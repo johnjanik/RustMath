@@ -258,6 +258,50 @@ impl<F: Field> Matrix<F> {
         Ok(basis)
     }
 
+    /// Compute the Moore-Penrose pseudoinverse
+    ///
+    /// For a matrix A, the pseudoinverse A⁺ satisfies:
+    /// - AA⁺A = A
+    /// - A⁺AA⁺ = A⁺
+    /// - (AA⁺)^T = AA⁺
+    /// - (A⁺A)^T = A⁺A
+    ///
+    /// For full-rank matrices, this uses A⁺ = (A^T A)^{-1} A^T.
+    /// Returns None if the computation fails.
+    pub fn pseudoinverse(&self) -> Result<Option<Self>>
+    where
+        F: rustmath_core::NumericConversion,
+    {
+        let m = self.rows;
+        let n = self.cols;
+
+        // For full-rank case (rank = min(m,n))
+        if m >= n {
+            // Left pseudoinverse: A⁺ = (A^T A)^{-1} A^T
+            let at = self.transpose();
+            let ata = (at.clone() * self.clone())?;
+
+            // Try to invert A^T A
+            if let Some(ata_inv) = ata.inverse()? {
+                let pinv = (ata_inv * at)?;
+                return Ok(Some(pinv));
+            }
+        } else {
+            // Right pseudoinverse: A⁺ = A^T (A A^T)^{-1}
+            let at = self.transpose();
+            let aat = (self.clone() * at.clone())?;
+
+            // Try to invert A A^T
+            if let Some(aat_inv) = aat.inverse()? {
+                let pinv = (at * aat_inv)?;
+                return Ok(Some(pinv));
+            }
+        }
+
+        // If we can't compute using normal equations, return None
+        Ok(None)
+    }
+
     /// Compute the inverse of a square matrix
     ///
     /// Returns None if the matrix is singular (non-invertible).

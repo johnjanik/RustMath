@@ -46,6 +46,16 @@ pub struct CholeskyDecomposition<F: Field> {
     pub l: Matrix<F>,
 }
 
+/// Hessenberg decomposition result
+///
+/// Represents A = QHQ^T where H is upper Hessenberg (zeros below first subdiagonal)
+pub struct HessenbergDecomposition<F: Field> {
+    /// Upper Hessenberg matrix
+    pub h: Matrix<F>,
+    /// Orthogonal transformation matrix
+    pub q: Matrix<F>,
+}
+
 impl<F: Field> Matrix<F> {
     /// Compute LU decomposition without pivoting
     ///
@@ -429,6 +439,139 @@ impl<F: Field> Matrix<F> {
                 cols: n,
             },
         })
+    }
+
+    /// Compute Hessenberg form using Householder reflections
+    ///
+    /// Returns H and Q such that H = Q^T A Q where H is upper Hessenberg.
+    /// Upper Hessenberg means h[i][j] = 0 for i > j+1.
+    ///
+    /// This is useful as a preconditioner for eigenvalue algorithms.
+    pub fn hessenberg_decomposition(&self) -> Result<HessenbergDecomposition<F>>
+    where
+        F: rustmath_core::NumericConversion,
+    {
+        if !self.is_square() {
+            return Err(MathError::InvalidArgument(
+                "Hessenberg decomposition requires a square matrix".to_string(),
+            ));
+        }
+
+        let n = self.rows;
+        if n <= 2 {
+            // Already in Hessenberg form
+            return Ok(HessenbergDecomposition {
+                h: self.clone(),
+                q: Matrix::identity(n),
+            });
+        }
+
+        let mut h = self.clone();
+        let mut q = Matrix::identity(n);
+
+        // Householder reduction to Hessenberg form
+        for k in 0..(n - 2) {
+            // Compute Householder vector for column k, rows k+1 to n
+            let mut v = vec![F::zero(); n - k - 1];
+            for i in 0..(n - k - 1) {
+                v[i] = h.data[(k + 1 + i) * n + k].clone();
+            }
+
+            // Compute norm
+            let mut norm_sq = F::zero();
+            for vi in &v {
+                norm_sq = norm_sq + vi.clone() * vi.clone();
+            }
+
+            let norm = match norm_sq.to_f64() {
+                Some(val) if val > 1e-10 => match F::from_f64(val.sqrt()) {
+                    Some(n) => n,
+                    None => continue, // Skip if can't convert
+                },
+                _ => continue, // Skip if zero or too small
+            };
+
+            // v[0] += sign(v[0]) * norm
+            let sign = if v[0].to_f64().unwrap_or(0.0) >= 0.0 {
+                F::one()
+            } else {
+                F::zero() - F::one()
+            };
+            v[0] = v[0].clone() + sign * norm;
+
+            // Normalize v
+            let mut v_norm_sq = F::zero();
+            for vi in &v {
+                v_norm_sq = v_norm_sq + vi.clone() * vi.clone();
+            }
+
+            let v_norm = match v_norm_sq.to_f64() {
+                Some(val) if val > 1e-10 => match F::from_f64(val.sqrt()) {
+                    Some(n) => n,
+                    None => continue,
+                },
+                _ => continue,
+            };
+
+            for vi in &mut v {
+                *vi = vi.clone() / v_norm.clone();
+            }
+
+            // Apply Householder transformation: H = I - 2vv^T
+            // h = (I - 2vv^T) * h * (I - 2vv^T)
+
+            // Left multiplication: (I - 2vv^T) * h
+            for j in 0..n {
+                // Compute v^T * h[:, j] for rows k+1 to n
+                let mut dot = F::zero();
+                for i in 0..(n - k - 1) {
+                    dot = dot + v[i].clone() * h.data[(k + 1 + i) * n + j].clone();
+                }
+
+                let two = F::one() + F::one();
+                let factor = two * dot;
+
+                for i in 0..(n - k - 1) {
+                    h.data[(k + 1 + i) * n + j] =
+                        h.data[(k + 1 + i) * n + j].clone() - factor.clone() * v[i].clone();
+                }
+            }
+
+            // Right multiplication: h * (I - 2vv^T)
+            for i in 0..n {
+                // Compute h[i, :] * v for cols k+1 to n
+                let mut dot = F::zero();
+                for j in 0..(n - k - 1) {
+                    dot = dot + h.data[i * n + (k + 1 + j)].clone() * v[j].clone();
+                }
+
+                let two = F::one() + F::one();
+                let factor = two * dot;
+
+                for j in 0..(n - k - 1) {
+                    h.data[i * n + (k + 1 + j)] =
+                        h.data[i * n + (k + 1 + j)].clone() - factor.clone() * v[j].clone();
+                }
+            }
+
+            // Update Q matrix
+            for i in 0..n {
+                let mut dot = F::zero();
+                for j in 0..(n - k - 1) {
+                    dot = dot + q.data[i * n + (k + 1 + j)].clone() * v[j].clone();
+                }
+
+                let two = F::one() + F::one();
+                let factor = two * dot;
+
+                for j in 0..(n - k - 1) {
+                    q.data[i * n + (k + 1 + j)] =
+                        q.data[i * n + (k + 1 + j)].clone() - factor.clone() * v[j].clone();
+                }
+            }
+        }
+
+        Ok(HessenbergDecomposition { h, q })
     }
 }
 

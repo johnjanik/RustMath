@@ -5,12 +5,18 @@
 pub mod decomposition;
 pub mod linear_solve;
 pub mod matrix;
+pub mod polynomial_ops;
 pub mod vector;
+pub mod vector_space;
 
-pub use decomposition::{LUDecomposition, PLUDecomposition};
+pub use decomposition::{
+    CholeskyDecomposition, HessenbergDecomposition, LUDecomposition, PLUDecomposition,
+    QRDecomposition,
+};
 pub use linear_solve::RowEchelonForm;
 pub use matrix::Matrix;
 pub use vector::Vector;
+pub use vector_space::VectorSpace;
 
 #[cfg(test)]
 mod tests {
