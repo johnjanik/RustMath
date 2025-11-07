@@ -3,6 +3,7 @@
 //! This crate provides combinatorial structures like permutations, combinations,
 //! partitions, and algorithms for generating and manipulating them.
 
+use rustmath_core::Ring;
 use rustmath_integers::Integer;
 
 /// Compute factorial

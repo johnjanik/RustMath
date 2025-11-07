@@ -1,6 +1,6 @@
 //! Rational numbers (fractions)
 
-use rustmath_core::{CommutativeRing, Field, IntegralDomain, MathError, NumericConversion, Result, Ring};
+use rustmath_core::{CommutativeRing, EuclideanDomain, Field, IntegralDomain, MathError, NumericConversion, Result, Ring};
 use rustmath_integers::Integer;
 use std::cmp::Ordering;
 use std::fmt;
