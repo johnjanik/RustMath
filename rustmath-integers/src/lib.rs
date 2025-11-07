@@ -3,10 +3,12 @@
 //! This crate provides arbitrary precision integer arithmetic with implementations
 //! of number-theoretic algorithms.
 
+pub mod crt;
 pub mod integer;
 pub mod modular;
 pub mod prime;
 
+pub use crt::{chinese_remainder_theorem, crt_two};
 pub use integer::Integer;
 pub use modular::ModularInteger;
 

@@ -174,6 +174,139 @@ pub fn factor(n: &Integer) -> Vec<(Integer, u32)> {
     factors
 }
 
+/// Pollard's Rho algorithm for finding a non-trivial factor
+///
+/// This is a probabilistic algorithm that's much faster than trial division
+/// for large composite numbers with small factors.
+///
+/// Returns None if n is prime or if the algorithm fails to find a factor
+pub fn pollard_rho(n: &Integer) -> Option<Integer> {
+    if n <= &Integer::from(1) {
+        return None;
+    }
+
+    if n.is_even() {
+        return Some(Integer::from(2));
+    }
+
+    // Check if n is prime first (for small n)
+    if is_prime(n) {
+        return None;
+    }
+
+    // Pollard's Rho with Floyd's cycle detection
+    let mut x = Integer::from(2);
+    let mut y = Integer::from(2);
+    let mut d = Integer::one();
+
+    // f(x) = (x² + 1) mod n
+    let f = |val: &Integer| -> Integer {
+        let result = (val.clone() * val.clone() + Integer::one()) % n.clone();
+        if result.signum() < 0 {
+            result + n.clone()
+        } else {
+            result
+        }
+    };
+
+    // Try to find a factor
+    for _ in 0..1000000 {
+        x = f(&x);
+        y = f(&f(&y));
+
+        let diff = if x > y {
+            x.clone() - y.clone()
+        } else {
+            y.clone() - x.clone()
+        };
+
+        d = diff.gcd(n);
+
+        if d > Integer::one() && &d < n {
+            return Some(d);
+        }
+
+        if d == *n {
+            // Cycle detected, restart with different starting point
+            x = Integer::from(rand_int() % 100 + 2);
+            y = x.clone();
+        }
+    }
+
+    None
+}
+
+// Simple deterministic "random" number for Pollard's Rho
+fn rand_int() -> i64 {
+    use std::cell::Cell;
+    thread_local!(static COUNTER: Cell<i64> = Cell::new(42));
+    COUNTER.with(|c| {
+        let val = c.get();
+        c.set(val.wrapping_mul(1103515245).wrapping_add(12345));
+        (val / 65536) % 32768
+    })
+}
+
+/// Factor using Pollard's Rho algorithm
+///
+/// More efficient than trial division for numbers with small factors
+pub fn factor_pollard_rho(n: &Integer) -> Vec<(Integer, u32)> {
+    if n.is_zero() || n.is_one() {
+        return vec![];
+    }
+
+    let mut factors = Vec::new();
+    let mut remaining = n.abs();
+
+    // Handle factor of 2
+    if remaining.is_even() {
+        let mut count = 0;
+        while remaining.is_even() {
+            remaining = remaining / Integer::from(2);
+            count += 1;
+        }
+        factors.push((Integer::from(2), count));
+    }
+
+    // Use Pollard's Rho for the rest
+    while remaining > Integer::one() && !is_prime(&remaining) {
+        if let Some(factor) = pollard_rho(&remaining) {
+            let mut count = 0;
+            while (&remaining % &factor).is_zero() {
+                remaining = remaining / factor.clone();
+                count += 1;
+            }
+            factors.push((factor, count));
+        } else {
+            // Fallback to trial division if Pollard's Rho fails
+            let mut d = Integer::from(3);
+            while d.clone() * d.clone() <= remaining {
+                if (&remaining % &d).is_zero() {
+                    let mut count = 0;
+                    while (&remaining % &d).is_zero() {
+                        remaining = remaining / d.clone();
+                        count += 1;
+                    }
+                    factors.push((d.clone(), count));
+                    break;
+                }
+                d = d + Integer::from(2);
+            }
+
+            if remaining > Integer::one() {
+                break;
+            }
+        }
+    }
+
+    // If remaining > 1, it's a prime factor
+    if remaining > Integer::one() {
+        factors.push((remaining, 1));
+    }
+
+    factors
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

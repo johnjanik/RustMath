@@ -3,8 +3,10 @@
 //! This crate provides rational number (fraction) arithmetic with automatic
 //! simplification to lowest terms.
 
+pub mod continued_fraction;
 pub mod rational;
 
+pub use continued_fraction::ContinuedFraction;
 pub use rational::Rational;
 
 #[cfg(test)]
