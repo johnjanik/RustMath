@@ -35,33 +35,35 @@ rustmath/
 ### Phase 1: Foundation (Core Algebraic Structures)
 **Goal**: Basic mathematical building blocks
 
-#### 1.1 Core Traits and Types
-- [ ] `Ring` trait (addition, multiplication, zero, one)
-- [ ] `Field` trait (division)
-- [ ] `EuclideanDomain` trait (division with remainder)
-- [ ] `Group` trait
-- [ ] `Module` trait
-- [ ] Error handling types
+#### 1.1 Core Traits and Types ✅
+- [x] `Ring` trait (addition, multiplication, zero, one)
+- [x] `Field` trait (division)
+- [x] `EuclideanDomain` trait (division with remainder)
+- [x] `Group` trait
+- [x] `Module` trait
+- [x] Error handling types
 
-#### 1.2 Integer Arithmetic
-- [ ] Arbitrary precision integers (using `num-bigint`)
-- [ ] GCD, LCM algorithms
-- [ ] Modular arithmetic
-- [ ] Prime testing (Miller-Rabin, etc.)
-- [ ] Integer factorization
-- [ ] Chinese Remainder Theorem
+#### 1.2 Integer Arithmetic ✅
+- [x] Arbitrary precision integers (using `num-bigint`)
+- [x] GCD, LCM algorithms
+- [x] Modular arithmetic
+- [x] Prime testing (Miller-Rabin, etc.)
+- [x] Integer factorization (trial division)
+- [x] Pollard's Rho factorization
+- [x] Chinese Remainder Theorem
 
-#### 1.3 Rational Numbers
-- [ ] Rational number type with automatic simplification
-- [ ] Arithmetic operations
-- [ ] Continued fractions
+#### 1.3 Rational Numbers ✅
+- [x] Rational number type with automatic simplification
+- [x] Arithmetic operations
+- [x] Continued fractions
 
-#### 1.4 Polynomial Rings
-- [ ] Univariate polynomials
-- [ ] Multivariate polynomials
-- [ ] Polynomial arithmetic
-- [ ] GCD for polynomials
-- [ ] Factorization
+#### 1.4 Polynomial Rings 🚧
+- [x] Univariate polynomials
+- [x] Multivariate polynomials
+- [x] Polynomial arithmetic
+- [x] GCD for polynomials (basic Euclidean algorithm)
+- [ ] Polynomial factorization (TODO)
+- [ ] Advanced GCD algorithms (multivariate, subresultants)
 
 ### Phase 2: Linear Algebra
 **Goal**: Matrix and vector operations
