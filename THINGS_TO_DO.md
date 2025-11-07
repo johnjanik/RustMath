@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~31% (145 / 473 functions tracked)
+**Overall Progress**: ~33% (151 / 473 functions tracked)
 
 ---
 
@@ -184,20 +184,20 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.solve_left(b)` | ✅ | `rustmath-matrix/src/linear_solve.rs` | Solves xA = b |
 | `.kernel()` - Null space | ✅ | `rustmath-matrix/src/linear_solve.rs` | Basis from RREF |
 | `.image()` - Column space | ✅ | `rustmath-matrix/src/linear_solve.rs` | Pivot columns |
-| `.eigenvalues()` | ⬜ | | |
-| `.eigenvectors_right()` | ⬜ | | |
-| `.eigenvectors_left()` | ⬜ | | |
+| `.eigenvalues()` | ✅ | `rustmath-matrix/src/eigenvalues.rs` | QR algorithm |
+| `.eigenvectors_right()` | ✅ | `rustmath-matrix/src/eigenvalues.rs` | Via kernel of (A - λI) |
+| `.eigenvectors_left()` | ✅ | `rustmath-matrix/src/eigenvalues.rs` | Right eigenvectors of A^T |
 | `.charpoly()` - Characteristic polynomial | ✅ | `rustmath-matrix/src/polynomial_ops.rs` | Faddeev-LeVerrier algorithm |
 | `.minpoly()` - Minimal polynomial | 🚧 | `rustmath-matrix/src/polynomial_ops.rs` | Returns charpoly as approximation |
 | `.jordan_form()` | ⬜ | | Requires eigenvalues |
 | `.rational_canonical_form()` | ⬜ | | |
-| `.smith_form()` | ⬜ | | Integer matrices |
-| `.hermite_form()` | ⬜ | | Integer matrices |
+| `.smith_form()` | ✅ | `rustmath-matrix/src/integer_forms.rs` | Smith normal form for integer matrices |
+| `.hermite_form()` | ✅ | `rustmath-matrix/src/integer_forms.rs` | Hermite normal form |
 | `.echelon_form()` | ✅ | `rustmath-matrix/src/linear_solve.rs` | `row_echelon_form()` |
 | `.rref()` | ✅ | `rustmath-matrix/src/linear_solve.rs` | `reduced_row_echelon_form()` |
 | `.LU()` | ✅ | `rustmath-matrix/src/decomposition.rs` | |
 | `.QR()` | ✅ | `rustmath-matrix/src/decomposition.rs` | Gram-Schmidt |
-| `.SVD()` | ⬜ | | |
+| `.SVD()` | ✅ | `rustmath-matrix/src/decomposition.rs` | Via eigendecomposition of A^T A |
 | `.cholesky()` | ✅ | `rustmath-matrix/src/decomposition.rs` | For positive definite |
 | `.hessenberg_form()` | ✅ | `rustmath-matrix/src/decomposition.rs` | Householder reflections |
 | `.is_symmetric()` | ✅ | `rustmath-matrix/src/matrix.rs` | Also: is_diagonal, is_triangular |
@@ -208,7 +208,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.pseudoinverse()` | ✅ | `rustmath-matrix/src/linear_solve.rs` | Moore-Penrose via normal equations |
 | Sparse matrices | ⬜ | | |
 
-**Progress**: 23/35 features (66%)
+**Progress**: 28/35 features (80%)
 
 ### 2.2 Vectors (sage.modules.free_module)
 **SageMath Source**: `src/sage/modules/free_module.py`
@@ -220,9 +220,9 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.cross_product()` | ✅ | `rustmath-matrix/src/vector.rs` | 3D only |
 | `.norm(p)` | ✅ | `rustmath-matrix/src/vector.rs` | p-norms (1, 2, inf, general) |
 | `.normalize()` | ✅ | `rustmath-matrix/src/vector.rs` | Unit vector |
-| Inner product spaces | ⬜ | | |
+| Inner product spaces | ✅ | `rustmath-matrix/src/inner_product.rs` | With Gram matrix, Gram-Schmidt |
 
-**Progress**: 5/6 features (83%)
+**Progress**: 6/6 features (100%)
 
 ### 2.3 Vector Spaces (sage.modules.vector_space)
 **SageMath Source**: `src/sage/modules/vector_space.py`
@@ -996,7 +996,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Category | Functions Impl. | Total Functions | Progress |
 |----------|----------------|-----------------|----------|
 | 1. Rings & Fields | 37 | 90 | 41% |
-| 2. Linear Algebra | 32 | 46 | 70% |
+| 2. Linear Algebra | 38 | 46 | 83% |
 | 3. Number Theory | 20 | 42 | 48% |
 | 4. Symbolic Computation | 11 | 35 | 31% |
 | 5. Calculus | 7 | 30 | 23% |
@@ -1009,7 +1009,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 12. Group Theory | 0 | 14 | 0% |
 | 13-20. Advanced Topics | 1 | 49 | 2% |
 
-**TOTAL**: **145 / 473 functions** = **~31% complete**
+**TOTAL**: **151 / 473 functions** = **~33% complete**
 
 ### Files to Examine in SageMath Source
 

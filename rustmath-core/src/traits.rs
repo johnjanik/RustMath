@@ -219,6 +219,19 @@ impl Ring for i32 {
 impl CommutativeRing for i32 {}
 impl IntegralDomain for i32 {}
 
+impl EuclideanDomain for i32 {
+    fn norm(&self) -> u64 {
+        self.abs() as u64
+    }
+
+    fn div_rem(&self, other: &Self) -> Result<(Self, Self)> {
+        if other.is_zero() {
+            return Err(MathError::DivisionByZero);
+        }
+        Ok((self / other, self % other))
+    }
+}
+
 impl Ring for i64 {
     fn zero() -> Self { 0 }
     fn one() -> Self { 1 }
@@ -228,6 +241,71 @@ impl Ring for i64 {
 
 impl CommutativeRing for i64 {}
 impl IntegralDomain for i64 {}
+
+impl EuclideanDomain for i64 {
+    fn norm(&self) -> u64 {
+        self.abs() as u64
+    }
+
+    fn div_rem(&self, other: &Self) -> Result<(Self, Self)> {
+        if other.is_zero() {
+            return Err(MathError::DivisionByZero);
+        }
+        Ok((self / other, self % other))
+    }
+}
+
+impl NumericConversion for i32 {
+    fn from_i64(n: i64) -> Self {
+        n as i32
+    }
+
+    fn from_u64(n: u64) -> Self {
+        n as i32
+    }
+
+    fn to_i64(&self) -> Option<i64> {
+        Some(*self as i64)
+    }
+
+    fn to_u64(&self) -> Option<u64> {
+        if *self >= 0 {
+            Some(*self as u64)
+        } else {
+            None
+        }
+    }
+
+    fn to_f64(&self) -> Option<f64> {
+        Some(*self as f64)
+    }
+}
+
+impl NumericConversion for i64 {
+    fn from_i64(n: i64) -> Self {
+        n
+    }
+
+    fn from_u64(n: u64) -> Self {
+        n as i64
+    }
+
+    fn to_i64(&self) -> Option<i64> {
+        Some(*self)
+    }
+
+    fn to_u64(&self) -> Option<u64> {
+        if *self >= 0 {
+            Some(*self as u64)
+        } else {
+            None
+        }
+    }
+
+    fn to_f64(&self) -> Option<f64> {
+        Some(*self as f64)
+    }
+}
 
 #[cfg(test)]
 mod tests {
