@@ -28,6 +28,24 @@ pub struct PLUDecomposition<F: Field> {
     pub perm: Vec<usize>,
 }
 
+/// QR decomposition result
+///
+/// Represents A = QR where Q is orthogonal and R is upper triangular
+pub struct QRDecomposition<F: Field> {
+    /// Orthogonal matrix (Q^T Q = I)
+    pub q: Matrix<F>,
+    /// Upper triangular matrix
+    pub r: Matrix<F>,
+}
+
+/// Cholesky decomposition result
+///
+/// Represents A = LL^T where L is lower triangular
+pub struct CholeskyDecomposition<F: Field> {
+    /// Lower triangular matrix
+    pub l: Matrix<F>,
+}
+
 impl<F: Field> Matrix<F> {
     /// Compute LU decomposition without pivoting
     ///
@@ -233,6 +251,185 @@ impl<F: Field> Matrix<F> {
 
         Ok(det)
     }
+
+    /// Compute QR decomposition using Gram-Schmidt orthogonalization
+    ///
+    /// Returns Q and R such that A = QR where:
+    /// - Q is orthogonal (Q^T Q = I)
+    /// - R is upper triangular
+    ///
+    /// Uses the modified Gram-Schmidt algorithm for better numerical stability.
+    pub fn qr_decomposition(&self) -> Result<QRDecomposition<F>>
+    where
+        F: rustmath_core::NumericConversion,
+    {
+        let m = self.rows;
+        let n = self.cols;
+
+        if m < n {
+            return Err(MathError::InvalidArgument(
+                "QR decomposition requires rows >= cols".to_string(),
+            ));
+        }
+
+        // Extract columns
+        let mut q_cols: Vec<Vec<F>> = Vec::new();
+        let mut r_data = vec![F::zero(); n * n];
+
+        for j in 0..n {
+            // Get column j
+            let mut v = self.col(j)?;
+
+            // Orthogonalize against previous columns
+            for i in 0..j {
+                // r[i,j] = q_i^T * a_j
+                let mut dot = F::zero();
+                for k in 0..m {
+                    dot = dot + q_cols[i][k].clone() * v[k].clone();
+                }
+                r_data[i * n + j] = dot.clone();
+
+                // v = v - r[i,j] * q_i
+                for k in 0..m {
+                    v[k] = v[k].clone() - dot.clone() * q_cols[i][k].clone();
+                }
+            }
+
+            // Compute norm of v
+            let mut norm_squared = F::zero();
+            for k in 0..m {
+                norm_squared = norm_squared + v[k].clone() * v[k].clone();
+            }
+
+            let norm = match norm_squared.to_f64() {
+                Some(val) if val > 0.0 => F::from_f64(val.sqrt()),
+                _ => {
+                    return Err(MathError::InvalidArgument(
+                        "Column vectors are linearly dependent".to_string(),
+                    ))
+                }
+            };
+
+            let norm = match norm {
+                Some(n) => n,
+                None => {
+                    return Err(MathError::InvalidArgument(
+                        "Failed to compute norm".to_string(),
+                    ))
+                }
+            };
+
+            r_data[j * n + j] = norm.clone();
+
+            // Normalize v
+            let mut q_j = Vec::with_capacity(m);
+            for k in 0..m {
+                q_j.push(v[k].clone() / norm.clone());
+            }
+
+            q_cols.push(q_j);
+        }
+
+        // Build Q matrix from columns
+        let mut q_data = Vec::with_capacity(m * n);
+        for i in 0..m {
+            for j in 0..n {
+                q_data.push(q_cols[j][i].clone());
+            }
+        }
+
+        Ok(QRDecomposition {
+            q: Matrix {
+                data: q_data,
+                rows: m,
+                cols: n,
+            },
+            r: Matrix {
+                data: r_data,
+                rows: n,
+                cols: n,
+            },
+        })
+    }
+
+    /// Compute Cholesky decomposition for positive definite matrices
+    ///
+    /// Returns L such that A = LL^T where L is lower triangular.
+    /// The matrix must be symmetric positive definite.
+    ///
+    /// This is more efficient than LU decomposition for this special case.
+    pub fn cholesky_decomposition(&self) -> Result<CholeskyDecomposition<F>>
+    where
+        F: rustmath_core::NumericConversion,
+    {
+        if !self.is_square() {
+            return Err(MathError::InvalidArgument(
+                "Cholesky decomposition requires a square matrix".to_string(),
+            ));
+        }
+
+        if !self.is_symmetric() {
+            return Err(MathError::InvalidArgument(
+                "Cholesky decomposition requires a symmetric matrix".to_string(),
+            ));
+        }
+
+        let n = self.rows;
+        let mut l_data = vec![F::zero(); n * n];
+
+        for i in 0..n {
+            for j in 0..=i {
+                let mut sum = F::zero();
+
+                if i == j {
+                    // Diagonal element
+                    for k in 0..j {
+                        let l_jk = l_data[j * n + k].clone();
+                        sum = sum + l_jk.clone() * l_jk;
+                    }
+
+                    let diff = self.data[i * n + j].clone() - sum;
+
+                    // Check if positive
+                    let diff_f64 = diff.to_f64().ok_or_else(|| {
+                        MathError::InvalidArgument("Cannot convert to f64".to_string())
+                    })?;
+
+                    if diff_f64 <= 0.0 {
+                        return Err(MathError::InvalidArgument(
+                            "Matrix is not positive definite".to_string(),
+                        ));
+                    }
+
+                    let sqrt_val = F::from_f64(diff_f64.sqrt()).ok_or_else(|| {
+                        MathError::InvalidArgument("Cannot convert sqrt back".to_string())
+                    })?;
+
+                    l_data[i * n + j] = sqrt_val;
+                } else {
+                    // Off-diagonal element
+                    for k in 0..j {
+                        sum = sum + l_data[i * n + k].clone() * l_data[j * n + k].clone();
+                    }
+
+                    let l_jj = l_data[j * n + j].clone();
+                    if l_jj.is_zero() {
+                        return Err(MathError::DivisionByZero);
+                    }
+
+                    l_data[i * n + j] = (self.data[i * n + j].clone() - sum) / l_jj;
+                }
+            }
+        }
+
+        Ok(CholeskyDecomposition {
+            l: Matrix {
+                data: l_data,
+                rows: n,
+                cols: n,
+            },
+        })
+    }
 }
 
 #[cfg(test)]
@@ -326,5 +523,99 @@ mod tests {
         // det = 1*4 - 2*3 = -2
         let det = m.determinant_lu().unwrap();
         assert_eq!(det, Rational::from((-2, 1)));
+    }
+
+    #[test]
+    fn test_qr_decomposition() {
+        // Simple 2x2 matrix
+        let m = Matrix::from_vec(
+            2,
+            2,
+            vec![
+                Rational::from((1, 1)),
+                Rational::from((0, 1)),
+                Rational::from((0, 1)),
+                Rational::from((1, 1)),
+            ],
+        )
+        .unwrap();
+
+        let qr = m.qr_decomposition().unwrap();
+
+        // Verify Q is orthogonal: Q^T Q = I
+        let qt = qr.q.transpose();
+        let qtq = (qt * qr.q.clone()).unwrap();
+
+        for i in 0..2 {
+            for j in 0..2 {
+                let expected = if i == j {
+                    Rational::from((1, 1))
+                } else {
+                    Rational::from((0, 1))
+                };
+                let val = qtq.get(i, j).unwrap();
+                // Allow small numerical error
+                let diff = (val.clone() - expected.clone()).to_f64().unwrap_or(0.0).abs();
+                assert!(diff < 1e-10, "Q^T Q should be identity");
+            }
+        }
+
+        // Verify A = QR
+        let reconstructed = (qr.q * qr.r).unwrap();
+        for i in 0..2 {
+            for j in 0..2 {
+                let orig = m.get(i, j).unwrap();
+                let recon = reconstructed.get(i, j).unwrap();
+                let diff = (orig.clone() - recon.clone()).to_f64().unwrap_or(0.0).abs();
+                assert!(diff < 1e-10, "A should equal QR");
+            }
+        }
+    }
+
+    #[test]
+    fn test_cholesky_decomposition() {
+        // Positive definite matrix:
+        // [4  12  -16]
+        // [12  37  -43]
+        // [-16 -43  98]
+        // This has Cholesky factor L =
+        // [2   0   0]
+        // [6   1   0]
+        // [-8  5   3]
+
+        let m = Matrix::from_vec(
+            3,
+            3,
+            vec![
+                Rational::from((4, 1)),
+                Rational::from((12, 1)),
+                Rational::from((-16, 1)),
+                Rational::from((12, 1)),
+                Rational::from((37, 1)),
+                Rational::from((-43, 1)),
+                Rational::from((-16, 1)),
+                Rational::from((-43, 1)),
+                Rational::from((98, 1)),
+            ],
+        )
+        .unwrap();
+
+        let chol = m.cholesky_decomposition().unwrap();
+
+        // Verify L is lower triangular
+        assert!(chol.l.is_lower_triangular());
+
+        // Verify A = LL^T
+        let lt = chol.l.transpose();
+        let reconstructed = (chol.l * lt).unwrap();
+
+        for i in 0..3 {
+            for j in 0..3 {
+                let orig = m.get(i, j).unwrap();
+                let recon = reconstructed.get(i, j).unwrap();
+                let diff = (orig.clone() - recon.clone()).to_f64().unwrap_or(0.0).abs();
+                assert!(diff < 1e-8, "A should equal LL^T at ({}, {})", i, j);
+            }
+        }
     }
 }
