@@ -100,56 +100,65 @@ rustmath/
 - [ ] Iterative solvers (Conjugate Gradient, GMRES)
 - [ ] Matrix norms and condition numbers
 
-### Phase 3: Symbolic Computation
+### Phase 3: Symbolic Computation 🚧
 **Goal**: Expression manipulation and simplification
 
-- [ ] Expression tree structure
+- [x] Expression tree structure
 - [ ] Expression parsing
-- [ ] Simplification rules
-- [ ] Pattern matching
-- [ ] Substitution
+- [x] Basic simplification rules
+- [ ] Advanced pattern matching
+- [x] Substitution
+- [x] Symbol collection and evaluation
 - [ ] Expression ordering
 
-### Phase 4: Calculus
+### Phase 4: Calculus 🚧
 **Goal**: Differentiation and integration
 
-- [ ] Symbolic differentiation
-- [ ] Chain rule, product rule, quotient rule
+- [x] Symbolic differentiation
+- [x] Chain rule, product rule, quotient rule
+- [x] Trigonometric and exponential differentiation
 - [ ] Integration (pattern matching)
 - [ ] Series expansion (Taylor, Laurent)
 - [ ] Limits
 - [ ] Numerical integration
 
-### Phase 5: Number Theory
+### Phase 5: Number Theory 🚧
 **Goal**: Advanced number-theoretic algorithms
 
-- [ ] Primality testing (deterministic and probabilistic)
-- [ ] Prime generation
-- [ ] Integer factorization (Pollard's rho, etc.)
+- [x] Primality testing (Miller-Rabin)
+- [ ] Deterministic primality testing
+- [x] Prime generation (next_prime)
+- [x] Integer factorization (trial division, Pollard's rho)
+- [x] Chinese Remainder Theorem
 - [ ] Discrete logarithm
 - [ ] Elliptic curves
 - [ ] Modular forms
 
-### Phase 6: Combinatorics
+### Phase 6: Combinatorics ✅
 **Goal**: Combinatorial objects and algorithms
 
-- [ ] Permutations
-- [ ] Combinations
-- [ ] Partitions
+- [x] Factorial and binomial coefficients
+- [x] Permutations (generation, composition, cycles)
+- [x] Integer partitions (generation, counting, conjugate)
+- [x] All permutations generation
+- [ ] Combinations generation
 - [ ] Young tableaux
 - [ ] Posets (Partially Ordered Sets)
 
-### Phase 7: Graph Theory
+### Phase 7: Graph Theory ✅
 **Goal**: Graph algorithms and structures
 
-- [ ] Graph representations (adjacency list, matrix)
-- [ ] Graph traversal (DFS, BFS)
-- [ ] Shortest paths
+- [x] Graph representations (adjacency list)
+- [x] Graph traversal (DFS, BFS)
+- [x] Shortest paths (BFS-based)
+- [x] Connectivity checking
 - [ ] Spanning trees
 - [ ] Graph coloring
 - [ ] Matching algorithms
+- [ ] Dijkstra's algorithm
+- [ ] Adjacency matrix representation
 
-### Phase 8: Geometry
+### Phase 8: Geometry 🔜
 **Goal**: Geometric objects and computations
 
 - [ ] Points, lines, planes
@@ -157,15 +166,16 @@ rustmath/
 - [ ] Transformations
 - [ ] Computational geometry algorithms
 
-### Phase 9: Cryptography
+### Phase 9: Cryptography ✅
 **Goal**: Cryptographic primitives and protocols
 
-- [ ] RSA
+- [x] RSA (key generation, encrypt, decrypt)
 - [ ] Elliptic curve cryptography
 - [ ] Hashing algorithms
 - [ ] Random number generation
+- [ ] Digital signatures
 
-### Phase 10: User Interface
+### Phase 10: User Interface 🔜
 **Goal**: Interactive usage
 
 - [ ] REPL (Read-Eval-Print Loop)
