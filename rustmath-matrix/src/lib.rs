@@ -22,7 +22,7 @@ pub use inner_product::InnerProductSpace;
 pub use integer_forms::{HermiteNormalForm, SmithNormalForm};
 pub use linear_solve::RowEchelonForm;
 pub use matrix::Matrix;
-pub use sparse::SparseMatrix;
+pub use sparse::{SparseMatrix, SparseMatrixIterator};
 pub use vector::Vector;
 pub use vector_space::{QuotientSpace, VectorSpace};
 

@@ -315,6 +315,230 @@ impl<F: Field> SparseMatrix<F> {
             row_ptrs: self.row_ptrs.clone(),
         }
     }
+
+    /// Sparse matrix-matrix multiplication
+    ///
+    /// Computes C = A * B where both A and B are sparse.
+    /// Result is also returned as a sparse matrix.
+    pub fn matmul(&self, other: &SparseMatrix<F>) -> Result<Self> {
+        if self.cols != other.rows {
+            return Err(MathError::InvalidArgument(
+                "Matrix dimensions don't match for multiplication".to_string(),
+            ));
+        }
+
+        let m = self.rows;
+        let n = other.cols;
+
+        // Use a temporary dense row for accumulation
+        // A more efficient implementation would use sparse accumulation
+        let mut result_values = Vec::new();
+        let mut result_col_indices = Vec::new();
+        let mut result_row_ptrs = vec![0];
+
+        for i in 0..m {
+            // Compute row i of result
+            let mut row = vec![F::zero(); n];
+
+            let row_start = self.row_ptrs[i];
+            let row_end = self.row_ptrs[i + 1];
+
+            for idx in row_start..row_end {
+                let j = self.col_indices[idx];
+                let a_val = &self.values[idx];
+
+                // Multiply by row j of B (which is column j of B^T)
+                let b_row_start = other.row_ptrs[j];
+                let b_row_end = other.row_ptrs[j + 1];
+
+                for b_idx in b_row_start..b_row_end {
+                    let k = other.col_indices[b_idx];
+                    let b_val = &other.values[b_idx];
+
+                    row[k] = row[k].clone() + a_val.clone() * b_val.clone();
+                }
+            }
+
+            // Add non-zero elements to result
+            for (k, val) in row.iter().enumerate() {
+                if !val.is_zero() {
+                    result_values.push(val.clone());
+                    result_col_indices.push(k);
+                }
+            }
+
+            result_row_ptrs.push(result_values.len());
+        }
+
+        Ok(SparseMatrix {
+            rows: m,
+            cols: n,
+            values: result_values,
+            col_indices: result_col_indices,
+            row_ptrs: result_row_ptrs,
+        })
+    }
+
+    /// Extract the diagonal as a vector
+    pub fn diagonal(&self) -> Vec<F> {
+        let n = self.rows.min(self.cols);
+        let mut diag = vec![F::zero(); n];
+
+        for i in 0..n {
+            if let Ok(val) = self.get(i, i) {
+                diag[i] = val;
+            }
+        }
+
+        diag
+    }
+
+    /// Get a row as a dense vector
+    pub fn get_row(&self, i: usize) -> Result<Vec<F>> {
+        if i >= self.rows {
+            return Err(MathError::InvalidArgument(
+                "Row index out of bounds".to_string(),
+            ));
+        }
+
+        let mut row = vec![F::zero(); self.cols];
+
+        let row_start = self.row_ptrs[i];
+        let row_end = self.row_ptrs[i + 1];
+
+        for idx in row_start..row_end {
+            let j = self.col_indices[idx];
+            row[j] = self.values[idx].clone();
+        }
+
+        Ok(row)
+    }
+
+    /// Get a column as a dense vector (slower than get_row due to CSR format)
+    pub fn get_col(&self, j: usize) -> Result<Vec<F>> {
+        if j >= self.cols {
+            return Err(MathError::InvalidArgument(
+                "Column index out of bounds".to_string(),
+            ));
+        }
+
+        let mut col = vec![F::zero(); self.rows];
+
+        for i in 0..self.rows {
+            col[i] = self.get(i, j)?;
+        }
+
+        Ok(col)
+    }
+
+    /// Compute the Frobenius norm (sqrt of sum of squared elements)
+    ///
+    /// Returns the squared norm since we're over general fields
+    pub fn frobenius_norm_squared(&self) -> F {
+        let mut sum = F::zero();
+
+        for val in &self.values {
+            sum = sum + val.clone() * val.clone();
+        }
+
+        sum
+    }
+
+    /// Iterator over non-zero elements (row, col, value)
+    pub fn iter_nonzero(&self) -> SparseMatrixIterator<'_, F> {
+        SparseMatrixIterator {
+            matrix: self,
+            row: 0,
+            idx: 0,
+        }
+    }
+
+    /// Extract a submatrix
+    pub fn submatrix(
+        &self,
+        row_start: usize,
+        row_end: usize,
+        col_start: usize,
+        col_end: usize,
+    ) -> Result<Self> {
+        if row_start >= row_end
+            || col_start >= col_end
+            || row_end > self.rows
+            || col_end > self.cols
+        {
+            return Err(MathError::InvalidArgument(
+                "Invalid submatrix range".to_string(),
+            ));
+        }
+
+        let new_rows = row_end - row_start;
+        let new_cols = col_end - col_start;
+
+        let mut new_values = Vec::new();
+        let mut new_col_indices = Vec::new();
+        let mut new_row_ptrs = vec![0];
+
+        for i in row_start..row_end {
+            let row_start_idx = self.row_ptrs[i];
+            let row_end_idx = self.row_ptrs[i + 1];
+
+            for idx in row_start_idx..row_end_idx {
+                let j = self.col_indices[idx];
+
+                if j >= col_start && j < col_end {
+                    new_values.push(self.values[idx].clone());
+                    new_col_indices.push(j - col_start);
+                }
+            }
+
+            new_row_ptrs.push(new_values.len());
+        }
+
+        Ok(SparseMatrix {
+            rows: new_rows,
+            cols: new_cols,
+            values: new_values,
+            col_indices: new_col_indices,
+            row_ptrs: new_row_ptrs,
+        })
+    }
+}
+
+/// Iterator over non-zero elements of a sparse matrix
+pub struct SparseMatrixIterator<'a, F: Field> {
+    matrix: &'a SparseMatrix<F>,
+    row: usize,
+    idx: usize,
+}
+
+impl<'a, F: Field> Iterator for SparseMatrixIterator<'a, F> {
+    type Item = (usize, usize, &'a F);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.row < self.matrix.rows {
+            let row_start = self.matrix.row_ptrs[self.row];
+            let row_end = self.matrix.row_ptrs[self.row + 1];
+
+            if self.idx < row_end {
+                let col = self.matrix.col_indices[self.idx];
+                let val = &self.matrix.values[self.idx];
+                let row = self.row;
+
+                self.idx += 1;
+
+                return Some((row, col, val));
+            }
+
+            self.row += 1;
+            self.idx = if self.row < self.matrix.rows {
+                self.matrix.row_ptrs[self.row]
+            } else {
+                0
+            };
+        }
+
+        None
+    }
 }
 
 #[cfg(test)]

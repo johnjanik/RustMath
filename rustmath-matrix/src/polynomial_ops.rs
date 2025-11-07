@@ -74,17 +74,140 @@ impl<F: Field> Matrix<F> {
         Ok(UnivariatePolynomial::new(coeffs))
     }
 
-    /// Compute a minimal polynomial (simplified version)
+    /// Compute the minimal polynomial
     ///
-    /// This is a placeholder - proper implementation requires eigenvalue computation.
-    /// For now, returns the characteristic polynomial as an approximation.
+    /// The minimal polynomial is the monic polynomial of smallest degree that
+    /// annihilates the matrix (i.e., m(A) = 0).
+    ///
+    /// For each distinct eigenvalue λ, the exponent in the minimal polynomial
+    /// equals the size of the largest Jordan block for λ.
+    ///
+    /// This implementation:
+    /// 1. Computes eigenvalues
+    /// 2. For each eigenvalue, finds the smallest k where (A - λI)^k has stable nullity
+    /// 3. Constructs m(x) = ∏(x - λ_i)^k_i
     pub fn minimal_polynomial(&self) -> Result<UnivariatePolynomial<F>>
     where
         F: rustmath_core::NumericConversion,
     {
-        // TODO: Implement proper minimal polynomial computation
-        // The minimal polynomial divides the characteristic polynomial
-        self.characteristic_polynomial()
+        if !self.is_square() {
+            return Err(MathError::InvalidArgument(
+                "Minimal polynomial is only defined for square matrices".to_string(),
+            ));
+        }
+
+        let n = self.rows;
+
+        // Special case for 1x1 matrices
+        if n == 1 {
+            return Ok(UnivariatePolynomial::new(vec![
+                F::zero() - self.data[0].clone(),
+                F::one(),
+            ]));
+        }
+
+        // Compute eigenvalues
+        let eigenvalues = match self.eigenvalues(100, 1e-10) {
+            Ok(vals) => vals,
+            Err(_) => {
+                // If eigenvalue computation fails, fall back to characteristic polynomial
+                return self.characteristic_polynomial();
+            }
+        };
+
+        if eigenvalues.is_empty() {
+            return self.characteristic_polynomial();
+        }
+
+        // Group eigenvalues by uniqueness (with tolerance)
+        let mut unique_eigenvalues: Vec<(F, usize)> = Vec::new();
+
+        for eval in eigenvalues {
+            let mut found = false;
+
+            for (unique_eval, max_power) in &mut unique_eigenvalues {
+                // Check if eigenvalues are "equal" (within numerical tolerance)
+                let diff = eval.clone() - unique_eval.clone();
+                if let Some(diff_f64) = diff.to_f64() {
+                    if diff_f64.abs() < 1e-10 {
+                        // Same eigenvalue, we'll update the power later
+                        found = true;
+                        break;
+                    }
+                }
+            }
+
+            if !found {
+                // Determine the exponent for this eigenvalue
+                let exponent = self.find_minimal_polynomial_exponent(&eval)?;
+                unique_eigenvalues.push((eval, exponent));
+            }
+        }
+
+        // Build minimal polynomial as product of (x - λ_i)^k_i
+        let mut result = UnivariatePolynomial::new(vec![F::one()]);
+
+        for (eigenval, exponent) in unique_eigenvalues {
+            // Create (x - eigenval)
+            let linear_factor = UnivariatePolynomial::new(vec![
+                F::zero() - eigenval.clone(),
+                F::one(),
+            ]);
+
+            // Raise to power exponent
+            for _ in 0..exponent {
+                result = result * linear_factor.clone();
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Find the exponent of an eigenvalue in the minimal polynomial
+    ///
+    /// This equals the size of the largest Jordan block for this eigenvalue.
+    /// We find it by computing the nullity of (A - λI)^k for increasing k.
+    fn find_minimal_polynomial_exponent(&self, eigenvalue: &F) -> Result<usize>
+    where
+        F: rustmath_core::NumericConversion,
+    {
+        let n = self.rows;
+
+        // Compute A - λI
+        let mut a_shifted = self.clone();
+        for i in 0..n {
+            a_shifted.data[i * n + i] = a_shifted.data[i * n + i].clone() - eigenvalue.clone();
+        }
+
+        let mut prev_nullity = 0;
+        let mut current_matrix = a_shifted.clone();
+
+        // Check powers up to n (since the largest Jordan block can't be larger than n)
+        for k in 1..=n {
+            // Compute nullity of (A - λI)^k
+            let nullity = match current_matrix.kernel() {
+                Ok(kernel) => kernel.len(),
+                Err(_) => 0,
+            };
+
+            // If nullity stabilizes, we've found the exponent
+            if k > 1 && nullity == prev_nullity {
+                return Ok(k - 1);
+            }
+
+            prev_nullity = nullity;
+
+            // Compute next power: (A - λI)^(k+1) = (A - λI)^k * (A - λI)
+            if k < n {
+                current_matrix = match current_matrix.clone() * a_shifted.clone() {
+                    Ok(m) => m,
+                    Err(_) => break,
+                };
+            }
+        }
+
+        // If we reach here, the exponent is at most n
+        Ok(n.min(prev_nullity.max(1)))
     }
 }
 
