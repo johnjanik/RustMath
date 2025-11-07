@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~35% (estimated based on core functionality coverage)
+**Overall Progress**: ~27% (128 / 473 functions tracked)
 
 ---
 
@@ -25,27 +25,27 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `ZZ` - Integer ring | ✅ | `rustmath-integers` | Type-level |
 | `.abs()` - Absolute value | ✅ | `rustmath-integers/src/integer.rs` | Via `BigInt::abs()` |
 | `.bits()` - Number of bits | ⬜ | | |
-| `.sqrt()` - Integer square root | ⬜ | | |
+| `.sqrt()` - Integer square root | ✅ | `rustmath-integers/src/integer.rs` | Newton's method |
 | `.is_prime()` - Primality test | ✅ | `rustmath-integers/src/prime.rs` | Miller-Rabin |
 | `.is_pseudoprime()` | ⬜ | | |
 | `.next_prime()` - Next prime | ✅ | `rustmath-integers/src/prime.rs` | |
-| `.previous_prime()` | ⬜ | | |
+| `.previous_prime()` | ✅ | `rustmath-integers/src/prime.rs` | |
 | `.prime_divisors()` | 🚧 | `rustmath-integers/src/prime.rs` | Basic factorization |
 | `.factor()` - Prime factorization | ✅ | `rustmath-integers/src/prime.rs` | Trial division + Pollard's Rho |
-| `.divisors()` | ⬜ | | |
+| `.divisors()` | ✅ | `rustmath-integers/src/integer.rs` | From prime factorization |
 | `.gcd(b)` - Greatest common divisor | ✅ | `rustmath-integers/src/integer.rs` | Euclidean algorithm |
 | `.lcm(b)` - Least common multiple | ✅ | `rustmath-integers/src/integer.rs` | |
 | `.xgcd(b)` - Extended GCD | ✅ | `rustmath-integers/src/integer.rs` | Returns (gcd, s, t) |
 | `.mod_inverse(n)` | ✅ | `rustmath-integers/src/modular.rs` | Via extended GCD |
 | `.powermod(e, m)` | ✅ | `rustmath-integers/src/integer.rs` | `mod_pow()` |
-| `.kronecker(b)` | ⬜ | | Jacobi/Legendre symbol |
+| `.kronecker(b)` | ✅ | `rustmath-integers/src/integer.rs` | `jacobi_symbol()` |
 | `.factorial()` | ✅ | `rustmath-combinatorics/src/lib.rs` | |
 | `.binomial(k)` | ✅ | `rustmath-combinatorics/src/lib.rs` | |
-| `.digits(base)` | ⬜ | | |
-| `.nth_root(n)` | ⬜ | | |
+| `.digits(base)` | ✅ | `rustmath-integers/src/integer.rs` | Base 2-36 |
+| `.nth_root(n)` | ✅ | `rustmath-integers/src/integer.rs` | Newton's method |
 | `.valuation(p)` | ⬜ | | p-adic valuation |
 
-**Progress**: 13/26 functions (50%)
+**Progress**: 18/26 functions (69%)
 
 ### 1.2 Rational Numbers (sage.rings.rational)
 **SageMath Source**: `src/sage/rings/rational.pyx`
@@ -106,14 +106,14 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Multivariate polynomials | ✅ | `rustmath-polynomials/src/multivariate.rs` | Sparse representation |
 | `.degree()` | ✅ | | |
 | `.coefficients()` | ✅ | | |
-| `.roots()` | ⬜ | | |
+| `.roots()` | 🚧 | `rustmath-polynomials/src/roots.rs` | Rational roots, quadratic formula |
 | `.factor()` - Factorization | 🚧 | `rustmath-polynomials/src/factorization.rs` | Square-free only |
 | `.gcd()` - Polynomial GCD | 🚧 | `rustmath-polynomials/src/univariate.rs` | Limited to field coefficients |
 | `.lcm()` | ⬜ | | |
 | `.derivative()` | ✅ | `rustmath-polynomials/src/univariate.rs` | |
-| `.integral()` | ⬜ | | |
+| `.integral()` | ✅ | `rustmath-polynomials/src/univariate.rs` | `integrate()` |
 | `.resultant()` | ⬜ | | |
-| `.discriminant()` | ⬜ | | |
+| `.discriminant()` | ✅ | `rustmath-polynomials/src/univariate.rs` | |
 | `.sylvester_matrix()` | ⬜ | | |
 | `.quo_rem(g)` - Quotient/remainder | ✅ | `rustmath-polynomials/src/univariate.rs` | `div_rem()` |
 | Gröbner bases | ⬜ | | |
@@ -122,7 +122,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.content()` | ✅ | `rustmath-polynomials/src/factorization.rs` | |
 | `.primitive_part()` | ✅ | `rustmath-polynomials/src/factorization.rs` | |
 
-**Progress**: 10/20 features (50%)
+**Progress**: 12/20 features (60%)
 
 ### 1.6 Power Series (sage.rings.power_series_ring)
 **SageMath Source**: `src/sage/rings/power_series_ring.py`
@@ -200,15 +200,15 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.SVD()` | ⬜ | | |
 | `.cholesky()` | ⬜ | | |
 | `.hessenberg_form()` | ⬜ | | |
-| `.is_symmetric()` | ⬜ | | |
+| `.is_symmetric()` | ✅ | `rustmath-matrix/src/matrix.rs` | Also: is_diagonal, is_triangular |
 | `.is_hermitian()` | ⬜ | | |
 | `.is_positive_definite()` | ⬜ | | |
-| `.norm(p)` | ⬜ | | Matrix norms |
+| `.norm(p)` | 🚧 | `rustmath-matrix/src/matrix.rs` | Frobenius, infinity, one norms |
 | `.condition_number()` | ⬜ | | |
 | `.pseudoinverse()` | ⬜ | | Moore-Penrose |
 | Sparse matrices | ⬜ | | |
 
-**Progress**: 11/35 features (31%)
+**Progress**: 13/35 features (37%)
 
 ### 2.2 Vectors (sage.modules.free_module)
 **SageMath Source**: `src/sage/modules/free_module.py`
@@ -250,14 +250,14 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `is_pseudoprime(n)` | ⬜ | | |
 | `is_prime_power(n)` | ⬜ | | |
 | `next_prime(n)` | ✅ | `rustmath-integers/src/prime.rs` | |
-| `previous_prime(n)` | ⬜ | | |
+| `previous_prime(n)` | ✅ | `rustmath-integers/src/prime.rs` | |
 | `nth_prime(n)` | ⬜ | | |
 | `prime_range(start, stop)` | ⬜ | | Sieve of Eratosthenes |
 | `primes_first_n(n)` | ⬜ | | |
 | `prime_pi(x)` | ⬜ | | Prime counting |
 | `random_prime(a, b)` | ⬜ | | |
 
-**Progress**: 2/10 functions (20%)
+**Progress**: 3/10 functions (30%)
 
 ### 3.2 Factorization (sage.rings.factorint)
 **SageMath Source**: `src/sage/rings/factorint.pyx`
@@ -270,13 +270,13 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Pollard's p-1 | ⬜ | | |
 | ECM (Elliptic Curve Method) | ⬜ | | |
 | Quadratic sieve | ⬜ | | |
-| `.divisors()` | ⬜ | | |
-| `.number_of_divisors()` | ⬜ | | tau(n) |
-| `.sum_of_divisors()` | ⬜ | | sigma(n) |
-| `.euler_phi()` | ⬜ | | Totient function |
-| `.moebius()` | ⬜ | | Möbius function |
+| `.divisors()` | ✅ | `rustmath-integers/src/integer.rs` | From prime factorization |
+| `.number_of_divisors()` | ✅ | `rustmath-integers/src/integer.rs` | tau(n) - `num_divisors()` |
+| `.sum_of_divisors()` | ✅ | `rustmath-integers/src/integer.rs` | sigma(n) - `sum_divisors()` |
+| `.euler_phi()` | ✅ | `rustmath-integers/src/integer.rs` | Totient function |
+| `.moebius()` | ✅ | `rustmath-integers/src/integer.rs` | Möbius function μ(n) |
 
-**Progress**: 3/11 functions (27%)
+**Progress**: 8/11 functions (73%)
 
 ### 3.3 Modular Arithmetic (sage.rings.finite_rings.integer_mod)
 **SageMath Source**: `src/sage/rings/finite_rings/integer_mod.pyx`
@@ -290,9 +290,9 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Primitive roots | ⬜ | | |
 | Chinese Remainder Theorem | ✅ | `rustmath-integers/src/crt.rs` | |
 | Quadratic residues | ⬜ | | |
-| Legendre/Jacobi symbols | ⬜ | | |
+| Legendre/Jacobi symbols | ✅ | `rustmath-integers/src/integer.rs` | `legendre_symbol()`, `jacobi_symbol()` |
 
-**Progress**: 3/8 functions (38%)
+**Progress**: 4/8 functions (50%)
 
 ### 3.4 Continued Fractions (sage.rings.continued_fraction)
 **SageMath Source**: `src/sage/rings/continued_fraction.py`
@@ -391,18 +391,18 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| `diff(f, x)` | ✅ | `rustmath-calculus/src/differentiation.rs` | |
-| Partial derivatives | ⬜ | | |
-| Chain rule | ✅ | `rustmath-calculus/src/differentiation.rs` | Automatic |
-| Product rule | ✅ | `rustmath-calculus/src/differentiation.rs` | Automatic |
-| Quotient rule | ✅ | `rustmath-calculus/src/differentiation.rs` | Automatic |
+| `diff(f, x)` | ✅ | `rustmath-symbolic/src/differentiate.rs` | `differentiate()` |
+| Partial derivatives | ✅ | `rustmath-symbolic/src/differentiate.rs` | Via `gradient()` |
+| Chain rule | ✅ | `rustmath-symbolic/src/differentiate.rs` | Automatic |
+| Product rule | ✅ | `rustmath-symbolic/src/differentiate.rs` | Automatic |
+| Quotient rule | ✅ | `rustmath-symbolic/src/differentiate.rs` | Automatic |
 | Implicit differentiation | ⬜ | | |
-| Higher-order derivatives | ⬜ | | |
-| `.derivative(x, n)` | ⬜ | | nth derivative |
+| Higher-order derivatives | ✅ | `rustmath-symbolic/src/differentiate.rs` | `nth_derivative()` |
+| `.derivative(x, n)` | ✅ | `rustmath-symbolic/src/differentiate.rs` | `nth_derivative()` |
 | Jacobian matrix | ⬜ | | |
 | Hessian matrix | ⬜ | | |
 
-**Progress**: 4/10 functions (40%)
+**Progress**: 7/10 functions (70%)
 
 ### 5.2 Integration (sage.calculus.integration)
 **SageMath Source**: `src/sage/symbolic/integration/`
@@ -538,19 +538,19 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
 | `factorial(n)` | ✅ | `rustmath-combinatorics/src/lib.rs` | |
-| `catalan_number(n)` | ⬜ | | |
-| `fibonacci(n)` | ⬜ | | |
-| `lucas_number(n)` | ⬜ | | |
+| `catalan_number(n)` | ✅ | `rustmath-combinatorics/src/lib.rs` | `catalan()` |
+| `fibonacci(n)` | ✅ | `rustmath-combinatorics/src/lib.rs` | |
+| `lucas_number(n)` | ✅ | `rustmath-combinatorics/src/lib.rs` | `lucas()` |
 | `stirling_number1(n, k)` | ⬜ | | |
-| `stirling_number2(n, k)` | ⬜ | | |
-| `bell_number(n)` | ⬜ | | |
+| `stirling_number2(n, k)` | ✅ | `rustmath-combinatorics/src/lib.rs` | `stirling_second()` |
+| `bell_number(n)` | ✅ | `rustmath-combinatorics/src/lib.rs` | |
 | Set partitions | ⬜ | | |
 | Dyck words | ⬜ | | |
 | Integer compositions | ⬜ | | |
 | Perfect matchings | ⬜ | | |
 | Latin squares | ⬜ | | |
 
-**Progress**: 1/12 functions (8%)
+**Progress**: 6/12 functions (50%)
 
 ---
 
@@ -583,15 +583,15 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
 | `.is_connected()` | ✅ | `rustmath-graphs/src/graph.rs` | |
-| `.connected_components()` | ⬜ | | |
-| `.is_bipartite()` | ⬜ | | |
+| `.connected_components()` | ✅ | `rustmath-graphs/src/graph.rs` | |
+| `.is_bipartite()` | ✅ | `rustmath-graphs/src/graph.rs` | |
 | `.is_planar()` | ⬜ | | |
 | `.is_tree()` | ⬜ | | |
 | `.is_forest()` | ⬜ | | |
 | `.is_eulerian()` | ⬜ | | |
 | `.is_hamiltonian()` | ⬜ | | |
 
-**Progress**: 1/8 functions (13%)
+**Progress**: 3/8 functions (38%)
 
 ### 7.3 Traversals (sage.graphs.traversals)
 **SageMath Source**: `src/sage/graphs/traversals.pyx`
@@ -636,12 +636,12 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| `.chromatic_number()` | ⬜ | | |
-| `.coloring()` | ⬜ | | Find a coloring |
-| Greedy coloring | ⬜ | | |
+| `.chromatic_number()` | ✅ | `rustmath-graphs/src/graph.rs` | |
+| `.coloring()` | ✅ | `rustmath-graphs/src/graph.rs` | `greedy_coloring()` |
+| Greedy coloring | ✅ | `rustmath-graphs/src/graph.rs` | |
 | `.chromatic_polynomial()` | ⬜ | | |
 
-**Progress**: 0/4 functions (0%)
+**Progress**: 3/4 functions (75%)
 
 ### 7.7 Matching (sage.graphs.matchpoly)
 **SageMath Source**: `src/sage/graphs/matchpoly.pyx`
@@ -995,13 +995,13 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Category | Functions Impl. | Total Functions | Progress |
 |----------|----------------|-----------------|----------|
-| 1. Rings & Fields | 34 | 90 | 38% |
-| 2. Linear Algebra | 13 | 46 | 28% |
-| 3. Number Theory | 12 | 42 | 29% |
+| 1. Rings & Fields | 37 | 90 | 41% |
+| 2. Linear Algebra | 15 | 46 | 33% |
+| 3. Number Theory | 20 | 42 | 48% |
 | 4. Symbolic Computation | 11 | 35 | 31% |
-| 5. Calculus | 4 | 30 | 13% |
-| 6. Combinatorics | 12 | 54 | 22% |
-| 7. Graph Theory | 11 | 59 | 19% |
+| 5. Calculus | 7 | 30 | 23% |
+| 6. Combinatorics | 17 | 54 | 31% |
+| 7. Graph Theory | 17 | 59 | 29% |
 | 8. Geometry | 0 | 15 | 0% |
 | 9. Algebraic Geometry | 0 | 11 | 0% |
 | 10. Cryptography | 3 | 18 | 17% |
@@ -1009,7 +1009,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 12. Group Theory | 0 | 14 | 0% |
 | 13-20. Advanced Topics | 1 | 49 | 2% |
 
-**TOTAL**: **101 / 473 functions** = **~21% complete**
+**TOTAL**: **128 / 473 functions** = **~27% complete**
 
 ### Files to Examine in SageMath Source
 
