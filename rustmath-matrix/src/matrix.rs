@@ -441,6 +441,99 @@ impl<R: Ring> Matrix<R> {
 
         max_sum
     }
+
+    /// Compute the condition number using the infinity norm
+    ///
+    /// The condition number measures how sensitive the solution to Ax=b is
+    /// to perturbations in A and b. A condition number of 1 is ideal.
+    /// Returns None if the matrix is singular.
+    pub fn condition_number(&self) -> Option<f64>
+    where
+        R: rustmath_core::NumericConversion + rustmath_core::Field,
+    {
+        if !self.is_square() {
+            return None;
+        }
+
+        // cond(A) = ||A|| * ||A^{-1}||
+        let norm_a = self.infinity_norm();
+
+        // Try to compute inverse
+        let inv = self.inverse().ok()??;
+        let norm_inv = inv.infinity_norm();
+
+        Some(norm_a * norm_inv)
+    }
+
+    /// Check if matrix is Hermitian (for real matrices, this means symmetric)
+    ///
+    /// For complex matrices, A is Hermitian if A = A^H (conjugate transpose).
+    /// For real matrices, this is equivalent to being symmetric.
+    pub fn is_hermitian(&self) -> bool {
+        // For real matrices, Hermitian is the same as symmetric
+        self.is_symmetric()
+    }
+
+    /// Check if matrix is positive definite
+    ///
+    /// A matrix A is positive definite if:
+    /// 1. It is symmetric (or Hermitian)
+    /// 2. All eigenvalues are positive
+    ///
+    /// We use Sylvester's criterion: all leading principal minors are positive.
+    /// This is equivalent to checking that all eigenvalues are positive.
+    pub fn is_positive_definite(&self) -> bool
+    where
+        R: rustmath_core::NumericConversion + rustmath_core::Field,
+    {
+        if !self.is_square() || !self.is_symmetric() {
+            return false;
+        }
+
+        // Use Sylvester's criterion: all leading principal minors must be positive
+        for k in 1..=self.rows {
+            // Extract leading k×k submatrix
+            let mut submatrix_data = Vec::with_capacity(k * k);
+            for i in 0..k {
+                for j in 0..k {
+                    submatrix_data.push(self.data[i * self.cols + j].clone());
+                }
+            }
+
+            let submatrix = match Matrix::from_vec(k, k, submatrix_data) {
+                Ok(m) => m,
+                Err(_) => return false,
+            };
+
+            // Compute determinant of submatrix
+            let det = match submatrix.determinant() {
+                Ok(d) => d,
+                Err(_) => return false,
+            };
+
+            // Check if determinant is positive
+            let det_f64 = match det.to_f64() {
+                Some(v) => v,
+                None => return false,
+            };
+
+            if det_f64 <= 0.0 {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    /// Get reference to internal data
+    pub fn data(&self) -> &[R] {
+        &self.data
+    }
+
+    /// Get mutable reference to internal data
+    pub fn data_mut(&mut self) -> &mut [R] {
+        &mut self.data
+    }
 }
 
 impl<R: Ring> fmt::Display for Matrix<R> {

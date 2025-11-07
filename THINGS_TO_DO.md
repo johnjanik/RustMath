@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~27% (128 / 473 functions tracked)
+**Overall Progress**: ~29% (138 / 473 functions tracked)
 
 ---
 
@@ -181,9 +181,9 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.transpose()` | ✅ | `rustmath-matrix/src/matrix.rs` | |
 | `.inverse()` | ✅ | `rustmath-matrix/src/linear_solve.rs` | Gauss-Jordan |
 | `.solve_right(b)` | ✅ | `rustmath-matrix/src/linear_solve.rs` | |
-| `.solve_left(b)` | ⬜ | | |
-| `.kernel()` - Null space | ⬜ | | |
-| `.image()` - Column space | ⬜ | | |
+| `.solve_left(b)` | ✅ | `rustmath-matrix/src/linear_solve.rs` | Solves xA = b |
+| `.kernel()` - Null space | ✅ | `rustmath-matrix/src/linear_solve.rs` | Basis from RREF |
+| `.image()` - Column space | ✅ | `rustmath-matrix/src/linear_solve.rs` | Pivot columns |
 | `.eigenvalues()` | ⬜ | | |
 | `.eigenvectors_right()` | ⬜ | | |
 | `.eigenvectors_left()` | ⬜ | | |
@@ -196,19 +196,19 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.echelon_form()` | ✅ | `rustmath-matrix/src/linear_solve.rs` | `row_echelon_form()` |
 | `.rref()` | ✅ | `rustmath-matrix/src/linear_solve.rs` | `reduced_row_echelon_form()` |
 | `.LU()` | ✅ | `rustmath-matrix/src/decomposition.rs` | |
-| `.QR()` | ⬜ | | |
+| `.QR()` | ✅ | `rustmath-matrix/src/decomposition.rs` | Gram-Schmidt |
 | `.SVD()` | ⬜ | | |
-| `.cholesky()` | ⬜ | | |
+| `.cholesky()` | ✅ | `rustmath-matrix/src/decomposition.rs` | For positive definite |
 | `.hessenberg_form()` | ⬜ | | |
 | `.is_symmetric()` | ✅ | `rustmath-matrix/src/matrix.rs` | Also: is_diagonal, is_triangular |
-| `.is_hermitian()` | ⬜ | | |
-| `.is_positive_definite()` | ⬜ | | |
-| `.norm(p)` | 🚧 | `rustmath-matrix/src/matrix.rs` | Frobenius, infinity, one norms |
-| `.condition_number()` | ⬜ | | |
+| `.is_hermitian()` | ✅ | `rustmath-matrix/src/matrix.rs` | Same as symmetric for reals |
+| `.is_positive_definite()` | ✅ | `rustmath-matrix/src/matrix.rs` | Sylvester's criterion |
+| `.norm(p)` | ✅ | `rustmath-matrix/src/matrix.rs` | Frobenius, infinity, one norms |
+| `.condition_number()` | ✅ | `rustmath-matrix/src/matrix.rs` | Using infinity norm |
 | `.pseudoinverse()` | ⬜ | | Moore-Penrose |
 | Sparse matrices | ⬜ | | |
 
-**Progress**: 13/35 features (37%)
+**Progress**: 20/35 features (57%)
 
 ### 2.2 Vectors (sage.modules.free_module)
 **SageMath Source**: `src/sage/modules/free_module.py`
@@ -217,12 +217,12 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 |-----------------|--------|-------------------|-------|
 | `vector(R, values)` | ✅ | `rustmath-matrix/src/vector.rs` | |
 | `.dot_product()` | ✅ | `rustmath-matrix/src/vector.rs` | |
-| `.cross_product()` | ⬜ | | 3D only |
-| `.norm(p)` | ⬜ | | |
-| `.normalize()` | ⬜ | | |
+| `.cross_product()` | ✅ | `rustmath-matrix/src/vector.rs` | 3D only |
+| `.norm(p)` | ✅ | `rustmath-matrix/src/vector.rs` | p-norms (1, 2, inf, general) |
+| `.normalize()` | ✅ | `rustmath-matrix/src/vector.rs` | Unit vector |
 | Inner product spaces | ⬜ | | |
 
-**Progress**: 2/6 features (33%)
+**Progress**: 5/6 features (83%)
 
 ### 2.3 Vector Spaces (sage.modules.vector_space)
 **SageMath Source**: `src/sage/modules/vector_space.py`
@@ -996,7 +996,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Category | Functions Impl. | Total Functions | Progress |
 |----------|----------------|-----------------|----------|
 | 1. Rings & Fields | 37 | 90 | 41% |
-| 2. Linear Algebra | 15 | 46 | 33% |
+| 2. Linear Algebra | 25 | 46 | 54% |
 | 3. Number Theory | 20 | 42 | 48% |
 | 4. Symbolic Computation | 11 | 35 | 31% |
 | 5. Calculus | 7 | 30 | 23% |
@@ -1009,7 +1009,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 12. Group Theory | 0 | 14 | 0% |
 | 13-20. Advanced Topics | 1 | 49 | 2% |
 
-**TOTAL**: **128 / 473 functions** = **~27% complete**
+**TOTAL**: **138 / 473 functions** = **~29% complete**
 
 ### Files to Examine in SageMath Source
 
