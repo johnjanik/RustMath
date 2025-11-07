@@ -3,12 +3,15 @@
 //! Provides arithmetic in finite fields (Galois fields).
 //! - GF(p) for prime p: integers modulo p
 //! - GF(p^n) for prime p and n > 1: extension fields
+//! - Conway polynomials for standard field construction
 
-pub mod prime_field;
+pub mod conway;
 pub mod extension_field;
+pub mod prime_field;
 
-pub use prime_field::PrimeField;
+pub use conway::{available_conway_polynomials, conway_polynomial, has_conway_polynomial};
 pub use extension_field::ExtensionField;
+pub use prime_field::PrimeField;
 
 #[cfg(test)]
 mod tests {

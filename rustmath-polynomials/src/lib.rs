@@ -3,6 +3,7 @@
 //! This crate provides polynomial arithmetic over various coefficient rings.
 
 pub mod factorization;
+pub mod groebner;
 pub mod multivariate;
 pub mod polynomial;
 pub mod roots;
@@ -12,9 +13,15 @@ pub use factorization::{
     content, factor_over_integers, is_irreducible, is_square_free, primitive_part,
     square_free_factorization,
 };
+pub use groebner::{
+    groebner_basis_info, is_well_ordering, ordering_description, MonomialOrdering,
+};
 pub use multivariate::{Monomial, MultivariatePolynomial};
 pub use polynomial::Polynomial;
-pub use roots::{rational_roots, solve_cubic, solve_quadratic, CubicRoots, QuadraticRoots};
+pub use roots::{
+    find_rational_roots_up_to_degree_4, rational_roots, solve_cubic, solve_quartic,
+    solve_quadratic, CubicRoots, QuadraticRoots, QuarticRoots,
+};
 pub use univariate::UnivariatePolynomial;
 
 #[cfg(test)]
