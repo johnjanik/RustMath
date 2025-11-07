@@ -195,6 +195,31 @@ impl<R: Ring> UnivariatePolynomial<R> {
         a
     }
 
+    /// Compute polynomial LCM (least common multiple)
+    ///
+    /// For polynomials f and g: lcm(f, g) = (f * g) / gcd(f, g)
+    ///
+    /// # Limitations
+    ///
+    /// Same limitations as GCD - works best over fields or when coefficients divide cleanly.
+    pub fn lcm(&self, other: &Self) -> Self
+    where
+        R: EuclideanDomain,
+    {
+        if self.is_zero() || other.is_zero() {
+            return UnivariatePolynomial::new(vec![R::zero()]);
+        }
+
+        let g = self.gcd(other);
+        let product = self.clone() * other.clone();
+
+        // lcm = (self * other) / gcd
+        match product.div_rem(&g) {
+            Ok((quotient, _)) => quotient,
+            Err(_) => product, // Fallback if division fails
+        }
+    }
+
     /// Compute the discriminant of a polynomial
     ///
     /// Currently supports degrees 2 and 3.
@@ -265,6 +290,106 @@ impl<R: Ring> UnivariatePolynomial<R> {
             }
         }
         gcd
+    }
+
+    /// Construct the Sylvester matrix of two polynomials
+    ///
+    /// For polynomials f of degree m and g of degree n, the Sylvester matrix
+    /// is an (m+n) × (m+n) matrix whose determinant is the resultant of f and g.
+    ///
+    /// Returns the matrix as a vector of rows (Vec<Vec<R>>)
+    pub fn sylvester_matrix(&self, other: &Self) -> Vec<Vec<R>> {
+        let m = self.degree().unwrap_or(0);
+        let n = other.degree().unwrap_or(0);
+        let size = m + n;
+
+        let mut matrix = vec![vec![R::zero(); size]; size];
+
+        // First n rows: shifted coefficients of self
+        for i in 0..n {
+            for j in 0..=m {
+                matrix[i][i + j] = self.coeffs.get(m - j).cloned().unwrap_or_else(|| R::zero());
+            }
+        }
+
+        // Last m rows: shifted coefficients of other
+        for i in 0..m {
+            for j in 0..=n {
+                matrix[n + i][i + j] = other.coeffs.get(n - j).cloned().unwrap_or_else(|| R::zero());
+            }
+        }
+
+        matrix
+    }
+
+    /// Compute the resultant of two polynomials
+    ///
+    /// The resultant is the determinant of the Sylvester matrix.
+    /// It is zero if and only if the polynomials have a common root (over an algebraically closed field).
+    ///
+    /// # Limitations
+    ///
+    /// This naive implementation computes the determinant using expansion by minors,
+    /// which is O(n!) and only practical for small polynomials (degree < 10).
+    /// For larger polynomials, more efficient algorithms should be used.
+    pub fn resultant(&self, other: &Self) -> R
+    where
+        R: rustmath_core::NumericConversion,
+    {
+        if self.is_zero() || other.is_zero() {
+            return R::zero();
+        }
+
+        let matrix = self.sylvester_matrix(other);
+        Self::determinant_helper(&matrix)
+    }
+
+    /// Helper function to compute determinant recursively
+    fn determinant_helper(matrix: &[Vec<R>]) -> R
+    where
+        R: rustmath_core::NumericConversion,
+    {
+        let n = matrix.len();
+
+        if n == 0 {
+            return R::zero();
+        }
+
+        if n == 1 {
+            return matrix[0][0].clone();
+        }
+
+        if n == 2 {
+            return matrix[0][0].clone() * matrix[1][1].clone()
+                - matrix[0][1].clone() * matrix[1][0].clone();
+        }
+
+        // Expansion by first row
+        let mut det = R::zero();
+        let mut sign = R::one();
+
+        for j in 0..n {
+            if !matrix[0][j].is_zero() {
+                // Create minor by removing first row and j-th column
+                let mut minor = Vec::with_capacity(n - 1);
+                for i in 1..n {
+                    let mut row = Vec::with_capacity(n - 1);
+                    for k in 0..n {
+                        if k != j {
+                            row.push(matrix[i][k].clone());
+                        }
+                    }
+                    minor.push(row);
+                }
+
+                let cofactor = sign.clone() * matrix[0][j].clone() * Self::determinant_helper(&minor);
+                det = det + cofactor;
+            }
+
+            sign = R::zero() - sign; // Flip sign
+        }
+
+        det
     }
 }
 

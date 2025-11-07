@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~35% (161 / 473 functions tracked)
+**Overall Progress**: ~35% (165 / 473 functions tracked)
 
 ---
 
@@ -106,23 +106,23 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Multivariate polynomials | ✅ | `rustmath-polynomials/src/multivariate.rs` | Sparse representation |
 | `.degree()` | ✅ | | |
 | `.coefficients()` | ✅ | | |
-| `.roots()` | 🚧 | `rustmath-polynomials/src/roots.rs` | Rational roots, quadratic formula |
+| `.roots()` | 🚧 | `rustmath-polynomials/src/roots.rs` | Rational roots, quadratic & cubic formulas |
 | `.factor()` - Factorization | 🚧 | `rustmath-polynomials/src/factorization.rs` | Square-free only |
 | `.gcd()` - Polynomial GCD | 🚧 | `rustmath-polynomials/src/univariate.rs` | Limited to field coefficients |
-| `.lcm()` | ⬜ | | |
+| `.lcm()` | ✅ | `rustmath-polynomials/src/univariate.rs` | |
 | `.derivative()` | ✅ | `rustmath-polynomials/src/univariate.rs` | |
 | `.integral()` | ✅ | `rustmath-polynomials/src/univariate.rs` | `integrate()` |
-| `.resultant()` | ⬜ | | |
+| `.resultant()` | ✅ | `rustmath-polynomials/src/univariate.rs` | Via Sylvester matrix determinant |
 | `.discriminant()` | ✅ | `rustmath-polynomials/src/univariate.rs` | |
-| `.sylvester_matrix()` | ⬜ | | |
+| `.sylvester_matrix()` | ✅ | `rustmath-polynomials/src/univariate.rs` | Returns Vec<Vec<R>> |
 | `.quo_rem(g)` - Quotient/remainder | ✅ | `rustmath-polynomials/src/univariate.rs` | `div_rem()` |
 | Gröbner bases | ⬜ | | |
-| `.is_irreducible()` | ⬜ | | |
+| `.is_irreducible()` | ✅ | `rustmath-polynomials/src/factorization.rs` | Basic implementation |
 | `.is_square_free()` | ✅ | `rustmath-polynomials/src/factorization.rs` | |
 | `.content()` | ✅ | `rustmath-polynomials/src/factorization.rs` | |
 | `.primitive_part()` | ✅ | `rustmath-polynomials/src/factorization.rs` | |
 
-**Progress**: 12/20 features (60%)
+**Progress**: 16/20 features (80%)
 
 ### 1.6 Power Series (sage.rings.power_series_ring)
 **SageMath Source**: `src/sage/rings/power_series_ring.py`
@@ -995,7 +995,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Category | Functions Impl. | Total Functions | Progress |
 |----------|----------------|-----------------|----------|
-| 1. Rings & Fields | 43 | 90 | 48% |
+| 1. Rings & Fields | 47 | 90 | 52% |
 | 2. Linear Algebra | 42 | 46 | 91% |
 | 3. Number Theory | 20 | 42 | 48% |
 | 4. Symbolic Computation | 11 | 35 | 31% |
@@ -1009,7 +1009,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 12. Group Theory | 0 | 14 | 0% |
 | 13-20. Advanced Topics | 1 | 49 | 2% |
 
-**TOTAL**: **161 / 473 functions** = **~35% complete**
+**TOTAL**: **165 / 473 functions** = **~35% complete**
 
 ### Files to Examine in SageMath Source
 

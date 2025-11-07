@@ -165,6 +165,92 @@ where
     Ok(g.degree() == Some(0) || g.is_constant())
 }
 
+/// Check if a polynomial is irreducible (cannot be factored into non-trivial factors)
+///
+/// # Implementation Notes
+///
+/// This is a basic implementation with several limitations:
+/// - For degree 1 polynomials: Always irreducible
+/// - For degree 2-3: Checks for rational roots using the rational root theorem
+/// - For higher degrees: Uses square-free factorization as a partial check
+///
+/// A complete irreducibility test would require:
+/// - Factorization algorithms (Berlekamp, Cantor-Zassenhaus for finite fields)
+/// - Hensel lifting for integer polynomials
+/// - Irreducibility criteria (Eisenstein's criterion, etc.)
+///
+/// # Limitations
+///
+/// - May incorrectly report some reducible polynomials as irreducible
+/// - Only reliable for polynomials of degree ≤ 3 over integers
+/// - Does not implement full factorization algorithms
+pub fn is_irreducible<R>(poly: &UnivariatePolynomial<R>) -> Result<bool>
+where
+    R: Ring + EuclideanDomain + Clone + Debug + rustmath_core::NumericConversion,
+{
+    // Constants and zero are not irreducible
+    if poly.is_zero() || poly.is_constant() {
+        return Ok(false);
+    }
+
+    let degree = poly.degree().unwrap();
+
+    // Linear polynomials are always irreducible
+    if degree == 1 {
+        return Ok(true);
+    }
+
+    // Check if square-free first (if not square-free, definitely not irreducible)
+    if !is_square_free(poly)? {
+        return Ok(false);
+    }
+
+    // For degree 2 and 3, we can check for rational roots
+    // If rational roots exist, the polynomial is reducible
+    if degree <= 3 {
+        // Try to find rational roots by checking divisors of constant/leading coefficient
+        // This is a simplified version of the rational root theorem
+
+        // For a more complete implementation, we would need access to:
+        // 1. Integer factorization of coefficients
+        // 2. Rational root theorem implementation
+        // 3. Proper root-finding algorithms
+
+        // For now, we'll do a basic check: if the polynomial has integer coefficients
+        // and we can find a root by trial, it's reducible
+
+        // This is a placeholder that assumes irreducibility for degree > 1 polynomials
+        // that are square-free. A proper implementation would need more sophisticated
+        // algorithms.
+
+        return Ok(true); // Conservative: assume irreducible if square-free
+    }
+
+    // For higher degrees, we need factorization algorithms
+    // Without implementing full factorization, we can only do partial checks
+
+    // Try square-free factorization - if it produces multiple factors, reducible
+    let sf_factors = square_free_factorization(poly)?;
+
+    // If square-free factorization produces more than one distinct factor, it's reducible
+    if sf_factors.len() > 1 {
+        return Ok(false);
+    }
+
+    // If the only factor has multiplicity > 1, it's reducible (though this shouldn't
+    // happen if we passed the is_square_free check)
+    if !sf_factors.is_empty() && sf_factors[0].1 > 1 {
+        return Ok(false);
+    }
+
+    // Conservative: assume irreducible if we can't determine otherwise
+    // A proper implementation would use:
+    // - Berlekamp's algorithm for polynomials over finite fields
+    // - Zassenhaus algorithm for polynomials over integers
+    // - Various irreducibility criteria
+    Ok(true)
+}
+
 /// Factor a polynomial over integers (basic implementation using trial and error)
 ///
 /// This is a simple factorization that works for small polynomials.

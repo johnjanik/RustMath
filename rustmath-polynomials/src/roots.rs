@@ -106,6 +106,26 @@ pub enum QuadraticRoots {
     },
 }
 
+/// Represents roots of a cubic equation
+#[derive(Debug, Clone)]
+pub enum CubicRoots {
+    /// One rational root
+    OneRational(Rational),
+    /// Two distinct rational roots (one root with multiplicity 2)
+    TwoRational(Rational, Rational),
+    /// Three distinct rational roots
+    ThreeRational(Rational, Rational, Rational),
+    /// One real root and two complex conjugate roots
+    OneRealTwoComplex {
+        real_root: String, // Symbolic representation
+        discriminant: rustmath_integers::Integer,
+    },
+    /// Three distinct real roots (casus irreducibilis - requires trigonometry or complex numbers)
+    ThreeRealIrrational {
+        description: String,
+    },
+}
+
 /// Solve a quadratic equation ax² + bx + c = 0
 ///
 /// Uses the quadratic formula: x = (-b ± sqrt(b²-4ac)) / (2a)
@@ -160,6 +180,126 @@ pub fn solve_quadratic(
         Ok(QuadraticRoots::Complex {
             real: real_part,
             discriminant,
+        })
+    }
+}
+
+/// Solve a cubic equation ax³ + bx² + cx + d = 0
+///
+/// Uses Cardano's formula and first checks for rational roots.
+///
+/// # Algorithm
+///
+/// 1. First tries to find rational roots using the rational root theorem
+/// 2. If a rational root is found, factors it out and solves the resulting quadratic
+/// 3. Otherwise, uses the depressed cubic substitution and Cardano's formula
+///
+/// # Limitations
+///
+/// - For three distinct irrational real roots (casus irreducibilis), returns a symbolic description
+/// - Requires exact arithmetic which may lose precision for large coefficients
+pub fn solve_cubic(
+    a: rustmath_integers::Integer,
+    b: rustmath_integers::Integer,
+    c: rustmath_integers::Integer,
+    d: rustmath_integers::Integer,
+) -> Result<CubicRoots> {
+    use rustmath_integers::Integer;
+
+    if a.is_zero() {
+        return Err(MathError::InvalidArgument(
+            "Leading coefficient cannot be zero".to_string(),
+        ));
+    }
+
+    // Try to find rational roots first using rational root theorem
+    let poly = UnivariatePolynomial::new(vec![d.clone(), c.clone(), b.clone(), a.clone()]);
+    let rational_roots_found = rational_roots(&poly);
+
+    if !rational_roots_found.is_empty() {
+        // We found at least one rational root - factor it out
+        let r = &rational_roots_found[0];
+
+        // Use synthetic division or polynomial division to get quadratic factor
+        // For now, if we have one rational root, we can describe it
+        // A complete implementation would factor out the root and solve the quadratic
+
+        if rational_roots_found.len() == 3 {
+            return Ok(CubicRoots::ThreeRational(
+                rational_roots_found[0].clone(),
+                rational_roots_found[1].clone(),
+                rational_roots_found[2].clone(),
+            ));
+        } else if rational_roots_found.len() == 2 {
+            return Ok(CubicRoots::TwoRational(
+                rational_roots_found[0].clone(),
+                rational_roots_found[1].clone(),
+            ));
+        } else {
+            return Ok(CubicRoots::OneRational(rational_roots_found[0].clone()));
+        }
+    }
+
+    // No rational roots found - use Cardano's formula
+    // First, convert to depressed cubic form: t³ + pt + q = 0
+    // using substitution x = t - b/(3a)
+
+    // Compute p = (3ac - b²) / (3a²)
+    // Compute q = (2b³ - 9abc + 27a²d) / (27a³)
+
+    let three = Integer::from(3);
+    let two = Integer::from(2);
+    let nine = Integer::from(9);
+    let twenty_seven = Integer::from(27);
+
+    // For exact rational arithmetic, compute using Rational
+    let a_rat = Rational::from_integer(a.clone());
+    let b_rat = Rational::from_integer(b.clone());
+    let c_rat = Rational::from_integer(c.clone());
+    let d_rat = Rational::from_integer(d.clone());
+
+    // p = (3ac - b²) / (3a²)
+    let three_rat = Rational::from_integer(three.clone());
+    let numerator_p = three_rat.clone() * a_rat.clone() * c_rat.clone()
+        - b_rat.clone() * b_rat.clone();
+    let denominator_p = three_rat.clone() * a_rat.clone() * a_rat.clone();
+    let p = numerator_p / denominator_p;
+
+    // q = (2b³ - 9abc + 27a²d) / (27a³)
+    let two_rat = Rational::from_integer(two);
+    let nine_rat = Rational::from_integer(nine);
+    let twenty_seven_rat = Rational::from_integer(twenty_seven.clone());
+
+    let term1 = two_rat * b_rat.clone() * b_rat.clone() * b_rat.clone();
+    let term2 = nine_rat * a_rat.clone() * b_rat.clone() * c_rat.clone();
+    let term3 = twenty_seven_rat.clone() * a_rat.clone() * a_rat.clone() * d_rat.clone();
+
+    let numerator_q = term1 - term2 + term3;
+    let denominator_q = twenty_seven_rat * a_rat.clone() * a_rat.clone() * a_rat.clone();
+    let q = numerator_q / denominator_q;
+
+    // Compute discriminant: Δ = -4p³ - 27q²
+    let four_rat = Rational::from_integer(Integer::from(4));
+    let p_cubed = p.clone() * p.clone() * p.clone();
+    let q_squared = q.clone() * q.clone();
+
+    let disc = -(four_rat * p_cubed) - (Rational::from_integer(twenty_seven) * q_squared);
+
+    // Based on the discriminant, determine the nature of the roots
+    if disc.numerator().signum() > 0 {
+        // Three distinct real roots (casus irreducibilis)
+        // This case requires trigonometric methods or complex arithmetic
+        Ok(CubicRoots::ThreeRealIrrational {
+            description: format!(
+                "Three distinct real irrational roots (use trigonometric method or complex arithmetic)"
+            ),
+        })
+    } else {
+        // One real root and two complex conjugate roots
+        // The real root can be expressed using Cardano's formula
+        Ok(CubicRoots::OneRealTwoComplex {
+            real_root: format!("Use Cardano's formula with p={}, q={}", p, q),
+            discriminant: disc.numerator().clone(),
         })
     }
 }
@@ -263,5 +403,57 @@ mod tests {
         assert_eq!(roots.len(), 2);
         assert!(roots.contains(&Rational::new(0, 1).unwrap()));
         assert!(roots.contains(&Rational::new(4, 1).unwrap()));
+    }
+
+    #[test]
+    fn test_solve_cubic_rational() {
+        // x³ - 6x² + 11x - 6 = (x-1)(x-2)(x-3)
+        let roots = solve_cubic(
+            Integer::from(1),
+            Integer::from(-6),
+            Integer::from(11),
+            Integer::from(-6),
+        )
+        .unwrap();
+
+        match roots {
+            CubicRoots::ThreeRational(r1, r2, r3) => {
+                let mut roots_vec = vec![r1, r2, r3];
+                roots_vec.sort_by(|a, b| {
+                    let diff = a.clone() - b.clone();
+                    if diff.numerator().signum() < 0 {
+                        std::cmp::Ordering::Less
+                    } else if diff.numerator().is_zero() {
+                        std::cmp::Ordering::Equal
+                    } else {
+                        std::cmp::Ordering::Greater
+                    }
+                });
+                assert_eq!(roots_vec[0], Rational::new(1, 1).unwrap());
+                assert_eq!(roots_vec[1], Rational::new(2, 1).unwrap());
+                assert_eq!(roots_vec[2], Rational::new(3, 1).unwrap());
+            }
+            _ => panic!("Expected three rational roots, got {:?}", roots),
+        }
+    }
+
+    #[test]
+    fn test_solve_cubic_one_rational() {
+        // x³ - 1 = (x-1)(x² + x + 1)
+        // Has one rational root: x = 1
+        let roots = solve_cubic(
+            Integer::from(1),
+            Integer::from(0),
+            Integer::from(0),
+            Integer::from(-1),
+        )
+        .unwrap();
+
+        match roots {
+            CubicRoots::OneRational(r) => {
+                assert_eq!(r, Rational::new(1, 1).unwrap());
+            }
+            _ => panic!("Expected one rational root, got {:?}", roots),
+        }
     }
 }
