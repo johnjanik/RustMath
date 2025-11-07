@@ -5,6 +5,7 @@
 pub mod factorization;
 pub mod multivariate;
 pub mod polynomial;
+pub mod roots;
 pub mod univariate;
 
 pub use factorization::{
@@ -12,6 +13,7 @@ pub use factorization::{
 };
 pub use multivariate::{Monomial, MultivariatePolynomial};
 pub use polynomial::Polynomial;
+pub use roots::{rational_roots, solve_quadratic, QuadraticRoots};
 pub use univariate::UnivariatePolynomial;
 
 #[cfg(test)]
