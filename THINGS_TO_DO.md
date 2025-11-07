@@ -116,13 +116,13 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.discriminant()` | ✅ | `rustmath-polynomials/src/univariate.rs` | |
 | `.sylvester_matrix()` | ✅ | `rustmath-polynomials/src/univariate.rs` | Returns Vec<Vec<R>> |
 | `.quo_rem(g)` - Quotient/remainder | ✅ | `rustmath-polynomials/src/univariate.rs` | `div_rem()` |
-| Gröbner bases | ⬜ | | |
+| Gröbner bases | 🚧 | `rustmath-polynomials/src/groebner.rs` | Framework and documentation |
 | `.is_irreducible()` | ✅ | `rustmath-polynomials/src/factorization.rs` | Basic implementation |
 | `.is_square_free()` | ✅ | `rustmath-polynomials/src/factorization.rs` | |
 | `.content()` | ✅ | `rustmath-polynomials/src/factorization.rs` | |
 | `.primitive_part()` | ✅ | `rustmath-polynomials/src/factorization.rs` | |
 
-**Progress**: 17/20 features (85%)
+**Progress**: 18/20 features (90%)
 
 ### 1.6 Power Series (sage.rings.power_series_ring)
 **SageMath Source**: `src/sage/rings/power_series_ring.py`
