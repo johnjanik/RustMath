@@ -9,7 +9,8 @@ pub mod roots;
 pub mod univariate;
 
 pub use factorization::{
-    content, factor_over_integers, is_square_free, primitive_part, square_free_factorization,
+    content, factor_over_integers, is_irreducible, is_square_free, primitive_part,
+    square_free_factorization,
 };
 pub use multivariate::{Monomial, MultivariatePolynomial};
 pub use polynomial::Polynomial;
