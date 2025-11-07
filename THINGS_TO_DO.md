@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~29% (138 / 473 functions tracked)
+**Overall Progress**: ~31% (145 / 473 functions tracked)
 
 ---
 
@@ -187,9 +187,9 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.eigenvalues()` | ⬜ | | |
 | `.eigenvectors_right()` | ⬜ | | |
 | `.eigenvectors_left()` | ⬜ | | |
-| `.charpoly()` - Characteristic polynomial | ⬜ | | |
-| `.minpoly()` - Minimal polynomial | ⬜ | | |
-| `.jordan_form()` | ⬜ | | |
+| `.charpoly()` - Characteristic polynomial | ✅ | `rustmath-matrix/src/polynomial_ops.rs` | Faddeev-LeVerrier algorithm |
+| `.minpoly()` - Minimal polynomial | 🚧 | `rustmath-matrix/src/polynomial_ops.rs` | Returns charpoly as approximation |
+| `.jordan_form()` | ⬜ | | Requires eigenvalues |
 | `.rational_canonical_form()` | ⬜ | | |
 | `.smith_form()` | ⬜ | | Integer matrices |
 | `.hermite_form()` | ⬜ | | Integer matrices |
@@ -199,16 +199,16 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.QR()` | ✅ | `rustmath-matrix/src/decomposition.rs` | Gram-Schmidt |
 | `.SVD()` | ⬜ | | |
 | `.cholesky()` | ✅ | `rustmath-matrix/src/decomposition.rs` | For positive definite |
-| `.hessenberg_form()` | ⬜ | | |
+| `.hessenberg_form()` | ✅ | `rustmath-matrix/src/decomposition.rs` | Householder reflections |
 | `.is_symmetric()` | ✅ | `rustmath-matrix/src/matrix.rs` | Also: is_diagonal, is_triangular |
 | `.is_hermitian()` | ✅ | `rustmath-matrix/src/matrix.rs` | Same as symmetric for reals |
 | `.is_positive_definite()` | ✅ | `rustmath-matrix/src/matrix.rs` | Sylvester's criterion |
 | `.norm(p)` | ✅ | `rustmath-matrix/src/matrix.rs` | Frobenius, infinity, one norms |
 | `.condition_number()` | ✅ | `rustmath-matrix/src/matrix.rs` | Using infinity norm |
-| `.pseudoinverse()` | ⬜ | | Moore-Penrose |
+| `.pseudoinverse()` | ✅ | `rustmath-matrix/src/linear_solve.rs` | Moore-Penrose via normal equations |
 | Sparse matrices | ⬜ | | |
 
-**Progress**: 20/35 features (57%)
+**Progress**: 23/35 features (66%)
 
 ### 2.2 Vectors (sage.modules.free_module)
 **SageMath Source**: `src/sage/modules/free_module.py`
@@ -229,13 +229,13 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| `VectorSpace(F, n)` | ⬜ | | |
-| `.basis()` | ⬜ | | |
-| `.dimension()` | ⬜ | | |
-| Direct sums | ⬜ | | |
+| `VectorSpace(F, n)` | ✅ | `rustmath-matrix/src/vector_space.rs` | With standard or custom basis |
+| `.basis()` | ✅ | `rustmath-matrix/src/vector_space.rs` | |
+| `.dimension()` | ✅ | `rustmath-matrix/src/vector_space.rs` | |
+| Direct sums | ✅ | `rustmath-matrix/src/vector_space.rs` | `direct_sum()` |
 | Quotient spaces | ⬜ | | |
 
-**Progress**: 0/5 features (0%)
+**Progress**: 4/5 features (80%)
 
 ---
 
@@ -996,7 +996,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Category | Functions Impl. | Total Functions | Progress |
 |----------|----------------|-----------------|----------|
 | 1. Rings & Fields | 37 | 90 | 41% |
-| 2. Linear Algebra | 25 | 46 | 54% |
+| 2. Linear Algebra | 32 | 46 | 70% |
 | 3. Number Theory | 20 | 42 | 48% |
 | 4. Symbolic Computation | 11 | 35 | 31% |
 | 5. Calculus | 7 | 30 | 23% |
@@ -1009,7 +1009,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 12. Group Theory | 0 | 14 | 0% |
 | 13-20. Advanced Topics | 1 | 49 | 2% |
 
-**TOTAL**: **138 / 473 functions** = **~29% complete**
+**TOTAL**: **145 / 473 functions** = **~31% complete**
 
 ### Files to Examine in SageMath Source
 
