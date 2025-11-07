@@ -449,6 +449,142 @@ impl Integer {
 
         Ok(result)
     }
+
+    /// Check if the number is a perfect square
+    pub fn is_perfect_square(&self) -> bool {
+        if self.signum() < 0 {
+            return false;
+        }
+
+        if let Ok(sqrt) = self.sqrt() {
+            sqrt.clone() * sqrt == *self
+        } else {
+            false
+        }
+    }
+
+    /// Compute the Legendre symbol (a/p) for odd prime p
+    ///
+    /// Returns:
+    /// - 0 if a ≡ 0 (mod p)
+    /// - 1 if a is a quadratic residue mod p
+    /// - -1 if a is a quadratic non-residue mod p
+    pub fn legendre_symbol(&self, p: &Self) -> Result<i8> {
+        use crate::prime::is_prime;
+
+        if !is_prime(p) || *p == Integer::from(2) {
+            return Err(MathError::InvalidArgument(
+                "Second argument must be an odd prime".to_string(),
+            ));
+        }
+
+        let a = self.clone() % p.clone();
+        if a.is_zero() {
+            return Ok(0);
+        }
+
+        // Use Euler's criterion: (a/p) ≡ a^((p-1)/2) (mod p)
+        let exponent = (p.clone() - Integer::one()) / Integer::from(2);
+        let result = a.mod_pow(&exponent, p)?;
+
+        if result.is_one() {
+            Ok(1)
+        } else if result == *p - Integer::one() {
+            Ok(-1)
+        } else {
+            // This shouldn't happen for valid inputs
+            Ok(0)
+        }
+    }
+
+    /// Compute the Jacobi symbol (a/n)
+    ///
+    /// Generalization of the Legendre symbol to odd positive integers n
+    pub fn jacobi_symbol(&self, n: &Self) -> Result<i8> {
+        if n.is_even() || n.signum() <= 0 {
+            return Err(MathError::InvalidArgument(
+                "Second argument must be an odd positive integer".to_string(),
+            ));
+        }
+
+        use crate::prime::factor;
+
+        if n.is_one() {
+            return Ok(1);
+        }
+
+        let a = self.clone() % n.clone();
+        if a.is_zero() {
+            return Ok(0);
+        }
+
+        // Use the property: (a/n) = ∏ (a/p_i)^{e_i} for n = ∏ p_i^{e_i}
+        let factors = factor(n);
+        let mut result = 1i8;
+
+        for (prime, exponent) in factors {
+            let leg = a.legendre_symbol(&prime)?;
+            if leg == 0 {
+                return Ok(0);
+            }
+            // (a/p)^e
+            if exponent % 2 == 1 {
+                result *= leg;
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Compute binomial coefficient modulo a prime
+    ///
+    /// Uses Lucas' theorem for efficiency when p is prime
+    pub fn binomial_mod(&self, k: &Self, p: &Self) -> Result<Self> {
+        use crate::prime::is_prime;
+
+        if !is_prime(p) {
+            return Err(MathError::InvalidArgument(
+                "Modulus must be prime".to_string(),
+            ));
+        }
+
+        if k > self {
+            return Ok(Integer::zero());
+        }
+
+        if k.is_zero() || k == self {
+            return Ok(Integer::one());
+        }
+
+        // Use Lucas' theorem for prime modulus
+        let mut n = self.clone();
+        let mut k = k.clone();
+        let mut result = Integer::one();
+
+        while !n.is_zero() && !k.is_zero() {
+            let n_i = n.clone() % p.clone();
+            let k_i = k.clone() % p.clone();
+
+            if k_i > n_i {
+                return Ok(Integer::zero());
+            }
+
+            // Compute C(n_i, k_i) mod p directly (since n_i, k_i < p)
+            let mut binom = Integer::one();
+            for i in 0..k_i.to_u64().unwrap_or(0) {
+                binom = binom * (n_i.clone() - Integer::from(i));
+                binom = binom / Integer::from(i + 1);
+            }
+            binom = binom % p.clone();
+
+            result = (result * binom) % p.clone();
+
+            n = n / p.clone();
+            k = k / p.clone();
+        }
+
+        Ok(result)
+    }
 }
 
 // Implement From traits for convenient construction
@@ -892,5 +1028,71 @@ mod tests {
 
         // rad(16) = rad(2^4) = 2
         assert_eq!(Integer::from(16).radical().unwrap(), Integer::from(2));
+    }
+
+    #[test]
+    fn test_is_perfect_square() {
+        assert!(Integer::from(0).is_perfect_square());
+        assert!(Integer::from(1).is_perfect_square());
+        assert!(Integer::from(4).is_perfect_square());
+        assert!(Integer::from(9).is_perfect_square());
+        assert!(Integer::from(16).is_perfect_square());
+        assert!(Integer::from(100).is_perfect_square());
+
+        assert!(!Integer::from(2).is_perfect_square());
+        assert!(!Integer::from(3).is_perfect_square());
+        assert!(!Integer::from(5).is_perfect_square());
+        assert!(!Integer::from(99).is_perfect_square());
+        assert!(!Integer::from(-4).is_perfect_square());
+    }
+
+    #[test]
+    fn test_legendre_symbol() {
+        // (2/7) = 1 (2 is a QR mod 7, since 3² = 9 ≡ 2 (mod 7))
+        assert_eq!(Integer::from(2).legendre_symbol(&Integer::from(7)).unwrap(), 1);
+
+        // (3/7) = -1 (3 is not a QR mod 7)
+        assert_eq!(Integer::from(3).legendre_symbol(&Integer::from(7)).unwrap(), -1);
+
+        // (0/7) = 0
+        assert_eq!(Integer::from(0).legendre_symbol(&Integer::from(7)).unwrap(), 0);
+
+        // (1/p) = 1 for any prime p
+        assert_eq!(Integer::from(1).legendre_symbol(&Integer::from(11)).unwrap(), 1);
+    }
+
+    #[test]
+    fn test_jacobi_symbol() {
+        // (2/15) where 15 = 3 * 5
+        let result = Integer::from(2).jacobi_symbol(&Integer::from(15)).unwrap();
+        // (2/3) = -1, (2/5) = -1, so (2/15) = 1
+        assert_eq!(result, 1);
+
+        // (1/n) = 1 for any odd n
+        assert_eq!(Integer::from(1).jacobi_symbol(&Integer::from(21)).unwrap(), 1);
+
+        // (0/n) = 0 if n > 1
+        assert_eq!(Integer::from(0).jacobi_symbol(&Integer::from(15)).unwrap(), 0);
+    }
+
+    #[test]
+    fn test_binomial_mod() {
+        // C(5, 2) mod 3 = 10 mod 3 = 1
+        assert_eq!(
+            Integer::from(5).binomial_mod(&Integer::from(2), &Integer::from(3)).unwrap(),
+            Integer::from(1)
+        );
+
+        // C(10, 5) mod 7 = 252 mod 7 = 0
+        assert_eq!(
+            Integer::from(10).binomial_mod(&Integer::from(5), &Integer::from(7)).unwrap(),
+            Integer::from(0)
+        );
+
+        // C(p, k) mod p = 0 for 0 < k < p
+        assert_eq!(
+            Integer::from(7).binomial_mod(&Integer::from(3), &Integer::from(7)).unwrap(),
+            Integer::from(0)
+        );
     }
 }
