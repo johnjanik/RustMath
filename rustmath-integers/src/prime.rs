@@ -197,7 +197,6 @@ pub fn pollard_rho(n: &Integer) -> Option<Integer> {
     // Pollard's Rho with Floyd's cycle detection
     let mut x = Integer::from(2);
     let mut y = Integer::from(2);
-    let mut d = Integer::one();
 
     // f(x) = (x² + 1) mod n
     let f = |val: &Integer| -> Integer {
@@ -220,7 +219,7 @@ pub fn pollard_rho(n: &Integer) -> Option<Integer> {
             y.clone() - x.clone()
         };
 
-        d = diff.gcd(n);
+        let d = diff.gcd(n);
 
         if d > Integer::one() && &d < n {
             return Some(d);

@@ -1,6 +1,5 @@
 //! Multivariate polynomials (polynomials in multiple variables)
 
-use crate::polynomial::Polynomial;
 use rustmath_core::Ring;
 use std::collections::BTreeMap;
 use std::fmt;
@@ -147,12 +146,14 @@ impl<R: Ring> MultivariatePolynomial<R> {
             return;
         }
 
+        // Clone monomial for potential removal later
+        let monomial_key = monomial.clone();
         let entry = self.terms.entry(monomial).or_insert_with(|| R::zero());
         *entry = entry.clone() + coeff;
 
         // Remove if it became zero
         if entry.is_zero() {
-            self.terms.remove(&monomial);
+            self.terms.remove(&monomial_key);
         }
     }
 

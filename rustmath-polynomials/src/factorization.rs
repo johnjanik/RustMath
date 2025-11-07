@@ -1,5 +1,6 @@
 //! Polynomial factorization algorithms
 
+use crate::polynomial::Polynomial;
 use crate::univariate::UnivariatePolynomial;
 use rustmath_core::{EuclideanDomain, MathError, Result, Ring};
 use std::fmt::Debug;
@@ -41,7 +42,7 @@ where
 {
     let cont = content(poly);
     if cont.is_zero() {
-        return UnivariatePolynomial::zero();
+        return UnivariatePolynomial::new(vec![R::zero()]);
     }
     if cont.is_one() {
         return poly.clone();
@@ -50,7 +51,10 @@ where
     let new_coeffs: Vec<R> = poly
         .coefficients()
         .iter()
-        .map(|c| c.clone() / cont.clone())
+        .map(|c| {
+            let (q, _) = c.clone().div_rem(cont.clone()).unwrap();
+            q
+        })
         .collect();
 
     UnivariatePolynomial::new(new_coeffs)
@@ -90,15 +94,15 @@ where
     }
 
     // Compute gcd(f, f')
-    let g = f.gcd(&f_prime)?;
+    let g = f.gcd(&f_prime);
 
     // If gcd is 1, f is already square-free
-    if g.degree() == Some(0) {
+    if g.degree() == Some(0) || g.is_constant() {
         return Ok(vec![(f, 1)]);
     }
 
     // Compute f / gcd(f, f')
-    let f_reduced = f.div(&g)?;
+    let (f_reduced, _) = f.div_rem(&g)?;
 
     let mut factors = Vec::new();
     let mut multiplicity = 1;
@@ -106,9 +110,9 @@ where
     let mut g_remaining = g;
 
     while !g_remaining.is_constant() {
-        let g_next = current.gcd(&g_remaining)?;
+        let g_next = current.gcd(&g_remaining);
 
-        if g_next.degree() == Some(0) {
+        if g_next.degree() == Some(0) || g_next.is_constant() {
             // current is a square-free factor with this multiplicity
             if !current.is_constant() {
                 factors.push((current.clone(), multiplicity));
@@ -116,14 +120,15 @@ where
             break;
         }
 
-        let factor = current.div(&g_next)?;
+        let (factor, _) = current.div_rem(&g_next)?;
 
         if !factor.is_constant() {
             factors.push((factor, multiplicity));
         }
 
         current = g_next.clone();
-        g_remaining = g_remaining.div(&g_next)?;
+        let (g_remaining_new, _) = g_remaining.div_rem(&g_next)?;
+        g_remaining = g_remaining_new;
         multiplicity += 1;
 
         // Safety check to prevent infinite loops
@@ -156,8 +161,8 @@ where
         return Ok(false);
     }
 
-    let g = poly.gcd(&derivative)?;
-    Ok(g.degree() == Some(0))
+    let g = poly.gcd(&derivative);
+    Ok(g.degree() == Some(0) || g.is_constant())
 }
 
 /// Factor a polynomial over integers (basic implementation using trial and error)
@@ -208,9 +213,9 @@ mod tests {
         let pp = primitive_part(&p);
 
         // Primitive part should be 2x² + 3x + 1
-        assert_eq!(pp.coefficient(0), Integer::from(1));
-        assert_eq!(pp.coefficient(1), Integer::from(3));
-        assert_eq!(pp.coefficient(2), Integer::from(2));
+        assert_eq!(*pp.coeff(0), Integer::from(1));
+        assert_eq!(*pp.coeff(1), Integer::from(3));
+        assert_eq!(*pp.coeff(2), Integer::from(2));
     }
 
     #[test]
