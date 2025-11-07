@@ -30,7 +30,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.is_pseudoprime()` | ✅ | `rustmath-integers/src/prime.rs` | Fermat test |
 | `.next_prime()` - Next prime | ✅ | `rustmath-integers/src/prime.rs` | |
 | `.previous_prime()` | ✅ | `rustmath-integers/src/prime.rs` | |
-| `.prime_divisors()` | 🚧 | `rustmath-integers/src/prime.rs` | Basic factorization |
+| `.prime_divisors()` | ✅ | `rustmath-integers/src/prime.rs` | Returns distinct prime factors |
 | `.factor()` - Prime factorization | ✅ | `rustmath-integers/src/prime.rs` | Trial division + Pollard's Rho |
 | `.divisors()` | ✅ | `rustmath-integers/src/integer.rs` | From prime factorization |
 | `.gcd(b)` - Greatest common divisor | ✅ | `rustmath-integers/src/integer.rs` | Euclidean algorithm |
@@ -78,9 +78,9 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.exp()`, `.log()` | ✅ | `rustmath-reals/src/transcendental.rs` | |
 | `.sqrt()` | ✅ | `rustmath-reals/src/transcendental.rs` | |
 | Rounding modes | ✅ | `rustmath-reals/src/rounding.rs` | Five modes supported |
-| Interval arithmetic | ⬜ | | Planned |
+| Interval arithmetic | ✅ | `rustmath-reals/src/interval.rs` | Full interval arithmetic |
 
-**Progress**: 6/7 features (86%)
+**Progress**: 7/7 features (100%)
 
 ### 1.4 Complex Numbers (sage.rings.complex_mpfr)
 **SageMath Source**: `src/sage/rings/complex_mpfr.pyx`
@@ -143,12 +143,12 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
 | `GF(p)` - Prime field | ✅ | `rustmath-finitefields/src/prime_field.rs` | Full arithmetic |
-| `GF(p^n)` - Extension field | 🚧 | `rustmath-finitefields/src/extension_field.rs` | Basic structure |
+| `GF(p^n)` - Extension field | ✅ | `rustmath-finitefields/src/extension_field.rs` | With arithmetic operations |
 | Conway polynomials | ⬜ | | Planned |
 | Discrete logarithm | ⬜ | | Planned |
-| Frobenius endomorphism | 🚧 | `rustmath-finitefields/src/extension_field.rs` | Placeholder |
+| Frobenius endomorphism | ✅ | `rustmath-finitefields/src/extension_field.rs` | Complete with trace |
 
-**Progress**: 2/5 features (40%)
+**Progress**: 3/5 features (60%)
 
 ### 1.8 p-adic Numbers (sage.rings.padics)
 **SageMath Source**: `src/sage/rings/padics/`
@@ -157,10 +157,10 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 |-----------------|--------|-------------------|-------|
 | `Qp(p)` - p-adic field | ✅ | `rustmath-padics/src/padic_rational.rs` | With finite precision |
 | `Zp(p)` - p-adic ring | ✅ | `rustmath-padics/src/padic_integer.rs` | Full arithmetic |
-| Hensel lifting | 🚧 | `rustmath-padics/src/padic_integer.rs` | Placeholder |
+| Hensel lifting | ✅ | `rustmath-padics/src/padic_integer.rs` | Linear and root lifting |
 | `.valuation()` | ✅ | `rustmath-padics/src/padic_integer.rs` | |
 
-**Progress**: 3/4 features (75%)
+**Progress**: 4/4 features (100%)
 
 ---
 

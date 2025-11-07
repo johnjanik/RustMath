@@ -4,12 +4,15 @@
 //! - Standard f64 precision
 //! - Configurable rounding modes
 //! - Transcendental functions (sin, cos, exp, log, etc.)
+//! - Interval arithmetic for verified computations
 //! - Conversions from integers and rationals
 
+pub mod interval;
 pub mod real;
 pub mod rounding;
 pub mod transcendental;
 
+pub use interval::Interval;
 pub use real::Real;
 pub use rounding::RoundingMode;
 
