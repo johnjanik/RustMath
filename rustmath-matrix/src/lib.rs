@@ -9,6 +9,7 @@ pub mod integer_forms;
 pub mod linear_solve;
 pub mod matrix;
 pub mod polynomial_ops;
+pub mod sparse;
 pub mod vector;
 pub mod vector_space;
 
@@ -16,13 +17,14 @@ pub use decomposition::{
     CholeskyDecomposition, HessenbergDecomposition, LUDecomposition, PLUDecomposition,
     QRDecomposition, SVDDecomposition,
 };
-pub use eigenvalues::{EigenDecomposition, Eigenvector};
+pub use eigenvalues::{EigenDecomposition, Eigenvector, JordanForm};
 pub use inner_product::InnerProductSpace;
 pub use integer_forms::{HermiteNormalForm, SmithNormalForm};
 pub use linear_solve::RowEchelonForm;
 pub use matrix::Matrix;
+pub use sparse::SparseMatrix;
 pub use vector::Vector;
-pub use vector_space::VectorSpace;
+pub use vector_space::{QuotientSpace, VectorSpace};
 
 #[cfg(test)]
 mod tests {
