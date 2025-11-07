@@ -74,7 +74,7 @@ pub trait Ring:
         } else {
             let half = self.pow(n / 2);
             let result = half.clone() * half;
-            if n % 2 == 0 {
+            if n.is_multiple_of(2) {
                 result
             } else {
                 result * self.clone()

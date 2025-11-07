@@ -162,7 +162,7 @@ impl Add for Rational {
     }
 }
 
-impl<'a, 'b> Add<&'b Rational> for &'a Rational {
+impl<'b> Add<&'b Rational> for &Rational {
     type Output = Rational;
 
     fn add(self, other: &'b Rational) -> Rational {
@@ -185,7 +185,7 @@ impl Sub for Rational {
     }
 }
 
-impl<'a, 'b> Sub<&'b Rational> for &'a Rational {
+impl<'b> Sub<&'b Rational> for &Rational {
     type Output = Rational;
 
     fn sub(self, other: &'b Rational) -> Rational {
@@ -207,7 +207,7 @@ impl Mul for Rational {
     }
 }
 
-impl<'a, 'b> Mul<&'b Rational> for &'a Rational {
+impl<'b> Mul<&'b Rational> for &Rational {
     type Output = Rational;
 
     fn mul(self, other: &'b Rational) -> Rational {
@@ -229,7 +229,7 @@ impl Div for Rational {
     }
 }
 
-impl<'a, 'b> Div<&'b Rational> for &'a Rational {
+impl<'b> Div<&'b Rational> for &Rational {
     type Output = Rational;
 
     fn div(self, other: &'b Rational) -> Rational {
@@ -251,7 +251,7 @@ impl Neg for Rational {
     }
 }
 
-impl<'a> Neg for &'a Rational {
+impl Neg for &Rational {
     type Output = Rational;
 
     fn neg(self) -> Rational {

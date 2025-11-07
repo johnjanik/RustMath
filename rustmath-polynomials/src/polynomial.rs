@@ -34,10 +34,6 @@ pub trait Polynomial: Sized + Clone {
 
     /// Check if the polynomial is constant
     fn is_constant(&self) -> bool {
-        match self.degree() {
-            None => true,
-            Some(0) => true,
-            _ => false,
-        }
+        matches!(self.degree(), None | Some(0))
     }
 }
