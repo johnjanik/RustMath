@@ -1,0 +1,18 @@
+[package]
+name = "rustmath-finitefields"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustmath-core = { path = "../rustmath-core" }
+rustmath-integers = { path = "../rustmath-integers" }
+rustmath-polynomials = { path = "../rustmath-polynomials" }
+num-traits = { workspace = true }
+serde = { workspace = true, optional = true }
+
+[features]
+default = []
+serde = ["dep:serde"]
