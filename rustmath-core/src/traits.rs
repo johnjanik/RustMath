@@ -231,8 +231,6 @@ impl IntegralDomain for i64 {}
 
 #[cfg(test)]
 mod tests {
-    use super::Ring;
-
     #[test]
     fn test_pow() {
         assert_eq!(2i32.pow(0), 1);
