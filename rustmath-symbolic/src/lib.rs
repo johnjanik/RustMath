@@ -3,6 +3,7 @@
 //! This crate provides symbolic expression manipulation, simplification,
 //! and evaluation.
 
+pub mod differentiate;
 pub mod expression;
 pub mod simplify;
 pub mod substitute;
