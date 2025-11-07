@@ -14,7 +14,7 @@ mod tests {
 
     #[test]
     fn basic_matrix() {
-        let m = Matrix::from_vec(2, 2, vec![1.0, 2.0, 3.0, 4.0]).unwrap();
+        let m = Matrix::from_vec(2, 2, vec![1, 2, 3, 4]).unwrap();
         assert_eq!(m.rows(), 2);
         assert_eq!(m.cols(), 2);
     }
