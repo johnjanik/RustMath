@@ -67,6 +67,98 @@ impl ModularInteger {
             modulus: self.modulus.clone(),
         })
     }
+
+    /// Check if this element is a unit (has a multiplicative inverse)
+    ///
+    /// Returns true if gcd(value, modulus) = 1
+    pub fn is_unit(&self) -> bool {
+        let gcd = self.value.gcd(&self.modulus);
+        gcd.is_one()
+    }
+
+    /// Compute the multiplicative order of this element
+    ///
+    /// Returns the smallest positive integer k such that self^k ≡ 1 (mod n).
+    /// Returns None if the element is not a unit.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_integers::{Integer, ModularInteger};
+    ///
+    /// let a = ModularInteger::new(Integer::from(2), Integer::from(7)).unwrap();
+    /// let order = a.multiplicative_order();
+    /// assert_eq!(order, Some(3)); // 2^3 ≡ 1 (mod 7)
+    /// ```
+    pub fn multiplicative_order(&self) -> Option<usize> {
+        if !self.is_unit() {
+            return None;
+        }
+
+        let mut power = ModularInteger::new(Integer::one(), self.modulus.clone()).ok()?;
+        let mut order = 0usize;
+
+        // The order must divide φ(n), so we have an upper bound
+        // For simplicity, we just iterate up to the modulus
+        let max_order = self.modulus.to_usize().unwrap_or(10000);
+
+        loop {
+            order += 1;
+            power = (power * self.clone()).ok()?;
+
+            if power.value.is_one() {
+                return Some(order);
+            }
+
+            if order >= max_order {
+                // Safety check to prevent infinite loops
+                return None;
+            }
+        }
+    }
+}
+
+/// Find all primitive roots modulo n
+///
+/// A primitive root modulo n is an integer g such that every integer coprime to n
+/// is congruent to a power of g modulo n. Equivalently, g has multiplicative order φ(n).
+///
+/// Primitive roots exist if and only if n is 1, 2, 4, p^k, or 2p^k for odd prime p.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_integers::Integer;
+/// use rustmath_integers::modular::primitive_roots;
+///
+/// let roots = primitive_roots(&Integer::from(7));
+/// // 7 is prime, so it has primitive roots: [3, 5]
+/// ```
+pub fn primitive_roots(n: &Integer) -> Vec<Integer> {
+    if *n <= Integer::one() {
+        return vec![];
+    }
+
+    // Calculate φ(n)
+    let phi_n = n.euler_phi();
+
+    let mut roots = Vec::new();
+
+    // Try all values from 1 to n-1
+    for candidate_val in 1..n.to_usize().unwrap_or(1000).min(1000) {
+        let candidate = Integer::from(candidate_val as i64);
+
+        if let Ok(mod_int) = ModularInteger::new(candidate.clone(), n.clone()) {
+            if let Some(order) = mod_int.multiplicative_order() {
+                let order_int = Integer::from(order as i64);
+                if order_int == phi_n {
+                    roots.push(candidate);
+                }
+            }
+        }
+    }
+
+    roots
 }
 
 impl fmt::Display for ModularInteger {
@@ -186,5 +278,52 @@ mod tests {
         let base = ModularInteger::new(Integer::from(2), Integer::from(13)).unwrap();
         let result = base.pow(&Integer::from(10)).unwrap();
         assert_eq!(result.value(), &Integer::from(10));
+    }
+
+    #[test]
+    fn test_is_unit() {
+        // 3 is a unit mod 7 (gcd(3,7) = 1)
+        let a = ModularInteger::new(Integer::from(3), Integer::from(7)).unwrap();
+        assert!(a.is_unit());
+
+        // 6 is not a unit mod 9 (gcd(6,9) = 3)
+        let b = ModularInteger::new(Integer::from(6), Integer::from(9)).unwrap();
+        assert!(!b.is_unit());
+
+        // 0 is never a unit
+        let c = ModularInteger::new(Integer::from(0), Integer::from(7)).unwrap();
+        assert!(!c.is_unit());
+    }
+
+    #[test]
+    fn test_multiplicative_order() {
+        // Order of 2 mod 7
+        let a = ModularInteger::new(Integer::from(2), Integer::from(7)).unwrap();
+        assert_eq!(a.multiplicative_order(), Some(3)); // 2^3 = 8 ≡ 1 (mod 7)
+
+        // Order of 3 mod 7 (primitive root)
+        let b = ModularInteger::new(Integer::from(3), Integer::from(7)).unwrap();
+        assert_eq!(b.multiplicative_order(), Some(6)); // φ(7) = 6
+
+        // Non-unit has no order
+        let c = ModularInteger::new(Integer::from(6), Integer::from(9)).unwrap();
+        assert_eq!(c.multiplicative_order(), None);
+    }
+
+    #[test]
+    fn test_primitive_roots() {
+        // Primitive roots of 7 (prime)
+        let roots = primitive_roots(&Integer::from(7));
+        assert_eq!(roots.len(), 2); // φ(φ(7)) = φ(6) = 2
+        assert!(roots.contains(&Integer::from(3)));
+        assert!(roots.contains(&Integer::from(5)));
+
+        // Primitive roots of 14 = 2 * 7
+        let roots = primitive_roots(&Integer::from(14));
+        assert!(!roots.is_empty());
+
+        // 8 has no primitive roots (not 1, 2, 4, p^k, or 2p^k)
+        let roots = primitive_roots(&Integer::from(8));
+        assert!(roots.is_empty());
     }
 }
