@@ -58,7 +58,7 @@ pub fn chinese_remainder_theorem(remainders: &[Integer], moduli: &[Integer]) -> 
     // Apply CRT formula
     let mut result = Integer::zero();
 
-    for (i, (a, m)) in remainders.iter().zip(moduli.iter()).enumerate() {
+    for (a, m) in remainders.iter().zip(moduli.iter()) {
         // Mᵢ = M / mᵢ
         let big_m_i = big_m.clone() / m.clone();
 
