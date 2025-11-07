@@ -16,7 +16,7 @@ impl<R: Ring> UnivariatePolynomial<R> {
     /// Create a new polynomial from coefficients
     pub fn new(mut coeffs: Vec<R>) -> Self {
         // Remove leading zeros
-        while coeffs.len() > 1 && coeffs.last().map_or(false, |c| c.is_zero()) {
+        while coeffs.len() > 1 && coeffs.last().is_some_and(|c| c.is_zero()) {
             coeffs.pop();
         }
 
@@ -167,12 +167,10 @@ impl<R: Ring> fmt::Display for UnivariatePolynomial<R> {
                 } else {
                     write!(f, "{}*x", coeff)?;
                 }
+            } else if coeff.is_one() {
+                write!(f, "x^{}", i)?;
             } else {
-                if coeff.is_one() {
-                    write!(f, "x^{}", i)?;
-                } else {
-                    write!(f, "{}*x^{}", coeff, i)?;
-                }
+                write!(f, "{}*x^{}", coeff, i)?;
             }
         }
 

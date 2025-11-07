@@ -151,7 +151,7 @@ impl Add for Integer {
     }
 }
 
-impl<'a, 'b> Add<&'b Integer> for &'a Integer {
+impl<'b> Add<&'b Integer> for &Integer {
     type Output = Integer;
 
     fn add(self, other: &'b Integer) -> Integer {
@@ -167,7 +167,7 @@ impl Sub for Integer {
     }
 }
 
-impl<'a, 'b> Sub<&'b Integer> for &'a Integer {
+impl<'b> Sub<&'b Integer> for &Integer {
     type Output = Integer;
 
     fn sub(self, other: &'b Integer) -> Integer {
@@ -183,7 +183,7 @@ impl Mul for Integer {
     }
 }
 
-impl<'a, 'b> Mul<&'b Integer> for &'a Integer {
+impl<'b> Mul<&'b Integer> for &Integer {
     type Output = Integer;
 
     fn mul(self, other: &'b Integer) -> Integer {
@@ -199,7 +199,7 @@ impl Div for Integer {
     }
 }
 
-impl<'a, 'b> Div<&'b Integer> for &'a Integer {
+impl<'b> Div<&'b Integer> for &Integer {
     type Output = Integer;
 
     fn div(self, other: &'b Integer) -> Integer {
@@ -215,7 +215,7 @@ impl Rem for Integer {
     }
 }
 
-impl<'a, 'b> Rem<&'b Integer> for &'a Integer {
+impl<'b> Rem<&'b Integer> for &Integer {
     type Output = Integer;
 
     fn rem(self, other: &'b Integer) -> Integer {
@@ -231,7 +231,7 @@ impl Neg for Integer {
     }
 }
 
-impl<'a> Neg for &'a Integer {
+impl Neg for &Integer {
     type Output = Integer;
 
     fn neg(self) -> Integer {
