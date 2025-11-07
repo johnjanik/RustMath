@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~34% (155 / 473 functions tracked)
+**Overall Progress**: ~35% (161 / 473 functions tracked)
 
 ---
 
@@ -24,10 +24,10 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `Integer(n)` - Create integer | ✅ | `rustmath-integers/src/integer.rs` | Via `Integer::from()` |
 | `ZZ` - Integer ring | ✅ | `rustmath-integers` | Type-level |
 | `.abs()` - Absolute value | ✅ | `rustmath-integers/src/integer.rs` | Via `BigInt::abs()` |
-| `.bits()` - Number of bits | ⬜ | | |
+| `.bits()` - Number of bits | ✅ | `rustmath-integers/src/integer.rs` | Alias for bit_length() |
 | `.sqrt()` - Integer square root | ✅ | `rustmath-integers/src/integer.rs` | Newton's method |
 | `.is_prime()` - Primality test | ✅ | `rustmath-integers/src/prime.rs` | Miller-Rabin |
-| `.is_pseudoprime()` | ⬜ | | |
+| `.is_pseudoprime()` | ✅ | `rustmath-integers/src/prime.rs` | Fermat test |
 | `.next_prime()` - Next prime | ✅ | `rustmath-integers/src/prime.rs` | |
 | `.previous_prime()` | ✅ | `rustmath-integers/src/prime.rs` | |
 | `.prime_divisors()` | 🚧 | `rustmath-integers/src/prime.rs` | Basic factorization |
@@ -43,9 +43,9 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.binomial(k)` | ✅ | `rustmath-combinatorics/src/lib.rs` | |
 | `.digits(base)` | ✅ | `rustmath-integers/src/integer.rs` | Base 2-36 |
 | `.nth_root(n)` | ✅ | `rustmath-integers/src/integer.rs` | Newton's method |
-| `.valuation(p)` | ⬜ | | p-adic valuation |
+| `.valuation(p)` | ✅ | `rustmath-integers/src/integer.rs` | p-adic valuation |
 
-**Progress**: 18/26 functions (69%)
+**Progress**: 21/26 functions (81%)
 
 ### 1.2 Rational Numbers (sage.rings.rational)
 **SageMath Source**: `src/sage/rings/rational.pyx`
@@ -58,14 +58,14 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.denominator()` | ✅ | `rustmath-rationals/src/rational.rs` | |
 | `.floor()` | ✅ | `rustmath-rationals/src/rational.rs` | |
 | `.ceil()` | ✅ | `rustmath-rationals/src/rational.rs` | |
-| `.round()` | ⬜ | | |
+| `.round()` | ✅ | `rustmath-rationals/src/rational.rs` | Round half up |
 | `.continued_fraction()` | ✅ | `rustmath-rationals/src/continued_fraction.rs` | |
 | `.convergents()` | ✅ | `rustmath-rationals/src/continued_fraction.rs` | |
 | `.n(digits)` - Numerical approx | ✅ | `rustmath-rationals/src/rational.rs` | `to_f64()` |
-| `.valuation(p)` | ⬜ | | |
-| `.norm()` | ⬜ | | |
+| `.valuation(p)` | ✅ | `rustmath-rationals/src/rational.rs` | p-adic valuation |
+| `.norm()` | ✅ | `rustmath-rationals/src/rational.rs` | Absolute value |
 
-**Progress**: 8/12 functions (67%)
+**Progress**: 11/12 functions (92%)
 
 ### 1.3 Real Numbers (sage.rings.real_mpfr)
 **SageMath Source**: `src/sage/rings/real_mpfr.pyx`
@@ -995,7 +995,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Category | Functions Impl. | Total Functions | Progress |
 |----------|----------------|-----------------|----------|
-| 1. Rings & Fields | 37 | 90 | 41% |
+| 1. Rings & Fields | 43 | 90 | 48% |
 | 2. Linear Algebra | 42 | 46 | 91% |
 | 3. Number Theory | 20 | 42 | 48% |
 | 4. Symbolic Computation | 11 | 35 | 31% |
@@ -1009,7 +1009,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 12. Group Theory | 0 | 14 | 0% |
 | 13-20. Advanced Topics | 1 | 49 | 2% |
 
-**TOTAL**: **155 / 473 functions** = **~34% complete**
+**TOTAL**: **161 / 473 functions** = **~35% complete**
 
 ### Files to Examine in SageMath Source
 

@@ -497,6 +497,62 @@ impl Integer {
         }
     }
 
+    /// Compute the p-adic valuation: largest k such that p^k divides self
+    ///
+    /// Returns the exponent k in the prime factorization where this prime appears.
+    /// Returns 0 if p does not divide self.
+    ///
+    /// # Examples
+    /// ```ignore
+    /// // 12 = 2^2 * 3, so valuation(12, 2) = 2
+    /// assert_eq!(Integer::from(12).valuation(&Integer::from(2)), 2);
+    /// // valuation(12, 3) = 1
+    /// assert_eq!(Integer::from(12).valuation(&Integer::from(3)), 1);
+    /// // valuation(12, 5) = 0 (5 doesn't divide 12)
+    /// assert_eq!(Integer::from(12).valuation(&Integer::from(5)), 0);
+    /// ```
+    pub fn valuation(&self, p: &Self) -> u32 {
+        if self.is_zero() {
+            return u32::MAX; // Infinite valuation for 0
+        }
+
+        if p.abs() <= Integer::one() {
+            return 0; // Invalid prime
+        }
+
+        let mut n = self.abs();
+        let p_abs = p.abs();
+        let mut count = 0u32;
+
+        loop {
+            let (quotient, remainder) = match n.div_rem(&p_abs) {
+                Ok((q, r)) => (q, r),
+                Err(_) => break,
+            };
+
+            if !remainder.is_zero() {
+                break;
+            }
+
+            count += 1;
+            n = quotient;
+
+            if n.is_zero() {
+                break;
+            }
+        }
+
+        count
+    }
+
+    /// Get the number of bits required to represent this integer
+    ///
+    /// This is an alias for `bit_length()` for SageMath compatibility.
+    /// Returns the minimum number of bits needed to represent this number.
+    pub fn bits(&self) -> u64 {
+        self.bit_length()
+    }
+
     /// Compute the Jacobi symbol (a/n)
     ///
     /// Generalization of the Legendre symbol to odd positive integers n

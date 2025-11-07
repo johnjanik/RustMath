@@ -106,6 +106,37 @@ impl Rational {
         -(-self.clone()).floor()
     }
 
+    /// Round to the nearest integer
+    ///
+    /// Uses the "round half up" rule: 0.5 rounds to 1, -0.5 rounds to -1
+    pub fn round(&self) -> Integer {
+        // Add 1/2 and take floor for positive, subtract 1/2 and take ceil for negative
+        if self.numerator.signum() >= 0 {
+            let half = Rational::new(Integer::one(), Integer::from(2));
+            (self.clone() + half).floor()
+        } else {
+            let half = Rational::new(Integer::one(), Integer::from(2));
+            (self.clone() - half).ceil()
+        }
+    }
+
+    /// Compute the p-adic valuation of this rational number
+    ///
+    /// Returns v_p(a/b) = v_p(a) - v_p(b) where v_p(n) is the p-adic valuation of n.
+    /// This is the exponent of p in the prime factorization when written in lowest terms.
+    pub fn valuation(&self, p: &Integer) -> i32 {
+        let num_val = self.numerator.valuation(p) as i32;
+        let den_val = self.denominator.valuation(p) as i32;
+        num_val - den_val
+    }
+
+    /// Compute the absolute value (norm) of this rational number
+    ///
+    /// Returns |a/b| as a rational number
+    pub fn norm(&self) -> Self {
+        self.abs()
+    }
+
     /// Convert to float (may lose precision)
     pub fn to_f64(&self) -> Option<f64> {
         let num = self.numerator.to_f64()?;
