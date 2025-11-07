@@ -2,6 +2,7 @@
 
 use crate::Integer;
 use num_traits::{One, Zero};
+use rustmath_core::{NumericConversion, Ring};
 
 /// Check if a number is prime using trial division (for small numbers)
 pub fn is_prime_trial_division(n: &Integer) -> bool {

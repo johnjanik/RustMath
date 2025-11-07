@@ -1,7 +1,7 @@
 //! Modular arithmetic
 
 use crate::Integer;
-use rustmath_core::{MathError, Result};
+use rustmath_core::{MathError, Result, Ring};
 use std::fmt;
 use std::ops::{Add, Mul, Neg, Sub};
 
