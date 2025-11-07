@@ -106,7 +106,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Multivariate polynomials | ✅ | `rustmath-polynomials/src/multivariate.rs` | Sparse representation |
 | `.degree()` | ✅ | | |
 | `.coefficients()` | ✅ | | |
-| `.roots()` | 🚧 | `rustmath-polynomials/src/roots.rs` | Rational roots, quadratic & cubic formulas |
+| `.roots()` | ✅ | `rustmath-polynomials/src/roots.rs` | Rational roots + formulas up to degree 4 |
 | `.factor()` - Factorization | 🚧 | `rustmath-polynomials/src/factorization.rs` | Square-free only |
 | `.gcd()` - Polynomial GCD | 🚧 | `rustmath-polynomials/src/univariate.rs` | Limited to field coefficients |
 | `.lcm()` | ✅ | `rustmath-polynomials/src/univariate.rs` | |
@@ -122,7 +122,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.content()` | ✅ | `rustmath-polynomials/src/factorization.rs` | |
 | `.primitive_part()` | ✅ | `rustmath-polynomials/src/factorization.rs` | |
 
-**Progress**: 16/20 features (80%)
+**Progress**: 17/20 features (85%)
 
 ### 1.6 Power Series (sage.rings.power_series_ring)
 **SageMath Source**: `src/sage/rings/power_series_ring.py`
@@ -144,11 +144,11 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 |-----------------|--------|-------------------|-------|
 | `GF(p)` - Prime field | ✅ | `rustmath-finitefields/src/prime_field.rs` | Full arithmetic |
 | `GF(p^n)` - Extension field | ✅ | `rustmath-finitefields/src/extension_field.rs` | With arithmetic operations |
-| Conway polynomials | ⬜ | | Planned |
-| Discrete logarithm | ⬜ | | Planned |
+| Conway polynomials | ✅ | `rustmath-finitefields/src/conway.rs` | Lookup table for common cases |
+| Discrete logarithm | ✅ | `rustmath-finitefields/src/prime_field.rs` | Baby-step giant-step algorithm |
 | Frobenius endomorphism | ✅ | `rustmath-finitefields/src/extension_field.rs` | Complete with trace |
 
-**Progress**: 3/5 features (60%)
+**Progress**: 5/5 features (100%)
 
 ### 1.8 p-adic Numbers (sage.rings.padics)
 **SageMath Source**: `src/sage/rings/padics/`

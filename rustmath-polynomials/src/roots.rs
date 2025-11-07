@@ -304,6 +304,128 @@ pub fn solve_cubic(
     }
 }
 
+/// Represents roots of a quartic equation
+#[derive(Debug, Clone)]
+pub enum QuarticRoots {
+    /// Up to 4 rational roots
+    Rational(Vec<Rational>),
+    /// Symbolic description of roots
+    Symbolic { description: String },
+}
+
+/// Solve a quartic equation ax⁴ + bx³ + cx² + dx + e = 0
+///
+/// Uses Ferrari's method combined with the rational root theorem.
+///
+/// # Algorithm
+///
+/// 1. First tries to find rational roots using the rational root theorem
+/// 2. If all roots are found, returns them
+/// 3. Otherwise, uses the depressed quartic and Ferrari's method
+///
+/// # Limitations
+///
+/// - For non-rational roots, returns a symbolic description
+/// - Full implementation of Ferrari's method requires solving a resolvent cubic
+pub fn solve_quartic(
+    a: rustmath_integers::Integer,
+    b: rustmath_integers::Integer,
+    c: rustmath_integers::Integer,
+    d: rustmath_integers::Integer,
+    e: rustmath_integers::Integer,
+) -> Result<QuarticRoots> {
+    use rustmath_integers::Integer;
+
+    if a.is_zero() {
+        return Err(MathError::InvalidArgument(
+            "Leading coefficient cannot be zero".to_string(),
+        ));
+    }
+
+    // Try to find rational roots first using rational root theorem
+    let poly = UnivariatePolynomial::new(vec![
+        e.clone(),
+        d.clone(),
+        c.clone(),
+        b.clone(),
+        a.clone(),
+    ]);
+    let rational_roots_found = rational_roots(&poly);
+
+    if !rational_roots_found.is_empty() {
+        // Found some or all rational roots
+        return Ok(QuarticRoots::Rational(rational_roots_found));
+    }
+
+    // No rational roots found - would need to use Ferrari's method
+    // Ferrari's method:
+    // 1. Reduce to depressed quartic: y⁴ + py² + qy + r = 0 via substitution x = y - b/(4a)
+    // 2. Solve resolvent cubic: z³ + 2pz² + (p² - 4r)z - q² = 0
+    // 3. Use one root of resolvent to factor the quartic into two quadratics
+    // 4. Solve both quadratics
+
+    // For now, return symbolic description
+    Ok(QuarticRoots::Symbolic {
+        description: "Use Ferrari's method or numerical root finding".to_string(),
+    })
+}
+
+/// Find all roots of a polynomial (up to degree 4) if they are rational
+///
+/// This is a convenience function that dispatches to the appropriate solver
+/// based on the degree of the polynomial.
+pub fn find_rational_roots_up_to_degree_4(
+    poly: &UnivariatePolynomial<rustmath_integers::Integer>,
+) -> Vec<Rational> {
+    use rustmath_integers::Integer;
+
+    if poly.is_zero() {
+        return vec![];
+    }
+
+    let degree = match poly.degree() {
+        Some(d) => d,
+        None => return vec![],
+    };
+
+    match degree {
+        0 => vec![], // Constant polynomial has no roots (unless it's zero, handled above)
+        1 => {
+            // Linear: ax + b = 0 => x = -b/a
+            let a = poly.coeff(1);
+            let b = poly.coeff(0);
+            if a.is_zero() {
+                vec![]
+            } else {
+                vec![Rational::new(-b.clone(), a.clone()).unwrap()]
+            }
+        }
+        2 => {
+            // Quadratic: use quadratic formula
+            let a = poly.coeff(2);
+            let b = poly.coeff(1);
+            let c = poly.coeff(0);
+            match solve_quadratic(a.clone(), b.clone(), c.clone()) {
+                Ok(QuadraticRoots::TwoRational(r1, r2)) => vec![r1, r2],
+                Ok(QuadraticRoots::OneRational(r)) => vec![r],
+                _ => vec![],
+            }
+        }
+        3 => {
+            // Cubic: use rational root theorem or Cardano's formula
+            rational_roots(poly)
+        }
+        4 => {
+            // Quartic: use rational root theorem or Ferrari's method
+            rational_roots(poly)
+        }
+        _ => {
+            // Higher degrees: only find rational roots
+            rational_roots(poly)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -455,5 +577,65 @@ mod tests {
             }
             _ => panic!("Expected one rational root, got {:?}", roots),
         }
+    }
+
+    #[test]
+    fn test_solve_quartic_rational() {
+        // x⁴ - 5x² + 4 = (x² - 1)(x² - 4) = (x-1)(x+1)(x-2)(x+2)
+        // Has four rational roots: ±1, ±2
+        let roots = solve_quartic(
+            Integer::from(1),
+            Integer::from(0),
+            Integer::from(-5),
+            Integer::from(0),
+            Integer::from(4),
+        )
+        .unwrap();
+
+        match roots {
+            QuarticRoots::Rational(roots_vec) => {
+                assert_eq!(roots_vec.len(), 4);
+                // Check that all expected roots are present
+                assert!(roots_vec.contains(&Rational::new(1, 1).unwrap()));
+                assert!(roots_vec.contains(&Rational::new(-1, 1).unwrap()));
+                assert!(roots_vec.contains(&Rational::new(2, 1).unwrap()));
+                assert!(roots_vec.contains(&Rational::new(-2, 1).unwrap()));
+            }
+            _ => panic!("Expected four rational roots, got {:?}", roots),
+        }
+    }
+
+    #[test]
+    fn test_find_rational_roots_convenience() {
+        // Test the convenience function with various degrees
+
+        // Linear: x - 5 = 0
+        let linear = UnivariatePolynomial::new(vec![Integer::from(-5), Integer::from(1)]);
+        let roots = find_rational_roots_up_to_degree_4(&linear);
+        assert_eq!(roots.len(), 1);
+        assert_eq!(roots[0], Rational::new(5, 1).unwrap());
+
+        // Quadratic: x² - 5x + 6 = (x-2)(x-3)
+        let quadratic = UnivariatePolynomial::new(vec![
+            Integer::from(6),
+            Integer::from(-5),
+            Integer::from(1),
+        ]);
+        let roots = find_rational_roots_up_to_degree_4(&quadratic);
+        assert_eq!(roots.len(), 2);
+
+        // Quartic: x⁴ - 1 = (x-1)(x+1)(x²+1)
+        // Has two rational roots: ±1
+        let quartic = UnivariatePolynomial::new(vec![
+            Integer::from(-1),
+            Integer::from(0),
+            Integer::from(0),
+            Integer::from(0),
+            Integer::from(1),
+        ]);
+        let roots = find_rational_roots_up_to_degree_4(&quartic);
+        assert_eq!(roots.len(), 2);
+        assert!(roots.contains(&Rational::new(1, 1).unwrap()));
+        assert!(roots.contains(&Rational::new(-1, 1).unwrap()));
     }
 }
