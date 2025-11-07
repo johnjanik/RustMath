@@ -18,8 +18,8 @@ mod tests {
     fn basic_arithmetic() {
         let a = Integer::from(42);
         let b = Integer::from(17);
-        assert_eq!(a + b, Integer::from(59));
-        assert_eq!(a - b, Integer::from(25));
+        assert_eq!(a.clone() + b.clone(), Integer::from(59));
+        assert_eq!(a.clone() - b.clone(), Integer::from(25));
         assert_eq!(a * b, Integer::from(714));
     }
 }

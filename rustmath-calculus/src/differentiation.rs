@@ -133,7 +133,7 @@ mod tests {
         // d/dx(x + 5) = 1
         let x = Expr::symbol("x");
         let expr = x + Expr::from(5);
-        let deriv = differentiate(&expr, "x");
+        let _deriv = differentiate(&expr, "x");
         // Result should be 1 + 0 = 1 (may need simplification)
     }
 
@@ -142,7 +142,7 @@ mod tests {
         // d/dx(x * x) = 2x
         let x = Expr::symbol("x");
         let expr = x.clone() * x.clone();
-        let deriv = differentiate(&expr, "x");
+        let _deriv = differentiate(&expr, "x");
         // Result should be x + x = 2x (may need simplification)
     }
 }

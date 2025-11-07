@@ -208,20 +208,30 @@ pub trait NumericConversion {
     fn to_f64(&self) -> Option<f64>;
 }
 
+// Implement Ring for standard integer types for convenience in tests
+impl Ring for i32 {
+    fn zero() -> Self { 0 }
+    fn one() -> Self { 1 }
+    fn is_zero(&self) -> bool { *self == 0 }
+    fn is_one(&self) -> bool { *self == 1 }
+}
+
+impl CommutativeRing for i32 {}
+impl IntegralDomain for i32 {}
+
+impl Ring for i64 {
+    fn zero() -> Self { 0 }
+    fn one() -> Self { 1 }
+    fn is_zero(&self) -> bool { *self == 0 }
+    fn is_one(&self) -> bool { *self == 1 }
+}
+
+impl CommutativeRing for i64 {}
+impl IntegralDomain for i64 {}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    // Test implementation for i32
-    impl Ring for i32 {
-        fn zero() -> Self { 0 }
-        fn one() -> Self { 1 }
-        fn is_zero(&self) -> bool { *self == 0 }
-        fn is_one(&self) -> bool { *self == 1 }
-    }
-
-    impl CommutativeRing for i32 {}
-    impl IntegralDomain for i32 {}
 
     #[test]
     fn test_pow() {

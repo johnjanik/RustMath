@@ -15,7 +15,7 @@ mod tests {
     fn basic_derivative() {
         // d/dx(x) = 1
         let x = Expr::symbol("x");
-        let deriv = differentiate(&x, "x");
+        let _deriv = differentiate(&x, "x");
         // Test passes if it compiles - full symbolic diff testing needs more work
     }
 }
