@@ -1,7 +1,6 @@
 //! Symbolic differentiation
 
-use rustmath_symbolic::{BinaryOp, Expr, Symbol, UnaryOp};
-use std::sync::Arc;
+use rustmath_symbolic::{BinaryOp, Expr, UnaryOp};
 
 /// Compute the derivative of an expression with respect to a variable
 pub fn differentiate(expr: &Expr, var: &str) -> Expr {
