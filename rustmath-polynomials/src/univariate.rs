@@ -73,8 +73,12 @@ impl<R: Ring> UnivariatePolynomial<R> {
             .iter()
             .enumerate()
             .map(|(i, c)| {
-                let n = R::from_i64((i + 1) as i64);
-                c.clone() * n
+                // Multiply coefficient by (i+1) using repeated addition
+                let mut result = R::zero();
+                for _ in 0..=(i as u32) {
+                    result = result + c.clone();
+                }
+                result
             })
             .collect();
 
@@ -95,13 +99,9 @@ impl<R: Ring> UnivariatePolynomial<R> {
             b = r;
         }
 
-        // Make monic (leading coefficient = 1)
-        if let Some(lc) = a.leading_coeff() {
-            if !lc.is_one() && !lc.is_zero() {
-                let lc_inv = lc.clone();
-                a = a.scalar_mul(&R::one());
-            }
-        }
+        // Note: Making polynomial monic (leading coefficient = 1) requires
+        // division by the leading coefficient, which needs the Field trait.
+        // This is left as a future enhancement.
 
         a
     }
