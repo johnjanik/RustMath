@@ -115,6 +115,34 @@ pub fn next_prime(n: &Integer) -> Integer {
     candidate
 }
 
+/// Generate the previous prime before n
+///
+/// Returns None if n <= 2
+pub fn previous_prime(n: &Integer) -> Option<Integer> {
+    if *n <= Integer::from(2) {
+        return None;
+    }
+
+    if *n <= Integer::from(3) {
+        return Some(Integer::from(2));
+    }
+
+    let mut candidate = if n.is_even() {
+        n.clone() - Integer::one()
+    } else {
+        n.clone() - Integer::from(2)
+    };
+
+    while candidate > Integer::from(2) {
+        if is_prime(&candidate) {
+            return Some(candidate);
+        }
+        candidate = candidate - Integer::from(2);
+    }
+
+    Some(Integer::from(2))
+}
+
 /// Integer square root (floor)
 fn isqrt(n: &Integer) -> Integer {
     if n.is_zero() || n.is_one() {
@@ -332,6 +360,18 @@ mod tests {
         assert_eq!(next_prime(&Integer::from(2)), Integer::from(3));
         assert_eq!(next_prime(&Integer::from(7)), Integer::from(11));
         assert_eq!(next_prime(&Integer::from(20)), Integer::from(23));
+    }
+
+    #[test]
+    fn test_previous_prime() {
+        assert_eq!(previous_prime(&Integer::from(3)), Some(Integer::from(2)));
+        assert_eq!(previous_prime(&Integer::from(10)), Some(Integer::from(7)));
+        assert_eq!(previous_prime(&Integer::from(20)), Some(Integer::from(19)));
+        assert_eq!(previous_prime(&Integer::from(100)), Some(Integer::from(97)));
+
+        // Edge cases
+        assert_eq!(previous_prime(&Integer::from(2)), None);
+        assert_eq!(previous_prime(&Integer::from(1)), None);
     }
 
     #[test]

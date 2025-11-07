@@ -116,6 +116,78 @@ impl<R: Ring> UnivariatePolynomial<R> {
 
         a
     }
+
+    /// Compute the discriminant of a polynomial
+    ///
+    /// Currently supports degrees 2 and 3.
+    /// Returns None for unsupported degrees or zero polynomial.
+    pub fn discriminant(&self) -> Option<R>
+    where
+        R: rustmath_core::NumericConversion,
+    {
+        match self.degree()? {
+            0 | 1 => Some(R::one()),
+            2 => {
+                // ax² + bx + c
+                // Discriminant = b² - 4ac
+                let a = self.coeff(2);
+                let b = self.coeff(1);
+                let c = self.coeff(0);
+
+                let b_squared = b.clone() * b.clone();
+                let four = R::from_i64(4);
+                let four_ac = four * a.clone() * c.clone();
+                Some(b_squared - four_ac)
+            }
+            3 => {
+                // ax³ + bx² + cx + d
+                // Discriminant = 18abcd - 4b³d + b²c² - 4ac³ - 27a²d²
+                let a = self.coeff(3);
+                let b = self.coeff(2);
+                let c = self.coeff(1);
+                let d = self.coeff(0);
+
+                let term1 = R::from_i64(18) * a.clone() * b.clone() * c.clone() * d.clone();
+                let term2 = R::from_i64(4) * b.clone() * b.clone() * b.clone() * d.clone();
+                let term3 = b.clone() * b.clone() * c.clone() * c.clone();
+                let term4 = R::from_i64(4) * a.clone() * c.clone() * c.clone() * c.clone();
+                let term5 = R::from_i64(27) * a.clone() * a.clone() * d.clone() * d.clone();
+
+                Some(term1 - term2 + term3 - term4 - term5)
+            }
+            _ => None,
+        }
+    }
+
+    /// Check if this polynomial is monic (leading coefficient is 1)
+    pub fn is_monic(&self) -> bool {
+        if let Some(lc) = self.leading_coeff() {
+            lc.is_one()
+        } else {
+            false
+        }
+    }
+
+    /// Get the content of the polynomial (GCD of all coefficients)
+    ///
+    /// Only works for coefficients in a Euclidean domain
+    pub fn content(&self) -> R
+    where
+        R: EuclideanDomain,
+    {
+        if self.coeffs.is_empty() {
+            return R::zero();
+        }
+
+        let mut gcd = self.coeffs[0].clone();
+        for coeff in &self.coeffs[1..] {
+            gcd = EuclideanDomain::gcd(&gcd, coeff);
+            if gcd.is_one() {
+                break;
+            }
+        }
+        gcd
+    }
 }
 
 impl<R: Ring> Polynomial for UnivariatePolynomial<R> {
@@ -400,5 +472,68 @@ mod tests {
 
         let deriv = p.derivative();
         assert_eq!(deriv.coefficients(), &[Integer::from(2), Integer::from(6)]);
+    }
+
+    #[test]
+    fn test_discriminant() {
+        // Quadratic: x^2 - 5x + 6 = (x-2)(x-3)
+        // Discriminant = b^2 - 4ac = 25 - 24 = 1
+        let p = UnivariatePolynomial::new(vec![
+            Integer::from(6),
+            Integer::from(-5),
+            Integer::from(1),
+        ]);
+        assert_eq!(p.discriminant(), Some(Integer::from(1)));
+
+        // Quadratic: x^2 + 1 (no real roots)
+        // Discriminant = 0 - 4 = -4
+        let p = UnivariatePolynomial::new(vec![
+            Integer::from(1),
+            Integer::from(0),
+            Integer::from(1),
+        ]);
+        assert_eq!(p.discriminant(), Some(Integer::from(-4)));
+
+        // Linear polynomial: discriminant = 1
+        let p = UnivariatePolynomial::new(vec![
+            Integer::from(2),
+            Integer::from(3),
+        ]);
+        assert_eq!(p.discriminant(), Some(Integer::from(1)));
+    }
+
+    #[test]
+    fn test_is_monic() {
+        let p = UnivariatePolynomial::new(vec![
+            Integer::from(1),
+            Integer::from(2),
+            Integer::from(1), // Leading coefficient
+        ]);
+        assert!(p.is_monic());
+
+        let p = UnivariatePolynomial::new(vec![
+            Integer::from(1),
+            Integer::from(2),
+            Integer::from(3), // Leading coefficient
+        ]);
+        assert!(!p.is_monic());
+    }
+
+    #[test]
+    fn test_content() {
+        // 6 + 9x + 12x^2, content = gcd(6, 9, 12) = 3
+        let p = UnivariatePolynomial::new(vec![
+            Integer::from(6),
+            Integer::from(9),
+            Integer::from(12),
+        ]);
+        assert_eq!(p.content(), Integer::from(3));
+
+        // 2 + 4x, content = 2
+        let p = UnivariatePolynomial::new(vec![
+            Integer::from(2),
+            Integer::from(4),
+        ]);
+        assert_eq!(p.content(), Integer::from(2));
     }
 }
