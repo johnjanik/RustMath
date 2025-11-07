@@ -1,13 +1,23 @@
 //! RustMath Graphs - Graph theory data structures and algorithms
 //!
-//! This crate provides graph representations and classic graph algorithms.
+//! This crate provides graph data structures, algorithms for traversal,
+//! shortest paths, and other graph-theoretic computations.
 
-// Future modules:
-// - Graph representations (adjacency list, matrix)
-// - Graph traversal (DFS, BFS)
-// - Shortest paths (Dijkstra, Bellman-Ford, Floyd-Warshall)
-// - Minimum spanning tree (Kruskal, Prim)
-// - Maximum flow
-// - Graph coloring
-// - Matching algorithms
-// - Planarity testing
+pub mod graph;
+
+pub use graph::Graph;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn basic_graph() {
+        let mut g = Graph::new(3);
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(1, 2).unwrap();
+
+        assert_eq!(g.num_vertices(), 3);
+        assert_eq!(g.num_edges(), 2);
+    }
+}

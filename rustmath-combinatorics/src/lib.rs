@@ -3,6 +3,12 @@
 //! This crate provides combinatorial structures like permutations, combinations,
 //! partitions, and algorithms for generating and manipulating them.
 
+pub mod partitions;
+pub mod permutations;
+
+pub use partitions::{partition_count, partitions, Partition};
+pub use permutations::{all_permutations, Permutation};
+
 use rustmath_core::Ring;
 use rustmath_integers::Integer;
 
@@ -52,10 +58,3 @@ mod tests {
         assert_eq!(binomial(10, 5), Integer::from(252));
     }
 }
-
-// Future modules:
-// - Permutations
-// - Combinations
-// - Partitions
-// - Young tableaux
-// - Posets

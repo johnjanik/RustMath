@@ -96,6 +96,114 @@ impl<R: Ring> Matrix<R> {
         self.rows == self.cols
     }
 
+    /// Trace (sum of diagonal elements)
+    pub fn trace(&self) -> Result<R> {
+        if !self.is_square() {
+            return Err(MathError::InvalidArgument(
+                "Trace is only defined for square matrices".to_string(),
+            ));
+        }
+
+        let mut sum = R::zero();
+        for i in 0..self.rows {
+            sum = sum + self.data[i * self.cols + i].clone();
+        }
+        Ok(sum)
+    }
+
+    /// Get the submatrix by removing row i and column j
+    fn submatrix(&self, row: usize, col: usize) -> Result<Self> {
+        if !self.is_square() || self.rows == 0 {
+            return Err(MathError::InvalidArgument(
+                "Submatrix requires a non-empty square matrix".to_string(),
+            ));
+        }
+
+        let n = self.rows - 1;
+        let mut data = Vec::with_capacity(n * n);
+
+        for i in 0..self.rows {
+            if i == row {
+                continue;
+            }
+            for j in 0..self.cols {
+                if j == col {
+                    continue;
+                }
+                data.push(self.data[i * self.cols + j].clone());
+            }
+        }
+
+        Ok(Matrix {
+            data,
+            rows: n,
+            cols: n,
+        })
+    }
+
+    /// Calculate determinant using cofactor expansion
+    ///
+    /// This uses recursive cofactor expansion which is O(n!).
+    /// For larger matrices (>4x4), consider using LU decomposition instead.
+    pub fn determinant(&self) -> Result<R> {
+        if !self.is_square() {
+            return Err(MathError::InvalidArgument(
+                "Determinant is only defined for square matrices".to_string(),
+            ));
+        }
+
+        match self.rows {
+            0 => Err(MathError::InvalidArgument(
+                "Cannot compute determinant of empty matrix".to_string(),
+            )),
+            1 => Ok(self.data[0].clone()),
+            2 => {
+                // ad - bc
+                let a = self.data[0].clone();
+                let b = self.data[1].clone();
+                let c = self.data[2].clone();
+                let d = self.data[3].clone();
+                Ok(a * d - b * c)
+            }
+            3 => {
+                // Sarrus rule for 3x3
+                let a = self.data[0].clone();
+                let b = self.data[1].clone();
+                let c = self.data[2].clone();
+                let d = self.data[3].clone();
+                let e = self.data[4].clone();
+                let f = self.data[5].clone();
+                let g = self.data[6].clone();
+                let h = self.data[7].clone();
+                let i = self.data[8].clone();
+
+                let pos = a.clone() * e.clone() * i.clone()
+                    + b.clone() * f.clone() * g.clone()
+                    + c.clone() * d.clone() * h.clone();
+
+                let neg = c.clone() * e.clone() * g.clone()
+                    + a.clone() * f.clone() * h.clone()
+                    + b.clone() * d.clone() * i.clone();
+
+                Ok(pos - neg)
+            }
+            _ => {
+                // Cofactor expansion along first row
+                let mut det = R::zero();
+                let mut sign = R::one();
+
+                for j in 0..self.cols {
+                    let submat = self.submatrix(0, j)?;
+                    let cofactor = sign.clone() * self.data[j].clone() * submat.determinant()?;
+                    det = det + cofactor;
+                    sign = R::zero() - sign; // Flip sign
+                }
+
+                Ok(det)
+            }
+        }
+    }
+
     /// Get a row as a vector
     pub fn row(&self, i: usize) -> Result<Vec<R>> {
         if i >= self.rows {
@@ -278,5 +386,31 @@ mod tests {
         assert_eq!(*c.get(0, 1).unwrap(), 22);
         assert_eq!(*c.get(1, 0).unwrap(), 43);
         assert_eq!(*c.get(1, 1).unwrap(), 50);
+    }
+
+    #[test]
+    fn test_trace() {
+        let m = Matrix::from_vec(3, 3, vec![1, 2, 3, 4, 5, 6, 7, 8, 9]).unwrap();
+        assert_eq!(m.trace().unwrap(), 15); // 1 + 5 + 9 = 15
+    }
+
+    #[test]
+    fn test_determinant_2x2() {
+        let m = Matrix::from_vec(2, 2, vec![1, 2, 3, 4]).unwrap();
+        // det = 1*4 - 2*3 = -2
+        assert_eq!(m.determinant().unwrap(), -2);
+    }
+
+    #[test]
+    fn test_determinant_3x3() {
+        let m = Matrix::from_vec(3, 3, vec![1, 2, 3, 0, 1, 4, 5, 6, 0]).unwrap();
+        // Using Sarrus rule: det = 1 + 40 + 0 - 15 - 24 - 0 = 2
+        assert_eq!(m.determinant().unwrap(), 1);
+    }
+
+    #[test]
+    fn test_determinant_identity() {
+        let id: Matrix<i32> = Matrix::identity(4);
+        assert_eq!(id.determinant().unwrap(), 1);
     }
 }

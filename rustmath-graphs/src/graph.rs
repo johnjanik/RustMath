@@ -1,0 +1,246 @@
+//! Graph data structures and basic operations
+
+use std::collections::{HashMap, HashSet, VecDeque};
+
+/// An undirected graph using adjacency list representation
+#[derive(Debug, Clone)]
+pub struct Graph {
+    /// Number of vertices
+    num_vertices: usize,
+    /// Adjacency list: vertex -> list of neighbors
+    adj: Vec<HashSet<usize>>,
+}
+
+impl Graph {
+    /// Create a new graph with n vertices
+    pub fn new(n: usize) -> Self {
+        Graph {
+            num_vertices: n,
+            adj: vec![HashSet::new(); n],
+        }
+    }
+
+    /// Get the number of vertices
+    pub fn num_vertices(&self) -> usize {
+        self.num_vertices
+    }
+
+    /// Get the number of edges
+    pub fn num_edges(&self) -> usize {
+        self.adj.iter().map(|neighbors| neighbors.len()).sum::<usize>() / 2
+    }
+
+    /// Add an edge between vertices u and v
+    pub fn add_edge(&mut self, u: usize, v: usize) -> Result<(), String> {
+        if u >= self.num_vertices || v >= self.num_vertices {
+            return Err(format!("Vertex out of bounds"));
+        }
+        self.adj[u].insert(v);
+        self.adj[v].insert(u);
+        Ok(())
+    }
+
+    /// Check if there's an edge between u and v
+    pub fn has_edge(&self, u: usize, v: usize) -> bool {
+        if u >= self.num_vertices || v >= self.num_vertices {
+            return false;
+        }
+        self.adj[u].contains(&v)
+    }
+
+    /// Get the degree of a vertex
+    pub fn degree(&self, v: usize) -> Option<usize> {
+        if v >= self.num_vertices {
+            return None;
+        }
+        Some(self.adj[v].len())
+    }
+
+    /// Get neighbors of a vertex
+    pub fn neighbors(&self, v: usize) -> Option<Vec<usize>> {
+        if v >= self.num_vertices {
+            return None;
+        }
+        Some(self.adj[v].iter().copied().collect())
+    }
+
+    /// Perform breadth-first search from a starting vertex
+    pub fn bfs(&self, start: usize) -> Result<Vec<usize>, String> {
+        if start >= self.num_vertices {
+            return Err("Start vertex out of bounds".to_string());
+        }
+
+        let mut visited = vec![false; self.num_vertices];
+        let mut order = Vec::new();
+        let mut queue = VecDeque::new();
+
+        queue.push_back(start);
+        visited[start] = true;
+
+        while let Some(v) = queue.pop_front() {
+            order.push(v);
+
+            for &neighbor in &self.adj[v] {
+                if !visited[neighbor] {
+                    visited[neighbor] = true;
+                    queue.push_back(neighbor);
+                }
+            }
+        }
+
+        Ok(order)
+    }
+
+    /// Perform depth-first search from a starting vertex
+    pub fn dfs(&self, start: usize) -> Result<Vec<usize>, String> {
+        if start >= self.num_vertices {
+            return Err("Start vertex out of bounds".to_string());
+        }
+
+        let mut visited = vec![false; self.num_vertices];
+        let mut order = Vec::new();
+
+        self.dfs_recursive(start, &mut visited, &mut order);
+
+        Ok(order)
+    }
+
+    fn dfs_recursive(&self, v: usize, visited: &mut [bool], order: &mut Vec<usize>) {
+        visited[v] = true;
+        order.push(v);
+
+        for &neighbor in &self.adj[v] {
+            if !visited[neighbor] {
+                self.dfs_recursive(neighbor, visited, order);
+            }
+        }
+    }
+
+    /// Check if the graph is connected
+    pub fn is_connected(&self) -> bool {
+        if self.num_vertices == 0 {
+            return true;
+        }
+
+        let visited = self.bfs(0).unwrap();
+        visited.len() == self.num_vertices
+    }
+
+    /// Find shortest path between two vertices using BFS
+    pub fn shortest_path(&self, start: usize, end: usize) -> Result<Option<Vec<usize>>, String> {
+        if start >= self.num_vertices || end >= self.num_vertices {
+            return Err("Vertex out of bounds".to_string());
+        }
+
+        if start == end {
+            return Ok(Some(vec![start]));
+        }
+
+        let mut visited = vec![false; self.num_vertices];
+        let mut parent: HashMap<usize, usize> = HashMap::new();
+        let mut queue = VecDeque::new();
+
+        queue.push_back(start);
+        visited[start] = true;
+
+        while let Some(v) = queue.pop_front() {
+            if v == end {
+                // Reconstruct path
+                let mut path = vec![end];
+                let mut current = end;
+
+                while current != start {
+                    current = parent[&current];
+                    path.push(current);
+                }
+
+                path.reverse();
+                return Ok(Some(path));
+            }
+
+            for &neighbor in &self.adj[v] {
+                if !visited[neighbor] {
+                    visited[neighbor] = true;
+                    parent.insert(neighbor, v);
+                    queue.push_back(neighbor);
+                }
+            }
+        }
+
+        Ok(None) // No path found
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_graph_creation() {
+        let g = Graph::new(5);
+        assert_eq!(g.num_vertices(), 5);
+        assert_eq!(g.num_edges(), 0);
+    }
+
+    #[test]
+    fn test_add_edge() {
+        let mut g = Graph::new(3);
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(1, 2).unwrap();
+
+        assert!(g.has_edge(0, 1));
+        assert!(g.has_edge(1, 2));
+        assert!(!g.has_edge(0, 2));
+        assert_eq!(g.num_edges(), 2);
+    }
+
+    #[test]
+    fn test_degree() {
+        let mut g = Graph::new(3);
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(0, 2).unwrap();
+
+        assert_eq!(g.degree(0), Some(2));
+        assert_eq!(g.degree(1), Some(1));
+        assert_eq!(g.degree(2), Some(1));
+    }
+
+    #[test]
+    fn test_bfs() {
+        let mut g = Graph::new(4);
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(0, 2).unwrap();
+        g.add_edge(1, 3).unwrap();
+
+        let order = g.bfs(0).unwrap();
+        assert_eq!(order.len(), 4);
+        assert_eq!(order[0], 0); // Start vertex first
+    }
+
+    #[test]
+    fn test_is_connected() {
+        let mut g = Graph::new(3);
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(1, 2).unwrap();
+
+        assert!(g.is_connected());
+
+        let mut g2 = Graph::new(4);
+        g2.add_edge(0, 1).unwrap();
+        g2.add_edge(2, 3).unwrap();
+
+        assert!(!g2.is_connected());
+    }
+
+    #[test]
+    fn test_shortest_path() {
+        let mut g = Graph::new(4);
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(1, 2).unwrap();
+        g.add_edge(2, 3).unwrap();
+        g.add_edge(0, 3).unwrap();
+
+        let path = g.shortest_path(0, 3).unwrap().unwrap();
+        assert_eq!(path, vec![0, 3]); // Direct path is shorter
+    }
+}

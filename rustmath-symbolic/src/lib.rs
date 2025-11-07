@@ -5,6 +5,7 @@
 
 pub mod expression;
 pub mod simplify;
+pub mod substitute;
 pub mod symbol;
 
 pub use expression::{BinaryOp, Expr, UnaryOp};
