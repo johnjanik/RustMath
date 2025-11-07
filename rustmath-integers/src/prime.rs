@@ -100,6 +100,39 @@ pub fn is_prime(n: &Integer) -> bool {
     is_prime_miller_rabin(n, 20)
 }
 
+/// Check if a number is a pseudoprime (passes Fermat test but may not be prime)
+///
+/// A pseudoprime to base a is a composite number n such that a^(n-1) ≡ 1 (mod n).
+/// This is the Fermat primality test. Note that this can have false positives
+/// (Carmichael numbers pass for all bases).
+///
+/// For base 2, these are called "Fermat pseudoprimes base 2".
+pub fn is_pseudoprime(n: &Integer, base: Option<u32>) -> bool {
+    let a = base.unwrap_or(2);
+
+    if *n <= Integer::one() {
+        return false;
+    }
+
+    if *n <= Integer::from(3) {
+        return true;
+    }
+
+    if n.is_even() {
+        return *n == Integer::from(2);
+    }
+
+    let base_int = Integer::from(a);
+
+    // Check if base_int^(n-1) ≡ 1 (mod n)
+    let exponent = n.clone() - Integer::one();
+
+    match base_int.mod_pow(&exponent, n) {
+        Ok(result) => result.is_one(),
+        Err(_) => false,
+    }
+}
+
 /// Generate the next prime after n
 pub fn next_prime(n: &Integer) -> Integer {
     let mut candidate = if n.is_even() {
