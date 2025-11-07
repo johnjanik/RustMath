@@ -65,17 +65,40 @@ rustmath/
 - [ ] Polynomial factorization (TODO)
 - [ ] Advanced GCD algorithms (multivariate, subresultants)
 
-### Phase 2: Linear Algebra
+### Phase 2: Linear Algebra 🚧
 **Goal**: Matrix and vector operations
 
-- [ ] Dense matrices
-- [ ] Sparse matrices
-- [ ] Vector spaces
-- [ ] Matrix operations (multiplication, determinant, inverse)
+#### 2.1 Dense Matrices and Basic Operations ✅
+- [x] Dense matrix implementation over generic rings
+- [x] Matrix creation (zeros, identity, from_vec)
+- [x] Element access (get, set)
+- [x] Matrix arithmetic (addition, subtraction, multiplication)
+- [x] Transpose
+- [x] Row and column extraction
+- [x] Trace
+- [x] Determinant (cofactor expansion for small matrices)
+
+#### 2.2 Linear System Solving ✅
+- [x] Gaussian elimination
+- [x] Row echelon form (REF)
+- [x] Reduced row echelon form (RREF)
+- [x] Rank computation
+- [x] Matrix inversion (Gauss-Jordan)
+- [x] Linear system solver (Ax = b)
+
+#### 2.3 Matrix Decompositions ✅ (partial)
+- [x] LU decomposition (Doolittle's algorithm)
+- [x] PLU decomposition (with partial pivoting)
+- [x] Determinant via LU (more efficient for large matrices)
+- [ ] QR decomposition (TODO)
+- [ ] Cholesky decomposition (TODO)
+- [ ] SVD (Singular Value Decomposition) (TODO)
+
+#### 2.4 Advanced Topics (TODO)
 - [ ] Eigenvalues and eigenvectors
-- [ ] Linear system solving (Gaussian elimination, LU decomposition)
-- [ ] QR decomposition
-- [ ] SVD (Singular Value Decomposition)
+- [ ] Sparse matrices (CSR, COO formats)
+- [ ] Iterative solvers (Conjugate Gradient, GMRES)
+- [ ] Matrix norms and condition numbers
 
 ### Phase 3: Symbolic Computation
 **Goal**: Expression manipulation and simplification

@@ -2,9 +2,13 @@
 //!
 //! This crate provides matrix and vector operations for linear algebra.
 
+pub mod decomposition;
+pub mod linear_solve;
 pub mod matrix;
 pub mod vector;
 
+pub use decomposition::{LUDecomposition, PLUDecomposition};
+pub use linear_solve::RowEchelonForm;
 pub use matrix::Matrix;
 pub use vector::Vector;
 
