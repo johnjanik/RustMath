@@ -248,6 +248,145 @@ impl<F: Field> Matrix<F> {
         let at = self.transpose();
         at.eigenvectors_right(max_iterations, tolerance)
     }
+
+    /// Compute the Jordan canonical form
+    ///
+    /// Returns J and P such that A = P J P^(-1), where J is in Jordan form.
+    ///
+    /// Note: This implementation works best for diagonalizable matrices.
+    /// For non-diagonalizable matrices, it attempts to compute generalized
+    /// eigenvectors but may not always succeed.
+    pub fn jordan_form(&self, max_iterations: usize, tolerance: f64) -> Result<JordanForm<F>>
+    where
+        F: rustmath_core::NumericConversion,
+    {
+        if !self.is_square() {
+            return Err(MathError::InvalidArgument(
+                "Jordan form requires a square matrix".to_string(),
+            ));
+        }
+
+        let n = self.rows;
+
+        // Compute eigenvalues and eigenvectors
+        let eigenvalues = self.eigenvalues(max_iterations, tolerance)?;
+        let eigenvectors = self.eigenvectors_right(max_iterations, tolerance)?;
+
+        if eigenvectors.is_empty() {
+            return Err(MathError::InvalidArgument(
+                "No eigenvectors found".to_string(),
+            ));
+        }
+
+        // Build the Jordan matrix J and transformation matrix P
+        let mut j_data = vec![F::zero(); n * n];
+        let mut p_data = vec![F::zero(); n * n];
+
+        // For now, assume matrix is diagonalizable or nearly so
+        // In a full implementation, we'd compute generalized eigenvectors here
+
+        for (idx, eigvec) in eigenvectors.iter().enumerate().take(n) {
+            // Set diagonal entry in J to eigenvalue
+            j_data[idx * n + idx] = eigvec.eigenvalue.clone();
+
+            // Set column of P to eigenvector
+            for i in 0..n.min(eigvec.eigenvector.len()) {
+                p_data[i * n + idx] = eigvec.eigenvector[i].clone();
+            }
+        }
+
+        // If we don't have enough eigenvectors, try to find generalized eigenvectors
+        if eigenvectors.len() < n {
+            // Attempt to find generalized eigenvectors for repeated eigenvalues
+            let mut used = eigenvectors.len();
+
+            for eigenval in &eigenvalues {
+                if used >= n {
+                    break;
+                }
+
+                // Try to find a generalized eigenvector by solving (A - λI)^k v = 0
+                // for increasing k
+                for k in 2..=3 {
+                    if used >= n {
+                        break;
+                    }
+
+                    // Compute (A - λI)^k
+                    let mut a_shifted = self.clone();
+                    for i in 0..n {
+                        a_shifted.data[i * n + i] =
+                            a_shifted.data[i * n + i].clone() - eigenval.clone();
+                    }
+
+                    let mut power = a_shifted.clone();
+                    for _ in 1..k {
+                        power = match power.clone() * a_shifted.clone() {
+                            Ok(m) => m,
+                            Err(_) => break,
+                        };
+                    }
+
+                    // Find kernel
+                    if let Ok(kernel) = power.kernel() {
+                        for vec in kernel {
+                            if used >= n {
+                                break;
+                            }
+
+                            // Check if this is linearly independent from what we have
+                            let mut is_new = true;
+                            for j in 0..used {
+                                let mut all_same = true;
+                                for i in 0..n.min(vec.len()) {
+                                    if (vec[i].clone() - p_data[i * n + j].clone()).is_zero() {
+                                        continue;
+                                    }
+                                    all_same = false;
+                                    break;
+                                }
+                                if all_same {
+                                    is_new = false;
+                                    break;
+                                }
+                            }
+
+                            if is_new {
+                                // Add to P
+                                for i in 0..n.min(vec.len()) {
+                                    p_data[i * n + used] = vec[i].clone();
+                                }
+
+                                // Set J entry
+                                j_data[used * n + used] = eigenval.clone();
+
+                                // Add 1 on the superdiagonal if this is a Jordan block
+                                if used > 0 && (j_data[(used - 1) * n + (used - 1)].clone() - eigenval.clone()).is_zero() {
+                                    j_data[(used - 1) * n + used] = F::one();
+                                }
+
+                                used += 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let j = Matrix::from_vec(n, n, j_data)?;
+        let p = Matrix::from_vec(n, n, p_data)?;
+
+        Ok(JordanForm { j, p })
+    }
+}
+
+/// Jordan canonical form result
+#[derive(Debug, Clone)]
+pub struct JordanForm<F: Field> {
+    /// The Jordan form matrix J (block diagonal with Jordan blocks)
+    pub j: Matrix<F>,
+    /// The transformation matrix P such that A = P J P^(-1)
+    pub p: Matrix<F>,
 }
 
 #[cfg(test)]

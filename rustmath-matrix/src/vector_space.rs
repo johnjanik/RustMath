@@ -150,6 +150,205 @@ impl<F: Field> VectorSpace<F> {
     {
         self.coordinates(v).is_ok()
     }
+
+    /// Compute the quotient space V/W
+    ///
+    /// Given this vector space V and a subspace W, returns the quotient space V/W.
+    /// The dimension of V/W is dim(V) - dim(W).
+    ///
+    /// The quotient space is represented by a basis that complements W.
+    pub fn quotient(&self, subspace: &VectorSpace<F>) -> Result<QuotientSpace<F>>
+    where
+        F: rustmath_core::NumericConversion,
+    {
+        let ambient_dim = self.basis[0].len();
+        let subspace_ambient_dim = subspace.basis[0].len();
+
+        if ambient_dim != subspace_ambient_dim {
+            return Err(MathError::InvalidArgument(
+                "Subspace must live in the same ambient space".to_string(),
+            ));
+        }
+
+        // Build a matrix with the subspace basis
+        let mut subspace_data = Vec::new();
+        for i in 0..ambient_dim {
+            for j in 0..subspace.dimension {
+                subspace_data.push(subspace.basis[j][i].clone());
+            }
+        }
+
+        let subspace_matrix = Matrix::from_vec(ambient_dim, subspace.dimension, subspace_data)?;
+
+        // Find a complement: vectors in V that are not in the span of W
+        // We'll use the basis of V and check which ones are linearly independent mod W
+
+        let mut complement_basis = Vec::new();
+
+        for v_basis_vec in &self.basis {
+            // Check if this vector is already in span of W ∪ complement_basis
+            let mut extended_basis = subspace.basis.clone();
+            extended_basis.extend(complement_basis.clone());
+
+            // Build matrix
+            if !extended_basis.is_empty() {
+                let cols = extended_basis.len();
+                let mut data = Vec::new();
+                for i in 0..ambient_dim {
+                    for j in 0..cols {
+                        data.push(extended_basis[j][i].clone());
+                    }
+                }
+
+                if let Ok(mat) = Matrix::from_vec(ambient_dim, cols, data) {
+                    // Try to express v_basis_vec in terms of extended_basis
+                    if let Ok(Some(_)) = mat.solve(v_basis_vec) {
+                        // This vector is already in the span, skip it
+                        continue;
+                    }
+                }
+            }
+
+            // This vector adds a new dimension to the complement
+            complement_basis.push(v_basis_vec.clone());
+        }
+
+        let quotient_dimension = complement_basis.len();
+
+        Ok(QuotientSpace {
+            _field: std::marker::PhantomData,
+            original_space: self.clone(),
+            subspace: subspace.clone(),
+            dimension: quotient_dimension,
+            complement_basis,
+        })
+    }
+}
+
+impl<F: Field> Clone for VectorSpace<F> {
+    fn clone(&self) -> Self {
+        VectorSpace {
+            _field: std::marker::PhantomData,
+            dimension: self.dimension,
+            basis: self.basis.clone(),
+        }
+    }
+}
+
+/// A quotient space V/W
+///
+/// Represents the quotient of a vector space V by a subspace W.
+/// Elements are equivalence classes [v] = v + W.
+pub struct QuotientSpace<F: Field> {
+    _field: std::marker::PhantomData<F>,
+    /// The original vector space V
+    original_space: VectorSpace<F>,
+    /// The subspace W
+    subspace: VectorSpace<F>,
+    /// Dimension of the quotient space (dim(V) - dim(W))
+    dimension: usize,
+    /// A basis for a complement of W in V
+    complement_basis: Vec<Vec<F>>,
+}
+
+impl<F: Field> QuotientSpace<F> {
+    /// Get the dimension of the quotient space
+    pub fn dimension(&self) -> usize {
+        self.dimension
+    }
+
+    /// Project a vector from V to V/W
+    ///
+    /// Returns the coordinates of the equivalence class [v] in the quotient space.
+    pub fn project(&self, v: &[F]) -> Result<Vec<F>>
+    where
+        F: rustmath_core::NumericConversion,
+    {
+        // First, subtract the projection onto W
+        let ambient_dim = self.original_space.basis[0].len();
+
+        if v.len() != ambient_dim {
+            return Err(MathError::InvalidArgument(
+                "Vector dimension doesn't match".to_string(),
+            ));
+        }
+
+        // Project onto subspace W
+        let mut w_projection = vec![F::zero(); ambient_dim];
+
+        if self.subspace.dimension > 0 {
+            // Build matrix for subspace basis
+            let mut subspace_data = Vec::new();
+            for i in 0..ambient_dim {
+                for j in 0..self.subspace.dimension {
+                    subspace_data.push(self.subspace.basis[j][i].clone());
+                }
+            }
+
+            let subspace_matrix =
+                Matrix::from_vec(ambient_dim, self.subspace.dimension, subspace_data)?;
+
+            // Solve for coordinates in W
+            if let Ok(Some(coords)) = subspace_matrix.solve(v) {
+                // Reconstruct projection
+                for j in 0..self.subspace.dimension {
+                    for i in 0..ambient_dim {
+                        w_projection[i] = w_projection[i].clone()
+                            + coords[j].clone() * self.subspace.basis[j][i].clone();
+                    }
+                }
+            }
+        }
+
+        // Compute v - projection_W(v)
+        let mut v_mod_w = Vec::with_capacity(ambient_dim);
+        for i in 0..ambient_dim {
+            v_mod_w.push(v[i].clone() - w_projection[i].clone());
+        }
+
+        // Express v_mod_w in terms of complement basis
+        if self.complement_basis.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let mut complement_data = Vec::new();
+        for i in 0..ambient_dim {
+            for j in 0..self.dimension {
+                complement_data.push(self.complement_basis[j][i].clone());
+            }
+        }
+
+        let complement_matrix = Matrix::from_vec(ambient_dim, self.dimension, complement_data)?;
+
+        let coords = complement_matrix.solve(&v_mod_w)?;
+
+        coords.ok_or_else(|| {
+            MathError::InvalidArgument(
+                "Vector is not in the original vector space".to_string(),
+            )
+        })
+    }
+
+    /// Get a representative vector for the equivalence class with given coordinates
+    pub fn representative(&self, coords: &[F]) -> Result<Vec<F>> {
+        if coords.len() != self.dimension {
+            return Err(MathError::InvalidArgument(
+                "Coordinate vector has wrong dimension".to_string(),
+            ));
+        }
+
+        let ambient_dim = self.complement_basis[0].len();
+        let mut result = vec![F::zero(); ambient_dim];
+
+        for j in 0..self.dimension {
+            for i in 0..ambient_dim {
+                result[i] =
+                    result[i].clone() + coords[j].clone() * self.complement_basis[j][i].clone();
+            }
+        }
+
+        Ok(result)
+    }
 }
 
 #[cfg(test)]
