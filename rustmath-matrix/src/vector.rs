@@ -1,7 +1,7 @@
 //! Vector operations
 
 use rustmath_core::{MathError, Result, Ring};
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Sub};
 
 /// Generic vector over a ring R
 #[derive(Clone, PartialEq, Debug)]
