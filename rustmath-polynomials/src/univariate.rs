@@ -63,6 +63,46 @@ impl<R: Ring> UnivariatePolynomial<R> {
         UnivariatePolynomial::new(coeffs)
     }
 
+    /// Polynomial composition: compute p(q(x))
+    ///
+    /// Substitutes polynomial q into this polynomial p
+    pub fn compose(&self, q: &Self) -> Self {
+        if self.is_zero() {
+            return UnivariatePolynomial::new(vec![R::zero()]);
+        }
+
+        // Use Horner's method: p(q) = a_0 + q*(a_1 + q*(a_2 + ...))
+        let mut result = UnivariatePolynomial::new(vec![self.coeffs.last().unwrap().clone()]);
+
+        for coeff in self.coeffs.iter().rev().skip(1) {
+            // result = result * q + coeff
+            result = (result.clone() * q.clone())
+                + UnivariatePolynomial::new(vec![coeff.clone()]);
+        }
+
+        result
+    }
+
+    /// Scale the variable: compute p(c*x) for constant c
+    pub fn scale_variable(&self, c: &R) -> Self {
+        let mut coeffs = Vec::with_capacity(self.coeffs.len());
+        let mut power_of_c = R::one();
+
+        for coeff in &self.coeffs {
+            coeffs.push(coeff.clone() * power_of_c.clone());
+            power_of_c = power_of_c * c.clone();
+        }
+
+        UnivariatePolynomial::new(coeffs)
+    }
+
+    /// Translate the polynomial: compute p(x + a)
+    pub fn translate(&self, a: &R) -> Self {
+        // p(x + a) = p composed with (x + a)
+        let x_plus_a = UnivariatePolynomial::new(vec![a.clone(), R::one()]);
+        self.compose(&x_plus_a)
+    }
+
     /// Compute the derivative
     pub fn derivative(&self) -> Self {
         if self.coeffs.len() <= 1 {
@@ -83,6 +123,44 @@ impl<R: Ring> UnivariatePolynomial<R> {
             .collect();
 
         UnivariatePolynomial::new(coeffs)
+    }
+
+    /// Compute the indefinite integral (antiderivative)
+    ///
+    /// Returns ∫p(x)dx with constant of integration = 0
+    /// For coefficient ring where division by integers is available
+    pub fn integrate(&self) -> Self
+    where
+        R: rustmath_core::NumericConversion,
+    {
+        if self.is_zero() {
+            return UnivariatePolynomial::new(vec![R::zero()]);
+        }
+
+        // Add a zero constant term, then divide each coefficient by its new index
+        let mut coeffs = vec![R::zero()]; // Constant of integration
+
+        for (i, c) in self.coeffs.iter().enumerate() {
+            // Coefficient for x^(i+1) is c/(i+1)
+            let divisor = R::from_i64((i + 1) as i64);
+            // For integer coefficients, this is an approximation
+            // In a proper implementation, we'd need rational coefficients
+            let new_coeff = c.clone() / divisor;
+            coeffs.push(new_coeff);
+        }
+
+        UnivariatePolynomial::new(coeffs)
+    }
+
+    /// Compute definite integral from a to b
+    ///
+    /// ∫[a,b] p(x)dx = P(b) - P(a) where P is the antiderivative
+    pub fn definite_integral(&self, a: &R, b: &R) -> R
+    where
+        R: rustmath_core::NumericConversion,
+    {
+        let antiderivative = self.integrate();
+        antiderivative.eval(b) - antiderivative.eval(a)
     }
 
     /// Compute polynomial GCD (for polynomials over a field or Euclidean domain)
@@ -535,5 +613,56 @@ mod tests {
             Integer::from(4),
         ]);
         assert_eq!(p.content(), Integer::from(2));
+    }
+
+    #[test]
+    fn test_compose() {
+        // p(x) = x + 1, q(x) = 2x
+        // p(q(x)) = 2x + 1
+        let p = UnivariatePolynomial::new(vec![Integer::from(1), Integer::from(1)]);
+        let q = UnivariatePolynomial::new(vec![Integer::from(0), Integer::from(2)]);
+
+        let composed = p.compose(&q);
+        assert_eq!(composed.coefficients(), &[Integer::from(1), Integer::from(2)]);
+
+        // p(x) = x^2, q(x) = x + 1
+        // p(q(x)) = (x+1)^2 = x^2 + 2x + 1
+        let p = UnivariatePolynomial::new(vec![Integer::from(0), Integer::from(0), Integer::from(1)]);
+        let q = UnivariatePolynomial::new(vec![Integer::from(1), Integer::from(1)]);
+
+        let composed = p.compose(&q);
+        assert_eq!(
+            composed.coefficients(),
+            &[Integer::from(1), Integer::from(2), Integer::from(1)]
+        );
+    }
+
+    #[test]
+    fn test_scale_variable() {
+        // p(x) = x^2 + 2x + 3
+        // p(2x) = 4x^2 + 4x + 3
+        let p = UnivariatePolynomial::new(vec![
+            Integer::from(3),
+            Integer::from(2),
+            Integer::from(1),
+        ]);
+
+        let scaled = p.scale_variable(&Integer::from(2));
+        assert_eq!(
+            scaled.coefficients(),
+            &[Integer::from(3), Integer::from(4), Integer::from(4)]
+        );
+    }
+
+    #[test]
+    fn test_translate() {
+        // p(x) = x^2, p(x + 1) = x^2 + 2x + 1
+        let p = UnivariatePolynomial::new(vec![Integer::from(0), Integer::from(0), Integer::from(1)]);
+        let translated = p.translate(&Integer::from(1));
+
+        assert_eq!(
+            translated.coefficients(),
+            &[Integer::from(1), Integer::from(2), Integer::from(1)]
+        );
     }
 }
