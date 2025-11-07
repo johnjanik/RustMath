@@ -229,6 +229,218 @@ impl<R: Ring> Matrix<R> {
         }
         Ok(col_data)
     }
+
+    /// Check if matrix is symmetric (A = A^T)
+    pub fn is_symmetric(&self) -> bool {
+        if !self.is_square() {
+            return false;
+        }
+
+        for i in 0..self.rows {
+            for j in (i + 1)..self.cols {
+                if self.data[i * self.cols + j] != self.data[j * self.cols + i] {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+
+    /// Check if matrix is diagonal
+    pub fn is_diagonal(&self) -> bool {
+        if !self.is_square() {
+            return false;
+        }
+
+        for i in 0..self.rows {
+            for j in 0..self.cols {
+                if i != j && !self.data[i * self.cols + j].is_zero() {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+
+    /// Check if matrix is upper triangular
+    pub fn is_upper_triangular(&self) -> bool {
+        if !self.is_square() {
+            return false;
+        }
+
+        for i in 0..self.rows {
+            for j in 0..i {
+                if !self.data[i * self.cols + j].is_zero() {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+
+    /// Check if matrix is lower triangular
+    pub fn is_lower_triangular(&self) -> bool {
+        if !self.is_square() {
+            return false;
+        }
+
+        for i in 0..self.rows {
+            for j in (i + 1)..self.cols {
+                if !self.data[i * self.cols + j].is_zero() {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+
+    /// Scalar multiplication
+    pub fn scalar_mul(&self, scalar: &R) -> Self {
+        let data = self.data.iter().map(|x| x.clone() * scalar.clone()).collect();
+        Matrix {
+            data,
+            rows: self.rows,
+            cols: self.cols,
+        }
+    }
+
+    /// Matrix power (A^n) for non-negative integer n
+    pub fn pow(&self, n: u32) -> Result<Self> {
+        if !self.is_square() {
+            return Err(MathError::InvalidArgument(
+                "Matrix power is only defined for square matrices".to_string(),
+            ));
+        }
+
+        if n == 0 {
+            return Ok(Self::identity(self.rows));
+        }
+
+        if n == 1 {
+            return Ok(self.clone());
+        }
+
+        // Use binary exponentiation
+        let mut result = Self::identity(self.rows);
+        let mut base = self.clone();
+        let mut exp = n;
+
+        while exp > 0 {
+            if exp % 2 == 1 {
+                result = (result * base.clone())?;
+            }
+            base = (base.clone() * base)?;
+            exp /= 2;
+        }
+
+        Ok(result)
+    }
+
+    /// Swap two rows
+    pub fn swap_rows(&mut self, i: usize, j: usize) -> Result<()> {
+        if i >= self.rows || j >= self.rows {
+            return Err(MathError::InvalidArgument("Row index out of bounds".to_string()));
+        }
+
+        if i == j {
+            return Ok(());
+        }
+
+        for k in 0..self.cols {
+            self.data.swap(i * self.cols + k, j * self.cols + k);
+        }
+
+        Ok(())
+    }
+
+    /// Scale a row by a scalar
+    pub fn scale_row(&mut self, i: usize, scalar: &R) -> Result<()> {
+        if i >= self.rows {
+            return Err(MathError::InvalidArgument("Row index out of bounds".to_string()));
+        }
+
+        for j in 0..self.cols {
+            let idx = i * self.cols + j;
+            self.data[idx] = self.data[idx].clone() * scalar.clone();
+        }
+
+        Ok(())
+    }
+
+    /// Add a multiple of row i to row j: row[j] += scalar * row[i]
+    pub fn add_row_multiple(&mut self, i: usize, j: usize, scalar: &R) -> Result<()> {
+        if i >= self.rows || j >= self.rows {
+            return Err(MathError::InvalidArgument("Row index out of bounds".to_string()));
+        }
+
+        for k in 0..self.cols {
+            let val = self.data[i * self.cols + k].clone() * scalar.clone();
+            self.data[j * self.cols + k] = self.data[j * self.cols + k].clone() + val;
+        }
+
+        Ok(())
+    }
+
+    /// Compute Frobenius norm: sqrt(sum of squares of all elements)
+    ///
+    /// Only available for matrices over types with numeric conversion
+    pub fn frobenius_norm(&self) -> f64
+    where
+        R: rustmath_core::NumericConversion,
+    {
+        let sum_of_squares: f64 = self
+            .data
+            .iter()
+            .map(|x| {
+                let val = x.to_f64().unwrap_or(0.0);
+                val * val
+            })
+            .sum();
+
+        sum_of_squares.sqrt()
+    }
+
+    /// Compute the infinity norm (maximum absolute row sum)
+    pub fn infinity_norm(&self) -> f64
+    where
+        R: rustmath_core::NumericConversion,
+    {
+        let mut max_sum = 0.0;
+
+        for i in 0..self.rows {
+            let mut row_sum = 0.0;
+            for j in 0..self.cols {
+                let val = self.data[i * self.cols + j].to_f64().unwrap_or(0.0);
+                row_sum += val.abs();
+            }
+            if row_sum > max_sum {
+                max_sum = row_sum;
+            }
+        }
+
+        max_sum
+    }
+
+    /// Compute the one norm (maximum absolute column sum)
+    pub fn one_norm(&self) -> f64
+    where
+        R: rustmath_core::NumericConversion,
+    {
+        let mut max_sum = 0.0;
+
+        for j in 0..self.cols {
+            let mut col_sum = 0.0;
+            for i in 0..self.rows {
+                let val = self.data[i * self.cols + j].to_f64().unwrap_or(0.0);
+                col_sum += val.abs();
+            }
+            if col_sum > max_sum {
+                max_sum = col_sum;
+            }
+        }
+
+        max_sum
+    }
 }
 
 impl<R: Ring> fmt::Display for Matrix<R> {
@@ -412,5 +624,105 @@ mod tests {
     fn test_determinant_identity() {
         let id: Matrix<i32> = Matrix::identity(4);
         assert_eq!(id.determinant().unwrap(), 1);
+    }
+
+    #[test]
+    fn test_is_symmetric() {
+        // Symmetric matrix
+        let m = Matrix::from_vec(3, 3, vec![1, 2, 3, 2, 4, 5, 3, 5, 6]).unwrap();
+        assert!(m.is_symmetric());
+
+        // Non-symmetric matrix
+        let m = Matrix::from_vec(2, 2, vec![1, 2, 3, 4]).unwrap();
+        assert!(!m.is_symmetric());
+
+        // Identity is symmetric
+        let id: Matrix<i32> = Matrix::identity(3);
+        assert!(id.is_symmetric());
+    }
+
+    #[test]
+    fn test_is_diagonal() {
+        // Diagonal matrix
+        let m = Matrix::from_vec(3, 3, vec![1, 0, 0, 0, 2, 0, 0, 0, 3]).unwrap();
+        assert!(m.is_diagonal());
+
+        // Non-diagonal matrix
+        let m = Matrix::from_vec(2, 2, vec![1, 2, 0, 4]).unwrap();
+        assert!(!m.is_diagonal());
+
+        // Identity is diagonal
+        let id: Matrix<i32> = Matrix::identity(3);
+        assert!(id.is_diagonal());
+    }
+
+    #[test]
+    fn test_is_triangular() {
+        // Upper triangular
+        let upper = Matrix::from_vec(3, 3, vec![1, 2, 3, 0, 4, 5, 0, 0, 6]).unwrap();
+        assert!(upper.is_upper_triangular());
+        assert!(!upper.is_lower_triangular());
+
+        // Lower triangular
+        let lower = Matrix::from_vec(3, 3, vec![1, 0, 0, 2, 3, 0, 4, 5, 6]).unwrap();
+        assert!(lower.is_lower_triangular());
+        assert!(!lower.is_upper_triangular());
+
+        // Diagonal is both upper and lower triangular
+        let diag = Matrix::from_vec(2, 2, vec![1, 0, 0, 2]).unwrap();
+        assert!(diag.is_upper_triangular());
+        assert!(diag.is_lower_triangular());
+    }
+
+    #[test]
+    fn test_scalar_mul() {
+        let m = Matrix::from_vec(2, 2, vec![1, 2, 3, 4]).unwrap();
+        let scaled = m.scalar_mul(&3);
+
+        assert_eq!(*scaled.get(0, 0).unwrap(), 3);
+        assert_eq!(*scaled.get(0, 1).unwrap(), 6);
+        assert_eq!(*scaled.get(1, 0).unwrap(), 9);
+        assert_eq!(*scaled.get(1, 1).unwrap(), 12);
+    }
+
+    #[test]
+    fn test_matrix_pow() {
+        let m = Matrix::from_vec(2, 2, vec![1, 1, 0, 1]).unwrap();
+
+        // A^0 = I
+        let p0 = m.pow(0).unwrap();
+        assert_eq!(p0, Matrix::identity(2));
+
+        // A^1 = A
+        let p1 = m.pow(1).unwrap();
+        assert_eq!(p1, m);
+
+        // A^2
+        let p2 = m.pow(2).unwrap();
+        assert_eq!(*p2.get(0, 0).unwrap(), 1);
+        assert_eq!(*p2.get(0, 1).unwrap(), 2);
+        assert_eq!(*p2.get(1, 0).unwrap(), 0);
+        assert_eq!(*p2.get(1, 1).unwrap(), 1);
+    }
+
+    #[test]
+    fn test_row_operations() {
+        let mut m = Matrix::from_vec(3, 3, vec![1, 2, 3, 4, 5, 6, 7, 8, 9]).unwrap();
+
+        // Test swap_rows
+        m.swap_rows(0, 2).unwrap();
+        assert_eq!(*m.get(0, 0).unwrap(), 7);
+        assert_eq!(*m.get(2, 0).unwrap(), 1);
+
+        // Test scale_row
+        m.scale_row(1, &2).unwrap();
+        assert_eq!(*m.get(1, 0).unwrap(), 8);
+        assert_eq!(*m.get(1, 1).unwrap(), 10);
+
+        // Test add_row_multiple
+        let mut m2 = Matrix::from_vec(2, 2, vec![1, 2, 3, 4]).unwrap();
+        m2.add_row_multiple(0, 1, &2).unwrap(); // row[1] += 2 * row[0]
+        assert_eq!(*m2.get(1, 0).unwrap(), 5); // 3 + 2*1
+        assert_eq!(*m2.get(1, 1).unwrap(), 8); // 4 + 2*2
     }
 }
