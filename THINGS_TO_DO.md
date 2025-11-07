@@ -106,7 +106,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Multivariate polynomials | ✅ | `rustmath-polynomials/src/multivariate.rs` | Sparse representation |
 | `.degree()` | ✅ | | |
 | `.coefficients()` | ✅ | | |
-| `.roots()` | 🚧 | `rustmath-polynomials/src/roots.rs` | Rational roots, quadratic formula |
+| `.roots()` | 🚧 | `rustmath-polynomials/src/roots.rs` | Rational roots, quadratic & cubic formulas |
 | `.factor()` - Factorization | 🚧 | `rustmath-polynomials/src/factorization.rs` | Square-free only |
 | `.gcd()` - Polynomial GCD | 🚧 | `rustmath-polynomials/src/univariate.rs` | Limited to field coefficients |
 | `.lcm()` | ✅ | `rustmath-polynomials/src/univariate.rs` | |

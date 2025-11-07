@@ -14,7 +14,7 @@ pub use factorization::{
 };
 pub use multivariate::{Monomial, MultivariatePolynomial};
 pub use polynomial::Polynomial;
-pub use roots::{rational_roots, solve_quadratic, QuadraticRoots};
+pub use roots::{rational_roots, solve_cubic, solve_quadratic, CubicRoots, QuadraticRoots};
 pub use univariate::UnivariatePolynomial;
 
 #[cfg(test)]
