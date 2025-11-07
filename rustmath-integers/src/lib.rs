@@ -1,0 +1,25 @@
+//! RustMath Integers - Arbitrary precision integer arithmetic
+//!
+//! This crate provides arbitrary precision integer arithmetic with implementations
+//! of number-theoretic algorithms.
+
+pub mod integer;
+pub mod modular;
+pub mod prime;
+
+pub use integer::Integer;
+pub use modular::ModularInteger;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn basic_arithmetic() {
+        let a = Integer::from(42);
+        let b = Integer::from(17);
+        assert_eq!(a + b, Integer::from(59));
+        assert_eq!(a - b, Integer::from(25));
+        assert_eq!(a * b, Integer::from(714));
+    }
+}
