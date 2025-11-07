@@ -52,7 +52,7 @@ where
         .coefficients()
         .iter()
         .map(|c| {
-            let (q, _) = c.clone().div_rem(cont.clone()).unwrap();
+            let (q, _) = c.clone().div_rem(&cont).unwrap();
             q
         })
         .collect();
@@ -173,8 +173,6 @@ where
 pub fn factor_over_integers(
     poly: &UnivariatePolynomial<rustmath_integers::Integer>,
 ) -> Result<Vec<(UnivariatePolynomial<rustmath_integers::Integer>, u32)>> {
-    use rustmath_integers::Integer;
-
     // First, do square-free factorization
     let square_free_factors = square_free_factorization(poly)?;
 
