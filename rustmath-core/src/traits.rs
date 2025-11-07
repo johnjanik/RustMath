@@ -231,7 +231,7 @@ impl IntegralDomain for i64 {}
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::Ring;
 
     #[test]
     fn test_pow() {
