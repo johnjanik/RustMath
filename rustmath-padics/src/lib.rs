@@ -7,7 +7,7 @@
 pub mod padic_integer;
 pub mod padic_rational;
 
-pub use padic_integer::PadicInteger;
+pub use padic_integer::{hensel_lift_root, PadicInteger};
 pub use padic_rational::PadicRational;
 
 #[cfg(test)]

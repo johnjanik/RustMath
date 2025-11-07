@@ -163,14 +163,64 @@ impl PadicInteger {
         })
     }
 
-    /// Hensel lifting: lift a root modulo p to a root modulo p^k
+    /// Hensel lifting for linear congruences: ax ≡ b (mod p^k)
     ///
-    /// Given f(a) ≡ 0 (mod p), find b such that f(b) ≡ 0 (mod p^k) and b ≡ a (mod p)
-    pub fn hensel_lift(&self, _target_precision: usize) -> Result<Self> {
-        // Simplified placeholder
-        // Full implementation would require polynomial f and its derivative
-        Ok(self.clone())
+    /// Lifts a solution from precision n to precision n+1
+    /// This is a simplified version that works for the inverse operation
+    pub fn hensel_lift_linear(&self, a: &Self, b: &Self) -> Result<Self> {
+        // Newton's method: x_{n+1} = x_n - f(x_n)/f'(x_n)
+        // For f(x) = ax - b, we have f'(x) = a
+        // So x_{n+1} = x_n - (ax_n - b)/a = x_n(2 - ax_n/b)
+
+        if self.precision >= 50 {
+            // Already at high precision
+            return Ok(self.clone());
+        }
+
+        let new_precision = self.precision + 1;
+
+        // Compute correction term
+        let ax = a.clone() * self.clone();
+        let residual = b.clone() - ax;
+
+        // Lift: x' = x + residual * a^(-1)
+        let a_inv = a.inverse()?;
+        let correction = residual * a_inv;
+        let lifted = self.clone() + correction;
+
+        // Convert to higher precision
+        PadicInteger::from_integer(lifted.value, self.prime.clone(), new_precision)
     }
+}
+
+/// Hensel lifting for polynomial roots
+///
+/// Given a polynomial f and an approximate root r such that f(r) ≡ 0 (mod p^k),
+/// lift r to a root modulo p^(k+1).
+///
+/// This uses Newton's method: r' = r - f(r)/f'(r) mod p^(k+1)
+///
+/// Note: This is a simplified version. Full implementation would work with
+/// polynomial types from rustmath-polynomials.
+pub fn hensel_lift_root(
+    root: &PadicInteger,
+    f_value: &PadicInteger,
+    f_prime_value: &PadicInteger,
+) -> Result<PadicInteger> {
+    if f_prime_value.is_zero() {
+        return Err(MathError::InvalidArgument(
+            "Derivative is zero at root".to_string(),
+        ));
+    }
+
+    // Newton step: r' = r - f(r)/f'(r)
+    let f_prime_inv = f_prime_value.inverse()?;
+    let correction = f_value.clone() * f_prime_inv;
+    let new_root = root.clone() - correction;
+
+    // Lift precision
+    let new_precision = root.precision() + 1;
+    PadicInteger::from_integer(new_root.value, root.prime().clone(), new_precision)
 }
 
 impl fmt::Display for PadicInteger {

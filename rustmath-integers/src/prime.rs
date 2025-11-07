@@ -235,6 +235,32 @@ pub fn factor(n: &Integer) -> Vec<(Integer, u32)> {
     factors
 }
 
+/// Get all prime divisors of n (without multiplicities)
+///
+/// Returns a vector of distinct prime factors of n in ascending order.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_integers::Integer;
+/// use rustmath_integers::prime::prime_divisors;
+///
+/// let n = Integer::from(60); // 60 = 2² × 3 × 5
+/// let divisors = prime_divisors(&n);
+/// // Returns [2, 3, 5]
+/// ```
+pub fn prime_divisors(n: &Integer) -> Vec<Integer> {
+    if n.is_zero() || n.is_one() {
+        return vec![];
+    }
+
+    // Use the factor() function to get prime factorization
+    let factorization = factor(n);
+
+    // Extract just the primes (first element of each tuple)
+    factorization.into_iter().map(|(prime, _)| prime).collect()
+}
+
 /// Pollard's Rho algorithm for finding a non-trivial factor
 ///
 /// This is a probabilistic algorithm that's much faster than trial division

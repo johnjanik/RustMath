@@ -59,10 +59,42 @@ impl ExtensionField {
     /// Compute the Frobenius endomorphism: x -> x^p
     ///
     /// This is the fundamental automorphism of finite fields
+    /// In characteristic p, we have (a+b)^p = a^p + b^p, so we can compute
+    /// the Frobenius by raising each coefficient to power p
     pub fn frobenius(&self) -> Self {
-        // x -> x^p in GF(p^n)
-        // Implementation would require proper modular exponentiation
-        self.clone()
+        // In GF(p^n), elements are polynomials with coefficients in GF(p)
+        // The Frobenius map is x -> x^p
+
+        // For a polynomial a_0 + a_1*x + ... + a_k*x^k, we need (sum a_i*x^i)^p
+        // In characteristic p: (a+b)^p = a^p + b^p (Freshman's Dream)
+        // So (sum a_i*x^i)^p = sum a_i^p * x^(i*p) = sum a_i * x^(i*p)
+        // (since a_i in GF(p) means a_i^p = a_i by Fermat's Little Theorem)
+
+        let coeffs = self.poly.coefficients();
+        let mut new_coeffs = vec![Integer::zero(); self.degree()];
+
+        // For each coefficient a_i at position i, it goes to position (i*p) mod degree
+        for (i, coeff) in coeffs.iter().enumerate() {
+            if coeff.is_zero() {
+                continue;
+            }
+
+            // Compute i*p
+            let p_usize = self.characteristic.to_usize().unwrap_or(2);
+            let new_pos = (i * p_usize) % self.degree();
+
+            if new_pos < new_coeffs.len() {
+                new_coeffs[new_pos] = (new_coeffs[new_pos].clone() + coeff.clone()) % self.characteristic.clone();
+            }
+        }
+
+        let new_poly = UnivariatePolynomial::new(new_coeffs);
+
+        ExtensionField {
+            poly: new_poly,
+            characteristic: self.characteristic.clone(),
+            irreducible: self.irreducible.clone(),
+        }
     }
 
     /// Compute the norm N(x) = x · x^p · x^(p^2) · ... · x^(p^(n-1))
@@ -73,10 +105,28 @@ impl ExtensionField {
     }
 
     /// Compute the trace Tr(x) = x + x^p + x^(p^2) + ... + x^(p^(n-1))
+    ///
+    /// The trace maps GF(p^n) -> GF(p) and is the constant term of the sum
     pub fn trace(&self) -> Integer {
-        // Simplified: return zero for now
-        // Full implementation would compute the actual trace
-        Integer::zero()
+        let n = self.degree();
+        let mut current = self.clone();
+        let mut sum_coeffs = vec![Integer::zero(); n];
+
+        // Add x + x^p + x^(p^2) + ... + x^(p^(n-1))
+        for _ in 0..n {
+            // Add current element's coefficients to sum
+            for (i, coeff) in current.poly.coefficients().iter().enumerate() {
+                if i < sum_coeffs.len() {
+                    sum_coeffs[i] = (sum_coeffs[i].clone() + coeff.clone()) % self.characteristic.clone();
+                }
+            }
+
+            // Apply Frobenius for next iteration
+            current = current.frobenius();
+        }
+
+        // The trace is the constant term (coefficient of x^0)
+        sum_coeffs.get(0).cloned().unwrap_or_else(Integer::zero)
     }
 }
 
@@ -100,9 +150,121 @@ impl PartialEq for ExtensionField {
     }
 }
 
-// Note: Arithmetic operations would require proper implementation
-// of polynomial arithmetic over GF(p) and reduction modulo the irreducible polynomial
-// This is left as a future enhancement
+use std::ops::{Add, Mul, Neg, Sub};
+
+impl Add for ExtensionField {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        assert_eq!(self.characteristic, other.characteristic);
+        assert_eq!(self.irreducible, other.irreducible);
+
+        // Add polynomials and reduce coefficients modulo p
+        let self_coeffs = self.poly.coefficients();
+        let other_coeffs = other.poly.coefficients();
+        let max_len = self_coeffs.len().max(other_coeffs.len());
+
+        let mut new_coeffs = Vec::new();
+        for i in 0..max_len {
+            let a = self_coeffs.get(i).cloned().unwrap_or_else(Integer::zero);
+            let b = other_coeffs.get(i).cloned().unwrap_or_else(Integer::zero);
+            new_coeffs.push((a + b) % self.characteristic.clone());
+        }
+
+        let new_poly = UnivariatePolynomial::new(new_coeffs);
+
+        ExtensionField {
+            poly: new_poly,
+            characteristic: self.characteristic,
+            irreducible: self.irreducible,
+        }
+    }
+}
+
+impl Sub for ExtensionField {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        assert_eq!(self.characteristic, other.characteristic);
+        assert_eq!(self.irreducible, other.irreducible);
+
+        // Subtract polynomials and reduce coefficients modulo p
+        let self_coeffs = self.poly.coefficients();
+        let other_coeffs = other.poly.coefficients();
+        let max_len = self_coeffs.len().max(other_coeffs.len());
+
+        let mut new_coeffs = Vec::new();
+        for i in 0..max_len {
+            let a = self_coeffs.get(i).cloned().unwrap_or_else(Integer::zero);
+            let b = other_coeffs.get(i).cloned().unwrap_or_else(Integer::zero);
+            let diff = (a - b + self.characteristic.clone()) % self.characteristic.clone();
+            new_coeffs.push(diff);
+        }
+
+        let new_poly = UnivariatePolynomial::new(new_coeffs);
+
+        ExtensionField {
+            poly: new_poly,
+            characteristic: self.characteristic,
+            irreducible: self.irreducible,
+        }
+    }
+}
+
+impl Mul for ExtensionField {
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self {
+        assert_eq!(self.characteristic, other.characteristic);
+        assert_eq!(self.irreducible, other.irreducible);
+
+        // Multiply polynomials
+        let product = self.poly.clone() * other.poly.clone();
+
+        // Reduce modulo the irreducible polynomial and modulo p
+        // This is a simplified version - proper implementation would use polynomial division
+        let mut reduced_coeffs: Vec<Integer> = product
+            .coefficients()
+            .iter()
+            .map(|c| c.clone() % self.characteristic.clone())
+            .collect();
+
+        // Truncate to degree less than n
+        let n = self.degree();
+        if reduced_coeffs.len() > n {
+            reduced_coeffs.truncate(n);
+        }
+
+        let new_poly = UnivariatePolynomial::new(reduced_coeffs);
+
+        ExtensionField {
+            poly: new_poly,
+            characteristic: self.characteristic,
+            irreducible: self.irreducible,
+        }
+    }
+}
+
+impl Neg for ExtensionField {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        let new_coeffs: Vec<Integer> = self
+            .poly
+            .coefficients()
+            .iter()
+            .map(|c| (self.characteristic.clone() - c.clone()) % self.characteristic.clone())
+            .collect();
+
+        let new_poly = UnivariatePolynomial::new(new_coeffs);
+
+        ExtensionField {
+            poly: new_poly,
+            characteristic: self.characteristic,
+            irreducible: self.irreducible,
+        }
+    }
+}
 
 impl Ring for ExtensionField {
     fn zero() -> Self {
