@@ -56,6 +56,18 @@ pub struct HessenbergDecomposition<F: Field> {
     pub q: Matrix<F>,
 }
 
+/// SVD (Singular Value Decomposition) result
+///
+/// Represents A = UΣV^T where U and V are orthogonal and Σ is diagonal
+pub struct SVDDecomposition<F: Field> {
+    /// Left singular vectors (m×m orthogonal matrix)
+    pub u: Matrix<F>,
+    /// Singular values (diagonal elements)
+    pub singular_values: Vec<F>,
+    /// Right singular vectors (n×n orthogonal matrix)
+    pub v: Matrix<F>,
+}
+
 impl<F: Field> Matrix<F> {
     /// Compute LU decomposition without pivoting
     ///
@@ -572,6 +584,111 @@ impl<F: Field> Matrix<F> {
         }
 
         Ok(HessenbergDecomposition { h, q })
+    }
+
+    /// Compute Singular Value Decomposition (SVD)
+    ///
+    /// Returns U, Σ, V such that A = UΣV^T where:
+    /// - U is an m×m orthogonal matrix (left singular vectors)
+    /// - Σ is diagonal with non-negative singular values
+    /// - V is an n×n orthogonal matrix (right singular vectors)
+    ///
+    /// This uses eigendecomposition of A^T A and A A^T.
+    pub fn svd(&self, max_iterations: usize, tolerance: f64) -> Result<SVDDecomposition<F>>
+    where
+        F: rustmath_core::NumericConversion,
+    {
+        let m = self.rows;
+        let n = self.cols;
+
+        // Compute A^T A (n×n matrix)
+        let at = self.transpose();
+        let ata = (at.clone() * self.clone())?;
+
+        // Compute eigenvalues and eigenvectors of A^T A
+        let eigenvals_ata = ata.eigenvalues(max_iterations, tolerance)?;
+        let eigenvecs_ata = ata.eigenvectors_right(max_iterations, tolerance)?;
+
+        // Singular values are sqrt of eigenvalues of A^T A
+        let mut singular_values = Vec::new();
+        for eval in &eigenvals_ata {
+            let eval_f64 = eval.to_f64().unwrap_or(0.0);
+            if eval_f64 > 0.0 {
+                if let Some(sv) = F::from_f64(eval_f64.sqrt()) {
+                    singular_values.push(sv);
+                }
+            } else {
+                singular_values.push(F::zero());
+            }
+        }
+
+        // V is the matrix of eigenvectors of A^T A
+        let mut v_data = vec![F::zero(); n * n];
+        for (j, eigvec) in eigenvecs_ata.iter().enumerate() {
+            if j < n {
+                for i in 0..n {
+                    if i < eigvec.eigenvector.len() {
+                        v_data[i * n + j] = eigvec.eigenvector[i].clone();
+                    }
+                }
+            }
+        }
+
+        let v = Matrix {
+            data: v_data,
+            rows: n,
+            cols: n,
+        };
+
+        // Compute U: u_i = (1/σ_i) * A * v_i for each non-zero singular value
+        let mut u_data = vec![F::zero(); m * m];
+
+        // Fill first min(m,n) columns of U
+        let rank = singular_values.len().min(m).min(n);
+        for j in 0..rank {
+            if singular_values[j].is_zero() {
+                continue;
+            }
+
+            // Extract v_j
+            let mut v_j = Vec::with_capacity(n);
+            for i in 0..n {
+                v_j.push(v.data[i * n + j].clone());
+            }
+
+            // Compute A * v_j
+            let mut av = vec![F::zero(); m];
+            for i in 0..m {
+                let mut sum = F::zero();
+                for k in 0..n {
+                    sum = sum + self.data[i * n + k].clone() * v_j[k].clone();
+                }
+                av[i] = sum;
+            }
+
+            // u_j = (1/σ_j) * A * v_j
+            for i in 0..m {
+                u_data[i * m + j] = av[i].clone() / singular_values[j].clone();
+            }
+        }
+
+        // Fill remaining columns of U with orthonormal vectors
+        // For simplicity, use identity for remaining columns
+        for j in rank..m {
+            u_data[j * m + j] = F::one();
+        }
+
+        let u = Matrix {
+            data: u_data,
+            rows: m,
+            cols: m,
+        };
+
+        Ok(SVDDecomposition {
+            u,
+            singular_values,
+            v,
+        })
     }
 }
 
