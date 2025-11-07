@@ -2,9 +2,15 @@
 //!
 //! This crate provides polynomial arithmetic over various coefficient rings.
 
+pub mod factorization;
+pub mod multivariate;
 pub mod polynomial;
 pub mod univariate;
 
+pub use factorization::{
+    content, factor_over_integers, is_square_free, primitive_part, square_free_factorization,
+};
+pub use multivariate::{Monomial, MultivariatePolynomial};
 pub use polynomial::Polynomial;
 pub use univariate::UnivariatePolynomial;
 
