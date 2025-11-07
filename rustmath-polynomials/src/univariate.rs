@@ -86,6 +86,17 @@ impl<R: Ring> UnivariatePolynomial<R> {
     }
 
     /// Compute polynomial GCD (for polynomials over a field or Euclidean domain)
+    ///
+    /// # Limitations
+    ///
+    /// This implementation uses the Euclidean algorithm which requires exact division.
+    /// For polynomials with integer coefficients, this may fail or produce incorrect
+    /// results when the leading coefficient of the divisor doesn't divide the leading
+    /// coefficient of the dividend.
+    ///
+    /// **TODO**: Implement pseudo-division or subresultant-based GCD algorithm for
+    /// polynomials over integers (Z[x]). Until then, GCD over integer polynomials
+    /// works reliably only when coefficients divide cleanly.
     pub fn gcd(&self, other: &Self) -> Self
     where
         R: EuclideanDomain,
