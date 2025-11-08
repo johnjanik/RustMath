@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~76% (324 / 428 functions tracked)
+**Overall Progress**: ~76% (329 / 431 functions tracked)
 
 ---
 
@@ -737,14 +737,17 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| `EllipticCurve([a,b])` | ⬜ | | |
-| Point addition | ⬜ | | |
-| Torsion points | ⬜ | | |
-| Rank computation | ⬜ | | |
-| L-functions | ⬜ | | |
-| Modular forms | ⬜ | | |
+| `EllipticCurve([a,b])` | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Weierstrass form over rationals |
+| Point addition | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Group law with point at infinity |
+| Scalar multiplication | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Double-and-add algorithm |
+| Point negation | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | |
+| Discriminant & j-invariant | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Curve invariants |
+| Torsion points | ⬜ | | Advanced number theory |
+| Rank computation | ⬜ | | Complex, deferred |
+| L-functions | ⬜ | | Advanced analytic number theory |
+| Modular forms | ⬜ | | Advanced, deferred |
 
-**Progress**: 0/6 features (0%)
+**Progress**: 5/9 features (56%)
 
 ---
 
