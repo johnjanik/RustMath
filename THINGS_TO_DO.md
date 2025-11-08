@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~51% (242 / 475 functions tracked)
+**Overall Progress**: ~51% (244 / 475 functions tracked)
 
 ---
 
@@ -547,13 +547,13 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `stirling_number1(n, k)` | ✅ | `rustmath-combinatorics/src/lib.rs` | `stirling_first()` - unsigned Stirling numbers of first kind |
 | `stirling_number2(n, k)` | ✅ | `rustmath-combinatorics/src/lib.rs` | `stirling_second()` |
 | `bell_number(n)` | ✅ | `rustmath-combinatorics/src/lib.rs` | |
-| Set partitions | ⬜ | | |
-| Dyck words | ⬜ | | |
+| Set partitions | ✅ | `rustmath-combinatorics/src/lib.rs` | `SetPartition`, `set_partitions(n)` - partitions of sets into non-empty blocks |
+| Dyck words | ✅ | `rustmath-combinatorics/src/lib.rs` | `DyckWord`, `dyck_words(n)` - balanced sequences with Catalan number count |
 | Integer compositions | ✅ | `rustmath-combinatorics/src/lib.rs` | `compositions(n)`, `compositions_k(n, k)` - ordered partitions |
 | Perfect matchings | ⬜ | | |
 | Latin squares | ⬜ | | |
 
-**Progress**: 8/12 functions (67%)
+**Progress**: 10/12 functions (83%)
 
 ---
 
