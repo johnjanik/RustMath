@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~78% (341 / 439 functions tracked)
+**Overall Progress**: ~78% (345 / 443 functions tracked)
 
 ---
 
@@ -749,11 +749,15 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Point negation | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | |
 | Discriminant & j-invariant | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Curve invariants with correct formula |
 | Torsion points | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Point order, is_torsion, 2-torsion points, search for n-torsion |
+| Rational point search | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Bounded height search for rational points |
+| Isomorphism checking | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Via j-invariant comparison |
+| Quadratic twists | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Generate twisted curves |
+| Complex multiplication | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Detect CM curves (j=0 or j=1728) |
 | Rank computation | ⬜ | | Complex, requires descent |
 | L-functions | ⬜ | | Advanced analytic number theory |
 | Modular forms | ⬜ | | Advanced, deferred |
 
-**Progress**: 6/9 features (67%)
+**Progress**: 10/13 features (77%)
 
 ---
 
