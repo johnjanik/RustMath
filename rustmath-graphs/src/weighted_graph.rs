@@ -256,6 +256,59 @@ impl WeightedGraph {
 
         count == self.num_vertices
     }
+
+    /// Find shortest paths using Bellman-Ford algorithm
+    ///
+    /// Handles negative edge weights and detects negative cycles.
+    /// Returns distances or None if a negative cycle is detected.
+    /// Time complexity: O(VE)
+    pub fn bellman_ford(&self, source: usize) -> Result<Option<Vec<Option<i64>>>, String> {
+        if source >= self.num_vertices {
+            return Err("Source vertex out of bounds".to_string());
+        }
+
+        let mut distances = vec![None; self.num_vertices];
+        distances[source] = Some(0);
+
+        // Relax edges V-1 times
+        for _ in 0..self.num_vertices - 1 {
+            let mut updated = false;
+
+            for u in 0..self.num_vertices {
+                if let Some(dist_u) = distances[u] {
+                    for &(v, weight) in &self.adj[u] {
+                        let new_dist = dist_u + weight;
+
+                        if distances[v].is_none() || new_dist < distances[v].unwrap() {
+                            distances[v] = Some(new_dist);
+                            updated = true;
+                        }
+                    }
+                }
+            }
+
+            // Early termination if no updates
+            if !updated {
+                break;
+            }
+        }
+
+        // Check for negative cycles
+        for u in 0..self.num_vertices {
+            if let Some(dist_u) = distances[u] {
+                for &(v, weight) in &self.adj[u] {
+                    let new_dist = dist_u + weight;
+
+                    if distances[v].is_none() || new_dist < distances[v].unwrap() {
+                        // Negative cycle detected
+                        return Ok(None);
+                    }
+                }
+            }
+        }
+
+        Ok(Some(distances))
+    }
 }
 
 /// Edge for Prim's algorithm priority queue
@@ -376,5 +429,41 @@ mod tests {
 
         let mst = g.prim_mst();
         assert!(mst.is_none()); // No MST for disconnected graph
+    }
+
+    #[test]
+    fn test_bellman_ford() {
+        // Note: In undirected graphs, ANY negative edge creates a negative cycle
+        // (since u->v->u with negative weight = 2*negative_weight < 0)
+        // So we test with non-negative weights here
+        let mut g = WeightedGraph::new(5);
+        g.add_edge(0, 1, 4).unwrap();
+        g.add_edge(0, 2, 1).unwrap();
+        g.add_edge(1, 2, 2).unwrap();
+        g.add_edge(1, 3, 1).unwrap();
+        g.add_edge(2, 3, 5).unwrap();
+        g.add_edge(3, 4, 3).unwrap();
+
+        let result = g.bellman_ford(0).unwrap();
+        assert!(result.is_some());
+        let distances = result.unwrap();
+
+        assert_eq!(distances[0], Some(0));
+        assert_eq!(distances[1], Some(3)); // 0->2->1
+        assert_eq!(distances[2], Some(1)); // 0->2
+        assert_eq!(distances[3], Some(4)); // 0->2->1->3
+        assert_eq!(distances[4], Some(7)); // 0->2->1->3->4
+    }
+
+    #[test]
+    fn test_bellman_ford_negative_cycle() {
+        // Graph with a negative cycle
+        let mut g = WeightedGraph::new(3);
+        g.add_edge(0, 1, 1).unwrap();
+        g.add_edge(1, 2, -1).unwrap();
+        g.add_edge(2, 0, -1).unwrap(); // Creates negative cycle: 0->1->2->0 = 1-1-1 = -1
+
+        let result = g.bellman_ford(0).unwrap();
+        assert!(result.is_none()); // Should detect negative cycle
     }
 }

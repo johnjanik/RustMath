@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~61% (291 / 475 functions tracked)
+**Overall Progress**: ~62% (294 / 475 functions tracked)
 
 ---
 
@@ -565,11 +565,11 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
 | `Graph()` | ✅ | `rustmath-graphs/src/graph.rs` | Undirected |
-| `DiGraph()` | ⬜ | | Directed graphs |
+| `DiGraph()` | ✅ | `rustmath-graphs/src/digraph.rs` | Directed graphs with topological sort, SCC, DAG detection |
 | `.add_vertex(v)` | 🚧 | | Implicit in `new(n)` |
 | `.add_edge(u, v)` | ✅ | `rustmath-graphs/src/graph.rs` | |
 | `.add_edges(edges)` | ✅ | `rustmath-graphs/src/graph.rs` | Add multiple edges at once |
-| Weighted graphs | ⬜ | | |
+| Weighted graphs | ✅ | `rustmath-graphs/src/weighted_graph.rs` | WeightedGraph with Dijkstra, Bellman-Ford, Floyd-Warshall, Prim |
 | Multigraphs | ⬜ | | |
 | `.num_verts()` | ✅ | `rustmath-graphs/src/graph.rs` | `num_vertices()` |
 | `.num_edges()` | ✅ | `rustmath-graphs/src/graph.rs` | |
@@ -578,7 +578,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.neighbors(v)` | ✅ | `rustmath-graphs/src/graph.rs` | |
 | `.degree(v)` | ✅ | `rustmath-graphs/src/graph.rs` | |
 
-**Progress**: 10/13 functions (77%)
+**Progress**: 12/13 functions (92%)
 
 ### 7.2 Graph Algorithms (sage.graphs.graph_algorithms)
 **SageMath Source**: `src/sage/graphs/generic_graph.py`
@@ -617,11 +617,11 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.shortest_path_length(u, v)` | ✅ | `rustmath-graphs/src/graph.rs` | Returns path length only |
 | `.all_paths(u, v)` | ✅ | `rustmath-graphs/src/graph.rs` | Find all simple paths (backtracking) |
 | Dijkstra's algorithm | ✅ | `rustmath-graphs/src/weighted_graph.rs` | Priority queue-based shortest paths for weighted graphs |
-| Bellman-Ford | ⬜ | | Negative weights |
+| Bellman-Ford | ✅ | `rustmath-graphs/src/weighted_graph.rs` | Handles negative weights, detects negative cycles, O(VE) complexity |
 | Floyd-Warshall | ✅ | `rustmath-graphs/src/weighted_graph.rs` | All-pairs shortest paths with dynamic programming |
 | A* search | ⬜ | | Heuristic |
 
-**Progress**: 5/7 functions (71%)
+**Progress**: 6/7 functions (86%)
 
 ### 7.5 Trees and Spanning Trees (sage.graphs.spanning_tree)
 **SageMath Source**: `src/sage/graphs/spanning_tree.pyx`
@@ -1004,7 +1004,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 4. Symbolic Computation | 33 | 37 | 89% |
 | 5. Calculus | 30 | 30 | 100% |
 | 6. Combinatorics | 44 | 44 | 100% |
-| 7. Graph Theory | 47 | 59 | 80% |
+| 7. Graph Theory | 50 | 59 | 85% |
 | 8. Geometry | 0 | 15 | 0% |
 | 9. Algebraic Geometry | 0 | 11 | 0% |
 | 10. Cryptography | 3 | 18 | 17% |
@@ -1012,7 +1012,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 12. Group Theory | 0 | 14 | 0% |
 | 13-20. Advanced Topics | 1 | 49 | 2% |
 
-**TOTAL**: **291 / 475 functions** = **~61% complete**
+**TOTAL**: **294 / 475 functions** = **~62% complete**
 
 ### Files to Examine in SageMath Source
 

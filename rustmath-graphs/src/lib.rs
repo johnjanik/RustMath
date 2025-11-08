@@ -6,10 +6,12 @@
 pub mod graph;
 pub mod generators;
 pub mod weighted_graph;
+pub mod digraph;
 
 pub use graph::Graph;
 pub use generators::*;
 pub use weighted_graph::WeightedGraph;
+pub use digraph::DiGraph;
 
 #[cfg(test)]
 mod tests {
