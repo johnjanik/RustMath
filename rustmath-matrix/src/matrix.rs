@@ -5,7 +5,7 @@ use std::fmt;
 use std::ops::{Add, Mul, Sub};
 
 /// Generic matrix over a ring R
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Matrix<R: Ring> {
     data: Vec<R>,
     rows: usize,

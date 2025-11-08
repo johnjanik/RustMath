@@ -1,6 +1,6 @@
 //! Complex number implementation
 
-use rustmath_core::{Field, MathError, NumericConversion, Result, Ring};
+use rustmath_core::{CommutativeRing, Field, MathError, NumericConversion, Result, Ring};
 use rustmath_reals::Real;
 use std::fmt;
 use std::ops::{Add, Div, Mul, Neg, Sub};
@@ -320,6 +320,8 @@ impl Ring for Complex {
         self.real.is_one() && self.imag.is_zero()
     }
 }
+
+impl CommutativeRing for Complex {}
 
 impl Field for Complex {
     fn inverse(&self) -> Result<Self> {

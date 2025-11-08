@@ -77,6 +77,16 @@ impl<F: Field> SparseMatrix<F> {
         })
     }
 
+    /// Get the number of rows
+    pub fn rows(&self) -> usize {
+        self.rows
+    }
+
+    /// Get the number of columns
+    pub fn cols(&self) -> usize {
+        self.cols
+    }
+
     /// Create a sparse matrix from dense format
     ///
     /// Automatically detects non-zero elements and builds CSR representation.
@@ -144,16 +154,6 @@ impl<F: Field> SparseMatrix<F> {
         }
     }
 
-    /// Get the number of rows
-    pub fn rows(&self) -> usize {
-        self.rows
-    }
-
-    /// Get the number of columns
-    pub fn cols(&self) -> usize {
-        self.cols
-    }
-
     /// Get the number of non-zero elements
     pub fn nnz(&self) -> usize {
         self.values.len()
@@ -161,7 +161,7 @@ impl<F: Field> SparseMatrix<F> {
 
     /// Get the sparsity (fraction of zero elements)
     pub fn sparsity(&self) -> f64 {
-        let total = self.rows * self.cols;
+        let total = self.rows() * self.cols();
         if total == 0 {
             return 0.0;
         }
@@ -170,7 +170,7 @@ impl<F: Field> SparseMatrix<F> {
 
     /// Get element at position (i, j)
     pub fn get(&self, i: usize, j: usize) -> Result<F> {
-        if i >= self.rows || j >= self.cols {
+        if i >= self.rows() || j >= self.cols() {
             return Err(MathError::InvalidArgument(
                 "Index out of bounds".to_string(),
             ));
@@ -193,15 +193,15 @@ impl<F: Field> SparseMatrix<F> {
 
     /// Convert to dense matrix representation
     pub fn to_dense(&self) -> Vec<F> {
-        let mut dense = vec![F::zero(); self.rows * self.cols];
+        let mut dense = vec![F::zero(); self.rows() * self.cols()];
 
-        for i in 0..self.rows {
+        for i in 0..self.rows() {
             let row_start = self.row_ptrs[i];
             let row_end = self.row_ptrs[i + 1];
 
             for idx in row_start..row_end {
                 let j = self.col_indices[idx];
-                dense[i * self.cols + j] = self.values[idx].clone();
+                dense[i * self.cols() + j] = self.values[idx].clone();
             }
         }
 
@@ -210,15 +210,15 @@ impl<F: Field> SparseMatrix<F> {
 
     /// Matrix-vector multiplication: y = A * x
     pub fn matvec(&self, x: &[F]) -> Result<Vec<F>> {
-        if x.len() != self.cols {
+        if x.len() != self.cols() {
             return Err(MathError::InvalidArgument(
                 "Vector dimension doesn't match matrix columns".to_string(),
             ));
         }
 
-        let mut y = vec![F::zero(); self.rows];
+        let mut y = vec![F::zero(); self.rows()];
 
-        for i in 0..self.rows {
+        for i in 0..self.rows() {
             let row_start = self.row_ptrs[i];
             let row_end = self.row_ptrs[i + 1];
 
@@ -239,7 +239,7 @@ impl<F: Field> SparseMatrix<F> {
     pub fn transpose(&self) -> Self {
         let mut new_values = vec![F::zero(); self.values.len()];
         let mut new_col_indices = vec![0; self.col_indices.len()];
-        let mut new_row_ptrs = vec![0; self.cols + 1];
+        let mut new_row_ptrs = vec![0; self.cols() + 1];
 
         // Count non-zeros per column
         for &col in &self.col_indices {
@@ -247,7 +247,7 @@ impl<F: Field> SparseMatrix<F> {
         }
 
         // Compute cumulative sum
-        for i in 1..=self.cols {
+        for i in 1..=self.cols() {
             new_row_ptrs[i] += new_row_ptrs[i - 1];
         }
 
@@ -255,7 +255,7 @@ impl<F: Field> SparseMatrix<F> {
         let mut current_pos = new_row_ptrs.clone();
 
         // Fill in the values
-        for i in 0..self.rows {
+        for i in 0..self.rows() {
             let row_start = self.row_ptrs[i];
             let row_end = self.row_ptrs[i + 1];
 
@@ -271,8 +271,8 @@ impl<F: Field> SparseMatrix<F> {
         }
 
         SparseMatrix {
-            rows: self.cols,
-            cols: self.rows,
+            rows: self.cols(),
+            cols: self.rows(),
             values: new_values,
             col_indices: new_col_indices,
             row_ptrs: new_row_ptrs,
@@ -281,7 +281,7 @@ impl<F: Field> SparseMatrix<F> {
 
     /// Add two sparse matrices
     pub fn add(&self, other: &SparseMatrix<F>) -> Result<Self> {
-        if self.rows != other.rows || self.cols != other.cols {
+        if self.rows() != other.rows || self.cols() != other.cols {
             return Err(MathError::InvalidArgument(
                 "Matrix dimensions must match for addition".to_string(),
             ));
@@ -292,11 +292,11 @@ impl<F: Field> SparseMatrix<F> {
         let mut dense = self.to_dense();
         let other_dense = other.to_dense();
 
-        for i in 0..(self.rows * self.cols) {
+        for i in 0..(self.rows() * self.cols()) {
             dense[i] = dense[i].clone() + other_dense[i].clone();
         }
 
-        SparseMatrix::from_dense(self.rows, self.cols, &dense)
+        SparseMatrix::from_dense(self.rows(), self.cols(), &dense)
     }
 
     /// Scalar multiplication
@@ -308,8 +308,8 @@ impl<F: Field> SparseMatrix<F> {
         }
 
         SparseMatrix {
-            rows: self.rows,
-            cols: self.cols,
+            rows: self.rows(),
+            cols: self.cols(),
             values: new_values,
             col_indices: self.col_indices.clone(),
             row_ptrs: self.row_ptrs.clone(),
@@ -321,13 +321,13 @@ impl<F: Field> SparseMatrix<F> {
     /// Computes C = A * B where both A and B are sparse.
     /// Result is also returned as a sparse matrix.
     pub fn matmul(&self, other: &SparseMatrix<F>) -> Result<Self> {
-        if self.cols != other.rows {
+        if self.cols() != other.rows {
             return Err(MathError::InvalidArgument(
                 "Matrix dimensions don't match for multiplication".to_string(),
             ));
         }
 
-        let m = self.rows;
+        let m = self.rows();
         let n = other.cols;
 
         // Use a temporary dense row for accumulation
@@ -381,7 +381,7 @@ impl<F: Field> SparseMatrix<F> {
 
     /// Extract the diagonal as a vector
     pub fn diagonal(&self) -> Vec<F> {
-        let n = self.rows.min(self.cols);
+        let n = self.rows().min(self.cols());
         let mut diag = vec![F::zero(); n];
 
         for i in 0..n {
@@ -395,13 +395,13 @@ impl<F: Field> SparseMatrix<F> {
 
     /// Get a row as a dense vector
     pub fn get_row(&self, i: usize) -> Result<Vec<F>> {
-        if i >= self.rows {
+        if i >= self.rows() {
             return Err(MathError::InvalidArgument(
                 "Row index out of bounds".to_string(),
             ));
         }
 
-        let mut row = vec![F::zero(); self.cols];
+        let mut row = vec![F::zero(); self.cols()];
 
         let row_start = self.row_ptrs[i];
         let row_end = self.row_ptrs[i + 1];
@@ -416,15 +416,15 @@ impl<F: Field> SparseMatrix<F> {
 
     /// Get a column as a dense vector (slower than get_row due to CSR format)
     pub fn get_col(&self, j: usize) -> Result<Vec<F>> {
-        if j >= self.cols {
+        if j >= self.cols() {
             return Err(MathError::InvalidArgument(
                 "Column index out of bounds".to_string(),
             ));
         }
 
-        let mut col = vec![F::zero(); self.rows];
+        let mut col = vec![F::zero(); self.rows()];
 
-        for i in 0..self.rows {
+        for i in 0..self.rows() {
             col[i] = self.get(i, j)?;
         }
 
@@ -463,8 +463,8 @@ impl<F: Field> SparseMatrix<F> {
     ) -> Result<Self> {
         if row_start >= row_end
             || col_start >= col_end
-            || row_end > self.rows
-            || col_end > self.cols
+            || row_end > self.rows()
+            || col_end > self.cols()
         {
             return Err(MathError::InvalidArgument(
                 "Invalid submatrix range".to_string(),
@@ -515,7 +515,7 @@ impl<'a, F: Field> Iterator for SparseMatrixIterator<'a, F> {
     type Item = (usize, usize, &'a F);
 
     fn next(&mut self) -> Option<Self::Item> {
-        while self.row < self.matrix.rows {
+        while self.row < self.matrix.rows() {
             let row_start = self.matrix.row_ptrs[self.row];
             let row_end = self.matrix.row_ptrs[self.row + 1];
 
@@ -530,7 +530,7 @@ impl<'a, F: Field> Iterator for SparseMatrixIterator<'a, F> {
             }
 
             self.row += 1;
-            self.idx = if self.row < self.matrix.rows {
+            self.idx = if self.row < self.matrix.rows() {
                 self.matrix.row_ptrs[self.row]
             } else {
                 0
@@ -544,31 +544,36 @@ impl<'a, F: Field> Iterator for SparseMatrixIterator<'a, F> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rustmath_rationals::Rational;
 
     #[test]
     fn test_sparse_identity() {
-        let id: SparseMatrix<i32> = SparseMatrix::identity(3);
+        let id: SparseMatrix<Rational> = SparseMatrix::identity(3);
 
         assert_eq!(id.rows(), 3);
         assert_eq!(id.cols(), 3);
         assert_eq!(id.nnz(), 3);
 
-        assert_eq!(id.get(0, 0).unwrap(), 1);
-        assert_eq!(id.get(1, 1).unwrap(), 1);
-        assert_eq!(id.get(2, 2).unwrap(), 1);
-        assert_eq!(id.get(0, 1).unwrap(), 0);
+        assert_eq!(id.get(0, 0).unwrap(), Rational::from_integer(1));
+        assert_eq!(id.get(1, 1).unwrap(), Rational::from_integer(1));
+        assert_eq!(id.get(2, 2).unwrap(), Rational::from_integer(1));
+        assert_eq!(id.get(0, 1).unwrap(), Rational::from_integer(0));
     }
 
     #[test]
     fn test_from_dense() {
-        let dense = vec![1, 0, 2, 0, 0, 0, 3, 0, 4];
+        let dense = vec![
+            Rational::from_integer(1), Rational::from_integer(0), Rational::from_integer(2),
+            Rational::from_integer(0), Rational::from_integer(0), Rational::from_integer(0),
+            Rational::from_integer(3), Rational::from_integer(0), Rational::from_integer(4),
+        ];
         let sparse = SparseMatrix::from_dense(3, 3, &dense).unwrap();
 
         assert_eq!(sparse.nnz(), 4);
-        assert_eq!(sparse.get(0, 0).unwrap(), 1);
-        assert_eq!(sparse.get(0, 2).unwrap(), 2);
-        assert_eq!(sparse.get(2, 0).unwrap(), 3);
-        assert_eq!(sparse.get(2, 2).unwrap(), 4);
+        assert_eq!(sparse.get(0, 0).unwrap(), Rational::from_integer(1));
+        assert_eq!(sparse.get(0, 2).unwrap(), Rational::from_integer(2));
+        assert_eq!(sparse.get(2, 0).unwrap(), Rational::from_integer(3));
+        assert_eq!(sparse.get(2, 2).unwrap(), Rational::from_integer(4));
     }
 
     #[test]
@@ -576,48 +581,61 @@ mod tests {
         let sparse = SparseMatrix::from_csr(
             2,
             2,
-            vec![1, 2, 3, 4],
+            vec![Rational::from_integer(1), Rational::from_integer(2), Rational::from_integer(3), Rational::from_integer(4)],
             vec![0, 1, 0, 1],
             vec![0, 2, 4],
         )
         .unwrap();
 
         let dense = sparse.to_dense();
-        assert_eq!(dense, vec![1, 2, 3, 4]);
+        assert_eq!(dense, vec![
+            Rational::from_integer(1), Rational::from_integer(2),
+            Rational::from_integer(3), Rational::from_integer(4)
+        ]);
     }
 
     #[test]
     fn test_matvec() {
         // Matrix: [1 2]
         //         [3 4]
-        let sparse = SparseMatrix::from_dense(2, 2, &[1, 2, 3, 4]).unwrap();
-        let x = vec![5, 6];
+        let sparse = SparseMatrix::from_dense(2, 2, &[
+            Rational::from_integer(1), Rational::from_integer(2),
+            Rational::from_integer(3), Rational::from_integer(4)
+        ]).unwrap();
+        let x = vec![Rational::from_integer(5), Rational::from_integer(6)];
 
         // Result should be [1*5 + 2*6, 3*5 + 4*6] = [17, 39]
         let y = sparse.matvec(&x).unwrap();
 
-        assert_eq!(y, vec![17, 39]);
+        assert_eq!(y, vec![Rational::from_integer(17), Rational::from_integer(39)]);
     }
 
     #[test]
     fn test_transpose() {
         // Matrix: [1 2]
         //         [3 4]
-        let sparse = SparseMatrix::from_dense(2, 2, &[1, 2, 3, 4]).unwrap();
+        let sparse = SparseMatrix::from_dense(2, 2, &[
+            Rational::from_integer(1), Rational::from_integer(2),
+            Rational::from_integer(3), Rational::from_integer(4)
+        ]).unwrap();
         let transposed = sparse.transpose();
 
         // Transpose should be: [1 3]
         //                      [2 4]
-        assert_eq!(transposed.get(0, 0).unwrap(), 1);
-        assert_eq!(transposed.get(0, 1).unwrap(), 3);
-        assert_eq!(transposed.get(1, 0).unwrap(), 2);
-        assert_eq!(transposed.get(1, 1).unwrap(), 4);
+        assert_eq!(transposed.get(0, 0).unwrap(), Rational::from_integer(1));
+        assert_eq!(transposed.get(0, 1).unwrap(), Rational::from_integer(3));
+        assert_eq!(transposed.get(1, 0).unwrap(), Rational::from_integer(2));
+        assert_eq!(transposed.get(1, 1).unwrap(), Rational::from_integer(4));
     }
 
     #[test]
     fn test_sparsity() {
         // 3x3 matrix with 2 non-zero elements
-        let sparse = SparseMatrix::from_dense(3, 3, &[1, 0, 0, 0, 2, 0, 0, 0, 0]).unwrap();
+        let sparse = SparseMatrix::from_dense(3, 3, &[
+            Rational::from_integer(1), Rational::from_integer(0), Rational::from_integer(0),
+            Rational::from_integer(0), Rational::from_integer(2), Rational::from_integer(0),
+            Rational::from_integer(0), Rational::from_integer(0), Rational::from_integer(0)
+        ]).unwrap();
 
         // Sparsity should be 7/9 ≈ 0.777
         let sparsity = sparse.sparsity();

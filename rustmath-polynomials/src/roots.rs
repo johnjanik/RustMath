@@ -1,7 +1,8 @@
 //! Polynomial root finding algorithms
 
+use crate::polynomial::Polynomial;
 use crate::univariate::UnivariatePolynomial;
-use rustmath_core::{NumericConversion, Result, MathError};
+use rustmath_core::{NumericConversion, Result, MathError, Ring};
 use rustmath_rationals::Rational;
 
 /// Find rational roots of a polynomial using the rational root theorem

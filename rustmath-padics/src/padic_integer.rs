@@ -44,7 +44,7 @@ impl PadicInteger {
         let modulus = prime.pow(precision as u32);
 
         // Reduce value modulo p^precision
-        let (_, reduced) = value.div_rem(&modulus)?;
+        let reduced = value.clone() % modulus.clone();
         let value = if reduced.signum() < 0 {
             reduced + modulus
         } else {
@@ -94,7 +94,7 @@ impl PadicInteger {
 
     /// Get the residue (value modulo p)
     pub fn residue(&self) -> Integer {
-        let (_, residue) = self.value.div_rem(&self.prime).unwrap();
+        let residue = self.value.clone() % self.prime.clone();
         if residue.signum() < 0 {
             residue + self.prime.clone()
         } else {
@@ -132,7 +132,7 @@ impl PadicInteger {
         }
 
         let modulus = self.prime.pow(new_precision as u32);
-        let (_, reduced) = self.value.div_rem(&modulus)?;
+        let reduced = self.value.clone() % modulus.clone();
 
         Ok(PadicInteger {
             value: reduced,
@@ -154,7 +154,17 @@ impl PadicInteger {
         }
 
         // Use extended GCD to find inverse
-        let inv = self.value.mod_inverse(&modulus)?;
+        let (gcd_check, s, _) = self.value.extended_gcd(&modulus);
+        if !gcd_check.is_one() {
+            return Err(MathError::NotInvertible);
+        }
+
+        // s is the inverse, but might be negative
+        let inv = if s.signum() < 0 {
+            s + modulus.clone()
+        } else {
+            s % modulus.clone()
+        };
 
         Ok(PadicInteger {
             value: inv,

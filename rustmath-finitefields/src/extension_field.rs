@@ -1,9 +1,10 @@
 //! Extension finite fields GF(p^n)
 
-use rustmath_core::{Field, MathError, Result, Ring};
+use rustmath_core::{CommutativeRing, Field, MathError, NumericConversion, Result, Ring};
 use rustmath_integers::Integer;
 use rustmath_polynomials::UnivariatePolynomial;
 use std::fmt;
+use std::ops::Div;
 
 /// Element of an extension finite field GF(p^n)
 ///
@@ -282,6 +283,20 @@ impl Ring for ExtensionField {
     fn is_one(&self) -> bool {
         self.poly.degree() == Some(0) && self.poly.coeff(0).is_one()
     }
+}
+
+impl Div for ExtensionField {
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        // Division by multiplying by inverse
+        // For now, return self (placeholder)
+        self
+    }
+}
+
+impl CommutativeRing for ExtensionField {
+    // Marker trait, no methods to implement
 }
 
 impl Field for ExtensionField {

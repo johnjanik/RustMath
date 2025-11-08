@@ -45,8 +45,8 @@ impl<R: EuclideanDomain> Matrix<R> {
     /// - Solving systems of linear Diophantine equations
     /// - Computing the structure of finitely generated modules
     pub fn smith_normal_form(&self) -> Result<SmithNormalForm<R>> {
-        let m = self.rows;
-        let n = self.cols;
+        let m = self.rows();
+        let n = self.cols();
 
         // Initialize working matrix and transformation matrices
         let mut s = self.clone();
@@ -82,9 +82,9 @@ impl<R: EuclideanDomain> Matrix<R> {
 
                 // Eliminate row k (to the right of pivot)
                 for j in (k + 1)..n {
-                    if !s.data[k * n + j].is_zero() {
-                        let pivot_val = s.data[k * n + k].clone();
-                        let target_val = s.data[k * n + j].clone();
+                    if !s.data()[k * n + j].is_zero() {
+                        let pivot_val = s.data()[k * n + k].clone();
+                        let target_val = s.data()[k * n + j].clone();
 
                         let (gcd, a, b) = pivot_val.extended_gcd(&target_val);
 
@@ -96,9 +96,9 @@ impl<R: EuclideanDomain> Matrix<R> {
 
                 // Eliminate column k (below pivot)
                 for i in (k + 1)..m {
-                    if !s.data[i * n + k].is_zero() {
-                        let pivot_val = s.data[k * n + k].clone();
-                        let target_val = s.data[i * n + k].clone();
+                    if !s.data()[i * n + k].is_zero() {
+                        let pivot_val = s.data()[k * n + k].clone();
+                        let target_val = s.data()[i * n + k].clone();
 
                         let (gcd, a, b) = pivot_val.extended_gcd(&target_val);
 
@@ -127,8 +127,8 @@ impl<R: EuclideanDomain> Matrix<R> {
     /// - Each pivot divides all entries to its right
     /// - Entries above each pivot are non-negative and smaller than the pivot
     pub fn hermite_normal_form(&self) -> Result<HermiteNormalForm<R>> {
-        let m = self.rows;
-        let n = self.cols;
+        let m = self.rows();
+        let n = self.cols();
 
         let mut h = self.clone();
         let mut u = Matrix::identity(m);
@@ -144,7 +144,7 @@ impl<R: EuclideanDomain> Matrix<R> {
             // Find non-zero entry in this column at or below pivot_row
             let mut found = None;
             for row in pivot_row..m {
-                if !h.data[row * n + col].is_zero() {
+                if !h.data()[row * n + col].is_zero() {
                     found = Some(row);
                     break;
                 }
@@ -168,9 +168,9 @@ impl<R: EuclideanDomain> Matrix<R> {
                 let mut changed = false;
 
                 for row in (current_row + 1)..m {
-                    if !h.data[row * n + col].is_zero() {
-                        let pivot_val = h.data[current_row * n + col].clone();
-                        let target_val = h.data[row * n + col].clone();
+                    if !h.data()[row * n + col].is_zero() {
+                        let pivot_val = h.data()[current_row * n + col].clone();
+                        let target_val = h.data()[row * n + col].clone();
 
                         let (gcd, a, b) = pivot_val.extended_gcd(&target_val);
 
@@ -186,11 +186,11 @@ impl<R: EuclideanDomain> Matrix<R> {
                 // After elimination, the pivot might have moved to a different row
                 // Find the smallest non-zero entry in this column
                 let mut smallest_row = current_row;
-                let mut smallest_norm = h.data[current_row * n + col].norm();
+                let mut smallest_norm = h.data()[current_row * n + col].norm();
 
                 for row in (current_row + 1)..m {
-                    if !h.data[row * n + col].is_zero() {
-                        let norm = h.data[row * n + col].norm();
+                    if !h.data()[row * n + col].is_zero() {
+                        let norm = h.data()[row * n + col].norm();
                         if norm < smallest_norm {
                             smallest_norm = norm;
                             smallest_row = row;
@@ -206,23 +206,23 @@ impl<R: EuclideanDomain> Matrix<R> {
 
             // Reduce entries above the pivot
             for row in 0..current_row {
-                if !h.data[row * n + col].is_zero() {
-                    let pivot_val = h.data[current_row * n + col].clone();
-                    let target_val = h.data[row * n + col].clone();
+                if !h.data()[row * n + col].is_zero() {
+                    let pivot_val = h.data()[current_row * n + col].clone();
+                    let target_val = h.data()[row * n + col].clone();
 
                     // Compute quotient: target_val = q * pivot_val + r
                     let (q, _r) = target_val.div_rem(&pivot_val)?;
 
                     // Subtract q times the pivot row from this row
                     for c in 0..n {
-                        let val = h.data[row * n + c].clone() - q.clone() * h.data[current_row * n + c].clone();
-                        h.data[row * n + c] = val;
+                        let val = h.data()[row * n + c].clone() - q.clone() * h.data()[current_row * n + c].clone();
+                        h.data_mut()[row * n + c] = val;
                     }
 
                     // Update transformation matrix
                     for c in 0..m {
-                        let val = u.data[row * n + c].clone() - q.clone() * u.data[current_row * n + c].clone();
-                        u.data[row * n + c] = val;
+                        let val = u.data()[row * n + c].clone() - q.clone() * u.data()[current_row * n + c].clone();
+                        u.data_mut()[row * n + c] = val;
                     }
                 }
             }
@@ -237,15 +237,15 @@ impl<R: EuclideanDomain> Matrix<R> {
 
     /// Find the position of the smallest non-zero entry in the submatrix starting at (k, k)
     fn find_pivot_for_smith(&self, mat: &Matrix<R>, k: usize) -> Result<Option<(usize, usize)>> {
-        let m = mat.rows;
-        let n = mat.cols;
+        let m = mat.rows();
+        let n = mat.cols();
 
         let mut min_norm = u64::MAX;
         let mut pivot = None;
 
         for i in k..m {
             for j in k..n {
-                let val = &mat.data[i * n + j];
+                let val = &mat.data()[i * n + j];
                 if !val.is_zero() {
                     let norm = val.norm();
                     if norm < min_norm {
@@ -275,7 +275,7 @@ impl<R: EuclideanDomain> Matrix<R> {
         s: &R,
         t: &R,
     ) -> Result<()> {
-        let n = mat.cols;
+        let n = mat.cols();
 
         // Compute multipliers: u = a/gcd, v = b/gcd
         let (u, _) = a.div_rem(gcd)?;
@@ -289,8 +289,8 @@ impl<R: EuclideanDomain> Matrix<R> {
         let mut new_row2 = vec![R::zero(); n];
 
         for j in 0..n {
-            let r1_val = mat.data[row1 * n + j].clone();
-            let r2_val = mat.data[row2 * n + j].clone();
+            let r1_val = mat.data_mut()[row1 * n + j].clone();
+            let r2_val = mat.data_mut()[row2 * n + j].clone();
 
             new_row1[j] = s.clone() * r1_val.clone() + t.clone() * r2_val.clone();
             new_row2[j] = u.clone() * r2_val - v.clone() * r1_val;
@@ -298,26 +298,26 @@ impl<R: EuclideanDomain> Matrix<R> {
 
         // Update matrix
         for j in 0..n {
-            mat.data[row1 * n + j] = new_row1[j].clone();
-            mat.data[row2 * n + j] = new_row2[j].clone();
+            mat.data_mut()[row1 * n + j] = new_row1[j].clone();
+            mat.data_mut()[row2 * n + j] = new_row2[j].clone();
         }
 
         // Apply same transformation to the transform matrix
-        let transform_cols = transform.cols;
+        let transform_cols = transform.cols();
         let mut new_t_row1 = vec![R::zero(); transform_cols];
         let mut new_t_row2 = vec![R::zero(); transform_cols];
 
         for j in 0..transform_cols {
-            let t1_val = transform.data[row1 * transform_cols + j].clone();
-            let t2_val = transform.data[row2 * transform_cols + j].clone();
+            let t1_val = transform.data_mut()[row1 * transform_cols + j].clone();
+            let t2_val = transform.data_mut()[row2 * transform_cols + j].clone();
 
             new_t_row1[j] = s.clone() * t1_val.clone() + t.clone() * t2_val.clone();
             new_t_row2[j] = u.clone() * t2_val - v.clone() * t1_val;
         }
 
         for j in 0..transform_cols {
-            transform.data[row1 * transform_cols + j] = new_t_row1[j].clone();
-            transform.data[row2 * transform_cols + j] = new_t_row2[j].clone();
+            transform.data_mut()[row1 * transform_cols + j] = new_t_row1[j].clone();
+            transform.data_mut()[row2 * transform_cols + j] = new_t_row2[j].clone();
         }
 
         Ok(())
@@ -336,8 +336,8 @@ impl<R: EuclideanDomain> Matrix<R> {
         s: &R,
         t: &R,
     ) -> Result<()> {
-        let m = mat.rows;
-        let n = mat.cols;
+        let m = mat.rows();
+        let n = mat.cols();
 
         // Compute multipliers
         let (u, _) = a.div_rem(gcd)?;
@@ -345,27 +345,27 @@ impl<R: EuclideanDomain> Matrix<R> {
 
         // Apply column transformation
         for i in 0..m {
-            let c1_val = mat.data[i * n + col1].clone();
-            let c2_val = mat.data[i * n + col2].clone();
+            let c1_val = mat.data_mut()[i * n + col1].clone();
+            let c2_val = mat.data_mut()[i * n + col2].clone();
 
             let new_c1 = s.clone() * c1_val.clone() + t.clone() * c2_val.clone();
             let new_c2 = u.clone() * c2_val - v.clone() * c1_val;
 
-            mat.data[i * n + col1] = new_c1;
-            mat.data[i * n + col2] = new_c2;
+            mat.data_mut()[i * n + col1] = new_c1;
+            mat.data_mut()[i * n + col2] = new_c2;
         }
 
         // Apply to transformation matrix
-        let transform_rows = transform.rows;
+        let transform_rows = transform.rows();
         for i in 0..transform_rows {
-            let c1_val = transform.data[i * n + col1].clone();
-            let c2_val = transform.data[i * n + col2].clone();
+            let c1_val = transform.data_mut()[i * n + col1].clone();
+            let c2_val = transform.data_mut()[i * n + col2].clone();
 
             let new_c1 = s.clone() * c1_val.clone() + t.clone() * c2_val.clone();
             let new_c2 = u.clone() * c2_val - v.clone() * c1_val;
 
-            transform.data[i * n + col1] = new_c1;
-            transform.data[i * n + col2] = new_c2;
+            transform.data_mut()[i * n + col1] = new_c1;
+            transform.data_mut()[i * n + col2] = new_c2;
         }
 
         Ok(())
@@ -378,12 +378,12 @@ impl<R: EuclideanDomain> Matrix<R> {
         _p: &mut Matrix<R>,
         _q: &mut Matrix<R>,
     ) -> Result<()> {
-        let n = mat.cols;
-        let min_dim = mat.rows.min(mat.cols);
+        let n = mat.cols();
+        let min_dim = mat.rows().min(mat.cols());
 
         for i in 0..(min_dim - 1) {
-            let d_i = mat.data[i * n + i].clone();
-            let d_i_plus_1 = mat.data[(i + 1) * n + (i + 1)].clone();
+            let d_i = mat.data_mut()[i * n + i].clone();
+            let d_i_plus_1 = mat.data_mut()[(i + 1) * n + (i + 1)].clone();
 
             if !d_i.is_zero() && !d_i_plus_1.is_zero() {
                 // Check if d_i divides d_{i+1}
@@ -400,19 +400,6 @@ impl<R: EuclideanDomain> Matrix<R> {
         Ok(())
     }
 
-    /// Swap two rows in the matrix
-    fn swap_rows(&mut self, row1: usize, row2: usize) {
-        if row1 == row2 {
-            return;
-        }
-
-        let n = self.cols;
-        for j in 0..n {
-            let idx1 = row1 * n + j;
-            let idx2 = row2 * n + j;
-            self.data.swap(idx1, idx2);
-        }
-    }
 
     /// Swap two columns in the matrix
     fn swap_cols(&mut self, col1: usize, col2: usize) {
@@ -420,12 +407,12 @@ impl<R: EuclideanDomain> Matrix<R> {
             return;
         }
 
-        let m = self.rows;
-        let n = self.cols;
+        let m = self.rows();
+        let n = self.cols();
         for i in 0..m {
             let idx1 = i * n + col1;
             let idx2 = i * n + col2;
-            self.data.swap(idx1, idx2);
+            self.data_mut().swap(idx1, idx2);
         }
     }
 }
@@ -433,24 +420,29 @@ impl<R: EuclideanDomain> Matrix<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rustmath_integers::Integer;
+    use rustmath_core::Ring;
 
     #[test]
     fn test_smith_normal_form_simple() {
         // Simple 2x2 matrix
-        let m = Matrix::from_vec(2, 2, vec![2, 4, 6, 8]).unwrap();
+        let m = Matrix::from_vec(2, 2, vec![
+            Integer::from(2), Integer::from(4),
+            Integer::from(6), Integer::from(8)
+        ]).unwrap();
 
         let snf = m.smith_normal_form().unwrap();
 
         // The result should be diagonal with d1 | d2
-        assert!(snf.s.data[0 * 2 + 1].is_zero()); // off-diagonal
-        assert!(snf.s.data[1 * 2 + 0].is_zero()); // off-diagonal
+        assert!(snf.s.data()[0 * 2 + 1].is_zero()); // off-diagonal
+        assert!(snf.s.data()[1 * 2 + 0].is_zero()); // off-diagonal
 
         // Check diagonal entries
-        let d1 = snf.s.data[0];
-        let d2 = snf.s.data[3];
+        let d1 = &snf.s.data()[0];
+        let d2 = &snf.s.data()[3];
 
         if !d2.is_zero() {
-            let (_q, r) = d2.div_rem(&d1).unwrap();
+            let (_q, r) = d2.clone().div_rem(d1).unwrap();
             assert!(r.is_zero(), "d1 should divide d2");
         }
     }
@@ -458,18 +450,25 @@ mod tests {
     #[test]
     fn test_hermite_normal_form_simple() {
         // Simple 2x2 matrix
-        let m = Matrix::from_vec(2, 2, vec![2, 3, 4, 5]).unwrap();
+        let m = Matrix::from_vec(2, 2, vec![
+            Integer::from(2), Integer::from(3),
+            Integer::from(4), Integer::from(5)
+        ]).unwrap();
 
         let hnf = m.hermite_normal_form().unwrap();
 
         // Result should be upper triangular
         // (entries below diagonal should be zero)
-        assert!(hnf.h.data[1 * 2 + 0].is_zero() || hnf.h.data[0 * 2 + 0].is_zero());
+        assert!(hnf.h.data()[1 * 2 + 0].is_zero() || hnf.h.data()[0 * 2 + 0].is_zero());
     }
 
     #[test]
     fn test_hermite_3x3() {
-        let m = Matrix::from_vec(3, 3, vec![1, 2, 3, 4, 5, 6, 7, 8, 9]).unwrap();
+        let m = Matrix::from_vec(3, 3, vec![
+            Integer::from(1), Integer::from(2), Integer::from(3),
+            Integer::from(4), Integer::from(5), Integer::from(6),
+            Integer::from(7), Integer::from(8), Integer::from(9)
+        ]).unwrap();
 
         let result = m.hermite_normal_form();
         assert!(result.is_ok());
@@ -478,7 +477,7 @@ mod tests {
 
         // Verify H = U * A
         // This is a basic sanity check
-        assert_eq!(hnf.h.rows, 3);
-        assert_eq!(hnf.h.cols, 3);
+        assert_eq!(hnf.h.rows(), 3);
+        assert_eq!(hnf.h.cols(), 3);
     }
 }

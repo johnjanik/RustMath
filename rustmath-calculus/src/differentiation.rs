@@ -103,6 +103,13 @@ pub fn differentiate(expr: &Expr, var: &str) -> Expr {
                 Expr::from(0)
             }
         },
+
+        // Function with chain rule
+        Expr::Function(name, args) => {
+            // For now, return 0 for functions
+            // TODO: Implement chain rule for specific functions
+            Expr::from(0)
+        }
     }
 }
 

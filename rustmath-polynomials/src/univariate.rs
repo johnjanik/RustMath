@@ -42,6 +42,25 @@ impl<R: Ring> UnivariatePolynomial<R> {
         &self.coeffs
     }
 
+    /// Get the degree of the polynomial
+    pub fn degree(&self) -> Option<usize> {
+        if self.coeffs.len() == 1 && self.coeffs[0].is_zero() {
+            None // Zero polynomial has undefined degree
+        } else {
+            Some(self.coeffs.len() - 1)
+        }
+    }
+
+    /// Get coefficient at given degree
+    pub fn coeff(&self, degree: usize) -> &R {
+        self.coeffs.get(degree).unwrap_or(&self.coeffs[0])
+    }
+
+    /// Check if this is the zero polynomial
+    pub fn is_zero(&self) -> bool {
+        self.coeffs.len() == 1 && self.coeffs[0].is_zero()
+    }
+
     /// Multiply by a scalar
     pub fn scalar_mul(&self, scalar: &R) -> Self {
         if scalar.is_zero() {
@@ -131,7 +150,7 @@ impl<R: Ring> UnivariatePolynomial<R> {
     /// For coefficient ring where division by integers is available
     pub fn integrate(&self) -> Self
     where
-        R: rustmath_core::NumericConversion,
+        R: rustmath_core::NumericConversion + rustmath_core::Field,
     {
         if self.is_zero() {
             return UnivariatePolynomial::new(vec![R::zero()]);
@@ -145,7 +164,7 @@ impl<R: Ring> UnivariatePolynomial<R> {
             let divisor = R::from_i64((i + 1) as i64);
             // For integer coefficients, this is an approximation
             // In a proper implementation, we'd need rational coefficients
-            let new_coeff = c.clone() / divisor;
+            let new_coeff = c.clone() * divisor.inverse().unwrap();
             coeffs.push(new_coeff);
         }
 
@@ -157,7 +176,7 @@ impl<R: Ring> UnivariatePolynomial<R> {
     /// ∫[a,b] p(x)dx = P(b) - P(a) where P is the antiderivative
     pub fn definite_integral(&self, a: &R, b: &R) -> R
     where
-        R: rustmath_core::NumericConversion,
+        R: rustmath_core::NumericConversion + rustmath_core::Field,
     {
         let antiderivative = self.integrate();
         antiderivative.eval(b) - antiderivative.eval(a)

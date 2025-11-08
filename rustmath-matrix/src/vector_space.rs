@@ -369,12 +369,12 @@ mod tests {
         let basis = v.basis();
 
         // e_1 = [1, 0]
-        assert_eq!(basis[0][0], Rational::from(1));
-        assert_eq!(basis[0][1], Rational::from(0));
+        assert_eq!(basis[0][0], Rational::from_integer(1));
+        assert_eq!(basis[0][1], Rational::from_integer(0));
 
         // e_2 = [0, 1]
-        assert_eq!(basis[1][0], Rational::from(0));
-        assert_eq!(basis[1][1], Rational::from(1));
+        assert_eq!(basis[1][0], Rational::from_integer(0));
+        assert_eq!(basis[1][1], Rational::from_integer(1));
     }
 
     #[test]
@@ -382,11 +382,11 @@ mod tests {
         let v: VectorSpace<Rational> = VectorSpace::new(2);
 
         // Vector [3, 4] should have coordinates [3, 4] in standard basis
-        let vec = vec![Rational::from(3), Rational::from(4)];
+        let vec = vec![Rational::from_integer(3), Rational::from_integer(4)];
         let coords = v.coordinates(&vec).unwrap();
 
-        assert_eq!(coords[0], Rational::from(3));
-        assert_eq!(coords[1], Rational::from(4));
+        assert_eq!(coords[0], Rational::from_integer(3));
+        assert_eq!(coords[1], Rational::from_integer(4));
     }
 
     #[test]
@@ -405,7 +405,7 @@ mod tests {
         let v: VectorSpace<Rational> = VectorSpace::new(2);
 
         // Any 2D vector should be in R^2
-        let vec = vec![Rational::from(5), Rational::from(7)];
+        let vec = vec![Rational::from_integer(5), Rational::from_integer(7)];
         assert!(v.contains(&vec));
     }
 }
