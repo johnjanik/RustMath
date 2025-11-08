@@ -1,0 +1,11 @@
+[package]
+name = "rustmath-crypto"
+version.workspace = true
+edition = "2021"
+
+[dependencies]
+rustmath-core = { path = "../rustmath-core" }
+rustmath-integers = { path = "../rustmath-integers" }
+rustmath-rationals = { path = "../rustmath-rationals" }
+rustmath-finitefields = { path = "../rustmath-finitefields" }
+rustmath-matrix = { path = "../rustmath-matrix" }
