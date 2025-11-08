@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~75% (321 / 428 functions tracked)
+**Overall Progress**: ~76% (324 / 428 functions tracked)
 
 ---
 
@@ -686,10 +686,10 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.faces()` | ✅ | `rustmath-geometry/src/polyhedron.rs` | Returns face list |
 | `.volume()` | ✅ | `rustmath-geometry/src/polyhedron.rs` | Divergence theorem for convex polyhedra |
 | `.is_lattice_polytope()` | ✅ | `rustmath-geometry/src/polyhedron.rs` | Checks integer coordinates |
-| Convex hull | 🚧 | `rustmath-geometry/src/polygon.rs` | 2D only (Graham's scan) |
-| Face lattice | ⬜ | | |
+| Convex hull | ✅ | `rustmath-geometry/src/convex_hull_3d.rs`, `polygon.rs` | 2D Graham's scan, 3D gift wrapping |
+| Face lattice | ✅ | `rustmath-geometry/src/face_lattice.rs` | Complete face lattice with f-vector computation |
 
-**Progress**: 5/7 functions (71%)
+**Progress**: 7/7 functions (100%)
 
 ### 8.2 Toric Geometry (sage.geometry.toric_varieties)
 **SageMath Source**: `src/sage/geometry/toric_`
@@ -708,12 +708,12 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
 | Convex hull (2D) | ✅ | `rustmath-geometry/src/polygon.rs` | Graham's scan algorithm, O(n log n) |
-| Voronoi diagrams | ⬜ | | |
-| Delaunay triangulation | ⬜ | | |
+| Voronoi diagrams | ⬜ | | Complex, deferred |
+| Delaunay triangulation | ✅ | `rustmath-geometry/src/triangulation.rs` | Bowyer-Watson algorithm for 2D |
 | Line intersection | ✅ | `rustmath-geometry/src/line.rs` | Line and line segment intersection |
 | Point in polygon | ✅ | `rustmath-geometry/src/polygon.rs` | Ray casting algorithm |
 
-**Progress**: 3/5 functions (60%)
+**Progress**: 4/5 functions (80%)
 
 ---
 
