@@ -200,6 +200,170 @@ impl Expr {
     fn is_minus_one(&self) -> bool {
         matches!(self, Expr::Integer(i) if i.to_i64() == Some(-1))
     }
+
+    /// Integration by parts: ∫ u dv = uv - ∫ v du
+    ///
+    /// # Arguments
+    ///
+    /// * `u` - The u function
+    /// * `dv` - The dv function (derivative already taken)
+    /// * `var` - Variable of integration
+    ///
+    /// # Returns
+    ///
+    /// The result of integration by parts if successful
+    pub fn integrate_by_parts(u: &Expr, dv: &Expr, var: &Symbol) -> Option<Expr> {
+        // Compute du
+        let du = u.differentiate(var);
+
+        // Integrate dv to get v
+        let v = dv.integrate(var)?;
+
+        // Compute ∫ v du
+        let v_du = (v.clone() * du).integrate(var)?;
+
+        // Return uv - ∫ v du
+        Some(u.clone() * v - v_du)
+    }
+
+    /// Try common integration by parts patterns
+    ///
+    /// Automatically selects u and dv for common patterns
+    pub fn try_integration_by_parts(&self, var: &Symbol) -> Option<Expr> {
+        match self {
+            // ∫ x * sin(x) dx
+            Expr::Binary(BinaryOp::Mul, left, right) => {
+                // Try left as u, right as dv
+                if let Some(result) = Self::integrate_by_parts(left, right, var) {
+                    return Some(result);
+                }
+
+                // Try right as u, left as dv
+                if let Some(result) = Self::integrate_by_parts(right, left, var) {
+                    return Some(result);
+                }
+
+                None
+            }
+            _ => None,
+        }
+    }
+
+    /// Integration by substitution: if f(x) = g(u(x)) * u'(x), then ∫f dx = ∫g(u) du
+    ///
+    /// # Arguments
+    ///
+    /// * `substitution` - The substitution u = substitution(x)
+    /// * `var` - Original variable
+    /// * `new_var` - New variable name
+    ///
+    /// # Returns
+    ///
+    /// The integral in terms of the new variable
+    pub fn integrate_with_substitution(
+        &self,
+        substitution: &Expr,
+        var: &Symbol,
+        new_var: &Symbol,
+    ) -> Option<Expr> {
+        // Compute du/dx
+        let du_dx = substitution.differentiate(var);
+
+        // Try to write integrand as g(u) * du/dx
+        // This is a simplified version - full implementation would need pattern matching
+
+        // For now, handle simple case: ∫ f(g(x)) * g'(x) dx
+        // Substitute u for g(x) everywhere
+        let mut transformed = self.clone();
+
+        // Replace substitution with new_var
+        // This is a placeholder - full implementation would be more sophisticated
+        transformed = transformed.substitute(var, &Expr::Symbol(new_var.clone()));
+
+        // Integrate with respect to new variable
+        let integrated = transformed.integrate(new_var)?;
+
+        // Substitute back
+        Some(integrated.substitute(new_var, substitution))
+    }
+}
+
+/// Advanced integration techniques
+pub mod advanced {
+    use super::*;
+
+    /// Recognize and integrate rational functions
+    ///
+    /// For f(x)/g(x) where f and g are polynomials
+    pub fn integrate_rational(numerator: &Expr, denominator: &Expr, var: &Symbol) -> Option<Expr> {
+        // Check if it's a simple case: constant/x = c*log(x)
+        if numerator.is_constant() && matches!(denominator, Expr::Symbol(s) if s == var) {
+            return Some(numerator.clone() * Expr::Symbol(var.clone()).log());
+        }
+
+        // For more complex cases, we would need:
+        // 1. Polynomial long division if degree(numerator) >= degree(denominator)
+        // 2. Partial fraction decomposition
+        // 3. Integration of each term
+
+        // This is a placeholder for future implementation
+        None
+    }
+
+    /// Integrate expressions involving sqrt
+    pub fn integrate_with_sqrt(expr: &Expr, var: &Symbol) -> Option<Expr> {
+        // Common patterns:
+        // ∫ 1/sqrt(1-x²) dx = arcsin(x)
+        // ∫ 1/sqrt(1+x²) dx = arcsinh(x) = log(x + sqrt(1+x²))
+        // ∫ 1/sqrt(x²-1) dx = arccosh(x) = log(x + sqrt(x²-1))
+
+        if let Expr::Binary(BinaryOp::Div, num, den) = expr {
+            if num.is_one() {
+                if let Expr::Unary(UnaryOp::Sqrt, inner) = &**den {
+                    // Check for 1/sqrt(1-x²)
+                    if let Expr::Binary(BinaryOp::Sub, one, x_sq) = &**inner {
+                        if one.is_one() && matches!(**x_sq, Expr::Binary(BinaryOp::Pow, ref x, ref two)
+                            if matches!(**x, Expr::Symbol(ref s) if s == var) && matches!(**two, Expr::Integer(_))) {
+                            return Some(Expr::Symbol(var.clone()).arcsin());
+                        }
+                    }
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Table of common integrals
+    pub struct IntegralTable;
+
+    impl IntegralTable {
+        /// Look up integral in table of known integrals
+        pub fn lookup(expr: &Expr, var: &Symbol) -> Option<Expr> {
+            // ∫ 1/(1+x²) dx = arctan(x)
+            if let Expr::Binary(BinaryOp::Div, num, den) = expr {
+                if num.is_one() {
+                    // Check for 1/(1+x²)
+                    if let Expr::Binary(BinaryOp::Add, one, x_sq) = &**den {
+                        if one.is_one() {
+                            if let Expr::Binary(BinaryOp::Pow, x, two) = &**x_sq {
+                                if matches!(**x, Expr::Symbol(ref s) if s == var)
+                                    && matches!(**two, Expr::Integer(ref i) if i.to_i64() == Some(2)) {
+                                    return Some(Expr::Symbol(var.clone()).arctan());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ∫ sec²(x) dx = tan(x)
+            // ∫ csc²(x) dx = -cot(x)
+            // etc.
+
+            None
+        }
+    }
 }
 
 #[cfg(test)]

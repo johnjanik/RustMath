@@ -10,6 +10,7 @@ pub mod expand;
 pub mod expression;
 pub mod integrate;
 pub mod limits;
+pub mod numerical;
 pub mod polynomial;
 pub mod series;
 pub mod simplify;
@@ -20,6 +21,7 @@ pub use assumptions::{assume, forget, forget_all, get_assumptions, has_property,
 pub use diffeq::{Euler, RungeKutta, ODE, ODEType};
 pub use expression::{BinaryOp, Expr, UnaryOp};
 pub use limits::{Direction, LimitResult};
+pub use numerical::IntegrationResult;
 pub use symbol::Symbol;
 
 #[cfg(test)]
