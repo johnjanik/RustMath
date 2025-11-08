@@ -38,6 +38,7 @@ pub enum UnaryOp {
     Gamma,
     Factorial,
     Erf,
+    Zeta,
 }
 
 /// Symbolic expression
@@ -53,6 +54,9 @@ pub enum Expr {
     Binary(BinaryOp, Arc<Expr>, Arc<Expr>),
     /// Unary operation
     Unary(UnaryOp, Arc<Expr>),
+    /// Function call with name and arguments
+    /// Examples: bessel_j(n, x), custom_func(a, b, c)
+    Function(String, Vec<Arc<Expr>>),
 }
 
 impl Expr {
@@ -68,6 +72,7 @@ impl Expr {
             Expr::Symbol(_) => false,
             Expr::Binary(_, left, right) => left.is_constant() && right.is_constant(),
             Expr::Unary(_, inner) => inner.is_constant(),
+            Expr::Function(_, args) => args.iter().all(|arg| arg.is_constant()),
         }
     }
 
@@ -168,6 +173,60 @@ impl Expr {
     pub fn erf(self) -> Self {
         Expr::Unary(UnaryOp::Erf, Arc::new(self))
     }
+
+    /// Create Riemann zeta function expression
+    ///
+    /// ζ(s) = Σ(n=1 to ∞) 1/n^s for Re(s) > 1
+    pub fn zeta(self) -> Self {
+        Expr::Unary(UnaryOp::Zeta, Arc::new(self))
+    }
+
+    /// Create a general function call
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_symbolic::Expr;
+    ///
+    /// let x = Expr::symbol("x");
+    /// let y = Expr::symbol("y");
+    /// // Create custom_func(x, y)
+    /// let f = Expr::function("custom_func", vec![x, y]);
+    /// ```
+    pub fn function(name: impl Into<String>, args: Vec<Expr>) -> Self {
+        Expr::Function(
+            name.into(),
+            args.into_iter().map(Arc::new).collect(),
+        )
+    }
+
+    /// Create Bessel J function: J_n(x)
+    ///
+    /// Bessel function of the first kind
+    pub fn bessel_j(order: Expr, x: Expr) -> Self {
+        Expr::Function("bessel_j".to_string(), vec![Arc::new(order), Arc::new(x)])
+    }
+
+    /// Create Bessel Y function: Y_n(x)
+    ///
+    /// Bessel function of the second kind
+    pub fn bessel_y(order: Expr, x: Expr) -> Self {
+        Expr::Function("bessel_y".to_string(), vec![Arc::new(order), Arc::new(x)])
+    }
+
+    /// Create modified Bessel I function: I_n(x)
+    ///
+    /// Modified Bessel function of the first kind
+    pub fn bessel_i(order: Expr, x: Expr) -> Self {
+        Expr::Function("bessel_i".to_string(), vec![Arc::new(order), Arc::new(x)])
+    }
+
+    /// Create modified Bessel K function: K_n(x)
+    ///
+    /// Modified Bessel function of the second kind
+    pub fn bessel_k(order: Expr, x: Expr) -> Self {
+        Expr::Function("bessel_k".to_string(), vec![Arc::new(order), Arc::new(x)])
+    }
 }
 
 impl From<i64> for Expr {
@@ -224,11 +283,22 @@ impl fmt::Display for Expr {
                     UnaryOp::Gamma => "gamma",
                     UnaryOp::Factorial => "factorial",
                     UnaryOp::Erf => "erf",
+                    UnaryOp::Zeta => "zeta",
                 };
                 match op {
                     UnaryOp::Neg => write!(f, "-{}", inner),
                     _ => write!(f, "{}({})", op_str, inner),
                 }
+            }
+            Expr::Function(name, args) => {
+                write!(f, "{}(", name)?;
+                for (i, arg) in args.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", arg)?;
+                }
+                write!(f, ")")
             }
         }
     }

@@ -68,6 +68,15 @@ impl Expr {
                     _ => Expr::Unary(*op, Arc::new(inner_exp)),
                 }
             }
+
+            Expr::Function(name, args) => {
+                // Recursively expand all arguments
+                let expanded_args: Vec<Arc<Expr>> = args
+                    .iter()
+                    .map(|arg| Arc::new(arg.expand()))
+                    .collect();
+                Expr::Function(name.clone(), expanded_args)
+            }
         }
     }
 

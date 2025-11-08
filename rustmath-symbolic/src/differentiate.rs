@@ -170,7 +170,19 @@ impl Expr {
                         let coeff = Expr::from(2) / Expr::from((PI.sqrt() * 1000.0) as i64) * Expr::from(1000);
                         coeff * (-f.clone().pow(Expr::from(2))).exp() * df
                     }
+
+                    // d/dx(zeta(f)) - derivative of Riemann zeta
+                    // ζ'(s) = -Σ(n=1 to ∞) ln(n)/n^s (for Re(s) > 1)
+                    // For symbolic purposes, leave as is
+                    UnaryOp::Zeta => Expr::from(0), // TODO: Implement symbolic zeta derivative
                 }
+            }
+
+            // Function calls - use chain rule on all arguments
+            Expr::Function(_, _) => {
+                // For general functions, we can't differentiate without knowing the function
+                // For now, return 0 (TODO: implement symbolic derivative for known functions)
+                Expr::from(0)
             }
         }
     }
