@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~40% (190 / 473 functions tracked)
+**Overall Progress**: ~41% (192 / 473 functions tracked)
 
 ---
 
@@ -312,12 +312,12 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| `QuadraticForm(Q)` | ⬜ | | |
-| Representation theory | ⬜ | | |
-| Theta series | ⬜ | | |
-| Local densities | ⬜ | | |
+| `QuadraticForm(Q)` | ✅ | `rustmath-numbertheory/src/quadratic_forms.rs` | From symmetric matrix or diagonal |
+| Representation theory | ✅ | `rustmath-numbertheory/src/quadratic_forms.rs` | `represents()`, `find_representation()`, `count_representations()` |
+| Theta series | ⬜ | | Planned |
+| Local densities | ⬜ | | Planned |
 
-**Progress**: 0/4 features (0%)
+**Progress**: 2/4 features (50%)
 
 ---
 
