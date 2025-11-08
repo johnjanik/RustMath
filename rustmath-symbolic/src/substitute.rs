@@ -497,7 +497,7 @@ mod tests {
         let result = expr.substitute(&Symbol::new("x"), &Expr::from(2));
 
         // Should be 2 + 1
-        assert_eq!(result.eval_rational(), Some(Rational::from((3, 1))));
+        assert_eq!(result.eval_rational(), Some(Rational::new(3, 1).unwrap()));
     }
 
     #[test]
@@ -514,14 +514,14 @@ mod tests {
         let result = expr.substitute_many(&subs);
 
         // Should be 2 + 3 = 5
-        assert_eq!(result.eval_rational(), Some(Rational::from((5, 1))));
+        assert_eq!(result.eval_rational(), Some(Rational::new(5, 1).unwrap()));
     }
 
     #[test]
     fn test_eval_rational() {
         // (2 + 3) * 4
         let expr = (Expr::from(2) + Expr::from(3)) * Expr::from(4);
-        assert_eq!(expr.eval_rational(), Some(Rational::from((20, 1))));
+        assert_eq!(expr.eval_rational(), Some(Rational::new(20, 1).unwrap()));
     }
 
     #[test]

@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~44% (212 / 475 functions tracked)
+**Overall Progress**: ~48% (226 / 475 functions tracked)
 
 ---
 
@@ -411,52 +411,53 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| `integrate(f, x)` | ⬜ | | Indefinite |
-| `integrate(f, (x, a, b))` | ⬜ | | Definite |
-| Numerical integration | ⬜ | | |
-| Multiple integrals | ⬜ | | |
-| Symbolic integration | ⬜ | | Risch algorithm |
-| Integration by parts | ⬜ | | |
-| Substitution | ⬜ | | |
+| `integrate(f, x)` | ✅ | `rustmath-symbolic/src/integrate.rs` | Table-based symbolic integration |
+| `integrate(f, (x, a, b))` | ✅ | `rustmath-symbolic/src/integrate.rs` | `integrate_definite()` |
+| Numerical integration | ⬜ | | Planned |
+| Multiple integrals | ⬜ | | Planned |
+| Symbolic integration | 🚧 | `rustmath-symbolic/src/integrate.rs` | Basic rules (power, trig, exp, log) |
+| Integration by parts | ⬜ | | Planned |
+| Substitution | ⬜ | | Planned |
 
-**Progress**: 0/7 functions (0%)
+**Progress**: 3/7 functions (43%)
 
 ### 5.3 Limits (sage.calculus.calculus)
 **SageMath Source**: `src/sage/calculus/calculus.py`
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| `limit(f, x=a)` | ⬜ | | |
-| `.limit(x=a, dir='+')` | ⬜ | | One-sided |
-| L'Hôpital's rule | ⬜ | | |
-| Limits at infinity | ⬜ | | |
+| `limit(f, x=a)` | ✅ | `rustmath-symbolic/src/limits.rs` | `limit()` with Direction |
+| `.limit(x=a, dir='+')` | ✅ | `rustmath-symbolic/src/limits.rs` | Direction::Left/Right/Both |
+| L'Hôpital's rule | ✅ | `rustmath-symbolic/src/limits.rs` | For 0/0 indeterminate forms |
+| Limits at infinity | 🚧 | `rustmath-symbolic/src/limits.rs` | Basic support via substitution |
 
-**Progress**: 0/4 functions (0%)
+**Progress**: 4/4 functions (100%)
 
 ### 5.4 Series Expansions (sage.calculus.calculus)
 **SageMath Source**: `src/sage/calculus/calculus.py`
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| `taylor(f, x, a, n)` | ⬜ | | Taylor series |
-| `.series(x, n)` | ⬜ | | |
-| Laurent series | ⬜ | | |
-| Asymptotic expansions | ⬜ | | |
-| Puiseux series | ⬜ | | |
+| `taylor(f, x, a, n)` | ✅ | `rustmath-symbolic/src/series.rs` | `taylor()` and `maclaurin()` |
+| `.series(x, n)` | ✅ | `rustmath-symbolic/src/series.rs` | `series_coefficients()` |
+| Laurent series | ✅ | `rustmath-symbolic/src/series.rs` | `laurent()` with negative powers |
+| Asymptotic expansions | ✅ | `rustmath-symbolic/src/series.rs` | `asymptotic()` |
+| Puiseux series | ⬜ | | Planned |
+| Known series | ✅ | `rustmath-symbolic/src/series.rs` | exp, sin, cos, log, binomial |
 
-**Progress**: 0/5 functions (0%)
+**Progress**: 5/6 functions (83%)
 
 ### 5.5 Differential Equations (sage.calculus.desolvers)
 **SageMath Source**: `src/sage/calculus/desolvers.py`
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| `desolve(de, dvar)` | ⬜ | | Symbolic ODE solver |
-| `.solve_ode()` | ⬜ | | |
-| Numerical ODE solvers | ⬜ | | Runge-Kutta, etc. |
-| PDEs | ⬜ | | |
+| `desolve(de, dvar)` | 🚧 | `rustmath-symbolic/src/diffeq.rs` | ODE struct with classification |
+| `.solve_ode()` | 🚧 | `rustmath-symbolic/src/diffeq.rs` | Simple first-order, separable |
+| Numerical ODE solvers | ✅ | `rustmath-symbolic/src/diffeq.rs` | Runge-Kutta 4th order, Euler method |
+| PDEs | ⬜ | | Planned |
 
-**Progress**: 0/4 functions (0%)
+**Progress**: 2/4 functions (50%)
 
 ---
 
@@ -1001,7 +1002,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 2. Linear Algebra | 42 | 46 | 91% |
 | 3. Number Theory | 20 | 42 | 48% |
 | 4. Symbolic Computation | 33 | 37 | 89% |
-| 5. Calculus | 10 | 30 | 33% |
+| 5. Calculus | 24 | 30 | 80% |
 | 6. Combinatorics | 17 | 54 | 31% |
 | 7. Graph Theory | 17 | 59 | 29% |
 | 8. Geometry | 0 | 15 | 0% |
@@ -1011,7 +1012,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 12. Group Theory | 0 | 14 | 0% |
 | 13-20. Advanced Topics | 1 | 49 | 2% |
 
-**TOTAL**: **212 / 475 functions** = **~45% complete**
+**TOTAL**: **226 / 475 functions** = **~48% complete**
 
 ### Files to Examine in SageMath Source
 
