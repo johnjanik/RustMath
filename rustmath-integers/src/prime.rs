@@ -194,6 +194,187 @@ fn isqrt(n: &Integer) -> Integer {
     x
 }
 
+/// Check if n is a prime power (n = p^k for some prime p and k ≥ 1)
+///
+/// Returns true if n can be expressed as p^k where p is prime and k ≥ 1.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_integers::Integer;
+/// use rustmath_integers::prime::is_prime_power;
+///
+/// assert!(is_prime_power(&Integer::from(8)));   // 2^3
+/// assert!(is_prime_power(&Integer::from(27)));  // 3^3
+/// assert!(!is_prime_power(&Integer::from(12))); // 2^2 * 3
+/// ```
+pub fn is_prime_power(n: &Integer) -> bool {
+    if *n <= Integer::one() {
+        return false;
+    }
+
+    // Check if n is prime (trivial case: n = p^1)
+    if is_prime(n) {
+        return true;
+    }
+
+    // Try to find the smallest prime factor
+    let factors = factor(n);
+
+    // n is a prime power if and only if it has exactly one distinct prime factor
+    factors.len() == 1
+}
+
+/// Get the nth prime number (1-indexed: nth_prime(1) = 2)
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_integers::Integer;
+/// use rustmath_integers::prime::nth_prime;
+///
+/// assert_eq!(nth_prime(1), Integer::from(2));
+/// assert_eq!(nth_prime(2), Integer::from(3));
+/// assert_eq!(nth_prime(10), Integer::from(29));
+/// ```
+pub fn nth_prime(n: usize) -> Integer {
+    if n == 0 {
+        panic!("nth_prime: n must be >= 1");
+    }
+
+    if n == 1 {
+        return Integer::from(2);
+    }
+
+    let mut count = 1; // We've already counted 2
+    let mut candidate = Integer::from(3);
+
+    while count < n {
+        if is_prime(&candidate) {
+            count += 1;
+        }
+        if count < n {
+            candidate = candidate + Integer::from(2);
+        }
+    }
+
+    candidate
+}
+
+/// Generate all primes in the range [start, stop)
+///
+/// Uses a simple sieve for small ranges or trial division for large ranges.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_integers::Integer;
+/// use rustmath_integers::prime::prime_range;
+///
+/// let primes = prime_range(&Integer::from(10), &Integer::from(20));
+/// // Returns [11, 13, 17, 19]
+/// ```
+pub fn prime_range(start: &Integer, stop: &Integer) -> Vec<Integer> {
+    if start >= stop {
+        return vec![];
+    }
+
+    let mut primes = Vec::new();
+    let mut candidate = start.clone();
+
+    // Make candidate odd if it's even and > 2
+    if candidate.is_even() && candidate > Integer::from(2) {
+        candidate = candidate + Integer::one();
+    }
+
+    // Special case: include 2 if in range
+    if *start <= Integer::from(2) && *stop > Integer::from(2) {
+        primes.push(Integer::from(2));
+        candidate = Integer::from(3);
+    }
+
+    // Check odd numbers
+    while candidate < *stop {
+        if is_prime(&candidate) {
+            primes.push(candidate.clone());
+        }
+        candidate = candidate + Integer::from(2);
+    }
+
+    primes
+}
+
+/// Generate the first n prime numbers
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_integers::Integer;
+/// use rustmath_integers::prime::primes_first_n;
+///
+/// let primes = primes_first_n(5);
+/// // Returns [2, 3, 5, 7, 11]
+/// ```
+pub fn primes_first_n(n: usize) -> Vec<Integer> {
+    if n == 0 {
+        return vec![];
+    }
+
+    let mut primes = Vec::with_capacity(n);
+    primes.push(Integer::from(2));
+
+    if n == 1 {
+        return primes;
+    }
+
+    let mut candidate = Integer::from(3);
+
+    while primes.len() < n {
+        if is_prime(&candidate) {
+            primes.push(candidate.clone());
+        }
+        candidate = candidate + Integer::from(2);
+    }
+
+    primes
+}
+
+/// Count the number of primes less than or equal to x (prime counting function π(x))
+///
+/// Uses a naive algorithm that counts primes one by one.
+/// For very large x, more efficient algorithms like Meissel-Lehmer would be needed.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_integers::Integer;
+/// use rustmath_integers::prime::prime_pi;
+///
+/// assert_eq!(prime_pi(&Integer::from(10)), 4);  // 2, 3, 5, 7
+/// assert_eq!(prime_pi(&Integer::from(100)), 25);
+/// ```
+pub fn prime_pi(x: &Integer) -> usize {
+    if *x < Integer::from(2) {
+        return 0;
+    }
+
+    let mut count = 0;
+    let mut candidate = Integer::from(2);
+
+    while candidate <= *x {
+        if is_prime(&candidate) {
+            count += 1;
+        }
+        if candidate == Integer::from(2) {
+            candidate = Integer::from(3);
+        } else {
+            candidate = candidate + Integer::from(2);
+        }
+    }
+
+    count
+}
+
 /// Compute all prime factors of n
 pub fn factor(n: &Integer) -> Vec<(Integer, u32)> {
     if n.is_zero() || n.is_one() {
@@ -444,5 +625,80 @@ mod tests {
         let factors = factor(&Integer::from(17));
         assert_eq!(factors.len(), 1);
         assert_eq!(factors[0], (Integer::from(17), 1));
+    }
+
+    #[test]
+    fn test_is_prime_power() {
+        // Prime powers
+        assert!(is_prime_power(&Integer::from(2)));  // 2^1
+        assert!(is_prime_power(&Integer::from(4)));  // 2^2
+        assert!(is_prime_power(&Integer::from(8)));  // 2^3
+        assert!(is_prime_power(&Integer::from(27))); // 3^3
+        assert!(is_prime_power(&Integer::from(125))); // 5^3
+
+        // Not prime powers
+        assert!(!is_prime_power(&Integer::from(1)));
+        assert!(!is_prime_power(&Integer::from(6)));  // 2 * 3
+        assert!(!is_prime_power(&Integer::from(12))); // 2^2 * 3
+        assert!(!is_prime_power(&Integer::from(30))); // 2 * 3 * 5
+    }
+
+    #[test]
+    fn test_nth_prime() {
+        assert_eq!(nth_prime(1), Integer::from(2));
+        assert_eq!(nth_prime(2), Integer::from(3));
+        assert_eq!(nth_prime(3), Integer::from(5));
+        assert_eq!(nth_prime(4), Integer::from(7));
+        assert_eq!(nth_prime(5), Integer::from(11));
+        assert_eq!(nth_prime(10), Integer::from(29));
+    }
+
+    #[test]
+    fn test_prime_range() {
+        let primes = prime_range(&Integer::from(10), &Integer::from(20));
+        assert_eq!(primes.len(), 4);
+        assert_eq!(primes[0], Integer::from(11));
+        assert_eq!(primes[1], Integer::from(13));
+        assert_eq!(primes[2], Integer::from(17));
+        assert_eq!(primes[3], Integer::from(19));
+
+        // Range including 2
+        let primes = prime_range(&Integer::from(0), &Integer::from(10));
+        assert_eq!(primes.len(), 4);
+        assert_eq!(primes[0], Integer::from(2));
+        assert_eq!(primes[1], Integer::from(3));
+        assert_eq!(primes[2], Integer::from(5));
+        assert_eq!(primes[3], Integer::from(7));
+
+        // Empty range
+        let primes = prime_range(&Integer::from(20), &Integer::from(10));
+        assert_eq!(primes.len(), 0);
+    }
+
+    #[test]
+    fn test_primes_first_n() {
+        let primes = primes_first_n(5);
+        assert_eq!(primes.len(), 5);
+        assert_eq!(primes[0], Integer::from(2));
+        assert_eq!(primes[1], Integer::from(3));
+        assert_eq!(primes[2], Integer::from(5));
+        assert_eq!(primes[3], Integer::from(7));
+        assert_eq!(primes[4], Integer::from(11));
+
+        let primes = primes_first_n(0);
+        assert_eq!(primes.len(), 0);
+
+        let primes = primes_first_n(1);
+        assert_eq!(primes.len(), 1);
+        assert_eq!(primes[0], Integer::from(2));
+    }
+
+    #[test]
+    fn test_prime_pi() {
+        assert_eq!(prime_pi(&Integer::from(1)), 0);
+        assert_eq!(prime_pi(&Integer::from(2)), 1);
+        assert_eq!(prime_pi(&Integer::from(10)), 4);  // 2, 3, 5, 7
+        assert_eq!(prime_pi(&Integer::from(20)), 8);  // 2, 3, 5, 7, 11, 13, 17, 19
+        assert_eq!(prime_pi(&Integer::from(100)), 25);
     }
 }

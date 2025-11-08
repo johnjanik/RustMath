@@ -10,7 +10,7 @@ pub mod prime;
 
 pub use crt::{chinese_remainder_theorem, crt_two};
 pub use integer::Integer;
-pub use modular::ModularInteger;
+pub use modular::{primitive_roots, ModularInteger};
 
 #[cfg(test)]
 mod tests {

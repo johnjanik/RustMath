@@ -247,17 +247,17 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
 | `is_prime(n)` | ✅ | `rustmath-integers/src/prime.rs` | Miller-Rabin |
-| `is_pseudoprime(n)` | ⬜ | | |
-| `is_prime_power(n)` | ⬜ | | |
+| `is_pseudoprime(n)` | ✅ | `rustmath-integers/src/prime.rs` | Fermat test |
+| `is_prime_power(n)` | ✅ | `rustmath-integers/src/prime.rs` | Checks if n = p^k |
 | `next_prime(n)` | ✅ | `rustmath-integers/src/prime.rs` | |
 | `previous_prime(n)` | ✅ | `rustmath-integers/src/prime.rs` | |
-| `nth_prime(n)` | ⬜ | | |
-| `prime_range(start, stop)` | ⬜ | | Sieve of Eratosthenes |
-| `primes_first_n(n)` | ⬜ | | |
-| `prime_pi(x)` | ⬜ | | Prime counting |
-| `random_prime(a, b)` | ⬜ | | |
+| `nth_prime(n)` | ✅ | `rustmath-integers/src/prime.rs` | 1-indexed |
+| `prime_range(start, stop)` | ✅ | `rustmath-integers/src/prime.rs` | Returns primes in [start, stop) |
+| `primes_first_n(n)` | ✅ | `rustmath-integers/src/prime.rs` | First n primes |
+| `prime_pi(x)` | ✅ | `rustmath-integers/src/prime.rs` | Prime counting function π(x) |
+| `random_prime(a, b)` | ⬜ | | Planned |
 
-**Progress**: 3/10 functions (30%)
+**Progress**: 9/10 functions (90%)
 
 ### 3.2 Factorization (sage.rings.factorint)
 **SageMath Source**: `src/sage/rings/factorint.pyx`
@@ -285,14 +285,14 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 |-----------------|--------|-------------------|-------|
 | `Mod(a, n)` | ✅ | `rustmath-integers/src/modular.rs` | `ModularInteger` |
 | `.inverse()` | ✅ | `rustmath-integers/src/modular.rs` | Via extended GCD |
-| `.is_unit()` | ⬜ | | |
-| `.multiplicative_order()` | ⬜ | | |
-| Primitive roots | ⬜ | | |
+| `.is_unit()` | ✅ | `rustmath-integers/src/modular.rs` | Checks gcd(a, n) = 1 |
+| `.multiplicative_order()` | ✅ | `rustmath-integers/src/modular.rs` | Finds smallest k: a^k ≡ 1 |
+| Primitive roots | ✅ | `rustmath-integers/src/modular.rs` | `primitive_roots(n)` |
 | Chinese Remainder Theorem | ✅ | `rustmath-integers/src/crt.rs` | |
-| Quadratic residues | ⬜ | | |
+| Quadratic residues | 🚧 | `rustmath-integers/src/integer.rs` | Via Legendre/Jacobi symbols |
 | Legendre/Jacobi symbols | ✅ | `rustmath-integers/src/integer.rs` | `legendre_symbol()`, `jacobi_symbol()` |
 
-**Progress**: 4/8 functions (50%)
+**Progress**: 7/8 functions (88%)
 
 ### 3.4 Continued Fractions (sage.rings.continued_fraction)
 **SageMath Source**: `src/sage/rings/continued_fraction.py`
