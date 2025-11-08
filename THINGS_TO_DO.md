@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~43% (204 / 473 functions tracked)
+**Overall Progress**: ~43% (203 / 473 functions tracked)
 
 ---
 
@@ -363,12 +363,12 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `sign(x)` | ✅ | `rustmath-symbolic/src/expression.rs` | Sign function (-1, 0, 1) |
 | Hyperbolic functions | ✅ | `rustmath-symbolic/src/expression.rs` | sinh, cosh, tanh |
 | Inverse trig functions | ✅ | `rustmath-symbolic/src/expression.rs` | arcsin, arccos, arctan |
-| Bessel functions | ⬜ | | Planned |
-| Gamma function | ⬜ | | Planned |
-| Zeta function | ⬜ | | Planned |
-| Custom functions | ⬜ | | Planned |
+| Bessel functions | ✅ | `rustmath-symbolic/src/expression.rs`, `substitute.rs` | J_n, Y_n, I_n, K_n with series approximations |
+| Gamma function | ✅ | `rustmath-symbolic/src/expression.rs`, `substitute.rs` | Stirling's approximation |
+| Zeta function | ✅ | `rustmath-symbolic/src/expression.rs`, `substitute.rs` | Riemann zeta with special values and series |
+| Custom functions | ✅ | `rustmath-symbolic/src/expression.rs` | Generic Function variant for user-defined functions |
 
-**Progress**: 7/11 features (64%)
+**Progress**: 11/11 features (100%)
 
 ### 4.3 Assumptions (sage.symbolic.assumptions)
 **SageMath Source**: `src/sage/symbolic/assumptions.py`
@@ -998,7 +998,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 1. Rings & Fields | 69 | 90 | 77% |
 | 2. Linear Algebra | 42 | 46 | 91% |
 | 3. Number Theory | 20 | 42 | 48% |
-| 4. Symbolic Computation | 11 | 35 | 31% |
+| 4. Symbolic Computation | 27 | 35 | 77% |
 | 5. Calculus | 7 | 30 | 23% |
 | 6. Combinatorics | 17 | 54 | 31% |
 | 7. Graph Theory | 17 | 59 | 29% |
@@ -1009,7 +1009,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 12. Group Theory | 0 | 14 | 0% |
 | 13-20. Advanced Topics | 1 | 49 | 2% |
 
-**TOTAL**: **187 / 473 functions** = **~39% complete**
+**TOTAL**: **203 / 473 functions** = **~43% complete**
 
 ### Files to Examine in SageMath Source
 
