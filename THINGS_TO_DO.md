@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~40% (188 / 473 functions tracked)
+**Overall Progress**: ~40% (189 / 473 functions tracked)
 
 ---
 
@@ -302,10 +302,10 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `continued_fraction(x)` | ✅ | `rustmath-rationals/src/continued_fraction.rs` | |
 | `.convergents()` | ✅ | `rustmath-rationals/src/continued_fraction.rs` | |
 | `.value()` | ✅ | `rustmath-rationals/src/continued_fraction.rs` | `to_rational()` |
-| Periodic continued fractions | ⬜ | | For quadratic irrationals |
+| Periodic continued fractions | ✅ | `rustmath-rationals/src/continued_fraction.rs` | `PeriodicContinuedFraction`, `from_sqrt()` |
 | `.quotients()` | ✅ | `rustmath-rationals/src/continued_fraction.rs` | |
 
-**Progress**: 4/5 functions (80%)
+**Progress**: 5/5 functions (100%)
 
 ### 3.5 Quadratic Forms (sage.quadratic_forms)
 **SageMath Source**: `src/sage/quadratic_forms/`
