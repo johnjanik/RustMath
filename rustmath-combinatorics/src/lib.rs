@@ -3,11 +3,15 @@
 //! This crate provides combinatorial structures like permutations, combinations,
 //! partitions, and algorithms for generating and manipulating them.
 
+pub mod combinations;
 pub mod partitions;
 pub mod permutations;
 
+pub use combinations::{combinations, Combination};
 pub use partitions::{partition_count, partitions, Partition};
 pub use permutations::{all_permutations, Permutation};
+
+// stirling_first, Composition, compositions, and compositions_k are defined in this module
 
 use rustmath_core::Ring;
 use rustmath_integers::Integer;
@@ -139,6 +143,38 @@ pub fn rising_factorial(n: u32, k: u32) -> Integer {
     result
 }
 
+/// Compute Stirling number of the first kind s(n, k) (unsigned)
+///
+/// Number of permutations of n elements with exactly k cycles
+pub fn stirling_first(n: u32, k: u32) -> Integer {
+    if n == 0 && k == 0 {
+        return Integer::one();
+    }
+    if n == 0 || k == 0 || k > n {
+        return Integer::zero();
+    }
+    if k == n {
+        return Integer::one();
+    }
+
+    // Use recurrence: s(n,k) = (n-1)*s(n-1,k) + s(n-1,k-1)
+    let mut dp = vec![vec![Integer::zero(); (k + 1) as usize]; (n + 1) as usize];
+    dp[0][0] = Integer::one();
+
+    for i in 1..=n as usize {
+        for j in 1..=k.min(i as u32) as usize {
+            if j == i {
+                dp[i][j] = Integer::one();
+            } else if j > 0 {
+                dp[i][j] = Integer::from((i - 1) as u32) * dp[i - 1][j].clone()
+                    + dp[i - 1][j - 1].clone();
+            }
+        }
+    }
+
+    dp[n as usize][k as usize].clone()
+}
+
 /// Compute Stirling number of the second kind S(n, k)
 ///
 /// Number of ways to partition n elements into k non-empty subsets
@@ -181,6 +217,118 @@ pub fn bell_number(n: u32) -> Integer {
         sum = sum + stirling_second(n, k);
     }
     sum
+}
+
+/// An integer composition (ordered partition)
+///
+/// A composition of n is an ordered sequence of positive integers that sum to n
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Composition {
+    parts: Vec<usize>,
+}
+
+impl Composition {
+    /// Create a composition from a vector of parts
+    pub fn new(parts: Vec<usize>) -> Option<Self> {
+        if parts.iter().any(|&p| p == 0) {
+            return None; // All parts must be positive
+        }
+        Some(Composition { parts })
+    }
+
+    /// Get the sum of the composition
+    pub fn sum(&self) -> usize {
+        self.parts.iter().sum()
+    }
+
+    /// Get the number of parts
+    pub fn length(&self) -> usize {
+        self.parts.len()
+    }
+
+    /// Get the parts
+    pub fn parts(&self) -> &[usize] {
+        &self.parts
+    }
+}
+
+/// Generate all compositions of n
+///
+/// A composition is an ordered way of writing n as a sum of positive integers
+pub fn compositions(n: usize) -> Vec<Composition> {
+    if n == 0 {
+        return vec![Composition { parts: vec![] }];
+    }
+
+    let mut result = Vec::new();
+    let mut current = Vec::new();
+
+    generate_compositions(n, &mut current, &mut result);
+
+    result
+}
+
+fn generate_compositions(n: usize, current: &mut Vec<usize>, result: &mut Vec<Composition>) {
+    if n == 0 {
+        result.push(Composition {
+            parts: current.clone(),
+        });
+        return;
+    }
+
+    for i in 1..=n {
+        current.push(i);
+        generate_compositions(n - i, current, result);
+        current.pop();
+    }
+}
+
+/// Generate all compositions of n into exactly k parts
+pub fn compositions_k(n: usize, k: usize) -> Vec<Composition> {
+    if k == 0 {
+        if n == 0 {
+            return vec![Composition { parts: vec![] }];
+        } else {
+            return vec![];
+        }
+    }
+
+    if k > n {
+        return vec![];
+    }
+
+    let mut result = Vec::new();
+    let mut current = Vec::new();
+
+    generate_compositions_k(n, k, &mut current, &mut result);
+
+    result
+}
+
+fn generate_compositions_k(
+    n: usize,
+    k: usize,
+    current: &mut Vec<usize>,
+    result: &mut Vec<Composition>,
+) {
+    if current.len() == k {
+        if n == 0 {
+            result.push(Composition {
+                parts: current.clone(),
+            });
+        }
+        return;
+    }
+
+    let remaining_parts = k - current.len();
+    let min_value = 1;
+    let max_value = n.saturating_sub(remaining_parts - 1);
+
+    for i in min_value..=max_value {
+        current.push(i);
+        generate_compositions_k(n - i, k, current, result);
+        current.pop();
+    }
 }
 
 #[cfg(test)]
@@ -295,5 +443,59 @@ mod tests {
         assert_eq!(bell_number(3), Integer::from(5));
         assert_eq!(bell_number(4), Integer::from(15));
         assert_eq!(bell_number(5), Integer::from(52));
+    }
+
+    #[test]
+    fn test_stirling_first() {
+        // s(n, 0) = 0 for n > 0
+        assert_eq!(stirling_first(5, 0), Integer::from(0));
+
+        // s(n, n) = 1
+        assert_eq!(stirling_first(5, 5), Integer::from(1));
+
+        // s(4, 2) = 11
+        assert_eq!(stirling_first(4, 2), Integer::from(11));
+
+        // s(5, 2) = 50
+        assert_eq!(stirling_first(5, 2), Integer::from(50));
+
+        // s(5, 3) = 35
+        assert_eq!(stirling_first(5, 3), Integer::from(35));
+    }
+
+    #[test]
+    fn test_compositions() {
+        // Compositions of 4: [4], [1,3], [2,2], [3,1], [1,1,2], [1,2,1], [2,1,1], [1,1,1,1]
+        let comps = compositions(4);
+        assert_eq!(comps.len(), 8); // 2^(n-1) = 2^3 = 8
+
+        // All compositions should sum to 4
+        for comp in &comps {
+            assert_eq!(comp.sum(), 4);
+        }
+    }
+
+    #[test]
+    fn test_compositions_k() {
+        // Compositions of 5 into 3 parts
+        let comps = compositions_k(5, 3);
+        // Should be: [1,1,3], [1,2,2], [1,3,1], [2,1,2], [2,2,1], [3,1,1]
+        assert_eq!(comps.len(), 6);
+
+        for comp in &comps {
+            assert_eq!(comp.sum(), 5);
+            assert_eq!(comp.length(), 3);
+        }
+    }
+
+    #[test]
+    fn test_composition_ordering() {
+        // Compositions are ordered (unlike partitions)
+        let comp1 = Composition::new(vec![1, 3]).unwrap();
+        let comp2 = Composition::new(vec![3, 1]).unwrap();
+
+        // These should be different
+        assert_ne!(comp1, comp2);
+        assert_eq!(comp1.sum(), comp2.sum());
     }
 }
