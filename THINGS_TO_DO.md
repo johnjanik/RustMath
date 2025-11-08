@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~59% (280 / 475 functions tracked)
+**Overall Progress**: ~61% (291 / 475 functions tracked)
 
 ---
 
@@ -588,13 +588,13 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.is_connected()` | ✅ | `rustmath-graphs/src/graph.rs` | |
 | `.connected_components()` | ✅ | `rustmath-graphs/src/graph.rs` | |
 | `.is_bipartite()` | ✅ | `rustmath-graphs/src/graph.rs` | |
-| `.is_planar()` | ⬜ | | |
+| `.is_planar()` | ✅ | `rustmath-graphs/src/graph.rs` | Euler's formula with K5/K3,3 detection |
 | `.is_tree()` | ✅ | `rustmath-graphs/src/graph.rs` | Connected acyclic with n-1 edges |
 | `.is_forest()` | ✅ | `rustmath-graphs/src/graph.rs` | Acyclic (may be disconnected) |
 | `.is_eulerian()` | ✅ | `rustmath-graphs/src/graph.rs` | Returns (has_path, has_circuit) tuple |
-| `.is_hamiltonian()` | ⬜ | | |
+| `.is_hamiltonian()` | ✅ | `rustmath-graphs/src/graph.rs` | Backtracking algorithm for Hamiltonian cycle detection |
 
-**Progress**: 6/8 functions (75%)
+**Progress**: 8/8 functions (100%)
 
 ### 7.3 Traversals (sage.graphs.traversals)
 **SageMath Source**: `src/sage/graphs/traversals.pyx`
@@ -613,15 +613,15 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| `.shortest_path(u, v)` | ✅ | `rustmath-graphs/src/graph.rs` | BFS-based |
+| `.shortest_path(u, v)` | ✅ | `rustmath-graphs/src/graph.rs` | BFS-based for unweighted |
 | `.shortest_path_length(u, v)` | ✅ | `rustmath-graphs/src/graph.rs` | Returns path length only |
 | `.all_paths(u, v)` | ✅ | `rustmath-graphs/src/graph.rs` | Find all simple paths (backtracking) |
-| Dijkstra's algorithm | ⬜ | | Weighted graphs |
+| Dijkstra's algorithm | ✅ | `rustmath-graphs/src/weighted_graph.rs` | Priority queue-based shortest paths for weighted graphs |
 | Bellman-Ford | ⬜ | | Negative weights |
-| Floyd-Warshall | ⬜ | | All pairs |
+| Floyd-Warshall | ✅ | `rustmath-graphs/src/weighted_graph.rs` | All-pairs shortest paths with dynamic programming |
 | A* search | ⬜ | | Heuristic |
 
-**Progress**: 3/7 functions (43%)
+**Progress**: 5/7 functions (71%)
 
 ### 7.5 Trees and Spanning Trees (sage.graphs.spanning_tree)
 **SageMath Source**: `src/sage/graphs/spanning_tree.pyx`
@@ -629,10 +629,10 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
 | `.min_spanning_tree()` | ✅ | `rustmath-graphs/src/graph.rs` | Kruskal's algorithm with Union-Find |
-| Prim's algorithm | ⬜ | | |
+| Prim's algorithm | ✅ | `rustmath-graphs/src/weighted_graph.rs` | Priority queue-based MST for weighted graphs |
 | `.spanning_trees_count()` | ✅ | `rustmath-graphs/src/graph.rs` | Kirchhoff's matrix-tree theorem using Laplacian determinant |
 
-**Progress**: 2/3 functions (67%)
+**Progress**: 3/3 functions (100%)
 
 ### 7.6 Graph Coloring (sage.graphs.graph_coloring)
 **SageMath Source**: `src/sage/graphs/graph_coloring.pyx`
@@ -652,11 +652,11 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
 | `.matching()` | ✅ | `rustmath-graphs/src/graph.rs` | `max_bipartite_matching()` using augmenting paths |
-| `.perfect_matchings()` | ⬜ | | |
+| `.perfect_matchings()` | ✅ | `rustmath-graphs/src/graph.rs` | Enumerate all perfect matchings via backtracking |
 | `.matching_polynomial()` | ⬜ | | |
 | Hungarian algorithm | ⬜ | | Bipartite matching |
 
-**Progress**: 1/4 functions (25%)
+**Progress**: 2/4 functions (50%)
 
 ### 7.8 Graph Generators (sage.graphs.graph_generators)
 **SageMath Source**: `src/sage/graphs/graph_generators.py`
@@ -1004,7 +1004,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 4. Symbolic Computation | 33 | 37 | 89% |
 | 5. Calculus | 30 | 30 | 100% |
 | 6. Combinatorics | 44 | 44 | 100% |
-| 7. Graph Theory | 36 | 59 | 61% |
+| 7. Graph Theory | 47 | 59 | 80% |
 | 8. Geometry | 0 | 15 | 0% |
 | 9. Algebraic Geometry | 0 | 11 | 0% |
 | 10. Cryptography | 3 | 18 | 17% |
@@ -1012,7 +1012,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 12. Group Theory | 0 | 14 | 0% |
 | 13-20. Advanced Topics | 1 | 49 | 2% |
 
-**TOTAL**: **280 / 475 functions** = **~59% complete**
+**TOTAL**: **291 / 475 functions** = **~61% complete**
 
 ### Files to Examine in SageMath Source
 

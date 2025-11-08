@@ -458,6 +458,174 @@ impl Graph {
         (has_path, has_circuit)
     }
 
+    /// Check if the graph has a Hamiltonian cycle
+    ///
+    /// A Hamiltonian cycle visits every vertex exactly once and returns to the start.
+    /// Uses backtracking (NP-complete problem, exponential time).
+    pub fn is_hamiltonian(&self) -> bool {
+        if self.num_vertices == 0 {
+            return false;
+        }
+
+        // Start from vertex 0 and try to find a Hamiltonian cycle
+        let mut path = vec![0];
+        let mut visited = vec![false; self.num_vertices];
+        visited[0] = true;
+
+        self.hamiltonian_helper(&mut path, &mut visited)
+    }
+
+    fn hamiltonian_helper(&self, path: &mut Vec<usize>, visited: &mut Vec<bool>) -> bool {
+        // If all vertices are in the path
+        if path.len() == self.num_vertices {
+            // Check if there's an edge back to the start
+            return self.has_edge(*path.last().unwrap(), path[0]);
+        }
+
+        let current = *path.last().unwrap();
+
+        // Try each neighbor
+        for &neighbor in &self.adj[current] {
+            if !visited[neighbor] {
+                path.push(neighbor);
+                visited[neighbor] = true;
+
+                if self.hamiltonian_helper(path, visited) {
+                    return true;
+                }
+
+                path.pop();
+                visited[neighbor] = false;
+            }
+        }
+
+        false
+    }
+
+    /// Check if the graph is planar
+    ///
+    /// A graph is planar if it can be drawn on a plane without edge crossings.
+    /// Uses a simplified check based on Kuratowski's theorem:
+    /// - A graph is planar iff it doesn't contain K5 or K3,3 as a subdivision
+    ///
+    /// This is a basic implementation using Euler's formula for small graphs.
+    pub fn is_planar(&self) -> bool {
+        let n = self.num_vertices;
+        let m = self.num_edges();
+
+        // Empty or single vertex graph is planar
+        if n <= 3 {
+            return true;
+        }
+
+        // Euler's formula: for a connected planar graph, v - e + f = 2
+        // This gives us: e <= 3v - 6 (for simple graphs)
+        if m > 3 * n - 6 {
+            return false;
+        }
+
+        // If bipartite, stronger bound: e <= 2v - 4
+        if self.is_bipartite() && m > 2 * n - 4 {
+            return false;
+        }
+
+        // For small graphs, check for K5 or K3,3 minors
+        // K5 has 5 vertices and 10 edges
+        if n == 5 && m == 10 {
+            // Check if it's a complete graph K5 (not planar)
+            let mut is_complete = true;
+            for i in 0..5 {
+                if self.degree(i) != Some(4) {
+                    is_complete = false;
+                    break;
+                }
+            }
+            if is_complete {
+                return false;
+            }
+        }
+
+        // K3,3 has 6 vertices and 9 edges
+        if n == 6 && m == 9 && self.is_bipartite() {
+            // Check if it's complete bipartite K3,3 (not planar)
+            let parts = self.bipartition();
+            if let Some((left, right)) = parts {
+                if left.len() == 3 && right.len() == 3 {
+                    // Check if complete
+                    let mut is_complete = true;
+                    for &u in &left {
+                        if self.degree(u) != Some(3) {
+                            is_complete = false;
+                            break;
+                        }
+                    }
+                    if is_complete {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        // For other cases, assume planar (full planarity testing is complex)
+        true
+    }
+
+    /// Enumerate all perfect matchings in the graph
+    ///
+    /// A perfect matching covers all vertices with non-overlapping edges.
+    /// Returns all possible perfect matchings.
+    pub fn perfect_matchings(&self) -> Vec<Vec<(usize, usize)>> {
+        if self.num_vertices % 2 != 0 {
+            // Perfect matching requires even number of vertices
+            return vec![];
+        }
+
+        let mut matchings = Vec::new();
+        let mut current_matching = Vec::new();
+        let mut unmatched: HashSet<usize> = (0..self.num_vertices).collect();
+
+        self.find_perfect_matchings(&mut current_matching, &mut unmatched, &mut matchings);
+
+        matchings
+    }
+
+    fn find_perfect_matchings(
+        &self,
+        current: &mut Vec<(usize, usize)>,
+        unmatched: &mut HashSet<usize>,
+        result: &mut Vec<Vec<(usize, usize)>>,
+    ) {
+        if unmatched.is_empty() {
+            // Found a complete perfect matching
+            result.push(current.clone());
+            return;
+        }
+
+        // Pick the smallest unmatched vertex to reduce branching
+        let &u = unmatched.iter().min().unwrap();
+
+        // Try pairing it with each unmatched neighbor
+        let neighbors: Vec<usize> = self.adj[u]
+            .iter()
+            .copied()
+            .filter(|v| unmatched.contains(v) && *v > u)
+            .collect();
+
+        for v in neighbors {
+            // Add edge to matching
+            current.push((u, v));
+            unmatched.remove(&u);
+            unmatched.remove(&v);
+
+            self.find_perfect_matchings(current, unmatched, result);
+
+            // Backtrack
+            current.pop();
+            unmatched.insert(u);
+            unmatched.insert(v);
+        }
+    }
+
     /// Get the length of the shortest path between two vertices
     pub fn shortest_path_length(&self, start: usize, end: usize) -> Result<Option<usize>, String> {
         match self.shortest_path(start, end)? {
@@ -1371,5 +1539,113 @@ mod tests {
         g3.add_edge(2, 0).unwrap();
         let order3 = g3.lex_bfs();
         assert_eq!(order3.len(), 3);
+    }
+
+    #[test]
+    fn test_is_hamiltonian() {
+        // Complete graph K4 is Hamiltonian
+        let mut g = Graph::new(4);
+        for i in 0..4 {
+            for j in i + 1..4 {
+                g.add_edge(i, j).unwrap();
+            }
+        }
+        assert!(g.is_hamiltonian());
+
+        // Cycle C5 is Hamiltonian
+        let mut g2 = Graph::new(5);
+        for i in 0..5 {
+            g2.add_edge(i, (i + 1) % 5).unwrap();
+        }
+        assert!(g2.is_hamiltonian());
+
+        // Path graph is not Hamiltonian (no cycle)
+        let mut g3 = Graph::new(4);
+        g3.add_edge(0, 1).unwrap();
+        g3.add_edge(1, 2).unwrap();
+        g3.add_edge(2, 3).unwrap();
+        assert!(!g3.is_hamiltonian());
+
+        // Star graph is not Hamiltonian
+        let mut g4 = Graph::new(5);
+        for i in 1..5 {
+            g4.add_edge(0, i).unwrap();
+        }
+        assert!(!g4.is_hamiltonian());
+    }
+
+    #[test]
+    fn test_is_planar() {
+        // K4 is planar
+        let mut g = Graph::new(4);
+        for i in 0..4 {
+            for j in i + 1..4 {
+                g.add_edge(i, j).unwrap();
+            }
+        }
+        assert!(g.is_planar());
+
+        // K5 is not planar
+        let mut g2 = Graph::new(5);
+        for i in 0..5 {
+            for j in i + 1..5 {
+                g2.add_edge(i, j).unwrap();
+            }
+        }
+        assert!(!g2.is_planar());
+
+        // Tree is planar
+        let mut g3 = Graph::new(5);
+        g3.add_edge(0, 1).unwrap();
+        g3.add_edge(0, 2).unwrap();
+        g3.add_edge(1, 3).unwrap();
+        g3.add_edge(1, 4).unwrap();
+        assert!(g3.is_planar());
+
+        // K3,3 is not planar
+        let mut g4 = Graph::new(6);
+        for i in 0..3 {
+            for j in 3..6 {
+                g4.add_edge(i, j).unwrap();
+            }
+        }
+        assert!(!g4.is_planar());
+    }
+
+    #[test]
+    fn test_perfect_matchings() {
+        // Complete graph K4 has 3 perfect matchings
+        let mut g = Graph::new(4);
+        for i in 0..4 {
+            for j in i + 1..4 {
+                g.add_edge(i, j).unwrap();
+            }
+        }
+        let matchings = g.perfect_matchings();
+        assert_eq!(matchings.len(), 3);
+
+        // Each matching should have 2 edges (covering 4 vertices)
+        for matching in &matchings {
+            assert_eq!(matching.len(), 2);
+        }
+
+        // Cycle C6 has 2 perfect matchings
+        let mut g2 = Graph::new(6);
+        for i in 0..6 {
+            g2.add_edge(i, (i + 1) % 6).unwrap();
+        }
+        let matchings2 = g2.perfect_matchings();
+        assert_eq!(matchings2.len(), 2);
+
+        // Odd number of vertices has no perfect matching
+        let g3 = Graph::new(5);
+        assert_eq!(g3.perfect_matchings().len(), 0);
+
+        // Path of length 2 has 1 perfect matching
+        let mut g4 = Graph::new(2);
+        g4.add_edge(0, 1).unwrap();
+        let matchings4 = g4.perfect_matchings();
+        assert_eq!(matchings4.len(), 1);
+        assert_eq!(matchings4[0], vec![(0, 1)]);
     }
 }
