@@ -20,6 +20,17 @@ impl Graph {
         }
     }
 
+    /// Add a new vertex to the graph
+    ///
+    /// Returns the index of the newly added vertex.
+    /// The new vertex initially has no edges.
+    pub fn add_vertex(&mut self) -> usize {
+        let new_idx = self.num_vertices;
+        self.num_vertices += 1;
+        self.adj.push(HashSet::new());
+        new_idx
+    }
+
     /// Get the number of vertices
     pub fn num_vertices(&self) -> usize {
         self.num_vertices
@@ -871,6 +882,19 @@ impl Graph {
         chromatic_poly_helper(self)
     }
 
+    /// Compute the matching polynomial
+    ///
+    /// The matching polynomial m(G, x) is defined such that the coefficient of x^k
+    /// gives information about matchings in the graph.
+    /// For a graph on n vertices: m(G, x) = Σ (-1)^k * m_k(G) * x^(n-2k)
+    /// where m_k(G) is the number of k-matchings (matchings with k edges).
+    ///
+    /// # Returns
+    /// Coefficient vector where index i corresponds to the coefficient of x^i
+    pub fn matching_polynomial(&self) -> Vec<i64> {
+        matching_poly_helper(self)
+    }
+
     /// Lexicographic breadth-first search
     ///
     /// Returns a vertex ordering that can be used for perfect elimination ordering
@@ -1085,6 +1109,96 @@ fn subtract_poly(p1: &[i64], p2: &[i64]) -> Vec<i64> {
     result
 }
 
+/// Helper function for matching polynomial computation
+fn matching_poly_helper(graph: &Graph) -> Vec<i64> {
+    let n = graph.num_vertices();
+
+    // Base case: empty graph
+    if n == 0 {
+        return vec![1];
+    }
+
+    // Base case: graph with no edges
+    if graph.num_edges() == 0 {
+        // m(G, x) = x^n for n isolated vertices
+        let mut poly = vec![0; n + 1];
+        poly[n] = 1;
+        return poly;
+    }
+
+    // Base case: single vertex
+    if n == 1 {
+        return vec![1]; // m(G, x) = 1
+    }
+
+    // Find an edge to use for deletion-contraction
+    let mut edge = None;
+    'outer: for u in 0..n {
+        for &v in &graph.adj[u] {
+            if u < v {
+                edge = Some((u, v));
+                break 'outer;
+            }
+        }
+    }
+
+    let (u, v) = edge.unwrap();
+
+    // Deletion: remove edge (u, v)
+    let mut g_delete = graph.clone();
+    g_delete.adj[u].remove(&v);
+    g_delete.adj[v].remove(&u);
+    let p_delete = matching_poly_helper(&g_delete);
+
+    // Removal: remove both vertices u and v
+    let g_remove = remove_vertices(graph, u, v);
+    let p_remove = matching_poly_helper(&g_remove);
+
+    // m(G, x) = m(G - e, x) - m(G - {u, v}, x)
+    // The second term needs to be multiplied by x^0 when adding back (no change needed)
+    subtract_poly(&p_delete, &p_remove)
+}
+
+/// Remove two vertices from a graph
+fn remove_vertices(graph: &Graph, u: usize, v: usize) -> Graph {
+    let n = graph.num_vertices();
+    let mut new_graph = Graph::new(n - 2);
+
+    // Determine which vertex to remove first
+    let (first, second) = if u < v { (u, v) } else { (v, u) };
+
+    // Map old vertices to new vertices
+    let get_new_vertex = |old: usize| -> Option<usize> {
+        if old == first || old == second {
+            None
+        } else if old < first {
+            Some(old)
+        } else if old < second {
+            Some(old - 1)
+        } else {
+            Some(old - 2)
+        }
+    };
+
+    // Add edges
+    for i in 0..n {
+        if i == first || i == second {
+            continue;
+        }
+        for &j in &graph.adj[i] {
+            if j == first || j == second || j <= i {
+                continue;
+            }
+            if let (Some(new_i), Some(new_j)) = (get_new_vertex(i), get_new_vertex(j)) {
+                new_graph.adj[new_i].insert(new_j);
+                new_graph.adj[new_j].insert(new_i);
+            }
+        }
+    }
+
+    new_graph
+}
+
 /// Union-Find data structure for Kruskal's algorithm
 struct UnionFind {
     parent: Vec<usize>,
@@ -1138,6 +1252,25 @@ mod tests {
         let g = Graph::new(5);
         assert_eq!(g.num_vertices(), 5);
         assert_eq!(g.num_edges(), 0);
+    }
+
+    #[test]
+    fn test_add_vertex() {
+        let mut g = Graph::new(3);
+        assert_eq!(g.num_vertices(), 3);
+
+        let v3 = g.add_vertex();
+        assert_eq!(v3, 3);
+        assert_eq!(g.num_vertices(), 4);
+
+        let v4 = g.add_vertex();
+        assert_eq!(v4, 4);
+        assert_eq!(g.num_vertices(), 5);
+
+        // Can add edges to new vertices
+        g.add_edge(0, v3).unwrap();
+        g.add_edge(v3, v4).unwrap();
+        assert_eq!(g.num_edges(), 2);
     }
 
     #[test]
@@ -1510,6 +1643,34 @@ mod tests {
         assert_eq!(poly3[1], 2);  // k term
         assert_eq!(poly3[2], -3); // k^2 term
         assert_eq!(poly3[3], 1);  // k^3 term
+    }
+
+    #[test]
+    fn test_matching_polynomial() {
+        // Single edge: m(G, x) = x^2 - 1
+        let mut g = Graph::new(2);
+        g.add_edge(0, 1).unwrap();
+        let poly = g.matching_polynomial();
+        // poly[0] = -1 (constant term)
+        // poly[2] = 1 (x^2 term)
+        assert_eq!(poly[0], -1);
+        assert_eq!(poly[2], 1);
+
+        // Triangle K3: m(G, x) = x^3 - 3x
+        let mut g2 = Graph::new(3);
+        g2.add_edge(0, 1).unwrap();
+        g2.add_edge(1, 2).unwrap();
+        g2.add_edge(2, 0).unwrap();
+        let poly2 = g2.matching_polynomial();
+        assert_eq!(poly2[0], 0);   // Constant term
+        assert_eq!(poly2[1], -3);  // x term
+        assert_eq!(poly2[3], 1);   // x^3 term
+
+        // Empty graph with 2 vertices: m(G, x) = x^2
+        let g3 = Graph::new(2);
+        let poly3 = g3.matching_polynomial();
+        assert_eq!(poly3.len(), 3);
+        assert_eq!(poly3[2], 1);
     }
 
     #[test]

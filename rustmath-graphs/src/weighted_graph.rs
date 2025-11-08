@@ -33,6 +33,28 @@ impl PartialOrd for DijkstraNode {
     }
 }
 
+/// A node in the priority queue for A* search
+#[derive(Debug, Clone, Eq, PartialEq)]
+struct AStarNode {
+    vertex: usize,
+    f_score: i64,  // g_score + heuristic
+    g_score: i64,  // actual cost from start
+}
+
+impl Ord for AStarNode {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // Reverse ordering for min-heap (prioritize lower f_score)
+        other.f_score.cmp(&self.f_score)
+            .then_with(|| self.vertex.cmp(&other.vertex))
+    }
+}
+
+impl PartialOrd for AStarNode {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 impl WeightedGraph {
     /// Create a new weighted graph with n vertices
     pub fn new(n: usize) -> Self {
@@ -146,6 +168,94 @@ impl WeightedGraph {
         }
     }
 
+    /// A* search algorithm for pathfinding with heuristic
+    ///
+    /// Finds shortest path from start to goal using a heuristic function.
+    /// The heuristic should be admissible (never overestimate) for optimal results.
+    ///
+    /// # Arguments
+    /// * `start` - Starting vertex
+    /// * `goal` - Goal vertex
+    /// * `heuristic` - Function mapping vertex to estimated distance to goal
+    ///
+    /// # Returns
+    /// Returns Some((path, cost)) if path exists, None otherwise
+    pub fn astar<F>(&self, start: usize, goal: usize, heuristic: F) -> Result<Option<(Vec<usize>, i64)>, String>
+    where
+        F: Fn(usize) -> i64,
+    {
+        if start >= self.num_vertices || goal >= self.num_vertices {
+            return Err("Vertex out of bounds".to_string());
+        }
+
+        if start == goal {
+            return Ok(Some((vec![start], 0)));
+        }
+
+        // g_score: cost from start to vertex
+        let mut g_score = vec![None; self.num_vertices];
+        g_score[start] = Some(0);
+
+        // Parent tracking for path reconstruction
+        let mut parent: HashMap<usize, usize> = HashMap::new();
+
+        // Priority queue ordered by f_score = g_score + heuristic
+        let mut heap = BinaryHeap::new();
+        heap.push(AStarNode {
+            vertex: start,
+            f_score: heuristic(start),
+            g_score: 0,
+        });
+
+        let mut visited = HashSet::new();
+
+        while let Some(AStarNode { vertex: current, g_score: current_g, .. }) = heap.pop() {
+            // Found goal
+            if current == goal {
+                let mut path = vec![goal];
+                let mut v = goal;
+                while v != start {
+                    if let Some(&prev) = parent.get(&v) {
+                        path.push(prev);
+                        v = prev;
+                    } else {
+                        break;
+                    }
+                }
+                path.reverse();
+                return Ok(Some((path, current_g)));
+            }
+
+            if visited.contains(&current) {
+                continue;
+            }
+            visited.insert(current);
+
+            // Explore neighbors
+            for &(neighbor, weight) in &self.adj[current] {
+                if visited.contains(&neighbor) {
+                    continue;
+                }
+
+                let tentative_g = current_g + weight;
+
+                if g_score[neighbor].is_none() || tentative_g < g_score[neighbor].unwrap() {
+                    g_score[neighbor] = Some(tentative_g);
+                    parent.insert(neighbor, current);
+
+                    let f = tentative_g + heuristic(neighbor);
+                    heap.push(AStarNode {
+                        vertex: neighbor,
+                        f_score: f,
+                        g_score: tentative_g,
+                    });
+                }
+            }
+        }
+
+        Ok(None)
+    }
+
     /// Find minimum spanning tree using Prim's algorithm
     ///
     /// Returns edges in the MST or None if graph is disconnected.
@@ -257,6 +367,54 @@ impl WeightedGraph {
         count == self.num_vertices
     }
 
+    /// Hungarian algorithm for maximum weight bipartite matching
+    ///
+    /// Solves the assignment problem for a weighted bipartite graph.
+    /// Assumes the graph is bipartite with partitions [0..n/2) and [n/2..n).
+    ///
+    /// # Returns
+    /// Returns Some(matching, total_weight) if a perfect matching exists,
+    /// None if the graph is not bipartite or no perfect matching exists.
+    pub fn hungarian(&self) -> Option<(Vec<(usize, usize)>, i64)> {
+        if self.num_vertices == 0 || self.num_vertices % 2 != 0 {
+            return None;
+        }
+
+        let n = self.num_vertices / 2;
+
+        // Build cost matrix (negate for max weight matching)
+        let mut cost = vec![vec![i64::MIN / 2; n]; n];
+        for u in 0..n {
+            for &(v, weight) in &self.adj[u] {
+                if v >= n && v < 2 * n {
+                    cost[u][v - n] = -weight; // Negate for minimization
+                }
+            }
+        }
+
+        // Hungarian algorithm implementation
+        let assignment = hungarian_solve(&cost)?;
+
+        // Build matching and calculate total weight
+        let mut matching = Vec::new();
+        let mut total_weight = 0i64;
+
+        for (u, v) in assignment.iter().enumerate() {
+            if let Some(v_idx) = v {
+                if cost[u][*v_idx] != i64::MIN / 2 {
+                    matching.push((u, v_idx + n));
+                    total_weight -= cost[u][*v_idx]; // Negate back
+                }
+            }
+        }
+
+        if matching.len() == n {
+            Some((matching, total_weight))
+        } else {
+            None
+        }
+    }
+
     /// Find shortest paths using Bellman-Ford algorithm
     ///
     /// Handles negative edge weights and detects negative cycles.
@@ -331,6 +489,92 @@ impl PartialOrd for PrimEdge {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
+}
+
+/// Solve the assignment problem using the Hungarian algorithm
+///
+/// Takes a cost matrix and returns an assignment vector where
+/// assignment[i] = Some(j) means row i is matched to column j.
+fn hungarian_solve(cost: &[Vec<i64>]) -> Option<Vec<Option<usize>>> {
+    let n = cost.len();
+    if n == 0 {
+        return Some(vec![]);
+    }
+
+    // Initialize
+    let mut u = vec![0i64; n + 1]; // Potentials for rows
+    let mut v = vec![0i64; n + 1]; // Potentials for columns
+    let mut match_col = vec![None; n + 1]; // match_col[j] = row matched to column j
+    let mut match_row = vec![None; n + 1]; // match_row[i] = column matched to row i
+
+    for i in 0..n {
+        let mut min_val = vec![i64::MAX; n + 1];
+        let mut visited = vec![false; n + 1];
+        let mut prev = vec![None; n + 1];
+
+        let mut col = n; // Start with dummy column
+        match_col[col] = Some(i);
+        visited[col] = true;
+
+        loop {
+            let row = match_col[col].unwrap();
+            let mut delta = i64::MAX;
+            let mut next_col = None;
+
+            // Find minimum slack edge
+            for j in 0..n {
+                if !visited[j] {
+                    let cur = if cost[row][j] == i64::MIN / 2 {
+                        i64::MAX
+                    } else {
+                        cost[row][j] - u[row] - v[j]
+                    };
+
+                    if cur < min_val[j] {
+                        min_val[j] = cur;
+                        prev[j] = Some(col);
+                    }
+
+                    if min_val[j] < delta {
+                        delta = min_val[j];
+                        next_col = Some(j);
+                    }
+                }
+            }
+
+            // Update potentials
+            for j in 0..=n {
+                if visited[j] {
+                    u[match_col[j].unwrap()] += delta;
+                    v[j] -= delta;
+                } else {
+                    min_val[j] = min_val[j].saturating_sub(delta);
+                }
+            }
+
+            col = next_col?;
+            visited[col] = true;
+
+            if match_col[col].is_none() {
+                // Augmenting path found
+                while col != n {
+                    let prev_col = prev[col]?;
+                    match_col[col] = match_col[prev_col];
+                    col = prev_col;
+                }
+                break;
+            }
+        }
+    }
+
+    // Build result
+    for j in 0..n {
+        if let Some(i) = match_col[j] {
+            match_row[i] = Some(j);
+        }
+    }
+
+    Some(match_row[..n].to_vec())
 }
 
 #[cfg(test)]
@@ -465,5 +709,97 @@ mod tests {
 
         let result = g.bellman_ford(0).unwrap();
         assert!(result.is_none()); // Should detect negative cycle
+    }
+
+    #[test]
+    fn test_astar() {
+        // Grid-like graph where A* should benefit from heuristic
+        let mut g = WeightedGraph::new(9);
+
+        // Create a 3x3 grid graph
+        // 0-1-2
+        // | | |
+        // 3-4-5
+        // | | |
+        // 6-7-8
+
+        // Horizontal edges
+        g.add_edge(0, 1, 1).unwrap();
+        g.add_edge(1, 2, 1).unwrap();
+        g.add_edge(3, 4, 1).unwrap();
+        g.add_edge(4, 5, 1).unwrap();
+        g.add_edge(6, 7, 1).unwrap();
+        g.add_edge(7, 8, 1).unwrap();
+
+        // Vertical edges
+        g.add_edge(0, 3, 1).unwrap();
+        g.add_edge(1, 4, 1).unwrap();
+        g.add_edge(2, 5, 1).unwrap();
+        g.add_edge(3, 6, 1).unwrap();
+        g.add_edge(4, 7, 1).unwrap();
+        g.add_edge(5, 8, 1).unwrap();
+
+        // Manhattan distance heuristic for grid
+        let heuristic = |v: usize| -> i64 {
+            let goal = 8;
+            let vx = (v % 3) as i64;
+            let vy = (v / 3) as i64;
+            let gx = (goal % 3) as i64;
+            let gy = (goal / 3) as i64;
+            (vx - gx).abs() + (vy - gy).abs()
+        };
+
+        let result = g.astar(0, 8, heuristic).unwrap();
+        assert!(result.is_some());
+
+        let (path, cost) = result.unwrap();
+        assert_eq!(cost, 4); // Shortest path from corner to corner is 4
+        assert_eq!(path[0], 0);
+        assert_eq!(path[path.len() - 1], 8);
+    }
+
+    #[test]
+    fn test_astar_no_path() {
+        // Disconnected graph
+        let mut g = WeightedGraph::new(4);
+        g.add_edge(0, 1, 1).unwrap();
+        g.add_edge(2, 3, 1).unwrap();
+
+        let heuristic = |_: usize| -> i64 { 0 };
+        let result = g.astar(0, 3, heuristic).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_hungarian() {
+        // Simple bipartite graph: vertices 0,1 on left, 2,3 on right
+        let mut g = WeightedGraph::new(4);
+        g.add_edge(0, 2, 10).unwrap(); // Left 0 to Right 0 with weight 10
+        g.add_edge(0, 3, 15).unwrap(); // Left 0 to Right 1 with weight 15
+        g.add_edge(1, 2, 20).unwrap(); // Left 1 to Right 0 with weight 20
+        g.add_edge(1, 3, 18).unwrap(); // Left 1 to Right 1 with weight 18
+
+        let result = g.hungarian();
+        assert!(result.is_some());
+
+        let (matching, total_weight) = result.unwrap();
+        assert_eq!(matching.len(), 2);
+        // Optimal matching: 0->3 (15) and 1->2 (20) = 35
+        assert_eq!(total_weight, 35);
+    }
+
+    #[test]
+    fn test_hungarian_simple() {
+        // Smaller example: 2 vertices on each side
+        let mut g = WeightedGraph::new(4);
+        g.add_edge(0, 2, 5).unwrap();
+        g.add_edge(1, 3, 7).unwrap();
+
+        let result = g.hungarian();
+        assert!(result.is_some());
+
+        let (matching, total_weight) = result.unwrap();
+        assert_eq!(matching.len(), 2);
+        assert_eq!(total_weight, 12); // 5 + 7
     }
 }
