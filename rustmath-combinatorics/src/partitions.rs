@@ -70,6 +70,85 @@ impl Partition {
             parts: conjugate_parts,
         }
     }
+
+    /// Compute hook lengths for the Young diagram
+    ///
+    /// Returns a vector of vectors where hook_lengths[i][j] is the hook length
+    /// at position (i, j) in the Young diagram
+    pub fn hook_lengths(&self) -> Vec<Vec<usize>> {
+        if self.parts.is_empty() {
+            return vec![];
+        }
+
+        let mut hooks = Vec::new();
+        let conjugate = self.conjugate();
+
+        for (i, &row_len) in self.parts.iter().enumerate() {
+            let mut row_hooks = Vec::new();
+            for j in 0..row_len {
+                // Hook length = cells to right + cells below + 1
+                let cells_right = row_len - j - 1;
+                let cells_below = conjugate.parts[j] - i - 1;
+                row_hooks.push(cells_right + cells_below + 1);
+            }
+            hooks.push(row_hooks);
+        }
+
+        hooks
+    }
+
+    /// Compute the dimension (number of standard Young tableaux)
+    ///
+    /// Uses the hook length formula: n! / product(hook lengths)
+    pub fn dimension(&self) -> usize {
+        if self.parts.is_empty() {
+            return 1;
+        }
+
+        let n = self.sum();
+        let hooks = self.hook_lengths();
+
+        // Compute n!
+        let mut numerator = 1usize;
+        for i in 2..=n {
+            numerator *= i;
+        }
+
+        // Compute product of hook lengths
+        let mut denominator = 1usize;
+        for row in hooks {
+            for hook in row {
+                denominator *= hook;
+            }
+        }
+
+        numerator / denominator
+    }
+
+    /// Check if this partition dominates another in the dominance ordering
+    ///
+    /// λ dominates μ if the sum of the first k parts of λ is >= the sum of
+    /// the first k parts of μ for all k
+    pub fn dominates(&self, other: &Partition) -> bool {
+        if self.sum() != other.sum() {
+            return false; // Can only compare partitions of the same number
+        }
+
+        let max_len = self.length().max(other.length());
+        let mut sum_self = 0;
+        let mut sum_other = 0;
+
+        for i in 0..max_len {
+            sum_self += self.parts.get(i).copied().unwrap_or(0);
+            sum_other += other.parts.get(i).copied().unwrap_or(0);
+
+            if sum_self < sum_other {
+                return false;
+            }
+        }
+
+        true
+    }
 }
 
 /// Generate all partitions of n
@@ -170,5 +249,61 @@ mod tests {
         let p = Partition::new(vec![3, 2, 1]);
         let diagram = p.ferrers_diagram();
         assert_eq!(diagram, "***\n**\n*");
+    }
+
+    #[test]
+    fn test_hook_lengths() {
+        // Partition [3, 2, 1]
+        let p = Partition::new(vec![3, 2, 1]);
+        let hooks = p.hook_lengths();
+
+        // Expected hook lengths:
+        // 5 3 1
+        // 3 1
+        // 1
+        assert_eq!(hooks, vec![vec![5, 3, 1], vec![3, 1], vec![1]]);
+    }
+
+    #[test]
+    fn test_dimension() {
+        // Partition [2, 1] has dimension 2
+        // (2 standard Young tableaux: 1 2  and  1 3)
+        //                              3      2
+        let p = Partition::new(vec![2, 1]);
+        assert_eq!(p.dimension(), 2);
+
+        // Partition [3, 2, 1] has dimension 16
+        let p2 = Partition::new(vec![3, 2, 1]);
+        assert_eq!(p2.dimension(), 16);
+
+        // Partition [n] (single row) has dimension 1
+        let p3 = Partition::new(vec![5]);
+        assert_eq!(p3.dimension(), 1);
+    }
+
+    #[test]
+    fn test_dominates() {
+        // [3, 2] dominates [2, 2, 1]
+        let p1 = Partition::new(vec![3, 2]);
+        let p2 = Partition::new(vec![2, 2, 1]);
+        assert!(p1.dominates(&p2));
+        assert!(!p2.dominates(&p1));
+
+        // [3, 1, 1] dominates [2, 2, 1]
+        let p3 = Partition::new(vec![3, 1, 1]);
+        assert!(p3.dominates(&p2));
+
+        // Every partition dominates itself
+        assert!(p1.dominates(&p1));
+
+        // [5] dominates everything
+        let p5 = Partition::new(vec![5]);
+        assert!(p5.dominates(&p1));
+        assert!(p5.dominates(&p2));
+
+        // [1,1,1,1,1] is dominated by everything
+        let p_min = Partition::new(vec![1, 1, 1, 1, 1]);
+        assert!(p1.dominates(&p_min));
+        assert!(p2.dominates(&p_min));
     }
 }

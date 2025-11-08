@@ -115,6 +115,96 @@ impl Permutation {
 
         cycles
     }
+
+    /// Compute the multiplicative order of the permutation
+    ///
+    /// Returns the smallest positive integer k such that p^k = identity
+    pub fn order(&self) -> usize {
+        let cycles = self.cycles();
+
+        if cycles.is_empty() {
+            return 1; // Identity permutation
+        }
+
+        // Order is the LCM of all cycle lengths
+        let mut result = 1;
+        for cycle in cycles {
+            result = lcm(result, cycle.len());
+        }
+        result
+    }
+
+    /// Convert permutation to a permutation matrix
+    ///
+    /// Returns a matrix where M[i][j] = 1 if perm[i] = j, and 0 otherwise
+    pub fn to_matrix(&self) -> Vec<Vec<u8>> {
+        let n = self.perm.len();
+        let mut matrix = vec![vec![0u8; n]; n];
+
+        for (i, &p) in self.perm.iter().enumerate() {
+            matrix[i][p] = 1;
+        }
+
+        matrix
+    }
+
+    /// Get the descent set
+    ///
+    /// Returns positions i where perm[i] > perm[i+1]
+    pub fn descents(&self) -> Vec<usize> {
+        let mut descents = Vec::new();
+
+        for i in 0..self.perm.len().saturating_sub(1) {
+            if self.perm[i] > self.perm[i + 1] {
+                descents.push(i);
+            }
+        }
+
+        descents
+    }
+
+    /// Get the ascent set
+    ///
+    /// Returns positions i where perm[i] < perm[i+1]
+    pub fn ascents(&self) -> Vec<usize> {
+        let mut ascents = Vec::new();
+
+        for i in 0..self.perm.len().saturating_sub(1) {
+            if self.perm[i] < self.perm[i + 1] {
+                ascents.push(i);
+            }
+        }
+
+        ascents
+    }
+
+    /// Count the number of descents
+    pub fn descent_number(&self) -> usize {
+        self.descents().len()
+    }
+
+    /// Count the number of ascents
+    pub fn ascent_number(&self) -> usize {
+        self.ascents().len()
+    }
+}
+
+/// Compute least common multiple of two numbers
+fn lcm(a: usize, b: usize) -> usize {
+    if a == 0 || b == 0 {
+        return 0;
+    }
+    (a * b) / gcd(a, b)
+}
+
+/// Compute greatest common divisor of two numbers
+fn gcd(mut a: usize, mut b: usize) -> usize {
+    while b != 0 {
+        let temp = b;
+        b = a % b;
+        a = temp;
+    }
+    a
 }
 
 /// Generate all permutations of n elements
@@ -174,7 +264,9 @@ mod tests {
         let p2 = Permutation::from_vec(vec![2, 1, 0]).unwrap();
 
         let result = p1.compose(&p2).unwrap();
-        assert_eq!(result.perm, vec![1, 2, 0]);
+        // p1 ∘ p2: apply p2 first (0→2, 1→1, 2→0), then p1 (2→2, 1→0, 0→1)
+        // Result: 0→2, 1→0, 2→1
+        assert_eq!(result.perm, vec![2, 0, 1]);
     }
 
     #[test]
@@ -199,5 +291,50 @@ mod tests {
 
         assert_eq!(cycles.len(), 1);
         assert_eq!(cycles[0], vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn test_order() {
+        // Identity has order 1
+        let id = Permutation::identity(3);
+        assert_eq!(id.order(), 1);
+
+        // (0 1 2) cycle has order 3
+        let perm = Permutation::from_vec(vec![1, 2, 0]).unwrap();
+        assert_eq!(perm.order(), 3);
+
+        // (0 1)(2 3) has order 2 (LCM of cycle lengths)
+        let perm2 = Permutation::from_vec(vec![1, 0, 3, 2]).unwrap();
+        assert_eq!(perm2.order(), 2);
+
+        // (0 1 2)(3 4) has order 6 (LCM of 3 and 2)
+        let perm3 = Permutation::from_vec(vec![1, 2, 0, 4, 3]).unwrap();
+        assert_eq!(perm3.order(), 6);
+    }
+
+    #[test]
+    fn test_to_matrix() {
+        let perm = Permutation::from_vec(vec![1, 0, 2]).unwrap();
+        let matrix = perm.to_matrix();
+
+        assert_eq!(matrix[0], vec![0, 1, 0]);
+        assert_eq!(matrix[1], vec![1, 0, 0]);
+        assert_eq!(matrix[2], vec![0, 0, 1]);
+    }
+
+    #[test]
+    fn test_descents_ascents() {
+        // [2, 0, 1, 3] has descents at position 0 (2 > 0)
+        let perm = Permutation::from_vec(vec![2, 0, 1, 3]).unwrap();
+        let descents = perm.descents();
+        let ascents = perm.ascents();
+
+        assert_eq!(descents, vec![0]); // 2 > 0
+        assert_eq!(ascents, vec![1, 2]); // 0 < 1, 1 < 3
+
+        // Identity permutation has all ascents, no descents
+        let id = Permutation::identity(4);
+        assert_eq!(id.descents().len(), 0);
+        assert_eq!(id.ascents().len(), 3);
     }
 }
