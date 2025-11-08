@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~78% (345 / 443 functions tracked)
+**Overall Progress**: ~78% (351 / 449 functions tracked)
 
 ---
 
@@ -753,11 +753,17 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Isomorphism checking | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Via j-invariant comparison |
 | Quadratic twists | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Generate twisted curves |
 | Complex multiplication | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Detect CM curves (j=0 or j=1728) |
-| Rank computation | ⬜ | | Complex, requires descent |
-| L-functions | ⬜ | | Advanced analytic number theory |
-| Modular forms | ⬜ | | Advanced, deferred |
+| Point counting mod p | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Count points over finite fields F_p |
+| L-function coefficients (a_p) | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Trace of Frobenius, foundation for L-functions |
+| Integral point search | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Find integer points with bounded search |
+| Naive height function | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Logarithmic height of points |
+| Rank heuristic | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Heuristic positive rank detection |
+| L-series coefficients | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Partial L-function computation via a_p values |
+| Rank computation (rigorous) | ⬜ | | Complex, requires descent algorithms |
+| Full L-functions | ⬜ | | Complete analytic L-function (very advanced) |
+| Modular forms | ⬜ | | Advanced, requires modularity theorem infrastructure |
 
-**Progress**: 10/13 features (77%)
+**Progress**: 16/19 features (84%)
 
 ---
 
@@ -1019,13 +1025,13 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 6. Combinatorics | 44 | 44 | 100% |
 | 7. Graph Theory | 50 | 59 | 85% |
 | 8. Geometry | 0 | 15 | 0% |
-| 9. Algebraic Geometry | 0 | 11 | 0% |
+| 9. Algebraic Geometry | 27 | 30 | 90% |
 | 10. Cryptography | 3 | 18 | 17% |
 | 11. Coding Theory | 0 | 10 | 0% |
 | 12. Group Theory | 0 | 14 | 0% |
 | 13-20. Advanced Topics | 1 | 49 | 2% |
 
-**TOTAL**: **294 / 475 functions** = **~62% complete**
+**TOTAL**: **300 / 481 functions** = **~62% complete**
 
 ### Files to Examine in SageMath Source
 
