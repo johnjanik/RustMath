@@ -14,7 +14,8 @@ pub use factorization::{
     square_free_factorization,
 };
 pub use groebner::{
-    groebner_basis_info, is_well_ordering, ordering_description, MonomialOrdering,
+    groebner_basis, groebner_basis_info, ideal_membership, is_well_ordering,
+    ordering_description, reduce, reduced_groebner_basis, s_polynomial, MonomialOrdering,
 };
 pub use multivariate::{Monomial, MultivariatePolynomial};
 pub use polynomial::Polynomial;
