@@ -1,6 +1,7 @@
 //! Symbolic expressions
 
 use crate::symbol::Symbol;
+use rustmath_core::Ring;
 use rustmath_integers::Integer;
 use rustmath_rationals::Rational;
 use std::fmt;
@@ -226,6 +227,117 @@ impl Expr {
     /// Modified Bessel function of the second kind
     pub fn bessel_k(order: Expr, x: Expr) -> Self {
         Expr::Function("bessel_k".to_string(), vec![Arc::new(order), Arc::new(x)])
+    }
+
+    /// Get the underlying symbol if this expression is a symbol
+    ///
+    /// Returns Some(symbol) if this is Expr::Symbol, None otherwise
+    pub fn as_symbol(&self) -> Option<&Symbol> {
+        match self {
+            Expr::Symbol(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Check if the expression is known to be positive
+    ///
+    /// Returns:
+    /// - Some(true) if definitely positive
+    /// - Some(false) if definitely not positive (zero or negative)
+    /// - None if unknown
+    pub fn is_positive(&self) -> Option<bool> {
+        use crate::assumptions::{has_property, Property};
+
+        match self {
+            Expr::Integer(n) => Some(n > &Integer::zero()),
+            Expr::Rational(r) => Some(r > &Rational::zero()),
+            Expr::Symbol(s) => {
+                if has_property(s, Property::Positive) {
+                    Some(true)
+                } else if has_property(s, Property::Negative)
+                    || has_property(s, Property::Zero)
+                    || has_property(s, Property::NonPositive)
+                {
+                    Some(false)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// Check if the expression is known to be negative
+    ///
+    /// Returns:
+    /// - Some(true) if definitely negative
+    /// - Some(false) if definitely not negative (zero or positive)
+    /// - None if unknown
+    pub fn is_negative(&self) -> Option<bool> {
+        use crate::assumptions::{has_property, Property};
+
+        match self {
+            Expr::Integer(n) => Some(n < &Integer::zero()),
+            Expr::Rational(r) => Some(r < &Rational::zero()),
+            Expr::Symbol(s) => {
+                if has_property(s, Property::Negative) {
+                    Some(true)
+                } else if has_property(s, Property::Positive)
+                    || has_property(s, Property::Zero)
+                    || has_property(s, Property::NonNegative)
+                {
+                    Some(false)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// Check if the expression is known to be real
+    ///
+    /// Returns:
+    /// - Some(true) if definitely real
+    /// - Some(false) if definitely not real
+    /// - None if unknown
+    pub fn is_real(&self) -> Option<bool> {
+        use crate::assumptions::{has_property, Property};
+
+        match self {
+            Expr::Integer(_) | Expr::Rational(_) => Some(true),
+            Expr::Symbol(s) => {
+                if has_property(s, Property::Real) {
+                    Some(true)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// Check if the expression is known to be an integer
+    ///
+    /// Returns:
+    /// - Some(true) if definitely an integer
+    /// - Some(false) if definitely not an integer
+    /// - None if unknown
+    pub fn is_integer(&self) -> Option<bool> {
+        use crate::assumptions::{has_property, Property};
+
+        match self {
+            Expr::Integer(_) => Some(true),
+            Expr::Rational(r) => Some(r.is_integer()),
+            Expr::Symbol(s) => {
+                if has_property(s, Property::Integer) {
+                    Some(true)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
     }
 }
 
