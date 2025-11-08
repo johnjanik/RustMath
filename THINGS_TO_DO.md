@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~81% (389 / 487 functions tracked)
+**Overall Progress**: ~81% (395 / 493 functions tracked)
 
 ---
 
@@ -965,14 +965,14 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| `find_root(f, a, b)` | ⬜ | | Root finding |
-| `minimize(f, x0)` | ⬜ | | Optimization |
-| Linear programming | ⬜ | | |
-| Numerical integration | ⬜ | | Quadrature |
-| Interpolation | ⬜ | | |
-| FFT | ⬜ | | Fast Fourier Transform |
+| `find_root(f, a, b)` | ✅ | rustmath-numerical/src/rootfinding.rs | Bisection, Newton-Raphson, Secant methods |
+| `minimize(f, x0)` | ✅ | rustmath-numerical/src/optimization.rs | Gradient descent, Nelder-Mead |
+| Linear programming | ✅ | rustmath-numerical/src/linear_programming.rs | Simplex method (simplified) |
+| Numerical integration | ✅ | rustmath-numerical/src/integration.rs | Simpson, Trapezoid, Romberg |
+| Interpolation | ✅ | rustmath-numerical/src/interpolation.rs | Lagrange, Spline |
+| FFT | ✅ | rustmath-numerical/src/fft.rs | FFT, IFFT, DFT |
 
-**Progress**: 0/6 functions (0%)
+**Progress**: 6/6 functions (100%) ✅ COMPLETE
 
 ---
 
@@ -1041,9 +1041,10 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 14. Homological Algebra | 3 | 3 | 100% |
 | 15. Category Theory | 3 | 3 | 100% |
 | 16. Statistics and Probability | 5 | 5 | 100% |
-| 17-20. Advanced Topics | 1 | 35 | 3% |
+| 17. Numerical Computation | 6 | 6 | 100% |
+| 18-20. Advanced Topics | 1 | 29 | 3% |
 
-**TOTAL**: **339 / 520 functions** = **~65% complete**
+**TOTAL**: **345 / 526 functions** = **~66% complete**
 
 ### Files to Examine in SageMath Source
 

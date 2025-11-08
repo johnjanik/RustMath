@@ -23,6 +23,7 @@ members = [
     "rustmath-homology",
     "rustmath-category",
     "rustmath-stats",
+    "rustmath-numerical",
 ]
 
 [workspace.package]
