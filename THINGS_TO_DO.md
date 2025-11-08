@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~77% (333 / 435 functions tracked)
+**Overall Progress**: ~78% (340 / 438 functions tracked)
 
 ---
 
@@ -724,16 +724,19 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| Affine space | ⬜ | | |
-| Projective space | ⬜ | | |
-| Varieties | ⬜ | | |
-| Morphisms | ⬜ | | |
+| Affine space | ✅ | `rustmath-polynomials/src/algebraic_geometry.rs` | AffineSpace<R> with dimension tracking |
+| Projective space | ✅ | `rustmath-polynomials/src/algebraic_geometry.rs` | ProjectiveSpace<R> with homogeneous coordinates |
+| Affine varieties | ✅ | `rustmath-polynomials/src/algebraic_geometry.rs` | AffineVariety with ideal operations |
+| Projective varieties | ✅ | `rustmath-polynomials/src/algebraic_geometry.rs` | ProjectiveVariety for homogeneous ideals |
+| Variety intersection | ✅ | `rustmath-polynomials/src/algebraic_geometry.rs` | V(I) ∩ V(J) = V(I + J) |
+| Variety union | ✅ | `rustmath-polynomials/src/algebraic_geometry.rs` | Zariski closure using ideal product |
+| Morphisms | ⬜ | | Polynomial maps between varieties |
 | Gröbner bases | ✅ | `rustmath-polynomials/src/groebner.rs` | Buchberger's algorithm with lex/grlex/grevlex orderings |
 | S-polynomial | ✅ | `rustmath-polynomials/src/groebner.rs` | Core component for Gröbner basis |
 | Polynomial reduction | ✅ | `rustmath-polynomials/src/groebner.rs` | Multivariate division with remainder |
 | Ideal membership | ✅ | `rustmath-polynomials/src/groebner.rs` | Test if polynomial is in ideal |
 
-**Progress**: 4/8 features (50%)
+**Progress**: 10/11 features (91%)
 
 ### 9.2 Elliptic Curves (sage.schemes.elliptic_curves)
 **SageMath Source**: `src/sage/schemes/elliptic_curves/`
@@ -744,13 +747,13 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Point addition | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Group law with point at infinity |
 | Scalar multiplication | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Double-and-add algorithm |
 | Point negation | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | |
-| Discriminant & j-invariant | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Curve invariants |
-| Torsion points | ⬜ | | Advanced number theory |
-| Rank computation | ⬜ | | Complex, deferred |
+| Discriminant & j-invariant | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Curve invariants with correct formula |
+| Torsion points | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Point order, is_torsion, 2-torsion points, search for n-torsion |
+| Rank computation | ⬜ | | Complex, requires descent |
 | L-functions | ⬜ | | Advanced analytic number theory |
 | Modular forms | ⬜ | | Advanced, deferred |
 
-**Progress**: 5/9 features (56%)
+**Progress**: 6/9 features (67%)
 
 ---
 
