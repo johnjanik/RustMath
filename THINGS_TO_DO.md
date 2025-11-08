@@ -289,10 +289,10 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.multiplicative_order()` | ✅ | `rustmath-integers/src/modular.rs` | Finds smallest k: a^k ≡ 1 |
 | Primitive roots | ✅ | `rustmath-integers/src/modular.rs` | `primitive_roots(n)` |
 | Chinese Remainder Theorem | ✅ | `rustmath-integers/src/crt.rs` | |
-| Quadratic residues | 🚧 | `rustmath-integers/src/integer.rs` | Via Legendre/Jacobi symbols |
+| Quadratic residues | ✅ | `rustmath-integers/src/integer.rs` | Tonelli-Shanks + listing |
 | Legendre/Jacobi symbols | ✅ | `rustmath-integers/src/integer.rs` | `legendre_symbol()`, `jacobi_symbol()` |
 
-**Progress**: 7/8 functions (88%)
+**Progress**: 8/8 functions (100%)
 
 ### 3.4 Continued Fractions (sage.rings.continued_fraction)
 **SageMath Source**: `src/sage/rings/continued_fraction.py`

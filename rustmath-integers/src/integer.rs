@@ -592,6 +592,183 @@ impl Integer {
         Ok(result)
     }
 
+    /// Check if this number is a quadratic residue modulo a prime p
+    ///
+    /// Returns true if there exists an x such that x² ≡ self (mod p).
+    /// For odd primes, this uses the Legendre symbol.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// // 4 is a QR mod 7: 2² = 4
+    /// assert!(Integer::from(4).is_quadratic_residue_prime(&Integer::from(7)));
+    /// // 3 is not a QR mod 7
+    /// assert!(!Integer::from(3).is_quadratic_residue_prime(&Integer::from(7)));
+    /// ```
+    pub fn is_quadratic_residue_prime(&self, p: &Self) -> bool {
+        use crate::prime::is_prime;
+
+        if !is_prime(p) {
+            return false;
+        }
+
+        // Special case for p = 2
+        if *p == Integer::from(2) {
+            return self.is_even() || self.clone() % Integer::from(2) == Integer::zero();
+        }
+
+        // For odd primes, use Legendre symbol
+        match self.legendre_symbol(p) {
+            Ok(1) => true,
+            Ok(0) => true, // 0 is technically a QR (0² = 0)
+            _ => false,
+        }
+    }
+
+    /// Compute a square root modulo a prime using the Tonelli-Shanks algorithm
+    ///
+    /// Given a quadratic residue a modulo prime p, finds r such that r² ≡ a (mod p).
+    ///
+    /// # Algorithm
+    ///
+    /// Tonelli-Shanks algorithm for finding square roots modulo prime p:
+    /// 1. Factor out powers of 2 from p-1: p-1 = Q · 2^S
+    /// 2. Find a quadratic non-residue z
+    /// 3. Iteratively compute the square root
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// // Find sqrt(4) mod 7 = 2 or 5
+    /// let root = Integer::from(4).sqrt_mod_prime(&Integer::from(7)).unwrap();
+    /// assert!(root == Integer::from(2) || root == Integer::from(5));
+    /// ```
+    pub fn sqrt_mod_prime(&self, p: &Self) -> Result<Self> {
+        use crate::prime::is_prime;
+
+        if !is_prime(p) {
+            return Err(MathError::InvalidArgument(
+                "Modulus must be prime".to_string(),
+            ));
+        }
+
+        let a = self.clone() % p.clone();
+
+        // Special cases
+        if a.is_zero() {
+            return Ok(Integer::zero());
+        }
+
+        if *p == Integer::from(2) {
+            return Ok(a % Integer::from(2));
+        }
+
+        // Check if a is a quadratic residue
+        if !self.is_quadratic_residue_prime(p) {
+            return Err(MathError::InvalidArgument(
+                "Not a quadratic residue".to_string(),
+            ));
+        }
+
+        // Special case: p ≡ 3 (mod 4)
+        if p.clone() % Integer::from(4) == Integer::from(3) {
+            let exponent = (p.clone() + Integer::one()) / Integer::from(4);
+            return a.mod_pow(&exponent, p);
+        }
+
+        // General case: Tonelli-Shanks algorithm
+        // Factor p-1 = Q · 2^S where Q is odd
+        let mut q = p.clone() - Integer::one();
+        let mut s = 0u32;
+
+        while q.is_even() {
+            q = q / Integer::from(2);
+            s += 1;
+        }
+
+        // Find a quadratic non-residue z
+        let mut z = Integer::from(2);
+        while z.is_quadratic_residue_prime(p) {
+            z = z + Integer::one();
+            if z >= *p {
+                return Err(MathError::NotFound(
+                    "Could not find non-residue".to_string(),
+                ));
+            }
+        }
+
+        // Initialize
+        let mut m = s;
+        let mut c = z.mod_pow(&q, p)?;
+        let mut t = a.mod_pow(&q, p)?;
+        let mut r = a.mod_pow(&((q.clone() + Integer::one()) / Integer::from(2)), p)?;
+
+        loop {
+            if t.is_zero() {
+                return Ok(Integer::zero());
+            }
+            if t.is_one() {
+                return Ok(r);
+            }
+
+            // Find the least i such that t^(2^i) = 1
+            let mut i = 1u32;
+            let mut temp = (t.clone() * t.clone()) % p.clone();
+            while !temp.is_one() && i < m {
+                temp = (temp.clone() * temp.clone()) % p.clone();
+                i += 1;
+            }
+
+            if i >= m {
+                return Err(MathError::InvalidArgument(
+                    "Algorithm failed".to_string(),
+                ));
+            }
+
+            // Update values
+            let two_pow = Integer::from(2).pow((m - i - 1) as u32);
+            let b = c.mod_pow(&two_pow, p)?;
+            m = i;
+            c = (b.clone() * b.clone()) % p.clone();
+            t = (t * c.clone()) % p.clone();
+            r = (r * b) % p.clone();
+        }
+    }
+
+    /// Get all quadratic residues modulo a prime p
+    ///
+    /// Returns a sorted vector of all quadratic residues in the range [0, p).
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// let qrs = Integer::quadratic_residues(&Integer::from(7));
+    /// // Returns [0, 1, 2, 4] since 0²=0, 1²=1, 2²=4, 3²=2 (mod 7)
+    /// ```
+    pub fn quadratic_residues(p: &Self) -> Vec<Self> {
+        use crate::prime::is_prime;
+
+        if !is_prime(p) || *p <= Integer::one() {
+            return vec![];
+        }
+
+        let mut residues = std::collections::HashSet::new();
+        residues.insert(Integer::zero()); // 0 is always a QR
+
+        // For prime p, there are (p-1)/2 non-zero quadratic residues
+        let limit = (p.clone() + Integer::one()) / Integer::from(2);
+
+        for i in 1..limit.to_usize().unwrap_or(1000).min(1000) {
+            let x = Integer::from(i as i64);
+            let sq = (x * x.clone()) % p.clone();
+            residues.insert(sq);
+        }
+
+        let mut result: Vec<Self> = residues.into_iter().collect();
+        result.sort();
+        result
+    }
+
     /// Compute binomial coefficient modulo a prime
     ///
     /// Uses Lucas' theorem for efficiency when p is prime
@@ -1150,5 +1327,87 @@ mod tests {
             Integer::from(7).binomial_mod(&Integer::from(3), &Integer::from(7)).unwrap(),
             Integer::from(0)
         );
+    }
+
+    #[test]
+    fn test_is_quadratic_residue_prime() {
+        let p = Integer::from(7);
+
+        // Quadratic residues mod 7: 0, 1, 2, 4
+        assert!(Integer::from(0).is_quadratic_residue_prime(&p));
+        assert!(Integer::from(1).is_quadratic_residue_prime(&p)); // 1² = 1
+        assert!(Integer::from(2).is_quadratic_residue_prime(&p)); // 3² = 9 ≡ 2
+        assert!(Integer::from(4).is_quadratic_residue_prime(&p)); // 2² = 4
+
+        // Non-residues mod 7: 3, 5, 6
+        assert!(!Integer::from(3).is_quadratic_residue_prime(&p));
+        assert!(!Integer::from(5).is_quadratic_residue_prime(&p));
+        assert!(!Integer::from(6).is_quadratic_residue_prime(&p));
+
+        // Test with p = 11
+        let p11 = Integer::from(11);
+        assert!(Integer::from(4).is_quadratic_residue_prime(&p11)); // 2² = 4
+        assert!(Integer::from(9).is_quadratic_residue_prime(&p11)); // 3² = 9
+        assert!(!Integer::from(2).is_quadratic_residue_prime(&p11));
+    }
+
+    #[test]
+    fn test_sqrt_mod_prime() {
+        // Test p ≡ 3 (mod 4) case
+        let p7 = Integer::from(7);
+
+        // sqrt(4) mod 7 should be 2 or 5
+        let root = Integer::from(4).sqrt_mod_prime(&p7).unwrap();
+        assert!(root == Integer::from(2) || root == Integer::from(5));
+        assert_eq!((root.clone() * root) % p7.clone(), Integer::from(4));
+
+        // sqrt(2) mod 7 should be 3 or 4
+        let root = Integer::from(2).sqrt_mod_prime(&p7).unwrap();
+        assert!(root == Integer::from(3) || root == Integer::from(4));
+        assert_eq!((root.clone() * root) % p7.clone(), Integer::from(2));
+
+        // Test general case with p ≡ 1 (mod 4)
+        let p13 = Integer::from(13);
+
+        // sqrt(3) mod 13 should be 4 or 9
+        let root = Integer::from(3).sqrt_mod_prime(&p13).unwrap();
+        assert_eq!((root.clone() * root) % p13.clone(), Integer::from(3));
+
+        // sqrt(1) mod any prime should be 1
+        assert_eq!(Integer::from(1).sqrt_mod_prime(&p7).unwrap(), Integer::from(1));
+        assert_eq!(Integer::from(1).sqrt_mod_prime(&p13).unwrap(), Integer::from(1));
+
+        // sqrt(0) mod any prime should be 0
+        assert_eq!(Integer::from(0).sqrt_mod_prime(&p7).unwrap(), Integer::from(0));
+
+        // Non-residue should error
+        assert!(Integer::from(3).sqrt_mod_prime(&p7).is_err());
+    }
+
+    #[test]
+    fn test_quadratic_residues() {
+        // QRs mod 7: {0, 1, 2, 4}
+        let qrs = Integer::quadratic_residues(&Integer::from(7));
+        assert_eq!(qrs.len(), 4);
+        assert_eq!(qrs[0], Integer::from(0));
+        assert_eq!(qrs[1], Integer::from(1));
+        assert_eq!(qrs[2], Integer::from(2));
+        assert_eq!(qrs[3], Integer::from(4));
+
+        // QRs mod 11: {0, 1, 3, 4, 5, 9}
+        let qrs = Integer::quadratic_residues(&Integer::from(11));
+        assert_eq!(qrs.len(), 6); // (11-1)/2 + 1 = 6
+        assert!(qrs.contains(&Integer::from(0)));
+        assert!(qrs.contains(&Integer::from(1)));
+        assert!(qrs.contains(&Integer::from(3)));
+        assert!(qrs.contains(&Integer::from(4)));
+        assert!(qrs.contains(&Integer::from(5)));
+        assert!(qrs.contains(&Integer::from(9)));
+
+        // Verify they're actually quadratic residues
+        let p = Integer::from(11);
+        for qr in &qrs {
+            assert!(qr.is_quadratic_residue_prime(&p));
+        }
     }
 }
