@@ -5,9 +5,11 @@
 
 pub mod graph;
 pub mod generators;
+pub mod weighted_graph;
 
 pub use graph::Graph;
 pub use generators::*;
+pub use weighted_graph::WeightedGraph;
 
 #[cfg(test)]
 mod tests {
