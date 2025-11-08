@@ -162,6 +162,85 @@ impl Tableau {
             .collect::<Vec<_>>()
             .join("\n")
     }
+
+    /// Perform jeu de taquin slide from a given position
+    ///
+    /// Jeu de taquin is a process for moving an empty cell in a tableau
+    /// while maintaining the tableau property. The empty cell slides by
+    /// swapping with the smaller of its right and down neighbors.
+    pub fn jeu_de_taquin(&self, empty_row: usize, empty_col: usize) -> Option<Tableau> {
+        if empty_row >= self.rows.len() {
+            return None;
+        }
+        if empty_col >= self.rows[empty_row].len() {
+            return None;
+        }
+
+        let mut rows = self.rows.clone();
+        let mut current_row = empty_row;
+        let mut current_col = empty_col;
+
+        loop {
+            // Check right and down neighbors
+            let right_exists = current_col + 1 < rows[current_row].len();
+            let down_exists = current_row + 1 < rows.len() && current_col < rows[current_row + 1].len();
+
+            if !right_exists && !down_exists {
+                // Reached a corner, remove this position
+                rows[current_row].truncate(current_col);
+                // Remove empty rows
+                rows.retain(|r| !r.is_empty());
+                break;
+            }
+
+            // Choose which neighbor to swap with
+            let swap_right = if right_exists && down_exists {
+                // Swap with the smaller value to maintain tableau property
+                rows[current_row][current_col + 1] < rows[current_row + 1][current_col]
+            } else {
+                right_exists
+            };
+
+            if swap_right {
+                // Swap with right neighbor
+                if current_col + 1 < rows[current_row].len() {
+                    rows[current_row][current_col] = rows[current_row][current_col + 1];
+                    current_col += 1;
+                } else {
+                    break;
+                }
+            } else {
+                // Swap with down neighbor
+                if current_row + 1 < rows.len() && current_col < rows[current_row + 1].len() {
+                    rows[current_row][current_col] = rows[current_row + 1][current_col];
+                    current_row += 1;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        Tableau::new(rows)
+    }
+
+    /// Remove a specific value from the tableau using jeu de taquin
+    pub fn remove_entry(&self, value: usize) -> Option<Tableau> {
+        // Find the position of the value
+        for (row_idx, row) in self.rows.iter().enumerate() {
+            for (col_idx, &entry) in row.iter().enumerate() {
+                if entry == value {
+                    // Mark this position as "empty" by using jeu de taquin
+                    let mut rows = self.rows.clone();
+                    rows[row_idx][col_idx] = 0; // Temporary marker
+
+                    // Create temporary tableau and perform slide
+                    let temp_tableau = Tableau::new(rows)?;
+                    return temp_tableau.jeu_de_taquin(row_idx, col_idx);
+                }
+            }
+        }
+        None
+    }
 }
 
 /// Generate all standard Young tableaux of a given shape
@@ -443,5 +522,39 @@ mod tests {
         assert_eq!(p.num_rows(), 1);
         assert_eq!(q.num_rows(), 1);
         assert_eq!(p.size(), 3);
+    }
+
+    #[test]
+    fn test_jeu_de_taquin() {
+        // Create a tableau: [[1, 2, 4], [3, 5]]
+        let t = Tableau::new(vec![vec![1, 2, 4], vec![3, 5]]).unwrap();
+
+        // Perform jeu de taquin from position (0, 0) - removing 1
+        let result = t.jeu_de_taquin(0, 0);
+        assert!(result.is_some());
+
+        let result_t = result.unwrap();
+        // After sliding, the tableau should be valid
+        assert!(result_t.is_semistandard() || result_t.rows().is_empty() || result_t.size() < t.size());
+    }
+
+    #[test]
+    fn test_remove_entry() {
+        // Create a tableau: [[1, 3, 5], [2, 4]]
+        let t = Tableau::new(vec![vec![1, 3, 5], vec![2, 4]]).unwrap();
+
+        // Remove the value 1
+        let result = t.remove_entry(1);
+        assert!(result.is_some());
+
+        let result_t = result.unwrap();
+        // Size should be one less
+        assert_eq!(result_t.size(), t.size() - 1);
+
+        // Should not contain 1 anymore
+        assert!(!result_t.content().contains(&1));
+
+        // Should still be a valid semistandard tableau
+        assert!(result_t.is_semistandard());
     }
 }

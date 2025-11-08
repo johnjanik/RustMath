@@ -6,11 +6,13 @@
 pub mod combinations;
 pub mod partitions;
 pub mod permutations;
+pub mod posets;
 pub mod tableaux;
 
 pub use combinations::{combinations, Combination};
 pub use partitions::{partition_count, partitions, Partition};
 pub use permutations::{all_permutations, Permutation};
+pub use posets::Poset;
 pub use tableaux::{robinson_schensted, rs_insert, standard_tableaux, Tableau};
 
 // stirling_first, Composition, compositions, and compositions_k are defined in this module
@@ -543,6 +545,234 @@ fn generate_dyck_words(
     }
 }
 
+/// A perfect matching on 2n vertices
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PerfectMatching {
+    /// The matching as pairs of vertices
+    pairs: Vec<(usize, usize)>,
+    n: usize,
+}
+
+impl PerfectMatching {
+    /// Create a new perfect matching
+    pub fn new(pairs: Vec<(usize, usize)>, n: usize) -> Option<Self> {
+        // Verify it's a valid perfect matching
+        let mut seen = vec![false; 2 * n];
+
+        for &(a, b) in &pairs {
+            if a >= 2 * n || b >= 2 * n || seen[a] || seen[b] {
+                return None;
+            }
+            seen[a] = true;
+            seen[b] = true;
+        }
+
+        // Check all vertices are matched
+        if !seen.iter().all(|&x| x) {
+            return None;
+        }
+
+        Some(PerfectMatching { pairs, n })
+    }
+
+    /// Get the pairs in the matching
+    pub fn pairs(&self) -> &[(usize, usize)] {
+        &self.pairs
+    }
+
+    /// Get the number of pairs
+    pub fn size(&self) -> usize {
+        self.n
+    }
+}
+
+/// Generate all perfect matchings on 2n vertices
+pub fn perfect_matchings(n: usize) -> Vec<PerfectMatching> {
+    if n == 0 {
+        return vec![PerfectMatching {
+            pairs: vec![],
+            n: 0,
+        }];
+    }
+
+    let mut result = Vec::new();
+    let mut current_pairs = Vec::new();
+    let mut available: Vec<usize> = (0..2 * n).collect();
+
+    generate_perfect_matchings(&mut current_pairs, &mut available, n, &mut result);
+
+    result
+}
+
+fn generate_perfect_matchings(
+    current: &mut Vec<(usize, usize)>,
+    available: &mut Vec<usize>,
+    n: usize,
+    result: &mut Vec<PerfectMatching>,
+) {
+    if available.is_empty() {
+        result.push(PerfectMatching {
+            pairs: current.clone(),
+            n,
+        });
+        return;
+    }
+
+    // Take the first available vertex and try matching it with all others
+    let first = available[0];
+
+    for i in 1..available.len() {
+        let second = available[i];
+
+        // Create the pair
+        current.push((first, second));
+
+        // Remove both from available
+        let mut new_available = available.clone();
+        new_available.retain(|&x| x != first && x != second);
+
+        generate_perfect_matchings(current, &mut new_available, n, result);
+
+        current.pop();
+    }
+}
+
+/// A Latin square of order n
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LatinSquare {
+    /// The square as a 2D grid
+    grid: Vec<Vec<usize>>,
+    n: usize,
+}
+
+impl LatinSquare {
+    /// Create a new Latin square
+    pub fn new(grid: Vec<Vec<usize>>) -> Option<Self> {
+        let n = grid.len();
+
+        if n == 0 {
+            return Some(LatinSquare { grid, n: 0 });
+        }
+
+        // Check dimensions
+        for row in &grid {
+            if row.len() != n {
+                return None;
+            }
+        }
+
+        // Check that each row and column contains each symbol exactly once
+        for i in 0..n {
+            // Check row i
+            let mut row_symbols = vec![false; n];
+            for j in 0..n {
+                if grid[i][j] >= n {
+                    return None;
+                }
+                if row_symbols[grid[i][j]] {
+                    return None;
+                }
+                row_symbols[grid[i][j]] = true;
+            }
+
+            // Check column i
+            let mut col_symbols = vec![false; n];
+            for j in 0..n {
+                if col_symbols[grid[j][i]] {
+                    return None;
+                }
+                col_symbols[grid[j][i]] = true;
+            }
+        }
+
+        Some(LatinSquare { grid, n })
+    }
+
+    /// Get the grid
+    pub fn grid(&self) -> &[Vec<usize>] {
+        &self.grid
+    }
+
+    /// Get the order of the square
+    pub fn order(&self) -> usize {
+        self.n
+    }
+
+    /// Get the element at position (i, j)
+    pub fn get(&self, i: usize, j: usize) -> Option<usize> {
+        self.grid.get(i)?.get(j).copied()
+    }
+}
+
+/// Generate all Latin squares of order n (warning: grows very quickly!)
+pub fn latin_squares(n: usize) -> Vec<LatinSquare> {
+    if n == 0 {
+        return vec![LatinSquare {
+            grid: vec![],
+            n: 0,
+        }];
+    }
+
+    let mut result = Vec::new();
+    let mut grid = vec![vec![0; n]; n];
+
+    generate_latin_squares(&mut grid, 0, 0, n, &mut result);
+
+    result
+}
+
+fn generate_latin_squares(
+    grid: &mut Vec<Vec<usize>>,
+    row: usize,
+    col: usize,
+    n: usize,
+    result: &mut Vec<LatinSquare>,
+) {
+    if row == n {
+        result.push(LatinSquare {
+            grid: grid.clone(),
+            n,
+        });
+        return;
+    }
+
+    let (next_row, next_col) = if col + 1 < n {
+        (row, col + 1)
+    } else {
+        (row + 1, 0)
+    };
+
+    // Try each symbol
+    for symbol in 0..n {
+        // Check if symbol can be placed at (row, col)
+        if can_place_latin(grid, row, col, symbol, n) {
+            grid[row][col] = symbol;
+            generate_latin_squares(grid, next_row, next_col, n, result);
+            grid[row][col] = 0; // Reset for backtracking
+        }
+    }
+}
+
+fn can_place_latin(grid: &[Vec<usize>], row: usize, col: usize, symbol: usize, _n: usize) -> bool {
+    // Check row
+    for j in 0..col {
+        if grid[row][j] == symbol {
+            return false;
+        }
+    }
+
+    // Check column
+    for i in 0..row {
+        if grid[i][col] == symbol {
+            return false;
+        }
+    }
+
+    // Also check the rest of the current row and column for future consistency
+    // (This is optional but helps prune search space)
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -800,5 +1030,69 @@ mod tests {
 
         // Unequal counts
         assert!(DyckWord::new(vec![true, true, false, true]).is_none());
+    }
+
+    #[test]
+    fn test_perfect_matchings() {
+        // Perfect matchings on 2 vertices: just one matching {(0,1)}
+        let matchings1 = perfect_matchings(1);
+        assert_eq!(matchings1.len(), 1);
+
+        // Perfect matchings on 4 vertices: should be 3 matchings
+        // {(0,1),(2,3)}, {(0,2),(1,3)}, {(0,3),(1,2)}
+        let matchings2 = perfect_matchings(2);
+        assert_eq!(matchings2.len(), 3);
+
+        // Verify each is a valid matching
+        for matching in &matchings2 {
+            assert_eq!(matching.pairs().len(), 2);
+        }
+    }
+
+    #[test]
+    fn test_perfect_matching_validation() {
+        // Valid matching on 4 vertices
+        let matching = PerfectMatching::new(vec![(0, 1), (2, 3)], 2);
+        assert!(matching.is_some());
+
+        // Invalid - duplicate vertex
+        let invalid = PerfectMatching::new(vec![(0, 1), (1, 2)], 2);
+        assert!(invalid.is_none());
+
+        // Invalid - missing vertex
+        let invalid2 = PerfectMatching::new(vec![(0, 1)], 2);
+        assert!(invalid2.is_none());
+    }
+
+    #[test]
+    fn test_latin_squares() {
+        // Latin squares of order 1
+        let squares1 = latin_squares(1);
+        assert_eq!(squares1.len(), 1);
+
+        // Latin squares of order 2: should be 2 squares
+        // [[0,1],[1,0]] and [[1,0],[0,1]]
+        let squares2 = latin_squares(2);
+        assert_eq!(squares2.len(), 2);
+
+        // Verify each is valid
+        for square in &squares2 {
+            assert_eq!(square.order(), 2);
+        }
+    }
+
+    #[test]
+    fn test_latin_square_validation() {
+        // Valid 3x3 Latin square
+        let valid = LatinSquare::new(vec![vec![0, 1, 2], vec![1, 2, 0], vec![2, 0, 1]]);
+        assert!(valid.is_some());
+
+        // Invalid - repeated element in row
+        let invalid = LatinSquare::new(vec![vec![0, 0, 1], vec![1, 2, 0], vec![2, 1, 2]]);
+        assert!(invalid.is_none());
+
+        // Invalid - repeated element in column
+        let invalid2 = LatinSquare::new(vec![vec![0, 1, 2], vec![0, 2, 1], vec![2, 0, 1]]);
+        assert!(invalid2.is_none());
     }
 }
