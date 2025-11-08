@@ -5,15 +5,21 @@
 
 pub mod assumptions;
 pub mod differentiate;
+pub mod diffeq;
 pub mod expand;
 pub mod expression;
+pub mod integrate;
+pub mod limits;
 pub mod polynomial;
+pub mod series;
 pub mod simplify;
 pub mod substitute;
 pub mod symbol;
 
 pub use assumptions::{assume, forget, forget_all, get_assumptions, has_property, Property};
+pub use diffeq::{Euler, RungeKutta, ODE, ODEType};
 pub use expression::{BinaryOp, Expr, UnaryOp};
+pub use limits::{Direction, LimitResult};
 pub use symbol::Symbol;
 
 #[cfg(test)]
@@ -119,5 +125,136 @@ mod tests {
         assert!(has_property(p_sym, Property::Real));
 
         forget(p_sym);
+    }
+
+    // Integration tests
+    #[test]
+    fn test_calculus_integration_basic() {
+        use crate::symbol::Symbol;
+
+        let x = Symbol::new("x");
+        // ∫ x dx = x²/2
+        let expr = Expr::Symbol(x.clone());
+        let result = expr.integrate(&x).unwrap();
+        let expected = Expr::Symbol(x.clone()).pow(Expr::from(2)) / Expr::from(2);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_calculus_integration_trig() {
+        use crate::symbol::Symbol;
+
+        let x = Symbol::new("x");
+        // ∫ cos(x) dx = sin(x)
+        let expr = Expr::Symbol(x.clone()).cos();
+        let result = expr.integrate(&x).unwrap();
+        assert_eq!(result, Expr::Symbol(x.clone()).sin());
+    }
+
+    // Limits tests
+    #[test]
+    fn test_calculus_limits_basic() {
+        use crate::limits::{Direction, LimitResult};
+        use crate::symbol::Symbol;
+
+        let x = Symbol::new("x");
+        // lim(x→2) (x² + 1) = 5
+        let expr = Expr::Symbol(x.clone()).pow(Expr::from(2)) + Expr::from(1);
+        let result = expr.limit(&x, &Expr::from(2), Direction::Both);
+        assert_eq!(result, LimitResult::Finite(Expr::from(5)));
+    }
+
+    #[test]
+    fn test_calculus_limits_lhopital() {
+        use crate::limits::{Direction, LimitResult};
+        use crate::symbol::Symbol;
+
+        let x = Symbol::new("x");
+        // lim(x→0) x/x = 1 (using L'Hôpital's rule)
+        let expr = Expr::Symbol(x.clone()) / Expr::Symbol(x.clone());
+        let result = expr.limit(&x, &Expr::from(0), Direction::Both);
+        assert_eq!(result, LimitResult::Finite(Expr::from(1)));
+    }
+
+    // Series expansion tests
+    #[test]
+    fn test_calculus_taylor_series() {
+        use crate::symbol::Symbol;
+
+        let x = Symbol::new("x");
+        // Taylor expansion of exp(x) around 0
+        let expr = Expr::Symbol(x.clone()).exp();
+        let taylor = expr.maclaurin(&x, 3);
+        // Should not be constant
+        assert!(!taylor.is_constant());
+    }
+
+    #[test]
+    fn test_calculus_series_coefficients() {
+        use crate::symbol::Symbol;
+
+        let x = Symbol::new("x");
+        // For f(x) = x², coefficients should be [0, 0, 1, 0, ...]
+        let expr = Expr::Symbol(x.clone()).pow(Expr::from(2));
+        let coeffs = expr.series_coefficients(&x, &Expr::from(0), 3);
+        assert_eq!(coeffs.len(), 4);
+        assert_eq!(coeffs[0], Expr::from(0));
+        assert_eq!(coeffs[1], Expr::from(0));
+    }
+
+    // Differential equations tests
+    #[test]
+    fn test_calculus_ode_runge_kutta() {
+        use crate::diffeq::RungeKutta;
+
+        // Solve dy/dx = x, y(0) = 0
+        // Exact solution: y = x²/2
+        let mut rk = RungeKutta::new(0.0, 0.0, 0.1);
+        let f = |x: f64, _y: f64| x;
+        let solution = rk.solve(f, 1.0);
+
+        let (_xf, yf) = solution.last().unwrap();
+        assert!((yf - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_calculus_ode_euler() {
+        use crate::diffeq::Euler;
+
+        // Solve dy/dx = y, y(0) = 1
+        let mut euler = Euler::new(0.0, 1.0, 0.1);
+        let f = |_x: f64, y: f64| y;
+
+        for _ in 0..5 {
+            euler.step(f);
+        }
+
+        assert!(euler.y > 1.0);
+    }
+
+    #[test]
+    fn test_calculus_complete_workflow() {
+        use crate::limits::{Direction, LimitResult};
+        use crate::symbol::Symbol;
+
+        let x = Symbol::new("x");
+
+        // Define f(x) = x²
+        let f = Expr::Symbol(x.clone()).pow(Expr::from(2));
+
+        // Differentiate: f'(x) = 2x
+        let f_prime = f.differentiate(&x);
+
+        // Integrate: ∫f'(x)dx should give us back x² (plus constant)
+        let integrated = f_prime.integrate(&x);
+        assert!(integrated.is_some());
+
+        // Evaluate limit: lim(x→3) f(x) = 9
+        let limit = f.limit(&x, &Expr::from(3), Direction::Both);
+        assert_eq!(limit, LimitResult::Finite(Expr::from(9)));
+
+        // Taylor series of f around x=0
+        let taylor = f.taylor(&x, &Expr::from(0), 5);
+        assert!(!taylor.is_constant());
     }
 }

@@ -382,7 +382,7 @@ mod tests {
         // Coefficient of x^0 (constant term) is 1
         let c0 = p.coefficient(&var_x, 0);
         assert!(c0.is_some());
-        assert_eq!(c0.unwrap().eval_rational(), Some(rustmath_rationals::Rational::from((1, 1))));
+        assert_eq!(c0.unwrap().eval_rational(), Some(rustmath_rationals::Rational::new(1, 1).unwrap()));
 
         // Coefficient of x^1 is 2
         let c1 = p.coefficient(&var_x, 1);
@@ -395,7 +395,7 @@ mod tests {
         // Coefficient of x^3 is 0
         let c3 = p.coefficient(&var_x, 3);
         assert!(c3.is_some());
-        assert_eq!(c3.unwrap().eval_rational(), Some(rustmath_rationals::Rational::from((0, 1))));
+        assert_eq!(c3.unwrap().eval_rational(), Some(rustmath_rationals::Rational::new(0, 1).unwrap()));
     }
 
     #[test]
