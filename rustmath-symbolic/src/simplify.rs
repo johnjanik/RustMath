@@ -100,6 +100,15 @@ pub fn simplify(expr: &Expr) -> Expr {
             let inner_simp = simplify(inner);
             simplify_unary(*op, inner_simp)
         }
+
+        Expr::Function(name, args) => {
+            // Recursively simplify all arguments
+            let simplified_args: Vec<Arc<Expr>> = args
+                .iter()
+                .map(|arg| Arc::new(simplify(arg)))
+                .collect();
+            Expr::Function(name.clone(), simplified_args)
+        }
     }
 }
 

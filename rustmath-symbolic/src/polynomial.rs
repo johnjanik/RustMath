@@ -71,6 +71,10 @@ impl Expr {
                 // Transcendental functions are only polynomial if applied to constants
                 _ => inner.is_polynomial_recursive(var, false),
             },
+            // Functions are polynomial only if all arguments are constant in var
+            Expr::Function(_, args) => {
+                args.iter().all(|arg| arg.is_polynomial_recursive(var, false))
+            }
         }
     }
 
@@ -149,6 +153,8 @@ impl Expr {
                 UnaryOp::Neg => inner.degree_recursive(var),
                 _ => Some(0), // Transcendental functions applied to constants
             },
+            // Functions are treated as constants (degree 0)
+            Expr::Function(_, _) => Some(0),
         }
     }
 
@@ -285,6 +291,14 @@ impl Expr {
                     }
                 }
             },
+            // Functions are treated as constants
+            Expr::Function(_, _) => {
+                if n == 0 {
+                    Some(self.clone())
+                } else {
+                    Some(Expr::from(0))
+                }
+            }
         }
     }
 

@@ -31,6 +31,13 @@ impl Expr {
                 let new_inner = inner.substitute(sym, replacement);
                 Expr::Unary(*op, Arc::new(new_inner))
             }
+            Expr::Function(name, args) => {
+                let new_args: Vec<Arc<Expr>> = args
+                    .iter()
+                    .map(|arg| Arc::new(arg.substitute(sym, replacement)))
+                    .collect();
+                Expr::Function(name.clone(), new_args)
+            }
         }
     }
 
@@ -49,6 +56,13 @@ impl Expr {
             Expr::Unary(op, inner) => {
                 let new_inner = inner.substitute_many(substitutions);
                 Expr::Unary(*op, Arc::new(new_inner))
+            }
+            Expr::Function(name, args) => {
+                let new_args: Vec<Arc<Expr>> = args
+                    .iter()
+                    .map(|arg| Arc::new(arg.substitute_many(substitutions)))
+                    .collect();
+                Expr::Function(name.clone(), new_args)
             }
         }
     }
@@ -104,6 +118,7 @@ impl Expr {
                     _ => None,
                 }
             }
+            Expr::Function(_, _) => None,
         }
     }
 
@@ -219,6 +234,56 @@ impl Expr {
                         // Error function approximation
                         Some(erf_approx(val))
                     }
+
+                    UnaryOp::Zeta => {
+                        // Riemann zeta function ζ(s) = Σ(n=1 to ∞) 1/n^s
+                        Some(zeta_approx(val))
+                    }
+                }
+            }
+            Expr::Function(name, args) => {
+                match name.as_str() {
+                    "bessel_j" => {
+                        // J_n(x) - Bessel function of the first kind
+                        if args.len() == 2 {
+                            let order = args[0].eval_float()?;
+                            let x = args[1].eval_float()?;
+                            Some(bessel_j_approx(order, x))
+                        } else {
+                            None
+                        }
+                    }
+                    "bessel_y" => {
+                        // Y_n(x) - Bessel function of the second kind
+                        if args.len() == 2 {
+                            let order = args[0].eval_float()?;
+                            let x = args[1].eval_float()?;
+                            Some(bessel_y_approx(order, x))
+                        } else {
+                            None
+                        }
+                    }
+                    "bessel_i" => {
+                        // I_n(x) - Modified Bessel function of the first kind
+                        if args.len() == 2 {
+                            let order = args[0].eval_float()?;
+                            let x = args[1].eval_float()?;
+                            Some(bessel_i_approx(order, x))
+                        } else {
+                            None
+                        }
+                    }
+                    "bessel_k" => {
+                        // K_n(x) - Modified Bessel function of the second kind
+                        if args.len() == 2 {
+                            let order = args[0].eval_float()?;
+                            let x = args[1].eval_float()?;
+                            Some(bessel_k_approx(order, x))
+                        } else {
+                            None
+                        }
+                    }
+                    _ => None, // Unknown function
                 }
             }
         }
@@ -243,6 +308,11 @@ impl Expr {
             }
             Expr::Unary(_, inner) => {
                 inner.collect_symbols(syms);
+            }
+            Expr::Function(_, args) => {
+                for arg in args {
+                    arg.collect_symbols(syms);
+                }
             }
         }
     }
@@ -282,6 +352,135 @@ fn erf_approx(x: f64) -> f64 {
     let y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * (-x * x).exp();
 
     sign * y
+}
+
+/// Approximate Riemann zeta function
+fn zeta_approx(s: f64) -> f64 {
+    use std::f64::consts::PI;
+
+    // Special values
+    if (s - 0.0).abs() < 1e-10 {
+        return -0.5; // ζ(0) = -1/2
+    }
+    if (s - 1.0).abs() < 1e-10 {
+        return f64::INFINITY; // ζ(1) has a pole
+    }
+    if (s - 2.0).abs() < 1e-10 {
+        return PI * PI / 6.0; // ζ(2) = π²/6
+    }
+    if (s - 4.0).abs() < 1e-10 {
+        return PI.powi(4) / 90.0; // ζ(4) = π⁴/90
+    }
+
+    // For Re(s) > 1, use series approximation
+    // ζ(s) = Σ(n=1 to ∞) 1/n^s
+    if s > 1.0 {
+        let mut sum = 0.0;
+        let max_terms = 1000;
+        for n in 1..=max_terms {
+            let term = 1.0 / (n as f64).powf(s);
+            sum += term;
+            if term < 1e-10 {
+                break;
+            }
+        }
+        return sum;
+    }
+
+    // For s < 1, use functional equation:
+    // ζ(s) = 2^s * π^(s-1) * sin(πs/2) * Γ(1-s) * ζ(1-s)
+    // For simplicity, return NaN for negative values
+    f64::NAN
+}
+
+/// Factorial for floating point (up to 20)
+fn factorial_f64(n: usize) -> f64 {
+    if n > 20 {
+        return f64::INFINITY;
+    }
+    let mut result = 1.0;
+    for i in 1..=n {
+        result *= i as f64;
+    }
+    result
+}
+
+/// Approximate Bessel J function (first kind)
+/// J_n(x) = (x/2)^n * Σ(k=0 to ∞) [(-1)^k / (k! * (n+k)!)] * (x/2)^(2k)
+fn bessel_j_approx(order: f64, x: f64) -> f64 {
+    // Only handle non-negative integer orders for now
+    if order < 0.0 || (order - order.floor()).abs() > 1e-10 {
+        return f64::NAN;
+    }
+
+    let n = order.floor() as usize;
+    let half_x = x / 2.0;
+    let mut sum = 0.0;
+
+    for k in 0..100 {
+        let numerator = (-1.0f64).powi(k as i32) * half_x.powi(2 * k as i32 + n as i32);
+        let denominator = factorial_f64(k) * factorial_f64(k + n);
+
+        if denominator.is_infinite() {
+            break;
+        }
+
+        let term = numerator / denominator;
+        sum += term;
+
+        if term.abs() < 1e-15 {
+            break;
+        }
+    }
+
+    sum
+}
+
+/// Approximate Bessel Y function (second kind)
+/// Y_n(x) is more complex and involves logarithmic terms
+fn bessel_y_approx(_order: f64, _x: f64) -> f64 {
+    // Y_n is defined as: Y_n(x) = [J_n(x)cos(nπ) - J_{-n}(x)] / sin(nπ)
+    // For simplicity, return NaN for now as full implementation is complex
+    f64::NAN
+}
+
+/// Approximate Modified Bessel I function (first kind)
+/// I_n(x) = (x/2)^n * Σ(k=0 to ∞) [1 / (k! * (n+k)!)] * (x/2)^(2k)
+fn bessel_i_approx(order: f64, x: f64) -> f64 {
+    // Only handle non-negative integer orders for now
+    if order < 0.0 || (order - order.floor()).abs() > 1e-10 {
+        return f64::NAN;
+    }
+
+    let n = order.floor() as usize;
+    let half_x = x / 2.0;
+    let mut sum = 0.0;
+
+    for k in 0..100 {
+        let numerator = half_x.powi(2 * k as i32 + n as i32);
+        let denominator = factorial_f64(k) * factorial_f64(k + n);
+
+        if denominator.is_infinite() {
+            break;
+        }
+
+        let term = numerator / denominator;
+        sum += term;
+
+        if term.abs() < 1e-15 {
+            break;
+        }
+    }
+
+    sum
+}
+
+/// Approximate Modified Bessel K function (second kind)
+/// K_n(x) is the modified Bessel function of the second kind
+fn bessel_k_approx(_order: f64, _x: f64) -> f64 {
+    // K_n has a complex definition involving I_n and I_{-n}
+    // For simplicity, return NaN for now as full implementation is complex
+    f64::NAN
 }
 
 #[cfg(test)]
@@ -454,5 +653,104 @@ mod tests {
         let expr = Expr::from(3).erf();
         let result = expr.eval_float().unwrap();
         assert!((result - 1.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_eval_zeta() {
+        use std::f64::consts::PI;
+
+        // ζ(2) = π²/6
+        let expr = Expr::from(2).zeta();
+        let result = expr.eval_float().unwrap();
+        let expected = PI * PI / 6.0;
+        assert!((result - expected).abs() < 1e-6);
+
+        // ζ(0) = -1/2
+        let expr = Expr::from(0).zeta();
+        let result = expr.eval_float().unwrap();
+        assert!((result - (-0.5)).abs() < 1e-10);
+
+        // ζ(4) = π⁴/90
+        let expr = Expr::from(4).zeta();
+        let result = expr.eval_float().unwrap();
+        let expected = PI.powi(4) / 90.0;
+        assert!((result - expected).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_bessel_j() {
+        // J_0(0) = 1
+        let expr = Expr::bessel_j(Expr::from(0), Expr::from(0));
+        let result = expr.eval_float().unwrap();
+        assert!((result - 1.0).abs() < 1e-10);
+
+        // J_1(0) = 0
+        let expr = Expr::bessel_j(Expr::from(1), Expr::from(0));
+        let result = expr.eval_float().unwrap();
+        assert!(result.abs() < 1e-10);
+
+        // J_0(1) ≈ 0.7651976866
+        let expr = Expr::bessel_j(Expr::from(0), Expr::from(1));
+        let result = expr.eval_float().unwrap();
+        assert!((result - 0.7651976866).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_bessel_i() {
+        // I_0(0) = 1
+        let expr = Expr::bessel_i(Expr::from(0), Expr::from(0));
+        let result = expr.eval_float().unwrap();
+        assert!((result - 1.0).abs() < 1e-10);
+
+        // I_1(0) = 0
+        let expr = Expr::bessel_i(Expr::from(1), Expr::from(0));
+        let result = expr.eval_float().unwrap();
+        assert!(result.abs() < 1e-10);
+
+        // I_0(1) ≈ 1.2660658777
+        let expr = Expr::bessel_i(Expr::from(0), Expr::from(1));
+        let result = expr.eval_float().unwrap();
+        assert!((result - 1.2660658777).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_custom_function() {
+        // Test custom function creation
+        let x = Expr::symbol("x");
+        let y = Expr::symbol("y");
+
+        // f(x, y) = custom_func(x, y)
+        let expr = Expr::function("my_func", vec![x.clone(), y.clone()]);
+
+        // Should have 2 symbols
+        let syms = expr.symbols();
+        assert_eq!(syms.len(), 2);
+        assert!(syms.contains(&Symbol::new("x")));
+        assert!(syms.contains(&Symbol::new("y")));
+
+        // Display should show function name and arguments
+        let display = format!("{}", expr);
+        assert!(display.contains("my_func"));
+        assert!(display.contains("x"));
+        assert!(display.contains("y"));
+
+        // Substitution should work
+        let result = expr.substitute(&Symbol::new("x"), &Expr::from(5));
+        let result_syms = result.symbols();
+        assert_eq!(result_syms.len(), 1);
+        assert!(result_syms.contains(&Symbol::new("y")));
+    }
+
+    #[test]
+    fn test_bessel_function_display() {
+        let expr = Expr::bessel_j(Expr::from(0), Expr::symbol("x"));
+        let display = format!("{}", expr);
+        assert!(display.contains("bessel_j"));
+        assert!(display.contains("x"));
+
+        let expr = Expr::bessel_i(Expr::from(1), Expr::symbol("y"));
+        let display = format!("{}", expr);
+        assert!(display.contains("bessel_i"));
+        assert!(display.contains("y"));
     }
 }
