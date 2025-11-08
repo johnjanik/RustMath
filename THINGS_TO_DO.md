@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~41% (192 / 473 functions tracked)
+**Overall Progress**: ~41% (196 / 473 functions tracked)
 
 ---
 
@@ -359,16 +359,16 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `sin(x)`, `cos(x)`, `tan(x)` | ✅ | `rustmath-symbolic/src/expression.rs` | |
 | `exp(x)`, `log(x)` | ✅ | `rustmath-symbolic/src/expression.rs` | |
 | `sqrt(x)` | ✅ | `rustmath-symbolic/src/expression.rs` | |
-| `abs(x)` | ⬜ | | |
-| `sign(x)` | ⬜ | | |
-| Hyperbolic functions | ⬜ | | sinh, cosh, tanh |
-| Inverse trig functions | ⬜ | | arcsin, arccos, etc. |
-| Bessel functions | ⬜ | | |
-| Gamma function | ⬜ | | |
-| Zeta function | ⬜ | | |
-| Custom functions | ⬜ | | |
+| `abs(x)` | ✅ | `rustmath-symbolic/src/expression.rs` | Absolute value |
+| `sign(x)` | ✅ | `rustmath-symbolic/src/expression.rs` | Sign function (-1, 0, 1) |
+| Hyperbolic functions | ✅ | `rustmath-symbolic/src/expression.rs` | sinh, cosh, tanh |
+| Inverse trig functions | ✅ | `rustmath-symbolic/src/expression.rs` | arcsin, arccos, arctan |
+| Bessel functions | ⬜ | | Planned |
+| Gamma function | ⬜ | | Planned |
+| Zeta function | ⬜ | | Planned |
+| Custom functions | ⬜ | | Planned |
 
-**Progress**: 3/11 features (27%)
+**Progress**: 7/11 features (64%)
 
 ### 4.3 Assumptions (sage.symbolic.assumptions)
 **SageMath Source**: `src/sage/symbolic/assumptions.py`
