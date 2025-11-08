@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~43% (203 / 473 functions tracked)
+**Overall Progress**: ~44% (209 / 475 functions tracked)
 
 ---
 
@@ -375,12 +375,14 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| `assume(x > 0)` | ⬜ | | |
-| `.is_positive()` | ⬜ | | |
-| `.is_real()` | ⬜ | | |
-| `.is_integer()` | ⬜ | | |
+| `assume(x > 0)` | ✅ | `rustmath-symbolic/src/assumptions.rs` | assume(symbol, Property::Positive) |
+| `.is_positive()` | ✅ | `rustmath-symbolic/src/expression.rs` | Returns Option<bool> |
+| `.is_negative()` | ✅ | `rustmath-symbolic/src/expression.rs` | Returns Option<bool> |
+| `.is_real()` | ✅ | `rustmath-symbolic/src/expression.rs` | Returns Option<bool> |
+| `.is_integer()` | ✅ | `rustmath-symbolic/src/expression.rs` | Returns Option<bool> |
+| Property system | ✅ | `rustmath-symbolic/src/assumptions.rs` | 11 property types with implication |
 
-**Progress**: 0/4 functions (0%)
+**Progress**: 6/6 functions (100%)
 
 ---
 
@@ -998,7 +1000,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 1. Rings & Fields | 69 | 90 | 77% |
 | 2. Linear Algebra | 42 | 46 | 91% |
 | 3. Number Theory | 20 | 42 | 48% |
-| 4. Symbolic Computation | 27 | 35 | 77% |
+| 4. Symbolic Computation | 33 | 37 | 89% |
 | 5. Calculus | 7 | 30 | 23% |
 | 6. Combinatorics | 17 | 54 | 31% |
 | 7. Graph Theory | 17 | 59 | 29% |
@@ -1009,7 +1011,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 12. Group Theory | 0 | 14 | 0% |
 | 13-20. Advanced Topics | 1 | 49 | 2% |
 
-**TOTAL**: **203 / 473 functions** = **~43% complete**
+**TOTAL**: **209 / 475 functions** = **~44% complete**
 
 ### Files to Examine in SageMath Source
 
