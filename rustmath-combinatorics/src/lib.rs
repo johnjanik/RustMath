@@ -6,10 +6,12 @@
 pub mod combinations;
 pub mod partitions;
 pub mod permutations;
+pub mod tableaux;
 
 pub use combinations::{combinations, Combination};
 pub use partitions::{partition_count, partitions, Partition};
 pub use permutations::{all_permutations, Permutation};
+pub use tableaux::{robinson_schensted, rs_insert, standard_tableaux, Tableau};
 
 // stirling_first, Composition, compositions, and compositions_k are defined in this module
 

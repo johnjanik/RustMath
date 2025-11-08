@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~51% (244 / 475 functions tracked)
+**Overall Progress**: ~52% (249 / 475 functions tracked)
 
 ---
 
@@ -513,14 +513,14 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| `Tableau([...])` | ⬜ | | Young tableaux |
-| Standard tableaux | ⬜ | | |
-| `.content()` | ⬜ | | |
-| `.reading_word()` | ⬜ | | |
-| Robinson-Schensted | ⬜ | | |
+| `Tableau([...])` | ✅ | `rustmath-combinatorics/src/tableaux.rs` | Young tableaux with shape validation |
+| Standard tableaux | ✅ | `rustmath-combinatorics/src/tableaux.rs` | `standard_tableaux()` - generates all SYT of given shape |
+| `.content()` | ✅ | `rustmath-combinatorics/src/tableaux.rs` | Returns multiset of entries |
+| `.reading_word()` | ✅ | `rustmath-combinatorics/src/tableaux.rs` | Row reading from bottom to top |
+| Robinson-Schensted | ✅ | `rustmath-combinatorics/src/tableaux.rs` | `robinson_schensted()` - permutation to tableau pair correspondence |
 | `.jeu_de_taquin()` | ⬜ | | |
 
-**Progress**: 0/6 functions (0%)
+**Progress**: 5/6 functions (83%)
 
 ### 6.5 Posets (sage.combinat.posets)
 **SageMath Source**: `src/sage/combinat/posets/`
@@ -1003,7 +1003,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 3. Number Theory | 20 | 42 | 48% |
 | 4. Symbolic Computation | 33 | 37 | 89% |
 | 5. Calculus | 30 | 30 | 100% |
-| 6. Combinatorics | 27 | 44 | 61% |
+| 6. Combinatorics | 32 | 44 | 73% |
 | 7. Graph Theory | 17 | 59 | 29% |
 | 8. Geometry | 0 | 15 | 0% |
 | 9. Algebraic Geometry | 0 | 11 | 0% |
@@ -1012,7 +1012,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 12. Group Theory | 0 | 14 | 0% |
 | 13-20. Advanced Topics | 1 | 49 | 2% |
 
-**TOTAL**: **242 / 475 functions** = **~51% complete**
+**TOTAL**: **249 / 475 functions** = **~52% complete**
 
 ### Files to Examine in SageMath Source
 
