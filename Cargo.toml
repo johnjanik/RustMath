@@ -24,6 +24,7 @@ members = [
     "rustmath-category",
     "rustmath-stats",
     "rustmath-numerical",
+    "rustmath-logic",
 ]
 
 [workspace.package]

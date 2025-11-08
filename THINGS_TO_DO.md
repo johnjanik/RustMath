@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~81% (395 / 493 functions tracked)
+**Overall Progress**: ~81% (398 / 493 functions tracked)
 
 ---
 
@@ -982,12 +982,12 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| Boolean formulas | ⬜ | | |
-| CNF/DNF | ⬜ | | |
-| SAT solving | ⬜ | | |
-| Proofs | ⬜ | | |
+| Boolean formulas | ✅ | `rustmath-logic::formula` | Formula enum, Variable, evaluation, simplification, tautology/satisfiability checking |
+| CNF/DNF | ✅ | `rustmath-logic::cnf` | CNF/DNF conversion, Tseitin transformation, De Morgan's laws |
+| SAT solving | ✅ | `rustmath-logic::sat` | DPLL algorithm with unit propagation and pure literal elimination |
+| Proofs | ⬜ | | Not implemented |
 
-**Progress**: 0/4 features (0%)
+**Progress**: 3/4 features (75%)
 
 ---
 
