@@ -5,6 +5,7 @@
 
 pub mod differentiate;
 pub mod expression;
+pub mod polynomial;
 pub mod simplify;
 pub mod substitute;
 pub mod symbol;

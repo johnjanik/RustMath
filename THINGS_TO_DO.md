@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~41% (196 / 473 functions tracked)
+**Overall Progress**: ~42% (199 / 473 functions tracked)
 
 ---
 
@@ -343,13 +343,13 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.simplify_trig()` | ⬜ | | |
 | `.canonicalize_radical()` | ⬜ | | |
 | `.collect(x)` | ⬜ | | Collect terms |
-| `.coefficient(x, n)` | ⬜ | | |
-| `.degree(x)` | ⬜ | | |
+| `.coefficient(x, n)` | ✅ | `rustmath-symbolic/src/polynomial.rs` | Get coefficient of x^n |
+| `.degree(x)` | ✅ | `rustmath-symbolic/src/polynomial.rs` | Polynomial degree in variable |
 | `.variables()` | ✅ | `rustmath-symbolic/src/substitute.rs` | `symbols()` |
-| `.is_polynomial(x)` | ⬜ | | |
-| `.is_rational_expression()` | ⬜ | | |
+| `.is_polynomial(x)` | ✅ | `rustmath-symbolic/src/polynomial.rs` | Check if polynomial |
+| `.is_rational_expression()` | ✅ | `rustmath-symbolic/src/polynomial.rs` | Check if ratio of polynomials |
 
-**Progress**: 8/20 functions (40%)
+**Progress**: 11/20 functions (55%)
 
 ### 4.2 Functions (sage.symbolic.function)
 **SageMath Source**: `src/sage/symbolic/function.pyx`
