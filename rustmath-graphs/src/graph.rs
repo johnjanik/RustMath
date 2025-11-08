@@ -650,6 +650,271 @@ impl Graph {
         }
         false
     }
+
+    /// Count the number of spanning trees using Kirchhoff's matrix-tree theorem
+    ///
+    /// Returns the number of spanning trees in the graph.
+    /// For disconnected graphs, returns 0.
+    /// Uses the Laplacian matrix and computes its cofactor determinant.
+    pub fn spanning_trees_count(&self) -> i64 {
+        if !self.is_connected() {
+            return 0;
+        }
+
+        if self.num_vertices == 0 {
+            return 0;
+        }
+
+        if self.num_vertices == 1 {
+            return 1;
+        }
+
+        // Create Laplacian matrix
+        let n = self.num_vertices;
+        let mut laplacian = vec![vec![0i64; n]; n];
+
+        for i in 0..n {
+            for j in 0..n {
+                if i == j {
+                    laplacian[i][j] = self.adj[i].len() as i64;
+                } else if self.adj[i].contains(&j) {
+                    laplacian[i][j] = -1;
+                }
+            }
+        }
+
+        // Remove first row and column to get cofactor
+        let mut cofactor = vec![vec![0i64; n - 1]; n - 1];
+        for i in 0..n - 1 {
+            for j in 0..n - 1 {
+                cofactor[i][j] = laplacian[i + 1][j + 1];
+            }
+        }
+
+        // Compute determinant
+        determinant(&cofactor)
+    }
+
+    /// Compute the chromatic polynomial of the graph
+    ///
+    /// Returns a polynomial where P(k) gives the number of ways to color
+    /// the graph with k colors. Uses deletion-contraction algorithm.
+    pub fn chromatic_polynomial(&self) -> Vec<i64> {
+        chromatic_poly_helper(self)
+    }
+
+    /// Lexicographic breadth-first search
+    ///
+    /// Returns a vertex ordering that can be used for perfect elimination ordering
+    /// and recognition of chordal graphs.
+    pub fn lex_bfs(&self) -> Vec<usize> {
+        if self.num_vertices == 0 {
+            return vec![];
+        }
+
+        let n = self.num_vertices;
+        let mut order = Vec::new();
+        let mut labels: Vec<Vec<usize>> = vec![vec![]; n];
+        let mut unnumbered: HashSet<usize> = (0..n).collect();
+
+        for i in (0..n).rev() {
+            // Find unnumbered vertex with lexicographically largest label
+            let mut max_vertex = *unnumbered.iter().next().unwrap();
+            for &v in &unnumbered {
+                if labels[v] > labels[max_vertex] {
+                    max_vertex = v;
+                }
+            }
+
+            order.push(max_vertex);
+            unnumbered.remove(&max_vertex);
+
+            // Update labels of unnumbered neighbors
+            for &neighbor in &self.adj[max_vertex] {
+                if unnumbered.contains(&neighbor) {
+                    labels[neighbor].push(i);
+                }
+            }
+        }
+
+        order.reverse();
+        order
+    }
+}
+
+/// Helper function to compute determinant of a matrix
+fn determinant(matrix: &[Vec<i64>]) -> i64 {
+    let n = matrix.len();
+    if n == 0 {
+        return 1;
+    }
+    if n == 1 {
+        return matrix[0][0];
+    }
+    if n == 2 {
+        return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+    }
+
+    // Use Gaussian elimination for larger matrices
+    let mut m = matrix.to_vec();
+    let mut det = 1i64;
+    let mut sign = 1i64;
+
+    for i in 0..n {
+        // Find pivot
+        let mut pivot = i;
+        for j in i + 1..n {
+            if m[j][i].abs() > m[pivot][i].abs() {
+                pivot = j;
+            }
+        }
+
+        if m[pivot][i] == 0 {
+            return 0;
+        }
+
+        if pivot != i {
+            m.swap(i, pivot);
+            sign = -sign;
+        }
+
+        det *= m[i][i];
+
+        // Eliminate column
+        for j in i + 1..n {
+            let factor = m[j][i];
+            for k in i..n {
+                m[j][k] = m[j][k] * m[i][i] - m[i][k] * factor;
+            }
+        }
+    }
+
+    // Adjust for divisions we didn't do
+    for i in 1..n {
+        det /= m[i - 1][i - 1].pow((n - i) as u32);
+    }
+
+    sign * det
+}
+
+/// Helper function for chromatic polynomial using deletion-contraction
+fn chromatic_poly_helper(graph: &Graph) -> Vec<i64> {
+    let n = graph.num_vertices();
+
+    // Base cases
+    if n == 0 {
+        return vec![1];
+    }
+
+    if graph.num_edges() == 0 {
+        // Empty graph: P(k) = k^n
+        let mut poly = vec![0; n + 1];
+        poly[n] = 1;
+        return poly;
+    }
+
+    // Find an edge to delete/contract
+    let mut edge = None;
+    'outer: for u in 0..n {
+        for &v in &graph.adj[u] {
+            if u < v {
+                edge = Some((u, v));
+                break 'outer;
+            }
+        }
+    }
+
+    let (u, v) = edge.unwrap();
+
+    // Deletion: remove edge (u, v)
+    let mut g_delete = graph.clone();
+    g_delete.adj[u].remove(&v);
+    g_delete.adj[v].remove(&u);
+    let p_delete = chromatic_poly_helper(&g_delete);
+
+    // Contraction: merge vertices u and v
+    let g_contract = contract_edge(graph, u, v);
+    let p_contract = chromatic_poly_helper(&g_contract);
+
+    // P(G) = P(G-e) - P(G/e)
+    subtract_poly(&p_delete, &p_contract)
+}
+
+/// Contract an edge (merge two vertices)
+fn contract_edge(graph: &Graph, u: usize, v: usize) -> Graph {
+    let n = graph.num_vertices();
+    let mut new_graph = Graph::new(n - 1);
+
+    // Map old vertices to new vertices (v is removed, everything after shifts down)
+    let vertex_map: Vec<usize> = (0..n)
+        .filter(|&i| i != v)
+        .enumerate()
+        .map(|(new_idx, _)| new_idx)
+        .collect();
+
+    let get_new_vertex = |old: usize| -> usize {
+        if old == v {
+            if u < v {
+                u
+            } else {
+                u - 1
+            }
+        } else if old < v {
+            old
+        } else {
+            old - 1
+        }
+    };
+
+    // Add edges
+    for i in 0..n {
+        if i == v {
+            continue;
+        }
+        for &j in &graph.adj[i] {
+            if j == v || j <= i {
+                continue;
+            }
+            let new_i = get_new_vertex(i);
+            let new_j = get_new_vertex(j);
+            if new_i != new_j {
+                new_graph.add_edge(new_i, new_j).ok();
+            }
+        }
+    }
+
+    // Add edges from v to u's new position
+    for &neighbor in &graph.adj[v] {
+        if neighbor != u {
+            let new_u = get_new_vertex(u);
+            let new_neighbor = get_new_vertex(neighbor);
+            if new_u != new_neighbor {
+                new_graph.add_edge(new_u, new_neighbor).ok();
+            }
+        }
+    }
+
+    new_graph
+}
+
+/// Subtract two polynomials
+fn subtract_poly(p1: &[i64], p2: &[i64]) -> Vec<i64> {
+    let max_len = p1.len().max(p2.len());
+    let mut result = vec![0; max_len];
+
+    for i in 0..p1.len() {
+        result[i] += p1[i];
+    }
+    for i in 0..p2.len() {
+        result[i] -= p2[i];
+    }
+
+    // Remove leading zeros
+    while result.len() > 1 && *result.last().unwrap() == 0 {
+        result.pop();
+    }
+
+    result
 }
 
 /// Union-Find data structure for Kruskal's algorithm
@@ -1015,5 +1280,96 @@ mod tests {
         g2.add_edge(1, 2).unwrap();
         g2.add_edge(2, 0).unwrap();
         assert!(g2.max_bipartite_matching().is_none());
+    }
+
+    #[test]
+    fn test_spanning_trees_count() {
+        // Complete graph K3 has 3 spanning trees
+        let mut g = Graph::new(3);
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(1, 2).unwrap();
+        g.add_edge(2, 0).unwrap();
+        assert_eq!(g.spanning_trees_count(), 3);
+
+        // Path graph has 1 spanning tree (itself)
+        let mut g2 = Graph::new(4);
+        g2.add_edge(0, 1).unwrap();
+        g2.add_edge(1, 2).unwrap();
+        g2.add_edge(2, 3).unwrap();
+        assert_eq!(g2.spanning_trees_count(), 1);
+
+        // Complete graph K4 has 16 spanning trees
+        let mut g3 = Graph::new(4);
+        for i in 0..4 {
+            for j in i + 1..4 {
+                g3.add_edge(i, j).unwrap();
+            }
+        }
+        assert_eq!(g3.spanning_trees_count(), 16);
+
+        // Disconnected graph has 0 spanning trees
+        let mut g4 = Graph::new(4);
+        g4.add_edge(0, 1).unwrap();
+        g4.add_edge(2, 3).unwrap();
+        assert_eq!(g4.spanning_trees_count(), 0);
+    }
+
+    #[test]
+    fn test_chromatic_polynomial() {
+        // Empty graph with 3 vertices: P(k) = k^3
+        let g = Graph::new(3);
+        let poly = g.chromatic_polynomial();
+        assert_eq!(poly.len(), 4);
+        assert_eq!(poly[3], 1); // Coefficient of k^3
+
+        // Path graph P3: P(k) = k(k-1)^2 = k^3 - 2k^2 + k
+        let mut g2 = Graph::new(3);
+        g2.add_edge(0, 1).unwrap();
+        g2.add_edge(1, 2).unwrap();
+        let poly2 = g2.chromatic_polynomial();
+        assert_eq!(poly2[0], 0);  // Constant term
+        assert_eq!(poly2[1], 1);  // k term
+        assert_eq!(poly2[2], -2); // k^2 term
+        assert_eq!(poly2[3], 1);  // k^3 term
+
+        // Triangle K3: P(k) = k(k-1)(k-2) = k^3 - 3k^2 + 2k
+        let mut g3 = Graph::new(3);
+        g3.add_edge(0, 1).unwrap();
+        g3.add_edge(1, 2).unwrap();
+        g3.add_edge(2, 0).unwrap();
+        let poly3 = g3.chromatic_polynomial();
+        assert_eq!(poly3[0], 0);  // Constant term
+        assert_eq!(poly3[1], 2);  // k term
+        assert_eq!(poly3[2], -3); // k^2 term
+        assert_eq!(poly3[3], 1);  // k^3 term
+    }
+
+    #[test]
+    fn test_lex_bfs() {
+        // Path graph
+        let mut g = Graph::new(4);
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(1, 2).unwrap();
+        g.add_edge(2, 3).unwrap();
+
+        let order = g.lex_bfs();
+        assert_eq!(order.len(), 4);
+        // All vertices should appear exactly once
+        let mut sorted_order = order.clone();
+        sorted_order.sort();
+        assert_eq!(sorted_order, vec![0, 1, 2, 3]);
+
+        // Empty graph
+        let g2 = Graph::new(3);
+        let order2 = g2.lex_bfs();
+        assert_eq!(order2.len(), 3);
+
+        // Complete graph
+        let mut g3 = Graph::new(3);
+        g3.add_edge(0, 1).unwrap();
+        g3.add_edge(1, 2).unwrap();
+        g3.add_edge(2, 0).unwrap();
+        let order3 = g3.lex_bfs();
+        assert_eq!(order3.len(), 3);
     }
 }

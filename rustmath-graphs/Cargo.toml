@@ -8,3 +8,5 @@ repository.workspace = true
 
 [dependencies]
 rustmath-core = { path = "../rustmath-core" }
+rustmath-integers = { path = "../rustmath-integers" }
+rustmath-polynomials = { path = "../rustmath-polynomials" }
