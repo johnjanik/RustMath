@@ -267,7 +267,7 @@ impl Expr {
         new_var: &Symbol,
     ) -> Option<Expr> {
         // Compute du/dx
-        let du_dx = substitution.differentiate(var);
+        let _du_dx = substitution.differentiate(var);
 
         // Try to write integrand as g(u) * du/dx
         // This is a simplified version - full implementation would need pattern matching
@@ -285,6 +285,90 @@ impl Expr {
 
         // Substitute back
         Some(integrated.substitute(new_var, substitution))
+    }
+
+    /// Double integral: ∫∫ f(x,y) dy dx over a rectangular region
+    ///
+    /// Computes ∫[x_min, x_max] ∫[y_min, y_max] f(x,y) dy dx
+    ///
+    /// Uses Fubini's theorem: integrate with respect to y first, then x
+    pub fn integrate_double(
+        &self,
+        x_var: &Symbol,
+        y_var: &Symbol,
+        x_min: &Expr,
+        x_max: &Expr,
+        y_min: &Expr,
+        y_max: &Expr,
+    ) -> Option<Expr> {
+        // First integrate with respect to y
+        let inner_integral = self.integrate(y_var)?;
+
+        // Evaluate the inner integral at the y bounds
+        let inner_at_y_max = inner_integral.substitute(y_var, y_max);
+        let inner_at_y_min = inner_integral.substitute(y_var, y_min);
+        let inner_result = inner_at_y_max - inner_at_y_min;
+
+        // Now integrate with respect to x
+        let outer_integral = inner_result.integrate(x_var)?;
+
+        // Evaluate at the x bounds
+        let result_at_x_max = outer_integral.substitute(x_var, x_max);
+        let result_at_x_min = outer_integral.substitute(x_var, x_min);
+
+        Some(result_at_x_max - result_at_x_min)
+    }
+
+    /// Triple integral: ∫∫∫ f(x,y,z) dz dy dx over a rectangular box
+    ///
+    /// Computes ∫[x_min, x_max] ∫[y_min, y_max] ∫[z_min, z_max] f(x,y,z) dz dy dx
+    pub fn integrate_triple(
+        &self,
+        x_var: &Symbol,
+        y_var: &Symbol,
+        z_var: &Symbol,
+        x_min: &Expr,
+        x_max: &Expr,
+        y_min: &Expr,
+        y_max: &Expr,
+        z_min: &Expr,
+        z_max: &Expr,
+    ) -> Option<Expr> {
+        // Integrate with respect to z
+        let integral_z = self.integrate(z_var)?;
+        let result_z = integral_z.substitute(z_var, z_max) - integral_z.substitute(z_var, z_min);
+
+        // Integrate with respect to y
+        let integral_y = result_z.integrate(y_var)?;
+        let result_y = integral_y.substitute(y_var, y_max) - integral_y.substitute(y_var, y_min);
+
+        // Integrate with respect to x
+        let integral_x = result_y.integrate(x_var)?;
+        let result_x = integral_x.substitute(x_var, x_max) - integral_x.substitute(x_var, x_min);
+
+        Some(result_x)
+    }
+
+    /// Change of variables for double integrals
+    ///
+    /// When transforming from (u,v) to (x,y), the Jacobian determinant is needed:
+    /// ∫∫ f(x,y) dx dy = ∫∫ f(x(u,v), y(u,v)) |J| du dv
+    ///
+    /// where J = ∂(x,y)/∂(u,v) is the Jacobian determinant
+    pub fn jacobian_2d(
+        x_of_uv: &Expr,
+        y_of_uv: &Expr,
+        u_var: &Symbol,
+        v_var: &Symbol,
+    ) -> Expr {
+        // Compute partial derivatives
+        let dx_du = x_of_uv.differentiate(u_var);
+        let dx_dv = x_of_uv.differentiate(v_var);
+        let dy_du = y_of_uv.differentiate(u_var);
+        let dy_dv = y_of_uv.differentiate(v_var);
+
+        // Jacobian determinant: (∂x/∂u)(∂y/∂v) - (∂x/∂v)(∂y/∂u)
+        dx_du * dy_dv - dx_dv * dy_du
     }
 }
 
