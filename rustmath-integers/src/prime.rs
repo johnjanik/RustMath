@@ -539,6 +539,86 @@ pub fn pollard_rho(n: &Integer) -> Option<Integer> {
     None
 }
 
+/// Pollard's p-1 algorithm for finding a non-trivial factor
+///
+/// This algorithm is effective when n has a prime factor p such that p-1
+/// is B-smooth (i.e., all prime factors of p-1 are ≤ B).
+///
+/// The algorithm computes a = 2^(k!) mod n for increasing k, then checks
+/// gcd(a-1, n). If p-1 divides k!, then a^(p-1) ≡ 1 (mod p) by Fermat's
+/// Little Theorem, so p divides gcd(a-1, n).
+///
+/// # Arguments
+/// * `n` - The number to factor
+/// * `bound` - The smoothness bound B (typically 100-10000)
+///
+/// Returns None if n is prime or if the algorithm fails to find a factor
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_integers::Integer;
+/// use rustmath_integers::prime::pollard_p_minus_1;
+///
+/// // 299 = 13 × 23, and 13-1 = 12 = 2² × 3
+/// let factor = pollard_p_minus_1(&Integer::from(299), 10);
+/// assert!(factor.is_some());
+/// ```
+pub fn pollard_p_minus_1(n: &Integer, bound: u32) -> Option<Integer> {
+    if n <= &Integer::from(1) {
+        return None;
+    }
+
+    if n.is_even() {
+        return Some(Integer::from(2));
+    }
+
+    // Check if n is prime first
+    if is_prime(n) {
+        return None;
+    }
+
+    // Start with base 2
+    let mut a = Integer::from(2);
+
+    // Compute a = 2^(product of prime powers ≤ bound) mod n
+    // We do this by repeatedly raising a to small primes
+    for p in 2..=bound {
+        if !is_prime(&Integer::from(p as i64)) {
+            continue;
+        }
+
+        // Compute the highest power of p that is ≤ bound
+        let mut q = p;
+        while q <= bound / p {
+            q *= p;
+        }
+
+        // Raise a to the power q
+        // a = a^q mod n
+        if let Ok(new_a) = a.mod_pow(&Integer::from(q as i64), n) {
+            a = new_a;
+        } else {
+            return None;
+        }
+    }
+
+    // Compute gcd(a - 1, n)
+    let diff = if a > Integer::one() {
+        a - Integer::one()
+    } else {
+        a + n.clone() - Integer::one()
+    };
+
+    let g = diff.gcd(n);
+
+    if g > Integer::one() && &g < n {
+        Some(g)
+    } else {
+        None
+    }
+}
+
 // Simple deterministic "random" number for Pollard's Rho
 fn rand_int() -> i64 {
     use std::cell::Cell;
@@ -768,5 +848,41 @@ mod tests {
         let p = random_prime(&Integer::from(2), &Integer::from(3));
         assert!(p.is_some());
         assert_eq!(p.unwrap(), Integer::from(2));
+    }
+
+    #[test]
+    fn test_pollard_p_minus_1() {
+        // 299 = 13 × 23
+        // 13 - 1 = 12 = 2² × 3 (smooth with bound 10)
+        // 23 - 1 = 22 = 2 × 11 (smooth with bound 20)
+        let n = Integer::from(299);
+        let factor = pollard_p_minus_1(&n, 20);
+        assert!(factor.is_some());
+        let f = factor.unwrap();
+        assert!(f == Integer::from(13) || f == Integer::from(23));
+        assert_eq!(&n % &f, Integer::zero());
+
+        // 437 = 19 × 23
+        // 19 - 1 = 18 = 2 × 3² (smooth with bound 10)
+        // 23 - 1 = 22 = 2 × 11 (smooth with bound 20)
+        let n = Integer::from(437);
+        let factor = pollard_p_minus_1(&n, 20);
+        assert!(factor.is_some());
+        let f = factor.unwrap();
+        assert!(f == Integer::from(19) || f == Integer::from(23));
+
+        // Test with prime (should return None)
+        let p = Integer::from(17);
+        let factor = pollard_p_minus_1(&p, 100);
+        assert!(factor.is_none());
+
+        // 91 = 7 × 13
+        // 7 - 1 = 6 = 2 × 3
+        // 13 - 1 = 12 = 2² × 3
+        let n = Integer::from(91);
+        let factor = pollard_p_minus_1(&n, 10);
+        assert!(factor.is_some());
+        let f = factor.unwrap();
+        assert!(f == Integer::from(7) || f == Integer::from(13));
     }
 }

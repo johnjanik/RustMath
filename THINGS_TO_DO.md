@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~40% (189 / 473 functions tracked)
+**Overall Progress**: ~40% (190 / 473 functions tracked)
 
 ---
 
@@ -267,7 +267,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `factor(n)` | ✅ | `rustmath-integers/src/prime.rs` | Trial + Pollard's Rho |
 | Trial division | ✅ | `rustmath-integers/src/prime.rs` | |
 | Pollard's rho | ✅ | `rustmath-integers/src/prime.rs` | |
-| Pollard's p-1 | ⬜ | | |
+| Pollard's p-1 | ✅ | `rustmath-integers/src/prime.rs` | With smoothness bound |
 | ECM (Elliptic Curve Method) | ⬜ | | |
 | Quadratic sieve | ⬜ | | |
 | `.divisors()` | ✅ | `rustmath-integers/src/integer.rs` | From prime factorization |
@@ -276,7 +276,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.euler_phi()` | ✅ | `rustmath-integers/src/integer.rs` | Totient function |
 | `.moebius()` | ✅ | `rustmath-integers/src/integer.rs` | Möbius function μ(n) |
 
-**Progress**: 8/11 functions (73%)
+**Progress**: 9/11 functions (82%)
 
 ### 3.3 Modular Arithmetic (sage.rings.finite_rings.integer_mod)
 **SageMath Source**: `src/sage/rings/finite_rings/integer_mod.pyx`
