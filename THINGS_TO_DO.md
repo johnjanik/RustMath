@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~57% (271 / 475 functions tracked)
+**Overall Progress**: ~59% (278 / 475 functions tracked)
 
 ---
 
@@ -603,10 +603,10 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 |-----------------|--------|-------------------|-------|
 | `.breadth_first_search(start)` | ✅ | `rustmath-graphs/src/graph.rs` | `bfs()` |
 | `.depth_first_search(start)` | ✅ | `rustmath-graphs/src/graph.rs` | `dfs()` |
-| Topological sort | ⬜ | | For DAGs |
+| Topological sort | ✅ | `rustmath-graphs/src/graph.rs` | `topological_sort()` - DFS-based for DAGs |
 | `.lex_BFS()` | ⬜ | | |
 
-**Progress**: 2/4 functions (50%)
+**Progress**: 3/4 functions (75%)
 
 ### 7.4 Shortest Paths (sage.graphs.distances_all_pairs)
 **SageMath Source**: `src/sage/graphs/distances_all_pairs.pyx`
@@ -663,14 +663,14 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| Complete graphs K_n | ⬜ | | |
-| Cycle graphs C_n | ⬜ | | |
-| Path graphs P_n | ⬜ | | |
-| Star graphs | ⬜ | | |
-| Petersen graph | ⬜ | | |
-| Random graphs | ⬜ | | Erdős-Rényi, etc. |
+| Complete graphs K_n | ✅ | `rustmath-graphs/src/generators.rs` | `complete_graph()` |
+| Cycle graphs C_n | ✅ | `rustmath-graphs/src/generators.rs` | `cycle_graph()` |
+| Path graphs P_n | ✅ | `rustmath-graphs/src/generators.rs` | `path_graph()` |
+| Star graphs | ✅ | `rustmath-graphs/src/generators.rs` | `star_graph()` |
+| Petersen graph | ✅ | `rustmath-graphs/src/generators.rs` | `petersen_graph()` |
+| Random graphs | ✅ | `rustmath-graphs/src/generators.rs` | `random_graph()` - Erdős-Rényi G(n,p) model with random feature |
 
-**Progress**: 0/6 functions (0%)
+**Progress**: 6/6 functions (100%)
 
 ---
 
@@ -1004,7 +1004,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 4. Symbolic Computation | 33 | 37 | 89% |
 | 5. Calculus | 30 | 30 | 100% |
 | 6. Combinatorics | 44 | 44 | 100% |
-| 7. Graph Theory | 27 | 59 | 46% |
+| 7. Graph Theory | 34 | 59 | 58% |
 | 8. Geometry | 0 | 15 | 0% |
 | 9. Algebraic Geometry | 0 | 11 | 0% |
 | 10. Cryptography | 3 | 18 | 17% |
@@ -1012,7 +1012,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 12. Group Theory | 0 | 14 | 0% |
 | 13-20. Advanced Topics | 1 | 49 | 2% |
 
-**TOTAL**: **271 / 475 functions** = **~57% complete**
+**TOTAL**: **278 / 475 functions** = **~59% complete**
 
 ### Files to Examine in SageMath Source
 

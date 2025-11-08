@@ -4,8 +4,10 @@
 //! shortest paths, and other graph-theoretic computations.
 
 pub mod graph;
+pub mod generators;
 
 pub use graph::Graph;
+pub use generators::*;
 
 #[cfg(test)]
 mod tests {
