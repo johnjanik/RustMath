@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~39% (187 / 473 functions tracked)
+**Overall Progress**: ~40% (188 / 473 functions tracked)
 
 ---
 
@@ -255,9 +255,9 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `prime_range(start, stop)` | ✅ | `rustmath-integers/src/prime.rs` | Returns primes in [start, stop) |
 | `primes_first_n(n)` | ✅ | `rustmath-integers/src/prime.rs` | First n primes |
 | `prime_pi(x)` | ✅ | `rustmath-integers/src/prime.rs` | Prime counting function π(x) |
-| `random_prime(a, b)` | ⬜ | | Planned |
+| `random_prime(a, b)` | ✅ | `rustmath-integers/src/prime.rs` | Random prime in range [a, b) |
 
-**Progress**: 9/10 functions (90%)
+**Progress**: 10/10 functions (100%)
 
 ### 3.2 Factorization (sage.rings.factorint)
 **SageMath Source**: `src/sage/rings/factorint.pyx`

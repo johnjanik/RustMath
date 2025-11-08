@@ -375,6 +375,42 @@ pub fn prime_pi(x: &Integer) -> usize {
     count
 }
 
+/// Generate a random prime in the range [a, b)
+///
+/// Returns a random prime number p such that a ≤ p < b.
+/// Returns None if no prime exists in the range.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_integers::Integer;
+/// use rustmath_integers::prime::random_prime;
+///
+/// // Get a random prime between 10 and 20
+/// if let Some(p) = random_prime(&Integer::from(10), &Integer::from(20)) {
+///     assert!(p >= Integer::from(10) && p < Integer::from(20));
+/// }
+/// ```
+pub fn random_prime(a: &Integer, b: &Integer) -> Option<Integer> {
+    use rand::Rng;
+
+    if a >= b {
+        return None;
+    }
+
+    // First, collect all primes in the range
+    let primes = prime_range(a, b);
+
+    if primes.is_empty() {
+        return None;
+    }
+
+    // Select a random prime from the list
+    let mut rng = rand::thread_rng();
+    let index = rng.gen_range(0..primes.len());
+    Some(primes[index].clone())
+}
+
 /// Compute all prime factors of n
 pub fn factor(n: &Integer) -> Vec<(Integer, u32)> {
     if n.is_zero() || n.is_one() {
@@ -700,5 +736,37 @@ mod tests {
         assert_eq!(prime_pi(&Integer::from(10)), 4);  // 2, 3, 5, 7
         assert_eq!(prime_pi(&Integer::from(20)), 8);  // 2, 3, 5, 7, 11, 13, 17, 19
         assert_eq!(prime_pi(&Integer::from(100)), 25);
+    }
+
+    #[test]
+    fn test_random_prime() {
+        // Test basic functionality
+        let p = random_prime(&Integer::from(10), &Integer::from(20));
+        assert!(p.is_some());
+        let prime = p.unwrap();
+        assert!(prime >= Integer::from(10) && prime < Integer::from(20));
+        assert!(is_prime(&prime));
+
+        // Verify it's one of the primes in range: 11, 13, 17, 19
+        let valid_primes = vec![
+            Integer::from(11),
+            Integer::from(13),
+            Integer::from(17),
+            Integer::from(19),
+        ];
+        assert!(valid_primes.contains(&prime));
+
+        // Test with no primes in range
+        let p = random_prime(&Integer::from(24), &Integer::from(28));
+        assert!(p.is_none());
+
+        // Test invalid range (a >= b)
+        let p = random_prime(&Integer::from(20), &Integer::from(10));
+        assert!(p.is_none());
+
+        // Test range with single prime
+        let p = random_prime(&Integer::from(2), &Integer::from(3));
+        assert!(p.is_some());
+        assert_eq!(p.unwrap(), Integer::from(2));
     }
 }
