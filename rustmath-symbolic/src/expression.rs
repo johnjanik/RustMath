@@ -35,6 +35,9 @@ pub enum UnaryOp {
     Arcsin,
     Arccos,
     Arctan,
+    Gamma,
+    Factorial,
+    Erf,
 }
 
 /// Symbolic expression
@@ -143,6 +146,28 @@ impl Expr {
     pub fn arctan(self) -> Self {
         Expr::Unary(UnaryOp::Arctan, Arc::new(self))
     }
+
+    /// Create gamma function expression
+    ///
+    /// The gamma function Γ(x) extends the factorial function to complex numbers.
+    /// For positive integers n: Γ(n) = (n-1)!
+    pub fn gamma(self) -> Self {
+        Expr::Unary(UnaryOp::Gamma, Arc::new(self))
+    }
+
+    /// Create factorial expression
+    ///
+    /// For non-negative integers n: n! = 1·2·3·...·n
+    pub fn factorial(self) -> Self {
+        Expr::Unary(UnaryOp::Factorial, Arc::new(self))
+    }
+
+    /// Create error function expression
+    ///
+    /// erf(x) = (2/√π) ∫₀ˣ e^(-t²) dt
+    pub fn erf(self) -> Self {
+        Expr::Unary(UnaryOp::Erf, Arc::new(self))
+    }
 }
 
 impl From<i64> for Expr {
@@ -196,6 +221,9 @@ impl fmt::Display for Expr {
                     UnaryOp::Arcsin => "arcsin",
                     UnaryOp::Arccos => "arccos",
                     UnaryOp::Arctan => "arctan",
+                    UnaryOp::Gamma => "gamma",
+                    UnaryOp::Factorial => "factorial",
+                    UnaryOp::Erf => "erf",
                 };
                 match op {
                     UnaryOp::Neg => write!(f, "-{}", inner),

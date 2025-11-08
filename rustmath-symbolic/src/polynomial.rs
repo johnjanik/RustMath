@@ -2,7 +2,7 @@
 
 use crate::expression::{BinaryOp, Expr, UnaryOp};
 use crate::symbol::Symbol;
-use rustmath_core::Ring;
+use rustmath_core::{NumericConversion, Ring};
 use rustmath_integers::Integer;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -134,7 +134,7 @@ impl Expr {
                 }
                 BinaryOp::Pow => {
                     if let Expr::Integer(exp) = right.as_ref() {
-                        if let Ok(exp_i64) = exp.to_i64() {
+                        if let Some(exp_i64) = exp.to_i64() {
                             if exp_i64 >= 0 {
                                 let base_deg = left.degree_recursive(var)?;
                                 return Some(base_deg * exp_i64);
@@ -235,7 +235,7 @@ impl Expr {
                 }
                 BinaryOp::Pow => {
                     if let Expr::Integer(exp) = right.as_ref() {
-                        if let Ok(exp_i64) = exp.to_i64() {
+                        if let Some(exp_i64) = exp.to_i64() {
                             if exp_i64 >= 0 {
                                 // Use binomial expansion for small exponents
                                 // For now, simple case: if base doesn't contain var

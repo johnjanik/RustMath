@@ -2,6 +2,8 @@
 
 use crate::expression::{BinaryOp, Expr, UnaryOp};
 use crate::symbol::Symbol;
+use rustmath_core::{NumericConversion, Ring};
+use rustmath_integers::Integer;
 use rustmath_rationals::Rational;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -57,7 +59,7 @@ impl Expr {
     /// None if it contains symbols or unsupported operations.
     pub fn eval_rational(&self) -> Option<Rational> {
         match self {
-            Expr::Integer(n) => Some(Rational::from((n.clone(), rustmath_integers::Integer::from(1)))),
+            Expr::Integer(n) => Rational::new(n.clone(), Integer::one()).ok(),
             Expr::Rational(r) => Some(r.clone()),
             Expr::Symbol(_) => None,
             Expr::Binary(op, left, right) => {
@@ -78,14 +80,12 @@ impl Expr {
                     BinaryOp::Pow => {
                         // Only handle integer powers
                         if let Expr::Integer(exp) = right.as_ref() {
-                            if let Ok(exp_u32) = exp.to_i64().and_then(|e| {
+                            if let Some(e) = exp.to_i64() {
                                 if e >= 0 && e <= u32::MAX as i64 {
-                                    Ok(e as u32)
+                                    Some(l.pow(e as u32))
                                 } else {
-                                    Err(())
+                                    None
                                 }
-                            }) {
-                                Some(l.pow(exp_u32))
                             } else {
                                 None
                             }
@@ -111,9 +111,10 @@ impl Expr {
     ///
     /// This uses f64 approximations for transcendental functions.
     pub fn eval_float(&self) -> Option<f64> {
+        use rustmath_core::NumericConversion as _;
         match self {
-            Expr::Integer(n) => n.to_i64().ok().map(|i| i as f64),
-            Expr::Rational(r) => Some(r.to_f64()),
+            Expr::Integer(n) => n.to_i64().map(|i| i as f64),
+            Expr::Rational(r) => r.to_f64(),
             Expr::Symbol(_) => None,
             Expr::Binary(op, left, right) => {
                 let l = left.eval_float()?;
@@ -182,6 +183,42 @@ impl Expr {
                         }
                     }
                     UnaryOp::Arctan => Some(val.atan()),
+                    UnaryOp::Gamma => {
+                        // Use Stirling's approximation for gamma function
+                        // Γ(x) ≈ √(2π/x) * (x/e)^x for large x
+                        // For small positive integers, use exact values
+                        if val > 0.0 && val <= 20.0 && (val - val.floor()).abs() < 1e-10 {
+                            // Integer case: Γ(n) = (n-1)!
+                            let n = val.floor() as i32;
+                            if n > 0 {
+                                let mut result = 1.0;
+                                for i in 1..(n as i32) {
+                                    result *= i as f64;
+                                }
+                                return Some(result);
+                            }
+                        }
+                        // General case using lgamma
+                        Some(gamma_approx(val))
+                    }
+                    UnaryOp::Factorial => {
+                        // n! for non-negative integers
+                        if val >= 0.0 && (val - val.floor()).abs() < 1e-10 {
+                            let n = val.floor() as i32;
+                            if n <= 20 {
+                                let mut result = 1.0;
+                                for i in 1..=n {
+                                    result *= i as f64;
+                                }
+                                return Some(result);
+                            }
+                        }
+                        None
+                    }
+                    UnaryOp::Erf => {
+                        // Error function approximation
+                        Some(erf_approx(val))
+                    }
                 }
             }
         }
@@ -209,6 +246,42 @@ impl Expr {
             }
         }
     }
+}
+
+/// Approximate gamma function using Stirling's formula
+fn gamma_approx(x: f64) -> f64 {
+    use std::f64::consts::{E, PI};
+    if x <= 0.0 {
+        return f64::NAN;
+    }
+    // Stirling's approximation: Γ(x) ≈ √(2π/x) * (x/e)^x
+    (2.0 * PI / x).sqrt() * (x / E).powf(x)
+}
+
+/// Approximate error function using Taylor series
+fn erf_approx(x: f64) -> f64 {
+    use std::f64::consts::PI;
+
+    // For |x| > 3, erf(x) ≈ ±1
+    if x.abs() > 3.0 {
+        return if x > 0.0 { 1.0 } else { -1.0 };
+    }
+
+    // Abramowitz and Stegun approximation
+    let a1 = 0.254829592;
+    let a2 = -0.284496736;
+    let a3 = 1.421413741;
+    let a4 = -1.453152027;
+    let a5 = 1.061405429;
+    let p = 0.3275911;
+
+    let sign = if x < 0.0 { -1.0 } else { 1.0 };
+    let x = x.abs();
+
+    let t = 1.0 / (1.0 + p * x);
+    let y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * (-x * x).exp();
+
+    sign * y
 }
 
 #[cfg(test)]
@@ -337,5 +410,49 @@ mod tests {
         let expr = Expr::from(0).sign();
         let result = expr.eval_float().unwrap();
         assert!((result - 0.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_eval_gamma() {
+        // Γ(1) = 0! = 1
+        let expr = Expr::from(1).gamma();
+        let result = expr.eval_float().unwrap();
+        assert!((result - 1.0).abs() < 1e-6);
+
+        // Γ(5) = 4! = 24
+        let expr = Expr::from(5).gamma();
+        let result = expr.eval_float().unwrap();
+        assert!((result - 24.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_eval_factorial() {
+        // 0! = 1
+        let expr = Expr::from(0).factorial();
+        let result = expr.eval_float().unwrap();
+        assert!((result - 1.0).abs() < 1e-10);
+
+        // 5! = 120
+        let expr = Expr::from(5).factorial();
+        let result = expr.eval_float().unwrap();
+        assert!((result - 120.0).abs() < 1e-10);
+
+        // 10! = 3628800
+        let expr = Expr::from(10).factorial();
+        let result = expr.eval_float().unwrap();
+        assert!((result - 3628800.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_eval_erf() {
+        // erf(0) = 0
+        let expr = Expr::from(0).erf();
+        let result = expr.eval_float().unwrap();
+        assert!((result - 0.0).abs() < 1e-6);
+
+        // erf(large) ≈ 1
+        let expr = Expr::from(3).erf();
+        let result = expr.eval_float().unwrap();
+        assert!((result - 1.0).abs() < 0.01);
     }
 }

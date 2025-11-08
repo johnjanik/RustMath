@@ -204,6 +204,9 @@ pub trait NumericConversion {
     /// Try to convert to u64
     fn to_u64(&self) -> Option<u64>;
 
+    /// Try to convert to usize
+    fn to_usize(&self) -> Option<usize>;
+
     /// Try to convert to f64 (may lose precision)
     fn to_f64(&self) -> Option<f64>;
 }
@@ -276,6 +279,14 @@ impl NumericConversion for i32 {
         }
     }
 
+    fn to_usize(&self) -> Option<usize> {
+        if *self >= 0 {
+            Some(*self as usize)
+        } else {
+            None
+        }
+    }
+
     fn to_f64(&self) -> Option<f64> {
         Some(*self as f64)
     }
@@ -297,6 +308,14 @@ impl NumericConversion for i64 {
     fn to_u64(&self) -> Option<u64> {
         if *self >= 0 {
             Some(*self as u64)
+        } else {
+            None
+        }
+    }
+
+    fn to_usize(&self) -> Option<usize> {
+        if *self >= 0 {
+            Some(*self as usize)
         } else {
             None
         }

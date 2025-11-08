@@ -489,7 +489,7 @@ impl Integer {
 
         if result.is_one() {
             Ok(1)
-        } else if result == *p - Integer::one() {
+        } else if result == p.clone() - Integer::one() {
             Ok(-1)
         } else {
             // This shouldn't happen for valid inputs
@@ -691,7 +691,7 @@ impl Integer {
         while z.is_quadratic_residue_prime(p) {
             z = z + Integer::one();
             if z >= *p {
-                return Err(MathError::NotFound(
+                return Err(MathError::InvalidArgument(
                     "Could not find non-residue".to_string(),
                 ));
             }
@@ -760,7 +760,7 @@ impl Integer {
 
         for i in 1..limit.to_usize().unwrap_or(1000).min(1000) {
             let x = Integer::from(i as i64);
-            let sq = (x * x.clone()) % p.clone();
+            let sq = (x.clone() * x.clone()) % p.clone();
             residues.insert(sq);
         }
 
@@ -1023,6 +1023,11 @@ impl NumericConversion for Integer {
     fn to_u64(&self) -> Option<u64> {
         use num_traits::ToPrimitive;
         self.value.to_u64()
+    }
+
+    fn to_usize(&self) -> Option<usize> {
+        use num_traits::ToPrimitive;
+        self.value.to_usize()
     }
 
     fn to_f64(&self) -> Option<f64> {

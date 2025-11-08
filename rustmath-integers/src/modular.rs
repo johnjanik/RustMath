@@ -1,7 +1,7 @@
 //! Modular arithmetic
 
 use crate::Integer;
-use rustmath_core::{MathError, Result, Ring};
+use rustmath_core::{MathError, NumericConversion, Result, Ring};
 use std::fmt;
 use std::ops::{Add, Mul, Neg, Sub};
 
@@ -140,7 +140,10 @@ pub fn primitive_roots(n: &Integer) -> Vec<Integer> {
     }
 
     // Calculate φ(n)
-    let phi_n = n.euler_phi();
+    let phi_n = match n.euler_phi() {
+        Ok(val) => val,
+        Err(_) => return vec![],
+    };
 
     let mut roots = Vec::new();
 

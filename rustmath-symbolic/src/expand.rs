@@ -1,7 +1,7 @@
 //! Expression expansion operations
 
 use crate::expression::{BinaryOp, Expr, UnaryOp};
-use rustmath_core::Ring;
+use rustmath_core::{NumericConversion, Ring};
 use rustmath_integers::Integer;
 use std::sync::Arc;
 
@@ -47,7 +47,7 @@ impl Expr {
                     BinaryOp::Pow => {
                         // Expand (expr)^n for small integer n
                         if let Expr::Integer(exp) = right.as_ref() {
-                            if let Ok(exp_i64) = exp.to_i64() {
+                            if let Some(exp_i64) = exp.to_i64() {
                                 if exp_i64 >= 0 && exp_i64 <= 10 {
                                     return expand_power(&left_exp, exp_i64 as u32);
                                 }
@@ -196,17 +196,17 @@ fn binomial_expand(a: &Expr, b: &Expr, n: u32, is_add: bool) -> Expr {
         let a_term = if n - k == 0 {
             Expr::from(1)
         } else if n - k == 1 {
-            a.as_ref().clone()
+            a.clone()
         } else {
-            a.as_ref().clone().pow(Expr::from((n - k) as i64))
+            a.clone().pow(Expr::from((n - k) as i64))
         };
 
         let b_term = if k == 0 {
             Expr::from(1)
         } else if k == 1 {
-            b.as_ref().clone()
+            b.clone()
         } else {
-            b.as_ref().clone().pow(Expr::from(k as i64))
+            b.clone().pow(Expr::from(k as i64))
         };
 
         let mut term = Expr::from(binom_coeff as i64) * a_term * b_term;
