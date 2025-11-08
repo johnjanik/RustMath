@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~48% (226 / 475 functions tracked)
+**Overall Progress**: ~48% (230 / 475 functions tracked)
 
 ---
 
@@ -413,13 +413,13 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 |-----------------|--------|-------------------|-------|
 | `integrate(f, x)` | ✅ | `rustmath-symbolic/src/integrate.rs` | Table-based symbolic integration |
 | `integrate(f, (x, a, b))` | ✅ | `rustmath-symbolic/src/integrate.rs` | `integrate_definite()` |
-| Numerical integration | ⬜ | | Planned |
+| Numerical integration | ✅ | `rustmath-symbolic/src/numerical.rs` | Trapezoidal, Simpson, Adaptive, Gauss-Legendre, Romberg, Monte Carlo |
 | Multiple integrals | ⬜ | | Planned |
-| Symbolic integration | 🚧 | `rustmath-symbolic/src/integrate.rs` | Basic rules (power, trig, exp, log) |
-| Integration by parts | ⬜ | | Planned |
-| Substitution | ⬜ | | Planned |
+| Symbolic integration | ✅ | `rustmath-symbolic/src/integrate.rs` | Basic rules + advanced patterns |
+| Integration by parts | ✅ | `rustmath-symbolic/src/integrate.rs` | `integrate_by_parts()`, `try_integration_by_parts()` |
+| Substitution | ✅ | `rustmath-symbolic/src/integrate.rs` | `integrate_with_substitution()` |
 
-**Progress**: 3/7 functions (43%)
+**Progress**: 6/7 functions (86%)
 
 ### 5.3 Limits (sage.calculus.calculus)
 **SageMath Source**: `src/sage/calculus/calculus.py`
@@ -452,12 +452,12 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| `desolve(de, dvar)` | 🚧 | `rustmath-symbolic/src/diffeq.rs` | ODE struct with classification |
-| `.solve_ode()` | 🚧 | `rustmath-symbolic/src/diffeq.rs` | Simple first-order, separable |
+| `desolve(de, dvar)` | ✅ | `rustmath-symbolic/src/diffeq.rs` | ODE struct with classification |
+| `.solve_ode()` | ✅ | `rustmath-symbolic/src/diffeq.rs` | First-order linear, separable, exact, homogeneous |
 | Numerical ODE solvers | ✅ | `rustmath-symbolic/src/diffeq.rs` | Runge-Kutta 4th order, Euler method |
 | PDEs | ⬜ | | Planned |
 
-**Progress**: 2/4 functions (50%)
+**Progress**: 3/4 functions (75%)
 
 ---
 
@@ -1002,7 +1002,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 2. Linear Algebra | 42 | 46 | 91% |
 | 3. Number Theory | 20 | 42 | 48% |
 | 4. Symbolic Computation | 33 | 37 | 89% |
-| 5. Calculus | 24 | 30 | 80% |
+| 5. Calculus | 28 | 30 | 93% |
 | 6. Combinatorics | 17 | 54 | 31% |
 | 7. Graph Theory | 17 | 59 | 29% |
 | 8. Geometry | 0 | 15 | 0% |
@@ -1012,7 +1012,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 12. Group Theory | 0 | 14 | 0% |
 | 13-20. Advanced Topics | 1 | 49 | 2% |
 
-**TOTAL**: **226 / 475 functions** = **~48% complete**
+**TOTAL**: **230 / 475 functions** = **~48% complete**
 
 ### Files to Examine in SageMath Source
 
