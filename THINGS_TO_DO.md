@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~80% (384 / 482 functions tracked)
+**Overall Progress**: ~81% (389 / 487 functions tracked)
 
 ---
 
@@ -949,13 +949,13 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| Probability distributions | ⬜ | | |
-| Random variables | ⬜ | | |
-| Statistical functions | ⬜ | | Mean, variance, etc. |
-| Hypothesis testing | ⬜ | | |
-| Regression | ⬜ | | |
+| Probability distributions | ✅ | rustmath-stats/src/distributions.rs | Normal, Binomial, Uniform, Poisson, Exponential |
+| Random variables | ✅ | rustmath-stats/src/distributions.rs | Distribution trait, sampling methods |
+| Statistical functions | ✅ | rustmath-stats/src/statistics.rs | Mean, variance, std dev, median, mode, correlation, quantiles, skewness, kurtosis |
+| Hypothesis testing | ✅ | rustmath-stats/src/hypothesis.rs | t-tests, chi-squared, confidence intervals |
+| Regression | ✅ | rustmath-stats/src/regression.rs | Simple and multiple linear regression, R², MSE |
 
-**Progress**: 0/5 features (0%)
+**Progress**: 5/5 features (100%) ✅ COMPLETE
 
 ---
 
@@ -1040,9 +1040,10 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 13. Representation Theory | 3 | 3 | 100% |
 | 14. Homological Algebra | 3 | 3 | 100% |
 | 15. Category Theory | 3 | 3 | 100% |
-| 16-20. Advanced Topics | 1 | 40 | 2% |
+| 16. Statistics and Probability | 5 | 5 | 100% |
+| 17-20. Advanced Topics | 1 | 35 | 3% |
 
-**TOTAL**: **334 / 515 functions** = **~65% complete**
+**TOTAL**: **339 / 520 functions** = **~65% complete**
 
 ### Files to Examine in SageMath Source
 
