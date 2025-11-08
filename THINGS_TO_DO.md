@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~77% (339 / 438 functions tracked)
+**Overall Progress**: ~78% (340 / 438 functions tracked)
 
 ---
 
@@ -747,13 +747,13 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Point addition | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Group law with point at infinity |
 | Scalar multiplication | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Double-and-add algorithm |
 | Point negation | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | |
-| Discriminant & j-invariant | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Curve invariants |
-| Torsion points | ⬜ | | Advanced number theory |
-| Rank computation | ⬜ | | Complex, deferred |
+| Discriminant & j-invariant | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Curve invariants with correct formula |
+| Torsion points | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Point order, is_torsion, 2-torsion points, search for n-torsion |
+| Rank computation | ⬜ | | Complex, requires descent |
 | L-functions | ⬜ | | Advanced analytic number theory |
 | Modular forms | ⬜ | | Advanced, deferred |
 
-**Progress**: 5/9 features (56%)
+**Progress**: 6/9 features (67%)
 
 ---
 
