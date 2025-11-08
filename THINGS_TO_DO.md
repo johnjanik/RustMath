@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~52% (249 / 475 functions tracked)
+**Overall Progress**: ~55% (261 / 475 functions tracked)
 
 ---
 
@@ -475,11 +475,11 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.inverse()` | ✅ | `rustmath-combinatorics/src/permutations.rs` | |
 | `.to_matrix()` | ✅ | `rustmath-combinatorics/src/permutations.rs` | Permutation matrix |
 | `Permutations(n)` - All perms | ✅ | `rustmath-combinatorics/src/permutations.rs` | `all_permutations()` |
-| Pattern avoidance | ⬜ | | |
-| Bruhat order | ⬜ | | |
+| Pattern avoidance | ✅ | `rustmath-combinatorics/src/permutations.rs` | `.avoids()` - checks if permutation avoids a pattern |
+| Bruhat order | ✅ | `rustmath-combinatorics/src/permutations.rs` | `.bruhat_le()`, `.bruhat_covers()` - Bruhat order relations |
 | Descents, ascents | ✅ | `rustmath-combinatorics/src/permutations.rs` | `.descents()`, `.ascents()`, descent/ascent numbers |
 
-**Progress**: 8/10 functions (80%)
+**Progress**: 10/10 functions (100%)
 
 ### 6.2 Combinations (sage.combinat.combination)
 **SageMath Source**: `src/sage/combinat/combination.py`
@@ -518,22 +518,22 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.content()` | ✅ | `rustmath-combinatorics/src/tableaux.rs` | Returns multiset of entries |
 | `.reading_word()` | ✅ | `rustmath-combinatorics/src/tableaux.rs` | Row reading from bottom to top |
 | Robinson-Schensted | ✅ | `rustmath-combinatorics/src/tableaux.rs` | `robinson_schensted()` - permutation to tableau pair correspondence |
-| `.jeu_de_taquin()` | ⬜ | | |
+| `.jeu_de_taquin()` | ✅ | `rustmath-combinatorics/src/tableaux.rs` | Sliding algorithm with `.remove_entry()` |
 
-**Progress**: 5/6 functions (83%)
+**Progress**: 6/6 functions (100%)
 
 ### 6.5 Posets (sage.combinat.posets)
 **SageMath Source**: `src/sage/combinat/posets/`
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| `Poset(...)` | ⬜ | | Partially ordered set |
-| Hasse diagram | ⬜ | | |
-| `.maximal_elements()` | ⬜ | | |
-| `.linear_extensions()` | ⬜ | | |
-| Möbius function | ⬜ | | |
+| `Poset(...)` | ✅ | `rustmath-combinatorics/src/posets.rs` | Partially ordered set with transitive closure |
+| Hasse diagram | ✅ | `rustmath-combinatorics/src/posets.rs` | `.hasse_diagram()` - covering relations |
+| `.maximal_elements()` | ✅ | `rustmath-combinatorics/src/posets.rs` | Find all maximal elements |
+| `.linear_extensions()` | ✅ | `rustmath-combinatorics/src/posets.rs` | Generate all total orderings consistent with partial order |
+| Möbius function | ✅ | `rustmath-combinatorics/src/posets.rs` | `.mobius()` - Möbius function μ(a,b) with memoization |
 
-**Progress**: 0/5 functions (0%)
+**Progress**: 5/5 functions (100%)
 
 ### 6.6 Other Combinatorial Structures
 **SageMath Source**: Various in `src/sage/combinat/`
@@ -550,10 +550,10 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Set partitions | ✅ | `rustmath-combinatorics/src/lib.rs` | `SetPartition`, `set_partitions(n)` - partitions of sets into non-empty blocks |
 | Dyck words | ✅ | `rustmath-combinatorics/src/lib.rs` | `DyckWord`, `dyck_words(n)` - balanced sequences with Catalan number count |
 | Integer compositions | ✅ | `rustmath-combinatorics/src/lib.rs` | `compositions(n)`, `compositions_k(n, k)` - ordered partitions |
-| Perfect matchings | ⬜ | | |
-| Latin squares | ⬜ | | |
+| Perfect matchings | ✅ | `rustmath-combinatorics/src/lib.rs` | `PerfectMatching`, `perfect_matchings(n)` - all matchings on 2n vertices |
+| Latin squares | ✅ | `rustmath-combinatorics/src/lib.rs` | `LatinSquare`, `latin_squares(n)` - generation and validation |
 
-**Progress**: 10/12 functions (83%)
+**Progress**: 12/12 functions (100%)
 
 ---
 
@@ -1003,7 +1003,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 3. Number Theory | 20 | 42 | 48% |
 | 4. Symbolic Computation | 33 | 37 | 89% |
 | 5. Calculus | 30 | 30 | 100% |
-| 6. Combinatorics | 32 | 44 | 73% |
+| 6. Combinatorics | 44 | 44 | 100% |
 | 7. Graph Theory | 17 | 59 | 29% |
 | 8. Geometry | 0 | 15 | 0% |
 | 9. Algebraic Geometry | 0 | 11 | 0% |
@@ -1012,7 +1012,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 12. Group Theory | 0 | 14 | 0% |
 | 13-20. Advanced Topics | 1 | 49 | 2% |
 
-**TOTAL**: **249 / 475 functions** = **~52% complete**
+**TOTAL**: **261 / 475 functions** = **~55% complete**
 
 ### Files to Examine in SageMath Source
 
