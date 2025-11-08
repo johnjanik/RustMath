@@ -508,6 +508,40 @@ impl Graph {
         }
     }
 
+    /// Perform topological sort on a DAG (Directed Acyclic Graph)
+    ///
+    /// For undirected graphs, this performs a topological-like ordering based on DFS finish times
+    /// Returns None if the graph has a cycle (for directed interpretation)
+    pub fn topological_sort(&self) -> Option<Vec<usize>> {
+        if self.has_cycle() {
+            return None;
+        }
+
+        let mut visited = vec![false; self.num_vertices];
+        let mut stack = Vec::new();
+
+        for v in 0..self.num_vertices {
+            if !visited[v] {
+                self.topological_dfs(v, &mut visited, &mut stack);
+            }
+        }
+
+        stack.reverse();
+        Some(stack)
+    }
+
+    fn topological_dfs(&self, v: usize, visited: &mut [bool], stack: &mut Vec<usize>) {
+        visited[v] = true;
+
+        for &neighbor in &self.adj[v] {
+            if !visited[neighbor] {
+                self.topological_dfs(neighbor, visited, stack);
+            }
+        }
+
+        stack.push(v);
+    }
+
     /// Find minimum spanning tree using Kruskal's algorithm
     ///
     /// Returns edges in the MST, or None if graph is not connected
