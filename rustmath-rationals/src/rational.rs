@@ -112,10 +112,10 @@ impl Rational {
     pub fn round(&self) -> Integer {
         // Add 1/2 and take floor for positive, subtract 1/2 and take ceil for negative
         if self.numerator.signum() >= 0 {
-            let half = Rational::new(Integer::one(), Integer::from(2));
+            let half = Rational::new(Integer::one(), Integer::from(2)).unwrap();
             (self.clone() + half).floor()
         } else {
-            let half = Rational::new(Integer::one(), Integer::from(2));
+            let half = Rational::new(Integer::one(), Integer::from(2)).unwrap();
             (self.clone() - half).ceil()
         }
     }
@@ -355,6 +355,15 @@ impl NumericConversion for Rational {
     fn to_u64(&self) -> Option<u64> {
         if self.is_integer() {
             self.numerator.to_u64()
+        } else {
+            None
+        }
+    }
+
+    fn to_usize(&self) -> Option<usize> {
+        use rustmath_core::NumericConversion as _;
+        if self.is_integer() {
+            self.numerator.to_usize()
         } else {
             None
         }

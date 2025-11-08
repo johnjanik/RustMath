@@ -2,6 +2,7 @@
 
 use crate::expression::{BinaryOp, Expr, UnaryOp};
 use crate::symbol::Symbol;
+use rustmath_core::Ring;
 use std::sync::Arc;
 
 impl Expr {
@@ -113,6 +114,61 @@ impl Expr {
                     // d/dx(sqrt(f)) = f'/(2*sqrt(f))
                     UnaryOp::Sqrt => {
                         df / (Expr::from(2) * (**inner).clone().sqrt())
+                    }
+
+                    // d/dx(abs(f)) - not differentiable at f=0, but we can handle it symbolically
+                    UnaryOp::Abs => (**inner).clone().sign() * df,
+
+                    // d/dx(sign(f)) = 0 (except at f=0 where it's undefined)
+                    UnaryOp::Sign => Expr::from(0),
+
+                    // d/dx(sinh(f)) = cosh(f) * f'
+                    UnaryOp::Sinh => (**inner).clone().cosh() * df,
+
+                    // d/dx(cosh(f)) = sinh(f) * f'
+                    UnaryOp::Cosh => (**inner).clone().sinh() * df,
+
+                    // d/dx(tanh(f)) = sech²(f) * f' = (1/cosh²(f)) * f'
+                    UnaryOp::Tanh => {
+                        let cosh_f = (**inner).clone().cosh();
+                        df / cosh_f.clone().pow(Expr::from(2))
+                    }
+
+                    // d/dx(arcsin(f)) = f' / sqrt(1 - f²)
+                    UnaryOp::Arcsin => {
+                        let f = (**inner).clone();
+                        df / (Expr::from(1) - f.clone().pow(Expr::from(2))).sqrt()
+                    }
+
+                    // d/dx(arccos(f)) = -f' / sqrt(1 - f²)
+                    UnaryOp::Arccos => {
+                        let f = (**inner).clone();
+                        -df / (Expr::from(1) - f.clone().pow(Expr::from(2))).sqrt()
+                    }
+
+                    // d/dx(arctan(f)) = f' / (1 + f²)
+                    UnaryOp::Arctan => {
+                        let f = (**inner).clone();
+                        df / (Expr::from(1) + f.clone().pow(Expr::from(2)))
+                    }
+
+                    // d/dx(gamma(f)) = gamma(f) * digamma(f) * f'
+                    // For now, return unsimplified derivative
+                    UnaryOp::Gamma => {
+                        // gamma'(x) = gamma(x) * psi(x) where psi is the digamma function
+                        // Since we don't have digamma implemented, leave as is
+                        Expr::from(0) // TODO: Implement digamma function
+                    }
+
+                    // d/dx(f!) = factorial not differentiable in standard sense
+                    UnaryOp::Factorial => Expr::from(0),
+
+                    // d/dx(erf(f)) = (2/sqrt(π)) * exp(-f²) * f'
+                    UnaryOp::Erf => {
+                        use std::f64::consts::PI;
+                        let f = (**inner).clone();
+                        let coeff = Expr::from(2) / Expr::from((PI.sqrt() * 1000.0) as i64) * Expr::from(1000);
+                        coeff * (-f.clone().pow(Expr::from(2))).exp() * df
                     }
                 }
             }

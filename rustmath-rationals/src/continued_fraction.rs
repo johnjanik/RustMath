@@ -200,14 +200,14 @@ impl PeriodicContinuedFraction {
             seen_states.insert(state, coefficients.len());
 
             // Compute next term
-            m = &d * &a - &m;
+            m = &d * &a - m;
             d = (n.clone() - &m * &m) / d;
 
             if d.is_zero() {
                 return None;
             }
 
-            a = (&a0 + &m) / &d;
+            a = (&a0 + &m) / d.clone();
             coefficients.push(a.clone());
 
             // Safety check to prevent infinite loops
