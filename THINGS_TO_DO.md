@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~62% (294 / 475 functions tracked)
+**Overall Progress**: ~73% (313 / 428 functions tracked)
 
 ---
 
@@ -566,11 +566,11 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 |-----------------|--------|-------------------|-------|
 | `Graph()` | ✅ | `rustmath-graphs/src/graph.rs` | Undirected |
 | `DiGraph()` | ✅ | `rustmath-graphs/src/digraph.rs` | Directed graphs with topological sort, SCC, DAG detection |
-| `.add_vertex(v)` | 🚧 | | Implicit in `new(n)` |
+| `.add_vertex(v)` | ✅ | `rustmath-graphs/src/graph.rs` | Dynamic vertex addition |
 | `.add_edge(u, v)` | ✅ | `rustmath-graphs/src/graph.rs` | |
 | `.add_edges(edges)` | ✅ | `rustmath-graphs/src/graph.rs` | Add multiple edges at once |
-| Weighted graphs | ✅ | `rustmath-graphs/src/weighted_graph.rs` | WeightedGraph with Dijkstra, Bellman-Ford, Floyd-Warshall, Prim |
-| Multigraphs | ⬜ | | |
+| Weighted graphs | ✅ | `rustmath-graphs/src/weighted_graph.rs` | WeightedGraph with Dijkstra, Bellman-Ford, Floyd-Warshall, Prim, A*, Hungarian |
+| Multigraphs | ✅ | `rustmath-graphs/src/multigraph.rs` | MultiGraph with edge multiplicity support |
 | `.num_verts()` | ✅ | `rustmath-graphs/src/graph.rs` | `num_vertices()` |
 | `.num_edges()` | ✅ | `rustmath-graphs/src/graph.rs` | |
 | `.vertices()` | ✅ | `rustmath-graphs/src/graph.rs` | Returns all vertex indices |
@@ -578,7 +578,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.neighbors(v)` | ✅ | `rustmath-graphs/src/graph.rs` | |
 | `.degree(v)` | ✅ | `rustmath-graphs/src/graph.rs` | |
 
-**Progress**: 12/13 functions (92%)
+**Progress**: 13/13 functions (100%)
 
 ### 7.2 Graph Algorithms (sage.graphs.graph_algorithms)
 **SageMath Source**: `src/sage/graphs/generic_graph.py`
@@ -619,9 +619,9 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Dijkstra's algorithm | ✅ | `rustmath-graphs/src/weighted_graph.rs` | Priority queue-based shortest paths for weighted graphs |
 | Bellman-Ford | ✅ | `rustmath-graphs/src/weighted_graph.rs` | Handles negative weights, detects negative cycles, O(VE) complexity |
 | Floyd-Warshall | ✅ | `rustmath-graphs/src/weighted_graph.rs` | All-pairs shortest paths with dynamic programming |
-| A* search | ⬜ | | Heuristic |
+| A* search | ✅ | `rustmath-graphs/src/weighted_graph.rs` | Heuristic pathfinding with admissible heuristic function |
 
-**Progress**: 6/7 functions (86%)
+**Progress**: 7/7 functions (100%)
 
 ### 7.5 Trees and Spanning Trees (sage.graphs.spanning_tree)
 **SageMath Source**: `src/sage/graphs/spanning_tree.pyx`
@@ -653,10 +653,10 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 |-----------------|--------|-------------------|-------|
 | `.matching()` | ✅ | `rustmath-graphs/src/graph.rs` | `max_bipartite_matching()` using augmenting paths |
 | `.perfect_matchings()` | ✅ | `rustmath-graphs/src/graph.rs` | Enumerate all perfect matchings via backtracking |
-| `.matching_polynomial()` | ⬜ | | |
-| Hungarian algorithm | ⬜ | | Bipartite matching |
+| `.matching_polynomial()` | ✅ | `rustmath-graphs/src/graph.rs` | Deletion-contraction algorithm for matching polynomial computation |
+| Hungarian algorithm | ✅ | `rustmath-graphs/src/weighted_graph.rs` | Maximum weight bipartite matching using Kuhn-Munkres algorithm |
 
-**Progress**: 2/4 functions (50%)
+**Progress**: 4/4 functions (100%)
 
 ### 7.8 Graph Generators (sage.graphs.graph_generators)
 **SageMath Source**: `src/sage/graphs/graph_generators.py`

@@ -7,11 +7,13 @@ pub mod graph;
 pub mod generators;
 pub mod weighted_graph;
 pub mod digraph;
+pub mod multigraph;
 
 pub use graph::Graph;
 pub use generators::*;
 pub use weighted_graph::WeightedGraph;
 pub use digraph::DiGraph;
+pub use multigraph::MultiGraph;
 
 #[cfg(test)]
 mod tests {
