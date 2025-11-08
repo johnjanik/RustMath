@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~80% (379 / 477 functions tracked)
+**Overall Progress**: ~80% (382 / 480 functions tracked)
 
 ---
 
@@ -921,11 +921,11 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| Chain complexes | ⬜ | | |
-| Homology groups | ⬜ | | |
-| Cohomology | ⬜ | | |
+| Chain complexes | ✅ | rustmath-homology/src/chain_complex.rs | Free Z-modules with boundary maps, validation of d∘d=0 |
+| Homology groups | ✅ | rustmath-homology/src/chain_complex.rs | H_n = ker(d_n)/im(d_{n+1}), Euler characteristic |
+| Cohomology | ✅ | rustmath-homology/src/cochain_complex.rs | Cochain complexes and cohomology groups H^n |
 
-**Progress**: 0/3 features (0%)
+**Progress**: 3/3 features (100%) ✅ COMPLETE
 
 ---
 
@@ -1038,9 +1038,10 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 11. Coding Theory | 0 | 10 | 0% |
 | 12. Group Theory | 18 | 18 | 100% |
 | 13. Representation Theory | 3 | 3 | 100% |
-| 14-20. Advanced Topics | 1 | 46 | 2% |
+| 14. Homological Algebra | 3 | 3 | 100% |
+| 15-20. Advanced Topics | 1 | 43 | 2% |
 
-**TOTAL**: **328 / 509 functions** = **~64% complete**
+**TOTAL**: **331 / 512 functions** = **~65% complete**
 
 ### Files to Examine in SageMath Source
 
