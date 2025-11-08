@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~59% (278 / 475 functions tracked)
+**Overall Progress**: ~59% (280 / 475 functions tracked)
 
 ---
 
@@ -604,9 +604,9 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.breadth_first_search(start)` | ✅ | `rustmath-graphs/src/graph.rs` | `bfs()` |
 | `.depth_first_search(start)` | ✅ | `rustmath-graphs/src/graph.rs` | `dfs()` |
 | Topological sort | ✅ | `rustmath-graphs/src/graph.rs` | `topological_sort()` - DFS-based for DAGs |
-| `.lex_BFS()` | ⬜ | | |
+| `.lex_BFS()` | ✅ | `rustmath-graphs/src/graph.rs` | `lex_bfs()` - lexicographic breadth-first search |
 
-**Progress**: 3/4 functions (75%)
+**Progress**: 4/4 functions (100%)
 
 ### 7.4 Shortest Paths (sage.graphs.distances_all_pairs)
 **SageMath Source**: `src/sage/graphs/distances_all_pairs.pyx`
@@ -630,9 +630,9 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 |-----------------|--------|-------------------|-------|
 | `.min_spanning_tree()` | ✅ | `rustmath-graphs/src/graph.rs` | Kruskal's algorithm with Union-Find |
 | Prim's algorithm | ⬜ | | |
-| `.spanning_trees_count()` | ⬜ | | Kirchhoff's theorem |
+| `.spanning_trees_count()` | ✅ | `rustmath-graphs/src/graph.rs` | Kirchhoff's matrix-tree theorem using Laplacian determinant |
 
-**Progress**: 1/3 functions (33%)
+**Progress**: 2/3 functions (67%)
 
 ### 7.6 Graph Coloring (sage.graphs.graph_coloring)
 **SageMath Source**: `src/sage/graphs/graph_coloring.pyx`
@@ -642,9 +642,9 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.chromatic_number()` | ✅ | `rustmath-graphs/src/graph.rs` | |
 | `.coloring()` | ✅ | `rustmath-graphs/src/graph.rs` | `greedy_coloring()` |
 | Greedy coloring | ✅ | `rustmath-graphs/src/graph.rs` | |
-| `.chromatic_polynomial()` | ⬜ | | |
+| `.chromatic_polynomial()` | ✅ | `rustmath-graphs/src/graph.rs` | Deletion-contraction algorithm returning coefficient vector |
 
-**Progress**: 3/4 functions (75%)
+**Progress**: 4/4 functions (100%)
 
 ### 7.7 Matching (sage.graphs.matchpoly)
 **SageMath Source**: `src/sage/graphs/matchpoly.pyx`
@@ -1004,7 +1004,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 4. Symbolic Computation | 33 | 37 | 89% |
 | 5. Calculus | 30 | 30 | 100% |
 | 6. Combinatorics | 44 | 44 | 100% |
-| 7. Graph Theory | 34 | 59 | 58% |
+| 7. Graph Theory | 36 | 59 | 61% |
 | 8. Geometry | 0 | 15 | 0% |
 | 9. Algebraic Geometry | 0 | 11 | 0% |
 | 10. Cryptography | 3 | 18 | 17% |
@@ -1012,7 +1012,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 12. Group Theory | 0 | 14 | 0% |
 | 13-20. Advanced Topics | 1 | 49 | 2% |
 
-**TOTAL**: **278 / 475 functions** = **~59% complete**
+**TOTAL**: **280 / 475 functions** = **~59% complete**
 
 ### Files to Examine in SageMath Source
 
