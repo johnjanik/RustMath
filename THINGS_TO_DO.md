@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~73% (313 / 428 functions tracked)
+**Overall Progress**: ~75% (321 / 428 functions tracked)
 
 ---
 
@@ -681,15 +681,15 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| `Polyhedron(vertices)` | ⬜ | | |
-| `.vertices()` | ⬜ | | |
-| `.faces()` | ⬜ | | |
-| `.volume()` | ⬜ | | |
-| `.is_lattice_polytope()` | ⬜ | | |
-| Convex hull | ⬜ | | |
+| `Polyhedron(vertices)` | ✅ | `rustmath-geometry/src/polyhedron.rs` | 3D polyhedron with vertices and faces |
+| `.vertices()` | ✅ | `rustmath-geometry/src/polyhedron.rs` | Returns vertex list |
+| `.faces()` | ✅ | `rustmath-geometry/src/polyhedron.rs` | Returns face list |
+| `.volume()` | ✅ | `rustmath-geometry/src/polyhedron.rs` | Divergence theorem for convex polyhedra |
+| `.is_lattice_polytope()` | ✅ | `rustmath-geometry/src/polyhedron.rs` | Checks integer coordinates |
+| Convex hull | 🚧 | `rustmath-geometry/src/polygon.rs` | 2D only (Graham's scan) |
 | Face lattice | ⬜ | | |
 
-**Progress**: 0/7 functions (0%)
+**Progress**: 5/7 functions (71%)
 
 ### 8.2 Toric Geometry (sage.geometry.toric_varieties)
 **SageMath Source**: `src/sage/geometry/toric_`
@@ -707,13 +707,13 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| Convex hull (2D) | ⬜ | | |
+| Convex hull (2D) | ✅ | `rustmath-geometry/src/polygon.rs` | Graham's scan algorithm, O(n log n) |
 | Voronoi diagrams | ⬜ | | |
 | Delaunay triangulation | ⬜ | | |
-| Line intersection | ⬜ | | |
-| Point in polygon | ⬜ | | |
+| Line intersection | ✅ | `rustmath-geometry/src/line.rs` | Line and line segment intersection |
+| Point in polygon | ✅ | `rustmath-geometry/src/polygon.rs` | Ray casting algorithm |
 
-**Progress**: 0/5 functions (0%)
+**Progress**: 3/5 functions (60%)
 
 ---
 
