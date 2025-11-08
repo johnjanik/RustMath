@@ -10,7 +10,10 @@ pub mod polynomial;
 pub mod roots;
 pub mod univariate;
 
-pub use algebraic_geometry::{AffineSpace, AffineVariety, ProjectiveSpace, ProjectiveVariety};
+pub use algebraic_geometry::{
+    constant_morphism, identity_morphism, AffineSpace, AffineVariety, Morphism, ProjectiveSpace,
+    ProjectiveVariety,
+};
 pub use factorization::{
     content, factor_over_integers, is_irreducible, is_square_free, primitive_part,
     square_free_factorization,

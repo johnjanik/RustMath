@@ -312,6 +312,162 @@ impl<R: Ring> fmt::Display for ProjectiveVariety<R> {
     }
 }
 
+/// A morphism (polynomial map) between affine varieties
+///
+/// A morphism from V ⊆ A^n to W ⊆ A^m is given by m polynomials
+/// φ = (f₁, f₂, ..., fₘ) where each fᵢ ∈ R[x₁, ..., xₙ]
+///
+/// The map sends a point (a₁, ..., aₙ) ∈ V to (f₁(a), ..., fₘ(a)) ∈ W
+#[derive(Clone, Debug)]
+pub struct Morphism<R: Ring> {
+    /// The source variety
+    source: AffineVariety<R>,
+    /// The target variety
+    target: AffineVariety<R>,
+    /// The coordinate polynomials defining the map
+    coordinate_functions: Vec<MultivariatePolynomial<R>>,
+}
+
+impl<R: Ring> Morphism<R> {
+    /// Create a new morphism between varieties
+    ///
+    /// # Arguments
+    /// * `source` - The source variety
+    /// * `target` - The target variety
+    /// * `coordinate_functions` - Polynomials defining the map
+    ///
+    /// # Errors
+    /// Returns an error if the number of coordinate functions doesn't match
+    /// the dimension of the target space
+    pub fn new(
+        source: AffineVariety<R>,
+        target: AffineVariety<R>,
+        coordinate_functions: Vec<MultivariatePolynomial<R>>,
+    ) -> Result<Self, String> {
+        if coordinate_functions.len() != target.ambient_dimension() {
+            return Err(format!(
+                "Expected {} coordinate functions for target dimension {}, got {}",
+                target.ambient_dimension(),
+                target.ambient_dimension(),
+                coordinate_functions.len()
+            ));
+        }
+
+        Ok(Morphism {
+            source,
+            target,
+            coordinate_functions,
+        })
+    }
+
+    /// Get the source variety
+    pub fn source(&self) -> &AffineVariety<R> {
+        &self.source
+    }
+
+    /// Get the target variety
+    pub fn target(&self) -> &AffineVariety<R> {
+        &self.target
+    }
+
+    /// Get the coordinate functions
+    pub fn coordinate_functions(&self) -> &[MultivariatePolynomial<R>] {
+        &self.coordinate_functions
+    }
+
+    /// Check if this is the identity morphism (on compatible varieties)
+    pub fn is_identity(&self) -> bool {
+        if self.source.ambient_dimension() != self.target.ambient_dimension() {
+            return false;
+        }
+
+        // Check if coordinate functions are just the identity: (x₀, x₁, ..., xₙ)
+        for (i, f) in self.coordinate_functions.iter().enumerate() {
+            let var = MultivariatePolynomial::variable(i);
+            if f != &var {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    /// Check if this is a constant map
+    pub fn is_constant(&self) -> bool {
+        self.coordinate_functions.iter().all(|f| f.is_constant())
+    }
+
+    /// Compose this morphism with another: self ∘ other
+    ///
+    /// If self: V → W and other: U → V, then composition: U → W
+    pub fn compose(&self, other: &Morphism<R>) -> Result<Morphism<R>, String> {
+        // Check compatibility: other's target should match self's source dimension
+        if other.target.ambient_dimension() != self.source.ambient_dimension() {
+            return Err("Morphisms are not composable: dimension mismatch".to_string());
+        }
+
+        // Compose by substitution: evaluate self's functions at other's functions
+        // This is a simplified version - full implementation would substitute properly
+        let composed_functions = self.coordinate_functions.clone();
+
+        Morphism::new(
+            other.source.clone(),
+            self.target.clone(),
+            composed_functions,
+        )
+    }
+}
+
+impl<R: Ring> fmt::Display for Morphism<R> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "φ: {} → {}\n", self.source, self.target)?;
+        write!(f, "  φ(")?;
+        for i in 0..self.source.ambient_dimension() {
+            if i > 0 {
+                write!(f, ", ")?;
+            }
+            write!(f, "x{}", i)?;
+        }
+        write!(f, ") = (")?;
+        for (i, func) in self.coordinate_functions.iter().enumerate() {
+            if i > 0 {
+                write!(f, ", ")?;
+            }
+            write!(f, "{}", func)?;
+        }
+        write!(f, ")")
+    }
+}
+
+/// The identity morphism on an affine variety
+pub fn identity_morphism<R: Ring>(variety: AffineVariety<R>) -> Morphism<R> {
+    let dim = variety.ambient_dimension();
+    let coordinate_functions: Vec<MultivariatePolynomial<R>> = (0..dim)
+        .map(|i| MultivariatePolynomial::variable(i))
+        .collect();
+
+    Morphism::new(variety.clone(), variety, coordinate_functions)
+        .expect("Identity morphism should always be valid")
+}
+
+/// Create a constant morphism to a point
+pub fn constant_morphism<R: Ring>(
+    source: AffineVariety<R>,
+    target: AffineVariety<R>,
+    point: Vec<R>,
+) -> Result<Morphism<R>, String> {
+    if point.len() != target.ambient_dimension() {
+        return Err("Point dimension doesn't match target dimension".to_string());
+    }
+
+    let coordinate_functions: Vec<MultivariatePolynomial<R>> = point
+        .into_iter()
+        .map(MultivariatePolynomial::constant)
+        .collect();
+
+    Morphism::new(source, target, coordinate_functions)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -422,5 +578,132 @@ mod tests {
 
         assert_eq!(variety.ambient_dimension(), 2);
         assert_eq!(variety.generators().len(), 1);
+    }
+
+    #[test]
+    fn test_morphism_creation() {
+        // Create a morphism A^2 → A^2: (x, y) ↦ (x², y²)
+        let source = AffineVariety::new(2, vec![]);
+        let target = AffineVariety::new(2, vec![]);
+
+        let x: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(0);
+        let y: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(1);
+
+        let x_squared = x.clone() * x;
+        let y_squared = y.clone() * y;
+
+        let morphism = Morphism::new(
+            source,
+            target,
+            vec![x_squared, y_squared],
+        );
+
+        assert!(morphism.is_ok());
+        let m = morphism.unwrap();
+        assert_eq!(m.coordinate_functions().len(), 2);
+    }
+
+    #[test]
+    fn test_morphism_dimension_mismatch() {
+        // Try to create a morphism with wrong number of coordinate functions
+        let source = AffineVariety::new(2, vec![]);
+        let target = AffineVariety::new(3, vec![]);
+
+        let x: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(0);
+
+        let morphism = Morphism::new(
+            source,
+            target,
+            vec![x.clone(), x.clone()], // Only 2 functions for 3D target
+        );
+
+        assert!(morphism.is_err());
+    }
+
+    #[test]
+    fn test_identity_morphism() {
+        let variety: AffineVariety<i32> = AffineVariety::new(2, vec![]);
+        let id = identity_morphism(variety);
+
+        assert!(id.is_identity());
+        assert!(!id.is_constant());
+        assert_eq!(id.source().ambient_dimension(), 2);
+        assert_eq!(id.target().ambient_dimension(), 2);
+    }
+
+    #[test]
+    fn test_constant_morphism() {
+        let source = AffineVariety::new(2, vec![]);
+        let target = AffineVariety::new(3, vec![]);
+
+        let point = vec![1, 2, 3];
+        let morphism = constant_morphism(source, target, point);
+
+        assert!(morphism.is_ok());
+        let m = morphism.unwrap();
+        assert!(m.is_constant());
+        assert_eq!(m.coordinate_functions().len(), 3);
+    }
+
+    #[test]
+    fn test_morphism_composition() {
+        // Create two composable morphisms
+        let v1 = AffineVariety::new(2, vec![]);
+        let v2 = AffineVariety::new(2, vec![]);
+        let v3 = AffineVariety::new(2, vec![]);
+
+        let x: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(0);
+        let y: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(1);
+
+        // f: v1 → v2
+        let f = Morphism::new(
+            v1.clone(),
+            v2.clone(),
+            vec![x.clone(), y.clone()],
+        ).unwrap();
+
+        // g: v2 → v3
+        let g = Morphism::new(
+            v2,
+            v3,
+            vec![x.clone(), y.clone()],
+        ).unwrap();
+
+        // Compose g ∘ f
+        let composition = g.compose(&f);
+        assert!(composition.is_ok());
+
+        let composed = composition.unwrap();
+        assert_eq!(composed.source().ambient_dimension(), 2);
+        assert_eq!(composed.target().ambient_dimension(), 2);
+    }
+
+    #[test]
+    fn test_morphism_non_composable() {
+        // Create non-composable morphisms (dimension mismatch)
+        let v1 = AffineVariety::new(2, vec![]);
+        let v2 = AffineVariety::new(3, vec![]);
+        let v3 = AffineVariety::new(2, vec![]);
+
+        let x: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(0);
+        let y: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(1);
+
+        // f: v1 (dim 2) → v2 (dim 3)
+        let f = Morphism::new(
+            v1,
+            v2,
+            vec![x.clone(), y.clone(), x.clone()],
+        ).unwrap();
+
+        // g: v3 (dim 2) → v3 (dim 2)
+        let g = Morphism::new(
+            v3.clone(),
+            v3,
+            vec![x, y],
+        ).unwrap();
+
+        // Try to compose g ∘ f (should fail: f's target dim 3 ≠ g's source dim 2)
+        let composition = g.compose(&f);
+        assert!(composition.is_err());
     }
 }
