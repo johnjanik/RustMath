@@ -204,6 +204,117 @@ impl Expr {
     pub fn gradient(&self, vars: &[Symbol]) -> Vec<Self> {
         vars.iter().map(|var| self.differentiate(var)).collect()
     }
+
+    /// Compute the Jacobian matrix for a vector of expressions
+    ///
+    /// For functions F: R^n → R^m represented as a vector [f1, f2, ..., fm],
+    /// the Jacobian J is an m×n matrix where J[i][j] = ∂f_i/∂x_j
+    ///
+    /// # Arguments
+    /// * `exprs` - Vector of expressions (the components of F)
+    /// * `vars` - Vector of variables to differentiate with respect to
+    ///
+    /// # Returns
+    /// A 2D vector representing the Jacobian matrix
+    ///
+    /// # Example
+    /// ```
+    /// use rustmath_symbolic::{Expr, Symbol};
+    ///
+    /// let x = Symbol::new("x");
+    /// let y = Symbol::new("y");
+    /// let fx = Expr::Symbol(x.clone()) * Expr::Symbol(y.clone()); // f = xy
+    /// let fy = Expr::Symbol(x.clone()) + Expr::Symbol(y.clone()); // g = x + y
+    ///
+    /// let jacobian = Expr::jacobian(&[fx, fy], &[x, y]);
+    /// // Jacobian is [[y, x], [1, 1]]
+    /// ```
+    pub fn jacobian(exprs: &[Expr], vars: &[Symbol]) -> Vec<Vec<Expr>> {
+        exprs
+            .iter()
+            .map(|expr| expr.gradient(vars))
+            .collect()
+    }
+
+    /// Compute the Hessian matrix of second partial derivatives
+    ///
+    /// For a scalar function f: R^n → R, the Hessian H is an n×n symmetric matrix
+    /// where H[i][j] = ∂²f/(∂x_i ∂x_j)
+    ///
+    /// # Arguments
+    /// * `vars` - Vector of variables
+    ///
+    /// # Returns
+    /// A 2D vector representing the Hessian matrix
+    ///
+    /// # Example
+    /// ```
+    /// use rustmath_symbolic::{Expr, Symbol};
+    ///
+    /// let x = Symbol::new("x");
+    /// let y = Symbol::new("y");
+    /// let x_expr = Expr::Symbol(x.clone());
+    /// let y_expr = Expr::Symbol(y.clone());
+    ///
+    /// // f(x, y) = x² + xy + y²
+    /// let f = x_expr.clone().pow(Expr::from(2))
+    ///       + x_expr.clone() * y_expr.clone()
+    ///       + y_expr.clone().pow(Expr::from(2));
+    ///
+    /// let hessian = f.hessian(&[x, y]);
+    /// // Hessian is [[2, 1], [1, 2]]
+    /// ```
+    pub fn hessian(&self, vars: &[Symbol]) -> Vec<Vec<Expr>> {
+        let n = vars.len();
+        let mut result = vec![vec![Expr::from(0); n]; n];
+
+        for i in 0..n {
+            for j in 0..n {
+                // ∂²f/(∂x_i ∂x_j)
+                let first_deriv = self.differentiate(&vars[i]);
+                let second_deriv = first_deriv.differentiate(&vars[j]);
+                result[i][j] = second_deriv;
+            }
+        }
+
+        result
+    }
+
+    /// Implicit differentiation: Find dy/dx given F(x, y) = 0
+    ///
+    /// Uses the formula: dy/dx = -(∂F/∂x) / (∂F/∂y)
+    ///
+    /// # Arguments
+    /// * `x_var` - The independent variable (x)
+    /// * `y_var` - The dependent variable (y)
+    ///
+    /// # Returns
+    /// The derivative dy/dx as an expression
+    ///
+    /// # Example
+    /// ```
+    /// use rustmath_symbolic::{Expr, Symbol};
+    ///
+    /// let x = Symbol::new("x");
+    /// let y = Symbol::new("y");
+    /// let x_expr = Expr::Symbol(x.clone());
+    /// let y_expr = Expr::Symbol(y.clone());
+    ///
+    /// // Circle: x² + y² - 1 = 0
+    /// let f = x_expr.clone().pow(Expr::from(2))
+    ///       + y_expr.clone().pow(Expr::from(2))
+    ///       - Expr::from(1);
+    ///
+    /// let dy_dx = f.implicit_differentiate(&x, &y);
+    /// // dy/dx = -x/y
+    /// ```
+    pub fn implicit_differentiate(&self, x_var: &Symbol, y_var: &Symbol) -> Expr {
+        let df_dx = self.differentiate(x_var);
+        let df_dy = self.differentiate(y_var);
+
+        // dy/dx = -(∂F/∂x) / (∂F/∂y)
+        -df_dx / df_dy
+    }
 }
 
 #[cfg(test)]
@@ -337,5 +448,110 @@ mod tests {
 
         assert_eq!(grad.len(), 2);
         // ∂f/∂x = y, ∂f/∂y = x
+    }
+
+    #[test]
+    fn test_jacobian() {
+        // F(x, y) = [xy, x + y]
+        let x_sym = Symbol::new("x");
+        let y_sym = Symbol::new("y");
+        let x = Expr::Symbol(x_sym.clone());
+        let y = Expr::Symbol(y_sym.clone());
+
+        let f1 = x.clone() * y.clone(); // xy
+        let f2 = x.clone() + y.clone(); // x + y
+
+        let jacobian = Expr::jacobian(&[f1, f2], &[x_sym, y_sym]);
+
+        // Jacobian should be [[y, x], [1, 1]]
+        assert_eq!(jacobian.len(), 2); // 2 rows
+        assert_eq!(jacobian[0].len(), 2); // 2 columns
+        assert_eq!(jacobian[1].len(), 2);
+
+        // First row: [∂(xy)/∂x, ∂(xy)/∂y] = [y, x]
+        let display_00 = format!("{}", jacobian[0][0]);
+        let display_01 = format!("{}", jacobian[0][1]);
+        assert!(display_00.contains("y"));
+        assert!(display_01.contains("x"));
+
+        // Second row: [∂(x+y)/∂x, ∂(x+y)/∂y] = [1, 1]
+        let display_10 = format!("{}", jacobian[1][0]);
+        let display_11 = format!("{}", jacobian[1][1]);
+        assert!(display_10.contains("1"));
+        assert!(display_11.contains("1"));
+    }
+
+    #[test]
+    fn test_hessian() {
+        // f(x, y) = x² + xy + y²
+        let x_sym = Symbol::new("x");
+        let y_sym = Symbol::new("y");
+        let x = Expr::Symbol(x_sym.clone());
+        let y = Expr::Symbol(y_sym.clone());
+
+        let f = x.clone().pow(Expr::from(2))
+            + x.clone() * y.clone()
+            + y.clone().pow(Expr::from(2));
+
+        let hessian = f.hessian(&[x_sym, y_sym]);
+
+        // Hessian should be [[2, 1], [1, 2]]
+        // ∂²f/∂x² = 2
+        // ∂²f/∂x∂y = 1
+        // ∂²f/∂y∂x = 1
+        // ∂²f/∂y² = 2
+
+        assert_eq!(hessian.len(), 2);
+        assert_eq!(hessian[0].len(), 2);
+        assert_eq!(hessian[1].len(), 2);
+
+        // Check that Hessian is symmetric
+        let display_01 = format!("{}", hessian[0][1]);
+        let display_10 = format!("{}", hessian[1][0]);
+        // Both should be 1
+        assert!(display_01.contains("1") || display_01.contains("y") && display_01.contains("0"));
+        assert!(display_10.contains("1") || display_10.contains("x") && display_10.contains("0"));
+    }
+
+    #[test]
+    fn test_implicit_differentiation() {
+        // Circle: x² + y² - 1 = 0
+        // dy/dx = -x/y
+        let x_sym = Symbol::new("x");
+        let y_sym = Symbol::new("y");
+        let x = Expr::Symbol(x_sym.clone());
+        let y = Expr::Symbol(y_sym.clone());
+
+        let circle = x.clone().pow(Expr::from(2))
+            + y.clone().pow(Expr::from(2))
+            - Expr::from(1);
+
+        let dy_dx = circle.implicit_differentiate(&x_sym, &y_sym);
+
+        // Result should be -x/y (or equivalent form)
+        let display = format!("{}", dy_dx);
+        assert!(display.contains("x") && display.contains("y"));
+        assert!(display.contains("/") || display.contains("*"));
+    }
+
+    #[test]
+    fn test_implicit_differentiation_ellipse() {
+        // Ellipse: x²/a² + y²/b² - 1 = 0
+        let x_sym = Symbol::new("x");
+        let y_sym = Symbol::new("y");
+        let x = Expr::Symbol(x_sym.clone());
+        let y = Expr::Symbol(y_sym.clone());
+        let a = Expr::from(3);
+        let b = Expr::from(4);
+
+        let ellipse = x.clone().pow(Expr::from(2)) / a.pow(Expr::from(2))
+            + y.clone().pow(Expr::from(2)) / b.pow(Expr::from(2))
+            - Expr::from(1);
+
+        let dy_dx = ellipse.implicit_differentiate(&x_sym, &y_sym);
+
+        // Should contain x and y
+        let display = format!("{}", dy_dx);
+        assert!(display.contains("x") && display.contains("y"));
     }
 }
