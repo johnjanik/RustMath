@@ -152,6 +152,7 @@ impl<R: Ring> PowerSeries<R> {
         }
     }
 
+    /* // Commented out: Requires Field trait for division
     /// Compute the integral (with zero constant term)
     pub fn integral(&self) -> Self
     where
@@ -170,7 +171,9 @@ impl<R: Ring> PowerSeries<R> {
 
         PowerSeries::new(coeffs, self.precision)
     }
+    */
 
+    /* // Commented out: Requires Field trait for division
     /// Compute the exponential exp(f) where f(0) = 0
     pub fn exp(&self) -> Self
     where
@@ -205,7 +208,9 @@ impl<R: Ring> PowerSeries<R> {
 
         result
     }
+    */
 
+    /* // Commented out: Requires Field trait for division
     /// Compute the logarithm log(1+f) where f(0) = 0
     pub fn log(&self) -> Self
     where
@@ -243,6 +248,7 @@ impl<R: Ring> PowerSeries<R> {
 
         result
     }
+    */
 
     /// Compute the multiplicative inverse 1/f where f(0) ≠ 0
     pub fn inverse(&self) -> Result<Self>

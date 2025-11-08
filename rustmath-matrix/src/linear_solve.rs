@@ -23,17 +23,17 @@ impl<F: Field> Matrix<F> {
         let mut pivots = Vec::new();
         let mut current_row = 0;
 
-        for col in 0..result.cols {
-            if current_row >= result.rows {
+        for col in 0..result.cols() {
+            if current_row >= result.rows() {
                 break;
             }
 
             // Find pivot (largest absolute value in column, starting from current_row)
             let mut pivot_row = current_row;
-            let mut max_val = result.data[current_row * result.cols + col].clone();
+            let mut max_val = result.data()[current_row * result.cols() + col].clone();
 
-            for row in (current_row + 1)..result.rows {
-                let val = result.data[row * result.cols + col].clone();
+            for row in (current_row + 1)..result.rows() {
+                let val = result.data()[row * result.cols() + col].clone();
                 // For fields without absolute value, we just use the first non-zero
                 if !val.is_zero() && max_val.is_zero() {
                     max_val = val;
@@ -48,34 +48,37 @@ impl<F: Field> Matrix<F> {
 
             // Swap rows if needed
             if pivot_row != current_row {
-                for j in 0..result.cols {
-                    let temp = result.data[current_row * result.cols + j].clone();
-                    result.data[current_row * result.cols + j] =
-                        result.data[pivot_row * result.cols + j].clone();
-                    result.data[pivot_row * result.cols + j] = temp;
+                let cols = result.cols();
+                for j in 0..cols {
+                    let temp = result.data()[current_row * cols + j].clone();
+                    let swap_val = result.data()[pivot_row * cols + j].clone();
+                    result.data_mut()[current_row * cols + j] = swap_val;
+                    result.data_mut()[pivot_row * cols + j] = temp;
                 }
             }
 
             pivots.push(col);
 
             // Scale pivot row
-            let pivot = result.data[current_row * result.cols + col].clone();
+            let pivot = result.data()[current_row * result.cols() + col].clone();
             if pivot.is_zero() {
                 return Err(MathError::DivisionByZero);
             }
 
-            for j in col..result.cols {
-                let val = result.data[current_row * result.cols + j].clone();
-                result.data[current_row * result.cols + j] = val / pivot.clone();
+            let cols = result.cols();
+            for j in col..cols {
+                let val = result.data()[current_row * cols + j].clone();
+                result.data_mut()[current_row * cols + j] = val / pivot.clone();
             }
 
             // Eliminate column below pivot
-            for row in (current_row + 1)..result.rows {
-                let factor = result.data[row * result.cols + col].clone();
-                for j in col..result.cols {
-                    let pivot_val = result.data[current_row * result.cols + j].clone();
-                    let current_val = result.data[row * result.cols + j].clone();
-                    result.data[row * result.cols + j] =
+            let rows = result.rows();
+            for row in (current_row + 1)..rows {
+                let factor = result.data()[row * cols + col].clone();
+                for j in col..cols {
+                    let pivot_val = result.data()[current_row * cols + j].clone();
+                    let current_val = result.data()[row * cols + j].clone();
+                    result.data_mut()[row * cols + j] =
                         current_val - factor.clone() * pivot_val;
                 }
             }
@@ -104,14 +107,15 @@ impl<F: Field> Matrix<F> {
             let pivot_row = i;
 
             // Eliminate above pivot
+            let matrix_cols = ref_form.matrix.cols();
             for row in 0..pivot_row {
-                let factor = ref_form.matrix.data[row * ref_form.matrix.cols + pivot_col].clone();
+                let factor = ref_form.matrix.data()[row * matrix_cols + pivot_col].clone();
                 if !factor.is_zero() {
-                    for j in 0..ref_form.matrix.cols {
+                    for j in 0..matrix_cols {
                         let pivot_val =
-                            ref_form.matrix.data[pivot_row * ref_form.matrix.cols + j].clone();
-                        let current_val = ref_form.matrix.data[row * ref_form.matrix.cols + j].clone();
-                        ref_form.matrix.data[row * ref_form.matrix.cols + j] =
+                            ref_form.matrix.data()[pivot_row * matrix_cols + j].clone();
+                        let current_val = ref_form.matrix.data()[row * matrix_cols + j].clone();
+                        ref_form.matrix.data_mut()[row * matrix_cols + j] =
                             current_val - factor.clone() * pivot_val;
                     }
                 }
@@ -132,47 +136,43 @@ impl<F: Field> Matrix<F> {
     /// Returns None if the system has no solution or infinitely many solutions.
     /// For a unique solution, the matrix must be square and non-singular.
     pub fn solve(&self, b: &[F]) -> Result<Option<Vec<F>>> {
-        if b.len() != self.rows {
+        if b.len() != self.rows() {
             return Err(MathError::InvalidArgument(
                 "Vector length must match number of rows".to_string(),
             ));
         }
 
         // Create augmented matrix [A | b]
-        let mut aug_data = Vec::with_capacity(self.rows * (self.cols + 1));
-        for i in 0..self.rows {
-            for j in 0..self.cols {
-                aug_data.push(self.data[i * self.cols + j].clone());
+        let mut aug_data = Vec::with_capacity(self.rows() * (self.cols() + 1));
+        for i in 0..self.rows() {
+            for j in 0..self.cols() {
+                aug_data.push(self.data()[i * self.cols() + j].clone());
             }
             aug_data.push(b[i].clone());
         }
 
-        let augmented = Matrix {
-            data: aug_data,
-            rows: self.rows,
-            cols: self.cols + 1,
-        };
+        let augmented = Matrix::from_vec(self.rows(), self.cols() + 1, aug_data)?;
 
         // Reduce to row echelon form
         let ref_form = augmented.reduced_row_echelon_form()?;
 
         // Check for inconsistency (row of form [0 0 ... 0 | non-zero])
-        for i in ref_form.rank..self.rows {
-            let b_val = ref_form.matrix.data[i * ref_form.matrix.cols + self.cols].clone();
+        for i in ref_form.rank..self.rows() {
+            let b_val = ref_form.matrix.data()[i * ref_form.matrix.cols() + self.cols()].clone();
             if !b_val.is_zero() {
                 return Ok(None); // No solution
             }
         }
 
         // For now, only handle unique solution case (square matrix, full rank)
-        if !self.is_square() || ref_form.rank != self.rows {
+        if !self.is_square() || ref_form.rank != self.rows() {
             return Ok(None); // Infinitely many solutions or no solution
         }
 
         // Extract solution from last column
-        let mut solution = Vec::with_capacity(self.cols);
-        for i in 0..self.cols {
-            solution.push(ref_form.matrix.data[i * ref_form.matrix.cols + self.cols].clone());
+        let mut solution = Vec::with_capacity(self.cols());
+        for i in 0..self.cols() {
+            solution.push(ref_form.matrix.data()[i * ref_form.matrix.cols() + self.cols()].clone());
         }
 
         Ok(Some(solution))
@@ -182,7 +182,7 @@ impl<F: Field> Matrix<F> {
     ///
     /// This solves for x where xA = b, which is equivalent to solving A^T x^T = b^T
     pub fn solve_left(&self, b: &[F]) -> Result<Option<Vec<F>>> {
-        if b.len() != self.cols {
+        if b.len() != self.cols() {
             return Err(MathError::InvalidArgument(
                 "Vector length must match number of columns".to_string(),
             ));
@@ -205,7 +205,7 @@ impl<F: Field> Matrix<F> {
         let mut pivot_cols: std::collections::HashSet<usize> =
             rref.pivots.iter().copied().collect();
 
-        for col in 0..self.cols {
+        for col in 0..self.cols() {
             if !pivot_cols.contains(&col) {
                 free_vars.push(col);
             }
@@ -220,7 +220,7 @@ impl<F: Field> Matrix<F> {
         let mut basis = Vec::new();
 
         for &free_var in &free_vars {
-            let mut kernel_vec = vec![F::zero(); self.cols];
+            let mut kernel_vec = vec![F::zero(); self.cols()];
             kernel_vec[free_var] = F::one();
 
             // For each pivot variable, set it based on the free variable
@@ -248,8 +248,8 @@ impl<F: Field> Matrix<F> {
         let mut basis = Vec::new();
 
         for &pivot_col in &rref.pivots {
-            let mut col_vec = Vec::with_capacity(self.rows);
-            for row in 0..self.rows {
+            let mut col_vec = Vec::with_capacity(self.rows());
+            for row in 0..self.rows() {
                 col_vec.push(self.get(row, pivot_col)?.clone());
             }
             basis.push(col_vec);
@@ -272,8 +272,8 @@ impl<F: Field> Matrix<F> {
     where
         F: rustmath_core::NumericConversion,
     {
-        let m = self.rows;
-        let n = self.cols;
+        let m = self.rows();
+        let n = self.cols();
 
         // For full-rank case (rank = min(m,n))
         if m >= n {
@@ -313,13 +313,13 @@ impl<F: Field> Matrix<F> {
             ));
         }
 
-        let n = self.rows;
+        let n = self.rows();
 
         // Create augmented matrix [A | I]
         let mut aug_data = Vec::with_capacity(n * (2 * n));
         for i in 0..n {
             for j in 0..n {
-                aug_data.push(self.data[i * n + j].clone());
+                aug_data.push(self.data()[i * n + j].clone());
             }
             // Add identity matrix columns
             for j in 0..n {
@@ -327,20 +327,16 @@ impl<F: Field> Matrix<F> {
             }
         }
 
-        let mut augmented = Matrix {
-            data: aug_data,
-            rows: n,
-            cols: 2 * n,
-        };
+        let mut augmented = Matrix::from_vec(n, 2 * n, aug_data)?;
 
         // Apply Gauss-Jordan elimination
         for col in 0..n {
             // Find pivot
             let mut pivot_row = col;
-            let mut max_val = augmented.data[col * augmented.cols + col].clone();
+            let mut max_val = augmented.data()[col * augmented.cols() + col].clone();
 
             for row in (col + 1)..n {
-                let val = augmented.data[row * augmented.cols + col].clone();
+                let val = augmented.data()[row * augmented.cols() + col].clone();
                 if !val.is_zero() && max_val.is_zero() {
                     max_val = val;
                     pivot_row = row;
@@ -353,20 +349,21 @@ impl<F: Field> Matrix<F> {
             }
 
             // Swap rows if needed
+            let aug_cols = augmented.cols();
             if pivot_row != col {
-                for j in 0..augmented.cols {
-                    let temp = augmented.data[col * augmented.cols + j].clone();
-                    augmented.data[col * augmented.cols + j] =
-                        augmented.data[pivot_row * augmented.cols + j].clone();
-                    augmented.data[pivot_row * augmented.cols + j] = temp;
+                for j in 0..aug_cols {
+                    let temp = augmented.data()[col * aug_cols + j].clone();
+                    let swap_val = augmented.data()[pivot_row * aug_cols + j].clone();
+                    augmented.data_mut()[col * aug_cols + j] = swap_val;
+                    augmented.data_mut()[pivot_row * aug_cols + j] = temp;
                 }
             }
 
             // Scale pivot row
-            let pivot = augmented.data[col * augmented.cols + col].clone();
-            for j in 0..augmented.cols {
-                let val = augmented.data[col * augmented.cols + j].clone();
-                augmented.data[col * augmented.cols + j] = val / pivot.clone();
+            let pivot = augmented.data()[col * aug_cols + col].clone();
+            for j in 0..aug_cols {
+                let val = augmented.data()[col * aug_cols + j].clone();
+                augmented.data_mut()[col * aug_cols + j] = val / pivot.clone();
             }
 
             // Eliminate column in all other rows
@@ -374,11 +371,11 @@ impl<F: Field> Matrix<F> {
                 if row == col {
                     continue;
                 }
-                let factor = augmented.data[row * augmented.cols + col].clone();
-                for j in 0..augmented.cols {
-                    let pivot_val = augmented.data[col * augmented.cols + j].clone();
-                    let current_val = augmented.data[row * augmented.cols + j].clone();
-                    augmented.data[row * augmented.cols + j] =
+                let factor = augmented.data()[row * aug_cols + col].clone();
+                for j in 0..aug_cols {
+                    let pivot_val = augmented.data()[col * aug_cols + j].clone();
+                    let current_val = augmented.data()[row * aug_cols + j].clone();
+                    augmented.data_mut()[row * aug_cols + j] =
                         current_val - factor.clone() * pivot_val;
                 }
             }
@@ -388,15 +385,11 @@ impl<F: Field> Matrix<F> {
         let mut inv_data = Vec::with_capacity(n * n);
         for i in 0..n {
             for j in 0..n {
-                inv_data.push(augmented.data[i * augmented.cols + n + j].clone());
+                inv_data.push(augmented.data()[i * augmented.cols() + n + j].clone());
             }
         }
 
-        Ok(Some(Matrix {
-            data: inv_data,
-            rows: n,
-            cols: n,
-        }))
+        Ok(Some(Matrix::from_vec(n, n, inv_data)?))
     }
 }
 
@@ -414,15 +407,15 @@ mod tests {
             3,
             3,
             vec![
-                Rational::from((1, 1)),
-                Rational::from((2, 1)),
-                Rational::from((3, 1)),
-                Rational::from((2, 1)),
-                Rational::from((4, 1)),
-                Rational::from((5, 1)),
-                Rational::from((3, 1)),
-                Rational::from((5, 1)),
-                Rational::from((6, 1)),
+                Rational::from_integer(1),
+                Rational::from_integer(2),
+                Rational::from_integer(3),
+                Rational::from_integer(2),
+                Rational::from_integer(4),
+                Rational::from_integer(5),
+                Rational::from_integer(3),
+                Rational::from_integer(5),
+                Rational::from_integer(6),
             ],
         )
         .unwrap();
@@ -440,10 +433,10 @@ mod tests {
             2,
             2,
             vec![
-                Rational::from((1, 1)),
-                Rational::from((2, 1)),
-                Rational::from((2, 1)),
-                Rational::from((4, 1)),
+                Rational::from_integer(1),
+                Rational::from_integer(2),
+                Rational::from_integer(2),
+                Rational::from_integer(4),
             ],
         )
         .unwrap();
@@ -460,20 +453,20 @@ mod tests {
             2,
             2,
             vec![
-                Rational::from((2, 1)),
-                Rational::from((1, 1)),
-                Rational::from((1, 1)),
-                Rational::from((-1, 1)),
+                Rational::from_integer(2),
+                Rational::from_integer(1),
+                Rational::from_integer(1),
+                Rational::from_integer(-1),
             ],
         )
         .unwrap();
 
-        let b = vec![Rational::from((5, 1)), Rational::from((1, 1))];
+        let b = vec![Rational::from_integer(5), Rational::from_integer(1)];
 
         let solution = a.solve(&b).unwrap().expect("Should have solution");
 
-        assert_eq!(solution[0], Rational::from((2, 1)));
-        assert_eq!(solution[1], Rational::from((1, 1)));
+        assert_eq!(solution[0], Rational::from_integer(2));
+        assert_eq!(solution[1], Rational::from_integer(1));
     }
 
     #[test]
@@ -486,10 +479,10 @@ mod tests {
             2,
             2,
             vec![
-                Rational::from((1, 1)),
-                Rational::from((2, 1)),
-                Rational::from((3, 1)),
-                Rational::from((4, 1)),
+                Rational::from_integer(1),
+                Rational::from_integer(2),
+                Rational::from_integer(3),
+                Rational::from_integer(4),
             ],
         )
         .unwrap();
@@ -524,10 +517,10 @@ mod tests {
             2,
             2,
             vec![
-                Rational::from((1, 1)),
-                Rational::from((2, 1)),
-                Rational::from((2, 1)),
-                Rational::from((4, 1)),
+                Rational::from_integer(1),
+                Rational::from_integer(2),
+                Rational::from_integer(2),
+                Rational::from_integer(4),
             ],
         )
         .unwrap();
@@ -545,12 +538,12 @@ mod tests {
             2,
             3,
             vec![
-                Rational::from((1, 1)),
-                Rational::from((2, 1)),
-                Rational::from((3, 1)),
-                Rational::from((2, 1)),
-                Rational::from((4, 1)),
-                Rational::from((6, 1)),
+                Rational::from_integer(1),
+                Rational::from_integer(2),
+                Rational::from_integer(3),
+                Rational::from_integer(2),
+                Rational::from_integer(4),
+                Rational::from_integer(6),
             ],
         )
         .unwrap();
@@ -562,12 +555,12 @@ mod tests {
         for v in &kernel {
             assert_eq!(v.len(), 3);
             // Compute m * v
-            let mut result = vec![Rational::from((0, 1)); 2];
+            let mut result = vec![Rational::from_integer(0); 2];
             for i in 0..2 {
                 for j in 0..3 {
                     result[i] = result[i].clone() + m.get(i, j).unwrap().clone() * v[j].clone();
                 }
-                assert_eq!(result[i], Rational::from((0, 1)));
+                assert_eq!(result[i], Rational::from_integer(0));
             }
         }
     }
@@ -582,15 +575,15 @@ mod tests {
             3,
             3,
             vec![
-                Rational::from((1, 1)),
-                Rational::from((2, 1)),
-                Rational::from((3, 1)),
-                Rational::from((2, 1)),
-                Rational::from((4, 1)),
-                Rational::from((5, 1)),
-                Rational::from((3, 1)),
-                Rational::from((6, 1)),
-                Rational::from((7, 1)),
+                Rational::from_integer(1),
+                Rational::from_integer(2),
+                Rational::from_integer(3),
+                Rational::from_integer(2),
+                Rational::from_integer(4),
+                Rational::from_integer(5),
+                Rational::from_integer(3),
+                Rational::from_integer(6),
+                Rational::from_integer(7),
             ],
         )
         .unwrap();
@@ -614,20 +607,20 @@ mod tests {
             2,
             2,
             vec![
-                Rational::from((1, 1)),
-                Rational::from((2, 1)),
-                Rational::from((3, 1)),
-                Rational::from((4, 1)),
+                Rational::from_integer(1),
+                Rational::from_integer(2),
+                Rational::from_integer(3),
+                Rational::from_integer(4),
             ],
         )
         .unwrap();
 
-        let b = vec![Rational::from((7, 1)), Rational::from((10, 1))];
+        let b = vec![Rational::from_integer(7), Rational::from_integer(10)];
 
         let solution = a.solve_left(&b).unwrap();
         if let Some(x) = solution {
             // Verify xA = b
-            let mut result = vec![Rational::from((0, 1)); 2];
+            let mut result = vec![Rational::from_integer(0); 2];
             for j in 0..2 {
                 for i in 0..2 {
                     result[j] = result[j].clone() + x[i].clone() * a.get(i, j).unwrap().clone();

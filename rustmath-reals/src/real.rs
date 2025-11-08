@@ -1,6 +1,6 @@
 //! Real number implementation with arbitrary precision support
 
-use rustmath_core::{Field, MathError, NumericConversion, Result, Ring};
+use rustmath_core::{CommutativeRing, Field, MathError, NumericConversion, Result, Ring};
 use rustmath_integers::Integer;
 use rustmath_rationals::Rational;
 use std::fmt;
@@ -195,6 +195,8 @@ impl Ring for Real {
     }
 }
 
+impl CommutativeRing for Real {}
+
 impl Field for Real {
     fn inverse(&self) -> Result<Self> {
         if self.is_zero() {
@@ -208,14 +210,44 @@ impl Field for Real {
 }
 
 impl NumericConversion for Real {
-    fn to_f64(&self) -> Option<f64> {
-        Some(self.value)
-    }
-
     fn from_i64(n: i64) -> Self {
         Real {
             value: n as f64,
         }
+    }
+
+    fn from_u64(n: u64) -> Self {
+        Real {
+            value: n as f64,
+        }
+    }
+
+    fn to_i64(&self) -> Option<i64> {
+        if self.value.is_finite() && self.value >= i64::MIN as f64 && self.value <= i64::MAX as f64 {
+            Some(self.value as i64)
+        } else {
+            None
+        }
+    }
+
+    fn to_u64(&self) -> Option<u64> {
+        if self.value.is_finite() && self.value >= 0.0 && self.value <= u64::MAX as f64 {
+            Some(self.value as u64)
+        } else {
+            None
+        }
+    }
+
+    fn to_usize(&self) -> Option<usize> {
+        if self.value.is_finite() && self.value >= 0.0 && self.value <= usize::MAX as f64 {
+            Some(self.value as usize)
+        } else {
+            None
+        }
+    }
+
+    fn to_f64(&self) -> Option<f64> {
+        Some(self.value)
     }
 }
 

@@ -5,156 +5,112 @@ use crate::Real;
 impl Real {
     /// Compute sine
     pub fn sin(&self) -> Self {
-        Real {
-            value: self.value.sin(),
-        }
+        Real::new(self.to_f64().sin())
     }
 
     /// Compute cosine
     pub fn cos(&self) -> Self {
-        Real {
-            value: self.value.cos(),
-        }
+        Real::new(self.to_f64().cos())
     }
 
     /// Compute tangent
     pub fn tan(&self) -> Self {
-        Real {
-            value: self.value.tan(),
-        }
+        Real::new(self.to_f64().tan())
     }
 
     /// Compute arcsine
     pub fn asin(&self) -> Self {
-        Real {
-            value: self.value.asin(),
-        }
+        Real::new(self.to_f64().asin())
     }
 
     /// Compute arccosine
     pub fn acos(&self) -> Self {
-        Real {
-            value: self.value.acos(),
-        }
+        Real::new(self.to_f64().acos())
     }
 
     /// Compute arctangent
     pub fn atan(&self) -> Self {
-        Real {
-            value: self.value.atan(),
-        }
+        Real::new(self.to_f64().atan())
     }
 
     /// Compute arctangent of y/x
     pub fn atan2(&self, x: &Self) -> Self {
-        Real {
-            value: self.value.atan2(x.value),
-        }
+        Real::new(self.to_f64().atan2(x.to_f64()))
     }
 
     /// Compute hyperbolic sine
     pub fn sinh(&self) -> Self {
-        Real {
-            value: self.value.sinh(),
-        }
+        Real::new(self.to_f64().sinh())
     }
 
     /// Compute hyperbolic cosine
     pub fn cosh(&self) -> Self {
-        Real {
-            value: self.value.cosh(),
-        }
+        Real::new(self.to_f64().cosh())
     }
 
     /// Compute hyperbolic tangent
     pub fn tanh(&self) -> Self {
-        Real {
-            value: self.value.tanh(),
-        }
+        Real::new(self.to_f64().tanh())
     }
 
     /// Compute inverse hyperbolic sine
     pub fn asinh(&self) -> Self {
-        Real {
-            value: self.value.asinh(),
-        }
+        Real::new(self.to_f64().asinh())
     }
 
     /// Compute inverse hyperbolic cosine
     pub fn acosh(&self) -> Self {
-        Real {
-            value: self.value.acosh(),
-        }
+        Real::new(self.to_f64().acosh())
     }
 
     /// Compute inverse hyperbolic tangent
     pub fn atanh(&self) -> Self {
-        Real {
-            value: self.value.atanh(),
-        }
+        Real::new(self.to_f64().atanh())
     }
 
     /// Compute exponential (e^x)
     pub fn exp(&self) -> Self {
-        Real {
-            value: self.value.exp(),
-        }
+        Real::new(self.to_f64().exp())
     }
 
     /// Compute natural logarithm
     pub fn ln(&self) -> Self {
-        Real {
-            value: self.value.ln(),
-        }
+        Real::new(self.to_f64().ln())
     }
 
     /// Compute logarithm base 2
     pub fn log2(&self) -> Self {
-        Real {
-            value: self.value.log2(),
-        }
+        Real::new(self.to_f64().log2())
     }
 
     /// Compute logarithm base 10
     pub fn log10(&self) -> Self {
-        Real {
-            value: self.value.log10(),
-        }
+        Real::new(self.to_f64().log10())
     }
 
     /// Compute logarithm with arbitrary base
     pub fn log(&self, base: &Self) -> Self {
-        Real {
-            value: self.value.log(base.value),
-        }
+        Real::new(self.to_f64().log(base.to_f64()))
     }
 
     /// Compute square root
     pub fn sqrt(&self) -> Self {
-        Real {
-            value: self.value.sqrt(),
-        }
+        Real::new(self.to_f64().sqrt())
     }
 
     /// Compute cube root
     pub fn cbrt(&self) -> Self {
-        Real {
-            value: self.value.cbrt(),
-        }
+        Real::new(self.to_f64().cbrt())
     }
 
     /// Compute e^x - 1 (more accurate for small x)
     pub fn exp_m1(&self) -> Self {
-        Real {
-            value: self.value.exp_m1(),
-        }
+        Real::new(self.to_f64().exp_m1())
     }
 
     /// Compute ln(1 + x) (more accurate for small x)
     pub fn ln_1p(&self) -> Self {
-        Real {
-            value: self.value.ln_1p(),
-        }
+        Real::new(self.to_f64().ln_1p())
     }
 }
 

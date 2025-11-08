@@ -1,10 +1,11 @@
 //! p-adic rationals Qp
 
 use crate::PadicInteger;
-use rustmath_core::{Field, MathError, Result, Ring};
+use rustmath_core::{CommutativeRing, Field, MathError, NumericConversion, Result, Ring};
 use rustmath_integers::Integer;
 use rustmath_rationals::Rational;
 use std::fmt;
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 /// p-adic rational number
 ///
@@ -37,14 +38,12 @@ impl PadicRational {
 
         // Remove factors of p from numerator
         for _ in 0..num_val {
-            let (quot, _) = num.div_rem(&prime)?;
-            num = quot;
+            num = num / prime.clone();
         }
 
         // Remove factors of p from denominator
         for _ in 0..den_val {
-            let (quot, _) = den.div_rem(&prime)?;
-            den = quot;
+            den = den / prime.clone();
         }
 
         // Now num and den are coprime to p
@@ -136,6 +135,8 @@ impl Ring for PadicRational {
     }
 }
 
+impl CommutativeRing for PadicRational {}
+
 impl Field for PadicRational {
     fn inverse(&self) -> Result<Self> {
         if self.is_zero() {
@@ -146,6 +147,100 @@ impl Field for PadicRational {
             unit: self.unit.inverse()?,
             valuation: -self.valuation,
         })
+    }
+}
+
+impl Neg for PadicRational {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        PadicRational {
+            unit: -self.unit,
+            valuation: self.valuation,
+        }
+    }
+}
+
+impl Neg for &PadicRational {
+    type Output = PadicRational;
+
+    fn neg(self) -> Self::Output {
+        PadicRational {
+            unit: -self.unit.clone(),
+            valuation: self.valuation,
+        }
+    }
+}
+
+impl Add for PadicRational {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self::Output {
+        if self.valuation == other.valuation {
+            // Same valuation: just add the units
+            PadicRational {
+                unit: self.unit + other.unit,
+                valuation: self.valuation,
+            }
+        } else if self.valuation < other.valuation {
+            // self has smaller valuation (larger p-adic norm)
+            let diff = (other.valuation - self.valuation) as usize;
+            let p = self.prime().clone();
+            let mut shifted_other = other.unit;
+            for _ in 0..diff {
+                shifted_other = shifted_other * PadicInteger::from_integer(p.clone(), p.clone(), self.precision()).unwrap();
+            }
+            PadicRational {
+                unit: self.unit + shifted_other,
+                valuation: self.valuation,
+            }
+        } else {
+            // other has smaller valuation
+            let diff = (self.valuation - other.valuation) as usize;
+            let p = self.prime().clone();
+            let precision = self.precision();
+            let mut shifted_self = self.unit;
+            for _ in 0..diff {
+                shifted_self = shifted_self * PadicInteger::from_integer(p.clone(), p.clone(), precision).unwrap();
+            }
+            PadicRational {
+                unit: shifted_self + other.unit,
+                valuation: other.valuation,
+            }
+        }
+    }
+}
+
+impl Sub for PadicRational {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self::Output {
+        self + (-other)
+    }
+}
+
+impl Mul for PadicRational {
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self::Output {
+        PadicRational {
+            unit: self.unit * other.unit,
+            valuation: self.valuation + other.valuation,
+        }
+    }
+}
+
+impl Div for PadicRational {
+    type Output = Self;
+
+    fn div(self, other: Self) -> Self::Output {
+        if other.is_zero() {
+            panic!("Division by zero");
+        }
+        PadicRational {
+            unit: self.unit * other.unit.inverse().unwrap(),
+            valuation: self.valuation - other.valuation,
+        }
     }
 }
 
