@@ -156,6 +156,32 @@ impl Expr {
                             None
                         }
                     }
+                    UnaryOp::Abs => Some(val.abs()),
+                    UnaryOp::Sign => Some(if val > 0.0 {
+                        1.0
+                    } else if val < 0.0 {
+                        -1.0
+                    } else {
+                        0.0
+                    }),
+                    UnaryOp::Sinh => Some(val.sinh()),
+                    UnaryOp::Cosh => Some(val.cosh()),
+                    UnaryOp::Tanh => Some(val.tanh()),
+                    UnaryOp::Arcsin => {
+                        if val >= -1.0 && val <= 1.0 {
+                            Some(val.asin())
+                        } else {
+                            None
+                        }
+                    }
+                    UnaryOp::Arccos => {
+                        if val >= -1.0 && val <= 1.0 {
+                            Some(val.acos())
+                        } else {
+                            None
+                        }
+                    }
+                    UnaryOp::Arctan => Some(val.atan()),
                 }
             }
         }
@@ -247,5 +273,69 @@ mod tests {
         assert!(syms.contains(&Symbol::new("x")));
         assert!(syms.contains(&Symbol::new("y")));
         assert!(syms.contains(&Symbol::new("z")));
+    }
+
+    #[test]
+    fn test_eval_hyperbolic_functions() {
+        use std::f64::consts::E;
+
+        // sinh(1) ≈ (e - 1/e) / 2
+        let expr = Expr::from(1).sinh();
+        let result = expr.eval_float().unwrap();
+        let expected = (E - 1.0 / E) / 2.0;
+        assert!((result - expected).abs() < 1e-10);
+
+        // cosh(0) = 1
+        let expr = Expr::from(0).cosh();
+        let result = expr.eval_float().unwrap();
+        assert!((result - 1.0).abs() < 1e-10);
+
+        // tanh(0) = 0
+        let expr = Expr::from(0).tanh();
+        let result = expr.eval_float().unwrap();
+        assert!((result - 0.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_eval_inverse_trig() {
+        use std::f64::consts::PI;
+
+        // arcsin(0) = 0
+        let expr = Expr::from(0).arcsin();
+        let result = expr.eval_float().unwrap();
+        assert!((result - 0.0).abs() < 1e-10);
+
+        // arccos(1) = 0
+        let expr = Expr::from(1).arccos();
+        let result = expr.eval_float().unwrap();
+        assert!((result - 0.0).abs() < 1e-10);
+
+        // arctan(0) = 0
+        let expr = Expr::from(0).arctan();
+        let result = expr.eval_float().unwrap();
+        assert!((result - 0.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_eval_abs_and_sign() {
+        // abs(-5) = 5
+        let expr = Expr::from(-5).abs();
+        let result = expr.eval_float().unwrap();
+        assert!((result - 5.0).abs() < 1e-10);
+
+        // sign(-3) = -1
+        let expr = Expr::from(-3).sign();
+        let result = expr.eval_float().unwrap();
+        assert!((result - (-1.0)).abs() < 1e-10);
+
+        // sign(5) = 1
+        let expr = Expr::from(5).sign();
+        let result = expr.eval_float().unwrap();
+        assert!((result - 1.0).abs() < 1e-10);
+
+        // sign(0) = 0
+        let expr = Expr::from(0).sign();
+        let result = expr.eval_float().unwrap();
+        assert!((result - 0.0).abs() < 1e-10);
     }
 }

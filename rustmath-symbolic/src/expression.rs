@@ -27,6 +27,14 @@ pub enum UnaryOp {
     Exp,
     Log,
     Sqrt,
+    Abs,
+    Sign,
+    Sinh,
+    Cosh,
+    Tanh,
+    Arcsin,
+    Arccos,
+    Arctan,
 }
 
 /// Symbolic expression
@@ -89,6 +97,52 @@ impl Expr {
     pub fn sqrt(self) -> Self {
         Expr::Unary(UnaryOp::Sqrt, Arc::new(self))
     }
+
+    /// Create tan expression
+    pub fn tan(self) -> Self {
+        Expr::Unary(UnaryOp::Tan, Arc::new(self))
+    }
+
+    /// Create abs (absolute value) expression
+    pub fn abs(self) -> Self {
+        Expr::Unary(UnaryOp::Abs, Arc::new(self))
+    }
+
+    /// Create sign expression
+    /// Returns -1 for negative, 0 for zero, 1 for positive
+    pub fn sign(self) -> Self {
+        Expr::Unary(UnaryOp::Sign, Arc::new(self))
+    }
+
+    /// Create sinh (hyperbolic sine) expression
+    pub fn sinh(self) -> Self {
+        Expr::Unary(UnaryOp::Sinh, Arc::new(self))
+    }
+
+    /// Create cosh (hyperbolic cosine) expression
+    pub fn cosh(self) -> Self {
+        Expr::Unary(UnaryOp::Cosh, Arc::new(self))
+    }
+
+    /// Create tanh (hyperbolic tangent) expression
+    pub fn tanh(self) -> Self {
+        Expr::Unary(UnaryOp::Tanh, Arc::new(self))
+    }
+
+    /// Create arcsin (inverse sine) expression
+    pub fn arcsin(self) -> Self {
+        Expr::Unary(UnaryOp::Arcsin, Arc::new(self))
+    }
+
+    /// Create arccos (inverse cosine) expression
+    pub fn arccos(self) -> Self {
+        Expr::Unary(UnaryOp::Arccos, Arc::new(self))
+    }
+
+    /// Create arctan (inverse tangent) expression
+    pub fn arctan(self) -> Self {
+        Expr::Unary(UnaryOp::Arctan, Arc::new(self))
+    }
 }
 
 impl From<i64> for Expr {
@@ -134,6 +188,14 @@ impl fmt::Display for Expr {
                     UnaryOp::Exp => "exp",
                     UnaryOp::Log => "log",
                     UnaryOp::Sqrt => "sqrt",
+                    UnaryOp::Abs => "abs",
+                    UnaryOp::Sign => "sign",
+                    UnaryOp::Sinh => "sinh",
+                    UnaryOp::Cosh => "cosh",
+                    UnaryOp::Tanh => "tanh",
+                    UnaryOp::Arcsin => "arcsin",
+                    UnaryOp::Arccos => "arccos",
+                    UnaryOp::Arctan => "arctan",
                 };
                 match op {
                     UnaryOp::Neg => write!(f, "-{}", inner),
@@ -220,5 +282,58 @@ mod tests {
         let display = format!("{}", expr);
         assert!(display.contains("x"));
         assert!(display.contains("1"));
+    }
+
+    #[test]
+    fn test_trig_functions() {
+        let x = Expr::symbol("x");
+
+        let sin_x = x.clone().sin();
+        assert_eq!(format!("{}", sin_x), "sin(x)");
+
+        let cos_x = x.clone().cos();
+        assert_eq!(format!("{}", cos_x), "cos(x)");
+
+        let tan_x = x.clone().tan();
+        assert_eq!(format!("{}", tan_x), "tan(x)");
+    }
+
+    #[test]
+    fn test_hyperbolic_functions() {
+        let x = Expr::symbol("x");
+
+        let sinh_x = x.clone().sinh();
+        assert_eq!(format!("{}", sinh_x), "sinh(x)");
+
+        let cosh_x = x.clone().cosh();
+        assert_eq!(format!("{}", cosh_x), "cosh(x)");
+
+        let tanh_x = x.clone().tanh();
+        assert_eq!(format!("{}", tanh_x), "tanh(x)");
+    }
+
+    #[test]
+    fn test_inverse_trig_functions() {
+        let x = Expr::symbol("x");
+
+        let arcsin_x = x.clone().arcsin();
+        assert_eq!(format!("{}", arcsin_x), "arcsin(x)");
+
+        let arccos_x = x.clone().arccos();
+        assert_eq!(format!("{}", arccos_x), "arccos(x)");
+
+        let arctan_x = x.clone().arctan();
+        assert_eq!(format!("{}", arctan_x), "arctan(x)");
+    }
+
+    #[test]
+    fn test_abs_and_sign() {
+        let x = Expr::symbol("x");
+
+        let abs_x = x.clone().abs();
+        assert_eq!(format!("{}", abs_x), "abs(x)");
+
+        let sign_x = x.clone().sign();
+        assert_eq!(format!("{}", sign_x), "sign(x)");
     }
 }
