@@ -4,6 +4,7 @@
 //! and evaluation.
 
 pub mod differentiate;
+pub mod expand;
 pub mod expression;
 pub mod polynomial;
 pub mod simplify;
