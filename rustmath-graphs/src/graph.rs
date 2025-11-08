@@ -386,6 +386,280 @@ impl Graph {
 
         distances
     }
+
+    /// Get all vertices in the graph
+    pub fn vertices(&self) -> Vec<usize> {
+        (0..self.num_vertices).collect()
+    }
+
+    /// Get all edges in the graph
+    ///
+    /// Returns a vector of (u, v) tuples where u < v
+    pub fn edges(&self) -> Vec<(usize, usize)> {
+        let mut edges = Vec::new();
+        for u in 0..self.num_vertices {
+            for &v in &self.adj[u] {
+                if u < v {
+                    edges.push((u, v));
+                }
+            }
+        }
+        edges
+    }
+
+    /// Add multiple edges at once
+    pub fn add_edges(&mut self, edges: &[(usize, usize)]) -> Result<(), String> {
+        for &(u, v) in edges {
+            self.add_edge(u, v)?;
+        }
+        Ok(())
+    }
+
+    /// Check if the graph is a tree
+    ///
+    /// A tree is a connected acyclic graph
+    pub fn is_tree(&self) -> bool {
+        // A tree with n vertices has exactly n-1 edges
+        if self.num_vertices == 0 {
+            return true;
+        }
+
+        self.is_connected() && self.num_edges() == self.num_vertices - 1
+    }
+
+    /// Check if the graph is a forest
+    ///
+    /// A forest is an acyclic graph (may be disconnected)
+    pub fn is_forest(&self) -> bool {
+        !self.has_cycle()
+    }
+
+    /// Check if the graph has an Eulerian path or circuit
+    ///
+    /// Returns (has_path, has_circuit)
+    pub fn is_eulerian(&self) -> (bool, bool) {
+        if !self.is_connected() {
+            return (false, false);
+        }
+
+        // Count vertices with odd degree
+        let mut odd_degree_count = 0;
+        for v in 0..self.num_vertices {
+            if self.degree(v).unwrap() % 2 == 1 {
+                odd_degree_count += 1;
+            }
+        }
+
+        // Eulerian circuit: all vertices have even degree
+        // Eulerian path: exactly 2 vertices have odd degree
+        let has_circuit = odd_degree_count == 0;
+        let has_path = odd_degree_count == 0 || odd_degree_count == 2;
+
+        (has_path, has_circuit)
+    }
+
+    /// Get the length of the shortest path between two vertices
+    pub fn shortest_path_length(&self, start: usize, end: usize) -> Result<Option<usize>, String> {
+        match self.shortest_path(start, end)? {
+            Some(path) => Ok(Some(path.len() - 1)),
+            None => Ok(None),
+        }
+    }
+
+    /// Find all paths between two vertices
+    ///
+    /// Warning: This can be exponential in the graph size
+    pub fn all_paths(&self, start: usize, end: usize) -> Result<Vec<Vec<usize>>, String> {
+        if start >= self.num_vertices || end >= self.num_vertices {
+            return Err("Vertex out of bounds".to_string());
+        }
+
+        let mut paths = Vec::new();
+        let mut current_path = vec![start];
+        let mut visited = vec![false; self.num_vertices];
+        visited[start] = true;
+
+        self.all_paths_helper(start, end, &mut current_path, &mut visited, &mut paths);
+
+        Ok(paths)
+    }
+
+    fn all_paths_helper(
+        &self,
+        current: usize,
+        end: usize,
+        path: &mut Vec<usize>,
+        visited: &mut [bool],
+        paths: &mut Vec<Vec<usize>>,
+    ) {
+        if current == end {
+            paths.push(path.clone());
+            return;
+        }
+
+        for &neighbor in &self.adj[current] {
+            if !visited[neighbor] {
+                path.push(neighbor);
+                visited[neighbor] = true;
+                self.all_paths_helper(neighbor, end, path, visited, paths);
+                path.pop();
+                visited[neighbor] = false;
+            }
+        }
+    }
+
+    /// Find minimum spanning tree using Kruskal's algorithm
+    ///
+    /// Returns edges in the MST, or None if graph is not connected
+    pub fn min_spanning_tree(&self) -> Option<Vec<(usize, usize)>> {
+        if !self.is_connected() {
+            return None;
+        }
+
+        let mut edges = self.edges();
+        // Sort edges (already sorted by vertex pairs)
+        edges.sort_by_key(|(u, v)| (*u, *v));
+
+        let mut mst = Vec::new();
+        let mut uf = UnionFind::new(self.num_vertices);
+
+        for (u, v) in edges {
+            if !uf.is_connected(u, v) {
+                uf.union(u, v);
+                mst.push((u, v));
+
+                if mst.len() == self.num_vertices - 1 {
+                    break;
+                }
+            }
+        }
+
+        Some(mst)
+    }
+
+    /// Find maximum matching in a bipartite graph
+    ///
+    /// Returns None if graph is not bipartite
+    pub fn max_bipartite_matching(&self) -> Option<Vec<(usize, usize)>> {
+        if !self.is_bipartite() {
+            return None;
+        }
+
+        // Get bipartition
+        let (left, right) = self.bipartition()?;
+
+        // Use augmenting path algorithm
+        let mut matching: HashMap<usize, usize> = HashMap::new();
+
+        for &u in &left {
+            let mut visited = HashSet::new();
+            self.augment_matching(u, &mut matching, &mut visited, &left, &right);
+        }
+
+        let edges: Vec<(usize, usize)> = matching.iter().map(|(&u, &v)| (u, v)).collect();
+        Some(edges)
+    }
+
+    fn bipartition(&self) -> Option<(Vec<usize>, Vec<usize>)> {
+        let mut color = vec![None; self.num_vertices];
+        let mut queue = VecDeque::new();
+
+        // Color first component
+        for start in 0..self.num_vertices {
+            if color[start].is_none() {
+                queue.push_back(start);
+                color[start] = Some(0);
+
+                while let Some(v) = queue.pop_front() {
+                    let current_color = color[v].unwrap();
+
+                    for &neighbor in &self.adj[v] {
+                        if color[neighbor].is_none() {
+                            color[neighbor] = Some(1 - current_color);
+                            queue.push_back(neighbor);
+                        }
+                    }
+                }
+            }
+        }
+
+        let left: Vec<usize> = (0..self.num_vertices)
+            .filter(|&v| color[v] == Some(0))
+            .collect();
+        let right: Vec<usize> = (0..self.num_vertices)
+            .filter(|&v| color[v] == Some(1))
+            .collect();
+
+        Some((left, right))
+    }
+
+    fn augment_matching(
+        &self,
+        u: usize,
+        matching: &mut HashMap<usize, usize>,
+        visited: &mut HashSet<usize>,
+        _left: &[usize],
+        _right: &[usize],
+    ) -> bool {
+        for &v in &self.adj[u] {
+            if visited.contains(&v) {
+                continue;
+            }
+            visited.insert(v);
+
+            // If v is unmatched or we can recursively find an augmenting path
+            if !matching.values().any(|&matched| matched == v) ||
+               self.augment_matching(*matching.iter().find(|(_, &val)| val == v).unwrap().0, matching, visited, _left, _right) {
+                matching.insert(u, v);
+                return true;
+            }
+        }
+        false
+    }
+}
+
+/// Union-Find data structure for Kruskal's algorithm
+struct UnionFind {
+    parent: Vec<usize>,
+    rank: Vec<usize>,
+}
+
+impl UnionFind {
+    fn new(n: usize) -> Self {
+        UnionFind {
+            parent: (0..n).collect(),
+            rank: vec![0; n],
+        }
+    }
+
+    fn find(&mut self, x: usize) -> usize {
+        if self.parent[x] != x {
+            self.parent[x] = self.find(self.parent[x]);
+        }
+        self.parent[x]
+    }
+
+    fn union(&mut self, x: usize, y: usize) {
+        let root_x = self.find(x);
+        let root_y = self.find(y);
+
+        if root_x == root_y {
+            return;
+        }
+
+        if self.rank[root_x] < self.rank[root_y] {
+            self.parent[root_x] = root_y;
+        } else if self.rank[root_x] > self.rank[root_y] {
+            self.parent[root_y] = root_x;
+        } else {
+            self.parent[root_y] = root_x;
+            self.rank[root_x] += 1;
+        }
+    }
+
+    fn is_connected(&mut self, x: usize, y: usize) -> bool {
+        self.find(x) == self.find(y)
+    }
 }
 
 #[cfg(test)]
@@ -562,5 +836,150 @@ mod tests {
         g2.add_edge(0, 1).unwrap();
         g2.add_edge(2, 3).unwrap();
         assert_eq!(g2.diameter(), None);
+    }
+
+    #[test]
+    fn test_vertices_edges() {
+        let mut g = Graph::new(4);
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(1, 2).unwrap();
+        g.add_edge(2, 3).unwrap();
+
+        assert_eq!(g.vertices(), vec![0, 1, 2, 3]);
+
+        let edges = g.edges();
+        assert_eq!(edges.len(), 3);
+        assert!(edges.contains(&(0, 1)));
+        assert!(edges.contains(&(1, 2)));
+        assert!(edges.contains(&(2, 3)));
+    }
+
+    #[test]
+    fn test_add_edges() {
+        let mut g = Graph::new(4);
+        let edges = vec![(0, 1), (1, 2), (2, 3)];
+        g.add_edges(&edges).unwrap();
+
+        assert_eq!(g.num_edges(), 3);
+        assert!(g.has_edge(0, 1));
+        assert!(g.has_edge(2, 3));
+    }
+
+    #[test]
+    fn test_is_tree() {
+        // Tree: connected acyclic with n-1 edges
+        let mut g = Graph::new(4);
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(1, 2).unwrap();
+        g.add_edge(2, 3).unwrap();
+        assert!(g.is_tree());
+
+        // Add cycle - no longer a tree
+        g.add_edge(3, 0).unwrap();
+        assert!(!g.is_tree());
+    }
+
+    #[test]
+    fn test_is_forest() {
+        // Forest: acyclic (may be disconnected)
+        let mut g = Graph::new(5);
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(2, 3).unwrap();
+        assert!(g.is_forest());
+
+        // Add cycle - no longer a forest
+        g.add_edge(3, 4).unwrap();
+        g.add_edge(4, 2).unwrap();
+        assert!(!g.is_forest());
+    }
+
+    #[test]
+    fn test_is_eulerian() {
+        // Eulerian circuit: all vertices have even degree
+        let mut g = Graph::new(4);
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(1, 2).unwrap();
+        g.add_edge(2, 3).unwrap();
+        g.add_edge(3, 0).unwrap();
+
+        let (has_path, has_circuit) = g.is_eulerian();
+        assert!(has_path);
+        assert!(has_circuit);
+
+        // Eulerian path: exactly 2 vertices with odd degree
+        let mut g2 = Graph::new(3);
+        g2.add_edge(0, 1).unwrap();
+        g2.add_edge(1, 2).unwrap();
+
+        let (has_path2, has_circuit2) = g2.is_eulerian();
+        assert!(has_path2);
+        assert!(!has_circuit2);
+    }
+
+    #[test]
+    fn test_shortest_path_length() {
+        let mut g = Graph::new(4);
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(1, 2).unwrap();
+        g.add_edge(2, 3).unwrap();
+
+        assert_eq!(g.shortest_path_length(0, 3).unwrap(), Some(3));
+        assert_eq!(g.shortest_path_length(0, 2).unwrap(), Some(2));
+        assert_eq!(g.shortest_path_length(0, 0).unwrap(), Some(0));
+    }
+
+    #[test]
+    fn test_all_paths() {
+        let mut g = Graph::new(4);
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(0, 2).unwrap();
+        g.add_edge(1, 3).unwrap();
+        g.add_edge(2, 3).unwrap();
+
+        let paths = g.all_paths(0, 3).unwrap();
+        assert_eq!(paths.len(), 2); // Two paths: 0->1->3 and 0->2->3
+
+        // Verify paths
+        for path in &paths {
+            assert_eq!(path[0], 0);
+            assert_eq!(path[path.len() - 1], 3);
+        }
+    }
+
+    #[test]
+    fn test_min_spanning_tree() {
+        // Create a graph: triangle 0-1-2-0
+        let mut g = Graph::new(3);
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(1, 2).unwrap();
+        g.add_edge(2, 0).unwrap();
+
+        let mst = g.min_spanning_tree().unwrap();
+        assert_eq!(mst.len(), 2); // MST of 3 vertices has 2 edges
+
+        // Disconnected graph has no MST
+        let mut g2 = Graph::new(4);
+        g2.add_edge(0, 1).unwrap();
+        g2.add_edge(2, 3).unwrap();
+        assert!(g2.min_spanning_tree().is_none());
+    }
+
+    #[test]
+    fn test_max_bipartite_matching() {
+        // Create a bipartite graph
+        let mut g = Graph::new(4);
+        g.add_edge(0, 2).unwrap(); // Left side: 0, 1; Right side: 2, 3
+        g.add_edge(0, 3).unwrap();
+        g.add_edge(1, 2).unwrap();
+
+        let matching = g.max_bipartite_matching().unwrap();
+        assert_eq!(matching.len(), 2); // Maximum matching has 2 edges
+
+        // Non-bipartite graph returns None
+        let mut g2 = Graph::new(3);
+        g2.add_edge(0, 1).unwrap();
+        g2.add_edge(1, 2).unwrap();
+        g2.add_edge(2, 0).unwrap();
+        assert!(g2.max_bipartite_matching().is_none());
     }
 }
