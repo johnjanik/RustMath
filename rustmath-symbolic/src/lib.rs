@@ -11,6 +11,7 @@ pub mod expression;
 pub mod integrate;
 pub mod limits;
 pub mod numerical;
+pub mod pde;
 pub mod polynomial;
 pub mod series;
 pub mod simplify;
@@ -22,6 +23,7 @@ pub use diffeq::{Euler, RungeKutta, ODE, ODEType};
 pub use expression::{BinaryOp, Expr, UnaryOp};
 pub use limits::{Direction, LimitResult};
 pub use numerical::IntegrationResult;
+pub use pde::PDEType;
 pub use symbol::Symbol;
 
 #[cfg(test)]
@@ -258,5 +260,216 @@ mod tests {
         // Taylor series of f around x=0
         let taylor = f.taylor(&x, &Expr::from(0), 5);
         assert!(!taylor.is_constant());
+    }
+
+    // Numerical integration tests
+    #[test]
+    fn test_numerical_trapezoidal() {
+        use crate::numerical;
+        use crate::symbol::Symbol;
+
+        let x = Symbol::new("x");
+        // ∫₀¹ x dx = 0.5
+        let expr = Expr::Symbol(x.clone());
+        let result = numerical::trapezoidal(&expr, &x, 0.0, 1.0, 100);
+        assert!((result.value - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_numerical_simpson() {
+        use crate::numerical;
+        use crate::symbol::Symbol;
+
+        let x = Symbol::new("x");
+        // ∫₀¹ x² dx = 1/3
+        let expr = Expr::Symbol(x.clone()).pow(Expr::from(2));
+        let result = numerical::simpson(&expr, &x, 0.0, 1.0, 100);
+        assert!((result.value - 1.0/3.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_numerical_adaptive_simpson() {
+        use crate::numerical;
+        use crate::symbol::Symbol;
+
+        let x = Symbol::new("x");
+        let expr = Expr::Symbol(x.clone()).pow(Expr::from(2));
+        let result = numerical::adaptive_simpson(&expr, &x, 0.0, 1.0, 1e-6, 10);
+        assert!((result.value - 1.0/3.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_numerical_gauss_legendre() {
+        use crate::numerical;
+        use crate::symbol::Symbol;
+
+        let x = Symbol::new("x");
+        let expr = Expr::Symbol(x.clone()).pow(Expr::from(2));
+        let result = numerical::gauss_legendre(&expr, &x, 0.0, 1.0, 10);
+        assert!((result.value - 1.0/3.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_numerical_romberg() {
+        use crate::numerical;
+        use crate::symbol::Symbol;
+
+        let x = Symbol::new("x");
+        let expr = Expr::Symbol(x.clone()).pow(Expr::from(2));
+        let result = numerical::romberg(&expr, &x, 0.0, 1.0, 10, 1e-6);
+        assert!((result.value - 1.0/3.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_numerical_monte_carlo() {
+        use crate::numerical;
+        use crate::symbol::Symbol;
+
+        let x = Symbol::new("x");
+        let expr = Expr::from(1);
+        let result = numerical::monte_carlo(&expr, &x, 0.0, 2.0, 10000);
+        assert!((result.value - 2.0).abs() < 0.1);
+        assert!(result.error.is_some());
+    }
+
+    // Multiple integral tests
+    #[test]
+    fn test_double_integral() {
+        use crate::symbol::Symbol;
+
+        let x = Symbol::new("x");
+        let y = Symbol::new("y");
+
+        // ∫₀¹ ∫₀¹ 1 dy dx = 1
+        let expr = Expr::from(1);
+        let result = expr.integrate_double(
+            &x,
+            &y,
+            &Expr::from(0),
+            &Expr::from(1),
+            &Expr::from(0),
+            &Expr::from(1),
+        );
+
+        assert!(result.is_some());
+        let integral = result.unwrap();
+        assert_eq!(integral, Expr::from(1));
+    }
+
+    #[test]
+    fn test_triple_integral() {
+        use crate::symbol::Symbol;
+
+        let x = Symbol::new("x");
+        let y = Symbol::new("y");
+        let z = Symbol::new("z");
+
+        // ∫₀¹ ∫₀¹ ∫₀¹ 1 dz dy dx = 1
+        let expr = Expr::from(1);
+        let result = expr.integrate_triple(
+            &x,
+            &y,
+            &z,
+            &Expr::from(0),
+            &Expr::from(1),
+            &Expr::from(0),
+            &Expr::from(1),
+            &Expr::from(0),
+            &Expr::from(1),
+        );
+
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_jacobian_2d() {
+        use crate::symbol::Symbol;
+
+        let u = Symbol::new("u");
+        let v = Symbol::new("v");
+
+        // Polar coordinates: x = u*cos(v), y = u*sin(v)
+        // Jacobian should be u
+        let x = Expr::Symbol(u.clone());  // Simplified: just u
+        let y = Expr::Symbol(v.clone());  // Simplified: just v
+
+        let jac = Expr::jacobian_2d(&x, &y, &u, &v);
+        // For this simple case, jacobian = 1*1 - 0*0 = 1
+        assert_eq!(jac, Expr::from(1));
+    }
+
+    // PDE tests
+    #[test]
+    fn test_pde_heat_equation_numerical() {
+        use crate::pde::numerical::FiniteDifference;
+
+        let solver = FiniteDifference::new(0.1, 0.001, 10, 100);
+
+        // Initial condition: u(x, 0) = sin(πx)
+        let initial = |x: f64| (std::f64::consts::PI * x).sin();
+
+        let solution = solver.solve_heat(0.1, initial);
+
+        // Check that solution exists and has correct dimensions
+        assert_eq!(solution.len(), 100); // nt time steps
+        assert_eq!(solution[0].len(), 10); // nx spatial points
+    }
+
+    #[test]
+    fn test_pde_wave_equation_numerical() {
+        use crate::pde::numerical::FiniteDifference;
+
+        let solver = FiniteDifference::new(0.1, 0.01, 10, 50);
+
+        let initial = |x: f64| (std::f64::consts::PI * x).sin();
+
+        let solution = solver.solve_wave(1.0, initial, |_x| 0.0);
+
+        assert_eq!(solution.len(), 50);
+        assert_eq!(solution[0].len(), 10);
+    }
+
+    #[test]
+    fn test_pde_laplace_equation_numerical() {
+        use crate::pde::numerical::FiniteDifference;
+
+        let solver = FiniteDifference::new(0.1, 0.01, 10, 10);
+
+        let solution = solver.solve_laplace(100, 1e-6);
+
+        assert_eq!(solution.len(), 10);
+        assert_eq!(solution[0].len(), 10);
+    }
+
+    #[test]
+    fn test_pde_separation_of_variables() {
+        use crate::pde::methods::SeparationOfVariables;
+        use crate::symbol::Symbol;
+
+        let x = Symbol::new("x");
+        let t = Symbol::new("t");
+
+        let sep_vars = SeparationOfVariables::new(x.clone(), t.clone());
+
+        // Test that structure is created successfully
+        assert_eq!(sep_vars.spatial_var, x);
+        assert_eq!(sep_vars.temporal_var, t);
+    }
+
+    #[test]
+    fn test_pde_dalembert_formula() {
+        use crate::pde::methods;
+        use crate::symbol::Symbol;
+
+        let x = Symbol::new("x");
+        let t = Symbol::new("t");
+
+        let f = Expr::Symbol(x.clone()).sin();
+        let g = Expr::from(0);
+
+        let result = methods::dalembert_formula(&f, &g, 1.0, &x, &t);
+
+        // Result should not be constant
+        assert!(!result.is_constant());
     }
 }
