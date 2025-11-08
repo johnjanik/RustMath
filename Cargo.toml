@@ -22,6 +22,7 @@ members = [
     "rustmath-groups",
     "rustmath-homology",
     "rustmath-category",
+    "rustmath-stats",
 ]
 
 [workspace.package]
