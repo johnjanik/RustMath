@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~79% (376 / 474 functions tracked)
+**Overall Progress**: ~80% (379 / 477 functions tracked)
 
 ---
 
@@ -907,11 +907,11 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| Character tables | ⬜ | | |
-| Irreducible representations | ⬜ | | |
-| Tensor products | ⬜ | | |
+| Character tables | ✅ | rustmath-groups/src/representation.rs | CharacterTable with cyclic, S₃ examples |
+| Irreducible representations | ✅ | rustmath-groups/src/representation.rs | Representation structure with irreducibility checking |
+| Tensor products | ✅ | rustmath-groups/src/representation.rs | Direct sum and tensor product operations |
 
-**Progress**: 0/3 features (0%)
+**Progress**: 3/3 features (100%)
 
 ---
 
@@ -1037,9 +1037,10 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 10. Cryptography | 3 | 18 | 17% |
 | 11. Coding Theory | 0 | 10 | 0% |
 | 12. Group Theory | 18 | 18 | 100% |
-| 13-20. Advanced Topics | 1 | 49 | 2% |
+| 13. Representation Theory | 3 | 3 | 100% |
+| 14-20. Advanced Topics | 1 | 46 | 2% |
 
-**TOTAL**: **325 / 506 functions** = **~64% complete**
+**TOTAL**: **328 / 509 functions** = **~64% complete**
 
 ### Files to Examine in SageMath Source
 
