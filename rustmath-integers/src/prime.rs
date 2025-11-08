@@ -375,6 +375,42 @@ pub fn prime_pi(x: &Integer) -> usize {
     count
 }
 
+/// Generate a random prime in the range [a, b)
+///
+/// Returns a random prime number p such that a ≤ p < b.
+/// Returns None if no prime exists in the range.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_integers::Integer;
+/// use rustmath_integers::prime::random_prime;
+///
+/// // Get a random prime between 10 and 20
+/// if let Some(p) = random_prime(&Integer::from(10), &Integer::from(20)) {
+///     assert!(p >= Integer::from(10) && p < Integer::from(20));
+/// }
+/// ```
+pub fn random_prime(a: &Integer, b: &Integer) -> Option<Integer> {
+    use rand::Rng;
+
+    if a >= b {
+        return None;
+    }
+
+    // First, collect all primes in the range
+    let primes = prime_range(a, b);
+
+    if primes.is_empty() {
+        return None;
+    }
+
+    // Select a random prime from the list
+    let mut rng = rand::thread_rng();
+    let index = rng.gen_range(0..primes.len());
+    Some(primes[index].clone())
+}
+
 /// Compute all prime factors of n
 pub fn factor(n: &Integer) -> Vec<(Integer, u32)> {
     if n.is_zero() || n.is_one() {
@@ -501,6 +537,86 @@ pub fn pollard_rho(n: &Integer) -> Option<Integer> {
     }
 
     None
+}
+
+/// Pollard's p-1 algorithm for finding a non-trivial factor
+///
+/// This algorithm is effective when n has a prime factor p such that p-1
+/// is B-smooth (i.e., all prime factors of p-1 are ≤ B).
+///
+/// The algorithm computes a = 2^(k!) mod n for increasing k, then checks
+/// gcd(a-1, n). If p-1 divides k!, then a^(p-1) ≡ 1 (mod p) by Fermat's
+/// Little Theorem, so p divides gcd(a-1, n).
+///
+/// # Arguments
+/// * `n` - The number to factor
+/// * `bound` - The smoothness bound B (typically 100-10000)
+///
+/// Returns None if n is prime or if the algorithm fails to find a factor
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_integers::Integer;
+/// use rustmath_integers::prime::pollard_p_minus_1;
+///
+/// // 299 = 13 × 23, and 13-1 = 12 = 2² × 3
+/// let factor = pollard_p_minus_1(&Integer::from(299), 10);
+/// assert!(factor.is_some());
+/// ```
+pub fn pollard_p_minus_1(n: &Integer, bound: u32) -> Option<Integer> {
+    if n <= &Integer::from(1) {
+        return None;
+    }
+
+    if n.is_even() {
+        return Some(Integer::from(2));
+    }
+
+    // Check if n is prime first
+    if is_prime(n) {
+        return None;
+    }
+
+    // Start with base 2
+    let mut a = Integer::from(2);
+
+    // Compute a = 2^(product of prime powers ≤ bound) mod n
+    // We do this by repeatedly raising a to small primes
+    for p in 2..=bound {
+        if !is_prime(&Integer::from(p as i64)) {
+            continue;
+        }
+
+        // Compute the highest power of p that is ≤ bound
+        let mut q = p;
+        while q <= bound / p {
+            q *= p;
+        }
+
+        // Raise a to the power q
+        // a = a^q mod n
+        if let Ok(new_a) = a.mod_pow(&Integer::from(q as i64), n) {
+            a = new_a;
+        } else {
+            return None;
+        }
+    }
+
+    // Compute gcd(a - 1, n)
+    let diff = if a > Integer::one() {
+        a - Integer::one()
+    } else {
+        a + n.clone() - Integer::one()
+    };
+
+    let g = diff.gcd(n);
+
+    if g > Integer::one() && &g < n {
+        Some(g)
+    } else {
+        None
+    }
 }
 
 // Simple deterministic "random" number for Pollard's Rho
@@ -700,5 +816,73 @@ mod tests {
         assert_eq!(prime_pi(&Integer::from(10)), 4);  // 2, 3, 5, 7
         assert_eq!(prime_pi(&Integer::from(20)), 8);  // 2, 3, 5, 7, 11, 13, 17, 19
         assert_eq!(prime_pi(&Integer::from(100)), 25);
+    }
+
+    #[test]
+    fn test_random_prime() {
+        // Test basic functionality
+        let p = random_prime(&Integer::from(10), &Integer::from(20));
+        assert!(p.is_some());
+        let prime = p.unwrap();
+        assert!(prime >= Integer::from(10) && prime < Integer::from(20));
+        assert!(is_prime(&prime));
+
+        // Verify it's one of the primes in range: 11, 13, 17, 19
+        let valid_primes = vec![
+            Integer::from(11),
+            Integer::from(13),
+            Integer::from(17),
+            Integer::from(19),
+        ];
+        assert!(valid_primes.contains(&prime));
+
+        // Test with no primes in range
+        let p = random_prime(&Integer::from(24), &Integer::from(28));
+        assert!(p.is_none());
+
+        // Test invalid range (a >= b)
+        let p = random_prime(&Integer::from(20), &Integer::from(10));
+        assert!(p.is_none());
+
+        // Test range with single prime
+        let p = random_prime(&Integer::from(2), &Integer::from(3));
+        assert!(p.is_some());
+        assert_eq!(p.unwrap(), Integer::from(2));
+    }
+
+    #[test]
+    fn test_pollard_p_minus_1() {
+        // 299 = 13 × 23
+        // 13 - 1 = 12 = 2² × 3 (smooth with bound 10)
+        // 23 - 1 = 22 = 2 × 11 (smooth with bound 20)
+        let n = Integer::from(299);
+        let factor = pollard_p_minus_1(&n, 20);
+        assert!(factor.is_some());
+        let f = factor.unwrap();
+        assert!(f == Integer::from(13) || f == Integer::from(23));
+        assert_eq!(&n % &f, Integer::zero());
+
+        // 437 = 19 × 23
+        // 19 - 1 = 18 = 2 × 3² (smooth with bound 10)
+        // 23 - 1 = 22 = 2 × 11 (smooth with bound 20)
+        let n = Integer::from(437);
+        let factor = pollard_p_minus_1(&n, 20);
+        assert!(factor.is_some());
+        let f = factor.unwrap();
+        assert!(f == Integer::from(19) || f == Integer::from(23));
+
+        // Test with prime (should return None)
+        let p = Integer::from(17);
+        let factor = pollard_p_minus_1(&p, 100);
+        assert!(factor.is_none());
+
+        // 91 = 7 × 13
+        // 7 - 1 = 6 = 2 × 3
+        // 13 - 1 = 12 = 2² × 3
+        let n = Integer::from(91);
+        let factor = pollard_p_minus_1(&n, 10);
+        assert!(factor.is_some());
+        let f = factor.unwrap();
+        assert!(f == Integer::from(7) || f == Integer::from(13));
     }
 }

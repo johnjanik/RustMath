@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~39% (187 / 473 functions tracked)
+**Overall Progress**: ~40% (190 / 473 functions tracked)
 
 ---
 
@@ -255,9 +255,9 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `prime_range(start, stop)` | ✅ | `rustmath-integers/src/prime.rs` | Returns primes in [start, stop) |
 | `primes_first_n(n)` | ✅ | `rustmath-integers/src/prime.rs` | First n primes |
 | `prime_pi(x)` | ✅ | `rustmath-integers/src/prime.rs` | Prime counting function π(x) |
-| `random_prime(a, b)` | ⬜ | | Planned |
+| `random_prime(a, b)` | ✅ | `rustmath-integers/src/prime.rs` | Random prime in range [a, b) |
 
-**Progress**: 9/10 functions (90%)
+**Progress**: 10/10 functions (100%)
 
 ### 3.2 Factorization (sage.rings.factorint)
 **SageMath Source**: `src/sage/rings/factorint.pyx`
@@ -267,7 +267,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `factor(n)` | ✅ | `rustmath-integers/src/prime.rs` | Trial + Pollard's Rho |
 | Trial division | ✅ | `rustmath-integers/src/prime.rs` | |
 | Pollard's rho | ✅ | `rustmath-integers/src/prime.rs` | |
-| Pollard's p-1 | ⬜ | | |
+| Pollard's p-1 | ✅ | `rustmath-integers/src/prime.rs` | With smoothness bound |
 | ECM (Elliptic Curve Method) | ⬜ | | |
 | Quadratic sieve | ⬜ | | |
 | `.divisors()` | ✅ | `rustmath-integers/src/integer.rs` | From prime factorization |
@@ -276,7 +276,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.euler_phi()` | ✅ | `rustmath-integers/src/integer.rs` | Totient function |
 | `.moebius()` | ✅ | `rustmath-integers/src/integer.rs` | Möbius function μ(n) |
 
-**Progress**: 8/11 functions (73%)
+**Progress**: 9/11 functions (82%)
 
 ### 3.3 Modular Arithmetic (sage.rings.finite_rings.integer_mod)
 **SageMath Source**: `src/sage/rings/finite_rings/integer_mod.pyx`
@@ -289,10 +289,10 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.multiplicative_order()` | ✅ | `rustmath-integers/src/modular.rs` | Finds smallest k: a^k ≡ 1 |
 | Primitive roots | ✅ | `rustmath-integers/src/modular.rs` | `primitive_roots(n)` |
 | Chinese Remainder Theorem | ✅ | `rustmath-integers/src/crt.rs` | |
-| Quadratic residues | 🚧 | `rustmath-integers/src/integer.rs` | Via Legendre/Jacobi symbols |
+| Quadratic residues | ✅ | `rustmath-integers/src/integer.rs` | Tonelli-Shanks + listing |
 | Legendre/Jacobi symbols | ✅ | `rustmath-integers/src/integer.rs` | `legendre_symbol()`, `jacobi_symbol()` |
 
-**Progress**: 7/8 functions (88%)
+**Progress**: 8/8 functions (100%)
 
 ### 3.4 Continued Fractions (sage.rings.continued_fraction)
 **SageMath Source**: `src/sage/rings/continued_fraction.py`
@@ -302,10 +302,10 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `continued_fraction(x)` | ✅ | `rustmath-rationals/src/continued_fraction.rs` | |
 | `.convergents()` | ✅ | `rustmath-rationals/src/continued_fraction.rs` | |
 | `.value()` | ✅ | `rustmath-rationals/src/continued_fraction.rs` | `to_rational()` |
-| Periodic continued fractions | ⬜ | | For quadratic irrationals |
+| Periodic continued fractions | ✅ | `rustmath-rationals/src/continued_fraction.rs` | `PeriodicContinuedFraction`, `from_sqrt()` |
 | `.quotients()` | ✅ | `rustmath-rationals/src/continued_fraction.rs` | |
 
-**Progress**: 4/5 functions (80%)
+**Progress**: 5/5 functions (100%)
 
 ### 3.5 Quadratic Forms (sage.quadratic_forms)
 **SageMath Source**: `src/sage/quadratic_forms/`

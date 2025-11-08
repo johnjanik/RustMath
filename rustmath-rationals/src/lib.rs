@@ -6,7 +6,7 @@
 pub mod continued_fraction;
 pub mod rational;
 
-pub use continued_fraction::ContinuedFraction;
+pub use continued_fraction::{ContinuedFraction, PeriodicContinuedFraction};
 pub use rational::Rational;
 
 #[cfg(test)]
