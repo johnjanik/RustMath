@@ -21,6 +21,7 @@ members = [
     "rustmath-crypto",
     "rustmath-groups",
     "rustmath-homology",
+    "rustmath-category",
 ]
 
 [workspace.package]
