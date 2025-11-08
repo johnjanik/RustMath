@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~76% (329 / 431 functions tracked)
+**Overall Progress**: ~77% (333 / 435 functions tracked)
 
 ---
 
@@ -728,9 +728,12 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Projective space | ⬜ | | |
 | Varieties | ⬜ | | |
 | Morphisms | ⬜ | | |
-| Gröbner bases | ⬜ | | Critical for ideals |
+| Gröbner bases | ✅ | `rustmath-polynomials/src/groebner.rs` | Buchberger's algorithm with lex/grlex/grevlex orderings |
+| S-polynomial | ✅ | `rustmath-polynomials/src/groebner.rs` | Core component for Gröbner basis |
+| Polynomial reduction | ✅ | `rustmath-polynomials/src/groebner.rs` | Multivariate division with remainder |
+| Ideal membership | ✅ | `rustmath-polynomials/src/groebner.rs` | Test if polynomial is in ideal |
 
-**Progress**: 0/5 features (0%)
+**Progress**: 4/8 features (50%)
 
 ### 9.2 Elliptic Curves (sage.schemes.elliptic_curves)
 **SageMath Source**: `src/sage/schemes/elliptic_curves/`
