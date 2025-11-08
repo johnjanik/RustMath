@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~44% (209 / 475 functions tracked)
+**Overall Progress**: ~44% (212 / 475 functions tracked)
 
 ---
 
@@ -398,13 +398,13 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Chain rule | ✅ | `rustmath-symbolic/src/differentiate.rs` | Automatic |
 | Product rule | ✅ | `rustmath-symbolic/src/differentiate.rs` | Automatic |
 | Quotient rule | ✅ | `rustmath-symbolic/src/differentiate.rs` | Automatic |
-| Implicit differentiation | ⬜ | | |
+| Implicit differentiation | ✅ | `rustmath-symbolic/src/differentiate.rs` | `implicit_differentiate()` |
 | Higher-order derivatives | ✅ | `rustmath-symbolic/src/differentiate.rs` | `nth_derivative()` |
 | `.derivative(x, n)` | ✅ | `rustmath-symbolic/src/differentiate.rs` | `nth_derivative()` |
-| Jacobian matrix | ⬜ | | |
-| Hessian matrix | ⬜ | | |
+| Jacobian matrix | ✅ | `rustmath-symbolic/src/differentiate.rs` | `jacobian()` |
+| Hessian matrix | ✅ | `rustmath-symbolic/src/differentiate.rs` | `hessian()` |
 
-**Progress**: 7/10 functions (70%)
+**Progress**: 10/10 functions (100%)
 
 ### 5.2 Integration (sage.calculus.integration)
 **SageMath Source**: `src/sage/symbolic/integration/`
@@ -1001,7 +1001,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 2. Linear Algebra | 42 | 46 | 91% |
 | 3. Number Theory | 20 | 42 | 48% |
 | 4. Symbolic Computation | 33 | 37 | 89% |
-| 5. Calculus | 7 | 30 | 23% |
+| 5. Calculus | 10 | 30 | 33% |
 | 6. Combinatorics | 17 | 54 | 31% |
 | 7. Graph Theory | 17 | 59 | 29% |
 | 8. Geometry | 0 | 15 | 0% |
@@ -1011,7 +1011,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 12. Group Theory | 0 | 14 | 0% |
 | 13-20. Advanced Topics | 1 | 49 | 2% |
 
-**TOTAL**: **209 / 475 functions** = **~44% complete**
+**TOTAL**: **212 / 475 functions** = **~45% complete**
 
 ### Files to Examine in SageMath Source
 
