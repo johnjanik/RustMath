@@ -329,7 +329,110 @@ impl EllipticCurve<Rational> {
 
         points
     }
+
+    /// Search for rational points on the curve with bounded height
+    ///
+    /// Returns points (x, y) where |numerator| <= max_height and |denominator| <= max_height
+    pub fn find_rational_points(&self, max_height: i64) -> Vec<EllipticCurvePoint<Rational>> {
+        let mut points = vec![EllipticCurvePoint::Infinity];
+
+        // Try rational x values
+        for x_num in -max_height..=max_height {
+            for x_denom in 1..=max_height {
+                let x = Rational::new(x_num, x_denom).unwrap();
+
+                // Compute y² = x³ + ax + b
+                let y_squared = x.clone() * x.clone() * x.clone()
+                              + self.a.clone() * x.clone()
+                              + self.b.clone();
+
+                // Check if y_squared is a perfect square
+                // Try to find rational y
+                for y_num in -max_height..=max_height {
+                    for y_denom in 1..=max_height {
+                        let y = Rational::new(y_num, y_denom).unwrap();
+
+                        if y.clone() * y.clone() == y_squared {
+                            let point = EllipticCurvePoint::Affine {
+                                x: x.clone(),
+                                y: y.clone(),
+                            };
+
+                            if !points.contains(&point) {
+                                points.push(point);
+                            }
+
+                            // Also add the negation
+                            let neg_point = EllipticCurvePoint::Affine {
+                                x: x.clone(),
+                                y: -y.clone(),
+                            };
+
+                            if !points.contains(&neg_point) && y != Rational::new(0, 1).unwrap() {
+                                points.push(neg_point);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        points
+    }
+
+    /// Check if two elliptic curves are isomorphic
+    ///
+    /// Two elliptic curves over the same field are isomorphic if and only if
+    /// they have the same j-invariant
+    pub fn is_isomorphic_to(&self, other: &EllipticCurve<Rational>) -> bool {
+        self.j_invariant() == other.j_invariant()
+    }
+
+    /// Get the quadratic twist of this curve
+    ///
+    /// The quadratic twist by d is: dy² = x³ + ax + b
+    /// which is isomorphic to y² = x³ + ad²x + bd³
+    pub fn quadratic_twist(&self, d: Rational) -> Result<EllipticCurve<Rational>, String> {
+        let d_squared = d.clone() * d.clone();
+        let d_cubed = d_squared.clone() * d.clone();
+
+        let new_a = self.a.clone() * d_squared;
+        let new_b = self.b.clone() * d_cubed;
+
+        EllipticCurve::new(new_a, new_b)
+    }
+
+    /// Count the number of affine rational points (excluding infinity) found with bounded search
+    ///
+    /// This is a naive implementation - proper point counting requires more advanced techniques
+    pub fn count_rational_points(&self, max_height: i64) -> usize {
+        let points = self.find_rational_points(max_height);
+        // Subtract 1 to exclude the point at infinity
+        points.len() - 1
+    }
+
+    /// Check if the curve has complex multiplication (CM)
+    ///
+    /// A curve has CM if j-invariant is 0 or 1728 (over Q)
+    /// j = 0: y² = x³ + b (CM by cube roots of unity)
+    /// j = 1728: y² = x³ + ax (CM by i)
+    pub fn has_complex_multiplication(&self) -> bool {
+        let j = self.j_invariant();
+        j == Rational::new(0, 1).unwrap() || j == Rational::new(1728, 1).unwrap()
+    }
+
+    /// Get the conductor (simplified version for curves in minimal Weierstrass form)
+    ///
+    /// This is a placeholder - proper conductor computation requires reduction theory
+    pub fn conductor_info(&self) -> String {
+        format!(
+            "Conductor computation requires reduction at each prime and is not yet implemented.\n\
+             For curve y² = x³ + {}x + {}, discriminant = {}",
+            self.a, self.b, self.discriminant()
+        )
+    }
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -555,5 +658,120 @@ mod tests {
 
         let j = curve.j_invariant();
         assert_eq!(j, Rational::new(0, 1).unwrap());
+    }
+
+    #[test]
+    fn test_find_rational_points() {
+        // y^2 = x^3 - x
+        let curve = EllipticCurve::new(
+            Rational::new(-1, 1).unwrap(),
+            Rational::new(0, 1).unwrap()
+        ).unwrap();
+
+        // Search for points with small height
+        let points = curve.find_rational_points(2);
+
+        // Should find at least the torsion points and infinity
+        assert!(points.len() >= 4); // O, (0,0), (1,0), (-1,0)
+        assert!(points.contains(&EllipticCurvePoint::Infinity));
+    }
+
+    #[test]
+    fn test_is_isomorphic() {
+        // Two curves with the same j-invariant are isomorphic
+        let curve1 = EllipticCurve::new(
+            Rational::new(1, 1).unwrap(),
+            Rational::new(0, 1).unwrap()
+        ).unwrap();
+
+        let curve2 = EllipticCurve::new(
+            Rational::new(4, 1).unwrap(),
+            Rational::new(0, 1).unwrap()
+        ).unwrap();
+
+        // Both have j = 1728, so they're isomorphic
+        assert!(curve1.is_isomorphic_to(&curve2));
+    }
+
+    #[test]
+    fn test_not_isomorphic() {
+        let curve1 = EllipticCurve::new(
+            Rational::new(1, 1).unwrap(),
+            Rational::new(0, 1).unwrap()
+        ).unwrap();
+
+        let curve2 = EllipticCurve::new(
+            Rational::new(0, 1).unwrap(),
+            Rational::new(1, 1).unwrap()
+        ).unwrap();
+
+        // Different j-invariants (1728 vs 0)
+        assert!(!curve1.is_isomorphic_to(&curve2));
+    }
+
+    #[test]
+    fn test_quadratic_twist() {
+        let curve = EllipticCurve::new(
+            Rational::new(1, 1).unwrap(),
+            Rational::new(2, 1).unwrap()
+        ).unwrap();
+
+        let twist = curve.quadratic_twist(Rational::new(2, 1).unwrap());
+        assert!(twist.is_ok());
+
+        let twisted_curve = twist.unwrap();
+        // Twisted curve should have: a' = a*d², b' = b*d³
+        // a' = 1*4 = 4, b' = 2*8 = 16
+        assert_eq!(twisted_curve.a, Rational::new(4, 1).unwrap());
+        assert_eq!(twisted_curve.b, Rational::new(16, 1).unwrap());
+    }
+
+    #[test]
+    fn test_has_complex_multiplication() {
+        // y^2 = x^3 + x has j = 1728 (CM by i)
+        let curve1 = EllipticCurve::new(
+            Rational::new(1, 1).unwrap(),
+            Rational::new(0, 1).unwrap()
+        ).unwrap();
+        assert!(curve1.has_complex_multiplication());
+
+        // y^2 = x^3 + 1 has j = 0 (CM by ω)
+        let curve2 = EllipticCurve::new(
+            Rational::new(0, 1).unwrap(),
+            Rational::new(1, 1).unwrap()
+        ).unwrap();
+        assert!(curve2.has_complex_multiplication());
+
+        // y^2 = x^3 - x + 1 has generic j-invariant
+        let curve3 = EllipticCurve::new(
+            Rational::new(-1, 1).unwrap(),
+            Rational::new(1, 1).unwrap()
+        ).unwrap();
+        assert!(!curve3.has_complex_multiplication());
+    }
+
+    #[test]
+    fn test_count_rational_points() {
+        // y^2 = x^3 - x
+        let curve = EllipticCurve::new(
+            Rational::new(-1, 1).unwrap(),
+            Rational::new(0, 1).unwrap()
+        ).unwrap();
+
+        let count = curve.count_rational_points(2);
+        // Should find the three 2-torsion points at minimum
+        assert!(count >= 3);
+    }
+
+    #[test]
+    fn test_conductor_info() {
+        let curve = EllipticCurve::new(
+            Rational::new(1, 1).unwrap(),
+            Rational::new(1, 1).unwrap()
+        ).unwrap();
+
+        let info = curve.conductor_info();
+        assert!(info.contains("Conductor"));
+        assert!(info.contains("discriminant"));
     }
 }
