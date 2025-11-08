@@ -19,6 +19,7 @@ members = [
     "rustmath-graphs",
     "rustmath-symbolic",
     "rustmath-crypto",
+    "rustmath-groups",
 ]
 
 [workspace.package]
