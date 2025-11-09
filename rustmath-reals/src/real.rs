@@ -9,29 +9,159 @@ use std::ops::{Add, Div, Mul, Neg, Sub};
 /// Real number with configurable precision
 ///
 /// Currently wraps f64 for basic functionality.
-/// Future versions will support arbitrary precision arithmetic.
+/// Future versions will support arbitrary precision arithmetic using MPFR or similar.
+///
+/// # Precision
+///
+/// The precision parameter is currently ignored (always uses f64 with ~53 bits).
+/// When arbitrary precision is implemented, it will specify the number of bits
+/// of precision for the mantissa.
 #[derive(Clone, Debug)]
 pub struct Real {
     value: f64,
+    /// Number of bits of precision (currently unused, reserved for future use)
+    precision: u32,
 }
 
-impl Real {
-    /// Create a new Real from an f64
-    pub fn new(value: f64) -> Self {
-        Real { value }
+/// Real number field with specified precision
+///
+/// Factory for creating Real numbers with a specific precision.
+/// This mirrors SageMath's RealField(prec) constructor.
+///
+/// # Example
+///
+/// ```
+/// use rustmath_reals::RealField;
+///
+/// // Create a real field with 100 bits of precision
+/// let rf = RealField::new(100);
+/// let x = rf.make_real(3.14159);
+/// ```
+#[derive(Clone, Debug)]
+pub struct RealField {
+    precision: u32,
+}
+
+impl RealField {
+    /// Create a new RealField with specified precision
+    ///
+    /// # Arguments
+    ///
+    /// * `precision` - Number of bits of precision for the mantissa
+    ///                 (currently must be 53 for f64, but parameter is accepted
+    ///                 for future compatibility)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rustmath_reals::RealField;
+    ///
+    /// let rf = RealField::new(53);  // Standard f64 precision
+    /// let high_prec = RealField::new(256);  // Future: 256-bit precision
+    /// ```
+    pub fn new(precision: u32) -> Self {
+        RealField { precision }
     }
 
-    /// Create Real from an integer
-    pub fn from_integer(n: &Integer) -> Self {
+    /// Create a default RealField (53-bit precision, equivalent to f64)
+    pub fn default() -> Self {
+        RealField { precision: 53 }
+    }
+
+    /// Get the precision of this field
+    pub fn precision(&self) -> u32 {
+        self.precision
+    }
+
+    /// Create a Real number in this field from an f64
+    pub fn make_real(&self, value: f64) -> Real {
         Real {
-            value: n.to_f64().unwrap_or(f64::NAN),
+            value,
+            precision: self.precision,
         }
     }
 
-    /// Create Real from a rational
+    /// Create a Real number from an integer
+    pub fn from_integer(&self, n: &Integer) -> Real {
+        Real {
+            value: n.to_f64().unwrap_or(f64::NAN),
+            precision: self.precision,
+        }
+    }
+
+    /// Create a Real number from a rational
+    pub fn from_rational(&self, r: &Rational) -> Real {
+        Real {
+            value: r.to_f64().unwrap_or(f64::NAN),
+            precision: self.precision,
+        }
+    }
+
+    /// Create zero
+    pub fn zero(&self) -> Real {
+        Real {
+            value: 0.0,
+            precision: self.precision,
+        }
+    }
+
+    /// Create one
+    pub fn one(&self) -> Real {
+        Real {
+            value: 1.0,
+            precision: self.precision,
+        }
+    }
+
+    /// Create pi with the field's precision
+    pub fn pi(&self) -> Real {
+        Real {
+            value: std::f64::consts::PI,
+            precision: self.precision,
+        }
+    }
+
+    /// Create e (Euler's number) with the field's precision
+    pub fn e(&self) -> Real {
+        Real {
+            value: std::f64::consts::E,
+            precision: self.precision,
+        }
+    }
+}
+
+impl Real {
+    /// Create a new Real from an f64 with default precision (53 bits)
+    pub fn new(value: f64) -> Self {
+        Real {
+            value,
+            precision: 53,
+        }
+    }
+
+    /// Create a new Real from an f64 with specified precision
+    pub fn with_precision(value: f64, precision: u32) -> Self {
+        Real { value, precision }
+    }
+
+    /// Get the precision of this Real number
+    pub fn precision(&self) -> u32 {
+        self.precision
+    }
+
+    /// Create Real from an integer with default precision
+    pub fn from_integer(n: &Integer) -> Self {
+        Real {
+            value: n.to_f64().unwrap_or(f64::NAN),
+            precision: 53,
+        }
+    }
+
+    /// Create Real from a rational with default precision
     pub fn from_rational(r: &Rational) -> Self {
         Real {
             value: r.to_f64().unwrap_or(f64::NAN),
+            precision: 53,
         }
     }
 
@@ -44,6 +174,7 @@ impl Real {
     pub fn abs(&self) -> Self {
         Real {
             value: self.value.abs(),
+            precision: self.precision,
         }
     }
 
@@ -81,6 +212,7 @@ impl Real {
     pub fn signum(&self) -> Self {
         Real {
             value: self.value.signum(),
+            precision: self.precision,
         }
     }
 
@@ -88,6 +220,7 @@ impl Real {
     pub fn pow(&self, exp: &Self) -> Self {
         Real {
             value: self.value.powf(exp.value),
+            precision: self.precision.min(exp.precision),
         }
     }
 
@@ -95,6 +228,7 @@ impl Real {
     pub fn powi(&self, exp: i32) -> Self {
         Real {
             value: self.value.powi(exp),
+            precision: self.precision,
         }
     }
 }
@@ -129,6 +263,7 @@ impl Add for Real {
     fn add(self, other: Self) -> Self {
         Real {
             value: self.value + other.value,
+            precision: self.precision.min(other.precision),
         }
     }
 }
@@ -139,6 +274,7 @@ impl Sub for Real {
     fn sub(self, other: Self) -> Self {
         Real {
             value: self.value - other.value,
+            precision: self.precision.min(other.precision),
         }
     }
 }
@@ -149,6 +285,7 @@ impl Mul for Real {
     fn mul(self, other: Self) -> Self {
         Real {
             value: self.value * other.value,
+            precision: self.precision.min(other.precision),
         }
     }
 }
@@ -159,6 +296,7 @@ impl Div for Real {
     fn div(self, other: Self) -> Self {
         Real {
             value: self.value / other.value,
+            precision: self.precision.min(other.precision),
         }
     }
 }
@@ -167,7 +305,10 @@ impl Neg for Real {
     type Output = Self;
 
     fn neg(self) -> Self {
-        Real { value: -self.value }
+        Real {
+            value: -self.value,
+            precision: self.precision,
+        }
     }
 }
 
@@ -179,11 +320,17 @@ impl PartialEq for Real {
 
 impl Ring for Real {
     fn zero() -> Self {
-        Real { value: 0.0 }
+        Real {
+            value: 0.0,
+            precision: 53,
+        }
     }
 
     fn one() -> Self {
-        Real { value: 1.0 }
+        Real {
+            value: 1.0,
+            precision: 53,
+        }
     }
 
     fn is_zero(&self) -> bool {
@@ -204,6 +351,7 @@ impl Field for Real {
         } else {
             Ok(Real {
                 value: 1.0 / self.value,
+                precision: self.precision,
             })
         }
     }
@@ -213,12 +361,14 @@ impl NumericConversion for Real {
     fn from_i64(n: i64) -> Self {
         Real {
             value: n as f64,
+            precision: 53,
         }
     }
 
     fn from_u64(n: u64) -> Self {
         Real {
             value: n as f64,
+            precision: 53,
         }
     }
 

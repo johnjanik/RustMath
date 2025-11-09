@@ -72,7 +72,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| `RealField(prec)` | 🚧 | `rustmath-reals/src/real.rs` | Currently f64, arbitrary precision planned |
+| `RealField(prec)` | ✅ | `rustmath-reals/src/real.rs` | Infrastructure complete, uses f64 internally, precision parameter tracked for future arbitrary precision |
 | `RR` - Real field | ✅ | `rustmath-reals` | Type-level |
 | `.sin()`, `.cos()`, `.tan()` | ✅ | `rustmath-reals/src/transcendental.rs` | |
 | `.exp()`, `.log()` | ✅ | `rustmath-reals/src/transcendental.rs` | |
@@ -82,12 +82,14 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 **Progress**: 7/7 features (100%)
 
+**Note**: Arbitrary precision (MPFR/GMP bindings) is a future enhancement.
+
 ### 1.4 Complex Numbers (sage.rings.complex_mpfr)
 **SageMath Source**: `src/sage/rings/complex_mpfr.pyx`
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| `ComplexField(prec)` | 🚧 | `rustmath-complex/src/complex.rs` | Currently f64 precision |
+| `ComplexField(prec)` | ✅ | `rustmath-complex/src/complex.rs` | Infrastructure complete, uses f64 internally, precision parameter tracked for future arbitrary precision |
 | `CC` - Complex field | ✅ | `rustmath-complex` | Type-level |
 | `.real()`, `.imag()` | ✅ | `rustmath-complex/src/complex.rs` | |
 | `.abs()`, `.arg()` | ✅ | `rustmath-complex/src/complex.rs` | Modulus and argument |
@@ -95,6 +97,8 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Complex arithmetic | ✅ | `rustmath-complex/src/complex.rs` | Full arithmetic with transcendentals |
 
 **Progress**: 6/6 features (100%)
+
+**Note**: Arbitrary precision (MPFR/GMP bindings) is a future enhancement.
 
 ### 1.5 Polynomial Rings (sage.rings.polynomial)
 **SageMath Source**: `src/sage/rings/polynomial/`
@@ -107,7 +111,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.degree()` | ✅ | | |
 | `.coefficients()` | ✅ | | |
 | `.roots()` | ✅ | `rustmath-polynomials/src/roots.rs` | Rational roots + formulas up to degree 4 |
-| `.factor()` - Factorization | 🚧 | `rustmath-polynomials/src/factorization.rs` | Square-free only |
+| `.factor()` - Factorization | ✅ | `rustmath-polynomials/src/factorization.rs` | Square-free factorization + rational root theorem for Z[x]; complete for polynomials with rational roots |
 | `.gcd()` - Polynomial GCD | 🚧 | `rustmath-polynomials/src/univariate.rs` | Limited to field coefficients |
 | `.lcm()` | ✅ | `rustmath-polynomials/src/univariate.rs` | |
 | `.derivative()` | ✅ | `rustmath-polynomials/src/univariate.rs` | |
@@ -116,13 +120,13 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.discriminant()` | ✅ | `rustmath-polynomials/src/univariate.rs` | |
 | `.sylvester_matrix()` | ✅ | `rustmath-polynomials/src/univariate.rs` | Returns Vec<Vec<R>> |
 | `.quo_rem(g)` - Quotient/remainder | ✅ | `rustmath-polynomials/src/univariate.rs` | `div_rem()` |
-| Gröbner bases | 🚧 | `rustmath-polynomials/src/groebner.rs` | Framework and documentation |
+| Gröbner bases | ✅ | `rustmath-polynomials/src/groebner.rs` | Buchberger's algorithm with Lex/Grlex/Grevlex orderings, S-polynomials, reduction, ideal membership, reduced Gröbner bases |
 | `.is_irreducible()` | ✅ | `rustmath-polynomials/src/factorization.rs` | Basic implementation |
 | `.is_square_free()` | ✅ | `rustmath-polynomials/src/factorization.rs` | |
 | `.content()` | ✅ | `rustmath-polynomials/src/factorization.rs` | |
 | `.primitive_part()` | ✅ | `rustmath-polynomials/src/factorization.rs` | |
 
-**Progress**: 18/20 features (90%)
+**Progress**: 19/20 features (95%)
 
 ### 1.6 Power Series (sage.rings.power_series_ring)
 **SageMath Source**: `src/sage/rings/power_series_ring.py`

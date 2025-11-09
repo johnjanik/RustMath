@@ -1,17 +1,126 @@
 //! Complex number implementation
 
 use rustmath_core::{CommutativeRing, Field, MathError, NumericConversion, Result, Ring};
-use rustmath_reals::Real;
+use rustmath_reals::{Real, RealField};
 use std::fmt;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
 /// Complex number with real and imaginary parts
 ///
 /// Represents a + bi where a, b are real numbers and i² = -1
+///
+/// # Precision
+///
+/// Complex numbers inherit their precision from their Real components.
+/// The precision parameter is currently for f64 compatibility (53 bits)
+/// but is designed for future arbitrary precision support.
 #[derive(Clone, Debug)]
 pub struct Complex {
     real: Real,
     imag: Real,
+}
+
+/// Complex number field with specified precision
+///
+/// Factory for creating Complex numbers with a specific precision.
+/// This mirrors SageMath's ComplexField(prec) constructor.
+///
+/// # Example
+///
+/// ```
+/// use rustmath_complex::ComplexField;
+///
+/// // Create a complex field with 100 bits of precision
+/// let cf = ComplexField::new(100);
+/// let z = cf.make_complex(3.0, 4.0);
+/// ```
+#[derive(Clone, Debug)]
+pub struct ComplexField {
+    real_field: RealField,
+}
+
+impl ComplexField {
+    /// Create a new ComplexField with specified precision
+    ///
+    /// # Arguments
+    ///
+    /// * `precision` - Number of bits of precision for the mantissa
+    ///                 (currently must be 53 for f64, but parameter is accepted
+    ///                 for future compatibility)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rustmath_complex::ComplexField;
+    ///
+    /// let cf = ComplexField::new(53);  // Standard f64 precision
+    /// let high_prec = ComplexField::new(256);  // Future: 256-bit precision
+    /// ```
+    pub fn new(precision: u32) -> Self {
+        ComplexField {
+            real_field: RealField::new(precision),
+        }
+    }
+
+    /// Create a default ComplexField (53-bit precision, equivalent to f64)
+    pub fn default() -> Self {
+        ComplexField {
+            real_field: RealField::default(),
+        }
+    }
+
+    /// Get the precision of this field
+    pub fn precision(&self) -> u32 {
+        self.real_field.precision()
+    }
+
+    /// Create a Complex number in this field from real and imaginary parts
+    pub fn make_complex(&self, real: f64, imag: f64) -> Complex {
+        Complex {
+            real: self.real_field.make_real(real),
+            imag: self.real_field.make_real(imag),
+        }
+    }
+
+    /// Create a purely real complex number
+    pub fn from_real(&self, real: f64) -> Complex {
+        Complex {
+            real: self.real_field.make_real(real),
+            imag: self.real_field.zero(),
+        }
+    }
+
+    /// Create a purely imaginary complex number
+    pub fn from_imag(&self, imag: f64) -> Complex {
+        Complex {
+            real: self.real_field.zero(),
+            imag: self.real_field.make_real(imag),
+        }
+    }
+
+    /// Create zero
+    pub fn zero(&self) -> Complex {
+        Complex {
+            real: self.real_field.zero(),
+            imag: self.real_field.zero(),
+        }
+    }
+
+    /// Create one
+    pub fn one(&self) -> Complex {
+        Complex {
+            real: self.real_field.one(),
+            imag: self.real_field.zero(),
+        }
+    }
+
+    /// Create the imaginary unit i
+    pub fn i(&self) -> Complex {
+        Complex {
+            real: self.real_field.zero(),
+            imag: self.real_field.one(),
+        }
+    }
 }
 
 impl Complex {

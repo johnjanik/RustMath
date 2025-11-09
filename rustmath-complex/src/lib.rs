@@ -4,7 +4,7 @@
 
 pub mod complex;
 
-pub use complex::Complex;
+pub use complex::{Complex, ComplexField};
 
 #[cfg(test)]
 mod tests {

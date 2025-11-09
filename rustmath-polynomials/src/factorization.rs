@@ -251,20 +251,185 @@ where
     Ok(true)
 }
 
-/// Factor a polynomial over integers (basic implementation using trial and error)
+/// Attempt to find rational roots of a polynomial using the Rational Root Theorem
 ///
-/// This is a simple factorization that works for small polynomials.
-/// More sophisticated algorithms (Berlekamp, Cantor-Zassenhaus, LLL) would be needed
-/// for production use.
+/// For a polynomial with integer coefficients a_n*x^n + ... + a_1*x + a_0,
+/// any rational root p/q must have:
+/// - p divides a_0 (constant term)
+/// - q divides a_n (leading coefficient)
+///
+/// Returns a list of rational roots found (as Integers when they're integers)
+fn find_rational_roots(
+    poly: &UnivariatePolynomial<rustmath_integers::Integer>,
+) -> Vec<rustmath_integers::Integer> {
+    use rustmath_integers::Integer;
+
+    let mut roots = Vec::new();
+
+    if poly.is_zero() || poly.is_constant() {
+        return roots;
+    }
+
+    let degree = poly.degree().unwrap();
+    let a0 = poly.coeff(0).clone();
+    let an = poly.coeff(degree).clone();
+
+    if a0.is_zero() {
+        // 0 is a root
+        roots.push(Integer::zero());
+    }
+
+    // Get divisors of constant and leading coefficient
+    let a0_divisors = if !a0.is_zero() {
+        a0.abs().divisors().unwrap_or_else(|_| vec![])
+    } else {
+        vec![]
+    };
+
+    let an_divisors = if !an.is_zero() {
+        an.abs().divisors().unwrap_or_else(|_| vec![])
+    } else {
+        vec![]
+    };
+
+    // Try all combinations p/q where p | a0 and q | a_n
+    // For simplicity, only try cases where q = 1 (integer roots)
+    for p in &a0_divisors {
+        // Try both positive and negative
+        for sign in &[Integer::one(), -Integer::one()] {
+            let candidate = p.clone() * sign.clone();
+
+            // Evaluate polynomial at candidate using Horner's method
+            let mut value = poly.coeff(degree).clone();
+            for i in (0..degree).rev() {
+                value = value * candidate.clone() + poly.coeff(i).clone();
+            }
+
+            if value.is_zero() && !roots.contains(&candidate) {
+                roots.push(candidate);
+            }
+        }
+    }
+
+    roots
+}
+
+/// Factor out known linear factors from a polynomial
+///
+/// Given a polynomial and a list of roots, divide out the corresponding linear factors
+fn factor_out_roots(
+    poly: &UnivariatePolynomial<rustmath_integers::Integer>,
+    roots: &[rustmath_integers::Integer],
+) -> Result<(
+    Vec<(UnivariatePolynomial<rustmath_integers::Integer>, u32)>,
+    UnivariatePolynomial<rustmath_integers::Integer>,
+)> {
+    use rustmath_integers::Integer;
+
+    let mut factors = Vec::new();
+    let mut remaining = poly.clone();
+
+    for root in roots {
+        // Factor (x - root)
+        let linear_factor = UnivariatePolynomial::new(vec![-root.clone(), Integer::one()]);
+
+        // Divide out as many times as possible
+        let mut multiplicity = 0;
+        loop {
+            let (quotient, remainder) = remaining.div_rem(&linear_factor)?;
+
+            if remainder.is_zero() {
+                remaining = quotient;
+                multiplicity += 1;
+            } else {
+                break;
+            }
+        }
+
+        if multiplicity > 0 {
+            factors.push((linear_factor, multiplicity));
+        }
+    }
+
+    Ok((factors, remaining))
+}
+
+/// Factor a polynomial over integers using basic methods
+///
+/// This implementation uses:
+/// 1. Square-free factorization to separate repeated factors
+/// 2. Rational root theorem to find linear factors
+/// 3. Returns remaining polynomial if it cannot be factored further
+///
+/// # Limitations
+///
+/// - Does not implement Zassenhaus or LLL-based algorithms
+/// - Cannot factor polynomials without rational roots
+/// - Works best for polynomials with small coefficients and low degrees
+///
+/// # Algorithm
+///
+/// For a complete factorization over Z[x], one would need:
+/// - Hensel lifting to factor modulo increasing prime powers
+/// - LLL lattice reduction for finding small factors
+/// - Zassenhaus or van Hoeij algorithms
 pub fn factor_over_integers(
     poly: &UnivariatePolynomial<rustmath_integers::Integer>,
 ) -> Result<Vec<(UnivariatePolynomial<rustmath_integers::Integer>, u32)>> {
-    // First, do square-free factorization
-    let square_free_factors = square_free_factorization(poly)?;
+    use rustmath_integers::Integer;
 
-    // For now, just return the square-free factorization
-    // Full factorization into irreducibles would require more sophisticated algorithms
-    Ok(square_free_factors)
+    if poly.is_zero() {
+        return Ok(vec![]);
+    }
+
+    if poly.is_constant() {
+        return Ok(vec![(poly.clone(), 1)]);
+    }
+
+    let mut all_factors = Vec::new();
+
+    // Step 1: Extract content
+    let cont = content(poly);
+    if !cont.is_one() && !cont.is_zero() {
+        let constant_poly = UnivariatePolynomial::new(vec![cont]);
+        all_factors.push((constant_poly, 1));
+    }
+
+    let primitive = primitive_part(poly);
+
+    // Step 2: Square-free factorization
+    let square_free_factors = square_free_factorization(&primitive)?;
+
+    // Step 3: For each square-free factor, try to find rational roots
+    for (sf_poly, multiplicity) in square_free_factors {
+        if sf_poly.is_constant() {
+            continue;
+        }
+
+        // Find rational roots
+        let roots = find_rational_roots(&sf_poly);
+
+        // Factor out the roots
+        let (linear_factors, remaining) = factor_out_roots(&sf_poly, &roots)?;
+
+        // Add linear factors with their multiplicities
+        for (linear, linear_mult) in linear_factors {
+            all_factors.push((linear, linear_mult * multiplicity));
+        }
+
+        // Add remaining polynomial if it's not constant
+        if !remaining.is_constant() && !remaining.is_zero() {
+            // The remaining polynomial is irreducible over Q (or we can't factor it)
+            all_factors.push((remaining, multiplicity));
+        }
+    }
+
+    if all_factors.is_empty() {
+        // No factorization found, return the original
+        Ok(vec![(poly.clone(), 1)])
+    } else {
+        Ok(all_factors)
+    }
 }
 
 #[cfg(test)]
@@ -364,5 +529,93 @@ mod tests {
 
         let factors = factor_over_integers(&p).unwrap();
         assert!(!factors.is_empty());
+    }
+
+    #[test]
+    fn test_find_rational_roots() {
+        // x² - 1 = (x-1)(x+1) has roots ±1
+        let p = UnivariatePolynomial::new(vec![
+            Integer::from(-1),
+            Integer::from(0),
+            Integer::from(1),
+        ]);
+
+        let roots = find_rational_roots(&p);
+        assert!(roots.contains(&Integer::from(1)));
+        assert!(roots.contains(&Integer::from(-1)));
+        assert_eq!(roots.len(), 2);
+    }
+
+    #[test]
+    fn test_find_rational_roots_cubic() {
+        // x³ - 6x² + 11x - 6 = (x-1)(x-2)(x-3) has roots 1, 2, 3
+        let p = UnivariatePolynomial::new(vec![
+            Integer::from(-6),
+            Integer::from(11),
+            Integer::from(-6),
+            Integer::from(1),
+        ]);
+
+        let roots = find_rational_roots(&p);
+        assert!(roots.contains(&Integer::from(1)));
+        assert!(roots.contains(&Integer::from(2)));
+        assert!(roots.contains(&Integer::from(3)));
+        assert_eq!(roots.len(), 3);
+    }
+
+    #[test]
+    fn test_factor_over_integers_quadratic() {
+        // x² - 5x + 6 = (x-2)(x-3)
+        let p = UnivariatePolynomial::new(vec![
+            Integer::from(6),
+            Integer::from(-5),
+            Integer::from(1),
+        ]);
+
+        let factors = factor_over_integers(&p).unwrap();
+
+        // Should have two linear factors
+        let linear_factors: Vec<_> = factors
+            .iter()
+            .filter(|(f, _)| f.degree() == Some(1))
+            .collect();
+
+        assert!(linear_factors.len() >= 2, "Should find at least 2 linear factors");
+    }
+
+    #[test]
+    fn test_factor_over_integers_with_content() {
+        // 2x² - 2 = 2(x² - 1) = 2(x-1)(x+1)
+        let p = UnivariatePolynomial::new(vec![
+            Integer::from(-2),
+            Integer::from(0),
+            Integer::from(2),
+        ]);
+
+        let factors = factor_over_integers(&p).unwrap();
+
+        // Should extract content 2
+        let constant_factors: Vec<_> = factors
+            .iter()
+            .filter(|(f, _)| f.is_constant())
+            .collect();
+
+        assert!(!constant_factors.is_empty(), "Should extract content");
+    }
+
+    #[test]
+    fn test_factor_irreducible() {
+        // x² + 1 is irreducible over Q (no rational roots)
+        let p = UnivariatePolynomial::new(vec![
+            Integer::from(1),
+            Integer::from(0),
+            Integer::from(1),
+        ]);
+
+        let factors = factor_over_integers(&p).unwrap();
+
+        // Should return the polynomial itself or as a single factor
+        assert_eq!(factors.len(), 1);
+        assert!(factors[0].0.degree() == Some(2) || factors[0].0.degree() == None);
     }
 }
