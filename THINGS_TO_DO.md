@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~84% (414 / 493 functions tracked)
+**Overall Progress**: ~84% (416 / 493 functions tracked)
 
 ---
 
@@ -796,10 +796,10 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | RSA signing | ✅ | `rustmath-crypto/src/rsa.rs` | Sign/verify |
 | Diffie-Hellman | ✅ | `rustmath-crypto/src/diffie_hellman.rs` | Key exchange |
 | ElGamal | ✅ | `rustmath-crypto/src/elgamal.rs` | Encrypt/decrypt |
-| ECC (Elliptic Curve) | ⬜ | | |
-| ECDSA | ⬜ | | |
+| ECC (Elliptic Curve) | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Point arithmetic over GF(p) |
+| ECDSA | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Sign/verify |
 
-**Progress**: 6/8 functions (75%)
+**Progress**: 8/8 functions (100%)
 
 ### 10.3 Block Ciphers (sage.crypto.block_cipher)
 **SageMath Source**: `src/sage/crypto/block_cipher/`
