@@ -243,8 +243,7 @@ impl Expr {
                     if let Expr::Integer(exp) = right.as_ref() {
                         if let Some(exp_i64) = exp.to_i64() {
                             if exp_i64 >= 0 {
-                                // Use binomial expansion for small exponents
-                                // For now, simple case: if base doesn't contain var
+                                // Simple case: if base doesn't contain var (is constant)
                                 if left.is_polynomial_recursive(var, false) {
                                     if n == 0 {
                                         return Some(self.clone());
@@ -252,7 +251,17 @@ impl Expr {
                                         return Some(Expr::from(0));
                                     }
                                 }
-                                // TODO: Full binomial expansion
+                                // Simple case: if base is exactly the variable (like x^k)
+                                if let Expr::Symbol(s) = left.as_ref() {
+                                    if s == var {
+                                        if n == exp_i64 {
+                                            return Some(Expr::from(1));
+                                        } else {
+                                            return Some(Expr::from(0));
+                                        }
+                                    }
+                                }
+                                // TODO: Full binomial expansion for (a + b)^k
                             }
                         }
                     }

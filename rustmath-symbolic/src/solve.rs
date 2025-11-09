@@ -448,10 +448,11 @@ mod tests {
     #[test]
     fn test_solve_linear() {
         let x = Expr::symbol("x");
+        let var_x = &x.symbols()[0]; // Extract the actual Symbol
 
         // x + 1 = 0 => x = -1
         let expr = x.clone() + Expr::from(1);
-        let solution = expr.solve(&Symbol::new("x"));
+        let solution = expr.solve(var_x);
 
         match solution {
             Solution::Expr(sol) => {
@@ -464,10 +465,11 @@ mod tests {
     #[test]
     fn test_solve_linear_general() {
         let x = Expr::symbol("x");
+        let var_x = &x.symbols()[0]; // Extract the actual Symbol
 
         // 2x + 4 = 0 => x = -2
         let expr = Expr::from(2) * x.clone() + Expr::from(4);
-        let solution = expr.solve(&Symbol::new("x"));
+        let solution = expr.solve(var_x);
 
         match solution {
             Solution::Expr(sol) => {
@@ -480,10 +482,11 @@ mod tests {
     #[test]
     fn test_solve_quadratic_simple() {
         let x = Expr::symbol("x");
+        let var_x = &x.symbols()[0]; // Extract the actual Symbol
 
         // x^2 - 1 = 0 => x = ±1
         let expr = x.clone().pow(Expr::from(2)) - Expr::from(1);
-        let solution = expr.solve(&Symbol::new("x"));
+        let solution = expr.solve(var_x);
 
         match solution {
             Solution::Multiple(sols) => {
@@ -512,11 +515,12 @@ mod tests {
     #[test]
     fn test_solve_equation_form() {
         let x = Expr::symbol("x");
+        let var_x = &x.symbols()[0]; // Extract the actual Symbol
 
         // 2x + 1 = 5 => x = 2
         let lhs = Expr::from(2) * x.clone() + Expr::from(1);
         let rhs = Expr::from(5);
-        let solution = Expr::solve_equation(lhs, rhs, &Symbol::new("x"));
+        let solution = Expr::solve_equation(lhs, rhs, var_x);
 
         match solution {
             Solution::Expr(sol) => {
