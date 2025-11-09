@@ -1,32 +1,24 @@
 //! RustMath Crypto - Cryptographic primitives
 //!
-//! This crate provides cryptographic algorithms including elliptic curves
-//! and other cryptographic primitives.
+//! This crate provides cryptographic algorithms including:
+//! - Classical ciphers (Caesar, Vigenère, Substitution, Hill)
+//! - RSA encryption and digital signatures
+//! - Diffie-Hellman key exchange
+//! - ElGamal encryption
+//! - Elliptic curve cryptography
+//! - Block ciphers and S-boxes
 
-// TODO: RSA module needs fixing - Integer::one() doesn't exist
-// pub mod rsa;
+pub mod classical;
+pub mod rsa;
+pub mod diffie_hellman;
+pub mod elgamal;
+pub mod block_cipher;
 pub mod elliptic_curve;
 
-// pub use rsa::{decrypt, encrypt, KeyPair, PrivateKey, PublicKey};
+// Re-export commonly used types
+pub use classical::{caesar_encrypt, caesar_decrypt, vigenere_encrypt, vigenere_decrypt};
+pub use rsa::{KeyPair as RSAKeyPair, PublicKey as RSAPublicKey, PrivateKey as RSAPrivateKey};
+pub use diffie_hellman::{DHParams, DHKeyPair, key_exchange as dh_key_exchange};
+pub use elgamal::{KeyPair as ElGamalKeyPair, PublicKey as ElGamalPublicKey};
+pub use block_cipher::{SBox, FeistelCipher};
 pub use elliptic_curve::{EllipticCurve, EllipticCurvePoint};
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use rustmath_integers::Integer;
-//
-//     #[test]
-//     fn basic_rsa() {
-//         let p = Integer::from(61);
-//         let q = Integer::from(53);
-//         let e = Integer::from(17);
-//
-//         let keypair = KeyPair::from_primes(p, q, e).unwrap();
-//         let message = Integer::from(42);
-//
-//         let ciphertext = keypair.encrypt(&message).unwrap();
-//         let decrypted = keypair.decrypt(&ciphertext).unwrap();
-//
-//         assert_eq!(message, decrypted);
-//     }
-// }
