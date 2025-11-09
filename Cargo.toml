@@ -27,6 +27,7 @@ members = [
     "rustmath-logic",
     "rustmath-dynamics",
     "rustmath-coding",
+    "rustmath-databases",
 ]
 
 [workspace.package]
