@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~83% (405 / 493 functions tracked)
+**Overall Progress**: ~84% (414 / 493 functions tracked)
 
 ---
 
@@ -778,12 +778,12 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| Caesar cipher | ⬜ | | |
-| Vigenère cipher | ⬜ | | |
-| Substitution cipher | ⬜ | | |
-| Hill cipher | ⬜ | | Matrix-based |
+| Caesar cipher | ✅ | `rustmath-crypto/src/classical.rs` | Encrypt/decrypt |
+| Vigenère cipher | ✅ | `rustmath-crypto/src/classical.rs` | Key-based polyalphabetic |
+| Substitution cipher | ✅ | `rustmath-crypto/src/classical.rs` | With key generation |
+| Hill cipher | ✅ | `rustmath-crypto/src/classical.rs` | Matrix-based encryption |
 
-**Progress**: 0/4 functions (0%)
+**Progress**: 4/4 functions (100%)
 
 ### 10.2 Public Key Cryptography (sage.crypto.public_key)
 **SageMath Source**: `src/sage/crypto/public_key/`
@@ -793,24 +793,24 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | RSA key generation | ✅ | `rustmath-crypto/src/rsa.rs` | From primes |
 | RSA encryption | ✅ | `rustmath-crypto/src/rsa.rs` | |
 | RSA decryption | ✅ | `rustmath-crypto/src/rsa.rs` | |
-| RSA signing | ⬜ | | |
-| Diffie-Hellman | ⬜ | | |
-| ElGamal | ⬜ | | |
+| RSA signing | ✅ | `rustmath-crypto/src/rsa.rs` | Sign/verify |
+| Diffie-Hellman | ✅ | `rustmath-crypto/src/diffie_hellman.rs` | Key exchange |
+| ElGamal | ✅ | `rustmath-crypto/src/elgamal.rs` | Encrypt/decrypt |
 | ECC (Elliptic Curve) | ⬜ | | |
 | ECDSA | ⬜ | | |
 
-**Progress**: 3/8 functions (38%)
+**Progress**: 6/8 functions (75%)
 
 ### 10.3 Block Ciphers (sage.crypto.block_cipher)
 **SageMath Source**: `src/sage/crypto/block_cipher/`
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| AES | ⬜ | | |
-| DES | ⬜ | | |
-| General S-boxes | ⬜ | | |
+| AES | ⬜ | | Simplified version via Feistel |
+| DES | ✅ | `rustmath-crypto/src/block_cipher.rs` | Feistel cipher framework |
+| General S-boxes | ✅ | `rustmath-crypto/src/block_cipher.rs` | Forward/inverse tables |
 
-**Progress**: 0/3 functions (0%)
+**Progress**: 2/3 functions (67%)
 
 ### 10.4 Hash Functions
 **SageMath Source**: Not directly in Sage (uses external libraries)
