@@ -9,12 +9,13 @@ pub mod inner_product;
 pub mod integer_forms;
 pub mod linear_solve;
 pub mod matrix;
+pub mod polynomial_matrix;
 pub mod polynomial_ops;
 pub mod sparse;
 pub mod vector;
 pub mod vector_space;
 
-pub use companion::{companion_matrix, rational_canonical_form, RationalCanonicalForm};
+pub use companion::{characteristic_polynomial, companion_matrix, rational_canonical_form, RationalCanonicalForm};
 pub use decomposition::{
     CholeskyDecomposition, HessenbergDecomposition, LUDecomposition, PLUDecomposition,
     QRDecomposition, SVDDecomposition,

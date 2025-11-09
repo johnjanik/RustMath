@@ -7,6 +7,7 @@
 //! consisting of companion matrices for the invariant factors.
 
 use crate::Matrix;
+use crate::polynomial_matrix::PolynomialMatrix;
 use rustmath_core::{Field, MathError, Result, Ring};
 use rustmath_polynomials::UnivariatePolynomial;
 
@@ -191,10 +192,118 @@ impl<F: Field> RationalCanonicalForm<F> {
     }
 }
 
+/// Compute the characteristic polynomial det(xI - A) using the Faddeev-LeVerrier algorithm
+///
+/// # Arguments
+///
+/// * `matrix` - A square matrix
+///
+/// # Returns
+///
+/// The characteristic polynomial
+pub fn characteristic_polynomial<F: Field>(matrix: &Matrix<F>) -> Result<UnivariatePolynomial<F>> {
+    if !matrix.is_square() {
+        return Err(MathError::InvalidArgument(
+            "Characteristic polynomial is only defined for square matrices".to_string(),
+        ));
+    }
+
+    let n = matrix.rows();
+
+    // Special case for 1x1 matrices
+    if n == 1 {
+        let a = matrix.get(0, 0)?;
+        return Ok(UnivariatePolynomial::new(vec![
+            F::zero() - a.clone(),
+            F::one(),
+        ]));
+    }
+
+    // Special case for 2x2 matrices
+    if n == 2 {
+        let a = matrix.get(0, 0)?;
+        let b = matrix.get(0, 1)?;
+        let c = matrix.get(1, 0)?;
+        let d = matrix.get(1, 1)?;
+
+        let trace = a.clone() + d.clone();
+        let det = a.clone() * d.clone() - b.clone() * c.clone();
+
+        return Ok(UnivariatePolynomial::new(vec![
+            det,
+            F::zero() - trace,
+            F::one(),
+        ]));
+    }
+
+    // Use Faddeev-LeVerrier algorithm for general case
+    // Build characteristic polynomial iteratively
+    let mut coeffs = vec![F::zero(); n + 1];
+    coeffs[n] = F::one(); // Leading coefficient is always 1
+
+    let mut b = Matrix::identity(n);
+
+    for k in 1..=n {
+        // B_k = A * B_{k-1}
+        b = (matrix.clone() * b)?;
+
+        // c_k = -trace(B_k) / k
+        let mut trace = F::zero();
+        for i in 0..n {
+            trace = trace + b.get(i, i)?.clone();
+        }
+
+        // Divide by k (convert k to field element)
+        let mut k_field = F::zero();
+        for _ in 0..k {
+            k_field = k_field + F::one();
+        }
+        let c_k = F::zero() - (trace / k_field);
+        coeffs[n - k] = c_k.clone();
+
+        // Add c_k * I to B_k for next iteration (except on last iteration)
+        if k < n {
+            let mut new_b_data = b.data().to_vec();
+            for i in 0..n {
+                new_b_data[i * n + i] = new_b_data[i * n + i].clone() + c_k.clone();
+            }
+            b = Matrix::from_vec(n, n, new_b_data)?;
+        }
+    }
+
+    Ok(UnivariatePolynomial::new(coeffs))
+}
+
+/// Construct the characteristic matrix xI - A
+///
+/// This is a polynomial matrix where x is the indeterminate.
+fn characteristic_matrix<F: Field>(matrix: &Matrix<F>) -> Result<PolynomialMatrix<F>> {
+    let n = matrix.rows();
+    let mut data = Vec::with_capacity(n * n);
+
+    for i in 0..n {
+        for j in 0..n {
+            let entry = if i == j {
+                // Diagonal: x - a_ij
+                UnivariatePolynomial::new(vec![
+                    F::zero() - matrix.get(i, j)?.clone(),
+                    F::one(),
+                ])
+            } else {
+                // Off-diagonal: -a_ij
+                UnivariatePolynomial::new(vec![F::zero() - matrix.get(i, j)?.clone()])
+            };
+            data.push(entry);
+        }
+    }
+
+    PolynomialMatrix::new(n, n, data)
+}
+
 /// Compute the rational canonical form of a matrix
 ///
-/// Note: This is a simplified implementation that requires the characteristic polynomial.
-/// A full implementation would use Smith normal form to find invariant factors.
+/// This implementation computes the Smith normal form of the characteristic matrix
+/// xI - A to extract the invariant factors.
 ///
 /// # Arguments
 ///
@@ -212,22 +321,21 @@ pub fn rational_canonical_form<F: Field>(
         ));
     }
 
-    // For now, create a placeholder implementation
-    // A real implementation would:
-    // 1. Compute the characteristic polynomial
-    // 2. Compute Smith normal form of xI - A over F[x]
-    // 3. Extract invariant factors
-    // 4. Build companion matrices
+    // Step 1: Construct the characteristic matrix xI - A
+    let char_matrix = characteristic_matrix(matrix)?;
 
-    let n = matrix.rows();
+    // Step 2: Compute Smith normal form to get invariant factors
+    let snf = char_matrix.smith_normal_form()?;
+    let invariant_factors = snf.invariant_factors();
 
-    // Placeholder: use the identity as a trivial case
-    let invariant_factors = vec![UnivariatePolynomial::new(vec![
-        F::zero() - F::one(),
-        F::one(),
-    ]); n];
-
-    RationalCanonicalForm::from_invariant_factors(invariant_factors)
+    // Step 3: Build the rational canonical form from invariant factors
+    if invariant_factors.is_empty() {
+        // Fallback: use characteristic polynomial as single invariant factor
+        let char_poly = characteristic_polynomial(matrix)?;
+        RationalCanonicalForm::from_invariant_factors(vec![char_poly])
+    } else {
+        RationalCanonicalForm::from_invariant_factors(invariant_factors)
+    }
 }
 
 #[cfg(test)]
@@ -361,5 +469,122 @@ mod tests {
         let companion = companion_matrix(&poly).unwrap();
         assert_eq!(companion.rows(), 1);
         assert_eq!(companion.get(0, 0).unwrap(), &Rational::from_integer(1));
+    }
+
+    #[test]
+    fn test_characteristic_polynomial_1x1() {
+        // Matrix [a] has characteristic polynomial (x - a)
+        let matrix = Matrix::from_vec(
+            1,
+            1,
+            vec![Rational::from_integer(5)],
+        )
+        .unwrap();
+
+        let charpoly = characteristic_polynomial(&matrix).unwrap();
+
+        assert_eq!(charpoly.degree(), Some(1));
+        assert_eq!(charpoly.coeff(0), &Rational::from_integer(-5)); // constant term
+        assert_eq!(charpoly.coeff(1), &Rational::from_integer(1));  // x coefficient
+    }
+
+    #[test]
+    fn test_characteristic_polynomial_2x2() {
+        // Matrix [1 2]
+        //        [3 4]
+        // Characteristic polynomial: x² - 5x - 2
+        let matrix = Matrix::from_vec(
+            2,
+            2,
+            vec![
+                Rational::from_integer(1),
+                Rational::from_integer(2),
+                Rational::from_integer(3),
+                Rational::from_integer(4),
+            ],
+        )
+        .unwrap();
+
+        let charpoly = characteristic_polynomial(&matrix).unwrap();
+
+        assert_eq!(charpoly.degree(), Some(2));
+        // det(A) = 1*4 - 2*3 = -2
+        assert_eq!(charpoly.coeff(0), &Rational::from_integer(-2));
+        // -tr(A) = -(1+4) = -5
+        assert_eq!(charpoly.coeff(1), &Rational::from_integer(-5));
+        assert_eq!(charpoly.coeff(2), &Rational::from_integer(1));
+    }
+
+    #[test]
+    fn test_characteristic_polynomial_identity() {
+        // Identity matrix has characteristic polynomial (x - 1)^n
+        let matrix = Matrix::<Rational>::identity(2);
+        let charpoly = characteristic_polynomial(&matrix).unwrap();
+
+        assert_eq!(charpoly.degree(), Some(2));
+        // (x - 1)² = x² - 2x + 1
+        assert_eq!(charpoly.coeff(0), &Rational::from_integer(1));   // constant
+        assert_eq!(charpoly.coeff(1), &Rational::from_integer(-2));  // x
+        assert_eq!(charpoly.coeff(2), &Rational::from_integer(1));   // x²
+    }
+
+    #[test]
+    fn test_characteristic_polynomial_zero_matrix() {
+        // Zero matrix has characteristic polynomial x^n
+        let mut matrix_data = vec![Rational::from_integer(0); 4];
+        let matrix = Matrix::from_vec(2, 2, matrix_data).unwrap();
+        let charpoly = characteristic_polynomial(&matrix).unwrap();
+
+        assert_eq!(charpoly.degree(), Some(2));
+        assert_eq!(charpoly.coeff(0), &Rational::from_integer(0));  // constant = det = 0
+        assert_eq!(charpoly.coeff(1), &Rational::from_integer(0));  // -trace = 0
+        assert_eq!(charpoly.coeff(2), &Rational::from_integer(1));  // x²
+    }
+
+    #[test]
+    fn test_rcf_diagonal_matrix() {
+        // Diagonal matrix should have simple RCF
+        let matrix = Matrix::from_vec(
+            2,
+            2,
+            vec![
+                Rational::from_integer(2),
+                Rational::from_integer(0),
+                Rational::from_integer(0),
+                Rational::from_integer(3),
+            ],
+        )
+        .unwrap();
+
+        let rcf = rational_canonical_form(&matrix).unwrap();
+
+        assert_eq!(rcf.canonical_matrix.rows(), 2);
+        assert_eq!(rcf.canonical_matrix.cols(), 2);
+
+        // Check that we have invariant factors
+        assert!(!rcf.invariant_factors.is_empty());
+    }
+
+    #[test]
+    fn test_rcf_nilpotent_matrix() {
+        // Nilpotent matrix: [0 1]
+        //                   [0 0]
+        // Characteristic polynomial: x²
+        let matrix = Matrix::from_vec(
+            2,
+            2,
+            vec![
+                Rational::from_integer(0),
+                Rational::from_integer(1),
+                Rational::from_integer(0),
+                Rational::from_integer(0),
+            ],
+        )
+        .unwrap();
+
+        let rcf = rational_canonical_form(&matrix).unwrap();
+
+        assert_eq!(rcf.canonical_matrix.rows(), 2);
+        assert_eq!(rcf.canonical_matrix.cols(), 2);
     }
 }
