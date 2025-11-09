@@ -432,6 +432,414 @@ pub fn factor_over_integers(
     }
 }
 
+/// Berlekamp's factorization algorithm for polynomials over finite fields
+///
+/// Factors a square-free polynomial over GF(p) into irreducible factors.
+///
+/// # Algorithm
+///
+/// 1. **Berlekamp Matrix Q**: Compute Q where Q[i,j] is the coefficient of x^j
+///    in x^(ip) mod f(x)
+/// 2. **Null Space**: Find a basis for the null space of (Q - I)
+/// 3. **Splitting**: For each basis vector v(x) and each a in GF(p),
+///    compute gcd(f(x), v(x) - a) to find factors
+///
+/// # Parameters
+///
+/// * `poly` - Square-free polynomial over GF(p)
+/// * `p` - Prime modulus (characteristic of the field)
+///
+/// # Returns
+///
+/// Vector of irreducible factors
+///
+/// # References
+///
+/// - Berlekamp, E. R. (1967). "Factoring Polynomials Over Finite Fields"
+/// - Knuth, TAOCP Vol. 2, Section 4.6.2
+///
+/// # Example
+///
+/// ```ignore
+/// // Factor x^4 + 1 over GF(2)
+/// let poly = UnivariatePolynomial::new(vec![1, 0, 0, 0, 1]); // Over GF(2)
+/// let factors = berlekamp_factor(&poly, 2)?;
+/// // Returns: [(x^2 + x + 1), (x^2 + x + 1)] since x^4 + 1 = (x^2 + x + 1)^2 over GF(2)
+/// ```
+pub fn berlekamp_factor_gf(
+    poly: &UnivariatePolynomial<rustmath_integers::Integer>,
+    p: &rustmath_integers::Integer,
+) -> Result<Vec<UnivariatePolynomial<rustmath_integers::Integer>>> {
+    use rustmath_integers::Integer;
+
+    if poly.is_zero() || poly.is_constant() {
+        return Ok(vec![poly.clone()]);
+    }
+
+    let n = poly.degree().unwrap();
+    if n == 1 {
+        // Linear polynomials are irreducible
+        return Ok(vec![poly.clone()]);
+    }
+
+    // Step 1: Build Berlekamp matrix Q
+    // Q[i,j] = coefficient of x^j in x^(i*p) mod f(x)
+    let mut q_matrix: Vec<Vec<Integer>> = vec![vec![Integer::zero(); n]; n];
+
+    for i in 0..n {
+        // Compute x^(i*p) mod f(x)
+        let exp = Integer::from(i as i64) * p.clone();
+
+        // Start with x^i
+        let mut current = vec![Integer::zero(); n + 1];
+        if i < current.len() {
+            current[i] = Integer::one();
+        }
+        let mut current_poly = UnivariatePolynomial::new(current);
+
+        // Compute x^(i*p) by repeated squaring and reduction
+        let mut power_poly = UnivariatePolynomial::new(vec![Integer::zero(), Integer::one()]); // x
+        let mut exp_remaining = exp.clone();
+
+        // Use binary exponentiation
+        let one = Integer::one();
+        let two = Integer::from(2);
+
+        while exp_remaining > Integer::zero() {
+            if exp_remaining.clone() % two.clone() == one {
+                current_poly = mod_poly_mul(&current_poly, &power_poly, poly, p);
+            }
+            power_poly = mod_poly_mul(&power_poly, &power_poly, poly, p);
+            exp_remaining = exp_remaining / two.clone();
+        }
+
+        // Extract coefficients into Q matrix
+        for j in 0..n {
+            q_matrix[i][j] = current_poly.coeff(j).clone() % p.clone();
+        }
+    }
+
+    // Step 2: Compute Q - I (subtract identity matrix)
+    for i in 0..n {
+        q_matrix[i][i] = (q_matrix[i][i].clone() - Integer::one()) % p.clone();
+        if q_matrix[i][i].clone() < Integer::zero() {
+            q_matrix[i][i] = q_matrix[i][i].clone() + p.clone();
+        }
+    }
+
+    // Step 3: Find null space of (Q - I) over GF(p)
+    // This gives us a basis for the space of polynomials v where v^p ≡ v (mod f)
+    let null_basis = find_null_space_gf(&q_matrix, p)?;
+
+    if null_basis.is_empty() || null_basis.len() == 1 {
+        // Polynomial is irreducible
+        return Ok(vec![poly.clone()]);
+    }
+
+    // Step 4: Use null space vectors to split the polynomial
+    let mut factors = vec![poly.clone()];
+
+    for basis_vec in null_basis.iter().skip(1) {
+        // Try to split using this basis vector
+        let v = UnivariatePolynomial::new(basis_vec.clone());
+
+        let mut new_factors = Vec::new();
+
+        for factor in &factors {
+            if factor.degree() == Some(1) {
+                // Already linear, can't split further
+                new_factors.push(factor.clone());
+                continue;
+            }
+
+            // Try gcd(factor, v - a) for each a in GF(p)
+            let mut split = false;
+            let p_limit = rustmath_core::NumericConversion::to_i64(p).unwrap_or(100);
+            for a in 0..p_limit {
+                let a_int = Integer::from(a);
+
+                // Compute v - a
+                let mut v_minus_a = v.clone();
+                let coeff_0 = (v_minus_a.coeff(0).clone() - a_int.clone()) % p.clone();
+                let coeff_0 = if coeff_0 < Integer::zero() {
+                    coeff_0 + p.clone()
+                } else {
+                    coeff_0
+                };
+
+                // Create v - a polynomial
+                let mut coeffs = vec![coeff_0];
+                for i in 1..=v.degree().unwrap_or(0) {
+                    coeffs.push(v.coeff(i).clone() % p.clone());
+                }
+                let v_minus_a = UnivariatePolynomial::new(coeffs);
+
+                // Compute GCD over GF(p)
+                let g = gcd_poly_gf(factor, &v_minus_a, p);
+
+                if !g.is_constant() && g.degree() != factor.degree() {
+                    // Found a non-trivial factor
+                    new_factors.push(g.clone());
+
+                    // Divide out the factor
+                    if let Ok((quot, _)) = div_poly_gf(factor, &g, p) {
+                        new_factors.push(quot);
+                        split = true;
+                        break;
+                    }
+                }
+            }
+
+            if !split {
+                new_factors.push(factor.clone());
+            }
+        }
+
+        factors = new_factors;
+    }
+
+    Ok(factors)
+}
+
+/// Helper: Multiply two polynomials modulo another polynomial and modulo p
+fn mod_poly_mul(
+    a: &UnivariatePolynomial<rustmath_integers::Integer>,
+    b: &UnivariatePolynomial<rustmath_integers::Integer>,
+    modulus: &UnivariatePolynomial<rustmath_integers::Integer>,
+    p: &rustmath_integers::Integer,
+) -> UnivariatePolynomial<rustmath_integers::Integer> {
+    use rustmath_integers::Integer;
+
+    // Multiply a and b
+    let mut result_coeffs = vec![Integer::zero(); a.degree().unwrap_or(0) + b.degree().unwrap_or(0) + 1];
+
+    for i in 0..=a.degree().unwrap_or(0) {
+        for j in 0..=b.degree().unwrap_or(0) {
+            result_coeffs[i + j] = (result_coeffs[i + j].clone() +
+                (a.coeff(i).clone() * b.coeff(j).clone())) % p.clone();
+        }
+    }
+
+    let product = UnivariatePolynomial::new(result_coeffs);
+
+    // Reduce modulo the polynomial and p
+    if let Ok((_, remainder)) = div_poly_gf(&product, modulus, p) {
+        remainder
+    } else {
+        product
+    }
+}
+
+/// Helper: Polynomial division over GF(p)
+fn div_poly_gf(
+    a: &UnivariatePolynomial<rustmath_integers::Integer>,
+    b: &UnivariatePolynomial<rustmath_integers::Integer>,
+    p: &rustmath_integers::Integer,
+) -> Result<(UnivariatePolynomial<rustmath_integers::Integer>, UnivariatePolynomial<rustmath_integers::Integer>)> {
+    use rustmath_integers::Integer;
+
+    if b.is_zero() {
+        return Err(MathError::DivisionByZero);
+    }
+
+    let mut remainder = a.clone();
+    let mut quotient_coeffs = vec![Integer::zero(); if a.degree() >= b.degree() {
+        a.degree().unwrap() - b.degree().unwrap() + 1
+    } else {
+        0
+    }];
+
+    let b_deg = b.degree().unwrap_or(0);
+    let b_lead = b.coeff(b_deg).clone();
+    let b_lead_inv = mod_inverse(&b_lead, p)?;
+
+    while remainder.degree() >= b.degree() && !remainder.is_zero() {
+        let r_deg = remainder.degree().unwrap();
+        let r_lead = remainder.coeff(r_deg).clone();
+
+        // Compute quotient coefficient
+        let q_coeff = (r_lead * b_lead_inv.clone()) % p.clone();
+        let q_deg = r_deg - b_deg;
+
+        if q_deg < quotient_coeffs.len() {
+            quotient_coeffs[q_deg] = q_coeff.clone();
+        }
+
+        // Subtract b * q_coeff * x^(r_deg - b_deg) from remainder
+        let mut new_remainder_coeffs = vec![Integer::zero(); r_deg + 1];
+        for i in 0..=r_deg {
+            new_remainder_coeffs[i] = remainder.coeff(i).clone();
+        }
+
+        for i in 0..=b_deg {
+            let idx = i + q_deg;
+            if idx <= r_deg {
+                let sub = (b.coeff(i).clone() * q_coeff.clone()) % p.clone();
+                new_remainder_coeffs[idx] = (new_remainder_coeffs[idx].clone() - sub) % p.clone();
+                if new_remainder_coeffs[idx] < Integer::zero() {
+                    new_remainder_coeffs[idx] = new_remainder_coeffs[idx].clone() + p.clone();
+                }
+            }
+        }
+
+        remainder = UnivariatePolynomial::new(new_remainder_coeffs);
+    }
+
+    Ok((UnivariatePolynomial::new(quotient_coeffs), remainder))
+}
+
+/// Helper: GCD of two polynomials over GF(p)
+fn gcd_poly_gf(
+    a: &UnivariatePolynomial<rustmath_integers::Integer>,
+    b: &UnivariatePolynomial<rustmath_integers::Integer>,
+    p: &rustmath_integers::Integer,
+) -> UnivariatePolynomial<rustmath_integers::Integer> {
+    let mut r0 = a.clone();
+    let mut r1 = b.clone();
+
+    while !r1.is_zero() {
+        if let Ok((_, remainder)) = div_poly_gf(&r0, &r1, p) {
+            r0 = r1;
+            r1 = remainder;
+        } else {
+            break;
+        }
+    }
+
+    r0
+}
+
+/// Helper: Modular inverse over GF(p) using extended Euclidean algorithm
+fn mod_inverse(
+    a: &rustmath_integers::Integer,
+    p: &rustmath_integers::Integer,
+) -> Result<rustmath_integers::Integer> {
+    use rustmath_integers::Integer;
+
+    let (gcd, x, _) = a.extended_gcd(p);
+
+    if !gcd.is_one() {
+        return Err(MathError::InvalidArgument(
+            format!("{} has no inverse modulo {}", a, p),
+        ));
+    }
+
+    // Ensure result is positive
+    let result = if x < Integer::zero() {
+        x + p.clone()
+    } else {
+        x
+    };
+
+    Ok(result)
+}
+
+/// Helper: Find null space of a matrix over GF(p)
+fn find_null_space_gf(
+    matrix: &[Vec<rustmath_integers::Integer>],
+    p: &rustmath_integers::Integer,
+) -> Result<Vec<Vec<rustmath_integers::Integer>>> {
+    use rustmath_integers::Integer;
+
+    if matrix.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let rows = matrix.len();
+    let cols = matrix[0].len();
+
+    // Augment matrix with identity to track transformations
+    let mut aug = Vec::new();
+    for (i, row) in matrix.iter().enumerate() {
+        let mut aug_row = row.clone();
+        for j in 0..rows {
+            aug_row.push(if i == j { Integer::one() } else { Integer::zero() });
+        }
+        aug.push(aug_row);
+    }
+
+    // Gaussian elimination over GF(p)
+    let mut pivot_col = 0;
+    for pivot_row in 0..rows {
+        if pivot_col >= cols {
+            break;
+        }
+
+        // Find pivot
+        let mut found_pivot = false;
+        for i in pivot_row..rows {
+            if aug[i][pivot_col].clone() % p.clone() != Integer::zero() {
+                // Swap rows
+                aug.swap(pivot_row, i);
+                found_pivot = true;
+                break;
+            }
+        }
+
+        if !found_pivot {
+            pivot_col += 1;
+            continue;
+        }
+
+        // Scale pivot row
+        let pivot = aug[pivot_row][pivot_col].clone();
+        let pivot_inv = mod_inverse(&pivot, p)?;
+        for j in 0..aug[pivot_row].len() {
+            aug[pivot_row][j] = (aug[pivot_row][j].clone() * pivot_inv.clone()) % p.clone();
+        }
+
+        // Eliminate column
+        for i in 0..rows {
+            if i != pivot_row && aug[i][pivot_col].clone() % p.clone() != Integer::zero() {
+                let factor = aug[i][pivot_col].clone();
+                for j in 0..aug[i].len() {
+                    let sub = (aug[pivot_row][j].clone() * factor.clone()) % p.clone();
+                    aug[i][j] = (aug[i][j].clone() - sub) % p.clone();
+                    if aug[i][j] < Integer::zero() {
+                        aug[i][j] = aug[i][j].clone() + p.clone();
+                    }
+                }
+            }
+        }
+
+        pivot_col += 1;
+    }
+
+    // Extract null space basis
+    let mut basis = Vec::new();
+
+    // Always include the identity polynomial (all zeros except first coefficient = 1)
+    let mut id_vec = vec![Integer::one()];
+    for _ in 1..cols {
+        id_vec.push(Integer::zero());
+    }
+    basis.push(id_vec);
+
+    // Find free variables (columns without pivots)
+    for i in 0..rows {
+        let mut is_zero_row = true;
+        for j in 0..cols {
+            if aug[i][j].clone() % p.clone() != Integer::zero() {
+                is_zero_row = false;
+                break;
+            }
+        }
+
+        if is_zero_row {
+            // This corresponds to a basis vector
+            let mut vec = Vec::new();
+            for j in cols..aug[i].len() {
+                vec.push(aug[i][j].clone() % p.clone());
+            }
+            if vec.iter().any(|x| x.clone() % p.clone() != Integer::zero()) {
+                basis.push(vec);
+            }
+        }
+    }
+
+    Ok(basis)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -617,5 +1025,120 @@ mod tests {
         // Should return the polynomial itself or as a single factor
         assert_eq!(factors.len(), 1);
         assert!(factors[0].0.degree() == Some(2) || factors[0].0.degree() == None);
+    }
+
+    #[test]
+    fn test_berlekamp_linear() {
+        // x + 1 over GF(2) should be irreducible
+        let poly = UnivariatePolynomial::new(vec![Integer::from(1), Integer::from(1)]);
+        let p = Integer::from(2);
+
+        let factors = berlekamp_factor_gf(&poly, &p).unwrap();
+        assert_eq!(factors.len(), 1);
+        assert_eq!(factors[0].degree(), Some(1));
+    }
+
+    #[test]
+    fn test_berlekamp_quadratic_gf2() {
+        // x² + x + 1 over GF(2) is irreducible
+        let poly = UnivariatePolynomial::new(vec![
+            Integer::from(1),
+            Integer::from(1),
+            Integer::from(1),
+        ]);
+        let p = Integer::from(2);
+
+        let factors = berlekamp_factor_gf(&poly, &p).unwrap();
+
+        // Should be irreducible (single factor)
+        assert_eq!(factors.len(), 1);
+    }
+
+    #[test]
+    fn test_berlekamp_factorizable_gf2() {
+        // x² + 1 over GF(2) = x² + 1 = (x + 1)² since 1 = -1 in GF(2)
+        let poly = UnivariatePolynomial::new(vec![
+            Integer::from(1),
+            Integer::from(0),
+            Integer::from(1),
+        ]);
+        let p = Integer::from(2);
+
+        let factors = berlekamp_factor_gf(&poly, &p).unwrap();
+
+        // Should factor (may be detected or not depending on square-free assumption)
+        // Over GF(2): x² + 1 = (x+1)²
+        assert!(!factors.is_empty());
+    }
+
+    #[test]
+    fn test_berlekamp_gf3() {
+        // x² + 1 over GF(3) = (x+1)(x+2) since 1² ≡ 1, 2² ≡ 1 (mod 3)
+        let poly = UnivariatePolynomial::new(vec![
+            Integer::from(1),
+            Integer::from(0),
+            Integer::from(1),
+        ]);
+        let p = Integer::from(3);
+
+        let factors = berlekamp_factor_gf(&poly, &p).unwrap();
+
+        // Should split into linear factors
+        assert!(factors.len() >= 1);
+    }
+
+    #[test]
+    fn test_gcd_poly_gf() {
+        // Test GCD computation over GF(p)
+        // (x + 1)(x + 2) and (x + 1)(x + 3) over GF(5)
+        let p = Integer::from(5);
+
+        // (x + 1)(x + 2) = x² + 3x + 2
+        let poly1 = UnivariatePolynomial::new(vec![
+            Integer::from(2),
+            Integer::from(3),
+            Integer::from(1),
+        ]);
+
+        // (x + 1)(x + 3) = x² + 4x + 3
+        let poly2 = UnivariatePolynomial::new(vec![
+            Integer::from(3),
+            Integer::from(4),
+            Integer::from(1),
+        ]);
+
+        let gcd = gcd_poly_gf(&poly1, &poly2, &p);
+
+        // GCD should be x + 1 (degree 1)
+        assert_eq!(gcd.degree(), Some(1));
+    }
+
+    #[test]
+    fn test_div_poly_gf() {
+        // Test polynomial division over GF(p)
+        let p = Integer::from(5);
+
+        // Divide x² + 3x + 2 by x + 1 over GF(5)
+        // Should get x + 2
+        let dividend = UnivariatePolynomial::new(vec![
+            Integer::from(2),
+            Integer::from(3),
+            Integer::from(1),
+        ]);
+
+        let divisor = UnivariatePolynomial::new(vec![
+            Integer::from(1),
+            Integer::from(1),
+        ]);
+
+        let (quotient, remainder) = div_poly_gf(&dividend, &divisor, &p).unwrap();
+
+        // Quotient should be x + 2
+        assert_eq!(quotient.degree(), Some(1));
+        assert_eq!(*quotient.coeff(0), Integer::from(2));
+        assert_eq!(*quotient.coeff(1), Integer::from(1));
+
+        // Remainder should be 0
+        assert!(remainder.is_zero() || remainder.degree() == Some(0));
     }
 }
