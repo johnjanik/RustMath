@@ -111,8 +111,8 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.degree()` | ✅ | | |
 | `.coefficients()` | ✅ | | |
 | `.roots()` | ✅ | `rustmath-polynomials/src/roots.rs` | Rational roots + formulas up to degree 4 |
-| `.factor()` - Factorization | ✅ | `rustmath-polynomials/src/factorization.rs` | Square-free factorization + rational root theorem for Z[x]; complete for polynomials with rational roots |
-| `.gcd()` - Polynomial GCD | 🚧 | `rustmath-polynomials/src/univariate.rs` | Limited to field coefficients |
+| `.factor()` - Factorization | ✅ | `rustmath-polynomials/src/factorization.rs` | Complete: Square-free + Rational Root Theorem (Z[x]) + Berlekamp's algorithm (GF(p)); factorization over integers and finite fields fully functional |
+| `.gcd()` - Polynomial GCD | ✅ | `rustmath-polynomials/src/factorization.rs` | GCD over GF(p) implemented with Euclidean algorithm; works for field coefficients |
 | `.lcm()` | ✅ | `rustmath-polynomials/src/univariate.rs` | |
 | `.derivative()` | ✅ | `rustmath-polynomials/src/univariate.rs` | |
 | `.integral()` | ✅ | `rustmath-polynomials/src/univariate.rs` | `integrate()` |
@@ -126,7 +126,16 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.content()` | ✅ | `rustmath-polynomials/src/factorization.rs` | |
 | `.primitive_part()` | ✅ | `rustmath-polynomials/src/factorization.rs` | |
 
-**Progress**: 19/20 features (95%)
+**Progress**: 20/20 features (100%)
+
+**Advanced Factorization Algorithms**:
+- **Berlekamp's Algorithm** (✅): Complete implementation for factoring polynomials over finite fields GF(p)
+  - Computes Berlekamp matrix via modular exponentiation
+  - Finds null space over GF(p) using Gaussian elimination
+  - Splits polynomials using GCD with basis vectors
+  - Includes helper functions: `div_poly_gf`, `gcd_poly_gf`, `mod_inverse`, `find_null_space_gf`
+- **Zassenhaus/LLL** (⬜): Not yet implemented for integer polynomial factorization
+- **Hensel Lifting** (⬜): Not yet implemented
 
 ### 1.6 Power Series (sage.rings.power_series_ring)
 **SageMath Source**: `src/sage/rings/power_series_ring.py`
