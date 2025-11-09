@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~84% (416 / 493 functions tracked)
+**Overall Progress**: ~66% (358 / 539 functions tracked)
 
 ---
 
@@ -832,26 +832,35 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| `LinearCode(...)` | ⬜ | | |
-| Generator matrix | ⬜ | | |
-| Parity check matrix | ⬜ | | |
-| `.minimum_distance()` | ⬜ | | |
-| `.encode()` | ⬜ | | |
-| `.decode()` | ⬜ | | |
+| `LinearCode(...)` | ✅ | `rustmath-coding/src/linear_code.rs` | From generator or parity check matrix |
+| Generator matrix | ✅ | `rustmath-coding/src/linear_code.rs` | `generator_matrix()` |
+| Parity check matrix | ✅ | `rustmath-coding/src/linear_code.rs` | `parity_check_matrix()` |
+| `.minimum_distance()` | ✅ | `rustmath-coding/src/linear_code.rs` | Brute force for small codes |
+| `.encode()` | ✅ | `rustmath-coding/src/linear_code.rs` | Matrix multiplication over finite field |
+| `.decode()` | ✅ | `rustmath-coding/src/linear_code.rs` | Syndrome decoding |
 
-**Progress**: 0/6 functions (0%)
+**Progress**: 6/6 functions (100%)
 
 ### 11.2 Specific Codes
 **SageMath Source**: Various in `src/sage/coding/`
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| Hamming codes | ⬜ | | |
-| Reed-Solomon codes | ⬜ | | |
-| BCH codes | ⬜ | | |
-| Golay codes | ⬜ | | |
+| Hamming codes | ✅ | `rustmath-coding/src/hamming.rs` | [2^r-1, 2^r-r-1, 3] perfect codes, extended variant |
+| Reed-Solomon codes | ✅ | `rustmath-coding/src/reed_solomon.rs` | Over GF(p), systematic encoding, syndrome decoding |
+| BCH codes | ✅ | `rustmath-coding/src/bch.rs` | Binary BCH codes with configurable parameters |
+| Golay codes | ✅ | `rustmath-coding/src/golay.rs` | Binary [23,12,7], ternary [11,6,5], extended [24,12,8] |
 
-**Progress**: 0/4 types (0%)
+**Progress**: 4/4 types (100%)
+
+### 11.3 Additional Features
+| Function/Feature | Status | RustMath Location | Notes |
+|-----------------|--------|-------------------|-------|
+| Syndrome decoding | ✅ | `rustmath-coding/src/syndrome.rs` | Syndrome tables, coset leaders, standard array |
+| Error correction | ✅ | All code types | Up to designed capability |
+| Encoding/decoding | ✅ | All code types | Systematic encoding where applicable |
+
+**Progress**: 3/3 features (100%) ✅ COMPLETE
 
 ---
 
@@ -1035,7 +1044,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 8. Geometry | 18 | 19 | 95% |
 | 9. Algebraic Geometry | 27 | 30 | 90% |
 | 10. Cryptography | 3 | 18 | 17% |
-| 11. Coding Theory | 0 | 10 | 0% |
+| 11. Coding Theory | 13 | 13 | 100% |
 | 12. Group Theory | 18 | 18 | 100% |
 | 13. Representation Theory | 3 | 3 | 100% |
 | 14. Homological Algebra | 3 | 3 | 100% |
@@ -1044,7 +1053,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 17. Numerical Computation | 6 | 6 | 100% |
 | 18-20. Advanced Topics | 1 | 29 | 3% |
 
-**TOTAL**: **345 / 526 functions** = **~66% complete**
+**TOTAL**: **358 / 539 functions** = **~66% complete**
 
 ### Files to Examine in SageMath Source
 
