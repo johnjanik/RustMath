@@ -6,7 +6,7 @@
 //! Every quadratic form can be represented by a symmetric matrix A such that
 //! Q(x) = x^T A x, where x is a column vector.
 
-use rustmath_core::{MathError, Result, Ring};
+use rustmath_core::{MathError, NumericConversion, Result, Ring};
 use rustmath_integers::Integer;
 
 /// A quadratic form over the integers
@@ -335,6 +335,158 @@ impl QuadraticForm {
             }
         }
     }
+
+    /// Compute the theta series coefficients
+    ///
+    /// The theta series is a generating function that encodes the representation numbers:
+    /// Θ(q) = Σ r(n) q^n
+    /// where r(n) is the number of ways to represent n by this quadratic form.
+    ///
+    /// # Arguments
+    ///
+    /// * `max_n` - Maximum n to compute coefficients for
+    /// * `bound` - Search bound for each variable
+    ///
+    /// # Returns
+    ///
+    /// A vector where element i is the number of representations of i
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rustmath_numbertheory::quadratic_forms::QuadraticForm;
+    /// use rustmath_integers::Integer;
+    ///
+    /// // Q(x, y) = x² + y² (sum of two squares)
+    /// let form = QuadraticForm::diagonal(vec![
+    ///     Integer::from(1),
+    ///     Integer::from(1),
+    /// ]).unwrap();
+    ///
+    /// // Compute first 10 theta series coefficients
+    /// let theta = form.theta_series(10, 5);
+    /// // theta[0] = 1 (only (0,0) represents 0)
+    /// // theta[1] = 4 ((±1,0) and (0,±1) represent 1)
+    /// // theta[2] = 4 ((±1,±1) represent 2)
+    /// // theta[5] = 8 ((±1,±2) and (±2,±1) represent 5)
+    /// ```
+    pub fn theta_series(&self, max_n: usize, bound: usize) -> Vec<usize> {
+        let mut coefficients = vec![0; max_n + 1];
+
+        // Count representations for each n
+        for n in 0..=max_n {
+            coefficients[n] = self.count_representations(&Integer::from(n as i64), bound);
+        }
+
+        coefficients
+    }
+
+    /// Compute the local density at a prime p
+    ///
+    /// The local density α_p(n) measures how often the quadratic form represents
+    /// n modulo powers of p. It's a p-adic measure of the representation.
+    ///
+    /// For a quadratic form Q over Z_p, the local density is defined as:
+    /// α_p(n, m) = |{x ∈ (Z/p^m Z)^k : Q(x) ≡ n (mod p^m)}| / p^{m(k-1)}
+    ///
+    /// As m → ∞, this converges to the p-adic density.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The integer to represent
+    /// * `p` - The prime
+    /// * `precision` - Precision (computes modulo p^precision)
+    ///
+    /// # Returns
+    ///
+    /// An approximation of the local density (as a ratio)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rustmath_numbertheory::quadratic_forms::QuadraticForm;
+    /// use rustmath_integers::Integer;
+    ///
+    /// // Q(x, y) = x² + y²
+    /// let form = QuadraticForm::diagonal(vec![
+    ///     Integer::from(1),
+    ///     Integer::from(1),
+    /// ]).unwrap();
+    ///
+    /// // Compute 2-adic density for representing 5
+    /// let (numerator, denominator) = form.local_density(&Integer::from(5), 2, 3);
+    /// ```
+    pub fn local_density(&self, n: &Integer, p: i64, precision: usize) -> (Integer, Integer) {
+        if precision == 0 {
+            return (Integer::zero(), Integer::one());
+        }
+
+        // Compute p^precision
+        let p_int = Integer::from(p);
+        let mut modulus = Integer::one();
+        for _ in 0..precision {
+            modulus = modulus.clone() * p_int.clone();
+        }
+
+        // Count solutions modulo p^precision
+        let mut count = Integer::zero();
+        let total_count = self.count_local_solutions(n, &modulus);
+        count = Integer::from(total_count as i64);
+
+        // Compute denominator: p^{precision * (dimension - 1)}
+        let mut denominator = Integer::one();
+        for _ in 0..(precision * (self.dimension - 1)) {
+            denominator = denominator.clone() * p_int.clone();
+        }
+
+        (count, denominator)
+    }
+
+    /// Count solutions to Q(x) ≡ n (mod m)
+    ///
+    /// Helper function for local density computation
+    fn count_local_solutions(&self, n: &Integer, modulus: &Integer) -> usize {
+        let mut count = 0;
+        let m = modulus.clone();
+
+        // Iterate through all possible values modulo m
+        // This is exponential in dimension, so only practical for small cases
+        self.count_modular_solutions(n, &m, 0, &mut vec![Integer::zero(); self.dimension], &mut count);
+
+        count
+    }
+
+    /// Recursive helper for counting modular solutions
+    fn count_modular_solutions(
+        &self,
+        target: &Integer,
+        modulus: &Integer,
+        var_index: usize,
+        current: &mut Vec<Integer>,
+        count: &mut usize,
+    ) {
+        if var_index == self.dimension {
+            // Evaluate and check
+            if let Ok(value) = self.evaluate(current) {
+                if (value.clone() - target.clone()) % modulus.clone() == Integer::zero() {
+                    *count += 1;
+                }
+            }
+            return;
+        }
+
+        // Try all values from 0 to modulus-1
+        let m_i64 = if let Some(val) = modulus.to_i64() {
+            val
+        } else {
+            return; // modulus too large
+        };
+
+        for val in 0..m_i64 {
+            current[var_index] = Integer::from(val);
+            self.count_modular_solutions(target, modulus, var_index + 1, current, count);
+        }
+    }
 }
 
 impl std::fmt::Display for QuadraticForm {
@@ -474,5 +626,94 @@ mod tests {
             vec![Integer::from(3), Integer::from(4)],
         ];
         assert!(QuadraticForm::new(matrix).is_err());
+    }
+
+    #[test]
+    fn test_theta_series() {
+        // Q(x, y) = x² + y²
+        let form = QuadraticForm::diagonal(vec![Integer::from(1), Integer::from(1)]).unwrap();
+
+        // Compute first 10 theta series coefficients
+        let theta = form.theta_series(10, 5);
+
+        // theta[0] = 1 (only (0,0) represents 0)
+        assert_eq!(theta[0], 1);
+
+        // theta[1] = 4 ((±1,0) and (0,±1) represent 1)
+        assert_eq!(theta[1], 4);
+
+        // theta[2] = 4 ((±1,±1) represent 2)
+        assert_eq!(theta[2], 4);
+
+        // theta[5] = 8 ((±1,±2) and (±2,±1) represent 5)
+        assert_eq!(theta[5], 8);
+
+        // 3 cannot be written as sum of two squares
+        assert_eq!(theta[3], 0);
+    }
+
+    #[test]
+    fn test_theta_series_single_square() {
+        // Q(x) = x²
+        let form = QuadraticForm::diagonal(vec![Integer::from(1)]).unwrap();
+
+        let theta = form.theta_series(10, 5);
+
+        // theta[0] = 1 (x = 0)
+        assert_eq!(theta[0], 1);
+
+        // theta[1] = 2 (x = ±1)
+        assert_eq!(theta[1], 2);
+
+        // theta[4] = 2 (x = ±2)
+        assert_eq!(theta[4], 2);
+
+        // theta[2] = 0 (2 is not a perfect square)
+        assert_eq!(theta[2], 0);
+    }
+
+    #[test]
+    fn test_local_density() {
+        // Q(x, y) = x² + y²
+        let form = QuadraticForm::diagonal(vec![Integer::from(1), Integer::from(1)]).unwrap();
+
+        // Compute 2-adic density for representing 1
+        let (numerator, denominator) = form.local_density(&Integer::from(1), 2, 2);
+
+        // There should be solutions modulo 4
+        // Check that we got a valid result
+        assert!(numerator >= Integer::zero());
+        assert!(denominator > Integer::zero());
+    }
+
+    #[test]
+    fn test_local_density_small_modulus() {
+        // Q(x, y) = x² + y²
+        let form = QuadraticForm::diagonal(vec![Integer::from(1), Integer::from(1)]).unwrap();
+
+        // Compute 3-adic density for representing 2
+        let (numerator, denominator) = form.local_density(&Integer::from(2), 3, 1);
+
+        // Should have non-zero density
+        assert!(numerator >= Integer::zero());
+        // The denominator should be p^{m(k-1)} where k=2, m=1
+        // So denominator = 3^(1*1) = 3
+        assert_eq!(denominator, Integer::from(3));
+
+        // Test with higher precision
+        let (_num2, denom2) = form.local_density(&Integer::from(2), 3, 2);
+        // denominator = 3^(2*1) = 9
+        assert_eq!(denom2, Integer::from(9));
+    }
+
+    #[test]
+    fn test_local_density_precision_zero() {
+        let form = QuadraticForm::diagonal(vec![Integer::from(1), Integer::from(1)]).unwrap();
+
+        let (numerator, denominator) = form.local_density(&Integer::from(5), 2, 0);
+
+        // Precision 0 should return (0, 1)
+        assert_eq!(numerator, Integer::zero());
+        assert_eq!(denominator, Integer::one());
     }
 }

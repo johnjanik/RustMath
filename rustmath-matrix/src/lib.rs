@@ -2,6 +2,7 @@
 //!
 //! This crate provides matrix and vector operations for linear algebra.
 
+pub mod companion;
 pub mod decomposition;
 pub mod eigenvalues;
 pub mod inner_product;
@@ -13,6 +14,7 @@ pub mod sparse;
 pub mod vector;
 pub mod vector_space;
 
+pub use companion::{companion_matrix, rational_canonical_form, RationalCanonicalForm};
 pub use decomposition::{
     CholeskyDecomposition, HessenbergDecomposition, LUDecomposition, PLUDecomposition,
     QRDecomposition, SVDDecomposition,
