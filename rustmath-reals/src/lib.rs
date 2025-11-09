@@ -13,7 +13,7 @@ pub mod rounding;
 pub mod transcendental;
 
 pub use interval::Interval;
-pub use real::Real;
+pub use real::{Real, RealField};
 pub use rounding::RoundingMode;
 
 #[cfg(test)]
