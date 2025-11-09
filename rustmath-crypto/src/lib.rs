@@ -7,6 +7,7 @@
 //! - ElGamal encryption
 //! - Elliptic curve cryptography (ECC) and ECDSA
 //! - Block ciphers and S-boxes
+//! - Hash functions (SHA-256, SHA-3, BLAKE2)
 
 pub mod classical;
 pub mod rsa;
@@ -14,6 +15,7 @@ pub mod diffie_hellman;
 pub mod elgamal;
 pub mod block_cipher;
 pub mod elliptic_curve;
+pub mod hash;
 
 // Re-export commonly used types
 pub use classical::{caesar_encrypt, caesar_decrypt, vigenere_encrypt, vigenere_decrypt};
@@ -22,3 +24,4 @@ pub use diffie_hellman::{DHParams, DHKeyPair, key_exchange as dh_key_exchange};
 pub use elgamal::{KeyPair as ElGamalKeyPair, PublicKey as ElGamalPublicKey};
 pub use block_cipher::{SBox, FeistelCipher};
 pub use elliptic_curve::{EllipticCurve, EllipticCurvePoint, ECCCurve, ECCPoint, ECDSAKeypair, create_test_ecdsa_keypair};
+pub use hash::{SHA256, SHA3_256, BLAKE2b, hex_digest};

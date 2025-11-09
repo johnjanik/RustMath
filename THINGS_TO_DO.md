@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~66% (358 / 539 functions tracked)
+**Overall Progress**: ~67% (361 / 539 functions tracked)
 
 ---
 
@@ -817,11 +817,11 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| SHA-256 | ⬜ | | |
-| SHA-3 | ⬜ | | |
-| BLAKE2 | ⬜ | | |
+| SHA-256 | ✅ | `rustmath-crypto/src/hash.rs` | FIPS 180-4 compliant, 256-bit output |
+| SHA-3 | ✅ | `rustmath-crypto/src/hash.rs` | Keccak-based, SHA3-256 variant |
+| BLAKE2 | ✅ | `rustmath-crypto/src/hash.rs` | BLAKE2b with configurable output length |
 
-**Progress**: 0/3 functions (0%)
+**Progress**: 3/3 functions (100%)
 
 ---
 
