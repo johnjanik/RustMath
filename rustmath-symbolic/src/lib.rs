@@ -8,13 +8,16 @@ pub mod differentiate;
 pub mod diffeq;
 pub mod expand;
 pub mod expression;
+pub mod factor;
 pub mod integrate;
 pub mod limits;
 pub mod numerical;
 pub mod pde;
 pub mod polynomial;
+pub mod radical;
 pub mod series;
 pub mod simplify;
+pub mod solve;
 pub mod substitute;
 pub mod symbol;
 
@@ -24,6 +27,7 @@ pub use expression::{BinaryOp, Expr, UnaryOp};
 pub use limits::{Direction, LimitResult};
 pub use numerical::IntegrationResult;
 pub use pde::PDEType;
+pub use solve::Solution;
 pub use symbol::Symbol;
 
 #[cfg(test)]
