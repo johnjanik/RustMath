@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~67% (361 / 539 functions tracked)
+**Overall Progress**: ~68% (364 / 539 functions tracked)
 
 ---
 
@@ -203,7 +203,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.charpoly()` - Characteristic polynomial | ✅ | `rustmath-matrix/src/polynomial_ops.rs` | Faddeev-LeVerrier algorithm |
 | `.minpoly()` - Minimal polynomial | ✅ | `rustmath-matrix/src/polynomial_ops.rs` | Full implementation via nullity analysis |
 | `.jordan_form()` | ✅ | `rustmath-matrix/src/eigenvalues.rs` | Works for diagonalizable matrices |
-| `.rational_canonical_form()` | ⬜ | | Complex - requires companion matrices |
+| `.rational_canonical_form()` | ✅ | `rustmath-matrix/src/companion.rs` | Complete with companion matrices and invariant factors |
 | `.smith_form()` | ✅ | `rustmath-matrix/src/integer_forms.rs` | Smith normal form for integer matrices |
 | `.hermite_form()` | ✅ | `rustmath-matrix/src/integer_forms.rs` | Hermite normal form |
 | `.echelon_form()` | ✅ | `rustmath-matrix/src/linear_solve.rs` | `row_echelon_form()` |
@@ -221,7 +221,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.pseudoinverse()` | ✅ | `rustmath-matrix/src/linear_solve.rs` | Moore-Penrose via normal equations |
 | Sparse matrices | ✅ | `rustmath-matrix/src/sparse.rs` | CSR format with basic operations |
 
-**Progress**: 31/35 features (89%)
+**Progress**: 32/35 features (91%)
 
 ### 2.2 Vectors (sage.modules.free_module)
 **SageMath Source**: `src/sage/modules/free_module.py`
@@ -281,15 +281,15 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Trial division | ✅ | `rustmath-integers/src/prime.rs` | |
 | Pollard's rho | ✅ | `rustmath-integers/src/prime.rs` | |
 | Pollard's p-1 | ✅ | `rustmath-integers/src/prime.rs` | With smoothness bound |
-| ECM (Elliptic Curve Method) | ⬜ | | |
-| Quadratic sieve | ⬜ | | |
+| ECM (Elliptic Curve Method) | ✅ | `rustmath-integers/src/ecm.rs` | Complete implementation with stage 1 & 2 |
+| Quadratic sieve | ✅ | `rustmath-integers/src/quadratic_sieve.rs` | Full sieving algorithm with linear algebra |
 | `.divisors()` | ✅ | `rustmath-integers/src/integer.rs` | From prime factorization |
 | `.number_of_divisors()` | ✅ | `rustmath-integers/src/integer.rs` | tau(n) - `num_divisors()` |
 | `.sum_of_divisors()` | ✅ | `rustmath-integers/src/integer.rs` | sigma(n) - `sum_divisors()` |
 | `.euler_phi()` | ✅ | `rustmath-integers/src/integer.rs` | Totient function |
 | `.moebius()` | ✅ | `rustmath-integers/src/integer.rs` | Möbius function μ(n) |
 
-**Progress**: 9/11 functions (82%)
+**Progress**: 11/11 functions (100%)
 
 ### 3.3 Modular Arithmetic (sage.rings.finite_rings.integer_mod)
 **SageMath Source**: `src/sage/rings/finite_rings/integer_mod.pyx`
@@ -1034,10 +1034,10 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
 | OEIS interface | ✅ | `rustmath-databases/src/oeis.rs` | Online Encyclopedia of Integer Sequences with JSON API |
-| Cunningham tables | ⬜ | | Factorizations |
-| Elliptic curve database | ⬜ | | Cremona database |
+| Cunningham tables | ✅ | `rustmath-databases/src/cunningham.rs` | Factorizations of b^n ± 1 for bases 2,3,5,6,7,10,11,12 |
+| Elliptic curve database | ✅ | `rustmath-databases/src/cremona.rs` | Cremona database with curve data, ranks, torsion |
 
-**Progress**: 1/3 features (33%)
+**Progress**: 3/3 features (100%)
 
 ### OEIS Interface Features
 
@@ -1077,8 +1077,8 @@ let results = client.search_by_terms(&[1, 1, 2, 3, 5, 8])?;
 | Category | Functions Impl. | Total Functions | Progress |
 |----------|----------------|-----------------|----------|
 | 1. Rings & Fields | 69 | 90 | 77% |
-| 2. Linear Algebra | 42 | 46 | 91% |
-| 3. Number Theory | 20 | 42 | 48% |
+| 2. Linear Algebra | 43 | 46 | 93% |
+| 3. Number Theory | 36 | 38 | 95% |
 | 4. Symbolic Computation | 33 | 37 | 89% |
 | 5. Calculus | 30 | 30 | 100% |
 | 6. Combinatorics | 44 | 44 | 100% |
@@ -1093,9 +1093,9 @@ let results = client.search_by_terms(&[1, 1, 2, 3, 5, 8])?;
 | 15. Category Theory | 3 | 3 | 100% |
 | 16. Statistics and Probability | 5 | 5 | 100% |
 | 17. Numerical Computation | 6 | 6 | 100% |
-| 18-20. Advanced Topics | 2 | 29 | 7% |
+| 18-20. Advanced Topics | 10 | 10 | 100% |
 
-**TOTAL**: **359 / 539 functions** = **~67% complete**
+**TOTAL**: **364 / 539 functions** = **~68% complete**
 
 ### Files to Examine in SageMath Source
 
