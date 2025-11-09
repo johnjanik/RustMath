@@ -5,7 +5,7 @@
 //! - RSA encryption and digital signatures
 //! - Diffie-Hellman key exchange
 //! - ElGamal encryption
-//! - Elliptic curve cryptography
+//! - Elliptic curve cryptography (ECC) and ECDSA
 //! - Block ciphers and S-boxes
 
 pub mod classical;
@@ -21,4 +21,4 @@ pub use rsa::{KeyPair as RSAKeyPair, PublicKey as RSAPublicKey, PrivateKey as RS
 pub use diffie_hellman::{DHParams, DHKeyPair, key_exchange as dh_key_exchange};
 pub use elgamal::{KeyPair as ElGamalKeyPair, PublicKey as ElGamalPublicKey};
 pub use block_cipher::{SBox, FeistelCipher};
-pub use elliptic_curve::{EllipticCurve, EllipticCurvePoint};
+pub use elliptic_curve::{EllipticCurve, EllipticCurvePoint, ECCCurve, ECCPoint, ECDSAKeypair, create_test_ecdsa_keypair};
