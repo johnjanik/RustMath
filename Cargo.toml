@@ -29,6 +29,7 @@ members = [
     "rustmath-coding",
     "rustmath-databases",
     "rustmath-ellipticcurves",
+    "rustmath-quadraticforms",
 ]
 
 [workspace.package]

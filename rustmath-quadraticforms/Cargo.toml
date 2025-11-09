@@ -1,0 +1,20 @@
+[package]
+name = "rustmath-quadraticforms"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+num-bigint.workspace = true
+num-traits.workspace = true
+num-integer.workspace = true
+rustmath-core = { path = "../rustmath-core" }
+rustmath-integers = { path = "../rustmath-integers" }
+rustmath-rationals = { path = "../rustmath-rationals" }
+rustmath-matrix = { path = "../rustmath-matrix" }
+itertools = "0.12"
+rayon.workspace = true
+
+[dev-dependencies]
