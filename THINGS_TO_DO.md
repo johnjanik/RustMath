@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~82% (402 / 493 functions tracked)
+**Overall Progress**: ~83% (405 / 493 functions tracked)
 
 ---
 
@@ -997,11 +997,11 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| Dynamical systems | ⬜ | | |
-| Fractals | ⬜ | | |
-| Chaos theory | ⬜ | | |
+| Dynamical systems | ✅ | `rustmath-dynamics::discrete`, `rustmath-dynamics::continuous` | Discrete maps, ODE solvers (RK4, Euler), Lorenz/Rossler/VdP systems |
+| Fractals | ✅ | `rustmath-dynamics::fractals` | Mandelbrot, Julia sets, Burning Ship, Newton fractals, grid generation |
+| Chaos theory | ✅ | `rustmath-dynamics::chaos` | Lyapunov exponents, bifurcation diagrams, correlation dimension, 0-1 test |
 
-**Progress**: 0/3 features (0%)
+**Progress**: 3/3 features (100%)
 
 ---
 
