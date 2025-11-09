@@ -2,8 +2,8 @@
 //!
 //! Provides access to external mathematical databases including:
 //! - OEIS (Online Encyclopedia of Integer Sequences)
-//! - Cunningham tables (planned)
-//! - Elliptic curve databases (planned)
+//! - Cunningham tables (factorizations of b^n ± 1)
+//! - Cremona elliptic curve database
 //!
 //! # Example: OEIS Interface
 //!
@@ -25,10 +25,42 @@
 //!     }
 //! }
 //! ```
+//!
+//! # Example: Cunningham Tables
+//!
+//! ```
+//! use rustmath_databases::cunningham::{CunninghamTables, CunninghamNumber};
+//!
+//! let tables = CunninghamTables::new();
+//!
+//! // Look up 2^10 - 1 = 1023 = 3 × 11 × 31
+//! let num = CunninghamNumber::new(2, 10, false);
+//! if let Ok(fact) = tables.factorization(&num) {
+//!     println!("{}", fact);
+//! }
+//! ```
+//!
+//! # Example: Cremona Database
+//!
+//! ```
+//! use rustmath_databases::cremona::CremonaDatabase;
+//!
+//! let db = CremonaDatabase::new();
+//!
+//! // Look up curve 11a1
+//! if let Some(curve) = db.lookup_curve("11a1") {
+//!     println!("Curve: {}", curve.label);
+//!     println!("Rank: {}", curve.rank);
+//! }
+//! ```
 
 pub mod oeis;
+pub mod cunningham;
+pub mod cremona;
 
 pub use oeis::{OEISClient, OEISSequence, OEISError};
+pub use cunningham::{CunninghamTables, CunninghamNumber, Factorization, Factor, CunninghamError};
+pub use cremona::{CremonaDatabase, EllipticCurve, CurveLabel, WeierstrassEquation, Point, CremonaError};
 
 #[cfg(test)]
 mod tests {
