@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~68% (364 / 539 functions tracked)
+**Overall Progress**: ~68% (367 / 539 functions tracked)
 
 ---
 
@@ -349,12 +349,13 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.substitute({x:val})` | ✅ | `rustmath-symbolic/src/substitute.rs` | `substitute_many()` |
 | `.n()` - Numerical eval | ✅ | `rustmath-symbolic/src/substitute.rs` | `eval_float()` |
 | `.expand()` | ✅ | `rustmath-symbolic/src/expand.rs` | Full polynomial expansion with binomial |
-| `.factor()` | ⬜ | | Planned |
+| `.factor()` | ✅ | `rustmath-symbolic/src/factor.rs` | Polynomial factorization via rustmath-polynomials integration; univariate over Z[x], common factor extraction |
 | `.simplify()` | ✅ | `rustmath-symbolic/src/simplify.rs` | Constant folding, identity elimination |
 | `.simplify_full()` | ✅ | `rustmath-symbolic/src/simplify.rs` | Expand + simplify |
 | `.simplify_rational()` | ✅ | `rustmath-symbolic/src/simplify.rs` | Simplify rational expressions |
 | `.simplify_trig()` | ✅ | `rustmath-symbolic/src/simplify.rs` | Apply trig identities (sin²+cos²=1) |
-| `.canonicalize_radical()` | ⬜ | | Planned |
+| `.canonicalize_radical()` | ✅ | `rustmath-symbolic/src/radical.rs` | Simplify radicals: perfect square extraction, √a·√b=√(ab), rationalize denominators |
+| `.solve(var)` | ✅ | `rustmath-symbolic/src/solve.rs` | Solve equations: linear, quadratic (with exact radicals), cubic, quartic; returns Solution enum |
 | `.collect(x)` | ✅ | `rustmath-symbolic/src/expand.rs` | Collect polynomial terms |
 | `.coefficient(x, n)` | ✅ | `rustmath-symbolic/src/polynomial.rs` | Get coefficient of x^n |
 | `.degree(x)` | ✅ | `rustmath-symbolic/src/polynomial.rs` | Polynomial degree in variable |
@@ -362,7 +363,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | `.is_polynomial(x)` | ✅ | `rustmath-symbolic/src/polynomial.rs` | Check if polynomial |
 | `.is_rational_expression()` | ✅ | `rustmath-symbolic/src/polynomial.rs` | Check if ratio of polynomials |
 
-**Progress**: 16/20 functions (80%)
+**Progress**: 21/21 functions (100%)
 
 ### 4.2 Functions (sage.symbolic.function)
 **SageMath Source**: `src/sage/symbolic/function.pyx`
