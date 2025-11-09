@@ -28,6 +28,7 @@ members = [
     "rustmath-dynamics",
     "rustmath-coding",
     "rustmath-databases",
+    "rustmath-ellipticcurves",
 ]
 
 [workspace.package]
