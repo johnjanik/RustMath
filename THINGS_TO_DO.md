@@ -1033,11 +1033,40 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
-| OEIS interface | ⬜ | | Online Encyclopedia of Integer Sequences |
+| OEIS interface | ✅ | `rustmath-databases/src/oeis.rs` | Online Encyclopedia of Integer Sequences with JSON API |
 | Cunningham tables | ⬜ | | Factorizations |
 | Elliptic curve database | ⬜ | | Cremona database |
 
-**Progress**: 0/3 features (0%)
+**Progress**: 1/3 features (33%)
+
+### OEIS Interface Features
+
+The OEIS (Online Encyclopedia of Integer Sequences) interface provides:
+- **OEISClient**: Client for accessing OEIS JSON API
+- **lookup(number)**: Look up sequences by A-number (e.g., "A000045" for Fibonacci)
+- **search_by_terms(terms)**: Search for sequences matching a list of integers
+- **search(query)**: Full-text search across sequence names and descriptions
+- **get_terms(number, n)**: Retrieve first n terms of a sequence
+
+**Implementation Details**:
+- Uses `reqwest` for HTTP requests to https://oeis.org/search
+- Uses `serde` and `serde_json` for JSON deserialization
+- Supports both synchronous blocking API
+- Comprehensive sequence metadata including formulas, references, comments, and examples
+
+**Example Usage**:
+```rust
+use rustmath_databases::oeis::OEISClient;
+
+let client = OEISClient::new();
+
+// Lookup Fibonacci sequence
+let fib = client.lookup("A000045")?;
+println!("{}: {}", fib.number, fib.name);
+
+// Search by terms
+let results = client.search_by_terms(&[1, 1, 2, 3, 5, 8])?;
+```
 
 ---
 
@@ -1064,9 +1093,9 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | 15. Category Theory | 3 | 3 | 100% |
 | 16. Statistics and Probability | 5 | 5 | 100% |
 | 17. Numerical Computation | 6 | 6 | 100% |
-| 18-20. Advanced Topics | 1 | 29 | 3% |
+| 18-20. Advanced Topics | 2 | 29 | 7% |
 
-**TOTAL**: **358 / 539 functions** = **~66% complete**
+**TOTAL**: **359 / 539 functions** = **~67% complete**
 
 ### Files to Examine in SageMath Source
 
