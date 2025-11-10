@@ -4,6 +4,7 @@ use pyo3::prelude::*;
 use pyo3::exceptions::{PyValueError, PyZeroDivisionError};
 use rustmath_integers::{Integer, prime};
 use rustmath_core::Ring;
+use num_bigint::BigInt;
 
 /// Python wrapper for RustMath Integer (arbitrary precision)
 #[pyclass]
@@ -14,21 +15,21 @@ pub struct PyInteger {
 
 #[pymethods]
 impl PyInteger {
-    /// Create a new integer from a Python int
+    /// Create a new integer from a Python int (supports arbitrary precision)
     #[new]
-    fn new(value: i64) -> Self {
+    fn new(value: BigInt) -> Self {
         PyInteger {
-            inner: Integer::from(value),
+            inner: Integer::new(value),
         }
     }
 
-    /// Create from string representation
+    /// Create from string representation (supports arbitrary precision)
     #[staticmethod]
     fn from_string(s: &str) -> PyResult<Self> {
-        let value: i64 = s.parse()
+        let value: BigInt = s.parse()
             .map_err(|_| PyValueError::new_err(format!("Invalid integer: {}", s)))?;
         Ok(PyInteger {
-            inner: Integer::from(value),
+            inner: Integer::new(value),
         })
     }
 
@@ -279,9 +280,8 @@ impl PyInteger {
         format!("Integer({})", self.inner)
     }
 
-    fn __int__(&self) -> PyResult<i64> {
-        use rustmath_core::NumericConversion;
-        self.inner.to_i64()
-            .ok_or_else(|| PyValueError::new_err("Integer too large to convert to i64"))
+    fn __int__(&self) -> BigInt {
+        // Extract the underlying BigInt - PyO3 will convert to Python int
+        self.inner.as_bigint().clone()
     }
 }
