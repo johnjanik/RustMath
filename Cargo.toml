@@ -1,6 +1,10 @@
 [workspace]
 resolver = "2"
 
+exclude = [
+    "rustmath-py",  # Python bindings (cdylib) - built separately with maturin
+]
+
 members = [
     "rustmath-core",
     "rustmath-integers",
