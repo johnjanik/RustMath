@@ -83,11 +83,32 @@ See [`THINGS_TO_DO.md`](THINGS_TO_DO.md) for detailed function-by-function track
 
 ### ⚠️ Known Issues
 
-- **Tests**: Some test suites have failures (e.g., Pollard's p-1 factorization)
-- **Warnings**: Extensive unused variable/import warnings throughout
-- **Real/Complex Numbers**: Currently use f64 (arbitrary precision MPFR planned)
-- **Python Bindings**: Only 3 modules exposed (integers, rationals, matrices)
-- **Documentation**: API docs incomplete in many areas
+#### **Critical (Blocking)**
+
+1. **❌ PyInteger limited to i64 (19 digits max)** - Python bindings cannot handle arbitrary-precision integers
+   - Both `PyInteger(n)` and `PyInteger.from_string(s)` fail for numbers > 2^63
+   - Makes Python bindings essentially unusable for real mathematical work
+   - Fix required: Update `rustmath-py/src/integers.rs` to accept Python's BigInt
+
+2. **❌ Primality testing 1261x slower than SageMath** - Critical performance regression
+   - `is_prime()` takes 487ms vs SageMath's 0.39ms (1000 calls)
+   - Needs immediate investigation in `rustmath-integers/src/prime.rs`
+
+#### **Performance Issues**
+
+3. **Batch operations 5x slower** - Python FFI overhead dominates
+4. **Extended GCD 8.83x slower** - Algorithm needs optimization
+
+#### **Other Issues**
+
+5. **Tests**: Some test suites have failures (e.g., Pollard's p-1 factorization)
+6. **Warnings**: Extensive unused variable/import warnings throughout
+7. **Real/Complex Numbers**: Currently use f64 (arbitrary precision MPFR planned)
+8. **Python Bindings**: Only 3 modules exposed (integers, rationals, matrices)
+9. **Documentation**: API docs incomplete in many areas
+10. **SageMath Integration**: Must use `builtins.int` to avoid preparser interference
+
+See [`BENCHMARKS.md`](BENCHMARKS.md) for detailed performance analysis.
 
 ---
 
