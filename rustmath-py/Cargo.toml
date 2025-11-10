@@ -1,0 +1,18 @@
+[package]
+name = "rustmath-py"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "rustmath"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.20", features = ["extension-module"] }
+rustmath-core = { path = "../rustmath-core" }
+rustmath-integers = { path = "../rustmath-integers" }
+rustmath-rationals = { path = "../rustmath-rationals" }
+rustmath-matrix = { path = "../rustmath-matrix" }
+rustmath-polynomials = { path = "../rustmath-polynomials" }
+rustmath-symbolic = { path = "../rustmath-symbolic" }
+rustmath-finitefields = { path = "../rustmath-finitefields" }
