@@ -10,8 +10,10 @@ repository.workspace = true
 rustmath-core = { path = "../rustmath-core" }
 rustmath-integers = { path = "../rustmath-integers" }
 rustmath-reals = { path = "../rustmath-reals" }
+rustmath-rationals = { path = "../rustmath-rationals" }
 num-traits = { workspace = true }
 serde = { workspace = true, optional = true }
+rug = { version = "1.24", default-features = false, features = ["float", "integer", "complex"] }
 
 [features]
 default = []
