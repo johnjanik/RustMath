@@ -22,6 +22,7 @@ members = [
     "rustmath-geometry",
     "rustmath-graphs",
     "rustmath-symbolic",
+    "rustmath-functions",
     "rustmath-crypto",
     "rustmath-groups",
     "rustmath-homology",
