@@ -12,6 +12,7 @@ rustmath-integers = { path = "../rustmath-integers" }
 rustmath-rationals = { path = "../rustmath-rationals" }
 num-traits = { workspace = true }
 serde = { workspace = true, optional = true }
+rug = { version = "1.24", default-features = false, features = ["float", "integer"] }
 
 [features]
 default = []
