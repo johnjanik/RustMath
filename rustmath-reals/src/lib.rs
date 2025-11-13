@@ -1,18 +1,21 @@
 //! Real numbers with configurable precision
 //!
 //! This module provides real number arithmetic with support for:
-//! - Standard f64 precision
+//! - Standard f64 precision (`Real` type)
+//! - Arbitrary precision using MPFR (`RealMPFR` type)
 //! - Configurable rounding modes
 //! - Transcendental functions (sin, cos, exp, log, etc.)
 //! - Interval arithmetic for verified computations
 //! - Conversions from integers and rationals
 
 pub mod interval;
+pub mod mpfr;
 pub mod real;
 pub mod rounding;
 pub mod transcendental;
 
 pub use interval::Interval;
+pub use mpfr::{RealMPFR, DEFAULT_PRECISION};
 pub use real::{Real, RealField};
 pub use rounding::RoundingMode;
 
