@@ -1,0 +1,1001 @@
+Status,full_name,module,entity_name,type,bases,source
+,sage.groups.perm_gps.partn_ref.refinement_matrices.MatrixStruct,sage.groups.perm_gps.partn_ref.refinement_matrices,MatrixStruct,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/partn_ref/refinement_matrices.pyx#L172
+,sage.groups.perm_gps.partn_ref.refinement_matrices.random_tests,sage.groups.perm_gps.partn_ref.refinement_matrices,random_tests,function,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/partn_ref/refinement_matrices.pyx#L298
+,sage.groups.perm_gps.permgroup,sage.groups.perm_gps.permgroup,permgroup,module,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup.py#L265
+,sage.groups.perm_gps.permgroup.PermutationGroup,sage.groups.perm_gps.permgroup,PermutationGroup,function,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup.py#L265
+,sage.groups.perm_gps.permgroup.PermutationGroup_action,sage.groups.perm_gps.permgroup,PermutationGroup_action,class,PermutationGroup_generic,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup.py#L5301
+,sage.groups.perm_gps.permgroup.PermutationGroup_generic,sage.groups.perm_gps.permgroup,PermutationGroup_generic,class,FiniteGroup,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup.py#L409
+,sage.groups.perm_gps.permgroup.PermutationGroup_subgroup,sage.groups.perm_gps.permgroup,PermutationGroup_subgroup,class,PermutationGroup_generic,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup.py#L5043
+,sage.groups.perm_gps.permgroup.direct_product_permgroups,sage.groups.perm_gps.permgroup,direct_product_permgroups,function,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup.py#L206
+,sage.groups.perm_gps.permgroup.from_gap_list,sage.groups.perm_gps.permgroup,from_gap_list,function,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup.py#L234
+,sage.groups.perm_gps.permgroup.hap_decorator,sage.groups.perm_gps.permgroup,hap_decorator,function,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup.py#L172
+,sage.groups.perm_gps.permgroup.load_hap,sage.groups.perm_gps.permgroup,load_hap,function,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup.py#L159
+,sage.groups.perm_gps.permgroup_element,sage.groups.perm_gps.permgroup_element,permgroup_element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_element.pyx#L227
+,sage.groups.perm_gps.permgroup_element.PermutationGroupElement,sage.groups.perm_gps.permgroup_element,PermutationGroupElement,class,MultiplicativeGroupElement,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_element.pyx#L227
+,sage.groups.perm_gps.permgroup_element.SymmetricGroupElement,sage.groups.perm_gps.permgroup_element,SymmetricGroupElement,class,PermutationGroupElement,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_element.pyx#L2092
+,sage.groups.perm_gps.permgroup_element.is_PermutationGroupElement,sage.groups.perm_gps.permgroup_element,is_PermutationGroupElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_element.pyx#L205
+,sage.groups.perm_gps.permgroup_element.make_permgroup_element,sage.groups.perm_gps.permgroup_element,make_permgroup_element,function,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_element.pyx#L156
+,sage.groups.perm_gps.permgroup_element.make_permgroup_element_v2,sage.groups.perm_gps.permgroup_element,make_permgroup_element_v2,function,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_element.pyx#L177
+,sage.groups.perm_gps.permgroup_morphism,sage.groups.perm_gps.permgroup_morphism,permgroup_morphism,module,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_morphism.py#L45
+,sage.groups.perm_gps.permgroup_morphism.PermutationGroupMorphism,sage.groups.perm_gps.permgroup_morphism,PermutationGroupMorphism,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_morphism.py#L45
+,sage.groups.perm_gps.permgroup_morphism.PermutationGroupMorphism_from_gap,sage.groups.perm_gps.permgroup_morphism,PermutationGroupMorphism_from_gap,class,"G, H, PermutationGroupMorphism",https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_morphism.py#L164
+,sage.groups.perm_gps.permgroup_morphism.PermutationGroupMorphism_id,sage.groups.perm_gps.permgroup_morphism,PermutationGroupMorphism_id,class,PermutationGroupMorphism,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_morphism.py#L160
+,sage.groups.perm_gps.permgroup_morphism.PermutationGroupMorphism_im_gens,sage.groups.perm_gps.permgroup_morphism,PermutationGroupMorphism_im_gens,class,"G, H, PermutationGroupMorphism",https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_morphism.py#L245
+,sage.groups.perm_gps.permgroup_morphism.is_PermutationGroupMorphism,sage.groups.perm_gps.permgroup_morphism,is_PermutationGroupMorphism,function,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_morphism.py#L313
+,sage.groups.perm_gps.permgroup_named,sage.groups.perm_gps.permgroup_named,permgroup_named,module,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L712
+,sage.groups.perm_gps.permgroup_named.AlternatingGroup,sage.groups.perm_gps.permgroup_named,AlternatingGroup,class,PermutationGroup_symalt,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L712
+,sage.groups.perm_gps.permgroup_named.ComplexReflectionGroup,sage.groups.perm_gps.permgroup_named,ComplexReflectionGroup,class,PermutationGroup_unique,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L3141
+,sage.groups.perm_gps.permgroup_named.CyclicPermutationGroup,sage.groups.perm_gps.permgroup_named,CyclicPermutationGroup,class,PermutationGroup_unique,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L787
+,sage.groups.perm_gps.permgroup_named.DiCyclicGroup,sage.groups.perm_gps.permgroup_named,DiCyclicGroup,class,PermutationGroup_unique,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L878
+,sage.groups.perm_gps.permgroup_named.DihedralGroup,sage.groups.perm_gps.permgroup_named,DihedralGroup,class,PermutationGroup_unique,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L1462
+,sage.groups.perm_gps.permgroup_named.GeneralDihedralGroup,sage.groups.perm_gps.permgroup_named,GeneralDihedralGroup,class,PermutationGroup_generic,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L1254
+,sage.groups.perm_gps.permgroup_named.JankoGroup,sage.groups.perm_gps.permgroup_named,JankoGroup,class,PermutationGroup_unique,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L1114
+,sage.groups.perm_gps.permgroup_named.KleinFourGroup,sage.groups.perm_gps.permgroup_named,KleinFourGroup,class,PermutationGroup_unique,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L1070
+,sage.groups.perm_gps.permgroup_named.MathieuGroup,sage.groups.perm_gps.permgroup_named,MathieuGroup,class,PermutationGroup_unique,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L1804
+,sage.groups.perm_gps.permgroup_named.PGL,sage.groups.perm_gps.permgroup_named,PGL,class,PermutationGroup_plg,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L2649
+,sage.groups.perm_gps.permgroup_named.PGU,sage.groups.perm_gps.permgroup_named,PGU,class,PermutationGroup_pug,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L3012
+,sage.groups.perm_gps.permgroup_named.PSL,sage.groups.perm_gps.permgroup_named,PSL,class,PermutationGroup_plg,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L2709
+,sage.groups.perm_gps.permgroup_named.PSU,sage.groups.perm_gps.permgroup_named,PSU,class,PermutationGroup_pug,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L2962
+,sage.groups.perm_gps.permgroup_named.PSp,sage.groups.perm_gps.permgroup_named,PSp,class,PermutationGroup_plg,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L2886
+,sage.groups.perm_gps.permgroup_named.PermutationGroup_plg,sage.groups.perm_gps.permgroup_named,PermutationGroup_plg,class,PermutationGroup_unique,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L2623
+,sage.groups.perm_gps.permgroup_named.PermutationGroup_pug,sage.groups.perm_gps.permgroup_named,PermutationGroup_pug,class,PermutationGroup_plg,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L2951
+,sage.groups.perm_gps.permgroup_named.PermutationGroup_symalt,sage.groups.perm_gps.permgroup_named,PermutationGroup_symalt,class,PermutationGroup_unique,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L147
+,sage.groups.perm_gps.permgroup_named.PermutationGroup_unique,sage.groups.perm_gps.permgroup_named,PermutationGroup_unique,class,"CachedRepresentation, PermutationGroup_generic",https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L110
+,sage.groups.perm_gps.permgroup_named.PrimitiveGroup,sage.groups.perm_gps.permgroup_named,PrimitiveGroup,class,PermutationGroup_unique,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L2246
+,sage.groups.perm_gps.permgroup_named.PrimitiveGroups,sage.groups.perm_gps.permgroup_named,PrimitiveGroups,function,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L2351
+,sage.groups.perm_gps.permgroup_named.PrimitiveGroupsAll,sage.groups.perm_gps.permgroup_named,PrimitiveGroupsAll,class,DisjointUnionEnumeratedSets,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L2399
+,sage.groups.perm_gps.permgroup_named.PrimitiveGroupsOfDegree,sage.groups.perm_gps.permgroup_named,PrimitiveGroupsOfDegree,class,"CachedRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L2470
+,sage.groups.perm_gps.permgroup_named.QuaternionGroup,sage.groups.perm_gps.permgroup_named,QuaternionGroup,class,DiCyclicGroup,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L1183
+,sage.groups.perm_gps.permgroup_named.SemidihedralGroup,sage.groups.perm_gps.permgroup_named,SemidihedralGroup,class,PermutationGroup_unique,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L1695
+,sage.groups.perm_gps.permgroup_named.SmallPermutationGroup,sage.groups.perm_gps.permgroup_named,SmallPermutationGroup,class,PermutationGroup_generic,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L3479
+,sage.groups.perm_gps.permgroup_named.SplitMetacyclicGroup,sage.groups.perm_gps.permgroup_named,SplitMetacyclicGroup,class,PermutationGroup_unique,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L1551
+,sage.groups.perm_gps.permgroup_named.SuzukiGroup,sage.groups.perm_gps.permgroup_named,SuzukiGroup,class,PermutationGroup_unique,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L3062
+,sage.groups.perm_gps.permgroup_named.SuzukiSporadicGroup,sage.groups.perm_gps.permgroup_named,SuzukiSporadicGroup,class,PermutationGroup_unique,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L1153
+,sage.groups.perm_gps.permgroup_named.SymmetricGroup,sage.groups.perm_gps.permgroup_named,SymmetricGroup,class,PermutationGroup_symalt,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L202
+,sage.groups.perm_gps.permgroup_named.TransitiveGroup,sage.groups.perm_gps.permgroup_named,TransitiveGroup,class,PermutationGroup_unique,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L1854
+,sage.groups.perm_gps.permgroup_named.TransitiveGroups,sage.groups.perm_gps.permgroup_named,TransitiveGroups,function,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L1962
+,sage.groups.perm_gps.permgroup_named.TransitiveGroupsAll,sage.groups.perm_gps.permgroup_named,TransitiveGroupsAll,class,DisjointUnionEnumeratedSets,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L2002
+,sage.groups.perm_gps.permgroup_named.TransitiveGroupsOfDegree,sage.groups.perm_gps.permgroup_named,TransitiveGroupsOfDegree,class,"CachedRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/permgroup_named.py#L2061
+,sage.groups.perm_gps.permutation_groups_catalog,sage.groups.perm_gps.permutation_groups_catalog,permutation_groups_catalog,module,,
+,sage.groups.perm_gps.symgp_conjugacy_class,sage.groups.perm_gps.symgp_conjugacy_class,symgp_conjugacy_class,module,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/symgp_conjugacy_class.py#L175
+,sage.groups.perm_gps.symgp_conjugacy_class.PermutationsConjugacyClass,sage.groups.perm_gps.symgp_conjugacy_class,PermutationsConjugacyClass,class,"P, SymmetricGroupConjugacyClassMixin, ConjugacyClass",https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/symgp_conjugacy_class.py#L175
+,sage.groups.perm_gps.symgp_conjugacy_class.SymmetricGroupConjugacyClass,sage.groups.perm_gps.symgp_conjugacy_class,SymmetricGroupConjugacyClass,class,"SymmetricGroupConjugacyClassMixin, ConjugacyClassGAP",https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/symgp_conjugacy_class.py#L99
+,sage.groups.perm_gps.symgp_conjugacy_class.SymmetricGroupConjugacyClassMixin,sage.groups.perm_gps.symgp_conjugacy_class,SymmetricGroupConjugacyClassMixin,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/symgp_conjugacy_class.py#L18
+,sage.groups.perm_gps.symgp_conjugacy_class.conjugacy_class_iterator,sage.groups.perm_gps.symgp_conjugacy_class,conjugacy_class_iterator,function,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/symgp_conjugacy_class.py#L296
+,sage.groups.perm_gps.symgp_conjugacy_class.default_representative,sage.groups.perm_gps.symgp_conjugacy_class,default_representative,function,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/perm_gps/symgp_conjugacy_class.py#L254
+,sage.groups.raag,sage.groups.raag,raag,module,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/raag.py#L633
+,sage.groups.raag.CohomologyRAAG,sage.groups.raag,CohomologyRAAG,class,"R, A, CombinatorialFreeModule",https://github.com/sagemath/sage/blob/develop/src/sage/groups/raag.py#L633
+,sage.groups.raag.Element,sage.groups.raag,Element,class,CohomologyRAAGElement,https://github.com/sagemath/sage/blob/develop/src/sage/groups/raag.py#L862
+,sage.groups.raag.RightAngledArtinGroup,sage.groups.raag,RightAngledArtinGroup,class,"G, ArtinGroup",https://github.com/sagemath/sage/blob/develop/src/sage/groups/raag.py#L45
+,sage.groups.semimonomial_transformations.semimonomial_transformation,sage.groups.semimonomial_transformations.semimonomial_transformation,semimonomial_transformation,module,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/semimonomial_transformations/semimonomial_transformation.pyx#L94
+,sage.groups.semimonomial_transformations.semimonomial_transformation.SemimonomialTransformation,sage.groups.semimonomial_transformations.semimonomial_transformation,SemimonomialTransformation,class,MultiplicativeGroupElement,https://github.com/sagemath/sage/blob/develop/src/sage/groups/semimonomial_transformations/semimonomial_transformation.pyx#L94
+,sage.groups.semimonomial_transformations.semimonomial_transformation_group,sage.groups.semimonomial_transformations.semimonomial_transformation_group,semimonomial_transformation_group,module,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/semimonomial_transformations/semimonomial_transformation_group.py#L462
+,sage.groups.semimonomial_transformations.semimonomial_transformation_group.SemimonomialActionMat,sage.groups.semimonomial_transformations.semimonomial_transformation_group,SemimonomialActionMat,class,"G, M, Action",https://github.com/sagemath/sage/blob/develop/src/sage/groups/semimonomial_transformations/semimonomial_transformation_group.py#L462
+,sage.groups.semimonomial_transformations.semimonomial_transformation_group.SemimonomialActionVec,sage.groups.semimonomial_transformations.semimonomial_transformation_group,SemimonomialActionVec,class,"G, V, Action",https://github.com/sagemath/sage/blob/develop/src/sage/groups/semimonomial_transformations/semimonomial_transformation_group.py#L408
+,sage.groups.semimonomial_transformations.semimonomial_transformation_group.SemimonomialTransformationGroup,sage.groups.semimonomial_transformations.semimonomial_transformation_group,SemimonomialTransformationGroup,class,"R, FiniteGroup, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/groups/semimonomial_transformations/semimonomial_transformation_group.py#L65
+,sage.homology,sage.homology,homology,module,,
+,sage.homology.algebraic_topological_model,sage.homology.algebraic_topological_model,algebraic_topological_model,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/algebraic_topological_model.py#L37
+,sage.homology.algebraic_topological_model.algebraic_topological_model,sage.homology.algebraic_topological_model,algebraic_topological_model,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/algebraic_topological_model.py#L37
+,sage.homology.algebraic_topological_model.algebraic_topological_model_delta_complex,sage.homology.algebraic_topological_model,algebraic_topological_model_delta_complex,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/algebraic_topological_model.py#L341
+,sage.homology.chain_complex,sage.homology.chain_complex,chain_complex,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex.py#L93
+,sage.homology.chain_complex.ChainComplex,sage.homology.chain_complex,ChainComplex,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex.py#L93
+,sage.homology.chain_complex.ChainComplex_class,sage.homology.chain_complex,ChainComplex_class,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex.py#L643
+,sage.homology.chain_complex.Chain_class,sage.homology.chain_complex,Chain_class,class,ModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex.py#L318
+,sage.homology.chain_complex_homspace,sage.homology.chain_complex_homspace,chain_complex_homspace,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex_homspace.py#L132
+,sage.homology.chain_complex_homspace.ChainComplexHomspace,sage.homology.chain_complex_homspace,ChainComplexHomspace,class,"X, Y, Homset",https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex_homspace.py#L132
+,sage.homology.chain_complex_homspace.is_ChainComplexHomspace,sage.homology.chain_complex_homspace,is_ChainComplexHomspace,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex_homspace.py#L108
+,sage.homology.chain_complex_morphism,sage.homology.chain_complex_morphism,chain_complex_morphism,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex_morphism.py#L94
+,sage.homology.chain_complex_morphism.ChainComplexMorphism,sage.homology.chain_complex_morphism,ChainComplexMorphism,class,"C, D, Morphism",https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex_morphism.py#L94
+,sage.homology.chain_complex_morphism.is_ChainComplexMorphism,sage.homology.chain_complex_morphism,is_ChainComplexMorphism,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex_morphism.py#L61
+,sage.homology.chain_homotopy,sage.homology.chain_homotopy,chain_homotopy,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_homotopy.py#L388
+,sage.homology.chain_homotopy.ChainContraction,sage.homology.chain_homotopy,ChainContraction,class,ChainHomotopy,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_homotopy.py#L388
+,sage.homology.chain_homotopy.ChainHomotopy,sage.homology.chain_homotopy,ChainHomotopy,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_homotopy.py#L51
+,sage.homology.chains,sage.homology.chains,chains,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chains.py#L28
+,sage.homology.chains.CellComplexReference,sage.homology.chains,CellComplexReference,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chains.py#L28
+,sage.homology.chains.Chains,sage.homology.chains,Chains,class,"CellComplexReference, CombinatorialFreeModule",https://github.com/sagemath/sage/blob/develop/src/sage/homology/chains.py#L90
+,sage.homology.chains.Cochains,sage.homology.chains,Cochains,class,"CellComplexReference, CombinatorialFreeModule",https://github.com/sagemath/sage/blob/develop/src/sage/homology/chains.py#L317
+,sage.homology.chains.Element,sage.homology.chains,Element,class,IndexedFreeModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chains.py#L216
+,sage.homology.free_resolution,sage.homology.free_resolution,free_resolution,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/free_resolution.py#L318
+,sage.homology.free_resolution.FiniteFreeResolution,sage.homology.free_resolution,FiniteFreeResolution,class,FreeResolution,https://github.com/sagemath/sage/blob/develop/src/sage/homology/free_resolution.py#L318
+,sage.homology.free_resolution.FiniteFreeResolution_free_module,sage.homology.free_resolution,FiniteFreeResolution_free_module,class,FiniteFreeResolution,https://github.com/sagemath/sage/blob/develop/src/sage/homology/free_resolution.py#L670
+,sage.homology.free_resolution.FiniteFreeResolution_singular,sage.homology.free_resolution,FiniteFreeResolution_singular,class,FiniteFreeResolution,https://github.com/sagemath/sage/blob/develop/src/sage/homology/free_resolution.py#L772
+,sage.homology.free_resolution.FreeResolution,sage.homology.free_resolution,FreeResolution,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/homology/free_resolution.py#L81
+,sage.homology.graded_resolution,sage.homology.graded_resolution,graded_resolution,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/graded_resolution.py#L92
+,sage.homology.graded_resolution.GradedFiniteFreeResolution,sage.homology.graded_resolution,GradedFiniteFreeResolution,class,FiniteFreeResolution,https://github.com/sagemath/sage/blob/develop/src/sage/homology/graded_resolution.py#L92
+,sage.homology.graded_resolution.GradedFiniteFreeResolution_free_module,sage.homology.graded_resolution,GradedFiniteFreeResolution_free_module,class,"GradedFiniteFreeResolution, FiniteFreeResolution_free_module",https://github.com/sagemath/sage/blob/develop/src/sage/homology/graded_resolution.py#L315
+,sage.homology.graded_resolution.GradedFiniteFreeResolution_singular,sage.homology.graded_resolution,GradedFiniteFreeResolution_singular,class,"GradedFiniteFreeResolution, FiniteFreeResolution_singular",https://github.com/sagemath/sage/blob/develop/src/sage/homology/graded_resolution.py#L411
+,sage.homology.hochschild_complex,sage.homology.hochschild_complex,hochschild_complex,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/hochschild_complex.py#L27
+,sage.homology.hochschild_complex.Element,sage.homology.hochschild_complex,Element,class,ModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/homology/hochschild_complex.py#L536
+,sage.homology.hochschild_complex.HochschildComplex,sage.homology.hochschild_complex,HochschildComplex,class,"A, M, UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/homology/hochschild_complex.py#L27
+,sage.homology.homology_group,sage.homology.homology_group,homology_group,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_group.py#L138
+,sage.homology.homology_group.HomologyGroup,sage.homology.homology_group,HomologyGroup,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_group.py#L138
+,sage.homology.homology_group.HomologyGroup_class,sage.homology.homology_group,HomologyGroup_class,class,AdditiveAbelianGroup_fixed_gens,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_group.py#L24
+,sage.homology.homology_morphism,sage.homology.homology_morphism,homology_morphism,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_morphism.py#L45
+,sage.homology.homology_morphism.InducedHomologyMorphism,sage.homology.homology_morphism,InducedHomologyMorphism,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_morphism.py#L45
+,sage.homology.homology_vector_space_with_basis,sage.homology.homology_vector_space_with_basis,homology_vector_space_with_basis,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L700
+,sage.homology.homology_vector_space_with_basis.CohomologyRing,sage.homology.homology_vector_space_with_basis,CohomologyRing,class,HomologyVectorSpaceWithBasis,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L700
+,sage.homology.homology_vector_space_with_basis.CohomologyRing_mod2,sage.homology.homology_vector_space_with_basis,CohomologyRing_mod2,class,CohomologyRing,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L939
+,sage.homology.homology_vector_space_with_basis.Element,sage.homology.homology_vector_space_with_basis,Element,class,Element,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L882
+,sage.homology.homology_vector_space_with_basis.HomologyVectorSpaceWithBasis,sage.homology.homology_vector_space_with_basis,HomologyVectorSpaceWithBasis,class,CombinatorialFreeModule,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L48
+,sage.homology.homology_vector_space_with_basis.HomologyVectorSpaceWithBasis_mod2,sage.homology.homology_vector_space_with_basis,HomologyVectorSpaceWithBasis_mod2,class,HomologyVectorSpaceWithBasis,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L522
+,sage.homology.homology_vector_space_with_basis.is_GF2,sage.homology.homology_vector_space_with_basis,is_GF2,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L1438
+,sage.homology.homology_vector_space_with_basis.sum_indices,sage.homology.homology_vector_space_with_basis,sum_indices,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L1397
+,sage.homology.koszul_complex,sage.homology.koszul_complex,koszul_complex,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/koszul_complex.py#L25
+,sage.homology.koszul_complex.KoszulComplex,sage.homology.koszul_complex,KoszulComplex,class,"R, ChainComplex_class, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/homology/koszul_complex.py#L25
+,sage.homology.matrix_utils,sage.homology.matrix_utils,matrix_utils,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/matrix_utils.py#L24
+,sage.homology.matrix_utils.dhsw_snf,sage.homology.matrix_utils,dhsw_snf,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/matrix_utils.py#L24
+,sage.interfaces,sage.interfaces,interfaces,module,,
+,sage.interfaces.abc,sage.interfaces.abc,abc,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/abc.py#L6
+,sage.interfaces.abc.AxiomElement,sage.interfaces.abc,AxiomElement,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/abc.py#L6
+,sage.interfaces.abc.ExpectElement,sage.interfaces.abc,ExpectElement,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/abc.py#L23
+,sage.interfaces.abc.FriCASElement,sage.interfaces.abc,FriCASElement,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/abc.py#L40
+,sage.interfaces.abc.GapElement,sage.interfaces.abc,GapElement,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/abc.py#L57
+,sage.interfaces.abc.GpElement,sage.interfaces.abc,GpElement,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/abc.py#L74
+,sage.interfaces.abc.Macaulay2Element,sage.interfaces.abc,Macaulay2Element,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/abc.py#L91
+,sage.interfaces.abc.MagmaElement,sage.interfaces.abc,MagmaElement,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/abc.py#L108
+,sage.interfaces.abc.SingularElement,sage.interfaces.abc,SingularElement,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/abc.py#L125
+,sage.interfaces.axiom,sage.interfaces.axiom,axiom,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/axiom.py#L488
+,sage.interfaces.axiom.Axiom,sage.interfaces.axiom,Axiom,class,PanAxiom,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/axiom.py#L488
+,sage.interfaces.axiom.PanAxiom,sage.interfaces.axiom,PanAxiom,class,"ExtraTabCompletion, Expect",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/axiom.py#L199
+,sage.interfaces.axiom.PanAxiomElement,sage.interfaces.axiom,PanAxiomElement,class,"ExpectElement, AxiomElement",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/axiom.py#L557
+,sage.interfaces.axiom.PanAxiomExpectFunction,sage.interfaces.axiom,PanAxiomExpectFunction,class,ExpectFunction,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/axiom.py#L924
+,sage.interfaces.axiom.PanAxiomFunctionElement,sage.interfaces.axiom,PanAxiomFunctionElement,class,FunctionElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/axiom.py#L899
+,sage.interfaces.axiom.axiom_console,sage.interfaces.axiom,axiom_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/axiom.py#L983
+,sage.interfaces.axiom.is_AxiomElement,sage.interfaces.axiom,is_AxiomElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/axiom.py#L945
+,sage.interfaces.axiom.reduce_load_Axiom,sage.interfaces.axiom,reduce_load_Axiom,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/axiom.py#L969
+,sage.interfaces.cleaner,sage.interfaces.cleaner,cleaner,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/cleaner.py#L26
+,sage.interfaces.cleaner.start_cleaner,sage.interfaces.cleaner,start_cleaner,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/cleaner.py#L26
+,sage.interfaces.ecm,sage.interfaces.ecm,ecm,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/ecm.py#L61
+,sage.interfaces.ecm.ECM,sage.interfaces.ecm,ECM,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/ecm.py#L61
+,sage.interfaces.expect,sage.interfaces.expect,expect,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/expect.py#L120
+,sage.interfaces.expect.Expect,sage.interfaces.expect,Expect,class,Interface,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/expect.py#L120
+,sage.interfaces.expect.ExpectElement,sage.interfaces.expect,ExpectElement,class,"InterfaceElement, ExpectElement",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/expect.py#L1497
+,sage.interfaces.expect.ExpectFunction,sage.interfaces.expect,ExpectFunction,class,InterfaceFunction,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/expect.py#L1460
+,sage.interfaces.expect.FunctionElement,sage.interfaces.expect,FunctionElement,class,InterfaceFunctionElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/expect.py#L1468
+,sage.interfaces.expect.StdOutContext,sage.interfaces.expect,StdOutContext,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/expect.py#L1572
+,sage.interfaces.expect.gc_disabled,sage.interfaces.expect,gc_disabled,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/expect.py#L88
+,sage.interfaces.expect.is_ExpectElement,sage.interfaces.expect,is_ExpectElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/expect.py#L1476
+,sage.interfaces.four_ti_2,sage.interfaces.four_ti_2,four_ti_2,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/four_ti_2.py#L44
+,sage.interfaces.four_ti_2.FourTi2,sage.interfaces.four_ti_2,FourTi2,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/four_ti_2.py#L44
+,sage.interfaces.fricas,sage.interfaces.fricas,fricas,module,,
+,sage.interfaces.fricas.FriCAS,sage.interfaces.fricas,FriCAS,class,"ExtraTabCompletion, Expect",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/fricas.py#L280
+,sage.interfaces.fricas.FriCASElement,sage.interfaces.fricas,FriCASElement,class,"ExpectElement, FriCASElement",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/fricas.py#L1007
+,sage.interfaces.fricas.FriCASExpectFunction,sage.interfaces.fricas,FriCASExpectFunction,class,ExpectFunction,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/fricas.py#L2092
+,sage.interfaces.fricas.FriCASFunctionElement,sage.interfaces.fricas,FriCASFunctionElement,class,FunctionElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/fricas.py#L2069
+,sage.interfaces.fricas.fricas_console,sage.interfaces.fricas,fricas_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/fricas.py#L2149
+,sage.interfaces.fricas.is_FriCASElement,sage.interfaces.fricas,is_FriCASElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/fricas.py#L2113
+,sage.interfaces.fricas.reduce_load_fricas,sage.interfaces.fricas,reduce_load_fricas,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/fricas.py#L2136
+,sage.interfaces.frobby,sage.interfaces.frobby,frobby,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/frobby.py#L30
+,sage.interfaces.frobby.Frobby,sage.interfaces.frobby,Frobby,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/frobby.py#L30
+,sage.interfaces.gap,sage.interfaces.gap,gap,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gap.py#L1047
+,sage.interfaces.gap.Gap,sage.interfaces.gap,Gap,class,Gap_generic,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gap.py#L1047
+,sage.interfaces.gap.GapElement,sage.interfaces.gap,GapElement,class,"GapElement_generic, GapElement",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gap.py#L1523
+,sage.interfaces.gap.GapElement_generic,sage.interfaces.gap,GapElement_generic,class,"ModuleElement, ExtraTabCompletion, ExpectElement",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gap.py#L923
+,sage.interfaces.gap.GapFunction,sage.interfaces.gap,GapFunction,class,ExpectFunction,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gap.py#L1605
+,sage.interfaces.gap.GapFunctionElement,sage.interfaces.gap,GapFunctionElement,class,FunctionElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gap.py#L1586
+,sage.interfaces.gap.Gap_generic,sage.interfaces.gap,Gap_generic,class,"ExtraTabCompletion, Expect",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gap.py#L247
+,sage.interfaces.gap.gap_command,sage.interfaces.gap,gap_command,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gap.py#L234
+,sage.interfaces.gap.gap_console,sage.interfaces.gap,gap_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gap.py#L1774
+,sage.interfaces.gap.gap_reset_workspace,sage.interfaces.gap,gap_reset_workspace,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gap.py#L1480
+,sage.interfaces.gap.gfq_gap_to_sage,sage.interfaces.gap,gfq_gap_to_sage,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gap.py#L1646
+,sage.interfaces.gap.intmod_gap_to_sage,sage.interfaces.gap,intmod_gap_to_sage,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gap.py#L1709
+,sage.interfaces.gap.is_GapElement,sage.interfaces.gap,is_GapElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gap.py#L1624
+,sage.interfaces.gap.reduce_load_GAP,sage.interfaces.gap,reduce_load_GAP,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gap.py#L1761
+,sage.interfaces.gap3,sage.interfaces.gap3,gap3,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gap3.py#L644
+,sage.interfaces.gap3.GAP3Element,sage.interfaces.gap3,GAP3Element,class,GapElement_generic,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gap3.py#L644
+,sage.interfaces.gap3.GAP3Record,sage.interfaces.gap3,GAP3Record,class,GAP3Element,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gap3.py#L770
+,sage.interfaces.gap3.Gap3,sage.interfaces.gap3,Gap3,class,Gap_generic,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gap3.py#L248
+,sage.interfaces.gap3.gap3_console,sage.interfaces.gap3,gap3_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gap3.py#L882
+,sage.interfaces.gap3.gap3_version,sage.interfaces.gap3,gap3_version,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gap3.py#L920
+,sage.interfaces.genus2reduction,sage.interfaces.genus2reduction,genus2reduction,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/genus2reduction.py#L227
+,sage.interfaces.genus2reduction.Genus2reduction,sage.interfaces.genus2reduction,Genus2reduction,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/genus2reduction.py#L227
+,sage.interfaces.genus2reduction.ReductionData,sage.interfaces.genus2reduction,ReductionData,class,"P, Q, Pmin, Qmin, SageObject",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/genus2reduction.py#L44
+,sage.interfaces.genus2reduction.divisors_to_string,sage.interfaces.genus2reduction,divisors_to_string,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/genus2reduction.py#L185
+,sage.interfaces.gfan,sage.interfaces.gfan,gfan,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gfan.py#L50
+,sage.interfaces.gfan.Gfan,sage.interfaces.gfan,Gfan,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gfan.py#L50
+,sage.interfaces.giac,sage.interfaces.giac,giac,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/giac.py#L254
+,sage.interfaces.giac.Giac,sage.interfaces.giac,Giac,class,Expect,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/giac.py#L254
+,sage.interfaces.giac.GiacElement,sage.interfaces.giac,GiacElement,class,ExpectElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/giac.py#L841
+,sage.interfaces.giac.GiacFunction,sage.interfaces.giac,GiacFunction,class,ExpectFunction,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/giac.py#L809
+,sage.interfaces.giac.GiacFunctionElement,sage.interfaces.giac,GiacFunctionElement,class,FunctionElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/giac.py#L825
+,sage.interfaces.giac.giac_console,sage.interfaces.giac,giac_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/giac.py#L1225
+,sage.interfaces.giac.reduce_load_Giac,sage.interfaces.giac,reduce_load_Giac,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/giac.py#L1212
+,sage.interfaces.gnuplot,sage.interfaces.gnuplot,gnuplot,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gnuplot.py#L25
+,sage.interfaces.gnuplot.Gnuplot,sage.interfaces.gnuplot,Gnuplot,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gnuplot.py#L25
+,sage.interfaces.gnuplot.gnuplot_console,sage.interfaces.gnuplot,gnuplot_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gnuplot.py#L191
+,sage.interfaces.gp,sage.interfaces.gp,gp,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gp.py#L156
+,sage.interfaces.gp.Gp,sage.interfaces.gp,Gp,class,"ExtraTabCompletion, Expect",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gp.py#L156
+,sage.interfaces.gp.GpElement,sage.interfaces.gp,GpElement,class,"ExpectElement, GpElement",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gp.py#L824
+,sage.interfaces.gp.gp_console,sage.interfaces.gp,gp_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gp.py#L1079
+,sage.interfaces.gp.gp_version,sage.interfaces.gp,gp_version,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gp.py#L1097
+,sage.interfaces.gp.is_GpElement,sage.interfaces.gp,is_GpElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gp.py#L1038
+,sage.interfaces.gp.reduce_load_GP,sage.interfaces.gp,reduce_load_GP,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/gp.py#L1066
+,sage.interfaces.interface,sage.interfaces.interface,interface,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/interface.py#L54
+,sage.interfaces.interface.AsciiArtString,sage.interfaces.interface,AsciiArtString,class,str,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/interface.py#L54
+,sage.interfaces.interface.Interface,sage.interfaces.interface,Interface,class,"WithEqualityById, ParentWithBase",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/interface.py#L59
+,sage.interfaces.interface.InterfaceElement,sage.interfaces.interface,InterfaceElement,class,Element,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/interface.py#L735
+,sage.interfaces.interface.InterfaceFunction,sage.interfaces.interface,InterfaceFunction,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/interface.py#L662
+,sage.interfaces.interface.InterfaceFunctionElement,sage.interfaces.interface,InterfaceFunctionElement,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/interface.py#L688
+,sage.interfaces.interface.is_InterfaceElement,sage.interfaces.interface,is_InterfaceElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/interface.py#L717
+,sage.interfaces.jmoldata,sage.interfaces.jmoldata,jmoldata,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/jmoldata.py#L34
+,sage.interfaces.jmoldata.JmolData,sage.interfaces.jmoldata,JmolData,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/jmoldata.py#L34
+,sage.interfaces.kash,sage.interfaces.kash,kash,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kash.py#L445
+,sage.interfaces.kash.Kash,sage.interfaces.kash,Kash,class,Expect,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kash.py#L445
+,sage.interfaces.kash.KashDocumentation,sage.interfaces.kash,KashDocumentation,class,list,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kash.py#L783
+,sage.interfaces.kash.KashElement,sage.interfaces.kash,KashElement,class,ExpectElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kash.py#L694
+,sage.interfaces.kash.is_KashElement,sage.interfaces.kash,is_KashElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kash.py#L790
+,sage.interfaces.kash.kash_console,sage.interfaces.kash,kash_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kash.py#L821
+,sage.interfaces.kash.kash_version,sage.interfaces.kash,kash_version,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kash.py#L828
+,sage.interfaces.kash.reduce_load_Kash,sage.interfaces.kash,reduce_load_Kash,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kash.py#L817
+,sage.interfaces.kenzo,sage.interfaces.kenzo,kenzo,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L1954
+,sage.interfaces.kenzo.BicomplexSpectralSequence,sage.interfaces.kenzo,BicomplexSpectralSequence,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L1954
+,sage.interfaces.kenzo.EilenbergMacLaneSpace,sage.interfaces.kenzo,EilenbergMacLaneSpace,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L174
+,sage.interfaces.kenzo.KAbstractSimplex,sage.interfaces.kenzo,KAbstractSimplex,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L1161
+,sage.interfaces.kenzo.KChainComplex,sage.interfaces.kenzo,KChainComplex,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L1043
+,sage.interfaces.kenzo.KChainComplexMorphism,sage.interfaces.kenzo,KChainComplexMorphism,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L1895
+,sage.interfaces.kenzo.KFiniteSimplicialSet,sage.interfaces.kenzo,KFiniteSimplicialSet,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L1189
+,sage.interfaces.kenzo.KenzoChainComplex,sage.interfaces.kenzo,KenzoChainComplex,class,KenzoObject,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L410
+,sage.interfaces.kenzo.KenzoChainComplexMorphism,sage.interfaces.kenzo,KenzoChainComplexMorphism,class,KenzoObject,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L1332
+,sage.interfaces.kenzo.KenzoObject,sage.interfaces.kenzo,KenzoObject,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L214
+,sage.interfaces.kenzo.KenzoSimplicialGroup,sage.interfaces.kenzo,KenzoSimplicialGroup,class,KenzoSimplicialSet,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L921
+,sage.interfaces.kenzo.KenzoSimplicialSet,sage.interfaces.kenzo,KenzoSimplicialSet,class,KenzoChainComplex,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L648
+,sage.interfaces.kenzo.KenzoSpectralSequence,sage.interfaces.kenzo,KenzoSpectralSequence,class,KenzoObject,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L261
+,sage.interfaces.kenzo.MooreSpace,sage.interfaces.kenzo,MooreSpace,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L144
+,sage.interfaces.kenzo.SAbstractSimplex,sage.interfaces.kenzo,SAbstractSimplex,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L1124
+,sage.interfaces.kenzo.SChainComplex,sage.interfaces.kenzo,SChainComplex,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L1074
+,sage.interfaces.kenzo.SFiniteSimplicialSet,sage.interfaces.kenzo,SFiniteSimplicialSet,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L1253
+,sage.interfaces.kenzo.Sphere,sage.interfaces.kenzo,Sphere,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L120
+,sage.interfaces.kenzo.build_morphism,sage.interfaces.kenzo,build_morphism,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L1820
+,sage.interfaces.kenzo.k2s_matrix,sage.interfaces.kenzo,k2s_matrix,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L947
+,sage.interfaces.kenzo.morphism_dictmat,sage.interfaces.kenzo,morphism_dictmat,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L1867
+,sage.interfaces.kenzo.pairing,sage.interfaces.kenzo,pairing,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L1020
+,sage.interfaces.kenzo.s2k_dictmat,sage.interfaces.kenzo,s2k_dictmat,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L994
+,sage.interfaces.kenzo.s2k_listofmorphisms,sage.interfaces.kenzo,s2k_listofmorphisms,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L1926
+,sage.interfaces.kenzo.s2k_matrix,sage.interfaces.kenzo,s2k_matrix,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/kenzo.py#L970
+,sage.interfaces.latte,sage.interfaces.latte,latte,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/latte.py#L22
+,sage.interfaces.latte.count,sage.interfaces.latte,count,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/latte.py#L22
+,sage.interfaces.latte.integrate,sage.interfaces.latte,integrate,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/latte.py#L219
+,sage.interfaces.latte.to_latte_polynomial,sage.interfaces.latte,to_latte_polynomial,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/latte.py#L420
+,sage.interfaces.lie,sage.interfaces.lie,lie,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/lie.py#L304
+,sage.interfaces.lie.LiE,sage.interfaces.lie,LiE,class,"ExtraTabCompletion, Expect",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/lie.py#L304
+,sage.interfaces.lie.LiEElement,sage.interfaces.lie,LiEElement,class,"ExtraTabCompletion, ExpectElement",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/lie.py#L735
+,sage.interfaces.lie.LiEFunction,sage.interfaces.lie,LiEFunction,class,ExpectFunction,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/lie.py#L871
+,sage.interfaces.lie.LiEFunctionElement,sage.interfaces.lie,LiEFunctionElement,class,FunctionElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/lie.py#L857
+,sage.interfaces.lie.is_LiEElement,sage.interfaces.lie,is_LiEElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/lie.py#L886
+,sage.interfaces.lie.lie_console,sage.interfaces.lie,lie_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/lie.py#L920
+,sage.interfaces.lie.lie_version,sage.interfaces.lie,lie_version,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/lie.py#L939
+,sage.interfaces.lie.reduce_load_lie,sage.interfaces.lie,reduce_load_lie,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/lie.py#L909
+,sage.interfaces.lisp,sage.interfaces.lisp,lisp,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/lisp.py#L62
+,sage.interfaces.lisp.Lisp,sage.interfaces.lisp,Lisp,class,Expect,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/lisp.py#L62
+,sage.interfaces.lisp.LispElement,sage.interfaces.lisp,LispElement,class,"RingElement, ExpectElement",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/lisp.py#L388
+,sage.interfaces.lisp.LispFunction,sage.interfaces.lisp,LispFunction,class,ExpectFunction,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/lisp.py#L507
+,sage.interfaces.lisp.LispFunctionElement,sage.interfaces.lisp,LispFunctionElement,class,FunctionElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/lisp.py#L491
+,sage.interfaces.lisp.is_LispElement,sage.interfaces.lisp,is_LispElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/lisp.py#L522
+,sage.interfaces.lisp.lisp_console,sage.interfaces.lisp,lisp_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/lisp.py#L555
+,sage.interfaces.lisp.reduce_load_Lisp,sage.interfaces.lisp,reduce_load_Lisp,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/lisp.py#L544
+,sage.interfaces.macaulay2,sage.interfaces.macaulay2,macaulay2,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/macaulay2.py#L182
+,sage.interfaces.macaulay2.Macaulay2,sage.interfaces.macaulay2,Macaulay2,class,"ExtraTabCompletion, Expect",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/macaulay2.py#L182
+,sage.interfaces.macaulay2.Macaulay2Element,sage.interfaces.macaulay2,Macaulay2Element,class,"ExtraTabCompletion, ExpectElement, Macaulay2Element",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/macaulay2.py#L875
+,sage.interfaces.macaulay2.Macaulay2Function,sage.interfaces.macaulay2,Macaulay2Function,class,ExpectFunction,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/macaulay2.py#L1753
+,sage.interfaces.macaulay2.Macaulay2FunctionElement,sage.interfaces.macaulay2,Macaulay2FunctionElement,class,FunctionElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/macaulay2.py#L1812
+,sage.interfaces.macaulay2.is_Macaulay2Element,sage.interfaces.macaulay2,is_Macaulay2Element,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/macaulay2.py#L1863
+,sage.interfaces.macaulay2.macaulay2_console,sage.interfaces.macaulay2,macaulay2_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/macaulay2.py#L1890
+,sage.interfaces.macaulay2.options,sage.interfaces.macaulay2,options,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/macaulay2.py#L837
+,sage.interfaces.macaulay2.reduce_load_macaulay2,sage.interfaces.macaulay2,reduce_load_macaulay2,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/macaulay2.py#L1907
+,sage.interfaces.macaulay2.remove_output_labels,sage.interfaces.macaulay2,remove_output_labels,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/macaulay2.py#L140
+,sage.interfaces.magma,sage.interfaces.magma,magma,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/magma.py#L274
+,sage.interfaces.magma.Magma,sage.interfaces.magma,Magma,class,"ExtraTabCompletion, Expect",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/magma.py#L274
+,sage.interfaces.magma.MagmaElement,sage.interfaces.magma,MagmaElement,class,"ExtraTabCompletion, ExpectElement, MagmaElement",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/magma.py#L1805
+,sage.interfaces.magma.MagmaFunction,sage.interfaces.magma,MagmaFunction,class,ExpectFunction,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/magma.py#L1720
+,sage.interfaces.magma.MagmaFunctionElement,sage.interfaces.magma,MagmaFunctionElement,class,FunctionElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/magma.py#L1598
+,sage.interfaces.magma.MagmaGBDefaultContext,sage.interfaces.magma,MagmaGBDefaultContext,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/magma.py#L2937
+,sage.interfaces.magma.MagmaGBLogPrettyPrinter,sage.interfaces.magma,MagmaGBLogPrettyPrinter,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/magma.py#L2760
+,sage.interfaces.magma.extcode_dir,sage.interfaces.magma,extcode_dir,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/magma.py#L240
+,sage.interfaces.magma.is_MagmaElement,sage.interfaces.magma,is_MagmaElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/magma.py#L1778
+,sage.interfaces.magma.magma_console,sage.interfaces.magma,magma_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/magma.py#L2742
+,sage.interfaces.magma.magma_gb_standard_options,sage.interfaces.magma,magma_gb_standard_options,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/magma.py#L2987
+,sage.interfaces.magma.reduce_load_Magma,sage.interfaces.magma,reduce_load_Magma,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/magma.py#L2728
+,sage.interfaces.magma_free,sage.interfaces.magma_free,magma_free,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/magma_free.py#L19
+,sage.interfaces.magma_free.MagmaExpr,sage.interfaces.magma_free,MagmaExpr,class,str,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/magma_free.py#L19
+,sage.interfaces.magma_free.MagmaFree,sage.interfaces.magma_free,MagmaFree,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/magma_free.py#L74
+,sage.interfaces.magma_free.magma_free_eval,sage.interfaces.magma_free,magma_free_eval,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/magma_free.py#L24
+,sage.interfaces.maple,sage.interfaces.maple,maple,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maple.py#L255
+,sage.interfaces.maple.Maple,sage.interfaces.maple,Maple,class,"ExtraTabCompletion, Expect",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maple.py#L255
+,sage.interfaces.maple.MapleElement,sage.interfaces.maple,MapleElement,class,"ExtraTabCompletion, ExpectElement",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maple.py#L919
+,sage.interfaces.maple.MapleFunction,sage.interfaces.maple,MapleFunction,class,ExpectFunction,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maple.py#L848
+,sage.interfaces.maple.MapleFunctionElement,sage.interfaces.maple,MapleFunctionElement,class,FunctionElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maple.py#L884
+,sage.interfaces.maple.maple_console,sage.interfaces.maple,maple_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maple.py#L1339
+,sage.interfaces.maple.reduce_load_Maple,sage.interfaces.maple,reduce_load_Maple,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maple.py#L1326
+,sage.interfaces.mathematica,sage.interfaces.mathematica,mathematica,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mathematica.py#L473
+,sage.interfaces.mathematica.Mathematica,sage.interfaces.mathematica,Mathematica,class,"ExtraTabCompletion, Expect",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mathematica.py#L473
+,sage.interfaces.mathematica.MathematicaElement,sage.interfaces.mathematica,MathematicaElement,class,ExpectElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mathematica.py#L716
+,sage.interfaces.mathematica.MathematicaFunction,sage.interfaces.mathematica,MathematicaFunction,class,ExpectFunction,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mathematica.py#L1087
+,sage.interfaces.mathematica.MathematicaFunctionElement,sage.interfaces.mathematica,MathematicaFunctionElement,class,FunctionElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mathematica.py#L1094
+,sage.interfaces.mathematica.clean_output,sage.interfaces.mathematica,clean_output,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mathematica.py#L444
+,sage.interfaces.mathematica.mathematica_console,sage.interfaces.mathematica,mathematica_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mathematica.py#L1109
+,sage.interfaces.mathematica.parse_moutput_from_json,sage.interfaces.mathematica,parse_moutput_from_json,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mathematica.py#L1227
+,sage.interfaces.mathematica.reduce_load,sage.interfaces.mathematica,reduce_load,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mathematica.py#L1105
+,sage.interfaces.mathematica.request_wolfram_alpha,sage.interfaces.mathematica,request_wolfram_alpha,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mathematica.py#L1123
+,sage.interfaces.mathematica.symbolic_expression_from_mathematica_string,sage.interfaces.mathematica,symbolic_expression_from_mathematica_string,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mathematica.py#L1290
+,sage.interfaces.mathics,sage.interfaces.mathics,mathics,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mathics.py#L438
+,sage.interfaces.mathics.Mathics,sage.interfaces.mathics,Mathics,class,Interface,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mathics.py#L438
+,sage.interfaces.mathics.MathicsElement,sage.interfaces.mathics,MathicsElement,class,"ExtraTabCompletion, InterfaceElement",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mathics.py#L817
+,sage.interfaces.mathics.mathics_console,sage.interfaces.mathics,mathics_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mathics.py#L1282
+,sage.interfaces.mathics.reduce_load,sage.interfaces.mathics,reduce_load,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mathics.py#L1267
+,sage.interfaces.matlab,sage.interfaces.matlab,matlab,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/matlab.py#L161
+,sage.interfaces.matlab.Matlab,sage.interfaces.matlab,Matlab,class,Expect,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/matlab.py#L161
+,sage.interfaces.matlab.MatlabElement,sage.interfaces.matlab,MatlabElement,class,ExpectElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/matlab.py#L327
+,sage.interfaces.matlab.matlab_console,sage.interfaces.matlab,matlab_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/matlab.py#L375
+,sage.interfaces.matlab.matlab_version,sage.interfaces.matlab,matlab_version,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/matlab.py#L404
+,sage.interfaces.matlab.reduce_load_Matlab,sage.interfaces.matlab,reduce_load_Matlab,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/matlab.py#L371
+,sage.interfaces.maxima,sage.interfaces.maxima,maxima,module,,
+,sage.interfaces.maxima.Maxima,sage.interfaces.maxima,Maxima,class,"MaximaAbstract, Expect",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima.py#L515
+,sage.interfaces.maxima.MaximaElement,sage.interfaces.maxima,MaximaElement,class,"MaximaAbstractElement, ExpectElement",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima.py#L1142
+,sage.interfaces.maxima.MaximaElementFunction,sage.interfaces.maxima,MaximaElementFunction,class,"MaximaElement, MaximaAbstractElementFunction",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima.py#L1212
+,sage.interfaces.maxima.is_MaximaElement,sage.interfaces.maxima,is_MaximaElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima.py#L1121
+,sage.interfaces.maxima.reduce_load_Maxima,sage.interfaces.maxima,reduce_load_Maxima,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima.py#L1261
+,sage.interfaces.maxima.reduce_load_Maxima_function,sage.interfaces.maxima,reduce_load_Maxima_function,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima.py#L1275
+,sage.interfaces.maxima_abstract,sage.interfaces.maxima_abstract,maxima_abstract,module,,
+,sage.interfaces.maxima_abstract.MaximaAbstract,sage.interfaces.maxima_abstract,MaximaAbstract,class,"ExtraTabCompletion, Interface",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_abstract.py#L75
+,sage.interfaces.maxima_abstract.MaximaAbstractElement,sage.interfaces.maxima_abstract,MaximaAbstractElement,class,"ExtraTabCompletion, InterfaceElement",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_abstract.py#L1066
+,sage.interfaces.maxima_abstract.MaximaAbstractElementFunction,sage.interfaces.maxima_abstract,MaximaAbstractElementFunction,class,MaximaAbstractElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_abstract.py#L1889
+,sage.interfaces.maxima_abstract.maxima_console,sage.interfaces.maxima_abstract,maxima_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_abstract.py#L2157
+,sage.interfaces.maxima_abstract.maxima_version,sage.interfaces.maxima_abstract,maxima_version,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_abstract.py#L2141
+,sage.interfaces.maxima_abstract.reduce_load_MaximaAbstract_function,sage.interfaces.maxima_abstract,reduce_load_MaximaAbstract_function,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_abstract.py#L2125
+,sage.interfaces.maxima_lib,sage.interfaces.maxima_lib,maxima_lib,module,,
+,sage.interfaces.maxima_lib.MaximaLib,sage.interfaces.maxima_lib,MaximaLib,class,MaximaAbstract,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_lib.py#L342
+,sage.interfaces.maxima_lib.MaximaLibElement,sage.interfaces.maxima_lib,MaximaLibElement,class,MaximaAbstractElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_lib.py#L1078
+,sage.interfaces.maxima_lib.MaximaLibElementFunction,sage.interfaces.maxima_lib,MaximaLibElementFunction,class,"MaximaLibElement, MaximaAbstractElementFunction",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_lib.py#L1183
+,sage.interfaces.maxima_lib.dummy_integrate,sage.interfaces.maxima_lib,dummy_integrate,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_lib.py#L1444
+,sage.interfaces.maxima_lib.is_MaximaLibElement,sage.interfaces.maxima_lib,is_MaximaLibElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_lib.py#L1057
+,sage.interfaces.maxima_lib.max_at_to_sage,sage.interfaces.maxima_lib,max_at_to_sage,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_lib.py#L1410
+,sage.interfaces.maxima_lib.max_harmonic_to_sage,sage.interfaces.maxima_lib,max_harmonic_to_sage,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_lib.py#L1481
+,sage.interfaces.maxima_lib.max_pochhammer_to_sage,sage.interfaces.maxima_lib,max_pochhammer_to_sage,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_lib.py#L1496
+,sage.interfaces.maxima_lib.max_to_sr,sage.interfaces.maxima_lib,max_to_sr,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_lib.py#L1692
+,sage.interfaces.maxima_lib.max_to_string,sage.interfaces.maxima_lib,max_to_string,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_lib.py#L297
+,sage.interfaces.maxima_lib.mdiff_to_sage,sage.interfaces.maxima_lib,mdiff_to_sage,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_lib.py#L1366
+,sage.interfaces.maxima_lib.mlist_to_sage,sage.interfaces.maxima_lib,mlist_to_sage,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_lib.py#L1388
+,sage.interfaces.maxima_lib.mqapply_to_sage,sage.interfaces.maxima_lib,mqapply_to_sage,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_lib.py#L1328
+,sage.interfaces.maxima_lib.mrat_to_sage,sage.interfaces.maxima_lib,mrat_to_sage,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_lib.py#L1296
+,sage.interfaces.maxima_lib.parse_max_string,sage.interfaces.maxima_lib,parse_max_string,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_lib.py#L323
+,sage.interfaces.maxima_lib.pyobject_to_max,sage.interfaces.maxima_lib,pyobject_to_max,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_lib.py#L1545
+,sage.interfaces.maxima_lib.reduce_load_MaximaLib,sage.interfaces.maxima_lib,reduce_load_MaximaLib,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_lib.py#L1193
+,sage.interfaces.maxima_lib.sage_rat,sage.interfaces.maxima_lib,sage_rat,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_lib.py#L1253
+,sage.interfaces.maxima_lib.sr_to_max,sage.interfaces.maxima_lib,sr_to_max,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_lib.py#L1584
+,sage.interfaces.maxima_lib.stdout_to_string,sage.interfaces.maxima_lib,stdout_to_string,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/maxima_lib.py#L272
+,sage.interfaces.mupad,sage.interfaces.mupad,mupad,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mupad.py#L109
+,sage.interfaces.mupad.Mupad,sage.interfaces.mupad,Mupad,class,"ExtraTabCompletion, Expect",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mupad.py#L109
+,sage.interfaces.mupad.MupadElement,sage.interfaces.mupad,MupadElement,class,"ExtraTabCompletion, ExpectElement",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mupad.py#L543
+,sage.interfaces.mupad.MupadFunction,sage.interfaces.mupad,MupadFunction,class,"ExtraTabCompletion, ExpectFunction",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mupad.py#L435
+,sage.interfaces.mupad.MupadFunctionElement,sage.interfaces.mupad,MupadFunctionElement,class,"ExtraTabCompletion, FunctionElement",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mupad.py#L472
+,sage.interfaces.mupad.mupad_console,sage.interfaces.mupad,mupad_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mupad.py#L651
+,sage.interfaces.mupad.reduce_load_mupad,sage.interfaces.mupad,reduce_load_mupad,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mupad.py#L640
+,sage.interfaces.mwrank,sage.interfaces.mwrank,mwrank,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mwrank.py#L27
+,sage.interfaces.mwrank.Mwrank,sage.interfaces.mwrank,Mwrank,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mwrank.py#L27
+,sage.interfaces.mwrank.Mwrank_class,sage.interfaces.mwrank,Mwrank_class,class,Expect,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mwrank.py#L147
+,sage.interfaces.mwrank.mwrank_console,sage.interfaces.mwrank,mwrank_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mwrank.py#L353
+,sage.interfaces.mwrank.validate_mwrank_input,sage.interfaces.mwrank,validate_mwrank_input,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/mwrank.py#L79
+,sage.interfaces.octave,sage.interfaces.octave,octave,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/octave.py#L156
+,sage.interfaces.octave.Octave,sage.interfaces.octave,Octave,class,Expect,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/octave.py#L156
+,sage.interfaces.octave.OctaveElement,sage.interfaces.octave,OctaveElement,class,ExpectElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/octave.py#L622
+,sage.interfaces.octave.octave_console,sage.interfaces.octave,octave_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/octave.py#L834
+,sage.interfaces.octave.reduce_load_Octave,sage.interfaces.octave,reduce_load_Octave,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/octave.py#L823
+,sage.interfaces.octave.to_complex,sage.interfaces.octave,to_complex,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/octave.py#L606
+,sage.interfaces.phc,sage.interfaces.phc,phc,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/phc.py#L386
+,sage.interfaces.phc.PHC,sage.interfaces.phc,PHC,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/phc.py#L386
+,sage.interfaces.phc.PHC_Object,sage.interfaces.phc,PHC_Object,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/phc.py#L178
+,sage.interfaces.phc.get_classified_solution_dicts,sage.interfaces.phc,get_classified_solution_dicts,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/phc.py#L96
+,sage.interfaces.phc.get_solution_dicts,sage.interfaces.phc,get_solution_dicts,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/phc.py#L47
+,sage.interfaces.phc.get_variable_list,sage.interfaces.phc,get_variable_list,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/phc.py#L153
+,sage.interfaces.phc.random,sage.interfaces.phc,random,function,,
+,sage.interfaces.polymake,sage.interfaces.polymake,polymake,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/polymake.py#L1769
+,sage.interfaces.polymake.PolymakeAbstract,sage.interfaces.polymake,PolymakeAbstract,class,"ExtraTabCompletion, Interface",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/polymake.py#L95
+,sage.interfaces.polymake.PolymakeElement,sage.interfaces.polymake,PolymakeElement,class,"ExtraTabCompletion, InterfaceElement",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/polymake.py#L843
+,sage.interfaces.polymake.PolymakeFunctionElement,sage.interfaces.polymake,PolymakeFunctionElement,class,InterfaceFunctionElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/polymake.py#L1641
+,sage.interfaces.polymake.PolymakeJuPyMake,sage.interfaces.polymake,PolymakeJuPyMake,class,PolymakeAbstract,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/polymake.py#L1769
+,sage.interfaces.polymake.polymake_console,sage.interfaces.polymake,polymake_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/polymake.py#L66
+,sage.interfaces.polymake.reduce_load_Polymake,sage.interfaces.polymake,reduce_load_Polymake,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/polymake.py#L2011
+,sage.interfaces.povray,sage.interfaces.povray,povray,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/povray.py#L9
+,sage.interfaces.povray.POVRay,sage.interfaces.povray,POVRay,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/povray.py#L9
+,sage.interfaces.psage,sage.interfaces.psage,psage,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/psage.py#L52
+,sage.interfaces.psage.PSage,sage.interfaces.psage,PSage,class,Sage,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/psage.py#L52
+,sage.interfaces.psage.PSageElement,sage.interfaces.psage,PSageElement,class,SageElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/psage.py#L187
+,sage.interfaces.qepcad,sage.interfaces.qepcad,qepcad,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/qepcad.py#L787
+,sage.interfaces.qepcad.Qepcad,sage.interfaces.qepcad,Qepcad,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/qepcad.py#L787
+,sage.interfaces.qepcad.QepcadCell,sage.interfaces.qepcad,QepcadCell,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/qepcad.py#L2363
+,sage.interfaces.qepcad.QepcadFunction,sage.interfaces.qepcad,QepcadFunction,class,ExpectFunction,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/qepcad.py#L1376
+,sage.interfaces.qepcad.Qepcad_expect,sage.interfaces.qepcad,Qepcad_expect,class,"ExtraTabCompletion, Expect",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/qepcad.py#L752
+,sage.interfaces.qepcad.qepcad,sage.interfaces.qepcad,qepcad,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/qepcad.py#L1432
+,sage.interfaces.qepcad.qepcad_banner,sage.interfaces.qepcad,qepcad_banner,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/qepcad.py#L1704
+,sage.interfaces.qepcad.qepcad_console,sage.interfaces.qepcad,qepcad_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/qepcad.py#L1687
+,sage.interfaces.qepcad.qepcad_formula_factory,sage.interfaces.qepcad,qepcad_formula_factory,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/qepcad.py#L1797
+,sage.interfaces.qepcad.qepcad_version,sage.interfaces.qepcad,qepcad_version,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/qepcad.py#L1734
+,sage.interfaces.qepcad.qformula,sage.interfaces.qepcad,qformula,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/qepcad.py#L1755
+,sage.interfaces.quit,sage.interfaces.quit,quit,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/quit.py#L73
+,sage.interfaces.quit.expect_quitall,sage.interfaces.quit,expect_quitall,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/quit.py#L73
+,sage.interfaces.quit.invalidate_all,sage.interfaces.quit,invalidate_all,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/quit.py#L151
+,sage.interfaces.quit.is_running,sage.interfaces.quit,is_running,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/quit.py#L140
+,sage.interfaces.quit.kill_spawned_jobs,sage.interfaces.quit,kill_spawned_jobs,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/quit.py#L98
+,sage.interfaces.quit.register_spawned_process,sage.interfaces.quit,register_spawned_process,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/quit.py#L48
+,sage.interfaces.quit.sage_spawned_process_file,sage.interfaces.quit,sage_spawned_process_file,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/quit.py#L31
+,sage.interfaces.r,sage.interfaces.r,r,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/r.py#L2076
+,sage.interfaces.r.HelpExpression,sage.interfaces.r,HelpExpression,class,str,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/r.py#L2076
+,sage.interfaces.r.R,sage.interfaces.r,R,class,"ExtraTabCompletion, Interface",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/r.py#L457
+,sage.interfaces.r.RElement,sage.interfaces.r,RElement,class,"ExtraTabCompletion, InterfaceElement",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/r.py#L1438
+,sage.interfaces.r.RFunction,sage.interfaces.r,RFunction,class,InterfaceFunction,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/r.py#L1902
+,sage.interfaces.r.RFunctionElement,sage.interfaces.r,RFunctionElement,class,InterfaceFunctionElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/r.py#L1837
+,sage.interfaces.r.is_RElement,sage.interfaces.r,is_RElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/r.py#L1997
+,sage.interfaces.r.r_console,sage.interfaces.r,r_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/r.py#L2040
+,sage.interfaces.r.r_version,sage.interfaces.r,r_version,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/r.py#L2059
+,sage.interfaces.r.reduce_load_R,sage.interfaces.r,reduce_load_R,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/r.py#L2027
+,sage.interfaces.read_data,sage.interfaces.read_data,read_data,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/read_data.py#L13
+,sage.interfaces.read_data.read_data,sage.interfaces.read_data,read_data,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/read_data.py#L13
+,sage.interfaces.rubik,sage.interfaces.rubik,rubik,module,,
+,sage.interfaces.rubik.CubexSolver,sage.interfaces.rubik,CubexSolver,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/rubik.py#L188
+,sage.interfaces.rubik.DikSolver,sage.interfaces.rubik,DikSolver,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/rubik.py#L241
+,sage.interfaces.rubik.OptimalSolver,sage.interfaces.rubik,OptimalSolver,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/rubik.py#L97
+,sage.interfaces.rubik.SingNot,sage.interfaces.rubik,SingNot,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/rubik.py#L65
+,sage.interfaces.rubik.facet_map,sage.interfaces.rubik,facet_map,attribute,,
+,sage.interfaces.rubik.rot_map,sage.interfaces.rubik,rot_map,attribute,,
+,sage.interfaces.sage0,sage.interfaces.sage0,sage0,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/sage0.py#L31
+,sage.interfaces.sage0.Sage,sage.interfaces.sage0,Sage,class,"ExtraTabCompletion, Expect",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/sage0.py#L31
+,sage.interfaces.sage0.SageElement,sage.interfaces.sage0,SageElement,class,ExpectElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/sage0.py#L451
+,sage.interfaces.sage0.SageFunction,sage.interfaces.sage0,SageFunction,class,FunctionElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/sage0.py#L519
+,sage.interfaces.sage0.reduce_load_Sage,sage.interfaces.sage0,reduce_load_Sage,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/sage0.py#L562
+,sage.interfaces.sage0.reduce_load_element,sage.interfaces.sage0,reduce_load_element,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/sage0.py#L573
+,sage.interfaces.sage0.sage0_console,sage.interfaces.sage0,sage0_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/sage0.py#L590
+,sage.interfaces.sage0.sage0_version,sage.interfaces.sage0,sage0_version,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/sage0.py#L609
+,sage.interfaces.sagespawn,sage.interfaces.sagespawn,sagespawn,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/sagespawn.pyx#L128
+,sage.interfaces.sagespawn.SagePtyProcess,sage.interfaces.sagespawn,SagePtyProcess,class,PtyProcess,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/sagespawn.pyx#L128
+,sage.interfaces.sagespawn.SageSpawn,sage.interfaces.sagespawn,SageSpawn,class,spawn,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/sagespawn.pyx#L38
+,sage.interfaces.scilab,sage.interfaces.scilab,scilab,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/scilab.py#L204
+,sage.interfaces.scilab.Scilab,sage.interfaces.scilab,Scilab,class,Expect,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/scilab.py#L204
+,sage.interfaces.scilab.ScilabElement,sage.interfaces.scilab,ScilabElement,class,ExpectElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/scilab.py#L437
+,sage.interfaces.scilab.scilab_console,sage.interfaces.scilab,scilab_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/scilab.py#L531
+,sage.interfaces.scilab.scilab_version,sage.interfaces.scilab,scilab_version,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/scilab.py#L566
+,sage.interfaces.singular,sage.interfaces.singular,singular,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/singular.py#L367
+,sage.interfaces.singular.Singular,sage.interfaces.singular,Singular,class,"ExtraTabCompletion, Expect",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/singular.py#L367
+,sage.interfaces.singular.SingularElement,sage.interfaces.singular,SingularElement,class,"ExtraTabCompletion, ExpectElement, SingularElement",https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/singular.py#L1336
+,sage.interfaces.singular.SingularFunction,sage.interfaces.singular,SingularFunction,class,ExpectFunction,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/singular.py#L2267
+,sage.interfaces.singular.SingularFunctionElement,sage.interfaces.singular,SingularFunctionElement,class,FunctionElement,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/singular.py#L2295
+,sage.interfaces.singular.SingularGBDefaultContext,sage.interfaces.singular,SingularGBDefaultContext,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/singular.py#L2671
+,sage.interfaces.singular.SingularGBLogPrettyPrinter,sage.interfaces.singular,SingularGBLogPrettyPrinter,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/singular.py#L2498
+,sage.interfaces.singular.get_docstring,sage.interfaces.singular,get_docstring,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/singular.py#L2332
+,sage.interfaces.singular.is_SingularElement,sage.interfaces.singular,is_SingularElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/singular.py#L2309
+,sage.interfaces.singular.reduce_load_Singular,sage.interfaces.singular,reduce_load_Singular,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/singular.py#L2456
+,sage.interfaces.singular.singular_console,sage.interfaces.singular,singular_console,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/singular.py#L2467
+,sage.interfaces.singular.singular_gb_standard_options,sage.interfaces.singular,singular_gb_standard_options,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/singular.py#L2795
+,sage.interfaces.singular.singular_version,sage.interfaces.singular,singular_version,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/singular.py#L2486
+,sage.interfaces.sympy,sage.interfaces.sympy,sympy,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/sympy.py#L463
+,sage.interfaces.sympy.UndefSageHelper,sage.interfaces.sympy,UndefSageHelper,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/sympy.py#L463
+,sage.interfaces.sympy.check_expression,sage.interfaces.sympy,check_expression,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/sympy.py#L1198
+,sage.interfaces.sympy.sympy_init,sage.interfaces.sympy,sympy_init,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/sympy.py#L1078
+,sage.interfaces.sympy.sympy_set_to_list,sage.interfaces.sympy,sympy_set_to_list,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/sympy.py#L1354
+,sage.interfaces.sympy.test_all,sage.interfaces.sympy,test_all,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/sympy.py#L1240
+,sage.interfaces.tachyon,sage.interfaces.tachyon,tachyon,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/tachyon.py#L696
+,sage.interfaces.tachyon.TachyonRT,sage.interfaces.tachyon,TachyonRT,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/tachyon.py#L696
+,sage.interfaces.tides,sage.interfaces.tides,tides,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/tides.py#L369
+,sage.interfaces.tides.genfiles_mintides,sage.interfaces.tides,genfiles_mintides,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/tides.py#L369
+,sage.interfaces.tides.genfiles_mpfr,sage.interfaces.tides,genfiles_mpfr,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/tides.py#L626
+,sage.interfaces.tides.remove_constants,sage.interfaces.tides,remove_constants,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/tides.py#L343
+,sage.interfaces.tides.remove_repeated,sage.interfaces.tides,remove_repeated,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/tides.py#L303
+,sage.interfaces.tides.subexpressions_list,sage.interfaces.tides,subexpressions_list,function,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/tides.py#L52
+,sage.knots,sage.knots,knots,module,,
+,sage.knots.free_knotinfo_monoid,sage.knots.free_knotinfo_monoid,free_knotinfo_monoid,module,,https://github.com/sagemath/sage/blob/develop/src/sage/knots/free_knotinfo_monoid.py#L97
+,sage.knots.free_knotinfo_monoid.FreeKnotInfoMonoid,sage.knots.free_knotinfo_monoid,FreeKnotInfoMonoid,class,IndexedFreeAbelianMonoid,https://github.com/sagemath/sage/blob/develop/src/sage/knots/free_knotinfo_monoid.py#L97
+,sage.knots.free_knotinfo_monoid.FreeKnotInfoMonoidElement,sage.knots.free_knotinfo_monoid,FreeKnotInfoMonoidElement,class,"F, IndexedFreeAbelianMonoidElement",https://github.com/sagemath/sage/blob/develop/src/sage/knots/free_knotinfo_monoid.py#L36
+,sage.knots.knot,sage.knots.knot,knot,module,,https://github.com/sagemath/sage/blob/develop/src/sage/knots/knot.py#L35
+,sage.knots.knot.Knot,sage.knots.knot,Knot,class,"Link, Element",https://github.com/sagemath/sage/blob/develop/src/sage/knots/knot.py#L35
+,sage.knots.knot.Knots,sage.knots.knot,Knots,class,"Singleton, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/knots/knot.py#L484
+,sage.knots.knotinfo,sage.knots.knotinfo,knotinfo,module,,https://github.com/sagemath/sage/blob/develop/src/sage/knots/knotinfo.py#L472
+,sage.knots.knotinfo.KnotInfo,sage.knots.knotinfo,KnotInfo,class,KnotInfoBase,https://github.com/sagemath/sage/blob/develop/src/sage/knots/knotinfo.py#L472
+,sage.knots.knotinfo.KnotInfoBase,sage.knots.knotinfo,KnotInfoBase,class,Enum,https://github.com/sagemath/sage/blob/develop/src/sage/knots/knotinfo.py#L472
+,sage.knots.knotinfo.KnotInfoSeries,sage.knots.knotinfo,KnotInfoSeries,class,"UniqueRepresentation, SageObject",https://github.com/sagemath/sage/blob/develop/src/sage/knots/knotinfo.py#L2488
+,sage.knots.knotinfo.SymmetryMutant,sage.knots.knotinfo,SymmetryMutant,class,Enum,https://github.com/sagemath/sage/blob/develop/src/sage/knots/knotinfo.py#L340
+,sage.knots.knotinfo.concordance_inverse,sage.knots.knotinfo,concordance_inverse,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/knots/knotinfo.py#L340
+,sage.knots.knotinfo.eval_knotinfo,sage.knots.knotinfo,eval_knotinfo,function,,https://github.com/sagemath/sage/blob/develop/src/sage/knots/knotinfo.py#L249
+,sage.knots.knotinfo.items,sage.knots.knotinfo,items,attribute,,
+,sage.knots.knotinfo.itself,sage.knots.knotinfo,itself,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/knots/knotinfo.py#L340
+,sage.knots.knotinfo.knotinfo_bool,sage.knots.knotinfo,knotinfo_bool,function,,https://github.com/sagemath/sage/blob/develop/src/sage/knots/knotinfo.py#L311
+,sage.knots.knotinfo.knotinfo_int,sage.knots.knotinfo,knotinfo_int,function,,https://github.com/sagemath/sage/blob/develop/src/sage/knots/knotinfo.py#L285
+,sage.knots.knotinfo.mirror_image,sage.knots.knotinfo,mirror_image,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/knots/knotinfo.py#L340
+,sage.knots.knotinfo.mixed,sage.knots.knotinfo,mixed,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/knots/knotinfo.py#L340
+,sage.knots.knotinfo.reverse,sage.knots.knotinfo,reverse,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/knots/knotinfo.py#L340
+,sage.knots.knotinfo.unknown,sage.knots.knotinfo,unknown,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/knots/knotinfo.py#L340
+,sage.knots.link,sage.knots.link,link,module,,https://github.com/sagemath/sage/blob/develop/src/sage/knots/link.py#L80
+,sage.knots.link.Link,sage.knots.link,Link,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/knots/link.py#L80
+,sage.lfunctions,sage.lfunctions,lfunctions,module,,
+,sage.lfunctions.dokchitser,sage.lfunctions.dokchitser,dokchitser,module,,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/dokchitser.py#L42
+,sage.lfunctions.dokchitser.Dokchitser,sage.lfunctions.dokchitser,Dokchitser,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/dokchitser.py#L42
+,sage.lfunctions.dokchitser.reduce_load_dokchitser,sage.lfunctions.dokchitser,reduce_load_dokchitser,function,,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/dokchitser.py#L729
+,sage.lfunctions.lcalc,sage.lfunctions.lcalc,lcalc,module,,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/lcalc.py#L45
+,sage.lfunctions.lcalc.LCalc,sage.lfunctions.lcalc,LCalc,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/lcalc.py#L45
+,sage.lfunctions.pari,sage.lfunctions.pari,pari,module,,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/pari.py#L437
+,sage.lfunctions.pari.LFunction,sage.lfunctions.pari,LFunction,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/pari.py#L437
+,sage.lfunctions.pari.conductor,sage.lfunctions.pari,conductor,attribute,,
+,sage.lfunctions.pari.lfun_character,sage.lfunctions.pari,lfun_character,function,,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/pari.py#L206
+,sage.lfunctions.pari.lfun_delta,sage.lfunctions.pari,lfun_delta,function,,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/pari.py#L361
+,sage.lfunctions.pari.lfun_elliptic_curve,sage.lfunctions.pari,lfun_elliptic_curve,function,,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/pari.py#L275
+,sage.lfunctions.pari.lfun_eta_quotient,sage.lfunctions.pari,lfun_eta_quotient,function,,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/pari.py#L326
+,sage.lfunctions.pari.lfun_generic,sage.lfunctions.pari,lfun_generic,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/pari.py#L29
+,sage.lfunctions.pari.lfun_genus2,sage.lfunctions.pari,lfun_genus2,function,,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/pari.py#L394
+,sage.lfunctions.pari.lfun_hgm,sage.lfunctions.pari,lfun_hgm,function,,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/pari.py#L255
+,sage.lfunctions.pari.lfun_number_field,sage.lfunctions.pari,lfun_number_field,function,,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/pari.py#L302
+,sage.lfunctions.pari.lfun_quadratic_form,sage.lfunctions.pari,lfun_quadratic_form,function,,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/pari.py#L375
+,sage.lfunctions.sympow,sage.lfunctions.sympow,sympow,module,,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/sympow.py#L57
+,sage.lfunctions.sympow.Sympow,sage.lfunctions.sympow,Sympow,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/sympow.py#L57
+,sage.lfunctions.zero_sums,sage.lfunctions.zero_sums,zero_sums,module,,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/zero_sums.pyx#L1808
+,sage.lfunctions.zero_sums.LFunctionZeroSum,sage.lfunctions.zero_sums,LFunctionZeroSum,function,,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/zero_sums.pyx#L1808
+,sage.lfunctions.zero_sums.LFunctionZeroSum_EllipticCurve,sage.lfunctions.zero_sums,LFunctionZeroSum_EllipticCurve,class,LFunctionZeroSum_abstract,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/zero_sums.pyx#L891
+,sage.lfunctions.zero_sums.LFunctionZeroSum_abstract,sage.lfunctions.zero_sums,LFunctionZeroSum_abstract,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/lfunctions/zero_sums.pyx#L45
+,sage.libs,sage.libs,libs,module,,
+,sage.libs.ecl,sage.libs.ecl,ecl,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/ecl.pyx#L1243
+,sage.libs.ecl.EclListIterator,sage.libs.ecl,EclListIterator,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/ecl.pyx#L1243
+,sage.libs.ecl.EclObject,sage.libs.ecl,EclObject,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/ecl.pyx#L542
+,sage.libs.ecl.ecl_eval,sage.libs.ecl,ecl_eval,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/ecl.pyx#L1336
+,sage.libs.ecl.init_ecl,sage.libs.ecl,init_ecl,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/ecl.pyx#L221
+,sage.libs.ecl.print_objects,sage.libs.ecl,print_objects,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/ecl.pyx#L387
+,sage.libs.ecl.shutdown_ecl,sage.libs.ecl,shutdown_ecl,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/ecl.pyx#L369
+,sage.libs.ecl.test_ecl_options,sage.libs.ecl,test_ecl_options,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/ecl.pyx#L141
+,sage.libs.ecl.test_sigint_before_ecl_sig_on,sage.libs.ecl,test_sigint_before_ecl_sig_on,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/ecl.pyx#L117
+,sage.libs.eclib.constructor,sage.libs.eclib.constructor,constructor,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/constructor.py#L4
+,sage.libs.eclib.constructor.CremonaModularSymbols,sage.libs.eclib.constructor,CremonaModularSymbols,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/constructor.py#L4
+,sage.libs.eclib.homspace,sage.libs.eclib.homspace,homspace,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/homspace.pyx#L16
+,sage.libs.eclib.homspace.ModularSymbols,sage.libs.eclib.homspace,ModularSymbols,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/homspace.pyx#L16
+,sage.libs.eclib.interface,sage.libs.eclib.interface,interface,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/interface.py#L35
+,sage.libs.eclib.interface.mwrank_EllipticCurve,sage.libs.eclib.interface,mwrank_EllipticCurve,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/interface.py#L35
+,sage.libs.eclib.interface.mwrank_MordellWeil,sage.libs.eclib.interface,mwrank_MordellWeil,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/interface.py#L671
+,sage.libs.eclib.mat,sage.libs.eclib.mat,mat,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/mat.pyx#L14
+,sage.libs.eclib.mat.Matrix,sage.libs.eclib.mat,Matrix,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/mat.pyx#L14
+,sage.libs.eclib.mat.MatrixFactory,sage.libs.eclib.mat,MatrixFactory,class,object,
+,sage.libs.eclib.mwrank,sage.libs.eclib.mwrank,mwrank,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/mwrank.pyx#L83
+,sage.libs.eclib.mwrank.get_precision,sage.libs.eclib.mwrank,get_precision,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/mwrank.pyx#L83
+,sage.libs.eclib.mwrank.initprimes,sage.libs.eclib.mwrank,initprimes,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/mwrank.pyx#L141
+,sage.libs.eclib.mwrank.parse_point_list,sage.libs.eclib.mwrank,parse_point_list,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/mwrank.pyx#L495
+,sage.libs.eclib.mwrank.set_precision,sage.libs.eclib.mwrank,set_precision,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/mwrank.pyx#L100
+,sage.libs.eclib.newforms,sage.libs.eclib.newforms,newforms,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/newforms.pyx#L24
+,sage.libs.eclib.newforms.ECModularSymbol,sage.libs.eclib.newforms,ECModularSymbol,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/newforms.pyx#L24
+,sage.libs.flint.arith_sage,sage.libs.flint.arith_sage,arith_sage,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/arith_sage.pyx#L28
+,sage.libs.flint.arith_sage.bell_number,sage.libs.flint.arith_sage,bell_number,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/arith_sage.pyx#L28
+,sage.libs.flint.arith_sage.bernoulli_number,sage.libs.flint.arith_sage,bernoulli_number,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/arith_sage.pyx#L66
+,sage.libs.flint.arith_sage.dedekind_sum,sage.libs.flint.arith_sage,dedekind_sum,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/arith_sage.pyx#L244
+,sage.libs.flint.arith_sage.euler_number,sage.libs.flint.arith_sage,euler_number,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/arith_sage.pyx#L97
+,sage.libs.flint.arith_sage.harmonic_number,sage.libs.flint.arith_sage,harmonic_number,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/arith_sage.pyx#L281
+,sage.libs.flint.arith_sage.number_of_partitions,sage.libs.flint.arith_sage,number_of_partitions,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/arith_sage.pyx#L175
+,sage.libs.flint.arith_sage.stirling_number_1,sage.libs.flint.arith_sage,stirling_number_1,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/arith_sage.pyx#L125
+,sage.libs.flint.arith_sage.stirling_number_2,sage.libs.flint.arith_sage,stirling_number_2,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/arith_sage.pyx#L150
+,sage.libs.flint.fmpq_poly_sage,sage.libs.flint.fmpq_poly_sage,fmpq_poly_sage,module,,
+,sage.libs.flint.fmpz_poly_sage,sage.libs.flint.fmpz_poly_sage,fmpz_poly_sage,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/fmpz_poly_sage.pyx#L33
+,sage.libs.flint.fmpz_poly_sage.Fmpz_poly,sage.libs.flint.fmpz_poly_sage,Fmpz_poly,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/fmpz_poly_sage.pyx#L33
+,sage.libs.flint.qsieve_sage,sage.libs.flint.qsieve_sage,qsieve_sage,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/qsieve_sage.pyx#L16
+,sage.libs.flint.qsieve_sage.qsieve,sage.libs.flint.qsieve_sage,qsieve,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/qsieve_sage.pyx#L16
+,sage.libs.flint.ulong_extras_sage,sage.libs.flint.ulong_extras_sage,ulong_extras_sage,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/ulong_extras_sage.pyx#L5
+,sage.libs.flint.ulong_extras_sage.n_factor_to_list,sage.libs.flint.ulong_extras_sage,n_factor_to_list,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/ulong_extras_sage.pyx#L5
+,sage.libs.gap.context_managers,sage.libs.gap.context_managers,context_managers,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/context_managers.py#L48
+,sage.libs.gap.context_managers.GlobalVariableContext,sage.libs.gap.context_managers,GlobalVariableContext,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/context_managers.py#L48
+,sage.libs.gap.element,sage.libs.gap.element,element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L395
+,sage.libs.gap.element.GapElement,sage.libs.gap.element,GapElement,class,RingElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L395
+,sage.libs.gap.element.GapElement_Boolean,sage.libs.gap.element,GapElement_Boolean,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2232
+,sage.libs.gap.element.GapElement_Cyclotomic,sage.libs.gap.element,GapElement_Cyclotomic,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L1917
+,sage.libs.gap.element.GapElement_FiniteField,sage.libs.gap.element,GapElement_FiniteField,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L1748
+,sage.libs.gap.element.GapElement_Float,sage.libs.gap.element,GapElement_Float,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L1586
+,sage.libs.gap.element.GapElement_Function,sage.libs.gap.element,GapElement_Function,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2388
+,sage.libs.gap.element.GapElement_Integer,sage.libs.gap.element,GapElement_Integer,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L1421
+,sage.libs.gap.element.GapElement_IntegerMod,sage.libs.gap.element,GapElement_IntegerMod,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L1657
+,sage.libs.gap.element.GapElement_List,sage.libs.gap.element,GapElement_List,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2660
+,sage.libs.gap.element.GapElement_MethodProxy,sage.libs.gap.element,GapElement_MethodProxy,class,GapElement_Function,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2587
+,sage.libs.gap.element.GapElement_Permutation,sage.libs.gap.element,GapElement_Permutation,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2988
+,sage.libs.gap.element.GapElement_Rational,sage.libs.gap.element,GapElement_Rational,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2002
+,sage.libs.gap.element.GapElement_Record,sage.libs.gap.element,GapElement_Record,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L3053
+,sage.libs.gap.element.GapElement_RecordIterator,sage.libs.gap.element,GapElement_RecordIterator,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L3192
+,sage.libs.gap.element.GapElement_Ring,sage.libs.gap.element,GapElement_Ring,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2073
+,sage.libs.gap.element.GapElement_String,sage.libs.gap.element,GapElement_String,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2322
+,sage.libs.gap.gap_functions,sage.libs.gap.gap_functions,gap_functions,module,,
+,sage.libs.gap.libgap,sage.libs.gap.libgap,libgap,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/libgap.pyx#L234
+,sage.libs.gap.libgap.Gap,sage.libs.gap.libgap,Gap,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/libgap.pyx#L234
+,sage.libs.gap.saved_workspace,sage.libs.gap.saved_workspace,saved_workspace,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/saved_workspace.py#L15
+,sage.libs.gap.saved_workspace.timestamp,sage.libs.gap.saved_workspace,timestamp,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/saved_workspace.py#L15
+,sage.libs.gap.saved_workspace.workspace,sage.libs.gap.saved_workspace,workspace,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/saved_workspace.py#L48
+,sage.libs.gap.test,sage.libs.gap.test,test,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/test.py#L9
+,sage.libs.gap.test.test_write_to_file,sage.libs.gap.test,test_write_to_file,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/test.py#L9
+,sage.libs.gap.test_long,sage.libs.gap.test_long,test_long,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/test_long.py#L9
+,sage.libs.gap.test_long.test_loop_1,sage.libs.gap.test_long,test_loop_1,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/test_long.py#L9
+,sage.libs.gap.test_long.test_loop_2,sage.libs.gap.test_long,test_loop_2,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/test_long.py#L21
+,sage.libs.gap.test_long.test_loop_3,sage.libs.gap.test_long,test_loop_3,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/test_long.py#L41
+,sage.libs.gap.util,sage.libs.gap.util,util,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/util.pyx#L400
+,sage.libs.gap.util.ObjWrapper,sage.libs.gap.util,ObjWrapper,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/util.pyx#L39
+,sage.libs.gap.util.get_owned_objects,sage.libs.gap.util,get_owned_objects,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/util.pyx#L121
+,sage.libs.gsl.array,sage.libs.gsl.array,array,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gsl/array.pyx#L7
+,sage.libs.gsl.array.GSLDoubleArray,sage.libs.gsl.array,GSLDoubleArray,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gsl/array.pyx#L7
+,sage.libs.lcalc.lcalc_Lfunction,sage.libs.lcalc.lcalc_Lfunction,lcalc_Lfunction,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/lcalc/lcalc_Lfunction.pyx#L53
+,sage.libs.lcalc.lcalc_Lfunction.Lfunction,sage.libs.lcalc.lcalc_Lfunction,Lfunction,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/lcalc/lcalc_Lfunction.pyx#L53
+,sage.libs.lcalc.lcalc_Lfunction.Lfunction_C,sage.libs.lcalc.lcalc_Lfunction,Lfunction_C,class,Lfunction,https://github.com/sagemath/sage/blob/develop/src/sage/libs/lcalc/lcalc_Lfunction.pyx#L701
+,sage.libs.lcalc.lcalc_Lfunction.Lfunction_D,sage.libs.lcalc.lcalc_Lfunction,Lfunction_D,class,Lfunction,https://github.com/sagemath/sage/blob/develop/src/sage/libs/lcalc/lcalc_Lfunction.pyx#L564
+,sage.libs.lcalc.lcalc_Lfunction.Lfunction_I,sage.libs.lcalc.lcalc_Lfunction,Lfunction_I,class,Lfunction,https://github.com/sagemath/sage/blob/develop/src/sage/libs/lcalc/lcalc_Lfunction.pyx#L427
+,sage.libs.lcalc.lcalc_Lfunction.Lfunction_Zeta,sage.libs.lcalc.lcalc_Lfunction,Lfunction_Zeta,class,Lfunction,https://github.com/sagemath/sage/blob/develop/src/sage/libs/lcalc/lcalc_Lfunction.pyx#L844
+,sage.libs.lcalc.lcalc_Lfunction.Lfunction_from_character,sage.libs.lcalc.lcalc_Lfunction,Lfunction_from_character,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/lcalc/lcalc_Lfunction.pyx#L890
+,sage.libs.lcalc.lcalc_Lfunction.Lfunction_from_elliptic_curve,sage.libs.lcalc.lcalc_Lfunction,Lfunction_from_elliptic_curve,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/lcalc/lcalc_Lfunction.pyx#L947
+,sage.libs.libecm,sage.libs.libecm,libecm,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/libecm.pyx#L65
+,sage.libs.libecm.ecmfactor,sage.libs.libecm,ecmfactor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/libecm.pyx#L65
+,sage.libs.linbox.linbox_flint_interface,sage.libs.linbox.linbox_flint_interface,linbox_flint_interface,module,,
+,sage.libs.lrcalc.lrcalc,sage.libs.lrcalc.lrcalc,lrcalc,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/lrcalc/lrcalc.py#L381
+,sage.libs.lrcalc.lrcalc.coprod,sage.libs.lrcalc.lrcalc,coprod,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/lrcalc/lrcalc.py#L381
+,sage.libs.lrcalc.lrcalc.lrcoef,sage.libs.lrcalc.lrcalc,lrcoef,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/lrcalc/lrcalc.py#L240
+,sage.libs.lrcalc.lrcalc.lrcoef_unsafe,sage.libs.lrcalc.lrcalc,lrcoef_unsafe,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/lrcalc/lrcalc.py#L209
+,sage.libs.lrcalc.lrcalc.lrskew,sage.libs.lrcalc.lrcalc,lrskew,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/lrcalc/lrcalc.py#L445
+,sage.libs.lrcalc.lrcalc.mult,sage.libs.lrcalc.lrcalc,mult,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/lrcalc/lrcalc.py#L272
+,sage.libs.lrcalc.lrcalc.mult_schubert,sage.libs.lrcalc.lrcalc,mult_schubert,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/lrcalc/lrcalc.py#L414
+,sage.libs.lrcalc.lrcalc.skew,sage.libs.lrcalc.lrcalc,skew,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/lrcalc/lrcalc.py#L355
+,sage.libs.mpmath.utils,sage.libs.mpmath.utils,utils,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/mpmath/utils.pyx#L19
+,sage.libs.mpmath.utils.bitcount,sage.libs.mpmath.utils,bitcount,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/mpmath/utils.pyx#L19
+,sage.libs.mpmath.utils.call,sage.libs.mpmath.utils,call,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/mpmath/utils.pyx#L347
+,sage.libs.mpmath.utils.from_man_exp,sage.libs.mpmath.utils,from_man_exp,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/mpmath/utils.pyx#L78
+,sage.libs.mpmath.utils.isqrt,sage.libs.mpmath.utils,isqrt,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/mpmath/utils.pyx#L48
+,sage.libs.mpmath.utils.mpmath_to_sage,sage.libs.mpmath.utils,mpmath_to_sage,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/mpmath/utils.pyx#L217
+,sage.libs.mpmath.utils.normalize,sage.libs.mpmath.utils,normalize,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/mpmath/utils.pyx#L107
+,sage.libs.mpmath.utils.sage_to_mpmath,sage.libs.mpmath.utils,sage_to_mpmath,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/mpmath/utils.pyx#L287
+,sage.libs.ntl.all,sage.libs.ntl.all,all,module,,
+,sage.libs.pari,sage.libs.pari,pari,module,,
+,sage.libs.pari.convert_sage,sage.libs.pari.convert_sage,convert_sage,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/pari/convert_sage.pyx#L55
+,sage.libs.pari.convert_sage.gen_to_sage,sage.libs.pari.convert_sage,gen_to_sage,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/pari/convert_sage.pyx#L55
+,sage.libs.pari.convert_sage.new_gen_from_integer,sage.libs.pari.convert_sage,new_gen_from_integer,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/pari/convert_sage.pyx#L388
+,sage.libs.pari.convert_sage.new_gen_from_rational,sage.libs.pari.convert_sage,new_gen_from_rational,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/pari/convert_sage.pyx#L420
+,sage.libs.pari.convert_sage.pari_divisors_small,sage.libs.pari.convert_sage,pari_divisors_small,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/pari/convert_sage.pyx#L432
+,sage.libs.pari.convert_sage.pari_is_prime,sage.libs.pari.convert_sage,pari_is_prime,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/pari/convert_sage.pyx#L478
+,sage.libs.pari.convert_sage.pari_is_prime_power,sage.libs.pari.convert_sage,pari_is_prime_power,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/pari/convert_sage.pyx#L505
+,sage.libs.pari.convert_sage.pari_maxprime,sage.libs.pari.convert_sage,pari_maxprime,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/pari/convert_sage.pyx#L546
+,sage.libs.pari.convert_sage.pari_prime_range,sage.libs.pari.convert_sage,pari_prime_range,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/pari/convert_sage.pyx#L562
+,sage.libs.pari.convert_sage.set_integer_from_gen,sage.libs.pari.convert_sage,set_integer_from_gen,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/pari/convert_sage.pyx#L340
+,sage.libs.pari.convert_sage.set_rational_from_gen,sage.libs.pari.convert_sage,set_rational_from_gen,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/pari/convert_sage.pyx#L400
+,sage.libs.singular.function,sage.libs.singular.function,function,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function.pyx#L988
+,sage.libs.singular.function.BaseCallHandler,sage.libs.singular.function,BaseCallHandler,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function.pyx#L988
+,sage.libs.singular.function.Converter,sage.libs.singular.function,Converter,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function.pyx#L483
+,sage.libs.singular.function.KernelCallHandler,sage.libs.singular.function,KernelCallHandler,class,BaseCallHandler,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function.pyx#L1059
+,sage.libs.singular.function.LibraryCallHandler,sage.libs.singular.function,LibraryCallHandler,class,BaseCallHandler,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function.pyx#L1006
+,sage.libs.singular.function.Resolution,sage.libs.singular.function,Resolution,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function.pyx#L288
+,sage.libs.singular.function.RingWrap,sage.libs.singular.function,RingWrap,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function.pyx#L130
+,sage.libs.singular.function.SingularFunction,sage.libs.singular.function,SingularFunction,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function.pyx#L1151
+,sage.libs.singular.function.SingularKernelFunction,sage.libs.singular.function,SingularKernelFunction,class,SingularFunction,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function.pyx#L1547
+,sage.libs.singular.function.SingularLibraryFunction,sage.libs.singular.function,SingularLibraryFunction,class,SingularFunction,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function.pyx#L1504
+,sage.libs.singular.function.all_singular_poly_wrapper,sage.libs.singular.function,all_singular_poly_wrapper,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function.pyx#L417
+,sage.libs.singular.function.all_vectors,sage.libs.singular.function,all_vectors,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function.pyx#L459
+,sage.libs.singular.function.get_printlevel,sage.libs.singular.function,get_printlevel,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function.pyx#L1814
+,sage.libs.singular.function.is_sage_wrapper_for_singular_ring,sage.libs.singular.function,is_sage_wrapper_for_singular_ring,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function.pyx#L371
+,sage.libs.singular.function.is_singular_poly_wrapper,sage.libs.singular.function,is_singular_poly_wrapper,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function.pyx#L402
+,sage.libs.singular.function.lib,sage.libs.singular.function,lib,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function.pyx#L1779
+,sage.libs.singular.function.list_of_functions,sage.libs.singular.function,list_of_functions,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function.pyx#L1853
+,sage.libs.singular.function.set_printlevel,sage.libs.singular.function,set_printlevel,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function.pyx#L1834
+,sage.libs.singular.function.singular_function,sage.libs.singular.function,singular_function,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function.pyx#L1592
+,sage.libs.singular.function_factory,sage.libs.singular.function_factory,function_factory,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function_factory.py#L18
+,sage.libs.singular.function_factory.SingularFunctionFactory,sage.libs.singular.function_factory,SingularFunctionFactory,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/function_factory.py#L18
+,sage.libs.singular.groebner_strategy,sage.libs.singular.groebner_strategy,groebner_strategy,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/groebner_strategy.pyx#L38
+,sage.libs.singular.groebner_strategy.GroebnerStrategy,sage.libs.singular.groebner_strategy,GroebnerStrategy,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/groebner_strategy.pyx#L38
+,sage.libs.singular.groebner_strategy.NCGroebnerStrategy,sage.libs.singular.groebner_strategy,NCGroebnerStrategy,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/groebner_strategy.pyx#L301
+,sage.libs.singular.groebner_strategy.unpickle_GroebnerStrategy0,sage.libs.singular.groebner_strategy,unpickle_GroebnerStrategy0,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/groebner_strategy.pyx#L558
+,sage.libs.singular.groebner_strategy.unpickle_NCGroebnerStrategy0,sage.libs.singular.groebner_strategy,unpickle_NCGroebnerStrategy0,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/groebner_strategy.pyx#L543
+,sage.libs.singular.option,sage.libs.singular.option,option,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/option.pyx#L301
+,sage.libs.singular.option.LibSingularOptions,sage.libs.singular.option,LibSingularOptions,class,LibSingularOptions_abstract,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/option.pyx#L301
+,sage.libs.singular.option.LibSingularOptionsContext,sage.libs.singular.option,LibSingularOptionsContext,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/option.pyx#L557
+,sage.libs.singular.option.LibSingularOptions_abstract,sage.libs.singular.option,LibSingularOptions_abstract,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/option.pyx#L139
+,sage.libs.singular.option.LibSingularVerboseOptions,sage.libs.singular.option,LibSingularVerboseOptions,class,LibSingularOptions_abstract,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/option.pyx#L473
+,sage.libs.singular.option.opt,sage.libs.singular.option,opt,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/option.pyx#L584
+,sage.libs.singular.polynomial,sage.libs.singular.polynomial,polynomial,module,,
+,sage.libs.singular.ring,sage.libs.singular.ring,ring,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/ring.pyx#L881
+,sage.libs.singular.ring.currRing_wrapper,sage.libs.singular.ring,currRing_wrapper,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/ring.pyx#L881
+,sage.libs.singular.ring.poison_currRing,sage.libs.singular.ring,poison_currRing,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/ring.pyx#L829
+,sage.libs.singular.ring.print_currRing,sage.libs.singular.ring,print_currRing,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/ring.pyx#L862
+,sage.libs.singular.ring.ring_wrapper_Py,sage.libs.singular.ring,ring_wrapper_Py,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/ring.pyx#L593
+,sage.libs.singular.singular,sage.libs.singular.singular,singular,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/singular.pyx#L1918
+,sage.libs.singular.singular.get_resource,sage.libs.singular.singular,get_resource,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/singular.pyx#L1918
+,sage.libs.singular.singular.si2sa_resolution,sage.libs.singular.singular,si2sa_resolution,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/singular.pyx#L634
+,sage.libs.singular.singular.si2sa_resolution_graded,sage.libs.singular.singular,si2sa_resolution_graded,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/singular/singular.pyx#L751
+,sage.libs.symmetrica.symmetrica,sage.libs.symmetrica.symmetrica,symmetrica,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L38
+,sage.libs.symmetrica.symmetrica.bdg_symmetrica,sage.libs.symmetrica.symmetrica,bdg_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L38
+,sage.libs.symmetrica.symmetrica.chartafel_symmetrica,sage.libs.symmetrica.symmetrica,chartafel_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L8
+,sage.libs.symmetrica.symmetrica.charvalue_symmetrica,sage.libs.symmetrica.symmetrica,charvalue_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L44
+,sage.libs.symmetrica.symmetrica.compute_elmsym_with_alphabet_symmetrica,sage.libs.symmetrica.symmetrica,compute_elmsym_with_alphabet_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L228
+,sage.libs.symmetrica.symmetrica.compute_homsym_with_alphabet_symmetrica,sage.libs.symmetrica.symmetrica,compute_homsym_with_alphabet_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L182
+,sage.libs.symmetrica.symmetrica.compute_monomial_with_alphabet_symmetrica,sage.libs.symmetrica.symmetrica,compute_monomial_with_alphabet_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L278
+,sage.libs.symmetrica.symmetrica.compute_powsym_with_alphabet_symmetrica,sage.libs.symmetrica.symmetrica,compute_powsym_with_alphabet_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L323
+,sage.libs.symmetrica.symmetrica.compute_schur_with_alphabet_det_symmetrica,sage.libs.symmetrica.symmetrica,compute_schur_with_alphabet_det_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L368
+,sage.libs.symmetrica.symmetrica.compute_schur_with_alphabet_symmetrica,sage.libs.symmetrica.symmetrica,compute_schur_with_alphabet_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L138
+,sage.libs.symmetrica.symmetrica.dimension_schur_symmetrica,sage.libs.symmetrica.symmetrica,dimension_schur_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L92
+,sage.libs.symmetrica.symmetrica.dimension_symmetrization_symmetrica,sage.libs.symmetrica.symmetrica,dimension_symmetrization_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L11
+,sage.libs.symmetrica.symmetrica.divdiff_perm_schubert_symmetrica,sage.libs.symmetrica.symmetrica,divdiff_perm_schubert_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L179
+,sage.libs.symmetrica.symmetrica.divdiff_schubert_symmetrica,sage.libs.symmetrica.symmetrica,divdiff_schubert_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L276
+,sage.libs.symmetrica.symmetrica.gupta_nm_symmetrica,sage.libs.symmetrica.symmetrica,gupta_nm_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L103
+,sage.libs.symmetrica.symmetrica.gupta_tafel_symmetrica,sage.libs.symmetrica.symmetrica,gupta_tafel_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L135
+,sage.libs.symmetrica.symmetrica.hall_littlewood_symmetrica,sage.libs.symmetrica.symmetrica,hall_littlewood_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L434
+,sage.libs.symmetrica.symmetrica.kostka_number_symmetrica,sage.libs.symmetrica.symmetrica,kostka_number_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L10
+,sage.libs.symmetrica.symmetrica.kostka_tab_symmetrica,sage.libs.symmetrica.symmetrica,kostka_tab_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L58
+,sage.libs.symmetrica.symmetrica.kostka_tafel_symmetrica,sage.libs.symmetrica.symmetrica,kostka_tafel_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L117
+,sage.libs.symmetrica.symmetrica.kranztafel_symmetrica,sage.libs.symmetrica.symmetrica,kranztafel_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L99
+,sage.libs.symmetrica.symmetrica.mult_monomial_monomial_symmetrica,sage.libs.symmetrica.symmetrica,mult_monomial_monomial_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L918
+,sage.libs.symmetrica.symmetrica.mult_schubert_schubert_symmetrica,sage.libs.symmetrica.symmetrica,mult_schubert_schubert_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L32
+,sage.libs.symmetrica.symmetrica.mult_schubert_variable_symmetrica,sage.libs.symmetrica.symmetrica,mult_schubert_variable_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L140
+,sage.libs.symmetrica.symmetrica.mult_schur_schur_symmetrica,sage.libs.symmetrica.symmetrica,mult_schur_schur_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L899
+,sage.libs.symmetrica.symmetrica.ndg_symmetrica,sage.libs.symmetrica.symmetrica,ndg_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L125
+,sage.libs.symmetrica.symmetrica.newtrans_symmetrica,sage.libs.symmetrica.symmetrica,newtrans_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L115
+,sage.libs.symmetrica.symmetrica.odd_to_strict_part_symmetrica,sage.libs.symmetrica.symmetrica,odd_to_strict_part_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L41
+,sage.libs.symmetrica.symmetrica.odg_symmetrica,sage.libs.symmetrica.symmetrica,odg_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L95
+,sage.libs.symmetrica.symmetrica.outerproduct_schur_symmetrica,sage.libs.symmetrica.symmetrica,outerproduct_schur_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L55
+,sage.libs.symmetrica.symmetrica.part_part_skewschur_symmetrica,sage.libs.symmetrica.symmetrica,part_part_skewschur_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L407
+,sage.libs.symmetrica.symmetrica.plethysm_symmetrica,sage.libs.symmetrica.symmetrica,plethysm_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L6
+,sage.libs.symmetrica.symmetrica.q_core_symmetrica,sage.libs.symmetrica.symmetrica,q_core_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L72
+,sage.libs.symmetrica.symmetrica.random_partition_symmetrica,sage.libs.symmetrica.symmetrica,random_partition_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L165
+,sage.libs.symmetrica.symmetrica.scalarproduct_schubert_symmetrica,sage.libs.symmetrica.symmetrica,scalarproduct_schubert_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L238
+,sage.libs.symmetrica.symmetrica.scalarproduct_schur_symmetrica,sage.libs.symmetrica.symmetrica,scalarproduct_schur_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L937
+,sage.libs.symmetrica.symmetrica.schur_schur_plet_symmetrica,sage.libs.symmetrica.symmetrica,schur_schur_plet_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L25
+,sage.libs.symmetrica.symmetrica.sdg_symmetrica,sage.libs.symmetrica.symmetrica,sdg_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L65
+,sage.libs.symmetrica.symmetrica.specht_dg_symmetrica,sage.libs.symmetrica.symmetrica,specht_dg_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L145
+,sage.libs.symmetrica.symmetrica.start,sage.libs.symmetrica.symmetrica,start,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L1169
+,sage.libs.symmetrica.symmetrica.strict_to_odd_part_symmetrica,sage.libs.symmetrica.symmetrica,strict_to_odd_part_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L10
+,sage.libs.symmetrica.symmetrica.t_ELMSYM_HOMSYM_symmetrica,sage.libs.symmetrica.symmetrica,t_ELMSYM_HOMSYM_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L698
+,sage.libs.symmetrica.symmetrica.t_ELMSYM_MONOMIAL_symmetrica,sage.libs.symmetrica.symmetrica,t_ELMSYM_MONOMIAL_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L681
+,sage.libs.symmetrica.symmetrica.t_ELMSYM_POWSYM_symmetrica,sage.libs.symmetrica.symmetrica,t_ELMSYM_POWSYM_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L664
+,sage.libs.symmetrica.symmetrica.t_ELMSYM_SCHUR_symmetrica,sage.libs.symmetrica.symmetrica,t_ELMSYM_SCHUR_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L647
+,sage.libs.symmetrica.symmetrica.t_HOMSYM_ELMSYM_symmetrica,sage.libs.symmetrica.symmetrica,t_HOMSYM_ELMSYM_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L790
+,sage.libs.symmetrica.symmetrica.t_HOMSYM_MONOMIAL_symmetrica,sage.libs.symmetrica.symmetrica,t_HOMSYM_MONOMIAL_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L773
+,sage.libs.symmetrica.symmetrica.t_HOMSYM_POWSYM_symmetrica,sage.libs.symmetrica.symmetrica,t_HOMSYM_POWSYM_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L756
+,sage.libs.symmetrica.symmetrica.t_HOMSYM_SCHUR_symmetrica,sage.libs.symmetrica.symmetrica,t_HOMSYM_SCHUR_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L739
+,sage.libs.symmetrica.symmetrica.t_MONOMIAL_ELMSYM_symmetrica,sage.libs.symmetrica.symmetrica,t_MONOMIAL_ELMSYM_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L572
+,sage.libs.symmetrica.symmetrica.t_MONOMIAL_HOMSYM_symmetrica,sage.libs.symmetrica.symmetrica,t_MONOMIAL_HOMSYM_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L555
+,sage.libs.symmetrica.symmetrica.t_MONOMIAL_POWSYM_symmetrica,sage.libs.symmetrica.symmetrica,t_MONOMIAL_POWSYM_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L606
+,sage.libs.symmetrica.symmetrica.t_MONOMIAL_SCHUR_symmetrica,sage.libs.symmetrica.symmetrica,t_MONOMIAL_SCHUR_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L589
+,sage.libs.symmetrica.symmetrica.t_POLYNOM_ELMSYM_symmetrica,sage.libs.symmetrica.symmetrica,t_POLYNOM_ELMSYM_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L715
+,sage.libs.symmetrica.symmetrica.t_POLYNOM_MONOMIAL_symmetrica,sage.libs.symmetrica.symmetrica,t_POLYNOM_MONOMIAL_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L623
+,sage.libs.symmetrica.symmetrica.t_POLYNOM_POWER_symmetrica,sage.libs.symmetrica.symmetrica,t_POLYNOM_POWER_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L875
+,sage.libs.symmetrica.symmetrica.t_POLYNOM_SCHUBERT_symmetrica,sage.libs.symmetrica.symmetrica,t_POLYNOM_SCHUBERT_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L100
+,sage.libs.symmetrica.symmetrica.t_POLYNOM_SCHUR_symmetrica,sage.libs.symmetrica.symmetrica,t_POLYNOM_SCHUR_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L531
+,sage.libs.symmetrica.symmetrica.t_POWSYM_ELMSYM_symmetrica,sage.libs.symmetrica.symmetrica,t_POWSYM_ELMSYM_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L841
+,sage.libs.symmetrica.symmetrica.t_POWSYM_HOMSYM_symmetrica,sage.libs.symmetrica.symmetrica,t_POWSYM_HOMSYM_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L858
+,sage.libs.symmetrica.symmetrica.t_POWSYM_MONOMIAL_symmetrica,sage.libs.symmetrica.symmetrica,t_POWSYM_MONOMIAL_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L807
+,sage.libs.symmetrica.symmetrica.t_POWSYM_SCHUR_symmetrica,sage.libs.symmetrica.symmetrica,t_POWSYM_SCHUR_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L824
+,sage.libs.symmetrica.symmetrica.t_SCHUBERT_POLYNOM_symmetrica,sage.libs.symmetrica.symmetrica,t_SCHUBERT_POLYNOM_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L67
+,sage.libs.symmetrica.symmetrica.t_SCHUR_ELMSYM_symmetrica,sage.libs.symmetrica.symmetrica,t_SCHUR_ELMSYM_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L497
+,sage.libs.symmetrica.symmetrica.t_SCHUR_HOMSYM_symmetrica,sage.libs.symmetrica.symmetrica,t_SCHUR_HOMSYM_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L480
+,sage.libs.symmetrica.symmetrica.t_SCHUR_MONOMIAL_symmetrica,sage.libs.symmetrica.symmetrica,t_SCHUR_MONOMIAL_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L463
+,sage.libs.symmetrica.symmetrica.t_SCHUR_POWSYM_symmetrica,sage.libs.symmetrica.symmetrica,t_SCHUR_POWSYM_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L514
+,sage.libs.symmetrica.symmetrica.test_integer,sage.libs.symmetrica.symmetrica,test_integer,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L526
+,sage.logic,sage.logic,logic,module,,
+,sage.logic.booleval,sage.logic.booleval,booleval,module,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/booleval.py#L76
+,sage.logic.booleval.eval_f,sage.logic.booleval,eval_f,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/booleval.py#L76
+,sage.logic.booleval.eval_formula,sage.logic.booleval,eval_formula,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/booleval.py#L42
+,sage.logic.booleval.eval_op,sage.logic.booleval,eval_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/booleval.py#L104
+,sage.logic.boolformula,sage.logic.boolformula,boolformula,module,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/boolformula.py#L150
+,sage.logic.boolformula.BooleanFormula,sage.logic.boolformula,BooleanFormula,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/logic/boolformula.py#L150
+,sage.logic.boolformula.is_consequence,sage.logic.boolformula,is_consequence,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/boolformula.py#L706
+,sage.logic.logic,sage.logic.logic,logic,module,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L40
+,sage.logic.logic.SymbolicLogic,sage.logic.logic,SymbolicLogic,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L40
+,sage.logic.logic.eval,sage.logic.logic,eval,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L405
+,sage.logic.logic.eval_and_op,sage.logic.logic,eval_and_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L646
+,sage.logic.logic.eval_bin_op,sage.logic.logic,eval_bin_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L593
+,sage.logic.logic.eval_iff_op,sage.logic.logic,eval_iff_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L745
+,sage.logic.logic.eval_ifthen_op,sage.logic.logic,eval_ifthen_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L710
+,sage.logic.logic.eval_ltor_toks,sage.logic.logic,eval_ltor_toks,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L446
+,sage.logic.logic.eval_mon_op,sage.logic.logic,eval_mon_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L557
+,sage.logic.logic.eval_or_op,sage.logic.logic,eval_or_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L678
+,sage.logic.logic.get_bit,sage.logic.logic,get_bit,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L366
+,sage.logic.logic.reduce_bins,sage.logic.logic,reduce_bins,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L483
+,sage.logic.logic.reduce_monos,sage.logic.logic,reduce_monos,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L521
+,sage.logic.logic.tokenize,sage.logic.logic,tokenize,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L780
+,sage.logic.logicparser,sage.logic.logicparser,logicparser,module,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L653
+,sage.logic.logicparser.apply_func,sage.logic.logicparser,apply_func,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L653
+,sage.logic.logicparser.get_trees,sage.logic.logicparser,get_trees,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L166
+,sage.logic.logicparser.parse,sage.logic.logicparser,parse,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L95
+,sage.logic.logicparser.parse_ltor,sage.logic.logicparser,parse_ltor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L569
+,sage.logic.logicparser.polish_parse,sage.logic.logicparser,polish_parse,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L130
+,sage.logic.logicparser.prefix_to_infix,sage.logic.logicparser,prefix_to_infix,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L339
+,sage.logic.logicparser.recover_formula,sage.logic.logicparser,recover_formula,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L222
+,sage.logic.logicparser.recover_formula_internal,sage.logic.logicparser,recover_formula_internal,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L275
+,sage.logic.logicparser.to_infix_internal,sage.logic.logicparser,to_infix_internal,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L381
+,sage.logic.logicparser.tokenize,sage.logic.logicparser,tokenize,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L429
+,sage.logic.logicparser.tree_parse,sage.logic.logicparser,tree_parse,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L512
+,sage.logic.logictable,sage.logic.logictable,logictable,module,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logictable.py#L125
+,sage.logic.logictable.Truthtable,sage.logic.logictable,Truthtable,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logictable.py#L125
+,sage.logic.propcalc,sage.logic.propcalc,propcalc,module,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/propcalc.py#L262
+,sage.logic.propcalc.consistent,sage.logic.propcalc,consistent,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/propcalc.py#L262
+,sage.logic.propcalc.formula,sage.logic.propcalc,formula,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/propcalc.py#L151
+,sage.logic.propcalc.get_formulas,sage.logic.propcalc,get_formulas,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/propcalc.py#L191
+,sage.manifolds,sage.manifolds,manifolds,module,,
+,sage.manifolds.calculus_method,sage.manifolds.calculus_method,calculus_method,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/calculus_method.py#L116
+,sage.manifolds.calculus_method.CalculusMethod,sage.manifolds.calculus_method,CalculusMethod,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/calculus_method.py#L116
+,sage.manifolds.catalog,sage.manifolds.catalog,catalog,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/catalog.py#L99
+,sage.manifolds.catalog.Kerr,sage.manifolds.catalog,Kerr,function,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/catalog.py#L99
+,sage.manifolds.catalog.Minkowski,sage.manifolds.catalog,Minkowski,function,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/catalog.py#L47
+,sage.manifolds.catalog.RealProjectiveSpace,sage.manifolds.catalog,RealProjectiveSpace,function,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/catalog.py#L298
+,sage.manifolds.catalog.Torus,sage.manifolds.catalog,Torus,function,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/catalog.py#L247
+,sage.manifolds.chart,sage.manifolds.chart,chart,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/chart.py#L51
+,sage.manifolds.chart.Chart,sage.manifolds.chart,Chart,class,"UniqueRepresentation, SageObject",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/chart.py#L51
+,sage.manifolds.chart.CoordChange,sage.manifolds.chart,CoordChange,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/chart.py#L3416
+,sage.manifolds.chart.RealChart,sage.manifolds.chart,RealChart,class,Chart,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/chart.py#L1613
+,sage.manifolds.chart_func,sage.manifolds.chart_func,chart_func,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/chart_func.py#L52
+,sage.manifolds.chart_func.ChartFunction,sage.manifolds.chart_func,ChartFunction,class,"AlgebraElement, ModuleElementWithMutability",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/chart_func.py#L52
+,sage.manifolds.chart_func.ChartFunctionRing,sage.manifolds.chart_func,ChartFunctionRing,class,"Parent, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/chart_func.py#L2716
+,sage.manifolds.chart_func.MultiCoordFunction,sage.manifolds.chart_func,MultiCoordFunction,class,"SageObject, Mutability",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/chart_func.py#L2909
+,sage.manifolds.continuous_map,sage.manifolds.continuous_map,continuous_map,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/continuous_map.py#L38
+,sage.manifolds.continuous_map.ContinuousMap,sage.manifolds.continuous_map,ContinuousMap,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/continuous_map.py#L38
+,sage.manifolds.continuous_map_image,sage.manifolds.continuous_map_image,continuous_map_image,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/continuous_map_image.py#L23
+,sage.manifolds.continuous_map_image.ImageManifoldSubset,sage.manifolds.continuous_map_image,ImageManifoldSubset,class,ManifoldSubset,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/continuous_map_image.py#L23
+,sage.manifolds.differentiable.affine_connection,sage.manifolds.differentiable.affine_connection,affine_connection,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/affine_connection.py#L39
+,sage.manifolds.differentiable.affine_connection.AffineConnection,sage.manifolds.differentiable.affine_connection,AffineConnection,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/affine_connection.py#L39
+,sage.manifolds.differentiable.automorphismfield,sage.manifolds.differentiable.automorphismfield,automorphismfield,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/automorphismfield.py#L32
+,sage.manifolds.differentiable.automorphismfield.AutomorphismField,sage.manifolds.differentiable.automorphismfield,AutomorphismField,class,TensorField,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/automorphismfield.py#L32
+,sage.manifolds.differentiable.automorphismfield.AutomorphismFieldParal,sage.manifolds.differentiable.automorphismfield,AutomorphismFieldParal,class,"FreeModuleAutomorphism, TensorFieldParal",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/automorphismfield.py#L908
+,sage.manifolds.differentiable.automorphismfield_group,sage.manifolds.differentiable.automorphismfield_group,automorphismfield_group,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/automorphismfield_group.py#L56
+,sage.manifolds.differentiable.automorphismfield_group.AutomorphismFieldGroup,sage.manifolds.differentiable.automorphismfield_group,AutomorphismFieldGroup,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/automorphismfield_group.py#L56
+,sage.manifolds.differentiable.automorphismfield_group.AutomorphismFieldParalGroup,sage.manifolds.differentiable.automorphismfield_group,AutomorphismFieldParalGroup,class,FreeModuleLinearGroup,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/automorphismfield_group.py#L387
+,sage.manifolds.differentiable.bundle_connection,sage.manifolds.differentiable.bundle_connection,bundle_connection,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/bundle_connection.py#L47
+,sage.manifolds.differentiable.bundle_connection.BundleConnection,sage.manifolds.differentiable.bundle_connection,BundleConnection,class,"SageObject, Mutability",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/bundle_connection.py#L47
+,sage.manifolds.differentiable.characteristic_cohomology_class,sage.manifolds.differentiable.characteristic_cohomology_class,characteristic_cohomology_class,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/characteristic_cohomology_class.py#L1207
+,sage.manifolds.differentiable.characteristic_cohomology_class.Algorithm_generic,sage.manifolds.differentiable.characteristic_cohomology_class,Algorithm_generic,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/characteristic_cohomology_class.py#L1207
+,sage.manifolds.differentiable.characteristic_cohomology_class.CharacteristicCohomologyClassRing,sage.manifolds.differentiable.characteristic_cohomology_class,CharacteristicCohomologyClassRing,class,FiniteGCAlgebra,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/characteristic_cohomology_class.py#L620
+,sage.manifolds.differentiable.characteristic_cohomology_class.CharacteristicCohomologyClassRingElement,sage.manifolds.differentiable.characteristic_cohomology_class,CharacteristicCohomologyClassRingElement,class,IndexedFreeModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/characteristic_cohomology_class.py#L297
+,sage.manifolds.differentiable.characteristic_cohomology_class.ChernAlgorithm,sage.manifolds.differentiable.characteristic_cohomology_class,ChernAlgorithm,class,"Singleton, Algorithm_generic",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/characteristic_cohomology_class.py#L1348
+,sage.manifolds.differentiable.characteristic_cohomology_class.EulerAlgorithm,sage.manifolds.differentiable.characteristic_cohomology_class,EulerAlgorithm,class,"Singleton, Algorithm_generic",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/characteristic_cohomology_class.py#L1531
+,sage.manifolds.differentiable.characteristic_cohomology_class.PontryaginAlgorithm,sage.manifolds.differentiable.characteristic_cohomology_class,PontryaginAlgorithm,class,"Singleton, Algorithm_generic",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/characteristic_cohomology_class.py#L1453
+,sage.manifolds.differentiable.characteristic_cohomology_class.PontryaginEulerAlgorithm,sage.manifolds.differentiable.characteristic_cohomology_class,PontryaginEulerAlgorithm,class,"Singleton, Algorithm_generic",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/characteristic_cohomology_class.py#L1708
+,sage.manifolds.differentiable.characteristic_cohomology_class.additive_sequence,sage.manifolds.differentiable.characteristic_cohomology_class,additive_sequence,function,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/characteristic_cohomology_class.py#L1106
+,sage.manifolds.differentiable.characteristic_cohomology_class.fast_wedge_power,sage.manifolds.differentiable.characteristic_cohomology_class,fast_wedge_power,function,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/characteristic_cohomology_class.py#L1161
+,sage.manifolds.differentiable.characteristic_cohomology_class.multiplicative_sequence,sage.manifolds.differentiable.characteristic_cohomology_class,multiplicative_sequence,function,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/characteristic_cohomology_class.py#L1051
+,sage.manifolds.differentiable.chart,sage.manifolds.differentiable.chart,chart,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/chart.py#L39
+,sage.manifolds.differentiable.chart.DiffChart,sage.manifolds.differentiable.chart,DiffChart,class,Chart,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/chart.py#L39
+,sage.manifolds.differentiable.chart.DiffCoordChange,sage.manifolds.differentiable.chart,DiffCoordChange,class,CoordChange,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/chart.py#L1073
+,sage.manifolds.differentiable.chart.RealDiffChart,sage.manifolds.differentiable.chart,RealDiffChart,class,"DiffChart, RealChart",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/chart.py#L673
+,sage.manifolds.differentiable.curve,sage.manifolds.differentiable.curve,curve,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/curve.py#L41
+,sage.manifolds.differentiable.curve.DifferentiableCurve,sage.manifolds.differentiable.curve,DifferentiableCurve,class,DiffMap,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/curve.py#L41
+,sage.manifolds.differentiable.de_rham_cohomology,sage.manifolds.differentiable.de_rham_cohomology,de_rham_cohomology,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/de_rham_cohomology.py#L59
+,sage.manifolds.differentiable.de_rham_cohomology.DeRhamCohomologyClass,sage.manifolds.differentiable.de_rham_cohomology,DeRhamCohomologyClass,class,AlgebraElement,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/de_rham_cohomology.py#L59
+,sage.manifolds.differentiable.de_rham_cohomology.DeRhamCohomologyRing,sage.manifolds.differentiable.de_rham_cohomology,DeRhamCohomologyRing,class,"Parent, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/de_rham_cohomology.py#L305
+,sage.manifolds.differentiable.degenerate,sage.manifolds.differentiable.degenerate,degenerate,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/degenerate.py#L27
+,sage.manifolds.differentiable.degenerate.DegenerateManifold,sage.manifolds.differentiable.degenerate,DegenerateManifold,class,DifferentiableManifold,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/degenerate.py#L27
+,sage.manifolds.differentiable.degenerate.TangentTensor,sage.manifolds.differentiable.degenerate,TangentTensor,class,TensorFieldParal,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/degenerate.py#L376
+,sage.manifolds.differentiable.degenerate_submanifold,sage.manifolds.differentiable.degenerate_submanifold,degenerate_submanifold,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/degenerate_submanifold.py#L176
+,sage.manifolds.differentiable.degenerate_submanifold.DegenerateSubmanifold,sage.manifolds.differentiable.degenerate_submanifold,DegenerateSubmanifold,class,"DegenerateManifold, DifferentiableSubmanifold",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/degenerate_submanifold.py#L176
+,sage.manifolds.differentiable.degenerate_submanifold.Screen,sage.manifolds.differentiable.degenerate_submanifold,Screen,class,VectorFieldModule,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/degenerate_submanifold.py#L1405
+,sage.manifolds.differentiable.diff_form,sage.manifolds.differentiable.diff_form,diff_form,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/diff_form.py#L61
+,sage.manifolds.differentiable.diff_form.DiffForm,sage.manifolds.differentiable.diff_form,DiffForm,class,TensorField,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/diff_form.py#L61
+,sage.manifolds.differentiable.diff_form.DiffFormParal,sage.manifolds.differentiable.diff_form,DiffFormParal,class,"FreeModuleAltForm, TensorFieldParal, DiffForm",
+,sage.manifolds.differentiable.diff_form_module,sage.manifolds.differentiable.diff_form_module,diff_form_module,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/diff_form_module.py#L574
+,sage.manifolds.differentiable.diff_form_module.DiffFormFreeModule,sage.manifolds.differentiable.diff_form_module,DiffFormFreeModule,class,ExtPowerDualFreeModule,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/diff_form_module.py#L574
+,sage.manifolds.differentiable.diff_form_module.DiffFormModule,sage.manifolds.differentiable.diff_form_module,DiffFormModule,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/diff_form_module.py#L52
+,sage.manifolds.differentiable.diff_form_module.VectorFieldDualFreeModule,sage.manifolds.differentiable.diff_form_module,VectorFieldDualFreeModule,class,DiffFormFreeModule,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/diff_form_module.py#L902
+,sage.manifolds.differentiable.diff_map,sage.manifolds.differentiable.diff_map,diff_map,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/diff_map.py#L47
+,sage.manifolds.differentiable.diff_map.DiffMap,sage.manifolds.differentiable.diff_map,DiffMap,class,ContinuousMap,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/diff_map.py#L47
+,sage.manifolds.differentiable.differentiable_submanifold,sage.manifolds.differentiable.differentiable_submanifold,differentiable_submanifold,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/differentiable_submanifold.py#L46
+,sage.manifolds.differentiable.differentiable_submanifold.DifferentiableSubmanifold,sage.manifolds.differentiable.differentiable_submanifold,DifferentiableSubmanifold,class,"DifferentiableManifold, TopologicalSubmanifold",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/differentiable_submanifold.py#L46
+,sage.manifolds.differentiable.examples.euclidean,sage.manifolds.differentiable.examples.euclidean,euclidean,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/examples/euclidean.py#L1557
+,sage.manifolds.differentiable.examples.euclidean.Euclidean3dimSpace,sage.manifolds.differentiable.examples.euclidean,Euclidean3dimSpace,class,EuclideanSpace,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/examples/euclidean.py#L1557
+,sage.manifolds.differentiable.examples.euclidean.EuclideanPlane,sage.manifolds.differentiable.examples.euclidean,EuclideanPlane,class,EuclideanSpace,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/examples/euclidean.py#L1046
+,sage.manifolds.differentiable.examples.euclidean.EuclideanSpace,sage.manifolds.differentiable.examples.euclidean,EuclideanSpace,class,PseudoRiemannianManifold,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/examples/euclidean.py#L422
+,sage.manifolds.differentiable.examples.real_line,sage.manifolds.differentiable.examples.real_line,real_line,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/examples/real_line.py#L37
+,sage.manifolds.differentiable.examples.real_line.OpenInterval,sage.manifolds.differentiable.examples.real_line,OpenInterval,class,DifferentiableManifold,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/examples/real_line.py#L37
+,sage.manifolds.differentiable.examples.real_line.RealLine,sage.manifolds.differentiable.examples.real_line,RealLine,class,OpenInterval,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/examples/real_line.py#L696
+,sage.manifolds.differentiable.examples.sphere,sage.manifolds.differentiable.examples.sphere,sphere,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/examples/sphere.py#L178
+,sage.manifolds.differentiable.examples.sphere.Sphere,sage.manifolds.differentiable.examples.sphere,Sphere,class,PseudoRiemannianSubmanifold,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/examples/sphere.py#L178
+,sage.manifolds.differentiable.examples.symplectic_space,sage.manifolds.differentiable.examples.symplectic_space,symplectic_space,module,,
+,sage.manifolds.differentiable.examples.symplectic_space.StandardSymplecticSpace,sage.manifolds.differentiable.examples.symplectic_space,StandardSymplecticSpace,class,EuclideanSpace,
+,sage.manifolds.differentiable.integrated_curve,sage.manifolds.differentiable.integrated_curve,integrated_curve,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/integrated_curve.py#L2871
+,sage.manifolds.differentiable.integrated_curve.IntegratedAutoparallelCurve,sage.manifolds.differentiable.integrated_curve,IntegratedAutoparallelCurve,class,IntegratedCurve,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/integrated_curve.py#L2871
+,sage.manifolds.differentiable.integrated_curve.IntegratedCurve,sage.manifolds.differentiable.integrated_curve,IntegratedCurve,class,DifferentiableCurve,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/integrated_curve.py#L128
+,sage.manifolds.differentiable.integrated_curve.IntegratedGeodesic,sage.manifolds.differentiable.integrated_curve,IntegratedGeodesic,class,IntegratedAutoparallelCurve,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/integrated_curve.py#L3656
+,sage.manifolds.differentiable.levi_civita_connection,sage.manifolds.differentiable.levi_civita_connection,levi_civita_connection,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/levi_civita_connection.py#L38
+,sage.manifolds.differentiable.levi_civita_connection.LeviCivitaConnection,sage.manifolds.differentiable.levi_civita_connection,LeviCivitaConnection,class,AffineConnection,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/levi_civita_connection.py#L38
+,sage.manifolds.differentiable.manifold,sage.manifolds.differentiable.manifold,manifold,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/manifold.py#L466
+,sage.manifolds.differentiable.manifold.DifferentiableManifold,sage.manifolds.differentiable.manifold,DifferentiableManifold,class,TopologicalManifold,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/manifold.py#L466
+,sage.manifolds.differentiable.manifold_homset,sage.manifolds.differentiable.manifold_homset,manifold_homset,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/manifold_homset.py#L223
+,sage.manifolds.differentiable.manifold_homset.DifferentiableCurveSet,sage.manifolds.differentiable.manifold_homset,DifferentiableCurveSet,class,DifferentiableManifoldHomset,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/manifold_homset.py#L223
+,sage.manifolds.differentiable.manifold_homset.DifferentiableManifoldHomset,sage.manifolds.differentiable.manifold_homset,DifferentiableManifoldHomset,class,TopologicalManifoldHomset,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/manifold_homset.py#L55
+,sage.manifolds.differentiable.manifold_homset.IntegratedAutoparallelCurveSet,sage.manifolds.differentiable.manifold_homset,IntegratedAutoparallelCurveSet,class,IntegratedCurveSet,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/manifold_homset.py#L970
+,sage.manifolds.differentiable.manifold_homset.IntegratedCurveSet,sage.manifolds.differentiable.manifold_homset,IntegratedCurveSet,class,DifferentiableCurveSet,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/manifold_homset.py#L514
+,sage.manifolds.differentiable.manifold_homset.IntegratedGeodesicSet,sage.manifolds.differentiable.manifold_homset,IntegratedGeodesicSet,class,IntegratedAutoparallelCurveSet,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/manifold_homset.py#L1424
+,sage.manifolds.differentiable.metric,sage.manifolds.differentiable.metric,metric,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/metric.py#L2513
+,sage.manifolds.differentiable.metric.DegenerateMetric,sage.manifolds.differentiable.metric,DegenerateMetric,class,TensorField,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/metric.py#L2513
+,sage.manifolds.differentiable.metric.DegenerateMetricParal,sage.manifolds.differentiable.metric,DegenerateMetricParal,class,"DegenerateMetric, TensorFieldParal",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/metric.py#L2820
+,sage.manifolds.differentiable.metric.PseudoRiemannianMetric,sage.manifolds.differentiable.metric,PseudoRiemannianMetric,class,TensorField,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/metric.py#L55
+,sage.manifolds.differentiable.metric.PseudoRiemannianMetricParal,sage.manifolds.differentiable.metric,PseudoRiemannianMetricParal,class,"PseudoRiemannianMetric, TensorFieldParal",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/metric.py#L1958
+,sage.manifolds.differentiable.mixed_form,sage.manifolds.differentiable.mixed_form,mixed_form,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/mixed_form.py#L30
+,sage.manifolds.differentiable.mixed_form.MixedForm,sage.manifolds.differentiable.mixed_form,MixedForm,class,"AlgebraElement, ModuleElementWithMutability",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/mixed_form.py#L30
+,sage.manifolds.differentiable.mixed_form_algebra,sage.manifolds.differentiable.mixed_form_algebra,mixed_form_algebra,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/mixed_form_algebra.py#L41
+,sage.manifolds.differentiable.mixed_form_algebra.MixedFormAlgebra,sage.manifolds.differentiable.mixed_form_algebra,MixedFormAlgebra,class,"Parent, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/mixed_form_algebra.py#L41
+,sage.manifolds.differentiable.multivector_module,sage.manifolds.differentiable.multivector_module,multivector_module,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/multivector_module.py#L495
+,sage.manifolds.differentiable.multivector_module.MultivectorFreeModule,sage.manifolds.differentiable.multivector_module,MultivectorFreeModule,class,ExtPowerFreeModule,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/multivector_module.py#L495
+,sage.manifolds.differentiable.multivector_module.MultivectorModule,sage.manifolds.differentiable.multivector_module,MultivectorModule,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/multivector_module.py#L46
+,sage.manifolds.differentiable.multivectorfield,sage.manifolds.differentiable.multivectorfield,multivectorfield,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/multivectorfield.py#L44
+,sage.manifolds.differentiable.multivectorfield.MultivectorField,sage.manifolds.differentiable.multivectorfield,MultivectorField,class,TensorField,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/multivectorfield.py#L44
+,sage.manifolds.differentiable.multivectorfield.MultivectorFieldParal,sage.manifolds.differentiable.multivectorfield,MultivectorFieldParal,class,"AlternatingContrTensor, TensorFieldParal",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/multivectorfield.py#L672
+,sage.manifolds.differentiable.poisson_tensor,sage.manifolds.differentiable.poisson_tensor,poisson_tensor,module,,
+,sage.manifolds.differentiable.poisson_tensor.PoissonTensorField,sage.manifolds.differentiable.poisson_tensor,PoissonTensorField,class,MultivectorField,
+,sage.manifolds.differentiable.poisson_tensor.PoissonTensorFieldParal,sage.manifolds.differentiable.poisson_tensor,PoissonTensorFieldParal,class,"PoissonTensorField, MultivectorFieldParal",
+,sage.manifolds.differentiable.pseudo_riemannian,sage.manifolds.differentiable.pseudo_riemannian,pseudo_riemannian,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/pseudo_riemannian.py#L281
+,sage.manifolds.differentiable.pseudo_riemannian.PseudoRiemannianManifold,sage.manifolds.differentiable.pseudo_riemannian,PseudoRiemannianManifold,class,DifferentiableManifold,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/pseudo_riemannian.py#L281
+,sage.manifolds.differentiable.pseudo_riemannian_submanifold,sage.manifolds.differentiable.pseudo_riemannian_submanifold,pseudo_riemannian_submanifold,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/pseudo_riemannian_submanifold.py#L208
+,sage.manifolds.differentiable.pseudo_riemannian_submanifold.PseudoRiemannianSubmanifold,sage.manifolds.differentiable.pseudo_riemannian_submanifold,PseudoRiemannianSubmanifold,class,"PseudoRiemannianManifold, DifferentiableSubmanifold",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/pseudo_riemannian_submanifold.py#L208
+,sage.manifolds.differentiable.scalarfield,sage.manifolds.differentiable.scalarfield,scalarfield,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/scalarfield.py#L51
+,sage.manifolds.differentiable.scalarfield.DiffScalarField,sage.manifolds.differentiable.scalarfield,DiffScalarField,class,ScalarField,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/scalarfield.py#L51
+,sage.manifolds.differentiable.scalarfield_algebra,sage.manifolds.differentiable.scalarfield_algebra,scalarfield_algebra,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/scalarfield_algebra.py#L39
+,sage.manifolds.differentiable.scalarfield_algebra.DiffScalarFieldAlgebra,sage.manifolds.differentiable.scalarfield_algebra,DiffScalarFieldAlgebra,class,ScalarFieldAlgebra,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/scalarfield_algebra.py#L39
+,sage.manifolds.differentiable.symplectic_form,sage.manifolds.differentiable.symplectic_form,symplectic_form,module,,
+,sage.manifolds.differentiable.symplectic_form.SymplecticForm,sage.manifolds.differentiable.symplectic_form,SymplecticForm,class,DiffForm,
+,sage.manifolds.differentiable.symplectic_form.SymplecticFormParal,sage.manifolds.differentiable.symplectic_form,SymplecticFormParal,class,"SymplecticForm, DiffFormParal",
+,sage.manifolds.differentiable.tangent_space,sage.manifolds.differentiable.tangent_space,tangent_space,module,,
+,sage.manifolds.differentiable.tangent_space.TangentSpace,sage.manifolds.differentiable.tangent_space,TangentSpace,class,FiniteRankFreeModule,
+,sage.manifolds.differentiable.tangent_vector,sage.manifolds.differentiable.tangent_vector,tangent_vector,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/tangent_vector.py#L33
+,sage.manifolds.differentiable.tangent_vector.TangentVector,sage.manifolds.differentiable.tangent_vector,TangentVector,class,FiniteRankFreeModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/tangent_vector.py#L33
+,sage.manifolds.differentiable.tensorfield,sage.manifolds.differentiable.tensorfield,tensorfield,module,,
+,sage.manifolds.differentiable.tensorfield.TensorField,sage.manifolds.differentiable.tensorfield,TensorField,class,ModuleElementWithMutability,
+,sage.manifolds.differentiable.tensorfield_module,sage.manifolds.differentiable.tensorfield_module,tensorfield_module,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/tensorfield_module.py#L593
+,sage.manifolds.differentiable.tensorfield_module.TensorFieldFreeModule,sage.manifolds.differentiable.tensorfield_module,TensorFieldFreeModule,class,TensorFreeModule,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/tensorfield_module.py#L593
+,sage.manifolds.differentiable.tensorfield_module.TensorFieldModule,sage.manifolds.differentiable.tensorfield_module,TensorFieldModule,class,"UniqueRepresentation, ReflexiveModule_tensor",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/tensorfield_module.py#L60
+,sage.manifolds.differentiable.tensorfield_paral,sage.manifolds.differentiable.tensorfield_paral,tensorfield_paral,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/tensorfield_paral.py#L323
+,sage.manifolds.differentiable.tensorfield_paral.TensorFieldParal,sage.manifolds.differentiable.tensorfield_paral,TensorFieldParal,class,"FreeModuleTensor, TensorField",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/tensorfield_paral.py#L323
+,sage.manifolds.differentiable.vector_bundle,sage.manifolds.differentiable.vector_bundle,vector_bundle,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/vector_bundle.py#L41
+,sage.manifolds.differentiable.vector_bundle.DifferentiableVectorBundle,sage.manifolds.differentiable.vector_bundle,DifferentiableVectorBundle,class,TopologicalVectorBundle,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/vector_bundle.py#L41
+,sage.manifolds.differentiable.vector_bundle.TensorBundle,sage.manifolds.differentiable.vector_bundle,TensorBundle,class,DifferentiableVectorBundle,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/vector_bundle.py#L340
+,sage.manifolds.differentiable.vectorfield,sage.manifolds.differentiable.vectorfield,vectorfield,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/vectorfield.py#L70
+,sage.manifolds.differentiable.vectorfield.VectorField,sage.manifolds.differentiable.vectorfield,VectorField,class,MultivectorField,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/vectorfield.py#L70
+,sage.manifolds.differentiable.vectorfield.VectorFieldParal,sage.manifolds.differentiable.vectorfield,VectorFieldParal,class,"FiniteRankFreeModuleElement, MultivectorFieldParal, VectorField",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/vectorfield.py#L1382
+,sage.manifolds.differentiable.vectorfield_module,sage.manifolds.differentiable.vectorfield_module,vectorfield_module,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/vectorfield_module.py#L1254
+,sage.manifolds.differentiable.vectorfield_module.VectorFieldFreeModule,sage.manifolds.differentiable.vectorfield_module,VectorFieldFreeModule,class,FiniteRankFreeModule,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/vectorfield_module.py#L1254
+,sage.manifolds.differentiable.vectorfield_module.VectorFieldModule,sage.manifolds.differentiable.vectorfield_module,VectorFieldModule,class,"UniqueRepresentation, ReflexiveModule_base",
+,sage.manifolds.differentiable.vectorframe,sage.manifolds.differentiable.vectorframe,vectorframe,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/vectorframe.py#L224
+,sage.manifolds.differentiable.vectorframe.CoFrame,sage.manifolds.differentiable.vectorframe,CoFrame,class,FreeModuleCoBasis,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/vectorframe.py#L224
+,sage.manifolds.differentiable.vectorframe.CoordCoFrame,sage.manifolds.differentiable.vectorframe,CoordCoFrame,class,CoFrame,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/vectorframe.py#L1557
+,sage.manifolds.differentiable.vectorframe.CoordFrame,sage.manifolds.differentiable.vectorframe,CoordFrame,class,VectorFrame,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/vectorframe.py#L1671
+,sage.manifolds.differentiable.vectorframe.VectorFrame,sage.manifolds.differentiable.vectorframe,VectorFrame,class,FreeModuleBasis,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/differentiable/vectorframe.py#L461
+,sage.manifolds.family,sage.manifolds.family,family,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/family.py#L33
+,sage.manifolds.family.ManifoldObjectFiniteFamily,sage.manifolds.family,ManifoldObjectFiniteFamily,class,FiniteFamily,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/family.py#L33
+,sage.manifolds.family.ManifoldSubsetFiniteFamily,sage.manifolds.family,ManifoldSubsetFiniteFamily,class,ManifoldObjectFiniteFamily,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/family.py#L192
+,sage.manifolds.local_frame,sage.manifolds.local_frame,local_frame,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/local_frame.py#L178
+,sage.manifolds.local_frame.LocalCoFrame,sage.manifolds.local_frame,LocalCoFrame,class,FreeModuleCoBasis,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/local_frame.py#L178
+,sage.manifolds.local_frame.LocalFrame,sage.manifolds.local_frame,LocalFrame,class,FreeModuleBasis,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/local_frame.py#L411
+,sage.manifolds.local_frame.TrivializationCoFrame,sage.manifolds.local_frame,TrivializationCoFrame,class,LocalCoFrame,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/local_frame.py#L1236
+,sage.manifolds.local_frame.TrivializationFrame,sage.manifolds.local_frame,TrivializationFrame,class,LocalFrame,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/local_frame.py#L1369
+,sage.manifolds.manifold,sage.manifolds.manifold,manifold,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/manifold.py#L2685
+,sage.manifolds.manifold.Manifold,sage.manifolds.manifold,Manifold,function,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/manifold.py#L2685
+,sage.manifolds.manifold.TopologicalManifold,sage.manifolds.manifold,TopologicalManifold,class,ManifoldSubset,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/manifold.py#L363
+,sage.manifolds.manifold.options,sage.manifolds.manifold,options,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/manifold.py#L837
+,sage.manifolds.manifold_homset,sage.manifolds.manifold_homset,manifold_homset,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/manifold_homset.py#L37
+,sage.manifolds.manifold_homset.TopologicalManifoldHomset,sage.manifolds.manifold_homset,TopologicalManifoldHomset,class,"UniqueRepresentation, Homset",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/manifold_homset.py#L37
+,sage.manifolds.operators,sage.manifolds.operators,operators,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/operators.py#L173
+,sage.manifolds.operators.curl,sage.manifolds.operators,curl,function,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/operators.py#L173
+,sage.manifolds.operators.dalembertian,sage.manifolds.operators,dalembertian,function,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/operators.py#L302
+,sage.manifolds.operators.div,sage.manifolds.operators,div,function,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/operators.py#L99
+,sage.manifolds.operators.grad,sage.manifolds.operators,grad,function,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/operators.py#L47
+,sage.manifolds.operators.laplacian,sage.manifolds.operators,laplacian,function,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/operators.py#L241
+,sage.manifolds.point,sage.manifolds.point,point,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/point.py#L96
+,sage.manifolds.point.ManifoldPoint,sage.manifolds.point,ManifoldPoint,class,Element,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/point.py#L96
+,sage.manifolds.scalarfield,sage.manifolds.scalarfield,scalarfield,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/scalarfield.py#L59
+,sage.manifolds.scalarfield.ScalarField,sage.manifolds.scalarfield,ScalarField,class,"CommutativeAlgebraElement, ModuleElementWithMutability",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/scalarfield.py#L59
+,sage.manifolds.scalarfield_algebra,sage.manifolds.scalarfield_algebra,scalarfield_algebra,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/scalarfield_algebra.py#L42
+,sage.manifolds.scalarfield_algebra.ScalarFieldAlgebra,sage.manifolds.scalarfield_algebra,ScalarFieldAlgebra,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/scalarfield_algebra.py#L42
+,sage.manifolds.section,sage.manifolds.section,section,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/section.py#L29
+,sage.manifolds.section.Section,sage.manifolds.section,Section,class,ModuleElementWithMutability,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/section.py#L29
+,sage.manifolds.section.TrivialSection,sage.manifolds.section,TrivialSection,class,"FiniteRankFreeModuleElement, Section",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/section.py#L2257
+,sage.manifolds.section_module,sage.manifolds.section_module,section_module,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/section_module.py#L481
+,sage.manifolds.section_module.SectionFreeModule,sage.manifolds.section_module,SectionFreeModule,class,FiniteRankFreeModule,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/section_module.py#L481
+,sage.manifolds.section_module.SectionModule,sage.manifolds.section_module,SectionModule,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/section_module.py#L38
+,sage.manifolds.structure,sage.manifolds.structure,structure,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/structure.py#L207
+,sage.manifolds.structure.DegenerateStructure,sage.manifolds.structure,DegenerateStructure,class,Singleton,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/structure.py#L207
+,sage.manifolds.structure.DifferentialStructure,sage.manifolds.structure,DifferentialStructure,class,Singleton,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/structure.py#L86
+,sage.manifolds.structure.LorentzianStructure,sage.manifolds.structure,LorentzianStructure,class,Singleton,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/structure.py#L183
+,sage.manifolds.structure.PseudoRiemannianStructure,sage.manifolds.structure,PseudoRiemannianStructure,class,Singleton,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/structure.py#L135
+,sage.manifolds.structure.RealDifferentialStructure,sage.manifolds.structure,RealDifferentialStructure,class,Singleton,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/structure.py#L111
+,sage.manifolds.structure.RealTopologicalStructure,sage.manifolds.structure,RealTopologicalStructure,class,Singleton,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/structure.py#L62
+,sage.manifolds.structure.RiemannianStructure,sage.manifolds.structure,RiemannianStructure,class,Singleton,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/structure.py#L159
+,sage.manifolds.structure.TopologicalStructure,sage.manifolds.structure,TopologicalStructure,class,Singleton,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/structure.py#L38
+,sage.manifolds.structure.chart,sage.manifolds.structure,chart,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/structure.py#L673
+,sage.manifolds.structure.homset,sage.manifolds.structure,homset,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/structure.py#L55
+,sage.manifolds.structure.name,sage.manifolds.structure,name,attribute,,
+,sage.manifolds.structure.scalar_field_algebra,sage.manifolds.structure,scalar_field_algebra,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/structure.py#L39
+,sage.manifolds.subset,sage.manifolds.subset,subset,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/subset.py#L81
+,sage.manifolds.subset.ManifoldSubset,sage.manifolds.subset,ManifoldSubset,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/subset.py#L81
+,sage.manifolds.subsets.closure,sage.manifolds.subsets.closure,closure,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/subsets/closure.py#L21
+,sage.manifolds.subsets.closure.ManifoldSubsetClosure,sage.manifolds.subsets.closure,ManifoldSubsetClosure,class,ManifoldSubset,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/subsets/closure.py#L21
+,sage.manifolds.subsets.pullback,sage.manifolds.subsets.pullback,pullback,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/subsets/pullback.py#L37
+,sage.manifolds.subsets.pullback.ManifoldSubsetPullback,sage.manifolds.subsets.pullback,ManifoldSubsetPullback,class,ManifoldSubset,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/subsets/pullback.py#L37
+,sage.manifolds.topological_submanifold,sage.manifolds.topological_submanifold,topological_submanifold,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/topological_submanifold.py#L63
+,sage.manifolds.topological_submanifold.TopologicalSubmanifold,sage.manifolds.topological_submanifold,TopologicalSubmanifold,class,TopologicalManifold,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/topological_submanifold.py#L63
+,sage.manifolds.trivialization,sage.manifolds.trivialization,trivialization,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/trivialization.py#L307
+,sage.manifolds.trivialization.TransitionMap,sage.manifolds.trivialization,TransitionMap,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/trivialization.py#L307
+,sage.manifolds.trivialization.Trivialization,sage.manifolds.trivialization,Trivialization,class,"UniqueRepresentation, SageObject",https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/trivialization.py#L28
