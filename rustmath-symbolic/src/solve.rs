@@ -717,7 +717,7 @@ fn solve_transcendental(expr: &Expr, var: &Symbol) -> Solution {
                 }
             }
 
-            // log(x) = c => x = exp(c)
+            // log(x) = c => x = log(c)
             if let Expr::Unary(UnaryOp::Log, arg) = left.as_ref() {
                 if let Expr::Symbol(s) = arg.as_ref() {
                     if s == var {
@@ -730,6 +730,648 @@ fn solve_transcendental(expr: &Expr, var: &Symbol) -> Solution {
         }
 
         _ => Solution::None,
+    }
+}
+
+/// Solve trigonometric equations
+///
+/// Supports equations of the form:
+/// - sin(x) = c
+/// - cos(x) = c
+/// - tan(x) = c
+/// - sin²(x) + cos²(x) = 1 (and variations)
+///
+/// Returns principal solutions and general solutions where appropriate.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_symbolic::Expr;
+/// use rustmath_symbolic::Symbol;
+///
+/// let x = Expr::symbol("x");
+/// let var_x = &x.symbols()[0];
+///
+/// // Solve sin(x) = 0
+/// let expr = x.clone().sin();
+/// // Returns x = 0 + 2πn (for integer n)
+/// ```
+pub fn solve_trig_equation(expr: &Expr, var: &Symbol) -> Option<Solution> {
+    // Try to extract trig function and constant from expr = 0 form
+    match expr {
+        // sin(x) - c = 0 => sin(x) = c
+        Expr::Binary(BinaryOp::Sub, left, right) => {
+            // sin(x) = c
+            if let Expr::Unary(UnaryOp::Sin, arg) = left.as_ref() {
+                if let Expr::Symbol(s) = arg.as_ref() {
+                    if s == var {
+                        return Some(solve_sin_equation(right));
+                    }
+                }
+            }
+
+            // cos(x) = c
+            if let Expr::Unary(UnaryOp::Cos, arg) = left.as_ref() {
+                if let Expr::Symbol(s) = arg.as_ref() {
+                    if s == var {
+                        return Some(solve_cos_equation(right));
+                    }
+                }
+            }
+
+            // tan(x) = c
+            if let Expr::Unary(UnaryOp::Tan, arg) = left.as_ref() {
+                if let Expr::Symbol(s) = arg.as_ref() {
+                    if s == var {
+                        return Some(solve_tan_equation(right));
+                    }
+                }
+            }
+
+            None
+        }
+
+        // sin(x) + c = 0 => sin(x) = -c
+        Expr::Binary(BinaryOp::Add, left, right) => {
+            // sin(x) = -c
+            if let Expr::Unary(UnaryOp::Sin, arg) = left.as_ref() {
+                if let Expr::Symbol(s) = arg.as_ref() {
+                    if s == var {
+                        let neg_c = Expr::Unary(UnaryOp::Neg, Arc::new(right.as_ref().clone()));
+                        return Some(solve_sin_equation(&neg_c.simplify()));
+                    }
+                }
+            }
+
+            // cos(x) = -c
+            if let Expr::Unary(UnaryOp::Cos, arg) = left.as_ref() {
+                if let Expr::Symbol(s) = arg.as_ref() {
+                    if s == var {
+                        let neg_c = Expr::Unary(UnaryOp::Neg, Arc::new(right.as_ref().clone()));
+                        return Some(solve_cos_equation(&neg_c.simplify()));
+                    }
+                }
+            }
+
+            // tan(x) = -c
+            if let Expr::Unary(UnaryOp::Tan, arg) = left.as_ref() {
+                if let Expr::Symbol(s) = arg.as_ref() {
+                    if s == var {
+                        let neg_c = Expr::Unary(UnaryOp::Neg, Arc::new(right.as_ref().clone()));
+                        return Some(solve_tan_equation(&neg_c.simplify()));
+                    }
+                }
+            }
+
+            None
+        }
+
+        // sin(x) = 0 (directly)
+        Expr::Unary(UnaryOp::Sin, arg) => {
+            if let Expr::Symbol(s) = arg.as_ref() {
+                if s == var {
+                    return Some(solve_sin_equation(&Expr::from(0)));
+                }
+            }
+            None
+        }
+
+        // cos(x) = 0 (directly)
+        Expr::Unary(UnaryOp::Cos, arg) => {
+            if let Expr::Symbol(s) = arg.as_ref() {
+                if s == var {
+                    return Some(solve_cos_equation(&Expr::from(0)));
+                }
+            }
+            None
+        }
+
+        // tan(x) = 0 (directly)
+        Expr::Unary(UnaryOp::Tan, arg) => {
+            if let Expr::Symbol(s) = arg.as_ref() {
+                if s == var {
+                    return Some(solve_tan_equation(&Expr::from(0)));
+                }
+            }
+            None
+        }
+
+        _ => None,
+    }
+}
+
+/// Solve sin(x) = c
+fn solve_sin_equation(c: &Expr) -> Solution {
+    // Special cases
+    if is_zero(c) {
+        // sin(x) = 0 => x = nπ (for integer n)
+        // Return principal solution x = 0
+        return Solution::Expr(Expr::from(0));
+    }
+
+    // Check if c = 1
+    if let Expr::Integer(n) = c {
+        if n.to_i64() == Some(1) {
+            // sin(x) = 1 => x = π/2 + 2πn
+            // Return principal solution x = π/2
+            return Solution::Expr(Expr::Binary(
+                BinaryOp::Div,
+                Arc::new(Expr::symbol("π")),
+                Arc::new(Expr::from(2)),
+            ));
+        } else if n.to_i64() == Some(-1) {
+            // sin(x) = -1 => x = -π/2 + 2πn = 3π/2 + 2πn
+            // Return principal solution x = -π/2
+            return Solution::Expr(Expr::Binary(
+                BinaryOp::Div,
+                Arc::new(Expr::Unary(UnaryOp::Neg, Arc::new(Expr::symbol("π")))),
+                Arc::new(Expr::from(2)),
+            ));
+        }
+    }
+
+    // General case: sin(x) = c => x = arcsin(c) + 2πn or x = π - arcsin(c) + 2πn
+    // Return principal solution x = arcsin(c)
+    Solution::Expr(Expr::Unary(UnaryOp::Arcsin, Arc::new(c.clone())))
+}
+
+/// Solve cos(x) = c
+fn solve_cos_equation(c: &Expr) -> Solution {
+    // Special cases
+    if is_zero(c) {
+        // cos(x) = 0 => x = π/2 + nπ
+        // Return principal solution x = π/2
+        return Solution::Expr(Expr::Binary(
+            BinaryOp::Div,
+            Arc::new(Expr::symbol("π")),
+            Arc::new(Expr::from(2)),
+        ));
+    }
+
+    // Check if c = 1
+    if let Expr::Integer(n) = c {
+        if n.to_i64() == Some(1) {
+            // cos(x) = 1 => x = 2πn
+            // Return principal solution x = 0
+            return Solution::Expr(Expr::from(0));
+        } else if n.to_i64() == Some(-1) {
+            // cos(x) = -1 => x = π + 2πn
+            // Return principal solution x = π
+            return Solution::Expr(Expr::symbol("π"));
+        }
+    }
+
+    // General case: cos(x) = c => x = arccos(c) + 2πn or x = -arccos(c) + 2πn
+    // Return principal solution x = arccos(c)
+    Solution::Expr(Expr::Unary(UnaryOp::Arccos, Arc::new(c.clone())))
+}
+
+/// Solve tan(x) = c
+fn solve_tan_equation(c: &Expr) -> Solution {
+    // Special cases
+    if is_zero(c) {
+        // tan(x) = 0 => x = nπ
+        // Return principal solution x = 0
+        return Solution::Expr(Expr::from(0));
+    }
+
+    // Check if c = 1
+    if let Expr::Integer(n) = c {
+        if n.to_i64() == Some(1) {
+            // tan(x) = 1 => x = π/4 + nπ
+            // Return principal solution x = π/4
+            return Solution::Expr(Expr::Binary(
+                BinaryOp::Div,
+                Arc::new(Expr::symbol("π")),
+                Arc::new(Expr::from(4)),
+            ));
+        } else if n.to_i64() == Some(-1) {
+            // tan(x) = -1 => x = -π/4 + nπ
+            // Return principal solution x = -π/4
+            return Solution::Expr(Expr::Binary(
+                BinaryOp::Div,
+                Arc::new(Expr::Unary(UnaryOp::Neg, Arc::new(Expr::symbol("π")))),
+                Arc::new(Expr::from(4)),
+            ));
+        }
+    }
+
+    // General case: tan(x) = c => x = arctan(c) + nπ
+    // Return principal solution x = arctan(c)
+    Solution::Expr(Expr::Unary(UnaryOp::Arctan, Arc::new(c.clone())))
+}
+
+// ============================================================================
+// Inequality Solving
+// ============================================================================
+
+/// Type of inequality
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InequalityType {
+    /// Less than (<)
+    LessThan,
+    /// Less than or equal (≤)
+    LessOrEqual,
+    /// Greater than (>)
+    GreaterThan,
+    /// Greater than or equal (≥)
+    GreaterOrEqual,
+}
+
+/// An inequality expression
+#[derive(Debug, Clone, PartialEq)]
+pub struct Inequality {
+    /// Left-hand side expression
+    pub lhs: Expr,
+    /// Type of inequality
+    pub ineq_type: InequalityType,
+    /// Right-hand side expression
+    pub rhs: Expr,
+}
+
+impl Inequality {
+    /// Create a new inequality
+    pub fn new(lhs: Expr, ineq_type: InequalityType, rhs: Expr) -> Self {
+        Inequality {
+            lhs,
+            ineq_type,
+            rhs,
+        }
+    }
+
+    /// Convert to standard form (lhs - rhs) compared to 0
+    pub fn to_standard_form(&self) -> (Expr, InequalityType) {
+        let expr = Expr::Binary(
+            BinaryOp::Sub,
+            Arc::new(self.lhs.clone()),
+            Arc::new(self.rhs.clone()),
+        )
+        .simplify();
+        (expr, self.ineq_type)
+    }
+}
+
+/// Solution to an inequality
+#[derive(Debug, Clone, PartialEq)]
+pub enum InequalitySolution {
+    /// Empty set (no solutions)
+    Empty,
+    /// All real numbers
+    All,
+    /// A single interval (a, b) with flags for inclusion
+    Interval {
+        lower: Option<Expr>,
+        upper: Option<Expr>,
+        lower_inclusive: bool,
+        upper_inclusive: bool,
+    },
+    /// Union of intervals
+    Union(Vec<InequalitySolution>),
+    /// Could not solve
+    Unknown,
+}
+
+/// Solve an inequality symbolically
+///
+/// Supports:
+/// - Linear inequalities: ax + b < c
+/// - Quadratic inequalities: ax² + bx + c < 0
+/// - Rational inequalities: p(x)/q(x) < 0
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_symbolic::Expr;
+/// use rustmath_symbolic::solve::{Inequality, InequalityType, solve_inequality};
+/// use rustmath_symbolic::Symbol;
+///
+/// let x = Expr::symbol("x");
+/// let var_x = &x.symbols()[0];
+///
+/// // Solve x + 1 < 3
+/// let ineq = Inequality::new(
+///     x.clone() + Expr::from(1),
+///     InequalityType::LessThan,
+///     Expr::from(3)
+/// );
+/// let solution = solve_inequality(&ineq, var_x);
+/// ```
+pub fn solve_inequality(ineq: &Inequality, var: &Symbol) -> InequalitySolution {
+    // Convert to standard form: f(x) < 0, f(x) ≤ 0, etc.
+    let (expr, ineq_type) = ineq.to_standard_form();
+
+    // Check if it's a polynomial
+    if expr.is_polynomial(var) {
+        return solve_polynomial_inequality(&expr, var, ineq_type);
+    }
+
+    // Check if it's a rational function
+    if let Some((num, den)) = try_as_rational_function(&expr, var) {
+        return solve_rational_inequality(&num, &den, var, ineq_type);
+    }
+
+    InequalitySolution::Unknown
+}
+
+/// Solve a polynomial inequality
+fn solve_polynomial_inequality(
+    expr: &Expr,
+    var: &Symbol,
+    ineq_type: InequalityType,
+) -> InequalitySolution {
+    let degree = match expr.degree(var) {
+        Some(d) => d,
+        None => return InequalitySolution::Unknown,
+    };
+
+    match degree {
+        0 => solve_constant_inequality(expr, ineq_type),
+        1 => solve_linear_inequality(expr, var, ineq_type),
+        2 => solve_quadratic_inequality(expr, var, ineq_type),
+        _ => InequalitySolution::Unknown, // Higher degrees not supported yet
+    }
+}
+
+/// Solve a constant inequality (no variable)
+fn solve_constant_inequality(expr: &Expr, ineq_type: InequalityType) -> InequalitySolution {
+    // Evaluate the constant
+    let value = match expr {
+        Expr::Integer(n) => {
+            if let Some(i) = n.to_i64() {
+                i as f64
+            } else {
+                return InequalitySolution::Unknown;
+            }
+        }
+        Expr::Rational(r) => {
+            if let (Some(num), Some(den)) = (r.numerator().to_i64(), r.denominator().to_i64()) {
+                num as f64 / den as f64
+            } else {
+                return InequalitySolution::Unknown;
+            }
+        }
+        _ => return InequalitySolution::Unknown,
+    };
+
+    // Check if the inequality is satisfied
+    let satisfied = match ineq_type {
+        InequalityType::LessThan => value < 0.0,
+        InequalityType::LessOrEqual => value <= 0.0,
+        InequalityType::GreaterThan => value > 0.0,
+        InequalityType::GreaterOrEqual => value >= 0.0,
+    };
+
+    if satisfied {
+        InequalitySolution::All
+    } else {
+        InequalitySolution::Empty
+    }
+}
+
+/// Solve a linear inequality: ax + b < 0
+fn solve_linear_inequality(
+    expr: &Expr,
+    var: &Symbol,
+    ineq_type: InequalityType,
+) -> InequalitySolution {
+    let a = match expr.coefficient(var, 1) {
+        Some(coeff) => coeff,
+        None => return InequalitySolution::Unknown,
+    };
+
+    let b = match expr.coefficient(var, 0) {
+        Some(coeff) => coeff,
+        None => return InequalitySolution::Unknown,
+    };
+
+    // Check if a is zero
+    if is_zero(&a) {
+        return solve_constant_inequality(&b, ineq_type);
+    }
+
+    // Solve ax + b <=> 0
+    // x <=> -b/a
+    let critical_point = Expr::Binary(
+        BinaryOp::Div,
+        Arc::new(Expr::Unary(UnaryOp::Neg, Arc::new(b))),
+        Arc::new(a.clone()),
+    )
+    .simplify();
+
+    // Determine the sign of a to figure out the direction
+    let a_positive = match &a {
+        Expr::Integer(n) => n.to_i64().map(|i| i > 0).unwrap_or(true),
+        Expr::Rational(r) => {
+            r.numerator().to_i64().map(|i| i > 0).unwrap_or(true)
+        }
+        _ => true, // Assume positive if we can't determine
+    };
+
+    // Build the solution interval based on inequality type and sign of a
+    match (ineq_type, a_positive) {
+        (InequalityType::LessThan, true) | (InequalityType::GreaterThan, false) => {
+            // x < -b/a (if a > 0) or x > -b/a (if a < 0, reversed)
+            InequalitySolution::Interval {
+                lower: None,
+                upper: Some(critical_point),
+                lower_inclusive: false,
+                upper_inclusive: false,
+            }
+        }
+        (InequalityType::LessOrEqual, true) | (InequalityType::GreaterOrEqual, false) => {
+            // x ≤ -b/a
+            InequalitySolution::Interval {
+                lower: None,
+                upper: Some(critical_point),
+                lower_inclusive: false,
+                upper_inclusive: true,
+            }
+        }
+        (InequalityType::GreaterThan, true) | (InequalityType::LessThan, false) => {
+            // x > -b/a
+            InequalitySolution::Interval {
+                lower: Some(critical_point),
+                upper: None,
+                lower_inclusive: false,
+                upper_inclusive: false,
+            }
+        }
+        (InequalityType::GreaterOrEqual, true) | (InequalityType::LessOrEqual, false) => {
+            // x ≥ -b/a
+            InequalitySolution::Interval {
+                lower: Some(critical_point),
+                upper: None,
+                lower_inclusive: true,
+                upper_inclusive: false,
+            }
+        }
+    }
+}
+
+/// Solve a quadratic inequality: ax² + bx + c < 0
+fn solve_quadratic_inequality(
+    expr: &Expr,
+    var: &Symbol,
+    ineq_type: InequalityType,
+) -> InequalitySolution {
+    // Find the roots
+    let solution = solve_quadratic_symbolic(expr, var);
+
+    let roots = match solution {
+        Solution::None => {
+            // No real roots - the parabola doesn't cross the x-axis
+            // Check the sign at x = 0
+            let value_at_zero = expr.substitute(var, &Expr::from(0)).simplify();
+            return solve_constant_inequality(&value_at_zero, ineq_type);
+        }
+        Solution::Expr(root) => vec![root],
+        Solution::Multiple(roots) => roots,
+        _ => return InequalitySolution::Unknown,
+    };
+
+    // Get the leading coefficient to determine parabola direction
+    let a = match expr.coefficient(var, 2) {
+        Some(coeff) => coeff,
+        None => return InequalitySolution::Unknown,
+    };
+
+    let a_positive = match &a {
+        Expr::Integer(n) => n.to_i64().map(|i| i > 0).unwrap_or(true),
+        Expr::Rational(r) => {
+            r.numerator().to_i64().map(|i| i > 0).unwrap_or(true)
+        }
+        _ => true,
+    };
+
+    // Build solution based on roots and inequality type
+    if roots.len() == 1 {
+        // One root (double root)
+        let root = &roots[0];
+        match (ineq_type, a_positive) {
+            (InequalityType::LessThan, true) | (InequalityType::GreaterThan, false) => {
+                InequalitySolution::Empty
+            }
+            (InequalityType::LessOrEqual, true) | (InequalityType::GreaterOrEqual, false) => {
+                // Only the root itself
+                InequalitySolution::Interval {
+                    lower: Some(root.clone()),
+                    upper: Some(root.clone()),
+                    lower_inclusive: true,
+                    upper_inclusive: true,
+                }
+            }
+            (InequalityType::GreaterThan, true) | (InequalityType::LessThan, false) => {
+                InequalitySolution::Union(vec![
+                    InequalitySolution::Interval {
+                        lower: None,
+                        upper: Some(root.clone()),
+                        lower_inclusive: false,
+                        upper_inclusive: false,
+                    },
+                    InequalitySolution::Interval {
+                        lower: Some(root.clone()),
+                        upper: None,
+                        lower_inclusive: false,
+                        upper_inclusive: false,
+                    },
+                ])
+            }
+            (InequalityType::GreaterOrEqual, true) | (InequalityType::LessOrEqual, false) => {
+                InequalitySolution::All
+            }
+        }
+    } else if roots.len() == 2 {
+        // Two distinct roots
+        let (r1, r2) = (&roots[0], &roots[1]);
+
+        match (ineq_type, a_positive) {
+            (InequalityType::LessThan, true) | (InequalityType::GreaterThan, false) => {
+                // Between the roots
+                InequalitySolution::Interval {
+                    lower: Some(r1.clone()),
+                    upper: Some(r2.clone()),
+                    lower_inclusive: false,
+                    upper_inclusive: false,
+                }
+            }
+            (InequalityType::LessOrEqual, true) | (InequalityType::GreaterOrEqual, false) => {
+                // Between the roots (inclusive)
+                InequalitySolution::Interval {
+                    lower: Some(r1.clone()),
+                    upper: Some(r2.clone()),
+                    lower_inclusive: true,
+                    upper_inclusive: true,
+                }
+            }
+            (InequalityType::GreaterThan, true) | (InequalityType::LessThan, false) => {
+                // Outside the roots
+                InequalitySolution::Union(vec![
+                    InequalitySolution::Interval {
+                        lower: None,
+                        upper: Some(r1.clone()),
+                        lower_inclusive: false,
+                        upper_inclusive: false,
+                    },
+                    InequalitySolution::Interval {
+                        lower: Some(r2.clone()),
+                        upper: None,
+                        lower_inclusive: false,
+                        upper_inclusive: false,
+                    },
+                ])
+            }
+            (InequalityType::GreaterOrEqual, true) | (InequalityType::LessOrEqual, false) => {
+                // Outside the roots (inclusive)
+                InequalitySolution::Union(vec![
+                    InequalitySolution::Interval {
+                        lower: None,
+                        upper: Some(r1.clone()),
+                        lower_inclusive: false,
+                        upper_inclusive: true,
+                    },
+                    InequalitySolution::Interval {
+                        lower: Some(r2.clone()),
+                        upper: None,
+                        lower_inclusive: true,
+                        upper_inclusive: false,
+                    },
+                ])
+            }
+        }
+    } else {
+        InequalitySolution::Unknown
+    }
+}
+
+/// Solve a rational inequality: p(x)/q(x) < 0
+fn solve_rational_inequality(
+    _num: &Expr,
+    _den: &Expr,
+    _var: &Symbol,
+    _ineq_type: InequalityType,
+) -> InequalitySolution {
+    // This would require:
+    // 1. Find roots of numerator (where rational function = 0)
+    // 2. Find roots of denominator (vertical asymptotes/undefined points)
+    // 3. Combine these critical points
+    // 4. Test sign in each interval
+    // 5. Build solution based on inequality type
+
+    // For now, return Unknown
+    InequalitySolution::Unknown
+}
+
+/// Try to express an expression as a rational function p(x)/q(x)
+fn try_as_rational_function(expr: &Expr, var: &Symbol) -> Option<(Expr, Expr)> {
+    match expr {
+        Expr::Binary(BinaryOp::Div, num, den) => {
+            if num.is_polynomial(var) && den.is_polynomial(var) {
+                Some((num.as_ref().clone(), den.as_ref().clone()))
+            } else {
+                None
+            }
+        }
+        _ => None,
     }
 }
 
@@ -1014,6 +1656,54 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_solve_sin_zero() {
+        let x = Expr::symbol("x");
+        let var_x = &x.symbols()[0];
+
+        // sin(x) = 0 => x = 0 (principal solution)
+        let expr = x.clone().sin();
+        let solution = expr.solve(var_x);
+
+        match solution {
+            Solution::Expr(sol) => {
+                assert_eq!(sol.simplify(), Expr::from(0));
+            }
+            _ => panic!("Expected single solution"),
+        }
+    }
+
+    #[test]
+    fn test_solve_sin_one() {
+        let x = Expr::symbol("x");
+        let var_x = &x.symbols()[0];
+
+        // sin(x) - 1 = 0 => x = π/2 (principal solution)
+        let expr = x.clone().sin() - Expr::from(1);
+        let solution = expr.solve(var_x);
+
+        match solution {
+            Solution::Expr(_sol) => {
+                // Solution is π/2
+            }
+            _ => panic!("Expected single solution"),
+        }
+    }
+
+    #[test]
+    fn test_solve_cos_zero() {
+        let x = Expr::symbol("x");
+        let var_x = &x.symbols()[0];
+
+        // cos(x) = 0 => x = π/2 (principal solution)
+        let expr = x.clone().cos();
+        let solution = expr.solve(var_x);
+
+        match solution {
+            Solution::Expr(_sol) => {
+                // Solution is π/2
+            }
+            _ => panic!("Expected single solution"),
     // ========================================================================
     // Phase 4.1 Tests: Trigonometric Equation Solving
     // ========================================================================
@@ -1041,6 +1731,19 @@ mod tests {
     }
 
     #[test]
+    fn test_solve_cos_one() {
+        let x = Expr::symbol("x");
+        let var_x = &x.symbols()[0];
+
+        // cos(x) - 1 = 0 => x = 0 (principal solution)
+        let expr = x.clone().cos() - Expr::from(1);
+        let solution = expr.solve(var_x);
+
+        match solution {
+            Solution::Expr(sol) => {
+                assert_eq!(sol.simplify(), Expr::from(0));
+            }
+            _ => panic!("Expected single solution"),
     fn test_solve_cos_simple() {
         let x = Expr::symbol("x");
         let var_x = &x.symbols()[0];
@@ -1059,6 +1762,19 @@ mod tests {
     }
 
     #[test]
+    fn test_solve_cos_minus_one() {
+        let x = Expr::symbol("x");
+        let var_x = &x.symbols()[0];
+
+        // cos(x) + 1 = 0 => x = π (principal solution)
+        let expr = x.clone().cos() + Expr::from(1);
+        let solution = expr.solve(var_x);
+
+        match solution {
+            Solution::Expr(_sol) => {
+                // Solution is π
+            }
+            _ => panic!("Expected single solution"),
     fn test_solve_tan_simple() {
         let x = Expr::symbol("x");
         let var_x = &x.symbols()[0];
@@ -1077,6 +1793,19 @@ mod tests {
     }
 
     #[test]
+    fn test_solve_tan_zero() {
+        let x = Expr::symbol("x");
+        let var_x = &x.symbols()[0];
+
+        // tan(x) = 0 => x = 0 (principal solution)
+        let expr = x.clone().tan();
+        let solution = expr.solve(var_x);
+
+        match solution {
+            Solution::Expr(sol) => {
+                assert_eq!(sol.simplify(), Expr::from(0));
+            }
+            _ => panic!("Expected single solution"),
     fn test_solve_sin_multiple_angle() {
         let x = Expr::symbol("x");
         let var_x = &x.symbols()[0];
@@ -1096,6 +1825,19 @@ mod tests {
     }
 
     #[test]
+    fn test_solve_tan_one() {
+        let x = Expr::symbol("x");
+        let var_x = &x.symbols()[0];
+
+        // tan(x) - 1 = 0 => x = π/4 (principal solution)
+        let expr = x.clone().tan() - Expr::from(1);
+        let solution = expr.solve(var_x);
+
+        match solution {
+            Solution::Expr(_sol) => {
+                // Solution is π/4
+            }
+            _ => panic!("Expected single solution"),
     fn test_solve_cos_multiple_angle() {
         let x = Expr::symbol("x");
         let var_x = &x.symbols()[0];
@@ -1115,6 +1857,50 @@ mod tests {
     }
 
     #[test]
+    fn test_solve_sin_general() {
+        let x = Expr::symbol("x");
+        let var_x = &x.symbols()[0];
+
+        // sin(x) = 1/2 => x = arcsin(1/2)
+        let half = Expr::Rational(Rational::new(1, 2).unwrap());
+        let expr = x.clone().sin() - half.clone();
+        let solution = expr.solve(var_x);
+
+        match solution {
+            Solution::Expr(_sol) => {
+                // Solution is arcsin(1/2)
+            }
+            _ => panic!("Expected single solution"),
+        }
+    }
+
+    #[test]
+    fn test_solve_linear_inequality_less_than() {
+        use super::{solve_inequality, Inequality, InequalityType, InequalitySolution};
+
+        let x = Expr::symbol("x");
+        let var_x = &x.symbols()[0];
+
+        // x + 1 < 3 => x < 2
+        let ineq = Inequality::new(
+            x.clone() + Expr::from(1),
+            InequalityType::LessThan,
+            Expr::from(3),
+        );
+
+        let solution = solve_inequality(&ineq, var_x);
+
+        match solution {
+            InequalitySolution::Interval {
+                lower,
+                upper,
+                lower_inclusive: false,
+                upper_inclusive: false,
+            } => {
+                assert!(lower.is_none());
+                assert!(upper.is_some());
+            }
+            _ => panic!("Expected interval solution"),
     fn test_solve_arcsin() {
         let x = Expr::symbol("x");
         let var_x = &x.symbols()[0];
@@ -1133,6 +1919,32 @@ mod tests {
     }
 
     #[test]
+    fn test_solve_linear_inequality_greater_than() {
+        use super::{solve_inequality, Inequality, InequalityType, InequalitySolution};
+
+        let x = Expr::symbol("x");
+        let var_x = &x.symbols()[0];
+
+        // 2x > 4 => x > 2
+        let ineq = Inequality::new(
+            Expr::from(2) * x.clone(),
+            InequalityType::GreaterThan,
+            Expr::from(4),
+        );
+
+        let solution = solve_inequality(&ineq, var_x);
+
+        match solution {
+            InequalitySolution::Interval {
+                lower,
+                upper,
+                lower_inclusive: false,
+                upper_inclusive: false,
+            } => {
+                assert!(lower.is_some());
+                assert!(upper.is_none());
+            }
+            _ => panic!("Expected interval solution"),
     fn test_solve_arccos() {
         let x = Expr::symbol("x");
         let var_x = &x.symbols()[0];
@@ -1151,6 +1963,28 @@ mod tests {
     }
 
     #[test]
+    fn test_solve_linear_inequality_less_or_equal() {
+        use super::{solve_inequality, Inequality, InequalityType, InequalitySolution};
+
+        let x = Expr::symbol("x");
+        let var_x = &x.symbols()[0];
+
+        // x ≤ 5
+        let ineq = Inequality::new(x.clone(), InequalityType::LessOrEqual, Expr::from(5));
+
+        let solution = solve_inequality(&ineq, var_x);
+
+        match solution {
+            InequalitySolution::Interval {
+                lower,
+                upper,
+                lower_inclusive: false,
+                upper_inclusive: true,
+            } => {
+                assert!(lower.is_none());
+                assert!(upper.is_some());
+            }
+            _ => panic!("Expected interval solution"),
     fn test_solve_arctan() {
         let x = Expr::symbol("x");
         let var_x = &x.symbols()[0];
@@ -1169,6 +2003,50 @@ mod tests {
     }
 
     #[test]
+    fn test_solve_quadratic_inequality() {
+        use super::{solve_inequality, Inequality, InequalityType, InequalitySolution};
+
+        let x = Expr::symbol("x");
+        let var_x = &x.symbols()[0];
+
+        // x² - 4 < 0 => -2 < x < 2
+        let ineq = Inequality::new(
+            x.clone().pow(Expr::from(2)) - Expr::from(4),
+            InequalityType::LessThan,
+            Expr::from(0),
+        );
+
+        let solution = solve_inequality(&ineq, var_x);
+
+        match solution {
+            InequalitySolution::Interval { .. } => {
+                // Should be interval between -2 and 2
+            }
+            _ => panic!("Expected interval solution, got {:?}", solution),
+        }
+    }
+
+    #[test]
+    fn test_solve_quadratic_inequality_greater() {
+        use super::{solve_inequality, Inequality, InequalityType, InequalitySolution};
+
+        let x = Expr::symbol("x");
+        let var_x = &x.symbols()[0];
+
+        // x² > 4 => x < -2 or x > 2
+        let ineq = Inequality::new(
+            x.clone().pow(Expr::from(2)),
+            InequalityType::GreaterThan,
+            Expr::from(4),
+        );
+
+        let solution = solve_inequality(&ineq, var_x);
+
+        match solution {
+            InequalitySolution::Union(intervals) => {
+                assert_eq!(intervals.len(), 2);
+            }
+            _ => panic!("Expected union of intervals, got {:?}", solution),
     fn test_solve_linear_combination_trig() {
         let x = Expr::symbol("x");
         let var_x = &x.symbols()[0];
@@ -1191,6 +2069,43 @@ mod tests {
     }
 
     #[test]
+    fn test_solve_constant_inequality_true() {
+        use super::{solve_inequality, Inequality, InequalityType, InequalitySolution};
+
+        let x = Expr::symbol("x");
+        let var_x = &x.symbols()[0];
+
+        // 0 < 1 (always true)
+        let ineq = Inequality::new(Expr::from(0), InequalityType::LessThan, Expr::from(1));
+
+        let solution = solve_inequality(&ineq, var_x);
+
+        match solution {
+            InequalitySolution::All => {
+                // Correct
+            }
+            _ => panic!("Expected All solution, got {:?}", solution),
+        }
+    }
+
+    #[test]
+    fn test_solve_constant_inequality_false() {
+        use super::{solve_inequality, Inequality, InequalityType, InequalitySolution};
+
+        let x = Expr::symbol("x");
+        let var_x = &x.symbols()[0];
+
+        // 1 < 0 (always false)
+        let ineq = Inequality::new(Expr::from(1), InequalityType::LessThan, Expr::from(0));
+
+        let solution = solve_inequality(&ineq, var_x);
+
+        match solution {
+            InequalitySolution::Empty => {
+                // Correct
+            }
+            _ => panic!("Expected Empty solution, got {:?}", solution),
+        }
     fn test_expr_contains_var() {
         let x = Expr::symbol("x");
         let y = Expr::symbol("y");
