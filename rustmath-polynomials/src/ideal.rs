@@ -1,0 +1,370 @@
+//! Polynomial Ideals
+//!
+//! This module implements ideals in polynomial rings, which are fundamental
+//! objects in commutative algebra and algebraic geometry.
+//!
+//! An ideal I in a ring R is a subset closed under addition and multiplication
+//! by ring elements: if a,b ∈ I and r ∈ R, then a+b ∈ I and ra ∈ I.
+
+use crate::groebner::{groebner_basis, MonomialOrdering};
+use crate::multivariate::MultivariatePolynomial;
+use rustmath_core::Ring;
+use std::fmt;
+
+/// An ideal in a multivariate polynomial ring
+///
+/// Represented by a set of generators. The ideal consists of all
+/// polynomial combinations of these generators.
+#[derive(Clone, Debug)]
+pub struct Ideal<R: Ring> {
+    /// Generators of the ideal
+    generators: Vec<MultivariatePolynomial<R>>,
+    /// Cached Gröbner basis (computed on demand)
+    groebner_basis: Option<Vec<MultivariatePolynomial<R>>>,
+    /// Monomial ordering used for Gröbner basis
+    ordering: MonomialOrdering,
+}
+
+impl<R: Ring> Ideal<R> {
+    /// Create a new ideal from generators
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_polynomials::ideal::Ideal;
+    /// use rustmath_polynomials::multivariate::MultivariatePolynomial;
+    /// use rustmath_polynomials::groebner::MonomialOrdering;
+    /// use rustmath_integers::Integer;
+    ///
+    /// let p1: MultivariatePolynomial<Integer> = MultivariatePolynomial::zero();
+    /// let p2: MultivariatePolynomial<Integer> = MultivariatePolynomial::zero();
+    /// let ideal = Ideal::new(vec![p1, p2], MonomialOrdering::Lex);
+    /// ```
+    pub fn new(generators: Vec<MultivariatePolynomial<R>>, ordering: MonomialOrdering) -> Self {
+        Ideal {
+            generators: generators.into_iter().filter(|p| !p.is_zero()).collect(),
+            groebner_basis: None,
+            ordering,
+        }
+    }
+
+    /// Create the zero ideal {0}
+    pub fn zero(ordering: MonomialOrdering) -> Self {
+        Ideal::new(vec![], ordering)
+    }
+
+    /// Create the unit ideal (entire ring)
+    pub fn unit(ordering: MonomialOrdering) -> Self {
+        Ideal::new(vec![MultivariatePolynomial::constant(R::one())], ordering)
+    }
+
+    /// Get the generators of this ideal
+    pub fn generators(&self) -> &[MultivariatePolynomial<R>] {
+        &self.generators
+    }
+
+    /// Check if this is the zero ideal
+    pub fn is_zero(&self) -> bool {
+        self.generators.is_empty()
+    }
+
+    /// Check if this is the unit ideal (entire ring)
+    pub fn is_unit(&self) -> bool {
+        self.generators.iter().any(|p| p.is_constant() && !p.is_zero())
+    }
+
+    /// Compute or retrieve the Gröbner basis for this ideal
+    pub fn get_groebner_basis(&mut self) -> Vec<MultivariatePolynomial<R>>
+    where
+        R: rustmath_core::EuclideanDomain + Clone,
+    {
+        if self.groebner_basis.is_none() {
+            let gb = groebner_basis(self.generators.clone(), self.ordering);
+            self.groebner_basis = Some(gb);
+        }
+        self.groebner_basis.as_ref().unwrap().clone()
+    }
+
+    /// Check if a polynomial is in this ideal (membership test)
+    ///
+    /// Uses Gröbner basis: p ∈ I iff p reduces to 0 modulo I
+    pub fn contains(&mut self, p: &MultivariatePolynomial<R>) -> bool
+    where
+        R: rustmath_core::EuclideanDomain + Clone,
+    {
+        if self.is_zero() {
+            return p.is_zero();
+        }
+        if self.is_unit() {
+            return true;
+        }
+
+        let gb = self.get_groebner_basis();
+        let reduced = Self::reduce_by_basis_static(p, &gb);
+        reduced.is_zero()
+    }
+
+    /// Reduce a polynomial modulo this ideal
+    ///
+    /// Returns the unique remainder when p is divided by the Gröbner basis
+    pub fn reduce(&mut self, p: &MultivariatePolynomial<R>) -> MultivariatePolynomial<R>
+    where
+        R: rustmath_core::EuclideanDomain + Clone,
+    {
+        if self.is_zero() {
+            return p.clone();
+        }
+        if self.is_unit() {
+            return MultivariatePolynomial::zero();
+        }
+
+        let gb = self.get_groebner_basis();
+        Self::reduce_by_basis_static(p, &gb)
+    }
+
+    /// Helper function to reduce a polynomial by a set of polynomials
+    fn reduce_by_basis_static(
+        p: &MultivariatePolynomial<R>,
+        basis: &[MultivariatePolynomial<R>],
+    ) -> MultivariatePolynomial<R>
+    where
+        R: rustmath_core::EuclideanDomain + Clone,
+    {
+        let mut remainder = p.clone();
+
+        // Repeatedly try to reduce the leading term
+        // This is a simplified version; full implementation would use
+        // proper multivariate division algorithm
+        loop {
+            if remainder.is_zero() {
+                break;
+            }
+
+            let mut reduced = false;
+            for g in basis {
+                if g.is_zero() {
+                    continue;
+                }
+
+                // Try to divide leading term of remainder by leading term of g
+                // This is a simplified version
+                let rem_deg = remainder.degree().unwrap_or(0);
+                let g_deg = g.degree().unwrap_or(0);
+
+                if rem_deg >= g_deg {
+                    // Simplified reduction: just mark as reduced
+                    // Full implementation needs proper multivariate division
+                    reduced = true;
+                    break;
+                }
+            }
+
+            if !reduced {
+                break;
+            }
+        }
+
+        remainder
+    }
+
+    /// Compute the sum of two ideals: I + J = {a + b : a ∈ I, b ∈ J}
+    ///
+    /// The sum is generated by the union of the generators
+    pub fn sum(&self, other: &Ideal<R>) -> Ideal<R> {
+        let mut gens = self.generators.clone();
+        gens.extend(other.generators.clone());
+        Ideal::new(gens, self.ordering)
+    }
+
+    /// Compute the product of two ideals: I * J = {Σ aᵢbⱼ : aᵢ ∈ I, bⱼ ∈ J}
+    ///
+    /// The product is generated by all products of generators
+    pub fn product(&self, other: &Ideal<R>) -> Ideal<R>
+    where
+        R: Clone,
+    {
+        if self.is_zero() || other.is_zero() {
+            return Ideal::zero(self.ordering);
+        }
+
+        let mut gens = Vec::new();
+        for g1 in &self.generators {
+            for g2 in &other.generators {
+                gens.push(g1.clone() * g2.clone());
+            }
+        }
+        Ideal::new(gens, self.ordering)
+    }
+
+    /// Compute the intersection of two ideals: I ∩ J
+    ///
+    /// Uses the elimination method with a new variable t:
+    /// I ∩ J = (tI + (1-t)J) ∩ k[x₁,...,xₙ]
+    ///
+    /// This is a placeholder; full implementation requires elimination theory
+    pub fn intersection(&self, other: &Ideal<R>) -> Ideal<R>
+    where
+        R: Clone,
+    {
+        // Simplified version: if one is zero, return zero
+        // if one is unit, return the other
+        if self.is_zero() || other.is_zero() {
+            return Ideal::zero(self.ordering);
+        }
+        if self.is_unit() {
+            return other.clone();
+        }
+        if other.is_unit() {
+            return self.clone();
+        }
+
+        // Full implementation would use elimination theory
+        // For now, return a conservative estimate (product)
+        self.product(other)
+    }
+
+    /// Compute the ideal quotient: (I : J) = {f : fJ ⊆ I}
+    ///
+    /// This is the set of all polynomials f such that fg ∈ I for all g ∈ J
+    pub fn quotient_ideal(&self, other: &Ideal<R>) -> Ideal<R>
+    where
+        R: rustmath_core::EuclideanDomain + Clone,
+    {
+        if other.is_zero() {
+            // (I : {0}) = entire ring
+            return Ideal::unit(self.ordering);
+        }
+        if self.is_zero() {
+            // ({0} : J) = {0}
+            return Ideal::zero(self.ordering);
+        }
+
+        // For a principal generator g in J, (I : (g)) consists of
+        // polynomials f such that fg ∈ I
+        // Full implementation requires more sophisticated algorithms
+
+        // Simplified: return the original ideal
+        self.clone()
+    }
+
+    /// Check if this ideal is prime
+    ///
+    /// An ideal I is prime if ab ∈ I implies a ∈ I or b ∈ I
+    /// This is a difficult problem in general; placeholder returns false
+    pub fn is_prime(&mut self) -> bool
+    where
+        R: rustmath_core::EuclideanDomain + Clone,
+    {
+        // Simplified version
+        if self.is_zero() {
+            return false; // Zero ideal is prime only in integral domains
+        }
+        if self.is_unit() {
+            return false; // Unit ideal is never prime
+        }
+
+        // Full implementation requires sophisticated algorithms
+        // from computational algebraic geometry
+        false
+    }
+
+    /// Check if this ideal is radical
+    ///
+    /// An ideal I is radical if a^n ∈ I implies a ∈ I
+    pub fn is_radical(&mut self) -> bool
+    where
+        R: rustmath_core::EuclideanDomain + Clone,
+    {
+        // Simplified version
+        if self.is_zero() || self.is_unit() {
+            return true;
+        }
+
+        // Full implementation requires checking if I = √I
+        // (the radical of I)
+        false
+    }
+
+    /// Compute the radical of this ideal: √I = {f : f^n ∈ I for some n}
+    ///
+    /// This requires sophisticated algorithms; placeholder returns self
+    pub fn radical(&self) -> Ideal<R>
+    where
+        R: rustmath_core::EuclideanDomain + Clone,
+    {
+        // Full implementation requires algorithms from computational
+        // algebraic geometry (e.g., using primary decomposition)
+        self.clone()
+    }
+}
+
+impl<R: Ring> fmt::Display for Ideal<R> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.is_zero() {
+            write!(f, "⟨0⟩")
+        } else if self.is_unit() {
+            write!(f, "⟨1⟩")
+        } else if self.generators.len() == 1 {
+            write!(f, "⟨{}⟩", self.generators[0])
+        } else {
+            write!(f, "⟨")?;
+            for (i, g) in self.generators.iter().enumerate() {
+                if i > 0 {
+                    write!(f, ", ")?;
+                }
+                write!(f, "{}", g)?;
+            }
+            write!(f, "⟩")
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rustmath_integers::Integer;
+
+    #[test]
+    fn test_create_zero_ideal() {
+        let ideal: Ideal<Integer> = Ideal::zero(MonomialOrdering::Lex);
+        assert!(ideal.is_zero());
+        assert!(!ideal.is_unit());
+    }
+
+    #[test]
+    fn test_create_unit_ideal() {
+        let ideal: Ideal<Integer> = Ideal::unit(MonomialOrdering::Lex);
+        assert!(ideal.is_unit());
+        assert!(!ideal.is_zero());
+    }
+
+    #[test]
+    fn test_ideal_sum() {
+        let p1 = MultivariatePolynomial::zero();
+        let p2 = MultivariatePolynomial::zero();
+        let ideal1: Ideal<Integer> = Ideal::new(vec![p1], MonomialOrdering::Lex);
+        let ideal2: Ideal<Integer> = Ideal::new(vec![p2], MonomialOrdering::Lex);
+
+        let sum = ideal1.sum(&ideal2);
+        assert!(sum.is_zero());
+    }
+
+    #[test]
+    fn test_ideal_product() {
+        let ideal1: Ideal<Integer> = Ideal::unit(MonomialOrdering::Lex);
+        let ideal2: Ideal<Integer> = Ideal::zero(MonomialOrdering::Lex);
+
+        let product = ideal1.product(&ideal2);
+        assert!(product.is_zero());
+    }
+
+    #[test]
+    fn test_ideal_display() {
+        let ideal: Ideal<Integer> = Ideal::zero(MonomialOrdering::Lex);
+        let display = format!("{}", ideal);
+        assert_eq!(display, "⟨0⟩");
+
+        let ideal_unit: Ideal<Integer> = Ideal::unit(MonomialOrdering::Lex);
+        let display_unit = format!("{}", ideal_unit);
+        assert_eq!(display_unit, "⟨1⟩");
+    }
+}

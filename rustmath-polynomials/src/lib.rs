@@ -5,6 +5,7 @@
 pub mod algebraic_geometry;
 pub mod factorization;
 pub mod groebner;
+pub mod ideal;
 pub mod multivariate;
 pub mod polynomial;
 pub mod roots;
@@ -22,6 +23,7 @@ pub use groebner::{
     groebner_basis, groebner_basis_info, ideal_membership, is_well_ordering,
     ordering_description, reduce, reduced_groebner_basis, s_polynomial, MonomialOrdering,
 };
+pub use ideal::Ideal;
 pub use multivariate::{Monomial, MultivariatePolynomial};
 pub use polynomial::Polynomial;
 pub use roots::{

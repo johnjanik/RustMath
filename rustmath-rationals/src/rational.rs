@@ -321,6 +321,25 @@ impl Ring for Rational {
 impl CommutativeRing for Rational {}
 impl IntegralDomain for Rational {}
 
+impl EuclideanDomain for Rational {
+    fn norm(&self) -> u64 {
+        // For a field, we can use a trivial norm: 0 for zero, 1 for non-zero
+        if self.is_zero() {
+            0
+        } else {
+            1
+        }
+    }
+
+    fn div_rem(&self, other: &Self) -> Result<(Self, Self)> {
+        if other.is_zero() {
+            return Err(MathError::DivisionByZero);
+        }
+        // In a field, division is always exact (no remainder)
+        Ok((self.clone() / other.clone(), Rational::zero()))
+    }
+}
+
 impl Field for Rational {
     fn inverse(&self) -> Result<Self> {
         self.reciprocal()
