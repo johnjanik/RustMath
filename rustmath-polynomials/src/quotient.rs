@@ -106,7 +106,10 @@ impl<R: Ring> QuotientRing<R> {
     /// Create an element of this quotient ring from a polynomial
     ///
     /// The polynomial is automatically reduced to canonical form
-    pub fn element(&self, poly: MultivariatePolynomial<R>) -> QuotientElement<R> {
+    pub fn element(&mut self, poly: MultivariatePolynomial<R>) -> QuotientElement<R>
+    where
+        R: rustmath_core::EuclideanDomain + Clone,
+    {
         let reduced = self.ideal.reduce(&poly);
         QuotientElement {
             representative: reduced,
@@ -115,12 +118,18 @@ impl<R: Ring> QuotientRing<R> {
     }
 
     /// The zero element of the quotient ring
-    pub fn zero(&self) -> QuotientElement<R> {
+    pub fn zero(&mut self) -> QuotientElement<R>
+    where
+        R: rustmath_core::EuclideanDomain + Clone,
+    {
         self.element(MultivariatePolynomial::zero())
     }
 
     /// The one element of the quotient ring
-    pub fn one(&self) -> QuotientElement<R> {
+    pub fn one(&mut self) -> QuotientElement<R>
+    where
+        R: rustmath_core::EuclideanDomain + Clone,
+    {
         self.element(MultivariatePolynomial::constant(R::one()))
     }
 
@@ -129,7 +138,10 @@ impl<R: Ring> QuotientRing<R> {
     /// # Arguments
     ///
     /// * `var` - The variable index
-    pub fn variable(&self, var: usize) -> QuotientElement<R> {
+    pub fn variable(&mut self, var: usize) -> QuotientElement<R>
+    where
+        R: rustmath_core::EuclideanDomain + Clone,
+    {
         self.element(MultivariatePolynomial::variable(var))
     }
 
@@ -179,45 +191,67 @@ impl<R: Ring> QuotientElement<R> {
 
     /// Check if this element is one
     pub fn is_one(&self) -> bool {
+        use crate::multivariate::Monomial;
         self.representative.is_constant()
-            && self.representative.constant_term().map_or(false, |c| c.is_one())
+            && self.representative.coefficient(&Monomial::new()).is_one()
     }
 
     /// Add two elements in the quotient ring
-    pub fn add(&self, other: &QuotientElement<R>) -> QuotientElement<R> {
+    pub fn add(&self, other: &QuotientElement<R>) -> QuotientElement<R>
+    where
+        R: rustmath_core::EuclideanDomain + Clone,
+    {
         let sum = self.representative.clone() + other.representative.clone();
-        self.ring.element(sum)
+        let mut ring = self.ring.clone();
+        ring.element(sum)
     }
 
     /// Subtract two elements in the quotient ring
-    pub fn sub(&self, other: &QuotientElement<R>) -> QuotientElement<R> {
+    pub fn sub(&self, other: &QuotientElement<R>) -> QuotientElement<R>
+    where
+        R: rustmath_core::EuclideanDomain + Clone,
+    {
         let diff = self.representative.clone() - other.representative.clone();
-        self.ring.element(diff)
+        let mut ring = self.ring.clone();
+        ring.element(diff)
     }
 
     /// Multiply two elements in the quotient ring
-    pub fn mul(&self, other: &QuotientElement<R>) -> QuotientElement<R> {
+    pub fn mul(&self, other: &QuotientElement<R>) -> QuotientElement<R>
+    where
+        R: rustmath_core::EuclideanDomain + Clone,
+    {
         let product = self.representative.clone() * other.representative.clone();
-        self.ring.element(product)
+        let mut ring = self.ring.clone();
+        ring.element(product)
     }
 
     /// Negate this element
-    pub fn neg(&self) -> QuotientElement<R> {
+    pub fn neg(&self) -> QuotientElement<R>
+    where
+        R: rustmath_core::EuclideanDomain + Clone,
+    {
         let negated = -self.representative.clone();
-        self.ring.element(negated)
+        let mut ring = self.ring.clone();
+        ring.element(negated)
     }
 
     /// Compute the power of this element
-    pub fn pow(&self, n: u32) -> QuotientElement<R> {
+    pub fn pow(&self, n: u32) -> QuotientElement<R>
+    where
+        R: rustmath_core::EuclideanDomain + Clone,
+    {
         if n == 0 {
-            return self.ring.one();
+            let mut ring = self.ring.clone();
+            return ring.one();
         }
         if n == 1 {
             return self.clone();
         }
 
         // Binary exponentiation
-        let mut result = self.ring.one();
+        let mut ring = self.ring.clone();
+        let mut result = ring.one();
         let mut base = self.clone();
         let mut exp = n;
 
@@ -276,35 +310,47 @@ impl<R: Ring> fmt::Display for QuotientElement<R> {
 }
 
 // Operator overloading for convenience
-impl<R: Ring> std::ops::Add for QuotientElement<R> {
+impl<R> std::ops::Add for QuotientElement<R>
+where
+    R: rustmath_core::EuclideanDomain + Clone,
+{
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
-        self.add(&other)
+        QuotientElement::add(&self, &other)
     }
 }
 
-impl<R: Ring> std::ops::Sub for QuotientElement<R> {
+impl<R> std::ops::Sub for QuotientElement<R>
+where
+    R: rustmath_core::EuclideanDomain + Clone,
+{
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
-        self.sub(&other)
+        QuotientElement::sub(&self, &other)
     }
 }
 
-impl<R: Ring> std::ops::Mul for QuotientElement<R> {
+impl<R> std::ops::Mul for QuotientElement<R>
+where
+    R: rustmath_core::EuclideanDomain + Clone,
+{
     type Output = Self;
 
     fn mul(self, other: Self) -> Self {
-        self.mul(&other)
+        QuotientElement::mul(&self, &other)
     }
 }
 
-impl<R: Ring> std::ops::Neg for QuotientElement<R> {
+impl<R> std::ops::Neg for QuotientElement<R>
+where
+    R: rustmath_core::EuclideanDomain + Clone,
+{
     type Output = Self;
 
     fn neg(self) -> Self {
-        self.neg()
+        QuotientElement::neg(&self)
     }
 }
 

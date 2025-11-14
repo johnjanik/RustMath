@@ -79,14 +79,13 @@ This document highlights the most impactful partial features to implement next. 
 **Impact: HIGH** - Essential for algebraic number theory
 
 - [x] `NumberField(polynomial, 'a')` - Create number field
-- [ ] `number_field.class_number()` - Class number
-- [ ] `number_field.unit_group()` - Unit group
+- [x] `number_field.class_number()` - Class number
+- [x] `number_field.unit_group()` - Unit group
 - [x] `number_field.discriminant()` - Field discriminant
-- [ ] `number_field.galois_closure()` - Galois closure
+- [x] `number_field.galois_closure()` - Galois closure
 
-**Current Status:** ⚠️ PARTIALLY COMPLETED (2/5) - Basic number fields with discriminant
+**Current Status:** ✅ COMPLETED - All number field methods implemented
 **Location:** rustmath-numberfields/src/lib.rs
-**Next Step:** Implement class_number(), unit_group(), and galois_closure()
 
 ---
 
