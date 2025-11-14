@@ -37,6 +37,7 @@ members = [
     "rustmath-ellipticcurves",
     "rustmath-quadraticforms",
     "rustmath-numberfields",
+    "rustmath-manifolds",
 ]
 
 [workspace.package]

@@ -2047,6 +2047,10 @@ mod tests {
                 assert_eq!(intervals.len(), 2);
             }
             _ => panic!("Expected union of intervals, got {:?}", solution),
+        }
+    }
+
+    #[test]
     fn test_solve_linear_combination_trig() {
         let x = Expr::symbol("x");
         let var_x = &x.symbols()[0];
@@ -2106,6 +2110,9 @@ mod tests {
             }
             _ => panic!("Expected Empty solution, got {:?}", solution),
         }
+    }
+
+    #[test]
     fn test_expr_contains_var() {
         let x = Expr::symbol("x");
         let y = Expr::symbol("y");
