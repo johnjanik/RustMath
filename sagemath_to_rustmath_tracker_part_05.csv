@@ -755,18 +755,18 @@ Implemented,sage.combinat.tableau_tuple.options,sage.combinat.tableau_tuple,opti
 ,sage.cpython.wrapperdescr,sage.cpython.wrapperdescr,wrapperdescr,module,,https://github.com/sagemath/sage/blob/develop/src/sage/cpython/wrapperdescr.pyx#L37
 ,sage.cpython.wrapperdescr.wrapperdescr_call,sage.cpython.wrapperdescr,wrapperdescr_call,function,,https://github.com/sagemath/sage/blob/develop/src/sage/cpython/wrapperdescr.pyx#L37
 ,sage.crypto,sage.crypto,crypto,module,,
-,sage.crypto.block_cipher.des,sage.crypto.block_cipher.des,des,module,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/des.py#L104
-,sage.crypto.block_cipher.des.DES,sage.crypto.block_cipher.des,DES,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/des.py#L104
-,sage.crypto.block_cipher.des.DES_KS,sage.crypto.block_cipher.des,DES_KS,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/des.py#L759
-,sage.crypto.block_cipher.des.convert_to_vector,sage.crypto.block_cipher.des,convert_to_vector,function,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/des.py#L1036
-,sage.crypto.block_cipher.miniaes,sage.crypto.block_cipher.miniaes,miniaes,module,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/miniaes.py#L39
-,sage.crypto.block_cipher.miniaes.MiniAES,sage.crypto.block_cipher.miniaes,MiniAES,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/miniaes.py#L39
-,sage.crypto.block_cipher.present,sage.crypto.block_cipher.present,present,module,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/present.py#L117
-,sage.crypto.block_cipher.present.PRESENT,sage.crypto.block_cipher.present,PRESENT,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/present.py#L117
-,sage.crypto.block_cipher.present.PRESENT_KS,sage.crypto.block_cipher.present,PRESENT_KS,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/present.py#L608
-,sage.crypto.block_cipher.present.convert_to_vector,sage.crypto.block_cipher.present,convert_to_vector,function,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/present.py#L880
-,sage.crypto.block_cipher.sdes,sage.crypto.block_cipher.sdes,sdes,module,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/sdes.py#L35
-,sage.crypto.block_cipher.sdes.SimplifiedDES,sage.crypto.block_cipher.sdes,SimplifiedDES,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/sdes.py#L35
+Partial,sage.crypto.block_cipher.des,sage.crypto.block_cipher.des,des,module,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/des.py#L104
+Partial,sage.crypto.block_cipher.des.DES,sage.crypto.block_cipher.des,DES,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/des.py#L104
+Partial,sage.crypto.block_cipher.des.DES_KS,sage.crypto.block_cipher.des,DES_KS,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/des.py#L759
+Partial,sage.crypto.block_cipher.des.convert_to_vector,sage.crypto.block_cipher.des,convert_to_vector,function,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/des.py#L1036
+Partial,sage.crypto.block_cipher.miniaes,sage.crypto.block_cipher.miniaes,miniaes,module,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/miniaes.py#L39
+Partial,sage.crypto.block_cipher.miniaes.MiniAES,sage.crypto.block_cipher.miniaes,MiniAES,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/miniaes.py#L39
+Partial,sage.crypto.block_cipher.present,sage.crypto.block_cipher.present,present,module,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/present.py#L117
+Partial,sage.crypto.block_cipher.present.PRESENT,sage.crypto.block_cipher.present,PRESENT,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/present.py#L117
+Partial,sage.crypto.block_cipher.present.PRESENT_KS,sage.crypto.block_cipher.present,PRESENT_KS,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/present.py#L608
+Partial,sage.crypto.block_cipher.present.convert_to_vector,sage.crypto.block_cipher.present,convert_to_vector,function,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/present.py#L880
+Partial,sage.crypto.block_cipher.sdes,sage.crypto.block_cipher.sdes,sdes,module,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/sdes.py#L35
+Partial,sage.crypto.block_cipher.sdes.SimplifiedDES,sage.crypto.block_cipher.sdes,SimplifiedDES,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/block_cipher/sdes.py#L35
 ,sage.crypto.boolean_function,sage.crypto.boolean_function,boolean_function,module,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/boolean_function.pyx#L152
 ,sage.crypto.boolean_function.BooleanFunction,sage.crypto.boolean_function,BooleanFunction,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/boolean_function.pyx#L152
 ,sage.crypto.boolean_function.BooleanFunctionIterator,sage.crypto.boolean_function,BooleanFunctionIterator,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/boolean_function.pyx#L1410
@@ -776,20 +776,20 @@ Implemented,sage.combinat.tableau_tuple.options,sage.combinat.tableau_tuple,opti
 ,sage.crypto.cipher.Cipher,sage.crypto.cipher,Cipher,class,Element,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/cipher.py#L20
 ,sage.crypto.cipher.PublicKeyCipher,sage.crypto.cipher,PublicKeyCipher,class,Cipher,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/cipher.py#L68
 ,sage.crypto.cipher.SymmetricKeyCipher,sage.crypto.cipher,SymmetricKeyCipher,class,Cipher,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/cipher.py#L57
-,sage.crypto.classical,sage.crypto.classical,classical,module,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical.py#L76
-,sage.crypto.classical.AffineCryptosystem,sage.crypto.classical,AffineCryptosystem,class,"A, SymmetricKeyCryptosystem",https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical.py#L76
-,sage.crypto.classical.HillCryptosystem,sage.crypto.classical,HillCryptosystem,class,"S, SymmetricKeyCryptosystem",https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical.py#L1282
-,sage.crypto.classical.ShiftCryptosystem,sage.crypto.classical,ShiftCryptosystem,class,"A, SymmetricKeyCryptosystem",https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical.py#L1578
-,sage.crypto.classical.SubstitutionCryptosystem,sage.crypto.classical,SubstitutionCryptosystem,class,"S, SymmetricKeyCryptosystem",https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical.py#L2973
-,sage.crypto.classical.TranspositionCryptosystem,sage.crypto.classical,TranspositionCryptosystem,class,"S, SymmetricKeyCryptosystem",https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical.py#L3198
-,sage.crypto.classical.VigenereCryptosystem,sage.crypto.classical,VigenereCryptosystem,class,"S, SymmetricKeyCryptosystem",https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical.py#L3435
-,sage.crypto.classical_cipher,sage.crypto.classical_cipher,classical_cipher,module,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical_cipher.py#L20
-,sage.crypto.classical_cipher.AffineCipher,sage.crypto.classical_cipher,AffineCipher,class,SymmetricKeyCipher,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical_cipher.py#L20
-,sage.crypto.classical_cipher.HillCipher,sage.crypto.classical_cipher,HillCipher,class,SymmetricKeyCipher,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical_cipher.py#L156
-,sage.crypto.classical_cipher.ShiftCipher,sage.crypto.classical_cipher,ShiftCipher,class,SymmetricKeyCipher,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical_cipher.py#L236
-,sage.crypto.classical_cipher.SubstitutionCipher,sage.crypto.classical_cipher,SubstitutionCipher,class,SymmetricKeyCipher,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical_cipher.py#L379
-,sage.crypto.classical_cipher.TranspositionCipher,sage.crypto.classical_cipher,TranspositionCipher,class,SymmetricKeyCipher,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical_cipher.py#L453
-,sage.crypto.classical_cipher.VigenereCipher,sage.crypto.classical_cipher,VigenereCipher,class,SymmetricKeyCipher,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical_cipher.py#L524
+Implemented,sage.crypto.classical,sage.crypto.classical,classical,module,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical.py#L76
+Implemented,sage.crypto.classical.AffineCryptosystem,sage.crypto.classical,AffineCryptosystem,class,"A, SymmetricKeyCryptosystem",https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical.py#L76
+Implemented,sage.crypto.classical.HillCryptosystem,sage.crypto.classical,HillCryptosystem,class,"S, SymmetricKeyCryptosystem",https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical.py#L1282
+Implemented,sage.crypto.classical.ShiftCryptosystem,sage.crypto.classical,ShiftCryptosystem,class,"A, SymmetricKeyCryptosystem",https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical.py#L1578
+Implemented,sage.crypto.classical.SubstitutionCryptosystem,sage.crypto.classical,SubstitutionCryptosystem,class,"S, SymmetricKeyCryptosystem",https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical.py#L2973
+Implemented,sage.crypto.classical.TranspositionCryptosystem,sage.crypto.classical,TranspositionCryptosystem,class,"S, SymmetricKeyCryptosystem",https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical.py#L3198
+Implemented,sage.crypto.classical.VigenereCryptosystem,sage.crypto.classical,VigenereCryptosystem,class,"S, SymmetricKeyCryptosystem",https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical.py#L3435
+Implemented,sage.crypto.classical_cipher,sage.crypto.classical_cipher,classical_cipher,module,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical_cipher.py#L20
+Implemented,sage.crypto.classical_cipher.AffineCipher,sage.crypto.classical_cipher,AffineCipher,class,SymmetricKeyCipher,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical_cipher.py#L20
+Implemented,sage.crypto.classical_cipher.HillCipher,sage.crypto.classical_cipher,HillCipher,class,SymmetricKeyCipher,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical_cipher.py#L156
+Implemented,sage.crypto.classical_cipher.ShiftCipher,sage.crypto.classical_cipher,ShiftCipher,class,SymmetricKeyCipher,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical_cipher.py#L236
+Implemented,sage.crypto.classical_cipher.SubstitutionCipher,sage.crypto.classical_cipher,SubstitutionCipher,class,SymmetricKeyCipher,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical_cipher.py#L379
+Implemented,sage.crypto.classical_cipher.TranspositionCipher,sage.crypto.classical_cipher,TranspositionCipher,class,SymmetricKeyCipher,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical_cipher.py#L453
+Implemented,sage.crypto.classical_cipher.VigenereCipher,sage.crypto.classical_cipher,VigenereCipher,class,SymmetricKeyCipher,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/classical_cipher.py#L524
 ,sage.crypto.cryptosystem,sage.crypto.cryptosystem,cryptosystem,module,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/cryptosystem.py#L42
 ,sage.crypto.cryptosystem.Cryptosystem,sage.crypto.cryptosystem,Cryptosystem,class,Set_generic,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/cryptosystem.py#L42
 ,sage.crypto.cryptosystem.PublicKeyCryptosystem,sage.crypto.cryptosystem,PublicKeyCryptosystem,class,Cryptosystem,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/cryptosystem.py#L383
@@ -830,8 +830,8 @@ Implemented,sage.combinat.tableau_tuple.options,sage.combinat.tableau_tuple,opti
 ,sage.crypto.mq.sr.SR_gf2_2,sage.crypto.mq.sr,SR_gf2_2,class,SR_gf2,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/mq/sr.py#L3167
 ,sage.crypto.mq.sr.SR_gf2n,sage.crypto.mq.sr,SR_gf2n,class,SR_generic,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/mq/sr.py#L2104
 ,sage.crypto.mq.sr.test_consistency,sage.crypto.mq.sr,test_consistency,function,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/mq/sr.py#L3301
-,sage.crypto.public_key.blum_goldwasser,sage.crypto.public_key.blum_goldwasser,blum_goldwasser,module,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/public_key/blum_goldwasser.py#L48
-,sage.crypto.public_key.blum_goldwasser.BlumGoldwasser,sage.crypto.public_key.blum_goldwasser,BlumGoldwasser,class,PublicKeyCryptosystem,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/public_key/blum_goldwasser.py#L48
+Implemented,sage.crypto.public_key.blum_goldwasser,sage.crypto.public_key.blum_goldwasser,blum_goldwasser,module,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/public_key/blum_goldwasser.py#L48
+Implemented,sage.crypto.public_key.blum_goldwasser.BlumGoldwasser,sage.crypto.public_key.blum_goldwasser,BlumGoldwasser,class,PublicKeyCryptosystem,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/public_key/blum_goldwasser.py#L48
 ,sage.crypto.sbox,sage.crypto.sbox,sbox,module,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/sbox.pyx#L59
 ,sage.crypto.sbox.SBox,sage.crypto.sbox,SBox,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/sbox.pyx#L59
 ,sage.crypto.sbox.feistel_construction,sage.crypto.sbox,feistel_construction,function,,https://github.com/sagemath/sage/blob/develop/src/sage/crypto/sbox.pyx#L2022
@@ -928,21 +928,21 @@ Implemented,sage.combinat.tableau_tuple.options,sage.combinat.tableau_tuple,opti
 ,sage.databases.conway,sage.databases.conway,conway,module,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/conway.py#L83
 ,sage.databases.conway.ConwayPolynomials,sage.databases.conway,ConwayPolynomials,class,Mapping,https://github.com/sagemath/sage/blob/develop/src/sage/databases/conway.py#L83
 ,sage.databases.conway.DictInMapping,sage.databases.conway,DictInMapping,class,Mapping,https://github.com/sagemath/sage/blob/develop/src/sage/databases/conway.py#L19
-,sage.databases.cremona,sage.databases.cremona,cremona,module,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L1654
-,sage.databases.cremona.CremonaDatabase,sage.databases.cremona,CremonaDatabase,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L1654
-,sage.databases.cremona.LargeCremonaDatabase,sage.databases.cremona,LargeCremonaDatabase,class,MiniCremonaDatabase,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L1438
-,sage.databases.cremona.MiniCremonaDatabase,sage.databases.cremona,MiniCremonaDatabase,class,SQLDatabase,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L637
-,sage.databases.cremona.build,sage.databases.cremona,build,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L101
-,sage.databases.cremona.class_to_int,sage.databases.cremona,class_to_int,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L492
-,sage.databases.cremona.cremona_letter_code,sage.databases.cremona,cremona_letter_code,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L180
-,sage.databases.cremona.cremona_to_lmfdb,sage.databases.cremona,cremona_to_lmfdb,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L532
-,sage.databases.cremona.is_optimal_id,sage.databases.cremona,is_optimal_id,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L145
-,sage.databases.cremona.lmfdb_to_cremona,sage.databases.cremona,lmfdb_to_cremona,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L589
-,sage.databases.cremona.old_cremona_letter_code,sage.databases.cremona,old_cremona_letter_code,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L255
-,sage.databases.cremona.parse_cremona_label,sage.databases.cremona,parse_cremona_label,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L301
-,sage.databases.cremona.parse_lmfdb_label,sage.databases.cremona,parse_lmfdb_label,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L395
-,sage.databases.cremona.sort_key,sage.databases.cremona,sort_key,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L513
-,sage.databases.cremona.split_code,sage.databases.cremona,split_code,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L470
+Implemented,sage.databases.cremona,sage.databases.cremona,cremona,module,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L1654
+Implemented,sage.databases.cremona.CremonaDatabase,sage.databases.cremona,CremonaDatabase,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L1654
+Implemented,sage.databases.cremona.LargeCremonaDatabase,sage.databases.cremona,LargeCremonaDatabase,class,MiniCremonaDatabase,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L1438
+Implemented,sage.databases.cremona.MiniCremonaDatabase,sage.databases.cremona,MiniCremonaDatabase,class,SQLDatabase,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L637
+Implemented,sage.databases.cremona.build,sage.databases.cremona,build,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L101
+Implemented,sage.databases.cremona.class_to_int,sage.databases.cremona,class_to_int,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L492
+Implemented,sage.databases.cremona.cremona_letter_code,sage.databases.cremona,cremona_letter_code,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L180
+Implemented,sage.databases.cremona.cremona_to_lmfdb,sage.databases.cremona,cremona_to_lmfdb,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L532
+Implemented,sage.databases.cremona.is_optimal_id,sage.databases.cremona,is_optimal_id,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L145
+Implemented,sage.databases.cremona.lmfdb_to_cremona,sage.databases.cremona,lmfdb_to_cremona,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L589
+Implemented,sage.databases.cremona.old_cremona_letter_code,sage.databases.cremona,old_cremona_letter_code,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L255
+Implemented,sage.databases.cremona.parse_cremona_label,sage.databases.cremona,parse_cremona_label,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L301
+Implemented,sage.databases.cremona.parse_lmfdb_label,sage.databases.cremona,parse_lmfdb_label,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L395
+Implemented,sage.databases.cremona.sort_key,sage.databases.cremona,sort_key,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L513
+Implemented,sage.databases.cremona.split_code,sage.databases.cremona,split_code,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cremona.py#L470
 ,sage.databases.cubic_hecke_db,sage.databases.cubic_hecke_db,cubic_hecke_db,module,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cubic_hecke_db.py#L158
 ,sage.databases.cubic_hecke_db.CubicHeckeDataBase,sage.databases.cubic_hecke_db,CubicHeckeDataBase,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cubic_hecke_db.py#L158
 ,sage.databases.cubic_hecke_db.CubicHeckeDataSection,sage.databases.cubic_hecke_db,CubicHeckeDataSection,class,Enum,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cubic_hecke_db.py#L128
@@ -965,8 +965,8 @@ Implemented,sage.combinat.tableau_tuple.options,sage.combinat.tableau_tuple,opti
 ,sage.databases.cubic_hecke_db.section,sage.databases.cubic_hecke_db,section,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cubic_hecke_db.py#L128
 ,sage.databases.cubic_hecke_db.simplify,sage.databases.cubic_hecke_db,simplify,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cubic_hecke_db.py#L80
 ,sage.databases.cubic_hecke_db.split_irred,sage.databases.cubic_hecke_db,split_irred,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cubic_hecke_db.py#L128
-,sage.databases.cunningham_tables,sage.databases.cunningham_tables,cunningham_tables,module,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cunningham_tables.py#L25
-,sage.databases.cunningham_tables.cunningham_prime_factors,sage.databases.cunningham_tables,cunningham_prime_factors,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cunningham_tables.py#L25
+Implemented,sage.databases.cunningham_tables,sage.databases.cunningham_tables,cunningham_tables,module,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cunningham_tables.py#L25
+Implemented,sage.databases.cunningham_tables.cunningham_prime_factors,sage.databases.cunningham_tables,cunningham_prime_factors,function,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/cunningham_tables.py#L25
 ,sage.databases.db_class_polynomials,sage.databases.db_class_polynomials,db_class_polynomials,module,,https://github.com/sagemath/sage/blob/develop/src/sage/databases/db_class_polynomials.py#L110
 ,sage.databases.db_class_polynomials.AtkinClassPolynomialDatabase,sage.databases.db_class_polynomials,AtkinClassPolynomialDatabase,class,ClassPolynomialDatabase,https://github.com/sagemath/sage/blob/develop/src/sage/databases/db_class_polynomials.py#L110
 ,sage.databases.db_class_polynomials.ClassPolynomialDatabase,sage.databases.db_class_polynomials,ClassPolynomialDatabase,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/databases/db_class_polynomials.py#L37
