@@ -33,6 +33,9 @@ pub mod scalar_field;
 pub mod differentiable;
 pub mod examples;
 pub mod errors;
+pub mod utilities;
+pub mod vector_bundle;
+pub mod vector_bundle_fiber;
 
 pub use subset::ManifoldSubset;
 pub use manifold::TopologicalManifold;
@@ -42,6 +45,13 @@ pub use scalar_field::ScalarField;
 pub use differentiable::DifferentiableManifold;
 pub use examples::{RealLine, EuclideanSpace};
 pub use errors::{ManifoldError, Result};
+pub use utilities::{
+    SimplificationChain, simplify_abs_trig, simplify_sqrt_real,
+    simplify_chain_real, simplify_chain_generic, exterior_derivative,
+    set_axes_labels, xder,
+};
+pub use vector_bundle::{TopologicalVectorBundle, TangentBundle, CotangentBundle};
+pub use vector_bundle_fiber::{VectorBundleFiber, VectorBundleFiberElement};
 
 #[cfg(test)]
 mod tests {

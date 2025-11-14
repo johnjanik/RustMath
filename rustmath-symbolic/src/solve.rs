@@ -1704,6 +1704,9 @@ mod tests {
                 // Solution is π/2
             }
             _ => panic!("Expected single solution"),
+        }
+    }
+
     // ========================================================================
     // Phase 4.1 Tests: Trigonometric Equation Solving
     // ========================================================================
@@ -1744,6 +1747,10 @@ mod tests {
                 assert_eq!(sol.simplify(), Expr::from(0));
             }
             _ => panic!("Expected single solution"),
+        }
+    }
+
+    #[test]
     fn test_solve_cos_simple() {
         let x = Expr::symbol("x");
         let var_x = &x.symbols()[0];
@@ -1775,6 +1782,10 @@ mod tests {
                 // Solution is π
             }
             _ => panic!("Expected single solution"),
+        }
+    }
+
+    #[test]
     fn test_solve_tan_simple() {
         let x = Expr::symbol("x");
         let var_x = &x.symbols()[0];
@@ -1806,6 +1817,10 @@ mod tests {
                 assert_eq!(sol.simplify(), Expr::from(0));
             }
             _ => panic!("Expected single solution"),
+        }
+    }
+
+    #[test]
     fn test_solve_sin_multiple_angle() {
         let x = Expr::symbol("x");
         let var_x = &x.symbols()[0];
@@ -1838,6 +1853,10 @@ mod tests {
                 // Solution is π/4
             }
             _ => panic!("Expected single solution"),
+        }
+    }
+
+    #[test]
     fn test_solve_cos_multiple_angle() {
         let x = Expr::symbol("x");
         let var_x = &x.symbols()[0];
@@ -1901,6 +1920,10 @@ mod tests {
                 assert!(upper.is_some());
             }
             _ => panic!("Expected interval solution"),
+        }
+    }
+
+    #[test]
     fn test_solve_arcsin() {
         let x = Expr::symbol("x");
         let var_x = &x.symbols()[0];
@@ -1945,6 +1968,10 @@ mod tests {
                 assert!(upper.is_none());
             }
             _ => panic!("Expected interval solution"),
+        }
+    }
+
+    #[test]
     fn test_solve_arccos() {
         let x = Expr::symbol("x");
         let var_x = &x.symbols()[0];
@@ -1985,6 +2012,10 @@ mod tests {
                 assert!(upper.is_some());
             }
             _ => panic!("Expected interval solution"),
+        }
+    }
+
+    #[test]
     fn test_solve_arctan() {
         let x = Expr::symbol("x");
         let var_x = &x.symbols()[0];
