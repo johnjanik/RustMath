@@ -40,6 +40,8 @@ members = [
     "rustmath-manifolds",
     "rustmath-modular",
     "rustmath-monoids",
+    "rustmath-modules",
+    "rustmath-misc",
 ]
 
 [workspace.package]

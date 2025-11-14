@@ -7,6 +7,7 @@
 //! - Numerical integration (quadrature)
 //! - Interpolation
 //! - Fast Fourier Transform (FFT)
+//! - Optimization backends (GLPK, CVXOPT, generic)
 
 pub mod rootfinding;
 pub mod optimization;
@@ -14,6 +15,7 @@ pub mod integration;
 pub mod interpolation;
 pub mod fft;
 pub mod linear_programming;
+pub mod backends;
 
 pub use rootfinding::{find_root, bisection, newton_raphson, secant};
 pub use optimization::{minimize, gradient_descent, nelder_mead};
