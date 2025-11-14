@@ -112,37 +112,37 @@ Status,full_name,module,entity_name,type,bases,source
 ,sage.combinat.combinat_cython.lyndon_word_iterator,sage.combinat.combinat_cython,lyndon_word_iterator,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combinat_cython.pyx#L156
 ,sage.combinat.combinat_cython.perfect_matchings_iterator,sage.combinat.combinat_cython,perfect_matchings_iterator,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combinat_cython.pyx#L212
 ,sage.combinat.combinat_cython.set_partition_composition,sage.combinat.combinat_cython,set_partition_composition,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combinat_cython.pyx#L299
-,sage.combinat.combination,sage.combinat.combination,combination,module,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combination.py#L734
-,sage.combinat.combination.ChooseNK,sage.combinat.combination,ChooseNK,class,Combinations_setk,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combination.py#L734
-,sage.combinat.combination.Combinations,sage.combinat.combination,Combinations,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combination.py#L37
-,sage.combinat.combination.Combinations_mset,sage.combinat.combination,Combinations_mset,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combination.py#L196
-,sage.combinat.combination.Combinations_msetk,sage.combinat.combination,Combinations_msetk,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combination.py#L342
-,sage.combinat.combination.Combinations_set,sage.combinat.combination,Combinations_set,class,Combinations_mset,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combination.py#L285
-,sage.combinat.combination.Combinations_setk,sage.combinat.combination,Combinations_setk,class,Combinations_msetk,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combination.py#L447
-,sage.combinat.combination.from_rank,sage.combinat.combination,from_rank,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combination.py#L614
-,sage.combinat.combination.rank,sage.combinat.combination,rank,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combination.py#L548
+Implemented,sage.combinat.combination,sage.combinat.combination,combination,module,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combination.py#L734
+Implemented,sage.combinat.combination.ChooseNK,sage.combinat.combination,ChooseNK,class,Combinations_setk,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combination.py#L734
+Implemented,sage.combinat.combination.Combinations,sage.combinat.combination,Combinations,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combination.py#L37
+Implemented,sage.combinat.combination.Combinations_mset,sage.combinat.combination,Combinations_mset,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combination.py#L196
+Implemented,sage.combinat.combination.Combinations_msetk,sage.combinat.combination,Combinations_msetk,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combination.py#L342
+Implemented,sage.combinat.combination.Combinations_set,sage.combinat.combination,Combinations_set,class,Combinations_mset,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combination.py#L285
+Implemented,sage.combinat.combination.Combinations_setk,sage.combinat.combination,Combinations_setk,class,Combinations_msetk,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combination.py#L447
+Implemented,sage.combinat.combination.from_rank,sage.combinat.combination,from_rank,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combination.py#L614
+Implemented,sage.combinat.combination.rank,sage.combinat.combination,rank,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combination.py#L548
 ,sage.combinat.combinatorial_map,sage.combinat.combinatorial_map,combinatorial_map,module,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combinatorial_map.py#L194
 ,sage.combinat.combinatorial_map.CombinatorialMap,sage.combinat.combinatorial_map,CombinatorialMap,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combinatorial_map.py#L194
 ,sage.combinat.combinatorial_map.combinatorial_map,sage.combinat.combinatorial_map,combinatorial_map,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combinatorial_map.py#L58
 ,sage.combinat.combinatorial_map.combinatorial_map_trivial,sage.combinat.combinatorial_map,combinatorial_map_trivial,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combinatorial_map.py#L58
 ,sage.combinat.combinatorial_map.combinatorial_map_wrapper,sage.combinat.combinatorial_map,combinatorial_map_wrapper,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combinatorial_map.py#L103
 ,sage.combinat.combinatorial_map.combinatorial_maps_in_class,sage.combinat.combinatorial_map,combinatorial_maps_in_class,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/combinatorial_map.py#L374
-,sage.combinat.composition,sage.combinat.composition,composition,module,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition.py#L52
-,sage.combinat.composition.Composition,sage.combinat.composition,Composition,class,CombinatorialElement,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition.py#L52
-,sage.combinat.composition.Compositions,sage.combinat.composition,Compositions,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition.py#L1471
-,sage.combinat.composition.Compositions_all,sage.combinat.composition,Compositions_all,class,Compositions,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition.py#L1951
-,sage.combinat.composition.Compositions_constraints,sage.combinat.composition,Compositions_constraints,class,IntegerListsLex,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition.py#L1928
-,sage.combinat.composition.Compositions_n,sage.combinat.composition,Compositions_n,class,Compositions,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition.py#L2039
-,sage.combinat.composition.composition_iterator_fast,sage.combinat.composition,composition_iterator_fast,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition.py#L2158
-,sage.combinat.composition_signed,sage.combinat.composition_signed,composition_signed,module,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition_signed.py#L26
-,sage.combinat.composition_signed.SignedCompositions,sage.combinat.composition_signed,SignedCompositions,class,Compositions_n,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition_signed.py#L26
-,sage.combinat.composition_tableau,sage.combinat.composition_tableau,composition_tableau,module,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition_tableau.py#L23
-,sage.combinat.composition_tableau.CompositionTableau,sage.combinat.composition_tableau,CompositionTableau,class,CombinatorialElement,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition_tableau.py#L23
-,sage.combinat.composition_tableau.CompositionTableaux,sage.combinat.composition_tableau,CompositionTableaux,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition_tableau.py#L272
-,sage.combinat.composition_tableau.CompositionTableauxBacktracker,sage.combinat.composition_tableau,CompositionTableauxBacktracker,class,GenericBacktracker,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition_tableau.py#L751
-,sage.combinat.composition_tableau.CompositionTableaux_all,sage.combinat.composition_tableau,CompositionTableaux_all,class,"CompositionTableaux, DisjointUnionEnumeratedSets",https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition_tableau.py#L513
-,sage.combinat.composition_tableau.CompositionTableaux_shape,sage.combinat.composition_tableau,CompositionTableaux_shape,class,CompositionTableaux,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition_tableau.py#L660
-,sage.combinat.composition_tableau.CompositionTableaux_size,sage.combinat.composition_tableau,CompositionTableaux_size,class,CompositionTableaux,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition_tableau.py#L560
+Implemented,sage.combinat.composition,sage.combinat.composition,composition,module,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition.py#L52
+Implemented,sage.combinat.composition.Composition,sage.combinat.composition,Composition,class,CombinatorialElement,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition.py#L52
+Implemented,sage.combinat.composition.Compositions,sage.combinat.composition,Compositions,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition.py#L1471
+Implemented,sage.combinat.composition.Compositions_all,sage.combinat.composition,Compositions_all,class,Compositions,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition.py#L1951
+Implemented,sage.combinat.composition.Compositions_constraints,sage.combinat.composition,Compositions_constraints,class,IntegerListsLex,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition.py#L1928
+Implemented,sage.combinat.composition.Compositions_n,sage.combinat.composition,Compositions_n,class,Compositions,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition.py#L2039
+Implemented,sage.combinat.composition.composition_iterator_fast,sage.combinat.composition,composition_iterator_fast,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition.py#L2158
+Implemented,sage.combinat.composition_signed,sage.combinat.composition_signed,composition_signed,module,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition_signed.py#L26
+Implemented,sage.combinat.composition_signed.SignedCompositions,sage.combinat.composition_signed,SignedCompositions,class,Compositions_n,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition_signed.py#L26
+Implemented,sage.combinat.composition_tableau,sage.combinat.composition_tableau,composition_tableau,module,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition_tableau.py#L23
+Implemented,sage.combinat.composition_tableau.CompositionTableau,sage.combinat.composition_tableau,CompositionTableau,class,CombinatorialElement,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition_tableau.py#L23
+Implemented,sage.combinat.composition_tableau.CompositionTableaux,sage.combinat.composition_tableau,CompositionTableaux,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition_tableau.py#L272
+Implemented,sage.combinat.composition_tableau.CompositionTableauxBacktracker,sage.combinat.composition_tableau,CompositionTableauxBacktracker,class,GenericBacktracker,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition_tableau.py#L751
+Implemented,sage.combinat.composition_tableau.CompositionTableaux_all,sage.combinat.composition_tableau,CompositionTableaux_all,class,"CompositionTableaux, DisjointUnionEnumeratedSets",https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition_tableau.py#L513
+Implemented,sage.combinat.composition_tableau.CompositionTableaux_shape,sage.combinat.composition_tableau,CompositionTableaux_shape,class,CompositionTableaux,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition_tableau.py#L660
+Implemented,sage.combinat.composition_tableau.CompositionTableaux_size,sage.combinat.composition_tableau,CompositionTableaux_size,class,CompositionTableaux,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/composition_tableau.py#L560
 ,sage.combinat.constellation,sage.combinat.constellation,constellation,module,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/constellation.py#L130
 ,sage.combinat.constellation.Constellation,sage.combinat.constellation,Constellation,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/constellation.py#L130
 ,sage.combinat.constellation.Constellation_class,sage.combinat.constellation,Constellation_class,class,Element,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/constellation.py#L183
@@ -726,23 +726,23 @@ Status,full_name,module,entity_name,type,bases,source
 ,sage.combinat.dlx.AllExactCovers,sage.combinat.dlx,AllExactCovers,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dlx.py#L467
 ,sage.combinat.dlx.DLXMatrix,sage.combinat.dlx,DLXMatrix,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dlx.py#L51
 ,sage.combinat.dlx.OneExactCover,sage.combinat.dlx,OneExactCover,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dlx.py#L494
-,sage.combinat.dyck_word,sage.combinat.dyck_word,dyck_word,module,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L3789
-,sage.combinat.dyck_word.CompleteDyckWords,sage.combinat.dyck_word,CompleteDyckWords,class,DyckWords,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L3789
-,sage.combinat.dyck_word.CompleteDyckWords_all,sage.combinat.dyck_word,CompleteDyckWords_all,class,"CompleteDyckWords, DyckWords_all",https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L3959
-,sage.combinat.dyck_word.CompleteDyckWords_size,sage.combinat.dyck_word,CompleteDyckWords_size,class,"CompleteDyckWords, DyckWords_size",https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L4070
-,sage.combinat.dyck_word.DyckWord,sage.combinat.dyck_word,DyckWord,class,CombinatorialElement,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L196
-,sage.combinat.dyck_word.DyckWordBacktracker,sage.combinat.dyck_word,DyckWordBacktracker,class,GenericBacktracker,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L3605
-,sage.combinat.dyck_word.DyckWord_complete,sage.combinat.dyck_word,DyckWord_complete,class,DyckWord,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L1882
-,sage.combinat.dyck_word.DyckWords,sage.combinat.dyck_word,DyckWords,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L3198
-,sage.combinat.dyck_word.DyckWords_all,sage.combinat.dyck_word,DyckWords_all,class,DyckWords,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L3544
-,sage.combinat.dyck_word.DyckWords_size,sage.combinat.dyck_word,DyckWords_size,class,DyckWords,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L3683
-,sage.combinat.dyck_word.height_poset,sage.combinat.dyck_word,height_poset,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L3998
-,sage.combinat.dyck_word.is_a,sage.combinat.dyck_word,is_a,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L4233
-,sage.combinat.dyck_word.is_area_sequence,sage.combinat.dyck_word,is_area_sequence,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L4208
-,sage.combinat.dyck_word.options,sage.combinat.dyck_word,options,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L837
-,sage.combinat.dyck_word.pealing,sage.combinat.dyck_word,pealing,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L4290
-,sage.combinat.dyck_word.replace_parens,sage.combinat.dyck_word,replace_parens,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L108
-,sage.combinat.dyck_word.replace_symbols,sage.combinat.dyck_word,replace_symbols,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L153
+Implemented,sage.combinat.dyck_word,sage.combinat.dyck_word,dyck_word,module,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L3789
+Implemented,sage.combinat.dyck_word.CompleteDyckWords,sage.combinat.dyck_word,CompleteDyckWords,class,DyckWords,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L3789
+Implemented,sage.combinat.dyck_word.CompleteDyckWords_all,sage.combinat.dyck_word,CompleteDyckWords_all,class,"CompleteDyckWords, DyckWords_all",https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L3959
+Implemented,sage.combinat.dyck_word.CompleteDyckWords_size,sage.combinat.dyck_word,CompleteDyckWords_size,class,"CompleteDyckWords, DyckWords_size",https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L4070
+Implemented,sage.combinat.dyck_word.DyckWord,sage.combinat.dyck_word,DyckWord,class,CombinatorialElement,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L196
+Implemented,sage.combinat.dyck_word.DyckWordBacktracker,sage.combinat.dyck_word,DyckWordBacktracker,class,GenericBacktracker,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L3605
+Implemented,sage.combinat.dyck_word.DyckWord_complete,sage.combinat.dyck_word,DyckWord_complete,class,DyckWord,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L1882
+Implemented,sage.combinat.dyck_word.DyckWords,sage.combinat.dyck_word,DyckWords,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L3198
+Implemented,sage.combinat.dyck_word.DyckWords_all,sage.combinat.dyck_word,DyckWords_all,class,DyckWords,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L3544
+Implemented,sage.combinat.dyck_word.DyckWords_size,sage.combinat.dyck_word,DyckWords_size,class,DyckWords,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L3683
+Implemented,sage.combinat.dyck_word.height_poset,sage.combinat.dyck_word,height_poset,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L3998
+Implemented,sage.combinat.dyck_word.is_a,sage.combinat.dyck_word,is_a,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L4233
+Implemented,sage.combinat.dyck_word.is_area_sequence,sage.combinat.dyck_word,is_area_sequence,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L4208
+Implemented,sage.combinat.dyck_word.options,sage.combinat.dyck_word,options,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L837
+Implemented,sage.combinat.dyck_word.pealing,sage.combinat.dyck_word,pealing,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L4290
+Implemented,sage.combinat.dyck_word.replace_parens,sage.combinat.dyck_word,replace_parens,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L108
+Implemented,sage.combinat.dyck_word.replace_symbols,sage.combinat.dyck_word,replace_symbols,function,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/dyck_word.py#L153
 ,sage.combinat.e_one_star,sage.combinat.e_one_star,e_one_star,module,,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/e_one_star.py#L1344
 ,sage.combinat.e_one_star.E1Star,sage.combinat.e_one_star,E1Star,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/e_one_star.py#L1344
 ,sage.combinat.e_one_star.Face,sage.combinat.e_one_star,Face,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/combinat/e_one_star.py#L235
