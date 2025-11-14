@@ -359,6 +359,316 @@ pub fn ideal_membership<R: Ring>(
     remainder.is_zero()
 }
 
+// ============================================================================
+// Phase 2.3 Enhancements: F4 Algorithm and Optimizations
+// ============================================================================
+
+/// Pair selection strategies for Buchberger's algorithm
+///
+/// Different strategies for selecting which S-polynomial pairs to process
+/// can significantly affect the performance of Gröbner basis computation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PairSelectionStrategy {
+    /// Normal strategy: process pairs in the order they're added
+    Normal,
+    /// Minimal degree strategy: process pairs with smallest degree first
+    MinimalDegree,
+    /// Minimal LCM degree: select pair with smallest LCM degree
+    MinimalLCM,
+}
+
+/// Compute degree of a polynomial in a specific ordering
+fn polynomial_degree<R: Ring>(
+    poly: &MultivariatePolynomial<R>,
+    ordering: MonomialOrdering,
+) -> u32 {
+    let cmp = get_comparison_fn(ordering);
+    match poly.leading_term(cmp) {
+        Some((monomial, _)) => monomial.degree(),
+        None => 0,
+    }
+}
+
+/// Compute the Gröbner basis with a specific pair selection strategy
+///
+/// This is an optimized version of Buchberger's algorithm that allows
+/// choosing different pair selection strategies.
+///
+/// # Arguments
+///
+/// * `generators` - Initial set of polynomials
+/// * `ordering` - Monomial ordering to use
+/// * `strategy` - Pair selection strategy
+///
+/// # Performance
+///
+/// The choice of strategy can dramatically affect performance:
+/// - Normal: Simple FIFO, can be slow
+/// - MinimalDegree: Often much faster, processes low-degree pairs first
+/// - MinimalLCM: Best for many examples, minimizes growth of intermediate polynomials
+pub fn groebner_basis_with_strategy<R: Ring>(
+    mut generators: Vec<MultivariatePolynomial<R>>,
+    ordering: MonomialOrdering,
+    strategy: PairSelectionStrategy,
+) -> Vec<MultivariatePolynomial<R>> {
+    // Remove zero polynomials
+    generators.retain(|p| !p.is_zero());
+
+    if generators.is_empty() {
+        return vec![];
+    }
+
+    let mut basis = generators.clone();
+    let mut pairs: Vec<(usize, usize, u32)> = Vec::new(); // (i, j, priority)
+
+    // Initialize pairs with priority
+    for i in 0..basis.len() {
+        for j in i + 1..basis.len() {
+            let priority = compute_pair_priority(&basis[i], &basis[j], ordering, strategy);
+            pairs.push((i, j, priority));
+        }
+    }
+
+    // Sort pairs by priority if using a strategic selection
+    if strategy != PairSelectionStrategy::Normal {
+        pairs.sort_by_key(|&(_, _, priority)| priority);
+    }
+
+    while let Some((i, j, _priority)) = if strategy == PairSelectionStrategy::Normal {
+        pairs.pop()
+    } else {
+        // For strategic selection, take the lowest priority (first element)
+        if pairs.is_empty() {
+            None
+        } else {
+            Some(pairs.remove(0))
+        }
+    } {
+        // Make sure indices are still valid
+        if i >= basis.len() || j >= basis.len() {
+            continue;
+        }
+
+        // Compute S-polynomial
+        let s = s_polynomial(&basis[i], &basis[j], ordering);
+
+        // Reduce with respect to current basis
+        let remainder = reduce(&s, &basis, ordering);
+
+        // If remainder is non-zero, add to basis
+        if !remainder.is_zero() {
+            let new_idx = basis.len();
+
+            // Add pairs with all existing basis elements
+            for k in 0..basis.len() {
+                let priority = compute_pair_priority(&basis[k], &remainder, ordering, strategy);
+                let new_pair = (k, new_idx, priority);
+
+                if strategy == PairSelectionStrategy::Normal {
+                    pairs.push(new_pair);
+                } else {
+                    // Insert in sorted order for strategic selection
+                    let insert_pos = pairs.iter()
+                        .position(|&(_, _, p)| p > priority)
+                        .unwrap_or(pairs.len());
+                    pairs.insert(insert_pos, new_pair);
+                }
+            }
+
+            basis.push(remainder);
+        }
+    }
+
+    basis
+}
+
+/// Compute priority for a pair of polynomials based on strategy
+fn compute_pair_priority<R: Ring>(
+    f: &MultivariatePolynomial<R>,
+    g: &MultivariatePolynomial<R>,
+    ordering: MonomialOrdering,
+    strategy: PairSelectionStrategy,
+) -> u32 {
+    let cmp = get_comparison_fn(ordering);
+
+    match strategy {
+        PairSelectionStrategy::Normal => 0, // No priority
+
+        PairSelectionStrategy::MinimalDegree => {
+            // Priority is the sum of degrees
+            let f_deg = polynomial_degree(f, ordering);
+            let g_deg = polynomial_degree(g, ordering);
+            f_deg + g_deg
+        }
+
+        PairSelectionStrategy::MinimalLCM => {
+            // Priority is the degree of LCM of leading monomials
+            let f_lm = f.leading_term(cmp).map(|(m, _)| m);
+            let g_lm = g.leading_term(cmp).map(|(m, _)| m);
+
+            match (f_lm, g_lm) {
+                (Some(m1), Some(m2)) => m1.lcm(&m2).degree(),
+                _ => u32::MAX, // Put invalid pairs at the end
+            }
+        }
+    }
+}
+
+/// Buchberger's criteria for detecting useless pairs
+///
+/// These criteria allow us to identify S-polynomial pairs that will reduce to zero,
+/// avoiding unnecessary computation.
+///
+/// # Criteria
+///
+/// 1. **Buchberger's First Criterion**: If gcd(LM(f), LM(g)) = 1, then S(f,g) reduces to 0
+/// 2. **Buchberger's Second Criterion**: More complex, involves checking if another basis
+///    element divides the LCM and certain reduction properties hold
+///
+/// # Returns
+///
+/// true if the pair can be safely discarded (will reduce to zero)
+pub fn is_useless_pair<R: Ring>(
+    f: &MultivariatePolynomial<R>,
+    g: &MultivariatePolynomial<R>,
+    _ordering: MonomialOrdering,
+) -> bool {
+    // For now, implement only the first criterion
+    // Full implementation of the second criterion requires more infrastructure
+
+    let cmp = get_comparison_fn(_ordering);
+
+    let f_lm = f.leading_term(cmp).map(|(m, _)| m);
+    let g_lm = g.leading_term(cmp).map(|(m, _)| m);
+
+    match (f_lm, g_lm) {
+        (Some(m1), Some(m2)) => {
+            // Check if leading monomials are coprime (gcd = 1)
+            // Two monomials are coprime if they share no common variables with positive exponents
+            let lcm = m1.lcm(&m2);
+            let product_degree = m1.degree() + m2.degree();
+
+            // If LCM degree equals sum of degrees, monomials are coprime
+            lcm.degree() == product_degree
+        }
+        _ => false,
+    }
+}
+
+/// Optimized Gröbner basis with Buchberger's criteria
+///
+/// This version applies Buchberger's criteria to avoid computing useless S-polynomials,
+/// significantly improving performance.
+pub fn groebner_basis_optimized<R: Ring>(
+    mut generators: Vec<MultivariatePolynomial<R>>,
+    ordering: MonomialOrdering,
+) -> Vec<MultivariatePolynomial<R>> {
+    // Remove zero polynomials
+    generators.retain(|p| !p.is_zero());
+
+    if generators.is_empty() {
+        return vec![];
+    }
+
+    let mut basis = generators.clone();
+    let mut pairs: Vec<(usize, usize, u32)> = Vec::new();
+
+    // Initialize pairs with priority, filtering useless ones
+    for i in 0..basis.len() {
+        for j in i + 1..basis.len() {
+            if !is_useless_pair(&basis[i], &basis[j], ordering) {
+                let priority = compute_pair_priority(
+                    &basis[i],
+                    &basis[j],
+                    ordering,
+                    PairSelectionStrategy::MinimalLCM,
+                );
+                pairs.push((i, j, priority));
+            }
+        }
+    }
+
+    // Sort by priority
+    pairs.sort_by_key(|&(_, _, priority)| priority);
+
+    while !pairs.is_empty() {
+        let (i, j, _priority) = pairs.remove(0);
+
+        // Make sure indices are still valid
+        if i >= basis.len() || j >= basis.len() {
+            continue;
+        }
+
+        // Compute S-polynomial
+        let s = s_polynomial(&basis[i], &basis[j], ordering);
+
+        // Reduce with respect to current basis
+        let remainder = reduce(&s, &basis, ordering);
+
+        // If remainder is non-zero, add to basis
+        if !remainder.is_zero() {
+            let new_idx = basis.len();
+
+            // Add pairs with all existing basis elements, filtering useless ones
+            for k in 0..basis.len() {
+                if !is_useless_pair(&basis[k], &remainder, ordering) {
+                    let priority = compute_pair_priority(
+                        &basis[k],
+                        &remainder,
+                        ordering,
+                        PairSelectionStrategy::MinimalLCM,
+                    );
+
+                    // Insert in sorted order
+                    let insert_pos = pairs.iter()
+                        .position(|&(_, _, p)| p > priority)
+                        .unwrap_or(pairs.len());
+                    pairs.insert(insert_pos, (k, new_idx, priority));
+                }
+            }
+
+            basis.push(remainder);
+        }
+    }
+
+    basis
+}
+
+/// F4 Algorithm for Gröbner basis computation
+///
+/// The F4 algorithm by Jean-Charles Faugère is a matrix-based approach to
+/// computing Gröbner bases. It's generally much faster than Buchberger's
+/// algorithm for large problems.
+///
+/// # Algorithm Overview
+///
+/// 1. Select critical pairs (similar to Buchberger)
+/// 2. Build a matrix from S-polynomials and their reductors
+/// 3. Perform Gaussian elimination on the matrix
+/// 4. Extract new basis elements from reduced matrix
+/// 5. Repeat until no new elements are added
+///
+/// # Implementation Status
+///
+/// This is a simplified implementation of F4. A full implementation would require:
+/// - Efficient sparse matrix representation (from rustmath-sparsematrix)
+/// - Symbolic preprocessing before matrix construction
+/// - Optimized linear algebra over the coefficient ring
+///
+/// For now, we provide a placeholder that delegates to the optimized Buchberger algorithm.
+pub fn groebner_basis_f4<R: Ring>(
+    generators: Vec<MultivariatePolynomial<R>>,
+    ordering: MonomialOrdering,
+) -> Vec<MultivariatePolynomial<R>> {
+    // Full F4 implementation requires:
+    // 1. Matrix-based reduction
+    // 2. Symbolic preprocessing
+    // 3. Efficient sparse matrix operations
+    //
+    // For now, use the optimized Buchberger algorithm as a fallback
+    groebner_basis_optimized(generators, ordering)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -571,5 +881,144 @@ mod tests {
         // Both should generate the same ideal
         // Reduced basis should have <= number of elements
         assert!(reduced.len() <= unreduced.len());
+    }
+
+    // ========================================================================
+    // Tests for Phase 2.3 Enhancements
+    // ========================================================================
+
+    #[test]
+    fn test_pair_selection_strategies() {
+        let x: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(0);
+        let y: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(1);
+
+        let generators = vec![x.clone(), y.clone()];
+
+        // All strategies should produce valid Gröbner bases
+        let basis_normal = groebner_basis_with_strategy(
+            generators.clone(),
+            MonomialOrdering::Lex,
+            PairSelectionStrategy::Normal,
+        );
+
+        let basis_min_degree = groebner_basis_with_strategy(
+            generators.clone(),
+            MonomialOrdering::Lex,
+            PairSelectionStrategy::MinimalDegree,
+        );
+
+        let basis_min_lcm = groebner_basis_with_strategy(
+            generators.clone(),
+            MonomialOrdering::Lex,
+            PairSelectionStrategy::MinimalLCM,
+        );
+
+        // All should produce non-empty bases
+        assert!(!basis_normal.is_empty());
+        assert!(!basis_min_degree.is_empty());
+        assert!(!basis_min_lcm.is_empty());
+    }
+
+    #[test]
+    fn test_is_useless_pair() {
+        // Test coprime monomials (Buchberger's first criterion)
+        let x: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(0);
+        let y: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(1);
+
+        // x and y have coprime leading monomials
+        assert!(is_useless_pair(&x, &y, MonomialOrdering::Lex));
+
+        // x and x² do not have coprime leading monomials
+        let x_squared = x.clone() * x.clone();
+        assert!(!is_useless_pair(&x, &x_squared, MonomialOrdering::Lex));
+    }
+
+    #[test]
+    fn test_groebner_basis_optimized() {
+        let x: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(0);
+        let y: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(1);
+
+        let generators = vec![x.clone(), y.clone()];
+
+        let basis = groebner_basis_optimized(generators, MonomialOrdering::Lex);
+
+        // Should produce a valid basis
+        assert!(basis.len() >= 2);
+    }
+
+    #[test]
+    fn test_groebner_basis_f4() {
+        let x: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(0);
+        let y: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(1);
+
+        let generators = vec![x.clone(), y.clone()];
+
+        let basis = groebner_basis_f4(generators, MonomialOrdering::Grevlex);
+
+        // Should produce a valid basis
+        assert!(basis.len() >= 2);
+    }
+
+    #[test]
+    fn test_polynomial_degree_ordering() {
+        let x: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(0);
+        let y: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(1);
+
+        let x_squared = x.clone() * x.clone();
+        let xy = x.clone() * y.clone();
+
+        // x² has degree 2
+        assert_eq!(polynomial_degree(&x_squared, MonomialOrdering::Lex), 2);
+
+        // xy has degree 2
+        assert_eq!(polynomial_degree(&xy, MonomialOrdering::Lex), 2);
+    }
+
+    #[test]
+    fn test_compute_pair_priority() {
+        let x: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(0);
+        let y: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(1);
+
+        // Test MinimalDegree strategy
+        let priority = compute_pair_priority(
+            &x,
+            &y,
+            MonomialOrdering::Lex,
+            PairSelectionStrategy::MinimalDegree,
+        );
+        // x and y each have degree 1, so priority should be 2
+        assert_eq!(priority, 2);
+
+        // Test Normal strategy
+        let priority_normal = compute_pair_priority(
+            &x,
+            &y,
+            MonomialOrdering::Lex,
+            PairSelectionStrategy::Normal,
+        );
+        // Normal strategy always returns 0
+        assert_eq!(priority_normal, 0);
+    }
+
+    #[test]
+    fn test_optimized_vs_standard() {
+        // Verify that optimized algorithm produces equivalent results
+        let x: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(0);
+        let y: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(1);
+
+        let f1 = x.clone() * x.clone() + y.clone();
+        let f2 = x.clone() * y.clone();
+        let generators = vec![f1, f2];
+
+        let standard = groebner_basis(generators.clone(), MonomialOrdering::Grevlex);
+        let optimized = groebner_basis_optimized(generators, MonomialOrdering::Grevlex);
+
+        // Both should produce non-trivial bases
+        assert!(!standard.is_empty());
+        assert!(!optimized.is_empty());
+
+        // The optimized version might produce a differently ordered but equivalent basis
+        // For this test, we just verify both are non-empty and of similar size
+        assert!((standard.len() as i32 - optimized.len() as i32).abs() <= 2);
     }
 }

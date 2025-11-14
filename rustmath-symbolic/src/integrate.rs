@@ -376,6 +376,253 @@ impl Expr {
 pub mod advanced {
     use super::*;
 
+    // ========================================================================
+    // Phase 3.1 Enhancements: Advanced Integration Techniques
+    // ========================================================================
+
+    /// Trigonometric substitution type
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum TrigSubstitution {
+        /// x = a sin(θ) for sqrt(a² - x²)
+        Sine,
+        /// x = a tan(θ) for sqrt(a² + x²)
+        Tangent,
+        /// x = a sec(θ) for sqrt(x² - a²)
+        Secant,
+    }
+
+    /// Detect which trigonometric substitution to use
+    ///
+    /// Analyzes expressions involving sqrt to determine the appropriate substitution:
+    /// - sqrt(a² - x²) → x = a sin(θ)
+    /// - sqrt(a² + x²) → x = a tan(θ)
+    /// - sqrt(x² - a²) → x = a sec(θ)
+    pub fn detect_trig_substitution(expr: &Expr, var: &Symbol) -> Option<(TrigSubstitution, Expr)> {
+        // Look for sqrt patterns
+        if let Expr::Unary(UnaryOp::Sqrt, inner) = expr {
+            match &**inner {
+                // sqrt(a² - x²)
+                Expr::Binary(BinaryOp::Sub, left, right) => {
+                    // Check if right is x²
+                    if is_square_of_var(right, var) {
+                        // left should be a constant a²
+                        return Some((TrigSubstitution::Sine, (**left).clone()));
+                    }
+                }
+                // sqrt(a² + x²)
+                Expr::Binary(BinaryOp::Add, left, right) => {
+                    // Check if one is x²
+                    if is_square_of_var(right, var) {
+                        return Some((TrigSubstitution::Tangent, (**left).clone()));
+                    } else if is_square_of_var(left, var) {
+                        return Some((TrigSubstitution::Tangent, (**right).clone()));
+                    }
+                }
+                // sqrt(x² - a²)
+                Expr::Binary(BinaryOp::Sub, left, right) => {
+                    // Check if left is x²
+                    if is_square_of_var(left, var) {
+                        return Some((TrigSubstitution::Secant, (**right).clone()));
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        None
+    }
+
+    /// Check if an expression is x²
+    fn is_square_of_var(expr: &Expr, var: &Symbol) -> bool {
+        matches!(expr,
+            Expr::Binary(BinaryOp::Pow, x, two)
+            if matches!(**x, Expr::Symbol(ref s) if s == var)
+                && matches!(**two, Expr::Integer(ref i) if i.to_i64() == Some(2))
+        )
+    }
+
+    /// Perform trigonometric substitution
+    ///
+    /// Transforms the integral using the appropriate trig substitution
+    pub fn apply_trig_substitution(
+        expr: &Expr,
+        var: &Symbol,
+        sub_type: TrigSubstitution,
+        a_squared: &Expr,
+    ) -> Option<Expr> {
+        // This is a simplified implementation
+        // Full implementation would:
+        // 1. Make the substitution
+        // 2. Compute dx in terms of dθ
+        // 3. Simplify using trig identities
+        // 4. Integrate in terms of θ
+        // 5. Substitute back to x
+
+        // For now, handle the most common cases directly
+        match sub_type {
+            TrigSubstitution::Sine => {
+                // For ∫ 1/sqrt(a² - x²) dx = arcsin(x/a)
+                if let Expr::Binary(BinaryOp::Div, num, den) = expr {
+                    if num.is_one() {
+                        if let Expr::Unary(UnaryOp::Sqrt, inner) = &**den {
+                            if let Expr::Binary(BinaryOp::Sub, left, right) = &**inner {
+                                if *left == a_squared && is_square_of_var(right, var) {
+                                    // Result: arcsin(x/sqrt(a²))
+                                    let a = a_squared.clone().sqrt();
+                                    return Some((Expr::Symbol(var.clone()) / a).arcsin());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            TrigSubstitution::Tangent => {
+                // For ∫ 1/sqrt(a² + x²) dx = arcsinh(x/a) or log(x + sqrt(a² + x²))
+                if let Expr::Binary(BinaryOp::Div, num, den) = expr {
+                    if num.is_one() {
+                        if let Expr::Unary(UnaryOp::Sqrt, inner) = &**den {
+                            if let Expr::Binary(BinaryOp::Add, left, right) = &**inner {
+                                let (const_part, var_part) = if is_square_of_var(right, var) {
+                                    (left, right)
+                                } else if is_square_of_var(left, var) {
+                                    (right, left)
+                                } else {
+                                    return None;
+                                };
+
+                                if *const_part == a_squared {
+                                    let a = const_part.clone().sqrt();
+                                    let x = Expr::Symbol(var.clone());
+                                    // arcsinh(x/a)
+                                    return Some((x.clone() / a).arcsinh());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            TrigSubstitution::Secant => {
+                // For ∫ 1/sqrt(x² - a²) dx = arccosh(x/a)
+                if let Expr::Binary(BinaryOp::Div, num, den) = expr {
+                    if num.is_one() {
+                        if let Expr::Unary(UnaryOp::Sqrt, inner) = &**den {
+                            if let Expr::Binary(BinaryOp::Sub, left, right) = &**inner {
+                                if is_square_of_var(left, var) && *right == a_squared {
+                                    let a = a_squared.clone().sqrt();
+                                    return Some((Expr::Symbol(var.clone()) / a).arccosh());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Partial fraction decomposition for rational functions
+    ///
+    /// Decomposes P(x)/Q(x) into simpler fractions that can be integrated separately
+    ///
+    /// # Algorithm
+    ///
+    /// 1. If deg(P) >= deg(Q), perform polynomial long division
+    /// 2. Factor the denominator Q(x) = (x - r₁)^m₁ × ... × (x - rₖ)^mₖ
+    /// 3. Write as sum: A₁/(x-r₁) + A₂/(x-r₁)² + ... + B₁/(x-r₂) + ...
+    /// 4. Solve for coefficients A₁, A₂, ..., B₁, ...
+    ///
+    /// # Implementation Status
+    ///
+    /// This is a simplified implementation. Full implementation requires:
+    /// - Polynomial factorization over rationals/algebraic numbers
+    /// - Solving systems of linear equations for coefficients
+    /// - Handling repeated and complex roots
+    pub fn partial_fractions(numerator: &Expr, denominator: &Expr, var: &Symbol) -> Option<Vec<Expr>> {
+        // Simplified implementation for basic cases
+
+        // Check for simple case: A/(Bx + C)
+        if numerator.is_constant() {
+            if let Expr::Binary(BinaryOp::Add, left, right) = denominator {
+                // Check if it's of the form ax + b
+                if let Expr::Binary(BinaryOp::Mul, coeff, x) = &**left {
+                    if coeff.is_constant() && matches!(**x, Expr::Symbol(ref s) if s == var) {
+                        if right.is_constant() {
+                            // This is already in simplest form
+                            return Some(vec![numerator.clone() / denominator.clone()]);
+                        }
+                    }
+                }
+            }
+        }
+
+        // For more complex cases, would need full factorization
+        None
+    }
+
+    /// Integrate rational function using partial fractions
+    pub fn integrate_rational_with_partial_fractions(
+        numerator: &Expr,
+        denominator: &Expr,
+        var: &Symbol,
+    ) -> Option<Expr> {
+        // Get partial fraction decomposition
+        let fractions = partial_fractions(numerator, denominator, var)?;
+
+        // Integrate each fraction
+        let mut result = Expr::from(0);
+        for fraction in fractions {
+            let integral = fraction.integrate(var)?;
+            result = result + integral;
+        }
+
+        Some(result)
+    }
+
+    /// Enhanced pattern matching for integration by parts
+    ///
+    /// Automatically chooses u and dv based on the LIATE rule:
+    /// - L: Logarithmic functions
+    /// - I: Inverse trigonometric functions
+    /// - A: Algebraic functions (polynomials)
+    /// - T: Trigonometric functions
+    /// - E: Exponential functions
+    ///
+    /// Choose u in order of priority L > I > A > T > E
+    pub fn integrate_by_parts_auto(expr: &Expr, var: &Symbol) -> Option<Expr> {
+        if let Expr::Binary(BinaryOp::Mul, left, right) = expr {
+            // Determine priority of left and right
+            let left_priority = function_priority(left);
+            let right_priority = function_priority(right);
+
+            // Higher priority should be u, lower should be dv
+            let (u, dv) = if left_priority > right_priority {
+                (left, right)
+            } else {
+                (right, left)
+            };
+
+            // Try integration by parts
+            return Expr::integrate_by_parts(u, dv, var);
+        }
+
+        None
+    }
+
+    /// Determine priority for LIATE rule
+    fn function_priority(expr: &Expr) -> u8 {
+        match expr {
+            Expr::Unary(UnaryOp::Log, _) => 5,  // Logarithmic
+            Expr::Unary(UnaryOp::Arcsin, _) | Expr::Unary(UnaryOp::Arccos, _)
+            | Expr::Unary(UnaryOp::Arctan, _) => 4,  // Inverse trig
+            Expr::Symbol(_) | Expr::Binary(BinaryOp::Pow, _, _) => 3,  // Algebraic
+            Expr::Unary(UnaryOp::Sin, _) | Expr::Unary(UnaryOp::Cos, _)
+            | Expr::Unary(UnaryOp::Tan, _) => 2,  // Trigonometric
+            Expr::Unary(UnaryOp::Exp, _) => 1,  // Exponential
+            _ => 0,
+        }
+    }
+
     /// Recognize and integrate rational functions
     ///
     /// For f(x)/g(x) where f and g are polynomials
@@ -385,13 +632,8 @@ pub mod advanced {
             return Some(numerator.clone() * Expr::Symbol(var.clone()).log());
         }
 
-        // For more complex cases, we would need:
-        // 1. Polynomial long division if degree(numerator) >= degree(denominator)
-        // 2. Partial fraction decomposition
-        // 3. Integration of each term
-
-        // This is a placeholder for future implementation
-        None
+        // Try partial fractions for more complex cases
+        integrate_rational_with_partial_fractions(numerator, denominator, var)
     }
 
     /// Integrate expressions involving sqrt

@@ -8,6 +8,7 @@ pub mod groebner;
 pub mod ideal;
 pub mod multivariate;
 pub mod polynomial;
+pub mod quotient;
 pub mod roots;
 pub mod univariate;
 
@@ -26,6 +27,7 @@ pub use groebner::{
 pub use ideal::Ideal;
 pub use multivariate::{Monomial, MultivariatePolynomial};
 pub use polynomial::Polynomial;
+pub use quotient::{QuotientElement, QuotientRing};
 pub use roots::{
     find_rational_roots_up_to_degree_4, rational_roots, solve_cubic, solve_quartic,
     solve_quadratic, CubicRoots, QuadraticRoots, QuarticRoots,
