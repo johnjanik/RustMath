@@ -171,12 +171,12 @@ impl Expr {
     /// Collect like terms in an expression
     ///
     /// Groups terms with the same symbolic part
-    pub fn collect(&self) -> Expr {
+    pub fn collect_like_terms(&self) -> Expr {
         // Basic implementation - collects terms in addition
         match self {
             Expr::Binary(BinaryOp::Add, left, right) => {
-                let left_coll = left.collect();
-                let right_coll = right.collect();
+                let left_coll = left.collect_like_terms();
+                let right_coll = right.collect_like_terms();
                 // Try to combine if they're like terms
                 match (&left_coll, &right_coll) {
                     // n*x + m*x = (n+m)*x

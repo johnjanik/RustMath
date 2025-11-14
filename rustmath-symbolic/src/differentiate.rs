@@ -152,6 +152,24 @@ impl Expr {
                         df / (Expr::from(1) + f.clone().pow(Expr::from(2)))
                     }
 
+                    // d/dx(arcsinh(f)) = f' / sqrt(f² + 1)
+                    UnaryOp::Arcsinh => {
+                        let f = (**inner).clone();
+                        df / (f.clone().pow(Expr::from(2)) + Expr::from(1)).sqrt()
+                    }
+
+                    // d/dx(arccosh(f)) = f' / sqrt(f² - 1)
+                    UnaryOp::Arccosh => {
+                        let f = (**inner).clone();
+                        df / (f.clone().pow(Expr::from(2)) - Expr::from(1)).sqrt()
+                    }
+
+                    // d/dx(arctanh(f)) = f' / (1 - f²)
+                    UnaryOp::Arctanh => {
+                        let f = (**inner).clone();
+                        df / (Expr::from(1) - f.clone().pow(Expr::from(2)))
+                    }
+
                     // d/dx(gamma(f)) = gamma(f) * digamma(f) * f'
                     // For now, return unsimplified derivative
                     UnaryOp::Gamma => {

@@ -461,7 +461,12 @@ impl Expr {
     /// 3. L'Hôpital's rule (repeated if necessary)
     /// 4. Series expansion
     /// 5. For infinity limits: asymptotic analysis
-    pub fn limit_advanced(&self, var: &Symbol, point: &Expr, dir: Direction) -> LimitResult {
+    ///
+    /// # Note
+    ///
+    /// This method is automatically called by `limit()` when direct substitution fails.
+    /// For most use cases, prefer using `limit()` directly.
+    pub fn limit_enhanced(&self, var: &Symbol, point: &Expr, dir: Direction) -> LimitResult {
         // Strategy 1: Direct substitution
         let substituted = self.substitute(var, point);
         if substituted.is_finite_value() {
@@ -497,6 +502,47 @@ impl Expr {
 
         // All strategies failed
         LimitResult::Unknown
+    }
+
+    /// Compute limit with series expansion and Big-O error analysis
+    ///
+    /// Returns both the limit value and an estimate of the error using Big-O notation.
+    /// This is useful for understanding the accuracy of the limit computation.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use rustmath_symbolic::{Expr, Symbol, Direction};
+    ///
+    /// let x = Symbol::new("x");
+    /// let expr = Expr::Symbol(x.clone()).sin() / Expr::Symbol(x.clone());
+    ///
+    /// // Compute lim(x→0) sin(x)/x with error estimate
+    /// let (result, error) = expr.limit_with_error(&x, &Expr::from(0), Direction::Both, 5);
+    /// // result: LimitResult::Finite(1)
+    /// // error: O(x²) or similar
+    /// ```
+    pub fn limit_with_error(
+        &self,
+        var: &Symbol,
+        point: &Expr,
+        dir: Direction,
+        series_order: usize,
+    ) -> (LimitResult, Option<crate::series::BigO>) {
+        use crate::series::BigO;
+
+        // First compute the limit normally
+        let limit_result = self.limit(var, point, dir);
+
+        // If we got a finite result, try to estimate error using series expansion
+        if let LimitResult::Finite(_) = limit_result {
+            // Expand function as series and determine remainder term
+            let (_, big_o) = self.series_with_big_o(var, point, series_order);
+            return (limit_result, Some(big_o));
+        }
+
+        // For non-finite results, no error estimate available
+        (limit_result, None)
     }
 }
 

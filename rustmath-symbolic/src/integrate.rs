@@ -178,19 +178,6 @@ impl Expr {
         Some(fb - fa)
     }
 
-    /// Check if expression contains a symbol
-    fn contains_symbol(&self, var: &Symbol) -> bool {
-        match self {
-            Expr::Integer(_) | Expr::Rational(_) => false,
-            Expr::Symbol(s) => s == var,
-            Expr::Binary(_, left, right) => {
-                left.contains_symbol(var) || right.contains_symbol(var)
-            }
-            Expr::Unary(_, inner) => inner.contains_symbol(var),
-            Expr::Function(_, args) => args.iter().any(|arg| arg.contains_symbol(var)),
-        }
-    }
-
     /// Check if expression equals 1
     fn is_one(&self) -> bool {
         matches!(self, Expr::Integer(i) if i.to_i64() == Some(1))
@@ -466,7 +453,7 @@ pub mod advanced {
                     if num.is_one() {
                         if let Expr::Unary(UnaryOp::Sqrt, inner) = &**den {
                             if let Expr::Binary(BinaryOp::Sub, left, right) = &**inner {
-                                if *left == a_squared && is_square_of_var(right, var) {
+                                if **left == *a_squared && is_square_of_var(right, var) {
                                     // Result: arcsin(x/sqrt(a²))
                                     let a = a_squared.clone().sqrt();
                                     return Some((Expr::Symbol(var.clone()) / a).arcsin());
@@ -490,8 +477,8 @@ pub mod advanced {
                                     return None;
                                 };
 
-                                if *const_part == a_squared {
-                                    let a = const_part.clone().sqrt();
+                                if **const_part == *a_squared {
+                                    let a = (**const_part).clone().sqrt();
                                     let x = Expr::Symbol(var.clone());
                                     // arcsinh(x/a)
                                     return Some((x.clone() / a).arcsinh());
@@ -507,7 +494,7 @@ pub mod advanced {
                     if num.is_one() {
                         if let Expr::Unary(UnaryOp::Sqrt, inner) = &**den {
                             if let Expr::Binary(BinaryOp::Sub, left, right) = &**inner {
-                                if is_square_of_var(left, var) && *right == a_squared {
+                                if is_square_of_var(left, var) && **right == *a_squared {
                                     let a = a_squared.clone().sqrt();
                                     return Some((Expr::Symbol(var.clone()) / a).arccosh());
                                 }

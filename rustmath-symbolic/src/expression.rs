@@ -36,6 +36,9 @@ pub enum UnaryOp {
     Arcsin,
     Arccos,
     Arctan,
+    Arcsinh,
+    Arccosh,
+    Arctanh,
     Gamma,
     Factorial,
     Erf,
@@ -74,6 +77,19 @@ impl Expr {
             Expr::Binary(_, left, right) => left.is_constant() && right.is_constant(),
             Expr::Unary(_, inner) => inner.is_constant(),
             Expr::Function(_, args) => args.iter().all(|arg| arg.is_constant()),
+        }
+    }
+
+    /// Check if the expression contains a specific symbol
+    pub fn contains_symbol(&self, var: &Symbol) -> bool {
+        match self {
+            Expr::Integer(_) | Expr::Rational(_) => false,
+            Expr::Symbol(s) => s == var,
+            Expr::Binary(_, left, right) => {
+                left.contains_symbol(var) || right.contains_symbol(var)
+            }
+            Expr::Unary(_, inner) => inner.contains_symbol(var),
+            Expr::Function(_, args) => args.iter().any(|arg| arg.contains_symbol(var)),
         }
     }
 
@@ -151,6 +167,21 @@ impl Expr {
     /// Create arctan (inverse tangent) expression
     pub fn arctan(self) -> Self {
         Expr::Unary(UnaryOp::Arctan, Arc::new(self))
+    }
+
+    /// Create arcsinh (inverse hyperbolic sine) expression
+    pub fn arcsinh(self) -> Self {
+        Expr::Unary(UnaryOp::Arcsinh, Arc::new(self))
+    }
+
+    /// Create arccosh (inverse hyperbolic cosine) expression
+    pub fn arccosh(self) -> Self {
+        Expr::Unary(UnaryOp::Arccosh, Arc::new(self))
+    }
+
+    /// Create arctanh (inverse hyperbolic tangent) expression
+    pub fn arctanh(self) -> Self {
+        Expr::Unary(UnaryOp::Arctanh, Arc::new(self))
     }
 
     /// Create gamma function expression
@@ -392,6 +423,9 @@ impl fmt::Display for Expr {
                     UnaryOp::Arcsin => "arcsin",
                     UnaryOp::Arccos => "arccos",
                     UnaryOp::Arctan => "arctan",
+                    UnaryOp::Arcsinh => "arcsinh",
+                    UnaryOp::Arccosh => "arccosh",
+                    UnaryOp::Arctanh => "arctanh",
                     UnaryOp::Gamma => "gamma",
                     UnaryOp::Factorial => "factorial",
                     UnaryOp::Erf => "erf",

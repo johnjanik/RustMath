@@ -138,12 +138,17 @@ This document highlights the most impactful partial features to implement next. 
 
 - [x] `limit(f, x, a, dir='+')` - Directional limits (enhanced)
 - [x] L'Hôpital's rule (multiple applications)
-- [ ] `series(f, x, a, n)` - Asymptotic series
-- [ ] Big-O notation support
+- [x] `series(f, x, a, n)` - Asymptotic series
+- [x] Big-O notation support
 
-**Current Status:** ⚠️ PARTIALLY COMPLETED (2/4) - Directional limits with L'Hôpital's rule
-**Location:** rustmath-symbolic/src/limits.rs
-**Next Step:** Implement asymptotic series expansion and Big-O notation
+**Current Status:** ✅ COMPLETED - All features implemented
+**Location:** rustmath-symbolic/src/{limits.rs, series.rs}
+**Details:**
+- Unified `series()` function provides flexible Taylor/Maclaurin/asymptotic series expansion
+- `series_with_big_o()` returns series with Big-O remainder term
+- Full Big-O, Little-o, Theta, and Omega notation support
+- `limit_with_error()` computes limits with error analysis
+- Enhanced integration between limits and series modules
 
 ---
 
