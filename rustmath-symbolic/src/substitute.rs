@@ -198,6 +198,21 @@ impl Expr {
                         }
                     }
                     UnaryOp::Arctan => Some(val.atan()),
+                    UnaryOp::Arcsinh => Some(val.asinh()),
+                    UnaryOp::Arccosh => {
+                        if val >= 1.0 {
+                            Some(val.acosh())
+                        } else {
+                            None
+                        }
+                    }
+                    UnaryOp::Arctanh => {
+                        if val > -1.0 && val < 1.0 {
+                            Some(val.atanh())
+                        } else {
+                            None
+                        }
+                    }
                     UnaryOp::Gamma => {
                         // Use Stirling's approximation for gamma function
                         // Γ(x) ≈ √(2π/x) * (x/e)^x for large x

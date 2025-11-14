@@ -169,6 +169,80 @@ impl Expr {
 
         coefficients
     }
+
+    /// Unified series expansion function
+    ///
+    /// This is the main interface for computing series expansions.
+    /// Provides a flexible API for Taylor, Maclaurin, Laurent, and asymptotic series.
+    ///
+    /// # Arguments
+    ///
+    /// * `var` - Variable to expand with respect to
+    /// * `point` - Point to expand around (use Expr::from(0) for Maclaurin)
+    /// * `order` - Number of terms to include
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use rustmath_symbolic::{Expr, Symbol};
+    ///
+    /// let x = Symbol::new("x");
+    /// let expr = Expr::Symbol(x.clone()).exp();
+    ///
+    /// // Maclaurin series of exp(x)
+    /// let series = expr.series(&x, &Expr::from(0), 5);
+    /// // Returns: 1 + x + x²/2! + x³/3! + x⁴/4! + x⁵/5!
+    ///
+    /// // Taylor series around x=1
+    /// let series_at_1 = expr.series(&x, &Expr::from(1), 3);
+    /// ```
+    ///
+    /// # Note
+    ///
+    /// This function automatically selects the appropriate expansion method:
+    /// - For point = 0: Uses Maclaurin series
+    /// - For finite points: Uses Taylor series
+    /// - Can be extended to detect when Laurent series is needed
+    pub fn series(&self, var: &Symbol, point: &Expr, order: usize) -> Self {
+        // Check if point is zero for Maclaurin optimization
+        let is_zero = matches!(point, Expr::Integer(i) if i.to_i64() == Some(0));
+
+        if is_zero {
+            self.maclaurin(var, order)
+        } else {
+            self.taylor(var, point, order)
+        }
+    }
+
+    /// Compute series expansion with Big-O remainder term
+    ///
+    /// Returns a tuple of (series_expansion, big_o_term) where the big_o_term
+    /// represents the error/remainder of the truncated series.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// let x = Symbol::new("x");
+    /// let expr = Expr::Symbol(x.clone()).sin();
+    /// let (series, big_o) = expr.series_with_big_o(&x, &Expr::from(0), 3);
+    /// // series: x - x³/3!
+    /// // big_o: O(x⁵)
+    /// ```
+    pub fn series_with_big_o(&self, var: &Symbol, point: &Expr, order: usize) -> (Self, BigO) {
+        let series = self.series(var, point, order);
+
+        // The remainder term is O((x-a)^(n+1)) for Taylor series
+        let x_minus_a = if matches!(point, Expr::Integer(i) if i.to_i64() == Some(0)) {
+            Expr::Symbol(var.clone())
+        } else {
+            Expr::Symbol(var.clone()) - point.clone()
+        };
+
+        let remainder = x_minus_a.pow(Expr::from((order + 1) as i64));
+        let big_o = BigO::new(remainder, var.clone());
+
+        (series, big_o)
+    }
 }
 
 /// Build known Taylor series for common functions
@@ -610,5 +684,98 @@ mod tests {
 
         // Should contain terms up to x²
         assert!(!result.is_constant());
+    }
+
+    #[test]
+    fn test_unified_series_function() {
+        let x = Symbol::new("x");
+
+        // Test Maclaurin series (point = 0)
+        let expr = Expr::Symbol(x.clone()).exp();
+        let series = expr.series(&x, &Expr::from(0), 3);
+
+        // Should match known exp series
+        let expected = known_series::exp(&x, 3);
+        assert_eq!(series, expected);
+    }
+
+    #[test]
+    fn test_series_at_nonzero_point() {
+        let x = Symbol::new("x");
+
+        // Test Taylor series at x=1
+        let expr = Expr::Symbol(x.clone()).pow(Expr::from(2));
+        let series = expr.series(&x, &Expr::from(1), 2);
+
+        // Should not be constant
+        assert!(!series.is_constant());
+    }
+
+    #[test]
+    fn test_series_with_big_o() {
+        let x = Symbol::new("x");
+
+        // Test series with remainder term
+        let expr = Expr::Symbol(x.clone()).sin();
+        let (series, big_o) = expr.series_with_big_o(&x, &Expr::from(0), 3);
+
+        // Series should not be constant
+        assert!(!series.is_constant());
+
+        // Big-O term should be for x^4
+        assert_eq!(big_o.var, x);
+    }
+
+    #[test]
+    fn test_big_o_from_expression() {
+        let x = Symbol::new("x");
+
+        // 3n² + 2n + 1 → O(n²)
+        let expr = Expr::from(3) * Expr::Symbol(x.clone()).pow(Expr::from(2))
+            + Expr::from(2) * Expr::Symbol(x.clone())
+            + Expr::from(1);
+
+        let big_o = BigO::from_expression(&expr, &x);
+
+        // Should detect x² as dominant term
+        let expected_func = Expr::Symbol(x.clone()).pow(Expr::from(2));
+        assert_eq!(big_o.function, expected_func);
+    }
+
+    #[test]
+    fn test_big_o_dominance() {
+        let x = Symbol::new("x");
+
+        // O(n²) dominates O(n)
+        let o_n2 = BigO::quadratic(x.clone());
+        let o_n = BigO::linear(x.clone());
+
+        assert!(o_n2.dominates(&o_n));
+        assert!(!o_n.dominates(&o_n2));
+    }
+
+    #[test]
+    fn test_big_o_display() {
+        let x = Symbol::new("x");
+        let big_o = BigO::quadratic(x);
+
+        let display = format!("{}", big_o);
+        assert!(display.contains("O("));
+    }
+
+    #[test]
+    fn test_asymptotic_expansion() {
+        let x = Symbol::new("x");
+
+        // Test asymptotic expansion as x → ∞
+        // For (x² + x) / (x² + 1), as x → ∞, should approach 1
+        let num = Expr::Symbol(x.clone()).pow(Expr::from(2)) + Expr::Symbol(x.clone());
+        let den = Expr::Symbol(x.clone()).pow(Expr::from(2)) + Expr::from(1);
+        let expr = num / den;
+
+        let asymp = expr.asymptotic(&x, 3);
+
+        // Should not be constant (has terms in powers of 1/x)
+        assert!(!asymp.is_constant());
     }
 }

@@ -29,6 +29,7 @@ pub use limits::{Direction, LimitResult};
 pub use numerical::IntegrationResult;
 pub use parser::{parse, ParseError};
 pub use pde::PDEType;
+pub use series::{BigO, LittleO, Theta, Omega};
 pub use solve::Solution;
 pub use symbol::Symbol;
 
