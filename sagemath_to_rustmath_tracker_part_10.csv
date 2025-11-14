@@ -94,10 +94,10 @@ Status,full_name,module,entity_name,type,bases,source
 ,sage.misc.weak_dict.CachedWeakValueDictionary,sage.misc.weak_dict,CachedWeakValueDictionary,class,WeakValueDictionary,https://github.com/sagemath/sage/blob/develop/src/sage/misc/weak_dict.pyx#L1118
 ,sage.misc.weak_dict.WeakValueDictEraser,sage.misc.weak_dict,WeakValueDictEraser,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/misc/weak_dict.pyx#L142
 ,sage.misc.weak_dict.WeakValueDictionary,sage.misc.weak_dict,WeakValueDictionary,class,dict,https://github.com/sagemath/sage/blob/develop/src/sage/misc/weak_dict.pyx#L222
-,sage.modular,sage.modular,modular,module,,
-,sage.modular.abvar.abvar,sage.modular.abvar.abvar,abvar,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/abvar.py#L3888
-,sage.modular.abvar.abvar.ModularAbelianVariety,sage.modular.abvar.abvar,ModularAbelianVariety,class,ModularAbelianVariety_abstract,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/abvar.py#L3888
-,sage.modular.abvar.abvar.ModularAbelianVariety_abstract,sage.modular.abvar.abvar,ModularAbelianVariety_abstract,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/abvar.py#L110
+Implemented,sage.modular,sage.modular,modular,module,,
+Implemented,sage.modular.abvar.abvar,sage.modular.abvar.abvar,abvar,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/abvar.py#L3888
+Implemented,sage.modular.abvar.abvar.ModularAbelianVariety,sage.modular.abvar.abvar,ModularAbelianVariety,class,ModularAbelianVariety_abstract,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/abvar.py#L3888
+Implemented,sage.modular.abvar.abvar.ModularAbelianVariety_abstract,sage.modular.abvar.abvar,ModularAbelianVariety_abstract,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/abvar.py#L110
 ,sage.modular.abvar.abvar.ModularAbelianVariety_modsym,sage.modular.abvar.abvar,ModularAbelianVariety_modsym,class,ModularAbelianVariety_modsym_abstract,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/abvar.py#L4479
 ,sage.modular.abvar.abvar.ModularAbelianVariety_modsym_abstract,sage.modular.abvar.abvar,ModularAbelianVariety_modsym_abstract,class,ModularAbelianVariety_abstract,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/abvar.py#L3949
 ,sage.modular.abvar.abvar.factor_modsym_space_new_factors,sage.modular.abvar.abvar,factor_modsym_space_new_factors,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/abvar.py#L4965
@@ -112,27 +112,27 @@ Status,full_name,module,entity_name,type,bases,source
 ,sage.modular.abvar.abvar_ambient_jacobian.ModAbVar_ambient_jacobian_class,sage.modular.abvar.abvar_ambient_jacobian,ModAbVar_ambient_jacobian_class,class,ModularAbelianVariety_modsym_abstract,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/abvar_ambient_jacobian.py#L71
 ,sage.modular.abvar.abvar_newform,sage.modular.abvar.abvar_newform,abvar_newform,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/abvar_newform.py#L29
 ,sage.modular.abvar.abvar_newform.ModularAbelianVariety_newform,sage.modular.abvar.abvar_newform,ModularAbelianVariety_newform,class,ModularAbelianVariety_modsym_abstract,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/abvar_newform.py#L29
-,sage.modular.abvar.constructor,sage.modular.abvar.constructor,constructor,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/constructor.py#L137
+Implemented,sage.modular.abvar.constructor,sage.modular.abvar.constructor,constructor,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/constructor.py#L137
 ,sage.modular.abvar.constructor.AbelianVariety,sage.modular.abvar.constructor,AbelianVariety,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/constructor.py#L137
-,sage.modular.abvar.constructor.J0,sage.modular.abvar.constructor,J0,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/constructor.py#L77
-,sage.modular.abvar.constructor.J1,sage.modular.abvar.constructor,J1,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/constructor.py#L101
+Implemented,sage.modular.abvar.constructor.J0,sage.modular.abvar.constructor,J0,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/constructor.py#L77
+Implemented,sage.modular.abvar.constructor.J1,sage.modular.abvar.constructor,J1,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/constructor.py#L101
 ,sage.modular.abvar.constructor.JH,sage.modular.abvar.constructor,JH,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/constructor.py#L119
-,sage.modular.abvar.cuspidal_subgroup,sage.modular.abvar.cuspidal_subgroup,cuspidal_subgroup,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/cuspidal_subgroup.py#L187
-,sage.modular.abvar.cuspidal_subgroup.CuspidalSubgroup,sage.modular.abvar.cuspidal_subgroup,CuspidalSubgroup,class,CuspidalSubgroup_generic,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/cuspidal_subgroup.py#L187
-,sage.modular.abvar.cuspidal_subgroup.CuspidalSubgroup_generic,sage.modular.abvar.cuspidal_subgroup,CuspidalSubgroup_generic,class,FiniteSubgroup,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/cuspidal_subgroup.py#L82
+Implemented,sage.modular.abvar.cuspidal_subgroup,sage.modular.abvar.cuspidal_subgroup,cuspidal_subgroup,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/cuspidal_subgroup.py#L187
+Implemented,sage.modular.abvar.cuspidal_subgroup.CuspidalSubgroup,sage.modular.abvar.cuspidal_subgroup,CuspidalSubgroup,class,CuspidalSubgroup_generic,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/cuspidal_subgroup.py#L187
+Implemented,sage.modular.abvar.cuspidal_subgroup.CuspidalSubgroup_generic,sage.modular.abvar.cuspidal_subgroup,CuspidalSubgroup_generic,class,FiniteSubgroup,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/cuspidal_subgroup.py#L82
 ,sage.modular.abvar.cuspidal_subgroup.RationalCuspSubgroup,sage.modular.abvar.cuspidal_subgroup,RationalCuspSubgroup,class,CuspidalSubgroup_generic,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/cuspidal_subgroup.py#L238
 ,sage.modular.abvar.cuspidal_subgroup.RationalCuspidalSubgroup,sage.modular.abvar.cuspidal_subgroup,RationalCuspidalSubgroup,class,CuspidalSubgroup_generic,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/cuspidal_subgroup.py#L289
 ,sage.modular.abvar.cuspidal_subgroup.is_rational_cusp_gamma0,sage.modular.abvar.cuspidal_subgroup,is_rational_cusp_gamma0,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/cuspidal_subgroup.py#L340
 ,sage.modular.abvar.finite_subgroup,sage.modular.abvar.finite_subgroup,finite_subgroup,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/finite_subgroup.py#L118
 ,sage.modular.abvar.finite_subgroup.FiniteSubgroup,sage.modular.abvar.finite_subgroup,FiniteSubgroup,class,Module,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/finite_subgroup.py#L118
 ,sage.modular.abvar.finite_subgroup.FiniteSubgroup_lattice,sage.modular.abvar.finite_subgroup,FiniteSubgroup_lattice,class,FiniteSubgroup,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/finite_subgroup.py#L839
-,sage.modular.abvar.homology,sage.modular.abvar.homology,homology,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/homology.py#L63
-,sage.modular.abvar.homology.Homology,sage.modular.abvar.homology,Homology,class,HeckeModule_free_module,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/homology.py#L63
-,sage.modular.abvar.homology.Homology_abvar,sage.modular.abvar.homology,Homology_abvar,class,Homology,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/homology.py#L95
+Implemented,sage.modular.abvar.homology,sage.modular.abvar.homology,homology,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/homology.py#L63
+Implemented,sage.modular.abvar.homology.Homology,sage.modular.abvar.homology,Homology,class,HeckeModule_free_module,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/homology.py#L63
+Implemented,sage.modular.abvar.homology.Homology_abvar,sage.modular.abvar.homology,Homology_abvar,class,Homology,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/homology.py#L95
 ,sage.modular.abvar.homology.Homology_over_base,sage.modular.abvar.homology,Homology_over_base,class,Homology_abvar,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/homology.py#L488
 ,sage.modular.abvar.homology.Homology_submodule,sage.modular.abvar.homology,Homology_submodule,class,Homology,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/homology.py#L549
-,sage.modular.abvar.homology.IntegralHomology,sage.modular.abvar.homology,IntegralHomology,class,Homology_abvar,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/homology.py#L334
-,sage.modular.abvar.homology.RationalHomology,sage.modular.abvar.homology,RationalHomology,class,Homology_abvar,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/homology.py#L410
+Implemented,sage.modular.abvar.homology.IntegralHomology,sage.modular.abvar.homology,IntegralHomology,class,Homology_abvar,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/homology.py#L334
+Implemented,sage.modular.abvar.homology.RationalHomology,sage.modular.abvar.homology,RationalHomology,class,Homology_abvar,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/homology.py#L410
 ,sage.modular.abvar.homspace,sage.modular.abvar.homspace,homspace,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/homspace.py#L739
 ,sage.modular.abvar.homspace.EndomorphismSubring,sage.modular.abvar.homspace,EndomorphismSubring,class,"A, Homspace",https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/homspace.py#L739
 ,sage.modular.abvar.homspace.Homspace,sage.modular.abvar.homspace,Homspace,class,HomsetWithBase,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/homspace.py#L195
@@ -145,13 +145,13 @@ Status,full_name,module,entity_name,type,bases,source
 ,sage.modular.abvar.morphism.HeckeOperator,sage.modular.abvar.morphism,HeckeOperator,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/morphism.py#L701
 ,sage.modular.abvar.morphism.Morphism,sage.modular.abvar.morphism,Morphism,class,"A, Morphism_abstract, MatrixMorphism",https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/morphism.py#L598
 ,sage.modular.abvar.morphism.Morphism_abstract,sage.modular.abvar.morphism,Morphism_abstract,class,MatrixMorphism_abstract,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/morphism.py#L53
-,sage.modular.abvar.torsion_subgroup,sage.modular.abvar.torsion_subgroup,torsion_subgroup,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/torsion_subgroup.py#L655
+Implemented,sage.modular.abvar.torsion_subgroup,sage.modular.abvar.torsion_subgroup,torsion_subgroup,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/torsion_subgroup.py#L655
 ,sage.modular.abvar.torsion_subgroup.QQbarTorsionSubgroup,sage.modular.abvar.torsion_subgroup,QQbarTorsionSubgroup,class,Module,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/torsion_subgroup.py#L655
-,sage.modular.abvar.torsion_subgroup.RationalTorsionSubgroup,sage.modular.abvar.torsion_subgroup,RationalTorsionSubgroup,class,FiniteSubgroup,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/torsion_subgroup.py#L105
-,sage.modular.arithgroup.arithgroup_element,sage.modular.arithgroup.arithgroup_element,arithgroup_element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/arithgroup_element.pyx#L26
-,sage.modular.arithgroup.arithgroup_element.ArithmeticSubgroupElement,sage.modular.arithgroup.arithgroup_element,ArithmeticSubgroupElement,class,MultiplicativeGroupElement,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/arithgroup_element.pyx#L26
-,sage.modular.arithgroup.arithgroup_generic,sage.modular.arithgroup.arithgroup_generic,arithgroup_generic,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/arithgroup_generic.py#L53
-,sage.modular.arithgroup.arithgroup_generic.ArithmeticSubgroup,sage.modular.arithgroup.arithgroup_generic,ArithmeticSubgroup,class,Group,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/arithgroup_generic.py#L53
+Implemented,sage.modular.abvar.torsion_subgroup.RationalTorsionSubgroup,sage.modular.abvar.torsion_subgroup,RationalTorsionSubgroup,class,FiniteSubgroup,https://github.com/sagemath/sage/blob/develop/src/sage/modular/abvar/torsion_subgroup.py#L105
+Implemented,sage.modular.arithgroup.arithgroup_element,sage.modular.arithgroup.arithgroup_element,arithgroup_element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/arithgroup_element.pyx#L26
+Implemented,sage.modular.arithgroup.arithgroup_element.ArithmeticSubgroupElement,sage.modular.arithgroup.arithgroup_element,ArithmeticSubgroupElement,class,MultiplicativeGroupElement,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/arithgroup_element.pyx#L26
+Implemented,sage.modular.arithgroup.arithgroup_generic,sage.modular.arithgroup.arithgroup_generic,arithgroup_generic,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/arithgroup_generic.py#L53
+Implemented,sage.modular.arithgroup.arithgroup_generic.ArithmeticSubgroup,sage.modular.arithgroup.arithgroup_generic,ArithmeticSubgroup,class,Group,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/arithgroup_generic.py#L53
 ,sage.modular.arithgroup.arithgroup_generic.is_ArithmeticSubgroup,sage.modular.arithgroup.arithgroup_generic,is_ArithmeticSubgroup,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/arithgroup_generic.py#L33
 ,sage.modular.arithgroup.arithgroup_perm,sage.modular.arithgroup.arithgroup_perm,arithgroup_perm,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/arithgroup_perm.py#L294
 ,sage.modular.arithgroup.arithgroup_perm.ArithmeticSubgroup_Permutation,sage.modular.arithgroup.arithgroup_perm,ArithmeticSubgroup_Permutation,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/arithgroup_perm.py#L294
@@ -167,31 +167,31 @@ Status,full_name,module,entity_name,type,bases,source
 ,sage.modular.arithgroup.congroup.degeneracy_coset_representatives_gamma0,sage.modular.arithgroup.congroup,degeneracy_coset_representatives_gamma0,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup.pyx#L45
 ,sage.modular.arithgroup.congroup.degeneracy_coset_representatives_gamma1,sage.modular.arithgroup.congroup,degeneracy_coset_representatives_gamma1,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup.pyx#L158
 ,sage.modular.arithgroup.congroup.generators_helper,sage.modular.arithgroup.congroup,generators_helper,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup.pyx#L268
-,sage.modular.arithgroup.congroup_gamma,sage.modular.arithgroup.congroup_gamma,congroup_gamma,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma.py#L64
-,sage.modular.arithgroup.congroup_gamma.Gamma_class,sage.modular.arithgroup.congroup_gamma,Gamma_class,class,CongruenceSubgroup,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma.py#L64
-,sage.modular.arithgroup.congroup_gamma.Gamma_constructor,sage.modular.arithgroup.congroup_gamma,Gamma_constructor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma.py#L31
+Implemented,sage.modular.arithgroup.congroup_gamma,sage.modular.arithgroup.congroup_gamma,congroup_gamma,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma.py#L64
+Implemented,sage.modular.arithgroup.congroup_gamma.Gamma_class,sage.modular.arithgroup.congroup_gamma,Gamma_class,class,CongruenceSubgroup,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma.py#L64
+Implemented,sage.modular.arithgroup.congroup_gamma.Gamma_constructor,sage.modular.arithgroup.congroup_gamma,Gamma_constructor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma.py#L31
 ,sage.modular.arithgroup.congroup_gamma.is_Gamma,sage.modular.arithgroup.congroup_gamma,is_Gamma,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma.py#L312
-,sage.modular.arithgroup.congroup_gamma0,sage.modular.arithgroup.congroup_gamma0,congroup_gamma0,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma0.py#L75
-,sage.modular.arithgroup.congroup_gamma0.Gamma0_class,sage.modular.arithgroup.congroup_gamma0,Gamma0_class,class,GammaH_class,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma0.py#L75
-,sage.modular.arithgroup.congroup_gamma0.Gamma0_constructor,sage.modular.arithgroup.congroup_gamma0,Gamma0_constructor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma0.py#L52
+Implemented,sage.modular.arithgroup.congroup_gamma0,sage.modular.arithgroup.congroup_gamma0,congroup_gamma0,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma0.py#L75
+Implemented,sage.modular.arithgroup.congroup_gamma0.Gamma0_class,sage.modular.arithgroup.congroup_gamma0,Gamma0_class,class,GammaH_class,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma0.py#L75
+Implemented,sage.modular.arithgroup.congroup_gamma0.Gamma0_constructor,sage.modular.arithgroup.congroup_gamma0,Gamma0_constructor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma0.py#L52
 ,sage.modular.arithgroup.congroup_gamma0.is_Gamma0,sage.modular.arithgroup.congroup_gamma0,is_Gamma0,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma0.py#L27
-,sage.modular.arithgroup.congroup_gamma1,sage.modular.arithgroup.congroup_gamma1,congroup_gamma1,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma1.py#L82
-,sage.modular.arithgroup.congroup_gamma1.Gamma1_class,sage.modular.arithgroup.congroup_gamma1,Gamma1_class,class,GammaH_class,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma1.py#L82
-,sage.modular.arithgroup.congroup_gamma1.Gamma1_constructor,sage.modular.arithgroup.congroup_gamma1,Gamma1_constructor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma1.py#L55
+Implemented,sage.modular.arithgroup.congroup_gamma1,sage.modular.arithgroup.congroup_gamma1,congroup_gamma1,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma1.py#L82
+Implemented,sage.modular.arithgroup.congroup_gamma1.Gamma1_class,sage.modular.arithgroup.congroup_gamma1,Gamma1_class,class,GammaH_class,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma1.py#L82
+Implemented,sage.modular.arithgroup.congroup_gamma1.Gamma1_constructor,sage.modular.arithgroup.congroup_gamma1,Gamma1_constructor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma1.py#L55
 ,sage.modular.arithgroup.congroup_gamma1.is_Gamma1,sage.modular.arithgroup.congroup_gamma1,is_Gamma1,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gamma1.py#L24
-,sage.modular.arithgroup.congroup_gammaH,sage.modular.arithgroup.congroup_gammaH,congroup_gammaH,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gammaH.py#L165
-,sage.modular.arithgroup.congroup_gammaH.GammaH_class,sage.modular.arithgroup.congroup_gammaH,GammaH_class,class,"H, CongruenceSubgroup",https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gammaH.py#L165
-,sage.modular.arithgroup.congroup_gammaH.GammaH_constructor,sage.modular.arithgroup.congroup_gammaH,GammaH_constructor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gammaH.py#L39
+Implemented,sage.modular.arithgroup.congroup_gammaH,sage.modular.arithgroup.congroup_gammaH,congroup_gammaH,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gammaH.py#L165
+Implemented,sage.modular.arithgroup.congroup_gammaH.GammaH_class,sage.modular.arithgroup.congroup_gammaH,GammaH_class,class,"H, CongruenceSubgroup",https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gammaH.py#L165
+Implemented,sage.modular.arithgroup.congroup_gammaH.GammaH_constructor,sage.modular.arithgroup.congroup_gammaH,GammaH_constructor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gammaH.py#L39
 ,sage.modular.arithgroup.congroup_gammaH.is_GammaH,sage.modular.arithgroup.congroup_gammaH,is_GammaH,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gammaH.py#L95
 ,sage.modular.arithgroup.congroup_gammaH.mumu,sage.modular.arithgroup.congroup_gammaH,mumu,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_gammaH.py#L1434
-,sage.modular.arithgroup.congroup_generic,sage.modular.arithgroup.congroup_generic,congroup_generic,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_generic.py#L436
-,sage.modular.arithgroup.congroup_generic.CongruenceSubgroup,sage.modular.arithgroup.congroup_generic,CongruenceSubgroup,class,CongruenceSubgroupFromGroup,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_generic.py#L436
-,sage.modular.arithgroup.congroup_generic.CongruenceSubgroupBase,sage.modular.arithgroup.congroup_generic,CongruenceSubgroupBase,class,ArithmeticSubgroup,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_generic.py#L153
+Implemented,sage.modular.arithgroup.congroup_generic,sage.modular.arithgroup.congroup_generic,congroup_generic,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_generic.py#L436
+Implemented,sage.modular.arithgroup.congroup_generic.CongruenceSubgroup,sage.modular.arithgroup.congroup_generic,CongruenceSubgroup,class,CongruenceSubgroupFromGroup,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_generic.py#L436
+Implemented,sage.modular.arithgroup.congroup_generic.CongruenceSubgroupBase,sage.modular.arithgroup.congroup_generic,CongruenceSubgroupBase,class,ArithmeticSubgroup,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_generic.py#L153
 ,sage.modular.arithgroup.congroup_generic.CongruenceSubgroupFromGroup,sage.modular.arithgroup.congroup_generic,CongruenceSubgroupFromGroup,class,"G, CongruenceSubgroupBase",https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_generic.py#L280
 ,sage.modular.arithgroup.congroup_generic.CongruenceSubgroup_constructor,sage.modular.arithgroup.congroup_generic,CongruenceSubgroup_constructor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_generic.py#L36
 ,sage.modular.arithgroup.congroup_generic.is_CongruenceSubgroup,sage.modular.arithgroup.congroup_generic,is_CongruenceSubgroup,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_generic.py#L118
-,sage.modular.arithgroup.congroup_sl2z,sage.modular.arithgroup.congroup_sl2z,congroup_sl2z,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_sl2z.py#L50
-,sage.modular.arithgroup.congroup_sl2z.SL2Z_class,sage.modular.arithgroup.congroup_sl2z,SL2Z_class,class,Gamma0_class,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_sl2z.py#L50
+Implemented,sage.modular.arithgroup.congroup_sl2z,sage.modular.arithgroup.congroup_sl2z,congroup_sl2z,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_sl2z.py#L50
+Implemented,sage.modular.arithgroup.congroup_sl2z.SL2Z_class,sage.modular.arithgroup.congroup_sl2z,SL2Z_class,class,Gamma0_class,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_sl2z.py#L50
 ,sage.modular.arithgroup.congroup_sl2z.is_SL2Z,sage.modular.arithgroup.congroup_sl2z,is_SL2Z,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/congroup_sl2z.py#L30
 ,sage.modular.arithgroup.farey_symbol,sage.modular.arithgroup.farey_symbol,farey_symbol,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/farey_symbol.pyx#L93
 ,sage.modular.arithgroup.farey_symbol.Farey,sage.modular.arithgroup.farey_symbol,Farey,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/modular/arithgroup/farey_symbol.pyx#L93
@@ -209,8 +209,8 @@ Status,full_name,module,entity_name,type,bases,source
 ,sage.modular.btquotients.pautomorphicform.pAdicAutomorphicForms,sage.modular.btquotients.pautomorphicform,pAdicAutomorphicForms,class,"U, Module, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/modular/btquotients/pautomorphicform.py#L2126
 ,sage.modular.buzzard,sage.modular.buzzard,buzzard,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/buzzard.py#L56
 ,sage.modular.buzzard.buzzard_tpslopes,sage.modular.buzzard,buzzard_tpslopes,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/buzzard.py#L56
-,sage.modular.cusps,sage.modular.cusps,cusps,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/cusps.py#L50
-,sage.modular.cusps.Cusp,sage.modular.cusps,Cusp,class,Element,https://github.com/sagemath/sage/blob/develop/src/sage/modular/cusps.py#L50
+Implemented,sage.modular.cusps,sage.modular.cusps,cusps,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/cusps.py#L50
+Implemented,sage.modular.cusps.Cusp,sage.modular.cusps,Cusp,class,Element,https://github.com/sagemath/sage/blob/develop/src/sage/modular/cusps.py#L50
 ,sage.modular.cusps.Cusps_class,sage.modular.cusps,Cusps_class,class,"Singleton, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/modular/cusps.py#L1007
 ,sage.modular.cusps_nf,sage.modular.cusps_nf,cusps_nf,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/cusps_nf.py#L1020
 ,sage.modular.cusps_nf.Gamma0_NFCusps,sage.modular.cusps_nf,Gamma0_NFCusps,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/cusps_nf.py#L1020
@@ -256,7 +256,7 @@ Status,full_name,module,entity_name,type,bases,source
 ,sage.modular.etaproducts.eta_poly_relations,sage.modular.etaproducts,eta_poly_relations,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L910
 ,sage.modular.etaproducts.num_cusps_of_width,sage.modular.etaproducts,num_cusps_of_width,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L665
 ,sage.modular.etaproducts.qexp_eta,sage.modular.etaproducts,qexp_eta,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L857
-,sage.modular.hecke.algebra,sage.modular.hecke.algebra,algebra,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/algebra.py#L660
+Implemented,sage.modular.hecke.algebra,sage.modular.hecke.algebra,algebra,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/algebra.py#L660
 ,sage.modular.hecke.algebra.HeckeAlgebra_anemic,sage.modular.hecke.algebra,HeckeAlgebra_anemic,class,"M, HeckeAlgebra_base",https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/algebra.py#L660
 ,sage.modular.hecke.algebra.HeckeAlgebra_base,sage.modular.hecke.algebra,HeckeAlgebra_base,class,"M, CachedRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/algebra.py#L110
 ,sage.modular.hecke.algebra.HeckeAlgebra_full,sage.modular.hecke.algebra,HeckeAlgebra_full,class,"M, HeckeAlgebra_base",https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/algebra.py#L597
@@ -269,7 +269,7 @@ Status,full_name,module,entity_name,type,bases,source
 ,sage.modular.hecke.element,sage.modular.hecke.element,element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/element.py#L51
 ,sage.modular.hecke.element.HeckeModuleElement,sage.modular.hecke.element,HeckeModuleElement,class,ModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/element.py#L51
 ,sage.modular.hecke.element.is_HeckeModuleElement,sage.modular.hecke.element,is_HeckeModuleElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/element.py#L31
-,sage.modular.hecke.hecke_operator,sage.modular.hecke.hecke_operator,hecke_operator,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/hecke_operator.py#L540
+Implemented,sage.modular.hecke.hecke_operator,sage.modular.hecke.hecke_operator,hecke_operator,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/hecke_operator.py#L540
 ,sage.modular.hecke.hecke_operator.DiamondBracketOperator,sage.modular.hecke.hecke_operator,DiamondBracketOperator,class,HeckeAlgebraElement_matrix,https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/hecke_operator.py#L540
 ,sage.modular.hecke.hecke_operator.HeckeAlgebraElement,sage.modular.hecke.hecke_operator,HeckeAlgebraElement,class,AlgebraElement,https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/hecke_operator.py#L73
 ,sage.modular.hecke.hecke_operator.HeckeAlgebraElement_matrix,sage.modular.hecke.hecke_operator,HeckeAlgebraElement_matrix,class,"A, HeckeAlgebraElement",https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/hecke_operator.py#L414
@@ -279,7 +279,7 @@ Status,full_name,module,entity_name,type,bases,source
 ,sage.modular.hecke.homspace,sage.modular.hecke.homspace,homspace,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/homspace.py#L47
 ,sage.modular.hecke.homspace.HeckeModuleHomspace,sage.modular.hecke.homspace,HeckeModuleHomspace,class,"X, Y, HomsetWithBase",https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/homspace.py#L47
 ,sage.modular.hecke.homspace.is_HeckeModuleHomspace,sage.modular.hecke.homspace,is_HeckeModuleHomspace,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/homspace.py#L26
-,sage.modular.hecke.module,sage.modular.hecke.module,module,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/module.py#L492
+Implemented,sage.modular.hecke.module,sage.modular.hecke.module,module,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/module.py#L492
 ,sage.modular.hecke.module.HeckeModule_free_module,sage.modular.hecke.module,HeckeModule_free_module,class,HeckeModule_generic,https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/module.py#L492
 ,sage.modular.hecke.module.HeckeModule_generic,sage.modular.hecke.module,HeckeModule_generic,class,Module,https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/module.py#L56
 ,sage.modular.hecke.module.is_HeckeModule,sage.modular.hecke.module,is_HeckeModule,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/module.py#L33
@@ -349,7 +349,7 @@ Status,full_name,module,entity_name,type,bases,source
 ,sage.modular.modform.constructor.Newforms,sage.modular.modform.constructor,Newforms,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/constructor.py#L411
 ,sage.modular.modform.constructor.canonical_parameters,sage.modular.modform.constructor,canonical_parameters,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/constructor.py#L46
 ,sage.modular.modform.constructor.parse_label,sage.modular.modform.constructor,parse_label,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/constructor.py#L506
-,sage.modular.modform.cuspidal_submodule,sage.modular.modform.cuspidal_submodule,cuspidal_submodule,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/cuspidal_submodule.py#L48
+Implemented,sage.modular.modform.cuspidal_submodule,sage.modular.modform.cuspidal_submodule,cuspidal_submodule,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/cuspidal_submodule.py#L48
 ,sage.modular.modform.cuspidal_submodule.CuspidalSubmodule,sage.modular.modform.cuspidal_submodule,CuspidalSubmodule,class,ModularFormsSubmodule,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/cuspidal_submodule.py#L48
 ,sage.modular.modform.cuspidal_submodule.CuspidalSubmodule_R,sage.modular.modform.cuspidal_submodule,CuspidalSubmodule_R,class,CuspidalSubmodule,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/cuspidal_submodule.py#L200
 ,sage.modular.modform.cuspidal_submodule.CuspidalSubmodule_eps,sage.modular.modform.cuspidal_submodule,CuspidalSubmodule_eps,class,CuspidalSubmodule_modsym_qexp,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/cuspidal_submodule.py#L621
@@ -367,7 +367,7 @@ Status,full_name,module,entity_name,type,bases,source
 ,sage.modular.modform.eis_series_cython,sage.modular.modform.eis_series_cython,eis_series_cython,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/eis_series_cython.pyx#L17
 ,sage.modular.modform.eis_series_cython.Ek_ZZ,sage.modular.modform.eis_series_cython,Ek_ZZ,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/eis_series_cython.pyx#L17
 ,sage.modular.modform.eis_series_cython.eisenstein_series_poly,sage.modular.modform.eis_series_cython,eisenstein_series_poly,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/eis_series_cython.pyx#L141
-,sage.modular.modform.eisenstein_submodule,sage.modular.modform.eisenstein_submodule,eisenstein_submodule,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/eisenstein_submodule.py#L22
+Implemented,sage.modular.modform.eisenstein_submodule,sage.modular.modform.eisenstein_submodule,eisenstein_submodule,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/eisenstein_submodule.py#L22
 ,sage.modular.modform.eisenstein_submodule.EisensteinSubmodule,sage.modular.modform.eisenstein_submodule,EisensteinSubmodule,class,ModularFormsSubmodule,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/eisenstein_submodule.py#L22
 ,sage.modular.modform.eisenstein_submodule.EisensteinSubmodule_eps,sage.modular.modform.eisenstein_submodule,EisensteinSubmodule_eps,class,EisensteinSubmodule_params,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/eisenstein_submodule.py#L514
 ,sage.modular.modform.eisenstein_submodule.EisensteinSubmodule_g0_Q,sage.modular.modform.eisenstein_submodule,EisensteinSubmodule_g0_Q,class,EisensteinSubmodule_params,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/eisenstein_submodule.py#L368
@@ -376,10 +376,10 @@ Status,full_name,module,entity_name,type,bases,source
 ,sage.modular.modform.eisenstein_submodule.EisensteinSubmodule_params,sage.modular.modform.eisenstein_submodule,EisensteinSubmodule_params,class,EisensteinSubmodule,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/eisenstein_submodule.py#L123
 ,sage.modular.modform.eisenstein_submodule.cyclotomic_restriction,sage.modular.modform.eisenstein_submodule,cyclotomic_restriction,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/eisenstein_submodule.py#L567
 ,sage.modular.modform.eisenstein_submodule.cyclotomic_restriction_tower,sage.modular.modform.eisenstein_submodule,cyclotomic_restriction_tower,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/eisenstein_submodule.py#L621
-,sage.modular.modform.element,sage.modular.modform.element,element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/element.py#L3072
+Implemented,sage.modular.modform.element,sage.modular.modform.element,element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/element.py#L3072
 ,sage.modular.modform.element.EisensteinSeries,sage.modular.modform.element,EisensteinSeries,class,ModularFormElement,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/element.py#L3072
 ,sage.modular.modform.element.GradedModularFormElement,sage.modular.modform.element,GradedModularFormElement,class,ModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/element.py#L3373
-,sage.modular.modform.element.ModularFormElement,sage.modular.modform.element,ModularFormElement,class,"ModularForm_abstract, HeckeModuleElement",https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/element.py#L2591
+Implemented,sage.modular.modform.element.ModularFormElement,sage.modular.modform.element,ModularFormElement,class,"ModularForm_abstract, HeckeModuleElement",https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/element.py#L2591
 ,sage.modular.modform.element.ModularFormElement_elliptic_curve,sage.modular.modform.element,ModularFormElement_elliptic_curve,class,"E, Newform",https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/element.py#L2954
 ,sage.modular.modform.element.ModularForm_abstract,sage.modular.modform.element,ModularForm_abstract,class,ModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/element.py#L147
 ,sage.modular.modform.element.Newform,sage.modular.modform.element,Newform,class,ModularForm_abstract,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modform/element.py#L1550
@@ -477,14 +477,14 @@ Status,full_name,module,entity_name,type,bases,source
 ,sage.modular.modsym.apply,sage.modular.modsym.apply,apply,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/apply.pyx#L65
 ,sage.modular.modsym.apply.Apply,sage.modular.modsym.apply,Apply,class,object,
 ,sage.modular.modsym.apply.apply_to_monomial,sage.modular.modsym.apply,apply_to_monomial,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/apply.pyx#L65
-,sage.modular.modsym.boundary,sage.modular.modsym.boundary,boundary,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/boundary.py#L275
+Implemented,sage.modular.modsym.boundary,sage.modular.modsym.boundary,boundary,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/boundary.py#L275
 ,sage.modular.modsym.boundary.BoundarySpace,sage.modular.modsym.boundary,BoundarySpace,class,"Z, HeckeModule_generic",https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/boundary.py#L275
 ,sage.modular.modsym.boundary.BoundarySpaceElement,sage.modular.modsym.boundary,BoundarySpaceElement,class,HeckeModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/boundary.py#L106
 ,sage.modular.modsym.boundary.BoundarySpace_wtk_eps,sage.modular.modsym.boundary,BoundarySpace_wtk_eps,class,BoundarySpace,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/boundary.py#L1205
 ,sage.modular.modsym.boundary.BoundarySpace_wtk_g0,sage.modular.modsym.boundary,BoundarySpace_wtk_g0,class,"F, BoundarySpace",https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/boundary.py#L611
 ,sage.modular.modsym.boundary.BoundarySpace_wtk_g1,sage.modular.modsym.boundary,BoundarySpace_wtk_g1,class,"F, BoundarySpace",https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/boundary.py#L754
 ,sage.modular.modsym.boundary.BoundarySpace_wtk_gamma_h,sage.modular.modsym.boundary,BoundarySpace_wtk_gamma_h,class,"F, BoundarySpace",https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/boundary.py#L954
-,sage.modular.modsym.element,sage.modular.modsym.element,element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/element.py#L92
+Implemented,sage.modular.modsym.element,sage.modular.modsym.element,element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/element.py#L92
 ,sage.modular.modsym.element.ModularSymbolsElement,sage.modular.modsym.element,ModularSymbolsElement,class,HeckeModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/element.py#L92
 ,sage.modular.modsym.element.is_ModularSymbolsElement,sage.modular.modsym.element,is_ModularSymbolsElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/element.py#L32
 ,sage.modular.modsym.element.set_modsym_print_mode,sage.modular.modsym.element,set_modsym_print_mode,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/element.py#L54
@@ -504,7 +504,7 @@ Status,full_name,module,entity_name,type,bases,source
 ,sage.modular.modsym.heilbronn.hecke_images_quad_character_weight2,sage.modular.modsym.heilbronn,hecke_images_quad_character_weight2,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/heilbronn.pyx#L749
 ,sage.modular.modsym.heilbronn.n,sage.modular.modsym.heilbronn,n,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/heilbronn.pyx#L415
 ,sage.modular.modsym.heilbronn.p,sage.modular.modsym.heilbronn,p,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/heilbronn.pyx#L301
-,sage.modular.modsym.manin_symbol,sage.modular.modsym.manin_symbol,manin_symbol,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/manin_symbol.pyx#L61
+Implemented,sage.modular.modsym.manin_symbol,sage.modular.modsym.manin_symbol,manin_symbol,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/manin_symbol.pyx#L61
 ,sage.modular.modsym.manin_symbol.ManinSymbol,sage.modular.modsym.manin_symbol,ManinSymbol,class,Element,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/manin_symbol.pyx#L61
 ,sage.modular.modsym.manin_symbol.i,sage.modular.modsym.manin_symbol,i,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/manin_symbol.pyx#L4
 ,sage.modular.modsym.manin_symbol.is_ManinSymbol,sage.modular.modsym.manin_symbol,is_ManinSymbol,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/manin_symbol.pyx#L33
@@ -517,7 +517,7 @@ Status,full_name,module,entity_name,type,bases,source
 ,sage.modular.modsym.manin_symbol_list.ManinSymbolList_gamma1,sage.modular.modsym.manin_symbol_list,ManinSymbolList_gamma1,class,ManinSymbolList_group,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/manin_symbol_list.py#L755
 ,sage.modular.modsym.manin_symbol_list.ManinSymbolList_gamma_h,sage.modular.modsym.manin_symbol_list,ManinSymbolList_gamma_h,class,ManinSymbolList_group,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/manin_symbol_list.py#L812
 ,sage.modular.modsym.manin_symbol_list.ManinSymbolList_group,sage.modular.modsym.manin_symbol_list,ManinSymbolList_group,class,ManinSymbolList,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/manin_symbol_list.py#L380
-,sage.modular.modsym.modsym,sage.modular.modsym.modsym,modsym,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/modsym.py#L192
+Implemented,sage.modular.modsym.modsym,sage.modular.modsym.modsym,modsym,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/modsym.py#L192
 ,sage.modular.modsym.modsym.ModularSymbols,sage.modular.modsym.modsym,ModularSymbols,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/modsym.py#L192
 ,sage.modular.modsym.modsym.ModularSymbols_clear_cache,sage.modular.modsym.modsym,ModularSymbols_clear_cache,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/modsym.py#L157
 ,sage.modular.modsym.modsym.canonical_parameters,sage.modular.modsym.modsym,canonical_parameters,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/modsym/modsym.py#L105
