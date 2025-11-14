@@ -73,57 +73,57 @@ Implemented,sage.groups.perm_gps.symgp_conjugacy_class.default_representative,sa
 ,sage.groups.semimonomial_transformations.semimonomial_transformation_group.SemimonomialActionMat,sage.groups.semimonomial_transformations.semimonomial_transformation_group,SemimonomialActionMat,class,"G, M, Action",https://github.com/sagemath/sage/blob/develop/src/sage/groups/semimonomial_transformations/semimonomial_transformation_group.py#L462
 ,sage.groups.semimonomial_transformations.semimonomial_transformation_group.SemimonomialActionVec,sage.groups.semimonomial_transformations.semimonomial_transformation_group,SemimonomialActionVec,class,"G, V, Action",https://github.com/sagemath/sage/blob/develop/src/sage/groups/semimonomial_transformations/semimonomial_transformation_group.py#L408
 ,sage.groups.semimonomial_transformations.semimonomial_transformation_group.SemimonomialTransformationGroup,sage.groups.semimonomial_transformations.semimonomial_transformation_group,SemimonomialTransformationGroup,class,"R, FiniteGroup, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/groups/semimonomial_transformations/semimonomial_transformation_group.py#L65
-,sage.homology,sage.homology,homology,module,,
-,sage.homology.algebraic_topological_model,sage.homology.algebraic_topological_model,algebraic_topological_model,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/algebraic_topological_model.py#L37
-,sage.homology.algebraic_topological_model.algebraic_topological_model,sage.homology.algebraic_topological_model,algebraic_topological_model,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/algebraic_topological_model.py#L37
-,sage.homology.algebraic_topological_model.algebraic_topological_model_delta_complex,sage.homology.algebraic_topological_model,algebraic_topological_model_delta_complex,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/algebraic_topological_model.py#L341
-,sage.homology.chain_complex,sage.homology.chain_complex,chain_complex,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex.py#L93
-,sage.homology.chain_complex.ChainComplex,sage.homology.chain_complex,ChainComplex,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex.py#L93
-,sage.homology.chain_complex.ChainComplex_class,sage.homology.chain_complex,ChainComplex_class,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex.py#L643
-,sage.homology.chain_complex.Chain_class,sage.homology.chain_complex,Chain_class,class,ModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex.py#L318
-,sage.homology.chain_complex_homspace,sage.homology.chain_complex_homspace,chain_complex_homspace,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex_homspace.py#L132
-,sage.homology.chain_complex_homspace.ChainComplexHomspace,sage.homology.chain_complex_homspace,ChainComplexHomspace,class,"X, Y, Homset",https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex_homspace.py#L132
-,sage.homology.chain_complex_homspace.is_ChainComplexHomspace,sage.homology.chain_complex_homspace,is_ChainComplexHomspace,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex_homspace.py#L108
-,sage.homology.chain_complex_morphism,sage.homology.chain_complex_morphism,chain_complex_morphism,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex_morphism.py#L94
-,sage.homology.chain_complex_morphism.ChainComplexMorphism,sage.homology.chain_complex_morphism,ChainComplexMorphism,class,"C, D, Morphism",https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex_morphism.py#L94
-,sage.homology.chain_complex_morphism.is_ChainComplexMorphism,sage.homology.chain_complex_morphism,is_ChainComplexMorphism,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex_morphism.py#L61
-,sage.homology.chain_homotopy,sage.homology.chain_homotopy,chain_homotopy,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_homotopy.py#L388
-,sage.homology.chain_homotopy.ChainContraction,sage.homology.chain_homotopy,ChainContraction,class,ChainHomotopy,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_homotopy.py#L388
-,sage.homology.chain_homotopy.ChainHomotopy,sage.homology.chain_homotopy,ChainHomotopy,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_homotopy.py#L51
-,sage.homology.chains,sage.homology.chains,chains,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chains.py#L28
-,sage.homology.chains.CellComplexReference,sage.homology.chains,CellComplexReference,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chains.py#L28
-,sage.homology.chains.Chains,sage.homology.chains,Chains,class,"CellComplexReference, CombinatorialFreeModule",https://github.com/sagemath/sage/blob/develop/src/sage/homology/chains.py#L90
-,sage.homology.chains.Cochains,sage.homology.chains,Cochains,class,"CellComplexReference, CombinatorialFreeModule",https://github.com/sagemath/sage/blob/develop/src/sage/homology/chains.py#L317
-,sage.homology.chains.Element,sage.homology.chains,Element,class,IndexedFreeModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chains.py#L216
-,sage.homology.free_resolution,sage.homology.free_resolution,free_resolution,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/free_resolution.py#L318
-,sage.homology.free_resolution.FiniteFreeResolution,sage.homology.free_resolution,FiniteFreeResolution,class,FreeResolution,https://github.com/sagemath/sage/blob/develop/src/sage/homology/free_resolution.py#L318
-,sage.homology.free_resolution.FiniteFreeResolution_free_module,sage.homology.free_resolution,FiniteFreeResolution_free_module,class,FiniteFreeResolution,https://github.com/sagemath/sage/blob/develop/src/sage/homology/free_resolution.py#L670
-,sage.homology.free_resolution.FiniteFreeResolution_singular,sage.homology.free_resolution,FiniteFreeResolution_singular,class,FiniteFreeResolution,https://github.com/sagemath/sage/blob/develop/src/sage/homology/free_resolution.py#L772
-,sage.homology.free_resolution.FreeResolution,sage.homology.free_resolution,FreeResolution,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/homology/free_resolution.py#L81
-,sage.homology.graded_resolution,sage.homology.graded_resolution,graded_resolution,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/graded_resolution.py#L92
-,sage.homology.graded_resolution.GradedFiniteFreeResolution,sage.homology.graded_resolution,GradedFiniteFreeResolution,class,FiniteFreeResolution,https://github.com/sagemath/sage/blob/develop/src/sage/homology/graded_resolution.py#L92
-,sage.homology.graded_resolution.GradedFiniteFreeResolution_free_module,sage.homology.graded_resolution,GradedFiniteFreeResolution_free_module,class,"GradedFiniteFreeResolution, FiniteFreeResolution_free_module",https://github.com/sagemath/sage/blob/develop/src/sage/homology/graded_resolution.py#L315
-,sage.homology.graded_resolution.GradedFiniteFreeResolution_singular,sage.homology.graded_resolution,GradedFiniteFreeResolution_singular,class,"GradedFiniteFreeResolution, FiniteFreeResolution_singular",https://github.com/sagemath/sage/blob/develop/src/sage/homology/graded_resolution.py#L411
-,sage.homology.hochschild_complex,sage.homology.hochschild_complex,hochschild_complex,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/hochschild_complex.py#L27
-,sage.homology.hochschild_complex.Element,sage.homology.hochschild_complex,Element,class,ModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/homology/hochschild_complex.py#L536
-,sage.homology.hochschild_complex.HochschildComplex,sage.homology.hochschild_complex,HochschildComplex,class,"A, M, UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/homology/hochschild_complex.py#L27
-,sage.homology.homology_group,sage.homology.homology_group,homology_group,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_group.py#L138
-,sage.homology.homology_group.HomologyGroup,sage.homology.homology_group,HomologyGroup,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_group.py#L138
-,sage.homology.homology_group.HomologyGroup_class,sage.homology.homology_group,HomologyGroup_class,class,AdditiveAbelianGroup_fixed_gens,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_group.py#L24
-,sage.homology.homology_morphism,sage.homology.homology_morphism,homology_morphism,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_morphism.py#L45
-,sage.homology.homology_morphism.InducedHomologyMorphism,sage.homology.homology_morphism,InducedHomologyMorphism,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_morphism.py#L45
-,sage.homology.homology_vector_space_with_basis,sage.homology.homology_vector_space_with_basis,homology_vector_space_with_basis,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L700
-,sage.homology.homology_vector_space_with_basis.CohomologyRing,sage.homology.homology_vector_space_with_basis,CohomologyRing,class,HomologyVectorSpaceWithBasis,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L700
-,sage.homology.homology_vector_space_with_basis.CohomologyRing_mod2,sage.homology.homology_vector_space_with_basis,CohomologyRing_mod2,class,CohomologyRing,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L939
-,sage.homology.homology_vector_space_with_basis.Element,sage.homology.homology_vector_space_with_basis,Element,class,Element,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L882
-,sage.homology.homology_vector_space_with_basis.HomologyVectorSpaceWithBasis,sage.homology.homology_vector_space_with_basis,HomologyVectorSpaceWithBasis,class,CombinatorialFreeModule,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L48
-,sage.homology.homology_vector_space_with_basis.HomologyVectorSpaceWithBasis_mod2,sage.homology.homology_vector_space_with_basis,HomologyVectorSpaceWithBasis_mod2,class,HomologyVectorSpaceWithBasis,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L522
-,sage.homology.homology_vector_space_with_basis.is_GF2,sage.homology.homology_vector_space_with_basis,is_GF2,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L1438
-,sage.homology.homology_vector_space_with_basis.sum_indices,sage.homology.homology_vector_space_with_basis,sum_indices,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L1397
-,sage.homology.koszul_complex,sage.homology.koszul_complex,koszul_complex,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/koszul_complex.py#L25
-,sage.homology.koszul_complex.KoszulComplex,sage.homology.koszul_complex,KoszulComplex,class,"R, ChainComplex_class, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/homology/koszul_complex.py#L25
-,sage.homology.matrix_utils,sage.homology.matrix_utils,matrix_utils,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/matrix_utils.py#L24
-,sage.homology.matrix_utils.dhsw_snf,sage.homology.matrix_utils,dhsw_snf,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/matrix_utils.py#L24
+Implemented,sage.homology,sage.homology,homology,module,,
+Implemented,sage.homology.algebraic_topological_model,sage.homology.algebraic_topological_model,algebraic_topological_model,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/algebraic_topological_model.py#L37
+Implemented,sage.homology.algebraic_topological_model.algebraic_topological_model,sage.homology.algebraic_topological_model,algebraic_topological_model,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/algebraic_topological_model.py#L37
+Implemented,sage.homology.algebraic_topological_model.algebraic_topological_model_delta_complex,sage.homology.algebraic_topological_model,algebraic_topological_model_delta_complex,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/algebraic_topological_model.py#L341
+Implemented,sage.homology.chain_complex,sage.homology.chain_complex,chain_complex,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex.py#L93
+Implemented,sage.homology.chain_complex.ChainComplex,sage.homology.chain_complex,ChainComplex,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex.py#L93
+Implemented,sage.homology.chain_complex.ChainComplex_class,sage.homology.chain_complex,ChainComplex_class,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex.py#L643
+Implemented,sage.homology.chain_complex.Chain_class,sage.homology.chain_complex,Chain_class,class,ModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex.py#L318
+Implemented,sage.homology.chain_complex_homspace,sage.homology.chain_complex_homspace,chain_complex_homspace,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex_homspace.py#L132
+Implemented,sage.homology.chain_complex_homspace.ChainComplexHomspace,sage.homology.chain_complex_homspace,ChainComplexHomspace,class,"X, Y, Homset",https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex_homspace.py#L132
+Implemented,sage.homology.chain_complex_homspace.is_ChainComplexHomspace,sage.homology.chain_complex_homspace,is_ChainComplexHomspace,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex_homspace.py#L108
+Implemented,sage.homology.chain_complex_morphism,sage.homology.chain_complex_morphism,chain_complex_morphism,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex_morphism.py#L94
+Implemented,sage.homology.chain_complex_morphism.ChainComplexMorphism,sage.homology.chain_complex_morphism,ChainComplexMorphism,class,"C, D, Morphism",https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex_morphism.py#L94
+Implemented,sage.homology.chain_complex_morphism.is_ChainComplexMorphism,sage.homology.chain_complex_morphism,is_ChainComplexMorphism,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_complex_morphism.py#L61
+Implemented,sage.homology.chain_homotopy,sage.homology.chain_homotopy,chain_homotopy,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_homotopy.py#L388
+Implemented,sage.homology.chain_homotopy.ChainContraction,sage.homology.chain_homotopy,ChainContraction,class,ChainHomotopy,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_homotopy.py#L388
+Implemented,sage.homology.chain_homotopy.ChainHomotopy,sage.homology.chain_homotopy,ChainHomotopy,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chain_homotopy.py#L51
+Implemented,sage.homology.chains,sage.homology.chains,chains,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chains.py#L28
+Implemented,sage.homology.chains.CellComplexReference,sage.homology.chains,CellComplexReference,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chains.py#L28
+Implemented,sage.homology.chains.Chains,sage.homology.chains,Chains,class,"CellComplexReference, CombinatorialFreeModule",https://github.com/sagemath/sage/blob/develop/src/sage/homology/chains.py#L90
+Implemented,sage.homology.chains.Cochains,sage.homology.chains,Cochains,class,"CellComplexReference, CombinatorialFreeModule",https://github.com/sagemath/sage/blob/develop/src/sage/homology/chains.py#L317
+Implemented,sage.homology.chains.Element,sage.homology.chains,Element,class,IndexedFreeModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/homology/chains.py#L216
+Implemented,sage.homology.free_resolution,sage.homology.free_resolution,free_resolution,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/free_resolution.py#L318
+Implemented,sage.homology.free_resolution.FiniteFreeResolution,sage.homology.free_resolution,FiniteFreeResolution,class,FreeResolution,https://github.com/sagemath/sage/blob/develop/src/sage/homology/free_resolution.py#L318
+Implemented,sage.homology.free_resolution.FiniteFreeResolution_free_module,sage.homology.free_resolution,FiniteFreeResolution_free_module,class,FiniteFreeResolution,https://github.com/sagemath/sage/blob/develop/src/sage/homology/free_resolution.py#L670
+Implemented,sage.homology.free_resolution.FiniteFreeResolution_singular,sage.homology.free_resolution,FiniteFreeResolution_singular,class,FiniteFreeResolution,https://github.com/sagemath/sage/blob/develop/src/sage/homology/free_resolution.py#L772
+Implemented,sage.homology.free_resolution.FreeResolution,sage.homology.free_resolution,FreeResolution,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/homology/free_resolution.py#L81
+Implemented,sage.homology.graded_resolution,sage.homology.graded_resolution,graded_resolution,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/graded_resolution.py#L92
+Implemented,sage.homology.graded_resolution.GradedFiniteFreeResolution,sage.homology.graded_resolution,GradedFiniteFreeResolution,class,FiniteFreeResolution,https://github.com/sagemath/sage/blob/develop/src/sage/homology/graded_resolution.py#L92
+Implemented,sage.homology.graded_resolution.GradedFiniteFreeResolution_free_module,sage.homology.graded_resolution,GradedFiniteFreeResolution_free_module,class,"GradedFiniteFreeResolution, FiniteFreeResolution_free_module",https://github.com/sagemath/sage/blob/develop/src/sage/homology/graded_resolution.py#L315
+Implemented,sage.homology.graded_resolution.GradedFiniteFreeResolution_singular,sage.homology.graded_resolution,GradedFiniteFreeResolution_singular,class,"GradedFiniteFreeResolution, FiniteFreeResolution_singular",https://github.com/sagemath/sage/blob/develop/src/sage/homology/graded_resolution.py#L411
+Implemented,sage.homology.hochschild_complex,sage.homology.hochschild_complex,hochschild_complex,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/hochschild_complex.py#L27
+Implemented,sage.homology.hochschild_complex.Element,sage.homology.hochschild_complex,Element,class,ModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/homology/hochschild_complex.py#L536
+Implemented,sage.homology.hochschild_complex.HochschildComplex,sage.homology.hochschild_complex,HochschildComplex,class,"A, M, UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/homology/hochschild_complex.py#L27
+Implemented,sage.homology.homology_group,sage.homology.homology_group,homology_group,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_group.py#L138
+Implemented,sage.homology.homology_group.HomologyGroup,sage.homology.homology_group,HomologyGroup,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_group.py#L138
+Implemented,sage.homology.homology_group.HomologyGroup_class,sage.homology.homology_group,HomologyGroup_class,class,AdditiveAbelianGroup_fixed_gens,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_group.py#L24
+Implemented,sage.homology.homology_morphism,sage.homology.homology_morphism,homology_morphism,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_morphism.py#L45
+Implemented,sage.homology.homology_morphism.InducedHomologyMorphism,sage.homology.homology_morphism,InducedHomologyMorphism,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_morphism.py#L45
+Implemented,sage.homology.homology_vector_space_with_basis,sage.homology.homology_vector_space_with_basis,homology_vector_space_with_basis,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L700
+Implemented,sage.homology.homology_vector_space_with_basis.CohomologyRing,sage.homology.homology_vector_space_with_basis,CohomologyRing,class,HomologyVectorSpaceWithBasis,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L700
+Implemented,sage.homology.homology_vector_space_with_basis.CohomologyRing_mod2,sage.homology.homology_vector_space_with_basis,CohomologyRing_mod2,class,CohomologyRing,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L939
+Implemented,sage.homology.homology_vector_space_with_basis.Element,sage.homology.homology_vector_space_with_basis,Element,class,Element,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L882
+Implemented,sage.homology.homology_vector_space_with_basis.HomologyVectorSpaceWithBasis,sage.homology.homology_vector_space_with_basis,HomologyVectorSpaceWithBasis,class,CombinatorialFreeModule,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L48
+Implemented,sage.homology.homology_vector_space_with_basis.HomologyVectorSpaceWithBasis_mod2,sage.homology.homology_vector_space_with_basis,HomologyVectorSpaceWithBasis_mod2,class,HomologyVectorSpaceWithBasis,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L522
+Implemented,sage.homology.homology_vector_space_with_basis.is_GF2,sage.homology.homology_vector_space_with_basis,is_GF2,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L1438
+Implemented,sage.homology.homology_vector_space_with_basis.sum_indices,sage.homology.homology_vector_space_with_basis,sum_indices,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/homology_vector_space_with_basis.py#L1397
+Implemented,sage.homology.koszul_complex,sage.homology.koszul_complex,koszul_complex,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/koszul_complex.py#L25
+Implemented,sage.homology.koszul_complex.KoszulComplex,sage.homology.koszul_complex,KoszulComplex,class,"R, ChainComplex_class, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/homology/koszul_complex.py#L25
+Implemented,sage.homology.matrix_utils,sage.homology.matrix_utils,matrix_utils,module,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/matrix_utils.py#L24
+Implemented,sage.homology.matrix_utils.dhsw_snf,sage.homology.matrix_utils,dhsw_snf,function,,https://github.com/sagemath/sage/blob/develop/src/sage/homology/matrix_utils.py#L24
 ,sage.interfaces,sage.interfaces,interfaces,module,,
 ,sage.interfaces.abc,sage.interfaces.abc,abc,module,,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/abc.py#L6
 ,sage.interfaces.abc.AxiomElement,sage.interfaces.abc,AxiomElement,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/interfaces/abc.py#L6
@@ -555,7 +555,7 @@ Implemented,sage.groups.perm_gps.symgp_conjugacy_class.default_representative,sa
 ,sage.libs.eclib.mwrank.set_precision,sage.libs.eclib.mwrank,set_precision,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/mwrank.pyx#L100
 ,sage.libs.eclib.newforms,sage.libs.eclib.newforms,newforms,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/newforms.pyx#L24
 ,sage.libs.eclib.newforms.ECModularSymbol,sage.libs.eclib.newforms,ECModularSymbol,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/newforms.pyx#L24
-Partial,sage.libs.flint.arith_sage,sage.libs.flint.arith_sage,arith_sage,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/arith_sage.pyx#L28
+Implemented,sage.libs.flint.arith_sage,sage.libs.flint.arith_sage,arith_sage,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/arith_sage.pyx#L28
 ,sage.libs.flint.arith_sage.bell_number,sage.libs.flint.arith_sage,bell_number,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/arith_sage.pyx#L28
 ,sage.libs.flint.arith_sage.bernoulli_number,sage.libs.flint.arith_sage,bernoulli_number,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/arith_sage.pyx#L66
 ,sage.libs.flint.arith_sage.dedekind_sum,sage.libs.flint.arith_sage,dedekind_sum,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/arith_sage.pyx#L244
@@ -757,46 +757,46 @@ Partial,sage.libs.flint.arith_sage,sage.libs.flint.arith_sage,arith_sage,module,
 ,sage.libs.symmetrica.symmetrica.t_SCHUR_MONOMIAL_symmetrica,sage.libs.symmetrica.symmetrica,t_SCHUR_MONOMIAL_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L463
 ,sage.libs.symmetrica.symmetrica.t_SCHUR_POWSYM_symmetrica,sage.libs.symmetrica.symmetrica,t_SCHUR_POWSYM_symmetrica,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L514
 ,sage.libs.symmetrica.symmetrica.test_integer,sage.libs.symmetrica.symmetrica,test_integer,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/symmetrica/symmetrica.pyx#L526
-,sage.logic,sage.logic,logic,module,,
-,sage.logic.booleval,sage.logic.booleval,booleval,module,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/booleval.py#L76
-,sage.logic.booleval.eval_f,sage.logic.booleval,eval_f,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/booleval.py#L76
-,sage.logic.booleval.eval_formula,sage.logic.booleval,eval_formula,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/booleval.py#L42
-,sage.logic.booleval.eval_op,sage.logic.booleval,eval_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/booleval.py#L104
-,sage.logic.boolformula,sage.logic.boolformula,boolformula,module,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/boolformula.py#L150
-,sage.logic.boolformula.BooleanFormula,sage.logic.boolformula,BooleanFormula,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/logic/boolformula.py#L150
-,sage.logic.boolformula.is_consequence,sage.logic.boolformula,is_consequence,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/boolformula.py#L706
-,sage.logic.logic,sage.logic.logic,logic,module,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L40
-,sage.logic.logic.SymbolicLogic,sage.logic.logic,SymbolicLogic,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L40
-,sage.logic.logic.eval,sage.logic.logic,eval,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L405
-,sage.logic.logic.eval_and_op,sage.logic.logic,eval_and_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L646
-,sage.logic.logic.eval_bin_op,sage.logic.logic,eval_bin_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L593
-,sage.logic.logic.eval_iff_op,sage.logic.logic,eval_iff_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L745
-,sage.logic.logic.eval_ifthen_op,sage.logic.logic,eval_ifthen_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L710
-,sage.logic.logic.eval_ltor_toks,sage.logic.logic,eval_ltor_toks,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L446
-,sage.logic.logic.eval_mon_op,sage.logic.logic,eval_mon_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L557
-,sage.logic.logic.eval_or_op,sage.logic.logic,eval_or_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L678
-,sage.logic.logic.get_bit,sage.logic.logic,get_bit,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L366
-,sage.logic.logic.reduce_bins,sage.logic.logic,reduce_bins,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L483
-,sage.logic.logic.reduce_monos,sage.logic.logic,reduce_monos,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L521
-,sage.logic.logic.tokenize,sage.logic.logic,tokenize,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L780
-,sage.logic.logicparser,sage.logic.logicparser,logicparser,module,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L653
-,sage.logic.logicparser.apply_func,sage.logic.logicparser,apply_func,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L653
-,sage.logic.logicparser.get_trees,sage.logic.logicparser,get_trees,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L166
-,sage.logic.logicparser.parse,sage.logic.logicparser,parse,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L95
-,sage.logic.logicparser.parse_ltor,sage.logic.logicparser,parse_ltor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L569
-,sage.logic.logicparser.polish_parse,sage.logic.logicparser,polish_parse,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L130
-,sage.logic.logicparser.prefix_to_infix,sage.logic.logicparser,prefix_to_infix,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L339
-,sage.logic.logicparser.recover_formula,sage.logic.logicparser,recover_formula,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L222
-,sage.logic.logicparser.recover_formula_internal,sage.logic.logicparser,recover_formula_internal,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L275
-,sage.logic.logicparser.to_infix_internal,sage.logic.logicparser,to_infix_internal,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L381
-,sage.logic.logicparser.tokenize,sage.logic.logicparser,tokenize,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L429
-,sage.logic.logicparser.tree_parse,sage.logic.logicparser,tree_parse,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L512
-,sage.logic.logictable,sage.logic.logictable,logictable,module,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logictable.py#L125
-,sage.logic.logictable.Truthtable,sage.logic.logictable,Truthtable,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logictable.py#L125
-,sage.logic.propcalc,sage.logic.propcalc,propcalc,module,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/propcalc.py#L262
-,sage.logic.propcalc.consistent,sage.logic.propcalc,consistent,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/propcalc.py#L262
-,sage.logic.propcalc.formula,sage.logic.propcalc,formula,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/propcalc.py#L151
-,sage.logic.propcalc.get_formulas,sage.logic.propcalc,get_formulas,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/propcalc.py#L191
+Implemented,sage.logic,sage.logic,logic,module,,
+Implemented,sage.logic.booleval,sage.logic.booleval,booleval,module,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/booleval.py#L76
+Implemented,sage.logic.booleval.eval_f,sage.logic.booleval,eval_f,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/booleval.py#L76
+Implemented,sage.logic.booleval.eval_formula,sage.logic.booleval,eval_formula,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/booleval.py#L42
+Implemented,sage.logic.booleval.eval_op,sage.logic.booleval,eval_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/booleval.py#L104
+Implemented,sage.logic.boolformula,sage.logic.boolformula,boolformula,module,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/boolformula.py#L150
+Implemented,sage.logic.boolformula.BooleanFormula,sage.logic.boolformula,BooleanFormula,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/logic/boolformula.py#L150
+Implemented,sage.logic.boolformula.is_consequence,sage.logic.boolformula,is_consequence,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/boolformula.py#L706
+Implemented,sage.logic.logic,sage.logic.logic,logic,module,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L40
+Implemented,sage.logic.logic.SymbolicLogic,sage.logic.logic,SymbolicLogic,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L40
+Implemented,sage.logic.logic.eval,sage.logic.logic,eval,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L405
+Implemented,sage.logic.logic.eval_and_op,sage.logic.logic,eval_and_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L646
+Implemented,sage.logic.logic.eval_bin_op,sage.logic.logic,eval_bin_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L593
+Implemented,sage.logic.logic.eval_iff_op,sage.logic.logic,eval_iff_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L745
+Implemented,sage.logic.logic.eval_ifthen_op,sage.logic.logic,eval_ifthen_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L710
+Implemented,sage.logic.logic.eval_ltor_toks,sage.logic.logic,eval_ltor_toks,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L446
+Implemented,sage.logic.logic.eval_mon_op,sage.logic.logic,eval_mon_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L557
+Implemented,sage.logic.logic.eval_or_op,sage.logic.logic,eval_or_op,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L678
+Implemented,sage.logic.logic.get_bit,sage.logic.logic,get_bit,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L366
+Implemented,sage.logic.logic.reduce_bins,sage.logic.logic,reduce_bins,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L483
+Implemented,sage.logic.logic.reduce_monos,sage.logic.logic,reduce_monos,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L521
+Implemented,sage.logic.logic.tokenize,sage.logic.logic,tokenize,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logic.py#L780
+Implemented,sage.logic.logicparser,sage.logic.logicparser,logicparser,module,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L653
+Implemented,sage.logic.logicparser.apply_func,sage.logic.logicparser,apply_func,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L653
+Implemented,sage.logic.logicparser.get_trees,sage.logic.logicparser,get_trees,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L166
+Implemented,sage.logic.logicparser.parse,sage.logic.logicparser,parse,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L95
+Implemented,sage.logic.logicparser.parse_ltor,sage.logic.logicparser,parse_ltor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L569
+Implemented,sage.logic.logicparser.polish_parse,sage.logic.logicparser,polish_parse,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L130
+Implemented,sage.logic.logicparser.prefix_to_infix,sage.logic.logicparser,prefix_to_infix,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L339
+Implemented,sage.logic.logicparser.recover_formula,sage.logic.logicparser,recover_formula,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L222
+Implemented,sage.logic.logicparser.recover_formula_internal,sage.logic.logicparser,recover_formula_internal,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L275
+Implemented,sage.logic.logicparser.to_infix_internal,sage.logic.logicparser,to_infix_internal,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L381
+Implemented,sage.logic.logicparser.tokenize,sage.logic.logicparser,tokenize,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L429
+Implemented,sage.logic.logicparser.tree_parse,sage.logic.logicparser,tree_parse,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logicparser.py#L512
+Implemented,sage.logic.logictable,sage.logic.logictable,logictable,module,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logictable.py#L125
+Implemented,sage.logic.logictable.Truthtable,sage.logic.logictable,Truthtable,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/logic/logictable.py#L125
+Implemented,sage.logic.propcalc,sage.logic.propcalc,propcalc,module,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/propcalc.py#L262
+Implemented,sage.logic.propcalc.consistent,sage.logic.propcalc,consistent,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/propcalc.py#L262
+Implemented,sage.logic.propcalc.formula,sage.logic.propcalc,formula,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/propcalc.py#L151
+Implemented,sage.logic.propcalc.get_formulas,sage.logic.propcalc,get_formulas,function,,https://github.com/sagemath/sage/blob/develop/src/sage/logic/propcalc.py#L191
 ,sage.manifolds,sage.manifolds,manifolds,module,,
 ,sage.manifolds.calculus_method,sage.manifolds.calculus_method,calculus_method,module,,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/calculus_method.py#L116
 ,sage.manifolds.calculus_method.CalculusMethod,sage.manifolds.calculus_method,CalculusMethod,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/manifolds/calculus_method.py#L116

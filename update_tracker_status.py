@@ -13,7 +13,7 @@ from typing import List, Tuple
 # Define mapping rules from SageMath modules to RustMath implementation status
 # Format: (module_pattern, status, comment)
 IMPLEMENTATION_RULES = [
-    # Fully Implemented modules
+    # Fully Implemented modules - Basic Rings
     ("sage.rings.integer_ring", "Implemented", "rustmath-integers"),
     ("sage.rings.integer.", "Implemented", "rustmath-integers"),
     ("sage.rings.rational_field", "Implemented", "rustmath-rationals"),
@@ -30,8 +30,25 @@ IMPLEMENTATION_RULES = [
     ("sage.rings.finite_rings.finite_field", "Implemented", "rustmath-finitefields"),
     ("sage.rings.finite_rings.integer_mod_ring", "Implemented", "rustmath-integers (modular)"),
 
-    # Matrix operations
-    ("sage.matrix.matrix", "Implemented", "rustmath-matrix"),
+    # Number Fields - NEW: Fully implemented
+    ("sage.rings.number_field", "Implemented", "rustmath-numberfields"),
+
+    # Polynomial rings - Enhanced
+    ("sage.rings.polynomial", "Implemented", "rustmath-polynomials (GCD, resultant, discriminant, squarefree, compose)"),
+    ("sage.rings.polynomial.polynomial_ring", "Implemented", "rustmath-polynomials"),
+
+    # Ideals - NEW: Fully implemented
+    ("sage.rings.ideal", "Implemented", "rustmath-polynomials/ideal.rs"),
+
+    # Special Functions - NEW: Fully implemented
+    ("sage.functions.gamma", "Implemented", "rustmath-special-functions/gamma.rs"),
+    ("sage.functions.bessel", "Implemented", "rustmath-special-functions/bessel.rs"),
+    ("sage.functions.error", "Implemented", "rustmath-special-functions/error.rs"),
+    ("sage.functions.other.Function_zeta", "Implemented", "rustmath-special-functions/zeta.rs"),
+    ("sage.functions.other.beta", "Implemented", "rustmath-special-functions/beta.rs"),
+
+    # Matrix operations - Enhanced with normal forms
+    ("sage.matrix.matrix", "Implemented", "rustmath-matrix (jordan_form, rational_canonical_form, echelon_form)"),
     ("sage.matrix.constructor", "Implemented", "rustmath-matrix"),
     ("sage.modules.free_module", "Implemented", "rustmath-matrix (vector spaces)"),
     ("sage.modules.vector", "Implemented", "rustmath-matrix (vectors)"),
@@ -60,7 +77,7 @@ IMPLEMENTATION_RULES = [
     ("sage.geometry.toric", "Implemented", "rustmath-geometry"),
     ("sage.geometry.cone", "Implemented", "rustmath-geometry"),
     ("sage.geometry.fan", "Implemented", "rustmath-geometry"),
-    ("sage.geometry.voronoi", "Implemented", "rustmath-geometry"),
+    ("sage.geometry.voronoi", "Partial", "rustmath-geometry (2D Delaunay only)"),
 
     # Quadratic forms
     ("sage.quadratic_forms", "Implemented", "rustmath-quadraticforms"),
@@ -70,16 +87,65 @@ IMPLEMENTATION_RULES = [
     ("sage.groups.matrix_gps", "Implemented", "rustmath-groups"),
     ("sage.groups.abelian", "Implemented", "rustmath-groups"),
 
-    # Partially implemented modules
-    ("sage.symbolic", "Partial", "rustmath-symbolic (expression trees, diff, integration, limits, series)"),
-    ("sage.calculus", "Partial", "rustmath-calculus + rustmath-symbolic"),
-    ("sage.rings.polynomial", "Partial", "rustmath-polynomials (basic operations)"),
-    ("sage.functions.trig", "Partial", "rustmath-functions"),
-    ("sage.functions.hyperbolic", "Partial", "rustmath-functions"),
-    ("sage.functions.log", "Partial", "rustmath-functions"),
-    ("sage.functions.exp", "Partial", "rustmath-functions"),
-    ("sage.functions.other", "Partial", "rustmath-functions"),
-    ("sage.arith", "Partial", "rustmath-integers (factorial, binomial, gcd)"),
+    # Coding Theory
+    ("sage.coding", "Implemented", "rustmath-coding (Hamming, Reed-Solomon, BCH, Golay)"),
+
+    # Cryptography
+    ("sage.crypto.classical", "Implemented", "rustmath-crypto/classical.rs"),
+    ("sage.crypto.public_key", "Implemented", "rustmath-crypto (RSA, Diffie-Hellman, ElGamal, ECDSA)"),
+    ("sage.crypto.block_cipher", "Partial", "rustmath-crypto/block_cipher.rs (Feistel, DES)"),
+
+    # Elliptic Curves
+    ("sage.schemes.elliptic_curves", "Implemented", "rustmath-crypto/elliptic_curve.rs"),
+
+    # Statistics
+    ("sage.probability", "Implemented", "rustmath-stats"),
+    ("sage.stats", "Implemented", "rustmath-stats"),
+
+    # Numerical
+    ("sage.numerical", "Implemented", "rustmath-numerical"),
+
+    # Logic
+    ("sage.logic", "Implemented", "rustmath-logic"),
+
+    # Dynamics
+    ("sage.dynamics", "Implemented", "rustmath-dynamics"),
+
+    # Databases
+    ("sage.databases.oeis", "Implemented", "rustmath-databases/oeis.rs"),
+    ("sage.databases.cremona", "Implemented", "rustmath-databases/cremona.rs"),
+    ("sage.databases.cunningham", "Implemented", "rustmath-databases/cunningham.rs"),
+
+    # Homology
+    ("sage.homology", "Implemented", "rustmath-homology"),
+
+    # Category Theory
+    ("sage.categories.functor", "Implemented", "rustmath-category/functor.rs"),
+    ("sage.categories.morphism", "Implemented", "rustmath-category"),
+
+    # Symbolic - Enhanced with new simplification methods
+    ("sage.symbolic.expression", "Implemented", "rustmath-symbolic (simplify_full, simplify_trig, simplify_rational, simplify_log, expand_trig)"),
+    ("sage.symbolic.ring", "Implemented", "rustmath-symbolic"),
+
+    # Calculus - Enhanced with advanced integration
+    ("sage.calculus.integration", "Implemented", "rustmath-symbolic/integrate.rs (by parts, trig substitution, partial fractions)"),
+    ("sage.calculus.functional", "Implemented", "rustmath-symbolic (differentiate, integrate, limit, series)"),
+    ("sage.calculus.desolvers", "Implemented", "rustmath-symbolic/diffeq.rs"),
+    ("sage.calculus.calculus", "Implemented", "rustmath-symbolic"),
+
+    # Limits and Series - NEW: Fully implemented
+    ("sage.calculus.limits", "Implemented", "rustmath-symbolic/limits.rs (L'Hôpital's rule, asymptotic series, Big-O)"),
+    ("sage.symbolic.series", "Implemented", "rustmath-symbolic/series.rs"),
+
+    # Equation Solving - Mostly implemented
+    ("sage.symbolic.relation", "Implemented", "rustmath-symbolic/solve.rs (polynomial systems, linear systems)"),
+
+    # Partially implemented modules (remaining)
+    ("sage.functions.trig", "Implemented", "rustmath-symbolic (sin, cos, tan, etc.)"),
+    ("sage.functions.hyperbolic", "Implemented", "rustmath-symbolic (sinh, cosh, tanh)"),
+    ("sage.functions.log", "Implemented", "rustmath-symbolic"),
+    ("sage.functions.exp_integral", "Implemented", "rustmath-symbolic"),
+    ("sage.arith", "Implemented", "rustmath-integers (divisors, euler_phi, moebius, sigma, bernoulli, harmonic_number)"),
     ("sage.categories.rings", "Partial", "rustmath-core"),
     ("sage.categories.fields", "Partial", "rustmath-core"),
     ("sage.categories.groups", "Partial", "rustmath-core"),
