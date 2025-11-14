@@ -120,6 +120,45 @@ impl<R: EuclideanDomain> Matrix<R> {
         Ok(SmithNormalForm { s, p, q })
     }
 
+    /// Compute the elementary divisors of the matrix
+    ///
+    /// Elementary divisors are the non-zero diagonal entries of the Smith Normal Form.
+    /// They satisfy the divisibility property: d₁ | d₂ | ... | dᵣ
+    ///
+    /// These are fundamental invariants that characterize:
+    /// - The structure of finitely generated modules over Euclidean domains
+    /// - The invariant factors of linear transformations
+    /// - The torsion structure of abelian groups
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use rustmath_matrix::Matrix;
+    /// use rustmath_integers::Integer;
+    ///
+    /// let m = Matrix::from_vec(2, 2, vec![
+    ///     Integer::from(2), Integer::from(4),
+    ///     Integer::from(6), Integer::from(8)
+    /// ]).unwrap();
+    ///
+    /// let divs = m.elementary_divisors().unwrap();
+    /// // divs contains the non-zero diagonal entries from Smith Normal Form
+    /// ```
+    pub fn elementary_divisors(&self) -> Result<Vec<R>> {
+        let snf = self.smith_normal_form()?;
+        let min_dim = snf.s.rows().min(snf.s.cols());
+
+        let mut divisors = Vec::new();
+        for i in 0..min_dim {
+            let diag_entry = snf.s.data()[i * snf.s.cols() + i].clone();
+            if !diag_entry.is_zero() {
+                divisors.push(diag_entry);
+            }
+        }
+
+        Ok(divisors)
+    }
+
     /// Compute the Hermite Normal Form of the matrix
     ///
     /// Returns an upper-triangular matrix H = U*A where:

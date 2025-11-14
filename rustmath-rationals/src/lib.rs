@@ -5,9 +5,11 @@
 
 pub mod continued_fraction;
 pub mod rational;
+pub mod special_numbers;
 
 pub use continued_fraction::{ContinuedFraction, PeriodicContinuedFraction};
 pub use rational::Rational;
+pub use special_numbers::{bernoulli, harmonic, harmonic_generalized};
 
 #[cfg(test)]
 mod tests {

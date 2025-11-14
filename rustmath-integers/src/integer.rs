@@ -240,6 +240,20 @@ impl Integer {
 
     /// Sum of divisors (sigma function, also written σ₁(n))
     pub fn sum_divisors(&self) -> Result<Self> {
+        self.sigma(1)
+    }
+
+    /// Generalized divisor function σₖ(n) - sum of k-th powers of divisors
+    ///
+    /// σₖ(n) = Σ d^k for all divisors d of n
+    ///
+    /// Special cases:
+    /// - σ₀(n) = number of divisors (tau function)
+    /// - σ₁(n) = sum of divisors
+    ///
+    /// Formula: If n = p₁^a₁ * p₂^a₂ * ... * pₖ^aₖ, then
+    /// σₖ(n) = ∏ [(pᵢ^((aᵢ+1)*k) - 1) / (pᵢ^k - 1)]
+    pub fn sigma(&self, k: u32) -> Result<Self> {
         use crate::prime::factor;
 
         if self.is_zero() {
@@ -253,20 +267,60 @@ impl Integer {
             return Ok(Integer::one());
         }
 
-        // If n = p1^a1 * p2^a2 * ... * pk^ak
-        // then sigma(n) = Π[(p_i^(a_i+1) - 1) / (p_i - 1)]
+        // Special case: σ₀(n) is the count of divisors
+        if k == 0 {
+            return self.num_divisors();
+        }
+
+        // Get prime factorization
         let factors = factor(&n);
         let mut result = Integer::one();
 
+        // If n = p1^a1 * p2^a2 * ... * pk^ak
+        // then σₖ(n) = Π[(p_i^((a_i+1)*k) - 1) / (p_i^k - 1)]
         for (prime, multiplicity) in factors {
-            let p_to_a_plus_1 = prime.pow(multiplicity + 1);
-            let numerator = p_to_a_plus_1 - Integer::one();
-            let denominator = prime.clone() - Integer::one();
-            let (quotient, _) = numerator.div_rem(&denominator)?;
-            result = result * quotient;
+            if k == 1 {
+                // Optimize for k=1
+                let p_to_a_plus_1 = prime.pow(multiplicity + 1);
+                let numerator = p_to_a_plus_1 - Integer::one();
+                let denominator = prime.clone() - Integer::one();
+                let (quotient, _) = numerator.div_rem(&denominator)?;
+                result = result * quotient;
+            } else {
+                // General case
+                let p_to_k = prime.pow(k);
+                let p_to_a_plus_1_times_k = prime.pow((multiplicity + 1) * k);
+                let numerator = p_to_a_plus_1_times_k - Integer::one();
+                let denominator = p_to_k - Integer::one();
+                let (quotient, _) = numerator.div_rem(&denominator)?;
+                result = result * quotient;
+            }
         }
 
         Ok(result)
+    }
+
+    /// Check if the number is a perfect k-th power
+    ///
+    /// Returns true if self = a^k for some integer a and the given k
+    pub fn is_power(&self, k: u32) -> bool {
+        if k == 0 {
+            return false;
+        }
+        if k == 1 {
+            return true;
+        }
+
+        if self.abs() <= Integer::one() {
+            return true;
+        }
+
+        let n = self.abs();
+        if let Ok(root) = n.nth_root(k) {
+            root.pow(k) == n
+        } else {
+            false
+        }
     }
 
     /// Get digits of the number in the given base
@@ -1182,6 +1236,42 @@ mod tests {
 
         // σ(7) = 1 + 7 = 8 (prime)
         assert_eq!(Integer::from(7).sum_divisors().unwrap(), Integer::from(8));
+    }
+
+    #[test]
+    fn test_sigma_function() {
+        // σ₀(12) = number of divisors = 6
+        assert_eq!(Integer::from(12).sigma(0).unwrap(), Integer::from(6));
+
+        // σ₁(12) = sum of divisors = 28
+        assert_eq!(Integer::from(12).sigma(1).unwrap(), Integer::from(28));
+
+        // σ₂(12) = 1² + 2² + 3² + 4² + 6² + 12² = 1 + 4 + 9 + 16 + 36 + 144 = 210
+        assert_eq!(Integer::from(12).sigma(2).unwrap(), Integer::from(210));
+
+        // σ₂(6) = 1² + 2² + 3² + 6² = 1 + 4 + 9 + 36 = 50
+        assert_eq!(Integer::from(6).sigma(2).unwrap(), Integer::from(50));
+    }
+
+    #[test]
+    fn test_is_power() {
+        // Perfect squares
+        assert!(Integer::from(4).is_power(2));
+        assert!(Integer::from(9).is_power(2));
+        assert!(Integer::from(16).is_power(2));
+
+        // Perfect cubes
+        assert!(Integer::from(8).is_power(3));
+        assert!(Integer::from(27).is_power(3));
+
+        // Not perfect powers
+        assert!(!Integer::from(5).is_power(2));
+        assert!(!Integer::from(10).is_power(3));
+
+        // Edge cases
+        assert!(Integer::from(1).is_power(5));
+        assert!(!Integer::from(2).is_power(0));
+        assert!(Integer::from(100).is_power(1));
     }
 
     #[test]
