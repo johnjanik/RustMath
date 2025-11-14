@@ -454,7 +454,7 @@ impl<R: Ring> UnivariatePolynomial<R> {
             let coeff_degree = rem_degree - divisor_degree;
 
             // Compute quotient coefficient
-            let (q, r) = rem_leading.clone().quot_rem(divisor_leading);
+            let (q, r) = rem_leading.clone().div_rem(divisor_leading).unwrap();
             if !r.is_zero() {
                 // Not exact division in the coefficient ring
                 break;
@@ -542,24 +542,6 @@ impl<R: Ring> UnivariatePolynomial<R> {
     /// Check if polynomial is constant 1
     fn is_one(&self) -> bool {
         self.coeffs.len() == 1 && self.coeffs[0].is_one()
-    }
-
-    /// Compute the derivative of the polynomial
-    pub fn derivative(&self) -> Self
-    where
-        R: rustmath_core::NumericConversion,
-    {
-        if self.is_zero() || self.coeffs.len() == 1 {
-            return UnivariatePolynomial::new(vec![R::zero()]);
-        }
-
-        let mut d_coeffs = Vec::with_capacity(self.coeffs.len() - 1);
-        for (i, coeff) in self.coeffs.iter().enumerate().skip(1) {
-            let i_coeff = R::from_usize(i);
-            d_coeffs.push(coeff.clone() * i_coeff);
-        }
-
-        UnivariatePolynomial::new(d_coeffs)
     }
 }
 
