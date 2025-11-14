@@ -221,41 +221,41 @@ Implemented,sage.modular.cusps.Cusp,sage.modular.cusps,Cusp,class,Element,https:
 ,sage.modular.cusps_nf.list_of_representatives,sage.modular.cusps_nf,list_of_representatives,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/cusps_nf.py#L84
 ,sage.modular.cusps_nf.number_of_Gamma0_NFCusps,sage.modular.cusps_nf,number_of_Gamma0_NFCusps,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/cusps_nf.py#L1111
 ,sage.modular.cusps_nf.units_mod_ideal,sage.modular.cusps_nf,units_mod_ideal,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/cusps_nf.py#L1210
-,sage.modular.dims,sage.modular.dims,dims,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dims.py#L92
-,sage.modular.dims.CO_delta,sage.modular.dims,CO_delta,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dims.py#L92
-,sage.modular.dims.CO_nu,sage.modular.dims,CO_nu,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dims.py#L136
-,sage.modular.dims.CohenOesterle,sage.modular.dims,CohenOesterle,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dims.py#L179
-,sage.modular.dims.dimension_cusp_forms,sage.modular.dims,dimension_cusp_forms,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dims.py#L316
-,sage.modular.dims.dimension_eis,sage.modular.dims,dimension_eis,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dims.py#L412
-,sage.modular.dims.dimension_modular_forms,sage.modular.dims,dimension_modular_forms,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dims.py#L483
-,sage.modular.dims.dimension_new_cusp_forms,sage.modular.dims,dimension_new_cusp_forms,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dims.py#L254
-,sage.modular.dims.eisen,sage.modular.dims,eisen,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dims.py#L64
-,sage.modular.dims.sturm_bound,sage.modular.dims,sturm_bound,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dims.py#L533
-,sage.modular.dirichlet,sage.modular.dirichlet,dirichlet,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dirichlet.py#L190
-,sage.modular.dirichlet.DirichletCharacter,sage.modular.dirichlet,DirichletCharacter,class,MultiplicativeGroupElement,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dirichlet.py#L190
-,sage.modular.dirichlet.DirichletGroupFactory,sage.modular.dirichlet,DirichletGroupFactory,class,UniqueFactory,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dirichlet.py#L2227
-,sage.modular.dirichlet.DirichletGroup_class,sage.modular.dirichlet,DirichletGroup_class,class,"WithEqualityById, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/modular/dirichlet.py#L2588
-,sage.modular.dirichlet.TrivialCharacter,sage.modular.dirichlet,TrivialCharacter,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dirichlet.py#L92
-,sage.modular.dirichlet.is_DirichletCharacter,sage.modular.dirichlet,is_DirichletCharacter,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dirichlet.py#L167
-,sage.modular.dirichlet.is_DirichletGroup,sage.modular.dirichlet,is_DirichletGroup,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dirichlet.py#L2566
-,sage.modular.dirichlet.kronecker_character,sage.modular.dirichlet,kronecker_character,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dirichlet.py#L113
-,sage.modular.dirichlet.kronecker_character_upside_down,sage.modular.dirichlet,kronecker_character_upside_down,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dirichlet.py#L144
-,sage.modular.dirichlet.trivial_character,sage.modular.dirichlet,trivial_character,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dirichlet.py#L92
+Implemented,sage.modular.dims,sage.modular.dims,dims,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dims.py#L92
+Implemented,sage.modular.dims.CO_delta,sage.modular.dims,CO_delta,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dims.py#L92
+Implemented,sage.modular.dims.CO_nu,sage.modular.dims,CO_nu,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dims.py#L136
+Implemented,sage.modular.dims.CohenOesterle,sage.modular.dims,CohenOesterle,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dims.py#L179
+Implemented,sage.modular.dims.dimension_cusp_forms,sage.modular.dims,dimension_cusp_forms,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dims.py#L316
+Implemented,sage.modular.dims.dimension_eis,sage.modular.dims,dimension_eis,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dims.py#L412
+Implemented,sage.modular.dims.dimension_modular_forms,sage.modular.dims,dimension_modular_forms,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dims.py#L483
+Implemented,sage.modular.dims.dimension_new_cusp_forms,sage.modular.dims,dimension_new_cusp_forms,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dims.py#L254
+Implemented,sage.modular.dims.eisen,sage.modular.dims,eisen,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dims.py#L64
+Implemented,sage.modular.dims.sturm_bound,sage.modular.dims,sturm_bound,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dims.py#L533
+Implemented,sage.modular.dirichlet,sage.modular.dirichlet,dirichlet,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dirichlet.py#L190
+Implemented,sage.modular.dirichlet.DirichletCharacter,sage.modular.dirichlet,DirichletCharacter,class,MultiplicativeGroupElement,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dirichlet.py#L190
+Implemented,sage.modular.dirichlet.DirichletGroupFactory,sage.modular.dirichlet,DirichletGroupFactory,class,UniqueFactory,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dirichlet.py#L2227
+Implemented,sage.modular.dirichlet.DirichletGroup_class,sage.modular.dirichlet,DirichletGroup_class,class,"WithEqualityById, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/modular/dirichlet.py#L2588
+Implemented,sage.modular.dirichlet.TrivialCharacter,sage.modular.dirichlet,TrivialCharacter,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dirichlet.py#L92
+Implemented,sage.modular.dirichlet.is_DirichletCharacter,sage.modular.dirichlet,is_DirichletCharacter,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dirichlet.py#L167
+Implemented,sage.modular.dirichlet.is_DirichletGroup,sage.modular.dirichlet,is_DirichletGroup,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dirichlet.py#L2566
+Implemented,sage.modular.dirichlet.kronecker_character,sage.modular.dirichlet,kronecker_character,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dirichlet.py#L113
+Implemented,sage.modular.dirichlet.kronecker_character_upside_down,sage.modular.dirichlet,kronecker_character_upside_down,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dirichlet.py#L144
+Implemented,sage.modular.dirichlet.trivial_character,sage.modular.dirichlet,trivial_character,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/dirichlet.py#L92
 ,sage.modular.drinfeld_modform.element,sage.modular.drinfeld_modform.element,element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/drinfeld_modform/element.py#L29
 ,sage.modular.drinfeld_modform.element.DrinfeldModularFormsElement,sage.modular.drinfeld_modform.element,DrinfeldModularFormsElement,class,ModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/modular/drinfeld_modform/element.py#L29
 ,sage.modular.drinfeld_modform.ring,sage.modular.drinfeld_modform.ring,ring,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/drinfeld_modform/ring.py#L48
 ,sage.modular.drinfeld_modform.ring.DrinfeldModularForms,sage.modular.drinfeld_modform.ring,DrinfeldModularForms,class,"Parent, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/modular/drinfeld_modform/ring.py#L48
 ,sage.modular.drinfeld_modform.tutorial,sage.modular.drinfeld_modform.tutorial,tutorial,module,,
-,sage.modular.etaproducts,sage.modular.etaproducts,etaproducts,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L693
-,sage.modular.etaproducts.AllCusps,sage.modular.etaproducts,AllCusps,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L693
-,sage.modular.etaproducts.CuspFamily,sage.modular.etaproducts,CuspFamily,class,"N, SageObject",https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L726
-,sage.modular.etaproducts.EtaGroup,sage.modular.etaproducts,EtaGroup,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L59
-,sage.modular.etaproducts.EtaGroupElement,sage.modular.etaproducts,EtaGroupElement,class,Element,https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L85
-,sage.modular.etaproducts.EtaGroup_class,sage.modular.etaproducts,EtaGroup_class,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L403
-,sage.modular.etaproducts.EtaProduct,sage.modular.etaproducts,EtaProduct,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L618
-,sage.modular.etaproducts.eta_poly_relations,sage.modular.etaproducts,eta_poly_relations,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L910
-,sage.modular.etaproducts.num_cusps_of_width,sage.modular.etaproducts,num_cusps_of_width,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L665
-,sage.modular.etaproducts.qexp_eta,sage.modular.etaproducts,qexp_eta,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L857
+Implemented,sage.modular.etaproducts,sage.modular.etaproducts,etaproducts,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L693
+Implemented,sage.modular.etaproducts.AllCusps,sage.modular.etaproducts,AllCusps,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L693
+Implemented,sage.modular.etaproducts.CuspFamily,sage.modular.etaproducts,CuspFamily,class,"N, SageObject",https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L726
+Implemented,sage.modular.etaproducts.EtaGroup,sage.modular.etaproducts,EtaGroup,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L59
+Implemented,sage.modular.etaproducts.EtaGroupElement,sage.modular.etaproducts,EtaGroupElement,class,Element,https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L85
+Implemented,sage.modular.etaproducts.EtaGroup_class,sage.modular.etaproducts,EtaGroup_class,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L403
+Implemented,sage.modular.etaproducts.EtaProduct,sage.modular.etaproducts,EtaProduct,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L618
+Implemented,sage.modular.etaproducts.eta_poly_relations,sage.modular.etaproducts,eta_poly_relations,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L910
+Implemented,sage.modular.etaproducts.num_cusps_of_width,sage.modular.etaproducts,num_cusps_of_width,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L665
+Implemented,sage.modular.etaproducts.qexp_eta,sage.modular.etaproducts,qexp_eta,function,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/etaproducts.py#L857
 Implemented,sage.modular.hecke.algebra,sage.modular.hecke.algebra,algebra,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/algebra.py#L660
 ,sage.modular.hecke.algebra.HeckeAlgebra_anemic,sage.modular.hecke.algebra,HeckeAlgebra_anemic,class,"M, HeckeAlgebra_base",https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/algebra.py#L660
 ,sage.modular.hecke.algebra.HeckeAlgebra_base,sage.modular.hecke.algebra,HeckeAlgebra_base,class,"M, CachedRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/modular/hecke/algebra.py#L110
@@ -931,45 +931,45 @@ Implemented,sage.modules.vector_symbolic_sparse.apply_map,sage.modules.vector_sy
 ,sage.modules.with_basis.subquotient,sage.modules.with_basis.subquotient,subquotient,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modules/with_basis/subquotient.py#L18
 ,sage.modules.with_basis.subquotient.QuotientModuleWithBasis,sage.modules.with_basis.subquotient,QuotientModuleWithBasis,class,CombinatorialFreeModule,https://github.com/sagemath/sage/blob/develop/src/sage/modules/with_basis/subquotient.py#L18
 ,sage.modules.with_basis.subquotient.SubmoduleWithBasis,sage.modules.with_basis.subquotient,SubmoduleWithBasis,class,CombinatorialFreeModule,https://github.com/sagemath/sage/blob/develop/src/sage/modules/with_basis/subquotient.py#L166
-,sage.monoids,sage.monoids,monoids,module,,
-,sage.monoids.automatic_semigroup,sage.monoids.automatic_semigroup,automatic_semigroup,module,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/automatic_semigroup.py#L1013
-,sage.monoids.automatic_semigroup.AutomaticMonoid,sage.monoids.automatic_semigroup,AutomaticMonoid,class,AutomaticSemigroup,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/automatic_semigroup.py#L1013
-,sage.monoids.automatic_semigroup.AutomaticSemigroup,sage.monoids.automatic_semigroup,AutomaticSemigroup,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/monoids/automatic_semigroup.py#L35
-,sage.monoids.automatic_semigroup.Element,sage.monoids.automatic_semigroup,Element,class,ElementWrapper,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/automatic_semigroup.py#L858
-,sage.monoids.free_abelian_monoid,sage.monoids.free_abelian_monoid,free_abelian_monoid,module,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_abelian_monoid.py#L112
-,sage.monoids.free_abelian_monoid.FreeAbelianMonoid,sage.monoids.free_abelian_monoid,FreeAbelianMonoid,function,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_abelian_monoid.py#L112
-,sage.monoids.free_abelian_monoid.FreeAbelianMonoidFactory,sage.monoids.free_abelian_monoid,FreeAbelianMonoidFactory,class,UniqueFactory,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_abelian_monoid.py#L68
-,sage.monoids.free_abelian_monoid.FreeAbelianMonoid_class,sage.monoids.free_abelian_monoid,FreeAbelianMonoid_class,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_abelian_monoid.py#L185
-,sage.monoids.free_abelian_monoid.is_FreeAbelianMonoid,sage.monoids.free_abelian_monoid,is_FreeAbelianMonoid,function,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_abelian_monoid.py#L160
-,sage.monoids.free_abelian_monoid_element,sage.monoids.free_abelian_monoid_element,free_abelian_monoid_element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_abelian_monoid_element.pyx#L64
-,sage.monoids.free_abelian_monoid_element.FreeAbelianMonoidElement,sage.monoids.free_abelian_monoid_element,FreeAbelianMonoidElement,class,MonoidElement,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_abelian_monoid_element.pyx#L64
-,sage.monoids.free_abelian_monoid_element.is_FreeAbelianMonoidElement,sage.monoids.free_abelian_monoid_element,is_FreeAbelianMonoidElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_abelian_monoid_element.pyx#L44
-,sage.monoids.free_monoid,sage.monoids.free_monoid,free_monoid,module,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_monoid.py#L71
-,sage.monoids.free_monoid.FreeMonoid,sage.monoids.free_monoid,FreeMonoid,class,"Monoid_class, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_monoid.py#L71
-,sage.monoids.free_monoid.is_FreeMonoid,sage.monoids.free_monoid,is_FreeMonoid,function,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_monoid.py#L39
-,sage.monoids.free_monoid_element,sage.monoids.free_monoid_element,free_monoid_element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_monoid_element.py#L41
-,sage.monoids.free_monoid_element.FreeMonoidElement,sage.monoids.free_monoid_element,FreeMonoidElement,class,"F, MonoidElement",https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_monoid_element.py#L41
-,sage.monoids.free_monoid_element.is_FreeMonoidElement,sage.monoids.free_monoid_element,is_FreeMonoidElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_monoid_element.py#L33
+Implemented,sage.monoids,sage.monoids,monoids,module,,
+Implemented,sage.monoids.automatic_semigroup,sage.monoids.automatic_semigroup,automatic_semigroup,module,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/automatic_semigroup.py#L1013
+Implemented,sage.monoids.automatic_semigroup.AutomaticMonoid,sage.monoids.automatic_semigroup,AutomaticMonoid,class,AutomaticSemigroup,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/automatic_semigroup.py#L1013
+Implemented,sage.monoids.automatic_semigroup.AutomaticSemigroup,sage.monoids.automatic_semigroup,AutomaticSemigroup,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/monoids/automatic_semigroup.py#L35
+Implemented,sage.monoids.automatic_semigroup.Element,sage.monoids.automatic_semigroup,Element,class,ElementWrapper,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/automatic_semigroup.py#L858
+Implemented,sage.monoids.free_abelian_monoid,sage.monoids.free_abelian_monoid,free_abelian_monoid,module,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_abelian_monoid.py#L112
+Implemented,sage.monoids.free_abelian_monoid.FreeAbelianMonoid,sage.monoids.free_abelian_monoid,FreeAbelianMonoid,function,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_abelian_monoid.py#L112
+Implemented,sage.monoids.free_abelian_monoid.FreeAbelianMonoidFactory,sage.monoids.free_abelian_monoid,FreeAbelianMonoidFactory,class,UniqueFactory,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_abelian_monoid.py#L68
+Implemented,sage.monoids.free_abelian_monoid.FreeAbelianMonoid_class,sage.monoids.free_abelian_monoid,FreeAbelianMonoid_class,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_abelian_monoid.py#L185
+Implemented,sage.monoids.free_abelian_monoid.is_FreeAbelianMonoid,sage.monoids.free_abelian_monoid,is_FreeAbelianMonoid,function,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_abelian_monoid.py#L160
+Implemented,sage.monoids.free_abelian_monoid_element,sage.monoids.free_abelian_monoid_element,free_abelian_monoid_element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_abelian_monoid_element.pyx#L64
+Implemented,sage.monoids.free_abelian_monoid_element.FreeAbelianMonoidElement,sage.monoids.free_abelian_monoid_element,FreeAbelianMonoidElement,class,MonoidElement,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_abelian_monoid_element.pyx#L64
+Implemented,sage.monoids.free_abelian_monoid_element.is_FreeAbelianMonoidElement,sage.monoids.free_abelian_monoid_element,is_FreeAbelianMonoidElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_abelian_monoid_element.pyx#L44
+Implemented,sage.monoids.free_monoid,sage.monoids.free_monoid,free_monoid,module,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_monoid.py#L71
+Implemented,sage.monoids.free_monoid.FreeMonoid,sage.monoids.free_monoid,FreeMonoid,class,"Monoid_class, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_monoid.py#L71
+Implemented,sage.monoids.free_monoid.is_FreeMonoid,sage.monoids.free_monoid,is_FreeMonoid,function,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_monoid.py#L39
+Implemented,sage.monoids.free_monoid_element,sage.monoids.free_monoid_element,free_monoid_element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_monoid_element.py#L41
+Implemented,sage.monoids.free_monoid_element.FreeMonoidElement,sage.monoids.free_monoid_element,FreeMonoidElement,class,"F, MonoidElement",https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_monoid_element.py#L41
+Implemented,sage.monoids.free_monoid_element.is_FreeMonoidElement,sage.monoids.free_monoid_element,is_FreeMonoidElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/free_monoid_element.py#L33
 ,sage.monoids.hecke_monoid,sage.monoids.hecke_monoid,hecke_monoid,module,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/hecke_monoid.py#L15
 ,sage.monoids.hecke_monoid.HeckeMonoid,sage.monoids.hecke_monoid,HeckeMonoid,function,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/hecke_monoid.py#L15
-,sage.monoids.indexed_free_monoid,sage.monoids.indexed_free_monoid,indexed_free_monoid,module,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/indexed_free_monoid.py#L945
-,sage.monoids.indexed_free_monoid.IndexedFreeAbelianMonoid,sage.monoids.indexed_free_monoid,IndexedFreeAbelianMonoid,class,IndexedMonoid,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/indexed_free_monoid.py#L945
-,sage.monoids.indexed_free_monoid.IndexedFreeAbelianMonoidElement,sage.monoids.indexed_free_monoid,IndexedFreeAbelianMonoidElement,class,"F, IndexedMonoidElement",https://github.com/sagemath/sage/blob/develop/src/sage/monoids/indexed_free_monoid.py#L485
-,sage.monoids.indexed_free_monoid.IndexedFreeMonoid,sage.monoids.indexed_free_monoid,IndexedFreeMonoid,class,IndexedMonoid,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/indexed_free_monoid.py#L864
-,sage.monoids.indexed_free_monoid.IndexedFreeMonoidElement,sage.monoids.indexed_free_monoid,IndexedFreeMonoidElement,class,"F, IndexedMonoidElement",https://github.com/sagemath/sage/blob/develop/src/sage/monoids/indexed_free_monoid.py#L387
-,sage.monoids.indexed_free_monoid.IndexedMonoid,sage.monoids.indexed_free_monoid,IndexedMonoid,class,"Parent, IndexedGenerators, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/monoids/indexed_free_monoid.py#L678
-,sage.monoids.indexed_free_monoid.IndexedMonoidElement,sage.monoids.indexed_free_monoid,IndexedMonoidElement,class,"F, MonoidElement",https://github.com/sagemath/sage/blob/develop/src/sage/monoids/indexed_free_monoid.py#L35
-,sage.monoids.monoid,sage.monoids.monoid,monoid,module,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/monoid.py#L39
-,sage.monoids.monoid.Monoid_class,sage.monoids.monoid,Monoid_class,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/monoid.py#L39
+Implemented,sage.monoids.indexed_free_monoid,sage.monoids.indexed_free_monoid,indexed_free_monoid,module,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/indexed_free_monoid.py#L945
+Implemented,sage.monoids.indexed_free_monoid.IndexedFreeAbelianMonoid,sage.monoids.indexed_free_monoid,IndexedFreeAbelianMonoid,class,IndexedMonoid,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/indexed_free_monoid.py#L945
+Implemented,sage.monoids.indexed_free_monoid.IndexedFreeAbelianMonoidElement,sage.monoids.indexed_free_monoid,IndexedFreeAbelianMonoidElement,class,"F, IndexedMonoidElement",https://github.com/sagemath/sage/blob/develop/src/sage/monoids/indexed_free_monoid.py#L485
+Implemented,sage.monoids.indexed_free_monoid.IndexedFreeMonoid,sage.monoids.indexed_free_monoid,IndexedFreeMonoid,class,IndexedMonoid,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/indexed_free_monoid.py#L864
+Implemented,sage.monoids.indexed_free_monoid.IndexedFreeMonoidElement,sage.monoids.indexed_free_monoid,IndexedFreeMonoidElement,class,"F, IndexedMonoidElement",https://github.com/sagemath/sage/blob/develop/src/sage/monoids/indexed_free_monoid.py#L387
+Implemented,sage.monoids.indexed_free_monoid.IndexedMonoid,sage.monoids.indexed_free_monoid,IndexedMonoid,class,"Parent, IndexedGenerators, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/monoids/indexed_free_monoid.py#L678
+Implemented,sage.monoids.indexed_free_monoid.IndexedMonoidElement,sage.monoids.indexed_free_monoid,IndexedMonoidElement,class,"F, MonoidElement",https://github.com/sagemath/sage/blob/develop/src/sage/monoids/indexed_free_monoid.py#L35
+Implemented,sage.monoids.monoid,sage.monoids.monoid,monoid,module,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/monoid.py#L39
+Implemented,sage.monoids.monoid.Monoid_class,sage.monoids.monoid,Monoid_class,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/monoid.py#L39
 ,sage.monoids.monoid.is_Monoid,sage.monoids.monoid,is_Monoid,function,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/monoid.py#L10
-,sage.monoids.string_monoid,sage.monoids.string_monoid,string_monoid,module,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/string_monoid.py#L499
+Implemented,sage.monoids.string_monoid,sage.monoids.string_monoid,string_monoid,module,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/string_monoid.py#L499
 ,sage.monoids.string_monoid.AlphabeticStringMonoid,sage.monoids.string_monoid,AlphabeticStringMonoid,class,StringMonoid_class,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/string_monoid.py#L499
 ,sage.monoids.string_monoid.BinaryStringMonoid,sage.monoids.string_monoid,BinaryStringMonoid,class,StringMonoid_class,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/string_monoid.py#L120
 ,sage.monoids.string_monoid.HexadecimalStringMonoid,sage.monoids.string_monoid,HexadecimalStringMonoid,class,StringMonoid_class,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/string_monoid.py#L319
 ,sage.monoids.string_monoid.OctalStringMonoid,sage.monoids.string_monoid,OctalStringMonoid,class,StringMonoid_class,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/string_monoid.py#L256
 ,sage.monoids.string_monoid.Radix64StringMonoid,sage.monoids.string_monoid,Radix64StringMonoid,class,StringMonoid_class,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/string_monoid.py#L432
 ,sage.monoids.string_monoid.StringMonoid_class,sage.monoids.string_monoid,StringMonoid_class,class,FreeMonoid,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/string_monoid.py#L27
-,sage.monoids.string_monoid_element,sage.monoids.string_monoid_element,string_monoid_element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/string_monoid_element.py#L90
+Implemented,sage.monoids.string_monoid_element,sage.monoids.string_monoid_element,string_monoid_element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/string_monoid_element.py#L90
 ,sage.monoids.string_monoid_element.StringMonoidElement,sage.monoids.string_monoid_element,StringMonoidElement,class,"S, FreeMonoidElement",https://github.com/sagemath/sage/blob/develop/src/sage/monoids/string_monoid_element.py#L90
 ,sage.monoids.string_monoid_element.is_AlphabeticStringMonoidElement,sage.monoids.string_monoid_element,is_AlphabeticStringMonoidElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/string_monoid_element.py#L40
 ,sage.monoids.string_monoid_element.is_BinaryStringMonoidElement,sage.monoids.string_monoid_element,is_BinaryStringMonoidElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/string_monoid_element.py#L50

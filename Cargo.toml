@@ -39,6 +39,7 @@ members = [
     "rustmath-numberfields",
     "rustmath-manifolds",
     "rustmath-modular",
+    "rustmath-monoids",
 ]
 
 [workspace.package]
