@@ -14,146 +14,150 @@ This document highlights the most impactful partial features to implement next. 
 ### 1. Special Functions (sage.functions)
 **Impact: HIGH** - Used extensively in scientific computing
 
-- [ ] `gamma(x)` - Gamma function
-- [ ] `beta(x, y)` - Beta function
-- [ ] `zeta(s)` - Riemann zeta function
-- [ ] `bessel_J(n, x)` - Bessel functions of first kind
-- [ ] `bessel_Y(n, x)` - Bessel functions of second kind
-- [ ] `erf(x)` - Error function
-- [ ] `erfc(x)` - Complementary error function
+- [x] `gamma(x)` - Gamma function
+- [x] `beta(x, y)` - Beta function
+- [x] `zeta(s)` - Riemann zeta function
+- [x] `bessel_J(n, x)` - Bessel functions of first kind
+- [x] `bessel_Y(n, x)` - Bessel functions of second kind
+- [x] `erf(x)` - Error function
+- [x] `erfc(x)` - Complementary error function
 
-**Current Status:** rustmath-functions has elementary functions, but no special functions
-**Next Step:** Create `rustmath-special-functions` crate
+**Current Status:** ✅ COMPLETED - rustmath-special-functions crate fully implemented
+**Location:** rustmath-special-functions/src/{gamma.rs, beta.rs, zeta.rs, bessel.rs, error.rs}
 
 ---
 
 ### 2. Enhanced Symbolic Simplification (sage.symbolic)
 **Impact: HIGH** - Core to computer algebra system
 
-- [ ] `simplify_full()` - Full recursive simplification
-- [ ] `simplify_trig()` - Trigonometric simplification
-- [ ] `simplify_rational()` - Rational expression simplification
-- [ ] `simplify_log()` - Logarithm simplification
-- [ ] `expand_trig()` - Expand trig identities
-- [ ] `collect()` - Collect like terms
-- [ ] `combine()` - Combine fractions/powers
+- [x] `simplify_full()` - Full recursive simplification
+- [x] `simplify_trig()` - Trigonometric simplification
+- [x] `simplify_rational()` - Rational expression simplification
+- [x] `simplify_log()` - Logarithm simplification
+- [x] `expand_trig()` - Expand trig identities
+- [x] `collect()` - Collect like terms
+- [x] `combine()` - Combine fractions/powers
 
-**Current Status:** rustmath-symbolic has basic simplification
-**Next Step:** Enhance `rustmath-symbolic/src/simplify.rs` with pattern matching
+**Current Status:** ✅ COMPLETED - All simplification methods implemented
+**Location:** rustmath-symbolic/src/simplify.rs and rustmath-symbolic/src/expand.rs
 
 ---
 
 ### 3. Polynomial Operations (sage.rings.polynomial)
 **Impact: HIGH** - Foundation for algebraic operations
 
-- [ ] `polynomial.gcd()` - Polynomial GCD
-- [ ] `polynomial.resultant()` - Resultant of two polynomials
-- [ ] `polynomial.discriminant()` - Polynomial discriminant
-- [ ] `polynomial.squarefree_decomposition()` - Squarefree factorization
-- [ ] `polynomial.compose()` - Polynomial composition
-- [ ] `polynomial.quo_rem()` - Quotient and remainder
+- [x] `polynomial.gcd()` - Polynomial GCD
+- [x] `polynomial.resultant()` - Resultant of two polynomials
+- [x] `polynomial.discriminant()` - Polynomial discriminant
+- [x] `polynomial.squarefree_decomposition()` - Squarefree factorization
+- [x] `polynomial.compose()` - Polynomial composition
+- [x] `polynomial.quo_rem()` - Quotient and remainder
 
-**Current Status:** rustmath-polynomials has basic operations and factorization
-**Next Step:** Add to `rustmath-polynomials/src/polynomial.rs`
+**Current Status:** ✅ COMPLETED - All polynomial operations implemented
+**Location:** rustmath-polynomials/src/univariate.rs
 
 ---
 
 ### 4. Number-Theoretic Functions (sage.arith)
 **Impact: MEDIUM-HIGH** - Useful for many applications
 
-- [ ] `divisors(n)` - All divisors of n
-- [ ] `euler_phi(n)` - Euler's totient function
-- [ ] `moebius(n)` - Möbius function
-- [ ] `sigma(n, k)` - Sum of k-th powers of divisors
-- [ ] `bernoulli(n)` - Bernoulli numbers
-- [ ] `harmonic_number(n)` - Harmonic numbers
-- [ ] `is_square(n)` - Test if perfect square
-- [ ] `is_power(n, k)` - Test if perfect k-th power
+- [x] `divisors(n)` - All divisors of n
+- [x] `euler_phi(n)` - Euler's totient function
+- [x] `moebius(n)` - Möbius function
+- [x] `sigma(n, k)` - Sum of k-th powers of divisors
+- [x] `bernoulli(n)` - Bernoulli numbers
+- [x] `harmonic_number(n)` - Harmonic numbers
+- [x] `is_square(n)` - Test if perfect square
+- [x] `is_power(n, k)` - Test if perfect k-th power
 
-**Current Status:** rustmath-integers has basic number theory (GCD, factorization)
-**Next Step:** Extend `rustmath-integers/src/integer.rs`
+**Current Status:** ✅ COMPLETED - All number-theoretic functions implemented
+**Location:** rustmath-integers/src/integer.rs and rustmath-rationals/src/special_numbers.rs
 
 ---
 
 ### 5. Number Fields (sage.rings.number_field)
 **Impact: HIGH** - Essential for algebraic number theory
 
-- [ ] `NumberField(polynomial, 'a')` - Create number field
+- [x] `NumberField(polynomial, 'a')` - Create number field
 - [ ] `number_field.class_number()` - Class number
 - [ ] `number_field.unit_group()` - Unit group
-- [ ] `number_field.discriminant()` - Field discriminant
+- [x] `number_field.discriminant()` - Field discriminant
 - [ ] `number_field.galois_closure()` - Galois closure
 
-**Current Status:** Not implemented
-**Next Step:** Create new `rustmath-numberfields` crate
+**Current Status:** ⚠️ PARTIALLY COMPLETED (2/5) - Basic number fields with discriminant
+**Location:** rustmath-numberfields/src/lib.rs
+**Next Step:** Implement class_number(), unit_group(), and galois_closure()
 
 ---
 
 ### 6. Ideal Theory (sage.rings.ideal)
 **Impact: MEDIUM** - Important for ring theory
 
-- [ ] `ideal(generators)` - Create ideal
-- [ ] `ideal.reduce(element)` - Reduce modulo ideal
-- [ ] `ideal.groebner_basis()` - Gröbner basis of ideal
-- [ ] `ideal.quotient(other)` - Ideal quotient
-- [ ] `ideal.intersection(other)` - Ideal intersection
+- [x] `ideal(generators)` - Create ideal
+- [x] `ideal.reduce(element)` - Reduce modulo ideal
+- [x] `ideal.groebner_basis()` - Gröbner basis of ideal
+- [x] `ideal.quotient(other)` - Ideal quotient
+- [x] `ideal.intersection(other)` - Ideal intersection
 
-**Current Status:** Basic Gröbner bases in rustmath-polynomials
-**Next Step:** Add ideal module to `rustmath-polynomials`
+**Current Status:** ✅ COMPLETED - All ideal operations implemented
+**Location:** rustmath-polynomials/src/ideal.rs and rustmath-polynomials/src/groebner.rs
 
 ---
 
 ### 7. Advanced Integration (sage.calculus.integration)
 **Impact: MEDIUM-HIGH** - CAS core functionality
 
-- [ ] `integrate(f, x)` - Symbolic integration (enhanced)
-- [ ] Pattern matching for common integrals
+- [x] `integrate(f, x)` - Symbolic integration (enhanced)
+- [x] Pattern matching for common integrals
 - [ ] Integration by parts
 - [ ] Trigonometric substitution
 - [ ] Partial fraction decomposition for integration
 
-**Current Status:** rustmath-symbolic has basic integration
-**Next Step:** Enhance `rustmath-symbolic/src/integrate.rs`
+**Current Status:** ⚠️ PARTIALLY COMPLETED (2/5) - Basic integration with pattern matching
+**Location:** rustmath-symbolic/src/integrate.rs
+**Next Step:** Implement integration by parts, trig substitution, and partial fractions
 
 ---
 
 ### 8. Equation Solving (sage.symbolic.solve)
 **Impact: HIGH** - Frequently requested feature
 
-- [ ] `solve([equations], [vars])` - System of equations
-- [ ] `solve_polynomial_system()` - Polynomial systems via Gröbner
-- [ ] `solve_linear_system()` - Linear systems (symbolic)
+- [x] `solve([equations], [vars])` - System of equations
+- [x] `solve_polynomial_system()` - Polynomial systems via Gröbner
+- [x] `solve_linear_system()` - Linear systems (symbolic)
 - [ ] `solve_trig_equation()` - Trigonometric equations
 - [ ] `solve_inequality()` - Symbolic inequalities
 
-**Current Status:** rustmath-symbolic has basic solve
-**Next Step:** Enhance `rustmath-symbolic/src/solve.rs`
+**Current Status:** ⚠️ MOSTLY COMPLETED (3/5) - General, polynomial, and linear systems
+**Location:** rustmath-symbolic/src/solve.rs
+**Next Step:** Add specialized trig equation and inequality solvers
 
 ---
 
 ### 9. Limits and Asymptotic Expansion (sage.calculus.limits)
 **Impact: MEDIUM** - Important calculus feature
 
-- [ ] `limit(f, x, a, dir='+')` - Directional limits (enhanced)
-- [ ] L'Hôpital's rule (multiple applications)
+- [x] `limit(f, x, a, dir='+')` - Directional limits (enhanced)
+- [x] L'Hôpital's rule (multiple applications)
 - [ ] `series(f, x, a, n)` - Asymptotic series
 - [ ] Big-O notation support
 
-**Current Status:** rustmath-symbolic has basic limits with L'Hôpital
-**Next Step:** Enhance `rustmath-symbolic/src/limits.rs`
+**Current Status:** ⚠️ PARTIALLY COMPLETED (2/4) - Directional limits with L'Hôpital's rule
+**Location:** rustmath-symbolic/src/limits.rs
+**Next Step:** Implement asymptotic series expansion and Big-O notation
 
 ---
 
 ### 10. Matrix Normal Forms (sage.matrix)
 **Impact: MEDIUM** - Linear algebra foundation
 
-- [ ] `matrix.echelon_form()` - Enhanced with pivoting options
-- [ ] `matrix.jordan_form()` - Complete implementation
-- [ ] `matrix.rational_canonical_form()` - Complete implementation
-- [ ] `matrix.elementary_divisors()` - Elementary divisors
+- [x] `matrix.echelon_form()` - Enhanced with pivoting options
+- [x] `matrix.jordan_form()` - Complete implementation
+- [x] `matrix.rational_canonical_form()` - Complete implementation
+- [x] `matrix.elementary_divisors()` - Elementary divisors
 
-**Current Status:** rustmath-matrix has basic normal forms
-**Next Step:** Complete `rustmath-matrix/src/integer_forms.rs`
+**Current Status:** ✅ COMPLETED - All matrix normal forms implemented
+**Location:** rustmath-matrix/src/{linear_solve.rs, eigenvalues.rs, companion.rs, integer_forms.rs}
 
 ---
 
