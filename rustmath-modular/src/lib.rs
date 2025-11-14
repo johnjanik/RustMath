@@ -11,6 +11,9 @@
 //! - `hecke`: Hecke operators and Hecke modules
 //! - `abvar`: Modular abelian varieties
 //! - `cusps`: Cusps of modular curves
+//! - `dims`: Dimensions of spaces of modular forms
+//! - `dirichlet`: Dirichlet characters
+//! - `etaproducts`: Eta products and eta quotients
 
 pub mod arithgroup;
 pub mod modform;
@@ -18,6 +21,9 @@ pub mod modsym;
 pub mod hecke;
 pub mod abvar;
 pub mod cusps;
+pub mod dims;
+pub mod dirichlet;
+pub mod etaproducts;
 
 // Re-export commonly used types
 pub use arithgroup::{
