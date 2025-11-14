@@ -108,13 +108,19 @@ This document highlights the most impactful partial features to implement next. 
 
 - [x] `integrate(f, x)` - Symbolic integration (enhanced)
 - [x] Pattern matching for common integrals
-- [ ] Integration by parts
-- [ ] Trigonometric substitution
-- [ ] Partial fraction decomposition for integration
+- [x] Integration by parts (with LIATE rule)
+- [x] Trigonometric substitution (all three types: sine, tangent, secant)
+- [x] Partial fraction decomposition for integration
 
-**Current Status:** ⚠️ PARTIALLY COMPLETED (2/5) - Basic integration with pattern matching
+**Current Status:** ✅ COMPLETED - All advanced integration techniques implemented
 **Location:** rustmath-symbolic/src/integrate.rs
-**Next Step:** Implement integration by parts, trig substitution, and partial fractions
+**Details:**
+- Integration by parts with automatic LIATE prioritization
+- Full trigonometric substitution for sqrt(a²-x²), sqrt(a²+x²), and sqrt(x²-a²)
+- Partial fractions with polynomial degree analysis and factorization
+- Enhanced rational function integration (x/(x²+a²), 1/(x²±a²), etc.)
+- Automatic technique selection in main integrate() function
+- Comprehensive test coverage for all three techniques
 
 ---
 
