@@ -1,10 +1,16 @@
 //! Complex numbers with real and imaginary parts
 //!
 //! Provides complex number arithmetic over various real number types.
+//!
+//! This module includes:
+//! - `Complex`: Standard precision complex numbers (f64-based)
+//! - `ComplexMPFR`: Arbitrary precision complex numbers using MPC/MPFR
 
 pub mod complex;
+pub mod mpc;
 
 pub use complex::{Complex, ComplexField};
+pub use mpc::{ComplexMPFR, DEFAULT_PRECISION};
 
 #[cfg(test)]
 mod tests {
@@ -16,5 +22,27 @@ mod tests {
         assert!((z.real() - 3.0).abs() < 1e-10);
         assert!((z.imag() - 4.0).abs() < 1e-10);
         assert!((z.abs() - 5.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn basic_complex_mpfr() {
+        let z = ComplexMPFR::from((3.0, 4.0));
+        assert!((z.real() - 3.0).abs() < 1e-10);
+        assert!((z.imag() - 4.0).abs() < 1e-10);
+        assert!((z.abs().to_f64() - 5.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn high_precision_complex() {
+        // Test with 256 bits of precision
+        let z = ComplexMPFR::with_val(256, (3.0, 4.0));
+        assert_eq!(z.precision(), 256);
+
+        let w = ComplexMPFR::with_val(256, (1.0, 2.0));
+        let product = z * w;
+
+        // (3+4i)(1+2i) = -5+10i
+        assert!((product.real() - (-5.0)).abs() < 1e-10);
+        assert!((product.imag() - 10.0).abs() < 1e-10);
     }
 }
