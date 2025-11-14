@@ -38,6 +38,7 @@ members = [
     "rustmath-quadraticforms",
     "rustmath-numberfields",
     "rustmath-manifolds",
+    "rustmath-modular",
 ]
 
 [workspace.package]
