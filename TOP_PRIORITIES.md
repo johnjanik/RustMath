@@ -130,12 +130,16 @@ This document highlights the most impactful partial features to implement next. 
 - [x] `solve([equations], [vars])` - System of equations
 - [x] `solve_polynomial_system()` - Polynomial systems via Gröbner
 - [x] `solve_linear_system()` - Linear systems (symbolic)
-- [ ] `solve_trig_equation()` - Trigonometric equations
-- [ ] `solve_inequality()` - Symbolic inequalities
+- [x] `solve_trig_equation()` - Trigonometric equations
+- [x] `solve_inequality()` - Symbolic inequalities
 
-**Current Status:** ⚠️ MOSTLY COMPLETED (3/5) - General, polynomial, and linear systems
+**Current Status:** ✅ COMPLETED - All equation solving features implemented
 **Location:** rustmath-symbolic/src/solve.rs
-**Next Step:** Add specialized trig equation and inequality solvers
+**Details:**
+- Trigonometric equation solving for sin(x) = c, cos(x) = c, tan(x) = c
+- Symbolic inequality solving for linear and quadratic inequalities
+- Returns principal solutions and intervals as appropriate
+- Comprehensive test coverage for all equation and inequality types
 
 ---
 
