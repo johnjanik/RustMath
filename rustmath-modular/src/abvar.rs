@@ -445,3 +445,498 @@ mod tests {
         assert_eq!(a.dimension(), 1);
     }
 }
+
+/// ModularAbelianVariety constructed from modular symbols
+#[derive(Debug, Clone)]
+pub struct ModularAbelianVariety_modsym {
+    /// Base modular abelian variety
+    base: ModularAbelianVariety,
+    /// Associated modular symbol space
+    modsym_space: Option<ModularSymbolSpace>,
+}
+
+impl ModularAbelianVariety_modsym {
+    /// Create from a modular symbol space
+    pub fn from_modsym_space(space: ModularSymbolSpace) -> Self {
+        let level = space.level();
+        let dimension = space.dimension();
+        ModularAbelianVariety_modsym {
+            base: ModularAbelianVariety::new(level, dimension),
+            modsym_space: Some(space),
+        }
+    }
+
+    /// Get the base abelian variety
+    pub fn base(&self) -> &ModularAbelianVariety {
+        &self.base
+    }
+
+    /// Get the modular symbol space
+    pub fn modsym_space(&self) -> Option<&ModularSymbolSpace> {
+        self.modsym_space.as_ref()
+    }
+
+    /// Get level
+    pub fn level(&self) -> u64 {
+        self.base.level()
+    }
+
+    /// Get dimension
+    pub fn dimension(&self) -> usize {
+        self.base.dimension()
+    }
+}
+
+/// Check if an object is a ModularAbelianVariety
+pub fn is_modular_abelian_variety(obj: &ModularAbelianVariety) -> bool {
+    // In Rust, type checking is done at compile time
+    // This function exists for API compatibility
+    true
+}
+
+/// Factor a modular symbols space into new factors
+pub fn factor_modsym_space_new_factors(space: &ModularSymbolSpace) -> Vec<ModularSymbolSpace> {
+    // Placeholder: would decompose the space into newform factors
+    // This requires sophisticated algorithms from modular forms theory
+    vec![space.clone()]
+}
+
+/// Factor the new space of modular symbols
+pub fn factor_new_space(level: u64, weight: i32) -> Vec<ModularSymbolSpace> {
+    // Placeholder: create new space and factor it
+    let space = ModularSymbolSpace::new(weight, level, 0);
+    vec![space]
+}
+
+/// Generate a random Hecke operator for testing
+pub fn random_hecke_operator(level: u64, max_index: u64) -> HeckeOperator {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    let n = rng.gen_range(1..=max_index);
+    HeckeOperator::new(n, level)
+}
+
+/// Compute modular symbol lattices
+pub fn modsym_lattices(space: &ModularSymbolSpace) -> Vec<Vec<BigRational>> {
+    // Placeholder: would compute period lattices
+    vec![vec![BigRational::one()]]
+}
+
+/// Simple factorization of a modular symbols space
+pub fn simple_factorization_of_modsym_space(space: &ModularSymbolSpace) -> Vec<ModularSymbolSpace> {
+    // Placeholder: decompose into simple (irreducible) factors
+    vec![space.clone()]
+}
+
+/// Compute square root of a polynomial (if it exists)
+pub fn sqrt_poly(coeffs: &[BigRational]) -> Option<Vec<BigRational>> {
+    // Placeholder: would compute polynomial square root
+    // For now, return None (not a perfect square)
+    None
+}
+
+/// Finite subgroup of an abelian variety
+#[derive(Debug, Clone)]
+pub struct FiniteSubgroup {
+    /// Parent abelian variety
+    abvar: ModularAbelianVariety,
+    /// Generators as vectors
+    generators: Vec<Vec<BigInt>>,
+}
+
+impl FiniteSubgroup {
+    /// Create a new finite subgroup
+    pub fn new(abvar: ModularAbelianVariety) -> Self {
+        FiniteSubgroup {
+            abvar,
+            generators: Vec::new(),
+        }
+    }
+
+    /// Add a generator
+    pub fn add_generator(&mut self, gen: Vec<BigInt>) {
+        self.generators.push(gen);
+    }
+
+    /// Get generators
+    pub fn generators(&self) -> &[Vec<BigInt>] {
+        &self.generators
+    }
+
+    /// Get the parent abelian variety
+    pub fn abvar(&self) -> &ModularAbelianVariety {
+        &self.abvar
+    }
+}
+
+/// Finite subgroup defined by a lattice
+#[derive(Debug, Clone)]
+pub struct FiniteSubgroup_lattice {
+    /// Base finite subgroup
+    base: FiniteSubgroup,
+    /// Lattice basis
+    lattice_basis: Vec<Vec<BigInt>>,
+}
+
+impl FiniteSubgroup_lattice {
+    /// Create from a lattice
+    pub fn new(abvar: ModularAbelianVariety, lattice_basis: Vec<Vec<BigInt>>) -> Self {
+        FiniteSubgroup_lattice {
+            base: FiniteSubgroup::new(abvar),
+            lattice_basis,
+        }
+    }
+
+    /// Get lattice basis
+    pub fn lattice_basis(&self) -> &[Vec<BigInt>] {
+        &self.lattice_basis
+    }
+}
+
+/// Homomorphism space between abelian varieties
+#[derive(Debug, Clone)]
+pub struct Homspace {
+    /// Domain abelian variety
+    domain: ModularAbelianVariety,
+    /// Codomain abelian variety
+    codomain: ModularAbelianVariety,
+    /// Dimension of Hom space
+    dimension: usize,
+}
+
+impl Homspace {
+    /// Create a homomorphism space
+    pub fn new(domain: ModularAbelianVariety, codomain: ModularAbelianVariety) -> Self {
+        // Dimension of Hom(A, B) depends on the varieties
+        let dimension = 0; // Placeholder
+        Homspace {
+            domain,
+            codomain,
+            dimension,
+        }
+    }
+
+    /// Get domain
+    pub fn domain(&self) -> &ModularAbelianVariety {
+        &self.domain
+    }
+
+    /// Get codomain
+    pub fn codomain(&self) -> &ModularAbelianVariety {
+        &self.codomain
+    }
+
+    /// Get dimension
+    pub fn dimension(&self) -> usize {
+        self.dimension
+    }
+}
+
+/// Endomorphism subring (when domain = codomain)
+#[derive(Debug, Clone)]
+pub struct EndomorphismSubring {
+    /// Homomorphism space (domain = codomain)
+    homspace: Homspace,
+}
+
+impl EndomorphismSubring {
+    /// Create endomorphism subring
+    pub fn new(abvar: ModularAbelianVariety) -> Self {
+        let homspace = Homspace::new(abvar.clone(), abvar);
+        EndomorphismSubring { homspace }
+    }
+
+    /// Get the underlying homspace
+    pub fn homspace(&self) -> &Homspace {
+        &self.homspace
+    }
+}
+
+/// L-series attached to a modular abelian variety
+#[derive(Debug, Clone)]
+pub struct Lseries {
+    /// Parent abelian variety
+    abvar: ModularAbelianVariety,
+}
+
+impl Lseries {
+    /// Create L-series
+    pub fn new(abvar: ModularAbelianVariety) -> Self {
+        Lseries { abvar }
+    }
+
+    /// Get the parent abelian variety
+    pub fn abvar(&self) -> &ModularAbelianVariety {
+        &self.abvar
+    }
+}
+
+/// Complex L-series
+#[derive(Debug, Clone)]
+pub struct Lseries_complex {
+    /// Base L-series
+    base: Lseries,
+}
+
+impl Lseries_complex {
+    /// Create complex L-series
+    pub fn new(abvar: ModularAbelianVariety) -> Self {
+        Lseries_complex {
+            base: Lseries::new(abvar),
+        }
+    }
+
+    /// Evaluate at a complex number (placeholder)
+    pub fn evaluate(&self, _s: f64) -> f64 {
+        // Placeholder: would compute L(s)
+        0.0
+    }
+}
+
+/// p-adic L-series
+#[derive(Debug, Clone)]
+pub struct Lseries_padic {
+    /// Base L-series
+    base: Lseries,
+    /// Prime p
+    p: u64,
+}
+
+impl Lseries_padic {
+    /// Create p-adic L-series
+    pub fn new(abvar: ModularAbelianVariety, p: u64) -> Self {
+        Lseries_padic {
+            base: Lseries::new(abvar),
+            p,
+        }
+    }
+
+    /// Get the prime
+    pub fn prime(&self) -> u64 {
+        self.p
+    }
+}
+
+/// Morphism between modular abelian varieties
+#[derive(Debug, Clone)]
+pub struct Morphism {
+    /// Domain
+    domain: ModularAbelianVariety,
+    /// Codomain
+    codomain: ModularAbelianVariety,
+    /// Matrix representation (on homology)
+    matrix: Vec<Vec<BigRational>>,
+}
+
+impl Morphism {
+    /// Create a morphism
+    pub fn new(
+        domain: ModularAbelianVariety,
+        codomain: ModularAbelianVariety,
+        matrix: Vec<Vec<BigRational>>,
+    ) -> Self {
+        Morphism {
+            domain,
+            codomain,
+            matrix,
+        }
+    }
+
+    /// Get domain
+    pub fn domain(&self) -> &ModularAbelianVariety {
+        &self.domain
+    }
+
+    /// Get codomain
+    pub fn codomain(&self) -> &ModularAbelianVariety {
+        &self.codomain
+    }
+
+    /// Get matrix
+    pub fn matrix(&self) -> &[Vec<BigRational>] {
+        &self.matrix
+    }
+}
+
+/// Degeneracy map between Jacobians
+#[derive(Debug, Clone)]
+pub struct DegeneracyMap {
+    /// Base morphism
+    morphism: Morphism,
+    /// Degeneracy parameter
+    param: u64,
+}
+
+impl DegeneracyMap {
+    /// Create a degeneracy map
+    pub fn new(domain: ModularAbelianVariety, codomain: ModularAbelianVariety, param: u64) -> Self {
+        let matrix = vec![]; // Placeholder
+        DegeneracyMap {
+            morphism: Morphism::new(domain, codomain, matrix),
+            param,
+        }
+    }
+
+    /// Get the morphism
+    pub fn morphism(&self) -> &Morphism {
+        &self.morphism
+    }
+
+    /// Get parameter
+    pub fn param(&self) -> u64 {
+        self.param
+    }
+}
+
+/// Homology with additional structure
+#[derive(Debug, Clone)]
+pub struct Homology_over_base {
+    /// Base homology
+    base: Homology,
+    /// Base ring (Z, Q, Z/NZ, etc.)
+    base_ring: String,
+}
+
+impl Homology_over_base {
+    /// Create homology over a specific base
+    pub fn new(abvar: ModularAbelianVariety, base_ring: String) -> Self {
+        Homology_over_base {
+            base: Homology::new(abvar),
+            base_ring,
+        }
+    }
+
+    /// Get base ring
+    pub fn base_ring(&self) -> &str {
+        &self.base_ring
+    }
+
+    /// Get the base homology
+    pub fn base(&self) -> &Homology {
+        &self.base
+    }
+}
+
+/// Homology submodule
+#[derive(Debug, Clone)]
+pub struct Homology_submodule {
+    /// Ambient homology
+    ambient: Homology,
+    /// Generators of the submodule
+    generators: Vec<Vec<BigInt>>,
+}
+
+impl Homology_submodule {
+    /// Create a submodule
+    pub fn new(ambient: Homology, generators: Vec<Vec<BigInt>>) -> Self {
+        Homology_submodule {
+            ambient,
+            generators,
+        }
+    }
+
+    /// Get ambient homology
+    pub fn ambient(&self) -> &Homology {
+        &self.ambient
+    }
+
+    /// Get generators
+    pub fn generators(&self) -> &[Vec<BigInt>] {
+        &self.generators
+    }
+}
+
+/// Rational cusp subgroup
+#[derive(Debug, Clone)]
+pub struct RationalCuspSubgroup {
+    /// Base cuspidal subgroup
+    base: CuspidalSubgroup,
+}
+
+impl RationalCuspSubgroup {
+    /// Create rational cusp subgroup
+    pub fn new(level: u64) -> Self {
+        RationalCuspSubgroup {
+            base: CuspidalSubgroup::new(level),
+        }
+    }
+
+    /// Get the base
+    pub fn base(&self) -> &CuspidalSubgroup {
+        &self.base
+    }
+}
+
+/// Rational cuspidal subgroup (full rational torsion from cusps)
+#[derive(Debug, Clone)]
+pub struct RationalCuspidalSubgroup {
+    /// Base cuspidal subgroup
+    base: CuspidalSubgroup,
+}
+
+impl RationalCuspidalSubgroup {
+    /// Create rational cuspidal subgroup
+    pub fn new(level: u64) -> Self {
+        RationalCuspidalSubgroup {
+            base: CuspidalSubgroup::new(level),
+        }
+    }
+
+    /// Get the base
+    pub fn base(&self) -> &CuspidalSubgroup {
+        &self.base
+    }
+}
+
+/// Check if a cusp is rational for Gamma0
+pub fn is_rational_cusp_gamma0(numerator: i64, denominator: i64, level: u64) -> bool {
+    use num_integer::Integer;
+    use crate::cusps::Cusp;
+
+    let cusp = Cusp::from_i64(numerator, denominator);
+    // A cusp p/q is rational for Gamma0(N) if gcd(q, N) = 1
+    if let Some(q) = cusp.denominator() {
+        let q_val = q.to_string().parse::<u64>().unwrap_or(level);
+        Integer::gcd(&q_val, &level) == 1
+    } else {
+        // Infinity is always rational
+        true
+    }
+}
+
+/// QQbar torsion subgroup (torsion over algebraic closure)
+#[derive(Debug, Clone)]
+pub struct QQbarTorsionSubgroup {
+    /// Parent abelian variety
+    abvar: ModularAbelianVariety,
+}
+
+impl QQbarTorsionSubgroup {
+    /// Create QQbar torsion subgroup
+    pub fn new(abvar: ModularAbelianVariety) -> Self {
+        QQbarTorsionSubgroup { abvar }
+    }
+
+    /// Get parent abelian variety
+    pub fn abvar(&self) -> &ModularAbelianVariety {
+        &self.abvar
+    }
+}
+
+/// Abelian variety constructor functions
+pub mod constructor {
+    use super::*;
+
+    /// Generic abelian variety constructor
+    pub fn abelian_variety(level: u64, dimension: usize) -> ModularAbelianVariety {
+        ModularAbelianVariety::new(level, dimension)
+    }
+
+    /// JH - Jacobian of X_H(N)
+    pub fn jh(level: u64, h_subgroup: Vec<u64>) -> ModularAbelianVariety {
+        // Compute dimension for J_H(N)
+        // This is more complex than J0 or J1
+        let dimension = 1; // Placeholder
+        ModularAbelianVariety::new(level, dimension)
+    }
+}
