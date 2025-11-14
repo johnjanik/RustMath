@@ -410,6 +410,157 @@ impl<R: Ring> UnivariatePolynomial<R> {
 
         det
     }
+
+    /// Compute both quotient and remainder of polynomial division
+    ///
+    /// Returns (quotient, remainder) such that self = quotient * other + remainder
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_polynomials::UnivariatePolynomial;
+    /// use rustmath_integers::Integer;
+    ///
+    /// // p(x) = x^2 + 3x + 2, q(x) = x + 1
+    /// let p = UnivariatePolynomial::new(vec![
+    ///     Integer::from(2),
+    ///     Integer::from(3),
+    ///     Integer::from(1)
+    /// ]);
+    /// let q = UnivariatePolynomial::new(vec![Integer::from(1), Integer::from(1)]);
+    ///
+    /// let (quo, rem) = p.quo_rem(&q);
+    /// // quo = x + 2, rem = 0
+    /// ```
+    pub fn quo_rem(&self, divisor: &Self) -> (Self, Self)
+    where
+        R: EuclideanDomain,
+    {
+        if divisor.is_zero() {
+            panic!("Division by zero polynomial");
+        }
+
+        let mut remainder = self.clone();
+        let mut quotient = UnivariatePolynomial::new(vec![R::zero()]);
+
+        let divisor_degree = divisor.degree().unwrap();
+        let divisor_leading = divisor.coeffs.last().unwrap();
+
+        while let Some(rem_degree) = remainder.degree() {
+            if rem_degree < divisor_degree {
+                break;
+            }
+
+            let rem_leading = remainder.coeffs.last().unwrap();
+            let coeff_degree = rem_degree - divisor_degree;
+
+            // Compute quotient coefficient
+            let (q, r) = rem_leading.clone().quot_rem(divisor_leading);
+            if !r.is_zero() {
+                // Not exact division in the coefficient ring
+                break;
+            }
+
+            // Create monomial q * x^(coeff_degree)
+            let mut mono_coeffs = vec![R::zero(); coeff_degree];
+            mono_coeffs.push(q.clone());
+            let mono = UnivariatePolynomial::new(mono_coeffs);
+
+            quotient = quotient.clone() + mono.clone();
+            remainder = remainder.clone() - mono * divisor.clone();
+        }
+
+        (quotient, remainder)
+    }
+
+    /// Compute squarefree decomposition
+    ///
+    /// Returns a vector of (factor, multiplicity) pairs where each factor is squarefree
+    /// and the original polynomial is the product of factor^multiplicity
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_polynomials::UnivariatePolynomial;
+    /// use rustmath_integers::Integer;
+    ///
+    /// // p(x) = (x-1)^2 * (x-2)
+    /// let p = UnivariatePolynomial::new(vec![
+    ///     Integer::from(2),
+    ///     Integer::from(-5),
+    ///     Integer::from(4),
+    ///     Integer::from(-1)
+    /// ]);
+    ///
+    /// let decomp = p.squarefree_decomposition();
+    /// ```
+    pub fn squarefree_decomposition(&self) -> Vec<(Self, usize)>
+    where
+        R: EuclideanDomain,
+    {
+        if self.is_zero() {
+            return vec![];
+        }
+
+        let mut result = Vec::new();
+        let mut f = self.clone();
+        let mut i = 1;
+
+        // Compute f' (derivative)
+        let fp = self.derivative();
+
+        if fp.is_zero() {
+            // Characteristic p case or constant polynomial
+            return vec![(f, 1)];
+        }
+
+        // Compute gcd(f, f')
+        let mut g = f.gcd(&fp);
+
+        // Compute squarefree part
+        let (mut s, _) = f.quo_rem(&g);
+
+        while !s.is_one() {
+            let h = s.gcd(&g);
+            let (factor, _) = s.quo_rem(&h);
+
+            if !factor.is_one() {
+                result.push((factor, i));
+            }
+
+            s = h.clone();
+            let (new_g, _) = g.quo_rem(&h);
+            g = new_g;
+            i += 1;
+        }
+
+        if !g.is_one() {
+            result.push((g, i));
+        }
+
+        result
+    }
+
+    /// Check if polynomial is constant 1
+    fn is_one(&self) -> bool {
+        self.coeffs.len() == 1 && self.coeffs[0].is_one()
+    }
+
+    /// Compute the derivative of the polynomial
+    pub fn derivative(&self) -> Self
+    where
+        R: rustmath_core::NumericConversion,
+    {
+        if self.is_zero() || self.coeffs.len() == 1 {
+            return UnivariatePolynomial::new(vec![R::zero()]);
+        }
+
+        let mut d_coeffs = Vec::with_capacity(self.coeffs.len() - 1);
+        for (i, coeff) in self.coeffs.iter().enumerate().skip(1) {
+            let i_coeff = R::from_usize(i);
+            d_coeffs.push(coeff.clone() * i_coeff);
+        }
+
+        UnivariatePolynomial::new(d_coeffs)
+    }
 }
 
 impl<R: Ring> Polynomial for UnivariatePolynomial<R> {

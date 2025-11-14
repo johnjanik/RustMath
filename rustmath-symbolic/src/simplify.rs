@@ -83,6 +83,154 @@ impl Expr {
             _ => self.clone(),
         }
     }
+
+    /// Simplify logarithmic expressions
+    ///
+    /// Applies log identities like log(a*b) = log(a) + log(b)
+    pub fn simplify_log(&self) -> Expr {
+        match self {
+            Expr::Unary(UnaryOp::Log, inner) => {
+                match inner.as_ref() {
+                    // log(1) = 0
+                    Expr::Integer(n) if n.is_one() => Expr::from(0),
+                    // log(a * b) = log(a) + log(b)
+                    Expr::Binary(BinaryOp::Mul, left, right) => {
+                        let log_left = Expr::Unary(UnaryOp::Log, left.clone()).simplify_log();
+                        let log_right = Expr::Unary(UnaryOp::Log, right.clone()).simplify_log();
+                        Expr::Binary(BinaryOp::Add, Arc::new(log_left), Arc::new(log_right))
+                    }
+                    // log(a / b) = log(a) - log(b)
+                    Expr::Binary(BinaryOp::Div, num, den) => {
+                        let log_num = Expr::Unary(UnaryOp::Log, num.clone()).simplify_log();
+                        let log_den = Expr::Unary(UnaryOp::Log, den.clone()).simplify_log();
+                        Expr::Binary(BinaryOp::Sub, Arc::new(log_num), Arc::new(log_den))
+                    }
+                    // log(a^b) = b * log(a)
+                    Expr::Binary(BinaryOp::Pow, base, exp) => {
+                        let log_base = Expr::Unary(UnaryOp::Log, base.clone()).simplify_log();
+                        Expr::Binary(BinaryOp::Mul, exp.clone(), Arc::new(log_base))
+                    }
+                    _ => self.clone(),
+                }
+            }
+            Expr::Binary(op, left, right) => {
+                let left_simp = left.simplify_log();
+                let right_simp = right.simplify_log();
+                Expr::Binary(*op, Arc::new(left_simp), Arc::new(right_simp))
+            }
+            Expr::Unary(op, inner) => {
+                let inner_simp = inner.simplify_log();
+                Expr::Unary(*op, Arc::new(inner_simp))
+            }
+            _ => self.clone(),
+        }
+    }
+
+    /// Expand trigonometric expressions using angle addition formulas
+    ///
+    /// Applies identities like sin(a+b) = sin(a)cos(b) + cos(a)sin(b)
+    pub fn expand_trig(&self) -> Expr {
+        // Basic implementation - can be extended with more formulas
+        match self {
+            Expr::Unary(UnaryOp::Sin, inner) => {
+                match inner.as_ref() {
+                    // sin(a + b) = sin(a)cos(b) + cos(a)sin(b)
+                    Expr::Binary(BinaryOp::Add, a, b) => {
+                        let sin_a = Expr::Unary(UnaryOp::Sin, a.clone());
+                        let cos_a = Expr::Unary(UnaryOp::Cos, a.clone());
+                        let sin_b = Expr::Unary(UnaryOp::Sin, b.clone());
+                        let cos_b = Expr::Unary(UnaryOp::Cos, b.clone());
+
+                        let term1 = Expr::Binary(BinaryOp::Mul, Arc::new(sin_a), Arc::new(cos_b));
+                        let term2 = Expr::Binary(BinaryOp::Mul, Arc::new(cos_a), Arc::new(sin_b));
+                        Expr::Binary(BinaryOp::Add, Arc::new(term1), Arc::new(term2))
+                    }
+                    _ => self.clone(),
+                }
+            }
+            Expr::Unary(UnaryOp::Cos, inner) => {
+                match inner.as_ref() {
+                    // cos(a + b) = cos(a)cos(b) - sin(a)sin(b)
+                    Expr::Binary(BinaryOp::Add, a, b) => {
+                        let sin_a = Expr::Unary(UnaryOp::Sin, a.clone());
+                        let cos_a = Expr::Unary(UnaryOp::Cos, a.clone());
+                        let sin_b = Expr::Unary(UnaryOp::Sin, b.clone());
+                        let cos_b = Expr::Unary(UnaryOp::Cos, b.clone());
+
+                        let term1 = Expr::Binary(BinaryOp::Mul, Arc::new(cos_a), Arc::new(cos_b));
+                        let term2 = Expr::Binary(BinaryOp::Mul, Arc::new(sin_a), Arc::new(sin_b));
+                        Expr::Binary(BinaryOp::Sub, Arc::new(term1), Arc::new(term2))
+                    }
+                    _ => self.clone(),
+                }
+            }
+            _ => self.clone(),
+        }
+    }
+
+    /// Collect like terms in an expression
+    ///
+    /// Groups terms with the same symbolic part
+    pub fn collect(&self) -> Expr {
+        // Basic implementation - collects terms in addition
+        match self {
+            Expr::Binary(BinaryOp::Add, left, right) => {
+                let left_coll = left.collect();
+                let right_coll = right.collect();
+                // Try to combine if they're like terms
+                match (&left_coll, &right_coll) {
+                    // n*x + m*x = (n+m)*x
+                    (
+                        Expr::Binary(BinaryOp::Mul, n1, x1),
+                        Expr::Binary(BinaryOp::Mul, n2, x2),
+                    ) if x1 == x2 => {
+                        let coeff_sum = Expr::Binary(BinaryOp::Add, n1.clone(), n2.clone()).simplify();
+                        Expr::Binary(BinaryOp::Mul, Arc::new(coeff_sum), x1.clone())
+                    }
+                    _ => Expr::Binary(BinaryOp::Add, Arc::new(left_coll), Arc::new(right_coll)),
+                }
+            }
+            _ => self.clone(),
+        }
+    }
+
+    /// Combine fractions and powers
+    ///
+    /// Combines expressions like a/b + c/d = (ad + bc)/(bd)
+    pub fn combine(&self) -> Expr {
+        match self {
+            // Combine fractions: a/b + c/d = (ad + bc)/(bd)
+            Expr::Binary(BinaryOp::Add, left, right) => {
+                match (left.as_ref(), right.as_ref()) {
+                    (
+                        Expr::Binary(BinaryOp::Div, a, b),
+                        Expr::Binary(BinaryOp::Div, c, d),
+                    ) => {
+                        let ad = Expr::Binary(BinaryOp::Mul, a.clone(), d.clone());
+                        let bc = Expr::Binary(BinaryOp::Mul, b.clone(), c.clone());
+                        let bd = Expr::Binary(BinaryOp::Mul, b.clone(), d.clone());
+                        let num = Expr::Binary(BinaryOp::Add, Arc::new(ad), Arc::new(bc));
+                        Expr::Binary(BinaryOp::Div, Arc::new(num), Arc::new(bd)).simplify()
+                    }
+                    _ => self.clone(),
+                }
+            }
+            // Combine powers: x^a * x^b = x^(a+b)
+            Expr::Binary(BinaryOp::Mul, left, right) => {
+                match (left.as_ref(), right.as_ref()) {
+                    (
+                        Expr::Binary(BinaryOp::Pow, base1, exp1),
+                        Expr::Binary(BinaryOp::Pow, base2, exp2),
+                    ) if base1 == base2 => {
+                        let exp_sum = Expr::Binary(BinaryOp::Add, exp1.clone(), exp2.clone());
+                        Expr::Binary(BinaryOp::Pow, base1.clone(), Arc::new(exp_sum)).simplify()
+                    }
+                    _ => self.clone(),
+                }
+            }
+            _ => self.clone(),
+        }
+    }
 }
 
 /// Simplify an expression
