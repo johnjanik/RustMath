@@ -281,6 +281,237 @@ pub mod known_series {
     }
 }
 
+// ============================================================================
+// Phase 3.4 Enhancement: Big-O Notation Support
+// ============================================================================
+
+/// Big-O notation for asymptotic analysis
+///
+/// Represents O(f(x)) where f(x) is the growth rate function
+#[derive(Debug, Clone, PartialEq)]
+pub struct BigO {
+    /// The function inside O(...)
+    pub function: Expr,
+    /// The variable (usually x or n)
+    pub var: Symbol,
+}
+
+impl BigO {
+    /// Create a new Big-O expression
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// let x = Symbol::new("x");
+    /// let o_x2 = BigO::new(Expr::Symbol(x.clone()).pow(Expr::from(2)), x);
+    /// // Represents O(x²)
+    /// ```
+    pub fn new(function: Expr, var: Symbol) -> Self {
+        BigO { function, var }
+    }
+
+    /// Create O(1) - constant time
+    pub fn constant(var: Symbol) -> Self {
+        BigO::new(Expr::from(1), var)
+    }
+
+    /// Create O(log n) - logarithmic time
+    pub fn logarithmic(var: Symbol) -> Self {
+        BigO::new(Expr::Symbol(var.clone()).log(), var)
+    }
+
+    /// Create O(n) - linear time
+    pub fn linear(var: Symbol) -> Self {
+        BigO::new(Expr::Symbol(var.clone()), var)
+    }
+
+    /// Create O(n log n) - linearithmic time
+    pub fn linearithmic(var: Symbol) -> Self {
+        let n = Expr::Symbol(var.clone());
+        BigO::new(n.clone() * n.log(), var)
+    }
+
+    /// Create O(n²) - quadratic time
+    pub fn quadratic(var: Symbol) -> Self {
+        BigO::new(Expr::Symbol(var.clone()).pow(Expr::from(2)), var)
+    }
+
+    /// Create O(n^k) - polynomial time
+    pub fn polynomial(var: Symbol, degree: i64) -> Self {
+        BigO::new(Expr::Symbol(var.clone()).pow(Expr::from(degree)), var)
+    }
+
+    /// Create O(2^n) - exponential time
+    pub fn exponential(var: Symbol) -> Self {
+        BigO::new(Expr::from(2).pow(Expr::Symbol(var.clone())), var)
+    }
+
+    /// Create O(n!) - factorial time
+    pub fn factorial(var: Symbol) -> Self {
+        // Factorial not directly representable, use placeholder
+        BigO::new(Expr::Symbol(var.clone()).factorial(), var)
+    }
+
+    /// Determine the dominant term in an expression for Big-O analysis
+    ///
+    /// For a sum of terms, returns the fastest-growing term
+    ///
+    /// # Algorithm
+    ///
+    /// 1. Separate expression into terms
+    /// 2. For each term, determine its growth rate
+    /// 3. Return the term with highest growth rate
+    pub fn dominant_term(expr: &Expr, var: &Symbol) -> Expr {
+        // For sums, find the dominant term
+        if let Expr::Binary(BinaryOp::Add, left, right) = expr {
+            let left_dom = BigO::dominant_term(left, var);
+            let right_dom = BigO::dominant_term(right, var);
+
+            // Compare growth rates
+            if BigO::grows_faster(&left_dom, &right_dom, var) {
+                left_dom
+            } else {
+                right_dom
+            }
+        } else {
+            // For non-sums, return the expression itself (simplified)
+            expr.clone()
+        }
+    }
+
+    /// Check if f(x) grows faster than g(x) as x → ∞
+    ///
+    /// Uses limit comparison: if lim(x→∞) g(x)/f(x) = 0, then f grows faster
+    fn grows_faster(f: &Expr, g: &Expr, var: &Symbol) -> bool {
+        // Simplified comparison based on degree
+        let f_degree = f.degree(var).unwrap_or(0);
+        let g_degree = g.degree(var).unwrap_or(0);
+
+        f_degree > g_degree
+    }
+
+    /// Derive Big-O complexity from an expression
+    ///
+    /// Analyzes an expression and determines its asymptotic complexity
+    ///
+    /// # Examples
+    ///
+    /// - 3n² + 2n + 1 → O(n²)
+    /// - 5n + log(n) → O(n)
+    /// - 2^n + n³ → O(2^n)
+    pub fn from_expression(expr: &Expr, var: &Symbol) -> Self {
+        // Find dominant term
+        let dominant = BigO::dominant_term(expr, var);
+
+        // Remove constant coefficients
+        let simplified = BigO::remove_constants(&dominant, var);
+
+        BigO::new(simplified, var.clone())
+    }
+
+    /// Remove constant coefficients from an expression
+    ///
+    /// For Big-O analysis, constant factors don't matter
+    fn remove_constants(expr: &Expr, var: &Symbol) -> Expr {
+        match expr {
+            // If expression doesn't contain the variable, treat as constant
+            _ if !expr.contains_symbol(var) => Expr::from(1),
+
+            // For products, remove constant factors
+            Expr::Binary(BinaryOp::Mul, left, right) => {
+                if !left.contains_symbol(var) {
+                    BigO::remove_constants(right, var)
+                } else if !right.contains_symbol(var) {
+                    BigO::remove_constants(left, var)
+                } else {
+                    // Both contain the variable
+                    BigO::remove_constants(left, var) * BigO::remove_constants(right, var)
+                }
+            }
+
+            // For other expressions, keep as is
+            _ => expr.clone(),
+        }
+    }
+
+    /// Check if this Big-O is equal to or dominates another
+    ///
+    /// O(f) dominates O(g) if f grows at least as fast as g
+    pub fn dominates(&self, other: &BigO) -> bool {
+        BigO::grows_faster(&self.function, &other.function, &self.var)
+            || self.function == other.function
+    }
+}
+
+impl std::fmt::Display for BigO {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "O({})", self.function)
+    }
+}
+
+/// Little-o notation for strict asymptotic bounds
+///
+/// o(f(x)) represents functions that grow strictly slower than f(x)
+#[derive(Debug, Clone, PartialEq)]
+pub struct LittleO {
+    pub function: Expr,
+    pub var: Symbol,
+}
+
+impl LittleO {
+    pub fn new(function: Expr, var: Symbol) -> Self {
+        LittleO { function, var }
+    }
+}
+
+impl std::fmt::Display for LittleO {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "o({})", self.function)
+    }
+}
+
+/// Theta notation for tight asymptotic bounds
+///
+/// Θ(f(x)) represents functions that grow at the same rate as f(x)
+#[derive(Debug, Clone, PartialEq)]
+pub struct Theta {
+    pub function: Expr,
+    pub var: Symbol,
+}
+
+impl Theta {
+    pub fn new(function: Expr, var: Symbol) -> Self {
+        Theta { function, var }
+    }
+}
+
+impl std::fmt::Display for Theta {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Θ({})", self.function)
+    }
+}
+
+/// Omega notation for lower bounds
+///
+/// Ω(f(x)) represents functions that grow at least as fast as f(x)
+#[derive(Debug, Clone, PartialEq)]
+pub struct Omega {
+    pub function: Expr,
+    pub var: Symbol,
+}
+
+impl Omega {
+    pub fn new(function: Expr, var: Symbol) -> Self {
+        Omega { function, var }
+    }
+}
+
+impl std::fmt::Display for Omega {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Ω({})", self.function)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -396,6 +396,153 @@ fn solve_transcendental(expr: &Expr, var: &Symbol) -> Solution {
     }
 }
 
+// ============================================================================
+// Phase 3.2 Enhancements: System Solving via Gröbner Bases
+// ============================================================================
+
+/// Solution for a system of equations
+#[derive(Debug, Clone)]
+pub enum SystemSolution {
+    /// Finite set of solutions (each solution is a mapping from variables to values)
+    Finite(Vec<Vec<(Symbol, Expr)>>),
+    /// Infinitely many solutions (parametric form)
+    Infinite,
+    /// No solutions
+    None,
+    /// Could not determine
+    Unknown,
+}
+
+/// Solve a system of polynomial equations using Gröbner bases
+///
+/// Given a system of polynomial equations f₁ = 0, f₂ = 0, ..., fₙ = 0,
+/// uses Gröbner basis computation to find all solutions.
+///
+/// # Algorithm
+///
+/// 1. Compute the Gröbner basis of the ideal <f₁, f₂, ..., fₙ>
+/// 2. If the basis contains 1, the system has no solutions
+/// 3. Use elimination to solve for variables one at a time
+/// 4. Back-substitute to find complete solutions
+///
+/// # Implementation Status
+///
+/// This is a simplified implementation. Full implementation requires:
+/// - Converting symbolic expressions to multivariate polynomials
+/// - Gröbner basis computation over the appropriate coefficient field
+/// - Solving univariate polynomials in the basis
+/// - Back-substitution to recover all variables
+///
+/// For now, this provides the interface and basic structure.
+pub fn solve_system_groebner(equations: &[Expr], vars: &[Symbol]) -> SystemSolution {
+    // This is a placeholder for full Gröbner-based system solving
+    //
+    // The full algorithm would:
+    // 1. Convert each equation to a multivariate polynomial
+    // 2. Compute Gröbner basis with lex ordering (for elimination)
+    // 3. Check if 1 is in the basis (no solutions)
+    // 4. Solve the "triangular" system from the basis
+    // 5. Return all solutions
+
+    // For now, delegate to simpler methods for small systems
+    if equations.is_empty() {
+        return SystemSolution::Infinite;
+    }
+
+    if equations.len() == 1 && vars.len() == 1 {
+        // Single equation, single variable
+        let solution = equations[0].solve(&vars[0]);
+        return match solution {
+            Solution::None => SystemSolution::None,
+            Solution::All => SystemSolution::Infinite,
+            Solution::Expr(expr) => {
+                SystemSolution::Finite(vec![vec![(vars[0].clone(), expr)]])
+            }
+            Solution::Multiple(exprs) => SystemSolution::Finite(
+                exprs
+                    .into_iter()
+                    .map(|e| vec![(vars[0].clone(), e)])
+                    .collect(),
+            ),
+        };
+    }
+
+    // For 2x2 linear systems, use substitution
+    if equations.len() == 2 && vars.len() == 2 {
+        return solve_2x2_linear_system(&equations[0], &equations[1], &vars[0], &vars[1]);
+    }
+
+    // General case not fully implemented yet
+    SystemSolution::Unknown
+}
+
+/// Solve a 2x2 linear system using substitution
+fn solve_2x2_linear_system(eq1: &Expr, eq2: &Expr, var1: &Symbol, var2: &Symbol) -> SystemSolution {
+    // Check if both are linear in both variables
+    if !eq1.is_polynomial(var1) || !eq1.is_polynomial(var2) {
+        return SystemSolution::Unknown;
+    }
+
+    if !eq2.is_polynomial(var1) || !eq2.is_polynomial(var2) {
+        return SystemSolution::Unknown;
+    }
+
+    // Try to solve eq1 for var1 in terms of var2
+    if let Solution::Expr(var1_expr) = eq1.solve(var1) {
+        // Substitute into eq2
+        let eq2_substituted = eq2.substitute(var1, &var1_expr);
+
+        // Solve for var2
+        if let Solution::Expr(var2_value) = eq2_substituted.solve(var2) {
+            // Back-substitute to get var1
+            let var1_value = var1_expr.substitute(var2, &var2_value).simplify();
+
+            return SystemSolution::Finite(vec![vec![
+                (var1.clone(), var1_value),
+                (var2.clone(), var2_value),
+            ]]);
+        }
+    }
+
+    // Try the other way: solve eq2 for var1
+    if let Solution::Expr(var1_expr) = eq2.solve(var1) {
+        let eq1_substituted = eq1.substitute(var1, &var1_expr);
+
+        if let Solution::Expr(var2_value) = eq1_substituted.solve(var2) {
+            let var1_value = var1_expr.substitute(var2, &var2_value).simplify();
+
+            return SystemSolution::Finite(vec![vec![
+                (var1.clone(), var1_value),
+                (var2.clone(), var2_value),
+            ]]);
+        }
+    }
+
+    SystemSolution::Unknown
+}
+
+/// Solve a linear system of equations using matrix methods
+///
+/// For systems of the form Ax = b, uses Gaussian elimination
+///
+/// # Implementation Status
+///
+/// This requires integration with the rustmath-matrix crate.
+/// For now, this is a placeholder.
+pub fn solve_linear_system(
+    _coefficients: Vec<Vec<Expr>>,
+    _constants: Vec<Expr>,
+    _vars: &[Symbol],
+) -> SystemSolution {
+    // Would use:
+    // 1. Convert symbolic coefficients to a matrix
+    // 2. Use Gaussian elimination from rustmath-matrix
+    // 3. Back-substitute to get solutions
+    // 4. Handle special cases (no solution, infinite solutions)
+
+    SystemSolution::Unknown
+}
+
 /// Check if an expression is zero
 fn is_zero(expr: &Expr) -> bool {
     match expr {

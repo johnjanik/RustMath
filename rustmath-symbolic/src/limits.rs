@@ -318,6 +318,186 @@ impl Expr {
             _ => false,
         }
     }
+
+    // ========================================================================
+    // Phase 3.3 Enhancements: Improved Limit Computation
+    // ========================================================================
+
+    /// Apply L'Hôpital's rule multiple times
+    ///
+    /// Continues applying L'Hôpital's rule until either:
+    /// - A determinate limit is found
+    /// - Maximum iterations reached
+    /// - An indeterminate form other than 0/0 or ∞/∞ is encountered
+    ///
+    /// # Arguments
+    ///
+    /// * `var` - The variable approaching the limit
+    /// * `point` - The point being approached
+    /// * `dir` - Direction of approach
+    /// * `max_iterations` - Maximum number of L'Hôpital applications (default 5)
+    pub fn lhopital_repeated(
+        &self,
+        var: &Symbol,
+        point: &Expr,
+        dir: Direction,
+        max_iterations: usize,
+    ) -> LimitResult {
+        let mut expr = self.clone();
+        let mut iterations = 0;
+
+        while iterations < max_iterations {
+            // Try direct substitution
+            let substituted = expr.substitute(var, point);
+            if substituted.is_finite_value() {
+                return LimitResult::Finite(substituted);
+            }
+
+            // Check if we have a 0/0 or ∞/∞ indeterminate form
+            if let Expr::Binary(BinaryOp::Div, num, den) = &expr {
+                let num_limit = num.limit(var, point, dir);
+                let den_limit = den.limit(var, point, dir);
+
+                // Check for 0/0
+                let is_zero_over_zero = matches!(
+                    (&num_limit, &den_limit),
+                    (LimitResult::Finite(n), LimitResult::Finite(d))
+                    if n.is_zero() && d.is_zero()
+                );
+
+                // Check for ∞/∞
+                let is_inf_over_inf = matches!(
+                    (&num_limit, &den_limit),
+                    (LimitResult::Infinity, LimitResult::Infinity)
+                        | (LimitResult::NegInfinity, LimitResult::NegInfinity)
+                        | (LimitResult::Infinity, LimitResult::NegInfinity)
+                        | (LimitResult::NegInfinity, LimitResult::Infinity)
+                );
+
+                if is_zero_over_zero || is_inf_over_inf {
+                    // Apply L'Hôpital: differentiate numerator and denominator
+                    let num_prime = num.differentiate(var);
+                    let den_prime = den.differentiate(var);
+
+                    expr = num_prime / den_prime;
+                    iterations += 1;
+                    continue;
+                }
+            }
+
+            // If not 0/0 or ∞/∞, compute the limit normally
+            return expr.limit(var, point, dir);
+        }
+
+        // Reached max iterations without resolving
+        LimitResult::Unknown
+    }
+
+    /// Compute limit using series expansion
+    ///
+    /// For limits at a point, expand the function as a Taylor series
+    /// around that point and determine the leading behavior.
+    ///
+    /// # Algorithm
+    ///
+    /// 1. Expand f(x) as Taylor series around the point
+    /// 2. Identify the lowest-order non-zero term
+    /// 3. The limit is the value of that term
+    ///
+    /// # Arguments
+    ///
+    /// * `var` - The variable approaching the limit
+    /// * `point` - The point being approached
+    /// * `order` - Order of Taylor expansion (default 5)
+    pub fn limit_via_series(&self, var: &Symbol, point: &Expr, order: usize) -> LimitResult {
+        // Compute Taylor series expansion
+        let series = self.taylor(var, point, order);
+
+        // Try to evaluate the series at the point
+        // The constant term gives the limit
+        let result = series.substitute(var, point);
+
+        if result.is_finite_value() {
+            LimitResult::Finite(result)
+        } else {
+            // Series expansion didn't help, return unknown
+            LimitResult::Unknown
+        }
+    }
+
+    /// Compute limit at infinity using asymptotic expansion
+    ///
+    /// For limits as x → ∞, substitutes x = 1/t and computes lim(t→0+)
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// // lim(x→∞) (2x + 1)/(x + 3) = 2
+    /// // Substitute x = 1/t: lim(t→0+) (2/t + 1)/(1/t + 3) = lim(t→0+) (2 + t)/(1 + 3t) = 2
+    /// ```
+    pub fn limit_at_infinity(&self, var: &Symbol, dir: Direction) -> LimitResult {
+        // Create a new variable t
+        let t = Symbol::new("t_limit_inf");
+        let t_expr = Expr::Symbol(t.clone());
+
+        // Substitute x = 1/t
+        let substituted = self.substitute(var, &(Expr::from(1) / t_expr.clone()));
+
+        // Compute limit as t → 0+
+        let limit_dir = match dir {
+            Direction::Right => Direction::Right, // x→+∞ means t→0+
+            Direction::Left => Direction::Left,   // x→-∞ means t→0-
+            Direction::Both => Direction::Right,  // Default to +∞
+        };
+
+        substituted.limit(&t, &Expr::from(0), limit_dir)
+    }
+
+    /// Enhanced limit computation with all available techniques
+    ///
+    /// Tries multiple strategies in order:
+    /// 1. Direct substitution
+    /// 2. Algebraic simplification
+    /// 3. L'Hôpital's rule (repeated if necessary)
+    /// 4. Series expansion
+    /// 5. For infinity limits: asymptotic analysis
+    pub fn limit_advanced(&self, var: &Symbol, point: &Expr, dir: Direction) -> LimitResult {
+        // Strategy 1: Direct substitution
+        let substituted = self.substitute(var, point);
+        if substituted.is_finite_value() {
+            return LimitResult::Finite(substituted);
+        }
+
+        // Strategy 2: Simplify first, then try direct substitution
+        let simplified = self.simplify();
+        let sub_simplified = simplified.substitute(var, point);
+        if sub_simplified.is_finite_value() {
+            return LimitResult::Finite(sub_simplified);
+        }
+
+        // Strategy 3: Try repeated L'Hôpital for indeterminate forms
+        if matches!(self, Expr::Binary(BinaryOp::Div, _, _)) {
+            let lhopital_result = self.lhopital_repeated(var, point, dir, 5);
+            if !matches!(lhopital_result, LimitResult::Unknown) {
+                return lhopital_result;
+            }
+        }
+
+        // Strategy 4: Try series expansion (for finite points)
+        if point.is_finite_value() {
+            let series_result = self.limit_via_series(var, point, 5);
+            if !matches!(series_result, LimitResult::Unknown) {
+                return series_result;
+            }
+        }
+
+        // Strategy 5: For infinity limits, use asymptotic expansion
+        // (This would check if point represents infinity, but we don't have
+        // an infinity type yet, so we skip this for now)
+
+        // All strategies failed
+        LimitResult::Unknown
+    }
 }
 
 #[cfg(test)]
