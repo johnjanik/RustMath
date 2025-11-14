@@ -2,6 +2,8 @@
 //!
 //! This crate provides matrix and vector operations for linear algebra.
 
+pub mod action;
+pub mod args;
 pub mod companion;
 pub mod decomposition;
 pub mod eigenvalues;
@@ -15,6 +17,12 @@ pub mod sparse;
 pub mod vector;
 pub mod vector_space;
 
+pub use action::{
+    MatrixAction, Point, PolynomialMap,
+    VectorMatrixAction, MatrixVectorAction, MatrixMatrixAction,
+    MatrixSchemePointAction, MatrixPolymapAction, PolymapMatrixAction,
+};
+pub use args::{SparseEntry, MatrixArgs, matrix_args_init};
 pub use companion::{characteristic_polynomial, companion_matrix, rational_canonical_form, RationalCanonicalForm};
 pub use decomposition::{
     CholeskyDecomposition, HessenbergDecomposition, LUDecomposition, PLUDecomposition,
