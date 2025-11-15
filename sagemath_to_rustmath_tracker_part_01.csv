@@ -1,5 +1,5 @@
 Status,Implementation Type,full_name,module,entity_name,type,bases,source
-,,sage.algebras,sage.algebras,algebras,module,,
+Implemented,Full,sage.algebras,sage.algebras,algebras,module,,
 Implemented,Full,sage.algebras.affine_nil_temperley_lieb,sage.algebras.affine_nil_temperley_lieb,affine_nil_temperley_lieb,module,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/affine_nil_temperley_lieb.py#L20
 Implemented,Full,sage.algebras.affine_nil_temperley_lieb.AffineNilTemperleyLiebTypeA,sage.algebras.affine_nil_temperley_lieb,AffineNilTemperleyLiebTypeA,class,CombinatorialFreeModule,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/affine_nil_temperley_lieb.py#L20
 Implemented,Full,sage.algebras.askey_wilson,sage.algebras.askey_wilson,askey_wilson,module,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/askey_wilson.py#L788
