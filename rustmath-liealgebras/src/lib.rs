@@ -13,6 +13,7 @@ pub mod root_system;
 pub mod weyl_group;
 pub mod lie_algebra;
 pub mod lie_algebra_element;
+pub mod poincare_birkhoff_witt;
 pub mod abelian;
 pub mod classical;
 pub mod exceptional;
@@ -51,6 +52,9 @@ pub use lie_algebra_element::{
     LieObject, LieGenerator, LieBracket, GradedLieBracket, LyndonBracket,
     FreeLieAlgebraElement, StructureCoefficientsElement as StructureCoefficientsElt,
     UntwistedAffineLieAlgebraElement,
+};
+pub use poincare_birkhoff_witt::{
+    PBWMonomial, PBWElement, PoincareBirkhoffWittBasis, PoincareBirkhoffWittBasisSemisimple,
 };
 pub use abelian::{
     AbelianLieAlgebra, AbelianLieAlgebraElement, InfiniteDimensionalAbelianLieAlgebra, LieAlgebra,
