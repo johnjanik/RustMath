@@ -29,6 +29,9 @@ pub mod witt;
 pub mod pwitt;
 pub mod onsager;
 pub mod structure_coefficients;
+pub mod morphism;
+pub mod subalgebra;
+pub mod quotient;
 
 pub use cartan_type::{Affinity, CartanLetter, CartanType};
 pub use root_system::{Root, RootSystem};
@@ -90,6 +93,20 @@ pub use onsager::{
 };
 pub use structure_coefficients::{
     LieAlgebraWithStructureCoefficients, StructureCoefficientsElement,
+};
+pub use morphism::{
+    LieAlgebraHomomorphism, LieAlgebraHomset, IdentityMorphism, ZeroMorphism,
+    IsZero, EvaluateMorphism, PreservesBracket, ComposeMorphism, Kernel, Image,
+    MorphismProperties,
+};
+pub use subalgebra::{
+    LieSubalgebra, Center, Normalizer, Centralizer,
+    BracketClosure, CheckIdeal, Reduce, Contains,
+    DerivedSeries, LowerCentralSeries,
+};
+pub use quotient::{
+    LieQuotient, QuotientElement, ProjectionMorphism,
+    NaturalProjection, StructureCoefficients,
 };
 
 #[cfg(test)]

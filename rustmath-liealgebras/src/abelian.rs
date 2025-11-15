@@ -142,7 +142,7 @@ impl<R: Ring + Clone> Display for AbelianLieAlgebra<R> {
 /// Element of an abelian Lie algebra
 ///
 /// Represented as a linear combination of basis elements
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AbelianLieAlgebraElement<R: Ring> {
     /// Coefficients for each basis element
     coefficients: Vec<R>,
