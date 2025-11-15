@@ -21,7 +21,11 @@ pub mod traits;
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
 pub use quotient_algebra::*;
-pub use clifford_algebra::*;
+pub use clifford_algebra::{
+    CliffordAlgebra, CliffordAlgebraElement, CliffordBasisElement,
+    ExteriorAlgebra, ExteriorAlgebraDifferential, ExteriorAlgebraBoundary,
+    ExteriorAlgebraCoboundary, ExteriorAlgebraIdeal, StructureCoefficients,
+};
 pub use group_algebra::*;
 pub use traits::*;
 
