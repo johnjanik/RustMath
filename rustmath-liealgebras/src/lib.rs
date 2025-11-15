@@ -14,6 +14,7 @@ pub mod weyl_group;
 pub mod lie_algebra;
 pub mod lie_algebra_element;
 pub mod poincare_birkhoff_witt;
+pub mod representation;
 pub mod abelian;
 pub mod classical;
 pub mod exceptional;
@@ -55,6 +56,10 @@ pub use lie_algebra_element::{
 };
 pub use poincare_birkhoff_witt::{
     PBWMonomial, PBWElement, PoincareBirkhoffWittBasis, PoincareBirkhoffWittBasisSemisimple,
+};
+pub use representation::{
+    Representation, RepresentationElement, RepresentationByMorphism,
+    TrivialRepresentation, FaithfulRepresentationNilpotentPBW, FaithfulRepresentationPBWPosChar,
 };
 pub use abelian::{
     AbelianLieAlgebra, AbelianLieAlgebraElement, InfiniteDimensionalAbelianLieAlgebra, LieAlgebra,
