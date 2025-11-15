@@ -1,0 +1,14 @@
+[package]
+name = "rustmath-liealgebras"
+version = "0.1.0"
+edition = "2021"
+authors = ["RustMath Contributors"]
+description = "Lie algebras, root systems, and Weyl groups for RustMath"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+rustmath-core = { path = "../rustmath-core" }
+rustmath-integers = { path = "../rustmath-integers" }
+rustmath-rationals = { path = "../rustmath-rationals" }
+rustmath-matrix = { path = "../rustmath-matrix" }
+rustmath-combinatorics = { path = "../rustmath-combinatorics" }

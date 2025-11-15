@@ -43,6 +43,7 @@ members = [
     "rustmath-modules",
     "rustmath-misc", "rustmath-algebras",
     "rustmath-quantumgroups",
+    "rustmath-liealgebras",
 ]
 
 [workspace.package]
