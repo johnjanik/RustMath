@@ -9,3 +9,4 @@ repository.workspace = true
 [dependencies]
 rustmath-core = { path = "../rustmath-core" }
 rustmath-symbolic = { path = "../rustmath-symbolic" }
+rustmath-integers = { path = "../rustmath-integers" }
