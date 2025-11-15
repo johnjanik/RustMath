@@ -9,7 +9,9 @@ pub mod expr;
 pub mod functional;
 pub mod integration;
 pub mod interpolation;
+pub mod interpolators;
 pub mod limits;
+pub mod ode;
 pub mod taylor;
 
 // Re-export commonly used functions
@@ -22,7 +24,9 @@ pub use expr::{is_constant, is_polynomial, polynomial_degree, symbolic_expressio
 pub use functional::{expand, simplify};
 pub use integration::{integrate, nintegrate, numerical_integrate_simpson};
 pub use interpolation::{spline, CubicSpline};
+pub use interpolators::{complex_cubic_spline, polygon_spline, CCSpline, PSpline};
 pub use limits::{lim, limit, substitute, LimitDirection};
+pub use ode::{ODESolver, ODESystem};
 pub use taylor::{laurent, maclaurin, series_coefficients, taylor};
 
 #[cfg(test)]
