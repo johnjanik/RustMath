@@ -22,12 +22,15 @@ pub mod down_up_algebra;
 pub mod algebra_morphism;
 pub mod algebra_with_parent;
 pub mod cached_algebra;
+pub mod askey_wilson;
+pub mod associated_graded;
+pub mod cellular_basis;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
 pub use quotient_algebra::*;
 pub use clifford_algebra::{
-    CliffordAlgebra, CliffordAlgebraElement, CliffordBasisElement,
+    CliffordAlgebra, CliffordAlgebraElement, CliffordBasisElement, CliffordAlgebraIndices,
     ExteriorAlgebra, ExteriorAlgebraDifferential, ExteriorAlgebraBoundary,
     ExteriorAlgebraCoboundary, ExteriorAlgebraIdeal, StructureCoefficients,
 };
@@ -35,6 +38,9 @@ pub use group_algebra::*;
 pub use traits::*;
 pub use affine_nil_temperley_lieb::{AffineNilTemperleyLiebTypeA, Element as AffineNilTemperleyLiebElement};
 pub use algebra_morphism::{AlgebraMorphism, AlgebraEndomorphism, AlgebraAutomorphism};
+pub use askey_wilson::{AskeyWilsonAlgebra, AskeyWilsonIndex};
+pub use associated_graded::AssociatedGradedAlgebra;
+pub use cellular_basis::{CellularBasis, CellularIndex};
 
 #[cfg(test)]
 mod tests {
