@@ -28,6 +28,7 @@ pub mod vector_space_morphism;
 pub mod misc;
 pub mod tensor_operations;
 pub mod tutorial_free_modules;
+pub mod combinatorial_free_module;
 
 // Finitely generated modules over PIDs
 pub mod fg_pid {
@@ -128,6 +129,7 @@ pub use free_module::FreeModule;
 pub use free_module_element::FreeModuleElement;
 pub use free_module_morphism::FreeModuleMorphism;
 pub use quotient_module::QuotientModule;
+pub use combinatorial_free_module::{CombinatorialFreeModule, CombinatorialFreeModuleElement};
 
 #[cfg(test)]
 mod tests {
