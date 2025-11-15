@@ -68,6 +68,199 @@ impl Display for CliffordBasisElement {
     }
 }
 
+/// Indices for Clifford algebra basis elements
+///
+/// A facade parent for managing the indexing system of Clifford algebra basis elements.
+/// Indices are represented as subsets of {0, 1, ..., n-1} where n is the dimension.
+///
+/// Each subset corresponds to a basis element: the subset {i, j, k} represents e_i ∧ e_j ∧ e_k.
+///
+/// # Type Parameters
+///
+/// * `Qdim` - The dimension of the underlying quadratic space
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_algebras::clifford_algebra::CliffordAlgebraIndices;
+///
+/// // Create index set for dimension 3
+/// let indices = CliffordAlgebraIndices::new(3, None);
+///
+/// // Get all indices
+/// let all_indices = indices.all_indices();
+/// assert_eq!(all_indices.len(), 8); // 2^3 = 8 subsets
+///
+/// // Get indices of a specific degree
+/// let deg2_indices = indices.indices_of_degree(2);
+/// assert_eq!(deg2_indices.len(), 3); // C(3,2) = 3
+/// ```
+pub struct CliffordAlgebraIndices {
+    /// Dimension of the quadratic space
+    dimension: usize,
+    /// Optional degree constraint (None means all degrees allowed)
+    degree: Option<usize>,
+}
+
+impl CliffordAlgebraIndices {
+    /// Create a new index set
+    ///
+    /// # Arguments
+    ///
+    /// * `dimension` - The dimension of the quadratic space
+    /// * `degree` - Optional degree constraint (None for unconstrained)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_algebras::clifford_algebra::CliffordAlgebraIndices;
+    ///
+    /// // All indices for dimension 4
+    /// let all = CliffordAlgebraIndices::new(4, None);
+    ///
+    /// // Only degree-2 indices for dimension 4
+    /// let deg2 = CliffordAlgebraIndices::new(4, Some(2));
+    /// ```
+    pub fn new(dimension: usize, degree: Option<usize>) -> Self {
+        if let Some(d) = degree {
+            assert!(d <= dimension, "Degree cannot exceed dimension");
+        }
+        CliffordAlgebraIndices { dimension, degree }
+    }
+
+    /// Get the dimension
+    pub fn dimension(&self) -> usize {
+        self.dimension
+    }
+
+    /// Get the degree constraint (if any)
+    pub fn degree_constraint(&self) -> Option<usize> {
+        self.degree
+    }
+
+    /// Calculate the cardinality (number of indices)
+    ///
+    /// Returns 2^n for unconstrained indices, or C(n,k) for degree k
+    pub fn cardinality(&self) -> usize {
+        match self.degree {
+            None => 1 << self.dimension, // 2^dimension
+            Some(k) => Self::binomial(self.dimension, k),
+        }
+    }
+
+    /// Compute binomial coefficient C(n, k)
+    fn binomial(n: usize, k: usize) -> usize {
+        if k > n {
+            return 0;
+        }
+        if k == 0 || k == n {
+            return 1;
+        }
+        let k = k.min(n - k); // Use symmetry
+        let mut result = 1;
+        for i in 0..k {
+            result = result * (n - i) / (i + 1);
+        }
+        result
+    }
+
+    /// Generate all valid indices
+    ///
+    /// Returns all subsets of {0, 1, ..., n-1} satisfying the degree constraint
+    pub fn all_indices(&self) -> Vec<Vec<usize>> {
+        match self.degree {
+            None => {
+                // Generate all subsets
+                let mut result = Vec::new();
+                for mask in 0..(1 << self.dimension) {
+                    let mut subset = Vec::new();
+                    for i in 0..self.dimension {
+                        if (mask & (1 << i)) != 0 {
+                            subset.push(i);
+                        }
+                    }
+                    result.push(subset);
+                }
+                result
+            }
+            Some(k) => self.indices_of_degree(k),
+        }
+    }
+
+    /// Generate all indices of a specific degree
+    ///
+    /// Returns all k-element subsets of {0, 1, ..., n-1}
+    pub fn indices_of_degree(&self, k: usize) -> Vec<Vec<usize>> {
+        if k > self.dimension {
+            return Vec::new();
+        }
+
+        let mut result = Vec::new();
+        let mut current = Vec::new();
+        Self::combinations_helper(self.dimension, k, 0, &mut current, &mut result);
+        result
+    }
+
+    /// Helper function for generating combinations recursively
+    fn combinations_helper(
+        n: usize,
+        k: usize,
+        start: usize,
+        current: &mut Vec<usize>,
+        result: &mut Vec<Vec<usize>>,
+    ) {
+        if current.len() == k {
+            result.push(current.clone());
+            return;
+        }
+
+        for i in start..n {
+            current.push(i);
+            Self::combinations_helper(n, k, i + 1, current, result);
+            current.pop();
+        }
+    }
+
+    /// Check if an index (subset) is valid for this index set
+    pub fn contains(&self, subset: &[usize]) -> bool {
+        // Check all elements are < dimension
+        if subset.iter().any(|&i| i >= self.dimension) {
+            return false;
+        }
+
+        // Check degree constraint if present
+        if let Some(k) = self.degree {
+            if subset.len() != k {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    /// Get a sample element
+    pub fn sample_element(&self) -> Vec<usize> {
+        match self.degree {
+            None => Vec::new(), // Empty subset
+            Some(k) => (0..k).collect(), // First k elements
+        }
+    }
+}
+
+impl Display for CliffordAlgebraIndices {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.degree {
+            None => write!(f, "Subsets of {{0, 1, ..., {}}}", self.dimension - 1),
+            Some(k) => write!(
+                f,
+                "{}-element subsets of {{0, 1, ..., {}}}",
+                k,
+                self.dimension - 1
+            ),
+        }
+    }
+}
+
 /// An element of a Clifford algebra
 #[derive(Clone, Debug)]
 pub struct CliffordAlgebraElement<R: Ring> {
@@ -713,6 +906,96 @@ impl<R: Ring> ExteriorAlgebraIdeal<R> {
 mod tests {
     use super::*;
     use rustmath_integers::Integer;
+
+    #[test]
+    fn test_clifford_indices_creation() {
+        let indices = CliffordAlgebraIndices::new(3, None);
+        assert_eq!(indices.dimension(), 3);
+        assert_eq!(indices.degree_constraint(), None);
+        assert_eq!(indices.cardinality(), 8); // 2^3
+    }
+
+    #[test]
+    fn test_clifford_indices_with_degree() {
+        let indices = CliffordAlgebraIndices::new(4, Some(2));
+        assert_eq!(indices.dimension(), 4);
+        assert_eq!(indices.degree_constraint(), Some(2));
+        assert_eq!(indices.cardinality(), 6); // C(4,2) = 6
+    }
+
+    #[test]
+    fn test_clifford_indices_all_indices() {
+        let indices = CliffordAlgebraIndices::new(2, None);
+        let all = indices.all_indices();
+
+        // Should have 4 subsets: {}, {0}, {1}, {0,1}
+        assert_eq!(all.len(), 4);
+
+        // Check specific subsets exist
+        assert!(all.contains(&vec![]));
+        assert!(all.contains(&vec![0]));
+        assert!(all.contains(&vec![1]));
+        assert!(all.contains(&vec![0, 1]));
+    }
+
+    #[test]
+    fn test_clifford_indices_of_degree() {
+        let indices = CliffordAlgebraIndices::new(3, None);
+        let deg2 = indices.indices_of_degree(2);
+
+        // C(3,2) = 3: {0,1}, {0,2}, {1,2}
+        assert_eq!(deg2.len(), 3);
+        assert!(deg2.contains(&vec![0, 1]));
+        assert!(deg2.contains(&vec![0, 2]));
+        assert!(deg2.contains(&vec![1, 2]));
+    }
+
+    #[test]
+    fn test_clifford_indices_contains() {
+        let indices = CliffordAlgebraIndices::new(3, Some(2));
+
+        // Valid 2-element subset
+        assert!(indices.contains(&[0, 1]));
+        assert!(indices.contains(&[1, 2]));
+
+        // Invalid: wrong size
+        assert!(!indices.contains(&[0]));
+        assert!(!indices.contains(&[0, 1, 2]));
+
+        // Invalid: element >= dimension
+        assert!(!indices.contains(&[0, 3]));
+    }
+
+    #[test]
+    fn test_clifford_indices_binomial() {
+        assert_eq!(CliffordAlgebraIndices::binomial(5, 0), 1);
+        assert_eq!(CliffordAlgebraIndices::binomial(5, 1), 5);
+        assert_eq!(CliffordAlgebraIndices::binomial(5, 2), 10);
+        assert_eq!(CliffordAlgebraIndices::binomial(5, 3), 10);
+        assert_eq!(CliffordAlgebraIndices::binomial(5, 4), 5);
+        assert_eq!(CliffordAlgebraIndices::binomial(5, 5), 1);
+        assert_eq!(CliffordAlgebraIndices::binomial(5, 6), 0);
+    }
+
+    #[test]
+    fn test_clifford_indices_sample() {
+        let indices1 = CliffordAlgebraIndices::new(3, None);
+        let sample1 = indices1.sample_element();
+        assert_eq!(sample1, vec![]);
+
+        let indices2 = CliffordAlgebraIndices::new(3, Some(2));
+        let sample2 = indices2.sample_element();
+        assert_eq!(sample2, vec![0, 1]);
+    }
+
+    #[test]
+    fn test_clifford_indices_display() {
+        let indices1 = CliffordAlgebraIndices::new(3, None);
+        assert_eq!(format!("{}", indices1), "Subsets of {0, 1, ..., 2}");
+
+        let indices2 = CliffordAlgebraIndices::new(4, Some(2));
+        assert_eq!(format!("{}", indices2), "2-element subsets of {0, 1, ..., 3}");
+    }
 
     #[test]
     fn test_clifford_algebra_creation() {

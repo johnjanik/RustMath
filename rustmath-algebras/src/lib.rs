@@ -30,7 +30,7 @@ pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
 pub use quotient_algebra::*;
 pub use clifford_algebra::{
-    CliffordAlgebra, CliffordAlgebraElement, CliffordBasisElement,
+    CliffordAlgebra, CliffordAlgebraElement, CliffordBasisElement, CliffordAlgebraIndices,
     ExteriorAlgebra, ExteriorAlgebraDifferential, ExteriorAlgebraBoundary,
     ExteriorAlgebraCoboundary, ExteriorAlgebraIdeal, StructureCoefficients,
 };
