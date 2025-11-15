@@ -26,6 +26,7 @@ pub mod cached_algebra;
 pub mod askey_wilson;
 pub mod associated_graded;
 pub mod cellular_basis;
+pub mod cluster_algebra;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -43,6 +44,10 @@ pub use algebra_morphism::{AlgebraMorphism, AlgebraEndomorphism, AlgebraAutomorp
 pub use askey_wilson::{AskeyWilsonAlgebra, AskeyWilsonIndex};
 pub use associated_graded::AssociatedGradedAlgebra;
 pub use cellular_basis::{CellularBasis, CellularIndex};
+pub use cluster_algebra::{
+    ClusterAlgebra, ClusterAlgebraElement, ClusterAlgebraSeed,
+    PrincipalClusterAlgebraElement, GVector, DVector, ExchangeMatrix,
+};
 
 #[cfg(test)]
 mod tests {
