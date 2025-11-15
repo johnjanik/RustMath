@@ -294,6 +294,38 @@ pub fn hamilton_quatalg<R: Ring>() -> (QuotientAlgebra<R>, (QuotientAlgebraEleme
     (H, (qi, qj, qk))
 }
 
+/// Check if a value is a FreeAlgebraQuotientElement
+///
+/// Corresponds to sage.algebras.free_algebra_quotient_element.is_FreeAlgebraQuotientElement
+///
+/// In Rust, this is primarily for API compatibility with SageMath. Due to Rust's
+/// static typing, type checking is typically done at compile time. This function
+/// always returns `true` when called with a `QuotientAlgebraElement`.
+///
+/// # Arguments
+///
+/// * `_element` - A reference to a quotient algebra element
+///
+/// # Returns
+///
+/// Always returns `true` since the type system ensures the argument is correct.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_algebras::quotient_algebra::{hamilton_quatalg, is_FreeAlgebraQuotientElement};
+/// use rustmath_integers::Integer;
+///
+/// let (H, (i, j, k)) = hamilton_quatalg::<Integer>();
+/// assert!(is_FreeAlgebraQuotientElement(&i));
+/// assert!(is_FreeAlgebraQuotientElement(&j));
+/// ```
+pub fn is_FreeAlgebraQuotientElement<R: Ring>(_element: &QuotientAlgebraElement<R>) -> bool {
+    // In Rust, if this function is called, the argument must be of the correct type
+    // due to static typing. This function exists for API compatibility with SageMath.
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -330,5 +362,18 @@ mod tests {
 
         assert!(!sum.is_zero());
         assert!(!prod.is_zero());
+    }
+
+    #[test]
+    fn test_is_free_algebra_quotient_element() {
+        let (H, (i, j, k)) = hamilton_quatalg::<Integer>();
+
+        // Test that is_FreeAlgebraQuotientElement returns true for valid elements
+        assert!(is_FreeAlgebraQuotientElement(&i));
+        assert!(is_FreeAlgebraQuotientElement(&j));
+        assert!(is_FreeAlgebraQuotientElement(&k));
+
+        let zero = H.zero();
+        assert!(is_FreeAlgebraQuotientElement(&zero));
     }
 }

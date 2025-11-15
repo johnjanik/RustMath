@@ -17,6 +17,7 @@ pub mod heisenberg;
 pub mod free_lie_algebra;
 pub mod nilpotent;
 pub mod virasoro;
+pub mod examples;
 
 pub use cartan_type::{Affinity, CartanLetter, CartanType};
 pub use root_system::{Root, RootSystem};
