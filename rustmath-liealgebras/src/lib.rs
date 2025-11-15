@@ -27,6 +27,7 @@ pub mod bgg_dual_module;
 pub mod bgg_resolution;
 pub mod witt;
 pub mod pwitt;
+pub mod onsager;
 
 pub use cartan_type::{Affinity, CartanLetter, CartanType};
 pub use root_system::{Root, RootSystem};
@@ -81,6 +82,10 @@ pub use witt::{
 };
 pub use pwitt::{
     PolynomialWittAlgebra, PolynomialWittElement,
+};
+pub use onsager::{
+    OnsagerAlgebra, OnsagerElement, OnsagerGenerator, OnsagerGeneratorType,
+    OnsagerAlgebraACE, ACEElement, ACEGenerator, ACEGeneratorType,
 };
 
 #[cfg(test)]
