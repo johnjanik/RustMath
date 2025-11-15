@@ -33,6 +33,7 @@ pub mod morphism;
 pub mod subalgebra;
 pub mod quotient;
 pub mod chevalley_basis;
+pub mod compact_real_form;
 
 pub use cartan_type::{Affinity, CartanLetter, CartanType};
 pub use root_system::{Root, RootSystem};
@@ -112,6 +113,9 @@ pub use quotient::{
 pub use chevalley_basis::{
     LieAlgebraChevalleyBasis, LieAlgebraChevalleyBasisSimplyLaced,
     ChevalleyBasisElement,
+};
+pub use compact_real_form::{
+    MatrixCompactRealForm, CompactRealFormElement,
 };
 
 #[cfg(test)]
