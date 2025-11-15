@@ -1,0 +1,16 @@
+[package]
+name = "rustmath-lieconformal"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustmath-core = { path = "../rustmath-core" }
+rustmath-rationals = { path = "../rustmath-rationals" }
+rustmath-polynomials = { path = "../rustmath-polynomials" }
+rustmath-liealgebras = { path = "../rustmath-liealgebras" }
+num-traits.workspace = true
+
+[dev-dependencies]

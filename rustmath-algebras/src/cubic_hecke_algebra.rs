@@ -24,6 +24,11 @@ use std::collections::HashMap;
 use std::fmt::{self, Display};
 use std::marker::PhantomData;
 
+// Re-export representation types for cubic Hecke algebra
+// These correspond to sage.algebras.hecke_algebras.cubic_hecke_algebra.repr_type
+// and sage.algebras.hecke_algebras.cubic_hecke_algebra.irred_repr attributes
+pub use crate::cubic_hecke_matrix_rep::{RepresentationType, AbsIrreducibleRep};
+
 /// Cubic Hecke Algebra
 ///
 /// A quotient of the braid group algebra B_n by the cubic relation.
