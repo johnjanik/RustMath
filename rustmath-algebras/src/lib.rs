@@ -87,6 +87,10 @@ pub use ariki_koike_algebra::{
 pub use cubic_hecke_algebra::{
     CubicHeckeAlgebra, CubicHeckeElement, BraidWord,
 };
+pub use poly_tup_engine::{
+    PolyTuple, poly_to_tup, constant_coeff, variables, get_variables_degrees,
+    resize, apply_coeff_map, poly_tup_sortkey, compute_known_powers, tup_to_univ_poly,
+};
 
 #[cfg(test)]
 mod tests {
