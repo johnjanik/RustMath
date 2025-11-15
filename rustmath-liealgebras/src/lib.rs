@@ -22,6 +22,9 @@ pub mod two_dimensional;
 pub mod three_dimensional;
 pub mod examples;
 pub mod bch;
+pub mod affine_lie_algebra;
+pub mod bgg_dual_module;
+pub mod bgg_resolution;
 
 pub use cartan_type::{Affinity, CartanLetter, CartanType};
 pub use root_system::{Root, RootSystem};
@@ -59,6 +62,17 @@ pub use three_dimensional::{
 };
 pub use bch::{
     BCHIterator, bch_iterator, bch_sum,
+};
+pub use affine_lie_algebra::{
+    AffineLieAlgebra, UntwistedAffineLieAlgebra, TwistedAffineLieAlgebra,
+    UntwistedAffineElement, TwistedAffineIndices, AffineLieAlgebraElement,
+};
+pub use bgg_dual_module::{
+    BGGDualModule, SimpleModule, FiniteDimensionalSimpleModule,
+    SimpleModuleElement, SimpleModuleIndices,
+};
+pub use bgg_resolution::{
+    BGGResolution, DifferentialMap, build_differential, dot_action,
 };
 
 #[cfg(test)]
