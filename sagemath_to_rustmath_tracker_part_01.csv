@@ -55,11 +55,11 @@ Implemented,Full,sage.algebras.finite_dimensional_algebras.finite_dimensional_al
 Implemented,Full,sage.algebras.finite_gca,sage.algebras.finite_gca,finite_gca,module,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/finite_gca.py#L30
 Implemented,Full,sage.algebras.finite_gca.FiniteGCAlgebra,sage.algebras.finite_gca,FiniteGCAlgebra,class,CombinatorialFreeModule,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/finite_gca.py#L30
 Implemented,Full,sage.algebras.free_algebra,sage.algebras.free_algebra,free_algebra,module,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/free_algebra.py#L1480
-,,sage.algebras.free_algebra.AssociativeFunctor,sage.algebras.free_algebra,AssociativeFunctor,class,ConstructionFunctor,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/free_algebra.py#L1480
-,,sage.algebras.free_algebra.Element,sage.algebras.free_algebra,Element,class,IndexedFreeModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/free_algebra.py#L1463
-,,sage.algebras.free_algebra.FreeAlgebraFactory,sage.algebras.free_algebra,FreeAlgebraFactory,class,UniqueFactory,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/free_algebra.py#L185
+Implemented,Full,sage.algebras.free_algebra.AssociativeFunctor,sage.algebras.free_algebra,AssociativeFunctor,class,ConstructionFunctor,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/free_algebra.py#L1480
+Implemented,Full,sage.algebras.free_algebra.Element,sage.algebras.free_algebra,Element,class,IndexedFreeModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/free_algebra.py#L1463
+Implemented,Full,sage.algebras.free_algebra.FreeAlgebraFactory,sage.algebras.free_algebra,FreeAlgebraFactory,class,UniqueFactory,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/free_algebra.py#L185
 Implemented,Full,sage.algebras.free_algebra.FreeAlgebra_generic,sage.algebras.free_algebra,FreeAlgebra_generic,class,"R, CombinatorialFreeModule",https://github.com/sagemath/sage/blob/develop/src/sage/algebras/free_algebra.py#L407
-,,sage.algebras.free_algebra.PBWBasisOfFreeAlgebra,sage.algebras.free_algebra,PBWBasisOfFreeAlgebra,class,CombinatorialFreeModule,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/free_algebra.py#L1145
+Implemented,Full,sage.algebras.free_algebra.PBWBasisOfFreeAlgebra,sage.algebras.free_algebra,PBWBasisOfFreeAlgebra,class,CombinatorialFreeModule,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/free_algebra.py#L1145
 Implemented,Full,sage.algebras.free_algebra.is_FreeAlgebra,sage.algebras.free_algebra,is_FreeAlgebra,function,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/free_algebra.py#L379
 Implemented,Full,sage.algebras.free_algebra.rank,sage.algebras.free_algebra,rank,attribute,,
 Implemented,Full,sage.algebras.free_algebra_element,sage.algebras.free_algebra_element,free_algebra_element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/free_algebra_element.py#L43
