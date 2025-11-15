@@ -19,6 +19,9 @@ pub mod group_algebra;
 pub mod traits;
 pub mod affine_nil_temperley_lieb;
 pub mod down_up_algebra;
+pub mod algebra_morphism;
+pub mod algebra_with_parent;
+pub mod cached_algebra;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -31,6 +34,7 @@ pub use clifford_algebra::{
 pub use group_algebra::*;
 pub use traits::*;
 pub use affine_nil_temperley_lieb::{AffineNilTemperleyLiebTypeA, Element as AffineNilTemperleyLiebElement};
+pub use algebra_morphism::{AlgebraMorphism, AlgebraEndomorphism, AlgebraAutomorphism};
 
 #[cfg(test)]
 mod tests {
