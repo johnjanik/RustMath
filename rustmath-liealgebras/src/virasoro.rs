@@ -160,7 +160,7 @@ impl Display for VirasoroGenerator {
 /// Element of the Virasoro algebra
 ///
 /// Represented as a linear combination of generators L_n and c
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct VirasoroElement<R: Ring> {
     /// Terms: map from generator to coefficient
     terms: HashMap<VirasoroGenerator, R>,
@@ -512,6 +512,11 @@ impl<R: Ring + Clone> RankTwoHeisenbergVirasoroElement<R> {
     /// Get the terms
     pub fn terms(&self) -> &HashMap<RankTwoGenerator, R> {
         &self.terms
+    }
+
+    /// Get the coefficient of a generator
+    pub fn coefficient(&self, gen: &RankTwoGenerator) -> Option<&R> {
+        self.terms.get(gen)
     }
 
     /// Check if this is zero
