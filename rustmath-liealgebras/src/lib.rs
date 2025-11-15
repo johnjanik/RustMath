@@ -12,7 +12,7 @@ pub mod cartan_type;
 pub mod root_system;
 pub mod weyl_group;
 
-pub use cartan_type::{CartanLetter, CartanType};
+pub use cartan_type::{Affinity, CartanLetter, CartanType};
 pub use root_system::{Root, RootSystem};
 pub use weyl_group::{WeylGroup, WeylGroupElement};
 
