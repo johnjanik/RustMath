@@ -12,6 +12,7 @@ pub mod interpolation;
 pub mod interpolators;
 pub mod limits;
 pub mod ode;
+pub mod riemann;
 pub mod taylor;
 
 // Re-export commonly used functions
@@ -27,6 +28,10 @@ pub use interpolation::{spline, CubicSpline};
 pub use interpolators::{complex_cubic_spline, polygon_spline, CCSpline, PSpline};
 pub use limits::{lim, limit, substitute, LimitDirection};
 pub use ode::{ODESolver, ODESystem};
+pub use riemann::{
+    analytic_boundary, analytic_interior, cauchy_kernel, complex_to_rgb, complex_to_spiderweb,
+    get_derivatives, RiemannMap, RGB,
+};
 pub use taylor::{laurent, maclaurin, series_coefficients, taylor};
 
 #[cfg(test)]
