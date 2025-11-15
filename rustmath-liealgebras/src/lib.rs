@@ -21,6 +21,7 @@ pub mod virasoro;
 pub mod two_dimensional;
 pub mod three_dimensional;
 pub mod examples;
+pub mod bch;
 
 pub use cartan_type::{Affinity, CartanLetter, CartanType};
 pub use root_system::{Root, RootSystem};
@@ -55,6 +56,9 @@ pub use two_dimensional::{
 };
 pub use three_dimensional::{
     ThreeDimensionalLieAlgebra, ThreeDimensionalLieAlgebraElement,
+};
+pub use bch::{
+    BCHIterator, bch_iterator, bch_sum,
 };
 
 #[cfg(test)]

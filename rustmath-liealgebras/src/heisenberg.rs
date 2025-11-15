@@ -213,7 +213,7 @@ impl<R: Ring + Clone> Display for HeisenbergAlgebra<R> {
 ///
 /// Represented as a linear combination of basis elements:
 /// c_0*p_0 + ... + c_{n-1}*p_{n-1} + d_0*q_0 + ... + d_{n-1}*q_{n-1} + e*z
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct HeisenbergAlgebraElement<R: Ring> {
     /// Coefficients for each basis element
     coefficients: Vec<R>,

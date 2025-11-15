@@ -393,6 +393,20 @@ impl NumericConversion for Rational {
     }
 }
 
+// Implement From<i64> for Rational
+impl From<i64> for Rational {
+    fn from(n: i64) -> Self {
+        Rational::from_integer(n)
+    }
+}
+
+// Implement From<i32> for convenience
+impl From<i32> for Rational {
+    fn from(n: i32) -> Self {
+        Rational::from_integer(n as i64)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
