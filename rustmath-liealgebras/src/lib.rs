@@ -28,6 +28,7 @@ pub mod bgg_resolution;
 pub mod witt;
 pub mod pwitt;
 pub mod onsager;
+pub mod structure_coefficients;
 
 pub use cartan_type::{Affinity, CartanLetter, CartanType};
 pub use root_system::{Root, RootSystem};
@@ -86,6 +87,9 @@ pub use pwitt::{
 pub use onsager::{
     OnsagerAlgebra, OnsagerElement, OnsagerGenerator, OnsagerGeneratorType,
     OnsagerAlgebraACE, ACEElement, ACEGenerator, ACEGeneratorType,
+};
+pub use structure_coefficients::{
+    LieAlgebraWithStructureCoefficients, StructureCoefficientsElement,
 };
 
 #[cfg(test)]
