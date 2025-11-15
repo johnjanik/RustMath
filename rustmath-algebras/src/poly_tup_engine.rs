@@ -325,6 +325,60 @@ pub fn compute_known_powers<R: Ring>(
         .collect()
 }
 
+/// Convert polynomial tuple to a coefficient vector for univariate polynomial
+///
+/// Converts a polynomial in tuple representation to a coefficient vector suitable
+/// for constructing a univariate polynomial. The tuple must represent a univariate
+/// polynomial (only one variable index should have non-zero exponents).
+///
+/// Corresponds to sage.algebras.fusion_rings.poly_tup_engine.tup_to_univ_poly
+///
+/// # Arguments
+/// * `poly_tup` - Polynomial in tuple representation (must be univariate)
+/// * `var_index` - Index of the variable to use (defaults to 0 if not specified)
+///
+/// # Returns
+/// Vector of coefficients in increasing degree order [c_0, c_1, c_2, ...]
+/// representing c_0 + c_1*x + c_2*x^2 + ...
+///
+/// # Examples
+/// ```
+/// use rustmath_algebras::poly_tup_engine::tup_to_univ_poly;
+/// use rustmath_integers::Integer;
+///
+/// let poly = vec![
+///     (vec![0], Integer::from(5)),  // constant term: 5
+///     (vec![1], Integer::from(3)),  // linear term: 3x
+///     (vec![2], Integer::from(1)),  // quadratic term: x^2
+/// ];
+///
+/// let coeffs = tup_to_univ_poly(&poly, 0);
+/// assert_eq!(coeffs, vec![Integer::from(5), Integer::from(3), Integer::from(1)]);
+/// // Represents: 5 + 3x + x^2
+/// ```
+pub fn tup_to_univ_poly<R: Ring>(poly_tup: &PolyTuple<R>, var_index: usize) -> Vec<R> {
+    if poly_tup.is_empty() {
+        return vec![R::zero()];
+    }
+
+    // Find the maximum degree
+    let max_degree = poly_tup
+        .iter()
+        .map(|(exp, _)| exp.get(var_index).copied().unwrap_or(0))
+        .max()
+        .unwrap_or(0);
+
+    // Build coefficient vector
+    let mut coeffs = vec![R::zero(); max_degree + 1];
+
+    for (exp, coeff) in poly_tup {
+        let degree = exp.get(var_index).copied().unwrap_or(0);
+        coeffs[degree] = coeffs[degree].clone() + coeff.clone();
+    }
+
+    coeffs
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -456,5 +510,77 @@ mod tests {
         assert_eq!(powers.get(&0), Some(&vec![1, 2, 3]));
         assert_eq!(powers.get(&1), Some(&vec![2, 4]));
         assert_eq!(powers.get(&2), Some(&vec![]));
+    }
+
+    #[test]
+    fn test_tup_to_univ_poly() {
+        // Test basic conversion: 5 + 3x + x^2
+        let poly = vec![
+            (vec![0], Integer::from(5)),
+            (vec![1], Integer::from(3)),
+            (vec![2], Integer::from(1)),
+        ];
+
+        let coeffs = tup_to_univ_poly(&poly, 0);
+        assert_eq!(coeffs.len(), 3);
+        assert_eq!(coeffs[0], Integer::from(5));
+        assert_eq!(coeffs[1], Integer::from(3));
+        assert_eq!(coeffs[2], Integer::from(1));
+    }
+
+    #[test]
+    fn test_tup_to_univ_poly_multivariate() {
+        // Test with multivariate exponents, extracting just one variable
+        // Polynomial: 2x^3 + x (treating first variable as x, ignoring others)
+        let poly = vec![
+            (vec![3, 0, 0], Integer::from(2)),
+            (vec![1, 0, 0], Integer::from(1)),
+        ];
+
+        let coeffs = tup_to_univ_poly(&poly, 0);
+        assert_eq!(coeffs.len(), 4);
+        assert_eq!(coeffs[0], Integer::from(0)); // no constant
+        assert_eq!(coeffs[1], Integer::from(1)); // x
+        assert_eq!(coeffs[2], Integer::from(0)); // no x^2
+        assert_eq!(coeffs[3], Integer::from(2)); // 2x^3
+    }
+
+    #[test]
+    fn test_tup_to_univ_poly_with_gaps() {
+        // Test polynomial with missing terms: x^4 + 1 (no x, x^2, x^3 terms)
+        let poly = vec![
+            (vec![0], Integer::from(1)),
+            (vec![4], Integer::from(1)),
+        ];
+
+        let coeffs = tup_to_univ_poly(&poly, 0);
+        assert_eq!(coeffs.len(), 5);
+        assert_eq!(coeffs[0], Integer::from(1));
+        assert_eq!(coeffs[1], Integer::from(0));
+        assert_eq!(coeffs[2], Integer::from(0));
+        assert_eq!(coeffs[3], Integer::from(0));
+        assert_eq!(coeffs[4], Integer::from(1));
+    }
+
+    #[test]
+    fn test_tup_to_univ_poly_empty() {
+        let poly: PolyTuple<Integer> = vec![];
+        let coeffs = tup_to_univ_poly(&poly, 0);
+        assert_eq!(coeffs.len(), 1);
+        assert_eq!(coeffs[0], Integer::from(0));
+    }
+
+    #[test]
+    fn test_tup_to_univ_poly_combining_terms() {
+        // Test that terms with same exponent are combined: x + 2x = 3x
+        let poly = vec![
+            (vec![1], Integer::from(1)),
+            (vec![1], Integer::from(2)),
+        ];
+
+        let coeffs = tup_to_univ_poly(&poly, 0);
+        assert_eq!(coeffs.len(), 2);
+        assert_eq!(coeffs[0], Integer::from(0));
+        assert_eq!(coeffs[1], Integer::from(3)); // 1 + 2 = 3
     }
 }
