@@ -29,6 +29,7 @@ pub mod associated_graded;
 pub mod cellular_basis;
 pub mod cluster_algebra;
 pub mod commutative_dga;
+pub mod finite_gca;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -59,6 +60,7 @@ pub use commutative_dga::{
     CohomologyClass, GCAlgebraHomset, GCAlgebraMorphism,
     Degree, Generator, GCAlgebraElement,
 };
+pub use finite_gca::{FiniteGCAlgebra, FiniteGCABasisElement, FiniteGCAlgebraElement};
 
 #[cfg(test)]
 mod tests {
