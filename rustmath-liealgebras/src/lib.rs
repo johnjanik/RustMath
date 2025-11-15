@@ -30,6 +30,7 @@ pub mod affine_lie_algebra;
 pub mod bgg_dual_module;
 pub mod bgg_resolution;
 pub mod verma_module;
+pub mod center_uea;
 pub mod witt;
 pub mod pwitt;
 pub mod onsager;
@@ -111,6 +112,9 @@ pub use bgg_resolution::{
 pub use verma_module::{
     VermaModule, VermaModuleElement, VermaModuleBasisElement, Weight,
     VermaModuleHomomorphism, VermaModuleHomset, ContravariantForm,
+};
+pub use center_uea::{
+    CenterUEA, CenterElement, CenterIndex, SimpleLieCenter,
 };
 pub use witt::{
     WittAlgebra, WittElement,
