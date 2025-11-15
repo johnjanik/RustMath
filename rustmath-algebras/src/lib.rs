@@ -42,7 +42,10 @@ pub use finite_dimensional_algebra_ideal::FiniteDimensionalAlgebraIdeal;
 pub use finite_dimensional_algebra_morphism::{
     FiniteDimensionalAlgebraMorphism, FiniteDimensionalAlgebraHomset,
 };
-pub use quotient_algebra::*;
+pub use quotient_algebra::{
+    QuotientAlgebra, QuotientAlgebraElement, FreeAlgebraIdeal,
+    hamilton_quatalg, is_FreeAlgebraQuotientElement,
+};
 pub use clifford_algebra::{
     CliffordAlgebra, CliffordAlgebraElement, CliffordBasisElement, CliffordAlgebraIndices,
     ExteriorAlgebra, ExteriorAlgebraDifferential, ExteriorAlgebraBoundary,

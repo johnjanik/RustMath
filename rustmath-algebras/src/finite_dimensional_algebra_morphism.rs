@@ -83,6 +83,7 @@ impl<R: Ring + Clone + PartialEq> Eq for FiniteDimensionalAlgebraHomset<R> {}
 /// # Type Parameters
 ///
 /// * `R` - The coefficient ring
+#[derive(Debug, Clone)]
 pub struct FiniteDimensionalAlgebraMorphism<R: Ring> {
     /// Matrix representation of the linear map
     ///
@@ -241,14 +242,6 @@ impl<R: Ring + Clone + Display> Display for FiniteDimensionalAlgebraMorphism<R> 
             "Finite-dimensional algebra morphism ({}×{} matrix)",
             rows, cols
         )
-    }
-}
-
-impl<R: Ring + Clone> Clone for FiniteDimensionalAlgebraMorphism<R> {
-    fn clone(&self) -> Self {
-        FiniteDimensionalAlgebraMorphism {
-            matrix: self.matrix.clone(),
-        }
     }
 }
 
