@@ -18,6 +18,7 @@ pub mod clifford_algebra;
 pub mod group_algebra;
 pub mod traits;
 pub mod affine_nil_temperley_lieb;
+pub mod down_up_algebra;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
