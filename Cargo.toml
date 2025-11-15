@@ -42,6 +42,7 @@ members = [
     "rustmath-monoids",
     "rustmath-modules",
     "rustmath-misc", "rustmath-algebras",
+    "rustmath-quantumgroups",
 ]
 
 [workspace.package]

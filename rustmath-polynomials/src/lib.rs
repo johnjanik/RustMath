@@ -6,6 +6,7 @@ pub mod algebraic_geometry;
 pub mod factorization;
 pub mod groebner;
 pub mod ideal;
+pub mod laurent;
 pub mod multivariate;
 pub mod polynomial;
 pub mod quotient;
@@ -25,6 +26,7 @@ pub use groebner::{
     ordering_description, reduce, reduced_groebner_basis, s_polynomial, MonomialOrdering,
 };
 pub use ideal::Ideal;
+pub use laurent::LaurentPolynomial;
 pub use multivariate::{Monomial, MultivariatePolynomial};
 pub use polynomial::Polynomial;
 pub use quotient::{QuotientElement, QuotientRing};
