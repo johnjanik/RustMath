@@ -379,6 +379,27 @@ impl<R: Ring> FreeAlgebra<R> {
     }
 }
 
+/// Check if a value is a FreeAlgebra instance
+///
+/// This is a type-level predicate that always returns true when called
+/// with a FreeAlgebra instance. In Rust's type system, this is primarily
+/// useful for generic code that needs runtime confirmation.
+///
+/// Corresponds to sage.algebras.free_algebra.is_FreeAlgebra
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_algebras::free_algebra::{FreeAlgebra, is_FreeAlgebra};
+/// use rustmath_integers::Integer;
+///
+/// let algebra: FreeAlgebra<Integer> = FreeAlgebra::new(3);
+/// assert!(is_FreeAlgebra(&algebra));
+/// ```
+pub fn is_FreeAlgebra<R: Ring>(_algebra: &FreeAlgebra<R>) -> bool {
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

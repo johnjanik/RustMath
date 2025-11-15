@@ -227,6 +227,73 @@ impl<R: Ring> QuotientAlgebra<R> {
     }
 }
 
+/// Construct the Hamilton quaternion algebra as a free algebra quotient
+///
+/// The quaternions are a 4-dimensional algebra over a ring R with basis {1, i, j, k}
+/// and multiplication rules:
+/// - i² = j² = k² = -1
+/// - ij = k, jk = i, ki = j
+/// - ji = -k, kj = -i, ik = -j
+///
+/// Corresponds to sage.algebras.free_algebra_quotient.hamilton_quatalg
+///
+/// # Arguments
+///
+/// * `R` - The base ring (must have characteristic != 2 for proper quaternions)
+///
+/// # Returns
+///
+/// A tuple `(H, (i, j, k))` where:
+/// - `H` is the quaternion algebra
+/// - `(i, j, k)` are the three generators
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_algebras::quotient_algebra::hamilton_quatalg;
+/// use rustmath_integers::Integer;
+///
+/// let (H, (i, j, k)) = hamilton_quatalg::<Integer>();
+/// // i * i should equal -1 (in the quotient)
+/// ```
+pub fn hamilton_quatalg<R: Ring>() -> (QuotientAlgebra<R>, (QuotientAlgebraElement<R>, QuotientAlgebraElement<R>, QuotientAlgebraElement<R>)) {
+    use crate::free_algebra::FreeAlgebra;
+
+    // Create free algebra on 3 generators: i, j, k
+    let free_alg: FreeAlgebra<R> = FreeAlgebra::new(3);
+    let i = free_alg.generator(0).unwrap();
+    let j = free_alg.generator(1).unwrap();
+    let k = free_alg.generator(2).unwrap();
+
+    // Define the quaternion relations:
+    // i² + 1 = 0  =>  i² = -1
+    // j² + 1 = 0  =>  j² = -1
+    // k² + 1 = 0  =>  k² = -1
+    // ij - k = 0  =>  ij = k
+    // jk - i = 0  =>  jk = i
+    // ki - j = 0  =>  ki = j
+    let one = free_alg.scalar(R::one());
+
+    let relations = vec![
+        i.clone() * i.clone() + one.clone(),           // i² = -1
+        j.clone() * j.clone() + one.clone(),           // j² = -1
+        k.clone() * k.clone() + one.clone(),           // k² = -1
+        i.clone() * j.clone() - k.clone(),             // ij = k
+        j.clone() * k.clone() - i.clone(),             // jk = i
+        k.clone() * i.clone() - j.clone(),             // ki = j
+    ];
+
+    // Create the quotient algebra
+    let H = QuotientAlgebra::new(3, relations);
+
+    // Return generators in the quotient
+    let qi = H.generator(0).unwrap();
+    let qj = H.generator(1).unwrap();
+    let qk = H.generator(2).unwrap();
+
+    (H, (qi, qj, qk))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
