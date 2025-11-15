@@ -13,6 +13,7 @@ pub mod root_system;
 pub mod weyl_group;
 pub mod abelian;
 pub mod classical;
+pub mod exceptional;
 pub mod heisenberg;
 pub mod free_lie_algebra;
 pub mod nilpotent;
@@ -30,6 +31,9 @@ pub use abelian::{
 pub use classical::{
     GeneralLinearLieAlgebra, SpecialLinearLieAlgebra, SpecialOrthogonalLieAlgebra,
     SymplecticLieAlgebra,
+};
+pub use exceptional::{
+    E6LieAlgebra, E7LieAlgebra, E8LieAlgebra, F4LieAlgebra, G2LieAlgebra,
 };
 pub use heisenberg::{
     HeisenbergAlgebra, HeisenbergAlgebraElement, HeisenbergAlgebraMatrix,
