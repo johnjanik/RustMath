@@ -32,6 +32,8 @@ pub mod structure_coefficients;
 pub mod morphism;
 pub mod subalgebra;
 pub mod quotient;
+pub mod chevalley_basis;
+pub mod compact_real_form;
 
 pub use cartan_type::{Affinity, CartanLetter, CartanType};
 pub use root_system::{Root, RootSystem};
@@ -45,6 +47,7 @@ pub use classical::{
 };
 pub use exceptional::{
     E6LieAlgebra, E7LieAlgebra, E8LieAlgebra, F4LieAlgebra, G2LieAlgebra,
+    ExceptionalMatrixLieAlgebra,
 };
 pub use heisenberg::{
     HeisenbergAlgebra, HeisenbergAlgebraElement, HeisenbergAlgebraMatrix,
@@ -107,6 +110,13 @@ pub use subalgebra::{
 pub use quotient::{
     LieQuotient, QuotientElement, ProjectionMorphism,
     NaturalProjection, StructureCoefficients,
+};
+pub use chevalley_basis::{
+    LieAlgebraChevalleyBasis, LieAlgebraChevalleyBasisSimplyLaced,
+    ChevalleyBasisElement,
+};
+pub use compact_real_form::{
+    MatrixCompactRealForm, CompactRealFormElement,
 };
 
 #[cfg(test)]

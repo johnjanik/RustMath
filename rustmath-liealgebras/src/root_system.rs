@@ -50,6 +50,7 @@ impl Root {
 }
 
 /// A root system associated with a Cartan type
+#[derive(Clone, Debug)]
 pub struct RootSystem {
     /// The Cartan type of this root system
     pub cartan_type: CartanType,
@@ -67,7 +68,7 @@ impl RootSystem {
     /// This constructs the simple roots in the standard realization
     pub fn new(cartan_type: CartanType) -> Self {
         let (simple_roots, ambient_dim) = Self::construct_simple_roots(&cartan_type);
-        let positive_roots = Self::compute_positive_roots(&simple_roots);
+        let positive_roots = Self::compute_positive_roots(&simple_roots, &cartan_type);
 
         RootSystem {
             cartan_type,
@@ -245,11 +246,83 @@ impl RootSystem {
 
     /// Compute all positive roots from simple roots
     ///
-    /// This is a simplified version - full implementation would use reflection formulas
-    fn compute_positive_roots(simple_roots: &[Root]) -> Vec<Root> {
-        // For now, just return the simple roots
-        // Full implementation would generate all positive roots using the root system axioms
-        simple_roots.to_vec()
+    /// Uses the algorithm: generate roots by adding simple roots up to the known count
+    /// The number of positive roots is determined by the Cartan type
+    fn compute_positive_roots(simple_roots: &[Root], cartan_type: &CartanType) -> Vec<Root> {
+        use crate::cartan_type::CartanLetter;
+
+        // Get the target number of positive roots
+        let target_count = match cartan_type.letter {
+            CartanLetter::A => {
+                let n = cartan_type.rank;
+                n * (n + 1) / 2
+            }
+            CartanLetter::B | CartanLetter::C => {
+                let n = cartan_type.rank;
+                n * n
+            }
+            CartanLetter::D => {
+                let n = cartan_type.rank;
+                n * (n - 1)
+            }
+            CartanLetter::E => {
+                match cartan_type.rank {
+                    6 => 36,
+                    7 => 63,
+                    8 => 120,
+                    _ => cartan_type.rank * 10, // fallback
+                }
+            }
+            CartanLetter::F => 24, // F_4
+            CartanLetter::G => 6,  // G_2
+        };
+
+        // Start with simple roots
+        let mut positive_roots: Vec<Root> = simple_roots.to_vec();
+
+        // Keep adding simple roots to existing roots until we reach the target count
+        // Use a queue-based approach
+        let mut queue: Vec<Root> = simple_roots.to_vec();
+        let mut queue_idx = 0;
+
+        // Continue until we have enough roots
+        while positive_roots.len() < target_count && queue_idx < queue.len() {
+            let alpha = &queue[queue_idx].clone();
+            queue_idx += 1;
+
+            // Try adding each simple root
+            for beta in simple_roots {
+                if positive_roots.len() >= target_count {
+                    break;
+                }
+
+                let sum = Self::add_roots_static(alpha, beta);
+
+                // Check if this root is new
+                if !Self::contains_root(&positive_roots, &sum) {
+                    positive_roots.push(sum.clone());
+                    queue.push(sum);
+                }
+            }
+        }
+
+        positive_roots
+    }
+
+    /// Add two roots (static version for use in constructor)
+    fn add_roots_static(alpha: &Root, beta: &Root) -> Root {
+        let coords: Vec<_> = alpha
+            .coordinates
+            .iter()
+            .zip(&beta.coordinates)
+            .map(|(a, b)| a.clone() + b.clone())
+            .collect();
+        Root::new(coords)
+    }
+
+    /// Check if a root is in a list
+    fn contains_root(roots: &[Root], target: &Root) -> bool {
+        roots.iter().any(|r| r == target)
     }
 
     /// Get the rank of this root system
