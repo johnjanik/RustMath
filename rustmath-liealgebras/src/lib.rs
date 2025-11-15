@@ -29,6 +29,7 @@ pub mod bch;
 pub mod affine_lie_algebra;
 pub mod bgg_dual_module;
 pub mod bgg_resolution;
+pub mod verma_module;
 pub mod witt;
 pub mod pwitt;
 pub mod onsager;
@@ -106,6 +107,10 @@ pub use bgg_dual_module::{
 };
 pub use bgg_resolution::{
     BGGResolution, DifferentialMap, build_differential, dot_action,
+};
+pub use verma_module::{
+    VermaModule, VermaModuleElement, VermaModuleBasisElement, Weight,
+    VermaModuleHomomorphism, VermaModuleHomset, ContravariantForm,
 };
 pub use witt::{
     WittAlgebra, WittElement,
