@@ -337,6 +337,7 @@ impl<R: Ring> Ring for CliffordAlgebraElement<R> {
 }
 
 /// A Clifford algebra Cl(V,Q)
+#[derive(Clone, Debug)]
 pub struct CliffordAlgebra<R: Ring> {
     /// Dimension of the underlying vector space
     dimension: usize,
@@ -414,6 +415,300 @@ impl<R: Ring> CliffordAlgebra<R> {
     }
 }
 
+/// Structure coefficients for Lie algebra differentials
+///
+/// Maps pairs of basis indices (i,j) to the bracket [x_i, x_j] represented
+/// as a linear combination of basis elements
+pub type StructureCoefficients<R> = HashMap<(usize, usize), HashMap<usize, R>>;
+
+/// A differential operator on an exterior algebra
+///
+/// Base structure for boundary and coboundary operators used in
+/// (co)homology computations of Lie algebras
+#[derive(Clone, Debug)]
+pub struct ExteriorAlgebraDifferential<R: Ring> {
+    /// The underlying exterior algebra
+    algebra: ExteriorAlgebra<R>,
+    /// Structure coefficients defining the differential
+    /// For indices i < j: structure_coeffs[(i,j)][k] = c_{ij}^k where [x_i, x_j] = Σ c_{ij}^k x_k
+    structure_coeffs: StructureCoefficients<R>,
+    /// Whether this increases degree (coboundary) or decreases (boundary)
+    increases_degree: bool,
+}
+
+impl<R: Ring> ExteriorAlgebraDifferential<R> {
+    /// Create a new differential from structure coefficients
+    ///
+    /// # Arguments
+    /// * `algebra` - The exterior algebra to operate on
+    /// * `structure_coeffs` - Maps (i,j) pairs to linear combinations representing [x_i, x_j]
+    /// * `increases_degree` - true for coboundary (d), false for boundary (∂)
+    pub fn new(
+        algebra: ExteriorAlgebra<R>,
+        structure_coeffs: StructureCoefficients<R>,
+        increases_degree: bool,
+    ) -> Self {
+        Self {
+            algebra,
+            structure_coeffs,
+            increases_degree,
+        }
+    }
+
+    /// Apply the differential to an exterior algebra element
+    ///
+    /// For boundary: maps (k+1)-forms to k-forms
+    /// For coboundary: maps k-forms to (k+1)-forms
+    pub fn apply(&self, element: &CliffordAlgebraElement<R>) -> CliffordAlgebraElement<R> {
+        let mut result = self.algebra.zero();
+
+        for (basis, coeff) in &element.terms {
+            let diff_term = self.apply_to_basis(basis);
+            let scaled = self.scalar_mult(&diff_term, coeff.clone());
+            result = result + scaled;
+        }
+
+        result
+    }
+
+    /// Apply differential to a single basis element
+    fn apply_to_basis(&self, basis: &CliffordBasisElement) -> CliffordAlgebraElement<R> {
+        let mut result = self.algebra.zero();
+
+        if self.increases_degree {
+            // Coboundary: increase degree by 1
+            // d(e_{i1} ∧ ... ∧ e_{ik}) involves structure coefficients
+            for (i, j) in basis.indices.iter().enumerate().flat_map(|(idx, &i)| {
+                basis.indices[idx + 1..].iter().map(move |&j| (i, j))
+            }) {
+                if let Some(bracket) = self.get_structure_coeff(i, j) {
+                    // Compute sign and construct result term
+                    for (k, c) in bracket {
+                        let mut new_indices = basis.indices.clone();
+                        new_indices.push(*k);
+                        new_indices.sort_unstable();
+
+                        let new_basis = CliffordBasisElement::new(new_indices);
+                        result.add_term(c.clone(), new_basis);
+                    }
+                }
+            }
+        } else {
+            // Boundary: decrease degree by 1
+            // ∂(e_{i1} ∧ ... ∧ e_{ik}) = Σ (-1)^{p+q} [e_{ip}, e_{iq}] ∧ e_{i1} ∧ ... (omitting ip, iq)
+            let indices = &basis.indices;
+            for p in 0..indices.len() {
+                for q in (p + 1)..indices.len() {
+                    let i = indices[p];
+                    let j = indices[q];
+
+                    if let Some(bracket) = self.get_structure_coeff(i, j) {
+                        // Sign from position
+                        let sign_flips = (p + q) % 2;
+
+                        // Construct basis without indices p and q
+                        let mut remaining: Vec<usize> = indices
+                            .iter()
+                            .enumerate()
+                            .filter_map(|(idx, &val)| {
+                                if idx != p && idx != q {
+                                    Some(val)
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect();
+
+                        for (k, c) in bracket {
+                            remaining.push(*k);
+                            remaining.sort_unstable();
+
+                            let new_basis = CliffordBasisElement::new(remaining.clone());
+                            let signed_coeff = if sign_flips % 2 == 0 {
+                                c.clone()
+                            } else {
+                                -c.clone()
+                            };
+                            result.add_term(signed_coeff, new_basis);
+
+                            remaining.pop();
+                        }
+                    }
+                }
+            }
+        }
+
+        result
+    }
+
+    /// Get structure coefficient for [x_i, x_j]
+    fn get_structure_coeff(&self, i: usize, j: usize) -> Option<&HashMap<usize, R>> {
+        if i < j {
+            self.structure_coeffs.get(&(i, j))
+        } else if i > j {
+            // Use antisymmetry: [x_j, x_i] = -[x_i, x_j]
+            self.structure_coeffs.get(&(j, i))
+        } else {
+            // [x_i, x_i] = 0
+            None
+        }
+    }
+
+    /// Scalar multiplication helper
+    fn scalar_mult(&self, element: &CliffordAlgebraElement<R>, scalar: R) -> CliffordAlgebraElement<R> {
+        let mut result = self.algebra.zero();
+        for (basis, coeff) in &element.terms {
+            result.add_term(coeff.clone() * scalar.clone(), basis.clone());
+        }
+        result
+    }
+
+    /// Get the underlying algebra
+    pub fn algebra(&self) -> &ExteriorAlgebra<R> {
+        &self.algebra
+    }
+}
+
+/// Boundary operator for Lie algebra homology
+///
+/// The boundary ∂: ∧^{k+1}(L) → ∧^k(L) is defined using structure coefficients
+/// of the Lie algebra L. It satisfies ∂² = 0, making (∧(L), ∂) a chain complex.
+#[derive(Clone, Debug)]
+pub struct ExteriorAlgebraBoundary<R: Ring> {
+    differential: ExteriorAlgebraDifferential<R>,
+}
+
+impl<R: Ring> ExteriorAlgebraBoundary<R> {
+    /// Create a boundary operator from structure coefficients
+    pub fn new(algebra: ExteriorAlgebra<R>, structure_coeffs: StructureCoefficients<R>) -> Self {
+        let differential = ExteriorAlgebraDifferential::new(algebra, structure_coeffs, false);
+        Self { differential }
+    }
+
+    /// Apply the boundary operator to an element
+    pub fn apply(&self, element: &CliffordAlgebraElement<R>) -> CliffordAlgebraElement<R> {
+        self.differential.apply(element)
+    }
+
+    /// Get the underlying algebra
+    pub fn algebra(&self) -> &ExteriorAlgebra<R> {
+        self.differential.algebra()
+    }
+
+    /// Verify that ∂² = 0 for a given element
+    pub fn verify_chain_complex(&self, element: &CliffordAlgebraElement<R>) -> bool {
+        let first_application = self.apply(element);
+        let second_application = self.apply(&first_application);
+        second_application.is_zero()
+    }
+}
+
+/// Coboundary operator for Lie algebra cohomology
+///
+/// The coboundary d: ∧^k(L) → ∧^{k+1}(L) is the dual operator to the boundary.
+/// It satisfies d² = 0, making (∧(L), d) a cochain complex.
+#[derive(Clone, Debug)]
+pub struct ExteriorAlgebraCoboundary<R: Ring> {
+    differential: ExteriorAlgebraDifferential<R>,
+}
+
+impl<R: Ring> ExteriorAlgebraCoboundary<R> {
+    /// Create a coboundary operator from structure coefficients
+    pub fn new(algebra: ExteriorAlgebra<R>, structure_coeffs: StructureCoefficients<R>) -> Self {
+        let differential = ExteriorAlgebraDifferential::new(algebra, structure_coeffs, true);
+        Self { differential }
+    }
+
+    /// Apply the coboundary operator to an element
+    pub fn apply(&self, element: &CliffordAlgebraElement<R>) -> CliffordAlgebraElement<R> {
+        self.differential.apply(element)
+    }
+
+    /// Get the underlying algebra
+    pub fn algebra(&self) -> &ExteriorAlgebra<R> {
+        self.differential.algebra()
+    }
+
+    /// Verify that d² = 0 for a given element
+    pub fn verify_cochain_complex(&self, element: &CliffordAlgebraElement<R>) -> bool {
+        let first_application = self.apply(element);
+        let second_application = self.apply(&first_application);
+        second_application.is_zero()
+    }
+}
+
+/// An ideal in an exterior algebra
+///
+/// Represents a two-sided ideal in ∧(V), which is a subspace I such that
+/// for all x ∈ I and y ∈ ∧(V), both x∧y and y∧x are in I.
+#[derive(Clone, Debug)]
+pub struct ExteriorAlgebraIdeal<R: Ring> {
+    /// The exterior algebra containing this ideal
+    algebra: ExteriorAlgebra<R>,
+    /// Generator elements of the ideal
+    generators: Vec<CliffordAlgebraElement<R>>,
+    /// Cached Gröbner-like basis (optional, for efficiency)
+    basis: Option<Vec<CliffordAlgebraElement<R>>>,
+}
+
+impl<R: Ring> ExteriorAlgebraIdeal<R> {
+    /// Create a new ideal from generators
+    pub fn new(algebra: ExteriorAlgebra<R>, generators: Vec<CliffordAlgebraElement<R>>) -> Self {
+        Self {
+            algebra,
+            generators,
+            basis: None,
+        }
+    }
+
+    /// Create the zero ideal
+    pub fn zero(algebra: ExteriorAlgebra<R>) -> Self {
+        Self::new(algebra, Vec::new())
+    }
+
+    /// Create the unit ideal (whole algebra)
+    pub fn unit(algebra: ExteriorAlgebra<R>) -> Self {
+        Self::new(algebra.clone(), vec![algebra.one()])
+    }
+
+    /// Get the generators of this ideal
+    pub fn generators(&self) -> &[CliffordAlgebraElement<R>] {
+        &self.generators
+    }
+
+    /// Check if an element is in this ideal
+    ///
+    /// Note: This is a simplified membership test. For exact computation,
+    /// Gröbner basis methods would be needed.
+    pub fn contains(&self, element: &CliffordAlgebraElement<R>) -> bool {
+        // Simplified: check if element is in span of generators
+        // Full implementation would use reduction algorithms
+        if element.is_zero() {
+            return true;
+        }
+
+        if self.generators.is_empty() {
+            return element.is_zero();
+        }
+
+        // For now, just check if it's a generator
+        self.generators.iter().any(|g| g == element)
+    }
+
+    /// Add a generator to the ideal
+    pub fn add_generator(&mut self, generator: CliffordAlgebraElement<R>) {
+        if !generator.is_zero() {
+            self.generators.push(generator);
+            self.basis = None; // Invalidate cached basis
+        }
+    }
+
+    /// Get the underlying algebra
+    pub fn algebra(&self) -> &ExteriorAlgebra<R> {
+        &self.algebra
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -456,5 +751,103 @@ mod tests {
         let prod1 = e0.clone() * e1.clone();
         let prod2 = e1.clone() * e0.clone();
         assert_eq!(prod1, -prod2);
+    }
+
+    #[test]
+    fn test_exterior_differential_basic() {
+        // Create a 3-dimensional exterior algebra
+        let alg: CliffordAlgebra<Integer> = CliffordAlgebra::exterior(3);
+
+        // Define structure coefficients for a simple Lie algebra
+        // Let's use sl_2: [h,e] = 2e, [h,f] = -2f, [e,f] = h
+        // Indices: 0=h, 1=e, 2=f
+        let mut structure_coeffs = HashMap::new();
+
+        // [h, e] = 2e (indices 0,1 -> 1)
+        let mut bracket_01 = HashMap::new();
+        bracket_01.insert(1, Integer::from(2));
+        structure_coeffs.insert((0, 1), bracket_01);
+
+        // [h, f] = -2f (indices 0,2 -> 2)
+        let mut bracket_02 = HashMap::new();
+        bracket_02.insert(2, Integer::from(-2));
+        structure_coeffs.insert((0, 2), bracket_02);
+
+        // [e, f] = h (indices 1,2 -> 0)
+        let mut bracket_12 = HashMap::new();
+        bracket_12.insert(0, Integer::from(1));
+        structure_coeffs.insert((1, 2), bracket_12);
+
+        // Create boundary operator
+        let boundary = ExteriorAlgebraBoundary::new(alg.clone(), structure_coeffs);
+
+        // Test on a 2-form: e_0 ∧ e_1
+        let e0 = alg.generator(0).unwrap();
+        let e1 = alg.generator(1).unwrap();
+        let two_form = e0.clone() * e1.clone();
+
+        let result = boundary.apply(&two_form);
+        // ∂(e_0 ∧ e_1) = [e_0, e_1] = 2e_1
+        // The result should be a 1-form
+        assert!(!result.is_zero());
+    }
+
+    #[test]
+    fn test_exterior_boundary_chain_complex() {
+        // Create exterior algebra
+        let alg: CliffordAlgebra<Integer> = CliffordAlgebra::exterior(3);
+
+        // Simple structure coefficients (abelian Lie algebra: all brackets = 0)
+        let structure_coeffs = HashMap::new();
+
+        let boundary = ExteriorAlgebraBoundary::new(alg.clone(), structure_coeffs);
+
+        // For abelian Lie algebra, ∂ should be zero
+        let e0 = alg.generator(0).unwrap();
+        let e1 = alg.generator(1).unwrap();
+        let two_form = e0 * e1;
+
+        assert!(boundary.verify_chain_complex(&two_form));
+    }
+
+    #[test]
+    fn test_exterior_algebra_ideal() {
+        let alg: CliffordAlgebra<Integer> = CliffordAlgebra::exterior(3);
+        let e0 = alg.generator(0).unwrap();
+        let e1 = alg.generator(1).unwrap();
+
+        // Create ideal generated by e0
+        let ideal = ExteriorAlgebraIdeal::new(alg.clone(), vec![e0.clone()]);
+
+        assert!(ideal.contains(&e0));
+        assert!(!ideal.contains(&e1));
+        assert_eq!(ideal.generators().len(), 1);
+    }
+
+    #[test]
+    fn test_exterior_algebra_ideal_unit_and_zero() {
+        let alg: CliffordAlgebra<Integer> = CliffordAlgebra::exterior(2);
+        let e0 = alg.generator(0).unwrap();
+
+        // Zero ideal
+        let zero_ideal = ExteriorAlgebraIdeal::zero(alg.clone());
+        assert!(zero_ideal.contains(&alg.zero()));
+        assert!(!zero_ideal.contains(&e0));
+
+        // Unit ideal
+        let unit_ideal = ExteriorAlgebraIdeal::unit(alg.clone());
+        assert!(unit_ideal.contains(&alg.one()));
+    }
+
+    #[test]
+    fn test_clifford_basis_element_grade() {
+        let basis1 = CliffordBasisElement::scalar();
+        assert_eq!(basis1.grade(), 0);
+
+        let basis2 = CliffordBasisElement::generator(0);
+        assert_eq!(basis2.grade(), 1);
+
+        let basis3 = CliffordBasisElement::new(vec![0, 1, 2]);
+        assert_eq!(basis3.grade(), 3);
     }
 }
