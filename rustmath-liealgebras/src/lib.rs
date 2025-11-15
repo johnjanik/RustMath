@@ -47,6 +47,7 @@ pub use classical::{
 };
 pub use exceptional::{
     E6LieAlgebra, E7LieAlgebra, E8LieAlgebra, F4LieAlgebra, G2LieAlgebra,
+    ExceptionalMatrixLieAlgebra,
 };
 pub use heisenberg::{
     HeisenbergAlgebra, HeisenbergAlgebraElement, HeisenbergAlgebraMatrix,
