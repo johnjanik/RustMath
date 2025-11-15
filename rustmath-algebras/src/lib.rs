@@ -37,6 +37,13 @@ pub mod ariki_koike_algebra;
 pub mod cubic_hecke_algebra;
 pub mod catalog;
 pub mod poly_tup_engine;
+pub mod fusion_ring;
+pub mod fusion_double;
+pub mod f_matrix;
+pub mod fast_parallel_fmats_methods;
+pub mod fast_parallel_fusion_ring_braid_repn;
+pub mod shm_managers;
+pub mod ariki_koike_specht_modules;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -75,7 +82,7 @@ pub use free_zinbiel_algebra::{
     FreeZinbielAlgebra, FreeZinbielAlgebraElement, ZinbielWord, ZinbielFunctor,
 };
 pub use hall_algebra::{
-    HallAlgebra, HallAlgebraMonomials, HallAlgebraElement, Partition, transpose_cmp,
+    HallAlgebra, HallAlgebraMonomials, HallAlgebraElement, Partition as HallPartition, transpose_cmp,
 };
 pub use jordan_algebra::{
     JordanAlgebra, JordanAlgebraElement, JordanAlgebraType, JordanAlgebraTrait,
@@ -91,6 +98,13 @@ pub use poly_tup_engine::{
     PolyTuple, poly_to_tup, constant_coeff, variables, get_variables_degrees,
     resize, apply_coeff_map, poly_tup_sortkey, compute_known_powers, tup_to_univ_poly,
 };
+pub use fusion_ring::{FusionRing, FusionRingElement, Weight};
+pub use fusion_double::{FusionDouble, FusionDoubleElement, FusionDoubleIndex};
+pub use f_matrix::FMatrix;
+pub use fast_parallel_fmats_methods::{FMatrixExecutor, ParallelTask};
+pub use fast_parallel_fusion_ring_braid_repn::BraidRepnExecutor;
+pub use shm_managers::{FvarsHandler, KSHandler, make_fvars_handler, make_ks_handler};
+pub use ariki_koike_specht_modules::{SpechtModule, SpechtModuleElement, Multipartition, Partition};
 
 #[cfg(test)]
 mod tests {

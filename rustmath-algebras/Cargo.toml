@@ -14,6 +14,7 @@ rustmath-matrix = { path = "../rustmath-matrix" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
 rustmath-modules = { path = "../rustmath-modules" }
 rustmath-liealgebras = { path = "../rustmath-liealgebras" }
+rustmath-combinatorics = { path = "../rustmath-combinatorics" }
 num-bigint = { workspace = true }
 num-rational = { workspace = true }
 num-traits = { workspace = true }
