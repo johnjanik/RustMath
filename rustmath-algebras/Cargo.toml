@@ -1,0 +1,18 @@
+[package]
+name = "rustmath-algebras"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustmath-core = { path = "../rustmath-core" }
+rustmath-integers = { path = "../rustmath-integers" }
+rustmath-rationals = { path = "../rustmath-rationals" }
+rustmath-matrix = { path = "../rustmath-matrix" }
+rustmath-polynomials = { path = "../rustmath-polynomials" }
+num-bigint = { workspace = true }
+num-rational = { workspace = true }
+num-traits = { workspace = true }
+thiserror = { workspace = true }
