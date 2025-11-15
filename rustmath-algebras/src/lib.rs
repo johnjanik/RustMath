@@ -33,6 +33,8 @@ pub mod finite_gca;
 pub mod free_zinbiel_algebra;
 pub mod hall_algebra;
 pub mod jordan_algebra;
+pub mod ariki_koike_algebra;
+pub mod cubic_hecke_algebra;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -73,6 +75,12 @@ pub use hall_algebra::{
 pub use jordan_algebra::{
     JordanAlgebra, JordanAlgebraElement, JordanAlgebraType, JordanAlgebraTrait,
     SpecialJordanAlgebra, JordanAlgebraSymmetricBilinear, ExceptionalJordanAlgebra,
+};
+pub use ariki_koike_algebra::{
+    ArikiKoikeAlgebra, ArikiKoikeElement, ArikiKoikeWord, ArikiKoikeBasis,
+};
+pub use cubic_hecke_algebra::{
+    CubicHeckeAlgebra, CubicHeckeElement, BraidWord,
 };
 
 #[cfg(test)]
