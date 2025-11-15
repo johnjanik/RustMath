@@ -27,6 +27,7 @@ pub mod askey_wilson;
 pub mod associated_graded;
 pub mod cellular_basis;
 pub mod cluster_algebra;
+pub mod commutative_dga;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -47,6 +48,12 @@ pub use cellular_basis::{CellularBasis, CellularIndex};
 pub use cluster_algebra::{
     ClusterAlgebra, ClusterAlgebraElement, ClusterAlgebraSeed,
     PrincipalClusterAlgebraElement, GVector, DVector, ExchangeMatrix,
+};
+pub use commutative_dga::{
+    GCAlgebra, GCAlgebraMultigraded, Differential, DifferentialMultigraded,
+    DifferentialGCAlgebra, DifferentialGCAlgebraMultigraded,
+    CohomologyClass, GCAlgebraHomset, GCAlgebraMorphism,
+    Degree, Generator, GCAlgebraElement,
 };
 
 #[cfg(test)]
