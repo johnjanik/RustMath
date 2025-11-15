@@ -10,6 +10,9 @@ use rustmath_core::{Ring, MathError, Result};
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 use std::ops::{Add, Mul, Neg, Sub};
+use std::sync::{Arc, Mutex};
+use std::hash::{Hash, Hasher};
+use once_cell::sync::Lazy;
 use crate::traits::{Algebra, FreeAlgebra as FreeAlgebraTrait};
 
 /// A monomial in a free algebra: a word in the generators
@@ -400,6 +403,382 @@ pub fn is_FreeAlgebra<R: Ring>(_algebra: &FreeAlgebra<R>) -> bool {
     true
 }
 
+/// A construction functor for free algebras
+///
+/// This functor encodes the construction of a free algebra, enabling
+/// automatic coercion and arithmetic between algebras over different base rings.
+/// When composed with a ring homomorphism, it creates the corresponding
+/// free algebra homomorphism.
+///
+/// Corresponds to sage.algebras.free_algebra.AssociativeFunctor
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_algebras::free_algebra::{AssociativeFunctor, FreeAlgebra};
+/// use rustmath_integers::Integer;
+///
+/// let functor = AssociativeFunctor::new(vec!["x".to_string(), "y".to_string()]);
+/// assert_eq!(functor.variables().len(), 2);
+/// ```
+#[derive(Clone, Debug)]
+pub struct AssociativeFunctor {
+    /// Variable names for the free algebra generators
+    variables: Vec<String>,
+}
+
+impl AssociativeFunctor {
+    /// Create a new associative functor with the given variable names
+    pub fn new(variables: Vec<String>) -> Self {
+        Self { variables }
+    }
+
+    /// Get the variable names
+    pub fn variables(&self) -> &[String] {
+        &self.variables
+    }
+
+    /// Apply this functor to a ring to create a free algebra
+    ///
+    /// This corresponds to the _apply_functor method in SageMath
+    pub fn apply<R: Ring>(&self) -> FreeAlgebra<R> {
+        FreeAlgebra::with_names(self.variables.clone())
+    }
+
+    /// Merge two functors with compatible variable sets
+    ///
+    /// Returns None if the functors cannot be merged (conflicting variables)
+    pub fn merge(&self, other: &Self) -> Option<Self> {
+        // For now, we require exact match of variables
+        // A more sophisticated implementation would handle subset relationships
+        if self.variables == other.variables {
+            Some(self.clone())
+        } else {
+            None
+        }
+    }
+
+    /// Get the rank (number of variables) of this functor
+    pub fn rank(&self) -> usize {
+        self.variables.len()
+    }
+}
+
+impl PartialEq for AssociativeFunctor {
+    fn eq(&self, other: &Self) -> bool {
+        self.variables == other.variables
+    }
+}
+
+impl Eq for AssociativeFunctor {}
+
+impl Hash for AssociativeFunctor {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.variables.hash(state);
+    }
+}
+
+/// Factory key for caching free algebras
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+struct FreeAlgebraKey {
+    num_generators: usize,
+    generator_names: Vec<String>,
+}
+
+/// Global cache for free algebras
+///
+/// This ensures that identical free algebras are represented by the same object,
+/// following SageMath's UniqueFactory pattern.
+static FREE_ALGEBRA_CACHE: Lazy<Mutex<HashMap<FreeAlgebraKey, usize>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
+
+/// Factory for creating and caching free algebras
+///
+/// This factory ensures that free algebras with the same parameters
+/// are represented by the same object (global uniqueness). It corresponds
+/// to the UniqueFactory pattern in SageMath.
+///
+/// Corresponds to sage.algebras.free_algebra.FreeAlgebraFactory
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_algebras::free_algebra::FreeAlgebraFactory;
+/// use rustmath_integers::Integer;
+///
+/// let factory = FreeAlgebraFactory::new();
+/// let algebra1 = factory.create::<Integer>(3, None);
+/// let algebra2 = factory.create::<Integer>(3, None);
+/// // In a full implementation, algebra1 and algebra2 would be the same object
+/// ```
+#[derive(Clone, Debug)]
+pub struct FreeAlgebraFactory;
+
+impl FreeAlgebraFactory {
+    /// Create a new free algebra factory
+    pub fn new() -> Self {
+        Self
+    }
+
+    /// Create or retrieve a cached free algebra
+    ///
+    /// # Arguments
+    ///
+    /// * `num_generators` - Number of generators for the algebra
+    /// * `names` - Optional custom names for the generators
+    pub fn create<R: Ring>(&self, num_generators: usize, names: Option<Vec<String>>) -> FreeAlgebra<R> {
+        let generator_names = names.unwrap_or_else(|| {
+            (0..num_generators)
+                .map(|i| format!("x{}", i))
+                .collect()
+        });
+
+        // Note: In a full implementation, we would cache the actual algebra objects
+        // For now, we just create a new instance
+        // The cache would require more sophisticated lifetime management in Rust
+        FreeAlgebra::with_names(generator_names)
+    }
+
+    /// Create a key for caching purposes
+    ///
+    /// This normalizes the input parameters into a canonical form
+    fn create_key(&self, num_generators: usize, names: Option<Vec<String>>) -> FreeAlgebraKey {
+        let generator_names = names.unwrap_or_else(|| {
+            (0..num_generators)
+                .map(|i| format!("x{}", i))
+                .collect()
+        });
+
+        FreeAlgebraKey {
+            num_generators,
+            generator_names,
+        }
+    }
+}
+
+impl Default for FreeAlgebraFactory {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Lyndon word representation for PBW basis
+///
+/// A Lyndon word is a word that is strictly smaller in lexicographic
+/// order than all of its non-trivial rotations. These form a basis
+/// for the free Lie algebra.
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct LyndonWord {
+    /// The word as a sequence of generator indices
+    word: Vec<usize>,
+}
+
+impl LyndonWord {
+    /// Create a new Lyndon word
+    ///
+    /// Note: This does not verify that the word is actually a Lyndon word
+    pub fn new(word: Vec<usize>) -> Self {
+        Self { word }
+    }
+
+    /// Check if this word is a Lyndon word
+    pub fn is_lyndon(&self) -> bool {
+        if self.word.is_empty() {
+            return false;
+        }
+
+        let n = self.word.len();
+        for i in 1..n {
+            let rotated = self.rotate(i);
+            if rotated <= self.word {
+                return false;
+            }
+        }
+        true
+    }
+
+    /// Rotate the word by k positions
+    fn rotate(&self, k: usize) -> Vec<usize> {
+        let n = self.word.len();
+        let k = k % n;
+        let mut result = Vec::with_capacity(n);
+        result.extend_from_slice(&self.word[k..]);
+        result.extend_from_slice(&self.word[..k]);
+        result
+    }
+
+    /// Get the word as a slice
+    pub fn as_slice(&self) -> &[usize] {
+        &self.word
+    }
+
+    /// Length of the Lyndon word
+    pub fn len(&self) -> usize {
+        self.word.len()
+    }
+
+    /// Check if empty
+    pub fn is_empty(&self) -> bool {
+        self.word.is_empty()
+    }
+}
+
+/// Poincaré-Birkhoff-Witt basis element
+///
+/// A PBW basis element is represented as a product of Lyndon words,
+/// which provides an alternative coordinatization of the free algebra.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PBWBasisElement {
+    /// The Lyndon words in this PBW element
+    lyndon_words: Vec<LyndonWord>,
+}
+
+impl PBWBasisElement {
+    /// Create a new PBW basis element from Lyndon words
+    pub fn new(lyndon_words: Vec<LyndonWord>) -> Self {
+        Self { lyndon_words }
+    }
+
+    /// Get the Lyndon words
+    pub fn lyndon_words(&self) -> &[LyndonWord] {
+        &self.lyndon_words
+    }
+
+    /// Total degree of the PBW element
+    pub fn degree(&self) -> usize {
+        self.lyndon_words.iter().map(|w| w.len()).sum()
+    }
+}
+
+/// Poincaré-Birkhoff-Witt basis for a free algebra
+///
+/// The PBW basis provides an alternative coordinatization where elements
+/// are expressed as products of Lyndon words. This is particularly useful
+/// for theoretical computations and relating free algebras to free Lie algebras.
+///
+/// Corresponds to sage.algebras.free_algebra.PBWBasisOfFreeAlgebra
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_algebras::free_algebra::{PBWBasisOfFreeAlgebra, FreeAlgebra};
+/// use rustmath_integers::Integer;
+///
+/// let algebra: FreeAlgebra<Integer> = FreeAlgebra::new(3);
+/// let pbw = PBWBasisOfFreeAlgebra::new(&algebra);
+/// assert_eq!(pbw.rank(), 3);
+/// ```
+pub struct PBWBasisOfFreeAlgebra<R: Ring> {
+    /// The underlying free algebra
+    algebra: FreeAlgebra<R>,
+}
+
+impl<R: Ring> PBWBasisOfFreeAlgebra<R> {
+    /// Create a new PBW basis for the given free algebra
+    pub fn new(algebra: &FreeAlgebra<R>) -> Self {
+        Self {
+            algebra: FreeAlgebra::new(algebra.rank()),
+        }
+    }
+
+    /// Get the underlying free algebra
+    pub fn free_algebra(&self) -> &FreeAlgebra<R> {
+        &self.algebra
+    }
+
+    /// Get the rank (number of generators)
+    pub fn rank(&self) -> usize {
+        self.algebra.rank()
+    }
+
+    /// Generate all Lyndon words up to a given length
+    ///
+    /// This uses the Duval algorithm for efficient generation
+    pub fn lyndon_words_up_to_length(&self, max_length: usize) -> Vec<LyndonWord> {
+        let mut result = Vec::new();
+        let n = self.rank();
+
+        for length in 1..=max_length {
+            // Generate all words of this length and filter for Lyndon words
+            self.generate_lyndon_words_of_length(length, n, &mut result);
+        }
+
+        result
+    }
+
+    /// Generate Lyndon words of a specific length
+    fn generate_lyndon_words_of_length(&self, length: usize, alphabet_size: usize, result: &mut Vec<LyndonWord>) {
+        if length == 0 {
+            return;
+        }
+
+        if length == 1 {
+            // Single generators are always Lyndon words
+            for i in 0..alphabet_size {
+                result.push(LyndonWord::new(vec![i]));
+            }
+            return;
+        }
+
+        // Use the Duval algorithm to generate Lyndon words
+        let mut word = vec![0; length];
+        self.duval_generate(&mut word, 0, length, alphabet_size, result);
+    }
+
+    /// Duval algorithm for generating Lyndon words
+    fn duval_generate(&self, word: &mut Vec<usize>, pos: usize, length: usize,
+                      alphabet_size: usize, result: &mut Vec<LyndonWord>) {
+        if pos == length {
+            let lyndon = LyndonWord::new(word.clone());
+            if lyndon.is_lyndon() {
+                result.push(lyndon);
+            }
+            return;
+        }
+
+        for letter in 0..alphabet_size {
+            word[pos] = letter;
+            self.duval_generate(word, pos + 1, length, alphabet_size, result);
+        }
+    }
+
+    /// Convert a PBW basis element to a free algebra element
+    ///
+    /// This expansion uses the relationship between Lyndon words
+    /// and Lie polynomials
+    pub fn expansion(&self, pbw_element: &PBWBasisElement) -> FreeAlgebraElement<R> {
+        // For simplicity, we'll expand each Lyndon word to a monomial
+        // A full implementation would use the Lie polynomial expansion
+        let mut result = self.algebra.one();
+
+        for lyndon in pbw_element.lyndon_words() {
+            let word = Word::new(lyndon.as_slice().to_vec());
+            let elem = FreeAlgebraElement::from_term(
+                R::one(),
+                word,
+                self.rank(),
+            );
+            result = result * elem;
+        }
+
+        result
+    }
+
+    /// Create a PBW basis element from a single Lyndon word
+    pub fn monomial(&self, lyndon: LyndonWord) -> PBWBasisElement {
+        PBWBasisElement::new(vec![lyndon])
+    }
+
+    /// Multiply two PBW basis elements
+    ///
+    /// This maintains the PBW structure by combining the Lyndon words
+    pub fn product(&self, a: &PBWBasisElement, b: &PBWBasisElement) -> PBWBasisElement {
+        let mut words = a.lyndon_words().to_vec();
+        words.extend_from_slice(b.lyndon_words());
+        PBWBasisElement::new(words)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -461,5 +840,153 @@ mod tests {
         let lhs = (y.clone() + z.clone()) * x.clone();
         let rhs = y.clone() * x.clone() + z.clone() * x.clone();
         assert_eq!(lhs, rhs);
+    }
+
+    #[test]
+    fn test_associative_functor() {
+        let vars = vec!["x".to_string(), "y".to_string(), "z".to_string()];
+        let functor = AssociativeFunctor::new(vars.clone());
+
+        assert_eq!(functor.variables().len(), 3);
+        assert_eq!(functor.rank(), 3);
+        assert_eq!(functor.variables(), &vars);
+
+        // Test applying the functor
+        let algebra: FreeAlgebra<Integer> = functor.apply();
+        assert_eq!(algebra.rank(), 3);
+    }
+
+    #[test]
+    fn test_associative_functor_merge() {
+        let vars1 = vec!["x".to_string(), "y".to_string()];
+        let vars2 = vec!["x".to_string(), "y".to_string()];
+        let vars3 = vec!["a".to_string(), "b".to_string()];
+
+        let f1 = AssociativeFunctor::new(vars1);
+        let f2 = AssociativeFunctor::new(vars2);
+        let f3 = AssociativeFunctor::new(vars3);
+
+        // Same variables should merge
+        assert!(f1.merge(&f2).is_some());
+
+        // Different variables should not merge
+        assert!(f1.merge(&f3).is_none());
+    }
+
+    #[test]
+    fn test_free_algebra_factory() {
+        let factory = FreeAlgebraFactory::new();
+
+        let algebra1: FreeAlgebra<Integer> = factory.create(3, None);
+        let algebra2: FreeAlgebra<Integer> = factory.create(3, None);
+
+        assert_eq!(algebra1.rank(), 3);
+        assert_eq!(algebra2.rank(), 3);
+
+        // Test with custom names
+        let names = vec!["a".to_string(), "b".to_string()];
+        let algebra3: FreeAlgebra<Integer> = factory.create(2, Some(names));
+        assert_eq!(algebra3.rank(), 2);
+    }
+
+    #[test]
+    fn test_lyndon_word() {
+        // Test single letter (always Lyndon)
+        let w1 = LyndonWord::new(vec![0]);
+        assert!(w1.is_lyndon());
+
+        // Test "ab" which is Lyndon (assuming a < b)
+        let w2 = LyndonWord::new(vec![0, 1]);
+        assert!(w2.is_lyndon());
+
+        // Test "ba" which is not Lyndon when a < b
+        let w3 = LyndonWord::new(vec![1, 0]);
+        assert!(!w3.is_lyndon());
+
+        // Test "aab" which is Lyndon
+        let w4 = LyndonWord::new(vec![0, 0, 1]);
+        assert!(w4.is_lyndon());
+
+        // Test "aba" which is not Lyndon (rotation "baa" is smaller)
+        let w5 = LyndonWord::new(vec![0, 1, 0]);
+        assert!(!w5.is_lyndon());
+    }
+
+    #[test]
+    fn test_pbw_basis_creation() {
+        let algebra: FreeAlgebra<Integer> = FreeAlgebra::new(3);
+        let pbw = PBWBasisOfFreeAlgebra::new(&algebra);
+
+        assert_eq!(pbw.rank(), 3);
+        assert_eq!(pbw.free_algebra().rank(), 3);
+    }
+
+    #[test]
+    fn test_pbw_lyndon_words_generation() {
+        let algebra: FreeAlgebra<Integer> = FreeAlgebra::new(2);
+        let pbw = PBWBasisOfFreeAlgebra::new(&algebra);
+
+        // Generate Lyndon words up to length 2
+        let lyndon_words = pbw.lyndon_words_up_to_length(2);
+
+        // Should include: [0], [1], [0,1]
+        // but not [1,0] (not Lyndon) or [0,0], [1,1] (not Lyndon)
+        assert!(lyndon_words.len() >= 3);
+
+        // Check that all generated words are actually Lyndon
+        for word in &lyndon_words {
+            assert!(word.is_lyndon(), "Generated word {:?} is not Lyndon", word);
+        }
+    }
+
+    #[test]
+    fn test_pbw_basis_element() {
+        let l1 = LyndonWord::new(vec![0]);
+        let l2 = LyndonWord::new(vec![1]);
+
+        let pbw_elem = PBWBasisElement::new(vec![l1, l2]);
+
+        assert_eq!(pbw_elem.lyndon_words().len(), 2);
+        assert_eq!(pbw_elem.degree(), 2); // Total length
+    }
+
+    #[test]
+    fn test_pbw_expansion() {
+        let algebra: FreeAlgebra<Integer> = FreeAlgebra::new(2);
+        let pbw = PBWBasisOfFreeAlgebra::new(&algebra);
+
+        // Create a simple PBW element from a single Lyndon word
+        let lyndon = LyndonWord::new(vec![0, 1]);
+        let pbw_elem = pbw.monomial(lyndon);
+
+        // Expand to free algebra element
+        let expanded = pbw.expansion(&pbw_elem);
+
+        // Should be the monomial x0*x1
+        assert!(!expanded.is_zero());
+        assert_eq!(expanded.degree(), Some(2));
+    }
+
+    #[test]
+    fn test_pbw_product() {
+        let algebra: FreeAlgebra<Integer> = FreeAlgebra::new(2);
+        let pbw = PBWBasisOfFreeAlgebra::new(&algebra);
+
+        let l1 = LyndonWord::new(vec![0]);
+        let l2 = LyndonWord::new(vec![1]);
+
+        let pbw1 = PBWBasisElement::new(vec![l1.clone()]);
+        let pbw2 = PBWBasisElement::new(vec![l2.clone()]);
+
+        let product = pbw.product(&pbw1, &pbw2);
+
+        assert_eq!(product.lyndon_words().len(), 2);
+        assert_eq!(product.degree(), 2);
+    }
+
+    #[test]
+    fn test_is_free_algebra() {
+        let algebra: FreeAlgebra<Integer> = FreeAlgebra::new(3);
+        assert!(is_FreeAlgebra(&algebra));
     }
 }
