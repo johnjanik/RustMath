@@ -35,6 +35,7 @@ use crate::heisenberg::HeisenbergAlgebra;
 use crate::free_lie_algebra::{FreeLieAlgebra, FreeLieAlgebraBasis};
 use crate::nilpotent::FreeNilpotentLieAlgebra;
 use crate::virasoro::VirasoroAlgebra;
+use crate::three_dimensional::ThreeDimensionalLieAlgebra;
 use rustmath_core::Ring;
 
 /// Create an abelian (commutative) Lie algebra of given dimension
@@ -244,6 +245,47 @@ pub fn virasoro<R: Ring + Clone>() -> VirasoroAlgebra<R> {
     VirasoroAlgebra::new()
 }
 
+/// Create the Lie algebra R^3 with the cross product as Lie bracket
+///
+/// This creates the 3-dimensional Lie algebra where the Lie bracket is
+/// defined by the standard vector cross product:
+/// - [e_0, e_1] = e_2 (i × j = k)
+/// - [e_1, e_2] = e_0 (j × k = i)
+/// - [e_2, e_0] = e_1 (k × i = j)
+///
+/// This Lie algebra is isomorphic to so(3) and su(2).
+///
+/// Corresponds to sage.algebras.lie_algebras.examples.cross_product
+///
+/// # Returns
+///
+/// The 3-dimensional Lie algebra with cross product bracket
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_liealgebras::examples::cross_product;
+/// use rustmath_rationals::Rational;
+///
+/// let lie_alg = cross_product::<Rational>();
+/// assert_eq!(lie_alg.dimension(), 3);
+/// ```
+pub fn cross_product<R>() -> ThreeDimensionalLieAlgebra<R>
+where
+    R: Ring + Clone + From<i64>,
+{
+    // R^3 with cross product has structure coefficients: a=1, b=1, c=1, d=0
+    // [e_0, e_1] = e_2
+    // [e_0, e_2] = e_1  (but with negative sign from antisymmetry: [e_2, e_0] = e_1)
+    // [e_1, e_2] = e_0
+    ThreeDimensionalLieAlgebra::new(
+        R::from(1),  // a: [e_0, e_1] = e_2
+        R::from(1),  // b: [e_0, e_2] = e_1
+        R::from(1),  // c: [e_1, e_2] = e_0
+        R::from(0),  // d: no e_2 component in [e_1, e_2]
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -307,6 +349,31 @@ mod tests {
     }
 
     #[test]
+    fn test_cross_product_example() {
+        // Test cross product Lie algebra
+        let cross = cross_product::<Integer>();
+        assert_eq!(cross.dimension(), 3);
+
+        // Test the structure: [e_0, e_1] = e_2
+        let result = cross.bracket_on_basis(0, 1);
+        assert_eq!(result[0], Integer::from(0));
+        assert_eq!(result[1], Integer::from(0));
+        assert_eq!(result[2], Integer::from(1));
+
+        // Test [e_1, e_2] = e_0
+        let result = cross.bracket_on_basis(1, 2);
+        assert_eq!(result[0], Integer::from(1));
+        assert_eq!(result[1], Integer::from(0));
+        assert_eq!(result[2], Integer::from(0));
+
+        // Test [e_2, e_0] = e_1
+        let result = cross.bracket_on_basis(2, 0);
+        assert_eq!(result[0], Integer::from(0));
+        assert_eq!(result[1], Integer::from(1));
+        assert_eq!(result[2], Integer::from(0));
+    }
+
+    #[test]
     fn test_all_factories_work() {
         // Comprehensive test that all factory functions work
         let _ab = abelian::<Integer>(2);
@@ -317,6 +384,7 @@ mod tests {
         let _free = free_lie_algebra::<Integer>(2);
         let _nilp = free_nilpotent::<Integer>(2, 2);
         let _vir = virasoro::<Integer>();
+        let _cross = cross_product::<Integer>();
 
         // If we got here, all factories work
         assert!(true);

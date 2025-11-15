@@ -17,6 +17,7 @@ pub mod heisenberg;
 pub mod free_lie_algebra;
 pub mod nilpotent;
 pub mod virasoro;
+pub mod three_dimensional;
 pub mod examples;
 
 pub use cartan_type::{Affinity, CartanLetter, CartanType};
@@ -43,6 +44,9 @@ pub use nilpotent::{
 pub use virasoro::{
     VirasoroAlgebra, VirasoroElement, VirasoroGenerator,
     RankTwoHeisenbergVirasoro, RankTwoHeisenbergVirasoroElement, RankTwoGenerator,
+};
+pub use three_dimensional::{
+    ThreeDimensionalLieAlgebra, ThreeDimensionalLieAlgebraElement,
 };
 
 #[cfg(test)]
