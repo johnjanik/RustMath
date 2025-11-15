@@ -15,6 +15,7 @@ pub mod abelian;
 pub mod classical;
 pub mod heisenberg;
 pub mod free_lie_algebra;
+pub mod nilpotent;
 
 pub use cartan_type::{Affinity, CartanLetter, CartanType};
 pub use root_system::{Root, RootSystem};
@@ -33,6 +34,9 @@ pub use heisenberg::{
 pub use free_lie_algebra::{
     FreeLieAlgebra, FreeLieAlgebraElement, FreeLieAlgebraBasis,
     LieBracket, LyndonWord, is_lyndon,
+};
+pub use nilpotent::{
+    NilpotentLieAlgebra, NilpotentLieAlgebraElement, FreeNilpotentLieAlgebra,
 };
 
 #[cfg(test)]
