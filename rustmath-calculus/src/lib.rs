@@ -14,6 +14,7 @@ pub mod limits;
 pub mod ode;
 pub mod riemann;
 pub mod taylor;
+pub mod var;
 
 // Re-export commonly used functions
 pub use differentiation::differentiate;
@@ -33,6 +34,7 @@ pub use riemann::{
     get_derivatives, RiemannMap, RGB,
 };
 pub use taylor::{laurent, maclaurin, series_coefficients, taylor};
+pub use var::{clear_all_vars, clear_vars, function, get_vars, var, var_from_string, vars};
 
 #[cfg(test)]
 mod tests {
