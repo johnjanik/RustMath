@@ -11,6 +11,8 @@
 pub mod cartan_type;
 pub mod root_system;
 pub mod weyl_group;
+pub mod lie_algebra;
+pub mod lie_algebra_element;
 pub mod abelian;
 pub mod classical;
 pub mod exceptional;
@@ -38,6 +40,18 @@ pub mod compact_real_form;
 pub use cartan_type::{Affinity, CartanLetter, CartanType};
 pub use root_system::{Root, RootSystem};
 pub use weyl_group::{WeylGroup, WeylGroupElement};
+pub use lie_algebra::{
+    LieAlgebraElement, LieAlgebraBase, LieAlgebraWithGenerators,
+    FinitelyGeneratedLieAlgebra, InfinitelyGeneratedLieAlgebra,
+    LieAlgebraFromAssociative, MatrixLieAlgebraFromAssociative,
+    AssociativeLieElement, MatrixLieElement, LiftMorphismToAssociative,
+    LieAlgebraElementWrapper,
+};
+pub use lie_algebra_element::{
+    LieObject, LieGenerator, LieBracket, GradedLieBracket, LyndonBracket,
+    FreeLieAlgebraElement, StructureCoefficientsElement as StructureCoefficientsElt,
+    UntwistedAffineLieAlgebraElement,
+};
 pub use abelian::{
     AbelianLieAlgebra, AbelianLieAlgebraElement, InfiniteDimensionalAbelianLieAlgebra, LieAlgebra,
 };
