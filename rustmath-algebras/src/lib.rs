@@ -14,6 +14,7 @@
 pub mod free_algebra;
 pub mod finite_dimensional_algebra;
 pub mod finite_dimensional_algebra_ideal;
+pub mod finite_dimensional_algebra_morphism;
 pub mod quotient_algebra;
 pub mod clifford_algebra;
 pub mod group_algebra;
@@ -26,10 +27,16 @@ pub mod cached_algebra;
 pub mod askey_wilson;
 pub mod associated_graded;
 pub mod cellular_basis;
+pub mod cluster_algebra;
+pub mod commutative_dga;
+pub mod finite_gca;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
 pub use finite_dimensional_algebra_ideal::FiniteDimensionalAlgebraIdeal;
+pub use finite_dimensional_algebra_morphism::{
+    FiniteDimensionalAlgebraMorphism, FiniteDimensionalAlgebraHomset,
+};
 pub use quotient_algebra::*;
 pub use clifford_algebra::{
     CliffordAlgebra, CliffordAlgebraElement, CliffordBasisElement, CliffordAlgebraIndices,
@@ -43,6 +50,17 @@ pub use algebra_morphism::{AlgebraMorphism, AlgebraEndomorphism, AlgebraAutomorp
 pub use askey_wilson::{AskeyWilsonAlgebra, AskeyWilsonIndex};
 pub use associated_graded::AssociatedGradedAlgebra;
 pub use cellular_basis::{CellularBasis, CellularIndex};
+pub use cluster_algebra::{
+    ClusterAlgebra, ClusterAlgebraElement, ClusterAlgebraSeed,
+    PrincipalClusterAlgebraElement, GVector, DVector, ExchangeMatrix,
+};
+pub use commutative_dga::{
+    GCAlgebra, GCAlgebraMultigraded, Differential, DifferentialMultigraded,
+    DifferentialGCAlgebra, DifferentialGCAlgebraMultigraded,
+    CohomologyClass, GCAlgebraHomset, GCAlgebraMorphism,
+    Degree, Generator, GCAlgebraElement,
+};
+pub use finite_gca::{FiniteGCAlgebra, FiniteGCABasisElement, FiniteGCAlgebraElement};
 
 #[cfg(test)]
 mod tests {
