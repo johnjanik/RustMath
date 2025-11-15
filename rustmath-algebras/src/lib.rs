@@ -36,6 +36,7 @@ pub mod jordan_algebra;
 pub mod ariki_koike_algebra;
 pub mod cubic_hecke_algebra;
 pub mod catalog;
+pub mod poly_tup_engine;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
