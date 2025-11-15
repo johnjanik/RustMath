@@ -35,6 +35,9 @@ pub mod hall_algebra;
 pub mod jordan_algebra;
 pub mod ariki_koike_algebra;
 pub mod cubic_hecke_algebra;
+pub mod cubic_hecke_base_ring;
+pub mod cubic_hecke_matrix_rep;
+pub mod iwahori_hecke_algebra;
 pub mod catalog;
 pub mod poly_tup_engine;
 pub mod fusion_ring;
@@ -93,6 +96,19 @@ pub use ariki_koike_algebra::{
 };
 pub use cubic_hecke_algebra::{
     CubicHeckeAlgebra, CubicHeckeElement, BraidWord,
+};
+pub use cubic_hecke_base_ring::{
+    CubicHeckeRingOfDefinition, CubicHeckeExtensionRing, GaloisGroupAction,
+    MarkovTraceVersion, normalize_names_markov, register_ring_hom, RingHomomorphism,
+    embedding_to_extension,
+};
+pub use cubic_hecke_matrix_rep::{
+    CubicHeckeMatrixRep, CubicHeckeMatrixSpace, GenSign, RepresentationType,
+    AbsIrreducibleRep,
+};
+pub use iwahori_hecke_algebra::{
+    IwahoriHeckeAlgebra, IwahoriHeckeElement, HeckeBasisType,
+    index_cmp, normalized_laurent_polynomial,
 };
 pub use poly_tup_engine::{
     PolyTuple, poly_to_tup, constant_coeff, variables, get_variables_degrees,
