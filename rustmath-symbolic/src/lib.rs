@@ -9,6 +9,7 @@ pub mod diffeq;
 pub mod expand;
 pub mod expression;
 pub mod factor;
+pub mod functions;
 pub mod inequalities;
 pub mod integrate;
 pub mod limits;
@@ -26,6 +27,7 @@ pub mod symbol;
 pub use assumptions::{assume, forget, forget_all, get_assumptions, has_property, Property};
 pub use diffeq::{Euler, RungeKutta, ODE, ODEType};
 pub use expression::{BinaryOp, Expr, UnaryOp};
+pub use functions::{jacobian, wronskian};
 pub use inequalities::{
     solve_abs_inequality, solve_inequality, solve_polynomial_inequality,
     solve_rational_inequality, solve_system_inequalities, InequalitySolution, InequalityType,
