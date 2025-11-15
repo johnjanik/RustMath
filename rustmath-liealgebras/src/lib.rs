@@ -25,6 +25,8 @@ pub mod bch;
 pub mod affine_lie_algebra;
 pub mod bgg_dual_module;
 pub mod bgg_resolution;
+pub mod witt;
+pub mod pwitt;
 
 pub use cartan_type::{Affinity, CartanLetter, CartanType};
 pub use root_system::{Root, RootSystem};
@@ -73,6 +75,12 @@ pub use bgg_dual_module::{
 };
 pub use bgg_resolution::{
     BGGResolution, DifferentialMap, build_differential, dot_action,
+};
+pub use witt::{
+    WittAlgebra, WittElement,
+};
+pub use pwitt::{
+    PolynomialWittAlgebra, PolynomialWittElement,
 };
 
 #[cfg(test)]
