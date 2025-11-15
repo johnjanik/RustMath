@@ -35,6 +35,7 @@ use crate::heisenberg::HeisenbergAlgebra;
 use crate::free_lie_algebra::{FreeLieAlgebra, FreeLieAlgebraBasis};
 use crate::nilpotent::FreeNilpotentLieAlgebra;
 use crate::virasoro::VirasoroAlgebra;
+use crate::two_dimensional::TwoDimensionalLieAlgebra;
 use crate::three_dimensional::ThreeDimensionalLieAlgebra;
 use rustmath_core::Ring;
 
@@ -286,6 +287,44 @@ where
     )
 }
 
+/// Create the Lie algebra of affine transformations of the line
+///
+/// This creates a 2-dimensional Lie algebra governing affine transformations
+/// of the form x ↦ ax + b on the real line. The generators are:
+/// - e_0 (X): scaling generator
+/// - e_1 (Y): translation generator
+///
+/// With the bracket relation: [X, Y] = Y
+///
+/// This represents how the translation generator is affected by the scaling
+/// generator under commutation.
+///
+/// Corresponds to sage.algebras.lie_algebras.examples.affine_transformations_line
+///
+/// # Returns
+///
+/// The 2-dimensional Lie algebra of affine transformations
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_liealgebras::examples::affine_transformations_line;
+/// use rustmath_rationals::Rational;
+///
+/// let lie_alg = affine_transformations_line::<Rational>();
+/// assert_eq!(lie_alg.dimension(), 2);
+/// ```
+pub fn affine_transformations_line<R>() -> TwoDimensionalLieAlgebra<R>
+where
+    R: Ring + Clone + From<i64>,
+{
+    // [e_0, e_1] = e_1, so c=0, d=1
+    TwoDimensionalLieAlgebra::new(
+        R::from(0),  // c: no e_0 component in [e_0, e_1]
+        R::from(1),  // d: [e_0, e_1] = e_1
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -374,6 +413,29 @@ mod tests {
     }
 
     #[test]
+    fn test_affine_transformations_line_example() {
+        // Test affine transformations Lie algebra
+        let affine = affine_transformations_line::<Integer>();
+        assert_eq!(affine.dimension(), 2);
+
+        // Test the structure: [e_0, e_1] = e_1
+        let result = affine.bracket_on_basis(0, 1);
+        assert_eq!(result[0], Integer::from(0));
+        assert_eq!(result[1], Integer::from(1));
+
+        // Test [e_1, e_0] = -e_1 (antisymmetry)
+        let result = affine.bracket_on_basis(1, 0);
+        assert_eq!(result[0], Integer::from(0));
+        assert_eq!(result[1], Integer::from(-1));
+
+        // Test that it's not abelian
+        assert!(!affine.is_abelian());
+
+        // Test that it's solvable
+        assert!(affine.is_solvable());
+    }
+
+    #[test]
     fn test_all_factories_work() {
         // Comprehensive test that all factory functions work
         let _ab = abelian::<Integer>(2);
@@ -385,6 +447,7 @@ mod tests {
         let _nilp = free_nilpotent::<Integer>(2, 2);
         let _vir = virasoro::<Integer>();
         let _cross = cross_product::<Integer>();
+        let _affine = affine_transformations_line::<Integer>();
 
         // If we got here, all factories work
         assert!(true);

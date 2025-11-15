@@ -17,6 +17,7 @@ pub mod heisenberg;
 pub mod free_lie_algebra;
 pub mod nilpotent;
 pub mod virasoro;
+pub mod two_dimensional;
 pub mod three_dimensional;
 pub mod examples;
 
@@ -44,6 +45,9 @@ pub use nilpotent::{
 pub use virasoro::{
     VirasoroAlgebra, VirasoroElement, VirasoroGenerator,
     RankTwoHeisenbergVirasoro, RankTwoHeisenbergVirasoroElement, RankTwoGenerator,
+};
+pub use two_dimensional::{
+    TwoDimensionalLieAlgebra, TwoDimensionalLieAlgebraElement,
 };
 pub use three_dimensional::{
     ThreeDimensionalLieAlgebra, ThreeDimensionalLieAlgebraElement,
