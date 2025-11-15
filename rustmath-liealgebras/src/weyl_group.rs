@@ -12,7 +12,7 @@ use rustmath_combinatorics::permutations::Permutation;
 /// An element of a Weyl group represented as a reduced word
 ///
 /// A Weyl group element is a product of simple reflections s_i
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct WeylGroupElement {
     /// The reduced word (sequence of simple reflection indices)
     pub reduced_word: Vec<usize>,
@@ -83,6 +83,7 @@ impl WeylGroupElement {
 }
 
 /// The Weyl group associated with a Cartan type
+#[derive(Clone, Debug)]
 pub struct WeylGroup {
     /// The Cartan type
     pub cartan_type: CartanType,

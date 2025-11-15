@@ -17,6 +17,7 @@ pub mod quotient_algebra;
 pub mod clifford_algebra;
 pub mod group_algebra;
 pub mod traits;
+pub mod affine_nil_temperley_lieb;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -28,6 +29,7 @@ pub use clifford_algebra::{
 };
 pub use group_algebra::*;
 pub use traits::*;
+pub use affine_nil_temperley_lieb::{AffineNilTemperleyLiebTypeA, Element as AffineNilTemperleyLiebElement};
 
 #[cfg(test)]
 mod tests {
