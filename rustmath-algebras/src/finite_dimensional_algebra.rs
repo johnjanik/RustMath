@@ -81,6 +81,31 @@ impl<R: Ring> FiniteDimensionalAlgebraElement<R> {
     fn is_zero_coords(&self) -> bool {
         self.coords.iter().all(|c| c.is_zero())
     }
+
+    /// Reconstruct an element from serialized data (unpickle)
+    ///
+    /// This function recreates a FiniteDimensionalAlgebraElement from its component parts,
+    /// bypassing the normal validation. This is useful for deserialization where the
+    /// element was previously validated.
+    ///
+    /// # Arguments
+    /// * `coords` - The vector representation of the element
+    /// * `structure_constants` - The structure constants of the parent algebra
+    ///
+    /// # Returns
+    /// A reconstructed algebra element
+    ///
+    /// # Note
+    /// This function is analogous to SageMath's unpickle_FiniteDimensionalAlgebraElement
+    /// which reconstructs elements during Python's unpickling process.
+    ///
+    /// Corresponds to sage.algebras.finite_dimensional_algebras.finite_dimensional_algebra_element.unpickle_FiniteDimensionalAlgebraElement
+    pub fn unpickle(coords: Vec<R>, structure_constants: Vec<Vec<Vec<R>>>) -> Self {
+        Self {
+            coords,
+            structure_constants,
+        }
+    }
 }
 
 impl<R: Ring> PartialEq for FiniteDimensionalAlgebraElement<R> {
@@ -482,5 +507,37 @@ mod tests {
         // Test multiplication
         let prod = e0.clone() * e1.clone();
         assert_eq!(prod.coords, vec![Integer::zero(), Integer::one()]);
+    }
+
+    #[test]
+    fn test_unpickle_element() {
+        // Create structure constants for a simple algebra
+        let mut constants = vec![vec![vec![Integer::zero(); 2]; 2]; 2];
+        constants[0][0][0] = Integer::one();
+        constants[0][1][1] = Integer::one();
+        constants[1][0][1] = Integer::one();
+
+        // Create element normally
+        let algebra = FiniteDimensionalAlgebra::new(constants.clone()).unwrap();
+        let elem = algebra.element(vec![Integer::from(3), Integer::from(4)]).unwrap();
+
+        // Reconstruct the same element using unpickle
+        let unpickled = FiniteDimensionalAlgebraElement::unpickle(
+            vec![Integer::from(3), Integer::from(4)],
+            constants.clone(),
+        );
+
+        // Both elements should be equal
+        assert_eq!(elem, unpickled);
+        assert_eq!(unpickled.coordinates(), &[Integer::from(3), Integer::from(4)]);
+
+        // Test that operations work on unpickled elements
+        let elem2 = FiniteDimensionalAlgebraElement::unpickle(
+            vec![Integer::from(1), Integer::from(2)],
+            constants,
+        );
+
+        let sum = unpickled + elem2;
+        assert_eq!(sum.coordinates(), &[Integer::from(4), Integer::from(6)]);
     }
 }
