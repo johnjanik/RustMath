@@ -1,12 +1,30 @@
-//! fgp_element for finitely generated modules over PIDs
+//! Elements of FGP modules
 
 use rustmath_core::Ring;
 
-#[derive(Clone, Debug)]
-pub struct FGPElement {}
+/// An element of a finitely generated module over a PID
+#[derive(Clone, Debug, PartialEq)]
+pub struct FGPElement<R: Ring> {
+    /// Coordinates in the Smith normal form decomposition
+    coordinates: Vec<R>,
+}
 
-impl FGPElement {
-    pub fn new() -> Self {
-        Self {}
+impl<R: Ring> FGPElement<R> {
+    pub fn new(coordinates: Vec<R>) -> Self {
+        Self { coordinates }
+    }
+
+    pub fn zero(rank: usize) -> Self {
+        Self {
+            coordinates: vec![R::zero(); rank],
+        }
+    }
+
+    pub fn coordinates(&self) -> &[R] {
+        &self.coordinates
+    }
+
+    pub fn is_zero(&self) -> bool {
+        self.coordinates.iter().all(|x| x.is_zero())
     }
 }
