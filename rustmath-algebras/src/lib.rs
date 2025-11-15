@@ -32,6 +32,7 @@ pub mod commutative_dga;
 pub mod finite_gca;
 pub mod free_zinbiel_algebra;
 pub mod hall_algebra;
+pub mod jordan_algebra;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -68,6 +69,10 @@ pub use free_zinbiel_algebra::{
 };
 pub use hall_algebra::{
     HallAlgebra, HallAlgebraMonomials, HallAlgebraElement, Partition, transpose_cmp,
+};
+pub use jordan_algebra::{
+    JordanAlgebra, JordanAlgebraElement, JordanAlgebraType, JordanAlgebraTrait,
+    SpecialJordanAlgebra, JordanAlgebraSymmetricBilinear, ExceptionalJordanAlgebra,
 };
 
 #[cfg(test)]
