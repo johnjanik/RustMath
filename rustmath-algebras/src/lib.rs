@@ -47,6 +47,7 @@ pub mod fast_parallel_fmats_methods;
 pub mod fast_parallel_fusion_ring_braid_repn;
 pub mod shm_managers;
 pub mod ariki_koike_specht_modules;
+pub mod octonion_algebra;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -121,6 +122,7 @@ pub use fast_parallel_fmats_methods::{FMatrixExecutor, ParallelTask};
 pub use fast_parallel_fusion_ring_braid_repn::BraidRepnExecutor;
 pub use shm_managers::{FvarsHandler, KSHandler, make_fvars_handler, make_ks_handler};
 pub use ariki_koike_specht_modules::{SpechtModule, SpechtModuleElement, Multipartition, Partition};
+pub use octonion_algebra::{OctonionAlgebra, Octonion};
 
 #[cfg(test)]
 mod tests {
