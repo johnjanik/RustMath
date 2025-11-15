@@ -121,6 +121,34 @@ impl<R: Ring + Clone> ThreeDimensionalLieAlgebra<R> {
         (self.a.clone(), self.b.clone(), self.c.clone(), self.d.clone())
     }
 
+    /// Check if this Lie algebra is abelian (all brackets are zero)
+    pub fn is_abelian(&self) -> bool {
+        self.a.is_zero() && self.b.is_zero() && self.c.is_zero() && self.d.is_zero()
+    }
+
+    /// Check if this Lie algebra is solvable
+    ///
+    /// A 3-dimensional Lie algebra is solvable if it's either abelian
+    /// or if the derived series eventually becomes zero.
+    /// For 3D algebras, we can check specific structure conditions.
+    pub fn is_solvable(&self) -> bool {
+        // Abelian algebras are solvable
+        if self.is_abelian() {
+            return true;
+        }
+
+        // A 3D simple Lie algebra (like sl_2) is NOT solvable
+        // sl_2 has structure: a=1, b=1, c=1, d=0
+        // If all of a, b, c are nonzero and d=0, it's likely semisimple (not solvable)
+        if !self.a.is_zero() && !self.b.is_zero() && !self.c.is_zero() && self.d.is_zero() {
+            return false;
+        }
+
+        // Otherwise, it's likely solvable
+        // (This is a heuristic; a full implementation would compute the derived series)
+        true
+    }
+
     /// Create a Lie algebra element from coefficients
     pub fn element(&self, coeffs: [R; 3]) -> ThreeDimensionalLieAlgebraElement<R> {
         ThreeDimensionalLieAlgebraElement::new(

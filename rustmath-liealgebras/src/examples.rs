@@ -325,6 +325,169 @@ where
     )
 }
 
+/// Create a general 3-dimensional Lie algebra with structure coefficients
+///
+/// Creates a 3-dimensional Lie algebra with bracket relations:
+/// - [X, Y] = aZ + dY
+/// - [Y, Z] = bX
+/// - [Z, X] = cY + dZ
+///
+/// where X, Y, Z are the basis elements (e_0, e_1, e_2) and a, b, c, d
+/// are the structure coefficients.
+///
+/// Corresponds to sage.algebras.lie_algebras.examples.three_dimensional
+///
+/// # Arguments
+///
+/// * `a` - Coefficient for [X,Y] = aZ + dY (Z component)
+/// * `b` - Coefficient for [Y,Z] = bX
+/// * `c` - Coefficient for [Z,X] = cY + dZ (Y component)
+/// * `d` - Mixed coefficient appearing in [X,Y] and [Z,X]
+///
+/// # Returns
+///
+/// A 3-dimensional Lie algebra with the specified structure
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_liealgebras::examples::three_dimensional;
+/// use rustmath_rationals::Rational;
+///
+/// // Create sl_2 (a=1, b=1, c=1, d=0)
+/// let sl2 = three_dimensional(
+///     Rational::from(1),
+///     Rational::from(1),
+///     Rational::from(1),
+///     Rational::from(0)
+/// );
+/// ```
+pub fn three_dimensional<R>(a: R, b: R, c: R, d: R) -> ThreeDimensionalLieAlgebra<R>
+where
+    R: Ring + Clone + From<i64>,
+{
+    ThreeDimensionalLieAlgebra::new(a, b, c, d)
+}
+
+/// Create a 3-dimensional Lie algebra by rank
+///
+/// Creates a 3-dimensional Lie algebra with a specific rank (dimension
+/// of maximal torus). The rank determines the type of algebra:
+///
+/// - rank 0: Abelian (Heisenberg)
+/// - rank 1: Solvable but not nilpotent
+/// - rank 2: Solvable but not nilpotent (with deformation parameter a)
+/// - rank 3: Semisimple (sl_2)
+///
+/// Corresponds to sage.algebras.lie_algebras.examples.three_dimensional_by_rank
+///
+/// # Arguments
+///
+/// * `rank` - The rank (0, 1, 2, or 3)
+/// * `a` - Optional deformation parameter for rank 2 (defaults to 1)
+///
+/// # Returns
+///
+/// A 3-dimensional Lie algebra, or None if rank is invalid
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_liealgebras::examples::three_dimensional_by_rank;
+/// use rustmath_rationals::Rational;
+///
+/// // Create Heisenberg algebra (rank 0)
+/// let heisen = three_dimensional_by_rank::<Rational>(0, None).unwrap();
+///
+/// // Create sl_2 (rank 3)
+/// let sl2 = three_dimensional_by_rank::<Rational>(3, None).unwrap();
+/// ```
+pub fn three_dimensional_by_rank<R>(rank: usize, a: Option<R>) -> Option<ThreeDimensionalLieAlgebra<R>>
+where
+    R: Ring + Clone + From<i64>,
+{
+    match rank {
+        0 => {
+            // Heisenberg algebra (rank 0, abelian)
+            // All brackets are zero
+            Some(ThreeDimensionalLieAlgebra::new(
+                R::from(0),
+                R::from(0),
+                R::from(0),
+                R::from(0),
+            ))
+        }
+        1 => {
+            // Rank 1: solvable but not nilpotent
+            // [X,Y] = Y (affine transformations extended)
+            // This gives structure: a=0, b=0, c=0, d=1
+            Some(ThreeDimensionalLieAlgebra::new(
+                R::from(0),  // a
+                R::from(0),  // b
+                R::from(0),  // c
+                R::from(1),  // d: [X,Y] = Y
+            ))
+        }
+        2 => {
+            // Rank 2: solvable with deformation
+            // Uses parameter a (default 1)
+            let coeff_a = a.unwrap_or_else(|| R::from(1));
+            // Structure: [X,Y] = Z, [Y,Z] = aX
+            Some(ThreeDimensionalLieAlgebra::new(
+                R::from(1),  // a=1: [X,Y] = Z
+                coeff_a,     // b=a: [Y,Z] = aX
+                R::from(0),  // c=0
+                R::from(0),  // d=0
+            ))
+        }
+        3 => {
+            // Rank 3 gives sl_2 (semisimple)
+            // Standard sl_2 structure: a=1, b=1, c=1, d=0
+            Some(ThreeDimensionalLieAlgebra::new(
+                R::from(1),
+                R::from(1),
+                R::from(1),
+                R::from(0),
+            ))
+        }
+        _ => None,
+    }
+}
+
+/// Create the special unitary Lie algebra su_n
+///
+/// The special unitary Lie algebra 𝔰𝔲ₙ consists of n×n skew-Hermitian
+/// matrices with trace zero. It is the compact real form of type A_{n-1}.
+///
+/// For simplicity, this implementation returns the same algebra as sl(n)
+/// since they share the same Lie bracket structure (though over different
+/// base fields in the mathematical theory).
+///
+/// Corresponds to sage.algebras.lie_algebras.examples.su
+///
+/// # Arguments
+///
+/// * `n` - The dimension
+///
+/// # Returns
+///
+/// The special unitary Lie algebra su_n, or an error if invalid parameters
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_liealgebras::examples::su;
+/// use rustmath_rationals::Rational;
+///
+/// let su2 = su::<Rational>(2).unwrap();
+/// assert_eq!(su2.dimension(), 3);
+/// ```
+pub fn su<R: Ring + Clone>(n: usize) -> Result<SpecialLinearLieAlgebra<R>, String> {
+    // For the Lie bracket structure, su(n) is isomorphic to sl(n)
+    // They differ in the base field (real vs complex) but have the same brackets
+    SpecialLinearLieAlgebra::new(n)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -436,6 +599,60 @@ mod tests {
     }
 
     #[test]
+    fn test_three_dimensional() {
+        // Test creating a general 3D Lie algebra
+        let lie_alg = three_dimensional(
+            Integer::from(1),
+            Integer::from(1),
+            Integer::from(1),
+            Integer::from(0),
+        );
+        assert_eq!(lie_alg.dimension(), 3);
+
+        // This creates sl_2
+        let result = lie_alg.bracket_on_basis(0, 1);
+        assert_eq!(result[2], Integer::from(1));  // [X,Y] = Z
+    }
+
+    #[test]
+    fn test_three_dimensional_by_rank() {
+        // Test rank 0 (abelian/Heisenberg)
+        let rank0 = three_dimensional_by_rank::<Integer>(0, None).unwrap();
+        assert_eq!(rank0.dimension(), 3);
+        assert!(rank0.is_abelian());
+
+        // Test rank 1 (solvable)
+        let rank1 = three_dimensional_by_rank::<Integer>(1, None).unwrap();
+        assert_eq!(rank1.dimension(), 3);
+        assert!(rank1.is_solvable());
+        assert!(!rank1.is_abelian());
+
+        // Test rank 2 (solvable with parameter)
+        let rank2 = three_dimensional_by_rank::<Integer>(2, None).unwrap();
+        assert_eq!(rank2.dimension(), 3);
+
+        // Test rank 3 (semisimple, sl_2)
+        let rank3 = three_dimensional_by_rank::<Integer>(3, None).unwrap();
+        assert_eq!(rank3.dimension(), 3);
+        // sl_2 is semisimple (not solvable unless trivial)
+        assert!(!rank3.is_abelian());
+
+        // Test invalid rank
+        assert!(three_dimensional_by_rank::<Integer>(4, None).is_none());
+    }
+
+    #[test]
+    fn test_su() {
+        // Test su_2 (same structure as sl_2)
+        let su2 = su::<Integer>(2).unwrap();
+        assert_eq!(su2.dimension(), 3);
+
+        // Test su_3
+        let su3 = su::<Integer>(3).unwrap();
+        assert_eq!(su3.dimension(), 8);
+    }
+
+    #[test]
     fn test_all_factories_work() {
         // Comprehensive test that all factory functions work
         let _ab = abelian::<Integer>(2);
@@ -448,6 +665,14 @@ mod tests {
         let _vir = virasoro::<Integer>();
         let _cross = cross_product::<Integer>();
         let _affine = affine_transformations_line::<Integer>();
+        let _three_d = three_dimensional(
+            Integer::from(1),
+            Integer::from(1),
+            Integer::from(1),
+            Integer::from(0),
+        );
+        let _rank0 = three_dimensional_by_rank::<Integer>(0, None).unwrap();
+        let _su2 = su::<Integer>(2).unwrap();
 
         // If we got here, all factories work
         assert!(true);
