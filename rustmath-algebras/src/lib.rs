@@ -14,6 +14,7 @@
 pub mod free_algebra;
 pub mod finite_dimensional_algebra;
 pub mod finite_dimensional_algebra_ideal;
+pub mod finite_dimensional_algebra_morphism;
 pub mod quotient_algebra;
 pub mod clifford_algebra;
 pub mod group_algebra;
@@ -32,6 +33,9 @@ pub mod commutative_dga;
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
 pub use finite_dimensional_algebra_ideal::FiniteDimensionalAlgebraIdeal;
+pub use finite_dimensional_algebra_morphism::{
+    FiniteDimensionalAlgebraMorphism, FiniteDimensionalAlgebraHomset,
+};
 pub use quotient_algebra::*;
 pub use clifford_algebra::{
     CliffordAlgebra, CliffordAlgebraElement, CliffordBasisElement, CliffordAlgebraIndices,
