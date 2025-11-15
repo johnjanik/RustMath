@@ -377,22 +377,22 @@ fn solve_quartic_symbolic(expr: &Expr, var: &Symbol) -> Solution {
 /// - sin(nx) = a, cos(nx) = a (multiple angles)
 /// - a*sin(x) + b*cos(x) = c
 /// - Inverse trig equations
-fn solve_trig_equation(expr: &Expr, var: &Symbol) -> Option<Solution> {
+fn solve_trig_equation_internal(expr: &Expr, var: &Symbol) -> Option<Solution> {
     match expr {
         // Pattern: trig(arg) - c = 0
         Expr::Binary(BinaryOp::Sub, left, right) => {
             match left.as_ref() {
                 // sin(arg) = c
                 Expr::Unary(UnaryOp::Sin, arg) => {
-                    return Some(solve_sin_equation(arg, right, var));
+                    return Some(solve_sin_equation_internal(arg, right, var));
                 }
                 // cos(arg) = c
                 Expr::Unary(UnaryOp::Cos, arg) => {
-                    return Some(solve_cos_equation(arg, right, var));
+                    return Some(solve_cos_equation_internal(arg, right, var));
                 }
                 // tan(arg) = c
                 Expr::Unary(UnaryOp::Tan, arg) => {
-                    return Some(solve_tan_equation(arg, right, var));
+                    return Some(solve_tan_equation_internal(arg, right, var));
                 }
                 // arcsin(arg) = c => arg = sin(c)
                 Expr::Unary(UnaryOp::Arcsin, arg) => {
@@ -444,7 +444,7 @@ fn solve_trig_equation(expr: &Expr, var: &Symbol) -> Option<Solution> {
 }
 
 /// Solve sin(arg) = c
-fn solve_sin_equation(arg: &Expr, c: &Expr, var: &Symbol) -> Solution {
+fn solve_sin_equation_internal(arg: &Expr, c: &Expr, var: &Symbol) -> Solution {
     // Check if arg is just the variable
     if let Expr::Symbol(s) = arg {
         if s == var {
@@ -497,7 +497,7 @@ fn solve_sin_equation(arg: &Expr, c: &Expr, var: &Symbol) -> Solution {
 }
 
 /// Solve cos(arg) = c
-fn solve_cos_equation(arg: &Expr, c: &Expr, var: &Symbol) -> Solution {
+fn solve_cos_equation_internal(arg: &Expr, c: &Expr, var: &Symbol) -> Solution {
     // Check if arg is just the variable
     if let Expr::Symbol(s) = arg {
         if s == var {
@@ -544,7 +544,7 @@ fn solve_cos_equation(arg: &Expr, c: &Expr, var: &Symbol) -> Solution {
 }
 
 /// Solve tan(arg) = c
-fn solve_tan_equation(arg: &Expr, c: &Expr, var: &Symbol) -> Solution {
+fn solve_tan_equation_internal(arg: &Expr, c: &Expr, var: &Symbol) -> Solution {
     // Check if arg is just the variable
     if let Expr::Symbol(s) = arg {
         if s == var {
@@ -701,7 +701,7 @@ fn arg_contains_var(arg: &Expr, var: &Symbol) -> bool {
 /// Solve transcendental equations (limited support)
 fn solve_transcendental(expr: &Expr, var: &Symbol) -> Solution {
     // Try trigonometric equations first
-    if let Some(sol) = solve_trig_equation(expr, var) {
+    if let Some(sol) = solve_trig_equation_internal(expr, var) {
         return sol;
     }
 

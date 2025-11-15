@@ -668,9 +668,9 @@ Implemented,STUB,sage.calculus.functional.lim,sage.calculus.functional,lim,funct
 Implemented,STUB,sage.calculus.functional.limit,sage.calculus.functional,limit,function,,https://github.com/sagemath/sage/blob/develop/src/sage/calculus/functional.py#L325
 Implemented,STUB,sage.calculus.functional.simplify,sage.calculus.functional,simplify,function,,https://github.com/sagemath/sage/blob/develop/src/sage/calculus/functional.py#L32
 Implemented,STUB,sage.calculus.functional.taylor,sage.calculus.functional,taylor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/calculus/functional.py#L381
-,,sage.calculus.functions,sage.calculus.functions,functions,module,,https://github.com/sagemath/sage/blob/develop/src/sage/calculus/functions.py#L109
-,,sage.calculus.functions.jacobian,sage.calculus.functions,jacobian,function,,https://github.com/sagemath/sage/blob/develop/src/sage/calculus/functions.py#L109
-,,sage.calculus.functions.wronskian,sage.calculus.functions,wronskian,function,,https://github.com/sagemath/sage/blob/develop/src/sage/calculus/functions.py#L13
+Implemented,Full,sage.calculus.functions,sage.calculus.functions,functions,module,,https://github.com/sagemath/sage/blob/develop/src/sage/calculus/functions.py#L109
+Implemented,Full,sage.calculus.functions.jacobian,sage.calculus.functions,jacobian,function,,https://github.com/sagemath/sage/blob/develop/src/sage/calculus/functions.py#L109
+Implemented,Full,sage.calculus.functions.wronskian,sage.calculus.functions,wronskian,function,,https://github.com/sagemath/sage/blob/develop/src/sage/calculus/functions.py#L13
 Implemented,STUB,sage.calculus.integration,sage.calculus.integration,integration,module,,https://github.com/sagemath/sage/blob/develop/src/sage/calculus/integration.pyx#L443
 Implemented,STUB,sage.calculus.integration.PyFunctionWrapper,sage.calculus.integration,PyFunctionWrapper,class,object,
 Implemented,STUB,sage.calculus.integration.compiled_integrand,sage.calculus.integration,compiled_integrand,class,object,
