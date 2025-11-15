@@ -11,10 +11,19 @@
 pub mod cartan_type;
 pub mod root_system;
 pub mod weyl_group;
+pub mod abelian;
+pub mod classical;
 
 pub use cartan_type::{Affinity, CartanLetter, CartanType};
 pub use root_system::{Root, RootSystem};
 pub use weyl_group::{WeylGroup, WeylGroupElement};
+pub use abelian::{
+    AbelianLieAlgebra, AbelianLieAlgebraElement, InfiniteDimensionalAbelianLieAlgebra, LieAlgebra,
+};
+pub use classical::{
+    GeneralLinearLieAlgebra, SpecialLinearLieAlgebra, SpecialOrthogonalLieAlgebra,
+    SymplecticLieAlgebra,
+};
 
 #[cfg(test)]
 mod tests {
