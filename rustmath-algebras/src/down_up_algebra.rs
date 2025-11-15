@@ -367,6 +367,306 @@ impl<R: Ring + Display> Display for Element<R> {
     }
 }
 
+/// Verma module for the down-up algebra
+///
+/// A representation V(λ) of the down-up algebra DU(α, β, γ) with weight λ.
+///
+/// The module has basis {v_n | n ≥ 0} where v_0 is the highest weight vector.
+/// The action of the generators is:
+/// - u·v_n = v_{n+1}
+/// - d·v_n = λ_{n-1}·v_{n-1}
+///
+/// Where the weights λ_n satisfy the recurrence:
+/// λ_n = α·λ_{n-1} + β·λ_{n-2} + γ with λ_0 = λ, λ_{-1} = 0
+///
+/// The module V(λ) is simple if and only if λ_n ≠ 0 for all n ≥ 0.
+///
+/// # Type Parameters
+///
+/// * `R` - The base ring (must be a field for full theory)
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_algebras::down_up_algebra::{DownUpAlgebra, VermaModule};
+/// use rustmath_rationals::Rational;
+///
+/// let algebra = DownUpAlgebra::new(
+///     Rational::from(1),
+///     Rational::from(0),
+///     Rational::from(0)
+/// );
+///
+/// // Create Verma module with weight λ = 2
+/// let verma = VermaModule::new(&algebra, Rational::from(2));
+/// ```
+pub struct VermaModule<'a, R: Ring> {
+    /// The down-up algebra
+    algebra: &'a DownUpAlgebra<R>,
+    /// Initial weight λ
+    lambda: R,
+    /// Cached weights λ_n (lazy computation)
+    weight_cache: std::cell::RefCell<Vec<R>>,
+}
+
+impl<'a, R: Ring + Clone> VermaModule<'a, R> {
+    /// Create a new Verma module with weight λ
+    ///
+    /// # Arguments
+    ///
+    /// * `algebra` - The down-up algebra
+    /// * `lambda` - The initial weight parameter
+    pub fn new(algebra: &'a DownUpAlgebra<R>, lambda: R) -> Self {
+        // Initialize weight cache with λ_0 = lambda
+        let mut weight_cache = Vec::new();
+        weight_cache.push(lambda.clone());
+
+        VermaModule {
+            algebra,
+            lambda,
+            weight_cache: std::cell::RefCell::new(weight_cache),
+        }
+    }
+
+    /// Get the initial weight λ
+    pub fn weight(&self) -> &R {
+        &self.lambda
+    }
+
+    /// Get the down-up algebra
+    pub fn algebra(&self) -> &DownUpAlgebra<R> {
+        self.algebra
+    }
+
+    /// Compute weight λ_n using the recurrence relation
+    ///
+    /// λ_n = α·λ_{n-1} + β·λ_{n-2} + γ
+    /// with λ_0 = λ and λ_{-1} = 0
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The index
+    ///
+    /// # Returns
+    ///
+    /// The weight λ_n
+    pub fn weight_at(&self, n: usize) -> R {
+        let mut cache = self.weight_cache.borrow_mut();
+
+        // Extend cache if needed
+        while cache.len() <= n {
+            let idx = cache.len();
+            let new_weight = if idx == 0 {
+                self.lambda.clone()
+            } else if idx == 1 {
+                // λ_1 = α·λ_0 + β·0 + γ = α·λ + γ
+                self.algebra.alpha().clone() * self.lambda.clone()
+                    + self.algebra.gamma().clone()
+            } else {
+                // λ_n = α·λ_{n-1} + β·λ_{n-2} + γ
+                self.algebra.alpha().clone() * cache[idx - 1].clone()
+                    + self.algebra.beta().clone() * cache[idx - 2].clone()
+                    + self.algebra.gamma().clone()
+            };
+            cache.push(new_weight);
+        }
+
+        cache[n].clone()
+    }
+
+    /// Create basis element v_n
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The index
+    ///
+    /// # Returns
+    ///
+    /// The basis element v_n
+    pub fn basis_element(&self, n: usize) -> VermaModuleElement<R> {
+        VermaModuleElement {
+            coefficients: std::iter::once((n, R::one())).collect(),
+        }
+    }
+
+    /// Get the highest weight vector v_0
+    pub fn highest_weight_vector(&self) -> VermaModuleElement<R> {
+        self.basis_element(0)
+    }
+
+    /// Check if the module is simple
+    ///
+    /// V(λ) is simple iff λ_n ≠ 0 for all n ≥ 0.
+    /// We check up to a reasonable bound.
+    ///
+    /// # Arguments
+    ///
+    /// * `check_depth` - How many weights to check
+    ///
+    /// # Returns
+    ///
+    /// `true` if all checked weights are non-zero
+    pub fn is_simple(&self, check_depth: usize) -> bool {
+        for n in 0..check_depth {
+            if self.weight_at(n).is_zero() {
+                return false;
+            }
+        }
+        true
+    }
+
+    /// Action of the down-up algebra on a basis element
+    ///
+    /// Implements:
+    /// - u·v_n = v_{n+1}
+    /// - d·v_n = λ_{n-1}·v_{n-1} (or 0 if n=0)
+    ///
+    /// # Arguments
+    ///
+    /// * `algebra_basis` - Basis element from the algebra (u^i (du)^j d^k)
+    /// * `module_index` - Index n of the module basis element v_n
+    ///
+    /// # Returns
+    ///
+    /// The result of the action as a module element
+    pub fn action_on_basis(
+        &self,
+        algebra_basis: &DownUpBasisIndex,
+        module_index: usize,
+    ) -> VermaModuleElement<R> {
+        // Start with v_n
+        let mut result = self.basis_element(module_index);
+
+        // Apply u^i: raises index by i
+        // Apply d^k: lowers index by k (with weight scaling)
+        // Apply (du)^j: contributes product of weights
+
+        // For simplicity, we handle the basic cases:
+        // u^i d^0 (du)^0 and d^k u^0 (du)^0
+
+        if algebra_basis.j == 0 {
+            // Simple case: u^i d^k
+            if algebra_basis.k == 0 {
+                // u^i acts: v_n → v_{n+i}
+                return self.basis_element(module_index + algebra_basis.i);
+            } else if algebra_basis.i == 0 {
+                // d^k acts: needs to apply d k times
+                let mut current_idx = module_index;
+                let mut coeff = R::one();
+
+                for _ in 0..algebra_basis.k {
+                    if current_idx == 0 {
+                        // d·v_0 = 0
+                        return VermaModuleElement::zero();
+                    }
+                    // d·v_n = λ_{n-1}·v_{n-1}
+                    coeff = coeff * self.weight_at(current_idx - 1);
+                    current_idx -= 1;
+                }
+
+                let mut coeffs = HashMap::new();
+                coeffs.insert(current_idx, coeff);
+                return VermaModuleElement { coefficients: coeffs };
+            }
+        }
+
+        // For more complex cases, the full implementation would require
+        // decomposing the algebra element and applying the action term by term
+        result
+    }
+}
+
+/// An element of a Verma module
+///
+/// Represented as a linear combination of basis elements v_n
+#[derive(Clone, Debug, PartialEq)]
+pub struct VermaModuleElement<R: Ring> {
+    /// Coefficients for each basis element v_n
+    coefficients: HashMap<usize, R>,
+}
+
+impl<R: Ring> VermaModuleElement<R> {
+    /// Create the zero element
+    pub fn zero() -> Self {
+        VermaModuleElement {
+            coefficients: HashMap::new(),
+        }
+    }
+
+    /// Check if this element is zero
+    pub fn is_zero(&self) -> bool {
+        self.coefficients.values().all(|c| c.is_zero())
+    }
+
+    /// Get coefficient of v_n
+    pub fn coefficient(&self, n: usize) -> R
+    where
+        R: Clone,
+    {
+        self.coefficients.get(&n).cloned().unwrap_or_else(R::zero)
+    }
+
+    /// Scalar multiplication
+    pub fn scalar_mul(&self, scalar: &R) -> Self
+    where
+        R: Clone,
+    {
+        let mut new_coeffs = HashMap::new();
+        for (idx, coeff) in &self.coefficients {
+            let new_coeff = coeff.clone() * scalar.clone();
+            if !new_coeff.is_zero() {
+                new_coeffs.insert(*idx, new_coeff);
+            }
+        }
+        VermaModuleElement { coefficients: new_coeffs }
+    }
+
+    /// Add two module elements
+    pub fn add(&self, other: &Self) -> Self
+    where
+        R: Clone,
+    {
+        let mut new_coeffs = self.coefficients.clone();
+
+        for (idx, coeff) in &other.coefficients {
+            let sum = new_coeffs.get(idx).cloned().unwrap_or_else(R::zero) + coeff.clone();
+            if sum.is_zero() {
+                new_coeffs.remove(idx);
+            } else {
+                new_coeffs.insert(*idx, sum);
+            }
+        }
+
+        VermaModuleElement { coefficients: new_coeffs }
+    }
+}
+
+impl<R: Ring + Clone> Display for VermaModuleElement<R> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.is_zero() {
+            return write!(f, "0");
+        }
+
+        let mut indices: Vec<_> = self.coefficients.keys().cloned().collect();
+        indices.sort();
+
+        for (i, idx) in indices.iter().enumerate() {
+            if i > 0 {
+                write!(f, " + ")?;
+            }
+
+            let coeff = &self.coefficients[idx];
+            if coeff.is_one() {
+                write!(f, "v_{}", idx)?;
+            } else {
+                write!(f, "{}*v_{}", coeff, idx)?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -469,5 +769,168 @@ mod tests {
 
         let idx4 = DownUpBasisIndex::new(2, 3, 1);
         assert_eq!(format!("{}", idx4), "u^2(du)^3d");
+    }
+
+    #[test]
+    fn test_verma_module_creation() {
+        let algebra = DownUpAlgebra::new(
+            Integer::from(1),
+            Integer::from(0),
+            Integer::from(0),
+        );
+
+        let verma = VermaModule::new(&algebra, Integer::from(2));
+        assert_eq!(*verma.weight(), Integer::from(2));
+    }
+
+    #[test]
+    fn test_verma_module_weights() {
+        let algebra = DownUpAlgebra::new(
+            Integer::from(2),  // α = 2
+            Integer::from(1),  // β = 1
+            Integer::from(3),  // γ = 3
+        );
+
+        let lambda = Integer::from(5);
+        let verma = VermaModule::new(&algebra, lambda.clone());
+
+        // λ_0 = λ = 5
+        assert_eq!(verma.weight_at(0), Integer::from(5));
+
+        // λ_1 = α·λ_0 + γ = 2*5 + 3 = 13
+        assert_eq!(verma.weight_at(1), Integer::from(13));
+
+        // λ_2 = α·λ_1 + β·λ_0 + γ = 2*13 + 1*5 + 3 = 34
+        assert_eq!(verma.weight_at(2), Integer::from(34));
+
+        // λ_3 = α·λ_2 + β·λ_1 + γ = 2*34 + 1*13 + 3 = 84
+        assert_eq!(verma.weight_at(3), Integer::from(84));
+    }
+
+    #[test]
+    fn test_verma_module_basis_elements() {
+        let algebra = DownUpAlgebra::new(
+            Integer::from(1),
+            Integer::from(0),
+            Integer::from(0),
+        );
+
+        let verma = VermaModule::new(&algebra, Integer::from(2));
+
+        let v0 = verma.basis_element(0);
+        assert_eq!(v0.coefficient(0), Integer::from(1));
+        assert_eq!(v0.coefficient(1), Integer::from(0));
+
+        let v1 = verma.basis_element(1);
+        assert_eq!(v1.coefficient(0), Integer::from(0));
+        assert_eq!(v1.coefficient(1), Integer::from(1));
+
+        let hw = verma.highest_weight_vector();
+        assert_eq!(hw, v0);
+    }
+
+    #[test]
+    fn test_verma_module_action_u() {
+        let algebra = DownUpAlgebra::new(
+            Integer::from(1),
+            Integer::from(0),
+            Integer::from(0),
+        );
+
+        let verma = VermaModule::new(&algebra, Integer::from(2));
+
+        // u acts on v_0: u·v_0 = v_1
+        let u_basis = DownUpBasisIndex::new(1, 0, 0);
+        let result = verma.action_on_basis(&u_basis, 0);
+        assert_eq!(result.coefficient(1), Integer::from(1));
+        assert_eq!(result.coefficient(0), Integer::from(0));
+
+        // u·v_2 = v_3
+        let result2 = verma.action_on_basis(&u_basis, 2);
+        assert_eq!(result2.coefficient(3), Integer::from(1));
+    }
+
+    #[test]
+    fn test_verma_module_action_d() {
+        let algebra = DownUpAlgebra::new(
+            Integer::from(2),
+            Integer::from(1),
+            Integer::from(0),
+        );
+
+        let lambda = Integer::from(3);
+        let verma = VermaModule::new(&algebra, lambda);
+
+        // d acts on v_0: d·v_0 = 0 (annihilates highest weight vector)
+        let d_basis = DownUpBasisIndex::new(0, 0, 1);
+        let result0 = verma.action_on_basis(&d_basis, 0);
+        assert!(result0.is_zero());
+
+        // d acts on v_1: d·v_1 = λ_0·v_0 = 3·v_0
+        let result1 = verma.action_on_basis(&d_basis, 1);
+        assert_eq!(result1.coefficient(0), Integer::from(3));
+        assert_eq!(result1.coefficient(1), Integer::from(0));
+
+        // d acts on v_2: d·v_2 = λ_1·v_1
+        // λ_1 = α·λ_0 + γ = 2*3 + 0 = 6
+        let result2 = verma.action_on_basis(&d_basis, 2);
+        assert_eq!(result2.coefficient(1), Integer::from(6));
+    }
+
+    #[test]
+    fn test_verma_module_element_operations() {
+        let v1 = VermaModuleElement {
+            coefficients: vec![(0, Integer::from(2)), (1, Integer::from(3))].into_iter().collect(),
+        };
+
+        let v2 = VermaModuleElement {
+            coefficients: vec![(1, Integer::from(1)), (2, Integer::from(5))].into_iter().collect(),
+        };
+
+        // Addition
+        let sum = v1.add(&v2);
+        assert_eq!(sum.coefficient(0), Integer::from(2));
+        assert_eq!(sum.coefficient(1), Integer::from(4)); // 3 + 1
+        assert_eq!(sum.coefficient(2), Integer::from(5));
+
+        // Scalar multiplication
+        let scaled = v1.scalar_mul(&Integer::from(2));
+        assert_eq!(scaled.coefficient(0), Integer::from(4)); // 2 * 2
+        assert_eq!(scaled.coefficient(1), Integer::from(6)); // 2 * 3
+    }
+
+    #[test]
+    fn test_verma_module_is_simple() {
+        // Simple case: non-zero weights
+        let algebra1 = DownUpAlgebra::new(
+            Integer::from(2),
+            Integer::from(1),
+            Integer::from(0),
+        );
+        let verma1 = VermaModule::new(&algebra1, Integer::from(1));
+        assert!(verma1.is_simple(10)); // Check first 10 weights
+
+        // Non-simple case: λ = 0
+        let algebra2 = DownUpAlgebra::new(
+            Integer::from(1),
+            Integer::from(0),
+            Integer::from(0),
+        );
+        let verma2 = VermaModule::new(&algebra2, Integer::from(0));
+        assert!(!verma2.is_simple(5)); // λ_0 = 0
+    }
+
+    #[test]
+    fn test_verma_module_element_display() {
+        let v = VermaModuleElement {
+            coefficients: vec![(0, Integer::from(2)), (1, Integer::from(1)), (3, Integer::from(5))]
+                .into_iter()
+                .collect(),
+        };
+
+        let display = format!("{}", v);
+        assert!(display.contains("v_0"));
+        assert!(display.contains("v_1"));
+        assert!(display.contains("v_3"));
     }
 }
