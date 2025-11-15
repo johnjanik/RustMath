@@ -162,6 +162,15 @@ impl<R: Ring, I: Hash + Eq + Clone> CombinatorialFreeModuleElement<R, I> {
         }
         result
     }
+
+    /// Iterate over all (index, coefficient) pairs
+    ///
+    /// # Returns
+    ///
+    /// An iterator over references to (index, coefficient) pairs
+    pub fn iter(&self) -> impl Iterator<Item = (&I, &R)> {
+        self.terms.iter()
+    }
 }
 
 impl<R: Ring, I: Hash + Eq + Clone> PartialEq for CombinatorialFreeModuleElement<R, I> {

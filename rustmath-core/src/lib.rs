@@ -6,6 +6,10 @@
 
 pub mod traits;
 pub mod error;
+pub mod parent;
+pub mod unique_representation;
 
 pub use error::{MathError, Result};
 pub use traits::*;
+pub use parent::*;
+pub use unique_representation::{UniqueCache, UniqueRepresentation};
