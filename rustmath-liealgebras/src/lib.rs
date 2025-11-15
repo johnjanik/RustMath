@@ -32,6 +32,7 @@ pub mod structure_coefficients;
 pub mod morphism;
 pub mod subalgebra;
 pub mod quotient;
+pub mod chevalley_basis;
 
 pub use cartan_type::{Affinity, CartanLetter, CartanType};
 pub use root_system::{Root, RootSystem};
@@ -107,6 +108,10 @@ pub use subalgebra::{
 pub use quotient::{
     LieQuotient, QuotientElement, ProjectionMorphism,
     NaturalProjection, StructureCoefficients,
+};
+pub use chevalley_basis::{
+    LieAlgebraChevalleyBasis, LieAlgebraChevalleyBasisSimplyLaced,
+    ChevalleyBasisElement,
 };
 
 #[cfg(test)]
