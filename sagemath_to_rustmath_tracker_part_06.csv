@@ -757,9 +757,9 @@ Implemented,Partial,sage.geometry.integral_points.print_cache,sage.geometry.inte
 Implemented,Partial,sage.geometry.integral_points.ray_matrix_normal_form,sage.geometry.integral_points,ray_matrix_normal_form,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/integral_points.py#L146
 Implemented,Full,sage.geometry.integral_points.rectangular_box_points,sage.geometry.integral_points,rectangular_box_points,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/integral_points.py#L344
 Implemented,Full,sage.geometry.integral_points.simplex_points,sage.geometry.integral_points,simplex_points,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/integral_points.py#L243
-,,sage.geometry.lattice_polytope,sage.geometry.lattice_polytope,lattice_polytope,module,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/lattice_polytope.py#L199
-,,sage.geometry.lattice_polytope.LatticePolytope,sage.geometry.lattice_polytope,LatticePolytope,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/lattice_polytope.py#L199
-,,sage.geometry.lattice_polytope.LatticePolytopeClass,sage.geometry.lattice_polytope,LatticePolytopeClass,class,"ConvexSet_compact, Hashable, LatticePolytope",https://github.com/sagemath/sage/blob/develop/src/sage/geometry/lattice_polytope.py#L497
+Implemented,Full,sage.geometry.lattice_polytope,sage.geometry.lattice_polytope,lattice_polytope,module,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/lattice_polytope.py#L199
+Implemented,Full,sage.geometry.lattice_polytope.LatticePolytope,sage.geometry.lattice_polytope,LatticePolytope,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/lattice_polytope.py#L199
+Implemented,Full,sage.geometry.lattice_polytope.LatticePolytopeClass,sage.geometry.lattice_polytope,LatticePolytopeClass,class,"ConvexSet_compact, Hashable, LatticePolytope",https://github.com/sagemath/sage/blob/develop/src/sage/geometry/lattice_polytope.py#L497
 ,,sage.geometry.lattice_polytope.NefPartition,sage.geometry.lattice_polytope,NefPartition,class,"Delta_polar, SageObject, Hashable",https://github.com/sagemath/sage/blob/develop/src/sage/geometry/lattice_polytope.py#L4133
 ,,sage.geometry.lattice_polytope.ReflexivePolytope,sage.geometry.lattice_polytope,ReflexivePolytope,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/lattice_polytope.py#L357
 ,,sage.geometry.lattice_polytope.ReflexivePolytopes,sage.geometry.lattice_polytope,ReflexivePolytopes,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/lattice_polytope.py#L417
@@ -769,8 +769,8 @@ Implemented,Full,sage.geometry.integral_points.simplex_points,sage.geometry.inte
 ,,sage.geometry.lattice_polytope.all_nef_partitions,sage.geometry.lattice_polytope,all_nef_partitions,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/lattice_polytope.py#L5291
 ,,sage.geometry.lattice_polytope.all_points,sage.geometry.lattice_polytope,all_points,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/lattice_polytope.py#L5345
 ,,sage.geometry.lattice_polytope.all_polars,sage.geometry.lattice_polytope,all_polars,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/lattice_polytope.py#L5397
-,,sage.geometry.lattice_polytope.convex_hull,sage.geometry.lattice_polytope,convex_hull,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/lattice_polytope.py#L5433
-,,sage.geometry.lattice_polytope.cross_polytope,sage.geometry.lattice_polytope,cross_polytope,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/lattice_polytope.py#L5478
+Implemented,Full,sage.geometry.lattice_polytope.convex_hull,sage.geometry.lattice_polytope,convex_hull,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/lattice_polytope.py#L5433
+Implemented,Full,sage.geometry.lattice_polytope.cross_polytope,sage.geometry.lattice_polytope,cross_polytope,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/lattice_polytope.py#L5478
 ,,sage.geometry.lattice_polytope.is_LatticePolytope,sage.geometry.lattice_polytope,is_LatticePolytope,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/lattice_polytope.py#L465
 ,,sage.geometry.lattice_polytope.is_NefPartition,sage.geometry.lattice_polytope,is_NefPartition,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/lattice_polytope.py#L4102
 ,,sage.geometry.lattice_polytope.minkowski_sum,sage.geometry.lattice_polytope,minkowski_sum,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/lattice_polytope.py#L5508
