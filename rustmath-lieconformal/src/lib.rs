@@ -67,6 +67,15 @@ pub use virasoro_lie_conformal_algebra::{
 pub use weyl_lie_conformal_algebra::{
     WeylLieConformalAlgebra, WeylLCAElement,
 };
+pub use affine_lie_conformal_algebra::{
+    AffineLieConformalAlgebra, AffineLCAElement,
+};
+pub use free_bosons_lie_conformal_algebra::{
+    FreeBosonsLieConformalAlgebra, FreeBosonsLCAElement,
+};
+pub use free_fermions_lie_conformal_algebra::{
+    FreeFermionsLieConformalAlgebra, FreeFermionsLCAElement,
+};
 
 #[cfg(test)]
 mod tests {
