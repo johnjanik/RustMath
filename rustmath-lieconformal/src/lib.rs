@@ -86,6 +86,12 @@ pub use fermionic_ghosts_lie_conformal_algebra::{
 pub use finitely_freely_generated_lca::{
     FinitelyFreelyGeneratedLCA, FinitelyFreelyGeneratedElement,
 };
+pub use n2_lie_conformal_algebra::{
+    N2LieConformalAlgebra, N2LCAElement, N2Generator,
+};
+pub use neveu_schwarz_lie_conformal_algebra::{
+    NeveuSchwarzLieConformalAlgebra, NeveuSchwarzLCAElement, NeveuSchwarzGenerator,
+};
 
 #[cfg(test)]
 mod tests {
