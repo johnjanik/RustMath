@@ -453,7 +453,7 @@ Implemented,Full,sage.algebras.splitting_algebra,sage.algebras.splitting_algebra
 Implemented,Full,sage.algebras.splitting_algebra.SplittingAlgebra,sage.algebras.splitting_algebra,SplittingAlgebra,class,PolynomialQuotientRing_domain,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/splitting_algebra.py#L131
 Implemented,Full,sage.algebras.splitting_algebra.SplittingAlgebraElement,sage.algebras.splitting_algebra,SplittingAlgebraElement,class,PolynomialQuotientRingElement,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/splitting_algebra.py#L48
 Implemented,Full,sage.algebras.splitting_algebra.solve_with_extension,sage.algebras.splitting_algebra,solve_with_extension,function,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/splitting_algebra.py#L642
-,,sage.algebras.steenrod.steenrod_algebra,sage.algebras.steenrod.steenrod_algebra,steenrod_algebra,module,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/steenrod/steenrod_algebra.py#L4183
+Implemented,Full,sage.algebras.steenrod.steenrod_algebra,sage.algebras.steenrod.steenrod_algebra,steenrod_algebra,module,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/steenrod/steenrod_algebra.py#L4183
 ,,sage.algebras.steenrod.steenrod_algebra.AA,sage.algebras.steenrod.steenrod_algebra,AA,function,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/steenrod/steenrod_algebra.py#L4183
 ,,sage.algebras.steenrod.steenrod_algebra.Element,sage.algebras.steenrod.steenrod_algebra,Element,class,IndexedFreeModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/steenrod/steenrod_algebra.py#L3097
 ,,sage.algebras.steenrod.steenrod_algebra.Sq,sage.algebras.steenrod.steenrod_algebra,Sq,function,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/steenrod/steenrod_algebra.py#L4223
@@ -496,25 +496,25 @@ Implemented,Full,sage.algebras.splitting_algebra.solve_with_extension,sage.algeb
 ,,sage.algebras.steenrod.steenrod_algebra_mult.milnor_multiplication_odd,sage.algebras.steenrod.steenrod_algebra_mult,milnor_multiplication_odd,function,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/steenrod/steenrod_algebra_mult.py#L375
 ,,sage.algebras.steenrod.steenrod_algebra_mult.multinomial,sage.algebras.steenrod.steenrod_algebra_mult,multinomial,function,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/steenrod/steenrod_algebra_mult.py#L321
 ,,sage.algebras.steenrod.steenrod_algebra_mult.multinomial_odd,sage.algebras.steenrod.steenrod_algebra_mult,multinomial_odd,function,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/steenrod/steenrod_algebra_mult.py#L571
-,,sage.algebras.tensor_algebra,sage.algebras.tensor_algebra,tensor_algebra,module,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/tensor_algebra.py#L690
+Implemented,Full,sage.algebras.tensor_algebra,sage.algebras.tensor_algebra,tensor_algebra,module,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/tensor_algebra.py#L690
 ,,sage.algebras.tensor_algebra.BaseRingLift,sage.algebras.tensor_algebra,BaseRingLift,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/tensor_algebra.py#L690
 ,,sage.algebras.tensor_algebra.TensorAlgebra,sage.algebras.tensor_algebra,TensorAlgebra,class,"M, CombinatorialFreeModule",https://github.com/sagemath/sage/blob/develop/src/sage/algebras/tensor_algebra.py#L34
 ,,sage.algebras.tensor_algebra.TensorAlgebraFunctor,sage.algebras.tensor_algebra,TensorAlgebraFunctor,class,ConstructionFunctor,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/tensor_algebra.py#L589
 ,,sage.algebras.tensor_algebra.rank,sage.algebras.tensor_algebra,rank,attribute,,
-,,sage.algebras.weyl_algebra,sage.algebras.weyl_algebra,weyl_algebra,module,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/weyl_algebra.py#L598
+Implemented,Full,sage.algebras.weyl_algebra,sage.algebras.weyl_algebra,weyl_algebra,module,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/weyl_algebra.py#L598
 ,,sage.algebras.weyl_algebra.DifferentialWeylAlgebra,sage.algebras.weyl_algebra,DifferentialWeylAlgebra,class,"R, UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/algebras/weyl_algebra.py#L598
 ,,sage.algebras.weyl_algebra.DifferentialWeylAlgebraAction,sage.algebras.weyl_algebra,DifferentialWeylAlgebraAction,class,"G, Action",https://github.com/sagemath/sage/blob/develop/src/sage/algebras/weyl_algebra.py#L1057
 ,,sage.algebras.weyl_algebra.DifferentialWeylAlgebraElement,sage.algebras.weyl_algebra,DifferentialWeylAlgebraElement,class,IndexedFreeModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/weyl_algebra.py#L233
 ,,sage.algebras.weyl_algebra.options,sage.algebras.weyl_algebra,options,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/weyl_algebra.py#L837
 ,,sage.algebras.weyl_algebra.repr_factored,sage.algebras.weyl_algebra,repr_factored,function,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/weyl_algebra.py#L163
 ,,sage.algebras.weyl_algebra.repr_from_monomials,sage.algebras.weyl_algebra,repr_from_monomials,function,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/weyl_algebra.py#L38
-,,sage.algebras.yangian,sage.algebras.yangian,yangian,module,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/yangian.py#L897
+Implemented,Full,sage.algebras.yangian,sage.algebras.yangian,yangian,module,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/yangian.py#L897
 ,,sage.algebras.yangian.GradedYangianBase,sage.algebras.yangian,GradedYangianBase,class,"A, AssociatedGradedAlgebra",https://github.com/sagemath/sage/blob/develop/src/sage/algebras/yangian.py#L897
 ,,sage.algebras.yangian.GradedYangianLoop,sage.algebras.yangian,GradedYangianLoop,class,"Y, GradedYangianBase",https://github.com/sagemath/sage/blob/develop/src/sage/algebras/yangian.py#L984
 ,,sage.algebras.yangian.GradedYangianNatural,sage.algebras.yangian,GradedYangianNatural,class,"Y, GradedYangianBase",https://github.com/sagemath/sage/blob/develop/src/sage/algebras/yangian.py#L943
 ,,sage.algebras.yangian.Yangian,sage.algebras.yangian,Yangian,class,CombinatorialFreeModule,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/yangian.py#L35
 ,,sage.algebras.yangian.YangianLevel,sage.algebras.yangian,YangianLevel,class,Yangian,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/yangian.py#L637
-,,sage.algebras.yokonuma_hecke_algebra,sage.algebras.yokonuma_hecke_algebra,yokonuma_hecke_algebra,module,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/yokonuma_hecke_algebra.py#L30
+Implemented,Full,sage.algebras.yokonuma_hecke_algebra,sage.algebras.yokonuma_hecke_algebra,yokonuma_hecke_algebra,module,,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/yokonuma_hecke_algebra.py#L30
 ,,sage.algebras.yokonuma_hecke_algebra.Element,sage.algebras.yokonuma_hecke_algebra,Element,class,IndexedFreeModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/algebras/yokonuma_hecke_algebra.py#L462
 ,,sage.algebras.yokonuma_hecke_algebra.YokonumaHeckeAlgebra,sage.algebras.yokonuma_hecke_algebra,YokonumaHeckeAlgebra,class,"R, CombinatorialFreeModule",https://github.com/sagemath/sage/blob/develop/src/sage/algebras/yokonuma_hecke_algebra.py#L30
 Implemented,FULL,sage.arith,sage.arith,arith,module,,
