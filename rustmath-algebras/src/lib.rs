@@ -54,6 +54,8 @@ pub mod quantum_clifford;
 pub mod ace_quantum_onsager;
 pub mod quantum_matrix_coordinate;
 pub mod quaternion_algebra;
+pub mod orlik_solomon;
+pub mod orlik_terao;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -146,6 +148,12 @@ pub use quantum_matrix_coordinate::{
     MatrixIndex, QuantumMatrixMonomial,
 };
 pub use quaternion_algebra::{QuaternionAlgebra, Quaternion};
+pub use orlik_solomon::{
+    Matroid, OrlikSolomonAlgebra, OrlikSolomonElement, OrlikSolomonInvariantAlgebra,
+};
+pub use orlik_terao::{
+    OrlikTeraoAlgebra, OrlikTeraoElement, OrlikTeraoInvariantAlgebra,
+};
 
 #[cfg(test)]
 mod tests {
