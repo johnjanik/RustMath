@@ -14,6 +14,7 @@ pub mod matrix;
 pub mod polynomial_matrix;
 pub mod polynomial_ops;
 pub mod sparse;
+pub mod special;
 pub mod vector;
 pub mod vector_space;
 
@@ -34,6 +35,11 @@ pub use integer_forms::{HermiteNormalForm, SmithNormalForm};
 pub use linear_solve::RowEchelonForm;
 pub use matrix::Matrix;
 pub use sparse::{SparseMatrix, SparseMatrixIterator};
+pub use special::{
+    block_diagonal_matrix, block_matrix, circulant, column_matrix, diagonal_matrix,
+    elementary_matrix_add, elementary_matrix_scale, elementary_matrix_swap, hankel, hilbert,
+    identity_matrix, jordan_block, lehmer, ones_matrix, toeplitz, vandermonde, zero_matrix,
+};
 pub use vector::Vector;
 pub use vector_space::{QuotientSpace, VectorSpace};
 
