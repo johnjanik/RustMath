@@ -640,7 +640,7 @@ Implemented,Full,sage.calculus.calculus.nintegrate,sage.calculus.calculus,ninteg
 Implemented,Full,sage.calculus.calculus.symbolic_expression_from_maxima_string,sage.calculus.calculus,symbolic_expression_from_maxima_string,function,,https://github.com/sagemath/sage/blob/develop/src/sage/calculus/calculus.py#L2236
 Implemented,Full,sage.calculus.calculus.symbolic_expression_from_string,sage.calculus.calculus,symbolic_expression_from_string,function,,https://github.com/sagemath/sage/blob/develop/src/sage/calculus/calculus.py#L2564
 Implemented,Full,sage.calculus.calculus.symbolic_product,sage.calculus.calculus,symbolic_product,function,,https://github.com/sagemath/sage/blob/develop/src/sage/calculus/calculus.py#L828
-Implemented,STUB,sage.calculus.calculus.symbolic_sum,sage.calculus.calculus,symbolic_sum,function,,https://github.com/sagemath/sage/blob/develop/src/sage/calculus/calculus.py#L445
+Implemented,Full,sage.calculus.calculus.symbolic_sum,sage.calculus.calculus,symbolic_sum,function,,https://github.com/sagemath/sage/blob/develop/src/sage/calculus/calculus.py#L445
 Implemented,Full,sage.calculus.desolvers,sage.calculus.desolvers,desolvers,module,,https://github.com/sagemath/sage/blob/develop/src/sage/calculus/desolvers.py#L179
 Implemented,Full,sage.calculus.desolvers.desolve,sage.calculus.desolvers,desolve,function,,https://github.com/sagemath/sage/blob/develop/src/sage/calculus/desolvers.py#L179
 Implemented,Full,sage.calculus.desolvers.desolve_laplace,sage.calculus.desolvers,desolve_laplace,function,,https://github.com/sagemath/sage/blob/develop/src/sage/calculus/desolvers.py#L661

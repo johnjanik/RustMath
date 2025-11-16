@@ -10,14 +10,20 @@ pub mod functional;
 pub mod integration;
 pub mod interpolation;
 pub mod interpolators;
-pub mod laplace;
+// TODO: Fix for new Expr structure
+// pub mod laplace;
 pub mod limits;
-pub mod maxima_compat;
-pub mod minpoly;
+// TODO: Fix for new Expr structure
+// pub mod maxima_compat;
+// TODO: Fix for new Expr structure
+// pub mod minpoly;
 pub mod ode;
-pub mod pochhammer;
-pub mod product;
+// TODO: Fix for new Expr structure
+// pub mod pochhammer;
+// TODO: Fix for new Expr structure
+// pub mod product;
 pub mod riemann;
+pub mod sum;
 pub mod taylor;
 pub mod transforms;
 pub mod var;
@@ -33,19 +39,23 @@ pub use functional::{expand, simplify};
 pub use integration::{integrate, nintegrate, numerical_integrate_simpson};
 pub use interpolation::{spline, CubicSpline};
 pub use interpolators::{complex_cubic_spline, polygon_spline, CCSpline, PSpline};
-pub use laplace::{
-    dummy_inverse_laplace, dummy_laplace, inverse_laplace, laplace, LaplaceAlgorithm,
-};
+// TODO: Fix for new Expr structure
+// pub use laplace::{
+//     dummy_inverse_laplace, dummy_laplace, inverse_laplace, laplace, LaplaceAlgorithm,
+// };
 pub use limits::{lim, limit, substitute, LimitDirection};
-pub use maxima_compat::{mapped_opts, maxima_options, MaximaOptions, MaximaValue};
-pub use minpoly::{minpoly, MinpolyAlgorithm, MinpolyOptions};
+// TODO: Fix for new Expr structure
+// pub use maxima_compat::{mapped_opts, maxima_options, MaximaOptions, MaximaValue};
+// pub use minpoly::{minpoly, MinpolyAlgorithm, MinpolyOptions};
 pub use ode::{ODESolver, ODESystem};
-pub use pochhammer::{dummy_pochhammer, pochhammer, pochhammer_eval, pochhammer_expand};
-pub use product::{expand_product, symbolic_product, ProductAlgorithm};
+// TODO: Fix for new Expr structure
+// pub use pochhammer::{dummy_pochhammer, pochhammer, pochhammer_eval, pochhammer_expand};
+// pub use product::{expand_product, symbolic_product, ProductAlgorithm};
 pub use riemann::{
     analytic_boundary, analytic_interior, cauchy_kernel, complex_to_rgb, complex_to_spiderweb,
     get_derivatives, RiemannMap, RGB,
 };
+pub use sum::{expand_sum, symbolic_sum, SumAlgorithm};
 pub use taylor::{laurent, maclaurin, series_coefficients, taylor};
 pub use var::{clear_all_vars, clear_vars, function, get_vars, var, var_from_string, vars};
 
