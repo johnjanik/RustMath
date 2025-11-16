@@ -259,7 +259,7 @@ impl<R: Ring + Clone + PartialEq + From<i64>> Representation<R, RepresentationEl
                 for row in 0..self.dimension {
                     let mut sum = R::from(0);
                     for col in 0..self.dimension {
-                        sum = sum.clone() + mat.get(row, col).clone() * vector.coordinates[col].clone();
+                        sum = sum.clone() + mat.get(row, col).unwrap().clone() * vector.coordinates[col].clone();
                     }
                     result[row] = result[row].clone() + coeff.clone() * sum;
                 }
@@ -404,7 +404,7 @@ impl<R: Ring + Clone + PartialEq + From<i64>> Representation<R, RepresentationEl
                 for row in 0..self.representation_dimension {
                     let mut sum = R::from(0);
                     for col in 0..self.representation_dimension {
-                        sum = sum.clone() + mat.get(row, col).clone() * vector.coordinates[col].clone();
+                        sum = sum.clone() + mat.get(row, col).unwrap().clone() * vector.coordinates[col].clone();
                     }
                     result[row] = result[row].clone() + coeff.clone() * sum;
                 }
@@ -499,7 +499,7 @@ impl<R: Ring + Clone + PartialEq + From<i64>> Representation<R, RepresentationEl
                 for row in 0..self.representation_dimension {
                     let mut sum = R::from(0);
                     for col in 0..self.representation_dimension {
-                        sum = sum.clone() + mat.get(row, col).clone() * vector.coordinates[col].clone();
+                        sum = sum.clone() + mat.get(row, col).unwrap().clone() * vector.coordinates[col].clone();
                     }
                     result[row] = result[row].clone() + coeff.clone() * sum;
                 }

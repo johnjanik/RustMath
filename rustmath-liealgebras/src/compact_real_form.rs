@@ -79,17 +79,17 @@ impl<R: Ring + Clone> CompactRealFormElement<R> {
     /// Convert to a complex matrix (for visualization)
     ///
     /// Returns A + iB as a matrix over ℂ
-    pub fn to_complex_matrix(&self) -> Matrix<Complex<R>>
+    pub fn to_complex_matrix(&self) -> Matrix<Complex>
     where
-        R: From<i64> + std::ops::Add<Output = R> + std::ops::Sub<Output = R> + std::ops::Mul<Output = R>,
+        R: From<i64> + std::ops::Add<Output = R> + std::ops::Sub<Output = R> + std::ops::Mul<Output = R> + Into<f64>,
     {
         let n = self.size();
         let mut result = Matrix::zeros(n, n);
 
         for i in 0..n {
             for j in 0..n {
-                let real_part = self.skew_symmetric.get(i, j).unwrap().clone();
-                let imag_part = self.symmetric.get(i, j).unwrap().clone();
+                let real_part: f64 = self.skew_symmetric.get(i, j).unwrap().clone().into();
+                let imag_part: f64 = self.symmetric.get(i, j).unwrap().clone().into();
                 let _ = result.set(i, j, Complex::new(real_part, imag_part));
             }
         }
