@@ -23,6 +23,9 @@ pub mod polyhedral_complex;
 pub mod hyperplane_arrangement;
 pub mod hyperbolic_space;
 pub mod lattice_polytope;
+pub mod pseudolines;
+pub mod ribbon_graph;
+pub mod riemannian_manifolds;
 
 pub use point::{Point2D, Point3D};
 pub use line::{Line2D, LineSegment2D};
@@ -34,3 +37,6 @@ pub use face_lattice::{FaceLattice, LatticeFace};
 pub use toric::{Cone, Fan, ToricVariety, projective_space_fan};
 pub use voronoi::{VoronoiDiagram, VoronoiCell, voronoi_brute_force};
 pub use lattice_polytope::{LatticePolytopeClass, lattice_polytope, cross_polytope};
+pub use pseudolines::{PseudolineArrangement, Encoding};
+pub use ribbon_graph::{RibbonGraph, make_ribbon, bipartite_ribbon_graph};
+pub use riemannian_manifolds::{ParametrizedSurface3D, SurfaceGenerators};
