@@ -848,11 +848,11 @@ Implemented,Full,sage.matrix.special.zero_matrix,sage.matrix.special,zero_matrix
 ,,sage.misc.misc_c.prod,sage.misc.misc_c,prod,function,,https://github.com/sagemath/sage/blob/develop/src/sage/misc/misc_c.pyx#L73
 ,,sage.misc.misc_c.running_total,sage.misc.misc_c,running_total,function,,https://github.com/sagemath/sage/blob/develop/src/sage/misc/misc_c.pyx#L38
 ,,sage.misc.misc_c.sized_iter,sage.misc.misc_c,sized_iter,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/misc/misc_c.pyx#L619
-,,sage.misc.mrange,sage.misc.mrange,mrange,module,,
-,,sage.misc.mrange.cantor_product,sage.misc.mrange,cantor_product,function,,https://github.com/sagemath/sage/blob/develop/src/sage/misc/mrange.py#L629
-,,sage.misc.mrange.cartesian_product_iterator,sage.misc.mrange,cartesian_product_iterator,function,,https://github.com/sagemath/sage/blob/develop/src/sage/misc/mrange.py#L598
-,,sage.misc.mrange.xmrange,sage.misc.mrange,xmrange,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/misc/mrange.py#L478
-,,sage.misc.mrange.xmrange_iter,sage.misc.mrange,xmrange_iter,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/misc/mrange.py#L225
+Implemented,Full,sage.misc.mrange,sage.misc.mrange,mrange,module,,
+Implemented,Full,sage.misc.mrange.cantor_product,sage.misc.mrange,cantor_product,function,,https://github.com/sagemath/sage/blob/develop/src/sage/misc/mrange.py#L629
+Implemented,Full,sage.misc.mrange.cartesian_product_iterator,sage.misc.mrange,cartesian_product_iterator,function,,https://github.com/sagemath/sage/blob/develop/src/sage/misc/mrange.py#L598
+Implemented,Full,sage.misc.mrange.xmrange,sage.misc.mrange,xmrange,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/misc/mrange.py#L478
+Implemented,Full,sage.misc.mrange.xmrange_iter,sage.misc.mrange,xmrange_iter,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/misc/mrange.py#L225
 ,,sage.misc.multireplace,sage.misc.multireplace,multireplace,module,,
 ,,sage.misc.multireplace.multiple_replace,sage.misc.multireplace,multiple_replace,function,,https://github.com/sagemath/sage/blob/develop/src/sage/misc/multireplace.py#L23
 ,,sage.misc.nested_class,sage.misc.nested_class,nested_class,module,,
