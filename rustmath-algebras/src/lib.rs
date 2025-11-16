@@ -60,6 +60,8 @@ pub mod rational_cherednik_algebra;
 pub mod schur_algebra;
 pub mod shuffle_algebra;
 pub mod splitting_algebra;
+pub mod quantum_group_gap;
+pub mod quantum_group_representations;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -176,6 +178,16 @@ pub use shuffle_algebra::{
 };
 pub use splitting_algebra::{
     SplittingAlgebra, SplittingAlgebraElement, solve_with_extension,
+};
+pub use quantum_group_gap::{
+    QuantumGroup, QuantumGroupModule, HighestWeightModule, HighestWeightSubmodule,
+    TensorProductOfHighestWeightModules, LowerHalfQuantumGroup,
+    QuaGroupModuleElement, QuaGroupRepresentationElement, CrystalGraphVertex,
+    QuantumGroupMorphism, QuantumGroupHomset, projection_lower_half,
+};
+pub use quantum_group_representations::{
+    QuantumGroupRepresentation, CyclicRepresentation, AdjointRepresentation,
+    MinusculeRepresentation, CrystalElement,
 };
 
 #[cfg(test)]
