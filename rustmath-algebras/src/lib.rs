@@ -147,7 +147,12 @@ pub use quantum_matrix_coordinate::{
     QuantumMatrixCoordinateAlgebra, QuantumGL, QuantumMatrixElement,
     MatrixIndex, QuantumMatrixMonomial,
 };
-pub use quaternion_algebra::{QuaternionAlgebra, Quaternion};
+pub use quaternion_algebra::{
+    QuaternionAlgebra, Quaternion, QuaternionOrder, QuaternionFractionalIdeal,
+    QuaternionFractionalIdealRational, basis_for_quaternion_lattice,
+    intersection_of_row_modules_over_zz, is_quaternion_algebra,
+    normalize_basis_at_p, maxord_solve_aux_eq,
+};
 pub use orlik_solomon::{
     Matroid, OrlikSolomonAlgebra, OrlikSolomonElement, OrlikSolomonInvariantAlgebra,
 };
