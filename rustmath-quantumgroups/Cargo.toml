@@ -7,6 +7,7 @@ description = "Quantum groups and q-analogs for RustMath"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+rustmath-combinatorics = { path = "../rustmath-combinatorics" }
 rustmath-core = { path = "../rustmath-core" }
 rustmath-integers = { path = "../rustmath-integers" }
 rustmath-rationals = { path = "../rustmath-rationals" }

@@ -1,7 +1,7 @@
 //! Integer partitions and partition generation
 
 /// A partition of an integer n is a way of writing n as a sum of positive integers
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Partition {
     /// The parts of the partition in non-increasing order
     parts: Vec<usize>,
@@ -148,6 +148,239 @@ impl Partition {
         }
 
         true
+    }
+}
+
+/// A partition tuple represents a sequence of partitions
+///
+/// Used in representation theory and quantum groups, particularly
+/// in the context of Fock spaces and Ariki-Koike algebras.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct PartitionTuple {
+    /// The components (individual partitions) of this partition tuple
+    components: Vec<Partition>,
+}
+
+impl PartitionTuple {
+    /// Create a new partition tuple from a vector of partitions
+    pub fn new(components: Vec<Partition>) -> Self {
+        PartitionTuple { components }
+    }
+
+    /// Create an empty partition tuple with a given level (number of components)
+    pub fn empty(level: usize) -> Self {
+        PartitionTuple {
+            components: vec![Partition::new(vec![]); level],
+        }
+    }
+
+    /// Get the level (number of components)
+    pub fn level(&self) -> usize {
+        self.components.len()
+    }
+
+    /// Get the components
+    pub fn components(&self) -> &[Partition] {
+        &self.components
+    }
+
+    /// Get the total sum across all components
+    pub fn sum(&self) -> usize {
+        self.components.iter().map(|p| p.sum()).sum()
+    }
+
+    /// Get the total length (total number of parts across all components)
+    pub fn length(&self) -> usize {
+        self.components.iter().map(|p| p.length()).sum()
+    }
+
+    /// Get the i-th component
+    pub fn component(&self, i: usize) -> Option<&Partition> {
+        self.components.get(i)
+    }
+
+    /// Check if this partition tuple dominates another (componentwise)
+    ///
+    /// Partition tuple λ dominates μ if λ[i] dominates μ[i] for all i
+    pub fn dominates(&self, other: &PartitionTuple) -> bool {
+        if self.level() != other.level() {
+            return false;
+        }
+
+        self.components
+            .iter()
+            .zip(other.components.iter())
+            .all(|(p1, p2)| p1.dominates(p2))
+    }
+
+    /// Compute the multicharge-adjusted degree
+    ///
+    /// Used in Fock space theory: sum_i (|λ^(i)| + γ_i * length(λ^(i)))
+    /// where γ is the multicharge vector
+    pub fn degree_with_multicharge(&self, multicharge: &[i32]) -> i32 {
+        self.components
+            .iter()
+            .enumerate()
+            .map(|(i, p)| {
+                let gamma_i = multicharge.get(i).copied().unwrap_or(0);
+                (p.sum() as i32) + gamma_i * (p.length() as i32)
+            })
+            .sum()
+    }
+
+    /// Get the residue of a cell (i, j, k) in the partition tuple
+    ///
+    /// For a cell at position (i, j) in the k-th component, with multicharge γ:
+    /// residue = j - i + γ_k (mod n)
+    ///
+    /// Used in quantum group representations
+    pub fn cell_residue(&self, component_idx: usize, row: usize, col: usize, multicharge: &[i32], n: usize) -> Option<usize> {
+        let partition = self.components.get(component_idx)?;
+
+        // Check if cell exists
+        if row >= partition.length() || col >= partition.parts()[row] {
+            return None;
+        }
+
+        let gamma_k = multicharge.get(component_idx).copied().unwrap_or(0);
+        let residue = (col as i32) - (row as i32) + gamma_k;
+
+        // Reduce modulo n
+        Some(residue.rem_euclid(n as i32) as usize)
+    }
+
+    /// Check if a cell can be added to create a valid partition tuple
+    ///
+    /// A cell (i, j, k) can be added if adding it to component k creates a valid partition
+    pub fn can_add_cell(&self, component_idx: usize, row: usize, col: usize) -> bool {
+        if component_idx >= self.level() {
+            return false;
+        }
+
+        let partition = &self.components[component_idx];
+
+        // Can add at row if:
+        // 1. row == partition.length() (adding a new row)
+        // 2. row < partition.length() and col == partition.parts()[row] (extending a row)
+
+        if row == partition.length() {
+            // Adding a new row - must add at column 0 and be <= previous row
+            if col != 0 {
+                return false;
+            }
+            if row > 0 {
+                let prev_row_len = partition.parts()[row - 1];
+                return 1 <= prev_row_len;
+            }
+            return true;
+        } else if row < partition.length() {
+            // Extending an existing row
+            let current_row_len = partition.parts()[row];
+            if col != current_row_len {
+                return false;
+            }
+
+            // Check row above (if exists)
+            if row > 0 {
+                let row_above_len = partition.parts()[row - 1];
+                if col + 1 > row_above_len {
+                    return false;
+                }
+            }
+
+            // Check row below (if exists)
+            if row + 1 < partition.length() {
+                let row_below_len = partition.parts()[row + 1];
+                if col + 1 < row_below_len {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        false
+    }
+
+    /// Add a cell to component k at position (row, col)
+    ///
+    /// Returns None if the cell cannot be added
+    pub fn add_cell(&self, component_idx: usize, row: usize, col: usize) -> Option<PartitionTuple> {
+        if !self.can_add_cell(component_idx, row, col) {
+            return None;
+        }
+
+        let mut new_components = self.components.clone();
+        let partition = &new_components[component_idx];
+
+        let mut new_parts = partition.parts().to_vec();
+
+        if row == partition.length() {
+            // Add a new row
+            new_parts.push(1);
+        } else {
+            // Extend existing row
+            new_parts[row] += 1;
+        }
+
+        new_components[component_idx] = Partition::new(new_parts);
+
+        Some(PartitionTuple::new(new_components))
+    }
+
+    /// Check if a cell can be removed from the partition tuple
+    pub fn can_remove_cell(&self, component_idx: usize, row: usize, col: usize) -> bool {
+        if component_idx >= self.level() {
+            return false;
+        }
+
+        let partition = &self.components[component_idx];
+
+        if row >= partition.length() {
+            return false;
+        }
+
+        let row_len = partition.parts()[row];
+        if col + 1 != row_len {
+            // Can only remove from the end of a row
+            return false;
+        }
+
+        // Check if removing preserves partition property
+        if row + 1 < partition.length() {
+            let next_row_len = partition.parts()[row + 1];
+            if row_len - 1 < next_row_len {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    /// Remove a cell from component k at position (row, col)
+    ///
+    /// Returns None if the cell cannot be removed
+    pub fn remove_cell(&self, component_idx: usize, row: usize, col: usize) -> Option<PartitionTuple> {
+        if !self.can_remove_cell(component_idx, row, col) {
+            return None;
+        }
+
+        let mut new_components = self.components.clone();
+        let partition = &new_components[component_idx];
+
+        let mut new_parts = partition.parts().to_vec();
+
+        if new_parts[row] == 1 {
+            // Remove the row entirely
+            new_parts.remove(row);
+        } else {
+            // Decrease row length
+            new_parts[row] -= 1;
+        }
+
+        new_components[component_idx] = Partition::new(new_parts);
+
+        Some(PartitionTuple::new(new_components))
     }
 }
 
@@ -305,5 +538,103 @@ mod tests {
         let p_min = Partition::new(vec![1, 1, 1, 1, 1]);
         assert!(p1.dominates(&p_min));
         assert!(p2.dominates(&p_min));
+    }
+
+    #[test]
+    fn test_partition_tuple_creation() {
+        let p1 = Partition::new(vec![2, 1]);
+        let p2 = Partition::new(vec![3]);
+        let pt = PartitionTuple::new(vec![p1.clone(), p2.clone()]);
+
+        assert_eq!(pt.level(), 2);
+        assert_eq!(pt.sum(), 2 + 1 + 3);
+        assert_eq!(pt.length(), 2 + 1);
+    }
+
+    #[test]
+    fn test_partition_tuple_empty() {
+        let pt = PartitionTuple::empty(3);
+        assert_eq!(pt.level(), 3);
+        assert_eq!(pt.sum(), 0);
+        assert_eq!(pt.length(), 0);
+    }
+
+    #[test]
+    fn test_partition_tuple_dominates() {
+        // ([3,1], [2]) dominates ([2,2], [2])
+        // Both have same sum (4, 2), and [3,1] dominates [2,2]
+        let pt1 = PartitionTuple::new(vec![
+            Partition::new(vec![3, 1]),
+            Partition::new(vec![2]),
+        ]);
+        let pt2 = PartitionTuple::new(vec![
+            Partition::new(vec![2, 2]),
+            Partition::new(vec![2]),
+        ]);
+
+        assert!(pt1.dominates(&pt2));
+        assert!(!pt2.dominates(&pt1));
+
+        // Partition tuple dominates itself
+        assert!(pt1.dominates(&pt1));
+    }
+
+    #[test]
+    fn test_partition_tuple_multicharge_degree() {
+        let pt = PartitionTuple::new(vec![
+            Partition::new(vec![2, 1]),
+            Partition::new(vec![3]),
+        ]);
+
+        // With multicharge [0, 1]:
+        // Component 0: |λ^(0)| + 0 * length(λ^(0)) = 3 + 0 * 2 = 3
+        // Component 1: |λ^(1)| + 1 * length(λ^(1)) = 3 + 1 * 1 = 4
+        // Total: 7
+        let degree = pt.degree_with_multicharge(&[0, 1]);
+        assert_eq!(degree, 7);
+    }
+
+    #[test]
+    fn test_partition_tuple_cell_residue() {
+        // Partition tuple ([2,1], []) with multicharge [0, 1], n=3
+        let pt = PartitionTuple::new(vec![
+            Partition::new(vec![2, 1]),
+            Partition::new(vec![]),
+        ]);
+
+        // Cell (0, 0) in component 0: residue = 0 - 0 + 0 = 0 (mod 3) = 0
+        assert_eq!(pt.cell_residue(0, 0, 0, &[0, 1], 3), Some(0));
+
+        // Cell (0, 1) in component 0: residue = 1 - 0 + 0 = 1 (mod 3) = 1
+        assert_eq!(pt.cell_residue(0, 0, 1, &[0, 1], 3), Some(1));
+
+        // Cell (1, 0) in component 0: residue = 0 - 1 + 0 = -1 (mod 3) = 2
+        assert_eq!(pt.cell_residue(0, 1, 0, &[0, 1], 3), Some(2));
+
+        // Non-existent cell
+        assert_eq!(pt.cell_residue(0, 0, 5, &[0, 1], 3), None);
+    }
+
+    #[test]
+    fn test_partition_tuple_add_remove_cell() {
+        let pt = PartitionTuple::new(vec![
+            Partition::new(vec![2, 1]),
+            Partition::new(vec![]),
+        ]);
+
+        // Add a cell to component 0 at (0, 2) - extending first row
+        assert!(pt.can_add_cell(0, 0, 2));
+        let pt2 = pt.add_cell(0, 0, 2).unwrap();
+        assert_eq!(pt2.component(0).unwrap().parts(), &[3, 1]);
+
+        // Remove the cell we just added
+        assert!(pt2.can_remove_cell(0, 0, 2));
+        let pt3 = pt2.remove_cell(0, 0, 2).unwrap();
+        assert_eq!(pt3, pt);
+
+        // Add a cell to component 1 at (0, 0) - first cell in empty partition
+        assert!(pt.can_add_cell(1, 0, 0));
+        let pt4 = pt.add_cell(1, 0, 0).unwrap();
+        assert_eq!(pt4.component(1).unwrap().parts(), &[1]);
     }
 }
