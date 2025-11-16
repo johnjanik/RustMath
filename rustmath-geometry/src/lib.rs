@@ -14,6 +14,7 @@ pub mod voronoi;
 pub mod convex_set;
 pub mod relative_interior;
 pub mod hasse_diagram;
+pub mod abc;
 
 pub use point::{Point2D, Point3D};
 pub use line::{Line2D, LineSegment2D};

@@ -642,10 +642,10 @@ Implemented,Full,sage.functions.wigner.wigner_9j,sage.functions.wigner,wigner_9j
 ,,sage.games.sudoku_backtrack,sage.games.sudoku_backtrack,sudoku_backtrack,module,,https://github.com/sagemath/sage/blob/develop/src/sage/games/sudoku_backtrack.pyx#L8
 ,,sage.games.sudoku_backtrack.backtrack_all,sage.games.sudoku_backtrack,backtrack_all,function,,https://github.com/sagemath/sage/blob/develop/src/sage/games/sudoku_backtrack.pyx#L8
 ,,sage.geometry,sage.geometry,geometry,module,,
-,,sage.geometry.abc,sage.geometry.abc,abc,module,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/abc.pyx#L32
-,,sage.geometry.abc.ConvexRationalPolyhedralCone,sage.geometry.abc,ConvexRationalPolyhedralCone,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/abc.pyx#L32
-,,sage.geometry.abc.LatticePolytope,sage.geometry.abc,LatticePolytope,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/abc.pyx#L6
-,,sage.geometry.abc.Polyhedron,sage.geometry.abc,Polyhedron,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/abc.pyx#L58
+Implemented,FULL,sage.geometry.abc,sage.geometry.abc,abc,module,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/abc.pyx#L32
+Implemented,FULL,sage.geometry.abc.ConvexRationalPolyhedralCone,sage.geometry.abc,ConvexRationalPolyhedralCone,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/abc.pyx#L32
+Implemented,FULL,sage.geometry.abc.LatticePolytope,sage.geometry.abc,LatticePolytope,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/abc.pyx#L6
+Implemented,FULL,sage.geometry.abc.Polyhedron,sage.geometry.abc,Polyhedron,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/abc.pyx#L58
 Implemented,FULL,sage.geometry.cone,sage.geometry.cone,cone,module,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/cone.py#L273
 Implemented,FULL,sage.geometry.cone.Cone,sage.geometry.cone,Cone,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/cone.py#L273
 Implemented,FULL,sage.geometry.cone.ConvexRationalPolyhedralCone,sage.geometry.cone,ConvexRationalPolyhedralCone,class,"IntegralRayCollection, Container, ConvexSet_closed, ConvexRationalPolyhedralCone",https://github.com/sagemath/sage/blob/develop/src/sage/geometry/cone.py#L1401
