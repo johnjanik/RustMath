@@ -41,6 +41,7 @@ pub mod subalgebra;
 pub mod quotient;
 pub mod chevalley_basis;
 pub mod compact_real_form;
+pub mod nil_coxeter_algebra;
 
 pub use cartan_type::{Affinity, CartanLetter, CartanType};
 pub use root_system::{Root, RootSystem};
@@ -68,8 +69,8 @@ pub use abelian::{
     AbelianLieAlgebra, AbelianLieAlgebraElement, InfiniteDimensionalAbelianLieAlgebra, LieAlgebra,
 };
 pub use classical::{
-    GeneralLinearLieAlgebra, SpecialLinearLieAlgebra, SpecialOrthogonalLieAlgebra,
-    SymplecticLieAlgebra,
+    ClassicalLieAlgebraElement, GeneralLinearLieAlgebra, SpecialLinearLieAlgebra,
+    SpecialOrthogonalLieAlgebra, SymplecticLieAlgebra,
 };
 pub use exceptional::{
     E6LieAlgebra, E7LieAlgebra, E8LieAlgebra, F4LieAlgebra, G2LieAlgebra,
@@ -154,6 +155,9 @@ pub use chevalley_basis::{
 };
 pub use compact_real_form::{
     MatrixCompactRealForm, CompactRealFormElement,
+};
+pub use nil_coxeter_algebra::{
+    NilCoxeterAlgebra, NilCoxeterAlgebraElement,
 };
 
 #[cfg(test)]
