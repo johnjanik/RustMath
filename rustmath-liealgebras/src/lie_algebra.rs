@@ -556,7 +556,7 @@ where
 impl<R, A> LiftMorphismToAssociative<R, A>
 where
     R: Ring + Clone,
-    A: Clone + Add<Output = A> + Sub<Output = A> + Mul<Output = A> + Neg<Output = A>,
+    A: Clone + Add<Output = A> + Sub<Output = A> + Mul<Output = A> + Neg<Output = A> + PartialEq,
 {
     /// Create a new lift morphism
     pub fn new(source: String, target: String) -> Self {

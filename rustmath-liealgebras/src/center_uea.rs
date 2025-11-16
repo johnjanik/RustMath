@@ -61,7 +61,10 @@ impl CenterIndex {
     /// Multiply two indices (add exponents)
     pub fn mul_index(&self, other: &Self) -> Result<Self> {
         if self.num_generators() != other.num_generators() {
-            return Err(MathError::DimensionMismatch);
+            return Err(MathError::DimensionMismatch(format!(
+                "Cannot multiply indices with different number of generators: {} vs {}",
+                self.num_generators(), other.num_generators()
+            )));
         }
         let exponents = self.exponents.iter()
             .zip(other.exponents.iter())
@@ -249,7 +252,7 @@ pub struct CenterUEA<F: Field> {
     max_degree_computed: usize,
 }
 
-impl<F: Field> CenterUEA<F> {
+impl<F: Field + From<i64>> CenterUEA<F> {
     /// Create a new center UEA
     pub fn new(lie_algebra_dim: usize) -> Self {
         Self {
@@ -324,8 +327,8 @@ impl<F: Field> CenterUEA<F> {
         for (index, coeff) in element.terms() {
             // Look up the PBW representation of this basis element
             if let Some(pbw_elem) = self.lift_map.get(index) {
-                let scaled = pbw_elem.clone().scale(coeff.clone());
-                result = (result + scaled)?;
+                let scaled = pbw_elem.clone().scale(coeff);
+                result = result + scaled;
             } else {
                 // If not in lift map, construct it
                 // For now, return error; full implementation would build it
@@ -380,7 +383,7 @@ pub struct SimpleLieCenter<F: Field> {
     coxeter_degrees: Vec<usize>,
 }
 
-impl<F: Field> SimpleLieCenter<F> {
+impl<F: Field + From<i64>> SimpleLieCenter<F> {
     /// Create a center for a simple Lie algebra
     ///
     /// The coxeter_degrees determine the degrees of the central generators.

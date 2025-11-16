@@ -14,6 +14,7 @@
 //!
 //! Corresponds to sage.algebras.lie_algebras.verma_module
 
+use num_traits::ToPrimitive;
 use rustmath_core::{Ring, Field, MathError, Result};
 use std::collections::{HashMap, BTreeMap};
 use std::fmt::{self, Display};
@@ -53,13 +54,17 @@ impl<F: Field> Weight<F> {
 
     /// Get the i-th coordinate
     pub fn coord(&self, i: usize) -> Result<&F> {
-        self.coords.get(i).ok_or(MathError::IndexOutOfBounds)
+        self.coords.get(i).ok_or(MathError::IndexOutOfBounds(format!(
+            "Index {} out of bounds for weight of rank {}", i, self.rank()
+        )))
     }
 
     /// Add two weights
     pub fn add_weight(&self, other: &Self) -> Result<Self> {
         if self.rank() != other.rank() {
-            return Err(MathError::DimensionMismatch);
+            return Err(MathError::DimensionMismatch(format!(
+                "Cannot add weights of different ranks: {} vs {}", self.rank(), other.rank()
+            )));
         }
         let coords = self.coords.iter()
             .zip(other.coords.iter())
@@ -71,7 +76,9 @@ impl<F: Field> Weight<F> {
     /// Subtract two weights
     pub fn sub_weight(&self, other: &Self) -> Result<Self> {
         if self.rank() != other.rank() {
-            return Err(MathError::DimensionMismatch);
+            return Err(MathError::DimensionMismatch(format!(
+                "Cannot subtract weights of different ranks: {} vs {}", self.rank(), other.rank()
+            )));
         }
         let coords = self.coords.iter()
             .zip(other.coords.iter())
@@ -88,13 +95,24 @@ impl<F: Field> Weight<F> {
     }
 
     /// Inner product with a root (assumes standard pairing)
-    pub fn pair_with_root(&self, root: &Root) -> F {
+    /// Note: This is a simplified implementation that assumes the root coordinates
+    /// can be converted to the field F. For a proper implementation, you would need
+    /// to use the Cartan matrix and coroot data.
+    pub fn pair_with_root(&self, root: &Root) -> F
+    where
+        F: From<i64>,
+    {
         // This is a simplified version; actual implementation would use
         // the Cartan matrix and coroots
         let mut result = F::zero();
-        for (i, coeff) in root.coordinates().iter().enumerate() {
+        for (i, coeff) in root.coordinates.iter().enumerate() {
             if i < self.coords.len() {
-                result = result + (self.coords[i].clone() * F::from_i64(*coeff as i64).unwrap());
+                // Convert Rational to i64 (numerator/denominator) then to F
+                // This is a simplification - in practice, you'd want proper rational conversion
+                let num = coeff.numerator().as_bigint().to_i64().unwrap_or(0);
+                let den = coeff.denominator().as_bigint().to_i64().unwrap_or(1);
+                let coeff_f = F::from(num) / F::from(den);
+                result = result + (self.coords[i].clone() * coeff_f);
             }
         }
         result
@@ -224,8 +242,8 @@ impl<F: Field> VermaModuleElement<F> {
     /// Add coefficient to a basis element
     fn add_term(&mut self, basis: VermaModuleBasisElement, coeff: F) {
         if !coeff.is_zero() {
-            *self.terms.entry(basis).or_insert_with(F::zero) =
-                self.terms.get(&basis).cloned().unwrap_or_else(F::zero) + coeff;
+            let entry = self.terms.entry(basis.clone()).or_insert_with(F::zero);
+            *entry = entry.clone() + coeff.clone();
             // Clean up zero coefficients
             if self.terms.get(&basis).unwrap().is_zero() {
                 self.terms.remove(&basis);

@@ -97,6 +97,21 @@ impl PBWMonomial {
         self.exponents.is_empty()
     }
 
+    /// Alias for `one()` - create the identity monomial
+    pub fn identity() -> Self {
+        Self::one()
+    }
+
+    /// Alias for `is_one()` - check if this is the identity monomial
+    pub fn is_identity(&self) -> bool {
+        self.is_one()
+    }
+
+    /// Alias for `generator()` - create a single generator monomial
+    pub fn from_generator(index: usize) -> Self {
+        Self::generator(index, 1)
+    }
+
     /// Get the exponents
     pub fn exponents(&self) -> &BTreeMap<usize, usize> {
         &self.exponents
@@ -256,6 +271,11 @@ impl<R: Ring + Clone + PartialEq + From<i64>> PBWElement<R> {
             .collect();
 
         PBWElement::new(scaled)
+    }
+
+    /// Alias for `scalar_mul()` - scale by a scalar
+    pub fn scale(&self, scalar: &R) -> Self {
+        self.scalar_mul(scalar)
     }
 }
 

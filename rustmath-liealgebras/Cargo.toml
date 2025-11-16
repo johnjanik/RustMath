@@ -13,3 +13,4 @@ rustmath-rationals = { path = "../rustmath-rationals" }
 rustmath-matrix = { path = "../rustmath-matrix" }
 rustmath-combinatorics = { path = "../rustmath-combinatorics" }
 rustmath-complex = { path = "../rustmath-complex" }
+num-traits = "0.2"

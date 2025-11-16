@@ -43,4 +43,16 @@ pub enum MathError {
     /// Not yet implemented
     #[error("Not yet implemented: {0}")]
     NotImplemented(String),
+
+    /// Invalid operation
+    #[error("Invalid operation: {0}")]
+    InvalidOperation(String),
+
+    /// Dimension mismatch
+    #[error("Dimension mismatch: {0}")]
+    DimensionMismatch(String),
+
+    /// Index out of bounds
+    #[error("Index out of bounds: {0}")]
+    IndexOutOfBounds(String),
 }
