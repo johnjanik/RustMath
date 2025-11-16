@@ -74,8 +74,8 @@ Implemented,FULL,sage.matrix,sage.matrix,matrix,module,,
 ,,sage.matrix.benchmark.report_ZZ,sage.matrix.benchmark,report_ZZ,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/benchmark.py#L94
 ,,sage.matrix.benchmark.smithform_ZZ,sage.matrix.benchmark,smithform_ZZ,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/benchmark.py#L287
 ,,sage.matrix.benchmark.vecmat_ZZ,sage.matrix.benchmark,vecmat_ZZ,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/benchmark.py#L525
-,,sage.matrix.berlekamp_massey,sage.matrix.berlekamp_massey,berlekamp_massey,module,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/berlekamp_massey.py#L26
-,,sage.matrix.berlekamp_massey.berlekamp_massey,sage.matrix.berlekamp_massey,berlekamp_massey,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/berlekamp_massey.py#L26
+Implemented,Full,sage.matrix.berlekamp_massey,sage.matrix.berlekamp_massey,berlekamp_massey,module,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/berlekamp_massey.py#L26
+Implemented,Full,sage.matrix.berlekamp_massey.berlekamp_massey,sage.matrix.berlekamp_massey,berlekamp_massey,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/berlekamp_massey.py#L26
 ,,sage.matrix.change_ring,sage.matrix.change_ring,change_ring,module,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/change_ring.pyx#L12
 ,,sage.matrix.change_ring.integer_to_real_double_dense,sage.matrix.change_ring,integer_to_real_double_dense,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/change_ring.pyx#L12
 ,,sage.matrix.compute_J_ideal,sage.matrix.compute_J_ideal,compute_J_ideal,module,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/compute_J_ideal.py#L272

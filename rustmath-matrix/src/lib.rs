@@ -4,6 +4,7 @@
 
 pub mod action;
 pub mod args;
+pub mod berlekamp_massey;
 pub mod companion;
 pub mod decomposition;
 pub mod eigenvalues;
@@ -24,6 +25,7 @@ pub use action::{
     MatrixSchemePointAction, MatrixPolymapAction, PolymapMatrixAction,
 };
 pub use args::{SparseEntry, MatrixArgs, matrix_args_init};
+pub use berlekamp_massey::{berlekamp_massey, berlekamp_massey_verify};
 pub use companion::{characteristic_polynomial, companion_matrix, rational_canonical_form, RationalCanonicalForm};
 pub use decomposition::{
     CholeskyDecomposition, HessenbergDecomposition, LUDecomposition, PLUDecomposition,
