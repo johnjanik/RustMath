@@ -10,7 +10,7 @@ pub mod posets;
 pub mod tableaux;
 
 pub use combinations::{combinations, Combination};
-pub use partitions::{partition_count, partitions, Partition};
+pub use partitions::{partition_count, partitions, Partition, PartitionTuple};
 pub use permutations::{all_permutations, Permutation};
 pub use posets::Poset;
 pub use tableaux::{robinson_schensted, rs_insert, standard_tableaux, Tableau};
