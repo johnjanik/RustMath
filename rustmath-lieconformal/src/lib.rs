@@ -34,6 +34,7 @@ pub mod lie_conformal_algebra;
 pub mod lie_conformal_algebra_element;
 pub mod graded_lie_conformal_algebra;
 pub mod lie_conformal_algebra_with_basis;
+pub mod lie_conformal_algebra_with_structure_coefs;
 pub mod freely_generated_lie_conformal_algebra;
 pub mod finitely_freely_generated_lca;
 pub mod abelian_lie_conformal_algebra;
@@ -52,12 +53,16 @@ pub use lie_conformal_algebra::{
 };
 pub use lie_conformal_algebra_element::{
     LieConformalAlgebraElement, LCAElementWrapper,
+    LCAWithGeneratorsElement, LCAStructureCoefficientsElement,
 };
 pub use graded_lie_conformal_algebra::{
     GradedLieConformalAlgebra, Degree, Weight,
 };
 pub use lie_conformal_algebra_with_basis::{
     LieConformalAlgebraWithBasis, BasisElement, StructureCoefficients,
+};
+pub use lie_conformal_algebra_with_structure_coefs::{
+    LieConformalAlgebraWithStructureCoefficients, LCAStructureCoefficients,
 };
 pub use abelian_lie_conformal_algebra::{
     AbelianLieConformalAlgebra, AbelianLCAElement,

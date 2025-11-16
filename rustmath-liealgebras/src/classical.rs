@@ -17,6 +17,144 @@ use rustmath_matrix::Matrix;
 use crate::cartan_type::{CartanType, CartanLetter};
 use std::fmt::{self, Display};
 use std::marker::PhantomData;
+use std::collections::HashMap;
+
+/// Element of a classical matrix Lie algebra
+///
+/// This represents an element of a classical Lie algebra (gl, sl, so, sp)
+/// as a matrix with additional methods for extracting monomial coefficients.
+///
+/// # Type Parameters
+///
+/// * `R` - The coefficient ring
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_liealgebras::ClassicalLieAlgebraElement;
+/// use rustmath_matrix::Matrix;
+///
+/// // Create an element from a matrix
+/// let mut mat = Matrix::zeros(3, 3);
+/// mat.set(0, 1, 1);
+/// mat.set(1, 2, 2);
+/// let elem = ClassicalLieAlgebraElement::from_matrix(mat);
+///
+/// // Get monomial coefficients as E_{i,j} basis elements
+/// let coeffs = elem.monomial_coefficients();
+/// ```
+#[derive(Clone, Debug, PartialEq)]
+pub struct ClassicalLieAlgebraElement<R: Ring> {
+    /// The underlying matrix representation
+    matrix: Matrix<R>,
+}
+
+impl<R: Ring + Clone> ClassicalLieAlgebraElement<R> {
+    /// Create an element from a matrix
+    ///
+    /// # Arguments
+    ///
+    /// * `matrix` - The matrix representation
+    pub fn from_matrix(matrix: Matrix<R>) -> Self {
+        ClassicalLieAlgebraElement { matrix }
+    }
+
+    /// Get the underlying matrix
+    pub fn matrix(&self) -> &Matrix<R> {
+        &self.matrix
+    }
+
+    /// Get monomial coefficients as a HashMap
+    ///
+    /// Returns a dictionary mapping basis element names (like "E_i_j")
+    /// to their coefficients.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_liealgebras::ClassicalLieAlgebraElement;
+    /// use rustmath_matrix::Matrix;
+    ///
+    /// let mut mat = Matrix::zeros(2, 2);
+    /// mat.set(0, 1, 3);  // 3*E_{0,1}
+    /// mat.set(1, 0, 1);  // 1*E_{1,0}
+    /// let elem = ClassicalLieAlgebraElement::from_matrix(mat);
+    ///
+    /// let coeffs = elem.monomial_coefficients();
+    /// // coeffs contains {"E_0_1": 3, "E_1_0": 1}
+    /// ```
+    pub fn monomial_coefficients(&self) -> HashMap<String, R>
+    where
+        R: From<i64> + PartialEq,
+    {
+        let mut coeffs = HashMap::new();
+
+        for i in 0..self.matrix.rows() {
+            for j in 0..self.matrix.cols() {
+                if let Ok(val) = self.matrix.get(i, j) {
+                    // Only include non-zero entries
+                    if val != &R::from(0) {
+                        let key = format!("E_{}_{}", i, j);
+                        coeffs.insert(key, val.clone());
+                    }
+                }
+            }
+        }
+
+        coeffs
+    }
+
+    /// Get the size of the matrix
+    pub fn size(&self) -> (usize, usize) {
+        (self.matrix.rows(), self.matrix.cols())
+    }
+
+    /// Check if this is a zero element
+    pub fn is_zero(&self) -> bool
+    where
+        R: From<i64> + PartialEq,
+    {
+        for i in 0..self.matrix.rows() {
+            for j in 0..self.matrix.cols() {
+                if let Ok(val) = self.matrix.get(i, j) {
+                    if val != &R::from(0) {
+                        return false;
+                    }
+                }
+            }
+        }
+        true
+    }
+}
+
+impl<R: Ring + Clone + From<i64> + PartialEq + Display> Display for ClassicalLieAlgebraElement<R> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let coeffs = self.monomial_coefficients();
+        if coeffs.is_empty() {
+            return write!(f, "0");
+        }
+
+        let mut first = true;
+        for (i, j) in (0..self.matrix.rows())
+            .flat_map(|i| (0..self.matrix.cols()).map(move |j| (i, j)))
+        {
+            if let Ok(val) = self.matrix.get(i, j) {
+                if val != &R::from(0) {
+                    if !first {
+                        write!(f, " + ")?;
+                    }
+                    if val == &R::from(1) {
+                        write!(f, "E_{{{},{}}}", i, j)?;
+                    } else {
+                        write!(f, "{}*E_{{{},{}}}", val, i, j)?;
+                    }
+                    first = false;
+                }
+            }
+        }
+        Ok(())
+    }
+}
 
 /// General Linear Lie Algebra gl(n)
 ///
@@ -384,6 +522,53 @@ impl<R: Ring + Clone> Display for SymplecticLieAlgebra<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_classical_element_creation() {
+        let mut mat = Matrix::zeros(2, 2);
+        mat.set(0, 1, 3);
+        mat.set(1, 0, 1);
+
+        let elem: ClassicalLieAlgebraElement<i64> = ClassicalLieAlgebraElement::from_matrix(mat);
+        assert_eq!(elem.size(), (2, 2));
+        assert!(!elem.is_zero());
+    }
+
+    #[test]
+    fn test_classical_element_monomial_coefficients() {
+        let mut mat = Matrix::zeros(3, 3);
+        mat.set(0, 1, 3);
+        mat.set(2, 0, 1);
+
+        let elem: ClassicalLieAlgebraElement<i64> = ClassicalLieAlgebraElement::from_matrix(mat);
+        let coeffs = elem.monomial_coefficients();
+
+        assert_eq!(coeffs.len(), 2);
+        assert_eq!(coeffs.get("E_0_1"), Some(&3));
+        assert_eq!(coeffs.get("E_2_0"), Some(&1));
+    }
+
+    #[test]
+    fn test_classical_element_zero() {
+        let mat: Matrix<i64> = Matrix::zeros(3, 3);
+        let elem = ClassicalLieAlgebraElement::from_matrix(mat);
+
+        assert!(elem.is_zero());
+        assert_eq!(elem.monomial_coefficients().len(), 0);
+    }
+
+    #[test]
+    fn test_classical_element_display() {
+        let mut mat = Matrix::zeros(2, 2);
+        mat.set(0, 1, 1);
+        mat.set(1, 0, 2);
+
+        let elem: ClassicalLieAlgebraElement<i64> = ClassicalLieAlgebraElement::from_matrix(mat);
+        let display = format!("{}", elem);
+
+        assert!(display.contains("E_{0,1}"));
+        assert!(display.contains("2*E_{1,0}"));
+    }
 
     #[test]
     fn test_gl_creation() {
