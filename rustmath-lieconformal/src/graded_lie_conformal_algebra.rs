@@ -63,7 +63,7 @@ impl Degree {
     pub fn as_rational(&self) -> Rational {
         match self {
             Degree::Integer(n) => Rational::from(*n),
-            Degree::Rational(num, den) => Rational::new(*num, *den),
+            Degree::Rational(num, den) => Rational::new(*num, *den).expect("Invalid rational degree"),
         }
     }
 }

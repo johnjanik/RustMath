@@ -399,21 +399,6 @@ impl<R: Ring + Clone + From<i64> + std::ops::Neg<Output = R> + Display> Display
     }
 }
 
-impl Display for CartanType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use rustmath_liealgebras::cartan_type::Affinity;
-
-        write!(f, "{}", self.letter)?;
-        write!(f, "_{}", self.rank)?;
-
-        if let Affinity::Affine(level) = self.affinity {
-            write!(f, "^({})", level)?;
-        }
-
-        Ok(())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

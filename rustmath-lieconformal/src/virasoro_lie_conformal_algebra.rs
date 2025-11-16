@@ -105,7 +105,7 @@ impl<R: Ring + Clone> VirasoroLieConformalAlgebra<R> {
 /// Element type for Virasoro Lie conformal algebra
 pub type VirasoroLCAElement<R> = LieConformalAlgebraElement<R, GeneratorIndex>;
 
-impl<R: Ring + Clone> LieConformalAlgebra<R> for VirasoroLieConformalAlgebra<R> {
+impl<R: Ring + Clone + From<i64>> LieConformalAlgebra<R> for VirasoroLieConformalAlgebra<R> {
     type Element = VirasoroLCAElement<R>;
 
     fn base_ring(&self) -> &R {
@@ -116,10 +116,7 @@ impl<R: Ring + Clone> LieConformalAlgebra<R> for VirasoroLieConformalAlgebra<R> 
         Some(2) // L and C
     }
 
-    fn generator(&self, i: usize) -> Option<Self::Element>
-    where
-        R: From<i64>,
-    {
+    fn generator(&self, i: usize) -> Option<Self::Element> {
         match i {
             0 => Some(self.conformal_vector()),
             1 => Some(self.central_element()),
@@ -138,7 +135,7 @@ impl<R: Ring + Clone> LieConformalAlgebra<R> for VirasoroLieConformalAlgebra<R> 
     }
 }
 
-impl<R: Ring + Clone> GradedLieConformalAlgebra<R> for VirasoroLieConformalAlgebra<R> {
+impl<R: Ring + Clone + From<i64>> GradedLieConformalAlgebra<R> for VirasoroLieConformalAlgebra<R> {
     fn generator_degree(&self, index: usize) -> Option<Degree> {
         match index {
             0 => Some(Degree::int(2)), // L has degree 2

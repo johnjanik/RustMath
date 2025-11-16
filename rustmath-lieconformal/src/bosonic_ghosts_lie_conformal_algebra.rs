@@ -202,7 +202,7 @@ impl<R: Ring + Clone + From<i64> + PartialEq> BosonicGhostsLieConformalAlgebra<R
     }
 
     /// Get total number of generators (including central element)
-    pub fn ngens(&self) -> usize {
+    pub fn num_generators(&self) -> usize {
         self.graded.ngens()
     }
 
