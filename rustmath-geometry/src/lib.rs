@@ -11,6 +11,9 @@ pub mod triangulation;
 pub mod face_lattice;
 pub mod toric;
 pub mod voronoi;
+pub mod convex_set;
+pub mod relative_interior;
+pub mod hasse_diagram;
 
 pub use point::{Point2D, Point3D};
 pub use line::{Line2D, LineSegment2D};

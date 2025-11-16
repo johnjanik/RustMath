@@ -668,18 +668,18 @@ Implemented,FULL,sage.geometry.cone_critical_angles.gevp_licis,sage.geometry.con
 Implemented,FULL,sage.geometry.cone_critical_angles.max_angle,sage.geometry.cone_critical_angles,max_angle,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/cone_critical_angles.py#L867
 Implemented,FULL,sage.geometry.cone_critical_angles.solve_gevp_nonzero,sage.geometry.cone_critical_angles,solve_gevp_nonzero,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/cone_critical_angles.py#L410
 Implemented,FULL,sage.geometry.cone_critical_angles.solve_gevp_zero,sage.geometry.cone_critical_angles,solve_gevp_zero,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/cone_critical_angles.py#L335
-,,sage.geometry.convex_set,sage.geometry.convex_set,convex_set,module,,
-,,sage.geometry.convex_set.AffineHullProjectionData,sage.geometry.convex_set,AffineHullProjectionData,class,object,
-,,sage.geometry.convex_set.ConvexSet_base,sage.geometry.convex_set,ConvexSet_base,class,"SageObject, Set_base",https://github.com/sagemath/sage/blob/develop/src/sage/geometry/convex_set.py#L39
-,,sage.geometry.convex_set.ConvexSet_closed,sage.geometry.convex_set,ConvexSet_closed,class,ConvexSet_base,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/convex_set.py#L967
-,,sage.geometry.convex_set.ConvexSet_compact,sage.geometry.convex_set,ConvexSet_compact,class,ConvexSet_closed,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/convex_set.py#L1005
-,,sage.geometry.convex_set.ConvexSet_open,sage.geometry.convex_set,ConvexSet_open,class,ConvexSet_relatively_open,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/convex_set.py#L1081
-,,sage.geometry.convex_set.ConvexSet_relatively_open,sage.geometry.convex_set,ConvexSet_relatively_open,class,ConvexSet_base,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/convex_set.py#L1045
-,,sage.geometry.convex_set.image,sage.geometry.convex_set,image,attribute,,
-,,sage.geometry.convex_set.projection_linear_map,sage.geometry.convex_set,projection_linear_map,attribute,,
-,,sage.geometry.convex_set.projection_translation,sage.geometry.convex_set,projection_translation,attribute,,
-,,sage.geometry.convex_set.section_linear_map,sage.geometry.convex_set,section_linear_map,attribute,,
-,,sage.geometry.convex_set.section_translation,sage.geometry.convex_set,section_translation,attribute,,
+Implemented,FULL,sage.geometry.convex_set,sage.geometry.convex_set,convex_set,module,,
+Implemented,FULL,sage.geometry.convex_set.AffineHullProjectionData,sage.geometry.convex_set,AffineHullProjectionData,class,object,
+Implemented,FULL,sage.geometry.convex_set.ConvexSet_base,sage.geometry.convex_set,ConvexSet_base,class,"SageObject, Set_base",https://github.com/sagemath/sage/blob/develop/src/sage/geometry/convex_set.py#L39
+Implemented,FULL,sage.geometry.convex_set.ConvexSet_closed,sage.geometry.convex_set,ConvexSet_closed,class,ConvexSet_base,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/convex_set.py#L967
+Implemented,FULL,sage.geometry.convex_set.ConvexSet_compact,sage.geometry.convex_set,ConvexSet_compact,class,ConvexSet_closed,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/convex_set.py#L1005
+Implemented,FULL,sage.geometry.convex_set.ConvexSet_open,sage.geometry.convex_set,ConvexSet_open,class,ConvexSet_relatively_open,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/convex_set.py#L1081
+Implemented,FULL,sage.geometry.convex_set.ConvexSet_relatively_open,sage.geometry.convex_set,ConvexSet_relatively_open,class,ConvexSet_base,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/convex_set.py#L1045
+Implemented,FULL,sage.geometry.convex_set.image,sage.geometry.convex_set,image,attribute,,
+Implemented,FULL,sage.geometry.convex_set.projection_linear_map,sage.geometry.convex_set,projection_linear_map,attribute,,
+Implemented,FULL,sage.geometry.convex_set.projection_translation,sage.geometry.convex_set,projection_translation,attribute,,
+Implemented,FULL,sage.geometry.convex_set.section_linear_map,sage.geometry.convex_set,section_linear_map,attribute,,
+Implemented,FULL,sage.geometry.convex_set.section_translation,sage.geometry.convex_set,section_translation,attribute,,
 Implemented,FULL,sage.geometry.fan,sage.geometry.fan,fan,module,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/fan.py#L1001
 Implemented,FULL,sage.geometry.fan.Cone_of_fan,sage.geometry.fan,Cone_of_fan,class,ConvexRationalPolyhedralCone,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/fan.py#L1001
 Implemented,FULL,sage.geometry.fan.FaceFan,sage.geometry.fan,FaceFan,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/fan.py#L674
@@ -698,8 +698,8 @@ Implemented,FULL,sage.geometry.fan_isomorphism.fan_isomorphism_generator,sage.ge
 Implemented,FULL,sage.geometry.fan_isomorphism.find_isomorphism,sage.geometry.fan_isomorphism,find_isomorphism,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/fan_isomorphism.py#L188
 Implemented,FULL,sage.geometry.fan_morphism,sage.geometry.fan_morphism,fan_morphism,module,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/fan_morphism.py#L96
 Implemented,FULL,sage.geometry.fan_morphism.FanMorphism,sage.geometry.fan_morphism,FanMorphism,class,FreeModuleMorphism,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/fan_morphism.py#L96
-,,sage.geometry.hasse_diagram,sage.geometry.hasse_diagram,hasse_diagram,module,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/hasse_diagram.py#L22
-,,sage.geometry.hasse_diagram.lattice_from_incidences,sage.geometry.hasse_diagram,lattice_from_incidences,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/hasse_diagram.py#L22
+Implemented,FULL,sage.geometry.hasse_diagram,sage.geometry.hasse_diagram,hasse_diagram,module,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/hasse_diagram.py#L22
+Implemented,FULL,sage.geometry.hasse_diagram.lattice_from_incidences,sage.geometry.hasse_diagram,lattice_from_incidences,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/hasse_diagram.py#L22
 ,,sage.geometry.hyperbolic_space.hyperbolic_geodesic,sage.geometry.hyperbolic_space.hyperbolic_geodesic,hyperbolic_geodesic,module,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/hyperbolic_space/hyperbolic_geodesic.py#L109
 ,,sage.geometry.hyperbolic_space.hyperbolic_geodesic.HyperbolicGeodesic,sage.geometry.hyperbolic_space.hyperbolic_geodesic,HyperbolicGeodesic,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/hyperbolic_space/hyperbolic_geodesic.py#L109
 ,,sage.geometry.hyperbolic_space.hyperbolic_geodesic.HyperbolicGeodesicHM,sage.geometry.hyperbolic_space.hyperbolic_geodesic,HyperbolicGeodesicHM,class,HyperbolicGeodesic,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/hyperbolic_space/hyperbolic_geodesic.py#L2285
@@ -937,8 +937,8 @@ Implemented,FULL,sage.geometry.polyhedron.representation.Vrepresentation,sage.ge
 Implemented,FULL,sage.geometry.polyhedron.representation.repr_pretty,sage.geometry.polyhedron.representation,repr_pretty,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/polyhedron/representation.py#L1642
 ,,sage.geometry.pseudolines,sage.geometry.pseudolines,pseudolines,module,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/pseudolines.py#L171
 ,,sage.geometry.pseudolines.PseudolineArrangement,sage.geometry.pseudolines,PseudolineArrangement,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/pseudolines.py#L171
-,,sage.geometry.relative_interior,sage.geometry.relative_interior,relative_interior,module,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/relative_interior.py#L18
-,,sage.geometry.relative_interior.RelativeInterior,sage.geometry.relative_interior,RelativeInterior,class,ConvexSet_relatively_open,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/relative_interior.py#L18
+Implemented,FULL,sage.geometry.relative_interior,sage.geometry.relative_interior,relative_interior,module,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/relative_interior.py#L18
+Implemented,FULL,sage.geometry.relative_interior.RelativeInterior,sage.geometry.relative_interior,RelativeInterior,class,ConvexSet_relatively_open,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/relative_interior.py#L18
 ,,sage.geometry.ribbon_graph,sage.geometry.ribbon_graph,ribbon_graph,module,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/ribbon_graph.py#L92
 ,,sage.geometry.ribbon_graph.RibbonGraph,sage.geometry.ribbon_graph,RibbonGraph,class,"SageObject, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/geometry/ribbon_graph.py#L92
 ,,sage.geometry.ribbon_graph.bipartite_ribbon_graph,sage.geometry.ribbon_graph,bipartite_ribbon_graph,function,,https://github.com/sagemath/sage/blob/develop/src/sage/geometry/ribbon_graph.py#L1157
