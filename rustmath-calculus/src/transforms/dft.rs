@@ -4,7 +4,7 @@
 //! The DFT converts a finite sequence of equally-spaced samples into a
 //! same-length sequence of complex frequency components.
 
-use rustmath_complex::Complex;
+use num_complex::Complex64 as Complex;
 use std::f64::consts::PI;
 
 /// Represents an indexed sequence for DFT operations.
@@ -31,9 +31,9 @@ impl IndexedSequence {
     ///
     /// ```
     /// use rustmath_calculus::transforms::dft::IndexedSequence;
-    /// use rustmath_complex::Complex;
+    /// use num_complex::Complex64;
     ///
-    /// let values = vec![Complex::new(1.0, 0.0), Complex::new(2.0, 0.0)];
+    /// let values = vec![Complex64::new(1.0, 0.0), Complex64::new(2.0, 0.0)];
     /// let seq = IndexedSequence::new(values, 0);
     /// ```
     pub fn new(values: Vec<Complex>, start_index: i64) -> Self {
@@ -117,13 +117,13 @@ impl IndexedSequence {
 ///
 /// ```
 /// use rustmath_calculus::transforms::dft::dft;
-/// use rustmath_complex::Complex;
+/// use num_complex::Complex64;
 ///
 /// let input = vec![
-///     Complex::new(1.0, 0.0),
-///     Complex::new(2.0, 0.0),
-///     Complex::new(3.0, 0.0),
-///     Complex::new(4.0, 0.0),
+///     Complex64::new(1.0, 0.0),
+///     Complex64::new(2.0, 0.0),
+///     Complex64::new(3.0, 0.0),
+///     Complex64::new(4.0, 0.0),
 /// ];
 /// let output = dft(&input);
 /// assert_eq!(output.len(), 4);
@@ -166,13 +166,13 @@ pub fn dft(input: &[Complex]) -> Vec<Complex> {
 ///
 /// ```
 /// use rustmath_calculus::transforms::dft::{dft, idft};
-/// use rustmath_complex::Complex;
+/// use num_complex::Complex64;
 ///
 /// let input = vec![
-///     Complex::new(1.0, 0.0),
-///     Complex::new(2.0, 0.0),
-///     Complex::new(3.0, 0.0),
-///     Complex::new(4.0, 0.0),
+///     Complex64::new(1.0, 0.0),
+///     Complex64::new(2.0, 0.0),
+///     Complex64::new(3.0, 0.0),
+///     Complex64::new(4.0, 0.0),
 /// ];
 /// let transformed = dft(&input);
 /// let recovered = idft(&transformed);
@@ -242,7 +242,7 @@ pub fn dft_real(input: &[f64]) -> Vec<Complex> {
 /// Real-valued time domain signal.
 pub fn idft_to_real(input: &[Complex]) -> Vec<f64> {
     let complex_output = idft(input);
-    complex_output.iter().map(|c| c.real()).collect()
+    complex_output.iter().map(|c| c.re).collect()
 }
 
 /// Computes the power spectrum of a signal.
@@ -259,7 +259,7 @@ pub fn idft_to_real(input: &[Complex]) -> Vec<f64> {
 /// Power spectrum (real values).
 pub fn power_spectrum(input: &[Complex]) -> Vec<f64> {
     let transformed = dft(input);
-    transformed.iter().map(|c| c.norm_squared()).collect()
+    transformed.iter().map(|c| c.norm_sqr()).collect()
 }
 
 /// Computes frequency values corresponding to DFT output.
@@ -337,8 +337,8 @@ mod tests {
         let output = dft(&input);
 
         // First bin should be 4.0 (sum of inputs)
-        assert!((output[0].real() - 4.0).abs() < 1e-10);
-        assert!(output[0].imag().abs() < 1e-10);
+        assert!((output[0].re - 4.0).abs() < 1e-10);
+        assert!(output[0].im.abs() < 1e-10);
 
         // Other bins should be near zero
         for i in 1..4 {
@@ -359,8 +359,8 @@ mod tests {
         let recovered = idft(&transformed);
 
         for (orig, recov) in input.iter().zip(recovered.iter()) {
-            assert!((orig.real() - recov.real()).abs() < 1e-10);
-            assert!((orig.imag() - recov.imag()).abs() < 1e-10);
+            assert!((orig.re - recov.re).abs() < 1e-10);
+            assert!((orig.im - recov.im).abs() < 1e-10);
         }
     }
 
@@ -383,7 +383,7 @@ mod tests {
 
         assert_eq!(output.len(), 4);
         // First bin should be sum = 10.0
-        assert!((output[0].real() - 10.0).abs() < 1e-10);
+        assert!((output[0].re - 10.0).abs() < 1e-10);
     }
 
     #[test]
@@ -428,7 +428,7 @@ mod tests {
 
         // Verify roundtrip
         for (orig, final_val) in input.iter().zip(unshifted.iter()) {
-            assert!((orig.real() - final_val.real()).abs() < 1e-10);
+            assert!((orig.re - final_val.re).abs() < 1e-10);
         }
     }
 

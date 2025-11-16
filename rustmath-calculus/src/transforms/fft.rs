@@ -3,7 +3,7 @@
 //! This module provides efficient FFT implementations using the Cooley-Tukey
 //! algorithm. The FFT is an O(N log N) algorithm for computing the DFT.
 
-use rustmath_complex::Complex;
+use num_complex::Complex64 as Complex;
 use std::f64::consts::PI;
 
 /// Base trait for Fourier Transform implementations.
@@ -259,7 +259,7 @@ impl FourierTransformReal {
         // Unpack to get full spectrum (conjugate symmetric)
         let mut result = Vec::with_capacity(self.size / 2 + 1);
         result.push(Complex::new(
-            fft_packed[0].real() + fft_packed[0].imag(),
+            fft_packed[0].re + fft_packed[0].im,
             0.0,
         ));
 
@@ -277,7 +277,7 @@ impl FourierTransformReal {
         }
 
         result.push(Complex::new(
-            fft_packed[0].real() - fft_packed[0].imag(),
+            fft_packed[0].re - fft_packed[0].im,
             0.0,
         ));
 
@@ -296,8 +296,8 @@ impl FourierTransformReal {
         let mut packed = vec![Complex::new(0.0, 0.0); self.size / 2];
 
         packed[0] = Complex::new(
-            (input[0].real() + input[self.size / 2].real()) * 0.5,
-            (input[0].real() - input[self.size / 2].real()) * 0.5,
+            (input[0].re + input[self.size / 2].re) * 0.5,
+            (input[0].re - input[self.size / 2].re) * 0.5,
         );
 
         for k in 1..self.size / 2 {
@@ -317,8 +317,8 @@ impl FourierTransformReal {
         // Unpack real values
         let mut result = Vec::with_capacity(self.size);
         for c in ifft_packed {
-            result.push(c.real());
-            result.push(c.imag());
+            result.push(c.re);
+            result.push(c.im);
         }
 
         result
@@ -403,8 +403,8 @@ mod tests {
         let output = fft(&input);
 
         // First bin should be 4.0
-        assert!((output[0].real() - 4.0).abs() < 1e-10);
-        assert!(output[0].imag().abs() < 1e-10);
+        assert!((output[0].re - 4.0).abs() < 1e-10);
+        assert!(output[0].im.abs() < 1e-10);
 
         // Other bins should be near zero
         for i in 1..4 {
@@ -425,8 +425,8 @@ mod tests {
         let recovered = ifft(&transformed);
 
         for (orig, recov) in input.iter().zip(recovered.iter()) {
-            assert!((orig.real() - recov.real()).abs() < 1e-10);
-            assert!((orig.imag() - recov.imag()).abs() < 1e-10);
+            assert!((orig.re - recov.re).abs() < 1e-10);
+            assert!((orig.im - recov.im).abs() < 1e-10);
         }
     }
 
@@ -444,8 +444,8 @@ mod tests {
 
         // All bins should be 1.0
         for bin in &output {
-            assert!((bin.real() - 1.0).abs() < 1e-10);
-            assert!(bin.imag().abs() < 1e-10);
+            assert!((bin.re - 1.0).abs() < 1e-10);
+            assert!(bin.im.abs() < 1e-10);
         }
     }
 
@@ -458,7 +458,7 @@ mod tests {
         assert_eq!(output.len(), 3);
 
         // DC component should be sum of inputs
-        assert!((output[0].real() - 10.0).abs() < 1e-6);
+        assert!((output[0].re - 10.0).abs() < 1e-6);
     }
 
     #[test]
@@ -483,8 +483,8 @@ mod tests {
         let recovered = ifft(&transformed);
 
         for (orig, recov) in input.iter().zip(recovered.iter()) {
-            assert!((orig.real() - recov.real()).abs() < 1e-9);
-            assert!((orig.imag() - recov.imag()).abs() < 1e-9);
+            assert!((orig.re - recov.re).abs() < 1e-9);
+            assert!((orig.im - recov.im).abs() < 1e-9);
         }
     }
 
@@ -495,8 +495,8 @@ mod tests {
         let output2 = fast_fourier_transform(&input);
 
         for (a, b) in output1.iter().zip(output2.iter()) {
-            assert!((a.real() - b.real()).abs() < 1e-10);
-            assert!((a.imag() - b.imag()).abs() < 1e-10);
+            assert!((a.re - b.re).abs() < 1e-10);
+            assert!((a.im - b.im).abs() < 1e-10);
         }
     }
 
@@ -517,8 +517,8 @@ mod tests {
         assert_eq!(fft.size(), 4);
 
         for (orig, recov) in input.iter().zip(inverse.iter()) {
-            assert!((orig.real() - recov.real()).abs() < 1e-10);
-            assert!((orig.imag() - recov.imag()).abs() < 1e-10);
+            assert!((orig.re - recov.re).abs() < 1e-10);
+            assert!((orig.im - recov.im).abs() < 1e-10);
         }
     }
 }
