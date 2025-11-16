@@ -51,6 +51,7 @@ pub mod octonion_algebra;
 pub mod q_system;
 pub mod quantum_oscillator;
 pub mod quantum_clifford;
+pub mod ace_quantum_onsager;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -134,6 +135,9 @@ pub use quantum_oscillator::{
 pub use quantum_clifford::{
     QuantumCliffordAlgebra, CliffordElement, CliffordIndex, CliffordGenerator,
     FermionIndex,
+};
+pub use ace_quantum_onsager::{
+    ACEQuantumOnsagerAlgebra, ACEOnsagerElement, OnsagerMonomial, Generator as OnsagerGenerator,
 };
 
 #[cfg(test)]
