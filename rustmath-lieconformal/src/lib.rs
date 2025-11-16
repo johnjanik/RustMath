@@ -76,6 +76,12 @@ pub use free_bosons_lie_conformal_algebra::{
 pub use free_fermions_lie_conformal_algebra::{
     FreeFermionsLieConformalAlgebra, FreeFermionsLCAElement,
 };
+pub use bosonic_ghosts_lie_conformal_algebra::{
+    BosonicGhostsLieConformalAlgebra, BosonicGhostsLCAElement,
+};
+pub use fermionic_ghosts_lie_conformal_algebra::{
+    FermionicGhostsLieConformalAlgebra, FermionicGhostsLCAElement,
+};
 
 #[cfg(test)]
 mod tests {
