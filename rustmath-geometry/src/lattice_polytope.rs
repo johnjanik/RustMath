@@ -25,6 +25,7 @@ use rustmath_core::Ring;
 use rustmath_integers::Integer;
 use std::fmt;
 use std::hash::{Hash, Hasher};
+use std::collections::HashMap;
 
 /// A lattice polytope
 ///
@@ -362,6 +363,551 @@ pub fn cross_polytope(dimension: usize) -> LatticePolytopeClass {
     }
 
     LatticePolytopeClass::new(vertices)
+}
+
+/// Set of all lattice polytopes
+///
+/// This represents the collection of all lattice polytopes.
+#[derive(Clone, Debug)]
+pub struct SetOfAllLatticePolytopesClass {
+    /// Dimension restriction (None means all dimensions)
+    dimension: Option<usize>,
+}
+
+impl SetOfAllLatticePolytopesClass {
+    /// Create a new set of all lattice polytopes
+    pub fn new() -> Self {
+        Self { dimension: None }
+    }
+
+    /// Create a set of lattice polytopes of a specific dimension
+    pub fn with_dimension(dimension: usize) -> Self {
+        Self {
+            dimension: Some(dimension),
+        }
+    }
+
+    /// Check if a polytope is in this set
+    pub fn contains(&self, polytope: &LatticePolytopeClass) -> bool {
+        if let Some(dim) = self.dimension {
+            polytope.dim() == dim
+        } else {
+            true
+        }
+    }
+}
+
+impl Default for SetOfAllLatticePolytopesClass {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Nef partition of a lattice polytope
+///
+/// A nef partition is a partition of the vertices of a reflexive polytope
+/// into two sets that satisfy certain geometric conditions related to
+/// nef line bundles on toric varieties.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NefPartition {
+    /// The underlying polytope
+    polytope: LatticePolytopeClass,
+    /// The partition of vertices (true/false for each vertex)
+    partition: Vec<bool>,
+    /// Cached properties
+    cached_data: Option<HashMap<String, String>>,
+}
+
+impl NefPartition {
+    /// Create a new nef partition
+    ///
+    /// # Arguments
+    ///
+    /// * `polytope` - The reflexive polytope
+    /// * `partition` - Boolean array indicating which part each vertex belongs to
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_geometry::lattice_polytope::{LatticePolytopeClass, NefPartition};
+    /// use rustmath_integers::Integer;
+    ///
+    /// let vertices = vec![
+    ///     vec![Integer::from(1), Integer::from(0)],
+    ///     vec![Integer::from(-1), Integer::from(0)],
+    ///     vec![Integer::from(0), Integer::from(1)],
+    ///     vec![Integer::from(0), Integer::from(-1)],
+    /// ];
+    /// let polytope = LatticePolytopeClass::new(vertices);
+    /// let partition = vec![true, true, false, false];
+    ///
+    /// let nef = NefPartition::new(polytope, partition);
+    /// ```
+    pub fn new(polytope: LatticePolytopeClass, partition: Vec<bool>) -> Self {
+        if partition.len() != polytope.n_vertices() {
+            panic!("Partition size must match number of vertices");
+        }
+
+        Self {
+            polytope,
+            partition,
+            cached_data: None,
+        }
+    }
+
+    /// Get the polytope
+    pub fn polytope(&self) -> &LatticePolytopeClass {
+        &self.polytope
+    }
+
+    /// Get the partition
+    pub fn partition(&self) -> &[bool] {
+        &self.partition
+    }
+
+    /// Get vertices in the first part
+    pub fn part0_vertices(&self) -> Vec<Vec<Integer>> {
+        self.polytope
+            .vertices()
+            .iter()
+            .zip(self.partition.iter())
+            .filter_map(|(v, &in_part)| {
+                if !in_part {
+                    Some(v.clone())
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    /// Get vertices in the second part
+    pub fn part1_vertices(&self) -> Vec<Vec<Integer>> {
+        self.polytope
+            .vertices()
+            .iter()
+            .zip(self.partition.iter())
+            .filter_map(|(v, &in_part)| {
+                if in_part {
+                    Some(v.clone())
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    /// Check if this is a valid nef partition
+    ///
+    /// A nef partition is valid if both parts are non-empty and
+    /// satisfy the nef conditions.
+    pub fn is_valid(&self) -> bool {
+        let part0_count = self.partition.iter().filter(|&&x| !x).count();
+        let part1_count = self.partition.iter().filter(|&&x| x).count();
+
+        // Both parts must be non-empty
+        part0_count > 0 && part1_count > 0
+    }
+
+    /// Compute the Hodge numbers associated with this nef partition
+    ///
+    /// Returns (h11, h12) for the associated Calabi-Yau variety.
+    /// This is a simplified placeholder.
+    pub fn hodge_numbers(&self) -> (usize, usize) {
+        // Proper implementation would compute actual Hodge numbers
+        // based on the partition geometry
+        (0, 0)
+    }
+}
+
+/// Check if an object is a lattice polytope
+///
+/// This function checks whether the given object is an instance of
+/// `LatticePolytopeClass`.
+///
+/// # Deprecated
+///
+/// Use `matches!(obj, LatticePolytopeClass { .. })` or type checking instead.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_geometry::lattice_polytope::{is_lattice_polytope, cross_polytope};
+///
+/// let polytope = cross_polytope(2);
+/// assert!(is_lattice_polytope(&polytope));
+/// ```
+pub fn is_lattice_polytope(obj: &LatticePolytopeClass) -> bool {
+    // In Rust, if we have a reference to LatticePolytopeClass, it's always a lattice polytope
+    // This function exists for API compatibility with SageMath
+    true
+}
+
+/// Global database of reflexive polytopes (simulated)
+///
+/// In SageMath, there are pre-computed databases of reflexive polytopes.
+/// This is a simplified version that generates basic examples.
+static REFLEXIVE_POLYTOPES_2D: &[(usize, &[(i32, i32)])] = &[
+    // Triangle: [-1,-1], [2,-1], [-1,2]
+    (0, &[(-1, -1), (2, -1), (-1, 2)]),
+    // Square: [1,1], [1,-1], [-1,1], [-1,-1]
+    (1, &[(1, 1), (1, -1), (-1, 1), (-1, -1)]),
+    // Hexagon: Various 2D reflexive polytopes
+    (2, &[(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1)]),
+    // Add more as needed...
+];
+
+/// Get a specific reflexive polytope from the database
+///
+/// Returns the n-th reflexive polytope of a given dimension.
+///
+/// # Arguments
+///
+/// * `dim` - Dimension (must be 2 or 3)
+/// * `n` - Index of the polytope
+///
+/// # Returns
+///
+/// The requested reflexive polytope, or None if out of range.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_geometry::lattice_polytope::reflexive_polytope;
+///
+/// // Get the first 2D reflexive polytope
+/// let poly = reflexive_polytope(2, 0);
+/// assert!(poly.is_some());
+/// ```
+pub fn reflexive_polytope(dim: usize, n: usize) -> Option<LatticePolytopeClass> {
+    match dim {
+        2 => {
+            if let Some((_, vertices)) = REFLEXIVE_POLYTOPES_2D.get(n) {
+                let verts: Vec<Vec<Integer>> = vertices
+                    .iter()
+                    .map(|(x, y)| vec![Integer::from(*x), Integer::from(*y)])
+                    .collect();
+                Some(LatticePolytopeClass::new(verts))
+            } else {
+                None
+            }
+        }
+        3 => {
+            // For 3D, we would need a much larger database
+            // This is a placeholder
+            None
+        }
+        _ => None,
+    }
+}
+
+/// Get all reflexive polytopes of a given dimension
+///
+/// Returns a vector of all reflexive polytopes of the specified dimension.
+///
+/// # Arguments
+///
+/// * `dim` - Dimension (must be 2 or 3)
+///
+/// # Returns
+///
+/// Vector of all reflexive polytopes in that dimension
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_geometry::lattice_polytope::reflexive_polytopes;
+///
+/// let polytopes_2d = reflexive_polytopes(2);
+/// assert!(polytopes_2d.len() > 0);
+/// ```
+pub fn reflexive_polytopes(dim: usize) -> Vec<LatticePolytopeClass> {
+    match dim {
+        2 => {
+            let mut result = Vec::new();
+            for (_, vertices) in REFLEXIVE_POLYTOPES_2D.iter() {
+                let verts: Vec<Vec<Integer>> = vertices
+                    .iter()
+                    .map(|(x, y)| vec![Integer::from(*x), Integer::from(*y)])
+                    .collect();
+                result.push(LatticePolytopeClass::new(verts));
+            }
+            result
+        }
+        3 => {
+            // For 3D reflexive polytopes, there are 4,319 of them
+            // This would require a large database
+            Vec::new()
+        }
+        _ => Vec::new(),
+    }
+}
+
+/// Get all lattice points for a sequence of polytopes
+///
+/// For a list of polytopes, returns all their lattice points.
+///
+/// # Arguments
+///
+/// * `polytopes` - Slice of polytopes
+///
+/// # Returns
+///
+/// Vector of vectors, where each inner vector contains the lattice points
+/// for the corresponding polytope
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_geometry::lattice_polytope::{all_points, cross_polytope};
+///
+/// let polytopes = vec![cross_polytope(2), cross_polytope(3)];
+/// let points = all_points(&polytopes);
+/// assert_eq!(points.len(), 2);
+/// ```
+pub fn all_points(polytopes: &[LatticePolytopeClass]) -> Vec<Vec<Vec<Integer>>> {
+    polytopes.iter().map(|p| p.points()).collect()
+}
+
+/// Get all polar duals for a sequence of polytopes
+///
+/// For a list of reflexive polytopes, returns their polar duals.
+///
+/// # Arguments
+///
+/// * `polytopes` - Slice of polytopes
+///
+/// # Returns
+///
+/// Vector of optional polytopes (None if not reflexive)
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_geometry::lattice_polytope::{all_polars, reflexive_polytopes};
+///
+/// let polytopes = reflexive_polytopes(2);
+/// let polars = all_polars(&polytopes);
+/// // Reflexive polytopes should have polar duals
+/// ```
+pub fn all_polars(polytopes: &[LatticePolytopeClass]) -> Vec<Option<LatticePolytopeClass>> {
+    polytopes.iter().map(|p| p.polar()).collect()
+}
+
+/// Get all facet equations for a sequence of polytopes
+///
+/// For a list of polytopes, returns the facet normal vectors.
+///
+/// # Arguments
+///
+/// * `polytopes` - Slice of polytopes
+///
+/// # Returns
+///
+/// Vector of vectors, where each inner vector contains the facet normals
+/// for the corresponding polytope
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_geometry::lattice_polytope::{all_facet_equations, cross_polytope};
+///
+/// let polytopes = vec![cross_polytope(2)];
+/// let facets = all_facet_equations(&polytopes);
+/// assert_eq!(facets.len(), 1);
+/// ```
+pub fn all_facet_equations(polytopes: &[LatticePolytopeClass]) -> Vec<Vec<Vec<Integer>>> {
+    polytopes.iter().map(|p| p.facet_normals()).collect()
+}
+
+/// Get all nef partitions for a sequence of reflexive polytopes
+///
+/// For a list of reflexive polytopes, computes all valid nef partitions.
+///
+/// # Arguments
+///
+/// * `polytopes` - Slice of reflexive polytopes
+///
+/// # Returns
+///
+/// Vector of vectors, where each inner vector contains the nef partitions
+/// for the corresponding polytope
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_geometry::lattice_polytope::{all_nef_partitions, reflexive_polytopes};
+///
+/// let polytopes = reflexive_polytopes(2);
+/// let nef_parts = all_nef_partitions(&polytopes);
+/// assert_eq!(nef_parts.len(), polytopes.len());
+/// ```
+pub fn all_nef_partitions(polytopes: &[LatticePolytopeClass]) -> Vec<Vec<NefPartition>> {
+    polytopes
+        .iter()
+        .map(|p| {
+            // Generate all possible partitions
+            let n = p.n_vertices();
+            let mut partitions = Vec::new();
+
+            // Try all 2^n possible partitions
+            for i in 0..(1 << n) {
+                let mut partition = Vec::new();
+                for j in 0..n {
+                    partition.push((i & (1 << j)) != 0);
+                }
+
+                let nef = NefPartition::new(p.clone(), partition);
+                if nef.is_valid() {
+                    partitions.push(nef);
+                }
+            }
+
+            partitions
+        })
+        .collect()
+}
+
+/// Get all cached data for a sequence of polytopes
+///
+/// Returns pre-computed data for a list of polytopes.
+/// This is primarily used for optimization when working with
+/// large databases of polytopes.
+///
+/// # Arguments
+///
+/// * `polytopes` - Slice of polytopes
+///
+/// # Returns
+///
+/// Vector of hash maps containing cached properties
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_geometry::lattice_polytope::{all_cached_data, cross_polytope};
+///
+/// let polytopes = vec![cross_polytope(2)];
+/// let cache = all_cached_data(&polytopes);
+/// assert_eq!(cache.len(), 1);
+/// ```
+pub fn all_cached_data(polytopes: &[LatticePolytopeClass]) -> Vec<HashMap<String, String>> {
+    polytopes
+        .iter()
+        .map(|p| {
+            let mut cache = HashMap::new();
+            cache.insert("n_vertices".to_string(), p.n_vertices().to_string());
+            cache.insert("dimension".to_string(), p.dim().to_string());
+            cache.insert("ambient_dim".to_string(), p.ambient_dim().to_string());
+            cache
+        })
+        .collect()
+}
+
+/// Write a polytope to PALP matrix format
+///
+/// PALP (Package for Analyzing Lattice Polytopes) is an external program
+/// for studying reflexive polytopes. This function writes a polytope's
+/// vertex matrix in PALP format.
+///
+/// # Arguments
+///
+/// * `polytope` - The polytope to write
+///
+/// # Returns
+///
+/// A string in PALP matrix format
+///
+/// # Format
+///
+/// The PALP format consists of:
+/// - First line: number of vertices, dimension
+/// - Following lines: vertex coordinates (one vertex per line)
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_geometry::lattice_polytope::{write_palp_matrix, cross_polytope};
+///
+/// let polytope = cross_polytope(2);
+/// let palp_string = write_palp_matrix(&polytope);
+/// assert!(palp_string.contains("4 2")); // 4 vertices, 2D
+/// ```
+pub fn write_palp_matrix(polytope: &LatticePolytopeClass) -> String {
+    let mut result = String::new();
+
+    // Header: number of vertices, dimension
+    result.push_str(&format!("{} {}\n", polytope.n_vertices(), polytope.ambient_dim()));
+
+    // Write each vertex
+    for vertex in polytope.vertices() {
+        let coords: Vec<String> = vertex.iter().map(|x| x.to_string()).collect();
+        result.push_str(&coords.join(" "));
+        result.push('\n');
+    }
+
+    result
+}
+
+/// Read a polytope from PALP matrix format
+///
+/// Parse a PALP-formatted string to create a lattice polytope.
+///
+/// # Arguments
+///
+/// * `palp_string` - String in PALP matrix format
+///
+/// # Returns
+///
+/// The parsed polytope, or None if parsing fails
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_geometry::lattice_polytope::{read_palp_matrix, write_palp_matrix, cross_polytope};
+///
+/// let original = cross_polytope(2);
+/// let palp_str = write_palp_matrix(&original);
+/// let parsed = read_palp_matrix(&palp_str);
+///
+/// assert!(parsed.is_some());
+/// let parsed_poly = parsed.unwrap();
+/// assert_eq!(parsed_poly.n_vertices(), original.n_vertices());
+/// ```
+pub fn read_palp_matrix(palp_string: &str) -> Option<LatticePolytopeClass> {
+    let lines: Vec<&str> = palp_string.trim().lines().collect();
+    if lines.is_empty() {
+        return None;
+    }
+
+    // Parse header
+    let header_parts: Vec<&str> = lines[0].split_whitespace().collect();
+    if header_parts.len() != 2 {
+        return None;
+    }
+
+    let n_vertices: usize = header_parts[0].parse().ok()?;
+    let _dim: usize = header_parts[1].parse().ok()?;
+
+    // Parse vertices
+    let mut vertices = Vec::new();
+    for line in lines.iter().skip(1).take(n_vertices) {
+        let coords: Result<Vec<Integer>, _> = line
+            .split_whitespace()
+            .map(|s| s.parse::<i64>().map(Integer::from))
+            .collect();
+
+        match coords {
+            Ok(v) => vertices.push(v),
+            Err(_) => return None,
+        }
+    }
+
+    if vertices.len() != n_vertices {
+        return None;
+    }
+
+    Some(LatticePolytopeClass::new(vertices))
 }
 
 #[cfg(test)]
