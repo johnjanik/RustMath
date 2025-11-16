@@ -40,7 +40,9 @@ pub use sparse::{SparseMatrix, SparseMatrixIterator};
 pub use special::{
     block_diagonal_matrix, block_matrix, circulant, column_matrix, diagonal_matrix,
     elementary_matrix_add, elementary_matrix_scale, elementary_matrix_swap, hankel, hilbert,
-    identity_matrix, jordan_block, lehmer, ones_matrix, toeplitz, vandermonde, zero_matrix,
+    identity_matrix, jordan_block, lehmer, ones_matrix, random_diagonal_matrix,
+    random_integer_matrix, random_lower_triangular, random_unimodular_matrix,
+    random_upper_triangular, toeplitz, vandermonde, zero_matrix,
 };
 pub use vector::Vector;
 pub use vector_space::{QuotientSpace, VectorSpace};
