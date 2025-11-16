@@ -22,7 +22,9 @@
 //! - `verbose`: Verbose output control
 //! - `viewer`: Viewing utilities
 //! - `weak_dict`: Weak reference dictionaries
+//! - `mrange`: Multi-dimensional range iterators and Cartesian products
 
+pub mod mrange;
 pub mod sagedoc;
 pub mod sagedoc_conf;
 pub mod sageinspect;
