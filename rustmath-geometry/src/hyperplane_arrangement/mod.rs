@@ -6,7 +6,11 @@
 pub mod affine_subspace;
 pub mod arrangement;
 pub mod hyperplane;
+pub mod library;
+pub mod ordered_arrangement;
 
 pub use affine_subspace::AffineSubspace;
 pub use arrangement::{HyperplaneArrangementElement, HyperplaneArrangements};
 pub use hyperplane::{AmbientVectorSpace, Hyperplane};
+pub use library::{HyperplaneArrangementLibrary, make_parent};
+pub use ordered_arrangement::{OrderedHyperplaneArrangementElement, OrderedHyperplaneArrangements};
