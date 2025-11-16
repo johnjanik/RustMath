@@ -1,7 +1,7 @@
 //! RustMath Calculus - Symbolic calculus operations
 //!
 //! This crate provides differentiation, integration, limits, series expansions,
-//! interpolation, and differential equation solvers.
+//! interpolation, differential equation solvers, and integral transforms.
 
 pub mod desolvers;
 pub mod differentiation;
@@ -10,10 +10,16 @@ pub mod functional;
 pub mod integration;
 pub mod interpolation;
 pub mod interpolators;
+pub mod laplace;
 pub mod limits;
+pub mod maxima_compat;
+pub mod minpoly;
 pub mod ode;
+pub mod pochhammer;
+pub mod product;
 pub mod riemann;
 pub mod taylor;
+pub mod transforms;
 pub mod var;
 
 // Re-export commonly used functions
@@ -27,8 +33,15 @@ pub use functional::{expand, simplify};
 pub use integration::{integrate, nintegrate, numerical_integrate_simpson};
 pub use interpolation::{spline, CubicSpline};
 pub use interpolators::{complex_cubic_spline, polygon_spline, CCSpline, PSpline};
+pub use laplace::{
+    dummy_inverse_laplace, dummy_laplace, inverse_laplace, laplace, LaplaceAlgorithm,
+};
 pub use limits::{lim, limit, substitute, LimitDirection};
+pub use maxima_compat::{mapped_opts, maxima_options, MaximaOptions, MaximaValue};
+pub use minpoly::{minpoly, MinpolyAlgorithm, MinpolyOptions};
 pub use ode::{ODESolver, ODESystem};
+pub use pochhammer::{dummy_pochhammer, pochhammer, pochhammer_eval, pochhammer_expand};
+pub use product::{expand_product, symbolic_product, ProductAlgorithm};
 pub use riemann::{
     analytic_boundary, analytic_interior, cauchy_kernel, complex_to_rgb, complex_to_spiderweb,
     get_derivatives, RiemannMap, RGB,
