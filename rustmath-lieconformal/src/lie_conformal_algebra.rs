@@ -11,7 +11,7 @@ pub trait LieConformalAlgebra<R: Ring> {
     type Element;
     fn base_ring(&self) -> &R;
     fn ngens(&self) -> Option<usize>;
-    fn generator(fn generator(&self, i: usize) -> Option<Self::Element>;self, i: usize) -> Option<Self::Element> where R: From<i64>;
+    fn generator(&self, i: usize) -> Option<Self::Element>;
     fn generators(&self) -> Vec<Self::Element> {
         if let Some(n) = self.ngens() {
             (0..n).filter_map(|i| self.generator(i)).collect()

@@ -35,6 +35,7 @@ pub mod lie_conformal_algebra_element;
 pub mod graded_lie_conformal_algebra;
 pub mod lie_conformal_algebra_with_basis;
 pub mod freely_generated_lie_conformal_algebra;
+pub mod finitely_freely_generated_lca;
 pub mod abelian_lie_conformal_algebra;
 pub mod virasoro_lie_conformal_algebra;
 pub mod weyl_lie_conformal_algebra;
@@ -81,6 +82,15 @@ pub use bosonic_ghosts_lie_conformal_algebra::{
 };
 pub use fermionic_ghosts_lie_conformal_algebra::{
     FermionicGhostsLieConformalAlgebra, FermionicGhostsLCAElement,
+};
+pub use finitely_freely_generated_lca::{
+    FinitelyFreelyGeneratedLCA, FinitelyFreelyGeneratedElement,
+};
+pub use n2_lie_conformal_algebra::{
+    N2LieConformalAlgebra, N2LCAElement, N2Generator,
+};
+pub use neveu_schwarz_lie_conformal_algebra::{
+    NeveuSchwarzLieConformalAlgebra, NeveuSchwarzLCAElement, NeveuSchwarzGenerator,
 };
 
 #[cfg(test)]
