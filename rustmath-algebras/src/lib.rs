@@ -50,6 +50,7 @@ pub mod ariki_koike_specht_modules;
 pub mod octonion_algebra;
 pub mod q_system;
 pub mod quantum_oscillator;
+pub mod quantum_clifford;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -129,6 +130,10 @@ pub use q_system::{QSystem, QElement, QIndex, QMonomial, is_tamely_laced};
 pub use quantum_oscillator::{
     QuantumOscillatorAlgebra, OscillatorElement, OscillatorIndex, Generator,
     FockSpaceRepresentation, FockSpaceElement,
+};
+pub use quantum_clifford::{
+    QuantumCliffordAlgebra, CliffordElement, CliffordIndex, CliffordGenerator,
+    FermionIndex,
 };
 
 #[cfg(test)]
