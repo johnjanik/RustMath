@@ -15,6 +15,9 @@
 //! - `hypergeometric`: Hypergeometric functions
 //! - `orthogonal_polys`: Orthogonal polynomials (Chebyshev, Legendre, Hermite, etc.)
 //! - `jacobi`: Jacobi elliptic functions
+//! - `special`: Elliptic integrals and spherical harmonics
+//! - `transcendental`: Zeta functions and related transcendental functions
+//! - `wigner`: Wigner symbols and Clebsch-Gordan coefficients
 //!
 //! # Examples
 //!
@@ -37,6 +40,9 @@ pub mod min_max;
 pub mod orthogonal_polys;
 pub mod other;
 pub mod prime_pi;
+pub mod special;
+pub mod transcendental;
+pub mod wigner;
 
 pub use airy::{airy_ai, airy_ai_prime, airy_bi, airy_bi_prime};
 pub use generalized::{dirac_delta, heaviside, kronecker_delta, signum, unit_step};
@@ -51,5 +57,13 @@ pub use other::{
     abs_symbolic, binomial, ceil, conjugate, factorial, floor, frac, imag_part, real_part,
 };
 pub use prime_pi::{legendre_phi, prime_pi};
+pub use special::{
+    elliptic_e, elliptic_ec, elliptic_eu, elliptic_f, elliptic_j, elliptic_kc, elliptic_pi,
+    spherical_harmonic,
+};
+pub use transcendental::{
+    dickman_rho, hurwitz_zeta, stieltjes, zeta, zeta_deriv, zeta_symmetric,
+};
+pub use wigner::{clebsch_gordan, gaunt, racah, wigner_3j, wigner_6j, wigner_9j};
 
 
