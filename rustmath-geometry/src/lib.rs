@@ -15,6 +15,11 @@ pub mod convex_set;
 pub mod relative_interior;
 pub mod hasse_diagram;
 pub mod abc;
+pub mod linear_expression;
+pub mod point_collection;
+pub mod newton_polygon;
+pub mod integral_points;
+pub mod polyhedral_complex;
 
 pub use point::{Point2D, Point3D};
 pub use line::{Line2D, LineSegment2D};
