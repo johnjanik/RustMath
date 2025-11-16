@@ -4,6 +4,7 @@
 
 pub mod action;
 pub mod args;
+pub mod berlekamp_massey;
 pub mod companion;
 pub mod decomposition;
 pub mod eigenvalues;
@@ -14,6 +15,7 @@ pub mod matrix;
 pub mod polynomial_matrix;
 pub mod polynomial_ops;
 pub mod sparse;
+pub mod special;
 pub mod vector;
 pub mod vector_space;
 
@@ -23,6 +25,7 @@ pub use action::{
     MatrixSchemePointAction, MatrixPolymapAction, PolymapMatrixAction,
 };
 pub use args::{SparseEntry, MatrixArgs, matrix_args_init};
+pub use berlekamp_massey::{berlekamp_massey, berlekamp_massey_verify};
 pub use companion::{characteristic_polynomial, companion_matrix, rational_canonical_form, RationalCanonicalForm};
 pub use decomposition::{
     CholeskyDecomposition, HessenbergDecomposition, LUDecomposition, PLUDecomposition,
@@ -34,6 +37,13 @@ pub use integer_forms::{HermiteNormalForm, SmithNormalForm};
 pub use linear_solve::RowEchelonForm;
 pub use matrix::Matrix;
 pub use sparse::{SparseMatrix, SparseMatrixIterator};
+pub use special::{
+    block_diagonal_matrix, block_matrix, circulant, column_matrix, diagonal_matrix,
+    elementary_matrix_add, elementary_matrix_scale, elementary_matrix_swap, hankel, hilbert,
+    identity_matrix, jordan_block, lehmer, ones_matrix, random_diagonal_matrix,
+    random_integer_matrix, random_lower_triangular, random_unimodular_matrix,
+    random_upper_triangular, toeplitz, vandermonde, zero_matrix,
+};
 pub use vector::Vector;
 pub use vector_space::{QuotientSpace, VectorSpace};
 
