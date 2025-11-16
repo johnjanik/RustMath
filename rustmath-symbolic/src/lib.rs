@@ -21,6 +21,7 @@ pub mod radical;
 pub mod series;
 pub mod simplify;
 pub mod solve;
+pub mod specialfunctions;
 pub mod substitute;
 pub mod symbol;
 
