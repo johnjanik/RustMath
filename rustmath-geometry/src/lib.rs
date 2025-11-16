@@ -20,6 +20,7 @@ pub mod point_collection;
 pub mod newton_polygon;
 pub mod integral_points;
 pub mod polyhedral_complex;
+pub mod hyperplane_arrangement;
 
 pub use point::{Point2D, Point3D};
 pub use line::{Line2D, LineSegment2D};
