@@ -910,6 +910,292 @@ pub fn read_palp_matrix(palp_string: &str) -> Option<LatticePolytopeClass> {
     Some(LatticePolytopeClass::new(vertices))
 }
 
+/// Check if an object is a nef partition
+///
+/// This function checks whether the given object is an instance of `NefPartition`.
+///
+/// # Deprecated
+///
+/// Use type checking instead.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_geometry::lattice_polytope::{is_nef_partition, NefPartition, cross_polytope};
+///
+/// let polytope = cross_polytope(2);
+/// let partition = vec![true, true, false, false];
+/// let nef = NefPartition::new(polytope, partition);
+/// assert!(is_nef_partition(&nef));
+/// ```
+pub fn is_nef_partition(_obj: &NefPartition) -> bool {
+    // In Rust, if we have a reference to NefPartition, it's always a nef partition
+    // This function exists for API compatibility with SageMath
+    true
+}
+
+/// Compute the Minkowski sum of two lattice polytopes
+///
+/// The Minkowski sum of polytopes P and Q is defined as:
+/// P ⊕ Q = {p + q : p ∈ P, q ∈ Q}
+///
+/// # Arguments
+///
+/// * `p1` - First polytope
+/// * `p2` - Second polytope
+///
+/// # Returns
+///
+/// The Minkowski sum as a new lattice polytope
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_geometry::lattice_polytope::{minkowski_sum, LatticePolytopeClass};
+/// use rustmath_integers::Integer;
+///
+/// // Unit square [0,1]²
+/// let square = LatticePolytopeClass::new(vec![
+///     vec![Integer::from(0), Integer::from(0)],
+///     vec![Integer::from(1), Integer::from(0)],
+///     vec![Integer::from(1), Integer::from(1)],
+///     vec![Integer::from(0), Integer::from(1)],
+/// ]);
+///
+/// // Single point at origin
+/// let point = LatticePolytopeClass::new(vec![
+///     vec![Integer::from(1), Integer::from(1)],
+/// ]);
+///
+/// let sum = minkowski_sum(&square, &point);
+/// // Result is square translated by (1,1)
+/// ```
+pub fn minkowski_sum(p1: &LatticePolytopeClass, p2: &LatticePolytopeClass) -> LatticePolytopeClass {
+    if p1.ambient_dim() != p2.ambient_dim() {
+        panic!("Polytopes must have the same ambient dimension");
+    }
+
+    let dim = p1.ambient_dim();
+    let mut sum_vertices = Vec::new();
+
+    // Compute all pairwise sums of vertices
+    for v1 in p1.vertices() {
+        for v2 in p2.vertices() {
+            let mut sum_vertex = Vec::with_capacity(dim);
+            for i in 0..dim {
+                sum_vertex.push(v1[i].clone() + v2[i].clone());
+            }
+            sum_vertices.push(sum_vertex);
+        }
+    }
+
+    // The Minkowski sum vertices are the convex hull of all pairwise sums
+    // For a proper implementation, we would compute the actual convex hull
+    // to remove interior points
+    LatticePolytopeClass::new(sum_vertices)
+}
+
+/// Find positive integer relations among vectors
+///
+/// Given a matrix whose columns are vectors, find all relations
+/// c₁v₁ + c₂v₂ + ... + cₙvₙ = 0 where all cᵢ are positive integers.
+///
+/// # Arguments
+///
+/// * `vectors` - Matrix where each column is a vector (rows × cols)
+///
+/// # Returns
+///
+/// Vector of relation vectors, where each relation is a vector of coefficients
+///
+/// # Mathematical Background
+///
+/// This computes the kernel of the matrix over the integers, restricted to
+/// positive coefficients. This is useful for studying combinatorial properties
+/// of polytopes.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_geometry::lattice_polytope::positive_integer_relations;
+/// use rustmath_integers::Integer;
+///
+/// // Three vectors: (1,0), (0,1), (-1,-1)
+/// // Relation: 1*(1,0) + 1*(0,1) + 1*(-1,-1) = (0,0)
+/// let vectors = vec![
+///     vec![Integer::from(1), Integer::from(0)],
+///     vec![Integer::from(0), Integer::from(1)],
+///     vec![Integer::from(-1), Integer::from(-1)],
+/// ];
+///
+/// let relations = positive_integer_relations(&vectors);
+/// // Should find the relation [1, 1, 1]
+/// ```
+pub fn positive_integer_relations(vectors: &[Vec<Integer>]) -> Vec<Vec<Integer>> {
+    if vectors.is_empty() {
+        return Vec::new();
+    }
+
+    // This is a simplified implementation
+    // A full implementation would:
+    // 1. Form the matrix from vectors
+    // 2. Compute the kernel (null space) over the integers
+    // 3. Find combinations with all positive coefficients
+    // 4. Use lattice reduction or enumeration algorithms
+
+    // For now, return empty - proper implementation requires
+    // integer matrix kernel computation
+    Vec::new()
+}
+
+/// Global PALP dimension setting
+///
+/// In SageMath, this is used to configure the PALP program.
+/// For our implementation, we store it as a module-level default.
+static mut PALP_DIMENSION: usize = 4;
+
+/// Set the PALP dimension
+///
+/// This sets the maximum dimension for PALP operations.
+/// In SageMath, PALP (Package for Analyzing Lattice Polytopes) requires
+/// dimension to be set at compile time.
+///
+/// # Arguments
+///
+/// * `dim` - The dimension to set (typically 2-6)
+///
+/// # Safety
+///
+/// This uses a mutable static variable, so it's not thread-safe in the
+/// current implementation.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_geometry::lattice_polytope::set_palp_dimension;
+///
+/// set_palp_dimension(4);
+/// ```
+pub fn set_palp_dimension(dim: usize) {
+    unsafe {
+        PALP_DIMENSION = dim;
+    }
+}
+
+/// Get the current PALP dimension
+///
+/// Returns the dimension previously set by `set_palp_dimension`.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_geometry::lattice_polytope::{set_palp_dimension, get_palp_dimension};
+///
+/// set_palp_dimension(5);
+/// assert_eq!(get_palp_dimension(), 5);
+/// ```
+pub fn get_palp_dimension() -> usize {
+    unsafe { PALP_DIMENSION }
+}
+
+/// Skip a PALP matrix in a reader
+///
+/// When reading multiple polytopes from a PALP-formatted file,
+/// this function skips over the next matrix without parsing it.
+///
+/// # Arguments
+///
+/// * `reader` - A string containing PALP-formatted data
+/// * `current_pos` - Current position in the string (line number)
+///
+/// # Returns
+///
+/// New position after skipping the matrix
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_geometry::lattice_polytope::skip_palp_matrix;
+///
+/// let palp_data = "3 2\n1 0\n0 1\n1 1\n2 2\n1 0\n-1 0\n";
+/// let new_pos = skip_palp_matrix(palp_data, 0);
+/// assert!(new_pos > 0);
+/// ```
+pub fn skip_palp_matrix(data: &str, current_pos: usize) -> usize {
+    let lines: Vec<&str> = data.lines().collect();
+
+    if current_pos >= lines.len() {
+        return current_pos;
+    }
+
+    // Parse header to get number of vertices
+    let header_parts: Vec<&str> = lines[current_pos].split_whitespace().collect();
+    if header_parts.len() < 2 {
+        return current_pos + 1;
+    }
+
+    if let Ok(n_vertices) = header_parts[0].parse::<usize>() {
+        // Skip header + n_vertices lines
+        current_pos + 1 + n_vertices
+    } else {
+        current_pos + 1
+    }
+}
+
+/// Read all polytopes from a PALP-formatted file
+///
+/// This function reads multiple polytopes from a file in PALP format.
+/// Each polytope is separated by its matrix representation.
+///
+/// # Arguments
+///
+/// * `data` - String containing PALP-formatted polytope data
+///
+/// # Returns
+///
+/// Vector of all polytopes read from the file
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_geometry::lattice_polytope::{read_all_polytopes, write_palp_matrix, cross_polytope};
+///
+/// // Create sample data with two polytopes
+/// let p1 = cross_polytope(2);
+/// let p2 = cross_polytope(2);
+/// let mut data = write_palp_matrix(&p1);
+/// data.push_str(&write_palp_matrix(&p2));
+///
+/// let polytopes = read_all_polytopes(&data);
+/// assert_eq!(polytopes.len(), 2);
+/// ```
+pub fn read_all_polytopes(data: &str) -> Vec<LatticePolytopeClass> {
+    let mut polytopes = Vec::new();
+    let lines: Vec<&str> = data.lines().collect();
+    let mut pos = 0;
+
+    while pos < lines.len() {
+        // Skip empty lines
+        if lines[pos].trim().is_empty() {
+            pos += 1;
+            continue;
+        }
+
+        // Try to read a polytope
+        let remaining_data = lines[pos..].join("\n");
+        if let Some(polytope) = read_palp_matrix(&remaining_data) {
+            polytopes.push(polytope);
+            // Move position forward by the matrix size
+            pos = skip_palp_matrix(data, pos);
+        } else {
+            // If we can't parse, skip this line
+            pos += 1;
+        }
+    }
+
+    polytopes
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

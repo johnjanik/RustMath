@@ -39,9 +39,12 @@ pub use voronoi::{VoronoiDiagram, VoronoiCell, voronoi_brute_force};
 pub use lattice_polytope::{
     LatticePolytopeClass, NefPartition, SetOfAllLatticePolytopesClass,
     lattice_polytope, cross_polytope,
-    is_lattice_polytope, reflexive_polytope, reflexive_polytopes,
+    is_lattice_polytope, is_nef_partition,
+    reflexive_polytope, reflexive_polytopes,
     all_points, all_polars, all_facet_equations, all_nef_partitions,
     all_cached_data, write_palp_matrix, read_palp_matrix,
+    minkowski_sum, positive_integer_relations, read_all_polytopes,
+    set_palp_dimension, get_palp_dimension, skip_palp_matrix,
 };
 pub use pseudolines::{PseudolineArrangement, Encoding};
 pub use ribbon_graph::{RibbonGraph, make_ribbon, bipartite_ribbon_graph};
