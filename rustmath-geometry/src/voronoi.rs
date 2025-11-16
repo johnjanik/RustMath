@@ -91,12 +91,106 @@ impl VoronoiCell {
 pub struct VoronoiDiagram {
     /// The Voronoi cells, one for each site
     pub cells: Vec<VoronoiCell>,
+    /// The original input points
+    points: Vec<Point2D>,
+    /// Ambient dimension (always 2 for this implementation)
+    ambient_dim: usize,
 }
 
 impl VoronoiDiagram {
+    /// Create a new Voronoi diagram
+    ///
+    /// This is typically called by `voronoi_brute_force` rather than directly.
+    pub fn new(cells: Vec<VoronoiCell>, points: Vec<Point2D>) -> Self {
+        Self {
+            cells,
+            ambient_dim: 2,
+            points,
+        }
+    }
+
     /// Get the number of cells in the diagram
     pub fn num_cells(&self) -> usize {
         self.cells.len()
+    }
+
+    /// Get the input points
+    ///
+    /// Returns the original generator points used to create this diagram.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_geometry::{Point2D, voronoi::voronoi_brute_force};
+    ///
+    /// let sites = vec![
+    ///     Point2D::new(0.0, 0.0),
+    ///     Point2D::new(1.0, 0.0),
+    /// ];
+    ///
+    /// let diagram = voronoi_brute_force(&sites, None);
+    /// let points = diagram.points();
+    /// assert_eq!(points.len(), 2);
+    /// ```
+    pub fn points(&self) -> &[Point2D] {
+        &self.points
+    }
+
+    /// Get the ambient dimension
+    ///
+    /// Returns the dimension of the space in which the diagram lives (always 2).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_geometry::{Point2D, voronoi::voronoi_brute_force};
+    ///
+    /// let sites = vec![Point2D::new(0.0, 0.0), Point2D::new(1.0, 0.0)];
+    /// let diagram = voronoi_brute_force(&sites, None);
+    /// assert_eq!(diagram.ambient_dim(), 2);
+    /// ```
+    pub fn ambient_dim(&self) -> usize {
+        self.ambient_dim
+    }
+
+    /// Get the Voronoi regions
+    ///
+    /// Returns a vector of cells, where each cell represents a Voronoi region.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_geometry::{Point2D, voronoi::voronoi_brute_force};
+    ///
+    /// let sites = vec![
+    ///     Point2D::new(0.0, 0.0),
+    ///     Point2D::new(1.0, 0.0),
+    /// ];
+    ///
+    /// let diagram = voronoi_brute_force(&sites, None);
+    /// let regions = diagram.regions();
+    /// assert_eq!(regions.len(), 2);
+    /// ```
+    pub fn regions(&self) -> &[VoronoiCell] {
+        &self.cells
+    }
+
+    /// Get a string representing the base ring
+    ///
+    /// In SageMath, this would return QQ, RDF, or AA.
+    /// For this implementation, we use f64, so this returns "RDF" (Real Double Field).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_geometry::{Point2D, voronoi::voronoi_brute_force};
+    ///
+    /// let sites = vec![Point2D::new(0.0, 0.0)];
+    /// let diagram = voronoi_brute_force(&sites, None);
+    /// assert_eq!(diagram.base_ring(), "RDF");
+    /// ```
+    pub fn base_ring(&self) -> &str {
+        "RDF" // Real Double Field (f64)
     }
 
     /// Find the cell containing a given point
@@ -128,6 +222,68 @@ impl VoronoiDiagram {
         }
 
         nearest
+    }
+
+    /// Validate that each point lies within its corresponding region
+    ///
+    /// This is a consistency check that verifies the diagram was computed correctly.
+    ///
+    /// # Returns
+    ///
+    /// `true` if each site is contained in its own Voronoi cell, `false` otherwise
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_geometry::{Point2D, voronoi::voronoi_brute_force};
+    ///
+    /// let sites = vec![
+    ///     Point2D::new(0.0, 0.0),
+    ///     Point2D::new(2.0, 0.0),
+    /// ];
+    ///
+    /// let diagram = voronoi_brute_force(&sites, None);
+    /// assert!(diagram.are_points_in_regions());
+    /// ```
+    pub fn are_points_in_regions(&self) -> bool {
+        for (i, cell) in self.cells.iter().enumerate() {
+            if i < self.points.len() {
+                if !cell.contains(&self.points[i]) {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+
+    /// Generate a string representation of the diagram
+    ///
+    /// Returns a human-readable description like:
+    /// "The Voronoi diagram of 3 points of dimension 2 in the Real Double Field"
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_geometry::{Point2D, voronoi::voronoi_brute_force};
+    ///
+    /// let sites = vec![
+    ///     Point2D::new(0.0, 0.0),
+    ///     Point2D::new(1.0, 0.0),
+    ///     Point2D::new(0.5, 1.0),
+    /// ];
+    ///
+    /// let diagram = voronoi_brute_force(&sites, None);
+    /// let desc = diagram.description();
+    /// assert!(desc.contains("3 points"));
+    /// assert!(desc.contains("dimension 2"));
+    /// ```
+    pub fn description(&self) -> String {
+        format!(
+            "The Voronoi diagram of {} points of dimension {} in the {}",
+            self.points.len(),
+            self.ambient_dim,
+            self.base_ring()
+        )
     }
 }
 
@@ -224,7 +380,7 @@ fn clip_polygon_by_half_plane(polygon: &[Point2D], a: f64, b: f64, c: f64) -> Ve
 /// ```
 pub fn voronoi_brute_force(sites: &[Point2D], bounds: Option<(Point2D, Point2D)>) -> VoronoiDiagram {
     if sites.is_empty() {
-        return VoronoiDiagram { cells: Vec::new() };
+        return VoronoiDiagram::new(Vec::new(), Vec::new());
     }
 
     // Compute bounding box
@@ -299,7 +455,7 @@ pub fn voronoi_brute_force(sites: &[Point2D], bounds: Option<(Point2D, Point2D)>
         cells.push(VoronoiCell::new(site, cell_polygon));
     }
 
-    VoronoiDiagram { cells }
+    VoronoiDiagram::new(cells, sites.to_vec())
 }
 
 #[cfg(test)]

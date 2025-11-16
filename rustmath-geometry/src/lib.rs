@@ -36,7 +36,13 @@ pub use triangulation::{Triangle, delaunay_triangulation};
 pub use face_lattice::{FaceLattice, LatticeFace};
 pub use toric::{Cone, Fan, ToricVariety, projective_space_fan};
 pub use voronoi::{VoronoiDiagram, VoronoiCell, voronoi_brute_force};
-pub use lattice_polytope::{LatticePolytopeClass, lattice_polytope, cross_polytope};
+pub use lattice_polytope::{
+    LatticePolytopeClass, NefPartition, SetOfAllLatticePolytopesClass,
+    lattice_polytope, cross_polytope,
+    is_lattice_polytope, reflexive_polytope, reflexive_polytopes,
+    all_points, all_polars, all_facet_equations, all_nef_partitions,
+    all_cached_data, write_palp_matrix, read_palp_matrix,
+};
 pub use pseudolines::{PseudolineArrangement, Encoding};
 pub use ribbon_graph::{RibbonGraph, make_ribbon, bipartite_ribbon_graph};
 pub use riemannian_manifolds::{ParametrizedSurface3D, SurfaceGenerators};
