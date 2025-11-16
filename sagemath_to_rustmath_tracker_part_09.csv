@@ -226,11 +226,11 @@ Implemented,Full,sage.matrix.special.jordan_block,sage.matrix.special,jordan_blo
 Implemented,Full,sage.matrix.special.lehmer,sage.matrix.special,lehmer,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/special.py#L941
 ,,sage.matrix.special.matrix_method,sage.matrix.special,matrix_method,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/special.py#L80
 Implemented,Full,sage.matrix.special.ones_matrix,sage.matrix.special,ones_matrix,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/special.py#L1024
-,,sage.matrix.special.random_diagonalizable_matrix,sage.matrix.special,random_diagonalizable_matrix,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/special.py#L3059
-,,sage.matrix.special.random_echelonizable_matrix,sage.matrix.special,random_echelonizable_matrix,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/special.py#L2591
-,,sage.matrix.special.random_matrix,sage.matrix.special,random_matrix,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/special.py#L213
-,,sage.matrix.special.random_rref_matrix,sage.matrix.special,random_rref_matrix,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/special.py#L2421
-,,sage.matrix.special.random_subspaces_matrix,sage.matrix.special,random_subspaces_matrix,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/special.py#L2804
+Implemented,Full,sage.matrix.special.random_diagonalizable_matrix,sage.matrix.special,random_diagonalizable_matrix,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/special.py#L3059
+Implemented,Full,sage.matrix.special.random_echelonizable_matrix,sage.matrix.special,random_echelonizable_matrix,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/special.py#L2591
+Implemented,Full,sage.matrix.special.random_matrix,sage.matrix.special,random_matrix,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/special.py#L213
+Implemented,Full,sage.matrix.special.random_rref_matrix,sage.matrix.special,random_rref_matrix,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/special.py#L2421
+Implemented,Full,sage.matrix.special.random_subspaces_matrix,sage.matrix.special,random_subspaces_matrix,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/special.py#L2804
 Implemented,Full,sage.matrix.special.random_unimodular_matrix,sage.matrix.special,random_unimodular_matrix,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/special.py#L2953
 Implemented,Full,sage.matrix.special.toeplitz,sage.matrix.special,toeplitz,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/special.py#L3552
 Implemented,Full,sage.matrix.special.vandermonde,sage.matrix.special,vandermonde,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/special.py#L3518
