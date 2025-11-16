@@ -62,6 +62,11 @@ pub mod shuffle_algebra;
 pub mod splitting_algebra;
 pub mod quantum_group_gap;
 pub mod quantum_group_representations;
+pub mod steenrod_algebra;
+pub mod tensor_algebra;
+pub mod weyl_algebra;
+pub mod yangian;
+pub mod yokonuma_hecke_algebra;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -188,6 +193,21 @@ pub use quantum_group_gap::{
 pub use quantum_group_representations::{
     QuantumGroupRepresentation, CyclicRepresentation, AdjointRepresentation,
     MinusculeRepresentation, CrystalElement,
+};
+pub use steenrod_algebra::{
+    SteenrodAlgebra, SteenrodElement, SteenrodMonomial, SteenrodSquare, SteenrodPrime,
+};
+pub use tensor_algebra::{
+    TensorAlgebra, TensorElement, TensorMonomial, TensorAlgebraFunctor,
+};
+pub use weyl_algebra::{
+    WeylAlgebra, WeylElement, WeylMonomial,
+};
+pub use yangian::{
+    Yangian, YangianElement, YangianMonomial, YangianIndex, YangianLevel, GradedYangianBase,
+};
+pub use yokonuma_hecke_algebra::{
+    YokonumaHeckeAlgebra, YokonumaElement, YokonumaWord, YokonumaGenerator,
 };
 
 #[cfg(test)]
