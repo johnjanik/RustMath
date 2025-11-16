@@ -116,7 +116,8 @@ impl ComplexMPFR {
 
     /// Get the precision of this number in bits
     pub fn precision(&self) -> u32 {
-        self.value.prec()
+        let (real_prec, _imag_prec) = self.value.prec();
+        real_prec
     }
 
     /// Get the real part as f64 (may lose precision)
@@ -141,19 +142,41 @@ impl ComplexMPFR {
 
     /// Compute the modulus (absolute value) |z| = √(a² + b²)
     pub fn abs(&self) -> RealMPFR {
-        RealMPFR::from_float(self.value.clone().abs())
+        use rug::ops::Pow;
+        use rug::Float;
+        let prec = self.precision();
+        let re = self.value.real().clone();
+        let im = self.value.imag().clone();
+        let re_sq = Float::with_val(prec, re.pow(2));
+        let im_sq = Float::with_val(prec, im.pow(2));
+        let sum = Float::with_val(prec, &re_sq + &im_sq);
+        let result = Float::with_val(prec, sum.sqrt());
+        RealMPFR::from_float(result)
     }
 
     /// Compute the squared modulus |z|² = a² + b²
     pub fn norm(&self) -> RealMPFR {
-        RealMPFR::from_float(self.value.clone().norm())
+        use rug::ops::Pow;
+        use rug::Float;
+        let prec = self.precision();
+        let re = self.value.real().clone();
+        let im = self.value.imag().clone();
+        let re_sq = Float::with_val(prec, re.pow(2));
+        let im_sq = Float::with_val(prec, im.pow(2));
+        let result = Float::with_val(prec, &re_sq + &im_sq);
+        RealMPFR::from_float(result)
     }
 
     /// Compute the argument (phase angle) in radians
     ///
     /// Returns angle θ where z = r·e^(iθ), θ ∈ (-π, π]
     pub fn arg(&self) -> RealMPFR {
-        RealMPFR::from_float(self.value.clone().arg())
+        use rug::Float;
+        let prec = self.precision();
+        let re = self.value.real().clone();
+        let im = self.value.imag().clone();
+        let result = Float::with_val(prec, im.atan2(&re));
+        RealMPFR::from_float(result)
     }
 
     /// Compute the complex conjugate z̄ = a - bi
@@ -531,11 +554,11 @@ impl Ring for ComplexMPFR {
     }
 
     fn is_zero(&self) -> bool {
-        self.value.real() == 0 && self.value.imag() == 0
+        *self.value.real() == 0 && *self.value.imag() == 0
     }
 
     fn is_one(&self) -> bool {
-        self.value.real() == 1 && self.value.imag() == 0
+        *self.value.real() == 1 && *self.value.imag() == 0
     }
 }
 
@@ -562,7 +585,7 @@ impl NumericConversion for ComplexMPFR {
 
     fn to_i64(&self) -> Option<i64> {
         // Only convert if imaginary part is zero
-        if self.value.imag() != 0 {
+        if *self.value.imag() != 0 {
             return None;
         }
         let real_f64 = self.value.real().to_f64();
@@ -575,7 +598,7 @@ impl NumericConversion for ComplexMPFR {
 
     fn to_u64(&self) -> Option<u64> {
         // Only convert if imaginary part is zero
-        if self.value.imag() != 0 {
+        if *self.value.imag() != 0 {
             return None;
         }
         let real_f64 = self.value.real().to_f64();
@@ -588,7 +611,7 @@ impl NumericConversion for ComplexMPFR {
 
     fn to_usize(&self) -> Option<usize> {
         // Only convert if imaginary part is zero
-        if self.value.imag() != 0 {
+        if *self.value.imag() != 0 {
             return None;
         }
         let real_f64 = self.value.real().to_f64();
@@ -601,7 +624,7 @@ impl NumericConversion for ComplexMPFR {
 
     fn to_f64(&self) -> Option<f64> {
         // Only convert if imaginary part is zero
-        if self.value.imag() != 0 {
+        if *self.value.imag() != 0 {
             return None;
         }
         Some(self.value.real().to_f64())
