@@ -48,6 +48,8 @@ pub mod fast_parallel_fusion_ring_braid_repn;
 pub mod shm_managers;
 pub mod ariki_koike_specht_modules;
 pub mod octonion_algebra;
+pub mod q_system;
+pub mod quantum_oscillator;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -123,6 +125,11 @@ pub use fast_parallel_fusion_ring_braid_repn::BraidRepnExecutor;
 pub use shm_managers::{FvarsHandler, KSHandler, make_fvars_handler, make_ks_handler};
 pub use ariki_koike_specht_modules::{SpechtModule, SpechtModuleElement, Multipartition, Partition};
 pub use octonion_algebra::{OctonionAlgebra, Octonion};
+pub use q_system::{QSystem, QElement, QIndex, QMonomial, is_tamely_laced};
+pub use quantum_oscillator::{
+    QuantumOscillatorAlgebra, OscillatorElement, OscillatorIndex, Generator,
+    FockSpaceRepresentation, FockSpaceElement,
+};
 
 #[cfg(test)]
 mod tests {
