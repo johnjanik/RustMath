@@ -268,6 +268,167 @@ pub fn cells_list_to_cells_dict(cells: Vec<Polyhedron>) -> HashMap<usize, Vec<Po
     dict
 }
 
+/// Data structure for exploded plot visualization
+///
+/// An exploded plot shows the cells of a polyhedral complex separated
+/// (exploded) from each other for better visualization. This structure
+/// contains the data needed to render such a plot.
+#[derive(Clone, Debug)]
+pub struct ExplodedPlotData {
+    /// The original complex
+    pub complex: PolyhedralComplex,
+    /// Explosion factor (how far to separate cells)
+    pub explosion_factor: f64,
+    /// Center points for each cell (for explosion calculation)
+    pub cell_centers: HashMap<String, Vec<f64>>,
+    /// Transformed vertices for exploded view
+    pub exploded_vertices: HashMap<usize, Vec<f64>>,
+}
+
+impl ExplodedPlotData {
+    /// Create new exploded plot data
+    pub fn new(complex: PolyhedralComplex, explosion_factor: f64) -> Self {
+        Self {
+            complex,
+            explosion_factor,
+            cell_centers: HashMap::new(),
+            exploded_vertices: HashMap::new(),
+        }
+    }
+
+    /// Get the explosion factor
+    pub fn explosion_factor(&self) -> f64 {
+        self.explosion_factor
+    }
+
+    /// Get the complex
+    pub fn complex(&self) -> &PolyhedralComplex {
+        &self.complex
+    }
+}
+
+/// Generate an exploded plot of a polyhedral complex
+///
+/// An exploded plot separates the cells of a polyhedral complex for better
+/// visualization. Each cell is moved away from the center of the complex
+/// by a factor proportional to the explosion factor.
+///
+/// # Arguments
+///
+/// * `complex` - The polyhedral complex to visualize
+/// * `explosion_factor` - How far to separate the cells (0.0 = no separation, 1.0 = normal separation)
+/// * `vertex_coords` - Optional coordinates for vertices. If None, uses placeholder coordinates.
+///
+/// # Returns
+///
+/// An `ExplodedPlotData` structure containing the visualization data
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_geometry::polyhedral_complex::{PolyhedralComplex, Polyhedron, exploded_plot};
+///
+/// let mut complex = PolyhedralComplex::new(2);
+/// complex.add_cell(Polyhedron::new(vec![0, 1], 1));
+/// complex.add_cell(Polyhedron::new(vec![1, 2], 1));
+///
+/// let plot_data = exploded_plot(&complex, 0.5, None);
+/// assert_eq!(plot_data.explosion_factor(), 0.5);
+/// ```
+pub fn exploded_plot(
+    complex: &PolyhedralComplex,
+    explosion_factor: f64,
+    vertex_coords: Option<&HashMap<usize, Vec<f64>>>,
+) -> ExplodedPlotData {
+    let mut plot_data = ExplodedPlotData::new(complex.clone(), explosion_factor);
+
+    // If no vertex coordinates provided, create placeholder coordinates
+    let default_coords = if vertex_coords.is_none() {
+        let mut coords = HashMap::new();
+        // Find all unique vertex indices
+        let mut vertex_indices = HashSet::new();
+        for cell in complex.all_cells() {
+            for &v in cell.vertices() {
+                vertex_indices.insert(v);
+            }
+        }
+
+        // Create simple 2D coordinates in a circle
+        let n = vertex_indices.len();
+        for (i, &v_idx) in vertex_indices.iter().enumerate() {
+            let angle = 2.0 * std::f64::consts::PI * (i as f64) / (n as f64);
+            let x = angle.cos();
+            let y = angle.sin();
+            coords.insert(v_idx, vec![x, y]);
+        }
+        Some(coords)
+    } else {
+        None
+    };
+
+    let coords = vertex_coords.unwrap_or_else(|| default_coords.as_ref().unwrap());
+
+    // Calculate center of the entire complex
+    let mut center = vec![0.0; complex.ambient_dimension()];
+    let mut count = 0;
+    for (_idx, coord) in coords.iter() {
+        for (i, &val) in coord.iter().enumerate() {
+            if i < center.len() {
+                center[i] += val;
+            }
+        }
+        count += 1;
+    }
+    if count > 0 {
+        for c in &mut center {
+            *c /= count as f64;
+        }
+    }
+
+    // For each cell, calculate its center and explode its vertices
+    for cell in complex.all_cells() {
+        // Calculate cell center
+        let mut cell_center = vec![0.0; complex.ambient_dimension()];
+        let n_vertices = cell.vertices().len();
+
+        if n_vertices > 0 {
+            for &v_idx in cell.vertices() {
+                if let Some(coord) = coords.get(&v_idx) {
+                    for (i, &val) in coord.iter().enumerate() {
+                        if i < cell_center.len() {
+                            cell_center[i] += val;
+                        }
+                    }
+                }
+            }
+            for c in &mut cell_center {
+                *c /= n_vertices as f64;
+            }
+        }
+
+        // Store cell center
+        let cell_key = format!("{:?}", cell.vertices());
+        plot_data.cell_centers.insert(cell_key, cell_center.clone());
+
+        // Explode each vertex of this cell
+        for &v_idx in cell.vertices() {
+            if let Some(coord) = coords.get(&v_idx) {
+                let mut exploded = coord.clone();
+
+                // Move vertex away from complex center, towards cell center, by explosion factor
+                for i in 0..exploded.len().min(center.len()) {
+                    let to_cell_center = cell_center[i] - center[i];
+                    exploded[i] += to_cell_center * explosion_factor;
+                }
+
+                plot_data.exploded_vertices.insert(v_idx, exploded);
+            }
+        }
+    }
+
+    plot_data
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -384,5 +545,47 @@ mod tests {
 
         assert_eq!(dict.get(&0).unwrap().len(), 2);
         assert_eq!(dict.get(&1).unwrap().len(), 1);
+    }
+
+    #[test]
+    fn test_exploded_plot_basic() {
+        let mut complex = PolyhedralComplex::new(2);
+        complex.add_cell(Polyhedron::new(vec![0, 1], 1));
+        complex.add_cell(Polyhedron::new(vec![1, 2], 1));
+
+        let plot_data = exploded_plot(&complex, 0.5, None);
+
+        assert_eq!(plot_data.explosion_factor(), 0.5);
+        assert_eq!(plot_data.complex().total_cell_count(), 2);
+
+        // Should have exploded vertices
+        assert!(!plot_data.exploded_vertices.is_empty());
+
+        // Should have cell centers
+        assert!(!plot_data.cell_centers.is_empty());
+    }
+
+    #[test]
+    fn test_exploded_plot_with_coords() {
+        let mut complex = PolyhedralComplex::new(2);
+        complex.add_cell(Polyhedron::new(vec![0, 1], 1));
+
+        let mut coords = HashMap::new();
+        coords.insert(0, vec![0.0, 0.0]);
+        coords.insert(1, vec![1.0, 0.0]);
+
+        let plot_data = exploded_plot(&complex, 0.3, Some(&coords));
+
+        assert_eq!(plot_data.explosion_factor(), 0.3);
+        assert_eq!(plot_data.exploded_vertices.len(), 2);
+    }
+
+    #[test]
+    fn test_exploded_plot_empty_complex() {
+        let complex = PolyhedralComplex::new(3);
+        let plot_data = exploded_plot(&complex, 1.0, None);
+
+        assert_eq!(plot_data.explosion_factor(), 1.0);
+        assert_eq!(plot_data.exploded_vertices.len(), 0);
     }
 }
