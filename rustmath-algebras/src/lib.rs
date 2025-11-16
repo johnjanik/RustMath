@@ -56,6 +56,10 @@ pub mod quantum_matrix_coordinate;
 pub mod quaternion_algebra;
 pub mod orlik_solomon;
 pub mod orlik_terao;
+pub mod rational_cherednik_algebra;
+pub mod schur_algebra;
+pub mod shuffle_algebra;
+pub mod splitting_algebra;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -158,6 +162,20 @@ pub use orlik_solomon::{
 };
 pub use orlik_terao::{
     OrlikTeraoAlgebra, OrlikTeraoElement, OrlikTeraoInvariantAlgebra,
+};
+pub use rational_cherednik_algebra::{
+    RationalCherednikAlgebra, RationalCherednikElement, CartanType,
+};
+pub use schur_algebra::{
+    SchurAlgebra, SchurElement, SchurTensorModule,
+    schur_representative_indices, schur_representative_from_index,
+    gl_irreducible_character,
+};
+pub use shuffle_algebra::{
+    ShuffleAlgebra, ShuffleElement, DualPBWBasis, Word, shuffle_product,
+};
+pub use splitting_algebra::{
+    SplittingAlgebra, SplittingAlgebraElement, solve_with_extension,
 };
 
 #[cfg(test)]
