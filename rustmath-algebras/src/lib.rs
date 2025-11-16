@@ -53,6 +53,7 @@ pub mod quantum_oscillator;
 pub mod quantum_clifford;
 pub mod ace_quantum_onsager;
 pub mod quantum_matrix_coordinate;
+pub mod quaternion_algebra;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -144,6 +145,7 @@ pub use quantum_matrix_coordinate::{
     QuantumMatrixCoordinateAlgebra, QuantumGL, QuantumMatrixElement,
     MatrixIndex, QuantumMatrixMonomial,
 };
+pub use quaternion_algebra::{QuaternionAlgebra, Quaternion};
 
 #[cfg(test)]
 mod tests {
