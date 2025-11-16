@@ -80,8 +80,8 @@ pub use heisenberg::{
     InfiniteHeisenbergAlgebra,
 };
 pub use free_lie_algebra::{
-    FreeLieAlgebra, FreeLieAlgebraElement, FreeLieAlgebraBasis,
-    LieBracket, LyndonWord, is_lyndon,
+    FreeLieAlgebra, FreeLieAlgebraBasis,
+    LyndonWord, is_lyndon,
 };
 pub use nilpotent::{
     NilpotentLieAlgebra, NilpotentLieAlgebraElement, FreeNilpotentLieAlgebra,

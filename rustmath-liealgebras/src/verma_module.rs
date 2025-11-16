@@ -304,7 +304,7 @@ pub struct VermaModule<F: Field> {
     /// Root system of the Lie algebra
     root_system: Option<RootSystem>,
     /// PBW basis for the universal enveloping algebra
-    pbw_basis: Option<PoincareBirkhoffWittBasis>,
+    pbw_basis: Option<PoincareBirkhoffWittBasis<F>>,
 }
 
 impl<F: Field> VermaModule<F> {

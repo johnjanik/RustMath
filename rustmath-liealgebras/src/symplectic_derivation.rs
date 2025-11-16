@@ -133,7 +133,7 @@ impl<R: Ring> SymplecticDerivationElement<R> {
     /// Add a term
     fn add_term(&mut self, index: SymplecticDerivationIndex, coeff: R) {
         if !coeff.is_zero() {
-            *self.terms.entry(index).or_insert_with(R::zero) =
+            *self.terms.entry(index.clone()).or_insert_with(R::zero) =
                 self.terms.get(&index).cloned().unwrap_or_else(R::zero) + coeff;
             // Clean up zero coefficients
             if self.terms.get(&index).unwrap().is_zero() {
