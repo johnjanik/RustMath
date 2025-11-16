@@ -52,6 +52,7 @@ pub mod q_system;
 pub mod quantum_oscillator;
 pub mod quantum_clifford;
 pub mod ace_quantum_onsager;
+pub mod quantum_matrix_coordinate;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -138,6 +139,10 @@ pub use quantum_clifford::{
 };
 pub use ace_quantum_onsager::{
     ACEQuantumOnsagerAlgebra, ACEOnsagerElement, OnsagerMonomial, Generator as OnsagerGenerator,
+};
+pub use quantum_matrix_coordinate::{
+    QuantumMatrixCoordinateAlgebra, QuantumGL, QuantumMatrixElement,
+    MatrixIndex, QuantumMatrixMonomial,
 };
 
 #[cfg(test)]
