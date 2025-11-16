@@ -22,6 +22,7 @@ pub mod integral_points;
 pub mod polyhedral_complex;
 pub mod hyperplane_arrangement;
 pub mod hyperbolic_space;
+pub mod lattice_polytope;
 
 pub use point::{Point2D, Point3D};
 pub use line::{Line2D, LineSegment2D};
@@ -32,3 +33,4 @@ pub use triangulation::{Triangle, delaunay_triangulation};
 pub use face_lattice::{FaceLattice, LatticeFace};
 pub use toric::{Cone, Fan, ToricVariety, projective_space_fan};
 pub use voronoi::{VoronoiDiagram, VoronoiCell, voronoi_brute_force};
+pub use lattice_polytope::{LatticePolytopeClass, lattice_polytope, cross_polytope};
