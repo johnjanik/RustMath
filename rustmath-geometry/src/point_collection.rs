@@ -298,6 +298,88 @@ pub fn is_point_collection<R: Ring>(_obj: &PointCollection<R>) -> bool {
     true
 }
 
+/// Read a point collection from PALP format
+///
+/// Parses a point collection from a string in PALP (Package for Analyzing Lattice Polytopes)
+/// format. The format consists of:
+/// - First line: dimension and number of points
+/// - Subsequent lines: coordinates of each point
+///
+/// # Arguments
+///
+/// * `palp_string` - A string in PALP format
+///
+/// # Returns
+///
+/// * `Some(PointCollection)` - If parsing succeeds
+/// * `None` - If the format is invalid
+///
+/// # Format Example
+///
+/// ```text
+/// 2 3
+/// 1 0
+/// 0 1
+/// 1 1
+/// ```
+///
+/// This represents 3 points in 2D: (1,0), (0,1), (1,1)
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_geometry::point_collection::read_palp_point_collection;
+///
+/// let palp_data = "2 3\n1 0\n0 1\n1 1\n";
+/// let collection = read_palp_point_collection(palp_data).unwrap();
+/// assert_eq!(collection.dimension(), 2);
+/// assert_eq!(collection.len(), 3);
+/// ```
+pub fn read_palp_point_collection(palp_string: &str) -> Option<PointCollection<rustmath_integers::Integer>> {
+    use rustmath_integers::Integer;
+
+    let lines: Vec<&str> = palp_string.trim().lines().collect();
+    if lines.is_empty() {
+        return None;
+    }
+
+    // Parse first line: dimension and number of points
+    let header: Vec<&str> = lines[0].split_whitespace().collect();
+    if header.len() < 2 {
+        return None;
+    }
+
+    let dimension: usize = header[0].parse().ok()?;
+    let num_points: usize = header[1].parse().ok()?;
+
+    if lines.len() < num_points + 1 {
+        return None;
+    }
+
+    // Parse points
+    let mut points = Vec::with_capacity(num_points);
+
+    for line in lines.iter().skip(1).take(num_points) {
+        let coords: Vec<&str> = line.split_whitespace().collect();
+        if coords.len() != dimension {
+            return None;
+        }
+
+        let point: Vec<Integer> = coords
+            .iter()
+            .filter_map(|s| s.parse::<i64>().ok().map(Integer::from))
+            .collect();
+
+        if point.len() != dimension {
+            return None;
+        }
+
+        points.push(point);
+    }
+
+    Some(PointCollection::new(dimension, points))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -526,5 +608,43 @@ mod tests {
     fn test_is_point_collection() {
         let collection: PointCollection<Integer> = PointCollection::empty(2);
         assert!(is_point_collection(&collection));
+    }
+
+    #[test]
+    fn test_read_palp_point_collection() {
+        let palp_data = "2 3\n1 0\n0 1\n1 1\n";
+        let collection = read_palp_point_collection(palp_data).unwrap();
+
+        assert_eq!(collection.dimension(), 2);
+        assert_eq!(collection.len(), 3);
+
+        // Check points
+        assert!(collection.contains(&[Integer::from(1), Integer::from(0)]));
+        assert!(collection.contains(&[Integer::from(0), Integer::from(1)]));
+        assert!(collection.contains(&[Integer::from(1), Integer::from(1)]));
+    }
+
+    #[test]
+    fn test_read_palp_point_collection_3d() {
+        let palp_data = "3 4\n1 0 0\n0 1 0\n0 0 1\n1 1 1\n";
+        let collection = read_palp_point_collection(palp_data).unwrap();
+
+        assert_eq!(collection.dimension(), 3);
+        assert_eq!(collection.len(), 4);
+    }
+
+    #[test]
+    fn test_read_palp_point_collection_invalid() {
+        // Invalid header
+        let palp_data1 = "not a number\n1 0\n";
+        assert!(read_palp_point_collection(palp_data1).is_none());
+
+        // Too few points
+        let palp_data2 = "2 3\n1 0\n";
+        assert!(read_palp_point_collection(palp_data2).is_none());
+
+        // Wrong dimension in point
+        let palp_data3 = "2 2\n1 0\n0 1 2\n";
+        assert!(read_palp_point_collection(palp_data3).is_none());
     }
 }
