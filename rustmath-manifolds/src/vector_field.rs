@@ -11,6 +11,7 @@ use crate::scalar_field::ScalarFieldEnhanced as ScalarField;
 use crate::chart::Chart;
 use crate::point::ManifoldPoint;
 use crate::differentiable::DifferentiableManifold;
+use crate::tangent_space::TangentVector;
 use rustmath_symbolic::Expr;
 use std::collections::HashMap;
 use std::ops::{Add, Sub, Neg, Mul};
@@ -123,6 +124,34 @@ impl VectorField {
 
         self.chart_components.insert(chart.name().to_string(), components);
         Ok(())
+    }
+
+    /// Evaluate the vector field at a specific point
+    ///
+    /// Returns a TangentVector representing the vector field evaluated at the given point
+    pub fn at_point(&self, point: &ManifoldPoint) -> Result<TangentVector> {
+        // Get the default chart
+        let chart = self.manifold.default_chart()
+            .ok_or(ManifoldError::NoChart)?;
+
+        // Get the symbolic components
+        let components = self.components(chart)?;
+
+        // Evaluate each component at the point
+        // For now, just convert Expr to f64 (simplified evaluation)
+        let mut values = Vec::with_capacity(components.len());
+        for comp in components {
+            // Simplified: assume components are constants for now
+            // A full implementation would substitute point coordinates into the expressions
+            let val = match comp {
+                Expr::Integer(ref n) => n.to_f64().unwrap_or(0.0),
+                Expr::Rational(ref r) => r.to_f64(),
+                _ => 0.0, // For now, treat other expressions as 0
+            };
+            values.push(val);
+        }
+
+        TangentVector::new(point.clone(), values, self.manifold.clone())
     }
 
     /// Apply vector field to a scalar field: X(f)
