@@ -233,22 +233,22 @@ impl SymplecticForm {
 
         // Check if determinant is non-zero
         // For a 2-form on a 2n-dimensional manifold, the matrix is 2n × 2n
-        Ok(matrix.det().abs() > 1e-10)
+        Ok(!matrix.det().is_zero())
     }
 
     /// Get the matrix representation ω_{ij} at a point
-    fn matrix_at(&self, _point: &ManifoldPoint, _chart: &Chart) -> Result<Matrix<f64>> {
+    fn matrix_at(&self, _point: &ManifoldPoint, _chart: &Chart) -> Result<Matrix<Rational>> {
         let n = self.manifold.dimension();
 
         // For now, return identity for standard form
         // In a full implementation, we'd evaluate the components
-        let mut data = vec![0.0; n * n];
+        let mut data = vec![Rational::zero(); n * n];
 
         // Standard symplectic matrix has block form [[0, I], [-I, 0]]
         let half = n / 2;
         for i in 0..half {
-            data[i * n + (half + i)] = 1.0;
-            data[(half + i) * n + i] = -1.0;
+            data[i * n + (half + i)] = Rational::one();
+            data[(half + i) * n + i] = -Rational::one();
         }
 
         Ok(Matrix::from_vec(n, n, data))
@@ -280,7 +280,9 @@ impl SymplecticForm {
         let mut result = 0.0;
         for i in 0..v_comps.len() {
             for j in 0..w_comps.len() {
-                result += matrix.get(i, j) * v_comps[i] * w_comps[j];
+                // Convert Rational matrix element to f64 for computation
+                let matrix_elem = matrix.get(i, j).to_f64().unwrap_or(0.0);
+                result += matrix_elem * v_comps[i] * w_comps[j];
             }
         }
 

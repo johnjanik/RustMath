@@ -50,6 +50,7 @@ pub struct FiberBundle {
 /// A local trivialization of a fiber bundle
 ///
 /// Over an open set U ⊂ B, the bundle is trivial: π^{-1}(U) ≅ U × F
+#[derive(Clone)]
 pub struct Trivialization {
     /// Name of the trivialization
     name: String,
