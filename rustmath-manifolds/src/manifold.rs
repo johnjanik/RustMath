@@ -103,6 +103,11 @@ impl TopologicalManifold {
         &self.charts
     }
 
+    /// Get the default chart (first chart in atlas)
+    pub fn default_chart(&self) -> Option<&Chart> {
+        self.charts.first()
+    }
+
     /// Get a chart by name
     pub fn chart(&self, name: &str) -> Result<&Chart> {
         self.charts

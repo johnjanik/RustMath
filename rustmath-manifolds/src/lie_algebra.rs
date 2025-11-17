@@ -149,7 +149,7 @@ impl LieAlgebra {
     /// compute [X, Y] = Σ_k (Σ_{i,j} c^k_{ij} x^i y^j) e_k
     pub fn bracket(&self, x: &[f64], y: &[f64]) -> Result<Vec<f64>> {
         if x.len() != self.dimension || y.len() != self.dimension {
-            return Err(ManifoldError::InvalidDimension);
+            return Err(ManifoldError::InvalidDimension(format!("Bracket dimension mismatch: expected {}, got x:{} y:{}", self.dimension, x.len(), y.len())));
         }
 
         let mut result = vec![0.0; self.dimension];
@@ -199,7 +199,10 @@ impl LieAlgebra {
     /// Get structure constant c^k_{ij}
     pub fn structure_constant(&self, i: usize, j: usize, k: usize) -> Result<f64> {
         if i >= self.dimension || j >= self.dimension || k >= self.dimension {
-            return Err(ManifoldError::InvalidIndex);
+            return Err(ManifoldError::InvalidIndex(
+                format!("Structure constant indices ({},{},{}) out of range for dimension {}",
+                        i, j, k, self.dimension)
+            ));
         }
 
         Ok(self.structure_constants[i][j][k])
@@ -210,7 +213,7 @@ impl LieAlgebra {
     /// where ad_X(Y) = [X, Y] is the adjoint representation
     pub fn killing_form(&self, x: &[f64], y: &[f64]) -> Result<f64> {
         if x.len() != self.dimension || y.len() != self.dimension {
-            return Err(ManifoldError::InvalidDimension);
+            return Err(ManifoldError::InvalidDimension(format!("Killing form dimension mismatch: expected {}, got x:{} y:{}", self.dimension, x.len(), y.len())));
         }
 
         // Compute matrices of ad_X and ad_Y
@@ -304,7 +307,7 @@ impl ExponentialMap {
     /// The corresponding group element exp(X)
     pub fn exp(&self, x: &[f64]) -> Result<ManifoldPoint> {
         if x.len() != self.algebra.dimension() {
-            return Err(ManifoldError::InvalidDimension);
+            return Err(ManifoldError::InvalidDimension(format!("Exp dimension mismatch: expected {}, got {}", self.algebra.dimension(), x.len())));
         }
 
         (self.exp_impl)(x)

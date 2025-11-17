@@ -37,6 +37,11 @@ impl ManifoldPoint {
         }
     }
 
+    /// Create a point from coordinates (alias for new)
+    pub fn from_coordinates(coordinates: Vec<f64>) -> Self {
+        Self::new(coordinates)
+    }
+
     /// Create a named point
     pub fn named(name: impl Into<String>, coordinates: Vec<f64>) -> Self {
         Self {

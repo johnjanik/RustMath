@@ -74,7 +74,9 @@ impl DiffForm {
     ) -> Result<Self> {
         let n = manifold.dimension();
         if index >= n {
-            return Err(ManifoldError::InvalidIndex);
+            return Err(ManifoldError::InvalidIndex(
+                format!("Coordinate index {} out of range for dimension {}", index, n)
+            ));
         }
 
         let mut components = vec![Expr::from(0); n];

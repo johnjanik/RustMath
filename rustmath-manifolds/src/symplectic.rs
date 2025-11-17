@@ -14,6 +14,7 @@ use crate::tangent_space::TangentVector;
 use rustmath_symbolic::Expr;
 use rustmath_matrix::Matrix;
 use rustmath_rationals::Rational;
+use rustmath_core::Ring;
 use std::sync::Arc;
 
 /// A symplectic manifold (M, ω)
@@ -59,7 +60,9 @@ impl SymplecticManifold {
     ) -> Result<Self> {
         // Check dimension is even
         if manifold.dimension() % 2 != 0 {
-            return Err(ManifoldError::InvalidDimension);
+            return Err(ManifoldError::InvalidDimension(
+                format!("Symplectic manifold requires even dimension, got {}", manifold.dimension())
+            ));
         }
 
         // Verify form is closed (dω = 0)
@@ -175,7 +178,9 @@ impl SymplecticForm {
     /// ω = Σᵢ₌₁ⁿ dq^i ∧ dp^i
     pub fn standard_form(manifold: Arc<DifferentiableManifold>, n: usize) -> Result<Self> {
         if manifold.dimension() != 2 * n {
-            return Err(ManifoldError::InvalidDimension);
+            return Err(ManifoldError::InvalidDimension(
+                format!("Expected dimension {} for standard form with n={}, got {}", 2*n, n, manifold.dimension())
+            ));
         }
 
         let chart = manifold.default_chart()
@@ -229,7 +234,7 @@ impl SymplecticForm {
 
         // For a full check, we'd evaluate at multiple points
         // For now, check at the origin
-        let point = ManifoldPoint::from_coords(vec![0.0; self.manifold.dimension()]);
+        let point = ManifoldPoint::from_coordinates(vec![0.0; self.manifold.dimension()]);
 
         let matrix = self.matrix_at(&point, chart)?;
 
@@ -250,7 +255,7 @@ impl SymplecticForm {
         let half = n / 2;
         for i in 0..half {
             data[i * n + (half + i)] = Rational::one();
-            data[(half + i) * n + i] = -Rational::one();
+            data[(half + i) * n + i] = Rational::zero() - Rational::one();
         }
 
         Ok(Matrix::from_vec(n, n, data))
