@@ -37,12 +37,17 @@ pub mod utilities;
 pub mod vector_bundle;
 pub mod vector_bundle_fiber;
 pub mod transition;
+pub mod traits;
+pub mod vector_field;
+pub mod tensor_field;
+pub mod diff_form;
+pub mod tangent_space;
 
 pub use subset::ManifoldSubset;
 pub use manifold::TopologicalManifold;
 pub use chart::{Chart, CoordinateFunction};
 pub use point::ManifoldPoint;
-pub use scalar_field::ScalarField;
+pub use scalar_field::ScalarFieldEnhanced as ScalarField;
 pub use differentiable::DifferentiableManifold;
 pub use examples::{RealLine, EuclideanSpace};
 pub use errors::{ManifoldError, Result};
@@ -54,6 +59,10 @@ pub use utilities::{
 pub use vector_bundle::{TopologicalVectorBundle, TangentBundle, CotangentBundle};
 pub use vector_bundle_fiber::{VectorBundleFiber, VectorBundleFiberElement};
 pub use transition::TransitionFunction;
+pub use vector_field::VectorField;
+pub use tensor_field::{TensorField, MultiIndex};
+pub use diff_form::DiffForm;
+pub use tangent_space::{TangentVector, TangentSpace, Covector, CotangentSpace};
 
 #[cfg(test)]
 mod tests {

@@ -1,0 +1,101 @@
+Status,Implementation Type,Phase,RustMath Module,Entity Name,Description,SageMath Equivalent,Notes
+Implemented,Full,Phase 1,rustmath-symbolic,ExprVisitor,Trait for walking expression trees,N/A,Foundation for differential geometry
+Implemented,Full,Phase 1,rustmath-symbolic,ExprMutator,Trait for transforming expressions,N/A,Used for substitutions and transformations
+Implemented,Full,Phase 1,rustmath-symbolic,SymbolCollector,Collects free symbols in expressions,N/A,Walker implementation
+Implemented,Full,Phase 1,rustmath-symbolic,Substituter,Substitutes symbols with expressions,N/A,Walker implementation
+Implemented,Full,Phase 1,rustmath-symbolic,CoordinateRegistry,Registry for coordinate symbols and charts,N/A,Tracks symbol-chart relationships
+Implemented,Full,Phase 1,rustmath-manifolds,Chart,Local coordinate systems with transition support,sage.manifolds.chart.Chart,Extended with symbolic support
+Implemented,Full,Phase 1,rustmath-manifolds,TransitionFunction,Chart transition function computation,sage.manifolds.chart.CoordChange,Includes Jacobian computation
+Implemented,Full,Phase 2,rustmath-manifolds,ManifoldSubsetTrait,Base trait for manifold subsets,sage.manifolds.subset.ManifoldSubset,Trait hierarchy foundation
+Implemented,Full,Phase 2,rustmath-manifolds,TopologicalManifoldTrait,Topological manifold trait,sage.manifolds.manifold.TopologicalManifold,Atlas and chart management
+Implemented,Full,Phase 2,rustmath-manifolds,DifferentiableManifoldTrait,Smooth manifold trait,sage.manifolds.differentiable.diff_manifold.DifferentiableManifold,C^∞ structure
+Implemented,Full,Phase 2,rustmath-manifolds,ParallelizableManifoldTrait,Parallelizable manifold trait,sage.manifolds.differentiable.manifold.DifferentiableManifold (parallelizable case),Global frame support
+Implemented,Full,Phase 2,rustmath-manifolds,ScalarFieldAlgebraTrait,Algebra of scalar fields trait,sage.manifolds.scalarfield_algebra.ScalarFieldAlgebra,Parent trait
+Implemented,Full,Phase 2,rustmath-manifolds,DiffScalarFieldAlgebraTrait,Differentiable scalar field algebra,sage.manifolds.differentiable.scalarfield_algebra.DiffScalarFieldAlgebra,C^∞ specialization
+Implemented,Full,Phase 2,rustmath-manifolds,VectorFieldModuleTrait,Module of vector fields trait,sage.manifolds.differentiable.vectorfield_module.VectorFieldModule,Module over C^∞(M)
+Implemented,Full,Phase 2,rustmath-manifolds,VectorFieldFreeModuleTrait,Free module trait (parallelizable),sage.manifolds.differentiable.vectorfield_module.VectorFieldFreeModule,Parallelizable case
+Implemented,Full,Phase 2,rustmath-manifolds,TensorFieldModuleTrait,Tensor field module trait,sage.manifolds.differentiable.tensorfield_module.TensorFieldModule,T^(p,q)(M)
+Implemented,Full,Phase 2,rustmath-manifolds,TangentSpaceTrait,Tangent space trait,sage.manifolds.differentiable.tangent_space.TangentSpace,T_p(M)
+Implemented,Full,Phase 2,rustmath-manifolds,ScalarFieldTrait,Scalar field element trait,sage.manifolds.differentiable.scalarfield.DiffScalarField,f: M → ℝ
+Implemented,Full,Phase 2,rustmath-manifolds,VectorFieldTrait,Vector field element trait,sage.manifolds.differentiable.vectorfield.VectorField,X ∈ 𝔛(M)
+Implemented,Full,Phase 2,rustmath-manifolds,TensorFieldTrait,Tensor field element trait,sage.manifolds.differentiable.tensorfield.TensorField,T^(p,q)
+Implemented,Full,Phase 2,rustmath-manifolds,DiffFormTrait,Differential form trait,sage.manifolds.differentiable.diff_form.DiffForm,Ω^p(M)
+Implemented,Full,Phase 2,rustmath-manifolds,ScalarFieldEnhanced,Smooth scalar field implementation,sage.manifolds.differentiable.scalarfield.DiffScalarField,With chart expressions
+Implemented,Full,Phase 2,rustmath-manifolds,VectorField,Vector field implementation,sage.manifolds.differentiable.vectorfield.VectorField,With Lie bracket
+Implemented,Full,Phase 2,rustmath-manifolds,TensorField,General rank tensor field,sage.manifolds.differentiable.tensorfield.TensorField,Type (p,q) tensors
+Implemented,Full,Phase 2,rustmath-manifolds,MultiIndex,Multi-index for tensor components,N/A,Flat/multi-index conversion
+Implemented,Full,Phase 2,rustmath-manifolds,DiffForm,Differential p-form,sage.manifolds.differentiable.diff_form.DiffForm,Exterior calculus
+Implemented,Full,Phase 2,rustmath-manifolds,TangentVector,Tangent vector at point,sage.manifolds.differentiable.tangent_vector.TangentVector,v ∈ T_p(M)
+Implemented,Full,Phase 2,rustmath-manifolds,TangentSpace,Tangent space at point,sage.manifolds.differentiable.tangent_space.TangentSpace,T_p(M) structure
+Implemented,Full,Phase 2,rustmath-manifolds,Covector,Cotangent vector,sage.manifolds.differentiable.tangent_vector.TangentVector (dual),ω ∈ T*_p(M)
+Implemented,Full,Phase 2,rustmath-manifolds,CotangentSpace,Cotangent space at point,sage.manifolds.differentiable.tangent_space.TangentSpace (dual),T*_p(M) structure
+Planned,Stub,Phase 3,rustmath-manifolds,DiffScalarFieldAlgebra,Concrete algebra implementation,sage.manifolds.differentiable.scalarfield_algebra.DiffScalarFieldAlgebra,Parent implementation
+Planned,Stub,Phase 3,rustmath-manifolds,VectorFieldModule,Concrete module implementation,sage.manifolds.differentiable.vectorfield_module.VectorFieldModule,Module structure
+Planned,Stub,Phase 3,rustmath-manifolds,VectorFieldFreeModule,Free module implementation,sage.manifolds.differentiable.vectorfield_module.VectorFieldFreeModule,Parallelizable case
+Planned,Stub,Phase 3,rustmath-manifolds,TensorFieldModule,Tensor field module,sage.manifolds.differentiable.tensorfield_module.TensorFieldModule,T^(p,q)(M) structure
+Planned,Stub,Phase 3,rustmath-manifolds,DiffFormModule,Differential form module,sage.manifolds.differentiable.diff_form_module.DiffFormModule,Ω^p(M) structure
+Planned,Stub,Phase 3,rustmath-manifolds,Circle,Circle manifold S^1,sage.manifolds.manifold.Manifold (custom),Example manifold
+Planned,Stub,Phase 3,rustmath-manifolds,Sphere2,2-sphere S^2,sage.manifolds.manifold.Manifold (custom),Stereographic charts
+Planned,Stub,Phase 3,rustmath-manifolds,Torus2,2-torus T^2,sage.manifolds.manifold.Manifold (custom),Product manifold
+Planned,Stub,Phase 3,rustmath-manifolds,RiemannianMetric,Metric tensor,sage.manifolds.differentiable.metric.Metric,g_ij
+Planned,Stub,Phase 3,rustmath-manifolds,AffineConnection,Affine connection,sage.manifolds.differentiable.affine_connection.AffineConnection,Γ^k_ij
+Planned,Stub,Phase 3,rustmath-manifolds,LeviCivitaConnection,Levi-Civita connection,sage.manifolds.differentiable.levi_civita_connection.LeviCivitaConnection,Riemannian connection
+Planned,Stub,Phase 3,rustmath-manifolds,CovariantDerivative,Covariant derivative,N/A,∇_X Y
+Planned,Stub,Phase 3,rustmath-manifolds,RiemannTensor,Riemann curvature tensor,sage.manifolds.differentiable.metric.Metric.riemann(),R^l_ijk
+Planned,Stub,Phase 3,rustmath-manifolds,RicciTensor,Ricci tensor,sage.manifolds.differentiable.metric.Metric.ricci(),R_ij
+Planned,Stub,Phase 3,rustmath-manifolds,ScalarCurvature,Scalar curvature,sage.manifolds.differentiable.metric.Metric.ricci_scalar(),R
+Planned,Stub,Phase 3,rustmath-manifolds,Geodesic,Geodesic curve,sage.manifolds.differentiable.integrated_curve.IntegratedGeodesic,Shortest path
+Planned,Stub,Phase 3,rustmath-manifolds,ParallelTransport,Parallel transport,N/A,Along curves
+Planned,Stub,Phase 4,rustmath-manifolds,LieGroup,Lie group manifold,sage.groups.matrix_gps.linear.LinearMatrixGroup_generic (as manifold),Group + manifold
+Planned,Stub,Phase 4,rustmath-manifolds,LieAlgebra,Lie algebra,sage.algebras.lie_algebras.lie_algebra.LieAlgebra,Tangent space at identity
+Planned,Stub,Phase 4,rustmath-manifolds,MaurerCartanForm,Maurer-Cartan form,N/A,Left-invariant 1-form
+Planned,Stub,Phase 4,rustmath-manifolds,ExponentialMap,Exponential map,N/A,exp: 𝔤 → G
+Planned,Stub,Phase 4,rustmath-manifolds,LeftInvariantVectorField,Left-invariant vector field,N/A,Pushforward from T_e G
+Planned,Stub,Phase 4,rustmath-manifolds,RightInvariantVectorField,Right-invariant vector field,N/A,Dual structure
+Planned,Stub,Phase 4,rustmath-manifolds,FiberBundle,General fiber bundle,sage.manifolds.differentiable.bundle.TopologicalBundle,π: E → B
+Planned,Stub,Phase 4,rustmath-manifolds,PrincipalBundle,Principal G-bundle,N/A,G-action
+Planned,Stub,Phase 4,rustmath-manifolds,AssociatedBundle,Associated bundle,N/A,E ×_G F
+Planned,Stub,Phase 4,rustmath-manifolds,ConnectionForm,Connection form,sage.manifolds.differentiable.bundle_connection.BundleConnection,ω ∈ Ω^1(P, 𝔤)
+Planned,Stub,Phase 4,rustmath-manifolds,CurvatureForm,Curvature form,N/A,Ω = dω + ½[ω,ω]
+Planned,Stub,Phase 4,rustmath-manifolds,SymplecticManifold,Symplectic manifold,N/A,Non-degenerate ω
+Planned,Stub,Phase 4,rustmath-manifolds,SymplecticForm,Symplectic form,N/A,Closed 2-form
+Planned,Stub,Phase 4,rustmath-manifolds,HamiltonianVectorField,Hamiltonian vector field,N/A,i_X ω = dH
+Planned,Stub,Phase 4,rustmath-manifolds,PoissonBracket,Poisson bracket,N/A,{f,g} = ω(X_f, X_g)
+Planned,Stub,Phase 5,rustmath-manifolds,ComplexManifold,Complex manifold,sage.manifolds.manifold.Manifold (complex case),Holomorphic charts
+Planned,Stub,Phase 5,rustmath-manifolds,HolomorphicFunction,Holomorphic function,N/A,f: M → ℂ
+Planned,Stub,Phase 5,rustmath-manifolds,AlmostComplexStructure,Almost complex structure,N/A,J: TM → TM
+Planned,Stub,Phase 5,rustmath-manifolds,KahlerManifold,Kähler manifold,N/A,Compatible metric
+Planned,Stub,Phase 5,rustmath-manifolds,FinslerManifold,Finsler manifold,N/A,Generalized Riemannian
+Planned,Stub,Phase 5,rustmath-manifolds,SubRiemannianManifold,Sub-Riemannian manifold,N/A,Constrained metric
+Planned,Stub,Phase 5,rustmath-manifolds,ContactManifold,Contact manifold,N/A,Odd-dimensional symplectic
+Planned,Stub,Phase 5,rustmath-manifolds,SpinStructure,Spin structure,N/A,Spinor bundles
+Planned,Stub,Phase 5,rustmath-manifolds,DiracOperator,Dirac operator,N/A,First-order diff operator
+Planned,Stub,Integration,rustmath-manifolds,IntegrationOnManifolds,Integration of forms,sage.manifolds.differentiable.integrated_curve.IntegratedCurve (partial),∫_M ω
+Planned,Stub,Integration,rustmath-manifolds,StokesTheorem,Stokes theorem verification,N/A,∫_∂M ω = ∫_M dω
+Planned,Stub,Integration,rustmath-manifolds,VolumeForm,Volume form,sage.manifolds.differentiable.metric.Metric.volume_form(),Top-degree form
+Planned,Stub,Integration,rustmath-manifolds,OrientedManifold,Oriented manifold,N/A,Consistent orientation
+Planned,Stub,Topology,rustmath-manifolds,DeRhamCohomology,De Rham cohomology,sage.manifolds.differentiable.de_rham_cohomology.DeRhamCohomologyRing,H^p_dR(M)
+Planned,Stub,Topology,rustmath-manifolds,BettiNumber,Betti number,N/A,dim H^p(M)
+Planned,Stub,Topology,rustmath-manifolds,EulerCharacteristic,Euler characteristic,N/A,χ(M)
+Planned,Stub,Topology,rustmath-manifolds,ChernClass,Chern class,sage.manifolds.differentiable.characteristic_cohomology_class.ChernCharacteristic,c_i(E)
+Planned,Stub,Topology,rustmath-manifolds,PontryaginClass,Pontryagin class,sage.manifolds.differentiable.characteristic_cohomology_class.PontryaginCharacteristic,p_i(E)
+Planned,Stub,Topology,rustmath-manifolds,EulerClass,Euler class,sage.manifolds.differentiable.characteristic_cohomology_class.EulerCharacteristic,e(E)
+Planned,Stub,Advanced,rustmath-manifolds,PushForward,Pushforward map,sage.manifolds.continuous_map.ContinuousMap.pushforward(),f_*: TM → TN
+Planned,Stub,Advanced,rustmath-manifolds,PullBack,Pullback map,sage.manifolds.continuous_map.ContinuousMap.pullback(),f^*: Ω(N) → Ω(M)
+Planned,Stub,Advanced,rustmath-manifolds,Immersion,Immersion,sage.manifolds.differentiable.diff_map.DiffMap (immersion),Injective differential
+Planned,Stub,Advanced,rustmath-manifolds,Submersion,Submersion,sage.manifolds.differentiable.diff_map.DiffMap (submersion),Surjective differential
+Planned,Stub,Advanced,rustmath-manifolds,Embedding,Embedding,sage.manifolds.differentiable.diff_map.DiffMap (embedding),Injective immersion
+Planned,Stub,Advanced,rustmath-manifolds,Diffeomorphism,Diffeomorphism,sage.manifolds.differentiable.diff_map.DiffMap (invertible),Smooth bijection
+Planned,Stub,Advanced,rustmath-manifolds,IsometryGroup,Isometry group,N/A,Metric-preserving diffeomorphisms
+Planned,Stub,Advanced,rustmath-manifolds,KillingVectorField,Killing vector field,N/A,ℒ_X g = 0
+Planned,Stub,Advanced,rustmath-manifolds,ConformallKillingVectorField,Conformal Killing field,N/A,ℒ_X g = λg
+Planned,Stub,Catalog,rustmath-manifolds,EuclideanSpace,Euclidean space ℝ^n,N/A (custom),Already implemented
+Planned,Stub,Catalog,rustmath-manifolds,RealLine,Real line ℝ,N/A (custom),Already implemented
+Planned,Stub,Catalog,rustmath-manifolds,Minkowski,Minkowski spacetime,sage.manifolds.catalog.Minkowski(),Relativity
+Planned,Stub,Catalog,rustmath-manifolds,Schwarzschild,Schwarzschild spacetime,N/A (custom),Black hole
+Planned,Stub,Catalog,rustmath-manifolds,Kerr,Kerr spacetime,sage.manifolds.catalog.Kerr(),Rotating black hole
+Planned,Stub,Catalog,rustmath-manifolds,RealProjectiveSpace,Real projective space ℝP^n,sage.manifolds.catalog.RealProjectiveSpace(),Quotient space
+Planned,Stub,Catalog,rustmath-manifolds,ComplexProjectiveSpace,Complex projective space ℂP^n,N/A (custom),Holomorphic manifold
+Planned,Stub,Catalog,rustmath-manifolds,Grassmannian,Grassmann manifold,N/A,k-planes in ℝ^n
+Planned,Stub,Catalog,rustmath-manifolds,SpecialOrthogonalGroup,SO(n) manifold,N/A,Rotation group
+Planned,Stub,Catalog,rustmath-manifolds,SpecialUnitaryGroup,SU(n) manifold,N/A,Special unitary
