@@ -225,7 +225,7 @@ impl LeftInvariantVectorField {
     pub fn new(group: Arc<LieGroup>, value_at_identity: TangentVector) -> Result<Self> {
         // Verify the value is at the identity
         if value_at_identity.base_point() != group.identity() {
-            return Err(ManifoldError::InvalidPoint);
+            return Err(ManifoldError::InvalidPoint("Value not at identity element".to_string()));
         }
 
         // Create the vector field by extending via left translation
@@ -304,7 +304,7 @@ impl RightInvariantVectorField {
     /// Create a right-invariant vector field from its value at the identity
     pub fn new(group: Arc<LieGroup>, value_at_identity: TangentVector) -> Result<Self> {
         if value_at_identity.base_point() != group.identity() {
-            return Err(ManifoldError::InvalidPoint);
+            return Err(ManifoldError::InvalidPoint("Value not at identity element".to_string()));
         }
 
         let chart = group.manifold().default_chart()

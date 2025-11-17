@@ -110,6 +110,11 @@ impl DifferentiableManifold {
         self.topological.charts()
     }
 
+    /// Get the default chart (first chart in atlas)
+    pub fn default_chart(&self) -> Option<&Chart> {
+        self.topological.default_chart()
+    }
+
     /// Create a scalar field on this manifold
     pub fn scalar_field(&self, name: impl Into<String>) -> ScalarField {
         ScalarField::new(name, self.dimension())

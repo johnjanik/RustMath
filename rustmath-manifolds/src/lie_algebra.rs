@@ -63,16 +63,16 @@ impl LieAlgebra {
     ) -> Result<Self> {
         // Verify structure constants have correct dimensions
         if structure_constants.len() != dimension {
-            return Err(ManifoldError::InvalidDimension);
+            return Err(ManifoldError::InvalidDimension("Structure constants dimension mismatch".to_string()));
         }
 
         for i in 0..dimension {
             if structure_constants[i].len() != dimension {
-                return Err(ManifoldError::InvalidDimension);
+                return Err(ManifoldError::InvalidDimension(format!("Structure constants[{}] has wrong size", i)));
             }
             for j in 0..dimension {
                 if structure_constants[i][j].len() != dimension {
-                    return Err(ManifoldError::InvalidDimension);
+                    return Err(ManifoldError::InvalidDimension(format!("Structure constants[{}][{}] has wrong size", i, j)));
                 }
             }
         }
@@ -140,7 +140,7 @@ impl LieAlgebra {
     /// compute [X, Y] = Σ_k (Σ_{i,j} c^k_{ij} x^i y^j) e_k
     pub fn bracket(&self, x: &[f64], y: &[f64]) -> Result<Vec<f64>> {
         if x.len() != self.dimension || y.len() != self.dimension {
-            return Err(ManifoldError::InvalidDimension);
+            return Err(ManifoldError::InvalidDimension(format!("Bracket dimension mismatch: expected {}, got x:{} y:{}", self.dimension, x.len(), y.len())));
         }
 
         let mut result = vec![0.0; self.dimension];
@@ -201,7 +201,7 @@ impl LieAlgebra {
     /// where ad_X(Y) = [X, Y] is the adjoint representation
     pub fn killing_form(&self, x: &[f64], y: &[f64]) -> Result<f64> {
         if x.len() != self.dimension || y.len() != self.dimension {
-            return Err(ManifoldError::InvalidDimension);
+            return Err(ManifoldError::InvalidDimension(format!("Killing form dimension mismatch: expected {}, got x:{} y:{}", self.dimension, x.len(), y.len())));
         }
 
         // Compute matrices of ad_X and ad_Y
@@ -295,7 +295,7 @@ impl ExponentialMap {
     /// The corresponding group element exp(X)
     pub fn exp(&self, x: &[f64]) -> Result<ManifoldPoint> {
         if x.len() != self.algebra.dimension() {
-            return Err(ManifoldError::InvalidDimension);
+            return Err(ManifoldError::InvalidDimension(format!("Exp dimension mismatch: expected {}, got {}", self.algebra.dimension(), x.len())));
         }
 
         (self.exp_impl)(x)
