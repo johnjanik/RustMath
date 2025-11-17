@@ -213,7 +213,9 @@ impl SymplecticForm {
 
     /// Check if the form is closed (dω = 0)
     pub fn is_closed(&self) -> Result<bool> {
-        let d_omega = self.form.exterior_derivative()?;
+        let chart = self.manifold.default_chart()
+            .ok_or(ManifoldError::NoChart)?;
+        let d_omega = self.form.exterior_derivative(chart)?;
         Ok(d_omega.is_zero())
     }
 
@@ -271,8 +273,8 @@ impl SymplecticForm {
         let chart = self.manifold.default_chart()
             .ok_or(ManifoldError::NoChart)?;
 
-        let v_comps = v.components(chart)?;
-        let w_comps = w.components(chart)?;
+        let v_comps = v.components();
+        let w_comps = w.components();
 
         let matrix = self.matrix_at(point, chart)?;
 
@@ -292,12 +294,14 @@ impl SymplecticForm {
     /// Volume form Ω = ωⁿ/n!
     pub fn volume_form(&self) -> Result<DiffForm> {
         let n = self.manifold.dimension() / 2;
+        let chart = self.manifold.default_chart()
+            .ok_or(ManifoldError::NoChart)?;
 
         // ωⁿ = ω ∧ ω ∧ ... ∧ ω (n times)
         let mut result = self.form.clone();
 
         for _ in 1..n {
-            result = result.wedge(&self.form)?;
+            result = result.wedge(&self.form, chart)?;
         }
 
         // Divide by n!
