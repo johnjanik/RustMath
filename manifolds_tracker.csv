@@ -89,13 +89,13 @@ Implemented,Full,Advanced,rustmath-manifolds,Diffeomorphism,Diffeomorphism,sage.
 Implemented,Full,Advanced,rustmath-manifolds,IsometryGroup,Isometry group,N/A,Metric-preserving diffeomorphisms
 Implemented,Full,Advanced,rustmath-manifolds,KillingVectorField,Killing vector field,N/A,ℒ_X g = 0
 Implemented,Full,Advanced,rustmath-manifolds,ConformallKillingVectorField,Conformal Killing field,N/A,ℒ_X g = λg
-Planned,Stub,Catalog,rustmath-manifolds,EuclideanSpace,Euclidean space ℝ^n,N/A (custom),Already implemented
-Planned,Stub,Catalog,rustmath-manifolds,RealLine,Real line ℝ,N/A (custom),Already implemented
-Planned,Stub,Catalog,rustmath-manifolds,Minkowski,Minkowski spacetime,sage.manifolds.catalog.Minkowski(),Relativity
-Planned,Stub,Catalog,rustmath-manifolds,Schwarzschild,Schwarzschild spacetime,N/A (custom),Black hole
-Planned,Stub,Catalog,rustmath-manifolds,Kerr,Kerr spacetime,sage.manifolds.catalog.Kerr(),Rotating black hole
-Planned,Stub,Catalog,rustmath-manifolds,RealProjectiveSpace,Real projective space ℝP^n,sage.manifolds.catalog.RealProjectiveSpace(),Quotient space
-Planned,Stub,Catalog,rustmath-manifolds,ComplexProjectiveSpace,Complex projective space ℂP^n,N/A (custom),Holomorphic manifold
-Planned,Stub,Catalog,rustmath-manifolds,Grassmannian,Grassmann manifold,N/A,k-planes in ℝ^n
-Planned,Stub,Catalog,rustmath-manifolds,SpecialOrthogonalGroup,SO(n) manifold,N/A,Rotation group
-Planned,Stub,Catalog,rustmath-manifolds,SpecialUnitaryGroup,SU(n) manifold,N/A,Special unitary
+Implemented,Full,Catalog,rustmath-manifolds,EuclideanSpace,Euclidean space ℝ^n,N/A (custom),Already in examples module
+Implemented,Full,Catalog,rustmath-manifolds,RealLine,Real line ℝ,N/A (custom),Already in examples module
+Implemented,Full,Catalog,rustmath-manifolds,Minkowski,Minkowski spacetime,sage.manifolds.catalog.Minkowski(),Flat spacetime η=diag(-1,1,1,1)
+Implemented,Full,Catalog,rustmath-manifolds,Schwarzschild,Schwarzschild spacetime,N/A (custom),Spherical black hole with mass M
+Implemented,Full,Catalog,rustmath-manifolds,Kerr,Kerr spacetime,sage.manifolds.catalog.Kerr(),Rotating black hole with spin a
+Implemented,Full,Catalog,rustmath-manifolds,RealProjectiveSpace,Real projective space ℝP^n,sage.manifolds.catalog.RealProjectiveSpace(),Lines through origin in ℝ^{n+1}
+Implemented,Full,Catalog,rustmath-manifolds,ComplexProjectiveSpace,Complex projective space ℂP^n,N/A (custom),Complex lines in ℂ^{n+1}
+Implemented,Full,Catalog,rustmath-manifolds,Grassmannian,Grassmann manifold Gr(k,n),N/A,k-dimensional subspaces of ℝ^n
+Implemented,Full,Catalog,rustmath-manifolds,SpecialOrthogonalGroup,SO(n) rotation group,N/A,Orthogonal matrices with det=1
+Implemented,Full,Catalog,rustmath-manifolds,SpecialUnitaryGroup,SU(n) unitary group,N/A,Unitary matrices with det=1

@@ -302,6 +302,17 @@ impl TensorField {
     }
 }
 
+// PartialEq implementation
+impl PartialEq for TensorField {
+    fn eq(&self, other: &Self) -> bool {
+        // Two tensor fields are equal if they have the same type and components in all charts
+        // Note: This is a structural equality, not mathematical equality
+        self.contravariant_rank == other.contravariant_rank
+            && self.covariant_rank == other.covariant_rank
+            && self.chart_components == other.chart_components
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

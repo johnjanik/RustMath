@@ -9,7 +9,7 @@ use crate::point::ManifoldPoint;
 use crate::vector_field::VectorField;
 use crate::diff_form::DiffForm;
 use crate::tangent_space::TangentVector;
-use rustmath_symbolic::expr::Expr;
+use rustmath_symbolic::Expr;
 use std::sync::Arc;
 use std::collections::HashMap;
 

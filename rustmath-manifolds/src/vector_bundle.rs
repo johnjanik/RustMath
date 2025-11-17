@@ -32,7 +32,7 @@ pub struct TopologicalVectorBundle<M, F> {
     _fiber: PhantomData<F>,
 }
 
-impl<M: TopologicalManifold, F> TopologicalVectorBundle<M, F> {
+impl<M: crate::traits::TopologicalManifoldTrait, F> TopologicalVectorBundle<M, F> {
     /// Create a new vector bundle
     ///
     /// # Arguments
@@ -85,7 +85,7 @@ pub struct TangentBundle<M> {
     bundle: TopologicalVectorBundle<M, Vec<f64>>,
 }
 
-impl<M: TopologicalManifold> TangentBundle<M> {
+impl<M: crate::traits::TopologicalManifoldTrait> TangentBundle<M> {
     /// Create the tangent bundle for a manifold
     pub fn new(base_manifold: M) -> Self {
         let rank = base_manifold.dimension();
@@ -119,7 +119,7 @@ pub struct CotangentBundle<M> {
     bundle: TopologicalVectorBundle<M, Vec<f64>>,
 }
 
-impl<M: TopologicalManifold> CotangentBundle<M> {
+impl<M: crate::traits::TopologicalManifoldTrait> CotangentBundle<M> {
     /// Create the cotangent bundle for a manifold
     pub fn new(base_manifold: M) -> Self {
         let rank = base_manifold.dimension();

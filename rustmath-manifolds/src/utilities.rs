@@ -4,11 +4,12 @@
 //! manifolds, including expression simplification, symbolic operations,
 //! and coordinate transformations.
 
-use rustmath_symbolic::{Expression, simplify};
+use rustmath_symbolic::Expr;
+use rustmath_symbolic::Symbol;
 use std::collections::HashMap;
 
 /// Type alias for simplification functions
-pub type SimplificationFn = fn(Expression) -> Expression;
+pub type SimplificationFn = fn(Expr) -> Expr;
 
 /// Chain of simplification operations to apply to expressions
 #[derive(Clone)]
@@ -31,7 +32,7 @@ impl SimplificationChain {
     }
 
     /// Apply all simplification operations in sequence
-    pub fn apply(&self, expr: Expression) -> Expression {
+    pub fn apply(&self, expr: Expr) -> Expr {
         self.operations.iter().fold(expr, |acc, op| op(acc))
     }
 }
@@ -47,11 +48,11 @@ impl Default for SimplificationChain {
 /// This simplification assumes real-valued expressions and applies rules like:
 /// - |sin(x)| can be simplified under certain assumptions
 /// - |cos(x)| can be simplified under certain assumptions
-pub fn simplify_abs_trig(expr: Expression) -> Expression {
+pub fn simplify_abs_trig(expr: Expr) -> Expr {
     // For now, use the standard simplification
     // In a full implementation, this would walk the expression tree
     // and apply special rules for absolute values of trig functions
-    simplify(expr)
+    expr.simplify()
 }
 
 /// Simplify expressions involving square roots of real numbers
@@ -59,11 +60,16 @@ pub fn simplify_abs_trig(expr: Expression) -> Expression {
 /// This simplification assumes real-valued expressions and applies rules like:
 /// - sqrt(x^2) = |x| for real x
 /// - sqrt(a) * sqrt(b) = sqrt(a*b) for positive a, b
-pub fn simplify_sqrt_real(expr: Expression) -> Expression {
+pub fn simplify_sqrt_real(expr: Expr) -> Expr {
     // For now, use the standard simplification
     // In a full implementation, this would walk the expression tree
     // and apply special rules for square roots
-    simplify(expr)
+    expr.simplify()
+}
+
+/// Basic simplification wrapper
+pub fn basic_simplify(expr: Expr) -> Expr {
+    expr.simplify()
 }
 
 /// Generic simplification chain for real-valued expressions
@@ -72,9 +78,9 @@ pub fn simplify_sqrt_real(expr: Expression) -> Expression {
 /// 1. Basic algebraic simplification
 /// 2. Square root simplification
 /// 3. Absolute value/trigonometric simplification
-pub fn simplify_chain_real(expr: Expression) -> Expression {
+pub fn simplify_chain_real(expr: Expr) -> Expr {
     let mut chain = SimplificationChain::new();
-    chain.add(simplify);
+    chain.add(basic_simplify);
     chain.add(simplify_sqrt_real);
     chain.add(simplify_abs_trig);
     chain.apply(expr)
@@ -85,9 +91,9 @@ pub fn simplify_chain_real(expr: Expression) -> Expression {
 /// Applies a sequence of simplifications appropriate for general expressions:
 /// 1. Basic algebraic simplification
 /// 2. Trigonometric simplification
-pub fn simplify_chain_generic(expr: Expression) -> Expression {
+pub fn simplify_chain_generic(expr: Expr) -> Expr {
     let mut chain = SimplificationChain::new();
-    chain.add(simplify);
+    chain.add(basic_simplify);
     chain.add(simplify_abs_trig);
     chain.apply(expr)
 }
@@ -109,9 +115,9 @@ pub fn simplify_chain_generic(expr: Expression) -> Expression {
 ///
 /// The exterior derivative as a new differential form
 pub fn exterior_derivative(
-    form: &HashMap<Vec<usize>, Expression>,
+    form: &HashMap<Vec<usize>, Expr>,
     variables: &[String],
-) -> HashMap<Vec<usize>, Expression> {
+) -> HashMap<Vec<usize>, Expr> {
     let mut result = HashMap::new();
 
     // For each term in the form
@@ -124,9 +130,13 @@ pub fn exterior_derivative(
             }
 
             // Compute the partial derivative
-            let deriv = rustmath_symbolic::differentiate(coeff.clone(), var_name);
+            let var_symbol = Symbol::new(var_name);
+            let deriv = coeff.differentiate(&var_symbol);
 
-            if !rustmath_symbolic::is_zero(&deriv) {
+            // Check if derivative is non-zero (simple check for zero constant)
+            let is_nonzero = !matches!(deriv, Expr::Integer(ref n) if n.is_zero());
+
+            if is_nonzero {
                 // Create new index list: [var_idx] ∧ indices
                 let mut new_indices = vec![var_idx];
                 new_indices.extend(indices.iter().copied());
@@ -136,12 +146,12 @@ pub fn exterior_derivative(
                 let final_expr = if sign > 0 {
                     deriv
                 } else {
-                    rustmath_symbolic::negate(deriv)
+                    -deriv
                 };
 
                 // Add to result (or accumulate if already present)
                 result.entry(new_indices)
-                    .and_modify(|e| *e = rustmath_symbolic::add(e.clone(), final_expr.clone()))
+                    .and_modify(|e| *e = e.clone() + final_expr.clone())
                     .or_insert(final_expr);
             }
         }
@@ -184,9 +194,9 @@ pub fn set_axes_labels(_labels: &[String]) {
 
 /// Alternative name for exterior_derivative
 pub fn xder(
-    form: &HashMap<Vec<usize>, Expression>,
+    form: &HashMap<Vec<usize>, Expr>,
     variables: &[String],
-) -> HashMap<Vec<usize>, Expression> {
+) -> HashMap<Vec<usize>, Expr> {
     exterior_derivative(form, variables)
 }
 

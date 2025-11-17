@@ -163,6 +163,16 @@ impl ScalarFieldEnhanced {
     }
 }
 
+// PartialEq implementation
+impl PartialEq for ScalarFieldEnhanced {
+    fn eq(&self, other: &Self) -> bool {
+        // Two scalar fields are equal if they have the same expressions in all charts
+        // We consider them equal if their chart_expressions are equal
+        // Note: This is a structural equality, not mathematical equality
+        self.chart_expressions == other.chart_expressions
+    }
+}
+
 // Algebraic operations
 
 impl Add for ScalarFieldEnhanced {

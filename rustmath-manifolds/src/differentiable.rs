@@ -3,7 +3,7 @@
 use crate::chart::Chart;
 use crate::errors::Result;
 use crate::manifold::TopologicalManifold;
-use crate::scalar_field::ScalarField;
+use crate::scalar_field::ScalarFieldEnhanced as ScalarField;
 use std::fmt;
 
 /// A differentiable (smooth) manifold
