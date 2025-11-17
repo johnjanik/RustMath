@@ -16,6 +16,7 @@ pub mod polynomial_matrix;
 pub mod polynomial_ops;
 pub mod sparse;
 pub mod special;
+pub mod strassen;
 pub mod vector;
 pub mod vector_space;
 
@@ -44,6 +45,7 @@ pub use special::{
     random_integer_matrix, random_lower_triangular, random_unimodular_matrix,
     random_upper_triangular, toeplitz, vandermonde, zero_matrix,
 };
+pub use strassen::strassen_multiply;
 pub use vector::Vector;
 pub use vector_space::{QuotientSpace, VectorSpace};
 
