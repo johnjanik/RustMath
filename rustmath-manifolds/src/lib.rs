@@ -49,6 +49,16 @@ pub mod lie_algebra;
 pub mod fiber_bundles;
 pub mod symplectic;
 
+// Phase 5: Advanced geometric structures
+pub mod complex_manifold;
+pub mod almost_complex;
+pub mod kahler;
+pub mod finsler;
+pub mod subriemannian;
+pub mod contact;
+pub mod spin;
+pub mod dirac;
+
 pub use subset::ManifoldSubset;
 pub use manifold::TopologicalManifold;
 pub use chart::{Chart, CoordinateFunction};
@@ -88,6 +98,19 @@ pub use fiber_bundles::{
 };
 pub use symplectic::{
     SymplecticManifold, SymplecticForm, HamiltonianVectorField, PoissonBracket,
+};
+
+// Phase 5: Advanced geometric structures
+pub use complex_manifold::{ComplexManifold, ComplexChart, HolomorphicFunction};
+pub use almost_complex::{AlmostComplexStructure, AlmostComplexManifold};
+pub use kahler::{KahlerManifold, HermitianMetric};
+pub use finsler::{FinslerManifold, FinslerFunction, CartanTensor};
+pub use subriemannian::{SubRiemannianManifold, Distribution};
+pub use contact::{ContactManifold, ContactForm, ContactHamiltonian};
+pub use spin::{SpinStructure, SpinorBundle, SpinorField, SpinGroup, CliffordMultiplication};
+pub use dirac::{
+    DiracOperator, SpinorConnection, DiracSquared, TwistedDiracOperator,
+    AtiyahSingerIndexTheorem, DiracHeatKernel,
 };
 
 #[cfg(test)]

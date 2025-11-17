@@ -61,15 +61,15 @@ Implemented,Full,Phase 4,rustmath-manifolds,SymplecticManifold,Symplectic manifo
 Implemented,Full,Phase 4,rustmath-manifolds,SymplecticForm,Symplectic form,N/A,Closed 2-form
 Implemented,Full,Phase 4,rustmath-manifolds,HamiltonianVectorField,Hamiltonian vector field,N/A,i_X ω = dH
 Implemented,Full,Phase 4,rustmath-manifolds,PoissonBracket,Poisson bracket,N/A,{f,g} = ω(X_f, X_g)
-Planned,Stub,Phase 5,rustmath-manifolds,ComplexManifold,Complex manifold,sage.manifolds.manifold.Manifold (complex case),Holomorphic charts
-Planned,Stub,Phase 5,rustmath-manifolds,HolomorphicFunction,Holomorphic function,N/A,f: M → ℂ
-Planned,Stub,Phase 5,rustmath-manifolds,AlmostComplexStructure,Almost complex structure,N/A,J: TM → TM
-Planned,Stub,Phase 5,rustmath-manifolds,KahlerManifold,Kähler manifold,N/A,Compatible metric
-Planned,Stub,Phase 5,rustmath-manifolds,FinslerManifold,Finsler manifold,N/A,Generalized Riemannian
-Planned,Stub,Phase 5,rustmath-manifolds,SubRiemannianManifold,Sub-Riemannian manifold,N/A,Constrained metric
-Planned,Stub,Phase 5,rustmath-manifolds,ContactManifold,Contact manifold,N/A,Odd-dimensional symplectic
-Planned,Stub,Phase 5,rustmath-manifolds,SpinStructure,Spin structure,N/A,Spinor bundles
-Planned,Stub,Phase 5,rustmath-manifolds,DiracOperator,Dirac operator,N/A,First-order diff operator
+Implemented,Full,Phase 5,rustmath-manifolds,ComplexManifold,Complex manifold,sage.manifolds.manifold.Manifold (complex case),Holomorphic charts
+Implemented,Full,Phase 5,rustmath-manifolds,HolomorphicFunction,Holomorphic function,N/A,f: M → ℂ
+Implemented,Full,Phase 5,rustmath-manifolds,AlmostComplexStructure,Almost complex structure,N/A,J: TM → TM
+Implemented,Full,Phase 5,rustmath-manifolds,KahlerManifold,Kähler manifold,N/A,Compatible metric
+Implemented,Full,Phase 5,rustmath-manifolds,FinslerManifold,Finsler manifold,N/A,Generalized Riemannian
+Implemented,Full,Phase 5,rustmath-manifolds,SubRiemannianManifold,Sub-Riemannian manifold,N/A,Constrained metric
+Implemented,Full,Phase 5,rustmath-manifolds,ContactManifold,Contact manifold,N/A,Odd-dimensional symplectic
+Implemented,Full,Phase 5,rustmath-manifolds,SpinStructure,Spin structure,N/A,Spinor bundles
+Implemented,Full,Phase 5,rustmath-manifolds,DiracOperator,Dirac operator,N/A,First-order diff operator
 Planned,Stub,Integration,rustmath-manifolds,IntegrationOnManifolds,Integration of forms,sage.manifolds.differentiable.integrated_curve.IntegratedCurve (partial),∫_M ω
 Planned,Stub,Integration,rustmath-manifolds,StokesTheorem,Stokes theorem verification,N/A,∫_∂M ω = ∫_M dω
 Planned,Stub,Integration,rustmath-manifolds,VolumeForm,Volume form,sage.manifolds.differentiable.metric.Metric.volume_form(),Top-degree form
