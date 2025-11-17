@@ -13,5 +13,6 @@ rustmath-reals = { path = "../rustmath-reals" }
 rustmath-symbolic = { path = "../rustmath-symbolic" }
 rustmath-matrix = { path = "../rustmath-matrix" }
 rustmath-integers = { path = "../rustmath-integers" }
+rustmath-complex = { path = "../rustmath-complex" }
 num-traits = { workspace = true }
 thiserror = { workspace = true }
