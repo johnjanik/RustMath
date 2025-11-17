@@ -46,6 +46,8 @@ members = [
     "rustmath-liealgebras",
     "rustmath-lieconformal",
     "rustmath-quivers",
+    "rustmath-colors",
+    "rustmath-plot-core",
 ]
 
 [workspace.package]

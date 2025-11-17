@@ -1,0 +1,19 @@
+[package]
+name = "rustmath-plot-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustmath-colors = { path = "../rustmath-colors" }
+rustmath-core = { path = "../rustmath-core" }
+thiserror.workspace = true
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+
+[features]
+default = []
+serde = ["dep:serde", "rustmath-colors/serde"]
