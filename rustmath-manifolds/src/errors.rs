@@ -32,8 +32,8 @@ pub enum ManifoldError {
     #[error("No expression defined in this chart")]
     NoExpressionInChart,
 
-    #[error("Invalid index")]
-    InvalidIndex,
+    #[error("Invalid index: {0}")]
+    InvalidIndex(String),
 
     #[error("Different manifolds")]
     DifferentManifolds,

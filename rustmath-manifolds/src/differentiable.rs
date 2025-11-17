@@ -5,6 +5,7 @@ use crate::errors::Result;
 use crate::manifold::TopologicalManifold;
 use crate::scalar_field::ScalarFieldEnhanced as ScalarField;
 use std::fmt;
+use std::sync::Arc;
 
 /// A differentiable (smooth) manifold
 ///

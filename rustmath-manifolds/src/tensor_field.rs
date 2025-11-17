@@ -172,7 +172,9 @@ impl TensorField {
 
         components.get(flat_index)
             .cloned()
-            .ok_or(ManifoldError::InvalidIndex)
+            .ok_or_else(|| ManifoldError::InvalidIndex(
+                format!("Flat index {} out of range for {} components", flat_index, components.len())
+            ))
     }
 
     /// Set a specific component
@@ -198,7 +200,9 @@ impl TensorField {
                 components[flat_index] = value;
                 Ok(())
             } else {
-                Err(ManifoldError::InvalidIndex)
+                Err(ManifoldError::InvalidIndex(
+                    format!("Flat index {} out of range for {} components", flat_index, components.len())
+                ))
             }
         } else {
             Err(ManifoldError::NoComponentsInChart)
@@ -216,10 +220,14 @@ impl TensorField {
         chart: &Chart,
     ) -> Result<TensorField> {
         if contra_index >= self.contravariant_rank {
-            return Err(ManifoldError::InvalidIndex);
+            return Err(ManifoldError::InvalidIndex(
+                format!("Contravariant index {} out of range for rank {}", contra_index, self.contravariant_rank)
+            ));
         }
         if cov_index >= self.covariant_rank {
-            return Err(ManifoldError::InvalidIndex);
+            return Err(ManifoldError::InvalidIndex(
+                format!("Covariant index {} out of range for rank {}", cov_index, self.covariant_rank)
+            ));
         }
 
         let components = self.components(chart)?;

@@ -230,7 +230,10 @@ impl PrincipalBundle {
     ) -> Result<Self> {
         // Verify that fiber has same dimension as structure group
         if bundle.fiber_dimension() != structure_group.dimension() {
-            return Err(ManifoldError::InvalidDimension);
+            return Err(ManifoldError::InvalidDimension(
+                format!("Fiber dimension {} must match structure group dimension {}",
+                        bundle.fiber_dimension(), structure_group.dimension())
+            ));
         }
 
         Ok(Self {

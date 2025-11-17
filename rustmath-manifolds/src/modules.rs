@@ -91,7 +91,9 @@ impl DiffScalarFieldAlgebra {
             .ok_or(ManifoldError::NoChart)?;
 
         if index >= self.manifold.dimension() {
-            return Err(ManifoldError::InvalidIndex(index));
+            return Err(ManifoldError::InvalidIndex(
+                format!("Index {} out of range for manifold dimension {}", index, self.manifold.dimension())
+            ));
         }
 
         let symbol = chart.coordinate_symbols()[index].clone();

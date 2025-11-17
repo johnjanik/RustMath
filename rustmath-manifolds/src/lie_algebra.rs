@@ -190,7 +190,10 @@ impl LieAlgebra {
     /// Get structure constant c^k_{ij}
     pub fn structure_constant(&self, i: usize, j: usize, k: usize) -> Result<f64> {
         if i >= self.dimension || j >= self.dimension || k >= self.dimension {
-            return Err(ManifoldError::InvalidIndex);
+            return Err(ManifoldError::InvalidIndex(
+                format!("Structure constant indices ({},{},{}) out of range for dimension {}",
+                        i, j, k, self.dimension)
+            ));
         }
 
         Ok(self.structure_constants[i][j][k])

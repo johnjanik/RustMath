@@ -38,6 +38,9 @@ pub trait ManifoldSubsetTrait {
 
 /// Topological manifold
 pub trait TopologicalManifoldTrait: ManifoldSubsetTrait {
+    /// Get the name of the manifold
+    fn name(&self) -> &str;
+
     /// Get all charts in the atlas
     fn atlas(&self) -> &[Chart];
 
