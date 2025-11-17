@@ -116,6 +116,23 @@ impl TensorField {
         Ok(tensor)
     }
 
+    /// Create a zero tensor field of type (p, q)
+    ///
+    /// All components are zero in all charts.
+    pub fn zero(
+        manifold: Arc<DifferentiableManifold>,
+        contravariant_rank: usize,
+        covariant_rank: usize,
+    ) -> Self {
+        Self {
+            manifold,
+            contravariant_rank,
+            covariant_rank,
+            chart_components: HashMap::new(),
+            name: Some("zero".to_string()),
+        }
+    }
+
     /// Get the underlying manifold
     pub fn manifold(&self) -> &Arc<DifferentiableManifold> {
         &self.manifold

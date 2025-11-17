@@ -42,6 +42,8 @@ pub mod vector_field;
 pub mod tensor_field;
 pub mod diff_form;
 pub mod tangent_space;
+pub mod modules;
+pub mod riemannian;
 
 pub use subset::ManifoldSubset;
 pub use manifold::TopologicalManifold;
@@ -49,7 +51,7 @@ pub use chart::{Chart, CoordinateFunction};
 pub use point::ManifoldPoint;
 pub use scalar_field::ScalarFieldEnhanced as ScalarField;
 pub use differentiable::DifferentiableManifold;
-pub use examples::{RealLine, EuclideanSpace};
+pub use examples::{RealLine, EuclideanSpace, Circle, Sphere2, Torus2};
 pub use errors::{ManifoldError, Result};
 pub use utilities::{
     SimplificationChain, simplify_abs_trig, simplify_sqrt_real,
@@ -63,6 +65,15 @@ pub use vector_field::VectorField;
 pub use tensor_field::{TensorField, MultiIndex};
 pub use diff_form::DiffForm;
 pub use tangent_space::{TangentVector, TangentSpace, Covector, CotangentSpace};
+pub use modules::{
+    DiffScalarFieldAlgebra, VectorFieldModule, VectorFieldFreeModule,
+    TensorFieldModule, DiffFormModule,
+};
+pub use riemannian::{
+    RiemannianMetric, AffineConnection, LeviCivitaConnection,
+    CovariantDerivative, RiemannTensor, RicciTensor, ScalarCurvature,
+    Geodesic, ParallelTransport,
+};
 
 #[cfg(test)]
 mod tests {
