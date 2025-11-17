@@ -297,8 +297,13 @@ impl Expr {
     }
 
     /// Check if expression is zero
-    fn is_zero(&self) -> bool {
-        matches!(self, Expr::Integer(i) if i.to_i64() == Some(0))
+    pub fn is_zero(&self) -> bool {
+        use rustmath_core::Ring;
+        match self {
+            Expr::Integer(n) => n.is_zero(),
+            Expr::Rational(r) => r.is_zero(),
+            _ => false,
+        }
     }
 
     /// Check if expression is a positive numerical value

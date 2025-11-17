@@ -93,7 +93,7 @@ impl Minkowski {
 
         for i in 0..4 {
             for j in 0..4 {
-                let g_ij = &metric_comps[i * 4 + j];
+                let g_ij = &metric_comps[i][j];
                 norm_squared = norm_squared.clone()
                     + g_ij.clone() * vector_components[i].clone() * vector_components[j].clone();
             }
