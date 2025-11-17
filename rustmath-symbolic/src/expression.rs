@@ -392,17 +392,6 @@ impl From<Rational> for Expr {
 
 impl From<f64> for Expr {
     fn from(value: f64) -> Self {
-        // Convert f64 to Rational with approximation
-        // Multiply by 10^6 to preserve 6 decimal places
-        let scale = 1_000_000i64;
-        let numerator = (value * scale as f64).round() as i64;
-
-        // Try to create the rational, or fall back to Integer if it's a whole number
-        if numerator % scale == 0 {
-            Expr::Integer(Integer::from(numerator / scale))
-        } else {
-            // This might fail if denominator is zero, but scale is never zero
-            Expr::Rational(Rational::new(numerator, scale).unwrap())
         // Handle special cases
         if value.is_nan() || value.is_infinite() {
             // Fall back to a symbol or panic - for now, use 0
