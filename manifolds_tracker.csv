@@ -46,21 +46,21 @@ Implemented,Full,Phase 3,rustmath-manifolds,RicciTensor,Ricci tensor,sage.manifo
 Implemented,Full,Phase 3,rustmath-manifolds,ScalarCurvature,Scalar curvature,sage.manifolds.differentiable.metric.Metric.ricci_scalar(),R
 Implemented,Full,Phase 3,rustmath-manifolds,Geodesic,Geodesic curve,sage.manifolds.differentiable.integrated_curve.IntegratedGeodesic,Shortest path
 Implemented,Full,Phase 3,rustmath-manifolds,ParallelTransport,Parallel transport,N/A,Along curves
-Planned,Stub,Phase 4,rustmath-manifolds,LieGroup,Lie group manifold,sage.groups.matrix_gps.linear.LinearMatrixGroup_generic (as manifold),Group + manifold
-Planned,Stub,Phase 4,rustmath-manifolds,LieAlgebra,Lie algebra,sage.algebras.lie_algebras.lie_algebra.LieAlgebra,Tangent space at identity
-Planned,Stub,Phase 4,rustmath-manifolds,MaurerCartanForm,Maurer-Cartan form,N/A,Left-invariant 1-form
-Planned,Stub,Phase 4,rustmath-manifolds,ExponentialMap,Exponential map,N/A,exp: 𝔤 → G
-Planned,Stub,Phase 4,rustmath-manifolds,LeftInvariantVectorField,Left-invariant vector field,N/A,Pushforward from T_e G
-Planned,Stub,Phase 4,rustmath-manifolds,RightInvariantVectorField,Right-invariant vector field,N/A,Dual structure
-Planned,Stub,Phase 4,rustmath-manifolds,FiberBundle,General fiber bundle,sage.manifolds.differentiable.bundle.TopologicalBundle,π: E → B
-Planned,Stub,Phase 4,rustmath-manifolds,PrincipalBundle,Principal G-bundle,N/A,G-action
-Planned,Stub,Phase 4,rustmath-manifolds,AssociatedBundle,Associated bundle,N/A,E ×_G F
-Planned,Stub,Phase 4,rustmath-manifolds,ConnectionForm,Connection form,sage.manifolds.differentiable.bundle_connection.BundleConnection,ω ∈ Ω^1(P, 𝔤)
-Planned,Stub,Phase 4,rustmath-manifolds,CurvatureForm,Curvature form,N/A,Ω = dω + ½[ω,ω]
-Planned,Stub,Phase 4,rustmath-manifolds,SymplecticManifold,Symplectic manifold,N/A,Non-degenerate ω
-Planned,Stub,Phase 4,rustmath-manifolds,SymplecticForm,Symplectic form,N/A,Closed 2-form
-Planned,Stub,Phase 4,rustmath-manifolds,HamiltonianVectorField,Hamiltonian vector field,N/A,i_X ω = dH
-Planned,Stub,Phase 4,rustmath-manifolds,PoissonBracket,Poisson bracket,N/A,{f,g} = ω(X_f, X_g)
+Implemented,Full,Phase 4,rustmath-manifolds,LieGroup,Lie group manifold,sage.groups.matrix_gps.linear.LinearMatrixGroup_generic (as manifold),Group + manifold
+Implemented,Full,Phase 4,rustmath-manifolds,LieAlgebra,Lie algebra,sage.algebras.lie_algebras.lie_algebra.LieAlgebra,Tangent space at identity
+Implemented,Full,Phase 4,rustmath-manifolds,MaurerCartanForm,Maurer-Cartan form,N/A,Left-invariant 1-form
+Implemented,Full,Phase 4,rustmath-manifolds,ExponentialMap,Exponential map,N/A,exp: 𝔤 → G
+Implemented,Full,Phase 4,rustmath-manifolds,LeftInvariantVectorField,Left-invariant vector field,N/A,Pushforward from T_e G
+Implemented,Full,Phase 4,rustmath-manifolds,RightInvariantVectorField,Right-invariant vector field,N/A,Dual structure
+Implemented,Full,Phase 4,rustmath-manifolds,FiberBundle,General fiber bundle,sage.manifolds.differentiable.bundle.TopologicalBundle,π: E → B
+Implemented,Full,Phase 4,rustmath-manifolds,PrincipalBundle,Principal G-bundle,N/A,G-action
+Implemented,Full,Phase 4,rustmath-manifolds,AssociatedBundle,Associated bundle,N/A,E ×_G F
+Implemented,Full,Phase 4,rustmath-manifolds,ConnectionForm,Connection form,sage.manifolds.differentiable.bundle_connection.BundleConnection,ω ∈ Ω^1(P, 𝔤)
+Implemented,Full,Phase 4,rustmath-manifolds,CurvatureForm,Curvature form,N/A,Ω = dω + ½[ω,ω]
+Implemented,Full,Phase 4,rustmath-manifolds,SymplecticManifold,Symplectic manifold,N/A,Non-degenerate ω
+Implemented,Full,Phase 4,rustmath-manifolds,SymplecticForm,Symplectic form,N/A,Closed 2-form
+Implemented,Full,Phase 4,rustmath-manifolds,HamiltonianVectorField,Hamiltonian vector field,N/A,i_X ω = dH
+Implemented,Full,Phase 4,rustmath-manifolds,PoissonBracket,Poisson bracket,N/A,{f,g} = ω(X_f, X_g)
 Planned,Stub,Phase 5,rustmath-manifolds,ComplexManifold,Complex manifold,sage.manifolds.manifold.Manifold (complex case),Holomorphic charts
 Planned,Stub,Phase 5,rustmath-manifolds,HolomorphicFunction,Holomorphic function,N/A,f: M → ℂ
 Planned,Stub,Phase 5,rustmath-manifolds,AlmostComplexStructure,Almost complex structure,N/A,J: TM → TM
