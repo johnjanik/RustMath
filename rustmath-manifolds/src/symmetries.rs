@@ -106,7 +106,7 @@ impl KillingVectorField {
 
         for i in 0..n {
             for j in 0..n {
-                let g_ij = &g_comps[i * n + j];
+                let g_ij = &g_comps[i][j];
                 let mut term = Expr::from(0);
 
                 // Term 1: X^k ∂_k g_{ij}
@@ -119,7 +119,7 @@ impl KillingVectorField {
 
                 // Term 2: g_{kj} ∂_i X^k
                 for k in 0..n {
-                    let g_kj = &g_comps[k * n + j];
+                    let g_kj = &g_comps[k][j];
                     let x_k = &x_comps[k];
                     let coord_i = chart.coordinate_symbol(i);
                     let dx_k_dxi = x_k.differentiate(&coord_i.name());
@@ -128,7 +128,7 @@ impl KillingVectorField {
 
                 // Term 3: g_{ik} ∂_j X^k
                 for k in 0..n {
-                    let g_ik = &g_comps[i * n + k];
+                    let g_ik = &g_comps[i][k];
                     let x_k = &x_comps[k];
                     let coord_j = chart.coordinate_symbol(j);
                     let dx_k_dxj = x_k.differentiate(&coord_j.name());
