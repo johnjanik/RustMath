@@ -123,7 +123,7 @@ impl LieGroup {
         // Get components in local chart
         let chart = self.manifold.default_chart()
             .ok_or(ManifoldError::NoChart)?;
-        let v_comps = v.components(chart)?;
+        let v_comps = v.components().to_vec();
 
         // The pushforward in coordinates is given by the Jacobian
         // For a proper implementation, we'd compute the Jacobian symbolically
@@ -146,7 +146,7 @@ impl LieGroup {
 
         let chart = self.manifold.default_chart()
             .ok_or(ManifoldError::NoChart)?;
-        let v_comps = v.components(chart)?;
+        let v_comps = v.components().to_vec();
 
         TangentVector::from_components(
             hg,
@@ -232,14 +232,16 @@ impl LeftInvariantVectorField {
         let chart = group.manifold().default_chart()
             .ok_or(ManifoldError::NoChart)?;
 
-        let v_comps = value_at_identity.components(chart)?;
+        let v_comps = value_at_identity.components();
 
         // For a left-invariant field, the value at g is (L_g)_* X_e
         // In coordinates, this is given by left translation
+        // Convert &[f64] to Vec<Expr>
+        let v_comps_expr: Vec<_> = v_comps.iter().map(|&x| Expr::from(x)).collect();
         let field = VectorField::from_components(
             group.manifold().clone(),
             chart,
-            v_comps.clone(),
+            v_comps_expr,
         )?;
 
         Ok(Self {
@@ -272,7 +274,9 @@ impl LeftInvariantVectorField {
     pub fn lie_bracket(&self, other: &LeftInvariantVectorField) -> Result<LeftInvariantVectorField> {
         // The Lie bracket is also left-invariant
         // We compute it at the identity
-        let bracket_field = self.field.lie_bracket(other.as_vector_field())?;
+        let chart = self.group.manifold().default_chart()
+            .ok_or(ManifoldError::NoChart)?;
+        let bracket_field = self.field.lie_bracket(other.as_vector_field(), chart)?;
 
         // Evaluate at identity
         let bracket_at_e = bracket_field.at_point(self.group.identity())?;
@@ -306,12 +310,14 @@ impl RightInvariantVectorField {
         let chart = group.manifold().default_chart()
             .ok_or(ManifoldError::NoChart)?;
 
-        let v_comps = value_at_identity.components(chart)?;
+        let v_comps = value_at_identity.components();
 
+        // Convert &[f64] to Vec<Expr>
+        let v_comps_expr: Vec<_> = v_comps.iter().map(|&x| Expr::from(x)).collect();
         let field = VectorField::from_components(
             group.manifold().clone(),
             chart,
-            v_comps.clone(),
+            v_comps_expr,
         )?;
 
         Ok(Self {
@@ -340,7 +346,9 @@ impl RightInvariantVectorField {
 
     /// Lie bracket of two right-invariant vector fields
     pub fn lie_bracket(&self, other: &RightInvariantVectorField) -> Result<RightInvariantVectorField> {
-        let bracket_field = self.field.lie_bracket(other.as_vector_field())?;
+        let chart = self.group.manifold().default_chart()
+            .ok_or(ManifoldError::NoChart)?;
+        let bracket_field = self.field.lie_bracket(other.as_vector_field(), chart)?;
         let bracket_at_e = bracket_field.at_point(self.group.identity())?;
 
         RightInvariantVectorField::new(self.group.clone(), bracket_at_e)
