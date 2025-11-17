@@ -44,6 +44,10 @@ pub mod diff_form;
 pub mod tangent_space;
 pub mod modules;
 pub mod riemannian;
+pub mod lie_group;
+pub mod lie_algebra;
+pub mod fiber_bundles;
+pub mod symplectic;
 
 pub use subset::ManifoldSubset;
 pub use manifold::TopologicalManifold;
@@ -73,6 +77,17 @@ pub use riemannian::{
     RiemannianMetric, AffineConnection, LeviCivitaConnection,
     CovariantDerivative, RiemannTensor, RicciTensor, ScalarCurvature,
     Geodesic, ParallelTransport,
+};
+pub use lie_group::{
+    LieGroup, LeftInvariantVectorField, RightInvariantVectorField, MaurerCartanForm,
+};
+pub use lie_algebra::{LieAlgebra, ExponentialMap};
+pub use fiber_bundles::{
+    FiberBundle, Fiber, PrincipalBundle, AssociatedBundle,
+    ConnectionForm, CurvatureForm, Trivialization,
+};
+pub use symplectic::{
+    SymplecticManifold, SymplecticForm, HamiltonianVectorField, PoissonBracket,
 };
 
 #[cfg(test)]
