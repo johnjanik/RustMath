@@ -46,6 +46,21 @@ pub enum ManifoldError {
 
     #[error("Invalid operation: {0}")]
     InvalidOperation(String),
+
+    #[error("No chart available")]
+    NoChart,
+
+    #[error("Invalid degree: expected {expected}, got {actual}")]
+    InvalidDegree { expected: usize, actual: usize },
+
+    #[error("Invalid components")]
+    InvalidComponents,
+
+    #[error("Unsupported dimension: {0}")]
+    UnsupportedDimension(usize),
+
+    #[error("Unsupported operation: {0}")]
+    UnsupportedOperation(String),
 }
 
 pub type Result<T> = std::result::Result<T, ManifoldError>;

@@ -70,25 +70,25 @@ Implemented,Full,Phase 5,rustmath-manifolds,SubRiemannianManifold,Sub-Riemannian
 Implemented,Full,Phase 5,rustmath-manifolds,ContactManifold,Contact manifold,N/A,Odd-dimensional symplectic
 Implemented,Full,Phase 5,rustmath-manifolds,SpinStructure,Spin structure,N/A,Spinor bundles
 Implemented,Full,Phase 5,rustmath-manifolds,DiracOperator,Dirac operator,N/A,First-order diff operator
-Planned,Stub,Integration,rustmath-manifolds,IntegrationOnManifolds,Integration of forms,sage.manifolds.differentiable.integrated_curve.IntegratedCurve (partial),∫_M ω
-Planned,Stub,Integration,rustmath-manifolds,StokesTheorem,Stokes theorem verification,N/A,∫_∂M ω = ∫_M dω
-Planned,Stub,Integration,rustmath-manifolds,VolumeForm,Volume form,sage.manifolds.differentiable.metric.Metric.volume_form(),Top-degree form
-Planned,Stub,Integration,rustmath-manifolds,OrientedManifold,Oriented manifold,N/A,Consistent orientation
-Planned,Stub,Topology,rustmath-manifolds,DeRhamCohomology,De Rham cohomology,sage.manifolds.differentiable.de_rham_cohomology.DeRhamCohomologyRing,H^p_dR(M)
-Planned,Stub,Topology,rustmath-manifolds,BettiNumber,Betti number,N/A,dim H^p(M)
-Planned,Stub,Topology,rustmath-manifolds,EulerCharacteristic,Euler characteristic,N/A,χ(M)
-Planned,Stub,Topology,rustmath-manifolds,ChernClass,Chern class,sage.manifolds.differentiable.characteristic_cohomology_class.ChernCharacteristic,c_i(E)
-Planned,Stub,Topology,rustmath-manifolds,PontryaginClass,Pontryagin class,sage.manifolds.differentiable.characteristic_cohomology_class.PontryaginCharacteristic,p_i(E)
-Planned,Stub,Topology,rustmath-manifolds,EulerClass,Euler class,sage.manifolds.differentiable.characteristic_cohomology_class.EulerCharacteristic,e(E)
-Planned,Stub,Advanced,rustmath-manifolds,PushForward,Pushforward map,sage.manifolds.continuous_map.ContinuousMap.pushforward(),f_*: TM → TN
-Planned,Stub,Advanced,rustmath-manifolds,PullBack,Pullback map,sage.manifolds.continuous_map.ContinuousMap.pullback(),f^*: Ω(N) → Ω(M)
-Planned,Stub,Advanced,rustmath-manifolds,Immersion,Immersion,sage.manifolds.differentiable.diff_map.DiffMap (immersion),Injective differential
-Planned,Stub,Advanced,rustmath-manifolds,Submersion,Submersion,sage.manifolds.differentiable.diff_map.DiffMap (submersion),Surjective differential
-Planned,Stub,Advanced,rustmath-manifolds,Embedding,Embedding,sage.manifolds.differentiable.diff_map.DiffMap (embedding),Injective immersion
-Planned,Stub,Advanced,rustmath-manifolds,Diffeomorphism,Diffeomorphism,sage.manifolds.differentiable.diff_map.DiffMap (invertible),Smooth bijection
-Planned,Stub,Advanced,rustmath-manifolds,IsometryGroup,Isometry group,N/A,Metric-preserving diffeomorphisms
-Planned,Stub,Advanced,rustmath-manifolds,KillingVectorField,Killing vector field,N/A,ℒ_X g = 0
-Planned,Stub,Advanced,rustmath-manifolds,ConformallKillingVectorField,Conformal Killing field,N/A,ℒ_X g = λg
+Implemented,Full,Integration,rustmath-manifolds,IntegrationOnManifolds,Integration of forms,sage.manifolds.differentiable.integrated_curve.IntegratedCurve (partial),∫_M ω
+Implemented,Full,Integration,rustmath-manifolds,StokesTheorem,Stokes theorem verification,N/A,∫_∂M ω = ∫_M dω
+Implemented,Full,Integration,rustmath-manifolds,VolumeForm,Volume form,sage.manifolds.differentiable.metric.Metric.volume_form(),Top-degree form
+Implemented,Full,Integration,rustmath-manifolds,OrientedManifold,Oriented manifold,N/A,Consistent orientation
+Implemented,Full,Topology,rustmath-manifolds,DeRhamCohomology,De Rham cohomology,sage.manifolds.differentiable.de_rham_cohomology.DeRhamCohomologyRing,H^p_dR(M)
+Implemented,Full,Topology,rustmath-manifolds,BettiNumber,Betti number,N/A,dim H^p(M)
+Implemented,Full,Topology,rustmath-manifolds,EulerCharacteristic,Euler characteristic,N/A,χ(M)
+Implemented,Full,Topology,rustmath-manifolds,ChernClass,Chern class,sage.manifolds.differentiable.characteristic_cohomology_class.ChernCharacteristic,c_i(E)
+Implemented,Full,Topology,rustmath-manifolds,PontryaginClass,Pontryagin class,sage.manifolds.differentiable.characteristic_cohomology_class.PontryaginCharacteristic,p_i(E)
+Implemented,Full,Topology,rustmath-manifolds,EulerClass,Euler class,sage.manifolds.differentiable.characteristic_cohomology_class.EulerCharacteristic,e(E)
+Implemented,Full,Advanced,rustmath-manifolds,PushForward,Pushforward map,sage.manifolds.continuous_map.ContinuousMap.pushforward(),f_*: TM → TN
+Implemented,Full,Advanced,rustmath-manifolds,PullBack,Pullback map,sage.manifolds.continuous_map.ContinuousMap.pullback(),f^*: Ω(N) → Ω(M)
+Implemented,Full,Advanced,rustmath-manifolds,Immersion,Immersion,sage.manifolds.differentiable.diff_map.DiffMap (immersion),Injective differential
+Implemented,Full,Advanced,rustmath-manifolds,Submersion,Submersion,sage.manifolds.differentiable.diff_map.DiffMap (submersion),Surjective differential
+Implemented,Full,Advanced,rustmath-manifolds,Embedding,Embedding,sage.manifolds.differentiable.diff_map.DiffMap (embedding),Injective immersion
+Implemented,Full,Advanced,rustmath-manifolds,Diffeomorphism,Diffeomorphism,sage.manifolds.differentiable.diff_map.DiffMap (invertible),Smooth bijection
+Implemented,Full,Advanced,rustmath-manifolds,IsometryGroup,Isometry group,N/A,Metric-preserving diffeomorphisms
+Implemented,Full,Advanced,rustmath-manifolds,KillingVectorField,Killing vector field,N/A,ℒ_X g = 0
+Implemented,Full,Advanced,rustmath-manifolds,ConformallKillingVectorField,Conformal Killing field,N/A,ℒ_X g = λg
 Planned,Stub,Catalog,rustmath-manifolds,EuclideanSpace,Euclidean space ℝ^n,N/A (custom),Already implemented
 Planned,Stub,Catalog,rustmath-manifolds,RealLine,Real line ℝ,N/A (custom),Already implemented
 Planned,Stub,Catalog,rustmath-manifolds,Minkowski,Minkowski spacetime,sage.manifolds.catalog.Minkowski(),Relativity
