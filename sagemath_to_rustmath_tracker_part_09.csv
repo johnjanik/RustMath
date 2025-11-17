@@ -236,10 +236,10 @@ Implemented,Full,sage.matrix.special.toeplitz,sage.matrix.special,toeplitz,funct
 Implemented,Full,sage.matrix.special.vandermonde,sage.matrix.special,vandermonde,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/special.py#L3518
 ,,sage.matrix.special.vector_on_axis_rotation_matrix,sage.matrix.special,vector_on_axis_rotation_matrix,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/special.py#L3300
 Implemented,Full,sage.matrix.special.zero_matrix,sage.matrix.special,zero_matrix,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/special.py#L968
-,,sage.matrix.strassen,sage.matrix.strassen,strassen,module,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/strassen.pyx#L484
+Implemented,Full,sage.matrix.strassen,sage.matrix.strassen,strassen,module,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/strassen.pyx#L484
 ,,sage.matrix.strassen.int_range,sage.matrix.strassen,int_range,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/strassen.pyx#L484
 ,,sage.matrix.strassen.strassen_echelon,sage.matrix.strassen,strassen_echelon,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/strassen.pyx#L250
-,,sage.matrix.strassen.strassen_window_multiply,sage.matrix.strassen,strassen_window_multiply,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/strassen.pyx#L23
+Implemented,Full,sage.matrix.strassen.strassen_window_multiply,sage.matrix.strassen,strassen_window_multiply,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/strassen.pyx#L23
 ,,sage.matrix.strassen.test,sage.matrix.strassen,test,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/strassen.pyx#L762
 ,,sage.matrix.symplectic_basis,sage.matrix.symplectic_basis,symplectic_basis,module,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/symplectic_basis.py#L377
 ,,sage.matrix.symplectic_basis.symplectic_basis_over_ZZ,sage.matrix.symplectic_basis,symplectic_basis_over_ZZ,function,,https://github.com/sagemath/sage/blob/develop/src/sage/matrix/symplectic_basis.py#L377
