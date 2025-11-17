@@ -1,0 +1,15 @@
+[package]
+name = "rustmath-quivers"
+version = "0.1.0"
+edition = "2021"
+authors = ["RustMath Contributors"]
+description = "Quiver theory - directed graphs with labeled edges for representation theory"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+rustmath-core = { path = "../rustmath-core" }
+rustmath-graphs = { path = "../rustmath-graphs" }
+
+[lib]
+name = "rustmath_quivers"
+path = "src/lib.rs"
