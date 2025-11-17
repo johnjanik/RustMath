@@ -82,6 +82,22 @@ impl Integer {
         !self.is_even()
     }
 
+    /// Check if the number is zero
+    pub fn is_zero(&self) -> bool {
+        self.value.is_zero()
+    }
+
+    /// Check if the number is one
+    pub fn is_one(&self) -> bool {
+        self.value == BigInt::one()
+    }
+
+    /// Convert to f64 if within range
+    pub fn to_f64(&self) -> Option<f64> {
+        use num_traits::ToPrimitive;
+        self.value.to_f64()
+    }
+
     /// Get the bit length
     pub fn bit_length(&self) -> u64 {
         self.value.bits()
