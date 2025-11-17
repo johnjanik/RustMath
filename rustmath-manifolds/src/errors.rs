@@ -62,6 +62,7 @@ pub enum ManifoldError {
     #[error("Unsupported operation: {0}")]
     UnsupportedOperation(String),
 
+    // Added to fix compilation errors - Phase 2
     #[error("Invalid dimension: {0}")]
     InvalidDimension(String),
 

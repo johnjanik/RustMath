@@ -476,7 +476,7 @@ Implemented,FULL,sage.quadratic_forms.ternary_qf.TernaryQF,sage.quadratic_forms.
 Implemented,FULL,sage.quadratic_forms.ternary_qf.find_a_ternary_qf_by_level_disc,sage.quadratic_forms.ternary_qf,find_a_ternary_qf_by_level_disc,function,,https://github.com/sagemath/sage/blob/develop/src/sage/quadratic_forms/ternary_qf.py#L2029
 Implemented,FULL,sage.quadratic_forms.ternary_qf.find_all_ternary_qf_by_level_disc,sage.quadratic_forms.ternary_qf,find_all_ternary_qf_by_level_disc,function,,https://github.com/sagemath/sage/blob/develop/src/sage/quadratic_forms/ternary_qf.py#L1992
 Implemented,FULL,sage.quadratic_forms.ternary_qf.possible_automorphisms,sage.quadratic_forms.ternary_qf,possible_automorphisms,attribute,,
-,,sage.quivers,sage.quivers,quivers,module,,
+Implemented,Full,sage.quivers,sage.quivers,quivers,module,,rustmath-quivers
 ,,sage.quivers.algebra,sage.quivers.algebra,algebra,module,,https://github.com/sagemath/sage/blob/develop/src/sage/quivers/algebra.py#L28
 ,,sage.quivers.algebra.PathAlgebra,sage.quivers.algebra,PathAlgebra,class,"P, CombinatorialFreeModule",https://github.com/sagemath/sage/blob/develop/src/sage/quivers/algebra.py#L28
 ,,sage.quivers.algebra_elements,sage.quivers.algebra_elements,algebra_elements,module,,https://github.com/sagemath/sage/blob/develop/src/sage/quivers/algebra_elements.pyx#L23
@@ -491,11 +491,11 @@ Implemented,FULL,sage.quadratic_forms.ternary_qf.possible_automorphisms,sage.qua
 ,,sage.quivers.homspace.QuiverHomSpace,sage.quivers.homspace,QuiverHomSpace,class,Homset,https://github.com/sagemath/sage/blob/develop/src/sage/quivers/homspace.py#L27
 ,,sage.quivers.morphism,sage.quivers.morphism,morphism,module,,https://github.com/sagemath/sage/blob/develop/src/sage/quivers/morphism.py#L25
 ,,sage.quivers.morphism.QuiverRepHom,sage.quivers.morphism,QuiverRepHom,class,CallMorphism,https://github.com/sagemath/sage/blob/develop/src/sage/quivers/morphism.py#L25
-,,sage.quivers.path_semigroup,sage.quivers.path_semigroup,path_semigroup,module,,https://github.com/sagemath/sage/blob/develop/src/sage/quivers/path_semigroup.py#L39
-,,sage.quivers.path_semigroup.PathSemigroup,sage.quivers.path_semigroup,PathSemigroup,class,"Q, UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/quivers/path_semigroup.py#L39
-,,sage.quivers.paths,sage.quivers.paths,paths,module,,https://github.com/sagemath/sage/blob/develop/src/sage/quivers/paths.pyx#L770
+Implemented,Full,sage.quivers.path_semigroup,sage.quivers.path_semigroup,path_semigroup,module,,rustmath-quivers/src/path_semigroup.rs
+Implemented,Full,sage.quivers.path_semigroup.PathSemigroup,sage.quivers.path_semigroup,PathSemigroup,class,"Q, UniqueRepresentation, Parent",rustmath-quivers/src/path_semigroup.rs
+Implemented,Full,sage.quivers.paths,sage.quivers.paths,paths,module,rustmath-quivers/src/path.rs
 ,,sage.quivers.paths.NewQuiverPath,sage.quivers.paths,NewQuiverPath,function,,https://github.com/sagemath/sage/blob/develop/src/sage/quivers/paths.pyx#L770
-,,sage.quivers.paths.QuiverPath,sage.quivers.paths,QuiverPath,class,MonoidElement,https://github.com/sagemath/sage/blob/develop/src/sage/quivers/paths.pyx#L29
+Implemented,Full,sage.quivers.paths.QuiverPath,sage.quivers.paths,QuiverPath,class,MonoidElement,rustmath-quivers/src/path.rs
 ,,sage.quivers.representation,sage.quivers.representation,representation,module,,https://github.com/sagemath/sage/blob/develop/src/sage/quivers/representation.py#L815
 ,,sage.quivers.representation.QuiverRepElement,sage.quivers.representation,QuiverRepElement,class,ModuleElement,https://github.com/sagemath/sage/blob/develop/src/sage/quivers/representation.py#L815
 ,,sage.quivers.representation.QuiverRepFactory,sage.quivers.representation,QuiverRepFactory,class,UniqueFactory,https://github.com/sagemath/sage/blob/develop/src/sage/quivers/representation.py#L459

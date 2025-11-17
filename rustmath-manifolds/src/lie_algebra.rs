@@ -63,16 +63,25 @@ impl LieAlgebra {
     ) -> Result<Self> {
         // Verify structure constants have correct dimensions
         if structure_constants.len() != dimension {
-            return Err(ManifoldError::InvalidDimension("Structure constants dimension mismatch".to_string()));
+            return Err(ManifoldError::InvalidDimension(format!(
+                "Structure constants outer dimension {} does not match Lie algebra dimension {}",
+                structure_constants.len(), dimension
+            )));
         }
 
         for i in 0..dimension {
             if structure_constants[i].len() != dimension {
-                return Err(ManifoldError::InvalidDimension(format!("Structure constants[{}] has wrong size", i)));
+                return Err(ManifoldError::InvalidDimension(format!(
+                    "Structure constants middle dimension {} does not match Lie algebra dimension {}",
+                    structure_constants[i].len(), dimension
+                )));
             }
             for j in 0..dimension {
                 if structure_constants[i][j].len() != dimension {
-                    return Err(ManifoldError::InvalidDimension(format!("Structure constants[{}][{}] has wrong size", i, j)));
+                    return Err(ManifoldError::InvalidDimension(format!(
+                        "Structure constants inner dimension {} does not match Lie algebra dimension {}",
+                        structure_constants[i][j].len(), dimension
+                    )));
                 }
             }
         }

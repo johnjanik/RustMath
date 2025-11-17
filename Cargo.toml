@@ -45,6 +45,7 @@ members = [
     "rustmath-quantumgroups",
     "rustmath-liealgebras",
     "rustmath-lieconformal",
+    "rustmath-quivers",
 ]
 
 [workspace.package]
