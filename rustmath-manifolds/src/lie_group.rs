@@ -130,10 +130,10 @@ impl LieGroup {
         // For now, return a tangent vector with the same components
         // (This is exact for matrix Lie groups in exponential coordinates)
 
-        TangentVector::from_components(
+        TangentVector::new(
             gh,
-            chart,
             v_comps,
+            self.manifold.clone(),
         )
     }
 
@@ -144,14 +144,14 @@ impl LieGroup {
         let h = v.base_point();
         let hg = self.right_translate(h, g)?;
 
-        let chart = self.manifold.default_chart()
+        let _chart = self.manifold.default_chart()
             .ok_or(ManifoldError::NoChart)?;
         let v_comps = v.components().to_vec();
 
-        TangentVector::from_components(
+        TangentVector::new(
             hg,
-            chart,
             v_comps,
+            self.manifold.clone(),
         )
     }
 

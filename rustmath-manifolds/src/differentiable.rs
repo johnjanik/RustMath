@@ -117,16 +117,18 @@ impl DifferentiableManifold {
 
     /// Create a scalar field on this manifold
     pub fn scalar_field(&self, name: impl Into<String>) -> ScalarField {
-        ScalarField::new(name, self.dimension())
+        ScalarField::named(Arc::new(self.clone()), name)
     }
 
     /// Create a scalar field with a description
     pub fn scalar_field_with_description(
         &self,
         name: impl Into<String>,
-        description: impl Into<String>,
+        _description: impl Into<String>,
     ) -> ScalarField {
-        ScalarField::with_description(name, self.dimension(), description)
+        // Note: ScalarFieldEnhanced doesn't currently support description field
+        // Creating a named field as a workaround
+        ScalarField::named(Arc::new(self.clone()), name)
     }
 }
 

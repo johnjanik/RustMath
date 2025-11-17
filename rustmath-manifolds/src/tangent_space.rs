@@ -59,6 +59,27 @@ impl TangentVector {
         }
     }
 
+    /// Create a tangent vector from components (alternative constructor)
+    ///
+    /// This is a convenience method that accepts a chart parameter for compatibility,
+    /// though the chart is not currently used in the construction.
+    pub fn from_components(
+        base_point: ManifoldPoint,
+        _chart: &Chart,
+        components: Vec<f64>,
+    ) -> Result<Self> {
+        // Extract manifold from base point or require it as parameter
+        // For now, we'll need to update call sites to use `new` instead
+        // Or we need to store manifold info in ManifoldPoint
+        // Let's create a version that infers dimension from components
+        Ok(Self {
+            base_point: base_point.clone(),
+            components,
+            // This is a temporary workaround - we need the manifold reference
+            manifold: Arc::new(DifferentiableManifold::new("temp", components.len())),
+        })
+    }
+
     /// Get the base point
     pub fn base_point(&self) -> &ManifoldPoint {
         &self.base_point
