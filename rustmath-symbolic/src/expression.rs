@@ -403,6 +403,38 @@ impl From<f64> for Expr {
         } else {
             // This might fail if denominator is zero, but scale is never zero
             Expr::Rational(Rational::new(numerator, scale).unwrap())
+        // Handle special cases
+        if value.is_nan() || value.is_infinite() {
+            // Fall back to a symbol or panic - for now, use 0
+            return Expr::Integer(Integer::from(0));
+        }
+
+        // For integers or simple decimals, convert directly
+        if value.fract() == 0.0 && value.abs() < (i64::MAX as f64) {
+            return Expr::Integer(Integer::from(value as i64));
+        }
+
+        // Convert f64 to rational using decimal approximation
+        // Find power of 10 to make this an integer
+        let mut scaled = value.abs();
+        let mut denominator = 1i64;
+        let precision = 10; // decimal places
+
+        for _ in 0..precision {
+            if scaled.fract() == 0.0 {
+                break;
+            }
+            scaled *= 10.0;
+            denominator *= 10;
+        }
+
+        let numerator = scaled.round() as i64;
+        let numerator = if value < 0.0 { -numerator } else { numerator };
+
+        // Create rational and simplify
+        match Rational::new(numerator, denominator) {
+            Ok(r) => Expr::Rational(r),
+            Err(_) => Expr::Integer(Integer::from(0)), // Fallback
         }
     }
 }

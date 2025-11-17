@@ -2,6 +2,10 @@
 //!
 //! This module defines the trait hierarchy that mirrors SageMath's manifold class structure.
 //! The design uses trait composition instead of class inheritance to achieve similar flexibility.
+//!
+//! NOTE: Parent and UniqueRepresentation have been removed from the base traits
+//! to ensure object safety (allow usage as dyn Trait). If Parent functionality
+//! is needed for specific implementations, it can be added separately.
 
 use crate::chart::Chart;
 use crate::point::ManifoldPoint;
@@ -15,9 +19,9 @@ use std::hash::Hash;
 
 /// Base trait for any subset of a manifold
 ///
-/// NOTE: This trait no longer requires Parent or UniqueRepresentation to enable
-/// object safety (dyn compatibility). This allows Arc<dyn ManifoldSubsetTrait>
-/// and Arc<dyn DifferentiableManifoldTrait> to work correctly.
+/// This trait is object-safe to allow usage as `Arc<dyn ManifoldSubsetTrait>`.
+/// If you need Parent or UniqueRepresentation functionality, implement those
+/// traits separately on your concrete types.
 pub trait ManifoldSubsetTrait {
     /// Dimension of the ambient space
     fn dimension(&self) -> usize;
@@ -71,7 +75,7 @@ pub trait ParallelizableManifoldTrait: DifferentiableManifoldTrait {
 
 /// Algebra of scalar fields C^∞(M)
 ///
-/// NOTE: Parent requirement removed for object safety (dyn compatibility)
+/// Object-safe trait (Parent removed for trait object compatibility).
 pub trait ScalarFieldAlgebraTrait {
     /// Get the underlying manifold
     fn manifold(&self) -> Arc<dyn DifferentiableManifoldTrait>;
@@ -88,7 +92,7 @@ pub trait DiffScalarFieldAlgebraTrait: ScalarFieldAlgebraTrait {
 
 /// Module of vector fields over C^∞(M)
 ///
-/// NOTE: Parent requirement removed for object safety (dyn compatibility)
+/// Object-safe trait (Parent removed for trait object compatibility).
 pub trait VectorFieldModuleTrait {
     /// Get the underlying manifold
     fn manifold(&self) -> Arc<dyn DifferentiableManifoldTrait>;
@@ -105,7 +109,7 @@ pub trait VectorFieldFreeModuleTrait: VectorFieldModuleTrait {
 
 /// Tensor field module T^(p,q)(M)
 ///
-/// NOTE: Parent requirement removed for object safety (dyn compatibility)
+/// Object-safe trait (Parent removed for trait object compatibility).
 pub trait TensorFieldModuleTrait {
     /// Contravariant rank (p)
     fn contravariant_rank(&self) -> usize;
