@@ -13,6 +13,7 @@ use crate::diff_form::DiffForm;
 use crate::differentiable::DifferentiableManifold;
 use crate::scalar_field::ScalarFieldEnhanced as ScalarField;
 use crate::riemannian::RiemannianMetric;
+use rustmath_core::NumericConversion;
 use rustmath_symbolic::Expr;
 use rustmath_reals::Real;
 use std::sync::Arc;

@@ -5,6 +5,7 @@
 
 use crate::chart::Chart;
 use crate::errors::{ManifoldError, Result};
+use rustmath_core::NumericConversion;
 use rustmath_matrix::Matrix;
 use rustmath_symbolic::{Expr, Symbol, Substituter, ExprMutator};
 use std::collections::HashMap;

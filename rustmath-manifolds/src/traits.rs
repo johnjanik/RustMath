@@ -6,7 +6,6 @@
 use crate::chart::Chart;
 use crate::point::ManifoldPoint;
 use crate::errors::Result;
-use rustmath_core::{Parent, UniqueRepresentation};
 use std::sync::Arc;
 use std::hash::Hash;
 
@@ -15,7 +14,11 @@ use std::hash::Hash;
 // ============================================================================
 
 /// Base trait for any subset of a manifold
-pub trait ManifoldSubsetTrait: Parent<Element = ManifoldPoint> + UniqueRepresentation {
+///
+/// NOTE: This trait no longer requires Parent or UniqueRepresentation to enable
+/// object safety (dyn compatibility). This allows Arc<dyn ManifoldSubsetTrait>
+/// and Arc<dyn DifferentiableManifoldTrait> to work correctly.
+pub trait ManifoldSubsetTrait {
     /// Dimension of the ambient space
     fn dimension(&self) -> usize;
 
@@ -67,7 +70,9 @@ pub trait ParallelizableManifoldTrait: DifferentiableManifoldTrait {
 // ============================================================================
 
 /// Algebra of scalar fields C^∞(M)
-pub trait ScalarFieldAlgebraTrait: Parent {
+///
+/// NOTE: Parent requirement removed for object safety (dyn compatibility)
+pub trait ScalarFieldAlgebraTrait {
     /// Get the underlying manifold
     fn manifold(&self) -> Arc<dyn DifferentiableManifoldTrait>;
 }
@@ -82,7 +87,9 @@ pub trait DiffScalarFieldAlgebraTrait: ScalarFieldAlgebraTrait {
 // ============================================================================
 
 /// Module of vector fields over C^∞(M)
-pub trait VectorFieldModuleTrait: Parent {
+///
+/// NOTE: Parent requirement removed for object safety (dyn compatibility)
+pub trait VectorFieldModuleTrait {
     /// Get the underlying manifold
     fn manifold(&self) -> Arc<dyn DifferentiableManifoldTrait>;
 
@@ -97,7 +104,9 @@ pub trait VectorFieldFreeModuleTrait: VectorFieldModuleTrait {
 }
 
 /// Tensor field module T^(p,q)(M)
-pub trait TensorFieldModuleTrait: Parent {
+///
+/// NOTE: Parent requirement removed for object safety (dyn compatibility)
+pub trait TensorFieldModuleTrait {
     /// Contravariant rank (p)
     fn contravariant_rank(&self) -> usize;
 

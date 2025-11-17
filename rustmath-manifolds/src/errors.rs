@@ -61,6 +61,22 @@ pub enum ManifoldError {
 
     #[error("Unsupported operation: {0}")]
     UnsupportedOperation(String),
+
+    // Added to fix compilation errors - Phase 2
+    #[error("Invalid dimension: {0}")]
+    InvalidDimension(String),
+
+    #[error("Validation error: {0}")]
+    ValidationError(String),
+
+    #[error("Computation error: {0}")]
+    ComputationError(String),
+
+    #[error("Invalid structure: {0}")]
+    InvalidStructure(String),
+
+    #[error("Invalid point: {0}")]
+    InvalidPoint(String),
 }
 
 pub type Result<T> = std::result::Result<T, ManifoldError>;
