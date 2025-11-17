@@ -2,6 +2,7 @@
 
 use crate::errors::{ManifoldError, Result};
 use crate::point::ManifoldPoint;
+use rustmath_symbolic::Symbol;
 use std::fmt;
 
 /// A coordinate function that maps points to coordinates
@@ -108,6 +109,31 @@ impl Chart {
                 "Coordinate index {} out of bounds for {}-dimensional chart",
                 index, self.dimension
             )))
+    }
+
+    /// Get a coordinate as a symbolic variable
+    ///
+    /// This creates a Symbol that can be used in symbolic expressions.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index of the coordinate (0-based)
+    ///
+    /// # Returns
+    ///
+    /// A Symbol representing the coordinate, or an error if the index is out of bounds
+    pub fn coordinate_symbol(&self, index: usize) -> Symbol {
+        let name = self.coordinate_names.get(index)
+            .map(|s| s.as_str())
+            .unwrap_or("x");
+        Symbol::new(name)
+    }
+
+    /// Get all coordinate symbols
+    pub fn coordinate_symbols(&self) -> Vec<Symbol> {
+        self.coordinate_names.iter()
+            .map(|name| Symbol::new(name))
+            .collect()
     }
 
     /// Get the description

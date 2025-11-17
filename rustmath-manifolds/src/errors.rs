@@ -25,6 +25,27 @@ pub enum ManifoldError {
 
     #[error("Incompatible manifolds: {0}")]
     IncompatibleManifolds(String),
+
+    #[error("No components defined in this chart")]
+    NoComponentsInChart,
+
+    #[error("No expression defined in this chart")]
+    NoExpressionInChart,
+
+    #[error("Invalid index")]
+    InvalidIndex,
+
+    #[error("Different manifolds")]
+    DifferentManifolds,
+
+    #[error("Different base points")]
+    DifferentBasePoints,
+
+    #[error("Invalid tensor rank")]
+    InvalidTensorRank,
+
+    #[error("Invalid operation: {0}")]
+    InvalidOperation(String),
 }
 
 pub type Result<T> = std::result::Result<T, ManifoldError>;
