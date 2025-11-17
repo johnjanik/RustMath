@@ -11,7 +11,7 @@ use crate::vector_field::VectorField;
 use crate::scalar_field::ScalarFieldEnhanced as ScalarField;
 use crate::chart::Chart;
 use crate::tangent_space::TangentVector;
-use rustmath_symbolic::expr::Expr;
+use rustmath_symbolic::Expr;
 use rustmath_matrix::Matrix;
 use rustmath_rationals::Rational;
 use std::sync::Arc;

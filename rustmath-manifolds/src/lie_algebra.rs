@@ -12,7 +12,7 @@ use crate::point::ManifoldPoint;
 use crate::chart::Chart;
 use rustmath_matrix::Matrix;
 use rustmath_rationals::Rational;
-use rustmath_symbolic::expr::Expr;
+use rustmath_symbolic::Expr;
 use std::sync::Arc;
 use std::collections::HashMap;
 

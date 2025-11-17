@@ -34,7 +34,6 @@
 use crate::errors::{ManifoldError, Result};
 use crate::differentiable::DifferentiableManifold;
 use crate::riemannian::RiemannianMetric;
-use crate::vector_bundle::VectorBundle;
 use crate::tensor_field::TensorField;
 use rustmath_symbolic::Expr;
 use rustmath_complex::Complex;

@@ -13,7 +13,7 @@ use crate::differentiable::DifferentiableManifold;
 use crate::integration::{OrientedManifold, IntegrationOnManifolds};
 use crate::riemannian::RiemannianMetric;
 use crate::tensor_field::TensorField;
-use crate::vector_bundle::TopologicalVectorBundle;
+// Note: TopologicalVectorBundle has complex generics, so we'll use simpler approach
 use rustmath_symbolic::Expr;
 use std::sync::Arc;
 use std::collections::HashMap;
@@ -298,8 +298,10 @@ impl EulerCharacteristic {
 /// They live in the even-degree cohomology groups.
 #[derive(Clone)]
 pub struct ChernClass {
-    /// The vector bundle
-    bundle: Arc<TopologicalVectorBundle>,
+    /// The base manifold
+    manifold: Arc<DifferentiableManifold>,
+    /// Rank of the vector bundle
+    rank: usize,
     /// Degree (index i in c_i)
     degree: usize,
     /// Representative differential form
@@ -307,10 +309,11 @@ pub struct ChernClass {
 }
 
 impl ChernClass {
-    /// Create the i-th Chern class
-    pub fn new(bundle: Arc<TopologicalVectorBundle>, degree: usize) -> Self {
+    /// Create the i-th Chern class for a vector bundle
+    pub fn new(manifold: Arc<DifferentiableManifold>, rank: usize, degree: usize) -> Self {
         Self {
-            bundle,
+            manifold,
+            rank,
             degree,
             form: None,
         }
@@ -375,14 +378,7 @@ impl ChernClass {
             });
         }
 
-        // Create a trivial bundle for now
-        let bundle = Arc::new(TopologicalVectorBundle::new(
-            manifold.clone(),
-            1, // rank 1 for line bundle
-            "trivial",
-        ));
-
-        let mut chern = Self::new(bundle, 1);
+        let mut chern = Self::new(manifold, 1 /* line bundle rank */, 1 /* first chern class */);
         chern.form = Some(curvature);
         Ok(chern)
     }
@@ -394,8 +390,10 @@ impl ChernClass {
 /// They live in H^{4i}(M).
 #[derive(Clone)]
 pub struct PontryaginClass {
-    /// The vector bundle
-    bundle: Arc<TopologicalVectorBundle>,
+    /// The base manifold
+    manifold: Arc<DifferentiableManifold>,
+    /// Rank of the vector bundle
+    rank: usize,
     /// Degree (index i in p_i)
     degree: usize,
     /// Representative differential form
@@ -404,9 +402,10 @@ pub struct PontryaginClass {
 
 impl PontryaginClass {
     /// Create the i-th Pontryagin class
-    pub fn new(bundle: Arc<TopologicalVectorBundle>, degree: usize) -> Self {
+    pub fn new(manifold: Arc<DifferentiableManifold>, rank: usize, degree: usize) -> Self {
         Self {
-            bundle,
+            manifold,
+            rank,
             degree,
             form: None,
         }
@@ -464,13 +463,7 @@ impl PontryaginClass {
             });
         }
 
-        let bundle = Arc::new(TopologicalVectorBundle::new(
-            manifold.clone(),
-            1,
-            "trivial",
-        ));
-
-        let mut pont = Self::new(bundle, 1);
+        let mut pont = Self::new(manifold, 1, 1);
         pont.form = Some(curvature);
         Ok(pont)
     }
@@ -483,17 +476,20 @@ impl PontryaginClass {
 /// Euler characteristic when the bundle is the tangent bundle.
 #[derive(Clone)]
 pub struct EulerClass {
-    /// The vector bundle
-    bundle: Arc<TopologicalVectorBundle>,
+    /// The base manifold
+    manifold: Arc<DifferentiableManifold>,
+    /// Rank of the vector bundle
+    rank: usize,
     /// Representative differential form
     form: Option<DiffForm>,
 }
 
 impl EulerClass {
     /// Create the Euler class
-    pub fn new(bundle: Arc<TopologicalVectorBundle>) -> Self {
+    pub fn new(manifold: Arc<DifferentiableManifold>, rank: usize) -> Self {
         Self {
-            bundle,
+            manifold,
+            rank,
             form: None,
         }
     }
@@ -505,10 +501,9 @@ impl EulerClass {
 
     /// Set the representative form
     pub fn set_form(&mut self, form: DiffForm) -> Result<()> {
-        let rank = self.bundle.rank();
-        if form.degree() != rank {
+        if form.degree() != self.rank {
             return Err(ManifoldError::InvalidDegree {
-                expected: rank,
+                expected: self.rank,
                 actual: form.degree(),
             });
         }
@@ -546,14 +541,7 @@ impl EulerClass {
         // This is a placeholder - we need the curvature 2-form
         let n = manifold.dimension();
 
-        // Create a trivial bundle representing TM
-        let tangent_bundle = Arc::new(TopologicalVectorBundle::new(
-            manifold.clone(),
-            n,
-            "tangent_bundle",
-        ));
-
-        let mut euler = Self::new(tangent_bundle);
+        let euler = Self::new(manifold.clone(), n);
 
         // In practice, we'd compute this from the Riemann tensor
         // For now, this is a placeholder
@@ -716,14 +704,9 @@ mod tests {
     #[test]
     fn test_chern_class_degree() {
         let euclidean_4d = Arc::new(EuclideanSpace::new(4));
-        let bundle = Arc::new(TopologicalVectorBundle::new(
-            euclidean_4d.clone(),
-            2,
-            "complex_bundle",
-        ));
 
-        let c1 = ChernClass::new(bundle.clone(), 1);
-        let c2 = ChernClass::new(bundle.clone(), 2);
+        let c1 = ChernClass::new(euclidean_4d.clone(), 2 /* rank */, 1 /* degree */);
+        let c2 = ChernClass::new(euclidean_4d.clone(), 2, 2);
 
         assert_eq!(c1.degree(), 1);
         assert_eq!(c2.degree(), 2);
@@ -732,26 +715,16 @@ mod tests {
     #[test]
     fn test_pontryagin_class_creation() {
         let euclidean_4d = Arc::new(EuclideanSpace::new(4));
-        let bundle = Arc::new(TopologicalVectorBundle::new(
-            euclidean_4d.clone(),
-            2,
-            "real_bundle",
-        ));
 
-        let p1 = PontryaginClass::new(bundle.clone(), 1);
+        let p1 = PontryaginClass::new(euclidean_4d.clone(), 2 /* rank */, 1 /* degree */);
         assert_eq!(p1.degree(), 1);
     }
 
     #[test]
     fn test_euler_class_creation() {
         let euclidean_3d = Arc::new(EuclideanSpace::new(3));
-        let bundle = Arc::new(TopologicalVectorBundle::new(
-            euclidean_3d.clone(),
-            3,
-            "tangent_bundle",
-        ));
 
-        let euler = EulerClass::new(bundle);
+        let euler = EulerClass::new(euclidean_3d.clone(), 3 /* rank */);
         assert!(euler.form().is_none());
     }
 }

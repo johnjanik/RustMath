@@ -7,7 +7,7 @@
 //! - Module operations
 
 use crate::errors::{ManifoldError, Result};
-use crate::scalar_field::ScalarField;
+use crate::scalar_field::ScalarFieldEnhanced as ScalarField;
 use crate::chart::Chart;
 use crate::point::ManifoldPoint;
 use crate::differentiable::DifferentiableManifold;
@@ -219,6 +219,15 @@ impl VectorField {
         let mut field = VectorField::from_components(manifold, chart, components)?;
         field.set_name(format!("d/d{}", chart.coordinate_names()[index]));
         Ok(field)
+    }
+}
+
+// PartialEq implementation
+impl PartialEq for VectorField {
+    fn eq(&self, other: &Self) -> bool {
+        // Two vector fields are equal if they have the same components in all charts
+        // Note: This is a structural equality, not mathematical equality
+        self.chart_components == other.chart_components
     }
 }
 

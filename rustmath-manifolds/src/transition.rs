@@ -34,9 +34,10 @@ pub struct TransitionFunction {
     coordinate_maps: Vec<Expr>,
     /// Jacobian matrix: J^i_j = ∂y^i/∂x^j
     /// Computed lazily and cached
-    jacobian: Option<Matrix<Expr>>,
+    /// Using Vec<Vec<Expr>> since Expr doesn't implement Ring trait
+    jacobian: Option<Vec<Vec<Expr>>>,
     /// Inverse Jacobian matrix (if computed)
-    inverse_jacobian: Option<Matrix<Expr>>,
+    inverse_jacobian: Option<Vec<Vec<Expr>>>,
 }
 
 impl TransitionFunction {
@@ -119,7 +120,7 @@ impl TransitionFunction {
     /// # Returns
     ///
     /// A symbolic matrix where entry (i,j) is ∂y^i/∂x^j
-    pub fn compute_jacobian(&mut self, source_symbols: &[Symbol]) -> Result<&Matrix<Expr>> {
+    pub fn compute_jacobian(&mut self, source_symbols: &[Symbol]) -> Result<&Vec<Vec<Expr>>> {
         if source_symbols.len() != self.dimension() {
             return Err(ManifoldError::DimensionMismatch {
                 expected: self.dimension(),
@@ -132,25 +133,24 @@ impl TransitionFunction {
         }
 
         let n = self.dimension();
-        let mut jacobian_entries = Vec::with_capacity(n * n);
+        let mut jacobian = Vec::with_capacity(n);
 
         // Compute J^i_j = ∂(y^i)/∂(x^j)
         for i in 0..n {
+            let mut row = Vec::with_capacity(n);
             for j in 0..n {
                 let derivative = self.coordinate_maps[i].differentiate(&source_symbols[j]);
-                jacobian_entries.push(derivative);
+                row.push(derivative);
             }
+            jacobian.push(row);
         }
-
-        let jacobian = Matrix::from_vec(n, n, jacobian_entries)
-            .map_err(|e| ManifoldError::ComputationError(format!("Failed to create Jacobian matrix: {:?}", e)))?;
 
         self.jacobian = Some(jacobian);
         Ok(self.jacobian.as_ref().unwrap())
     }
 
     /// Get the Jacobian matrix (must be computed first)
-    pub fn jacobian(&self) -> Option<&Matrix<Expr>> {
+    pub fn jacobian(&self) -> Option<&Vec<Vec<Expr>>> {
         self.jacobian.as_ref()
     }
 
@@ -246,8 +246,7 @@ impl TransitionFunction {
         for i in 0..n {
             let mut component = Expr::from(0);
             for j in 0..n {
-                let j_ij = jacobian.get(i, j)
-                    .map_err(|e| ManifoldError::ComputationError(format!("Jacobian access error: {:?}", e)))?;
+                let j_ij = &jacobian[i][j];
                 component = component + j_ij.clone() * vector_components[j].clone();
             }
             result.push(component);
@@ -259,14 +258,46 @@ impl TransitionFunction {
     /// Compute the determinant of the Jacobian (useful for integration)
     ///
     /// Returns det(J) where J is the Jacobian matrix.
+    /// Currently only supports dimensions 1, 2, and 3.
     pub fn jacobian_determinant(&mut self, source_symbols: &[Symbol]) -> Result<Expr> {
         self.compute_jacobian(source_symbols)?;
         let jacobian = self.jacobian.as_ref().unwrap();
+        let n = jacobian.len();
 
-        // For small dimensions, we can compute determinant symbolically
-        // For larger dimensions, this becomes very expensive
-        jacobian.det()
-            .map_err(|e| ManifoldError::ComputationError(format!("Failed to compute Jacobian determinant: {:?}", e)))
+        // Compute determinant for small dimensions
+        match n {
+            1 => Ok(jacobian[0][0].clone()),
+            2 => {
+                // det = a*d - b*c
+                let a = &jacobian[0][0];
+                let b = &jacobian[0][1];
+                let c = &jacobian[1][0];
+                let d = &jacobian[1][1];
+                Ok(a.clone() * d.clone() - b.clone() * c.clone())
+            }
+            3 => {
+                // Use Sarrus' rule for 3x3
+                let a = &jacobian[0][0]; let b = &jacobian[0][1]; let c = &jacobian[0][2];
+                let d = &jacobian[1][0]; let e = &jacobian[1][1]; let f = &jacobian[1][2];
+                let g = &jacobian[2][0]; let h = &jacobian[2][1]; let i = &jacobian[2][2];
+
+                let term1 = a.clone() * e.clone() * i.clone();
+                let term2 = b.clone() * f.clone() * g.clone();
+                let term3 = c.clone() * d.clone() * h.clone();
+                let term4 = c.clone() * e.clone() * g.clone();
+                let term5 = b.clone() * d.clone() * i.clone();
+                let term6 = a.clone() * f.clone() * h.clone();
+
+                Ok(term1 + term2 + term3 - term4 - term5 - term6)
+            }
+            _ => {
+                // For dimensions > 3, computing symbolic determinant is too expensive
+                // This is documented in DEPENDENCIES_TODO.md
+                Err(ManifoldError::UnsupportedOperation(
+                    format!("Symbolic Jacobian determinant not supported for dimension {}", n)
+                ))
+            }
+        }
     }
 }
 

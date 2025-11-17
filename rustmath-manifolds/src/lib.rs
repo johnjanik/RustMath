@@ -52,6 +52,7 @@ pub mod integration;
 pub mod topology;
 pub mod maps;
 pub mod symmetries;
+pub mod catalog;
 
 // Phase 5: Advanced geometric structures
 pub mod complex_manifold;
@@ -115,6 +116,11 @@ pub use maps::{
 };
 pub use symmetries::{
     KillingVectorField, ConformallKillingVectorField, IsometryGroup,
+};
+pub use catalog::{
+    Minkowski, Schwarzschild, Kerr,
+    RealProjectiveSpace, ComplexProjectiveSpace, Grassmannian,
+    SpecialOrthogonalGroup, SpecialUnitaryGroup,
 };
 
 // Phase 5: Advanced geometric structures

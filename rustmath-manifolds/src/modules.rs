@@ -525,7 +525,7 @@ impl fmt::Debug for TensorFieldModule {
 
 impl fmt::Display for TensorFieldModule {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "T^({},{})({}})",
+        write!(f, "T^({},{})({})",
             self.contravariant_rank,
             self.covariant_rank,
             self.manifold.name())
@@ -554,7 +554,7 @@ impl Parent for TensorFieldModule {
     }
 
     fn name(&self) -> String {
-        format!("T^({},{})({}})",
+        format!("T^({},{})({})",
             self.contravariant_rank,
             self.covariant_rank,
             self.manifold.name())

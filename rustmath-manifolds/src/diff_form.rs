@@ -231,6 +231,15 @@ impl DiffForm {
     }
 }
 
+// PartialEq implementation
+impl PartialEq for DiffForm {
+    fn eq(&self, other: &Self) -> bool {
+        // Two differential forms are equal if they have the same degree and tensor components
+        // Note: This is a structural equality, not mathematical equality
+        self.degree == other.degree && self.tensor == other.tensor
+    }
+}
+
 // Arithmetic operations
 
 impl Add for DiffForm {

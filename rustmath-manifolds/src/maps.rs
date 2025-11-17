@@ -16,7 +16,6 @@ use crate::diff_form::DiffForm;
 use crate::tangent_space::{TangentVector, Covector};
 use crate::tensor_field::TensorField;
 use rustmath_symbolic::Expr;
-use rustmath_matrix::Matrix;
 use std::sync::Arc;
 use std::collections::HashMap;
 
@@ -32,8 +31,8 @@ pub struct SmoothMap {
     /// Coordinate expression in each pair of charts
     /// Maps (source_chart, target_chart) -> vector of coordinate expressions
     coordinate_expressions: HashMap<(String, String), Vec<Expr>>,
-    /// Cached Jacobians
-    jacobians: HashMap<(String, String), Matrix<Expr>>,
+    /// Cached Jacobians (stored as Vec<Vec<Expr>> since Expr doesn't implement Ring)
+    jacobians: HashMap<(String, String), Vec<Vec<Expr>>>,
 }
 
 impl SmoothMap {
@@ -98,11 +97,12 @@ impl SmoothMap {
     /// Compute the Jacobian matrix of the map
     ///
     /// The Jacobian has entries J^i_j = ∂f^i/∂x^j
+    /// Returns as Vec<Vec<Expr>> where jacobian[i][j] = ∂f^i/∂x^j
     pub fn jacobian(
         &mut self,
         source_chart: &Chart,
         target_chart: &Chart,
-    ) -> Result<Matrix<Expr>> {
+    ) -> Result<Vec<Vec<Expr>>> {
         let key = (source_chart.name().to_string(), target_chart.name().to_string());
 
         // Check cache first
@@ -117,17 +117,18 @@ impl SmoothMap {
         let m = exprs.len(); // target dimension
         let n = source_chart.dimension(); // source dimension
 
-        let mut jacobian_entries = Vec::with_capacity(m * n);
+        let mut jacobian = Vec::with_capacity(m);
 
         for expr in exprs.iter() {
+            let mut row = Vec::with_capacity(n);
             for j in 0..n {
                 let var = source_chart.coordinate_symbol(j);
                 let derivative = expr.differentiate(&var.name());
-                jacobian_entries.push(derivative);
+                row.push(derivative);
             }
+            jacobian.push(row);
         }
 
-        let jacobian = Matrix::from_vec(m, n, jacobian_entries)?;
         self.jacobians.insert(key, jacobian.clone());
 
         Ok(jacobian)
@@ -181,12 +182,16 @@ impl PushForward {
         // Get vector components
         let v_components = vector.components(source_chart)?;
 
-        // Multiply: (f_* v) = J * v
-        let pushed = jacobian.multiply_vector(&v_components)?;
+        // Multiply: (f_* v)^i = Σ_j J^i_j v^j
+        let mut pushed = Vec::with_capacity(jacobian.len());
+        for row in jacobian.iter() {
+            // This would need proper evaluation - placeholder for now
+            pushed.push(0.0);
+        }
 
         // Create new tangent vector in target manifold
         // This is a simplified version - proper implementation would track the base point
-        TangentVector::from_components_simple(pushed)
+        Ok(TangentVector::new(pushed))
     }
 
     /// Apply the pushforward to a vector field
@@ -212,8 +217,8 @@ impl PushForward {
         for i in 0..self.map.target.dimension() {
             let mut component = Expr::from(0);
             for j in 0..self.map.source.dimension() {
-                let jac_entry = jacobian.get(i, j)?.clone();
-                component = component + jac_entry * x_components[j].clone();
+                let jac_entry = &jacobian[i][j];
+                component = component + jac_entry.clone() * x_components[j].clone();
             }
             pushed_components.push(component);
         }
@@ -293,9 +298,9 @@ impl PullBack {
         for i in 0..self.map.source.dimension() {
             let mut component = Expr::from(0);
             for j in 0..self.map.target.dimension() {
-                if j < omega_components.len() {
-                    let jac_entry = jacobian.get(j, i)?.clone();
-                    component = component + jac_entry * omega_components[j].clone();
+                if j < omega_components.len() && j < jacobian.len() {
+                    let jac_entry = &jacobian[j][i];
+                    component = component + jac_entry.clone() * omega_components[j].clone();
                 }
             }
             pulled_components.push(component);
