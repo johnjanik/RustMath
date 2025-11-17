@@ -48,6 +48,10 @@ pub mod lie_group;
 pub mod lie_algebra;
 pub mod fiber_bundles;
 pub mod symplectic;
+pub mod integration;
+pub mod topology;
+pub mod maps;
+pub mod symmetries;
 
 // Phase 5: Advanced geometric structures
 pub mod complex_manifold;
@@ -98,6 +102,19 @@ pub use fiber_bundles::{
 };
 pub use symplectic::{
     SymplecticManifold, SymplecticForm, HamiltonianVectorField, PoissonBracket,
+};
+pub use integration::{
+    IntegrationOnManifolds, VolumeForm, OrientedManifold, Orientation, StokesTheorem,
+};
+pub use topology::{
+    DeRhamCohomology, BettiNumber, EulerCharacteristic,
+    ChernClass, PontryaginClass, EulerClass,
+};
+pub use maps::{
+    SmoothMap, PushForward, PullBack, Immersion, Submersion, Embedding, Diffeomorphism,
+};
+pub use symmetries::{
+    KillingVectorField, ConformallKillingVectorField, IsometryGroup,
 };
 
 // Phase 5: Advanced geometric structures

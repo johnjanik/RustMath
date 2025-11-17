@@ -140,6 +140,16 @@ impl Chart {
     pub fn description(&self) -> Option<&str> {
         self.description.as_deref()
     }
+
+    /// Get the domain bounds for integration
+    ///
+    /// Returns default bounds for each coordinate. For specialized charts,
+    /// this should be overridden with appropriate bounds.
+    /// Default: (-10.0, 10.0) for each coordinate
+    pub fn get_domain_bounds(&self) -> Result<Vec<(f64, f64)>> {
+        // Default bounds - in practice, this should be customized per chart
+        Ok(vec![(-10.0, 10.0); self.dimension])
+    }
 }
 
 impl fmt::Debug for Chart {
