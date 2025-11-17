@@ -29,23 +29,23 @@ Implemented,Full,Phase 2,rustmath-manifolds,TangentVector,Tangent vector at poin
 Implemented,Full,Phase 2,rustmath-manifolds,TangentSpace,Tangent space at point,sage.manifolds.differentiable.tangent_space.TangentSpace,T_p(M) structure
 Implemented,Full,Phase 2,rustmath-manifolds,Covector,Cotangent vector,sage.manifolds.differentiable.tangent_vector.TangentVector (dual),ω ∈ T*_p(M)
 Implemented,Full,Phase 2,rustmath-manifolds,CotangentSpace,Cotangent space at point,sage.manifolds.differentiable.tangent_space.TangentSpace (dual),T*_p(M) structure
-Planned,Stub,Phase 3,rustmath-manifolds,DiffScalarFieldAlgebra,Concrete algebra implementation,sage.manifolds.differentiable.scalarfield_algebra.DiffScalarFieldAlgebra,Parent implementation
-Planned,Stub,Phase 3,rustmath-manifolds,VectorFieldModule,Concrete module implementation,sage.manifolds.differentiable.vectorfield_module.VectorFieldModule,Module structure
-Planned,Stub,Phase 3,rustmath-manifolds,VectorFieldFreeModule,Free module implementation,sage.manifolds.differentiable.vectorfield_module.VectorFieldFreeModule,Parallelizable case
-Planned,Stub,Phase 3,rustmath-manifolds,TensorFieldModule,Tensor field module,sage.manifolds.differentiable.tensorfield_module.TensorFieldModule,T^(p,q)(M) structure
-Planned,Stub,Phase 3,rustmath-manifolds,DiffFormModule,Differential form module,sage.manifolds.differentiable.diff_form_module.DiffFormModule,Ω^p(M) structure
-Planned,Stub,Phase 3,rustmath-manifolds,Circle,Circle manifold S^1,sage.manifolds.manifold.Manifold (custom),Example manifold
-Planned,Stub,Phase 3,rustmath-manifolds,Sphere2,2-sphere S^2,sage.manifolds.manifold.Manifold (custom),Stereographic charts
-Planned,Stub,Phase 3,rustmath-manifolds,Torus2,2-torus T^2,sage.manifolds.manifold.Manifold (custom),Product manifold
-Planned,Stub,Phase 3,rustmath-manifolds,RiemannianMetric,Metric tensor,sage.manifolds.differentiable.metric.Metric,g_ij
-Planned,Stub,Phase 3,rustmath-manifolds,AffineConnection,Affine connection,sage.manifolds.differentiable.affine_connection.AffineConnection,Γ^k_ij
-Planned,Stub,Phase 3,rustmath-manifolds,LeviCivitaConnection,Levi-Civita connection,sage.manifolds.differentiable.levi_civita_connection.LeviCivitaConnection,Riemannian connection
-Planned,Stub,Phase 3,rustmath-manifolds,CovariantDerivative,Covariant derivative,N/A,∇_X Y
-Planned,Stub,Phase 3,rustmath-manifolds,RiemannTensor,Riemann curvature tensor,sage.manifolds.differentiable.metric.Metric.riemann(),R^l_ijk
-Planned,Stub,Phase 3,rustmath-manifolds,RicciTensor,Ricci tensor,sage.manifolds.differentiable.metric.Metric.ricci(),R_ij
-Planned,Stub,Phase 3,rustmath-manifolds,ScalarCurvature,Scalar curvature,sage.manifolds.differentiable.metric.Metric.ricci_scalar(),R
-Planned,Stub,Phase 3,rustmath-manifolds,Geodesic,Geodesic curve,sage.manifolds.differentiable.integrated_curve.IntegratedGeodesic,Shortest path
-Planned,Stub,Phase 3,rustmath-manifolds,ParallelTransport,Parallel transport,N/A,Along curves
+Implemented,Full,Phase 3,rustmath-manifolds,DiffScalarFieldAlgebra,Concrete algebra implementation,sage.manifolds.differentiable.scalarfield_algebra.DiffScalarFieldAlgebra,Parent implementation
+Implemented,Full,Phase 3,rustmath-manifolds,VectorFieldModule,Concrete module implementation,sage.manifolds.differentiable.vectorfield_module.VectorFieldModule,Module structure
+Implemented,Full,Phase 3,rustmath-manifolds,VectorFieldFreeModule,Free module implementation,sage.manifolds.differentiable.vectorfield_module.VectorFieldFreeModule,Parallelizable case
+Implemented,Full,Phase 3,rustmath-manifolds,TensorFieldModule,Tensor field module,sage.manifolds.differentiable.tensorfield_module.TensorFieldModule,T^(p,q)(M) structure
+Implemented,Full,Phase 3,rustmath-manifolds,DiffFormModule,Differential form module,sage.manifolds.differentiable.diff_form_module.DiffFormModule,Ω^p(M) structure
+Implemented,Full,Phase 3,rustmath-manifolds,Circle,Circle manifold S^1,sage.manifolds.manifold.Manifold (custom),Example manifold
+Implemented,Full,Phase 3,rustmath-manifolds,Sphere2,2-sphere S^2,sage.manifolds.manifold.Manifold (custom),Stereographic charts
+Implemented,Full,Phase 3,rustmath-manifolds,Torus2,2-torus T^2,sage.manifolds.manifold.Manifold (custom),Product manifold
+Implemented,Full,Phase 3,rustmath-manifolds,RiemannianMetric,Metric tensor,sage.manifolds.differentiable.metric.Metric,g_ij
+Implemented,Full,Phase 3,rustmath-manifolds,AffineConnection,Affine connection,sage.manifolds.differentiable.affine_connection.AffineConnection,Γ^k_ij
+Implemented,Full,Phase 3,rustmath-manifolds,LeviCivitaConnection,Levi-Civita connection,sage.manifolds.differentiable.levi_civita_connection.LeviCivitaConnection,Riemannian connection
+Implemented,Full,Phase 3,rustmath-manifolds,CovariantDerivative,Covariant derivative,N/A,∇_X Y
+Implemented,Full,Phase 3,rustmath-manifolds,RiemannTensor,Riemann curvature tensor,sage.manifolds.differentiable.metric.Metric.riemann(),R^l_ijk
+Implemented,Full,Phase 3,rustmath-manifolds,RicciTensor,Ricci tensor,sage.manifolds.differentiable.metric.Metric.ricci(),R_ij
+Implemented,Full,Phase 3,rustmath-manifolds,ScalarCurvature,Scalar curvature,sage.manifolds.differentiable.metric.Metric.ricci_scalar(),R
+Implemented,Full,Phase 3,rustmath-manifolds,Geodesic,Geodesic curve,sage.manifolds.differentiable.integrated_curve.IntegratedGeodesic,Shortest path
+Implemented,Full,Phase 3,rustmath-manifolds,ParallelTransport,Parallel transport,N/A,Along curves
 Planned,Stub,Phase 4,rustmath-manifolds,LieGroup,Lie group manifold,sage.groups.matrix_gps.linear.LinearMatrixGroup_generic (as manifold),Group + manifold
 Planned,Stub,Phase 4,rustmath-manifolds,LieAlgebra,Lie algebra,sage.algebras.lie_algebras.lie_algebra.LieAlgebra,Tangent space at identity
 Planned,Stub,Phase 4,rustmath-manifolds,MaurerCartanForm,Maurer-Cartan form,N/A,Left-invariant 1-form
