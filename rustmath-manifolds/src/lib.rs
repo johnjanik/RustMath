@@ -36,6 +36,7 @@ pub mod errors;
 pub mod utilities;
 pub mod vector_bundle;
 pub mod vector_bundle_fiber;
+pub mod transition;
 
 pub use subset::ManifoldSubset;
 pub use manifold::TopologicalManifold;
@@ -52,6 +53,7 @@ pub use utilities::{
 };
 pub use vector_bundle::{TopologicalVectorBundle, TangentBundle, CotangentBundle};
 pub use vector_bundle_fiber::{VectorBundleFiber, VectorBundleFiberElement};
+pub use transition::TransitionFunction;
 
 #[cfg(test)]
 mod tests {

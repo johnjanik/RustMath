@@ -18,12 +18,14 @@ pub mod parser;
 pub mod pde;
 pub mod polynomial;
 pub mod radical;
+pub mod registry;
 pub mod series;
 pub mod simplify;
 pub mod solve;
 pub mod specialfunctions;
 pub mod substitute;
 pub mod symbol;
+pub mod walker;
 
 pub use assumptions::{assume, forget, forget_all, get_assumptions, has_property, Property};
 pub use diffeq::{Euler, RungeKutta, ODE, ODEType};
@@ -41,6 +43,12 @@ pub use pde::PDEType;
 pub use series::{BigO, LittleO, Theta, Omega};
 pub use solve::Solution;
 pub use symbol::Symbol;
+pub use walker::{
+    collect_symbols, substitute, count_operations, calculate_depth,
+    ExprVisitor, ExprMutator, SymbolCollector, Substituter,
+    OperationCounter, DepthCalculator,
+};
+pub use registry::{CoordinateRegistry, global_registry, ChartId};
 
 #[cfg(test)]
 mod tests {
