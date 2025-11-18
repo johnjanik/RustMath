@@ -50,6 +50,7 @@ members = [
     "rustmath-plot-core",
     "rustmath-plot",
     "rustmath-plot3d",
+    "rustmath-rings",
 ]
 
 [workspace.package]
