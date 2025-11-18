@@ -236,8 +236,10 @@ impl Graphics {
             }
         };
 
-        let mut file = File::create(path.as_ref())?;
-        file.write_all(&data)?;
+        let mut file = File::create(path.as_ref())
+            .map_err(|e| PlotError::IoError(e.to_string()))?;
+        file.write_all(&data)
+            .map_err(|e| PlotError::IoError(e.to_string()))?;
 
         Ok(())
     }

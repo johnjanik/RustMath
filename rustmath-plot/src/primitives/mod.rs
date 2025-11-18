@@ -15,6 +15,12 @@
 //! - **Arrow**: Directed arrows
 //! - **Arc**: Circular arcs
 //!
+//! # Phase 8 Primitives
+//!
+//! Advanced primitives:
+//! - **BezierPath**: Cubic and quadratic Bezier curves
+//! - **Hyperbolic**: Hyperbolic geometry primitives (arcs, polygons)
+//!
 //! # Examples
 //!
 //! ```ignore
@@ -42,6 +48,10 @@ mod point;
 mod polygon;
 mod text;
 
+// Phase 8 primitives
+mod bezier_path;
+pub mod hyperbolic;
+
 // Re-export all primitives
 pub use arc::{arc, Arc};
 pub use arrow::{arrow, Arrow};
@@ -51,6 +61,9 @@ pub use line::{line, Line};
 pub use point::{point, Point};
 pub use polygon::{polygon, Polygon};
 pub use text::{text, Text};
+
+// Re-export Phase 8 primitives
+pub use bezier_path::{bezier_path, bezier_quadratic, BezierPath, BezierType};
 
 #[cfg(test)]
 mod tests {

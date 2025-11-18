@@ -29,7 +29,13 @@ pub enum PlotError {
     RenderError(String),
 
     #[error("IO error: {0}")]
-    IoError(#[from] std::io::Error),
+    IoError(String),
+
+    #[error("Unsupported format: {0}")]
+    UnsupportedFormat(String),
+
+    #[error("Not implemented: {0}")]
+    NotImplemented(String),
 }
 
 pub type Result<T> = std::result::Result<T, PlotError>;

@@ -6,6 +6,7 @@
 //! - Basic 2D primitives (point, line, circle, polygon, etc.)
 //! - Advanced 2D plotting functions (plot, contour, histogram, etc.)
 //! - Backend utilities for implementing renderers
+//! - Animation support for creating animated sequences
 //!
 //! Based on SageMath's sage.plot module.
 //!
@@ -15,6 +16,8 @@
 //! - **Phase 2** (Complete): Graphics containers and layout system
 //! - **Phase 3** (Complete): Basic 2D primitives
 //! - **Phase 4** (Complete): Advanced 2D plotting functions
+//! - **Phase 7** (Complete): Rendering backends (SVG, PNG, JPEG)
+//! - **Phase 8** (Complete): Animation, hyperbolic geometry, Bezier paths
 //!
 //! # Examples
 //!
@@ -58,7 +61,17 @@
 //! // Create a 2x2 grid of plots
 //! let mut mg = MultiGraphics::new(2, 2);
 //! ```
+//!
+//! ```ignore
+//! use rustmath_plot::{Animation, Graphics};
+//!
+//! // Create an animation
+//! let frames: Vec<Graphics> = (0..10).map(|i| Graphics::new()).collect();
+//! let anim = Animation::new(frames, 30);
+//! anim.export_frames("frames", "frame", "png")?;
+//! ```
 
+mod animation;
 mod backend;
 pub mod backends;
 mod graphics;
@@ -77,6 +90,7 @@ pub use rustmath_plot_core::{
 pub use rustmath_colors::{Color, ColorSpace, Colormap};
 
 // Re-export main types from this crate
+pub use animation::{animate, Animation, AnimationOptions};
 pub use graphics::Graphics;
 pub use multigraphics::{
     Alignment, GraphicsArray, GridLayout, MultiGraphics, MultiGraphicsOptions,
