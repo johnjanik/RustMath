@@ -14,6 +14,7 @@ pub mod quadratic_sieve;
 
 pub use crt::{chinese_remainder_theorem, crt_two};
 pub use ecm::{ecm_factor, ecm_factor_complete};
+pub use fast_arith::{prime_range, ArithInt, ArithLLong};
 pub use integer::Integer;
 pub use modular::{primitive_roots, ModularInteger};
 pub use quadratic_sieve::{quadratic_sieve_factor, quadratic_sieve_factor_complete};

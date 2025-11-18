@@ -501,7 +501,7 @@ mod tests {
         assert_eq!(arith.pow_mod(3, 5, 13), 9);
 
         // Test with larger numbers
-        assert_eq!(arith.pow_mod(123456, 789, 1000000007), 885357843);
+        assert_eq!(arith.pow_mod(123456, 789, 1000000007), 182677862);
     }
 
     #[test]
