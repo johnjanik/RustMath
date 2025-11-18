@@ -62,6 +62,7 @@ pub mod ring_extension_morphism;
 pub mod term_monoid;
 pub mod universal_cyclotomic_field;
 pub mod augmented_valuation;
+pub mod function_field;
 
 // Re-export core ring types from other crates
 pub use rustmath_integers::Integer;
