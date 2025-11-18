@@ -104,6 +104,22 @@ pub mod extensions;
 pub mod ideal;
 pub mod place;
 
+// New modules for SageMath rings implementation
+pub mod function_field_polymod;
+pub mod function_field_rational;
+pub mod hermite_form_polynomial;
+pub mod ideal_polymod;
+pub mod ideal_rational;
+pub mod maps;
+pub mod order;
+pub mod order_basis;
+pub mod order_polymod;
+pub mod order_rational;
+pub mod jacobian_base;
+pub mod jacobian_hess;
+pub mod jacobian_khuri_makdisi;
+pub mod khuri_makdisi;
+
 // Re-export main types for convenience
 pub use drinfeld_modules::{
     DrinfeldModule, DrinfeldModule_charzero, DrinfeldModule_finite, DrinfeldModule_rational,
@@ -115,6 +131,84 @@ pub use extensions::{ConstantFieldExtension, FunctionFieldExtension};
 pub use ideal::{FunctionFieldIdeal, FunctionFieldIdealInfinite, IdealMonoid};
 
 pub use place::{FunctionFieldPlace, PlaceSet};
+
+pub use order_basis::{FunctionFieldOrder_basis, FunctionFieldOrderInfinite_basis};
+
+pub use order_polymod::{
+    FunctionFieldMaximalOrder_polymod, FunctionFieldMaximalOrder_global,
+    FunctionFieldMaximalOrderInfinite_polymod,
+};
+
+pub use order_rational::{
+    FunctionFieldMaximalOrder_rational, FunctionFieldMaximalOrderInfinite_rational,
+};
+
+pub use jacobian_base::{
+    JacobianPoint_base, JacobianGroup_base, Jacobian_base,
+    JacobianPoint_finite_field_base, JacobianGroup_finite_field_base,
+    JacobianGroupFunctor,
+};
+
+pub use jacobian_hess::{
+    Jacobian as JacobianHess, JacobianPoint as JacobianPointHess,
+    JacobianGroup as JacobianGroupHess, JacobianGroupEmbedding as JacobianGroupEmbeddingHess,
+    Jacobian_finite_field as JacobianHess_finite_field,
+    JacobianPoint_finite_field as JacobianPointHess_finite_field,
+    JacobianGroup_finite_field as JacobianGroupHess_finite_field,
+    JacobianGroupEmbedding_finite_field as JacobianGroupEmbeddingHess_finite_field,
+};
+
+pub use jacobian_khuri_makdisi::{
+    Jacobian as JacobianKM, JacobianPoint as JacobianPointKM,
+    JacobianGroup as JacobianGroupKM, JacobianGroupEmbedding as JacobianGroupEmbeddingKM,
+    Jacobian_finite_field as JacobianKM_finite_field,
+    JacobianPoint_finite_field as JacobianPointKM_finite_field,
+    JacobianGroup_finite_field as JacobianGroupKM_finite_field,
+    JacobianGroupEmbedding_finite_field as JacobianGroupEmbeddingKM_finite_field,
+};
+
+pub use khuri_makdisi::{
+    KhuriMakdisi_base, KhuriMakdisi_small, KhuriMakdisi_medium, KhuriMakdisi_large,
+};
+
+// Re-export new module types
+pub use function_field_polymod::{
+    FunctionField_polymod, FunctionField_simple, FunctionField_char_zero,
+    FunctionField_integral, FunctionField_char_zero_integral,
+    FunctionField_global, FunctionField_global_integral,
+};
+
+pub use function_field_rational::{
+    RationalFunctionField, RationalFunctionField_char_zero,
+    RationalFunctionField_global, is_function_field,
+};
+
+pub use hermite_form_polynomial::{
+    reversed_hermite_form, hermite_form, is_hermite_form, is_reversed_hermite_form,
+};
+
+pub use ideal_polymod::{
+    FunctionFieldIdeal_polymod, FunctionFieldIdealInfinite_polymod,
+    FunctionFieldIdeal_global,
+};
+
+pub use ideal_rational::{
+    FunctionFieldIdeal_rational, FunctionFieldIdealInfinite_rational,
+};
+
+pub use maps::{
+    FunctionFieldMorphism, FunctionFieldMorphism_polymod, FunctionFieldMorphism_rational,
+    FunctionFieldVectorSpaceIsomorphism, MapFunctionFieldToVectorSpace,
+    MapVectorSpaceToFunctionField, FunctionFieldCompletion, FunctionFieldLinearMap,
+    FunctionFieldLinearMapSection, FractionFieldToFunctionField,
+    FunctionFieldToFractionField, FunctionFieldRingMorphism,
+    FunctionFieldConversionToConstantBaseField,
+};
+
+pub use order::{
+    FunctionFieldOrder_base, FunctionFieldOrder, FunctionFieldOrderInfinite,
+    FunctionFieldMaximalOrder, FunctionFieldMaximalOrderInfinite,
+};
 
 #[cfg(test)]
 mod tests {
