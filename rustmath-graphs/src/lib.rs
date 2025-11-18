@@ -8,12 +8,15 @@ pub mod generators;
 pub mod weighted_graph;
 pub mod digraph;
 pub mod multigraph;
+pub mod asteroidal_triples;
+pub mod boost_graph;
 
 pub use graph::Graph;
 pub use generators::*;
 pub use weighted_graph::WeightedGraph;
 pub use digraph::DiGraph;
 pub use multigraph::MultiGraph;
+pub use asteroidal_triples::is_asteroidal_triple_free;
 
 #[cfg(test)]
 mod tests {
