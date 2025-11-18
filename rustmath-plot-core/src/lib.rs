@@ -13,7 +13,7 @@ mod types;
 
 pub use bbox::BoundingBox;
 pub use options::{AxesOptions, GraphicsOptions, LineStyle, MarkerStyle, PlotOptions, TextOptions};
-pub use traits::{GraphicPrimitive, Renderable, RenderBackend};
+pub use traits::{GraphicPrimitive, Renderable, RenderBackend, Transform2D};
 pub use types::{Point2D, Point3D, RenderFormat, Vector2D, Vector3D};
 
 /// Errors that can occur during plotting operations
