@@ -52,6 +52,7 @@ pub mod real_interval_absolute;
 pub mod real_mpfi;
 pub mod residue_field;
 pub mod term_monoid;
+pub mod universal_cyclotomic_field;
 
 // Re-export core ring types from other crates
 pub use rustmath_integers::Integer;
