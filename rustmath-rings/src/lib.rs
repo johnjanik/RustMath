@@ -45,6 +45,7 @@ pub mod fraction_field_fpt;
 pub mod function_field_element;
 pub mod function_field_element_polymod;
 pub mod function_field_element_rational;
+pub mod function_field_module;
 pub mod growth_group;
 pub mod growth_group_cartesian;
 pub mod homset;
