@@ -109,9 +109,9 @@ Implemented,FULL,sage.plot.arrow.Arrow,sage.plot.arrow,Arrow,class,GraphicPrimit
 ,,sage.plot.arrow.CurveArrow,sage.plot.arrow,CurveArrow,class,GraphicPrimitive,https://github.com/sagemath/sage/blob/develop/src/sage/plot/arrow.py#L26
 ,,sage.plot.arrow.arrow,sage.plot.arrow,arrow,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/arrow.py#L453
 ,,sage.plot.arrow.arrow2d,sage.plot.arrow,arrow2d,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/arrow.py#L493
-Implemented,PARTIAL,sage.plot.bar_chart,sage.plot.bar_chart,bar_chart,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/bar_chart.py#L29
+,,sage.plot.bar_chart,sage.plot.bar_chart,bar_chart,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/bar_chart.py#L29
 ,,sage.plot.bar_chart.BarChart,sage.plot.bar_chart,BarChart,class,GraphicPrimitive,https://github.com/sagemath/sage/blob/develop/src/sage/plot/bar_chart.py#L29
-Implemented,PARTIAL,sage.plot.bar_chart.bar_chart,sage.plot.bar_chart,bar_chart,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/bar_chart.py#L126
+,,sage.plot.bar_chart.bar_chart,sage.plot.bar_chart,bar_chart,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/bar_chart.py#L126
 ,,sage.plot.bezier_path,sage.plot.bezier_path,bezier_path,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/bezier_path.py#L26
 ,,sage.plot.bezier_path.BezierPath,sage.plot.bezier_path,BezierPath,class,GraphicPrimitive_xydata,https://github.com/sagemath/sage/blob/develop/src/sage/plot/bezier_path.py#L26
 ,,sage.plot.bezier_path.bezier_path,sage.plot.bezier_path,bezier_path,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/bezier_path.py#L272
@@ -141,15 +141,15 @@ Implemented,PARTIAL,sage.plot.colors.Colormaps,sage.plot.colors,Colormaps,class,
 ,,sage.plot.complex_plot.complex_to_rgb,sage.plot.complex_plot,complex_to_rgb,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/complex_plot.pyx#L279
 ,,sage.plot.complex_plot.hls_to_rgb,sage.plot.complex_plot,hls_to_rgb,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/complex_plot.pyx#L1318
 ,,sage.plot.complex_plot.rgb_to_hls,sage.plot.complex_plot,rgb_to_hls,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/complex_plot.pyx#L1231
-Implemented,PARTIAL,sage.plot.contour_plot,sage.plot.contour_plot,contour_plot,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/contour_plot.py#L28
+,,sage.plot.contour_plot,sage.plot.contour_plot,contour_plot,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/contour_plot.py#L28
 ,,sage.plot.contour_plot.ContourPlot,sage.plot.contour_plot,ContourPlot,class,GraphicPrimitive,https://github.com/sagemath/sage/blob/develop/src/sage/plot/contour_plot.py#L28
-Implemented,PARTIAL,sage.plot.contour_plot.contour_plot,sage.plot.contour_plot,contour_plot,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/contour_plot.py#L227
+,,sage.plot.contour_plot.contour_plot,sage.plot.contour_plot,contour_plot,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/contour_plot.py#L227
 ,,sage.plot.contour_plot.equify,sage.plot.contour_plot,equify,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/contour_plot.py#L1759
 ,,sage.plot.contour_plot.implicit_plot,sage.plot.contour_plot,implicit_plot,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/contour_plot.py#L1033
 ,,sage.plot.contour_plot.region_plot,sage.plot.contour_plot,region_plot,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/contour_plot.py#L1393
-Implemented,PARTIAL,sage.plot.density_plot,sage.plot.density_plot,density_plot,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/density_plot.py#L29
+,,sage.plot.density_plot,sage.plot.density_plot,density_plot,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/density_plot.py#L29
 ,,sage.plot.density_plot.DensityPlot,sage.plot.density_plot,DensityPlot,class,GraphicPrimitive,https://github.com/sagemath/sage/blob/develop/src/sage/plot/density_plot.py#L29
-Implemented,PARTIAL,sage.plot.density_plot.density_plot,sage.plot.density_plot,density_plot,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/density_plot.py#L153
+,,sage.plot.density_plot.density_plot,sage.plot.density_plot,density_plot,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/density_plot.py#L153
 Implemented,FULL,sage.plot.disk,sage.plot.disk,disk,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/disk.py#L28
 Implemented,FULL,sage.plot.disk.Disk,sage.plot.disk,Disk,class,GraphicPrimitive,https://github.com/sagemath/sage/blob/develop/src/sage/plot/disk.py#L28
 Implemented,FULL,sage.plot.disk.disk,sage.plot.disk,disk,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/disk.py#L245
@@ -160,9 +160,9 @@ Implemented,PARTIAL,sage.plot.graphics,sage.plot.graphics,graphics,module,,https
 Implemented,PARTIAL,sage.plot.graphics.Graphics,sage.plot.graphics,Graphics,class,"WithEqualityById, SageObject",https://github.com/sagemath/sage/blob/develop/src/sage/plot/graphics.py#L128
 Implemented,PARTIAL,sage.plot.graphics.GraphicsArray,sage.plot.graphics,GraphicsArray,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/graphics.py#L3558
 ,,sage.plot.graphics.is_Graphics,sage.plot.graphics,is_Graphics,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/graphics.py#L56
-Implemented,PARTIAL,sage.plot.histogram,sage.plot.histogram,histogram,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/histogram.py#L21
+,,sage.plot.histogram,sage.plot.histogram,histogram,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/histogram.py#L21
 ,,sage.plot.histogram.Histogram,sage.plot.histogram,Histogram,class,GraphicPrimitive,https://github.com/sagemath/sage/blob/develop/src/sage/plot/histogram.py#L21
-Implemented,PARTIAL,sage.plot.histogram.histogram,sage.plot.histogram,histogram,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/histogram.py#L210
+,,sage.plot.histogram.histogram,sage.plot.histogram,histogram,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/histogram.py#L210
 ,,sage.plot.hyperbolic_arc,sage.plot.hyperbolic_arc,hyperbolic_arc,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_arc.py#L172
 ,,sage.plot.hyperbolic_arc.HyperbolicArc,sage.plot.hyperbolic_arc,HyperbolicArc,class,"A, B, HyperbolicArcCore",https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_arc.py#L172
 ,,sage.plot.hyperbolic_arc.HyperbolicArcCore,sage.plot.hyperbolic_arc,HyperbolicArcCore,class,BezierPath,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_arc.py#L88
@@ -178,9 +178,9 @@ Implemented,FULL,sage.plot.line,sage.plot.line,line,module,,https://github.com/s
 Implemented,FULL,sage.plot.line.Line,sage.plot.line,Line,class,GraphicPrimitive_xydata,https://github.com/sagemath/sage/blob/develop/src/sage/plot/line.py#L26
 Implemented,FULL,sage.plot.line.line,sage.plot.line,line,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/line.py#L274
 ,,sage.plot.line.line2d,sage.plot.line,line2d,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/line.py#L314
-Implemented,PARTIAL,sage.plot.matrix_plot,sage.plot.matrix_plot,matrix_plot,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/matrix_plot.py#L26
+,,sage.plot.matrix_plot,sage.plot.matrix_plot,matrix_plot,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/matrix_plot.py#L26
 ,,sage.plot.matrix_plot.MatrixPlot,sage.plot.matrix_plot,MatrixPlot,class,GraphicPrimitive,https://github.com/sagemath/sage/blob/develop/src/sage/plot/matrix_plot.py#L26
-Implemented,PARTIAL,sage.plot.matrix_plot.matrix_plot,sage.plot.matrix_plot,matrix_plot,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/matrix_plot.py#L247
+,,sage.plot.matrix_plot.matrix_plot,sage.plot.matrix_plot,matrix_plot,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/matrix_plot.py#L247
 ,,sage.plot.misc,sage.plot.misc,misc,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/misc.py#L467
 ,,sage.plot.misc.FastCallablePlotWrapper,sage.plot.misc,FastCallablePlotWrapper,class,FastCallableFloatWrapper,https://github.com/sagemath/sage/blob/develop/src/sage/plot/misc.py#L467
 ,,sage.plot.misc.get_matplotlib_linestyle,sage.plot.misc,get_matplotlib_linestyle,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/misc.py#L325
@@ -194,14 +194,14 @@ Implemented,PARTIAL,sage.plot.multigraphics.MultiGraphics,sage.plot.multigraphic
 ,,sage.plot.plot.adaptive_refinement,sage.plot.plot,adaptive_refinement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L3875
 ,,sage.plot.plot.generate_plot_points,sage.plot.plot,generate_plot_points,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L3987
 ,,sage.plot.plot.graphics_array,sage.plot.plot,graphics_array,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L3595
-Implemented,PARTIAL,sage.plot.plot.list_plot,sage.plot.plot,list_plot,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L2878
+,,sage.plot.plot.list_plot,sage.plot.plot,list_plot,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L2878
 ,,sage.plot.plot.list_plot_loglog,sage.plot.plot,list_plot_loglog,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L3334
 ,,sage.plot.plot.list_plot_semilogx,sage.plot.plot,list_plot_semilogx,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L3401
 ,,sage.plot.plot.list_plot_semilogy,sage.plot.plot,list_plot_semilogy,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L3456
 ,,sage.plot.plot.minmax_data,sage.plot.plot,minmax_data,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L3839
 ,,sage.plot.plot.multi_graphics,sage.plot.plot,multi_graphics,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L3765
-Implemented,PARTIAL,sage.plot.plot.parametric_plot,sage.plot.plot,parametric_plot,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L2559
-Implemented,PARTIAL,sage.plot.plot.plot,sage.plot.plot,plot,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L842
+,,sage.plot.plot.parametric_plot,sage.plot.plot,parametric_plot,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L2559
+,,sage.plot.plot.plot,sage.plot.plot,plot,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L842
 ,,sage.plot.plot.plot_loglog,sage.plot.plot,plot_loglog,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L3194
 ,,sage.plot.plot.plot_semilogx,sage.plot.plot,plot_semilogx,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L3244
 ,,sage.plot.plot.plot_semilogy,sage.plot.plot,plot_semilogy,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L3296

@@ -4,6 +4,7 @@
 //! - Graphics container for combining multiple primitives
 //! - Multi-graphics for arranging plots in grids
 //! - Basic 2D primitives (point, line, circle, polygon, etc.)
+//! - Advanced 2D plotting functions (plot, contour, histogram, etc.)
 //! - Backend utilities for implementing renderers
 //!
 //! Based on SageMath's sage.plot module.
@@ -13,6 +14,7 @@
 //! - **Phase 1** (Complete): Core infrastructure, color system, plot traits
 //! - **Phase 2** (Complete): Graphics containers and layout system
 //! - **Phase 3** (Complete): Basic 2D primitives
+//! - **Phase 4** (Complete): Advanced 2D plotting functions
 //!
 //! # Examples
 //!
@@ -35,6 +37,21 @@
 //! g.add(circle((0.0, 0.0), 1.0, None));
 //! ```
 //!
+//! ```ignore
+//! use rustmath_plot::plots::*;
+//!
+//! // Plot a mathematical function
+//! let g = plot(|x| x.sin(), 0.0, 2.0 * std::f64::consts::PI, None);
+//!
+//! // Create a scatter plot
+//! let data = vec![(0.0, 1.0), (1.0, 2.0), (2.0, 1.5)];
+//! let g = scatter_plot(data, None, None, None);
+//!
+//! // Create a histogram
+//! let data = vec![1.0, 2.0, 2.0, 3.0, 3.0, 3.0, 4.0];
+//! let g = histogram(data, Some(5), None, None, None);
+//! ```
+//!
 //! ```
 //! use rustmath_plot::MultiGraphics;
 //!
@@ -46,6 +63,7 @@ mod backend;
 mod graphics;
 mod multigraphics;
 pub mod primitives;
+pub mod plots;
 
 // Re-export core types from rustmath-plot-core
 pub use rustmath_plot_core::{
