@@ -43,6 +43,9 @@ pub mod function_field_element_polymod;
 pub mod function_field_element_rational;
 pub mod growth_group;
 pub mod growth_group_cartesian;
+pub mod homset;
+pub mod infinity;
+pub mod morphism;
 pub mod residue_field;
 pub mod term_monoid;
 
