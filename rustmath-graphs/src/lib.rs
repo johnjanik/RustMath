@@ -10,6 +10,7 @@ pub mod digraph;
 pub mod multigraph;
 pub mod asteroidal_triples;
 pub mod boost_graph;
+pub mod backends;
 
 pub use graph::Graph;
 pub use generators::*;
