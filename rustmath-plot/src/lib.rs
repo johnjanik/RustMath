@@ -60,6 +60,7 @@
 //! ```
 
 mod backend;
+pub mod backends;
 mod graphics;
 mod multigraphics;
 pub mod primitives;
@@ -83,6 +84,9 @@ pub use multigraphics::{
 
 // Re-export backend utilities
 pub use backend::{AdaptiveSampler, ColorInterpolator, ViewportTransform};
+
+// Re-export backends
+pub use backends::{RasterBackend, SvgBackend};
 
 #[cfg(test)]
 mod tests {

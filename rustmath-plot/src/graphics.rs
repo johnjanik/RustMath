@@ -198,12 +198,48 @@ impl Graphics {
     /// g.save("plot.svg", RenderFormat::SVG)?;
     /// g.save("plot.png", RenderFormat::PNG)?;
     /// ```
-    pub fn save(&self, _path: impl AsRef<Path>, _format: RenderFormat) -> Result<()> {
-        // This is a placeholder - actual implementation would require
-        // creating the appropriate backend based on the format
-        Err(PlotError::RenderError(
-            "save() not yet implemented - needs backend selection".to_string(),
-        ))
+    pub fn save(&self, path: impl AsRef<Path>, format: RenderFormat) -> Result<()> {
+        use crate::backends::{RasterBackend, SvgBackend};
+        use std::fs::File;
+        use std::io::Write;
+
+        let (width, height) = self.options.figsize;
+
+        let data = match format {
+            RenderFormat::SVG => {
+                let mut backend = SvgBackend::new(width, height);
+                self.render(&mut backend)?;
+                backend.finalize()?
+            }
+            RenderFormat::PNG => {
+                let mut backend = RasterBackend::new(width as u32, height as u32)?;
+
+                // Set background color
+                backend.set_background(self.options.background_color.clone());
+
+                self.render(&mut backend)?;
+                backend.finalize()?
+            }
+            RenderFormat::JPEG => {
+                let mut backend = RasterBackend::new(width as u32, height as u32)?;
+
+                // Set background color
+                backend.set_background(self.options.background_color.clone());
+
+                self.render(&mut backend)?;
+                backend.to_jpeg(90)? // 90% quality
+            }
+            RenderFormat::PDF | RenderFormat::EPS => {
+                return Err(PlotError::RenderError(
+                    format!("{:?} format not yet implemented", format),
+                ));
+            }
+        };
+
+        let mut file = File::create(path.as_ref())?;
+        file.write_all(&data)?;
+
+        Ok(())
     }
 
     /// Display this Graphics (placeholder for interactive display)
