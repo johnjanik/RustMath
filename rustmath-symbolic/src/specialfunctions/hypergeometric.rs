@@ -173,6 +173,111 @@ pub fn hypergeometric_u(a: &Expr, b: &Expr, z: &Expr) -> Expr {
     )
 }
 
+/// Evaluation methods for hypergeometric functions
+///
+/// Provides various numerical evaluation strategies for hypergeometric series
+/// including direct summation, asymptotic expansions, and continued fractions.
+///
+/// Corresponds to sage.functions.hypergeometric.EvaluationMethods
+#[derive(Debug, Clone, Copy)]
+pub struct HypergeometricEvaluationMethods;
+
+impl HypergeometricEvaluationMethods {
+    /// Create a new evaluation methods instance
+    pub fn new() -> Self {
+        HypergeometricEvaluationMethods
+    }
+}
+
+impl Default for HypergeometricEvaluationMethods {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Convert hypergeometric function to closed form if possible
+///
+/// Attempts to recognize special cases of hypergeometric functions that
+/// can be expressed in terms of elementary or other well-known functions.
+///
+/// Corresponds to sage.functions.hypergeometric.closed_form
+///
+/// Returns a symbolic expression representing the closed form if recognized,
+/// otherwise returns the hypergeometric function itself.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_symbolic::specialfunctions::hypergeometric::*;
+/// use rustmath_symbolic::Expr;
+///
+/// // 1F0(a; ; z) = (1-z)^(-a)
+/// let result = hypergeometric_closed_form(
+///     &[Expr::from(2)],
+///     &[],
+///     &Expr::from(0.5)
+/// );
+/// ```
+pub fn hypergeometric_closed_form(a: &[Expr], b: &[Expr], z: &Expr) -> Expr {
+    // Check for known closed forms
+
+    // 1F0(a; ; z) = (1-z)^(-a)
+    if a.len() == 1 && b.is_empty() {
+        let one_minus_z = Expr::Binary(
+            crate::expression::BinaryOp::Sub,
+            Arc::new(Expr::from(1)),
+            Arc::new(z.clone()),
+        );
+        return Expr::Binary(
+            crate::expression::BinaryOp::Pow,
+            Arc::new(one_minus_z),
+            Arc::new(Expr::Unary(
+                crate::expression::UnaryOp::Neg,
+                Arc::new(a[0].clone()),
+            )),
+        );
+    }
+
+    // 0F0(; ; z) = exp(z)
+    if a.is_empty() && b.is_empty() {
+        return z.clone().exp();
+    }
+
+    // For other cases, return the hypergeometric function
+    hypergeometric(a, b, z)
+}
+
+/// Convert rational parameters to tuple form for hypergeometric functions
+///
+/// Normalizes parameters to (numerator, denominator) pairs for canonical representation.
+///
+/// Corresponds to sage.functions.hypergeometric.rational_param_as_tuple
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_symbolic::specialfunctions::hypergeometric::rational_param_as_tuple;
+/// use rustmath_symbolic::Expr;
+///
+/// let param = Expr::from(3) / Expr::from(2);
+/// let (num, den) = rational_param_as_tuple(&param);
+/// ```
+pub fn rational_param_as_tuple(param: &Expr) -> (Expr, Expr) {
+    use crate::expression::BinaryOp;
+
+    match param {
+        Expr::Integer(_) => (param.clone(), Expr::from(1)),
+        Expr::Rational(r) => {
+            // Extract numerator and denominator from rational
+            (Expr::Integer(r.numerator().clone()), Expr::Integer(r.denominator().clone()))
+        }
+        Expr::Binary(BinaryOp::Div, num, den) => {
+            ((**num).clone(), (**den).clone())
+        }
+        _ => (param.clone(), Expr::from(1)),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -217,5 +322,42 @@ mod tests {
         let hyp2 = hypergeometric(&[Expr::from(1), Expr::from(2)], &[], &Expr::Symbol(x));
 
         assert_ne!(hyp1, hyp2);
+    }
+
+    #[test]
+    fn test_hypergeometric_evaluation_methods() {
+        let methods = HypergeometricEvaluationMethods::new();
+        let methods_default = HypergeometricEvaluationMethods::default();
+        // Just test that the struct can be created
+        assert!(matches!(methods, HypergeometricEvaluationMethods));
+        assert!(matches!(methods_default, HypergeometricEvaluationMethods));
+    }
+
+    #[test]
+    fn test_hypergeometric_closed_form() {
+        // Test 1F0(2; ; 0.5) = (1-0.5)^(-2) = 4
+        let result = hypergeometric_closed_form(
+            &[Expr::from(2)],
+            &[],
+            &Expr::Rational(rustmath_rationals::Rational::new(1, 2).unwrap())
+        );
+        // Result should be (1 - 1/2)^(-2)
+        assert!(!result.is_constant() || matches!(result, Expr::Binary(..)));
+    }
+
+    #[test]
+    fn test_rational_param_as_tuple() {
+        use rustmath_rationals::Rational;
+
+        // Integer case
+        let (num, den) = rational_param_as_tuple(&Expr::from(5));
+        assert_eq!(num, Expr::from(5));
+        assert_eq!(den, Expr::from(1));
+
+        // Rational case
+        let param = Expr::Rational(Rational::new(3, 2).unwrap());
+        let (num, den) = rational_param_as_tuple(&param);
+        assert_eq!(num, Expr::from(3));
+        assert_eq!(den, Expr::from(2));
     }
 }

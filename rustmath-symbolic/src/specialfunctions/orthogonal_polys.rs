@@ -407,6 +407,215 @@ pub fn ultraspherical(n: &Expr, lambda: &Expr, x: &Expr) -> Expr {
     )
 }
 
+/// Associated Legendre function of the first kind P_n^m(x)
+///
+/// Generalization of Legendre polynomials with an additional order parameter.
+///
+/// Corresponds to sage.functions.orthogonal_polys.Func_assoc_legendre_P
+///
+/// # Arguments
+///
+/// * `n` - Degree
+/// * `m` - Order
+/// * `x` - The argument
+///
+/// # Returns
+///
+/// P_n^m(x)
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_symbolic::specialfunctions::orthogonal_polys::assoc_legendre_p;
+/// use rustmath_symbolic::Expr;
+///
+/// // P_2^1(x)
+/// let p = assoc_legendre_p(&Expr::from(2), &Expr::from(1), &Expr::from(0));
+/// ```
+///
+/// # Properties
+///
+/// - P_n^0(x) = Pₙ(x) (Legendre polynomial)
+/// - P_n^m(x) = 0 for m > n
+/// - Used in spherical harmonics: Yₗᵐ(θ,φ) ∝ Pₗᵐ(cos θ)
+pub fn assoc_legendre_p(n: &Expr, m: &Expr, x: &Expr) -> Expr {
+    Expr::Function(
+        "assoc_legendre_p".to_string(),
+        vec![Arc::new(n.clone()), Arc::new(m.clone()), Arc::new(x.clone())],
+    )
+}
+
+/// Associated Legendre function of the second kind Q_n^m(x)
+///
+/// Second linearly independent solution related to P_n^m.
+///
+/// Corresponds to sage.functions.orthogonal_polys.Func_assoc_legendre_Q
+///
+/// # Arguments
+///
+/// * `n` - Degree
+/// * `m` - Order
+/// * `x` - The argument
+///
+/// # Returns
+///
+/// Q_n^m(x)
+///
+/// # Properties
+///
+/// - Q_n^0(x) = Qₙ(x) (Legendre function of the second kind)
+/// - Singular at x = ±1
+pub fn assoc_legendre_q(n: &Expr, m: &Expr, x: &Expr) -> Expr {
+    Expr::Function(
+        "assoc_legendre_q".to_string(),
+        vec![Arc::new(n.clone()), Arc::new(m.clone()), Arc::new(x.clone())],
+    )
+}
+
+/// Hahn polynomial h_n(x; α, β, N)
+///
+/// Discrete orthogonal polynomial on a finite set {0, 1, ..., N}.
+///
+/// Corresponds to sage.functions.orthogonal_polys.Func_hahn
+///
+/// # Arguments
+///
+/// * `n` - Degree (0 ≤ n ≤ N)
+/// * `x` - Point of evaluation
+/// * `alpha` - Parameter α > -1
+/// * `beta` - Parameter β > -1
+/// * `N` - Upper limit
+///
+/// # Returns
+///
+/// h_n(x; α, β, N)
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_symbolic::specialfunctions::orthogonal_polys::hahn_polynomial;
+/// use rustmath_symbolic::Expr;
+///
+/// let h = hahn_polynomial(
+///     &Expr::from(2),
+///     &Expr::from(1),
+///     &Expr::from(1),
+///     &Expr::from(1),
+///     &Expr::from(5)
+/// );
+/// ```
+///
+/// # Properties
+///
+/// - Orthogonal with respect to a discrete measure
+/// - Used in combinatorics and coding theory
+pub fn hahn_polynomial(n: &Expr, x: &Expr, alpha: &Expr, beta: &Expr, N: &Expr) -> Expr {
+    Expr::Function(
+        "hahn".to_string(),
+        vec![
+            Arc::new(n.clone()),
+            Arc::new(x.clone()),
+            Arc::new(alpha.clone()),
+            Arc::new(beta.clone()),
+            Arc::new(N.clone()),
+        ],
+    )
+}
+
+/// Krawtchouk polynomial K_n(x; p, N)
+///
+/// Discrete orthogonal polynomial on {0, 1, ..., N}.
+///
+/// Corresponds to sage.functions.orthogonal_polys.Func_krawtchouk
+///
+/// # Arguments
+///
+/// * `n` - Degree (0 ≤ n ≤ N)
+/// * `x` - Point of evaluation
+/// * `p` - Probability parameter (0 < p < 1)
+/// * `N` - Upper limit
+///
+/// # Returns
+///
+/// K_n(x; p, N)
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_symbolic::specialfunctions::orthogonal_polys::krawtchouk_polynomial;
+/// use rustmath_symbolic::Expr;
+///
+/// let k = krawtchouk_polynomial(
+///     &Expr::from(2),
+///     &Expr::from(1),
+///     &Expr::Rational(rustmath_rationals::Rational::new(1, 2).unwrap()),
+///     &Expr::from(5)
+/// );
+/// ```
+///
+/// # Properties
+///
+/// - Appears in the theory of binary codes
+/// - Related to binomial distributions
+pub fn krawtchouk_polynomial(n: &Expr, x: &Expr, p: &Expr, N: &Expr) -> Expr {
+    Expr::Function(
+        "krawtchouk".to_string(),
+        vec![
+            Arc::new(n.clone()),
+            Arc::new(x.clone()),
+            Arc::new(p.clone()),
+            Arc::new(N.clone()),
+        ],
+    )
+}
+
+/// Meixner polynomial M_n(x; β, c)
+///
+/// Discrete orthogonal polynomial on non-negative integers.
+///
+/// Corresponds to sage.functions.orthogonal_polys.Func_meixner
+///
+/// # Arguments
+///
+/// * `n` - Degree
+/// * `x` - Point of evaluation (non-negative integer)
+/// * `beta` - Parameter β > 0
+/// * `c` - Parameter c with 0 < c < 1
+///
+/// # Returns
+///
+/// M_n(x; β, c)
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_symbolic::specialfunctions::orthogonal_polys::meixner_polynomial;
+/// use rustmath_symbolic::Expr;
+///
+/// let m = meixner_polynomial(
+///     &Expr::from(2),
+///     &Expr::from(3),
+///     &Expr::from(2),
+///     &Expr::Rational(rustmath_rationals::Rational::new(1, 2).unwrap())
+/// );
+/// ```
+///
+/// # Properties
+///
+/// - Orthogonal on non-negative integers
+/// - Related to negative binomial distributions
+pub fn meixner_polynomial(n: &Expr, x: &Expr, beta: &Expr, c: &Expr) -> Expr {
+    Expr::Function(
+        "meixner".to_string(),
+        vec![
+            Arc::new(n.clone()),
+            Arc::new(x.clone()),
+            Arc::new(beta.clone()),
+            Arc::new(c.clone()),
+        ],
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -479,5 +688,56 @@ mod tests {
         let x = Symbol::new("x");
         let q = legendre_q(&Expr::from(5), &Expr::Symbol(x));
         assert!(matches!(q, Expr::Function(name, _) if name == "legendre_q"));
+    }
+
+    #[test]
+    fn test_assoc_legendre_p() {
+        let x = Symbol::new("x");
+        let p = assoc_legendre_p(&Expr::from(2), &Expr::from(1), &Expr::Symbol(x));
+        assert!(matches!(p, Expr::Function(name, _) if name == "assoc_legendre_p"));
+    }
+
+    #[test]
+    fn test_assoc_legendre_q() {
+        let x = Symbol::new("x");
+        let q = assoc_legendre_q(&Expr::from(2), &Expr::from(1), &Expr::Symbol(x));
+        assert!(matches!(q, Expr::Function(name, _) if name == "assoc_legendre_q"));
+    }
+
+    #[test]
+    fn test_hahn_polynomial() {
+        let x = Symbol::new("x");
+        let h = hahn_polynomial(
+            &Expr::from(2),
+            &Expr::Symbol(x),
+            &Expr::from(1),
+            &Expr::from(1),
+            &Expr::from(5),
+        );
+        assert!(matches!(h, Expr::Function(name, _) if name == "hahn"));
+    }
+
+    #[test]
+    fn test_krawtchouk_polynomial() {
+        let x = Symbol::new("x");
+        let k = krawtchouk_polynomial(
+            &Expr::from(2),
+            &Expr::Symbol(x),
+            &Expr::Rational(rustmath_rationals::Rational::new(1, 2).unwrap()),
+            &Expr::from(5),
+        );
+        assert!(matches!(k, Expr::Function(name, _) if name == "krawtchouk"));
+    }
+
+    #[test]
+    fn test_meixner_polynomial() {
+        let x = Symbol::new("x");
+        let m = meixner_polynomial(
+            &Expr::from(2),
+            &Expr::Symbol(x),
+            &Expr::from(2),
+            &Expr::Rational(rustmath_rationals::Rational::new(1, 2).unwrap()),
+        );
+        assert!(matches!(m, Expr::Function(name, _) if name == "meixner"));
     }
 }
