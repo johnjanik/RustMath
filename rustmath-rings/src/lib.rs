@@ -48,6 +48,8 @@ pub mod infinity;
 pub mod morphism;
 pub mod quotient_ring;
 pub mod quotient_ring_element;
+pub mod real_interval_absolute;
+pub mod real_mpfi;
 pub mod residue_field;
 pub mod term_monoid;
 
