@@ -46,6 +46,8 @@ pub mod growth_group_cartesian;
 pub mod homset;
 pub mod infinity;
 pub mod morphism;
+pub mod quotient_ring;
+pub mod quotient_ring_element;
 pub mod residue_field;
 pub mod term_monoid;
 

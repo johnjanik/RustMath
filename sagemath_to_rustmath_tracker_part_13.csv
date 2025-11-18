@@ -180,15 +180,15 @@ Implemented,FULL,sage.rings.power_series_ring_element.make_powerseries_poly_v0,s
 ,,sage.rings.qqbar.t1,sage.rings.qqbar,t1,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L8587
 ,,sage.rings.qqbar.t2,sage.rings.qqbar,t2,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L7177
 ,,sage.rings.qqbar.tail_prec_seq,sage.rings.qqbar,tail_prec_seq,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L2192
-,,sage.rings.quotient_ring,sage.rings.quotient_ring,quotient_ring,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L134
-,,sage.rings.quotient_ring.QuotientRing,sage.rings.quotient_ring,QuotientRing,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L134
-,,sage.rings.quotient_ring.QuotientRingIdeal_generic,sage.rings.quotient_ring,QuotientRingIdeal_generic,class,Ideal_generic,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L1514
-,,sage.rings.quotient_ring.QuotientRingIdeal_principal,sage.rings.quotient_ring,QuotientRingIdeal_principal,class,"Ideal_principal, QuotientRingIdeal_generic",https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L1586
-,,sage.rings.quotient_ring.QuotientRing_generic,sage.rings.quotient_ring,QuotientRing_generic,class,"R, I, QuotientRing_nc, CommutativeRing",https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L1397
-,,sage.rings.quotient_ring.QuotientRing_nc,sage.rings.quotient_ring,QuotientRing_nc,class,"R, I, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L387
-,,sage.rings.quotient_ring.is_QuotientRing,sage.rings.quotient_ring,is_QuotientRing,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L346
-,,sage.rings.quotient_ring_element,sage.rings.quotient_ring_element,quotient_ring_element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring_element.py#L29
-,,sage.rings.quotient_ring_element.QuotientRingElement,sage.rings.quotient_ring_element,QuotientRingElement,class,RingElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring_element.py#L29
+Implemented,Full,sage.rings.quotient_ring,sage.rings.quotient_ring,quotient_ring,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L134
+Implemented,Full,sage.rings.quotient_ring.QuotientRing,sage.rings.quotient_ring,QuotientRing,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L134
+Implemented,Full,sage.rings.quotient_ring.QuotientRingIdeal_generic,sage.rings.quotient_ring,QuotientRingIdeal_generic,class,Ideal_generic,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L1514
+Implemented,Full,sage.rings.quotient_ring.QuotientRingIdeal_principal,sage.rings.quotient_ring,QuotientRingIdeal_principal,class,"Ideal_principal, QuotientRingIdeal_generic",https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L1586
+Implemented,Full,sage.rings.quotient_ring.QuotientRing_generic,sage.rings.quotient_ring,QuotientRing_generic,class,"R, I, QuotientRing_nc, CommutativeRing",https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L1397
+Implemented,Full,sage.rings.quotient_ring.QuotientRing_nc,sage.rings.quotient_ring,QuotientRing_nc,class,"R, I, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L387
+Implemented,Full,sage.rings.quotient_ring.is_QuotientRing,sage.rings.quotient_ring,is_QuotientRing,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L346
+Implemented,Full,sage.rings.quotient_ring_element,sage.rings.quotient_ring_element,quotient_ring_element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring_element.py#L29
+Implemented,Full,sage.rings.quotient_ring_element.QuotientRingElement,sage.rings.quotient_ring_element,QuotientRingElement,class,RingElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring_element.py#L29
 Implemented,FULL,sage.rings.rational,sage.rings.rational,rational,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/rational.pyx#L4174
 Implemented,FULL,sage.rings.rational.Q_to_Z,sage.rings.rational,Q_to_Z,class,Map,https://github.com/sagemath/sage/blob/develop/src/sage/rings/rational.pyx#L4174
 Implemented,FULL,sage.rings.rational.Rational,sage.rings.rational,Rational,class,FieldElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/rational.pyx#L414
