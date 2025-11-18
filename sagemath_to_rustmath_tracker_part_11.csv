@@ -118,9 +118,9 @@ Implemented,FULL,sage.numerical.sdp.SemidefiniteProgram,sage.numerical.sdp,Semid
 ,,sage.plot.circle,sage.plot.circle,circle,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/circle.py#L26
 ,,sage.plot.circle.Circle,sage.plot.circle,Circle,class,GraphicPrimitive,https://github.com/sagemath/sage/blob/develop/src/sage/plot/circle.py#L26
 ,,sage.plot.circle.circle,sage.plot.circle,circle,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/circle.py#L231
-,,sage.plot.colors,sage.plot.colors,colors,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/colors.py#L355
-,,sage.plot.colors.Color,sage.plot.colors,Color,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/plot/colors.py#L355
-,,sage.plot.colors.Colormaps,sage.plot.colors,Colormaps,class,MutableMapping,https://github.com/sagemath/sage/blob/develop/src/sage/plot/colors.py#L1359
+Implemented,PARTIAL,sage.plot.colors,sage.plot.colors,colors,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/colors.py#L355
+Implemented,PARTIAL,sage.plot.colors.Color,sage.plot.colors,Color,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/plot/colors.py#L355
+Implemented,PARTIAL,sage.plot.colors.Colormaps,sage.plot.colors,Colormaps,class,MutableMapping,https://github.com/sagemath/sage/blob/develop/src/sage/plot/colors.py#L1359
 ,,sage.plot.colors.ColorsDict,sage.plot.colors,ColorsDict,class,dict,https://github.com/sagemath/sage/blob/develop/src/sage/plot/colors.py#L999
 ,,sage.plot.colors.check_color_data,sage.plot.colors,check_color_data,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/colors.py#L1326
 ,,sage.plot.colors.float_to_html,sage.plot.colors,float_to_html,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/colors.py#L1137
@@ -156,9 +156,9 @@ Implemented,FULL,sage.numerical.sdp.SemidefiniteProgram,sage.numerical.sdp,Semid
 ,,sage.plot.ellipse,sage.plot.ellipse,ellipse,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/ellipse.py#L25
 ,,sage.plot.ellipse.Ellipse,sage.plot.ellipse,Ellipse,class,GraphicPrimitive,https://github.com/sagemath/sage/blob/develop/src/sage/plot/ellipse.py#L25
 ,,sage.plot.ellipse.ellipse,sage.plot.ellipse,ellipse,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/ellipse.py#L231
-,,sage.plot.graphics,sage.plot.graphics,graphics,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/graphics.py#L128
-,,sage.plot.graphics.Graphics,sage.plot.graphics,Graphics,class,"WithEqualityById, SageObject",https://github.com/sagemath/sage/blob/develop/src/sage/plot/graphics.py#L128
-,,sage.plot.graphics.GraphicsArray,sage.plot.graphics,GraphicsArray,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/graphics.py#L3558
+Implemented,PARTIAL,sage.plot.graphics,sage.plot.graphics,graphics,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/graphics.py#L128
+Implemented,PARTIAL,sage.plot.graphics.Graphics,sage.plot.graphics,Graphics,class,"WithEqualityById, SageObject",https://github.com/sagemath/sage/blob/develop/src/sage/plot/graphics.py#L128
+Implemented,PARTIAL,sage.plot.graphics.GraphicsArray,sage.plot.graphics,GraphicsArray,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/graphics.py#L3558
 ,,sage.plot.graphics.is_Graphics,sage.plot.graphics,is_Graphics,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/graphics.py#L56
 ,,sage.plot.histogram,sage.plot.histogram,histogram,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/histogram.py#L21
 ,,sage.plot.histogram.Histogram,sage.plot.histogram,Histogram,class,GraphicPrimitive,https://github.com/sagemath/sage/blob/develop/src/sage/plot/histogram.py#L21
@@ -186,9 +186,9 @@ Implemented,FULL,sage.numerical.sdp.SemidefiniteProgram,sage.numerical.sdp,Semid
 ,,sage.plot.misc.get_matplotlib_linestyle,sage.plot.misc,get_matplotlib_linestyle,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/misc.py#L325
 ,,sage.plot.misc.setup_for_eval_on_grid,sage.plot.misc,setup_for_eval_on_grid,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/misc.py#L22
 ,,sage.plot.misc.unify_arguments,sage.plot.misc,unify_arguments,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/misc.py#L228
-,,sage.plot.multigraphics,sage.plot.multigraphics,multigraphics,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/multigraphics.py#L909
-,,sage.plot.multigraphics.GraphicsArray,sage.plot.multigraphics,GraphicsArray,class,MultiGraphics,https://github.com/sagemath/sage/blob/develop/src/sage/plot/multigraphics.py#L909
-,,sage.plot.multigraphics.MultiGraphics,sage.plot.multigraphics,MultiGraphics,class,"WithEqualityById, SageObject",https://github.com/sagemath/sage/blob/develop/src/sage/plot/multigraphics.py#L24
+Implemented,PARTIAL,sage.plot.multigraphics,sage.plot.multigraphics,multigraphics,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/multigraphics.py#L909
+Implemented,PARTIAL,sage.plot.multigraphics.GraphicsArray,sage.plot.multigraphics,GraphicsArray,class,MultiGraphics,https://github.com/sagemath/sage/blob/develop/src/sage/plot/multigraphics.py#L909
+Implemented,PARTIAL,sage.plot.multigraphics.MultiGraphics,sage.plot.multigraphics,MultiGraphics,class,"WithEqualityById, SageObject",https://github.com/sagemath/sage/blob/develop/src/sage/plot/multigraphics.py#L24
 ,,sage.plot.plot,sage.plot.plot,plot,module,,
 ,,sage.plot.plot.SelectiveFormatter,sage.plot.plot,SelectiveFormatter,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L677
 ,,sage.plot.plot.adaptive_refinement,sage.plot.plot,adaptive_refinement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L3875
@@ -372,8 +372,8 @@ Implemented,FULL,sage.numerical.sdp.SemidefiniteProgram,sage.numerical.sdp,Semid
 ,,sage.plot.polygon.Polygon,sage.plot.polygon,Polygon,class,GraphicPrimitive_xydata,https://github.com/sagemath/sage/blob/develop/src/sage/plot/polygon.py#L26
 ,,sage.plot.polygon.polygon,sage.plot.polygon,polygon,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/polygon.py#L284
 ,,sage.plot.polygon.polygon2d,sage.plot.polygon,polygon2d,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/polygon.py#L321
-,,sage.plot.primitive,sage.plot.primitive,primitive,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/primitive.py#L25
-,,sage.plot.primitive.GraphicPrimitive,sage.plot.primitive,GraphicPrimitive,class,"WithEqualityById, SageObject",https://github.com/sagemath/sage/blob/develop/src/sage/plot/primitive.py#L25
+Implemented,PARTIAL,sage.plot.primitive,sage.plot.primitive,primitive,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/primitive.py#L25
+Implemented,PARTIAL,sage.plot.primitive.GraphicPrimitive,sage.plot.primitive,GraphicPrimitive,class,"WithEqualityById, SageObject",https://github.com/sagemath/sage/blob/develop/src/sage/plot/primitive.py#L25
 ,,sage.plot.primitive.GraphicPrimitive_xydata,sage.plot.primitive,GraphicPrimitive_xydata,class,GraphicPrimitive,https://github.com/sagemath/sage/blob/develop/src/sage/plot/primitive.py#L217
 ,,sage.plot.scatter_plot,sage.plot.scatter_plot,scatter_plot,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/scatter_plot.py#L27
 ,,sage.plot.scatter_plot.ScatterPlot,sage.plot.scatter_plot,ScatterPlot,class,GraphicPrimitive,https://github.com/sagemath/sage/blob/develop/src/sage/plot/scatter_plot.py#L27

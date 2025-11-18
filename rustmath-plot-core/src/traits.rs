@@ -57,8 +57,8 @@ pub trait GraphicPrimitive: Renderable {
     }
 
     /// Set the label for the legend
-    fn set_label(&mut self, label: impl Into<String>) {
-        self.options_mut().label = Some(label.into());
+    fn set_label(&mut self, label: &str) {
+        self.options_mut().label = Some(label.to_string());
     }
 }
 

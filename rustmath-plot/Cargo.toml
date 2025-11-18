@@ -1,0 +1,16 @@
+[package]
+name = "rustmath-plot"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustmath-core = { path = "../rustmath-core" }
+rustmath-plot-core = { path = "../rustmath-plot-core" }
+rustmath-colors = { path = "../rustmath-colors" }
+thiserror.workspace = true
+
+[dev-dependencies]
+# Add test dependencies here as needed
