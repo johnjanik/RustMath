@@ -808,19 +808,19 @@ Implemented,Full,sage.rings.asymptotic.term_monoid.can_absorb,sage.rings.asympto
 Implemented,Full,sage.rings.asymptotic.term_monoid.coefficient_ring,sage.rings.asymptotic.term_monoid,coefficient_ring,attribute,,
 Implemented,Full,sage.rings.asymptotic.term_monoid.growth_group,sage.rings.asymptotic.term_monoid,growth_group,attribute,,
 Implemented,Full,sage.rings.asymptotic.term_monoid.term_monoid_factory,sage.rings.asymptotic.term_monoid,term_monoid_factory,attribute,,
-,,sage.rings.bernmm,sage.rings.bernmm,bernmm,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/bernmm.pyx#L98
-,,sage.rings.bernmm.bernmm_bern_modp,sage.rings.bernmm,bernmm_bern_modp,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/bernmm.pyx#L98
-,,sage.rings.bernmm.bernmm_bern_rat,sage.rings.bernmm,bernmm_bern_rat,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/bernmm.pyx#L42
-,,sage.rings.bernoulli_mod_p,sage.rings.bernoulli_mod_p,bernoulli_mod_p,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/bernoulli_mod_p.pyx#L97
-,,sage.rings.bernoulli_mod_p.bernoulli_mod_p,sage.rings.bernoulli_mod_p,bernoulli_mod_p,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/bernoulli_mod_p.pyx#L97
-,,sage.rings.bernoulli_mod_p.bernoulli_mod_p_single,sage.rings.bernoulli_mod_p,bernoulli_mod_p_single,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/bernoulli_mod_p.pyx#L227
-,,sage.rings.bernoulli_mod_p.verify_bernoulli_mod_p,sage.rings.bernoulli_mod_p,verify_bernoulli_mod_p,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/bernoulli_mod_p.pyx#L42
-,,sage.rings.big_oh,sage.rings.big_oh,big_oh,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/big_oh.py#L37
-,,sage.rings.big_oh.O,sage.rings.big_oh,O,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/big_oh.py#L37
-,,sage.rings.cfinite_sequence,sage.rings.cfinite_sequence,cfinite_sequence,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/cfinite_sequence.py#L160
-,,sage.rings.cfinite_sequence.CFiniteSequence,sage.rings.cfinite_sequence,CFiniteSequence,class,FieldElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/cfinite_sequence.py#L160
-,,sage.rings.cfinite_sequence.CFiniteSequences,sage.rings.cfinite_sequence,CFiniteSequences,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/cfinite_sequence.py#L107
-,,sage.rings.cfinite_sequence.CFiniteSequences_generic,sage.rings.cfinite_sequence,CFiniteSequences_generic,class,"Parent, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/rings/cfinite_sequence.py#L882
+Implemented,Full,sage.rings.bernmm,sage.rings.bernmm,bernmm,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/bernmm.pyx#L98
+Implemented,Full,sage.rings.bernmm.bernmm_bern_modp,sage.rings.bernmm,bernmm_bern_modp,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/bernmm.pyx#L98
+Implemented,Full,sage.rings.bernmm.bernmm_bern_rat,sage.rings.bernmm,bernmm_bern_rat,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/bernmm.pyx#L42
+Implemented,Full,sage.rings.bernoulli_mod_p,sage.rings.bernoulli_mod_p,bernoulli_mod_p,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/bernoulli_mod_p.pyx#L97
+Implemented,Full,sage.rings.bernoulli_mod_p.bernoulli_mod_p,sage.rings.bernoulli_mod_p,bernoulli_mod_p,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/bernoulli_mod_p.pyx#L97
+Implemented,Full,sage.rings.bernoulli_mod_p.bernoulli_mod_p_single,sage.rings.bernoulli_mod_p,bernoulli_mod_p_single,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/bernoulli_mod_p.pyx#L227
+Implemented,Full,sage.rings.bernoulli_mod_p.verify_bernoulli_mod_p,sage.rings.bernoulli_mod_p,verify_bernoulli_mod_p,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/bernoulli_mod_p.pyx#L42
+Implemented,Full,sage.rings.big_oh,sage.rings.big_oh,big_oh,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/big_oh.py#L37
+Implemented,Full,sage.rings.big_oh.O,sage.rings.big_oh,O,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/big_oh.py#L37
+Implemented,Full,sage.rings.cfinite_sequence,sage.rings.cfinite_sequence,cfinite_sequence,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/cfinite_sequence.py#L160
+Implemented,Full,sage.rings.cfinite_sequence.CFiniteSequence,sage.rings.cfinite_sequence,CFiniteSequence,class,FieldElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/cfinite_sequence.py#L160
+Implemented,Full,sage.rings.cfinite_sequence.CFiniteSequences,sage.rings.cfinite_sequence,CFiniteSequences,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/cfinite_sequence.py#L107
+Implemented,Full,sage.rings.cfinite_sequence.CFiniteSequences_generic,sage.rings.cfinite_sequence,CFiniteSequences_generic,class,"Parent, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/rings/cfinite_sequence.py#L882
 ,,sage.rings.complex_arb,sage.rings.complex_arb,complex_arb,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_arb.pyx#L1370
 ,,sage.rings.complex_arb.ComplexBall,sage.rings.complex_arb,ComplexBall,class,RingElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_arb.pyx#L1370
 ,,sage.rings.complex_arb.ComplexBallField,sage.rings.complex_arb,ComplexBallField,class,"UniqueRepresentation, ComplexBallField",https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_arb.pyx#L311
