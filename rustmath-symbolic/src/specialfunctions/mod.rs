@@ -39,28 +39,37 @@ pub mod jacobi;
 pub mod min_max;
 pub mod orthogonal_polys;
 pub mod other;
+pub mod piecewise;
 pub mod prime_pi;
 pub mod special;
+pub mod spike_function;
 pub mod transcendental;
 pub mod wigner;
 
 pub use airy::{airy_ai, airy_ai_prime, airy_bi, airy_bi_prime};
 pub use generalized::{dirac_delta, heaviside, kronecker_delta, signum, unit_step};
-pub use hypergeometric::{hypergeometric, hypergeometric_m, hypergeometric_u};
+pub use hypergeometric::{
+    hypergeometric, hypergeometric_closed_form, hypergeometric_m, hypergeometric_u,
+    rational_param_as_tuple, HypergeometricEvaluationMethods,
+};
 pub use jacobi::{inverse_jacobi, jacobi_am, jacobi_cn, jacobi_dn, jacobi_sn};
 pub use min_max::{max2, max_symbolic, min2, min_symbolic};
 pub use orthogonal_polys::{
-    chebyshev_t, chebyshev_u, gen_laguerre, hermite, jacobi_p, laguerre, legendre_p, legendre_q,
-    ultraspherical,
+    assoc_legendre_p, assoc_legendre_q, chebyshev_t, chebyshev_u, gen_laguerre,
+    hahn_polynomial, hermite, jacobi_p, krawtchouk_polynomial, laguerre, legendre_p, legendre_q,
+    meixner_polynomial, ultraspherical,
 };
 pub use other::{
-    abs_symbolic, binomial, ceil, conjugate, factorial, floor, frac, imag_part, real_part,
+    abs_symbolic, arg, binomial, cases, ceil, conjugate, factorial, floor, frac, imag_part, limit,
+    order, product, real_nth_root, real_part, sqrt_function, sum,
 };
+pub use piecewise::{piecewise_function, PiecewiseEvaluationMethods};
 pub use prime_pi::{legendre_phi, prime_pi};
 pub use special::{
     elliptic_e, elliptic_ec, elliptic_eu, elliptic_f, elliptic_j, elliptic_kc, elliptic_pi,
     spherical_harmonic,
 };
+pub use spike_function::spike_function;
 pub use transcendental::{
     dickman_rho, hurwitz_zeta, stieltjes, zeta, zeta_deriv, zeta_symmetric,
 };

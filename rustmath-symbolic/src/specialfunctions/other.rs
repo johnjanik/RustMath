@@ -30,6 +30,7 @@
 //! ```
 
 use crate::expression::Expr;
+use crate::symbol::Symbol;
 use rustmath_core::{NumericConversion, Ring};
 use rustmath_integers::Integer;
 use rustmath_rationals::Rational;
@@ -308,6 +309,129 @@ pub fn conjugate(z: &Expr) -> Expr {
     }
 }
 
+/// Complex argument function arg(z)
+///
+/// Returns the argument (angle/phase) of a complex number.
+///
+/// Corresponds to sage.functions.other.Function_arg
+pub fn arg(z: &Expr) -> Expr {
+    // For real numbers, return 0 if positive, π if negative
+    match z {
+        Expr::Integer(i) => {
+            if i > &Integer::zero() {
+                Expr::from(0)
+            } else if i < &Integer::zero() {
+                Expr::Function("pi".to_string(), vec![])
+            } else {
+                Expr::Function("arg".to_string(), vec![Arc::new(z.clone())])
+            }
+        }
+        Expr::Rational(r) => {
+            if r > &Rational::zero() {
+                Expr::from(0)
+            } else if r < &Rational::zero() {
+                Expr::Function("pi".to_string(), vec![])
+            } else {
+                Expr::Function("arg".to_string(), vec![Arc::new(z.clone())])
+            }
+        }
+        _ => Expr::Function("arg".to_string(), vec![Arc::new(z.clone())]),
+    }
+}
+
+/// Real nth root function
+///
+/// Corresponds to sage.functions.other.Function_real_nth_root
+pub fn real_nth_root(x: &Expr, n: &Expr) -> Expr {
+    Expr::Function(
+        "real_nth_root".to_string(),
+        vec![Arc::new(x.clone()), Arc::new(n.clone())],
+    )
+}
+
+/// Square root function
+///
+/// Corresponds to sage.functions.other.Function_sqrt
+pub fn sqrt_function(x: &Expr) -> Expr {
+    x.clone().sqrt()
+}
+
+/// Symbolic limit function
+///
+/// Represents lim_{var→point} expr
+///
+/// Corresponds to sage.functions.other.Function_limit
+pub fn limit(expr: &Expr, var: &Symbol, point: &Expr) -> Expr {
+    Expr::Function(
+        "limit".to_string(),
+        vec![
+            Arc::new(expr.clone()),
+            Arc::new(Expr::Symbol(var.clone())),
+            Arc::new(point.clone()),
+        ],
+    )
+}
+
+/// Symbolic sum function
+///
+/// Represents Σ_{var=lower}^{upper} expr
+///
+/// Corresponds to sage.functions.other.Function_sum
+pub fn sum(expr: &Expr, var: &Symbol, lower: &Expr, upper: &Expr) -> Expr {
+    Expr::Function(
+        "sum".to_string(),
+        vec![
+            Arc::new(expr.clone()),
+            Arc::new(Expr::Symbol(var.clone())),
+            Arc::new(lower.clone()),
+            Arc::new(upper.clone()),
+        ],
+    )
+}
+
+/// Symbolic product function
+///
+/// Represents Π_{var=lower}^{upper} expr
+///
+/// Corresponds to sage.functions.other.Function_prod
+pub fn product(expr: &Expr, var: &Symbol, lower: &Expr, upper: &Expr) -> Expr {
+    Expr::Function(
+        "product".to_string(),
+        vec![
+            Arc::new(expr.clone()),
+            Arc::new(Expr::Symbol(var.clone())),
+            Arc::new(lower.clone()),
+            Arc::new(upper.clone()),
+        ],
+    )
+}
+
+/// Order function O(expr) for asymptotic analysis
+///
+/// Corresponds to sage.functions.other.Function_Order
+pub fn order(expr: &Expr, var: &Symbol, point: &Expr) -> Expr {
+    Expr::Function(
+        "order".to_string(),
+        vec![
+            Arc::new(expr.clone()),
+            Arc::new(Expr::Symbol(var.clone())),
+            Arc::new(point.clone()),
+        ],
+    )
+}
+
+/// Case-based function
+///
+/// Corresponds to sage.functions.other.Function_cases
+pub fn cases(cases_list: &[(Expr, Expr)]) -> Expr {
+    let cases_vec: Vec<Arc<Expr>> = cases_list
+        .iter()
+        .flat_map(|(cond, val)| vec![Arc::new(cond.clone()), Arc::new(val.clone())])
+        .collect();
+
+    Expr::Function("cases".to_string(), cases_vec)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -477,5 +601,47 @@ mod tests {
             conjugate(&Expr::Rational(Rational::new(3, 4).unwrap())),
             Expr::Rational(Rational::new(3, 4).unwrap())
         );
+    }
+
+    #[test]
+    fn test_arg() {
+        // arg of positive real is 0
+        assert_eq!(arg(&Expr::from(5)), Expr::from(0));
+    }
+
+    #[test]
+    fn test_real_nth_root() {
+        let x = Symbol::new("x");
+        let root = real_nth_root(&Expr::Symbol(x), &Expr::from(3));
+        assert!(matches!(root, Expr::Function(name, _) if name == "real_nth_root"));
+    }
+
+    #[test]
+    fn test_sqrt_function() {
+        let x = Symbol::new("x");
+        let sqrt_x = sqrt_function(&Expr::Symbol(x));
+        // sqrt should return a power with exponent 1/2
+        assert!(!sqrt_x.is_constant());
+    }
+
+    #[test]
+    fn test_limit_symbolic() {
+        let x = Symbol::new("x");
+        let lim = limit(&Expr::Symbol(x.clone()), &x, &Expr::from(0));
+        assert!(matches!(lim, Expr::Function(name, _) if name == "limit"));
+    }
+
+    #[test]
+    fn test_sum_symbolic() {
+        let i = Symbol::new("i");
+        let s = sum(&Expr::Symbol(i.clone()), &i, &Expr::from(1), &Expr::from(10));
+        assert!(matches!(s, Expr::Function(name, _) if name == "sum"));
+    }
+
+    #[test]
+    fn test_product_symbolic() {
+        let i = Symbol::new("i");
+        let p = product(&Expr::Symbol(i.clone()), &i, &Expr::from(1), &Expr::from(5));
+        assert!(matches!(p, Expr::Function(name, _) if name == "product"));
     }
 }
