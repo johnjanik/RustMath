@@ -36,8 +36,10 @@ pub mod big_oh;
 pub mod cfinite_sequence;
 pub mod derivation;
 pub mod fraction_field;
+pub mod fraction_field_fpt;
 pub mod growth_group;
 pub mod growth_group_cartesian;
+pub mod residue_field;
 pub mod term_monoid;
 
 // Re-export core ring types from other crates
