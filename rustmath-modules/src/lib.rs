@@ -31,6 +31,9 @@ pub mod tutorial_free_modules;
 pub mod combinatorial_free_module;
 pub mod module_morphism;
 
+// Tensor modules - comprehensive tensor algebra for free modules
+pub mod tensor;
+
 // Finitely generated modules over PIDs
 pub mod fg_pid {
     pub mod fgp_module;
@@ -139,7 +142,8 @@ mod tests {
 
     #[test]
     fn test_basic_module_imports() {
-        // Compilation test - verify modules exist
-        let _ = std::marker::PhantomData::<Module>;
+        // Compilation test - verify tensor modules exist
+        use crate::tensor::Components;
+        let _: Components<i32> = Components::new(2, vec![2, 2]);
     }
 }
