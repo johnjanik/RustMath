@@ -1,0 +1,18 @@
+[package]
+name = "rustmath-topology"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustmath-core = { path = "../rustmath-core" }
+rustmath-integers = { path = "../rustmath-integers" }
+rustmath-rationals = { path = "../rustmath-rationals" }
+rustmath-matrix = { path = "../rustmath-matrix" }
+rustmath-groups = { path = "../rustmath-groups" }
+rustmath-combinatorics = { path = "../rustmath-combinatorics" }
+num-traits = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
