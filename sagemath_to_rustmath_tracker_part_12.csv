@@ -174,19 +174,19 @@ Implemented,Full,sage.rings.homset.RingHomset,sage.rings.homset,RingHomset,funct
 Implemented,Full,sage.rings.homset.RingHomset_generic,sage.rings.homset,RingHomset_generic,class,"R, S, HomsetWithBase",https://github.com/sagemath/sage/blob/develop/src/sage/rings/homset.py#L64
 Implemented,Full,sage.rings.homset.RingHomset_quo_ring,sage.rings.homset,RingHomset_quo_ring,class,"R, S, RingHomset_generic",https://github.com/sagemath/sage/blob/develop/src/sage/rings/homset.py#L249
 Implemented,Full,sage.rings.homset.is_RingHomset,sage.rings.homset,is_RingHomset,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/homset.py#L21
-Implemented,STUB,sage.rings.ideal,sage.rings.ideal,ideal,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L1734
-Implemented,STUB,sage.rings.ideal.Cyclic,sage.rings.ideal,Cyclic,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L1734
-Implemented,STUB,sage.rings.ideal.FieldIdeal,sage.rings.ideal,FieldIdeal,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L1851
-Implemented,STUB,sage.rings.ideal.Ideal,sage.rings.ideal,Ideal,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L44
-Implemented,STUB,sage.rings.ideal.Ideal_fractional,sage.rings.ideal,Ideal_fractional,class,Ideal_generic,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L1710
-Implemented,STUB,sage.rings.ideal.Ideal_generic,sage.rings.ideal,Ideal_generic,class,MonoidElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L251
-Implemented,STUB,sage.rings.ideal.Ideal_pid,sage.rings.ideal,Ideal_pid,class,Ideal_principal,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L1461
-Implemented,STUB,sage.rings.ideal.Ideal_principal,sage.rings.ideal,Ideal_principal,class,Ideal_generic,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L1263
-Implemented,STUB,sage.rings.ideal.Katsura,sage.rings.ideal,Katsura,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L1800
-Implemented,STUB,sage.rings.ideal.is_Ideal,sage.rings.ideal,is_Ideal,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L210
-Implemented,STUB,sage.rings.ideal_monoid,sage.rings.ideal_monoid,ideal_monoid,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal_monoid.py#L17
-Implemented,STUB,sage.rings.ideal_monoid.IdealMonoid,sage.rings.ideal_monoid,IdealMonoid,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal_monoid.py#L17
-Implemented,STUB,sage.rings.ideal_monoid.IdealMonoid_c,sage.rings.ideal_monoid,IdealMonoid_c,class,"R, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal_monoid.py#L31
+Implemented,Full,sage.rings.ideal,sage.rings.ideal,ideal,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L1734
+Implemented,Full,sage.rings.ideal.Cyclic,sage.rings.ideal,Cyclic,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L1734
+Implemented,Full,sage.rings.ideal.FieldIdeal,sage.rings.ideal,FieldIdeal,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L1851
+Implemented,Full,sage.rings.ideal.Ideal,sage.rings.ideal,Ideal,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L44
+Implemented,Full,sage.rings.ideal.Ideal_fractional,sage.rings.ideal,Ideal_fractional,class,Ideal_generic,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L1710
+Implemented,Full,sage.rings.ideal.Ideal_generic,sage.rings.ideal,Ideal_generic,class,MonoidElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L251
+Implemented,Full,sage.rings.ideal.Ideal_pid,sage.rings.ideal,Ideal_pid,class,Ideal_principal,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L1461
+Implemented,Full,sage.rings.ideal.Ideal_principal,sage.rings.ideal,Ideal_principal,class,Ideal_generic,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L1263
+Implemented,Full,sage.rings.ideal.Katsura,sage.rings.ideal,Katsura,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L1800
+Implemented,Full,sage.rings.ideal.is_Ideal,sage.rings.ideal,is_Ideal,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L210
+Implemented,Full,sage.rings.ideal_monoid,sage.rings.ideal_monoid,ideal_monoid,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal_monoid.py#L17
+Implemented,Full,sage.rings.ideal_monoid.IdealMonoid,sage.rings.ideal_monoid,IdealMonoid,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal_monoid.py#L17
+Implemented,Full,sage.rings.ideal_monoid.IdealMonoid_c,sage.rings.ideal_monoid,IdealMonoid_c,class,"R, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal_monoid.py#L31
 Implemented,Full,sage.rings.infinity,sage.rings.infinity,infinity,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L253
 Implemented,Full,sage.rings.infinity.AnInfinity,sage.rings.infinity,AnInfinity,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L253
 Implemented,Full,sage.rings.infinity.FiniteNumber,sage.rings.infinity,FiniteNumber,class,RingElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L1304

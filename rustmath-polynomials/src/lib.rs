@@ -6,6 +6,7 @@ pub mod algebraic_geometry;
 pub mod factorization;
 pub mod groebner;
 pub mod ideal;
+pub mod ideal_monoid;
 pub mod laurent;
 pub mod multivariate;
 pub mod polynomial;
@@ -25,7 +26,8 @@ pub use groebner::{
     groebner_basis, groebner_basis_info, ideal_membership, is_well_ordering,
     ordering_description, reduce, reduced_groebner_basis, s_polynomial, MonomialOrdering,
 };
-pub use ideal::Ideal;
+pub use ideal::{cyclic_ideal, is_ideal, katsura_ideal, FieldIdeal, Ideal};
+pub use ideal_monoid::{is_ideal_monoid, IdealMonoid};
 pub use laurent::LaurentPolynomial;
 pub use multivariate::{Monomial, MultivariatePolynomial};
 pub use polynomial::Polynomial;
