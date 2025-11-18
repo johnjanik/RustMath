@@ -169,11 +169,11 @@ Implemented,Full,sage.rings.function_field.element_rational.FunctionFieldElement
 ,,sage.rings.generic,sage.rings.generic,generic,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/generic.py#L12
 ,,sage.rings.generic.ProductTree,sage.rings.generic,ProductTree,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/rings/generic.py#L12
 ,,sage.rings.generic.prod_with_derivative,sage.rings.generic,prod_with_derivative,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/generic.py#L258
-,,sage.rings.homset,sage.rings.homset,homset,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/homset.py#L46
-,,sage.rings.homset.RingHomset,sage.rings.homset,RingHomset,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/homset.py#L46
-,,sage.rings.homset.RingHomset_generic,sage.rings.homset,RingHomset_generic,class,"R, S, HomsetWithBase",https://github.com/sagemath/sage/blob/develop/src/sage/rings/homset.py#L64
-,,sage.rings.homset.RingHomset_quo_ring,sage.rings.homset,RingHomset_quo_ring,class,"R, S, RingHomset_generic",https://github.com/sagemath/sage/blob/develop/src/sage/rings/homset.py#L249
-,,sage.rings.homset.is_RingHomset,sage.rings.homset,is_RingHomset,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/homset.py#L21
+Implemented,Full,sage.rings.homset,sage.rings.homset,homset,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/homset.py#L46
+Implemented,Full,sage.rings.homset.RingHomset,sage.rings.homset,RingHomset,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/homset.py#L46
+Implemented,Full,sage.rings.homset.RingHomset_generic,sage.rings.homset,RingHomset_generic,class,"R, S, HomsetWithBase",https://github.com/sagemath/sage/blob/develop/src/sage/rings/homset.py#L64
+Implemented,Full,sage.rings.homset.RingHomset_quo_ring,sage.rings.homset,RingHomset_quo_ring,class,"R, S, RingHomset_generic",https://github.com/sagemath/sage/blob/develop/src/sage/rings/homset.py#L249
+Implemented,Full,sage.rings.homset.is_RingHomset,sage.rings.homset,is_RingHomset,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/homset.py#L21
 Implemented,STUB,sage.rings.ideal,sage.rings.ideal,ideal,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L1734
 Implemented,STUB,sage.rings.ideal.Cyclic,sage.rings.ideal,Cyclic,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L1734
 Implemented,STUB,sage.rings.ideal.FieldIdeal,sage.rings.ideal,FieldIdeal,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal.py#L1851
@@ -187,18 +187,18 @@ Implemented,STUB,sage.rings.ideal.is_Ideal,sage.rings.ideal,is_Ideal,function,,h
 Implemented,STUB,sage.rings.ideal_monoid,sage.rings.ideal_monoid,ideal_monoid,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal_monoid.py#L17
 Implemented,STUB,sage.rings.ideal_monoid.IdealMonoid,sage.rings.ideal_monoid,IdealMonoid,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal_monoid.py#L17
 Implemented,STUB,sage.rings.ideal_monoid.IdealMonoid_c,sage.rings.ideal_monoid,IdealMonoid_c,class,"R, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/rings/ideal_monoid.py#L31
-,,sage.rings.infinity,sage.rings.infinity,infinity,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L253
-,,sage.rings.infinity.AnInfinity,sage.rings.infinity,AnInfinity,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L253
-,,sage.rings.infinity.FiniteNumber,sage.rings.infinity,FiniteNumber,class,RingElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L1304
-,,sage.rings.infinity.InfinityRing_class,sage.rings.infinity,InfinityRing_class,class,"Singleton, CommutativeRing",https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L1009
-,,sage.rings.infinity.LessThanInfinity,sage.rings.infinity,LessThanInfinity,class,"_uniq, RingElement",https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L761
-,,sage.rings.infinity.MinusInfinity,sage.rings.infinity,MinusInfinity,class,"_uniq, AnInfinity, InfinityElement",https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L1567
-,,sage.rings.infinity.PlusInfinity,sage.rings.infinity,PlusInfinity,class,"_uniq, AnInfinity, InfinityElement",https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L1666
-,,sage.rings.infinity.UnsignedInfinity,sage.rings.infinity,UnsignedInfinity,class,"_uniq, AnInfinity, InfinityElement",https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L890
-,,sage.rings.infinity.UnsignedInfinityRing_class,sage.rings.infinity,UnsignedInfinityRing_class,class,"Singleton, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L566
-,,sage.rings.infinity.is_Infinite,sage.rings.infinity,is_Infinite,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L973
-,,sage.rings.infinity.test_comparison,sage.rings.infinity,test_comparison,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L1770
-,,sage.rings.infinity.test_signed_infinity,sage.rings.infinity,test_signed_infinity,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L1841
+Implemented,Full,sage.rings.infinity,sage.rings.infinity,infinity,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L253
+Implemented,Full,sage.rings.infinity.AnInfinity,sage.rings.infinity,AnInfinity,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L253
+Implemented,Full,sage.rings.infinity.FiniteNumber,sage.rings.infinity,FiniteNumber,class,RingElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L1304
+Implemented,Full,sage.rings.infinity.InfinityRing_class,sage.rings.infinity,InfinityRing_class,class,"Singleton, CommutativeRing",https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L1009
+Implemented,Full,sage.rings.infinity.LessThanInfinity,sage.rings.infinity,LessThanInfinity,class,"_uniq, RingElement",https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L761
+Implemented,Full,sage.rings.infinity.MinusInfinity,sage.rings.infinity,MinusInfinity,class,"_uniq, AnInfinity, InfinityElement",https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L1567
+Implemented,Full,sage.rings.infinity.PlusInfinity,sage.rings.infinity,PlusInfinity,class,"_uniq, AnInfinity, InfinityElement",https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L1666
+Implemented,Full,sage.rings.infinity.UnsignedInfinity,sage.rings.infinity,UnsignedInfinity,class,"_uniq, AnInfinity, InfinityElement",https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L890
+Implemented,Full,sage.rings.infinity.UnsignedInfinityRing_class,sage.rings.infinity,UnsignedInfinityRing_class,class,"Singleton, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L566
+Implemented,Full,sage.rings.infinity.is_Infinite,sage.rings.infinity,is_Infinite,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L973
+Implemented,Full,sage.rings.infinity.test_comparison,sage.rings.infinity,test_comparison,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L1770
+Implemented,Full,sage.rings.infinity.test_signed_infinity,sage.rings.infinity,test_signed_infinity,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/infinity.py#L1841
 Implemented,FULL,sage.rings.integer,sage.rings.integer,integer,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/integer.pyx#L7344
 Implemented,FULL,sage.rings.integer.GCD_list,sage.rings.integer,GCD_list,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/integer.pyx#L7344
 Implemented,FULL,sage.rings.integer.Integer,sage.rings.integer,Integer,class,EuclideanDomainElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/integer.pyx#L404
@@ -259,16 +259,16 @@ Implemented,FULL,sage.rings.integer_ring.is_IntegerRing,sage.rings.integer_ring,
 ,,sage.rings.localization.normalize_extra_units,sage.rings.localization,normalize_extra_units,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/localization.py#L187
 ,,sage.rings.monomials,sage.rings.monomials,monomials,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/monomials.py#L42
 ,,sage.rings.monomials.monomials,sage.rings.monomials,monomials,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/monomials.py#L42
-,,sage.rings.morphism,sage.rings.morphism,morphism,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/morphism.pyx#L2856
-,,sage.rings.morphism.FrobeniusEndomorphism_generic,sage.rings.morphism,FrobeniusEndomorphism_generic,class,RingHomomorphism,https://github.com/sagemath/sage/blob/develop/src/sage/rings/morphism.pyx#L2856
-,,sage.rings.morphism.RingHomomorphism,sage.rings.morphism,RingHomomorphism,class,RingMap,https://github.com/sagemath/sage/blob/develop/src/sage/rings/morphism.pyx#L633
-,,sage.rings.morphism.RingHomomorphism_cover,sage.rings.morphism,RingHomomorphism_cover,class,RingHomomorphism,https://github.com/sagemath/sage/blob/develop/src/sage/rings/morphism.pyx#L2446
-,,sage.rings.morphism.RingHomomorphism_from_base,sage.rings.morphism,RingHomomorphism_from_base,class,RingHomomorphism,https://github.com/sagemath/sage/blob/develop/src/sage/rings/morphism.pyx#L1975
-,,sage.rings.morphism.RingHomomorphism_from_fraction_field,sage.rings.morphism,RingHomomorphism_from_fraction_field,class,RingHomomorphism,https://github.com/sagemath/sage/blob/develop/src/sage/rings/morphism.pyx#L2328
-,,sage.rings.morphism.RingHomomorphism_from_quotient,sage.rings.morphism,RingHomomorphism_from_quotient,class,RingHomomorphism,https://github.com/sagemath/sage/blob/develop/src/sage/rings/morphism.pyx#L2617
-,,sage.rings.morphism.RingHomomorphism_im_gens,sage.rings.morphism,RingHomomorphism_im_gens,class,RingHomomorphism,https://github.com/sagemath/sage/blob/develop/src/sage/rings/morphism.pyx#L1661
-,,sage.rings.morphism.RingMap,sage.rings.morphism,RingMap,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/rings/morphism.pyx#L416
-,,sage.rings.morphism.RingMap_lift,sage.rings.morphism,RingMap_lift,class,RingMap,https://github.com/sagemath/sage/blob/develop/src/sage/rings/morphism.pyx#L446
+Implemented,Full,sage.rings.morphism,sage.rings.morphism,morphism,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/morphism.pyx#L2856
+Implemented,Full,sage.rings.morphism.FrobeniusEndomorphism_generic,sage.rings.morphism,FrobeniusEndomorphism_generic,class,RingHomomorphism,https://github.com/sagemath/sage/blob/develop/src/sage/rings/morphism.pyx#L2856
+Implemented,Full,sage.rings.morphism.RingHomomorphism,sage.rings.morphism,RingHomomorphism,class,RingMap,https://github.com/sagemath/sage/blob/develop/src/sage/rings/morphism.pyx#L633
+Implemented,Full,sage.rings.morphism.RingHomomorphism_cover,sage.rings.morphism,RingHomomorphism_cover,class,RingHomomorphism,https://github.com/sagemath/sage/blob/develop/src/sage/rings/morphism.pyx#L2446
+Implemented,Full,sage.rings.morphism.RingHomomorphism_from_base,sage.rings.morphism,RingHomomorphism_from_base,class,RingHomomorphism,https://github.com/sagemath/sage/blob/develop/src/sage/rings/morphism.pyx#L1975
+Implemented,Full,sage.rings.morphism.RingHomomorphism_from_fraction_field,sage.rings.morphism,RingHomomorphism_from_fraction_field,class,RingHomomorphism,https://github.com/sagemath/sage/blob/develop/src/sage/rings/morphism.pyx#L2328
+Implemented,Full,sage.rings.morphism.RingHomomorphism_from_quotient,sage.rings.morphism,RingHomomorphism_from_quotient,class,RingHomomorphism,https://github.com/sagemath/sage/blob/develop/src/sage/rings/morphism.pyx#L2617
+Implemented,Full,sage.rings.morphism.RingHomomorphism_im_gens,sage.rings.morphism,RingHomomorphism_im_gens,class,RingHomomorphism,https://github.com/sagemath/sage/blob/develop/src/sage/rings/morphism.pyx#L1661
+Implemented,Full,sage.rings.morphism.RingMap,sage.rings.morphism,RingMap,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/rings/morphism.pyx#L416
+Implemented,Full,sage.rings.morphism.RingMap_lift,sage.rings.morphism,RingMap_lift,class,RingMap,https://github.com/sagemath/sage/blob/develop/src/sage/rings/morphism.pyx#L446
 ,,sage.rings.multi_power_series_ring,sage.rings.multi_power_series_ring,multi_power_series_ring,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/multi_power_series_ring.py#L273
 ,,sage.rings.multi_power_series_ring.MPowerSeriesRing_generic,sage.rings.multi_power_series_ring,MPowerSeriesRing_generic,class,"PowerSeriesRing_generic, Nonexact",https://github.com/sagemath/sage/blob/develop/src/sage/rings/multi_power_series_ring.py#L273
 ,,sage.rings.multi_power_series_ring.is_MPowerSeriesRing,sage.rings.multi_power_series_ring,is_MPowerSeriesRing,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/multi_power_series_ring.py#L233

@@ -180,15 +180,15 @@ Implemented,FULL,sage.rings.power_series_ring_element.make_powerseries_poly_v0,s
 ,,sage.rings.qqbar.t1,sage.rings.qqbar,t1,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L8587
 ,,sage.rings.qqbar.t2,sage.rings.qqbar,t2,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L7177
 ,,sage.rings.qqbar.tail_prec_seq,sage.rings.qqbar,tail_prec_seq,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L2192
-,,sage.rings.quotient_ring,sage.rings.quotient_ring,quotient_ring,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L134
-,,sage.rings.quotient_ring.QuotientRing,sage.rings.quotient_ring,QuotientRing,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L134
-,,sage.rings.quotient_ring.QuotientRingIdeal_generic,sage.rings.quotient_ring,QuotientRingIdeal_generic,class,Ideal_generic,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L1514
-,,sage.rings.quotient_ring.QuotientRingIdeal_principal,sage.rings.quotient_ring,QuotientRingIdeal_principal,class,"Ideal_principal, QuotientRingIdeal_generic",https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L1586
-,,sage.rings.quotient_ring.QuotientRing_generic,sage.rings.quotient_ring,QuotientRing_generic,class,"R, I, QuotientRing_nc, CommutativeRing",https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L1397
-,,sage.rings.quotient_ring.QuotientRing_nc,sage.rings.quotient_ring,QuotientRing_nc,class,"R, I, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L387
-,,sage.rings.quotient_ring.is_QuotientRing,sage.rings.quotient_ring,is_QuotientRing,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L346
-,,sage.rings.quotient_ring_element,sage.rings.quotient_ring_element,quotient_ring_element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring_element.py#L29
-,,sage.rings.quotient_ring_element.QuotientRingElement,sage.rings.quotient_ring_element,QuotientRingElement,class,RingElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring_element.py#L29
+Implemented,Full,sage.rings.quotient_ring,sage.rings.quotient_ring,quotient_ring,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L134
+Implemented,Full,sage.rings.quotient_ring.QuotientRing,sage.rings.quotient_ring,QuotientRing,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L134
+Implemented,Full,sage.rings.quotient_ring.QuotientRingIdeal_generic,sage.rings.quotient_ring,QuotientRingIdeal_generic,class,Ideal_generic,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L1514
+Implemented,Full,sage.rings.quotient_ring.QuotientRingIdeal_principal,sage.rings.quotient_ring,QuotientRingIdeal_principal,class,"Ideal_principal, QuotientRingIdeal_generic",https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L1586
+Implemented,Full,sage.rings.quotient_ring.QuotientRing_generic,sage.rings.quotient_ring,QuotientRing_generic,class,"R, I, QuotientRing_nc, CommutativeRing",https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L1397
+Implemented,Full,sage.rings.quotient_ring.QuotientRing_nc,sage.rings.quotient_ring,QuotientRing_nc,class,"R, I, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L387
+Implemented,Full,sage.rings.quotient_ring.is_QuotientRing,sage.rings.quotient_ring,is_QuotientRing,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring.py#L346
+Implemented,Full,sage.rings.quotient_ring_element,sage.rings.quotient_ring_element,quotient_ring_element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring_element.py#L29
+Implemented,Full,sage.rings.quotient_ring_element.QuotientRingElement,sage.rings.quotient_ring_element,QuotientRingElement,class,RingElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/quotient_ring_element.py#L29
 Implemented,FULL,sage.rings.rational,sage.rings.rational,rational,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/rational.pyx#L4174
 Implemented,FULL,sage.rings.rational.Q_to_Z,sage.rings.rational,Q_to_Z,class,Map,https://github.com/sagemath/sage/blob/develop/src/sage/rings/rational.pyx#L4174
 Implemented,FULL,sage.rings.rational.Rational,sage.rings.rational,Rational,class,FieldElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/rational.pyx#L414
@@ -212,14 +212,14 @@ Implemented,FULL,sage.rings.real_double.RealDoubleField,sage.rings.real_double,R
 Implemented,FULL,sage.rings.real_double.RealDoubleField_class,sage.rings.real_double,RealDoubleField_class,class,RealDoubleField,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_double.pyx#L72
 Implemented,FULL,sage.rings.real_double.ToRDF,sage.rings.real_double,ToRDF,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_double.pyx#L1962
 Implemented,FULL,sage.rings.real_double.is_RealDoubleElement,sage.rings.real_double,is_RealDoubleElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_double.pyx#L2050
-,,sage.rings.real_interval_absolute,sage.rings.real_interval_absolute,real_interval_absolute,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_interval_absolute.pyx#L77
-,,sage.rings.real_interval_absolute.Factory,sage.rings.real_interval_absolute,Factory,class,UniqueFactory,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_interval_absolute.pyx#L77
-,,sage.rings.real_interval_absolute.MpfrOp,sage.rings.real_interval_absolute,MpfrOp,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_interval_absolute.pyx#L1015
-,,sage.rings.real_interval_absolute.RealIntervalAbsoluteElement,sage.rings.real_interval_absolute,RealIntervalAbsoluteElement,class,FieldElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_interval_absolute.pyx#L242
-,,sage.rings.real_interval_absolute.RealIntervalAbsoluteField,sage.rings.real_interval_absolute,RealIntervalAbsoluteField,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_interval_absolute.pyx#L77
-,,sage.rings.real_interval_absolute.RealIntervalAbsoluteField_class,sage.rings.real_interval_absolute,RealIntervalAbsoluteField_class,class,Field,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_interval_absolute.pyx#L95
-,,sage.rings.real_interval_absolute.shift_ceil,sage.rings.real_interval_absolute,shift_ceil,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_interval_absolute.pyx#L43
-,,sage.rings.real_interval_absolute.shift_floor,sage.rings.real_interval_absolute,shift_floor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_interval_absolute.pyx#L26
+Implemented,Full,sage.rings.real_interval_absolute,sage.rings.real_interval_absolute,real_interval_absolute,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_interval_absolute.pyx#L77
+Implemented,Full,sage.rings.real_interval_absolute.Factory,sage.rings.real_interval_absolute,Factory,class,UniqueFactory,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_interval_absolute.pyx#L77
+Implemented,Full,sage.rings.real_interval_absolute.MpfrOp,sage.rings.real_interval_absolute,MpfrOp,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_interval_absolute.pyx#L1015
+Implemented,Full,sage.rings.real_interval_absolute.RealIntervalAbsoluteElement,sage.rings.real_interval_absolute,RealIntervalAbsoluteElement,class,FieldElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_interval_absolute.pyx#L242
+Implemented,Full,sage.rings.real_interval_absolute.RealIntervalAbsoluteField,sage.rings.real_interval_absolute,RealIntervalAbsoluteField,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_interval_absolute.pyx#L77
+Implemented,Full,sage.rings.real_interval_absolute.RealIntervalAbsoluteField_class,sage.rings.real_interval_absolute,RealIntervalAbsoluteField_class,class,Field,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_interval_absolute.pyx#L95
+Implemented,Full,sage.rings.real_interval_absolute.shift_ceil,sage.rings.real_interval_absolute,shift_ceil,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_interval_absolute.pyx#L43
+Implemented,Full,sage.rings.real_interval_absolute.shift_floor,sage.rings.real_interval_absolute,shift_floor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_interval_absolute.pyx#L26
 Partial,,sage.rings.real_lazy,sage.rings.real_lazy,real_lazy,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_lazy.pyx#L513
 Partial,,sage.rings.real_lazy.ComplexLazyField,sage.rings.real_lazy,ComplexLazyField,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_lazy.pyx#L513
 Partial,,sage.rings.real_lazy.ComplexLazyField_class,sage.rings.real_lazy,ComplexLazyField_class,class,LazyField,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_lazy.pyx#L371
@@ -235,13 +235,13 @@ Partial,,sage.rings.real_lazy.LazyWrapperMorphism,sage.rings.real_lazy,LazyWrapp
 Partial,,sage.rings.real_lazy.RealLazyField,sage.rings.real_lazy,RealLazyField,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_lazy.pyx#L357
 Partial,,sage.rings.real_lazy.RealLazyField_class,sage.rings.real_lazy,RealLazyField_class,class,LazyField,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_lazy.pyx#L220
 Partial,,sage.rings.real_lazy.make_element,sage.rings.real_lazy,make_element,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_lazy.pyx#L907
-,,sage.rings.real_mpfi,sage.rings.real_mpfi,real_mpfi,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_mpfi.pyx#L5274
-,,sage.rings.real_mpfi.RealInterval,sage.rings.real_mpfi,RealInterval,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_mpfi.pyx#L5274
-,,sage.rings.real_mpfi.RealIntervalField,sage.rings.real_mpfi,RealIntervalField,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_mpfi.pyx#L330
-,,sage.rings.real_mpfi.RealIntervalFieldElement,sage.rings.real_mpfi,RealIntervalFieldElement,class,RingElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_mpfi.pyx#L1191
-,,sage.rings.real_mpfi.RealIntervalField_class,sage.rings.real_mpfi,RealIntervalField_class,class,RealIntervalField,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_mpfi.pyx#L369
-,,sage.rings.real_mpfi.is_RealIntervalField,sage.rings.real_mpfi,is_RealIntervalField,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_mpfi.pyx#L5341
-,,sage.rings.real_mpfi.is_RealIntervalFieldElement,sage.rings.real_mpfi,is_RealIntervalFieldElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_mpfi.pyx#L5363
+Implemented,Full,sage.rings.real_mpfi,sage.rings.real_mpfi,real_mpfi,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_mpfi.pyx#L5274
+Implemented,Full,sage.rings.real_mpfi.RealInterval,sage.rings.real_mpfi,RealInterval,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_mpfi.pyx#L5274
+Implemented,Full,sage.rings.real_mpfi.RealIntervalField,sage.rings.real_mpfi,RealIntervalField,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_mpfi.pyx#L330
+Implemented,Full,sage.rings.real_mpfi.RealIntervalFieldElement,sage.rings.real_mpfi,RealIntervalFieldElement,class,RingElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_mpfi.pyx#L1191
+Implemented,Full,sage.rings.real_mpfi.RealIntervalField_class,sage.rings.real_mpfi,RealIntervalField_class,class,RealIntervalField,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_mpfi.pyx#L369
+Implemented,Full,sage.rings.real_mpfi.is_RealIntervalField,sage.rings.real_mpfi,is_RealIntervalField,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_mpfi.pyx#L5341
+Implemented,Full,sage.rings.real_mpfi.is_RealIntervalFieldElement,sage.rings.real_mpfi,is_RealIntervalFieldElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_mpfi.pyx#L5363
 Implemented,FULL,sage.rings.real_mpfr,sage.rings.real_mpfr,real_mpfr,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_mpfr.pyx#L76
 Implemented,FULL,sage.rings.real_mpfr.QQtoRR,sage.rings.real_mpfr,QQtoRR,class,Map,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_mpfr.pyx#L76
 Implemented,FULL,sage.rings.real_mpfr.RRtoRR,sage.rings.real_mpfr,RRtoRR,class,Map,https://github.com/sagemath/sage/blob/develop/src/sage/rings/real_mpfr.pyx#L76
@@ -320,13 +320,13 @@ Implemented,FULL,sage.rings.real_mpfr.mpfr_set_exp_min,sage.rings.real_mpfr,mpfr
 ,,sage.rings.tate_algebra.TateAlgebraFactory,sage.rings.tate_algebra,TateAlgebraFactory,class,UniqueFactory,https://github.com/sagemath/sage/blob/develop/src/sage/rings/tate_algebra.py#L156
 ,,sage.rings.tate_algebra.TateAlgebra_generic,sage.rings.tate_algebra,TateAlgebra_generic,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/rings/tate_algebra.py#L677
 ,,sage.rings.tate_algebra.TateTermMonoid,sage.rings.tate_algebra,TateTermMonoid,class,"A, Monoid_class, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/rings/tate_algebra.py#L341
-,,sage.rings.universal_cyclotomic_field,sage.rings.universal_cyclotomic_field,universal_cyclotomic_field,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/universal_cyclotomic_field.py#L1728
-,,sage.rings.universal_cyclotomic_field.E,sage.rings.universal_cyclotomic_field,E,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/universal_cyclotomic_field.py#L1728
-,,sage.rings.universal_cyclotomic_field.UCF_sqrt_int,sage.rings.universal_cyclotomic_field,UCF_sqrt_int,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/universal_cyclotomic_field.py#L211
-,,sage.rings.universal_cyclotomic_field.UCFtoQQbar,sage.rings.universal_cyclotomic_field,UCFtoQQbar,class,"UCF, Morphism",https://github.com/sagemath/sage/blob/develop/src/sage/rings/universal_cyclotomic_field.py#L251
-,,sage.rings.universal_cyclotomic_field.UniversalCyclotomicField,sage.rings.universal_cyclotomic_field,UniversalCyclotomicField,class,"UniqueRepresentation, UniversalCyclotomicField",https://github.com/sagemath/sage/blob/develop/src/sage/rings/universal_cyclotomic_field.py#L1286
-,,sage.rings.universal_cyclotomic_field.UniversalCyclotomicFieldElement,sage.rings.universal_cyclotomic_field,UniversalCyclotomicFieldElement,class,FieldElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/universal_cyclotomic_field.py#L309
-,,sage.rings.universal_cyclotomic_field.late_import,sage.rings.universal_cyclotomic_field,late_import,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/universal_cyclotomic_field.py#L190
+Implemented,Full,sage.rings.universal_cyclotomic_field,sage.rings.universal_cyclotomic_field,universal_cyclotomic_field,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/universal_cyclotomic_field.py#L1728
+Implemented,Full,sage.rings.universal_cyclotomic_field.E,sage.rings.universal_cyclotomic_field,E,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/universal_cyclotomic_field.py#L1728
+Implemented,Full,sage.rings.universal_cyclotomic_field.UCF_sqrt_int,sage.rings.universal_cyclotomic_field,UCF_sqrt_int,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/universal_cyclotomic_field.py#L211
+Implemented,Full,sage.rings.universal_cyclotomic_field.UCFtoQQbar,sage.rings.universal_cyclotomic_field,UCFtoQQbar,class,"UCF, Morphism",https://github.com/sagemath/sage/blob/develop/src/sage/rings/universal_cyclotomic_field.py#L251
+Implemented,Full,sage.rings.universal_cyclotomic_field.UniversalCyclotomicField,sage.rings.universal_cyclotomic_field,UniversalCyclotomicField,class,"UniqueRepresentation, UniversalCyclotomicField",https://github.com/sagemath/sage/blob/develop/src/sage/rings/universal_cyclotomic_field.py#L1286
+Implemented,Full,sage.rings.universal_cyclotomic_field.UniversalCyclotomicFieldElement,sage.rings.universal_cyclotomic_field,UniversalCyclotomicFieldElement,class,FieldElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/universal_cyclotomic_field.py#L309
+Implemented,Full,sage.rings.universal_cyclotomic_field.late_import,sage.rings.universal_cyclotomic_field,late_import,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/universal_cyclotomic_field.py#L190
 ,,sage.rings.valuation.augmented_valuation,sage.rings.valuation.augmented_valuation,augmented_valuation,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/valuation/augmented_valuation.py#L164
 ,,sage.rings.valuation.augmented_valuation.AugmentedValuationFactory,sage.rings.valuation.augmented_valuation,AugmentedValuationFactory,class,UniqueFactory,https://github.com/sagemath/sage/blob/develop/src/sage/rings/valuation/augmented_valuation.py#L164
 ,,sage.rings.valuation.augmented_valuation.AugmentedValuation_base,sage.rings.valuation.augmented_valuation,AugmentedValuation_base,class,InductiveValuation,https://github.com/sagemath/sage/blob/develop/src/sage/rings/valuation/augmented_valuation.py#L254
