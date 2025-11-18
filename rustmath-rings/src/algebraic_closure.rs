@@ -22,9 +22,7 @@
 //! We use a "pseudo-Conway" approach where elements are stored in the smallest extension
 //! containing them. Operations may require lifting to a common extension field.
 
-use rustmath_core::{Ring, CommutativeRing, Field, IntegralDomain};
-use rustmath_finitefields::{FiniteField, FiniteFieldElement};
-use rustmath_polynomials::Polynomial;
+use rustmath_core::{CommutativeRing, Field, IntegralDomain};
 use std::fmt::{self, Debug, Display};
 use num_bigint::BigInt;
 use num_traits::{Zero, One};
@@ -146,13 +144,14 @@ impl AlgebraicClosureFiniteFieldElement {
     }
 
     /// Finds the minimal polynomial of this element over GF(p).
-    pub fn minimal_polynomial(&self) -> Polynomial<BigInt> {
-        // This is a simplified implementation
-        // In practice, we would compute the minimal polynomial by finding
-        // the polynomial of smallest degree that this element satisfies
-
-        // For now, return a placeholder
-        Polynomial::new(vec![BigInt::zero(), BigInt::one()])
+    ///
+    /// Note: This is a placeholder implementation.
+    /// A full implementation would compute the polynomial of smallest degree
+    /// that this element satisfies.
+    pub fn minimal_polynomial_degree(&self) -> usize {
+        // Return the degree of the minimal polynomial (divides the extension degree)
+        // For now, just return the extension degree
+        self.degree
     }
 
     /// Computes the order of this element (smallest k such that x^k = 1).

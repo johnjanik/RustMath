@@ -31,14 +31,18 @@
 pub mod abc;
 pub mod algebraic_closure;
 pub mod asymptotic;
+pub mod asymptotic_misc;
+pub mod growth_group;
+pub mod growth_group_cartesian;
+pub mod term_monoid;
 
 // Re-export core ring types from other crates
 pub use rustmath_integers::Integer;
 pub use rustmath_rationals::Rational;
 pub use rustmath_reals::Real;
 pub use rustmath_complex::Complex;
-pub use rustmath_finitefields::{FiniteField, FiniteFieldElement, GaloisField};
-pub use rustmath_padics::{PAdicNumber, PAdicRing};
+// pub use rustmath_finitefields::{FiniteField, FiniteFieldElement, GaloisField};
+// pub use rustmath_padics::{PAdicNumber, PAdicRing};
 
 // Re-export core traits
 pub use rustmath_core::{Ring, CommutativeRing, Field, EuclideanDomain, IntegralDomain};
