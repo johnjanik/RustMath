@@ -11,6 +11,7 @@ use crate::mpc::ComplexMPFR;
 use crate::complex::Complex;
 use rustmath_integers::Integer;
 use rustmath_reals::RealMPFR;
+use rustmath_core::NumericConversion;
 use std::fmt;
 
 /// Default precision for MPC numbers (53 bits = f64 equivalent)
