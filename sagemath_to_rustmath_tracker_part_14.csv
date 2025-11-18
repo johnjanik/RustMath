@@ -94,101 +94,101 @@ Status,Implementation Type,full_name,module,entity_name,type,bases,source
 ,,sage.schemes.toric.weierstrass_higher.WeierstrassForm_P3,sage.schemes.toric.weierstrass_higher,WeierstrassForm_P3,function,,https://github.com/sagemath/sage/blob/develop/src/sage/schemes/toric/weierstrass_higher.py#L190
 ,,sage.schemes.toric.weierstrass_higher.WeierstrassMap_P3,sage.schemes.toric.weierstrass_higher,WeierstrassMap_P3,function,,https://github.com/sagemath/sage/blob/develop/src/sage/schemes/toric/weierstrass_higher.py#L228
 ,,sage.sets,sage.sets,sets,module,,
-,,sage.sets.cartesian_product,sage.sets.cartesian_product,cartesian_product,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/cartesian_product.py#L32
-,,sage.sets.cartesian_product.CartesianProduct,sage.sets.cartesian_product,CartesianProduct,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/sets/cartesian_product.py#L32
-,,sage.sets.cartesian_product.Element,sage.sets.cartesian_product,Element,class,ElementWrapperCheckWrappedClass,https://github.com/sagemath/sage/blob/develop/src/sage/sets/cartesian_product.py#L301
-,,sage.sets.cartesian_product.wrapped_class,sage.sets.cartesian_product,wrapped_class,attribute,,
-,,sage.sets.condition_set,sage.sets.condition_set,condition_set,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/condition_set.py#L26
-,,sage.sets.condition_set.ConditionSet,sage.sets.condition_set,ConditionSet,class,"Set_generic, Set_base, Set_boolean_operators, Set_add_sub_operators, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/sets/condition_set.py#L26
-,,sage.sets.disjoint_set,sage.sets.disjoint_set,disjoint_set,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/disjoint_set.pyx#L70
-,,sage.sets.disjoint_set.DisjointSet,sage.sets.disjoint_set,DisjointSet,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/disjoint_set.pyx#L70
-,,sage.sets.disjoint_set.DisjointSet_class,sage.sets.disjoint_set,DisjointSet_class,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/sets/disjoint_set.pyx#L157
-,,sage.sets.disjoint_set.DisjointSet_of_hashables,sage.sets.disjoint_set,DisjointSet_of_hashables,class,DisjointSet_class,https://github.com/sagemath/sage/blob/develop/src/sage/sets/disjoint_set.pyx#L665
-,,sage.sets.disjoint_set.DisjointSet_of_integers,sage.sets.disjoint_set,DisjointSet_of_integers,class,DisjointSet_class,https://github.com/sagemath/sage/blob/develop/src/sage/sets/disjoint_set.pyx#L342
-,,sage.sets.disjoint_union_enumerated_sets,sage.sets.disjoint_union_enumerated_sets,disjoint_union_enumerated_sets,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/disjoint_union_enumerated_sets.py#L29
-,,sage.sets.disjoint_union_enumerated_sets.DisjointUnionEnumeratedSets,sage.sets.disjoint_union_enumerated_sets,DisjointUnionEnumeratedSets,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/sets/disjoint_union_enumerated_sets.py#L29
-,,sage.sets.family,sage.sets.family,family,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/family.pyx#L425
-,,sage.sets.family.AbstractFamily,sage.sets.family,AbstractFamily,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/sets/family.pyx#L425
-,,sage.sets.family.EnumeratedFamily,sage.sets.family,EnumeratedFamily,class,LazyFamily,https://github.com/sagemath/sage/blob/develop/src/sage/sets/family.pyx#L1414
-,,sage.sets.family.Family,sage.sets.family,Family,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/family.pyx#L58
-,,sage.sets.family.FiniteFamily,sage.sets.family,FiniteFamily,class,AbstractFamily,https://github.com/sagemath/sage/blob/develop/src/sage/sets/family.pyx#L539
-,,sage.sets.family.FiniteFamilyWithHiddenKeys,sage.sets.family,FiniteFamilyWithHiddenKeys,class,FiniteFamily,https://github.com/sagemath/sage/blob/develop/src/sage/sets/family.pyx#L832
-,,sage.sets.family.LazyFamily,sage.sets.family,LazyFamily,class,AbstractFamily,https://github.com/sagemath/sage/blob/develop/src/sage/sets/family.pyx#L940
-,,sage.sets.family.TrivialFamily,sage.sets.family,TrivialFamily,class,AbstractFamily,https://github.com/sagemath/sage/blob/develop/src/sage/sets/family.pyx#L1239
-,,sage.sets.finite_enumerated_set,sage.sets.finite_enumerated_set,finite_enumerated_set,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_enumerated_set.py#L27
-,,sage.sets.finite_enumerated_set.FiniteEnumeratedSet,sage.sets.finite_enumerated_set,FiniteEnumeratedSet,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_enumerated_set.py#L27
-,,sage.sets.finite_set_map_cy,sage.sets.finite_set_map_cy,finite_set_map_cy,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_map_cy.pyx#L601
-,,sage.sets.finite_set_map_cy.FiniteSetEndoMap_N,sage.sets.finite_set_map_cy,FiniteSetEndoMap_N,class,FiniteSetMap_MN,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_map_cy.pyx#L601
-,,sage.sets.finite_set_map_cy.FiniteSetEndoMap_Set,sage.sets.finite_set_map_cy,FiniteSetEndoMap_Set,class,FiniteSetMap_Set,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_map_cy.pyx#L653
-,,sage.sets.finite_set_map_cy.FiniteSetMap_MN,sage.sets.finite_set_map_cy,FiniteSetMap_MN,class,ClonableIntArray,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_map_cy.pyx#L115
-,,sage.sets.finite_set_map_cy.FiniteSetMap_Set,sage.sets.finite_set_map_cy,FiniteSetMap_Set,class,FiniteSetMap_MN,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_map_cy.pyx#L431
-,,sage.sets.finite_set_map_cy.FiniteSetMap_Set_from_dict,sage.sets.finite_set_map_cy,FiniteSetMap_Set_from_dict,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_map_cy.pyx#L407
-,,sage.sets.finite_set_map_cy.FiniteSetMap_Set_from_list,sage.sets.finite_set_map_cy,FiniteSetMap_Set_from_list,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_map_cy.pyx#L384
-,,sage.sets.finite_set_map_cy.fibers,sage.sets.finite_set_map_cy,fibers,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_map_cy.pyx#L61
-,,sage.sets.finite_set_map_cy.fibers_args,sage.sets.finite_set_map_cy,fibers_args,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_map_cy.pyx#L99
-,,sage.sets.finite_set_maps,sage.sets.finite_set_maps,finite_set_maps,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_maps.py#L482
-,,sage.sets.finite_set_maps.FiniteSetEndoMaps_N,sage.sets.finite_set_maps,FiniteSetEndoMaps_N,class,FiniteSetMaps_MN,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_maps.py#L482
-,,sage.sets.finite_set_maps.FiniteSetEndoMaps_Set,sage.sets.finite_set_maps,FiniteSetEndoMaps_Set,class,"FiniteSetMaps_Set, FiniteSetEndoMaps_N",https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_maps.py#L548
-,,sage.sets.finite_set_maps.FiniteSetMaps,sage.sets.finite_set_maps,FiniteSetMaps,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_maps.py#L38
-,,sage.sets.finite_set_maps.FiniteSetMaps_MN,sage.sets.finite_set_maps,FiniteSetMaps_MN,class,FiniteSetMaps,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_maps.py#L208
-,,sage.sets.finite_set_maps.FiniteSetMaps_Set,sage.sets.finite_set_maps,FiniteSetMaps_Set,class,FiniteSetMaps_MN,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_maps.py#L369
-,,sage.sets.integer_range,sage.sets.integer_range,integer_range,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/integer_range.py#L28
-,,sage.sets.integer_range.IntegerRange,sage.sets.integer_range,IntegerRange,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/sets/integer_range.py#L28
-,,sage.sets.integer_range.IntegerRangeEmpty,sage.sets.integer_range,IntegerRangeEmpty,class,"IntegerRange, FiniteEnumeratedSet",https://github.com/sagemath/sage/blob/develop/src/sage/sets/integer_range.py#L291
-,,sage.sets.integer_range.IntegerRangeFinite,sage.sets.integer_range,IntegerRangeFinite,class,IntegerRange,https://github.com/sagemath/sage/blob/develop/src/sage/sets/integer_range.py#L318
-,,sage.sets.integer_range.IntegerRangeFromMiddle,sage.sets.integer_range,IntegerRangeFromMiddle,class,IntegerRange,https://github.com/sagemath/sage/blob/develop/src/sage/sets/integer_range.py#L672
-,,sage.sets.integer_range.IntegerRangeInfinite,sage.sets.integer_range,IntegerRangeInfinite,class,IntegerRange,https://github.com/sagemath/sage/blob/develop/src/sage/sets/integer_range.py#L528
-,,sage.sets.integer_range.element_class,sage.sets.integer_range,element_class,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/integer_range.py#L404
-,,sage.sets.non_negative_integers,sage.sets.non_negative_integers,non_negative_integers,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/non_negative_integers.py#L17
-,,sage.sets.non_negative_integers.NonNegativeIntegers,sage.sets.non_negative_integers,NonNegativeIntegers,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/sets/non_negative_integers.py#L17
-,,sage.sets.non_negative_integers.from_integer,sage.sets.non_negative_integers,from_integer,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/non_negative_integers.py#L404
-,,sage.sets.positive_integers,sage.sets.positive_integers,positive_integers,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/positive_integers.py#L15
-,,sage.sets.positive_integers.PositiveIntegers,sage.sets.positive_integers,PositiveIntegers,class,IntegerRangeInfinite,https://github.com/sagemath/sage/blob/develop/src/sage/sets/positive_integers.py#L15
-,,sage.sets.primes,sage.sets.primes,primes,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/primes.py#L24
-,,sage.sets.primes.Primes,sage.sets.primes,Primes,class,"Set_generic, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/sets/primes.py#L24
-,,sage.sets.pythonclass,sage.sets.pythonclass,pythonclass,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/pythonclass.pyx#L23
-,,sage.sets.pythonclass.Set_PythonType,sage.sets.pythonclass,Set_PythonType,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/pythonclass.pyx#L23
-,,sage.sets.pythonclass.Set_PythonType_class,sage.sets.pythonclass,Set_PythonType_class,class,Set_generic,https://github.com/sagemath/sage/blob/develop/src/sage/sets/pythonclass.pyx#L51
-,,sage.sets.real_set,sage.sets.real_set,real_set,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/real_set.py#L113
-,,sage.sets.real_set.InternalRealInterval,sage.sets.real_set,InternalRealInterval,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/sets/real_set.py#L113
-,,sage.sets.real_set.RealSet,sage.sets.real_set,RealSet,class,"UniqueRepresentation, Parent, Set_base, Set_boolean_operators, Set_add_sub_operators",https://github.com/sagemath/sage/blob/develop/src/sage/sets/real_set.py#L890
-,,sage.sets.real_set.element_class,sage.sets.real_set,element_class,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/real_set.py#L369
-,,sage.sets.recursively_enumerated_set,sage.sets.recursively_enumerated_set,recursively_enumerated_set,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/recursively_enumerated_set.pyx#L288
-,,sage.sets.recursively_enumerated_set.RecursivelyEnumeratedSet,sage.sets.recursively_enumerated_set,RecursivelyEnumeratedSet,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/recursively_enumerated_set.pyx#L288
-,,sage.sets.recursively_enumerated_set.RecursivelyEnumeratedSet_forest,sage.sets.recursively_enumerated_set,RecursivelyEnumeratedSet_forest,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/sets/recursively_enumerated_set.pyx#L1551
-,,sage.sets.recursively_enumerated_set.RecursivelyEnumeratedSet_generic,sage.sets.recursively_enumerated_set,RecursivelyEnumeratedSet_generic,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/sets/recursively_enumerated_set.pyx#L432
-,,sage.sets.recursively_enumerated_set.RecursivelyEnumeratedSet_graded,sage.sets.recursively_enumerated_set,RecursivelyEnumeratedSet_graded,class,RecursivelyEnumeratedSet_generic,https://github.com/sagemath/sage/blob/develop/src/sage/sets/recursively_enumerated_set.pyx#L1235
-,,sage.sets.recursively_enumerated_set.RecursivelyEnumeratedSet_symmetric,sage.sets.recursively_enumerated_set,RecursivelyEnumeratedSet_symmetric,class,RecursivelyEnumeratedSet_generic,https://github.com/sagemath/sage/blob/develop/src/sage/sets/recursively_enumerated_set.pyx#L960
-,,sage.sets.recursively_enumerated_set.search_forest_iterator,sage.sets.recursively_enumerated_set,search_forest_iterator,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/recursively_enumerated_set.pyx#L1465
-,,sage.sets.recursively_enumerated_set.successors,sage.sets.recursively_enumerated_set,successors,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/recursively_enumerated_set.pyx#L14
-,,sage.sets.set,sage.sets.set,set,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L88
-,,sage.sets.set.Set,sage.sets.set,Set,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L88
-,,sage.sets.set.Set_add_sub_operators,sage.sets.set,Set_add_sub_operators,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L401
-,,sage.sets.set.Set_base,sage.sets.set,Set_base,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L212
-,,sage.sets.set.Set_boolean_operators,sage.sets.set,Set_boolean_operators,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L351
-,,sage.sets.set.Set_object,sage.sets.set,Set_object,class,"X, Set_generic, Set_base, Set_boolean_operators, Set_add_sub_operators",https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L442
-,,sage.sets.set.Set_object_binary,sage.sets.set,Set_object_binary,class,"X, Y, Set_object",https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L1256
-,,sage.sets.set.Set_object_difference,sage.sets.set,Set_object_difference,class,"X, Y, Set_object_binary",https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L1738
-,,sage.sets.set.Set_object_enumerated,sage.sets.set,Set_object_enumerated,class,"X, Set_object",https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L848
-,,sage.sets.set.Set_object_intersection,sage.sets.set,Set_object_intersection,class,"X, Y, Set_object_binary",https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L1556
-,,sage.sets.set.Set_object_symmetric_difference,sage.sets.set,Set_object_symmetric_difference,class,"X, Y, Set_object_binary",https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L1918
-,,sage.sets.set.Set_object_union,sage.sets.set,Set_object_union,class,"X, Y, Set_object_binary",https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L1370
-,,sage.sets.set.has_finite_length,sage.sets.set,has_finite_length,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L55
-,,sage.sets.set_from_iterator,sage.sets.set_from_iterator,set_from_iterator,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set_from_iterator.py#L452
-,,sage.sets.set_from_iterator.Decorator,sage.sets.set_from_iterator,Decorator,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set_from_iterator.py#L452
-,,sage.sets.set_from_iterator.DummyExampleForPicklingTest,sage.sets.set_from_iterator,DummyExampleForPicklingTest,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set_from_iterator.py#L985
-,,sage.sets.set_from_iterator.EnumeratedSetFromIterator,sage.sets.set_from_iterator,EnumeratedSetFromIterator,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set_from_iterator.py#L73
-,,sage.sets.set_from_iterator.EnumeratedSetFromIterator_function_decorator,sage.sets.set_from_iterator,EnumeratedSetFromIterator_function_decorator,class,Decorator,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set_from_iterator.py#L564
-,,sage.sets.set_from_iterator.EnumeratedSetFromIterator_method_caller,sage.sets.set_from_iterator,EnumeratedSetFromIterator_method_caller,class,Decorator,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set_from_iterator.py#L715
-,,sage.sets.set_from_iterator.EnumeratedSetFromIterator_method_decorator,sage.sets.set_from_iterator,EnumeratedSetFromIterator_method_decorator,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set_from_iterator.py#L841
-,,sage.sets.set_from_iterator.set_from_function,sage.sets.set_from_iterator,set_from_function,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set_from_iterator.py#L564
-,,sage.sets.set_from_iterator.set_from_method,sage.sets.set_from_iterator,set_from_method,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set_from_iterator.py#L841
-,,sage.sets.set_from_iterator.start,sage.sets.set_from_iterator,start,attribute,,
-,,sage.sets.set_from_iterator.stop,sage.sets.set_from_iterator,stop,attribute,,
-,,sage.sets.totally_ordered_finite_set,sage.sets.totally_ordered_finite_set,totally_ordered_finite_set,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/totally_ordered_finite_set.py#L137
-,,sage.sets.totally_ordered_finite_set.TotallyOrderedFiniteSet,sage.sets.totally_ordered_finite_set,TotallyOrderedFiniteSet,class,FiniteEnumeratedSet,https://github.com/sagemath/sage/blob/develop/src/sage/sets/totally_ordered_finite_set.py#L137
-,,sage.sets.totally_ordered_finite_set.TotallyOrderedFiniteSetElement,sage.sets.totally_ordered_finite_set,TotallyOrderedFiniteSetElement,class,Element,https://github.com/sagemath/sage/blob/develop/src/sage/sets/totally_ordered_finite_set.py#L31
-Implemented,FULL,sage.stats,sage.stats,stats,module,,
+Implemented,Full,sage.sets.cartesian_product,sage.sets.cartesian_product,cartesian_product,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/cartesian_product.py#L32
+Implemented,Full,sage.sets.cartesian_product.CartesianProduct,sage.sets.cartesian_product,CartesianProduct,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/sets/cartesian_product.py#L32
+Implemented,Full,sage.sets.cartesian_product.Element,sage.sets.cartesian_product,Element,class,ElementWrapperCheckWrappedClass,https://github.com/sagemath/sage/blob/develop/src/sage/sets/cartesian_product.py#L301
+Implemented,Full,sage.sets.cartesian_product.wrapped_class,sage.sets.cartesian_product,wrapped_class,attribute,,
+Implemented,Full,sage.sets.condition_set,sage.sets.condition_set,condition_set,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/condition_set.py#L26
+Implemented,Full,sage.sets.condition_set.ConditionSet,sage.sets.condition_set,ConditionSet,class,"Set_generic, Set_base, Set_boolean_operators, Set_add_sub_operators, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/sets/condition_set.py#L26
+Implemented,Full,sage.sets.disjoint_set,sage.sets.disjoint_set,disjoint_set,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/disjoint_set.pyx#L70
+Implemented,Full,sage.sets.disjoint_set.DisjointSet,sage.sets.disjoint_set,DisjointSet,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/disjoint_set.pyx#L70
+Implemented,Full,sage.sets.disjoint_set.DisjointSet_class,sage.sets.disjoint_set,DisjointSet_class,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/sets/disjoint_set.pyx#L157
+Implemented,Full,sage.sets.disjoint_set.DisjointSet_of_hashables,sage.sets.disjoint_set,DisjointSet_of_hashables,class,DisjointSet_class,https://github.com/sagemath/sage/blob/develop/src/sage/sets/disjoint_set.pyx#L665
+Implemented,Full,sage.sets.disjoint_set.DisjointSet_of_integers,sage.sets.disjoint_set,DisjointSet_of_integers,class,DisjointSet_class,https://github.com/sagemath/sage/blob/develop/src/sage/sets/disjoint_set.pyx#L342
+Implemented,Full,sage.sets.disjoint_union_enumerated_sets,sage.sets.disjoint_union_enumerated_sets,disjoint_union_enumerated_sets,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/disjoint_union_enumerated_sets.py#L29
+Implemented,Full,sage.sets.disjoint_union_enumerated_sets.DisjointUnionEnumeratedSets,sage.sets.disjoint_union_enumerated_sets,DisjointUnionEnumeratedSets,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/sets/disjoint_union_enumerated_sets.py#L29
+Implemented,Full,sage.sets.family,sage.sets.family,family,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/family.pyx#L425
+Implemented,Full,sage.sets.family.AbstractFamily,sage.sets.family,AbstractFamily,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/sets/family.pyx#L425
+Implemented,Full,sage.sets.family.EnumeratedFamily,sage.sets.family,EnumeratedFamily,class,LazyFamily,https://github.com/sagemath/sage/blob/develop/src/sage/sets/family.pyx#L1414
+Implemented,Full,sage.sets.family.Family,sage.sets.family,Family,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/family.pyx#L58
+Implemented,Full,sage.sets.family.FiniteFamily,sage.sets.family,FiniteFamily,class,AbstractFamily,https://github.com/sagemath/sage/blob/develop/src/sage/sets/family.pyx#L539
+Implemented,Full,sage.sets.family.FiniteFamilyWithHiddenKeys,sage.sets.family,FiniteFamilyWithHiddenKeys,class,FiniteFamily,https://github.com/sagemath/sage/blob/develop/src/sage/sets/family.pyx#L832
+Implemented,Full,sage.sets.family.LazyFamily,sage.sets.family,LazyFamily,class,AbstractFamily,https://github.com/sagemath/sage/blob/develop/src/sage/sets/family.pyx#L940
+Implemented,Full,sage.sets.family.TrivialFamily,sage.sets.family,TrivialFamily,class,AbstractFamily,https://github.com/sagemath/sage/blob/develop/src/sage/sets/family.pyx#L1239
+Implemented,Full,sage.sets.finite_enumerated_set,sage.sets.finite_enumerated_set,finite_enumerated_set,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_enumerated_set.py#L27
+Implemented,Full,sage.sets.finite_enumerated_set.FiniteEnumeratedSet,sage.sets.finite_enumerated_set,FiniteEnumeratedSet,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_enumerated_set.py#L27
+Implemented,Full,sage.sets.finite_set_map_cy,sage.sets.finite_set_map_cy,finite_set_map_cy,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_map_cy.pyx#L601
+Implemented,Full,sage.sets.finite_set_map_cy.FiniteSetEndoMap_N,sage.sets.finite_set_map_cy,FiniteSetEndoMap_N,class,FiniteSetMap_MN,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_map_cy.pyx#L601
+Implemented,Full,sage.sets.finite_set_map_cy.FiniteSetEndoMap_Set,sage.sets.finite_set_map_cy,FiniteSetEndoMap_Set,class,FiniteSetMap_Set,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_map_cy.pyx#L653
+Implemented,Full,sage.sets.finite_set_map_cy.FiniteSetMap_MN,sage.sets.finite_set_map_cy,FiniteSetMap_MN,class,ClonableIntArray,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_map_cy.pyx#L115
+Implemented,Full,sage.sets.finite_set_map_cy.FiniteSetMap_Set,sage.sets.finite_set_map_cy,FiniteSetMap_Set,class,FiniteSetMap_MN,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_map_cy.pyx#L431
+Implemented,Full,sage.sets.finite_set_map_cy.FiniteSetMap_Set_from_dict,sage.sets.finite_set_map_cy,FiniteSetMap_Set_from_dict,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_map_cy.pyx#L407
+Implemented,Full,sage.sets.finite_set_map_cy.FiniteSetMap_Set_from_list,sage.sets.finite_set_map_cy,FiniteSetMap_Set_from_list,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_map_cy.pyx#L384
+Implemented,Full,sage.sets.finite_set_map_cy.fibers,sage.sets.finite_set_map_cy,fibers,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_map_cy.pyx#L61
+Implemented,Full,sage.sets.finite_set_map_cy.fibers_args,sage.sets.finite_set_map_cy,fibers_args,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_map_cy.pyx#L99
+Implemented,Full,sage.sets.finite_set_maps,sage.sets.finite_set_maps,finite_set_maps,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_maps.py#L482
+Implemented,Full,sage.sets.finite_set_maps.FiniteSetEndoMaps_N,sage.sets.finite_set_maps,FiniteSetEndoMaps_N,class,FiniteSetMaps_MN,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_maps.py#L482
+Implemented,Full,sage.sets.finite_set_maps.FiniteSetEndoMaps_Set,sage.sets.finite_set_maps,FiniteSetEndoMaps_Set,class,"FiniteSetMaps_Set, FiniteSetEndoMaps_N",https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_maps.py#L548
+Implemented,Full,sage.sets.finite_set_maps.FiniteSetMaps,sage.sets.finite_set_maps,FiniteSetMaps,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_maps.py#L38
+Implemented,Full,sage.sets.finite_set_maps.FiniteSetMaps_MN,sage.sets.finite_set_maps,FiniteSetMaps_MN,class,FiniteSetMaps,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_maps.py#L208
+Implemented,Full,sage.sets.finite_set_maps.FiniteSetMaps_Set,sage.sets.finite_set_maps,FiniteSetMaps_Set,class,FiniteSetMaps_MN,https://github.com/sagemath/sage/blob/develop/src/sage/sets/finite_set_maps.py#L369
+Implemented,Full,sage.sets.integer_range,sage.sets.integer_range,integer_range,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/integer_range.py#L28
+Implemented,Full,sage.sets.integer_range.IntegerRange,sage.sets.integer_range,IntegerRange,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/sets/integer_range.py#L28
+Implemented,Full,sage.sets.integer_range.IntegerRangeEmpty,sage.sets.integer_range,IntegerRangeEmpty,class,"IntegerRange, FiniteEnumeratedSet",https://github.com/sagemath/sage/blob/develop/src/sage/sets/integer_range.py#L291
+Implemented,Full,sage.sets.integer_range.IntegerRangeFinite,sage.sets.integer_range,IntegerRangeFinite,class,IntegerRange,https://github.com/sagemath/sage/blob/develop/src/sage/sets/integer_range.py#L318
+Implemented,Full,sage.sets.integer_range.IntegerRangeFromMiddle,sage.sets.integer_range,IntegerRangeFromMiddle,class,IntegerRange,https://github.com/sagemath/sage/blob/develop/src/sage/sets/integer_range.py#L672
+Implemented,Full,sage.sets.integer_range.IntegerRangeInfinite,sage.sets.integer_range,IntegerRangeInfinite,class,IntegerRange,https://github.com/sagemath/sage/blob/develop/src/sage/sets/integer_range.py#L528
+Implemented,Full,sage.sets.integer_range.element_class,sage.sets.integer_range,element_class,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/integer_range.py#L404
+Implemented,Full,sage.sets.non_negative_integers,sage.sets.non_negative_integers,non_negative_integers,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/non_negative_integers.py#L17
+Implemented,Full,sage.sets.non_negative_integers.NonNegativeIntegers,sage.sets.non_negative_integers,NonNegativeIntegers,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/sets/non_negative_integers.py#L17
+Implemented,Full,sage.sets.non_negative_integers.from_integer,sage.sets.non_negative_integers,from_integer,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/non_negative_integers.py#L404
+Implemented,Full,sage.sets.positive_integers,sage.sets.positive_integers,positive_integers,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/positive_integers.py#L15
+Implemented,Full,sage.sets.positive_integers.PositiveIntegers,sage.sets.positive_integers,PositiveIntegers,class,IntegerRangeInfinite,https://github.com/sagemath/sage/blob/develop/src/sage/sets/positive_integers.py#L15
+Implemented,Full,sage.sets.primes,sage.sets.primes,primes,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/primes.py#L24
+Implemented,Full,sage.sets.primes.Primes,sage.sets.primes,Primes,class,"Set_generic, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/sets/primes.py#L24
+Implemented,Full,sage.sets.pythonclass,sage.sets.pythonclass,pythonclass,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/pythonclass.pyx#L23
+Implemented,Full,sage.sets.pythonclass.Set_PythonType,sage.sets.pythonclass,Set_PythonType,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/pythonclass.pyx#L23
+Implemented,Full,sage.sets.pythonclass.Set_PythonType_class,sage.sets.pythonclass,Set_PythonType_class,class,Set_generic,https://github.com/sagemath/sage/blob/develop/src/sage/sets/pythonclass.pyx#L51
+Implemented,Full,sage.sets.real_set,sage.sets.real_set,real_set,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/real_set.py#L113
+Implemented,Full,sage.sets.real_set.InternalRealInterval,sage.sets.real_set,InternalRealInterval,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/sets/real_set.py#L113
+Implemented,Full,sage.sets.real_set.RealSet,sage.sets.real_set,RealSet,class,"UniqueRepresentation, Parent, Set_base, Set_boolean_operators, Set_add_sub_operators",https://github.com/sagemath/sage/blob/develop/src/sage/sets/real_set.py#L890
+Implemented,Full,sage.sets.real_set.element_class,sage.sets.real_set,element_class,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/real_set.py#L369
+Implemented,Full,sage.sets.recursively_enumerated_set,sage.sets.recursively_enumerated_set,recursively_enumerated_set,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/recursively_enumerated_set.pyx#L288
+Implemented,Full,sage.sets.recursively_enumerated_set.RecursivelyEnumeratedSet,sage.sets.recursively_enumerated_set,RecursivelyEnumeratedSet,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/recursively_enumerated_set.pyx#L288
+Implemented,Full,sage.sets.recursively_enumerated_set.RecursivelyEnumeratedSet_forest,sage.sets.recursively_enumerated_set,RecursivelyEnumeratedSet_forest,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/sets/recursively_enumerated_set.pyx#L1551
+Implemented,Full,sage.sets.recursively_enumerated_set.RecursivelyEnumeratedSet_generic,sage.sets.recursively_enumerated_set,RecursivelyEnumeratedSet_generic,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/sets/recursively_enumerated_set.pyx#L432
+Implemented,Full,sage.sets.recursively_enumerated_set.RecursivelyEnumeratedSet_graded,sage.sets.recursively_enumerated_set,RecursivelyEnumeratedSet_graded,class,RecursivelyEnumeratedSet_generic,https://github.com/sagemath/sage/blob/develop/src/sage/sets/recursively_enumerated_set.pyx#L1235
+Implemented,Full,sage.sets.recursively_enumerated_set.RecursivelyEnumeratedSet_symmetric,sage.sets.recursively_enumerated_set,RecursivelyEnumeratedSet_symmetric,class,RecursivelyEnumeratedSet_generic,https://github.com/sagemath/sage/blob/develop/src/sage/sets/recursively_enumerated_set.pyx#L960
+Implemented,Full,sage.sets.recursively_enumerated_set.search_forest_iterator,sage.sets.recursively_enumerated_set,search_forest_iterator,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/recursively_enumerated_set.pyx#L1465
+Implemented,Full,sage.sets.recursively_enumerated_set.successors,sage.sets.recursively_enumerated_set,successors,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/recursively_enumerated_set.pyx#L14
+Implemented,Full,sage.sets.set,sage.sets.set,set,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L88
+Implemented,Full,sage.sets.set.Set,sage.sets.set,Set,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L88
+Implemented,Full,sage.sets.set.Set_add_sub_operators,sage.sets.set,Set_add_sub_operators,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L401
+Implemented,Full,sage.sets.set.Set_base,sage.sets.set,Set_base,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L212
+Implemented,Full,sage.sets.set.Set_boolean_operators,sage.sets.set,Set_boolean_operators,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L351
+Implemented,Full,sage.sets.set.Set_object,sage.sets.set,Set_object,class,"X, Set_generic, Set_base, Set_boolean_operators, Set_add_sub_operators",https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L442
+Implemented,Full,sage.sets.set.Set_object_binary,sage.sets.set,Set_object_binary,class,"X, Y, Set_object",https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L1256
+Implemented,Full,sage.sets.set.Set_object_difference,sage.sets.set,Set_object_difference,class,"X, Y, Set_object_binary",https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L1738
+Implemented,Full,sage.sets.set.Set_object_enumerated,sage.sets.set,Set_object_enumerated,class,"X, Set_object",https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L848
+Implemented,Full,sage.sets.set.Set_object_intersection,sage.sets.set,Set_object_intersection,class,"X, Y, Set_object_binary",https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L1556
+Implemented,Full,sage.sets.set.Set_object_symmetric_difference,sage.sets.set,Set_object_symmetric_difference,class,"X, Y, Set_object_binary",https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L1918
+Implemented,Full,sage.sets.set.Set_object_union,sage.sets.set,Set_object_union,class,"X, Y, Set_object_binary",https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L1370
+Implemented,Full,sage.sets.set.has_finite_length,sage.sets.set,has_finite_length,function,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set.py#L55
+Implemented,Full,sage.sets.set_from_iterator,sage.sets.set_from_iterator,set_from_iterator,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set_from_iterator.py#L452
+Implemented,Full,sage.sets.set_from_iterator.Decorator,sage.sets.set_from_iterator,Decorator,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set_from_iterator.py#L452
+Implemented,Full,sage.sets.set_from_iterator.DummyExampleForPicklingTest,sage.sets.set_from_iterator,DummyExampleForPicklingTest,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set_from_iterator.py#L985
+Implemented,Full,sage.sets.set_from_iterator.EnumeratedSetFromIterator,sage.sets.set_from_iterator,EnumeratedSetFromIterator,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set_from_iterator.py#L73
+Implemented,Full,sage.sets.set_from_iterator.EnumeratedSetFromIterator_function_decorator,sage.sets.set_from_iterator,EnumeratedSetFromIterator_function_decorator,class,Decorator,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set_from_iterator.py#L564
+Implemented,Full,sage.sets.set_from_iterator.EnumeratedSetFromIterator_method_caller,sage.sets.set_from_iterator,EnumeratedSetFromIterator_method_caller,class,Decorator,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set_from_iterator.py#L715
+Implemented,Full,sage.sets.set_from_iterator.EnumeratedSetFromIterator_method_decorator,sage.sets.set_from_iterator,EnumeratedSetFromIterator_method_decorator,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set_from_iterator.py#L841
+Implemented,Full,sage.sets.set_from_iterator.set_from_function,sage.sets.set_from_iterator,set_from_function,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set_from_iterator.py#L564
+Implemented,Full,sage.sets.set_from_iterator.set_from_method,sage.sets.set_from_iterator,set_from_method,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/set_from_iterator.py#L841
+Implemented,Full,sage.sets.set_from_iterator.start,sage.sets.set_from_iterator,start,attribute,,
+Implemented,Full,sage.sets.set_from_iterator.stop,sage.sets.set_from_iterator,stop,attribute,,
+Implemented,Full,sage.sets.totally_ordered_finite_set,sage.sets.totally_ordered_finite_set,totally_ordered_finite_set,module,,https://github.com/sagemath/sage/blob/develop/src/sage/sets/totally_ordered_finite_set.py#L137
+Implemented,Full,sage.sets.totally_ordered_finite_set.TotallyOrderedFiniteSet,sage.sets.totally_ordered_finite_set,TotallyOrderedFiniteSet,class,FiniteEnumeratedSet,https://github.com/sagemath/sage/blob/develop/src/sage/sets/totally_ordered_finite_set.py#L137
+Implemented,Full,sage.sets.totally_ordered_finite_set.TotallyOrderedFiniteSetElement,sage.sets.totally_ordered_finite_set,TotallyOrderedFiniteSetElement,class,Element,https://github.com/sagemath/sage/blob/develop/src/sage/sets/totally_ordered_finite_set.py#L31
+Implemented,Full,sage.stats,sage.stats,stats,module,,
 Implemented,FULL,sage.stats.basic_stats,sage.stats.basic_stats,basic_stats,module,,https://github.com/sagemath/sage/blob/develop/src/sage/stats/basic_stats.py#L51
 Implemented,FULL,sage.stats.basic_stats.mean,sage.stats.basic_stats,mean,function,,https://github.com/sagemath/sage/blob/develop/src/sage/stats/basic_stats.py#L51
 Implemented,FULL,sage.stats.basic_stats.median,sage.stats.basic_stats,median,function,,https://github.com/sagemath/sage/blob/develop/src/sage/stats/basic_stats.py#L369
