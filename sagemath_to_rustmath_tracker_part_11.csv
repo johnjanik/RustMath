@@ -209,15 +209,15 @@ Implemented,PARTIAL,sage.plot.plot.plot,sage.plot.plot,plot,function,,https://gi
 ,,sage.plot.plot.reshape,sage.plot.plot,reshape,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L3528
 ,,sage.plot.plot.to_float_list,sage.plot.plot,to_float_list,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L3514
 ,,sage.plot.plot.xydata_from_point_list,sage.plot.plot,xydata_from_point_list,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot.py#L777
-,,sage.plot.plot3d.base,sage.plot.plot3d.base,base,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/base.pyx#L3016
-,,sage.plot.plot3d.base.BoundingSphere,sage.plot.plot3d.base,BoundingSphere,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/base.pyx#L3016
-,,sage.plot.plot3d.base.Graphics3d,sage.plot.plot3d.base,Graphics3d,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/base.pyx#L78
+Phase 5,rustmath-plot3d module,sage.plot.plot3d.base,sage.plot.plot3d.base,base,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/base.pyx#L3016
+Phase 5,rustmath-plot3d::BoundingBox3D,sage.plot.plot3d.base.BoundingSphere,sage.plot.plot3d.base,BoundingSphere,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/base.pyx#L3016
+Phase 5,rustmath-plot3d::Graphics3d,sage.plot.plot3d.base.Graphics3d,sage.plot.plot3d.base,Graphics3d,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/base.pyx#L78
 ,,sage.plot.plot3d.base.Graphics3dGroup,sage.plot.plot3d.base,Graphics3dGroup,class,Graphics3d,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/base.pyx#L2251
 ,,sage.plot.plot3d.base.KeyframeAnimationGroup,sage.plot.plot3d.base,KeyframeAnimationGroup,class,Graphics3dGroup,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/base.pyx#L2814
-,,sage.plot.plot3d.base.PrimitiveObject,sage.plot.plot3d.base,PrimitiveObject,class,Graphics3d,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/base.pyx#L2892
-,,sage.plot.plot3d.base.RenderParams,sage.plot.plot3d.base,RenderParams,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/base.pyx#L3094
-,,sage.plot.plot3d.base.TransformGroup,sage.plot.plot3d.base,TransformGroup,class,Graphics3dGroup,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/base.pyx#L2550
-,,sage.plot.plot3d.base.Viewpoint,sage.plot.plot3d.base,Viewpoint,class,Graphics3d,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/base.pyx#L2864
+Phase 5,rustmath-plot3d::Graphics3dPrimitive trait,sage.plot.plot3d.base.PrimitiveObject,sage.plot.plot3d.base,PrimitiveObject,class,Graphics3d,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/base.pyx#L2892
+Phase 5,rustmath-plot3d::Graphics3dOptions,sage.plot.plot3d.base.RenderParams,sage.plot.plot3d.base,RenderParams,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/base.pyx#L3094
+Phase 5,rustmath-plot3d::TransformGroup,sage.plot.plot3d.base.TransformGroup,sage.plot.plot3d.base,TransformGroup,class,Graphics3dGroup,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/base.pyx#L2550
+Phase 5,rustmath-plot3d::Camera,sage.plot.plot3d.base.Viewpoint,sage.plot.plot3d.base,Viewpoint,class,Graphics3d,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/base.pyx#L2864
 ,,sage.plot.plot3d.base.antialiasing,sage.plot.plot3d.base,antialiasing,attribute,,
 ,,sage.plot.plot3d.base.dots,sage.plot.plot3d.base,dots,attribute,,
 ,,sage.plot.plot3d.base.flatten_list,sage.plot.plot3d.base,flatten_list,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/base.pyx#L3218
@@ -263,10 +263,10 @@ Implemented,PARTIAL,sage.plot.plot.plot,sage.plot.plot,plot,function,,https://gi
 ,,sage.plot.plot3d.implicit_surface.z_vertices,sage.plot.plot3d.implicit_surface,z_vertices,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/implicit_surface.pyx#L308
 ,,sage.plot.plot3d.implicit_surface.z_vertices_swapped,sage.plot.plot3d.implicit_surface,z_vertices_swapped,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/implicit_surface.pyx#L311
 ,,sage.plot.plot3d.implicit_surface.zrange,sage.plot.plot3d.implicit_surface,zrange,attribute,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/implicit_surface.pyx#L940
-,,sage.plot.plot3d.index_face_set,sage.plot.plot3d.index_face_set,index_face_set,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/index_face_set.pyx#L1774
+Phase 5,rustmath-plot3d module,sage.plot.plot3d.index_face_set,sage.plot.plot3d.index_face_set,index_face_set,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/index_face_set.pyx#L1774
 ,,sage.plot.plot3d.index_face_set.EdgeIter,sage.plot.plot3d.index_face_set,EdgeIter,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/index_face_set.pyx#L1774
 ,,sage.plot.plot3d.index_face_set.FaceIter,sage.plot.plot3d.index_face_set,FaceIter,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/index_face_set.pyx#L1743
-,,sage.plot.plot3d.index_face_set.IndexFaceSet,sage.plot.plot3d.index_face_set,IndexFaceSet,class,PrimitiveObject,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/index_face_set.pyx#L285
+Phase 5,rustmath-plot3d::IndexFaceSet,sage.plot.plot3d.index_face_set.IndexFaceSet,sage.plot.plot3d.index_face_set,IndexFaceSet,class,PrimitiveObject,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/index_face_set.pyx#L285
 ,,sage.plot.plot3d.index_face_set.VertexIter,sage.plot.plot3d.index_face_set,VertexIter,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/index_face_set.pyx#L1825
 ,,sage.plot.plot3d.index_face_set.cut_edge_by_bisection,sage.plot.plot3d.index_face_set,cut_edge_by_bisection,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/index_face_set.pyx#L225
 ,,sage.plot.plot3d.index_face_set.midpoint,sage.plot.plot3d.index_face_set,midpoint,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/plot3d/index_face_set.pyx#L200

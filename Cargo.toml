@@ -49,6 +49,7 @@ members = [
     "rustmath-colors",
     "rustmath-plot-core",
     "rustmath-plot",
+    "rustmath-plot3d",
 ]
 
 [workspace.package]
