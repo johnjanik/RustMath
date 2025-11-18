@@ -931,7 +931,7 @@ implemented,STUB,sage.modules.with_basis.representation.TrivialRepresentation,sa
 implemented,STUB,sage.modules.with_basis.subquotient,sage.modules.with_basis.subquotient,subquotient,module,,https://github.com/sagemath/sage/blob/develop/src/sage/modules/with_basis/subquotient.py#L18
 implemented,STUB,sage.modules.with_basis.subquotient.QuotientModuleWithBasis,sage.modules.with_basis.subquotient,QuotientModuleWithBasis,class,CombinatorialFreeModule,https://github.com/sagemath/sage/blob/develop/src/sage/modules/with_basis/subquotient.py#L18
 implemented,STUB,sage.modules.with_basis.subquotient.SubmoduleWithBasis,sage.modules.with_basis.subquotient,SubmoduleWithBasis,class,CombinatorialFreeModule,https://github.com/sagemath/sage/blob/develop/src/sage/modules/with_basis/subquotient.py#L166
-Implemented,STUB,sage.monoids,sage.monoids,monoids,module,,
+Implemented,Full,sage.monoids,sage.monoids,monoids,module,,
 implemented,STUB,sage.monoids.automatic_semigroup,sage.monoids.automatic_semigroup,automatic_semigroup,module,,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/automatic_semigroup.py#L1013
 implemented,STUB,sage.monoids.automatic_semigroup.AutomaticMonoid,sage.monoids.automatic_semigroup,AutomaticMonoid,class,AutomaticSemigroup,https://github.com/sagemath/sage/blob/develop/src/sage/monoids/automatic_semigroup.py#L1013
 implemented,STUB,sage.monoids.automatic_semigroup.AutomaticSemigroup,sage.monoids.automatic_semigroup,AutomaticSemigroup,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/monoids/automatic_semigroup.py#L35

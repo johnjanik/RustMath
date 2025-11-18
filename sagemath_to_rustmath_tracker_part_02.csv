@@ -220,13 +220,13 @@ Partial,,sage.categories.fields.ParentMethods,sage.categories.fields,ParentMetho
 ,,sage.categories.function_fields.ElementMethods,sage.categories.function_fields,ElementMethods,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/categories/function_fields.py#L75
 ,,sage.categories.function_fields.FunctionFields,sage.categories.function_fields,FunctionFields,class,Category,https://github.com/sagemath/sage/blob/develop/src/sage/categories/function_fields.py#L20
 ,,sage.categories.function_fields.ParentMethods,sage.categories.function_fields,ParentMethods,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/categories/function_fields.py#L72
-Implemented,STUB,sage.categories.functor,sage.categories.functor,functor,module,,https://github.com/sagemath/sage/blob/develop/src/sage/categories/functor.pyx#L646
-Implemented,STUB,sage.categories.functor.ForgetfulFunctor,sage.categories.functor,ForgetfulFunctor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/categories/functor.pyx#L646
-Implemented,STUB,sage.categories.functor.ForgetfulFunctor_generic,sage.categories.functor,ForgetfulFunctor_generic,class,Functor,https://github.com/sagemath/sage/blob/develop/src/sage/categories/functor.pyx#L451
-Implemented,STUB,sage.categories.functor.Functor,sage.categories.functor,Functor,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/categories/functor.pyx#L63
-Implemented,STUB,sage.categories.functor.IdentityFunctor,sage.categories.functor,IdentityFunctor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/categories/functor.pyx#L626
-Implemented,STUB,sage.categories.functor.IdentityFunctor_generic,sage.categories.functor,IdentityFunctor_generic,class,"C, ForgetfulFunctor_generic",https://github.com/sagemath/sage/blob/develop/src/sage/categories/functor.pyx#L541
-Implemented,STUB,sage.categories.functor.is_Functor,sage.categories.functor,is_Functor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/categories/functor.pyx#L414
+Implemented,Full,sage.categories.functor,sage.categories.functor,functor,module,,https://github.com/sagemath/sage/blob/develop/src/sage/categories/functor.pyx#L646
+Implemented,Full,sage.categories.functor.ForgetfulFunctor,sage.categories.functor,ForgetfulFunctor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/categories/functor.pyx#L646
+Implemented,Full,sage.categories.functor.ForgetfulFunctor_generic,sage.categories.functor,ForgetfulFunctor_generic,class,Functor,https://github.com/sagemath/sage/blob/develop/src/sage/categories/functor.pyx#L451
+Implemented,Full,sage.categories.functor.Functor,sage.categories.functor,Functor,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/categories/functor.pyx#L63
+Implemented,Full,sage.categories.functor.IdentityFunctor,sage.categories.functor,IdentityFunctor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/categories/functor.pyx#L626
+Implemented,Full,sage.categories.functor.IdentityFunctor_generic,sage.categories.functor,IdentityFunctor_generic,class,"C, ForgetfulFunctor_generic",https://github.com/sagemath/sage/blob/develop/src/sage/categories/functor.pyx#L541
+Implemented,Full,sage.categories.functor.is_Functor,sage.categories.functor,is_Functor,function,,https://github.com/sagemath/sage/blob/develop/src/sage/categories/functor.pyx#L414
 ,,sage.categories.g_sets,sage.categories.g_sets,g_sets,module,,https://github.com/sagemath/sage/blob/develop/src/sage/categories/g_sets.py#L22
 ,,sage.categories.g_sets.GSets,sage.categories.g_sets,GSets,class,"G, Category",https://github.com/sagemath/sage/blob/develop/src/sage/categories/g_sets.py#L22
 ,,sage.categories.gcd_domains,sage.categories.gcd_domains,gcd_domains,module,,https://github.com/sagemath/sage/blob/develop/src/sage/categories/gcd_domains.py#L16
@@ -504,14 +504,14 @@ Partial,,sage.categories.modules_with_basis.TensorProducts,sage.categories.modul
 ,,sage.categories.monoids.ParentMethods,sage.categories.monoids,ParentMethods,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/categories/monoids.py#L505
 ,,sage.categories.monoids.Subquotients,sage.categories.monoids,Subquotients,class,SubquotientsCategory,https://github.com/sagemath/sage/blob/develop/src/sage/categories/monoids.py#L469
 ,,sage.categories.monoids.WithRealizations,sage.categories.monoids,WithRealizations,class,WithRealizationsCategory,https://github.com/sagemath/sage/blob/develop/src/sage/categories/monoids.py#L440
-Implemented,STUB,sage.categories.morphism,sage.categories.morphism,morphism,module,,https://github.com/sagemath/sage/blob/develop/src/sage/categories/morphism.pyx#L76
-Implemented,STUB,sage.categories.morphism.CallMorphism,sage.categories.morphism,CallMorphism,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/categories/morphism.pyx#L76
-Implemented,STUB,sage.categories.morphism.FormalCoercionMorphism,sage.categories.morphism,FormalCoercionMorphism,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/categories/morphism.pyx#L451
-Implemented,STUB,sage.categories.morphism.IdentityMorphism,sage.categories.morphism,IdentityMorphism,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/categories/morphism.pyx#L471
-Implemented,STUB,sage.categories.morphism.Morphism,sage.categories.morphism,Morphism,class,Map,https://github.com/sagemath/sage/blob/develop/src/sage/categories/morphism.pyx#L76
-Implemented,STUB,sage.categories.morphism.SetIsomorphism,sage.categories.morphism,SetIsomorphism,class,SetMorphism,https://github.com/sagemath/sage/blob/develop/src/sage/categories/morphism.pyx#L742
-Implemented,STUB,sage.categories.morphism.SetMorphism,sage.categories.morphism,SetMorphism,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/categories/morphism.pyx#L569
-Implemented,STUB,sage.categories.morphism.is_Morphism,sage.categories.morphism,is_Morphism,function,,https://github.com/sagemath/sage/blob/develop/src/sage/categories/morphism.pyx#L49
+Implemented,Full,sage.categories.morphism,sage.categories.morphism,morphism,module,,https://github.com/sagemath/sage/blob/develop/src/sage/categories/morphism.pyx#L76
+Implemented,Full,sage.categories.morphism.CallMorphism,sage.categories.morphism,CallMorphism,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/categories/morphism.pyx#L76
+Implemented,Full,sage.categories.morphism.FormalCoercionMorphism,sage.categories.morphism,FormalCoercionMorphism,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/categories/morphism.pyx#L451
+Implemented,Full,sage.categories.morphism.IdentityMorphism,sage.categories.morphism,IdentityMorphism,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/categories/morphism.pyx#L471
+Implemented,Full,sage.categories.morphism.Morphism,sage.categories.morphism,Morphism,class,Map,https://github.com/sagemath/sage/blob/develop/src/sage/categories/morphism.pyx#L76
+Implemented,Full,sage.categories.morphism.SetIsomorphism,sage.categories.morphism,SetIsomorphism,class,SetMorphism,https://github.com/sagemath/sage/blob/develop/src/sage/categories/morphism.pyx#L742
+Implemented,Full,sage.categories.morphism.SetMorphism,sage.categories.morphism,SetMorphism,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/categories/morphism.pyx#L569
+Implemented,Full,sage.categories.morphism.is_Morphism,sage.categories.morphism,is_Morphism,function,,https://github.com/sagemath/sage/blob/develop/src/sage/categories/morphism.pyx#L49
 ,,sage.categories.number_fields,sage.categories.number_fields,number_fields,module,,https://github.com/sagemath/sage/blob/develop/src/sage/categories/number_fields.py#L19
 ,,sage.categories.number_fields.ElementMethods,sage.categories.number_fields,ElementMethods,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/categories/number_fields.py#L236
 ,,sage.categories.number_fields.NumberFields,sage.categories.number_fields,NumberFields,class,Category_singleton,https://github.com/sagemath/sage/blob/develop/src/sage/categories/number_fields.py#L19
