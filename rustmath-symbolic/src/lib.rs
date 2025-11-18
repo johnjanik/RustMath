@@ -15,20 +15,25 @@ pub mod functions;
 pub mod inequalities;
 pub mod integral;
 pub mod integrate;
+pub mod integrate_external;
 pub mod limits;
+pub mod maxima_wrapper;
 pub mod numerical;
 pub mod operators;
 pub mod parser;
 pub mod pde;
 pub mod polynomial;
 pub mod radical;
+pub mod random_tests;
 pub mod registry;
 pub mod series;
 pub mod simplify;
 pub mod solve;
 pub mod specialfunctions;
+pub mod subring;
 pub mod substitute;
 pub mod symbol;
+pub mod units;
 pub mod walker;
 
 pub use assumptions::{assume, forget, forget_all, get_assumptions, has_property, Property};
@@ -55,13 +60,37 @@ pub use integral::{
     definite_integral, integral, integrate, integrate_multi, DefiniteIntegral,
     IndefiniteIntegral,
 };
+pub use integrate_external::{
+    fricas_integrator, libgiac_integrator, maxima_integrator, mma_free_integrator,
+    sympy_integrator, ExternalIntegrator, FricasIntegrator, IntegratorChain,
+    LibgiacIntegrator, MathematicaFreeIntegrator, MaximaIntegrator, SympyIntegrator,
+};
 pub use limits::{Direction, LimitResult};
+pub use maxima_wrapper::{
+    expr_to_maxima, maxima_to_expr, MaximaError, MaximaFunctionElementWrapper, MaximaResult,
+    MaximaWrapper,
+};
 pub use numerical::IntegrationResult;
 pub use parser::{parse, ParseError};
 pub use pde::PDEType;
+pub use random_tests::{
+    assert_strict_weak_order, choose_from_prob_list, normalize_prob_list, random_expr,
+    random_integer_vector, test_symbolic_expression_order, OperationType, ProbList,
+    RandomExprConfig,
+};
 pub use series::{BigO, LittleO, Theta, Omega};
 pub use solve::Solution;
+pub use subring::{
+    GenericSymbolicSubring, GenericSymbolicSubringFunctor, SubringFunctor,
+    SymbolicConstantsSubring, SymbolicSubring, SymbolicSubringAcceptingVars,
+    SymbolicSubringAcceptingVarsFunctor, SymbolicSubringFactory,
+    SymbolicSubringRejectingVars, SymbolicSubringRejectingVarsFunctor, COERCION_REVERSED,
+};
 pub use symbol::Symbol;
+pub use units::{
+    base_units, convert, convert_temperature, evalunitdict, is_unit, str_to_unit,
+    unit_derivations_expr, unitdocs, vars_in_str, UnitExpression, Units,
+};
 pub use walker::{
     collect_symbols, substitute, count_operations, calculate_depth,
     ExprVisitor, ExprMutator, SymbolCollector, Substituter,
