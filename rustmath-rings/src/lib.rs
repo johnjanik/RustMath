@@ -70,6 +70,13 @@ pub mod term_monoid;
 pub mod universal_cyclotomic_field;
 pub mod augmented_valuation;
 pub mod function_field;
+pub mod invariants;
+pub mod laurent_series_ring;
+pub mod laurent_series_ring_element;
+pub mod lazy_series;
+pub mod lazy_series_ring;
+pub mod multi_power_series_ring;
+pub mod multi_power_series_ring_element;
 
 // Re-export core ring types from other crates
 pub use rustmath_integers::Integer;
