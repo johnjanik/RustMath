@@ -45,7 +45,7 @@ use rustmath_core::{Ring, CommutativeRing};
 use rustmath_rationals::Rational;
 use num_rational::BigRational;
 use num_bigint::BigInt;
-use num_traits::{Zero, One};
+use num_traits::{Zero, One, Signed};
 use std::fmt::{self, Debug, Display};
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -782,7 +782,7 @@ impl Display for SymbolicPolynomial {
                 write!(f, " - ")?;
             }
 
-            let abs_coeff = if coeff.is_negative() { -coeff } else { coeff.clone() };
+            let abs_coeff = if coeff.is_negative() { -coeff.clone() } else { (*coeff).clone() };
 
             let all_zero = exps.iter().all(|&e| e == 0);
             if !abs_coeff.is_one() || all_zero {
