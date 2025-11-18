@@ -5,6 +5,8 @@
 
 pub mod crt;
 pub mod ecm;
+pub mod factorint;
+pub mod fast_arith;
 pub mod integer;
 pub mod modular;
 pub mod prime;

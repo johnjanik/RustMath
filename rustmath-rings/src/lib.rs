@@ -34,6 +34,8 @@ pub mod asymptotic;
 pub mod asymptotic_misc;
 pub mod big_oh;
 pub mod cfinite_sequence;
+pub mod derivation;
+pub mod fraction_field;
 pub mod growth_group;
 pub mod growth_group_cartesian;
 pub mod term_monoid;
