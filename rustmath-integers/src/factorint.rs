@@ -11,8 +11,8 @@
 //! prime module.
 
 use crate::Integer;
-use crate::prime::{is_prime, factor};
-use rustmath_core::Ring;
+use crate::prime::factor;
+use rustmath_core::{NumericConversion, Ring};
 
 /// Perform trial division factorization up to a given bound
 ///
@@ -76,7 +76,7 @@ pub fn factor_trial_division(n: &Integer, limit: Option<u64>) -> Vec<(Integer, u
 
         while &remaining % &divisor == Integer::zero() {
             exp += 1;
-            remaining = remaining / &divisor;
+            remaining = remaining / divisor.clone();
         }
 
         if exp > 0 {
@@ -116,7 +116,7 @@ pub fn aurifeuillian(n: &Integer) -> Option<(Integer, u32, i8)> {
     // Check for n = a^k + 1
     for exp in 2..=64 {
         let root = n.nth_root(exp);
-        if let Some(a) = root {
+        if let Ok(a) = root {
             // Check if a^exp + 1 = n
             if a.pow(exp) + Integer::one() == *n {
                 return Some((a, exp, 1));
@@ -277,7 +277,7 @@ pub fn trial_division_with_primes(n: &Integer, primes: &[Integer]) -> Vec<(Integ
         let mut exp = 0u32;
         while &remaining % prime == Integer::zero() {
             exp += 1;
-            remaining = remaining / prime;
+            remaining = remaining / prime.clone();
         }
 
         if exp > 0 {

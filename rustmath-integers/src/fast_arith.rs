@@ -10,9 +10,6 @@
 //! - SIMD operations where applicable
 //! - Efficient prime generation and testing
 
-use crate::Integer;
-use rustmath_core::Ring;
-
 /// Fast arithmetic operations using i32
 ///
 /// Provides optimized operations when working with 32-bit integers
@@ -78,7 +75,7 @@ impl ArithInt {
     }
 
     /// Fast modular exponentiation: a^b mod m
-    pub fn pow_mod(&self, mut a: i32, mut b: i32, m: i32) -> i32 {
+    pub fn pow_mod(&self, a: i32, mut b: i32, m: i32) -> i32 {
         let mut result = 1i64;
         let mut base = (a as i64) % (m as i64);
 
@@ -228,7 +225,7 @@ impl ArithLLong {
     }
 
     /// Fast modular exponentiation: a^b mod m
-    pub fn pow_mod(&self, mut a: i64, mut b: i64, m: i64) -> i64 {
+    pub fn pow_mod(&self, a: i64, mut b: i64, m: i64) -> i64 {
         let mut result = 1i128;
         let mut base = (a as i128) % (m as i128);
 
