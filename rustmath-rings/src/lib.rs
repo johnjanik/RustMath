@@ -1,0 +1,57 @@
+//! # RustMath Rings Module
+//!
+//! This module provides a comprehensive collection of ring structures and their operations,
+//! mirroring SageMath's `sage.rings` module. It serves as a central hub for accessing all
+//! ring-related functionality in RustMath.
+//!
+//! ## Overview
+//!
+//! A ring is a fundamental algebraic structure consisting of a set equipped with two binary
+//! operations (addition and multiplication) satisfying specific axioms. This module provides:
+//!
+//! - **Abstract Base Classes (ABC)**: Traits and type definitions for various ring categories
+//! - **Concrete Ring Implementations**: Integer rings, rational fields, finite fields, etc.
+//! - **Specialized Ring Structures**: Algebraic closures, asymptotic rings, etc.
+//! - **Ring Homomorphisms and Morphisms**: Structure-preserving maps between rings
+//!
+//! ## Module Structure
+//!
+//! - `abc`: Abstract base classes defining ring categories (algebraic fields, p-adic rings, etc.)
+//! - `algebraic_closure`: Algebraic closures of finite fields
+//! - `asymptotic`: Asymptotic expansion rings for analytic combinatorics
+//! - Re-exports from existing crates: integers, rationals, finite fields, p-adics, etc.
+//!
+//! ## Examples
+//!
+//! ```rust
+//! use rustmath_rings::abc::{IntegerRing, RationalField, FiniteFieldTrait};
+//! use rustmath_rings::algebraic_closure::AlgebraicClosureFiniteField;
+//! ```
+
+pub mod abc;
+pub mod algebraic_closure;
+pub mod asymptotic;
+
+// Re-export core ring types from other crates
+pub use rustmath_integers::Integer;
+pub use rustmath_rationals::Rational;
+pub use rustmath_reals::Real;
+pub use rustmath_complex::Complex;
+pub use rustmath_finitefields::{FiniteField, FiniteFieldElement, GaloisField};
+pub use rustmath_padics::{PAdicNumber, PAdicRing};
+
+// Re-export core traits
+pub use rustmath_core::{Ring, CommutativeRing, Field, EuclideanDomain, IntegralDomain};
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_module_imports() {
+        // Test that all re-exports are accessible
+        use crate::abc::*;
+        use crate::algebraic_closure::*;
+        use crate::asymptotic::*;
+    }
+}
