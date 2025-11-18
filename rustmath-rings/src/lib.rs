@@ -82,6 +82,7 @@ pub mod power_series_poly;
 pub mod puiseux_series_ring;
 pub mod puiseux_series_ring_element;
 pub mod real_arb;
+pub mod real_lazy;
 pub mod semirings;
 pub mod sum_of_squares;
 pub mod tate_algebra;
