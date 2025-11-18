@@ -132,9 +132,9 @@ mod tests {
         // GF(2^2): x^2 + x + 1
         let poly = conway_polynomial(2, 2).unwrap();
         assert_eq!(poly.degree(), Some(2));
-        assert_eq!(poly.coeff(0), Integer::from(1));
-        assert_eq!(poly.coeff(1), Integer::from(1));
-        assert_eq!(poly.coeff(2), Integer::from(1));
+        assert_eq!(*poly.coeff(0), Integer::from(1));
+        assert_eq!(*poly.coeff(1), Integer::from(1));
+        assert_eq!(*poly.coeff(2), Integer::from(1));
     }
 
     #[test]
@@ -142,9 +142,9 @@ mod tests {
         // GF(3^2): x^2 + x + 2
         let poly = conway_polynomial(3, 2).unwrap();
         assert_eq!(poly.degree(), Some(2));
-        assert_eq!(poly.coeff(0), Integer::from(2));
-        assert_eq!(poly.coeff(1), Integer::from(1));
-        assert_eq!(poly.coeff(2), Integer::from(1));
+        assert_eq!(*poly.coeff(0), Integer::from(2));
+        assert_eq!(*poly.coeff(1), Integer::from(1));
+        assert_eq!(*poly.coeff(2), Integer::from(1));
     }
 
     #[test]
