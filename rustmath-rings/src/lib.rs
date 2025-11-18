@@ -51,6 +51,10 @@ pub mod quotient_ring_element;
 pub mod real_interval_absolute;
 pub mod real_mpfi;
 pub mod residue_field;
+pub mod ring;
+pub mod ring_extension;
+pub mod ring_extension_element;
+pub mod ring_extension_morphism;
 pub mod term_monoid;
 pub mod universal_cyclotomic_field;
 
