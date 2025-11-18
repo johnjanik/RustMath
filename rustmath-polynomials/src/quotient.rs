@@ -365,7 +365,7 @@ mod tests {
         let x: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(0);
         let gen = x.clone() * x.clone() - MultivariatePolynomial::constant(2);
 
-        let quotient = QuotientRing::from_generators(
+        let mut quotient = QuotientRing::from_generators(
             vec![gen],
             MonomialOrdering::Lex,
         );
@@ -379,7 +379,7 @@ mod tests {
         let x: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(0);
         let gen = x.clone() * x.clone();
 
-        let quotient = QuotientRing::from_generators(
+        let mut quotient = QuotientRing::from_generators(
             vec![gen],
             MonomialOrdering::Lex,
         );
@@ -394,7 +394,7 @@ mod tests {
         let x: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(0);
         let gen = x.clone() * x.clone() - MultivariatePolynomial::constant(1);
 
-        let quotient = QuotientRing::from_generators(
+        let mut quotient = QuotientRing::from_generators(
             vec![gen],
             MonomialOrdering::Lex,
         );
@@ -417,7 +417,7 @@ mod tests {
         let x: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(0);
         let gen = x.clone() * x.clone();
 
-        let quotient = QuotientRing::from_generators(
+        let mut quotient = QuotientRing::from_generators(
             vec![gen],
             MonomialOrdering::Lex,
         );
@@ -437,7 +437,7 @@ mod tests {
         let x: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(0);
         let gen = x.clone() * x.clone() - MultivariatePolynomial::constant(1);
 
-        let quotient = QuotientRing::from_generators(
+        let mut quotient = QuotientRing::from_generators(
             vec![gen],
             MonomialOrdering::Lex,
         );
@@ -458,7 +458,7 @@ mod tests {
         let x: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(0);
         let gen = x.clone() * x.clone() - MultivariatePolynomial::constant(1);
 
-        let quotient = QuotientRing::from_generators(
+        let mut quotient = QuotientRing::from_generators(
             vec![gen],
             MonomialOrdering::Lex,
         );
@@ -479,7 +479,7 @@ mod tests {
         let x: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(0);
         let gen = x.clone() * x.clone();
 
-        let quotient = QuotientRing::from_generators(
+        let mut quotient = QuotientRing::from_generators(
             vec![gen],
             MonomialOrdering::Lex,
         );
@@ -497,7 +497,7 @@ mod tests {
         let x: MultivariatePolynomial<i32> = MultivariatePolynomial::variable(0);
         let gen = x.clone() * x.clone();
 
-        let quotient = QuotientRing::from_generators(
+        let mut quotient = QuotientRing::from_generators(
             vec![gen],
             MonomialOrdering::Lex,
         );
@@ -515,7 +515,7 @@ mod tests {
         let gen1 = x.clone() * x.clone();
         let gen2 = x.clone() * y.clone();
 
-        let quotient = QuotientRing::from_generators(
+        let mut quotient = QuotientRing::from_generators(
             vec![gen1, gen2],
             MonomialOrdering::Grevlex,
         );
