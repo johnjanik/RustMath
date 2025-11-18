@@ -140,23 +140,23 @@ Implemented,Full,sage.rings.puiseux_series_ring,sage.rings.puiseux_series_ring,p
 Implemented,Full,sage.rings.puiseux_series_ring.PuiseuxSeriesRing,sage.rings.puiseux_series_ring,PuiseuxSeriesRing,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/rings/puiseux_series_ring.py#L44
 Implemented,Full,sage.rings.puiseux_series_ring_element,sage.rings.puiseux_series_ring_element,puiseux_series_ring_element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/puiseux_series_ring_element.pyx#L116
 Implemented,Full,sage.rings.puiseux_series_ring_element.PuiseuxSeries,sage.rings.puiseux_series_ring_element,PuiseuxSeries,class,AlgebraElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/puiseux_series_ring_element.pyx#L116
-,,sage.rings.qqbar,sage.rings.qqbar,qqbar,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L8587
-,,sage.rings.qqbar.ANBinaryExpr,sage.rings.qqbar,ANBinaryExpr,class,ANDescr,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L8587
-,,sage.rings.qqbar.ANDescr,sage.rings.qqbar,ANDescr,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L3586
-,,sage.rings.qqbar.ANExtensionElement,sage.rings.qqbar,ANExtensionElement,class,ANDescr,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L7863
-,,sage.rings.qqbar.ANRational,sage.rings.qqbar,ANRational,class,ANDescr,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L6617
-,,sage.rings.qqbar.ANRoot,sage.rings.qqbar,ANRoot,class,ANDescr,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L7177
-,,sage.rings.qqbar.ANUnaryExpr,sage.rings.qqbar,ANUnaryExpr,class,ANDescr,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L8330
-,,sage.rings.qqbar.AlgebraicField,sage.rings.qqbar,AlgebraicField,class,"Singleton, AlgebraicField_common, AlgebraicField",https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L1599
-,,sage.rings.qqbar.AlgebraicField_common,sage.rings.qqbar,AlgebraicField_common,class,AlgebraicField_common,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L633
+Implemented,Full,sage.rings.qqbar,sage.rings.qqbar,qqbar,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L8587
+Implemented,Full,sage.rings.qqbar.ANBinaryExpr,sage.rings.qqbar,ANBinaryExpr,class,ANDescr,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L8587
+Implemented,Full,sage.rings.qqbar.ANDescr,sage.rings.qqbar,ANDescr,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L3586
+Implemented,Full,sage.rings.qqbar.ANExtensionElement,sage.rings.qqbar,ANExtensionElement,class,ANDescr,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L7863
+Implemented,Full,sage.rings.qqbar.ANRational,sage.rings.qqbar,ANRational,class,ANDescr,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L6617
+Implemented,Full,sage.rings.qqbar.ANRoot,sage.rings.qqbar,ANRoot,class,ANDescr,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L7177
+Implemented,Full,sage.rings.qqbar.ANUnaryExpr,sage.rings.qqbar,ANUnaryExpr,class,ANDescr,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L8330
+Implemented,Full,sage.rings.qqbar.AlgebraicField,sage.rings.qqbar,AlgebraicField,class,"Singleton, AlgebraicField_common, AlgebraicField",https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L1599
+Implemented,Full,sage.rings.qqbar.AlgebraicField_common,sage.rings.qqbar,AlgebraicField_common,class,AlgebraicField_common,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L633
 ,,sage.rings.qqbar.AlgebraicGenerator,sage.rings.qqbar,AlgebraicGenerator,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L3121
 ,,sage.rings.qqbar.AlgebraicGeneratorRelation,sage.rings.qqbar,AlgebraicGeneratorRelation,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L3098
-,,sage.rings.qqbar.AlgebraicNumber,sage.rings.qqbar,AlgebraicNumber,class,AlgebraicNumber_base,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L4984
+Implemented,Full,sage.rings.qqbar.AlgebraicNumber,sage.rings.qqbar,AlgebraicNumber,class,AlgebraicNumber_base,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L4984
 ,,sage.rings.qqbar.AlgebraicNumberPowQQAction,sage.rings.qqbar,AlgebraicNumberPowQQAction,class,"G, S, Action",https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L6388
 ,,sage.rings.qqbar.AlgebraicNumber_base,sage.rings.qqbar,AlgebraicNumber_base,class,FieldElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L3733
 ,,sage.rings.qqbar.AlgebraicPolynomialTracker,sage.rings.qqbar,AlgebraicPolynomialTracker,class,SageObject,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L6908
-,,sage.rings.qqbar.AlgebraicReal,sage.rings.qqbar,AlgebraicReal,class,AlgebraicNumber_base,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L5552
-,,sage.rings.qqbar.AlgebraicRealField,sage.rings.qqbar,AlgebraicRealField,class,"Singleton, AlgebraicField_common, AlgebraicRealField",https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L1068
+Implemented,Full,sage.rings.qqbar.AlgebraicReal,sage.rings.qqbar,AlgebraicReal,class,AlgebraicNumber_base,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L5552
+Implemented,Full,sage.rings.qqbar.AlgebraicRealField,sage.rings.qqbar,AlgebraicRealField,class,"Singleton, AlgebraicField_common, AlgebraicRealField",https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L1068
 ,,sage.rings.qqbar.an_binop_element,sage.rings.qqbar,an_binop_element,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L8876
 ,,sage.rings.qqbar.an_binop_expr,sage.rings.qqbar,an_binop_expr,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L8836
 ,,sage.rings.qqbar.an_binop_rational,sage.rings.qqbar,an_binop_rational,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/qqbar.py#L8812
