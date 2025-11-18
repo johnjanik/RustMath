@@ -18,6 +18,7 @@ pub mod comparability;
 pub mod connectivity;
 pub mod convexity_properties;
 pub mod distances_all_pairs;
+pub mod domination;
 
 pub use graph::Graph;
 pub use generators::*;
