@@ -20,6 +20,13 @@ impl Graph {
         }
     }
 
+    /// Check if the graph is directed
+    ///
+    /// Currently, Graph is always undirected. For directed graphs, use DiGraph.
+    pub fn is_directed(&self) -> bool {
+        false
+    }
+
     /// Add a new vertex to the graph
     ///
     /// Returns the index of the newly added vertex.
