@@ -555,7 +555,7 @@ Implemented,FULL,sage.homology.matrix_utils.dhsw_snf,sage.homology.matrix_utils,
 ,,sage.libs.eclib.mwrank.set_precision,sage.libs.eclib.mwrank,set_precision,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/mwrank.pyx#L100
 ,,sage.libs.eclib.newforms,sage.libs.eclib.newforms,newforms,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/newforms.pyx#L24
 ,,sage.libs.eclib.newforms.ECModularSymbol,sage.libs.eclib.newforms,ECModularSymbol,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/eclib/newforms.pyx#L24
-Implemented,STUB,sage.libs.flint.arith_sage,sage.libs.flint.arith_sage,arith_sage,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/arith_sage.pyx#L28
+Implemented,Full,sage.libs.flint.arith_sage,sage.libs.flint.arith_sage,arith_sage,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/arith_sage.pyx#L28
 ,,sage.libs.flint.arith_sage.bell_number,sage.libs.flint.arith_sage,bell_number,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/arith_sage.pyx#L28
 ,,sage.libs.flint.arith_sage.bernoulli_number,sage.libs.flint.arith_sage,bernoulli_number,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/arith_sage.pyx#L66
 ,,sage.libs.flint.arith_sage.dedekind_sum,sage.libs.flint.arith_sage,dedekind_sum,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/arith_sage.pyx#L244
