@@ -36,6 +36,7 @@ pub mod big_oh;
 pub mod cfinite_sequence;
 pub mod derivation;
 pub mod fraction_field;
+pub mod fraction_field_element;
 pub mod fraction_field_fpt;
 pub mod growth_group;
 pub mod growth_group_cartesian;
