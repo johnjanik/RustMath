@@ -95,10 +95,10 @@ Implemented,FULL,sage.numerical.sdp.SemidefiniteProgram,sage.numerical.sdp,Semid
 ,,sage.parallel.use_fork,sage.parallel.use_fork,use_fork,module,,https://github.com/sagemath/sage/blob/develop/src/sage/parallel/use_fork.py#L26
 ,,sage.parallel.use_fork.WorkerData,sage.parallel.use_fork,WorkerData,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/parallel/use_fork.py#L26
 ,,sage.parallel.use_fork.p_iter_fork,sage.parallel.use_fork,p_iter_fork,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/parallel/use_fork.py#L61
-,,sage.plot,sage.plot,plot,module,,
-,,sage.plot.animate,sage.plot.animate,animate,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/animate.py#L1257
-,,sage.plot.animate.APngAssembler,sage.plot.animate,APngAssembler,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/plot/animate.py#L1257
-,,sage.plot.animate.Animation,sage.plot.animate,Animation,class,"WithEqualityById, SageObject",https://github.com/sagemath/sage/blob/develop/src/sage/plot/animate.py#L157
+Implemented,FULL,sage.plot,sage.plot,plot,module,,
+Implemented,PARTIAL,sage.plot.animate,sage.plot.animate,animate,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/animate.py#L1257
+Implemented,FULL,sage.plot.animate.APngAssembler,sage.plot.animate,APngAssembler,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/plot/animate.py#L1257
+Implemented,FULL,sage.plot.animate.Animation,sage.plot.animate,Animation,class,"WithEqualityById, SageObject",https://github.com/sagemath/sage/blob/develop/src/sage/plot/animate.py#L157
 ,,sage.plot.animate.animate,sage.plot.animate,animate,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/animate.py#L141
 ,,sage.plot.animate.magic,sage.plot.animate,magic,attribute,,
 Implemented,FULL,sage.plot.arc,sage.plot.arc,arc,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/arc.py#L27
@@ -112,8 +112,8 @@ Implemented,FULL,sage.plot.arrow.Arrow,sage.plot.arrow,Arrow,class,GraphicPrimit
 Implemented,PARTIAL,sage.plot.bar_chart,sage.plot.bar_chart,bar_chart,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/bar_chart.py#L29
 ,,sage.plot.bar_chart.BarChart,sage.plot.bar_chart,BarChart,class,GraphicPrimitive,https://github.com/sagemath/sage/blob/develop/src/sage/plot/bar_chart.py#L29
 Implemented,PARTIAL,sage.plot.bar_chart.bar_chart,sage.plot.bar_chart,bar_chart,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/bar_chart.py#L126
-,,sage.plot.bezier_path,sage.plot.bezier_path,bezier_path,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/bezier_path.py#L26
-,,sage.plot.bezier_path.BezierPath,sage.plot.bezier_path,BezierPath,class,GraphicPrimitive_xydata,https://github.com/sagemath/sage/blob/develop/src/sage/plot/bezier_path.py#L26
+Implemented,FULL,sage.plot.bezier_path,sage.plot.bezier_path,bezier_path,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/bezier_path.py#L26
+Implemented,FULL,sage.plot.bezier_path.BezierPath,sage.plot.bezier_path,BezierPath,class,GraphicPrimitive_xydata,https://github.com/sagemath/sage/blob/develop/src/sage/plot/bezier_path.py#L26
 ,,sage.plot.bezier_path.bezier_path,sage.plot.bezier_path,bezier_path,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/bezier_path.py#L272
 Implemented,FULL,sage.plot.circle,sage.plot.circle,circle,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/circle.py#L26
 Implemented,FULL,sage.plot.circle.Circle,sage.plot.circle,Circle,class,GraphicPrimitive,https://github.com/sagemath/sage/blob/develop/src/sage/plot/circle.py#L26
@@ -163,16 +163,16 @@ Implemented,PARTIAL,sage.plot.graphics.GraphicsArray,sage.plot.graphics,Graphics
 Implemented,PARTIAL,sage.plot.histogram,sage.plot.histogram,histogram,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/histogram.py#L21
 ,,sage.plot.histogram.Histogram,sage.plot.histogram,Histogram,class,GraphicPrimitive,https://github.com/sagemath/sage/blob/develop/src/sage/plot/histogram.py#L21
 Implemented,PARTIAL,sage.plot.histogram.histogram,sage.plot.histogram,histogram,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/histogram.py#L210
-,,sage.plot.hyperbolic_arc,sage.plot.hyperbolic_arc,hyperbolic_arc,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_arc.py#L172
-,,sage.plot.hyperbolic_arc.HyperbolicArc,sage.plot.hyperbolic_arc,HyperbolicArc,class,"A, B, HyperbolicArcCore",https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_arc.py#L172
-,,sage.plot.hyperbolic_arc.HyperbolicArcCore,sage.plot.hyperbolic_arc,HyperbolicArcCore,class,BezierPath,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_arc.py#L88
-,,sage.plot.hyperbolic_arc.hyperbolic_arc,sage.plot.hyperbolic_arc,hyperbolic_arc,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_arc.py#L231
-,,sage.plot.hyperbolic_polygon,sage.plot.hyperbolic_polygon,hyperbolic_polygon,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_polygon.py#L35
-,,sage.plot.hyperbolic_polygon.HyperbolicPolygon,sage.plot.hyperbolic_polygon,HyperbolicPolygon,class,HyperbolicArcCore,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_polygon.py#L35
-,,sage.plot.hyperbolic_polygon.hyperbolic_polygon,sage.plot.hyperbolic_polygon,hyperbolic_polygon,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_polygon.py#L154
-,,sage.plot.hyperbolic_polygon.hyperbolic_triangle,sage.plot.hyperbolic_polygon,hyperbolic_triangle,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_polygon.py#L331
-,,sage.plot.hyperbolic_regular_polygon,sage.plot.hyperbolic_regular_polygon,hyperbolic_regular_polygon,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_regular_polygon.py#L34
-,,sage.plot.hyperbolic_regular_polygon.HyperbolicRegularPolygon,sage.plot.hyperbolic_regular_polygon,HyperbolicRegularPolygon,class,HyperbolicPolygon,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_regular_polygon.py#L34
+Implemented,FULL,sage.plot.hyperbolic_arc,sage.plot.hyperbolic_arc,hyperbolic_arc,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_arc.py#L172
+Implemented,PARTIAL,sage.plot.hyperbolic_arc.HyperbolicArc,sage.plot.hyperbolic_arc,HyperbolicArc,class,"A, B, HyperbolicArcCore",https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_arc.py#L172
+Implemented,FULL,sage.plot.hyperbolic_arc.HyperbolicArcCore,sage.plot.hyperbolic_arc,HyperbolicArcCore,class,BezierPath,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_arc.py#L88
+Implemented,FULL,sage.plot.hyperbolic_arc.hyperbolic_arc,sage.plot.hyperbolic_arc,hyperbolic_arc,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_arc.py#L231
+Implemented,FULL,sage.plot.hyperbolic_polygon,sage.plot.hyperbolic_polygon,hyperbolic_polygon,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_polygon.py#L35
+Implemented,FULL,sage.plot.hyperbolic_polygon.HyperbolicPolygon,sage.plot.hyperbolic_polygon,HyperbolicPolygon,class,HyperbolicArcCore,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_polygon.py#L35
+Implemented,PARTIAL,sage.plot.hyperbolic_polygon.hyperbolic_polygon,sage.plot.hyperbolic_polygon,hyperbolic_polygon,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_polygon.py#L154
+Implemented,FULL,sage.plot.hyperbolic_polygon.hyperbolic_triangle,sage.plot.hyperbolic_polygon,hyperbolic_triangle,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_polygon.py#L331
+Implemented,FULL,sage.plot.hyperbolic_regular_polygon,sage.plot.hyperbolic_regular_polygon,hyperbolic_regular_polygon,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_regular_polygon.py#L34
+Implemented,FULL,sage.plot.hyperbolic_regular_polygon.HyperbolicRegularPolygon,sage.plot.hyperbolic_regular_polygon,HyperbolicRegularPolygon,class,HyperbolicPolygon,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_regular_polygon.py#L34
 ,,sage.plot.hyperbolic_regular_polygon.hyperbolic_regular_polygon,sage.plot.hyperbolic_regular_polygon,hyperbolic_regular_polygon,function,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/hyperbolic_regular_polygon.py#L203
 Implemented,FULL,sage.plot.line,sage.plot.line,line,module,,https://github.com/sagemath/sage/blob/develop/src/sage/plot/line.py#L26
 Implemented,FULL,sage.plot.line.Line,sage.plot.line,Line,class,GraphicPrimitive_xydata,https://github.com/sagemath/sage/blob/develop/src/sage/plot/line.py#L26
