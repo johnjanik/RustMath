@@ -3,16 +3,16 @@
 //! This crate provides the core plotting functionality for RustMath, including:
 //! - Graphics container for combining multiple primitives
 //! - Multi-graphics for arranging plots in grids
+//! - Basic 2D primitives (point, line, circle, polygon, etc.)
 //! - Backend utilities for implementing renderers
 //!
-//! Based on SageMath's sage.plot.graphics and sage.plot.multigraphics modules.
+//! Based on SageMath's sage.plot module.
 //!
-//! # Phase 2 Implementation
+//! # Implementation Phases
 //!
-//! This is Phase 2 of the plotting system implementation:
-//! - Graphics container system
-//! - Multi-graphics (GraphicsArray) for subplot layouts
-//! - Backend utilities and helpers
+//! - **Phase 1** (Complete): Core infrastructure, color system, plot traits
+//! - **Phase 2** (Complete): Graphics containers and layout system
+//! - **Phase 3** (Complete): Basic 2D primitives
 //!
 //! # Examples
 //!
@@ -25,6 +25,16 @@
 //! g.set_labels("x-axis", "y-axis");
 //! ```
 //!
+//! ```ignore
+//! use rustmath_plot::{Graphics, primitives::*};
+//!
+//! // Create a plot with primitives
+//! let mut g = Graphics::new();
+//! g.add(point(vec![(0.0, 0.0), (1.0, 1.0)], None));
+//! g.add(line(vec![(0.0, 0.0), (1.0, 1.0), (2.0, 0.0)], None));
+//! g.add(circle((0.0, 0.0), 1.0, None));
+//! ```
+//!
 //! ```
 //! use rustmath_plot::MultiGraphics;
 //!
@@ -35,6 +45,7 @@
 mod backend;
 mod graphics;
 mod multigraphics;
+pub mod primitives;
 
 // Re-export core types from rustmath-plot-core
 pub use rustmath_plot_core::{
