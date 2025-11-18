@@ -4,10 +4,12 @@
 //! - `basic`: Fundamental graph types (complete, path, cycle, grid, etc.)
 //! - `chessboard`: Chessboard-based graphs (rook, bishop, knight, queen, king)
 //! - `classical_geometries`: Graphs from classical geometries
+//! - `distance_regular`: Distance-regular graphs and generalized polygons
 
 pub mod basic;
 pub mod chessboard;
 pub mod classical_geometries;
+pub mod distance_regular;
 
 // Re-export common generators for convenience
 pub use basic::*;
