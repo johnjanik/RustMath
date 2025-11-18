@@ -13,6 +13,7 @@ pub mod function;
 pub mod function_factory;
 pub mod functions;
 pub mod inequalities;
+pub mod integral;
 pub mod integrate;
 pub mod limits;
 pub mod numerical;
@@ -49,6 +50,10 @@ pub use inequalities::{
     solve_abs_inequality, solve_inequality, solve_polynomial_inequality,
     solve_rational_inequality, solve_system_inequalities, InequalitySolution, InequalityType,
     Interval, IntervalSet,
+};
+pub use integral::{
+    definite_integral, integral, integrate, integrate_multi, DefiniteIntegral,
+    IndefiniteIntegral,
 };
 pub use limits::{Direction, LimitResult};
 pub use numerical::IntegrationResult;
