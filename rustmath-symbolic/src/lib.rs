@@ -9,11 +9,14 @@ pub mod diffeq;
 pub mod expand;
 pub mod expression;
 pub mod factor;
+pub mod function;
+pub mod function_factory;
 pub mod functions;
 pub mod inequalities;
 pub mod integrate;
 pub mod limits;
 pub mod numerical;
+pub mod operators;
 pub mod parser;
 pub mod pde;
 pub mod polynomial;
@@ -30,7 +33,18 @@ pub mod walker;
 pub use assumptions::{assume, forget, forget_all, get_assumptions, has_property, Property};
 pub use diffeq::{Euler, RungeKutta, ODE, ODEType};
 pub use expression::{BinaryOp, Expr, UnaryOp};
+pub use function::{
+    get_function, initialize_registry, pickle_wrapper, register_function, unpickle_wrapper,
+    BuiltinFunction, Function, FunctionRegistry, GinacFunction, SymbolicFunction,
+};
+pub use function_factory::{
+    function, function_with_expression, unpickle_function, wrap_function, FunctionFactory,
+};
 pub use functions::{jacobian, wronskian};
+pub use operators::{
+    add_vararg, derivative, mul_vararg, partial_derivative, DerivativeOperator,
+    DerivativeOperatorWithParameters, FDerivativeOperator,
+};
 pub use inequalities::{
     solve_abs_inequality, solve_inequality, solve_polynomial_inequality,
     solve_rational_inequality, solve_system_inequalities, InequalitySolution, InequalityType,
