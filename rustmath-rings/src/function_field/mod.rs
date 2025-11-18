@@ -103,6 +103,10 @@ pub mod drinfeld_modules;
 pub mod extensions;
 pub mod ideal;
 pub mod place;
+pub mod place_polymod;
+pub mod place_rational;
+pub mod valuation;
+pub mod valuation_ring;
 
 // New modules for SageMath rings implementation
 pub mod function_field_polymod;
@@ -131,6 +135,23 @@ pub use extensions::{ConstantFieldExtension, FunctionFieldExtension};
 pub use ideal::{FunctionFieldIdeal, FunctionFieldIdealInfinite, IdealMonoid};
 
 pub use place::{FunctionFieldPlace, PlaceSet};
+
+pub use place_polymod::FunctionFieldPlace_polymod;
+
+pub use place_rational::FunctionFieldPlace_rational;
+
+pub use valuation::{
+    DiscreteFunctionFieldValuation,
+    FunctionFieldValuation_base,
+    ClassicalFunctionFieldValuation_base,
+    RationalFunctionFieldValuation_base,
+    FiniteRationalFunctionFieldValuation,
+    InfiniteRationalFunctionFieldValuation,
+    NonClassicalRationalFunctionFieldValuation,
+    FunctionFieldValuationFactory,
+};
+
+pub use valuation_ring::FunctionFieldValuationRing;
 
 pub use order_basis::{FunctionFieldOrder_basis, FunctionFieldOrderInfinite_basis};
 
