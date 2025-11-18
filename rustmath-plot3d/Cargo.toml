@@ -1,0 +1,18 @@
+[package]
+name = "rustmath-plot3d"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustmath-core = { path = "../rustmath-core" }
+rustmath-colors = { path = "../rustmath-colors" }
+rustmath-plot-core = { path = "../rustmath-plot-core" }
+rustmath-geometry = { path = "../rustmath-geometry" }
+rustmath-matrix = { path = "../rustmath-matrix" }
+rustmath-reals = { path = "../rustmath-reals" }
+thiserror.workspace = true
+
+[dev-dependencies]
