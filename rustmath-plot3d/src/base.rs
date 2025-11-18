@@ -202,7 +202,18 @@ pub struct IndexFaceSet {
 
 impl IndexFaceSet {
     /// Create a new empty mesh
-    pub fn new() -> Self {
+    pub fn new(vertices: Vec<Point3D>, faces: Vec<[usize; 3]>) -> Self {
+        Self {
+            vertices,
+            faces,
+            normals: None,
+            vertex_colors: None,
+            face_colors: None,
+        }
+    }
+
+    /// Create an empty mesh
+    pub fn empty() -> Self {
         Self {
             vertices: Vec::new(),
             faces: Vec::new(),
@@ -294,7 +305,22 @@ impl IndexFaceSet {
 
 impl Default for IndexFaceSet {
     fn default() -> Self {
-        Self::new()
+        Self::empty()
+    }
+}
+
+// Implement Graphics3dPrimitive for IndexFaceSet
+impl Graphics3dPrimitive for IndexFaceSet {
+    fn bounding_box(&self) -> BoundingBox3D {
+        self.bounding_box()
+    }
+
+    fn to_mesh(&self) -> crate::Result<IndexFaceSet> {
+        Ok(self.clone())
+    }
+
+    fn clone_box(&self) -> Box<dyn Graphics3dPrimitive> {
+        Box::new(self.clone())
     }
 }
 
@@ -306,7 +332,7 @@ pub trait Graphics3dPrimitive: fmt::Debug {
     fn bounding_box(&self) -> BoundingBox3D;
 
     /// Convert this primitive to a triangle mesh
-    fn to_mesh(&self) -> IndexFaceSet;
+    fn to_mesh(&self) -> crate::Result<IndexFaceSet>;
 
     /// Clone the primitive into a boxed trait object
     fn clone_box(&self) -> Box<dyn Graphics3dPrimitive>;
@@ -324,6 +350,9 @@ impl Clone for Box<dyn Graphics3dPrimitive> {
 pub struct Graphics3dOptions {
     /// Background color
     pub background_color: Color,
+
+    /// Default color for objects (if not specified)
+    pub default_color: Option<Color>,
 
     /// Aspect ratio (width/height), or None for automatic
     pub aspect_ratio: Option<f64>,
@@ -351,6 +380,7 @@ impl Graphics3dOptions {
     pub fn new() -> Self {
         Self {
             background_color: Color::white(),
+            default_color: None,
             aspect_ratio: None,
             lighting: true,
             wireframe: false,
@@ -400,6 +430,11 @@ impl Graphics3d {
     /// Add a 3D object to this graphics
     pub fn add(&mut self, object: Box<dyn Graphics3dPrimitive>) {
         self.objects.push(object);
+    }
+
+    /// Add a mesh to this graphics (convenience method)
+    pub fn add_mesh(&mut self, mesh: IndexFaceSet) {
+        self.objects.push(Box::new(mesh));
     }
 
     /// Set the camera
