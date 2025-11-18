@@ -5,12 +5,30 @@
 //! This module includes:
 //! - `Complex`: Standard precision complex numbers (f64-based)
 //! - `ComplexMPFR`: Arbitrary precision complex numbers using MPC/MPFR
+//! - `ComplexBall`: Complex ball arithmetic with rigorous error bounds
+//! - `ComplexIntervalFieldElement`: Complex interval arithmetic
+//! - `ComplexIntervalField`: Factory for complex intervals
+//! - MPC morphisms and helper functions
 
 pub mod complex;
 pub mod mpc;
+pub mod complex_arb;
+pub mod complex_interval;
+pub mod complex_interval_field;
+pub mod complex_mpc_ext;
 
 pub use complex::{Complex, ComplexField};
 pub use mpc::{ComplexMPFR, DEFAULT_PRECISION};
+pub use complex_arb::{ComplexBall, ComplexBallField, IntegrationContext};
+pub use complex_interval::{
+    ComplexIntervalFieldElement, create_complex_interval_field_element,
+    is_complex_interval_field_element, make_complex_interval_field_element0,
+};
+pub use complex_interval_field::{ComplexIntervalField, ComplexIntervalField_class};
+pub use complex_mpc_ext::{
+    CCtoMPC, INTEGERtoMPC, MPCtoMPC, MPFRtoMPC, MPComplexField,
+    MPComplexField_class, MPComplexNumber, late_import, split_complex_string,
+};
 
 #[cfg(test)]
 mod tests {
