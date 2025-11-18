@@ -77,6 +77,15 @@ pub mod lazy_series;
 pub mod lazy_series_ring;
 pub mod multi_power_series_ring;
 pub mod multi_power_series_ring_element;
+pub mod power_series_pari;
+pub mod power_series_poly;
+pub mod puiseux_series_ring;
+pub mod puiseux_series_ring_element;
+pub mod real_arb;
+pub mod semirings;
+pub mod sum_of_squares;
+pub mod tate_algebra;
+pub mod valuation;
 
 // Re-export core ring types from other crates
 pub use rustmath_integers::Integer;
