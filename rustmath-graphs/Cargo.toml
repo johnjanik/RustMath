@@ -10,3 +10,4 @@ repository.workspace = true
 rustmath-core = { path = "../rustmath-core" }
 rustmath-integers = { path = "../rustmath-integers" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
+rand = "0.8"
