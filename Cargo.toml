@@ -51,6 +51,7 @@ members = [
     "rustmath-plot",
     "rustmath-plot3d",
     "rustmath-rings",
+    "rustmath-topology",
 ]
 
 [workspace.package]
