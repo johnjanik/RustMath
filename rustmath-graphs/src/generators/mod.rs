@@ -5,11 +5,13 @@
 //! - `chessboard`: Chessboard-based graphs (rook, bishop, knight, queen, king)
 //! - `classical_geometries`: Graphs from classical geometries
 //! - `distance_regular`: Distance-regular graphs and generalized polygons
+//! - `families`: Common graph families (trees, cubes, Petersen variations, etc.)
 
 pub mod basic;
 pub mod chessboard;
 pub mod classical_geometries;
 pub mod distance_regular;
+pub mod families;
 
 // Re-export common generators for convenience
 pub use basic::*;
