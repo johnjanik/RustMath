@@ -821,10 +821,10 @@ Implemented,Full,sage.rings.cfinite_sequence,sage.rings.cfinite_sequence,cfinite
 Implemented,Full,sage.rings.cfinite_sequence.CFiniteSequence,sage.rings.cfinite_sequence,CFiniteSequence,class,FieldElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/cfinite_sequence.py#L160
 Implemented,Full,sage.rings.cfinite_sequence.CFiniteSequences,sage.rings.cfinite_sequence,CFiniteSequences,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/cfinite_sequence.py#L107
 Implemented,Full,sage.rings.cfinite_sequence.CFiniteSequences_generic,sage.rings.cfinite_sequence,CFiniteSequences_generic,class,"Parent, UniqueRepresentation",https://github.com/sagemath/sage/blob/develop/src/sage/rings/cfinite_sequence.py#L882
-,,sage.rings.complex_arb,sage.rings.complex_arb,complex_arb,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_arb.pyx#L1370
-,,sage.rings.complex_arb.ComplexBall,sage.rings.complex_arb,ComplexBall,class,RingElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_arb.pyx#L1370
-,,sage.rings.complex_arb.ComplexBallField,sage.rings.complex_arb,ComplexBallField,class,"UniqueRepresentation, ComplexBallField",https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_arb.pyx#L311
-,,sage.rings.complex_arb.IntegrationContext,sage.rings.complex_arb,IntegrationContext,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_arb.pyx#L243
+Implemented,Full,sage.rings.complex_arb,sage.rings.complex_arb,complex_arb,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_arb.pyx#L1370
+Implemented,Full,sage.rings.complex_arb.ComplexBall,sage.rings.complex_arb,ComplexBall,class,RingElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_arb.pyx#L1370
+Implemented,Full,sage.rings.complex_arb.ComplexBallField,sage.rings.complex_arb,ComplexBallField,class,"UniqueRepresentation, ComplexBallField",https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_arb.pyx#L311
+Implemented,Full,sage.rings.complex_arb.IntegrationContext,sage.rings.complex_arb,IntegrationContext,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_arb.pyx#L243
 Implemented,FULL,sage.rings.complex_double,sage.rings.complex_double,complex_double,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_double.pyx#L721
 Implemented,FULL,sage.rings.complex_double.ComplexDoubleElement,sage.rings.complex_double,ComplexDoubleElement,class,FieldElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_double.pyx#L721
 Implemented,FULL,sage.rings.complex_double.ComplexDoubleField,sage.rings.complex_double,ComplexDoubleField,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_double.pyx#L2611
@@ -832,24 +832,24 @@ Implemented,FULL,sage.rings.complex_double.ComplexDoubleField_class,sage.rings.c
 Implemented,FULL,sage.rings.complex_double.ComplexToCDF,sage.rings.complex_double,ComplexToCDF,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_double.pyx#L2552
 Implemented,FULL,sage.rings.complex_double.FloatToCDF,sage.rings.complex_double,FloatToCDF,class,Morphism,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_double.pyx#L2475
 Implemented,FULL,sage.rings.complex_double.is_ComplexDoubleElement,sage.rings.complex_double,is_ComplexDoubleElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_double.pyx#L698
-,,sage.rings.complex_interval,sage.rings.complex_interval,complex_interval,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_interval.pyx#L100
-,,sage.rings.complex_interval.ComplexIntervalFieldElement,sage.rings.complex_interval,ComplexIntervalFieldElement,class,FieldElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_interval.pyx#L100
-,,sage.rings.complex_interval.create_ComplexIntervalFieldElement,sage.rings.complex_interval,create_ComplexIntervalFieldElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_interval.pyx#L2406
-,,sage.rings.complex_interval.is_ComplexIntervalFieldElement,sage.rings.complex_interval,is_ComplexIntervalFieldElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_interval.pyx#L77
-,,sage.rings.complex_interval.make_ComplexIntervalFieldElement0,sage.rings.complex_interval,make_ComplexIntervalFieldElement0,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_interval.pyx#L2393
-,,sage.rings.complex_interval_field,sage.rings.complex_interval_field,complex_interval_field,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_interval_field.py#L54
-,,sage.rings.complex_interval_field.ComplexIntervalField,sage.rings.complex_interval_field,ComplexIntervalField,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_interval_field.py#L54
-,,sage.rings.complex_interval_field.ComplexIntervalField_class,sage.rings.complex_interval_field,ComplexIntervalField_class,class,ComplexIntervalField,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_interval_field.py#L84
-,,sage.rings.complex_mpc,sage.rings.complex_mpc,complex_mpc,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpc.pyx#L76
-,,sage.rings.complex_mpc.CCtoMPC,sage.rings.complex_mpc,CCtoMPC,class,Map,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpc.pyx#L76
-,,sage.rings.complex_mpc.INTEGERtoMPC,sage.rings.complex_mpc,INTEGERtoMPC,class,Map,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpc.pyx#L76
-,,sage.rings.complex_mpc.MPComplexField,sage.rings.complex_mpc,MPComplexField,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpc.pyx#L242
-,,sage.rings.complex_mpc.MPComplexField_class,sage.rings.complex_mpc,MPComplexField_class,class,Field,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpc.pyx#L271
-,,sage.rings.complex_mpc.MPComplexNumber,sage.rings.complex_mpc,MPComplexNumber,class,FieldElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpc.pyx#L707
-,,sage.rings.complex_mpc.MPCtoMPC,sage.rings.complex_mpc,MPCtoMPC,class,Map,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpc.pyx#L76
-,,sage.rings.complex_mpc.MPFRtoMPC,sage.rings.complex_mpc,MPFRtoMPC,class,Map,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpc.pyx#L76
-,,sage.rings.complex_mpc.late_import,sage.rings.complex_mpc,late_import,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpc.pyx#L101
-,,sage.rings.complex_mpc.split_complex_string,sage.rings.complex_mpc,split_complex_string,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpc.pyx#L156
+Implemented,Full,sage.rings.complex_interval,sage.rings.complex_interval,complex_interval,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_interval.pyx#L100
+Implemented,Full,sage.rings.complex_interval.ComplexIntervalFieldElement,sage.rings.complex_interval,ComplexIntervalFieldElement,class,FieldElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_interval.pyx#L100
+Implemented,Full,sage.rings.complex_interval.create_ComplexIntervalFieldElement,sage.rings.complex_interval,create_ComplexIntervalFieldElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_interval.pyx#L2406
+Implemented,Full,sage.rings.complex_interval.is_ComplexIntervalFieldElement,sage.rings.complex_interval,is_ComplexIntervalFieldElement,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_interval.pyx#L77
+Implemented,Full,sage.rings.complex_interval.make_ComplexIntervalFieldElement0,sage.rings.complex_interval,make_ComplexIntervalFieldElement0,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_interval.pyx#L2393
+Implemented,Full,sage.rings.complex_interval_field,sage.rings.complex_interval_field,complex_interval_field,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_interval_field.py#L54
+Implemented,Full,sage.rings.complex_interval_field.ComplexIntervalField,sage.rings.complex_interval_field,ComplexIntervalField,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_interval_field.py#L54
+Implemented,Full,sage.rings.complex_interval_field.ComplexIntervalField_class,sage.rings.complex_interval_field,ComplexIntervalField_class,class,ComplexIntervalField,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_interval_field.py#L84
+Implemented,Full,sage.rings.complex_mpc,sage.rings.complex_mpc,complex_mpc,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpc.pyx#L76
+Implemented,Full,sage.rings.complex_mpc.CCtoMPC,sage.rings.complex_mpc,CCtoMPC,class,Map,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpc.pyx#L76
+Implemented,Full,sage.rings.complex_mpc.INTEGERtoMPC,sage.rings.complex_mpc,INTEGERtoMPC,class,Map,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpc.pyx#L76
+Implemented,Full,sage.rings.complex_mpc.MPComplexField,sage.rings.complex_mpc,MPComplexField,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpc.pyx#L242
+Implemented,Full,sage.rings.complex_mpc.MPComplexField_class,sage.rings.complex_mpc,MPComplexField_class,class,Field,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpc.pyx#L271
+Implemented,Full,sage.rings.complex_mpc.MPComplexNumber,sage.rings.complex_mpc,MPComplexNumber,class,FieldElement,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpc.pyx#L707
+Implemented,Full,sage.rings.complex_mpc.MPCtoMPC,sage.rings.complex_mpc,MPCtoMPC,class,Map,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpc.pyx#L76
+Implemented,Full,sage.rings.complex_mpc.MPFRtoMPC,sage.rings.complex_mpc,MPFRtoMPC,class,Map,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpc.pyx#L76
+Implemented,Full,sage.rings.complex_mpc.late_import,sage.rings.complex_mpc,late_import,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpc.pyx#L101
+Implemented,Full,sage.rings.complex_mpc.split_complex_string,sage.rings.complex_mpc,split_complex_string,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpc.pyx#L156
 Implemented,FULL,sage.rings.complex_mpfr,sage.rings.complex_mpfr,complex_mpfr,module,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpfr.pyx#L165
 Implemented,FULL,sage.rings.complex_mpfr.ComplexField,sage.rings.complex_mpfr,ComplexField,function,,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpfr.pyx#L165
 Implemented,FULL,sage.rings.complex_mpfr.ComplexField_class,sage.rings.complex_mpfr,ComplexField_class,class,ComplexField,https://github.com/sagemath/sage/blob/develop/src/sage/rings/complex_mpfr.pyx#L199

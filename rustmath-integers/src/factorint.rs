@@ -53,7 +53,7 @@ pub fn factor_trial_division(n: &Integer, limit: Option<u64>) -> Vec<(Integer, u
     let mut exp = 0u32;
     while &remaining % &two == Integer::zero() {
         exp += 1;
-        remaining = remaining / &two;
+        remaining = &remaining / &two;
     }
     if exp > 0 {
         factors.push((two, exp));
