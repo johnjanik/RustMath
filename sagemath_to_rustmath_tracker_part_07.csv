@@ -865,9 +865,9 @@ Implemented,Full,sage.groups.group.is_Group,sage.groups.group,is_Group,function,
 ,,sage.groups.indexed_free_group.IndexedFreeAbelianGroup,sage.groups.indexed_free_group,IndexedFreeAbelianGroup,class,"IndexedGroup, AbelianGroup",https://github.com/sagemath/sage/blob/develop/src/sage/groups/indexed_free_group.py#L302
 ,,sage.groups.indexed_free_group.IndexedFreeGroup,sage.groups.indexed_free_group,IndexedFreeGroup,class,"IndexedGroup, Group",https://github.com/sagemath/sage/blob/develop/src/sage/groups/indexed_free_group.py#L141
 ,,sage.groups.indexed_free_group.IndexedGroup,sage.groups.indexed_free_group,IndexedGroup,class,IndexedMonoid,https://github.com/sagemath/sage/blob/develop/src/sage/groups/indexed_free_group.py#L36
-,,sage.groups.kernel_subgroup,sage.groups.kernel_subgroup,kernel_subgroup,module,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/kernel_subgroup.py#L25
-,,sage.groups.kernel_subgroup.Element,sage.groups.kernel_subgroup,Element,class,ElementWrapper,https://github.com/sagemath/sage/blob/develop/src/sage/groups/kernel_subgroup.py#L199
-,,sage.groups.kernel_subgroup.KernelSubgroup,sage.groups.kernel_subgroup,KernelSubgroup,class,"UniqueRepresentation, Parent",https://github.com/sagemath/sage/blob/develop/src/sage/groups/kernel_subgroup.py#L25
+Implemented,Full,sage.groups.kernel_subgroup,sage.groups.kernel_subgroup,kernel_subgroup,module,rustmath-groups/src/kernel_subgroup.rs,https://github.com/sagemath/sage/blob/develop/src/sage/groups/kernel_subgroup.py#L25
+Implemented,Full,sage.groups.kernel_subgroup.Element,sage.groups.kernel_subgroup,Element,class,rustmath-groups/src/kernel_subgroup.rs,https://github.com/sagemath/sage/blob/develop/src/sage/groups/kernel_subgroup.py#L199
+Implemented,Full,sage.groups.kernel_subgroup.KernelSubgroup,sage.groups.kernel_subgroup,KernelSubgroup,class,rustmath-groups/src/kernel_subgroup.rs,https://github.com/sagemath/sage/blob/develop/src/sage/groups/kernel_subgroup.py#L25
 ,,sage.groups.libgap_group,sage.groups.libgap_group,libgap_group,module,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/libgap_group.py#L40
 ,,sage.groups.libgap_group.GroupLibGAP,sage.groups.libgap_group,GroupLibGAP,class,"GroupMixinLibGAP, Group, ParentLibGAP",https://github.com/sagemath/sage/blob/develop/src/sage/groups/libgap_group.py#L40
 ,,sage.groups.libgap_mixin,sage.groups.libgap_mixin,libgap_mixin,module,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/libgap_mixin.py#L23

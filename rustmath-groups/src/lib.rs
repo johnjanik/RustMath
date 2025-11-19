@@ -19,6 +19,7 @@ pub mod conjugacy_classes;
 pub mod free_group;
 pub mod generic;
 pub mod group_traits;
+pub mod kernel_subgroup;
 pub mod representation;
 
 pub use permutation_group::{PermutationGroup, SymmetricGroup, AlternatingGroup};
@@ -31,4 +32,5 @@ pub use euclidean_group::EuclideanGroup;
 pub use conjugacy_classes::{ConjugacyClass, conjugacy_classes, num_conjugacy_classes, GroupElement as ConjugacyGroupElement};
 pub use free_group::{FreeGroup, FreeGroupElement};
 pub use group_traits::{Group, AbelianGroupTrait, FiniteGroupTrait, GroupElement, AlgebraicGroupTrait, is_group};
+pub use kernel_subgroup::{KernelSubgroup, KernelSubgroupElement};
 pub use representation::{Representation, Character, CharacterTable, direct_sum, tensor_product};
