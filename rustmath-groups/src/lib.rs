@@ -37,6 +37,12 @@ pub mod pari_group;
 pub mod representation;
 pub mod semimonomial_transformation;
 pub mod semimonomial_transformation_group;
+pub mod libgap_wrapper;
+pub mod libgap_group;
+pub mod libgap_mixin;
+pub mod libgap_morphism;
+pub mod nilpotent_lie_group;
+pub mod raag;
 
 pub use permutation_group::{PermutationGroup, SymmetricGroup, AlternatingGroup};
 pub use matrix_group::{MatrixGroup, GLn, SLn};
@@ -75,3 +81,8 @@ pub use pari_group::{PariGroup, symmetric_pari_group, alternating_pari_group, di
 pub use representation::{Representation, Character, CharacterTable, direct_sum, tensor_product};
 pub use semimonomial_transformation::{SemimonomialTransformation, Automorphism, action_on_vector, action_on_matrix, compose};
 pub use semimonomial_transformation_group::{SemimonomialTransformationGroup, SemimonomialActionVec, SemimonomialActionMat, group_order};
+pub use libgap_wrapper::{ElementLibGAP, ParentLibGAP, GenericElementWrapper, GenericParentWrapper};
+pub use libgap_group::GroupLibGAP;
+pub use libgap_mixin::GroupMixinLibGAP;
+pub use libgap_morphism::{GroupMorphism_libgap, GroupHomset_libgap};
+pub use nilpotent_lie_group::{NilpotentLieGroup, NilpotentLieGroupElement};
