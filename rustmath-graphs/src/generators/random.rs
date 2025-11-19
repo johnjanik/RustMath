@@ -635,6 +635,228 @@ pub fn random_block_graph(m: usize, k: usize, kmax: usize, seed: Option<u64>) ->
     g
 }
 
+/// Generate subtrees by growing from random starting points
+///
+/// Helper function for chordal graph generation. Creates subtrees by picking
+/// random starting nodes and growing them to random sizes.
+///
+/// # Arguments
+///
+/// * `tree` - The host tree to generate subtrees from
+/// * `k` - Maximum size of each subtree
+/// * `n` - Number of subtrees to generate
+/// * `rng` - Random number generator
+///
+/// # Returns
+///
+/// Vector of sets, where each set contains the vertices in one subtree
+pub fn growing_subtrees(tree: &Graph, k: usize, n: usize, rng: &mut Box<dyn RngCore>) -> Vec<HashSet<usize>> {
+    let tree_size = tree.num_vertices();
+    let mut subtrees = Vec::new();
+
+    for _ in 0..n {
+        let root = rng.gen_range(0..tree_size);
+        let size = rng.gen_range(1..=k.min(tree_size));
+
+        let mut subtree = HashSet::new();
+        subtree.insert(root);
+
+        // BFS to grow subtree
+        let mut queue = vec![root];
+        let mut visited = HashSet::new();
+        visited.insert(root);
+
+        while subtree.len() < size && !queue.is_empty() {
+            let v = queue.remove(0);
+            if let Some(neighbors) = tree.neighbors(v) {
+                for &u in &neighbors {
+                    if !visited.contains(&u) && subtree.len() < size {
+                        visited.insert(u);
+                        subtree.insert(u);
+                        queue.push(u);
+                    }
+                }
+            }
+        }
+
+        subtrees.push(subtree);
+    }
+
+    subtrees
+}
+
+/// Generate subtrees by connecting randomly selected nodes
+///
+/// Helper function for chordal graph generation. Creates subtrees by selecting
+/// random nodes (using Poisson-like distribution) and finding minimal subtrees
+/// connecting them.
+///
+/// # Arguments
+///
+/// * `tree` - The host tree to generate subtrees from
+/// * `l` - Mean number of nodes to select per subtree
+/// * `n` - Number of subtrees to generate
+/// * `rng` - Random number generator
+///
+/// # Returns
+///
+/// Vector of sets, where each set contains the vertices in one subtree
+pub fn connecting_nodes(tree: &Graph, l: f64, n: usize, rng: &mut Box<dyn RngCore>) -> Vec<HashSet<usize>> {
+    let tree_size = tree.num_vertices();
+    let mut subtrees = Vec::new();
+
+    for _ in 0..n {
+        // Select random number of nodes (approximating Poisson distribution)
+        let num_nodes = (rng.gen::<f64>() * l * 2.0).round() as usize;
+        let num_nodes = num_nodes.max(1).min(tree_size);
+
+        // Select random nodes
+        let mut selected_nodes = HashSet::new();
+        for _ in 0..num_nodes {
+            selected_nodes.insert(rng.gen_range(0..tree_size));
+        }
+
+        // Find minimal subtree connecting these nodes (using BFS)
+        let mut subtree = HashSet::new();
+        if selected_nodes.is_empty() {
+            selected_nodes.insert(rng.gen_range(0..tree_size));
+        }
+
+        // Start from first selected node
+        let start = *selected_nodes.iter().next().unwrap();
+        let mut queue = vec![start];
+        let mut visited = HashSet::new();
+        visited.insert(start);
+        subtree.insert(start);
+
+        // BFS to find paths to all selected nodes
+        while !queue.is_empty() {
+            let v = queue.remove(0);
+            if let Some(neighbors) = tree.neighbors(v) {
+                for &u in &neighbors {
+                    if !visited.contains(&u) {
+                        visited.insert(u);
+                        // Add node if it's selected or leads to a selected node
+                        if selected_nodes.contains(&u) || rng.gen::<f64>() < 0.5 {
+                            subtree.insert(u);
+                            queue.push(u);
+                        }
+                    }
+                }
+            }
+        }
+
+        subtrees.push(subtree);
+    }
+
+    subtrees
+}
+
+/// Generate subtrees by pruning edges from the tree
+///
+/// Helper function for chordal graph generation. Creates subtrees by randomly
+/// deleting a fraction of edges, creating disconnected components.
+///
+/// # Arguments
+///
+/// * `tree` - The host tree to generate subtrees from
+/// * `f` - Fraction of edges to remove (0.0 to 1.0)
+/// * `s` - Size selection parameter (selects from largest 1-s fraction)
+/// * `n` - Number of subtrees to generate
+/// * `rng` - Random number generator
+///
+/// # Returns
+///
+/// Vector of sets, where each set contains the vertices in one subtree
+pub fn pruned_tree(tree: &Graph, f: f64, s: f64, n: usize, rng: &mut Box<dyn RngCore>) -> Vec<HashSet<usize>> {
+    let tree_size = tree.num_vertices();
+
+    // Collect all edges
+    let mut edges = Vec::new();
+    for v in 0..tree_size {
+        if let Some(neighbors) = tree.neighbors(v) {
+            for &u in &neighbors {
+                if v < u {
+                    edges.push((v, u));
+                }
+            }
+        }
+    }
+
+    // Determine which edges to keep
+    let num_to_remove = (edges.len() as f64 * f) as usize;
+    let mut edges_to_keep = HashSet::new();
+    for (idx, &edge) in edges.iter().enumerate() {
+        if rng.gen::<f64>() > f || idx >= edges.len() - num_to_remove {
+            edges_to_keep.insert(edge);
+        }
+    }
+
+    // Build forest from remaining edges
+    let mut adj: HashMap<usize, Vec<usize>> = HashMap::new();
+    for &(u, v) in &edges_to_keep {
+        adj.entry(u).or_insert_with(Vec::new).push(v);
+        adj.entry(v).or_insert_with(Vec::new).push(u);
+    }
+
+    // Find connected components
+    let mut components = Vec::new();
+    let mut visited_global = HashSet::new();
+
+    for start_v in 0..tree_size {
+        if visited_global.contains(&start_v) {
+            continue;
+        }
+
+        let mut component = HashSet::new();
+        let mut queue = vec![start_v];
+        let mut visited = HashSet::new();
+        visited.insert(start_v);
+        component.insert(start_v);
+
+        while !queue.is_empty() {
+            let v = queue.remove(0);
+            if let Some(neighbors) = adj.get(&v) {
+                for &u in neighbors {
+                    if !visited.contains(&u) {
+                        visited.insert(u);
+                        component.insert(u);
+                        queue.push(u);
+                    }
+                }
+            }
+        }
+
+        for &v in &component {
+            visited_global.insert(v);
+        }
+
+        if !component.is_empty() {
+            components.push(component);
+        }
+    }
+
+    // Sort components by size and select from largest (1-s) fraction
+    components.sort_by_key(|c| std::cmp::Reverse(c.len()));
+    let cutoff_idx = ((components.len() as f64) * s) as usize;
+
+    // Select n subtrees from the available components
+    let mut subtrees = Vec::new();
+    for _ in 0..n {
+        if components.is_empty() {
+            // Create single-vertex subtree as fallback
+            let mut single = HashSet::new();
+            single.insert(rng.gen_range(0..tree_size));
+            subtrees.push(single);
+        } else {
+            let idx = rng.gen_range(cutoff_idx..components.len().max(cutoff_idx + 1));
+            subtrees.push(components[idx.min(components.len() - 1)].clone());
+        }
+    }
+
+    subtrees
+}
+
 /// Generate a random chordal graph
 ///
 /// Chordal graphs have no induced cycles of length 4 or more.
@@ -667,37 +889,8 @@ pub fn random_chordal_graph(n: usize, seed: Option<u64>) -> Graph {
     // Create a random tree on 2n vertices to serve as the host tree
     let tree = random_tree(2 * n, seed);
 
-    // For each vertex in the chordal graph, select a random subtree
-    let mut subtrees: Vec<HashSet<usize>> = Vec::new();
-
-    for _ in 0..n {
-        // Each subtree is defined by picking a random root and growing to random size
-        let root = rng.gen_range(0..(2 * n));
-        let size = rng.gen_range(1..=(2 * n).min(10)); // Limit subtree size
-
-        let mut subtree = HashSet::new();
-        subtree.insert(root);
-
-        // BFS to grow subtree
-        let mut queue = vec![root];
-        let mut visited = HashSet::new();
-        visited.insert(root);
-
-        while subtree.len() < size && !queue.is_empty() {
-            let v = queue.remove(0);
-            if let Some(neighbors) = tree.neighbors(v) {
-                for &u in &neighbors {
-                    if !visited.contains(&u) && subtree.len() < size {
-                        visited.insert(u);
-                        subtree.insert(u);
-                        queue.push(u);
-                    }
-                }
-            }
-        }
-
-        subtrees.push(subtree);
-    }
+    // Generate subtrees using growing algorithm
+    let subtrees = growing_subtrees(&tree, 10, n, &mut rng);
 
     // Create chordal graph: edge between vertices if subtrees intersect
     let mut g = Graph::new(n);
