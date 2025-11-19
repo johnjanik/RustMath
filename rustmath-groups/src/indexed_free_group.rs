@@ -139,6 +139,25 @@ impl<I: Clone + Eq + Hash + fmt::Debug> Group for IndexedFreeGroup<I> {
     fn identity(&self) -> Self::Element {
         self.one()
     }
+
+    fn is_finite(&self) -> bool {
+        // Free groups are infinite (unless they have no generators)
+        self.ngens() == 0
+    }
+
+    fn order(&self) -> Option<usize> {
+        if self.ngens() == 0 {
+            Some(1) // Trivial group
+        } else {
+            None // Infinite
+        }
+    }
+
+    fn contains(&self, element: &Self::Element) -> bool {
+        // Check if the element uses only generators from this group
+        // In a full implementation, we'd verify the indices match
+        element.word().iter().all(|(idx, _)| self.indices.contains(idx))
+    }
 }
 
 /// An element of an indexed free group
@@ -372,6 +391,29 @@ impl<I: Clone + Eq + Hash + fmt::Debug> Group for IndexedFreeAbelianGroup<I> {
 
     fn identity(&self) -> Self::Element {
         self.one()
+    }
+
+    fn is_finite(&self) -> bool {
+        // Free abelian groups are infinite (unless they have no generators)
+        self.indices.is_empty()
+    }
+
+    fn order(&self) -> Option<usize> {
+        if self.indices.is_empty() {
+            Some(1) // Trivial group
+        } else {
+            None // Infinite
+        }
+    }
+
+    fn contains(&self, element: &Self::Element) -> bool {
+        // Check if the element uses only indices from this group
+        element.exponents.keys().all(|idx| self.indices.contains(idx))
+    }
+
+    fn is_abelian(&self) -> bool {
+        // Free abelian groups are always abelian
+        true
     }
 }
 

@@ -340,6 +340,21 @@ impl Group for CubicBraidGroup {
             word: FreeGroupElement::identity(),
         }
     }
+
+    fn is_finite(&self) -> bool {
+        // Cubic braid groups are infinite
+        false
+    }
+
+    fn order(&self) -> Option<usize> {
+        // Cubic braid groups are infinite
+        None
+    }
+
+    fn contains(&self, element: &Self::Element) -> bool {
+        // Check if element belongs to this cubic braid group
+        self.n == element.group.n && self.cubic_type == element.group.cubic_type
+    }
 }
 
 /// An element of a cubic braid group

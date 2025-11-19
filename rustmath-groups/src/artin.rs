@@ -276,6 +276,22 @@ impl Group for ArtinGroup {
             word: FreeGroupElement::identity(),
         }
     }
+
+    fn is_finite(&self) -> bool {
+        // Artin groups are generally infinite
+        // Only finite-type Artin groups with specific conditions can be finite
+        false
+    }
+
+    fn order(&self) -> Option<usize> {
+        // Artin groups are infinite
+        None
+    }
+
+    fn contains(&self, element: &Self::Element) -> bool {
+        // Check if element belongs to this group by comparing rank
+        self.coxeter_matrix.rank() == element.parent.coxeter_matrix.rank()
+    }
 }
 
 /// An element of an Artin group

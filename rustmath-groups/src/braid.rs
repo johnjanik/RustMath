@@ -158,6 +158,21 @@ impl Group for BraidGroup {
             element: self.artin_group.identity(),
         }
     }
+
+    fn is_finite(&self) -> bool {
+        // Braid groups are infinite for n >= 2
+        false
+    }
+
+    fn order(&self) -> Option<usize> {
+        // Braid groups are infinite
+        None
+    }
+
+    fn contains(&self, element: &Self::Element) -> bool {
+        // Check if element belongs to this braid group
+        self.n == element.parent.n
+    }
 }
 
 /// An element of a braid group (a braid)
