@@ -56,8 +56,9 @@ impl<R: EuclideanDomain> Matrix<R> {
 }
 ```
 
-### Module Structure (17 crates)
+### Module Structure (18+ crates)
 - **rustmath-core**: Fundamental traits (Ring, Field, EuclideanDomain)
+- **rustmath-features**: Feature detection and optional dependency management (NEW)
 - **rustmath-integers**: Integer operations, factorization (Pollard's Rho), primality (Miller-Rabin)
 - **rustmath-rationals**: Exact rational arithmetic
 - **rustmath-matrix**: Generic matrix operations, LU/PLU decomposition, Gaussian elimination
@@ -82,6 +83,38 @@ impl<R: EuclideanDomain> Matrix<R> {
 3. **Expression Evaluation Pipeline**: Symbolic expressions evaluate via: parse → build tree → substitute → simplify → compute
 4. **Assumption Propagation**: Symbolic system tracks assumptions (e.g., x > 0) for intelligent simplification
 5. **No Circular Dependencies**: Clean DAG structure between crates
+6. **Feature Detection System**: Runtime and compile-time detection of optional features with automatic fallbacks
+
+### Feature Detection System (rustmath-features)
+
+The `rustmath-features` crate provides infrastructure for optional dependency management:
+
+**Capabilities:**
+- Compile-time feature detection using Cargo feature flags
+- Runtime feature queries to check which features are enabled
+- Automatic fallbacks when optional dependencies are unavailable
+- Performance optimization by selecting the best available implementation
+- CPU capability detection (SIMD, core count)
+
+**Available Features:**
+- `gmp`, `mpfr`, `flint`, `pari` - External library bindings (future)
+- `parallel` - Parallel algorithms using rayon
+- `simd` - SIMD optimizations
+- `native` - Native CPU optimizations
+- `databases` - Database integrations (OEIS, LMFDB, Cremona)
+- `plotting` - Plotting and visualization
+- `experimental` - Experimental features
+
+**Usage Example:**
+```rust
+use rustmath_features::{with_fallback, Feature};
+
+// Automatically use optimized version if available
+let result = with_fallback!(
+    Feature::Gmp => gmp_factorial(10),
+    pure_rust_factorial(10)
+);
+```
 
 ### Non-Obvious Implementation Details
 
