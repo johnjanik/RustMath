@@ -166,7 +166,31 @@ impl Group for CactusGroup {
     type Element = CactusGroupElement;
 
     fn identity(&self) -> Self::Element {
-        self.identity()
+        CactusGroupElement {
+            parent: self.clone(),
+            word: Vec::new(),
+        }
+    }
+
+    fn is_finite(&self) -> bool {
+        // Cactus groups are finite
+        true
+    }
+
+    fn order(&self) -> Option<usize> {
+        // Cactus group J_n has order (2n-1)!!
+        let mut result = 1;
+        let mut k = 1;
+        while k < 2 * self.n {
+            result *= k;
+            k += 2;
+        }
+        Some(result)
+    }
+
+    fn contains(&self, element: &Self::Element) -> bool {
+        // Check if element belongs to this cactus group
+        self.n == element.parent.n
     }
 }
 
