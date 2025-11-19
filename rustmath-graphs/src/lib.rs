@@ -26,6 +26,7 @@ pub mod weakly_chordal;
 pub mod traversals;
 pub mod views;
 pub mod trees;
+pub mod tutte_polynomial;
 
 pub use graph::Graph;
 pub use generators::*;
