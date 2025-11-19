@@ -18,6 +18,13 @@ pub use shapes::{Sphere, Box, Cylinder, Cone, Torus};
 pub use platonic::{tetrahedron, cube, octahedron, dodecahedron, icosahedron, colored_platonic_solid};
 pub use plots::{plot3d, parametric_plot3d, list_plot3d, revolution_plot3d};
 
+// Type aliases for common naming conventions
+/// Alias for BoundingBox3D
+pub type BoundingBox = BoundingBox3D;
+
+/// Alias for Graphics3dOptions (rendering parameters)
+pub type RenderParams = Graphics3dOptions;
+
 use thiserror::Error;
 
 /// Error types for 3D plotting operations
