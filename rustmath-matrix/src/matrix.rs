@@ -2,7 +2,7 @@
 
 use rustmath_core::{MathError, Result, Ring};
 use std::fmt;
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Index, IndexMut, Mul, Sub};
 
 /// Generic matrix over a ring R
 #[derive(Clone, PartialEq, Debug)]
@@ -533,6 +533,29 @@ impl<R: Ring> Matrix<R> {
     /// Get mutable reference to internal data
     pub fn data_mut(&mut self) -> &mut [R] {
         &mut self.data
+    }
+}
+
+// Implement Index trait for tuple indexing (immutable)
+impl<R: Ring> Index<(usize, usize)> for Matrix<R> {
+    type Output = R;
+
+    fn index(&self, (i, j): (usize, usize)) -> &Self::Output {
+        if i >= self.rows || j >= self.cols {
+            panic!("Matrix index out of bounds: ({}, {}) for {}x{} matrix", i, j, self.rows, self.cols);
+        }
+        &self.data[i * self.cols + j]
+    }
+}
+
+// Implement IndexMut trait for tuple indexing (mutable)
+impl<R: Ring> IndexMut<(usize, usize)> for Matrix<R> {
+    fn index_mut(&mut self, (i, j): (usize, usize)) -> &mut Self::Output {
+        if i >= self.rows || j >= self.cols {
+            panic!("Matrix index out of bounds: ({}, {}) for {}x{} matrix", i, j, self.rows, self.cols);
+        }
+        let cols = self.cols; // Capture for borrow checker
+        &mut self.data[i * cols + j]
     }
 }
 

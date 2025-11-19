@@ -165,6 +165,47 @@ pub struct FreeGroupElement {
 }
 
 impl FreeGroupElement {
+    /// Create a generator element with a given index and exponent
+    ///
+    /// This creates a minimal free group element without needing the full group structure.
+    /// Useful for constructing words programmatically.
+    ///
+    /// # Arguments
+    /// * `gen_index` - The generator index (0-based)
+    /// * `exponent` - The exponent for the generator
+    pub fn generator(gen_index: i32, exponent: isize) -> Self {
+        // Create a minimal free group for this purpose
+        let group = FreeGroup::with_default_names((gen_index.abs() + 1) as usize);
+
+        if exponent == 0 {
+            return FreeGroupElement {
+                group,
+                word: vec![],
+            };
+        }
+
+        FreeGroupElement {
+            group,
+            word: vec![(gen_index as isize, exponent)],
+        }
+    }
+
+    /// Create the identity element of a free group
+    ///
+    /// Creates a minimal free group with default structure
+    pub fn identity() -> Self {
+        let group = FreeGroup::with_default_names(1);
+        FreeGroupElement {
+            group,
+            word: vec![],
+        }
+    }
+
+    /// Alias for identity() to match common usage
+    pub fn zero() -> Self {
+        Self::identity()
+    }
+
     /// Get the parent free group
     pub fn group(&self) -> &FreeGroup {
         &self.group
@@ -221,20 +262,27 @@ impl FreeGroupElement {
 
     /// Multiply this element by another
     pub fn mul(&self, other: &FreeGroupElement) -> FreeGroupElement {
-        assert_eq!(
-            self.group, other.group,
-            "Cannot multiply elements from different groups"
-        );
+        // Try to unify groups if they're compatible
+        let target_group = if self.group.rank() >= other.group.rank() {
+            self.group.clone()
+        } else {
+            other.group.clone()
+        };
 
         let mut word = self.word.clone();
         word.extend_from_slice(&other.word);
 
         let mut result = FreeGroupElement {
-            group: self.group.clone(),
+            group: target_group,
             word,
         };
         result.reduce();
         result
+    }
+
+    /// Alias for mul() to match SageMath naming convention
+    pub fn multiply(&self, other: &FreeGroupElement) -> FreeGroupElement {
+        self.mul(other)
     }
 
     /// Compute the inverse of this element

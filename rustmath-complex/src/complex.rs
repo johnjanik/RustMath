@@ -132,6 +132,30 @@ impl Complex {
         }
     }
 
+    /// Create the zero complex number (0 + 0i)
+    pub fn zero() -> Self {
+        Complex {
+            real: Real::from(0.0),
+            imag: Real::from(0.0),
+        }
+    }
+
+    /// Create the one complex number (1 + 0i)
+    pub fn one() -> Self {
+        Complex {
+            real: Real::from(1.0),
+            imag: Real::from(0.0),
+        }
+    }
+
+    /// Create the imaginary unit (0 + 1i)
+    pub fn i() -> Self {
+        Complex {
+            real: Real::from(0.0),
+            imag: Real::from(1.0),
+        }
+    }
+
     /// Create a complex number from Real parts
     pub fn from_reals(real: Real, imag: Real) -> Self {
         Complex { real, imag }
@@ -200,6 +224,42 @@ impl Complex {
             real: self.real.clone(),
             imag: -self.imag.clone(),
         }
+    }
+
+    /// Add two complex numbers
+    pub fn add(&self, other: &Self) -> Self {
+        Complex {
+            real: self.real.clone() + other.real.clone(),
+            imag: self.imag.clone() + other.imag.clone(),
+        }
+    }
+
+    /// Subtract two complex numbers
+    pub fn sub(&self, other: &Self) -> Self {
+        Complex {
+            real: self.real.clone() - other.real.clone(),
+            imag: self.imag.clone() - other.imag.clone(),
+        }
+    }
+
+    /// Multiply two complex numbers
+    pub fn mul(&self, other: &Self) -> Self {
+        // (a + bi)(c + di) = (ac - bd) + (ad + bc)i
+        let ac = self.real.clone() * other.real.clone();
+        let bd = self.imag.clone() * other.imag.clone();
+        let ad = self.real.clone() * other.imag.clone();
+        let bc = self.imag.clone() * other.real.clone();
+
+        Complex {
+            real: ac - bd,
+            imag: ad + bc,
+        }
+    }
+
+    /// Divide two complex numbers
+    pub fn div(&self, other: &Self) -> Result<Self> {
+        let recip = other.reciprocal()?;
+        Ok(self.mul(&recip))
     }
 
     /// Compute the reciprocal 1/z
