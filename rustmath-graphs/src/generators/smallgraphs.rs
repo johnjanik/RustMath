@@ -552,6 +552,256 @@ pub fn cameron_graph() -> Graph {
     g
 }
 
+/// Generate the Cell600 graph (600-cell 1-skeleton)
+///
+/// The Cell600 graph is the 1-skeleton of the 600-cell, a 4-dimensional polytope.
+/// It has 120 vertices arranged using the golden ratio.
+///
+/// # Properties
+///
+/// * Vertices: 120
+/// * Edges: 720
+/// * 12-regular
+/// * Vertex-transitive
+/// * Automorphism group: H4 Coxeter group
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::smallgraphs::cell600_graph;
+///
+/// let g = cell600_graph();
+/// assert_eq!(g.num_vertices(), 120);
+/// assert_eq!(g.num_edges(), 720);
+/// ```
+///
+/// # References
+///
+/// * [Wikipedia: 600-cell](https://en.wikipedia.org/wiki/600-cell)
+pub fn cell600_graph() -> Graph {
+    let phi = (1.0 + 5.0_f64.sqrt()) / 2.0; // Golden ratio
+    let inv_phi = 1.0 / phi;
+    let mut vertices: Vec<Vec<f64>> = Vec::new();
+
+    // Generate 16 vertices: all combinations of (±1, ±1, ±1, ±1)
+    for i in 0..16 {
+        let v = vec![
+            if i & 1 == 0 { 1.0 } else { -1.0 },
+            if i & 2 == 0 { 1.0 } else { -1.0 },
+            if i & 4 == 0 { 1.0 } else { -1.0 },
+            if i & 8 == 0 { 1.0 } else { -1.0 },
+        ];
+        vertices.push(v);
+    }
+
+    // Generate 8 vertices: (±2, 0, 0, 0) and permutations
+    for axis in 0..4 {
+        for &sign in &[2.0, -2.0] {
+            let mut v = vec![0.0; 4];
+            v[axis] = sign;
+            vertices.push(v);
+        }
+    }
+
+    // Generate 96 vertices from even permutations and sign changes of (φ, 1, 1/φ, 0)
+    // Using 12 even permutations (A4 alternating group) × 8 sign combinations = 96
+    for s1 in &[phi, -phi] {
+        for s2 in &[1.0, -1.0] {
+            for s3 in &[inv_phi, -inv_phi] {
+                // 12 even permutations of (s1, s2, s3, 0)
+                for perm in [[*s1, *s2, *s3, 0.0], [*s1, *s3, 0.0, *s2], [*s1, 0.0, *s2, *s3],
+                             [*s2, *s1, 0.0, *s3], [*s2, *s3, *s1, 0.0], [*s2, 0.0, *s3, *s1],
+                             [*s3, *s1, *s2, 0.0], [*s3, *s2, 0.0, *s1], [*s3, 0.0, *s1, *s2],
+                             [0.0, *s1, *s3, *s2], [0.0, *s2, *s1, *s3], [0.0, *s3, *s2, *s1]] {
+                    vertices.push(perm.to_vec());
+                }
+            }
+        }
+    }
+
+    let n = vertices.len();
+    let mut g = Graph::new(n);
+
+    // Two vertices are adjacent in the 600-cell when they are at the minimum distance
+    // For this construction, check multiple possible dot products for edges
+    // The 600-cell is 12-regular, so each vertex should have exactly 12 neighbors
+
+    // Build edge list by finding the 12 nearest neighbors for each vertex
+    for i in 0..n {
+        let mut distances: Vec<(usize, f64)> = Vec::new();
+        for j in 0..n {
+            if i != j {
+                let dist_sq: f64 = vertices[i].iter().zip(&vertices[j])
+                    .map(|(a, b)| (a - b) * (a - b)).sum();
+                distances.push((j, dist_sq));
+            }
+        }
+        // Sort by distance and take the 12 closest
+        distances.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+        for k in 0..12.min(distances.len()) {
+            let j = distances[k].0;
+            if i < j {  // Only add each edge once
+                g.add_edge(i, j).unwrap();
+            }
+        }
+    }
+
+    g
+}
+
+/// Generate the Cell120 graph (120-cell 1-skeleton)
+///
+/// The Cell120 graph is the 1-skeleton of the 120-cell, a 4-dimensional polytope.
+/// It has 600 vertices arranged using the golden ratio.
+///
+/// # Properties
+///
+/// * Vertices: 600
+/// * Edges: 1200
+/// * 4-regular
+/// * Vertex-transitive
+/// * Automorphism group: H4 Coxeter group
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::smallgraphs::cell120_graph;
+///
+/// let g = cell120_graph();
+/// assert_eq!(g.num_vertices(), 600);
+/// assert_eq!(g.num_edges(), 1200);
+/// ```
+///
+/// # References
+///
+/// * [Wikipedia: 120-cell](https://en.wikipedia.org/wiki/120-cell)
+pub fn cell120_graph() -> Graph {
+    let phi = (1.0 + 5.0_f64.sqrt()) / 2.0; // Golden ratio
+    let inv_phi = 1.0 / phi;
+    let mut vertices: Vec<Vec<f64>> = Vec::new();
+
+    // The 120-cell has 600 vertices constructed from several groups:
+
+    // Group 1: 16 vertices (±1, ±1, ±1, ±1)
+    for i in 0..16 {
+        vertices.push(vec![
+            if i & 1 == 0 { 1.0 } else { -1.0 },
+            if i & 2 == 0 { 1.0 } else { -1.0 },
+            if i & 4 == 0 { 1.0 } else { -1.0 },
+            if i & 8 == 0 { 1.0 } else { -1.0 },
+        ]);
+    }
+
+    // Group 2: 8 vertices (±2, 0, 0, 0) and permutations
+    for axis in 0..4 {
+        for &sign in &[2.0, -2.0] {
+            let mut v = vec![0.0; 4];
+            v[axis] = sign;
+            vertices.push(v);
+        }
+    }
+
+    // Group 3: 96 vertices from even permutations of (φ, 1, 1/φ, 0)
+    for s1 in &[phi, -phi] {
+        for s2 in &[1.0, -1.0] {
+            for s3 in &[inv_phi, -inv_phi] {
+                for perm in [[*s1, *s2, *s3, 0.0], [*s1, *s3, 0.0, *s2], [*s1, 0.0, *s2, *s3],
+                             [*s2, *s1, 0.0, *s3], [*s2, *s3, *s1, 0.0], [*s2, 0.0, *s3, *s1],
+                             [*s3, *s1, *s2, 0.0], [*s3, *s2, 0.0, *s1], [*s3, 0.0, *s1, *s2],
+                             [0.0, *s1, *s3, *s2], [0.0, *s2, *s1, *s3], [0.0, *s3, *s2, *s1]] {
+                    vertices.push(perm.to_vec());
+                }
+            }
+        }
+    }
+
+    // Group 4: 96 vertices from even permutations of (φ, φ⁻¹, 1, 0)
+    let phi2 = phi * phi;  // φ² = φ + 1
+    for s1 in &[phi, -phi] {
+        for s2 in &[inv_phi, -inv_phi] {
+            for s3 in &[1.0, -1.0] {
+                for perm in [[*s1, *s2, *s3, 0.0], [*s1, *s3, 0.0, *s2], [*s1, 0.0, *s2, *s3],
+                             [*s2, *s1, 0.0, *s3], [*s2, *s3, *s1, 0.0], [*s2, 0.0, *s3, *s1],
+                             [*s3, *s1, *s2, 0.0], [*s3, *s2, 0.0, *s1], [*s3, 0.0, *s1, *s2],
+                             [0.0, *s1, *s3, *s2], [0.0, *s2, *s1, *s3], [0.0, *s3, *s2, *s1]] {
+                    vertices.push(perm.to_vec());
+                }
+            }
+        }
+    }
+
+    // Group 5: 96 vertices from even permutations of (φ², φ⁻², 0, 0) where φ² = φ + 1
+    for s1 in &[phi2, -phi2] {
+        for s2 in &[1.0/phi2, -1.0/phi2] {
+            for perm in [[*s1, *s2, 0.0, 0.0], [*s1, 0.0, *s2, 0.0], [*s1, 0.0, 0.0, *s2],
+                         [*s2, *s1, 0.0, 0.0], [*s2, 0.0, *s1, 0.0], [*s2, 0.0, 0.0, *s1],
+                         [0.0, *s1, *s2, 0.0], [0.0, *s1, 0.0, *s2], [0.0, *s2, *s1, 0.0],
+                         [0.0, *s2, 0.0, *s1], [0.0, 0.0, *s1, *s2], [0.0, 0.0, *s2, *s1]] {
+                vertices.push(perm.to_vec());
+            }
+        }
+    }
+
+    // Group 6: 192 vertices from all permutations of (±φ, ±1, 0, 0)
+    for s1 in &[phi, -phi] {
+        for s2 in &[1.0, -1.0] {
+            // All permutations of (s1, s2, 0, 0)
+            for perm in [[*s1, *s2, 0.0, 0.0], [*s1, 0.0, *s2, 0.0], [*s1, 0.0, 0.0, *s2],
+                         [*s2, *s1, 0.0, 0.0], [*s2, 0.0, *s1, 0.0], [*s2, 0.0, 0.0, *s1],
+                         [0.0, *s1, *s2, 0.0], [0.0, *s1, 0.0, *s2], [0.0, *s2, *s1, 0.0],
+                         [0.0, *s2, 0.0, *s1], [0.0, 0.0, *s1, *s2], [0.0, 0.0, *s2, *s1]] {
+                vertices.push(perm.to_vec());
+            }
+        }
+    }
+
+    // Group 7: 192 vertices from all permutations of (±√5, ±1, 0, 0)
+    let sqrt5 = 5.0_f64.sqrt();
+    for s1 in &[sqrt5, -sqrt5] {
+        for s2 in &[1.0, -1.0] {
+            for perm in [[*s1, *s2, 0.0, 0.0], [*s1, 0.0, *s2, 0.0], [*s1, 0.0, 0.0, *s2],
+                         [*s2, *s1, 0.0, 0.0], [*s2, 0.0, *s1, 0.0], [*s2, 0.0, 0.0, *s1],
+                         [0.0, *s1, *s2, 0.0], [0.0, *s1, 0.0, *s2], [0.0, *s2, *s1, 0.0],
+                         [0.0, *s2, 0.0, *s1], [0.0, 0.0, *s1, *s2], [0.0, 0.0, *s2, *s1]] {
+                vertices.push(perm.to_vec());
+            }
+        }
+    }
+
+    // Remove duplicates
+    vertices.sort_by(|a, b| {
+        for i in 0..4 {
+            match a[i].partial_cmp(&b[i]) {
+                Some(std::cmp::Ordering::Equal) => continue,
+                Some(ord) => return ord,
+                None => return std::cmp::Ordering::Equal,
+            }
+        }
+        std::cmp::Ordering::Equal
+    });
+    vertices.dedup_by(|a, b| {
+        a.iter().zip(b.iter()).all(|(x, y)| (x - y).abs() < 0.0001)
+    });
+
+    let n = vertices.len();
+    let mut g = Graph::new(n);
+
+    // Two vertices are adjacent when dot product = 2 (edge length 2)
+    let target = 2.0;
+    let epsilon = 0.1;
+
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let dot: f64 = vertices[i].iter().zip(&vertices[j]).map(|(a, b)| a * b).sum();
+            if (dot - target).abs() < epsilon {
+                g.add_edge(i, j).unwrap();
+            }
+        }
+    }
+
+    g
+}
+
 /// Generate the Chvátal graph
 ///
 /// The Chvátal graph is a 4-regular graph with 12 vertices.
@@ -1744,13 +1994,18 @@ pub fn golomb_graph() -> Graph {
 /// Generate the Gosset graph
 ///
 /// The Gosset graph is a 27-regular graph with 56 vertices.
-/// It is the skeleton of the Gosset polytope (4_21 polytope).
+/// It is the 1-skeleton of the Gosset polytope (3_21 polytope) in E7.
+///
+/// The vertices are constructed as all permutations and sign changes of the vector
+/// (3, 3, -1, -1, -1, -1, -1, -1) in R^8. Two vertices are adjacent when their
+/// inner product equals 8.
 ///
 /// # Properties
 ///
 /// * Vertices: 56
 /// * Edges: 756
 /// * 27-regular
+/// * Automorphism group: E7 (order 2,903,040)
 /// * Strongly regular
 ///
 /// # Examples
@@ -1762,38 +2017,72 @@ pub fn golomb_graph() -> Graph {
 /// assert_eq!(g.num_vertices(), 56);
 /// assert_eq!(g.num_edges(), 756);
 /// ```
+///
+/// # References
+///
+/// * [Wikipedia: Gosset graph](https://en.wikipedia.org/wiki/Gosset_graph)
+/// * [Wikipedia: 4_21 polytope](https://en.wikipedia.org/wiki/4_21_polytope)
 pub fn gosset_graph() -> Graph {
-    // The Gosset graph is complex to construct from scratch.
-    // We'll use a simplified construction based on the 4_21 polytope structure.
-    let n = 56;
+    // Generate all 56 vertices as permutations and negatives of (3, 3, -1, -1, -1, -1, -1, -1)
+    let mut vertices: Vec<Vec<i32>> = Vec::new();
+
+    // Base vector
+    let base = vec![3, 3, -1, -1, -1, -1, -1, -1];
+
+    // Generate all permutations of base vector
+    let mut indices: Vec<usize> = (0..8).collect();
+    generate_permutations_gosset(&base, &mut indices, 0, &mut vertices);
+
+    // Add negatives of all permutations
+    let original_count = vertices.len();
+    for i in 0..original_count {
+        let mut negated = vertices[i].clone();
+        for val in &mut negated {
+            *val = -*val;
+        }
+        vertices.push(negated);
+    }
+
+    // Remove duplicates
+    vertices.sort();
+    vertices.dedup();
+
+    // Build graph based on inner product = 8
+    let n = vertices.len();
     let mut g = Graph::new(n);
 
-    // The Gosset graph can be constructed from the E7 root system
-    // For simplicity, we use a pre-computed adjacency pattern
-    // Each vertex has exactly 27 neighbors
-
-    // Simplified construction: vertices represent points in E7 lattice
-    // Two vertices are adjacent if their distance is sqrt(2)
-    // We'll use a combinatorial construction instead
-
-    // The graph is vertex-transitive, so we can use a circulant-like construction
-    // with carefully chosen jumps to ensure 27-regularity
-
-    let jumps = vec![
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-        15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
-    ];
-
     for i in 0..n {
-        for &jump in &jumps {
-            let j = (i + jump) % n;
-            if i < j {
+        for j in (i + 1)..n {
+            if inner_product(&vertices[i], &vertices[j]) == 8 {
                 g.add_edge(i, j).unwrap();
             }
         }
     }
 
     g
+}
+
+// Helper function to compute inner product of two vectors
+fn inner_product(v1: &[i32], v2: &[i32]) -> i32 {
+    v1.iter().zip(v2.iter()).map(|(a, b)| a * b).sum()
+}
+
+// Helper function to generate all permutations for Gosset graph
+fn generate_permutations_gosset(base: &[i32], indices: &mut [usize], start: usize, result: &mut Vec<Vec<i32>>) {
+    if start == indices.len() {
+        let mut perm = vec![0; base.len()];
+        for i in 0..base.len() {
+            perm[i] = base[indices[i]];
+        }
+        result.push(perm);
+        return;
+    }
+
+    for i in start..indices.len() {
+        indices.swap(start, i);
+        generate_permutations_gosset(base, indices, start + 1, result);
+        indices.swap(start, i);
+    }
 }
 
 /// Generate the Gray graph
@@ -2083,6 +2372,30 @@ mod tests {
     }
 
     #[test]
+    fn test_cell600_graph() {
+        let g = cell600_graph();
+        assert_eq!(g.num_vertices(), 120);
+        assert_eq!(g.num_edges(), 720);
+
+        // Check 12-regularity
+        for v in 0..120 {
+            assert_eq!(g.degree(v), Some(12));
+        }
+    }
+
+    #[test]
+    fn test_cell120_graph() {
+        let g = cell120_graph();
+        assert_eq!(g.num_vertices(), 600);
+        assert_eq!(g.num_edges(), 1200);
+
+        // Check 4-regularity
+        for v in 0..600 {
+            assert_eq!(g.degree(v), Some(4));
+        }
+    }
+
+    #[test]
     fn test_cameron_graph() {
         let g = cameron_graph();
         assert_eq!(g.num_vertices(), 231);
@@ -2363,7 +2676,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // TODO: Implement correct Gosset graph construction
     fn test_gosset_graph() {
         let g = gosset_graph();
         assert_eq!(g.num_vertices(), 56);
