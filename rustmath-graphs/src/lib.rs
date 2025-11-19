@@ -20,6 +20,8 @@ pub mod convexity_properties;
 pub mod distances_all_pairs;
 pub mod domination;
 pub mod edge_connectivity;
+pub mod planarity;
+pub mod spanning_tree;
 
 pub use graph::Graph;
 pub use generators::*;
