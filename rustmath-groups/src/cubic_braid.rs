@@ -26,7 +26,8 @@
 use std::collections::HashMap;
 use std::fmt;
 
-use crate::finitely_presented::{FinitelyPresentedGroup, FreeGroupElement};
+use crate::finitely_presented::FinitelyPresentedGroup;
+use crate::free_group::FreeGroupElement;
 use crate::group_traits::Group;
 
 /// Type of cubic braid group
