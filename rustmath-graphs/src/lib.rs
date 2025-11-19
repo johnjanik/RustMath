@@ -22,6 +22,12 @@ pub mod domination;
 pub mod edge_connectivity;
 pub mod planarity;
 pub mod spanning_tree;
+pub mod weakly_chordal;
+pub mod traversals;
+pub mod views;
+pub mod trees;
+pub mod tutte_polynomial;
+pub mod strongly_regular_db;
 
 pub use graph::Graph;
 pub use generators::*;
