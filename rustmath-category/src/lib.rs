@@ -13,6 +13,7 @@ pub mod functor;
 pub mod group_category;
 pub mod morphism;
 pub mod natural_transformation;
+pub mod module_category;
 
 pub use category::{
     CartesianProductsCategory, Category, CommutativeCategory, FiniteCategory, TopologicalCategory,
@@ -27,3 +28,8 @@ pub use morphism::{
     SetIsomorphism, SetMorphism,
 };
 pub use natural_transformation::NaturalTransformation;
+pub use module_category::{
+    ModuleCategory, ElementMethods, ParentMethods, SubcategoryMethods,
+    CartesianProducts, Homsets, Endset, TensorProducts,
+    FiniteDimensional, FinitelyPresented,
+};
