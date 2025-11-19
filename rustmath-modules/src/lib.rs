@@ -71,21 +71,22 @@ pub mod fp_graded {
     pub use homspace::FPGradedHomspace;
 }
 
-// Modules with basis
-pub mod with_basis {
-    pub mod all;
-    pub mod cell_module;
-    pub mod indexed_element;
-    pub mod invariant;
-    pub mod morphism;
-    pub mod representation;
-    pub mod subquotient;
+// Modules with basis - comprehensive category implementation
+#[path = "with_basis/lib.rs"]
+pub mod with_basis;
 
-    pub use cell_module::CellModule;
-    pub use indexed_element::IndexedElement;
-    pub use morphism::ModuleMorphismWithBasis;
-    pub use representation::Representation;
-}
+// Re-export key with_basis types at module level for convenience
+pub use with_basis::{
+    ModuleWithBasisElement,
+    ModuleWithBasis,
+    ModuleWithBasisParentMethods,
+    FreeModuleWithBasis,
+    ModuleWithBasisMorphism,
+    CartesianProduct,
+    DualModule,
+    HomSpace,
+    TensorProduct,
+};
 
 // Ore modules (modules over Ore algebras)
 pub mod ore_module;
