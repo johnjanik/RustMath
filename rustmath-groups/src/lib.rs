@@ -29,7 +29,10 @@ pub mod group_exp;
 pub mod group_traits;
 pub mod indexed_free_group;
 pub mod kernel_subgroup;
+pub mod raag;
 pub mod representation;
+pub mod semimonomial_transformation;
+pub mod semimonomial_transformation_group;
 
 pub use permutation_group::{PermutationGroup, SymmetricGroup, AlternatingGroup};
 pub use matrix_group::{MatrixGroup, GLn, SLn};
@@ -56,4 +59,7 @@ pub use group_exp::{GroupExp, GroupExpElement};
 pub use group_traits::{Group, AbelianGroupTrait, FiniteGroupTrait, GroupElement, AlgebraicGroupTrait, is_group};
 pub use indexed_free_group::{IndexedGroup, IndexedFreeGroup, IndexedFreeGroupElement, IndexedFreeAbelianGroup, IndexedFreeAbelianGroupElement};
 pub use kernel_subgroup::{KernelSubgroup, KernelSubgroupElement};
+pub use raag::{RightAngledArtinGroup, RightAngledArtinGroupElement, CohomologyRAAG};
 pub use representation::{Representation, Character, CharacterTable, direct_sum, tensor_product};
+pub use semimonomial_transformation::{SemimonomialTransformation, Automorphism, action_on_vector, action_on_matrix, compose};
+pub use semimonomial_transformation_group::{SemimonomialTransformationGroup, SemimonomialActionVec, SemimonomialActionMat, group_order};
