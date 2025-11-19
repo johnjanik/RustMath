@@ -1,0 +1,250 @@
+RUSTMATH ARCHITECTURE FOR MODULESWITHBASIS
+===========================================
+
+CATEGORY HIERARCHY:
+===================
+    
+    Category Framework
+         │
+         ├── Morphism (source, target, compose)
+         ├── Functor (map objects & morphisms)
+         └── NaturalTransformation
+
+           ↓ implements ↓
+
+    Parent (Container for Elements)
+         │
+         ├── Parent<Element>
+         ├── RingParent<Element, Ring>
+         ├── ParentWithBasis<Element, BasisIndex>
+         └── ParentWithGenerators<Element>
+
+           ↓ specializes ↓
+
+    Module Hierarchy
+         │
+         ├── Module<BaseRing, Element>
+         │    │
+         │    ├── FreeModule<R>                    ← Free basis modules
+         │    ├── QuotientModule<R>
+         │    ├── TensorModule<R1, R2>
+         │    │
+         │    └── [WITH BASIS STRUCTURE] ← ModuleWithBasis
+         │         │
+         │         ├── FreeModuleWithBasis<R>     ← Main concrete impl
+         │         ├── CellModule                  ← Combinatorial
+         │         ├── GradedModuleWithBasis       ← With grading
+         │         └── FiniteDimensionalModuleWithBasis
+         │
+         ├── ElementMethods
+         │    ├── Module.Element (add, negate, scalar_mul)
+         │    │
+         │    └── ModuleWithBasis.Element
+         │         ├── ModuleWithBasisElement<I, R>  ← Sparse/indexed
+         │         │    - coefficients: BTreeMap<I, R>
+         │         │    - coefficient(index)
+         │         │    - support()
+         │         │    - items()
+         │         │
+         │         └── IndexedElement               ← Special case
+         │              (integer index)
+         │
+         └── MorphismMethods
+              ├── Module Morphism
+              │    - source/target
+              │    - image/kernel
+              │
+              └── ModuleWithBasisMorphism
+                   - on_basis(index)
+                   - extend linearly
+                   - matrix representation
+
+
+CRATE DEPENDENCIES:
+===================
+
+rustmath-core/
+  ├── traits.rs          ← Ring, Field, EuclideanDomain
+  ├── parent.rs          ← Parent, ParentWithBasis ✓ USED
+  └── error.rs
+
+rustmath-category/
+  ├── morphism.rs        ← Morphism trait ✓ USED
+  ├── functor.rs         ← Functor trait ✓ USED
+  └── natural_transformation.rs
+
+rustmath-modules/
+  ├── module.rs          ← Module trait ✓ USED
+  ├── free_module.rs     ← FreeModule<R> ✓ REFERENCE
+  ├── free_module_element.rs
+  ├── free_module_morphism.rs
+  ├── tensor/            ← Tensor infrastructure ✓ REFERENCE
+  │   ├── free_module_basis.rs
+  │   ├── free_module_tensor.rs
+  │   └── ...
+  │
+  ├── with_basis/        ← TARGET: IMPLEMENT
+  │   ├── lib.rs         ← Main module exports
+  │   ├── parent.rs      ← ModuleWithBasis trait (NEW)
+  │   ├── element.rs     ← ModuleWithBasisElement (NEW)
+  │   ├── morphism.rs    ← ModuleWithBasisMorphism (EXPAND)
+  │   ├── indexed_element.rs     ← IndexedElement (EXPAND)
+  │   ├── cell_module.rs         ← CellModule (EXPAND)
+  │   ├── representation.rs      ← Representation (EXPAND)
+  │   ├── subquotient.rs         ← Quotient modules (EXPAND)
+  │   ├── invariant.rs           ← Invariant submodules (EXPAND)
+  │   └── examples.rs            ← Tests & examples (NEW)
+  │
+  ├── fg_pid/            ← Finitely generated over PIDs
+  └── fp_graded/         ← Graded modules
+
+
+TRAIT HIERARCHY FOR MODULESWITHBASIS:
+=====================================
+
+ParentWithBasis
+    (from rustmath-core)
+    ├── BasisIndex
+    ├── dimension()
+    ├── basis_element(index)
+    └── basis_indices()
+        │
+        └─ implements ─→ ModuleWithBasis
+                          ├── base_ring()
+                          ├── basis_keys()
+                          ├── basis_matrix()
+                          └── [Category methods]
+                              ├── direct_sum
+                              ├── tensor_product
+                              └── quotient_module
+
+Module (from rustmath-modules)
+    ├── BaseRing
+    ├── Element
+    ├── base_ring()
+    ├── rank()
+    ├── zero()
+    ├── add()
+    ├── negate()
+    └── scalar_mul()
+
+
+ELEMENT STRUCTURE:
+==================
+
+ModuleWithBasisElement<I: Ord + Clone, R: Ring>
+{
+    // Sparse representation: only non-zero coefficients
+    coefficients: BTreeMap<I, R>
+}
+
+Methods:
+    ├── new(coefficients)
+    ├── coefficient(index) -> Option<R>
+    ├── support() -> Vec<I>
+    ├── items() -> Iterator<(I, R)>
+    ├── add(other)
+    ├── negate()
+    ├── scalar_mul(scalar)
+    └── from_dense(vec, ring)
+
+
+MORPHISM STRUCTURE:
+===================
+
+ModuleWithBasisMorphism<I: Ord, R: Ring>
+{
+    source: ModuleWithBasis<I, R>,
+    target: ModuleWithBasis<I, R>,
+    // Store action on basis elements
+    basis_action: BTreeMap<I, ModuleWithBasisElement<I, R>>
+}
+
+Implements Morphism<Object = ModuleWithBasis<I, R>>:
+    ├── source()
+    ├── target()
+    ├── compose(other)
+    └── on_basis(index) -> Element
+    
+Category Methods:
+    ├── kernel() -> Submodule
+    ├── image() -> Submodule
+    ├── matrix_representation() -> Matrix<R>
+    └── is_isomorphism() -> bool
+
+
+KEY DESIGN DECISIONS:
+====================
+
+1. SPARSE REPRESENTATION
+   - Use BTreeMap<I, R> for coefficients
+   - Efficient for sparse vectors
+   - Natural ordered iteration
+   - Good for symbolic indices
+
+2. GENERIC INDEX TYPE
+   - I: Ord + Clone (flexible indexing)
+   - Support: usize, tuples, custom types
+   - Not limited to integers
+
+3. INHERITANCE PATTERN
+   - ModuleWithBasis extends ParentWithBasis + Module
+   - Reuse existing parent infrastructure
+   - Add module-specific operations
+
+4. MORPHISM REPRESENTATION
+   - Store action on basis only
+   - Extend linearly to entire module
+   - Lazy matrix computation
+
+5. CATEGORY COMPOSITION
+   - Category methods bridge module and basis structure
+   - Preserve basis in operations (tensor, direct sum)
+   - Support forgetful functors (forget basis)
+
+
+IMPLEMENTATION ROADMAP:
+======================
+
+PHASE 1 (CRITICAL):
+    └─ Core Element & Parent Infrastructure
+        ├─ ModuleWithBasisElement<I, R> type
+        ├─ ModuleWithBasis trait definition
+        └─ Basic operations (access, support)
+
+PHASE 2 (HIGH PRIORITY):
+    └─ Morphisms & Category Operations
+        ├─ ModuleWithBasisMorphism
+        ├─ Kernel/Image computation
+        └─ Basic morphism tests
+
+PHASE 3 (MEDIUM PRIORITY):
+    └─ Specific Implementations
+        ├─ FreeModuleWithBasis
+        ├─ IndexedFreeModule
+        └─ CellModule for combinatorics
+
+PHASE 4 (FUTURE):
+    └─ Advanced Features
+        ├─ Graded modules with basis
+        ├─ Tensor products preserving basis
+        └─ Matrix representations
+
+
+EXPECTED FILE STRUCTURE AFTER IMPLEMENTATION:
+==============================================
+
+/home/user/RustMath/rustmath-modules/src/with_basis/
+├── lib.rs              (main module exports, ~50 lines)
+├── parent.rs           (ModuleWithBasis trait, ~200 lines)
+├── element.rs          (ModuleWithBasisElement<I,R>, ~400 lines)
+├── morphism.rs         (ModuleWithBasisMorphism, ~500 lines)
+├── indexed_element.rs  (IndexedElement specialization, ~300 lines)
+├── cell_module.rs      (CellModule implementation, ~300 lines)
+├── representation.rs   (Rep theory module, ~300 lines)
+├── subquotient.rs      (Quotient modules, ~300 lines)
+├── invariant.rs        (Invariant submodules, ~200 lines)
+└── examples.rs         (Tests & examples, ~600 lines)
+
+Total: ~3500 lines of well-documented code
+
