@@ -782,11 +782,11 @@ Implemented,Full,sage.groups.affine_gps.euclidean_group,sage.groups.affine_gps.e
 Implemented,Full,sage.groups.affine_gps.euclidean_group.EuclideanGroup,sage.groups.affine_gps.euclidean_group,EuclideanGroup,class,rustmath-groups/src/euclidean_group.rs,https://github.com/sagemath/sage/blob/develop/src/sage/groups/affine_gps/euclidean_group.py#L22
 Implemented,Full,sage.groups.affine_gps.group_element,sage.groups.affine_gps.group_element,group_element,module,rustmath-groups/src/affine_group.rs,https://github.com/sagemath/sage/blob/develop/src/sage/groups/affine_gps/group_element.py#L51
 Implemented,Full,sage.groups.affine_gps.group_element.AffineGroupElement,sage.groups.affine_gps.group_element,AffineGroupElement,class,rustmath-groups/src/affine_group.rs,https://github.com/sagemath/sage/blob/develop/src/sage/groups/affine_gps/group_element.py#L51
-,,sage.groups.artin,sage.groups.artin,artin,module,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/artin.py#L490
-,,sage.groups.artin.ArtinGroup,sage.groups.artin,ArtinGroup,class,"UniqueRepresentation, FinitelyPresentedGroup",https://github.com/sagemath/sage/blob/develop/src/sage/groups/artin.py#L490
-,,sage.groups.artin.ArtinGroupElement,sage.groups.artin,ArtinGroupElement,class,FinitelyPresentedGroupElement,https://github.com/sagemath/sage/blob/develop/src/sage/groups/artin.py#L42
-,,sage.groups.artin.FiniteTypeArtinGroup,sage.groups.artin,FiniteTypeArtinGroup,class,ArtinGroup,https://github.com/sagemath/sage/blob/develop/src/sage/groups/artin.py#L1000
-,,sage.groups.artin.FiniteTypeArtinGroupElement,sage.groups.artin,FiniteTypeArtinGroupElement,class,ArtinGroupElement,https://github.com/sagemath/sage/blob/develop/src/sage/groups/artin.py#L317
+Implemented,Full,sage.groups.artin,sage.groups.artin,artin,module,rustmath-groups/src/artin.rs,https://github.com/sagemath/sage/blob/develop/src/sage/groups/artin.py#L490
+Implemented,Full,sage.groups.artin.ArtinGroup,sage.groups.artin,ArtinGroup,class,rustmath-groups/src/artin.rs,https://github.com/sagemath/sage/blob/develop/src/sage/groups/artin.py#L490
+Implemented,Full,sage.groups.artin.ArtinGroupElement,sage.groups.artin,ArtinGroupElement,class,rustmath-groups/src/artin.rs,https://github.com/sagemath/sage/blob/develop/src/sage/groups/artin.py#L42
+Implemented,Full,sage.groups.artin.FiniteTypeArtinGroup,sage.groups.artin,FiniteTypeArtinGroup,class,rustmath-groups/src/artin.rs,https://github.com/sagemath/sage/blob/develop/src/sage/groups/artin.py#L1000
+Implemented,Full,sage.groups.artin.FiniteTypeArtinGroupElement,sage.groups.artin,FiniteTypeArtinGroupElement,class,rustmath-groups/src/artin.rs,https://github.com/sagemath/sage/blob/develop/src/sage/groups/artin.py#L317
 ,,sage.groups.braid,sage.groups.braid,braid,module,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/braid.py#L110
 ,,sage.groups.braid.Braid,sage.groups.braid,Braid,class,FiniteTypeArtinGroupElement,https://github.com/sagemath/sage/blob/develop/src/sage/groups/braid.py#L110
 ,,sage.groups.braid.BraidGroup,sage.groups.braid,BraidGroup,function,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/braid.py#L3579
