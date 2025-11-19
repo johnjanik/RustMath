@@ -26,8 +26,10 @@ fn lcf_graph_with_cycle(jumps: &[i32], repeats: usize) -> Graph {
         for (idx, &jump) in jumps.iter().enumerate() {
             let i = rep * jumps.len() + idx;
             let j = ((i as i32 + jump).rem_euclid(n as i32)) as usize;
-            if i < j {
-                g.add_edge(i, j).unwrap();
+            if i != j {
+                // Add edge in canonical order (smaller index first)
+                let (u, v) = if i < j { (i, j) } else { (j, i) };
+                g.add_edge(u, v).unwrap();
             }
         }
     }
@@ -861,6 +863,308 @@ pub fn dyck_graph() -> Graph {
     g
 }
 
+/// Generate the Folkman graph
+///
+/// The Folkman graph is a bipartite 4-regular graph with 20 vertices and 40 edges.
+///
+/// # Properties
+///
+/// * Vertices: 20
+/// * Edges: 40
+/// * 4-regular
+/// * Bipartite
+/// * Hamiltonian
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::smallgraphs::folkman_graph;
+///
+/// let g = folkman_graph();
+/// assert_eq!(g.num_vertices(), 20);
+/// assert_eq!(g.num_edges(), 40);
+/// ```
+///
+/// # References
+///
+/// * [Wikipedia: Folkman graph](https://en.wikipedia.org/wiki/Folkman_graph)
+pub fn folkman_graph() -> Graph {
+    // LCF notation for Folkman graph: [5, -7, -7, 5] repeated 5 times
+    let jumps = vec![5, -7, -7, 5];
+    lcf_graph_with_cycle(&jumps, 5)
+}
+
+/// Generate the Foster graph
+///
+/// The Foster graph is a 3-regular graph with 90 vertices.
+///
+/// # Properties
+///
+/// * Vertices: 90
+/// * Edges: 135
+/// * 3-regular (cubic)
+/// * Hamiltonian
+/// * Girth: 10
+/// * Diameter: 8
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::smallgraphs::foster_graph;
+///
+/// let g = foster_graph();
+/// assert_eq!(g.num_vertices(), 90);
+/// assert_eq!(g.num_edges(), 135);
+/// ```
+///
+/// # References
+///
+/// * [Wikipedia: Foster graph](https://en.wikipedia.org/wiki/Foster_graph)
+pub fn foster_graph() -> Graph {
+    // LCF notation for Foster graph: [17, -9, 37, -37, 9, -17] repeated 15 times
+    let jumps = vec![17, -9, 37, -37, 9, -17];
+    lcf_graph_with_cycle(&jumps, 15)
+}
+
+/// Generate the Franklin graph
+///
+/// The Franklin graph is a 3-regular graph with 12 vertices and 18 edges.
+///
+/// # Properties
+///
+/// * Vertices: 12
+/// * Edges: 18
+/// * 3-regular (cubic)
+/// * Hamiltonian
+/// * Chromatic number: 2
+/// * Bipartite
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::smallgraphs::franklin_graph;
+///
+/// let g = franklin_graph();
+/// assert_eq!(g.num_vertices(), 12);
+/// assert_eq!(g.num_edges(), 18);
+/// ```
+///
+/// # References
+///
+/// * [Wikipedia: Franklin graph](https://en.wikipedia.org/wiki/Franklin_graph)
+pub fn franklin_graph() -> Graph {
+    let mut g = Graph::new(12);
+
+    // Edge dictionary for Franklin graph
+    let adjacencies = vec![
+        (0, vec![1, 5, 6]),
+        (1, vec![2, 7]),
+        (2, vec![3, 8]),
+        (3, vec![4, 9]),
+        (4, vec![5, 10]),
+        (5, vec![11]),
+        (6, vec![7, 9]),
+        (7, vec![10]),
+        (8, vec![9, 11]),
+        (10, vec![11]),
+    ];
+
+    for (v, neighbors) in adjacencies {
+        for u in neighbors {
+            if v < u {
+                g.add_edge(v, u).unwrap();
+            }
+        }
+    }
+
+    g
+}
+
+/// Generate the Frucht graph
+///
+/// The Frucht graph is the smallest cubic identity graph (automorphism group is trivial).
+///
+/// # Properties
+///
+/// * Vertices: 12
+/// * Edges: 18
+/// * 3-regular (cubic)
+/// * Hamiltonian
+/// * Planar
+/// * Trivial automorphism group (only identity)
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::smallgraphs::frucht_graph;
+///
+/// let g = frucht_graph();
+/// assert_eq!(g.num_vertices(), 12);
+/// assert_eq!(g.num_edges(), 18);
+/// ```
+///
+/// # References
+///
+/// * [Wikipedia: Frucht graph](https://en.wikipedia.org/wiki/Frucht_graph)
+pub fn frucht_graph() -> Graph {
+    let mut g = Graph::new(12);
+
+    // Edge dictionary for Frucht graph
+    let adjacencies = vec![
+        (0, vec![1, 6, 7]),
+        (1, vec![2, 7]),
+        (2, vec![3, 8]),
+        (3, vec![4, 9]),
+        (4, vec![5, 9]),
+        (5, vec![6, 10]),
+        (6, vec![10]),
+        (7, vec![11]),
+        (8, vec![9, 11]),
+        (10, vec![11]),
+    ];
+
+    for (v, neighbors) in adjacencies {
+        for u in neighbors {
+            if v < u {
+                g.add_edge(v, u).unwrap();
+            }
+        }
+    }
+
+    g
+}
+
+/// Generate the Grötzsch graph
+///
+/// The Grötzsch graph is the smallest triangle-free graph with chromatic number 4.
+///
+/// # Properties
+///
+/// * Vertices: 11
+/// * Edges: 20
+/// * Triangle-free
+/// * Chromatic number: 4
+/// * Hamiltonian
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::smallgraphs::grotzsch_graph;
+///
+/// let g = grotzsch_graph();
+/// assert_eq!(g.num_vertices(), 11);
+/// assert_eq!(g.num_edges(), 20);
+/// ```
+///
+/// # References
+///
+/// * [Wikipedia: Grötzsch graph](https://en.wikipedia.org/wiki/Gr%C3%B6tzsch_graph)
+pub fn grotzsch_graph() -> Graph {
+    let mut g = Graph::new(11);
+
+    // Outer pentagon (vertices 0-4)
+    for i in 0..5 {
+        g.add_edge(i, (i + 1) % 5).unwrap();
+    }
+
+    // Inner star (vertices 5-9 connecting to outer pentagon)
+    for i in 0..5 {
+        g.add_edge(i, 5 + i).unwrap();
+        g.add_edge(i, 5 + ((i + 1) % 5)).unwrap();
+    }
+
+    // Center vertex (10) connects to all inner star vertices
+    for i in 5..10 {
+        g.add_edge(10, i).unwrap();
+    }
+
+    g
+}
+
+/// Generate the Heawood graph
+///
+/// The Heawood graph is a 3-regular graph with 14 vertices, and is the unique (3,6)-cage.
+///
+/// # Properties
+///
+/// * Vertices: 14
+/// * Edges: 21
+/// * 3-regular (cubic)
+/// * Bipartite
+/// * Diameter: 3
+/// * Girth: 6
+/// * (3,6)-cage (smallest cubic graph with girth 6)
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::smallgraphs::heawood_graph;
+///
+/// let g = heawood_graph();
+/// assert_eq!(g.num_vertices(), 14);
+/// assert_eq!(g.num_edges(), 21);
+/// ```
+///
+/// # References
+///
+/// * [Wikipedia: Heawood graph](https://en.wikipedia.org/wiki/Heawood_graph)
+pub fn heawood_graph() -> Graph {
+    // LCF notation for Heawood graph: [5, -5] repeated 7 times
+    let jumps = vec![5, -5];
+    lcf_graph_with_cycle(&jumps, 7)
+}
+
+/// Generate the Herschel graph
+///
+/// The Herschel graph is a bipartite, planar graph with 11 vertices.
+///
+/// # Properties
+///
+/// * Vertices: 11
+/// * Edges: 18
+/// * Bipartite
+/// * Planar
+/// * 3-vertex-connected
+/// * Non-Hamiltonian polyhedral graph
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::smallgraphs::herschel_graph;
+///
+/// let g = herschel_graph();
+/// assert_eq!(g.num_vertices(), 11);
+/// assert_eq!(g.num_edges(), 18);
+/// ```
+///
+/// # References
+///
+/// * [Wikipedia: Herschel graph](https://en.wikipedia.org/wiki/Herschel_graph)
+pub fn herschel_graph() -> Graph {
+    let mut g = Graph::new(11);
+
+    // Herschel graph edge list (bipartite with sets {0,2,4,6,8,10} and {1,3,5,7,9})
+    let edges = vec![
+        (0, 1), (0, 3), (0, 9),
+        (1, 2), (1, 10),
+        (2, 3), (2, 5),
+        (3, 4),
+        (4, 5), (4, 7),
+        (5, 6),
+        (6, 7), (6, 9),
+        (7, 8),
+        (8, 9), (8, 10),
+        (9, 10),
+        (4, 10),
+    ];
+
+    for (u, v) in edges {
+        g.add_edge(u, v).unwrap();
+    }
+
+    g
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1050,6 +1354,92 @@ mod tests {
         // Check 3-regularity
         for v in 0..32 {
             assert_eq!(g.degree(v), Some(3));
+        }
+    }
+
+    #[test]
+    fn test_folkman_graph() {
+        let g = folkman_graph();
+        assert_eq!(g.num_vertices(), 20);
+        assert_eq!(g.num_edges(), 40);
+
+        // Check 4-regularity
+        for v in 0..20 {
+            assert_eq!(g.degree(v), Some(4));
+        }
+    }
+
+    #[test]
+    fn test_foster_graph() {
+        let g = foster_graph();
+        assert_eq!(g.num_vertices(), 90);
+        assert_eq!(g.num_edges(), 135);
+
+        // Check 3-regularity
+        for v in 0..90 {
+            assert_eq!(g.degree(v), Some(3));
+        }
+    }
+
+    #[test]
+    fn test_franklin_graph() {
+        let g = franklin_graph();
+        assert_eq!(g.num_vertices(), 12);
+        assert_eq!(g.num_edges(), 18);
+
+        // Check 3-regularity
+        for v in 0..12 {
+            assert_eq!(g.degree(v), Some(3));
+        }
+    }
+
+    #[test]
+    fn test_frucht_graph() {
+        let g = frucht_graph();
+        assert_eq!(g.num_vertices(), 12);
+        assert_eq!(g.num_edges(), 18);
+
+        // Check 3-regularity
+        for v in 0..12 {
+            assert_eq!(g.degree(v), Some(3));
+        }
+    }
+
+    #[test]
+    fn test_grotzsch_graph() {
+        let g = grotzsch_graph();
+        assert_eq!(g.num_vertices(), 11);
+        assert_eq!(g.num_edges(), 20);
+
+        // Check that all vertices have degree between 3 and 5
+        for v in 0..11 {
+            let deg = g.degree(v).unwrap();
+            assert!(deg >= 3 && deg <= 5);
+        }
+    }
+
+    #[test]
+    fn test_heawood_graph() {
+        let g = heawood_graph();
+        assert_eq!(g.num_vertices(), 14);
+        assert_eq!(g.num_edges(), 21);
+
+        // Check 3-regularity
+        for v in 0..14 {
+            assert_eq!(g.degree(v), Some(3));
+        }
+    }
+
+    #[test]
+    fn test_herschel_graph() {
+        let g = herschel_graph();
+        assert_eq!(g.num_vertices(), 11);
+        assert_eq!(g.num_edges(), 18);
+
+        // Herschel graph has vertices of degree 3 and 4
+        for v in 0..11 {
+            let deg = g.degree(v).unwrap();
+            assert!(deg == 3 || deg == 4);
         }
     }
 }
