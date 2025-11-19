@@ -5,11 +5,14 @@
 //! - Morphisms (structure-preserving maps)
 //! - Functors (structure-preserving maps between categories)
 //! - Natural transformations
+//! - Field category methods (ElementMethods and ParentMethods)
 
+pub mod field_category;
 pub mod functor;
 pub mod morphism;
 pub mod natural_transformation;
 
+pub use field_category::{FieldElementMethods, FieldParentMethods};
 pub use functor::{Functor, IdentityFunctor, ForgetfulFunctor};
 pub use morphism::{
     is_morphism, CallMorphism, FormalCoercionMorphism, IdentityMorphism, Isomorphism, Morphism,
