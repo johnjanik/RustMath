@@ -35,6 +35,8 @@ pub mod kernel_subgroup;
 pub mod misc_groups;
 pub mod pari_group;
 pub mod representation;
+pub mod semimonomial_transformation;
+pub mod semimonomial_transformation_group;
 
 pub use permutation_group::{PermutationGroup, SymmetricGroup, AlternatingGroup};
 pub use matrix_group::{MatrixGroup, GLn, SLn};
@@ -71,3 +73,5 @@ pub use kernel_subgroup::{KernelSubgroup, KernelSubgroupElement};
 pub use misc_groups::{klein_four_group, quaternion_group, dicyclic_group, trivial_group, group_of_order, GroupCatalog};
 pub use pari_group::{PariGroup, symmetric_pari_group, alternating_pari_group, dihedral_pari_group, cyclic_pari_group};
 pub use representation::{Representation, Character, CharacterTable, direct_sum, tensor_product};
+pub use semimonomial_transformation::{SemimonomialTransformation, Automorphism, action_on_vector, action_on_matrix, compose};
+pub use semimonomial_transformation_group::{SemimonomialTransformationGroup, SemimonomialActionVec, SemimonomialActionMat, group_order};
