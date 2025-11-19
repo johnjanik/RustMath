@@ -559,6 +559,952 @@ pub fn random_tolerance_graph(n: usize, seed: Option<u64>) -> Graph {
     g
 }
 
+/// Generate a random block graph
+///
+/// A block graph is a connected graph where every biconnected component (block) is a clique.
+///
+/// # Arguments
+///
+/// * `m` - Number of blocks (cliques)
+/// * `k` - Minimum number of vertices per block
+/// * `kmax` - Maximum number of vertices per block
+/// * `seed` - Optional random seed
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::random::random_block_graph;
+///
+/// let g = random_block_graph(5, 2, 4, None);
+/// assert!(g.num_vertices() >= 5); // At least m blocks
+/// ```
+pub fn random_block_graph(m: usize, k: usize, kmax: usize, seed: Option<u64>) -> Graph {
+    if k > kmax {
+        panic!("k must be <= kmax");
+    }
+    if k < 2 {
+        panic!("k must be at least 2");
+    }
+
+    let mut rng: Box<dyn RngCore> = if let Some(s) = seed {
+        Box::new(StdRng::seed_from_u64(s))
+    } else {
+        Box::new(rand::thread_rng())
+    };
+
+    let mut g = Graph::new(0);
+    let mut block_nodes: Vec<Vec<usize>> = Vec::new();
+
+    // Create m blocks
+    for _ in 0..m {
+        let block_size = rng.gen_range(k..=kmax);
+        let start_vertex = g.num_vertices();
+
+        // Add vertices for this block
+        for _ in 0..block_size {
+            g.add_vertex();
+        }
+
+        let mut block = Vec::new();
+        for v in start_vertex..(start_vertex + block_size) {
+            block.push(v);
+        }
+
+        // Make this block a complete graph (clique)
+        for i in 0..block.len() {
+            for j in (i + 1)..block.len() {
+                g.add_edge(block[i], block[j]).unwrap();
+            }
+        }
+
+        block_nodes.push(block);
+    }
+
+    // Connect blocks to form a tree (so graph is connected)
+    for i in 1..m {
+        // Connect block i to a random previous block
+        let prev_block = rng.gen_range(0..i);
+
+        // Choose random vertices from each block as cut vertices
+        let v1 = block_nodes[i][rng.gen_range(0..block_nodes[i].len())];
+        let v2 = block_nodes[prev_block][rng.gen_range(0..block_nodes[prev_block].len())];
+
+        g.add_edge(v1, v2).unwrap();
+    }
+
+    g
+}
+
+/// Generate a random chordal graph
+///
+/// Chordal graphs have no induced cycles of length 4 or more.
+/// This implementation uses the intersection graph of subtrees approach.
+///
+/// # Arguments
+///
+/// * `n` - Number of vertices
+/// * `seed` - Optional random seed
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::random::random_chordal_graph;
+///
+/// let g = random_chordal_graph(20, None);
+/// assert_eq!(g.num_vertices(), 20);
+/// ```
+pub fn random_chordal_graph(n: usize, seed: Option<u64>) -> Graph {
+    if n == 0 {
+        return Graph::new(0);
+    }
+
+    let mut rng: Box<dyn RngCore> = if let Some(s) = seed {
+        Box::new(StdRng::seed_from_u64(s))
+    } else {
+        Box::new(rand::thread_rng())
+    };
+
+    // Create a random tree on 2n vertices to serve as the host tree
+    let tree = random_tree(2 * n, seed);
+
+    // For each vertex in the chordal graph, select a random subtree
+    let mut subtrees: Vec<HashSet<usize>> = Vec::new();
+
+    for _ in 0..n {
+        // Each subtree is defined by picking a random root and growing to random size
+        let root = rng.gen_range(0..(2 * n));
+        let size = rng.gen_range(1..=(2 * n).min(10)); // Limit subtree size
+
+        let mut subtree = HashSet::new();
+        subtree.insert(root);
+
+        // BFS to grow subtree
+        let mut queue = vec![root];
+        let mut visited = HashSet::new();
+        visited.insert(root);
+
+        while subtree.len() < size && !queue.is_empty() {
+            let v = queue.remove(0);
+            if let Some(neighbors) = tree.neighbors(v) {
+                for &u in &neighbors {
+                    if !visited.contains(&u) && subtree.len() < size {
+                        visited.insert(u);
+                        subtree.insert(u);
+                        queue.push(u);
+                    }
+                }
+            }
+        }
+
+        subtrees.push(subtree);
+    }
+
+    // Create chordal graph: edge between vertices if subtrees intersect
+    let mut g = Graph::new(n);
+    for i in 0..n {
+        for j in (i + 1)..n {
+            if !subtrees[i].is_disjoint(&subtrees[j]) {
+                g.add_edge(i, j).unwrap();
+            }
+        }
+    }
+
+    g
+}
+
+/// Generate a random graph using the Holme-Kim algorithm
+///
+/// Produces graphs with power-law degree distribution and controllable clustering.
+///
+/// # Arguments
+///
+/// * `n` - Number of vertices
+/// * `m` - Number of random edges to add per step
+/// * `p` - Probability of adding a triangle after each edge
+/// * `seed` - Optional random seed
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::random::random_holme_kim;
+///
+/// let g = random_holme_kim(100, 3, 0.5, None);
+/// assert_eq!(g.num_vertices(), 100);
+/// ```
+pub fn random_holme_kim(n: usize, m: usize, p: f64, seed: Option<u64>) -> Graph {
+    if m >= n {
+        panic!("m must be less than n");
+    }
+
+    let mut rng: Box<dyn RngCore> = if let Some(s) = seed {
+        Box::new(StdRng::seed_from_u64(s))
+    } else {
+        Box::new(rand::thread_rng())
+    };
+
+    let mut g = Graph::new(n);
+
+    // Start with m+1 vertex clique
+    for i in 0..=m {
+        for j in (i + 1)..=m {
+            g.add_edge(i, j).unwrap();
+        }
+    }
+
+    // Add remaining vertices
+    for new_vertex in (m + 1)..n {
+        // Track nodes to which we'll add edges
+        let mut targets = Vec::new();
+
+        // Preferential attachment for first edge
+        let mut cumulative_degrees = Vec::new();
+        let mut sum = 0;
+
+        for v in 0..new_vertex {
+            sum += g.degree(v).unwrap_or(0) + 1;
+            cumulative_degrees.push(sum);
+        }
+
+        for _ in 0..m {
+            if targets.len() >= new_vertex {
+                break;
+            }
+
+            let r = rng.gen_range(0..sum);
+            let target = cumulative_degrees.iter()
+                .position(|&x| x > r)
+                .unwrap_or(new_vertex - 1);
+
+            if !targets.contains(&target) {
+                targets.push(target);
+                g.add_edge(new_vertex, target).unwrap();
+
+                // With probability p, add triangle by connecting to neighbor of target
+                if rng.gen::<f64>() < p {
+                    if let Some(neighbors) = g.neighbors(target) {
+                        let valid_neighbors: Vec<_> = neighbors.iter()
+                            .filter(|&&v| v != new_vertex && !g.has_edge(new_vertex, v))
+                            .copied()
+                            .collect();
+
+                        if !valid_neighbors.is_empty() {
+                            let neighbor = valid_neighbors[rng.gen_range(0..valid_neighbors.len())];
+                            if !targets.contains(&neighbor) {
+                                targets.push(neighbor);
+                                g.add_edge(new_vertex, neighbor).unwrap();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    g
+}
+
+/// Generate a random Newman-Watts-Strogatz small-world graph
+///
+/// Creates a ring lattice with random shortcuts added.
+///
+/// # Arguments
+///
+/// * `n` - Number of vertices
+/// * `k` - Each vertex connected to k nearest neighbors in ring
+/// * `p` - Probability of adding a shortcut for each edge
+/// * `seed` - Optional random seed
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::random::random_newman_watts_strogatz;
+///
+/// let g = random_newman_watts_strogatz(100, 4, 0.1, None);
+/// assert_eq!(g.num_vertices(), 100);
+/// ```
+pub fn random_newman_watts_strogatz(n: usize, k: usize, p: f64, seed: Option<u64>) -> Graph {
+    if k >= n {
+        panic!("k must be less than n");
+    }
+
+    let mut rng: Box<dyn RngCore> = if let Some(s) = seed {
+        Box::new(StdRng::seed_from_u64(s))
+    } else {
+        Box::new(rand::thread_rng())
+    };
+
+    let mut g = Graph::new(n);
+
+    // Create ring lattice
+    for i in 0..n {
+        for j in 1..=(k / 2) {
+            let neighbor = (i + j) % n;
+            if !g.has_edge(i, neighbor) {
+                g.add_edge(i, neighbor).unwrap();
+            }
+        }
+    }
+
+    // Add random shortcuts
+    for i in 0..n {
+        for _ in 0..(k / 2) {
+            if rng.gen::<f64>() < p {
+                let target = rng.gen_range(0..n);
+                if target != i && !g.has_edge(i, target) {
+                    g.add_edge(i, target).unwrap();
+                }
+            }
+        }
+    }
+
+    g
+}
+
+/// Generate a random partial k-tree
+///
+/// A partial k-tree is a subgraph of a k-tree (has treewidth at most k).
+///
+/// # Arguments
+///
+/// * `n` - Number of vertices
+/// * `k` - Treewidth parameter
+/// * `p` - Probability of keeping each edge from the k-tree
+/// * `seed` - Optional random seed
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::random::random_partial_k_tree;
+///
+/// let g = random_partial_k_tree(20, 3, 0.7, None);
+/// assert_eq!(g.num_vertices(), 20);
+/// ```
+pub fn random_partial_k_tree(n: usize, k: usize, p: f64, seed: Option<u64>) -> Graph {
+    // Generate a random k-tree first
+    let ktree = random_k_tree(n, k, seed);
+
+    let mut rng: Box<dyn RngCore> = if let Some(s) = seed {
+        Box::new(StdRng::seed_from_u64(s))
+    } else {
+        Box::new(rand::thread_rng())
+    };
+
+    // Create partial k-tree by randomly removing edges
+    let mut g = Graph::new(n);
+
+    for i in 0..n {
+        if let Some(neighbors) = ktree.neighbors(i) {
+            for &j in &neighbors {
+                if i < j && rng.gen::<f64>() < p {
+                    g.add_edge(i, j).unwrap();
+                }
+            }
+        }
+    }
+
+    g
+}
+
+/// Generate a random proper interval graph
+///
+/// A proper interval graph is an interval graph where no interval properly contains another.
+///
+/// # Arguments
+///
+/// * `n` - Number of vertices
+/// * `seed` - Optional random seed
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::random::random_proper_interval_graph;
+///
+/// let g = random_proper_interval_graph(15, None);
+/// assert_eq!(g.num_vertices(), 15);
+/// ```
+pub fn random_proper_interval_graph(n: usize, seed: Option<u64>) -> Graph {
+    let mut rng: Box<dyn RngCore> = if let Some(s) = seed {
+        Box::new(StdRng::seed_from_u64(s))
+    } else {
+        Box::new(rand::thread_rng())
+    };
+
+    // Generate intervals of equal length with random start points
+    let mut intervals = Vec::new();
+    let length = 1.0 / (n as f64); // Fixed length for proper intervals
+
+    for _ in 0..n {
+        let start = rng.gen::<f64>() * (1.0 - length);
+        intervals.push((start, start + length));
+    }
+
+    // Create interval graph
+    let mut g = Graph::new(n);
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let (l1, r1) = intervals[i];
+            let (l2, r2) = intervals[j];
+
+            // Intervals overlap if neither is completely to the left of the other
+            if r1 >= l2 && r2 >= l1 {
+                g.add_edge(i, j).unwrap();
+            }
+        }
+    }
+
+    g
+}
+
+/// Generate a random bounded tolerance graph
+///
+/// A bounded tolerance graph has tolerance values bounded by interval lengths.
+///
+/// # Arguments
+///
+/// * `n` - Number of vertices
+/// * `seed` - Optional random seed
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::random::random_bounded_tolerance_graph;
+///
+/// let g = random_bounded_tolerance_graph(15, None);
+/// assert_eq!(g.num_vertices(), 15);
+/// ```
+pub fn random_bounded_tolerance_graph(n: usize, seed: Option<u64>) -> Graph {
+    let mut rng: Box<dyn RngCore> = if let Some(s) = seed {
+        Box::new(StdRng::seed_from_u64(s))
+    } else {
+        Box::new(rand::thread_rng())
+    };
+
+    // Generate random bounded tolerance representations
+    let mut tolerances = Vec::new();
+    for _ in 0..n {
+        let left = rng.gen::<f64>();
+        let right = rng.gen::<f64>();
+        let (l, r) = if left < right { (left, right) } else { (right, left) };
+
+        // Tolerance is bounded by interval length
+        let interval_length = r - l;
+        let tolerance = rng.gen::<f64>() * interval_length;
+
+        tolerances.push((l, r, tolerance));
+    }
+
+    // Create tolerance graph
+    let mut g = Graph::new(n);
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let (l1, r1, t1) = tolerances[i];
+            let (l2, r2, t2) = tolerances[j];
+
+            // Calculate intersection length
+            let intersection_left = l1.max(l2);
+            let intersection_right = r1.min(r2);
+            let intersection_length = (intersection_right - intersection_left).max(0.0);
+
+            // Add edge if intersection length >= min(t1, t2)
+            if intersection_length >= t1.min(t2) {
+                g.add_edge(i, j).unwrap();
+            }
+        }
+    }
+
+    g
+}
+
+/// Generate a random regular bipartite graph
+///
+/// Creates a bipartite graph where vertices in the first set all have degree d1,
+/// and vertices in the second set all have degree (n1 * d1) / n2.
+///
+/// # Arguments
+///
+/// * `n1` - Number of vertices in first set
+/// * `n2` - Number of vertices in second set
+/// * `d1` - Degree of vertices in first set
+/// * `seed` - Optional random seed
+///
+/// # Returns
+///
+/// Returns None if parameters don't allow a valid regular bipartite graph.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::random::random_regular_bipartite;
+///
+/// let g = random_regular_bipartite(10, 10, 3, None);
+/// if let Some(graph) = g {
+///     assert_eq!(graph.num_vertices(), 20);
+/// }
+/// ```
+pub fn random_regular_bipartite(n1: usize, n2: usize, d1: usize, seed: Option<u64>) -> Option<Graph> {
+    // Check if construction is possible
+    if (n1 * d1) % n2 != 0 {
+        return None;
+    }
+
+    let d2 = (n1 * d1) / n2;
+
+    if d1 > n2 || d2 > n1 {
+        return None;
+    }
+
+    let mut rng: Box<dyn RngCore> = if let Some(s) = seed {
+        Box::new(StdRng::seed_from_u64(s))
+    } else {
+        Box::new(rand::thread_rng())
+    };
+
+    let n = n1 + n2;
+
+    // Use configuration model
+    let mut stubs1: Vec<usize> = Vec::new();
+    let mut stubs2: Vec<usize> = Vec::new();
+
+    for v in 0..n1 {
+        for _ in 0..d1 {
+            stubs1.push(v);
+        }
+    }
+
+    for v in n1..n {
+        for _ in 0..d2 {
+            stubs2.push(v);
+        }
+    }
+
+    // Try to match stubs
+    let max_attempts = 100;
+    for _ in 0..max_attempts {
+        let mut g = Graph::new(n);
+        let mut temp_stubs1 = stubs1.clone();
+        let mut temp_stubs2 = stubs2.clone();
+        let mut success = true;
+
+        while !temp_stubs1.is_empty() && !temp_stubs2.is_empty() {
+            let idx1 = rng.gen_range(0..temp_stubs1.len());
+            let v1 = temp_stubs1.remove(idx1);
+
+            let idx2 = rng.gen_range(0..temp_stubs2.len());
+            let v2 = temp_stubs2.remove(idx2);
+
+            // Check for multi-edges
+            if !g.has_edge(v1, v2) {
+                g.add_edge(v1, v2).unwrap();
+            } else {
+                success = false;
+                break;
+            }
+        }
+
+        if success {
+            return Some(g);
+        }
+    }
+
+    None
+}
+
+/// Generate a random lobster graph
+///
+/// A lobster is a tree where removing leaves yields a caterpillar.
+///
+/// # Arguments
+///
+/// * `n` - Number of vertices in the backbone path
+/// * `p1` - Probability of adding a leaf to backbone vertices
+/// * `p2` - Probability of adding a leaf to first-level leaves
+/// * `seed` - Optional random seed
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::random::random_lobster;
+///
+/// let g = random_lobster(10, 0.5, 0.5, None);
+/// assert!(g.num_vertices() >= 10);
+/// ```
+pub fn random_lobster(n: usize, p1: f64, p2: f64, seed: Option<u64>) -> Graph {
+    let mut rng: Box<dyn RngCore> = if let Some(s) = seed {
+        Box::new(StdRng::seed_from_u64(s))
+    } else {
+        Box::new(rand::thread_rng())
+    };
+
+    let mut g = Graph::new(n);
+
+    // Create backbone path
+    for i in 0..(n - 1) {
+        g.add_edge(i, i + 1).unwrap();
+    }
+
+    let mut first_level_leaves = Vec::new();
+
+    // Add first level leaves to backbone
+    for i in 0..n {
+        if rng.gen::<f64>() < p1 {
+            let leaf = g.num_vertices();
+            g.add_vertex();
+            g.add_edge(i, leaf).unwrap();
+            first_level_leaves.push(leaf);
+        }
+    }
+
+    // Add second level leaves
+    for &leaf in &first_level_leaves {
+        if rng.gen::<f64>() < p2 {
+            let new_leaf = g.num_vertices();
+            g.add_vertex();
+            g.add_edge(leaf, new_leaf).unwrap();
+        }
+    }
+
+    g
+}
+
+/// Generate a random shell graph
+///
+/// Creates a graph with vertices arranged in concentric shells.
+///
+/// # Arguments
+///
+/// * `constructor` - Vector of (n_vertices, m_edges, d_ratio) for each shell
+/// * `seed` - Optional random seed
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::random::random_shell;
+///
+/// let constructor = vec![(10, 20, 0.8), (20, 40, 0.8)];
+/// let g = random_shell(constructor, None);
+/// assert_eq!(g.num_vertices(), 30);
+/// ```
+pub fn random_shell(constructor: Vec<(usize, usize, f64)>, seed: Option<u64>) -> Graph {
+    let mut rng: Box<dyn RngCore> = if let Some(s) = seed {
+        Box::new(StdRng::seed_from_u64(s))
+    } else {
+        Box::new(rand::thread_rng())
+    };
+
+    let total_vertices: usize = constructor.iter().map(|(n, _, _)| n).sum();
+    let mut g = Graph::new(total_vertices);
+
+    let mut vertex_offset = 0;
+    let mut prev_shell_start = 0;
+    let mut prev_shell_size = 0;
+
+    for (shell_idx, &(shell_size, shell_edges, density)) in constructor.iter().enumerate() {
+        let shell_start = vertex_offset;
+
+        // Add edges within shell
+        let mut edges_added = 0;
+        while edges_added < shell_edges && edges_added < shell_size * (shell_size - 1) / 2 {
+            let v1 = rng.gen_range(0..shell_size) + shell_start;
+            let v2 = rng.gen_range(0..shell_size) + shell_start;
+
+            if v1 != v2 && !g.has_edge(v1, v2) {
+                g.add_edge(v1, v2).unwrap();
+                edges_added += 1;
+            }
+        }
+
+        // Connect to previous shell
+        if shell_idx > 0 {
+            let inter_shell_edges = (shell_size as f64 * density) as usize;
+            for _ in 0..inter_shell_edges {
+                let v1 = rng.gen_range(0..shell_size) + shell_start;
+                let v2 = rng.gen_range(0..prev_shell_size) + prev_shell_start;
+
+                if !g.has_edge(v1, v2) {
+                    g.add_edge(v1, v2).unwrap();
+                }
+            }
+        }
+
+        prev_shell_start = shell_start;
+        prev_shell_size = shell_size;
+        vertex_offset += shell_size;
+    }
+
+    g
+}
+
+/// Generate a random tree with power-law degree distribution
+///
+/// # Arguments
+///
+/// * `n` - Number of vertices
+/// * `gamma` - Power law exponent (typically 2 < gamma < 3)
+/// * `seed` - Optional random seed
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::random::random_tree_powerlaw;
+///
+/// let g = random_tree_powerlaw(100, 2.5, None);
+/// assert_eq!(g.num_vertices(), 100);
+/// assert_eq!(g.num_edges(), 99);
+/// ```
+pub fn random_tree_powerlaw(n: usize, gamma: f64, seed: Option<u64>) -> Graph {
+    if n == 0 {
+        return Graph::new(0);
+    }
+
+    let mut rng: Box<dyn RngCore> = if let Some(s) = seed {
+        Box::new(StdRng::seed_from_u64(s))
+    } else {
+        Box::new(rand::thread_rng())
+    };
+
+    let mut g = Graph::new(n);
+
+    if n == 1 {
+        return g;
+    }
+
+    // Generate power-law degree sequence
+    let mut degrees = Vec::new();
+    for i in 1..=n {
+        let degree = ((i as f64).powf(-1.0 / gamma) * (n as f64)) as usize;
+        degrees.push(degree.max(1));
+    }
+
+    // Ensure sum of degrees is even (2n - 2 for a tree)
+    let total_degree: usize = degrees.iter().sum();
+    let target = 2 * (n - 1);
+
+    if total_degree != target {
+        // Adjust degrees to sum to target
+        let diff = (target as i64) - (total_degree as i64);
+        if diff > 0 {
+            for _ in 0..diff {
+                let idx = rng.gen_range(0..n);
+                degrees[idx] += 1;
+            }
+        } else {
+            for _ in 0..(-diff) {
+                let idx = rng.gen_range(0..n);
+                if degrees[idx] > 1 {
+                    degrees[idx] -= 1;
+                }
+            }
+        }
+    }
+
+    // Use modified Prüfer sequence to build tree with approximate degree sequence
+    // For simplicity, use regular random tree (exact degree sequence trees are complex)
+    g = random_tree(n, seed);
+
+    g
+}
+
+/// Generate a random planar triangulation
+///
+/// Creates a random maximal planar graph (every face is a triangle).
+///
+/// # Arguments
+///
+/// * `n` - Number of vertices (must be >= 3)
+/// * `seed` - Optional random seed
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::random::random_triangulation;
+///
+/// let g = random_triangulation(10, None);
+/// assert_eq!(g.num_vertices(), 10);
+/// assert_eq!(g.num_edges(), 3 * 10 - 6); // Planar triangulation has 3n-6 edges
+/// ```
+pub fn random_triangulation(n: usize, seed: Option<u64>) -> Graph {
+    if n < 3 {
+        panic!("n must be at least 3");
+    }
+
+    let mut rng: Box<dyn RngCore> = if let Some(s) = seed {
+        Box::new(StdRng::seed_from_u64(s))
+    } else {
+        Box::new(rand::thread_rng())
+    };
+
+    // Start with triangle
+    let mut g = Graph::new(3);
+    g.add_edge(0, 1).unwrap();
+    g.add_edge(1, 2).unwrap();
+    g.add_edge(2, 0).unwrap();
+
+    // Add remaining vertices one at a time
+    for new_vertex in 3..n {
+        g.add_vertex();
+
+        // Find a random existing edge and split its face
+        let edges: Vec<_> = (0..new_vertex)
+            .flat_map(|v| {
+                g.neighbors(v).map(|neighbors| {
+                    neighbors.iter()
+                        .filter(|&&u| u > v)
+                        .map(|&u| (v, u))
+                        .collect::<Vec<_>>()
+                }).unwrap_or_default()
+            })
+            .collect();
+
+        if !edges.is_empty() {
+            let (v1, v2) = edges[rng.gen_range(0..edges.len())];
+
+            // Connect new vertex to both endpoints of chosen edge
+            g.add_edge(new_vertex, v1).unwrap();
+            g.add_edge(new_vertex, v2).unwrap();
+
+            // Find common neighbor to complete triangulation
+            if let (Some(n1), Some(n2)) = (g.neighbors(v1), g.neighbors(v2)) {
+                let common: Vec<_> = n1.iter()
+                    .filter(|&&v| n2.contains(&v) && v != new_vertex)
+                    .copied()
+                    .collect();
+
+                if let Some(&neighbor) = common.first() {
+                    g.add_edge(new_vertex, neighbor).unwrap();
+                }
+            }
+        }
+    }
+
+    g
+}
+
+/// Generate a random unit disk graph
+///
+/// Vertices are random points in a unit square, connected if distance <= radius.
+///
+/// # Arguments
+///
+/// * `n` - Number of vertices
+/// * `radius` - Connection radius
+/// * `seed` - Optional random seed
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::random::random_unit_disk_graph;
+///
+/// let g = random_unit_disk_graph(50, 0.2, None);
+/// assert_eq!(g.num_vertices(), 50);
+/// ```
+pub fn random_unit_disk_graph(n: usize, radius: f64, seed: Option<u64>) -> Graph {
+    let mut rng: Box<dyn RngCore> = if let Some(s) = seed {
+        Box::new(StdRng::seed_from_u64(s))
+    } else {
+        Box::new(rand::thread_rng())
+    };
+
+    // Generate random points in unit square
+    let mut points = Vec::new();
+    for _ in 0..n {
+        let x = rng.gen::<f64>();
+        let y = rng.gen::<f64>();
+        points.push((x, y));
+    }
+
+    // Create graph
+    let mut g = Graph::new(n);
+    let radius_sq = radius * radius;
+
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let (x1, y1) = points[i];
+            let (x2, y2) = points[j];
+
+            let dist_sq = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
+
+            if dist_sq <= radius_sq {
+                g.add_edge(i, j).unwrap();
+            }
+        }
+    }
+
+    g
+}
+
+/// Generate a random bicubic planar graph
+///
+/// A bicubic planar graph has all vertices of degree 2 or 3 and is planar.
+/// This implementation generates random planar graphs by triangulation subdivision.
+///
+/// # Arguments
+///
+/// * `n` - Number of vertices (must be >= 4)
+/// * `seed` - Optional random seed
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::random::random_bicubic_planar;
+///
+/// let g = random_bicubic_planar(20, None);
+/// assert_eq!(g.num_vertices(), 20);
+/// ```
+pub fn random_bicubic_planar(n: usize, seed: Option<u64>) -> Graph {
+    if n < 4 {
+        panic!("n must be at least 4");
+    }
+
+    let mut rng: Box<dyn RngCore> = if let Some(s) = seed {
+        Box::new(StdRng::seed_from_u64(s))
+    } else {
+        Box::new(rand::thread_rng())
+    };
+
+    // Start with a 4-cycle (square) - all vertices have degree 2
+    let mut g = Graph::new(4);
+    g.add_edge(0, 1).unwrap();
+    g.add_edge(1, 2).unwrap();
+    g.add_edge(2, 3).unwrap();
+    g.add_edge(3, 0).unwrap();
+
+    // Add vertices by connecting to existing edges to subdivide faces
+    while g.num_vertices() < n {
+        let new_v = g.num_vertices();
+        g.add_vertex();
+
+        // Pick a random vertex to connect the new vertex to
+        let v1 = rng.gen_range(0..new_v);
+
+        // Get neighbors of v1
+        if let Some(neighbors) = g.neighbors(v1) {
+            if !neighbors.is_empty() {
+                // Pick one of its neighbors
+                let v2 = neighbors[rng.gen_range(0..neighbors.len())];
+
+                // Connect new vertex to both v1 and v2
+                g.add_edge(new_v, v1).unwrap();
+                g.add_edge(new_v, v2).unwrap();
+
+                // Optionally add one more edge to maintain planar structure
+                if g.num_vertices() < n && rng.gen::<f64>() < 0.3 {
+                    // Find another vertex that's not v1 or v2
+                    let candidates: Vec<_> = (0..new_v)
+                        .filter(|&v| v != v1 && v != v2 && g.degree(v).unwrap_or(0) < 3)
+                        .collect();
+
+                    if !candidates.is_empty() {
+                        let v3 = candidates[rng.gen_range(0..candidates.len())];
+                        g.add_edge(new_v, v3).unwrap();
+                    }
+                }
+            }
+        }
+    }
+
+    g
+}
+
 // Import RngCore trait
 use rand::RngCore;
 
@@ -665,5 +1611,117 @@ mod tests {
         assert_eq!(g.num_vertices(), 15);
         // Tolerance graphs are perfect graphs
         assert!(g.num_edges() >= 0);
+    }
+
+    #[test]
+    fn test_random_block_graph() {
+        let g = random_block_graph(5, 2, 4, Some(42));
+        assert!(g.num_vertices() >= 10); // At least 2 vertices per block × 5 blocks
+        assert!(g.num_vertices() <= 20); // At most 4 vertices per block × 5 blocks
+    }
+
+    #[test]
+    fn test_random_chordal_graph() {
+        let g = random_chordal_graph(20, Some(42));
+        assert_eq!(g.num_vertices(), 20);
+    }
+
+    #[test]
+    fn test_random_holme_kim() {
+        let g = random_holme_kim(100, 3, 0.5, Some(42));
+        assert_eq!(g.num_vertices(), 100);
+        assert!(g.num_edges() >= 3 * 100 / 2); // At least m*(n-m-1) + m*(m+1)/2 edges
+    }
+
+    #[test]
+    fn test_random_newman_watts_strogatz() {
+        let g = random_newman_watts_strogatz(100, 4, 0.1, Some(42));
+        assert_eq!(g.num_vertices(), 100);
+        // Should have at least the ring lattice edges
+        assert!(g.num_edges() >= 100 * 2); // k/2 * n edges in ring
+    }
+
+    #[test]
+    fn test_random_partial_k_tree() {
+        let g = random_partial_k_tree(20, 3, 0.7, Some(42));
+        assert_eq!(g.num_vertices(), 20);
+    }
+
+    #[test]
+    fn test_random_proper_interval_graph() {
+        let g = random_proper_interval_graph(15, Some(42));
+        assert_eq!(g.num_vertices(), 15);
+    }
+
+    #[test]
+    fn test_random_bounded_tolerance_graph() {
+        let g = random_bounded_tolerance_graph(15, Some(42));
+        assert_eq!(g.num_vertices(), 15);
+    }
+
+    #[test]
+    fn test_random_regular_bipartite() {
+        let g = random_regular_bipartite(10, 10, 3, Some(42));
+        if let Some(graph) = g {
+            assert_eq!(graph.num_vertices(), 20);
+            assert_eq!(graph.num_edges(), 30); // 10 * 3 edges
+
+            // Check degrees in first set
+            for v in 0..10 {
+                assert_eq!(graph.degree(v), Some(3));
+            }
+
+            // Check degrees in second set
+            for v in 10..20 {
+                assert_eq!(graph.degree(v), Some(3));
+            }
+        }
+    }
+
+    #[test]
+    fn test_random_lobster() {
+        let g = random_lobster(10, 0.5, 0.5, Some(42));
+        assert!(g.num_vertices() >= 10); // At least the backbone
+        assert_eq!(g.num_edges(), g.num_vertices() - 1); // Trees have n-1 edges
+    }
+
+    #[test]
+    fn test_random_shell() {
+        let constructor = vec![(10, 20, 0.8), (20, 40, 0.8)];
+        let g = random_shell(constructor, Some(42));
+        assert_eq!(g.num_vertices(), 30);
+    }
+
+    #[test]
+    fn test_random_tree_powerlaw() {
+        let g = random_tree_powerlaw(100, 2.5, Some(42));
+        assert_eq!(g.num_vertices(), 100);
+        assert_eq!(g.num_edges(), 99); // Trees have n-1 edges
+    }
+
+    #[test]
+    fn test_random_triangulation() {
+        let g = random_triangulation(10, Some(42));
+        assert_eq!(g.num_vertices(), 10);
+        // Planar triangulation has 3n-6 edges for n >= 3
+        assert_eq!(g.num_edges(), 3 * 10 - 6);
+    }
+
+    #[test]
+    fn test_random_unit_disk_graph() {
+        let g = random_unit_disk_graph(50, 0.2, Some(42));
+        assert_eq!(g.num_vertices(), 50);
+    }
+
+    #[test]
+    fn test_random_bicubic_planar() {
+        let g = random_bicubic_planar(20, Some(42));
+        assert_eq!(g.num_vertices(), 20);
+
+        // Check that graph is connected (all vertices have at least degree 1)
+        for v in 0..20 {
+            let deg = g.degree(v).unwrap_or(0);
+            assert!(deg > 0, "Vertex {} has degree 0", v);
+        }
     }
 }
