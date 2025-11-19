@@ -22,6 +22,7 @@ pub mod domination;
 pub mod edge_connectivity;
 pub mod planarity;
 pub mod spanning_tree;
+pub mod weakly_chordal;
 
 pub use graph::Graph;
 pub use generators::*;

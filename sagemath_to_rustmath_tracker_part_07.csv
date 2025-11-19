@@ -722,10 +722,10 @@ Implemented,Full,sage.graphs.spanning_tree.spanning_trees,sage.graphs.spanning_t
 ,,sage.graphs.tutte_polynomial.vertices,sage.graphs.tutte_polynomial,vertices,attribute,,
 ,,sage.graphs.views,sage.graphs.views,views,module,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/views.pyx#L32
 ,,sage.graphs.views.EdgesView,sage.graphs.views,EdgesView,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/views.pyx#L32
-,,sage.graphs.weakly_chordal,sage.graphs.weakly_chordal,weakly_chordal,module,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/weakly_chordal.pyx#L386
-,,sage.graphs.weakly_chordal.is_long_antihole_free,sage.graphs.weakly_chordal,is_long_antihole_free,function,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/weakly_chordal.pyx#L386
-,,sage.graphs.weakly_chordal.is_long_hole_free,sage.graphs.weakly_chordal,is_long_hole_free,function,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/weakly_chordal.pyx#L139
-,,sage.graphs.weakly_chordal.is_weakly_chordal,sage.graphs.weakly_chordal,is_weakly_chordal,function,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/weakly_chordal.pyx#L550
+Implemented,Full,sage.graphs.weakly_chordal,sage.graphs.weakly_chordal,weakly_chordal,module,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/weakly_chordal.pyx#L386
+Implemented,Full,sage.graphs.weakly_chordal.is_long_antihole_free,sage.graphs.weakly_chordal,is_long_antihole_free,function,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/weakly_chordal.pyx#L386
+Implemented,Full,sage.graphs.weakly_chordal.is_long_hole_free,sage.graphs.weakly_chordal,is_long_hole_free,function,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/weakly_chordal.pyx#L139
+Implemented,Full,sage.graphs.weakly_chordal.is_weakly_chordal,sage.graphs.weakly_chordal,is_weakly_chordal,function,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/weakly_chordal.pyx#L550
 ,,sage.groups,sage.groups,groups,module,,
 Implemented,FULL,sage.groups.abelian_gps.abelian_aut,sage.groups.abelian_gps.abelian_aut,abelian_aut,module,,https://github.com/sagemath/sage/blob/develop/src/sage/groups/abelian_gps/abelian_aut.py#L89
 Implemented,FULL,sage.groups.abelian_gps.abelian_aut.AbelianGroupAutomorphism,sage.groups.abelian_gps.abelian_aut,AbelianGroupAutomorphism,class,ElementLibGAP,https://github.com/sagemath/sage/blob/develop/src/sage/groups/abelian_gps/abelian_aut.py#L89
