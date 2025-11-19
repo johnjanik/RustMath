@@ -6,6 +6,7 @@
 //! - `classical_geometries`: Graphs from classical geometries
 //! - `distance_regular`: Distance-regular graphs and generalized polygons
 //! - `families`: Common graph families (trees, cubes, Petersen variations, etc.)
+//! - `intersection`: Intersection graphs (interval, permutation, tolerance, etc.)
 //! - `platonic_solids`: The five Platonic solid graphs (tetrahedron, cube, octahedron, icosahedron, dodecahedron)
 
 pub mod basic;
@@ -13,6 +14,7 @@ pub mod chessboard;
 pub mod classical_geometries;
 pub mod distance_regular;
 pub mod families;
+pub mod intersection;
 pub mod platonic_solids;
 
 // Re-export common generators for convenience
