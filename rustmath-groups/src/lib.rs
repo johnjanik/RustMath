@@ -43,6 +43,7 @@ pub mod libgap_mixin;
 pub mod libgap_morphism;
 pub mod nilpotent_lie_group;
 pub mod raag;
+pub mod groups_catalog;
 
 pub use permutation_group::{PermutationGroup, SymmetricGroup, AlternatingGroup};
 pub use matrix_group::{MatrixGroup, GLn, SLn};
@@ -86,3 +87,7 @@ pub use libgap_group::GroupLibGAP;
 pub use libgap_mixin::GroupMixinLibGAP;
 pub use libgap_morphism::{GroupMorphism_libgap, GroupHomset_libgap};
 pub use nilpotent_lie_group::{NilpotentLieGroup, NilpotentLieGroupElement};
+pub use raag::RightAngledArtinGroup;
+
+// Re-export the groups catalog for convenient access
+pub use groups_catalog as catalog;
