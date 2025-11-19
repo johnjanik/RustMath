@@ -611,8 +611,8 @@ Implemented,FULL,sage.graphs.graph.Graph,sage.graphs.graph,Graph,class,GenericGr
 ,,sage.graphs.path_enumeration.feng_k_shortest_simple_paths,sage.graphs.path_enumeration,feng_k_shortest_simple_paths,function,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/path_enumeration.pyx#L877
 ,,sage.graphs.path_enumeration.shortest_simple_paths,sage.graphs.path_enumeration,shortest_simple_paths,function,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/path_enumeration.pyx#L283
 ,,sage.graphs.path_enumeration.yen_k_shortest_simple_paths,sage.graphs.path_enumeration,yen_k_shortest_simple_paths,function,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/path_enumeration.pyx#L582
-,,sage.graphs.planarity,sage.graphs.planarity,planarity,module,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/planarity.pyx#L33
-,,sage.graphs.planarity.is_planar,sage.graphs.planarity,is_planar,function,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/planarity.pyx#L33
+Implemented,Full,sage.graphs.planarity,sage.graphs.planarity,planarity,module,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/planarity.pyx#L33
+Implemented,Full,sage.graphs.planarity.is_planar,sage.graphs.planarity,is_planar,function,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/planarity.pyx#L33
 ,,sage.graphs.pq_trees,sage.graphs.pq_trees,pq_trees,module,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/pq_trees.py#L524
 ,,sage.graphs.pq_trees.P,sage.graphs.pq_trees,P,class,PQ,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/pq_trees.py#L524
 ,,sage.graphs.pq_trees.PQ,sage.graphs.pq_trees,PQ,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/pq_trees.py#L277
