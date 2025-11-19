@@ -13,3 +13,4 @@ rustmath-matrix = { path = "../rustmath-matrix" }
 rustmath-combinatorics = { path = "../rustmath-combinatorics" }
 rustmath-rationals = { path = "../rustmath-rationals" }
 rustmath-complex = { path = "../rustmath-complex" }
+rustmath-graphs = { path = "../rustmath-graphs" }
