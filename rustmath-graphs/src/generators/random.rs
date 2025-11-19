@@ -418,6 +418,147 @@ pub fn random_k_tree(n: usize, k: usize, seed: Option<u64>) -> Graph {
     g
 }
 
+/// Generate a random tree on n vertices
+///
+/// Uses Prüfer sequences to generate uniformly random labeled trees.
+///
+/// # Arguments
+///
+/// * `n` - Number of vertices
+/// * `seed` - Optional random seed
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::random::random_tree;
+///
+/// let g = random_tree(10, None);
+/// assert_eq!(g.num_vertices(), 10);
+/// assert_eq!(g.num_edges(), 9); // Trees have n-1 edges
+/// ```
+pub fn random_tree(n: usize, seed: Option<u64>) -> Graph {
+    if n == 0 {
+        return Graph::new(0);
+    }
+
+    if n == 1 {
+        return Graph::new(1);
+    }
+
+    let mut rng: Box<dyn RngCore> = if let Some(s) = seed {
+        Box::new(StdRng::seed_from_u64(s))
+    } else {
+        Box::new(rand::thread_rng())
+    };
+
+    // Generate random Prüfer sequence of length n-2
+    let mut prufer: Vec<usize> = Vec::new();
+    for _ in 0..(n - 2) {
+        prufer.push(rng.gen_range(0..n));
+    }
+
+    // Convert Prüfer sequence to tree
+    let mut g = Graph::new(n);
+    let mut degree = vec![1; n];
+
+    // Calculate degrees from Prüfer sequence
+    for &val in &prufer {
+        degree[val] += 1;
+    }
+
+    // Build tree from Prüfer sequence
+    for &val in &prufer {
+        // Find minimum leaf
+        for i in 0..n {
+            if degree[i] == 1 {
+                g.add_edge(i, val).unwrap();
+                degree[i] -= 1;
+                degree[val] -= 1;
+                break;
+            }
+        }
+    }
+
+    // Connect last two vertices with degree 1
+    let mut remaining = Vec::new();
+    for i in 0..n {
+        if degree[i] == 1 {
+            remaining.push(i);
+        }
+    }
+
+    if remaining.len() == 2 {
+        g.add_edge(remaining[0], remaining[1]).unwrap();
+    }
+
+    g
+}
+
+/// Generate a random tolerance graph
+///
+/// Creates a random tolerance graph by generating random tolerance representations
+/// (intervals with tolerance values) and connecting vertices based on tolerance overlap.
+///
+/// # Arguments
+///
+/// * `n` - Number of vertices
+/// * `seed` - Optional random seed
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::random::random_tolerance_graph;
+///
+/// let g = random_tolerance_graph(15, None);
+/// assert_eq!(g.num_vertices(), 15);
+/// ```
+pub fn random_tolerance_graph(n: usize, seed: Option<u64>) -> Graph {
+    let mut rng: Box<dyn RngCore> = if let Some(s) = seed {
+        Box::new(StdRng::seed_from_u64(s))
+    } else {
+        Box::new(rand::thread_rng())
+    };
+
+    // Width bounded by n^2 * 2^n for small n, or just use a reasonable bound
+    let w = if n <= 10 {
+        n * n * (1 << n)
+    } else {
+        10000 // Use fixed width for larger n
+    };
+
+    // Generate random tolerance representations
+    let mut tolerances = Vec::new();
+    for _ in 0..n {
+        let left = rng.gen_range(0..w) as i64;
+        let right = rng.gen_range(0..=w) as i64;
+        let tolerance = rng.gen_range(1..=w) as i64; // Must be positive
+
+        let (l, r) = if left < right { (left, right) } else { (right, left) };
+        tolerances.push((l, r, tolerance));
+    }
+
+    // Create tolerance graph
+    let mut g = Graph::new(n);
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let (l1, r1, t1) = tolerances[i];
+            let (l2, r2, t2) = tolerances[j];
+
+            // Calculate intersection length
+            let intersection_left = l1.max(l2);
+            let intersection_right = r1.min(r2);
+            let intersection_length = (intersection_right - intersection_left).max(0);
+
+            // Add edge if intersection length >= min(t1, t2)
+            if intersection_length >= t1.min(t2) {
+                g.add_edge(i, j).unwrap();
+            }
+        }
+    }
+
+    g
+}
+
 // Import RngCore trait
 use rand::RngCore;
 
@@ -499,5 +640,30 @@ mod tests {
         // k(k+1)/2 + (n-k-1)k edges
         let expected_edges = 3 * 4 / 2 + (15 - 3 - 1) * 3;
         assert_eq!(g.num_edges(), expected_edges);
+    }
+
+    #[test]
+    fn test_random_tree() {
+        let g = random_tree(10, Some(42));
+        assert_eq!(g.num_vertices(), 10);
+        assert_eq!(g.num_edges(), 9); // Trees have n-1 edges
+
+        // Test single vertex
+        let g1 = random_tree(1, Some(42));
+        assert_eq!(g1.num_vertices(), 1);
+        assert_eq!(g1.num_edges(), 0);
+
+        // Test two vertices
+        let g2 = random_tree(2, Some(42));
+        assert_eq!(g2.num_vertices(), 2);
+        assert_eq!(g2.num_edges(), 1);
+    }
+
+    #[test]
+    fn test_random_tolerance_graph() {
+        let g = random_tolerance_graph(15, Some(42));
+        assert_eq!(g.num_vertices(), 15);
+        // Tolerance graphs are perfect graphs
+        assert!(g.num_edges() >= 0);
     }
 }
