@@ -15,7 +15,8 @@
 //! let d4 = dihedral_presentation(4);
 //! ```
 
-use crate::finitely_presented::{FinitelyPresentedGroup, FreeGroupElement};
+use crate::finitely_presented::FinitelyPresentedGroup;
+use crate::free_group::FreeGroupElement;
 
 /// Create a presentation of the cyclic group of order n
 ///
