@@ -8,6 +8,7 @@
 //! - `families`: Common graph families (trees, cubes, Petersen variations, etc.)
 //! - `intersection`: Intersection graphs (interval, permutation, tolerance, etc.)
 //! - `platonic_solids`: The five Platonic solid graphs (tetrahedron, cube, octahedron, icosahedron, dodecahedron)
+//! - `random`: Random graph models (Erdős-Rényi, Barabási-Albert, etc.)
 
 pub mod basic;
 pub mod chessboard;
@@ -16,6 +17,7 @@ pub mod distance_regular;
 pub mod families;
 pub mod intersection;
 pub mod platonic_solids;
+pub mod random;
 
 // Re-export common generators for convenience
 pub use basic::*;
