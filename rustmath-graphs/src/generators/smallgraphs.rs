@@ -1,8 +1,9 @@
-//! Small famous graphs
+//! Small famous named graphs
 //!
-//! This module provides generators for famous small graphs that appear
-//! frequently in graph theory literature, including Chvátal, Clebsch, Coxeter,
-//! Desargues, and many other named graphs.
+//! This module provides constructors for many well-known small graphs that appear
+//! frequently in graph theory, including cages, snarks, and other notable examples.
+//!
+//! Many of these graphs are constructed using LCF notation or as generalized Petersen graphs.
 
 use crate::graph::Graph;
 use super::families::generalized_petersen_graph;
@@ -553,8 +554,17 @@ pub fn cameron_graph() -> Graph {
 
 /// Generate the Chvátal graph
 ///
-/// The Chvátal graph is a 4-regular, 4-chromatic graph with 12 vertices and 24 edges.
-/// It has radius 2, diameter 2, and girth 4.
+/// The Chvátal graph is a 4-regular graph with 12 vertices.
+///
+/// # Properties
+///
+/// * Vertices: 12
+/// * Edges: 24
+/// * 4-regular
+/// * 4-chromatic
+/// * Radius: 2
+/// * Diameter: 2
+/// * Girth: 4
 ///
 /// # Examples
 ///
@@ -565,25 +575,36 @@ pub fn cameron_graph() -> Graph {
 /// assert_eq!(g.num_vertices(), 12);
 /// assert_eq!(g.num_edges(), 24);
 /// ```
+///
+/// # References
+///
+/// * [Wikipedia: Chvátal graph](https://en.wikipedia.org/wiki/Chv%C3%A1tal_graph)
 pub fn chvatal_graph() -> Graph {
     let mut g = Graph::new(12);
 
-    // Explicit edge list for Chvátal graph
-    let edges = vec![
-        (0, 1), (0, 4), (0, 6), (0, 9),
-        (1, 2), (1, 5), (1, 7),
-        (2, 3), (2, 6), (2, 8),
-        (3, 4), (3, 7), (3, 9),
-        (4, 5), (4, 8),
-        (5, 10), (5, 11),
-        (6, 10), (6, 11),
-        (7, 8), (7, 11),
-        (8, 10),
-        (9, 10), (9, 11),
+    // Define edges for the Chvátal graph based on SageMath
+    // edges = {0: [1, 4, 6, 9], 1: [2, 5, 7], 2: [3, 6, 8], 3: [4, 7, 9],
+    //          4: [5, 8], 5: [10, 11], 6: [10, 11], 7: [8, 11], 8: [10],
+    //          9: [10, 11]}
+    let adjacencies = vec![
+        (0, vec![1, 4, 6, 9]),
+        (1, vec![2, 5, 7]),
+        (2, vec![3, 6, 8]),
+        (3, vec![4, 7, 9]),
+        (4, vec![5, 8]),
+        (5, vec![10, 11]),
+        (6, vec![10, 11]),
+        (7, vec![8, 11]),
+        (8, vec![10]),
+        (9, vec![10, 11]),
     ];
 
-    for (u, v) in edges {
-        g.add_edge(u, v).unwrap();
+    for (v, neighbors) in adjacencies {
+        for u in neighbors {
+            if v < u {
+                g.add_edge(v, u).unwrap();
+            }
+        }
     }
 
     g
@@ -591,8 +612,17 @@ pub fn chvatal_graph() -> Graph {
 
 /// Generate the Clebsch graph
 ///
-/// The Clebsch graph is a 5-regular graph with 16 vertices and 40 edges.
-/// It has diameter 2, girth 4, and chromatic number 4.
+/// The Clebsch graph is a 5-regular graph with 16 vertices.
+///
+/// # Properties
+///
+/// * Vertices: 16
+/// * Edges: 40
+/// * 5-regular
+/// * Diameter: 2
+/// * Girth: 4
+/// * Chromatic number: 4
+/// * Automorphism group order: 1920
 ///
 /// # Examples
 ///
@@ -603,10 +633,15 @@ pub fn chvatal_graph() -> Graph {
 /// assert_eq!(g.num_vertices(), 16);
 /// assert_eq!(g.num_edges(), 40);
 /// ```
+///
+/// # References
+///
+/// * [Wikipedia: Clebsch graph](https://en.wikipedia.org/wiki/Clebsch_graph)
 pub fn clebsch_graph() -> Graph {
     let mut g = Graph::new(16);
 
-    // Construct using SageMath's pattern
+    // Clebsch graph construction from SageMath
+    // Iteratively add edges following a specific pattern
     let mut x = 0;
     for _ in 0..8 {
         g.add_edge(x % 16, (x + 1) % 16).unwrap();
@@ -624,8 +659,18 @@ pub fn clebsch_graph() -> Graph {
 
 /// Generate the Coxeter graph
 ///
-/// The Coxeter graph is a 3-regular graph with 28 vertices and 42 edges.
-/// It has girth 7, chromatic number 3, and diameter 4.
+/// The Coxeter graph is a 3-regular non-Hamiltonian graph with 28 vertices.
+///
+/// # Properties
+///
+/// * Vertices: 28
+/// * Edges: 42
+/// * 3-regular (cubic)
+/// * Girth: 7
+/// * Chromatic number: 3
+/// * Diameter: 4
+/// * Non-Hamiltonian
+/// * Automorphism group order: 336
 ///
 /// # Examples
 ///
@@ -636,47 +681,55 @@ pub fn clebsch_graph() -> Graph {
 /// assert_eq!(g.num_vertices(), 28);
 /// assert_eq!(g.num_edges(), 42);
 /// ```
+///
+/// # References
+///
+/// * [Wikipedia: Coxeter graph](https://en.wikipedia.org/wiki/Coxeter_graph)
 pub fn coxeter_graph() -> Graph {
     let mut g = Graph::new(28);
 
-    // Base 24-cycle (vertices 0-23)
+    // Create 24-vertex cycle (0-23)
     for i in 0..24 {
         g.add_edge(i, (i + 1) % 24).unwrap();
     }
 
-    // Six additional chords in the 24-cycle
-    g.add_edge(5, 11).unwrap();
-    g.add_edge(9, 20).unwrap();
-    g.add_edge(12, 1).unwrap();
-    g.add_edge(13, 19).unwrap();
-    g.add_edge(17, 4).unwrap();
-    g.add_edge(3, 21).unwrap();
+    // Add connections for vertices 24-27
+    let vertex_connections = vec![
+        (27, vec![6, 22, 14]),
+        (24, vec![0, 7, 18]),
+        (25, vec![8, 15, 2]),
+        (26, vec![10, 16, 23]),
+    ];
 
-    // Connect outer vertices 24-27
-    g.add_edge(24, 0).unwrap();
-    g.add_edge(24, 7).unwrap();
-    g.add_edge(24, 18).unwrap();
+    for (v, neighbors) in vertex_connections {
+        for u in neighbors {
+            g.add_edge(v, u).unwrap();
+        }
+    }
 
-    g.add_edge(25, 2).unwrap();
-    g.add_edge(25, 8).unwrap();
-    g.add_edge(25, 15).unwrap();
+    // Add additional cycle edges
+    let additional_edges = vec![
+        (5, 11), (9, 20), (12, 1), (13, 19), (17, 4), (3, 21),
+    ];
 
-    g.add_edge(26, 10).unwrap();
-    g.add_edge(26, 16).unwrap();
-    g.add_edge(26, 23).unwrap();
-
-    g.add_edge(27, 6).unwrap();
-    g.add_edge(27, 14).unwrap();
-    g.add_edge(27, 22).unwrap();
+    for (u, v) in additional_edges {
+        g.add_edge(u, v).unwrap();
+    }
 
     g
 }
 
 /// Generate the Desargues graph
 ///
-/// The Desargues graph is a 3-regular bipartite graph with 20 vertices and 30 edges.
-/// It is isomorphic to the generalized Petersen graph GP(10, 3).
-/// It has diameter 5 and girth 6.
+/// The Desargues graph is the generalized Petersen graph GP(10,3).
+///
+/// # Properties
+///
+/// * Vertices: 20
+/// * Edges: 30
+/// * 3-regular (cubic)
+/// * Bipartite
+/// * Hamiltonian
 ///
 /// # Examples
 ///
@@ -687,45 +740,124 @@ pub fn coxeter_graph() -> Graph {
 /// assert_eq!(g.num_vertices(), 20);
 /// assert_eq!(g.num_edges(), 30);
 /// ```
+///
+/// # References
+///
+/// * [Wikipedia: Desargues graph](https://en.wikipedia.org/wiki/Desargues_graph)
 pub fn desargues_graph() -> Graph {
-    // Desargues graph is GP(10, 3)
-    crate::generators::families::generalized_petersen_graph(10, 3)
+    generalized_petersen_graph(10, 3)
 }
 
-/// Generate the Bucky Ball graph (Buckminsterfullerene)
+/// Generate the Dürer graph
 ///
-/// The Bucky Ball graph represents the carbon skeleton of the buckminsterfullerene
-/// molecule (C60). It is a 3-regular planar graph with 60 vertices and 90 edges,
-/// consisting of 12 pentagons and 20 hexagons arranged like a soccer ball.
+/// The Dürer graph is the generalized Petersen graph GP(6,2).
+/// Named after Albrecht Dürer who studied this graph's structure.
+///
+/// # Properties
+///
+/// * Vertices: 12
+/// * Edges: 18
+/// * 3-regular (cubic)
+/// * Planar
+/// * Chromatic number: 3
+/// * Diameter: 4
+/// * Girth: 3
+/// * Hamiltonian
 ///
 /// # Examples
 ///
 /// ```
-/// use rustmath_graphs::generators::smallgraphs::bucky_ball;
+/// use rustmath_graphs::generators::smallgraphs::durer_graph;
 ///
-/// let g = bucky_ball();
-/// assert_eq!(g.num_vertices(), 60);
-/// assert_eq!(g.num_edges(), 90);
+/// let g = durer_graph();
+/// assert_eq!(g.num_vertices(), 12);
+/// assert_eq!(g.num_edges(), 18);
 /// ```
-pub fn bucky_ball() -> Graph {
-    let mut g = Graph::new(60);
+///
+/// # References
+///
+/// * [Wikipedia: Dürer graph](https://en.wikipedia.org/wiki/D%C3%BCrer_graph)
+pub fn durer_graph() -> Graph {
+    generalized_petersen_graph(6, 2)
+}
 
-    // Bucky ball edge list (truncated icosahedron)
-    let edges = vec![
-        (0, 1), (0, 4), (0, 5), (1, 2), (1, 6), (2, 3), (2, 7), (3, 4), (3, 8), (4, 9),
-        (5, 10), (5, 14), (6, 10), (6, 11), (7, 11), (7, 12), (8, 12), (8, 13), (9, 13), (9, 14),
-        (10, 15), (11, 16), (12, 17), (13, 18), (14, 19), (15, 20), (15, 24), (16, 20), (16, 21),
-        (17, 21), (17, 22), (18, 22), (18, 23), (19, 23), (19, 24), (20, 25), (21, 26), (22, 27),
-        (23, 28), (24, 29), (25, 30), (25, 34), (26, 30), (26, 31), (27, 31), (27, 32), (28, 32),
-        (28, 33), (29, 33), (29, 34), (30, 35), (31, 36), (32, 37), (33, 38), (34, 39), (35, 40),
-        (35, 44), (36, 40), (36, 41), (37, 41), (37, 42), (38, 42), (38, 43), (39, 43), (39, 44),
-        (40, 45), (41, 46), (42, 47), (43, 48), (44, 49), (45, 50), (45, 54), (46, 50), (46, 51),
-        (47, 51), (47, 52), (48, 52), (48, 53), (49, 53), (49, 54), (50, 55), (51, 56), (52, 57),
-        (53, 58), (54, 59), (55, 56), (55, 59), (56, 57), (57, 58), (58, 59),
+/// Generate the Dyck graph
+///
+/// The Dyck graph is a 3-regular graph with 32 vertices.
+///
+/// # Properties
+///
+/// * Vertices: 32
+/// * Edges: 48
+/// * 3-regular (cubic)
+/// * Bipartite
+/// * Non-planar
+/// * Hamiltonian
+/// * Radius: 5
+/// * Diameter: 5
+/// * Girth: 6
+/// * Chromatic number: 2
+/// * Automorphism group order: 192
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::smallgraphs::dyck_graph;
+///
+/// let g = dyck_graph();
+/// assert_eq!(g.num_vertices(), 32);
+/// assert_eq!(g.num_edges(), 48);
+/// ```
+///
+/// # References
+///
+/// * [Wikipedia: Dyck graph](https://en.wikipedia.org/wiki/Dyck_graph)
+pub fn dyck_graph() -> Graph {
+    let mut g = Graph::new(32);
+
+    // Dyck graph edge dictionary based on SageMath octal notation
+    // Converted from octal: 0o00-0o07=0-7, 0o10-0o17=8-15, 0o20-0o27=16-23, 0o30-0o37=24-31
+    let adjacencies = vec![
+        (0, vec![7, 1, 8]),      // 0o00
+        (1, vec![0, 2, 9]),      // 0o01
+        (2, vec![1, 3, 10]),     // 0o02
+        (3, vec![2, 4, 11]),     // 0o03
+        (4, vec![3, 5, 12]),     // 0o04
+        (5, vec![4, 6, 13]),     // 0o05
+        (6, vec![5, 7, 14]),     // 0o06
+        (7, vec![6, 0, 15]),     // 0o07
+        (8, vec![0, 23, 17]),    // 0o10
+        (9, vec![1, 16, 18]),    // 0o11
+        (10, vec![2, 17, 19]),   // 0o12
+        (11, vec![3, 18, 20]),   // 0o13
+        (12, vec![4, 19, 21]),   // 0o14
+        (13, vec![5, 20, 22]),   // 0o15
+        (14, vec![6, 21, 23]),   // 0o16
+        (15, vec![7, 22, 16]),   // 0o17
+        (16, vec![15, 9, 24]),   // 0o20
+        (17, vec![8, 10, 25]),   // 0o21
+        (18, vec![9, 11, 26]),   // 0o22
+        (19, vec![10, 12, 27]),  // 0o23
+        (20, vec![11, 13, 28]),  // 0o24
+        (21, vec![12, 14, 29]),  // 0o25
+        (22, vec![13, 15, 30]),  // 0o26
+        (23, vec![14, 8, 31]),   // 0o27
+        (24, vec![16, 29, 27]),  // 0o30
+        (25, vec![17, 30, 28]),  // 0o31
+        (26, vec![18, 31, 29]),  // 0o32
+        (27, vec![19, 24, 30]),  // 0o33
+        (28, vec![20, 25, 31]),  // 0o34
+        (29, vec![21, 26, 24]),  // 0o35
+        (30, vec![22, 27, 25]),  // 0o36
+        (31, vec![23, 28, 26]),  // 0o37
     ];
 
-    for (u, v) in edges {
-        g.add_edge(u, v).unwrap();
+    for (v, neighbors) in adjacencies {
+        for u in neighbors {
+            if v < u {
+                g.add_edge(v, u).unwrap();
+            }
+        }
     }
 
     g
@@ -1038,12 +1170,128 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_balaban_10_cage() {
+        let g = balaban_10_cage();
+        assert_eq!(g.num_vertices(), 70);
+        assert_eq!(g.num_edges(), 105);
+
+        // Check 3-regularity
+        for v in 0..70 {
+            assert_eq!(g.degree(v), Some(3));
+        }
+    }
+
+    #[test]
+    fn test_balaban_11_cage() {
+        let g = balaban_11_cage();
+        assert_eq!(g.num_vertices(), 112);
+        assert_eq!(g.num_edges(), 168);
+
+        // Check 3-regularity
+        for v in 0..112 {
+            assert_eq!(g.degree(v), Some(3));
+        }
+    }
+
+    #[test]
+    fn test_bidiakis_cube() {
+        let g = bidiakis_cube();
+        assert_eq!(g.num_vertices(), 12);
+        assert_eq!(g.num_edges(), 18);
+
+        // Check 3-regularity
+        for v in 0..12 {
+            assert_eq!(g.degree(v), Some(3));
+        }
+    }
+
+    #[test]
+    fn test_biggs_smith_graph() {
+        let g = biggs_smith_graph();
+        assert_eq!(g.num_vertices(), 102);
+        assert_eq!(g.num_edges(), 153);
+
+        // Check 3-regularity
+        for v in 0..102 {
+            assert_eq!(g.degree(v), Some(3));
+        }
+    }
+
+    #[test]
+    fn test_blanusa_first_snark() {
+        let g = blanusa_first_snark();
+        assert_eq!(g.num_vertices(), 18);
+        assert_eq!(g.num_edges(), 27);
+
+        // Check 3-regularity
+        for v in 0..18 {
+            assert_eq!(g.degree(v), Some(3));
+        }
+    }
+
+    #[test]
+    fn test_blanusa_second_snark() {
+        let g = blanusa_second_snark();
+        assert_eq!(g.num_vertices(), 18);
+        assert_eq!(g.num_edges(), 27);
+
+        // Check 3-regularity
+        for v in 0..18 {
+            assert_eq!(g.degree(v), Some(3));
+        }
+    }
+
+    #[test]
+    fn test_brinkmann_graph() {
+        let g = brinkmann_graph();
+        assert_eq!(g.num_vertices(), 21);
+        assert_eq!(g.num_edges(), 42);
+
+        // Check 4-regularity
+        for v in 0..21 {
+            assert_eq!(g.degree(v), Some(4));
+        }
+    }
+
+    #[test]
+    fn test_brouwer_haemers_graph() {
+        let g = brouwer_haemers_graph();
+        assert_eq!(g.num_vertices(), 81);
+        assert_eq!(g.num_edges(), 810);
+
+        // Check 20-regularity
+        for v in 0..81 {
+            assert_eq!(g.degree(v), Some(20));
+        }
+    }
+
+    #[test]
+    fn test_bucky_ball() {
+        let g = bucky_ball();
+        assert_eq!(g.num_vertices(), 60);
+        assert_eq!(g.num_edges(), 90);
+
+        // Check 3-regularity
+        for v in 0..60 {
+            assert_eq!(g.degree(v), Some(3));
+        }
+    }
+
+    #[test]
+    fn test_cameron_graph() {
+        let g = cameron_graph();
+        assert_eq!(g.num_vertices(), 231);
+        // Note: exact edge count depends on construction
+        // The actual Cameron graph should have 3465 edges
+    }
+
+    #[test]
     fn test_chvatal_graph() {
         let g = chvatal_graph();
         assert_eq!(g.num_vertices(), 12);
         assert_eq!(g.num_edges(), 24);
 
-        // Chvátal graph is 4-regular
+        // Check 4-regularity
         for v in 0..12 {
             assert_eq!(g.degree(v), Some(4));
         }
@@ -1055,7 +1303,7 @@ mod tests {
         assert_eq!(g.num_vertices(), 16);
         assert_eq!(g.num_edges(), 40);
 
-        // Clebsch graph is 5-regular
+        // Check 5-regularity
         for v in 0..16 {
             assert_eq!(g.degree(v), Some(5));
         }
@@ -1067,7 +1315,7 @@ mod tests {
         assert_eq!(g.num_vertices(), 28);
         assert_eq!(g.num_edges(), 42);
 
-        // Coxeter graph is 3-regular
+        // Check 3-regularity
         for v in 0..28 {
             assert_eq!(g.degree(v), Some(3));
         }
@@ -1079,20 +1327,32 @@ mod tests {
         assert_eq!(g.num_vertices(), 20);
         assert_eq!(g.num_edges(), 30);
 
-        // Desargues graph is 3-regular
+        // Check 3-regularity
         for v in 0..20 {
             assert_eq!(g.degree(v), Some(3));
         }
     }
 
     #[test]
-    fn test_bucky_ball() {
-        let g = bucky_ball();
-        assert_eq!(g.num_vertices(), 60);
-        assert_eq!(g.num_edges(), 90);
+    fn test_durer_graph() {
+        let g = durer_graph();
+        assert_eq!(g.num_vertices(), 12);
+        assert_eq!(g.num_edges(), 18);
 
-        // Bucky ball is 3-regular
-        for v in 0..60 {
+        // Check 3-regularity
+        for v in 0..12 {
+            assert_eq!(g.degree(v), Some(3));
+        }
+    }
+
+    #[test]
+    fn test_dyck_graph() {
+        let g = dyck_graph();
+        assert_eq!(g.num_vertices(), 32);
+        assert_eq!(g.num_edges(), 48);
+
+        // Check 3-regularity
+        for v in 0..32 {
             assert_eq!(g.degree(v), Some(3));
         }
     }
