@@ -1,0 +1,43 @@
+[package]
+name = "rustmath-features"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+once_cell = { workspace = true }
+
+[features]
+# Default features - safe, pure-Rust implementations
+default = ["std"]
+
+# Standard library support
+std = []
+
+# Optional dependencies and integrations
+# External library bindings (for future use)
+gmp = []          # GNU Multiple Precision Arithmetic Library
+mpfr = []         # Multiple Precision Floating-Point Reliable Library
+flint = []        # Fast Library for Number Theory
+pari = []         # PARI/GP computer algebra system
+
+# Performance features
+parallel = []     # Enable parallel algorithms (rayon)
+simd = []         # SIMD optimizations
+
+# Platform-specific optimizations
+native = []       # Native CPU optimizations
+
+# Experimental features (unstable)
+experimental = [] # Experimental algorithms and features
+
+# Database features
+databases = []    # Enable database integrations (OEIS, LMFDB, etc.)
+
+# Plotting features
+plotting = []     # Enable plotting capabilities
+
+# All features (for testing)
+full = ["gmp", "mpfr", "flint", "pari", "parallel", "simd", "native", "databases", "plotting"]
