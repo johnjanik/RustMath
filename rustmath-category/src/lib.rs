@@ -11,6 +11,7 @@ pub mod field_category;
 pub mod functor;
 pub mod morphism;
 pub mod natural_transformation;
+pub mod module_category;
 
 pub use field_category::{FieldElementMethods, FieldParentMethods};
 pub use functor::{Functor, IdentityFunctor, ForgetfulFunctor};
@@ -19,3 +20,8 @@ pub use morphism::{
     SetIsomorphism, SetMorphism,
 };
 pub use natural_transformation::NaturalTransformation;
+pub use module_category::{
+    ModuleCategory, ElementMethods, ParentMethods, SubcategoryMethods,
+    CartesianProducts, Homsets, Endset, TensorProducts,
+    FiniteDimensional, FinitelyPresented,
+};
