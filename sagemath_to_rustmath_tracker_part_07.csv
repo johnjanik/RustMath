@@ -720,8 +720,8 @@ Implemented,Full,sage.graphs.traversals.maximum_cardinality_search_M,sage.graphs
 ,,sage.graphs.tutte_polynomial.tutte_polynomial,sage.graphs.tutte_polynomial,tutte_polynomial,function,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/tutte_polynomial.py#L516
 ,,sage.graphs.tutte_polynomial.underlying_graph,sage.graphs.tutte_polynomial,underlying_graph,function,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/tutte_polynomial.py#L176
 ,,sage.graphs.tutte_polynomial.vertices,sage.graphs.tutte_polynomial,vertices,attribute,,
-,,sage.graphs.views,sage.graphs.views,views,module,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/views.pyx#L32
-,,sage.graphs.views.EdgesView,sage.graphs.views,EdgesView,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/views.pyx#L32
+Implemented,Full,sage.graphs.views,sage.graphs.views,views,module,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/views.pyx#L32
+Implemented,Full,sage.graphs.views.EdgesView,sage.graphs.views,EdgesView,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/views.pyx#L32
 Implemented,Full,sage.graphs.weakly_chordal,sage.graphs.weakly_chordal,weakly_chordal,module,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/weakly_chordal.pyx#L386
 Implemented,Full,sage.graphs.weakly_chordal.is_long_antihole_free,sage.graphs.weakly_chordal,is_long_antihole_free,function,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/weakly_chordal.pyx#L386
 Implemented,Full,sage.graphs.weakly_chordal.is_long_hole_free,sage.graphs.weakly_chordal,is_long_hole_free,function,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/weakly_chordal.pyx#L139

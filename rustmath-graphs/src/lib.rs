@@ -24,6 +24,7 @@ pub mod planarity;
 pub mod spanning_tree;
 pub mod weakly_chordal;
 pub mod traversals;
+pub mod views;
 
 pub use graph::Graph;
 pub use generators::*;
