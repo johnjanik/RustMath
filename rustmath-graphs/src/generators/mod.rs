@@ -9,7 +9,7 @@
 //! - `intersection`: Intersection graphs (interval, permutation, tolerance, etc.)
 //! - `platonic_solids`: The five Platonic solid graphs (tetrahedron, cube, octahedron, icosahedron, dodecahedron)
 //! - `random`: Random graph models (Erdős-Rényi, Barabási-Albert, etc.)
-//! - `smallgraphs`: Famous named graphs (cages, snarks, and other notable small graphs)
+//! - `smallgraphs`: Famous small named graphs (Chvátal, Clebsch, Coxeter, etc.)
 
 pub mod basic;
 pub mod chessboard;
