@@ -702,8 +702,8 @@ Implemented,Full,sage.graphs.traversals.lex_M_slow,sage.graphs.traversals,lex_M_
 Implemented,Full,sage.graphs.traversals.lex_UP,sage.graphs.traversals,lex_UP,function,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/traversals.pyx#L510
 Implemented,Full,sage.graphs.traversals.maximum_cardinality_search,sage.graphs.traversals,maximum_cardinality_search,function,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/traversals.pyx#L1329
 Implemented,Full,sage.graphs.traversals.maximum_cardinality_search_M,sage.graphs.traversals,maximum_cardinality_search_M,function,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/traversals.pyx#L1679
-,,sage.graphs.trees,sage.graphs.trees,trees,module,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/trees.pyx#L22
-,,sage.graphs.trees.TreeIterator,sage.graphs.trees,TreeIterator,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/trees.pyx#L22
+Implemented,Full,sage.graphs.trees,sage.graphs.trees,trees,module,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/trees.pyx#L22
+Implemented,Full,sage.graphs.trees.TreeIterator,sage.graphs.trees,TreeIterator,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/trees.pyx#L22
 ,,sage.graphs.tutte_polynomial,sage.graphs.tutte_polynomial,tutte_polynomial,module,,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/tutte_polynomial.py#L221
 ,,sage.graphs.tutte_polynomial.Ear,sage.graphs.tutte_polynomial,Ear,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/tutte_polynomial.py#L221
 ,,sage.graphs.tutte_polynomial.EdgeSelection,sage.graphs.tutte_polynomial,EdgeSelection,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/graphs/tutte_polynomial.py#L375
