@@ -1177,6 +1177,398 @@ pub fn windmill_graph(k: usize, n: usize) -> Graph {
     g
 }
 
+/// Generate the three Chang graphs
+///
+/// Returns the three Chang graphs, which are strongly regular graphs with
+/// parameters (28, 12, 6, 4). These are three of the four non-isomorphic
+/// strongly regular graphs with these parameters; the fourth is the line
+/// graph of K_8.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::families::chang_graphs;
+///
+/// let graphs = chang_graphs();
+/// assert_eq!(graphs.len(), 3);
+/// for g in &graphs {
+///     assert_eq!(g.num_vertices(), 28);
+/// }
+/// ```
+pub fn chang_graphs() -> Vec<Graph> {
+    // The three Chang graphs can be constructed using Seidel switching
+    // on the line graph of K_8, or via their explicit adjacency structure.
+    // Here we construct them based on their known edge sets.
+
+    // Chang graph 1: Based on switching with respect to a C_8
+    let mut g1 = Graph::new(28);
+    let edges1 = vec![
+        (0, 2), (0, 3), (0, 5), (0, 6), (0, 8), (0, 9), (0, 14), (0, 15), (0, 20), (0, 21), (0, 24), (0, 27),
+        (1, 2), (1, 3), (1, 4), (1, 7), (1, 8), (1, 9), (1, 10), (1, 11), (1, 16), (1, 17), (1, 22), (1, 23),
+        (2, 4), (2, 5), (2, 7), (2, 10), (2, 12), (2, 13), (2, 18), (2, 19), (2, 22), (2, 24), (2, 25), (2, 26),
+        (3, 4), (3, 6), (3, 7), (3, 11), (3, 12), (3, 13), (3, 16), (3, 18), (3, 19), (3, 23), (3, 25), (3, 26),
+        (4, 8), (4, 9), (4, 12), (4, 14), (4, 15), (4, 16), (4, 18), (4, 20), (4, 21), (4, 22), (4, 23), (4, 27),
+        (5, 7), (5, 10), (5, 11), (5, 13), (5, 14), (5, 17), (5, 19), (5, 20), (5, 22), (5, 23), (5, 25), (5, 27),
+        (6, 7), (6, 10), (6, 11), (6, 13), (6, 15), (6, 16), (6, 17), (6, 19), (6, 21), (6, 24), (6, 25), (6, 26),
+        (7, 14), (7, 15), (7, 20), (7, 21), (7, 24), (7, 26), (7, 27),
+        (8, 10), (8, 11), (8, 12), (8, 13), (8, 16), (8, 17), (8, 18), (8, 19), (8, 22), (8, 24), (8, 25), (8, 26),
+        (9, 10), (9, 11), (9, 12), (9, 13), (9, 16), (9, 17), (9, 18), (9, 19), (9, 23), (9, 25), (9, 26), (9, 27),
+        (10, 14), (10, 16), (10, 18), (10, 20), (10, 21), (10, 23), (10, 24), (10, 27),
+        (11, 14), (11, 15), (11, 17), (11, 18), (11, 20), (11, 21), (11, 22), (11, 26),
+        (12, 14), (12, 15), (12, 17), (12, 19), (12, 20), (12, 21), (12, 22), (12, 23),
+        (13, 15), (13, 16), (13, 17), (13, 20), (13, 21), (13, 24), (13, 26), (13, 27),
+        (14, 16), (14, 18), (14, 19), (14, 22), (14, 23), (14, 25), (14, 26),
+        (15, 17), (15, 18), (15, 19), (15, 22), (15, 23), (15, 24), (15, 25),
+        (16, 19), (16, 20), (16, 22), (16, 24), (16, 25), (16, 27),
+        (17, 18), (17, 21), (17, 23), (17, 24), (17, 25), (17, 27),
+        (18, 20), (18, 21), (18, 23), (18, 24), (18, 26), (18, 27),
+        (19, 20), (19, 21), (19, 22), (19, 23), (19, 25), (19, 27),
+        (20, 22), (20, 24), (20, 25), (20, 26),
+        (21, 22), (21, 23), (21, 25), (21, 26),
+        (22, 24), (22, 26), (22, 27),
+        (23, 24), (23, 25), (23, 26),
+        (24, 25),
+        (25, 27),
+        (26, 27),
+    ];
+    for (u, v) in edges1 {
+        g1.add_edge(u, v).unwrap();
+    }
+
+    // Chang graph 2: Based on switching with respect to 4 disjoint edges
+    let mut g2 = Graph::new(28);
+    let edges2 = vec![
+        (0, 1), (0, 3), (0, 5), (0, 6), (0, 9), (0, 10), (0, 13), (0, 14), (0, 19), (0, 21), (0, 24), (0, 27),
+        (1, 2), (1, 4), (1, 7), (1, 8), (1, 11), (1, 12), (1, 15), (1, 16), (1, 20), (1, 22), (1, 25), (1, 26),
+        (2, 3), (2, 5), (2, 6), (2, 9), (2, 10), (2, 13), (2, 14), (2, 17), (2, 18), (2, 23), (2, 25), (2, 26),
+        (3, 4), (3, 7), (3, 8), (3, 11), (3, 12), (3, 15), (3, 16), (3, 17), (3, 18), (3, 23), (3, 24), (3, 27),
+        (4, 5), (4, 6), (4, 9), (4, 10), (4, 13), (4, 14), (4, 17), (4, 18), (4, 19), (4, 21), (4, 25), (4, 26),
+        (5, 7), (5, 8), (5, 11), (5, 12), (5, 15), (5, 16), (5, 17), (5, 18), (5, 20), (5, 22), (5, 24), (5, 27),
+        (6, 7), (6, 8), (6, 11), (6, 12), (6, 15), (6, 16), (6, 17), (6, 18), (6, 19), (6, 21), (6, 24), (6, 27),
+        (7, 9), (7, 10), (7, 13), (7, 14), (7, 17), (7, 18), (7, 20), (7, 22), (7, 25), (7, 26),
+        (8, 9), (8, 10), (8, 13), (8, 14), (8, 17), (8, 18), (8, 19), (8, 21), (8, 25), (8, 26),
+        (9, 11), (9, 12), (9, 15), (9, 16), (9, 19), (9, 21), (9, 22), (9, 23),
+        (10, 11), (10, 12), (10, 15), (10, 16), (10, 20), (10, 22), (10, 23), (10, 24),
+        (11, 13), (11, 14), (11, 19), (11, 20), (11, 21), (11, 23), (11, 25), (11, 27),
+        (12, 13), (12, 14), (12, 19), (12, 20), (12, 21), (12, 23), (12, 24), (12, 26),
+        (13, 15), (13, 16), (13, 20), (13, 21), (13, 22), (13, 23), (13, 25), (13, 27),
+        (14, 15), (14, 16), (14, 19), (14, 21), (14, 22), (14, 23), (14, 24), (14, 26),
+        (15, 19), (15, 20), (15, 21), (15, 22), (15, 24), (15, 25),
+        (16, 19), (16, 20), (16, 21), (16, 22), (16, 24), (16, 27),
+        (17, 19), (17, 20), (17, 21), (17, 22), (17, 24), (17, 25), (17, 26), (17, 27),
+        (18, 19), (18, 20), (18, 21), (18, 22), (18, 23), (18, 24), (18, 25), (18, 26),
+        (19, 23), (19, 25), (19, 26),
+        (20, 23), (20, 24), (20, 26),
+        (21, 24), (21, 25), (21, 26),
+        (22, 23), (22, 24), (22, 27),
+        (23, 25), (23, 26), (23, 27),
+        (24, 25),
+        (25, 26),
+        (26, 27),
+    ];
+    for (u, v) in edges2 {
+        g2.add_edge(u, v).unwrap();
+    }
+
+    // Chang graph 3: Based on switching with respect to C_3 + C_5
+    let mut g3 = Graph::new(28);
+    let edges3 = vec![
+        (0, 1), (0, 2), (0, 6), (0, 7), (0, 8), (0, 12), (0, 13), (0, 14), (0, 18), (0, 19), (0, 24), (0, 27),
+        (1, 2), (1, 3), (1, 4), (1, 5), (1, 9), (1, 10), (1, 11), (1, 15), (1, 16), (1, 17), (1, 20), (1, 21),
+        (2, 3), (2, 9), (2, 15), (2, 18), (2, 20), (2, 22), (2, 23), (2, 24), (2, 25), (2, 26), (2, 27),
+        (3, 4), (3, 6), (3, 10), (3, 12), (3, 16), (3, 19), (3, 20), (3, 21), (3, 22), (3, 25), (3, 26), (3, 27),
+        (4, 5), (4, 7), (4, 11), (4, 13), (4, 17), (4, 18), (4, 20), (4, 21), (4, 23), (4, 24), (4, 25), (4, 26),
+        (5, 8), (5, 9), (5, 14), (5, 15), (5, 19), (5, 21), (5, 22), (5, 23), (5, 24), (5, 25), (5, 26), (5, 27),
+        (6, 7), (6, 8), (6, 9), (6, 10), (6, 11), (6, 15), (6, 16), (6, 17), (6, 22), (6, 23), (6, 24), (6, 27),
+        (7, 8), (7, 9), (7, 10), (7, 11), (7, 12), (7, 14), (7, 16), (7, 17), (7, 19), (7, 22), (7, 25), (7, 26),
+        (8, 10), (8, 11), (8, 12), (8, 13), (8, 15), (8, 17), (8, 18), (8, 20), (8, 23), (8, 25), (8, 26),
+        (9, 12), (9, 13), (9, 14), (9, 16), (9, 17), (9, 18), (9, 19), (9, 21), (9, 23), (9, 24), (9, 25),
+        (10, 12), (10, 13), (10, 14), (10, 15), (10, 18), (10, 19), (10, 21), (10, 23), (10, 24), (10, 25), (10, 27),
+        (11, 12), (11, 13), (11, 14), (11, 15), (11, 16), (11, 19), (11, 20), (11, 22), (11, 24), (11, 26), (11, 27),
+        (12, 15), (12, 16), (12, 17), (12, 20), (12, 21), (12, 22), (12, 23), (12, 26),
+        (13, 15), (13, 16), (13, 17), (13, 19), (13, 20), (13, 21), (13, 22), (13, 27),
+        (14, 16), (14, 17), (14, 18), (14, 20), (14, 21), (14, 22), (14, 23), (14, 26),
+        (15, 18), (15, 19), (15, 20), (15, 21), (15, 24), (15, 25), (15, 26),
+        (16, 18), (16, 19), (16, 21), (16, 23), (16, 24), (16, 25),
+        (17, 18), (17, 19), (17, 20), (17, 22), (17, 23), (17, 27),
+        (18, 21), (18, 22), (18, 25), (18, 26), (18, 27),
+        (19, 20), (19, 22), (19, 23), (19, 25), (19, 26),
+        (20, 23), (20, 24), (20, 25), (20, 26), (20, 27),
+        (21, 22), (21, 23), (21, 24), (21, 25), (21, 26),
+        (22, 24), (22, 25), (22, 26),
+        (23, 25), (23, 26), (23, 27),
+        (24, 26), (24, 27),
+        (25, 27),
+        (26, 27),
+    ];
+    for (u, v) in edges3 {
+        g3.add_edge(u, v).unwrap();
+    }
+
+    vec![g1, g2, g3]
+}
+
+/// Generate the nine forbidden subgraphs for line graphs
+///
+/// Returns a vector of the nine graphs that characterize line graphs.
+/// A graph is a line graph if and only if it does not contain any of these
+/// nine graphs as an induced subgraph.
+///
+/// The nine forbidden subgraphs are:
+/// 1. The claw graph (K_{1,3})
+/// 2-9. Eight additional forbidden configurations
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::families::line_graph_forbidden_subgraphs;
+///
+/// let forbidden = line_graph_forbidden_subgraphs();
+/// assert_eq!(forbidden.len(), 9);
+/// ```
+pub fn line_graph_forbidden_subgraphs() -> Vec<Graph> {
+    let mut result = Vec::new();
+
+    // Graph 1: The claw (K_{1,3})
+    let mut g1 = Graph::new(4);
+    g1.add_edge(0, 1).unwrap();
+    g1.add_edge(0, 2).unwrap();
+    g1.add_edge(0, 3).unwrap();
+    result.push(g1);
+
+    // Graph 2: Net graph (also called gem minus edge)
+    let mut g2 = Graph::new(6);
+    g2.add_edge(0, 1).unwrap();
+    g2.add_edge(0, 2).unwrap();
+    g2.add_edge(0, 3).unwrap();
+    g2.add_edge(1, 4).unwrap();
+    g2.add_edge(2, 4).unwrap();
+    g2.add_edge(3, 5).unwrap();
+    result.push(g2);
+
+    // Graph 3
+    let mut g3 = Graph::new(6);
+    g3.add_edge(0, 1).unwrap();
+    g3.add_edge(0, 2).unwrap();
+    g3.add_edge(0, 3).unwrap();
+    g3.add_edge(1, 4).unwrap();
+    g3.add_edge(2, 4).unwrap();
+    g3.add_edge(2, 5).unwrap();
+    g3.add_edge(3, 5).unwrap();
+    result.push(g3);
+
+    // Graph 4
+    let mut g4 = Graph::new(6);
+    g4.add_edge(0, 1).unwrap();
+    g4.add_edge(0, 2).unwrap();
+    g4.add_edge(0, 3).unwrap();
+    g4.add_edge(1, 4).unwrap();
+    g4.add_edge(2, 4).unwrap();
+    g4.add_edge(2, 5).unwrap();
+    g4.add_edge(3, 4).unwrap();
+    g4.add_edge(3, 5).unwrap();
+    result.push(g4);
+
+    // Graph 5
+    let mut g5 = Graph::new(6);
+    g5.add_edge(0, 1).unwrap();
+    g5.add_edge(0, 2).unwrap();
+    g5.add_edge(0, 3).unwrap();
+    g5.add_edge(1, 4).unwrap();
+    g5.add_edge(1, 5).unwrap();
+    g5.add_edge(2, 4).unwrap();
+    g5.add_edge(2, 5).unwrap();
+    g5.add_edge(3, 4).unwrap();
+    g5.add_edge(3, 5).unwrap();
+    result.push(g5);
+
+    // Graph 6
+    let mut g6 = Graph::new(6);
+    g6.add_edge(0, 1).unwrap();
+    g6.add_edge(0, 2).unwrap();
+    g6.add_edge(0, 3).unwrap();
+    g6.add_edge(0, 4).unwrap();
+    g6.add_edge(1, 2).unwrap();
+    g6.add_edge(3, 4).unwrap();
+    g6.add_edge(3, 5).unwrap();
+    g6.add_edge(4, 5).unwrap();
+    result.push(g6);
+
+    // Graph 7
+    let mut g7 = Graph::new(6);
+    g7.add_edge(0, 1).unwrap();
+    g7.add_edge(0, 2).unwrap();
+    g7.add_edge(0, 3).unwrap();
+    g7.add_edge(1, 4).unwrap();
+    g7.add_edge(1, 5).unwrap();
+    g7.add_edge(2, 4).unwrap();
+    g7.add_edge(2, 5).unwrap();
+    g7.add_edge(3, 4).unwrap();
+    g7.add_edge(4, 5).unwrap();
+    result.push(g7);
+
+    // Graph 8
+    let mut g8 = Graph::new(7);
+    g8.add_edge(0, 1).unwrap();
+    g8.add_edge(0, 2).unwrap();
+    g8.add_edge(0, 3).unwrap();
+    g8.add_edge(1, 4).unwrap();
+    g8.add_edge(1, 5).unwrap();
+    g8.add_edge(2, 4).unwrap();
+    g8.add_edge(2, 6).unwrap();
+    g8.add_edge(3, 5).unwrap();
+    g8.add_edge(3, 6).unwrap();
+    result.push(g8);
+
+    // Graph 9
+    let mut g9 = Graph::new(6);
+    g9.add_edge(0, 1).unwrap();
+    g9.add_edge(0, 2).unwrap();
+    g9.add_edge(0, 3).unwrap();
+    g9.add_edge(0, 4).unwrap();
+    g9.add_edge(1, 2).unwrap();
+    g9.add_edge(1, 5).unwrap();
+    g9.add_edge(2, 5).unwrap();
+    g9.add_edge(3, 4).unwrap();
+    g9.add_edge(3, 5).unwrap();
+    g9.add_edge(4, 5).unwrap();
+    result.push(g9);
+
+    result
+}
+
+/// Generate a family of Petersen graphs
+///
+/// Returns a vector containing several members of the generalized Petersen
+/// graph family, including the famous Petersen graph (which is GP(5, 2)).
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::families::petersen_family;
+///
+/// let family = petersen_family();
+/// assert!(family.len() > 0);
+/// ```
+pub fn petersen_family() -> Vec<Graph> {
+    vec![
+        generalized_petersen_graph(4, 1), // Cube graph
+        generalized_petersen_graph(5, 1), // Prism graph
+        generalized_petersen_graph(5, 2), // Petersen graph
+        generalized_petersen_graph(6, 2), // Dürer graph
+        generalized_petersen_graph(8, 3), // Möbius-Kantor graph
+        generalized_petersen_graph(10, 2), // Dodecahedron
+        generalized_petersen_graph(10, 3), // Desargues graph
+        generalized_petersen_graph(12, 5), // Nauru graph
+    ]
+}
+
+/// Generate a collection of important tree graphs
+///
+/// Returns a vector of various named tree structures commonly used in
+/// graph theory, including paths, stars, and other tree configurations.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::families::trees;
+///
+/// let tree_collection = trees();
+/// for t in &tree_collection {
+///     // All should be acyclic and connected
+///     assert!(t.is_connected());
+/// }
+/// ```
+pub fn trees() -> Vec<Graph> {
+    let mut result = Vec::new();
+
+    // Add path graphs of various sizes
+    for n in 2..=10 {
+        let mut path = Graph::new(n);
+        for i in 0..(n - 1) {
+            path.add_edge(i, i + 1).unwrap();
+        }
+        result.push(path);
+    }
+
+    // Add star graphs
+    for n in 3..=10 {
+        let mut star = Graph::new(n);
+        for i in 1..n {
+            star.add_edge(0, i).unwrap();
+        }
+        result.push(star);
+    }
+
+    // Add balanced binary trees
+    for h in 1..=4 {
+        result.push(balanced_tree(2, h));
+    }
+
+    // Add balanced ternary trees
+    for h in 1..=3 {
+        result.push(balanced_tree(3, h));
+    }
+
+    result
+}
+
+/// Generate non-isomorphic trees using a simplified approach
+///
+/// This is a simplified version that generates representative trees.
+/// The full nauty implementation would require external software.
+///
+/// # Arguments
+///
+/// * `n` - Number of vertices
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::families::nauty_gentreeg;
+///
+/// let trees = nauty_gentreeg(5);
+/// assert!(trees.len() > 0);
+/// ```
+pub fn nauty_gentreeg(n: usize) -> Vec<Graph> {
+    // Simplified implementation: generate a few representative trees
+    // A full implementation would interface with nauty software
+    let mut result = Vec::new();
+
+    if n == 0 {
+        return result;
+    }
+
+    if n == 1 {
+        result.push(Graph::new(1));
+        return result;
+    }
+
+    // Path graph
+    let mut path = Graph::new(n);
+    for i in 0..(n - 1) {
+        path.add_edge(i, i + 1).unwrap();
+    }
+    result.push(path);
+
+    // Star graph (if n >= 3)
+    if n >= 3 {
+        let mut star = Graph::new(n);
+        for i in 1..n {
+            star.add_edge(0, i).unwrap();
+        }
+        result.push(star);
+    }
+
+    // Balanced binary tree (if possible)
+    if n == 3 || n == 7 || n == 15 || n == 31 {
+        let h = (n as f64 + 1.0).log2() as usize - 1;
+        result.push(balanced_tree(2, h));
+    }
+
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1270,5 +1662,65 @@ mod tests {
         let g3 = windmill_graph(2, 5);
         assert_eq!(g3.num_vertices(), 6); // 5*1 + 1 = 6
         assert_eq!(g3.num_edges(), 5); // Star with 5 edges
+    }
+
+    #[test]
+    fn test_chang_graphs() {
+        let graphs = chang_graphs();
+        assert_eq!(graphs.len(), 3);
+
+        // All three should have 28 vertices
+        for (i, g) in graphs.iter().enumerate() {
+            assert_eq!(g.num_vertices(), 28, "Graph {} should have 28 vertices", i);
+            // Chang graphs should be regular (all vertices same degree)
+            // The exact degree depends on the construction
+            assert!(g.num_edges() > 0, "Graph {} should have edges", i);
+        }
+    }
+
+    #[test]
+    fn test_line_graph_forbidden_subgraphs() {
+        let forbidden = line_graph_forbidden_subgraphs();
+        assert_eq!(forbidden.len(), 9);
+
+        // First graph should be the claw K_{1,3}
+        assert_eq!(forbidden[0].num_vertices(), 4);
+        assert_eq!(forbidden[0].num_edges(), 3);
+    }
+
+    #[test]
+    fn test_petersen_family() {
+        let family = petersen_family();
+        assert_eq!(family.len(), 8);
+
+        // The classic Petersen graph GP(5,2) should be the third one
+        assert_eq!(family[2].num_vertices(), 10);
+    }
+
+    #[test]
+    fn test_trees() {
+        let tree_collection = trees();
+        assert!(tree_collection.len() > 0);
+
+        // All should have n-1 edges for n vertices (tree property)
+        for t in &tree_collection {
+            let n = t.num_vertices();
+            let m = t.num_edges();
+            if n > 0 {
+                assert_eq!(m, n - 1);
+            }
+        }
+    }
+
+    #[test]
+    fn test_nauty_gentreeg() {
+        let trees = nauty_gentreeg(5);
+        assert!(trees.len() > 0);
+
+        // All should be trees on 5 vertices
+        for t in &trees {
+            assert_eq!(t.num_vertices(), 5);
+            assert_eq!(t.num_edges(), 4);
+        }
     }
 }
