@@ -38,6 +38,7 @@ pub mod cubic_hecke_algebra;
 pub mod cubic_hecke_base_ring;
 pub mod cubic_hecke_matrix_rep;
 pub mod iwahori_hecke_algebra;
+pub mod nil_coxeter_algebra;
 pub mod catalog;
 pub mod poly_tup_engine;
 pub mod fusion_ring;
@@ -129,6 +130,9 @@ pub use cubic_hecke_matrix_rep::{
 pub use iwahori_hecke_algebra::{
     IwahoriHeckeAlgebra, IwahoriHeckeElement, HeckeBasisType,
     index_cmp, normalized_laurent_polynomial,
+};
+pub use nil_coxeter_algebra::{
+    NilCoxeterAlgebra, NilCoxeterElement,
 };
 pub use poly_tup_engine::{
     PolyTuple, poly_to_tup, constant_coeff, variables, get_variables_degrees,
