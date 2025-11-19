@@ -1114,6 +1114,69 @@ pub fn turan_graph(n: usize, r: usize) -> Graph {
     g
 }
 
+/// Generate a Windmill Graph Wd(k, n)
+///
+/// The windmill graph is constructed by joining n copies of the complete graph
+/// K_k at a shared universal vertex.
+///
+/// # Arguments
+///
+/// * `k` - Size of each complete graph (must be >= 2)
+/// * `n` - Number of copies (must be >= 2)
+///
+/// # Properties
+///
+/// * Vertices: n*(k-1) + 1
+/// * Edges: n*k*(k-1)/2
+/// * The central vertex has degree n*(k-1)
+///
+/// # Special Cases
+///
+/// * Wd(3, n) is the friendship graph
+/// * Wd(2, n) is the star graph
+/// * Wd(3, 2) is the butterfly graph
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_graphs::generators::families::windmill_graph;
+///
+/// let g = windmill_graph(3, 4); // 4 triangles sharing a vertex
+/// assert_eq!(g.num_vertices(), 9); // 4*(3-1) + 1 = 9
+/// assert_eq!(g.num_edges(), 18); // 4*3*2/2 = 12
+/// ```
+pub fn windmill_graph(k: usize, n: usize) -> Graph {
+    if k < 2 || n < 2 {
+        return Graph::new(0);
+    }
+
+    let num_vertices = n * (k - 1) + 1;
+    let mut g = Graph::new(num_vertices);
+
+    // Vertex 0 is the central shared vertex
+    let center = 0;
+
+    // Create n copies of K_k, each sharing the center vertex
+    for copy in 0..n {
+        // Calculate the starting vertex for this copy (excluding center)
+        let base = 1 + copy * (k - 1);
+
+        // Connect all vertices in this copy to the center
+        for i in 0..(k - 1) {
+            g.add_edge(center, base + i).unwrap();
+        }
+
+        // Make this copy a complete graph (all pairs connected)
+        for i in 0..(k - 1) {
+            for j in (i + 1)..(k - 1) {
+                g.add_edge(base + i, base + j).unwrap();
+            }
+        }
+    }
+
+    g
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1189,5 +1252,23 @@ mod tests {
     fn test_turan_graph() {
         let g = turan_graph(10, 3);
         assert_eq!(g.num_vertices(), 10);
+    }
+
+    #[test]
+    fn test_windmill_graph() {
+        // Test Wd(3, 4): 4 triangles sharing a vertex
+        let g = windmill_graph(3, 4);
+        assert_eq!(g.num_vertices(), 9); // 4*(3-1) + 1 = 9
+        assert_eq!(g.num_edges(), 12); // 4*3*2/2 = 12
+
+        // Test Wd(4, 3): 3 K4s sharing a vertex
+        let g2 = windmill_graph(4, 3);
+        assert_eq!(g2.num_vertices(), 10); // 3*(4-1) + 1 = 10
+        assert_eq!(g2.num_edges(), 18); // 3*4*3/2 = 18
+
+        // Test special case: Wd(2, n) is a star graph
+        let g3 = windmill_graph(2, 5);
+        assert_eq!(g3.num_vertices(), 6); // 5*1 + 1 = 6
+        assert_eq!(g3.num_edges(), 5); // Star with 5 edges
     }
 }
