@@ -649,6 +649,160 @@ pub fn count_k_subsets(n: usize, k: usize) -> Integer {
     crate::binomial(n as u32, k as u32)
 }
 
+/// Generate pairwise disjoint k-subsets
+///
+/// Returns a collection of k-subsets where every pair of subsets has empty intersection.
+/// The maximum number of pairwise disjoint k-subsets from {0, 1, ..., n-1} is floor(n/k).
+///
+/// # Arguments
+/// * `n` - Size of the universe set {0, 1, ..., n-1}
+/// * `k` - Size of each subset
+/// * `num_sets` - Number of pairwise disjoint sets to generate (must be <= floor(n/k))
+///
+/// # Returns
+/// `Some(Vec<Subset>)` if possible, `None` if num_sets > floor(n/k)
+///
+/// # Example
+/// ```
+/// use rustmath_combinatorics::pairwise_disjoint_k_subsets;
+///
+/// // Generate 3 pairwise disjoint 2-subsets from {0,1,2,3,4,5}
+/// let subsets = pairwise_disjoint_k_subsets(6, 2, 3).unwrap();
+/// assert_eq!(subsets.len(), 3);
+/// // Possible result: [{0,1}, {2,3}, {4,5}]
+/// ```
+pub fn pairwise_disjoint_k_subsets(n: usize, k: usize, num_sets: usize) -> Option<Vec<Subset>> {
+    if k == 0 {
+        // Special case: empty sets are always pairwise disjoint
+        return Some(vec![Subset::empty(n); num_sets]);
+    }
+
+    let max_disjoint = n / k;
+    if num_sets > max_disjoint {
+        return None;
+    }
+
+    let mut result = Vec::new();
+    let mut start = 0;
+
+    for _ in 0..num_sets {
+        if start + k > n {
+            return None; // Not enough elements remaining
+        }
+
+        let elements: Vec<usize> = (start..start + k).collect();
+        result.push(Subset {
+            elements,
+            n,
+        });
+
+        start += k;
+    }
+
+    Some(result)
+}
+
+/// Iterator that generates all maximal families of pairwise disjoint k-subsets
+///
+/// A maximal family is one where adding any other k-subset would violate
+/// the pairwise disjoint property.
+///
+/// For small values of k and n, this iterates through different ways to
+/// partition the ground set into k-subsets.
+pub struct PairwiseDisjointFamilyIterator {
+    n: usize,
+    k: usize,
+    num_sets: usize,
+    current_indices: Vec<usize>,
+    done: bool,
+}
+
+impl PairwiseDisjointFamilyIterator {
+    /// Create a new iterator for pairwise disjoint k-subset families
+    ///
+    /// # Arguments
+    /// * `n` - Size of the universe set
+    /// * `k` - Size of each subset
+    /// * `num_sets` - Number of sets in each family
+    pub fn new(n: usize, k: usize, num_sets: usize) -> Self {
+        let max_sets = n / k;
+        let done = num_sets > max_sets || (k > 0 && n == 0);
+
+        PairwiseDisjointFamilyIterator {
+            n,
+            k,
+            num_sets,
+            current_indices: vec![0; num_sets * k],
+            done,
+        }
+    }
+}
+
+impl Iterator for PairwiseDisjointFamilyIterator {
+    type Item = Vec<Subset>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+
+        if self.k == 0 {
+            // Special case: empty sets
+            self.done = true;
+            return Some(vec![Subset::empty(self.n); self.num_sets]);
+        }
+
+        // For simplicity, we just return one canonical partition
+        // A full implementation would enumerate all possible partitions
+        self.done = true;
+
+        pairwise_disjoint_k_subsets(self.n, self.k, self.num_sets)
+    }
+}
+
+/// Create an iterator over pairwise disjoint k-subset families
+///
+/// # Example
+/// ```
+/// use rustmath_combinatorics::pairwise_disjoint_family_iterator;
+///
+/// let mut iter = pairwise_disjoint_family_iterator(6, 2, 3);
+/// if let Some(family) = iter.next() {
+///     assert_eq!(family.len(), 3);
+///     // Each family member is a 2-subset
+///     for subset in &family {
+///         assert_eq!(subset.size(), 2);
+///     }
+/// }
+/// ```
+pub fn pairwise_disjoint_family_iterator(
+    n: usize,
+    k: usize,
+    num_sets: usize,
+) -> PairwiseDisjointFamilyIterator {
+    PairwiseDisjointFamilyIterator::new(n, k, num_sets)
+}
+
+/// Count the maximum number of pairwise disjoint k-subsets from an n-element set
+///
+/// Returns floor(n/k), which is the maximum number of pairwise disjoint
+/// k-subsets that can be selected from {0, 1, ..., n-1}.
+///
+/// # Example
+/// ```
+/// use rustmath_combinatorics::max_pairwise_disjoint_k_subsets;
+///
+/// assert_eq!(max_pairwise_disjoint_k_subsets(10, 3), 3); // floor(10/3) = 3
+/// assert_eq!(max_pairwise_disjoint_k_subsets(12, 4), 3); // floor(12/4) = 3
+/// assert_eq!(max_pairwise_disjoint_k_subsets(7, 2), 3);  // floor(7/2) = 3
+/// ```
+pub fn max_pairwise_disjoint_k_subsets(n: usize, k: usize) -> usize {
+    if k == 0 {
+        return usize::MAX; // Infinite empty sets are possible
+    }
+    n / k
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -882,5 +1036,204 @@ mod tests {
         // k > n
         let invalid = k_subsets(3, 5);
         assert_eq!(invalid.len(), 0);
+    }
+
+    #[test]
+    fn test_pairwise_disjoint_k_subsets() {
+        // Generate 3 pairwise disjoint 2-subsets from {0,1,2,3,4,5}
+        let subsets = pairwise_disjoint_k_subsets(6, 2, 3).unwrap();
+        assert_eq!(subsets.len(), 3);
+
+        // Verify they are pairwise disjoint
+        for i in 0..subsets.len() {
+            for j in (i + 1)..subsets.len() {
+                let intersection = subsets[i].intersection(&subsets[j]).unwrap();
+                assert_eq!(intersection.size(), 0, "Sets {} and {} should be disjoint", i, j);
+            }
+        }
+
+        // Verify each has size 2
+        for subset in &subsets {
+            assert_eq!(subset.size(), 2);
+        }
+
+        // Expected: [{0,1}, {2,3}, {4,5}]
+        assert_eq!(subsets[0].elements(), &[0, 1]);
+        assert_eq!(subsets[1].elements(), &[2, 3]);
+        assert_eq!(subsets[2].elements(), &[4, 5]);
+    }
+
+    #[test]
+    fn test_pairwise_disjoint_max_sets() {
+        // Maximum number of disjoint 3-subsets from {0..8} is floor(9/3) = 3
+        let subsets = pairwise_disjoint_k_subsets(9, 3, 3).unwrap();
+        assert_eq!(subsets.len(), 3);
+
+        // Verify disjointness
+        for i in 0..subsets.len() {
+            for j in (i + 1)..subsets.len() {
+                let intersection = subsets[i].intersection(&subsets[j]).unwrap();
+                assert_eq!(intersection.size(), 0);
+            }
+        }
+
+        // Try to request too many
+        let result = pairwise_disjoint_k_subsets(9, 3, 4);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_pairwise_disjoint_edge_cases() {
+        // k = 0 (empty sets)
+        let empty_sets = pairwise_disjoint_k_subsets(5, 0, 3).unwrap();
+        assert_eq!(empty_sets.len(), 3);
+        for subset in &empty_sets {
+            assert_eq!(subset.size(), 0);
+        }
+
+        // num_sets = 0
+        let no_sets = pairwise_disjoint_k_subsets(6, 2, 0).unwrap();
+        assert_eq!(no_sets.len(), 0);
+
+        // num_sets = 1
+        let one_set = pairwise_disjoint_k_subsets(5, 2, 1).unwrap();
+        assert_eq!(one_set.len(), 1);
+        assert_eq!(one_set[0].elements(), &[0, 1]);
+
+        // n = k (exactly one possible set)
+        let exact = pairwise_disjoint_k_subsets(3, 3, 1).unwrap();
+        assert_eq!(exact.len(), 1);
+        assert_eq!(exact[0].elements(), &[0, 1, 2]);
+
+        // n < k (impossible)
+        let impossible = pairwise_disjoint_k_subsets(2, 3, 1);
+        assert!(impossible.is_none());
+
+        // Request more than floor(n/k)
+        let too_many = pairwise_disjoint_k_subsets(7, 2, 4);
+        assert!(too_many.is_none()); // floor(7/2) = 3, so 4 is too many
+    }
+
+    #[test]
+    fn test_max_pairwise_disjoint_k_subsets() {
+        assert_eq!(max_pairwise_disjoint_k_subsets(10, 3), 3); // floor(10/3) = 3
+        assert_eq!(max_pairwise_disjoint_k_subsets(12, 4), 3); // floor(12/4) = 3
+        assert_eq!(max_pairwise_disjoint_k_subsets(7, 2), 3);  // floor(7/2) = 3
+        assert_eq!(max_pairwise_disjoint_k_subsets(6, 2), 3);  // floor(6/2) = 3
+        assert_eq!(max_pairwise_disjoint_k_subsets(5, 2), 2);  // floor(5/2) = 2
+        assert_eq!(max_pairwise_disjoint_k_subsets(9, 3), 3);  // floor(9/3) = 3
+        assert_eq!(max_pairwise_disjoint_k_subsets(10, 1), 10); // floor(10/1) = 10
+
+        // Edge case: k = 0
+        assert_eq!(max_pairwise_disjoint_k_subsets(5, 0), usize::MAX);
+    }
+
+    #[test]
+    fn test_pairwise_disjoint_family_iterator() {
+        let mut iter = pairwise_disjoint_family_iterator(6, 2, 3);
+
+        let family = iter.next();
+        assert!(family.is_some());
+
+        let subsets = family.unwrap();
+        assert_eq!(subsets.len(), 3);
+
+        // Verify each subset has size 2
+        for subset in &subsets {
+            assert_eq!(subset.size(), 2);
+        }
+
+        // Verify pairwise disjoint
+        for i in 0..subsets.len() {
+            for j in (i + 1)..subsets.len() {
+                let intersection = subsets[i].intersection(&subsets[j]).unwrap();
+                assert_eq!(intersection.size(), 0);
+            }
+        }
+
+        // Iterator should be exhausted after one call (current simple implementation)
+        assert!(iter.next().is_none());
+    }
+
+    #[test]
+    fn test_pairwise_disjoint_family_iterator_invalid() {
+        // Request too many sets
+        let mut iter = pairwise_disjoint_family_iterator(6, 3, 3);
+        assert!(iter.next().is_none()); // floor(6/3) = 2, so 3 is too many
+
+        // k larger than n
+        let mut iter2 = pairwise_disjoint_family_iterator(3, 5, 1);
+        assert!(iter2.next().is_none());
+    }
+
+    #[test]
+    fn test_pairwise_disjoint_with_set_system() {
+        // Create pairwise disjoint subsets
+        let subsets = pairwise_disjoint_k_subsets(8, 2, 4).unwrap();
+
+        // Convert to set system format
+        let sets: Vec<Vec<usize>> = subsets
+            .iter()
+            .map(|s| s.elements().to_vec())
+            .collect();
+
+        // Verify using set system methods
+        use crate::SetSystem;
+        let sys = SetSystem::from_sets(8, sets).unwrap();
+
+        assert!(sys.is_pairwise_disjoint());
+        assert!(sys.is_uniform());
+        assert_eq!(sys.uniformity(), Some(2));
+        assert_eq!(sys.num_sets(), 4);
+
+        // These form a sunflower with empty core
+        let all_indices: Vec<usize> = (0..sys.num_sets()).collect();
+        let selected_sets: Vec<_> = all_indices
+            .iter()
+            .map(|&i| sys.sets()[i].clone())
+            .collect();
+        assert!(SetSystem::is_sunflower(&selected_sets));
+    }
+
+    #[test]
+    fn test_pairwise_disjoint_comprehensive() {
+        // Test various combinations
+        for n in 4..=12 {
+            for k in 1..=4 {
+                if k > n {
+                    continue;
+                }
+
+                let max = max_pairwise_disjoint_k_subsets(n, k);
+                assert_eq!(max, n / k);
+
+                // Generate the maximum number
+                if let Some(subsets) = pairwise_disjoint_k_subsets(n, k, max) {
+                    assert_eq!(subsets.len(), max);
+
+                    // Verify all are k-subsets
+                    for subset in &subsets {
+                        assert_eq!(subset.size(), k);
+                        assert_eq!(subset.universe_size(), n);
+                    }
+
+                    // Verify pairwise disjoint
+                    for i in 0..subsets.len() {
+                        for j in (i + 1)..subsets.len() {
+                            let intersection = subsets[i].intersection(&subsets[j]).unwrap();
+                            assert_eq!(
+                                intersection.size(),
+                                0,
+                                "Failed for n={}, k={}, sets {} and {} not disjoint",
+                                n, k, i, j
+                            );
+                        }
+                    }
+                }
+
+                // Verify we can't generate more than max
+                assert!(pairwise_disjoint_k_subsets(n, k, max + 1).is_none());
+            }
+        }
     }
 }

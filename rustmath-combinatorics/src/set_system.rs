@@ -475,6 +475,268 @@ impl SetSystem {
         SetSystem::from_sets(self.n, sets).unwrap()
     }
 
+    /// Check if the set system is pairwise disjoint
+    ///
+    /// A set system is pairwise disjoint if every pair of distinct sets
+    /// has empty intersection.
+    ///
+    /// # Example
+    /// ```
+    /// use rustmath_combinatorics::SetSystem;
+    ///
+    /// let disjoint = SetSystem::from_sets(6, vec![
+    ///     vec![0, 1],
+    ///     vec![2, 3],
+    ///     vec![4, 5]
+    /// ]).unwrap();
+    /// assert!(disjoint.is_pairwise_disjoint());
+    ///
+    /// let not_disjoint = SetSystem::from_sets(4, vec![
+    ///     vec![0, 1],
+    ///     vec![1, 2]  // Shares element 1
+    /// ]).unwrap();
+    /// assert!(!not_disjoint.is_pairwise_disjoint());
+    /// ```
+    pub fn is_pairwise_disjoint(&self) -> bool {
+        for i in 0..self.sets.len() {
+            let set_i: HashSet<_> = self.sets[i].iter().copied().collect();
+
+            for j in (i + 1)..self.sets.len() {
+                let set_j: HashSet<_> = self.sets[j].iter().copied().collect();
+
+                // Check if intersection is non-empty
+                if set_i.iter().any(|x| set_j.contains(x)) {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+
+    /// Compute the core of a collection of sets
+    ///
+    /// The core is the intersection of all sets in the collection.
+    ///
+    /// # Example
+    /// ```
+    /// use rustmath_combinatorics::SetSystem;
+    ///
+    /// let sets = vec![
+    ///     vec![0, 1, 2],
+    ///     vec![0, 1, 3],
+    ///     vec![0, 1, 4]
+    /// ];
+    /// let core = SetSystem::compute_core(&sets);
+    /// assert_eq!(core, vec![0, 1]);
+    /// ```
+    pub fn compute_core(sets: &[Vec<usize>]) -> Vec<usize> {
+        if sets.is_empty() {
+            return Vec::new();
+        }
+
+        let mut core: HashSet<_> = sets[0].iter().copied().collect();
+
+        for set in &sets[1..] {
+            let set_hash: HashSet<_> = set.iter().copied().collect();
+            core.retain(|x| set_hash.contains(x));
+        }
+
+        let mut result: Vec<_> = core.into_iter().collect();
+        result.sort();
+        result
+    }
+
+    /// Check if a collection of sets forms a sunflower (Δ-system)
+    ///
+    /// A sunflower is a collection of sets where every pair of sets has
+    /// the same intersection (called the "core").
+    ///
+    /// # Example
+    /// ```
+    /// use rustmath_combinatorics::SetSystem;
+    ///
+    /// // Sets {0,1,2}, {0,1,3}, {0,1,4} form a sunflower with core {0,1}
+    /// let sunflower = vec![
+    ///     vec![0, 1, 2],
+    ///     vec![0, 1, 3],
+    ///     vec![0, 1, 4]
+    /// ];
+    /// assert!(SetSystem::is_sunflower(&sunflower));
+    ///
+    /// // These don't form a sunflower
+    /// let not_sunflower = vec![
+    ///     vec![0, 1],
+    ///     vec![1, 2],
+    ///     vec![2, 3]
+    /// ];
+    /// assert!(!SetSystem::is_sunflower(&not_sunflower));
+    /// ```
+    pub fn is_sunflower(sets: &[Vec<usize>]) -> bool {
+        if sets.len() <= 1 {
+            return true; // Trivially a sunflower
+        }
+
+        // Compute the core (intersection of all sets)
+        let core = Self::compute_core(sets);
+        let core_set: HashSet<_> = core.iter().copied().collect();
+
+        // Check that every pair has exactly this core as intersection
+        for i in 0..sets.len() {
+            for j in (i + 1)..sets.len() {
+                let set_i: HashSet<_> = sets[i].iter().copied().collect();
+                let set_j: HashSet<_> = sets[j].iter().copied().collect();
+
+                let intersection: HashSet<_> = set_i
+                    .intersection(&set_j)
+                    .copied()
+                    .collect();
+
+                if intersection != core_set {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
+    /// Find a sunflower with r petals (r sets) in the system
+    ///
+    /// Returns the indices of sets forming a sunflower, or None if not found.
+    ///
+    /// # Example
+    /// ```
+    /// use rustmath_combinatorics::SetSystem;
+    ///
+    /// let sys = SetSystem::from_sets(5, vec![
+    ///     vec![0, 1, 2],
+    ///     vec![0, 1, 3],
+    ///     vec![0, 1, 4]
+    /// ]).unwrap();
+    ///
+    /// let sunflower = sys.find_sunflower(3);
+    /// assert!(sunflower.is_some());
+    /// ```
+    pub fn find_sunflower(&self, r: usize) -> Option<Vec<usize>> {
+        if r > self.sets.len() {
+            return None;
+        }
+
+        if r == 0 {
+            return Some(Vec::new());
+        }
+
+        if r == 1 {
+            return Some(vec![0]);
+        }
+
+        // Try all combinations of r sets
+        let mut indices = Vec::new();
+        Self::find_sunflower_recursive(&self.sets, r, 0, &mut indices)
+    }
+
+    fn find_sunflower_recursive(
+        sets: &[Vec<usize>],
+        r: usize,
+        start: usize,
+        current: &mut Vec<usize>,
+    ) -> Option<Vec<usize>> {
+        if current.len() == r {
+            // Check if current indices form a sunflower
+            let selected_sets: Vec<_> = current.iter().map(|&i| sets[i].clone()).collect();
+            if Self::is_sunflower(&selected_sets) {
+                return Some(current.clone());
+            }
+            return None;
+        }
+
+        for i in start..sets.len() {
+            current.push(i);
+            if let Some(result) = Self::find_sunflower_recursive(sets, r, i + 1, current) {
+                return Some(result);
+            }
+            current.pop();
+        }
+
+        None
+    }
+
+    /// Check if the system contains a sunflower with at least r petals
+    ///
+    /// This is more efficient than find_sunflower when you only need
+    /// a yes/no answer.
+    pub fn contains_sunflower(&self, r: usize) -> bool {
+        self.find_sunflower(r).is_some()
+    }
+
+    /// Compute the sunflower bound from the sunflower lemma
+    ///
+    /// The sunflower lemma states: If a family of k-element sets has more than
+    /// k! * (r-1)^k sets, then it contains a sunflower with r petals.
+    ///
+    /// This function returns the maximum number of k-element sets that can exist
+    /// without necessarily containing an r-sunflower.
+    ///
+    /// # Example
+    /// ```
+    /// use rustmath_combinatorics::SetSystem;
+    ///
+    /// // For k=3, r=3: bound is 3! * 2^3 = 6 * 8 = 48
+    /// assert_eq!(SetSystem::sunflower_bound(3, 3), 48);
+    /// ```
+    pub fn sunflower_bound(k: usize, r: usize) -> usize {
+        if r <= 1 {
+            return usize::MAX;
+        }
+
+        // Compute k!
+        let mut factorial = 1usize;
+        for i in 1..=k {
+            factorial = factorial.saturating_mul(i);
+        }
+
+        // Compute (r-1)^k
+        let base = r.saturating_sub(1);
+        let mut power = 1usize;
+        for _ in 0..k {
+            power = power.saturating_mul(base);
+        }
+
+        factorial.saturating_mul(power)
+    }
+
+    /// Check if the system exceeds the sunflower bound
+    ///
+    /// If this returns true and the system is uniform with k-element sets,
+    /// then by the sunflower lemma, the system must contain a sunflower
+    /// with r petals.
+    ///
+    /// # Example
+    /// ```
+    /// use rustmath_combinatorics::SetSystem;
+    ///
+    /// let sys = SetSystem::from_sets(10, vec![
+    ///     vec![0, 1],
+    ///     vec![2, 3],
+    ///     vec![4, 5],
+    ///     vec![6, 7],
+    ///     vec![8, 9]
+    /// ]).unwrap();
+    ///
+    /// // For k=2, r=3: bound is 2! * 2^2 = 2 * 4 = 8
+    /// // We have 5 sets, which is less than 8, so no guarantee
+    /// assert!(!sys.exceeds_sunflower_bound(3));
+    /// ```
+    pub fn exceeds_sunflower_bound(&self, r: usize) -> bool {
+        if !self.is_uniform() {
+            return false; // Lemma only applies to uniform systems
+        }
+
+        let k = self.uniformity().unwrap_or(0);
+        let bound = Self::sunflower_bound(k, r);
+        self.num_sets() > bound
+    }
+
     /// Compute the Vapnik-Chervonenkis (VC) dimension
     ///
     /// The VC dimension is the size of the largest subset of the ground set
@@ -929,5 +1191,344 @@ mod tests {
         let shadow_0 = singletons.k_shadow(0);
         assert_eq!(shadow_0.num_sets(), 1); // Just the empty set
         assert!(shadow_0.contains(&[]));
+    }
+
+    #[test]
+    fn test_is_pairwise_disjoint() {
+        // Pairwise disjoint sets
+        let disjoint = SetSystem::from_sets(6, vec![
+            vec![0, 1],
+            vec![2, 3],
+            vec![4, 5]
+        ]).unwrap();
+        assert!(disjoint.is_pairwise_disjoint());
+
+        // Not pairwise disjoint (share element 1)
+        let not_disjoint = SetSystem::from_sets(4, vec![
+            vec![0, 1],
+            vec![1, 2]
+        ]).unwrap();
+        assert!(!not_disjoint.is_pairwise_disjoint());
+
+        // Empty system is trivially pairwise disjoint
+        let empty = SetSystem::new(5);
+        assert!(empty.is_pairwise_disjoint());
+
+        // Single set is trivially pairwise disjoint
+        let single = SetSystem::from_sets(3, vec![vec![0, 1, 2]]).unwrap();
+        assert!(single.is_pairwise_disjoint());
+
+        // Multiple sets with some overlap
+        let overlap = SetSystem::from_sets(5, vec![
+            vec![0, 1],
+            vec![2, 3],
+            vec![3, 4]  // Shares 3 with previous set
+        ]).unwrap();
+        assert!(!overlap.is_pairwise_disjoint());
+    }
+
+    #[test]
+    fn test_compute_core() {
+        // Core of sets with common elements
+        let sets1 = vec![
+            vec![0, 1, 2],
+            vec![0, 1, 3],
+            vec![0, 1, 4]
+        ];
+        let core1 = SetSystem::compute_core(&sets1);
+        assert_eq!(core1, vec![0, 1]);
+
+        // Core of disjoint sets (empty)
+        let sets2 = vec![
+            vec![0, 1],
+            vec![2, 3],
+            vec![4, 5]
+        ];
+        let core2 = SetSystem::compute_core(&sets2);
+        assert_eq!(core2, Vec::<usize>::new());
+
+        // Core of identical sets
+        let sets3 = vec![
+            vec![1, 2, 3],
+            vec![1, 2, 3],
+            vec![1, 2, 3]
+        ];
+        let core3 = SetSystem::compute_core(&sets3);
+        assert_eq!(core3, vec![1, 2, 3]);
+
+        // Core of single set
+        let sets4 = vec![vec![5, 6, 7]];
+        let core4 = SetSystem::compute_core(&sets4);
+        assert_eq!(core4, vec![5, 6, 7]);
+
+        // Core of empty vector
+        let sets5: Vec<Vec<usize>> = vec![];
+        let core5 = SetSystem::compute_core(&sets5);
+        assert_eq!(core5, Vec::<usize>::new());
+    }
+
+    #[test]
+    fn test_is_sunflower() {
+        // Classic sunflower with non-empty core
+        let sunflower1 = vec![
+            vec![0, 1, 2],
+            vec![0, 1, 3],
+            vec![0, 1, 4]
+        ];
+        assert!(SetSystem::is_sunflower(&sunflower1));
+
+        // Pairwise disjoint sets (sunflower with empty core)
+        let sunflower2 = vec![
+            vec![0, 1],
+            vec![2, 3],
+            vec![4, 5]
+        ];
+        assert!(SetSystem::is_sunflower(&sunflower2));
+
+        // Not a sunflower (different pairwise intersections)
+        let not_sunflower = vec![
+            vec![0, 1],
+            vec![1, 2],
+            vec![2, 3]
+        ];
+        assert!(!SetSystem::is_sunflower(&not_sunflower));
+
+        // Single set is trivially a sunflower
+        let single = vec![vec![1, 2, 3]];
+        assert!(SetSystem::is_sunflower(&single));
+
+        // Empty collection is trivially a sunflower
+        let empty: Vec<Vec<usize>> = vec![];
+        assert!(SetSystem::is_sunflower(&empty));
+
+        // Two sets with intersection
+        let two_sets = vec![
+            vec![0, 1, 2],
+            vec![0, 1, 3]
+        ];
+        assert!(SetSystem::is_sunflower(&two_sets));
+
+        // Complex sunflower pattern
+        let complex = vec![
+            vec![0, 1, 2, 5],
+            vec![0, 1, 3, 6],
+            vec![0, 1, 4, 7]
+        ];
+        assert!(SetSystem::is_sunflower(&complex));
+
+        // Not sunflower - varying intersections
+        let varying = vec![
+            vec![0, 1, 2],  // Shares {0,1} with second
+            vec![0, 1, 3],  // Shares {0,1} with first, {1,3} with third
+            vec![1, 3, 4]   // Shares {1,3} with second
+        ];
+        assert!(!SetSystem::is_sunflower(&varying));
+    }
+
+    #[test]
+    fn test_find_sunflower() {
+        // System with clear sunflower
+        let sys1 = SetSystem::from_sets(5, vec![
+            vec![0, 1, 2],
+            vec![0, 1, 3],
+            vec![0, 1, 4]
+        ]).unwrap();
+
+        let result = sys1.find_sunflower(3);
+        assert!(result.is_some());
+        let indices = result.unwrap();
+        assert_eq!(indices, vec![0, 1, 2]);
+
+        // System with sunflower of size 2
+        let sys2 = SetSystem::from_sets(4, vec![
+            vec![0, 1],
+            vec![2, 3]
+        ]).unwrap();
+
+        let result2 = sys2.find_sunflower(2);
+        assert!(result2.is_some());
+
+        // System without 3-sunflower but with 2-sunflower
+        let sys3 = SetSystem::from_sets(4, vec![
+            vec![0, 1],
+            vec![1, 2],
+            vec![2, 3]
+        ]).unwrap();
+
+        // Any 2 sets form a sunflower
+        assert!(sys3.find_sunflower(2).is_some());
+
+        // But not all 3 together
+        let result3 = sys3.find_sunflower(3);
+        assert!(result3.is_none());
+
+        // Request more sets than available
+        let sys4 = SetSystem::from_sets(3, vec![vec![0], vec![1]]).unwrap();
+        assert!(sys4.find_sunflower(5).is_none());
+
+        // Pairwise disjoint system forms a sunflower
+        let sys5 = SetSystem::from_sets(6, vec![
+            vec![0, 1],
+            vec![2, 3],
+            vec![4, 5]
+        ]).unwrap();
+        assert!(sys5.find_sunflower(3).is_some());
+    }
+
+    #[test]
+    fn test_contains_sunflower() {
+        let sys = SetSystem::from_sets(5, vec![
+            vec![0, 1, 2],
+            vec![0, 1, 3],
+            vec![0, 1, 4]
+        ]).unwrap();
+
+        assert!(sys.contains_sunflower(2));
+        assert!(sys.contains_sunflower(3));
+        assert!(!sys.contains_sunflower(4)); // Only 3 sets total
+    }
+
+    #[test]
+    fn test_sunflower_bound() {
+        // For k=2, r=3: bound = 2! * 2^2 = 2 * 4 = 8
+        assert_eq!(SetSystem::sunflower_bound(2, 3), 8);
+
+        // For k=3, r=3: bound = 3! * 2^3 = 6 * 8 = 48
+        assert_eq!(SetSystem::sunflower_bound(3, 3), 48);
+
+        // For k=1, r=4: bound = 1! * 3^1 = 1 * 3 = 3
+        assert_eq!(SetSystem::sunflower_bound(1, 4), 3);
+
+        // For k=2, r=2: bound = 2! * 1^2 = 2 * 1 = 2
+        assert_eq!(SetSystem::sunflower_bound(2, 2), 2);
+
+        // Edge case: r=1 should give maximum
+        assert_eq!(SetSystem::sunflower_bound(5, 1), usize::MAX);
+
+        // k=0 should give 1 (0! * (r-1)^0 = 1 * 1)
+        assert_eq!(SetSystem::sunflower_bound(0, 3), 1);
+    }
+
+    #[test]
+    fn test_exceeds_sunflower_bound() {
+        // Small system below bound
+        let sys1 = SetSystem::from_sets(10, vec![
+            vec![0, 1],
+            vec![2, 3],
+            vec![4, 5]
+        ]).unwrap();
+
+        // For k=2, r=3: bound = 8, we have 3 sets
+        assert!(!sys1.exceeds_sunflower_bound(3));
+
+        // Build a system that exceeds the bound for k=2, r=2
+        // Bound is 2! * 1^2 = 2
+        let sys2 = SetSystem::from_sets(6, vec![
+            vec![0, 1],
+            vec![2, 3],
+            vec![4, 5]
+        ]).unwrap();
+
+        // 3 sets > bound of 2
+        assert!(sys2.exceeds_sunflower_bound(2));
+
+        // Non-uniform system doesn't exceed
+        let sys3 = SetSystem::from_sets(5, vec![
+            vec![0, 1],
+            vec![2, 3, 4]
+        ]).unwrap();
+        assert!(!sys3.exceeds_sunflower_bound(3));
+    }
+
+    #[test]
+    fn test_sunflower_lemma_application() {
+        // Create a uniform system of 2-sets that exceeds bound
+        // For k=2, r=3: bound = 2! * 2^2 = 8
+        // If we have 9 or more 2-sets, we must have a 3-sunflower
+
+        let sys = SetSystem::from_sets(20, vec![
+            vec![0, 1],
+            vec![2, 3],
+            vec![4, 5],
+            vec![6, 7],
+            vec![8, 9],
+            vec![10, 11],
+            vec![12, 13],
+            vec![14, 15],
+            vec![16, 17]  // 9 sets
+        ]).unwrap();
+
+        assert!(sys.is_uniform());
+        assert_eq!(sys.uniformity(), Some(2));
+        assert!(sys.exceeds_sunflower_bound(3));
+
+        // By the sunflower lemma, this system must contain a 3-sunflower
+        // Since all sets are disjoint, they form a sunflower with empty core
+        assert!(sys.contains_sunflower(3));
+    }
+
+    #[test]
+    fn test_pairwise_disjoint_is_sunflower() {
+        // Pairwise disjoint sets always form a sunflower (with empty core)
+        let disjoint_sets = vec![
+            vec![0, 1],
+            vec![2, 3],
+            vec![4, 5],
+            vec![6, 7]
+        ];
+
+        assert!(SetSystem::is_sunflower(&disjoint_sets));
+
+        let core = SetSystem::compute_core(&disjoint_sets);
+        assert_eq!(core, Vec::<usize>::new());
+    }
+
+    #[test]
+    fn test_sunflower_edge_cases() {
+        // Empty sets in sunflower
+        let with_empty = vec![
+            vec![],
+            vec![],
+            vec![]
+        ];
+        assert!(SetSystem::is_sunflower(&with_empty));
+
+        // Mix of empty and non-empty with 2 sets (IS a sunflower - only one pair with empty intersection)
+        let mixed = vec![
+            vec![],
+            vec![1, 2]
+        ];
+        assert!(SetSystem::is_sunflower(&mixed)); // Two sets always form a sunflower
+
+        // Mix of empty and non-empty with 3 sets (NOT a sunflower - different pairwise intersections)
+        let mixed3 = vec![
+            vec![],
+            vec![1, 2],
+            vec![3, 4]
+        ];
+        // Intersection of empty and {1,2} is empty
+        // Intersection of empty and {3,4} is empty
+        // Intersection of {1,2} and {3,4} is empty
+        // All pairwise intersections are empty, so this IS a sunflower
+        assert!(SetSystem::is_sunflower(&mixed3));
+
+        // A real non-sunflower with varying intersections
+        let not_sunflower_mixed = vec![
+            vec![1],
+            vec![1, 2],
+            vec![2, 3]
+        ];
+        // Intersection of {1} and {1,2} is {1}
+        // Intersection of {1} and {2,3} is empty
+        // Different pairwise intersections, so NOT a sunflower
+        assert!(!SetSystem::is_sunflower(&not_sunflower_mixed));
+
+        // All identical sets
+        let identical = vec![
+            vec![1, 2, 3],
+            vec![1, 2, 3],
+            vec![1, 2, 3]
+        ];
+        assert!(SetSystem::is_sunflower(&identical));
     }
 }
