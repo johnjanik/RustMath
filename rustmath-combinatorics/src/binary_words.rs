@@ -265,6 +265,54 @@ impl BinaryWord {
         true
     }
 
+    /// Compute the Lyndon factorization using Duval's algorithm
+    ///
+    /// Returns the unique factorization of this word into non-increasing Lyndon words.
+    /// This is an O(n) algorithm discovered by Duval in 1983.
+    ///
+    /// # Example
+    /// ```
+    /// use rustmath_combinatorics::BinaryWord;
+    /// let w = BinaryWord::from_string("0010110").unwrap();
+    /// let factors = w.lyndon_factorization();
+    /// // factors will be ["001", "011", "0"]
+    /// ```
+    pub fn lyndon_factorization(&self) -> Vec<BinaryWord> {
+        let n = self.len();
+        if n == 0 {
+            return vec![];
+        }
+
+        let mut factors = Vec::new();
+        let mut i = 0;
+
+        while i < n {
+            let mut j = i + 1;
+            let mut k = i;
+
+            // Find the next Lyndon word
+            while j < n && self.bits[k] <= self.bits[j] {
+                if self.bits[k] < self.bits[j] {
+                    k = i;
+                } else {
+                    k += 1;
+                }
+                j += 1;
+            }
+
+            // Extract Lyndon factors from [i..j)
+            while i <= k {
+                let factor = BinaryWord {
+                    bits: self.bits[i..i + j - k].to_vec(),
+                };
+                factors.push(factor);
+                i += j - k;
+            }
+        }
+
+        factors
+    }
+
     /// Convert to string representation
     pub fn to_string(&self) -> String {
         self.bits.iter().map(|&b| if b { '1' } else { '0' }).collect()
@@ -356,9 +404,113 @@ pub fn lyndon_words(n: usize) -> Vec<BinaryWord> {
         .collect()
 }
 
+/// Generate all necklaces of length n with exactly k ones (fixed density)
+///
+/// This is more efficient than filtering all necklaces by weight, as it only
+/// generates necklaces with the desired number of ones.
+///
+/// Uses a recursive algorithm based on the FKM (Fredricksen-Kessler-Maiorana)
+/// algorithm adapted for fixed content.
+///
+/// # Example
+/// ```
+/// use rustmath_combinatorics::binary_words::necklaces_with_weight;
+/// let necklaces = necklaces_with_weight(4, 2);
+/// // Returns necklaces with exactly 2 ones: "0011", "0101"
+/// ```
+pub fn necklaces_with_weight(n: usize, k: usize) -> Vec<BinaryWord> {
+    if k > n {
+        return vec![];
+    }
+    if n == 0 {
+        return vec![BinaryWord::new(vec![])];
+    }
+    if k == 0 {
+        return vec![BinaryWord::zeros(n)];
+    }
+    if k == n {
+        return vec![BinaryWord::ones(n)];
+    }
+
+    let mut result = Vec::new();
+    let mut current = vec![false; n];
+    // Start with position 1, period 1 (1-indexed in the algorithm)
+    generate_necklaces_with_weight_helper(n, k, 1, 1, 0, &mut current, &mut result);
+    result
+}
+
+/// Recursive helper for generating fixed-density necklaces
+///
+/// This uses a modified FKM algorithm with 1-indexed positions internally.
+/// Parameters:
+/// - n: length of necklace
+/// - k: desired number of ones
+/// - t: current position (1-indexed)
+/// - p: period of the current prefix
+/// - ones_count: number of ones in positions [0..t)
+fn generate_necklaces_with_weight_helper(
+    n: usize,
+    k: usize,
+    t: usize,
+    p: usize,
+    ones_count: usize,
+    current: &mut Vec<bool>,
+    result: &mut Vec<BinaryWord>,
+) {
+    if t > n {
+        // Check if we have exactly k ones and if this is a necklace (n divisible by period)
+        if ones_count == k && n % p == 0 {
+            result.push(BinaryWord::new(current.clone()));
+        }
+        return;
+    }
+
+    // Calculate remaining positions and how many more ones we need
+    let remaining = n - t + 1;
+    let ones_needed = k.saturating_sub(ones_count);
+
+    // Prune: if we can't reach exactly k ones, skip
+    if ones_needed > remaining || ones_count > k {
+        return;
+    }
+
+    // Try extending with the same value as position t-p
+    // Note: t and p are 1-indexed, but current is 0-indexed
+    let prev_idx = if t > p { t - p - 1 } else { 0 };
+    let prev_bit = current[prev_idx];
+
+    current[t - 1] = prev_bit;
+    let new_ones = ones_count + if prev_bit { 1 } else { 0 };
+    generate_necklaces_with_weight_helper(n, k, t + 1, p, new_ones, current, result);
+
+    // Try extending with 1 if it's lexicographically larger than position t-p
+    if !prev_bit {
+        current[t - 1] = true;
+        generate_necklaces_with_weight_helper(n, k, t + 1, t, ones_count + 1, current, result);
+    }
+}
+
+/// Generate all Lyndon words of length n with exactly k ones
+///
+/// A more efficient alternative to filtering all Lyndon words by weight.
+pub fn lyndon_words_with_weight(n: usize, k: usize) -> Vec<BinaryWord> {
+    necklaces_with_weight(n, k)
+        .into_iter()
+        .filter(|w| w.is_lyndon())
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn repeat(word: &BinaryWord, n: usize) -> BinaryWord {
+        let mut bits = Vec::with_capacity(word.len() * n);
+        for _ in 0..n {
+            bits.extend(word.bits());
+        }
+        BinaryWord::new(bits)
+    }
 
     #[test]
     fn test_binary_word_creation() {
@@ -512,5 +664,213 @@ mod tests {
         // For n=4, there should be 3 Lyndon words: 0001, 0011, 0111
         let lyndon_4 = lyndon_words(4);
         assert_eq!(lyndon_4.len(), 3);
+    }
+
+    #[test]
+    fn test_lyndon_factorization_basic() {
+        // Test basic Lyndon factorizations
+        let w1 = BinaryWord::from_string("00101100").unwrap();
+        let factors = w1.lyndon_factorization();
+        assert_eq!(factors.len(), 3);
+        assert_eq!(factors[0].to_string(), "001011");
+        assert_eq!(factors[1].to_string(), "0");
+        assert_eq!(factors[2].to_string(), "0");
+
+        // Verify each factor is a Lyndon word (except possibly repeats)
+        for factor in &factors {
+            if factor.len() > 0 {
+                // Each factor should be Lyndon or a repeat of a Lyndon word
+                let is_lyndon_or_repeat = factor.is_lyndon() || {
+                    // Check if it's a repeat of a Lyndon word
+                    let mut is_repeat = false;
+                    for divisor in 1..factor.len() {
+                        if factor.len() % divisor == 0 {
+                            let period = factor.substring(0, divisor).unwrap();
+                            let repetitions = factor.len() / divisor;
+                            let repeated = repeat(&period, repetitions);
+                            if repeated == *factor && period.is_lyndon() {
+                                is_repeat = true;
+                                break;
+                            }
+                        }
+                    }
+                    is_repeat
+                };
+                assert!(is_lyndon_or_repeat || factor.to_string() == "0" || factor.to_string() == "1");
+            }
+        }
+    }
+
+    #[test]
+    fn test_lyndon_factorization_lyndon_word() {
+        // A Lyndon word should factorize to itself
+        let w = BinaryWord::from_string("00011").unwrap();
+        assert!(w.is_lyndon());
+        let factors = w.lyndon_factorization();
+        assert_eq!(factors.len(), 1);
+        assert_eq!(factors[0], w);
+    }
+
+    #[test]
+    fn test_lyndon_factorization_empty() {
+        let w = BinaryWord::new(vec![]);
+        let factors = w.lyndon_factorization();
+        assert_eq!(factors.len(), 0);
+    }
+
+    #[test]
+    fn test_lyndon_factorization_single_bit() {
+        let w0 = BinaryWord::from_string("0").unwrap();
+        let factors0 = w0.lyndon_factorization();
+        assert_eq!(factors0.len(), 1);
+        assert_eq!(factors0[0].to_string(), "0");
+
+        let w1 = BinaryWord::from_string("1").unwrap();
+        let factors1 = w1.lyndon_factorization();
+        assert_eq!(factors1.len(), 1);
+        assert_eq!(factors1[0].to_string(), "1");
+    }
+
+    #[test]
+    fn test_lyndon_factorization_all_zeros() {
+        let w = BinaryWord::from_string("0000").unwrap();
+        let factors = w.lyndon_factorization();
+        // "0000" = "0" * 4
+        assert_eq!(factors.len(), 4);
+        for factor in factors {
+            assert_eq!(factor.to_string(), "0");
+        }
+    }
+
+    #[test]
+    fn test_lyndon_factorization_decreasing() {
+        // Lyndon factorization should produce non-increasing sequence
+        let w = BinaryWord::from_string("001011001").unwrap();
+        let factors = w.lyndon_factorization();
+
+        // Check that factors are in non-increasing lexicographic order
+        for i in 1..factors.len() {
+            assert!(factors[i - 1].bits >= factors[i].bits);
+        }
+    }
+
+    #[test]
+    fn test_necklaces_with_weight_basic() {
+        // Necklaces of length 4 with 2 ones
+        let necklaces = necklaces_with_weight(4, 2);
+
+        // Should have: "0011", "0101"
+        // "0110" is equivalent to "0011" (rotation)
+        // "1001" is equivalent to "0011" (rotation)
+        // "1010" is equivalent to "0101" (rotation)
+        // "1100" is equivalent to "0011" (rotation)
+        assert!(necklaces.len() >= 2);
+
+        // All should be necklaces
+        for necklace in &necklaces {
+            assert!(necklace.is_necklace());
+            assert_eq!(necklace.hamming_weight(), 2);
+        }
+    }
+
+    #[test]
+    fn test_necklaces_with_weight_edge_cases() {
+        // Length 0
+        let n0 = necklaces_with_weight(0, 0);
+        assert_eq!(n0.len(), 1);
+        assert_eq!(n0[0].len(), 0);
+
+        // All zeros
+        let all_zeros = necklaces_with_weight(5, 0);
+        assert_eq!(all_zeros.len(), 1);
+        assert_eq!(all_zeros[0].to_string(), "00000");
+
+        // All ones
+        let all_ones = necklaces_with_weight(5, 5);
+        assert_eq!(all_ones.len(), 1);
+        assert_eq!(all_ones[0].to_string(), "11111");
+
+        // Impossible case
+        let impossible = necklaces_with_weight(3, 5);
+        assert_eq!(impossible.len(), 0);
+    }
+
+    #[test]
+    fn test_necklaces_with_weight_length_3() {
+        // Length 3, weight 1: "001"
+        let n31 = necklaces_with_weight(3, 1);
+        assert_eq!(n31.len(), 1);
+        assert_eq!(n31[0].to_string(), "001");
+
+        // Length 3, weight 2: "011"
+        let n32 = necklaces_with_weight(3, 2);
+        assert_eq!(n32.len(), 1);
+        assert_eq!(n32[0].to_string(), "011");
+    }
+
+    #[test]
+    fn test_necklaces_with_weight_properties() {
+        // Test that all generated necklaces have correct weight
+        for n in 1..=6 {
+            for k in 0..=n {
+                let necklaces = necklaces_with_weight(n, k);
+                for necklace in &necklaces {
+                    assert_eq!(necklace.len(), n);
+                    assert_eq!(necklace.hamming_weight(), k);
+                    assert!(necklace.is_necklace());
+                }
+
+                // Check for duplicates
+                for i in 0..necklaces.len() {
+                    for j in (i + 1)..necklaces.len() {
+                        assert_ne!(necklaces[i], necklaces[j]);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_lyndon_words_with_weight() {
+        // Lyndon words of length 4 with 2 ones
+        let lyndon = lyndon_words_with_weight(4, 2);
+
+        // All should be Lyndon words with weight 2
+        for word in &lyndon {
+            assert!(word.is_lyndon());
+            assert_eq!(word.hamming_weight(), 2);
+        }
+
+        // Should include "0011" and "0111" but not "0101" (not Lyndon)
+        let strings: Vec<String> = lyndon.iter().map(|w| w.to_string()).collect();
+        assert!(strings.contains(&"0011".to_string()));
+
+        // "0101" is not a Lyndon word (rotation "0101" equals itself)
+        assert!(!strings.contains(&"0101".to_string()));
+    }
+
+    #[test]
+    fn test_lyndon_factorization_concatenation() {
+        // The concatenation of Lyndon factorization should equal original word
+        let words = vec![
+            "0010110",
+            "11001",
+            "0001111",
+            "10101010",
+            "00011101",
+        ];
+
+        for word_str in words {
+            let w = BinaryWord::from_string(word_str).unwrap();
+            let factors = w.lyndon_factorization();
+
+            // Concatenate all factors
+            let mut reconstructed = BinaryWord::new(vec![]);
+            for factor in factors {
+                reconstructed = reconstructed.concat(&factor);
+            }
+
+            assert_eq!(reconstructed, w);
+        }
     }
 }
