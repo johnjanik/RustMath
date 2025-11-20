@@ -1,0 +1,26 @@
+[package]
+name = "rustmath-curves"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustmath-core = { path = "../rustmath-core" }
+rustmath-integers = { path = "../rustmath-integers" }
+rustmath-rationals = { path = "../rustmath-rationals" }
+rustmath-polynomials = { path = "../rustmath-polynomials" }
+rustmath-symbolic = { path = "../rustmath-symbolic" }
+rustmath-matrix = { path = "../rustmath-matrix" }
+rustmath-complex = { path = "../rustmath-complex" }
+rustmath-finitefields = { path = "../rustmath-finitefields" }
+num-bigint = { workspace = true }
+num-rational = { workspace = true }
+num-traits = { workspace = true }
+serde = { workspace = true, optional = true }
+thiserror = { workspace = true }
+
+[features]
+default = []
+serde = ["dep:serde", "num-bigint/serde"]
