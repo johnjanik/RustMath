@@ -7,12 +7,15 @@
 //! - Ribbon tableaux
 //! - Inner product on symmetric functions
 //! - Plethysm operations
+//! - Free quasi-symmetric functions (FQSym) with F-basis and shuffle product
 
 pub mod basis;
 pub mod kostka;
 pub mod ribbon;
 pub mod operations;
 pub mod plethysm;
+pub mod fqsym;
+pub mod super_schur;
 
 pub use basis::{
     elementary_symmetric, monomial_symmetric, power_sum_symmetric, schur_function,
@@ -22,6 +25,11 @@ pub use kostka::{kostka_number, kostka_tableau_count};
 pub use operations::{inner_product, symmetric_product};
 pub use plethysm::plethysm;
 pub use ribbon::{is_ribbon_tableau, ribbon_tableaux, RibbonTableau};
+pub use fqsym::FQSym;
+pub use super_schur::{
+    evaluate_super_schur, is_classical_schur, super_dimension, super_schur_function,
+    SuperSchurCoefficient,
+};
 
 use rustmath_combinatorics::Partition;
 use rustmath_core::Ring;
