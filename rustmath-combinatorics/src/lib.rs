@@ -12,6 +12,7 @@ pub mod enumeration;
 pub mod partitions;
 pub mod perfect_matching;
 pub mod permutations;
+pub mod permutation_simd;
 pub mod posets;
 pub mod q_analogue;
 pub mod ranking;
@@ -32,6 +33,10 @@ pub use partitions::{
     PartitionTuple,
 };
 pub use permutations::{all_permutations, Permutation};
+pub use permutation_simd::{
+    batch_compose_simd, compose_simd, cycles_simd, inverse_simd, power_simd, simd_available,
+    simd_info,
+};
 pub use posets::Poset;
 pub use tableaux::{robinson_schensted, rs_insert, standard_tableaux, Tableau};
 pub use tuple::{tuples as tuple_tuples, Tuple, TupleIterator};
