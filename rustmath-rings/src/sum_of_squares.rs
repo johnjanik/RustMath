@@ -33,13 +33,18 @@ use rustmath_integers::Integer;
 /// Uses Fermat's criterion: n is sum of two squares iff in its prime factorization,
 /// every prime of the form 4k+3 occurs to an even power.
 ///
+/// # Input Constraints
+/// For inputs ≥ 2^32, behavior is platform-dependent (u64 on 64-bit systems).
+///
 /// # Examples
 /// ```
 /// use rustmath_rings::sum_of_squares::is_sum_of_two_squares;
 ///
+/// assert!(is_sum_of_two_squares(0));
+/// assert!(is_sum_of_two_squares(1));
+/// assert!(is_sum_of_two_squares(2));
+/// assert!(!is_sum_of_two_squares(3));
 /// assert!(is_sum_of_two_squares(25)); // 25 = 3² + 4²
-/// assert!(is_sum_of_two_squares(2));  // 2 = 1² + 1²
-/// assert!(!is_sum_of_two_squares(3)); // 3 cannot be expressed
 /// ```
 pub fn is_sum_of_two_squares(n: u64) -> bool {
     if n == 0 {
@@ -78,17 +83,23 @@ pub fn is_sum_of_two_squares(n: u64) -> bool {
     true
 }
 
-/// Express n as sum of two squares: n = a² + b² with a ≥ b ≥ 0
+/// Express n as sum of two squares: n = a² + b² with a ≤ b
 ///
+/// Returns the lexicographically smallest representation where a ≤ b.
 /// Returns None if n cannot be expressed as sum of two squares.
+///
+/// # Input Constraints
+/// For inputs ≥ 2^32, behavior is platform-dependent (u64 on 64-bit systems).
 ///
 /// # Examples
 /// ```
 /// use rustmath_rings::sum_of_squares::two_squares;
 ///
+/// assert_eq!(two_squares(0), Some((0, 0)));
+/// assert_eq!(two_squares(2), Some((1, 1)));
 /// let (a, b) = two_squares(25).unwrap();
 /// assert_eq!(a*a + b*b, 25);
-/// assert!(a >= b);
+/// assert!(a <= b);
 /// ```
 pub fn two_squares(n: u64) -> Option<(u64, u64)> {
     if !is_sum_of_two_squares(n) {
@@ -107,7 +118,8 @@ pub fn two_squares(n: u64) -> Option<(u64, u64)> {
         let b = (remainder as f64).sqrt() as u64;
 
         if b * b == remainder {
-            return Some((a.max(b), a.min(b)));
+            // Return in ascending order: a ≤ b
+            return Some((a.min(b), a.max(b)));
         }
     }
 
@@ -115,8 +127,45 @@ pub fn two_squares(n: u64) -> Option<(u64, u64)> {
 }
 
 /// Internal implementation for two_squares (mirrors SageMath's interface)
+///
+/// Returns a 2-tuple `(i, j)` where i² + j² = n and i ≤ j, representing the
+/// lexicographically smallest solution. Returns None if n is not a sum of two squares.
+///
+/// This function mirrors SageMath's `two_squares_pyx` interface.
+///
+/// # Examples
+/// ```
+/// use rustmath_rings::sum_of_squares::two_squares_pyx;
+///
+/// assert_eq!(two_squares_pyx(0), Some((0, 0)));
+/// assert_eq!(two_squares_pyx(2), Some((1, 1)));
+/// assert_eq!(two_squares_pyx(106), Some((5, 9)));
+/// assert_eq!(two_squares_pyx(3), None);
+/// ```
 pub fn two_squares_pyx(n: u64) -> Option<(u64, u64)> {
     two_squares(n)
+}
+
+/// Check if n is a sum of two squares (mirrors SageMath's interface)
+///
+/// This function mirrors SageMath's `is_sum_of_two_squares_pyx` interface.
+/// Returns true if n can be expressed as i² + j² for some nonnegative integers i, j.
+///
+/// # Input Constraints
+/// For inputs ≥ 2^32, behavior is platform-dependent (u64 on 64-bit systems).
+///
+/// # Examples
+/// ```
+/// use rustmath_rings::sum_of_squares::is_sum_of_two_squares_pyx;
+///
+/// assert!(is_sum_of_two_squares_pyx(0));
+/// assert!(is_sum_of_two_squares_pyx(1));
+/// assert!(is_sum_of_two_squares_pyx(2));
+/// assert!(!is_sum_of_two_squares_pyx(3));
+/// assert!(is_sum_of_two_squares_pyx(5));
+/// ```
+pub fn is_sum_of_two_squares_pyx(n: u64) -> bool {
+    is_sum_of_two_squares(n)
 }
 
 /// Check if n can be expressed as sum of three squares
@@ -139,16 +188,26 @@ pub fn is_sum_of_three_squares(n: u64) -> bool {
     n % 8 != 7
 }
 
-/// Express n as sum of three squares: n = a² + b² + c²
+/// Express n as sum of three squares: n = a² + b² + c² with a ≤ b ≤ c
 ///
+/// Returns a 3-tuple `(a, b, c)` where a² + b² + c² = n and a ≤ b ≤ c.
 /// Returns None if n cannot be expressed as sum of three squares.
+///
+/// By Legendre's three-square theorem, n is a sum of three squares if and only if
+/// it is not of the form 4^a(8b+7).
+///
+/// # Input Constraints
+/// For inputs ≥ 2^32, behavior is platform-dependent (u64 on 64-bit systems).
 ///
 /// # Examples
 /// ```
 /// use rustmath_rings::sum_of_squares::three_squares;
 ///
+/// assert_eq!(three_squares(5), Some((0, 1, 2)));
+/// assert_eq!(three_squares(107), Some((1, 5, 9)));
 /// let (a, b, c) = three_squares(14).unwrap();
 /// assert_eq!(a*a + b*b + c*c, 14);
+/// assert!(a <= b && b <= c);
 /// ```
 pub fn three_squares(n: u64) -> Option<(u64, u64, u64)> {
     if !is_sum_of_three_squares(n) {
@@ -165,7 +224,10 @@ pub fn three_squares(n: u64) -> Option<(u64, u64, u64)> {
 
         let remainder = n - a_sq;
         if let Some((b, c)) = two_squares(remainder) {
-            return Some((a, b, c));
+            // Sort the three values to ensure a ≤ b ≤ c
+            let mut values = [a, b, c];
+            values.sort_unstable();
+            return Some((values[0], values[1], values[2]));
         }
     }
 
@@ -173,20 +235,41 @@ pub fn three_squares(n: u64) -> Option<(u64, u64, u64)> {
 }
 
 /// Internal implementation for three_squares (mirrors SageMath's interface)
+///
+/// Returns a 3-tuple `(i, j, k)` where i² + j² + k² = n and i ≤ j ≤ k.
+/// Returns None if n cannot be expressed as sum of three squares.
+///
+/// This function mirrors SageMath's `three_squares_pyx` interface.
+///
+/// # Examples
+/// ```
+/// use rustmath_rings::sum_of_squares::three_squares_pyx;
+///
+/// assert_eq!(three_squares_pyx(5), Some((0, 1, 2)));
+/// assert_eq!(three_squares_pyx(107), Some((1, 5, 9)));
+/// assert_eq!(three_squares_pyx(7), None);
+/// ```
 pub fn three_squares_pyx(n: u64) -> Option<(u64, u64, u64)> {
     three_squares(n)
 }
 
-/// Express n as sum of four squares: n = a² + b² + c² + d²
+/// Express n as sum of four squares: n = a² + b² + c² + d² with a ≤ b ≤ c ≤ d
+///
+/// Returns a 4-tuple `(a, b, c, d)` where a² + b² + c² + d² = n and a ≤ b ≤ c ≤ d.
 ///
 /// By Lagrange's four-square theorem, this always succeeds for non-negative n.
+///
+/// # Input Constraints
+/// For inputs ≥ 2^32, behavior is platform-dependent (u64 on 64-bit systems).
 ///
 /// # Examples
 /// ```
 /// use rustmath_rings::sum_of_squares::four_squares;
 ///
+/// assert_eq!(four_squares(15447), (2, 5, 17, 123));
 /// let (a, b, c, d) = four_squares(7);
 /// assert_eq!(a*a + b*b + c*c + d*d, 7);
+/// assert!(a <= b && b <= c && c <= d);
 /// ```
 pub fn four_squares(n: u64) -> (u64, u64, u64, u64) {
     if n == 0 {
@@ -195,11 +278,13 @@ pub fn four_squares(n: u64) -> (u64, u64, u64, u64) {
 
     // Try to express as sum of fewer squares first
     if let Some((a, b)) = two_squares(n) {
-        return (a, b, 0, 0);
+        // Already in ascending order
+        return (0, 0, a, b);
     }
 
     if let Some((a, b, c)) = three_squares(n) {
-        return (a, b, c, 0);
+        // Already in ascending order
+        return (0, a, b, c);
     }
 
     // Otherwise, use exhaustive search
@@ -211,7 +296,10 @@ pub fn four_squares(n: u64) -> (u64, u64, u64, u64) {
         }
 
         if let Some((b, c, d)) = three_squares(n - a_sq) {
-            return (a, b, c, d);
+            // Sort all four values to ensure a ≤ b ≤ c ≤ d
+            let mut values = [a, b, c, d];
+            values.sort_unstable();
+            return (values[0], values[1], values[2], values[3]);
         }
     }
 
@@ -220,6 +308,20 @@ pub fn four_squares(n: u64) -> (u64, u64, u64, u64) {
 }
 
 /// Internal implementation for four_squares (mirrors SageMath's interface)
+///
+/// Returns a 4-tuple `(i, j, k, l)` where i² + j² + k² + l² = n and i ≤ j ≤ k ≤ l.
+///
+/// This function mirrors SageMath's `four_squares_pyx` interface.
+///
+/// # Examples
+/// ```
+/// use rustmath_rings::sum_of_squares::four_squares_pyx;
+///
+/// assert_eq!(four_squares_pyx(15447), (2, 5, 17, 123));
+/// assert_eq!(four_squares_pyx(523439), (3, 5, 26, 723));
+/// let (a, b, c, d) = four_squares_pyx(7);
+/// assert_eq!(a*a + b*b + c*c + d*d, 7);
+/// ```
 pub fn four_squares_pyx(n: u64) -> (u64, u64, u64, u64) {
     four_squares(n)
 }
@@ -245,24 +347,56 @@ mod tests {
 
     #[test]
     fn test_two_squares() {
+        // Test basic cases with ascending order (a ≤ b)
         assert_eq!(two_squares(0), Some((0, 0)));
-        assert_eq!(two_squares(1), Some((1, 0)));
+        assert_eq!(two_squares(1), Some((0, 1)));
         assert_eq!(two_squares(2), Some((1, 1)));
         assert_eq!(two_squares(3), None);
-        assert_eq!(two_squares(4), Some((2, 0)));
-        assert_eq!(two_squares(5), Some((2, 1)));
+        assert_eq!(two_squares(4), Some((0, 2)));
+        assert_eq!(two_squares(5), Some((1, 2)));
+        assert_eq!(two_squares(106), Some((5, 9)));
 
+        // Verify ordering and sum
         let (a, b) = two_squares(25).unwrap();
         assert_eq!(a * a + b * b, 25);
-        assert!(a >= b);
+        assert!(a <= b, "Expected a <= b, got {} > {}", a, b);
 
         let (a, b) = two_squares(50).unwrap();
         assert_eq!(a * a + b * b, 50);
+        assert!(a <= b);
     }
 
     #[test]
     fn test_two_squares_pyx() {
-        assert_eq!(two_squares_pyx(25), Some((4, 3)));
+        // Test SageMath examples with ascending order
+        assert_eq!(two_squares_pyx(0), Some((0, 0)));
+        assert_eq!(two_squares_pyx(2), Some((1, 1)));
+        assert_eq!(two_squares_pyx(106), Some((5, 9)));
+        assert_eq!(two_squares_pyx(25), Some((3, 4)));
+        assert_eq!(two_squares_pyx(3), None);
+    }
+
+    #[test]
+    fn test_is_sum_of_two_squares_pyx() {
+        // Test SageMath examples
+        assert!(is_sum_of_two_squares_pyx(0));
+        assert!(is_sum_of_two_squares_pyx(1));
+        assert!(is_sum_of_two_squares_pyx(2));
+        assert!(!is_sum_of_two_squares_pyx(3));
+        assert!(is_sum_of_two_squares_pyx(4));
+        assert!(is_sum_of_two_squares_pyx(5));
+        assert!(!is_sum_of_two_squares_pyx(6));
+
+        // Verify range [0,30] matches SageMath
+        let expected_sums: Vec<u64> = vec![0, 1, 2, 4, 5, 8, 9, 10, 13, 16, 17, 18, 20, 25, 26, 29];
+        for n in 0..=30 {
+            assert_eq!(
+                is_sum_of_two_squares_pyx(n),
+                expected_sums.contains(&n),
+                "Failed for n = {}",
+                n
+            );
+        }
     }
 
     #[test]
@@ -278,50 +412,79 @@ mod tests {
 
     #[test]
     fn test_three_squares() {
+        // Test SageMath examples with ascending order (a ≤ b ≤ c)
         assert_eq!(three_squares(0), Some((0, 0, 0)));
-        assert_eq!(three_squares(7), None);
+        assert_eq!(three_squares(5), Some((0, 1, 2)));
+        assert_eq!(three_squares(107), Some((1, 5, 9)));
+        assert_eq!(three_squares(7), None); // 7 = 4^0(8*0+7) - not a sum of 3 squares
 
+        // Verify ordering and sum
         let (a, b, c) = three_squares(14).unwrap();
         assert_eq!(a * a + b * b + c * c, 14);
+        assert!(a <= b && b <= c, "Expected a <= b <= c, got {} {} {}", a, b, c);
 
         let (a, b, c) = three_squares(3).unwrap();
         assert_eq!(a * a + b * b + c * c, 3);
+        assert!(a <= b && b <= c);
     }
 
     #[test]
     fn test_three_squares_pyx() {
+        // Test SageMath examples
+        assert_eq!(three_squares_pyx(5), Some((0, 1, 2)));
+        assert_eq!(three_squares_pyx(107), Some((1, 5, 9)));
+        assert_eq!(three_squares_pyx(7), None);
+
         let result = three_squares_pyx(14);
         assert!(result.is_some());
         if let Some((a, b, c)) = result {
             assert_eq!(a * a + b * b + c * c, 14);
+            assert!(a <= b && b <= c);
         }
     }
 
     #[test]
     fn test_four_squares() {
-        // Test that every number can be expressed
+        // Test SageMath examples with ascending order (a ≤ b ≤ c ≤ d)
+        assert_eq!(four_squares(15447), (2, 5, 17, 123));
+        assert_eq!(four_squares(523439), (3, 5, 26, 723));
+
+        // Test that every number can be expressed with correct ordering
         for n in 0..100 {
             let (a, b, c, d) = four_squares(n);
             assert_eq!(a * a + b * b + c * c + d * d, n);
+            assert!(
+                a <= b && b <= c && c <= d,
+                "Failed ordering for n = {}: ({}, {}, {}, {})",
+                n, a, b, c, d
+            );
         }
 
         // Specific cases
         let (a, b, c, d) = four_squares(7);
         assert_eq!(a * a + b * b + c * c + d * d, 7);
+        assert!(a <= b && b <= c && c <= d);
 
         let (a, b, c, d) = four_squares(15);
         assert_eq!(a * a + b * b + c * c + d * d, 15);
+        assert!(a <= b && b <= c && c <= d);
     }
 
     #[test]
     fn test_four_squares_pyx() {
+        // Test SageMath examples
+        assert_eq!(four_squares_pyx(15447), (2, 5, 17, 123));
+        assert_eq!(four_squares_pyx(523439), (3, 5, 26, 723));
+
         let (a, b, c, d) = four_squares_pyx(7);
         assert_eq!(a * a + b * b + c * c + d * d, 7);
+        assert!(a <= b && b <= c && c <= d);
     }
 
     #[test]
     fn test_lagrange_theorem() {
         // Verify Lagrange's four-square theorem for first 200 positive integers
+        // with correct ascending order
         for n in 1..=200 {
             let (a, b, c, d) = four_squares(n);
             assert_eq!(
@@ -329,6 +492,11 @@ mod tests {
                 n,
                 "Failed for n = {}",
                 n
+            );
+            assert!(
+                a <= b && b <= c && c <= d,
+                "Failed ordering for n = {}: ({}, {}, {}, {})",
+                n, a, b, c, d
             );
         }
     }
