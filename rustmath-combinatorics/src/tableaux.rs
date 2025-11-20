@@ -163,6 +163,176 @@ impl Tableau {
             .join("\n")
     }
 
+    /// Compute the residue of a cell at position (row, col) with quantum characteristic e
+    ///
+    /// The residue is defined as (col - row + multicharge) mod e
+    /// where multicharge is typically 0 for standard tableaux.
+    ///
+    /// # Arguments
+    /// * `row` - Row index (0-based)
+    /// * `col` - Column index (0-based)
+    /// * `e` - Quantum characteristic (positive integer)
+    /// * `multicharge` - Multicharge parameter (default 0 for standard tableaux)
+    ///
+    /// # Returns
+    /// The e-residue of the cell, or None if the position is invalid
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_combinatorics::Tableau;
+    ///
+    /// let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+    /// // Cell at (0, 0): residue = (0 - 0) mod 3 = 0
+    /// assert_eq!(t.cell_residue(0, 0, 3, 0), Some(0));
+    /// // Cell at (0, 2): residue = (2 - 0) mod 3 = 2
+    /// assert_eq!(t.cell_residue(0, 2, 3, 0), Some(2));
+    /// // Cell at (1, 1): residue = (1 - 1) mod 3 = 0
+    /// assert_eq!(t.cell_residue(1, 1, 3, 0), Some(0));
+    /// ```
+    pub fn cell_residue(&self, row: usize, col: usize, e: usize, multicharge: i32) -> Option<usize> {
+        if e == 0 {
+            return None;
+        }
+
+        if row >= self.rows.len() || col >= self.rows[row].len() {
+            return None;
+        }
+
+        // Compute (col - row + multicharge) mod e
+        // Need to handle negative values properly
+        let content = (col as i32) - (row as i32) + multicharge;
+        let residue = content.rem_euclid(e as i32) as usize;
+
+        Some(residue)
+    }
+
+    /// Compute the residue sequence of a standard tableau
+    ///
+    /// For a standard tableau with entries 1, 2, ..., n, this returns the sequence
+    /// (r₁, r₂, ..., rₙ) where rₖ is the e-residue of the cell containing k.
+    ///
+    /// # Arguments
+    /// * `e` - Quantum characteristic (positive integer)
+    /// * `multicharge` - Multicharge parameter (default 0 for standard tableaux)
+    ///
+    /// # Returns
+    /// Vector of residues in order of entries 1, 2, ..., n
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_combinatorics::Tableau;
+    ///
+    /// let t = Tableau::new(vec![vec![1, 2, 4], vec![3, 5]]).unwrap();
+    /// let residues = t.residue_sequence(3, 0);
+    /// assert_eq!(residues.len(), 5);
+    /// ```
+    pub fn residue_sequence(&self, e: usize, multicharge: i32) -> Vec<usize> {
+        if e == 0 {
+            return vec![];
+        }
+
+        let n = self.size();
+        if n == 0 {
+            return vec![];
+        }
+
+        // Create a map from value to (row, col)
+        let mut position_map = vec![(0, 0); n + 1];
+
+        for (row_idx, row) in self.rows.iter().enumerate() {
+            for (col_idx, &value) in row.iter().enumerate() {
+                if value > 0 && value <= n {
+                    position_map[value] = (row_idx, col_idx);
+                }
+            }
+        }
+
+        // Compute residues in order 1, 2, ..., n
+        let mut residues = Vec::new();
+        for i in 1..=n {
+            let (row, col) = position_map[i];
+            if let Some(res) = self.cell_residue(row, col, e, multicharge) {
+                residues.push(res);
+            }
+        }
+
+        residues
+    }
+
+    /// Compute the residue content of the tableau
+    ///
+    /// Returns a vector where the i-th element is the count of cells with residue i.
+    ///
+    /// # Arguments
+    /// * `e` - Quantum characteristic (positive integer)
+    /// * `multicharge` - Multicharge parameter (default 0 for standard tableaux)
+    ///
+    /// # Returns
+    /// Vector of length e, where element i is the number of cells with residue i
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_combinatorics::Tableau;
+    ///
+    /// let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+    /// let content = t.residue_content(3, 0);
+    /// assert_eq!(content.len(), 3);
+    /// ```
+    pub fn residue_content(&self, e: usize, multicharge: i32) -> Vec<usize> {
+        if e == 0 {
+            return vec![];
+        }
+
+        let mut content = vec![0; e];
+
+        for (row_idx, row) in self.rows.iter().enumerate() {
+            for col_idx in 0..row.len() {
+                if let Some(res) = self.cell_residue(row_idx, col_idx, e, multicharge) {
+                    content[res] += 1;
+                }
+            }
+        }
+
+        content
+    }
+
+    /// Get all cells with a specific residue
+    ///
+    /// Returns a vector of (row, col, value) tuples for all cells with the given residue.
+    ///
+    /// # Arguments
+    /// * `e` - Quantum characteristic (positive integer)
+    /// * `residue` - The residue to search for
+    /// * `multicharge` - Multicharge parameter (default 0 for standard tableaux)
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_combinatorics::Tableau;
+    ///
+    /// let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+    /// let cells = t.cells_with_residue(3, 0, 0);
+    /// // Cells at (0,0), (1,1) have residue 0 when e=3
+    /// ```
+    pub fn cells_with_residue(&self, e: usize, residue: usize, multicharge: i32) -> Vec<(usize, usize, usize)> {
+        if e == 0 || residue >= e {
+            return vec![];
+        }
+
+        let mut result = Vec::new();
+
+        for (row_idx, row) in self.rows.iter().enumerate() {
+            for (col_idx, &value) in row.iter().enumerate() {
+                if let Some(res) = self.cell_residue(row_idx, col_idx, e, multicharge) {
+                    if res == residue {
+                        result.push((row_idx, col_idx, value));
+                    }
+                }
+            }
+        }
+
+        result
+    }
+
     /// Perform jeu de taquin slide from a given position
     ///
     /// Jeu de taquin is a process for moving an empty cell in a tableau
@@ -408,6 +578,376 @@ fn insert_at_position(tableau: &Tableau, row: usize, col: usize, value: usize) -
     Tableau::new(rows).unwrap()
 }
 
+/// A k-tableau - a generalization of Young tableaux
+///
+/// In a k-tableau:
+/// - Rows are weakly increasing (non-decreasing)
+/// - Entries in columns differ by at least k
+///
+/// For k=1, this gives semistandard tableaux
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct KTableau {
+    /// The underlying tableau
+    tableau: Tableau,
+    /// The k value (minimum column increment)
+    k: usize,
+}
+
+impl KTableau {
+    /// Create a k-tableau from rows and a k value
+    ///
+    /// Returns None if the rows don't satisfy the k-tableau property
+    pub fn new(rows: Vec<Vec<usize>>, k: usize) -> Option<Self> {
+        let tableau = Tableau::new(rows)?;
+
+        // Check k-tableau property: columns differ by at least k
+        for col in 0..tableau.rows()[0].len() {
+            for row in 1..tableau.rows().len() {
+                if col < tableau.rows()[row].len() {
+                    let upper = tableau.rows()[row - 1][col];
+                    let lower = tableau.rows()[row][col];
+                    if lower < upper + k {
+                        return None;
+                    }
+                }
+            }
+        }
+
+        // Check rows are weakly increasing
+        for row in tableau.rows() {
+            for i in 1..row.len() {
+                if row[i] < row[i - 1] {
+                    return None;
+                }
+            }
+        }
+
+        Some(KTableau { tableau, k })
+    }
+
+    /// Get the underlying tableau
+    pub fn tableau(&self) -> &Tableau {
+        &self.tableau
+    }
+
+    /// Get the k value
+    pub fn k(&self) -> usize {
+        self.k
+    }
+
+    /// Get the shape of the k-tableau
+    pub fn shape(&self) -> &Partition {
+        self.tableau.shape()
+    }
+
+    /// Get the rows of the k-tableau
+    pub fn rows(&self) -> &[Vec<usize>] {
+        self.tableau.rows()
+    }
+
+    /// Get the size (number of entries)
+    pub fn size(&self) -> usize {
+        self.tableau.size()
+    }
+
+    /// Check if this is a valid k-tableau
+    pub fn is_valid(&self) -> bool {
+        // Check rows are weakly increasing
+        for row in self.tableau.rows() {
+            for i in 1..row.len() {
+                if row[i] < row[i - 1] {
+                    return false;
+                }
+            }
+        }
+
+        // Check columns differ by at least k
+        for col in 0..self.tableau.rows()[0].len() {
+            for row in 1..self.tableau.rows().len() {
+                if col < self.tableau.rows()[row].len() {
+                    let upper = self.tableau.rows()[row - 1][col];
+                    let lower = self.tableau.rows()[row][col];
+                    if lower < upper + self.k {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        true
+    }
+
+    /// Convert to string representation
+    pub fn to_string(&self) -> String {
+        self.tableau.to_string()
+    }
+}
+
+/// A weak k-tableau (same as k-tableau, but emphasizing weak row condition)
+///
+/// In a weak k-tableau:
+/// - Rows are weakly increasing (non-decreasing) - the "weak" part
+/// - Entries in columns differ by at least k
+pub type WeakKTableau = KTableau;
+
+/// An increasing tableau
+///
+/// In an increasing tableau:
+/// - Rows are strictly increasing
+/// - Columns are strictly increasing
+///
+/// This is more restrictive than a standard tableau which allows
+/// equal entries in rows
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct IncreasingTableau {
+    /// The underlying tableau
+    tableau: Tableau,
+}
+
+impl IncreasingTableau {
+    /// Create an increasing tableau from rows
+    ///
+    /// Returns None if the rows don't satisfy the increasing property
+    pub fn new(rows: Vec<Vec<usize>>) -> Option<Self> {
+        let tableau = Tableau::new(rows)?;
+
+        // Check rows are strictly increasing
+        for row in tableau.rows() {
+            for i in 1..row.len() {
+                if row[i] <= row[i - 1] {
+                    return None;
+                }
+            }
+        }
+
+        // Check columns are strictly increasing
+        for col in 0..tableau.rows()[0].len() {
+            for row in 1..tableau.rows().len() {
+                if col < tableau.rows()[row].len() {
+                    if tableau.rows()[row][col] <= tableau.rows()[row - 1][col] {
+                        return None;
+                    }
+                }
+            }
+        }
+
+        Some(IncreasingTableau { tableau })
+    }
+
+    /// Get the underlying tableau
+    pub fn tableau(&self) -> &Tableau {
+        &self.tableau
+    }
+
+    /// Get the shape of the tableau
+    pub fn shape(&self) -> &Partition {
+        self.tableau.shape()
+    }
+
+    /// Get the rows of the tableau
+    pub fn rows(&self) -> &[Vec<usize>] {
+        self.tableau.rows()
+    }
+
+    /// Get the size (number of entries)
+    pub fn size(&self) -> usize {
+        self.tableau.size()
+    }
+
+    /// Check if this is a valid increasing tableau
+    pub fn is_valid(&self) -> bool {
+        // Check rows are strictly increasing
+        for row in self.tableau.rows() {
+            for i in 1..row.len() {
+                if row[i] <= row[i - 1] {
+                    return false;
+                }
+            }
+        }
+
+        // Check columns are strictly increasing
+        for col in 0..self.tableau.rows()[0].len() {
+            for row in 1..self.tableau.rows().len() {
+                if col < self.tableau.rows()[row].len() {
+                    if self.tableau.rows()[row][col] <= self.tableau.rows()[row - 1][col] {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        true
+    }
+
+    /// Convert to string representation
+    pub fn to_string(&self) -> String {
+        self.tableau.to_string()
+    }
+}
+
+/// Generate all k-tableaux of a given shape with entries from a specified range
+///
+/// # Arguments
+/// * `shape` - The partition shape
+/// * `k` - The minimum column increment
+/// * `max_entry` - Maximum entry value allowed
+///
+/// # Returns
+/// A vector of all valid k-tableaux
+pub fn generate_k_tableaux(shape: &Partition, k: usize, max_entry: usize) -> Vec<KTableau> {
+    if shape.sum() == 0 {
+        return vec![];
+    }
+
+    let mut result = Vec::new();
+    let mut current: Vec<Vec<usize>> = shape
+        .parts()
+        .iter()
+        .map(|&len| vec![1; len])
+        .collect();
+
+    generate_k_tableaux_recursive(&mut current, shape, k, max_entry, 0, 0, &mut result);
+    result
+}
+
+fn generate_k_tableaux_recursive(
+    current: &mut Vec<Vec<usize>>,
+    shape: &Partition,
+    k: usize,
+    max_entry: usize,
+    row: usize,
+    col: usize,
+    result: &mut Vec<KTableau>,
+) {
+    // If we've filled all positions, add this k-tableau
+    if row >= shape.length() {
+        if let Some(kt) = KTableau::new(current.clone(), k) {
+            result.push(kt);
+        }
+        return;
+    }
+
+    // Calculate next position
+    let (next_row, next_col) = if col + 1 < shape.parts()[row] {
+        (row, col + 1)
+    } else if row + 1 < shape.length() {
+        (row + 1, 0)
+    } else {
+        (shape.length(), 0)
+    };
+
+    // Determine valid range for this position
+    let min_val = if col > 0 {
+        // Must be >= left neighbor (weakly increasing rows)
+        current[row][col - 1]
+    } else if row > 0 && col < shape.parts()[row] && col < current[row - 1].len() {
+        // Must be >= upper neighbor + k (column constraint)
+        current[row - 1][col] + k
+    } else {
+        1
+    };
+
+    // Additional constraint from above if both col > 0 and row > 0
+    let min_val = if row > 0 && col < current[row - 1].len() {
+        min_val.max(current[row - 1][col] + k)
+    } else {
+        min_val
+    };
+
+    // Try each valid value
+    for val in min_val..=max_entry {
+        current[row][col] = val;
+        generate_k_tableaux_recursive(current, shape, k, max_entry, next_row, next_col, result);
+    }
+}
+
+/// Generate all increasing tableaux of a given shape with specified entries
+///
+/// # Arguments
+/// * `shape` - The partition shape
+/// * `entries` - The entries to use (must have size equal to shape.sum())
+///
+/// # Returns
+/// A vector of all valid increasing tableaux using those entries
+pub fn generate_increasing_tableaux(shape: &Partition, entries: &[usize]) -> Vec<IncreasingTableau> {
+    if shape.sum() != entries.len() {
+        return vec![];
+    }
+
+    if shape.sum() == 0 {
+        return vec![];
+    }
+
+    let mut result = Vec::new();
+    let mut current: Vec<Vec<usize>> = shape
+        .parts()
+        .iter()
+        .map(|&len| vec![0; len])
+        .collect();
+
+    let mut used = vec![false; entries.len()];
+    generate_increasing_tableaux_recursive(&mut current, shape, entries, &mut used, 0, 0, &mut result);
+    result
+}
+
+fn generate_increasing_tableaux_recursive(
+    current: &mut Vec<Vec<usize>>,
+    shape: &Partition,
+    entries: &[usize],
+    used: &mut Vec<bool>,
+    row: usize,
+    col: usize,
+    result: &mut Vec<IncreasingTableau>,
+) {
+    // If we've filled all positions, add this increasing tableau
+    if row >= shape.length() {
+        if let Some(it) = IncreasingTableau::new(current.clone()) {
+            result.push(it);
+        }
+        return;
+    }
+
+    // Calculate next position
+    let (next_row, next_col) = if col + 1 < shape.parts()[row] {
+        (row, col + 1)
+    } else if row + 1 < shape.length() {
+        (row + 1, 0)
+    } else {
+        (shape.length(), 0)
+    };
+
+    // Try each unused entry
+    for i in 0..entries.len() {
+        if used[i] {
+            continue;
+        }
+
+        let val = entries[i];
+
+        // Check if this value is valid for this position
+        let valid = if col > 0 && row > 0 && col < current[row - 1].len() {
+            // Must be > left neighbor and > upper neighbor
+            val > current[row][col - 1] && val > current[row - 1][col]
+        } else if col > 0 {
+            // Must be > left neighbor
+            val > current[row][col - 1]
+        } else if row > 0 && col < current[row - 1].len() {
+            // Must be > upper neighbor
+            val > current[row - 1][col]
+        } else {
+            true
+        };
+
+        if valid {
+            current[row][col] = val;
+            used[i] = true;
+            generate_increasing_tableaux_recursive(current, shape, entries, used, next_row, next_col, result);
+            used[i] = false;
+            current[row][col] = 0;
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -556,5 +1096,499 @@ mod tests {
 
         // Should still be a valid semistandard tableau
         assert!(result_t.is_semistandard());
+    }
+
+    #[test]
+    fn test_cell_residue() {
+        // Create a tableau: [[1, 2, 3], [4, 5]]
+        let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+
+        // Test with e=3, multicharge=0
+        // Cell (0,0): residue = (0 - 0 + 0) mod 3 = 0
+        assert_eq!(t.cell_residue(0, 0, 3, 0), Some(0));
+
+        // Cell (0,1): residue = (1 - 0 + 0) mod 3 = 1
+        assert_eq!(t.cell_residue(0, 1, 3, 0), Some(1));
+
+        // Cell (0,2): residue = (2 - 0 + 0) mod 3 = 2
+        assert_eq!(t.cell_residue(0, 2, 3, 0), Some(2));
+
+        // Cell (1,0): residue = (0 - 1 + 0) mod 3 = -1 mod 3 = 2
+        assert_eq!(t.cell_residue(1, 0, 3, 0), Some(2));
+
+        // Cell (1,1): residue = (1 - 1 + 0) mod 3 = 0
+        assert_eq!(t.cell_residue(1, 1, 3, 0), Some(0));
+
+        // Test with multicharge=1
+        // Cell (0,0): residue = (0 - 0 + 1) mod 3 = 1
+        assert_eq!(t.cell_residue(0, 0, 3, 1), Some(1));
+
+        // Test invalid positions
+        assert_eq!(t.cell_residue(2, 0, 3, 0), None);
+        assert_eq!(t.cell_residue(0, 5, 3, 0), None);
+
+        // Test e=0 (should return None)
+        assert_eq!(t.cell_residue(0, 0, 0, 0), None);
+    }
+
+    #[test]
+    fn test_cell_residue_with_different_e() {
+        let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+
+        // Test with e=2
+        // Cell (0,0): residue = 0 mod 2 = 0
+        assert_eq!(t.cell_residue(0, 0, 2, 0), Some(0));
+
+        // Cell (0,1): residue = 1 mod 2 = 1
+        assert_eq!(t.cell_residue(0, 1, 2, 0), Some(1));
+
+        // Cell (1,0): residue = -1 mod 2 = 1
+        assert_eq!(t.cell_residue(1, 0, 2, 0), Some(1));
+
+        // Test with e=5
+        // Cell (1,0): residue = -1 mod 5 = 4
+        assert_eq!(t.cell_residue(1, 0, 5, 0), Some(4));
+    }
+
+    #[test]
+    fn test_residue_sequence() {
+        // Create a standard tableau: [[1, 2, 4], [3, 5]]
+        let t = Tableau::new(vec![vec![1, 2, 4], vec![3, 5]]).unwrap();
+        assert!(t.is_standard());
+
+        // Compute residue sequence with e=3, multicharge=0
+        let residues = t.residue_sequence(3, 0);
+
+        // Should have 5 residues (one for each entry 1-5)
+        assert_eq!(residues.len(), 5);
+
+        // Entry 1 is at (0,0): residue = 0
+        assert_eq!(residues[0], 0);
+
+        // Entry 2 is at (0,1): residue = 1
+        assert_eq!(residues[1], 1);
+
+        // Entry 3 is at (1,0): residue = -1 mod 3 = 2
+        assert_eq!(residues[2], 2);
+
+        // Entry 4 is at (0,2): residue = 2
+        assert_eq!(residues[3], 2);
+
+        // Entry 5 is at (1,1): residue = 0
+        assert_eq!(residues[4], 0);
+    }
+
+    #[test]
+    fn test_residue_sequence_with_multicharge() {
+        // Create a standard tableau: [[1, 2], [3]]
+        let t = Tableau::new(vec![vec![1, 2], vec![3]]).unwrap();
+
+        // Compute residue sequence with e=2, multicharge=1
+        let residues = t.residue_sequence(2, 1);
+
+        // Entry 1 at (0,0): residue = (0 - 0 + 1) mod 2 = 1
+        assert_eq!(residues[0], 1);
+
+        // Entry 2 at (0,1): residue = (1 - 0 + 1) mod 2 = 0
+        assert_eq!(residues[1], 0);
+
+        // Entry 3 at (1,0): residue = (0 - 1 + 1) mod 2 = 0
+        assert_eq!(residues[2], 0);
+    }
+
+    #[test]
+    fn test_residue_content() {
+        // Create a tableau: [[1, 2, 3], [4, 5]]
+        let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+
+        // Compute residue content with e=3, multicharge=0
+        let content = t.residue_content(3, 0);
+
+        // Should have 3 entries (one for each residue class 0, 1, 2)
+        assert_eq!(content.len(), 3);
+
+        // Count cells with residue 0: (0,0) and (1,1) -> 2 cells
+        assert_eq!(content[0], 2);
+
+        // Count cells with residue 1: (0,1) -> 1 cell
+        assert_eq!(content[1], 1);
+
+        // Count cells with residue 2: (0,2) and (1,0) -> 2 cells
+        assert_eq!(content[2], 2);
+
+        // Verify total
+        assert_eq!(content.iter().sum::<usize>(), 5);
+    }
+
+    #[test]
+    fn test_residue_content_different_shape() {
+        // Create a tableau with shape [3, 2, 1]: [[1, 2, 3], [4, 5], [6]]
+        let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5], vec![6]]).unwrap();
+
+        let content = t.residue_content(2, 0);
+
+        // With e=2, residues are 0 or 1
+        assert_eq!(content.len(), 2);
+
+        // Cells with even content (col - row): (0,0)=0, (0,2)=2, (1,1)=0, (2,0)=-2 -> 4 cells with residue 0
+        // Cells with odd content: (0,1)=1, (1,0)=-1 -> 2 cells with residue 1
+        assert_eq!(content[0], 4);
+        assert_eq!(content[1], 2);
+
+        assert_eq!(content.iter().sum::<usize>(), 6);
+    }
+
+    #[test]
+    fn test_cells_with_residue() {
+        // Create a tableau: [[1, 2, 3], [4, 5]]
+        let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+
+        // Find cells with residue 0 (e=3, multicharge=0)
+        let cells = t.cells_with_residue(3, 0, 0);
+
+        // Should have 2 cells: (0,0) with value 1 and (1,1) with value 5
+        assert_eq!(cells.len(), 2);
+        assert!(cells.contains(&(0, 0, 1)));
+        assert!(cells.contains(&(1, 1, 5)));
+
+        // Find cells with residue 1
+        let cells_1 = t.cells_with_residue(3, 1, 0);
+        assert_eq!(cells_1.len(), 1);
+        assert_eq!(cells_1[0], (0, 1, 2));
+
+        // Find cells with residue 2
+        let cells_2 = t.cells_with_residue(3, 2, 0);
+        assert_eq!(cells_2.len(), 2);
+        assert!(cells_2.contains(&(0, 2, 3)));
+        assert!(cells_2.contains(&(1, 0, 4)));
+    }
+
+    #[test]
+    fn test_cells_with_residue_invalid() {
+        let t = Tableau::new(vec![vec![1, 2, 3]]).unwrap();
+
+        // Invalid: residue >= e
+        let cells = t.cells_with_residue(3, 3, 0);
+        assert_eq!(cells.len(), 0);
+
+        // Invalid: e = 0
+        let cells = t.cells_with_residue(0, 0, 0);
+        assert_eq!(cells.len(), 0);
+    }
+
+    #[test]
+    fn test_residue_empty_tableau() {
+        let t = Tableau::new(vec![]).unwrap();
+
+        // Cell residue on empty tableau
+        assert_eq!(t.cell_residue(0, 0, 3, 0), None);
+
+        // Residue sequence of empty tableau
+        let residues = t.residue_sequence(3, 0);
+        assert_eq!(residues.len(), 0);
+
+        // Residue content of empty tableau
+        let content = t.residue_content(3, 0);
+        assert_eq!(content, vec![0, 0, 0]);
+
+        // Cells with residue on empty tableau
+        let cells = t.cells_with_residue(3, 0, 0);
+        assert_eq!(cells.len(), 0);
+    }
+
+    #[test]
+    fn test_residue_large_tableau() {
+        // Create a larger standard tableau
+        let t = Tableau::new(vec![
+            vec![1, 2, 3, 4],
+            vec![5, 6, 7],
+            vec![8, 9],
+        ]).unwrap();
+
+        assert!(t.is_standard());
+        assert_eq!(t.size(), 9);
+
+        // Test residue sequence with e=4
+        let residues = t.residue_sequence(4, 0);
+        assert_eq!(residues.len(), 9);
+
+        // Entry 1 at (0,0): residue = 0
+        assert_eq!(residues[0], 0);
+
+        // Entry 5 at (1,0): residue = -1 mod 4 = 3
+        assert_eq!(residues[4], 3);
+
+        // Entry 9 at (2,1): residue = (1 - 2) mod 4 = -1 mod 4 = 3
+        assert_eq!(residues[8], 3);
+
+        // Test residue content
+        let content = t.residue_content(4, 0);
+        assert_eq!(content.len(), 4);
+        assert_eq!(content.iter().sum::<usize>(), 9);
+    }
+
+    #[test]
+    fn test_residue_negative_multicharge() {
+        let t = Tableau::new(vec![vec![1, 2], vec![3]]).unwrap();
+
+        // Test with negative multicharge
+        let residues = t.residue_sequence(3, -1);
+
+        // Entry 1 at (0,0): residue = (0 - 0 - 1) mod 3 = -1 mod 3 = 2
+        assert_eq!(residues[0], 2);
+
+        // Entry 2 at (0,1): residue = (1 - 0 - 1) mod 3 = 0
+        assert_eq!(residues[1], 0);
+
+        // Entry 3 at (1,0): residue = (0 - 1 - 1) mod 3 = -2 mod 3 = 1
+        assert_eq!(residues[2], 1);
+    // k-tableau tests
+    #[test]
+    fn test_k_tableau_creation() {
+        // Valid 2-tableau: columns differ by at least 2
+        // [[1, 2, 3],
+        //  [3, 4, 5]]
+        let kt = KTableau::new(vec![vec![1, 2, 3], vec![3, 4, 5]], 2);
+        assert!(kt.is_some());
+        let kt = kt.unwrap();
+        assert_eq!(kt.k(), 2);
+        assert_eq!(kt.size(), 6);
+        assert!(kt.is_valid());
+    }
+
+    #[test]
+    fn test_k_tableau_invalid() {
+        // Invalid 2-tableau: second column only differs by 1
+        // [[1, 2, 3],
+        //  [3, 3, 5]]
+        let kt = KTableau::new(vec![vec![1, 2, 3], vec![3, 3, 5]], 2);
+        assert!(kt.is_none());
+
+        // Invalid: rows not weakly increasing
+        let kt2 = KTableau::new(vec![vec![3, 2, 1], vec![4, 5, 6]], 1);
+        assert!(kt2.is_none());
+    }
+
+    #[test]
+    fn test_k_tableau_k1_is_semistandard() {
+        // A 1-tableau should be the same as a semistandard tableau
+        // [[1, 1, 2],
+        //  [2, 3]]
+        let kt = KTableau::new(vec![vec![1, 1, 2], vec![2, 3]], 1);
+        assert!(kt.is_some());
+
+        let kt = kt.unwrap();
+        assert!(kt.is_valid());
+
+        // Verify it's also semistandard
+        let t = Tableau::new(vec![vec![1, 1, 2], vec![2, 3]]).unwrap();
+        assert!(t.is_semistandard());
+    }
+
+    #[test]
+    fn test_k_tableau_k3() {
+        // Valid 3-tableau
+        // [[1, 2],
+        //  [4, 5]]
+        let kt = KTableau::new(vec![vec![1, 2], vec![4, 5]], 3);
+        assert!(kt.is_some());
+        assert!(kt.unwrap().is_valid());
+
+        // Invalid 3-tableau (column differs by only 2)
+        // [[1, 2],
+        //  [3, 5]]
+        let kt2 = KTableau::new(vec![vec![1, 2], vec![3, 5]], 3);
+        assert!(kt2.is_none());
+    }
+
+    #[test]
+    fn test_weak_k_tableau() {
+        // WeakKTableau is a type alias for KTableau
+        // Test that weak rows (with repeats) are allowed
+        let wkt: WeakKTableau = KTableau::new(vec![vec![1, 1, 1], vec![3, 3, 4]], 2).unwrap();
+        assert_eq!(wkt.k(), 2);
+        assert!(wkt.is_valid());
+    }
+
+    #[test]
+    fn test_increasing_tableau_creation() {
+        // Valid increasing tableau
+        // [[1, 2, 4],
+        //  [3, 5]]
+        let it = IncreasingTableau::new(vec![vec![1, 2, 4], vec![3, 5]]);
+        assert!(it.is_some());
+        let it = it.unwrap();
+        assert_eq!(it.size(), 5);
+        assert!(it.is_valid());
+    }
+
+    #[test]
+    fn test_increasing_tableau_invalid_rows() {
+        // Invalid: row not strictly increasing (has equal entries)
+        // [[1, 1, 2],
+        //  [3, 4]]
+        let it = IncreasingTableau::new(vec![vec![1, 1, 2], vec![3, 4]]);
+        assert!(it.is_none());
+
+        // Invalid: row decreasing
+        // [[2, 1, 3],
+        //  [4, 5]]
+        let it2 = IncreasingTableau::new(vec![vec![2, 1, 3], vec![4, 5]]);
+        assert!(it2.is_none());
+    }
+
+    #[test]
+    fn test_increasing_tableau_invalid_columns() {
+        // Invalid: column not strictly increasing (has equal entries)
+        // [[1, 2, 3],
+        //  [1, 4, 5]]
+        let it = IncreasingTableau::new(vec![vec![1, 2, 3], vec![1, 4, 5]]);
+        assert!(it.is_none());
+
+        // Invalid: column decreasing
+        // [[2, 3, 4],
+        //  [1, 5, 6]]
+        let it2 = IncreasingTableau::new(vec![vec![2, 3, 4], vec![1, 5, 6]]);
+        assert!(it2.is_none());
+    }
+
+    #[test]
+    fn test_increasing_tableau_vs_standard() {
+        // An increasing tableau is more restrictive than a standard tableau
+        // Standard tableau (but not increasing due to equal in row):
+        // [[1, 1], [2]]  - This would be invalid for both standard and increasing
+
+        // Valid standard and increasing:
+        // [[1, 2], [3]]
+        let rows = vec![vec![1, 2], vec![3]];
+        let it = IncreasingTableau::new(rows.clone());
+        assert!(it.is_some());
+
+        let t = Tableau::new(rows).unwrap();
+        assert!(t.is_standard());
+    }
+
+    #[test]
+    fn test_generate_k_tableaux_small() {
+        // Generate all 2-tableaux of shape [2, 1] with max entry 5
+        let shape = Partition::new(vec![2, 1]);
+        let k_tableaux = generate_k_tableaux(&shape, 2, 5);
+
+        // Verify all are valid
+        for kt in &k_tableaux {
+            assert!(kt.is_valid());
+            assert_eq!(kt.k(), 2);
+            assert_eq!(kt.shape(), &shape);
+        }
+
+        // Should have at least some k-tableaux
+        assert!(!k_tableaux.is_empty());
+    }
+
+    #[test]
+    fn test_generate_k_tableaux_k1() {
+        // Generate all 1-tableaux (semistandard) of shape [2] with max entry 3
+        let shape = Partition::new(vec![2]);
+        let k_tableaux = generate_k_tableaux(&shape, 1, 3);
+
+        // Expected: [1,1], [1,2], [1,3], [2,2], [2,3], [3,3]
+        // All should be valid 1-tableaux
+        for kt in &k_tableaux {
+            assert!(kt.is_valid());
+            assert_eq!(kt.k(), 1);
+        }
+
+        // Should have exactly 6 tableaux
+        assert_eq!(k_tableaux.len(), 6);
+    }
+
+    #[test]
+    fn test_generate_k_tableaux_empty() {
+        // Empty shape should give empty list
+        let shape = Partition::new(vec![]);
+        let k_tableaux = generate_k_tableaux(&shape, 1, 5);
+        assert_eq!(k_tableaux.len(), 0);
+    }
+
+    #[test]
+    fn test_generate_increasing_tableaux_small() {
+        // Generate all increasing tableaux of shape [2, 1] with entries [1, 2, 3]
+        let shape = Partition::new(vec![2, 1]);
+        let entries = vec![1, 2, 3];
+        let inc_tableaux = generate_increasing_tableaux(&shape, &entries);
+
+        // Verify all are valid
+        for it in &inc_tableaux {
+            assert!(it.is_valid());
+            assert_eq!(it.shape(), &shape);
+            assert_eq!(it.size(), 3);
+        }
+
+        // Should have exactly 2 increasing tableaux:
+        // [[1, 2], [3]] and [[1, 3], [2]]
+        assert_eq!(inc_tableaux.len(), 2);
+    }
+
+    #[test]
+    fn test_generate_increasing_tableaux_single_row() {
+        // Generate all increasing tableaux of shape [3] with entries [1, 2, 3]
+        let shape = Partition::new(vec![3]);
+        let entries = vec![1, 2, 3];
+        let inc_tableaux = generate_increasing_tableaux(&shape, &entries);
+
+        // Should have exactly 1 tableau: [[1, 2, 3]]
+        assert_eq!(inc_tableaux.len(), 1);
+        assert_eq!(inc_tableaux[0].rows(), &[vec![1, 2, 3]]);
+    }
+
+    #[test]
+    fn test_generate_increasing_tableaux_wrong_size() {
+        // Wrong number of entries should give empty list
+        let shape = Partition::new(vec![2, 1]);
+        let entries = vec![1, 2]; // Need 3 entries
+        let inc_tableaux = generate_increasing_tableaux(&shape, &entries);
+        assert_eq!(inc_tableaux.len(), 0);
+    }
+
+    #[test]
+    fn test_generate_increasing_tableaux_empty() {
+        // Empty shape should give empty list
+        let shape = Partition::new(vec![]);
+        let entries = vec![];
+        let inc_tableaux = generate_increasing_tableaux(&shape, &entries);
+        assert_eq!(inc_tableaux.len(), 0);
+    }
+
+    #[test]
+    fn test_k_tableau_edge_case_single_cell() {
+        // Single cell should be valid for any k
+        let kt1 = KTableau::new(vec![vec![1]], 1).unwrap();
+        assert!(kt1.is_valid());
+
+        let kt5 = KTableau::new(vec![vec![1]], 5).unwrap();
+        assert!(kt5.is_valid());
+    }
+
+    #[test]
+    fn test_increasing_tableau_edge_case_single_cell() {
+        // Single cell should be valid
+        let it = IncreasingTableau::new(vec![vec![1]]).unwrap();
+        assert!(it.is_valid());
+    }
+
+    #[test]
+    fn test_k_tableau_to_string() {
+        let kt = KTableau::new(vec![vec![1, 2, 3], vec![4, 5]], 1).unwrap();
+        let s = kt.to_string();
+        assert!(s.contains("1 2 3"));
+        assert!(s.contains("4 5"));
+    }
+
+    #[test]
+    fn test_increasing_tableau_to_string() {
+        let it = IncreasingTableau::new(vec![vec![1, 3, 5], vec![2, 4]]).unwrap();
+        let s = it.to_string();
+        assert!(s.contains("1 3 5"));
+        assert!(s.contains("2 4"));
     }
 }
