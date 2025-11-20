@@ -26,6 +26,7 @@ pub mod posets;
 pub mod q_analogue;
 pub mod ranking;
 pub mod recurrence_sequences;
+pub mod ribbon_tableau;
 pub mod restricted_growth;
 pub mod set_partition;
 pub mod set_system;
@@ -140,6 +141,10 @@ pub use path_tableaux::{
     ballot_sequences, count_dyck_paths, count_lattice_paths_ne, dyck_path_to_partition,
     dyck_paths, lattice_paths_ne, partition_to_dyck_path, LatticePath, PathTableau, Step,
 };
+pub use ribbon_tableau::{
+    fermionic_formula, kostka_foulkes_ribbon, ribbon_tableaux, RibbonDecomposition, RibbonTableau,
+};
+pub use skew_partition::{SkewPartition, SkewTableau};
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
 
