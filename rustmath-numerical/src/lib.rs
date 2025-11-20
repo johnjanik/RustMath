@@ -1,8 +1,9 @@
 //! RustMath Numerical - Numerical computation methods
 //!
 //! This crate provides implementations of:
-//! - Root finding algorithms
-//! - Optimization methods
+//! - Root finding algorithms (Brent's method, bisection, Newton-Raphson, secant)
+//! - Optimization methods (golden section search, gradient descent, Nelder-Mead)
+//! - Curve fitting (linear least squares)
 //! - Linear programming
 //! - Numerical integration (quadrature)
 //! - Interpolation
@@ -11,6 +12,7 @@
 
 pub mod rootfinding;
 pub mod optimization;
+pub mod optimize;
 pub mod integration;
 pub mod interpolation;
 pub mod fft;
@@ -23,3 +25,16 @@ pub use integration::{integrate, simpson, trapezoid, romberg};
 pub use interpolation::{lagrange_interpolate, spline_interpolate};
 pub use fft::{fft, ifft};
 pub use linear_programming::simplex;
+
+// Export the comprehensive optimize module functions
+pub use optimize::{
+    find_root as optimize_find_root,
+    find_local_minimum,
+    find_local_maximum,
+    find_fit,
+    brent_root,
+    golden_section_search,
+    RootResult as OptimizeRootResult,
+    OptimizationResult,
+    FitResult,
+};
