@@ -7,6 +7,7 @@ pub mod affine_permutations;
 pub mod binary_words;
 pub mod combinations;
 pub mod composition;
+pub mod debruijn;
 pub mod derangements;
 pub mod designs;
 pub mod dyck_word;
@@ -124,6 +125,11 @@ pub use vector_partition::{
     count_vector_partitions_exact_parts, count_vector_partitions_max_parts,
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
     vector_partitions_with_max_part, VectorPartition,
+};
+pub use debruijn::{
+    debruijn_graph_path, debruijn_prefer_one, debruijn_prefer_zero, debruijn_sequence,
+    debruijn_sequence_binary, universal_cycle_permutations, universal_cycle_subsets,
+    DeBruijnSequence,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
