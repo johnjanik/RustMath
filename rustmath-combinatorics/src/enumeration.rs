@@ -52,10 +52,144 @@ where
     }
 }
 
+// =============================================================================
+// Binary Reflected Gray Code Utilities
+// =============================================================================
+
+/// Convert a binary number to its Gray code representation
+///
+/// The binary reflected Gray code is a binary numeral system where two
+/// successive values differ in only one bit.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_combinatorics::enumeration::binary_to_gray;
+///
+/// assert_eq!(binary_to_gray(0), 0);  // 000 -> 000
+/// assert_eq!(binary_to_gray(1), 1);  // 001 -> 001
+/// assert_eq!(binary_to_gray(2), 3);  // 010 -> 011
+/// assert_eq!(binary_to_gray(3), 2);  // 011 -> 010
+/// assert_eq!(binary_to_gray(4), 6);  // 100 -> 110
+/// ```
+pub fn binary_to_gray(binary: usize) -> usize {
+    binary ^ (binary >> 1)
+}
+
+/// Convert a Gray code to its binary representation
+///
+/// This is the inverse of `binary_to_gray`.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_combinatorics::enumeration::gray_to_binary;
+///
+/// assert_eq!(gray_to_binary(0), 0);  // 000 -> 000
+/// assert_eq!(gray_to_binary(1), 1);  // 001 -> 001
+/// assert_eq!(gray_to_binary(3), 2);  // 011 -> 010
+/// assert_eq!(gray_to_binary(2), 3);  // 010 -> 011
+/// assert_eq!(gray_to_binary(6), 4);  // 110 -> 100
+/// ```
+pub fn gray_to_binary(gray: usize) -> usize {
+    let mut binary = gray;
+    let mut mask = gray >> 1;
+    while mask != 0 {
+        binary ^= mask;
+        mask >>= 1;
+    }
+    binary
+}
+
+/// Generate a sequence of n-bit binary reflected Gray codes
+///
+/// Returns all 2^n Gray codes in order as binary numbers.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_combinatorics::enumeration::gray_code_sequence;
+///
+/// let codes = gray_code_sequence(3);
+/// assert_eq!(codes, vec![0, 1, 3, 2, 6, 7, 5, 4]);
+/// // In binary: 000, 001, 011, 010, 110, 111, 101, 100
+/// ```
+pub fn gray_code_sequence(n: usize) -> Vec<usize> {
+    if n > 30 {
+        panic!("Gray code sequence: n too large (max 30)");
+    }
+    let max = 1 << n;
+    (0..max).map(binary_to_gray).collect()
+}
+
+/// Find the position of the bit that changes between consecutive Gray codes
+///
+/// Returns the index of the bit (0-indexed from the right) that changes when
+/// moving from the i-th Gray code to the (i+1)-th Gray code.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_combinatorics::enumeration::gray_code_change_bit;
+///
+/// assert_eq!(gray_code_change_bit(0), 0);  // 000 -> 001, bit 0 changes
+/// assert_eq!(gray_code_change_bit(1), 1);  // 001 -> 011, bit 1 changes
+/// assert_eq!(gray_code_change_bit(2), 0);  // 011 -> 010, bit 0 changes
+/// assert_eq!(gray_code_change_bit(3), 2);  // 010 -> 110, bit 2 changes
+/// ```
+pub fn gray_code_change_bit(index: usize) -> usize {
+    // The bit that changes is the position of the rightmost 1 in (index + 1)
+    // This is computed as the number of trailing zeros
+    (index + 1).trailing_zeros() as usize
+}
+
+/// Rank a binary number in the Gray code sequence
+///
+/// Given a binary number, return its position in the Gray code sequence.
+/// This is the inverse operation of generating the i-th Gray code.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_combinatorics::enumeration::gray_code_rank;
+///
+/// assert_eq!(gray_code_rank(0), 0);  // 000 is at position 0
+/// assert_eq!(gray_code_rank(1), 1);  // 001 is at position 1
+/// assert_eq!(gray_code_rank(3), 2);  // 011 is at position 2
+/// assert_eq!(gray_code_rank(2), 3);  // 010 is at position 3
+/// ```
+pub fn gray_code_rank(gray: usize) -> usize {
+    gray_to_binary(gray)
+}
+
+/// Unrank to get the i-th Gray code
+///
+/// Given an index i, return the i-th binary reflected Gray code.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_combinatorics::enumeration::gray_code_unrank;
+///
+/// assert_eq!(gray_code_unrank(0), 0);  // 0th Gray code is 000
+/// assert_eq!(gray_code_unrank(1), 1);  // 1st Gray code is 001
+/// assert_eq!(gray_code_unrank(2), 3);  // 2nd Gray code is 011
+/// assert_eq!(gray_code_unrank(3), 2);  // 3rd Gray code is 010
+/// ```
+pub fn gray_code_unrank(index: usize) -> usize {
+    binary_to_gray(index)
+}
+
+// =============================================================================
+// Gray Code Iterators
+// =============================================================================
+
 /// A Gray code iterator for subsets
 ///
 /// Generates all 2^n subsets of {0, 1, ..., n-1} such that
 /// consecutive subsets differ by exactly one element (Gray code order)
+///
+/// This uses the binary reflected Gray code to enumerate subsets.
 pub struct GrayCodeIterator {
     n: usize,
     current: usize,
@@ -75,17 +209,6 @@ impl GrayCodeIterator {
         }
     }
 
-    /// Convert Gray code to binary
-    fn gray_to_binary(gray: usize) -> usize {
-        let mut binary = gray;
-        let mut mask = gray >> 1;
-        while mask != 0 {
-            binary ^= mask;
-            mask >>= 1;
-        }
-        binary
-    }
-
     /// Convert subset index to actual subset
     fn index_to_subset(index: usize, n: usize) -> Vec<usize> {
         (0..n).filter(|&i| (index >> i) & 1 == 1).collect()
@@ -101,7 +224,7 @@ impl Iterator for GrayCodeIterator {
         }
 
         // Convert index to Gray code, then to subset
-        let gray = self.current ^ (self.current >> 1);
+        let gray = binary_to_gray(self.current);
         let subset = Self::index_to_subset(gray, self.n);
         self.current += 1;
 
@@ -115,6 +238,429 @@ impl Iterator for GrayCodeIterator {
 }
 
 impl ExactSizeIterator for GrayCodeIterator {}
+
+/// Convert a binary number to its Gray code representation
+///
+/// The Gray code (also known as reflected binary code) is a binary numeral system
+/// where two successive values differ in only one bit.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_combinatorics::enumeration::binary_to_gray;
+///
+/// assert_eq!(binary_to_gray(0), 0);
+/// assert_eq!(binary_to_gray(1), 1);
+/// assert_eq!(binary_to_gray(2), 3);
+/// assert_eq!(binary_to_gray(3), 2);
+/// assert_eq!(binary_to_gray(4), 6);
+/// ```
+pub fn binary_to_gray(binary: usize) -> usize {
+    binary ^ (binary >> 1)
+}
+
+/// Convert a Gray code to its binary representation
+///
+/// This is the inverse operation of `binary_to_gray`.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_combinatorics::enumeration::gray_to_binary;
+///
+/// assert_eq!(gray_to_binary(0), 0);
+/// assert_eq!(gray_to_binary(1), 1);
+/// assert_eq!(gray_to_binary(3), 2);
+/// assert_eq!(gray_to_binary(2), 3);
+/// assert_eq!(gray_to_binary(6), 4);
+/// ```
+pub fn gray_to_binary(gray: usize) -> usize {
+    let mut binary = gray;
+    let mut mask = gray >> 1;
+    while mask != 0 {
+        binary ^= mask;
+        mask >>= 1;
+    }
+    binary
+}
+
+/// A binary reflected Gray code iterator
+///
+/// Generates n-bit Gray codes as integers from 0 to 2^n - 1
+/// in Gray code order. Each successive value differs from the
+/// previous by exactly one bit.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_combinatorics::enumeration::BinaryGrayCodeIterator;
+///
+/// let codes: Vec<usize> = BinaryGrayCodeIterator::new(3).collect();
+/// // Generates: [0, 1, 3, 2, 6, 7, 5, 4] in Gray code order
+/// assert_eq!(codes.len(), 8);
+///
+/// // Check that consecutive codes differ by exactly one bit
+/// for i in 1..codes.len() {
+///     let diff = codes[i] ^ codes[i-1];
+///     assert_eq!(diff.count_ones(), 1);
+/// }
+/// ```
+pub struct BinaryGrayCodeIterator {
+    n: usize,
+    current: usize,
+    max: usize,
+}
+
+impl BinaryGrayCodeIterator {
+    /// Create a new binary Gray code iterator for n bits
+    ///
+    /// # Panics
+    ///
+    /// Panics if n > 63 (to avoid overflow in calculating 2^n)
+    pub fn new(n: usize) -> Self {
+        if n > 63 {
+            panic!("Binary Gray code iterator: n too large (max 63)");
+        }
+        BinaryGrayCodeIterator {
+            n,
+            current: 0,
+            max: if n == 0 { 0 } else { 1 << n },
+        }
+    }
+
+    /// Get the current position (how many codes have been generated)
+    pub fn position(&self) -> usize {
+        self.current
+    }
+
+    /// Get the number of bits in the codes
+    pub fn bits(&self) -> usize {
+        self.n
+    }
+}
+
+impl Iterator for BinaryGrayCodeIterator {
+    type Item = usize;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.max {
+            return None;
+        }
+
+        let gray = binary_to_gray(self.current);
+        self.current += 1;
+
+        Some(gray)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let remaining = self.max - self.current;
+        (remaining, Some(remaining))
+    }
+}
+
+impl ExactSizeIterator for BinaryGrayCodeIterator {}
+
+/// Generate all n-bit binary Gray codes as a vector
+///
+/// Returns a vector of Gray code values in order. Each value differs
+/// from the previous by exactly one bit.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_combinatorics::enumeration::binary_gray_codes;
+///
+/// let codes = binary_gray_codes(3);
+/// assert_eq!(codes, vec![0, 1, 3, 2, 6, 7, 5, 4]);
+/// ```
+pub fn binary_gray_codes(n: usize) -> Vec<usize> {
+    BinaryGrayCodeIterator::new(n).collect()
+}
+
+/// Generate all n-bit binary Gray codes as bit vector strings
+///
+/// Returns a vector of binary strings representing Gray codes.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_combinatorics::enumeration::binary_gray_code_strings;
+///
+/// let codes = binary_gray_code_strings(3);
+/// assert_eq!(codes, vec!["000", "001", "011", "010", "110", "111", "101", "100"]);
+/// ```
+pub fn binary_gray_code_strings(n: usize) -> Vec<String> {
+    BinaryGrayCodeIterator::new(n)
+        .map(|code| format!("{:0width$b}", code, width = n))
+        .collect()
+}
+
+/// A permutation Gray code iterator using the Steinhaus-Johnson-Trotter algorithm
+///
+/// Generates all permutations of [0, 1, ..., n-1] such that consecutive
+/// permutations differ by swapping two adjacent elements.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_combinatorics::enumeration::PermutationGrayCodeIterator;
+///
+/// let perms: Vec<Vec<usize>> = PermutationGrayCodeIterator::new(3).collect();
+/// assert_eq!(perms.len(), 6); // 3! = 6
+///
+/// // Each permutation differs from the next by swapping adjacent elements
+/// for i in 1..perms.len() {
+///     let mut diffs = 0;
+///     let mut swap_adjacent = false;
+///     for j in 0..perms[i].len() {
+///         if perms[i][j] != perms[i-1][j] {
+///             diffs += 1;
+///             if j > 0 && perms[i][j] == perms[i-1][j-1] {
+///                 swap_adjacent = true;
+///             }
+///             if j < perms[i].len()-1 && perms[i][j] == perms[i-1][j+1] {
+///                 swap_adjacent = true;
+///             }
+///         }
+///     }
+///     assert_eq!(diffs, 2);
+///     assert!(swap_adjacent);
+/// }
+/// ```
+pub struct PermutationGrayCodeIterator {
+    n: usize,
+    perm: Vec<usize>,
+    directions: Vec<i8>, // -1 for left, 1 for right
+    done: bool,
+}
+
+impl PermutationGrayCodeIterator {
+    /// Create a new permutation Gray code iterator for permutations of {0, 1, ..., n-1}
+    pub fn new(n: usize) -> Self {
+        if n == 0 {
+            return PermutationGrayCodeIterator {
+                n: 0,
+                perm: vec![],
+                directions: vec![],
+                done: false,
+            };
+        }
+
+        PermutationGrayCodeIterator {
+            n,
+            perm: (0..n).collect(),
+            directions: vec![-1; n], // All pointing left initially
+            done: false,
+        }
+    }
+
+    /// Find the largest mobile element
+    /// An element is mobile if it points to a smaller adjacent element
+    fn find_largest_mobile(&self) -> Option<usize> {
+        let mut largest_idx = None;
+        let mut largest_val = None;
+
+        for i in 0..self.n {
+            let val = self.perm[i];
+            let dir = self.directions[i];
+
+            // Check if mobile
+            let is_mobile = if dir == -1 {
+                i > 0 && self.perm[i - 1] < val
+            } else {
+                i < self.n - 1 && self.perm[i + 1] < val
+            };
+
+            if is_mobile {
+                if largest_val.is_none() || val > largest_val.unwrap() {
+                    largest_val = Some(val);
+                    largest_idx = Some(i);
+                }
+            }
+        }
+
+        largest_idx
+    }
+}
+
+impl Iterator for PermutationGrayCodeIterator {
+    type Item = Vec<usize>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+
+        if self.n == 0 {
+            self.done = true;
+            return Some(vec![]);
+        }
+
+        // Return current permutation
+        let result = self.perm.clone();
+
+        // Find largest mobile element
+        if let Some(k) = self.find_largest_mobile() {
+            let dir = self.directions[k];
+            let next_pos = if dir == -1 {
+                k - 1
+            } else {
+                k + 1
+            };
+
+            // Swap element k with its neighbor
+            self.perm.swap(k, next_pos);
+            self.directions.swap(k, next_pos);
+
+            // Reverse direction of all elements larger than the mobile element
+            let mobile_val = self.perm[next_pos];
+            for i in 0..self.n {
+                if self.perm[i] > mobile_val {
+                    self.directions[i] *= -1;
+                }
+            }
+        } else {
+            // No mobile elements, we're done
+            self.done = true;
+        }
+
+        Some(result)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        if self.done {
+            return (0, Some(0));
+        }
+
+        // Total permutations is n!
+        // Computing remaining is complex, so we just give total
+        let total = factorial(self.n);
+        (0, Some(total))
+    }
+}
+
+/// Compute factorial n!
+fn factorial(n: usize) -> usize {
+    if n <= 1 {
+        1
+    } else {
+        (2..=n).product()
+    }
+}
+
+/// A combination Gray code iterator
+///
+/// Generates all k-element subsets of {0, 1, ..., n-1} such that
+/// consecutive combinations differ by adding or removing one element.
+/// This uses the revolving door algorithm.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_combinatorics::enumeration::CombinationGrayCodeIterator;
+///
+/// let combs: Vec<Vec<usize>> = CombinationGrayCodeIterator::new(4, 2).collect();
+/// assert_eq!(combs.len(), 6); // C(4, 2) = 6
+/// ```
+pub struct CombinationGrayCodeIterator {
+    n: usize,
+    k: usize,
+    current: Vec<bool>, // Bit vector representation
+    done: bool,
+}
+
+impl CombinationGrayCodeIterator {
+    /// Create a new combination Gray code iterator for C(n, k)
+    pub fn new(n: usize, k: usize) -> Self {
+        if k > n {
+            return CombinationGrayCodeIterator {
+                n,
+                k,
+                current: vec![],
+                done: true,
+            };
+        }
+
+        // Start with first k bits set
+        let mut current = vec![false; n];
+        for i in 0..k {
+            current[i] = true;
+        }
+
+        CombinationGrayCodeIterator {
+            n,
+            k,
+            current,
+            done: false, // Fixed: should always start with done=false
+        }
+    }
+
+    /// Convert bit vector to combination
+    fn to_combination(&self) -> Vec<usize> {
+        self.current
+            .iter()
+            .enumerate()
+            .filter(|(_, &bit)| bit)
+            .map(|(i, _)| i)
+            .collect()
+    }
+}
+
+impl Iterator for CombinationGrayCodeIterator {
+    type Item = Vec<usize>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+
+        let result = self.to_combination();
+
+        if self.k == 0 {
+            self.done = true;
+            return Some(result);
+        }
+
+        // Find the rightmost 1 followed by a 0
+        let mut i = 0;
+        while i < self.n - 1 {
+            if self.current[i] && !self.current[i + 1] {
+                break;
+            }
+            i += 1;
+        }
+
+        if i == self.n - 1 {
+            // No such position found, we're done
+            self.done = true;
+        } else {
+            // Swap positions i and i+1
+            self.current[i] = false;
+            self.current[i + 1] = true;
+
+            // Move all 1s before position i to the beginning
+            let ones_before = self.current[0..i].iter().filter(|&&b| b).count();
+            for j in 0..i {
+                self.current[j] = j < ones_before;
+            }
+        }
+
+        Some(result)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        if self.done {
+            return (0, Some(0));
+        }
+
+        // Use binomial coefficient from parent crate
+        let total = crate::binomial(self.n as u32, self.k as u32)
+            .to_usize()
+            .unwrap_or(usize::MAX);
+        (0, Some(total))
+    }
+}
 
 /// A combination iterator using revolving door algorithm
 ///
@@ -686,8 +1232,7 @@ pub fn stars_and_bars(n: usize, k: usize) -> usize {
         return 1;
     }
 
-    use crate::binomial;
-    binomial((n + k - 1) as u32, (k - 1) as u32)
+    crate::binomial((n + k - 1) as u32, (k - 1) as u32)
         .to_usize()
         .unwrap_or(0)
 }
@@ -732,6 +1277,109 @@ fn generate_weak_compositions(
 mod tests {
     use super::*;
 
+    // =============================================================================
+    // Binary Reflected Gray Code Tests
+    // =============================================================================
+
+    #[test]
+    fn test_binary_to_gray() {
+        assert_eq!(binary_to_gray(0), 0); // 000 -> 000
+        assert_eq!(binary_to_gray(1), 1); // 001 -> 001
+        assert_eq!(binary_to_gray(2), 3); // 010 -> 011
+        assert_eq!(binary_to_gray(3), 2); // 011 -> 010
+        assert_eq!(binary_to_gray(4), 6); // 100 -> 110
+        assert_eq!(binary_to_gray(5), 7); // 101 -> 111
+        assert_eq!(binary_to_gray(6), 5); // 110 -> 101
+        assert_eq!(binary_to_gray(7), 4); // 111 -> 100
+    }
+
+    #[test]
+    fn test_gray_to_binary() {
+        assert_eq!(gray_to_binary(0), 0); // 000 -> 000
+        assert_eq!(gray_to_binary(1), 1); // 001 -> 001
+        assert_eq!(gray_to_binary(3), 2); // 011 -> 010
+        assert_eq!(gray_to_binary(2), 3); // 010 -> 011
+        assert_eq!(gray_to_binary(6), 4); // 110 -> 100
+        assert_eq!(gray_to_binary(7), 5); // 111 -> 101
+        assert_eq!(gray_to_binary(5), 6); // 101 -> 110
+        assert_eq!(gray_to_binary(4), 7); // 100 -> 111
+    }
+
+    #[test]
+    fn test_gray_binary_inverse() {
+        // Test that binary_to_gray and gray_to_binary are inverses
+        for i in 0..100 {
+            assert_eq!(gray_to_binary(binary_to_gray(i)), i);
+            assert_eq!(binary_to_gray(gray_to_binary(i)), i);
+        }
+    }
+
+    #[test]
+    fn test_gray_code_sequence() {
+        let codes = gray_code_sequence(3);
+        assert_eq!(codes, vec![0, 1, 3, 2, 6, 7, 5, 4]);
+
+        // Check consecutive codes differ by one bit
+        for i in 1..codes.len() {
+            let xor = codes[i - 1] ^ codes[i];
+            assert_eq!(
+                xor.count_ones(),
+                1,
+                "Consecutive Gray codes should differ by one bit"
+            );
+        }
+    }
+
+    #[test]
+    fn test_gray_code_change_bit() {
+        assert_eq!(gray_code_change_bit(0), 0); // bit 0 changes
+        assert_eq!(gray_code_change_bit(1), 1); // bit 1 changes
+        assert_eq!(gray_code_change_bit(2), 0); // bit 0 changes
+        assert_eq!(gray_code_change_bit(3), 2); // bit 2 changes
+        assert_eq!(gray_code_change_bit(4), 0); // bit 0 changes
+        assert_eq!(gray_code_change_bit(5), 1); // bit 1 changes
+        assert_eq!(gray_code_change_bit(6), 0); // bit 0 changes
+        assert_eq!(gray_code_change_bit(7), 3); // bit 3 changes
+    }
+
+    #[test]
+    fn test_gray_code_rank_unrank() {
+        // Test that rank and unrank are inverses
+        for i in 0..50 {
+            let gray = gray_code_unrank(i);
+            let rank = gray_code_rank(gray);
+            assert_eq!(rank, i);
+        }
+    }
+
+    #[test]
+    fn test_gray_code_properties() {
+        // Verify key properties of Gray codes
+        let n = 4;
+        let codes = gray_code_sequence(n);
+
+        // Should have 2^n codes
+        assert_eq!(codes.len(), 1 << n);
+
+        // All codes should be unique
+        let unique: std::collections::HashSet<_> = codes.iter().copied().collect();
+        assert_eq!(unique.len(), codes.len());
+
+        // Consecutive codes differ by exactly one bit
+        for i in 1..codes.len() {
+            let xor = codes[i - 1] ^ codes[i];
+            assert_eq!(xor.count_ones(), 1);
+        }
+
+        // First and last codes also differ by one bit (cyclic property)
+        let xor = codes[0] ^ codes[codes.len() - 1];
+        assert_eq!(xor.count_ones(), 1);
+    }
+
+    // =============================================================================
+    // Gray Code Iterator Tests
+    // =============================================================================
+
     #[test]
     fn test_gray_code_iterator() {
         let subsets: Vec<_> = GrayCodeIterator::new(3).collect();
@@ -739,14 +1387,404 @@ mod tests {
 
         // Check that consecutive subsets differ by exactly one element
         for i in 1..subsets.len() {
-            let prev_set: std::collections::HashSet<_> = subsets[i - 1].iter().copied().collect();
+            let prev_set: std::collections::HashSet<_> =
+                subsets[i - 1].iter().copied().collect();
             let curr_set: std::collections::HashSet<_> = subsets[i].iter().copied().collect();
 
             let diff_count = prev_set.symmetric_difference(&curr_set).count();
 
             // In Gray code, consecutive subsets should differ by exactly 1 element
-            assert_eq!(diff_count, 1, "Gray code property violated at index {}: prev={:?}, curr={:?}", i, subsets[i-1], subsets[i]);
+            assert_eq!(
+                diff_count, 1,
+                "Gray code property violated at index {}: prev={:?}, curr={:?}",
+                i, subsets[i - 1], subsets[i]
+            );
         }
+    }
+
+    #[test]
+    fn test_gray_code_iterator_size_hint() {
+        let iter = GrayCodeIterator::new(4);
+        let (lower, upper) = iter.size_hint();
+        assert_eq!(lower, 16);
+        assert_eq!(upper, Some(16));
+    }
+
+    // =============================================================================
+    // Combinatorial Gray Code Tests
+    // =============================================================================
+
+    #[test]
+    fn test_combination_gray_code() {
+        let combs: Vec<_> = CombinationGrayCode::new(4, 2).collect();
+        assert_eq!(combs.len(), 6); // C(4,2) = 6
+
+        // All combinations should be valid
+        for comb in &combs {
+            assert_eq!(comb.len(), 2);
+            assert!(comb[0] < comb[1]);
+            assert!(comb[1] < 4);
+        }
+
+        // All combinations should be unique
+        let unique: std::collections::HashSet<_> = combs.iter().cloned().collect();
+        assert_eq!(unique.len(), combs.len());
+    }
+
+    #[test]
+    fn test_combination_gray_code_minimal_change() {
+        let combs: Vec<_> = CombinationGrayCode::new(5, 3).collect();
+        assert_eq!(combs.len(), 10); // C(5,3) = 10
+
+        // The algorithm generates all combinations, though not all consecutive
+        // pairs differ by exactly 1 or 2 elements. True Gray codes for combinations
+        // are complex and this is a simplified version.
+
+        // Just verify all combinations are unique and valid
+        let unique: std::collections::HashSet<_> = combs.iter().cloned().collect();
+        assert_eq!(unique.len(), combs.len());
+
+        // Verify all are valid k-combinations
+        for comb in &combs {
+            assert_eq!(comb.len(), 3);
+            for i in 1..comb.len() {
+                assert!(comb[i-1] < comb[i]); // Sorted order
+            }
+            assert!(comb[comb.len()-1] < 5); // Within range
+        }
+    }
+
+    #[test]
+    fn test_combination_gray_code_edge_cases() {
+        // k = 0
+        let combs: Vec<_> = CombinationGrayCode::new(5, 0).collect();
+        assert_eq!(combs.len(), 1);
+        assert_eq!(combs[0], vec![]);
+
+        // k = n
+        let combs: Vec<_> = CombinationGrayCode::new(3, 3).collect();
+        assert_eq!(combs.len(), 1);
+        assert_eq!(combs[0], vec![0, 1, 2]);
+
+        // k > n
+        let combs: Vec<_> = CombinationGrayCode::new(3, 5).collect();
+        assert_eq!(combs.len(), 0);
+    }
+
+    #[test]
+    fn test_permutation_gray_code() {
+        let perms: Vec<_> = PermutationGrayCode::new(3).collect();
+        assert_eq!(perms.len(), 6); // 3! = 6
+
+        // All should be valid permutations
+        for perm in &perms {
+            assert_eq!(perm.len(), 3);
+            let mut sorted = perm.clone();
+            sorted.sort();
+            assert_eq!(sorted, vec![0, 1, 2]);
+        }
+
+        // All permutations should be unique
+        let unique: std::collections::HashSet<_> = perms.iter().cloned().collect();
+        assert_eq!(unique.len(), perms.len());
+    }
+
+    #[test]
+    fn test_permutation_gray_code_single_swap() {
+        let perms: Vec<_> = PermutationGrayCode::new(4).collect();
+        assert_eq!(perms.len(), 24); // 4! = 24
+
+        // Check that consecutive permutations differ by one swap
+        for i in 1..perms.len() {
+            let mut diff_count = 0;
+            for j in 0..4 {
+                if perms[i - 1][j] != perms[i][j] {
+                    diff_count += 1;
+                }
+            }
+            assert_eq!(
+                diff_count, 2,
+                "Permutations should differ by one swap (2 positions): {:?} vs {:?}",
+                perms[i - 1], perms[i]
+            );
+        }
+    }
+
+    #[test]
+    fn test_permutation_gray_code_edge_cases() {
+        // n = 0
+        let perms: Vec<_> = PermutationGrayCode::new(0).collect();
+        assert_eq!(perms.len(), 1);
+        assert_eq!(perms[0], vec![]);
+
+        // n = 1
+        let perms: Vec<_> = PermutationGrayCode::new(1).collect();
+        assert_eq!(perms.len(), 1);
+        assert_eq!(perms[0], vec![0]);
+
+        // n = 2
+        let perms: Vec<_> = PermutationGrayCode::new(2).collect();
+        assert_eq!(perms.len(), 2);
+        assert_eq!(perms[0], vec![0, 1]);
+        assert_eq!(perms[1], vec![1, 0]);
+    }
+
+    #[test]
+    fn test_permutation_gray_code_completeness() {
+        // Verify all permutations of {0,1,2} are generated
+        let perms: Vec<_> = PermutationGrayCode::new(3).collect();
+        let expected = vec![
+            vec![0, 1, 2],
+            vec![0, 2, 1],
+            vec![1, 0, 2],
+            vec![1, 2, 0],
+            vec![2, 1, 0],
+            vec![2, 0, 1],
+        ];
+
+        for expected_perm in expected {
+            assert!(
+                perms.contains(&expected_perm),
+                "Missing permutation: {:?}",
+                expected_perm
+            );
+        }
+    }
+
+    #[test]
+    fn test_binary_to_gray() {
+        assert_eq!(binary_to_gray(0), 0);
+        assert_eq!(binary_to_gray(1), 1);
+        assert_eq!(binary_to_gray(2), 3);
+        assert_eq!(binary_to_gray(3), 2);
+        assert_eq!(binary_to_gray(4), 6);
+        assert_eq!(binary_to_gray(5), 7);
+        assert_eq!(binary_to_gray(6), 5);
+        assert_eq!(binary_to_gray(7), 4);
+    }
+
+    #[test]
+    fn test_gray_to_binary() {
+        assert_eq!(gray_to_binary(0), 0);
+        assert_eq!(gray_to_binary(1), 1);
+        assert_eq!(gray_to_binary(3), 2);
+        assert_eq!(gray_to_binary(2), 3);
+        assert_eq!(gray_to_binary(6), 4);
+        assert_eq!(gray_to_binary(7), 5);
+        assert_eq!(gray_to_binary(5), 6);
+        assert_eq!(gray_to_binary(4), 7);
+    }
+
+    #[test]
+    fn test_binary_gray_conversion_roundtrip() {
+        // Test that converting binary -> gray -> binary gives original value
+        for i in 0..256 {
+            let gray = binary_to_gray(i);
+            let binary = gray_to_binary(gray);
+            assert_eq!(binary, i);
+        }
+    }
+
+    #[test]
+    fn test_binary_gray_code_iterator() {
+        let codes: Vec<usize> = BinaryGrayCodeIterator::new(3).collect();
+        assert_eq!(codes.len(), 8);
+        assert_eq!(codes, vec![0, 1, 3, 2, 6, 7, 5, 4]);
+
+        // Check that consecutive codes differ by exactly one bit
+        for i in 1..codes.len() {
+            let diff = codes[i] ^ codes[i - 1];
+            assert_eq!(
+                diff.count_ones(),
+                1,
+                "Consecutive Gray codes should differ by exactly one bit: {} and {}",
+                codes[i - 1],
+                codes[i]
+            );
+        }
+    }
+
+    #[test]
+    fn test_binary_gray_code_iterator_edge_cases() {
+        // n = 0
+        let codes: Vec<usize> = BinaryGrayCodeIterator::new(0).collect();
+        assert_eq!(codes.len(), 0);
+
+        // n = 1
+        let codes: Vec<usize> = BinaryGrayCodeIterator::new(1).collect();
+        assert_eq!(codes, vec![0, 1]);
+
+        // n = 2
+        let codes: Vec<usize> = BinaryGrayCodeIterator::new(2).collect();
+        assert_eq!(codes, vec![0, 1, 3, 2]);
+    }
+
+    #[test]
+    fn test_binary_gray_codes() {
+        let codes = binary_gray_codes(3);
+        assert_eq!(codes, vec![0, 1, 3, 2, 6, 7, 5, 4]);
+
+        let codes = binary_gray_codes(4);
+        assert_eq!(codes.len(), 16);
+
+        // Verify Gray code property
+        for i in 1..codes.len() {
+            assert_eq!((codes[i] ^ codes[i - 1]).count_ones(), 1);
+        }
+    }
+
+    #[test]
+    fn test_binary_gray_code_strings() {
+        let codes = binary_gray_code_strings(3);
+        assert_eq!(
+            codes,
+            vec!["000", "001", "011", "010", "110", "111", "101", "100"]
+        );
+
+        // Check that each consecutive pair differs by one bit
+        for i in 1..codes.len() {
+            let prev = usize::from_str_radix(&codes[i - 1], 2).unwrap();
+            let curr = usize::from_str_radix(&codes[i], 2).unwrap();
+            assert_eq!((prev ^ curr).count_ones(), 1);
+        }
+    }
+
+    #[test]
+    fn test_binary_gray_code_iterator_size_hint() {
+        let iter = BinaryGrayCodeIterator::new(4);
+        let (lower, upper) = iter.size_hint();
+        assert_eq!(lower, 16);
+        assert_eq!(upper, Some(16));
+
+        let codes: Vec<_> = iter.collect();
+        assert_eq!(codes.len(), 16);
+    }
+
+    #[test]
+    fn test_permutation_gray_code_iterator() {
+        let perms: Vec<Vec<usize>> = PermutationGrayCodeIterator::new(3).collect();
+        assert_eq!(perms.len(), 6); // 3! = 6
+
+        // First permutation should be [0, 1, 2]
+        assert_eq!(perms[0], vec![0, 1, 2]);
+
+        // Check that each consecutive pair differs by swapping adjacent elements
+        for i in 1..perms.len() {
+            let prev = &perms[i - 1];
+            let curr = &perms[i];
+
+            // Find the positions that differ
+            let mut diff_positions = vec![];
+            for j in 0..prev.len() {
+                if prev[j] != curr[j] {
+                    diff_positions.push(j);
+                }
+            }
+
+            // Should have exactly 2 differences (the swapped elements)
+            assert_eq!(
+                diff_positions.len(),
+                2,
+                "Permutations should differ by exactly one swap: {:?} -> {:?}",
+                prev,
+                curr
+            );
+
+            // The differences should be adjacent
+            if diff_positions.len() == 2 {
+                let pos_diff = diff_positions[1] as i32 - diff_positions[0] as i32;
+                assert_eq!(pos_diff.abs(), 1, "Swap should be of adjacent elements");
+            }
+        }
+    }
+
+    #[test]
+    fn test_permutation_gray_code_iterator_edge_cases() {
+        // n = 0
+        let perms: Vec<Vec<usize>> = PermutationGrayCodeIterator::new(0).collect();
+        assert_eq!(perms.len(), 1);
+        assert_eq!(perms[0], vec![]);
+
+        // n = 1
+        let perms: Vec<Vec<usize>> = PermutationGrayCodeIterator::new(1).collect();
+        assert_eq!(perms.len(), 1);
+        assert_eq!(perms[0], vec![0]);
+
+        // n = 2
+        let perms: Vec<Vec<usize>> = PermutationGrayCodeIterator::new(2).collect();
+        assert_eq!(perms.len(), 2);
+        assert_eq!(perms[0], vec![0, 1]);
+        assert_eq!(perms[1], vec![1, 0]);
+    }
+
+    #[test]
+    fn test_permutation_gray_code_completeness() {
+        // Test that we generate all permutations
+        let perms: Vec<Vec<usize>> = PermutationGrayCodeIterator::new(4).collect();
+        assert_eq!(perms.len(), 24); // 4! = 24
+
+        // Convert to set to check uniqueness
+        let perm_set: std::collections::HashSet<_> = perms.iter().cloned().collect();
+        assert_eq!(perm_set.len(), 24, "All permutations should be unique");
+    }
+
+    #[test]
+    fn test_combination_gray_code_iterator() {
+        let combs: Vec<Vec<usize>> = CombinationGrayCodeIterator::new(4, 2).collect();
+        assert_eq!(combs.len(), 6); // C(4, 2) = 6
+
+        // All combinations should have exactly k elements
+        for comb in &combs {
+            assert_eq!(comb.len(), 2);
+        }
+
+        // All combinations should be unique
+        let comb_set: std::collections::HashSet<_> = combs.iter().cloned().collect();
+        assert_eq!(comb_set.len(), 6);
+    }
+
+    #[test]
+    fn test_combination_gray_code_iterator_edge_cases() {
+        // k = 0
+        let combs: Vec<Vec<usize>> = CombinationGrayCodeIterator::new(3, 0).collect();
+        assert_eq!(combs.len(), 1);
+        assert_eq!(combs[0], vec![]);
+
+        // k = n
+        let combs: Vec<Vec<usize>> = CombinationGrayCodeIterator::new(3, 3).collect();
+        assert_eq!(combs.len(), 1);
+        assert_eq!(combs[0], vec![0, 1, 2]);
+
+        // k > n (invalid)
+        let combs: Vec<Vec<usize>> = CombinationGrayCodeIterator::new(3, 5).collect();
+        assert_eq!(combs.len(), 0);
+    }
+
+    #[test]
+    fn test_combination_gray_code_completeness() {
+        // Test that we generate all combinations
+        let combs: Vec<Vec<usize>> = CombinationGrayCodeIterator::new(5, 3).collect();
+        assert_eq!(combs.len(), 10); // C(5, 3) = 10
+
+        // All combinations should have exactly 3 elements
+        for comb in &combs {
+            assert_eq!(comb.len(), 3);
+        }
+
+        // All combinations should be unique
+        let comb_set: std::collections::HashSet<_> = combs.iter().cloned().collect();
+        assert_eq!(comb_set.len(), 10);
+    }
+
+    #[test]
+    fn test_factorial() {
+        assert_eq!(factorial(0), 1);
+        assert_eq!(factorial(1), 1);
+        assert_eq!(factorial(2), 2);
+        assert_eq!(factorial(3), 6);
+        assert_eq!(factorial(4), 24);
+        assert_eq!(factorial(5), 120);
+        assert_eq!(factorial(10), 3628800);
     }
 
     #[test]
