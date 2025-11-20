@@ -7,13 +7,18 @@ pub mod affine_permutations;
 pub mod binary_words;
 pub mod combinations;
 pub mod composition;
+pub mod composition_tableau;
+pub mod debruijn;
 pub mod derangements;
 pub mod designs;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod integer_vectors;
+pub mod integer_matrices;
 pub mod multiset_partition_into_sets_ordered;
 pub mod ordered_tree;
 pub mod partitions;
+pub mod path_tableaux;
 pub mod perfect_matching;
 pub mod permutations;
 pub mod plane_partition;
@@ -22,6 +27,8 @@ pub mod posets;
 pub mod q_analogue;
 pub mod ranking;
 pub mod recurrence_sequences;
+pub mod ribbon_tableau;
+pub mod restricted_growth;
 pub mod set_partition;
 pub mod set_system;
 pub mod sidon_sets;
@@ -30,8 +37,10 @@ pub mod species;
 pub mod subset;
 pub mod superpartitions;
 pub mod tableaux;
+pub mod tableau_tuple;
 pub mod tamari;
 pub mod tuple;
+pub mod vector_partition;
 pub mod word;
 pub mod wreath_product;
 
@@ -53,27 +62,40 @@ pub use tableaux::{robinson_schensted, rs_insert, standard_tableaux, Tableau, Pr
 pub use tuple::{tuples as tuple_tuples, Tuple, TupleIterator};
 
 // Re-export new modules
-pub use binary_words::{all_binary_words, binary_words_with_weight, lyndon_words, necklaces, BinaryWord};
+pub use binary_words::{
+    all_binary_words, binary_words_with_weight, lyndon_words, lyndon_words_with_weight,
+    necklaces, necklaces_with_weight, BinaryWord,
+};
 pub use composition::{
-    compositions, compositions_k, signed_compositions, signed_compositions_k, Composition,
-    SignedComposition,
+    compositions, compositions_k, integer_vectors_weighted, integer_vectors_weighted_dp,
+    signed_compositions, signed_compositions_k, Composition, SignedComposition,
+    WeightedIntegerVector,
+};
+pub use composition_tableau::{
+    count_tableaux_with_descent_set, standard_composition_tableaux, CompositionTableau,
 };
 pub use designs::{
     are_latin_squares_orthogonal, mutually_orthogonal_latin_squares, BlockDesign,
     DesignAutomorphism, DifferenceSet, HadamardMatrix, OrthogonalArray, SteinerSystem,
 };
-pub use dyck_word::{dyck_words, nu_dyck_words, DyckWord, NuDyckWord};
+pub use dyck_word::{dyck_words, nu_dyck_words, BounceStats, DyckWord, NuDyckWord};
 pub use enumeration::{
     cartesian_product, stars_and_bars, tuples, weak_compositions, CartesianProduct,
     CompositionIterator, Enumerable, GrayCodeIterator, InfiniteCartesianProduct, LazyEnumerator,
     PartitionIterator, RevolvingDoorIterator,
 };
-pub use perfect_matching::{noncrossing_perfect_matchings, perfect_matchings, PerfectMatching};
+pub use integer_matrices::{
+    count_integer_matrices, integer_matrices, integer_matrices_bounded, IntegerMatrix,
+};
+pub use perfect_matching::{perfect_matchings, PerfectMatching};
 pub use ranking::{CombinationRank, PermutationRank, Rankable, RankingTable};
 pub use recurrence_sequences::{
     solve_binary_recurrence, BinaryRecurrence, LinearRecurrence, RecurrenceSequence,
 };
-pub use set_partition::{set_partition_ordered, set_partitions, OrderedSetPartition, SetPartition};
+pub use set_partition::{
+    bell_number_optimized, bell_numbers_up_to, set_partition_iterator, set_partitions,
+    SetPartition, SetPartitionIterator,
+};
 pub use set_system::SetSystem;
 pub use multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
 pub use word::{
@@ -95,8 +117,7 @@ pub use plane_partition::{
     count_transpose_complement_plane_partitions, plane_partitions, plane_partitions_in_box,
     PlanePartition,
 };
-pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator,
-};
+pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator};
 pub use derangements::{
     all_derangements, count_derangements, count_derangements_recurrence, is_derangement,
 };
@@ -104,10 +125,29 @@ pub use superpartitions::{
     count_superpartitions, strict_superpartitions, superpartitions, superpartitions_with_k_parts,
     superpartitions_with_m_circled, SuperPart, SuperPartition,
 };
-pub use sidon_sets::{
-    backtracking_bh_sequence, backtracking_sidon_set, greedy_bh_sequence, greedy_sidon_set,
-    is_bh_sequence, is_sidon_set, max_bh_sequence_size, max_sidon_set_size, BhSequence, SidonSet,
+pub use integer_vectors::{
+    count_integer_vectors_in_box, count_integer_vectors_with_sum, integer_vector_sum_iter,
+    integer_vectors_in_box, integer_vectors_with_l1_norm_bounded, integer_vectors_with_sum,
+    integer_vectors_with_weighted_sum, IntegerVector, IntegerVectorSumIter,
 };
+pub use vector_partition::{
+    count_vector_partitions_exact_parts, count_vector_partitions_max_parts,
+    fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
+    vector_partitions_with_max_part, VectorPartition,
+};
+pub use debruijn::{
+    debruijn_graph_path, debruijn_prefer_one, debruijn_prefer_zero, debruijn_sequence,
+    debruijn_sequence_binary, universal_cycle_permutations, universal_cycle_subsets,
+    DeBruijnSequence,
+};
+pub use path_tableaux::{
+    ballot_sequences, count_dyck_paths, count_lattice_paths_ne, dyck_path_to_partition,
+    dyck_paths, lattice_paths_ne, partition_to_dyck_path, LatticePath, PathTableau, Step,
+};
+pub use ribbon_tableau::{
+    fermionic_formula, kostka_foulkes_ribbon, ribbon_tableaux, RibbonDecomposition, RibbonTableau,
+};
+pub use skew_partition::{SkewPartition, SkewTableau};
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
 

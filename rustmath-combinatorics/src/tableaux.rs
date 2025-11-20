@@ -163,6 +163,176 @@ impl Tableau {
             .join("\n")
     }
 
+    /// Compute the residue of a cell at position (row, col) with quantum characteristic e
+    ///
+    /// The residue is defined as (col - row + multicharge) mod e
+    /// where multicharge is typically 0 for standard tableaux.
+    ///
+    /// # Arguments
+    /// * `row` - Row index (0-based)
+    /// * `col` - Column index (0-based)
+    /// * `e` - Quantum characteristic (positive integer)
+    /// * `multicharge` - Multicharge parameter (default 0 for standard tableaux)
+    ///
+    /// # Returns
+    /// The e-residue of the cell, or None if the position is invalid
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_combinatorics::Tableau;
+    ///
+    /// let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+    /// // Cell at (0, 0): residue = (0 - 0) mod 3 = 0
+    /// assert_eq!(t.cell_residue(0, 0, 3, 0), Some(0));
+    /// // Cell at (0, 2): residue = (2 - 0) mod 3 = 2
+    /// assert_eq!(t.cell_residue(0, 2, 3, 0), Some(2));
+    /// // Cell at (1, 1): residue = (1 - 1) mod 3 = 0
+    /// assert_eq!(t.cell_residue(1, 1, 3, 0), Some(0));
+    /// ```
+    pub fn cell_residue(&self, row: usize, col: usize, e: usize, multicharge: i32) -> Option<usize> {
+        if e == 0 {
+            return None;
+        }
+
+        if row >= self.rows.len() || col >= self.rows[row].len() {
+            return None;
+        }
+
+        // Compute (col - row + multicharge) mod e
+        // Need to handle negative values properly
+        let content = (col as i32) - (row as i32) + multicharge;
+        let residue = content.rem_euclid(e as i32) as usize;
+
+        Some(residue)
+    }
+
+    /// Compute the residue sequence of a standard tableau
+    ///
+    /// For a standard tableau with entries 1, 2, ..., n, this returns the sequence
+    /// (r₁, r₂, ..., rₙ) where rₖ is the e-residue of the cell containing k.
+    ///
+    /// # Arguments
+    /// * `e` - Quantum characteristic (positive integer)
+    /// * `multicharge` - Multicharge parameter (default 0 for standard tableaux)
+    ///
+    /// # Returns
+    /// Vector of residues in order of entries 1, 2, ..., n
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_combinatorics::Tableau;
+    ///
+    /// let t = Tableau::new(vec![vec![1, 2, 4], vec![3, 5]]).unwrap();
+    /// let residues = t.residue_sequence(3, 0);
+    /// assert_eq!(residues.len(), 5);
+    /// ```
+    pub fn residue_sequence(&self, e: usize, multicharge: i32) -> Vec<usize> {
+        if e == 0 {
+            return vec![];
+        }
+
+        let n = self.size();
+        if n == 0 {
+            return vec![];
+        }
+
+        // Create a map from value to (row, col)
+        let mut position_map = vec![(0, 0); n + 1];
+
+        for (row_idx, row) in self.rows.iter().enumerate() {
+            for (col_idx, &value) in row.iter().enumerate() {
+                if value > 0 && value <= n {
+                    position_map[value] = (row_idx, col_idx);
+                }
+            }
+        }
+
+        // Compute residues in order 1, 2, ..., n
+        let mut residues = Vec::new();
+        for i in 1..=n {
+            let (row, col) = position_map[i];
+            if let Some(res) = self.cell_residue(row, col, e, multicharge) {
+                residues.push(res);
+            }
+        }
+
+        residues
+    }
+
+    /// Compute the residue content of the tableau
+    ///
+    /// Returns a vector where the i-th element is the count of cells with residue i.
+    ///
+    /// # Arguments
+    /// * `e` - Quantum characteristic (positive integer)
+    /// * `multicharge` - Multicharge parameter (default 0 for standard tableaux)
+    ///
+    /// # Returns
+    /// Vector of length e, where element i is the number of cells with residue i
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_combinatorics::Tableau;
+    ///
+    /// let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+    /// let content = t.residue_content(3, 0);
+    /// assert_eq!(content.len(), 3);
+    /// ```
+    pub fn residue_content(&self, e: usize, multicharge: i32) -> Vec<usize> {
+        if e == 0 {
+            return vec![];
+        }
+
+        let mut content = vec![0; e];
+
+        for (row_idx, row) in self.rows.iter().enumerate() {
+            for col_idx in 0..row.len() {
+                if let Some(res) = self.cell_residue(row_idx, col_idx, e, multicharge) {
+                    content[res] += 1;
+                }
+            }
+        }
+
+        content
+    }
+
+    /// Get all cells with a specific residue
+    ///
+    /// Returns a vector of (row, col, value) tuples for all cells with the given residue.
+    ///
+    /// # Arguments
+    /// * `e` - Quantum characteristic (positive integer)
+    /// * `residue` - The residue to search for
+    /// * `multicharge` - Multicharge parameter (default 0 for standard tableaux)
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_combinatorics::Tableau;
+    ///
+    /// let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+    /// let cells = t.cells_with_residue(3, 0, 0);
+    /// // Cells at (0,0), (1,1) have residue 0 when e=3
+    /// ```
+    pub fn cells_with_residue(&self, e: usize, residue: usize, multicharge: i32) -> Vec<(usize, usize, usize)> {
+        if e == 0 || residue >= e {
+            return vec![];
+        }
+
+        let mut result = Vec::new();
+
+        for (row_idx, row) in self.rows.iter().enumerate() {
+            for (col_idx, &value) in row.iter().enumerate() {
+                if let Some(res) = self.cell_residue(row_idx, col_idx, e, multicharge) {
+                    if res == residue {
+                        result.push((row_idx, col_idx, value));
+                    }
+                }
+            }
+        }
+
+        result
+    }
+
     /// Perform jeu de taquin slide from a given position
     ///
     /// Jeu de taquin is a process for moving an empty cell in a tableau
