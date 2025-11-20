@@ -22,6 +22,7 @@ pub mod ascii;
 pub mod html;
 pub mod latex;
 pub mod unicode;
+pub mod unicode_art;
 pub mod utils;
 
 use std::fmt;

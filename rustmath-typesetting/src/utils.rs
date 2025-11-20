@@ -122,6 +122,9 @@ pub fn greek_substitute(name: &str, format: OutputFormat, use_greek: bool) -> St
 }
 
 /// Convert a digit to its Unicode subscript form
+///
+/// Note: For more comprehensive subscript support including letters,
+/// use `unicode_art::unicode_subscript` instead.
 pub fn subscript_digit(c: char) -> char {
     match c {
         '0' => '₀',
@@ -139,6 +142,9 @@ pub fn subscript_digit(c: char) -> char {
 }
 
 /// Convert a digit to its Unicode superscript form
+///
+/// Note: For more comprehensive superscript support including letters,
+/// use `unicode_art::unicode_superscript` instead.
 pub fn superscript_digit(c: char) -> char {
     match c {
         '0' => '⁰',
@@ -161,13 +167,19 @@ pub fn superscript_digit(c: char) -> char {
 }
 
 /// Convert a string to Unicode subscript
+///
+/// This is a simple version that only handles digits and basic operators.
+/// For full letter support, use `unicode_art::unicode_subscript`.
 pub fn to_subscript(s: &str) -> String {
-    s.chars().map(subscript_digit).collect()
+    crate::unicode_art::unicode_subscript(s)
 }
 
 /// Convert a string to Unicode superscript
+///
+/// This is a simple version that delegates to the comprehensive implementation.
+/// For full letter support, use `unicode_art::unicode_superscript`.
 pub fn to_superscript(s: &str) -> String {
-    s.chars().map(superscript_digit).collect()
+    crate::unicode_art::unicode_superscript(s)
 }
 
 /// Wrap content in parentheses if needed based on precedence

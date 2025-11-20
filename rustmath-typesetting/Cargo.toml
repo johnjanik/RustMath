@@ -8,5 +8,6 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/johnjanik/RustMath"
 
 [dependencies]
+once_cell = "1.19"
 
 [dev-dependencies]
