@@ -465,4 +465,159 @@ These modules serve as **proof of concept** that comprehensive SageMath→RustMa
 
 ---
 
+## Parallel Execution Prompts
+
+### One-Liner Prompts for Maximum Parallelization
+
+The following prompts can be executed **simultaneously in parallel** to maximize development velocity. Each prompt is independent and can be assigned to different developers or AI agents.
+
+---
+
+### Phase 1: Sprint Foundations (Week 1-2)
+
+**Parallel Execution Group 1A - Review & Finalization (Can run simultaneously):**
+
+```
+Prompt 1A-1: Review rustmath-rings/src/sum_of_squares.rs against SageMath's sage.rings.sum_of_squares API, add any missing methods, verify comprehensive test coverage matches SageMath functionality, and update documentation to align with SageMath docs.
+
+Prompt 1A-2: Review rustmath-complex/src/complex_interval.rs against SageMath's sage.rings.complex_interval API, add any missing interval arithmetic methods, verify test coverage for edge cases (zero-width intervals, infinity handling), and update documentation.
+
+Prompt 1A-3: Review rustmath-integers/src/factorint.rs against SageMath's sage.rings.factorint API, verify factorization algorithms (Pollard's rho, trial division) match SageMath behavior, add comprehensive tests for edge cases, and update documentation.
+```
+
+**Parallel Execution Group 1B - New Implementations Week 1 (Can run simultaneously):**
+
+```
+Prompt 1B-1: Implement sage.monoids.string_ops in rustmath-monoids/src/string_ops.rs with functions: coincidence_index(s, n), coincidence_discriminant(s, n), frequency_distribution(s, n), strip_encoding(s). Use HashMap for frequency counting, add comprehensive tests, and document cryptographic text analysis use cases.
+
+Prompt 1B-2: Implement sage.misc.temporary_file in rustmath-misc/src/temporary_file.rs wrapping Rust's tempfile crate with functions: tmp_filename(), tmp_dir(), atomic_write, atomic_dir. Follow Rust RAII patterns, add tests for cleanup, and document thread-safety guarantees.
+
+Prompt 1B-3: Implement sage.typeset.unicode_art in rustmath-typeset/src/unicode_art.rs with functions: unicode_art(obj), unicode_subscript(text), unicode_superscript(text). Create character mapping tables for mathematical symbols, add tests for all supported characters, and document Unicode ranges used.
+```
+
+**Parallel Execution Group 1C - New Implementations Week 2 (Can run simultaneously):**
+
+```
+Prompt 1C-1: Implement sage.sets.disjoint_set in rustmath-sets/src/disjoint_set.rs with DisjointSet_of_integers (Vec-based) and DisjointSet_of_hashables (HashMap-based) using path compression and union-by-rank optimizations. Add comprehensive tests including performance benchmarks, and document time complexity.
+
+Prompt 1C-2: Implement sage.stats.basic_stats in rustmath-stats/src/basic_stats.rs with functions: mean(v), median(v), mode(v), std(v, bias), variance(v, bias), moving_average(v, n). Make generic over Ring trait, add tests for exact (Rational) and approximate (f64) arithmetic, and document bias parameter behavior.
+```
+
+---
+
+### Phase 2: Consolidation (Week 3-4)
+
+**Parallel Execution Group 2A - Algebraic Structures (Can run simultaneously):**
+
+```
+Prompt 2A-1: Implement sage.monoids.free_abelian_monoid in rustmath-monoids/src/free_abelian_monoid.rs with FreeAbelianMonoid_class and FreeAbelianMonoidElement using Vec<Integer> for exponent representation. Implement monoid operations (composition, identity), add comprehensive tests including generator creation, and document relationship to existing rustmath-monoids architecture.
+
+Prompt 2A-2: Implement sage.sets.integer_range in rustmath-sets/src/integer_range.rs extending Rust's Range types with mathematical set operations (union, intersection, complement, difference). Make generic over Integer types, add tests for range arithmetic, and document how it extends std::ops::Range.
+```
+
+**Parallel Execution Group 2B - Numerical Methods (Can run simultaneously):**
+
+```
+Prompt 2B-1: Implement sage.numerical.gauss_legendre in rustmath-numerical/src/gauss_legendre.rs with functions: nodes(degree, prec), nodes_uncached(degree, prec), estimate_error(results, prec, epsilon), integrate_vector(f, prec, epsilon), integrate_vector_N(f, prec, N). Use Legendre polynomial recurrence relations, implement node caching with lazy_static, add comprehensive tests against known integrals, and document error estimation approach.
+
+Prompt 2B-2: Implement sage.numerical.optimize in rustmath-numerical/src/optimize.rs with functions: find_root(f, a, b) using bisection/Brent's method, find_local_minimum(f, a, b) using golden section search, find_local_maximum(f, a, b), find_fit(data, model) using least squares. Consider wrapping argmin crate for advanced methods, add tests with known solutions, and document convergence criteria.
+```
+
+---
+
+### Phase 3: Strategic Expansion (Week 5-8)
+
+**Parallel Execution Group 3A - sage.rings Quick Wins (Can run simultaneously):**
+
+```
+Prompt 3A-1: Implement sage.rings.real_mpfi in rustmath-rings/src/real_mpfi.rs for arbitrary precision real interval arithmetic wrapping MPFI library (or pure Rust implementation). Implement interval operations (addition, multiplication, division with proper rounding), add tests for interval containment, and document precision guarantees.
+
+Prompt 3A-2: Implement sage.rings.integer wrapper in rustmath-integers/src/sage_wrapper.rs providing SageMath-compatible API for Integer type. Add missing SageMath methods (nth_root, is_prime_power, factorial, binomial), comprehensive tests comparing to SageMath behavior, and document API differences.
+
+Prompt 3A-3: Implement sage.rings.rational wrapper in rustmath-rationals/src/sage_wrapper.rs providing SageMath-compatible API for Rational type. Add missing SageMath methods (continued_fraction, convergents, denominator, numerator), comprehensive tests, and document exact arithmetic guarantees.
+```
+
+---
+
+### Phase 4: Major Modules (Week 9-24+)
+
+**Parallel Execution Group 4A - sage.rings.number_field Core (Can run simultaneously):**
+
+```
+Prompt 4A-1: Implement sage.rings.number_field core number field class in rustmath-rings/src/number_field/mod.rs with NumberField struct, defining polynomial, basis computation, and field arithmetic. Start with absolute number fields over Q, add comprehensive tests for quadratic and cyclotomic fields, and document algebraic number theory foundations.
+
+Prompt 4A-2: Implement sage.rings.number_field.order in rustmath-rings/src/number_field/order.rs with Order class representing rings of integers in number fields. Implement order basis computation, conductor calculation, and ideal factorization. Add tests for maximal orders, and document relationship to Dedekind domains.
+
+Prompt 4A-3: Implement sage.rings.number_field.S_unit_solver in rustmath-rings/src/number_field/s_unit_solver.rs for solving S-unit equations using algorithm from Smart's paper. Implement fundamental units computation, regulator calculation, and S-unit group structure. Add tests with known examples from literature, and document algorithm complexity.
+
+Prompt 4A-4: Implement sage.rings.number_field.morphisms in rustmath-rings/src/number_field/morphisms.rs for number field homomorphisms. Support embedding computations, Galois group actions, and automorphism groups. Add tests for splitting fields and normal extensions, and document Galois theory implementation approach.
+```
+
+**Parallel Execution Group 4B - sage.rings.padics Core (Can run simultaneously):**
+
+```
+Prompt 4B-1: Implement sage.rings.padics.factory in rustmath-rings/src/padics/factory.rs with Zp, Qp, Zq, Qq constructors for p-adic rings and fields. Support capped relative, capped absolute, and fixed modulus precision models. Add tests for different precision types, and document precision model trade-offs.
+
+Prompt 4B-2: Implement sage.rings.padics.padic_capped_relative_element in rustmath-rings/src/padics/capped_relative.rs for p-adic elements with capped relative precision. Implement arithmetic operations (add, sub, mul, div) with proper precision tracking, Teichmüller lifts, and unit splitting. Add comprehensive tests including precision loss scenarios, and document precision semantics.
+
+Prompt 4B-3: Implement sage.rings.padics.padic_extension in rustmath-rings/src/padics/extension.rs for unramified and Eisenstein extensions of p-adic fields. Support extension arithmetic, norm/trace computations, and embedding into algebraic closures. Add tests for Galois extensions, and document ramification theory implementation.
+
+Prompt 4B-4: Implement sage.rings.padics.pow_computer in rustmath-rings/src/padics/pow_computer.rs for efficient p-power caching and modular reduction. Implement Frobenius endomorphism computations for extensions. Add performance benchmarks, and document cache invalidation strategy.
+```
+
+**Parallel Execution Group 4C - sage.schemes.elliptic_curves Foundation (Can run simultaneously):**
+
+```
+Prompt 4C-1: Implement sage.schemes.elliptic_curves.ell_generic in rustmath-schemes/src/elliptic_curves/generic.rs with EllipticCurve_generic base class supporting Weierstrass equations over arbitrary fields. Implement point addition, doubling, and scalar multiplication. Add tests for curves over Q, finite fields, and p-adics, and document arithmetic implementation.
+
+Prompt 4C-2: Implement sage.schemes.elliptic_curves.ell_rational_field in rustmath-schemes/src/elliptic_curves/rational.rs for elliptic curves over Q. Support conductor computation, minimal models, Cremona database integration, and torsion group structure. Add tests with known curves from LMFDB, and document BSD conjecture computations.
+
+Prompt 4C-3: Implement sage.schemes.elliptic_curves.isogeny in rustmath-schemes/src/elliptic_curves/isogeny.rs for isogeny computations using Vélu's formulas. Support isogeny degree computation, kernel polynomial calculation, and isogeny graph construction. Add tests for ℓ-isogenies, and document algorithm complexity.
+
+Prompt 4C-4: Implement sage.schemes.elliptic_curves.heegner in rustmath-schemes/src/elliptic_curves/heegner.rs for Heegner point computations. Support complex multiplication, Gross-Zagier formula, and height pairings for BSD conjecture applications. Add tests with examples from literature, and document CM theory foundations.
+```
+
+**Parallel Execution Group 4D - Supporting Infrastructure (Can run simultaneously):**
+
+```
+Prompt 4D-1: Create rustmath-schemes crate with initial structure: Cargo.toml, src/lib.rs, src/elliptic_curves/mod.rs, src/generic/mod.rs, src/projective/mod.rs, src/affine/mod.rs. Set up dependencies on rustmath-core, rustmath-rings, and rustmath-polynomials. Add basic scheme trait definitions, and document architectural decisions.
+
+Prompt 4D-2: Create rustmath-numerical crate with initial structure: Cargo.toml, src/lib.rs, src/integration/mod.rs, src/optimization/mod.rs, src/root_finding/mod.rs. Set up dependencies and feature flags for optional libraries (BLAS, LAPACK). Add basic numerical trait definitions, and document precision guarantees.
+
+Prompt 4D-3: Create rustmath-stats crate with initial structure: Cargo.toml, src/lib.rs, src/basic_stats/mod.rs, src/distributions/mod.rs. Set up dependencies on rustmath-core for generic statistics over Ring trait. Add statistical trait definitions, and document exact vs approximate arithmetic modes.
+
+Prompt 4D-4: Create rustmath-sets crate with initial structure: Cargo.toml, src/lib.rs, src/disjoint_set.rs, src/integer_range.rs, src/finite_set_maps.rs. Set up dependencies on rustmath-core. Add set theory trait definitions, and document relationship to Rust's std collections.
+```
+
+---
+
+### Usage Instructions
+
+**For Solo Development:**
+1. Execute prompts sequentially within each group (1A → 1B → 1C → 2A → ...)
+2. Run prompts within a group in any order (all are independent)
+3. Complete all prompts in a phase before moving to next phase
+
+**For Team Development (Recommended):**
+1. Assign each prompt in a group to a different developer/agent
+2. Execute all prompts in a group simultaneously
+3. Merge results at end of each group
+4. Move to next group once all prompts in current group complete
+
+**For Maximum Parallelization:**
+1. Phase 1 can run 8 prompts in parallel (1A-1 through 1C-2)
+2. Phase 2 can run 4 prompts in parallel (2A-1 through 2B-2)
+3. Phase 3 can run 3 prompts in parallel (3A-1 through 3A-3)
+4. Phase 4 can run up to 16 prompts in parallel (4A-1 through 4D-4)
+
+**Estimated Timeline with Full Parallelization:**
+- Phase 1: 2 weeks → 3-4 days (with 8 parallel agents)
+- Phase 2: 2 weeks → 4-6 days (with 4 parallel agents)
+- Phase 3: 4 weeks → 1 week (with 3 parallel agents)
+- Phase 4: 16 weeks → 2-4 weeks (with 16 parallel agents)
+
+**Total: 24 weeks → 5-7 weeks with maximum parallelization**
+
+---
+
 *Analysis based on comprehensive review of sagemath_to_rustmath_tracker_part_10-14.csv files containing 3,846 total items across 17 major modules.*
