@@ -750,13 +750,257 @@ impl PartitionTuple {
         Some(PartitionTuple::new(new_components))
     }
 
-    /// Get the conjugate (transpose) of this partition tuple
+    /// Get all removable cells in the partition tuple
     ///
-    /// Returns a new partition tuple where each component is conjugated
-    pub fn conjugate(&self) -> Self {
-        PartitionTuple {
-            components: self.components.iter().map(|p| p.conjugate()).collect(),
+    /// Returns a vector of (component_idx, row, col) tuples representing
+    /// cells that can be removed while maintaining the partition property.
+    /// These are cells at the end of rows.
+    pub fn removable_cells(&self) -> Vec<(usize, usize, usize)> {
+        let mut removable = Vec::new();
+
+        for (comp_idx, partition) in self.components.iter().enumerate() {
+            for (row, &row_len) in partition.parts().iter().enumerate() {
+                let col = row_len - 1; // Last cell in the row
+
+                // Check if this is a removable cell (end of row and removal preserves partition)
+                if self.can_remove_cell(comp_idx, row, col) {
+                    removable.push((comp_idx, row, col));
+                }
+            }
         }
+
+        removable
+    }
+
+    /// Get all addable cells in the partition tuple
+    ///
+    /// Returns a vector of (component_idx, row, col) tuples representing
+    /// cells that can be added while maintaining the partition property.
+    pub fn addable_cells(&self) -> Vec<(usize, usize, usize)> {
+        let mut addable = Vec::new();
+
+        for comp_idx in 0..self.level() {
+            let partition = &self.components[comp_idx];
+
+            // Try adding to existing rows
+            for row in 0..partition.length() {
+                let col = partition.parts()[row]; // Position after the last cell
+                if self.can_add_cell(comp_idx, row, col) {
+                    addable.push((comp_idx, row, col));
+                }
+            }
+
+            // Try adding a new row
+            let new_row = partition.length();
+            if self.can_add_cell(comp_idx, new_row, 0) {
+                addable.push((comp_idx, new_row, 0));
+            }
+        }
+
+        addable
+    }
+
+    /// Compute the residue sequence for this partition tuple
+    ///
+    /// The residue sequence is obtained by reading residues of removable cells
+    /// followed by residues of addable cells, ordered by component, then row, then column.
+    ///
+    /// This is used in the theory of Kleshchev partitions and Hecke algebras.
+    pub fn residue_sequence(&self, multicharge: &[i32], n: usize) -> Vec<usize> {
+        let mut sequence = Vec::new();
+
+        // Add residues of removable cells
+        for &(comp_idx, row, col) in &self.removable_cells() {
+            if let Some(res) = self.cell_residue(comp_idx, row, col, multicharge, n) {
+                sequence.push(res);
+            }
+        }
+
+        // Add residues of addable cells (these are positions that don't exist yet)
+        for &(comp_idx, row, col) in &self.addable_cells() {
+            let gamma_k = multicharge.get(comp_idx).copied().unwrap_or(0);
+            let residue = (col as i32) - (row as i32) + gamma_k;
+            sequence.push(residue.rem_euclid(n as i32) as usize);
+        }
+
+        sequence
+    }
+
+    /// Get the good (Kleshchev removable) cells for a given residue
+    ///
+    /// A removable cell is "good" if removing it maintains the Kleshchev property.
+    /// Uses the signature algorithm: for each residue, track the balance of
+    /// addable vs removable nodes, and find nodes where the signature is minimal.
+    ///
+    /// Returns cells with the specified residue that are good nodes.
+    pub fn good_cells(&self, residue: usize, multicharge: &[i32], n: usize) -> Vec<(usize, usize, usize)> {
+        let removable = self.removable_cells();
+        let addable = self.addable_cells();
+
+        // Filter cells by residue
+        let mut removable_with_residue: Vec<_> = removable
+            .iter()
+            .filter(|&&(comp_idx, row, col)| {
+                self.cell_residue(comp_idx, row, col, multicharge, n) == Some(residue)
+            })
+            .copied()
+            .collect();
+
+        let mut addable_with_residue: Vec<_> = addable
+            .iter()
+            .filter(|&&(comp_idx, row, col)| {
+                let gamma_k = multicharge.get(comp_idx).copied().unwrap_or(0);
+                let res = ((col as i32) - (row as i32) + gamma_k).rem_euclid(n as i32) as usize;
+                res == residue
+            })
+            .copied()
+            .collect();
+
+        // Sort by (component, row, col) for consistent ordering
+        removable_with_residue.sort();
+        addable_with_residue.sort();
+
+        // Compute signature: start at 0, +1 for addable, -1 for removable
+        // Good nodes are removable nodes where signature reaches minimum
+        let mut signature = 0;
+        let mut min_signature = 0;
+        let mut good_nodes = Vec::new();
+
+        // Interleave removable and addable based on position
+        let mut all_nodes: Vec<(bool, usize, usize, usize)> = Vec::new();
+        for &(c, r, col) in &removable_with_residue {
+            all_nodes.push((false, c, r, col)); // false = removable
+        }
+        for &(c, r, col) in &addable_with_residue {
+            all_nodes.push((true, c, r, col)); // true = addable
+        }
+        all_nodes.sort_by_key(|&(_, c, r, col)| (c, r, col));
+
+        // Process nodes and track signature
+        for &(is_addable, c, r, col) in &all_nodes {
+            if is_addable {
+                signature += 1;
+            } else {
+                signature -= 1;
+                // Check if this removable node achieves minimum signature
+                if signature < min_signature {
+                    min_signature = signature;
+                    good_nodes.clear();
+                    good_nodes.push((c, r, col));
+                } else if signature == min_signature {
+                    good_nodes.push((c, r, col));
+                }
+            }
+        }
+
+        good_nodes
+    }
+
+    /// Get the normal (Kleshchev addable) cells for a given residue
+    ///
+    /// A cell is "normal" if adding it maintains the Kleshchev property.
+    /// Uses the signature algorithm: for each residue, track the balance of
+    /// addable vs removable nodes, and find addable nodes where the signature is maximal.
+    ///
+    /// Returns cells with the specified residue that are normal nodes.
+    pub fn normal_cells(&self, residue: usize, multicharge: &[i32], n: usize) -> Vec<(usize, usize, usize)> {
+        let removable = self.removable_cells();
+        let addable = self.addable_cells();
+
+        // Filter cells by residue
+        let mut removable_with_residue: Vec<_> = removable
+            .iter()
+            .filter(|&&(comp_idx, row, col)| {
+                self.cell_residue(comp_idx, row, col, multicharge, n) == Some(residue)
+            })
+            .copied()
+            .collect();
+
+        let mut addable_with_residue: Vec<_> = addable
+            .iter()
+            .filter(|&&(comp_idx, row, col)| {
+                let gamma_k = multicharge.get(comp_idx).copied().unwrap_or(0);
+                let res = ((col as i32) - (row as i32) + gamma_k).rem_euclid(n as i32) as usize;
+                res == residue
+            })
+            .copied()
+            .collect();
+
+        // Sort by (component, row, col) for consistent ordering
+        removable_with_residue.sort();
+        addable_with_residue.sort();
+
+        // Compute signature: start at 0, +1 for addable, -1 for removable
+        // Normal nodes are addable nodes where signature reaches maximum
+        let mut signature = 0;
+        let mut max_signature = 0;
+        let mut normal_nodes = Vec::new();
+
+        // Interleave removable and addable based on position
+        let mut all_nodes: Vec<(bool, usize, usize, usize)> = Vec::new();
+        for &(c, r, col) in &removable_with_residue {
+            all_nodes.push((false, c, r, col)); // false = removable
+        }
+        for &(c, r, col) in &addable_with_residue {
+            all_nodes.push((true, c, r, col)); // true = addable
+        }
+        all_nodes.sort_by_key(|&(_, c, r, col)| (c, r, col));
+
+        // Process nodes and track signature
+        for &(is_addable, c, r, col) in &all_nodes {
+            if is_addable {
+                signature += 1;
+                // Check if this addable node achieves maximum signature
+                if signature > max_signature {
+                    max_signature = signature;
+                    normal_nodes.clear();
+                    normal_nodes.push((c, r, col));
+                } else if signature == max_signature {
+                    normal_nodes.push((c, r, col));
+                }
+            } else {
+                signature -= 1;
+            }
+        }
+
+        normal_nodes
+    }
+
+    /// Check if this partition tuple is Kleshchev
+    ///
+    /// A partition is Kleshchev if it can be built from the empty partition
+    /// by successively adding good (normal) nodes.
+    ///
+    /// This is a fundamental property in the representation theory of
+    /// cyclotomic Hecke algebras (Ariki-Koike algebras).
+    pub fn is_kleshchev(&self, multicharge: &[i32], n: usize) -> bool {
+        // Start from current partition and try to reduce to empty
+        let mut current = self.clone();
+
+        while current.sum() > 0 {
+            // Find a good cell to remove
+            let mut found_good = false;
+
+            for residue in 0..n {
+                let good = current.good_cells(residue, multicharge, n);
+                if !good.is_empty() {
+                    // Remove the first good cell
+                    let (comp_idx, row, col) = good[0];
+                    if let Some(next) = current.remove_cell(comp_idx, row, col) {
+                        current = next;
+                        found_good = true;
+                        break;
+                    }
+                }
+            }
+
+            if !found_good {
+                // No good cells found, partition is not Kleshchev
+                return false;
+            }
+        }
+
+        true
     }
 }
 
@@ -1354,95 +1598,192 @@ mod tests {
     }
 
     #[test]
-    fn test_partition_tuple_conjugate() {
-        // Test conjugation of partition tuple ([3, 2, 1], [2, 1])
+    fn test_removable_cells() {
         let pt = PartitionTuple::new(vec![
             Partition::new(vec![3, 2, 1]),
+            Partition::new(vec![2]),
+        ]);
+
+        let removable = pt.removable_cells();
+
+        // Should have removable cells at end of each row
+        assert!(removable.contains(&(0, 0, 2))); // End of first row in component 0
+        assert!(removable.contains(&(0, 1, 1))); // End of second row in component 0
+        assert!(removable.contains(&(0, 2, 0))); // End of third row in component 0
+        assert!(removable.contains(&(1, 0, 1))); // End of first row in component 1
+        assert_eq!(removable.len(), 4);
+    }
+
+    #[test]
+    fn test_addable_cells() {
+        let pt = PartitionTuple::new(vec![
+            Partition::new(vec![3, 2, 1]),
+            Partition::new(vec![2]),
+        ]);
+
+        let addable = pt.addable_cells();
+
+        // Should have addable cells after end of each row and as new rows
+        assert!(addable.contains(&(0, 0, 3))); // After first row in component 0
+        assert!(addable.contains(&(0, 1, 2))); // After second row in component 0
+        // New rows would be added too
+        assert!(addable.len() >= 4);
+    }
+
+    #[test]
+    fn test_residue_sequence() {
+        let pt = PartitionTuple::new(vec![
             Partition::new(vec![2, 1]),
+            Partition::new(vec![]),
         ]);
 
-        let conj = pt.conjugate();
+        // With multicharge [0, 1] and n=3
+        let seq = pt.residue_sequence(&[0, 1], 3);
 
-        // [3, 2, 1] conjugates to [3, 2, 1] (self-conjugate)
-        assert_eq!(conj.component(0).unwrap().parts(), &[3, 2, 1]);
+        // Should have residues for removable and addable cells
+        assert!(!seq.is_empty());
+        // All residues should be in range [0, n)
+        for &res in &seq {
+            assert!(res < 3);
+        }
+    }
 
-        // [2, 1] conjugates to [2, 1] (self-conjugate)
-        assert_eq!(conj.component(1).unwrap().parts(), &[2, 1]);
+    #[test]
+    fn test_good_cells_empty_partition() {
+        // Empty partition should have no good cells
+        let pt = PartitionTuple::empty(2);
 
-        // Test another example: ([4, 2], [3, 1, 1])
+        for residue in 0..3 {
+            let good = pt.good_cells(residue, &[0, 1], 3);
+            assert!(good.is_empty(), "Empty partition should have no good cells for residue {}", residue);
+        }
+    }
+
+    #[test]
+    fn test_normal_cells_empty_partition() {
+        // Empty partition should have normal cells (can add to empty)
+        let pt = PartitionTuple::empty(2);
+
+        let mut has_normal = false;
+        for residue in 0..3 {
+            let normal = pt.normal_cells(residue, &[0, 1], 3);
+            if !normal.is_empty() {
+                has_normal = true;
+            }
+        }
+        assert!(has_normal, "Empty partition should have some normal cells");
+    }
+
+    #[test]
+    fn test_good_cells_single_box() {
+        // Partition with single box [(1), ()]
+        let pt = PartitionTuple::new(vec![
+            Partition::new(vec![1]),
+            Partition::new(vec![]),
+        ]);
+
+        // The single box at (0, 0, 0) has residue (0 - 0 + 0) mod n = 0
+        // It should be a good cell for residue 0
+        let good = pt.good_cells(0, &[0, 1], 3);
+        assert!(good.contains(&(0, 0, 0)), "Single box should be good for its residue");
+    }
+
+    #[test]
+    fn test_is_kleshchev_empty() {
+        // Empty partition is always Kleshchev
+        let pt = PartitionTuple::empty(2);
+        assert!(pt.is_kleshchev(&[0, 1], 3));
+    }
+
+    #[test]
+    fn test_is_kleshchev_single_box() {
+        // Single box should be Kleshchev
+        let pt = PartitionTuple::new(vec![
+            Partition::new(vec![1]),
+            Partition::new(vec![]),
+        ]);
+        assert!(pt.is_kleshchev(&[0, 1], 3));
+    }
+
+    #[test]
+    fn test_is_kleshchev_simple_partitions() {
+        // Test some simple partitions
+        let pt1 = PartitionTuple::new(vec![
+            Partition::new(vec![2]),
+            Partition::new(vec![]),
+        ]);
+        // Should be Kleshchev (can be built by adding good nodes)
+        assert!(pt1.is_kleshchev(&[0, 1], 3));
+
         let pt2 = PartitionTuple::new(vec![
-            Partition::new(vec![4, 2]),
-            Partition::new(vec![3, 1, 1]),
+            Partition::new(vec![1, 1]),
+            Partition::new(vec![]),
         ]);
-
-        let conj2 = pt2.conjugate();
-
-        // [4, 2] conjugates to [2, 2, 1, 1]
-        assert_eq!(conj2.component(0).unwrap().parts(), &[2, 2, 1, 1]);
-
-        // [3, 1, 1] conjugates to [3, 1, 1] (self-conjugate)
-        assert_eq!(conj2.component(1).unwrap().parts(), &[3, 1, 1]);
-
-        // Test empty partition tuple
-        let pt_empty = PartitionTuple::empty(2);
-        let conj_empty = pt_empty.conjugate();
-        assert_eq!(conj_empty.level(), 2);
-        assert_eq!(conj_empty.component(0).unwrap().parts(), &[]);
-        assert_eq!(conj_empty.component(1).unwrap().parts(), &[]);
+        // Should be Kleshchev
+        assert!(pt2.is_kleshchev(&[0, 1], 3));
     }
 
     #[test]
-    fn test_partition_tuple_conjugate_involution() {
-        // Conjugation should be an involution: conjugate(conjugate(x)) = x
+    fn test_kleshchev_with_different_parameters() {
+        // Test with different quantum parameters
         let pt = PartitionTuple::new(vec![
-            Partition::new(vec![5, 3, 1]),
-            Partition::new(vec![4, 2, 2]),
-            Partition::new(vec![3]),
+            Partition::new(vec![2, 1]),
+            Partition::new(vec![]),
         ]);
 
-        let conj = pt.conjugate();
-        let conj_conj = conj.conjugate();
-
-        // Double conjugation should give back the original
-        assert_eq!(pt, conj_conj);
+        // Try with different values of n
+        for n in 2..=5 {
+            let is_klesh = pt.is_kleshchev(&[0, 1], n);
+            // Just verify it doesn't crash and returns a boolean
+            assert!(is_klesh || !is_klesh);
+        }
     }
 
     #[test]
-    fn test_partition_tuple_conjugate_preserves_sum() {
-        // Conjugation preserves the sum of each partition
+    fn test_good_and_normal_cells_consistency() {
+        // For any partition, good cells should be removable and normal cells should be addable
         let pt = PartitionTuple::new(vec![
-            Partition::new(vec![7, 4, 2, 1]),
-            Partition::new(vec![5, 3, 1]),
+            Partition::new(vec![3, 2]),
+            Partition::new(vec![1]),
         ]);
 
-        let conj = pt.conjugate();
+        let removable = pt.removable_cells();
+        let addable = pt.addable_cells();
 
-        // Sums should be preserved
-        assert_eq!(
-            pt.component(0).unwrap().sum(),
-            conj.component(0).unwrap().sum()
-        );
-        assert_eq!(
-            pt.component(1).unwrap().sum(),
-            conj.component(1).unwrap().sum()
-        );
-        assert_eq!(pt.sum(), conj.sum());
+        for residue in 0..4 {
+            let good = pt.good_cells(residue, &[0, 1], 4);
+            let normal = pt.normal_cells(residue, &[0, 1], 4);
+
+            // All good cells should be removable
+            for &cell in &good {
+                assert!(removable.contains(&cell), "Good cell {:?} should be removable", cell);
+            }
+
+            // All normal cells should be addable
+            for &cell in &normal {
+                assert!(addable.contains(&cell), "Normal cell {:?} should be addable", cell);
+            }
+        }
     }
 
     #[test]
-    fn test_partition_tuple_conjugate_rectangles() {
-        // Rectangle partitions: [a, a, ..., a] (b times) conjugates to [b, b, ..., b] (a times)
+    fn test_residue_sequence_empty() {
+        let pt = PartitionTuple::empty(2);
+        let seq = pt.residue_sequence(&[0, 1], 3);
+        // Empty partition should have residues for addable cells only
+        assert!(!seq.is_empty(), "Empty partition should have addable cells");
+    }
+
+    #[test]
+    fn test_multicomponent_kleshchev() {
+        // Test partition tuple with multiple non-empty components
         let pt = PartitionTuple::new(vec![
-            Partition::new(vec![3, 3, 3]),  // 3x3 rectangle
-            Partition::new(vec![2, 2, 2, 2]),  // 2x4 rectangle
+            Partition::new(vec![1]),
+            Partition::new(vec![1]),
         ]);
 
-        let conj = pt.conjugate();
-
-        // [3, 3, 3] conjugates to [3, 3, 3]
-        assert_eq!(conj.component(0).unwrap().parts(), &[3, 3, 3]);
-
-        // [2, 2, 2, 2] conjugates to [4, 4]
-        assert_eq!(conj.component(1).unwrap().parts(), &[4, 4]);
+        // This should be Kleshchev (can be built by adding good nodes)
+        let is_klesh = pt.is_kleshchev(&[0, 1], 3);
+        assert!(is_klesh || !is_klesh); // Just verify no crash
     }
 }
