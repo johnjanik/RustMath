@@ -116,6 +116,16 @@ impl DifferentiableManifold {
         self.topological.default_chart()
     }
 
+    /// Get the full atlas (all charts)
+    pub fn atlas(&self) -> &[Chart] {
+        self.charts()
+    }
+
+    /// Get a chart by name
+    pub fn chart(&self, name: &str) -> Result<&Chart> {
+        self.topological.chart(name)
+    }
+
     /// Create a scalar field on this manifold
     pub fn scalar_field(&self, name: impl Into<String>) -> ScalarField {
         ScalarField::named(Arc::new(self.clone()), name)
