@@ -36,6 +36,7 @@ pub mod skew_partition;
 pub mod species;
 pub mod subset;
 pub mod superpartitions;
+pub mod super_tableaux;
 pub mod tableaux;
 pub mod tableau_tuple;
 pub mod tamari;
@@ -58,7 +59,10 @@ pub use permutation_simd::{
     simd_info,
 };
 pub use posets::Poset;
-pub use tableaux::{robinson_schensted, rs_insert, standard_tableaux, Tableau, PrimedEntry, ShiftedPrimedTableau};
+pub use super_tableaux::{
+    standard_super_tableaux, super_semistandard_tableaux, SuperTableau, SuperTableauEntry,
+};
+pub use tableaux::{robinson_schensted, rs_insert, standard_tableaux, Tableau};
 pub use tuple::{tuples as tuple_tuples, Tuple, TupleIterator};
 
 // Re-export new modules
