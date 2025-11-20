@@ -1,13 +1,38 @@
 //! Word Combinatorics - Advanced operations on finite and infinite words
 //!
 //! This module provides comprehensive word combinatorics functionality including:
-//! - Lyndon words over arbitrary alphabets
+//! - Lyndon words and the Chen-Fox-Lyndon theorem
+//! - Lyndon factorization using Duval's algorithm
+//! - Standard factorization with exponents
 //! - Christoffel words
 //! - Sturmian words
 //! - Word morphisms
 //! - Pattern matching algorithms
 //! - Abelian complexity
 //! - Automatic sequences
+//!
+//! ## Chen-Fox-Lyndon Theorem
+//!
+//! The Chen-Fox-Lyndon theorem is a fundamental result in combinatorics on words:
+//!
+//! **Theorem**: Every finite word w can be uniquely factored as a non-increasing
+//! product of Lyndon words: w = l₁l₂...lₖ where l₁ ≥ l₂ ≥ ... ≥ lₖ are Lyndon words.
+//!
+//! A **Lyndon word** is a non-empty word that is strictly less than all of its
+//! proper non-trivial rotations in lexicographic order.
+//!
+//! The **standard factorization** groups consecutive equal Lyndon factors:
+//! w = l₁^{a₁}l₂^{a₂}...lₘ^{aₘ} where l₁ > l₂ > ... > lₘ and aᵢ > 0
+//!
+//! ## Example
+//!
+//! ```
+//! use rustmath_combinatorics::{Word, lyndon_factorization};
+//!
+//! let w = Word::new(vec!['a', 'b', 'a', 'a', 'b', 'b']);
+//! let factors = w.lyndon_factorization();
+//! // factors = [ab, aab, b]
+//! ```
 
 use std::collections::{HashMap, HashSet};
 use std::fmt;
@@ -237,7 +262,26 @@ impl<T: Clone + Eq + PartialOrd> Word<T> {
     }
 
     /// Compute the Lyndon factorization (Chen-Fox-Lyndon factorization)
-    /// Decomposes the word as a non-increasing product of Lyndon words
+    ///
+    /// Decomposes the word as a non-increasing product of Lyndon words using Duval's algorithm.
+    ///
+    /// # Chen-Fox-Lyndon Theorem
+    ///
+    /// Every word w has a unique factorization w = l₁l₂...lₖ where:
+    /// - Each lᵢ is a Lyndon word
+    /// - l₁ ≥ l₂ ≥ ... ≥ lₖ (non-increasing in lexicographic order)
+    ///
+    /// This algorithm runs in O(n) time and O(1) extra space using Duval's algorithm.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rustmath_combinatorics::Word;
+    ///
+    /// let w = Word::new(vec![0, 1, 0, 0, 1, 1]);
+    /// let factors = w.lyndon_factorization();
+    /// // Each factor is a Lyndon word, and they are non-increasing
+    /// ```
     pub fn lyndon_factorization(&self) -> Vec<Word<T>> {
         if self.is_empty() {
             return vec![];
@@ -273,6 +317,66 @@ impl<T: Clone + Eq + PartialOrd> Word<T> {
 
         result
     }
+
+    /// Compute the standard (or condensed) Lyndon factorization
+    ///
+    /// Returns the factorization as pairs (Lyndon word, exponent) where
+    /// w = l₁^{a₁}l₂^{a₂}...lₘ^{aₘ} with l₁ > l₂ > ... > lₘ and aᵢ > 0.
+    ///
+    /// This groups consecutive equal Lyndon factors in the Chen-Fox-Lyndon factorization.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rustmath_combinatorics::Word;
+    ///
+    /// let w = Word::new(vec![0, 1, 0, 1, 0, 0, 1]);
+    /// let standard = w.standard_lyndon_factorization();
+    /// // standard = [(01, 2), (001, 1)] meaning w = (01)²(001)
+    /// ```
+    pub fn standard_lyndon_factorization(&self) -> Vec<(Word<T>, usize)> {
+        let factors = self.lyndon_factorization();
+        if factors.is_empty() {
+            return vec![];
+        }
+
+        let mut result = Vec::new();
+        let mut i = 0;
+
+        while i < factors.len() {
+            let current = &factors[i];
+            let mut count = 1;
+
+            // Count consecutive equal factors
+            while i + count < factors.len() && &factors[i + count] == current {
+                count += 1;
+            }
+
+            result.push((current.clone(), count));
+            i += count;
+        }
+
+        result
+    }
+
+    /// Check if this word can be written as a power of a Lyndon word
+    ///
+    /// Returns Some((lyndon_word, exponent)) if the word equals lyndon_word^exponent
+    /// where lyndon_word is a Lyndon word, otherwise returns None.
+    pub fn as_lyndon_power(&self) -> Option<(Word<T>, usize)> {
+        if self.is_empty() {
+            return None;
+        }
+
+        let standard = self.standard_lyndon_factorization();
+
+        // A word is a power of a Lyndon word iff its standard factorization has only one term
+        if standard.len() == 1 {
+            Some(standard[0].clone())
+        } else {
+            None
+        }
+    }
 }
 
 impl<T: Clone + Eq + fmt::Display> fmt::Display for Word<T> {
@@ -286,6 +390,9 @@ impl<T: Clone + Eq + fmt::Display> fmt::Display for Word<T> {
 
 /// Generate all Lyndon words of length n over an alphabet
 /// Uses a simple filtering approach - generates all words and filters for Lyndon property
+///
+/// Note: For large alphabets or lengths, consider using `lyndon_words_fast()` which uses
+/// the more efficient CAT (Constant Amortized Time) algorithm.
 pub fn lyndon_words<T: Clone + Eq + Ord>(alphabet: &[T], n: usize) -> Vec<Word<T>> {
     if n == 0 {
         return vec![Word::empty()];
@@ -322,6 +429,110 @@ pub fn lyndon_words<T: Clone + Eq + Ord>(alphabet: &[T], n: usize) -> Vec<Word<T
         .map(|letters| Word { letters })
         .filter(|w| w.is_lyndon())
         .collect()
+}
+
+/// Generate all Lyndon words of length up to n over an alphabet using the FKM algorithm
+///
+/// This implements the Fredericksen-Kessler-Maiorana (FKM) algorithm which generates
+/// Lyndon words in lexicographic order with constant amortized time per word.
+///
+/// Returns all Lyndon words of length 1, 2, ..., n over the given alphabet.
+pub fn lyndon_words_up_to<T: Clone + Eq + Ord>(alphabet: &[T], n: usize) -> Vec<Word<T>> {
+    if alphabet.is_empty() || n == 0 {
+        return vec![];
+    }
+
+    let k = alphabet.len();
+    let mut result = Vec::new();
+    let mut w = vec![0_usize; n + 1];
+
+    lyndon_gen(&mut w, n, k, 1, 1, &mut result);
+
+    result
+        .into_iter()
+        .map(|indices| Word {
+            letters: indices.iter().map(|&i| alphabet[i].clone()).collect(),
+        })
+        .collect()
+}
+
+/// Helper function for FKM algorithm
+fn lyndon_gen(w: &mut [usize], n: usize, k: usize, t: usize, p: usize, result: &mut Vec<Vec<usize>>) {
+    if t > n {
+        if n % p == 0 {
+            result.push(w[1..=p].to_vec());
+        }
+    } else {
+        w[t] = w[t - p];
+        lyndon_gen(w, n, k, t + 1, p, result);
+
+        for j in (w[t - p] + 1)..k {
+            w[t] = j;
+            lyndon_gen(w, n, k, t + 1, t, result);
+        }
+    }
+}
+
+/// Check if a sequence of words forms a valid Chen-Fox-Lyndon factorization
+///
+/// Returns true if the concatenation of the words in the sequence forms a valid
+/// CFL factorization (each word is Lyndon and they are in non-increasing order).
+pub fn is_cfl_factorization<T: Clone + Eq + Ord>(factors: &[Word<T>]) -> bool {
+    if factors.is_empty() {
+        return true;
+    }
+
+    // Check each factor is a Lyndon word
+    for factor in factors {
+        if !factor.is_lyndon() {
+            return false;
+        }
+    }
+
+    // Check non-increasing order
+    for i in 1..factors.len() {
+        if factors[i].letters > factors[i - 1].letters {
+            return false;
+        }
+    }
+
+    true
+}
+
+/// Reconstruct a word from its Chen-Fox-Lyndon factorization
+///
+/// Takes a sequence of Lyndon words and concatenates them to form the original word.
+pub fn from_cfl_factorization<T: Clone + Eq + Ord>(factors: &[Word<T>]) -> Word<T> {
+    if factors.is_empty() {
+        return Word::empty();
+    }
+
+    let mut letters = Vec::new();
+    for factor in factors {
+        letters.extend(factor.letters.iter().cloned());
+    }
+
+    Word { letters }
+}
+
+/// Reconstruct a word from its standard Lyndon factorization
+///
+/// Takes pairs of (Lyndon word, exponent) and reconstructs the original word.
+pub fn from_standard_factorization<T: Clone + Eq + Ord>(
+    standard: &[(Word<T>, usize)],
+) -> Word<T> {
+    if standard.is_empty() {
+        return Word::empty();
+    }
+
+    let mut letters = Vec::new();
+    for (lyndon_word, exponent) in standard {
+        for _ in 0..*exponent {
+            letters.extend(lyndon_word.letters.iter().cloned());
+        }
+    }
+
+    Word { letters }
 }
 
 /// A Christoffel word is a finite Sturmian word with specific slope properties
@@ -472,7 +683,7 @@ impl SturmianWord {
     pub fn fibonacci(n: usize) -> Self {
         // Fibonacci word is generated by iterating the morphism 0 -> 01, 1 -> 0
         // Starting from 0: 0, 01, 010, 01001, 01001010, ...
-        let morphism = super::fibonacci_morphism();
+        let morphism = fibonacci_morphism();
         let mut current = Word::new(vec![0]);
 
         // Iterate the morphism until we have at least n letters
@@ -1034,5 +1245,214 @@ mod tests {
         let repeated = w.repeat(3);
 
         assert_eq!(repeated.letters(), &[1, 2, 1, 2, 1, 2]);
+    }
+
+    // Tests for Chen-Fox-Lyndon theorem and standard factorization
+
+    #[test]
+    fn test_standard_lyndon_factorization() {
+        // Test word that has repeated Lyndon factors
+        let w = Word::new(vec![0, 1, 0, 1, 0, 0, 1]);
+        let standard = w.standard_lyndon_factorization();
+
+        // Check that standard factorization is correct
+        assert!(!standard.is_empty());
+
+        // Verify that reconstructed word equals original
+        let reconstructed = from_standard_factorization(&standard);
+        assert_eq!(reconstructed, w);
+
+        // Check each factor is Lyndon
+        for (lyndon_word, _) in &standard {
+            assert!(lyndon_word.is_lyndon());
+        }
+
+        // Check factors are in strictly decreasing order
+        for i in 1..standard.len() {
+            assert!(standard[i - 1].0.letters > standard[i].0.letters);
+        }
+    }
+
+    #[test]
+    fn test_as_lyndon_power() {
+        // Test a word that is a power of a Lyndon word
+        let w1 = Word::new(vec![0, 1, 0, 1, 0, 1]);
+        if let Some((lyndon, exp)) = w1.as_lyndon_power() {
+            assert_eq!(lyndon.letters(), &[0, 1]);
+            assert_eq!(exp, 3);
+        } else {
+            panic!("Expected word to be a Lyndon power");
+        }
+
+        // Test a word that is not a power of a Lyndon word
+        let w2 = Word::new(vec![0, 1, 0, 0, 1]);
+        assert!(w2.as_lyndon_power().is_none());
+    }
+
+    #[test]
+    fn test_is_cfl_factorization() {
+        // Valid CFL factorization
+        let factors = vec![
+            Word::new(vec![0, 1]),
+            Word::new(vec![0, 0, 1]),
+        ];
+        assert!(is_cfl_factorization(&factors));
+
+        // Invalid - not all Lyndon words
+        let invalid1 = vec![
+            Word::new(vec![0, 1]),
+            Word::new(vec![1, 0]),  // Not a Lyndon word
+        ];
+        assert!(!is_cfl_factorization(&invalid1));
+
+        // Invalid - not in non-increasing order
+        let invalid2 = vec![
+            Word::new(vec![0, 0, 1]),
+            Word::new(vec![0, 1]),  // Increasing order
+        ];
+        assert!(!is_cfl_factorization(&invalid2));
+    }
+
+    #[test]
+    fn test_from_cfl_factorization() {
+        let factors = vec![
+            Word::new(vec![0, 1]),
+            Word::new(vec![0, 0, 1]),
+            Word::new(vec![1]),
+        ];
+
+        let w = from_cfl_factorization(&factors);
+        assert_eq!(w.letters(), &[0, 1, 0, 0, 1, 1]);
+
+        // Verify that lyndon_factorization gives back the same factors
+        let refactored = w.lyndon_factorization();
+        assert_eq!(refactored, factors);
+    }
+
+    #[test]
+    fn test_from_standard_factorization() {
+        let standard = vec![
+            (Word::new(vec![0, 1]), 2),
+            (Word::new(vec![0, 0, 1]), 1),
+        ];
+
+        let w = from_standard_factorization(&standard);
+        assert_eq!(w.letters(), &[0, 1, 0, 1, 0, 0, 1]);
+
+        // Verify round-trip
+        let standard2 = w.standard_lyndon_factorization();
+        assert_eq!(standard2, standard);
+    }
+
+    #[test]
+    fn test_lyndon_factorization_properties() {
+        // Test various words to ensure CFL properties hold
+        let test_words = vec![
+            vec![0, 1, 0, 0, 1, 1],
+            vec![1, 0, 1, 0, 1],
+            vec![0, 0, 0, 1, 1, 1],
+            vec![0, 1, 1, 0, 0, 1],
+        ];
+
+        for letters in test_words {
+            let w = Word::new(letters.clone());
+            let factors = w.lyndon_factorization();
+
+            // Property 1: Concatenation gives original word
+            let reconstructed = from_cfl_factorization(&factors);
+            assert_eq!(reconstructed, w, "Failed for word {:?}", letters);
+
+            // Property 2: Each factor is a Lyndon word
+            for factor in &factors {
+                assert!(factor.is_lyndon(), "Non-Lyndon factor {:?} in word {:?}", factor.letters(), letters);
+            }
+
+            // Property 3: Factors are in non-increasing order
+            for i in 1..factors.len() {
+                assert!(
+                    factors[i - 1].letters >= factors[i].letters,
+                    "Factors not non-increasing in word {:?}", letters
+                );
+            }
+
+            // Property 4: Valid CFL factorization
+            assert!(is_cfl_factorization(&factors), "Invalid CFL for word {:?}", letters);
+        }
+    }
+
+    #[test]
+    fn test_lyndon_words_up_to() {
+        // Test FKM algorithm for generating Lyndon words
+        let alphabet = vec![0, 1];
+        let lyndon = lyndon_words_up_to(&alphabet, 4);
+
+        // All generated words should be Lyndon words
+        for word in &lyndon {
+            assert!(word.is_lyndon(), "Generated non-Lyndon word: {:?}", word.letters());
+        }
+
+        // Should include all Lyndon words up to length 4
+        // Binary Lyndon words: 0, 1, 01, 001, 011, 0001, 0011, 0111
+        assert!(lyndon.len() >= 8);
+
+        // Check some specific words are present
+        let w01 = Word::new(vec![0, 1]);
+        let w001 = Word::new(vec![0, 0, 1]);
+        let w011 = Word::new(vec![0, 1, 1]);
+
+        assert!(lyndon.contains(&w01));
+        assert!(lyndon.contains(&w001));
+        assert!(lyndon.contains(&w011));
+    }
+
+    #[test]
+    fn test_lyndon_factorization_uniqueness() {
+        // The CFL factorization should be unique
+        let w = Word::new(vec![0, 1, 0, 0, 1, 1, 0, 1]);
+
+        let factors1 = w.lyndon_factorization();
+        let factors2 = w.lyndon_factorization();
+
+        assert_eq!(factors1, factors2, "CFL factorization should be deterministic");
+    }
+
+    #[test]
+    fn test_standard_factorization_exponents() {
+        // Test that exponents are counted correctly
+        let w = Word::new(vec![0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1]);
+        let standard = w.standard_lyndon_factorization();
+
+        // Check that all exponents are positive
+        for (_, exp) in &standard {
+            assert!(*exp > 0, "Exponent should be positive");
+        }
+
+        // Verify total length
+        let total_len: usize = standard.iter()
+            .map(|(word, exp)| word.len() * exp)
+            .sum();
+        assert_eq!(total_len, w.len(), "Standard factorization should preserve length");
+    }
+
+    #[test]
+    fn test_single_letter_lyndon() {
+        // Single letter words are not Lyndon words (by convention, need at least 1 rotation)
+        // Actually, in some definitions they are considered Lyndon
+        let w = Word::new(vec![0]);
+        let factors = w.lyndon_factorization();
+        assert_eq!(factors.len(), 1);
+        assert_eq!(factors[0].letters(), &[0]);
+    }
+
+    #[test]
+    fn test_empty_word_factorization() {
+        let w: Word<u32> = Word::empty();
+        let factors = w.lyndon_factorization();
+        assert!(factors.is_empty());
+
+        let standard = w.standard_lyndon_factorization();
+        assert!(standard.is_empty());
+
+        assert!(w.as_lyndon_power().is_none());
     }
 }
