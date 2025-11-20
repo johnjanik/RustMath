@@ -17,6 +17,7 @@ pub mod ranking;
 pub mod set_partition;
 pub mod set_system;
 pub mod species;
+pub mod subset;
 pub mod tableaux;
 pub mod word;
 
@@ -51,6 +52,10 @@ pub use word::{
     abelian_complexity, boyer_moore_search, christoffel_word, factor_complexity, kmp_search,
     lyndon_factorization, lyndon_words as general_lyndon_words, sturmian_word, AutomaticSequence,
     Morphism, Word,
+};
+pub use subset::{
+    all_subsets, count_k_subsets, k_subset_iterator, k_subsets, subset_iterator, KSubsetIterator,
+    Subset, SubsetIterator,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
