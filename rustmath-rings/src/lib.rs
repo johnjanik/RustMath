@@ -57,6 +57,7 @@ pub mod monomials;
 pub mod morphism;
 pub mod noncommutative_ideals;
 pub mod numbers_abc;
+pub mod padics;
 pub mod pari_ring;
 pub mod quotient_ring;
 pub mod quotient_ring_element;
@@ -89,6 +90,7 @@ pub mod sum_of_squares;
 pub mod tate_algebra;
 pub mod valuation;
 pub mod qqbar;
+pub mod padics;
 
 // Re-export core ring types from other crates
 pub use rustmath_integers::Integer;
@@ -111,5 +113,6 @@ mod tests {
         use crate::abc::*;
         use crate::algebraic_closure::*;
         use crate::asymptotic::*;
+        use crate::padics::*;
     }
 }
