@@ -22,6 +22,7 @@ members = [
     "rustmath-calculus",
     "rustmath-numbertheory",
     "rustmath-combinatorics",
+    "rustmath-constants",
     "rustmath-crystals",
     "rustmath-geometry",
     "rustmath-graphs",
