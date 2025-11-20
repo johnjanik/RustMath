@@ -9,6 +9,7 @@ pub mod composition;
 pub mod designs;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod ordered_tree;
 pub mod partitions;
 pub mod perfect_matching;
 pub mod permutations;
@@ -71,6 +72,7 @@ pub use subset::{
 pub use q_analogue::{
     gaussian_polynomial, q_binomial, q_binomial_eval, q_factorial, q_integer, q_multinomial,
 };
+pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator};
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
 
