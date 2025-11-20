@@ -56,9 +56,10 @@ impl<R: EuclideanDomain> Matrix<R> {
 }
 ```
 
-### Module Structure (18+ crates)
+### Module Structure (19+ crates)
 - **rustmath-core**: Fundamental traits (Ring, Field, EuclideanDomain)
-- **rustmath-features**: Feature detection and optional dependency management (NEW)
+- **rustmath-features**: Feature detection and optional dependency management
+- **rustmath-interfaces**: External system interfaces (GAP, PARI, etc.) (NEW)
 - **rustmath-integers**: Integer operations, factorization (Pollard's Rho), primality (Miller-Rabin)
 - **rustmath-rationals**: Exact rational arithmetic
 - **rustmath-matrix**: Generic matrix operations, LU/PLU decomposition, Gaussian elimination
@@ -115,6 +116,45 @@ let result = with_fallback!(
     pure_rust_factorial(10)
 );
 ```
+
+### External System Interfaces (rustmath-interfaces)
+
+The `rustmath-interfaces` crate provides bridges to external computational systems:
+
+**GAP Interface (Groups, Algorithms, Programming):**
+- Process management: Spawn and manage GAP processes
+- Command translation: Convert Rust operations to GAP syntax
+- Result parsing: Parse GAP output back to Rust structures
+- Group operations: Use GAP for advanced group computations
+- Permutation algorithms: Leverage GAP's Schreier-Sims and other algorithms
+
+**Key Features:**
+- Thread-safe process management with `Arc<Mutex<>>`
+- Comprehensive error handling (process, parsing, runtime errors)
+- High-level API for permutation groups
+- Support for transitive groups, stabilizers, orbits, conjugacy classes
+- Base and strong generating set computation
+
+**Usage Example:**
+```rust
+use rustmath_interfaces::gap::GapInterface;
+use rustmath_interfaces::gap_permutation::GapPermutationGroup;
+
+// Execute GAP commands
+let gap = GapInterface::new()?;
+let order = gap.group_order("SymmetricGroup(5)")?;
+
+// High-level permutation group interface
+let s5 = GapPermutationGroup::symmetric(5)?;
+let orbit = s5.orbit(1)?;
+let (base, sgs) = s5.base_and_strong_generators()?;
+```
+
+**Planned Interfaces:**
+- PARI/GP: Number theory computations
+- Singular: Algebraic geometry
+- FLINT: Fast integer arithmetic
+- GMP/MPFR: Arbitrary precision
 
 ### Non-Obvious Implementation Details
 
