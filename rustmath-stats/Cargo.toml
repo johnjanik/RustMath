@@ -9,4 +9,5 @@ repository.workspace = true
 [dependencies]
 rustmath-core = { path = "../rustmath-core" }
 rustmath-reals = { path = "../rustmath-reals" }
+rustmath-rationals = { path = "../rustmath-rationals" }
 rand = { workspace = true }
