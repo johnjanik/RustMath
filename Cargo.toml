@@ -16,6 +16,7 @@ members = [
     "rustmath-powerseries",
     "rustmath-finitefields",
     "rustmath-padics",
+    "rustmath-algebraic",
     "rustmath-matrix",
     "rustmath-calculus",
     "rustmath-numbertheory",
