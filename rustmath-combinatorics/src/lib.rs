@@ -32,6 +32,7 @@ pub mod superpartitions;
 pub mod tableaux;
 pub mod tamari;
 pub mod tuple;
+pub mod vector_partition;
 pub mod word;
 pub mod wreath_product;
 
@@ -106,9 +107,10 @@ pub use superpartitions::{
     count_superpartitions, strict_superpartitions, superpartitions, superpartitions_with_k_parts,
     superpartitions_with_m_circled, SuperPart, SuperPartition,
 };
-pub use sidon_sets::{
-    backtracking_bh_sequence, backtracking_sidon_set, greedy_bh_sequence, greedy_sidon_set,
-    is_bh_sequence, is_sidon_set, max_bh_sequence_size, max_sidon_set_size, BhSequence, SidonSet,
+pub use vector_partition::{
+    count_vector_partitions_exact_parts, count_vector_partitions_max_parts,
+    fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
+    vector_partitions_with_max_part, VectorPartition,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
