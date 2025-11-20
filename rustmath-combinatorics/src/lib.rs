@@ -4,6 +4,7 @@
 //! partitions, and algorithms for generating and manipulating them.
 
 pub mod affine_permutations;
+pub mod bijectionist;
 pub mod binary_words;
 pub mod combinations;
 pub mod composition;
@@ -39,6 +40,11 @@ pub mod word;
 pub mod wreath_product;
 
 pub use affine_permutations::{AffinePermutation, CoxeterType};
+pub use bijectionist::{
+    all_k_subsets, all_ordered_pairs, all_unordered_pairs, burnside_count, BijectionFinder,
+    BijectiveCorrespondence, GroupAction, OrbitStructure, PermutationActionOnMultiset,
+    PermutationActionOnPairs, PermutationActionOnSequence, PermutationActionOnSet,
+};
 pub use combinations::{combinations, Combination};
 pub use partitions::{
     count_partitions_with_max_parts, partition_count, partitions, partitions_with_distinct_parts,
@@ -85,7 +91,6 @@ pub use set_partition::{
     SetPartition, SetPartitionIterator,
 };
 pub use set_system::SetSystem;
-pub use multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
 pub use word::{
     abelian_complexity, boyer_moore_search, christoffel_word, factor_complexity, kmp_search,
     lyndon_factorization, lyndon_words as general_lyndon_words, sturmian_word, AutomaticSequence,
@@ -117,6 +122,7 @@ pub use integer_vectors::{
     count_integer_vectors_in_box, count_integer_vectors_with_sum, integer_vector_sum_iter,
     integer_vectors_in_box, integer_vectors_with_l1_norm_bounded, integer_vectors_with_sum,
     integer_vectors_with_weighted_sum, IntegerVector, IntegerVectorSumIter,
+};
 pub use vector_partition::{
     count_vector_partitions_exact_parts, count_vector_partitions_max_parts,
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
