@@ -7,6 +7,7 @@
 extern crate lazy_static;
 
 pub mod affine_permutations;
+pub mod bijectionist;
 pub mod backtrack;
 pub mod combinatorial_map;
 pub mod combinatorial_map_examples;
@@ -67,6 +68,11 @@ pub mod key_polynomial;
 pub mod multiset_partition_into_sets_ordered;
 
 pub use affine_permutations::{AffinePermutation, CoxeterType};
+pub use bijectionist::{
+    all_k_subsets, all_ordered_pairs, all_unordered_pairs, burnside_count, BijectionFinder,
+    BijectiveCorrespondence, GroupAction, OrbitStructure, PermutationActionOnMultiset,
+    PermutationActionOnPairs, PermutationActionOnSequence, PermutationActionOnSet,
+};
 pub use backtrack::{BacktrackFn, BacktrackProblem, Backtracker};
 pub use combinations::{combinations, Combination};
 pub use partitions::{
@@ -145,7 +151,6 @@ pub use set_partition::{
     SetPartition, SetPartitionIterator,
 };
 pub use set_system::SetSystem;
-// pub use multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
 pub use word::{
     abelian_complexity, boyer_moore_search, christoffel_word, factor_complexity,
     from_cfl_factorization, from_standard_factorization, is_cfl_factorization, kmp_search,
