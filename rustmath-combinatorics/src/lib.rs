@@ -12,6 +12,7 @@ pub mod enumeration;
 pub mod partitions;
 pub mod perfect_matching;
 pub mod permutations;
+pub mod plane_partition;
 pub mod posets;
 pub mod q_analogue;
 pub mod ranking;
@@ -70,6 +71,12 @@ pub use subset::{
 };
 pub use q_analogue::{
     gaussian_polynomial, q_binomial, q_binomial_eval, q_factorial, q_integer, q_multinomial,
+};
+pub use plane_partition::{
+    count_cyclically_symmetric_plane_partitions, count_plane_partitions_in_box,
+    count_self_complementary_plane_partitions, count_totally_symmetric_plane_partitions,
+    count_transpose_complement_plane_partitions, plane_partitions, plane_partitions_in_box,
+    PlanePartition,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
