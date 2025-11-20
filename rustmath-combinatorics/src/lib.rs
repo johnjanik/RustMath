@@ -11,7 +11,7 @@ pub mod derangements;
 pub mod designs;
 pub mod dyck_word;
 pub mod enumeration;
-pub mod integer_lists;
+pub mod multiset_partition_into_sets_ordered;
 pub mod ordered_tree;
 pub mod partitions;
 pub mod perfect_matching;
@@ -75,6 +75,7 @@ pub use recurrence_sequences::{
 };
 pub use set_partition::{set_partition_ordered, set_partitions, OrderedSetPartition, SetPartition};
 pub use set_system::SetSystem;
+pub use multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
 pub use word::{
     abelian_complexity, boyer_moore_search, christoffel_word, factor_complexity, kmp_search,
     lyndon_factorization, lyndon_words as general_lyndon_words, sturmian_word, AutomaticSequence,
@@ -94,7 +95,8 @@ pub use plane_partition::{
     count_transpose_complement_plane_partitions, plane_partitions, plane_partitions_in_box,
     PlanePartition,
 };
-pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator};
+pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator,
+};
 pub use derangements::{
     all_derangements, count_derangements, count_derangements_recurrence, is_derangement,
 };
