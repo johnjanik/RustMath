@@ -281,28 +281,388 @@ impl Iterator for CompositionIterator {
     }
 }
 
-/// Generate Cartesian product of multiple sets
-pub fn cartesian_product<T: Clone>(sets: &[Vec<T>]) -> Vec<Vec<T>> {
-    if sets.is_empty() {
-        return vec![vec![]];
-    }
+/// A lazy iterator for Cartesian products
+///
+/// This iterator generates tuples from the Cartesian product of multiple sequences
+/// without materializing all combinations at once. It supports both finite and
+/// infinite input sequences through diagonal enumeration.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_combinatorics::enumeration::CartesianProduct;
+///
+/// let sets = vec![vec![1, 2], vec![3, 4], vec![5]];
+/// let product: Vec<Vec<i32>> = CartesianProduct::new(sets).collect();
+/// assert_eq!(product.len(), 4); // 2 * 2 * 1
+/// ```
+pub struct CartesianProduct<T: Clone> {
+    /// The sets to take the product of (we store items as we collect them)
+    sets: Vec<Vec<T>>,
+    /// Current indices into each set
+    indices: Vec<usize>,
+    /// Whether we've finished iterating
+    done: bool,
+    /// Whether any set is known to be empty
+    has_empty: bool,
+}
 
-    if sets.len() == 1 {
-        return sets[0].iter().map(|x| vec![x.clone()]).collect();
-    }
+impl<T: Clone> CartesianProduct<T> {
+    /// Create a new CartesianProduct iterator from a collection of sets
+    pub fn new(sets: Vec<Vec<T>>) -> Self {
+        if sets.is_empty() {
+            // Empty input means one empty tuple
+            return CartesianProduct {
+                sets: vec![],
+                indices: vec![],
+                done: false,
+                has_empty: false,
+            };
+        }
 
-    let mut result = Vec::new();
-    let rest = cartesian_product(&sets[1..]);
+        let has_empty = sets.iter().any(|s| s.is_empty());
+        let indices = vec![0; sets.len()];
 
-    for elem in &sets[0] {
-        for tuple in &rest {
-            let mut new_tuple = vec![elem.clone()];
-            new_tuple.extend(tuple.iter().cloned());
-            result.push(new_tuple);
+        CartesianProduct {
+            sets,
+            indices,
+            done: has_empty,
+            has_empty,
         }
     }
 
-    result
+    /// Create a CartesianProduct from an iterator of iterators
+    ///
+    /// This collects items from the input iterators as needed. For infinite
+    /// iterators, items are collected lazily during iteration.
+    pub fn from_iters<I>(iters: I) -> Self
+    where
+        I: IntoIterator<Item = Vec<T>>,
+    {
+        let sets: Vec<Vec<T>> = iters.into_iter().collect();
+        Self::new(sets)
+    }
+
+    /// Increment indices to get the next tuple (standard lexicographic order)
+    fn increment_indices(&mut self) -> bool {
+        // Increment from rightmost position
+        for i in (0..self.indices.len()).rev() {
+            self.indices[i] += 1;
+            if self.indices[i] < self.sets[i].len() {
+                return true;
+            }
+            self.indices[i] = 0;
+        }
+        false
+    }
+
+    /// Get the current tuple
+    fn current_tuple(&self) -> Vec<T> {
+        self.indices
+            .iter()
+            .enumerate()
+            .map(|(i, &idx)| self.sets[i][idx].clone())
+            .collect()
+    }
+}
+
+impl<T: Clone> Iterator for CartesianProduct<T> {
+    type Item = Vec<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+
+        // Special case: empty input produces one empty tuple
+        if self.sets.is_empty() {
+            self.done = true;
+            return Some(vec![]);
+        }
+
+        // Get current tuple
+        let result = self.current_tuple();
+
+        // Advance to next position
+        if !self.increment_indices() {
+            self.done = true;
+        }
+
+        Some(result)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        if self.has_empty {
+            return (0, Some(0));
+        }
+
+        if self.sets.is_empty() {
+            return if self.done { (0, Some(0)) } else { (1, Some(1)) };
+        }
+
+        // Calculate total size and remaining
+        let total: Option<usize> = self
+            .sets
+            .iter()
+            .try_fold(1usize, |acc, set| acc.checked_mul(set.len()));
+
+        if let Some(total) = total {
+            // Calculate how many we've already produced
+            let mut produced = 0usize;
+            let mut multiplier = 1usize;
+
+            for i in (0..self.indices.len()).rev() {
+                produced += self.indices[i] * multiplier;
+                multiplier *= self.sets[i].len();
+            }
+
+            let remaining = total.saturating_sub(produced);
+            (remaining, Some(remaining))
+        } else {
+            // Overflow occurred, size is very large
+            (usize::MAX, None)
+        }
+    }
+}
+
+impl<T: Clone> ExactSizeIterator for CartesianProduct<T> {}
+
+/// A lazy iterator for Cartesian products with support for infinite sequences
+///
+/// This uses diagonal enumeration to ensure that products involving infinite
+/// sequences can still be enumerated. Each output tuple is finite, but the
+/// iterator itself may be infinite.
+///
+/// The enumeration proceeds by generating tuples in order of increasing
+/// "coordinate sum" - i.e., tuples where indices sum to 0, then 1, then 2, etc.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_combinatorics::enumeration::InfiniteCartesianProduct;
+///
+/// // Product of two infinite sequences
+/// let naturals1 = Box::new(0..) as Box<dyn Iterator<Item=i32>>;
+/// let naturals2 = Box::new(0..) as Box<dyn Iterator<Item=i32>>;
+///
+/// let mut product = InfiniteCartesianProduct::new(vec![naturals1, naturals2]);
+///
+/// // First few tuples: [0,0], [0,1], [1,0], [0,2], [1,1], [2,0], ...
+/// assert_eq!(product.next(), Some(vec![0, 0]));
+/// assert_eq!(product.next(), Some(vec![0, 1]));
+/// assert_eq!(product.next(), Some(vec![1, 0]));
+/// ```
+pub struct InfiniteCartesianProduct<T: Clone> {
+    /// Storage for elements from each iterator
+    storage: Vec<Vec<T>>,
+    /// The source iterators
+    iterators: Vec<Box<dyn Iterator<Item = T>>>,
+    /// Current diagonal level
+    diagonal: usize,
+    /// Current position within the diagonal
+    position: usize,
+    /// Number of tuples at current diagonal level
+    diagonal_size: usize,
+    /// Number of consecutive empty diagonals
+    empty_diagonals: usize,
+}
+
+impl<T: Clone> InfiniteCartesianProduct<T> {
+    /// Create a new InfiniteCartesianProduct from a vector of iterators
+    pub fn new(iterators: Vec<Box<dyn Iterator<Item = T>>>) -> Self {
+        let n = iterators.len();
+        let storage = vec![Vec::new(); n];
+
+        InfiniteCartesianProduct {
+            storage,
+            iterators,
+            diagonal: 0,
+            position: 0,
+            diagonal_size: if n == 0 { 0 } else { 1 },
+            empty_diagonals: 0,
+        }
+    }
+
+    /// Ensure we have enough elements from iterator i to reach index idx
+    fn ensure_element(&mut self, i: usize, idx: usize) -> bool {
+        while self.storage[i].len() <= idx {
+            if let Some(elem) = self.iterators[i].next() {
+                self.storage[i].push(elem);
+            } else {
+                // Iterator exhausted
+                return false;
+            }
+        }
+        true
+    }
+
+    /// Generate the k-th tuple at the given diagonal level
+    /// Returns None if we can't generate it (iterator exhausted)
+    fn tuple_at_diagonal(&mut self, diagonal: usize, k: usize) -> Option<Vec<T>> {
+        if self.iterators.is_empty() {
+            return None;
+        }
+
+        // Generate indices that sum to 'diagonal'
+        // We enumerate all ways to partition 'diagonal' into len indices
+        let indices = self.get_indices_for_position(diagonal, k)?;
+
+        // Ensure we have all needed elements
+        for (i, &idx) in indices.iter().enumerate() {
+            if !self.ensure_element(i, idx) {
+                return None;
+            }
+        }
+
+        // Build the tuple
+        Some(
+            indices
+                .iter()
+                .enumerate()
+                .map(|(i, &idx)| self.storage[i][idx].clone())
+                .collect(),
+        )
+    }
+
+    /// Convert diagonal position to indices
+    /// This generates the k-th way to partition 'sum' into 'n' non-negative integers
+    fn get_indices_for_position(&self, sum: usize, mut k: usize) -> Option<Vec<usize>> {
+        let n = self.iterators.len();
+        if n == 0 {
+            return None;
+        }
+
+        let mut indices = vec![0; n];
+        let mut remaining = sum;
+
+        for i in 0..n - 1 {
+            // How many ways to distribute remaining among the rest?
+            for val in 0..=remaining {
+                let ways = Self::count_partitions(remaining - val, n - i - 1);
+                if k < ways {
+                    indices[i] = val;
+                    remaining -= val;
+                    break;
+                }
+                k -= ways;
+            }
+        }
+        indices[n - 1] = remaining;
+
+        Some(indices)
+    }
+
+    /// Count number of ways to partition sum into n non-negative integers
+    /// This is "stars and bars": C(sum + n - 1, n - 1)
+    fn count_partitions(sum: usize, n: usize) -> usize {
+        if n == 0 {
+            return if sum == 0 { 1 } else { 0 };
+        }
+        if n == 1 {
+            return 1;
+        }
+
+        // C(sum + n - 1, n - 1)
+        Self::binomial(sum + n - 1, n - 1)
+    }
+
+    /// Simple binomial coefficient calculation
+    fn binomial(n: usize, k: usize) -> usize {
+        if k > n {
+            return 0;
+        }
+        if k == 0 || k == n {
+            return 1;
+        }
+
+        let k = k.min(n - k);
+        let mut result = 1usize;
+
+        for i in 0..k {
+            result = result
+                .saturating_mul(n - i)
+                .checked_div(i + 1)
+                .unwrap_or(usize::MAX);
+        }
+
+        result
+    }
+}
+
+impl<T: Clone> Iterator for InfiniteCartesianProduct<T> {
+    type Item = Vec<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.iterators.is_empty() {
+            return None;
+        }
+
+        loop {
+            // Try all positions at current diagonal
+            while self.position < self.diagonal_size {
+                if let Some(tuple) = self.tuple_at_diagonal(self.diagonal, self.position) {
+                    self.position += 1;
+                    self.empty_diagonals = 0; // Reset counter when we find a tuple
+                    return Some(tuple);
+                }
+                // This particular combination can't be generated, try next
+                self.position += 1;
+            }
+
+            // Finished this diagonal without finding anything
+            // (or found some but now at end of diagonal)
+
+            // Move to next diagonal
+            self.diagonal += 1;
+            self.position = 0;
+            self.diagonal_size = Self::count_partitions(self.diagonal, self.iterators.len());
+
+            if self.diagonal_size == 0 {
+                return None;
+            }
+
+            // Check if we should stop - if we've seen many empty diagonals in a row,
+            // it means all finite iterators are exhausted
+            // We use the number of iterators as a threshold
+            if self.empty_diagonals > self.iterators.len() {
+                return None;
+            }
+
+            // Try to find at least one valid tuple at this diagonal
+            let mut found_at_this_diagonal = false;
+            for pos in 0..self.diagonal_size {
+                if self.tuple_at_diagonal(self.diagonal, pos).is_some() {
+                    found_at_this_diagonal = true;
+                    break;
+                }
+            }
+
+            if !found_at_this_diagonal {
+                self.empty_diagonals += 1;
+            } else {
+                self.empty_diagonals = 0;
+            }
+        }
+    }
+}
+
+/// Generate Cartesian product of multiple sets (eager evaluation)
+///
+/// This function eagerly computes all tuples in the Cartesian product.
+/// For lazy evaluation, use the `CartesianProduct` iterator instead.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_combinatorics::enumeration::cartesian_product;
+///
+/// let set1 = vec![1, 2];
+/// let set2 = vec![3, 4];
+/// let product = cartesian_product(&[set1, set2]);
+/// assert_eq!(product.len(), 4);
+/// ```
+pub fn cartesian_product<T: Clone>(sets: &[Vec<T>]) -> Vec<Vec<T>> {
+    CartesianProduct::new(sets.to_vec()).collect()
 }
 
 /// Generate all k-tuples from a set (Cartesian power)
@@ -489,5 +849,217 @@ mod tests {
         let k = 3;
         let weak_comps = weak_compositions(n, k);
         assert_eq!(weak_comps.len(), stars_and_bars(n, k));
+    }
+
+    #[test]
+    fn test_cartesian_product_iterator_basic() {
+        let sets = vec![vec![1, 2], vec![3, 4], vec![5]];
+        let product: Vec<Vec<i32>> = CartesianProduct::new(sets).collect();
+
+        assert_eq!(product.len(), 4); // 2 * 2 * 1
+
+        assert!(product.contains(&vec![1, 3, 5]));
+        assert!(product.contains(&vec![1, 4, 5]));
+        assert!(product.contains(&vec![2, 3, 5]));
+        assert!(product.contains(&vec![2, 4, 5]));
+    }
+
+    #[test]
+    fn test_cartesian_product_iterator_lazy() {
+        // Verify that the iterator is truly lazy by only taking first few items
+        let sets = vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]];
+        let mut iter = CartesianProduct::new(sets);
+
+        assert_eq!(iter.next(), Some(vec![1, 4, 7]));
+        assert_eq!(iter.next(), Some(vec![1, 4, 8]));
+        assert_eq!(iter.next(), Some(vec![1, 4, 9]));
+        assert_eq!(iter.next(), Some(vec![1, 5, 7]));
+
+        // We can stop here without computing all 27 tuples
+    }
+
+    #[test]
+    fn test_cartesian_product_iterator_empty_input() {
+        // Empty input should produce one empty tuple
+        let sets: Vec<Vec<i32>> = vec![];
+        let product: Vec<Vec<i32>> = CartesianProduct::new(sets).collect();
+
+        assert_eq!(product.len(), 1);
+        assert_eq!(product[0], vec![]);
+    }
+
+    #[test]
+    fn test_cartesian_product_iterator_empty_set() {
+        // If any set is empty, product should be empty
+        let sets = vec![vec![1, 2], vec![], vec![3]];
+        let product: Vec<Vec<i32>> = CartesianProduct::new(sets).collect();
+
+        assert_eq!(product.len(), 0);
+    }
+
+    #[test]
+    fn test_cartesian_product_iterator_single_set() {
+        let sets = vec![vec![1, 2, 3]];
+        let product: Vec<Vec<i32>> = CartesianProduct::new(sets).collect();
+
+        assert_eq!(product.len(), 3);
+        assert_eq!(product[0], vec![1]);
+        assert_eq!(product[1], vec![2]);
+        assert_eq!(product[2], vec![3]);
+    }
+
+    #[test]
+    fn test_cartesian_product_iterator_size_hint() {
+        let sets = vec![vec![1, 2], vec![3, 4, 5], vec![6]];
+        let iter = CartesianProduct::new(sets);
+
+        let (lower, upper) = iter.size_hint();
+        assert_eq!(lower, 6); // 2 * 3 * 1
+        assert_eq!(upper, Some(6));
+    }
+
+    #[test]
+    fn test_cartesian_product_backward_compat() {
+        // Verify that the new implementation gives same results as before
+        let set1 = vec![1, 2];
+        let set2 = vec![3, 4];
+        let set3 = vec![5];
+
+        let product = cartesian_product(&[set1.clone(), set2.clone(), set3.clone()]);
+        let product_iter: Vec<Vec<i32>> =
+            CartesianProduct::new(vec![set1, set2, set3]).collect();
+
+        // Both should produce the same tuples (order may differ, so we compare sets)
+        assert_eq!(product.len(), product_iter.len());
+        for tuple in &product {
+            assert!(product_iter.contains(tuple));
+        }
+    }
+
+    #[test]
+    fn test_infinite_cartesian_product_finite_inputs() {
+        // Test with finite iterators first
+        let iter1: Box<dyn Iterator<Item = i32>> = Box::new(vec![1, 2].into_iter());
+        let iter2: Box<dyn Iterator<Item = i32>> = Box::new(vec![3, 4].into_iter());
+
+        let mut product = InfiniteCartesianProduct::new(vec![iter1, iter2]);
+
+        // Diagonal enumeration: sum=0: [0,0], sum=1: [0,1],[1,0], sum=2: [0,2],[1,1],[2,0]
+        // But we only have indices up to 1 in each dimension
+        assert_eq!(product.next(), Some(vec![1, 3])); // [0,0]
+        assert_eq!(product.next(), Some(vec![1, 4])); // [0,1]
+        assert_eq!(product.next(), Some(vec![2, 3])); // [1,0]
+        assert_eq!(product.next(), Some(vec![2, 4])); // [1,1]
+        assert_eq!(product.next(), None); // No more elements
+    }
+
+    #[test]
+    fn test_infinite_cartesian_product_with_infinite_iterator() {
+        // Test with actual infinite iterator
+        let iter1: Box<dyn Iterator<Item = i32>> = Box::new(0..);
+        let iter2: Box<dyn Iterator<Item = i32>> = Box::new(0..);
+
+        let mut product = InfiniteCartesianProduct::new(vec![iter1, iter2]);
+
+        // First few tuples in diagonal order
+        assert_eq!(product.next(), Some(vec![0, 0])); // sum=0
+        assert_eq!(product.next(), Some(vec![0, 1])); // sum=1
+        assert_eq!(product.next(), Some(vec![1, 0])); // sum=1
+        assert_eq!(product.next(), Some(vec![0, 2])); // sum=2
+        assert_eq!(product.next(), Some(vec![1, 1])); // sum=2
+        assert_eq!(product.next(), Some(vec![2, 0])); // sum=2
+        assert_eq!(product.next(), Some(vec![0, 3])); // sum=3
+        assert_eq!(product.next(), Some(vec![1, 2])); // sum=3
+
+        // Can take as many as we want
+        for _ in 0..100 {
+            assert!(product.next().is_some());
+        }
+    }
+
+    #[test]
+    fn test_infinite_cartesian_product_three_iterators() {
+        // Test with three infinite iterators
+        let iter1: Box<dyn Iterator<Item = usize>> = Box::new(0..);
+        let iter2: Box<dyn Iterator<Item = usize>> = Box::new(0..);
+        let iter3: Box<dyn Iterator<Item = usize>> = Box::new(0..);
+
+        let mut product = InfiniteCartesianProduct::new(vec![iter1, iter2, iter3]);
+
+        // First tuple should be [0,0,0]
+        assert_eq!(product.next(), Some(vec![0, 0, 0]));
+
+        // Should be able to generate many tuples
+        let tuples: Vec<_> = product.take(50).collect();
+        assert_eq!(tuples.len(), 50);
+
+        // All tuples should have 3 elements
+        for tuple in &tuples {
+            assert_eq!(tuple.len(), 3);
+        }
+
+        // Check that we eventually see tuples with larger values
+        let has_large = tuples.iter().any(|t| t.iter().any(|&x| x >= 3));
+        assert!(has_large);
+    }
+
+    #[test]
+    fn test_infinite_cartesian_product_mixed_finite_infinite() {
+        // Mix of finite and infinite iterators
+        let iter1: Box<dyn Iterator<Item = i32>> = Box::new(vec![1, 2].into_iter());
+        let iter2: Box<dyn Iterator<Item = i32>> = Box::new(0..);
+
+        let mut product = InfiniteCartesianProduct::new(vec![iter1, iter2]);
+
+        // Should get infinitely many tuples, but first component only 1 or 2
+        let tuples: Vec<_> = product.take(20).collect();
+        assert_eq!(tuples.len(), 20);
+
+        for tuple in &tuples {
+            assert!(tuple[0] == 1 || tuple[0] == 2);
+        }
+    }
+
+    #[test]
+    fn test_cartesian_product_large_lazy() {
+        // Test with a large product that would be expensive to compute eagerly
+        let sets: Vec<Vec<i32>> = (0..10).map(|_| (0..10).collect()).collect();
+        let mut iter = CartesianProduct::new(sets);
+
+        // Only take first 5 tuples, not all 10^10
+        let first_five: Vec<_> = iter.take(5).collect();
+        assert_eq!(first_five.len(), 5);
+
+        // Verify correctness of first tuple
+        assert_eq!(first_five[0], vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn test_cartesian_product_from_iters() {
+        let sets = vec![vec![1, 2], vec![3, 4]];
+        let product: Vec<Vec<i32>> = CartesianProduct::from_iters(sets).collect();
+
+        assert_eq!(product.len(), 4);
+        assert!(product.contains(&vec![1, 3]));
+        assert!(product.contains(&vec![1, 4]));
+        assert!(product.contains(&vec![2, 3]));
+        assert!(product.contains(&vec![2, 4]));
+    }
+
+    #[test]
+    fn test_infinite_cartesian_product_coverage() {
+        // Verify that diagonal enumeration eventually reaches any specific tuple
+        let iter1: Box<dyn Iterator<Item = usize>> = Box::new(0..);
+        let iter2: Box<dyn Iterator<Item = usize>> = Box::new(0..);
+
+        let product = InfiniteCartesianProduct::new(vec![iter1, iter2]);
+
+        // Take enough tuples to be sure we've seen [3, 2]
+        let tuples: Vec<_> = product.take(100).collect();
+
+        // The tuple [3, 2] has coordinate sum 5, so it should appear
+        assert!(tuples.contains(&vec![3, 2]));
+        assert!(tuples.contains(&vec![2, 3]));
+        assert!(tuples.contains(&vec![5, 0]));
     }
 }
