@@ -218,6 +218,7 @@ pub mod projective_morphism;
 pub mod projective_space;
 pub mod segre;
 pub mod veronese;
+pub mod elliptic_curves;
 
 // Re-export commonly used types from generic module
 pub use generic::{
@@ -241,8 +242,7 @@ pub use projective_morphism::{ProjectiveMorphism, ProjMorphism};
 pub use projective_space::{Hyperplane, LinearSubspace, ProjectivePoint, ProjectiveSpace};
 pub use segre::{MultiSegreEmbedding, SegreEmbedding, SegreVariety};
 pub use veronese::{VeroneseEmbedding, VeroneseVariety};
-
-// Re-export elliptic curve types
 pub use elliptic_curves::{
-    EllipticCurve, EllipticCurvePoint, Isogeny, TorsionSubgroup
+    ImaginaryQuadraticField, HeegnerDiscriminant, HeegnerPoint,
+    CanonicalHeight, HeightPairing, GrossZagierFormula, BSDHeegner,
 };
