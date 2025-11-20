@@ -7,6 +7,7 @@ pub mod affine_permutations;
 pub mod binary_words;
 pub mod combinations;
 pub mod composition;
+pub mod debruijn;
 pub mod derangements;
 pub mod designs;
 pub mod dyck_word;
@@ -107,6 +108,11 @@ pub use superpartitions::{
 pub use sidon_sets::{
     backtracking_bh_sequence, backtracking_sidon_set, greedy_bh_sequence, greedy_sidon_set,
     is_bh_sequence, is_sidon_set, max_bh_sequence_size, max_sidon_set_size, BhSequence, SidonSet,
+};
+pub use debruijn::{
+    debruijn_graph_path, debruijn_prefer_one, debruijn_prefer_zero, debruijn_sequence,
+    debruijn_sequence_binary, universal_cycle_permutations, universal_cycle_subsets,
+    DeBruijnSequence,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
