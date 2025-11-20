@@ -1,30 +1,85 @@
-//! Projective Schemes
+//! Schemes in Algebraic Geometry
 //!
-//! This crate provides comprehensive support for projective schemes in algebraic geometry.
+//! This crate provides comprehensive support for schemes in algebraic geometry,
+//! the fundamental objects of modern algebraic geometry.
 //!
 //! # Overview
 //!
-//! Projective schemes are fundamental objects in algebraic geometry. This crate implements:
+//! A scheme is a topological space together with a sheaf of rings that generalizes
+//! classical algebraic varieties. This crate implements:
 //!
-//! - **Graded Rings**: The foundation for Proj construction
+//! ## Generic Scheme Infrastructure
+//!
+//! - **Scheme Trait**: Core abstraction for all schemes
+//! - **Morphisms**: Structure-preserving maps between schemes
+//! - **Points**: Geometric and scheme-theoretic points
+//! - **Dimension Theory**: Krull dimension and related invariants
+//!
+//! ## Affine Schemes
+//!
+//! - **Spec Construction**: Spec(R) for commutative rings R
+//! - **Affine Space**: 𝔸ⁿ as Spec(k[x₁, ..., xₙ])
+//! - **Closed Subschemes**: Varieties defined by ideals
+//! - **Distinguished Opens**: D(f) basic open sets
+//!
+//! ## Projective Schemes
+//!
+//! - **Graded Rings**: Foundation for Proj construction
 //! - **Proj Construction**: Building schemes from graded rings
 //! - **Projective Spaces**: ℙⁿ with homogeneous coordinates
 //! - **Veronese Embeddings**: νₐ: ℙⁿ → ℙᴺ via degree d monomials
-//! - **Segre Embeddings**: ℙⁿ × ℙᵐ → ℙᴺ for products of projective spaces
-//! - **Projective Morphisms**: Morphisms between projective schemes
+//! - **Segre Embeddings**: ℙⁿ × ℙᵐ → ℙᴺ for products
 //! - **Line Bundles**: Locally free sheaves of rank 1
+//! - **Divisors and Picard Group**: Linear equivalence classes
+//!
+//! ## Elliptic Curves
+//!
+//! - **Weierstrass Models**: Standard and short forms
+//! - **Group Law**: Abelian group structure on points
+//! - **Isogenies**: Morphisms between elliptic curves
+//! - **Torsion Points**: Points of finite order
+//! - **Invariants**: j-invariant and discriminant
 //! - **Ample Line Bundles**: Line bundles that embed into projective space
+//! - **Elliptic Curves**: Elliptic curves over Q with conductor, minimal models, and torsion
 //!
 //! # Key Concepts
 //!
-//! ## Projective Space
+//! ## Schemes
 //!
-//! Projective n-space ℙⁿ over a ring R is the set of lines through the origin in Rⁿ⁺¹.
-//! Points are represented by homogeneous coordinates [x₀ : x₁ : ... : xₙ] where
-//! [x₀ : ... : xₙ] = [λx₀ : ... : λxₙ] for any non-zero λ.
+//! A scheme generalizes the notion of an algebraic variety. Every scheme is built from
+//! affine pieces (affine schemes Spec(R)) glued together. The two fundamental examples are:
+//!
+//! 1. **Affine Schemes**: Spec(R) for a commutative ring R
+//! 2. **Projective Schemes**: Proj(S) for a graded ring S
+//!
+//! ## Affine vs Projective
+//!
+//! - **Affine schemes** model "unbounded" geometric objects (e.g., affine space 𝔸ⁿ)
+//! - **Projective schemes** are "compact" and include "points at infinity" (e.g., ℙⁿ)
+//!
+//! ## The Scheme Hierarchy
+//!
+//! All schemes in this crate implement the `Scheme` trait from the `generic` module,
+//! which provides common operations like dimension computation and property checking.
+//!
+//! # Examples
+//!
+//! ## Working with Affine Schemes
+//!
+//! ```rust
+//! use rustmath_schemes::affine::{AffineSpace, AffinePoint};
+//! use rustmath_schemes::generic::Scheme;
+//!
+//! // Create 2-dimensional affine space 𝔸²
+//! // let a2 = AffineSpace::new(2, base_ring);
+//! // assert!(a2.is_affine());
+//! // assert_eq!(a2.dimension(), Some(2));
+//! ```
+//!
+//! ## Working with Projective Schemes
 //!
 //! ```
-//! use rustmath_schemes::projective_space::{ProjectiveSpace, ProjectivePoint};
+//! use rustmath_schemes::projective::{ProjectiveSpace, ProjectivePoint};
 //!
 //! // Create ℙ² (projective plane)
 //! let p2: ProjectiveSpace<i32> = ProjectiveSpace::new(2);
@@ -148,7 +203,13 @@
 //! assert!(k_p2.is_fano()); // ℙ² is Fano
 //! ```
 
+// Core scheme infrastructure
+pub mod generic;
+pub mod affine;
+pub mod projective;
 pub mod elliptic_curves;
+
+// Projective-specific modules (organized under projective)
 pub mod graded_ring;
 pub mod line_bundle;
 pub mod proj;
@@ -157,8 +218,22 @@ pub mod projective_space;
 pub mod segre;
 pub mod veronese;
 
+// Re-export commonly used types from generic module
+pub use generic::{
+    Scheme, SchemeMorphism, SchemePoint, DimensionTheory,
+    Separated, AlgebraicScheme, StructureSheaf, FiberedProduct
+};
+
+// Re-export affine scheme types
+pub use affine::{
+    AffineScheme, AffineSpace, AffinePoint, AffineSchemeMorphism,
+    ClosedSubscheme, DistinguishedOpen
+};
+
+// Re-export projective scheme types
 // Re-export commonly used types
-pub use elliptic_curves::{Isogeny, IsogenyGraph, KernelPolynomial};
+pub use elliptic_curves::{EllipticCurve, Point};
+pub use elliptic_curves::rational::{EllipticCurveRational, ReductionType, TorsionGroup};
 pub use graded_ring::{GradedRing, HomogeneousElement, HomogeneousIdeal};
 pub use line_bundle::{CanonicalBundle, Divisor, LineBundle, PicardGroup};
 pub use proj::{AffineChart, Proj, TwistingSheaf};
@@ -166,3 +241,7 @@ pub use projective_morphism::{ProjectiveMorphism, ProjMorphism};
 pub use projective_space::{Hyperplane, LinearSubspace, ProjectivePoint, ProjectiveSpace};
 pub use segre::{MultiSegreEmbedding, SegreEmbedding, SegreVariety};
 pub use veronese::{VeroneseEmbedding, VeroneseVariety};
+pub use elliptic_curves::{
+    ImaginaryQuadraticField, HeegnerDiscriminant, HeegnerPoint,
+    CanonicalHeight, HeightPairing, GrossZagierFormula, BSDHeegner,
+};

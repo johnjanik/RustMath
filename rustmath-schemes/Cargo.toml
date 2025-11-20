@@ -8,12 +8,20 @@ repository.workspace = true
 
 [dependencies]
 rustmath-core = { path = "../rustmath-core" }
+rustmath-rings = { path = "../rustmath-rings" }
 rustmath-integers = { path = "../rustmath-integers" }
 rustmath-rationals = { path = "../rustmath-rationals" }
+rustmath-finitefields = { path = "../rustmath-finitefields" }
+rustmath-padics = { path = "../rustmath-padics" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
 rustmath-matrix = { path = "../rustmath-matrix" }
 rustmath-ellipticcurves = { path = "../rustmath-ellipticcurves" }
 rustmath-finitefields = { path = "../rustmath-finitefields" }
+rustmath-complex = { path = "../rustmath-complex" }
+rustmath-reals = { path = "../rustmath-reals" }
+rustmath-numberfields = { path = "../rustmath-numberfields" }
+rustmath-ellipticcurves = { path = "../rustmath-ellipticcurves" }
+rustmath-numbertheory = { path = "../rustmath-numbertheory" }
 num-bigint.workspace = true
 num-traits.workspace = true
 num-rational.workspace = true
