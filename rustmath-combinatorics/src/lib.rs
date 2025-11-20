@@ -65,6 +65,7 @@ pub mod skew_partition;
 pub mod species;
 pub mod subset;
 pub mod superpartitions;
+pub mod symmetric_group_representations;
 pub mod super_tableaux;
 pub mod tableaux;
 pub mod tableau_tuple;
@@ -235,6 +236,9 @@ pub use vector_partition::{
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
     vector_partitions_with_max_part, VectorPartition,
 };
+pub use symmetric_group_representations::{
+    all_irreducible_representations, conjugacy_class_size, decompose_character,
+    murnaghan_nakayama, permutation_cycle_type, CharacterTable, IrreducibleRepresentation,
 pub use alternating_sign_matrix::{
     all_asms, asm_count, asm_count_by_inversions, asm_q_enumeration, razumov_stroganov_polynomial,
     razumov_stroganov_refined_count, AlternatingSignMatrix,
