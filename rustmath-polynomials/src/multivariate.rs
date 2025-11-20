@@ -122,6 +122,11 @@ impl Monomial {
         self.exponents.keys().copied().collect()
     }
 
+    /// Iterate over the (variable, exponent) pairs
+    pub fn iter_exponents(&self) -> impl Iterator<Item = (&usize, &u32)> {
+        self.exponents.iter()
+    }
+
     /// Compare monomials using lexicographic ordering
     pub fn cmp_lex(&self, other: &Monomial) -> std::cmp::Ordering {
         use std::cmp::Ordering;
@@ -298,6 +303,11 @@ impl<R: Ring> MultivariatePolynomial<R> {
         self.terms.len() <= 1 && self.terms.keys().all(|m| m.is_one())
     }
 
+    /// Get an iterator over the terms (monomial, coefficient pairs)
+    pub fn terms(&self) -> impl Iterator<Item = (&Monomial, &R)> {
+        self.terms.iter()
+    }
+
     /// Get all variables that appear in the polynomial
     pub fn variables(&self) -> Vec<usize> {
         let mut vars = std::collections::HashSet::new();
@@ -314,6 +324,11 @@ impl<R: Ring> MultivariatePolynomial<R> {
     /// Number of terms in the polynomial
     pub fn num_terms(&self) -> usize {
         self.terms.len()
+    }
+
+    /// Iterate over the terms (monomial, coefficient) pairs
+    pub fn iter_terms(&self) -> impl Iterator<Item = (&Monomial, &R)> {
+        self.terms.iter()
     }
 
     /// Get the leading monomial using a specific monomial ordering
