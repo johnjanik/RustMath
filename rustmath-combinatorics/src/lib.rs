@@ -70,6 +70,7 @@ pub mod vector_partition;
 pub mod word;
 pub mod words;
 pub mod wreath_product;
+pub mod ncsym;
 pub mod key_polynomial;
 pub mod multiset_partition_into_sets_ordered;
 
@@ -211,15 +212,15 @@ pub use integer_vectors::{
     integer_vectors_in_box, integer_vectors_with_l1_norm_bounded, integer_vectors_with_sum,
     integer_vectors_with_weighted_sum, IntegerVector, IntegerVectorSumIter,
 };
-pub use knutson_tao::{
-    generate_knutson_tao_puzzles, littlewood_richardson_coefficient,
-    littlewood_richardson_memoized, schur_product_decomposition, KnutsonTaoPuzzle,
-};
 pub use vector_partition::{
     count_vector_partitions_exact_parts, count_vector_partitions_max_parts,
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
     vector_partitions_with_max_part, VectorPartition,
 };
+pub use ncsym::{
+    coarse_powersum, deformed_coarse_powersum, elementary, homogeneous, matchings, monomial,
+    nesting, powersum, ribbon_schur, supercharacter, x_basis, NCSymBasis, NCSymDual,
+    NCSymFunction, RibbonSchurFunction,
 pub use triangles_fhm::{Triangle, MTriangle, HTriangle, FTriangle, GammaTriangle};
 pub use key_polynomial::{
     key_polynomial, KeyMonomial, KeyPolynomial, WeakComposition,

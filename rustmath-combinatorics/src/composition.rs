@@ -5,7 +5,7 @@
 /// An integer composition (ordered partition)
 ///
 /// A composition of n is an ordered sequence of positive integers that sum to n
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Composition {
     parts: Vec<usize>,
 }
@@ -29,9 +29,35 @@ impl Composition {
         self.parts.len()
     }
 
+    /// Get the number of parts (alias for length)
+    pub fn len(&self) -> usize {
+        self.parts.len()
+    }
+
+    /// Check if the composition is empty
+    pub fn is_empty(&self) -> bool {
+        self.parts.is_empty()
+    }
+
     /// Get the parts
     pub fn parts(&self) -> &[usize] {
         &self.parts
+    }
+
+    /// Reverse the order of the parts
+    ///
+    /// Example: [1, 2, 3] becomes [3, 2, 1]
+    pub fn reverse(&self) -> Self {
+        let mut reversed_parts = self.parts.clone();
+        reversed_parts.reverse();
+        Composition {
+            parts: reversed_parts,
+        }
+    }
+
+    /// Create an empty composition
+    pub fn empty() -> Self {
+        Composition { parts: vec![] }
     }
 }
 
