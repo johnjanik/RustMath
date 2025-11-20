@@ -62,7 +62,7 @@ pub use designs::{
     are_latin_squares_orthogonal, mutually_orthogonal_latin_squares, BlockDesign,
     DesignAutomorphism, DifferenceSet, HadamardMatrix, OrthogonalArray, SteinerSystem,
 };
-pub use dyck_word::{dyck_words, nu_dyck_words, DyckWord, NuDyckWord};
+pub use dyck_word::{dyck_words, nu_dyck_words, BounceStats, DyckWord, NuDyckWord};
 pub use enumeration::{
     cartesian_product, stars_and_bars, tuples, weak_compositions, CartesianProduct,
     CompositionIterator, Enumerable, GrayCodeIterator, InfiniteCartesianProduct, LazyEnumerator,
@@ -95,8 +95,7 @@ pub use plane_partition::{
     count_transpose_complement_plane_partitions, plane_partitions, plane_partitions_in_box,
     PlanePartition,
 };
-pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator,
-};
+pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator};
 pub use derangements::{
     all_derangements, count_derangements, count_derangements_recurrence, is_derangement,
 };
