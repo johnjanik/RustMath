@@ -19,6 +19,7 @@
 //! - **Elementary crystals**: B(∞), T_λ, R_λ, and B(i)
 //! - **Nakajima monomials**: Polyhedral realization of crystals
 //! - **Crystal morphisms**: Structure-preserving maps between crystals
+//! - **Rigged configurations**: Bijection to tensor product crystals
 //!
 //! # Supported Types
 //!
@@ -56,6 +57,7 @@ pub mod kr_crystal;
 pub mod elementary;
 pub mod morphisms;
 pub mod nakajima;
+pub mod rigged_configurations;
 
 pub use operators::{Crystal, CrystalElement};
 pub use tableau_crystal::{TableauCrystal, TableauElement};
@@ -77,3 +79,10 @@ pub use morphisms::{
     IdentityMorphism, ExplicitMorphism, VirtualCrystal,
 };
 pub use nakajima::{NakajimaCrystal, NakajimaMonomial, PolyhedralData, AVariables};
+pub use rigged_configurations::{
+    RiggedPartition, RiggedConfiguration, RCElement, RiggedConfigurationCrystal,
+    TensorProductImage, RCStatistics, KleberTree, KleberNode, RCCrystalGraph,
+    AffineRiggedConfigurationCrystal, VirtualRC, VirtualType,
+    is_partition, young_diagram, hook_length, content, are_isomorphic,
+    promotion, evacuation, conversions,
+};

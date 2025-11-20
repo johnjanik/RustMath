@@ -1120,6 +1120,10 @@ mod tests {
         assert!(kt.is_valid());
     }
 
+    #[test]
+    fn test_shifted_primed_tableau_invalid_shape() {
+        use PrimedEntry::Unprimed as U;
+
         // Invalid - shape is not strictly decreasing (3, 3)
         let t = ShiftedPrimedTableau::new(vec![
             vec![U(1), U(2), U(3)],
