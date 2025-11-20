@@ -17,7 +17,7 @@ pub mod integer_vectors;
 pub mod integer_matrices;
 pub mod multiset_partition_into_sets_ordered;
 pub mod ordered_tree;
-pub mod parking_functions;
+pub mod parking_function;
 pub mod partitions;
 pub mod path_tableaux;
 pub mod perfect_matching;
@@ -156,7 +156,11 @@ pub use ribbon_tableau::{
 pub use skew_partition::{
     ribbon_shaped_tableaux, RibbonTableau, SkewPartition, SkewTableau,
 };
-pub use parking_functions::ParkingFunction;
+pub use parking_function::{
+    count_non_decreasing_parking_functions, count_parking_functions,
+    non_decreasing_parking_functions, non_decreasing_parking_functions_with_area,
+    parking_functions, NonDecreasingParkingFunction, ParkingFunction,
+};
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
 
