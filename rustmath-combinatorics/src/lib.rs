@@ -19,6 +19,7 @@ pub mod designs;
 pub mod dlx;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod group_action;
 pub mod finite_state_machine_generators;
 pub mod integer_vectors;
 pub mod integer_matrices;
@@ -104,6 +105,10 @@ pub use enumeration::{
 };
 pub use finite_state_machine_generators::{
     Automaton, AutomatonGenerators, FSMState, FSMTransition, Transducer, TransducerGenerators,
+};
+pub use group_action::{
+    burnside_lemma, count_fixed_colorings, cycle_index, enumerate_distinct_colorings,
+    polya_enumeration, PermutationGroup,
 };
 pub use integer_matrices::{
     count_integer_matrices, integer_matrices, integer_matrices_bounded, IntegerMatrix,
