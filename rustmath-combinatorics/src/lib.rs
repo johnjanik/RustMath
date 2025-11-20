@@ -30,6 +30,7 @@ pub mod superpartitions;
 pub mod tableaux;
 pub mod tamari;
 pub mod tuple;
+pub mod vector_partition;
 pub mod word;
 pub mod wreath_product;
 
@@ -91,14 +92,19 @@ pub use plane_partition::{
     count_self_complementary_plane_partitions, count_totally_symmetric_plane_partitions,
     count_transpose_complement_plane_partitions, plane_partitions, plane_partitions_in_box,
     PlanePartition,
-pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator,
 };
+pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator};
 pub use derangements::{
     all_derangements, count_derangements, count_derangements_recurrence, is_derangement,
 };
 pub use superpartitions::{
     count_superpartitions, strict_superpartitions, superpartitions, superpartitions_with_k_parts,
     superpartitions_with_m_circled, SuperPart, SuperPartition,
+};
+pub use vector_partition::{
+    count_vector_partitions_exact_parts, count_vector_partitions_max_parts,
+    fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
+    vector_partitions_with_max_part, VectorPartition,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
