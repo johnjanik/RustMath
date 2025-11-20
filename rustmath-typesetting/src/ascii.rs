@@ -1,6 +1,6 @@
 //! ASCII art rendering for mathematical objects
 
-use crate::{BracketStyle, DisplayMode, FormatOptions};
+use crate::{BracketStyle, DisplayMode};
 
 /// Format a fraction as ASCII art
 pub fn fraction(numerator: &str, denominator: &str, mode: DisplayMode) -> String {
