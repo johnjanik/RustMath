@@ -7,6 +7,7 @@
 extern crate lazy_static;
 
 pub mod affine_permutations;
+pub mod baxter_permutations;
 pub mod bijectionist;
 pub mod backtrack;
 pub mod combinatorial_map;
@@ -73,6 +74,7 @@ pub mod key_polynomial;
 pub mod multiset_partition_into_sets_ordered;
 
 pub use affine_permutations::{AffinePermutation, CoxeterType};
+pub use baxter_permutations::{baxter_permutations, count_baxter_permutations, is_baxter};
 pub use bijectionist::{
     all_k_subsets, all_ordered_pairs, all_unordered_pairs, burnside_count, BijectionFinder,
     BijectiveCorrespondence, GroupAction, OrbitStructure, PermutationActionOnMultiset,
