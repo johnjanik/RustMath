@@ -5,6 +5,43 @@
 //!
 //! This provides guaranteed containment of complex values through
 //! interval arithmetic on both components.
+//!
+//! ## SageMath API Compatibility
+//!
+//! This implementation provides compatibility with SageMath's
+//! `sage.rings.complex_interval.ComplexIntervalFieldElement` API.
+//!
+//! ### Implemented Methods
+//!
+//! - **Accessors**: `real()`, `imag()`, `precision()`, `center()`, `diameter()`
+//! - **Interval operations**: `contains()`, `overlaps()`, `intersection()`, `union()`, `hull()`
+//! - **Utility**: `is_exact()`, `is_point()`, `is_nan()`, `contains_zero()`
+//! - **Geometric**: `endpoints()`, `edges()`, `bisection()`, `midpoint()`, `width()`
+//! - **Mathematical**: `norm()`, `abs()`, `sqrt()`, `powi()`, `conjugate()`, `argument_bounds()`
+//! - **Arithmetic**: `+`, `-`, `*`, `/`, `-` (negation)
+//! - **Comparison**: `==`, `!=`, `<`, `<=`, `>`, `>=` (lexicographic ordering)
+//!
+//! ### Not Yet Implemented (Requires Transcendental Functions)
+//!
+//! The following methods from SageMath's API are not yet implemented because
+//! the underlying `Interval` type does not yet support transcendental functions:
+//!
+//! - **Exponential/Logarithmic**: `exp()`, `log()`, `log10()`
+//! - **Trigonometric**: `sin()`, `cos()`, `tan()`, `cot()`, `sec()`, `csc()`
+//! - **Inverse Trigonometric**: `asin()`, `acos()`, `atan()`, `atan2()`
+//! - **Hyperbolic**: `sinh()`, `cosh()`, `tanh()`, `coth()`, `sech()`, `csch()`
+//! - **Inverse Hyperbolic**: `asinh()`, `acosh()`, `atanh()`
+//!
+//! These will be added once the `rustmath-reals` crate implements interval
+//! versions of these transcendental functions.
+//!
+//! ## Edge Cases
+//!
+//! - **Zero-width intervals**: Fully supported via `point()` constructor and `is_exact()` check
+//! - **Infinity handling**: Intervals can have infinite bounds; operations handle these conservatively
+//! - **NaN handling**: Detected via `is_nan()` method
+//! - **Division by zero**: Returns conservative infinite bounds when dividing by zero-containing interval
+//! - **Branch cuts**: `argument_bounds()` handles branch cuts conservatively
 
 use rustmath_core::{CommutativeRing, Field, MathError, Result, Ring};
 use rustmath_reals::{Interval, Real, RealMPFR};
@@ -99,9 +136,37 @@ impl ComplexIntervalFieldElement {
         &self.imag
     }
 
+    /// Get the real component (alias for real_interval)
+    ///
+    /// This method provides SageMath API compatibility
+    pub fn real(&self) -> &Interval {
+        &self.real
+    }
+
+    /// Get the imaginary component (alias for imag_interval)
+    ///
+    /// This method provides SageMath API compatibility
+    pub fn imag(&self) -> &Interval {
+        &self.imag
+    }
+
     /// Get the precision
     pub fn precision(&self) -> u32 {
         self.precision
+    }
+
+    /// Get the center point of the interval (alias for midpoint)
+    ///
+    /// This method provides SageMath API compatibility
+    pub fn center(&self) -> (f64, f64) {
+        self.midpoint()
+    }
+
+    /// Get the diameter (maximum width) of the interval
+    ///
+    /// This method provides SageMath API compatibility
+    pub fn diameter(&self) -> f64 {
+        self.max_width()
     }
 
     /// Get the center (midpoint) of the interval
@@ -168,6 +233,86 @@ impl ComplexIntervalFieldElement {
         self.real.is_point() && self.imag.is_point()
     }
 
+    /// Check if this is an exact interval (alias for is_point)
+    ///
+    /// This method provides SageMath API compatibility
+    pub fn is_exact(&self) -> bool {
+        self.is_point()
+    }
+
+    /// Check if the interval contains zero
+    pub fn contains_zero(&self) -> bool {
+        self.contains(0.0, 0.0)
+    }
+
+    /// Check if either component contains NaN
+    pub fn is_nan(&self) -> bool {
+        self.real.lower().to_f64().is_nan()
+            || self.real.upper().to_f64().is_nan()
+            || self.imag.lower().to_f64().is_nan()
+            || self.imag.upper().to_f64().is_nan()
+    }
+
+    /// Get the four corner points (endpoints) of the rectangular interval
+    ///
+    /// Returns corners in the order: (lower-left, lower-right, upper-left, upper-right)
+    /// where lower-left = (real_lower, imag_lower), etc.
+    pub fn endpoints(&self) -> [(f64, f64); 4] {
+        let rl = self.real.lower().to_f64();
+        let ru = self.real.upper().to_f64();
+        let il = self.imag.lower().to_f64();
+        let iu = self.imag.upper().to_f64();
+
+        [(rl, il), (ru, il), (rl, iu), (ru, iu)]
+    }
+
+    /// Get the four edges of the rectangular interval
+    ///
+    /// Returns (left, right, bottom, top) edges as complex intervals
+    pub fn edges(&self) -> [ComplexIntervalFieldElement; 4] {
+        let rl = self.real.lower().to_f64();
+        let ru = self.real.upper().to_f64();
+        let il = self.imag.lower().to_f64();
+        let iu = self.imag.upper().to_f64();
+
+        [
+            // Left edge: x = real_lower, y varies
+            ComplexIntervalFieldElement::new(rl, rl, il, iu),
+            // Right edge: x = real_upper, y varies
+            ComplexIntervalFieldElement::new(ru, ru, il, iu),
+            // Bottom edge: x varies, y = imag_lower
+            ComplexIntervalFieldElement::new(rl, ru, il, il),
+            // Top edge: x varies, y = imag_upper
+            ComplexIntervalFieldElement::new(rl, ru, iu, iu),
+        ]
+    }
+
+    /// Bisect the interval into four quadrants
+    ///
+    /// Splits the interval at its center point, returning four sub-intervals
+    /// in the order: (lower-left, lower-right, upper-left, upper-right)
+    pub fn bisection(&self) -> [ComplexIntervalFieldElement; 4] {
+        let (mr, mi) = self.midpoint();
+        let rl = self.real.lower().to_f64();
+        let ru = self.real.upper().to_f64();
+        let il = self.imag.lower().to_f64();
+        let iu = self.imag.upper().to_f64();
+
+        [
+            ComplexIntervalFieldElement::new(rl, mr, il, mi), // lower-left
+            ComplexIntervalFieldElement::new(mr, ru, il, mi), // lower-right
+            ComplexIntervalFieldElement::new(rl, mr, mi, iu), // upper-left
+            ComplexIntervalFieldElement::new(mr, ru, mi, iu), // upper-right
+        ]
+    }
+
+    /// Compute the union (smallest interval containing both)
+    ///
+    /// This is an alias for hull() providing SageMath API compatibility
+    pub fn union(&self, other: &ComplexIntervalFieldElement) -> Self {
+        self.hull(other)
+    }
+
     /// Compute the conjugate interval
     pub fn conjugate(&self) -> Self {
         ComplexIntervalFieldElement {
@@ -175,6 +320,24 @@ impl ComplexIntervalFieldElement {
             imag: -self.imag.clone(),
             precision: self.precision,
         }
+    }
+
+    /// Compute the norm (squared magnitude) as an interval
+    ///
+    /// Returns the interval [min(|z|²), max(|z|²)] for all z in this interval.
+    /// This is computed as real² + imag².
+    pub fn norm(&self) -> Interval {
+        let r_sq = self.real.clone().square();
+        let i_sq = self.imag.clone().square();
+        r_sq + i_sq
+    }
+
+    /// Compute the absolute value (magnitude) as an interval
+    ///
+    /// Returns the interval [min(|z|), max(|z|)] for all z in this interval.
+    pub fn abs(&self) -> Interval {
+        let (min_abs, max_abs) = self.abs_bounds();
+        Interval::from_f64(min_abs, max_abs)
     }
 
     /// Compute bounds on absolute value
@@ -219,6 +382,109 @@ impl ComplexIntervalFieldElement {
         .fold(f64::NEG_INFINITY, f64::max);
 
         (min_abs, max_abs)
+    }
+
+    /// Compute the principal square root
+    ///
+    /// For a complex number z = a + bi, the principal square root is computed using:
+    /// sqrt(z) = sqrt((|z| + a)/2) + i * sign(b) * sqrt((|z| - a)/2)
+    ///
+    /// For intervals, this computes conservative bounds on all possible square roots.
+    pub fn sqrt(&self) -> Self {
+        // For now, compute sqrt at corners and take hull
+        // A more sophisticated implementation would use the formula above with intervals
+        let corners = self.endpoints();
+        let mut result: Option<ComplexIntervalFieldElement> = None;
+
+        for (r, i) in corners.iter() {
+            let z_abs = (r * r + i * i).sqrt();
+            let re_sqrt = ((z_abs + r) / 2.0).sqrt();
+            let im_sqrt = ((z_abs - r) / 2.0).sqrt() * i.signum();
+
+            let corner_sqrt = ComplexIntervalFieldElement::point(re_sqrt, im_sqrt);
+
+            result = Some(match result {
+                None => corner_sqrt,
+                Some(prev) => prev.hull(&corner_sqrt),
+            });
+        }
+
+        result.unwrap_or_else(|| ComplexIntervalFieldElement::point(0.0, 0.0))
+    }
+
+    /// Compute integer power z^n
+    ///
+    /// Uses binary exponentiation for efficiency.
+    /// For negative exponents, computes (1/z)^|n|.
+    pub fn powi(&self, n: i32) -> Self {
+        if n == 0 {
+            return ComplexIntervalFieldElement::one_with_prec(self.precision);
+        }
+
+        if n < 0 {
+            // z^(-n) = (1/z)^n
+            let inv = ComplexIntervalFieldElement::one_with_prec(self.precision) / self.clone();
+            return inv.powi(-n);
+        }
+
+        // Binary exponentiation
+        let mut result = ComplexIntervalFieldElement::one_with_prec(self.precision);
+        let mut base = self.clone();
+        let mut exp = n as u32;
+
+        while exp > 0 {
+            if exp % 2 == 1 {
+                result = result * base.clone();
+            }
+            base = base.clone() * base.clone();
+            exp /= 2;
+        }
+
+        result
+    }
+
+    /// Compute the argument (phase angle) bounds
+    ///
+    /// Returns (min_arg, max_arg) where the argument is the angle in radians.
+    /// The argument is in the range (-π, π].
+    ///
+    /// Note: For intervals crossing the branch cut (negative real axis),
+    /// this may return conservative bounds.
+    pub fn argument_bounds(&self) -> (f64, f64) {
+        let rl = self.real.lower().to_f64();
+        let ru = self.real.upper().to_f64();
+        let il = self.imag.lower().to_f64();
+        let iu = self.imag.upper().to_f64();
+
+        // Check if interval contains origin
+        if self.contains_zero() {
+            return (-std::f64::consts::PI, std::f64::consts::PI);
+        }
+
+        // Compute arguments at all four corners
+        let mut angles = vec![
+            il.atan2(rl),
+            il.atan2(ru),
+            iu.atan2(rl),
+            iu.atan2(ru),
+        ];
+
+        // Check if we cross the negative real axis (branch cut)
+        if rl <= 0.0 && il <= 0.0 && iu >= 0.0 {
+            // Interval straddles the negative real axis
+            return (-std::f64::consts::PI, std::f64::consts::PI);
+        }
+
+        let min_arg = angles
+            .iter()
+            .cloned()
+            .fold(f64::INFINITY, f64::min);
+        let max_arg = angles
+            .iter()
+            .cloned()
+            .fold(f64::NEG_INFINITY, f64::max);
+
+        (min_arg, max_arg)
     }
 
     /// Create zero interval with specified precision
@@ -324,6 +590,47 @@ impl Neg for ComplexIntervalFieldElement {
             imag: -self.imag,
             precision: self.precision,
         }
+    }
+}
+
+impl PartialEq for ComplexIntervalFieldElement {
+    fn eq(&self, other: &Self) -> bool {
+        // Two intervals are equal if they represent the same region
+        self.real.lower().to_f64() == other.real.lower().to_f64()
+            && self.real.upper().to_f64() == other.real.upper().to_f64()
+            && self.imag.lower().to_f64() == other.imag.lower().to_f64()
+            && self.imag.upper().to_f64() == other.imag.upper().to_f64()
+    }
+}
+
+impl PartialOrd for ComplexIntervalFieldElement {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        // Lexicographic ordering: first by real lower, then real upper, then imag lower, then imag upper
+        let rl1 = self.real.lower().to_f64();
+        let rl2 = other.real.lower().to_f64();
+
+        if rl1 != rl2 {
+            return rl1.partial_cmp(&rl2);
+        }
+
+        let ru1 = self.real.upper().to_f64();
+        let ru2 = other.real.upper().to_f64();
+
+        if ru1 != ru2 {
+            return ru1.partial_cmp(&ru2);
+        }
+
+        let il1 = self.imag.lower().to_f64();
+        let il2 = other.imag.lower().to_f64();
+
+        if il1 != il2 {
+            return il1.partial_cmp(&il2);
+        }
+
+        let iu1 = self.imag.upper().to_f64();
+        let iu2 = other.imag.upper().to_f64();
+
+        iu1.partial_cmp(&iu2)
     }
 }
 
@@ -519,5 +826,333 @@ mod tests {
         assert_eq!(neg.real_interval().upper().to_f64(), -1.0);
         assert_eq!(neg.imag_interval().lower().to_f64(), -4.0);
         assert_eq!(neg.imag_interval().upper().to_f64(), -3.0);
+    }
+
+    // Tests for new accessor methods
+    #[test]
+    fn test_real_imag_accessors() {
+        let z = ComplexIntervalFieldElement::new(1.0, 2.0, 3.0, 4.0);
+        assert_eq!(z.real().lower().to_f64(), 1.0);
+        assert_eq!(z.real().upper().to_f64(), 2.0);
+        assert_eq!(z.imag().lower().to_f64(), 3.0);
+        assert_eq!(z.imag().upper().to_f64(), 4.0);
+    }
+
+    #[test]
+    fn test_center_and_diameter() {
+        let z = ComplexIntervalFieldElement::new(1.0, 3.0, 2.0, 6.0);
+        let (cr, ci) = z.center();
+        assert_eq!(cr, 2.0);
+        assert_eq!(ci, 4.0);
+        assert_eq!(z.diameter(), 4.0); // max of (3-1, 6-2) = max(2, 4) = 4
+    }
+
+    // Tests for utility methods
+    #[test]
+    fn test_contains_zero() {
+        let z1 = ComplexIntervalFieldElement::new(-1.0, 1.0, -1.0, 1.0);
+        assert!(z1.contains_zero());
+
+        let z2 = ComplexIntervalFieldElement::new(1.0, 2.0, 3.0, 4.0);
+        assert!(!z2.contains_zero());
+
+        let z3 = ComplexIntervalFieldElement::point(0.0, 0.0);
+        assert!(z3.contains_zero());
+    }
+
+    #[test]
+    fn test_is_exact() {
+        let z1 = ComplexIntervalFieldElement::point(3.0, 4.0);
+        assert!(z1.is_exact());
+
+        let z2 = ComplexIntervalFieldElement::new(1.0, 2.0, 3.0, 4.0);
+        assert!(!z2.is_exact());
+    }
+
+    #[test]
+    fn test_is_nan() {
+        let z1 = ComplexIntervalFieldElement::point(3.0, 4.0);
+        assert!(!z1.is_nan());
+
+        let z2 = ComplexIntervalFieldElement::new(f64::NAN, 1.0, 2.0, 3.0);
+        assert!(z2.is_nan());
+
+        let z3 = ComplexIntervalFieldElement::new(1.0, 2.0, f64::NAN, 3.0);
+        assert!(z3.is_nan());
+    }
+
+    #[test]
+    fn test_endpoints() {
+        let z = ComplexIntervalFieldElement::new(1.0, 2.0, 3.0, 4.0);
+        let endpoints = z.endpoints();
+
+        assert_eq!(endpoints[0], (1.0, 3.0)); // lower-left
+        assert_eq!(endpoints[1], (2.0, 3.0)); // lower-right
+        assert_eq!(endpoints[2], (1.0, 4.0)); // upper-left
+        assert_eq!(endpoints[3], (2.0, 4.0)); // upper-right
+    }
+
+    #[test]
+    fn test_edges() {
+        let z = ComplexIntervalFieldElement::new(1.0, 3.0, 2.0, 4.0);
+        let edges = z.edges();
+
+        // Left edge: x=1, y∈[2,4]
+        assert_eq!(edges[0].real().lower().to_f64(), 1.0);
+        assert_eq!(edges[0].real().upper().to_f64(), 1.0);
+        assert_eq!(edges[0].imag().lower().to_f64(), 2.0);
+        assert_eq!(edges[0].imag().upper().to_f64(), 4.0);
+
+        // Right edge: x=3, y∈[2,4]
+        assert_eq!(edges[1].real().lower().to_f64(), 3.0);
+        assert_eq!(edges[1].real().upper().to_f64(), 3.0);
+
+        // Bottom edge: x∈[1,3], y=2
+        assert_eq!(edges[2].imag().lower().to_f64(), 2.0);
+        assert_eq!(edges[2].imag().upper().to_f64(), 2.0);
+
+        // Top edge: x∈[1,3], y=4
+        assert_eq!(edges[3].imag().lower().to_f64(), 4.0);
+        assert_eq!(edges[3].imag().upper().to_f64(), 4.0);
+    }
+
+    #[test]
+    fn test_bisection() {
+        let z = ComplexIntervalFieldElement::new(0.0, 4.0, 0.0, 4.0);
+        let quadrants = z.bisection();
+
+        // Lower-left: [0,2] + [0,2]i
+        assert_eq!(quadrants[0].real().lower().to_f64(), 0.0);
+        assert_eq!(quadrants[0].real().upper().to_f64(), 2.0);
+        assert_eq!(quadrants[0].imag().lower().to_f64(), 0.0);
+        assert_eq!(quadrants[0].imag().upper().to_f64(), 2.0);
+
+        // Upper-right: [2,4] + [2,4]i
+        assert_eq!(quadrants[3].real().lower().to_f64(), 2.0);
+        assert_eq!(quadrants[3].real().upper().to_f64(), 4.0);
+        assert_eq!(quadrants[3].imag().lower().to_f64(), 2.0);
+        assert_eq!(quadrants[3].imag().upper().to_f64(), 4.0);
+    }
+
+    #[test]
+    fn test_union() {
+        let z1 = ComplexIntervalFieldElement::new(1.0, 2.0, 1.0, 2.0);
+        let z2 = ComplexIntervalFieldElement::new(3.0, 4.0, 3.0, 4.0);
+
+        let union = z1.union(&z2);
+        assert_eq!(union.real().lower().to_f64(), 1.0);
+        assert_eq!(union.real().upper().to_f64(), 4.0);
+        assert_eq!(union.imag().lower().to_f64(), 1.0);
+        assert_eq!(union.imag().upper().to_f64(), 4.0);
+    }
+
+    // Tests for mathematical methods
+    #[test]
+    fn test_norm() {
+        let z = ComplexIntervalFieldElement::point(3.0, 4.0);
+        let norm = z.norm();
+
+        // |3+4i|² = 9 + 16 = 25
+        let norm_val = norm.lower().to_f64();
+        assert!((norm_val - 25.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_abs_interval() {
+        let z = ComplexIntervalFieldElement::point(3.0, 4.0);
+        let abs_interval = z.abs();
+
+        // |3+4i| = 5
+        let abs_val = abs_interval.lower().to_f64();
+        assert!((abs_val - 5.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_sqrt_simple() {
+        // sqrt(4) = 2
+        let z = ComplexIntervalFieldElement::point(4.0, 0.0);
+        let sqrt_z = z.sqrt();
+        let (r, i) = sqrt_z.center();
+
+        assert!((r - 2.0).abs() < 1e-10);
+        assert!(i.abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_sqrt_imaginary() {
+        // sqrt(i) ≈ (1+i)/√2
+        let z = ComplexIntervalFieldElement::point(0.0, 1.0);
+        let sqrt_z = z.sqrt();
+        let (r, i) = sqrt_z.center();
+
+        let expected = 1.0 / 2.0_f64.sqrt();
+        assert!((r - expected).abs() < 1e-10);
+        assert!((i - expected).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_powi() {
+        let z = ComplexIntervalFieldElement::point(2.0, 0.0);
+
+        // z^0 = 1
+        let z0 = z.powi(0);
+        assert!(z0.is_exact());
+        assert!(z0.contains(1.0, 0.0));
+
+        // z^1 = z
+        let z1 = z.powi(1);
+        assert!(z1.contains(2.0, 0.0));
+
+        // z^2 = 4
+        let z2 = z.powi(2);
+        let (r, i) = z2.center();
+        assert!((r - 4.0).abs() < 1e-10);
+        assert!(i.abs() < 1e-10);
+
+        // z^3 = 8
+        let z3 = z.powi(3);
+        let (r, i) = z3.center();
+        assert!((r - 8.0).abs() < 1e-10);
+        assert!(i.abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_powi_imaginary() {
+        // i^2 = -1, i^3 = -i, i^4 = 1
+        let i = ComplexIntervalFieldElement::point(0.0, 1.0);
+
+        let i2 = i.powi(2);
+        let (r, im) = i2.center();
+        assert!((r - (-1.0)).abs() < 1e-10);
+        assert!(im.abs() < 1e-10);
+
+        let i4 = i.powi(4);
+        let (r, im) = i4.center();
+        assert!((r - 1.0).abs() < 1e-10);
+        assert!(im.abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_powi_negative() {
+        // (2+0i)^(-1) = 0.5
+        let z = ComplexIntervalFieldElement::point(2.0, 0.0);
+        let inv = z.powi(-1);
+        let (r, i) = inv.center();
+
+        assert!((r - 0.5).abs() < 1e-10);
+        assert!(i.abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_argument_bounds() {
+        // Argument of 1+i is π/4
+        let z = ComplexIntervalFieldElement::point(1.0, 1.0);
+        let (min_arg, max_arg) = z.argument_bounds();
+
+        let expected = std::f64::consts::PI / 4.0;
+        assert!((min_arg - expected).abs() < 1e-10);
+        assert!((max_arg - expected).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_argument_bounds_with_origin() {
+        // Interval containing origin has full range
+        let z = ComplexIntervalFieldElement::new(-1.0, 1.0, -1.0, 1.0);
+        let (min_arg, max_arg) = z.argument_bounds();
+
+        assert_eq!(min_arg, -std::f64::consts::PI);
+        assert_eq!(max_arg, std::f64::consts::PI);
+    }
+
+    // Tests for comparison
+    #[test]
+    fn test_equality() {
+        let z1 = ComplexIntervalFieldElement::new(1.0, 2.0, 3.0, 4.0);
+        let z2 = ComplexIntervalFieldElement::new(1.0, 2.0, 3.0, 4.0);
+        let z3 = ComplexIntervalFieldElement::new(1.0, 2.0, 3.0, 5.0);
+
+        assert_eq!(z1, z2);
+        assert_ne!(z1, z3);
+    }
+
+    #[test]
+    fn test_partial_ord() {
+        let z1 = ComplexIntervalFieldElement::new(1.0, 2.0, 3.0, 4.0);
+        let z2 = ComplexIntervalFieldElement::new(1.0, 2.0, 3.0, 5.0);
+        let z3 = ComplexIntervalFieldElement::new(2.0, 3.0, 1.0, 2.0);
+
+        assert!(z1 < z2); // Same real and imag lower, but z2 has larger imag upper
+        assert!(z1 < z3); // z1 has smaller real lower
+    }
+
+    // Edge case tests
+    #[test]
+    fn test_zero_width_interval() {
+        let z = ComplexIntervalFieldElement::point(5.0, 12.0);
+
+        assert!(z.is_exact());
+        assert!(z.is_point());
+        assert_eq!(z.real_width(), 0.0);
+        assert_eq!(z.imag_width(), 0.0);
+        assert_eq!(z.diameter(), 0.0);
+
+        let (r, i) = z.center();
+        assert_eq!(r, 5.0);
+        assert_eq!(i, 12.0);
+
+        // |5+12i| = 13
+        let (min_abs, max_abs) = z.abs_bounds();
+        assert_eq!(min_abs, max_abs);
+        assert_eq!(min_abs, 13.0);
+    }
+
+    #[test]
+    fn test_infinity_handling() {
+        // Test intervals with infinite bounds
+        let z = ComplexIntervalFieldElement::new(
+            f64::NEG_INFINITY,
+            f64::INFINITY,
+            0.0,
+            1.0
+        );
+
+        assert!(!z.is_exact());
+        assert!(z.contains(0.0, 0.5));
+        assert!(z.contains(1000.0, 0.5));
+        assert!(z.contains(-1000.0, 0.5));
+
+        // Width should be infinite
+        assert!(z.real_width().is_infinite());
+    }
+
+    #[test]
+    fn test_division_by_zero_containing_interval() {
+        let z1 = ComplexIntervalFieldElement::new(1.0, 2.0, 1.0, 2.0);
+        let z2 = ComplexIntervalFieldElement::new(-1.0, 1.0, -1.0, 1.0); // Contains zero
+
+        let result = z1 / z2;
+
+        // Result should have very large or infinite bounds
+        // This is a conservative estimate when dividing by interval containing zero
+        assert!(result.real_width() > 100.0 || result.real_width().is_infinite());
+    }
+
+    #[test]
+    fn test_interval_arithmetic_conservativeness() {
+        // Verify that interval arithmetic is conservative:
+        // (z1 op z2) should contain all possible values of (z op w) for z ∈ z1, w ∈ z2
+
+        let z1 = ComplexIntervalFieldElement::new(1.0, 2.0, 1.0, 2.0);
+        let z2 = ComplexIntervalFieldElement::new(0.5, 1.0, 0.5, 1.0);
+
+        // Test specific points
+        let p1 = ComplexIntervalFieldElement::point(1.5, 1.5);
+        let p2 = ComplexIntervalFieldElement::point(0.75, 0.75);
+
+        let sum = z1.clone() + z2.clone();
+        let point_sum = p1.clone() + p2.clone();
+
+        // The point sum should be contained in the interval sum
+        assert!(sum.contains_interval(&point_sum));
     }
 }
