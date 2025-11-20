@@ -9,6 +9,7 @@ pub mod composition;
 pub mod designs;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod fully_packed_loop;
 pub mod partitions;
 pub mod perfect_matching;
 pub mod permutations;
@@ -18,6 +19,7 @@ pub mod ranking;
 pub mod recurrence_sequences;
 pub mod set_partition;
 pub mod set_system;
+pub mod skew_partition;
 pub mod species;
 pub mod subset;
 pub mod tableaux;
@@ -71,6 +73,7 @@ pub use subset::{
 pub use q_analogue::{
     gaussian_polynomial, q_binomial, q_binomial_eval, q_factorial, q_integer, q_multinomial,
 };
+pub use skew_partition::{SkewPartition, SkewTableau};
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
 
