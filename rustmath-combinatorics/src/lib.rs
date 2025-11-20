@@ -17,6 +17,7 @@ pub mod integer_vectors;
 pub mod integer_matrices;
 pub mod ordered_tree;
 pub mod partitions;
+pub mod path_tableaux;
 pub mod perfect_matching;
 pub mod permutations;
 pub mod plane_partition;
@@ -134,6 +135,10 @@ pub use debruijn::{
     debruijn_graph_path, debruijn_prefer_one, debruijn_prefer_zero, debruijn_sequence,
     debruijn_sequence_binary, universal_cycle_permutations, universal_cycle_subsets,
     DeBruijnSequence,
+};
+pub use path_tableaux::{
+    ballot_sequences, count_dyck_paths, count_lattice_paths_ne, dyck_path_to_partition,
+    dyck_paths, lattice_paths_ne, partition_to_dyck_path, LatticePath, PathTableau, Step,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
