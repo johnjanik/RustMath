@@ -271,6 +271,199 @@ pub fn bell_number(n: u32) -> Integer {
     sum
 }
 
+/// Compute Eulerian number A(n, k)
+///
+/// Number of permutations of {1, 2, ..., n} with exactly k descents.
+/// A descent in a permutation is a position i where π(i) > π(i+1).
+///
+/// The Eulerian numbers satisfy the recurrence:
+/// A(n, k) = (k+1)*A(n-1, k) + (n-k)*A(n-1, k-1)
+///
+/// Properties:
+/// - A(n, 0) = 1 (identity permutation has 0 descents)
+/// - A(n, k) = 0 for k >= n
+/// - Sum over k of A(n, k) = n!
+pub fn eulerian(n: u32, k: u32) -> Integer {
+    if n == 0 && k == 0 {
+        return Integer::one();
+    }
+    if k >= n {
+        return Integer::zero();
+    }
+    if k == 0 {
+        return Integer::one();
+    }
+
+    // Use dynamic programming to compute A(n, k)
+    let mut dp = vec![vec![Integer::zero(); (k + 1) as usize]; (n + 1) as usize];
+    dp[0][0] = Integer::one();
+
+    for i in 1..=n as usize {
+        for j in 0..=k.min((i - 1) as u32) as usize {
+            if j == 0 {
+                dp[i][j] = Integer::one();
+            } else {
+                // A(n, k) = (k+1)*A(n-1, k) + (n-k)*A(n-1, k-1)
+                let term1 = Integer::from((j + 1) as u32) * dp[i - 1][j].clone();
+                let term2 = Integer::from((i as u32) - (j as u32)) * dp[i - 1][j - 1].clone();
+                dp[i][j] = term1 + term2;
+            }
+        }
+    }
+
+    dp[n as usize][k as usize].clone()
+}
+
+/// Compute Narayana number N(n, k)
+///
+/// Number of expressions containing n pairs of parentheses which are correctly matched
+/// and which contain k distinct nestings. Equivalently, the number of Dyck paths of
+/// length 2n with exactly k peaks.
+///
+/// The Narayana numbers are given by:
+/// N(n, k) = (1/n) * C(n, k) * C(n, k-1)
+///
+/// Properties:
+/// - N(n, 0) = 0 for n > 0
+/// - N(n, 1) = 1 for n >= 1
+/// - Sum over k of N(n, k) = C_n (nth Catalan number)
+pub fn narayana(n: u32, k: u32) -> Integer {
+    if n == 0 {
+        return if k == 0 { Integer::one() } else { Integer::zero() };
+    }
+    if k == 0 || k > n {
+        return Integer::zero();
+    }
+    if k == 1 {
+        return Integer::one();
+    }
+
+    // N(n, k) = (1/n) * C(n, k) * C(n, k-1)
+    let binom_n_k = binomial(n, k);
+    let binom_n_k_minus_1 = binomial(n, k - 1);
+
+    (binom_n_k * binom_n_k_minus_1) / Integer::from(n)
+}
+
+/// Compute central Delannoy number D(n)
+///
+/// Number of paths from (0, 0) to (n, n) using steps (1, 0), (0, 1), and (1, 1).
+/// Also the number of ways to place n non-attacking rooks on an n×n chessboard
+/// with some squares removed.
+///
+/// The central Delannoy numbers satisfy:
+/// D(n) = Sum_{k=0}^{n} C(n, k)^2 * 2^k
+///
+/// First few values: 1, 3, 13, 63, 321, 1683, ...
+pub fn delannoy_central(n: u32) -> Integer {
+    let mut sum = Integer::zero();
+
+    for k in 0..=n {
+        let binom_sq = binomial(n, k).clone();
+        let term = binom_sq.clone() * binom_sq * Integer::from(2).pow(k);
+        sum = sum + term;
+    }
+
+    sum
+}
+
+/// Compute Delannoy number D(m, n)
+///
+/// Number of paths from (0, 0) to (m, n) using steps (1, 0), (0, 1), and (1, 1).
+///
+/// The Delannoy numbers satisfy:
+/// D(m, n) = Sum_{k=0}^{min(m,n)} C(m, k) * C(n, k) * 2^k
+pub fn delannoy(m: u32, n: u32) -> Integer {
+    let min_mn = m.min(n);
+    let mut sum = Integer::zero();
+
+    for k in 0..=min_mn {
+        let term = binomial(m, k) * binomial(n, k) * Integer::from(2).pow(k);
+        sum = sum + term;
+    }
+
+    sum
+}
+
+/// Compute nth Motzkin number M(n)
+///
+/// Number of ways to draw non-intersecting chords between n points on a circle,
+/// where not all points need to be paired. Also the number of lattice paths from
+/// (0, 0) to (n, 0) using steps (1, 1), (1, -1), and (1, 0) that never go below y=0.
+///
+/// The Motzkin numbers satisfy the recurrence:
+/// M(n) = M(n-1) + Sum_{k=0}^{n-2} M(k) * M(n-2-k)
+///
+/// First few values: 1, 1, 2, 4, 9, 21, 51, 127, ...
+pub fn motzkin(n: u32) -> Integer {
+    if n == 0 || n == 1 {
+        return Integer::one();
+    }
+
+    let mut m = vec![Integer::zero(); (n + 1) as usize];
+    m[0] = Integer::one();
+    m[1] = Integer::one();
+
+    for i in 2..=n as usize {
+        // M(i) = M(i-1) + Sum_{k=0}^{i-2} M(k) * M(i-2-k)
+        m[i] = m[i - 1].clone();
+
+        for k in 0..=(i - 2) {
+            m[i] = m[i].clone() + m[k].clone() * m[i - 2 - k].clone();
+        }
+    }
+
+    m[n as usize].clone()
+}
+
+/// Compute nth large Schröder number S(n)
+///
+/// Number of lattice paths from (0, 0) to (2n, 0) using steps (1, 1), (1, -1),
+/// and (2, 0) that never go below the x-axis. Also counts the number of ways
+/// to parenthesize a string of n+1 factors.
+///
+/// The large Schröder numbers satisfy the recurrence:
+/// (n+1)*S(n) = 3*(2n-1)*S(n-1) - (n-2)*S(n-2)
+///
+/// First few values: 1, 2, 6, 22, 90, 394, 1806, ...
+pub fn schroder_large(n: u32) -> Integer {
+    if n == 0 {
+        return Integer::one();
+    }
+    if n == 1 {
+        return Integer::from(2);
+    }
+
+    let mut s = vec![Integer::zero(); (n + 1) as usize];
+    s[0] = Integer::one();
+    s[1] = Integer::from(2);
+
+    for i in 2..=n as usize {
+        // (i+1)*S(i) = 3*(2*i-1)*S(i-1) - (i-2)*S(i-2)
+        // S(i) = (3*(2*i-1)*S(i-1) - (i-2)*S(i-2)) / (i+1)
+        let term1 = Integer::from(3 * (2 * i - 1) as u32) * s[i - 1].clone();
+        let term2 = Integer::from((i - 2) as u32) * s[i - 2].clone();
+        s[i] = (term1 - term2) / Integer::from((i + 1) as u32);
+    }
+
+    s[n as usize].clone()
+}
+
+/// Compute nth small Schröder number (or Schröder-Hipparchus number) s(n)
+///
+/// Related to large Schröder numbers by: s(n) = S(n) / 2 for n >= 1, and s(0) = 1
+/// The small Schröder numbers count lattice paths and bracket structures.
+///
+/// First few values: 1, 1, 3, 11, 45, 197, 903, ...
+pub fn schroder_small(n: u32) -> Integer {
+    if n == 0 {
+        return Integer::one();
+    }
+
+    // s(n) = S(n) / 2 for n >= 1
+    schroder_large(n) / Integer::from(2)
+}
+
 /// A Latin square of order n
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LatinSquare {
@@ -569,5 +762,182 @@ mod tests {
         // Invalid - repeated element in column
         let invalid2 = LatinSquare::new(vec![vec![0, 1, 2], vec![0, 2, 1], vec![2, 0, 1]]);
         assert!(invalid2.is_none());
+    }
+
+    #[test]
+    fn test_eulerian() {
+        // A(n, k) = 0 for k >= n
+        assert_eq!(eulerian(5, 5), Integer::from(0));
+        assert_eq!(eulerian(5, 6), Integer::from(0));
+
+        // A(n, 0) = 1 (identity permutation has 0 descents)
+        assert_eq!(eulerian(0, 0), Integer::from(1));
+        assert_eq!(eulerian(5, 0), Integer::from(1));
+        assert_eq!(eulerian(10, 0), Integer::from(1));
+
+        // Known values for small n
+        // A(3, 0) = 1, A(3, 1) = 4, A(3, 2) = 1
+        assert_eq!(eulerian(3, 0), Integer::from(1));
+        assert_eq!(eulerian(3, 1), Integer::from(4));
+        assert_eq!(eulerian(3, 2), Integer::from(1));
+
+        // A(4, 0) = 1, A(4, 1) = 11, A(4, 2) = 11, A(4, 3) = 1
+        assert_eq!(eulerian(4, 0), Integer::from(1));
+        assert_eq!(eulerian(4, 1), Integer::from(11));
+        assert_eq!(eulerian(4, 2), Integer::from(11));
+        assert_eq!(eulerian(4, 3), Integer::from(1));
+
+        // A(5, 1) = 26, A(5, 2) = 66
+        assert_eq!(eulerian(5, 1), Integer::from(26));
+        assert_eq!(eulerian(5, 2), Integer::from(66));
+
+        // Verify that sum of A(n, k) over k equals n!
+        let mut sum = Integer::zero();
+        for k in 0..5 {
+            sum = sum + eulerian(5, k);
+        }
+        assert_eq!(sum, factorial(5));
+    }
+
+    #[test]
+    fn test_narayana() {
+        // N(0, 0) = 1
+        assert_eq!(narayana(0, 0), Integer::from(1));
+
+        // N(n, 0) = 0 for n > 0
+        assert_eq!(narayana(1, 0), Integer::from(0));
+        assert_eq!(narayana(5, 0), Integer::from(0));
+
+        // N(n, k) = 0 for k > n
+        assert_eq!(narayana(3, 5), Integer::from(0));
+
+        // N(n, 1) = 1 for n >= 1
+        assert_eq!(narayana(1, 1), Integer::from(1));
+        assert_eq!(narayana(5, 1), Integer::from(1));
+        assert_eq!(narayana(10, 1), Integer::from(1));
+
+        // Known values
+        // N(3, 1) = 1, N(3, 2) = 3, N(3, 3) = 1
+        assert_eq!(narayana(3, 1), Integer::from(1));
+        assert_eq!(narayana(3, 2), Integer::from(3));
+        assert_eq!(narayana(3, 3), Integer::from(1));
+
+        // N(4, 2) = 6, N(4, 3) = 6
+        assert_eq!(narayana(4, 2), Integer::from(6));
+        assert_eq!(narayana(4, 3), Integer::from(6));
+
+        // Verify that sum of N(n, k) equals C_n (Catalan number)
+        let mut sum = Integer::zero();
+        for k in 1..=5 {
+            sum = sum + narayana(5, k);
+        }
+        assert_eq!(sum, catalan(5));
+
+        // Another verification for n=4
+        let mut sum4 = Integer::zero();
+        for k in 1..=4 {
+            sum4 = sum4 + narayana(4, k);
+        }
+        assert_eq!(sum4, catalan(4));
+    }
+
+    #[test]
+    fn test_delannoy_central() {
+        // First few central Delannoy numbers: 1, 3, 13, 63, 321, 1683
+        assert_eq!(delannoy_central(0), Integer::from(1));
+        assert_eq!(delannoy_central(1), Integer::from(3));
+        assert_eq!(delannoy_central(2), Integer::from(13));
+        assert_eq!(delannoy_central(3), Integer::from(63));
+        assert_eq!(delannoy_central(4), Integer::from(321));
+        assert_eq!(delannoy_central(5), Integer::from(1683));
+    }
+
+    #[test]
+    fn test_delannoy() {
+        // D(m, n) should be symmetric
+        assert_eq!(delannoy(3, 5), delannoy(5, 3));
+        assert_eq!(delannoy(2, 4), delannoy(4, 2));
+
+        // D(n, n) should equal central Delannoy number
+        assert_eq!(delannoy(0, 0), delannoy_central(0));
+        assert_eq!(delannoy(3, 3), delannoy_central(3));
+        assert_eq!(delannoy(5, 5), delannoy_central(5));
+
+        // D(0, n) = 1 (only one path along the edge)
+        assert_eq!(delannoy(0, 0), Integer::from(1));
+        assert_eq!(delannoy(0, 5), Integer::from(1));
+        assert_eq!(delannoy(5, 0), Integer::from(1));
+
+        // Known values
+        assert_eq!(delannoy(2, 3), Integer::from(25));
+        assert_eq!(delannoy(3, 4), Integer::from(129));
+    }
+
+    #[test]
+    fn test_motzkin() {
+        // First few Motzkin numbers: 1, 1, 2, 4, 9, 21, 51, 127, 323
+        assert_eq!(motzkin(0), Integer::from(1));
+        assert_eq!(motzkin(1), Integer::from(1));
+        assert_eq!(motzkin(2), Integer::from(2));
+        assert_eq!(motzkin(3), Integer::from(4));
+        assert_eq!(motzkin(4), Integer::from(9));
+        assert_eq!(motzkin(5), Integer::from(21));
+        assert_eq!(motzkin(6), Integer::from(51));
+        assert_eq!(motzkin(7), Integer::from(127));
+        assert_eq!(motzkin(8), Integer::from(323));
+    }
+
+    #[test]
+    fn test_schroder_large() {
+        // First few large Schröder numbers: 1, 2, 6, 22, 90, 394, 1806
+        assert_eq!(schroder_large(0), Integer::from(1));
+        assert_eq!(schroder_large(1), Integer::from(2));
+        assert_eq!(schroder_large(2), Integer::from(6));
+        assert_eq!(schroder_large(3), Integer::from(22));
+        assert_eq!(schroder_large(4), Integer::from(90));
+        assert_eq!(schroder_large(5), Integer::from(394));
+        assert_eq!(schroder_large(6), Integer::from(1806));
+    }
+
+    #[test]
+    fn test_schroder_small() {
+        // First few small Schröder numbers: 1, 1, 3, 11, 45, 197, 903
+        assert_eq!(schroder_small(0), Integer::from(1));
+        assert_eq!(schroder_small(1), Integer::from(1));
+        assert_eq!(schroder_small(2), Integer::from(3));
+        assert_eq!(schroder_small(3), Integer::from(11));
+        assert_eq!(schroder_small(4), Integer::from(45));
+        assert_eq!(schroder_small(5), Integer::from(197));
+        assert_eq!(schroder_small(6), Integer::from(903));
+
+        // Verify relationship: S(n) = 2*s(n) for n > 0
+        for n in 1..=6 {
+            assert_eq!(schroder_large(n), schroder_small(n) * Integer::from(2));
+        }
+    }
+
+    #[test]
+    fn test_counting_edge_cases() {
+        // Test edge cases for all new functions
+
+        // Eulerian with n=0
+        assert_eq!(eulerian(0, 0), Integer::from(1));
+        assert_eq!(eulerian(0, 1), Integer::from(0));
+
+        // Narayana edge cases
+        assert_eq!(narayana(1, 1), Integer::from(1));
+        assert_eq!(narayana(1, 2), Integer::from(0));
+
+        // Delannoy with zero
+        assert_eq!(delannoy(0, 0), Integer::from(1));
+        assert_eq!(delannoy_central(0), Integer::from(1));
+
+        // Motzkin base cases
+        assert_eq!(motzkin(0), Integer::from(1));
+        assert_eq!(motzkin(1), Integer::from(1));
+
+        // Schröder base cases
+        assert_eq!(schroder_large(0), Integer::from(1));
+        assert_eq!(schroder_small(0), Integer::from(1));
     }
 }
