@@ -1,32 +1,24 @@
-//! Partition Algebra
+//! Brauer Algebra
 //!
-//! The partition algebra P_n(δ) is a diagram algebra where:
-//! - Elements are linear combinations of all partition diagrams with n top and n bottom vertices
+//! The Brauer algebra B_n(δ) is a diagram algebra where:
+//! - Elements are linear combinations of partition diagrams with n top and n bottom vertices
 //! - Multiplication is diagram composition
 //! - Closed loops evaluate to a parameter δ
 //!
-//! The partition algebra contains the Brauer algebra as a subalgebra (those partitions
-//! where each block has size at most 2).
-//!
-//! Applications:
-//! - Representation theory of symmetric groups
-//! - Invariant theory
-//! - Statistical mechanics
-//! - Schur-Weyl duality generalizations
+//! The Brauer algebra is fundamental in representation theory and has applications
+//! in invariant theory, knot theory, and statistical mechanics.
 //!
 //! References:
+//! - Brauer, R. "On algebras which are connected with the semisimple continuous groups" (1937)
 //! - Martin, P. "The structure of the partition algebras" (1996)
-//! - Halverson, T. and Ram, A. "Partition algebras" (2005)
 
 use rustmath_core::{Ring, MathError, Result};
 use rustmath_modules::CombinatorialFreeModuleElement;
-use rustmath_combinatorics::SetPartition;
-use crate::diagram::PartitionDiagram;
+use crate::diagram::{PartitionDiagram, BrauerDiagram};
 use std::fmt::{self, Display};
 use std::marker::PhantomData;
-use std::collections::BTreeSet;
 
-/// The partition algebra P_n(δ) over a ring R
+/// The Brauer algebra B_n(δ) over a ring R
 ///
 /// # Type Parameters
 ///
@@ -35,14 +27,14 @@ use std::collections::BTreeSet;
 /// # Examples
 ///
 /// ```
-/// use rustmath_algebras::partition_algebra::PartitionAlgebra;
+/// use rustmath_algebras::brauer_algebra::BrauerAlgebra;
 /// use rustmath_integers::Integer;
 ///
-/// // Create the partition algebra P_3(2) over integers
-/// let algebra = PartitionAlgebra::<Integer>::new(3, Integer::from(2));
+/// // Create the Brauer algebra B_3(2) over integers
+/// let algebra = BrauerAlgebra::<Integer>::new(3, Integer::from(2));
 /// ```
 #[derive(Clone, Debug)]
-pub struct PartitionAlgebra<R: Ring> {
+pub struct BrauerAlgebra<R: Ring> {
     /// Order of the algebra (number of vertices per side)
     order: usize,
     /// The parameter δ (value of closed loops)
@@ -51,8 +43,8 @@ pub struct PartitionAlgebra<R: Ring> {
     _phantom: PhantomData<R>,
 }
 
-impl<R: Ring> PartitionAlgebra<R> {
-    /// Create a new partition algebra
+impl<R: Ring> BrauerAlgebra<R> {
+    /// Create a new Brauer algebra
     ///
     /// # Arguments
     ///
@@ -61,10 +53,10 @@ impl<R: Ring> PartitionAlgebra<R> {
     ///
     /// # Returns
     ///
-    /// A new partition algebra P_n(δ)
+    /// A new Brauer algebra B_n(δ)
     pub fn new(order: usize, delta: R) -> Self {
         assert!(order > 0, "Order must be positive");
-        PartitionAlgebra {
+        BrauerAlgebra {
             order,
             delta,
             _phantom: PhantomData,
@@ -82,57 +74,36 @@ impl<R: Ring> PartitionAlgebra<R> {
     }
 
     /// Get the identity element
-    pub fn one(&self) -> PartitionElement<R> {
+    pub fn one(&self) -> BrauerElement<R> {
         let identity_diagram = PartitionDiagram::identity(self.order);
-        PartitionElement {
+        BrauerElement {
             module_element: CombinatorialFreeModuleElement::from_basis_index(identity_diagram),
         }
     }
 
     /// Get the zero element
-    pub fn zero(&self) -> PartitionElement<R> {
-        PartitionElement {
+    pub fn zero(&self) -> BrauerElement<R> {
+        BrauerElement {
             module_element: CombinatorialFreeModuleElement::zero(),
         }
     }
 
-    /// Create an element from a single partition diagram
+    /// Create an element from a single diagram
     ///
     /// # Arguments
     ///
     /// * `diagram` - The partition diagram
     /// * `coefficient` - The coefficient (usually 1)
-    pub fn from_diagram(&self, diagram: PartitionDiagram, coefficient: R) -> PartitionElement<R> {
-        PartitionElement {
+    pub fn from_diagram(&self, diagram: PartitionDiagram, coefficient: R) -> BrauerElement<R> {
+        BrauerElement {
             module_element: CombinatorialFreeModuleElement::monomial(diagram, coefficient),
         }
     }
 
-    /// Create a partition diagram from a set partition
-    ///
-    /// The set partition represents how vertices {0, ..., 2n-1} are partitioned.
-    ///
-    /// # Arguments
-    ///
-    /// * `partition` - Set partition of 2n elements
-    pub fn diagram_from_set_partition(&self, partition: &SetPartition) -> Result<PartitionDiagram> {
-        let n = self.order;
-
-        if partition.num_elements() != 2 * n {
-            return Err(MathError::InvalidArgument(
-                format!("Set partition must have {} elements, got {}",
-                    2 * n, partition.num_elements())
-            ));
-        }
-
-        let blocks: Vec<BTreeSet<usize>> = partition.blocks().iter()
-            .map(|block| block.iter().copied().collect())
-            .collect();
-
-        PartitionDiagram::new(n, blocks)
-    }
-
     /// Multiply two basis elements (diagrams) and evaluate loops
+    ///
+    /// When composing diagrams, closed loops in the middle are removed
+    /// and contribute a factor of δ for each loop.
     ///
     /// # Arguments
     ///
@@ -141,33 +112,41 @@ impl<R: Ring> PartitionAlgebra<R> {
     ///
     /// # Returns
     ///
-    /// The product as a partition algebra element
-    pub fn product_on_basis(&self, diagram1: &PartitionDiagram, diagram2: &PartitionDiagram) -> PartitionElement<R> {
-        // Compose diagrams
+    /// The product as a Brauer algebra element
+    pub fn product_on_basis(&self, diagram1: &BrauerDiagram, diagram2: &BrauerDiagram) -> BrauerElement<R> {
+        // Compose diagrams (this may create loops in the middle)
         let composed = match diagram1.compose(diagram2) {
             Ok(d) => d,
-            Err(_) => return self.zero(),
+            Err(_) => return self.zero(), // Composition failed
         };
 
-        // Count loops
+        // Count loops created in the middle
         let loops_count = self.count_loops_in_composition(diagram1, diagram2);
 
-        // Compute coefficient with δ^loops_count
+        // Each loop contributes a factor of δ
         let mut coefficient = R::one();
         for _ in 0..loops_count {
             coefficient = coefficient * self.delta.clone();
         }
 
-        PartitionElement {
+        BrauerElement {
             module_element: CombinatorialFreeModuleElement::monomial(composed, coefficient),
         }
     }
 
-    /// Count closed loops in composition
-    fn count_loops_in_composition(&self, diagram1: &PartitionDiagram, diagram2: &PartitionDiagram) -> usize {
+    /// Count the number of closed loops created in the middle when composing diagrams
+    ///
+    /// When we compose two diagrams, the bottom vertices of diagram1 are identified
+    /// with the top vertices of diagram2. Any blocks that only touch these middle
+    /// vertices form closed loops.
+    fn count_loops_in_composition(&self, diagram1: &BrauerDiagram, diagram2: &BrauerDiagram) -> usize {
         let n = self.order;
         let mut loops = 0;
 
+        // We need to track which middle vertices are connected
+        // Middle vertices are: bottom of diagram1 (n..2n-1) = top of diagram2 (0..n-1)
+
+        // Create a union-find structure for middle vertices
         let mut parent: Vec<usize> = (0..n).collect();
 
         fn find(parent: &mut Vec<usize>, x: usize) -> usize {
@@ -185,7 +164,7 @@ impl<R: Ring> PartitionAlgebra<R> {
             }
         }
 
-        // Process diagram1 bottom vertices
+        // Process diagram1: find which bottom vertices are connected
         for block in diagram1.blocks() {
             let bottom_vertices: Vec<usize> = block.iter()
                 .filter(|&&v| v >= n && v < 2 * n)
@@ -197,7 +176,7 @@ impl<R: Ring> PartitionAlgebra<R> {
             }
         }
 
-        // Process diagram2 top vertices
+        // Process diagram2: find which top vertices are connected
         for block in diagram2.blocks() {
             let top_vertices: Vec<usize> = block.iter()
                 .filter(|&&v| v < n)
@@ -209,10 +188,12 @@ impl<R: Ring> PartitionAlgebra<R> {
             }
         }
 
-        // Check which components touch outside
+        // Check each connected component: if it doesn't connect to
+        // top of diagram1 or bottom of diagram2, it's a loop
         let mut component_touches_outside: std::collections::HashMap<usize, bool> =
             std::collections::HashMap::new();
 
+        // Check if components touch top vertices of diagram1
         for block in diagram1.blocks() {
             let has_top = block.iter().any(|&v| v < n);
             let bottom_vertices: Vec<usize> = block.iter()
@@ -228,6 +209,7 @@ impl<R: Ring> PartitionAlgebra<R> {
             }
         }
 
+        // Check if components touch bottom vertices of diagram2
         for block in diagram2.blocks() {
             let has_bottom = block.iter().any(|&v| v >= n);
             let top_vertices: Vec<usize> = block.iter()
@@ -243,7 +225,7 @@ impl<R: Ring> PartitionAlgebra<R> {
             }
         }
 
-        // Count loops
+        // Count components that don't touch outside (these are loops)
         let mut seen_roots = std::collections::HashSet::new();
         for i in 0..n {
             let root = find(&mut parent, i);
@@ -258,61 +240,42 @@ impl<R: Ring> PartitionAlgebra<R> {
         loops
     }
 
-    /// Get the dimension of the algebra
+    /// Get the dimension of the algebra over the base ring
     ///
-    /// The dimension is the Bell number B_{2n} (number of partitions of a 2n-element set).
+    /// The dimension is the number of partition diagrams on 2n vertices,
+    /// which is the Bell number B_{2n}.
     pub fn dimension_upper_bound(&self) -> usize {
-        // This is the exact dimension for generic δ
-        // Computing large Bell numbers is expensive, so we provide an upper bound
-        bell_number_upper_bound(2 * self.order)
+        // This is an upper bound; exact dimension depends on δ
+        // For generic δ, dimension is the (2n-1)!! (double factorial)
+        let n = self.order;
+        if n == 0 {
+            return 1;
+        }
+
+        // (2n)! / (2^n * n!) = (2n-1)!! for number of perfect matchings on 2n vertices
+        // But Brauer algebra can have more general partitions
+        // Exact dimension is sum of partition diagrams with k propagating strands
+        // for k = 0, 2, 4, ..., 2*min(n,n) with specific counting
+
+        // Simplified: return an upper bound
+        // Exact formula involves Catalan numbers and binomial coefficients
+        2_usize.pow((2 * n) as u32) // Very rough upper bound
     }
 }
 
-/// Compute an upper bound for the nth Bell number
+/// An element of the Brauer algebra
 ///
-/// Bell numbers grow very quickly: B_0=1, B_1=1, B_2=2, B_3=5, B_4=15, B_5=52, ...
-/// Exact formula: B_n = sum over k of S(n,k) where S(n,k) is Stirling number of second kind
-fn bell_number_upper_bound(n: usize) -> usize {
-    if n == 0 {
-        return 1;
-    }
-    if n == 1 {
-        return 1;
-    }
-    if n == 2 {
-        return 2;
-    }
-    if n == 3 {
-        return 5;
-    }
-    if n == 4 {
-        return 15;
-    }
-    if n == 5 {
-        return 52;
-    }
-    if n == 6 {
-        return 203;
-    }
-
-    // For larger n, use the upper bound: B_n < n^n
-    // More accurate would be to compute via dynamic programming, but that's expensive
-    n.saturating_pow(n as u32)
-}
-
-/// An element of the partition algebra
-///
-/// Represented as a linear combination of partition diagrams
+/// Represented as a linear combination of Brauer diagrams
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct PartitionElement<R: Ring> {
+pub struct BrauerElement<R: Ring> {
     /// The underlying combinatorial free module element
-    pub module_element: CombinatorialFreeModuleElement<R, PartitionDiagram>,
+    pub module_element: CombinatorialFreeModuleElement<R, BrauerDiagram>,
 }
 
-impl<R: Ring> PartitionElement<R> {
+impl<R: Ring> BrauerElement<R> {
     /// Create the zero element
     pub fn zero() -> Self {
-        PartitionElement {
+        BrauerElement {
             module_element: CombinatorialFreeModuleElement::zero(),
         }
     }
@@ -323,40 +286,45 @@ impl<R: Ring> PartitionElement<R> {
     }
 
     /// Add two elements
-    pub fn add(&self, other: &PartitionElement<R>) -> PartitionElement<R> {
-        PartitionElement {
+    pub fn add(&self, other: &BrauerElement<R>) -> BrauerElement<R> {
+        BrauerElement {
             module_element: self.module_element.clone() + other.module_element.clone(),
         }
     }
 
     /// Subtract two elements
-    pub fn sub(&self, other: &PartitionElement<R>) -> PartitionElement<R> {
-        PartitionElement {
+    pub fn sub(&self, other: &BrauerElement<R>) -> BrauerElement<R> {
+        BrauerElement {
             module_element: self.module_element.clone() - other.module_element.clone(),
         }
     }
 
     /// Negate this element
-    pub fn neg(&self) -> PartitionElement<R> {
-        PartitionElement {
+    pub fn neg(&self) -> BrauerElement<R> {
+        BrauerElement {
             module_element: -self.module_element.clone(),
         }
     }
 
     /// Scalar multiplication
-    pub fn scalar_mul(&self, scalar: &R) -> PartitionElement<R> {
-        PartitionElement {
+    pub fn scalar_mul(&self, scalar: &R) -> BrauerElement<R> {
+        BrauerElement {
             module_element: self.module_element.scalar_mul(scalar),
         }
     }
 
     /// Multiply two algebra elements
-    pub fn multiply(&self, other: &PartitionElement<R>, algebra: &PartitionAlgebra<R>) -> PartitionElement<R> {
-        let mut result = PartitionElement::zero();
+    ///
+    /// Uses bilinearity: (Σ a_i d_i) * (Σ b_j d_j) = Σ a_i b_j (d_i * d_j)
+    pub fn multiply(&self, other: &BrauerElement<R>, algebra: &BrauerAlgebra<R>) -> BrauerElement<R> {
+        let mut result = BrauerElement::zero();
 
         for (diagram1, coeff1) in self.module_element.iter() {
             for (diagram2, coeff2) in other.module_element.iter() {
+                // Compute product of basis elements
                 let basis_product = algebra.product_on_basis(diagram1, diagram2);
+
+                // Multiply by coefficients
                 let coeff_product = coeff1.clone() * coeff2.clone();
                 let term = basis_product.scalar_mul(&coeff_product);
 
@@ -373,7 +341,7 @@ impl<R: Ring> PartitionElement<R> {
     }
 }
 
-impl<R: Ring + Display> Display for PartitionElement<R> {
+impl<R: Ring + Display> Display for BrauerElement<R> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.is_zero() {
             return write!(f, "0");
@@ -401,17 +369,18 @@ impl<R: Ring + Display> Display for PartitionElement<R> {
 mod tests {
     use super::*;
     use rustmath_integers::Integer;
+    use crate::diagram::PartitionDiagram;
 
     #[test]
-    fn test_partition_algebra_creation() {
-        let algebra = PartitionAlgebra::<Integer>::new(3, Integer::from(2));
+    fn test_brauer_algebra_creation() {
+        let algebra = BrauerAlgebra::<Integer>::new(3, Integer::from(2));
         assert_eq!(algebra.order(), 3);
         assert_eq!(*algebra.delta(), Integer::from(2));
     }
 
     #[test]
     fn test_identity_element() {
-        let algebra = PartitionAlgebra::<Integer>::new(3, Integer::from(2));
+        let algebra = BrauerAlgebra::<Integer>::new(3, Integer::from(2));
         let one = algebra.one();
         assert!(!one.is_zero());
         assert_eq!(one.num_terms(), 1);
@@ -419,14 +388,14 @@ mod tests {
 
     #[test]
     fn test_zero_element() {
-        let algebra = PartitionAlgebra::<Integer>::new(3, Integer::from(2));
+        let algebra = BrauerAlgebra::<Integer>::new(3, Integer::from(2));
         let zero = algebra.zero();
         assert!(zero.is_zero());
     }
 
     #[test]
     fn test_identity_multiplication() {
-        let algebra = PartitionAlgebra::<Integer>::new(2, Integer::from(2));
+        let algebra = BrauerAlgebra::<Integer>::new(2, Integer::from(2));
         let one = algebra.one();
 
         let result = one.multiply(&one, &algebra);
@@ -435,7 +404,7 @@ mod tests {
 
     #[test]
     fn test_diagram_element() {
-        let algebra = PartitionAlgebra::<Integer>::new(2, Integer::from(2));
+        let algebra = BrauerAlgebra::<Integer>::new(2, Integer::from(2));
         let diagram = PartitionDiagram::identity(2);
         let element = algebra.from_diagram(diagram, Integer::from(1));
 
@@ -445,7 +414,7 @@ mod tests {
 
     #[test]
     fn test_addition() {
-        let algebra = PartitionAlgebra::<Integer>::new(2, Integer::from(2));
+        let algebra = BrauerAlgebra::<Integer>::new(2, Integer::from(2));
         let one = algebra.one();
         let zero = algebra.zero();
 
@@ -455,7 +424,7 @@ mod tests {
 
     #[test]
     fn test_scalar_multiplication() {
-        let algebra = PartitionAlgebra::<Integer>::new(2, Integer::from(2));
+        let algebra = BrauerAlgebra::<Integer>::new(2, Integer::from(2));
         let one = algebra.one();
         let scalar = Integer::from(3);
 
@@ -464,31 +433,33 @@ mod tests {
     }
 
     #[test]
+    fn test_product_with_loops() {
+        // Create a diagram that will produce loops when composed with itself
+        let algebra = BrauerAlgebra::<Integer>::new(2, Integer::from(2));
+
+        // Create a diagram with a "cap" on top: (0,1), (2), (3)
+        let cap_diagram = PartitionDiagram::from_matching(2, vec![(0, 1)]).unwrap();
+
+        // Create a diagram with a "cup" on bottom: (0), (1), (2,3)
+        let cup_diagram = PartitionDiagram::from_matching(2, vec![(2, 3)]).unwrap();
+
+        let cap = algebra.from_diagram(cap_diagram, Integer::from(1));
+        let cup = algebra.from_diagram(cup_diagram, Integer::from(1));
+
+        // When we compose cap on top of cup, we should get loops
+        let product = cap.multiply(&cup, &algebra);
+
+        // The result should have δ factors from loops
+        assert!(!product.is_zero());
+    }
+
+    #[test]
     fn test_negation() {
-        let algebra = PartitionAlgebra::<Integer>::new(2, Integer::from(2));
+        let algebra = BrauerAlgebra::<Integer>::new(2, Integer::from(2));
         let one = algebra.one();
         let neg_one = one.neg();
 
         let sum = one.add(&neg_one);
         assert!(sum.is_zero());
-    }
-
-    #[test]
-    fn test_bell_numbers() {
-        assert_eq!(bell_number_upper_bound(0), 1);
-        assert_eq!(bell_number_upper_bound(1), 1);
-        assert_eq!(bell_number_upper_bound(2), 2);
-        assert_eq!(bell_number_upper_bound(3), 5);
-        assert_eq!(bell_number_upper_bound(4), 15);
-        assert_eq!(bell_number_upper_bound(5), 52);
-    }
-
-    #[test]
-    fn test_dimension_bounds() {
-        let p1 = PartitionAlgebra::<Integer>::new(1, Integer::from(2));
-        assert!(p1.dimension_upper_bound() >= 2); // B_2 = 2
-
-        let p2 = PartitionAlgebra::<Integer>::new(2, Integer::from(2));
-        assert!(p2.dimension_upper_bound() >= 15); // B_4 = 15
     }
 }

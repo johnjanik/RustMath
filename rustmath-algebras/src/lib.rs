@@ -42,6 +42,11 @@ pub mod cubic_hecke_matrix_rep;
 pub mod iwahori_hecke_algebra;
 pub mod nil_coxeter_algebra;
 pub mod catalog;
+pub mod diagram;
+pub mod brauer_algebra;
+pub mod temperley_lieb_algebra;
+pub mod partition_algebra;
+pub mod planar_algebra;
 pub mod poly_tup_engine;
 pub mod fusion_ring;
 pub mod fusion_double;
@@ -223,6 +228,13 @@ pub use yangian::{
 pub use yokonuma_hecke_algebra::{
     YokonumaHeckeAlgebra, YokonumaElement, YokonumaWord, YokonumaGenerator,
 };
+pub use diagram::{
+    PartitionDiagram, BrauerDiagram, TemperleyLiebDiagram,
+};
+pub use brauer_algebra::{BrauerAlgebra, BrauerElement};
+pub use temperley_lieb_algebra::{TemperleyLiebAlgebra, TLElement};
+pub use partition_algebra::{PartitionAlgebra, PartitionElement};
+pub use planar_algebra::{PlanarAlgebra, PlanarElement, PlanarDiagram};
 pub use partition_algebra::{
     PartitionAlgebra, PartitionAlgebraElement, PartitionDiagram,
 };
