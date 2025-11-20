@@ -13,6 +13,7 @@ pub mod dyck_word;
 pub mod enumeration;
 pub mod integer_vectors;
 pub mod integer_matrices;
+pub mod multiset_partition_into_sets_ordered;
 pub mod ordered_tree;
 pub mod partitions;
 pub mod perfect_matching;
@@ -68,9 +69,11 @@ pub use designs::{
 };
 pub use dyck_word::{dyck_words, nu_dyck_words, BounceStats, DyckWord, NuDyckWord};
 pub use enumeration::{
-    cartesian_product, stars_and_bars, tuples, weak_compositions, CartesianProduct,
-    CompositionIterator, Enumerable, GrayCodeIterator, InfiniteCartesianProduct, LazyEnumerator,
-    PartitionIterator, RevolvingDoorIterator,
+    binary_gray_code_strings, binary_gray_codes, binary_to_gray, cartesian_product,
+    gray_to_binary, stars_and_bars, tuples, weak_compositions, BinaryGrayCodeIterator,
+    CartesianProduct, CombinationGrayCodeIterator, CompositionIterator, Enumerable,
+    GrayCodeIterator, InfiniteCartesianProduct, LazyEnumerator, PartitionIterator,
+    PermutationGrayCodeIterator, RevolvingDoorIterator,
 };
 pub use integer_matrices::{
     count_integer_matrices, integer_matrices, integer_matrices_bounded, IntegerMatrix,
@@ -117,6 +120,7 @@ pub use integer_vectors::{
     count_integer_vectors_in_box, count_integer_vectors_with_sum, integer_vector_sum_iter,
     integer_vectors_in_box, integer_vectors_with_l1_norm_bounded, integer_vectors_with_sum,
     integer_vectors_with_weighted_sum, IntegerVector, IntegerVectorSumIter,
+};
 pub use vector_partition::{
     count_vector_partitions_exact_parts, count_vector_partitions_max_parts,
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
