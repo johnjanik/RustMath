@@ -662,6 +662,160 @@ fn simpson_1d(integrand: &Expr, chart: &Chart, a: f64, b: f64) -> Result<f64> {
     Ok(sum * h / 3.0)
 }
 
+/// Adaptive Simpson's rule for better accuracy
+///
+/// Uses recursive subdivision to achieve desired tolerance
+fn adaptive_simpson(
+    integrand: &Expr,
+    chart: &Chart,
+    a: f64,
+    b: f64,
+    tolerance: f64,
+    max_depth: usize,
+) -> Result<f64> {
+    adaptive_simpson_recursive(integrand, chart, a, b, tolerance, max_depth, 0)
+}
+
+fn adaptive_simpson_recursive(
+    integrand: &Expr,
+    chart: &Chart,
+    a: f64,
+    b: f64,
+    tolerance: f64,
+    max_depth: usize,
+    depth: usize,
+) -> Result<f64> {
+    if depth >= max_depth {
+        return simpson_1d(integrand, chart, a, b);
+    }
+
+    let mid = (a + b) / 2.0;
+
+    // Compute full interval
+    let full = simpson_1d(integrand, chart, a, b)?;
+
+    // Compute two half intervals
+    let left = simpson_1d(integrand, chart, a, mid)?;
+    let right = simpson_1d(integrand, chart, mid, b)?;
+
+    let error = (left + right - full).abs() / 15.0; // Error estimate for Simpson's rule
+
+    if error < tolerance {
+        // Add Richardson extrapolation correction
+        Ok(left + right + error)
+    } else {
+        // Subdivide further
+        let left_refined = adaptive_simpson_recursive(
+            integrand,
+            chart,
+            a,
+            mid,
+            tolerance / 2.0,
+            max_depth,
+            depth + 1,
+        )?;
+        let right_refined = adaptive_simpson_recursive(
+            integrand,
+            chart,
+            mid,
+            b,
+            tolerance / 2.0,
+            max_depth,
+            depth + 1,
+        )?;
+
+        Ok(left_refined + right_refined)
+    }
+}
+
+/// Gauss-Legendre quadrature for high accuracy
+///
+/// Uses 5-point Gauss-Legendre rule
+fn gauss_legendre_1d(integrand: &Expr, chart: &Chart, a: f64, b: f64) -> Result<f64> {
+    // 5-point Gauss-Legendre nodes and weights on [-1, 1]
+    let nodes = vec![
+        -0.9061798459386640,
+        -0.5384693101056831,
+        0.0,
+        0.5384693101056831,
+        0.9061798459386640,
+    ];
+
+    let weights = vec![
+        0.2369268850561891,
+        0.4786286704993665,
+        0.5688888888888889,
+        0.4786286704993665,
+        0.2369268850561891,
+    ];
+
+    let mid = (a + b) / 2.0;
+    let half_length = (b - a) / 2.0;
+
+    let mut sum = 0.0;
+    for (node, weight) in nodes.iter().zip(weights.iter()) {
+        let x = mid + half_length * node;
+        let coords = vec![x];
+        let f_x = evaluate_expr_at_point(integrand, chart, &coords)?;
+        sum += weight * f_x;
+    }
+
+    Ok(half_length * sum)
+}
+
+/// Monte Carlo integration for high-dimensional integrals
+///
+/// Uses pseudo-random sampling for efficient high-dimensional integration
+fn monte_carlo_integration(
+    integrand: &Expr,
+    chart: &Chart,
+    bounds: &[(f64, f64)],
+    num_samples: usize,
+) -> Result<f64> {
+    use std::collections::hash_map::RandomState;
+    use std::hash::{BuildHasher, Hasher};
+
+    let n = bounds.len();
+    if n == 0 {
+        return Ok(0.0);
+    }
+
+    // Compute volume of integration domain
+    let mut volume = 1.0;
+    for (a, b) in bounds {
+        volume *= b - a;
+    }
+
+    // Simple pseudo-random number generator using hash
+    let hasher_builder = RandomState::new();
+    let mut sum = 0.0;
+
+    for sample_idx in 0..num_samples {
+        let mut coords = Vec::with_capacity(n);
+
+        for (dim_idx, (a, b)) in bounds.iter().enumerate() {
+            // Generate pseudo-random number using hash
+            let mut hasher = hasher_builder.build_hasher();
+            hasher.write_usize(sample_idx);
+            hasher.write_usize(dim_idx);
+            let hash = hasher.finish();
+
+            // Convert hash to [0, 1]
+            let random = (hash as f64) / (u64::MAX as f64);
+
+            // Scale to [a, b]
+            let coord = a + random * (b - a);
+            coords.push(coord);
+        }
+
+        // Evaluate function at this point
+        let f_val = evaluate_expr_at_point(integrand, chart, &coords)?;
+        sum += f_val;
+    }
+
+    Ok(volume * sum / (num_samples as f64))
+}
+
 // ============================================================================
 // Tests
 // ============================================================================
@@ -782,5 +936,41 @@ mod tests {
         let result = IntegrationOnManifolds::integrate_form(&oriented, &form_2d);
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_adaptive_simpson() {
+        let chart = Chart::new("x", 1, vec!["x"]).unwrap();
+        // Integrate x^2 from 0 to 1, should give 1/3
+        let expr = Expr::Symbol("x".to_string()) * Expr::Symbol("x".to_string());
+
+        let result = adaptive_simpson(&expr, &chart, 0.0, 1.0, 1e-6, 10).unwrap();
+
+        // Should be close to 1/3 ≈ 0.333...
+        assert!((result - 1.0/3.0).abs() < 1e-3);
+    }
+
+    #[test]
+    fn test_gauss_legendre() {
+        let chart = Chart::new("x", 1, vec!["x"]).unwrap();
+        // Integrate x from 0 to 1, should give 1/2
+        let expr = Expr::Symbol("x".to_string());
+
+        let result = gauss_legendre_1d(&expr, &chart, 0.0, 1.0).unwrap();
+
+        // Should be close to 1/2 = 0.5
+        assert!((result - 0.5).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_monte_carlo_integration() {
+        let chart = Chart::new("x", 1, vec!["x"]).unwrap();
+        // Integrate constant 1 from 0 to 2, should give 2
+        let expr = Expr::from(1);
+
+        let result = monte_carlo_integration(&expr, &chart, &[(0.0, 2.0)], 10000).unwrap();
+
+        // Should be close to 2 (with some Monte Carlo error)
+        assert!((result - 2.0).abs() < 0.5);
     }
 }

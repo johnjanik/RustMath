@@ -150,6 +150,32 @@ impl Chart {
         // Default bounds - in practice, this should be customized per chart
         Ok(vec![(-10.0, 10.0); self.dimension])
     }
+
+    /// Apply the chart map to convert a point's coordinates to chart coordinates
+    ///
+    /// This is the identity in most cases, but can be overridden for specialized charts
+    pub fn map_to_chart(&self, coordinates: &[f64]) -> Result<Vec<f64>> {
+        if coordinates.len() != self.dimension {
+            return Err(ManifoldError::DimensionMismatch {
+                expected: self.dimension,
+                actual: coordinates.len(),
+            });
+        }
+        Ok(coordinates.to_vec())
+    }
+
+    /// Apply the inverse chart map to convert chart coordinates to manifold coordinates
+    ///
+    /// This is the identity in most cases, but can be overridden for specialized charts
+    pub fn map_from_chart(&self, chart_coordinates: &[f64]) -> Result<Vec<f64>> {
+        if chart_coordinates.len() != self.dimension {
+            return Err(ManifoldError::DimensionMismatch {
+                expected: self.dimension,
+                actual: chart_coordinates.len(),
+            });
+        }
+        Ok(chart_coordinates.to_vec())
+    }
 }
 
 impl fmt::Debug for Chart {
@@ -181,6 +207,8 @@ pub struct CoordinateTransformation {
     source: Chart,
     /// Target chart
     target: Chart,
+    /// Transformation function (if available)
+    transform_fn: Option<fn(&[f64]) -> Vec<f64>>,
 }
 
 impl CoordinateTransformation {
@@ -193,7 +221,31 @@ impl CoordinateTransformation {
             });
         }
 
-        Ok(Self { source, target })
+        Ok(Self {
+            source,
+            target,
+            transform_fn: None,
+        })
+    }
+
+    /// Create a coordinate transformation with a custom transformation function
+    pub fn with_function(
+        source: Chart,
+        target: Chart,
+        transform_fn: fn(&[f64]) -> Vec<f64>,
+    ) -> Result<Self> {
+        if source.dimension() != target.dimension() {
+            return Err(ManifoldError::DimensionMismatch {
+                expected: source.dimension(),
+                actual: target.dimension(),
+            });
+        }
+
+        Ok(Self {
+            source,
+            target,
+            transform_fn: Some(transform_fn),
+        })
     }
 
     /// Get the source chart
@@ -209,6 +261,51 @@ impl CoordinateTransformation {
     /// Get the dimension of the transformation
     pub fn dimension(&self) -> usize {
         self.source.dimension()
+    }
+
+    /// Apply the transformation to coordinates
+    pub fn apply(&self, coords: &[f64]) -> Result<Vec<f64>> {
+        if coords.len() != self.dimension() {
+            return Err(ManifoldError::DimensionMismatch {
+                expected: self.dimension(),
+                actual: coords.len(),
+            });
+        }
+
+        if let Some(func) = self.transform_fn {
+            Ok(func(coords))
+        } else {
+            // Default: identity transformation
+            Ok(coords.to_vec())
+        }
+    }
+
+    /// Compute the inverse transformation
+    ///
+    /// This creates a new transformation that goes from target to source
+    pub fn inverse(&self) -> Result<Self> {
+        Ok(CoordinateTransformation::new(
+            self.target.clone(),
+            self.source.clone(),
+        )?)
+    }
+
+    /// Compose two transformations: self ∘ other
+    ///
+    /// Returns a transformation from other.source to self.target
+    pub fn compose(&self, other: &Self) -> Result<Self> {
+        if self.source.name() != other.target.name() {
+            return Err(ManifoldError::InvalidChart(format!(
+                "Cannot compose transformations: target of first ({}) doesn't match source of second ({})",
+                other.target.name(),
+                self.source.name()
+            )));
+        }
+
+        Ok(CoordinateTransformation::new(
+            other.source.clone(),
+            self.target.clone(),
+        )?)
     }
 }
 
@@ -273,5 +370,59 @@ mod tests {
     fn test_chart_display() {
         let chart = Chart::new("cartesian", 2, vec!["x", "y"]).unwrap();
         assert_eq!(format!("{}", chart), "cartesian (x, y)");
+    }
+
+    #[test]
+    fn test_chart_map_to_chart() {
+        let chart = Chart::new("cart", 2, vec!["x", "y"]).unwrap();
+        let coords = vec![1.0, 2.0];
+        let mapped = chart.map_to_chart(&coords).unwrap();
+        assert_eq!(mapped, vec![1.0, 2.0]);
+    }
+
+    #[test]
+    fn test_chart_map_from_chart() {
+        let chart = Chart::new("cart", 2, vec!["x", "y"]).unwrap();
+        let coords = vec![1.0, 2.0];
+        let mapped = chart.map_from_chart(&coords).unwrap();
+        assert_eq!(mapped, vec![1.0, 2.0]);
+    }
+
+    #[test]
+    fn test_coordinate_transformation_apply() {
+        let cart = Chart::new("cartesian", 2, vec!["x", "y"]).unwrap();
+        let polar = Chart::new("polar", 2, vec!["r", "theta"]).unwrap();
+
+        let transform = CoordinateTransformation::new(cart, polar).unwrap();
+        let coords = vec![3.0, 4.0];
+        let result = transform.apply(&coords).unwrap();
+        // Default identity transformation
+        assert_eq!(result, vec![3.0, 4.0]);
+    }
+
+    #[test]
+    fn test_coordinate_transformation_inverse() {
+        let cart = Chart::new("cartesian", 2, vec!["x", "y"]).unwrap();
+        let polar = Chart::new("polar", 2, vec!["r", "theta"]).unwrap();
+
+        let transform = CoordinateTransformation::new(cart.clone(), polar.clone()).unwrap();
+        let inverse = transform.inverse().unwrap();
+
+        assert_eq!(inverse.source().name(), polar.name());
+        assert_eq!(inverse.target().name(), cart.name());
+    }
+
+    #[test]
+    fn test_coordinate_transformation_compose() {
+        let chart1 = Chart::new("chart1", 2, vec!["x", "y"]).unwrap();
+        let chart2 = Chart::new("chart2", 2, vec!["u", "v"]).unwrap();
+        let chart3 = Chart::new("chart3", 2, vec!["s", "t"]).unwrap();
+
+        let trans1 = CoordinateTransformation::new(chart1.clone(), chart2.clone()).unwrap();
+        let trans2 = CoordinateTransformation::new(chart2.clone(), chart3.clone()).unwrap();
+
+        let composed = trans2.compose(&trans1).unwrap();
+        assert_eq!(composed.source().name(), chart1.name());
+        assert_eq!(composed.target().name(), chart3.name());
     }
 }
