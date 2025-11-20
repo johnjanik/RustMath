@@ -90,6 +90,8 @@ pub mod sum_of_squares;
 pub mod tate_algebra;
 pub mod valuation;
 pub mod qqbar;
+pub mod number_field;
+pub mod padics;
 
 // Re-export core ring types from other crates
 pub use rustmath_integers::Integer;
@@ -112,5 +114,6 @@ mod tests {
         use crate::abc::*;
         use crate::algebraic_closure::*;
         use crate::asymptotic::*;
+        use crate::padics::*;
     }
 }
