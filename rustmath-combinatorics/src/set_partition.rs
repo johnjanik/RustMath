@@ -300,6 +300,132 @@ fn generate_set_partitions(
     current.pop();
 }
 
+/// An ordered set partition - a set partition where the order of blocks matters
+///
+/// Unlike regular set partitions, {{0}, {1, 2}} and {{1, 2}, {0}} are considered
+/// different ordered set partitions.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OrderedSetPartition {
+    /// Each vector represents one block (subset) in the partition, in order
+    blocks: Vec<Vec<usize>>,
+    /// Total number of elements
+    n: usize,
+}
+
+impl OrderedSetPartition {
+    /// Create an ordered set partition from blocks
+    pub fn new(blocks: Vec<Vec<usize>>, n: usize) -> Option<Self> {
+        // Verify that blocks are non-empty and disjoint
+        let mut seen = vec![false; n];
+
+        for block in &blocks {
+            if block.is_empty() {
+                return None;
+            }
+            for &elem in block {
+                if elem >= n || seen[elem] {
+                    return None;
+                }
+                seen[elem] = true;
+            }
+        }
+
+        // All elements must be covered
+        if !seen.iter().all(|&x| x) {
+            return None;
+        }
+
+        Some(OrderedSetPartition { blocks, n })
+    }
+
+    /// Get the number of blocks
+    pub fn num_blocks(&self) -> usize {
+        self.blocks.len()
+    }
+
+    /// Get the blocks in order
+    pub fn blocks(&self) -> &[Vec<usize>] {
+        &self.blocks
+    }
+
+    /// Get the size of the set being partitioned
+    pub fn size(&self) -> usize {
+        self.n
+    }
+
+    /// Convert to a regular (unordered) set partition
+    pub fn to_set_partition(&self) -> SetPartition {
+        // Note: This creates a SetPartition with blocks in the current order,
+        // but SetPartition doesn't consider order when comparing
+        SetPartition {
+            blocks: self.blocks.clone(),
+            n: self.n,
+        }
+    }
+}
+
+/// Generate all ordered set partitions of n elements (labeled 0..n)
+///
+/// The number of ordered set partitions is the Fubini number (ordered Bell number).
+/// For n = 0, 1, 2, 3, 4, the counts are 1, 1, 3, 13, 75, ...
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_combinatorics::set_partition_ordered;
+///
+/// let partitions = set_partition_ordered(2);
+/// assert_eq!(partitions.len(), 3); // {{0,1}}, {{0},{1}}, {{1},{0}}
+/// ```
+pub fn set_partition_ordered(n: usize) -> Vec<OrderedSetPartition> {
+    if n == 0 {
+        return vec![OrderedSetPartition {
+            blocks: vec![],
+            n: 0,
+        }];
+    }
+
+    let mut result = Vec::new();
+    let elements: Vec<usize> = (0..n).collect();
+    let mut current_partition: Vec<Vec<usize>> = Vec::new();
+
+    generate_ordered_set_partitions(&elements, 0, &mut current_partition, &mut result);
+
+    result
+}
+
+fn generate_ordered_set_partitions(
+    elements: &[usize],
+    index: usize,
+    current: &mut Vec<Vec<usize>>,
+    result: &mut Vec<OrderedSetPartition>,
+) {
+    if index == elements.len() {
+        result.push(OrderedSetPartition {
+            blocks: current.clone(),
+            n: elements.len(),
+        });
+        return;
+    }
+
+    let elem = elements[index];
+
+    // Try adding element to each existing block (order preserved)
+    for i in 0..current.len() {
+        current[i].push(elem);
+        generate_ordered_set_partitions(elements, index + 1, current, result);
+        current[i].pop();
+    }
+
+    // Try creating a new block at each possible position
+    // This is what makes it "ordered" - we can insert at any position
+    for pos in 0..=current.len() {
+        current.insert(pos, vec![elem]);
+        generate_ordered_set_partitions(elements, index + 1, current, result);
+        current.remove(pos);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
