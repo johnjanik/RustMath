@@ -3,7 +3,12 @@
 //! This crate provides combinatorial structures like permutations, combinations,
 //! partitions, and algorithms for generating and manipulating them.
 
+#[macro_use]
+extern crate lazy_static;
+
 pub mod affine_permutations;
+pub mod combinatorial_map;
+pub mod combinatorial_map_examples;
 pub mod binary_words;
 pub mod combinations;
 pub mod composition;
