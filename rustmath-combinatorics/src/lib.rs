@@ -13,6 +13,7 @@ pub mod dyck_word;
 pub mod enumeration;
 pub mod integer_vectors;
 pub mod integer_matrices;
+pub mod multiset_partition_into_sets_ordered;
 pub mod ordered_tree;
 pub mod partitions;
 pub mod perfect_matching;
@@ -92,8 +93,10 @@ pub use word::{
     Morphism, Word,
 };
 pub use subset::{
-    all_subsets, count_k_subsets, k_subset_iterator, k_subsets, subset_iterator, KSubsetIterator,
-    Subset, SubsetIterator,
+    all_subsets, count_k_subsets, k_subset_iterator, k_subsets,
+    max_pairwise_disjoint_k_subsets, pairwise_disjoint_family_iterator,
+    pairwise_disjoint_k_subsets, subset_iterator, KSubsetIterator,
+    PairwiseDisjointFamilyIterator, Subset, SubsetIterator,
 };
 pub use q_analogue::{
     gaussian_polynomial, q_binomial, q_binomial_eval, q_factorial, q_integer, q_multinomial,
@@ -117,6 +120,7 @@ pub use integer_vectors::{
     count_integer_vectors_in_box, count_integer_vectors_with_sum, integer_vector_sum_iter,
     integer_vectors_in_box, integer_vectors_with_l1_norm_bounded, integer_vectors_with_sum,
     integer_vectors_with_weighted_sum, IntegerVector, IntegerVectorSumIter,
+};
 pub use vector_partition::{
     count_vector_partitions_exact_parts, count_vector_partitions_max_parts,
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
