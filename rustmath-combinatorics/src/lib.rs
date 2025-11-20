@@ -25,6 +25,8 @@ pub mod designs;
 pub mod dlx;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod interval_posets;
+pub mod multiset_partition_into_sets_ordered;
 pub mod fully_packed_loop;
 pub mod gelfand_tsetlin;
 pub mod fully_commutative_elements;
@@ -284,6 +286,8 @@ pub use path_tableaux::{
     ballot_sequences, count_dyck_paths, count_lattice_paths_ne, dyck_path_to_partition,
     dyck_paths, lattice_paths_ne, partition_to_dyck_path, LatticePath, PathTableau, Step,
 };
+pub use interval_posets::{
+    interval_representation, is_interval_order, is_semiorder, Interval, IntervalPoset,
 pub use ribbon_tableau::{
     fermionic_formula, kostka_foulkes_ribbon, ribbon_tableaux, RibbonDecomposition, RibbonTableau,
 };
