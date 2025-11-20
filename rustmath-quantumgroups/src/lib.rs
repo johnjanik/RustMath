@@ -2,14 +2,17 @@
 //!
 //! This crate provides quantum group structures and q-analogs of classical
 //! mathematical objects, including q-integers, q-factorials, q-binomials,
-//! q-Bernoulli numbers, and Fock space representations.
+//! q-Bernoulli numbers, Fock space representations, and sine-Gordon Y-systems
+//! from integrable quantum field theory.
 //!
 //! Corresponds to sage.algebras.quantum_groups
 
 pub mod fock_space;
 pub mod q_bernoulli;
 pub mod q_numbers;
+pub mod sine_gordon;
 
 pub use fock_space::{FockSpaceElement, FockSpaceParams};
 pub use q_bernoulli::{q_bernoulli, RationalFunction};
 pub use q_numbers::{q_binomial, q_factorial, q_int};
+pub use sine_gordon::{SineGordonBuilder, SineGordonYSystem, YVariable};

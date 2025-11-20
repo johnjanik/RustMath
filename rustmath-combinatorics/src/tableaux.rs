@@ -1148,6 +1148,8 @@ mod tests {
 
     // k-tableau tests
     // TODO: Re-enable this test once KTableau is implemented
+    // TODO: Implement KTableau
+    // TODO: Implement KTableau before enabling this test
     // #[test]
     // fn test_k_tableau_creation() {
     //     // Valid 2-tableau: columns differ by at least 2
@@ -1160,6 +1162,13 @@ mod tests {
     //     assert_eq!(kt.size(), 6);
     //     assert!(kt.is_valid());
     // }
+    #[test]
+    fn test_hillman_grassl_invalid_matrix() {
+        // Non-binary matrix should return None
+        let matrix = vec![vec![1, 2, 0], vec![0, 1, 3]];
+        let result = hillman_grassl(&matrix);
+        assert!(result.is_none());
+    }
 
     #[test]
     fn test_hillman_grassl_zero_matrix() {

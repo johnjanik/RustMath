@@ -14,14 +14,18 @@ pub mod backtrack;
 pub mod combinatorial_map;
 pub mod combinatorial_map_examples;
 pub mod binary_words;
+pub mod cluster_complex;
 pub mod combinations;
 pub mod composition;
 pub mod dendriform_algebra;
 pub mod cyclic_sieving;
 pub mod composition_tableau;
+pub mod constellation;
 pub mod debruijn;
 pub mod derangements;
+pub mod descent_algebra;
 pub mod designs;
+pub mod multiset_partition_into_sets_ordered;
 pub mod dlx;
 pub mod dyck_word;
 pub mod enumeration;
@@ -39,6 +43,7 @@ pub mod group_action;
 pub mod finite_state_machine_generators;
 pub mod integer_vectors;
 pub mod integer_matrices;
+pub mod kazhdan_lusztig;
 pub mod knutson_tao;
 pub mod integer_lists;
 pub mod multiset_partition_into_sets_ordered;
@@ -52,6 +57,8 @@ pub mod permutations;
 pub mod plane_partition;
 pub mod parallelogram_polyomino;
 pub mod permutation_simd;
+pub mod pipe_dream;
+pub mod plane_partition;
 pub mod posets;
 pub mod q_analogue;
 pub mod ranking;
@@ -64,12 +71,14 @@ pub mod schubert;
 pub mod set_partition;
 pub mod set_system;
 pub mod sidon_sets;
+pub mod similarity_class_type;
 pub mod six_vertex_model;
 pub mod skew_partition;
 pub mod specht_module;
 pub mod species;
 pub mod subset;
 pub mod subword;
+pub mod subword_complex;
 pub mod superpartitions;
 pub mod symmetric_group_representations;
 pub mod super_tableaux;
@@ -168,10 +177,8 @@ pub use integer_matrices::{
     count_integer_matrices, integer_matrices, integer_matrices_bounded, IntegerMatrix,
 };
 pub use perfect_matching::{perfect_matchings, PerfectMatching};
-pub use ranking::{
-    BinaryTreeRank, CombinationRank, GraphRank, PermutationRank, Rankable, RankingTable,
-    RootedTreeRank,
-};
+pub use pipe_dream::{PipeDream, PipeDreamBuilder};
+pub use ranking::{CombinationRank, PermutationRank, Rankable, RankingTable};
 pub use recurrence_sequences::{
     solve_binary_recurrence, BinaryRecurrence, LinearRecurrence, RecurrenceSequence,
 };
@@ -200,6 +207,7 @@ pub use subset::{
     pairwise_disjoint_k_subsets, subset_iterator, KSubsetIterator,
     PairwiseDisjointFamilyIterator, Subset, SubsetIterator,
 };
+pub use subword_complex::{ReducedWord, SubwordComplex};
 pub use q_analogue::{
     gaussian_polynomial, q_binomial, q_binomial_eval, q_factorial, q_integer, q_multinomial,
 };
@@ -230,6 +238,9 @@ pub use grossman_larson::{
 };
 pub use derangements::{
     all_derangements, count_derangements, count_derangements_recurrence, is_derangement,
+};
+pub use descent_algebra::{
+    count_permutations_with_descent_set, DescentAlgebraElement, DescentSet,
 };
 pub use superpartitions::{
     count_superpartitions, strict_superpartitions, superpartitions, superpartitions_with_k_parts,
@@ -297,11 +308,30 @@ pub use subword::{
     subword_positions, PipeDream, SubwordComplex,
 pub use skew_partition::{
     ribbon_shaped_tableaux, RibbonTableau, SkewPartition, SkewTableau,
+pub use similarity_class_type::{
+    centralizer_algebra_dim, centralizer_group_cardinality, dictionary_from_generator,
+    ext_orbit_centralizers, ext_orbits, fq, input_parsing,
+    invariant_subspace_generating_function, matrix_centralizer_cardinalities,
+    matrix_centralizer_cardinalities_length_two, matrix_similarity_classes,
+    matrix_similarity_classes_length_two, order_of_general_linear_group, primitives,
+    PrimarySimilarityClassType, PrimarySimilarityClassTypes, SimilarityClassType,
+    SimilarityClassTypes,
 };
+pub use skew_partition::{SkewPartition, SkewTableau};
+pub use kazhdan_lusztig::{
+    bruhat_interval, bruhat_le, bruhat_poset, kazhdan_lusztig_polynomial, length, r_polynomial,
+pub use constellation::{
+    count_genus_0_constellations, path_constellation, star_constellation, trivial_constellation,
+    Constellation, ConstellationEncoding,
+    cube_constellation, tetrahedron_constellation, Constellation, ConstellationEncoding,
 pub use parking_function::{
     count_non_decreasing_parking_functions, count_parking_functions,
     non_decreasing_parking_functions, non_decreasing_parking_functions_with_area,
     parking_functions, NonDecreasingParkingFunction, ParkingFunction,
+};
+pub use cluster_complex::{
+    associahedron, cluster_complex_type_a, AlmostPositiveRoot, Cluster, ClusterCartanType,
+    ClusterComplex, GeneralizedAssociahedron,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module

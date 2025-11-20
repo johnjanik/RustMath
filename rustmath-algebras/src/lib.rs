@@ -75,6 +75,7 @@ pub mod quantum_group_representations;
 pub mod steenrod_algebra;
 pub mod tensor_algebra;
 pub mod weyl_algebra;
+pub mod e_one_star;
 pub mod yangian;
 pub mod yokonuma_hecke_algebra;
 pub mod partition_algebra;
@@ -239,6 +240,8 @@ pub use yangian::{
 pub use yokonuma_hecke_algebra::{
     YokonumaHeckeAlgebra, YokonumaElement, YokonumaWord, YokonumaGenerator,
 };
+pub use e_one_star::{
+    E1Algebra, E1Element, E1Generator, E1Monomial, BiDegree,
 pub use diagram::{
     PartitionDiagram, BrauerDiagram, TemperleyLiebDiagram,
 };
