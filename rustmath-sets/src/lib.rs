@@ -1,26 +1,290 @@
 //! RustMath Sets Module
 //!
-//! This module provides set theory structures corresponding to SageMath's sage.sets module.
+//! This module provides set theory structures corresponding to SageMath's `sage.sets` module.
 //! It includes implementations for:
 //! - Cartesian products
 //! - Condition sets
-//! - Disjoint sets
+//! - Disjoint sets (union-find)
 //! - Families of sets
 //! - Finite enumerated sets
+//! - Finite set maps and functions
 //! - Integer ranges (with set operations)
 //! - Prime sets
 //! - Real sets
 //! - Set operations and utilities
+//!
+//! # Relationship to Rust's Standard Collections
+//!
+//! This crate provides mathematical set abstractions that complement Rust's standard collections:
+//!
+//! ## Rust's `std::collections`
+//!
+//! Rust provides several collection types that can represent sets:
+//! - **`HashSet<T>`**: Unordered set using hash table, O(1) average lookup/insert/remove
+//! - **`BTreeSet<T>`**: Ordered set using B-tree, O(log n) lookup/insert/remove
+//! - **`Vec<T>`**: Can represent sets when uniqueness is guaranteed
+//!
+//! These are optimized for performance and general-purpose use.
+//!
+//! ## RustMath Sets
+//!
+//! This crate extends Rust's collections with mathematical abstractions:
+//!
+//! - **Mathematical Operations**: Union, intersection, difference, complement, symmetric difference
+//!   with mathematical semantics rather than just data structure operations
+//!
+//! - **Infinite Sets**: Represent and reason about infinite sets like ℕ (natural numbers),
+//!   ℤ (integers), ℝ (real numbers), and primes
+//!
+//! - **Structured Sets**: Cartesian products, condition sets (sets defined by predicates),
+//!   integer ranges with steps (arithmetic progressions)
+//!
+//! - **Set Morphisms**: Functions between finite sets with properties like injectivity,
+//!   surjectivity, and bijectivity
+//!
+//! - **Algebraic Structures**: Integration with RustMath's algebraic traits (Ring, Field, etc.)
+//!   allowing sets to carry algebraic structure
+//!
+//! ## When to Use Each
+//!
+//! **Use `std::collections::{HashSet, BTreeSet}`** when:
+//! - You need fast membership testing, insertion, or removal
+//! - Working with concrete, finite sets
+//! - Performance is critical
+//! - You don't need mathematical operations beyond basic set operations
+//!
+//! **Use `rustmath-sets`** when:
+//! - You need mathematical set theory operations
+//! - Working with infinite sets or ranges
+//! - Need to represent sets symbolically (e.g., "all primes")
+//! - Require functions between sets with mathematical properties
+//! - Integration with other RustMath algebraic structures
+//!
+//! ## Interoperability
+//!
+//! You can easily convert between RustMath sets and standard collections:
+//!
+//! ```rust
+//! use std::collections::HashSet;
+//! use rustmath_sets::FiniteEnumeratedSet;
+//!
+//! // From Vec to HashSet
+//! let vec = vec![1, 2, 3, 2, 1];
+//! let hash_set: HashSet<_> = vec.iter().cloned().collect();
+//!
+//! // From FiniteEnumeratedSet to HashSet
+//! let enum_set = FiniteEnumeratedSet::new(vec![1, 2, 3, 4, 5]);
+//! let hash_set: HashSet<_> = enum_set.iter().cloned().collect();
+//!
+//! // From HashSet to FiniteEnumeratedSet
+//! let hash_set: HashSet<i32> = [1, 2, 3, 4, 5].iter().cloned().collect();
+//! let enum_set: FiniteEnumeratedSet<i32> = hash_set.into_iter().collect();
+//! ```
+//!
+//! # Set Theory Traits
+//!
+//! This crate defines traits for common set theory operations that can be implemented
+//! by various set-like structures. See the [`traits`] module for details.
 
 use std::collections::{HashMap, HashSet, BTreeSet};
 use std::hash::Hash;
 use std::fmt;
 
-// Export the new disjoint_set module with optimized implementations
+// Export the disjoint_set module with optimized union-find implementations
 pub mod disjoint_set;
 
-// Export the new integer_range module with generic set operations
+// Export the integer_range module with generic set operations
 pub mod integer_range;
+
+// Export the finite_set_maps module for functions between finite sets
+pub mod finite_set_maps;
+
+// ============================================================================
+// Set Theory Traits
+// ============================================================================
+
+/// Trait for sets that support membership testing.
+///
+/// This trait represents the fundamental operation of checking whether an element
+/// belongs to a set. It is the most basic property of any set-like structure.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_sets::Set;
+/// use std::collections::HashSet;
+///
+/// // HashSet implements this naturally
+/// let mut set = HashSet::new();
+/// set.insert(1);
+/// set.insert(2);
+/// set.insert(3);
+///
+/// assert!(set.contains(&1));
+/// assert!(!set.contains(&4));
+/// ```
+pub trait Set<T> {
+    /// Check if the set contains the given element.
+    fn contains(&self, element: &T) -> bool;
+
+    /// Check if this set is empty.
+    fn is_empty(&self) -> bool {
+        false // Default: most infinite sets override this
+    }
+}
+
+/// Trait for finite sets that can report their cardinality.
+///
+/// A finite set has a well-defined number of elements. This trait extends
+/// the basic `Set` trait with the ability to query the size of the set.
+pub trait FiniteSet<T>: Set<T> {
+    /// Get the number of elements in this set.
+    fn cardinality(&self) -> usize;
+
+    /// Check if this set is empty.
+    ///
+    /// Default implementation checks if cardinality is zero.
+    fn is_empty(&self) -> bool {
+        self.cardinality() == 0
+    }
+}
+
+/// Trait for enumerable sets that can iterate over their elements.
+///
+/// An enumerable set can produce all of its elements in sequence. This is
+/// only possible for finite sets or sets with a well-defined enumeration.
+pub trait EnumerableSet<T>: Set<T> {
+    /// The type of iterator over elements.
+    type Iter: Iterator<Item = T>;
+
+    /// Create an iterator over all elements in this set.
+    fn iter_elements(&self) -> Self::Iter;
+}
+
+/// Trait for sets that support standard set operations.
+///
+/// This trait provides the fundamental operations of set theory:
+/// union, intersection, and difference.
+pub trait SetOperations<T>: Set<T> + Sized {
+    /// Compute the union of this set with another set.
+    ///
+    /// The union A ∪ B contains all elements in either A or B.
+    fn union(&self, other: &Self) -> Self;
+
+    /// Compute the intersection of this set with another set.
+    ///
+    /// The intersection A ∩ B contains all elements in both A and B.
+    fn intersection(&self, other: &Self) -> Self;
+
+    /// Compute the set difference (relative complement).
+    ///
+    /// The difference A - B contains all elements in A but not in B.
+    fn difference(&self, other: &Self) -> Self;
+
+    /// Compute the symmetric difference.
+    ///
+    /// The symmetric difference A △ B = (A - B) ∪ (B - A) contains elements
+    /// in exactly one of the two sets.
+    fn symmetric_difference(&self, other: &Self) -> Self {
+        let a_minus_b = self.difference(other);
+        let b_minus_a = other.difference(self);
+        a_minus_b.union(&b_minus_a)
+    }
+
+    /// Check if this set is a subset of another set.
+    ///
+    /// A ⊆ B if every element of A is also in B.
+    fn is_subset(&self, _other: &Self) -> bool {
+        // Default implementation not provided as it requires iteration
+        unimplemented!("is_subset requires a concrete implementation")
+    }
+
+    /// Check if this set is a superset of another set.
+    ///
+    /// A ⊇ B if every element of B is also in A.
+    fn is_superset(&self, other: &Self) -> bool {
+        other.is_subset(self)
+    }
+
+    /// Check if this set is disjoint from another set.
+    ///
+    /// Two sets are disjoint if they have no elements in common.
+    fn is_disjoint(&self, other: &Self) -> bool {
+        self.intersection(other).is_empty()
+    }
+}
+
+/// Trait for sets with a defined complement operation.
+///
+/// This trait is for sets that exist within a universal set, allowing
+/// computation of the complement (all elements not in the set).
+pub trait ComplementableSet<T>: Set<T> + Sized {
+    /// The type representing the universal set.
+    type Universe;
+
+    /// Compute the complement of this set within the universal set.
+    ///
+    /// The complement Aᶜ contains all elements in the universe that are not in A.
+    fn complement(&self, universe: &Self::Universe) -> Self;
+}
+
+/// Trait for sets that can be constructed from iterators.
+///
+/// This allows easy construction of sets from various sources.
+pub trait FromElements<T>: Sized {
+    /// Create a set from an iterator of elements.
+    fn from_elements<I: IntoIterator<Item = T>>(iter: I) -> Self;
+}
+
+// Implement Set trait for standard collections
+impl<T: Eq + Hash> Set<T> for HashSet<T> {
+    fn contains(&self, element: &T) -> bool {
+        HashSet::contains(self, element)
+    }
+
+    fn is_empty(&self) -> bool {
+        HashSet::is_empty(self)
+    }
+}
+
+impl<T: Ord> Set<T> for BTreeSet<T> {
+    fn contains(&self, element: &T) -> bool {
+        BTreeSet::contains(self, element)
+    }
+
+    fn is_empty(&self) -> bool {
+        BTreeSet::is_empty(self)
+    }
+}
+
+impl<T: PartialEq> Set<T> for Vec<T> {
+    fn contains(&self, element: &T) -> bool {
+        self.iter().any(|x| x == element)
+    }
+
+    fn is_empty(&self) -> bool {
+        Vec::is_empty(self)
+    }
+}
+
+// Implement FiniteSet trait for standard collections
+impl<T: Eq + Hash> FiniteSet<T> for HashSet<T> {
+    fn cardinality(&self) -> usize {
+        self.len()
+    }
+}
+
+impl<T: Ord> FiniteSet<T> for BTreeSet<T> {
+    fn cardinality(&self) -> usize {
+        self.len()
+    }
+}
+
+impl<T: PartialEq> FiniteSet<T> for Vec<T> {
+    fn cardinality(&self) -> usize {
+        self.len()
+    }
+}
 
 // ============================================================================
 // Cartesian Product
@@ -894,6 +1158,116 @@ pub fn set_symmetric_difference<T: Eq + Hash + Clone>(a: &[T], b: &[T]) -> Vec<T
     let set_b: HashSet<T> = b.iter().cloned().collect();
 
     set_a.symmetric_difference(&set_b).cloned().collect()
+}
+
+// ============================================================================
+// Trait Implementations for RustMath Set Types
+// ============================================================================
+
+impl<T: PartialEq> Set<T> for FiniteEnumeratedSet<T> {
+    fn contains(&self, element: &T) -> bool {
+        self.contains(element)
+    }
+
+    fn is_empty(&self) -> bool {
+        self.is_empty()
+    }
+}
+
+impl<T: PartialEq> FiniteSet<T> for FiniteEnumeratedSet<T> {
+    fn cardinality(&self) -> usize {
+        self.cardinality()
+    }
+}
+
+impl<T> FromElements<T> for FiniteEnumeratedSet<T> {
+    fn from_elements<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        Self::new(iter.into_iter().collect())
+    }
+}
+
+// Implement Set trait for IntegerRange
+impl Set<i64> for IntegerRange {
+    fn contains(&self, element: &i64) -> bool {
+        self.contains(*element)
+    }
+
+    fn is_empty(&self) -> bool {
+        self.is_empty()
+    }
+}
+
+// Implement FiniteSet trait for finite IntegerRange only
+// Note: This is conditional on the range being finite
+impl FiniteSet<i64> for IntegerRange {
+    fn cardinality(&self) -> usize {
+        self.cardinality().expect("IntegerRange must be finite for cardinality")
+    }
+
+    fn is_empty(&self) -> bool {
+        self.is_empty()
+    }
+}
+
+// Implement Set trait for Primes
+impl Set<u64> for Primes {
+    fn contains(&self, element: &u64) -> bool {
+        Primes::contains(*element)
+    }
+
+    fn is_empty(&self) -> bool {
+        false // The set of primes is infinite
+    }
+}
+
+// Implement Set trait for PositiveIntegers
+impl Set<i64> for PositiveIntegers {
+    fn contains(&self, element: &i64) -> bool {
+        PositiveIntegers::contains(*element)
+    }
+
+    fn is_empty(&self) -> bool {
+        false // Infinite set
+    }
+}
+
+// Implement Set trait for NonNegativeIntegers
+impl Set<i64> for NonNegativeIntegers {
+    fn contains(&self, element: &i64) -> bool {
+        NonNegativeIntegers::contains(*element)
+    }
+
+    fn is_empty(&self) -> bool {
+        false // Infinite set
+    }
+}
+
+// Implement Set trait for RealSet
+impl Set<f64> for RealSet {
+    fn contains(&self, element: &f64) -> bool {
+        self.contains(*element)
+    }
+
+    fn is_empty(&self) -> bool {
+        self.is_empty()
+    }
+}
+
+// Implement Set trait for ConditionSet
+impl<T: PartialEq> Set<T> for ConditionSet<T> {
+    fn contains(&self, element: &T) -> bool {
+        self.contains(element)
+    }
+
+    fn is_empty(&self) -> bool {
+        self.cardinality() == 0
+    }
+}
+
+impl<T: PartialEq> FiniteSet<T> for ConditionSet<T> {
+    fn cardinality(&self) -> usize {
+        self.cardinality()
+    }
 }
 
 // ============================================================================
