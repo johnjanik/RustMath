@@ -7,12 +7,18 @@
 //! - Ribbon tableaux
 //! - Inner product on symmetric functions
 //! - Plethysm operations
+//! - Noncommutative Symmetric Functions (NCSF)
+//! - Quasi-Symmetric Functions (QSym)
 
 pub mod basis;
 pub mod kostka;
 pub mod ribbon;
 pub mod operations;
 pub mod plethysm;
+pub mod ncsf;
+pub mod qsym;
+pub mod fqsym;
+pub mod super_schur;
 
 pub use basis::{
     elementary_symmetric, monomial_symmetric, power_sum_symmetric, schur_function,
@@ -22,6 +28,41 @@ pub use kostka::{kostka_number, kostka_tableau_count};
 pub use operations::{inner_product, symmetric_product};
 pub use plethysm::plethysm;
 pub use ribbon::{is_ribbon_tableau, ribbon_tableaux, RibbonTableau};
+pub use fqsym::FQSym;
+pub use super_schur::{
+    evaluate_super_schur, is_classical_schur, super_dimension, super_schur_function,
+    SuperSchurCoefficient,
+};
+
+// NCSF exports
+pub use ncsf::{
+    NCSF, NCSFBasis,
+    complete as ncsf_complete,
+    elementary as ncsf_elementary,
+    ribbon as ncsf_ribbon,
+    monomial as ncsf_monomial,
+    phi as ncsf_phi,
+    psi as ncsf_psi,
+    product_complete as ncsf_product,
+    coproduct_complete as ncsf_coproduct,
+    antipode as ncsf_antipode,
+    concatenate,
+    composition_splits,
+    refines,
+};
+
+// QSym exports
+pub use qsym::{
+    QSym, QSymBasis,
+    monomial as qsym_monomial,
+    fundamental as qsym_fundamental,
+    product_monomial as qsym_product,
+    coproduct_monomial as qsym_coproduct,
+    antipode as qsym_antipode,
+    duality_pairing,
+    coarsenings,
+    refinements,
+};
 
 use rustmath_combinatorics::Partition;
 use rustmath_core::Ring;
