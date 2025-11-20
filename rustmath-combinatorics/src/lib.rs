@@ -7,6 +7,7 @@ pub mod affine_permutations;
 pub mod binary_words;
 pub mod combinations;
 pub mod composition;
+pub mod derangements;
 pub mod designs;
 pub mod dyck_word;
 pub mod enumeration;
@@ -76,6 +77,9 @@ pub use subset::{
 };
 pub use q_analogue::{
     gaussian_polynomial, q_binomial, q_binomial_eval, q_factorial, q_integer, q_multinomial,
+};
+pub use derangements::{
+    all_derangements, count_derangements, count_derangements_recurrence, is_derangement,
 };
 pub use superpartitions::{
     count_superpartitions, strict_superpartitions, superpartitions, superpartitions_with_k_parts,
