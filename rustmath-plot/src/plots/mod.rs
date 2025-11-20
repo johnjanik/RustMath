@@ -5,7 +5,7 @@
 //! - Data visualization: `list_plot()`, `scatter_plot()`
 //! - Contour and density plots: `contour_plot()`, `density_plot()`
 //! - Statistical plots: `histogram()`, `bar_chart()`
-//! - Specialized plots: `matrix_plot()`
+//! - Specialized plots: `matrix_plot()`, `implicit_plot()`
 //!
 //! Based on SageMath's sage.plot module.
 
@@ -18,6 +18,7 @@ mod density_plot;
 mod histogram;
 mod bar_chart;
 mod matrix_plot;
+mod implicit_plot;
 
 // Re-export all plot functions
 pub use plot::plot;
@@ -29,3 +30,4 @@ pub use density_plot::density_plot;
 pub use histogram::histogram;
 pub use bar_chart::bar_chart;
 pub use matrix_plot::matrix_plot;
+pub use implicit_plot::{implicit_plot, implicit_plot_multiple};
