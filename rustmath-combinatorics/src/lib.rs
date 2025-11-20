@@ -4,6 +4,7 @@
 //! partitions, and algorithms for generating and manipulating them.
 
 pub mod affine_permutations;
+pub mod alternating_sign_matrix;
 pub mod binary_words;
 pub mod combinations;
 pub mod composition;
@@ -11,8 +12,10 @@ pub mod derangements;
 pub mod designs;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod fully_packed_loop;
 pub mod integer_vectors;
 pub mod integer_matrices;
+pub mod multiset_partition_into_sets_ordered;
 pub mod ordered_tree;
 pub mod partitions;
 pub mod perfect_matching;
@@ -27,6 +30,7 @@ pub mod restricted_growth;
 pub mod set_partition;
 pub mod set_system;
 pub mod sidon_sets;
+pub mod six_vertex_model;
 pub mod skew_partition;
 pub mod species;
 pub mod subset;
@@ -117,10 +121,25 @@ pub use integer_vectors::{
     count_integer_vectors_in_box, count_integer_vectors_with_sum, integer_vector_sum_iter,
     integer_vectors_in_box, integer_vectors_with_l1_norm_bounded, integer_vectors_with_sum,
     integer_vectors_with_weighted_sum, IntegerVector, IntegerVectorSumIter,
+};
 pub use vector_partition::{
     count_vector_partitions_exact_parts, count_vector_partitions_max_parts,
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
     vector_partitions_with_max_part, VectorPartition,
+};
+pub use alternating_sign_matrix::{
+    all_asms, asm_count, asm_count_by_inversions, asm_q_enumeration, razumov_stroganov_polynomial,
+    razumov_stroganov_refined_count, AlternatingSignMatrix,
+};
+pub use fully_packed_loop::{
+    all_asms as all_fpls, count_asms, AlternatingSignMatrix as FPLAlternatingSignMatrix,
+    FullyPackedLoop, LinkPattern,
+};
+pub use six_vertex_model::{
+    all_dwbc_configurations, count_dwbc_configurations, from_asm as six_vertex_from_asm,
+    partition_function as six_vertex_partition_function,
+    weighted_partition_function as six_vertex_weighted_partition_function, SixVertexConfiguration,
+    VertexType,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
