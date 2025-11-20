@@ -12,5 +12,8 @@ rustmath-integers = { path = "../rustmath-integers" }
 rustmath-rationals = { path = "../rustmath-rationals" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
 rustmath-matrix = { path = "../rustmath-matrix" }
+rustmath-ellipticcurves = { path = "../rustmath-ellipticcurves" }
+rustmath-finitefields = { path = "../rustmath-finitefields" }
 num-bigint.workspace = true
 num-traits.workspace = true
+num-rational.workspace = true
