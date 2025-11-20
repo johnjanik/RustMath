@@ -7,6 +7,7 @@ pub mod affine_permutations;
 pub mod binary_words;
 pub mod combinations;
 pub mod composition;
+pub mod composition_tableau;
 pub mod derangements;
 pub mod designs;
 pub mod dyck_word;
@@ -57,6 +58,9 @@ pub use binary_words::{all_binary_words, binary_words_with_weight, lyndon_words,
 pub use composition::{
     compositions, compositions_k, signed_compositions, signed_compositions_k, Composition,
     SignedComposition,
+};
+pub use composition_tableau::{
+    count_tableaux_with_descent_set, standard_composition_tableaux, CompositionTableau,
 };
 pub use designs::{
     are_latin_squares_orthogonal, mutually_orthogonal_latin_squares, BlockDesign,
