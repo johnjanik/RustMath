@@ -69,6 +69,7 @@ pub mod tensor_algebra;
 pub mod weyl_algebra;
 pub mod yangian;
 pub mod yokonuma_hecke_algebra;
+pub mod partition_algebra;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -219,6 +220,9 @@ pub use yangian::{
 };
 pub use yokonuma_hecke_algebra::{
     YokonumaHeckeAlgebra, YokonumaElement, YokonumaWord, YokonumaGenerator,
+};
+pub use partition_algebra::{
+    PartitionAlgebra, PartitionAlgebraElement, PartitionDiagram,
 };
 
 #[cfg(test)]
