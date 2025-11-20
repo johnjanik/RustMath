@@ -10,6 +10,8 @@ repository.workspace = true
 rustmath-core = { path = "../rustmath-core" }
 rustmath-integers = { path = "../rustmath-integers" }
 rustmath-rationals = { path = "../rustmath-rationals" }
+rustmath-finitefields = { path = "../rustmath-finitefields" }
+rustmath-padics = { path = "../rustmath-padics" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
 rustmath-matrix = { path = "../rustmath-matrix" }
 num-bigint.workspace = true
