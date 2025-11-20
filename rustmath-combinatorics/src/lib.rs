@@ -53,6 +53,8 @@ pub mod permutations;
 pub mod plane_partition;
 pub mod parallelogram_polyomino;
 pub mod permutation_simd;
+pub mod pipe_dream;
+pub mod plane_partition;
 pub mod posets;
 pub mod q_analogue;
 pub mod ranking;
@@ -71,6 +73,7 @@ pub mod skew_partition;
 pub mod specht_module;
 pub mod species;
 pub mod subset;
+pub mod subword_complex;
 pub mod superpartitions;
 pub mod symmetric_group_representations;
 pub mod super_tableaux;
@@ -169,10 +172,8 @@ pub use integer_matrices::{
     count_integer_matrices, integer_matrices, integer_matrices_bounded, IntegerMatrix,
 };
 pub use perfect_matching::{perfect_matchings, PerfectMatching};
-pub use ranking::{
-    BinaryTreeRank, CombinationRank, GraphRank, PermutationRank, Rankable, RankingTable,
-    RootedTreeRank,
-};
+pub use pipe_dream::{PipeDream, PipeDreamBuilder};
+pub use ranking::{CombinationRank, PermutationRank, Rankable, RankingTable};
 pub use recurrence_sequences::{
     solve_binary_recurrence, BinaryRecurrence, LinearRecurrence, RecurrenceSequence,
 };
@@ -201,6 +202,7 @@ pub use subset::{
     pairwise_disjoint_k_subsets, subset_iterator, KSubsetIterator,
     PairwiseDisjointFamilyIterator, Subset, SubsetIterator,
 };
+pub use subword_complex::{ReducedWord, SubwordComplex};
 pub use q_analogue::{
     gaussian_polynomial, q_binomial, q_binomial_eval, q_factorial, q_integer, q_multinomial,
 };
