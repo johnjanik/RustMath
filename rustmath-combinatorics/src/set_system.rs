@@ -258,7 +258,7 @@ impl SetSystem {
         let mut shadow_sets = HashSet::new();
 
         for set in &self.sets {
-            // Generate all subsets
+            // Generate all subsets (including empty set)
             let n = set.len();
             for mask in 0..(1 << n) {
                 let subset: Vec<usize> = set
@@ -268,9 +268,7 @@ impl SetSystem {
                     .map(|(_, &x)| x)
                     .collect();
 
-                if !subset.is_empty() {
-                    shadow_sets.insert(subset);
-                }
+                shadow_sets.insert(subset);
             }
         }
 
@@ -304,6 +302,172 @@ impl SetSystem {
                 }
                 superset.sort();
                 shade_sets.insert(superset);
+            }
+        }
+
+        let sets: Vec<_> = shade_sets.into_iter().collect();
+        SetSystem::from_sets(self.n, sets).unwrap()
+    }
+
+    /// Check if the set system is hereditary (downward-closed)
+    ///
+    /// A set system is hereditary if whenever a set S is in the system,
+    /// all subsets of S are also in the system. This is also called a
+    /// downward-closed set system or an order ideal.
+    ///
+    /// # Example
+    /// ```
+    /// use rustmath_combinatorics::SetSystem;
+    ///
+    /// // {}, {0}, {1}, {0,1} is hereditary (all subsets of {0,1})
+    /// let hereditary = SetSystem::from_sets(2, vec![
+    ///     vec![],
+    ///     vec![0],
+    ///     vec![1],
+    ///     vec![0, 1]
+    /// ]).unwrap();
+    /// assert!(hereditary.is_hereditary());
+    ///
+    /// // {0,1} without {0} is not hereditary
+    /// let not_hereditary = SetSystem::from_sets(2, vec![vec![0, 1]]).unwrap();
+    /// assert!(!not_hereditary.is_hereditary());
+    /// ```
+    pub fn is_hereditary(&self) -> bool {
+        // A system is hereditary iff it equals its shadow
+        let shadow = self.shadow();
+
+        // Check that all sets in shadow are in this system
+        for set in &shadow.sets {
+            if !self.contains(set) {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    /// Compute the hereditary closure (downward closure)
+    ///
+    /// Returns the smallest hereditary set system containing all sets in this system.
+    /// This is equivalent to the shadow operation, but makes the intent clearer.
+    ///
+    /// # Example
+    /// ```
+    /// use rustmath_combinatorics::SetSystem;
+    ///
+    /// let sys = SetSystem::from_sets(3, vec![vec![0, 1, 2]]).unwrap();
+    /// let closure = sys.hereditary_closure();
+    ///
+    /// // Should contain all subsets of {0,1,2}
+    /// assert!(closure.contains(&[]));
+    /// assert!(closure.contains(&[0]));
+    /// assert!(closure.contains(&[1]));
+    /// assert!(closure.contains(&[2]));
+    /// assert!(closure.contains(&[0, 1]));
+    /// assert!(closure.contains(&[0, 2]));
+    /// assert!(closure.contains(&[1, 2]));
+    /// assert!(closure.contains(&[0, 1, 2]));
+    /// assert!(closure.is_hereditary());
+    /// ```
+    pub fn hereditary_closure(&self) -> SetSystem {
+        self.shadow()
+    }
+
+    /// Compute the k-shadow of the set system
+    ///
+    /// The k-shadow consists of all k-element subsets that can be obtained
+    /// by removing one element from a (k+1)-element set in the system.
+    ///
+    /// For a uniform system of (k+1)-sets, this gives all k-sets that are
+    /// "covered" by the system.
+    ///
+    /// # Example
+    /// ```
+    /// use rustmath_combinatorics::SetSystem;
+    ///
+    /// // System of 3-sets
+    /// let sys = SetSystem::from_sets(4, vec![
+    ///     vec![0, 1, 2],
+    ///     vec![0, 1, 3]
+    /// ]).unwrap();
+    ///
+    /// let shadow_2 = sys.k_shadow(2);
+    /// // Should contain {0,1}, {0,2}, {1,2}, {0,3}, {1,3}
+    /// assert!(shadow_2.contains(&[0, 1]));
+    /// assert!(shadow_2.contains(&[0, 2]));
+    /// assert!(shadow_2.contains(&[1, 2]));
+    /// assert!(shadow_2.contains(&[0, 3]));
+    /// assert!(shadow_2.contains(&[1, 3]));
+    /// ```
+    pub fn k_shadow(&self, k: usize) -> SetSystem {
+        let mut shadow_sets = HashSet::new();
+
+        for set in &self.sets {
+            // Only consider sets of size k+1
+            if set.len() != k + 1 {
+                continue;
+            }
+
+            // Generate all k-subsets of this (k+1)-set
+            for i in 0..set.len() {
+                let mut subset = Vec::new();
+                for (j, &elem) in set.iter().enumerate() {
+                    if j != i {
+                        subset.push(elem);
+                    }
+                }
+                shadow_sets.insert(subset);
+            }
+        }
+
+        let sets: Vec<_> = shadow_sets.into_iter().collect();
+        SetSystem::from_sets(self.n, sets).unwrap()
+    }
+
+    /// Compute the k-shade of the set system
+    ///
+    /// The k-shade consists of all k-element supersets that can be obtained
+    /// by adding one element from the ground set to a (k-1)-element set in the system.
+    ///
+    /// For a uniform system of (k-1)-sets, this gives all k-sets that
+    /// "cover" sets in the system.
+    ///
+    /// # Example
+    /// ```
+    /// use rustmath_combinatorics::SetSystem;
+    ///
+    /// // System of 2-sets
+    /// let sys = SetSystem::from_sets(4, vec![
+    ///     vec![0, 1],
+    ///     vec![0, 2]
+    /// ]).unwrap();
+    ///
+    /// let shade_3 = sys.k_shade(3);
+    /// // Should contain all 3-sets containing {0,1} or {0,2}
+    /// assert!(shade_3.contains(&[0, 1, 2]));
+    /// assert!(shade_3.contains(&[0, 1, 3]));
+    /// assert!(shade_3.contains(&[0, 2, 3]));
+    /// ```
+    pub fn k_shade(&self, k: usize) -> SetSystem {
+        let mut shade_sets = HashSet::new();
+        let ground_set: Vec<usize> = (0..self.n).collect();
+
+        for set in &self.sets {
+            // Only consider sets of size k-1
+            if set.len() != k - 1 {
+                continue;
+            }
+
+            let set_hash: HashSet<_> = set.iter().copied().collect();
+
+            // Add each possible element from ground set
+            for &elem in &ground_set {
+                if !set_hash.contains(&elem) {
+                    let mut superset = set.clone();
+                    superset.push(elem);
+                    superset.sort();
+                    shade_sets.insert(superset);
+                }
             }
         }
 
@@ -546,5 +710,224 @@ mod tests {
         )
         .unwrap();
         assert_eq!(sys3.vc_dimension(), 2);
+    }
+
+    #[test]
+    fn test_is_hereditary() {
+        // Empty system is hereditary
+        let empty = SetSystem::new(3);
+        assert!(empty.is_hereditary());
+
+        // All subsets of {0,1} - this is hereditary
+        let hereditary = SetSystem::from_sets(
+            2,
+            vec![vec![], vec![0], vec![1], vec![0, 1]],
+        )
+        .unwrap();
+        assert!(hereditary.is_hereditary());
+
+        // Just {0,1} without its subsets - not hereditary
+        let not_hereditary = SetSystem::from_sets(2, vec![vec![0, 1]]).unwrap();
+        assert!(!not_hereditary.is_hereditary());
+
+        // {0}, {1}, {0,1} without empty set - not hereditary
+        let missing_empty = SetSystem::from_sets(2, vec![vec![0], vec![1], vec![0, 1]]).unwrap();
+        assert!(!missing_empty.is_hereditary());
+
+        // {}, {0}, {1} without {0,1} - this IS hereditary (downward-closed)
+        let partial = SetSystem::from_sets(2, vec![vec![], vec![0], vec![1]]).unwrap();
+        assert!(partial.is_hereditary());
+
+        // System with multiple maximal sets - all subsets of {0,1,2}
+        let multi_max = SetSystem::from_sets(
+            4,
+            vec![
+                vec![],
+                vec![0],
+                vec![1],
+                vec![2],
+                vec![0, 1],
+                vec![0, 2],
+                vec![1, 2],
+                vec![0, 1, 2],
+            ],
+        )
+        .unwrap();
+        assert!(multi_max.is_hereditary());
+
+        // Missing a subset in the middle
+        let missing_middle = SetSystem::from_sets(
+            3,
+            vec![
+                vec![],
+                vec![0],
+                vec![1],
+                vec![2],
+                vec![0, 1],
+                // Missing {0,2} and {1,2}
+                vec![0, 1, 2],
+            ],
+        )
+        .unwrap();
+        assert!(!missing_middle.is_hereditary());
+    }
+
+    #[test]
+    fn test_hereditary_closure() {
+        // Closure of single 3-set should give all 2^3 = 8 subsets
+        let sys = SetSystem::from_sets(3, vec![vec![0, 1, 2]]).unwrap();
+        let closure = sys.hereditary_closure();
+
+        assert_eq!(closure.num_sets(), 8);
+        assert!(closure.contains(&[]));
+        assert!(closure.contains(&[0]));
+        assert!(closure.contains(&[1]));
+        assert!(closure.contains(&[2]));
+        assert!(closure.contains(&[0, 1]));
+        assert!(closure.contains(&[0, 2]));
+        assert!(closure.contains(&[1, 2]));
+        assert!(closure.contains(&[0, 1, 2]));
+        assert!(closure.is_hereditary());
+
+        // Closure of two disjoint 2-sets
+        let sys2 = SetSystem::from_sets(4, vec![vec![0, 1], vec![2, 3]]).unwrap();
+        let closure2 = sys2.hereditary_closure();
+
+        // Should have: {}, {0}, {1}, {2}, {3}, {0,1}, {2,3}
+        assert_eq!(closure2.num_sets(), 7);
+        assert!(closure2.is_hereditary());
+
+        // Closure of already hereditary system should be itself
+        let already_hereditary = SetSystem::from_sets(
+            2,
+            vec![vec![], vec![0], vec![1], vec![0, 1]],
+        )
+        .unwrap();
+        let closure3 = already_hereditary.hereditary_closure();
+        assert_eq!(closure3.num_sets(), 4);
+    }
+
+    #[test]
+    fn test_k_shadow() {
+        // Shadow of 3-sets
+        let sys = SetSystem::from_sets(
+            4,
+            vec![vec![0, 1, 2], vec![0, 1, 3]],
+        )
+        .unwrap();
+
+        let shadow_2 = sys.k_shadow(2);
+
+        // {0,1,2} gives {0,1}, {0,2}, {1,2}
+        // {0,1,3} gives {0,1}, {0,3}, {1,3}
+        // Combined: {0,1}, {0,2}, {1,2}, {0,3}, {1,3}
+        assert_eq!(shadow_2.num_sets(), 5);
+        assert!(shadow_2.contains(&[0, 1]));
+        assert!(shadow_2.contains(&[0, 2]));
+        assert!(shadow_2.contains(&[1, 2]));
+        assert!(shadow_2.contains(&[0, 3]));
+        assert!(shadow_2.contains(&[1, 3]));
+
+        // k-shadow of k-sets should be empty (no k+1 sets to shadow from)
+        let shadow_same = sys.k_shadow(3);
+        assert_eq!(shadow_same.num_sets(), 0);
+
+        // Shadow of single 4-set
+        let sys2 = SetSystem::from_sets(4, vec![vec![0, 1, 2, 3]]).unwrap();
+        let shadow_3 = sys2.k_shadow(3);
+        assert_eq!(shadow_3.num_sets(), 4); // All 3-subsets of {0,1,2,3}
+    }
+
+    #[test]
+    fn test_k_shade() {
+        // Shade of 2-sets
+        let sys = SetSystem::from_sets(
+            4,
+            vec![vec![0, 1], vec![0, 2]],
+        )
+        .unwrap();
+
+        let shade_3 = sys.k_shade(3);
+
+        // {0,1} can be extended to {0,1,2}, {0,1,3}
+        // {0,2} can be extended to {0,1,2}, {0,2,3}
+        // Combined: {0,1,2}, {0,1,3}, {0,2,3}
+        assert_eq!(shade_3.num_sets(), 3);
+        assert!(shade_3.contains(&[0, 1, 2]));
+        assert!(shade_3.contains(&[0, 1, 3]));
+        assert!(shade_3.contains(&[0, 2, 3]));
+
+        // k-shade of k-sets should be empty (need k-1 sets to shade from)
+        let shade_same = sys.k_shade(2);
+        assert_eq!(shade_same.num_sets(), 0);
+
+        // Shade of single empty set (0-set)
+        let sys2 = SetSystem::from_sets(3, vec![vec![]]).unwrap();
+        let shade_1 = sys2.k_shade(1);
+        assert_eq!(shade_1.num_sets(), 3); // All singletons {0}, {1}, {2}
+        assert!(shade_1.contains(&[0]));
+        assert!(shade_1.contains(&[1]));
+        assert!(shade_1.contains(&[2]));
+    }
+
+    #[test]
+    fn test_shadow_shade_relationship() {
+        // For a uniform k-system, k_shadow gives (k-1)-sets
+        let sys = SetSystem::from_sets(
+            5,
+            vec![
+                vec![0, 1, 2],
+                vec![0, 1, 3],
+                vec![0, 2, 3],
+            ],
+        )
+        .unwrap();
+
+        let shadow = sys.k_shadow(2);
+        let shade_back = shadow.k_shade(3);
+
+        // The shade of the shadow should contain at least the original sets
+        for set in sys.sets() {
+            assert!(shade_back.contains(set));
+        }
+    }
+
+    #[test]
+    fn test_hereditary_edge_cases() {
+        // Single element ground set
+        let sys1 = SetSystem::from_sets(1, vec![vec![], vec![0]]).unwrap();
+        assert!(sys1.is_hereditary());
+
+        let sys2 = SetSystem::from_sets(1, vec![vec![0]]).unwrap();
+        assert!(!sys2.is_hereditary()); // Missing empty set
+
+        // Just empty set is hereditary
+        let sys3 = SetSystem::from_sets(5, vec![vec![]]).unwrap();
+        assert!(sys3.is_hereditary());
+
+        // Empty system is hereditary (vacuously true)
+        let sys4 = SetSystem::new(5);
+        assert!(sys4.is_hereditary());
+    }
+
+    #[test]
+    fn test_k_shadow_shade_edge_cases() {
+        // Empty system
+        let empty = SetSystem::new(3);
+        let shadow = empty.k_shadow(2);
+        assert_eq!(shadow.num_sets(), 0);
+        let shade = empty.k_shade(2);
+        assert_eq!(shade.num_sets(), 0);
+
+        // Single empty set
+        let single_empty = SetSystem::from_sets(3, vec![vec![]]).unwrap();
+        let shadow = single_empty.k_shadow(0);
+        assert_eq!(shadow.num_sets(), 0); // No 1-sets to shadow from
+
+        // k-shadow with k=0 (should find all empty sets from 1-sets)
+        let singletons = SetSystem::from_sets(3, vec![vec![0], vec![1]]).unwrap();
+        let shadow_0 = singletons.k_shadow(0);
+        assert_eq!(shadow_0.num_sets(), 1); // Just the empty set
+        assert!(shadow_0.contains(&[]));
     }
 }
