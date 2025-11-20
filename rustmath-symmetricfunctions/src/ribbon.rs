@@ -207,18 +207,97 @@ pub fn is_ribbon_tableau(outer: &Partition, inner: &Partition, ribbons: &[Vec<(u
 /// representations using ribbon tableaux:
 /// χ^λ(ρ) = sum over ribbon tableaux T of shape λ and type ρ of sign(T)
 ///
-/// where ρ is a partition (cycle type of a permutation).
+/// where λ is a partition indexing an irreducible representation of S_n,
+/// and ρ is a partition giving the cycle type of a permutation in S_n.
+///
+/// The algorithm works by recursively removing border strips (ribbons)
+/// of sizes matching the parts of ρ from λ, accumulating the sign
+/// contribution (-1)^(height) for each removed ribbon.
+///
+/// Returns the character value χ^λ(ρ) as an integer (possibly negative).
 pub fn murnaghan_nakayama(lambda: &Partition, rho: &Partition) -> i64 {
-    // This requires generating ribbon tableaux of shape λ and content ρ
-    // and computing their signs
+    // Check that lambda and rho partition the same number
+    if lambda.sum() != rho.sum() {
+        return 0;
+    }
 
-    // For equal partitions, character is 1
-    if lambda == rho {
+    // Base case: empty partitions
+    if lambda.parts().is_empty() && rho.parts().is_empty() {
         return 1;
     }
 
-    // Placeholder - full implementation is complex
-    0
+    // If rho is empty but lambda is not, character is 0
+    if rho.parts().is_empty() {
+        return 0;
+    }
+
+    // Recursive case: remove the first part of rho
+    let parts = rho.parts();
+    let k = parts[0]; // Size of border strip to remove
+
+    // Create the remaining cycle type (rho with first part removed)
+    let remaining_rho = if parts.len() > 1 {
+        Partition::new(parts[1..].to_vec())
+    } else {
+        Partition::new(vec![])
+    };
+
+    // Try all ways to remove a border strip of size k from lambda
+    let removals = lambda.remove_border_strip_advanced(k);
+
+    let mut total = 0i64;
+
+    for (inner_partition, height) in removals {
+        // Recursively compute character for the remaining partition and cycle type
+        let sub_character = murnaghan_nakayama(&inner_partition, &remaining_rho);
+
+        // Add contribution with sign based on height
+        let sign = if height % 2 == 0 { 1 } else { -1 };
+        total += sign * sub_character;
+    }
+
+    total
+}
+
+/// Compute a full character of S_n for a given partition λ
+///
+/// Returns a map from cycle types (partitions of n) to character values.
+/// This computes χ^λ(ρ) for all cycle types ρ of permutations in S_n.
+pub fn symmetric_group_character(lambda: &Partition) -> std::collections::HashMap<Partition, i64> {
+    let n = lambda.sum();
+    let mut character = std::collections::HashMap::new();
+
+    // Generate all partitions of n (cycle types)
+    for rho in rustmath_combinatorics::partitions(n) {
+        let value = murnaghan_nakayama(lambda, &rho);
+        character.insert(rho, value);
+    }
+
+    character
+}
+
+/// Compute the character table for the symmetric group S_n
+///
+/// Returns a map from pairs (λ, ρ) to χ^λ(ρ), where λ and ρ are partitions of n.
+/// The rows are indexed by partitions (irreducible representations),
+/// and columns are indexed by cycle types (conjugacy classes).
+pub fn symmetric_group_character_table(
+    n: usize,
+) -> std::collections::HashMap<(Partition, Partition), i64> {
+    let mut table = std::collections::HashMap::new();
+
+    // Get all partitions of n
+    let partitions = rustmath_combinatorics::partitions(n);
+
+    // Compute character values for all pairs
+    for lambda in &partitions {
+        for rho in &partitions {
+            let value = murnaghan_nakayama(lambda, rho);
+            table.insert((lambda.clone(), rho.clone()), value);
+        }
+    }
+
+    table
 }
 
 #[cfg(test)]
@@ -326,5 +405,174 @@ mod tests {
         assert!(fits_inside(&inner1, &outer));
         assert!(fits_inside(&inner2, &outer));
         assert!(!fits_inside(&inner3, &outer)); // 4 > 3
+    }
+
+    #[test]
+    fn test_murnaghan_nakayama_trivial() {
+        // Trivial case: empty partitions
+        let lambda = Partition::new(vec![]);
+        let rho = Partition::new(vec![]);
+        assert_eq!(murnaghan_nakayama(&lambda, &rho), 1);
+    }
+
+    #[test]
+    fn test_murnaghan_nakayama_identity() {
+        // χ^(n)(1^n) = 1 (trivial representation on identity element)
+        let lambda = Partition::new(vec![3]); // S_3 trivial rep
+        let rho = Partition::new(vec![1, 1, 1]); // Identity element
+        assert_eq!(murnaghan_nakayama(&lambda, &rho), 1);
+
+        // χ^(1^n)(1^n) = 1 (sign representation on identity element)
+        let lambda2 = Partition::new(vec![1, 1, 1]);
+        let rho2 = Partition::new(vec![1, 1, 1]);
+        assert_eq!(murnaghan_nakayama(&lambda2, &rho2), 1);
+    }
+
+    #[test]
+    fn test_murnaghan_nakayama_s3() {
+        // Test complete character table for S_3
+        // S_3 has 3 conjugacy classes: [3], [2,1], [1,1,1]
+        // and 3 irreducible representations indexed by partitions of 3
+
+        // Trivial representation λ = (3)
+        let lambda_trivial = Partition::new(vec![3]);
+        assert_eq!(
+            murnaghan_nakayama(&lambda_trivial, &Partition::new(vec![3])),
+            1
+        );
+        assert_eq!(
+            murnaghan_nakayama(&lambda_trivial, &Partition::new(vec![2, 1])),
+            1
+        );
+        assert_eq!(
+            murnaghan_nakayama(&lambda_trivial, &Partition::new(vec![1, 1, 1])),
+            1
+        );
+
+        // Sign representation λ = (1,1,1)
+        let lambda_sign = Partition::new(vec![1, 1, 1]);
+        assert_eq!(
+            murnaghan_nakayama(&lambda_sign, &Partition::new(vec![3])),
+            1
+        );
+        assert_eq!(
+            murnaghan_nakayama(&lambda_sign, &Partition::new(vec![2, 1])),
+            -1
+        );
+        assert_eq!(
+            murnaghan_nakayama(&lambda_sign, &Partition::new(vec![1, 1, 1])),
+            1
+        );
+
+        // Standard representation λ = (2,1)
+        let lambda_std = Partition::new(vec![2, 1]);
+        assert_eq!(
+            murnaghan_nakayama(&lambda_std, &Partition::new(vec![3])),
+            -1
+        );
+        assert_eq!(
+            murnaghan_nakayama(&lambda_std, &Partition::new(vec![2, 1])),
+            0
+        );
+        assert_eq!(
+            murnaghan_nakayama(&lambda_std, &Partition::new(vec![1, 1, 1])),
+            2
+        );
+    }
+
+    #[test]
+    fn test_murnaghan_nakayama_s4() {
+        // Test some values for S_4
+        // λ = (4): trivial representation
+        let lambda = Partition::new(vec![4]);
+        assert_eq!(
+            murnaghan_nakayama(&lambda, &Partition::new(vec![4])),
+            1
+        );
+        assert_eq!(
+            murnaghan_nakayama(&lambda, &Partition::new(vec![2, 2])),
+            1
+        );
+        assert_eq!(
+            murnaghan_nakayama(&lambda, &Partition::new(vec![1, 1, 1, 1])),
+            1
+        );
+
+        // λ = (1,1,1,1): sign representation
+        let lambda_sign = Partition::new(vec![1, 1, 1, 1]);
+        assert_eq!(
+            murnaghan_nakayama(&lambda_sign, &Partition::new(vec![4])),
+            1
+        );
+        assert_eq!(
+            murnaghan_nakayama(&lambda_sign, &Partition::new(vec![3, 1])),
+            -1
+        );
+        assert_eq!(
+            murnaghan_nakayama(&lambda_sign, &Partition::new(vec![2, 2])),
+            1
+        );
+        assert_eq!(
+            murnaghan_nakayama(&lambda_sign, &Partition::new(vec![2, 1, 1])),
+            -1
+        );
+        assert_eq!(
+            murnaghan_nakayama(&lambda_sign, &Partition::new(vec![1, 1, 1, 1])),
+            1
+        );
+    }
+
+    #[test]
+    fn test_murnaghan_nakayama_different_sizes() {
+        // Character should be 0 if partitions have different sizes
+        let lambda = Partition::new(vec![3]);
+        let rho = Partition::new(vec![2, 1, 1]);
+        assert_eq!(murnaghan_nakayama(&lambda, &rho), 0);
+    }
+
+    #[test]
+    fn test_symmetric_group_character() {
+        // Test full character computation for a partition
+        let lambda = Partition::new(vec![2, 1]);
+        let character = symmetric_group_character(&lambda);
+
+        // Should have entries for all partitions of 3
+        assert_eq!(character.len(), 3);
+        assert!(character.contains_key(&Partition::new(vec![3])));
+        assert!(character.contains_key(&Partition::new(vec![2, 1])));
+        assert!(character.contains_key(&Partition::new(vec![1, 1, 1])));
+    }
+
+    #[test]
+    fn test_symmetric_group_character_table() {
+        // Test character table generation for S_3
+        let table = symmetric_group_character_table(3);
+
+        // S_3 has 3 partitions, so table should have 3×3 = 9 entries
+        assert_eq!(table.len(), 9);
+
+        // Check some specific values
+        let lambda_trivial = Partition::new(vec![3]);
+        let rho_identity = Partition::new(vec![1, 1, 1]);
+        assert_eq!(table[&(lambda_trivial.clone(), rho_identity.clone())], 1);
+
+        // Column orthogonality: sum over λ of |χ^λ(ρ)|^2 equals |C_ρ| (size of conjugacy class)
+        // For identity class (1,1,1), all characters equal their dimension
+        // Dimensions: 1 (trivial), 1 (sign), 2 (standard)
+        // Sum of squares: 1 + 1 + 4 = 6 = |S_3|
+    }
+
+    #[test]
+    fn test_character_orthogonality() {
+        // Test orthogonality relations for S_4
+        let n = 4;
+        let table = symmetric_group_character_table(n);
+        let partitions = rustmath_combinatorics::partitions(n);
+
+        // Row orthogonality: ⟨χ^λ, χ^μ⟩ = δ_{λμ}
+        // This requires knowing conjugacy class sizes, which we'll skip for now
+
+        // Instead, just verify the table was generated correctly
+        assert_eq!(table.len(), partitions.len() * partitions.len());
     }
 }

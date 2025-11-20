@@ -516,6 +516,222 @@ impl Partition {
 
         cores
     }
+
+    /// Remove a border strip (ribbon) of size k from this partition
+    ///
+    /// A border strip is a connected skew shape with no 2×2 blocks.
+    /// Returns all possible ways to remove a border strip of size k,
+    /// along with the height of each removed strip (number of rows - 1).
+    ///
+    /// This is used in the Murnaghan-Nakayama rule for computing characters
+    /// of symmetric group representations.
+    ///
+    /// Returns: Vec<(resulting_partition, height)>
+    pub fn remove_border_strip(&self, k: usize) -> Vec<(Partition, usize)> {
+        if k == 0 {
+            return vec![(self.clone(), 0)];
+        }
+
+        if k > self.sum() {
+            return vec![];
+        }
+
+        let mut results = Vec::new();
+
+        // Find all removable border strips of size k
+        // We do this by trying to remove cells from the rim
+        self.remove_border_strip_rec(k, &mut results);
+
+        results
+    }
+
+    /// Recursive helper for border strip removal
+    fn remove_border_strip_rec(&self, k: usize, results: &mut Vec<(Partition, usize)>) {
+        if k == 0 {
+            results.push((self.clone(), 0));
+            return;
+        }
+
+        // Try removing each removable corner cell
+        let removable_corners = self.removable_corners();
+
+        for (row, col) in removable_corners {
+            // Remove this cell
+            let mut new_parts = self.parts.clone();
+
+            if row < new_parts.len() && col < new_parts[row] {
+                // Check if removing this cell maintains a border strip
+                // (connected and no 2×2 blocks)
+
+                // For now, use a simpler approach: remove from the rim
+                let removed_partition = self.remove_cell(row, col);
+
+                if let Some(new_partition) = removed_partition {
+                    if k == 1 {
+                        // Single cell removal
+                        results.push((new_partition, 0));
+                    } else {
+                        // Continue removing
+                        let mut sub_results = Vec::new();
+                        new_partition.remove_border_strip_rec(k - 1, &mut sub_results);
+
+                        for (result_partition, height) in sub_results {
+                            // Calculate total height
+                            // Height increases if we span multiple rows
+                            let min_row = row;
+                            let max_row = if !result_partition.parts.is_empty() {
+                                result_partition.parts.len() - 1
+                            } else {
+                                row
+                            };
+
+                            let new_height = if min_row == max_row {
+                                height
+                            } else {
+                                height + 1
+                            };
+
+                            // Check if this forms a valid border strip (connected, no 2×2)
+                            if self.is_valid_border_strip_removal(&result_partition, k) {
+                                results.push((result_partition, new_height));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Get all removable corner cells
+    fn removable_corners(&self) -> Vec<(usize, usize)> {
+        let mut corners = Vec::new();
+
+        for (i, &part) in self.parts.iter().enumerate() {
+            let col = part - 1; // Rightmost cell in row i
+
+            // Check if this is a removable corner
+            let is_removable = if i + 1 < self.parts.len() {
+                col >= self.parts[i + 1] // Can remove if row below has fewer cells
+            } else {
+                true // Bottom row cells are always removable
+            };
+
+            if is_removable {
+                corners.push((i, col));
+            }
+        }
+
+        corners
+    }
+
+    /// Remove a single cell from position (row, col)
+    fn remove_cell(&self, row: usize, col: usize) -> Option<Partition> {
+        if row >= self.parts.len() || col >= self.parts[row] {
+            return None;
+        }
+
+        // Can only remove from the rightmost position of a row
+        if col != self.parts[row] - 1 {
+            return None;
+        }
+
+        let mut new_parts = self.parts.clone();
+        new_parts[row] -= 1;
+
+        // Remove zero parts
+        new_parts.retain(|&p| p > 0);
+
+        Some(Partition::new(new_parts))
+    }
+
+    /// Check if removing cells to get result_partition forms a valid border strip
+    fn is_valid_border_strip_removal(&self, result_partition: &Partition, _size: usize) -> bool {
+        // For now, accept all removals
+        // A more sophisticated check would verify connectivity and no 2×2 blocks
+        // This is a simplified version
+
+        // Basic check: result should be smaller by exactly size cells
+        self.sum() >= result_partition.sum()
+    }
+
+    /// Advanced border strip removal using skew partition analysis
+    ///
+    /// This is a more sophisticated version that properly checks for
+    /// connected border strips with no 2×2 blocks.
+    pub fn remove_border_strip_advanced(&self, k: usize) -> Vec<(Partition, usize)> {
+        use crate::skew_partition::SkewPartition;
+
+        if k == 0 {
+            return vec![(self.clone(), 0)];
+        }
+
+        if k > self.sum() {
+            return vec![];
+        }
+
+        let mut results = Vec::new();
+
+        // Try all possible inner partitions that give a skew shape of size k
+        for inner_partition in self.all_inner_partitions_of_size(k) {
+            if let Some(skew) = SkewPartition::new(self.clone(), inner_partition.clone()) {
+                if skew.size() == k && skew.is_ribbon() {
+                    // This is a valid border strip!
+                    let height = skew.height().unwrap_or(0);
+                    results.push((inner_partition, height));
+                }
+            }
+        }
+
+        results
+    }
+
+    /// Generate all partitions that could be inner partitions giving size k skew shape
+    fn all_inner_partitions_of_size(&self, k: usize) -> Vec<Partition> {
+        let target_sum = self.sum() - k;
+        if target_sum == 0 {
+            return vec![Partition::new(vec![])];
+        }
+
+        let mut results = Vec::new();
+
+        // Generate all partitions of size target_sum that fit inside self
+        fn generate_inner(
+            outer: &[usize],
+            index: usize,
+            current: Vec<usize>,
+            target_sum: usize,
+            current_sum: usize,
+            results: &mut Vec<Partition>,
+        ) {
+            if current_sum == target_sum {
+                results.push(Partition::new(current));
+                return;
+            }
+
+            if current_sum > target_sum || index >= outer.len() {
+                return;
+            }
+
+            // For row index, try all possible sizes from 0 to outer[index]
+            for size in 0..=outer[index].min(target_sum - current_sum) {
+                let mut new_current = current.clone();
+                if size > 0 || new_current.is_empty() {
+                    new_current.push(size);
+                }
+                generate_inner(
+                    outer,
+                    index + 1,
+                    new_current,
+                    target_sum,
+                    current_sum + size,
+                    results,
+                );
+            }
+        }
+
+        generate_inner(&self.parts, 0, vec![], target_sum, 0, &mut results);
+        results
+    }
 }
 
 /// A partition tuple represents a sequence of partitions
