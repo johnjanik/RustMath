@@ -59,7 +59,7 @@ members = [
     "rustmath-topology",
     "rustmath-sets",
     "rustmath-interfaces",
-    "rustmath-curves",
+    "rustmath-schemes",
 ]
 
 [workspace.package]
