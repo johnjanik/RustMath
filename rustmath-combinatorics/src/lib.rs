@@ -13,6 +13,7 @@ pub mod derangements;
 pub mod designs;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod finite_state_machine_generators;
 pub mod integer_vectors;
 pub mod integer_matrices;
 pub mod multiset_partition_into_sets_ordered;
@@ -88,6 +89,9 @@ pub use enumeration::{
     cartesian_product, stars_and_bars, tuples, weak_compositions, CartesianProduct,
     CompositionIterator, Enumerable, GrayCodeIterator, InfiniteCartesianProduct, LazyEnumerator,
     PartitionIterator, RevolvingDoorIterator,
+};
+pub use finite_state_machine_generators::{
+    Automaton, AutomatonGenerators, FSMState, FSMTransition, Transducer, TransducerGenerators,
 };
 pub use integer_matrices::{
     count_integer_matrices, integer_matrices, integer_matrices_bounded, IntegerMatrix,
