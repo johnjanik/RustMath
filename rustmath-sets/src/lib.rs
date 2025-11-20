@@ -15,7 +15,9 @@
 use std::collections::{HashMap, HashSet, BTreeSet};
 use std::hash::Hash;
 use std::fmt;
-use std::ops::Range;
+
+// Export the new disjoint_set module with optimized implementations
+pub mod disjoint_set;
 
 // ============================================================================
 // Cartesian Product
