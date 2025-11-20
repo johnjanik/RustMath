@@ -23,9 +23,8 @@ pub mod designs;
 pub mod dlx;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod free_prelie_algebra;
 pub mod grossman_larson;
-pub mod integer_vectors;
-pub mod integer_matrices;
 pub mod growth_diagram;
 pub mod hall_polynomial;
 pub mod expnums;
@@ -143,6 +142,7 @@ pub use group_action::{
     burnside_lemma, count_fixed_colorings, cycle_index, enumerate_distinct_colorings,
     polya_enumeration, PermutationGroup,
 };
+pub use free_prelie_algebra::{PreLieAlgebra, RootedTree};
 pub use integer_matrices::{
     count_integer_matrices, integer_matrices, integer_matrices_bounded, IntegerMatrix,
 };
