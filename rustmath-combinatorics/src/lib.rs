@@ -13,6 +13,7 @@ pub mod dyck_word;
 pub mod enumeration;
 pub mod integer_vectors;
 pub mod integer_matrices;
+pub mod multiset_partition_into_sets_ordered;
 pub mod ordered_tree;
 pub mod partitions;
 pub mod perfect_matching;
@@ -28,6 +29,7 @@ pub mod set_partition;
 pub mod set_system;
 pub mod sidon_sets;
 pub mod skew_partition;
+pub mod specht_module;
 pub mod species;
 pub mod subset;
 pub mod superpartitions;
@@ -53,6 +55,9 @@ pub use permutation_simd::{
 };
 pub use posets::Poset;
 pub use tableaux::{robinson_schensted, rs_insert, standard_tableaux, Tableau};
+pub use specht_module::{
+    GarnirElement, GarnirSet, Polytabloid, PolytabloidSum, SpechtModule, Tabloid,
+};
 pub use tuple::{tuples as tuple_tuples, Tuple, TupleIterator};
 
 // Re-export new modules
@@ -117,6 +122,7 @@ pub use integer_vectors::{
     count_integer_vectors_in_box, count_integer_vectors_with_sum, integer_vector_sum_iter,
     integer_vectors_in_box, integer_vectors_with_l1_norm_bounded, integer_vectors_with_sum,
     integer_vectors_with_weighted_sum, IntegerVector, IntegerVectorSumIter,
+};
 pub use vector_partition::{
     count_vector_partitions_exact_parts, count_vector_partitions_max_parts,
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
