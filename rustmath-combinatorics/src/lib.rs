@@ -23,6 +23,7 @@ pub mod designs;
 pub mod dlx;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod fully_commutative_elements;
 pub mod free_prelie_algebra;
 pub mod grossman_larson;
 pub mod growth_diagram;
@@ -85,6 +86,10 @@ pub use bijectionist::{
 };
 pub use backtrack::{BacktrackFn, BacktrackProblem, Backtracker};
 pub use combinations::{combinations, Combination};
+pub use fully_commutative_elements::{
+    count_fc_elements_by_length, enumerate_fc_elements, CoxeterMatrix, FullyCommutativeElement,
+    HeapPoset, ReducedWord, SimpleCoxeterMatrix,
+};
 pub use partitions::{
     count_partitions_with_max_parts, partition_count, partitions, partitions_with_distinct_parts,
     partitions_with_even_parts, partitions_with_exact_parts, partitions_with_max_part,
