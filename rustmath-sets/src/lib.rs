@@ -7,7 +7,7 @@
 //! - Disjoint sets
 //! - Families of sets
 //! - Finite enumerated sets
-//! - Integer ranges
+//! - Integer ranges (with set operations)
 //! - Prime sets
 //! - Real sets
 //! - Set operations and utilities
@@ -18,6 +18,9 @@ use std::fmt;
 
 // Export the new disjoint_set module with optimized implementations
 pub mod disjoint_set;
+
+// Export the new integer_range module with generic set operations
+pub mod integer_range;
 
 // ============================================================================
 // Cartesian Product
