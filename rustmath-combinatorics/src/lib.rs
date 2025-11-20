@@ -7,6 +7,7 @@ pub mod affine_permutations;
 pub mod binary_words;
 pub mod combinations;
 pub mod composition;
+pub mod cyclic_sieving;
 pub mod derangements;
 pub mod designs;
 pub mod dyck_word;
@@ -99,6 +100,7 @@ pub use q_analogue::{
     gaussian_polynomial, q_binomial, q_binomial_eval, q_factorial, q_integer, q_multinomial,
 };
 pub use wreath_product::{all_colored_permutations, ColoredPermutation};
+pub use cyclic_sieving::{CyclicAction, CyclicSievingTriple, FunctionAction};
 pub use plane_partition::{
     count_cyclically_symmetric_plane_partitions, count_plane_partitions_in_box,
     count_self_complementary_plane_partitions, count_totally_symmetric_plane_partitions,
