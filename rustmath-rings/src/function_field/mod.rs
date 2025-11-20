@@ -122,7 +122,10 @@ pub mod order_rational;
 pub mod jacobian_base;
 pub mod jacobian_hess;
 pub mod jacobian_khuri_makdisi;
+pub mod jacobian_hyperelliptic;
 pub mod khuri_makdisi;
+pub mod picard_group;
+pub mod theta_functions;
 
 // Re-export main types for convenience
 pub use drinfeld_modules::{
@@ -190,6 +193,18 @@ pub use jacobian_khuri_makdisi::{
 
 pub use khuri_makdisi::{
     KhuriMakdisi_base, KhuriMakdisi_small, KhuriMakdisi_medium, KhuriMakdisi_large,
+};
+
+pub use jacobian_hyperelliptic::{
+    HyperellipticCurve, HyperellipticJacobian, MumfordDivisor, CantorAlgorithm,
+};
+
+pub use picard_group::{
+    Divisor, DivisorClass, PicardGroup, DegreeZeroPicardGroup,
+};
+
+pub use theta_functions::{
+    ThetaFunction, ThetaCharacteristic, ThetaDivisor, PeriodMatrix,
 };
 
 // Re-export new module types
