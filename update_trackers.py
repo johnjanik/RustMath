@@ -264,19 +264,73 @@ IMPLEMENTATION_MAP = {
         'virtual', 'kleber', 'promotion', 'evacuation'
     ]),
 
+    # Additional ring types
+    'sage.rings': ('Implemented', 'Partial', [
+        'integer', 'rational', 'real', 'complex',
+        'polynomial', 'finite', 'padic', 'power_series',
+        'number_field', 'quotient'
+    ]),
+    'sage.rings.number_field': ('Implemented', 'Partial', [
+        'number_field', 'algebraic'
+    ]),
+
+    # Schemes
+    'sage.schemes': ('Implemented', 'Partial', [
+        'elliptic_curve', 'weierstrass', 'affine', 'projective',
+        'variety', 'morphism'
+    ]),
+
+    # Homology
+    'sage.homology': ('Implemented', 'Partial', [
+        'chain_complex', 'simplicial', 'homology'
+    ]),
+
+    # Tensor structures
+    'sage.tensor': ('Implemented', 'Partial', [
+        'tensor', 'differential'
+    ]),
+
+    # Manifolds
+    'sage.manifolds': ('Implemented', 'Partial', [
+        'manifold', 'riemannian', 'differential'
+    ]),
+
+    # Monoids
+    'sage.monoids': ('Implemented', 'Partial', [
+        'monoid', 'free_monoid'
+    ]),
+
+    # Quivers
+    'sage.quivers': ('Implemented', 'Partial', [
+        'quiver', 'representation'
+    ]),
+
     # NOT IMPLEMENTED or minimal
     'sage.coding': ('Not Implemented', 'None', []),
     'sage.crypto': ('Not Implemented', 'None', []),
     'sage.databases': ('Implemented', 'Partial', ['oeis', 'lmfdb', 'cremona']),
+    'sage.doctest': ('Not Implemented', 'None', []),
     'sage.dynamics': ('Not Implemented', 'None', []),
+    'sage.ext': ('Not Implemented', 'None', []),
+    'sage.features': ('Not Implemented', 'None', []),
     'sage.game_theory': ('Not Implemented', 'None', []),
+    'sage.games': ('Not Implemented', 'None', []),
+    'sage.knots': ('Not Implemented', 'None', []),
+    'sage.lfunctions': ('Not Implemented', 'None', []),
+    'sage.libs': ('Not Implemented', 'None', []),
     'sage.logic': ('Implemented', 'Partial', ['sat']),
     'sage.matroids': ('Not Implemented', 'None', []),
+    'sage.misc': ('Implemented', 'Partial', ['cache', 'lazy', 'functional']),
     'sage.modules': ('Implemented', 'Partial', ['module', 'vector_space']),
+    'sage.parallel': ('Not Implemented', 'None', []),
+    'sage.plot': ('Implemented', 'Partial', ['plot', 'graphics']),
     'sage.probability': ('Not Implemented', 'None', []),
+    'sage.repl': ('Not Implemented', 'None', []),
+    'sage.sandpiles': ('Not Implemented', 'None', []),
     'sage.sat': ('Implemented', 'Partial', ['sat_solver']),
     'sage.stats': ('Implemented', 'Partial', ['statistics']),
     'sage.topology': ('Implemented', 'Partial', ['topological_space']),
+    'sage.typeset': ('Implemented', 'Partial', ['latex', 'ascii_art']),
 }
 
 
@@ -373,6 +427,15 @@ def main():
         'sagemath_to_rustmath_tracker_part_03.csv',
         'sagemath_to_rustmath_tracker_part_04.csv',
         'sagemath_to_rustmath_tracker_part_05.csv',
+        'sagemath_to_rustmath_tracker_part_06.csv',
+        'sagemath_to_rustmath_tracker_part_07.csv',
+        'sagemath_to_rustmath_tracker_part_08.csv',
+        'sagemath_to_rustmath_tracker_part_09.csv',
+        'sagemath_to_rustmath_tracker_part_10.csv',
+        'sagemath_to_rustmath_tracker_part_11.csv',
+        'sagemath_to_rustmath_tracker_part_12.csv',
+        'sagemath_to_rustmath_tracker_part_13.csv',
+        'sagemath_to_rustmath_tracker_part_14.csv',
     ]
 
     total_updated = 0
