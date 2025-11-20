@@ -22,6 +22,7 @@ pub mod designs;
 pub mod dlx;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod hall_polynomial;
 pub mod expnums;
 pub mod group_action;
 pub mod finite_state_machine_generators;
@@ -166,6 +167,8 @@ pub use subset::{
 pub use q_analogue::{
     gaussian_polynomial, q_binomial, q_binomial_eval, q_factorial, q_integer, q_multinomial,
 };
+pub use hall_polynomial::{
+    count_submodules, hall_littlewood_p, hall_polynomial, kostka_foulkes,
 pub use t_sequences::{
     t_bell, t_binomial, t_binomial_eval, t_catalan, t_eulerian, t_factorial, t_fibonacci,
     t_integer, t_lucas, t_multinomial, t_stirling_second,
