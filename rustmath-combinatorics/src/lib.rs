@@ -11,6 +11,7 @@ pub mod derangements;
 pub mod designs;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod growth_diagram;
 pub mod integer_vectors;
 pub mod integer_matrices;
 pub mod ordered_tree;
@@ -54,6 +55,9 @@ pub use permutation_simd::{
 pub use posets::Poset;
 pub use tableaux::{robinson_schensted, rs_insert, standard_tableaux, Tableau};
 pub use tuple::{tuples as tuple_tuples, Tuple, TupleIterator};
+pub use growth_diagram::{
+    growth_sequence, growth_to_p_tableau, growth_to_q_tableau, GrowthDiagram,
+};
 
 // Re-export new modules
 pub use binary_words::{all_binary_words, binary_words_with_weight, lyndon_words, necklaces, BinaryWord};
@@ -85,7 +89,7 @@ pub use set_partition::{
     SetPartition, SetPartitionIterator,
 };
 pub use set_system::SetSystem;
-pub use multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
+// pub use multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
 pub use word::{
     abelian_complexity, boyer_moore_search, christoffel_word, factor_complexity, kmp_search,
     lyndon_factorization, lyndon_words as general_lyndon_words, sturmian_word, AutomaticSequence,
@@ -117,6 +121,7 @@ pub use integer_vectors::{
     count_integer_vectors_in_box, count_integer_vectors_with_sum, integer_vector_sum_iter,
     integer_vectors_in_box, integer_vectors_with_l1_norm_bounded, integer_vectors_with_sum,
     integer_vectors_with_weighted_sum, IntegerVector, IntegerVectorSumIter,
+};
 pub use vector_partition::{
     count_vector_partitions_exact_parts, count_vector_partitions_max_parts,
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
