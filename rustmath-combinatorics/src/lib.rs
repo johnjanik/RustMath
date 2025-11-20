@@ -18,6 +18,7 @@ pub mod set_partition;
 pub mod set_system;
 pub mod species;
 pub mod tableaux;
+pub mod tuple;
 pub mod word;
 
 pub use combinations::{combinations, Combination};
@@ -30,6 +31,7 @@ pub use partitions::{
 pub use permutations::{all_permutations, Permutation};
 pub use posets::Poset;
 pub use tableaux::{robinson_schensted, rs_insert, standard_tableaux, Tableau};
+pub use tuple::{tuples as tuple_tuples, Tuple, TupleIterator};
 
 // Re-export new modules
 pub use binary_words::{all_binary_words, binary_words_with_weight, lyndon_words, necklaces, BinaryWord};
