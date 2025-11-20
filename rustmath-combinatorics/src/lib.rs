@@ -22,6 +22,7 @@ pub mod posets;
 pub mod q_analogue;
 pub mod ranking;
 pub mod recurrence_sequences;
+pub mod ribbon_tableau;
 pub mod set_partition;
 pub mod set_system;
 pub mod sidon_sets;
@@ -108,6 +109,10 @@ pub use sidon_sets::{
     backtracking_bh_sequence, backtracking_sidon_set, greedy_bh_sequence, greedy_sidon_set,
     is_bh_sequence, is_sidon_set, max_bh_sequence_size, max_sidon_set_size, BhSequence, SidonSet,
 };
+pub use ribbon_tableau::{
+    fermionic_formula, kostka_foulkes_ribbon, ribbon_tableaux, RibbonDecomposition, RibbonTableau,
+};
+pub use skew_partition::{SkewPartition, SkewTableau};
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
 
