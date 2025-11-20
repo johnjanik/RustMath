@@ -22,3 +22,10 @@ num-traits.workspace = true
 num-integer.workspace = true
 thiserror.workspace = true
 rug = { version = "1.24", default-features = false, features = ["float", "integer"] }
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "pow_computer_bench"
+harness = false
