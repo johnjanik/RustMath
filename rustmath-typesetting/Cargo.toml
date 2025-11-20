@@ -1,0 +1,12 @@
+[package]
+name = "rustmath-typesetting"
+version = "0.1.0"
+edition = "2021"
+authors = ["RustMath Contributors"]
+description = "Typesetting system for RustMath: LaTeX, ASCII, Unicode, HTML/MathML output"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/johnjanik/RustMath"
+
+[dependencies]
+
+[dev-dependencies]

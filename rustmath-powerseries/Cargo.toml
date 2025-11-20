@@ -10,6 +10,7 @@ repository.workspace = true
 rustmath-core = { path = "../rustmath-core" }
 rustmath-integers = { path = "../rustmath-integers" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
+rustmath-typesetting = { path = "../rustmath-typesetting" }
 num-traits = { workspace = true }
 serde = { workspace = true, optional = true }
 

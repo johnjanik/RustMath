@@ -11,6 +11,7 @@ rustmath-core = { path = "../rustmath-core" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
 rustmath-integers = { path = "../rustmath-integers" }
 rustmath-rationals = { path = "../rustmath-rationals" }
+rustmath-typesetting = { path = "../rustmath-typesetting" }
 ndarray = { workspace = true }
 num-traits = { workspace = true }
 rayon = { workspace = true }
