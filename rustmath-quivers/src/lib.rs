@@ -32,7 +32,9 @@
 pub mod quiver;
 pub mod path;
 pub mod path_semigroup;
+pub mod cluster_quiver;
 
 pub use quiver::Quiver;
 pub use path::QuiverPath;
 pub use path_semigroup::PathSemigroup;
+pub use cluster_quiver::{ClusterQuiver, MutationSequence, MutationType};

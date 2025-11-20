@@ -18,8 +18,10 @@ pub mod finite_dimensional_algebra_morphism;
 pub mod quotient_algebra;
 pub mod clifford_algebra;
 pub mod group_algebra;
+pub mod symmetric_group_algebra;
 pub mod traits;
 pub mod affine_nil_temperley_lieb;
+pub mod blob_algebra;
 pub mod down_up_algebra;
 pub mod algebra_morphism;
 pub mod algebra_with_parent;
@@ -28,6 +30,8 @@ pub mod askey_wilson;
 pub mod associated_graded;
 pub mod cellular_basis;
 pub mod cluster_algebra;
+pub mod cluster_variable;
+pub mod cluster_integration;
 pub mod commutative_dga;
 pub mod finite_gca;
 pub mod free_zinbiel_algebra;
@@ -40,6 +44,11 @@ pub mod cubic_hecke_matrix_rep;
 pub mod iwahori_hecke_algebra;
 pub mod nil_coxeter_algebra;
 pub mod catalog;
+pub mod diagram;
+pub mod brauer_algebra;
+pub mod temperley_lieb_algebra;
+pub mod partition_algebra;
+pub mod planar_algebra;
 pub mod poly_tup_engine;
 pub mod fusion_ring;
 pub mod fusion_double;
@@ -69,6 +78,7 @@ pub mod weyl_algebra;
 pub mod e_one_star;
 pub mod yangian;
 pub mod yokonuma_hecke_algebra;
+pub mod partition_algebra;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -86,8 +96,15 @@ pub use clifford_algebra::{
     ExteriorAlgebraCoboundary, ExteriorAlgebraIdeal, StructureCoefficients,
 };
 pub use group_algebra::*;
+pub use symmetric_group_algebra::{
+    SymmetricGroupElement, SymmetricGroupAlgebraBuilder,
+    ZSymmetricGroupAlgebra, ZSymmetricGroupElement,
+    QSymmetricGroupAlgebra, QSymmetricGroupElement,
+    verify_coxeter_relations,
+};
 pub use traits::*;
 pub use affine_nil_temperley_lieb::{AffineNilTemperleyLiebTypeA, Element as AffineNilTemperleyLiebElement};
+pub use blob_algebra::{BlobAlgebra, BlobElement, BlobBasisElement};
 pub use algebra_morphism::{AlgebraMorphism, AlgebraEndomorphism, AlgebraAutomorphism};
 pub use askey_wilson::{AskeyWilsonAlgebra, AskeyWilsonIndex};
 pub use associated_graded::AssociatedGradedAlgebra;
@@ -95,6 +112,15 @@ pub use cellular_basis::{CellularBasis, CellularIndex};
 pub use cluster_algebra::{
     ClusterAlgebra, ClusterAlgebraElement, ClusterAlgebraSeed,
     PrincipalClusterAlgebraElement, GVector, DVector, ExchangeMatrix,
+};
+pub use cluster_variable::{
+    ClusterVariable, Cluster, ClusterVariableCache,
+    exchange_polynomial, f_polynomial, cluster_variable_from_g_vector,
+};
+pub use cluster_integration::{
+    matrix_to_exchange, exchange_to_matrix, cluster_algebra_from_matrix,
+    validate_exchange_matrix, principal_part, coefficient_part,
+    transpose, matrix_multiply,
 };
 pub use commutative_dga::{
     GCAlgebra, GCAlgebraMultigraded, Differential, DifferentialMultigraded,
@@ -216,6 +242,15 @@ pub use yokonuma_hecke_algebra::{
 };
 pub use e_one_star::{
     E1Algebra, E1Element, E1Generator, E1Monomial, BiDegree,
+pub use diagram::{
+    PartitionDiagram, BrauerDiagram, TemperleyLiebDiagram,
+};
+pub use brauer_algebra::{BrauerAlgebra, BrauerElement};
+pub use temperley_lieb_algebra::{TemperleyLiebAlgebra, TLElement};
+pub use partition_algebra::{PartitionAlgebra, PartitionElement};
+pub use planar_algebra::{PlanarAlgebra, PlanarElement, PlanarDiagram};
+pub use partition_algebra::{
+    PartitionAlgebra, PartitionAlgebraElement, PartitionDiagram,
 };
 
 #[cfg(test)]
