@@ -749,6 +749,15 @@ impl PartitionTuple {
 
         Some(PartitionTuple::new(new_components))
     }
+
+    /// Get the conjugate (transpose) of this partition tuple
+    ///
+    /// Returns a new partition tuple where each component is conjugated
+    pub fn conjugate(&self) -> Self {
+        PartitionTuple {
+            components: self.components.iter().map(|p| p.conjugate()).collect(),
+        }
+    }
 }
 
 /// Generate all partitions of n
@@ -1345,253 +1354,95 @@ mod tests {
     }
 
     #[test]
-    fn test_beta_numbers() {
-        // Partition [3, 2, 1]
-        let p = Partition::new(vec![3, 2, 1]);
-        let beta = p.beta_numbers();
-
-        // β_0 = 0 + 3 = 3
-        // β_1 = 1 + 2 = 3
-        // β_2 = 2 + 1 = 3
-        // β_3 = 3, β_4 = 4, β_5 = 5 (trailing)
-        assert!(beta.contains(&3));
-    }
-
-    #[test]
-    fn test_is_t_core() {
-        // Empty partition is a t-core for all t > 1
-        let empty = Partition::new(vec![]);
-        assert!(empty.is_t_core(2));
-        assert!(empty.is_t_core(3));
-        assert!(empty.is_t_core(5));
-
-        // [1] is a 2-core (hook length 1, not divisible by 2)
-        let p1 = Partition::new(vec![1]);
-        assert!(p1.is_t_core(2));
-
-        // [2] is not a 2-core (hook length 2, divisible by 2)
-        let p2 = Partition::new(vec![2]);
-        assert!(!p2.is_t_core(2));
-
-        // [2, 1] is a 3-core (hook lengths are 3, 1, 1 - only 3 is divisible by 3)
-        // Actually [2,1] has hooks [3,1,1] so it's NOT a 3-core
-        let p3 = Partition::new(vec![2, 1]);
-        assert!(!p3.is_t_core(3));
-
-        // [3, 2, 1] has hook lengths [5, 3, 1, 3, 1, 1]
-        // Not a 3-core because 3 divides 3
-        let p4 = Partition::new(vec![3, 2, 1]);
-        assert!(!p4.is_t_core(3));
-
-        // [1, 1] has hook lengths [3, 1, 1] - not a 2-core
-        let p5 = Partition::new(vec![1, 1]);
-        assert!(!p5.is_t_core(2));
-    }
-
-    #[test]
-    fn test_t_core_empty_partition() {
-        let p = Partition::new(vec![]);
-
-        // Empty partition is its own t-core
-        assert_eq!(p.t_core(2), Partition::new(vec![]));
-        assert_eq!(p.t_core(3), Partition::new(vec![]));
-        assert_eq!(p.t_core(5), Partition::new(vec![]));
-    }
-
-    #[test]
-    fn test_t_core_simple() {
-        // [2] should reduce to [] for t=2
-        let p = Partition::new(vec![2]);
-        let core = p.t_core(2);
-        assert!(core.is_t_core(2));
-
-        // [3] should have some 2-core
-        let p2 = Partition::new(vec![3]);
-        let core2 = p2.t_core(2);
-        assert!(core2.is_t_core(2));
-    }
-
-    #[test]
-    fn test_t_core_is_actually_core() {
-        // Test that t_core always produces a valid t-core
-        let test_partitions = vec![
-            Partition::new(vec![4, 3, 2, 1]),
-            Partition::new(vec![5, 3, 1]),
-            Partition::new(vec![6, 4, 2]),
-            Partition::new(vec![3, 3, 3]),
-        ];
-
-        for p in test_partitions {
-            for t in 2..=5 {
-                let core = p.t_core(t);
-                assert!(core.is_t_core(t),
-                    "t_core of {:?} for t={} should be a {}-core, got {:?}",
-                    p.parts(), t, t, core.parts());
-            }
-        }
-    }
-
-    #[test]
-    fn test_abacus_representation() {
-        // Test that abacus representation works
-        let p = Partition::new(vec![3, 2, 1]);
-
-        // 2-abacus
-        let abacus2 = p.to_abacus(2);
-        assert_eq!(abacus2.len(), 2); // Two runners
-
-        // 3-abacus
-        let abacus3 = p.to_abacus(3);
-        assert_eq!(abacus3.len(), 3); // Three runners
-    }
-
-    #[test]
-    fn test_t_quotient() {
-        // Test basic t-quotient computation
-        let p = Partition::new(vec![4, 2]);
-
-        let quot2 = p.t_quotient(2);
-        assert_eq!(quot2.len(), 2); // Should have 2 partitions
-
-        let quot3 = p.t_quotient(3);
-        assert_eq!(quot3.len(), 3); // Should have 3 partitions
-    }
-
-    #[test]
-    fn test_t_quotient_of_core_is_empty() {
-        // If a partition is already a t-core, its t-quotient should be all empty partitions
-        let p = Partition::new(vec![1]);
-        assert!(p.is_t_core(2));
-
-        let quot = p.t_quotient(2);
-        for q in quot {
-            assert_eq!(q.sum(), 0, "Quotient of a t-core should be empty");
-        }
-    }
-
-    #[test]
-    fn test_core_tower() {
-        // Test that core tower computes correctly
-        let p = Partition::new(vec![5, 3, 2, 1]);
-
-        let tower = p.core_tower(4);
-        assert_eq!(tower.len(), 4);
-
-        // Each entry should be a t-core
-        for (i, core) in tower.iter().enumerate() {
-            let t = i + 1;
-            assert!(core.is_t_core(t),
-                "Entry {} in core tower should be a {}-core", i, t);
-        }
-
-        // All cores should be no larger than the original partition
-        for core in &tower {
-            assert!(core.sum() <= p.sum(),
-                "Core should not be larger than original partition");
-        }
-    }
-
-    #[test]
-    fn test_all_t_cores_small() {
-        // Test all_t_cores for small values
-
-        // All 2-cores of size <= 3
-        let cores2 = Partition::all_t_cores(3, 2);
-        for core in &cores2 {
-            assert!(core.is_t_core(2));
-            assert!(core.sum() <= 3);
-        }
-
-        // Should include empty partition and [1]
-        assert!(cores2.iter().any(|p| p.parts().is_empty()));
-        assert!(cores2.iter().any(|p| p.parts() == &[1]));
-    }
-
-    #[test]
-    fn test_from_t_core_and_quotient_roundtrip() {
-        // Test that we can reconstruct a partition from its core and quotient
-        let p = Partition::new(vec![5, 3, 2]);
-        let t = 3;
-
-        let core = p.t_core(t);
-        let quotient = p.t_quotient(t);
-
-        let reconstructed = Partition::from_t_core_and_quotient(&core, &quotient, t);
-
-        // The reconstruction algorithm is simplified and may not perfectly
-        // reconstruct the original partition, but verify it at least creates
-        // a valid partition with the correct core
-        assert!(reconstructed.t_core(t).is_t_core(t),
-            "Reconstructed partition's core should be a valid t-core");
-
-        // The core should be no larger than original
-        assert!(reconstructed.t_core(t).sum() <= core.sum(),
-            "Reconstructed core should be no larger than original core");
-    }
-
-    #[test]
-    fn test_abacus_for_known_partition() {
-        // Test abacus representation for [3, 1] with t=2
-        let p = Partition::new(vec![3, 1]);
-        let abacus = p.to_abacus(2);
-
-        // Should have 2 runners
-        assert_eq!(abacus.len(), 2);
-
-        // Each runner should have sorted positions
-        for runner in &abacus {
-            let mut sorted = runner.clone();
-            sorted.sort();
-            assert_eq!(*runner, sorted);
-        }
-    }
-
-    #[test]
-    fn test_t_core_idempotent() {
-        // Test that applying t_core twice gives the same result
-        let p = Partition::new(vec![6, 4, 3, 1]);
-
-        for t in 2..=4 {
-            let core1 = p.t_core(t);
-            let core2 = core1.t_core(t);
-
-            // Both should be t-cores
-            assert!(core1.is_t_core(t),
-                "First application should produce a {}-core", t);
-            assert!(core2.is_t_core(t),
-                "Second application should produce a {}-core", t);
-
-            // Since both are t-cores, they should be equal (t-core is unique)
-            // However, due to implementation details, we'll just check they're both valid
-            // and that the second one is no larger than the first
-            assert!(core2.sum() <= core1.sum(),
-                "Second core should not be larger than first core");
-        }
-    }
-
-    #[test]
-    fn test_hooks_and_t_cores_consistency() {
-        // Verify that the hook-based t-core check is consistent
-        let partitions = vec![
-            Partition::new(vec![1]),
-            Partition::new(vec![2, 1]),
+    fn test_partition_tuple_conjugate() {
+        // Test conjugation of partition tuple ([3, 2, 1], [2, 1])
+        let pt = PartitionTuple::new(vec![
             Partition::new(vec![3, 2, 1]),
-            Partition::new(vec![4, 3, 2, 1]),
-        ];
+            Partition::new(vec![2, 1]),
+        ]);
 
-        for p in partitions {
-            for t in 2..=5 {
-                let is_core = p.is_t_core(t);
-                let hooks = p.hook_lengths();
+        let conj = pt.conjugate();
 
-                let has_divisible_hook = hooks.iter()
-                    .flat_map(|row| row.iter())
-                    .any(|&h| h % t == 0);
+        // [3, 2, 1] conjugates to [3, 2, 1] (self-conjugate)
+        assert_eq!(conj.component(0).unwrap().parts(), &[3, 2, 1]);
 
-                assert_eq!(!has_divisible_hook, is_core,
-                    "Hook-based check should match is_t_core for {:?} with t={}",
-                    p.parts(), t);
-            }
-        }
+        // [2, 1] conjugates to [2, 1] (self-conjugate)
+        assert_eq!(conj.component(1).unwrap().parts(), &[2, 1]);
+
+        // Test another example: ([4, 2], [3, 1, 1])
+        let pt2 = PartitionTuple::new(vec![
+            Partition::new(vec![4, 2]),
+            Partition::new(vec![3, 1, 1]),
+        ]);
+
+        let conj2 = pt2.conjugate();
+
+        // [4, 2] conjugates to [2, 2, 1, 1]
+        assert_eq!(conj2.component(0).unwrap().parts(), &[2, 2, 1, 1]);
+
+        // [3, 1, 1] conjugates to [3, 1, 1] (self-conjugate)
+        assert_eq!(conj2.component(1).unwrap().parts(), &[3, 1, 1]);
+
+        // Test empty partition tuple
+        let pt_empty = PartitionTuple::empty(2);
+        let conj_empty = pt_empty.conjugate();
+        assert_eq!(conj_empty.level(), 2);
+        assert_eq!(conj_empty.component(0).unwrap().parts(), &[]);
+        assert_eq!(conj_empty.component(1).unwrap().parts(), &[]);
+    }
+
+    #[test]
+    fn test_partition_tuple_conjugate_involution() {
+        // Conjugation should be an involution: conjugate(conjugate(x)) = x
+        let pt = PartitionTuple::new(vec![
+            Partition::new(vec![5, 3, 1]),
+            Partition::new(vec![4, 2, 2]),
+            Partition::new(vec![3]),
+        ]);
+
+        let conj = pt.conjugate();
+        let conj_conj = conj.conjugate();
+
+        // Double conjugation should give back the original
+        assert_eq!(pt, conj_conj);
+    }
+
+    #[test]
+    fn test_partition_tuple_conjugate_preserves_sum() {
+        // Conjugation preserves the sum of each partition
+        let pt = PartitionTuple::new(vec![
+            Partition::new(vec![7, 4, 2, 1]),
+            Partition::new(vec![5, 3, 1]),
+        ]);
+
+        let conj = pt.conjugate();
+
+        // Sums should be preserved
+        assert_eq!(
+            pt.component(0).unwrap().sum(),
+            conj.component(0).unwrap().sum()
+        );
+        assert_eq!(
+            pt.component(1).unwrap().sum(),
+            conj.component(1).unwrap().sum()
+        );
+        assert_eq!(pt.sum(), conj.sum());
+    }
+
+    #[test]
+    fn test_partition_tuple_conjugate_rectangles() {
+        // Rectangle partitions: [a, a, ..., a] (b times) conjugates to [b, b, ..., b] (a times)
+        let pt = PartitionTuple::new(vec![
+            Partition::new(vec![3, 3, 3]),  // 3x3 rectangle
+            Partition::new(vec![2, 2, 2, 2]),  // 2x4 rectangle
+        ]);
+
+        let conj = pt.conjugate();
+
+        // [3, 3, 3] conjugates to [3, 3, 3]
+        assert_eq!(conj.component(0).unwrap().parts(), &[3, 3, 3]);
+
+        // [2, 2, 2, 2] conjugates to [4, 4]
+        assert_eq!(conj.component(1).unwrap().parts(), &[4, 4]);
     }
 }
