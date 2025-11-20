@@ -50,6 +50,7 @@ pub mod super_tableaux;
 pub mod tableaux;
 pub mod tableau_tuple;
 pub mod tamari;
+pub mod tiling;
 pub mod tuple;
 pub mod vector_partition;
 pub mod word;
@@ -169,6 +170,9 @@ pub use vector_partition::{
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
     vector_partitions_with_max_part, VectorPartition,
 };
+pub use tiling::{
+    build_transfer_matrix, count_domino_tilings, count_monomino_tilings,
+    count_polyomino_tilings, count_tilings, ColumnState, Polyomino,
 pub use debruijn::{
     debruijn_graph_path, debruijn_prefer_one, debruijn_prefer_zero, debruijn_sequence,
     debruijn_sequence_binary, universal_cycle_permutations, universal_cycle_subsets,
