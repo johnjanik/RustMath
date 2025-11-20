@@ -573,38 +573,38 @@ Not Implemented,None,sage.libs.flint.ulong_extras_sage,sage.libs.flint.ulong_ext
 Not Implemented,None,sage.libs.flint.ulong_extras_sage.n_factor_to_list,sage.libs.flint.ulong_extras_sage,n_factor_to_list,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/flint/ulong_extras_sage.pyx#L5
 Not Implemented,None,sage.libs.gap.context_managers,sage.libs.gap.context_managers,context_managers,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/context_managers.py#L48
 Not Implemented,None,sage.libs.gap.context_managers.GlobalVariableContext,sage.libs.gap.context_managers,GlobalVariableContext,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/context_managers.py#L48
-Not Implemented,None,sage.libs.gap.element,sage.libs.gap.element,element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L395
-Not Implemented,None,sage.libs.gap.element.GapElement,sage.libs.gap.element,GapElement,class,RingElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L395
-Not Implemented,None,sage.libs.gap.element.GapElement_Boolean,sage.libs.gap.element,GapElement_Boolean,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2232
-Not Implemented,None,sage.libs.gap.element.GapElement_Cyclotomic,sage.libs.gap.element,GapElement_Cyclotomic,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L1917
-Not Implemented,None,sage.libs.gap.element.GapElement_FiniteField,sage.libs.gap.element,GapElement_FiniteField,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L1748
-Not Implemented,None,sage.libs.gap.element.GapElement_Float,sage.libs.gap.element,GapElement_Float,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L1586
-Not Implemented,None,sage.libs.gap.element.GapElement_Function,sage.libs.gap.element,GapElement_Function,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2388
-Not Implemented,None,sage.libs.gap.element.GapElement_Integer,sage.libs.gap.element,GapElement_Integer,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L1421
-Not Implemented,None,sage.libs.gap.element.GapElement_IntegerMod,sage.libs.gap.element,GapElement_IntegerMod,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L1657
-Not Implemented,None,sage.libs.gap.element.GapElement_List,sage.libs.gap.element,GapElement_List,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2660
-Not Implemented,None,sage.libs.gap.element.GapElement_MethodProxy,sage.libs.gap.element,GapElement_MethodProxy,class,GapElement_Function,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2587
-Not Implemented,None,sage.libs.gap.element.GapElement_Permutation,sage.libs.gap.element,GapElement_Permutation,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2988
-Not Implemented,None,sage.libs.gap.element.GapElement_Rational,sage.libs.gap.element,GapElement_Rational,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2002
-Not Implemented,None,sage.libs.gap.element.GapElement_Record,sage.libs.gap.element,GapElement_Record,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L3053
-Not Implemented,None,sage.libs.gap.element.GapElement_RecordIterator,sage.libs.gap.element,GapElement_RecordIterator,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L3192
-Not Implemented,None,sage.libs.gap.element.GapElement_Ring,sage.libs.gap.element,GapElement_Ring,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2073
-Not Implemented,None,sage.libs.gap.element.GapElement_String,sage.libs.gap.element,GapElement_String,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2322
-Not Implemented,None,sage.libs.gap.gap_functions,sage.libs.gap.gap_functions,gap_functions,module,,
-Not Implemented,None,sage.libs.gap.libgap,sage.libs.gap.libgap,libgap,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/libgap.pyx#L234
-Not Implemented,None,sage.libs.gap.libgap.Gap,sage.libs.gap.libgap,Gap,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/libgap.pyx#L234
-Not Implemented,None,sage.libs.gap.saved_workspace,sage.libs.gap.saved_workspace,saved_workspace,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/saved_workspace.py#L15
-Not Implemented,None,sage.libs.gap.saved_workspace.timestamp,sage.libs.gap.saved_workspace,timestamp,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/saved_workspace.py#L15
-Not Implemented,None,sage.libs.gap.saved_workspace.workspace,sage.libs.gap.saved_workspace,workspace,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/saved_workspace.py#L48
-Not Implemented,None,sage.libs.gap.test,sage.libs.gap.test,test,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/test.py#L9
-Not Implemented,None,sage.libs.gap.test.test_write_to_file,sage.libs.gap.test,test_write_to_file,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/test.py#L9
-Not Implemented,None,sage.libs.gap.test_long,sage.libs.gap.test_long,test_long,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/test_long.py#L9
-Not Implemented,None,sage.libs.gap.test_long.test_loop_1,sage.libs.gap.test_long,test_loop_1,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/test_long.py#L9
-Not Implemented,None,sage.libs.gap.test_long.test_loop_2,sage.libs.gap.test_long,test_loop_2,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/test_long.py#L21
-Not Implemented,None,sage.libs.gap.test_long.test_loop_3,sage.libs.gap.test_long,test_loop_3,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/test_long.py#L41
-Not Implemented,None,sage.libs.gap.util,sage.libs.gap.util,util,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/util.pyx#L400
-Not Implemented,None,sage.libs.gap.util.ObjWrapper,sage.libs.gap.util,ObjWrapper,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/util.pyx#L39
-Not Implemented,None,sage.libs.gap.util.get_owned_objects,sage.libs.gap.util,get_owned_objects,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/util.pyx#L121
+Implemented,rustmath_interfaces,sage.libs.gap.element,sage.libs.gap.element,element,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L395
+Implemented,rustmath_interfaces,sage.libs.gap.element.GapElement,sage.libs.gap.element,GapElement,class,RingElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L395
+Implemented,rustmath_interfaces,sage.libs.gap.element.GapElement_Boolean,sage.libs.gap.element,GapElement_Boolean,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2232
+Implemented,rustmath_interfaces,sage.libs.gap.element.GapElement_Cyclotomic,sage.libs.gap.element,GapElement_Cyclotomic,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L1917
+Implemented,rustmath_interfaces,sage.libs.gap.element.GapElement_FiniteField,sage.libs.gap.element,GapElement_FiniteField,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L1748
+Implemented,rustmath_interfaces,sage.libs.gap.element.GapElement_Float,sage.libs.gap.element,GapElement_Float,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L1586
+Implemented,rustmath_interfaces,sage.libs.gap.element.GapElement_Function,sage.libs.gap.element,GapElement_Function,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2388
+Implemented,rustmath_interfaces,sage.libs.gap.element.GapElement_Integer,sage.libs.gap.element,GapElement_Integer,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L1421
+Implemented,rustmath_interfaces,sage.libs.gap.element.GapElement_IntegerMod,sage.libs.gap.element,GapElement_IntegerMod,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L1657
+Implemented,rustmath_interfaces,sage.libs.gap.element.GapElement_List,sage.libs.gap.element,GapElement_List,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2660
+Implemented,rustmath_interfaces,sage.libs.gap.element.GapElement_MethodProxy,sage.libs.gap.element,GapElement_MethodProxy,class,GapElement_Function,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2587
+Implemented,rustmath_interfaces,sage.libs.gap.element.GapElement_Permutation,sage.libs.gap.element,GapElement_Permutation,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2988
+Implemented,rustmath_interfaces,sage.libs.gap.element.GapElement_Rational,sage.libs.gap.element,GapElement_Rational,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2002
+Implemented,rustmath_interfaces,sage.libs.gap.element.GapElement_Record,sage.libs.gap.element,GapElement_Record,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L3053
+Implemented,rustmath_interfaces,sage.libs.gap.element.GapElement_RecordIterator,sage.libs.gap.element,GapElement_RecordIterator,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L3192
+Implemented,rustmath_interfaces,sage.libs.gap.element.GapElement_Ring,sage.libs.gap.element,GapElement_Ring,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2073
+Implemented,rustmath_interfaces,sage.libs.gap.element.GapElement_String,sage.libs.gap.element,GapElement_String,class,GapElement,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/element.pyx#L2322
+Implemented,rustmath_interfaces,sage.libs.gap.gap_functions,sage.libs.gap.gap_functions,gap_functions,module,,
+Implemented,rustmath_interfaces,sage.libs.gap.libgap,sage.libs.gap.libgap,libgap,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/libgap.pyx#L234
+Implemented,rustmath_interfaces,sage.libs.gap.libgap.Gap,sage.libs.gap.libgap,Gap,class,Parent,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/libgap.pyx#L234
+Implemented,rustmath_interfaces,sage.libs.gap.saved_workspace,sage.libs.gap.saved_workspace,saved_workspace,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/saved_workspace.py#L15
+Implemented,rustmath_interfaces,sage.libs.gap.saved_workspace.timestamp,sage.libs.gap.saved_workspace,timestamp,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/saved_workspace.py#L15
+Implemented,rustmath_interfaces,sage.libs.gap.saved_workspace.workspace,sage.libs.gap.saved_workspace,workspace,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/saved_workspace.py#L48
+Implemented,rustmath_interfaces,sage.libs.gap.test,sage.libs.gap.test,test,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/test.py#L9
+Implemented,rustmath_interfaces,sage.libs.gap.test.test_write_to_file,sage.libs.gap.test,test_write_to_file,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/test.py#L9
+Implemented,rustmath_interfaces,sage.libs.gap.test_long,sage.libs.gap.test_long,test_long,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/test_long.py#L9
+Implemented,rustmath_interfaces,sage.libs.gap.test_long.test_loop_1,sage.libs.gap.test_long,test_loop_1,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/test_long.py#L9
+Implemented,rustmath_interfaces,sage.libs.gap.test_long.test_loop_2,sage.libs.gap.test_long,test_loop_2,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/test_long.py#L21
+Implemented,rustmath_interfaces,sage.libs.gap.test_long.test_loop_3,sage.libs.gap.test_long,test_loop_3,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/test_long.py#L41
+Implemented,rustmath_interfaces,sage.libs.gap.util,sage.libs.gap.util,util,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/util.pyx#L400
+Implemented,rustmath_interfaces,sage.libs.gap.util.ObjWrapper,sage.libs.gap.util,ObjWrapper,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/util.pyx#L39
+Implemented,rustmath_interfaces,sage.libs.gap.util.get_owned_objects,sage.libs.gap.util,get_owned_objects,function,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gap/util.pyx#L121
 Not Implemented,None,sage.libs.gsl.array,sage.libs.gsl.array,array,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gsl/array.pyx#L7
 Not Implemented,None,sage.libs.gsl.array.GSLDoubleArray,sage.libs.gsl.array,GSLDoubleArray,class,object,https://github.com/sagemath/sage/blob/develop/src/sage/libs/gsl/array.pyx#L7
 Not Implemented,None,sage.libs.lcalc.lcalc_Lfunction,sage.libs.lcalc.lcalc_Lfunction,lcalc_Lfunction,module,,https://github.com/sagemath/sage/blob/develop/src/sage/libs/lcalc/lcalc_Lfunction.pyx#L53

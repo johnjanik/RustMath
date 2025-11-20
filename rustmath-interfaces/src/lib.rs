@@ -15,6 +15,10 @@
 //! - **Result Parsing**: Parse GAP output back to Rust structures
 //! - **Group Operations**: Use GAP for advanced group computations
 //! - **Permutation Algorithms**: Leverage GAP's Schreier-Sims and other algorithms
+//! - **Type-Safe Elements**: Rust wrappers for GAP data types (integers, lists, permutations, etc.)
+//! - **Function Wrappers**: High-level API for common GAP functions
+//! - **Workspace Management**: Save and load GAP session state
+//! - **Object Tracking**: Monitor and manage GAP object lifecycle
 //!
 //! # Features
 //!
@@ -115,6 +119,13 @@
 pub mod gap;
 pub mod gap_parser;
 pub mod gap_permutation;
+pub mod gap_element;
+pub mod gap_functions;
+pub mod libgap;
+pub mod saved_workspace;
+pub mod test;
+pub mod test_long;
+pub mod util;
 
 // Re-export main types for convenience
 pub use gap::{GapError, GapInterface, GapProcess};
@@ -123,6 +134,15 @@ pub use gap_parser::{
     parse_permutation, parse_record, GroupInfo, ParseError, Permutation,
 };
 pub use gap_permutation::GapPermutationGroup;
+pub use gap_element::{
+    GapElement, GapElement_Boolean, GapElement_Integer, GapElement_Rational,
+    GapElement_Float, GapElement_String, GapElement_List, GapElement_Record,
+    GapElement_RecordIterator, GapElement_Permutation, GapElement_Function,
+    GapElement_MethodProxy, GapElement_FiniteField, GapElement_IntegerMod,
+    GapElement_Cyclotomic, GapElement_Ring,
+};
+pub use libgap::{Gap, gap};
+pub use util::{ObjWrapper, ObjInfo, get_owned_objects, num_owned_objects, cleanup_all_objects};
 
 /// Version information for the interfaces crate
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
