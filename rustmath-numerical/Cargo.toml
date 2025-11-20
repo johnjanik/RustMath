@@ -5,9 +5,34 @@ edition.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
+description = "Numerical computation methods with optional BLAS/LAPACK support"
 
 [dependencies]
 rustmath-core = { path = "../rustmath-core" }
 rustmath-reals = { path = "../rustmath-reals" }
 rustmath-complex = { path = "../rustmath-complex" }
+rustmath-features = { path = "../rustmath-features" }
+num-traits = { workspace = true }
 lazy_static = "1.4"
+
+# Optional dependencies for BLAS/LAPACK support
+ndarray-linalg = { version = "0.16", optional = true }
+openblas-src = { version = "0.10", optional = true }
+netlib-src = { version = "0.8", optional = true }
+intel-mkl-src = { version = "0.8", optional = true }
+
+[features]
+# Default features - pure Rust implementations
+default = ["std"]
+
+# Standard library support
+std = []
+
+# BLAS/LAPACK backends (mutually exclusive)
+# Enable one of these for accelerated linear algebra operations
+openblas = ["ndarray-linalg", "openblas-src"]
+netlib = ["ndarray-linalg", "netlib-src"]
+intel-mkl = ["ndarray-linalg", "intel-mkl-src"]
+
+# Enable all optional features (for testing)
+full = ["openblas"]
