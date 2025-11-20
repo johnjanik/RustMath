@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 /// # Examples
 ///
 /// ```
-/// use rustmath_trees::BinaryTree;
+/// use rustmath_trees::{BinaryTree, Tree};
 ///
 /// let mut root = BinaryTree::new(1);
 /// root.set_left(BinaryTree::new(2));
@@ -37,7 +37,7 @@ impl<T> BinaryTree<T> {
     /// # Examples
     ///
     /// ```
-    /// use rustmath_trees::BinaryTree;
+    /// use rustmath_trees::{BinaryTree, Tree};
     ///
     /// let node = BinaryTree::new(42);
     /// assert_eq!(node.value(), &42);
@@ -56,7 +56,7 @@ impl<T> BinaryTree<T> {
     /// # Examples
     ///
     /// ```
-    /// use rustmath_trees::BinaryTree;
+    /// use rustmath_trees::{BinaryTree, Tree};
     ///
     /// let left = BinaryTree::new(2);
     /// let right = BinaryTree::new(3);
@@ -220,6 +220,11 @@ impl<T> BinaryTree<T> {
     }
 
     fn check_balance(&self) -> Option<usize> {
+        // Check if this is a leaf node
+        if self.left.is_none() && self.right.is_none() {
+            return Some(0);
+        }
+
         let left_height = if let Some(left) = &self.left {
             left.check_balance()?
         } else {
@@ -317,6 +322,136 @@ impl<T> BinaryTree<T> {
             _ => false,
         }
     }
+
+    /// Generate a complete binary tree from a list of values
+    ///
+    /// Creates a complete binary tree where nodes are filled level by level from left to right.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_trees::{BinaryTree, Tree};
+    ///
+    /// let tree = BinaryTree::from_complete(vec![1, 2, 3, 4, 5]);
+    /// assert!(tree.is_some());
+    /// let tree = tree.unwrap();
+    /// assert_eq!(tree.size(), 5);
+    /// assert!(tree.is_complete());
+    /// ```
+    pub fn from_complete(values: Vec<T>) -> Option<Self>
+    where
+        T: Clone,
+    {
+        if values.is_empty() {
+            return None;
+        }
+        Some(Self::from_complete_helper(values, 0))
+    }
+
+    fn from_complete_helper(values: Vec<T>, index: usize) -> Self
+    where
+        T: Clone,
+    {
+        let mut node = BinaryTree::new(values[index].clone());
+
+        let left_index = 2 * index + 1;
+        let right_index = 2 * index + 2;
+
+        if left_index < values.len() {
+            node.left = Some(Box::new(Self::from_complete_helper(values.clone(), left_index)));
+        }
+
+        if right_index < values.len() {
+            node.right = Some(Box::new(Self::from_complete_helper(values.clone(), right_index)));
+        }
+
+        node
+    }
+
+    /// Generate a full binary tree from a list of values
+    ///
+    /// Creates a full binary tree where every node has either 0 or 2 children.
+    /// If the number of values cannot form a full tree, returns None.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_trees::BinaryTree;
+    ///
+    /// // Full tree with 7 nodes (levels 0, 1, 2 complete)
+    /// let tree = BinaryTree::from_full(vec![1, 2, 3, 4, 5, 6, 7]);
+    /// assert!(tree.is_some());
+    /// let tree = tree.unwrap();
+    /// assert!(tree.is_full());
+    /// ```
+    pub fn from_full(values: Vec<T>) -> Option<Self>
+    where
+        T: Clone,
+    {
+        if values.is_empty() {
+            return None;
+        }
+
+        // Check if the number of values can form a full binary tree
+        // A full tree has 2^h - 1 nodes for some height h
+        let n = values.len();
+        let mut check = 1;
+        while check <= n {
+            if check == n {
+                return Some(Self::from_full_helper(&values, 0));
+            }
+            check = check * 2 + 1;
+        }
+        None
+    }
+
+    fn from_full_helper(values: &[T], index: usize) -> Self
+    where
+        T: Clone,
+    {
+        let mut node = BinaryTree::new(values[index].clone());
+
+        let left_index = 2 * index + 1;
+        let right_index = 2 * index + 2;
+
+        if left_index < values.len() {
+            node.left = Some(Box::new(Self::from_full_helper(values, left_index)));
+        }
+
+        if right_index < values.len() {
+            node.right = Some(Box::new(Self::from_full_helper(values, right_index)));
+        }
+
+        node
+    }
+
+    /// Generate a perfect binary tree of a given height with all nodes having the same value
+    ///
+    /// A perfect binary tree has all interior nodes with exactly 2 children and all leaves
+    /// at the same depth.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_trees::{BinaryTree, Tree};
+    ///
+    /// let tree = BinaryTree::perfect(2, 1);
+    /// assert_eq!(tree.height(), 2);
+    /// assert_eq!(tree.size(), 7); // 2^3 - 1 = 7
+    /// assert!(tree.is_perfect());
+    /// ```
+    pub fn perfect(height: usize, value: T) -> Self
+    where
+        T: Clone,
+    {
+        if height == 0 {
+            BinaryTree::new(value)
+        } else {
+            let left = Self::perfect(height - 1, value.clone());
+            let right = Self::perfect(height - 1, value.clone());
+            BinaryTree::with_children(value, Some(left), Some(right))
+        }
+    }
 }
 
 impl<T: Clone + fmt::Debug> Tree for BinaryTree<T> {
@@ -331,12 +466,11 @@ impl<T: Clone + fmt::Debug> Tree for BinaryTree<T> {
     }
 
     fn height(&self) -> usize {
-        let left_height = self.left.as_ref().map(|l| l.height()).unwrap_or(0);
-        let right_height = self.right.as_ref().map(|r| r.height()).unwrap_or(0);
-
-        if left_height == 0 && right_height == 0 {
+        if self.is_leaf() {
             0
         } else {
+            let left_height = self.left.as_ref().map(|l| l.height()).unwrap_or(0);
+            let right_height = self.right.as_ref().map(|r| r.height()).unwrap_or(0);
             1 + left_height.max(right_height)
         }
     }
@@ -610,5 +744,76 @@ mod tests {
         let json = serde_json::to_string(&root).unwrap();
         let deserialized: BinaryTree<i32> = serde_json::from_str(&json).unwrap();
         assert_eq!(root, deserialized);
+    }
+
+    #[test]
+    fn test_from_complete() {
+        let tree = BinaryTree::from_complete(vec![1, 2, 3, 4, 5]).unwrap();
+        assert_eq!(tree.size(), 5);
+        assert!(tree.is_complete());
+        assert_eq!(tree.value(), &1);
+        assert_eq!(tree.left().unwrap().value(), &2);
+        assert_eq!(tree.right().unwrap().value(), &3);
+        assert_eq!(tree.left().unwrap().left().unwrap().value(), &4);
+        assert_eq!(tree.left().unwrap().right().unwrap().value(), &5);
+
+        // Empty vector should return None
+        assert!(BinaryTree::<i32>::from_complete(vec![]).is_none());
+    }
+
+    #[test]
+    fn test_from_full() {
+        // Full tree with 7 nodes (perfect tree of height 2)
+        let tree = BinaryTree::from_full(vec![1, 2, 3, 4, 5, 6, 7]).unwrap();
+        assert_eq!(tree.size(), 7);
+        assert!(tree.is_full());
+        assert!(tree.is_perfect());
+
+        // Full tree with 3 nodes
+        let tree = BinaryTree::from_full(vec![1, 2, 3]).unwrap();
+        assert_eq!(tree.size(), 3);
+        assert!(tree.is_full());
+
+        // Single node is a full tree
+        let tree = BinaryTree::from_full(vec![1]).unwrap();
+        assert_eq!(tree.size(), 1);
+        assert!(tree.is_full());
+
+        // 5 nodes cannot form a full tree (need 1, 3, 7, 15, ...)
+        assert!(BinaryTree::from_full(vec![1, 2, 3, 4, 5]).is_none());
+
+        // Empty vector should return None
+        assert!(BinaryTree::<i32>::from_full(vec![]).is_none());
+    }
+
+    #[test]
+    fn test_perfect() {
+        // Perfect tree of height 0 (single node)
+        let tree = BinaryTree::perfect(0, 1);
+        assert_eq!(tree.size(), 1);
+        assert_eq!(tree.height(), 0);
+        assert!(tree.is_perfect());
+
+        // Perfect tree of height 1
+        let tree = BinaryTree::perfect(1, 5);
+        assert_eq!(tree.size(), 3);
+        assert_eq!(tree.height(), 1);
+        assert!(tree.is_perfect());
+        assert_eq!(tree.value(), &5);
+        assert_eq!(tree.left().unwrap().value(), &5);
+        assert_eq!(tree.right().unwrap().value(), &5);
+
+        // Perfect tree of height 2
+        let tree = BinaryTree::perfect(2, 10);
+        assert_eq!(tree.size(), 7);
+        assert_eq!(tree.height(), 2);
+        assert!(tree.is_perfect());
+        assert!(tree.is_full());
+
+        // Perfect tree of height 3
+        let tree = BinaryTree::perfect(3, 1);
+        assert_eq!(tree.size(), 15);
+        assert_eq!(tree.height(), 3);
+        assert!(tree.is_perfect());
     }
 }

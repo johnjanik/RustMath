@@ -578,6 +578,376 @@ fn insert_at_position(tableau: &Tableau, row: usize, col: usize, value: usize) -
     Tableau::new(rows).unwrap()
 }
 
+/// A k-tableau - a generalization of Young tableaux
+///
+/// In a k-tableau:
+/// - Rows are weakly increasing (non-decreasing)
+/// - Entries in columns differ by at least k
+///
+/// For k=1, this gives semistandard tableaux
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct KTableau {
+    /// The underlying tableau
+    tableau: Tableau,
+    /// The k value (minimum column increment)
+    k: usize,
+}
+
+impl KTableau {
+    /// Create a k-tableau from rows and a k value
+    ///
+    /// Returns None if the rows don't satisfy the k-tableau property
+    pub fn new(rows: Vec<Vec<usize>>, k: usize) -> Option<Self> {
+        let tableau = Tableau::new(rows)?;
+
+        // Check k-tableau property: columns differ by at least k
+        for col in 0..tableau.rows()[0].len() {
+            for row in 1..tableau.rows().len() {
+                if col < tableau.rows()[row].len() {
+                    let upper = tableau.rows()[row - 1][col];
+                    let lower = tableau.rows()[row][col];
+                    if lower < upper + k {
+                        return None;
+                    }
+                }
+            }
+        }
+
+        // Check rows are weakly increasing
+        for row in tableau.rows() {
+            for i in 1..row.len() {
+                if row[i] < row[i - 1] {
+                    return None;
+                }
+            }
+        }
+
+        Some(KTableau { tableau, k })
+    }
+
+    /// Get the underlying tableau
+    pub fn tableau(&self) -> &Tableau {
+        &self.tableau
+    }
+
+    /// Get the k value
+    pub fn k(&self) -> usize {
+        self.k
+    }
+
+    /// Get the shape of the k-tableau
+    pub fn shape(&self) -> &Partition {
+        self.tableau.shape()
+    }
+
+    /// Get the rows of the k-tableau
+    pub fn rows(&self) -> &[Vec<usize>] {
+        self.tableau.rows()
+    }
+
+    /// Get the size (number of entries)
+    pub fn size(&self) -> usize {
+        self.tableau.size()
+    }
+
+    /// Check if this is a valid k-tableau
+    pub fn is_valid(&self) -> bool {
+        // Check rows are weakly increasing
+        for row in self.tableau.rows() {
+            for i in 1..row.len() {
+                if row[i] < row[i - 1] {
+                    return false;
+                }
+            }
+        }
+
+        // Check columns differ by at least k
+        for col in 0..self.tableau.rows()[0].len() {
+            for row in 1..self.tableau.rows().len() {
+                if col < self.tableau.rows()[row].len() {
+                    let upper = self.tableau.rows()[row - 1][col];
+                    let lower = self.tableau.rows()[row][col];
+                    if lower < upper + self.k {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        true
+    }
+
+    /// Convert to string representation
+    pub fn to_string(&self) -> String {
+        self.tableau.to_string()
+    }
+}
+
+/// A weak k-tableau (same as k-tableau, but emphasizing weak row condition)
+///
+/// In a weak k-tableau:
+/// - Rows are weakly increasing (non-decreasing) - the "weak" part
+/// - Entries in columns differ by at least k
+pub type WeakKTableau = KTableau;
+
+/// An increasing tableau
+///
+/// In an increasing tableau:
+/// - Rows are strictly increasing
+/// - Columns are strictly increasing
+///
+/// This is more restrictive than a standard tableau which allows
+/// equal entries in rows
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct IncreasingTableau {
+    /// The underlying tableau
+    tableau: Tableau,
+}
+
+impl IncreasingTableau {
+    /// Create an increasing tableau from rows
+    ///
+    /// Returns None if the rows don't satisfy the increasing property
+    pub fn new(rows: Vec<Vec<usize>>) -> Option<Self> {
+        let tableau = Tableau::new(rows)?;
+
+        // Check rows are strictly increasing
+        for row in tableau.rows() {
+            for i in 1..row.len() {
+                if row[i] <= row[i - 1] {
+                    return None;
+                }
+            }
+        }
+
+        // Check columns are strictly increasing
+        for col in 0..tableau.rows()[0].len() {
+            for row in 1..tableau.rows().len() {
+                if col < tableau.rows()[row].len() {
+                    if tableau.rows()[row][col] <= tableau.rows()[row - 1][col] {
+                        return None;
+                    }
+                }
+            }
+        }
+
+        Some(IncreasingTableau { tableau })
+    }
+
+    /// Get the underlying tableau
+    pub fn tableau(&self) -> &Tableau {
+        &self.tableau
+    }
+
+    /// Get the shape of the tableau
+    pub fn shape(&self) -> &Partition {
+        self.tableau.shape()
+    }
+
+    /// Get the rows of the tableau
+    pub fn rows(&self) -> &[Vec<usize>] {
+        self.tableau.rows()
+    }
+
+    /// Get the size (number of entries)
+    pub fn size(&self) -> usize {
+        self.tableau.size()
+    }
+
+    /// Check if this is a valid increasing tableau
+    pub fn is_valid(&self) -> bool {
+        // Check rows are strictly increasing
+        for row in self.tableau.rows() {
+            for i in 1..row.len() {
+                if row[i] <= row[i - 1] {
+                    return false;
+                }
+            }
+        }
+
+        // Check columns are strictly increasing
+        for col in 0..self.tableau.rows()[0].len() {
+            for row in 1..self.tableau.rows().len() {
+                if col < self.tableau.rows()[row].len() {
+                    if self.tableau.rows()[row][col] <= self.tableau.rows()[row - 1][col] {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        true
+    }
+
+    /// Convert to string representation
+    pub fn to_string(&self) -> String {
+        self.tableau.to_string()
+    }
+}
+
+/// Generate all k-tableaux of a given shape with entries from a specified range
+///
+/// # Arguments
+/// * `shape` - The partition shape
+/// * `k` - The minimum column increment
+/// * `max_entry` - Maximum entry value allowed
+///
+/// # Returns
+/// A vector of all valid k-tableaux
+pub fn generate_k_tableaux(shape: &Partition, k: usize, max_entry: usize) -> Vec<KTableau> {
+    if shape.sum() == 0 {
+        return vec![];
+    }
+
+    let mut result = Vec::new();
+    let mut current: Vec<Vec<usize>> = shape
+        .parts()
+        .iter()
+        .map(|&len| vec![1; len])
+        .collect();
+
+    generate_k_tableaux_recursive(&mut current, shape, k, max_entry, 0, 0, &mut result);
+    result
+}
+
+fn generate_k_tableaux_recursive(
+    current: &mut Vec<Vec<usize>>,
+    shape: &Partition,
+    k: usize,
+    max_entry: usize,
+    row: usize,
+    col: usize,
+    result: &mut Vec<KTableau>,
+) {
+    // If we've filled all positions, add this k-tableau
+    if row >= shape.length() {
+        if let Some(kt) = KTableau::new(current.clone(), k) {
+            result.push(kt);
+        }
+        return;
+    }
+
+    // Calculate next position
+    let (next_row, next_col) = if col + 1 < shape.parts()[row] {
+        (row, col + 1)
+    } else if row + 1 < shape.length() {
+        (row + 1, 0)
+    } else {
+        (shape.length(), 0)
+    };
+
+    // Determine valid range for this position
+    let min_val = if col > 0 {
+        // Must be >= left neighbor (weakly increasing rows)
+        current[row][col - 1]
+    } else if row > 0 && col < shape.parts()[row] && col < current[row - 1].len() {
+        // Must be >= upper neighbor + k (column constraint)
+        current[row - 1][col] + k
+    } else {
+        1
+    };
+
+    // Additional constraint from above if both col > 0 and row > 0
+    let min_val = if row > 0 && col < current[row - 1].len() {
+        min_val.max(current[row - 1][col] + k)
+    } else {
+        min_val
+    };
+
+    // Try each valid value
+    for val in min_val..=max_entry {
+        current[row][col] = val;
+        generate_k_tableaux_recursive(current, shape, k, max_entry, next_row, next_col, result);
+    }
+}
+
+/// Generate all increasing tableaux of a given shape with specified entries
+///
+/// # Arguments
+/// * `shape` - The partition shape
+/// * `entries` - The entries to use (must have size equal to shape.sum())
+///
+/// # Returns
+/// A vector of all valid increasing tableaux using those entries
+pub fn generate_increasing_tableaux(shape: &Partition, entries: &[usize]) -> Vec<IncreasingTableau> {
+    if shape.sum() != entries.len() {
+        return vec![];
+    }
+
+    if shape.sum() == 0 {
+        return vec![];
+    }
+
+    let mut result = Vec::new();
+    let mut current: Vec<Vec<usize>> = shape
+        .parts()
+        .iter()
+        .map(|&len| vec![0; len])
+        .collect();
+
+    let mut used = vec![false; entries.len()];
+    generate_increasing_tableaux_recursive(&mut current, shape, entries, &mut used, 0, 0, &mut result);
+    result
+}
+
+fn generate_increasing_tableaux_recursive(
+    current: &mut Vec<Vec<usize>>,
+    shape: &Partition,
+    entries: &[usize],
+    used: &mut Vec<bool>,
+    row: usize,
+    col: usize,
+    result: &mut Vec<IncreasingTableau>,
+) {
+    // If we've filled all positions, add this increasing tableau
+    if row >= shape.length() {
+        if let Some(it) = IncreasingTableau::new(current.clone()) {
+            result.push(it);
+        }
+        return;
+    }
+
+    // Calculate next position
+    let (next_row, next_col) = if col + 1 < shape.parts()[row] {
+        (row, col + 1)
+    } else if row + 1 < shape.length() {
+        (row + 1, 0)
+    } else {
+        (shape.length(), 0)
+    };
+
+    // Try each unused entry
+    for i in 0..entries.len() {
+        if used[i] {
+            continue;
+        }
+
+        let val = entries[i];
+
+        // Check if this value is valid for this position
+        let valid = if col > 0 && row > 0 && col < current[row - 1].len() {
+            // Must be > left neighbor and > upper neighbor
+            val > current[row][col - 1] && val > current[row - 1][col]
+        } else if col > 0 {
+            // Must be > left neighbor
+            val > current[row][col - 1]
+        } else if row > 0 && col < current[row - 1].len() {
+            // Must be > upper neighbor
+            val > current[row - 1][col]
+        } else {
+            true
+        };
+
+        if valid {
+            current[row][col] = val;
+            used[i] = true;
+            generate_increasing_tableaux_recursive(current, shape, entries, used, next_row, next_col, result);
+            used[i] = false;
+            current[row][col] = 0;
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -972,5 +1342,253 @@ mod tests {
 
         // Entry 3 at (1,0): residue = (0 - 1 - 1) mod 3 = -2 mod 3 = 1
         assert_eq!(residues[2], 1);
+    // k-tableau tests
+    #[test]
+    fn test_k_tableau_creation() {
+        // Valid 2-tableau: columns differ by at least 2
+        // [[1, 2, 3],
+        //  [3, 4, 5]]
+        let kt = KTableau::new(vec![vec![1, 2, 3], vec![3, 4, 5]], 2);
+        assert!(kt.is_some());
+        let kt = kt.unwrap();
+        assert_eq!(kt.k(), 2);
+        assert_eq!(kt.size(), 6);
+        assert!(kt.is_valid());
+    }
+
+    #[test]
+    fn test_k_tableau_invalid() {
+        // Invalid 2-tableau: second column only differs by 1
+        // [[1, 2, 3],
+        //  [3, 3, 5]]
+        let kt = KTableau::new(vec![vec![1, 2, 3], vec![3, 3, 5]], 2);
+        assert!(kt.is_none());
+
+        // Invalid: rows not weakly increasing
+        let kt2 = KTableau::new(vec![vec![3, 2, 1], vec![4, 5, 6]], 1);
+        assert!(kt2.is_none());
+    }
+
+    #[test]
+    fn test_k_tableau_k1_is_semistandard() {
+        // A 1-tableau should be the same as a semistandard tableau
+        // [[1, 1, 2],
+        //  [2, 3]]
+        let kt = KTableau::new(vec![vec![1, 1, 2], vec![2, 3]], 1);
+        assert!(kt.is_some());
+
+        let kt = kt.unwrap();
+        assert!(kt.is_valid());
+
+        // Verify it's also semistandard
+        let t = Tableau::new(vec![vec![1, 1, 2], vec![2, 3]]).unwrap();
+        assert!(t.is_semistandard());
+    }
+
+    #[test]
+    fn test_k_tableau_k3() {
+        // Valid 3-tableau
+        // [[1, 2],
+        //  [4, 5]]
+        let kt = KTableau::new(vec![vec![1, 2], vec![4, 5]], 3);
+        assert!(kt.is_some());
+        assert!(kt.unwrap().is_valid());
+
+        // Invalid 3-tableau (column differs by only 2)
+        // [[1, 2],
+        //  [3, 5]]
+        let kt2 = KTableau::new(vec![vec![1, 2], vec![3, 5]], 3);
+        assert!(kt2.is_none());
+    }
+
+    #[test]
+    fn test_weak_k_tableau() {
+        // WeakKTableau is a type alias for KTableau
+        // Test that weak rows (with repeats) are allowed
+        let wkt: WeakKTableau = KTableau::new(vec![vec![1, 1, 1], vec![3, 3, 4]], 2).unwrap();
+        assert_eq!(wkt.k(), 2);
+        assert!(wkt.is_valid());
+    }
+
+    #[test]
+    fn test_increasing_tableau_creation() {
+        // Valid increasing tableau
+        // [[1, 2, 4],
+        //  [3, 5]]
+        let it = IncreasingTableau::new(vec![vec![1, 2, 4], vec![3, 5]]);
+        assert!(it.is_some());
+        let it = it.unwrap();
+        assert_eq!(it.size(), 5);
+        assert!(it.is_valid());
+    }
+
+    #[test]
+    fn test_increasing_tableau_invalid_rows() {
+        // Invalid: row not strictly increasing (has equal entries)
+        // [[1, 1, 2],
+        //  [3, 4]]
+        let it = IncreasingTableau::new(vec![vec![1, 1, 2], vec![3, 4]]);
+        assert!(it.is_none());
+
+        // Invalid: row decreasing
+        // [[2, 1, 3],
+        //  [4, 5]]
+        let it2 = IncreasingTableau::new(vec![vec![2, 1, 3], vec![4, 5]]);
+        assert!(it2.is_none());
+    }
+
+    #[test]
+    fn test_increasing_tableau_invalid_columns() {
+        // Invalid: column not strictly increasing (has equal entries)
+        // [[1, 2, 3],
+        //  [1, 4, 5]]
+        let it = IncreasingTableau::new(vec![vec![1, 2, 3], vec![1, 4, 5]]);
+        assert!(it.is_none());
+
+        // Invalid: column decreasing
+        // [[2, 3, 4],
+        //  [1, 5, 6]]
+        let it2 = IncreasingTableau::new(vec![vec![2, 3, 4], vec![1, 5, 6]]);
+        assert!(it2.is_none());
+    }
+
+    #[test]
+    fn test_increasing_tableau_vs_standard() {
+        // An increasing tableau is more restrictive than a standard tableau
+        // Standard tableau (but not increasing due to equal in row):
+        // [[1, 1], [2]]  - This would be invalid for both standard and increasing
+
+        // Valid standard and increasing:
+        // [[1, 2], [3]]
+        let rows = vec![vec![1, 2], vec![3]];
+        let it = IncreasingTableau::new(rows.clone());
+        assert!(it.is_some());
+
+        let t = Tableau::new(rows).unwrap();
+        assert!(t.is_standard());
+    }
+
+    #[test]
+    fn test_generate_k_tableaux_small() {
+        // Generate all 2-tableaux of shape [2, 1] with max entry 5
+        let shape = Partition::new(vec![2, 1]);
+        let k_tableaux = generate_k_tableaux(&shape, 2, 5);
+
+        // Verify all are valid
+        for kt in &k_tableaux {
+            assert!(kt.is_valid());
+            assert_eq!(kt.k(), 2);
+            assert_eq!(kt.shape(), &shape);
+        }
+
+        // Should have at least some k-tableaux
+        assert!(!k_tableaux.is_empty());
+    }
+
+    #[test]
+    fn test_generate_k_tableaux_k1() {
+        // Generate all 1-tableaux (semistandard) of shape [2] with max entry 3
+        let shape = Partition::new(vec![2]);
+        let k_tableaux = generate_k_tableaux(&shape, 1, 3);
+
+        // Expected: [1,1], [1,2], [1,3], [2,2], [2,3], [3,3]
+        // All should be valid 1-tableaux
+        for kt in &k_tableaux {
+            assert!(kt.is_valid());
+            assert_eq!(kt.k(), 1);
+        }
+
+        // Should have exactly 6 tableaux
+        assert_eq!(k_tableaux.len(), 6);
+    }
+
+    #[test]
+    fn test_generate_k_tableaux_empty() {
+        // Empty shape should give empty list
+        let shape = Partition::new(vec![]);
+        let k_tableaux = generate_k_tableaux(&shape, 1, 5);
+        assert_eq!(k_tableaux.len(), 0);
+    }
+
+    #[test]
+    fn test_generate_increasing_tableaux_small() {
+        // Generate all increasing tableaux of shape [2, 1] with entries [1, 2, 3]
+        let shape = Partition::new(vec![2, 1]);
+        let entries = vec![1, 2, 3];
+        let inc_tableaux = generate_increasing_tableaux(&shape, &entries);
+
+        // Verify all are valid
+        for it in &inc_tableaux {
+            assert!(it.is_valid());
+            assert_eq!(it.shape(), &shape);
+            assert_eq!(it.size(), 3);
+        }
+
+        // Should have exactly 2 increasing tableaux:
+        // [[1, 2], [3]] and [[1, 3], [2]]
+        assert_eq!(inc_tableaux.len(), 2);
+    }
+
+    #[test]
+    fn test_generate_increasing_tableaux_single_row() {
+        // Generate all increasing tableaux of shape [3] with entries [1, 2, 3]
+        let shape = Partition::new(vec![3]);
+        let entries = vec![1, 2, 3];
+        let inc_tableaux = generate_increasing_tableaux(&shape, &entries);
+
+        // Should have exactly 1 tableau: [[1, 2, 3]]
+        assert_eq!(inc_tableaux.len(), 1);
+        assert_eq!(inc_tableaux[0].rows(), &[vec![1, 2, 3]]);
+    }
+
+    #[test]
+    fn test_generate_increasing_tableaux_wrong_size() {
+        // Wrong number of entries should give empty list
+        let shape = Partition::new(vec![2, 1]);
+        let entries = vec![1, 2]; // Need 3 entries
+        let inc_tableaux = generate_increasing_tableaux(&shape, &entries);
+        assert_eq!(inc_tableaux.len(), 0);
+    }
+
+    #[test]
+    fn test_generate_increasing_tableaux_empty() {
+        // Empty shape should give empty list
+        let shape = Partition::new(vec![]);
+        let entries = vec![];
+        let inc_tableaux = generate_increasing_tableaux(&shape, &entries);
+        assert_eq!(inc_tableaux.len(), 0);
+    }
+
+    #[test]
+    fn test_k_tableau_edge_case_single_cell() {
+        // Single cell should be valid for any k
+        let kt1 = KTableau::new(vec![vec![1]], 1).unwrap();
+        assert!(kt1.is_valid());
+
+        let kt5 = KTableau::new(vec![vec![1]], 5).unwrap();
+        assert!(kt5.is_valid());
+    }
+
+    #[test]
+    fn test_increasing_tableau_edge_case_single_cell() {
+        // Single cell should be valid
+        let it = IncreasingTableau::new(vec![vec![1]]).unwrap();
+        assert!(it.is_valid());
+    }
+
+    #[test]
+    fn test_k_tableau_to_string() {
+        let kt = KTableau::new(vec![vec![1, 2, 3], vec![4, 5]], 1).unwrap();
+        let s = kt.to_string();
+        assert!(s.contains("1 2 3"));
+        assert!(s.contains("4 5"));
+    }
+
+    #[test]
+    fn test_increasing_tableau_to_string() {
+        let it = IncreasingTableau::new(vec![vec![1, 3, 5], vec![2, 4]]).unwrap();
+        let s = it.to_string();
+        assert!(s.contains("1 3 5"));
+        assert!(s.contains("2 4"));
     }
 }
