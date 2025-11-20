@@ -37,6 +37,8 @@ pub mod tuple;
 pub mod vector_partition;
 pub mod word;
 pub mod wreath_product;
+pub mod key_polynomial;
+pub mod multiset_partition_into_sets_ordered;
 
 pub use affine_permutations::{AffinePermutation, CoxeterType};
 pub use combinations::{combinations, Combination};
@@ -117,10 +119,14 @@ pub use integer_vectors::{
     count_integer_vectors_in_box, count_integer_vectors_with_sum, integer_vector_sum_iter,
     integer_vectors_in_box, integer_vectors_with_l1_norm_bounded, integer_vectors_with_sum,
     integer_vectors_with_weighted_sum, IntegerVector, IntegerVectorSumIter,
+};
 pub use vector_partition::{
     count_vector_partitions_exact_parts, count_vector_partitions_max_parts,
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
     vector_partitions_with_max_part, VectorPartition,
+};
+pub use key_polynomial::{
+    key_polynomial, KeyMonomial, KeyPolynomial, WeakComposition,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
