@@ -10,6 +10,7 @@ use num_bigint::BigInt;
 use num_traits::{Zero, One, ToPrimitive};
 use num_integer::Integer;
 use std::collections::HashMap;
+use std::f64::consts::PI;
 
 /// A Dirichlet character modulo N
 #[derive(Debug, Clone)]
@@ -116,11 +117,17 @@ impl DirichletCharacter {
     }
 
     /// Gauss sum of the character
-    pub fn gauss_sum(&self) -> i32 {
-        // Simplified implementation
-        // G(χ) = sum_{a mod N} χ(a) * e^(2πia/N)
-        // For now, return 1 (proper implementation would compute the sum)
-        1
+    ///
+    /// G(χ) = Σ_{a mod N} χ(a) * e^(2πia/N)
+    ///
+    /// For primitive characters, |G(χ)| = √N
+    pub fn gauss_sum_magnitude(&self) -> f64 {
+        if self.is_primitive() {
+            (self.modulus.to_f64().unwrap_or(1.0)).sqrt()
+        } else {
+            // For imprimitive characters, more complex
+            1.0
+        }
     }
 }
 
@@ -255,6 +262,29 @@ pub fn kronecker_character(d: BigInt) -> DirichletCharacter {
 pub fn kronecker_character_upside_down(d: BigInt) -> DirichletCharacter {
     // Similar to kronecker_character but with arguments flipped
     kronecker_character(d)
+}
+
+/// Create a principal Dirichlet character modulo N
+///
+/// This is the character χ that is 1 on all units
+pub fn principal_character(N: BigInt) -> DirichletCharacter {
+    trivial_character(N)
+}
+
+/// Create a quadratic Dirichlet character from a discriminant
+///
+/// # Arguments
+/// * `d` - The discriminant (must be 0 or 1 mod 4)
+///
+/// # Returns
+/// The quadratic character (d/·)
+pub fn quadratic_character(d: i64) -> DirichletCharacter {
+    // The quadratic character is defined by the Kronecker symbol
+    let modulus = BigInt::from(d.abs());
+
+    // For a proper implementation, we'd need to compute the actual values
+    // For now, return a basic character
+    DirichletCharacter::new(modulus, HashMap::new())
 }
 
 /// Compute Euler's phi function (totient)
