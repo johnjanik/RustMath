@@ -3,9 +3,13 @@
 //! Provides truncated power series arithmetic for formal power series.
 //! A power series is an infinite series of the form: Σ(n=0 to ∞) aₙxⁿ
 //! We represent truncated series keeping coefficients up to some precision.
+//!
+//! Also provides weighted automata for recognizable (rational) series.
 
+pub mod automaton;
 pub mod series;
 
+pub use automaton::WeightedAutomaton;
 pub use series::PowerSeries;
 
 #[cfg(test)]
