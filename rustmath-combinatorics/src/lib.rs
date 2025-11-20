@@ -3,6 +3,7 @@
 //! This crate provides combinatorial structures like permutations, combinations,
 //! partitions, and algorithms for generating and manipulating them.
 
+pub mod affine_permutations;
 pub mod binary_words;
 pub mod combinations;
 pub mod composition;
@@ -10,6 +11,7 @@ pub mod derangements;
 pub mod designs;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod fully_packed_loop;
 pub mod partitions;
 pub mod perfect_matching;
 pub mod permutations;
@@ -19,12 +21,16 @@ pub mod ranking;
 pub mod recurrence_sequences;
 pub mod set_partition;
 pub mod set_system;
+pub mod skew_partition;
 pub mod species;
 pub mod subset;
+pub mod superpartitions;
 pub mod tableaux;
+pub mod tamari;
 pub mod tuple;
 pub mod word;
 
+pub use affine_permutations::{AffinePermutation, CoxeterType};
 pub use combinations::{combinations, Combination};
 pub use partitions::{
     count_partitions_with_max_parts, partition_count, partitions, partitions_with_distinct_parts,
@@ -74,6 +80,10 @@ pub use q_analogue::{
 };
 pub use derangements::{
     all_derangements, count_derangements, count_derangements_recurrence, is_derangement,
+};
+pub use superpartitions::{
+    count_superpartitions, strict_superpartitions, superpartitions, superpartitions_with_k_parts,
+    superpartitions_with_m_circled, SuperPart, SuperPartition,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
