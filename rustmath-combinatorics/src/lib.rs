@@ -71,7 +71,7 @@ pub use ranking::{CombinationRank, PermutationRank, Rankable, RankingTable};
 pub use recurrence_sequences::{
     solve_binary_recurrence, BinaryRecurrence, LinearRecurrence, RecurrenceSequence,
 };
-pub use set_partition::{set_partitions, SetPartition};
+pub use set_partition::{set_partition_ordered, set_partitions, OrderedSetPartition, SetPartition};
 pub use set_system::SetSystem;
 pub use word::{
     abelian_complexity, boyer_moore_search, christoffel_word, factor_complexity, kmp_search,
@@ -91,6 +91,7 @@ pub use plane_partition::{
     count_self_complementary_plane_partitions, count_totally_symmetric_plane_partitions,
     count_transpose_complement_plane_partitions, plane_partitions, plane_partitions_in_box,
     PlanePartition,
+};
 pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator,
 };
 pub use derangements::{
