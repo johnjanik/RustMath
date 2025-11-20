@@ -13,11 +13,13 @@ pub mod dyck_word;
 pub mod enumeration;
 pub mod integer_vectors;
 pub mod integer_matrices;
+pub mod multiset_partition_into_sets_ordered;
 pub mod ordered_tree;
 pub mod partitions;
 pub mod perfect_matching;
 pub mod permutations;
 pub mod plane_partition;
+pub mod parallelogram_polyomino;
 pub mod permutation_simd;
 pub mod posets;
 pub mod q_analogue;
@@ -105,6 +107,10 @@ pub use plane_partition::{
     count_transpose_complement_plane_partitions, plane_partitions, plane_partitions_in_box,
     PlanePartition,
 };
+pub use parallelogram_polyomino::{
+    count_parallelogram_polyominoes, parallelogram_polyominoes,
+    parallelogram_polyominoes_with_bounce_statistic, BouncePath, ParallelogramPolyomino, Point,
+};
 pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator};
 pub use derangements::{
     all_derangements, count_derangements, count_derangements_recurrence, is_derangement,
@@ -117,6 +123,7 @@ pub use integer_vectors::{
     count_integer_vectors_in_box, count_integer_vectors_with_sum, integer_vector_sum_iter,
     integer_vectors_in_box, integer_vectors_with_l1_norm_bounded, integer_vectors_with_sum,
     integer_vectors_with_weighted_sum, IntegerVector, IntegerVectorSumIter,
+};
 pub use vector_partition::{
     count_vector_partitions_exact_parts, count_vector_partitions_max_parts,
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
