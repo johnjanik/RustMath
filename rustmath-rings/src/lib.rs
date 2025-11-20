@@ -57,6 +57,7 @@ pub mod monomials;
 pub mod morphism;
 pub mod noncommutative_ideals;
 pub mod numbers_abc;
+pub mod padics;
 pub mod pari_ring;
 pub mod quotient_ring;
 pub mod quotient_ring_element;
