@@ -14,3 +14,4 @@ num-traits = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }
 rand = { workspace = true }
+tempfile = "3.8"
