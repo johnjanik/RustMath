@@ -5,6 +5,7 @@
 
 pub mod binary_words;
 pub mod combinations;
+pub mod designs;
 pub mod enumeration;
 pub mod partitions;
 pub mod permutations;
@@ -26,6 +27,10 @@ pub use tableaux::{robinson_schensted, rs_insert, standard_tableaux, Tableau};
 
 // Re-export new modules
 pub use binary_words::{all_binary_words, binary_words_with_weight, lyndon_words, necklaces, BinaryWord};
+pub use designs::{
+    are_latin_squares_orthogonal, mutually_orthogonal_latin_squares, BlockDesign,
+    DesignAutomorphism, DifferenceSet, HadamardMatrix, OrthogonalArray, SteinerSystem,
+};
 pub use enumeration::{
     cartesian_product, stars_and_bars, tuples, weak_compositions, CompositionIterator,
     Enumerable, GrayCodeIterator, LazyEnumerator, PartitionIterator, RevolvingDoorIterator,
