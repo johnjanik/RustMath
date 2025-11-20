@@ -1147,6 +1147,7 @@ mod tests {
     }
 
     // k-tableau tests
+    // TODO: Re-enable this test once KTableau is implemented
     // TODO: Implement KTableau
     // TODO: Implement KTableau before enabling this test
     // #[test]

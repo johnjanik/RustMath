@@ -77,6 +77,7 @@ pub mod skew_partition;
 pub mod specht_module;
 pub mod species;
 pub mod subset;
+pub mod subword;
 pub mod subword_complex;
 pub mod superpartitions;
 pub mod symmetric_group_representations;
@@ -302,6 +303,11 @@ pub use interval_posets::{
 pub use ribbon_tableau::{
     fermionic_formula, kostka_foulkes_ribbon, ribbon_tableaux, RibbonDecomposition, RibbonTableau,
 };
+pub use subword::{
+    all_subwords, count_distinct_subwords, is_subword, reduced_pipe_dreams, subword_order,
+    subword_positions, PipeDream, SubwordComplex,
+pub use skew_partition::{
+    ribbon_shaped_tableaux, RibbonTableau, SkewPartition, SkewTableau,
 pub use similarity_class_type::{
     centralizer_algebra_dim, centralizer_group_cardinality, dictionary_from_generator,
     ext_orbit_centralizers, ext_orbits, fq, input_parsing,
