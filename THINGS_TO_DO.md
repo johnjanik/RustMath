@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~70% (396 / 568 functions tracked)
+**Overall Progress**: ~71% (424 / 596 functions tracked)
 
 ---
 
@@ -831,6 +831,43 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 **Progress**: 16/19 features (84%)
 
+### 9.3 Algebraic Curves (sage.schemes.curves)
+**SageMath Source**: `src/sage/schemes/curves/`
+
+| Function/Feature | Status | RustMath Location | Notes |
+|-----------------|--------|-------------------|-------|
+| Plane curves | ✅ | `rustmath-curves/src/plane_curve.rs` | Affine and projective plane curves |
+| `PlaneCurve(F)` | ✅ | `rustmath-curves/src/plane_curve.rs` | Create curve from polynomial |
+| `.degree()` | ✅ | `rustmath-curves/src/plane_curve.rs` | Degree of defining polynomial |
+| `.is_smooth()` | ✅ | `rustmath-curves/src/plane_curve.rs` | Check if curve has no singularities |
+| `.singular_points()` | ✅ | `rustmath-curves/src/plane_curve.rs` | Find singular points |
+| `.to_projective()` | ✅ | `rustmath-curves/src/plane_curve.rs` | Homogenize to projective form |
+| `.to_affine()` | ✅ | `rustmath-curves/src/plane_curve.rs` | Dehomogenize to affine form |
+| Common curves | ✅ | `rustmath-curves/src/plane_curve.rs` | Circle, line, conic, elliptic (short Weierstrass) |
+| Singularities | ✅ | `rustmath-curves/src/singularities.rs` | Detection and classification |
+| Singularity types | ✅ | `rustmath-curves/src/singularities.rs` | Node, cusp, tacnode, triple point, higher |
+| Delta invariant | ✅ | `rustmath-curves/src/singularities.rs` | For genus computation |
+| Genus computation | ✅ | `rustmath-curves/src/genus.rs` | Arithmetic and geometric genus |
+| `.arithmetic_genus()` | ✅ | `rustmath-curves/src/genus.rs` | g = (d-1)(d-2)/2 for smooth curves |
+| `.geometric_genus()` | ✅ | `rustmath-curves/src/genus.rs` | Using genus-delta formula |
+| Genus classification | ✅ | `rustmath-curves/src/genus.rs` | Rational (g=0), elliptic (g=1), general type (g≥2) |
+| Hyperelliptic curves | ✅ | `rustmath-curves/src/hyperelliptic.rs` | y² = f(x) with genus g |
+| `HyperellipticCurve(f)` | ✅ | `rustmath-curves/src/hyperelliptic.rs` | From polynomial f |
+| `.genus` | ✅ | `rustmath-curves/src/hyperelliptic.rs` | Genus of hyperelliptic curve |
+| `.discriminant()` | ✅ | `rustmath-curves/src/hyperelliptic.rs` | Discriminant of defining polynomial |
+| Genus 2 curves | ✅ | `rustmath-curves/src/hyperelliptic.rs` | Quintic and sextic forms |
+| Curve parameterization | ✅ | `rustmath-curves/src/parameterization.rs` | Rational and transcendental |
+| Rational parameterization | ✅ | `rustmath-curves/src/parameterization.rs` | For genus 0 curves |
+| Stereographic projection | ✅ | `rustmath-curves/src/parameterization.rs` | Circle parameterization |
+| Weierstrass forms | ✅ | `rustmath-curves/src/weierstrass.rs` | Long and short forms |
+| Long Weierstrass form | ✅ | `rustmath-curves/src/weierstrass.rs` | y² + a₁xy + a₃y = x³ + a₂x² + a₄x + a₆ |
+| Short Weierstrass form | ✅ | `rustmath-curves/src/weierstrass.rs` | y² = x³ + ax + b |
+| `.discriminant()` | ✅ | `rustmath-curves/src/weierstrass.rs` | Discriminant formula |
+| `.j_invariant()` | ✅ | `rustmath-curves/src/weierstrass.rs` | j-invariant for classification |
+| Special j-invariants | ✅ | `rustmath-curves/src/weierstrass.rs` | j = 0, j = 1728 |
+
+**Progress**: 28/28 features (100%) ✅ COMPLETE
+
 ---
 
 ## 10. Cryptography (sage.crypto)
@@ -1186,7 +1223,7 @@ let results = client.search_by_terms(&[1, 1, 2, 3, 5, 8])?;
 | 6. Combinatorics | 52 | 52 | 100% |
 | 7. Graph Theory | 50 | 59 | 85% |
 | 8. Geometry | 18 | 19 | 95% |
-| 9. Algebraic Geometry | 27 | 30 | 90% |
+| 9. Algebraic Geometry | 55 | 58 | 95% |
 | 10. Cryptography | 24 | 24 | 100% |
 | 11. Coding Theory | 13 | 13 | 100% |
 | 12. Group Theory | 18 | 18 | 100% |
@@ -1197,7 +1234,7 @@ let results = client.search_by_terms(&[1, 1, 2, 3, 5, 8])?;
 | 17. Numerical Computation | 6 | 6 | 100% |
 | 18-20. Advanced Topics | 10 | 10 | 100% |
 
-**TOTAL**: **396 / 568 functions** = **~70% complete**
+**TOTAL**: **424 / 596 functions** = **~71% complete**
 
 ### Files to Examine in SageMath Source
 
