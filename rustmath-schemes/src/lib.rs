@@ -210,7 +210,6 @@ pub mod projective;
 pub mod elliptic_curves;
 
 // Projective-specific modules (organized under projective)
-pub mod elliptic_curves;
 pub mod graded_ring;
 pub mod line_bundle;
 pub mod proj;
@@ -218,7 +217,6 @@ pub mod projective_morphism;
 pub mod projective_space;
 pub mod segre;
 pub mod veronese;
-pub mod elliptic_curves;
 
 // Re-export commonly used types from generic module
 pub use generic::{
