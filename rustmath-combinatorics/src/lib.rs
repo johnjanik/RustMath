@@ -64,6 +64,7 @@ pub mod schubert;
 pub mod set_partition;
 pub mod set_system;
 pub mod sidon_sets;
+pub mod similarity_class_type;
 pub mod six_vertex_model;
 pub mod skew_partition;
 pub mod specht_module;
@@ -291,9 +292,16 @@ pub use interval_posets::{
 pub use ribbon_tableau::{
     fermionic_formula, kostka_foulkes_ribbon, ribbon_tableaux, RibbonDecomposition, RibbonTableau,
 };
-pub use skew_partition::{
-    ribbon_shaped_tableaux, RibbonTableau, SkewPartition, SkewTableau,
+pub use similarity_class_type::{
+    centralizer_algebra_dim, centralizer_group_cardinality, dictionary_from_generator,
+    ext_orbit_centralizers, ext_orbits, fq, input_parsing,
+    invariant_subspace_generating_function, matrix_centralizer_cardinalities,
+    matrix_centralizer_cardinalities_length_two, matrix_similarity_classes,
+    matrix_similarity_classes_length_two, order_of_general_linear_group, primitives,
+    PrimarySimilarityClassType, PrimarySimilarityClassTypes, SimilarityClassType,
+    SimilarityClassTypes,
 };
+pub use skew_partition::{SkewPartition, SkewTableau};
 pub use parking_function::{
     count_non_decreasing_parking_functions, count_parking_functions,
     non_decreasing_parking_functions, non_decreasing_parking_functions_with_area,
