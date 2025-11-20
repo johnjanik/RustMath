@@ -7,6 +7,7 @@
 extern crate lazy_static;
 
 pub mod affine_permutations;
+pub mod alternating_sign_matrix;
 pub mod baxter_permutations;
 pub mod bijectionist;
 pub mod backtrack;
@@ -23,6 +24,7 @@ pub mod designs;
 pub mod dlx;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod fully_packed_loop;
 pub mod gelfand_tsetlin;
 pub mod fully_commutative_elements;
 pub mod free_prelie_algebra;
@@ -58,6 +60,7 @@ pub mod schubert;
 pub mod set_partition;
 pub mod set_system;
 pub mod sidon_sets;
+pub mod six_vertex_model;
 pub mod skew_partition;
 pub mod species;
 pub mod subset;
@@ -232,6 +235,19 @@ pub use vector_partition::{
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
     vector_partitions_with_max_part, VectorPartition,
 };
+pub use alternating_sign_matrix::{
+    all_asms, asm_count, asm_count_by_inversions, asm_q_enumeration, razumov_stroganov_polynomial,
+    razumov_stroganov_refined_count, AlternatingSignMatrix,
+};
+pub use fully_packed_loop::{
+    all_asms as all_fpls, count_asms, AlternatingSignMatrix as FPLAlternatingSignMatrix,
+    FullyPackedLoop, LinkPattern,
+};
+pub use six_vertex_model::{
+    all_dwbc_configurations, count_dwbc_configurations, from_asm as six_vertex_from_asm,
+    partition_function as six_vertex_partition_function,
+    weighted_partition_function as six_vertex_weighted_partition_function, SixVertexConfiguration,
+    VertexType,
 pub use ncsym::{
     coarse_powersum, deformed_coarse_powersum, elementary, homogeneous, matchings, monomial,
     nesting, powersum, ribbon_schur, supercharacter, x_basis, NCSymBasis, NCSymDual,
