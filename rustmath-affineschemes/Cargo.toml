@@ -1,0 +1,17 @@
+[package]
+name = "rustmath-affineschemes"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustmath-core = { path = "../rustmath-core" }
+rustmath-integers = { path = "../rustmath-integers" }
+rustmath-rationals = { path = "../rustmath-rationals" }
+rustmath-polynomials = { path = "../rustmath-polynomials" }
+rustmath-rings = { path = "../rustmath-rings" }
+num-bigint = { workspace = true }
+num-traits = { workspace = true }
+thiserror = { workspace = true }
