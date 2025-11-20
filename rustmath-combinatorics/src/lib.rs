@@ -13,6 +13,7 @@ pub mod partitions;
 pub mod perfect_matching;
 pub mod permutations;
 pub mod posets;
+pub mod q_analogue;
 pub mod ranking;
 pub mod set_partition;
 pub mod set_system;
@@ -61,6 +62,9 @@ pub use word::{
 pub use subset::{
     all_subsets, count_k_subsets, k_subset_iterator, k_subsets, subset_iterator, KSubsetIterator,
     Subset, SubsetIterator,
+};
+pub use q_analogue::{
+    gaussian_polynomial, q_binomial, q_binomial_eval, q_factorial, q_integer, q_multinomial,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
