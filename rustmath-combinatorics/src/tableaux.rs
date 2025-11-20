@@ -1090,8 +1090,35 @@ mod tests {
     }
 
     #[test]
-    fn test_shifted_primed_tableau_invalid_shape() {
-        use PrimedEntry::Unprimed as U;
+    fn test_residue_negative_multicharge() {
+        let t = Tableau::new(vec![vec![1, 2], vec![3]]).unwrap();
+
+        // Test with negative multicharge
+        let residues = t.residue_sequence(3, -1);
+
+        // Entry 1 at (0,0): residue = (0 - 0 - 1) mod 3 = -1 mod 3 = 2
+        assert_eq!(residues[0], 2);
+
+        // Entry 2 at (0,1): residue = (1 - 0 - 1) mod 3 = 0
+        assert_eq!(residues[1], 0);
+
+        // Entry 3 at (1,0): residue = (0 - 1 - 1) mod 3 = -2 mod 3 = 1
+        assert_eq!(residues[2], 1);
+    }
+
+    // k-tableau tests
+    #[test]
+    fn test_k_tableau_creation() {
+        // Valid 2-tableau: columns differ by at least 2
+        // [[1, 2, 3],
+        //  [3, 4, 5]]
+        let kt = KTableau::new(vec![vec![1, 2, 3], vec![3, 4, 5]], 2);
+        assert!(kt.is_some());
+        let kt = kt.unwrap();
+        assert_eq!(kt.k(), 2);
+        assert_eq!(kt.size(), 6);
+        assert!(kt.is_valid());
+    }
 
         // Invalid - shape is not strictly decreasing (3, 3)
         let t = ShiftedPrimedTableau::new(vec![
