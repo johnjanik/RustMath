@@ -15,6 +15,7 @@ pub mod dyck_word;
 pub mod enumeration;
 pub mod integer_vectors;
 pub mod integer_matrices;
+pub mod kazhdan_lusztig;
 pub mod multiset_partition_into_sets_ordered;
 pub mod ordered_tree;
 pub mod partitions;
@@ -149,6 +150,9 @@ pub use ribbon_tableau::{
     fermionic_formula, kostka_foulkes_ribbon, ribbon_tableaux, RibbonDecomposition, RibbonTableau,
 };
 pub use skew_partition::{SkewPartition, SkewTableau};
+pub use kazhdan_lusztig::{
+    bruhat_interval, bruhat_le, bruhat_poset, kazhdan_lusztig_polynomial, length, r_polynomial,
+};
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
 
