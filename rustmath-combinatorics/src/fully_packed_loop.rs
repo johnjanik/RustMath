@@ -501,33 +501,33 @@ fn check_column_constraints(matrix: &[Vec<i8>], row: usize, n: usize) -> bool {
 /// Count the number of ASMs of size n
 ///
 /// Uses the formula: A(n) = ∏(k=0 to n-1) (3k+1)! / (n+k)!
-pub fn count_asms(n: usize) -> num_bigint::BigUint {
-    use num_bigint::BigUint;
-    use num_traits::One;
+pub fn count_asms(n: usize) -> rustmath_integers::Integer {
+    use rustmath_integers::Integer;
+    use rustmath_core::Ring;
 
     if n == 0 {
-        return One::one();
+        return Integer::one();
     }
 
-    let mut numerator: BigUint = One::one();
-    let mut denominator: BigUint = One::one();
+    let mut numerator = Integer::one();
+    let mut denominator = Integer::one();
 
     for k in 0..n {
-        numerator *= factorial_big((3 * k + 1) as u32);
-        denominator *= factorial_big((n + k) as u32);
+        numerator = numerator * factorial_big((3 * k + 1) as u32);
+        denominator = denominator * factorial_big((n + k) as u32);
     }
 
     numerator / denominator
 }
 
-/// Helper to compute factorial as BigUint
-fn factorial_big(n: u32) -> num_bigint::BigUint {
-    use num_bigint::BigUint;
-    use num_traits::One;
+/// Helper to compute factorial as Integer
+fn factorial_big(n: u32) -> rustmath_integers::Integer {
+    use rustmath_integers::Integer;
+    use rustmath_core::Ring;
 
-    let mut result: BigUint = One::one();
+    let mut result = Integer::one();
     for i in 2..=n {
-        result *= i;
+        result = result * Integer::from(i);
     }
     result
 }
@@ -637,14 +637,14 @@ mod tests {
 
     #[test]
     fn test_count_asms() {
-        use num_bigint::BigUint;
+        use rustmath_integers::Integer;
 
         // Known ASM counts
-        assert_eq!(count_asms(1), BigUint::from(1u32));
-        assert_eq!(count_asms(2), BigUint::from(2u32));
-        assert_eq!(count_asms(3), BigUint::from(7u32));
-        assert_eq!(count_asms(4), BigUint::from(42u32));
-        assert_eq!(count_asms(5), BigUint::from(429u32));
+        assert_eq!(count_asms(1), Integer::from(1));
+        assert_eq!(count_asms(2), Integer::from(2));
+        assert_eq!(count_asms(3), Integer::from(7));
+        assert_eq!(count_asms(4), Integer::from(42));
+        assert_eq!(count_asms(5), Integer::from(429));
     }
 
     #[test]
