@@ -440,6 +440,345 @@ pub fn partition_count(n: usize) -> usize {
     dp[n]
 }
 
+/// Generate partitions of n with at most k parts
+///
+/// These are partitions where the number of parts is <= k
+pub fn partitions_with_max_parts(n: usize, k: usize) -> Vec<Partition> {
+    if n == 0 {
+        return vec![Partition { parts: vec![] }];
+    }
+    if k == 0 {
+        return vec![];
+    }
+
+    let mut result = Vec::new();
+    let mut current = Vec::new();
+
+    generate_partitions_with_max_parts(n, n, k, &mut current, &mut result);
+
+    result
+}
+
+fn generate_partitions_with_max_parts(
+    n: usize,
+    max_value: usize,
+    max_parts: usize,
+    current: &mut Vec<usize>,
+    result: &mut Vec<Partition>,
+) {
+    if n == 0 {
+        result.push(Partition {
+            parts: current.clone(),
+        });
+        return;
+    }
+
+    if max_parts == 0 {
+        return; // Can't add more parts
+    }
+
+    for i in (1..=max_value.min(n)).rev() {
+        current.push(i);
+        generate_partitions_with_max_parts(n - i, i, max_parts - 1, current, result);
+        current.pop();
+    }
+}
+
+/// Generate partitions of n with exactly k parts
+///
+/// These are partitions where the number of parts equals k
+pub fn partitions_with_exact_parts(n: usize, k: usize) -> Vec<Partition> {
+    if k == 0 {
+        if n == 0 {
+            return vec![Partition { parts: vec![] }];
+        } else {
+            return vec![];
+        }
+    }
+    if n < k {
+        return vec![]; // Can't partition n into k positive parts if n < k
+    }
+
+    let mut result = Vec::new();
+    let mut current = Vec::new();
+
+    generate_partitions_exact_parts(n, n, k, &mut current, &mut result);
+
+    result
+}
+
+fn generate_partitions_exact_parts(
+    n: usize,
+    max_value: usize,
+    remaining_parts: usize,
+    current: &mut Vec<usize>,
+    result: &mut Vec<Partition>,
+) {
+    if remaining_parts == 0 {
+        if n == 0 {
+            result.push(Partition {
+                parts: current.clone(),
+            });
+        }
+        return;
+    }
+
+    if n == 0 {
+        return; // Still have parts to add but no value left
+    }
+
+    // Minimum value for next part to ensure we can complete the partition
+    let min_value = 1;
+    // Maximum value is limited by remaining sum and max_value
+    let max_for_part = max_value.min(n - (remaining_parts - 1)); // Reserve at least 1 for each remaining part
+
+    for i in (min_value..=max_for_part).rev() {
+        current.push(i);
+        generate_partitions_exact_parts(n - i, i, remaining_parts - 1, current, result);
+        current.pop();
+    }
+}
+
+/// Generate partitions of n where each part is at most max_part
+///
+/// Also known as partitions into parts of size at most max_part
+pub fn partitions_with_max_part(n: usize, max_part: usize) -> Vec<Partition> {
+    if n == 0 {
+        return vec![Partition { parts: vec![] }];
+    }
+    if max_part == 0 {
+        return vec![];
+    }
+
+    let mut result = Vec::new();
+    let mut current = Vec::new();
+
+    generate_partitions(n, max_part, &mut current, &mut result);
+
+    result
+}
+
+/// Generate partitions of n where each part is at least min_part
+///
+/// Also known as partitions into parts of size at least min_part
+pub fn partitions_with_min_part(n: usize, min_part: usize) -> Vec<Partition> {
+    if n == 0 {
+        return vec![Partition { parts: vec![] }];
+    }
+    if min_part > n {
+        return vec![];
+    }
+
+    let mut result = Vec::new();
+    let mut current = Vec::new();
+
+    generate_partitions_with_min_part(n, n, min_part, &mut current, &mut result);
+
+    result
+}
+
+fn generate_partitions_with_min_part(
+    n: usize,
+    max_value: usize,
+    min_part: usize,
+    current: &mut Vec<usize>,
+    result: &mut Vec<Partition>,
+) {
+    if n == 0 {
+        result.push(Partition {
+            parts: current.clone(),
+        });
+        return;
+    }
+
+    if max_value < min_part {
+        return; // Can't use parts smaller than min_part
+    }
+
+    for i in (min_part..=max_value.min(n)).rev() {
+        current.push(i);
+        generate_partitions_with_min_part(n - i, i, min_part, current, result);
+        current.pop();
+    }
+}
+
+/// Generate partitions of n with distinct parts (all parts different)
+///
+/// Also known as partitions into distinct summands
+pub fn partitions_with_distinct_parts(n: usize) -> Vec<Partition> {
+    if n == 0 {
+        return vec![Partition { parts: vec![] }];
+    }
+
+    let mut result = Vec::new();
+    let mut current = Vec::new();
+
+    generate_partitions_distinct(n, n, &mut current, &mut result);
+
+    result
+}
+
+fn generate_partitions_distinct(
+    n: usize,
+    max_value: usize,
+    current: &mut Vec<usize>,
+    result: &mut Vec<Partition>,
+) {
+    if n == 0 {
+        result.push(Partition {
+            parts: current.clone(),
+        });
+        return;
+    }
+
+    if max_value == 0 {
+        return;
+    }
+
+    // Don't use max_value
+    generate_partitions_distinct(n, max_value - 1, current, result);
+
+    // Use max_value (if possible)
+    if max_value <= n {
+        current.push(max_value);
+        generate_partitions_distinct(n - max_value, max_value - 1, current, result);
+        current.pop();
+    }
+}
+
+/// Generate partitions of n with odd parts only
+pub fn partitions_with_odd_parts(n: usize) -> Vec<Partition> {
+    if n == 0 {
+        return vec![Partition { parts: vec![] }];
+    }
+
+    let mut result = Vec::new();
+    let mut current = Vec::new();
+
+    // Start with largest odd number <= n
+    let max_odd = if n % 2 == 1 { n } else { n - 1 };
+    generate_partitions_odd(n, max_odd, &mut current, &mut result);
+
+    result
+}
+
+fn generate_partitions_odd(
+    n: usize,
+    max_value: usize,
+    current: &mut Vec<usize>,
+    result: &mut Vec<Partition>,
+) {
+    if n == 0 {
+        result.push(Partition {
+            parts: current.clone(),
+        });
+        return;
+    }
+
+    if max_value == 0 {
+        return;
+    }
+
+    // Try all odd values from max_value down to 1
+    let mut val = max_value;
+    loop {
+        if val <= n {
+            current.push(val);
+            generate_partitions_odd(n - val, val, current, result);
+            current.pop();
+        }
+
+        if val < 2 {
+            break;
+        }
+        val = val.saturating_sub(2); // Next smaller odd number
+    }
+}
+
+/// Generate partitions of n with even parts only
+pub fn partitions_with_even_parts(n: usize) -> Vec<Partition> {
+    if n == 0 {
+        return vec![Partition { parts: vec![] }];
+    }
+    if n % 2 != 0 {
+        return vec![]; // Can't partition odd number into even parts
+    }
+
+    let mut result = Vec::new();
+    let mut current = Vec::new();
+
+    // Start with largest even number <= n
+    let max_even = if n % 2 == 0 { n } else { n - 1 };
+    generate_partitions_even(n, max_even, &mut current, &mut result);
+
+    result
+}
+
+fn generate_partitions_even(
+    n: usize,
+    max_value: usize,
+    current: &mut Vec<usize>,
+    result: &mut Vec<Partition>,
+) {
+    if n == 0 {
+        result.push(Partition {
+            parts: current.clone(),
+        });
+        return;
+    }
+
+    if max_value == 0 {
+        return;
+    }
+
+    // Try all even values from max_value down to 2
+    let mut val = max_value;
+    loop {
+        if val <= n {
+            current.push(val);
+            generate_partitions_even(n - val, val, current, result);
+            current.pop();
+        }
+
+        if val < 2 {
+            break;
+        }
+        val = val.saturating_sub(2); // Next smaller even number
+    }
+}
+
+/// Count partitions with restrictions using dynamic programming
+pub fn count_partitions_with_max_parts(n: usize, k: usize) -> usize {
+    if n == 0 {
+        return 1;
+    }
+    if k == 0 {
+        return 0;
+    }
+
+    // dp[i][j] = number of partitions of i with at most j parts
+    let mut dp = vec![vec![0; k + 1]; n + 1];
+    dp[0][0] = 1;
+    for j in 1..=k {
+        dp[0][j] = 1; // Empty partition
+    }
+
+    for i in 1..=n {
+        for j in 1..=k {
+            // Partitions with < j parts (same as with at most j-1 parts)
+            dp[i][j] = dp[i][j - 1];
+
+            // Partitions with exactly j parts
+            // Remove 1 from each part: partition of (i-j) with at most j parts
+            if i >= j {
+                dp[i][j] += dp[i - j][j];
+            }
+        }
+    }
+
+    dp[n][k]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

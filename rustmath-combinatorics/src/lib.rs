@@ -3,17 +3,35 @@
 //! This crate provides combinatorial structures like permutations, combinations,
 //! partitions, and algorithms for generating and manipulating them.
 
+pub mod binary_words;
 pub mod combinations;
+pub mod enumeration;
 pub mod partitions;
 pub mod permutations;
 pub mod posets;
+pub mod ranking;
+pub mod set_system;
 pub mod tableaux;
 
 pub use combinations::{combinations, Combination};
-pub use partitions::{partition_count, partitions, Partition, PartitionTuple};
+pub use partitions::{
+    count_partitions_with_max_parts, partition_count, partitions, partitions_with_distinct_parts,
+    partitions_with_even_parts, partitions_with_exact_parts, partitions_with_max_part,
+    partitions_with_max_parts, partitions_with_min_part, partitions_with_odd_parts, Partition,
+    PartitionTuple,
+};
 pub use permutations::{all_permutations, Permutation};
 pub use posets::Poset;
 pub use tableaux::{robinson_schensted, rs_insert, standard_tableaux, Tableau};
+
+// Re-export new modules
+pub use binary_words::{all_binary_words, binary_words_with_weight, lyndon_words, necklaces, BinaryWord};
+pub use enumeration::{
+    cartesian_product, stars_and_bars, tuples, weak_compositions, CompositionIterator,
+    Enumerable, GrayCodeIterator, LazyEnumerator, PartitionIterator, RevolvingDoorIterator,
+};
+pub use ranking::{CombinationRank, PermutationRank, Rankable, RankingTable};
+pub use set_system::SetSystem;
 
 // stirling_first, Composition, compositions, and compositions_k are defined in this module
 
