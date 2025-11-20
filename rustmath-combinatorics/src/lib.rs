@@ -3,12 +3,14 @@
 //! This crate provides combinatorial structures like permutations, combinations,
 //! partitions, and algorithms for generating and manipulating them.
 
+pub mod alternating_sign_matrix;
 pub mod binary_words;
 pub mod combinations;
 pub mod composition;
 pub mod designs;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod fully_packed_loop;
 pub mod partitions;
 pub mod perfect_matching;
 pub mod permutations;
@@ -18,10 +20,12 @@ pub mod ranking;
 pub mod recurrence_sequences;
 pub mod set_partition;
 pub mod set_system;
+pub mod skew_partition;
 pub mod species;
 pub mod subset;
 pub mod superpartitions;
 pub mod tableaux;
+pub mod tamari;
 pub mod tuple;
 pub mod word;
 
