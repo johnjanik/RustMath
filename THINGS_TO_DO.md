@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~70% (396 / 568 functions tracked)
+**Overall Progress**: ~71% (424 / 596 functions tracked)
 
 ---
 
@@ -726,6 +726,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
+| **Basic Structures** | | | |
 | Cones | ✅ | `rustmath-geometry/src/toric.rs` | Rational polyhedral cones with ray generators |
 | Cone operations | ✅ | `rustmath-geometry/src/toric.rs` | Dimension, smoothness, simpliciality, faces, intersection |
 | Fans | ✅ | `rustmath-geometry/src/toric.rs` | Collections of compatible cones |
@@ -733,8 +734,39 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Toric varieties | ✅ | `rustmath-geometry/src/toric.rs` | Algebraic varieties from fans |
 | Variety properties | ✅ | `rustmath-geometry/src/toric.rs` | Smoothness, completeness, Picard number |
 | Projective space fan | ✅ | `rustmath-geometry/src/toric.rs` | Standard fan for ℙⁿ |
+| **Toric Divisors (Tracker 14)** | | | |
+| Toric divisors | ✅ | `rustmath-geometry/src/toric.rs` | Formal sums D = ∑ aᵢDᵢ of torus-invariant divisors |
+| Divisor operations | ✅ | `rustmath-geometry/src/toric.rs` | Addition, subtraction, negation, scalar multiplication |
+| Cartier divisors | ✅ | `rustmath-geometry/src/toric.rs` | is_cartier() with simplicial fan check |
+| Ample divisors | ✅ | `rustmath-geometry/src/toric.rs` | is_ample() for positivity checking |
+| Nef divisors | ✅ | `rustmath-geometry/src/toric.rs` | is_nef() for numerically effective divisors |
+| Effective divisors | ✅ | `rustmath-geometry/src/toric.rs` | is_effective() for non-negative coefficients |
+| **Chow Groups (Tracker 14)** | | | |
+| Cycles | ✅ | `rustmath-geometry/src/toric.rs` | k-cycles as formal sums of subvarieties |
+| Cycle operations | ✅ | `rustmath-geometry/src/toric.rs` | Addition, scalar multiplication |
+| Chow groups A_k(X) | ✅ | `rustmath-geometry/src/toric.rs` | Cycles modulo rational equivalence |
+| Intersection products | ✅ | `rustmath-geometry/src/toric.rs` | Simplified intersection of cycles |
+| **Toric Morphisms (Tracker 14)** | | | |
+| Toric morphisms | ✅ | `rustmath-geometry/src/toric.rs` | Equivariant maps X_Σ → X_Σ' from linear maps |
+| Morphism composition | ✅ | `rustmath-geometry/src/toric.rs` | compose() for morphism composition |
+| Identity morphism | ✅ | `rustmath-geometry/src/toric.rs` | identity() constructor |
+| Morphism application | ✅ | `rustmath-geometry/src/toric.rs` | apply() to lattice points |
+| Isomorphism testing | ✅ | `rustmath-geometry/src/toric.rs` | is_isomorphism() via determinant |
+| Pullback of divisors | ✅ | `rustmath-geometry/src/toric.rs` | pullback_divisor() for proper morphisms |
+| **Moment Maps (Tracker 14)** | | | |
+| Moment polytopes | ✅ | `rustmath-geometry/src/toric.rs` | Polytopes from torus-invariant Kähler metrics |
+| Polytope from fan | ✅ | `rustmath-geometry/src/toric.rs` | from_fan() constructs polytope from complete fan |
+| Polytope volume | ✅ | `rustmath-geometry/src/toric.rs` | volume() for 2D polytopes (shoelace formula) |
+| Point containment | ✅ | `rustmath-geometry/src/toric.rs` | contains() checks if point is in polytope |
+| **Fan Subdivisions (Tracker 14)** | | | |
+| Star subdivision | ✅ | `rustmath-geometry/src/toric.rs` | star_subdivision() adds new ray |
+| Barycentric subdivision | ✅ | `rustmath-geometry/src/toric.rs` | barycentric_subdivision() subdivides at barycenters |
+| Cone refinement | ✅ | `rustmath-geometry/src/toric.rs` | refine_cone() subdivides specific cone |
+| Common refinement | ✅ | `rustmath-geometry/src/toric.rs` | common_refinement() of two fans |
+| Refinement checking | ✅ | `rustmath-geometry/src/toric.rs` | is_refinement_of() verifies refinement relation |
+| Blow-up | ✅ | `rustmath-geometry/src/toric.rs` | blow_up_cone() creates smooth fan |
 
-**Progress**: 7/7 features (100%) ✅ COMPLETE
+**Progress**: 37/37 features (100%) ✅ COMPLETE (including Tracker 14)
 
 ### 8.3 Computational Geometry
 **SageMath Source**: Various
@@ -798,6 +830,43 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Modular forms | ⬜ | | Advanced, requires modularity theorem infrastructure |
 
 **Progress**: 16/19 features (84%)
+
+### 9.3 Algebraic Curves (sage.schemes.curves)
+**SageMath Source**: `src/sage/schemes/curves/`
+
+| Function/Feature | Status | RustMath Location | Notes |
+|-----------------|--------|-------------------|-------|
+| Plane curves | ✅ | `rustmath-curves/src/plane_curve.rs` | Affine and projective plane curves |
+| `PlaneCurve(F)` | ✅ | `rustmath-curves/src/plane_curve.rs` | Create curve from polynomial |
+| `.degree()` | ✅ | `rustmath-curves/src/plane_curve.rs` | Degree of defining polynomial |
+| `.is_smooth()` | ✅ | `rustmath-curves/src/plane_curve.rs` | Check if curve has no singularities |
+| `.singular_points()` | ✅ | `rustmath-curves/src/plane_curve.rs` | Find singular points |
+| `.to_projective()` | ✅ | `rustmath-curves/src/plane_curve.rs` | Homogenize to projective form |
+| `.to_affine()` | ✅ | `rustmath-curves/src/plane_curve.rs` | Dehomogenize to affine form |
+| Common curves | ✅ | `rustmath-curves/src/plane_curve.rs` | Circle, line, conic, elliptic (short Weierstrass) |
+| Singularities | ✅ | `rustmath-curves/src/singularities.rs` | Detection and classification |
+| Singularity types | ✅ | `rustmath-curves/src/singularities.rs` | Node, cusp, tacnode, triple point, higher |
+| Delta invariant | ✅ | `rustmath-curves/src/singularities.rs` | For genus computation |
+| Genus computation | ✅ | `rustmath-curves/src/genus.rs` | Arithmetic and geometric genus |
+| `.arithmetic_genus()` | ✅ | `rustmath-curves/src/genus.rs` | g = (d-1)(d-2)/2 for smooth curves |
+| `.geometric_genus()` | ✅ | `rustmath-curves/src/genus.rs` | Using genus-delta formula |
+| Genus classification | ✅ | `rustmath-curves/src/genus.rs` | Rational (g=0), elliptic (g=1), general type (g≥2) |
+| Hyperelliptic curves | ✅ | `rustmath-curves/src/hyperelliptic.rs` | y² = f(x) with genus g |
+| `HyperellipticCurve(f)` | ✅ | `rustmath-curves/src/hyperelliptic.rs` | From polynomial f |
+| `.genus` | ✅ | `rustmath-curves/src/hyperelliptic.rs` | Genus of hyperelliptic curve |
+| `.discriminant()` | ✅ | `rustmath-curves/src/hyperelliptic.rs` | Discriminant of defining polynomial |
+| Genus 2 curves | ✅ | `rustmath-curves/src/hyperelliptic.rs` | Quintic and sextic forms |
+| Curve parameterization | ✅ | `rustmath-curves/src/parameterization.rs` | Rational and transcendental |
+| Rational parameterization | ✅ | `rustmath-curves/src/parameterization.rs` | For genus 0 curves |
+| Stereographic projection | ✅ | `rustmath-curves/src/parameterization.rs` | Circle parameterization |
+| Weierstrass forms | ✅ | `rustmath-curves/src/weierstrass.rs` | Long and short forms |
+| Long Weierstrass form | ✅ | `rustmath-curves/src/weierstrass.rs` | y² + a₁xy + a₃y = x³ + a₂x² + a₄x + a₆ |
+| Short Weierstrass form | ✅ | `rustmath-curves/src/weierstrass.rs` | y² = x³ + ax + b |
+| `.discriminant()` | ✅ | `rustmath-curves/src/weierstrass.rs` | Discriminant formula |
+| `.j_invariant()` | ✅ | `rustmath-curves/src/weierstrass.rs` | j-invariant for classification |
+| Special j-invariants | ✅ | `rustmath-curves/src/weierstrass.rs` | j = 0, j = 1728 |
+
+**Progress**: 28/28 features (100%) ✅ COMPLETE
 
 ---
 
@@ -1154,7 +1223,7 @@ let results = client.search_by_terms(&[1, 1, 2, 3, 5, 8])?;
 | 6. Combinatorics | 52 | 52 | 100% |
 | 7. Graph Theory | 50 | 59 | 85% |
 | 8. Geometry | 18 | 19 | 95% |
-| 9. Algebraic Geometry | 27 | 30 | 90% |
+| 9. Algebraic Geometry | 55 | 58 | 95% |
 | 10. Cryptography | 24 | 24 | 100% |
 | 11. Coding Theory | 13 | 13 | 100% |
 | 12. Group Theory | 18 | 18 | 100% |
@@ -1165,7 +1234,7 @@ let results = client.search_by_terms(&[1, 1, 2, 3, 5, 8])?;
 | 17. Numerical Computation | 6 | 6 | 100% |
 | 18-20. Advanced Topics | 10 | 10 | 100% |
 
-**TOTAL**: **396 / 568 functions** = **~70% complete**
+**TOTAL**: **424 / 596 functions** = **~71% complete**
 
 ### Files to Examine in SageMath Source
 

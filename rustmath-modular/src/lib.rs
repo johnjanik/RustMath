@@ -14,6 +14,7 @@
 //! - `cusps_nf`: Cusps for number fields
 //! - `dims`: Dimensions of spaces of modular forms
 //! - `dirichlet`: Dirichlet characters
+//! - `lfunction`: Dirichlet L-functions and analytic properties
 //! - `etaproducts`: Eta products and eta quotients
 //! - `btquotients`: Bruhat-Tits tree quotients
 //! - `drinfeld_modform`: Drinfeld modular forms
@@ -37,6 +38,7 @@ pub mod cusps;
 pub mod cusps_nf;
 pub mod dims;
 pub mod dirichlet;
+pub mod lfunction;
 pub mod etaproducts;
 pub mod btquotients;
 pub mod drinfeld_modform;
@@ -58,6 +60,8 @@ pub use arithgroup::{
 };
 pub use modform::{ModularForm, CuspForm};
 pub use cusps::Cusp;
+pub use dirichlet::{DirichletCharacter, DirichletGroup, trivial_character};
+pub use lfunction::DirichletLFunction;
 
 #[cfg(test)]
 mod tests {
