@@ -11,6 +11,7 @@ pub mod derangements;
 pub mod designs;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod integer_vectors;
 pub mod integer_matrices;
 pub mod ordered_tree;
 pub mod partitions;
@@ -112,6 +113,10 @@ pub use superpartitions::{
     count_superpartitions, strict_superpartitions, superpartitions, superpartitions_with_k_parts,
     superpartitions_with_m_circled, SuperPart, SuperPartition,
 };
+pub use integer_vectors::{
+    count_integer_vectors_in_box, count_integer_vectors_with_sum, integer_vector_sum_iter,
+    integer_vectors_in_box, integer_vectors_with_l1_norm_bounded, integer_vectors_with_sum,
+    integer_vectors_with_weighted_sum, IntegerVector, IntegerVectorSumIter,
 pub use vector_partition::{
     count_vector_partitions_exact_parts, count_vector_partitions_max_parts,
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
