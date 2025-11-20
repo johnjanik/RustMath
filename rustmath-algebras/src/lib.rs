@@ -20,6 +20,7 @@ pub mod clifford_algebra;
 pub mod group_algebra;
 pub mod traits;
 pub mod affine_nil_temperley_lieb;
+pub mod blob_algebra;
 pub mod down_up_algebra;
 pub mod algebra_morphism;
 pub mod algebra_with_parent;
@@ -87,6 +88,7 @@ pub use clifford_algebra::{
 pub use group_algebra::*;
 pub use traits::*;
 pub use affine_nil_temperley_lieb::{AffineNilTemperleyLiebTypeA, Element as AffineNilTemperleyLiebElement};
+pub use blob_algebra::{BlobAlgebra, BlobElement, BlobBasisElement};
 pub use algebra_morphism::{AlgebraMorphism, AlgebraEndomorphism, AlgebraAutomorphism};
 pub use askey_wilson::{AskeyWilsonAlgebra, AskeyWilsonIndex};
 pub use associated_graded::AssociatedGradedAlgebra;
