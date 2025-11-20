@@ -29,6 +29,13 @@ pub mod trees;
 pub mod tutte_polynomial;
 pub mod strongly_regular_db;
 
+// Advanced graph theory (tracker 07)
+pub mod homomorphisms;
+pub mod automorphisms;
+pub mod cayley;
+pub mod spectra;
+pub mod ramsey;
+
 pub use graph::Graph;
 pub use generators::*;
 pub use weighted_graph::WeightedGraph;
