@@ -28,6 +28,8 @@ pub mod askey_wilson;
 pub mod associated_graded;
 pub mod cellular_basis;
 pub mod cluster_algebra;
+pub mod cluster_variable;
+pub mod cluster_integration;
 pub mod commutative_dga;
 pub mod finite_gca;
 pub mod free_zinbiel_algebra;
@@ -94,6 +96,15 @@ pub use cellular_basis::{CellularBasis, CellularIndex};
 pub use cluster_algebra::{
     ClusterAlgebra, ClusterAlgebraElement, ClusterAlgebraSeed,
     PrincipalClusterAlgebraElement, GVector, DVector, ExchangeMatrix,
+};
+pub use cluster_variable::{
+    ClusterVariable, Cluster, ClusterVariableCache,
+    exchange_polynomial, f_polynomial, cluster_variable_from_g_vector,
+};
+pub use cluster_integration::{
+    matrix_to_exchange, exchange_to_matrix, cluster_algebra_from_matrix,
+    validate_exchange_matrix, principal_part, coefficient_part,
+    transpose, matrix_multiply,
 };
 pub use commutative_dga::{
     GCAlgebra, GCAlgebraMultigraded, Differential, DifferentialMultigraded,
