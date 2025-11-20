@@ -36,6 +36,7 @@ pub mod posets;
 pub mod q_analogue;
 pub mod ranking;
 pub mod recurrence_sequences;
+pub mod regular_sequences;
 pub mod ribbon_tableau;
 pub mod restricted_growth;
 pub mod set_partition;
@@ -114,12 +115,18 @@ pub use ranking::{
 pub use recurrence_sequences::{
     solve_binary_recurrence, BinaryRecurrence, LinearRecurrence, RecurrenceSequence,
 };
+pub use regular_sequences::{
+    baum_sweet, characteristic_sequence, detect_periodicity, fibonacci_word,
+    multiplicatively_independent, paperfolding, rudin_shapiro, sequence_product, sequence_sum,
+    thue_morse, verify_cobham, AutomaticSequenceWrapper, CobhamResult, MorphicSequence,
+    RegularSequence,
+};
 pub use set_partition::{
     bell_number_optimized, bell_numbers_up_to, set_partition_iterator, set_partitions,
     SetPartition, SetPartitionIterator,
 };
 pub use set_system::SetSystem;
-pub use multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
+// pub use multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
 pub use word::{
     abelian_complexity, boyer_moore_search, christoffel_word, factor_complexity,
     from_cfl_factorization, from_standard_factorization, is_cfl_factorization, kmp_search,
