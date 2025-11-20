@@ -85,7 +85,7 @@ pub use set_partition::{
     SetPartition, SetPartitionIterator,
 };
 pub use set_system::SetSystem;
-pub use multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
+// pub use multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
 pub use word::{
     abelian_complexity, boyer_moore_search, christoffel_word, factor_complexity, kmp_search,
     lyndon_factorization, lyndon_words as general_lyndon_words, sturmian_word, AutomaticSequence,
@@ -115,8 +115,10 @@ pub use superpartitions::{
 };
 pub use integer_vectors::{
     count_integer_vectors_in_box, count_integer_vectors_with_sum, integer_vector_sum_iter,
-    integer_vectors_in_box, integer_vectors_with_l1_norm_bounded, integer_vectors_with_sum,
-    integer_vectors_with_weighted_sum, IntegerVector, IntegerVectorSumIter,
+    integer_vectors_in_box, integer_vectors_mod_permgroup, integer_vectors_with_l1_norm_bounded,
+    integer_vectors_with_sum, integer_vectors_with_weighted_sum, orbit_of_vector, IntegerVector,
+    IntegerVectorSumIter,
+};
 pub use vector_partition::{
     count_vector_partitions_exact_parts, count_vector_partitions_max_parts,
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
