@@ -7,6 +7,7 @@ pub mod affine_permutations;
 pub mod binary_words;
 pub mod combinations;
 pub mod composition;
+pub mod composition_tableau;
 pub mod debruijn;
 pub mod derangements;
 pub mod designs;
@@ -65,6 +66,9 @@ pub use composition::{
     compositions, compositions_k, integer_vectors_weighted, integer_vectors_weighted_dp,
     signed_compositions, signed_compositions_k, Composition, SignedComposition,
     WeightedIntegerVector,
+};
+pub use composition_tableau::{
+    count_tableaux_with_descent_set, standard_composition_tableaux, CompositionTableau,
 };
 pub use designs::{
     are_latin_squares_orthogonal, mutually_orthogonal_latin_squares, BlockDesign,
