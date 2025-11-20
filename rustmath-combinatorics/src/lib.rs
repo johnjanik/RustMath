@@ -31,6 +31,7 @@ pub mod tableaux;
 pub mod tamari;
 pub mod tuple;
 pub mod word;
+pub mod wreath_product;
 
 pub use affine_permutations::{AffinePermutation, CoxeterType};
 pub use combinations::{combinations, Combination};
@@ -84,6 +85,7 @@ pub use subset::{
 pub use q_analogue::{
     gaussian_polynomial, q_binomial, q_binomial_eval, q_factorial, q_integer, q_multinomial,
 };
+pub use wreath_product::{all_colored_permutations, ColoredPermutation};
 pub use plane_partition::{
     count_cyclically_symmetric_plane_partitions, count_plane_partitions_in_box,
     count_self_complementary_plane_partitions, count_totally_symmetric_plane_partitions,
