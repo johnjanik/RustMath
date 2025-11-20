@@ -34,7 +34,10 @@ pub use polyhedron::{Polyhedron, Face};
 pub use convex_hull_3d::{convex_hull_3d, convex_hull_3d_simple};
 pub use triangulation::{Triangle, delaunay_triangulation};
 pub use face_lattice::{FaceLattice, LatticeFace};
-pub use toric::{Cone, Fan, ToricVariety, projective_space_fan};
+pub use toric::{
+    Cone, Fan, ToricVariety, projective_space_fan,
+    ToricDivisor, Cycle, ChowGroup, ToricMorphism, MomentPolytope,
+};
 pub use voronoi::{VoronoiDiagram, VoronoiCell, voronoi_brute_force};
 pub use lattice_polytope::{
     LatticePolytopeClass, NefPartition, SetOfAllLatticePolytopesClass,

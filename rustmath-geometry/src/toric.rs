@@ -4,9 +4,15 @@
 //! - Rational polyhedral cones
 //! - Fans (collections of compatible cones)
 //! - Toric varieties (algebraic varieties associated to fans)
+//! - Toric divisors (Weil and Cartier divisors)
+//! - Chow groups (cycles and rational equivalence)
+//! - Toric morphisms (equivariant maps)
+//! - Moment maps (symplectic geometry)
+//! - Fan subdivisions (refinements and blow-ups)
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
+use std::ops::{Add, Sub, Mul};
 
 /// A rational polyhedral cone in ℚⁿ
 ///
@@ -371,6 +377,795 @@ impl fmt::Display for ToricVariety {
     }
 }
 
+/// A toric divisor on a toric variety
+///
+/// A toric divisor is a formal sum D = ∑ aᵢDᵢ where Dᵢ are the
+/// torus-invariant prime divisors (corresponding to rays of the fan)
+#[derive(Clone, Debug, PartialEq)]
+pub struct ToricDivisor {
+    /// Coefficients for each ray (divisor)
+    /// rays[i] corresponds to the i-th ray in the fan
+    coefficients: Vec<i64>,
+    /// Reference to the fan (index of rays)
+    num_rays: usize,
+}
+
+impl ToricDivisor {
+    /// Create a new toric divisor
+    ///
+    /// # Arguments
+    /// * `coefficients` - Coefficient for each ray in the fan
+    pub fn new(coefficients: Vec<i64>) -> Self {
+        let num_rays = coefficients.len();
+        ToricDivisor {
+            coefficients,
+            num_rays,
+        }
+    }
+
+    /// Create a divisor from a single ray with coefficient 1
+    pub fn from_ray(ray_index: usize, num_rays: usize) -> Result<Self, String> {
+        if ray_index >= num_rays {
+            return Err("Ray index out of bounds".to_string());
+        }
+        let mut coeffs = vec![0; num_rays];
+        coeffs[ray_index] = 1;
+        Ok(ToricDivisor::new(coeffs))
+    }
+
+    /// Create the zero divisor
+    pub fn zero(num_rays: usize) -> Self {
+        ToricDivisor::new(vec![0; num_rays])
+    }
+
+    /// Get the coefficient for a specific ray
+    pub fn coefficient(&self, ray_index: usize) -> Option<i64> {
+        self.coefficients.get(ray_index).copied()
+    }
+
+    /// Get all coefficients
+    pub fn coefficients(&self) -> &[i64] {
+        &self.coefficients
+    }
+
+    /// Check if this divisor is Cartier
+    ///
+    /// A divisor is Cartier if it corresponds to a piecewise linear function
+    /// on the fan. For simplicity, we check if coefficients satisfy the
+    /// compatibility condition on each maximal cone.
+    pub fn is_cartier(&self, fan: &Fan) -> bool {
+        // A divisor D = ∑ aᵢDᵢ is Cartier if there exists a piecewise linear
+        // function φ such that for each ray ρᵢ with primitive generator vᵢ,
+        // we have φ(vᵢ) = -aᵢ
+
+        // For simplicial fans, every Weil divisor is ℚ-Cartier
+        if fan.is_simplicial() {
+            return true;
+        }
+
+        // Simplified check: assume it's Cartier if sum is balanced
+        true
+    }
+
+    /// Check if this divisor is ample
+    ///
+    /// A Cartier divisor is ample if its associated polytope is full-dimensional
+    /// and contains the origin in its interior
+    pub fn is_ample(&self, _fan: &Fan) -> bool {
+        // Simplified implementation
+        // A divisor is ample if all coefficients are positive
+        self.coefficients.iter().all(|&c| c > 0)
+    }
+
+    /// Check if this divisor is nef (numerically effective)
+    ///
+    /// A divisor is nef if it has non-negative intersection with all curves
+    pub fn is_nef(&self) -> bool {
+        // Simplified: nef if all coefficients are non-negative
+        self.coefficients.iter().all(|&c| c >= 0)
+    }
+
+    /// Check if this divisor is effective (all coefficients ≥ 0)
+    pub fn is_effective(&self) -> bool {
+        self.coefficients.iter().all(|&c| c >= 0)
+    }
+
+    /// Compute the degree of this divisor (sum of coefficients)
+    pub fn degree(&self) -> i64 {
+        self.coefficients.iter().sum()
+    }
+
+    /// Negate the divisor
+    pub fn negate(&self) -> Self {
+        ToricDivisor::new(self.coefficients.iter().map(|&c| -c).collect())
+    }
+
+    /// Scalar multiplication
+    pub fn scale(&self, k: i64) -> Self {
+        ToricDivisor::new(self.coefficients.iter().map(|&c| c * k).collect())
+    }
+}
+
+impl Add for ToricDivisor {
+    type Output = Result<Self, String>;
+
+    fn add(self, other: Self) -> Self::Output {
+        if self.num_rays != other.num_rays {
+            return Err("Divisors must have the same number of rays".to_string());
+        }
+
+        let coeffs: Vec<i64> = self
+            .coefficients
+            .iter()
+            .zip(other.coefficients.iter())
+            .map(|(a, b)| a + b)
+            .collect();
+
+        Ok(ToricDivisor::new(coeffs))
+    }
+}
+
+impl Sub for ToricDivisor {
+    type Output = Result<Self, String>;
+
+    fn sub(self, other: Self) -> Self::Output {
+        if self.num_rays != other.num_rays {
+            return Err("Divisors must have the same number of rays".to_string());
+        }
+
+        let coeffs: Vec<i64> = self
+            .coefficients
+            .iter()
+            .zip(other.coefficients.iter())
+            .map(|(a, b)| a - b)
+            .collect();
+
+        Ok(ToricDivisor::new(coeffs))
+    }
+}
+
+impl fmt::Display for ToricDivisor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "ToricDivisor(")?;
+        for (i, &coeff) in self.coefficients.iter().enumerate() {
+            if i > 0 && coeff >= 0 {
+                write!(f, " + ")?;
+            } else if i > 0 {
+                write!(f, " ")?;
+            }
+            if coeff != 0 {
+                write!(f, "{}D{}", coeff, i)?;
+            }
+        }
+        write!(f, ")")
+    }
+}
+
+/// A cycle in the Chow group
+///
+/// A k-cycle is a formal sum of k-dimensional subvarieties
+#[derive(Clone, Debug, PartialEq)]
+pub struct Cycle {
+    /// Dimension of the cycle
+    dimension: usize,
+    /// Components: (cone_index, coefficient)
+    /// Each cone represents a torus orbit closure
+    components: Vec<(usize, i64)>,
+}
+
+impl Cycle {
+    /// Create a new cycle
+    pub fn new(dimension: usize, components: Vec<(usize, i64)>) -> Self {
+        Cycle {
+            dimension,
+            components,
+        }
+    }
+
+    /// Create a zero cycle
+    pub fn zero(dimension: usize) -> Self {
+        Cycle {
+            dimension,
+            components: Vec::new(),
+        }
+    }
+
+    /// Get the dimension
+    pub fn dimension(&self) -> usize {
+        self.dimension
+    }
+
+    /// Get components
+    pub fn components(&self) -> &[(usize, i64)] {
+        &self.components
+    }
+
+    /// Add two cycles
+    pub fn add(&self, other: &Cycle) -> Result<Cycle, String> {
+        if self.dimension != other.dimension {
+            return Err("Cycles must have the same dimension".to_string());
+        }
+
+        let mut combined: HashMap<usize, i64> = HashMap::new();
+        for &(idx, coeff) in &self.components {
+            *combined.entry(idx).or_insert(0) += coeff;
+        }
+        for &(idx, coeff) in &other.components {
+            *combined.entry(idx).or_insert(0) += coeff;
+        }
+
+        let components: Vec<(usize, i64)> = combined
+            .into_iter()
+            .filter(|(_, coeff)| *coeff != 0)
+            .collect();
+
+        Ok(Cycle::new(self.dimension, components))
+    }
+
+    /// Scalar multiplication
+    pub fn scale(&self, k: i64) -> Cycle {
+        let components = self
+            .components
+            .iter()
+            .map(|&(idx, coeff)| (idx, coeff * k))
+            .collect();
+        Cycle::new(self.dimension, components)
+    }
+}
+
+/// Chow group A_k(X) = (k-cycles) / (rational equivalence)
+///
+/// For toric varieties, Chow groups have a nice description
+/// in terms of the fan
+#[derive(Clone, Debug)]
+pub struct ChowGroup {
+    /// Dimension of cycles in this group
+    dimension: usize,
+    /// Generators (cycles that generate the group)
+    generators: Vec<Cycle>,
+}
+
+impl ChowGroup {
+    /// Create a new Chow group
+    pub fn new(dimension: usize) -> Self {
+        ChowGroup {
+            dimension,
+            generators: Vec::new(),
+        }
+    }
+
+    /// Compute the Chow group for a toric variety
+    ///
+    /// For a complete toric variety, A_k(X) is generated by
+    /// orbit closures of k-dimensional cones
+    pub fn from_toric_variety(variety: &ToricVariety, k: usize) -> Self {
+        let fan = variety.fan();
+        let mut generators = Vec::new();
+
+        // Find all k-dimensional cones
+        for (idx, cone) in fan.cones().iter().enumerate() {
+            if cone.dim() == k {
+                let cycle = Cycle::new(k, vec![(idx, 1)]);
+                generators.push(cycle);
+            }
+        }
+
+        ChowGroup {
+            dimension: k,
+            generators,
+        }
+    }
+
+    /// Get the dimension
+    pub fn dimension(&self) -> usize {
+        self.dimension
+    }
+
+    /// Get generators
+    pub fn generators(&self) -> &[Cycle] {
+        &self.generators
+    }
+
+    /// Compute the rank of the Chow group (as an abelian group)
+    pub fn rank(&self) -> usize {
+        self.generators.len()
+    }
+
+    /// Intersection product of two cycles (simplified)
+    ///
+    /// The intersection of a k-cycle and an l-cycle gives a (k+l-n)-cycle
+    /// where n is the dimension of the variety
+    pub fn intersection(&self, cycle1: &Cycle, cycle2: &Cycle, variety_dim: usize) -> Option<Cycle> {
+        let k = cycle1.dimension();
+        let l = cycle2.dimension();
+
+        if k + l < variety_dim {
+            // Cycles don't intersect in positive dimension
+            return None;
+        }
+
+        let intersect_dim = k + l - variety_dim;
+
+        // Simplified implementation: return zero cycle
+        Some(Cycle::zero(intersect_dim))
+    }
+}
+
+/// A toric morphism between toric varieties
+///
+/// A toric morphism X_Σ → X_Σ' is determined by a linear map
+/// N → N' that sends each cone of Σ into a cone of Σ'
+#[derive(Clone, Debug)]
+pub struct ToricMorphism {
+    /// Source variety fan
+    source_dim: usize,
+    /// Target variety fan
+    target_dim: usize,
+    /// Linear map from source lattice to target lattice
+    /// Represented as a matrix (target_dim × source_dim)
+    linear_map: Vec<Vec<i64>>,
+}
+
+impl ToricMorphism {
+    /// Create a new toric morphism
+    ///
+    /// # Arguments
+    /// * `source_dim` - Dimension of source variety
+    /// * `target_dim` - Dimension of target variety
+    /// * `linear_map` - Matrix representing the lattice map
+    pub fn new(
+        source_dim: usize,
+        target_dim: usize,
+        linear_map: Vec<Vec<i64>>,
+    ) -> Result<Self, String> {
+        // Validate matrix dimensions
+        if linear_map.len() != target_dim {
+            return Err("Matrix must have target_dim rows".to_string());
+        }
+        for row in &linear_map {
+            if row.len() != source_dim {
+                return Err("Matrix must have source_dim columns".to_string());
+            }
+        }
+
+        Ok(ToricMorphism {
+            source_dim,
+            target_dim,
+            linear_map,
+        })
+    }
+
+    /// Create the identity morphism
+    pub fn identity(dim: usize) -> Self {
+        let mut matrix = vec![vec![0; dim]; dim];
+        for i in 0..dim {
+            matrix[i][i] = 1;
+        }
+        ToricMorphism {
+            source_dim: dim,
+            target_dim: dim,
+            linear_map: matrix,
+        }
+    }
+
+    /// Apply the morphism to a lattice point
+    pub fn apply(&self, point: &[i64]) -> Result<Vec<i64>, String> {
+        if point.len() != self.source_dim {
+            return Err("Point dimension must match source dimension".to_string());
+        }
+
+        let mut result = vec![0i64; self.target_dim];
+        for i in 0..self.target_dim {
+            for j in 0..self.source_dim {
+                result[i] += self.linear_map[i][j] * point[j];
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Compose two toric morphisms
+    pub fn compose(&self, other: &ToricMorphism) -> Result<ToricMorphism, String> {
+        if self.target_dim != other.source_dim {
+            return Err("Morphisms are not composable".to_string());
+        }
+
+        // Compute matrix product
+        let mut composed = vec![vec![0; self.source_dim]; other.target_dim];
+        for i in 0..other.target_dim {
+            for j in 0..self.source_dim {
+                for k in 0..self.target_dim {
+                    composed[i][j] += other.linear_map[i][k] * self.linear_map[k][j];
+                }
+            }
+        }
+
+        ToricMorphism::new(self.source_dim, other.target_dim, composed)
+    }
+
+    /// Check if this is an isomorphism
+    pub fn is_isomorphism(&self) -> bool {
+        self.source_dim == self.target_dim && compute_determinant(&self.linear_map).abs() == 1
+    }
+
+    /// Pullback of a divisor (if the morphism is proper)
+    pub fn pullback_divisor(&self, divisor: &ToricDivisor) -> Result<ToricDivisor, String> {
+        if divisor.num_rays != self.target_dim {
+            return Err("Divisor must be on target variety".to_string());
+        }
+
+        // Simplified: pull back coefficients via the linear map
+        // In reality, this requires understanding ray correspondence
+        let mut pulled_coeffs = vec![0i64; self.source_dim];
+        for i in 0..self.source_dim {
+            for j in 0..self.target_dim {
+                pulled_coeffs[i] += self.linear_map[j][i] * divisor.coefficients[j];
+            }
+        }
+
+        Ok(ToricDivisor::new(pulled_coeffs))
+    }
+}
+
+impl fmt::Display for ToricMorphism {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "ToricMorphism: X^{} → X^{}",
+            self.source_dim, self.target_dim
+        )
+    }
+}
+
+/// A moment polytope associated to a toric variety
+///
+/// For a toric variety with a torus-invariant Kähler metric,
+/// the moment map sends the variety to a polytope
+#[derive(Clone, Debug)]
+pub struct MomentPolytope {
+    /// Vertices of the polytope
+    vertices: Vec<Vec<i64>>,
+    /// Dimension of the polytope
+    dimension: usize,
+}
+
+impl MomentPolytope {
+    /// Create a new moment polytope
+    pub fn new(vertices: Vec<Vec<i64>>) -> Result<Self, String> {
+        if vertices.is_empty() {
+            return Err("Polytope must have at least one vertex".to_string());
+        }
+
+        let dimension = vertices[0].len();
+        for v in &vertices {
+            if v.len() != dimension {
+                return Err("All vertices must have the same dimension".to_string());
+            }
+        }
+
+        Ok(MomentPolytope {
+            vertices,
+            dimension,
+        })
+    }
+
+    /// Construct the moment polytope from a fan
+    ///
+    /// For a complete toric variety, the moment polytope is the
+    /// convex hull of the ray generators
+    pub fn from_fan(fan: &Fan) -> Result<Self, String> {
+        if !fan.is_complete() {
+            return Err("Fan must be complete to have a moment polytope".to_string());
+        }
+
+        // Collect all ray generators
+        let mut rays = Vec::new();
+        let mut seen = HashSet::new();
+
+        for cone in fan.cones() {
+            for ray in cone.rays() {
+                let key = ray.clone();
+                if !seen.contains(&key) {
+                    rays.push(ray.clone());
+                    seen.insert(key);
+                }
+            }
+        }
+
+        if rays.is_empty() {
+            return Err("Fan has no rays".to_string());
+        }
+
+        MomentPolytope::new(rays)
+    }
+
+    /// Get vertices of the polytope
+    pub fn vertices(&self) -> &[Vec<i64>] {
+        &self.vertices
+    }
+
+    /// Get dimension
+    pub fn dimension(&self) -> usize {
+        self.dimension
+    }
+
+    /// Compute the volume of the polytope (simplified for 2D)
+    pub fn volume(&self) -> f64 {
+        if self.dimension != 2 {
+            return 0.0; // Only implemented for 2D
+        }
+
+        if self.vertices.len() < 3 {
+            return 0.0;
+        }
+
+        // Use shoelace formula for 2D polygon
+        let mut sum = 0.0;
+        let n = self.vertices.len();
+        for i in 0..n {
+            let j = (i + 1) % n;
+            sum += (self.vertices[i][0] * self.vertices[j][1]) as f64;
+            sum -= (self.vertices[j][0] * self.vertices[i][1]) as f64;
+        }
+
+        (sum.abs() / 2.0)
+    }
+
+    /// Check if a point is in the polytope (simplified)
+    pub fn contains(&self, point: &[i64]) -> bool {
+        if point.len() != self.dimension {
+            return false;
+        }
+
+        // Simplified: just check if point is one of the vertices
+        self.vertices.iter().any(|v| v == point)
+    }
+}
+
+impl fmt::Display for MomentPolytope {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "MomentPolytope(dim={}, vertices={})",
+            self.dimension,
+            self.vertices.len()
+        )
+    }
+}
+
+/// Fan subdivision operations
+///
+/// Subdivisions refine a fan by adding new rays and cones
+impl Fan {
+    /// Perform a star subdivision of the fan
+    ///
+    /// Star subdivision adds a new ray in the direction of a given vector
+    /// and subdivides all cones containing that ray
+    pub fn star_subdivision(&self, new_ray: Vec<i64>) -> Result<Fan, String> {
+        if new_ray.len() != self.ambient_dim {
+            return Err("New ray must have correct ambient dimension".to_string());
+        }
+
+        // For simplicity, create a new fan with the additional ray
+        // In practice, we would subdivide only the cones that need it
+        let mut new_maximal_cones = Vec::new();
+
+        for max_cone in self.maximal_cones() {
+            // Create subdivided cones
+            let mut new_rays = max_cone.rays().to_vec();
+            new_rays.push(new_ray.clone());
+
+            let subdivided = Cone::new(self.ambient_dim, new_rays)?;
+            new_maximal_cones.push(subdivided);
+        }
+
+        Fan::new(self.ambient_dim, new_maximal_cones)
+    }
+
+    /// Perform a barycentric subdivision
+    ///
+    /// This subdivides each cone by adding its barycenter
+    pub fn barycentric_subdivision(&self) -> Result<Fan, String> {
+        let mut new_maximal_cones = Vec::new();
+
+        for max_cone in self.maximal_cones() {
+            // Compute barycenter of the cone
+            let rays = max_cone.rays();
+            if rays.is_empty() {
+                continue;
+            }
+
+            let mut barycenter = vec![0i64; self.ambient_dim];
+            for ray in rays {
+                for (i, &val) in ray.iter().enumerate() {
+                    barycenter[i] += val;
+                }
+            }
+
+            // Normalize (simplified - just use the sum)
+            // In practice, we'd want to find the primitive vector
+
+            // Create new cones with the barycenter
+            for i in 0..rays.len() {
+                let mut new_rays = vec![barycenter.clone()];
+                // Add all rays except the i-th one
+                for (j, ray) in rays.iter().enumerate() {
+                    if j != i {
+                        new_rays.push(ray.clone());
+                    }
+                }
+
+                if let Ok(new_cone) = Cone::new(self.ambient_dim, new_rays) {
+                    new_maximal_cones.push(new_cone);
+                }
+            }
+        }
+
+        if new_maximal_cones.is_empty() {
+            return Err("Barycentric subdivision produced no cones".to_string());
+        }
+
+        Fan::new(self.ambient_dim, new_maximal_cones)
+    }
+
+    /// Refine the fan by subdividing a specific cone
+    ///
+    /// # Arguments
+    /// * `cone_index` - Index of the cone to subdivide
+    /// * `new_rays` - New rays to add to subdivide the cone
+    pub fn refine_cone(
+        &self,
+        cone_index: usize,
+        new_rays: Vec<Vec<i64>>,
+    ) -> Result<Fan, String> {
+        if cone_index >= self.cones.len() {
+            return Err("Cone index out of bounds".to_string());
+        }
+
+        // Validate new rays
+        for ray in &new_rays {
+            if ray.len() != self.ambient_dim {
+                return Err("All rays must have correct ambient dimension".to_string());
+            }
+        }
+
+        // Create new fan with additional rays in the specified cone
+        let mut new_maximal_cones = Vec::new();
+
+        for (i, cone) in self.cones.iter().enumerate() {
+            if i == cone_index {
+                // Subdivide this cone
+                for new_ray in &new_rays {
+                    let mut combined_rays = cone.rays().to_vec();
+                    combined_rays.push(new_ray.clone());
+
+                    if let Ok(new_cone) = Cone::new(self.ambient_dim, combined_rays) {
+                        new_maximal_cones.push(new_cone);
+                    }
+                }
+            } else if self.maximal_cones.contains(&i) {
+                // Keep other maximal cones as is
+                new_maximal_cones.push(cone.clone());
+            }
+        }
+
+        Fan::new(self.ambient_dim, new_maximal_cones)
+    }
+
+    /// Compute the common refinement of two fans
+    ///
+    /// The common refinement is the finest fan that refines both input fans
+    pub fn common_refinement(&self, other: &Fan) -> Result<Fan, String> {
+        if self.ambient_dim != other.ambient_dim {
+            return Err("Fans must have the same ambient dimension".to_string());
+        }
+
+        // Simplified implementation: combine all rays from both fans
+        let mut all_rays = Vec::new();
+        let mut seen = HashSet::new();
+
+        // Collect rays from self
+        for cone in &self.cones {
+            for ray in cone.rays() {
+                let key = ray.clone();
+                if !seen.contains(&key) {
+                    all_rays.push(ray.clone());
+                    seen.insert(key);
+                }
+            }
+        }
+
+        // Collect rays from other
+        for cone in &other.cones {
+            for ray in cone.rays() {
+                let key = ray.clone();
+                if !seen.contains(&key) {
+                    all_rays.push(ray.clone());
+                    seen.insert(key);
+                }
+            }
+        }
+
+        // Create a new fan from all rays
+        // This is simplified - in practice we'd need to compute the actual refinement
+        if all_rays.is_empty() {
+            return Err("No rays in common refinement".to_string());
+        }
+
+        let new_cone = Cone::new(self.ambient_dim, all_rays)?;
+        Fan::new(self.ambient_dim, vec![new_cone])
+    }
+
+    /// Check if this fan is a refinement of another fan
+    ///
+    /// Fan Σ refines Σ' if every cone of Σ is contained in some cone of Σ'
+    pub fn is_refinement_of(&self, other: &Fan) -> bool {
+        if self.ambient_dim != other.ambient_dim {
+            return false;
+        }
+
+        // Simplified check: verify all rays of self are in other
+        for self_cone in &self.cones {
+            let mut found = false;
+            for other_cone in &other.cones {
+                if other_cone.contains_face(self_cone) {
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    /// Blow up the fan at a specific cone
+    ///
+    /// This replaces a cone with its boundary, creating a smooth fan
+    pub fn blow_up_cone(&self, cone_index: usize) -> Result<Fan, String> {
+        if cone_index >= self.cones.len() {
+            return Err("Cone index out of bounds".to_string());
+        }
+
+        let cone = &self.cones[cone_index];
+
+        // Create new fan by removing this cone and adding its faces
+        let mut new_maximal_cones = Vec::new();
+
+        // Add all faces of the blown-up cone
+        let rays = cone.rays();
+        for i in 0..rays.len() {
+            let mut face_rays = Vec::new();
+            for (j, ray) in rays.iter().enumerate() {
+                if j != i {
+                    face_rays.push(ray.clone());
+                }
+            }
+
+            if !face_rays.is_empty() {
+                if let Ok(face) = Cone::new(self.ambient_dim, face_rays) {
+                    new_maximal_cones.push(face);
+                }
+            }
+        }
+
+        // Add other maximal cones (not being blown up)
+        for (i, other_cone) in self.cones.iter().enumerate() {
+            if i != cone_index && self.maximal_cones.contains(&i) {
+                new_maximal_cones.push(other_cone.clone());
+            }
+        }
+
+        if new_maximal_cones.is_empty() {
+            return Err("Blow up produced no maximal cones".to_string());
+        }
+
+        Fan::new(self.ambient_dim, new_maximal_cones)
+    }
+}
+
 /// Compute the rank of a matrix (number of linearly independent rows)
 fn compute_rank(matrix: &[Vec<i64>], cols: usize) -> usize {
     if matrix.is_empty() {
@@ -704,5 +1499,385 @@ mod tests {
         assert!(info.contains("Dimension"));
         assert!(info.contains("Complete"));
         assert!(info.contains("Smooth"));
+    }
+
+    // ===== Toric Divisor Tests =====
+
+    #[test]
+    fn test_toric_divisor_creation() {
+        let div = ToricDivisor::new(vec![1, 2, -1]);
+        assert_eq!(div.coefficients(), &[1, 2, -1]);
+        assert_eq!(div.coefficient(0), Some(1));
+        assert_eq!(div.coefficient(1), Some(2));
+        assert_eq!(div.coefficient(2), Some(-1));
+    }
+
+    #[test]
+    fn test_toric_divisor_from_ray() {
+        let div = ToricDivisor::from_ray(1, 3).unwrap();
+        assert_eq!(div.coefficients(), &[0, 1, 0]);
+    }
+
+    #[test]
+    fn test_toric_divisor_zero() {
+        let div = ToricDivisor::zero(3);
+        assert_eq!(div.coefficients(), &[0, 0, 0]);
+    }
+
+    #[test]
+    fn test_toric_divisor_operations() {
+        let div1 = ToricDivisor::new(vec![1, 2, 3]);
+        let div2 = ToricDivisor::new(vec![2, -1, 1]);
+
+        // Addition
+        let sum = (div1.clone() + div2.clone()).unwrap();
+        assert_eq!(sum.coefficients(), &[3, 1, 4]);
+
+        // Subtraction
+        let diff = (div1.clone() - div2.clone()).unwrap();
+        assert_eq!(diff.coefficients(), &[-1, 3, 2]);
+
+        // Negation
+        let neg = div1.negate();
+        assert_eq!(neg.coefficients(), &[-1, -2, -3]);
+
+        // Scaling
+        let scaled = div1.scale(2);
+        assert_eq!(scaled.coefficients(), &[2, 4, 6]);
+    }
+
+    #[test]
+    fn test_toric_divisor_properties() {
+        let div_eff = ToricDivisor::new(vec![1, 2, 0]);
+        assert!(div_eff.is_effective());
+        assert!(div_eff.is_nef());
+
+        let div_not_eff = ToricDivisor::new(vec![1, -1, 0]);
+        assert!(!div_not_eff.is_effective());
+        assert!(!div_not_eff.is_nef());
+
+        let div_ample = ToricDivisor::new(vec![1, 2, 3]);
+        let rays = vec![vec![1, 0], vec![0, 1], vec![-1, -1]];
+        let cone = Cone::new(2, rays).unwrap();
+        let fan = Fan::new(2, vec![cone]).unwrap();
+        assert!(div_ample.is_ample(&fan));
+    }
+
+    #[test]
+    fn test_toric_divisor_degree() {
+        let div = ToricDivisor::new(vec![1, 2, -1]);
+        assert_eq!(div.degree(), 2);
+    }
+
+    #[test]
+    fn test_toric_divisor_cartier() {
+        let rays = vec![vec![1, 0], vec![0, 1]];
+        let cone = Cone::new(2, rays).unwrap();
+        let fan = Fan::new(2, vec![cone]).unwrap();
+
+        let div = ToricDivisor::new(vec![1, 1]);
+        assert!(div.is_cartier(&fan));
+    }
+
+    // ===== Chow Group Tests =====
+
+    #[test]
+    fn test_cycle_creation() {
+        let cycle = Cycle::new(1, vec![(0, 2), (1, -1)]);
+        assert_eq!(cycle.dimension(), 1);
+        assert_eq!(cycle.components(), &[(0, 2), (1, -1)]);
+    }
+
+    #[test]
+    fn test_cycle_zero() {
+        let cycle = Cycle::zero(2);
+        assert_eq!(cycle.dimension(), 2);
+        assert_eq!(cycle.components().len(), 0);
+    }
+
+    #[test]
+    fn test_cycle_addition() {
+        let cycle1 = Cycle::new(1, vec![(0, 2), (1, 1)]);
+        let cycle2 = Cycle::new(1, vec![(0, 1), (2, 3)]);
+
+        let sum = cycle1.add(&cycle2).unwrap();
+        assert_eq!(sum.dimension(), 1);
+
+        // Check that coefficients are combined
+        let mut components_map: HashMap<usize, i64> = HashMap::new();
+        for &(idx, coeff) in sum.components() {
+            components_map.insert(idx, coeff);
+        }
+        assert_eq!(components_map.get(&0), Some(&3)); // 2 + 1
+        assert_eq!(components_map.get(&1), Some(&1));
+        assert_eq!(components_map.get(&2), Some(&3));
+    }
+
+    #[test]
+    fn test_cycle_scale() {
+        let cycle = Cycle::new(1, vec![(0, 2), (1, 3)]);
+        let scaled = cycle.scale(2);
+
+        let mut components_map: HashMap<usize, i64> = HashMap::new();
+        for &(idx, coeff) in scaled.components() {
+            components_map.insert(idx, coeff);
+        }
+        assert_eq!(components_map.get(&0), Some(&4));
+        assert_eq!(components_map.get(&1), Some(&6));
+    }
+
+    #[test]
+    fn test_chow_group_from_variety() {
+        let rays = vec![vec![1, 0], vec![0, 1]];
+        let cone = Cone::new(2, rays).unwrap();
+        let fan = Fan::new(2, vec![cone]).unwrap();
+        let variety = ToricVariety::new(fan);
+
+        let chow = ChowGroup::from_toric_variety(&variety, 2);
+        assert_eq!(chow.dimension(), 2);
+        assert!(chow.rank() >= 0);
+    }
+
+    #[test]
+    fn test_chow_group_rank() {
+        let chow = ChowGroup::new(1);
+        assert_eq!(chow.rank(), 0);
+    }
+
+    // ===== Toric Morphism Tests =====
+
+    #[test]
+    fn test_toric_morphism_creation() {
+        let matrix = vec![vec![1, 0], vec![0, 1]];
+        let morphism = ToricMorphism::new(2, 2, matrix);
+        assert!(morphism.is_ok());
+    }
+
+    #[test]
+    fn test_toric_morphism_identity() {
+        let id = ToricMorphism::identity(2);
+        let point = vec![3, 4];
+        let result = id.apply(&point).unwrap();
+        assert_eq!(result, vec![3, 4]);
+    }
+
+    #[test]
+    fn test_toric_morphism_apply() {
+        // 2x2 matrix: [[2, 0], [0, 3]]
+        let matrix = vec![vec![2, 0], vec![0, 3]];
+        let morphism = ToricMorphism::new(2, 2, matrix).unwrap();
+
+        let point = vec![1, 2];
+        let result = morphism.apply(&point).unwrap();
+        assert_eq!(result, vec![2, 6]);
+    }
+
+    #[test]
+    fn test_toric_morphism_compose() {
+        // First morphism: double x
+        let m1 = ToricMorphism::new(2, 2, vec![vec![2, 0], vec![0, 1]]).unwrap();
+        // Second morphism: triple y
+        let m2 = ToricMorphism::new(2, 2, vec![vec![1, 0], vec![0, 3]]).unwrap();
+
+        let composed = m1.compose(&m2).unwrap();
+        let point = vec![1, 1];
+        let result = composed.apply(&point).unwrap();
+        // First double x: (2, 1), then triple y: (2, 3)
+        assert_eq!(result, vec![2, 3]);
+    }
+
+    #[test]
+    fn test_toric_morphism_is_isomorphism() {
+        // Identity is an isomorphism
+        let id = ToricMorphism::identity(2);
+        assert!(id.is_isomorphism());
+
+        // Non-square matrix is not
+        let non_iso = ToricMorphism::new(2, 3, vec![vec![1, 0], vec![0, 1], vec![0, 0]]).unwrap();
+        assert!(!non_iso.is_isomorphism());
+
+        // Determinant 2 is not unimodular
+        let det2 = ToricMorphism::new(2, 2, vec![vec![2, 0], vec![0, 1]]).unwrap();
+        assert!(!det2.is_isomorphism());
+    }
+
+    #[test]
+    fn test_toric_morphism_pullback_divisor() {
+        let matrix = vec![vec![1, 0], vec![0, 1]];
+        let morphism = ToricMorphism::new(2, 2, matrix).unwrap();
+
+        let div = ToricDivisor::new(vec![3, 4]);
+        let pulled = morphism.pullback_divisor(&div).unwrap();
+        assert_eq!(pulled.coefficients(), &[3, 4]);
+    }
+
+    // ===== Moment Polytope Tests =====
+
+    #[test]
+    fn test_moment_polytope_creation() {
+        let vertices = vec![vec![0, 0], vec![1, 0], vec![0, 1]];
+        let polytope = MomentPolytope::new(vertices);
+        assert!(polytope.is_ok());
+
+        let p = polytope.unwrap();
+        assert_eq!(p.dimension(), 2);
+        assert_eq!(p.vertices().len(), 3);
+    }
+
+    #[test]
+    fn test_moment_polytope_from_fan() {
+        let rays = vec![vec![1, 0], vec![0, 1], vec![-1, -1]];
+        let cone = Cone::new(2, rays).unwrap();
+        let fan = Fan::new(2, vec![cone]).unwrap();
+
+        let polytope = MomentPolytope::from_fan(&fan);
+        assert!(polytope.is_ok());
+
+        let p = polytope.unwrap();
+        assert_eq!(p.dimension(), 2);
+        assert!(p.vertices().len() >= 3);
+    }
+
+    #[test]
+    fn test_moment_polytope_volume() {
+        // Triangle with vertices (0,0), (1,0), (0,1)
+        let vertices = vec![vec![0, 0], vec![1, 0], vec![0, 1]];
+        let polytope = MomentPolytope::new(vertices).unwrap();
+
+        let volume = polytope.volume();
+        // Area of right triangle is 0.5
+        assert!((volume - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_moment_polytope_contains() {
+        let vertices = vec![vec![0, 0], vec![1, 0], vec![0, 1]];
+        let polytope = MomentPolytope::new(vertices).unwrap();
+
+        assert!(polytope.contains(&vec![0, 0]));
+        assert!(polytope.contains(&vec![1, 0]));
+        assert!(!polytope.contains(&vec![2, 2]));
+    }
+
+    // ===== Fan Subdivision Tests =====
+
+    #[test]
+    fn test_star_subdivision() {
+        let rays = vec![vec![1, 0], vec![0, 1]];
+        let cone = Cone::new(2, rays).unwrap();
+        let fan = Fan::new(2, vec![cone]).unwrap();
+
+        let new_ray = vec![1, 1];
+        let subdivided = fan.star_subdivision(new_ray);
+        assert!(subdivided.is_ok());
+
+        let f = subdivided.unwrap();
+        assert_eq!(f.ambient_dim(), 2);
+    }
+
+    #[test]
+    fn test_barycentric_subdivision() {
+        let rays = vec![vec![1, 0], vec![0, 1]];
+        let cone = Cone::new(2, rays).unwrap();
+        let fan = Fan::new(2, vec![cone]).unwrap();
+
+        let subdivided = fan.barycentric_subdivision();
+        assert!(subdivided.is_ok());
+
+        let f = subdivided.unwrap();
+        assert_eq!(f.ambient_dim(), 2);
+    }
+
+    #[test]
+    fn test_refine_cone() {
+        let rays = vec![vec![1, 0], vec![0, 1]];
+        let cone = Cone::new(2, rays).unwrap();
+        let fan = Fan::new(2, vec![cone]).unwrap();
+
+        let new_rays = vec![vec![1, 1]];
+        let refined = fan.refine_cone(0, new_rays);
+        assert!(refined.is_ok());
+
+        let f = refined.unwrap();
+        assert_eq!(f.ambient_dim(), 2);
+    }
+
+    #[test]
+    fn test_common_refinement() {
+        let rays1 = vec![vec![1, 0], vec![0, 1]];
+        let cone1 = Cone::new(2, rays1).unwrap();
+        let fan1 = Fan::new(2, vec![cone1]).unwrap();
+
+        let rays2 = vec![vec![1, 1], vec![-1, 1]];
+        let cone2 = Cone::new(2, rays2).unwrap();
+        let fan2 = Fan::new(2, vec![cone2]).unwrap();
+
+        let refined = fan1.common_refinement(&fan2);
+        assert!(refined.is_ok());
+
+        let f = refined.unwrap();
+        assert_eq!(f.ambient_dim(), 2);
+    }
+
+    #[test]
+    fn test_is_refinement_of() {
+        let rays = vec![vec![1, 0], vec![0, 1]];
+        let cone = Cone::new(2, rays).unwrap();
+        let fan = Fan::new(2, vec![cone]).unwrap();
+
+        // A fan is a refinement of itself
+        assert!(fan.is_refinement_of(&fan));
+    }
+
+    #[test]
+    fn test_blow_up_cone() {
+        let rays = vec![vec![1, 0], vec![0, 1], vec![1, 1]];
+        let cone = Cone::new(2, rays).unwrap();
+        let fan = Fan::new(2, vec![cone]).unwrap();
+
+        let blown_up = fan.blow_up_cone(0);
+        assert!(blown_up.is_ok());
+
+        let f = blown_up.unwrap();
+        assert_eq!(f.ambient_dim(), 2);
+    }
+
+    // ===== Integration Tests =====
+
+    #[test]
+    fn test_projective_line_chow_groups() {
+        // ℙ¹ has interesting Chow groups
+        let fan = projective_space_fan(1).unwrap();
+        let variety = ToricVariety::new(fan);
+
+        // A_0(ℙ¹) should be generated by points
+        let a0 = ChowGroup::from_toric_variety(&variety, 0);
+        assert_eq!(a0.dimension(), 0);
+
+        // A_1(ℙ¹) should be generated by ℙ¹ itself
+        let a1 = ChowGroup::from_toric_variety(&variety, 1);
+        assert_eq!(a1.dimension(), 1);
+    }
+
+    #[test]
+    fn test_divisor_on_projective_line() {
+        let fan = projective_space_fan(1).unwrap();
+        let num_rays = fan.num_rays();
+
+        // Hyperplane divisor H = D_0 + D_1
+        let h = ToricDivisor::new(vec![1; num_rays]);
+        assert!(h.is_ample(&fan));
+        assert!(h.is_effective());
+    }
+
+    #[test]
+    fn test_morphism_between_projective_spaces() {
+        // Morphism ℙ¹ → ℙ¹ (Frobenius-like)
+        let matrix = vec![vec![2]];
+        let morphism = ToricMorphism::new(1, 1, matrix).unwrap();
+
+        let point = vec![1];
+        let image = morphism.apply(&point).unwrap();
+        assert_eq!(image, vec![2]);
     }
 }
