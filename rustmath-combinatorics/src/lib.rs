@@ -16,6 +16,7 @@ pub mod combinatorial_map_examples;
 pub mod binary_words;
 pub mod combinations;
 pub mod composition;
+pub mod dendriform_algebra;
 pub mod cyclic_sieving;
 pub mod composition_tableau;
 pub mod debruijn;
@@ -236,6 +237,10 @@ pub use vector_partition::{
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
     vector_partitions_with_max_part, VectorPartition,
 };
+pub use dendriform_algebra::{
+    dimension as dendriform_dimension, free_dendriform_basis, DendriFormElement,
+};
+pub use tamari_lattice::{all_binary_trees, BinaryTree, TamariLattice};
 pub use symmetric_group_representations::{
     all_irreducible_representations, conjugacy_class_size, decompose_character,
     murnaghan_nakayama, permutation_cycle_type, CharacterTable, IrreducibleRepresentation,
