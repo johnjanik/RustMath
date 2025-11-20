@@ -27,7 +27,10 @@ pub use basis::{
 pub use kostka::{kostka_number, kostka_tableau_count};
 pub use operations::{inner_product, symmetric_product};
 pub use plethysm::plethysm;
-pub use ribbon::{is_ribbon_tableau, ribbon_tableaux, RibbonTableau};
+pub use ribbon::{
+    is_ribbon_tableau, ribbon_tableaux, RibbonTableau,
+    murnaghan_nakayama, symmetric_group_character, symmetric_group_character_table,
+};
 pub use fqsym::FQSym;
 pub use super_schur::{
     evaluate_super_schur, is_classical_schur, super_dimension, super_schur_function,
