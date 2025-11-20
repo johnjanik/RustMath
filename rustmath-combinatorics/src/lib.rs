@@ -13,6 +13,7 @@ pub mod combinatorial_map_examples;
 pub mod binary_words;
 pub mod combinations;
 pub mod composition;
+pub mod cyclic_sieving;
 pub mod composition_tableau;
 pub mod debruijn;
 pub mod derangements;
@@ -157,6 +158,7 @@ pub use t_sequences::{
     t_integer, t_lucas, t_multinomial, t_stirling_second,
 };
 pub use wreath_product::{all_colored_permutations, ColoredPermutation};
+pub use cyclic_sieving::{CyclicAction, CyclicSievingTriple, FunctionAction};
 pub use plane_partition::{
     count_cyclically_symmetric_plane_partitions, count_plane_partitions_in_box,
     count_self_complementary_plane_partitions, count_totally_symmetric_plane_partitions,
