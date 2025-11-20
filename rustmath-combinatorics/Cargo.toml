@@ -11,5 +11,3 @@ rustmath-core = { path = "../rustmath-core" }
 rustmath-integers = { path = "../rustmath-integers" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
 rustmath-rationals = { path = "../rustmath-rationals" }
-num-bigint = "0.4"
-num-traits = "0.2"
