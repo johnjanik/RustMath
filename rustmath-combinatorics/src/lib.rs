@@ -77,9 +77,10 @@ pub use set_partition::{set_partition_ordered, set_partitions, OrderedSetPartiti
 pub use set_system::SetSystem;
 pub use multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
 pub use word::{
-    abelian_complexity, boyer_moore_search, christoffel_word, factor_complexity, kmp_search,
-    lyndon_factorization, lyndon_words as general_lyndon_words, sturmian_word, AutomaticSequence,
-    Morphism, Word,
+    abelian_complexity, boyer_moore_search, christoffel_word, factor_complexity,
+    from_cfl_factorization, from_standard_factorization, is_cfl_factorization, kmp_search,
+    lyndon_factorization, lyndon_words as general_lyndon_words, lyndon_words_up_to,
+    standard_lyndon_factorization, sturmian_word, AutomaticSequence, Morphism, Word,
 };
 pub use subset::{
     all_subsets, count_k_subsets, k_subset_iterator, k_subsets, subset_iterator, KSubsetIterator,
