@@ -18,6 +18,7 @@ pub mod finite_dimensional_algebra_morphism;
 pub mod quotient_algebra;
 pub mod clifford_algebra;
 pub mod group_algebra;
+pub mod symmetric_group_algebra;
 pub mod traits;
 pub mod affine_nil_temperley_lieb;
 pub mod blob_algebra;
@@ -69,6 +70,7 @@ pub mod tensor_algebra;
 pub mod weyl_algebra;
 pub mod yangian;
 pub mod yokonuma_hecke_algebra;
+pub mod partition_algebra;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -86,6 +88,12 @@ pub use clifford_algebra::{
     ExteriorAlgebraCoboundary, ExteriorAlgebraIdeal, StructureCoefficients,
 };
 pub use group_algebra::*;
+pub use symmetric_group_algebra::{
+    SymmetricGroupElement, SymmetricGroupAlgebraBuilder,
+    ZSymmetricGroupAlgebra, ZSymmetricGroupElement,
+    QSymmetricGroupAlgebra, QSymmetricGroupElement,
+    verify_coxeter_relations,
+};
 pub use traits::*;
 pub use affine_nil_temperley_lieb::{AffineNilTemperleyLiebTypeA, Element as AffineNilTemperleyLiebElement};
 pub use blob_algebra::{BlobAlgebra, BlobElement, BlobBasisElement};
@@ -214,6 +222,9 @@ pub use yangian::{
 };
 pub use yokonuma_hecke_algebra::{
     YokonumaHeckeAlgebra, YokonumaElement, YokonumaWord, YokonumaGenerator,
+};
+pub use partition_algebra::{
+    PartitionAlgebra, PartitionAlgebraElement, PartitionDiagram,
 };
 
 #[cfg(test)]

@@ -9,5 +9,8 @@ repository.workspace = true
 [dependencies]
 rustmath-core = { path = "../rustmath-core" }
 rustmath-integers = { path = "../rustmath-integers" }
+rustmath-matrix = { path = "../rustmath-matrix" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
 rustmath-rationals = { path = "../rustmath-rationals" }
+rustmath-complex = { path = "../rustmath-complex" }
+lazy_static = "1.5"
