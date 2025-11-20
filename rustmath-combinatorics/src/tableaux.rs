@@ -578,198 +578,177 @@ fn insert_at_position(tableau: &Tableau, row: usize, col: usize, value: usize) -
     Tableau::new(rows).unwrap()
 }
 
-/// A k-tableau - a generalization of Young tableaux
+/// An entry in a shifted primed tableau - can be primed or unprimed
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum PrimedEntry {
+    /// Unprimed entry with value
+    Unprimed(usize),
+    /// Primed entry with value (represented as value')
+    Primed(usize),
+}
+
+impl PrimedEntry {
+    /// Get the underlying value (ignoring prime status)
+    pub fn value(&self) -> usize {
+        match self {
+            PrimedEntry::Unprimed(v) | PrimedEntry::Primed(v) => *v,
+        }
+    }
+
+    /// Check if this entry is primed
+    pub fn is_primed(&self) -> bool {
+        matches!(self, PrimedEntry::Primed(_))
+    }
+
+    /// Check if this entry is unprimed
+    pub fn is_unprimed(&self) -> bool {
+        matches!(self, PrimedEntry::Unprimed(_))
+    }
+
+    /// Create an unprimed entry
+    pub fn unprimed(value: usize) -> Self {
+        PrimedEntry::Unprimed(value)
+    }
+
+    /// Create a primed entry
+    pub fn primed(value: usize) -> Self {
+        PrimedEntry::Primed(value)
+    }
+}
+
+impl PartialOrd for PrimedEntry {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for PrimedEntry {
+    /// Ordering for primed entries: first by value, then unprimed < primed
+    /// This means 1 < 1' < 2 < 2' < 3 < 3'
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match self.value().cmp(&other.value()) {
+            std::cmp::Ordering::Equal => {
+                // If values are equal, unprimed comes before primed
+                match (self, other) {
+                    (PrimedEntry::Unprimed(_), PrimedEntry::Primed(_)) => std::cmp::Ordering::Less,
+                    (PrimedEntry::Primed(_), PrimedEntry::Unprimed(_)) => std::cmp::Ordering::Greater,
+                    _ => std::cmp::Ordering::Equal,
+                }
+            }
+            other_ordering => other_ordering,
+        }
+    }
+}
+
+impl std::fmt::Display for PrimedEntry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PrimedEntry::Unprimed(v) => write!(f, "{}", v),
+            PrimedEntry::Primed(v) => write!(f, "{}'", v),
+        }
+    }
+}
+
+/// A shifted primed tableau
 ///
-/// In a k-tableau:
-/// - Rows are weakly increasing (non-decreasing)
-/// - Entries in columns differ by at least k
-///
-/// For k=1, this gives semistandard tableaux
+/// A shifted primed tableau is a filling of a shifted Young diagram (where row i
+/// starts at column i) with entries that can be primed or unprimed, satisfying:
+/// - The shape is a strict partition (strictly decreasing parts)
+/// - Rows are weakly increasing from left to right
+/// - Columns are strictly increasing from top to bottom
+/// - An unprimed entry cannot appear to the right of a primed entry of the same value
+/// - No two primed entries with the same value can appear in the same column
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct KTableau {
-    /// The underlying tableau
-    tableau: Tableau,
-    /// The k value (minimum column increment)
-    k: usize,
+pub struct ShiftedPrimedTableau {
+    /// The entries of the tableau, organized by rows
+    /// Row i contains entries starting at column i (shifted position)
+    rows: Vec<Vec<PrimedEntry>>,
+    /// The shape (strict partition) of the tableau
+    shape: Vec<usize>,
 }
 
-impl KTableau {
-    /// Create a k-tableau from rows and a k value
+impl ShiftedPrimedTableau {
+    /// Create a shifted primed tableau from rows
     ///
-    /// Returns None if the rows don't satisfy the k-tableau property
-    pub fn new(rows: Vec<Vec<usize>>, k: usize) -> Option<Self> {
-        let tableau = Tableau::new(rows)?;
+    /// Returns None if the rows don't form a valid shifted primed tableau
+    pub fn new(rows: Vec<Vec<PrimedEntry>>) -> Option<Self> {
+        if rows.is_empty() {
+            return Some(ShiftedPrimedTableau {
+                rows: vec![],
+                shape: vec![],
+            });
+        }
 
-        // Check k-tableau property: columns differ by at least k
-        for col in 0..tableau.rows()[0].len() {
-            for row in 1..tableau.rows().len() {
-                if col < tableau.rows()[row].len() {
-                    let upper = tableau.rows()[row - 1][col];
-                    let lower = tableau.rows()[row][col];
-                    if lower < upper + k {
-                        return None;
-                    }
-                }
+        // Extract shape - for shifted tableaux, this should be strictly decreasing
+        let shape: Vec<usize> = rows.iter().map(|row| row.len()).collect();
+
+        // Check that shape is a strict partition (strictly decreasing)
+        for i in 1..shape.len() {
+            if shape[i] >= shape[i - 1] {
+                return None; // Not strictly decreasing
             }
         }
 
-        // Check rows are weakly increasing
-        for row in tableau.rows() {
-            for i in 1..row.len() {
-                if row[i] < row[i - 1] {
-                    return None;
-                }
-            }
+        let tableau = ShiftedPrimedTableau { rows, shape };
+
+        // Validate the tableau rules
+        if !tableau.is_valid() {
+            return None;
         }
 
-        Some(KTableau { tableau, k })
-    }
-
-    /// Get the underlying tableau
-    pub fn tableau(&self) -> &Tableau {
-        &self.tableau
-    }
-
-    /// Get the k value
-    pub fn k(&self) -> usize {
-        self.k
-    }
-
-    /// Get the shape of the k-tableau
-    pub fn shape(&self) -> &Partition {
-        self.tableau.shape()
-    }
-
-    /// Get the rows of the k-tableau
-    pub fn rows(&self) -> &[Vec<usize>] {
-        self.tableau.rows()
-    }
-
-    /// Get the size (number of entries)
-    pub fn size(&self) -> usize {
-        self.tableau.size()
-    }
-
-    /// Check if this is a valid k-tableau
-    pub fn is_valid(&self) -> bool {
-        // Check rows are weakly increasing
-        for row in self.tableau.rows() {
-            for i in 1..row.len() {
-                if row[i] < row[i - 1] {
-                    return false;
-                }
-            }
-        }
-
-        // Check columns differ by at least k
-        for col in 0..self.tableau.rows()[0].len() {
-            for row in 1..self.tableau.rows().len() {
-                if col < self.tableau.rows()[row].len() {
-                    let upper = self.tableau.rows()[row - 1][col];
-                    let lower = self.tableau.rows()[row][col];
-                    if lower < upper + self.k {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        true
-    }
-
-    /// Convert to string representation
-    pub fn to_string(&self) -> String {
-        self.tableau.to_string()
-    }
-}
-
-/// A weak k-tableau (same as k-tableau, but emphasizing weak row condition)
-///
-/// In a weak k-tableau:
-/// - Rows are weakly increasing (non-decreasing) - the "weak" part
-/// - Entries in columns differ by at least k
-pub type WeakKTableau = KTableau;
-
-/// An increasing tableau
-///
-/// In an increasing tableau:
-/// - Rows are strictly increasing
-/// - Columns are strictly increasing
-///
-/// This is more restrictive than a standard tableau which allows
-/// equal entries in rows
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct IncreasingTableau {
-    /// The underlying tableau
-    tableau: Tableau,
-}
-
-impl IncreasingTableau {
-    /// Create an increasing tableau from rows
-    ///
-    /// Returns None if the rows don't satisfy the increasing property
-    pub fn new(rows: Vec<Vec<usize>>) -> Option<Self> {
-        let tableau = Tableau::new(rows)?;
-
-        // Check rows are strictly increasing
-        for row in tableau.rows() {
-            for i in 1..row.len() {
-                if row[i] <= row[i - 1] {
-                    return None;
-                }
-            }
-        }
-
-        // Check columns are strictly increasing
-        for col in 0..tableau.rows()[0].len() {
-            for row in 1..tableau.rows().len() {
-                if col < tableau.rows()[row].len() {
-                    if tableau.rows()[row][col] <= tableau.rows()[row - 1][col] {
-                        return None;
-                    }
-                }
-            }
-        }
-
-        Some(IncreasingTableau { tableau })
-    }
-
-    /// Get the underlying tableau
-    pub fn tableau(&self) -> &Tableau {
-        &self.tableau
+        Some(tableau)
     }
 
     /// Get the shape of the tableau
-    pub fn shape(&self) -> &Partition {
-        self.tableau.shape()
+    pub fn shape(&self) -> &[usize] {
+        &self.shape
     }
 
     /// Get the rows of the tableau
-    pub fn rows(&self) -> &[Vec<usize>] {
-        self.tableau.rows()
+    pub fn rows(&self) -> &[Vec<PrimedEntry>] {
+        &self.rows
     }
 
-    /// Get the size (number of entries)
+    /// Get the number of entries in the tableau
     pub fn size(&self) -> usize {
-        self.tableau.size()
+        self.rows.iter().map(|row| row.len()).sum()
     }
 
-    /// Check if this is a valid increasing tableau
+    /// Check if this tableau satisfies all the shifted primed tableau rules
     pub fn is_valid(&self) -> bool {
-        // Check rows are strictly increasing
-        for row in self.tableau.rows() {
-            for i in 1..row.len() {
-                if row[i] <= row[i - 1] {
-                    return false;
-                }
+        // Check row conditions
+        for row in &self.rows {
+            if !self.is_valid_row(row) {
+                return false;
             }
         }
 
-        // Check columns are strictly increasing
-        for col in 0..self.tableau.rows()[0].len() {
-            for row in 1..self.tableau.rows().len() {
-                if col < self.tableau.rows()[row].len() {
-                    if self.tableau.rows()[row][col] <= self.tableau.rows()[row - 1][col] {
+        // Check column conditions
+        for col_idx in 0..*self.shape.iter().max().unwrap_or(&0) {
+            if !self.is_valid_column(col_idx) {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    /// Check if a row satisfies the row conditions
+    fn is_valid_row(&self, row: &[PrimedEntry]) -> bool {
+        // Check weakly increasing
+        for i in 1..row.len() {
+            if row[i] < row[i - 1] {
+                return false;
+            }
+        }
+
+        // Check that unprimed doesn't follow primed of same value
+        for i in 1..row.len() {
+            if row[i].is_unprimed() {
+                let value = row[i].value();
+                // Check if there's a primed entry with the same value to the left
+                for j in 0..i {
+                    if row[j] == PrimedEntry::Primed(value) {
                         return false;
                     }
                 }
@@ -779,172 +758,114 @@ impl IncreasingTableau {
         true
     }
 
-    /// Convert to string representation
+    /// Check if a column satisfies the column conditions
+    fn is_valid_column(&self, col_idx: usize) -> bool {
+        let mut primed_values = std::collections::HashSet::new();
+        let mut prev_entry: Option<PrimedEntry> = None;
+
+        for (row_idx, row) in self.rows.iter().enumerate() {
+            // Column col_idx in shifted tableau is at position col_idx - row_idx in row row_idx
+            // But we need to account for the shift: row i starts at column i
+            // So absolute column col_idx corresponds to relative position col_idx - row_idx in row row_idx
+            if col_idx < row_idx {
+                continue; // This row doesn't have this column
+            }
+
+            let relative_col = col_idx - row_idx;
+            if relative_col >= row.len() {
+                continue; // This row doesn't extend to this column
+            }
+
+            let entry = row[relative_col];
+
+            // Check strictly increasing
+            if let Some(prev) = prev_entry {
+                if entry <= prev {
+                    return false;
+                }
+            }
+            prev_entry = Some(entry);
+
+            // Check no repeated primed values
+            if entry.is_primed() {
+                if !primed_values.insert(entry.value()) {
+                    return false; // Repeated primed value in column
+                }
+            }
+        }
+
+        true
+    }
+
+    /// Get entry at position (row, col) in absolute coordinates
+    /// Returns None if the position is not in the tableau
+    pub fn get(&self, row: usize, col: usize) -> Option<PrimedEntry> {
+        if row >= self.rows.len() {
+            return None;
+        }
+        if col < row {
+            return None; // Before the start of this row in shifted tableau
+        }
+        let relative_col = col - row;
+        self.rows.get(row)?.get(relative_col).copied()
+    }
+
+    /// Get the number of rows
+    pub fn num_rows(&self) -> usize {
+        self.rows.len()
+    }
+
+    /// Display the tableau as a string with proper shifting
     pub fn to_string(&self) -> String {
-        self.tableau.to_string()
-    }
-}
-
-/// Generate all k-tableaux of a given shape with entries from a specified range
-///
-/// # Arguments
-/// * `shape` - The partition shape
-/// * `k` - The minimum column increment
-/// * `max_entry` - Maximum entry value allowed
-///
-/// # Returns
-/// A vector of all valid k-tableaux
-pub fn generate_k_tableaux(shape: &Partition, k: usize, max_entry: usize) -> Vec<KTableau> {
-    if shape.sum() == 0 {
-        return vec![];
+        self.rows
+            .iter()
+            .enumerate()
+            .map(|(i, row)| {
+                let indent = "  ".repeat(i); // 2 spaces per shift level
+                let entries = row
+                    .iter()
+                    .map(|e| format!("{:3}", e.to_string()))
+                    .collect::<Vec<_>>()
+                    .join(" ");
+                format!("{}{}", indent, entries)
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 
-    let mut result = Vec::new();
-    let mut current: Vec<Vec<usize>> = shape
-        .parts()
-        .iter()
-        .map(|&len| vec![1; len])
-        .collect();
-
-    generate_k_tableaux_recursive(&mut current, shape, k, max_entry, 0, 0, &mut result);
-    result
-}
-
-fn generate_k_tableaux_recursive(
-    current: &mut Vec<Vec<usize>>,
-    shape: &Partition,
-    k: usize,
-    max_entry: usize,
-    row: usize,
-    col: usize,
-    result: &mut Vec<KTableau>,
-) {
-    // If we've filled all positions, add this k-tableau
-    if row >= shape.length() {
-        if let Some(kt) = KTableau::new(current.clone(), k) {
-            result.push(kt);
-        }
-        return;
-    }
-
-    // Calculate next position
-    let (next_row, next_col) = if col + 1 < shape.parts()[row] {
-        (row, col + 1)
-    } else if row + 1 < shape.length() {
-        (row + 1, 0)
-    } else {
-        (shape.length(), 0)
-    };
-
-    // Determine valid range for this position
-    let min_val = if col > 0 {
-        // Must be >= left neighbor (weakly increasing rows)
-        current[row][col - 1]
-    } else if row > 0 && col < shape.parts()[row] && col < current[row - 1].len() {
-        // Must be >= upper neighbor + k (column constraint)
-        current[row - 1][col] + k
-    } else {
-        1
-    };
-
-    // Additional constraint from above if both col > 0 and row > 0
-    let min_val = if row > 0 && col < current[row - 1].len() {
-        min_val.max(current[row - 1][col] + k)
-    } else {
-        min_val
-    };
-
-    // Try each valid value
-    for val in min_val..=max_entry {
-        current[row][col] = val;
-        generate_k_tableaux_recursive(current, shape, k, max_entry, next_row, next_col, result);
-    }
-}
-
-/// Generate all increasing tableaux of a given shape with specified entries
-///
-/// # Arguments
-/// * `shape` - The partition shape
-/// * `entries` - The entries to use (must have size equal to shape.sum())
-///
-/// # Returns
-/// A vector of all valid increasing tableaux using those entries
-pub fn generate_increasing_tableaux(shape: &Partition, entries: &[usize]) -> Vec<IncreasingTableau> {
-    if shape.sum() != entries.len() {
-        return vec![];
-    }
-
-    if shape.sum() == 0 {
-        return vec![];
-    }
-
-    let mut result = Vec::new();
-    let mut current: Vec<Vec<usize>> = shape
-        .parts()
-        .iter()
-        .map(|&len| vec![0; len])
-        .collect();
-
-    let mut used = vec![false; entries.len()];
-    generate_increasing_tableaux_recursive(&mut current, shape, entries, &mut used, 0, 0, &mut result);
-    result
-}
-
-fn generate_increasing_tableaux_recursive(
-    current: &mut Vec<Vec<usize>>,
-    shape: &Partition,
-    entries: &[usize],
-    used: &mut Vec<bool>,
-    row: usize,
-    col: usize,
-    result: &mut Vec<IncreasingTableau>,
-) {
-    // If we've filled all positions, add this increasing tableau
-    if row >= shape.length() {
-        if let Some(it) = IncreasingTableau::new(current.clone()) {
-            result.push(it);
-        }
-        return;
-    }
-
-    // Calculate next position
-    let (next_row, next_col) = if col + 1 < shape.parts()[row] {
-        (row, col + 1)
-    } else if row + 1 < shape.length() {
-        (row + 1, 0)
-    } else {
-        (shape.length(), 0)
-    };
-
-    // Try each unused entry
-    for i in 0..entries.len() {
-        if used[i] {
-            continue;
+    /// Check if this is a standard shifted primed tableau
+    ///
+    /// A standard shifted primed tableau uses each value 1, 2, ..., n exactly once
+    pub fn is_standard(&self) -> bool {
+        let n = self.size();
+        if n == 0 {
+            return true;
         }
 
-        let val = entries[i];
+        // Collect all values (ignoring prime status)
+        let mut values: Vec<usize> = self.rows
+            .iter()
+            .flat_map(|row| row.iter().map(|e| e.value()))
+            .collect();
+        values.sort_unstable();
 
-        // Check if this value is valid for this position
-        let valid = if col > 0 && row > 0 && col < current[row - 1].len() {
-            // Must be > left neighbor and > upper neighbor
-            val > current[row][col - 1] && val > current[row - 1][col]
-        } else if col > 0 {
-            // Must be > left neighbor
-            val > current[row][col - 1]
-        } else if row > 0 && col < current[row - 1].len() {
-            // Must be > upper neighbor
-            val > current[row - 1][col]
-        } else {
-            true
-        };
+        // Check that we have exactly 1, 2, ..., n
+        values == (1..=n).collect::<Vec<_>>()
+    }
 
-        if valid {
-            current[row][col] = val;
-            used[i] = true;
-            generate_increasing_tableaux_recursive(current, shape, entries, used, next_row, next_col, result);
-            used[i] = false;
-            current[row][col] = 0;
-        }
+    /// Get all entries as a flat list
+    pub fn entries(&self) -> Vec<PrimedEntry> {
+        self.rows.iter().flat_map(|row| row.iter().copied()).collect()
+    }
+
+    /// Count the number of primed entries
+    pub fn num_primed(&self) -> usize {
+        self.entries().iter().filter(|e| e.is_primed()).count()
+    }
+
+    /// Count the number of unprimed entries
+    pub fn num_unprimed(&self) -> usize {
+        self.entries().iter().filter(|e| e.is_unprimed()).count()
     }
 }
 
@@ -1098,233 +1019,74 @@ mod tests {
         assert!(result_t.is_semistandard());
     }
 
+    // Tests for PrimedEntry
     #[test]
-    fn test_cell_residue() {
-        // Create a tableau: [[1, 2, 3], [4, 5]]
-        let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+    fn test_primed_entry_creation() {
+        let u1 = PrimedEntry::unprimed(1);
+        let p1 = PrimedEntry::primed(1);
 
-        // Test with e=3, multicharge=0
-        // Cell (0,0): residue = (0 - 0 + 0) mod 3 = 0
-        assert_eq!(t.cell_residue(0, 0, 3, 0), Some(0));
+        assert!(u1.is_unprimed());
+        assert!(!u1.is_primed());
+        assert!(p1.is_primed());
+        assert!(!p1.is_unprimed());
 
-        // Cell (0,1): residue = (1 - 0 + 0) mod 3 = 1
-        assert_eq!(t.cell_residue(0, 1, 3, 0), Some(1));
-
-        // Cell (0,2): residue = (2 - 0 + 0) mod 3 = 2
-        assert_eq!(t.cell_residue(0, 2, 3, 0), Some(2));
-
-        // Cell (1,0): residue = (0 - 1 + 0) mod 3 = -1 mod 3 = 2
-        assert_eq!(t.cell_residue(1, 0, 3, 0), Some(2));
-
-        // Cell (1,1): residue = (1 - 1 + 0) mod 3 = 0
-        assert_eq!(t.cell_residue(1, 1, 3, 0), Some(0));
-
-        // Test with multicharge=1
-        // Cell (0,0): residue = (0 - 0 + 1) mod 3 = 1
-        assert_eq!(t.cell_residue(0, 0, 3, 1), Some(1));
-
-        // Test invalid positions
-        assert_eq!(t.cell_residue(2, 0, 3, 0), None);
-        assert_eq!(t.cell_residue(0, 5, 3, 0), None);
-
-        // Test e=0 (should return None)
-        assert_eq!(t.cell_residue(0, 0, 0, 0), None);
+        assert_eq!(u1.value(), 1);
+        assert_eq!(p1.value(), 1);
     }
 
     #[test]
-    fn test_cell_residue_with_different_e() {
-        let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+    fn test_primed_entry_ordering() {
+        let u1 = PrimedEntry::unprimed(1);
+        let p1 = PrimedEntry::primed(1);
+        let u2 = PrimedEntry::unprimed(2);
+        let p2 = PrimedEntry::primed(2);
 
-        // Test with e=2
-        // Cell (0,0): residue = 0 mod 2 = 0
-        assert_eq!(t.cell_residue(0, 0, 2, 0), Some(0));
+        // 1 < 1' < 2 < 2'
+        assert!(u1 < p1);
+        assert!(p1 < u2);
+        assert!(u2 < p2);
 
-        // Cell (0,1): residue = 1 mod 2 = 1
-        assert_eq!(t.cell_residue(0, 1, 2, 0), Some(1));
-
-        // Cell (1,0): residue = -1 mod 2 = 1
-        assert_eq!(t.cell_residue(1, 0, 2, 0), Some(1));
-
-        // Test with e=5
-        // Cell (1,0): residue = -1 mod 5 = 4
-        assert_eq!(t.cell_residue(1, 0, 5, 0), Some(4));
+        assert_eq!(u1, u1);
+        assert_eq!(p1, p1);
     }
 
     #[test]
-    fn test_residue_sequence() {
-        // Create a standard tableau: [[1, 2, 4], [3, 5]]
-        let t = Tableau::new(vec![vec![1, 2, 4], vec![3, 5]]).unwrap();
+    fn test_primed_entry_display() {
+        let u1 = PrimedEntry::unprimed(5);
+        let p1 = PrimedEntry::primed(3);
+
+        assert_eq!(format!("{}", u1), "5");
+        assert_eq!(format!("{}", p1), "3'");
+    }
+
+    // Tests for ShiftedPrimedTableau
+    #[test]
+    fn test_shifted_primed_tableau_empty() {
+        let t = ShiftedPrimedTableau::new(vec![]).unwrap();
+        assert_eq!(t.size(), 0);
+        assert_eq!(t.num_rows(), 0);
+        assert!(t.is_valid());
+    }
+
+    #[test]
+    fn test_shifted_primed_tableau_valid() {
+        use PrimedEntry::{Primed as P, Unprimed as U};
+
+        // Valid shifted primed tableau with shape (3, 2)
+        // Row 0: 1  2  3
+        // Row 1:   4  5
+        let t = ShiftedPrimedTableau::new(vec![
+            vec![U(1), U(2), U(3)],
+            vec![U(4), U(5)],
+        ]);
+
+        assert!(t.is_some());
+        let t = t.unwrap();
+        assert_eq!(t.size(), 5);
+        assert_eq!(t.num_rows(), 2);
+        assert_eq!(t.shape(), &[3, 2]);
+        assert!(t.is_valid());
         assert!(t.is_standard());
-
-        // Compute residue sequence with e=3, multicharge=0
-        let residues = t.residue_sequence(3, 0);
-
-        // Should have 5 residues (one for each entry 1-5)
-        assert_eq!(residues.len(), 5);
-
-        // Entry 1 is at (0,0): residue = 0
-        assert_eq!(residues[0], 0);
-
-        // Entry 2 is at (0,1): residue = 1
-        assert_eq!(residues[1], 1);
-
-        // Entry 3 is at (1,0): residue = -1 mod 3 = 2
-        assert_eq!(residues[2], 2);
-
-        // Entry 4 is at (0,2): residue = 2
-        assert_eq!(residues[3], 2);
-
-        // Entry 5 is at (1,1): residue = 0
-        assert_eq!(residues[4], 0);
-    }
-
-    #[test]
-    fn test_residue_sequence_with_multicharge() {
-        // Create a standard tableau: [[1, 2], [3]]
-        let t = Tableau::new(vec![vec![1, 2], vec![3]]).unwrap();
-
-        // Compute residue sequence with e=2, multicharge=1
-        let residues = t.residue_sequence(2, 1);
-
-        // Entry 1 at (0,0): residue = (0 - 0 + 1) mod 2 = 1
-        assert_eq!(residues[0], 1);
-
-        // Entry 2 at (0,1): residue = (1 - 0 + 1) mod 2 = 0
-        assert_eq!(residues[1], 0);
-
-        // Entry 3 at (1,0): residue = (0 - 1 + 1) mod 2 = 0
-        assert_eq!(residues[2], 0);
-    }
-
-    #[test]
-    fn test_residue_content() {
-        // Create a tableau: [[1, 2, 3], [4, 5]]
-        let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
-
-        // Compute residue content with e=3, multicharge=0
-        let content = t.residue_content(3, 0);
-
-        // Should have 3 entries (one for each residue class 0, 1, 2)
-        assert_eq!(content.len(), 3);
-
-        // Count cells with residue 0: (0,0) and (1,1) -> 2 cells
-        assert_eq!(content[0], 2);
-
-        // Count cells with residue 1: (0,1) -> 1 cell
-        assert_eq!(content[1], 1);
-
-        // Count cells with residue 2: (0,2) and (1,0) -> 2 cells
-        assert_eq!(content[2], 2);
-
-        // Verify total
-        assert_eq!(content.iter().sum::<usize>(), 5);
-    }
-
-    #[test]
-    fn test_residue_content_different_shape() {
-        // Create a tableau with shape [3, 2, 1]: [[1, 2, 3], [4, 5], [6]]
-        let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5], vec![6]]).unwrap();
-
-        let content = t.residue_content(2, 0);
-
-        // With e=2, residues are 0 or 1
-        assert_eq!(content.len(), 2);
-
-        // Cells with even content (col - row): (0,0)=0, (0,2)=2, (1,1)=0, (2,0)=-2 -> 4 cells with residue 0
-        // Cells with odd content: (0,1)=1, (1,0)=-1 -> 2 cells with residue 1
-        assert_eq!(content[0], 4);
-        assert_eq!(content[1], 2);
-
-        assert_eq!(content.iter().sum::<usize>(), 6);
-    }
-
-    #[test]
-    fn test_cells_with_residue() {
-        // Create a tableau: [[1, 2, 3], [4, 5]]
-        let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
-
-        // Find cells with residue 0 (e=3, multicharge=0)
-        let cells = t.cells_with_residue(3, 0, 0);
-
-        // Should have 2 cells: (0,0) with value 1 and (1,1) with value 5
-        assert_eq!(cells.len(), 2);
-        assert!(cells.contains(&(0, 0, 1)));
-        assert!(cells.contains(&(1, 1, 5)));
-
-        // Find cells with residue 1
-        let cells_1 = t.cells_with_residue(3, 1, 0);
-        assert_eq!(cells_1.len(), 1);
-        assert_eq!(cells_1[0], (0, 1, 2));
-
-        // Find cells with residue 2
-        let cells_2 = t.cells_with_residue(3, 2, 0);
-        assert_eq!(cells_2.len(), 2);
-        assert!(cells_2.contains(&(0, 2, 3)));
-        assert!(cells_2.contains(&(1, 0, 4)));
-    }
-
-    #[test]
-    fn test_cells_with_residue_invalid() {
-        let t = Tableau::new(vec![vec![1, 2, 3]]).unwrap();
-
-        // Invalid: residue >= e
-        let cells = t.cells_with_residue(3, 3, 0);
-        assert_eq!(cells.len(), 0);
-
-        // Invalid: e = 0
-        let cells = t.cells_with_residue(0, 0, 0);
-        assert_eq!(cells.len(), 0);
-    }
-
-    #[test]
-    fn test_residue_empty_tableau() {
-        let t = Tableau::new(vec![]).unwrap();
-
-        // Cell residue on empty tableau
-        assert_eq!(t.cell_residue(0, 0, 3, 0), None);
-
-        // Residue sequence of empty tableau
-        let residues = t.residue_sequence(3, 0);
-        assert_eq!(residues.len(), 0);
-
-        // Residue content of empty tableau
-        let content = t.residue_content(3, 0);
-        assert_eq!(content, vec![0, 0, 0]);
-
-        // Cells with residue on empty tableau
-        let cells = t.cells_with_residue(3, 0, 0);
-        assert_eq!(cells.len(), 0);
-    }
-
-    #[test]
-    fn test_residue_large_tableau() {
-        // Create a larger standard tableau
-        let t = Tableau::new(vec![
-            vec![1, 2, 3, 4],
-            vec![5, 6, 7],
-            vec![8, 9],
-        ]).unwrap();
-
-        assert!(t.is_standard());
-        assert_eq!(t.size(), 9);
-
-        // Test residue sequence with e=4
-        let residues = t.residue_sequence(4, 0);
-        assert_eq!(residues.len(), 9);
-
-        // Entry 1 at (0,0): residue = 0
-        assert_eq!(residues[0], 0);
-
-        // Entry 5 at (1,0): residue = -1 mod 4 = 3
-        assert_eq!(residues[4], 3);
-
-        // Entry 9 at (2,1): residue = (1 - 2) mod 4 = -1 mod 4 = 3
-        assert_eq!(residues[8], 3);
-
-        // Test residue content
-        let content = t.residue_content(4, 0);
-        assert_eq!(content.len(), 4);
-        assert_eq!(content.iter().sum::<usize>(), 9);
     }
 
     #[test]
@@ -1358,239 +1120,163 @@ mod tests {
         assert!(kt.is_valid());
     }
 
-    #[test]
-    fn test_k_tableau_invalid() {
-        // Invalid 2-tableau: second column only differs by 1
-        // [[1, 2, 3],
-        //  [3, 3, 5]]
-        let kt = KTableau::new(vec![vec![1, 2, 3], vec![3, 3, 5]], 2);
-        assert!(kt.is_none());
+        // Invalid - shape is not strictly decreasing (3, 3)
+        let t = ShiftedPrimedTableau::new(vec![
+            vec![U(1), U(2), U(3)],
+            vec![U(4), U(5), U(6)],
+        ]);
 
-        // Invalid: rows not weakly increasing
-        let kt2 = KTableau::new(vec![vec![3, 2, 1], vec![4, 5, 6]], 1);
-        assert!(kt2.is_none());
+        assert!(t.is_none()); // Should fail because shape is not strict
     }
 
     #[test]
-    fn test_k_tableau_k1_is_semistandard() {
-        // A 1-tableau should be the same as a semistandard tableau
-        // [[1, 1, 2],
-        //  [2, 3]]
-        let kt = KTableau::new(vec![vec![1, 1, 2], vec![2, 3]], 1);
-        assert!(kt.is_some());
+    fn test_shifted_primed_tableau_row_not_increasing() {
+        use PrimedEntry::Unprimed as U;
 
-        let kt = kt.unwrap();
-        assert!(kt.is_valid());
+        // Invalid - row not weakly increasing
+        let t = ShiftedPrimedTableau::new(vec![
+            vec![U(2), U(1), U(3)], // Not increasing
+            vec![U(4)],
+        ]);
 
-        // Verify it's also semistandard
-        let t = Tableau::new(vec![vec![1, 1, 2], vec![2, 3]]).unwrap();
-        assert!(t.is_semistandard());
+        assert!(t.is_none());
     }
 
     #[test]
-    fn test_k_tableau_k3() {
-        // Valid 3-tableau
-        // [[1, 2],
-        //  [4, 5]]
-        let kt = KTableau::new(vec![vec![1, 2], vec![4, 5]], 3);
-        assert!(kt.is_some());
-        assert!(kt.unwrap().is_valid());
+    fn test_shifted_primed_tableau_column_not_increasing() {
+        use PrimedEntry::{Primed as P, Unprimed as U};
 
-        // Invalid 3-tableau (column differs by only 2)
-        // [[1, 2],
-        //  [3, 5]]
-        let kt2 = KTableau::new(vec![vec![1, 2], vec![3, 5]], 3);
-        assert!(kt2.is_none());
+        // Invalid - column not strictly increasing
+        // Row 0: 1  2
+        // Row 1:   2  (column 1 has 2, 2 which is not strictly increasing)
+        let t = ShiftedPrimedTableau::new(vec![
+            vec![U(1), U(2)],
+            vec![U(2)],
+        ]);
+
+        assert!(t.is_none());
     }
 
     #[test]
-    fn test_weak_k_tableau() {
-        // WeakKTableau is a type alias for KTableau
-        // Test that weak rows (with repeats) are allowed
-        let wkt: WeakKTableau = KTableau::new(vec![vec![1, 1, 1], vec![3, 3, 4]], 2).unwrap();
-        assert_eq!(wkt.k(), 2);
-        assert!(wkt.is_valid());
+    fn test_shifted_primed_tableau_unprimed_after_primed() {
+        use PrimedEntry::{Primed as P, Unprimed as U};
+
+        // Invalid - unprimed 2 follows primed 2 in same row
+        let t = ShiftedPrimedTableau::new(vec![
+            vec![U(1), P(2), U(2)], // Invalid: U(2) after P(2)
+            vec![U(3)],
+        ]);
+
+        assert!(t.is_none());
     }
 
     #[test]
-    fn test_increasing_tableau_creation() {
-        // Valid increasing tableau
-        // [[1, 2, 4],
-        //  [3, 5]]
-        let it = IncreasingTableau::new(vec![vec![1, 2, 4], vec![3, 5]]);
-        assert!(it.is_some());
-        let it = it.unwrap();
-        assert_eq!(it.size(), 5);
-        assert!(it.is_valid());
+    fn test_shifted_primed_tableau_repeated_primed_in_column() {
+        use PrimedEntry::{Primed as P, Unprimed as U};
+
+        // Invalid - primed value appears twice in same column
+        // In shifted tableau:
+        // Row 0: 1' 2'  (columns 0, 1)
+        // Row 1:   2' 3' (columns 1, 2)
+        // Column 1 would have 2' and 2' which is invalid
+        let t = ShiftedPrimedTableau::new(vec![
+            vec![P(1), P(2)],
+            vec![P(2), P(3)],
+        ]);
+
+        assert!(t.is_none());
     }
 
     #[test]
-    fn test_increasing_tableau_invalid_rows() {
-        // Invalid: row not strictly increasing (has equal entries)
-        // [[1, 1, 2],
-        //  [3, 4]]
-        let it = IncreasingTableau::new(vec![vec![1, 1, 2], vec![3, 4]]);
-        assert!(it.is_none());
+    fn test_shifted_primed_tableau_get() {
+        use PrimedEntry::{Primed as P, Unprimed as U};
 
-        // Invalid: row decreasing
-        // [[2, 1, 3],
-        //  [4, 5]]
-        let it2 = IncreasingTableau::new(vec![vec![2, 1, 3], vec![4, 5]]);
-        assert!(it2.is_none());
+        // Row 0: 1  2  3  (columns 0, 1, 2)
+        // Row 1:   4  5   (columns 1, 2)
+        let t = ShiftedPrimedTableau::new(vec![
+            vec![U(1), U(2), U(3)],
+            vec![U(4), U(5)],
+        ]).unwrap();
+
+        assert_eq!(t.get(0, 0), Some(U(1)));
+        assert_eq!(t.get(0, 1), Some(U(2)));
+        assert_eq!(t.get(0, 2), Some(U(3)));
+        assert_eq!(t.get(1, 1), Some(U(4)));
+        assert_eq!(t.get(1, 2), Some(U(5)));
+
+        // Invalid positions
+        assert_eq!(t.get(1, 0), None); // Before start of row 1
+        assert_eq!(t.get(0, 3), None); // Beyond row 0
+        assert_eq!(t.get(2, 0), None); // Beyond tableau
     }
 
     #[test]
-    fn test_increasing_tableau_invalid_columns() {
-        // Invalid: column not strictly increasing (has equal entries)
-        // [[1, 2, 3],
-        //  [1, 4, 5]]
-        let it = IncreasingTableau::new(vec![vec![1, 2, 3], vec![1, 4, 5]]);
-        assert!(it.is_none());
+    fn test_shifted_primed_tableau_num_primed_unprimed() {
+        use PrimedEntry::{Primed as P, Unprimed as U};
 
-        // Invalid: column decreasing
-        // [[2, 3, 4],
-        //  [1, 5, 6]]
-        let it2 = IncreasingTableau::new(vec![vec![2, 3, 4], vec![1, 5, 6]]);
-        assert!(it2.is_none());
+        let t = ShiftedPrimedTableau::new(vec![
+            vec![U(1), P(1), U(2)],
+            vec![P(2), U(3)],
+        ]).unwrap();
+
+        assert_eq!(t.num_primed(), 2);
+        assert_eq!(t.num_unprimed(), 3);
     }
 
     #[test]
-    fn test_increasing_tableau_vs_standard() {
-        // An increasing tableau is more restrictive than a standard tableau
-        // Standard tableau (but not increasing due to equal in row):
-        // [[1, 1], [2]]  - This would be invalid for both standard and increasing
+    fn test_shifted_primed_tableau_to_string() {
+        use PrimedEntry::{Primed as P, Unprimed as U};
 
-        // Valid standard and increasing:
-        // [[1, 2], [3]]
-        let rows = vec![vec![1, 2], vec![3]];
-        let it = IncreasingTableau::new(rows.clone());
-        assert!(it.is_some());
+        let t = ShiftedPrimedTableau::new(vec![
+            vec![U(1), P(1), U(2)],
+            vec![P(2), U(3)],
+        ]).unwrap();
 
-        let t = Tableau::new(rows).unwrap();
-        assert!(t.is_standard());
+        let s = t.to_string();
+        // Should show the shifted structure with indentation
+        assert!(s.contains("1"));
+        assert!(s.contains("1'"));
+        assert!(s.contains("2"));
     }
 
     #[test]
-    fn test_generate_k_tableaux_small() {
-        // Generate all 2-tableaux of shape [2, 1] with max entry 5
-        let shape = Partition::new(vec![2, 1]);
-        let k_tableaux = generate_k_tableaux(&shape, 2, 5);
+    fn test_shifted_primed_tableau_standard() {
+        use PrimedEntry::{Primed as P, Unprimed as U};
 
-        // Verify all are valid
-        for kt in &k_tableaux {
-            assert!(kt.is_valid());
-            assert_eq!(kt.k(), 2);
-            assert_eq!(kt.shape(), &shape);
-        }
+        // Standard: uses 1, 2, 3, 4, 5 each exactly once
+        let t1 = ShiftedPrimedTableau::new(vec![
+            vec![U(1), U(2), P(3)],
+            vec![U(4), P(5)],
+        ]).unwrap();
+        assert!(t1.is_standard());
 
-        // Should have at least some k-tableaux
-        assert!(!k_tableaux.is_empty());
+        // Not standard: uses 1, 1, 2, 2, 3 (repeated values because of primes)
+        let t2 = ShiftedPrimedTableau::new(vec![
+            vec![U(1), P(1), U(2)],
+            vec![P(2), P(3)],
+        ]).unwrap();
+        // This has values 1, 1, 2, 2, 3 so not standard
+        assert!(!t2.is_standard());
     }
 
     #[test]
-    fn test_generate_k_tableaux_k1() {
-        // Generate all 1-tableaux (semistandard) of shape [2] with max entry 3
-        let shape = Partition::new(vec![2]);
-        let k_tableaux = generate_k_tableaux(&shape, 1, 3);
+    fn test_shifted_primed_tableau_complex() {
+        use PrimedEntry::{Primed as P, Unprimed as U};
 
-        // Expected: [1,1], [1,2], [1,3], [2,2], [2,3], [3,3]
-        // All should be valid 1-tableaux
-        for kt in &k_tableaux {
-            assert!(kt.is_valid());
-            assert_eq!(kt.k(), 1);
-        }
+        // A more complex valid tableau
+        // Row 0: 1  1' 2  2'  (columns 0, 1, 2, 3)
+        // Row 1:   3  3' 4   (columns 1, 2, 3)
+        // Row 2:     5  6    (columns 2, 3)
+        let t = ShiftedPrimedTableau::new(vec![
+            vec![U(1), P(1), U(2), P(2)],
+            vec![U(3), P(3), U(4)],
+            vec![U(5), U(6)],
+        ]);
 
-        // Should have exactly 6 tableaux
-        assert_eq!(k_tableaux.len(), 6);
-    }
-
-    #[test]
-    fn test_generate_k_tableaux_empty() {
-        // Empty shape should give empty list
-        let shape = Partition::new(vec![]);
-        let k_tableaux = generate_k_tableaux(&shape, 1, 5);
-        assert_eq!(k_tableaux.len(), 0);
-    }
-
-    #[test]
-    fn test_generate_increasing_tableaux_small() {
-        // Generate all increasing tableaux of shape [2, 1] with entries [1, 2, 3]
-        let shape = Partition::new(vec![2, 1]);
-        let entries = vec![1, 2, 3];
-        let inc_tableaux = generate_increasing_tableaux(&shape, &entries);
-
-        // Verify all are valid
-        for it in &inc_tableaux {
-            assert!(it.is_valid());
-            assert_eq!(it.shape(), &shape);
-            assert_eq!(it.size(), 3);
-        }
-
-        // Should have exactly 2 increasing tableaux:
-        // [[1, 2], [3]] and [[1, 3], [2]]
-        assert_eq!(inc_tableaux.len(), 2);
-    }
-
-    #[test]
-    fn test_generate_increasing_tableaux_single_row() {
-        // Generate all increasing tableaux of shape [3] with entries [1, 2, 3]
-        let shape = Partition::new(vec![3]);
-        let entries = vec![1, 2, 3];
-        let inc_tableaux = generate_increasing_tableaux(&shape, &entries);
-
-        // Should have exactly 1 tableau: [[1, 2, 3]]
-        assert_eq!(inc_tableaux.len(), 1);
-        assert_eq!(inc_tableaux[0].rows(), &[vec![1, 2, 3]]);
-    }
-
-    #[test]
-    fn test_generate_increasing_tableaux_wrong_size() {
-        // Wrong number of entries should give empty list
-        let shape = Partition::new(vec![2, 1]);
-        let entries = vec![1, 2]; // Need 3 entries
-        let inc_tableaux = generate_increasing_tableaux(&shape, &entries);
-        assert_eq!(inc_tableaux.len(), 0);
-    }
-
-    #[test]
-    fn test_generate_increasing_tableaux_empty() {
-        // Empty shape should give empty list
-        let shape = Partition::new(vec![]);
-        let entries = vec![];
-        let inc_tableaux = generate_increasing_tableaux(&shape, &entries);
-        assert_eq!(inc_tableaux.len(), 0);
-    }
-
-    #[test]
-    fn test_k_tableau_edge_case_single_cell() {
-        // Single cell should be valid for any k
-        let kt1 = KTableau::new(vec![vec![1]], 1).unwrap();
-        assert!(kt1.is_valid());
-
-        let kt5 = KTableau::new(vec![vec![1]], 5).unwrap();
-        assert!(kt5.is_valid());
-    }
-
-    #[test]
-    fn test_increasing_tableau_edge_case_single_cell() {
-        // Single cell should be valid
-        let it = IncreasingTableau::new(vec![vec![1]]).unwrap();
-        assert!(it.is_valid());
-    }
-
-    #[test]
-    fn test_k_tableau_to_string() {
-        let kt = KTableau::new(vec![vec![1, 2, 3], vec![4, 5]], 1).unwrap();
-        let s = kt.to_string();
-        assert!(s.contains("1 2 3"));
-        assert!(s.contains("4 5"));
-    }
-
-    #[test]
-    fn test_increasing_tableau_to_string() {
-        let it = IncreasingTableau::new(vec![vec![1, 3, 5], vec![2, 4]]).unwrap();
-        let s = it.to_string();
-        assert!(s.contains("1 3 5"));
-        assert!(s.contains("2 4"));
+        assert!(t.is_some());
+        let t = t.unwrap();
+        assert_eq!(t.size(), 9);
+        assert_eq!(t.num_rows(), 3);
+        assert!(t.is_valid());
     }
 }
