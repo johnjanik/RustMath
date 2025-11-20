@@ -434,6 +434,52 @@ impl SkewTableau {
         *self.entries.get(row)?.get(col)?
     }
 
+    /// Check if this is a semistandard skew tableau
+    ///
+    /// Semistandard means: rows are weakly increasing (non-decreasing),
+    /// columns are strictly increasing
+    pub fn is_semistandard(&self) -> bool {
+        if self.shape.size() == 0 {
+            return true;
+        }
+
+        // Check rows are weakly increasing (non-decreasing)
+        for row in &self.entries {
+            let mut prev = None;
+            for &entry in row {
+                if let Some(e) = entry {
+                    if let Some(p) = prev {
+                        if e < p {
+                            return false;
+                        }
+                    }
+                    prev = Some(e);
+                }
+            }
+        }
+
+        // Check columns are strictly increasing
+        if self.entries.is_empty() {
+            return true;
+        }
+
+        for col in 0..self.entries[0].len() {
+            let mut prev = None;
+            for row in &self.entries {
+                if let Some(&Some(e)) = row.get(col) {
+                    if let Some(p) = prev {
+                        if e <= p {
+                            return false;
+                        }
+                    }
+                    prev = Some(e);
+                }
+            }
+        }
+
+        true
+    }
+
     /// Check if this is a standard skew tableau
     ///
     /// Standard means: entries are 1,2,...,n (each appears once),
@@ -476,6 +522,10 @@ impl SkewTableau {
         }
 
         // Check columns are strictly increasing
+        if self.entries.is_empty() {
+            return true;
+        }
+
         for col in 0..self.entries[0].len() {
             let mut prev = None;
             for row in &self.entries {
@@ -493,33 +543,622 @@ impl SkewTableau {
         true
     }
 
-    /// Straighten the skew tableau
+    /// Perform a single jeu de taquin forward slide from a specified position
     ///
-    /// This converts a skew tableau to a linear combination of standard tableaux
-    /// using jeu de taquin slides. For now, we return just the resulting standard tableau
-    /// after all slides (coefficient +1).
-    pub fn straighten(&self) -> Option<Tableau> {
-        // Convert skew tableau to a regular tableau by performing jeu de taquin
-        // until all inner partition cells are filled
+    /// Schützenberger's jeu de taquin: slide an empty cell towards the outer corner
+    /// by repeatedly swapping with the smaller of its right and down neighbors.
+    ///
+    /// The starting position should be at the boundary of the inner partition (an inner corner).
+    /// It will either be empty (part of inner partition) or filled (part of skew shape).
+    ///
+    /// Returns the new skew tableau after the slide, and the path taken by the empty cell.
+    pub fn jeu_de_taquin_slide(&self, start_row: usize, start_col: usize) -> Option<(SkewTableau, Vec<(usize, usize)>)> {
+        let mut entries = self.entries.clone();
+        let mut path = vec![(start_row, start_col)];
+        let mut curr_row = start_row;
+        let mut curr_col = start_col;
 
-        // Start by creating a full tableau with gaps
-        let outer_parts = self.shape.outer().parts();
-        let mut rows: Vec<Vec<usize>> = Vec::new();
+        // Ensure the entries array is large enough
+        while entries.len() <= curr_row {
+            entries.push(vec![]);
+        }
+        while entries[curr_row].len() <= curr_col {
+            entries[curr_row].push(None);
+        }
 
-        for (i, &outer_len) in outer_parts.iter().enumerate() {
-            let mut row = Vec::new();
-            for j in 0..outer_len {
-                if let Some(entry) = self.get(i, j) {
-                    row.push(entry);
+        // Mark starting position as empty (it might already be None if in inner partition)
+        entries[curr_row][curr_col] = None;
+
+        loop {
+            // Check right and down neighbors
+            let right_val = if curr_row < entries.len() && curr_col + 1 < entries[curr_row].len() {
+                entries[curr_row][curr_col + 1]
+            } else {
+                None
+            };
+
+            let down_val = if curr_row + 1 < entries.len() && curr_col < entries[curr_row + 1].len() {
+                entries[curr_row + 1][curr_col]
+            } else {
+                None
+            };
+
+            // Decide which direction to slide based on values
+            let slide_direction = match (right_val, down_val) {
+                (Some(r), Some(d)) => {
+                    // Both exist: choose the smaller value to maintain tableau property
+                    if r <= d {
+                        Some((0, 1)) // right
+                    } else {
+                        Some((1, 0)) // down
+                    }
+                }
+                (Some(_), None) => Some((0, 1)), // only right
+                (None, Some(_)) => Some((1, 0)), // only down
+                (None, None) => None, // reached corner
+            };
+
+            match slide_direction {
+                Some((dr, dc)) => {
+                    let next_row = curr_row + dr;
+                    let next_col = curr_col + dc;
+
+                    // Swap the empty cell with the chosen neighbor
+                    entries[curr_row][curr_col] = entries[next_row][next_col];
+                    entries[next_row][next_col] = None;
+
+                    curr_row = next_row;
+                    curr_col = next_col;
+                    path.push((curr_row, curr_col));
+                }
+                None => {
+                    // Reached a corner - the slide is complete
+                    break;
                 }
             }
-            if !row.is_empty() {
-                rows.push(row);
+        }
+
+        // Update the shape after the slide
+        // The inner partition shrinks and the outer corner where we ended is removed
+        let new_shape = self.compute_shape_after_slide(start_row, start_col, curr_row, curr_col)?;
+
+        // Clean up entries to match new shape
+        let cleaned_entries = self.clean_entries_for_shape(&entries, &new_shape);
+
+        Some((SkewTableau::new(new_shape, cleaned_entries)?, path))
+    }
+
+    /// Clean up entries array to match a given shape
+    fn clean_entries_for_shape(&self, entries: &[Vec<Option<usize>>], shape: &SkewPartition) -> Vec<Vec<Option<usize>>> {
+        let mut cleaned = Vec::new();
+
+        for (row_idx, &outer_len) in shape.outer().parts().iter().enumerate() {
+            let inner_len = shape.inner().parts().get(row_idx).copied().unwrap_or(0);
+            let mut row = vec![None; outer_len];
+
+            // Copy existing values
+            if row_idx < entries.len() {
+                for col_idx in 0..outer_len {
+                    if col_idx < entries[row_idx].len() {
+                        if col_idx < inner_len {
+                            // This is in the inner partition, should be None
+                            row[col_idx] = None;
+                        } else {
+                            // This is in the skew shape, copy the value
+                            row[col_idx] = entries[row_idx][col_idx];
+                        }
+                    }
+                }
+            }
+
+            cleaned.push(row);
+        }
+
+        cleaned
+    }
+
+    /// Compute the new skew shape after a jeu de taquin slide
+    fn compute_shape_after_slide(&self, start_row: usize, start_col: usize, end_row: usize, end_col: usize) -> Option<SkewPartition> {
+        let mut outer_parts = self.shape.outer().parts().to_vec();
+        let mut inner_parts = self.shape.inner().parts().to_vec();
+
+        // Ensure inner_parts is long enough
+        while inner_parts.len() <= start_row {
+            inner_parts.push(0);
+        }
+
+        // Reduce the inner partition at the starting position
+        if inner_parts[start_row] > 0 && inner_parts[start_row] == start_col + 1 {
+            inner_parts[start_row] -= 1;
+        }
+
+        // Reduce the outer partition at the ending position
+        if end_row < outer_parts.len() && outer_parts[end_row] > 0 && outer_parts[end_row] == end_col + 1 {
+            outer_parts[end_row] -= 1;
+        }
+
+        // Remove trailing zeros
+        while outer_parts.last() == Some(&0) {
+            outer_parts.pop();
+        }
+        while inner_parts.last() == Some(&0) {
+            inner_parts.pop();
+        }
+
+        let new_outer = Partition::new(outer_parts);
+        let new_inner = Partition::new(inner_parts);
+
+        SkewPartition::new(new_outer, new_inner)
+    }
+
+    /// Compute the new skew shape after removing a corner cell via jeu de taquin
+    fn compute_shape_after_removal(&self, row: usize, col: usize) -> Option<SkewPartition> {
+        let outer_parts = self.shape.outer().parts().to_vec();
+        let mut inner_parts = self.shape.inner().parts().to_vec();
+
+        // When jeu de taquin completes, we reduce the inner partition at the position
+        // where the slide started, and the outer partition at the position where it ended
+
+        // For now, use a simpler approach: reduce the first non-zero inner partition entry
+        for i in 0..inner_parts.len() {
+            if inner_parts[i] > 0 {
+                inner_parts[i] -= 1;
+                break;
+            }
+        }
+
+        // Remove trailing zeros from inner
+        while inner_parts.last() == Some(&0) {
+            inner_parts.pop();
+        }
+
+        let new_outer = Partition::new(outer_parts);
+        let new_inner = Partition::new(inner_parts);
+
+        SkewPartition::new(new_outer, new_inner)
+    }
+
+    /// Rectify the skew tableau using jeu de taquin
+    ///
+    /// Repeatedly perform jeu de taquin slides from the inner corners
+    /// until we obtain a standard (non-skew) tableau.
+    ///
+    /// This is the main operation for Schützenberger's jeu de taquin algorithm.
+    pub fn rectify(&self) -> Option<Tableau> {
+        // Start with the current tableau
+        let mut current = self.clone();
+        let initial_inner_size = current.shape.inner().sum();
+
+        // Safety limit to prevent infinite loops
+        let max_iterations = initial_inner_size + 10;
+        let mut iterations = 0;
+
+        // Keep sliding until the inner partition is empty
+        while current.shape.inner().sum() > 0 {
+            if iterations >= max_iterations {
+                // Something went wrong, bail out
+                return None;
+            }
+
+            // Find an inner corner to slide from
+            let inner_corner = current.find_inner_corner()?;
+
+            // Perform jeu de taquin slide from this corner
+            let (new_tableau, _path) = current.jeu_de_taquin_slide(inner_corner.0, inner_corner.1)?;
+            current = new_tableau;
+            iterations += 1;
+        }
+
+        // Convert to a standard Tableau
+        current.to_tableau()
+    }
+
+    /// Find an inner corner of the skew shape for jeu de taquin
+    ///
+    /// An inner corner is a removable corner cell of the inner partition.
+    /// It should be a cell where removing it maintains a valid partition shape.
+    fn find_inner_corner(&self) -> Option<(usize, usize)> {
+        let inner_parts = self.shape.inner().parts();
+
+        // If no inner partition, we're done
+        if inner_parts.is_empty() || inner_parts.iter().all(|&x| x == 0) {
+            return None;
+        }
+
+        // Find a removable corner of the inner partition
+        // This is the rightmost cell of the bottom-most row that can be removed
+        // while maintaining a valid partition
+        for (row, &inner_len) in inner_parts.iter().enumerate().rev() {
+            if inner_len > 0 {
+                let col = inner_len - 1;
+
+                // Check if this is a removable corner
+                // It's removable if the row below (if it exists) has fewer cells
+                let is_removable = if row + 1 < inner_parts.len() {
+                    col >= inner_parts[row + 1]
+                } else {
+                    true
+                };
+
+                if is_removable {
+                    return Some((row, col));
+                }
+            }
+        }
+
+        // If we didn't find a proper corner, just use the first non-empty cell
+        for (row, &inner_len) in inner_parts.iter().enumerate() {
+            if inner_len > 0 {
+                return Some((row, inner_len - 1));
+            }
+        }
+
+        None
+    }
+
+    /// Convert to a standard Tableau (only works if inner partition is empty)
+    fn to_tableau(&self) -> Option<Tableau> {
+        if self.shape.inner().sum() > 0 {
+            return None;
+        }
+
+        let mut rows: Vec<Vec<usize>> = Vec::new();
+
+        for row in &self.entries {
+            let row_entries: Vec<usize> = row.iter()
+                .filter_map(|&x| x)
+                .collect();
+
+            if !row_entries.is_empty() {
+                rows.push(row_entries);
             }
         }
 
         Tableau::new(rows)
     }
+
+    /// Perform inverse jeu de taquin slide
+    ///
+    /// This is the reverse operation: start with an empty cell at an outer corner
+    /// and slide it towards the inner partition.
+    pub fn inverse_jdt_slide(&self, corner_row: usize, corner_col: usize) -> Option<(SkewTableau, Vec<(usize, usize)>)> {
+        // Verify this is an outer corner
+        if !self.is_outer_corner(corner_row, corner_col) {
+            return None;
+        }
+
+        let mut entries = self.entries.clone();
+        let mut path = vec![(corner_row, corner_col)];
+        let mut curr_row = corner_row;
+        let mut curr_col = corner_col;
+
+        // Mark current position as empty
+        entries[curr_row][curr_col] = None;
+
+        loop {
+            // Check left and up neighbors
+            let left_val = if curr_col > 0 {
+                entries[curr_row].get(curr_col - 1).and_then(|&x| x)
+            } else {
+                None
+            };
+
+            let up_val = if curr_row > 0 {
+                entries.get(curr_row - 1)
+                    .and_then(|row| row.get(curr_col))
+                    .and_then(|&x| x)
+            } else {
+                None
+            };
+
+            // Decide which direction to slide (choose larger to maintain tableau property in reverse)
+            let slide_direction = match (left_val, up_val) {
+                (Some(l), Some(u)) => {
+                    if l >= u {
+                        Some((0, -1)) // left
+                    } else {
+                        Some((-1, 0)) // up
+                    }
+                }
+                (Some(_), None) => Some((0, -1)), // only left
+                (None, Some(_)) => Some((-1, 0)), // only up
+                (None, None) => None, // reached inner corner
+            };
+
+            match slide_direction {
+                Some((dr, dc)) => {
+                    let next_row = (curr_row as i32 + dr) as usize;
+                    let next_col = (curr_col as i32 + dc) as usize;
+
+                    // Swap the empty cell with the chosen neighbor
+                    entries[curr_row][curr_col] = entries[next_row][next_col];
+                    entries[next_row][next_col] = None;
+
+                    curr_row = next_row;
+                    curr_col = next_col;
+                    path.push((curr_row, curr_col));
+                }
+                None => {
+                    // Reached inner corner
+                    break;
+                }
+            }
+        }
+
+        // Update shape to add an inner corner
+        let new_shape = self.compute_shape_after_addition(curr_row, curr_col)?;
+
+        Some((SkewTableau::new(new_shape, entries)?, path))
+    }
+
+    /// Check if a position is an outer corner
+    fn is_outer_corner(&self, row: usize, col: usize) -> bool {
+        if !self.shape.contains(row, col) {
+            return false;
+        }
+
+        // An outer corner has no cell to the right and no cell below
+        let no_right = !self.shape.contains(row, col + 1);
+        let no_below = !self.shape.contains(row + 1, col);
+
+        no_right && no_below
+    }
+
+    /// Compute the new skew shape after adding an inner corner
+    fn compute_shape_after_addition(&self, row: usize, col: usize) -> Option<SkewPartition> {
+        let outer_parts = self.shape.outer().parts().to_vec();
+        let mut inner_parts = self.shape.inner().parts().to_vec();
+
+        // Extend inner_parts if needed
+        while inner_parts.len() <= row {
+            inner_parts.push(0);
+        }
+
+        // Add to the inner partition
+        inner_parts[row] = col + 1;
+
+        let new_outer = Partition::new(outer_parts);
+        let new_inner = Partition::new(inner_parts);
+
+        SkewPartition::new(new_outer, new_inner)
+    }
+
+    /// Display the skew tableau as a string
+    pub fn to_string(&self) -> String {
+        let mut result = String::new();
+
+        for (row_idx, row) in self.entries.iter().enumerate() {
+            for (col_idx, &entry) in row.iter().enumerate() {
+                if let Some(val) = entry {
+                    result.push_str(&format!("{:3}", val));
+                } else if self.shape.contains(row_idx, col_idx) {
+                    result.push_str("  .");
+                } else {
+                    result.push_str("   ");
+                }
+            }
+            result.push('\n');
+        }
+
+        result
+    }
+
+    /// Straighten the skew tableau (alias for rectify)
+    ///
+    /// This converts a skew tableau to a linear combination of standard tableaux
+    /// using jeu de taquin slides. For now, we return just the resulting standard tableau
+    /// after all slides (coefficient +1).
+    #[deprecated(note = "Use rectify() instead")]
+    pub fn straighten(&self) -> Option<Tableau> {
+        self.rectify()
+    }
+}
+
+/// A ribbon-shaped tableau
+///
+/// A ribbon tableau is a standard tableau whose shape is a ribbon (a connected skew shape
+/// with no 2×2 blocks). Ribbons are characterized by their height function.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RibbonTableau {
+    /// The underlying skew tableau (must be a ribbon shape)
+    tableau: SkewTableau,
+    /// Height of the ribbon (number of rows spanned minus 1)
+    height: usize,
+}
+
+impl RibbonTableau {
+    /// Create a new ribbon tableau
+    ///
+    /// Returns None if the shape is not a ribbon or the tableau is not standard
+    pub fn new(tableau: SkewTableau) -> Option<Self> {
+        if !tableau.shape().is_ribbon() {
+            return None;
+        }
+
+        if !tableau.is_standard() {
+            return None;
+        }
+
+        let height = tableau.shape().height()?;
+
+        Some(RibbonTableau { tableau, height })
+    }
+
+    /// Get the underlying skew tableau
+    pub fn tableau(&self) -> &SkewTableau {
+        &self.tableau
+    }
+
+    /// Get the height of the ribbon
+    pub fn height(&self) -> usize {
+        self.height
+    }
+
+    /// Get the spin of the ribbon
+    ///
+    /// For a ribbon of size n with height h, spin = h - (n - h - 1) = 2h - n + 1
+    pub fn spin(&self) -> i32 {
+        self.tableau.shape().spin().unwrap_or(0)
+    }
+
+    /// Get the size (number of cells) of the ribbon
+    pub fn size(&self) -> usize {
+        self.tableau.shape().size()
+    }
+
+    /// Compute the height function for the ribbon
+    ///
+    /// The height function h(i) gives the "height" after reading the first i entries.
+    /// It increases by 1 when moving down a row and decreases by 1 when moving right.
+    pub fn height_function(&self) -> Vec<usize> {
+        let cells = self.tableau.shape().cells();
+        let n = cells.len();
+
+        if n == 0 {
+            return vec![0];
+        }
+
+        // Sort cells by their tableau entry value to get reading order
+        let mut cell_entries: Vec<((usize, usize), usize)> = Vec::new();
+        for &(row, col) in &cells {
+            if let Some(entry) = self.tableau.get(row, col) {
+                cell_entries.push(((row, col), entry));
+            }
+        }
+        cell_entries.sort_by_key(|&(_, entry)| entry);
+
+        // Compute height function
+        let mut heights = vec![0]; // h(0) = 0
+        let mut current_height = 0;
+
+        for i in 1..=n {
+            let (curr_row, curr_col) = cell_entries[i - 1].0;
+
+            if i < n {
+                let (next_row, next_col) = cell_entries[i].0;
+
+                // If moving down (next row > current row), height increases
+                // If moving right (same row, next col > current col), height decreases
+                if next_row > curr_row {
+                    current_height += 1;
+                } else if next_row == curr_row && next_col > curr_col {
+                    if current_height > 0 {
+                        current_height -= 1;
+                    }
+                }
+            }
+
+            heights.push(current_height);
+        }
+
+        heights
+    }
+
+    /// Get the head (northwest-most cell) of the ribbon
+    pub fn head(&self) -> Option<(usize, usize)> {
+        let cells = self.tableau.shape().cells();
+        if cells.is_empty() {
+            return None;
+        }
+
+        // Head is the cell with minimum row, and within that minimum column
+        cells.iter()
+            .min_by_key(|&&(r, c)| (r, c))
+            .copied()
+    }
+
+    /// Get the tail (southeast-most cell) of the ribbon
+    pub fn tail(&self) -> Option<(usize, usize)> {
+        let cells = self.tableau.shape().cells();
+        if cells.is_empty() {
+            return None;
+        }
+
+        // Tail is the cell with maximum row, and within that maximum column
+        cells.iter()
+            .max_by_key(|&&(r, c)| (r, c))
+            .copied()
+    }
+}
+
+/// Generate all standard ribbon tableaux for a given ribbon shape
+///
+/// A ribbon is a connected skew shape that contains no 2×2 block.
+/// This function generates all ways to fill the ribbon shape with the numbers 1..n
+/// such that entries are strictly increasing along rows and down columns.
+pub fn ribbon_shaped_tableaux(shape: &SkewPartition) -> Vec<RibbonTableau> {
+    if !shape.is_ribbon() {
+        return vec![];
+    }
+
+    let cells = shape.cells();
+    let n = cells.len();
+
+    if n == 0 {
+        return vec![];
+    }
+
+    let mut result = Vec::new();
+
+    // Initialize grid based on outer partition shape
+    let outer_parts = shape.outer().parts();
+    let mut current_filling: Vec<Vec<Option<usize>>> = outer_parts.iter()
+        .map(|&len| vec![None; len])
+        .collect();
+
+    generate_ribbon_tableaux(
+        shape,
+        &cells,
+        &mut current_filling,
+        1,
+        n,
+        &mut result,
+    );
+
+    result
+}
+
+fn generate_ribbon_tableaux(
+    shape: &SkewPartition,
+    cells: &[(usize, usize)],
+    current_filling: &mut Vec<Vec<Option<usize>>>,
+    next_value: usize,
+    n: usize,
+    result: &mut Vec<RibbonTableau>,
+) {
+    if next_value > n {
+        // All values placed, create ribbon tableau
+        if let Some(skew_tableau) = SkewTableau::new(shape.clone(), current_filling.clone()) {
+            if let Some(ribbon_tableau) = RibbonTableau::new(skew_tableau) {
+                result.push(ribbon_tableau);
+            }
+        }
+        return;
+    }
+
+    // Try placing next_value in each valid cell
+    for &(row, col) in cells {
+        if current_filling[row][col].is_none() && can_place_in_ribbon(shape, current_filling, row, col, next_value) {
+            current_filling[row][col] = Some(next_value);
+            generate_ribbon_tableaux(shape, cells, current_filling, next_value + 1, n, result);
+            current_filling[row][col] = None;
+        }
+    }
+}
+
+fn can_place_in_ribbon(
+    _shape: &SkewPartition,
+    current_filling: &[Vec<Option<usize>>],
+    row: usize,
+    col: usize,
+    _value: usize,
+) -> bool {
+    // Check that this position is empty
+    // Since we're placing values 1, 2, 3, ... in order, and trying all positions
+    // for each value, the tableau property (strictly increasing along rows/columns)
+    // is automatically satisfied - any already-placed value is smaller than the
+    // current value we're trying to place.
+    current_filling[row][col].is_none()
 }
 
 #[cfg(test)]
@@ -679,6 +1318,218 @@ mod tests {
     }
 
     #[test]
+    fn test_skew_tableau_is_semistandard() {
+        let outer = Partition::new(vec![3, 2]);
+        let inner = Partition::new(vec![1]);
+        let skew = SkewPartition::new(outer, inner).unwrap();
+
+        // Semistandard with repeated values
+        let entries = vec![
+            vec![None, Some(1), Some(1)],
+            vec![Some(2), Some(3)],
+        ];
+
+        let tableau = SkewTableau::new(skew.clone(), entries).unwrap();
+        assert!(tableau.is_semistandard());
+        assert!(!tableau.is_standard()); // Not standard due to repeated 1s
+
+        // Not semistandard (decreasing in row)
+        let entries2 = vec![
+            vec![None, Some(3), Some(1)],
+            vec![Some(2), Some(4)],
+        ];
+
+        let tableau2 = SkewTableau::new(skew, entries2).unwrap();
+        assert!(!tableau2.is_semistandard());
+    }
+
+    #[test]
+    fn test_jeu_de_taquin_slide() {
+        // Create a skew tableau: shape (3,2)/(1,0)
+        // Layout:
+        //   . 1 3
+        //   2 4
+        let outer = Partition::new(vec![3, 2]);
+        let inner = Partition::new(vec![1]);
+        let skew = SkewPartition::new(outer, inner).unwrap();
+
+        let entries = vec![
+            vec![None, Some(1), Some(3)],
+            vec![Some(2), Some(4)],
+        ];
+
+        let tableau = SkewTableau::new(skew, entries).unwrap();
+
+        // Perform jeu de taquin slide from the inner corner (0, 0)
+        let result = tableau.jeu_de_taquin_slide(0, 0);
+        assert!(result.is_some());
+
+        let (new_tableau, path) = result.unwrap();
+
+        // Check that the path is valid
+        assert!(!path.is_empty());
+        assert_eq!(path[0], (0, 0));
+
+        // Check that the resulting tableau is still semistandard
+        assert!(new_tableau.is_semistandard() || new_tableau.shape.size() < tableau.shape.size());
+    }
+
+    #[test]
+    fn test_rectify_skew_tableau() {
+        // Create a simple skew tableau that should rectify to a standard tableau
+        let outer = Partition::new(vec![3, 2]);
+        let inner = Partition::new(vec![1]);
+        let skew = SkewPartition::new(outer, inner).unwrap();
+
+        let entries = vec![
+            vec![None, Some(1), Some(3)],
+            vec![Some(2), Some(4)],
+        ];
+
+        let tableau = SkewTableau::new(skew, entries).unwrap();
+        let rectified = tableau.rectify();
+
+        assert!(rectified.is_some());
+        let t = rectified.unwrap();
+
+        // The rectified tableau should have 4 cells
+        assert_eq!(t.size(), 4);
+
+        // It should be semistandard
+        assert!(t.is_semistandard());
+    }
+
+    #[test]
+    fn test_find_inner_corner() {
+        let outer = Partition::new(vec![4, 3, 1]);
+        let inner = Partition::new(vec![2, 1]);
+        let skew = SkewPartition::new(outer, inner).unwrap();
+
+        let entries = vec![
+            vec![None, None, Some(1), Some(2)],
+            vec![None, Some(3), Some(4)],
+            vec![Some(5)],
+        ];
+
+        let tableau = SkewTableau::new(skew, entries).unwrap();
+        let corner = tableau.find_inner_corner();
+
+        assert!(corner.is_some());
+        // Should find an inner corner
+        let (row, col) = corner.unwrap();
+        assert!(row < 2 && col < 2);
+    }
+
+    #[test]
+    fn test_inverse_jdt_slide() {
+        // Create a regular (non-skew) tableau
+        let outer = Partition::new(vec![2, 1]);
+        let inner = Partition::new(vec![]);
+        let skew = SkewPartition::new(outer, inner).unwrap();
+
+        let entries = vec![
+            vec![Some(1), Some(3)],
+            vec![Some(2)],
+        ];
+
+        let tableau = SkewTableau::new(skew, entries).unwrap();
+
+        // Find an outer corner
+        // (1, 0) should be an outer corner
+        assert!(tableau.is_outer_corner(1, 0));
+
+        // Perform inverse jeu de taquin
+        let result = tableau.inverse_jdt_slide(1, 0);
+        assert!(result.is_some());
+
+        let (new_tableau, path) = result.unwrap();
+
+        // Check that the path is valid
+        assert!(!path.is_empty());
+        assert_eq!(path[0], (1, 0));
+
+        // The new tableau should have a larger inner partition
+        assert!(new_tableau.shape.inner().sum() > tableau.shape.inner().sum());
+    }
+
+    #[test]
+    fn test_to_string_display() {
+        let outer = Partition::new(vec![3, 2]);
+        let inner = Partition::new(vec![1]);
+        let skew = SkewPartition::new(outer, inner).unwrap();
+
+        let entries = vec![
+            vec![None, Some(1), Some(3)],
+            vec![Some(2), Some(4)],
+        ];
+
+        let tableau = SkewTableau::new(skew, entries).unwrap();
+        let display = tableau.to_string();
+
+        // Should contain the values
+        assert!(display.contains('1'));
+        assert!(display.contains('2'));
+        assert!(display.contains('3'));
+        assert!(display.contains('4'));
+    }
+
+    #[test]
+    fn test_jdt_preserves_semistandard() {
+        // Create a semistandard skew tableau
+        let outer = Partition::new(vec![4, 3, 2]);
+        let inner = Partition::new(vec![2, 1]);
+        let skew = SkewPartition::new(outer, inner).unwrap();
+
+        let entries = vec![
+            vec![None, None, Some(1), Some(2)],
+            vec![None, Some(2), Some(3)],
+            vec![Some(3), Some(4)],
+        ];
+
+        let tableau = SkewTableau::new(skew, entries).unwrap();
+        assert!(tableau.is_semistandard());
+
+        // Perform jeu de taquin slide
+        let corner = tableau.find_inner_corner().unwrap();
+        let result = tableau.jeu_de_taquin_slide(corner.0, corner.1);
+
+        assert!(result.is_some());
+        let (new_tableau, _) = result.unwrap();
+
+        // The result should still be semistandard
+        assert!(new_tableau.is_semistandard());
+    }
+
+    #[test]
+    fn test_rectify_produces_valid_tableau() {
+        // Create a skew tableau with a larger inner partition
+        let outer = Partition::new(vec![5, 4, 3]);
+        let inner = Partition::new(vec![2, 1]);
+        let skew = SkewPartition::new(outer, inner).unwrap();
+
+        let entries = vec![
+            vec![None, None, Some(1), Some(2), Some(5)],
+            vec![None, Some(2), Some(3), Some(6)],
+            vec![Some(4), Some(5), Some(7)],
+        ];
+
+        let tableau = SkewTableau::new(skew, entries).unwrap();
+        let rectified = tableau.rectify();
+
+        assert!(rectified.is_some());
+        let t = rectified.unwrap();
+
+        // Should have the correct number of cells
+        assert_eq!(t.size(), 9);
+
+        // Should be semistandard
+        assert!(t.is_semistandard());
+
+        // Shape should be a valid partition
+        assert!(t.shape().parts().len() > 0);
+    }
+
+    #[test]
     fn test_straighten() {
         let outer = Partition::new(vec![3, 2]);
         let inner = Partition::new(vec![1]);
@@ -690,10 +1541,236 @@ mod tests {
         ];
 
         let tableau = SkewTableau::new(skew, entries).unwrap();
+
+        #[allow(deprecated)]
         let straightened = tableau.straighten();
 
         assert!(straightened.is_some());
         let t = straightened.unwrap();
         assert_eq!(t.size(), 4);
+    }
+
+    #[test]
+    fn test_ribbon_tableau_creation() {
+        // Create a ribbon shape: [2,1] is an L-shape (a ribbon)
+        let outer = Partition::new(vec![2, 1]);
+        let inner = Partition::new(vec![]);
+        let shape = SkewPartition::new(outer, inner).unwrap();
+
+        assert!(shape.is_ribbon());
+
+        // Create a standard filling
+        let entries = vec![
+            vec![Some(1), Some(2)],
+            vec![Some(3)],
+        ];
+
+        let skew_tableau = SkewTableau::new(shape, entries).unwrap();
+        let ribbon_tableau = RibbonTableau::new(skew_tableau);
+
+        assert!(ribbon_tableau.is_some());
+        let rt = ribbon_tableau.unwrap();
+        assert_eq!(rt.height(), 1); // Spans 2 rows, so height = 1
+        assert_eq!(rt.size(), 3);
+    }
+
+    #[test]
+    fn test_ribbon_tableau_invalid_shape() {
+        // Create a non-ribbon shape with a 2×2 block
+        let outer = Partition::new(vec![2, 2]);
+        let inner = Partition::new(vec![]);
+        let shape = SkewPartition::new(outer, inner).unwrap();
+
+        assert!(!shape.is_ribbon()); // Has a 2×2 block
+
+        let entries = vec![
+            vec![Some(1), Some(2)],
+            vec![Some(3), Some(4)],
+        ];
+
+        let skew_tableau = SkewTableau::new(shape, entries).unwrap();
+        let ribbon_tableau = RibbonTableau::new(skew_tableau);
+
+        // Should fail because shape is not a ribbon
+        assert!(ribbon_tableau.is_none());
+    }
+
+    #[test]
+    fn test_ribbon_tableau_height_function() {
+        // Create a ribbon shape: [3,2] / [1] is a connected ribbon
+        let outer = Partition::new(vec![3, 2]);
+        let inner = Partition::new(vec![1]);
+        let shape = SkewPartition::new(outer, inner).unwrap();
+
+        // This is a connected ribbon
+        assert!(shape.is_ribbon());
+
+        // Create a standard filling
+        let entries = vec![
+            vec![None, Some(1), Some(3)],
+            vec![Some(2), Some(4)],
+        ];
+
+        let skew_tableau = SkewTableau::new(shape, entries).unwrap();
+        let ribbon_tableau = RibbonTableau::new(skew_tableau).unwrap();
+
+        // Compute height function
+        let heights = ribbon_tableau.height_function();
+        assert!(!heights.is_empty());
+        assert_eq!(heights[0], 0); // Start at height 0
+    }
+
+    #[test]
+    fn test_ribbon_tableau_head_tail() {
+        // Create a simple ribbon: [2,1]
+        let outer = Partition::new(vec![2, 1]);
+        let inner = Partition::new(vec![]);
+        let shape = SkewPartition::new(outer, inner).unwrap();
+
+        let entries = vec![
+            vec![Some(1), Some(3)],
+            vec![Some(2)],
+        ];
+
+        let skew_tableau = SkewTableau::new(shape, entries).unwrap();
+        let ribbon_tableau = RibbonTableau::new(skew_tableau).unwrap();
+
+        // Head should be (0, 0) - northwest cell
+        assert_eq!(ribbon_tableau.head(), Some((0, 0)));
+
+        // Tail should be (1, 0) - southeast cell
+        assert_eq!(ribbon_tableau.tail(), Some((1, 0)));
+    }
+
+    #[test]
+    fn test_ribbon_tableau_spin() {
+        // Create a ribbon with known spin
+        let outer = Partition::new(vec![2, 1]);
+        let inner = Partition::new(vec![]);
+        let shape = SkewPartition::new(outer, inner).unwrap();
+
+        let entries = vec![
+            vec![Some(1), Some(2)],
+            vec![Some(3)],
+        ];
+
+        let skew_tableau = SkewTableau::new(shape, entries).unwrap();
+        let ribbon_tableau = RibbonTableau::new(skew_tableau).unwrap();
+
+        let spin = ribbon_tableau.spin();
+        // For a ribbon of size 3 with height 1: spin = 2*1 - 3 + 1 = 0
+        assert_eq!(spin, 0);
+    }
+
+    #[test]
+    fn test_ribbon_shaped_tableaux_generation() {
+        // Generate all standard ribbon tableaux for shape [2,1]
+        let outer = Partition::new(vec![2, 1]);
+        let inner = Partition::new(vec![]);
+        let shape = SkewPartition::new(outer, inner).unwrap();
+
+        assert!(shape.is_ribbon());
+
+        let tableaux = ribbon_shaped_tableaux(&shape);
+
+        // There should be exactly 2 standard tableaux for this shape:
+        // [[1,2],[3]] and [[1,3],[2]]
+        assert_eq!(tableaux.len(), 2);
+
+        // Verify all are standard and have correct shape
+        for rt in &tableaux {
+            assert_eq!(rt.size(), 3);
+            assert_eq!(rt.height(), 1);
+            assert!(rt.tableau().is_standard());
+        }
+    }
+
+    #[test]
+    fn test_ribbon_shaped_tableaux_single_row() {
+        // Single row ribbon: [3]
+        let outer = Partition::new(vec![3]);
+        let inner = Partition::new(vec![]);
+        let shape = SkewPartition::new(outer, inner).unwrap();
+
+        assert!(shape.is_ribbon());
+
+        let tableaux = ribbon_shaped_tableaux(&shape);
+
+        // There should be exactly 1 standard tableau: [[1,2,3]]
+        assert_eq!(tableaux.len(), 1);
+        assert_eq!(tableaux[0].height(), 0); // Single row has height 0
+    }
+
+    #[test]
+    fn test_ribbon_shaped_tableaux_single_column() {
+        // Single column ribbon: [1,1,1]
+        let outer = Partition::new(vec![1, 1, 1]);
+        let inner = Partition::new(vec![]);
+        let shape = SkewPartition::new(outer, inner).unwrap();
+
+        assert!(shape.is_ribbon());
+
+        let tableaux = ribbon_shaped_tableaux(&shape);
+
+        // There should be exactly 1 standard tableau: [[1],[2],[3]]
+        assert_eq!(tableaux.len(), 1);
+        assert_eq!(tableaux[0].height(), 2); // Spans 3 rows, so height = 2
+    }
+
+    #[test]
+    fn test_ribbon_shaped_tableaux_non_ribbon() {
+        // Non-ribbon shape with 2×2 block
+        let outer = Partition::new(vec![2, 2]);
+        let inner = Partition::new(vec![]);
+        let shape = SkewPartition::new(outer, inner).unwrap();
+
+        assert!(!shape.is_ribbon());
+
+        let tableaux = ribbon_shaped_tableaux(&shape);
+
+        // Should return empty vector for non-ribbon shapes
+        assert_eq!(tableaux.len(), 0);
+    }
+
+    #[test]
+    fn test_debug_shapes() {
+        // Test various shapes to see which are ribbons
+        let test_cases = vec![
+            (vec![2, 1], vec![]),
+            (vec![3, 1], vec![1]),
+            (vec![3, 2], vec![1]),
+            (vec![3, 2, 1], vec![2, 1]),
+            (vec![4, 2], vec![2]),
+        ];
+
+        for (outer_parts, inner_parts) in test_cases {
+            let outer = Partition::new(outer_parts.clone());
+            let inner = Partition::new(inner_parts.clone());
+            let shape = SkewPartition::new(outer, inner).unwrap();
+            println!("{:?}/{:?}: is_ribbon={}, cells={:?}",
+                     outer_parts, inner_parts, shape.is_ribbon(), shape.cells());
+        }
+    }
+
+    #[test]
+    fn test_ribbon_shaped_tableaux_skew_ribbon() {
+        // Use [3,2] / [1] which is a valid ribbon
+        let outer = Partition::new(vec![3, 2]);
+        let inner = Partition::new(vec![1]);
+        let shape = SkewPartition::new(outer, inner).unwrap();
+
+        // This should be a ribbon
+        assert!(shape.is_ribbon());
+
+        let tableaux = ribbon_shaped_tableaux(&shape);
+
+        // Verify all generated tableaux are valid
+        for rt in &tableaux {
+            assert_eq!(rt.size(), 4);
+            assert!(rt.tableau().is_standard());
+        }
+
+        // There should be at least 1 tableau
+        assert!(!tableaux.is_empty());
     }
 }
