@@ -97,7 +97,10 @@ pub use integer_matrices::{
     count_integer_matrices, integer_matrices, integer_matrices_bounded, IntegerMatrix,
 };
 pub use perfect_matching::{perfect_matchings, PerfectMatching};
-pub use ranking::{CombinationRank, PermutationRank, Rankable, RankingTable};
+pub use ranking::{
+    BinaryTreeRank, CombinationRank, GraphRank, PermutationRank, Rankable, RankingTable,
+    RootedTreeRank,
+};
 pub use recurrence_sequences::{
     solve_binary_recurrence, BinaryRecurrence, LinearRecurrence, RecurrenceSequence,
 };
