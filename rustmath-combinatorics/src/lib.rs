@@ -11,6 +11,7 @@ pub mod backtrack;
 pub mod combinatorial_map;
 pub mod combinatorial_map_examples;
 pub mod binary_words;
+pub mod cluster_complex;
 pub mod combinations;
 pub mod composition;
 pub mod cyclic_sieving;
@@ -218,6 +219,10 @@ pub use parking_function::{
     count_non_decreasing_parking_functions, count_parking_functions,
     non_decreasing_parking_functions, non_decreasing_parking_functions_with_area,
     parking_functions, NonDecreasingParkingFunction, ParkingFunction,
+};
+pub use cluster_complex::{
+    associahedron, cluster_complex_type_a, AlmostPositiveRoot, Cluster, ClusterCartanType,
+    ClusterComplex, GeneralizedAssociahedron,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
