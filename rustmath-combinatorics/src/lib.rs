@@ -14,6 +14,7 @@ pub mod enumeration;
 pub mod multiset_partition_into_sets_ordered;
 pub mod ordered_tree;
 pub mod partitions;
+pub mod path_tableaux;
 pub mod perfect_matching;
 pub mod permutations;
 pub mod plane_partition;
@@ -107,6 +108,10 @@ pub use superpartitions::{
 pub use sidon_sets::{
     backtracking_bh_sequence, backtracking_sidon_set, greedy_bh_sequence, greedy_sidon_set,
     is_bh_sequence, is_sidon_set, max_bh_sequence_size, max_sidon_set_size, BhSequence, SidonSet,
+};
+pub use path_tableaux::{
+    ballot_sequences, count_dyck_paths, count_lattice_paths_ne, dyck_path_to_partition,
+    dyck_paths, lattice_paths_ne, partition_to_dyck_path, LatticePath, PathTableau, Step,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
