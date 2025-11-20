@@ -155,6 +155,7 @@ pub mod projective_morphism;
 pub mod projective_space;
 pub mod segre;
 pub mod veronese;
+pub mod elliptic_curves;
 
 // Re-export commonly used types
 pub use graded_ring::{GradedRing, HomogeneousElement, HomogeneousIdeal};
@@ -164,3 +165,7 @@ pub use projective_morphism::{ProjectiveMorphism, ProjMorphism};
 pub use projective_space::{Hyperplane, LinearSubspace, ProjectivePoint, ProjectiveSpace};
 pub use segre::{MultiSegreEmbedding, SegreEmbedding, SegreVariety};
 pub use veronese::{VeroneseEmbedding, VeroneseVariety};
+pub use elliptic_curves::{
+    ImaginaryQuadraticField, HeegnerDiscriminant, HeegnerPoint,
+    CanonicalHeight, HeightPairing, GrossZagierFormula, BSDHeegner,
+};
