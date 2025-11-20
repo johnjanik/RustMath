@@ -934,6 +934,36 @@ impl fmt::Debug for Integer {
     }
 }
 
+// Typesetting implementation
+impl rustmath_typesetting::MathDisplay for Integer {
+    fn math_format(&self, options: &rustmath_typesetting::FormatOptions) -> String {
+        use rustmath_typesetting::OutputFormat;
+
+        let value_str = self.value.to_string();
+
+        match options.format {
+            OutputFormat::LaTeX => {
+                // For large numbers, might want to add formatting
+                if let Some(max_width) = options.max_width {
+                    if value_str.len() > max_width {
+                        return rustmath_typesetting::utils::truncate(&value_str, max_width);
+                    }
+                }
+                value_str
+            }
+            OutputFormat::Html => {
+                // Wrap in MathML number element
+                rustmath_typesetting::html::number(&value_str)
+            }
+            OutputFormat::Unicode | OutputFormat::Ascii | OutputFormat::Plain => value_str,
+        }
+    }
+
+    fn precedence(&self) -> i32 {
+        rustmath_typesetting::utils::precedence::ATOMIC
+    }
+}
+
 // Arithmetic operations
 impl Add for Integer {
     type Output = Self;

@@ -313,6 +313,95 @@ impl<R: Ring> fmt::Display for PowerSeries<R> {
     }
 }
 
+// Typesetting implementation for power series where coefficients implement MathDisplay
+impl<R> rustmath_typesetting::MathDisplay for PowerSeries<R>
+where
+    R: Ring + rustmath_typesetting::MathDisplay + std::fmt::Display,
+{
+    fn math_format(&self, options: &rustmath_typesetting::FormatOptions) -> String {
+        use rustmath_typesetting::OutputFormat;
+
+        let var_name = "x";
+        let mut result = String::new();
+        let mut first = true;
+
+        // Format polynomial terms
+        for (i, coeff) in self.coeffs.iter().enumerate() {
+            if coeff.is_zero() {
+                continue;
+            }
+
+            let coeff_str = coeff.to_string();
+
+            if !first {
+                result.push_str(" + ");
+            }
+            first = false;
+
+            // Format the term (similar to polynomial)
+            if i == 0 {
+                result.push_str(&coeff_str);
+            } else if i == 1 {
+                if coeff.is_one() {
+                    result.push_str(var_name);
+                } else {
+                    result.push_str(&coeff_str);
+                    if !options.implicit_multiply {
+                        result.push('*');
+                    }
+                    result.push_str(var_name);
+                }
+            } else {
+                if !coeff.is_one() {
+                    result.push_str(&coeff_str);
+                    if !options.implicit_multiply {
+                        result.push('*');
+                    }
+                }
+                match options.format {
+                    OutputFormat::LaTeX => {
+                        result.push_str(&format!("{}^{{{}}}", var_name, i));
+                    }
+                    OutputFormat::Unicode => {
+                        result.push_str(var_name);
+                        result.push_str(&rustmath_typesetting::utils::to_superscript(&i.to_string()));
+                    }
+                    _ => {
+                        result.push_str(&format!("{}^{}", var_name, i));
+                    }
+                }
+            }
+        }
+
+        if first {
+            result.push('0');
+        }
+
+        // Add big-O notation for truncation
+        result.push_str(" + ");
+        match options.format {
+            OutputFormat::LaTeX => {
+                result.push_str(&format!(r"O({}^{{{}}})", var_name, self.precision));
+            }
+            OutputFormat::Unicode => {
+                result.push_str("O(");
+                result.push_str(var_name);
+                result.push_str(&rustmath_typesetting::utils::to_superscript(&self.precision.to_string()));
+                result.push(')');
+            }
+            _ => {
+                result.push_str(&format!("O({}^{})", var_name, self.precision));
+            }
+        }
+
+        result
+    }
+
+    fn precedence(&self) -> i32 {
+        rustmath_typesetting::utils::precedence::ADD
+    }
+}
+
 impl<R: Ring> Add for PowerSeries<R> {
     type Output = Self;
 
