@@ -22,6 +22,7 @@ pub mod designs;
 pub mod dlx;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod growth_diagram;
 pub mod hall_polynomial;
 pub mod expnums;
 pub mod group_action;
@@ -96,6 +97,9 @@ pub use super_tableaux::{
     standard_super_tableaux, super_semistandard_tableaux, SuperTableau, SuperTableauEntry,
 };
 pub use tuple::{tuples as tuple_tuples, Tuple, TupleIterator};
+pub use growth_diagram::{
+    growth_sequence, growth_to_p_tableau, growth_to_q_tableau, GrowthDiagram,
+};
 
 // Re-export new modules
 pub use binary_words::{
@@ -152,6 +156,7 @@ pub use set_partition::{
     SetPartition, SetPartitionIterator,
 };
 pub use set_system::SetSystem;
+// pub use multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
 pub use word::{
     abelian_complexity, boyer_moore_search, christoffel_word, factor_complexity,
     from_cfl_factorization, from_standard_factorization, is_cfl_factorization, kmp_search,
