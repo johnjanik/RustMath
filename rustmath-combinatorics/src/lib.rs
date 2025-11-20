@@ -33,7 +33,10 @@ pub use tableaux::{robinson_schensted, rs_insert, standard_tableaux, Tableau};
 
 // Re-export new modules
 pub use binary_words::{all_binary_words, binary_words_with_weight, lyndon_words, necklaces, BinaryWord};
-pub use composition::{compositions, compositions_k, Composition};
+pub use composition::{
+    compositions, compositions_k, signed_compositions, signed_compositions_k, Composition,
+    SignedComposition,
+};
 pub use designs::{
     are_latin_squares_orthogonal, mutually_orthogonal_latin_squares, BlockDesign,
     DesignAutomorphism, DifferenceSet, HadamardMatrix, OrthogonalArray, SteinerSystem,
