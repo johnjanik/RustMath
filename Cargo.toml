@@ -27,6 +27,7 @@ members = [
     "rustmath-geometry",
     "rustmath-graphs",
     "rustmath-symbolic",
+    "rustmath-symmetricfunctions",
     "rustmath-functions",
     "rustmath-special-functions",
     "rustmath-crypto",
