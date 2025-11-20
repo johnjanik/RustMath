@@ -35,6 +35,7 @@ pub mod sidon_sets;
 pub mod skew_partition;
 pub mod species;
 pub mod subset;
+pub mod subword;
 pub mod superpartitions;
 pub mod tableaux;
 pub mod tableau_tuple;
@@ -149,6 +150,10 @@ pub use ribbon_tableau::{
     fermionic_formula, kostka_foulkes_ribbon, ribbon_tableaux, RibbonDecomposition, RibbonTableau,
 };
 pub use skew_partition::{SkewPartition, SkewTableau};
+pub use subword::{
+    all_subwords, count_distinct_subwords, is_subword, reduced_pipe_dreams, subword_order,
+    subword_positions, PipeDream, SubwordComplex,
+};
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
 
