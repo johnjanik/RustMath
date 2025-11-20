@@ -63,6 +63,8 @@ pub mod vector_partition;
 pub mod word;
 pub mod words;
 pub mod wreath_product;
+pub mod key_polynomial;
+pub mod multiset_partition_into_sets_ordered;
 
 pub use affine_permutations::{AffinePermutation, CoxeterType};
 pub use backtrack::{BacktrackFn, BacktrackProblem, Backtracker};
@@ -188,6 +190,8 @@ pub use vector_partition::{
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
     vector_partitions_with_max_part, VectorPartition,
 };
+pub use key_polynomial::{
+    key_polynomial, KeyMonomial, KeyPolynomial, WeakComposition,
 pub use expnums::{EGF, ExpNum};
 pub use tiling::{
     build_transfer_matrix, count_domino_tilings, count_monomino_tilings,
