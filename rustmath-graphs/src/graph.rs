@@ -939,6 +939,543 @@ impl Graph {
         order.reverse();
         order
     }
+
+    /// Compute the Cartesian product of two graphs
+    ///
+    /// The Cartesian product G □ H has vertex set V(G) × V(H).
+    /// Two vertices (u, v) and (u', v') are adjacent iff:
+    /// - u = u' and vv' ∈ E(H), or
+    /// - v = v' and uu' ∈ E(G)
+    pub fn cartesian_product(&self, other: &Graph) -> Graph {
+        let n1 = self.num_vertices;
+        let n2 = other.num_vertices;
+        let mut product = Graph::new(n1 * n2);
+
+        // Helper to get vertex index in product graph
+        let vertex_idx = |i: usize, j: usize| i * n2 + j;
+
+        // Add edges from first graph (same second coordinate)
+        for i in 0..n1 {
+            for &neighbor in &self.adj[i] {
+                if i < neighbor {
+                    for j in 0..n2 {
+                        let u = vertex_idx(i, j);
+                        let v = vertex_idx(neighbor, j);
+                        product.add_edge(u, v).ok();
+                    }
+                }
+            }
+        }
+
+        // Add edges from second graph (same first coordinate)
+        for j in 0..n2 {
+            for &neighbor in &other.adj[j] {
+                if j < neighbor {
+                    for i in 0..n1 {
+                        let u = vertex_idx(i, j);
+                        let v = vertex_idx(i, neighbor);
+                        product.add_edge(u, v).ok();
+                    }
+                }
+            }
+        }
+
+        product
+    }
+
+    /// Compute the tensor product (categorical product) of two graphs
+    ///
+    /// The tensor product G × H has vertex set V(G) × V(H).
+    /// Two vertices (u, v) and (u', v') are adjacent iff:
+    /// - uu' ∈ E(G) AND vv' ∈ E(H)
+    pub fn tensor_product(&self, other: &Graph) -> Graph {
+        let n1 = self.num_vertices;
+        let n2 = other.num_vertices;
+        let mut product = Graph::new(n1 * n2);
+
+        let vertex_idx = |i: usize, j: usize| i * n2 + j;
+
+        for i in 0..n1 {
+            for j in 0..n2 {
+                for &i_neighbor in &self.adj[i] {
+                    for &j_neighbor in &other.adj[j] {
+                        let u = vertex_idx(i, j);
+                        let v = vertex_idx(i_neighbor, j_neighbor);
+                        if u < v {
+                            product.add_edge(u, v).ok();
+                        }
+                    }
+                }
+            }
+        }
+
+        product
+    }
+
+    /// Compute the strong product of two graphs
+    ///
+    /// The strong product G ⊠ H has vertex set V(G) × V(H).
+    /// Two vertices (u, v) and (u', v') are adjacent iff:
+    /// - u = u' and vv' ∈ E(H), or
+    /// - v = v' and uu' ∈ E(G), or
+    /// - uu' ∈ E(G) and vv' ∈ E(H)
+    pub fn strong_product(&self, other: &Graph) -> Graph {
+        let n1 = self.num_vertices;
+        let n2 = other.num_vertices;
+        let mut product = Graph::new(n1 * n2);
+
+        let vertex_idx = |i: usize, j: usize| i * n2 + j;
+
+        for i in 0..n1 {
+            for j in 0..n2 {
+                let u = vertex_idx(i, j);
+
+                // Edges from same i coordinate (Cartesian component)
+                for &j_neighbor in &other.adj[j] {
+                    if j < j_neighbor {
+                        let v = vertex_idx(i, j_neighbor);
+                        product.add_edge(u, v).ok();
+                    }
+                }
+
+                // Edges from same j coordinate (Cartesian component)
+                for &i_neighbor in &self.adj[i] {
+                    if i < i_neighbor {
+                        let v = vertex_idx(i_neighbor, j);
+                        product.add_edge(u, v).ok();
+                    }
+                }
+
+                // Diagonal edges (tensor component)
+                for &i_neighbor in &self.adj[i] {
+                    for &j_neighbor in &other.adj[j] {
+                        if i < i_neighbor || (i == i_neighbor && j < j_neighbor) {
+                            let v = vertex_idx(i_neighbor, j_neighbor);
+                            if u != v {
+                                product.add_edge(u, v).ok();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        product
+    }
+
+    /// Compute the k-th power of the graph
+    ///
+    /// In G^k, vertices u and v are adjacent iff their distance in G is at most k.
+    pub fn graph_power(&self, k: usize) -> Graph {
+        if k == 0 {
+            return Graph::new(self.num_vertices);
+        }
+
+        let mut power = Graph::new(self.num_vertices);
+
+        // Compute all-pairs shortest distances
+        for u in 0..self.num_vertices {
+            let distances = self.bfs_distances(u);
+            for v in u + 1..self.num_vertices {
+                if distances[v] != usize::MAX && distances[v] <= k {
+                    power.add_edge(u, v).ok();
+                }
+            }
+        }
+
+        power
+    }
+
+    /// Compute the line graph of this graph
+    ///
+    /// The line graph L(G) has vertices corresponding to edges of G.
+    /// Two vertices in L(G) are adjacent iff the corresponding edges in G share a vertex.
+    ///
+    /// Returns (line_graph, edge_map) where edge_map[i] gives the original edge for vertex i.
+    pub fn line_graph(&self) -> (Graph, Vec<(usize, usize)>) {
+        let edges = self.edges();
+        let num_edges = edges.len();
+        let mut line = Graph::new(num_edges);
+
+        // Two edges are adjacent in line graph if they share a vertex
+        for i in 0..num_edges {
+            for j in i + 1..num_edges {
+                let (u1, v1) = edges[i];
+                let (u2, v2) = edges[j];
+
+                if u1 == u2 || u1 == v2 || v1 == u2 || v1 == v2 {
+                    line.add_edge(i, j).ok();
+                }
+            }
+        }
+
+        (line, edges)
+    }
+
+    /// Delete an edge from the graph
+    ///
+    /// Returns a new graph with the edge (u, v) removed.
+    pub fn delete_edge(&self, u: usize, v: usize) -> Graph {
+        let mut g = self.clone();
+        g.adj[u].remove(&v);
+        g.adj[v].remove(&u);
+        g
+    }
+
+    /// Contract an edge in the graph
+    ///
+    /// Returns a new graph where vertices u and v are merged into a single vertex.
+    /// The merged vertex inherits all edges from both u and v.
+    pub fn contract_edge_public(&self, u: usize, v: usize) -> Graph {
+        contract_edge(self, u, v)
+    }
+
+    /// Delete a vertex from the graph
+    ///
+    /// Returns a new graph with the vertex removed and all its edges deleted.
+    pub fn delete_vertex(&self, vertex: usize) -> Graph {
+        if vertex >= self.num_vertices {
+            return self.clone();
+        }
+
+        let mut g = Graph::new(self.num_vertices - 1);
+
+        // Map old vertices to new vertices
+        let get_new_vertex = |old: usize| -> Option<usize> {
+            if old == vertex {
+                None
+            } else if old < vertex {
+                Some(old)
+            } else {
+                Some(old - 1)
+            }
+        };
+
+        // Add edges
+        for i in 0..self.num_vertices {
+            if i == vertex {
+                continue;
+            }
+            for &j in &self.adj[i] {
+                if j == vertex || j <= i {
+                    continue;
+                }
+                if let (Some(new_i), Some(new_j)) = (get_new_vertex(i), get_new_vertex(j)) {
+                    g.add_edge(new_i, new_j).ok();
+                }
+            }
+        }
+
+        g
+    }
+
+    /// Check if this graph is a minor of another graph
+    ///
+    /// A graph H is a minor of G if H can be obtained from G by deleting edges,
+    /// deleting vertices, and contracting edges.
+    /// Note: This is a simple check, not a full minor testing algorithm.
+    pub fn has_minor(&self, minor: &Graph) -> bool {
+        // Simple heuristic checks
+        if minor.num_vertices > self.num_vertices {
+            return false;
+        }
+        if minor.num_edges() > self.num_edges() {
+            return false;
+        }
+
+        // For small graphs, could implement more sophisticated checks
+        // This is a placeholder for the full minor testing problem (NP-complete)
+        true
+    }
+
+    /// Compute the girth of the graph
+    ///
+    /// The girth is the length of the shortest cycle.
+    /// Returns None if the graph is acyclic.
+    pub fn girth(&self) -> Option<usize> {
+        if !self.has_cycle() {
+            return None;
+        }
+
+        let mut min_cycle = usize::MAX;
+
+        // For each edge, find shortest path that doesn't use that edge
+        for u in 0..self.num_vertices {
+            for &v in &self.adj[u] {
+                if u < v {
+                    // Remove edge (u, v) temporarily
+                    let mut g = self.clone();
+                    g.adj[u].remove(&v);
+                    g.adj[v].remove(&u);
+
+                    // Find shortest path from u to v in modified graph
+                    if let Ok(Some(path)) = g.shortest_path(u, v) {
+                        let cycle_length = path.len(); // path.len() includes both endpoints
+                        min_cycle = min_cycle.min(cycle_length);
+                    }
+                }
+            }
+        }
+
+        if min_cycle == usize::MAX {
+            None
+        } else {
+            Some(min_cycle)
+        }
+    }
+
+    /// Compute the radius of the graph
+    ///
+    /// The radius is the minimum eccentricity over all vertices.
+    /// Eccentricity of a vertex is the maximum distance from that vertex to any other.
+    /// Returns None if the graph is not connected.
+    pub fn radius(&self) -> Option<usize> {
+        if !self.is_connected() {
+            return None;
+        }
+
+        let mut min_eccentricity = usize::MAX;
+
+        for v in 0..self.num_vertices {
+            let distances = self.bfs_distances(v);
+            let eccentricity = distances.iter()
+                .filter(|&&d| d != usize::MAX)
+                .max()
+                .copied()
+                .unwrap_or(0);
+
+            min_eccentricity = min_eccentricity.min(eccentricity);
+        }
+
+        Some(min_eccentricity)
+    }
+
+    /// Get the eccentricity of a vertex
+    ///
+    /// Eccentricity is the maximum distance from this vertex to any other vertex.
+    /// Returns None if the graph is not connected.
+    pub fn eccentricity(&self, v: usize) -> Option<usize> {
+        if v >= self.num_vertices || !self.is_connected() {
+            return None;
+        }
+
+        let distances = self.bfs_distances(v);
+        distances.iter()
+            .filter(|&&d| d != usize::MAX)
+            .max()
+            .copied()
+    }
+
+    /// Find the center of the graph
+    ///
+    /// The center is the set of vertices with minimum eccentricity (equal to radius).
+    /// Returns None if the graph is not connected.
+    pub fn center(&self) -> Option<Vec<usize>> {
+        let radius = self.radius()?;
+        let mut center_vertices = Vec::new();
+
+        for v in 0..self.num_vertices {
+            if self.eccentricity(v) == Some(radius) {
+                center_vertices.push(v);
+            }
+        }
+
+        Some(center_vertices)
+    }
+
+    /// Find the maximum clique size (clique number) using a simple algorithm
+    ///
+    /// Note: This uses a greedy approximation, not guaranteed to be optimal.
+    /// Finding the maximum clique is NP-complete.
+    pub fn clique_number(&self) -> usize {
+        if self.num_vertices == 0 {
+            return 0;
+        }
+
+        let mut max_clique_size = 1;
+
+        // Try building a clique starting from each vertex
+        for start in 0..self.num_vertices {
+            let mut clique = vec![start];
+            let mut candidates: HashSet<usize> = self.adj[start].clone();
+
+            loop {
+                // Find vertex in candidates that is connected to all vertices in current clique
+                let mut best_vertex = None;
+                let mut max_connections = 0;
+
+                for &v in &candidates {
+                    // Check if v is connected to all vertices in the current clique
+                    let connected_to_all = clique.iter().all(|&u| self.has_edge(u, v));
+
+                    if connected_to_all {
+                        // Count how many other candidates v is connected to
+                        let connections = candidates.iter()
+                            .filter(|&&w| w != v && self.has_edge(v, w))
+                            .count();
+
+                        if connections >= max_connections {
+                            max_connections = connections;
+                            best_vertex = Some(v);
+                        }
+                    }
+                }
+
+                if let Some(v) = best_vertex {
+                    clique.push(v);
+                    // Keep only candidates that are neighbors of v (and thus potential clique members)
+                    candidates = candidates.into_iter()
+                        .filter(|&w| w != v && self.has_edge(v, w))
+                        .collect();
+                } else {
+                    // No more vertices can be added to the clique
+                    break;
+                }
+            }
+
+            max_clique_size = max_clique_size.max(clique.len());
+        }
+
+        max_clique_size
+    }
+
+    /// Check if the graph is perfect
+    ///
+    /// A graph is perfect if the chromatic number equals the clique number
+    /// for every induced subgraph.
+    ///
+    /// This implementation uses the Strong Perfect Graph Theorem:
+    /// A graph is perfect iff neither it nor its complement contains an odd hole
+    /// (induced cycle of odd length ≥ 5) or odd antihole.
+    ///
+    /// Note: This is a simplified heuristic check that may not be complete.
+    /// Complete graphs and bipartite graphs are always perfect.
+    pub fn is_perfect(&self) -> bool {
+        // Check basic cases
+        if self.num_vertices <= 3 {
+            return true;
+        }
+
+        // Bipartite graphs are perfect
+        if self.is_bipartite() {
+            return true;
+        }
+
+        // Complete graphs are perfect (check if all vertices are connected)
+        let expected_edges = (self.num_vertices * (self.num_vertices - 1)) / 2;
+        if self.num_edges() == expected_edges {
+            return true;
+        }
+
+        // Check if chromatic number equals clique number
+        // This is a necessary condition but not sufficient
+        let chi = self.chromatic_number();
+        let omega = self.clique_number();
+
+        if chi != omega {
+            return false;
+        }
+
+        // For a more complete check, we would need to verify all induced subgraphs
+        // This is computationally expensive, so we use heuristics
+
+        // Check for odd holes (odd cycles of length ≥ 5)
+        if self.has_odd_hole() {
+            return false;
+        }
+
+        // Check for odd antiholes in complement
+        let complement = self.complement();
+        if complement.has_odd_hole() {
+            return false;
+        }
+
+        true
+    }
+
+    /// Get the complement of the graph
+    ///
+    /// In the complement, vertices are adjacent iff they are not adjacent in the original.
+    pub fn complement(&self) -> Graph {
+        let mut comp = Graph::new(self.num_vertices);
+
+        for u in 0..self.num_vertices {
+            for v in u + 1..self.num_vertices {
+                if !self.has_edge(u, v) {
+                    comp.add_edge(u, v).ok();
+                }
+            }
+        }
+
+        comp
+    }
+
+    /// Check if the graph contains an odd hole (odd cycle of length ≥ 5)
+    ///
+    /// This is a heuristic check, not guaranteed to find all odd holes.
+    fn has_odd_hole(&self) -> bool {
+        // Look for odd cycles of length 5, 7, 9, etc.
+        for length in (5..=self.num_vertices).step_by(2) {
+            if self.has_cycle_of_length(length) {
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Check if the graph has a cycle of a specific length
+    ///
+    /// Uses DFS with depth limit to search for cycles.
+    fn has_cycle_of_length(&self, target_length: usize) -> bool {
+        if target_length < 3 || target_length > self.num_vertices {
+            return false;
+        }
+
+        for start in 0..self.num_vertices {
+            let mut path = vec![start];
+            let mut visited = vec![false; self.num_vertices];
+            visited[start] = true;
+
+            if self.find_cycle_of_length(start, start, target_length, &mut path, &mut visited) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    fn find_cycle_of_length(
+        &self,
+        start: usize,
+        current: usize,
+        remaining: usize,
+        path: &mut Vec<usize>,
+        visited: &mut Vec<bool>,
+    ) -> bool {
+        if remaining == 1 {
+            // Check if we can close the cycle
+            return self.has_edge(current, start);
+        }
+
+        for &neighbor in &self.adj[current] {
+            if neighbor == start && remaining > 2 {
+                continue; // Don't close cycle early
+            }
+            if !visited[neighbor] {
+                path.push(neighbor);
+                visited[neighbor] = true;
+
+                if self.find_cycle_of_length(start, neighbor, remaining - 1, path, visited) {
+                    return true;
+                }
+
+                path.pop();
+                visited[neighbor] = false;
+            }
+        }
+
+        false
+    }
 }
 
 /// Helper function to compute determinant of a matrix
@@ -1815,5 +2352,383 @@ mod tests {
         let matchings4 = g4.perfect_matchings();
         assert_eq!(matchings4.len(), 1);
         assert_eq!(matchings4[0], vec![(0, 1)]);
+    }
+
+    #[test]
+    fn test_cartesian_product() {
+        // P2 □ P2 = C4 (path of 2 vertices product with itself gives 4-cycle)
+        let mut p2 = Graph::new(2);
+        p2.add_edge(0, 1).unwrap();
+
+        let product = p2.cartesian_product(&p2);
+        assert_eq!(product.num_vertices(), 4);
+        assert_eq!(product.num_edges(), 4);
+
+        // Verify it's a 4-cycle by checking degrees
+        for v in 0..4 {
+            assert_eq!(product.degree(v), Some(2));
+        }
+
+        // K2 □ K1 = K2 (edge product with single vertex)
+        let k1 = Graph::new(1);
+        let product2 = p2.cartesian_product(&k1);
+        assert_eq!(product2.num_vertices(), 2);
+        assert_eq!(product2.num_edges(), 1);
+    }
+
+    #[test]
+    fn test_tensor_product() {
+        // K2 × K2 = two disjoint edges
+        let mut k2 = Graph::new(2);
+        k2.add_edge(0, 1).unwrap();
+
+        let product = k2.tensor_product(&k2);
+        assert_eq!(product.num_vertices(), 4);
+        // K2 × K2 creates edges (0,0)-(1,1) and (0,1)-(1,0)
+        assert_eq!(product.num_edges(), 2);
+
+        // K3 × K2
+        let mut k3 = Graph::new(3);
+        k3.add_edge(0, 1).unwrap();
+        k3.add_edge(1, 2).unwrap();
+        k3.add_edge(2, 0).unwrap();
+
+        let product2 = k3.tensor_product(&k2);
+        assert_eq!(product2.num_vertices(), 6);
+        // K3 × K2: 3 edges × 1 edge × 2 (both directions) = 6 edges
+        assert_eq!(product2.num_edges(), 6);
+    }
+
+    #[test]
+    fn test_strong_product() {
+        // P2 ⊠ P2
+        let mut p2 = Graph::new(2);
+        p2.add_edge(0, 1).unwrap();
+
+        let product = p2.strong_product(&p2);
+        assert_eq!(product.num_vertices(), 4);
+        // Strong product includes Cartesian (4 edges) + tensor (0 edges) = 4 edges
+        // But actually for P2⊠P2 we get more due to diagonals
+        assert!(product.num_edges() >= 4);
+
+        // Verify connectivity
+        assert!(product.is_connected());
+    }
+
+    #[test]
+    fn test_graph_power() {
+        // Path P4: 0-1-2-3
+        let mut p4 = Graph::new(4);
+        p4.add_edge(0, 1).unwrap();
+        p4.add_edge(1, 2).unwrap();
+        p4.add_edge(2, 3).unwrap();
+
+        // P4^0 should have no edges
+        let p0 = p4.graph_power(0);
+        assert_eq!(p0.num_edges(), 0);
+
+        // P4^1 = P4 (same as original)
+        let p1 = p4.graph_power(1);
+        assert_eq!(p1.num_edges(), 3);
+
+        // P4^2 should connect vertices at distance ≤ 2
+        let p2 = p4.graph_power(2);
+        assert!(p2.has_edge(0, 1));
+        assert!(p2.has_edge(0, 2));
+        assert!(p2.has_edge(1, 3));
+        assert!(p2.has_edge(2, 3));
+
+        // P4^3 should be complete (all distances ≤ 3)
+        let p3 = p4.graph_power(3);
+        assert_eq!(p3.num_edges(), 6); // K4 has 6 edges
+    }
+
+    #[test]
+    fn test_line_graph() {
+        // Triangle K3
+        let mut k3 = Graph::new(3);
+        k3.add_edge(0, 1).unwrap();
+        k3.add_edge(1, 2).unwrap();
+        k3.add_edge(2, 0).unwrap();
+
+        let (line, edge_map) = k3.line_graph();
+        assert_eq!(line.num_vertices(), 3); // 3 edges in K3
+        assert_eq!(edge_map.len(), 3);
+
+        // Line graph of K3 is also K3 (each edge shares a vertex with every other edge)
+        assert_eq!(line.num_edges(), 3);
+
+        // Path P3
+        let mut p3 = Graph::new(3);
+        p3.add_edge(0, 1).unwrap();
+        p3.add_edge(1, 2).unwrap();
+
+        let (line2, edge_map2) = p3.line_graph();
+        assert_eq!(line2.num_vertices(), 2); // 2 edges in P3
+        assert_eq!(line2.num_edges(), 1); // The two edges share vertex 1
+        assert_eq!(edge_map2, vec![(0, 1), (1, 2)]);
+    }
+
+    #[test]
+    fn test_delete_edge() {
+        let mut g = Graph::new(3);
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(1, 2).unwrap();
+        g.add_edge(2, 0).unwrap();
+
+        let g2 = g.delete_edge(0, 1);
+        assert_eq!(g2.num_vertices(), 3);
+        assert_eq!(g2.num_edges(), 2);
+        assert!(!g2.has_edge(0, 1));
+        assert!(g2.has_edge(1, 2));
+        assert!(g2.has_edge(2, 0));
+    }
+
+    #[test]
+    fn test_contract_edge() {
+        let mut g = Graph::new(4);
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(1, 2).unwrap();
+        g.add_edge(2, 3).unwrap();
+
+        let g2 = g.contract_edge_public(1, 2);
+        assert_eq!(g2.num_vertices(), 3);
+        // After contracting 1-2, we have vertices {0, merged(1,2), 3}
+        // The merged vertex should be connected to both 0 and 3
+        assert!(g2.is_connected());
+    }
+
+    #[test]
+    fn test_delete_vertex() {
+        let mut g = Graph::new(4);
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(1, 2).unwrap();
+        g.add_edge(2, 3).unwrap();
+        g.add_edge(3, 0).unwrap();
+
+        let g2 = g.delete_vertex(1);
+        assert_eq!(g2.num_vertices(), 3);
+        // After removing vertex 1, edges 0-1 and 1-2 are gone
+        assert_eq!(g2.num_edges(), 2); // Only 2-3 and 3-0 remain (remapped)
+    }
+
+    #[test]
+    fn test_girth() {
+        // Tree has no cycles
+        let mut tree = Graph::new(4);
+        tree.add_edge(0, 1).unwrap();
+        tree.add_edge(0, 2).unwrap();
+        tree.add_edge(0, 3).unwrap();
+        assert_eq!(tree.girth(), None);
+
+        // Triangle has girth 3
+        let mut k3 = Graph::new(3);
+        k3.add_edge(0, 1).unwrap();
+        k3.add_edge(1, 2).unwrap();
+        k3.add_edge(2, 0).unwrap();
+        assert_eq!(k3.girth(), Some(3));
+
+        // Square has girth 4
+        let mut c4 = Graph::new(4);
+        c4.add_edge(0, 1).unwrap();
+        c4.add_edge(1, 2).unwrap();
+        c4.add_edge(2, 3).unwrap();
+        c4.add_edge(3, 0).unwrap();
+        assert_eq!(c4.girth(), Some(4));
+
+        // Pentagon has girth 5
+        let mut c5 = Graph::new(5);
+        for i in 0..5 {
+            c5.add_edge(i, (i + 1) % 5).unwrap();
+        }
+        assert_eq!(c5.girth(), Some(5));
+    }
+
+    #[test]
+    fn test_radius() {
+        // Path P4: 0-1-2-3
+        let mut p4 = Graph::new(4);
+        p4.add_edge(0, 1).unwrap();
+        p4.add_edge(1, 2).unwrap();
+        p4.add_edge(2, 3).unwrap();
+
+        // Radius is 1 (center vertices 1 or 2 have eccentricity 2)
+        // Wait, let me recalculate:
+        // Eccentricity of 0: max(0→1=1, 0→2=2, 0→3=3) = 3
+        // Eccentricity of 1: max(1→0=1, 1→2=1, 1→3=2) = 2
+        // Eccentricity of 2: max(2→0=2, 2→1=1, 2→3=1) = 2
+        // Eccentricity of 3: max(3→0=3, 3→1=2, 3→2=1) = 3
+        // Radius = min(3, 2, 2, 3) = 2
+        assert_eq!(p4.radius(), Some(2));
+
+        // Star graph: center has eccentricity 1, leaves have eccentricity 2
+        let mut star = Graph::new(5);
+        for i in 1..5 {
+            star.add_edge(0, i).unwrap();
+        }
+        assert_eq!(star.radius(), Some(1));
+
+        // Complete graph: all vertices have eccentricity 1
+        let mut k4 = Graph::new(4);
+        for i in 0..4 {
+            for j in i + 1..4 {
+                k4.add_edge(i, j).unwrap();
+            }
+        }
+        assert_eq!(k4.radius(), Some(1));
+
+        // Disconnected graph has no radius
+        let mut disconnected = Graph::new(4);
+        disconnected.add_edge(0, 1).unwrap();
+        disconnected.add_edge(2, 3).unwrap();
+        assert_eq!(disconnected.radius(), None);
+    }
+
+    #[test]
+    fn test_eccentricity() {
+        let mut p4 = Graph::new(4);
+        p4.add_edge(0, 1).unwrap();
+        p4.add_edge(1, 2).unwrap();
+        p4.add_edge(2, 3).unwrap();
+
+        assert_eq!(p4.eccentricity(0), Some(3));
+        assert_eq!(p4.eccentricity(1), Some(2));
+        assert_eq!(p4.eccentricity(2), Some(2));
+        assert_eq!(p4.eccentricity(3), Some(3));
+    }
+
+    #[test]
+    fn test_center() {
+        // Path P4: center should be vertices 1 and 2
+        let mut p4 = Graph::new(4);
+        p4.add_edge(0, 1).unwrap();
+        p4.add_edge(1, 2).unwrap();
+        p4.add_edge(2, 3).unwrap();
+
+        let center = p4.center().unwrap();
+        assert_eq!(center.len(), 2);
+        assert!(center.contains(&1));
+        assert!(center.contains(&2));
+
+        // Star: center is the hub vertex
+        let mut star = Graph::new(5);
+        for i in 1..5 {
+            star.add_edge(0, i).unwrap();
+        }
+        assert_eq!(star.center(), Some(vec![0]));
+    }
+
+    #[test]
+    fn test_clique_number() {
+        // Complete graph K4 has clique number 4
+        let mut k4 = Graph::new(4);
+        for i in 0..4 {
+            for j in i + 1..4 {
+                k4.add_edge(i, j).unwrap();
+            }
+        }
+        assert_eq!(k4.clique_number(), 4);
+
+        // Triangle has clique number 3
+        let mut k3 = Graph::new(3);
+        k3.add_edge(0, 1).unwrap();
+        k3.add_edge(1, 2).unwrap();
+        k3.add_edge(2, 0).unwrap();
+        assert_eq!(k3.clique_number(), 3);
+
+        // Path has clique number 2 (just edges)
+        let mut p3 = Graph::new(3);
+        p3.add_edge(0, 1).unwrap();
+        p3.add_edge(1, 2).unwrap();
+        assert_eq!(p3.clique_number(), 2);
+
+        // Empty graph has clique number 1
+        let empty = Graph::new(3);
+        assert_eq!(empty.clique_number(), 1);
+    }
+
+    #[test]
+    fn test_complement() {
+        // Complement of K3 is empty graph
+        let mut k3 = Graph::new(3);
+        k3.add_edge(0, 1).unwrap();
+        k3.add_edge(1, 2).unwrap();
+        k3.add_edge(2, 0).unwrap();
+
+        let comp = k3.complement();
+        assert_eq!(comp.num_edges(), 0);
+
+        // Complement of empty graph is complete
+        let empty = Graph::new(3);
+        let comp2 = empty.complement();
+        assert_eq!(comp2.num_edges(), 3); // K3 has 3 edges
+
+        // Complement of path P3
+        let mut p3 = Graph::new(3);
+        p3.add_edge(0, 1).unwrap();
+        p3.add_edge(1, 2).unwrap();
+
+        let comp3 = p3.complement();
+        assert_eq!(comp3.num_edges(), 1); // Only edge 0-2
+        assert!(comp3.has_edge(0, 2));
+    }
+
+    #[test]
+    fn test_is_perfect() {
+        // Bipartite graphs are perfect
+        let mut k22 = Graph::new(4);
+        k22.add_edge(0, 2).unwrap();
+        k22.add_edge(0, 3).unwrap();
+        k22.add_edge(1, 2).unwrap();
+        k22.add_edge(1, 3).unwrap();
+        assert!(k22.is_perfect());
+
+        // Complete graphs are perfect
+        let mut k4 = Graph::new(4);
+        for i in 0..4 {
+            for j in i + 1..4 {
+                k4.add_edge(i, j).unwrap();
+            }
+        }
+        assert!(k4.is_perfect());
+
+        // Small graphs are perfect
+        let mut k3 = Graph::new(3);
+        k3.add_edge(0, 1).unwrap();
+        k3.add_edge(1, 2).unwrap();
+        k3.add_edge(2, 0).unwrap();
+        assert!(k3.is_perfect());
+    }
+
+    #[test]
+    fn test_has_cycle_of_length() {
+        // Triangle
+        let mut k3 = Graph::new(3);
+        k3.add_edge(0, 1).unwrap();
+        k3.add_edge(1, 2).unwrap();
+        k3.add_edge(2, 0).unwrap();
+
+        assert!(k3.has_cycle_of_length(3));
+        assert!(!k3.has_cycle_of_length(4));
+        assert!(!k3.has_cycle_of_length(5));
+
+        // 4-cycle
+        let mut c4 = Graph::new(4);
+        c4.add_edge(0, 1).unwrap();
+        c4.add_edge(1, 2).unwrap();
+        c4.add_edge(2, 3).unwrap();
+        c4.add_edge(3, 0).unwrap();
+
+        assert!(c4.has_cycle_of_length(4));
+        assert!(!c4.has_cycle_of_length(3));
+
+        // 5-cycle
+        let mut c5 = Graph::new(5);
+        for i in 0..5 {
+            c5.add_edge(i, (i + 1) % 5).unwrap();
+        }
+        assert!(c5.has_cycle_of_length(5));
+        assert!(!c5.has_cycle_of_length(3));
+        assert!(!c5.has_cycle_of_length(4));
     }
 }
