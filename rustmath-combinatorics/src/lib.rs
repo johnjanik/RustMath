@@ -13,6 +13,7 @@ pub mod dyck_word;
 pub mod enumeration;
 pub mod multiset_partition_into_sets_ordered;
 pub mod ordered_tree;
+pub mod parking_function;
 pub mod partitions;
 pub mod perfect_matching;
 pub mod permutations;
@@ -107,6 +108,11 @@ pub use superpartitions::{
 pub use sidon_sets::{
     backtracking_bh_sequence, backtracking_sidon_set, greedy_bh_sequence, greedy_sidon_set,
     is_bh_sequence, is_sidon_set, max_bh_sequence_size, max_sidon_set_size, BhSequence, SidonSet,
+};
+pub use parking_function::{
+    count_non_decreasing_parking_functions, count_parking_functions,
+    non_decreasing_parking_functions, non_decreasing_parking_functions_with_area,
+    parking_functions, NonDecreasingParkingFunction, ParkingFunction,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
