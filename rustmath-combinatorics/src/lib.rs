@@ -148,7 +148,9 @@ pub use path_tableaux::{
 pub use ribbon_tableau::{
     fermionic_formula, kostka_foulkes_ribbon, ribbon_tableaux, RibbonDecomposition, RibbonTableau,
 };
-pub use skew_partition::{SkewPartition, SkewTableau};
+pub use skew_partition::{
+    ribbon_shaped_tableaux, RibbonTableau, SkewPartition, SkewTableau,
+};
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
 
