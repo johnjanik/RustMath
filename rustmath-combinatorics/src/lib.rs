@@ -46,8 +46,9 @@ pub use designs::{
 };
 pub use dyck_word::{dyck_words, DyckWord};
 pub use enumeration::{
-    cartesian_product, stars_and_bars, tuples, weak_compositions, CompositionIterator,
-    Enumerable, GrayCodeIterator, LazyEnumerator, PartitionIterator, RevolvingDoorIterator,
+    cartesian_product, stars_and_bars, tuples, weak_compositions, CartesianProduct,
+    CompositionIterator, Enumerable, GrayCodeIterator, InfiniteCartesianProduct, LazyEnumerator,
+    PartitionIterator, RevolvingDoorIterator,
 };
 pub use perfect_matching::{perfect_matchings, PerfectMatching};
 pub use ranking::{CombinationRank, PermutationRank, Rankable, RankingTable};
