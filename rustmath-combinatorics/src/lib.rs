@@ -80,10 +80,10 @@ pub use ranking::{CombinationRank, PermutationRank, Rankable, RankingTable};
 pub use recurrence_sequences::{
     solve_binary_recurrence, BinaryRecurrence, LinearRecurrence, RecurrenceSequence,
 };
-pub use restricted_growth::{
-    restricted_growth_strings, RestrictedGrowth, RestrictedGrowthIterator,
+pub use set_partition::{
+    bell_number_optimized, bell_numbers_up_to, set_partition_iterator, set_partitions,
+    SetPartition, SetPartitionIterator,
 };
-pub use set_partition::{set_partitions, SetPartition};
 pub use set_system::SetSystem;
 pub use multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
 pub use word::{

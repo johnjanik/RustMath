@@ -3,13 +3,12 @@
 //! A set partition is a way of partitioning a set into non-empty disjoint subsets.
 //! The number of set partitions of n elements is the Bell number B(n).
 //!
-//! Set partitions form a lattice under the refinement partial order:
-//! - Partition P refines partition Q (P ≤ Q) if every block of P is contained in some block of Q
-//! - The meet (∧) is the finest common coarsening
-//! - The join (∨) is the coarsest common refinement
-
-use std::cmp::Ordering;
-use std::collections::HashMap;
+//! This module uses Restricted Growth Strings (RGS) for efficient generation and iteration.
+//! An RGS is a sequence a[0], a[1], ..., a[n-1] where:
+//! - a[0] = 0
+//! - a[i] <= max(a[0], ..., a[i-1]) + 1 for all i > 0
+//!
+//! The value a[i] indicates which block element i belongs to.
 
 /// A set partition - a way of partitioning a set into non-empty disjoint subsets
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -61,193 +60,79 @@ impl SetPartition {
         self.n
     }
 
-    /// Create the finest partition (all singletons)
-    pub fn finest(n: usize) -> Self {
-        let blocks: Vec<Vec<usize>> = (0..n).map(|i| vec![i]).collect();
-        SetPartition { blocks, n }
-    }
-
-    /// Create the coarsest partition (one block containing all elements)
-    pub fn coarsest(n: usize) -> Self {
-        let blocks = if n > 0 {
-            vec![(0..n).collect()]
-        } else {
-            vec![]
-        };
-        SetPartition { blocks, n }
-    }
-
-    /// Check if this partition refines another partition (self ≤ other)
+    /// Create a set partition from a restricted growth string (RGS)
     ///
-    /// Partition P refines partition Q if every block of P is contained in some block of Q.
-    /// In the refinement order, P ≤ Q means P is finer (has smaller blocks) than Q.
-    pub fn refines(&self, other: &SetPartition) -> bool {
-        if self.n != other.n {
-            return false;
+    /// An RGS is a sequence where rgs[i] indicates which block element i belongs to.
+    /// The RGS must satisfy: rgs[0] = 0 and rgs[i] <= max(rgs[0..i]) + 1
+    pub fn from_rgs(rgs: &[usize]) -> Option<Self> {
+        if rgs.is_empty() {
+            return Some(SetPartition {
+                blocks: vec![],
+                n: 0,
+            });
         }
 
-        // For each block in self, check if it's contained in some block of other
-        for self_block in &self.blocks {
-            let mut found = false;
-            for other_block in &other.blocks {
-                // Check if all elements of self_block are in other_block
-                if self_block.iter().all(|elem| other_block.contains(elem)) {
-                    found = true;
-                    break;
-                }
+        let n = rgs.len();
+
+        // Verify RGS constraints
+        if rgs[0] != 0 {
+            return None;
+        }
+
+        let mut max_block = 0;
+        for i in 1..n {
+            if rgs[i] > max_block + 1 {
+                return None;
             }
-            if !found {
+            if rgs[i] > max_block {
+                max_block = rgs[i];
+            }
+        }
+
+        // Convert RGS to blocks
+        let num_blocks = max_block + 1;
+        let mut blocks = vec![Vec::new(); num_blocks];
+
+        for (elem, &block_id) in rgs.iter().enumerate() {
+            blocks[block_id].push(elem);
+        }
+
+        Some(SetPartition { blocks, n })
+    }
+
+    /// Convert this set partition to a restricted growth string (RGS)
+    ///
+    /// Returns a vector where result[i] is the block number that element i belongs to.
+    /// Block numbers are assigned in the order they first appear (starting from 0).
+    pub fn to_rgs(&self) -> Vec<usize> {
+        let mut rgs = vec![0; self.n];
+
+        for (block_id, block) in self.blocks.iter().enumerate() {
+            for &elem in block {
+                rgs[elem] = block_id;
+            }
+        }
+
+        rgs
+    }
+
+    /// Check if this partition is valid (for internal consistency checks)
+    pub fn is_valid(&self) -> bool {
+        let mut seen = vec![false; self.n];
+
+        for block in &self.blocks {
+            if block.is_empty() {
                 return false;
             }
-        }
-
-        true
-    }
-
-    /// Check if this partition is coarser than another (self ≥ other)
-    pub fn is_coarser_than(&self, other: &SetPartition) -> bool {
-        other.refines(self)
-    }
-
-    /// Compute the meet (greatest lower bound) of two partitions
-    ///
-    /// The meet is the finest partition that both partitions refine.
-    /// It's computed by taking all pairwise intersections of blocks.
-    pub fn meet(&self, other: &SetPartition) -> Option<Self> {
-        if self.n != other.n {
-            return None;
-        }
-
-        let mut blocks: Vec<Vec<usize>> = Vec::new();
-
-        // For each pair of blocks, compute their intersection
-        for self_block in &self.blocks {
-            for other_block in &other.blocks {
-                let intersection: Vec<usize> = self_block
-                    .iter()
-                    .filter(|elem| other_block.contains(elem))
-                    .copied()
-                    .collect();
-
-                if !intersection.is_empty() {
-                    blocks.push(intersection);
+            for &elem in block {
+                if elem >= self.n || seen[elem] {
+                    return false;
                 }
+                seen[elem] = true;
             }
         }
 
-        SetPartition::new(blocks, self.n)
-    }
-
-    /// Compute the join (least upper bound) of two partitions
-    ///
-    /// The join is the coarsest partition that refines both partitions.
-    /// It's computed using a union-find algorithm to merge blocks that share elements
-    /// when considering both partitions together.
-    pub fn join(&self, other: &SetPartition) -> Option<Self> {
-        if self.n != other.n {
-            return None;
-        }
-
-        // Use union-find to merge blocks
-        let mut parent: Vec<usize> = (0..self.n).collect();
-
-        fn find(parent: &mut Vec<usize>, x: usize) -> usize {
-            if parent[x] != x {
-                parent[x] = find(parent, parent[x]);
-            }
-            parent[x]
-        }
-
-        fn union(parent: &mut Vec<usize>, x: usize, y: usize) {
-            let root_x = find(parent, x);
-            let root_y = find(parent, y);
-            if root_x != root_y {
-                parent[root_x] = root_y;
-            }
-        }
-
-        // Union elements in the same block for self
-        for block in &self.blocks {
-            if !block.is_empty() {
-                let first = block[0];
-                for &elem in &block[1..] {
-                    union(&mut parent, first, elem);
-                }
-            }
-        }
-
-        // Union elements in the same block for other
-        for block in &other.blocks {
-            if !block.is_empty() {
-                let first = block[0];
-                for &elem in &block[1..] {
-                    union(&mut parent, first, elem);
-                }
-            }
-        }
-
-        // Group elements by their root
-        let mut blocks_map: HashMap<usize, Vec<usize>> = HashMap::new();
-        for i in 0..self.n {
-            let root = find(&mut parent, i);
-            blocks_map.entry(root).or_insert_with(Vec::new).push(i);
-        }
-
-        let blocks: Vec<Vec<usize>> = blocks_map.into_values().collect();
-
-        SetPartition::new(blocks, self.n)
-    }
-
-    /// Find which block contains a given element
-    pub fn find_block(&self, elem: usize) -> Option<usize> {
-        if elem >= self.n {
-            return None;
-        }
-
-        for (i, block) in self.blocks.iter().enumerate() {
-            if block.contains(&elem) {
-                return Some(i);
-            }
-        }
-
-        None
-    }
-
-    /// Check if two elements are in the same block
-    pub fn in_same_block(&self, a: usize, b: usize) -> bool {
-        if a >= self.n || b >= self.n {
-            return false;
-        }
-
-        for block in &self.blocks {
-            if block.contains(&a) && block.contains(&b) {
-                return true;
-            }
-        }
-
-        false
-    }
-}
-
-impl PartialOrd for SetPartition {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        if self.n != other.n {
-            return None;
-        }
-
-        if self == other {
-            return Some(Ordering::Equal);
-        }
-
-        let self_refines_other = self.refines(other);
-        let other_refines_self = other.refines(self);
-
-        match (self_refines_other, other_refines_self) {
-            (true, false) => Some(Ordering::Less),    // self is finer
-            (false, true) => Some(Ordering::Greater), // self is coarser
-            (false, false) => None,                   // incomparable
-            (true, true) => Some(Ordering::Equal),    // should not happen if self != other
-        }
+        seen.iter().all(|&x| x)
     }
 }
 
@@ -300,130 +185,211 @@ fn generate_set_partitions(
     current.pop();
 }
 
-/// An ordered set partition - a set partition where the order of blocks matters
+/// Iterator over all set partitions of n elements using restricted growth strings
 ///
-/// Unlike regular set partitions, {{0}, {1, 2}} and {{1, 2}, {0}} are considered
-/// different ordered set partitions.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OrderedSetPartition {
-    /// Each vector represents one block (subset) in the partition, in order
-    blocks: Vec<Vec<usize>>,
-    /// Total number of elements
+/// This iterator generates set partitions in lexicographic order of their RGS representation,
+/// which is more efficient than the recursive algorithm for large n.
+#[derive(Debug, Clone)]
+pub struct SetPartitionIterator {
     n: usize,
+    rgs: Vec<usize>,
+    done: bool,
 }
 
-impl OrderedSetPartition {
-    /// Create an ordered set partition from blocks
-    pub fn new(blocks: Vec<Vec<usize>>, n: usize) -> Option<Self> {
-        // Verify that blocks are non-empty and disjoint
-        let mut seen = vec![false; n];
-
-        for block in &blocks {
-            if block.is_empty() {
-                return None;
+impl SetPartitionIterator {
+    /// Create a new iterator for set partitions of n elements
+    pub fn new(n: usize) -> Self {
+        if n == 0 {
+            SetPartitionIterator {
+                n: 0,
+                rgs: vec![],
+                done: false,
             }
-            for &elem in block {
-                if elem >= n || seen[elem] {
-                    return None;
-                }
-                seen[elem] = true;
+        } else {
+            SetPartitionIterator {
+                n,
+                rgs: vec![0; n],
+                done: false,
             }
         }
+    }
 
-        // All elements must be covered
-        if !seen.iter().all(|&x| x) {
+    /// Get the current RGS
+    pub fn current_rgs(&self) -> &[usize] {
+        &self.rgs
+    }
+
+    /// Compute the maximum value allowed at position i
+    fn max_allowed(&self, i: usize) -> usize {
+        if i == 0 {
+            return 0; // First position must be 0
+        }
+        // Max allowed is max(rgs[0..i]) + 1
+        let max_before = self.rgs[0..i].iter().max().unwrap_or(&0);
+        max_before + 1
+    }
+}
+
+impl Iterator for SetPartitionIterator {
+    type Item = SetPartition;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
             return None;
         }
 
-        Some(OrderedSetPartition { blocks, n })
-    }
-
-    /// Get the number of blocks
-    pub fn num_blocks(&self) -> usize {
-        self.blocks.len()
-    }
-
-    /// Get the blocks in order
-    pub fn blocks(&self) -> &[Vec<usize>] {
-        &self.blocks
-    }
-
-    /// Get the size of the set being partitioned
-    pub fn size(&self) -> usize {
-        self.n
-    }
-
-    /// Convert to a regular (unordered) set partition
-    pub fn to_set_partition(&self) -> SetPartition {
-        // Note: This creates a SetPartition with blocks in the current order,
-        // but SetPartition doesn't consider order when comparing
-        SetPartition {
-            blocks: self.blocks.clone(),
-            n: self.n,
+        // Handle empty case
+        if self.n == 0 {
+            self.done = true;
+            return Some(SetPartition {
+                blocks: vec![],
+                n: 0,
+            });
         }
+
+        // Generate current partition from RGS
+        let current = SetPartition::from_rgs(&self.rgs)?;
+
+        // Generate next RGS
+        // Find rightmost position that can be incremented
+        let mut i = self.n - 1;
+        loop {
+            let max_val = self.max_allowed(i);
+            if self.rgs[i] < max_val {
+                // Can increment this position
+                self.rgs[i] += 1;
+
+                // Reset all positions after i to 0
+                for j in (i + 1)..self.n {
+                    self.rgs[j] = 0;
+                }
+                break;
+            }
+
+            // Can't increment this position, try previous
+            if i == 0 {
+                // Can't increment any position, we're done
+                self.done = true;
+                break;
+            }
+            i -= 1;
+        }
+
+        Some(current)
     }
 }
 
-/// Generate all ordered set partitions of n elements (labeled 0..n)
+/// Create an iterator over all set partitions of n elements
 ///
-/// The number of ordered set partitions is the Fubini number (ordered Bell number).
-/// For n = 0, 1, 2, 3, 4, the counts are 1, 1, 3, 13, 75, ...
+/// This is more memory-efficient than `set_partitions()` for large n,
+/// as it generates partitions on-demand rather than storing them all.
 ///
 /// # Examples
 ///
 /// ```
-/// use rustmath_combinatorics::set_partition_ordered;
+/// use rustmath_combinatorics::set_partition_iterator;
 ///
-/// let partitions = set_partition_ordered(2);
-/// assert_eq!(partitions.len(), 3); // {{0,1}}, {{0},{1}}, {{1},{0}}
+/// let mut count = 0;
+/// for partition in set_partition_iterator(4) {
+///     count += 1;
+///     assert_eq!(partition.size(), 4);
+/// }
+/// assert_eq!(count, 15); // Bell(4) = 15
 /// ```
-pub fn set_partition_ordered(n: usize) -> Vec<OrderedSetPartition> {
-    if n == 0 {
-        return vec![OrderedSetPartition {
-            blocks: vec![],
-            n: 0,
-        }];
-    }
-
-    let mut result = Vec::new();
-    let elements: Vec<usize> = (0..n).collect();
-    let mut current_partition: Vec<Vec<usize>> = Vec::new();
-
-    generate_ordered_set_partitions(&elements, 0, &mut current_partition, &mut result);
-
-    result
+pub fn set_partition_iterator(n: usize) -> SetPartitionIterator {
+    SetPartitionIterator::new(n)
 }
 
-fn generate_ordered_set_partitions(
-    elements: &[usize],
-    index: usize,
-    current: &mut Vec<Vec<usize>>,
-    result: &mut Vec<OrderedSetPartition>,
-) {
-    if index == elements.len() {
-        result.push(OrderedSetPartition {
-            blocks: current.clone(),
-            n: elements.len(),
-        });
-        return;
+/// Compute Bell number B(n) using the Bell triangle (optimized algorithm)
+///
+/// The Bell number B(n) is the number of ways to partition n elements into non-empty subsets.
+/// This implementation uses the Bell triangle, which is more efficient than summing Stirling numbers.
+///
+/// The Bell triangle is constructed as follows:
+/// - Start with B(0) = 1
+/// - Each row starts with the last element of the previous row
+/// - Each element is the sum of the element to its left and the element above-left
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_combinatorics::bell_number_optimized;
+/// use rustmath_integers::Integer;
+///
+/// assert_eq!(bell_number_optimized(0), Integer::from(1));
+/// assert_eq!(bell_number_optimized(3), Integer::from(5));
+/// assert_eq!(bell_number_optimized(5), Integer::from(52));
+/// ```
+pub fn bell_number_optimized(n: u32) -> crate::Integer {
+    use crate::Integer;
+    use rustmath_core::Ring;
+
+    if n == 0 {
+        return Integer::one();
     }
 
-    let elem = elements[index];
+    // We only need to keep the previous row
+    let mut prev_row = vec![Integer::one()];
 
-    // Try adding element to each existing block (order preserved)
-    for i in 0..current.len() {
-        current[i].push(elem);
-        generate_ordered_set_partitions(elements, index + 1, current, result);
-        current[i].pop();
+    for i in 1..=n {
+        let mut current_row = Vec::with_capacity((i + 1) as usize);
+        // First element is the last element of previous row
+        current_row.push(prev_row[prev_row.len() - 1].clone());
+
+        // Each subsequent element is sum of left and above-left
+        for j in 0..prev_row.len() {
+            let sum = current_row[j].clone() + prev_row[j].clone();
+            current_row.push(sum);
+        }
+
+        prev_row = current_row;
     }
 
-    // Try creating a new block at each possible position
-    // This is what makes it "ordered" - we can insert at any position
-    for pos in 0..=current.len() {
-        current.insert(pos, vec![elem]);
-        generate_ordered_set_partitions(elements, index + 1, current, result);
-        current.remove(pos);
+    prev_row[0].clone()
+}
+
+/// Compute all Bell numbers from B(0) to B(n) efficiently
+///
+/// Returns a vector where result[i] = B(i).
+/// This is more efficient than calling bell_number_optimized multiple times.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_combinatorics::bell_numbers_up_to;
+/// use rustmath_integers::Integer;
+///
+/// let bells = bell_numbers_up_to(5);
+/// assert_eq!(bells[0], Integer::from(1));
+/// assert_eq!(bells[3], Integer::from(5));
+/// assert_eq!(bells[5], Integer::from(52));
+/// ```
+pub fn bell_numbers_up_to(n: u32) -> Vec<crate::Integer> {
+    use crate::Integer;
+    use rustmath_core::Ring;
+
+    let mut result = vec![Integer::one()];
+
+    if n == 0 {
+        return result;
     }
+
+    let mut prev_row = vec![Integer::one()];
+
+    for i in 1..=n {
+        let mut current_row = Vec::with_capacity((i + 1) as usize);
+        current_row.push(prev_row[prev_row.len() - 1].clone());
+
+        for j in 0..prev_row.len() {
+            let sum = current_row[j].clone() + prev_row[j].clone();
+            current_row.push(sum);
+        }
+
+        result.push(current_row[0].clone());
+        prev_row = current_row;
+    }
+
+    result
 }
 
 #[cfg(test)]
@@ -464,246 +430,200 @@ mod tests {
     }
 
     #[test]
-    fn test_finest_coarsest() {
-        // Finest partition has all singletons
-        let finest = SetPartition::finest(4);
-        assert_eq!(finest.num_blocks(), 4);
-        assert_eq!(finest.size(), 4);
-        for i in 0..4 {
-            assert_eq!(finest.blocks()[i], vec![i]);
+    fn test_rgs_conversion() {
+        // Test RGS to SetPartition conversion
+        let rgs = vec![0, 0, 1, 0, 2];
+        let partition = SetPartition::from_rgs(&rgs).unwrap();
+        assert_eq!(partition.size(), 5);
+        assert_eq!(partition.num_blocks(), 3);
+
+        // Verify the partition has correct blocks
+        let blocks = partition.blocks();
+        assert!(blocks.contains(&vec![0, 1, 3]));
+        assert!(blocks.contains(&vec![2]));
+        assert!(blocks.contains(&vec![4]));
+
+        // Test round-trip conversion
+        let rgs2 = partition.to_rgs();
+        assert_eq!(rgs, rgs2);
+    }
+
+    #[test]
+    fn test_rgs_validation() {
+        // Valid RGS
+        assert!(SetPartition::from_rgs(&[0, 0, 1, 2, 1]).is_some());
+        assert!(SetPartition::from_rgs(&[0, 1, 1, 2, 0]).is_some());
+
+        // Invalid - doesn't start with 0
+        assert!(SetPartition::from_rgs(&[1, 0, 0]).is_none());
+
+        // Invalid - increment too large
+        assert!(SetPartition::from_rgs(&[0, 2, 1]).is_none());
+        assert!(SetPartition::from_rgs(&[0, 0, 0, 3]).is_none());
+
+        // Valid - can increment by 1
+        assert!(SetPartition::from_rgs(&[0, 1, 2, 3]).is_some());
+    }
+
+    #[test]
+    fn test_set_partition_iterator() {
+        // Test iterator for n=0
+        let parts0: Vec<_> = set_partition_iterator(0).collect();
+        assert_eq!(parts0.len(), 1);
+        assert_eq!(parts0[0].size(), 0);
+
+        // Test iterator for n=3
+        let parts3: Vec<_> = set_partition_iterator(3).collect();
+        assert_eq!(parts3.len(), 5); // Bell(3) = 5
+
+        // Verify all partitions are valid
+        for part in &parts3 {
+            assert_eq!(part.size(), 3);
+            assert!(part.is_valid());
         }
 
-        // Coarsest partition has one block
-        let coarsest = SetPartition::coarsest(4);
-        assert_eq!(coarsest.num_blocks(), 1);
-        assert_eq!(coarsest.size(), 4);
-        assert_eq!(coarsest.blocks()[0], vec![0, 1, 2, 3]);
+        // Test iterator for n=4
+        let parts4: Vec<_> = set_partition_iterator(4).collect();
+        assert_eq!(parts4.len(), 15); // Bell(4) = 15
 
-        // Edge case: n=0
-        let finest0 = SetPartition::finest(0);
-        assert_eq!(finest0.num_blocks(), 0);
-        let coarsest0 = SetPartition::coarsest(0);
-        assert_eq!(coarsest0.num_blocks(), 0);
+        // Verify all partitions are valid
+        for part in &parts4 {
+            assert_eq!(part.size(), 4);
+            assert!(part.is_valid());
+        }
     }
 
     #[test]
-    fn test_refines() {
-        // {{0}, {1}, {2}} refines {{0, 1}, {2}}
-        let fine = SetPartition::new(vec![vec![0], vec![1], vec![2]], 3).unwrap();
-        let coarse = SetPartition::new(vec![vec![0, 1], vec![2]], 3).unwrap();
+    fn test_iterator_vs_recursive() {
+        // Compare iterator results with recursive generation
+        for n in 0..=5 {
+            let iter_parts: Vec<_> = set_partition_iterator(n).collect();
+            let recursive_parts = set_partitions(n);
 
-        assert!(fine.refines(&coarse));
-        assert!(!coarse.refines(&fine));
+            assert_eq!(iter_parts.len(), recursive_parts.len());
 
-        // Every partition refines itself
-        assert!(fine.refines(&fine));
-        assert!(coarse.refines(&coarse));
+            // Convert to RGS for comparison (order might differ)
+            let mut iter_rgs: Vec<_> = iter_parts.iter().map(|p| p.to_rgs()).collect();
+            let mut recursive_rgs: Vec<_> = recursive_parts.iter().map(|p| p.to_rgs()).collect();
 
-        // Every partition refines the coarsest partition
-        let coarsest = SetPartition::coarsest(3);
-        assert!(fine.refines(&coarsest));
-        assert!(coarse.refines(&coarsest));
+            iter_rgs.sort();
+            recursive_rgs.sort();
 
-        // Finest partition refines every partition
-        let finest = SetPartition::finest(3);
-        assert!(finest.refines(&fine));
-        assert!(finest.refines(&coarse));
-        assert!(finest.refines(&coarsest));
+            assert_eq!(iter_rgs, recursive_rgs);
+        }
     }
 
     #[test]
-    fn test_is_coarser_than() {
-        let fine = SetPartition::new(vec![vec![0], vec![1], vec![2]], 3).unwrap();
-        let coarse = SetPartition::new(vec![vec![0, 1], vec![2]], 3).unwrap();
+    fn test_bell_number_optimized() {
+        use crate::Integer;
 
-        assert!(coarse.is_coarser_than(&fine));
-        assert!(!fine.is_coarser_than(&coarse));
+        // First few Bell numbers: 1, 1, 2, 5, 15, 52, 203, 877
+        assert_eq!(bell_number_optimized(0), Integer::from(1));
+        assert_eq!(bell_number_optimized(1), Integer::from(1));
+        assert_eq!(bell_number_optimized(2), Integer::from(2));
+        assert_eq!(bell_number_optimized(3), Integer::from(5));
+        assert_eq!(bell_number_optimized(4), Integer::from(15));
+        assert_eq!(bell_number_optimized(5), Integer::from(52));
+        assert_eq!(bell_number_optimized(6), Integer::from(203));
+        assert_eq!(bell_number_optimized(7), Integer::from(877));
     }
 
     #[test]
-    fn test_partial_ord() {
-        let finest = SetPartition::finest(3);
-        let middle = SetPartition::new(vec![vec![0, 1], vec![2]], 3).unwrap();
-        let coarsest = SetPartition::coarsest(3);
+    fn test_bell_number_vs_stirling() {
+        use crate::{bell_number, Integer};
 
-        // Test ordering
-        assert!(finest < middle);
-        assert!(middle < coarsest);
-        assert!(finest < coarsest);
-
-        // Test equality
-        let middle2 = SetPartition::new(vec![vec![0, 1], vec![2]], 3).unwrap();
-        assert_eq!(middle.partial_cmp(&middle2), Some(Ordering::Equal));
-
-        // Test incomparable partitions
-        let p1 = SetPartition::new(vec![vec![0, 1], vec![2]], 3).unwrap();
-        let p2 = SetPartition::new(vec![vec![0], vec![1, 2]], 3).unwrap();
-        assert_eq!(p1.partial_cmp(&p2), None);
+        // Verify optimized algorithm matches Stirling-based algorithm
+        for n in 0..=8 {
+            assert_eq!(bell_number_optimized(n), bell_number(n));
+        }
     }
 
     #[test]
-    fn test_meet() {
-        // Meet of {{0, 1}, {2}} and {{0}, {1, 2}} should be {{0}, {1}, {2}}
-        let p1 = SetPartition::new(vec![vec![0, 1], vec![2]], 3).unwrap();
-        let p2 = SetPartition::new(vec![vec![0], vec![1, 2]], 3).unwrap();
-        let meet = p1.meet(&p2).unwrap();
+    fn test_bell_numbers_up_to() {
+        use crate::Integer;
 
-        // The meet should be the finest partition
-        let finest = SetPartition::finest(3);
-        assert!(meet.refines(&p1));
-        assert!(meet.refines(&p2));
-
-        // Check that the meet has the right structure
-        assert_eq!(meet.num_blocks(), 3);
-
-        // Meet with self is self
-        let meet_self = p1.meet(&p1).unwrap();
-        assert_eq!(meet_self, p1);
-
-        // Meet is commutative
-        let meet12 = p1.meet(&p2).unwrap();
-        let meet21 = p2.meet(&p1).unwrap();
-        // Note: blocks might be in different order, so we check refinement equivalence
-        assert!(meet12.refines(&meet21));
-        assert!(meet21.refines(&meet12));
+        let bells = bell_numbers_up_to(7);
+        assert_eq!(bells.len(), 8);
+        assert_eq!(bells[0], Integer::from(1));
+        assert_eq!(bells[1], Integer::from(1));
+        assert_eq!(bells[2], Integer::from(2));
+        assert_eq!(bells[3], Integer::from(5));
+        assert_eq!(bells[4], Integer::from(15));
+        assert_eq!(bells[5], Integer::from(52));
+        assert_eq!(bells[6], Integer::from(203));
+        assert_eq!(bells[7], Integer::from(877));
     }
 
     #[test]
-    fn test_join() {
-        // Join of {{0, 1}, {2}} and {{0}, {1, 2}} should be {{0, 1, 2}}
-        let p1 = SetPartition::new(vec![vec![0, 1], vec![2]], 3).unwrap();
-        let p2 = SetPartition::new(vec![vec![0], vec![1, 2]], 3).unwrap();
-        let join = p1.join(&p2).unwrap();
+    fn test_iterator_count_matches_bell() {
+        use crate::Integer;
 
-        // The join should be the coarsest partition
-        let coarsest = SetPartition::coarsest(3);
-        assert!(p1.refines(&join));
-        assert!(p2.refines(&join));
-        assert_eq!(join.num_blocks(), 1);
-
-        // Join with self is self
-        let join_self = p1.join(&p1).unwrap();
-        assert_eq!(join_self, p1);
-
-        // Join is commutative
-        let join12 = p1.join(&p2).unwrap();
-        let join21 = p2.join(&p1).unwrap();
-        assert!(join12.refines(&join21));
-        assert!(join21.refines(&join12));
+        // Verify iterator produces correct count
+        for n in 0..=6 {
+            let count = set_partition_iterator(n).count();
+            let bell = bell_number_optimized(n as u32);
+            assert_eq!(Integer::from(count as u32), bell);
+        }
     }
 
     #[test]
-    fn test_lattice_properties() {
-        // Test that meet and join satisfy lattice properties
-        let p1 = SetPartition::new(vec![vec![0, 1], vec![2, 3]], 4).unwrap();
-        let p2 = SetPartition::new(vec![vec![0], vec![1, 2], vec![3]], 4).unwrap();
-        let p3 = SetPartition::new(vec![vec![0, 1, 2], vec![3]], 4).unwrap();
+    fn test_specific_partitions() {
+        // Test specific known partitions for n=3
+        let parts3: Vec<_> = set_partition_iterator(3).collect();
 
-        // Idempotent: p ∨ p = p and p ∧ p = p
-        let p1_join_p1 = p1.join(&p1).unwrap();
-        assert!(p1_join_p1.refines(&p1) && p1.refines(&p1_join_p1));
-        assert_eq!(p1.meet(&p1).unwrap(), p1);
+        // Expected RGS for n=3: [0,0,0], [0,0,1], [0,1,0], [0,1,1], [0,1,2]
+        let expected_rgs = vec![
+            vec![0, 0, 0],
+            vec![0, 0, 1],
+            vec![0, 1, 0],
+            vec![0, 1, 1],
+            vec![0, 1, 2],
+        ];
 
-        // Commutative: p ∨ q = q ∨ p and p ∧ q = q ∧ p
-        let join12 = p1.join(&p2).unwrap();
-        let join21 = p2.join(&p1).unwrap();
-        assert!(join12.refines(&join21) && join21.refines(&join12));
-
-        let meet12 = p1.meet(&p2).unwrap();
-        let meet21 = p2.meet(&p1).unwrap();
-        assert!(meet12.refines(&meet21) && meet21.refines(&meet12));
-
-        // Associative: (p ∨ q) ∨ r = p ∨ (q ∨ r)
-        let join_assoc1 = p1.join(&p2).unwrap().join(&p3).unwrap();
-        let join_assoc2 = p1.join(&p2.join(&p3).unwrap()).unwrap();
-        assert!(join_assoc1.refines(&join_assoc2) && join_assoc2.refines(&join_assoc1));
-
-        // Absorption: p ∨ (p ∧ q) = p and p ∧ (p ∨ q) = p
-        let meet_pq = p1.meet(&p2).unwrap();
-        let join_p_meet = p1.join(&meet_pq).unwrap();
-        assert_eq!(join_p_meet, p1);
-
-        let join_pq = p1.join(&p2).unwrap();
-        let meet_p_join = p1.meet(&join_pq).unwrap();
-        assert_eq!(meet_p_join, p1);
+        let actual_rgs: Vec<_> = parts3.iter().map(|p| p.to_rgs()).collect();
+        assert_eq!(actual_rgs, expected_rgs);
     }
 
     #[test]
-    fn test_find_block() {
+    fn test_partition_validity() {
         let partition = SetPartition::new(vec![vec![0, 2], vec![1, 3]], 4).unwrap();
+        assert!(partition.is_valid());
 
-        assert_eq!(partition.find_block(0), Some(0));
-        assert_eq!(partition.find_block(2), Some(0));
-        assert_eq!(partition.find_block(1), Some(1));
-        assert_eq!(partition.find_block(3), Some(1));
-        assert_eq!(partition.find_block(4), None);
+        // Invalid - missing element
+        let invalid1 = SetPartition {
+            blocks: vec![vec![0, 2], vec![1]],
+            n: 4,
+        };
+        assert!(!invalid1.is_valid());
+
+        // Invalid - duplicate element
+        let invalid2 = SetPartition {
+            blocks: vec![vec![0, 1], vec![1, 2]],
+            n: 3,
+        };
+        assert!(!invalid2.is_valid());
+
+        // Invalid - empty block
+        let invalid3 = SetPartition {
+            blocks: vec![vec![0, 1], vec![]],
+            n: 2,
+        };
+        assert!(!invalid3.is_valid());
     }
 
     #[test]
-    fn test_in_same_block() {
-        let partition = SetPartition::new(vec![vec![0, 2], vec![1, 3]], 4).unwrap();
-
-        assert!(partition.in_same_block(0, 2));
-        assert!(partition.in_same_block(2, 0));
-        assert!(partition.in_same_block(1, 3));
-        assert!(partition.in_same_block(3, 1));
-
-        assert!(!partition.in_same_block(0, 1));
-        assert!(!partition.in_same_block(0, 3));
-        assert!(!partition.in_same_block(2, 3));
-
-        // Out of bounds
-        assert!(!partition.in_same_block(0, 4));
-        assert!(!partition.in_same_block(4, 0));
+    fn test_empty_partition() {
+        let empty = SetPartition::from_rgs(&[]).unwrap();
+        assert_eq!(empty.size(), 0);
+        assert_eq!(empty.num_blocks(), 0);
+        assert_eq!(empty.blocks().len(), 0);
     }
 
     #[test]
-    fn test_meet_join_edge_cases() {
-        // Test with finest and coarsest
-        let finest = SetPartition::finest(3);
-        let coarsest = SetPartition::coarsest(3);
-        let middle = SetPartition::new(vec![vec![0, 1], vec![2]], 3).unwrap();
-
-        // finest ∧ anything = finest
-        assert_eq!(finest.meet(&middle).unwrap(), finest);
-        assert_eq!(finest.meet(&coarsest).unwrap(), finest);
-
-        // coarsest ∨ anything = coarsest
-        assert_eq!(coarsest.join(&middle).unwrap(), coarsest);
-        assert_eq!(coarsest.join(&finest).unwrap(), coarsest);
-
-        // finest ∨ coarsest = coarsest
-        assert_eq!(finest.join(&coarsest).unwrap(), coarsest);
-
-        // finest ∧ coarsest = finest
-        assert_eq!(finest.meet(&coarsest).unwrap(), finest);
-    }
-
-    #[test]
-    fn test_incomparable_partitions() {
-        // Create two incomparable partitions
-        let p1 = SetPartition::new(vec![vec![0, 1], vec![2, 3]], 4).unwrap();
-        let p2 = SetPartition::new(vec![vec![0, 2], vec![1, 3]], 4).unwrap();
-
-        // They should be incomparable
-        assert!(!p1.refines(&p2));
-        assert!(!p2.refines(&p1));
-        assert_eq!(p1.partial_cmp(&p2), None);
-
-        // But their meet and join should exist
-        let meet = p1.meet(&p2).unwrap();
-        let join = p1.join(&p2).unwrap();
-
-        // Meet should refine both
-        assert!(meet.refines(&p1));
-        assert!(meet.refines(&p2));
-
-        // Both should refine join
-        assert!(p1.refines(&join));
-        assert!(p2.refines(&join));
-
-        // Meet should be finest, join should be coarsest
-        assert_eq!(meet, SetPartition::finest(4));
-        assert_eq!(join, SetPartition::coarsest(4));
+    fn test_single_element_partition() {
+        let single = SetPartition::from_rgs(&[0]).unwrap();
+        assert_eq!(single.size(), 1);
+        assert_eq!(single.num_blocks(), 1);
+        assert_eq!(single.blocks(), &[vec![0]]);
     }
 }
