@@ -11,6 +11,7 @@ pub mod permutations;
 pub mod posets;
 pub mod ranking;
 pub mod set_system;
+pub mod species;
 pub mod tableaux;
 
 pub use combinations::{combinations, Combination};
@@ -32,6 +33,9 @@ pub use enumeration::{
 };
 pub use ranking::{CombinationRank, PermutationRank, Rankable, RankingTable};
 pub use set_system::SetSystem;
+pub use species::{
+    GeneratingFunction, MolecularSpecies, RecursiveSpecies, Species, WeightedSpecies,
+};
 
 // stirling_first, Composition, compositions, and compositions_k are defined in this module
 
