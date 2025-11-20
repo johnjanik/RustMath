@@ -382,6 +382,15 @@ impl PartitionTuple {
 
         Some(PartitionTuple::new(new_components))
     }
+
+    /// Get the conjugate (transpose) of this partition tuple
+    ///
+    /// Returns a new partition tuple where each component is conjugated
+    pub fn conjugate(&self) -> Self {
+        PartitionTuple {
+            components: self.components.iter().map(|p| p.conjugate()).collect(),
+        }
+    }
 }
 
 /// Generate all partitions of n
@@ -975,5 +984,98 @@ mod tests {
         assert!(pt.can_add_cell(1, 0, 0));
         let pt4 = pt.add_cell(1, 0, 0).unwrap();
         assert_eq!(pt4.component(1).unwrap().parts(), &[1]);
+    }
+
+    #[test]
+    fn test_partition_tuple_conjugate() {
+        // Test conjugation of partition tuple ([3, 2, 1], [2, 1])
+        let pt = PartitionTuple::new(vec![
+            Partition::new(vec![3, 2, 1]),
+            Partition::new(vec![2, 1]),
+        ]);
+
+        let conj = pt.conjugate();
+
+        // [3, 2, 1] conjugates to [3, 2, 1] (self-conjugate)
+        assert_eq!(conj.component(0).unwrap().parts(), &[3, 2, 1]);
+
+        // [2, 1] conjugates to [2, 1] (self-conjugate)
+        assert_eq!(conj.component(1).unwrap().parts(), &[2, 1]);
+
+        // Test another example: ([4, 2], [3, 1, 1])
+        let pt2 = PartitionTuple::new(vec![
+            Partition::new(vec![4, 2]),
+            Partition::new(vec![3, 1, 1]),
+        ]);
+
+        let conj2 = pt2.conjugate();
+
+        // [4, 2] conjugates to [2, 2, 1, 1]
+        assert_eq!(conj2.component(0).unwrap().parts(), &[2, 2, 1, 1]);
+
+        // [3, 1, 1] conjugates to [3, 1, 1] (self-conjugate)
+        assert_eq!(conj2.component(1).unwrap().parts(), &[3, 1, 1]);
+
+        // Test empty partition tuple
+        let pt_empty = PartitionTuple::empty(2);
+        let conj_empty = pt_empty.conjugate();
+        assert_eq!(conj_empty.level(), 2);
+        assert_eq!(conj_empty.component(0).unwrap().parts(), &[]);
+        assert_eq!(conj_empty.component(1).unwrap().parts(), &[]);
+    }
+
+    #[test]
+    fn test_partition_tuple_conjugate_involution() {
+        // Conjugation should be an involution: conjugate(conjugate(x)) = x
+        let pt = PartitionTuple::new(vec![
+            Partition::new(vec![5, 3, 1]),
+            Partition::new(vec![4, 2, 2]),
+            Partition::new(vec![3]),
+        ]);
+
+        let conj = pt.conjugate();
+        let conj_conj = conj.conjugate();
+
+        // Double conjugation should give back the original
+        assert_eq!(pt, conj_conj);
+    }
+
+    #[test]
+    fn test_partition_tuple_conjugate_preserves_sum() {
+        // Conjugation preserves the sum of each partition
+        let pt = PartitionTuple::new(vec![
+            Partition::new(vec![7, 4, 2, 1]),
+            Partition::new(vec![5, 3, 1]),
+        ]);
+
+        let conj = pt.conjugate();
+
+        // Sums should be preserved
+        assert_eq!(
+            pt.component(0).unwrap().sum(),
+            conj.component(0).unwrap().sum()
+        );
+        assert_eq!(
+            pt.component(1).unwrap().sum(),
+            conj.component(1).unwrap().sum()
+        );
+        assert_eq!(pt.sum(), conj.sum());
+    }
+
+    #[test]
+    fn test_partition_tuple_conjugate_rectangles() {
+        // Rectangle partitions: [a, a, ..., a] (b times) conjugates to [b, b, ..., b] (a times)
+        let pt = PartitionTuple::new(vec![
+            Partition::new(vec![3, 3, 3]),  // 3x3 rectangle
+            Partition::new(vec![2, 2, 2, 2]),  // 2x4 rectangle
+        ]);
+
+        let conj = pt.conjugate();
+
+        // [3, 3, 3] conjugates to [3, 3, 3]
+        assert_eq!(conj.component(0).unwrap().parts(), &[3, 3, 3]);
+
+        // [2, 2, 2, 2] conjugates to [4, 4]
+        assert_eq!(conj.component(1).unwrap().parts(), &[4, 4]);
     }
 }
