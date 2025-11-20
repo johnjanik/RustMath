@@ -1,7 +1,28 @@
 //! 3D plotting infrastructure for RustMath
 //!
-//! This crate provides the core infrastructure for 3D plotting in RustMath,
-//! including base types, transformations, camera system, and lighting.
+//! This crate provides comprehensive 3D plotting capabilities including:
+//! - Surface plots from functions f(x,y) -> z
+//! - Parametric surface plots
+//! - Wireframe plots
+//! - 3D scatter plots
+//! - Implicit surface plots (using marching cubes)
+//! - Vector field visualizations
+//! - 3D export formats (OBJ, STL)
+//!
+//! # Example
+//! ```no_run
+//! use rustmath_plot3d::plots::plot3d;
+//! use rustmath_plot3d::export::export_obj;
+//!
+//! // Create a surface plot
+//! let f = |x: f64, y: f64| (x.powi(2) + y.powi(2)).sin();
+//! let graphics = plot3d(f, (-3.0, 3.0), (-3.0, 3.0), None).unwrap();
+//!
+//! // Export to OBJ format
+//! if let Some(mesh) = graphics.objects.get(0) {
+//!     // export_obj(mesh, "surface.obj").unwrap();
+//! }
+//! ```
 
 pub mod base;
 pub mod transform;
@@ -9,6 +30,7 @@ pub mod camera;
 pub mod shapes;
 pub mod platonic;
 pub mod plots;
+pub mod export;
 
 // Re-export key types
 pub use base::{Graphics3d, Graphics3dPrimitive, IndexFaceSet, BoundingBox3D, Point3D, Vector3D, Graphics3dOptions};
@@ -16,7 +38,13 @@ pub use transform::{Transform3D, TransformGroup};
 pub use camera::{Camera, Light};
 pub use shapes::{Sphere, Box, Cylinder, Cone, Torus};
 pub use platonic::{tetrahedron, cube, octahedron, dodecahedron, icosahedron, colored_platonic_solid};
-pub use plots::{plot3d, parametric_plot3d, list_plot3d, revolution_plot3d};
+pub use plots::{
+    plot3d, parametric_plot3d, list_plot3d, revolution_plot3d,
+    wireframe_plot3d, wireframe_parametric_plot3d,
+    scatter_plot3d, scatter_plot3d_colored,
+    implicit_plot3d, vector_field_plot3d
+};
+pub use export::{export_obj, export_stl, export_graphics_obj, export_graphics_stl};
 
 // Type aliases for common naming conventions
 /// Alias for BoundingBox3D
