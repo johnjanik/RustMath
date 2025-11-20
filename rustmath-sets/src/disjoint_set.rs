@@ -408,9 +408,7 @@ impl<T: Eq + Hash + Clone> DisjointSet_of_hashables<T> {
     ///
     /// let mut ds = DisjointSet_of_hashables::new(vec!["a", "b", "c"]);
     /// ds.union(&"a", &"b");
-    /// let root_a = ds.find(&"a");
-    /// let root_b = ds.find(&"b");
-    /// assert_eq!(root_a, root_b);
+    /// assert!(ds.same_set(&"a", &"b"));
     /// ```
     pub fn find(&mut self, element: &T) -> Option<&T> {
         let idx = *self.element_to_idx.get(element)?;
