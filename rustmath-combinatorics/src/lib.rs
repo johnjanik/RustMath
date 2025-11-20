@@ -14,6 +14,7 @@ pub mod perfect_matching;
 pub mod permutations;
 pub mod posets;
 pub mod ranking;
+pub mod recurrence_sequences;
 pub mod set_partition;
 pub mod set_system;
 pub mod species;
@@ -51,6 +52,9 @@ pub use enumeration::{
 };
 pub use perfect_matching::{perfect_matchings, PerfectMatching};
 pub use ranking::{CombinationRank, PermutationRank, Rankable, RankingTable};
+pub use recurrence_sequences::{
+    solve_binary_recurrence, BinaryRecurrence, LinearRecurrence, RecurrenceSequence,
+};
 pub use set_partition::{set_partitions, SetPartition};
 pub use set_system::SetSystem;
 pub use word::{
