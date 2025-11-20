@@ -74,6 +74,137 @@ impl DyckWord {
             .map(|&b| if b { '(' } else { ')' })
             .collect()
     }
+
+    /// Compute the heights of the path at each position
+    ///
+    /// Returns a vector of heights where heights[i] is the height after i steps
+    pub fn heights(&self) -> Vec<i32> {
+        let mut heights = vec![0];
+        let mut height = 0i32;
+
+        for &step in &self.word {
+            if step {
+                height += 1;
+            } else {
+                height -= 1;
+            }
+            heights.push(height);
+        }
+
+        heights
+    }
+
+    /// Find all peaks in the Dyck word
+    ///
+    /// A peak is a position i where word[i] = X (up) and word[i+1] = Y (down)
+    /// Returns the indices of the up steps that form peaks
+    pub fn peaks(&self) -> Vec<usize> {
+        let mut peaks = Vec::new();
+
+        for i in 0..self.word.len().saturating_sub(1) {
+            if self.word[i] && !self.word[i + 1] {
+                peaks.push(i);
+            }
+        }
+
+        peaks
+    }
+
+    /// Find all valleys in the Dyck word
+    ///
+    /// A valley is a position i where word[i] = Y (down) and word[i+1] = X (up)
+    /// Returns the indices of the down steps that form valleys
+    pub fn valleys(&self) -> Vec<usize> {
+        let mut valleys = Vec::new();
+
+        for i in 0..self.word.len().saturating_sub(1) {
+            if !self.word[i] && self.word[i + 1] {
+                valleys.push(i);
+            }
+        }
+
+        valleys
+    }
+
+    /// Count the number of peaks
+    pub fn peak_count(&self) -> usize {
+        self.peaks().len()
+    }
+
+    /// Count the number of valleys
+    pub fn valley_count(&self) -> usize {
+        self.valleys().len()
+    }
+
+    /// Get the heights at all peak positions
+    ///
+    /// Returns a vector of heights where each height is the y-coordinate
+    /// at a peak position (after taking the up step)
+    pub fn peak_heights(&self) -> Vec<i32> {
+        let peaks = self.peaks();
+        let heights = self.heights();
+
+        peaks.iter().map(|&i| heights[i + 1]).collect()
+    }
+
+    /// Get the heights at all valley positions
+    ///
+    /// Returns a vector of heights where each height is the y-coordinate
+    /// at a valley position (after taking the down step)
+    pub fn valley_heights(&self) -> Vec<i32> {
+        let valleys = self.valleys();
+        let heights = self.heights();
+
+        valleys.iter().map(|&i| heights[i + 1]).collect()
+    }
+
+    /// Get the area under the path
+    ///
+    /// This is the sum of heights at each up step
+    pub fn area(&self) -> i32 {
+        let mut area = 0;
+        let mut height = 0i32;
+
+        for &step in &self.word {
+            if step {
+                area += height;
+                height += 1;
+            } else {
+                height -= 1;
+            }
+        }
+
+        area
+    }
+
+    /// Compute the bounce statistic
+    ///
+    /// The bounce statistic is the sum of valley heights
+    pub fn bounce_statistic(&self) -> i32 {
+        self.valley_heights().iter().sum()
+    }
+
+    /// Return the number of returns to height 0 (not counting the final return)
+    ///
+    /// A return is a position where the path touches the x-axis
+    pub fn returns(&self) -> Vec<usize> {
+        let heights = self.heights();
+        let mut returns = Vec::new();
+
+        // Skip initial and final positions (always 0)
+        for i in 1..heights.len().saturating_sub(1) {
+            if heights[i] == 0 {
+                returns.push(i);
+            }
+        }
+
+        returns
+    }
+
+    /// Count the number of returns to height 0 (not counting start and end)
+    pub fn return_count(&self) -> usize {
+        self.returns().len()
+    }
 }
 
 /// Generate all Dyck words of half-length n
@@ -334,6 +465,179 @@ impl NuDyckWord {
         let nu = vec![0; path.len() + 1];
         NuDyckWord { path, nu }
     }
+
+    /// Find positions where the path touches the boundary ν
+    ///
+    /// Returns indices where the height equals ν[i]
+    pub fn boundary_touches(&self) -> Vec<usize> {
+        let heights = self.heights();
+        let mut touches = Vec::new();
+
+        for (i, &h) in heights.iter().enumerate() {
+            if i < self.nu.len() && h == self.nu[i] {
+                touches.push(i);
+            }
+        }
+
+        touches
+    }
+
+    /// Count the number of times the path touches the boundary
+    pub fn boundary_touch_count(&self) -> usize {
+        self.boundary_touches().len()
+    }
+
+    /// Compute statistics about the bounce path
+    ///
+    /// Returns a tuple of (min_height, max_height, total_area, touch_count)
+    pub fn bounce_statistics(&self) -> (i32, i32, i32, usize) {
+        let bounce = self.bounce_path();
+
+        if bounce.is_empty() {
+            return (0, 0, 0, 0);
+        }
+
+        let min_height = *bounce.iter().min().unwrap_or(&0);
+        let max_height = *bounce.iter().max().unwrap_or(&0);
+
+        // Total area is the sum of all heights
+        let total_area: i32 = bounce.iter().sum();
+
+        // Count touches with boundary ν
+        let mut touch_count = 0;
+        for (i, &h) in bounce.iter().enumerate() {
+            if i < self.nu.len() && h == self.nu[i] {
+                touch_count += 1;
+            }
+        }
+
+        (min_height, max_height, total_area, touch_count)
+    }
+
+    /// Find all peaks in the ν-Dyck word
+    ///
+    /// A peak is a position i where path[i] = true (up) and path[i+1] = false (down)
+    pub fn peaks(&self) -> Vec<usize> {
+        let mut peaks = Vec::new();
+
+        for i in 0..self.path.len().saturating_sub(1) {
+            if self.path[i] && !self.path[i + 1] {
+                peaks.push(i);
+            }
+        }
+
+        peaks
+    }
+
+    /// Find all valleys in the ν-Dyck word
+    ///
+    /// A valley is a position i where path[i] = false (down) and path[i+1] = true (up)
+    pub fn valleys(&self) -> Vec<usize> {
+        let mut valleys = Vec::new();
+
+        for i in 0..self.path.len().saturating_sub(1) {
+            if !self.path[i] && self.path[i + 1] {
+                valleys.push(i);
+            }
+        }
+
+        valleys
+    }
+
+    /// Count the number of peaks
+    pub fn peak_count(&self) -> usize {
+        self.peaks().len()
+    }
+
+    /// Count the number of valleys
+    pub fn valley_count(&self) -> usize {
+        self.valleys().len()
+    }
+
+    /// Get the heights at all peak positions
+    pub fn peak_heights(&self) -> Vec<i32> {
+        let peaks = self.peaks();
+        let heights = self.heights();
+
+        peaks.iter().map(|&i| heights[i + 1]).collect()
+    }
+
+    /// Get the heights at all valley positions
+    pub fn valley_heights(&self) -> Vec<i32> {
+        let valleys = self.valleys();
+        let heights = self.heights();
+
+        valleys.iter().map(|&i| heights[i + 1]).collect()
+    }
+
+    /// Compute the dinv statistic (diagonal inversion statistic)
+    ///
+    /// For a ν-Dyck word, this is the number of cells strictly between the path and ν
+    pub fn dinv(&self) -> i32 {
+        let heights = self.heights();
+        let mut count = 0;
+
+        for i in 0..self.path.len() {
+            // Count cells strictly between heights[i] and nu[i]
+            let h = heights[i];
+            let nu_h = self.nu[i];
+            if h > nu_h {
+                count += h - nu_h - 1;
+            }
+        }
+
+        count
+    }
+
+    /// Compute comprehensive bounce statistics
+    ///
+    /// Returns a BounceStats struct with detailed information
+    pub fn detailed_bounce_statistics(&self) -> BounceStats {
+        let bounce = self.bounce_path();
+        let heights = self.heights();
+
+        let touches = self.boundary_touches();
+        let area = self.total_area();
+
+        let bounce_min = *bounce.iter().min().unwrap_or(&0);
+        let bounce_max = *bounce.iter().max().unwrap_or(&0);
+        let bounce_area: i32 = bounce.iter().sum();
+
+        // Compute area between path and bounce
+        let mut area_between = 0;
+        for i in 0..heights.len().min(bounce.len()) {
+            area_between += (heights[i] - bounce[i]).abs();
+        }
+
+        BounceStats {
+            bounce_path: bounce,
+            boundary_touches: touches,
+            area_above_boundary: area,
+            bounce_min_height: bounce_min,
+            bounce_max_height: bounce_max,
+            bounce_total_area: bounce_area,
+            area_between_paths: area_between,
+        }
+    }
+}
+
+/// Detailed bounce statistics for a ν-Dyck word
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BounceStats {
+    /// The bounce path as a vector of heights
+    pub bounce_path: Vec<i32>,
+    /// Indices where the path touches the boundary ν
+    pub boundary_touches: Vec<usize>,
+    /// Total area between the path and boundary ν
+    pub area_above_boundary: i32,
+    /// Minimum height of the bounce path
+    pub bounce_min_height: i32,
+    /// Maximum height of the bounce path
+    pub bounce_max_height: i32,
+    /// Total area under the bounce path
+    pub bounce_total_area: i32,
+    /// Area between the original path and bounce path
+    pub area_between_paths: i32,
 }
 
 /// Generate all ν-Dyck words for a given boundary path ν
@@ -658,5 +962,271 @@ mod tests {
         assert_eq!(word.heights(), vec![0]);
         assert_eq!(word.area_sequence(), vec![]);
         assert_eq!(word.total_area(), 0);
+    }
+
+    #[test]
+    fn test_dyck_word_peaks() {
+        // XXYY has one peak at position 1
+        let word = DyckWord::new(vec![true, true, false, false]).unwrap();
+        let peaks = word.peaks();
+        assert_eq!(peaks, vec![1]);
+        assert_eq!(word.peak_count(), 1);
+
+        // XYXY has two peaks at positions 0 and 2
+        let word2 = DyckWord::new(vec![true, false, true, false]).unwrap();
+        let peaks2 = word2.peaks();
+        assert_eq!(peaks2, vec![0, 2]);
+        assert_eq!(word2.peak_count(), 2);
+
+        // XXXYYY has one peak at position 2
+        let word3 = DyckWord::new(vec![true, true, true, false, false, false]).unwrap();
+        let peaks3 = word3.peaks();
+        assert_eq!(peaks3, vec![2]);
+        assert_eq!(word3.peak_count(), 1);
+    }
+
+    #[test]
+    fn test_dyck_word_valleys() {
+        // XXYY has no valleys (pattern is XY, then Y)
+        let word = DyckWord::new(vec![true, true, false, false]).unwrap();
+        let valleys = word.valleys();
+        assert_eq!(valleys, vec![]);
+        assert_eq!(word.valley_count(), 0);
+
+        // XYXY has one valley at position 1
+        let word2 = DyckWord::new(vec![true, false, true, false]).unwrap();
+        let valleys2 = word2.valleys();
+        assert_eq!(valleys2, vec![1]);
+        assert_eq!(word2.valley_count(), 1);
+
+        // XXYYXX YY has valley at position 3
+        let word3 = DyckWord::new(vec![true, true, false, false, true, true, false, false]).unwrap();
+        let valleys3 = word3.valleys();
+        assert_eq!(valleys3, vec![3]);
+        assert_eq!(word3.valley_count(), 1);
+    }
+
+    #[test]
+    fn test_dyck_word_peak_heights() {
+        // XXYY: peak at position 1, height after step 1 is 2
+        let word = DyckWord::new(vec![true, true, false, false]).unwrap();
+        let peak_heights = word.peak_heights();
+        assert_eq!(peak_heights, vec![2]);
+
+        // XYXY: peaks at positions 0 and 2, heights are 1 and 1
+        let word2 = DyckWord::new(vec![true, false, true, false]).unwrap();
+        let peak_heights2 = word2.peak_heights();
+        assert_eq!(peak_heights2, vec![1, 1]);
+
+        // XXXYYY: peak at position 2, height is 3
+        let word3 = DyckWord::new(vec![true, true, true, false, false, false]).unwrap();
+        let peak_heights3 = word3.peak_heights();
+        assert_eq!(peak_heights3, vec![3]);
+    }
+
+    #[test]
+    fn test_dyck_word_valley_heights() {
+        // XYXY: valley at position 1, height after step 1 is 0
+        let word = DyckWord::new(vec![true, false, true, false]).unwrap();
+        let valley_heights = word.valley_heights();
+        assert_eq!(valley_heights, vec![0]);
+
+        // XXYXXY: valleys at positions where we have YX pattern
+        // Heights: [0, 1, 2, 1, 2, 1, 0]
+        // Valley at position 2 (Y at 2, X at 3), height after position 2 is 1
+        let word2 = DyckWord::new(vec![true, true, false, true, false, false]).unwrap();
+        let valleys2 = word2.valleys();
+        let valley_heights2 = word2.valley_heights();
+        assert_eq!(valleys2, vec![2]);
+        assert_eq!(valley_heights2, vec![1]);
+    }
+
+    #[test]
+    fn test_dyck_word_area() {
+        // XXYY: area = 0 + 1 = 1
+        let word = DyckWord::new(vec![true, true, false, false]).unwrap();
+        assert_eq!(word.area(), 1);
+
+        // XYXY: area = 0 + 0 = 0
+        let word2 = DyckWord::new(vec![true, false, true, false]).unwrap();
+        assert_eq!(word2.area(), 0);
+
+        // XXXYYY: area = 0 + 1 + 2 = 3
+        let word3 = DyckWord::new(vec![true, true, true, false, false, false]).unwrap();
+        assert_eq!(word3.area(), 3);
+    }
+
+    #[test]
+    fn test_dyck_word_bounce_statistic() {
+        // XYXY: valley at height 0, bounce = 0
+        let word = DyckWord::new(vec![true, false, true, false]).unwrap();
+        assert_eq!(word.bounce_statistic(), 0);
+
+        // XXYXXY: valley at height 1, bounce = 1
+        let word2 = DyckWord::new(vec![true, true, false, true, false, false]).unwrap();
+        assert_eq!(word2.bounce_statistic(), 1);
+    }
+
+    #[test]
+    fn test_dyck_word_returns() {
+        // XYXY: returns at position 2 (after XY)
+        let word = DyckWord::new(vec![true, false, true, false]).unwrap();
+        let returns = word.returns();
+        assert_eq!(returns, vec![2]);
+        assert_eq!(word.return_count(), 1);
+
+        // XXYY: no intermediate returns
+        let word2 = DyckWord::new(vec![true, true, false, false]).unwrap();
+        let returns2 = word2.returns();
+        assert_eq!(returns2, vec![]);
+        assert_eq!(word2.return_count(), 0);
+
+        // XYXYXY: returns at positions 2, 4
+        let word3 = DyckWord::new(vec![true, false, true, false, true, false]).unwrap();
+        let returns3 = word3.returns();
+        assert_eq!(returns3, vec![2, 4]);
+        assert_eq!(word3.return_count(), 2);
+    }
+
+    #[test]
+    fn test_dyck_word_heights() {
+        // XXYY: heights [0, 1, 2, 1, 0]
+        let word = DyckWord::new(vec![true, true, false, false]).unwrap();
+        assert_eq!(word.heights(), vec![0, 1, 2, 1, 0]);
+
+        // XYXY: heights [0, 1, 0, 1, 0]
+        let word2 = DyckWord::new(vec![true, false, true, false]).unwrap();
+        assert_eq!(word2.heights(), vec![0, 1, 0, 1, 0]);
+    }
+
+    #[test]
+    fn test_nu_dyck_word_peaks_and_valleys() {
+        // Standard Dyck word UUDD
+        let nu = vec![0, 0, 0, 0, 0];
+        let path = vec![true, true, false, false]; // UUDD
+        let word = NuDyckWord::new(path, nu).unwrap();
+
+        // One peak at position 1
+        assert_eq!(word.peaks(), vec![1]);
+        assert_eq!(word.peak_count(), 1);
+        assert_eq!(word.peak_heights(), vec![2]);
+
+        // No valleys
+        assert_eq!(word.valleys(), vec![]);
+        assert_eq!(word.valley_count(), 0);
+    }
+
+    #[test]
+    fn test_nu_dyck_word_boundary_touches() {
+        // Standard Dyck word that returns to zero
+        let nu = vec![0, 0, 0, 0, 0];
+        let path = vec![true, false, true, false]; // UDUD
+        let word = NuDyckWord::new(path, nu).unwrap();
+
+        // Touches boundary at positions 0, 2, 4
+        let touches = word.boundary_touches();
+        assert!(touches.contains(&0));
+        assert!(touches.contains(&2));
+        assert!(touches.contains(&4));
+        assert_eq!(word.boundary_touch_count(), 3);
+    }
+
+    #[test]
+    fn test_nu_dyck_word_bounce_statistics() {
+        // Standard Dyck word UUDD
+        let nu = vec![0, 0, 0, 0, 0];
+        let path = vec![true, true, false, false];
+        let word = NuDyckWord::new(path, nu).unwrap();
+
+        let (min, max, area, touches) = word.bounce_statistics();
+        assert_eq!(min, 0);
+        assert!(max > 0);
+        assert!(area >= 0);
+        assert!(touches >= 2); // At least start and end
+    }
+
+    #[test]
+    fn test_nu_dyck_word_dinv() {
+        // Path UUDD with ν = [0,0,0,0,0]
+        // Heights: [0, 1, 2, 1, 0]
+        // dinv counts cells strictly between path and ν
+        // At position 1: height 1, ν 0, cells = 0 (none strictly between)
+        // At position 2: height 2, ν 0, cells = 1 (one cell at height 1)
+        // At position 3: height 1, ν 0, cells = 0
+        // Total dinv = 1
+        let nu = vec![0, 0, 0, 0, 0];
+        let path = vec![true, true, false, false];
+        let word = NuDyckWord::new(path, nu).unwrap();
+
+        assert_eq!(word.dinv(), 1);
+    }
+
+    #[test]
+    fn test_nu_dyck_word_detailed_bounce_statistics() {
+        // Standard Dyck word UUDD
+        let nu = vec![0, 0, 0, 0, 0];
+        let path = vec![true, true, false, false];
+        let word = NuDyckWord::new(path, nu).unwrap();
+
+        let stats = word.detailed_bounce_statistics();
+
+        // Basic checks
+        assert_eq!(stats.bounce_path.len(), 5);
+        assert_eq!(stats.bounce_min_height, 0);
+        assert!(stats.area_above_boundary >= 0);
+        assert!(stats.bounce_total_area >= 0);
+    }
+
+    #[test]
+    fn test_nu_dyck_word_with_nontrivial_boundary() {
+        // Boundary path ν = [0, 1, 2, 1, 0] (UUDD)
+        let nu = vec![0, 1, 2, 1, 0];
+        let path = vec![true, true, false, false]; // Path follows boundary exactly
+        let word = NuDyckWord::new(path, nu).unwrap();
+
+        // Since path follows boundary exactly, should touch at every point
+        assert_eq!(word.boundary_touch_count(), 5);
+
+        // Area above boundary should be 0
+        assert_eq!(word.total_area(), 0);
+
+        // dinv should be 0 (no cells strictly between)
+        assert_eq!(word.dinv(), 0);
+    }
+
+    #[test]
+    fn test_peak_valley_relationship() {
+        // For a Dyck word that doesn't return to 0 in the middle:
+        // peak_count should equal valley_count + 1
+        let word = DyckWord::new(vec![true, true, false, false]).unwrap();
+        assert_eq!(word.peak_count(), word.valley_count() + 1);
+
+        // For a Dyck word with intermediate returns:
+        // The relationship is more complex
+        let word2 = DyckWord::new(vec![true, false, true, false]).unwrap();
+        // This has 2 peaks and 1 valley
+        assert_eq!(word2.peak_count(), 2);
+        assert_eq!(word2.valley_count(), 1);
+    }
+
+    #[test]
+    fn test_narayana_connection() {
+        // The number of Dyck words of half-length n with exactly k peaks
+        // equals the Narayana number N(n, k)
+        // We can verify this for small n
+
+        // For n=3, generate all Dyck words and count by peaks
+        let words = dyck_words(3);
+        let mut peak_counts = std::collections::HashMap::new();
+
+        for word in &words {
+            let count = word.peak_count();
+            *peak_counts.entry(count).or_insert(0) += 1;
+        }
+
+        // Narayana numbers for n=3: N(3,1)=1, N(3,2)=3, N(3,3)=1
+        assert_eq!(peak_counts.get(&1), Some(&1)); // 1 word with 1 peak
+        assert_eq!(peak_counts.get(&2), Some(&3)); // 3 words with 2 peaks
+        assert_eq!(peak_counts.get(&3), Some(&1)); // 1 word with 3 peaks
     }
 }

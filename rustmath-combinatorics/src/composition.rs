@@ -282,6 +282,228 @@ pub fn signed_compositions_k(n: isize, k: usize) -> Vec<SignedComposition> {
     result
 }
 
+/// A weighted integer vector
+///
+/// An integer vector where each position has an associated weight.
+/// The weighted sum is the sum of each component multiplied by its weight.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct WeightedIntegerVector {
+    components: Vec<usize>,
+    weights: Vec<usize>,
+}
+
+impl WeightedIntegerVector {
+    /// Create a new weighted integer vector
+    ///
+    /// Returns None if the components and weights have different lengths,
+    /// or if any weight is zero.
+    pub fn new(components: Vec<usize>, weights: Vec<usize>) -> Option<Self> {
+        if components.len() != weights.len() {
+            return None;
+        }
+        if weights.iter().any(|&w| w == 0) {
+            return None; // All weights must be positive
+        }
+        Some(WeightedIntegerVector {
+            components,
+            weights,
+        })
+    }
+
+    /// Get the components
+    pub fn components(&self) -> &[usize] {
+        &self.components
+    }
+
+    /// Get the weights
+    pub fn weights(&self) -> &[usize] {
+        &self.weights
+    }
+
+    /// Get the weighted sum: sum of components[i] * weights[i]
+    pub fn weighted_sum(&self) -> usize {
+        self.components
+            .iter()
+            .zip(self.weights.iter())
+            .map(|(&c, &w)| c * w)
+            .sum()
+    }
+
+    /// Get the length (number of components)
+    pub fn length(&self) -> usize {
+        self.components.len()
+    }
+
+    /// Convert to a regular vector (just the components)
+    pub fn to_vec(&self) -> Vec<usize> {
+        self.components.clone()
+    }
+}
+
+impl PartialOrd for WeightedIntegerVector {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for WeightedIntegerVector {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // Lexicographic ordering on components
+        self.components.cmp(&other.components)
+    }
+}
+
+/// Generate all weighted integer vectors with a given weighted sum
+///
+/// Given weights w_1, w_2, ..., w_k and a target sum n, generates all
+/// non-negative integer vectors (v_1, v_2, ..., v_k) such that:
+/// sum(v_i * w_i) = n
+///
+/// Uses a priority queue-based algorithm for efficient generation.
+/// Vectors are generated in reverse lexicographic order.
+///
+/// # Arguments
+/// * `weights` - The weights for each position
+/// * `n` - The target weighted sum
+///
+/// # Example
+/// ```
+/// use rustmath_combinatorics::composition::integer_vectors_weighted;
+///
+/// // Find all ways to make sum 5 with weights [1, 2, 3]
+/// let vectors = integer_vectors_weighted(vec![1, 2, 3], 5);
+/// // Includes: [5,0,0], [3,1,0], [1,2,0], [0,1,1], etc.
+/// ```
+pub fn integer_vectors_weighted(weights: Vec<usize>, n: usize) -> Vec<WeightedIntegerVector> {
+    if weights.is_empty() {
+        if n == 0 {
+            return vec![];
+        } else {
+            return vec![];
+        }
+    }
+
+    // Check for zero weights
+    if weights.iter().any(|&w| w == 0) {
+        return vec![];
+    }
+
+    let k = weights.len();
+    let mut result = Vec::new();
+
+    // Use a priority queue with a HashSet to avoid duplicates
+    use std::collections::{HashSet, VecDeque};
+    let mut queue: VecDeque<Vec<usize>> = VecDeque::new();
+    let mut visited: HashSet<Vec<usize>> = HashSet::new();
+
+    // Start with the zero vector
+    let start = vec![0; k];
+    queue.push_back(start.clone());
+    visited.insert(start);
+
+    while let Some(current) = queue.pop_back() {
+        // Calculate current weighted sum
+        let current_sum: usize = current
+            .iter()
+            .zip(weights.iter())
+            .map(|(&c, &w)| c * w)
+            .sum();
+
+        if current_sum == n {
+            // Found a valid vector
+            if let Some(vec) = WeightedIntegerVector::new(current.clone(), weights.clone()) {
+                result.push(vec);
+            }
+        } else if current_sum < n {
+            // Try incrementing each component
+            for i in 0..k {
+                let mut next = current.clone();
+                next[i] += 1;
+
+                // Only explore if we haven't visited this vector before
+                if !visited.contains(&next) {
+                    // Calculate new sum to check if it's worth exploring
+                    let next_sum: usize =
+                        next.iter().zip(weights.iter()).map(|(&c, &w)| c * w).sum();
+
+                    if next_sum <= n {
+                        visited.insert(next.clone());
+                        queue.push_back(next);
+                    }
+                }
+            }
+        }
+    }
+
+    result
+}
+
+/// Generate all weighted integer vectors with weighted sum n, optimized version
+///
+/// This version uses dynamic programming to avoid redundant computations.
+/// Generates vectors in lexicographic order using a more efficient algorithm.
+///
+/// # Arguments
+/// * `weights` - The weights for each position
+/// * `n` - The target weighted sum
+pub fn integer_vectors_weighted_dp(weights: Vec<usize>, n: usize) -> Vec<WeightedIntegerVector> {
+    if weights.is_empty() {
+        if n == 0 {
+            // Empty vector with empty weights
+            return vec![];
+        } else {
+            return vec![];
+        }
+    }
+
+    // Check for zero weights
+    if weights.iter().any(|&w| w == 0) {
+        return vec![];
+    }
+
+    let mut result = Vec::new();
+    let k = weights.len();
+    let mut current = vec![0; k];
+
+    // Recursive generation using backtracking
+    generate_weighted_vectors(&weights, n, 0, &mut current, &mut result);
+
+    result
+}
+
+fn generate_weighted_vectors(
+    weights: &[usize],
+    remaining: usize,
+    index: usize,
+    current: &mut Vec<usize>,
+    result: &mut Vec<WeightedIntegerVector>,
+) {
+    if index == weights.len() {
+        if remaining == 0 {
+            if let Some(vec) = WeightedIntegerVector::new(current.clone(), weights.to_vec()) {
+                result.push(vec);
+            }
+        }
+        return;
+    }
+
+    let weight = weights[index];
+
+    // Try all possible values for current position
+    for value in 0..=(remaining / weight) {
+        current[index] = value;
+        generate_weighted_vectors(
+            weights,
+            remaining - value * weight,
+            index + 1,
+            current,
+            result,
+        );
+    }
+
+    current[index] = 0; // Reset for backtracking
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -504,5 +726,264 @@ mod tests {
 
         // Test sum properties
         assert_eq!(sc.sum(), -sc.reverse_signs().sum());
+    }
+
+    #[test]
+    fn test_weighted_integer_vector_new() {
+        // Valid weighted vector
+        let wiv = WeightedIntegerVector::new(vec![1, 2, 3], vec![1, 2, 3]).unwrap();
+        assert_eq!(wiv.components(), &[1, 2, 3]);
+        assert_eq!(wiv.weights(), &[1, 2, 3]);
+        assert_eq!(wiv.weighted_sum(), 1 * 1 + 2 * 2 + 3 * 3); // 1 + 4 + 9 = 14
+        assert_eq!(wiv.length(), 3);
+
+        // Mismatched lengths should fail
+        assert!(WeightedIntegerVector::new(vec![1, 2], vec![1, 2, 3]).is_none());
+        assert!(WeightedIntegerVector::new(vec![1, 2, 3], vec![1, 2]).is_none());
+
+        // Zero weights should fail
+        assert!(WeightedIntegerVector::new(vec![1, 2, 3], vec![1, 0, 3]).is_none());
+        assert!(WeightedIntegerVector::new(vec![1], vec![0]).is_none());
+
+        // Empty vector is valid
+        let empty = WeightedIntegerVector::new(vec![], vec![]).unwrap();
+        assert_eq!(empty.weighted_sum(), 0);
+        assert_eq!(empty.length(), 0);
+    }
+
+    #[test]
+    fn test_weighted_integer_vector_weighted_sum() {
+        let wiv = WeightedIntegerVector::new(vec![2, 0, 1], vec![1, 2, 3]).unwrap();
+        assert_eq!(wiv.weighted_sum(), 2 * 1 + 0 * 2 + 1 * 3); // 2 + 0 + 3 = 5
+
+        let wiv2 = WeightedIntegerVector::new(vec![0, 0, 0], vec![5, 10, 15]).unwrap();
+        assert_eq!(wiv2.weighted_sum(), 0);
+
+        let wiv3 = WeightedIntegerVector::new(vec![10], vec![7]).unwrap();
+        assert_eq!(wiv3.weighted_sum(), 70);
+    }
+
+    #[test]
+    fn test_weighted_integer_vector_ordering() {
+        let wiv1 = WeightedIntegerVector::new(vec![1, 2, 3], vec![1, 1, 1]).unwrap();
+        let wiv2 = WeightedIntegerVector::new(vec![1, 2, 4], vec![1, 1, 1]).unwrap();
+        let wiv3 = WeightedIntegerVector::new(vec![1, 3, 0], vec![1, 1, 1]).unwrap();
+
+        // Lexicographic ordering: [1,2,3] < [1,2,4] < [1,3,0]
+        assert!(wiv1 < wiv2);
+        assert!(wiv1 < wiv3);
+        assert!(wiv2 < wiv3); // [1,2,4] < [1,3,0] because 2 < 3 at position 1
+
+        // Same components, different weights should still compare by components
+        let wiv4 = WeightedIntegerVector::new(vec![1, 2, 3], vec![2, 3, 4]).unwrap();
+        assert_eq!(wiv1.cmp(&wiv4), std::cmp::Ordering::Equal);
+    }
+
+    #[test]
+    fn test_integer_vectors_weighted_simple() {
+        // Find all ways to make sum 5 with weights [1, 2, 3]
+        let vectors = integer_vectors_weighted(vec![1, 2, 3], 5);
+
+        // All vectors should have weighted sum 5
+        for vec in &vectors {
+            assert_eq!(vec.weighted_sum(), 5);
+        }
+
+        // Should include specific vectors
+        assert!(vectors
+            .iter()
+            .any(|v| v.components() == &[5, 0, 0])); // 5*1
+        assert!(vectors
+            .iter()
+            .any(|v| v.components() == &[3, 1, 0])); // 3*1 + 1*2
+        assert!(vectors
+            .iter()
+            .any(|v| v.components() == &[1, 2, 0])); // 1*1 + 2*2
+        assert!(vectors
+            .iter()
+            .any(|v| v.components() == &[2, 0, 1])); // 2*1 + 1*3
+        assert!(vectors
+            .iter()
+            .any(|v| v.components() == &[0, 1, 1])); // 1*2 + 1*3
+
+        // No duplicates
+        for i in 0..vectors.len() {
+            for j in i + 1..vectors.len() {
+                assert_ne!(vectors[i].components(), vectors[j].components());
+            }
+        }
+    }
+
+    #[test]
+    fn test_integer_vectors_weighted_dp_simple() {
+        // Test the DP version
+        let vectors = integer_vectors_weighted_dp(vec![1, 2, 3], 5);
+
+        // All vectors should have weighted sum 5
+        for vec in &vectors {
+            assert_eq!(vec.weighted_sum(), 5);
+        }
+
+        // Should generate the same vectors as the queue version (possibly different order)
+        let vectors_queue = integer_vectors_weighted(vec![1, 2, 3], 5);
+        assert_eq!(vectors.len(), vectors_queue.len());
+
+        // Check that all vectors from queue version are in DP version
+        for qv in &vectors_queue {
+            assert!(vectors
+                .iter()
+                .any(|v| v.components() == qv.components()));
+        }
+    }
+
+    #[test]
+    fn test_integer_vectors_weighted_zero_sum() {
+        // Sum of 0 should only give the zero vector
+        let vectors = integer_vectors_weighted(vec![1, 2, 3], 0);
+        assert_eq!(vectors.len(), 1);
+        assert_eq!(vectors[0].components(), &[0, 0, 0]);
+        assert_eq!(vectors[0].weighted_sum(), 0);
+    }
+
+    #[test]
+    fn test_integer_vectors_weighted_single_weight() {
+        // With weight [3] and sum 9, should only get [3]
+        let vectors = integer_vectors_weighted(vec![3], 9);
+        assert_eq!(vectors.len(), 1);
+        assert_eq!(vectors[0].components(), &[3]);
+        assert_eq!(vectors[0].weighted_sum(), 9);
+
+        // With weight [3] and sum 7, should get nothing (not divisible)
+        let vectors2 = integer_vectors_weighted(vec![3], 7);
+        assert_eq!(vectors2.len(), 0);
+    }
+
+    #[test]
+    fn test_integer_vectors_weighted_uniform_weights() {
+        // With uniform weights [1, 1, 1] and sum 3, we're finding
+        // all ways to write 3 as a sum of 3 non-negative integers
+        let vectors = integer_vectors_weighted(vec![1, 1, 1], 3);
+
+        // Should include: [3,0,0], [0,3,0], [0,0,3], [2,1,0], [2,0,1], [1,2,0],
+        // [0,2,1], [1,0,2], [0,1,2], [1,1,1]
+        // Total: C(3+3-1, 3) = C(5,3) = 10
+        assert_eq!(vectors.len(), 10);
+
+        for vec in &vectors {
+            assert_eq!(vec.weighted_sum(), 3);
+            assert_eq!(
+                vec.components().iter().sum::<usize>(),
+                3,
+                "With uniform weights, sum of components should equal weighted sum"
+            );
+        }
+    }
+
+    #[test]
+    fn test_integer_vectors_weighted_large_weights() {
+        // With weights [10, 20] and sum 50
+        let vectors = integer_vectors_weighted(vec![10, 20], 50);
+
+        // Valid combinations:
+        // [5, 0] -> 50
+        // [3, 1] -> 30 + 20 = 50
+        // [1, 2] -> 10 + 40 = 50
+        assert_eq!(vectors.len(), 3);
+
+        assert!(vectors.iter().any(|v| v.components() == &[5, 0]));
+        assert!(vectors.iter().any(|v| v.components() == &[3, 1]));
+        assert!(vectors.iter().any(|v| v.components() == &[1, 2]));
+    }
+
+    #[test]
+    fn test_integer_vectors_weighted_impossible_sum() {
+        // With weights [2, 4] (all even), sum 7 (odd) should be impossible
+        let vectors = integer_vectors_weighted(vec![2, 4], 7);
+        assert_eq!(vectors.len(), 0);
+
+        // With weights [3, 6], sum 7 should also be impossible
+        let vectors2 = integer_vectors_weighted(vec![3, 6], 7);
+        assert_eq!(vectors2.len(), 0);
+    }
+
+    #[test]
+    fn test_integer_vectors_weighted_empty_weights() {
+        // Empty weights with sum 0
+        let vectors = integer_vectors_weighted(vec![], 0);
+        assert_eq!(vectors.len(), 0);
+
+        // Empty weights with non-zero sum
+        let vectors2 = integer_vectors_weighted(vec![], 5);
+        assert_eq!(vectors2.len(), 0);
+    }
+
+    #[test]
+    fn test_integer_vectors_weighted_zero_in_weights() {
+        // Zero weights should be rejected
+        let vectors = integer_vectors_weighted(vec![1, 0, 3], 5);
+        assert_eq!(vectors.len(), 0);
+    }
+
+    #[test]
+    fn test_integer_vectors_weighted_coin_change() {
+        // Classic coin change problem: make 10 cents with pennies(1), nickels(5), dimes(10)
+        let vectors = integer_vectors_weighted(vec![1, 5, 10], 10);
+
+        // All should sum to 10
+        for vec in &vectors {
+            assert_eq!(vec.weighted_sum(), 10);
+        }
+
+        // Should include:
+        // [10, 0, 0] - 10 pennies
+        // [5, 1, 0] - 5 pennies, 1 nickel
+        // [0, 2, 0] - 2 nickels
+        // [0, 0, 1] - 1 dime
+        assert!(vectors.iter().any(|v| v.components() == &[10, 0, 0]));
+        assert!(vectors.iter().any(|v| v.components() == &[5, 1, 0]));
+        assert!(vectors.iter().any(|v| v.components() == &[0, 2, 0]));
+        assert!(vectors.iter().any(|v| v.components() == &[0, 0, 1]));
+    }
+
+    #[test]
+    fn test_integer_vectors_weighted_dp_consistency() {
+        // Test that both algorithms produce the same results for various inputs
+        let test_cases = vec![
+            (vec![1, 2, 3], 5),
+            (vec![1, 1, 1], 3),
+            (vec![10, 20], 50),
+            (vec![2, 3, 5], 10),
+            (vec![1, 5, 10], 10),
+        ];
+
+        for (weights, sum) in test_cases {
+            let v1 = integer_vectors_weighted(weights.clone(), sum);
+            let v2 = integer_vectors_weighted_dp(weights.clone(), sum);
+
+            assert_eq!(
+                v1.len(),
+                v2.len(),
+                "Different number of results for weights {:?}, sum {}",
+                weights,
+                sum
+            );
+
+            // Check that all vectors from v1 are in v2 and vice versa
+            for vec in &v1 {
+                assert!(
+                    v2.iter().any(|v| v.components() == vec.components()),
+                    "Vector {:?} from queue version not found in DP version",
+                    vec.components()
+                );
+            }
+
+            for vec in &v2 {
+                assert!(
+                    v1.iter().any(|v| v.components() == vec.components()),
+                    "Vector {:?} from DP version not found in queue version",
+                    vec.components()
+                );
+            }
+        }
     }
 }
