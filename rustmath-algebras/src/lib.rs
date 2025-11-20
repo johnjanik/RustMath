@@ -18,6 +18,7 @@ pub mod finite_dimensional_algebra_morphism;
 pub mod quotient_algebra;
 pub mod clifford_algebra;
 pub mod group_algebra;
+pub mod symmetric_group_algebra;
 pub mod traits;
 pub mod affine_nil_temperley_lieb;
 pub mod down_up_algebra;
@@ -85,6 +86,12 @@ pub use clifford_algebra::{
     ExteriorAlgebraCoboundary, ExteriorAlgebraIdeal, StructureCoefficients,
 };
 pub use group_algebra::*;
+pub use symmetric_group_algebra::{
+    SymmetricGroupElement, SymmetricGroupAlgebraBuilder,
+    ZSymmetricGroupAlgebra, ZSymmetricGroupElement,
+    QSymmetricGroupAlgebra, QSymmetricGroupElement,
+    verify_coxeter_relations,
+};
 pub use traits::*;
 pub use affine_nil_temperley_lieb::{AffineNilTemperleyLiebTypeA, Element as AffineNilTemperleyLiebElement};
 pub use algebra_morphism::{AlgebraMorphism, AlgebraEndomorphism, AlgebraAutomorphism};
