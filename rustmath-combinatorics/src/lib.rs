@@ -11,7 +11,7 @@ pub mod derangements;
 pub mod designs;
 pub mod dyck_word;
 pub mod enumeration;
-pub mod multiset_partition_into_sets_ordered;
+pub mod integer_matrices;
 pub mod ordered_tree;
 pub mod partitions;
 pub mod perfect_matching;
@@ -68,7 +68,10 @@ pub use enumeration::{
     CompositionIterator, Enumerable, GrayCodeIterator, InfiniteCartesianProduct, LazyEnumerator,
     PartitionIterator, RevolvingDoorIterator,
 };
-pub use perfect_matching::{noncrossing_perfect_matchings, perfect_matchings, PerfectMatching};
+pub use integer_matrices::{
+    count_integer_matrices, integer_matrices, integer_matrices_bounded, IntegerMatrix,
+};
+pub use perfect_matching::{perfect_matchings, PerfectMatching};
 pub use ranking::{CombinationRank, PermutationRank, Rankable, RankingTable};
 pub use recurrence_sequences::{
     solve_binary_recurrence, BinaryRecurrence, LinearRecurrence, RecurrenceSequence,
