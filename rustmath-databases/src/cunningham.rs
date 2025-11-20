@@ -271,6 +271,57 @@ impl CunninghamTables {
 
         self.add_builtin(5, 2, true, vec!["2", "13"]);  // 5^2 + 1 = 26
         self.add_builtin(5, 3, true, vec!["2", "3", "3", "7"]);  // 5^3 + 1 = 126
+
+        // Base 6
+        self.add_builtin(6, 2, false, vec!["5", "7"]);  // 6^2 - 1 = 35
+        self.add_builtin(6, 3, false, vec!["5", "43"]);  // 6^3 - 1 = 215
+        self.add_builtin(6, 4, false, vec!["5", "7", "37"]);  // 6^4 - 1 = 1295
+        self.add_builtin(6, 5, false, vec!["5", "11", "71"]);  // 6^5 - 1 = 7775
+
+        self.add_builtin(6, 2, true, vec!["37"]);  // 6^2 + 1 = 37
+        self.add_builtin(6, 3, true, vec!["7", "31"]);  // 6^3 + 1 = 217
+        self.add_builtin(6, 4, true, vec!["13", "101"]);  // 6^4 + 1 = 1297
+
+        // Base 7
+        self.add_builtin(7, 2, false, vec!["2", "2", "2", "2", "3"]);  // 7^2 - 1 = 48
+        self.add_builtin(7, 3, false, vec!["2", "3", "3", "19"]);  // 7^3 - 1 = 342
+        self.add_builtin(7, 4, false, vec!["2", "2", "2", "2", "3", "5", "5"]);  // 7^4 - 1 = 2400
+        self.add_builtin(7, 5, false, vec!["2", "3", "2801"]);  // 7^5 - 1 = 16806
+
+        self.add_builtin(7, 2, true, vec!["2", "5", "5"]);  // 7^2 + 1 = 50
+        self.add_builtin(7, 3, true, vec!["2", "2", "2", "43"]);  // 7^3 + 1 = 344
+        self.add_builtin(7, 4, true, vec!["2", "5", "13", "37"]);  // 7^4 + 1 = 2402
+
+        // Base 10
+        self.add_builtin(10, 2, false, vec!["3", "3", "11"]);  // 10^2 - 1 = 99
+        self.add_builtin(10, 3, false, vec!["3", "3", "3", "37"]);  // 10^3 - 1 = 999
+        self.add_builtin(10, 4, false, vec!["3", "3", "11", "101"]);  // 10^4 - 1 = 9999
+        self.add_builtin(10, 5, false, vec!["3", "3", "41", "271"]);  // 10^5 - 1 = 99999
+        self.add_builtin(10, 6, false, vec!["3", "3", "3", "7", "11", "13", "37"]);  // 10^6 - 1 = 999999
+
+        self.add_builtin(10, 2, true, vec!["101"]);  // 10^2 + 1 = 101
+        self.add_builtin(10, 3, true, vec!["7", "11", "13"]);  // 10^3 + 1 = 1001
+        self.add_builtin(10, 4, true, vec!["73", "137"]);  // 10^4 + 1 = 10001
+
+        // Base 11
+        self.add_builtin(11, 2, false, vec!["2", "2", "2", "3", "5"]);  // 11^2 - 1 = 120
+        self.add_builtin(11, 3, false, vec!["2", "2", "2", "3", "5", "11"]);  // 11^3 - 1 = 1320
+        self.add_builtin(11, 4, false, vec!["2", "2", "2", "3", "5", "61"]);  // 11^4 - 1 = 14640
+        self.add_builtin(11, 5, false, vec!["2", "2", "2", "3", "5", "11", "61"]);  // 11^5 - 1 = 161050
+
+        self.add_builtin(11, 2, true, vec!["2", "61"]);  // 11^2 + 1 = 122
+        self.add_builtin(11, 3, true, vec!["2", "2", "331"]);  // 11^3 + 1 = 1332
+        self.add_builtin(11, 4, true, vec!["2", "7321"]);  // 11^4 + 1 = 14642
+
+        // Base 12
+        self.add_builtin(12, 2, false, vec!["11", "13"]);  // 12^2 - 1 = 143
+        self.add_builtin(12, 3, false, vec!["11", "157"]);  // 12^3 - 1 = 1727
+        self.add_builtin(12, 4, false, vec!["11", "13", "127"]);  // 12^4 - 1 = 20735
+        self.add_builtin(12, 5, false, vec!["11", "11", "23", "89"]);  // 12^5 - 1 = 248831
+
+        self.add_builtin(12, 2, true, vec!["5", "29"]);  // 12^2 + 1 = 145
+        self.add_builtin(12, 3, true, vec!["13", "133"]);  // 12^3 + 1 = 1729
+        self.add_builtin(12, 4, true, vec!["17", "1217"]);  // 12^4 + 1 = 20737
     }
 
     /// Add a built-in factorization
@@ -469,5 +520,47 @@ mod tests {
         let fact = tables.factorization(&f3).unwrap();
         assert_eq!(fact.factors.len(), 1);
         assert_eq!(fact.factors[0].value, "257");
+    }
+
+    #[test]
+    fn test_base_6_factorizations() {
+        let tables = CunninghamTables::new();
+
+        // 6^2 - 1 = 35 = 5 × 7
+        let num = CunninghamNumber::new(6, 2, false);
+        let fact = tables.factorization(&num).unwrap();
+        assert!(fact.is_complete);
+
+        // 6^2 + 1 = 37 (prime)
+        let num2 = CunninghamNumber::new(6, 2, true);
+        let fact2 = tables.factorization(&num2).unwrap();
+        assert_eq!(fact2.factors.len(), 1);
+    }
+
+    #[test]
+    fn test_base_10_factorizations() {
+        let tables = CunninghamTables::new();
+
+        // 10^2 - 1 = 99 = 3^2 × 11
+        let num = CunninghamNumber::new(10, 2, false);
+        let fact = tables.factorization(&num).unwrap();
+        assert!(fact.is_complete);
+
+        // 10^2 + 1 = 101 (prime)
+        let num2 = CunninghamNumber::new(10, 2, true);
+        let fact2 = tables.factorization(&num2).unwrap();
+        assert_eq!(fact2.factors.len(), 1);
+        assert_eq!(fact2.factors[0].value, "101");
+    }
+
+    #[test]
+    fn test_all_valid_bases() {
+        let tables = CunninghamTables::new();
+        let valid_bases = vec![2, 3, 5, 6, 7, 10, 11, 12];
+
+        for base in valid_bases {
+            let base_facts = tables.factorizations_for_base(base);
+            assert!(!base_facts.is_empty(), "Base {} should have factorizations", base);
+        }
     }
 }

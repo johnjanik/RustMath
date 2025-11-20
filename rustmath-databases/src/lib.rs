@@ -57,10 +57,14 @@
 pub mod oeis;
 pub mod cunningham;
 pub mod cremona;
+pub mod lmfdb;
+pub mod cache;
 
-pub use oeis::{OEISClient, OEISSequence, OEISError};
+pub use oeis::{OEISClient, OEISSequence, OEISError, SequenceAnalyzer, SequenceType};
 pub use cunningham::{CunninghamTables, CunninghamNumber, Factorization, Factor, CunninghamError};
-pub use cremona::{CremonaDatabase, EllipticCurve, CurveLabel, WeierstrassEquation, Point, CremonaError};
+pub use cremona::{CremonaDatabase, EllipticCurve, CurveLabel, WeierstrassEquation, Point, CremonaError, Isogeny, IsogenyGraph};
+pub use lmfdb::{LMFDBClient, LMFDBEllipticCurve, ModularForm, NumberField, DirichletCharacter, LMFDBError};
+pub use cache::{Cache, CacheConfig};
 
 #[cfg(test)]
 mod tests {
