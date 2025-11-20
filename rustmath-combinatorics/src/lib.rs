@@ -72,7 +72,7 @@ pub use ranking::{CombinationRank, PermutationRank, Rankable, RankingTable};
 pub use recurrence_sequences::{
     solve_binary_recurrence, BinaryRecurrence, LinearRecurrence, RecurrenceSequence,
 };
-pub use set_partition::{set_partitions, SetPartition};
+pub use set_partition::{set_partition_ordered, set_partitions, OrderedSetPartition, SetPartition};
 pub use set_system::SetSystem;
 pub use word::{
     abelian_complexity, boyer_moore_search, christoffel_word, factor_complexity, kmp_search,
