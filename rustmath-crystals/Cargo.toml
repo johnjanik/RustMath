@@ -1,5 +1,5 @@
 [package]
-name = "rustmath-combinatorics"
+name = "rustmath-crystals"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,4 +9,5 @@ repository.workspace = true
 [dependencies]
 rustmath-core = { path = "../rustmath-core" }
 rustmath-integers = { path = "../rustmath-integers" }
-rustmath-rationals = { path = "../rustmath-rationals" }
+rustmath-combinatorics = { path = "../rustmath-combinatorics" }
+rustmath-matrix = { path = "../rustmath-matrix" }

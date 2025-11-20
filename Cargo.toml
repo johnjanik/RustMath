@@ -8,6 +8,7 @@ exclude = [
 members = [
     "rustmath-core",
     "rustmath-features",
+    "rustmath-typesetting",
     "rustmath-integers",
     "rustmath-rationals",
     "rustmath-reals",
@@ -22,6 +23,7 @@ members = [
     "rustmath-numbertheory",
     "rustmath-combinatorics",
     "rustmath-constants",
+    "rustmath-crystals",
     "rustmath-geometry",
     "rustmath-graphs",
     "rustmath-symbolic",

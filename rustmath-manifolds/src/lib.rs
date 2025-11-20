@@ -46,6 +46,7 @@ pub mod modules;
 pub mod riemannian;
 pub mod lie_group;
 pub mod lie_algebra;
+pub mod lie_derivative;
 pub mod fiber_bundles;
 pub mod symplectic;
 pub mod integration;
@@ -97,6 +98,7 @@ pub use lie_group::{
     LieGroup, LeftInvariantVectorField, RightInvariantVectorField, MaurerCartanForm,
 };
 pub use lie_algebra::{LieAlgebra, ExponentialMap};
+pub use lie_derivative::LieDerivative;
 pub use fiber_bundles::{
     FiberBundle, Fiber, PrincipalBundle, AssociatedBundle,
     ConnectionForm, CurvatureForm, Trivialization,
