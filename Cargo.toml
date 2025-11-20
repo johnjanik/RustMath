@@ -62,6 +62,8 @@ members = [
     "rustmath-interfaces",
     "rustmath-affineschemes",
     "rustmath-trees",
+    "rustmath-automata",
+    "rustmath-symmetricfunctions",
 ]
 
 [workspace.package]
