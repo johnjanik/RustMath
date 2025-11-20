@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~68% (367 / 539 functions tracked)
+**Overall Progress**: ~69% (388 / 560 functions tracked)
 
 ---
 
@@ -837,6 +837,59 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 **Progress**: 3/3 functions (100%)
 
+### 10.5 Stream Ciphers
+**SageMath Source**: Not directly in Sage (uses external libraries)
+
+| Function/Feature | Status | RustMath Location | Notes |
+|-----------------|--------|-------------------|-------|
+| RC4 | ✅ | `rustmath-crypto/src/stream_cipher.rs` | Educational implementation, KSA + PRGA |
+| ChaCha20 | ✅ | `rustmath-crypto/src/stream_cipher.rs` | Modern stream cipher, RFC 8439 compliant |
+
+**Progress**: 2/2 functions (100%)
+
+### 10.6 Authenticated Encryption
+**SageMath Source**: Not directly in Sage (uses external libraries)
+
+| Function/Feature | Status | RustMath Location | Notes |
+|-----------------|--------|-------------------|-------|
+| GCM (Galois/Counter Mode) | ✅ | `rustmath-crypto/src/authenticated.rs` | AEAD with GHASH authentication, GF(2^128) multiplication |
+
+**Progress**: 1/1 functions (100%)
+
+### 10.7 Key Derivation Functions
+**SageMath Source**: Not directly in Sage (uses external libraries)
+
+| Function/Feature | Status | RustMath Location | Notes |
+|-----------------|--------|-------------------|-------|
+| PBKDF2 | ✅ | `rustmath-crypto/src/kdf.rs` | PBKDF2-HMAC-SHA256, RFC 2898 |
+| Argon2 | ✅ | `rustmath-crypto/src/kdf.rs` | Memory-hard KDF, simplified Argon2i variant |
+
+**Progress**: 2/2 functions (100%)
+
+### 10.8 Digital Signatures
+**SageMath Source**: `src/sage/crypto/public_key/`
+
+| Function/Feature | Status | RustMath Location | Notes |
+|-----------------|--------|-------------------|-------|
+| RSA signatures | ✅ | `rustmath-crypto/src/rsa.rs` | Sign/verify |
+| ECDSA | ✅ | `rustmath-crypto/src/elliptic_curve.rs` | Elliptic Curve Digital Signature Algorithm |
+| EdDSA (Ed25519) | ✅ | `rustmath-crypto/src/eddsa.rs` | Edwards-curve signatures, deterministic |
+
+**Progress**: 3/3 functions (100%)
+
+### 10.9 Cryptographic Utilities
+**SageMath Source**: Various
+
+| Function/Feature | Status | RustMath Location | Notes |
+|-----------------|--------|-------------------|-------|
+| Constant-time comparison | ✅ | `rustmath-crypto/src/utils.rs` | Timing-safe equality |
+| HMAC-SHA256 | ✅ | `rustmath-crypto/src/utils.rs` | Hash-based message authentication |
+| PKCS#7 padding | ✅ | `rustmath-crypto/src/utils.rs` | Padding and unpadding |
+| Hex encoding/decoding | ✅ | `rustmath-crypto/src/utils.rs` | Byte to hex conversion |
+| XOR operations | ✅ | `rustmath-crypto/src/utils.rs` | Byte-wise XOR |
+
+**Progress**: 5/5 functions (100%)
+
 ---
 
 ## 11. Coding Theory (sage.coding)
@@ -1086,7 +1139,7 @@ let results = client.search_by_terms(&[1, 1, 2, 3, 5, 8])?;
 | 7. Graph Theory | 50 | 59 | 85% |
 | 8. Geometry | 18 | 19 | 95% |
 | 9. Algebraic Geometry | 27 | 30 | 90% |
-| 10. Cryptography | 3 | 18 | 17% |
+| 10. Cryptography | 24 | 24 | 100% |
 | 11. Coding Theory | 13 | 13 | 100% |
 | 12. Group Theory | 18 | 18 | 100% |
 | 13. Representation Theory | 3 | 3 | 100% |
@@ -1096,7 +1149,7 @@ let results = client.search_by_terms(&[1, 1, 2, 3, 5, 8])?;
 | 17. Numerical Computation | 6 | 6 | 100% |
 | 18-20. Advanced Topics | 10 | 10 | 100% |
 
-**TOTAL**: **364 / 539 functions** = **~68% complete**
+**TOTAL**: **388 / 560 functions** = **~69% complete**
 
 ### Files to Examine in SageMath Source
 
