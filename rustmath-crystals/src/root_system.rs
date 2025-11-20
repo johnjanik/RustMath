@@ -16,6 +16,16 @@ pub enum RootSystemType {
     C(usize),
     /// Type D_n (SO(2n))
     D(usize),
+    /// Type E_6 (exceptional)
+    E6,
+    /// Type E_7 (exceptional)
+    E7,
+    /// Type E_8 (exceptional)
+    E8,
+    /// Type F_4 (exceptional)
+    F4,
+    /// Type G_2 (exceptional)
+    G2,
 }
 
 /// A root system with Cartan matrix
@@ -37,6 +47,11 @@ impl RootSystem {
             RootSystemType::B(n) => n,
             RootSystemType::C(n) => n,
             RootSystemType::D(n) => n,
+            RootSystemType::E6 => 6,
+            RootSystemType::E7 => 7,
+            RootSystemType::E8 => 8,
+            RootSystemType::F4 => 4,
+            RootSystemType::G2 => 2,
         };
 
         let cartan_matrix = Self::build_cartan_matrix(root_type);
@@ -120,6 +135,58 @@ impl RootSystem {
                     matrix[n - 1][n - 2] = -1;
                 }
                 matrix
+            }
+            RootSystemType::E6 => {
+                // Type E_6 Cartan matrix
+                vec![
+                    vec![2, 0, -1, 0, 0, 0],
+                    vec![0, 2, 0, -1, 0, 0],
+                    vec![-1, 0, 2, -1, 0, 0],
+                    vec![0, -1, -1, 2, -1, 0],
+                    vec![0, 0, 0, -1, 2, -1],
+                    vec![0, 0, 0, 0, -1, 2],
+                ]
+            }
+            RootSystemType::E7 => {
+                // Type E_7 Cartan matrix
+                vec![
+                    vec![2, 0, -1, 0, 0, 0, 0],
+                    vec![0, 2, 0, -1, 0, 0, 0],
+                    vec![-1, 0, 2, -1, 0, 0, 0],
+                    vec![0, -1, -1, 2, -1, 0, 0],
+                    vec![0, 0, 0, -1, 2, -1, 0],
+                    vec![0, 0, 0, 0, -1, 2, -1],
+                    vec![0, 0, 0, 0, 0, -1, 2],
+                ]
+            }
+            RootSystemType::E8 => {
+                // Type E_8 Cartan matrix
+                vec![
+                    vec![2, 0, -1, 0, 0, 0, 0, 0],
+                    vec![0, 2, 0, -1, 0, 0, 0, 0],
+                    vec![-1, 0, 2, -1, 0, 0, 0, 0],
+                    vec![0, -1, -1, 2, -1, 0, 0, 0],
+                    vec![0, 0, 0, -1, 2, -1, 0, 0],
+                    vec![0, 0, 0, 0, -1, 2, -1, 0],
+                    vec![0, 0, 0, 0, 0, -1, 2, -1],
+                    vec![0, 0, 0, 0, 0, 0, -1, 2],
+                ]
+            }
+            RootSystemType::F4 => {
+                // Type F_4 Cartan matrix
+                vec![
+                    vec![2, -1, 0, 0],
+                    vec![-1, 2, -2, 0],
+                    vec![0, -1, 2, -1],
+                    vec![0, 0, -1, 2],
+                ]
+            }
+            RootSystemType::G2 => {
+                // Type G_2 Cartan matrix
+                vec![
+                    vec![2, -1],
+                    vec![-3, 2],
+                ]
             }
         }
     }
