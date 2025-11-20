@@ -9,6 +9,7 @@ pub mod composition;
 pub mod designs;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod fully_packed_loop;
 pub mod partitions;
 pub mod perfect_matching;
 pub mod permutations;
