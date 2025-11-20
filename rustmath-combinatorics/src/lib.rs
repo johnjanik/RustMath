@@ -23,6 +23,7 @@ pub mod designs;
 pub mod dlx;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod gelfand_tsetlin;
 pub mod fully_commutative_elements;
 pub mod free_prelie_algebra;
 pub mod grossman_larson;
@@ -142,6 +143,9 @@ pub use enumeration::{
 };
 pub use finite_state_machine_generators::{
     Automaton, AutomatonGenerators, FSMState, FSMTransition, Transducer, TransducerGenerators,
+};
+pub use gelfand_tsetlin::{
+    gelfand_tsetlin_patterns, GelfandTsetlinIterator, GelfandTsetlinPattern,
 };
 pub use group_action::{
     burnside_lemma, count_fixed_colorings, cycle_index, enumerate_distinct_colorings,
