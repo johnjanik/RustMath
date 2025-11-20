@@ -86,9 +86,11 @@ pub use designs::{
 };
 pub use dyck_word::{dyck_words, nu_dyck_words, BounceStats, DyckWord, NuDyckWord};
 pub use enumeration::{
-    cartesian_product, stars_and_bars, tuples, weak_compositions, CartesianProduct,
-    CompositionIterator, Enumerable, GrayCodeIterator, InfiniteCartesianProduct, LazyEnumerator,
-    PartitionIterator, RevolvingDoorIterator,
+    binary_to_gray, cartesian_product, gray_code_change_bit, gray_code_rank, gray_code_sequence,
+    gray_code_unrank, gray_to_binary, stars_and_bars, tuples, weak_compositions,
+    CartesianProduct, CombinationGrayCode, CompositionIterator, Enumerable, GrayCodeIterator,
+    InfiniteCartesianProduct, LazyEnumerator, PartitionIterator, PermutationGrayCode,
+    RevolvingDoorIterator,
 };
 pub use finite_state_machine_generators::{
     Automaton, AutomatonGenerators, FSMState, FSMTransition, Transducer, TransducerGenerators,
