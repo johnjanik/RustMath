@@ -29,6 +29,7 @@ pub mod trees;
 pub mod tutte_polynomial;
 pub mod strongly_regular_db;
 pub mod degree_sequences;
+pub mod graph_path;
 
 // Advanced graph theory (tracker 07)
 pub mod homomorphisms;
@@ -44,6 +45,7 @@ pub use digraph::DiGraph;
 pub use multigraph::MultiGraph;
 pub use asteroidal_triples::is_asteroidal_triple_free;
 pub use degree_sequences::DegreeSequence;
+pub use graph_path::GraphPath;
 
 #[cfg(test)]
 mod tests {

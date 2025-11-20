@@ -9,7 +9,7 @@
 
 use crate::dyck_word::DyckWord;
 use crate::posets::Poset;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 /// A lattice path from (0,0) to (a,b) using steps (1,0) and (0,1)
 ///
