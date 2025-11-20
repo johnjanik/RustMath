@@ -46,7 +46,7 @@ pub mod weak_dict;
 // Re-export commonly used utilities
 pub use table::Table;
 pub use verbose::{set_verbose, get_verbose};
-pub use temporary_file::TemporaryFile;
+pub use temporary_file::{TemporaryFile, TemporaryDir, tmp_filename, tmp_dir, atomic_write, atomic_dir};
 
 #[cfg(test)]
 mod tests {
