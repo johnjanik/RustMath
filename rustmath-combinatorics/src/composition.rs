@@ -5,7 +5,7 @@
 /// An integer composition (ordered partition)
 ///
 /// A composition of n is an ordered sequence of positive integers that sum to n
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Composition {
     parts: Vec<usize>,
 }
