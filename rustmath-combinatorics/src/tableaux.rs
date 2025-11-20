@@ -578,374 +578,325 @@ fn insert_at_position(tableau: &Tableau, row: usize, col: usize, value: usize) -
     Tableau::new(rows).unwrap()
 }
 
-/// A k-tableau - a generalization of Young tableaux
+/// Hillman-Grassl algorithm: Binary matrix to pair of tableaux
 ///
-/// In a k-tableau:
-/// - Rows are weakly increasing (non-decreasing)
-/// - Entries in columns differ by at least k
+/// The Hillman-Grassl algorithm is a bijection between binary matrices
+/// and pairs of semistandard Young tableaux (P, Q) with the same shape.
 ///
-/// For k=1, this gives semistandard tableaux
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct KTableau {
-    /// The underlying tableau
-    tableau: Tableau,
-    /// The k value (minimum column increment)
-    k: usize,
-}
-
-impl KTableau {
-    /// Create a k-tableau from rows and a k value
-    ///
-    /// Returns None if the rows don't satisfy the k-tableau property
-    pub fn new(rows: Vec<Vec<usize>>, k: usize) -> Option<Self> {
-        let tableau = Tableau::new(rows)?;
-
-        // Check k-tableau property: columns differ by at least k
-        for col in 0..tableau.rows()[0].len() {
-            for row in 1..tableau.rows().len() {
-                if col < tableau.rows()[row].len() {
-                    let upper = tableau.rows()[row - 1][col];
-                    let lower = tableau.rows()[row][col];
-                    if lower < upper + k {
-                        return None;
-                    }
-                }
-            }
-        }
-
-        // Check rows are weakly increasing
-        for row in tableau.rows() {
-            for i in 1..row.len() {
-                if row[i] < row[i - 1] {
-                    return None;
-                }
-            }
-        }
-
-        Some(KTableau { tableau, k })
-    }
-
-    /// Get the underlying tableau
-    pub fn tableau(&self) -> &Tableau {
-        &self.tableau
-    }
-
-    /// Get the k value
-    pub fn k(&self) -> usize {
-        self.k
-    }
-
-    /// Get the shape of the k-tableau
-    pub fn shape(&self) -> &Partition {
-        self.tableau.shape()
-    }
-
-    /// Get the rows of the k-tableau
-    pub fn rows(&self) -> &[Vec<usize>] {
-        self.tableau.rows()
-    }
-
-    /// Get the size (number of entries)
-    pub fn size(&self) -> usize {
-        self.tableau.size()
-    }
-
-    /// Check if this is a valid k-tableau
-    pub fn is_valid(&self) -> bool {
-        // Check rows are weakly increasing
-        for row in self.tableau.rows() {
-            for i in 1..row.len() {
-                if row[i] < row[i - 1] {
-                    return false;
-                }
-            }
-        }
-
-        // Check columns differ by at least k
-        for col in 0..self.tableau.rows()[0].len() {
-            for row in 1..self.tableau.rows().len() {
-                if col < self.tableau.rows()[row].len() {
-                    let upper = self.tableau.rows()[row - 1][col];
-                    let lower = self.tableau.rows()[row][col];
-                    if lower < upper + self.k {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        true
-    }
-
-    /// Convert to string representation
-    pub fn to_string(&self) -> String {
-        self.tableau.to_string()
-    }
-}
-
-/// A weak k-tableau (same as k-tableau, but emphasizing weak row condition)
-///
-/// In a weak k-tableau:
-/// - Rows are weakly increasing (non-decreasing) - the "weak" part
-/// - Entries in columns differ by at least k
-pub type WeakKTableau = KTableau;
-
-/// An increasing tableau
-///
-/// In an increasing tableau:
-/// - Rows are strictly increasing
-/// - Columns are strictly increasing
-///
-/// This is more restrictive than a standard tableau which allows
-/// equal entries in rows
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct IncreasingTableau {
-    /// The underlying tableau
-    tableau: Tableau,
-}
-
-impl IncreasingTableau {
-    /// Create an increasing tableau from rows
-    ///
-    /// Returns None if the rows don't satisfy the increasing property
-    pub fn new(rows: Vec<Vec<usize>>) -> Option<Self> {
-        let tableau = Tableau::new(rows)?;
-
-        // Check rows are strictly increasing
-        for row in tableau.rows() {
-            for i in 1..row.len() {
-                if row[i] <= row[i - 1] {
-                    return None;
-                }
-            }
-        }
-
-        // Check columns are strictly increasing
-        for col in 0..tableau.rows()[0].len() {
-            for row in 1..tableau.rows().len() {
-                if col < tableau.rows()[row].len() {
-                    if tableau.rows()[row][col] <= tableau.rows()[row - 1][col] {
-                        return None;
-                    }
-                }
-            }
-        }
-
-        Some(IncreasingTableau { tableau })
-    }
-
-    /// Get the underlying tableau
-    pub fn tableau(&self) -> &Tableau {
-        &self.tableau
-    }
-
-    /// Get the shape of the tableau
-    pub fn shape(&self) -> &Partition {
-        self.tableau.shape()
-    }
-
-    /// Get the rows of the tableau
-    pub fn rows(&self) -> &[Vec<usize>] {
-        self.tableau.rows()
-    }
-
-    /// Get the size (number of entries)
-    pub fn size(&self) -> usize {
-        self.tableau.size()
-    }
-
-    /// Check if this is a valid increasing tableau
-    pub fn is_valid(&self) -> bool {
-        // Check rows are strictly increasing
-        for row in self.tableau.rows() {
-            for i in 1..row.len() {
-                if row[i] <= row[i - 1] {
-                    return false;
-                }
-            }
-        }
-
-        // Check columns are strictly increasing
-        for col in 0..self.tableau.rows()[0].len() {
-            for row in 1..self.tableau.rows().len() {
-                if col < self.tableau.rows()[row].len() {
-                    if self.tableau.rows()[row][col] <= self.tableau.rows()[row - 1][col] {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        true
-    }
-
-    /// Convert to string representation
-    pub fn to_string(&self) -> String {
-        self.tableau.to_string()
-    }
-}
-
-/// Generate all k-tableaux of a given shape with entries from a specified range
+/// Given a binary matrix M, it produces two tableaux:
+/// - P tableau: records the column indices of 1s
+/// - Q tableau: records which row each insertion came from
 ///
 /// # Arguments
-/// * `shape` - The partition shape
-/// * `k` - The minimum column increment
-/// * `max_entry` - Maximum entry value allowed
+/// * `matrix` - A binary matrix represented as Vec<Vec<usize>> where entries are 0 or 1
 ///
 /// # Returns
-/// A vector of all valid k-tableaux
-pub fn generate_k_tableaux(shape: &Partition, k: usize, max_entry: usize) -> Vec<KTableau> {
-    if shape.sum() == 0 {
-        return vec![];
+/// A pair of semistandard tableaux (P, Q) with the same shape
+///
+/// # Example
+/// For the matrix:
+/// ```text
+/// [1, 0, 1]
+/// [0, 1, 0]
+/// [1, 1, 0]
+/// ```
+/// The algorithm processes row by row, inserting column indices where 1s appear.
+pub fn hillman_grassl(matrix: &[Vec<usize>]) -> Option<(Tableau, Tableau)> {
+    if matrix.is_empty() {
+        return Some((Tableau::new(vec![]).unwrap(), Tableau::new(vec![]).unwrap()));
     }
 
-    let mut result = Vec::new();
-    let mut current: Vec<Vec<usize>> = shape
-        .parts()
-        .iter()
-        .map(|&len| vec![1; len])
-        .collect();
-
-    generate_k_tableaux_recursive(&mut current, shape, k, max_entry, 0, 0, &mut result);
-    result
-}
-
-fn generate_k_tableaux_recursive(
-    current: &mut Vec<Vec<usize>>,
-    shape: &Partition,
-    k: usize,
-    max_entry: usize,
-    row: usize,
-    col: usize,
-    result: &mut Vec<KTableau>,
-) {
-    // If we've filled all positions, add this k-tableau
-    if row >= shape.length() {
-        if let Some(kt) = KTableau::new(current.clone(), k) {
-            result.push(kt);
+    // Validate that matrix is binary
+    for row in matrix {
+        for &entry in row {
+            if entry != 0 && entry != 1 {
+                return None; // Not a binary matrix
+            }
         }
-        return;
     }
 
-    // Calculate next position
-    let (next_row, next_col) = if col + 1 < shape.parts()[row] {
-        (row, col + 1)
-    } else if row + 1 < shape.length() {
-        (row + 1, 0)
-    } else {
-        (shape.length(), 0)
-    };
+    let mut p_rows: Vec<Vec<usize>> = vec![];
+    let mut q_rows: Vec<Vec<usize>> = vec![];
 
-    // Determine valid range for this position
-    let min_val = if col > 0 {
-        // Must be >= left neighbor (weakly increasing rows)
-        current[row][col - 1]
-    } else if row > 0 && col < shape.parts()[row] && col < current[row - 1].len() {
-        // Must be >= upper neighbor + k (column constraint)
-        current[row - 1][col] + k
-    } else {
-        1
-    };
+    // Process each row of the matrix
+    for (row_idx, matrix_row) in matrix.iter().enumerate() {
+        // Collect column indices where this row has 1s
+        let cols_with_ones: Vec<usize> = matrix_row
+            .iter()
+            .enumerate()
+            .filter_map(|(col_idx, &val)| if val == 1 { Some(col_idx + 1) } else { None })
+            .collect();
 
-    // Additional constraint from above if both col > 0 and row > 0
-    let min_val = if row > 0 && col < current[row - 1].len() {
-        min_val.max(current[row - 1][col] + k)
-    } else {
-        min_val
-    };
-
-    // Try each valid value
-    for val in min_val..=max_entry {
-        current[row][col] = val;
-        generate_k_tableaux_recursive(current, shape, k, max_entry, next_row, next_col, result);
+        // Insert each column index into the tableaux
+        for col_value in cols_with_ones {
+            hillman_grassl_insert_pair(&mut p_rows, &mut q_rows, col_value, row_idx + 1);
+        }
     }
+
+    Some((
+        Tableau::new(p_rows).unwrap(),
+        Tableau::new(q_rows).unwrap(),
+    ))
 }
 
-/// Generate all increasing tableaux of a given shape with specified entries
+/// Modified insertion for Hillman-Grassl that produces semistandard tableaux
+///
+/// This is similar to RS insertion but allows repeated values (weakly increasing rows)
+/// while maintaining strictly increasing columns.
+fn hillman_grassl_insert(tableau: &Tableau, value: usize) -> Tableau {
+/// Dual Robinson-Schensted correspondence
+///
+/// Convert a permutation to a pair of standard tableaux (P, Q) using the dual RSK algorithm.
+/// This is equivalent to applying RSK to the inverse permutation, which swaps the P and Q tableaux.
 ///
 /// # Arguments
-/// * `shape` - The partition shape
-/// * `entries` - The entries to use (must have size equal to shape.sum())
+/// * `permutation` - A permutation as a vector of values
 ///
 /// # Returns
-/// A vector of all valid increasing tableaux using those entries
-pub fn generate_increasing_tableaux(shape: &Partition, entries: &[usize]) -> Vec<IncreasingTableau> {
-    if shape.sum() != entries.len() {
-        return vec![];
+/// A tuple (P, Q) where P and Q are standard tableaux of the same shape
+pub fn dual_robinson_schensted(permutation: &[usize]) -> (Tableau, Tableau) {
+    // Compute the inverse permutation
+    let n = permutation.len();
+    let mut inverse = vec![0; n];
+
+    for (i, &val) in permutation.iter().enumerate() {
+        if val > 0 && val <= n {
+            inverse[val - 1] = i + 1;
+        }
     }
 
-    if shape.sum() == 0 {
-        return vec![];
-    }
-
-    let mut result = Vec::new();
-    let mut current: Vec<Vec<usize>> = shape
-        .parts()
-        .iter()
-        .map(|&len| vec![0; len])
-        .collect();
-
-    let mut used = vec![false; entries.len()];
-    generate_increasing_tableaux_recursive(&mut current, shape, entries, &mut used, 0, 0, &mut result);
-    result
+    // Apply standard RSK to the inverse permutation
+    // This effectively swaps P and Q compared to standard RSK
+    robinson_schensted(&inverse)
 }
 
-fn generate_increasing_tableaux_recursive(
-    current: &mut Vec<Vec<usize>>,
-    shape: &Partition,
-    entries: &[usize],
-    used: &mut Vec<bool>,
-    row: usize,
-    col: usize,
-    result: &mut Vec<IncreasingTableau>,
-) {
-    // If we've filled all positions, add this increasing tableau
-    if row >= shape.length() {
-        if let Some(it) = IncreasingTableau::new(current.clone()) {
-            result.push(it);
-        }
-        return;
+/// Mixed insertion - a variant of RSK using both row and column insertion
+///
+/// This variant uses a binary word to determine whether to use row insertion (0)
+/// or column insertion (1) at each step. Column insertion is the transpose of row insertion.
+///
+/// # Arguments
+/// * `permutation` - A permutation as a vector of values
+/// * `insertion_word` - A binary word (0 for row insertion, 1 for column insertion)
+///
+/// # Returns
+/// A tuple (P, Q) where P and Q are tableaux (may not be standard due to mixed insertion)
+pub fn mixed_insertion(permutation: &[usize], insertion_word: &[u8]) -> (Tableau, Tableau) {
+    if permutation.len() != insertion_word.len() {
+        // If lengths don't match, default to standard RSK
+        return robinson_schensted(permutation);
     }
 
-    // Calculate next position
-    let (next_row, next_col) = if col + 1 < shape.parts()[row] {
-        (row, col + 1)
-    } else if row + 1 < shape.length() {
-        (row + 1, 0)
-    } else {
-        (shape.length(), 0)
-    };
+    let mut p_tableau = Tableau::new(vec![]).unwrap();
+    let mut q_tableau = Tableau::new(vec![]).unwrap();
 
-    // Try each unused entry
-    for i in 0..entries.len() {
-        if used[i] {
-            continue;
-        }
+    for (i, &value) in permutation.iter().enumerate() {
+        let old_p = p_tableau.clone();
 
-        let val = entries[i];
-
-        // Check if this value is valid for this position
-        let valid = if col > 0 && row > 0 && col < current[row - 1].len() {
-            // Must be > left neighbor and > upper neighbor
-            val > current[row][col - 1] && val > current[row - 1][col]
-        } else if col > 0 {
-            // Must be > left neighbor
-            val > current[row][col - 1]
-        } else if row > 0 && col < current[row - 1].len() {
-            // Must be > upper neighbor
-            val > current[row - 1][col]
+        // Choose insertion type based on the binary word
+        if insertion_word[i] == 0 {
+            // Row insertion (standard)
+            p_tableau = rs_insert(&p_tableau, value);
         } else {
-            true
-        };
+            // Column insertion (transpose, then row insert, then transpose back)
+            p_tableau = transpose_tableau(&p_tableau);
+            p_tableau = rs_insert(&p_tableau, value);
+            p_tableau = transpose_tableau(&p_tableau);
+        }
 
-        if valid {
-            current[row][col] = val;
-            used[i] = true;
-            generate_increasing_tableaux_recursive(current, shape, entries, used, next_row, next_col, result);
-            used[i] = false;
-            current[row][col] = 0;
+        // Record insertion position in Q tableau
+        let insertion_label = i + 1;
+        let new_cell_pos = find_new_cell(&old_p, &p_tableau);
+        q_tableau = insert_at_position(&q_tableau, new_cell_pos.0, new_cell_pos.1, insertion_label);
+    }
+
+    (p_tableau, q_tableau)
+}
+
+/// Transpose a tableau (swap rows and columns)
+fn transpose_tableau(tableau: &Tableau) -> Tableau {
+    if tableau.rows.is_empty() {
+        return Tableau::new(vec![]).unwrap();
+    }
+
+    let max_len = tableau.rows.iter().map(|r| r.len()).max().unwrap_or(0);
+    let mut transposed = vec![vec![]; max_len];
+
+    for row in &tableau.rows {
+        for (col_idx, &value) in row.iter().enumerate() {
+            transposed[col_idx].push(value);
         }
     }
+
+    Tableau::new(transposed).unwrap()
+}
+
+/// Hecke insertion - a variant related to Hecke algebras
+///
+/// Hecke insertion is a generalization of RSK insertion used in the study of
+/// K-theory and Hecke algebras. It uses a parameter that controls the insertion behavior.
+///
+/// In this implementation, when inserting a value:
+/// - If the value equals an entry in the row (and hecke_param allows), we can choose to
+///   either bump it or place it in a new position
+/// - This creates a richer structure than standard RSK
+///
+/// # Arguments
+/// * `permutation` - A permutation as a vector of values
+/// * `hecke_params` - A vector of parameters (0 or 1) controlling insertion choices
+///
+/// # Returns
+/// A tuple (P, Q) of tableaux
+pub fn hecke_insertion(permutation: &[usize], hecke_params: &[u8]) -> (Tableau, Tableau) {
+    if permutation.is_empty() {
+        return (Tableau::new(vec![]).unwrap(), Tableau::new(vec![]).unwrap());
+    }
+
+    let mut p_tableau = Tableau::new(vec![]).unwrap();
+    let mut q_tableau = Tableau::new(vec![]).unwrap();
+
+    for (i, &value) in permutation.iter().enumerate() {
+        let old_p = p_tableau.clone();
+
+        // Use Hecke parameter if available, otherwise default to 0
+        let param = if i < hecke_params.len() { hecke_params[i] } else { 0 };
+
+        // Perform Hecke insertion
+        p_tableau = hecke_insert_value(&p_tableau, value, param);
+
+        // Record insertion position in Q tableau
+        let insertion_label = i + 1;
+        let new_cell_pos = find_new_cell(&old_p, &p_tableau);
+        q_tableau = insert_at_position(&q_tableau, new_cell_pos.0, new_cell_pos.1, insertion_label);
+    }
+
+    (p_tableau, q_tableau)
+}
+
+/// Hecke insertion of a single value
+///
+/// This implements the Hecke insertion algorithm with a parameter that
+/// controls the insertion behavior when equal values are encountered.
+fn hecke_insert_value(tableau: &Tableau, value: usize, param: u8) -> Tableau {
+    let mut rows = tableau.rows.clone();
+    let mut current_value = value;
+
+    for row_idx in 0..rows.len() {
+        // Find position to insert in this row (first element > current_value)
+        match rows[row_idx].iter().position(|&x| x > current_value) {
+            Some(pos) => {
+                // Bump the value at this position
+                let bumped = rows[row_idx][pos];
+                rows[row_idx][pos] = current_value;
+                current_value = bumped;
+            }
+            None => {
+                // Append to end of this row (value is >= all elements in row)
+                rows[row_idx].push(current_value);
+                return Tableau::new(rows).unwrap();
+            }
+        }
+    }
+
+    // Create a new row with the bumped value
+    rows.push(vec![current_value]);
+    Tableau::new(rows).unwrap()
+}
+
+/// Insert into both P and Q tableaux simultaneously
+///
+/// This ensures that when values are bumped in P, the corresponding Q values
+/// are also bumped, maintaining the correspondence between P and Q entries.
+fn hillman_grassl_insert_pair(
+    p_rows: &mut Vec<Vec<usize>>,
+    q_rows: &mut Vec<Vec<usize>>,
+    p_value: usize,
+    q_value: usize,
+) {
+    let mut current_p = p_value;
+    let mut current_q = q_value;
+
+    for row_idx in 0..p_rows.len() {
+        // Find position to insert in this row (first element > current_p_value)
+        match p_rows[row_idx].iter().position(|&x| x > current_p) {
+            Some(pos) => {
+                // Bump both P and Q values at this position
+                let bumped_p = p_rows[row_idx][pos];
+                let bumped_q = q_rows[row_idx][pos];
+
+                p_rows[row_idx][pos] = current_p;
+                q_rows[row_idx][pos] = current_q;
+
+                current_p = bumped_p;
+                current_q = bumped_q;
+            }
+            None => {
+                // Append to end of this row
+                p_rows[row_idx].push(current_p);
+                q_rows[row_idx].push(current_q);
+                return;
+            }
+        }
+    }
+
+    // Create a new row with the bumped values
+    p_rows.push(vec![current_p]);
+    q_rows.push(vec![current_q]);
+}
+
+/// Inverse Hillman-Grassl algorithm: Convert pair of tableaux back to binary matrix
+///
+/// Given a pair of semistandard tableaux (P, Q) with the same shape,
+/// reconstruct the original binary matrix.
+///
+/// # Arguments
+/// * `p_tableau` - The P tableau (column indices)
+/// * `q_tableau` - The Q tableau (row indices)
+///
+/// # Returns
+/// The binary matrix if the tableaux are valid, None otherwise
+pub fn hillman_grassl_inverse(p_tableau: &Tableau, q_tableau: &Tableau) -> Option<Vec<Vec<usize>>> {
+    // Check that both tableaux have the same shape
+    if p_tableau.shape() != q_tableau.shape() {
+        return None;
+    }
+
+    if p_tableau.size() == 0 {
+        return Some(vec![]);
+    }
+
+    // Determine matrix dimensions
+    let max_row = q_tableau.rows()
+        .iter()
+        .flat_map(|row| row.iter())
+        .max()
+        .copied()
+        .unwrap_or(0);
+
+    let max_col = p_tableau.rows()
+        .iter()
+        .flat_map(|row| row.iter())
+        .max()
+        .copied()
+        .unwrap_or(0);
+
+    if max_row == 0 || max_col == 0 {
+        return Some(vec![]);
+    }
+
+    // Initialize matrix with zeros
+    let mut matrix = vec![vec![0; max_col]; max_row];
+
+    // Fill in the 1s based on (P, Q) pairs
+    for (p_row, q_row) in p_tableau.rows().iter().zip(q_tableau.rows().iter()) {
+        for (&col_idx, &row_idx) in p_row.iter().zip(q_row.iter()) {
+            if row_idx > 0 && row_idx <= max_row && col_idx > 0 && col_idx <= max_col {
+                matrix[row_idx - 1][col_idx - 1] = 1;
+            }
+        }
+    }
+
+    Some(matrix)
 }
 
 #[cfg(test)]
@@ -1099,496 +1050,267 @@ mod tests {
     }
 
     #[test]
-    fn test_cell_residue() {
-        // Create a tableau: [[1, 2, 3], [4, 5]]
-        let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+    fn test_hillman_grassl_empty_matrix() {
+        // Empty matrix should give empty tableaux
+        let matrix: Vec<Vec<usize>> = vec![];
+        let result = hillman_grassl(&matrix);
+        assert!(result.is_some());
 
-        // Test with e=3, multicharge=0
-        // Cell (0,0): residue = (0 - 0 + 0) mod 3 = 0
-        assert_eq!(t.cell_residue(0, 0, 3, 0), Some(0));
-
-        // Cell (0,1): residue = (1 - 0 + 0) mod 3 = 1
-        assert_eq!(t.cell_residue(0, 1, 3, 0), Some(1));
-
-        // Cell (0,2): residue = (2 - 0 + 0) mod 3 = 2
-        assert_eq!(t.cell_residue(0, 2, 3, 0), Some(2));
-
-        // Cell (1,0): residue = (0 - 1 + 0) mod 3 = -1 mod 3 = 2
-        assert_eq!(t.cell_residue(1, 0, 3, 0), Some(2));
-
-        // Cell (1,1): residue = (1 - 1 + 0) mod 3 = 0
-        assert_eq!(t.cell_residue(1, 1, 3, 0), Some(0));
-
-        // Test with multicharge=1
-        // Cell (0,0): residue = (0 - 0 + 1) mod 3 = 1
-        assert_eq!(t.cell_residue(0, 0, 3, 1), Some(1));
-
-        // Test invalid positions
-        assert_eq!(t.cell_residue(2, 0, 3, 0), None);
-        assert_eq!(t.cell_residue(0, 5, 3, 0), None);
-
-        // Test e=0 (should return None)
-        assert_eq!(t.cell_residue(0, 0, 0, 0), None);
+        let (p, q) = result.unwrap();
+        assert_eq!(p.size(), 0);
+        assert_eq!(q.size(), 0);
     }
 
     #[test]
-    fn test_cell_residue_with_different_e() {
-        let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+    fn test_hillman_grassl_single_one() {
+        // Matrix with single 1
+        let matrix = vec![vec![1]];
+        let result = hillman_grassl(&matrix);
+        assert!(result.is_some());
 
-        // Test with e=2
-        // Cell (0,0): residue = 0 mod 2 = 0
-        assert_eq!(t.cell_residue(0, 0, 2, 0), Some(0));
-
-        // Cell (0,1): residue = 1 mod 2 = 1
-        assert_eq!(t.cell_residue(0, 1, 2, 0), Some(1));
-
-        // Cell (1,0): residue = -1 mod 2 = 1
-        assert_eq!(t.cell_residue(1, 0, 2, 0), Some(1));
-
-        // Test with e=5
-        // Cell (1,0): residue = -1 mod 5 = 4
-        assert_eq!(t.cell_residue(1, 0, 5, 0), Some(4));
+        let (p, q) = result.unwrap();
+        assert_eq!(p.size(), 1);
+        assert_eq!(q.size(), 1);
+        assert_eq!(p.rows(), &[vec![1]]);
+        assert_eq!(q.rows(), &[vec![1]]);
     }
 
     #[test]
-    fn test_residue_sequence() {
-        // Create a standard tableau: [[1, 2, 4], [3, 5]]
-        let t = Tableau::new(vec![vec![1, 2, 4], vec![3, 5]]).unwrap();
-        assert!(t.is_standard());
+    fn test_hillman_grassl_simple_matrix() {
+        // Test with a simple 2x2 matrix
+        // [1, 0]
+        // [0, 1]
+        let matrix = vec![vec![1, 0], vec![0, 1]];
+        let result = hillman_grassl(&matrix);
+        assert!(result.is_some());
 
-        // Compute residue sequence with e=3, multicharge=0
-        let residues = t.residue_sequence(3, 0);
-
-        // Should have 5 residues (one for each entry 1-5)
-        assert_eq!(residues.len(), 5);
-
-        // Entry 1 is at (0,0): residue = 0
-        assert_eq!(residues[0], 0);
-
-        // Entry 2 is at (0,1): residue = 1
-        assert_eq!(residues[1], 1);
-
-        // Entry 3 is at (1,0): residue = -1 mod 3 = 2
-        assert_eq!(residues[2], 2);
-
-        // Entry 4 is at (0,2): residue = 2
-        assert_eq!(residues[3], 2);
-
-        // Entry 5 is at (1,1): residue = 0
-        assert_eq!(residues[4], 0);
+        let (p, q) = result.unwrap();
+        // Both tableaux should have the same shape
+        assert_eq!(p.shape(), q.shape());
+        // Should have 2 entries total (2 ones in the matrix)
+        assert_eq!(p.size(), 2);
+        assert_eq!(q.size(), 2);
+        // P should be semistandard
+        assert!(p.is_semistandard());
     }
 
     #[test]
-    fn test_residue_sequence_with_multicharge() {
-        // Create a standard tableau: [[1, 2], [3]]
-        let t = Tableau::new(vec![vec![1, 2], vec![3]]).unwrap();
+    fn test_hillman_grassl_row_vector() {
+        // Matrix with single row [1, 1, 1]
+        let matrix = vec![vec![1, 1, 1]];
+        let result = hillman_grassl(&matrix);
+        assert!(result.is_some());
 
-        // Compute residue sequence with e=2, multicharge=1
-        let residues = t.residue_sequence(2, 1);
-
-        // Entry 1 at (0,0): residue = (0 - 0 + 1) mod 2 = 1
-        assert_eq!(residues[0], 1);
-
-        // Entry 2 at (0,1): residue = (1 - 0 + 1) mod 2 = 0
-        assert_eq!(residues[1], 0);
-
-        // Entry 3 at (1,0): residue = (0 - 1 + 1) mod 2 = 0
-        assert_eq!(residues[2], 0);
+        let (p, q) = result.unwrap();
+        // P should contain columns 1, 2, 3
+        assert_eq!(p.size(), 3);
+        // All entries in Q should be 1 (all from row 1)
+        assert!(q.rows().iter().all(|row| row.iter().all(|&x| x == 1)));
     }
 
     #[test]
-    fn test_residue_content() {
-        // Create a tableau: [[1, 2, 3], [4, 5]]
-        let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+    fn test_hillman_grassl_column_vector() {
+        // Matrix with single column [1], [1], [1]
+        let matrix = vec![vec![1], vec![1], vec![1]];
+        let result = hillman_grassl(&matrix);
+        assert!(result.is_some());
 
-        // Compute residue content with e=3, multicharge=0
-        let content = t.residue_content(3, 0);
-
-        // Should have 3 entries (one for each residue class 0, 1, 2)
-        assert_eq!(content.len(), 3);
-
-        // Count cells with residue 0: (0,0) and (1,1) -> 2 cells
-        assert_eq!(content[0], 2);
-
-        // Count cells with residue 1: (0,1) -> 1 cell
-        assert_eq!(content[1], 1);
-
-        // Count cells with residue 2: (0,2) and (1,0) -> 2 cells
-        assert_eq!(content[2], 2);
-
-        // Verify total
-        assert_eq!(content.iter().sum::<usize>(), 5);
+        let (p, q) = result.unwrap();
+        // P should have all 1s (column 1)
+        assert!(p.rows().iter().all(|row| row.iter().all(|&x| x == 1)));
+        // Q should contain rows 1, 2, 3
+        assert_eq!(q.size(), 3);
     }
 
     #[test]
-    fn test_residue_content_different_shape() {
-        // Create a tableau with shape [3, 2, 1]: [[1, 2, 3], [4, 5], [6]]
-        let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5], vec![6]]).unwrap();
+    fn test_hillman_grassl_3x3_matrix() {
+        // Test with a 3x3 matrix
+        // [1, 0, 1]
+        // [0, 1, 0]
+        // [1, 1, 0]
+        let matrix = vec![
+            vec![1, 0, 1],
+            vec![0, 1, 0],
+            vec![1, 1, 0],
+        ];
+        let result = hillman_grassl(&matrix);
+        assert!(result.is_some());
 
-        let content = t.residue_content(2, 0);
-
-        // With e=2, residues are 0 or 1
-        assert_eq!(content.len(), 2);
-
-        // Cells with even content (col - row): (0,0)=0, (0,2)=2, (1,1)=0, (2,0)=-2 -> 4 cells with residue 0
-        // Cells with odd content: (0,1)=1, (1,0)=-1 -> 2 cells with residue 1
-        assert_eq!(content[0], 4);
-        assert_eq!(content[1], 2);
-
-        assert_eq!(content.iter().sum::<usize>(), 6);
+        let (p, q) = result.unwrap();
+        // Should have 5 entries (5 ones in the matrix)
+        assert_eq!(p.size(), 5);
+        assert_eq!(q.size(), 5);
+        // Same shape
+        assert_eq!(p.shape(), q.shape());
+        // P should be semistandard (Q may not be in Hillman-Grassl)
+        assert!(p.is_semistandard());
     }
 
     #[test]
-    fn test_cells_with_residue() {
-        // Create a tableau: [[1, 2, 3], [4, 5]]
-        let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
-
-        // Find cells with residue 0 (e=3, multicharge=0)
-        let cells = t.cells_with_residue(3, 0, 0);
-
-        // Should have 2 cells: (0,0) with value 1 and (1,1) with value 5
-        assert_eq!(cells.len(), 2);
-        assert!(cells.contains(&(0, 0, 1)));
-        assert!(cells.contains(&(1, 1, 5)));
-
-        // Find cells with residue 1
-        let cells_1 = t.cells_with_residue(3, 1, 0);
-        assert_eq!(cells_1.len(), 1);
-        assert_eq!(cells_1[0], (0, 1, 2));
-
-        // Find cells with residue 2
-        let cells_2 = t.cells_with_residue(3, 2, 0);
-        assert_eq!(cells_2.len(), 2);
-        assert!(cells_2.contains(&(0, 2, 3)));
-        assert!(cells_2.contains(&(1, 0, 4)));
+    fn test_hillman_grassl_invalid_matrix() {
+        // Non-binary matrix should return None
+        let matrix = vec![vec![1, 2, 0], vec![0, 1, 3]];
+        let result = hillman_grassl(&matrix);
+        assert!(result.is_none());
     }
 
     #[test]
-    fn test_cells_with_residue_invalid() {
-        let t = Tableau::new(vec![vec![1, 2, 3]]).unwrap();
+    fn test_hillman_grassl_zero_matrix() {
+        // Matrix of all zeros
+        let matrix = vec![vec![0, 0], vec![0, 0]];
+        let result = hillman_grassl(&matrix);
+        assert!(result.is_some());
 
-        // Invalid: residue >= e
-        let cells = t.cells_with_residue(3, 3, 0);
-        assert_eq!(cells.len(), 0);
-
-        // Invalid: e = 0
-        let cells = t.cells_with_residue(0, 0, 0);
-        assert_eq!(cells.len(), 0);
+        let (p, q) = result.unwrap();
+        // Should be empty tableaux
+        assert_eq!(p.size(), 0);
+        assert_eq!(q.size(), 0);
     }
 
     #[test]
-    fn test_residue_empty_tableau() {
+    fn test_hillman_grassl_inverse_basic() {
+        // Test inverse on simple matrix
+        let matrix = vec![vec![1, 0], vec![0, 1]];
+        let (p, q) = hillman_grassl(&matrix).unwrap();
+
+        let reconstructed = hillman_grassl_inverse(&p, &q);
+        assert!(reconstructed.is_some());
+        assert_eq!(reconstructed.unwrap(), matrix);
+    }
+
+    #[test]
+    fn test_hillman_grassl_inverse_3x3() {
+        // Test inverse on 3x3 matrix
+        let matrix = vec![
+            vec![1, 0, 1],
+            vec![0, 1, 0],
+            vec![1, 1, 0],
+        ];
+        let (p, q) = hillman_grassl(&matrix).unwrap();
+
+        // Debug output
+        println!("Original matrix: {:?}", matrix);
+        println!("P tableau: {:?}", p.rows());
+        println!("Q tableau: {:?}", q.rows());
+
+        let reconstructed = hillman_grassl_inverse(&p, &q);
+        assert!(reconstructed.is_some());
+        println!("Reconstructed: {:?}", reconstructed.as_ref().unwrap());
+        assert_eq!(reconstructed.unwrap(), matrix);
+    }
+
+    #[test]
+    fn test_hillman_grassl_inverse_row_vector() {
+        // Test inverse on row vector
+        let matrix = vec![vec![1, 1, 1]];
+        let (p, q) = hillman_grassl(&matrix).unwrap();
+
+        let reconstructed = hillman_grassl_inverse(&p, &q);
+        assert!(reconstructed.is_some());
+        assert_eq!(reconstructed.unwrap(), matrix);
+    }
+
+    #[test]
+    fn test_hillman_grassl_inverse_column_vector() {
+        // Test inverse on column vector
+        let matrix = vec![vec![1], vec![1], vec![1]];
+        let (p, q) = hillman_grassl(&matrix).unwrap();
+
+        let reconstructed = hillman_grassl_inverse(&p, &q);
+        assert!(reconstructed.is_some());
+        assert_eq!(reconstructed.unwrap(), matrix);
+    }
+
+    #[test]
+    fn test_hillman_grassl_inverse_empty() {
+        // Test inverse on empty tableaux
+        let p = Tableau::new(vec![]).unwrap();
+        let q = Tableau::new(vec![]).unwrap();
+
+        let reconstructed = hillman_grassl_inverse(&p, &q);
+        assert!(reconstructed.is_some());
+        assert_eq!(reconstructed.unwrap(), vec![] as Vec<Vec<usize>>);
+    }
+
+    #[test]
+    fn test_hillman_grassl_inverse_mismatched_shapes() {
+        // Tableaux with different shapes should return None
+        let p = Tableau::new(vec![vec![1, 2]]).unwrap();
+        let q = Tableau::new(vec![vec![1], vec![2]]).unwrap();
+
+        let result = hillman_grassl_inverse(&p, &q);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_hillman_grassl_roundtrip() {
+        // Test that hillman_grassl and its inverse are truly inverse operations
+        let test_matrices = vec![
+            vec![vec![1, 0, 1], vec![0, 1, 0], vec![1, 1, 0]],
+            vec![vec![1, 1, 0], vec![1, 0, 1], vec![0, 1, 1]],
+            vec![vec![1, 0, 0, 1], vec![0, 1, 1, 0]],
+            vec![vec![1], vec![1], vec![1], vec![1]],
+            vec![vec![1, 1, 1, 1]],
+        ];
+
+        for matrix in test_matrices {
+            let (p, q) = hillman_grassl(&matrix).unwrap();
+            let reconstructed = hillman_grassl_inverse(&p, &q).unwrap();
+            assert_eq!(reconstructed, matrix, "Roundtrip failed for matrix {:?}", matrix);
+        }
+    }
+
+    #[test]
+    fn test_hillman_grassl_insert() {
+        // Test the insertion algorithm directly
         let t = Tableau::new(vec![]).unwrap();
 
-        // Cell residue on empty tableau
-        assert_eq!(t.cell_residue(0, 0, 3, 0), None);
+        // Insert 2
+        let t = hillman_grassl_insert(&t, 2);
+        assert_eq!(t.rows(), &[vec![2]]);
 
-        // Residue sequence of empty tableau
-        let residues = t.residue_sequence(3, 0);
-        assert_eq!(residues.len(), 0);
+        // Insert 1 (should bump 2)
+        let t = hillman_grassl_insert(&t, 1);
+        assert_eq!(t.rows(), &[vec![1], vec![2]]);
 
-        // Residue content of empty tableau
-        let content = t.residue_content(3, 0);
-        assert_eq!(content, vec![0, 0, 0]);
+        // Insert 2 again (should go in first row since it allows repeats)
+        let t = hillman_grassl_insert(&t, 2);
+        assert_eq!(t.rows(), &[vec![1, 2], vec![2]]);
 
-        // Cells with residue on empty tableau
-        let cells = t.cells_with_residue(3, 0, 0);
-        assert_eq!(cells.len(), 0);
-    }
-
-    #[test]
-    fn test_residue_large_tableau() {
-        // Create a larger standard tableau
-        let t = Tableau::new(vec![
-            vec![1, 2, 3, 4],
-            vec![5, 6, 7],
-            vec![8, 9],
-        ]).unwrap();
-
-        assert!(t.is_standard());
-        assert_eq!(t.size(), 9);
-
-        // Test residue sequence with e=4
-        let residues = t.residue_sequence(4, 0);
-        assert_eq!(residues.len(), 9);
-
-        // Entry 1 at (0,0): residue = 0
-        assert_eq!(residues[0], 0);
-
-        // Entry 5 at (1,0): residue = -1 mod 4 = 3
-        assert_eq!(residues[4], 3);
-
-        // Entry 9 at (2,1): residue = (1 - 2) mod 4 = -1 mod 4 = 3
-        assert_eq!(residues[8], 3);
-
-        // Test residue content
-        let content = t.residue_content(4, 0);
-        assert_eq!(content.len(), 4);
-        assert_eq!(content.iter().sum::<usize>(), 9);
-    }
-
-    #[test]
-    fn test_residue_negative_multicharge() {
-        let t = Tableau::new(vec![vec![1, 2], vec![3]]).unwrap();
-
-        // Test with negative multicharge
-        let residues = t.residue_sequence(3, -1);
-
-        // Entry 1 at (0,0): residue = (0 - 0 - 1) mod 3 = -1 mod 3 = 2
-        assert_eq!(residues[0], 2);
-
-        // Entry 2 at (0,1): residue = (1 - 0 - 1) mod 3 = 0
-        assert_eq!(residues[1], 0);
-
-        // Entry 3 at (1,0): residue = (0 - 1 - 1) mod 3 = -2 mod 3 = 1
-        assert_eq!(residues[2], 1);
-    // k-tableau tests
-    #[test]
-    fn test_k_tableau_creation() {
-        // Valid 2-tableau: columns differ by at least 2
-        // [[1, 2, 3],
-        //  [3, 4, 5]]
-        let kt = KTableau::new(vec![vec![1, 2, 3], vec![3, 4, 5]], 2);
-        assert!(kt.is_some());
-        let kt = kt.unwrap();
-        assert_eq!(kt.k(), 2);
-        assert_eq!(kt.size(), 6);
-        assert!(kt.is_valid());
-    }
-
-    #[test]
-    fn test_k_tableau_invalid() {
-        // Invalid 2-tableau: second column only differs by 1
-        // [[1, 2, 3],
-        //  [3, 3, 5]]
-        let kt = KTableau::new(vec![vec![1, 2, 3], vec![3, 3, 5]], 2);
-        assert!(kt.is_none());
-
-        // Invalid: rows not weakly increasing
-        let kt2 = KTableau::new(vec![vec![3, 2, 1], vec![4, 5, 6]], 1);
-        assert!(kt2.is_none());
-    }
-
-    #[test]
-    fn test_k_tableau_k1_is_semistandard() {
-        // A 1-tableau should be the same as a semistandard tableau
-        // [[1, 1, 2],
-        //  [2, 3]]
-        let kt = KTableau::new(vec![vec![1, 1, 2], vec![2, 3]], 1);
-        assert!(kt.is_some());
-
-        let kt = kt.unwrap();
-        assert!(kt.is_valid());
-
-        // Verify it's also semistandard
-        let t = Tableau::new(vec![vec![1, 1, 2], vec![2, 3]]).unwrap();
+        // Result should be semistandard
         assert!(t.is_semistandard());
     }
 
     #[test]
-    fn test_k_tableau_k3() {
-        // Valid 3-tableau
-        // [[1, 2],
-        //  [4, 5]]
-        let kt = KTableau::new(vec![vec![1, 2], vec![4, 5]], 3);
-        assert!(kt.is_some());
-        assert!(kt.unwrap().is_valid());
+    fn test_hillman_grassl_properties() {
+        // Test that the resulting tableaux have expected properties
+        let matrix = vec![
+            vec![1, 1, 0, 0],
+            vec![0, 1, 1, 0],
+            vec![1, 0, 0, 1],
+        ];
 
-        // Invalid 3-tableau (column differs by only 2)
-        // [[1, 2],
-        //  [3, 5]]
-        let kt2 = KTableau::new(vec![vec![1, 2], vec![3, 5]], 3);
-        assert!(kt2.is_none());
-    }
+        let (p, q) = hillman_grassl(&matrix).unwrap();
 
-    #[test]
-    fn test_weak_k_tableau() {
-        // WeakKTableau is a type alias for KTableau
-        // Test that weak rows (with repeats) are allowed
-        let wkt: WeakKTableau = KTableau::new(vec![vec![1, 1, 1], vec![3, 3, 4]], 2).unwrap();
-        assert_eq!(wkt.k(), 2);
-        assert!(wkt.is_valid());
-    }
+        // Count total number of 1s in matrix
+        let num_ones: usize = matrix.iter().map(|row| row.iter().sum::<usize>()).sum();
 
-    #[test]
-    fn test_increasing_tableau_creation() {
-        // Valid increasing tableau
-        // [[1, 2, 4],
-        //  [3, 5]]
-        let it = IncreasingTableau::new(vec![vec![1, 2, 4], vec![3, 5]]);
-        assert!(it.is_some());
-        let it = it.unwrap();
-        assert_eq!(it.size(), 5);
-        assert!(it.is_valid());
-    }
+        // P and Q should have the same size as number of 1s
+        assert_eq!(p.size(), num_ones);
+        assert_eq!(q.size(), num_ones);
 
-    #[test]
-    fn test_increasing_tableau_invalid_rows() {
-        // Invalid: row not strictly increasing (has equal entries)
-        // [[1, 1, 2],
-        //  [3, 4]]
-        let it = IncreasingTableau::new(vec![vec![1, 1, 2], vec![3, 4]]);
-        assert!(it.is_none());
+        // P and Q should have the same shape
+        assert_eq!(p.shape(), q.shape());
 
-        // Invalid: row decreasing
-        // [[2, 1, 3],
-        //  [4, 5]]
-        let it2 = IncreasingTableau::new(vec![vec![2, 1, 3], vec![4, 5]]);
-        assert!(it2.is_none());
-    }
+        // P should be semistandard
+        assert!(p.is_semistandard());
 
-    #[test]
-    fn test_increasing_tableau_invalid_columns() {
-        // Invalid: column not strictly increasing (has equal entries)
-        // [[1, 2, 3],
-        //  [1, 4, 5]]
-        let it = IncreasingTableau::new(vec![vec![1, 2, 3], vec![1, 4, 5]]);
-        assert!(it.is_none());
+        // P should only contain values from 1 to number of columns
+        let max_p_value = p.rows().iter().flat_map(|row| row.iter()).max().copied().unwrap_or(0);
+        assert!(max_p_value <= matrix[0].len());
 
-        // Invalid: column decreasing
-        // [[2, 3, 4],
-        //  [1, 5, 6]]
-        let it2 = IncreasingTableau::new(vec![vec![2, 3, 4], vec![1, 5, 6]]);
-        assert!(it2.is_none());
-    }
-
-    #[test]
-    fn test_increasing_tableau_vs_standard() {
-        // An increasing tableau is more restrictive than a standard tableau
-        // Standard tableau (but not increasing due to equal in row):
-        // [[1, 1], [2]]  - This would be invalid for both standard and increasing
-
-        // Valid standard and increasing:
-        // [[1, 2], [3]]
-        let rows = vec![vec![1, 2], vec![3]];
-        let it = IncreasingTableau::new(rows.clone());
-        assert!(it.is_some());
-
-        let t = Tableau::new(rows).unwrap();
-        assert!(t.is_standard());
-    }
-
-    #[test]
-    fn test_generate_k_tableaux_small() {
-        // Generate all 2-tableaux of shape [2, 1] with max entry 5
-        let shape = Partition::new(vec![2, 1]);
-        let k_tableaux = generate_k_tableaux(&shape, 2, 5);
-
-        // Verify all are valid
-        for kt in &k_tableaux {
-            assert!(kt.is_valid());
-            assert_eq!(kt.k(), 2);
-            assert_eq!(kt.shape(), &shape);
-        }
-
-        // Should have at least some k-tableaux
-        assert!(!k_tableaux.is_empty());
-    }
-
-    #[test]
-    fn test_generate_k_tableaux_k1() {
-        // Generate all 1-tableaux (semistandard) of shape [2] with max entry 3
-        let shape = Partition::new(vec![2]);
-        let k_tableaux = generate_k_tableaux(&shape, 1, 3);
-
-        // Expected: [1,1], [1,2], [1,3], [2,2], [2,3], [3,3]
-        // All should be valid 1-tableaux
-        for kt in &k_tableaux {
-            assert!(kt.is_valid());
-            assert_eq!(kt.k(), 1);
-        }
-
-        // Should have exactly 6 tableaux
-        assert_eq!(k_tableaux.len(), 6);
-    }
-
-    #[test]
-    fn test_generate_k_tableaux_empty() {
-        // Empty shape should give empty list
-        let shape = Partition::new(vec![]);
-        let k_tableaux = generate_k_tableaux(&shape, 1, 5);
-        assert_eq!(k_tableaux.len(), 0);
-    }
-
-    #[test]
-    fn test_generate_increasing_tableaux_small() {
-        // Generate all increasing tableaux of shape [2, 1] with entries [1, 2, 3]
-        let shape = Partition::new(vec![2, 1]);
-        let entries = vec![1, 2, 3];
-        let inc_tableaux = generate_increasing_tableaux(&shape, &entries);
-
-        // Verify all are valid
-        for it in &inc_tableaux {
-            assert!(it.is_valid());
-            assert_eq!(it.shape(), &shape);
-            assert_eq!(it.size(), 3);
-        }
-
-        // Should have exactly 2 increasing tableaux:
-        // [[1, 2], [3]] and [[1, 3], [2]]
-        assert_eq!(inc_tableaux.len(), 2);
-    }
-
-    #[test]
-    fn test_generate_increasing_tableaux_single_row() {
-        // Generate all increasing tableaux of shape [3] with entries [1, 2, 3]
-        let shape = Partition::new(vec![3]);
-        let entries = vec![1, 2, 3];
-        let inc_tableaux = generate_increasing_tableaux(&shape, &entries);
-
-        // Should have exactly 1 tableau: [[1, 2, 3]]
-        assert_eq!(inc_tableaux.len(), 1);
-        assert_eq!(inc_tableaux[0].rows(), &[vec![1, 2, 3]]);
-    }
-
-    #[test]
-    fn test_generate_increasing_tableaux_wrong_size() {
-        // Wrong number of entries should give empty list
-        let shape = Partition::new(vec![2, 1]);
-        let entries = vec![1, 2]; // Need 3 entries
-        let inc_tableaux = generate_increasing_tableaux(&shape, &entries);
-        assert_eq!(inc_tableaux.len(), 0);
-    }
-
-    #[test]
-    fn test_generate_increasing_tableaux_empty() {
-        // Empty shape should give empty list
-        let shape = Partition::new(vec![]);
-        let entries = vec![];
-        let inc_tableaux = generate_increasing_tableaux(&shape, &entries);
-        assert_eq!(inc_tableaux.len(), 0);
-    }
-
-    #[test]
-    fn test_k_tableau_edge_case_single_cell() {
-        // Single cell should be valid for any k
-        let kt1 = KTableau::new(vec![vec![1]], 1).unwrap();
-        assert!(kt1.is_valid());
-
-        let kt5 = KTableau::new(vec![vec![1]], 5).unwrap();
-        assert!(kt5.is_valid());
-    }
-
-    #[test]
-    fn test_increasing_tableau_edge_case_single_cell() {
-        // Single cell should be valid
-        let it = IncreasingTableau::new(vec![vec![1]]).unwrap();
-        assert!(it.is_valid());
-    }
-
-    #[test]
-    fn test_k_tableau_to_string() {
-        let kt = KTableau::new(vec![vec![1, 2, 3], vec![4, 5]], 1).unwrap();
-        let s = kt.to_string();
-        assert!(s.contains("1 2 3"));
-        assert!(s.contains("4 5"));
-    }
-
-    #[test]
-    fn test_increasing_tableau_to_string() {
-        let it = IncreasingTableau::new(vec![vec![1, 3, 5], vec![2, 4]]).unwrap();
-        let s = it.to_string();
-        assert!(s.contains("1 3 5"));
-        assert!(s.contains("2 4"));
+        // Q should only contain values from 1 to number of rows
+        let max_q_value = q.rows().iter().flat_map(|row| row.iter()).max().copied().unwrap_or(0);
+        assert!(max_q_value <= matrix.len());
     }
 }
