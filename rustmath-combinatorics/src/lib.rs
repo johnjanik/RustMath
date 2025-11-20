@@ -22,6 +22,7 @@ pub mod posets;
 pub mod q_analogue;
 pub mod ranking;
 pub mod recurrence_sequences;
+pub mod restricted_growth;
 pub mod set_partition;
 pub mod set_system;
 pub mod sidon_sets;
@@ -77,7 +78,10 @@ pub use ranking::{CombinationRank, PermutationRank, Rankable, RankingTable};
 pub use recurrence_sequences::{
     solve_binary_recurrence, BinaryRecurrence, LinearRecurrence, RecurrenceSequence,
 };
-pub use set_partition::{set_partition_ordered, set_partitions, OrderedSetPartition, SetPartition};
+pub use restricted_growth::{
+    restricted_growth_strings, RestrictedGrowth, RestrictedGrowthIterator,
+};
+pub use set_partition::{set_partitions, SetPartition};
 pub use set_system::SetSystem;
 pub use multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
 pub use word::{
