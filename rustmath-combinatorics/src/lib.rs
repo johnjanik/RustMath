@@ -16,6 +16,7 @@ pub mod composition_tableau;
 pub mod debruijn;
 pub mod derangements;
 pub mod designs;
+pub mod dlx;
 pub mod dyck_word;
 pub mod enumeration;
 pub mod finite_state_machine_generators;
@@ -90,6 +91,7 @@ pub use designs::{
     are_latin_squares_orthogonal, mutually_orthogonal_latin_squares, BlockDesign,
     DesignAutomorphism, DifferenceSet, HadamardMatrix, OrthogonalArray, SteinerSystem,
 };
+pub use dlx::DancingLinks;
 pub use dyck_word::{dyck_words, nu_dyck_words, BounceStats, DyckWord, NuDyckWord};
 pub use enumeration::{
     binary_to_gray, cartesian_product, gray_code_change_bit, gray_code_rank, gray_code_sequence,
