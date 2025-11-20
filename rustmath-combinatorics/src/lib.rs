@@ -21,6 +21,7 @@ pub mod designs;
 pub mod dlx;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod expnums;
 pub mod group_action;
 pub mod finite_state_machine_generators;
 pub mod integer_vectors;
@@ -179,15 +180,15 @@ pub use superpartitions::{
 };
 pub use integer_vectors::{
     count_integer_vectors_in_box, count_integer_vectors_with_sum, integer_vector_sum_iter,
-    integer_vectors_in_box, integer_vectors_mod_permgroup, integer_vectors_with_l1_norm_bounded,
-    integer_vectors_with_sum, integer_vectors_with_weighted_sum, orbit_of_vector, IntegerVector,
-    IntegerVectorSumIter,
+    integer_vectors_in_box, integer_vectors_with_l1_norm_bounded, integer_vectors_with_sum,
+    integer_vectors_with_weighted_sum, IntegerVector, IntegerVectorSumIter,
 };
 pub use vector_partition::{
     count_vector_partitions_exact_parts, count_vector_partitions_max_parts,
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
     vector_partitions_with_max_part, VectorPartition,
 };
+pub use expnums::{EGF, ExpNum};
 pub use tiling::{
     build_transfer_matrix, count_domino_tilings, count_monomino_tilings,
     count_polyomino_tilings, count_tilings, ColumnState, Polyomino,
