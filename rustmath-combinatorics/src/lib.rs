@@ -36,6 +36,7 @@ pub mod permutation_simd;
 pub mod posets;
 pub mod q_analogue;
 pub mod ranking;
+pub mod t_sequences;
 pub mod recurrence_sequences;
 pub mod regular_sequences;
 pub mod ribbon_tableau;
@@ -145,6 +146,10 @@ pub use subset::{
 };
 pub use q_analogue::{
     gaussian_polynomial, q_binomial, q_binomial_eval, q_factorial, q_integer, q_multinomial,
+};
+pub use t_sequences::{
+    t_bell, t_binomial, t_binomial_eval, t_catalan, t_eulerian, t_factorial, t_fibonacci,
+    t_integer, t_lucas, t_multinomial, t_stirling_second,
 };
 pub use wreath_product::{all_colored_permutations, ColoredPermutation};
 pub use plane_partition::{
