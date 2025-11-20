@@ -12,6 +12,7 @@ pub mod posets;
 pub mod ranking;
 pub mod set_system;
 pub mod tableaux;
+pub mod words;
 
 pub use combinations::{combinations, Combination};
 pub use partitions::{
@@ -32,6 +33,11 @@ pub use enumeration::{
 };
 pub use ranking::{CombinationRank, PermutationRank, Rankable, RankingTable};
 pub use set_system::SetSystem;
+pub use words::{
+    abelian_complexity, kmp_pattern_match, pattern_match, thue_morse_automatic,
+    thue_morse_morphism, fibonacci_morphism, AutomaticSequence, ChristoffelWord,
+    SturmianWord, Word, WordMorphism,
+};
 
 // stirling_first, Composition, compositions, and compositions_k are defined in this module
 
