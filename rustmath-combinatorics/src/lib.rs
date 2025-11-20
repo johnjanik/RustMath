@@ -108,6 +108,9 @@ pub use sidon_sets::{
     backtracking_bh_sequence, backtracking_sidon_set, greedy_bh_sequence, greedy_sidon_set,
     is_bh_sequence, is_sidon_set, max_bh_sequence_size, max_sidon_set_size, BhSequence, SidonSet,
 };
+pub use skew_partition::{
+    ribbon_shaped_tableaux, RibbonTableau, SkewPartition, SkewTableau,
+};
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
 

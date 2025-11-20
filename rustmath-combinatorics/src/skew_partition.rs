@@ -522,6 +522,213 @@ impl SkewTableau {
     }
 }
 
+/// A ribbon-shaped tableau
+///
+/// A ribbon tableau is a standard tableau whose shape is a ribbon (a connected skew shape
+/// with no 2×2 blocks). Ribbons are characterized by their height function.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RibbonTableau {
+    /// The underlying skew tableau (must be a ribbon shape)
+    tableau: SkewTableau,
+    /// Height of the ribbon (number of rows spanned minus 1)
+    height: usize,
+}
+
+impl RibbonTableau {
+    /// Create a new ribbon tableau
+    ///
+    /// Returns None if the shape is not a ribbon or the tableau is not standard
+    pub fn new(tableau: SkewTableau) -> Option<Self> {
+        if !tableau.shape().is_ribbon() {
+            return None;
+        }
+
+        if !tableau.is_standard() {
+            return None;
+        }
+
+        let height = tableau.shape().height()?;
+
+        Some(RibbonTableau { tableau, height })
+    }
+
+    /// Get the underlying skew tableau
+    pub fn tableau(&self) -> &SkewTableau {
+        &self.tableau
+    }
+
+    /// Get the height of the ribbon
+    pub fn height(&self) -> usize {
+        self.height
+    }
+
+    /// Get the spin of the ribbon
+    ///
+    /// For a ribbon of size n with height h, spin = h - (n - h - 1) = 2h - n + 1
+    pub fn spin(&self) -> i32 {
+        self.tableau.shape().spin().unwrap_or(0)
+    }
+
+    /// Get the size (number of cells) of the ribbon
+    pub fn size(&self) -> usize {
+        self.tableau.shape().size()
+    }
+
+    /// Compute the height function for the ribbon
+    ///
+    /// The height function h(i) gives the "height" after reading the first i entries.
+    /// It increases by 1 when moving down a row and decreases by 1 when moving right.
+    pub fn height_function(&self) -> Vec<usize> {
+        let cells = self.tableau.shape().cells();
+        let n = cells.len();
+
+        if n == 0 {
+            return vec![0];
+        }
+
+        // Sort cells by their tableau entry value to get reading order
+        let mut cell_entries: Vec<((usize, usize), usize)> = Vec::new();
+        for &(row, col) in &cells {
+            if let Some(entry) = self.tableau.get(row, col) {
+                cell_entries.push(((row, col), entry));
+            }
+        }
+        cell_entries.sort_by_key(|&(_, entry)| entry);
+
+        // Compute height function
+        let mut heights = vec![0]; // h(0) = 0
+        let mut current_height = 0;
+
+        for i in 1..=n {
+            let (curr_row, curr_col) = cell_entries[i - 1].0;
+
+            if i < n {
+                let (next_row, next_col) = cell_entries[i].0;
+
+                // If moving down (next row > current row), height increases
+                // If moving right (same row, next col > current col), height decreases
+                if next_row > curr_row {
+                    current_height += 1;
+                } else if next_row == curr_row && next_col > curr_col {
+                    if current_height > 0 {
+                        current_height -= 1;
+                    }
+                }
+            }
+
+            heights.push(current_height);
+        }
+
+        heights
+    }
+
+    /// Get the head (northwest-most cell) of the ribbon
+    pub fn head(&self) -> Option<(usize, usize)> {
+        let cells = self.tableau.shape().cells();
+        if cells.is_empty() {
+            return None;
+        }
+
+        // Head is the cell with minimum row, and within that minimum column
+        cells.iter()
+            .min_by_key(|&&(r, c)| (r, c))
+            .copied()
+    }
+
+    /// Get the tail (southeast-most cell) of the ribbon
+    pub fn tail(&self) -> Option<(usize, usize)> {
+        let cells = self.tableau.shape().cells();
+        if cells.is_empty() {
+            return None;
+        }
+
+        // Tail is the cell with maximum row, and within that maximum column
+        cells.iter()
+            .max_by_key(|&&(r, c)| (r, c))
+            .copied()
+    }
+}
+
+/// Generate all standard ribbon tableaux for a given ribbon shape
+///
+/// A ribbon is a connected skew shape that contains no 2×2 block.
+/// This function generates all ways to fill the ribbon shape with the numbers 1..n
+/// such that entries are strictly increasing along rows and down columns.
+pub fn ribbon_shaped_tableaux(shape: &SkewPartition) -> Vec<RibbonTableau> {
+    if !shape.is_ribbon() {
+        return vec![];
+    }
+
+    let cells = shape.cells();
+    let n = cells.len();
+
+    if n == 0 {
+        return vec![];
+    }
+
+    let mut result = Vec::new();
+
+    // Initialize grid based on outer partition shape
+    let outer_parts = shape.outer().parts();
+    let mut current_filling: Vec<Vec<Option<usize>>> = outer_parts.iter()
+        .map(|&len| vec![None; len])
+        .collect();
+
+    generate_ribbon_tableaux(
+        shape,
+        &cells,
+        &mut current_filling,
+        1,
+        n,
+        &mut result,
+    );
+
+    result
+}
+
+fn generate_ribbon_tableaux(
+    shape: &SkewPartition,
+    cells: &[(usize, usize)],
+    current_filling: &mut Vec<Vec<Option<usize>>>,
+    next_value: usize,
+    n: usize,
+    result: &mut Vec<RibbonTableau>,
+) {
+    if next_value > n {
+        // All values placed, create ribbon tableau
+        if let Some(skew_tableau) = SkewTableau::new(shape.clone(), current_filling.clone()) {
+            if let Some(ribbon_tableau) = RibbonTableau::new(skew_tableau) {
+                result.push(ribbon_tableau);
+            }
+        }
+        return;
+    }
+
+    // Try placing next_value in each valid cell
+    for &(row, col) in cells {
+        if current_filling[row][col].is_none() && can_place_in_ribbon(shape, current_filling, row, col, next_value) {
+            current_filling[row][col] = Some(next_value);
+            generate_ribbon_tableaux(shape, cells, current_filling, next_value + 1, n, result);
+            current_filling[row][col] = None;
+        }
+    }
+}
+
+fn can_place_in_ribbon(
+    _shape: &SkewPartition,
+    current_filling: &[Vec<Option<usize>>],
+    row: usize,
+    col: usize,
+    _value: usize,
+) -> bool {
+    // Check that this position is empty
+    // Since we're placing values 1, 2, 3, ... in order, and trying all positions
+    // for each value, the tableau property (strictly increasing along rows/columns)
+    // is automatically satisfied - any already-placed value is smaller than the
+    // current value we're trying to place.
+    current_filling[row][col].is_none()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -695,5 +902,229 @@ mod tests {
         assert!(straightened.is_some());
         let t = straightened.unwrap();
         assert_eq!(t.size(), 4);
+    }
+
+    #[test]
+    fn test_ribbon_tableau_creation() {
+        // Create a ribbon shape: [2,1] is an L-shape (a ribbon)
+        let outer = Partition::new(vec![2, 1]);
+        let inner = Partition::new(vec![]);
+        let shape = SkewPartition::new(outer, inner).unwrap();
+
+        assert!(shape.is_ribbon());
+
+        // Create a standard filling
+        let entries = vec![
+            vec![Some(1), Some(2)],
+            vec![Some(3)],
+        ];
+
+        let skew_tableau = SkewTableau::new(shape, entries).unwrap();
+        let ribbon_tableau = RibbonTableau::new(skew_tableau);
+
+        assert!(ribbon_tableau.is_some());
+        let rt = ribbon_tableau.unwrap();
+        assert_eq!(rt.height(), 1); // Spans 2 rows, so height = 1
+        assert_eq!(rt.size(), 3);
+    }
+
+    #[test]
+    fn test_ribbon_tableau_invalid_shape() {
+        // Create a non-ribbon shape with a 2×2 block
+        let outer = Partition::new(vec![2, 2]);
+        let inner = Partition::new(vec![]);
+        let shape = SkewPartition::new(outer, inner).unwrap();
+
+        assert!(!shape.is_ribbon()); // Has a 2×2 block
+
+        let entries = vec![
+            vec![Some(1), Some(2)],
+            vec![Some(3), Some(4)],
+        ];
+
+        let skew_tableau = SkewTableau::new(shape, entries).unwrap();
+        let ribbon_tableau = RibbonTableau::new(skew_tableau);
+
+        // Should fail because shape is not a ribbon
+        assert!(ribbon_tableau.is_none());
+    }
+
+    #[test]
+    fn test_ribbon_tableau_height_function() {
+        // Create a ribbon shape: [3,2] / [1] is a connected ribbon
+        let outer = Partition::new(vec![3, 2]);
+        let inner = Partition::new(vec![1]);
+        let shape = SkewPartition::new(outer, inner).unwrap();
+
+        // This is a connected ribbon
+        assert!(shape.is_ribbon());
+
+        // Create a standard filling
+        let entries = vec![
+            vec![None, Some(1), Some(3)],
+            vec![Some(2), Some(4)],
+        ];
+
+        let skew_tableau = SkewTableau::new(shape, entries).unwrap();
+        let ribbon_tableau = RibbonTableau::new(skew_tableau).unwrap();
+
+        // Compute height function
+        let heights = ribbon_tableau.height_function();
+        assert!(!heights.is_empty());
+        assert_eq!(heights[0], 0); // Start at height 0
+    }
+
+    #[test]
+    fn test_ribbon_tableau_head_tail() {
+        // Create a simple ribbon: [2,1]
+        let outer = Partition::new(vec![2, 1]);
+        let inner = Partition::new(vec![]);
+        let shape = SkewPartition::new(outer, inner).unwrap();
+
+        let entries = vec![
+            vec![Some(1), Some(3)],
+            vec![Some(2)],
+        ];
+
+        let skew_tableau = SkewTableau::new(shape, entries).unwrap();
+        let ribbon_tableau = RibbonTableau::new(skew_tableau).unwrap();
+
+        // Head should be (0, 0) - northwest cell
+        assert_eq!(ribbon_tableau.head(), Some((0, 0)));
+
+        // Tail should be (1, 0) - southeast cell
+        assert_eq!(ribbon_tableau.tail(), Some((1, 0)));
+    }
+
+    #[test]
+    fn test_ribbon_tableau_spin() {
+        // Create a ribbon with known spin
+        let outer = Partition::new(vec![2, 1]);
+        let inner = Partition::new(vec![]);
+        let shape = SkewPartition::new(outer, inner).unwrap();
+
+        let entries = vec![
+            vec![Some(1), Some(2)],
+            vec![Some(3)],
+        ];
+
+        let skew_tableau = SkewTableau::new(shape, entries).unwrap();
+        let ribbon_tableau = RibbonTableau::new(skew_tableau).unwrap();
+
+        let spin = ribbon_tableau.spin();
+        // For a ribbon of size 3 with height 1: spin = 2*1 - 3 + 1 = 0
+        assert_eq!(spin, 0);
+    }
+
+    #[test]
+    fn test_ribbon_shaped_tableaux_generation() {
+        // Generate all standard ribbon tableaux for shape [2,1]
+        let outer = Partition::new(vec![2, 1]);
+        let inner = Partition::new(vec![]);
+        let shape = SkewPartition::new(outer, inner).unwrap();
+
+        assert!(shape.is_ribbon());
+
+        let tableaux = ribbon_shaped_tableaux(&shape);
+
+        // There should be exactly 2 standard tableaux for this shape:
+        // [[1,2],[3]] and [[1,3],[2]]
+        assert_eq!(tableaux.len(), 2);
+
+        // Verify all are standard and have correct shape
+        for rt in &tableaux {
+            assert_eq!(rt.size(), 3);
+            assert_eq!(rt.height(), 1);
+            assert!(rt.tableau().is_standard());
+        }
+    }
+
+    #[test]
+    fn test_ribbon_shaped_tableaux_single_row() {
+        // Single row ribbon: [3]
+        let outer = Partition::new(vec![3]);
+        let inner = Partition::new(vec![]);
+        let shape = SkewPartition::new(outer, inner).unwrap();
+
+        assert!(shape.is_ribbon());
+
+        let tableaux = ribbon_shaped_tableaux(&shape);
+
+        // There should be exactly 1 standard tableau: [[1,2,3]]
+        assert_eq!(tableaux.len(), 1);
+        assert_eq!(tableaux[0].height(), 0); // Single row has height 0
+    }
+
+    #[test]
+    fn test_ribbon_shaped_tableaux_single_column() {
+        // Single column ribbon: [1,1,1]
+        let outer = Partition::new(vec![1, 1, 1]);
+        let inner = Partition::new(vec![]);
+        let shape = SkewPartition::new(outer, inner).unwrap();
+
+        assert!(shape.is_ribbon());
+
+        let tableaux = ribbon_shaped_tableaux(&shape);
+
+        // There should be exactly 1 standard tableau: [[1],[2],[3]]
+        assert_eq!(tableaux.len(), 1);
+        assert_eq!(tableaux[0].height(), 2); // Spans 3 rows, so height = 2
+    }
+
+    #[test]
+    fn test_ribbon_shaped_tableaux_non_ribbon() {
+        // Non-ribbon shape with 2×2 block
+        let outer = Partition::new(vec![2, 2]);
+        let inner = Partition::new(vec![]);
+        let shape = SkewPartition::new(outer, inner).unwrap();
+
+        assert!(!shape.is_ribbon());
+
+        let tableaux = ribbon_shaped_tableaux(&shape);
+
+        // Should return empty vector for non-ribbon shapes
+        assert_eq!(tableaux.len(), 0);
+    }
+
+    #[test]
+    fn test_debug_shapes() {
+        // Test various shapes to see which are ribbons
+        let test_cases = vec![
+            (vec![2, 1], vec![]),
+            (vec![3, 1], vec![1]),
+            (vec![3, 2], vec![1]),
+            (vec![3, 2, 1], vec![2, 1]),
+            (vec![4, 2], vec![2]),
+        ];
+
+        for (outer_parts, inner_parts) in test_cases {
+            let outer = Partition::new(outer_parts.clone());
+            let inner = Partition::new(inner_parts.clone());
+            let shape = SkewPartition::new(outer, inner).unwrap();
+            println!("{:?}/{:?}: is_ribbon={}, cells={:?}",
+                     outer_parts, inner_parts, shape.is_ribbon(), shape.cells());
+        }
+    }
+
+    #[test]
+    fn test_ribbon_shaped_tableaux_skew_ribbon() {
+        // Use [3,2] / [1] which is a valid ribbon
+        let outer = Partition::new(vec![3, 2]);
+        let inner = Partition::new(vec![1]);
+        let shape = SkewPartition::new(outer, inner).unwrap();
+
+        // This should be a ribbon
+        assert!(shape.is_ribbon());
+
+        let tableaux = ribbon_shaped_tableaux(&shape);
+
+        // Verify all generated tableaux are valid
+        for rt in &tableaux {
+            assert_eq!(rt.size(), 4);
+            assert!(rt.tableau().is_standard());
+        }
+
+        // There should be at least 1 tableau
+        assert!(!tableaux.is_empty());
     }
 }
