@@ -58,7 +58,7 @@ pub use designs::{
     are_latin_squares_orthogonal, mutually_orthogonal_latin_squares, BlockDesign,
     DesignAutomorphism, DifferenceSet, HadamardMatrix, OrthogonalArray, SteinerSystem,
 };
-pub use dyck_word::{dyck_words, DyckWord};
+pub use dyck_word::{dyck_words, nu_dyck_words, DyckWord, NuDyckWord};
 pub use enumeration::{
     cartesian_product, stars_and_bars, tuples, weak_compositions, CartesianProduct,
     CompositionIterator, Enumerable, GrayCodeIterator, InfiniteCartesianProduct, LazyEnumerator,
