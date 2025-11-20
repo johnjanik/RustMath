@@ -3,7 +3,7 @@
 //! This crate provides combinatorial structures like permutations, combinations,
 //! partitions, and algorithms for generating and manipulating them.
 
-pub mod alternating_sign_matrix;
+pub mod affine_permutations;
 pub mod binary_words;
 pub mod combinations;
 pub mod composition;
@@ -29,6 +29,7 @@ pub mod tamari;
 pub mod tuple;
 pub mod word;
 
+pub use affine_permutations::{AffinePermutation, CoxeterType};
 pub use combinations::{combinations, Combination};
 pub use partitions::{
     count_partitions_with_max_parts, partition_count, partitions, partitions_with_distinct_parts,
