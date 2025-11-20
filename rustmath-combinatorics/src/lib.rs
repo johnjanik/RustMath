@@ -23,6 +23,9 @@ pub mod designs;
 pub mod dlx;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod grossman_larson;
+pub mod integer_vectors;
+pub mod integer_matrices;
 pub mod growth_diagram;
 pub mod hall_polynomial;
 pub mod expnums;
@@ -200,6 +203,9 @@ pub use parallelogram_polyomino::{
     parallelogram_polyominoes_with_bounce_statistic, BouncePath, ParallelogramPolyomino, Point,
 };
 pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator};
+pub use grossman_larson::{
+    all_rooted_trees, GrossmanLarsonElement, RootedTree,
+};
 pub use derangements::{
     all_derangements, count_derangements, count_derangements_recurrence, is_derangement,
 };
