@@ -23,6 +23,7 @@ pub mod subset;
 pub mod tableaux;
 pub mod tuple;
 pub mod word;
+pub mod wreath_product;
 
 pub use combinations::{combinations, Combination};
 pub use partitions::{
@@ -71,6 +72,7 @@ pub use subset::{
 pub use q_analogue::{
     gaussian_polynomial, q_binomial, q_binomial_eval, q_factorial, q_integer, q_multinomial,
 };
+pub use wreath_product::{all_colored_permutations, ColoredPermutation};
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
 
