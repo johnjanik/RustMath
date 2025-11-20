@@ -12,6 +12,7 @@ pub mod designs;
 pub mod dyck_word;
 pub mod enumeration;
 pub mod integer_vectors;
+pub mod integer_matrices;
 pub mod ordered_tree;
 pub mod partitions;
 pub mod perfect_matching;
@@ -22,8 +23,10 @@ pub mod posets;
 pub mod q_analogue;
 pub mod ranking;
 pub mod recurrence_sequences;
+pub mod restricted_growth;
 pub mod set_partition;
 pub mod set_system;
+pub mod sidon_sets;
 pub mod skew_partition;
 pub mod species;
 pub mod subset;
@@ -31,6 +34,7 @@ pub mod superpartitions;
 pub mod tableaux;
 pub mod tamari;
 pub mod tuple;
+pub mod vector_partition;
 pub mod word;
 pub mod wreath_product;
 
@@ -54,26 +58,34 @@ pub use tuple::{tuples as tuple_tuples, Tuple, TupleIterator};
 // Re-export new modules
 pub use binary_words::{all_binary_words, binary_words_with_weight, lyndon_words, necklaces, BinaryWord};
 pub use composition::{
-    compositions, compositions_k, signed_compositions, signed_compositions_k, Composition,
-    SignedComposition,
+    compositions, compositions_k, integer_vectors_weighted, integer_vectors_weighted_dp,
+    signed_compositions, signed_compositions_k, Composition, SignedComposition,
+    WeightedIntegerVector,
 };
 pub use designs::{
     are_latin_squares_orthogonal, mutually_orthogonal_latin_squares, BlockDesign,
     DesignAutomorphism, DifferenceSet, HadamardMatrix, OrthogonalArray, SteinerSystem,
 };
-pub use dyck_word::{dyck_words, nu_dyck_words, DyckWord, NuDyckWord};
+pub use dyck_word::{dyck_words, nu_dyck_words, BounceStats, DyckWord, NuDyckWord};
 pub use enumeration::{
     cartesian_product, stars_and_bars, tuples, weak_compositions, CartesianProduct,
     CompositionIterator, Enumerable, GrayCodeIterator, InfiniteCartesianProduct, LazyEnumerator,
     PartitionIterator, RevolvingDoorIterator,
+};
+pub use integer_matrices::{
+    count_integer_matrices, integer_matrices, integer_matrices_bounded, IntegerMatrix,
 };
 pub use perfect_matching::{perfect_matchings, PerfectMatching};
 pub use ranking::{CombinationRank, PermutationRank, Rankable, RankingTable};
 pub use recurrence_sequences::{
     solve_binary_recurrence, BinaryRecurrence, LinearRecurrence, RecurrenceSequence,
 };
+pub use restricted_growth::{
+    restricted_growth_strings, RestrictedGrowth, RestrictedGrowthIterator,
+};
 pub use set_partition::{set_partitions, SetPartition};
 pub use set_system::SetSystem;
+pub use multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
 pub use word::{
     abelian_complexity, boyer_moore_search, christoffel_word, factor_complexity, kmp_search,
     lyndon_factorization, lyndon_words as general_lyndon_words, sturmian_word, AutomaticSequence,
@@ -93,8 +105,7 @@ pub use plane_partition::{
     count_transpose_complement_plane_partitions, plane_partitions, plane_partitions_in_box,
     PlanePartition,
 };
-pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator,
-};
+pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator};
 pub use derangements::{
     all_derangements, count_derangements, count_derangements_recurrence, is_derangement,
 };
@@ -106,6 +117,10 @@ pub use integer_vectors::{
     count_integer_vectors_in_box, count_integer_vectors_with_sum, integer_vector_sum_iter,
     integer_vectors_in_box, integer_vectors_with_l1_norm_bounded, integer_vectors_with_sum,
     integer_vectors_with_weighted_sum, IntegerVector, IntegerVectorSumIter,
+pub use vector_partition::{
+    count_vector_partitions_exact_parts, count_vector_partitions_max_parts,
+    fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
+    vector_partitions_with_max_part, VectorPartition,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
