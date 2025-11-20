@@ -15,6 +15,7 @@ pub mod dyck_word;
 pub mod enumeration;
 pub mod integer_vectors;
 pub mod integer_matrices;
+pub mod multiset_partition_into_sets_ordered;
 pub mod ordered_tree;
 pub mod partitions;
 pub mod path_tableaux;
@@ -36,6 +37,7 @@ pub mod species;
 pub mod subset;
 pub mod superpartitions;
 pub mod tableaux;
+pub mod tableau_tuple;
 pub mod tamari;
 pub mod tuple;
 pub mod vector_partition;
@@ -59,6 +61,10 @@ pub use posets::Poset;
 pub use tableaux::{
     generate_increasing_tableaux, generate_k_tableaux, robinson_schensted, rs_insert,
     standard_tableaux, IncreasingTableau, KTableau, Tableau, WeakKTableau,
+};
+pub use tableau_tuple::{
+    row_standard_tableau_tuples, standard_tableau_tuples, RowStandardTableauTuple,
+    StandardTableauTuple, TableauTuple,
 };
 pub use tuple::{tuples as tuple_tuples, Tuple, TupleIterator};
 
@@ -130,6 +136,7 @@ pub use integer_vectors::{
     count_integer_vectors_in_box, count_integer_vectors_with_sum, integer_vector_sum_iter,
     integer_vectors_in_box, integer_vectors_with_l1_norm_bounded, integer_vectors_with_sum,
     integer_vectors_with_weighted_sum, IntegerVector, IntegerVectorSumIter,
+};
 pub use vector_partition::{
     count_vector_partitions_exact_parts, count_vector_partitions_max_parts,
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
