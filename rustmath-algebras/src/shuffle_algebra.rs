@@ -36,6 +36,7 @@
 use rustmath_core::Ring;
 use std::collections::HashMap;
 use std::fmt;
+use std::ops::{Add, Sub, Mul, Neg};
 
 /// A word is a sequence of letters from an alphabet
 pub type Word = Vec<String>;
@@ -125,6 +126,27 @@ impl<R: Ring> ShuffleElement<R> {
     pub fn coefficients(&self) -> &HashMap<Word, R> {
         &self.coefficients
     }
+
+    /// Multiply by a scalar
+    pub fn scalar_mul(&self, scalar: &R) -> Self {
+        if scalar.is_zero() {
+            return Self::zero();
+        }
+
+        let mut result = HashMap::new();
+        for (word, coeff) in &self.coefficients {
+            let new_coeff = coeff.clone() * scalar.clone();
+            if !new_coeff.is_zero() {
+                result.insert(word.clone(), new_coeff);
+            }
+        }
+        Self { coefficients: result }
+    }
+
+    /// Get all words with non-zero coefficients
+    pub fn words(&self) -> Vec<Word> {
+        self.coefficients.keys().cloned().collect()
+    }
 }
 
 impl<R: Ring> fmt::Display for ShuffleElement<R> {
@@ -147,6 +169,166 @@ impl<R: Ring> fmt::Display for ShuffleElement<R> {
             }
         }
         Ok(())
+    }
+}
+
+// Arithmetic trait implementations
+
+impl<R: Ring> Add for ShuffleElement<R> {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        let mut result = self.coefficients.clone();
+
+        for (word, coeff) in other.coefficients {
+            let entry = result.entry(word).or_insert_with(R::zero);
+            *entry = entry.clone() + coeff;
+        }
+
+        // Remove zero coefficients
+        result.retain(|_, c| !c.is_zero());
+
+        Self { coefficients: result }
+    }
+}
+
+impl<R: Ring> Add for &ShuffleElement<R> {
+    type Output = ShuffleElement<R>;
+
+    fn add(self, other: Self) -> ShuffleElement<R> {
+        let mut result = self.coefficients.clone();
+
+        for (word, coeff) in &other.coefficients {
+            let entry = result.entry(word.clone()).or_insert_with(R::zero);
+            *entry = entry.clone() + coeff.clone();
+        }
+
+        // Remove zero coefficients
+        result.retain(|_, c| !c.is_zero());
+
+        ShuffleElement { coefficients: result }
+    }
+}
+
+impl<R: Ring> Sub for ShuffleElement<R> {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        let mut result = self.coefficients.clone();
+
+        for (word, coeff) in other.coefficients {
+            let entry = result.entry(word).or_insert_with(R::zero);
+            *entry = entry.clone() - coeff;
+        }
+
+        // Remove zero coefficients
+        result.retain(|_, c| !c.is_zero());
+
+        Self { coefficients: result }
+    }
+}
+
+impl<R: Ring> Sub for &ShuffleElement<R> {
+    type Output = ShuffleElement<R>;
+
+    fn sub(self, other: Self) -> ShuffleElement<R> {
+        let mut result = self.coefficients.clone();
+
+        for (word, coeff) in &other.coefficients {
+            let entry = result.entry(word.clone()).or_insert_with(R::zero);
+            *entry = entry.clone() - coeff.clone();
+        }
+
+        // Remove zero coefficients
+        result.retain(|_, c| !c.is_zero());
+
+        ShuffleElement { coefficients: result }
+    }
+}
+
+impl<R: Ring> Neg for ShuffleElement<R> {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        let mut result = HashMap::new();
+        for (word, coeff) in self.coefficients {
+            result.insert(word, -coeff);
+        }
+        Self { coefficients: result }
+    }
+}
+
+impl<R: Ring> Neg for &ShuffleElement<R> {
+    type Output = ShuffleElement<R>;
+
+    fn neg(self) -> ShuffleElement<R> {
+        let mut result = HashMap::new();
+        for (word, coeff) in &self.coefficients {
+            result.insert(word.clone(), -coeff.clone());
+        }
+        ShuffleElement { coefficients: result }
+    }
+}
+
+impl<R: Ring> Mul for ShuffleElement<R> {
+    type Output = Self;
+
+    /// Multiply two shuffle elements using the shuffle product
+    fn mul(self, other: Self) -> Self {
+        if self.is_zero() || other.is_zero() {
+            return Self::zero();
+        }
+
+        let mut result = HashMap::new();
+
+        for (word1, coeff1) in &self.coefficients {
+            for (word2, coeff2) in &other.coefficients {
+                // Compute all shuffles of word1 and word2
+                let shuffles = shuffle_product(word1, word2);
+                let new_coeff = coeff1.clone() * coeff2.clone();
+
+                for shuffle in shuffles {
+                    let entry = result.entry(shuffle).or_insert_with(R::zero);
+                    *entry = entry.clone() + new_coeff.clone();
+                }
+            }
+        }
+
+        // Remove zero coefficients
+        result.retain(|_, c| !c.is_zero());
+
+        Self { coefficients: result }
+    }
+}
+
+impl<R: Ring> Mul for &ShuffleElement<R> {
+    type Output = ShuffleElement<R>;
+
+    /// Multiply two shuffle elements using the shuffle product
+    fn mul(self, other: Self) -> ShuffleElement<R> {
+        if self.is_zero() || other.is_zero() {
+            return ShuffleElement::zero();
+        }
+
+        let mut result = HashMap::new();
+
+        for (word1, coeff1) in &self.coefficients {
+            for (word2, coeff2) in &other.coefficients {
+                // Compute all shuffles of word1 and word2
+                let shuffles = shuffle_product(word1, word2);
+                let new_coeff = coeff1.clone() * coeff2.clone();
+
+                for shuffle in shuffles {
+                    let entry = result.entry(shuffle).or_insert_with(R::zero);
+                    *entry = entry.clone() + new_coeff.clone();
+                }
+            }
+        }
+
+        // Remove zero coefficients
+        result.retain(|_, c| !c.is_zero());
+
+        ShuffleElement { coefficients: result }
     }
 }
 
@@ -516,5 +698,235 @@ mod tests {
         let elem = ShuffleElement::from_word(word.clone(), 1);
         let display = format!("{}", elem);
         assert!(display.contains("abc"));
+    }
+
+    // Tests for Ring operations
+
+    #[test]
+    fn test_addition() {
+        let word1 = vec!["x".to_string()];
+        let word2 = vec!["y".to_string()];
+
+        let elem1 = ShuffleElement::from_word(word1.clone(), 2);
+        let elem2 = ShuffleElement::from_word(word2.clone(), 3);
+
+        let result = elem1 + elem2;
+
+        assert_eq!(result.coefficients().get(&word1), Some(&2));
+        assert_eq!(result.coefficients().get(&word2), Some(&3));
+    }
+
+    #[test]
+    fn test_addition_same_word() {
+        let word = vec!["x".to_string()];
+
+        let elem1 = ShuffleElement::from_word(word.clone(), 2);
+        let elem2 = ShuffleElement::from_word(word.clone(), 3);
+
+        let result = elem1 + elem2;
+
+        assert_eq!(result.coefficients().get(&word), Some(&5));
+        assert_eq!(result.coefficients().len(), 1);
+    }
+
+    #[test]
+    fn test_addition_cancellation() {
+        let word = vec!["x".to_string()];
+
+        let elem1 = ShuffleElement::from_word(word.clone(), 3);
+        let elem2 = ShuffleElement::from_word(word.clone(), -3);
+
+        let result = elem1 + elem2;
+
+        assert!(result.is_zero());
+    }
+
+    #[test]
+    fn test_subtraction() {
+        let word1 = vec!["x".to_string()];
+        let word2 = vec!["y".to_string()];
+
+        let elem1 = ShuffleElement::from_word(word1.clone(), 5);
+        let elem2 = ShuffleElement::from_word(word2.clone(), 3);
+
+        let result = elem1 - elem2;
+
+        assert_eq!(result.coefficients().get(&word1), Some(&5));
+        assert_eq!(result.coefficients().get(&word2), Some(&-3));
+    }
+
+    #[test]
+    fn test_subtraction_same_word() {
+        let word = vec!["x".to_string()];
+
+        let elem1 = ShuffleElement::from_word(word.clone(), 5);
+        let elem2 = ShuffleElement::from_word(word.clone(), 2);
+
+        let result = elem1 - elem2;
+
+        assert_eq!(result.coefficients().get(&word), Some(&3));
+    }
+
+    #[test]
+    fn test_negation() {
+        let word = vec!["x".to_string(), "y".to_string()];
+        let elem = ShuffleElement::from_word(word.clone(), 5);
+
+        let neg = -elem;
+
+        assert_eq!(neg.coefficients().get(&word), Some(&-5));
+    }
+
+    #[test]
+    fn test_scalar_multiplication() {
+        let word = vec!["x".to_string()];
+        let elem = ShuffleElement::from_word(word.clone(), 3);
+
+        let result = elem.scalar_mul(&5);
+
+        assert_eq!(result.coefficients().get(&word), Some(&15));
+    }
+
+    #[test]
+    fn test_scalar_multiplication_zero() {
+        let word = vec!["x".to_string()];
+        let elem = ShuffleElement::from_word(word.clone(), 3);
+
+        let result = elem.scalar_mul(&0);
+
+        assert!(result.is_zero());
+    }
+
+    #[test]
+    fn test_multiplication_single_letters() {
+        let x = ShuffleElement::from_word(vec!["x".to_string()], 1);
+        let y = ShuffleElement::from_word(vec!["y".to_string()], 1);
+
+        let result = x * y;
+
+        // x * y should give xy + yx (two shuffles)
+        assert_eq!(result.coefficients().len(), 2);
+        assert_eq!(result.coefficients().get(&vec!["x".to_string(), "y".to_string()]), Some(&1));
+        assert_eq!(result.coefficients().get(&vec!["y".to_string(), "x".to_string()]), Some(&1));
+    }
+
+    #[test]
+    fn test_multiplication_with_coefficients() {
+        let x = ShuffleElement::from_word(vec!["x".to_string()], 2);
+        let y = ShuffleElement::from_word(vec!["y".to_string()], 3);
+
+        let result = x * y;
+
+        // 2*x * 3*y should give 6*xy + 6*yx
+        assert_eq!(result.coefficients().len(), 2);
+        assert_eq!(result.coefficients().get(&vec!["x".to_string(), "y".to_string()]), Some(&6));
+        assert_eq!(result.coefficients().get(&vec!["y".to_string(), "x".to_string()]), Some(&6));
+    }
+
+    #[test]
+    fn test_multiplication_with_empty_word() {
+        let x = ShuffleElement::from_word(vec!["x".to_string()], 1);
+        let one: ShuffleElement<i32> = ShuffleElement::one();
+
+        let result = x.clone() * one;
+
+        // x * 1 = x (identity element)
+        assert_eq!(result.coefficients().len(), 1);
+        assert_eq!(result.coefficients().get(&vec!["x".to_string()]), Some(&1));
+    }
+
+    #[test]
+    fn test_multiplication_longer_words() {
+        let ab = ShuffleElement::from_word(vec!["a".to_string(), "b".to_string()], 1);
+        let c = ShuffleElement::from_word(vec!["c".to_string()], 1);
+
+        let result = ab * c;
+
+        // ab * c should give 3 shuffles: abc, acb, cab
+        assert_eq!(result.coefficients().len(), 3);
+        assert_eq!(result.coefficients().get(&vec!["a".to_string(), "b".to_string(), "c".to_string()]), Some(&1));
+        assert_eq!(result.coefficients().get(&vec!["a".to_string(), "c".to_string(), "b".to_string()]), Some(&1));
+        assert_eq!(result.coefficients().get(&vec!["c".to_string(), "a".to_string(), "b".to_string()]), Some(&1));
+    }
+
+    #[test]
+    fn test_multiplication_zero() {
+        let x = ShuffleElement::from_word(vec!["x".to_string()], 1);
+        let zero: ShuffleElement<i32> = ShuffleElement::zero();
+
+        let result = x * zero;
+
+        assert!(result.is_zero());
+    }
+
+    #[test]
+    fn test_commutativity() {
+        let x = ShuffleElement::from_word(vec!["x".to_string()], 1);
+        let y = ShuffleElement::from_word(vec!["y".to_string()], 1);
+
+        let xy = x.clone() * y.clone();
+        let yx = y * x;
+
+        // Shuffle product is commutative
+        assert_eq!(xy, yx);
+    }
+
+    #[test]
+    fn test_distributivity_left() {
+        let x = ShuffleElement::from_word(vec!["x".to_string()], 1);
+        let y = ShuffleElement::from_word(vec!["y".to_string()], 1);
+        let z = ShuffleElement::from_word(vec!["z".to_string()], 1);
+
+        let yz = y.clone() + z.clone();
+        let left = x.clone() * yz;
+        let right = (x.clone() * y) + (x * z);
+
+        assert_eq!(left, right);
+    }
+
+    #[test]
+    fn test_associativity() {
+        let x = ShuffleElement::from_word(vec!["x".to_string()], 1);
+        let y = ShuffleElement::from_word(vec!["y".to_string()], 1);
+        let z = ShuffleElement::from_word(vec!["z".to_string()], 1);
+
+        let xy_z = (x.clone() * y.clone()) * z.clone();
+        let x_yz = x * (y * z);
+
+        // Shuffle product is associative
+        assert_eq!(xy_z, x_yz);
+    }
+
+    #[test]
+    fn test_identity_left() {
+        let x = ShuffleElement::from_word(vec!["x".to_string()], 3);
+        let one: ShuffleElement<i32> = ShuffleElement::one();
+
+        let result = one * x.clone();
+
+        assert_eq!(result, x);
+    }
+
+    #[test]
+    fn test_identity_right() {
+        let x = ShuffleElement::from_word(vec!["x".to_string()], 3);
+        let one: ShuffleElement<i32> = ShuffleElement::one();
+
+        let result = x.clone() * one;
+
+        assert_eq!(result, x);
+    }
+
+    #[test]
+    fn test_get_words() {
+        let x = ShuffleElement::from_word(vec!["x".to_string()], 1);
+        let y = ShuffleElement::from_word(vec!["y".to_string()], 1);
+        let elem = x + y;
+
+        let words = elem.words();
+
+        assert_eq!(words.len(), 2);
+        assert!(words.contains(&vec!["x".to_string()]));
+        assert!(words.contains(&vec!["y".to_string()]));
     }
 }
