@@ -58,14 +58,7 @@ pub use permutation_simd::{
     simd_info,
 };
 pub use posets::Poset;
-pub use tableaux::{
-    generate_increasing_tableaux, generate_k_tableaux, robinson_schensted, rs_insert,
-    standard_tableaux, IncreasingTableau, KTableau, Tableau, WeakKTableau,
-};
-pub use tableau_tuple::{
-    row_standard_tableau_tuples, standard_tableau_tuples, RowStandardTableauTuple,
-    StandardTableauTuple, TableauTuple,
-};
+pub use tableaux::{robinson_schensted, rs_insert, standard_tableaux, Tableau, PrimedEntry, ShiftedPrimedTableau};
 pub use tuple::{tuples as tuple_tuples, Tuple, TupleIterator};
 
 // Re-export new modules
