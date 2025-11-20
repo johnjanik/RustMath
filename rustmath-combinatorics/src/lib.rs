@@ -24,6 +24,7 @@ pub mod ranking;
 pub mod recurrence_sequences;
 pub mod set_partition;
 pub mod set_system;
+pub mod sidon_sets;
 pub mod skew_partition;
 pub mod species;
 pub mod subset;
@@ -61,7 +62,7 @@ pub use designs::{
     are_latin_squares_orthogonal, mutually_orthogonal_latin_squares, BlockDesign,
     DesignAutomorphism, DifferenceSet, HadamardMatrix, OrthogonalArray, SteinerSystem,
 };
-pub use dyck_word::{dyck_words, nu_dyck_words, DyckWord, NuDyckWord};
+pub use dyck_word::{dyck_words, nu_dyck_words, BounceStats, DyckWord, NuDyckWord};
 pub use enumeration::{
     cartesian_product, stars_and_bars, tuples, weak_compositions, CartesianProduct,
     CompositionIterator, Enumerable, GrayCodeIterator, InfiniteCartesianProduct, LazyEnumerator,
@@ -75,8 +76,9 @@ pub use ranking::{CombinationRank, PermutationRank, Rankable, RankingTable};
 pub use recurrence_sequences::{
     solve_binary_recurrence, BinaryRecurrence, LinearRecurrence, RecurrenceSequence,
 };
-pub use set_partition::{set_partitions, SetPartition};
+pub use set_partition::{set_partition_ordered, set_partitions, OrderedSetPartition, SetPartition};
 pub use set_system::SetSystem;
+pub use multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
 pub use word::{
     abelian_complexity, boyer_moore_search, christoffel_word, factor_complexity, kmp_search,
     lyndon_factorization, lyndon_words as general_lyndon_words, sturmian_word, AutomaticSequence,
@@ -103,6 +105,10 @@ pub use derangements::{
 pub use superpartitions::{
     count_superpartitions, strict_superpartitions, superpartitions, superpartitions_with_k_parts,
     superpartitions_with_m_circled, SuperPart, SuperPartition,
+};
+pub use sidon_sets::{
+    backtracking_bh_sequence, backtracking_sidon_set, greedy_bh_sequence, greedy_sidon_set,
+    is_bh_sequence, is_sidon_set, max_bh_sequence_size, max_sidon_set_size, BhSequence, SidonSet,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
