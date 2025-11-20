@@ -3,28 +3,36 @@
 //! This crate provides combinatorial structures like permutations, combinations,
 //! partitions, and algorithms for generating and manipulating them.
 
+pub mod affine_permutations;
 pub mod binary_words;
 pub mod combinations;
 pub mod composition;
+pub mod derangements;
 pub mod designs;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod ordered_tree;
 pub mod partitions;
 pub mod perfect_matching;
 pub mod permutations;
 pub mod plane_partition;
+pub mod permutation_simd;
 pub mod posets;
 pub mod q_analogue;
 pub mod ranking;
 pub mod recurrence_sequences;
 pub mod set_partition;
 pub mod set_system;
+pub mod skew_partition;
 pub mod species;
 pub mod subset;
+pub mod superpartitions;
 pub mod tableaux;
+pub mod tamari;
 pub mod tuple;
 pub mod word;
 
+pub use affine_permutations::{AffinePermutation, CoxeterType};
 pub use combinations::{combinations, Combination};
 pub use partitions::{
     count_partitions_with_max_parts, partition_count, partitions, partitions_with_distinct_parts,
@@ -33,6 +41,10 @@ pub use partitions::{
     PartitionTuple,
 };
 pub use permutations::{all_permutations, Permutation};
+pub use permutation_simd::{
+    batch_compose_simd, compose_simd, cycles_simd, inverse_simd, power_simd, simd_available,
+    simd_info,
+};
 pub use posets::Poset;
 pub use tableaux::{robinson_schensted, rs_insert, standard_tableaux, Tableau};
 pub use tuple::{tuples as tuple_tuples, Tuple, TupleIterator};
@@ -47,7 +59,7 @@ pub use designs::{
     are_latin_squares_orthogonal, mutually_orthogonal_latin_squares, BlockDesign,
     DesignAutomorphism, DifferenceSet, HadamardMatrix, OrthogonalArray, SteinerSystem,
 };
-pub use dyck_word::{dyck_words, DyckWord};
+pub use dyck_word::{dyck_words, nu_dyck_words, DyckWord, NuDyckWord};
 pub use enumeration::{
     cartesian_product, stars_and_bars, tuples, weak_compositions, CartesianProduct,
     CompositionIterator, Enumerable, GrayCodeIterator, InfiniteCartesianProduct, LazyEnumerator,
@@ -77,6 +89,14 @@ pub use plane_partition::{
     count_self_complementary_plane_partitions, count_totally_symmetric_plane_partitions,
     count_transpose_complement_plane_partitions, plane_partitions, plane_partitions_in_box,
     PlanePartition,
+pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator,
+};
+pub use derangements::{
+    all_derangements, count_derangements, count_derangements_recurrence, is_derangement,
+};
+pub use superpartitions::{
+    count_superpartitions, strict_superpartitions, superpartitions, superpartitions_with_k_parts,
+    superpartitions_with_m_circled, SuperPart, SuperPartition,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
