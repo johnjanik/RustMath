@@ -622,6 +622,111 @@ impl<R: Ring> fmt::Debug for UnivariatePolynomial<R> {
     }
 }
 
+// Typesetting implementation for polynomials where coefficients implement MathDisplay
+impl<R> rustmath_typesetting::MathDisplay for UnivariatePolynomial<R>
+where
+    R: Ring + rustmath_typesetting::MathDisplay + std::fmt::Display,
+{
+    fn math_format(&self, options: &rustmath_typesetting::FormatOptions) -> String {
+        use rustmath_typesetting::OutputFormat;
+
+        if self.is_zero() {
+            return "0".to_string();
+        }
+
+        let var_name = "x";
+        let mut result = String::new();
+        let mut first = true;
+
+        // Iterate through coefficients in descending order (highest degree first)
+        for (i, coeff) in self.coeffs.iter().enumerate().rev() {
+            if coeff.is_zero() {
+                continue;
+            }
+
+            let coeff_str = coeff.to_string();
+
+            // Add sign (+ or -)
+            if !first {
+                result.push_str(" + ");
+            }
+            first = false;
+
+            // Format the term based on degree
+            if i == 0 {
+                // Constant term
+                result.push_str(&coeff_str);
+            } else if i == 1 {
+                // Linear term
+                if coeff.is_one() {
+                    result.push_str(var_name);
+                } else {
+                    result.push_str(&coeff_str);
+                    match options.format {
+                        OutputFormat::LaTeX => {
+                            if options.implicit_multiply && options.explicit_multiply {
+                                result.push_str(r" \cdot ");
+                            }
+                        }
+                        OutputFormat::Unicode if options.explicit_multiply => {
+                            result.push('·');
+                        }
+                        _ => {
+                            if options.explicit_multiply {
+                                result.push('*');
+                            }
+                        }
+                    }
+                    result.push_str(var_name);
+                }
+            } else {
+                // Higher degree terms
+                if !coeff.is_one() {
+                    result.push_str(&coeff_str);
+                    if options.explicit_multiply {
+                        match options.format {
+                            OutputFormat::LaTeX => result.push_str(r" \cdot "),
+                            OutputFormat::Unicode => result.push('·'),
+                            _ => result.push('*'),
+                        }
+                    }
+                }
+
+                // Variable with power
+                match options.format {
+                    OutputFormat::LaTeX => {
+                        result.push_str(&format!("{}^{{{}}}", var_name, i));
+                    }
+                    OutputFormat::Unicode => {
+                        result.push_str(var_name);
+                        result.push_str(&rustmath_typesetting::utils::to_superscript(&i.to_string()));
+                    }
+                    OutputFormat::Html => {
+                        result.push_str(&rustmath_typesetting::html::power(
+                            &rustmath_typesetting::html::identifier(var_name),
+                            &rustmath_typesetting::html::number(&i.to_string()),
+                        ));
+                    }
+                    _ => {
+                        result.push_str(&format!("{}^{}", var_name, i));
+                    }
+                }
+            }
+        }
+
+        result
+    }
+
+    fn precedence(&self) -> i32 {
+        // Polynomials with multiple terms need parentheses in multiplication
+        if self.coeffs.iter().filter(|c| !c.is_zero()).count() > 1 {
+            rustmath_typesetting::utils::precedence::ADD
+        } else {
+            rustmath_typesetting::utils::precedence::ATOMIC
+        }
+    }
+}
+
 impl<R: Ring> Add for UnivariatePolynomial<R> {
     type Output = Self;
 
