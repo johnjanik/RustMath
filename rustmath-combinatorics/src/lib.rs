@@ -67,7 +67,7 @@ pub use enumeration::{
     CompositionIterator, Enumerable, GrayCodeIterator, InfiniteCartesianProduct, LazyEnumerator,
     PartitionIterator, RevolvingDoorIterator,
 };
-pub use perfect_matching::{perfect_matchings, PerfectMatching};
+pub use perfect_matching::{noncrossing_perfect_matchings, perfect_matchings, PerfectMatching};
 pub use ranking::{CombinationRank, PermutationRank, Rankable, RankingTable};
 pub use recurrence_sequences::{
     solve_binary_recurrence, BinaryRecurrence, LinearRecurrence, RecurrenceSequence,
