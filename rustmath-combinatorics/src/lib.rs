@@ -23,6 +23,7 @@ pub mod ranking;
 pub mod recurrence_sequences;
 pub mod set_partition;
 pub mod set_system;
+pub mod sidon_sets;
 pub mod skew_partition;
 pub mod species;
 pub mod subset;
@@ -91,14 +92,18 @@ pub use plane_partition::{
     count_self_complementary_plane_partitions, count_totally_symmetric_plane_partitions,
     count_transpose_complement_plane_partitions, plane_partitions, plane_partitions_in_box,
     PlanePartition,
-pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator,
 };
+pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator};
 pub use derangements::{
     all_derangements, count_derangements, count_derangements_recurrence, is_derangement,
 };
 pub use superpartitions::{
     count_superpartitions, strict_superpartitions, superpartitions, superpartitions_with_k_parts,
     superpartitions_with_m_circled, SuperPart, SuperPartition,
+};
+pub use sidon_sets::{
+    backtracking_bh_sequence, backtracking_sidon_set, greedy_bh_sequence, greedy_sidon_set,
+    is_bh_sequence, is_sidon_set, max_bh_sequence_size, max_sidon_set_size, BhSequence, SidonSet,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
