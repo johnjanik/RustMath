@@ -572,6 +572,212 @@ impl Default for CremonaDatabase {
     }
 }
 
+/// Represents an isogeny between two elliptic curves
+#[derive(Debug, Clone)]
+pub struct Isogeny {
+    /// Source curve label
+    pub source: CurveLabel,
+    /// Target curve label
+    pub target: CurveLabel,
+    /// Degree of the isogeny
+    pub degree: u32,
+}
+
+impl Isogeny {
+    /// Create a new isogeny
+    pub fn new(source: CurveLabel, target: CurveLabel, degree: u32) -> Self {
+        Isogeny {
+            source,
+            target,
+            degree,
+        }
+    }
+}
+
+impl fmt::Display for Isogeny {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} --{}-> {}", self.source, self.degree, self.target)
+    }
+}
+
+/// Isogeny graph for an isogeny class
+///
+/// The vertices are curves, and edges are isogenies between them.
+#[derive(Debug, Clone)]
+pub struct IsogenyGraph {
+    /// Conductor for this isogeny class
+    pub conductor: u64,
+    /// Isogeny class letter
+    pub isogeny_class: String,
+    /// All curves in the isogeny class
+    pub curves: Vec<CurveLabel>,
+    /// All isogenies in the class
+    pub isogenies: Vec<Isogeny>,
+}
+
+impl IsogenyGraph {
+    /// Create a new isogeny graph
+    pub fn new(conductor: u64, isogeny_class: String) -> Self {
+        IsogenyGraph {
+            conductor,
+            isogeny_class,
+            curves: Vec::new(),
+            isogenies: Vec::new(),
+        }
+    }
+
+    /// Add a curve to the graph
+    pub fn add_curve(&mut self, label: CurveLabel) {
+        if !self.curves.contains(&label) {
+            self.curves.push(label);
+        }
+    }
+
+    /// Add an isogeny to the graph
+    pub fn add_isogeny(&mut self, isogeny: Isogeny) {
+        self.add_curve(isogeny.source.clone());
+        self.add_curve(isogeny.target.clone());
+        self.isogenies.push(isogeny);
+    }
+
+    /// Get all neighbors of a curve (curves connected by isogenies)
+    pub fn neighbors(&self, label: &CurveLabel) -> Vec<&CurveLabel> {
+        let mut neighbors = Vec::new();
+
+        for isogeny in &self.isogenies {
+            if &isogeny.source == label {
+                neighbors.push(&isogeny.target);
+            } else if &isogeny.target == label {
+                neighbors.push(&isogeny.source);
+            }
+        }
+
+        neighbors
+    }
+
+    /// Find all isogenies from a given curve
+    pub fn isogenies_from(&self, label: &CurveLabel) -> Vec<&Isogeny> {
+        self.isogenies
+            .iter()
+            .filter(|iso| &iso.source == label)
+            .collect()
+    }
+
+    /// Find a path between two curves in the isogeny graph
+    ///
+    /// Uses BFS to find the shortest path
+    pub fn find_path(&self, from: &CurveLabel, to: &CurveLabel) -> Option<Vec<CurveLabel>> {
+        if from == to {
+            return Some(vec![from.clone()]);
+        }
+
+        let mut queue = std::collections::VecDeque::new();
+        let mut visited = std::collections::HashSet::new();
+        let mut parent: std::collections::HashMap<CurveLabel, CurveLabel> = std::collections::HashMap::new();
+
+        queue.push_back(from.clone());
+        visited.insert(from.clone());
+
+        while let Some(current) = queue.pop_front() {
+            for neighbor in self.neighbors(&current) {
+                if !visited.contains(neighbor) {
+                    visited.insert(neighbor.clone());
+                    parent.insert(neighbor.clone(), current.clone());
+                    queue.push_back(neighbor.clone());
+
+                    if neighbor == to {
+                        // Reconstruct path
+                        let mut path = vec![to.clone()];
+                        let mut current = to.clone();
+
+                        while let Some(p) = parent.get(&current) {
+                            path.push(p.clone());
+                            current = p.clone();
+                            if &current == from {
+                                break;
+                            }
+                        }
+
+                        path.reverse();
+                        return Some(path);
+                    }
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Check if the graph is connected
+    pub fn is_connected(&self) -> bool {
+        if self.curves.is_empty() {
+            return true;
+        }
+
+        let mut visited = std::collections::HashSet::new();
+        let mut queue = std::collections::VecDeque::new();
+
+        queue.push_back(self.curves[0].clone());
+        visited.insert(self.curves[0].clone());
+
+        while let Some(current) = queue.pop_front() {
+            for neighbor in self.neighbors(&current) {
+                if !visited.contains(neighbor) {
+                    visited.insert(neighbor.clone());
+                    queue.push_back(neighbor.clone());
+                }
+            }
+        }
+
+        visited.len() == self.curves.len()
+    }
+}
+
+impl CremonaDatabase {
+    /// Build isogeny graph for a given isogeny class
+    ///
+    /// # Arguments
+    ///
+    /// * `conductor` - The conductor value
+    /// * `isogeny_class` - The isogeny class (e.g., "a", "b")
+    ///
+    /// # Returns
+    ///
+    /// The isogeny graph for this class
+    pub fn isogeny_graph(&self, conductor: u64, isogeny_class: &str) -> IsogenyGraph {
+        let mut graph = IsogenyGraph::new(conductor, isogeny_class.to_string());
+
+        // Get all curves in the isogeny class
+        let curves = self.curves_in_isogeny_class(conductor, isogeny_class);
+
+        for curve in curves {
+            graph.add_curve(curve.label.clone());
+        }
+
+        // Add known isogenies based on standard structure
+        // For now, we'll add a simple linear structure for demonstration
+        // Real implementation would compute actual isogenies
+        if graph.curves.len() > 1 {
+            for i in 0..graph.curves.len() - 1 {
+                let iso = Isogeny::new(
+                    graph.curves[i].clone(),
+                    graph.curves[i + 1].clone(),
+                    if i == 0 { 5 } else { 2 }  // Simplified: first isogeny degree 5, others 2
+                );
+                graph.add_isogeny(iso);
+            }
+        }
+
+        graph
+    }
+
+    /// Get isogeny graph for the isogeny class containing a given curve
+    pub fn isogeny_graph_of_curve(&self, label: &str) -> Option<IsogenyGraph> {
+        let curve = self.lookup_curve(label)?;
+        Some(self.isogeny_graph(curve.conductor, &curve.label.isogeny_class))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -708,5 +914,70 @@ mod tests {
         assert!(display.contains("11a1"));
         assert!(display.contains("Conductor: 11"));
         assert!(display.contains("Rank: 0"));
+    }
+
+    #[test]
+    fn test_isogeny_graph() {
+        let db = CremonaDatabase::new();
+        let graph = db.isogeny_graph(11, "a");
+
+        assert_eq!(graph.conductor, 11);
+        assert_eq!(graph.isogeny_class, "a");
+        assert_eq!(graph.curves.len(), 3);  // 11a1, 11a2, 11a3
+        assert!(!graph.isogenies.is_empty());
+    }
+
+    #[test]
+    fn test_isogeny_graph_connectivity() {
+        let db = CremonaDatabase::new();
+        let graph = db.isogeny_graph(11, "a");
+
+        // Graph should be connected
+        assert!(graph.is_connected());
+
+        // Should be able to find paths between curves
+        let label1 = CurveLabel::parse("11a1").unwrap();
+        let label3 = CurveLabel::parse("11a3").unwrap();
+
+        let path = graph.find_path(&label1, &label3);
+        assert!(path.is_some());
+
+        let path = path.unwrap();
+        assert_eq!(path.first().unwrap(), &label1);
+        assert_eq!(path.last().unwrap(), &label3);
+    }
+
+    #[test]
+    fn test_isogeny_graph_neighbors() {
+        let db = CremonaDatabase::new();
+        let graph = db.isogeny_graph(11, "a");
+
+        let label1 = CurveLabel::parse("11a1").unwrap();
+        let neighbors = graph.neighbors(&label1);
+
+        assert!(!neighbors.is_empty());
+    }
+
+    #[test]
+    fn test_isogeny_display() {
+        let source = CurveLabel::parse("11a1").unwrap();
+        let target = CurveLabel::parse("11a2").unwrap();
+        let iso = Isogeny::new(source, target, 5);
+
+        let display = format!("{}", iso);
+        assert!(display.contains("11a1"));
+        assert!(display.contains("11a2"));
+        assert!(display.contains("5"));
+    }
+
+    #[test]
+    fn test_isogeny_graph_of_curve() {
+        let db = CremonaDatabase::new();
+        let graph = db.isogeny_graph_of_curve("11a1");
+
+        assert!(graph.is_some());
+        let graph = graph.unwrap();
+        assert_eq!(graph.conductor, 11);
+        assert_eq!(graph.isogeny_class, "a");
     }
 }

@@ -357,6 +357,235 @@ impl Default for OEISClient {
     }
 }
 
+/// Sequence type classification
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SequenceType {
+    /// Arithmetic progression (constant difference)
+    Arithmetic,
+    /// Geometric progression (constant ratio)
+    Geometric,
+    /// Polynomial sequence
+    Polynomial(usize),  // degree
+    /// Fibonacci-like (linear recurrence)
+    Recurrence,
+    /// Other/unknown pattern
+    Unknown,
+}
+
+/// Sequence analysis utilities
+pub struct SequenceAnalyzer;
+
+impl SequenceAnalyzer {
+    /// Compute differences of a sequence
+    ///
+    /// Returns successive difference sequences until constant or empty
+    pub fn differences(seq: &[i64]) -> Vec<Vec<i64>> {
+        if seq.len() < 2 {
+            return Vec::new();
+        }
+
+        let mut result = Vec::new();
+        let mut current = seq.to_vec();
+
+        for _ in 0..seq.len() - 1 {
+            let diff: Vec<i64> = current.windows(2)
+                .map(|w| w[1] - w[0])
+                .collect();
+
+            if diff.is_empty() {
+                break;
+            }
+
+            // Check if constant
+            let is_constant = diff.windows(2).all(|w| w[0] == w[1]);
+
+            result.push(diff.clone());
+
+            if is_constant || diff.len() < 2 {
+                break;
+            }
+
+            current = diff;
+        }
+
+        result
+    }
+
+    /// Compute ratios of consecutive terms
+    ///
+    /// Useful for detecting geometric sequences
+    pub fn ratios(seq: &[i64]) -> Vec<f64> {
+        seq.windows(2)
+            .filter(|w| w[0] != 0)
+            .map(|w| w[1] as f64 / w[0] as f64)
+            .collect()
+    }
+
+    /// Detect sequence type
+    ///
+    /// Analyzes a sequence and attempts to classify its pattern
+    pub fn detect_type(seq: &[i64]) -> SequenceType {
+        if seq.len() < 3 {
+            return SequenceType::Unknown;
+        }
+
+        // Check for Fibonacci-like recurrence first (a_n = a_{n-1} + a_{n-2})
+        // This is a more specific pattern than polynomial
+        if seq.len() >= 5 {
+            let mut is_fibonacci = true;
+            for i in 2..seq.len().min(10) {
+                if seq[i] != seq[i - 1] + seq[i - 2] {
+                    is_fibonacci = false;
+                    break;
+                }
+            }
+            if is_fibonacci {
+                return SequenceType::Recurrence;
+            }
+        }
+
+        // Check for geometric sequence (constant ratios)
+        // This should be checked before polynomial
+        let ratios = Self::ratios(seq);
+        if ratios.len() >= 2 {
+            let first_ratio = ratios[0];
+            let is_geometric = ratios.iter()
+                .all(|&r| (r - first_ratio).abs() < 1e-6);
+            if is_geometric && first_ratio != 0.0 && first_ratio != 1.0 {
+                return SequenceType::Geometric;
+            }
+        }
+
+        // Check for arithmetic sequence (constant differences)
+        let diffs = Self::differences(seq);
+        if !diffs.is_empty() {
+            let first_diff = &diffs[0];
+            if first_diff.len() >= 2 && first_diff.windows(2).all(|w| w[0] == w[1]) {
+                return SequenceType::Arithmetic;
+            }
+
+            // Check for polynomial (eventually constant differences)
+            for (degree, diff) in diffs.iter().enumerate() {
+                if diff.len() >= 2 && diff.windows(2).all(|w| w[0] == w[1]) {
+                    return SequenceType::Polynomial(degree + 1);
+                }
+            }
+        }
+
+        SequenceType::Unknown
+    }
+
+    /// Predict next terms of a sequence
+    ///
+    /// Attempts to predict the next n terms based on detected pattern
+    pub fn predict_next(seq: &[i64], n: usize) -> Vec<i64> {
+        if seq.is_empty() {
+            return Vec::new();
+        }
+
+        let seq_type = Self::detect_type(seq);
+        let mut result = Vec::new();
+        let mut extended = seq.to_vec();
+
+        match seq_type {
+            SequenceType::Arithmetic => {
+                if seq.len() >= 2 {
+                    let diff = seq[1] - seq[0];
+                    for _ in 0..n {
+                        let next = extended.last().unwrap() + diff;
+                        result.push(next);
+                        extended.push(next);
+                    }
+                }
+            }
+            SequenceType::Geometric => {
+                if seq.len() >= 2 && seq[0] != 0 {
+                    let ratio = seq[1] as f64 / seq[0] as f64;
+                    for _ in 0..n {
+                        let next = (*extended.last().unwrap() as f64 * ratio).round() as i64;
+                        result.push(next);
+                        extended.push(next);
+                    }
+                }
+            }
+            SequenceType::Polynomial(degree) => {
+                // Use differences to extend
+                let diffs = Self::differences(seq);
+                if degree > 0 && degree <= diffs.len() + 1 {
+                    let mut current_diffs = diffs;
+                    for _ in 0..n {
+                        // Extend from the constant difference level up
+                        let mut level = current_diffs.len() - 1;
+                        loop {
+                            if level == 0 {
+                                break;
+                            }
+                            let constant = current_diffs[level][0];
+                            let new_val = current_diffs[level - 1].last().unwrap() + constant;
+                            current_diffs[level - 1].push(new_val);
+                            level -= 1;
+                        }
+
+                        let next = extended.last().unwrap() + current_diffs[0].last().unwrap();
+                        result.push(next);
+                        extended.push(next);
+                    }
+                }
+            }
+            SequenceType::Recurrence => {
+                // Fibonacci-like: a_n = a_{n-1} + a_{n-2}
+                for _ in 0..n {
+                    let len = extended.len();
+                    if len >= 2 {
+                        let next = extended[len - 1] + extended[len - 2];
+                        result.push(next);
+                        extended.push(next);
+                    }
+                }
+            }
+            SequenceType::Unknown => {
+                // No prediction possible
+            }
+        }
+
+        result
+    }
+
+    /// Generate sequence from formula
+    ///
+    /// Generates terms a_0, a_1, ..., a_{n-1} from a simple formula
+    pub fn from_formula<F>(n: usize, formula: F) -> Vec<i64>
+    where
+        F: Fn(usize) -> i64,
+    {
+        (0..n).map(formula).collect()
+    }
+}
+
+impl OEISSequence {
+    /// Analyze the sequence
+    ///
+    /// Returns the detected sequence type
+    pub fn analyze_type(&self) -> SequenceType {
+        SequenceAnalyzer::detect_type(&self.data)
+    }
+
+    /// Get the differences of this sequence
+    pub fn differences(&self) -> Vec<Vec<i64>> {
+        SequenceAnalyzer::differences(&self.data)
+    }
+
+    /// Get the ratios of consecutive terms
+    pub fn ratios(&self) -> Vec<f64> {
+        SequenceAnalyzer::ratios(&self.data)
+    }
+
+    /// Predict the next n terms
+    pub fn predict_next(&self, n: usize) -> Vec<i64> {
+        SequenceAnalyzer::predict_next(&self.data, n)
+    }
+}
+
 /// Normalize an A-number to standard format (A000000)
 ///
 /// Accepts:
@@ -430,5 +659,74 @@ mod tests {
         let results = client.search("prime numbers").unwrap();
 
         assert!(!results.is_empty());
+    }
+
+    #[test]
+    fn test_sequence_analysis_arithmetic() {
+        let seq = vec![2, 5, 8, 11, 14, 17];  // Arithmetic: +3
+        let seq_type = SequenceAnalyzer::detect_type(&seq);
+        assert_eq!(seq_type, SequenceType::Arithmetic);
+
+        let next = SequenceAnalyzer::predict_next(&seq, 3);
+        assert_eq!(next, vec![20, 23, 26]);
+    }
+
+    #[test]
+    fn test_sequence_analysis_geometric() {
+        let seq = vec![2, 6, 18, 54, 162];  // Geometric: ×3
+        let seq_type = SequenceAnalyzer::detect_type(&seq);
+        assert_eq!(seq_type, SequenceType::Geometric);
+
+        let next = SequenceAnalyzer::predict_next(&seq, 2);
+        assert_eq!(next, vec![486, 1458]);
+    }
+
+    #[test]
+    fn test_sequence_analysis_polynomial() {
+        let seq = vec![1, 4, 9, 16, 25, 36];  // Squares: n^2
+        let seq_type = SequenceAnalyzer::detect_type(&seq);
+        assert_eq!(seq_type, SequenceType::Polynomial(2));
+
+        let next = SequenceAnalyzer::predict_next(&seq, 2);
+        assert_eq!(next, vec![49, 64]);
+    }
+
+    #[test]
+    fn test_sequence_analysis_fibonacci() {
+        let seq = vec![0, 1, 1, 2, 3, 5, 8, 13];  // Fibonacci
+        let seq_type = SequenceAnalyzer::detect_type(&seq);
+        assert_eq!(seq_type, SequenceType::Recurrence);
+
+        let next = SequenceAnalyzer::predict_next(&seq, 3);
+        assert_eq!(next, vec![21, 34, 55]);
+    }
+
+    #[test]
+    fn test_sequence_differences() {
+        let seq = vec![1, 4, 9, 16, 25];
+        let diffs = SequenceAnalyzer::differences(&seq);
+
+        assert_eq!(diffs.len(), 2);
+        assert_eq!(diffs[0], vec![3, 5, 7, 9]);  // First difference
+        assert_eq!(diffs[1], vec![2, 2, 2]);     // Second difference (constant)
+    }
+
+    #[test]
+    fn test_sequence_ratios() {
+        let seq = vec![1, 2, 4, 8, 16];
+        let ratios = SequenceAnalyzer::ratios(&seq);
+
+        assert_eq!(ratios.len(), 4);
+        assert!((ratios[0] - 2.0).abs() < 1e-10);
+        assert!((ratios[1] - 2.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_from_formula() {
+        let squares = SequenceAnalyzer::from_formula(10, |n| (n * n) as i64);
+        assert_eq!(squares, vec![0, 1, 4, 9, 16, 25, 36, 49, 64, 81]);
+
+        let cubes = SequenceAnalyzer::from_formula(5, |n| (n * n * n) as i64);
+        assert_eq!(cubes, vec![0, 1, 8, 27, 64]);
     }
 }
