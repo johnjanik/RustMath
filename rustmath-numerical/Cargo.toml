@@ -10,3 +10,4 @@ repository.workspace = true
 rustmath-core = { path = "../rustmath-core" }
 rustmath-reals = { path = "../rustmath-reals" }
 rustmath-complex = { path = "../rustmath-complex" }
+lazy_static = "1.4"
