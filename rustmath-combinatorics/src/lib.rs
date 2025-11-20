@@ -24,6 +24,7 @@ pub mod path_tableaux;
 pub mod perfect_matching;
 pub mod permutations;
 pub mod plane_partition;
+pub mod parallelogram_polyomino;
 pub mod permutation_simd;
 pub mod posets;
 pub mod q_analogue;
@@ -131,6 +132,10 @@ pub use plane_partition::{
     count_self_complementary_plane_partitions, count_totally_symmetric_plane_partitions,
     count_transpose_complement_plane_partitions, plane_partitions, plane_partitions_in_box,
     PlanePartition,
+};
+pub use parallelogram_polyomino::{
+    count_parallelogram_polyominoes, parallelogram_polyominoes,
+    parallelogram_polyominoes_with_bounce_statistic, BouncePath, ParallelogramPolyomino, Point,
 };
 pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator};
 pub use derangements::{
