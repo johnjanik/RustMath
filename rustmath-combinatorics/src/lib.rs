@@ -48,6 +48,7 @@ pub mod recurrence_sequences;
 pub mod regular_sequences;
 pub mod ribbon_tableau;
 pub mod restricted_growth;
+pub mod schubert;
 pub mod set_partition;
 pub mod set_system;
 pub mod sidon_sets;
@@ -179,6 +180,9 @@ pub use t_sequences::{
     t_integer, t_lucas, t_multinomial, t_stirling_second,
 };
 pub use wreath_product::{all_colored_permutations, ColoredPermutation};
+pub use schubert::{
+    schubert_polynomial, monk_rule, monk_rule_expansion, DividedDifference,
+};
 pub use cyclic_sieving::{CyclicAction, CyclicSievingTriple, FunctionAction};
 pub use plane_partition::{
     count_cyclically_symmetric_plane_partitions, count_plane_partitions_in_box,
