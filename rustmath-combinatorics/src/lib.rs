@@ -3,6 +3,7 @@
 //! This crate provides combinatorial structures like permutations, combinations,
 //! partitions, and algorithms for generating and manipulating them.
 
+pub mod alternating_sign_matrix;
 pub mod binary_words;
 pub mod combinations;
 pub mod composition;
@@ -74,8 +75,9 @@ pub use subset::{
 pub use q_analogue::{
     gaussian_polynomial, q_binomial, q_binomial_eval, q_factorial, q_integer, q_multinomial,
 };
-pub use tamari::{
-    nu_tamari_lattice, tamari_lattice, LatticePath, TamariLattice,
+pub use alternating_sign_matrix::{
+    all_asms, asm_count, asm_count_by_inversions, asm_q_enumeration,
+    razumov_stroganov_polynomial, razumov_stroganov_refined_count, AlternatingSignMatrix,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
