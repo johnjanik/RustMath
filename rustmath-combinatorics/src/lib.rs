@@ -23,7 +23,7 @@ pub mod skew_partition;
 pub mod species;
 pub mod subset;
 pub mod tableaux;
-pub mod tamari_lattice;
+pub mod tamari;
 pub mod tuple;
 pub mod word;
 
@@ -74,7 +74,9 @@ pub use subset::{
 pub use q_analogue::{
     gaussian_polynomial, q_binomial, q_binomial_eval, q_factorial, q_integer, q_multinomial,
 };
-pub use tamari_lattice::{all_binary_trees, BinaryTree, TamariLattice};
+pub use tamari::{
+    nu_tamari_lattice, tamari_lattice, LatticePath, TamariLattice,
+};
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
 
