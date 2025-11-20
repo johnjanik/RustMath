@@ -726,6 +726,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 | Function/Feature | Status | RustMath Location | Notes |
 |-----------------|--------|-------------------|-------|
+| **Basic Structures** | | | |
 | Cones | ✅ | `rustmath-geometry/src/toric.rs` | Rational polyhedral cones with ray generators |
 | Cone operations | ✅ | `rustmath-geometry/src/toric.rs` | Dimension, smoothness, simpliciality, faces, intersection |
 | Fans | ✅ | `rustmath-geometry/src/toric.rs` | Collections of compatible cones |
@@ -733,8 +734,39 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Toric varieties | ✅ | `rustmath-geometry/src/toric.rs` | Algebraic varieties from fans |
 | Variety properties | ✅ | `rustmath-geometry/src/toric.rs` | Smoothness, completeness, Picard number |
 | Projective space fan | ✅ | `rustmath-geometry/src/toric.rs` | Standard fan for ℙⁿ |
+| **Toric Divisors (Tracker 14)** | | | |
+| Toric divisors | ✅ | `rustmath-geometry/src/toric.rs` | Formal sums D = ∑ aᵢDᵢ of torus-invariant divisors |
+| Divisor operations | ✅ | `rustmath-geometry/src/toric.rs` | Addition, subtraction, negation, scalar multiplication |
+| Cartier divisors | ✅ | `rustmath-geometry/src/toric.rs` | is_cartier() with simplicial fan check |
+| Ample divisors | ✅ | `rustmath-geometry/src/toric.rs` | is_ample() for positivity checking |
+| Nef divisors | ✅ | `rustmath-geometry/src/toric.rs` | is_nef() for numerically effective divisors |
+| Effective divisors | ✅ | `rustmath-geometry/src/toric.rs` | is_effective() for non-negative coefficients |
+| **Chow Groups (Tracker 14)** | | | |
+| Cycles | ✅ | `rustmath-geometry/src/toric.rs` | k-cycles as formal sums of subvarieties |
+| Cycle operations | ✅ | `rustmath-geometry/src/toric.rs` | Addition, scalar multiplication |
+| Chow groups A_k(X) | ✅ | `rustmath-geometry/src/toric.rs` | Cycles modulo rational equivalence |
+| Intersection products | ✅ | `rustmath-geometry/src/toric.rs` | Simplified intersection of cycles |
+| **Toric Morphisms (Tracker 14)** | | | |
+| Toric morphisms | ✅ | `rustmath-geometry/src/toric.rs` | Equivariant maps X_Σ → X_Σ' from linear maps |
+| Morphism composition | ✅ | `rustmath-geometry/src/toric.rs` | compose() for morphism composition |
+| Identity morphism | ✅ | `rustmath-geometry/src/toric.rs` | identity() constructor |
+| Morphism application | ✅ | `rustmath-geometry/src/toric.rs` | apply() to lattice points |
+| Isomorphism testing | ✅ | `rustmath-geometry/src/toric.rs` | is_isomorphism() via determinant |
+| Pullback of divisors | ✅ | `rustmath-geometry/src/toric.rs` | pullback_divisor() for proper morphisms |
+| **Moment Maps (Tracker 14)** | | | |
+| Moment polytopes | ✅ | `rustmath-geometry/src/toric.rs` | Polytopes from torus-invariant Kähler metrics |
+| Polytope from fan | ✅ | `rustmath-geometry/src/toric.rs` | from_fan() constructs polytope from complete fan |
+| Polytope volume | ✅ | `rustmath-geometry/src/toric.rs` | volume() for 2D polytopes (shoelace formula) |
+| Point containment | ✅ | `rustmath-geometry/src/toric.rs` | contains() checks if point is in polytope |
+| **Fan Subdivisions (Tracker 14)** | | | |
+| Star subdivision | ✅ | `rustmath-geometry/src/toric.rs` | star_subdivision() adds new ray |
+| Barycentric subdivision | ✅ | `rustmath-geometry/src/toric.rs` | barycentric_subdivision() subdivides at barycenters |
+| Cone refinement | ✅ | `rustmath-geometry/src/toric.rs` | refine_cone() subdivides specific cone |
+| Common refinement | ✅ | `rustmath-geometry/src/toric.rs` | common_refinement() of two fans |
+| Refinement checking | ✅ | `rustmath-geometry/src/toric.rs` | is_refinement_of() verifies refinement relation |
+| Blow-up | ✅ | `rustmath-geometry/src/toric.rs` | blow_up_cone() creates smooth fan |
 
-**Progress**: 7/7 features (100%) ✅ COMPLETE
+**Progress**: 37/37 features (100%) ✅ COMPLETE (including Tracker 14)
 
 ### 8.3 Computational Geometry
 **SageMath Source**: Various
