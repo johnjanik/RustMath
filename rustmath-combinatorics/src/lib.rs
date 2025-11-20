@@ -81,10 +81,13 @@ pub use permutation_simd::{
     simd_info,
 };
 pub use posets::Poset;
+pub use tableaux::{
+    dual_robinson_schensted, hecke_insertion, inverse_robinson_schensted, mixed_insertion,
+    robinson_schensted, rs_insert, standard_tableaux, Tableau,
+};
 pub use super_tableaux::{
     standard_super_tableaux, super_semistandard_tableaux, SuperTableau, SuperTableauEntry,
 };
-pub use tableaux::{robinson_schensted, rs_insert, standard_tableaux, Tableau};
 pub use tuple::{tuples as tuple_tuples, Tuple, TupleIterator};
 
 // Re-export new modules
