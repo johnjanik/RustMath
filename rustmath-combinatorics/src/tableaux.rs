@@ -1147,6 +1147,7 @@ mod tests {
     }
 
     // k-tableau tests
+    // TODO: Implement KTableau
     // TODO: Implement KTableau before enabling this test
     // #[test]
     // fn test_k_tableau_creation() {

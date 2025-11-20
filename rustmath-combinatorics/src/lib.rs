@@ -40,6 +40,7 @@ pub mod group_action;
 pub mod finite_state_machine_generators;
 pub mod integer_vectors;
 pub mod integer_matrices;
+pub mod kazhdan_lusztig;
 pub mod knutson_tao;
 pub mod integer_lists;
 pub mod multiset_partition_into_sets_ordered;
@@ -305,6 +306,8 @@ pub use similarity_class_type::{
     SimilarityClassTypes,
 };
 pub use skew_partition::{SkewPartition, SkewTableau};
+pub use kazhdan_lusztig::{
+    bruhat_interval, bruhat_le, bruhat_poset, kazhdan_lusztig_polynomial, length, r_polynomial,
 pub use constellation::{
     count_genus_0_constellations, path_constellation, star_constellation, trivial_constellation,
     Constellation, ConstellationEncoding,
