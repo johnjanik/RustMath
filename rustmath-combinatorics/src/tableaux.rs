@@ -163,6 +163,176 @@ impl Tableau {
             .join("\n")
     }
 
+    /// Compute the residue of a cell at position (row, col) with quantum characteristic e
+    ///
+    /// The residue is defined as (col - row + multicharge) mod e
+    /// where multicharge is typically 0 for standard tableaux.
+    ///
+    /// # Arguments
+    /// * `row` - Row index (0-based)
+    /// * `col` - Column index (0-based)
+    /// * `e` - Quantum characteristic (positive integer)
+    /// * `multicharge` - Multicharge parameter (default 0 for standard tableaux)
+    ///
+    /// # Returns
+    /// The e-residue of the cell, or None if the position is invalid
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_combinatorics::Tableau;
+    ///
+    /// let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+    /// // Cell at (0, 0): residue = (0 - 0) mod 3 = 0
+    /// assert_eq!(t.cell_residue(0, 0, 3, 0), Some(0));
+    /// // Cell at (0, 2): residue = (2 - 0) mod 3 = 2
+    /// assert_eq!(t.cell_residue(0, 2, 3, 0), Some(2));
+    /// // Cell at (1, 1): residue = (1 - 1) mod 3 = 0
+    /// assert_eq!(t.cell_residue(1, 1, 3, 0), Some(0));
+    /// ```
+    pub fn cell_residue(&self, row: usize, col: usize, e: usize, multicharge: i32) -> Option<usize> {
+        if e == 0 {
+            return None;
+        }
+
+        if row >= self.rows.len() || col >= self.rows[row].len() {
+            return None;
+        }
+
+        // Compute (col - row + multicharge) mod e
+        // Need to handle negative values properly
+        let content = (col as i32) - (row as i32) + multicharge;
+        let residue = content.rem_euclid(e as i32) as usize;
+
+        Some(residue)
+    }
+
+    /// Compute the residue sequence of a standard tableau
+    ///
+    /// For a standard tableau with entries 1, 2, ..., n, this returns the sequence
+    /// (r₁, r₂, ..., rₙ) where rₖ is the e-residue of the cell containing k.
+    ///
+    /// # Arguments
+    /// * `e` - Quantum characteristic (positive integer)
+    /// * `multicharge` - Multicharge parameter (default 0 for standard tableaux)
+    ///
+    /// # Returns
+    /// Vector of residues in order of entries 1, 2, ..., n
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_combinatorics::Tableau;
+    ///
+    /// let t = Tableau::new(vec![vec![1, 2, 4], vec![3, 5]]).unwrap();
+    /// let residues = t.residue_sequence(3, 0);
+    /// assert_eq!(residues.len(), 5);
+    /// ```
+    pub fn residue_sequence(&self, e: usize, multicharge: i32) -> Vec<usize> {
+        if e == 0 {
+            return vec![];
+        }
+
+        let n = self.size();
+        if n == 0 {
+            return vec![];
+        }
+
+        // Create a map from value to (row, col)
+        let mut position_map = vec![(0, 0); n + 1];
+
+        for (row_idx, row) in self.rows.iter().enumerate() {
+            for (col_idx, &value) in row.iter().enumerate() {
+                if value > 0 && value <= n {
+                    position_map[value] = (row_idx, col_idx);
+                }
+            }
+        }
+
+        // Compute residues in order 1, 2, ..., n
+        let mut residues = Vec::new();
+        for i in 1..=n {
+            let (row, col) = position_map[i];
+            if let Some(res) = self.cell_residue(row, col, e, multicharge) {
+                residues.push(res);
+            }
+        }
+
+        residues
+    }
+
+    /// Compute the residue content of the tableau
+    ///
+    /// Returns a vector where the i-th element is the count of cells with residue i.
+    ///
+    /// # Arguments
+    /// * `e` - Quantum characteristic (positive integer)
+    /// * `multicharge` - Multicharge parameter (default 0 for standard tableaux)
+    ///
+    /// # Returns
+    /// Vector of length e, where element i is the number of cells with residue i
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_combinatorics::Tableau;
+    ///
+    /// let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+    /// let content = t.residue_content(3, 0);
+    /// assert_eq!(content.len(), 3);
+    /// ```
+    pub fn residue_content(&self, e: usize, multicharge: i32) -> Vec<usize> {
+        if e == 0 {
+            return vec![];
+        }
+
+        let mut content = vec![0; e];
+
+        for (row_idx, row) in self.rows.iter().enumerate() {
+            for col_idx in 0..row.len() {
+                if let Some(res) = self.cell_residue(row_idx, col_idx, e, multicharge) {
+                    content[res] += 1;
+                }
+            }
+        }
+
+        content
+    }
+
+    /// Get all cells with a specific residue
+    ///
+    /// Returns a vector of (row, col, value) tuples for all cells with the given residue.
+    ///
+    /// # Arguments
+    /// * `e` - Quantum characteristic (positive integer)
+    /// * `residue` - The residue to search for
+    /// * `multicharge` - Multicharge parameter (default 0 for standard tableaux)
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_combinatorics::Tableau;
+    ///
+    /// let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+    /// let cells = t.cells_with_residue(3, 0, 0);
+    /// // Cells at (0,0), (1,1) have residue 0 when e=3
+    /// ```
+    pub fn cells_with_residue(&self, e: usize, residue: usize, multicharge: i32) -> Vec<(usize, usize, usize)> {
+        if e == 0 || residue >= e {
+            return vec![];
+        }
+
+        let mut result = Vec::new();
+
+        for (row_idx, row) in self.rows.iter().enumerate() {
+            for (col_idx, &value) in row.iter().enumerate() {
+                if let Some(res) = self.cell_residue(row_idx, col_idx, e, multicharge) {
+                    if res == residue {
+                        result.push((row_idx, col_idx, value));
+                    }
+                }
+            }
+        }
+
+        result
+    }
+
     /// Perform jeu de taquin slide from a given position
     ///
     /// Jeu de taquin is a process for moving an empty cell in a tableau
@@ -556,5 +726,251 @@ mod tests {
 
         // Should still be a valid semistandard tableau
         assert!(result_t.is_semistandard());
+    }
+
+    #[test]
+    fn test_cell_residue() {
+        // Create a tableau: [[1, 2, 3], [4, 5]]
+        let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+
+        // Test with e=3, multicharge=0
+        // Cell (0,0): residue = (0 - 0 + 0) mod 3 = 0
+        assert_eq!(t.cell_residue(0, 0, 3, 0), Some(0));
+
+        // Cell (0,1): residue = (1 - 0 + 0) mod 3 = 1
+        assert_eq!(t.cell_residue(0, 1, 3, 0), Some(1));
+
+        // Cell (0,2): residue = (2 - 0 + 0) mod 3 = 2
+        assert_eq!(t.cell_residue(0, 2, 3, 0), Some(2));
+
+        // Cell (1,0): residue = (0 - 1 + 0) mod 3 = -1 mod 3 = 2
+        assert_eq!(t.cell_residue(1, 0, 3, 0), Some(2));
+
+        // Cell (1,1): residue = (1 - 1 + 0) mod 3 = 0
+        assert_eq!(t.cell_residue(1, 1, 3, 0), Some(0));
+
+        // Test with multicharge=1
+        // Cell (0,0): residue = (0 - 0 + 1) mod 3 = 1
+        assert_eq!(t.cell_residue(0, 0, 3, 1), Some(1));
+
+        // Test invalid positions
+        assert_eq!(t.cell_residue(2, 0, 3, 0), None);
+        assert_eq!(t.cell_residue(0, 5, 3, 0), None);
+
+        // Test e=0 (should return None)
+        assert_eq!(t.cell_residue(0, 0, 0, 0), None);
+    }
+
+    #[test]
+    fn test_cell_residue_with_different_e() {
+        let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+
+        // Test with e=2
+        // Cell (0,0): residue = 0 mod 2 = 0
+        assert_eq!(t.cell_residue(0, 0, 2, 0), Some(0));
+
+        // Cell (0,1): residue = 1 mod 2 = 1
+        assert_eq!(t.cell_residue(0, 1, 2, 0), Some(1));
+
+        // Cell (1,0): residue = -1 mod 2 = 1
+        assert_eq!(t.cell_residue(1, 0, 2, 0), Some(1));
+
+        // Test with e=5
+        // Cell (1,0): residue = -1 mod 5 = 4
+        assert_eq!(t.cell_residue(1, 0, 5, 0), Some(4));
+    }
+
+    #[test]
+    fn test_residue_sequence() {
+        // Create a standard tableau: [[1, 2, 4], [3, 5]]
+        let t = Tableau::new(vec![vec![1, 2, 4], vec![3, 5]]).unwrap();
+        assert!(t.is_standard());
+
+        // Compute residue sequence with e=3, multicharge=0
+        let residues = t.residue_sequence(3, 0);
+
+        // Should have 5 residues (one for each entry 1-5)
+        assert_eq!(residues.len(), 5);
+
+        // Entry 1 is at (0,0): residue = 0
+        assert_eq!(residues[0], 0);
+
+        // Entry 2 is at (0,1): residue = 1
+        assert_eq!(residues[1], 1);
+
+        // Entry 3 is at (1,0): residue = -1 mod 3 = 2
+        assert_eq!(residues[2], 2);
+
+        // Entry 4 is at (0,2): residue = 2
+        assert_eq!(residues[3], 2);
+
+        // Entry 5 is at (1,1): residue = 0
+        assert_eq!(residues[4], 0);
+    }
+
+    #[test]
+    fn test_residue_sequence_with_multicharge() {
+        // Create a standard tableau: [[1, 2], [3]]
+        let t = Tableau::new(vec![vec![1, 2], vec![3]]).unwrap();
+
+        // Compute residue sequence with e=2, multicharge=1
+        let residues = t.residue_sequence(2, 1);
+
+        // Entry 1 at (0,0): residue = (0 - 0 + 1) mod 2 = 1
+        assert_eq!(residues[0], 1);
+
+        // Entry 2 at (0,1): residue = (1 - 0 + 1) mod 2 = 0
+        assert_eq!(residues[1], 0);
+
+        // Entry 3 at (1,0): residue = (0 - 1 + 1) mod 2 = 0
+        assert_eq!(residues[2], 0);
+    }
+
+    #[test]
+    fn test_residue_content() {
+        // Create a tableau: [[1, 2, 3], [4, 5]]
+        let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+
+        // Compute residue content with e=3, multicharge=0
+        let content = t.residue_content(3, 0);
+
+        // Should have 3 entries (one for each residue class 0, 1, 2)
+        assert_eq!(content.len(), 3);
+
+        // Count cells with residue 0: (0,0) and (1,1) -> 2 cells
+        assert_eq!(content[0], 2);
+
+        // Count cells with residue 1: (0,1) -> 1 cell
+        assert_eq!(content[1], 1);
+
+        // Count cells with residue 2: (0,2) and (1,0) -> 2 cells
+        assert_eq!(content[2], 2);
+
+        // Verify total
+        assert_eq!(content.iter().sum::<usize>(), 5);
+    }
+
+    #[test]
+    fn test_residue_content_different_shape() {
+        // Create a tableau with shape [3, 2, 1]: [[1, 2, 3], [4, 5], [6]]
+        let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5], vec![6]]).unwrap();
+
+        let content = t.residue_content(2, 0);
+
+        // With e=2, residues are 0 or 1
+        assert_eq!(content.len(), 2);
+
+        // Cells with even content (col - row): (0,0)=0, (0,2)=2, (1,1)=0, (2,0)=-2 -> 4 cells with residue 0
+        // Cells with odd content: (0,1)=1, (1,0)=-1 -> 2 cells with residue 1
+        assert_eq!(content[0], 4);
+        assert_eq!(content[1], 2);
+
+        assert_eq!(content.iter().sum::<usize>(), 6);
+    }
+
+    #[test]
+    fn test_cells_with_residue() {
+        // Create a tableau: [[1, 2, 3], [4, 5]]
+        let t = Tableau::new(vec![vec![1, 2, 3], vec![4, 5]]).unwrap();
+
+        // Find cells with residue 0 (e=3, multicharge=0)
+        let cells = t.cells_with_residue(3, 0, 0);
+
+        // Should have 2 cells: (0,0) with value 1 and (1,1) with value 5
+        assert_eq!(cells.len(), 2);
+        assert!(cells.contains(&(0, 0, 1)));
+        assert!(cells.contains(&(1, 1, 5)));
+
+        // Find cells with residue 1
+        let cells_1 = t.cells_with_residue(3, 1, 0);
+        assert_eq!(cells_1.len(), 1);
+        assert_eq!(cells_1[0], (0, 1, 2));
+
+        // Find cells with residue 2
+        let cells_2 = t.cells_with_residue(3, 2, 0);
+        assert_eq!(cells_2.len(), 2);
+        assert!(cells_2.contains(&(0, 2, 3)));
+        assert!(cells_2.contains(&(1, 0, 4)));
+    }
+
+    #[test]
+    fn test_cells_with_residue_invalid() {
+        let t = Tableau::new(vec![vec![1, 2, 3]]).unwrap();
+
+        // Invalid: residue >= e
+        let cells = t.cells_with_residue(3, 3, 0);
+        assert_eq!(cells.len(), 0);
+
+        // Invalid: e = 0
+        let cells = t.cells_with_residue(0, 0, 0);
+        assert_eq!(cells.len(), 0);
+    }
+
+    #[test]
+    fn test_residue_empty_tableau() {
+        let t = Tableau::new(vec![]).unwrap();
+
+        // Cell residue on empty tableau
+        assert_eq!(t.cell_residue(0, 0, 3, 0), None);
+
+        // Residue sequence of empty tableau
+        let residues = t.residue_sequence(3, 0);
+        assert_eq!(residues.len(), 0);
+
+        // Residue content of empty tableau
+        let content = t.residue_content(3, 0);
+        assert_eq!(content, vec![0, 0, 0]);
+
+        // Cells with residue on empty tableau
+        let cells = t.cells_with_residue(3, 0, 0);
+        assert_eq!(cells.len(), 0);
+    }
+
+    #[test]
+    fn test_residue_large_tableau() {
+        // Create a larger standard tableau
+        let t = Tableau::new(vec![
+            vec![1, 2, 3, 4],
+            vec![5, 6, 7],
+            vec![8, 9],
+        ]).unwrap();
+
+        assert!(t.is_standard());
+        assert_eq!(t.size(), 9);
+
+        // Test residue sequence with e=4
+        let residues = t.residue_sequence(4, 0);
+        assert_eq!(residues.len(), 9);
+
+        // Entry 1 at (0,0): residue = 0
+        assert_eq!(residues[0], 0);
+
+        // Entry 5 at (1,0): residue = -1 mod 4 = 3
+        assert_eq!(residues[4], 3);
+
+        // Entry 9 at (2,1): residue = (1 - 2) mod 4 = -1 mod 4 = 3
+        assert_eq!(residues[8], 3);
+
+        // Test residue content
+        let content = t.residue_content(4, 0);
+        assert_eq!(content.len(), 4);
+        assert_eq!(content.iter().sum::<usize>(), 9);
+    }
+
+    #[test]
+    fn test_residue_negative_multicharge() {
+        let t = Tableau::new(vec![vec![1, 2], vec![3]]).unwrap();
+
+        // Test with negative multicharge
+        let residues = t.residue_sequence(3, -1);
+
+        // Entry 1 at (0,0): residue = (0 - 0 - 1) mod 3 = -1 mod 3 = 2
+        assert_eq!(residues[0], 2);
+
+        // Entry 2 at (0,1): residue = (1 - 0 - 1) mod 3 = 0
+        assert_eq!(residues[1], 0);
+
+        // Entry 3 at (1,0): residue = (0 - 1 - 1) mod 3 = -2 mod 3 = 1
+        assert_eq!(residues[2], 1);
     }
 }
