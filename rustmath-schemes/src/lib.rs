@@ -14,6 +14,7 @@
 //! - **Projective Morphisms**: Morphisms between projective schemes
 //! - **Line Bundles**: Locally free sheaves of rank 1
 //! - **Ample Line Bundles**: Line bundles that embed into projective space
+//! - **Elliptic Curves**: Elliptic curves over Q with conductor, minimal models, and torsion
 //!
 //! # Key Concepts
 //!
@@ -148,6 +149,7 @@
 //! assert!(k_p2.is_fano()); // ℙ² is Fano
 //! ```
 
+pub mod elliptic_curves;
 pub mod graded_ring;
 pub mod line_bundle;
 pub mod proj;
@@ -157,6 +159,7 @@ pub mod segre;
 pub mod veronese;
 
 // Re-export commonly used types
+pub use elliptic_curves::rational::{EllipticCurveRational, ReductionType, TorsionGroup};
 pub use graded_ring::{GradedRing, HomogeneousElement, HomogeneousIdeal};
 pub use line_bundle::{CanonicalBundle, Divisor, LineBundle, PicardGroup};
 pub use proj::{AffineChart, Proj, TwistingSheaf};
