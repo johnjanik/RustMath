@@ -158,8 +158,10 @@ pub use word::{
     standard_lyndon_factorization, sturmian_word, AutomaticSequence, Morphism, Word,
 };
 pub use subset::{
-    all_subsets, count_k_subsets, k_subset_iterator, k_subsets, subset_iterator, KSubsetIterator,
-    Subset, SubsetIterator,
+    all_subsets, count_k_subsets, k_subset_iterator, k_subsets,
+    max_pairwise_disjoint_k_subsets, pairwise_disjoint_family_iterator,
+    pairwise_disjoint_k_subsets, subset_iterator, KSubsetIterator,
+    PairwiseDisjointFamilyIterator, Subset, SubsetIterator,
 };
 pub use q_analogue::{
     gaussian_polynomial, q_binomial, q_binomial_eval, q_factorial, q_integer, q_multinomial,
