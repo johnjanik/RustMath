@@ -11,6 +11,7 @@ pub mod derangements;
 pub mod designs;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod integer_vectors;
 pub mod ordered_tree;
 pub mod partitions;
 pub mod perfect_matching;
@@ -91,6 +92,7 @@ pub use plane_partition::{
     count_self_complementary_plane_partitions, count_totally_symmetric_plane_partitions,
     count_transpose_complement_plane_partitions, plane_partitions, plane_partitions_in_box,
     PlanePartition,
+};
 pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator,
 };
 pub use derangements::{
@@ -99,6 +101,11 @@ pub use derangements::{
 pub use superpartitions::{
     count_superpartitions, strict_superpartitions, superpartitions, superpartitions_with_k_parts,
     superpartitions_with_m_circled, SuperPart, SuperPartition,
+};
+pub use integer_vectors::{
+    count_integer_vectors_in_box, count_integer_vectors_with_sum, integer_vector_sum_iter,
+    integer_vectors_in_box, integer_vectors_with_l1_norm_bounded, integer_vectors_with_sum,
+    integer_vectors_with_weighted_sum, IntegerVector, IntegerVectorSumIter,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
