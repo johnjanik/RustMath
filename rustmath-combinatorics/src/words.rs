@@ -242,6 +242,67 @@ impl<T: Clone + Eq> Word<T> {
         }
         self.clone()
     }
+
+    /// Compute the shuffle product of two words
+    ///
+    /// Returns all ways to interleave the two words while preserving their internal order.
+    /// This is a fundamental operation in combinatorics and shuffle algebras.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_combinatorics::Word;
+    ///
+    /// let w1 = Word::new(vec!['a', 'b']);
+    /// let w2 = Word::new(vec!['c']);
+    /// let shuffles = w1.shuffle(&w2);
+    /// // Returns: [abc, acb, cab]
+    /// assert_eq!(shuffles.len(), 3);
+    /// ```
+    ///
+    /// # Mathematical Background
+    ///
+    /// The shuffle product w₁ ⊔ w₂ is defined recursively:
+    /// - If w₁ is empty, then w₁ ⊔ w₂ = {w₂}
+    /// - If w₂ is empty, then w₁ ⊔ w₂ = {w₁}
+    /// - Otherwise, w₁ ⊔ w₂ = {first(w₁) · (rest(w₁) ⊔ w₂)} ∪ {first(w₂) · (w₁ ⊔ rest(w₂))}
+    ///
+    /// The number of shuffles is given by the binomial coefficient C(|w₁|+|w₂|, |w₁|).
+    pub fn shuffle(&self, other: &Word<T>) -> Vec<Word<T>> {
+        // Base cases
+        if self.is_empty() {
+            return vec![other.clone()];
+        }
+        if other.is_empty() {
+            return vec![self.clone()];
+        }
+
+        let mut result = Vec::new();
+
+        // Take first letter from self
+        let rest_self = Word {
+            letters: self.letters[1..].to_vec(),
+        };
+        let shuffles_with_first_from_self = rest_self.shuffle(other);
+        for shuffle in shuffles_with_first_from_self {
+            let mut letters = vec![self.letters[0].clone()];
+            letters.extend(shuffle.letters);
+            result.push(Word { letters });
+        }
+
+        // Take first letter from other
+        let rest_other = Word {
+            letters: other.letters[1..].to_vec(),
+        };
+        let shuffles_with_first_from_other = self.shuffle(&rest_other);
+        for shuffle in shuffles_with_first_from_other {
+            let mut letters = vec![other.letters[0].clone()];
+            letters.extend(shuffle.letters);
+            result.push(Word { letters });
+        }
+
+        result
+    }
 }
 
 impl<T: Clone + Eq + PartialOrd> Word<T> {
@@ -1454,5 +1515,129 @@ mod tests {
         assert!(standard.is_empty());
 
         assert!(w.as_lyndon_power().is_none());
+    }
+
+    // Shuffle product tests
+
+    #[test]
+    fn test_shuffle_empty_words() {
+        let w1: Word<char> = Word::empty();
+        let w2 = Word::new(vec!['a', 'b']);
+
+        let shuffles1 = w1.shuffle(&w2);
+        assert_eq!(shuffles1.len(), 1);
+        assert_eq!(shuffles1[0], w2);
+
+        let shuffles2 = w2.shuffle(&w1);
+        assert_eq!(shuffles2.len(), 1);
+        assert_eq!(shuffles2[0], w2);
+    }
+
+    #[test]
+    fn test_shuffle_single_letters() {
+        let w1 = Word::new(vec!['a']);
+        let w2 = Word::new(vec!['b']);
+
+        let shuffles = w1.shuffle(&w2);
+
+        // Should have 2 shuffles: ab and ba
+        assert_eq!(shuffles.len(), 2);
+        assert!(shuffles.contains(&Word::new(vec!['a', 'b'])));
+        assert!(shuffles.contains(&Word::new(vec!['b', 'a'])));
+    }
+
+    #[test]
+    fn test_shuffle_ab_c() {
+        let w1 = Word::new(vec!['a', 'b']);
+        let w2 = Word::new(vec!['c']);
+
+        let shuffles = w1.shuffle(&w2);
+
+        // Should have 3 shuffles: abc, acb, cab
+        assert_eq!(shuffles.len(), 3);
+        assert!(shuffles.contains(&Word::new(vec!['a', 'b', 'c'])));
+        assert!(shuffles.contains(&Word::new(vec!['a', 'c', 'b'])));
+        assert!(shuffles.contains(&Word::new(vec!['c', 'a', 'b'])));
+    }
+
+    #[test]
+    fn test_shuffle_count() {
+        let w1 = Word::new(vec![1, 2]);
+        let w2 = Word::new(vec![3, 4]);
+
+        let shuffles = w1.shuffle(&w2);
+
+        // Number of shuffles should be C(4, 2) = 6
+        assert_eq!(shuffles.len(), 6);
+    }
+
+    #[test]
+    fn test_shuffle_preserves_order() {
+        let w1 = Word::new(vec![1, 2, 3]);
+        let w2 = Word::new(vec![4, 5]);
+
+        let shuffles = w1.shuffle(&w2);
+
+        // Verify that internal order is preserved in each shuffle
+        for shuffle in shuffles {
+            // Extract positions of elements from w1
+            let mut pos1 = Vec::new();
+            for (i, &letter) in shuffle.letters().iter().enumerate() {
+                if letter <= 3 {
+                    pos1.push((i, letter));
+                }
+            }
+            // Check that they appear in order 1, 2, 3
+            assert_eq!(pos1.len(), 3);
+            assert_eq!(pos1[0].1, 1);
+            assert_eq!(pos1[1].1, 2);
+            assert_eq!(pos1[2].1, 3);
+            assert!(pos1[0].0 < pos1[1].0);
+            assert!(pos1[1].0 < pos1[2].0);
+
+            // Extract positions of elements from w2
+            let mut pos2 = Vec::new();
+            for (i, &letter) in shuffle.letters().iter().enumerate() {
+                if letter >= 4 {
+                    pos2.push((i, letter));
+                }
+            }
+            // Check that they appear in order 4, 5
+            assert_eq!(pos2.len(), 2);
+            assert_eq!(pos2[0].1, 4);
+            assert_eq!(pos2[1].1, 5);
+            assert!(pos2[0].0 < pos2[1].0);
+        }
+    }
+
+    #[test]
+    fn test_shuffle_symmetry() {
+        let w1 = Word::new(vec!['x', 'y']);
+        let w2 = Word::new(vec!['z']);
+
+        let shuffles1 = w1.shuffle(&w2);
+        let shuffles2 = w2.shuffle(&w1);
+
+        // Both should produce the same set of words (possibly in different order)
+        assert_eq!(shuffles1.len(), shuffles2.len());
+        for word in &shuffles1 {
+            assert!(shuffles2.contains(word));
+        }
+    }
+
+    #[test]
+    fn test_shuffle_with_identical_words() {
+        let w1 = Word::new(vec![1, 1]);
+        let w2 = Word::new(vec![2, 2]);
+
+        let shuffles = w1.shuffle(&w2);
+
+        // Should have C(4, 2) = 6 shuffles
+        assert_eq!(shuffles.len(), 6);
+
+        // All shuffles should have length 4
+        for shuffle in &shuffles {
+            assert_eq!(shuffle.len(), 4);
+        }
     }
 }
