@@ -11,8 +11,10 @@ pub mod derangements;
 pub mod designs;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod fully_commutative_elements;
 pub mod integer_vectors;
 pub mod integer_matrices;
+pub mod multiset_partition_into_sets_ordered;
 pub mod ordered_tree;
 pub mod partitions;
 pub mod perfect_matching;
@@ -40,6 +42,10 @@ pub mod wreath_product;
 
 pub use affine_permutations::{AffinePermutation, CoxeterType};
 pub use combinations::{combinations, Combination};
+pub use fully_commutative_elements::{
+    count_fc_elements_by_length, enumerate_fc_elements, CoxeterMatrix, FullyCommutativeElement,
+    HeapPoset, ReducedWord, SimpleCoxeterMatrix,
+};
 pub use partitions::{
     count_partitions_with_max_parts, partition_count, partitions, partitions_with_distinct_parts,
     partitions_with_even_parts, partitions_with_exact_parts, partitions_with_max_part,
@@ -117,6 +123,7 @@ pub use integer_vectors::{
     count_integer_vectors_in_box, count_integer_vectors_with_sum, integer_vector_sum_iter,
     integer_vectors_in_box, integer_vectors_with_l1_norm_bounded, integer_vectors_with_sum,
     integer_vectors_with_weighted_sum, IntegerVector, IntegerVectorSumIter,
+};
 pub use vector_partition::{
     count_vector_partitions_exact_parts, count_vector_partitions_max_parts,
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
