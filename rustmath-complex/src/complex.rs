@@ -400,6 +400,75 @@ impl fmt::Display for Complex {
     }
 }
 
+// Typesetting implementation
+impl rustmath_typesetting::MathDisplay for Complex {
+    fn math_format(&self, options: &rustmath_typesetting::FormatOptions) -> String {
+        use rustmath_typesetting::OutputFormat;
+
+        let r = self.real();
+        let i = self.imag();
+
+        // Handle special cases
+        if i == 0.0 {
+            return format!("{}", r);
+        }
+        if r == 0.0 {
+            return format!("{}i", i);
+        }
+
+        match options.format {
+            OutputFormat::LaTeX => {
+                if i >= 0.0 {
+                    format!("{} + {}i", r, i)
+                } else {
+                    format!("{} - {}i", r, -i)
+                }
+            }
+            OutputFormat::Unicode => {
+                if i >= 0.0 {
+                    format!("{} + {}i", r, i)
+                } else {
+                    format!("{} − {}i", r, -i) // Using Unicode minus
+                }
+            }
+            OutputFormat::Html => {
+                let real_part = rustmath_typesetting::html::number(&r.to_string());
+                let imag_part = rustmath_typesetting::html::number(&i.abs().to_string());
+                let i_element = rustmath_typesetting::html::identifier("i");
+
+                if i >= 0.0 {
+                    format!(
+                        "<mrow>{}<mo>+</mo>{}{}</mrow>",
+                        real_part, imag_part, i_element
+                    )
+                } else {
+                    format!(
+                        "<mrow>{}<mo>&minus;</mo>{}{}</mrow>",
+                        real_part, imag_part, i_element
+                    )
+                }
+            }
+            OutputFormat::Ascii | OutputFormat::Plain => {
+                if i >= 0.0 {
+                    format!("{} + {}i", r, i)
+                } else {
+                    format!("{} - {}i", r, -i)
+                }
+            }
+        }
+    }
+
+    fn precedence(&self) -> i32 {
+        let i = self.imag();
+        if i == 0.0 {
+            rustmath_typesetting::utils::precedence::ATOMIC
+        } else {
+            // Complex numbers with imaginary parts need parens in multiplication
+            rustmath_typesetting::utils::precedence::ADD
+        }
+    }
+}
+
 impl Add for Complex {
     type Output = Self;
 

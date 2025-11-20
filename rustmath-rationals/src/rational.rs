@@ -180,6 +180,46 @@ impl fmt::Debug for Rational {
     }
 }
 
+// Typesetting implementation
+impl rustmath_typesetting::MathDisplay for Rational {
+    fn math_format(&self, options: &rustmath_typesetting::FormatOptions) -> String {
+        use rustmath_typesetting::{DisplayMode, OutputFormat};
+
+        // If denominator is 1, just display as an integer
+        if self.denominator.is_one() {
+            return self.numerator.math_format(options);
+        }
+
+        let num_str = self.numerator.to_string();
+        let den_str = self.denominator.to_string();
+
+        match options.format {
+            OutputFormat::LaTeX => {
+                rustmath_typesetting::latex::fraction(&num_str, &den_str, options)
+            }
+            OutputFormat::Unicode => {
+                rustmath_typesetting::unicode::fraction(&num_str, &den_str)
+            }
+            OutputFormat::Ascii => {
+                rustmath_typesetting::ascii::fraction(&num_str, &den_str, options.mode)
+            }
+            OutputFormat::Html => {
+                rustmath_typesetting::html::fraction(&num_str, &den_str)
+            }
+            OutputFormat::Plain => format!("{}/{}", num_str, den_str),
+        }
+    }
+
+    fn precedence(&self) -> i32 {
+        if self.denominator.is_one() {
+            rustmath_typesetting::utils::precedence::ATOMIC
+        } else {
+            // Fractions should be treated as division
+            rustmath_typesetting::utils::precedence::MULTIPLY
+        }
+    }
+}
+
 // Arithmetic operations
 impl Add for Rational {
     type Output = Self;
