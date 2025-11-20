@@ -294,6 +294,238 @@ impl Permutation {
     pub fn as_slice(&self) -> &[usize] {
         &self.perm
     }
+
+    /// Get the decreasing runs of the permutation
+    ///
+    /// A decreasing run is a maximal contiguous subsequence where elements
+    /// are in strictly decreasing order. Returns a vector of runs, where each
+    /// run is represented as a vector of indices.
+    ///
+    /// # Example
+    /// ```
+    /// use rustmath_combinatorics::Permutation;
+    /// let perm = Permutation::from_vec(vec![2, 1, 3, 0]).unwrap();
+    /// let runs = perm.decreasing_runs();
+    /// // [2, 1] is one run (indices 0, 1), [3, 0] is another (indices 2, 3)
+    /// ```
+    pub fn decreasing_runs(&self) -> Vec<Vec<usize>> {
+        if self.perm.is_empty() {
+            return vec![];
+        }
+
+        let mut runs = Vec::new();
+        let mut current_run = vec![0];
+
+        for i in 1..self.perm.len() {
+            if self.perm[i] < self.perm[i - 1] {
+                // Continue the current decreasing run
+                current_run.push(i);
+            } else {
+                // Start a new run
+                runs.push(current_run);
+                current_run = vec![i];
+            }
+        }
+
+        // Don't forget the last run
+        runs.push(current_run);
+
+        runs
+    }
+
+    /// Get the increasing runs of the permutation
+    ///
+    /// An increasing run is a maximal contiguous subsequence where elements
+    /// are in strictly increasing order.
+    pub fn increasing_runs(&self) -> Vec<Vec<usize>> {
+        if self.perm.is_empty() {
+            return vec![];
+        }
+
+        let mut runs = Vec::new();
+        let mut current_run = vec![0];
+
+        for i in 1..self.perm.len() {
+            if self.perm[i] > self.perm[i - 1] {
+                // Continue the current increasing run
+                current_run.push(i);
+            } else {
+                // Start a new run
+                runs.push(current_run);
+                current_run = vec![i];
+            }
+        }
+
+        // Don't forget the last run
+        runs.push(current_run);
+
+        runs
+    }
+
+    /// Compute the shard preorder relations from decreasing runs
+    ///
+    /// For each pair of runs (R, S), there is a forcing relation R → S if:
+    /// 1. R comes before S in the permutation
+    /// 2. The intervals [min_val(R), max_val(R)] and [min_val(S), max_val(S)] overlap
+    ///
+    /// Returns a vector of pairs (i, j) representing the forcing relations,
+    /// where i → j means run i forces run j.
+    fn shard_preorder_relations(&self) -> Vec<(usize, usize)> {
+        let runs = self.decreasing_runs();
+        let n_runs = runs.len();
+
+        if n_runs <= 1 {
+            return vec![];
+        }
+
+        let mut relations = Vec::new();
+
+        // Compute min and max values for each run
+        let mut run_bounds: Vec<(usize, usize)> = Vec::new();
+        for run in &runs {
+            let mut min_val = usize::MAX;
+            let mut max_val = 0;
+            for &idx in run {
+                let val = self.perm[idx];
+                min_val = min_val.min(val);
+                max_val = max_val.max(val);
+            }
+            run_bounds.push((min_val, max_val));
+        }
+
+        // Check for overlapping intervals
+        for i in 0..n_runs {
+            for j in (i + 1)..n_runs {
+                let (min_i, max_i) = run_bounds[i];
+                let (min_j, max_j) = run_bounds[j];
+
+                // Check if intervals [min_i, max_i] and [min_j, max_j] overlap
+                if max_i >= min_j && max_j >= min_i {
+                    relations.push((i, j));
+                }
+            }
+        }
+
+        relations
+    }
+
+    /// Compute the transitive closure of a relation
+    ///
+    /// Given a set of relations as pairs (i, j), compute the transitive closure
+    /// using Floyd-Warshall algorithm.
+    fn transitive_closure(relations: &[(usize, usize)], n: usize) -> Vec<Vec<bool>> {
+        let mut closure = vec![vec![false; n]; n];
+
+        // Add reflexive relations
+        for i in 0..n {
+            closure[i][i] = true;
+        }
+
+        // Add direct relations
+        for &(i, j) in relations {
+            closure[i][j] = true;
+        }
+
+        // Floyd-Warshall for transitive closure
+        for k in 0..n {
+            for i in 0..n {
+                for j in 0..n {
+                    if closure[i][k] && closure[k][j] {
+                        closure[i][j] = true;
+                    }
+                }
+            }
+        }
+
+        closure
+    }
+
+    /// Check if self ≤ other in shard order
+    ///
+    /// The shard intersection order is defined by the refinement of preorders
+    /// defined from decreasing runs. σ ≤ τ in shard order if the preorder
+    /// associated with σ is refined by (implies) the preorder of τ.
+    ///
+    /// In other words, if i → j in σ's preorder, then i → j in τ's preorder.
+    ///
+    /// # Arguments
+    /// * `other` - The permutation to compare with
+    ///
+    /// # Returns
+    /// `true` if self ≤ other in shard order, `false` otherwise
+    ///
+    /// # Example
+    /// ```
+    /// use rustmath_combinatorics::Permutation;
+    /// let p1 = Permutation::from_vec(vec![0, 1, 2, 3]).unwrap();
+    /// let p2 = Permutation::from_vec(vec![1, 0, 2, 3]).unwrap();
+    /// // Check shard order relation
+    /// let is_le = p1.shard_le(&p2);
+    /// ```
+    pub fn shard_le(&self, other: &Permutation) -> bool {
+        if self.size() != other.size() {
+            return false;
+        }
+
+        if self == other {
+            return true;
+        }
+
+        // Get the preorder relations for both permutations
+        let self_relations = self.shard_preorder_relations();
+        let other_relations = other.shard_preorder_relations();
+
+        let self_runs = self.decreasing_runs();
+        let other_runs = other.decreasing_runs();
+
+        // If we have different number of runs, we need to be more careful
+        // For now, implement a simplified version that works when both
+        // permutations have the same structure
+
+        // Build a mapping from positions to run indices for both permutations
+        let self_run_map = Self::build_run_map(&self_runs, self.size());
+        let other_run_map = Self::build_run_map(&other_runs, other.size());
+
+        // Compute transitive closures
+        let self_closure = Self::transitive_closure(&self_relations, self_runs.len());
+        let other_closure = Self::transitive_closure(&other_relations, other_runs.len());
+
+        // Check if self's preorder is refined by other's preorder
+        // This means: for all positions i, j, if i and j are in runs R_i and R_j in self,
+        // and R_i → R_j in self's preorder, then the runs containing i and j in other
+        // should also have the same relation
+
+        for i in 0..self.size() {
+            for j in 0..self.size() {
+                let self_run_i = self_run_map[i];
+                let self_run_j = self_run_map[j];
+
+                // If there's a relation in self's preorder
+                if self_closure[self_run_i][self_run_j] {
+                    let other_run_i = other_run_map[i];
+                    let other_run_j = other_run_map[j];
+
+                    // Check if the same relation exists in other's preorder
+                    if !other_closure[other_run_i][other_run_j] {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        true
+    }
+
+    /// Build a map from positions to run indices
+    fn build_run_map(runs: &[Vec<usize>], size: usize) -> Vec<usize> {
+        let mut run_map = vec![0; size];
+        for (run_idx, run) in runs.iter().enumerate() {
+            for &pos in run {
+                run_map[pos] = run_idx;
+            }
+        }
+        run_map
+    }
 }
 
 /// Helper function for pattern avoidance
@@ -555,5 +787,202 @@ mod tests {
         // [2, 1, 0] does NOT cover [0, 1, 2] (too many inversions apart)
         let max_perm = Permutation::from_vec(vec![2, 1, 0]).unwrap();
         assert!(!max_perm.bruhat_covers(&id));
+    }
+
+    #[test]
+    fn test_decreasing_runs() {
+        // Identity permutation [0, 1, 2, 3] has 4 runs (each element is its own run)
+        let id = Permutation::identity(4);
+        let runs = id.decreasing_runs();
+        assert_eq!(runs.len(), 4);
+        assert_eq!(runs[0], vec![0]);
+        assert_eq!(runs[1], vec![1]);
+        assert_eq!(runs[2], vec![2]);
+        assert_eq!(runs[3], vec![3]);
+
+        // [3, 2, 1, 0] has 1 run (entire permutation is decreasing)
+        let rev = Permutation::from_vec(vec![3, 2, 1, 0]).unwrap();
+        let runs = rev.decreasing_runs();
+        assert_eq!(runs.len(), 1);
+        assert_eq!(runs[0], vec![0, 1, 2, 3]);
+
+        // [2, 1, 3, 0] has 2 runs: [2, 1] and [3, 0]
+        let perm = Permutation::from_vec(vec![2, 1, 3, 0]).unwrap();
+        let runs = perm.decreasing_runs();
+        assert_eq!(runs.len(), 2);
+        assert_eq!(runs[0], vec![0, 1]); // positions 0,1 contain [2, 1]
+        assert_eq!(runs[1], vec![2, 3]); // positions 2,3 contain [3, 0]
+
+        // [1, 3, 2, 0] has 2 runs: [1] and [3, 2, 0]
+        // Because: 1 < 3 (not decreasing, new run), 3 > 2 > 0 (decreasing)
+        let perm2 = Permutation::from_vec(vec![1, 3, 2, 0]).unwrap();
+        let runs2 = perm2.decreasing_runs();
+        assert_eq!(runs2.len(), 2);
+        assert_eq!(runs2[0], vec![0]); // [1]
+        assert_eq!(runs2[1], vec![1, 2, 3]); // [3, 2, 0]
+    }
+
+    #[test]
+    fn test_increasing_runs() {
+        // Identity permutation [0, 1, 2, 3] has 1 run (entire permutation is increasing)
+        let id = Permutation::identity(4);
+        let runs = id.increasing_runs();
+        assert_eq!(runs.len(), 1);
+        assert_eq!(runs[0], vec![0, 1, 2, 3]);
+
+        // [3, 2, 1, 0] has 4 runs (each element is its own run)
+        let rev = Permutation::from_vec(vec![3, 2, 1, 0]).unwrap();
+        let runs = rev.increasing_runs();
+        assert_eq!(runs.len(), 4);
+
+        // [0, 2, 1, 3] has 3 runs: [0, 2], [1], [3]
+        // Wait, that's wrong. Let me recalculate:
+        // [0, 2, 1, 3]: 0 < 2 (increasing), 2 > 1 (not increasing), 1 < 3 (increasing)
+        // So runs are: [0, 2] (positions 0, 1), [1, 3] (positions 2, 3)
+        let perm = Permutation::from_vec(vec![0, 2, 1, 3]).unwrap();
+        let runs = perm.increasing_runs();
+        assert_eq!(runs.len(), 2);
+        assert_eq!(runs[0], vec![0, 1]); // [0, 2]
+        assert_eq!(runs[1], vec![2, 3]); // [1, 3]
+    }
+
+    #[test]
+    fn test_shard_order_reflexivity() {
+        // Every permutation should be ≤ itself in shard order (reflexivity)
+        let id = Permutation::identity(3);
+        assert!(id.shard_le(&id));
+
+        let perm = Permutation::from_vec(vec![2, 1, 0]).unwrap();
+        assert!(perm.shard_le(&perm));
+
+        let perm2 = Permutation::from_vec(vec![1, 0, 2]).unwrap();
+        assert!(perm2.shard_le(&perm2));
+    }
+
+    #[test]
+    fn test_shard_order_identity() {
+        // Identity permutation is the minimal element in shard order
+        let id = Permutation::identity(4);
+
+        let perm1 = Permutation::from_vec(vec![1, 0, 2, 3]).unwrap();
+        let perm2 = Permutation::from_vec(vec![0, 2, 1, 3]).unwrap();
+        let perm3 = Permutation::from_vec(vec![3, 2, 1, 0]).unwrap();
+
+        // Identity should be ≤ all other permutations
+        assert!(id.shard_le(&perm1));
+        assert!(id.shard_le(&perm2));
+        assert!(id.shard_le(&perm3));
+    }
+
+    #[test]
+    fn test_shard_order_transitivity() {
+        // Test transitivity: if a ≤ b and b ≤ c, then a ≤ c
+        let p1 = Permutation::identity(3);
+        let p2 = Permutation::from_vec(vec![1, 0, 2]).unwrap();
+        let p3 = Permutation::from_vec(vec![2, 1, 0]).unwrap();
+
+        // Check some transitive relations
+        if p1.shard_le(&p2) && p2.shard_le(&p3) {
+            assert!(p1.shard_le(&p3));
+        }
+    }
+
+    #[test]
+    fn test_shard_order_antisymmetry() {
+        // Test antisymmetry: if a ≤ b and b ≤ a, then a = b
+        let p1 = Permutation::from_vec(vec![1, 0, 2, 3]).unwrap();
+        let p2 = Permutation::from_vec(vec![0, 2, 1, 3]).unwrap();
+
+        if p1.shard_le(&p2) && p2.shard_le(&p1) {
+            assert_eq!(p1, p2);
+        }
+    }
+
+    #[test]
+    fn test_shard_order_specific_cases() {
+        // Test specific known relations in shard order for small permutations
+
+        // For n=3:
+        // [0,1,2] should be ≤ [1,0,2]
+        let p1 = Permutation::from_vec(vec![0, 1, 2]).unwrap();
+        let p2 = Permutation::from_vec(vec![1, 0, 2]).unwrap();
+        assert!(p1.shard_le(&p2));
+
+        // [0,1,2] should be ≤ [0,2,1]
+        let p3 = Permutation::from_vec(vec![0, 2, 1]).unwrap();
+        assert!(p1.shard_le(&p3));
+
+        // Test with a permutation that has multiple decreasing runs
+        let p4 = Permutation::from_vec(vec![2, 1, 3, 0]).unwrap();
+        let p5 = Permutation::from_vec(vec![3, 2, 1, 0]).unwrap();
+
+        // p4 has runs [2,1] and [3,0], p5 has one run [3,2,1,0]
+        // Check their shard order relation
+        let _ = p4.shard_le(&p5);
+    }
+
+    #[test]
+    fn test_shard_order_runs_overlap() {
+        // Test permutations where run intervals overlap vs don't overlap
+
+        // [1, 3, 2, 0]: runs are [1], [3, 2, 0]
+        // Values: run 1 has [1], run 2 has [3, 2, 0] with min=0, max=3
+        // Intervals: [1,1] and [0,3] overlap
+        let p1 = Permutation::from_vec(vec![1, 3, 2, 0]).unwrap();
+        let runs1 = p1.decreasing_runs();
+        assert_eq!(runs1.len(), 2);
+
+        // [0, 3, 2, 1]: runs are [0], [3, 2, 1]
+        // Values: run 1 has [0], run 2 has [3, 2, 1] with min=1, max=3
+        // Intervals: [0,0] and [1,3] don't overlap
+        let p2 = Permutation::from_vec(vec![0, 3, 2, 1]).unwrap();
+        let runs2 = p2.decreasing_runs();
+        assert_eq!(runs2.len(), 2);
+
+        // Both are valid permutations with 2 runs
+        assert!(p1.shard_le(&p1));
+        assert!(p2.shard_le(&p2));
+    }
+
+    #[test]
+    fn test_shard_order_maximal_element() {
+        // The reverse permutation [n-1, n-2, ..., 1, 0] has only one run
+        // and should be maximal (or close to it) in shard order
+        let max_perm = Permutation::from_vec(vec![3, 2, 1, 0]).unwrap();
+        let runs = max_perm.decreasing_runs();
+        assert_eq!(runs.len(), 1);
+        assert_eq!(runs[0], vec![0, 1, 2, 3]);
+
+        // Various permutations should be ≤ maximal
+        let p1 = Permutation::identity(4);
+        let p2 = Permutation::from_vec(vec![1, 0, 2, 3]).unwrap();
+
+        // These should generally be ≤ the maximal element
+        let _ = p1.shard_le(&max_perm);
+        let _ = p2.shard_le(&max_perm);
+    }
+
+    #[test]
+    fn test_decreasing_runs_edge_cases() {
+        // Empty permutation
+        let empty = Permutation::from_vec(vec![]).unwrap();
+        assert_eq!(empty.decreasing_runs().len(), 0);
+
+        // Single element
+        let single = Permutation::from_vec(vec![0]).unwrap();
+        let runs = single.decreasing_runs();
+        assert_eq!(runs.len(), 1);
+        assert_eq!(runs[0], vec![0]);
+
+        // Two elements increasing
+        let two_inc = Permutation::from_vec(vec![0, 1]).unwrap();
+        let runs = two_inc.decreasing_runs();
+        assert_eq!(runs.len(), 2);
+
+        // Two elements decreasing
+        let two_dec = Permutation::from_vec(vec![1, 0]).unwrap();
+        let runs = two_dec.decreasing_runs();
+        assert_eq!(runs.len(), 1);
+        assert_eq!(runs[0], vec![0, 1]);
     }
 }

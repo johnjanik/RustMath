@@ -1,6 +1,6 @@
 //! Power series implementation
 
-use rustmath_core::{Field, MathError, NumericConversion, Result, Ring};
+use rustmath_core::{Field, MathError, Result, Ring};
 use std::fmt;
 use std::ops::{Add, Mul, Neg, Sub};
 

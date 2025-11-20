@@ -3,29 +3,53 @@
 //! This crate provides combinatorial structures like permutations, combinations,
 //! partitions, and algorithms for generating and manipulating them.
 
+#[macro_use]
+extern crate lazy_static;
+
 pub mod affine_permutations;
+pub mod bijectionist;
+pub mod backtrack;
+pub mod combinatorial_map;
+pub mod combinatorial_map_examples;
 pub mod binary_words;
 pub mod combinations;
 pub mod composition;
+pub mod cyclic_sieving;
+pub mod composition_tableau;
+pub mod debruijn;
 pub mod derangements;
 pub mod designs;
+pub mod dlx;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod growth_diagram;
+pub mod hall_polynomial;
+pub mod expnums;
+pub mod group_action;
+pub mod finite_state_machine_generators;
 pub mod integer_vectors;
 pub mod integer_matrices;
 pub mod knutson_tao;
+pub mod integer_lists;
 pub mod multiset_partition_into_sets_ordered;
 pub mod ordered_tree;
+pub mod parking_function;
 pub mod partitions;
+pub mod path_tableaux;
 pub mod perfect_matching;
 pub mod permutations;
 pub mod plane_partition;
+pub mod parallelogram_polyomino;
 pub mod permutation_simd;
 pub mod posets;
 pub mod q_analogue;
 pub mod ranking;
+pub mod t_sequences;
 pub mod recurrence_sequences;
+pub mod regular_sequences;
+pub mod ribbon_tableau;
 pub mod restricted_growth;
+pub mod schubert;
 pub mod set_partition;
 pub mod set_system;
 pub mod sidon_sets;
@@ -33,14 +57,27 @@ pub mod skew_partition;
 pub mod species;
 pub mod subset;
 pub mod superpartitions;
+pub mod super_tableaux;
 pub mod tableaux;
+pub mod tableau_tuple;
 pub mod tamari;
+pub mod tamari_lattice;
+pub mod tiling;
 pub mod tuple;
 pub mod vector_partition;
 pub mod word;
+pub mod words;
 pub mod wreath_product;
+pub mod key_polynomial;
+pub mod multiset_partition_into_sets_ordered;
 
 pub use affine_permutations::{AffinePermutation, CoxeterType};
+pub use bijectionist::{
+    all_k_subsets, all_ordered_pairs, all_unordered_pairs, burnside_count, BijectionFinder,
+    BijectiveCorrespondence, GroupAction, OrbitStructure, PermutationActionOnMultiset,
+    PermutationActionOnPairs, PermutationActionOnSequence, PermutationActionOnSet,
+};
+pub use backtrack::{BacktrackFn, BacktrackProblem, Backtracker};
 pub use combinations::{combinations, Combination};
 pub use partitions::{
     count_partitions_with_max_parts, partition_count, partitions, partitions_with_distinct_parts,
@@ -54,58 +91,109 @@ pub use permutation_simd::{
     simd_info,
 };
 pub use posets::Poset;
-pub use tableaux::{robinson_schensted, rs_insert, standard_tableaux, Tableau};
+pub use tableaux::{
+    dual_robinson_schensted, hecke_insertion, inverse_robinson_schensted, mixed_insertion,
+    robinson_schensted, rs_insert, standard_tableaux, Tableau,
+};
+pub use super_tableaux::{
+    standard_super_tableaux, super_semistandard_tableaux, SuperTableau, SuperTableauEntry,
+};
 pub use tuple::{tuples as tuple_tuples, Tuple, TupleIterator};
+pub use growth_diagram::{
+    growth_sequence, growth_to_p_tableau, growth_to_q_tableau, GrowthDiagram,
+};
 
 // Re-export new modules
-pub use binary_words::{all_binary_words, binary_words_with_weight, lyndon_words, necklaces, BinaryWord};
+pub use binary_words::{
+    all_binary_words, binary_words_with_weight, lyndon_words, lyndon_words_with_weight,
+    necklaces, necklaces_with_weight, BinaryWord,
+};
 pub use composition::{
     compositions, compositions_k, integer_vectors_weighted, integer_vectors_weighted_dp,
     signed_compositions, signed_compositions_k, Composition, SignedComposition,
     WeightedIntegerVector,
 };
+pub use composition_tableau::{
+    count_tableaux_with_descent_set, standard_composition_tableaux, CompositionTableau,
+};
 pub use designs::{
     are_latin_squares_orthogonal, mutually_orthogonal_latin_squares, BlockDesign,
     DesignAutomorphism, DifferenceSet, HadamardMatrix, OrthogonalArray, SteinerSystem,
 };
+pub use dlx::DancingLinks;
 pub use dyck_word::{dyck_words, nu_dyck_words, BounceStats, DyckWord, NuDyckWord};
 pub use enumeration::{
-    cartesian_product, stars_and_bars, tuples, weak_compositions, CartesianProduct,
-    CompositionIterator, Enumerable, GrayCodeIterator, InfiniteCartesianProduct, LazyEnumerator,
-    PartitionIterator, RevolvingDoorIterator,
+    binary_to_gray, cartesian_product, gray_code_change_bit, gray_code_rank, gray_code_sequence,
+    gray_code_unrank, gray_to_binary, stars_and_bars, tuples, weak_compositions,
+    CartesianProduct, CombinationGrayCode, CompositionIterator, Enumerable, GrayCodeIterator,
+    InfiniteCartesianProduct, LazyEnumerator, PartitionIterator, PermutationGrayCode,
+    RevolvingDoorIterator,
+};
+pub use finite_state_machine_generators::{
+    Automaton, AutomatonGenerators, FSMState, FSMTransition, Transducer, TransducerGenerators,
+};
+pub use group_action::{
+    burnside_lemma, count_fixed_colorings, cycle_index, enumerate_distinct_colorings,
+    polya_enumeration, PermutationGroup,
 };
 pub use integer_matrices::{
     count_integer_matrices, integer_matrices, integer_matrices_bounded, IntegerMatrix,
 };
 pub use perfect_matching::{perfect_matchings, PerfectMatching};
-pub use ranking::{CombinationRank, PermutationRank, Rankable, RankingTable};
+pub use ranking::{
+    BinaryTreeRank, CombinationRank, GraphRank, PermutationRank, Rankable, RankingTable,
+    RootedTreeRank,
+};
 pub use recurrence_sequences::{
     solve_binary_recurrence, BinaryRecurrence, LinearRecurrence, RecurrenceSequence,
+};
+pub use regular_sequences::{
+    baum_sweet, characteristic_sequence, detect_periodicity, fibonacci_word,
+    multiplicatively_independent, paperfolding, rudin_shapiro, sequence_product, sequence_sum,
+    thue_morse, verify_cobham, AutomaticSequenceWrapper, CobhamResult, MorphicSequence,
+    RegularSequence,
 };
 pub use set_partition::{
     bell_number_optimized, bell_numbers_up_to, set_partition_iterator, set_partitions,
     SetPartition, SetPartitionIterator,
 };
 pub use set_system::SetSystem;
-pub use multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
+// pub use multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
 pub use word::{
-    abelian_complexity, boyer_moore_search, christoffel_word, factor_complexity, kmp_search,
-    lyndon_factorization, lyndon_words as general_lyndon_words, sturmian_word, AutomaticSequence,
-    Morphism, Word,
+    abelian_complexity, boyer_moore_search, christoffel_word, factor_complexity,
+    from_cfl_factorization, from_standard_factorization, is_cfl_factorization, kmp_search,
+    lyndon_factorization, lyndon_words as general_lyndon_words, lyndon_words_up_to,
+    standard_lyndon_factorization, sturmian_word, AutomaticSequence, Morphism, Word,
 };
 pub use subset::{
-    all_subsets, count_k_subsets, k_subset_iterator, k_subsets, subset_iterator, KSubsetIterator,
-    Subset, SubsetIterator,
+    all_subsets, count_k_subsets, k_subset_iterator, k_subsets,
+    max_pairwise_disjoint_k_subsets, pairwise_disjoint_family_iterator,
+    pairwise_disjoint_k_subsets, subset_iterator, KSubsetIterator,
+    PairwiseDisjointFamilyIterator, Subset, SubsetIterator,
 };
 pub use q_analogue::{
     gaussian_polynomial, q_binomial, q_binomial_eval, q_factorial, q_integer, q_multinomial,
 };
+pub use hall_polynomial::{
+    count_submodules, hall_littlewood_p, hall_polynomial, kostka_foulkes,
+pub use t_sequences::{
+    t_bell, t_binomial, t_binomial_eval, t_catalan, t_eulerian, t_factorial, t_fibonacci,
+    t_integer, t_lucas, t_multinomial, t_stirling_second,
+};
 pub use wreath_product::{all_colored_permutations, ColoredPermutation};
+pub use schubert::{
+    schubert_polynomial, monk_rule, monk_rule_expansion, DividedDifference,
+};
+pub use cyclic_sieving::{CyclicAction, CyclicSievingTriple, FunctionAction};
 pub use plane_partition::{
     count_cyclically_symmetric_plane_partitions, count_plane_partitions_in_box,
     count_self_complementary_plane_partitions, count_totally_symmetric_plane_partitions,
     count_transpose_complement_plane_partitions, plane_partitions, plane_partitions_in_box,
     PlanePartition,
+};
+pub use parallelogram_polyomino::{
+    count_parallelogram_polyominoes, parallelogram_polyominoes,
+    parallelogram_polyominoes_with_bounce_statistic, BouncePath, ParallelogramPolyomino, Point,
 };
 pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator};
 pub use derangements::{
@@ -128,6 +216,32 @@ pub use vector_partition::{
     count_vector_partitions_exact_parts, count_vector_partitions_max_parts,
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
     vector_partitions_with_max_part, VectorPartition,
+};
+pub use key_polynomial::{
+    key_polynomial, KeyMonomial, KeyPolynomial, WeakComposition,
+pub use expnums::{EGF, ExpNum};
+pub use tiling::{
+    build_transfer_matrix, count_domino_tilings, count_monomino_tilings,
+    count_polyomino_tilings, count_tilings, ColumnState, Polyomino,
+pub use debruijn::{
+    debruijn_graph_path, debruijn_prefer_one, debruijn_prefer_zero, debruijn_sequence,
+    debruijn_sequence_binary, universal_cycle_permutations, universal_cycle_subsets,
+    DeBruijnSequence,
+};
+pub use path_tableaux::{
+    ballot_sequences, count_dyck_paths, count_lattice_paths_ne, dyck_path_to_partition,
+    dyck_paths, lattice_paths_ne, partition_to_dyck_path, LatticePath, PathTableau, Step,
+};
+pub use ribbon_tableau::{
+    fermionic_formula, kostka_foulkes_ribbon, ribbon_tableaux, RibbonDecomposition, RibbonTableau,
+};
+pub use skew_partition::{
+    ribbon_shaped_tableaux, RibbonTableau, SkewPartition, SkewTableau,
+};
+pub use parking_function::{
+    count_non_decreasing_parking_functions, count_parking_functions,
+    non_decreasing_parking_functions, non_decreasing_parking_functions_with_area,
+    parking_functions, NonDecreasingParkingFunction, ParkingFunction,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
