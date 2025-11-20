@@ -7,6 +7,7 @@
 extern crate lazy_static;
 
 pub mod affine_permutations;
+pub mod backtrack;
 pub mod combinatorial_map;
 pub mod combinatorial_map_examples;
 pub mod binary_words;
@@ -23,6 +24,7 @@ pub mod group_action;
 pub mod finite_state_machine_generators;
 pub mod integer_vectors;
 pub mod integer_matrices;
+pub mod integer_lists;
 pub mod multiset_partition_into_sets_ordered;
 pub mod ordered_tree;
 pub mod parking_function;
@@ -52,13 +54,16 @@ pub mod super_tableaux;
 pub mod tableaux;
 pub mod tableau_tuple;
 pub mod tamari;
+pub mod tamari_lattice;
 pub mod tiling;
 pub mod tuple;
 pub mod vector_partition;
 pub mod word;
+pub mod words;
 pub mod wreath_product;
 
 pub use affine_permutations::{AffinePermutation, CoxeterType};
+pub use backtrack::{BacktrackFn, BacktrackProblem, Backtracker};
 pub use combinations::{combinations, Combination};
 pub use partitions::{
     count_partitions_with_max_parts, partition_count, partitions, partitions_with_distinct_parts,
