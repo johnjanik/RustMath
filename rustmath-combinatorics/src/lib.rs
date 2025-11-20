@@ -23,6 +23,7 @@ pub mod set_system;
 pub mod skew_partition;
 pub mod species;
 pub mod subset;
+pub mod superpartitions;
 pub mod tableaux;
 pub mod tamari;
 pub mod tuple;
@@ -75,9 +76,9 @@ pub use subset::{
 pub use q_analogue::{
     gaussian_polynomial, q_binomial, q_binomial_eval, q_factorial, q_integer, q_multinomial,
 };
-pub use alternating_sign_matrix::{
-    all_asms, asm_count, asm_count_by_inversions, asm_q_enumeration,
-    razumov_stroganov_polynomial, razumov_stroganov_refined_count, AlternatingSignMatrix,
+pub use superpartitions::{
+    count_superpartitions, strict_superpartitions, superpartitions, superpartitions_with_k_parts,
+    superpartitions_with_m_circled, SuperPart, SuperPartition,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
