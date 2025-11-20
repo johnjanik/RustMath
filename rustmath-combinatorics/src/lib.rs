@@ -19,6 +19,7 @@ pub mod composition;
 pub mod dendriform_algebra;
 pub mod cyclic_sieving;
 pub mod composition_tableau;
+pub mod constellation;
 pub mod debruijn;
 pub mod derangements;
 pub mod designs;
@@ -302,6 +303,8 @@ pub use similarity_class_type::{
     SimilarityClassTypes,
 };
 pub use skew_partition::{SkewPartition, SkewTableau};
+pub use constellation::{
+    cube_constellation, tetrahedron_constellation, Constellation, ConstellationEncoding,
 pub use parking_function::{
     count_non_decreasing_parking_functions, count_parking_functions,
     non_decreasing_parking_functions, non_decreasing_parking_functions_with_area,
