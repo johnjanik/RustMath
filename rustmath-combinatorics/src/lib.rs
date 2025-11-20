@@ -8,6 +8,7 @@ pub mod binary_words;
 pub mod combinations;
 pub mod composition;
 pub mod composition_tableau;
+pub mod constellation;
 pub mod debruijn;
 pub mod derangements;
 pub mod designs;
@@ -149,6 +150,9 @@ pub use ribbon_tableau::{
     fermionic_formula, kostka_foulkes_ribbon, ribbon_tableaux, RibbonDecomposition, RibbonTableau,
 };
 pub use skew_partition::{SkewPartition, SkewTableau};
+pub use constellation::{
+    cube_constellation, tetrahedron_constellation, Constellation, ConstellationEncoding,
+};
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
 
