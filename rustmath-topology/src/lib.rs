@@ -16,6 +16,7 @@
 //! - **Filtered Complexes**: Complexes with filtration for persistent homology
 //! - **Moment Angle Complexes**: Toric topology structures
 //! - **Morphisms and Homsets**: Maps between topological spaces
+//! - **Knot Theory**: Knots, links, braids, polynomial invariants, and Reidemeister moves
 //!
 //! ## Module Structure
 //!
@@ -32,6 +33,12 @@
 //! - `simplicial_set_constructions`: Constructions (cones, suspensions, products)
 //! - `simplicial_set_examples`: Pre-built simplicial set examples
 //! - `simplicial_set_morphism`: Maps between simplicial sets
+//! - `knot`: Core knot and link representations (PD codes, Gauss codes)
+//! - `braid`: Braid words and braid group operations
+//! - `reidemeister`: Reidemeister moves for knot diagrams
+//! - `knot_polynomials`: Jones and HOMFLY polynomial invariants
+//! - `knot_invariants`: Crossing number, unknotting number, genus, etc.
+//! - `link`: Link operations (connected sum, satellite, torus knots)
 //!
 //! ## Examples
 //!
@@ -61,10 +68,24 @@ pub mod simplicial_set_constructions;
 pub mod simplicial_set_examples;
 pub mod simplicial_set_morphism;
 
+// Knot theory modules
+pub mod knot;
+pub mod braid;
+pub mod reidemeister;
+pub mod knot_polynomials;
+pub mod knot_invariants;
+pub mod link;
+
 // Re-export commonly used types
 pub use cell_complex::GenericCellComplex;
 pub use simplicial_complex::{SimplicialComplex, Simplex};
 pub use simplicial_set::{SimplicialSet, AbstractSimplex};
+
+// Re-export knot theory types
+pub use knot::{Knot, Crossing, CrossingType};
+pub use braid::{Braid, BraidGenerator};
+pub use link::Link;
+pub use knot_polynomials::LaurentPolynomial;
 
 #[cfg(test)]
 mod tests {
