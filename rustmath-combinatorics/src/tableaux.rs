@@ -1342,6 +1342,8 @@ mod tests {
 
         // Entry 3 at (1,0): residue = (0 - 1 - 1) mod 3 = -2 mod 3 = 1
         assert_eq!(residues[2], 1);
+    }
+
     // k-tableau tests
     #[test]
     fn test_k_tableau_creation() {
