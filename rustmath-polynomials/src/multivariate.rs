@@ -303,6 +303,11 @@ impl<R: Ring> MultivariatePolynomial<R> {
         self.terms.len() <= 1 && self.terms.keys().all(|m| m.is_one())
     }
 
+    /// Get an iterator over the terms (monomial, coefficient pairs)
+    pub fn terms(&self) -> impl Iterator<Item = (&Monomial, &R)> {
+        self.terms.iter()
+    }
+
     /// Get all variables that appear in the polynomial
     pub fn variables(&self) -> Vec<usize> {
         let mut vars = std::collections::HashSet::new();

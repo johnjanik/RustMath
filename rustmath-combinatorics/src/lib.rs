@@ -61,6 +61,7 @@ pub mod super_tableaux;
 pub mod tableaux;
 pub mod tableau_tuple;
 pub mod tamari;
+pub mod triangles_fhm;
 pub mod tamari_lattice;
 pub mod tiling;
 pub mod tuple;
@@ -217,6 +218,7 @@ pub use vector_partition::{
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
     vector_partitions_with_max_part, VectorPartition,
 };
+pub use triangles_fhm::{Triangle, MTriangle, HTriangle, FTriangle, GammaTriangle};
 pub use key_polynomial::{
     key_polynomial, KeyMonomial, KeyPolynomial, WeakComposition,
 pub use expnums::{EGF, ExpNum};
