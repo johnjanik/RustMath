@@ -64,6 +64,7 @@ pub mod set_system;
 pub mod sidon_sets;
 pub mod six_vertex_model;
 pub mod skew_partition;
+pub mod specht_module;
 pub mod species;
 pub mod subset;
 pub mod superpartitions;
@@ -109,6 +110,8 @@ pub use permutation_simd::{
     simd_info,
 };
 pub use posets::Poset;
+pub use specht_module::{
+    GarnirElement, GarnirSet, Polytabloid, PolytabloidSum, SpechtModule, Tabloid,
 pub use tableaux::{
     dual_robinson_schensted, hecke_insertion, inverse_robinson_schensted, mixed_insertion,
     robinson_schensted, rs_insert, standard_tableaux, Tableau,
