@@ -43,6 +43,7 @@ pub mod multiset_partition_into_sets_ordered;
 pub mod ordered_tree;
 pub mod parking_function;
 pub mod partitions;
+pub mod partition_shifting_algebras;
 pub mod path_tableaux;
 pub mod perfect_matching;
 pub mod permutations;
@@ -179,6 +180,7 @@ pub use set_partition::{
     SetPartition, SetPartitionIterator,
 };
 pub use set_system::SetSystem;
+// TODO: Fix missing module
 // pub use multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
 pub use word::{
     abelian_complexity, boyer_moore_search, christoffel_word, factor_complexity,
@@ -237,6 +239,8 @@ pub use vector_partition::{
     fast_vector_partitions, fast_vector_partitions_with_max_part, vector_partitions,
     vector_partitions_with_max_part, VectorPartition,
 };
+pub use partition_shifting_algebras::{
+    ShiftingSequence, ShiftingSequenceSpace, ShiftingOperatorAlgebra, ShiftingOperatorElement,
 pub use dendriform_algebra::{
     dimension as dendriform_dimension, free_dendriform_basis, DendriFormElement,
 };
