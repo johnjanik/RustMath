@@ -576,6 +576,57 @@ impl<R: Ring> fmt::Display for Matrix<R> {
     }
 }
 
+// Typesetting implementation for matrices where elements implement MathDisplay
+impl<R> rustmath_typesetting::MathDisplay for Matrix<R>
+where
+    R: Ring + rustmath_typesetting::MathDisplay,
+{
+    fn math_format(&self, options: &rustmath_typesetting::FormatOptions) -> String {
+        use rustmath_typesetting::OutputFormat;
+
+        // Convert each element to string using the element's math_format
+        let mut rows_str: Vec<Vec<String>> = Vec::new();
+        for i in 0..self.rows {
+            let mut row: Vec<String> = Vec::new();
+            for j in 0..self.cols {
+                let elem = &self.data[i * self.cols + j];
+                row.push(elem.math_format(options));
+            }
+            rows_str.push(row);
+        }
+
+        match options.format {
+            OutputFormat::LaTeX => {
+                rustmath_typesetting::latex::matrix(&rows_str, options.matrix_brackets, options.mode)
+            }
+            OutputFormat::Unicode => {
+                rustmath_typesetting::unicode::matrix(&rows_str, options.matrix_brackets, options)
+            }
+            OutputFormat::Ascii => {
+                rustmath_typesetting::ascii::matrix(&rows_str, options.matrix_brackets, options.mode)
+            }
+            OutputFormat::Html => {
+                rustmath_typesetting::html::matrix(&rows_str, options.matrix_brackets)
+            }
+            OutputFormat::Plain => {
+                // Simple text representation
+                let mut result = String::from("[\n");
+                for row in rows_str {
+                    result.push_str("  [");
+                    result.push_str(&row.join(", "));
+                    result.push_str("]\n");
+                }
+                result.push(']');
+                result
+            }
+        }
+    }
+
+    fn precedence(&self) -> i32 {
+        rustmath_typesetting::utils::precedence::ATOMIC
+    }
+}
+
 impl<R: Ring> Add for Matrix<R> {
     type Output = Result<Self>;
 

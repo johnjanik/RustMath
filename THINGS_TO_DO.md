@@ -10,7 +10,7 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 - ⬜ = Not yet implemented
 - 🔍 = Under investigation/planning
 
-**Overall Progress**: ~69% (388 / 560 functions tracked)
+**Overall Progress**: ~70% (396 / 568 functions tracked)
 
 ---
 
@@ -568,6 +568,22 @@ and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 | Latin squares | ✅ | `rustmath-combinatorics/src/lib.rs` | `LatinSquare`, `latin_squares(n)` - generation and validation |
 
 **Progress**: 12/12 functions (100%)
+
+### 6.7 Combinatorial Designs (sage.combinat.designs)
+**SageMath Source**: `src/sage/combinat/designs/`
+
+| Function/Feature | Status | RustMath Location | Notes |
+|-----------------|--------|-------------------|-------|
+| Block designs | ✅ | `rustmath-combinatorics/src/designs.rs` | `BlockDesign` - t-(v,k,λ) designs with validation |
+| BIBD (Balanced Incomplete Block Designs) | ✅ | `rustmath-combinatorics/src/designs.rs` | 2-(v,k,λ) designs, replication number |
+| Steiner systems | ✅ | `rustmath-combinatorics/src/designs.rs` | `SteinerSystem` - S(t,k,v), Fano plane S(2,3,7), AG(2,3) |
+| Orthogonal arrays | ✅ | `rustmath-combinatorics/src/designs.rs` | `OrthogonalArray` - OA(t,k,v) with verification |
+| MOLS (Mutually Orthogonal Latin Squares) | ✅ | `rustmath-combinatorics/src/designs.rs` | `mutually_orthogonal_latin_squares(n)`, `are_latin_squares_orthogonal()` |
+| Difference sets | ✅ | `rustmath-combinatorics/src/designs.rs` | `DifferenceSet` - (v,k,λ) with development into designs |
+| Hadamard matrices | ✅ | `rustmath-combinatorics/src/designs.rs` | `HadamardMatrix` - Sylvester construction, normalization |
+| Design automorphisms | ✅ | `rustmath-combinatorics/src/designs.rs` | `DesignAutomorphism` - permutations preserving design structure |
+
+**Progress**: 8/8 features (100%) ✅ COMPLETE
 
 ---
 
@@ -1135,7 +1151,7 @@ let results = client.search_by_terms(&[1, 1, 2, 3, 5, 8])?;
 | 3. Number Theory | 36 | 38 | 95% |
 | 4. Symbolic Computation | 33 | 37 | 89% |
 | 5. Calculus | 30 | 30 | 100% |
-| 6. Combinatorics | 44 | 44 | 100% |
+| 6. Combinatorics | 52 | 52 | 100% |
 | 7. Graph Theory | 50 | 59 | 85% |
 | 8. Geometry | 18 | 19 | 95% |
 | 9. Algebraic Geometry | 27 | 30 | 90% |
@@ -1149,7 +1165,7 @@ let results = client.search_by_terms(&[1, 1, 2, 3, 5, 8])?;
 | 17. Numerical Computation | 6 | 6 | 100% |
 | 18-20. Advanced Topics | 10 | 10 | 100% |
 
-**TOTAL**: **388 / 560 functions** = **~69% complete**
+**TOTAL**: **396 / 568 functions** = **~70% complete**
 
 ### Files to Examine in SageMath Source
 

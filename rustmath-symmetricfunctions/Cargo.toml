@@ -1,5 +1,5 @@
 [package]
-name = "rustmath-polynomials"
+name = "rustmath-symmetricfunctions"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,10 +10,10 @@ repository.workspace = true
 rustmath-core = { path = "../rustmath-core" }
 rustmath-integers = { path = "../rustmath-integers" }
 rustmath-rationals = { path = "../rustmath-rationals" }
-rustmath-typesetting = { path = "../rustmath-typesetting" }
-num-traits = { workspace = true }
-serde = { workspace = true, optional = true }
+rustmath-combinatorics = { path = "../rustmath-combinatorics" }
+rustmath-matrix = { path = "../rustmath-matrix" }
+num-bigint.workspace = true
+num-rational.workspace = true
+num-traits.workspace = true
 
-[features]
-default = []
-serde = ["dep:serde"]
+[dev-dependencies]
