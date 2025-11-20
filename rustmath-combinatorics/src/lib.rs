@@ -11,6 +11,7 @@ pub mod derangements;
 pub mod designs;
 pub mod dyck_word;
 pub mod enumeration;
+pub mod interval_posets;
 pub mod multiset_partition_into_sets_ordered;
 pub mod ordered_tree;
 pub mod partitions;
@@ -107,6 +108,9 @@ pub use superpartitions::{
 pub use sidon_sets::{
     backtracking_bh_sequence, backtracking_sidon_set, greedy_bh_sequence, greedy_sidon_set,
     is_bh_sequence, is_sidon_set, max_bh_sequence_size, max_sidon_set_size, BhSequence, SidonSet,
+};
+pub use interval_posets::{
+    interval_representation, is_interval_order, is_semiorder, Interval, IntervalPoset,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
