@@ -2,7 +2,7 @@
 
 use crate::cnf::{Clause, Cnf, Literal};
 use crate::formula::{Formula, Variable};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::fmt;
 
 /// A proof step in natural deduction

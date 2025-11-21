@@ -3,7 +3,7 @@
 //! Draws polygons with geodesic sides in hyperbolic geometry.
 
 use crate::{
-    BoundingBox, Color, GraphicPrimitive, PlotOptions, Point2D, Renderable, RenderBackend, Result,
+    BoundingBox, GraphicPrimitive, PlotOptions, Point2D, Renderable, RenderBackend, Result,
 };
 use super::{HyperbolicModel, HyperbolicArc, hyperbolic_arc};
 

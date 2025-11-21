@@ -1,7 +1,7 @@
 //! Continued fractions representation and operations
 
 use crate::Rational;
-use rustmath_core::{EuclideanDomain, Ring};
+use rustmath_core::EuclideanDomain;
 use rustmath_integers::Integer;
 
 /// A continued fraction representation

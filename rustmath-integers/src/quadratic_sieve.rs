@@ -29,7 +29,7 @@
 
 use crate::Integer;
 use crate::prime::is_prime;
-use rustmath_core::{Ring, NumericConversion};
+use rustmath_core::Ring;
 use std::collections::HashMap;
 
 /// A smooth relation: x² ≡ product of primes (mod n)

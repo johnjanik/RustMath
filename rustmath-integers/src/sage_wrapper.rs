@@ -138,7 +138,7 @@
 
 use crate::prime::{factor, is_prime, is_prime_power};
 use crate::Integer;
-use rustmath_core::{NumericConversion, Result, Ring};
+use rustmath_core::{NumericConversion, Result};
 
 /// Extension trait providing SageMath-compatible methods for Integer
 ///

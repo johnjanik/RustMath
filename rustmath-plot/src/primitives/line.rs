@@ -2,7 +2,6 @@
 //!
 //! Based on SageMath's sage.plot.line module
 
-use rustmath_colors::Color;
 use rustmath_plot_core::{
     BoundingBox, GraphicPrimitive, PlotOptions, Point2D, Renderable, RenderBackend, Result,
 };

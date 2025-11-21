@@ -41,7 +41,7 @@
 //! ```
 
 use std::path::{Path, PathBuf};
-use std::io::{self, Write};
+use std::io;
 use std::fs;
 use tempfile::{NamedTempFile, TempDir, Builder};
 
