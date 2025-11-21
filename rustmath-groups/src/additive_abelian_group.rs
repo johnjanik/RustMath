@@ -152,6 +152,16 @@ impl AdditiveAbelianGroupElement {
         self.coordinates.iter().all(|&x| x == 0)
     }
 
+    /// Check if this is the zero element (alias for is_identity in additive groups)
+    pub fn is_zero(&self) -> bool {
+        self.is_identity()
+    }
+
+    /// Scalar multiplication (n * element) with i32 parameter
+    pub fn scalar_multiply(&self, n: i32) -> AdditiveAbelianGroupElement {
+        self.scalar_mul(n as i64)
+    }
+
     /// Compute the order of this element
     ///
     /// Returns None if the element has infinite order

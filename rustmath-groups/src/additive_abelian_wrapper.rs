@@ -17,14 +17,14 @@ use crate::additive_abelian_group::{AdditiveAbelianGroup, AdditiveAbelianGroupEl
 /// This morphism provides the coercion framework, allowing elements to be automatically
 /// converted back to their underlying objects when needed.
 #[derive(Clone, Debug)]
-pub struct UnwrappingMorphism<T: Clone> {
+pub struct UnwrappingMorphism<T: Clone + std::ops::Add<Output = T> + std::ops::Mul<i64, Output = T> + Default + PartialEq> {
     /// The source wrapped group
     source: AdditiveAbelianGroupWrapper<T>,
     /// The target ambient group type
     target_description: String,
 }
 
-impl<T: Clone> UnwrappingMorphism<T> {
+impl<T: Clone + std::ops::Add<Output = T> + std::ops::Mul<i64, Output = T> + Default + PartialEq> UnwrappingMorphism<T> {
     /// Create a new unwrapping morphism
     ///
     /// # Arguments
@@ -55,7 +55,7 @@ impl<T: Clone> UnwrappingMorphism<T> {
     }
 }
 
-impl<T: Clone + fmt::Display> fmt::Display for UnwrappingMorphism<T> {
+impl<T: Clone + std::ops::Add<Output = T> + std::ops::Mul<i64, Output = T> + Default + PartialEq + fmt::Display> fmt::Display for UnwrappingMorphism<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Unwrapping morphism from wrapped group to {}", self.target_description)
     }
@@ -66,7 +66,7 @@ impl<T: Clone + fmt::Display> fmt::Display for UnwrappingMorphism<T> {
 /// Represents an element as both a vector (in terms of the wrapped group's generators)
 /// and optionally the underlying ambient group element.
 #[derive(Clone, Debug)]
-pub struct AdditiveAbelianGroupWrapperElement<T: Clone> {
+pub struct AdditiveAbelianGroupWrapperElement<T: Clone + std::ops::Add<Output = T> + std::ops::Mul<i64, Output = T> + Default + PartialEq> {
     /// Vector representation in terms of generators
     vector: Vec<i64>,
     /// The parent wrapped group
@@ -75,7 +75,7 @@ pub struct AdditiveAbelianGroupWrapperElement<T: Clone> {
     ambient_element: Option<T>,
 }
 
-impl<T: Clone> AdditiveAbelianGroupWrapperElement<T> {
+impl<T: Clone + std::ops::Add<Output = T> + std::ops::Mul<i64, Output = T> + Default + PartialEq> AdditiveAbelianGroupWrapperElement<T> {
     /// Create a new wrapper element from a vector
     ///
     /// # Arguments
@@ -102,10 +102,7 @@ impl<T: Clone> AdditiveAbelianGroupWrapperElement<T> {
     /// # Arguments
     /// * `ambient_element` - Element from the ambient group
     /// * `parent` - The parent wrapped group
-    pub fn from_ambient(ambient_element: T, parent: AdditiveAbelianGroupWrapper<T>) -> Result<Self, String>
-    where
-        T: PartialEq,
-    {
+    pub fn from_ambient(ambient_element: T, parent: AdditiveAbelianGroupWrapper<T>) -> Result<Self, String> {
         let vector = parent.discrete_log(&ambient_element)?;
         Ok(AdditiveAbelianGroupWrapperElement {
             vector,
@@ -127,10 +124,7 @@ impl<T: Clone> AdditiveAbelianGroupWrapperElement<T> {
     /// Get the actual element in the ambient universe
     ///
     /// Uses discrete_exp to compute it if not cached
-    pub fn element(&self) -> Result<T, String>
-    where
-        T: std::ops::Add<Output = T>,
-    {
+    pub fn element(&self) -> Result<T, String> {
         if let Some(ref elem) = self.ambient_element {
             return Ok(elem.clone());
         }
@@ -171,7 +165,7 @@ impl<T: Clone> AdditiveAbelianGroupWrapperElement<T> {
     }
 }
 
-impl<T: Clone + fmt::Display> fmt::Display for AdditiveAbelianGroupWrapperElement<T> {
+impl<T: Clone + std::ops::Add<Output = T> + std::ops::Mul<i64, Output = T> + Default + PartialEq + fmt::Display> fmt::Display for AdditiveAbelianGroupWrapperElement<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "(")?;
         for (i, &coeff) in self.vector.iter().enumerate() {
@@ -184,13 +178,13 @@ impl<T: Clone + fmt::Display> fmt::Display for AdditiveAbelianGroupWrapperElemen
     }
 }
 
-impl<T: Clone + PartialEq> PartialEq for AdditiveAbelianGroupWrapperElement<T> {
+impl<T: Clone + std::ops::Add<Output = T> + std::ops::Mul<i64, Output = T> + Default + PartialEq> PartialEq for AdditiveAbelianGroupWrapperElement<T> {
     fn eq(&self, other: &Self) -> bool {
         self.parent == other.parent && self.vector == other.vector
     }
 }
 
-impl<T: Clone + PartialEq> Eq for AdditiveAbelianGroupWrapperElement<T> {}
+impl<T: Clone + std::ops::Add<Output = T> + std::ops::Mul<i64, Output = T> + Default + PartialEq> Eq for AdditiveAbelianGroupWrapperElement<T> {}
 
 /// A wrapped additive abelian group
 ///
@@ -198,7 +192,7 @@ impl<T: Clone + PartialEq> Eq for AdditiveAbelianGroupWrapperElement<T> {}
 /// and exponential functionality for converting between vector representations
 /// and ambient group elements.
 #[derive(Clone, Debug)]
-pub struct AdditiveAbelianGroupWrapper<T: Clone> {
+pub struct AdditiveAbelianGroupWrapper<T: Clone + std::ops::Add<Output = T> + std::ops::Mul<i64, Output = T> + Default + PartialEq> {
     /// Generators of the wrapped subgroup
     generators: Vec<T>,
     /// The underlying abstract abelian group structure
@@ -207,7 +201,7 @@ pub struct AdditiveAbelianGroupWrapper<T: Clone> {
     universe_description: String,
 }
 
-impl<T: Clone> AdditiveAbelianGroupWrapper<T> {
+impl<T: Clone + std::ops::Add<Output = T> + std::ops::Mul<i64, Output = T> + Default + PartialEq> AdditiveAbelianGroupWrapper<T> {
     /// Create a new wrapped additive abelian group
     ///
     /// # Arguments
@@ -260,10 +254,7 @@ impl<T: Clone> AdditiveAbelianGroupWrapper<T> {
     ///
     /// # Arguments
     /// * `coefficients` - Vector of coefficients with respect to generators
-    pub fn discrete_exp(&self, coefficients: &[i64]) -> Result<T, String>
-    where
-        T: std::ops::Add<Output = T> + std::ops::Mul<i64, Output = T> + Default,
-    {
+    pub fn discrete_exp(&self, coefficients: &[i64]) -> Result<T, String> {
         if coefficients.len() != self.ngens() {
             return Err(format!(
                 "Expected {} coefficients, got {}",
@@ -293,10 +284,7 @@ impl<T: Clone> AdditiveAbelianGroupWrapper<T> {
     ///
     /// # Returns
     /// Vector of coefficients, or an error if the element is not in the subgroup
-    pub fn discrete_log(&self, element: &T) -> Result<Vec<i64>, String>
-    where
-        T: PartialEq + std::ops::Add<Output = T> + std::ops::Mul<i64, Output = T> + Default,
-    {
+    pub fn discrete_log(&self, element: &T) -> Result<Vec<i64>, String> {
         // This is a placeholder implementation that would need to be specialized
         // for different types T. For full functionality, this would require
         // implementing algorithms like Shanks baby-step giant-step or Pollard's rho.
@@ -350,16 +338,16 @@ impl<T: Clone> AdditiveAbelianGroupWrapper<T> {
     }
 }
 
-impl<T: Clone + PartialEq> PartialEq for AdditiveAbelianGroupWrapper<T> {
+impl<T: Clone + std::ops::Add<Output = T> + std::ops::Mul<i64, Output = T> + Default + PartialEq> PartialEq for AdditiveAbelianGroupWrapper<T> {
     fn eq(&self, other: &Self) -> bool {
         self.generators == other.generators &&
         self.abstract_group == other.abstract_group
     }
 }
 
-impl<T: Clone + PartialEq> Eq for AdditiveAbelianGroupWrapper<T> {}
+impl<T: Clone + std::ops::Add<Output = T> + std::ops::Mul<i64, Output = T> + Default + PartialEq> Eq for AdditiveAbelianGroupWrapper<T> {}
 
-impl<T: Clone + fmt::Display> fmt::Display for AdditiveAbelianGroupWrapper<T> {
+impl<T: Clone + std::ops::Add<Output = T> + std::ops::Mul<i64, Output = T> + Default + PartialEq + fmt::Display> fmt::Display for AdditiveAbelianGroupWrapper<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Wrapped additive abelian group with {} generators in {}",
                self.ngens(),
@@ -393,7 +381,7 @@ pub fn basis_from_generators<T>(
     universe_description: String,
 ) -> Result<AdditiveAbelianGroupWrapper<T>, String>
 where
-    T: Clone + PartialEq + std::ops::Add<Output = T> + std::ops::Mul<i64, Output = T> + Default,
+    T: Clone + std::ops::Add<Output = T> + std::ops::Mul<i64, Output = T> + Default + PartialEq,
 {
     if generators.is_empty() {
         let trivial_group = AdditiveAbelianGroup::new(0, vec![])?;
@@ -424,7 +412,7 @@ fn _discrete_log_pgroup<T>(
     k: usize,
 ) -> Result<i64, String>
 where
-    T: Clone + PartialEq + std::ops::Add<Output = T> + std::ops::Mul<i64, Output = T> + Default,
+    T: Clone + std::ops::Add<Output = T> + std::ops::Mul<i64, Output = T> + Default + PartialEq,
 {
     // Base case: use baby-step giant-step
     if k == 1 {
@@ -454,7 +442,7 @@ fn _expand_basis_pgroup<T>(
     p: usize,
 ) -> Result<(), String>
 where
-    T: Clone + PartialEq,
+    T: Clone + std::ops::Add<Output = T> + std::ops::Mul<i64, Output = T> + Default + PartialEq,
 {
     // This would implement the basis expansion algorithm
     // Details would depend on the specific structure of T

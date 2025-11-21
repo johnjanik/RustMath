@@ -179,12 +179,12 @@ impl<I: Clone + Eq + Hash + fmt::Debug> Group for IndexedFreeGroup<I> {
 ///
 /// Elements are represented as words: sequences of (index, exponent) pairs.
 #[derive(Clone, Hash, Debug)]
-pub struct IndexedFreeGroupElement<I: Clone + Eq + Hash + fmt::Debug> {
+pub struct IndexedFreeGroupElement<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> {
     parent: IndexedFreeGroup<I>,
     word: Vec<(I, i32)>,
 }
 
-impl<I: Clone + Eq + Hash + fmt::Debug> IndexedFreeGroupElement<I> {
+impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> IndexedFreeGroupElement<I> {
     /// Create a new element from a word
     pub fn new(parent: IndexedFreeGroup<I>, word: Vec<(I, i32)>) -> Self {
         Self { parent, word }.reduce()
@@ -309,13 +309,13 @@ impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> fmt::Display for IndexedF
     }
 }
 
-impl<I: Clone + Eq + Hash + fmt::Debug> PartialEq for IndexedFreeGroupElement<I> {
+impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> PartialEq for IndexedFreeGroupElement<I> {
     fn eq(&self, other: &Self) -> bool {
         self.word == other.word
     }
 }
 
-impl<I: Clone + Eq + Hash + fmt::Debug> Eq for IndexedFreeGroupElement<I> {}
+impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> Eq for IndexedFreeGroupElement<I> {}
 
 impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> Default for IndexedFreeGroupElement<I> {
     /// Create a default element (identity of a trivial group)
@@ -324,7 +324,7 @@ impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> Default for IndexedFreeGr
     }
 }
 
-impl<I: Clone + Eq + Hash + fmt::Debug> Mul for IndexedFreeGroupElement<I> {
+impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> Mul for IndexedFreeGroupElement<I> {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
@@ -332,7 +332,7 @@ impl<I: Clone + Eq + Hash + fmt::Debug> Mul for IndexedFreeGroupElement<I> {
     }
 }
 
-impl<I: Clone + Eq + Hash + fmt::Debug> Mul for &IndexedFreeGroupElement<I> {
+impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> Mul for &IndexedFreeGroupElement<I> {
     type Output = IndexedFreeGroupElement<I>;
 
     fn mul(self, rhs: Self) -> Self::Output {
@@ -480,12 +480,12 @@ impl<I: Clone + Eq + Hash + fmt::Debug> Group for IndexedFreeAbelianGroup<I> {
 ///
 /// Elements are represented as dictionaries mapping indices to exponents.
 #[derive(Clone, Hash, Debug)]
-pub struct IndexedFreeAbelianGroupElement<I: Clone + Eq + Hash + fmt::Debug> {
+pub struct IndexedFreeAbelianGroupElement<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> {
     parent: IndexedFreeAbelianGroup<I>,
     exponents: HashMap<I, i32>,
 }
 
-impl<I: Clone + Eq + Hash + fmt::Debug> IndexedFreeAbelianGroupElement<I> {
+impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> IndexedFreeAbelianGroupElement<I> {
     /// Create a new element from exponents
     pub fn new(parent: IndexedFreeAbelianGroup<I>, exponents: HashMap<I, i32>) -> Self {
         let mut elem = Self { parent, exponents };
@@ -572,13 +572,13 @@ impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> fmt::Display
     }
 }
 
-impl<I: Clone + Eq + Hash + fmt::Debug> PartialEq for IndexedFreeAbelianGroupElement<I> {
+impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> PartialEq for IndexedFreeAbelianGroupElement<I> {
     fn eq(&self, other: &Self) -> bool {
         self.exponents == other.exponents
     }
 }
 
-impl<I: Clone + Eq + Hash + fmt::Debug> Eq for IndexedFreeAbelianGroupElement<I> {}
+impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> Eq for IndexedFreeAbelianGroupElement<I> {}
 
 impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> Default for IndexedFreeAbelianGroupElement<I> {
     /// Create a default element (identity of a trivial group)
@@ -587,7 +587,7 @@ impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> Default for IndexedFreeAb
     }
 }
 
-impl<I: Clone + Eq + Hash + fmt::Debug> Mul for IndexedFreeAbelianGroupElement<I> {
+impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> Mul for IndexedFreeAbelianGroupElement<I> {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
@@ -595,7 +595,7 @@ impl<I: Clone + Eq + Hash + fmt::Debug> Mul for IndexedFreeAbelianGroupElement<I
     }
 }
 
-impl<I: Clone + Eq + Hash + fmt::Debug> Mul for &IndexedFreeAbelianGroupElement<I> {
+impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> Mul for &IndexedFreeAbelianGroupElement<I> {
     type Output = IndexedFreeAbelianGroupElement<I>;
 
     fn mul(self, rhs: Self) -> Self::Output {
