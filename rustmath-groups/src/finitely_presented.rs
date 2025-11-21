@@ -29,6 +29,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::fmt;
+use std::ops::Mul;
 
 /// A finitely presented group G = ⟨X | R⟩
 ///
@@ -37,7 +38,7 @@ use std::fmt;
 /// - A set of relations R (words that equal the identity)
 ///
 /// Elements are represented as words in the generators and their inverses.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FinitelyPresentedGroup {
     /// Names of the generators
     generator_names: Vec<String>,
@@ -73,6 +74,17 @@ pub struct RewritingSystem {
     group: FinitelyPresentedGroup,
     /// Rewriting rules (lhs -> rhs), both in Tietze form
     rules: Vec<(Vec<i32>, Vec<i32>)>,
+}
+
+impl Default for FinitelyPresentedGroup {
+    /// Create a default (trivial) finitely presented group with no generators
+    fn default() -> Self {
+        FinitelyPresentedGroup {
+            generator_names: vec![],
+            num_generators: 0,
+            relations: vec![],
+        }
+    }
 }
 
 impl FinitelyPresentedGroup {
@@ -226,6 +238,13 @@ impl FinitelyPresentedGroup {
     }
 }
 
+impl Default for FinitelyPresentedGroupElement {
+    /// Create a default element (identity of the trivial group)
+    fn default() -> Self {
+        FinitelyPresentedGroup::default().identity()
+    }
+}
+
 impl FinitelyPresentedGroupElement {
     /// Get the word representation in Tietze form
     pub fn word(&self) -> &[i32] {
@@ -315,6 +334,22 @@ impl FinitelyPresentedGroupElement {
     /// Compute the commutator [self, other] = self * other * self^{-1} * other^{-1}
     pub fn commutator(&self, other: &Self) -> Self {
         self.mul(other).mul(&self.inverse()).mul(&other.inverse())
+    }
+}
+
+impl Mul for FinitelyPresentedGroupElement {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        FinitelyPresentedGroupElement::mul(&self, &rhs)
+    }
+}
+
+impl Mul for &FinitelyPresentedGroupElement {
+    type Output = FinitelyPresentedGroupElement;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        FinitelyPresentedGroupElement::mul(self, rhs)
     }
 }
 

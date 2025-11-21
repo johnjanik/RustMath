@@ -29,6 +29,7 @@
 
 use std::collections::HashMap;
 use std::fmt;
+use std::ops::Mul;
 
 use crate::group_traits::Group;
 use crate::kernel_subgroup::KernelSubgroup;
@@ -350,6 +351,29 @@ impl Hash for CactusGroupElement {
 }
 
 use crate::group_traits::GroupElement;
+
+impl Default for CactusGroupElement {
+    /// Create a default element (identity of a minimal cactus group)
+    fn default() -> Self {
+        <Self as GroupElement>::identity()
+    }
+}
+
+impl Mul for CactusGroupElement {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        self.multiply(&rhs)
+    }
+}
+
+impl Mul for &CactusGroupElement {
+    type Output = CactusGroupElement;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        self.multiply(rhs)
+    }
+}
 
 impl GroupElement for CactusGroupElement {
     fn identity() -> Self {

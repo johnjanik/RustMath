@@ -36,6 +36,7 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::hash::Hash;
+use std::ops::Mul;
 
 use crate::finitely_presented::FinitelyPresentedGroup;
 use crate::free_group::FreeGroupElement;
@@ -367,6 +368,29 @@ impl std::hash::Hash for ArtinGroupElement {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         // Hash only the word, consistent with PartialEq
         self.word.hash(state);
+    }
+}
+
+impl Default for ArtinGroupElement {
+    /// Create a default element (identity of a minimal Artin group)
+    fn default() -> Self {
+        <Self as GroupElement>::identity()
+    }
+}
+
+impl Mul for ArtinGroupElement {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        self.multiply(&rhs)
+    }
+}
+
+impl Mul for &ArtinGroupElement {
+    type Output = ArtinGroupElement;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        self.multiply(rhs)
     }
 }
 
