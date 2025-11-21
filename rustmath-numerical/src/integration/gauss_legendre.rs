@@ -109,7 +109,7 @@ pub fn nodes_uncached(degree: usize, prec: usize) -> (Vec<f64>, Vec<f64>) {
         let mut x = -(std::f64::consts::PI * (4.0 * i as f64 + 3.0) / (4.0 * degree as f64 + 2.0)).cos();
 
         // Newton-Raphson iteration to find root
-        let mut delta = 1.0;
+        let mut delta = 1.0_f64;
         while delta.abs() > 1e-15 {
             let (p, p_prime) = legendre_and_derivative(degree, x);
             delta = p / p_prime;

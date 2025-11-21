@@ -59,7 +59,7 @@ where
 
             if (fx - x).abs() < tolerance {
                 // Check if this is a new fixed point
-                if !fixed_points.iter().any(|fp| (fp - x).abs() < tolerance) {
+                if !fixed_points.iter().any(|fp: &f64| (fp - x).abs() < tolerance) {
                     fixed_points.push(x);
                 }
             }

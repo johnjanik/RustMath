@@ -80,7 +80,7 @@ struct EllipticCurve {
 impl EllipticCurve {
     /// Create a new elliptic curve modulo n
     fn new(a: Integer, b: Integer, n: Integer) -> Self {
-        Self { a, b, n }
+        Self { a, _b: b, n }
     }
 
     /// Compute modular inverse using extended GCD

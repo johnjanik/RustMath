@@ -218,7 +218,7 @@ pub use regression::LinearRegression;
 ///
 /// This trait provides a unified interface for computing statistical moments
 /// (mean, variance, etc.) over different numeric types.
-pub trait StatisticalMoments: Sized {
+pub trait StatisticalMoments: Sized + SquareRoot {
     /// Compute the mean (first moment) of a dataset
     fn mean(data: &[Self]) -> Option<Self>;
 
@@ -238,7 +238,7 @@ pub trait StatisticalMoments: Sized {
 ///
 /// Required for computing standard deviation and other statistics
 /// that involve square roots.
-pub trait SquareRoot {
+pub trait SquareRoot: Sized {
     /// Compute the square root, returning None if undefined (e.g., negative numbers)
     fn sqrt(self) -> Option<Self>;
 }

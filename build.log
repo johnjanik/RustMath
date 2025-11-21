@@ -1,3 +1,627 @@
+warning: unused variable: `r`
+   --> rustmath-polynomials/src/roots.rs:221:13
+    |
+221 |         let r = &rational_roots_found[0];
+    |             ^ help: if this is intentional, prefix it with an underscore: `_r`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `NumericConversion`
+ --> rustmath-padics/src/padic_rational.rs:4:56
+  |
+4 | use rustmath_core::{CommutativeRing, Field, MathError, NumericConversion, Result, Ring};
+  |                                                        ^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `rustmath-polynomials` (lib) generated 1 warning
+warning: `rustmath-padics` (lib) generated 1 warning
+   Compiling rustmath-matrix v0.1.0 (/home/user/RustMath/rustmath-matrix)
+warning: unused imports: `CommutativeRing`, `Field`, `MathError`, `Result`, and `Ring`
+  --> rustmath-complex/src/complex_arb.rs:12:21
+   |
+12 | use rustmath_core::{CommutativeRing, Field, MathError, Result, Ring};
+   |                     ^^^^^^^^^^^^^^^  ^^^^^  ^^^^^^^^^  ^^^^^^  ^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `Real`
+  --> rustmath-complex/src/complex_arb.rs:13:22
+   |
+13 | use rustmath_reals::{Real, RealMPFR};
+   |                      ^^^^
+
+warning: unused imports: `CommutativeRing`, `Field`, `MathError`, and `Result`
+  --> rustmath-complex/src/complex_interval.rs:46:21
+   |
+46 | use rustmath_core::{CommutativeRing, Field, MathError, Result, Ring};
+   |                     ^^^^^^^^^^^^^^^  ^^^^^  ^^^^^^^^^  ^^^^^^
+
+warning: unused import: `RealMPFR`
+  --> rustmath-complex/src/complex_interval.rs:47:38
+   |
+47 | use rustmath_reals::{Interval, Real, RealMPFR};
+   |                                      ^^^^^^^^
+
+warning: unused import: `Real`
+ --> rustmath-complex/src/complex_interval_field.rs:7:32
+  |
+7 | use rustmath_reals::{Interval, Real};
+  |                                ^^^^
+
+warning: type `ComplexIntervalField_class` should have an upper camel case name
+  --> rustmath-complex/src/complex_interval_field.rs:28:12
+   |
+28 | pub struct ComplexIntervalField_class {
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `ComplexIntervalFieldClass`
+   |
+   = note: `#[warn(non_camel_case_types)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: type `MPComplexField_class` should have an upper camel case name
+   --> rustmath-complex/src/complex_mpc_ext.rs:255:12
+    |
+255 | pub struct MPComplexField_class {
+    |            ^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `MpcomplexFieldClass`
+
+warning: unused import: `NumericConversion`
+ --> rustmath-complex/src/complex.rs:3:56
+  |
+3 | use rustmath_core::{CommutativeRing, Field, MathError, NumericConversion, Result, Ring};
+  |                                                        ^^^^^^^^^^^^^^^^^
+
+warning: variable does not need to be mutable
+   --> rustmath-complex/src/complex_interval.rs:465:13
+    |
+465 |         let mut angles = vec![
+    |             ----^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `elem` is never read
+  --> rustmath-complex/src/complex_interval_field.rs:81:17
+   |
+81 |         let mut elem = ComplexIntervalFieldElement::point(real, imag);
+   |                 ^^^^
+   |
+   = help: maybe it is overwritten before being read?
+   = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+  --> rustmath-complex/src/complex_interval_field.rs:99:13
+   |
+99 |         let mut elem = ComplexIntervalFieldElement::from_intervals(real, imag);
+   |             ----^^^^
+   |             |
+   |             help: remove this `mut`
+
+warning: function `ComplexIntervalField` should have a snake case name
+   --> rustmath-complex/src/complex_interval_field.rs:181:8
+    |
+181 | pub fn ComplexIntervalField(precision: Option<u32>) -> ComplexIntervalField_class {
+    |        ^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `complex_interval_field`
+    |
+    = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: function `MPComplexField` should have a snake case name
+   --> rustmath-complex/src/complex_mpc_ext.rs:236:8
+    |
+236 | pub fn MPComplexField(precision: Option<u32>) -> MPComplexField_class {
+    |        ^^^^^^^^^^^^^^ help: convert the identifier to snake case: `mpcomplex_field`
+
+   Compiling rustmath-finitefields v0.1.0 (/home/user/RustMath/rustmath-finitefields)
+   Compiling rustmath-powerseries v0.1.0 (/home/user/RustMath/rustmath-powerseries)
+warning: `rustmath-complex` (lib) generated 13 warnings (run `cargo fix --lib -p rustmath-complex` to apply 7 suggestions)
+   Compiling rustmath-symbolic v0.1.0 (/home/user/RustMath/rustmath-symbolic)
+warning: function `color_names` is never used
+  --> rustmath-colors/src/named_colors.rs:71:8
+   |
+71 | pub fn color_names() -> Vec<&'static str> {
+   |        ^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `parse_color_from_rgb` is never used
+   --> rustmath-colors/src/parser.rs:130:8
+    |
+130 | pub fn parse_color_from_rgb(r: f64, g: f64, b: f64) -> Result<Color> {
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `parse_color_from_rgba` is never used
+   --> rustmath-colors/src/parser.rs:135:8
+    |
+135 | pub fn parse_color_from_rgba(r: f64, g: f64, b: f64, a: f64) -> Result<Color> {
+    |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: `rustmath-colors` (lib) generated 3 warnings
+warning: struct `BoundingBox3D` is never constructed
+   --> rustmath-plot-core/src/bbox.rs:209:12
+    |
+209 | pub struct BoundingBox3D {
+    |            ^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated items `new`, `from_points`, `center`, `volume`, and `contains` are never used
+   --> rustmath-plot-core/src/bbox.rs:220:12
+    |
+218 | impl BoundingBox3D {
+    | ------------------ associated items in this implementation
+219 |     /// Create a new 3D bounding box
+220 |     pub fn new(xmin: f64, xmax: f64, ymin: f64, ymax: f64, zmin: f64, zmax: f64) -> Self {
+    |            ^^^
+...
+236 |     pub fn from_points(points: &[Point3D]) -> Result<Self> {
+    |            ^^^^^^^^^^^
+...
+270 |     pub fn center(&self) -> Point3D {
+    |            ^^^^^^
+...
+279 |     pub fn volume(&self) -> f64 {
+    |            ^^^^^^
+...
+284 |     pub fn contains(&self, point: &Point3D) -> bool {
+    |            ^^^^^^^^
+
+warning: `rustmath-plot-core` (lib) generated 2 warnings
+warning: unused import: `rustmath_integers::Integer`
+  --> rustmath-numbertheory/src/bernoulli.rs:46:5
+   |
+46 | use rustmath_integers::Integer;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `num_bigint::BigInt`
+  --> rustmath-numbertheory/src/bernoulli.rs:48:5
+   |
+48 | use num_bigint::BigInt;
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `FromPrimitive`
+  --> rustmath-numbertheory/src/bernoulli.rs:49:31
+   |
+49 | use num_traits::{ToPrimitive, FromPrimitive};
+   |                               ^^^^^^^^^^^^^
+
+warning: unused import: `ToPrimitive`
+  --> rustmath-numbertheory/src/bernoulli.rs:49:18
+   |
+49 | use num_traits::{ToPrimitive, FromPrimitive};
+   |                  ^^^^^^^^^^^
+
+warning: value assigned to `count` is never read
+   --> rustmath-numbertheory/src/quadratic_forms.rs:432:17
+    |
+432 |         let mut count = Integer::zero();
+    |                 ^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: creating a shared reference to mutable static
+  --> rustmath-numbertheory/src/bernoulli.rs:89:12
+   |
+89 |         if CACHE.is_none() {
+   |            ^^^^^^^^^^^^^^^ shared reference to mutable static
+   |
+   = note: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/static-mut-references.html>
+   = note: shared references to mutable statics are dangerous; it's undefined behavior if the static is mutated or if a mutable reference is created for it while the shared reference lives
+   = note: `#[warn(static_mut_refs)]` (part of `#[warn(rust_2024_compatibility)]`) on by default
+
+warning: creating a mutable reference to mutable static
+  --> rustmath-numbertheory/src/bernoulli.rs:93:21
+   |
+93 |         let cache = CACHE.as_mut().unwrap();
+   |                     ^^^^^^^^^^^^^^ mutable reference to mutable static
+   |
+   = note: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/static-mut-references.html>
+   = note: mutable references to mutable statics are dangerous; it's undefined behavior if any other pointer to the static is used or if any other reference is created for the static while the mutable reference lives
+
+warning: creating a mutable reference to mutable static
+   --> rustmath-numbertheory/src/bernoulli.rs:126:9
+    |
+126 |         CACHE.as_mut().unwrap().insert(n, result.clone());
+    |         ^^^^^^^^^^^^^^ mutable reference to mutable static
+    |
+    = note: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/static-mut-references.html>
+    = note: mutable references to mutable statics are dangerous; it's undefined behavior if any other pointer to the static is used or if any other reference is created for the static while the mutable reference lives
+
+warning: `rustmath-numbertheory` (lib) generated 8 warnings (run `cargo fix --lib -p rustmath-numbertheory` to apply 3 suggestions)
+   Compiling rustmath-numerical v0.1.0 (/home/user/RustMath/rustmath-numerical)
+warning: unused imports: `Float`, `One`, and `Zero`
+  --> rustmath-special-functions/src/lib.rs:12:18
+   |
+12 | use num_traits::{Float, One, Zero};
+   |                  ^^^^^  ^^^  ^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `E` and `PI`
+  --> rustmath-special-functions/src/lib.rs:13:24
+   |
+13 | use std::f64::consts::{E, PI};
+   |                        ^  ^^
+
+warning: unused variable: `mu`
+  --> rustmath-special-functions/src/bessel.rs:64:9
+   |
+64 |     let mu = 4.0 * (n as f64).powi(2);
+   |         ^^
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+help: if this is intentional, prefix it with an underscore
+   |
+64 |     let _mu = 4.0 * (n as f64).powi(2);
+   |         +
+help: you might have meant to pattern match on the similarly named constant `EPSILON`
+   |
+64 -     let mu = 4.0 * (n as f64).powi(2);
+64 +     let error::erfc_continued_fraction::EPSILON = 4.0 * (n as f64).powi(2);
+   |
+
+warning: unused variable: `k_f`
+   --> rustmath-special-functions/src/bessel.rs:120:13
+    |
+120 |         let k_f = k as f64;
+    |             ^^^
+    |
+help: if this is intentional, prefix it with an underscore
+    |
+120 |         let _k_f = k as f64;
+    |             +
+help: you might have meant to pattern match on the similarly named constant `EPSILON`
+    |
+120 -         let k_f = k as f64;
+120 +         let error::erfc_continued_fraction::EPSILON = k as f64;
+    |
+
+warning: unused variable: `x2`
+  --> rustmath-special-functions/src/error.rs:69:9
+   |
+69 |     let x2 = x * x;
+   |         ^^
+   |
+help: if this is intentional, prefix it with an underscore
+   |
+69 |     let _x2 = x * x;
+   |         +
+help: you might have meant to pattern match on the similarly named constant `EPSILON`
+   |
+69 -     let x2 = x * x;
+69 +     let error::erfc_continued_fraction::EPSILON = x * x;
+   |
+
+warning: value assigned to `a` is never read
+  --> rustmath-special-functions/src/error.rs:93:13
+   |
+93 |     let mut a = 1.0;
+   |             ^
+   |
+   = help: maybe it is overwritten before being read?
+   = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+   Compiling rustmath-dynamics v0.1.0 (/home/user/RustMath/rustmath-dynamics)
+   Compiling rustmath-algebraic v0.1.0 (/home/user/RustMath/rustmath-algebraic)
+warning: unused import: `std::f64::consts::PI`
+ --> rustmath-stats/src/hypothesis.rs:6:5
+  |
+6 | use std::f64::consts::PI;
+  |     ^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `variance`
+ --> rustmath-stats/src/regression.rs:5:31
+  |
+5 | use crate::statistics::{mean, variance};
+  |                               ^^^^^^^^
+
+warning: unused variable: `alpha`
+   --> rustmath-stats/src/hypothesis.rs:195:21
+    |
+195 | fn t_critical_value(alpha: f64, df: usize) -> f64 {
+    |                     ^^^^^ help: if this is intentional, prefix it with an underscore: `_alpha`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `n_features`
+   --> rustmath-stats/src/regression.rs:131:13
+    |
+131 |         let n_features = x_matrix[0].len();
+    |             ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_n_features`
+
+warning: variable does not need to be mutable
+   --> rustmath-stats/src/regression.rs:134:13
+    |
+134 |         let mut x_with_intercept: Vec<Vec<f64>> = x_matrix
+    |             ----^^^^^^^^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `max_digits`
+   --> rustmath-constants/src/constants.rs:145:9
+    |
+145 |     let max_digits = PI_DIGITS.len().saturating_sub(2); // Subtract "3."
+    |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_max_digits`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `max_digits`
+   --> rustmath-constants/src/constants.rs:152:9
+    |
+152 |     let max_digits = E_DIGITS.len().saturating_sub(2); // Subtract "2."
+    |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_max_digits`
+
+warning: unused variable: `max_digits`
+   --> rustmath-constants/src/constants.rs:159:9
+    |
+159 |     let max_digits = PHI_DIGITS.len().saturating_sub(2); // Subtract "1."
+    |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_max_digits`
+
+warning: unused variable: `max_digits`
+   --> rustmath-constants/src/constants.rs:166:9
+    |
+166 |     let max_digits = SQRT2_DIGITS.len().saturating_sub(2); // Subtract "1."
+    |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_max_digits`
+
+warning: unused variable: `max_digits`
+   --> rustmath-constants/src/constants.rs:173:9
+    |
+173 |     let max_digits = EULER_GAMMA_DIGITS.len().saturating_sub(2); // Subtract "0."
+    |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_max_digits`
+
+warning: unused import: `std::fmt`
+  --> rustmath-sets/src/finite_set_maps.rs:32:5
+   |
+32 | use std::fmt;
+   |     ^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: hiding a lifetime that's elided elsewhere is confusing
+   --> rustmath-sets/src/lib.rs:330:17
+    |
+330 |     pub fn iter(&self) -> CartesianProductIterator<T> {
+    |                 ^^^^^     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the same lifetime is hidden here
+    |                 |
+    |                 the lifetime is elided here
+    |
+    = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+    = note: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+help: use `'_` for type paths
+    |
+330 |     pub fn iter(&self) -> CartesianProductIterator<'_, T> {
+    |                                                    +++
+
+warning: `rustmath-special-functions` (lib) generated 6 warnings (run `cargo fix --lib -p rustmath-special-functions` to apply 5 suggestions)
+warning: `rustmath-stats` (lib) generated 5 warnings (run `cargo fix --lib -p rustmath-stats` to apply 3 suggestions)
+warning: `rustmath-constants` (lib) generated 5 warnings
+warning: `rustmath-sets` (lib) generated 2 warnings (run `cargo fix --lib -p rustmath-sets` to apply 2 suggestions)
+warning: unused import: `Path`
+  --> rustmath-databases/src/cache.rs:31:17
+   |
+31 | use std::path::{Path, PathBuf};
+   |                 ^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `count` is never read
+   --> rustmath-databases/src/oeis.rs:114:5
+    |
+110 | struct OEISResponse {
+    |        ------------ field in this struct
+...
+114 |     count: i32,
+    |     ^^^^^
+    |
+    = note: `OEISResponse` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `data_path` is never read
+   --> rustmath-databases/src/cunningham.rs:205:5
+    |
+201 | pub struct CunninghamTables {
+    |            ---------------- field in this struct
+...
+205 |     data_path: Option<String>,
+    |     ^^^^^^^^^
+
+warning: field `data_path` is never read
+   --> rustmath-databases/src/cremona.rs:385:5
+    |
+381 | pub struct CremonaDatabase {
+    |            --------------- field in this struct
+...
+385 |     data_path: Option<String>,
+    |     ^^^^^^^^^
+
+warning: fields `base_url`, `client`, and `cache` are never read
+   --> rustmath-databases/src/lmfdb.rs:115:5
+    |
+114 | pub struct LMFDBClient {
+    |            ----------- fields in this struct
+115 |     base_url: String,
+    |     ^^^^^^^^
+116 |     client: reqwest::blocking::Client,
+    |     ^^^^^^
+117 |     /// In-memory cache of queries
+118 |     cache: std::sync::Mutex<HashMap<String, String>>,
+    |     ^^^^^
+
+warning: type `Sagedoc_conf` should have an upper camel case name
+ --> rustmath-misc/src/sagedoc_conf.rs:6:12
+  |
+6 | pub struct Sagedoc_conf;
+  |            ^^^^^^^^^^^^ help: convert the identifier to upper camel case: `SagedocConf`
+  |
+  = note: `#[warn(non_camel_case_types)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: unused import: `Write`
+  --> rustmath-misc/src/temporary_file.rs:44:21
+   |
+44 | use std::io::{self, Write};
+   |                     ^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: type `Test_nested_class` should have an upper camel case name
+ --> rustmath-misc/src/test_nested_class.rs:6:12
+  |
+6 | pub struct Test_nested_class;
+  |            ^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `TestNestedClass`
+
+warning: type `Weak_dict` should have an upper camel case name
+ --> rustmath-misc/src/weak_dict.rs:6:12
+  |
+6 | pub struct Weak_dict;
+  |            ^^^^^^^^^ help: convert the identifier to upper camel case: `WeakDict`
+
+warning: use of deprecated method `tempfile::TempDir::into_path`: use TempDir::keep()
+   --> rustmath-misc/src/temporary_file.rs:275:14
+    |
+275 |         temp.into_path()
+    |              ^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `tempfile::TempDir::into_path`: use TempDir::keep()
+   --> rustmath-misc/src/temporary_file.rs:509:30
+    |
+509 |     let temp_path = temp_dir.into_path();
+    |                              ^^^^^^^^^
+
+warning: variable does not need to be mutable
+  --> rustmath-misc/src/mrange.rs:60:13
+   |
+60 |         let mut current = self.current.as_mut().unwrap();
+   |             ----^^^^^^^
+   |             |
+   |             help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> rustmath-misc/src/mrange.rs:141:13
+    |
+141 |         let mut indices = self.current_indices.as_mut().unwrap();
+    |             ----^^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: field `headers` is never read
+ --> rustmath-misc/src/table.rs:7:5
+  |
+5 | pub struct Table {
+  |            ----- field in this struct
+6 |     rows: Vec<Vec<String>>,
+7 |     headers: Option<Vec<String>>,
+  |     ^^^^^^^
+  |
+  = note: `Table` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `rustmath_colors::Color`
+ --> rustmath-plot/src/primitives/arc.rs:5:5
+  |
+5 | use rustmath_colors::Color;
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `rustmath_colors::Color`
+ --> rustmath-plot/src/primitives/arrow.rs:5:5
+  |
+5 | use rustmath_colors::Color;
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_colors::Color`
+ --> rustmath-plot/src/primitives/circle.rs:5:5
+  |
+5 | use rustmath_colors::Color;
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_colors::Color`
+ --> rustmath-plot/src/primitives/disk.rs:5:5
+  |
+5 | use rustmath_colors::Color;
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_colors::Color`
+ --> rustmath-plot/src/primitives/line.rs:5:5
+  |
+5 | use rustmath_colors::Color;
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_colors::Color`
+ --> rustmath-plot/src/primitives/point.rs:5:5
+  |
+5 | use rustmath_colors::Color;
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_colors::Color`
+ --> rustmath-plot/src/primitives/polygon.rs:5:5
+  |
+5 | use rustmath_colors::Color;
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_colors::Color`
+ --> rustmath-plot/src/primitives/text.rs:5:5
+  |
+5 | use rustmath_colors::Color;
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `Color` and `LineStyle`
+  --> rustmath-plot/src/primitives/bezier_path.rs:24:18
+   |
+24 |     BoundingBox, Color, GraphicPrimitive, LineStyle, PlotOptions, Point2D, Renderable,
+   |                  ^^^^^                    ^^^^^^^^^
+
+warning: unused import: `Color`
+ --> rustmath-plot/src/primitives/hyperbolic/hyperbolic_polygon.rs:6:18
+  |
+6 |     BoundingBox, Color, GraphicPrimitive, PlotOptions, Point2D, Renderable, RenderBackend, Result,
+  |                  ^^^^^
+
+warning: unnecessary parentheses around assigned value
+  --> rustmath-plot/src/primitives/hyperbolic/mod.rs:34:21
+   |
+34 |         let denom = (x * x + (y + 1.0) * (y + 1.0));
+   |                     ^                             ^
+   |
+   = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+   |
+34 -         let denom = (x * x + (y + 1.0) * (y + 1.0));
+34 +         let denom = x * x + (y + 1.0) * (y + 1.0);
+   |
+
+warning: unused import: `rustmath_colors::Color`
+ --> rustmath-plot/src/plots/plot.rs:8:5
+  |
+8 | use rustmath_colors::Color;
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `Point2D` and `Result`
+ --> rustmath-plot/src/plots/plot.rs:9:39
+  |
+9 | use rustmath_plot_core::{PlotOptions, Point2D, Result};
+  |                                       ^^^^^^^  ^^^^^^
+
+warning: unused import: `Result`
+ --> rustmath-plot/src/plots/parametric_plot.rs:7:48
+  |
+7 | use rustmath_plot_core::{PlotOptions, Point2D, Result};
+  |                                                ^^^^^^
+
+warning: unused import: `Result`
+ --> rustmath-plot/src/plots/list_plot.rs:7:48
+  |
+7 | use rustmath_plot_core::{PlotOptions, Point2D, Result};
+  |                                                ^^^^^^
    Compiling rustmath-integers v0.1.0 (/home/john/RustMath/rustmath-integers)
 warning: function `color_names` is never used
   --> rustmath-colors/src/named_colors.rs:71:8
@@ -285,6 +909,1577 @@ warning: unused import: `Result`
   |
 7 | use rustmath_plot_core::{PlotOptions, Point2D, Result};
   |                                                ^^^^^^
+
+warning: unused import: `Result`
+ --> rustmath-plot/src/plots/bar_chart.rs:8:48
+  |
+8 | use rustmath_plot_core::{PlotOptions, Point2D, Result};
+  |                                                ^^^^^^
+
+warning: unused import: `Result`
+ --> rustmath-plot/src/plots/matrix_plot.rs:9:48
+  |
+9 | use rustmath_plot_core::{PlotOptions, Point2D, Result};
+  |                                                ^^^^^^
+
+warning: unused import: `rustmath_colors::Color`
+ --> rustmath-plot/src/plots/implicit_plot.rs:7:5
+  |
+7 | use rustmath_colors::Color;
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Result`
+ --> rustmath-plot/src/plots/implicit_plot.rs:8:48
+  |
+8 | use rustmath_plot_core::{PlotOptions, Point2D, Result};
+  |                                                ^^^^^^
+
+warning: unused variable: `path`
+   --> rustmath-plot/src/animation.rs:207:24
+    |
+207 |     fn save_gif(&self, path: &Path, options: &AnimationOptions) -> Result<()> {
+    |                        ^^^^ help: if this is intentional, prefix it with an underscore: `_path`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `options`
+   --> rustmath-plot/src/animation.rs:207:37
+    |
+207 |     fn save_gif(&self, path: &Path, options: &AnimationOptions) -> Result<()> {
+    |                                     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_options`
+
+warning: unused variable: `path`
+   --> rustmath-plot/src/animation.rs:219:25
+    |
+219 |     fn save_apng(&self, path: &Path, options: &AnimationOptions) -> Result<()> {
+    |                         ^^^^ help: if this is intentional, prefix it with an underscore: `_path`
+
+warning: unused variable: `options`
+   --> rustmath-plot/src/animation.rs:219:38
+    |
+219 |     fn save_apng(&self, path: &Path, options: &AnimationOptions) -> Result<()> {
+    |                                      ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_options`
+
+warning: unused variable: `path`
+   --> rustmath-plot/src/animation.rs:227:26
+    |
+227 |     fn save_video(&self, path: &Path, format: &str, options: &AnimationOptions) -> Result<()> {
+    |                          ^^^^ help: if this is intentional, prefix it with an underscore: `_path`
+
+warning: unused variable: `options`
+   --> rustmath-plot/src/animation.rs:227:53
+    |
+227 |     fn save_video(&self, path: &Path, format: &str, options: &AnimationOptions) -> Result<()> {
+    |                                                     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_options`
+
+warning: unused variable: `tolerance`
+   --> rustmath-plot/src/primitives/bezier_path.rs:235:77
+    |
+235 |     fn arc_length_cubic(p0: Point2D, p1: Point2D, p2: Point2D, p3: Point2D, tolerance: f64) -> f64 {
+    |                                                                             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tolerance`
+
+warning: unused variable: `tolerance`
+   --> rustmath-plot/src/primitives/bezier_path.rs:254:68
+    |
+254 |     fn arc_length_quadratic(p0: Point2D, p1: Point2D, p2: Point2D, tolerance: f64) -> f64 {
+    |                                                                    ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tolerance`
+
+warning: unused variable: `colormap`
+   --> rustmath-plot/src/plots/contour_plot.rs:127:5
+    |
+127 |     colormap: Option<Colormap>,
+    |     ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_colormap`
+
+warning: unused variable: `colormap`
+  --> rustmath-plot/src/plots/density_plot.rs:55:5
+   |
+55 |     colormap: Option<Colormap>,
+   |     ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_colormap`
+
+warning: unused variable: `options`
+  --> rustmath-plot/src/plots/density_plot.rs:56:5
+   |
+56 |     options: Option<PlotOptions>,
+   |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_options`
+
+warning: unused variable: `options`
+   --> rustmath-plot/src/plots/density_plot.rs:160:5
+    |
+160 |     options: Option<PlotOptions>,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_options`
+
+warning: unused variable: `cols`
+  --> rustmath-plot/src/plots/matrix_plot.rs:54:9
+   |
+54 |     let cols = matrix[0].len();
+   |         ^^^^ help: if this is intentional, prefix it with an underscore: `_cols`
+
+warning: unused variable: `colormap`
+  --> rustmath-plot/src/plots/matrix_plot.rs:46:5
+   |
+46 |     colormap: Option<Colormap>,
+   |     ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_colormap`
+
+warning: unused variable: `options`
+  --> rustmath-plot/src/plots/matrix_plot.rs:47:5
+   |
+47 |     options: Option<PlotOptions>,
+   |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_options`
+
+warning: unused variable: `cols`
+   --> rustmath-plot/src/plots/matrix_plot.rs:131:9
+    |
+131 |     let cols = matrix[0].len();
+    |         ^^^^ help: if this is intentional, prefix it with an underscore: `_cols`
+
+warning: unused variable: `colormap`
+   --> rustmath-plot/src/plots/matrix_plot.rs:123:5
+    |
+123 |     colormap: Option<Colormap>,
+    |     ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_colormap`
+
+warning: unused variable: `options`
+   --> rustmath-plot/src/plots/matrix_plot.rs:124:5
+    |
+124 |     options: Option<PlotOptions>,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_options`
+
+warning: unused variable: `cols`
+   --> rustmath-plot/src/plots/matrix_plot.rs:183:9
+    |
+183 |     let cols = matrix[0].len();
+    |         ^^^^ help: if this is intentional, prefix it with an underscore: `_cols`
+
+warning: unused variable: `primitive`
+   --> rustmath-plot/src/plots/implicit_plot.rs:165:13
+    |
+165 |         for primitive in curve.primitives() {
+    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_primitive`
+
+warning: variable does not need to be mutable
+   --> rustmath-plot/src/plots/implicit_plot.rs:160:9
+    |
+160 |     let mut g = Graphics::new();
+    |         ----^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `width` and `height` are never read
+  --> rustmath-plot/src/backends/svg_backend.rs:25:5
+   |
+20 | pub struct SvgBackend {
+   |            ---------- fields in this struct
+...
+25 |     width: f64,
+   |     ^^^^^
+...
+28 |     height: f64,
+   |     ^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `plot_multiple` is never used
+  --> rustmath-plot/src/plots/plot.rs:96:8
+   |
+96 | pub fn plot_multiple<F>(
+   |        ^^^^^^^^^^^^^
+
+warning: function `parametric_plot_adaptive` is never used
+   --> rustmath-plot/src/plots/parametric_plot.rs:111:8
+    |
+111 | pub fn parametric_plot_adaptive<F, G>(
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `list_plot_y` is never used
+  --> rustmath-plot/src/plots/list_plot.rs:91:8
+   |
+91 | pub fn list_plot_y(
+   |        ^^^^^^^^^^^
+
+warning: function `list_plot_multiple` is never used
+   --> rustmath-plot/src/plots/list_plot.rs:137:8
+    |
+137 | pub fn list_plot_multiple(
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `scatter_plot_y` is never used
+  --> rustmath-plot/src/plots/scatter_plot.rs:77:8
+   |
+77 | pub fn scatter_plot_y(
+   |        ^^^^^^^^^^^^^^
+
+warning: function `scatter_plot_colored` is never used
+   --> rustmath-plot/src/plots/scatter_plot.rs:116:8
+    |
+116 | pub fn scatter_plot_colored(
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `scatter_plot_sized` is never used
+   --> rustmath-plot/src/plots/scatter_plot.rs:160:8
+    |
+160 | pub fn scatter_plot_sized(
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `contour_plot_filled` is never used
+   --> rustmath-plot/src/plots/contour_plot.rs:122:8
+    |
+122 | pub fn contour_plot_filled<F>(
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: function `density_plot_custom` is never used
+   --> rustmath-plot/src/plots/density_plot.rs:154:8
+    |
+154 | pub fn density_plot_custom<F, C>(
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: function `histogram_custom_bins` is never used
+   --> rustmath-plot/src/plots/histogram.rs:132:8
+    |
+132 | pub fn histogram_custom_bins(
+    |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `bar_chart_horizontal` is never used
+  --> rustmath-plot/src/plots/bar_chart.rs:77:8
+   |
+77 | pub fn bar_chart_horizontal(
+   |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `bar_chart_colored` is never used
+   --> rustmath-plot/src/plots/bar_chart.rs:122:8
+    |
+122 | pub fn bar_chart_colored(data: Vec<(f64, f64, Color)>, bar_width: Option<f64>) -> Graphics {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: function `bar_chart_grouped` is never used
+   --> rustmath-plot/src/plots/bar_chart.rs:166:8
+    |
+166 | pub fn bar_chart_grouped(
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: function `bar_chart_stacked` is never used
+   --> rustmath-plot/src/plots/bar_chart.rs:232:8
+    |
+232 | pub fn bar_chart_stacked(data: Vec<(f64, Vec<f64>, Vec<Color>)>, bar_width: Option<f64>) -> Graphics {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: function `matrix_plot_range` is never used
+   --> rustmath-plot/src/plots/matrix_plot.rs:119:8
+    |
+119 | pub fn matrix_plot_range(
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: function `matrix_plot_binary` is never used
+   --> rustmath-plot/src/plots/matrix_plot.rs:173:8
+    |
+173 | pub fn matrix_plot_binary(
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `matrix_plot_spy` is never used
+   --> rustmath-plot/src/plots/matrix_plot.rs:222:8
+    |
+222 | pub fn matrix_plot_spy(matrix: Vec<Vec<f64>>, threshold: Option<f64>, color: Color) -> Graphics {
+    |        ^^^^^^^^^^^^^^^
+
+warning: type `Monoid_class` should have an upper camel case name
+  --> rustmath-monoids/src/monoid.rs:45:12
+   |
+45 | pub struct Monoid_class<T: Monoid> {
+   |            ^^^^^^^^^^^^ help: convert the identifier to upper camel case: `MonoidClass`
+   |
+   = note: `#[warn(non_camel_case_types)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: unused variable: `obj`
+   --> rustmath-monoids/src/free_monoid.rs:149:22
+    |
+149 | pub fn is_FreeMonoid(obj: &FreeMonoid) -> bool {
+    |                      ^^^ help: if this is intentional, prefix it with an underscore: `_obj`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `obj`
+   --> rustmath-monoids/src/free_monoid.rs:155:29
+    |
+155 | pub fn is_FreeMonoidElement(obj: &FreeMonoidElement) -> bool {
+    |                             ^^^ help: if this is intentional, prefix it with an underscore: `_obj`
+
+warning: field `mult_table` is never read
+  --> rustmath-monoids/src/automatic_semigroup.rs:35:5
+   |
+31 | pub struct AutomaticSemigroup {
+   |            ------------------ field in this struct
+...
+35 |     mult_table: Option<HashMap<(usize, usize), usize>>,
+   |     ^^^^^^^^^^
+   |
+   = note: `AutomaticSemigroup` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `is_FreeMonoid` should have a snake case name
+   --> rustmath-monoids/src/free_monoid.rs:149:8
+    |
+149 | pub fn is_FreeMonoid(obj: &FreeMonoid) -> bool {
+    |        ^^^^^^^^^^^^^ help: convert the identifier to snake case: `is_free_monoid`
+    |
+    = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: function `is_FreeMonoidElement` should have a snake case name
+   --> rustmath-monoids/src/free_monoid.rs:155:8
+    |
+155 | pub fn is_FreeMonoidElement(obj: &FreeMonoidElement) -> bool {
+    |        ^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `is_free_monoid_element`
+
+warning: function `FreeAbelianMonoid_class` should have a snake case name
+   --> rustmath-monoids/src/free_abelian_monoid.rs:398:8
+    |
+398 | pub fn FreeAbelianMonoid_class(generators: Vec<String>) -> FreeAbelianMonoid {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `free_abelian_monoid_class`
+
+warning: function `is_FreeAbelianMonoid` should have a snake case name
+   --> rustmath-monoids/src/free_abelian_monoid.rs:406:8
+    |
+406 | pub fn is_FreeAbelianMonoid(_obj: &FreeAbelianMonoid) -> bool {
+    |        ^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `is_free_abelian_monoid`
+
+warning: function `is_FreeAbelianMonoidElement` should have a snake case name
+   --> rustmath-monoids/src/free_abelian_monoid.rs:414:8
+    |
+414 | pub fn is_FreeAbelianMonoidElement(_obj: &FreeAbelianMonoidElement) -> bool {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `is_free_abelian_monoid_element`
+
+warning: fields `states` and `input_alphabet` are never read
+   --> rustmath-automata/src/lib.rs:492:5
+    |
+486 | pub struct MooreMachine<S, I, O>
+    |            ------------ fields in this struct
+...
+492 |     states: HashSet<S>,
+    |     ^^^^^^
+493 |     input_alphabet: HashSet<I>,
+    |     ^^^^^^^^^^^^^^
+    |
+    = note: `MooreMachine` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `states` is never read
+   --> rustmath-automata/src/lib.rs:591:5
+    |
+585 | pub struct MealyMachine<S, I, O>
+    |            ------------ field in this struct
+...
+591 |     states: HashSet<S>,
+    |     ^^^^^^
+    |
+    = note: `MealyMachine` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: unused import: `HashMap`
+ --> rustmath-logic/src/proof.rs:5:24
+  |
+5 | use std::collections::{HashMap, HashSet};
+  |                        ^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `rustmath-databases` (lib) generated 5 warnings (run `cargo fix --lib -p rustmath-databases` to apply 1 suggestion)
+warning: `rustmath-misc` (lib) generated 9 warnings (run `cargo fix --lib -p rustmath-misc` to apply 3 suggestions)
+warning: `rustmath-plot` (lib) generated 63 warnings (run `cargo fix --lib -p rustmath-plot` to apply 25 suggestions)
+warning: `rustmath-monoids` (lib) generated 9 warnings
+warning: `rustmath-automata` (lib) generated 2 warnings
+warning: `rustmath-logic` (lib) generated 1 warning (run `cargo fix --lib -p rustmath-logic` to apply 1 suggestion)
+warning: unused imports: `MathError` and `Result`
+ --> rustmath-matrix/src/eigenvalues.rs:4:28
+  |
+4 | use rustmath_core::{Field, MathError, Result};
+  |                            ^^^^^^^^^  ^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `Vector`
+ --> rustmath-matrix/src/inner_product.rs:6:21
+  |
+6 | use crate::{Matrix, Vector};
+  |                     ^^^^^^
+
+warning: unused import: `MathError`
+ --> rustmath-matrix/src/integer_forms.rs:7:38
+  |
+7 | use rustmath_core::{EuclideanDomain, MathError, Result};
+  |                                      ^^^^^^^^^
+
+warning: unused import: `crate::Matrix`
+ --> rustmath-matrix/src/polynomial_ops.rs:3:5
+  |
+3 | use crate::Matrix;
+  |     ^^^^^^^^^^^^^
+
+warning: unused imports: `Field`, `MathError`, and `Result`
+ --> rustmath-matrix/src/polynomial_ops.rs:4:21
+  |
+4 | use rustmath_core::{Field, MathError, Result};
+  |                     ^^^^^  ^^^^^^^^^  ^^^^^^
+
+warning: unused import: `rustmath_polynomials::UnivariatePolynomial`
+ --> rustmath-matrix/src/polynomial_ops.rs:5:5
+  |
+5 | use rustmath_polynomials::UnivariatePolynomial;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Vector`
+ --> rustmath-matrix/src/vector_space.rs:3:21
+  |
+3 | use crate::{Matrix, Vector};
+  |                     ^^^^^^
+
+warning: unused variable: `rhs`
+   --> rustmath-finitefields/src/extension_field.rs:291:18
+    |
+291 |     fn div(self, rhs: Self) -> Self::Output {
+    |                  ^^^ help: if this is intentional, prefix it with an underscore: `_rhs`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `ANBinaryExpr`, `ANRational`, and `BinaryOp`
+ --> rustmath-algebraic/src/algebraic_real.rs:8:34
+  |
+8 |     AlgebraicDescriptor, ANRoot, ANRational, ANUnaryExpr, ANBinaryExpr, BinaryOp, UnaryOp,
+  |                                  ^^^^^^^^^^               ^^^^^^^^^^^^  ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `crate::algebraic_number::AlgebraicNumber`
+ --> rustmath-algebraic/src/radicals.rs:6:5
+  |
+6 | use crate::algebraic_number::AlgebraicNumber;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+ --> rustmath-symbolic/src/differentiate.rs:6:5
+  |
+6 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `BinaryOp` and `UnaryOp`
+ --> rustmath-symbolic/src/diffeq.rs:6:25
+  |
+6 | use crate::expression::{BinaryOp, Expr, UnaryOp};
+  |                         ^^^^^^^^        ^^^^^^^
+
+warning: unused import: `rustmath_rationals::Rational`
+ --> rustmath-symbolic/src/diffeq.rs:9:5
+  |
+9 | use rustmath_rationals::Rational;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> rustmath-symbolic/src/diffeq.rs:10:5
+   |
+10 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_integers::Integer`
+ --> rustmath-symbolic/src/expand.rs:5:5
+  |
+5 | use rustmath_integers::Integer;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::polynomial::*`
+  --> rustmath-symbolic/src/expand.rs:99:13
+   |
+99 |         use crate::polynomial::*;
+   |             ^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+   --> rustmath-symbolic/src/expand.rs:100:13
+    |
+100 |         use std::collections::HashMap;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `NumericConversion`
+ --> rustmath-symbolic/src/factor.rs:8:21
+  |
+8 | use rustmath_core::{NumericConversion, Ring};
+  |                     ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `NumericConversion`
+  --> rustmath-symbolic/src/inequalities.rs:13:21
+   |
+13 | use rustmath_core::{NumericConversion, Ring};
+   |                     ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> rustmath-symbolic/src/integrate.rs:10:5
+   |
+10 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+ --> rustmath-symbolic/src/limits.rs:9:5
+  |
+9 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: `crate::series::BigO`
+   --> rustmath-symbolic/src/limits.rs:537:13
+    |
+537 |         use crate::series::BigO;
+    |             ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+ --> rustmath-symbolic/src/operators.rs:8:5
+  |
+8 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused imports: `preceded` and `tuple`
+  --> rustmath-symbolic/src/parser.rs:23:33
+   |
+23 |     sequence::{delimited, pair, preceded, tuple},
+   |                                 ^^^^^^^^  ^^^^^
+
+warning: unused import: `std::collections::HashMap`
+ --> rustmath-symbolic/src/polynomial.rs:7:5
+  |
+7 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> rustmath-symbolic/src/radical.rs:10:5
+   |
+10 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `BinaryOp` and `UnaryOp`
+  --> rustmath-symbolic/src/random_tests.rs:26:25
+   |
+26 | use crate::expression::{BinaryOp, Expr, UnaryOp};
+   |                         ^^^^^^^^        ^^^^^^^
+   |
+help: if this is a test module, consider adding a `#[cfg(test)]` to the containing module
+  --> rustmath-symbolic/src/lib.rs:27:1
+   |
+27 | pub mod random_tests;
+   | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::symbol::Symbol`
+  --> rustmath-symbolic/src/random_tests.rs:27:5
+   |
+27 | use crate::symbol::Symbol;
+   |     ^^^^^^^^^^^^^^^^^^^^^
+   |
+help: if this is a test module, consider adding a `#[cfg(test)]` to the containing module
+  --> rustmath-symbolic/src/lib.rs:27:1
+   |
+27 | pub mod random_tests;
+   | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Weak`
+ --> rustmath-symbolic/src/registry.rs:9:30
+  |
+9 | use std::sync::{Arc, RwLock, Weak};
+  |                              ^^^^
+
+warning: unused import: `UnaryOp`
+ --> rustmath-symbolic/src/series.rs:5:41
+  |
+5 | use crate::expression::{BinaryOp, Expr, UnaryOp};
+  |                                         ^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+ --> rustmath-symbolic/src/series.rs:9:5
+  |
+9 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-symbolic/src/specialfunctions/generalized.rs:33:40
+   |
+33 | use rustmath_core::{NumericConversion, Ring};
+   |                                        ^^^^
+
+warning: unused import: `rustmath_integers::Integer`
+  --> rustmath-symbolic/src/specialfunctions/generalized.rs:34:5
+   |
+34 | use rustmath_integers::Integer;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_integers::Integer`
+  --> rustmath-symbolic/src/specialfunctions/orthogonal_polys.rs:38:5
+   |
+38 | use rustmath_integers::Integer;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-symbolic/src/specialfunctions/prime_pi.rs:29:40
+   |
+29 | use rustmath_core::{NumericConversion, Ring};
+   |                                        ^^^^
+
+warning: unused import: `rustmath_integers::Integer`
+  --> rustmath-symbolic/src/specialfunctions/prime_pi.rs:30:5
+   |
+30 | use rustmath_integers::Integer;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::f64::consts::PI`
+   --> rustmath-symbolic/src/substitute.rs:348:9
+    |
+348 |     use std::f64::consts::PI;
+    |         ^^^^^^^^^^^^^^^^^^^^
+
+   Compiling rustmath-ellipticcurves v0.1.0 (/home/user/RustMath/rustmath-ellipticcurves)
+error[E0599]: no method named `inverse` found for reference `&rustmath_rationals::Rational` in the current scope
+   --> rustmath-algebraic/src/descriptor.rs:218:50
+    |
+218 | ...                   if let Ok(inv) = rat.inverse() {
+    |                                            ^^^^^^^ method not found in `&rustmath_rationals::Rational`
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `Field` which provides `inverse` is implemented but not in scope; perhaps you want to import it
+    |
+ 10 + use rustmath_core::Field;
+    |
+
+warning: unused variable: `x`
+   --> rustmath-numerical/src/lib.rs:121:24
+    |
+121 |     fn gradient(&self, x: T) -> Option<T> {
+    |                        ^ help: if this is intentional, prefix it with an underscore: `_x`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+error[E0599]: no method named `is_zero` found for reference `&rustmath_rationals::Rational` in the current scope
+   --> rustmath-algebraic/src/descriptor.rs:251:35
+    |
+251 | ...                   if !r.is_zero() {
+    |                             ^^^^^^^ method not found in `&rustmath_rationals::Rational`
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `Ring` which provides `is_zero` is implemented but not in scope; perhaps you want to import it
+    |
+ 10 + use rustmath_core::Ring;
+    |
+
+warning: value assigned to `fb` is never read
+  --> rustmath-numerical/src/root_finding/methods.rs:60:13
+   |
+60 |             fb = fc;
+   |             ^^
+   |
+   = help: maybe it is overwritten before being read?
+   = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `x_prev` is never read
+   --> rustmath-dynamics/src/chaos.rs:169:13
+    |
+169 |     let mut x_prev = x;
+    |             ^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `x_prev` is never read
+   --> rustmath-dynamics/src/chaos.rs:173:9
+    |
+173 |         x_prev = x;
+    |         ^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: variable does not need to be mutable
+   --> rustmath-numerical/src/optimization/brent.rs:172:13
+    |
+172 |         let mut s;
+    |             ----^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+error[E0599]: no function or associated item named `from_i64` found for struct `rustmath_rationals::Rational` in the current scope
+  --> rustmath-algebraic/src/algebraic_number.rs:37:39
+   |
+37 |         Self::from_rational(Rational::from_i64(n))
+   |                                       ^^^^^^^^ function or associated item not found in `rustmath_rationals::Rational`
+   |
+note: if you're trying to build a new `rustmath_rationals::Rational` consider using one of the following associated functions:
+      rustmath_rationals::Rational::new
+      rustmath_rationals::Rational::from_integer
+  --> /home/user/RustMath/rustmath-rationals/src/rational.rs:18:5
+   |
+18 |     pub fn new<T: Into<Integer>>(numerator: T, denominator: T) -> Result<Self> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+36 |     pub fn from_integer<T: Into<Integer>>(n: T) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: items from traits can only be used if the trait is in scope
+help: trait `NumericConversion` which provides `from_i64` is implemented but not in scope; perhaps you want to import it
+   |
+ 6 + use rustmath_core::NumericConversion;
+   |
+help: there is an associated function `from_u64` with a similar name
+   |
+37 -         Self::from_rational(Rational::from_i64(n))
+37 +         Self::from_rational(Rational::from_u64(n))
+   |
+
+error[E0308]: mismatched types
+   --> rustmath-algebraic/src/algebraic_number.rs:55:26
+    |
+ 55 |             Complex::new(r.to_f64(), 0.0)
+    |             ------------ ^^^^^^^^^^ expected `f64`, found `Option<f64>`
+    |             |
+    |             arguments to this function are incorrect
+    |
+    = note: expected type `f64`
+               found enum `Option<f64>`
+note: associated function defined here
+   --> /home/user/RustMath/rustmath-complex/src/complex.rs:128:12
+    |
+128 |     pub fn new(real: f64, imag: f64) -> Self {
+    |            ^^^
+help: consider using `Option::expect` to unwrap the `Option<f64>` value, panicking if the value is an `Option::None`
+    |
+ 55 |             Complex::new(r.to_f64().expect("REASON"), 0.0)
+    |                                    +++++++++++++++++
+
+error[E0599]: no function or associated item named `from_i64` found for struct `rustmath_rationals::Rational` in the current scope
+  --> rustmath-algebraic/src/algebraic_real.rs:38:39
+   |
+38 |         Self::from_rational(Rational::from_i64(n))
+   |                                       ^^^^^^^^ function or associated item not found in `rustmath_rationals::Rational`
+   |
+note: if you're trying to build a new `rustmath_rationals::Rational` consider using one of the following associated functions:
+      rustmath_rationals::Rational::new
+      rustmath_rationals::Rational::from_integer
+  --> /home/user/RustMath/rustmath-rationals/src/rational.rs:18:5
+   |
+18 |     pub fn new<T: Into<Integer>>(numerator: T, denominator: T) -> Result<Self> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+36 |     pub fn from_integer<T: Into<Integer>>(n: T) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: items from traits can only be used if the trait is in scope
+help: trait `NumericConversion` which provides `from_i64` is implemented but not in scope; perhaps you want to import it
+   |
+ 6 + use rustmath_core::NumericConversion;
+   |
+help: there is an associated function `from_u64` with a similar name
+   |
+38 -         Self::from_rational(Rational::from_i64(n))
+38 +         Self::from_rational(Rational::from_u64(n))
+   |
+
+error[E0599]: no function or associated item named `from_f64` found for struct `rustmath_rationals::Rational` in the current scope
+  --> rustmath-algebraic/src/algebraic_real.rs:77:31
+   |
+77 |         let lower = Rational::from_f64(approx - epsilon).unwrap();
+   |                               ^^^^^^^^ function or associated item not found in `rustmath_rationals::Rational`
+   |
+note: if you're trying to build a new `rustmath_rationals::Rational` consider using one of the following associated functions:
+      rustmath_rationals::Rational::new
+      rustmath_rationals::Rational::from_integer
+  --> /home/user/RustMath/rustmath-rationals/src/rational.rs:18:5
+   |
+18 |     pub fn new<T: Into<Integer>>(numerator: T, denominator: T) -> Result<Self> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+36 |     pub fn from_integer<T: Into<Integer>>(n: T) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: there is an associated function `from_i64` with a similar name
+   |
+77 -         let lower = Rational::from_f64(approx - epsilon).unwrap();
+77 +         let lower = Rational::from_i64(approx - epsilon).unwrap();
+   |
+
+error[E0599]: no function or associated item named `from_f64` found for struct `rustmath_rationals::Rational` in the current scope
+  --> rustmath-algebraic/src/algebraic_real.rs:78:31
+   |
+78 |         let upper = Rational::from_f64(approx + epsilon).unwrap();
+   |                               ^^^^^^^^ function or associated item not found in `rustmath_rationals::Rational`
+   |
+note: if you're trying to build a new `rustmath_rationals::Rational` consider using one of the following associated functions:
+      rustmath_rationals::Rational::new
+      rustmath_rationals::Rational::from_integer
+  --> /home/user/RustMath/rustmath-rationals/src/rational.rs:18:5
+   |
+18 |     pub fn new<T: Into<Integer>>(numerator: T, denominator: T) -> Result<Self> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+36 |     pub fn from_integer<T: Into<Integer>>(n: T) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: there is an associated function `from_i64` with a similar name
+   |
+78 -         let upper = Rational::from_f64(approx + epsilon).unwrap();
+78 +         let upper = Rational::from_i64(approx + epsilon).unwrap();
+   |
+
+warning: unused variable: `b`
+  --> rustmath-numerical/src/linear_programming.rs:20:5
+   |
+20 |     b: &[f64],
+   |     ^ help: if this is intentional, prefix it with an underscore: `_b`
+
+warning: unused variable: `max_iter`
+  --> rustmath-numerical/src/linear_programming.rs:21:5
+   |
+21 |     max_iter: usize,
+   |     ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_max_iter`
+
+warning: constant `PHI` is never used
+   --> rustmath-numerical/src/optimization/brent.rs:322:11
+    |
+322 |     const PHI: f64 = 1.618033988749895; // Golden ratio
+    |           ^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+error[E0599]: no function or associated item named `from_f64` found for struct `rustmath_rationals::Rational` in the current scope
+   --> rustmath-algebraic/src/algebraic_real.rs:128:31
+    |
+128 |         let lower = Rational::from_f64(approx - epsilon).unwrap();
+    |                               ^^^^^^^^ function or associated item not found in `rustmath_rationals::Rational`
+    |
+note: if you're trying to build a new `rustmath_rationals::Rational` consider using one of the following associated functions:
+      rustmath_rationals::Rational::new
+      rustmath_rationals::Rational::from_integer
+   --> /home/user/RustMath/rustmath-rationals/src/rational.rs:18:5
+    |
+ 18 |     pub fn new<T: Into<Integer>>(numerator: T, denominator: T) -> Result<Self> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 36 |     pub fn from_integer<T: Into<Integer>>(n: T) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: there is an associated function `from_i64` with a similar name
+    |
+128 -         let lower = Rational::from_f64(approx - epsilon).unwrap();
+128 +         let lower = Rational::from_i64(approx - epsilon).unwrap();
+    |
+
+error[E0599]: no function or associated item named `from_f64` found for struct `rustmath_rationals::Rational` in the current scope
+   --> rustmath-algebraic/src/algebraic_real.rs:129:31
+    |
+129 |         let upper = Rational::from_f64(approx + epsilon).unwrap();
+    |                               ^^^^^^^^ function or associated item not found in `rustmath_rationals::Rational`
+    |
+note: if you're trying to build a new `rustmath_rationals::Rational` consider using one of the following associated functions:
+      rustmath_rationals::Rational::new
+      rustmath_rationals::Rational::from_integer
+   --> /home/user/RustMath/rustmath-rationals/src/rational.rs:18:5
+    |
+ 18 |     pub fn new<T: Into<Integer>>(numerator: T, denominator: T) -> Result<Self> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 36 |     pub fn from_integer<T: Into<Integer>>(n: T) -> Self {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: there is an associated function `from_i64` with a similar name
+    |
+129 -         let upper = Rational::from_f64(approx + epsilon).unwrap();
+129 +         let upper = Rational::from_i64(approx + epsilon).unwrap();
+    |
+
+error[E0308]: mismatched types
+   --> rustmath-algebraic/src/algebraic_real.rs:151:13
+    |
+149 |     pub fn to_f64(&self, precision: usize) -> f64 {
+    |                                               --- expected `f64` because of return type
+150 |         if let Some(r) = self.to_rational() {
+151 |             r.to_f64()
+    |             ^^^^^^^^^^ expected `f64`, found `Option<f64>`
+    |
+    = note: expected type `f64`
+               found enum `Option<f64>`
+help: consider using `Option::expect` to unwrap the `Option<f64>` value, panicking if the value is an `Option::None`
+    |
+151 |             r.to_f64().expect("REASON")
+    |                       +++++++++++++++++
+
+error[E0599]: no function or associated item named `zero` found for struct `AlgebraicNumber` in the current scope
+  --> rustmath-algebraic/src/algebraic_field.rs:32:26
+   |
+32 |         AlgebraicNumber::zero()
+   |                          ^^^^ function or associated item not found in `AlgebraicNumber`
+   |
+  ::: rustmath-algebraic/src/algebraic_number.rs:17:1
+   |
+17 | pub struct AlgebraicNumber {
+   | -------------------------- function or associated item `zero` not found for this struct
+   |
+note: if you're trying to build a new `AlgebraicNumber` consider using one of the following associated functions:
+      AlgebraicNumber::new
+      AlgebraicNumber::from_rational
+      AlgebraicNumber::from_i64
+  --> rustmath-algebraic/src/algebraic_number.rs:24:5
+   |
+24 |     pub fn new(descriptor: AlgebraicDescriptor) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+29 |     pub fn from_rational(r: Rational) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+36 |     pub fn from_i64(n: i64) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: items from traits can only be used if the trait is in scope
+help: trait `Ring` which provides `zero` is implemented but not in scope; perhaps you want to import it
+   |
+ 3 + use rustmath_core::Ring;
+   |
+help: there is a method `is_zero` with a similar name
+   |
+32 |         AlgebraicNumber::is_zero()
+   |                          +++
+
+error[E0599]: no function or associated item named `one` found for struct `AlgebraicNumber` in the current scope
+  --> rustmath-algebraic/src/algebraic_field.rs:37:26
+   |
+37 |         AlgebraicNumber::one()
+   |                          ^^^ function or associated item not found in `AlgebraicNumber`
+   |
+  ::: rustmath-algebraic/src/algebraic_number.rs:17:1
+   |
+17 | pub struct AlgebraicNumber {
+   | -------------------------- function or associated item `one` not found for this struct
+   |
+note: if you're trying to build a new `AlgebraicNumber` consider using one of the following associated functions:
+      AlgebraicNumber::new
+      AlgebraicNumber::from_rational
+      AlgebraicNumber::from_i64
+  --> rustmath-algebraic/src/algebraic_number.rs:24:5
+   |
+24 |     pub fn new(descriptor: AlgebraicDescriptor) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+29 |     pub fn from_rational(r: Rational) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+36 |     pub fn from_i64(n: i64) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: items from traits can only be used if the trait is in scope
+help: there is a method `ne` with a similar name, but with different arguments
+  --> /rustc/ed61e7d7e242494fb7057f2657300d9e77bb4fcb/library/core/src/cmp.rs:264:5
+help: trait `Ring` which provides `one` is implemented but not in scope; perhaps you want to import it
+   |
+ 3 + use rustmath_core::Ring;
+   |
+
+error[E0599]: no function or associated item named `zero` found for struct `AlgebraicNumber` in the current scope
+  --> rustmath-algebraic/src/algebraic_field.rs:44:26
+   |
+44 |         AlgebraicNumber::zero()
+   |                          ^^^^ function or associated item not found in `AlgebraicNumber`
+   |
+  ::: rustmath-algebraic/src/algebraic_number.rs:17:1
+   |
+17 | pub struct AlgebraicNumber {
+   | -------------------------- function or associated item `zero` not found for this struct
+   |
+note: if you're trying to build a new `AlgebraicNumber` consider using one of the following associated functions:
+      AlgebraicNumber::new
+      AlgebraicNumber::from_rational
+      AlgebraicNumber::from_i64
+  --> rustmath-algebraic/src/algebraic_number.rs:24:5
+   |
+24 |     pub fn new(descriptor: AlgebraicDescriptor) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+29 |     pub fn from_rational(r: Rational) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+36 |     pub fn from_i64(n: i64) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: items from traits can only be used if the trait is in scope
+help: trait `Ring` which provides `zero` is implemented but not in scope; perhaps you want to import it
+   |
+ 3 + use rustmath_core::Ring;
+   |
+help: there is a method `is_zero` with a similar name
+   |
+44 |         AlgebraicNumber::is_zero()
+   |                          +++
+
+error[E0599]: no function or associated item named `zero` found for struct `AlgebraicReal` in the current scope
+  --> rustmath-algebraic/src/algebraic_real_field.rs:31:24
+   |
+31 |         AlgebraicReal::zero()
+   |                        ^^^^ function or associated item not found in `AlgebraicReal`
+   |
+  ::: rustmath-algebraic/src/algebraic_real.rs:23:1
+   |
+23 | pub struct AlgebraicReal {
+   | ------------------------ function or associated item `zero` not found for this struct
+   |
+note: if you're trying to build a new `AlgebraicReal` consider using one of the following associated functions:
+      AlgebraicReal::from_rational
+      AlgebraicReal::from_i64
+      AlgebraicReal::sqrt
+      AlgebraicReal::nth_root
+  --> rustmath-algebraic/src/algebraic_real.rs:30:5
+   |
+30 |     pub fn from_rational(r: Rational) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+37 |     pub fn from_i64(n: i64) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+56 |     pub fn sqrt(n: i64) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+88 |     pub fn nth_root(n: i64, degree: u32) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: items from traits can only be used if the trait is in scope
+help: trait `Ring` which provides `zero` is implemented but not in scope; perhaps you want to import it
+   |
+ 3 + use rustmath_core::Ring;
+   |
+help: there is a method `is_zero` with a similar name
+   |
+31 |         AlgebraicReal::is_zero()
+   |                        +++
+
+error[E0599]: no function or associated item named `one` found for struct `AlgebraicReal` in the current scope
+  --> rustmath-algebraic/src/algebraic_real_field.rs:36:24
+   |
+36 |         AlgebraicReal::one()
+   |                        ^^^ function or associated item not found in `AlgebraicReal`
+   |
+  ::: rustmath-algebraic/src/algebraic_real.rs:23:1
+   |
+23 | pub struct AlgebraicReal {
+   | ------------------------ function or associated item `one` not found for this struct
+   |
+note: if you're trying to build a new `AlgebraicReal` consider using one of the following associated functions:
+      AlgebraicReal::from_rational
+      AlgebraicReal::from_i64
+      AlgebraicReal::sqrt
+      AlgebraicReal::nth_root
+  --> rustmath-algebraic/src/algebraic_real.rs:30:5
+   |
+30 |     pub fn from_rational(r: Rational) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+37 |     pub fn from_i64(n: i64) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+56 |     pub fn sqrt(n: i64) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+88 |     pub fn nth_root(n: i64, degree: u32) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: items from traits can only be used if the trait is in scope
+help: there is a method `ne` with a similar name, but with different arguments
+  --> /rustc/ed61e7d7e242494fb7057f2657300d9e77bb4fcb/library/core/src/cmp.rs:264:5
+help: trait `Ring` which provides `one` is implemented but not in scope; perhaps you want to import it
+   |
+ 3 + use rustmath_core::Ring;
+   |
+
+error[E0599]: no function or associated item named `zero` found for struct `Integer` in the current scope
+  --> rustmath-algebraic/src/minimal_polynomial.rs:40:53
+   |
+40 |             UnivariatePolynomial::new(vec![Integer::zero(), Integer::one()])
+   |                                                     ^^^^ function or associated item not found in `Integer`
+   |
+note: if you're trying to build a new `Integer`, consider using `Integer::new` which returns `Integer`
+  --> /home/user/RustMath/rustmath-integers/src/integer.rs:19:5
+   |
+19 |     pub fn new(value: BigInt) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: items from traits can only be used if the trait is in scope
+help: trait `Ring` which provides `zero` is implemented but not in scope; perhaps you want to import it
+   |
+ 5 + use rustmath_core::Ring;
+   |
+help: there is a method `is_zero` with a similar name
+   |
+40 |             UnivariatePolynomial::new(vec![Integer::is_zero(), Integer::one()])
+   |                                                     +++
+
+error[E0599]: no function or associated item named `one` found for struct `Integer` in the current scope
+  --> rustmath-algebraic/src/minimal_polynomial.rs:40:70
+   |
+40 |             UnivariatePolynomial::new(vec![Integer::zero(), Integer::one()])
+   |                                                                      ^^^ function or associated item not found in `Integer`
+   |
+note: if you're trying to build a new `Integer`, consider using `Integer::new` which returns `Integer`
+  --> /home/user/RustMath/rustmath-integers/src/integer.rs:19:5
+   |
+19 |     pub fn new(value: BigInt) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: items from traits can only be used if the trait is in scope
+help: there is a method `ne` with a similar name, but with different arguments
+  --> /rustc/ed61e7d7e242494fb7057f2657300d9e77bb4fcb/library/core/src/cmp.rs:264:5
+help: trait `Ring` which provides `one` is implemented but not in scope; perhaps you want to import it
+   |
+ 5 + use rustmath_core::Ring;
+   |
+
+error[E0599]: no method named `is_zero` found for struct `rustmath_rationals::Rational` in the current scope
+  --> rustmath-algebraic/src/radicals.rs:27:14
+   |
+27 |         if r.is_zero() {
+   |              ^^^^^^^ method not found in `rustmath_rationals::Rational`
+   |
+  ::: /home/user/RustMath/rustmath-core/src/traits.rs:63:8
+   |
+63 |     fn is_zero(&self) -> bool;
+   |        ------- the method is available for `rustmath_rationals::Rational` here
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: trait `Ring` which provides `is_zero` is implemented but not in scope; perhaps you want to import it
+   |
+ 5 + use rustmath_core::Ring;
+   |
+
+warning: unused import: `std::collections::HashSet`
+ --> rustmath-ellipticcurves/src/descent.rs:8:5
+  |
+8 | use std::collections::HashSet;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `Zero`
+ --> rustmath-ellipticcurves/src/lfunction.rs:7:31
+  |
+7 | use num_traits::{ToPrimitive, Zero, One};
+  |                               ^^^^
+
+warning: unnecessary parentheses around method argument
+   --> rustmath-ellipticcurves/src/modular.rs:192:40
+    |
+192 |                 result.set_coefficient((m * self.index as usize), new_coeff);
+    |                                        ^                       ^
+    |
+    = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+    |
+192 -                 result.set_coefficient((m * self.index as usize), new_coeff);
+192 +                 result.set_coefficient(m * self.index as usize, new_coeff);
+    |
+
+warning: unused import: `num_rational::BigRational`
+ --> rustmath-ellipticcurves/src/bsd.rs:9:5
+  |
+9 | use num_rational::BigRational;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `One`
+  --> rustmath-ellipticcurves/src/bsd.rs:10:37
+   |
+10 | use num_traits::{ToPrimitive, Zero, One, Signed};
+   |                                     ^^^
+
+error[E0599]: no function or associated item named `zero` found for struct `AlgebraicReal` in the current scope
+  --> rustmath-algebraic/src/radicals.rs:28:35
+   |
+28 |             return AlgebraicReal::zero();
+   |                                   ^^^^ function or associated item not found in `AlgebraicReal`
+   |
+  ::: rustmath-algebraic/src/algebraic_real.rs:23:1
+   |
+23 | pub struct AlgebraicReal {
+   | ------------------------ function or associated item `zero` not found for this struct
+   |
+note: if you're trying to build a new `AlgebraicReal` consider using one of the following associated functions:
+      AlgebraicReal::from_rational
+      AlgebraicReal::from_i64
+      AlgebraicReal::sqrt
+      AlgebraicReal::nth_root
+  --> rustmath-algebraic/src/algebraic_real.rs:30:5
+   |
+30 |     pub fn from_rational(r: Rational) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+37 |     pub fn from_i64(n: i64) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+56 |     pub fn sqrt(n: i64) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+88 |     pub fn nth_root(n: i64, degree: u32) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: items from traits can only be used if the trait is in scope
+help: trait `Ring` which provides `zero` is implemented but not in scope; perhaps you want to import it
+   |
+ 5 + use rustmath_core::Ring;
+   |
+help: there is a method `is_zero` with a similar name
+   |
+28 |             return AlgebraicReal::is_zero();
+   |                                   +++
+
+error[E0599]: no method named `to_i64` found for reference `&Integer` in the current scope
+  --> rustmath-algebraic/src/radicals.rs:34:37
+   |
+34 |             let num = r.numerator().to_i64().unwrap_or(0);
+   |                                     ^^^^^^
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: trait `NumericConversion` which provides `to_i64` is implemented but not in scope; perhaps you want to import it
+   |
+ 5 + use rustmath_core::NumericConversion;
+   |
+help: there is a method `to_f64` with a similar name
+   |
+34 -             let num = r.numerator().to_i64().unwrap_or(0);
+34 +             let num = r.numerator().to_f64().unwrap_or(0);
+   |
+
+warning: `rustmath-dynamics` (lib) generated 2 warnings
+warning: variable does not need to be mutable
+   --> rustmath-matrix/src/linear_solve.rs:205:13
+    |
+205 |         let mut pivot_cols: std::collections::HashSet<usize> =
+    |             ----^^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `min_poly`
+  --> rustmath-algebraic/src/conjugates.rs:18:9
+   |
+18 |     let min_poly = minimal_polynomial(alpha);
+   |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_min_poly`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+Some errors have detailed explanations: E0308, E0599.
+For more information about an error, try `rustc --explain E0308`.
+warning: `rustmath-algebraic` (lib) generated 3 warnings
+error: could not compile `rustmath-algebraic` (lib) due to 20 previous errors; 3 warnings emitted
+warning: build failed, waiting for other jobs to finish...
+warning: unused variable: `r`
+   --> rustmath-matrix/src/polynomial_matrix.rs:234:17
+    |
+234 |         let (q, r) = target.pseudo_div_rem(&pivot)?;
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_r`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `r`
+   --> rustmath-matrix/src/polynomial_matrix.rs:261:17
+    |
+261 |         let (q, r) = target.pseudo_div_rem(&pivot)?;
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_r`
+
+warning: unused variable: `q`
+   --> rustmath-matrix/src/polynomial_matrix.rs:287:22
+    |
+287 |                 let (q, r) = d_next.pseudo_div_rem(&d_i)?;
+    |                      ^ help: if this is intentional, prefix it with an underscore: `_q`
+
+warning: unused variable: `left`
+   --> rustmath-matrix/src/polynomial_matrix.rs:278:42
+    |
+278 |     fn ensure_divisibility(s: &mut Self, left: &mut Self, right: &mut Self) -> Result<()> {
+    |                                          ^^^^ help: if this is intentional, prefix it with an underscore: `_left`
+
+warning: unused variable: `right`
+   --> rustmath-matrix/src/polynomial_matrix.rs:278:59
+    |
+278 |     fn ensure_divisibility(s: &mut Self, left: &mut Self, right: &mut Self) -> Result<()> {
+    |                                                           ^^^^^ help: if this is intentional, prefix it with an underscore: `_right`
+
+warning: unused variable: `row_start`
+   --> rustmath-matrix/src/sparse.rs:519:17
+    |
+519 |             let row_start = self.matrix.row_ptrs[self.row];
+    |                 ^^^^^^^^^
+    |
+help: if this is intentional, prefix it with an underscore
+    |
+519 |             let _row_start = self.matrix.row_ptrs[self.row];
+    |                 +
+help: you might have meant to pattern match on the similarly named constant `STRASSEN_THRESHOLD`
+    |
+519 -             let row_start = self.matrix.row_ptrs[self.row];
+519 +             let strassen::STRASSEN_THRESHOLD = self.matrix.row_ptrs[self.row];
+    |
+
+warning: `rustmath-finitefields` (lib) generated 1 warning
+warning: unused variable: `p`
+   --> rustmath-matrix/src/special.rs:999:9
+    |
+999 |     let p = random_unimodular_matrix(size, 10);
+    |         ^ help: if this is intentional, prefix it with an underscore: `_p`
+
+warning: unused variable: `combined_ambient_dim`
+   --> rustmath-matrix/src/vector_space.rs:121:13
+    |
+121 |         let combined_ambient_dim = ambient_dim + other_ambient_dim;
+    |             ^^^^^^^^^^^^^^^^^^^^
+    |
+help: if this is intentional, prefix it with an underscore
+    |
+121 |         let _combined_ambient_dim = ambient_dim + other_ambient_dim;
+    |             +
+help: you might have meant to pattern match on the similarly named constant `STRASSEN_THRESHOLD`
+    |
+121 -         let combined_ambient_dim = ambient_dim + other_ambient_dim;
+121 +         let strassen::STRASSEN_THRESHOLD = ambient_dim + other_ambient_dim;
+    |
+
+warning: variable `N` should have a snake case name
+   --> rustmath-ellipticcurves/src/lfunction.rs:228:13
+    |
+228 |         let N = self.conductor.to_f64().unwrap_or(1.0);
+    |             ^ help: convert the identifier to snake case: `n`
+    |
+    = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: variable `L_value` should have a snake case name
+   --> rustmath-ellipticcurves/src/lfunction.rs:231:13
+    |
+231 |         let L_value = self.evaluate(s, 1000);
+    |             ^^^^^^^ help: convert the identifier to snake case: `l_value`
+
+warning: variable `N_to_s_half` should have a snake case name
+   --> rustmath-ellipticcurves/src/lfunction.rs:233:13
+    |
+233 |         let N_to_s_half = N.powf(s.re / 2.0) * ComplexNum::new(
+    |             ^^^^^^^^^^^ help: convert the identifier to snake case: `n_to_s_half`
+
+warning: unused variable: `subspace_matrix`
+   --> rustmath-matrix/src/vector_space.rs:181:13
+    |
+181 |         let subspace_matrix = Matrix::from_vec(ambient_dim, subspace.dimension, subspace_data)?;
+    |             ^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_subspace_matrix`
+
+warning: method `scalar_mul` is never used
+   --> rustmath-matrix/src/polynomial_matrix.rs:350:8
+    |
+346 | trait PolynomialExt<F: Field> {
+    |       ------------- method in this trait
+...
+350 |     fn scalar_mul(&self, scalar: &F) -> Self;
+    |        ^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused `Result` that must be used
+  --> rustmath-matrix/src/integer_forms.rs:72:21
+   |
+72 |                     s.swap_rows(k, pi);
+   |                     ^^^^^^^^^^^^^^^^^^
+   |
+   = note: this `Result` may be an `Err` variant, which should be handled
+   = note: `#[warn(unused_must_use)]` (part of `#[warn(unused)]`) on by default
+help: use `let _ = ...` to ignore the resulting value
+   |
+72 |                     let _ = s.swap_rows(k, pi);
+   |                     +++++++
+
+warning: unused `Result` that must be used
+  --> rustmath-matrix/src/integer_forms.rs:73:21
+   |
+73 |                     p.swap_rows(k, pi);
+   |                     ^^^^^^^^^^^^^^^^^^
+   |
+   = note: this `Result` may be an `Err` variant, which should be handled
+help: use `let _ = ...` to ignore the resulting value
+   |
+73 |                     let _ = p.swap_rows(k, pi);
+   |                     +++++++
+
+warning: unused `Result` that must be used
+   --> rustmath-matrix/src/integer_forms.rs:200:17
+    |
+200 |                 h.swap_rows(pivot_row, current_row);
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: this `Result` may be an `Err` variant, which should be handled
+help: use `let _ = ...` to ignore the resulting value
+    |
+200 |                 let _ = h.swap_rows(pivot_row, current_row);
+    |                 +++++++
+
+warning: unused `Result` that must be used
+   --> rustmath-matrix/src/integer_forms.rs:201:17
+    |
+201 |                 u.swap_rows(pivot_row, current_row);
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: this `Result` may be an `Err` variant, which should be handled
+help: use `let _ = ...` to ignore the resulting value
+    |
+201 |                 let _ = u.swap_rows(pivot_row, current_row);
+    |                 +++++++
+
+warning: unused `Result` that must be used
+   --> rustmath-matrix/src/integer_forms.rs:241:21
+    |
+241 |                     h.swap_rows(current_row, smallest_row);
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: this `Result` may be an `Err` variant, which should be handled
+help: use `let _ = ...` to ignore the resulting value
+    |
+241 |                     let _ = h.swap_rows(current_row, smallest_row);
+    |                     +++++++
+
+warning: unused `Result` that must be used
+   --> rustmath-matrix/src/integer_forms.rs:242:21
+    |
+242 |                     u.swap_rows(current_row, smallest_row);
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: this `Result` may be an `Err` variant, which should be handled
+help: use `let _ = ...` to ignore the resulting value
+    |
+242 |                     let _ = u.swap_rows(current_row, smallest_row);
+    |                     +++++++
+
+warning: unused import: `rustmath_core::Ring`
+ --> rustmath-symbolic/src/differentiate.rs:5:5
+  |
+5 | use rustmath_core::Ring;
+  |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_core::Ring`
+ --> rustmath-symbolic/src/diffeq.rs:8:5
+  |
+8 | use rustmath_core::Ring;
+  |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Ring`
+ --> rustmath-symbolic/src/integrate.rs:9:21
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                     ^^^^
+
+warning: unused import: `Ring`
+ --> rustmath-symbolic/src/limits.rs:8:21
+  |
+8 | use rustmath_core::{Ring, NumericConversion};
+  |                     ^^^^
+
+warning: unused import: `Ring`
+ --> rustmath-symbolic/src/series.rs:7:21
+  |
+7 | use rustmath_core::{Ring, NumericConversion};
+  |                     ^^^^
+
+warning: unused import: `rustmath_core::NumericConversion`
+  --> rustmath-symbolic/src/specialfunctions/airy.rs:43:5
+   |
+43 | use rustmath_core::NumericConversion;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `NumericConversion`
+  --> rustmath-symbolic/src/specialfunctions/generalized.rs:33:21
+   |
+33 | use rustmath_core::{NumericConversion, Ring};
+   |                     ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_core::NumericConversion`
+  --> rustmath-symbolic/src/specialfunctions/min_max.rs:25:5
+   |
+25 | use rustmath_core::NumericConversion;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-symbolic/src/specialfunctions/orthogonal_polys.rs:37:40
+   |
+37 | use rustmath_core::{NumericConversion, Ring};
+   |                                        ^^^^
+
+warning: `rustmath-numerical` (lib) generated 6 warnings (run `cargo fix --lib -p rustmath-numerical` to apply 1 suggestion)
+warning: unused variable: `discriminant`
+   --> rustmath-symbolic/src/diffeq.rs:332:13
+    |
+332 |         let discriminant = b.clone().pow(Expr::from(2))
+    |             ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_discriminant`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `var`
+   --> rustmath-symbolic/src/diffeq.rs:321:9
+    |
+321 |         var: &Symbol,
+    |         ^^^ help: if this is intentional, prefix it with an underscore: `_var`
+
+warning: unused variable: `dm_dy`
+   --> rustmath-symbolic/src/diffeq.rs:351:13
+    |
+351 |         let dm_dy = m.differentiate(y_var);
+    |             ^^^^^ help: if this is intentional, prefix it with an underscore: `_dm_dy`
+
+warning: unused variable: `dn_dx`
+   --> rustmath-symbolic/src/diffeq.rs:352:13
+    |
+352 |         let dn_dx = n.differentiate(x_var);
+    |             ^^^^^ help: if this is intentional, prefix it with an underscore: `_dn_dx`
+
+warning: unused variable: `degree`
+   --> rustmath-symbolic/src/factor.rs:178:9
+    |
+178 |     let degree = degree.unwrap();
+    |         ^^^^^^ help: if this is intentional, prefix it with an underscore: `_degree`
+
+warning: unused variable: `args`
+  --> rustmath-symbolic/src/function.rs:23:26
+   |
+23 |     fn derivative(&self, args: &[Expr], arg_index: usize) -> Result<Expr, String> {
+   |                          ^^^^ help: if this is intentional, prefix it with an underscore: `_args`
+
+warning: unused variable: `arg_index`
+  --> rustmath-symbolic/src/function.rs:23:41
+   |
+23 |     fn derivative(&self, args: &[Expr], arg_index: usize) -> Result<Expr, String> {
+   |                                         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_arg_index`
+
+warning: `rustmath-matrix` (lib) generated 24 warnings (run `cargo fix --lib -p rustmath-matrix` to apply 10 suggestions)
+warning: unused variable: `initial_velocity`
+   --> rustmath-symbolic/src/pde.rs:257:9
+    |
+257 |         initial_velocity: &Expr,
+    |         ^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_initial_velocity`
+
+warning: `rustmath-ellipticcurves` (lib) generated 8 warnings (run `cargo fix --lib -p rustmath-ellipticcurves` to apply 5 suggestions)
+warning: unused variable: `c2`
+   --> rustmath-symbolic/src/specialfunctions/airy.rs:270:13
+    |
+270 |         let c2 = 0.258819403792807; // |Ai'(0)|
+    |             ^^ help: if this is intentional, prefix it with an underscore: `_c2`
+
+warning: function `expr_to_rational` is never used
+    --> rustmath-symbolic/src/solve.rs:1535:4
+     |
+1535 | fn expr_to_rational(expr: &Expr) -> Option<Rational> {
+     |    ^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `expr_to_integer` is never used
+    --> rustmath-symbolic/src/solve.rs:1562:4
+     |
+1562 | fn expr_to_integer(expr: &Expr) -> Option<i64> {
+     |    ^^^^^^^^^^^^^^^
+
+warning: function `try_expr_to_f64` is never used
+  --> rustmath-symbolic/src/specialfunctions/other.rs:40:4
+   |
+40 | fn try_expr_to_f64(expr: &Expr) -> Option<f64> {
+   |    ^^^^^^^^^^^^^^^
+
+warning: variable `N` should have a snake case name
+   --> rustmath-symbolic/src/specialfunctions/orthogonal_polys.rs:512:71
+    |
+512 | pub fn hahn_polynomial(n: &Expr, x: &Expr, alpha: &Expr, beta: &Expr, N: &Expr) -> Expr {
+    |                                                                       ^ help: convert the identifier to snake case: `n`
+    |
+    = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: variable `N` should have a snake case name
+   --> rustmath-symbolic/src/specialfunctions/orthogonal_polys.rs:560:60
+    |
+560 | pub fn krawtchouk_polynomial(n: &Expr, x: &Expr, p: &Expr, N: &Expr) -> Expr {
+    |                                                            ^ help: convert the identifier to snake case: `n`
+
+warning: `rustmath-symbolic` (lib) generated 50 warnings (run `cargo fix --lib -p rustmath-symbolic` to apply 27 suggestions)
 
 warning: unused import: `Result`
  --> rustmath-plot/src/plots/bar_chart.rs:8:48
