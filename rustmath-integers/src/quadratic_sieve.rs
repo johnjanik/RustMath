@@ -48,7 +48,7 @@ fn legendre_symbol(a: &Integer, p: u64) -> i8 {
         return 1;
     }
 
-    let a_mod_p = (a.clone() % Integer::from(p as i64)).to_i64().unwrap_or(0);
+    let a_mod_p = (a.clone() % Integer::from(p as i64)).to_i64();
     if a_mod_p == 0 {
         return 0;
     }
@@ -58,7 +58,7 @@ fn legendre_symbol(a: &Integer, p: u64) -> i8 {
     let result = Integer::from(a_mod_p).mod_pow(&exp, &Integer::from(p as i64))
         .unwrap_or(Integer::one());
 
-    let result_i64 = result.to_i64().unwrap_or(1);
+    let result_i64 = result.to_i64();
     if result_i64 == 1 {
         1
     } else if result_i64 as u64 == p - 1 {
@@ -74,10 +74,10 @@ fn legendre_symbol(a: &Integer, p: u64) -> i8 {
 #[allow(dead_code)]
 fn tonelli_shanks(n: &Integer, p: u64) -> Option<i64> {
     if p == 2 {
-        return Some(n.to_i64().unwrap_or(0) % 2);
+        return Some(n.to_i64() % 2);
     }
 
-    let n_mod_p = (n.clone() % Integer::from(p as i64)).to_i64().unwrap_or(0);
+    let n_mod_p = (n.clone() % Integer::from(p as i64)).to_i64();
     if n_mod_p == 0 {
         return Some(0);
     }
@@ -93,7 +93,7 @@ fn tonelli_shanks(n: &Integer, p: u64) -> Option<i64> {
         let root = Integer::from(n_mod_p)
             .mod_pow(&Integer::from(exp as i64), &Integer::from(p as i64))
             .unwrap_or(Integer::zero());
-        return Some(root.to_i64().unwrap_or(0));
+        return Some(root.to_i64());
     }
 
     // General Tonelli-Shanks algorithm
@@ -130,7 +130,7 @@ fn tonelli_shanks(n: &Integer, p: u64) -> Option<i64> {
             return Some(0);
         }
         if t.is_one() {
-            return Some(r.to_i64().unwrap_or(0));
+            return Some(r.to_i64());
         }
 
         // Find the least i such that t^(2^i) = 1

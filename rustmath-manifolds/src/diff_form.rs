@@ -21,7 +21,7 @@ use std::sync::Arc;
 ///
 /// A p-form is a totally antisymmetric covariant tensor of rank p.
 /// In local coordinates: ω = ω_{i₁...iₚ} dx^{i₁} ∧ ... ∧ dx^{iₚ}
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DiffForm {
     /// Base tensor field (totally antisymmetric covariant tensor)
     tensor: TensorField,
