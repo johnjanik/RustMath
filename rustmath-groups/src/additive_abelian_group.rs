@@ -10,6 +10,7 @@
 
 use std::fmt;
 use std::collections::HashMap;
+use std::ops::Mul;
 
 /// Create an additive abelian group from invariants
 ///
@@ -183,6 +184,30 @@ impl AdditiveAbelianGroupElement {
         }
 
         Some(lcm)
+    }
+}
+
+impl Default for AdditiveAbelianGroupElement {
+    /// Create a default element (identity of a trivial group)
+    fn default() -> Self {
+        let parent = AdditiveAbelianGroup::new(0, vec![]).unwrap();
+        AdditiveAbelianGroupElement::new(vec![], parent).unwrap()
+    }
+}
+
+impl Mul for AdditiveAbelianGroupElement {
+    type Output = Result<Self, String>;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        self.add(&rhs)
+    }
+}
+
+impl Mul for &AdditiveAbelianGroupElement {
+    type Output = Result<AdditiveAbelianGroupElement, String>;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        self.add(rhs)
     }
 }
 

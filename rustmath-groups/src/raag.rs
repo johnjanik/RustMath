@@ -43,6 +43,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::fmt;
+use std::ops::Mul;
 use rustmath_graphs::Graph;
 use crate::group_traits::{Group, GroupElement};
 
@@ -311,6 +312,21 @@ impl RightAngledArtinGroupElement {
                 break;
             }
         }
+    }
+}
+
+impl Default for RightAngledArtinGroupElement {
+    /// Create a default element (identity of a trivial RAAG)
+    fn default() -> Self {
+        <Self as GroupElement>::identity()
+    }
+}
+
+impl Mul for &RightAngledArtinGroupElement {
+    type Output = RightAngledArtinGroupElement;
+
+    fn mul(self, other: Self) -> Self::Output {
+        self.clone() * other.clone()
     }
 }
 

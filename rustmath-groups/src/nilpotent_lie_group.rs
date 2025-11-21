@@ -30,6 +30,7 @@
 //! ```
 
 use std::fmt;
+use std::ops::Mul;
 use crate::group_traits::{Group, GroupElement};
 
 /// Element of a nilpotent Lie group
@@ -167,6 +168,29 @@ impl std::hash::Hash for NilpotentLieGroupElement {
 }
 
 impl Eq for NilpotentLieGroupElement {}
+
+impl Default for NilpotentLieGroupElement {
+    /// Create a default element (identity with dimension 1)
+    fn default() -> Self {
+        <Self as GroupElement>::identity()
+    }
+}
+
+impl Mul for NilpotentLieGroupElement {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        self.bch_multiply(&rhs)
+    }
+}
+
+impl Mul for &NilpotentLieGroupElement {
+    type Output = NilpotentLieGroupElement;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        self.bch_multiply(rhs)
+    }
+}
 
 impl GroupElement for NilpotentLieGroupElement {
     fn identity() -> Self {

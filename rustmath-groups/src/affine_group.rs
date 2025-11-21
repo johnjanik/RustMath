@@ -12,6 +12,7 @@
 //! - The transformation applies as: x ↦ Ax + b
 
 use std::fmt;
+use std::ops::Mul;
 use rustmath_matrix::Matrix;
 use rustmath_core::Ring;
 
@@ -235,6 +236,31 @@ impl<R: Ring + Clone + PartialEq> PartialEq for AffineGroupElement<R> {
 }
 
 impl<R: Ring + Clone + PartialEq> Eq for AffineGroupElement<R> {}
+
+impl<R: Ring + Clone + From<i32>> Default for AffineGroupElement<R> {
+    /// Create a default element (identity transformation in 1D space)
+    fn default() -> Self {
+        let matrix = Matrix::identity(1);
+        let vector = vec![R::from(0)];
+        AffineGroupElement::new(matrix, vector).unwrap()
+    }
+}
+
+impl<R: Ring + Clone + std::ops::Add<Output = R> + std::ops::Mul<Output = R>> Mul for AffineGroupElement<R> {
+    type Output = Result<Self, String>;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        self.compose(&rhs)
+    }
+}
+
+impl<R: Ring + Clone + std::ops::Add<Output = R> + std::ops::Mul<Output = R>> Mul for &AffineGroupElement<R> {
+    type Output = Result<AffineGroupElement<R>, String>;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        self.compose(rhs)
+    }
+}
 
 impl<R: Ring + Clone + fmt::Display> fmt::Display for AffineGroupElement<R> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
