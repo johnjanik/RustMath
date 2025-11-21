@@ -240,7 +240,7 @@ impl SymplecticForm {
 
         // Check if determinant is non-zero
         // For a 2-form on a 2n-dimensional manifold, the matrix is 2n × 2n
-        Ok(!matrix.det().is_zero())
+        Ok(!matrix.det()?.is_zero())
     }
 
     /// Get the matrix representation ω_{ij} at a point
@@ -258,7 +258,7 @@ impl SymplecticForm {
             data[(half + i) * n + i] = Rational::zero() - Rational::one();
         }
 
-        Ok(Matrix::from_vec(n, n, data))
+        Matrix::from_vec(n, n, data)
     }
 
     /// Evaluate the form on two vector fields
@@ -288,7 +288,7 @@ impl SymplecticForm {
         for i in 0..v_comps.len() {
             for j in 0..w_comps.len() {
                 // Convert Rational matrix element to f64 for computation
-                let matrix_elem = matrix.get(i, j).to_f64().unwrap_or(0.0);
+                let matrix_elem = matrix.get(i, j)?.to_f64().unwrap_or(0.0);
                 result += matrix_elem * v_comps[i] * w_comps[j];
             }
         }
@@ -358,7 +358,7 @@ impl HamiltonianVectorField {
         let n = manifold.dimension() / 2;
 
         // Compute dH
-        let dh = hamiltonian.differential()?;
+        let dh = hamiltonian.differential(chart)?;
 
         // For standard symplectic form ω = Σ dq^i ∧ dp^i,
         // X_H = Σ (∂H/∂p^i ∂/∂q^i - ∂H/∂q^i ∂/∂p^i)
@@ -405,15 +405,15 @@ impl HamiltonianVectorField {
     }
 
     /// Apply to a function: X_H(f)
-    pub fn apply_to_function(&self, f: &ScalarField) -> Result<ScalarField> {
-        self.vector_field.apply_to_scalar(f)
+    pub fn apply_to_function(&self, f: &ScalarField, chart: &Chart) -> Result<ScalarField> {
+        self.vector_field.apply_to_scalar(f, chart)
     }
 
     /// Poisson bracket with another Hamiltonian
     ///
     /// {H, K} = X_H(K) = -X_K(H)
-    pub fn poisson_bracket_with(&self, other: &HamiltonianVectorField) -> Result<ScalarField> {
-        self.apply_to_function(other.hamiltonian())
+    pub fn poisson_bracket_with(&self, other: &HamiltonianVectorField, chart: &Chart) -> Result<ScalarField> {
+        self.apply_to_function(other.hamiltonian(), chart)
     }
 }
 

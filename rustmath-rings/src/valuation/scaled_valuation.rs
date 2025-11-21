@@ -6,7 +6,10 @@ use super::valuation::{DiscretePseudoValuation, DiscreteValuation, ValuationValu
 use rustmath_core::Ring;
 
 /// Scaled valuation: s·v where s > 0
-#[derive(Debug, Clone)]
+///
+/// Note: Clone is not derived because this struct contains a trait object
+/// (Box<dyn DiscretePseudoValuation<R>>), which cannot be automatically cloned.
+#[derive(Debug)]
 pub struct ScaledValuation<R: Ring> {
     base_valuation: Box<dyn DiscretePseudoValuation<R>>,
     scale: i64,

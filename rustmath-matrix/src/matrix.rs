@@ -204,6 +204,38 @@ impl<R: Ring> Matrix<R> {
         }
     }
 
+    /// Compute the determinant of the matrix
+    ///
+    /// This method is available for matrices over Euclidean domains.
+    /// It uses cofactor expansion for small matrices (≤3×3) and recursive
+    /// expansion for larger matrices. This is exact but can be slow for
+    /// large matrices (O(n!) complexity).
+    ///
+    /// For matrices over fields, consider using `determinant_lu()` from the
+    /// decomposition module, which uses PLU decomposition and is much faster
+    /// for large matrices (O(n³) complexity).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_matrix::Matrix;
+    /// use rustmath_integers::Integer;
+    ///
+    /// let m = Matrix::from_vec(2, 2, vec![
+    ///     Integer::from(1), Integer::from(2),
+    ///     Integer::from(3), Integer::from(4)
+    /// ]).unwrap();
+    ///
+    /// // det = 1*4 - 2*3 = -2
+    /// assert_eq!(m.det().unwrap(), Integer::from(-2));
+    /// ```
+    pub fn det(&self) -> Result<R>
+    where
+        R: rustmath_core::EuclideanDomain,
+    {
+        self.determinant()
+    }
+
     /// Get a row as a vector
     pub fn row(&self, i: usize) -> Result<Vec<R>> {
         if i >= self.rows {
@@ -791,6 +823,52 @@ mod tests {
     fn test_determinant_identity() {
         let id: Matrix<i32> = Matrix::identity(4);
         assert_eq!(id.determinant().unwrap(), 1);
+    }
+
+    #[test]
+    fn test_det_method() {
+        // Test the new det() method with EuclideanDomain
+        use rustmath_integers::Integer;
+
+        // 2x2 matrix
+        let m = Matrix::from_vec(
+            2,
+            2,
+            vec![
+                Integer::from(1),
+                Integer::from(2),
+                Integer::from(3),
+                Integer::from(4),
+            ],
+        )
+        .unwrap();
+
+        // det = 1*4 - 2*3 = -2
+        assert_eq!(m.det().unwrap(), Integer::from(-2));
+
+        // 3x3 matrix
+        let m2 = Matrix::from_vec(
+            3,
+            3,
+            vec![
+                Integer::from(1),
+                Integer::from(2),
+                Integer::from(3),
+                Integer::from(0),
+                Integer::from(1),
+                Integer::from(4),
+                Integer::from(5),
+                Integer::from(6),
+                Integer::from(0),
+            ],
+        )
+        .unwrap();
+
+        assert_eq!(m2.det().unwrap(), Integer::from(1));
+
+        // Identity matrix
+        let id: Matrix<Integer> = Matrix::identity(3);
+        assert_eq!(id.det().unwrap(), Integer::from(1));
     }
 
     #[test]

@@ -6,7 +6,10 @@ use super::valuation::{DiscretePseudoValuation, ValuationValue};
 use rustmath_core::Ring;
 
 /// Gauss valuation on polynomial ring
-#[derive(Debug, Clone)]
+///
+/// Note: Clone is not derived because this struct contains a trait object
+/// (Box<dyn DiscretePseudoValuation<R>>), which cannot be automatically cloned.
+#[derive(Debug)]
 pub struct GaussValuation<R: Ring> {
     base_valuation: Box<dyn DiscretePseudoValuation<R>>,
 }

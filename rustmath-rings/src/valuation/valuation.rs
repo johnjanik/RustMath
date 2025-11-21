@@ -87,7 +87,13 @@ impl fmt::Display for ValuationValue {
 /// Discrete pseudo-valuation trait
 ///
 /// A pseudo-valuation may have infinite value on non-zero elements.
-pub trait DiscretePseudoValuation<R: Ring>: std::fmt::Debug + Clone {
+///
+/// # Dyn-Safety
+///
+/// This trait is dyn-safe (object-safe) to allow usage as `Box<dyn DiscretePseudoValuation<R>>`.
+/// Individual implementations can still implement `Clone` and `Debug`, but these are not
+/// required by the trait to maintain dyn-safety.
+pub trait DiscretePseudoValuation<R: Ring>: std::fmt::Debug {
     /// Evaluate the valuation on an element
     fn value(&self, element: &R) -> ValuationValue;
 
@@ -155,7 +161,10 @@ impl<R: Ring> DiscretePseudoValuation<R> for InfiniteDiscretePseudoValuation<R> 
 /// Node in a MacLane approximation tree
 ///
 /// Used for computing extensions of valuations to polynomial rings.
-#[derive(Debug, Clone)]
+///
+/// Note: Clone is not derived because this struct contains a trait object
+/// (Box<dyn DiscretePseudoValuation<R>>), which cannot be automatically cloned.
+#[derive(Debug)]
 pub struct MacLaneApproximantNode<R: Ring> {
     /// The valuation at this node
     pub valuation: Box<dyn DiscretePseudoValuation<R>>,

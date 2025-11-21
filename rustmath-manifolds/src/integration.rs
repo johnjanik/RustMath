@@ -180,8 +180,13 @@ impl VolumeForm {
         // Get the metric components
         let metric_components = metric.components(chart)?;
 
+        // Flatten the 2D metric components into a 1D array
+        let flat_components: Vec<Expr> = metric_components.iter()
+            .flat_map(|row| row.iter().cloned())
+            .collect();
+
         // Compute determinant of the metric
-        let det_expr = compute_matrix_determinant(&metric_components, n)?;
+        let det_expr = compute_matrix_determinant(&flat_components, n)?;
 
         // Volume form coefficient is sqrt(|det(g)|)
         let sqrt_det = Expr::Function(
@@ -495,7 +500,7 @@ fn substitute_expr(
 ) -> Expr {
     match expr {
         Expr::Symbol(s) => {
-            substitutions.get(s).cloned().unwrap_or_else(|| expr.clone())
+            substitutions.get(s.name()).cloned().unwrap_or_else(|| expr.clone())
         }
         Expr::Binary(op, left, right) => {
             let new_left = substitute_expr(left, substitutions);
@@ -519,9 +524,9 @@ fn substitute_expr(
 /// Evaluate an expression to a floating point number
 fn evaluate_to_float(expr: &Expr) -> Result<f64> {
     match expr {
-        Expr::Integer(i) => Ok(i.to_f64()),
-        Expr::Rational(r) => Ok(r.to_f64()),
-        Expr::Real(r) => Ok(r.to_f64()),
+        Expr::Integer(i) => i.to_f64().ok_or_else(|| ManifoldError::ComputationError("Integer too large to convert to f64".to_string())),
+        Expr::Rational(r) => r.to_f64().ok_or_else(|| ManifoldError::ComputationError("Rational conversion to f64 failed".to_string())),
+        Expr::Real(r) => Ok(*r),
         Expr::Binary(op, left, right) => {
             let left_val = evaluate_to_float(left)?;
             let right_val = evaluate_to_float(right)?;

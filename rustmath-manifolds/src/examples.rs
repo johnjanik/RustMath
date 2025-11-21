@@ -173,6 +173,12 @@ impl EuclideanSpace {
     }
 }
 
+impl Into<DifferentiableManifold> for EuclideanSpace {
+    fn into(self) -> DifferentiableManifold {
+        self.manifold
+    }
+}
+
 /// The circle S¹ = {(x,y) ∈ ℝ² : x² + y² = 1}
 ///
 /// The circle is a 1-dimensional compact manifold, often parameterized by angle θ ∈ [0, 2π).
@@ -372,6 +378,12 @@ impl Sphere2 {
         let z = (u * u + v * v - 1.0) / denom;
 
         Ok((x, y, z))
+    }
+}
+
+impl Into<DifferentiableManifold> for Sphere2 {
+    fn into(self) -> DifferentiableManifold {
+        self.manifold
     }
 }
 
