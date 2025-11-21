@@ -501,7 +501,7 @@ impl<R: Ring> UnivariatePolynomial<R> {
         }
 
         let mut result = Vec::new();
-        let mut f = self.clone();
+        let f = self.clone();
         let mut i = 1;
 
         // Compute f' (derivative)

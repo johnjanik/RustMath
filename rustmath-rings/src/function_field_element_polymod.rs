@@ -36,7 +36,7 @@ use std::marker::PhantomData;
 ///
 /// Represents an element of an algebraic extension of a function field.
 /// Elements are polynomials in the extension variable, reduced modulo
-//! the defining polynomial.
+/// the defining polynomial.
 ///
 /// This corresponds to SageMath's FunctionFieldElement_polymod.
 ///

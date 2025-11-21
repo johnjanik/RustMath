@@ -30,7 +30,6 @@
 use crate::Integer;
 use crate::prime::{is_prime, factor};
 use rustmath_core::Ring;
-use num_traits::Signed;
 use rand::Rng;
 
 /// Point on an elliptic curve in projective coordinates (X:Y:Z)
@@ -74,7 +73,7 @@ impl ECPoint {
 #[derive(Debug, Clone)]
 struct EllipticCurve {
     a: Integer,
-    b: Integer,
+    _b: Integer,
     n: Integer,
 }
 
@@ -339,7 +338,7 @@ fn try_one_curve(n: &Integer, b1: u64, b2: u64, seed: u64) -> Option<Integer> {
         }
     };
 
-    let u3 = (u.clone() * u.clone() * u.clone()) % n.clone();
+    let _u3 = (u.clone() * u.clone() * u.clone()) % n.clone();
     let v3 = (v.clone() * v.clone() * v.clone()) % n.clone();
 
     let v3_inv = {

@@ -183,7 +183,7 @@ impl fmt::Debug for Rational {
 // Typesetting implementation
 impl rustmath_typesetting::MathDisplay for Rational {
     fn math_format(&self, options: &rustmath_typesetting::FormatOptions) -> String {
-        use rustmath_typesetting::{DisplayMode, OutputFormat};
+        use rustmath_typesetting::OutputFormat;
 
         // If denominator is 1, just display as an integer
         if self.denominator.is_one() {
@@ -420,7 +420,6 @@ impl NumericConversion for Rational {
     }
 
     fn to_usize(&self) -> Option<usize> {
-        use rustmath_core::NumericConversion as _;
         if self.is_integer() {
             self.numerator.to_usize()
         } else {

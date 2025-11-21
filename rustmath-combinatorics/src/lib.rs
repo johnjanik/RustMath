@@ -124,6 +124,7 @@ pub use permutation_simd::{
 pub use posets::Poset;
 pub use specht_module::{
     GarnirElement, GarnirSet, Polytabloid, PolytabloidSum, SpechtModule, Tabloid,
+};
 pub use tableaux::{
     dual_robinson_schensted, hecke_insertion, inverse_robinson_schensted, mixed_insertion,
     robinson_schensted, rs_insert, standard_tableaux, Tableau,
@@ -213,6 +214,7 @@ pub use q_analogue::{
 };
 pub use hall_polynomial::{
     count_submodules, hall_littlewood_p, hall_polynomial, kostka_foulkes,
+};
 pub use t_sequences::{
     t_bell, t_binomial, t_binomial_eval, t_catalan, t_eulerian, t_factorial, t_fibonacci,
     t_integer, t_lucas, t_multinomial, t_stirling_second,
@@ -258,6 +260,7 @@ pub use vector_partition::{
 };
 pub use partition_shifting_algebras::{
     ShiftingSequence, ShiftingSequenceSpace, ShiftingOperatorAlgebra, ShiftingOperatorElement,
+};
 pub use dendriform_algebra::{
     dimension as dendriform_dimension, free_dendriform_basis, DendriFormElement,
 };
@@ -265,6 +268,7 @@ pub use tamari_lattice::{all_binary_trees, BinaryTree, TamariLattice};
 pub use symmetric_group_representations::{
     all_irreducible_representations, conjugacy_class_size, decompose_character,
     murnaghan_nakayama, permutation_cycle_type, CharacterTable, IrreducibleRepresentation,
+};
 pub use alternating_sign_matrix::{
     all_asms, asm_count, asm_count_by_inversions, asm_q_enumeration, razumov_stroganov_polynomial,
     razumov_stroganov_refined_count, AlternatingSignMatrix,
@@ -278,13 +282,16 @@ pub use six_vertex_model::{
     partition_function as six_vertex_partition_function,
     weighted_partition_function as six_vertex_weighted_partition_function, SixVertexConfiguration,
     VertexType,
+};
 pub use ncsym::{
     coarse_powersum, deformed_coarse_powersum, elementary, homogeneous, matchings, monomial,
     nesting, powersum, ribbon_schur, supercharacter, x_basis, NCSymBasis, NCSymDual,
     NCSymFunction, RibbonSchurFunction,
+};
 pub use triangles_fhm::{Triangle, MTriangle, HTriangle, FTriangle, GammaTriangle};
 pub use key_polynomial::{
     key_polynomial, KeyMonomial, KeyPolynomial, WeakComposition,
+};
 pub use expnums::{EGF, ExpNum};
 pub use tiling::{
     build_transfer_matrix, count_domino_tilings, count_monomino_tilings,

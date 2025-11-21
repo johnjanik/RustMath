@@ -176,7 +176,7 @@ impl<R: Ring> Ideal<R> {
     where
         R: rustmath_core::EuclideanDomain + Clone,
     {
-        let mut remainder = p.clone();
+        let remainder = p.clone();
 
         // Repeatedly try to reduce the leading term
         // This is a simplified version; full implementation would use

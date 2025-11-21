@@ -1,8 +1,7 @@
 //! Polynomial root finding algorithms
 
-use crate::polynomial::Polynomial;
 use crate::univariate::UnivariatePolynomial;
-use rustmath_core::{NumericConversion, Result, MathError, Ring};
+use rustmath_core::{Result, MathError, Ring};
 use rustmath_rationals::Rational;
 
 /// Find rational roots of a polynomial using the rational root theorem
@@ -335,7 +334,7 @@ pub fn solve_quartic(
     d: rustmath_integers::Integer,
     e: rustmath_integers::Integer,
 ) -> Result<QuarticRoots> {
-    use rustmath_integers::Integer;
+
 
     if a.is_zero() {
         return Err(MathError::InvalidArgument(
@@ -378,7 +377,7 @@ pub fn solve_quartic(
 pub fn find_rational_roots_up_to_degree_4(
     poly: &UnivariatePolynomial<rustmath_integers::Integer>,
 ) -> Vec<Rational> {
-    use rustmath_integers::Integer;
+
 
     if poly.is_zero() {
         return vec![];

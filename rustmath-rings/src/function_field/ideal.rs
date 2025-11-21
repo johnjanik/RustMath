@@ -57,7 +57,7 @@ use std::collections::HashSet;
 ///
 /// An ideal I in a function field has:
 /// - Norm: N(I) = |O/I| where O is the ring of integers
-//! - Valuation: v_P(I) for each place P
+/// - Valuation: v_P(I) for each place P
 /// - Factorization: I = ∏ P^{v_P(I)}
 #[derive(Clone, Debug)]
 pub struct FunctionFieldIdeal<F: Field> {

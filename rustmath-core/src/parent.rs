@@ -6,9 +6,8 @@
 //!
 //! Corresponds to sage.structure.parent.Parent
 
-use crate::{Ring, MathError, Result};
+use crate::Ring;
 use std::fmt::Debug;
-use std::any::Any;
 
 /// A Parent is an algebraic structure that contains elements
 ///
