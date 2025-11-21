@@ -2,7 +2,6 @@
 //!
 //! Corresponds to sage.graphs.base.graph_backends.GenericGraphBackend
 
-use std::collections::HashSet;
 
 /// Generic graph backend trait
 ///

@@ -21,7 +21,6 @@
 //! assert_eq!(polytope.dim(), 2);
 //! ```
 
-use rustmath_core::Ring;
 use rustmath_integers::Integer;
 use std::fmt;
 use std::hash::{Hash, Hasher};

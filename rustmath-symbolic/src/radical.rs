@@ -7,7 +7,6 @@ use crate::expression::{BinaryOp, Expr, UnaryOp};
 use rustmath_core::{NumericConversion, Ring};
 use rustmath_integers::Integer;
 use rustmath_rationals::Rational;
-use std::collections::HashMap;
 use std::sync::Arc;
 
 impl Expr {

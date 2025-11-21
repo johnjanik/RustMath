@@ -17,7 +17,6 @@
 //! assert_eq!(points.len(), 12); // 3 × 4 = 12 points
 //! ```
 
-use rustmath_integers::Integer;
 use rustmath_matrix::Matrix;
 use rustmath_rationals::Rational;
 use std::collections::HashMap;

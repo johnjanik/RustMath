@@ -44,7 +44,7 @@ impl PBKDF2 {
         let mut output = Vec::with_capacity(key_length);
 
         for block_num in 1..=num_blocks {
-            let mut block = Self::derive_block(password, salt, iterations, block_num as u32);
+            let block = Self::derive_block(password, salt, iterations, block_num as u32);
 
             // Append to output (truncate last block if needed)
             let remaining = key_length - output.len();
@@ -181,7 +181,7 @@ impl Argon2 {
         }
 
         // Extract final key
-        let mut final_block = memory[memory_blocks - 1].clone();
+        let final_block = memory[memory_blocks - 1].clone();
 
         // Compress to desired length
         let output = SHA256::hash(&final_block);

@@ -1,7 +1,6 @@
 //! Polygon structures and algorithms
 
 use crate::point::Point2D;
-use std::f64::consts::PI;
 
 /// A polygon in 2D space defined by an ordered list of vertices
 #[derive(Debug, Clone, PartialEq)]

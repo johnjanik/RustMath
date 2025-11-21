@@ -238,7 +238,7 @@ impl ConvexityProperties {
             return 0;
         };
 
-        let mut count = 0;
+        let count = 0;
         let mut paths = Vec::new();
         let mut current_path = vec![u];
         let mut visited = vec![false; self.graph.num_vertices()];

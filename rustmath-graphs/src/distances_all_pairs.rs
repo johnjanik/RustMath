@@ -3,7 +3,7 @@
 //! This module provides algorithms for computing distances between all pairs of vertices,
 //! including diameter, eccentricity, radius, Wiener index, and other distance-based metrics.
 
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use crate::graph::Graph;
 
 /// Compute all-pairs shortest path distances using BFS

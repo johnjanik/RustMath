@@ -30,8 +30,7 @@
 //! ```
 
 use crate::expression::Expr;
-use rustmath_core::{NumericConversion, Ring};
-use rustmath_integers::Integer;
+use rustmath_core::NumericConversion;
 use rustmath_rationals::Rational;
 use std::sync::Arc;
 

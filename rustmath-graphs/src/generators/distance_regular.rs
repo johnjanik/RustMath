@@ -739,7 +739,7 @@ pub fn generalised_octagon_graph(s: usize, t: usize) -> Graph {
 
     for i in 0..num_vertices {
         for j in (i + 1)..num_vertices {
-            if (i % (s + 1) == j % (s + 1)) {
+            if i % (s + 1) == j % (s + 1) {
                 g.add_edge(i, j).unwrap();
             }
         }
@@ -771,7 +771,7 @@ pub fn generalised_dodecagon_graph(s: usize, t: usize) -> Graph {
 
     for i in 0..num_vertices {
         for j in (i + 1)..num_vertices {
-            if (i % (s + 1) == j % (s + 1)) {
+            if i % (s + 1) == j % (s + 1) {
                 g.add_edge(i, j).unwrap();
             }
         }

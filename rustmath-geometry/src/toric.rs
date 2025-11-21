@@ -12,7 +12,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::fmt;
-use std::ops::{Add, Sub, Mul};
+use std::ops::{Add, Sub};
 
 /// A rational polyhedral cone in ℚⁿ
 ///
@@ -908,7 +908,7 @@ impl MomentPolytope {
             sum -= (self.vertices[j][0] * self.vertices[i][1]) as f64;
         }
 
-        (sum.abs() / 2.0)
+        sum.abs() / 2.0
     }
 
     /// Check if a point is in the polytope (simplified)

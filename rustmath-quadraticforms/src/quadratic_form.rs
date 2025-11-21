@@ -3,9 +3,8 @@
 //! Implementation of quadratic forms, reduction algorithms, and related theory.
 
 use rustmath_integers::Integer;
-use rustmath_core::{Ring, NumericConversion};
+use rustmath_core::Ring;
 use std::fmt;
-use std::cmp::{Ord, Ordering};
 
 /// Represents a binary quadratic form ax² + bxy + cy²
 #[derive(Debug, Clone, PartialEq, Eq)]

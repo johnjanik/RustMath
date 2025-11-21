@@ -5,7 +5,7 @@
 //! A comparability graph is the comparability graph of a partial order.
 
 use crate::Graph;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 /// Greedily check if graph is a comparability graph
 ///

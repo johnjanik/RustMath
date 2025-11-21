@@ -2,11 +2,10 @@
 //!
 //! This module implements Taylor and Laurent series expansions for symbolic expressions.
 
-use crate::expression::{BinaryOp, Expr, UnaryOp};
+use crate::expression::{BinaryOp, Expr};
 use crate::symbol::Symbol;
 use rustmath_core::{Ring, NumericConversion};
 use rustmath_integers::Integer;
-use std::sync::Arc;
 
 impl Expr {
     /// Compute Taylor series expansion around a point
