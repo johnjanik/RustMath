@@ -63,7 +63,7 @@ impl MultiIndex {
 /// T^{i₁...iₚ}_{j₁...jᵩ} where:
 /// - p = contravariant rank (upper indices)
 /// - q = covariant rank (lower indices)
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TensorField {
     /// The underlying manifold
     manifold: Arc<DifferentiableManifold>,
