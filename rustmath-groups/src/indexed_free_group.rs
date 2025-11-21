@@ -177,7 +177,7 @@ impl<I: Clone + Eq + Hash + fmt::Debug> Group for IndexedFreeGroup<I> {
 /// An element of an indexed free group
 ///
 /// Elements are represented as words: sequences of (index, exponent) pairs.
-#[derive(Debug, Clone)]
+#[derive(Clone, Hash, Debug)]
 pub struct IndexedFreeGroupElement<I: Clone + Eq + Hash + fmt::Debug> {
     parent: IndexedFreeGroup<I>,
     word: Vec<(I, i32)>,
@@ -316,6 +316,27 @@ impl<I: Clone + Eq + Hash + fmt::Debug> PartialEq for IndexedFreeGroupElement<I>
 
 impl<I: Clone + Eq + Hash + fmt::Debug> Eq for IndexedFreeGroupElement<I> {}
 
+impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> crate::group_traits::GroupElement for IndexedFreeGroupElement<I> {
+    fn identity() -> Self {
+        // We need a parent group to create an identity element
+        // This is a limitation of the design - we'll create a trivial group
+        let parent = IndexedFreeGroup::new(vec![]);
+        parent.one()
+    }
+
+    fn inverse(&self) -> Self {
+        self.inverse()
+    }
+
+    fn op(&self, other: &Self) -> Self {
+        self.multiply(other)
+    }
+
+    fn pow(&self, n: i64) -> Self {
+        self.pow(n as i32)
+    }
+}
+
 /// A free abelian group with generators indexed by an arbitrary type
 ///
 /// This is the commutative version of IndexedFreeGroup, where elements
@@ -434,7 +455,7 @@ impl<I: Clone + Eq + Hash + fmt::Debug> Group for IndexedFreeAbelianGroup<I> {
 /// An element of an indexed free abelian group
 ///
 /// Elements are represented as dictionaries mapping indices to exponents.
-#[derive(Debug, Clone)]
+#[derive(Clone, Hash, Debug)]
 pub struct IndexedFreeAbelianGroupElement<I: Clone + Eq + Hash + fmt::Debug> {
     parent: IndexedFreeAbelianGroup<I>,
     exponents: HashMap<I, i32>,
@@ -534,6 +555,27 @@ impl<I: Clone + Eq + Hash + fmt::Debug> PartialEq for IndexedFreeAbelianGroupEle
 }
 
 impl<I: Clone + Eq + Hash + fmt::Debug> Eq for IndexedFreeAbelianGroupElement<I> {}
+
+impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> crate::group_traits::GroupElement for IndexedFreeAbelianGroupElement<I> {
+    fn identity() -> Self {
+        // We need a parent group to create an identity element
+        // This is a limitation of the design - we'll create a trivial group
+        let parent = IndexedFreeAbelianGroup::new(vec![]);
+        parent.one()
+    }
+
+    fn inverse(&self) -> Self {
+        self.inverse()
+    }
+
+    fn op(&self, other: &Self) -> Self {
+        self.multiply(other)
+    }
+
+    fn pow(&self, n: i64) -> Self {
+        self.pow(n as i32)
+    }
+}
 
 #[cfg(test)]
 mod tests {
