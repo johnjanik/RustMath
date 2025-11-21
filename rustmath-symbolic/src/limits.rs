@@ -321,7 +321,7 @@ impl Expr {
     /// Check if expression is a positive numerical value
     fn is_positive_value(&self) -> bool {
         match self {
-            Expr::Integer(i) => i.to_i64().map(|v| v > 0).unwrap_or(false),
+            Expr::Integer(i) => i.to_i64() > 0,
             Expr::Rational(r) => r.to_f64().map(|v| v > 0.0).unwrap_or(false),
             _ => false,
         }
@@ -330,7 +330,7 @@ impl Expr {
     /// Check if expression is a negative numerical value
     fn is_negative_value(&self) -> bool {
         match self {
-            Expr::Integer(i) => i.to_i64().map(|v| v < 0).unwrap_or(false),
+            Expr::Integer(i) => i.to_i64() < 0,
             Expr::Rational(r) => r.to_f64().map(|v| v < 0.0).unwrap_or(false),
             _ => false,
         }

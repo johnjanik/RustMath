@@ -189,12 +189,12 @@ impl Expr {
 
     /// Check if expression equals 1
     fn is_one(&self) -> bool {
-        matches!(self, Expr::Integer(i) if i.to_i64() == Some(1))
+        matches!(self, Expr::Integer(i) if i.to_i64() == 1)
     }
 
     /// Check if expression equals -1
     fn is_minus_one(&self) -> bool {
-        matches!(self, Expr::Integer(i) if i.to_i64() == Some(-1))
+        matches!(self, Expr::Integer(i) if i.to_i64() == -1)
     }
 
     /// Integration by parts: ∫ u dv = uv - ∫ v du
@@ -451,7 +451,7 @@ pub mod advanced {
         matches!(expr,
             Expr::Binary(BinaryOp::Pow, x, two)
             if matches!(**x, Expr::Symbol(ref s) if s == var)
-                && matches!(**two, Expr::Integer(ref i) if i.to_i64() == Some(2))
+                && matches!(**two, Expr::Integer(ref i) if i.to_i64() == 2)
         )
     }
 
@@ -616,7 +616,7 @@ pub mod advanced {
             Expr::Binary(BinaryOp::Pow, base, exp) => {
                 if matches!(**base, Expr::Symbol(ref s) if s == var) {
                     if let Expr::Integer(n) = &**exp {
-                        n.to_i64()
+                        Some(n.to_i64())
                     } else {
                         None
                     }
@@ -907,7 +907,7 @@ pub mod advanced {
                         if one.is_one() {
                             if let Expr::Binary(BinaryOp::Pow, x, two) = &**x_sq {
                                 if matches!(**x, Expr::Symbol(ref s) if s == var)
-                                    && matches!(**two, Expr::Integer(ref i) if i.to_i64() == Some(2)) {
+                                    && matches!(**two, Expr::Integer(ref i) if i.to_i64() == 2) {
                                     return Some(Expr::Symbol(var.clone()).arctan());
                                 }
                             }

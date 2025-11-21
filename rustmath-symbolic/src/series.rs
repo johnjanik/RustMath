@@ -33,7 +33,7 @@ impl Expr {
             let coeff = derivative.substitute(var, point);
 
             // Compute (x - a)^n
-            let x_minus_a = if matches!(point, Expr::Integer(i) if i.to_i64() == Some(0)) {
+            let x_minus_a = if matches!(point, Expr::Integer(i) if i.to_i64() == 0) {
                 Expr::Symbol(var.clone())
             } else {
                 Expr::Symbol(var.clone()) - point.clone()
@@ -205,7 +205,7 @@ impl Expr {
     /// - Can be extended to detect when Laurent series is needed
     pub fn series(&self, var: &Symbol, point: &Expr, order: usize) -> Self {
         // Check if point is zero for Maclaurin optimization
-        let is_zero = matches!(point, Expr::Integer(i) if i.to_i64() == Some(0));
+        let is_zero = matches!(point, Expr::Integer(i) if i.to_i64() == 0);
 
         if is_zero {
             self.maclaurin(var, order)
@@ -232,7 +232,7 @@ impl Expr {
         let series = self.series(var, point, order);
 
         // The remainder term is O((x-a)^(n+1)) for Taylor series
-        let x_minus_a = if matches!(point, Expr::Integer(i) if i.to_i64() == Some(0)) {
+        let x_minus_a = if matches!(point, Expr::Integer(i) if i.to_i64() == 0) {
             Expr::Symbol(var.clone())
         } else {
             Expr::Symbol(var.clone()) - point.clone()

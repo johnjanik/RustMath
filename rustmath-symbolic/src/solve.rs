@@ -871,7 +871,7 @@ fn solve_sin_equation(c: &Expr) -> Solution {
 
     // Check if c = 1
     if let Expr::Integer(n) = c {
-        if n.to_i64() == Some(1) {
+        if n.to_i64() == 1 {
             // sin(x) = 1 => x = π/2 + 2πn
             // Return principal solution x = π/2
             return Solution::Expr(Expr::Binary(
@@ -879,7 +879,7 @@ fn solve_sin_equation(c: &Expr) -> Solution {
                 Arc::new(Expr::symbol("π")),
                 Arc::new(Expr::from(2)),
             ));
-        } else if n.to_i64() == Some(-1) {
+        } else if n.to_i64() == -1 {
             // sin(x) = -1 => x = -π/2 + 2πn = 3π/2 + 2πn
             // Return principal solution x = -π/2
             return Solution::Expr(Expr::Binary(
@@ -910,11 +910,11 @@ fn solve_cos_equation(c: &Expr) -> Solution {
 
     // Check if c = 1
     if let Expr::Integer(n) = c {
-        if n.to_i64() == Some(1) {
+        if n.to_i64() == 1 {
             // cos(x) = 1 => x = 2πn
             // Return principal solution x = 0
             return Solution::Expr(Expr::from(0));
-        } else if n.to_i64() == Some(-1) {
+        } else if n.to_i64() == -1 {
             // cos(x) = -1 => x = π + 2πn
             // Return principal solution x = π
             return Solution::Expr(Expr::symbol("π"));
@@ -937,7 +937,7 @@ fn solve_tan_equation(c: &Expr) -> Solution {
 
     // Check if c = 1
     if let Expr::Integer(n) = c {
-        if n.to_i64() == Some(1) {
+        if n.to_i64() == 1 {
             // tan(x) = 1 => x = π/4 + nπ
             // Return principal solution x = π/4
             return Solution::Expr(Expr::Binary(
@@ -945,7 +945,7 @@ fn solve_tan_equation(c: &Expr) -> Solution {
                 Arc::new(Expr::symbol("π")),
                 Arc::new(Expr::from(4)),
             ));
-        } else if n.to_i64() == Some(-1) {
+        } else if n.to_i64() == -1 {
             // tan(x) = -1 => x = -π/4 + nπ
             // Return principal solution x = -π/4
             return Solution::Expr(Expr::Binary(
@@ -1097,18 +1097,12 @@ fn solve_constant_inequality(expr: &Expr, ineq_type: InequalityType) -> Inequali
     // Evaluate the constant
     let value = match expr {
         Expr::Integer(n) => {
-            if let Some(i) = n.to_i64() {
-                i as f64
-            } else {
-                return InequalitySolution::Unknown;
-            }
+            let i = n.to_i64();
+            i as f64
         }
         Expr::Rational(r) => {
-            if let (Some(num), Some(den)) = (r.numerator().to_i64(), r.denominator().to_i64()) {
-                num as f64 / den as f64
-            } else {
-                return InequalitySolution::Unknown;
-            }
+            let (num, den) = (r.numerator().to_i64(), r.denominator().to_i64());
+            num as f64 / den as f64
         }
         _ => return InequalitySolution::Unknown,
     };
@@ -1160,9 +1154,9 @@ fn solve_linear_inequality(
 
     // Determine the sign of a to figure out the direction
     let a_positive = match &a {
-        Expr::Integer(n) => n.to_i64().map(|i| i > 0).unwrap_or(true),
+        Expr::Integer(n) => n.to_i64() > 0,
         Expr::Rational(r) => {
-            r.numerator().to_i64().map(|i| i > 0).unwrap_or(true)
+            r.numerator().to_i64() > 0
         }
         _ => true, // Assume positive if we can't determine
     };
@@ -1236,9 +1230,9 @@ fn solve_quadratic_inequality(
     };
 
     let a_positive = match &a {
-        Expr::Integer(n) => n.to_i64().map(|i| i > 0).unwrap_or(true),
+        Expr::Integer(n) => n.to_i64() > 0,
         Expr::Rational(r) => {
-            r.numerator().to_i64().map(|i| i > 0).unwrap_or(true)
+            r.numerator().to_i64() > 0
         }
         _ => true,
     };
@@ -1534,7 +1528,7 @@ fn is_zero(expr: &Expr) -> bool {
 /// Convert expression to rational if possible
 fn expr_to_rational(expr: &Expr) -> Option<Rational> {
     match expr {
-        Expr::Integer(n) => n.to_i64().and_then(|i| Rational::new(i, 1).ok()),
+        Expr::Integer(n) => Rational::new(n.to_i64(), 1).ok(),
         Expr::Rational(r) => Some(r.clone()),
         Expr::Binary(BinaryOp::Div, num, den) => {
             let num_i = expr_to_integer(num)?;
@@ -1561,7 +1555,7 @@ fn expr_to_integer_big(expr: &Expr) -> Option<Integer> {
 /// Convert expression to integer if possible
 fn expr_to_integer(expr: &Expr) -> Option<i64> {
     match expr {
-        Expr::Integer(n) => n.to_i64(),
+        Expr::Integer(n) => Some(n.to_i64()),
         Expr::Unary(UnaryOp::Neg, inner) => expr_to_integer(inner).map(|x| -x),
         _ => None,
     }

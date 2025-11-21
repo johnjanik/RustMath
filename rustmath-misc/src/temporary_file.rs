@@ -506,7 +506,7 @@ where
     populator(temp_dir.path())?;
 
     // Atomically rename to the final location
-    let temp_path = temp_dir.keep()?;
+    let temp_path = temp_dir.keep();
     fs::rename(temp_path, path)?;
 
     Ok(())

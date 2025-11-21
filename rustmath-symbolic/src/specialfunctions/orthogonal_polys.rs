@@ -72,10 +72,9 @@ use std::sync::Arc;
 pub fn chebyshev_t(n: &Expr, x: &Expr) -> Expr {
     // For small integer n, compute explicitly
     if let Expr::Integer(n_int) = n {
-        if let Some(n_val) = n_int.to_i64() {
-            if n_val >= 0 && n_val <= 5 {
-                return compute_chebyshev_t(n_val as usize, x);
-            }
+        let n_val = n_int.to_i64();
+        if n_val >= 0 && n_val <= 5 {
+            return compute_chebyshev_t(n_val as usize, x);
         }
     }
 
@@ -132,10 +131,9 @@ fn compute_chebyshev_t(n: usize, x: &Expr) -> Expr {
 pub fn chebyshev_u(n: &Expr, x: &Expr) -> Expr {
     // For small integer n, compute explicitly
     if let Expr::Integer(n_int) = n {
-        if let Some(n_val) = n_int.to_i64() {
-            if n_val >= 0 && n_val <= 3 {
-                return compute_chebyshev_u(n_val as usize, x);
-            }
+        let n_val = n_int.to_i64();
+        if n_val >= 0 && n_val <= 3 {
+            return compute_chebyshev_u(n_val as usize, x);
         }
     }
 
@@ -179,10 +177,9 @@ fn compute_chebyshev_u(n: usize, x: &Expr) -> Expr {
 /// - ∫₋₁¹ Pₙ(x)Pₘ(x) dx = 2/(2n+1) δₙₘ
 pub fn legendre_p(n: &Expr, x: &Expr) -> Expr {
     if let Expr::Integer(n_int) = n {
-        if let Some(n_val) = n_int.to_i64() {
-            if n_val >= 0 && n_val <= 3 {
-                return compute_legendre_p(n_val as usize, x);
-            }
+        let n_val = n_int.to_i64();
+        if n_val >= 0 && n_val <= 3 {
+            return compute_legendre_p(n_val as usize, x);
         }
     }
 
@@ -247,10 +244,9 @@ pub fn legendre_q(n: &Expr, x: &Expr) -> Expr {
 /// - ∫₋∞^∞ Hₙ(x)Hₘ(x)e⁻ˣ² dx = √π 2ⁿ n! δₙₘ
 pub fn hermite(n: &Expr, x: &Expr) -> Expr {
     if let Expr::Integer(n_int) = n {
-        if let Some(n_val) = n_int.to_i64() {
-            if n_val >= 0 && n_val <= 3 {
-                return compute_hermite(n_val as usize, x);
-            }
+        let n_val = n_int.to_i64();
+        if n_val >= 0 && n_val <= 3 {
+            return compute_hermite(n_val as usize, x);
         }
     }
 
@@ -293,10 +289,9 @@ fn compute_hermite(n: usize, x: &Expr) -> Expr {
 /// - ∫₀^∞ Lₙ(x)Lₘ(x)e⁻ˣ dx = δₙₘ
 pub fn laguerre(n: &Expr, x: &Expr) -> Expr {
     if let Expr::Integer(n_int) = n {
-        if let Some(n_val) = n_int.to_i64() {
-            if n_val >= 0 && n_val <= 2 {
-                return compute_laguerre(n_val as usize, x);
-            }
+        let n_val = n_int.to_i64();
+        if n_val >= 0 && n_val <= 2 {
+            return compute_laguerre(n_val as usize, x);
         }
     }
 

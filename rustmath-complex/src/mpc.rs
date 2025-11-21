@@ -92,16 +92,8 @@ impl ComplexMPFR {
 
     /// Create a new ComplexMPFR with specified precision from integers
     pub fn with_val_integers(prec: u32, real: &Integer, imag: &Integer) -> Self {
-        let real_f64 = if let Some(i) = real.to_i64() {
-            i as f64
-        } else {
-            real.to_string().parse::<f64>().unwrap_or(0.0)
-        };
-        let imag_f64 = if let Some(i) = imag.to_i64() {
-            i as f64
-        } else {
-            imag.to_string().parse::<f64>().unwrap_or(0.0)
-        };
+        let real_f64 = real.to_i64() as f64;
+        let imag_f64 = imag.to_i64() as f64;
         ComplexMPFR {
             value: RugComplex::with_val(prec, (real_f64, imag_f64)),
         }

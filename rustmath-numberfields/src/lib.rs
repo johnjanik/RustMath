@@ -395,7 +395,7 @@ impl NumberField {
         // Known class numbers for imaginary quadratic fields with small discriminant
         // These are the 9 imaginary quadratic fields with class number 1
         let class_one_discs = [-3, -4, -7, -8, -11, -19, -43, -67, -163];
-        if class_one_discs.contains(&d.to_i64().unwrap_or(0)) {
+        if class_one_discs.contains(&d.to_i64()) {
             return Ok(Integer::one());
         }
 
