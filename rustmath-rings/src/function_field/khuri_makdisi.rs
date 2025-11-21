@@ -57,10 +57,10 @@
 //!
 //! This module provides four algorithm variants:
 //!
-//! - `KhuriMakdisi_base`: Base class with common functionality
-//! - `KhuriMakdisi_small`: Optimized for small genus (g ≤ 10)
-//! - `KhuriMakdisi_medium`: For medium genus (10 < g ≤ 100)
-//! - `KhuriMakdisi_large`: For large genus (g > 100)
+//! - `KhuriMakdisiBase`: Base class with common functionality
+//! - `KhuriMakdisiSmall`: Optimized for small genus (g ≤ 10)
+//! - `KhuriMakdisiMedium`: For medium genus (10 < g ≤ 100)
+//! - `KhuriMakdisiLarge`: For large genus (g > 100)
 //!
 //! # References
 //!
@@ -88,10 +88,10 @@ use std::marker::PhantomData;
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::khuri_makdisi::KhuriMakdisi_base;
+/// use rustmath_rings::function_field::khuri_makdisi::KhuriMakdisiBase;
 /// use rustmath_rationals::Rational;
 ///
-/// let km = KhuriMakdisi_base::<Rational>::new("C".to_string(), 3);
+/// let km = KhuriMakdisiBase::<Rational>::new("C".to_string(), 3);
 /// assert_eq!(km.genus(), 3);
 /// ```
 #[derive(Debug, Clone)]
@@ -108,7 +108,7 @@ pub struct KhuriMakdisiBase<F: Field> {
     _phantom: PhantomData<F>,
 }
 
-impl<F: Field> KhuriMakdisi_base<F> {
+impl<F: Field> KhuriMakdisiBase<F> {
     /// Create a new KM algorithm instance
     ///
     /// # Arguments
@@ -234,20 +234,20 @@ impl<F: Field> KhuriMakdisi_base<F> {
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::khuri_makdisi::KhuriMakdisi_small;
+/// use rustmath_rings::function_field::khuri_makdisi::KhuriMakdisiSmall;
 /// use rustmath_rationals::Rational;
 ///
-/// let km = KhuriMakdisi_small::<Rational>::new("C".to_string(), 3);
+/// let km = KhuriMakdisiSmall::<Rational>::new("C".to_string(), 3);
 /// assert_eq!(km.genus(), 3);
 /// assert!(km.is_small_genus());
 /// ```
 #[derive(Debug, Clone)]
 pub struct KhuriMakdisiSmall<F: Field> {
     /// Base algorithm
-    base: KhuriMakdisi_base<F>,
+    base: KhuriMakdisiBase<F>,
 }
 
-impl<F: Field> KhuriMakdisi_small<F> {
+impl<F: Field> KhuriMakdisiSmall<F> {
     /// Create a new small genus KM algorithm
     ///
     /// # Arguments
@@ -257,12 +257,12 @@ impl<F: Field> KhuriMakdisi_small<F> {
     pub fn new(curve: String, genus: usize) -> Self {
         assert!(genus <= 10, "Use medium or large variant for genus > 10");
         Self {
-            base: KhuriMakdisi_base::new(curve, genus),
+            base: KhuriMakdisiBase::new(curve, genus),
         }
     }
 
     /// Get the base algorithm
-    pub fn base(&self) -> &KhuriMakdisi_base<F> {
+    pub fn base(&self) -> &KhuriMakdisiBase<F> {
         &self.base
     }
 
@@ -318,22 +318,22 @@ impl<F: Field> KhuriMakdisi_small<F> {
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::khuri_makdisi::KhuriMakdisi_medium;
+/// use rustmath_rings::function_field::khuri_makdisi::KhuriMakdisiMedium;
 /// use rustmath_rationals::Rational;
 ///
-/// let km = KhuriMakdisi_medium::<Rational>::new("C".to_string(), 20);
+/// let km = KhuriMakdisiMedium::<Rational>::new("C".to_string(), 20);
 /// assert_eq!(km.genus(), 20);
 /// assert!(km.is_medium_genus());
 /// ```
 #[derive(Debug, Clone)]
 pub struct KhuriMakdisiMedium<F: Field> {
     /// Base algorithm
-    base: KhuriMakdisi_base<F>,
+    base: KhuriMakdisiBase<F>,
     /// Use FFT optimization
     use_fft: bool,
 }
 
-impl<F: Field> KhuriMakdisi_medium<F> {
+impl<F: Field> KhuriMakdisiMedium<F> {
     /// Create a new medium genus KM algorithm
     ///
     /// # Arguments
@@ -343,7 +343,7 @@ impl<F: Field> KhuriMakdisi_medium<F> {
     pub fn new(curve: String, genus: usize) -> Self {
         assert!(genus > 10 && genus <= 100, "Genus out of range for medium variant");
         Self {
-            base: KhuriMakdisi_base::new(curve, genus),
+            base: KhuriMakdisiBase::new(curve, genus),
             use_fft: true,
         }
     }
@@ -352,13 +352,13 @@ impl<F: Field> KhuriMakdisi_medium<F> {
     pub fn without_fft(curve: String, genus: usize) -> Self {
         assert!(genus > 10 && genus <= 100, "Genus out of range for medium variant");
         Self {
-            base: KhuriMakdisi_base::new(curve, genus),
+            base: KhuriMakdisiBase::new(curve, genus),
             use_fft: false,
         }
     }
 
     /// Get the base algorithm
-    pub fn base(&self) -> &KhuriMakdisi_base<F> {
+    pub fn base(&self) -> &KhuriMakdisiBase<F> {
         &self.base
     }
 
@@ -430,22 +430,22 @@ impl<F: Field> KhuriMakdisi_medium<F> {
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::khuri_makdisi::KhuriMakdisi_large;
+/// use rustmath_rings::function_field::khuri_makdisi::KhuriMakdisiLarge;
 /// use rustmath_rationals::Rational;
 ///
-/// let km = KhuriMakdisi_large::<Rational>::new("C".to_string(), 150);
+/// let km = KhuriMakdisiLarge::<Rational>::new("C".to_string(), 150);
 /// assert_eq!(km.genus(), 150);
 /// assert!(km.is_large_genus());
 /// ```
 #[derive(Debug, Clone)]
 pub struct KhuriMakdisiLarge<F: Field> {
     /// Base algorithm
-    base: KhuriMakdisi_base<F>,
+    base: KhuriMakdisiBase<F>,
     /// Matrix multiplication exponent (ω)
     omega: f64,
 }
 
-impl<F: Field> KhuriMakdisi_large<F> {
+impl<F: Field> KhuriMakdisiLarge<F> {
     /// Create a new large genus KM algorithm
     ///
     /// # Arguments
@@ -455,7 +455,7 @@ impl<F: Field> KhuriMakdisi_large<F> {
     pub fn new(curve: String, genus: usize) -> Self {
         assert!(genus > 100, "Use small or medium variant for genus ≤ 100");
         Self {
-            base: KhuriMakdisi_base::new(curve, genus),
+            base: KhuriMakdisiBase::new(curve, genus),
             omega: 2.373, // Current best theoretical bound
         }
     }
@@ -465,13 +465,13 @@ impl<F: Field> KhuriMakdisi_large<F> {
         assert!(genus > 100, "Use small or medium variant for genus ≤ 100");
         assert!(omega >= 2.0 && omega <= 3.0, "Invalid omega value");
         Self {
-            base: KhuriMakdisi_base::new(curve, genus),
+            base: KhuriMakdisiBase::new(curve, genus),
             omega,
         }
     }
 
     /// Get the base algorithm
-    pub fn base(&self) -> &KhuriMakdisi_base<F> {
+    pub fn base(&self) -> &KhuriMakdisiBase<F> {
         &self.base
     }
 
@@ -525,7 +525,7 @@ mod tests {
 
     #[test]
     fn test_base_creation() {
-        let km = KhuriMakdisi_base::<Rational>::new("C".to_string(), 3);
+        let km = KhuriMakdisiBase::<Rational>::new("C".to_string(), 3);
         assert_eq!(km.curve(), "C");
         assert_eq!(km.genus(), 3);
         assert_eq!(km.base_degree(), 7); // 2*3 + 1
@@ -533,7 +533,7 @@ mod tests {
 
     #[test]
     fn test_base_with_params() {
-        let km = KhuriMakdisi_base::<Rational>::with_params(
+        let km = KhuriMakdisiBase::<Rational>::with_params(
             "C".to_string(),
             3,
             10,
@@ -545,7 +545,7 @@ mod tests {
 
     #[test]
     fn test_riemann_roch_dimension() {
-        let km = KhuriMakdisi_base::<Rational>::new("C".to_string(), 2);
+        let km = KhuriMakdisiBase::<Rational>::new("C".to_string(), 2);
 
         // For g=2: 2g-1 = 3
         assert_eq!(km.riemann_roch_dimension(5), 4); // 5 + 1 - 2 = 4
@@ -554,21 +554,21 @@ mod tests {
 
     #[test]
     fn test_add_divisors() {
-        let km = KhuriMakdisi_base::<Rational>::new("C".to_string(), 3);
+        let km = KhuriMakdisiBase::<Rational>::new("C".to_string(), 3);
         let sum = km.add_divisors("D1", "D2");
         assert!(sum.contains("KM"));
     }
 
     #[test]
     fn test_reduce() {
-        let km = KhuriMakdisi_base::<Rational>::new("C".to_string(), 3);
+        let km = KhuriMakdisiBase::<Rational>::new("C".to_string(), 3);
         let reduced = km.reduce("D");
         assert!(reduced.contains("reduce"));
     }
 
     #[test]
     fn test_intersect_spaces() {
-        let km = KhuriMakdisi_base::<Rational>::new("C".to_string(), 3);
+        let km = KhuriMakdisiBase::<Rational>::new("C".to_string(), 3);
         let b1 = vec!["f1".to_string(), "f2".to_string()];
         let b2 = vec!["g1".to_string(), "g2".to_string()];
         let intersection = km.intersect_spaces(&b1, &b2);
@@ -577,7 +577,7 @@ mod tests {
 
     #[test]
     fn test_sum_spaces() {
-        let km = KhuriMakdisi_base::<Rational>::new("C".to_string(), 3);
+        let km = KhuriMakdisiBase::<Rational>::new("C".to_string(), 3);
         let b1 = vec!["f1".to_string()];
         let b2 = vec!["g1".to_string()];
         let sum = km.sum_spaces(&b1, &b2);
@@ -586,7 +586,7 @@ mod tests {
 
     #[test]
     fn test_extract_divisor() {
-        let km = KhuriMakdisi_base::<Rational>::new("C".to_string(), 3);
+        let km = KhuriMakdisiBase::<Rational>::new("C".to_string(), 3);
         let basis = vec!["f1".to_string(), "f2".to_string()];
         let divisor = km.extract_divisor(&basis);
         assert!(!divisor.is_empty());
@@ -594,14 +594,14 @@ mod tests {
 
     #[test]
     fn test_complexity_estimate() {
-        let km = KhuriMakdisi_base::<Rational>::new("C".to_string(), 3);
+        let km = KhuriMakdisiBase::<Rational>::new("C".to_string(), 3);
         let complexity = km.complexity_estimate();
         assert_eq!(complexity, 27); // 3^3
     }
 
     #[test]
     fn test_small_creation() {
-        let km = KhuriMakdisi_small::<Rational>::new("C".to_string(), 3);
+        let km = KhuriMakdisiSmall::<Rational>::new("C".to_string(), 3);
         assert_eq!(km.genus(), 3);
         assert!(km.is_small_genus());
     }
@@ -609,40 +609,40 @@ mod tests {
     #[test]
     #[should_panic(expected = "Use medium or large variant for genus > 10")]
     fn test_small_invalid_genus() {
-        let _km = KhuriMakdisi_small::<Rational>::new("C".to_string(), 15);
+        let _km = KhuriMakdisiSmall::<Rational>::new("C".to_string(), 15);
     }
 
     #[test]
     fn test_small_add() {
-        let km = KhuriMakdisi_small::<Rational>::new("C".to_string(), 3);
+        let km = KhuriMakdisiSmall::<Rational>::new("C".to_string(), 3);
         let sum = km.add("D1", "D2");
         assert!(sum.contains("add_small"));
     }
 
     #[test]
     fn test_small_double() {
-        let km = KhuriMakdisi_small::<Rational>::new("C".to_string(), 3);
+        let km = KhuriMakdisiSmall::<Rational>::new("C".to_string(), 3);
         let doubled = km.double("D");
         assert!(doubled.contains("D"));
     }
 
     #[test]
     fn test_small_scalar_mul() {
-        let km = KhuriMakdisi_small::<Rational>::new("C".to_string(), 3);
+        let km = KhuriMakdisiSmall::<Rational>::new("C".to_string(), 3);
         let mult = km.scalar_mul("D", 5);
         assert!(mult.contains("[5]"));
     }
 
     #[test]
     fn test_small_operation_count() {
-        let km = KhuriMakdisi_small::<Rational>::new("C".to_string(), 5);
+        let km = KhuriMakdisiSmall::<Rational>::new("C".to_string(), 5);
         let count = km.operation_count();
         assert_eq!(count, 125); // 5^3
     }
 
     #[test]
     fn test_medium_creation() {
-        let km = KhuriMakdisi_medium::<Rational>::new("C".to_string(), 20);
+        let km = KhuriMakdisiMedium::<Rational>::new("C".to_string(), 20);
         assert_eq!(km.genus(), 20);
         assert!(km.is_medium_genus());
         assert!(km.uses_fft());
@@ -650,32 +650,32 @@ mod tests {
 
     #[test]
     fn test_medium_without_fft() {
-        let km = KhuriMakdisi_medium::<Rational>::without_fft("C".to_string(), 20);
+        let km = KhuriMakdisiMedium::<Rational>::without_fft("C".to_string(), 20);
         assert!(!km.uses_fft());
     }
 
     #[test]
     #[should_panic(expected = "Genus out of range for medium variant")]
     fn test_medium_too_small() {
-        let _km = KhuriMakdisi_medium::<Rational>::new("C".to_string(), 5);
+        let _km = KhuriMakdisiMedium::<Rational>::new("C".to_string(), 5);
     }
 
     #[test]
     #[should_panic(expected = "Genus out of range for medium variant")]
     fn test_medium_too_large() {
-        let _km = KhuriMakdisi_medium::<Rational>::new("C".to_string(), 150);
+        let _km = KhuriMakdisiMedium::<Rational>::new("C".to_string(), 150);
     }
 
     #[test]
     fn test_medium_add() {
-        let km = KhuriMakdisi_medium::<Rational>::new("C".to_string(), 20);
+        let km = KhuriMakdisiMedium::<Rational>::new("C".to_string(), 20);
         let sum = km.add("D1", "D2");
         assert!(sum.contains("add_medium_fft"));
     }
 
     #[test]
     fn test_medium_add_no_fft() {
-        let km = KhuriMakdisi_medium::<Rational>::without_fft("C".to_string(), 20);
+        let km = KhuriMakdisiMedium::<Rational>::without_fft("C".to_string(), 20);
         let sum = km.add("D1", "D2");
         assert!(sum.contains("add_medium"));
         assert!(!sum.contains("fft"));
@@ -683,7 +683,7 @@ mod tests {
 
     #[test]
     fn test_medium_operation_count() {
-        let km = KhuriMakdisi_medium::<Rational>::new("C".to_string(), 20);
+        let km = KhuriMakdisiMedium::<Rational>::new("C".to_string(), 20);
         let count = km.operation_count();
         // With FFT: O(g² log g) = 20² * log₂(20) ≈ 400 * 4.32 ≈ 1728
         assert!(count > 1000);
@@ -692,7 +692,7 @@ mod tests {
 
     #[test]
     fn test_large_creation() {
-        let km = KhuriMakdisi_large::<Rational>::new("C".to_string(), 150);
+        let km = KhuriMakdisiLarge::<Rational>::new("C".to_string(), 150);
         assert_eq!(km.genus(), 150);
         assert!(km.is_large_genus());
         assert_eq!(km.omega(), 2.373);
@@ -700,25 +700,25 @@ mod tests {
 
     #[test]
     fn test_large_with_omega() {
-        let km = KhuriMakdisi_large::<Rational>::with_omega("C".to_string(), 150, 2.5);
+        let km = KhuriMakdisiLarge::<Rational>::with_omega("C".to_string(), 150, 2.5);
         assert_eq!(km.omega(), 2.5);
     }
 
     #[test]
     #[should_panic(expected = "Use small or medium variant for genus ≤ 100")]
     fn test_large_too_small() {
-        let _km = KhuriMakdisi_large::<Rational>::new("C".to_string(), 50);
+        let _km = KhuriMakdisiLarge::<Rational>::new("C".to_string(), 50);
     }
 
     #[test]
     #[should_panic(expected = "Invalid omega value")]
     fn test_large_invalid_omega() {
-        let _km = KhuriMakdisi_large::<Rational>::with_omega("C".to_string(), 150, 1.5);
+        let _km = KhuriMakdisiLarge::<Rational>::with_omega("C".to_string(), 150, 1.5);
     }
 
     #[test]
     fn test_large_add() {
-        let km = KhuriMakdisi_large::<Rational>::new("C".to_string(), 150);
+        let km = KhuriMakdisiLarge::<Rational>::new("C".to_string(), 150);
         let sum = km.add("D1", "D2");
         assert!(sum.contains("add_large"));
         assert!(sum.contains("2.373"));
@@ -726,7 +726,7 @@ mod tests {
 
     #[test]
     fn test_large_operation_count() {
-        let km = KhuriMakdisi_large::<Rational>::new("C".to_string(), 150);
+        let km = KhuriMakdisiLarge::<Rational>::new("C".to_string(), 150);
         let count = km.operation_count();
         // O(g^2.373) ≈ 150^2.373
         assert!(count > 100000);
@@ -734,7 +734,7 @@ mod tests {
 
     #[test]
     fn test_large_complexity_bound() {
-        let km = KhuriMakdisi_large::<Rational>::new("C".to_string(), 150);
+        let km = KhuriMakdisiLarge::<Rational>::new("C".to_string(), 150);
         let bound = km.complexity_bound();
         assert!(bound.contains("O(g^"));
         assert!(bound.contains("2.373"));
@@ -743,15 +743,15 @@ mod tests {
     #[test]
     fn test_algorithm_selection() {
         // Small genus: use small variant
-        let km_small = KhuriMakdisi_small::<Rational>::new("C".to_string(), 5);
+        let km_small = KhuriMakdisiSmall::<Rational>::new("C".to_string(), 5);
         assert_eq!(km_small.genus(), 5);
 
         // Medium genus: use medium variant
-        let km_medium = KhuriMakdisi_medium::<Rational>::new("C".to_string(), 50);
+        let km_medium = KhuriMakdisiMedium::<Rational>::new("C".to_string(), 50);
         assert_eq!(km_medium.genus(), 50);
 
         // Large genus: use large variant
-        let km_large = KhuriMakdisi_large::<Rational>::new("C".to_string(), 200);
+        let km_large = KhuriMakdisiLarge::<Rational>::new("C".to_string(), 200);
         assert_eq!(km_large.genus(), 200);
     }
 }

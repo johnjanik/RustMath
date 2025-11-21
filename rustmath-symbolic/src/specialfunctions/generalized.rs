@@ -29,6 +29,7 @@
 //! assert_eq!(kronecker_delta(&Expr::from(1), &Expr::from(2)), Expr::from(0));
 //! ```
 
+use std::sync::Arc;
 use crate::expression::Expr;
 use rustmath_rationals::Rational;
 

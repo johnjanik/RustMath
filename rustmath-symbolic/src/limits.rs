@@ -3,6 +3,7 @@
 //! This module implements limit computation for symbolic expressions.
 //! Includes both two-sided limits and one-sided limits (left/right).
 
+use std::sync::Arc;
 use crate::expression::{BinaryOp, Expr, UnaryOp};
 use crate::symbol::Symbol;
 

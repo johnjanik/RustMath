@@ -1,5 +1,6 @@
 //! Expression expansion operations
 
+use std::sync::Arc;
 use crate::expression::{BinaryOp, Expr, UnaryOp};
 
 impl Expr {

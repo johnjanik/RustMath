@@ -81,7 +81,6 @@ pub mod matrix {
     /// use rustmath_groups::groups_catalog::matrix;
     ///
     /// let sl2 = matrix::SL(2);
-    /// ```
     // TODO: These functions need to be generic over the field type F
     // pub fn SL<F: Field>(n: usize) -> crate::matrix_group::SLn<F> {
     //     crate::matrix_group::SLn::new(n)

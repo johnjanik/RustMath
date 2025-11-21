@@ -159,8 +159,8 @@ pub use valuation_ring::FunctionFieldValuationRing;
 pub use order_basis::{FunctionFieldOrder_basis, FunctionFieldOrderInfinite_basis};
 
 pub use order_polymod::{
-    FunctionFieldMaximalOrder_polymod, FunctionFieldMaximalOrder_global,
-    FunctionFieldMaximalOrderInfinite_polymod,
+    FunctionFieldMaximalOrderPolymod, FunctionFieldMaximalOrderGlobal,
+    FunctionFieldMaximalOrderInfinitePolymod,
 };
 
 pub use order_rational::{
@@ -168,31 +168,31 @@ pub use order_rational::{
 };
 
 pub use jacobian_base::{
-    JacobianPoint_base, JacobianGroup_base, Jacobian_base,
-    JacobianPoint_finite_field_base, JacobianGroup_finite_field_base,
+    JacobianPointBase, JacobianGroupBase, JacobianBase,
+    JacobianPointFiniteFieldBase, JacobianGroupFiniteFieldBase,
     JacobianGroupFunctor,
 };
 
 pub use jacobian_hess::{
     Jacobian as JacobianHess, JacobianPoint as JacobianPointHess,
     JacobianGroup as JacobianGroupHess, JacobianGroupEmbedding as JacobianGroupEmbeddingHess,
-    Jacobian_finite_field as JacobianHess_finite_field,
-    JacobianPoint_finite_field as JacobianPointHess_finite_field,
-    JacobianGroup_finite_field as JacobianGroupHess_finite_field,
-    JacobianGroupEmbedding_finite_field as JacobianGroupEmbeddingHess_finite_field,
+    JacobianFiniteField as JacobianHessFiniteField,
+    JacobianPointFiniteField as JacobianPointHessFiniteField,
+    JacobianGroupFiniteField as JacobianGroupHessFiniteField,
+    JacobianGroupEmbeddingFiniteField as JacobianGroupEmbeddingHessFiniteField,
 };
 
 pub use jacobian_khuri_makdisi::{
     Jacobian as JacobianKM, JacobianPoint as JacobianPointKM,
     JacobianGroup as JacobianGroupKM, JacobianGroupEmbedding as JacobianGroupEmbeddingKM,
-    Jacobian_finite_field as JacobianKM_finite_field,
-    JacobianPoint_finite_field as JacobianPointKM_finite_field,
-    JacobianGroup_finite_field as JacobianGroupKM_finite_field,
-    JacobianGroupEmbedding_finite_field as JacobianGroupEmbeddingKM_finite_field,
+    JacobianFiniteField as JacobianKMFiniteField,
+    JacobianPointFiniteField as JacobianPointKMFiniteField,
+    JacobianGroupFiniteField as JacobianGroupKMFiniteField,
+    JacobianGroupEmbeddingFiniteField as JacobianGroupEmbeddingKMFiniteField,
 };
 
 pub use khuri_makdisi::{
-    KhuriMakdisi_base, KhuriMakdisi_small, KhuriMakdisi_medium, KhuriMakdisi_large,
+    KhuriMakdisiBase, KhuriMakdisiSmall, KhuriMakdisiMedium, KhuriMakdisiLarge,
 };
 
 pub use jacobian_hyperelliptic::{
@@ -224,8 +224,8 @@ pub use hermite_form_polynomial::{
 };
 
 pub use ideal_polymod::{
-    FunctionFieldIdeal_polymod, FunctionFieldIdealInfinite_polymod,
-    FunctionFieldIdeal_global,
+    FunctionFieldIdealPolymod, FunctionFieldIdealInfinitePolymod,
+    FunctionFieldIdealGlobal,
 };
 
 pub use ideal_rational::{
@@ -242,7 +242,7 @@ pub use maps::{
 };
 
 pub use order::{
-    FunctionFieldOrder_base, FunctionFieldOrder, FunctionFieldOrderInfinite,
+    FunctionFieldOrderBase, FunctionFieldOrder, FunctionFieldOrderInfinite,
     FunctionFieldMaximalOrder, FunctionFieldMaximalOrderInfinite,
 };
 
