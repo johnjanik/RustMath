@@ -57,6 +57,9 @@ pub struct FunctionFieldPlacePolymod<F: Field> {
     field_marker: PhantomData<F>,
 }
 
+/// Type alias for snake_case compatibility
+pub type FunctionFieldPlace_polymod<F> = FunctionFieldPlacePolymod<F>;
+
 impl<F: Field> FunctionFieldPlace_polymod<F> {
     /// Create a new place for polynomial extension
     ///

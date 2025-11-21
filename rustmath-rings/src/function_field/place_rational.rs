@@ -65,6 +65,9 @@ pub struct FunctionFieldPlaceRational<F: Field> {
     field_marker: PhantomData<F>,
 }
 
+/// Type alias for snake_case compatibility
+pub type FunctionFieldPlace_rational<F> = FunctionFieldPlaceRational<F>;
+
 impl<F: Field> FunctionFieldPlace_rational<F> {
     /// Create a new finite place for rational function field
     ///

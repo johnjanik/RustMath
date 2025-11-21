@@ -168,6 +168,9 @@ pub struct RationalFunctionFieldCharZero<F: Field> {
     inner: RationalFunctionField<F>,
 }
 
+/// Type alias for snake_case compatibility
+pub type RationalFunctionField_char_zero<F> = RationalFunctionFieldCharZero<F>;
+
 impl<F: Field> RationalFunctionField_char_zero<F> {
     /// Create a new rational function field in characteristic 0
     pub fn new(constant_field: String, variable: String) -> Self {
@@ -234,6 +237,9 @@ pub struct RationalFunctionFieldGlobal<F: Field> {
     /// Size of the constant field
     constant_field_size: usize,
 }
+
+/// Type alias for snake_case compatibility
+pub type RationalFunctionField_global<F> = RationalFunctionFieldGlobal<F>;
 
 impl<F: Field> RationalFunctionField_global<F> {
     /// Create a new global rational function field

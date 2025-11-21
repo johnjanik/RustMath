@@ -142,6 +142,9 @@ pub struct FunctionFieldMorphismPolymod<F: Field> {
     generator_image: String,
 }
 
+/// Type alias for snake_case compatibility
+pub type FunctionFieldMorphism_polymod<F> = FunctionFieldMorphismPolymod<F>;
+
 impl<F: Field> FunctionFieldMorphism_polymod<F> {
     /// Create a new polymod morphism
     pub fn new(source: String, target: String, generator_image: String) -> Self {
@@ -183,6 +186,9 @@ pub struct FunctionFieldMorphismRational<F: Field> {
     /// Image of the variable
     variable_image: String,
 }
+
+/// Type alias for snake_case compatibility
+pub type FunctionFieldMorphism_rational<F> = FunctionFieldMorphismRational<F>;
 
 impl<F: Field> FunctionFieldMorphism_rational<F> {
     /// Create a new rational function field morphism

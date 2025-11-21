@@ -127,6 +127,9 @@ pub struct FunctionFieldValuationBase<F: Field> {
     field_marker: PhantomData<F>,
 }
 
+/// Type alias for snake_case compatibility
+pub type FunctionFieldValuation_base<F> = FunctionFieldValuationBase<F>;
+
 impl<F: Field> FunctionFieldValuation_base<F> {
     /// Create a new function field valuation base
     ///
@@ -187,6 +190,9 @@ pub struct ClassicalFunctionFieldValuationBase<F: Field> {
     /// Degree of the place
     place_degree: usize,
 }
+
+/// Type alias for snake_case compatibility
+pub type ClassicalFunctionFieldValuation_base<F> = ClassicalFunctionFieldValuationBase<F>;
 
 impl<F: Field> ClassicalFunctionFieldValuation_base<F> {
     /// Create a new classical valuation
@@ -284,6 +290,9 @@ pub struct RationalFunctionFieldValuationBase<F: Field> {
     /// Prime polynomial (None for infinite valuation)
     prime_polynomial: Option<String>,
 }
+
+/// Type alias for snake_case compatibility
+pub type RationalFunctionFieldValuation_base<F> = RationalFunctionFieldValuationBase<F>;
 
 impl<F: Field> RationalFunctionFieldValuation_base<F> {
     /// Create a finite valuation on k(x)

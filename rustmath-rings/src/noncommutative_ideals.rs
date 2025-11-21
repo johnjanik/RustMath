@@ -63,6 +63,9 @@ pub struct IdealMonoidNc {
     prime_ideals: HashSet<String>,
 }
 
+/// Type alias for snake_case compatibility
+pub type IdealMonoid_nc = IdealMonoidNc;
+
 /// Type of ideal in a noncommutative ring
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum IdealType {
@@ -188,6 +191,9 @@ pub struct IdealNc {
     /// Whether this is a prime ideal
     is_prime: bool,
 }
+
+/// Type alias for snake_case compatibility
+pub type Ideal_nc = IdealNc;
 
 impl Ideal_nc {
     /// Create a new noncommutative ideal

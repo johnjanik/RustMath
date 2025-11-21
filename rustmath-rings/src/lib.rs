@@ -103,6 +103,9 @@ pub use rustmath_complex::Complex;
 // Re-export core traits
 pub use rustmath_core::{Ring, CommutativeRing, Field, EuclideanDomain, IntegralDomain};
 
+// Re-export noncommutative ideal types
+pub use noncommutative_ideals::{Ideal_nc, IdealMonoid_nc, IdealType};
+
 #[cfg(test)]
 mod tests {
     use super::*;
