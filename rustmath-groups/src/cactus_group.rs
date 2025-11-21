@@ -340,6 +340,37 @@ impl PartialEq for CactusGroupElement {
 
 impl Eq for CactusGroupElement {}
 
+use std::hash::{Hash, Hasher};
+
+impl Hash for CactusGroupElement {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        // Hash only the word, as elements are compared within the same group context
+        self.word.hash(state);
+    }
+}
+
+use crate::group_traits::GroupElement;
+
+impl GroupElement for CactusGroupElement {
+    fn identity() -> Self {
+        // Create a minimal default group (1 fruit)
+        // Note: Users should prefer calling group.identity() for the specific group
+        let group = CactusGroup::new(1);
+        CactusGroupElement {
+            parent: group,
+            word: Vec::new(),
+        }
+    }
+
+    fn inverse(&self) -> Self {
+        Self::inverse(self)
+    }
+
+    fn op(&self, other: &Self) -> Self {
+        self.multiply(other)
+    }
+}
+
 /// The pure cactus group PJ_n
 ///
 /// The pure cactus group is the kernel of the natural homomorphism from J_n to S_n.
