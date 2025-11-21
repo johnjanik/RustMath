@@ -56,6 +56,48 @@ impl<R: Ring> UnivariatePolynomial<R> {
         self.coeffs.get(degree).unwrap_or(&self.coeffs[0])
     }
 
+    /// Get the leading coefficient (highest degree non-zero coefficient)
+    pub fn leading_coefficient(&self) -> Option<&R> {
+        self.leading_coeff()
+    }
+
+    /// Get the leading coefficient (internal method)
+    fn leading_coeff(&self) -> Option<&R> {
+        if self.is_zero() {
+            None
+        } else {
+            self.coeffs.last()
+        }
+    }
+
+    /// Create the zero polynomial
+    pub fn zero() -> Self {
+        UnivariatePolynomial::new(vec![R::zero()])
+    }
+
+    /// Create the one polynomial
+    pub fn one() -> Self {
+        UnivariatePolynomial::new(vec![R::one()])
+    }
+
+    /// Create a polynomial from a usize constant
+    pub fn from_usize(n: usize) -> Self
+    where
+        R: rustmath_core::NumericConversion,
+    {
+        UnivariatePolynomial::constant(R::from_u64(n as u64))
+    }
+
+    /// Evaluate the polynomial at a point (alias for eval)
+    pub fn evaluate(&self, point: &R) -> R {
+        self.eval(point)
+    }
+
+    /// Negate the polynomial (returns the additive inverse)
+    pub fn negate(self) -> Self {
+        -self
+    }
+
     /// Check if this is the zero polynomial
     pub fn is_zero(&self) -> bool {
         self.coeffs.len() == 1 && self.coeffs[0].is_zero()

@@ -144,7 +144,7 @@ pub fn expand_sum(expression: &Expr, v: &str, a: i64, b: i64) -> Expr {
 fn contains_variable(expr: &Expr, var: &str) -> bool {
     match expr {
         Expr::Symbol(s) => s.name() == var,
-        Expr::Integer(_) | Expr::Rational(_) => false,
+        Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => false,
         Expr::Binary(_, left, right) => {
             contains_variable(left, var) || contains_variable(right, var)
         }
@@ -162,7 +162,7 @@ fn substitute_value(expr: &Expr, var: &str, value: i64) -> Expr {
 fn substitute_expr(expr: &Expr, var: &str, replacement: &Expr) -> Expr {
     match expr {
         Expr::Symbol(s) if s.name() == var => replacement.clone(),
-        Expr::Symbol(_) | Expr::Integer(_) | Expr::Rational(_) => expr.clone(),
+        Expr::Symbol(_) | Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => expr.clone(),
         Expr::Binary(op, left, right) => {
             let new_left = substitute_expr(left, var, replacement);
             let new_right = substitute_expr(right, var, replacement);
@@ -172,6 +172,7 @@ fn substitute_expr(expr: &Expr, var: &str, replacement: &Expr) -> Expr {
                 BinaryOp::Mul => new_left * new_right,
                 BinaryOp::Div => new_left / new_right,
                 BinaryOp::Pow => new_left.pow(new_right),
+                BinaryOp::Mod => Expr::Binary(BinaryOp::Mod, new_left.into(), new_right.into()),
             }
         }
         Expr::Unary(op, inner) => {

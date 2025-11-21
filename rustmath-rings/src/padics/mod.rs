@@ -30,7 +30,7 @@ pub mod pow_computer;
 pub mod pow_computer_ext;
 
 pub use pow_computer::PowComputer;
-pub use pow_computer_ext::{ExtensionType, PowComputerExt};
+pub use pow_computer_ext::PowComputerExt;
 
 // p-adic numbers and rings with capped relative precision
 

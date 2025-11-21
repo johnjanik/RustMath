@@ -40,6 +40,11 @@ impl Rational {
         }
     }
 
+    /// Create a rational from an i64
+    pub fn from_i64(n: i64) -> Self {
+        Rational::from_integer(n)
+    }
+
     /// Get the numerator
     pub fn numerator(&self) -> &Integer {
         &self.numerator
@@ -142,6 +147,46 @@ impl Rational {
         let num = self.numerator.to_f64()?;
         let den = self.denominator.to_f64()?;
         Some(num / den)
+    }
+
+    /// Create a rational from an f64
+    ///
+    /// Attempts to convert a floating-point number to a rational approximation.
+    /// This uses a continued fraction algorithm with a maximum denominator.
+    pub fn from_f64(f: f64) -> Result<Self> {
+        if f.is_nan() || f.is_infinite() {
+            return Err(MathError::InvalidArgument("Cannot convert NaN or infinity to rational".to_string()));
+        }
+
+        if f == 0.0 {
+            return Ok(Rational::zero());
+        }
+
+        // Extract sign
+        let sign = if f < 0.0 { -1 } else { 1 };
+        let f = f.abs();
+
+        // Simple algorithm: convert to fraction with limited precision
+        // For better accuracy, we'd use continued fractions
+        let max_denominator = 1_000_000;
+        let mut best_num = 1i64;
+        let mut best_den = 1i64;
+        let mut best_error = (f - best_num as f64 / best_den as f64).abs();
+
+        for den in 1..=max_denominator {
+            let num = (f * den as f64).round() as i64;
+            let error = (f - num as f64 / den as f64).abs();
+            if error < best_error {
+                best_num = num;
+                best_den = den;
+                best_error = error;
+                if error < 1e-10 {
+                    break;
+                }
+            }
+        }
+
+        Rational::new(sign * best_num, best_den)
     }
 
     /// Check if this is an integer

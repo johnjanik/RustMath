@@ -74,7 +74,7 @@ impl<F: Field> PuiseuxSeries<F> {
     /// );
     /// ```
     pub fn new(
-        mut coefficients: Vec<F>,
+        coefficients: Vec<F>,
         valuation: isize,
         ramification: usize,
         precision: usize,
@@ -84,7 +84,7 @@ impl<F: Field> PuiseuxSeries<F> {
         }
 
         // Normalize: reduce ramification if possible
-        let (valuation, ramification, coefficients) =
+        let (valuation, ramification, mut coefficients) =
             Self::normalize(valuation, ramification, coefficients);
 
         // Truncate to precision
@@ -129,11 +129,11 @@ impl<F: Field> PuiseuxSeries<F> {
     }
 
     /// Get the coefficient at a given position
-    pub fn coeff(&self, index: usize) -> &F {
+    pub fn coeff(&self, index: usize) -> F {
         if index < self.coefficients.len() {
-            &self.coefficients[index]
+            self.coefficients[index].clone()
         } else {
-            &F::zero()
+            F::zero()
         }
     }
 
@@ -158,11 +158,11 @@ impl<F: Field> PuiseuxSeries<F> {
     }
 
     /// Get the leading coefficient
-    pub fn leading_coefficient(&self) -> &F {
+    pub fn leading_coefficient(&self) -> F {
         if self.coefficients.is_empty() {
-            &F::zero()
+            F::zero()
         } else {
-            &self.coefficients[0]
+            self.coefficients[0].clone()
         }
     }
 

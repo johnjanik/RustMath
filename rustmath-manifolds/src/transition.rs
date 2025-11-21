@@ -311,6 +311,7 @@ fn evaluate_expr(expr: &Expr, coord_values: &HashMap<Symbol, f64>) -> Result<f64
         Expr::Rational(r) => Ok(r.to_f64().ok_or_else(|| {
             ManifoldError::ComputationError("Rational too large to convert to f64".to_string())
         })?),
+        Expr::Real(x) => Ok(*x),
         Expr::Symbol(s) => coord_values.get(s).copied().ok_or_else(|| {
             ManifoldError::ComputationError(format!("Symbol {} not found in coordinate values", s.name()))
         }),
@@ -331,6 +332,7 @@ fn evaluate_expr(expr: &Expr, coord_values: &HashMap<Symbol, f64>) -> Result<f64
                     }
                 }
                 BinaryOp::Pow => Ok(left_val.powf(right_val)),
+                BinaryOp::Mod => Ok(left_val % right_val),
             }
         }
         Expr::Unary(op, inner) => {

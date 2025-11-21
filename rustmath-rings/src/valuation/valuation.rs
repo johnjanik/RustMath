@@ -87,7 +87,7 @@ impl fmt::Display for ValuationValue {
 /// Discrete pseudo-valuation trait
 ///
 /// A pseudo-valuation may have infinite value on non-zero elements.
-pub trait DiscretePseudoValuation<R: Ring> {
+pub trait DiscretePseudoValuation<R: Ring>: std::fmt::Debug + Clone {
     /// Evaluate the valuation on an element
     fn value(&self, element: &R) -> ValuationValue;
 

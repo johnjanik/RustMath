@@ -855,6 +855,50 @@ impl Integer {
         result
     }
 
+    /// Compute the modular inverse using the extended Euclidean algorithm
+    ///
+    /// Returns Some(x) where (self * x) ≡ 1 (mod modulus), or None if no inverse exists
+    pub fn mod_inverse(&self, modulus: &Self) -> Option<Self> {
+        let (gcd, x, _) = self.extended_gcd(modulus);
+
+        if !gcd.is_one() {
+            // No inverse exists if gcd(self, modulus) != 1
+            return None;
+        }
+
+        // Ensure the result is positive
+        let result = x % modulus.clone();
+        if result.signum() < 0 {
+            Some(result + modulus.clone())
+        } else {
+            Some(result)
+        }
+    }
+
+    /// Compute modulo operation (always returns non-negative result)
+    ///
+    /// Unlike the % operator which can return negative values,
+    /// this always returns a value in the range [0, modulus)
+    pub fn modulo(&self, modulus: &Self) -> Self {
+        let result = self.clone() % modulus.clone();
+        if result.signum() < 0 {
+            result + modulus.abs()
+        } else {
+            result
+        }
+    }
+
+    /// Alias for mod_pow for compatibility
+    pub fn modpow(&self, exp: &Self, modulus: &Self) -> Result<Self> {
+        self.mod_pow(exp, modulus)
+    }
+
+    /// Check if this number is prime using Miller-Rabin primality test
+    pub fn is_prime(&self) -> bool {
+        use crate::prime::is_prime;
+        is_prime(self)
+    }
+
     /// Compute binomial coefficient modulo a prime
     ///
     /// Uses Lucas' theorem for efficiency when p is prime

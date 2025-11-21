@@ -157,7 +157,7 @@ impl FinslerFunction {
                 let deriv2 = deriv1.differentiate(&v_j);
 
                 // Multiply by 1/2
-                let component = deriv2 * Expr::from_rational(1, 2);
+                let component = deriv2 * Expr::from(Rational::new(1, 2).unwrap());
                 components.push(component);
             }
         }
@@ -304,7 +304,7 @@ impl CartanTensor {
                     let deriv3 = deriv2.differentiate(&v_k);
 
                     // Multiply by 1/4
-                    let component = deriv3 * Expr::from_rational(1, 4);
+                    let component = deriv3 * Expr::from(Rational::new(1, 4).unwrap());
                     components.push(component);
                 }
             }

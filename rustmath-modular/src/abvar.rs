@@ -3,7 +3,7 @@
 //! This module implements modular abelian varieties, which are abelian varieties
 //! arising from modular forms.
 
-use crate::arithgroup::{CongruenceSubgroup, Gamma0, Gamma1};
+use crate::arithgroup::{ArithmeticSubgroup, CongruenceSubgroup, Gamma0, Gamma1};
 use crate::hecke::{HeckeOperator, Newform};
 use crate::modsym::ModularSymbolSpace;
 use num_bigint::BigInt;

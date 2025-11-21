@@ -22,7 +22,7 @@ use std::hash::Hash;
 /// This trait is object-safe to allow usage as `Arc<dyn ManifoldSubsetTrait>`.
 /// If you need Parent or UniqueRepresentation functionality, implement those
 /// traits separately on your concrete types.
-pub trait ManifoldSubsetTrait {
+pub trait ManifoldSubsetTrait: std::fmt::Debug + 'static {
     /// Dimension of the ambient space
     fn dimension(&self) -> usize;
 
@@ -60,16 +60,16 @@ pub trait DifferentiableManifoldTrait: TopologicalManifoldTrait {
     fn verify_smoothness(&self) -> Result<()>;
 
     /// Get the scalar field algebra C^∞(M)
-    fn scalar_field_algebra(&self) -> Arc<dyn ScalarFieldAlgebraTrait>;
+    fn scalar_field_algebra(&self) -> Arc<dyn ScalarFieldAlgebraTrait + 'static>;
 
     /// Get the vector field module 𝔛(M)
-    fn vector_field_module(&self) -> Arc<dyn VectorFieldModuleTrait>;
+    fn vector_field_module(&self) -> Arc<dyn VectorFieldModuleTrait + 'static>;
 }
 
 /// Parallelizable manifold (has a global frame)
 pub trait ParallelizableManifoldTrait: DifferentiableManifoldTrait {
     /// Get the vector field free module (parallelizable case)
-    fn vector_field_free_module(&self) -> Arc<dyn VectorFieldFreeModuleTrait>;
+    fn vector_field_free_module(&self) -> Arc<dyn VectorFieldFreeModuleTrait + 'static>;
 }
 
 // ============================================================================
@@ -79,9 +79,9 @@ pub trait ParallelizableManifoldTrait: DifferentiableManifoldTrait {
 /// Algebra of scalar fields C^∞(M)
 ///
 /// Object-safe trait (Parent removed for trait object compatibility).
-pub trait ScalarFieldAlgebraTrait {
+pub trait ScalarFieldAlgebraTrait: std::fmt::Debug + 'static {
     /// Get the underlying manifold
-    fn manifold(&self) -> Arc<dyn DifferentiableManifoldTrait>;
+    fn manifold(&self) -> Arc<dyn DifferentiableManifoldTrait + 'static>;
 }
 
 /// Differentiable scalar field algebra (specialization)
@@ -96,9 +96,9 @@ pub trait DiffScalarFieldAlgebraTrait: ScalarFieldAlgebraTrait {
 /// Module of vector fields over C^∞(M)
 ///
 /// Object-safe trait (Parent removed for trait object compatibility).
-pub trait VectorFieldModuleTrait {
+pub trait VectorFieldModuleTrait: std::fmt::Debug + 'static {
     /// Get the underlying manifold
-    fn manifold(&self) -> Arc<dyn DifferentiableManifoldTrait>;
+    fn manifold(&self) -> Arc<dyn DifferentiableManifoldTrait + 'static>;
 
     /// Get the rank (contravariant, covariant)
     fn rank(&self) -> (usize, usize);
@@ -113,7 +113,7 @@ pub trait VectorFieldFreeModuleTrait: VectorFieldModuleTrait {
 /// Tensor field module T^(p,q)(M)
 ///
 /// Object-safe trait (Parent removed for trait object compatibility).
-pub trait TensorFieldModuleTrait {
+pub trait TensorFieldModuleTrait: std::fmt::Debug + 'static {
     /// Contravariant rank (p)
     fn contravariant_rank(&self) -> usize;
 
@@ -137,18 +137,18 @@ pub trait TangentSpaceTrait: VectorFieldFreeModuleTrait {
 // ============================================================================
 
 /// A scalar field f: M → ℝ
-pub trait ScalarFieldTrait: Clone {
+pub trait ScalarFieldTrait: Clone + std::fmt::Debug + 'static {
     /// Get the underlying manifold
-    fn manifold(&self) -> Arc<dyn DifferentiableManifoldTrait>;
+    fn manifold(&self) -> Arc<dyn DifferentiableManifoldTrait + 'static>;
 
     /// Get the name of the field
     fn name(&self) -> Option<&str>;
 }
 
 /// A vector field X ∈ 𝔛(M)
-pub trait VectorFieldTrait: Clone {
+pub trait VectorFieldTrait: Clone + std::fmt::Debug + 'static {
     /// Get the underlying manifold
-    fn manifold(&self) -> Arc<dyn DifferentiableManifoldTrait>;
+    fn manifold(&self) -> Arc<dyn DifferentiableManifoldTrait + 'static>;
 
     /// Get the name of the field
     fn name(&self) -> Option<&str>;
@@ -160,7 +160,7 @@ pub trait VectorFieldParalTrait: VectorFieldTrait {
 }
 
 /// Tensor field of type (p, q)
-pub trait TensorFieldTrait: Clone {
+pub trait TensorFieldTrait: Clone + std::fmt::Debug + 'static {
     /// Contravariant rank
     fn contravariant_rank(&self) -> usize;
 
@@ -169,7 +169,7 @@ pub trait TensorFieldTrait: Clone {
 }
 
 /// Tangent vector at a point
-pub trait TangentVectorTrait: Clone {
+pub trait TangentVectorTrait: Clone + std::fmt::Debug + 'static {
     /// Get the base point
     fn base_point(&self) -> &ManifoldPoint;
 }

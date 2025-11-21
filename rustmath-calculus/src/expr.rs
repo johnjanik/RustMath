@@ -134,7 +134,7 @@ pub fn is_constant(expr: &Expr) -> bool {
 /// ```
 pub fn is_polynomial(expr: &Expr, var: &str) -> bool {
     match expr {
-        Expr::Integer(_) | Expr::Rational(_) => true,
+        Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => true,
         Expr::Symbol(_s) => true, // A variable is a polynomial of degree 1
         Expr::Binary(op, left, right) => {
             use rustmath_symbolic::BinaryOp;
@@ -158,6 +158,10 @@ pub fn is_polynomial(expr: &Expr, var: &str) -> bool {
                 BinaryOp::Div => {
                     // f/g is polynomial only if g is constant with respect to var
                     is_polynomial(left, var) && !variables(right).contains(var)
+                }
+                BinaryOp::Mod => {
+                    // Modulo is not a polynomial operation
+                    false
                 }
             }
         }
@@ -199,7 +203,7 @@ pub fn polynomial_degree(expr: &Expr, var: &str) -> Option<i64> {
     }
 
     match expr {
-        Expr::Integer(_) | Expr::Rational(_) => Some(0),
+        Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => Some(0),
         Expr::Symbol(s) => {
             if s.name() == var {
                 Some(1)
@@ -240,6 +244,10 @@ pub fn polynomial_degree(expr: &Expr, var: &str) -> Option<i64> {
                     } else {
                         polynomial_degree(left, var)
                     }
+                }
+                BinaryOp::Mod => {
+                    // Modulo is not a polynomial operation
+                    None
                 }
             }
         }

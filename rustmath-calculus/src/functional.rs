@@ -213,6 +213,10 @@ fn simplify_binary(op: BinaryOp, left: &Expr, right: &Expr) -> Expr {
         BinaryOp::Mul => simplify_mul(left, right),
         BinaryOp::Div => simplify_div(left, right),
         BinaryOp::Pow => simplify_pow(left, right),
+        BinaryOp::Mod => {
+            // Keep modulo operation as-is for now
+            Expr::Binary(BinaryOp::Mod, std::sync::Arc::new(left.clone()), std::sync::Arc::new(right.clone()))
+        }
     }
 }
 
