@@ -90,9 +90,9 @@ impl KahlerManifold {
         let kahler_form = Self::compute_kahler_form(&metric, &complex_structure)?;
 
         // Verify Kähler form is closed (dω = 0)
-        let chart = complex_manifold.manifold().default_chart()
+        let chart = complex_manifold.default_chart()
             .ok_or(ManifoldError::NoChart)?;
-        if !kahler_form.is_closed(chart)? {
+        if !kahler_form.is_closed(chart.real_chart())? {
             return Err(ManifoldError::ValidationError(
                 "Kähler form is not closed".to_string()
             ));
@@ -252,9 +252,9 @@ impl HermitianMetric {
     /// Check if this metric is Kähler (i.e., the Kähler form is closed)
     pub fn is_kahler(&self, complex_structure: &AlmostComplexStructure) -> Result<bool> {
         let omega = self.kahler_form(complex_structure)?;
-        let chart = self.manifold.manifold().default_chart()
+        let chart = self.manifold.default_chart()
             .ok_or(ManifoldError::NoChart)?;
-        omega.is_closed(chart)
+        omega.is_closed(chart.real_chart())
     }
 }
 

@@ -46,6 +46,19 @@ pub struct ComplexChart {
     real_chart: Chart,
 }
 
+// Manual Debug implementation since dyn Fn doesn't implement Debug
+impl std::fmt::Debug for ComplexChart {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ComplexChart")
+            .field("name", &self.name)
+            .field("complex_dim", &self.complex_dim)
+            .field("coordinate_names", &self.coordinate_names)
+            .field("coordinate_functions", &format!("<{} functions>", self.coordinate_functions.len()))
+            .field("real_chart", &self.real_chart)
+            .finish()
+    }
+}
+
 impl ComplexChart {
     /// Create a new complex chart
     ///
@@ -75,7 +88,8 @@ impl ComplexChart {
             real_coord_names.push(format!("x{}", i)); // Real part
             real_coord_names.push(format!("y{}", i)); // Imaginary part
         }
-        let real_chart = Chart::new(name, 2 * complex_dim, real_coord_names);
+        let real_chart = Chart::new(name, 2 * complex_dim, real_coord_names)
+            .expect("Failed to create real chart for complex chart");
 
         Self {
             name: name.to_string(),

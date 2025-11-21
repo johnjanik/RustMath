@@ -63,7 +63,8 @@ impl DiracOperator {
         let clifford = CliffordMultiplication::new(dimension);
 
         // Lift the Levi-Civita connection to the spinor bundle
-        let levi_civita = LeviCivitaConnection::from_metric(spin_structure.metric().clone());
+        let levi_civita = LeviCivitaConnection::from_metric(Arc::new(spin_structure.metric().clone()))
+            .expect("Failed to create Levi-Civita connection");
         let connection = SpinorConnection::from_levi_civita(levi_civita);
 
         Self {

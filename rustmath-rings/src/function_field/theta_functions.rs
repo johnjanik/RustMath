@@ -156,20 +156,21 @@ impl PeriodMatrix {
         true
     }
 
-    /// Get imaginary part as a real matrix
-    pub fn imaginary_part(&self) -> Matrix<f64> {
-        let mut result = vec![];
-        for i in 0..self.genus {
-            for j in 0..self.genus {
-                if let Ok(c) = self.omega.get(i, j) {
-                    result.push(c.imag());
-                } else {
-                    result.push(0.0);
-                }
-            }
-        }
-        Matrix::from_vec(self.genus, self.genus, result).unwrap()
-    }
+    // TODO: Fix return type - f64 doesn't implement Ring
+    // /// Get imaginary part as a real matrix
+    // pub fn imaginary_part(&self) -> Matrix<f64> {
+    //     let mut result = vec![];
+    //     for i in 0..self.genus {
+    //         for j in 0..self.genus {
+    //             if let Ok(c) = self.omega.get(i, j) {
+    //                 result.push(c.imag());
+    //             } else {
+    //                 result.push(0.0);
+    //             }
+    //         }
+    //     }
+    //     Matrix::from_vec(self.genus, self.genus, result).unwrap()
+    // }
 }
 
 /// Theta characteristic

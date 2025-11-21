@@ -228,12 +228,13 @@ pub trait RingExt: Ring {
 
 /// Extension methods for commutative rings
 pub trait CommutativeRingExt: CommutativeRing {
-    /// Constructs the fraction field
-    ///
-    /// For an integral domain R, this returns its field of fractions Frac(R).
-    fn fraction_field(&self) -> Result<Box<impl Field>, RingError> {
-        Err::<Box<dyn std::any::Any>, _>(RingError::NotCommutative)
-    }
+    // TODO: Fix - Field trait is not dyn compatible
+    // /// Constructs the fraction field
+    // ///
+    // /// For an integral domain R, this returns its field of fractions Frac(R).
+    // fn fraction_field(&self) -> Result<Box<dyn Field>, RingError> {
+    //     Err::<Box<dyn std::any::Any>, _>(RingError::NotCommutative)
+    // }
 }
 
 #[cfg(test)]
