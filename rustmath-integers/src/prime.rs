@@ -1,7 +1,7 @@
 //! Prime number algorithms
 
 use crate::Integer;
-use rustmath_core::{NumericConversion, Ring};
+use rustmath_core::NumericConversion;
 
 /// Check if a number is prime using trial division (for small numbers)
 pub fn is_prime_trial_division(n: &Integer) -> bool {

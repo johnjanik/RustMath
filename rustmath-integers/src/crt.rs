@@ -1,7 +1,7 @@
 //! Chinese Remainder Theorem implementation
 
 use crate::Integer;
-use rustmath_core::{MathError, Result, Ring};
+use rustmath_core::{MathError, Result};
 
 /// Solve the Chinese Remainder Theorem
 ///

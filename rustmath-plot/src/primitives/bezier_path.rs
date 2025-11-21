@@ -21,7 +21,7 @@
 //! ```
 
 use crate::{
-    BoundingBox, Color, GraphicPrimitive, LineStyle, PlotOptions, Point2D, Renderable,
+    BoundingBox, GraphicPrimitive, PlotOptions, Point2D, Renderable,
     RenderBackend, Result,
 };
 

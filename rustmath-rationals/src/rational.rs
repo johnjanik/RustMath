@@ -405,7 +405,7 @@ impl NumericConversion for Rational {
 
     fn to_i64(&self) -> Option<i64> {
         if self.is_integer() {
-            self.numerator.to_i64()
+            Some(self.numerator.to_i64())
         } else {
             None
         }
