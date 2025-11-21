@@ -166,7 +166,7 @@ impl EtaGroup {
 }
 
 /// Create an eta group for level N
-pub fn EtaGroup_class(N: BigInt) -> EtaGroup {
+pub fn eta_group_class(N: BigInt) -> EtaGroup {
     EtaGroup::new(N)
 }
 
@@ -175,7 +175,7 @@ pub fn EtaGroup_class(N: BigInt) -> EtaGroup {
 /// # Arguments
 /// * `N` - The level
 /// * `powers` - Map from divisors to powers
-pub fn EtaProduct(N: BigInt, powers: HashMap<BigInt, i64>) -> EtaGroupElement {
+pub fn eta_product(N: BigInt, powers: HashMap<BigInt, i64>) -> EtaGroupElement {
     EtaGroupElement::new(N, powers)
 }
 
@@ -257,7 +257,7 @@ impl CuspFamily {
 }
 
 /// Get all cusps for Gamma0(N)
-pub fn AllCusps(N: BigInt) -> Vec<(BigInt, BigInt)> {
+pub fn all_cusps(N: BigInt) -> Vec<(BigInt, BigInt)> {
     // Cusps of Gamma0(N) are represented as a/c where c | N and gcd(a, c) = 1
     let mut cusps = Vec::new();
 

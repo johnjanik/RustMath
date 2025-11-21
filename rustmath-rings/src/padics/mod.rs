@@ -10,8 +10,8 @@
 //! # Re-exports
 //!
 //! For convenience, we re-export the basic p-adic types from rustmath-padics:
-//! - `PadicInteger`: p-adic integers Zp
-//! - `PadicRational`: p-adic rationals Qp
+//! - `PadicInteger`: p-adic integers zp
+//! - `PadicRational`: p-adic rationals qp
 
 pub mod extension;
 
@@ -38,12 +38,12 @@ pub mod capped_relative;
 
 pub use capped_relative::CappedRelativePadicElement;
 
-// p-adic factory functions (Zp, Qp, Zq, Qq)
+// p-adic factory functions (zp, qp, zq, qq)
 
 pub mod factory;
 
 // Re-export commonly used items
 pub use factory::{
-    PadicField, PadicFieldExtension, PadicIntegerExtension, PadicIntegerRing, PrecisionModel, Qp,
-    Qq, Zp, Zq,
+    PadicField, PadicFieldExtension, PadicIntegerExtension, PadicIntegerRing, PrecisionModel, qp,
+    qq, zp, zq,
 };

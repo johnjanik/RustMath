@@ -55,7 +55,7 @@ pub use riemannian_manifolds::{ParametrizedSurface3D, SurfaceGenerators};
 pub use integral_points::{
     rectangular_box_points, simplex_points, parallelotope_points,
     loop_over_parallelotope_points, ParallelotopePointsIter,
-    Inequality_int, Inequality_generic, InequalityCollection,
+    InequalityInt, InequalityGeneric, InequalityCollection,
     ray_matrix_normal_form, print_cache,
 };
 pub use point_collection::{PointCollection, is_point_collection, read_palp_point_collection};

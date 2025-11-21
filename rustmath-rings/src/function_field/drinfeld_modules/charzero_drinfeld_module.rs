@@ -64,7 +64,7 @@ pub trait DrinfeldModule {
 /// - The exponential function Exp_φ converges
 /// - The logarithm function Log_φ is well-defined
 #[derive(Clone, Debug)]
-pub struct DrinfeldModule_charzero<F: Field> {
+pub struct DrinfeldModuleCharzero<F: Field> {
     /// Name of the base field
     base_field: String,
     /// Rank of the Drinfeld module
@@ -179,7 +179,7 @@ impl<F: Field> fmt::Display for DrinfeldModule_charzero<F> {
 /// - φ_T = T + g_1·τ + ... + g_r·τ^r where g_i ∈ K
 /// - The Carlitz module is the simplest example (rank 1)
 #[derive(Clone, Debug)]
-pub struct DrinfeldModule_rational<F: Field> {
+pub struct DrinfeldModuleRational<F: Field> {
     /// The underlying characteristic zero module
     base_module: DrinfeldModule_charzero<F>,
     /// Generator element name (typically "T")

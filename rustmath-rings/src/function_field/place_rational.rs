@@ -54,7 +54,7 @@ use super::place::FunctionFieldPlace;
 ///
 /// The infinite place corresponds to the point at infinity on the projective line.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct FunctionFieldPlace_rational<F: Field> {
+pub struct FunctionFieldPlaceRational<F: Field> {
     /// Base place structure
     base: FunctionFieldPlace<F>,
     /// Prime polynomial (for finite places)

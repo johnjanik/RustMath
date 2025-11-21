@@ -98,7 +98,7 @@ use std::marker::PhantomData;
 /// assert_eq!(point.degree(), 0);
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct JacobianPoint_base<F: Field> {
+pub struct JacobianPointBase<F: Field> {
     /// Jacobian variety name
     jacobian: String,
     /// Divisor representation
@@ -200,7 +200,7 @@ impl<F: Field> JacobianPoint_base<F> {
 /// assert_eq!(jac_group.genus(), 2);
 /// ```
 #[derive(Debug, Clone)]
-pub struct JacobianGroup_base<F: Field> {
+pub struct JacobianGroupBase<F: Field> {
     /// Jacobian variety name
     jacobian: String,
     /// Genus of the curve
@@ -306,7 +306,7 @@ impl<F: Field> JacobianGroup_base<F> {
 /// assert_eq!(jac.dimension(), 2);
 /// ```
 #[derive(Debug, Clone)]
-pub struct Jacobian_base<F: Field> {
+pub struct JacobianBase<F: Field> {
     /// Curve name
     curve: String,
     /// Genus
@@ -397,7 +397,7 @@ impl<F: Field> Jacobian_base<F> {
 /// assert_eq!(point.field_size(), 5);
 /// ```
 #[derive(Debug, Clone)]
-pub struct JacobianPoint_finite_field_base<F: Field> {
+pub struct JacobianPointFiniteFieldBase<F: Field> {
     /// Base point structure
     base: JacobianPoint_base<F>,
     /// Size of finite field
@@ -473,7 +473,7 @@ impl<F: Field> JacobianPoint_finite_field_base<F> {
 /// assert_eq!(jac_group.field_size(), 5);
 /// ```
 #[derive(Debug, Clone)]
-pub struct JacobianGroup_finite_field_base<F: Field> {
+pub struct JacobianGroupFiniteFieldBase<F: Field> {
     /// Base group structure
     base: JacobianGroup_base<F>,
     /// Size of finite field

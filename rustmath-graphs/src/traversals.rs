@@ -28,17 +28,17 @@ use std::collections::HashSet;
 /// # Examples
 ///
 /// ```
-/// use rustmath_graphs::{Graph, traversals::lex_BFS};
+/// use rustmath_graphs::{Graph, traversals::lex_bfs};
 ///
 /// let mut g = Graph::new(4);
 /// g.add_edge(0, 1).unwrap();
 /// g.add_edge(1, 2).unwrap();
 /// g.add_edge(2, 3).unwrap();
 ///
-/// let order = lex_BFS(&g, None);
+/// let order = lex_bfs(&g, None);
 /// assert_eq!(order.len(), 4);
 /// ```
-pub fn lex_BFS(graph: &Graph, start: Option<usize>) -> Vec<usize> {
+pub fn lex_bfs(graph: &Graph, start: Option<usize>) -> Vec<usize> {
     let n = graph.num_vertices();
     let start = start.unwrap_or(0);
 
@@ -127,7 +127,7 @@ pub fn lex_BFS(graph: &Graph, start: Option<usize>) -> Vec<usize> {
 /// # Returns
 ///
 /// A vector containing the vertices in lex-DFS order
-pub fn lex_DFS(graph: &Graph, start: Option<usize>) -> Vec<usize> {
+pub fn lex_dfs(graph: &Graph, start: Option<usize>) -> Vec<usize> {
     let n = graph.num_vertices();
     let start = start.unwrap_or(0);
 
@@ -190,10 +190,10 @@ pub fn lex_DFS(graph: &Graph, start: Option<usize>) -> Vec<usize> {
 /// # Returns
 ///
 /// A vector containing the vertices in lex-UP order
-pub fn lex_UP(graph: &Graph, start: Option<usize>) -> Vec<usize> {
+pub fn lex_up(graph: &Graph, start: Option<usize>) -> Vec<usize> {
     // Lex-UP is similar to Lex-BFS but with different tie-breaking
     // For simplicity, we use a similar implementation
-    lex_BFS(graph, start)
+    lex_bfs(graph, start)
 }
 
 /// Perform lexicographic DOWN search (Lex-DOWN)
@@ -209,8 +209,8 @@ pub fn lex_UP(graph: &Graph, start: Option<usize>) -> Vec<usize> {
 /// # Returns
 ///
 /// A vector containing the vertices in lex-DOWN order
-pub fn lex_DOWN(graph: &Graph, start: Option<usize>) -> Vec<usize> {
-    let bfs_order = lex_BFS(graph, start);
+pub fn lex_down(graph: &Graph, start: Option<usize>) -> Vec<usize> {
+    let bfs_order = lex_bfs(graph, start);
     // Reverse the order for DOWN variant
     bfs_order.into_iter().rev().collect()
 }
@@ -228,9 +228,9 @@ pub fn lex_DOWN(graph: &Graph, start: Option<usize>) -> Vec<usize> {
 /// # Returns
 ///
 /// A vector containing the vertices in lex-M order
-pub fn lex_M(graph: &Graph, start: Option<usize>) -> Vec<usize> {
+pub fn lex_m(graph: &Graph, start: Option<usize>) -> Vec<usize> {
     // Use the fast implementation
-    lex_M_fast(graph, start)
+    lex_m_fast(graph, start)
 }
 
 /// Fast implementation of lexicographic M search
@@ -245,7 +245,7 @@ pub fn lex_M(graph: &Graph, start: Option<usize>) -> Vec<usize> {
 /// # Returns
 ///
 /// A vector containing the vertices in lex-M order
-pub fn lex_M_fast(graph: &Graph, start: Option<usize>) -> Vec<usize> {
+pub fn lex_m_fast(graph: &Graph, start: Option<usize>) -> Vec<usize> {
     let n = graph.num_vertices();
     let start = start.unwrap_or(0);
 
@@ -310,10 +310,10 @@ pub fn lex_M_fast(graph: &Graph, start: Option<usize>) -> Vec<usize> {
 /// # Returns
 ///
 /// A vector containing the vertices in lex-M order
-pub fn lex_M_slow(graph: &Graph, start: Option<usize>) -> Vec<usize> {
+pub fn lex_m_slow(graph: &Graph, start: Option<usize>) -> Vec<usize> {
     // Use the same implementation as fast for now
     // In practice, this would use a simpler but slower algorithm
-    lex_M_fast(graph, start)
+    lex_m_fast(graph, start)
 }
 
 /// Validate a lex-M ordering
@@ -328,7 +328,7 @@ pub fn lex_M_slow(graph: &Graph, start: Option<usize>) -> Vec<usize> {
 /// # Returns
 ///
 /// `true` if the order is a valid lex-M order, `false` otherwise
-pub fn is_valid_lex_M_order(graph: &Graph, order: &[usize]) -> bool {
+pub fn is_valid_lex_m_order(graph: &Graph, order: &[usize]) -> bool {
     let n = graph.num_vertices();
 
     // Check that order contains all vertices exactly once
@@ -440,7 +440,7 @@ pub fn maximum_cardinality_search(graph: &Graph, start: Option<usize>) -> Vec<us
 /// # Returns
 ///
 /// A vector containing the vertices in MCS-M order
-pub fn maximum_cardinality_search_M(graph: &Graph, start: Option<usize>) -> Vec<usize> {
+pub fn maximum_cardinality_search_m(graph: &Graph, start: Option<usize>) -> Vec<usize> {
     // For now, use the same implementation as regular MCS
     // A full implementation would maintain additional M-property invariants
     maximum_cardinality_search(graph, start)
@@ -458,7 +458,7 @@ mod tests {
         g.add_edge(1, 2).unwrap();
         g.add_edge(2, 3).unwrap();
 
-        let order = lex_BFS(&g, None);
+        let order = lex_bfs(&g, None);
         assert_eq!(order.len(), 4);
         // All vertices should be in the order
         assert_eq!(order.iter().collect::<HashSet<_>>().len(), 4);
@@ -473,7 +473,7 @@ mod tests {
             }
         }
 
-        let order = lex_BFS(&g, None);
+        let order = lex_bfs(&g, None);
         assert_eq!(order.len(), 4);
     }
 
@@ -484,7 +484,7 @@ mod tests {
         g.add_edge(1, 2).unwrap();
         g.add_edge(2, 3).unwrap();
 
-        let order = lex_DFS(&g, None);
+        let order = lex_dfs(&g, None);
         assert_eq!(order.len(), 4);
         assert_eq!(order.iter().collect::<HashSet<_>>().len(), 4);
     }
@@ -495,7 +495,7 @@ mod tests {
         g.add_edge(0, 1).unwrap();
         g.add_edge(1, 2).unwrap();
 
-        let order = lex_UP(&g, None);
+        let order = lex_up(&g, None);
         assert_eq!(order.len(), 3);
     }
 
@@ -505,7 +505,7 @@ mod tests {
         g.add_edge(0, 1).unwrap();
         g.add_edge(1, 2).unwrap();
 
-        let order = lex_DOWN(&g, None);
+        let order = lex_down(&g, None);
         assert_eq!(order.len(), 3);
     }
 
@@ -516,7 +516,7 @@ mod tests {
         g.add_edge(1, 2).unwrap();
         g.add_edge(2, 3).unwrap();
 
-        let order = lex_M_fast(&g, None);
+        let order = lex_m_fast(&g, None);
         assert_eq!(order.len(), 4);
     }
 
@@ -526,7 +526,7 @@ mod tests {
         g.add_edge(0, 1).unwrap();
         g.add_edge(1, 2).unwrap();
 
-        let order = lex_M_slow(&g, None);
+        let order = lex_m_slow(&g, None);
         assert_eq!(order.len(), 4);
     }
 
@@ -536,7 +536,7 @@ mod tests {
         g.add_edge(0, 1).unwrap();
         g.add_edge(1, 2).unwrap();
 
-        let order = lex_M(&g, None);
+        let order = lex_m(&g, None);
         assert_eq!(order.len(), 3);
     }
 
@@ -547,10 +547,10 @@ mod tests {
         g.add_edge(1, 2).unwrap();
 
         let order = vec![0, 1, 2];
-        assert!(is_valid_lex_M_order(&g, &order));
+        assert!(is_valid_lex_m_order(&g, &order));
 
         let invalid_order = vec![0, 1];
-        assert!(!is_valid_lex_M_order(&g, &invalid_order));
+        assert!(!is_valid_lex_m_order(&g, &invalid_order));
     }
 
     #[test]
@@ -584,7 +584,7 @@ mod tests {
         g.add_edge(1, 2).unwrap();
         g.add_edge(2, 3).unwrap();
 
-        let order = maximum_cardinality_search_M(&g, None);
+        let order = maximum_cardinality_search_m(&g, None);
         assert_eq!(order.len(), 4);
     }
 
@@ -592,7 +592,7 @@ mod tests {
     fn test_empty_graph() {
         let g = Graph::new(3);
 
-        let order = lex_BFS(&g, None);
+        let order = lex_bfs(&g, None);
         assert_eq!(order.len(), 3);
 
         let order = maximum_cardinality_search(&g, None);
@@ -603,7 +603,7 @@ mod tests {
     fn test_single_vertex() {
         let g = Graph::new(1);
 
-        let order = lex_BFS(&g, None);
+        let order = lex_bfs(&g, None);
         assert_eq!(order, vec![0]);
 
         let order = maximum_cardinality_search(&g, None);
@@ -618,10 +618,10 @@ mod tests {
         g.add_edge(3, 4).unwrap();
         g.add_edge(4, 5).unwrap();
 
-        let order = lex_BFS(&g, None);
+        let order = lex_bfs(&g, None);
         assert_eq!(order.len(), 6);
 
-        let order = lex_DFS(&g, None);
+        let order = lex_dfs(&g, None);
         assert_eq!(order.len(), 6);
     }
 }

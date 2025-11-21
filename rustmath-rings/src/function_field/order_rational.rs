@@ -88,7 +88,7 @@ use std::marker::PhantomData;
 /// assert_eq!(order.class_number(), 1);
 /// ```
 #[derive(Debug, Clone)]
-pub struct FunctionFieldMaximalOrder_rational<F: Field> {
+pub struct FunctionFieldMaximalOrderRational<F: Field> {
     /// Function field name
     field: String,
     /// Variable name (typically "x")
@@ -308,7 +308,7 @@ impl<F: Field> FunctionFieldMaximalOrder_rational<F> {
 /// assert!(order_inf.is_maximal());
 /// ```
 #[derive(Debug, Clone)]
-pub struct FunctionFieldMaximalOrderInfinite_rational<F: Field> {
+pub struct FunctionFieldMaximalOrderInfiniteRational<F: Field> {
     /// Function field
     field: String,
     /// Variable name

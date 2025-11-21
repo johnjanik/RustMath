@@ -206,18 +206,18 @@ impl DirichletGroup {
 ///
 /// # Returns
 /// The group of Dirichlet characters modulo N
-pub fn DirichletGroup_class(N: BigInt) -> DirichletGroup {
+pub fn dirichlet_group_class(N: BigInt) -> DirichletGroup {
     DirichletGroup::new(N)
 }
 
 /// Check if an object is a Dirichlet character
-pub fn is_DirichletCharacter(obj: &DirichletCharacter) -> bool {
+pub fn is_dirichlet_character(obj: &DirichletCharacter) -> bool {
     // In Rust, this is always true if we have the object
     true
 }
 
 /// Check if an object is a Dirichlet group
-pub fn is_DirichletGroup(obj: &DirichletGroup) -> bool {
+pub fn is_dirichlet_group(obj: &DirichletGroup) -> bool {
     // In Rust, this is always true if we have the object
     true
 }
@@ -233,10 +233,6 @@ pub fn trivial_character(N: BigInt) -> DirichletCharacter {
     DirichletCharacter::new(N, HashMap::new())
 }
 
-/// Alias for trivial_character
-pub fn TrivialCharacter(N: BigInt) -> DirichletCharacter {
-    trivial_character(N)
-}
 
 /// Compute the Kronecker character (d/.)
 ///

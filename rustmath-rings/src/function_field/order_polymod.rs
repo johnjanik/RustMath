@@ -91,7 +91,7 @@ use std::marker::PhantomData;
 /// assert_eq!(order.degree(), 2);
 /// ```
 #[derive(Debug, Clone)]
-pub struct FunctionFieldMaximalOrder_polymod<F: Field> {
+pub struct FunctionFieldMaximalOrderPolymod<F: Field> {
     /// Base field
     base_field: String,
     /// Defining polynomial
@@ -271,7 +271,7 @@ impl<F: Field> FunctionFieldMaximalOrder_polymod<F> {
 /// assert_eq!(order.constant_field_size(), 5);
 /// ```
 #[derive(Debug, Clone)]
-pub struct FunctionFieldMaximalOrder_global<F: Field> {
+pub struct FunctionFieldMaximalOrderGlobal<F: Field> {
     /// Underlying polymod order
     polymod: FunctionFieldMaximalOrder_polymod<F>,
     /// Size of constant field
@@ -398,7 +398,7 @@ impl<F: Field> FunctionFieldMaximalOrder_global<F> {
 /// assert!(order_inf.is_maximal());
 /// ```
 #[derive(Debug, Clone)]
-pub struct FunctionFieldMaximalOrderInfinite_polymod<F: Field> {
+pub struct FunctionFieldMaximalOrderInfinitePolymod<F: Field> {
     /// Base field
     base_field: String,
     /// Defining polynomial

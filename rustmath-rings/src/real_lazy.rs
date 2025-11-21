@@ -545,7 +545,7 @@ impl fmt::Display for LazyFieldElement {
 /// This allows working with exact algebraic values while maintaining
 /// the ability to compute numerical approximations when needed.
 #[derive(Debug, Clone)]
-pub struct RealLazyField {
+pub struct real_lazy_field {
     // Currently a unit struct, but kept as struct for future extensions
     // (e.g., precision management, caching, etc.)
 }
@@ -617,7 +617,7 @@ impl Default for RealLazyField {
 /// Like RealLazyField, but supports complex arithmetic and evaluates
 /// to complex numbers when needed.
 #[derive(Debug, Clone)]
-pub struct ComplexLazyField {
+pub struct complex_lazy_field {
     // Currently a unit struct, but kept as struct for future extensions
 }
 

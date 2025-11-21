@@ -42,7 +42,7 @@ use std::marker::PhantomData;
 /// Polynomials are represented as coefficient vectors in increasing degree order:
 /// [a₀, a₁, a₂, ...] represents a₀ + a₁x + a₂x² + ...
 #[derive(Clone, Debug)]
-pub struct FunctionFieldElement_rational<F: Field> {
+pub struct FunctionFieldElementRational<F: Field> {
     /// Numerator polynomial coefficients
     numerator: Vec<F>,
     /// Denominator polynomial coefficients

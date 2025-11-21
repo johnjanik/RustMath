@@ -233,7 +233,7 @@ impl fmt::Display for MPFRtoMPC {
 /// let field = mp_complex_field(Some(256));
 /// // Use field for creating high-precision complex numbers
 /// ```
-pub fn mp_complex_field(precision: Option<u32>) -> MpcomplexFieldClass {
+pub fn mpcomplex_field(precision: Option<u32>) -> MpcomplexFieldClass {
     MpcomplexFieldClass::new(precision.unwrap_or(DEFAULT_PRECISION))
 }
 

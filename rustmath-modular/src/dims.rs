@@ -76,7 +76,7 @@ pub fn eisen(N: &BigInt, k: i64) -> BigInt {
 ///
 /// # Returns
 /// The value of the delta function
-pub fn CO_delta(N: &BigInt) -> BigInt {
+pub fn co_delta(N: &BigInt) -> BigInt {
     if N <= &BigInt::zero() {
         return BigInt::zero();
     }
@@ -106,7 +106,7 @@ pub fn CO_delta(N: &BigInt) -> BigInt {
 ///
 /// # Returns
 /// The value of the nu function
-pub fn CO_nu(N: &BigInt) -> BigInt {
+pub fn co_nu(N: &BigInt) -> BigInt {
     if N <= &BigInt::zero() {
         return BigInt::zero();
     }
@@ -138,7 +138,7 @@ pub fn CO_nu(N: &BigInt) -> BigInt {
 ///
 /// # Returns
 /// The dimension using Cohen-Oesterle formula
-pub fn CohenOesterle(N: &BigInt, k: i64) -> BigInt {
+pub fn cohen_oesterle(N: &BigInt, k: i64) -> BigInt {
     if k < 2 || k % 2 != 0 {
         return BigInt::zero();
     }
@@ -148,8 +148,8 @@ pub fn CohenOesterle(N: &BigInt, k: i64) -> BigInt {
     }
 
     let g = (k - 1) as i64;
-    let delta = CO_delta(N);
-    let nu = CO_nu(N);
+    let delta = co_delta(N);
+    let nu = co_nu(N);
 
     // Formula: dim S_k(Gamma0(N)) = g * delta/12 - nu/4 - nu_3/3 + epsilon
     // This is simplified; full formula has more terms
@@ -188,7 +188,7 @@ pub fn dimension_new_cusp_forms(N: &BigInt, k: i64) -> BigInt {
 
     // Use Cohen-Oesterle formula for now
     // Proper implementation would use Möbius inversion
-    CohenOesterle(N, k)
+    cohen_oesterle(N, k)
 }
 
 /// Dimension of the space of cusp forms
@@ -227,7 +227,7 @@ pub fn dimension_cusp_forms(N: &BigInt, k: i64) -> BigInt {
     }
 
     // Use Cohen-Oesterle formula
-    CohenOesterle(N, k)
+    cohen_oesterle(N, k)
 }
 
 /// Dimension of the space of Eisenstein series
@@ -341,8 +341,8 @@ mod tests {
     }
 
     #[test]
-    fn test_CO_delta() {
+    fn test_co_delta() {
         // delta(1) should be 12
-        assert_eq!(CO_delta(&BigInt::one()), BigInt::from(12));
+        assert_eq!(co_delta(&BigInt::one()), BigInt::from(12));
     }
 }

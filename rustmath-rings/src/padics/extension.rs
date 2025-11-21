@@ -9,7 +9,7 @@
 //!
 //! ## Ramification Theory
 //!
-//! For an extension K/Qp of degree n, we have the fundamental relation:
+//! For an extension K/qp of degree n, we have the fundamental relation:
 //! ```text
 //! n = e·f
 //! ```
@@ -35,7 +35,7 @@
 //!
 //! ### General Extensions
 //! Any extension can be written as a tower K = K_unr · K_ram where:
-//! - K_unr/Qp is the maximal unramified subextension
+//! - K_unr/qp is the maximal unramified subextension
 //! - K_ram/K_unr is totally ramified
 //!
 //! # Examples
@@ -82,14 +82,14 @@ pub enum ExtensionType {
 
 /// p-adic field extension
 ///
-/// Represents an extension K/Qp where K is obtained by adjoining a root
-/// of a polynomial to the base field Qp.
+/// Represents an extension K/qp where K is obtained by adjoining a root
+/// of a polynomial to the base field qp.
 #[derive(Clone, Debug)]
 pub struct PadicExtension {
     /// Base prime p
     prime: Integer,
 
-    /// Extension degree [K:Qp]
+    /// Extension degree [K:qp]
     degree: usize,
 
     /// Ramification index e
@@ -102,7 +102,7 @@ pub struct PadicExtension {
     extension_type: ExtensionType,
 
     /// Defining polynomial (minimal polynomial of generator)
-    /// Must be irreducible over Qp
+    /// Must be irreducible over qp
     defining_polynomial: UnivariatePolynomial<Integer>,
 
     /// Precision for p-adic computations
@@ -189,7 +189,7 @@ impl PadicExtension {
     pub fn unramified(prime: Integer, degree: usize, precision: usize) -> Result<Self> {
         // For unramified extensions, we need a polynomial that is:
         // 1. Monic
-        // 2. Irreducible over Qp
+        // 2. Irreducible over qp
         // 3. Reduces to an irreducible polynomial over F_p
         //
         // For now, we use x^degree - (1 + p) as a placeholder
@@ -328,7 +328,7 @@ impl PadicExtension {
     ///
     /// Returns an element representing the root of the defining polynomial
     pub fn generator(&self) -> PadicExtensionElement {
-        // Generator is represented as x in the quotient ring Qp[x]/(f(x))
+        // Generator is represented as x in the quotient ring qp[x]/(f(x))
         // where f is the defining polynomial
         let mut coeffs = vec![PadicRational::from_padic_integer(
             PadicInteger::zero(self.prime.clone(), self.precision).unwrap()
@@ -378,8 +378,8 @@ impl fmt::Display for PadicExtension {
 /// Element of a p-adic field extension
 ///
 /// Represented as a polynomial in the generator modulo the defining polynomial.
-/// For an extension K = Qp[π]/(f(π)), elements are represented as
-/// a_0 + a_1·π + ... + a_{n-1}·π^{n-1} where a_i ∈ Qp.
+/// For an extension K = qp[π]/(f(π)), elements are represented as
+/// a_0 + a_1·π + ... + a_{n-1}·π^{n-1} where a_i ∈ qp.
 #[derive(Clone, Debug)]
 pub struct PadicExtensionElement {
     /// The extension field this element belongs to
@@ -435,7 +435,7 @@ impl PadicExtensionElement {
         Self::new(extension, coeffs)
     }
 
-    /// Create element from a base field element (Qp)
+    /// Create element from a base field element (qp)
     pub fn from_base_field(extension: Arc<PadicExtension>, value: PadicRational) -> Self {
         let mut coeffs = vec![
             PadicRational::from_padic_integer(
@@ -462,7 +462,7 @@ impl PadicExtensionElement {
         &mut self.coefficients
     }
 
-    /// Compute the norm N_{K/Qp}(α)
+    /// Compute the norm N_{K/qp}(α)
     ///
     /// The norm is the product of all Galois conjugates, or equivalently
     /// the determinant of the multiplication-by-α map.
@@ -493,7 +493,7 @@ impl PadicExtensionElement {
         }
     }
 
-    /// Compute the trace Tr_{K/Qp}(α)
+    /// Compute the trace Tr_{K/qp}(α)
     ///
     /// The trace is the sum of all Galois conjugates, or equivalently
     /// the trace of the multiplication-by-α map.
@@ -517,7 +517,7 @@ impl PadicExtensionElement {
     /// Compute the characteristic polynomial of this element
     ///
     /// This is the minimal polynomial of the multiplication-by-α map
-    /// viewed as a Qp-linear transformation on the n-dimensional vector space K.
+    /// viewed as a qp-linear transformation on the n-dimensional vector space K.
     fn characteristic_polynomial(&self) -> Result<UnivariatePolynomial<PadicRational>> {
         // Build the multiplication matrix M where M[i][j] = coefficient of π^i
         // in α · π^j
@@ -795,7 +795,7 @@ impl CommutativeRing for PadicExtensionElement {}
 /// Embedding of p-adic extensions
 ///
 /// Provides functionality for embedding p-adic extensions into larger extensions
-/// or into the algebraic closure of Qp.
+/// or into the algebraic closure of qp.
 #[derive(Clone, Debug)]
 pub struct PadicEmbedding {
     /// Source extension

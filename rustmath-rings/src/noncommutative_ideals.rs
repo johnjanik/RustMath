@@ -54,7 +54,7 @@ use std::collections::HashSet;
 /// The ideal monoid consists of all ideals of a ring with the operation
 /// of ideal multiplication.
 #[derive(Clone, Debug)]
-pub struct IdealMonoid_nc {
+pub struct IdealMonoidNc {
     /// Name of the base ring
     ring_name: String,
     /// Type of ideals (left, right, or two-sided)
@@ -176,7 +176,7 @@ impl fmt::Display for IdealMonoid_nc {
 ///
 /// This corresponds to SageMath's `Ideal_nc` class.
 #[derive(Clone, Debug)]
-pub struct Ideal_nc {
+pub struct IdealNc {
     /// Name/description of the ideal
     name: String,
     /// Ring the ideal belongs to

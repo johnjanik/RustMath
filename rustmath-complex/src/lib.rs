@@ -26,7 +26,7 @@ pub use complex_interval::{
 };
 pub use complex_interval_field::{complex_interval_field, ComplexIntervalFieldClass};
 pub use complex_mpc_ext::{
-    CCtoMPC, INTEGERtoMPC, MPCtoMPC, MPFRtoMPC, mp_complex_field,
+    CCtoMPC, INTEGERtoMPC, MPCtoMPC, MPFRtoMPC, mpcomplex_field,
     MpcomplexFieldClass, MPComplexNumber, late_import, split_complex_string,
 };
 

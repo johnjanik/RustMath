@@ -95,7 +95,7 @@ use std::marker::PhantomData;
 /// assert_eq!(km.genus(), 3);
 /// ```
 #[derive(Debug, Clone)]
-pub struct KhuriMakdisi_base<F: Field> {
+pub struct KhuriMakdisiBase<F: Field> {
     /// Curve name
     curve: String,
     /// Genus
@@ -242,7 +242,7 @@ impl<F: Field> KhuriMakdisi_base<F> {
 /// assert!(km.is_small_genus());
 /// ```
 #[derive(Debug, Clone)]
-pub struct KhuriMakdisi_small<F: Field> {
+pub struct KhuriMakdisiSmall<F: Field> {
     /// Base algorithm
     base: KhuriMakdisi_base<F>,
 }
@@ -326,7 +326,7 @@ impl<F: Field> KhuriMakdisi_small<F> {
 /// assert!(km.is_medium_genus());
 /// ```
 #[derive(Debug, Clone)]
-pub struct KhuriMakdisi_medium<F: Field> {
+pub struct KhuriMakdisiMedium<F: Field> {
     /// Base algorithm
     base: KhuriMakdisi_base<F>,
     /// Use FFT optimization
@@ -438,7 +438,7 @@ impl<F: Field> KhuriMakdisi_medium<F> {
 /// assert!(km.is_large_genus());
 /// ```
 #[derive(Debug, Clone)]
-pub struct KhuriMakdisi_large<F: Field> {
+pub struct KhuriMakdisiLarge<F: Field> {
     /// Base algorithm
     base: KhuriMakdisi_base<F>,
     /// Matrix multiplication exponent (ω)
