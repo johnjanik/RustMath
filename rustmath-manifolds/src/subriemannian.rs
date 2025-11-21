@@ -109,9 +109,10 @@ impl Distribution {
     /// (i.e., closed under Lie brackets)
     pub fn is_involutive(&self) -> Result<bool> {
         // Check if Lie bracket of any two frame vectors is in the distribution
+        let chart = self.manifold.default_chart().ok_or(ManifoldError::NoChart)?;
         for i in 0..self.frame.len() {
             for j in i+1..self.frame.len() {
-                let bracket = self.frame[i].lie_bracket(&self.frame[j])?;
+                let bracket = self.frame[i].lie_bracket(&self.frame[j], chart)?;
 
                 // Check if bracket can be expressed as a linear combination of frame
                 // TODO: Implement proper linear dependence check
@@ -133,6 +134,7 @@ impl Distribution {
         let mut current_frame = self.frame.clone();
         let mut flag = vec![self.clone()];
 
+        let chart = self.manifold.default_chart().ok_or(ManifoldError::NoChart)?;
         loop {
             let mut new_frame = current_frame.clone();
             let mut added = false;
@@ -140,7 +142,7 @@ impl Distribution {
             // Add Lie brackets
             for i in 0..current_frame.len() {
                 for j in i+1..current_frame.len() {
-                    let bracket = current_frame[i].lie_bracket(&current_frame[j])?;
+                    let bracket = current_frame[i].lie_bracket(&current_frame[j], chart)?;
 
                     // TODO: Check if bracket is linearly independent of current frame
                     // If so, add it
@@ -254,9 +256,9 @@ impl SubRiemannianManifold {
 
         let metric = TensorField::from_components(
             base.clone(),
-            chart,
             0,
             2,
+            chart,
             metric_components,
         )?;
 
@@ -388,9 +390,9 @@ mod tests {
         let metric_components = vec![Expr::from(1)]; // 1x1 metric
         let metric = TensorField::from_components(
             m.clone(),
-            chart,
             0,
             2,
+            chart,
             metric_components,
         ).unwrap();
 

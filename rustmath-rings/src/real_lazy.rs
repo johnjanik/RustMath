@@ -39,6 +39,7 @@ use std::fmt;
 use std::rc::Rc;
 use std::f64::consts as f64_consts;
 
+use rustmath_core::Ring;
 use rustmath_rationals::Rational;
 use rustmath_complex::Complex;
 
@@ -416,7 +417,7 @@ impl LazyFieldElement {
             LazyFieldElement::Integer(n) => *n as f64,
             LazyFieldElement::Rational(r) => r.to_f64(),
             LazyFieldElement::Float(f) => *f,
-            LazyFieldElement::Complex(c) => c.real, // Take real part for real field
+            LazyFieldElement::Complex(c) => c.real(), // Take real part for real field
             LazyFieldElement::Constant(c) => c.to_f64(),
 
             LazyFieldElement::BinOp { op, left, right } => {
@@ -561,7 +562,7 @@ impl RealLazyField {
 
     /// Create a lazy element from a rational number (numerator/denominator)
     pub fn from_rational(&self, num: i64, den: i64) -> LazyFieldElement {
-        LazyFieldElement::from_rational(Rational::new(num.into(), den.into()))
+        LazyFieldElement::from_rational(Rational::new(num.into(), den.into()).unwrap())
     }
 
     /// Create a lazy element from a Rational
@@ -632,7 +633,7 @@ impl ComplexLazyField {
 
     /// Create a lazy element from a rational number
     pub fn from_rational(&self, num: i64, den: i64) -> LazyFieldElement {
-        LazyFieldElement::from_rational(Rational::new(num.into(), den.into()))
+        LazyFieldElement::from_rational(Rational::new(num.into(), den.into()).unwrap())
     }
 
     /// Create a lazy element from a complex number

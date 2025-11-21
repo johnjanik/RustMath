@@ -75,7 +75,7 @@ impl ComplexChart {
             real_coord_names.push(format!("x{}", i)); // Real part
             real_coord_names.push(format!("y{}", i)); // Imaginary part
         }
-        let real_chart = Chart::new(name, 2 * complex_dim);
+        let real_chart = Chart::new(name, 2 * complex_dim, real_coord_names);
 
         Self {
             name: name.to_string(),

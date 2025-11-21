@@ -164,9 +164,9 @@ impl FinslerFunction {
 
         TensorField::from_components(
             self.manifold.clone(),
-            chart,
             0, // covariant only
             2,
+            chart,
             components,
         )
     }
@@ -312,9 +312,9 @@ impl CartanTensor {
 
         let tensor = TensorField::from_components(
             finsler.manifold().clone(),
-            chart,
             0,
             3,
+            chart,
             components,
         )?;
 

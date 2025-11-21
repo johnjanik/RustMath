@@ -236,18 +236,18 @@ impl<F: Field> MumfordDivisor<F> {
     }
 
     /// Get degree (degree of u)
-    pub fn degree(&self) -> usize {
+    pub fn degree(&self) -> Option<usize> {
         self.u.degree()
     }
 
     /// Check if this is the zero divisor
     pub fn is_zero(&self) -> bool {
-        self.u.degree() == 0 && self.v.is_zero()
+        self.u.degree() == Some(0) && self.v.is_zero()
     }
 
     /// Check if divisor is reduced (deg(u) ≤ g and deg(v) < deg(u))
     pub fn is_reduced(&self, genus: usize) -> bool {
-        self.u.degree() <= genus && self.v.degree() < self.u.degree()
+        self.u.degree() <= Some(genus) && self.v.degree() < self.u.degree()
     }
 
     /// Make u monic
@@ -477,7 +477,7 @@ mod tests {
         let div = MumfordDivisor::<Rational>::zero();
 
         assert!(div.is_zero());
-        assert_eq!(div.degree(), 0);
+        assert_eq!(div.degree(), Some(0));
     }
 
     #[test]
@@ -487,7 +487,7 @@ mod tests {
         let div = MumfordDivisor::new(u, v);
 
         assert!(div.is_reduced(2)); // Genus 2
-        assert_eq!(div.degree(), 1);
+        assert_eq!(div.degree(), Some(1));
     }
 
     #[test]

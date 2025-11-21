@@ -239,51 +239,6 @@ impl Iterator for GrayCodeIterator {
 
 impl ExactSizeIterator for GrayCodeIterator {}
 
-/// Convert a binary number to its Gray code representation
-///
-/// The Gray code (also known as reflected binary code) is a binary numeral system
-/// where two successive values differ in only one bit.
-///
-/// # Examples
-///
-/// ```
-/// use rustmath_combinatorics::enumeration::binary_to_gray;
-///
-/// assert_eq!(binary_to_gray(0), 0);
-/// assert_eq!(binary_to_gray(1), 1);
-/// assert_eq!(binary_to_gray(2), 3);
-/// assert_eq!(binary_to_gray(3), 2);
-/// assert_eq!(binary_to_gray(4), 6);
-/// ```
-pub fn binary_to_gray(binary: usize) -> usize {
-    binary ^ (binary >> 1)
-}
-
-/// Convert a Gray code to its binary representation
-///
-/// This is the inverse operation of `binary_to_gray`.
-///
-/// # Examples
-///
-/// ```
-/// use rustmath_combinatorics::enumeration::gray_to_binary;
-///
-/// assert_eq!(gray_to_binary(0), 0);
-/// assert_eq!(gray_to_binary(1), 1);
-/// assert_eq!(gray_to_binary(3), 2);
-/// assert_eq!(gray_to_binary(2), 3);
-/// assert_eq!(gray_to_binary(6), 4);
-/// ```
-pub fn gray_to_binary(gray: usize) -> usize {
-    let mut binary = gray;
-    let mut mask = gray >> 1;
-    while mask != 0 {
-        binary ^= mask;
-        mask >>= 1;
-    }
-    binary
-}
-
 /// A binary reflected Gray code iterator
 ///
 /// Generates n-bit Gray codes as integers from 0 to 2^n - 1

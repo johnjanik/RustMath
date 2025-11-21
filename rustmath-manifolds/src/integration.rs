@@ -548,6 +548,22 @@ fn evaluate_to_float(expr: &Expr) -> Result<f64> {
             let result = match op {
                 UnaryOp::Neg => -val,
                 UnaryOp::Abs => val.abs(),
+                UnaryOp::Sin => val.sin(),
+                UnaryOp::Cos => val.cos(),
+                UnaryOp::Tan => val.tan(),
+                UnaryOp::Exp => val.exp(),
+                UnaryOp::Log => val.ln(),
+                UnaryOp::Sqrt => val.sqrt(),
+                UnaryOp::Sign => if val > 0.0 { 1.0 } else if val < 0.0 { -1.0 } else { 0.0 },
+                UnaryOp::Sinh => val.sinh(),
+                UnaryOp::Cosh => val.cosh(),
+                UnaryOp::Tanh => val.tanh(),
+                UnaryOp::Arcsin => val.asin(),
+                UnaryOp::Arccos => val.acos(),
+                UnaryOp::Arctan => val.atan(),
+                UnaryOp::Arcsinh => val.asinh(),
+                UnaryOp::Arccosh => val.acosh(),
+                UnaryOp::Arctanh => val.atanh(),
             };
             Ok(result)
         }

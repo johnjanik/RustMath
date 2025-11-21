@@ -329,7 +329,7 @@ impl fmt::Display for UnsignedInfinityRing {
 /// Checks if a value is infinite
 ///
 /// This is the Rust equivalent of SageMath's `is_Infinite` function.
-pub fn is_infinite<T>(value: &T) -> bool {
+pub fn is_infinite<T: 'static>(value: &T) -> bool {
     // For actual Infinity type
     std::any::TypeId::of::<T>() == std::any::TypeId::of::<Infinity>()
 }

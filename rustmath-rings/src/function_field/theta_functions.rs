@@ -112,11 +112,11 @@ pub struct PeriodMatrix {
 impl PeriodMatrix {
     /// Create a period matrix
     pub fn new(omega: Matrix<Complex>) -> Result<Self, String> {
-        if omega.nrows() != omega.ncols() {
+        if omega.rows() != omega.cols() {
             return Err("Period matrix must be square".to_string());
         }
 
-        let genus = omega.nrows();
+        let genus = omega.rows();
 
         // TODO: Verify symmetry and positivity of Im(Ω)
 

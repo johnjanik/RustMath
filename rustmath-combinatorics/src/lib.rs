@@ -30,7 +30,6 @@ pub mod dlx;
 pub mod dyck_word;
 pub mod enumeration;
 pub mod interval_posets;
-pub mod multiset_partition_into_sets_ordered;
 pub mod fully_packed_loop;
 pub mod gelfand_tsetlin;
 pub mod fully_commutative_elements;
@@ -46,7 +45,6 @@ pub mod integer_matrices;
 pub mod kazhdan_lusztig;
 pub mod knutson_tao;
 pub mod integer_lists;
-pub mod multiset_partition_into_sets_ordered;
 pub mod ordered_tree;
 pub mod parking_function;
 pub mod partitions;
@@ -58,7 +56,6 @@ pub mod plane_partition;
 pub mod parallelogram_polyomino;
 pub mod permutation_simd;
 pub mod pipe_dream;
-pub mod plane_partition;
 pub mod posets;
 pub mod q_analogue;
 pub mod ranking;
@@ -95,7 +92,6 @@ pub mod words;
 pub mod wreath_product;
 pub mod ncsym;
 pub mod key_polynomial;
-pub mod multiset_partition_into_sets_ordered;
 
 pub use affine_permutations::{AffinePermutation, CoxeterType};
 pub use baxter_permutations::{baxter_permutations, count_baxter_permutations, is_baxter};
@@ -108,7 +104,7 @@ pub use backtrack::{BacktrackFn, BacktrackProblem, Backtracker};
 pub use combinations::{combinations, Combination};
 pub use fully_commutative_elements::{
     count_fc_elements_by_length, enumerate_fc_elements, CoxeterMatrix, FullyCommutativeElement,
-    HeapPoset, ReducedWord, SimpleCoxeterMatrix,
+    HeapPoset, ReducedWord as FCReducedWord, SimpleCoxeterMatrix,
 };
 pub use partitions::{
     count_partitions_with_max_parts, partition_count, partitions, partitions_with_distinct_parts,
@@ -126,7 +122,7 @@ pub use specht_module::{
     GarnirElement, GarnirSet, Polytabloid, PolytabloidSum, SpechtModule, Tabloid,
 };
 pub use tableaux::{
-    dual_robinson_schensted, hecke_insertion, inverse_robinson_schensted, mixed_insertion,
+    dual_robinson_schensted, hecke_insertion, mixed_insertion,
     robinson_schensted, rs_insert, standard_tableaux, Tableau,
 };
 pub use super_tableaux::{
@@ -159,8 +155,8 @@ pub use dyck_word::{dyck_words, nu_dyck_words, BounceStats, DyckWord, NuDyckWord
 pub use enumeration::{
     binary_to_gray, cartesian_product, gray_code_change_bit, gray_code_rank, gray_code_sequence,
     gray_code_unrank, gray_to_binary, stars_and_bars, tuples, weak_compositions,
-    CartesianProduct, CombinationGrayCode, CompositionIterator, Enumerable, GrayCodeIterator,
-    InfiniteCartesianProduct, LazyEnumerator, PartitionIterator, PermutationGrayCode,
+    BinaryGrayCodeIterator, CartesianProduct, CombinationGrayCodeIterator, CompositionIterator, Enumerable, GrayCodeIterator,
+    InfiniteCartesianProduct, LazyEnumerator, PartitionIterator, PermutationGrayCodeIterator,
     RevolvingDoorIterator,
 };
 pub use finite_state_machine_generators::{
@@ -173,12 +169,12 @@ pub use group_action::{
     burnside_lemma, count_fixed_colorings, cycle_index, enumerate_distinct_colorings,
     polya_enumeration, PermutationGroup,
 };
-pub use free_prelie_algebra::{PreLieAlgebra, RootedTree};
+pub use free_prelie_algebra::{PreLieAlgebra, RootedTree as PreLieRootedTree};
 pub use integer_matrices::{
     count_integer_matrices, integer_matrices, integer_matrices_bounded, IntegerMatrix,
 };
 pub use perfect_matching::{perfect_matchings, PerfectMatching};
-pub use pipe_dream::{PipeDream, PipeDreamBuilder};
+pub use pipe_dream::{PipeDream as PipeDreamType, PipeDreamBuilder};
 pub use ranking::{CombinationRank, PermutationRank, Rankable, RankingTable};
 pub use recurrence_sequences::{
     solve_binary_recurrence, BinaryRecurrence, LinearRecurrence, RecurrenceSequence,
@@ -208,7 +204,7 @@ pub use subset::{
     pairwise_disjoint_k_subsets, subset_iterator, KSubsetIterator,
     PairwiseDisjointFamilyIterator, Subset, SubsetIterator,
 };
-pub use subword_complex::{ReducedWord, SubwordComplex};
+pub use subword_complex::{ReducedWord as SubwordReducedWord, SubwordComplex as SubwordComplexType};
 pub use q_analogue::{
     gaussian_polynomial, q_binomial, q_binomial_eval, q_factorial, q_integer, q_multinomial,
 };
@@ -236,7 +232,7 @@ pub use parallelogram_polyomino::{
 };
 pub use ordered_tree::{OrderedTree, OrderedTreeNode, PreorderIterator};
 pub use grossman_larson::{
-    all_rooted_trees, GrossmanLarsonElement, RootedTree,
+    all_rooted_trees, GrossmanLarsonElement, RootedTree as GLRootedTree,
 };
 pub use derangements::{
     all_derangements, count_derangements, count_derangements_recurrence, is_derangement,
@@ -310,14 +306,14 @@ pub use interval_posets::{
     interval_representation, is_interval_order, is_semiorder, Interval, IntervalPoset,
 };
 pub use ribbon_tableau::{
-    fermionic_formula, kostka_foulkes_ribbon, ribbon_tableaux, RibbonDecomposition, RibbonTableau,
+    fermionic_formula, kostka_foulkes_ribbon, ribbon_tableaux, RibbonDecomposition, RibbonTableau as RibbonTableauType,
 };
 pub use subword::{
     all_subwords, count_distinct_subwords, is_subword, reduced_pipe_dreams, subword_order,
-    subword_positions, PipeDream, SubwordComplex,
+    subword_positions, PipeDream as SubwordPipeDream, SubwordComplex as SubwordComplexFromSubword,
 };
 pub use skew_partition::{
-    ribbon_shaped_tableaux, RibbonTableau, SkewPartition, SkewTableau,
+    ribbon_shaped_tableaux, RibbonTableau as SkewRibbonTableau, SkewPartition, SkewTableau,
 };
 pub use similarity_class_type::{
     centralizer_algebra_dim, centralizer_group_cardinality, dictionary_from_generator,
@@ -328,12 +324,10 @@ pub use similarity_class_type::{
     PrimarySimilarityClassType, PrimarySimilarityClassTypes, SimilarityClassType,
     SimilarityClassTypes,
 };
-pub use skew_partition::{SkewPartition, SkewTableau};
 pub use kazhdan_lusztig::{
     bruhat_interval, bruhat_le, bruhat_poset, kazhdan_lusztig_polynomial, length, r_polynomial,
 };
 pub use constellation::{
-    count_genus_0_constellations, path_constellation, star_constellation, trivial_constellation,
     cube_constellation, tetrahedron_constellation, Constellation, ConstellationEncoding,
 };
 pub use parking_function::{

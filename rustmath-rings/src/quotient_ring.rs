@@ -337,7 +337,7 @@ pub fn quotient_ring_nc<R: Ring>(ideal: Ideal<R>) -> Result<QuotientRingNc<R>, Q
 /// Checks if a value is a quotient ring
 ///
 /// This is the Rust equivalent of SageMath's `is_QuotientRing()` function.
-pub fn is_quotient_ring<T>() -> bool {
+pub fn is_quotient_ring<T: 'static>() -> bool {
     // In Rust, type checking is compile-time
     std::any::TypeId::of::<T>() == std::any::TypeId::of::<QuotientRingGeneric<i32>>()
         || std::any::TypeId::of::<T>() == std::any::TypeId::of::<QuotientRingNc<i32>>()
