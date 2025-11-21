@@ -40,6 +40,7 @@ use std::rc::Rc;
 use std::f64::consts as f64_consts;
 
 use rustmath_core::Ring;
+use rustmath_integers::Integer;
 use rustmath_rationals::Rational;
 use rustmath_complex::Complex;
 

@@ -173,7 +173,7 @@ fn poly_divmod(dividend: &Polynomial, divisor: &Polynomial, p: &Integer) -> (Pol
         // remainder -= subtrahend
         for i in 0..subtrahend.len() {
             if i < remainder.len() {
-                remainder[i] = (remainder[i].clone() - subtrahend[i].clone() + p).modulo(p);
+                remainder[i] = (remainder[i].clone() - subtrahend[i].clone() + p.clone()).modulo(p);
             }
         }
 

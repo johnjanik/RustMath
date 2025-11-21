@@ -594,6 +594,7 @@ fn evaluate_to_float(expr: &Expr) -> Result<f64> {
                     let a5 = 1.061405429;
                     sign * (1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * (-x * x).exp())
                 },
+                UnaryOp::Zeta => Err(ManifoldError::NotImplemented("Riemann Zeta integration not implemented".to_string()))?,
                 // UnaryOp::Conjugate => val, // Real numbers are their own conjugate (removed - doesn't exist)
             };
             Ok(result)
