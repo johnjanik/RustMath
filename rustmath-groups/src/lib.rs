@@ -57,9 +57,9 @@ pub use argument_groups::{
     ArgumentByElementGroup, ArgumentGroupFactory, exponent,
 };
 pub use artin::{ArtinGroup, ArtinGroupElement, FiniteTypeArtinGroup, FiniteTypeArtinGroupElement, CoxeterMatrix};
-pub use braid::{BraidGroup, BraidGroup_class, Braid, braid_group, MappingClassGroupAction, MappingClass, RightQuantumWord};
+pub use braid::{BraidGroup, BraidGroupClass, Braid, braid_group, MappingClassGroupAction, MappingClass, RightQuantumWord};
 pub use cactus_group::{CactusGroup, CactusGroupElement, PureCactusGroup, Interval};
-pub use class_function::{ClassFunction, ClassFunction_gap, ClassFunction_libgap, class_function, trivial_class_function, class_function_from_values};
+pub use class_function::{ClassFunction, ClassFunctionGap, ClassFunctionLibgap, class_function, trivial_class_function, class_function_from_values};
 pub use conjugacy_classes::{ConjugacyClass, conjugacy_classes, num_conjugacy_classes, GroupElement as ConjugacyGroupElement};
 pub use cubic_braid::{CubicBraidGroup, CubicBraidElement, CubicBraidType};
 pub use euclidean_group::EuclideanGroup;
@@ -85,7 +85,7 @@ pub use semimonomial_transformation_group::{SemimonomialTransformationGroup, Sem
 pub use libgap_wrapper::{ElementLibGAP, ParentLibGAP, GenericElementWrapper, GenericParentWrapper};
 pub use libgap_group::GroupLibGAP;
 pub use libgap_mixin::GroupMixinLibGAP;
-pub use libgap_morphism::{GroupMorphism_libgap, GroupHomset_libgap};
+pub use libgap_morphism::{GroupMorphismLibgap, GroupHomsetLibgap};
 pub use nilpotent_lie_group::{NilpotentLieGroup, NilpotentLieGroupElement};
 pub use raag::RightAngledArtinGroup;
 

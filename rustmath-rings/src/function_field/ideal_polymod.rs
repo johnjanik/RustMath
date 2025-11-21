@@ -36,9 +36,9 @@
 //!
 //! This module provides:
 //!
-//! - `FunctionFieldIdeal_polymod`: Ideals in polymod extensions
-//! - `FunctionFieldIdealInfinite_polymod`: Ideals at infinity
-//! - `FunctionFieldIdeal_global`: Ideals in global function fields
+//! - `FunctionFieldIdealPolymod`: Ideals in polymod extensions
+//! - `FunctionFieldIdealInfinitePolymod`: Ideals at infinity
+//! - `FunctionFieldIdealGlobal`: Ideals in global function fields
 //!
 //! # References
 //!
@@ -60,10 +60,10 @@ use std::marker::PhantomData;
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::ideal_polymod::FunctionFieldIdeal_polymod;
+/// use rustmath_rings::function_field::ideal_polymod::FunctionFieldIdealPolymod;
 /// use rustmath_rationals::Rational;
 ///
-/// let ideal = FunctionFieldIdeal_polymod::<Rational>::new("(x, y)".to_string());
+/// let ideal = FunctionFieldIdealPolymod::<Rational>::new("(x, y)".to_string());
 /// assert!(ideal.is_well_defined());
 /// ```
 #[derive(Debug, Clone)]
@@ -78,7 +78,7 @@ pub struct FunctionFieldIdealPolymod<F: Field> {
     _phantom: PhantomData<F>,
 }
 
-impl<F: Field> FunctionFieldIdeal_polymod<F> {
+impl<F: Field> FunctionFieldIdealPolymod<F> {
     /// Create a new ideal with generators
     pub fn new(name: String) -> Self {
         Self {
@@ -217,25 +217,25 @@ impl<F: Field> FunctionFieldIdeal_polymod<F> {
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::ideal_polymod::FunctionFieldIdealInfinite_polymod;
+/// use rustmath_rings::function_field::ideal_polymod::FunctionFieldIdealInfinitePolymod;
 /// use rustmath_rationals::Rational;
 ///
-/// let ideal_inf = FunctionFieldIdealInfinite_polymod::<Rational>::new("∞".to_string());
+/// let ideal_inf = FunctionFieldIdealInfinitePolymod::<Rational>::new("∞".to_string());
 /// assert!(ideal_inf.is_infinite());
 /// ```
 #[derive(Debug, Clone)]
 pub struct FunctionFieldIdealInfinitePolymod<F: Field> {
     /// Underlying ideal structure
-    inner: FunctionFieldIdeal_polymod<F>,
+    inner: FunctionFieldIdealPolymod<F>,
     /// Valuation at infinity
     valuation: i32,
 }
 
-impl<F: Field> FunctionFieldIdealInfinite_polymod<F> {
+impl<F: Field> FunctionFieldIdealInfinitePolymod<F> {
     /// Create a new infinite ideal
     pub fn new(name: String) -> Self {
         Self {
-            inner: FunctionFieldIdeal_polymod::new(name),
+            inner: FunctionFieldIdealPolymod::new(name),
             valuation: 1,
         }
     }
@@ -274,25 +274,25 @@ impl<F: Field> FunctionFieldIdealInfinite_polymod<F> {
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::ideal_polymod::FunctionFieldIdeal_global;
+/// use rustmath_rings::function_field::ideal_polymod::FunctionFieldIdealGlobal;
 /// use rustmath_rationals::Rational;
 ///
-/// let ideal = FunctionFieldIdeal_global::<Rational>::new("(x)".to_string(), 2);
+/// let ideal = FunctionFieldIdealGlobal::<Rational>::new("(x)".to_string(), 2);
 /// assert_eq!(ideal.constant_field_size(), 2);
 /// ```
 #[derive(Debug, Clone)]
 pub struct FunctionFieldIdealGlobal<F: Field> {
     /// Underlying polymod ideal
-    inner: FunctionFieldIdeal_polymod<F>,
+    inner: FunctionFieldIdealPolymod<F>,
     /// Size of constant field
     constant_field_size: usize,
 }
 
-impl<F: Field> FunctionFieldIdeal_global<F> {
+impl<F: Field> FunctionFieldIdealGlobal<F> {
     /// Create a new global ideal
     pub fn new(name: String, constant_field_size: usize) -> Self {
         Self {
-            inner: FunctionFieldIdeal_polymod::new(name),
+            inner: FunctionFieldIdealPolymod::new(name),
             constant_field_size,
         }
     }
@@ -300,7 +300,7 @@ impl<F: Field> FunctionFieldIdeal_global<F> {
     /// Create a prime global ideal
     pub fn prime(name: String, constant_field_size: usize) -> Self {
         Self {
-            inner: FunctionFieldIdeal_polymod::prime(name),
+            inner: FunctionFieldIdealPolymod::prime(name),
             constant_field_size,
         }
     }
@@ -370,7 +370,7 @@ mod tests {
 
     #[test]
     fn test_function_field_ideal_polymod() {
-        let ideal = FunctionFieldIdeal_polymod::<Rational>::new("(x, y)".to_string());
+        let ideal = FunctionFieldIdealPolymod::<Rational>::new("(x, y)".to_string());
 
         assert!(ideal.is_well_defined());
         assert!(!ideal.is_prime());
@@ -381,7 +381,7 @@ mod tests {
     #[test]
     fn test_ideal_with_generators() {
         let gens = vec!["x".to_string(), "y-1".to_string()];
-        let ideal = FunctionFieldIdeal_polymod::<Rational>::with_generators(gens.clone());
+        let ideal = FunctionFieldIdealPolymod::<Rational>::with_generators(gens.clone());
 
         assert_eq!(ideal.generators().len(), 2);
         assert!(ideal.name().contains("x"));
@@ -390,7 +390,7 @@ mod tests {
 
     #[test]
     fn test_prime_ideal() {
-        let prime = FunctionFieldIdeal_polymod::<Rational>::prime("(x)".to_string());
+        let prime = FunctionFieldIdealPolymod::<Rational>::prime("(x)".to_string());
 
         assert!(prime.is_prime());
         assert!(!prime.is_unit());
@@ -399,7 +399,7 @@ mod tests {
 
     #[test]
     fn test_unit_ideal() {
-        let mut unit = FunctionFieldIdeal_polymod::<Rational>::new("unit".to_string());
+        let mut unit = FunctionFieldIdealPolymod::<Rational>::new("unit".to_string());
         unit.add_generator("1".to_string());
 
         assert!(unit.is_unit());
@@ -408,13 +408,13 @@ mod tests {
 
     #[test]
     fn test_zero_ideal() {
-        let zero = FunctionFieldIdeal_polymod::<Rational>::new("zero".to_string());
+        let zero = FunctionFieldIdealPolymod::<Rational>::new("zero".to_string());
         assert!(zero.is_zero());
     }
 
     #[test]
     fn test_add_generator() {
-        let mut ideal = FunctionFieldIdeal_polymod::<Rational>::new("test".to_string());
+        let mut ideal = FunctionFieldIdealPolymod::<Rational>::new("test".to_string());
 
         assert_eq!(ideal.generators().len(), 0);
 
@@ -431,8 +431,8 @@ mod tests {
 
     #[test]
     fn test_ideal_multiplication() {
-        let i1 = FunctionFieldIdeal_polymod::<Rational>::new("I".to_string());
-        let i2 = FunctionFieldIdeal_polymod::<Rational>::new("J".to_string());
+        let i1 = FunctionFieldIdealPolymod::<Rational>::new("I".to_string());
+        let i2 = FunctionFieldIdealPolymod::<Rational>::new("J".to_string());
 
         let product = i1.multiply(&i2);
 
@@ -443,10 +443,10 @@ mod tests {
 
     #[test]
     fn test_ideal_addition() {
-        let mut i1 = FunctionFieldIdeal_polymod::<Rational>::with_generators(vec![
+        let mut i1 = FunctionFieldIdealPolymod::<Rational>::with_generators(vec![
             "x".to_string(),
         ]);
-        let mut i2 = FunctionFieldIdeal_polymod::<Rational>::with_generators(vec![
+        let mut i2 = FunctionFieldIdealPolymod::<Rational>::with_generators(vec![
             "y".to_string(),
         ]);
 
@@ -458,8 +458,8 @@ mod tests {
 
     #[test]
     fn test_ideal_intersection() {
-        let i1 = FunctionFieldIdeal_polymod::<Rational>::new("I".to_string());
-        let i2 = FunctionFieldIdeal_polymod::<Rational>::new("J".to_string());
+        let i1 = FunctionFieldIdealPolymod::<Rational>::new("I".to_string());
+        let i2 = FunctionFieldIdealPolymod::<Rational>::new("J".to_string());
 
         let inter = i1.intersect(&i2);
 
@@ -468,7 +468,7 @@ mod tests {
 
     #[test]
     fn test_norm() {
-        let ideal = FunctionFieldIdeal_polymod::<Rational>::new("(x)".to_string());
+        let ideal = FunctionFieldIdealPolymod::<Rational>::new("(x)".to_string());
         let norm = ideal.norm();
 
         assert!(norm.contains("Norm"));
@@ -477,7 +477,7 @@ mod tests {
 
     #[test]
     fn test_relative_degree() {
-        let prime = FunctionFieldIdeal_polymod::<Rational>::prime("(x)".to_string());
+        let prime = FunctionFieldIdealPolymod::<Rational>::prime("(x)".to_string());
         let deg = prime.relative_degree();
 
         assert!(deg >= 1);
@@ -485,7 +485,7 @@ mod tests {
 
     #[test]
     fn test_ramification_index() {
-        let prime = FunctionFieldIdeal_polymod::<Rational>::prime("(x)".to_string());
+        let prime = FunctionFieldIdealPolymod::<Rational>::prime("(x)".to_string());
         let e = prime.ramification_index();
 
         assert!(e >= 1);
@@ -493,7 +493,7 @@ mod tests {
 
     #[test]
     fn test_function_field_ideal_infinite() {
-        let ideal_inf = FunctionFieldIdealInfinite_polymod::<Rational>::new("∞".to_string());
+        let ideal_inf = FunctionFieldIdealInfinitePolymod::<Rational>::new("∞".to_string());
 
         assert!(ideal_inf.is_infinite());
         assert_eq!(ideal_inf.valuation(), 1);
@@ -502,7 +502,7 @@ mod tests {
 
     #[test]
     fn test_infinite_valuation() {
-        let mut ideal_inf = FunctionFieldIdealInfinite_polymod::<Rational>::new("∞".to_string());
+        let mut ideal_inf = FunctionFieldIdealInfinitePolymod::<Rational>::new("∞".to_string());
 
         ideal_inf.set_valuation(3);
         assert_eq!(ideal_inf.valuation(), 3);
@@ -511,7 +511,7 @@ mod tests {
 
     #[test]
     fn test_function_field_ideal_global() {
-        let ideal = FunctionFieldIdeal_global::<Rational>::new("(x)".to_string(), 2);
+        let ideal = FunctionFieldIdealGlobal::<Rational>::new("(x)".to_string(), 2);
 
         assert_eq!(ideal.constant_field_size(), 2);
         assert!(!ideal.is_prime());
@@ -519,7 +519,7 @@ mod tests {
 
     #[test]
     fn test_global_prime_ideal() {
-        let prime = FunctionFieldIdeal_global::<Rational>::prime("(x)".to_string(), 3);
+        let prime = FunctionFieldIdealGlobal::<Rational>::prime("(x)".to_string(), 3);
 
         assert!(prime.is_prime());
         assert_eq!(prime.constant_field_size(), 3);
@@ -527,7 +527,7 @@ mod tests {
 
     #[test]
     fn test_norm_degree() {
-        let prime = FunctionFieldIdeal_global::<Rational>::prime("(x)".to_string(), 2);
+        let prime = FunctionFieldIdealGlobal::<Rational>::prime("(x)".to_string(), 2);
         let deg = prime.norm_degree();
 
         assert!(deg >= 1);
@@ -535,7 +535,7 @@ mod tests {
 
     #[test]
     fn test_norm_as_integer() {
-        let prime = FunctionFieldIdeal_global::<Rational>::prime("(x)".to_string(), 2);
+        let prime = FunctionFieldIdealGlobal::<Rational>::prime("(x)".to_string(), 2);
         let norm = prime.norm_as_integer();
 
         // For degree 1, norm should be q^1 = 2
@@ -544,7 +544,7 @@ mod tests {
 
     #[test]
     fn test_residue_field_size() {
-        let prime = FunctionFieldIdeal_global::<Rational>::prime("(x)".to_string(), 5);
+        let prime = FunctionFieldIdealGlobal::<Rational>::prime("(x)".to_string(), 5);
         let res_size = prime.residue_field_size();
 
         assert!(res_size >= 5);
@@ -552,7 +552,7 @@ mod tests {
 
     #[test]
     fn test_frobenius() {
-        let prime = FunctionFieldIdeal_global::<Rational>::prime("(x)".to_string(), 2);
+        let prime = FunctionFieldIdealGlobal::<Rational>::prime("(x)".to_string(), 2);
         let frob = prime.frobenius();
 
         assert!(frob.contains("Frobenius"));
@@ -560,16 +560,16 @@ mod tests {
 
     #[test]
     fn test_has_good_reduction() {
-        let prime = FunctionFieldIdeal_global::<Rational>::prime("(x)".to_string(), 2);
+        let prime = FunctionFieldIdealGlobal::<Rational>::prime("(x)".to_string(), 2);
         assert!(prime.has_good_reduction());
     }
 
     #[test]
     fn test_ideal_chain() {
         // Test a chain of ideal operations
-        let i1 = FunctionFieldIdeal_polymod::<Rational>::prime("P1".to_string());
-        let i2 = FunctionFieldIdeal_polymod::<Rational>::prime("P2".to_string());
-        let i3 = FunctionFieldIdeal_polymod::<Rational>::prime("P3".to_string());
+        let i1 = FunctionFieldIdealPolymod::<Rational>::prime("P1".to_string());
+        let i2 = FunctionFieldIdealPolymod::<Rational>::prime("P2".to_string());
+        let i3 = FunctionFieldIdealPolymod::<Rational>::prime("P3".to_string());
 
         let prod = i1.multiply(&i2);
         let sum = prod.add(&i3);
@@ -581,7 +581,7 @@ mod tests {
     #[test]
     fn test_different_field_sizes() {
         for q in [2, 3, 5, 7, 11] {
-            let prime = FunctionFieldIdeal_global::<Rational>::prime("(x)".to_string(), q);
+            let prime = FunctionFieldIdealGlobal::<Rational>::prime("(x)".to_string(), q);
             assert_eq!(prime.constant_field_size(), q);
             assert!(prime.residue_field_size() >= q);
         }

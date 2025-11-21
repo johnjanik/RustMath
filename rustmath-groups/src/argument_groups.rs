@@ -640,7 +640,7 @@ fn gcd(a: u64, b: u64) -> u64 {
 /// Compute the exponent for a complex argument group element
 ///
 /// This is a helper function matching SageMath's exponent attribute.
-pub fn exponent(arg: &dyn AbstractArgument) -> Complex {
+pub fn exponent<A: AbstractArgument>(arg: &A) -> Complex {
     let z = arg.to_complex();
     // Return the exponent representation
     // For e^(iθ), this would be iθ

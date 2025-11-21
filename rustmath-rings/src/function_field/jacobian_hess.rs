@@ -332,10 +332,10 @@ impl<F: Field> JacobianGroupEmbedding<F> {
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::jacobian_hess::Jacobian_finite_field;
+/// use rustmath_rings::function_field::jacobian_hess::JacobianFiniteField;
 /// use rustmath_rationals::Rational;
 ///
-/// let jac = Jacobian_finite_field::<Rational>::new("d".to_string(), 5);
+/// let jac = JacobianFiniteField::<Rational>::new("d".to_string(), 5);
 /// assert_eq!(jac.field_size(), 5);
 /// ```
 #[derive(Debug, Clone)]
@@ -346,7 +346,7 @@ pub struct JacobianFiniteField<F: Field> {
     field_size: usize,
 }
 
-impl<F: Field> Jacobian_finite_field<F> {
+impl<F: Field> JacobianFiniteField<F> {
     /// Create a new finite field Jacobian
     pub fn new(parameter_d: String, field_size: usize) -> Self {
         Self {
@@ -387,10 +387,10 @@ impl<F: Field> Jacobian_finite_field<F> {
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::jacobian_hess::JacobianPoint_finite_field;
+/// use rustmath_rings::function_field::jacobian_hess::JacobianPointFiniteField;
 /// use rustmath_rationals::Rational;
 ///
-/// let point = JacobianPoint_finite_field::<Rational>::new(
+/// let point = JacobianPointFiniteField::<Rational>::new(
 ///     "Hess(d=2)".to_string(),
 ///     "P".to_string(),
 ///     5,
@@ -405,7 +405,7 @@ pub struct JacobianPointFiniteField<F: Field> {
     field_size: usize,
 }
 
-impl<F: Field> JacobianPoint_finite_field<F> {
+impl<F: Field> JacobianPointFiniteField<F> {
     /// Create a new finite field point
     pub fn new(jacobian: String, coords: String, field_size: usize) -> Self {
         Self {
@@ -449,10 +449,10 @@ impl<F: Field> JacobianPoint_finite_field<F> {
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::jacobian_hess::JacobianGroup_finite_field;
+/// use rustmath_rings::function_field::jacobian_hess::JacobianGroupFiniteField;
 /// use rustmath_rationals::Rational;
 ///
-/// let group = JacobianGroup_finite_field::<Rational>::new("d".to_string(), 5);
+/// let group = JacobianGroupFiniteField::<Rational>::new("d".to_string(), 5);
 /// assert_eq!(group.field_size(), 5);
 /// ```
 #[derive(Debug, Clone)]
@@ -463,7 +463,7 @@ pub struct JacobianGroupFiniteField<F: Field> {
     field_size: usize,
 }
 
-impl<F: Field> JacobianGroup_finite_field<F> {
+impl<F: Field> JacobianGroupFiniteField<F> {
     /// Create a new finite field group
     pub fn new(parameter_d: String, field_size: usize) -> Self {
         Self {
@@ -497,10 +497,10 @@ impl<F: Field> JacobianGroup_finite_field<F> {
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::jacobian_hess::JacobianGroupEmbedding_finite_field;
+/// use rustmath_rings::function_field::jacobian_hess::JacobianGroupEmbeddingFiniteField;
 /// use rustmath_rationals::Rational;
 ///
-/// let embedding = JacobianGroupEmbedding_finite_field::<Rational>::new(
+/// let embedding = JacobianGroupEmbeddingFiniteField::<Rational>::new(
 ///     "C".to_string(),
 ///     "d".to_string(),
 ///     5,
@@ -515,7 +515,7 @@ pub struct JacobianGroupEmbeddingFiniteField<F: Field> {
     field_size: usize,
 }
 
-impl<F: Field> JacobianGroupEmbedding_finite_field<F> {
+impl<F: Field> JacobianGroupEmbeddingFiniteField<F> {
     /// Create a new finite field embedding
     pub fn new(source: String, parameter_d: String, field_size: usize) -> Self {
         Self {
@@ -535,9 +535,9 @@ impl<F: Field> JacobianGroupEmbedding_finite_field<F> {
     }
 
     /// Apply to a finite field point
-    pub fn apply(&self, point: &str) -> JacobianPoint_finite_field<F> {
+    pub fn apply(&self, point: &str) -> JacobianPointFiniteField<F> {
         let embedded = self.base.apply(point);
-        JacobianPoint_finite_field::new(
+        JacobianPointFiniteField::new(
             embedded.jacobian,
             embedded.coords,
             self.field_size,
@@ -704,28 +704,28 @@ mod tests {
 
     #[test]
     fn test_finite_field_jacobian() {
-        let jac = Jacobian_finite_field::<Rational>::new("2".to_string(), 5);
+        let jac = JacobianFiniteField::<Rational>::new("2".to_string(), 5);
         assert_eq!(jac.field_size(), 5);
         assert_eq!(jac.base().genus(), 1);
     }
 
     #[test]
     fn test_count_points() {
-        let jac = Jacobian_finite_field::<Rational>::new("2".to_string(), 5);
+        let jac = JacobianFiniteField::<Rational>::new("2".to_string(), 5);
         let count = jac.count_points();
         assert!(count > 0);
     }
 
     #[test]
     fn test_frobenius_trace() {
-        let jac = Jacobian_finite_field::<Rational>::new("2".to_string(), 5);
+        let jac = JacobianFiniteField::<Rational>::new("2".to_string(), 5);
         let trace = jac.frobenius_trace();
         assert!(trace.abs() <= 2 * 5); // Hasse bound
     }
 
     #[test]
     fn test_finite_field_point() {
-        let point = JacobianPoint_finite_field::<Rational>::new(
+        let point = JacobianPointFiniteField::<Rational>::new(
             "Hess".to_string(),
             "P".to_string(),
             5,
@@ -735,7 +735,7 @@ mod tests {
 
     #[test]
     fn test_point_frobenius() {
-        let point = JacobianPoint_finite_field::<Rational>::new(
+        let point = JacobianPointFiniteField::<Rational>::new(
             "Hess".to_string(),
             "P".to_string(),
             5,
@@ -746,7 +746,7 @@ mod tests {
 
     #[test]
     fn test_finite_point_order() {
-        let point = JacobianPoint_finite_field::<Rational>::new(
+        let point = JacobianPointFiniteField::<Rational>::new(
             "Hess".to_string(),
             "P".to_string(),
             5,
@@ -757,20 +757,20 @@ mod tests {
 
     #[test]
     fn test_finite_field_group() {
-        let group = JacobianGroup_finite_field::<Rational>::new("2".to_string(), 5);
+        let group = JacobianGroupFiniteField::<Rational>::new("2".to_string(), 5);
         assert_eq!(group.field_size(), 5);
     }
 
     #[test]
     fn test_finite_group_order() {
-        let group = JacobianGroup_finite_field::<Rational>::new("2".to_string(), 5);
+        let group = JacobianGroupFiniteField::<Rational>::new("2".to_string(), 5);
         let order = group.order();
         assert_eq!(order, 6); // Approximately q + 1
     }
 
     #[test]
     fn test_finite_embedding() {
-        let emb = JacobianGroupEmbedding_finite_field::<Rational>::new(
+        let emb = JacobianGroupEmbeddingFiniteField::<Rational>::new(
             "C".to_string(),
             "2".to_string(),
             5,
@@ -780,7 +780,7 @@ mod tests {
 
     #[test]
     fn test_finite_embedding_apply() {
-        let emb = JacobianGroupEmbedding_finite_field::<Rational>::new(
+        let emb = JacobianGroupEmbeddingFiniteField::<Rational>::new(
             "C".to_string(),
             "2".to_string(),
             5,

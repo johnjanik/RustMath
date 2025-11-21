@@ -25,6 +25,7 @@
 //! in number theory. It's closely related to the distribution of primes
 //! via the Prime Number Theorem: π(x) ~ x / ln(x) as x → ∞.
 
+use std::sync::Arc;
 use crate::expression::Expr;
 
 /// Prime counting function π(x)

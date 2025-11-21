@@ -54,11 +54,11 @@
 //!
 //! This module provides:
 //!
-//! - `JacobianPoint_base`: Base class for points on the Jacobian
-//! - `JacobianGroup_base`: Base class for the Jacobian group
-//! - `Jacobian_base`: Base Jacobian variety
-//! - `JacobianPoint_finite_field_base`: Points over finite fields
-//! - `JacobianGroup_finite_field_base`: Jacobian group over finite fields
+//! - `JacobianPointBase`: Base class for points on the Jacobian
+//! - `JacobianGroupBase`: Base class for the Jacobian group
+//! - `JacobianBase`: Base Jacobian variety
+//! - `JacobianPointFiniteFieldBase`: Points over finite fields
+//! - `JacobianGroupFiniteFieldBase`: Jacobian group over finite fields
 //! - `JacobianGroupFunctor`: Functor for creating Jacobian groups
 //!
 //! # References
@@ -88,10 +88,10 @@ use std::marker::PhantomData;
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::jacobian_base::JacobianPoint_base;
+/// use rustmath_rings::function_field::jacobian_base::JacobianPointBase;
 /// use rustmath_rationals::Rational;
 ///
-/// let point = JacobianPoint_base::<Rational>::new(
+/// let point = JacobianPointBase::<Rational>::new(
 ///     "Jac(C)".to_string(),
 ///     "P1 - P2".to_string(),
 /// );
@@ -109,7 +109,7 @@ pub struct JacobianPointBase<F: Field> {
     _phantom: PhantomData<F>,
 }
 
-impl<F: Field> JacobianPoint_base<F> {
+impl<F: Field> JacobianPointBase<F> {
     /// Create a new Jacobian point
     ///
     /// # Arguments
@@ -190,10 +190,10 @@ impl<F: Field> JacobianPoint_base<F> {
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::jacobian_base::JacobianGroup_base;
+/// use rustmath_rings::function_field::jacobian_base::JacobianGroupBase;
 /// use rustmath_rationals::Rational;
 ///
-/// let jac_group = JacobianGroup_base::<Rational>::new(
+/// let jac_group = JacobianGroupBase::<Rational>::new(
 ///     "Jac(C)".to_string(),
 ///     2,
 /// );
@@ -211,7 +211,7 @@ pub struct JacobianGroupBase<F: Field> {
     _phantom: PhantomData<F>,
 }
 
-impl<F: Field> JacobianGroup_base<F> {
+impl<F: Field> JacobianGroupBase<F> {
     /// Create a new Jacobian group
     ///
     /// # Arguments
@@ -258,24 +258,24 @@ impl<F: Field> JacobianGroup_base<F> {
     }
 
     /// Get the identity element
-    pub fn zero(&self) -> JacobianPoint_base<F> {
-        JacobianPoint_base::new(self.jacobian.clone(), "0".to_string())
+    pub fn zero(&self) -> JacobianPointBase<F> {
+        JacobianPointBase::new(self.jacobian.clone(), "0".to_string())
     }
 
     /// Create a point from a divisor
-    pub fn point(&self, divisor: String) -> JacobianPoint_base<F> {
-        JacobianPoint_base::new(self.jacobian.clone(), divisor)
+    pub fn point(&self, divisor: String) -> JacobianPointBase<F> {
+        JacobianPointBase::new(self.jacobian.clone(), divisor)
     }
 
     /// Apply Abel-Jacobi map to a curve point
-    pub fn abel_jacobi(&self, curve_point: &str) -> JacobianPoint_base<F> {
+    pub fn abel_jacobi(&self, curve_point: &str) -> JacobianPointBase<F> {
         if let Some(base) = &self.base_point {
-            JacobianPoint_base::new(
+            JacobianPointBase::new(
                 self.jacobian.clone(),
                 format!("{} - {}", curve_point, base),
             )
         } else {
-            JacobianPoint_base::new(self.jacobian.clone(), curve_point.to_string())
+            JacobianPointBase::new(self.jacobian.clone(), curve_point.to_string())
         }
     }
 }
@@ -296,10 +296,10 @@ impl<F: Field> JacobianGroup_base<F> {
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::jacobian_base::Jacobian_base;
+/// use rustmath_rings::function_field::jacobian_base::JacobianBase;
 /// use rustmath_rationals::Rational;
 ///
-/// let jac = Jacobian_base::<Rational>::new(
+/// let jac = JacobianBase::<Rational>::new(
 ///     "C".to_string(),
 ///     2,
 /// );
@@ -314,15 +314,15 @@ pub struct JacobianBase<F: Field> {
     /// Function field
     function_field: String,
     /// Group structure
-    group: JacobianGroup_base<F>,
+    group: JacobianGroupBase<F>,
 }
 
-impl<F: Field> Jacobian_base<F> {
+impl<F: Field> JacobianBase<F> {
     /// Create a new Jacobian variety
     pub fn new(curve: String, genus: usize) -> Self {
         let jacobian_name = format!("Jac({})", curve);
         let function_field = format!("K({})", curve);
-        let group = JacobianGroup_base::new(jacobian_name, genus);
+        let group = JacobianGroupBase::new(jacobian_name, genus);
 
         Self {
             curve,
@@ -353,7 +353,7 @@ impl<F: Field> Jacobian_base<F> {
     }
 
     /// Get the group structure
-    pub fn group(&self) -> &JacobianGroup_base<F> {
+    pub fn group(&self) -> &JacobianGroupBase<F> {
         &self.group
     }
 
@@ -386,10 +386,10 @@ impl<F: Field> Jacobian_base<F> {
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::jacobian_base::JacobianPoint_finite_field_base;
+/// use rustmath_rings::function_field::jacobian_base::JacobianPointFiniteFieldBase;
 /// use rustmath_rationals::Rational;
 ///
-/// let point = JacobianPoint_finite_field_base::<Rational>::new(
+/// let point = JacobianPointFiniteFieldBase::<Rational>::new(
 ///     "Jac(C)".to_string(),
 ///     "P1 - P2".to_string(),
 ///     5,
@@ -399,16 +399,16 @@ impl<F: Field> Jacobian_base<F> {
 #[derive(Debug, Clone)]
 pub struct JacobianPointFiniteFieldBase<F: Field> {
     /// Base point structure
-    base: JacobianPoint_base<F>,
+    base: JacobianPointBase<F>,
     /// Size of finite field
     field_size: usize,
 }
 
-impl<F: Field> JacobianPoint_finite_field_base<F> {
+impl<F: Field> JacobianPointFiniteFieldBase<F> {
     /// Create a new finite field point
     pub fn new(jacobian: String, divisor: String, field_size: usize) -> Self {
         Self {
-            base: JacobianPoint_base::new(jacobian, divisor),
+            base: JacobianPointBase::new(jacobian, divisor),
             field_size,
         }
     }
@@ -419,7 +419,7 @@ impl<F: Field> JacobianPoint_finite_field_base<F> {
     }
 
     /// Get the base point
-    pub fn base(&self) -> &JacobianPoint_base<F> {
+    pub fn base(&self) -> &JacobianPointBase<F> {
         &self.base
     }
 
@@ -462,10 +462,10 @@ impl<F: Field> JacobianPoint_finite_field_base<F> {
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::jacobian_base::JacobianGroup_finite_field_base;
+/// use rustmath_rings::function_field::jacobian_base::JacobianGroupFiniteFieldBase;
 /// use rustmath_rationals::Rational;
 ///
-/// let jac_group = JacobianGroup_finite_field_base::<Rational>::new(
+/// let jac_group = JacobianGroupFiniteFieldBase::<Rational>::new(
 ///     "Jac(C)".to_string(),
 ///     2,
 ///     5,
@@ -475,18 +475,18 @@ impl<F: Field> JacobianPoint_finite_field_base<F> {
 #[derive(Debug, Clone)]
 pub struct JacobianGroupFiniteFieldBase<F: Field> {
     /// Base group structure
-    base: JacobianGroup_base<F>,
+    base: JacobianGroupBase<F>,
     /// Size of finite field
     field_size: usize,
     /// Group order (if computed)
     group_order: Option<usize>,
 }
 
-impl<F: Field> JacobianGroup_finite_field_base<F> {
+impl<F: Field> JacobianGroupFiniteFieldBase<F> {
     /// Create a new finite field Jacobian group
     pub fn new(jacobian: String, genus: usize, field_size: usize) -> Self {
         Self {
-            base: JacobianGroup_base::new(jacobian, genus),
+            base: JacobianGroupBase::new(jacobian, genus),
             field_size,
             group_order: None,
         }
@@ -503,7 +503,7 @@ impl<F: Field> JacobianGroup_finite_field_base<F> {
     }
 
     /// Get the base group
-    pub fn base(&self) -> &JacobianGroup_base<F> {
+    pub fn base(&self) -> &JacobianGroupBase<F> {
         &self.base
     }
 
@@ -564,8 +564,8 @@ impl<F: Field> JacobianGroupFunctor<F> {
     }
 
     /// Apply the functor to a curve
-    pub fn apply(&self, curve: String, genus: usize) -> Jacobian_base<F> {
-        Jacobian_base::new(curve, genus)
+    pub fn apply(&self, curve: String, genus: usize) -> JacobianBase<F> {
+        JacobianBase::new(curve, genus)
     }
 
     /// Apply to a curve over finite field
@@ -574,9 +574,9 @@ impl<F: Field> JacobianGroupFunctor<F> {
         curve: String,
         genus: usize,
         field_size: usize,
-    ) -> JacobianGroup_finite_field_base<F> {
+    ) -> JacobianGroupFiniteFieldBase<F> {
         let jacobian_name = format!("Jac({})", curve);
-        JacobianGroup_finite_field_base::new(jacobian_name, genus, field_size)
+        JacobianGroupFiniteFieldBase::new(jacobian_name, genus, field_size)
     }
 }
 
@@ -593,7 +593,7 @@ mod tests {
 
     #[test]
     fn test_jacobian_point_creation() {
-        let point = JacobianPoint_base::<Rational>::new(
+        let point = JacobianPointBase::<Rational>::new(
             "Jac(C)".to_string(),
             "P - Q".to_string(),
         );
@@ -605,7 +605,7 @@ mod tests {
 
     #[test]
     fn test_point_with_degree() {
-        let point = JacobianPoint_base::<Rational>::with_degree(
+        let point = JacobianPointBase::<Rational>::with_degree(
             "Jac(C)".to_string(),
             "2P - Q - R".to_string(),
             0,
@@ -616,17 +616,17 @@ mod tests {
 
     #[test]
     fn test_is_zero() {
-        let zero = JacobianPoint_base::<Rational>::new("Jac(C)".to_string(), "0".to_string());
+        let zero = JacobianPointBase::<Rational>::new("Jac(C)".to_string(), "0".to_string());
         assert!(zero.is_zero());
 
-        let nonzero = JacobianPoint_base::<Rational>::new("Jac(C)".to_string(), "P".to_string());
+        let nonzero = JacobianPointBase::<Rational>::new("Jac(C)".to_string(), "P".to_string());
         assert!(!nonzero.is_zero());
     }
 
     #[test]
     fn test_point_addition() {
-        let p1 = JacobianPoint_base::<Rational>::new("Jac(C)".to_string(), "P".to_string());
-        let p2 = JacobianPoint_base::<Rational>::new("Jac(C)".to_string(), "Q".to_string());
+        let p1 = JacobianPointBase::<Rational>::new("Jac(C)".to_string(), "P".to_string());
+        let p2 = JacobianPointBase::<Rational>::new("Jac(C)".to_string(), "Q".to_string());
 
         let sum = p1.add(&p2);
         assert!(sum.divisor().contains("P"));
@@ -635,7 +635,7 @@ mod tests {
 
     #[test]
     fn test_point_negation() {
-        let point = JacobianPoint_base::<Rational>::new("Jac(C)".to_string(), "P".to_string());
+        let point = JacobianPointBase::<Rational>::new("Jac(C)".to_string(), "P".to_string());
         let neg = point.negate();
 
         assert!(neg.divisor().contains("-"));
@@ -644,7 +644,7 @@ mod tests {
 
     #[test]
     fn test_scalar_multiplication() {
-        let point = JacobianPoint_base::<Rational>::new("Jac(C)".to_string(), "P".to_string());
+        let point = JacobianPointBase::<Rational>::new("Jac(C)".to_string(), "P".to_string());
         let doubled = point.scalar_mul(2);
 
         assert!(doubled.divisor().contains("[2]"));
@@ -653,7 +653,7 @@ mod tests {
 
     #[test]
     fn test_jacobian_group_creation() {
-        let group = JacobianGroup_base::<Rational>::new("Jac(C)".to_string(), 2);
+        let group = JacobianGroupBase::<Rational>::new("Jac(C)".to_string(), 2);
 
         assert_eq!(group.jacobian(), "Jac(C)");
         assert_eq!(group.genus(), 2);
@@ -662,7 +662,7 @@ mod tests {
 
     #[test]
     fn test_group_with_base_point() {
-        let group = JacobianGroup_base::<Rational>::with_base_point(
+        let group = JacobianGroupBase::<Rational>::with_base_point(
             "Jac(C)".to_string(),
             2,
             "P0".to_string(),
@@ -673,7 +673,7 @@ mod tests {
 
     #[test]
     fn test_group_zero() {
-        let group = JacobianGroup_base::<Rational>::new("Jac(C)".to_string(), 2);
+        let group = JacobianGroupBase::<Rational>::new("Jac(C)".to_string(), 2);
         let zero = group.zero();
 
         assert!(zero.is_zero());
@@ -681,7 +681,7 @@ mod tests {
 
     #[test]
     fn test_group_point() {
-        let group = JacobianGroup_base::<Rational>::new("Jac(C)".to_string(), 2);
+        let group = JacobianGroupBase::<Rational>::new("Jac(C)".to_string(), 2);
         let point = group.point("P - Q".to_string());
 
         assert_eq!(point.divisor(), "P - Q");
@@ -689,7 +689,7 @@ mod tests {
 
     #[test]
     fn test_abel_jacobi() {
-        let group = JacobianGroup_base::<Rational>::with_base_point(
+        let group = JacobianGroupBase::<Rational>::with_base_point(
             "Jac(C)".to_string(),
             2,
             "P0".to_string(),
@@ -702,7 +702,7 @@ mod tests {
 
     #[test]
     fn test_jacobian_base_creation() {
-        let jac = Jacobian_base::<Rational>::new("C".to_string(), 2);
+        let jac = JacobianBase::<Rational>::new("C".to_string(), 2);
 
         assert_eq!(jac.curve(), "C");
         assert_eq!(jac.genus(), 2);
@@ -711,7 +711,7 @@ mod tests {
 
     #[test]
     fn test_jacobian_function_field() {
-        let jac = Jacobian_base::<Rational>::new("C".to_string(), 2);
+        let jac = JacobianBase::<Rational>::new("C".to_string(), 2);
 
         assert!(jac.function_field().contains("K"));
         assert!(jac.function_field().contains("C"));
@@ -719,19 +719,19 @@ mod tests {
 
     #[test]
     fn test_is_abelian_variety() {
-        let jac = Jacobian_base::<Rational>::new("C".to_string(), 2);
+        let jac = JacobianBase::<Rational>::new("C".to_string(), 2);
         assert!(jac.is_abelian_variety());
     }
 
     #[test]
     fn test_is_principally_polarized() {
-        let jac = Jacobian_base::<Rational>::new("C".to_string(), 2);
+        let jac = JacobianBase::<Rational>::new("C".to_string(), 2);
         assert!(jac.is_principally_polarized());
     }
 
     #[test]
     fn test_jacobian_group_access() {
-        let jac = Jacobian_base::<Rational>::new("C".to_string(), 2);
+        let jac = JacobianBase::<Rational>::new("C".to_string(), 2);
         let group = jac.group();
 
         assert_eq!(group.genus(), 2);
@@ -739,7 +739,7 @@ mod tests {
 
     #[test]
     fn test_finite_field_point_creation() {
-        let point = JacobianPoint_finite_field_base::<Rational>::new(
+        let point = JacobianPointFiniteFieldBase::<Rational>::new(
             "Jac(C)".to_string(),
             "P - Q".to_string(),
             5,
@@ -750,7 +750,7 @@ mod tests {
 
     #[test]
     fn test_frobenius() {
-        let point = JacobianPoint_finite_field_base::<Rational>::new(
+        let point = JacobianPointFiniteFieldBase::<Rational>::new(
             "Jac(C)".to_string(),
             "P".to_string(),
             5,
@@ -762,7 +762,7 @@ mod tests {
 
     #[test]
     fn test_point_order() {
-        let point = JacobianPoint_finite_field_base::<Rational>::new(
+        let point = JacobianPointFiniteFieldBase::<Rational>::new(
             "Jac(C)".to_string(),
             "P".to_string(),
             5,
@@ -774,7 +774,7 @@ mod tests {
 
     #[test]
     fn test_is_torsion() {
-        let point = JacobianPoint_finite_field_base::<Rational>::new(
+        let point = JacobianPointFiniteFieldBase::<Rational>::new(
             "Jac(C)".to_string(),
             "P".to_string(),
             5,
@@ -785,7 +785,7 @@ mod tests {
 
     #[test]
     fn test_finite_field_group_creation() {
-        let group = JacobianGroup_finite_field_base::<Rational>::new(
+        let group = JacobianGroupFiniteFieldBase::<Rational>::new(
             "Jac(C)".to_string(),
             2,
             5,
@@ -797,7 +797,7 @@ mod tests {
 
     #[test]
     fn test_finite_field_group_order() {
-        let mut group = JacobianGroup_finite_field_base::<Rational>::new(
+        let mut group = JacobianGroupFiniteFieldBase::<Rational>::new(
             "Jac(C)".to_string(),
             2,
             5,
@@ -809,7 +809,7 @@ mod tests {
 
     #[test]
     fn test_frobenius_polynomial() {
-        let group = JacobianGroup_finite_field_base::<Rational>::new(
+        let group = JacobianGroupFiniteFieldBase::<Rational>::new(
             "Jac(C)".to_string(),
             2,
             5,
@@ -821,7 +821,7 @@ mod tests {
 
     #[test]
     fn test_group_structure() {
-        let group = JacobianGroup_finite_field_base::<Rational>::new(
+        let group = JacobianGroupFiniteFieldBase::<Rational>::new(
             "Jac(C)".to_string(),
             2,
             5,
@@ -858,9 +858,9 @@ mod tests {
 
     #[test]
     fn test_point_equality() {
-        let p1 = JacobianPoint_base::<Rational>::new("Jac(C)".to_string(), "P".to_string());
-        let p2 = JacobianPoint_base::<Rational>::new("Jac(C)".to_string(), "P".to_string());
-        let p3 = JacobianPoint_base::<Rational>::new("Jac(C)".to_string(), "Q".to_string());
+        let p1 = JacobianPointBase::<Rational>::new("Jac(C)".to_string(), "P".to_string());
+        let p2 = JacobianPointBase::<Rational>::new("Jac(C)".to_string(), "P".to_string());
+        let p3 = JacobianPointBase::<Rational>::new("Jac(C)".to_string(), "Q".to_string());
 
         assert_eq!(p1, p2);
         assert_ne!(p1, p3);

@@ -47,9 +47,9 @@
 //!
 //! This module provides:
 //!
-//! - `FunctionFieldMaximalOrder_polymod`: Maximal order for polymod fields
-//! - `FunctionFieldMaximalOrder_global`: Maximal order for global fields
-//! - `FunctionFieldMaximalOrderInfinite_polymod`: Maximal order at infinity
+//! - `FunctionFieldMaximalOrderPolymod`: Maximal order for polymod fields
+//! - `FunctionFieldMaximalOrderGlobal`: Maximal order for global fields
+//! - `FunctionFieldMaximalOrderInfinitePolymod`: Maximal order at infinity
 //!
 //! # References
 //!
@@ -78,11 +78,11 @@ use std::marker::PhantomData;
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::order_polymod::FunctionFieldMaximalOrder_polymod;
+/// use rustmath_rings::function_field::order_polymod::FunctionFieldMaximalOrderPolymod;
 /// use rustmath_rationals::Rational;
 ///
 /// // Maximal order in Q(x)[y]/(y^2 - x)
-/// let order = FunctionFieldMaximalOrder_polymod::<Rational>::new(
+/// let order = FunctionFieldMaximalOrderPolymod::<Rational>::new(
 ///     "Q(x)".to_string(),
 ///     "y^2 - x".to_string(),
 ///     2,
@@ -106,7 +106,7 @@ pub struct FunctionFieldMaximalOrderPolymod<F: Field> {
     _phantom: PhantomData<F>,
 }
 
-impl<F: Field> FunctionFieldMaximalOrder_polymod<F> {
+impl<F: Field> FunctionFieldMaximalOrderPolymod<F> {
     /// Create a new maximal polymod order
     ///
     /// # Arguments
@@ -258,10 +258,10 @@ impl<F: Field> FunctionFieldMaximalOrder_polymod<F> {
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::order_polymod::FunctionFieldMaximalOrder_global;
+/// use rustmath_rings::function_field::order_polymod::FunctionFieldMaximalOrderGlobal;
 /// use rustmath_rationals::Rational;
 ///
-/// let order = FunctionFieldMaximalOrder_global::<Rational>::new(
+/// let order = FunctionFieldMaximalOrderGlobal::<Rational>::new(
 ///     "F5(x)".to_string(),
 ///     "y^2 - x".to_string(),
 ///     2,
@@ -273,14 +273,14 @@ impl<F: Field> FunctionFieldMaximalOrder_polymod<F> {
 #[derive(Debug, Clone)]
 pub struct FunctionFieldMaximalOrderGlobal<F: Field> {
     /// Underlying polymod order
-    polymod: FunctionFieldMaximalOrder_polymod<F>,
+    polymod: FunctionFieldMaximalOrderPolymod<F>,
     /// Size of constant field
     constant_field_size: usize,
     /// Genus (if known)
     genus: Option<usize>,
 }
 
-impl<F: Field> FunctionFieldMaximalOrder_global<F> {
+impl<F: Field> FunctionFieldMaximalOrderGlobal<F> {
     /// Create a new global maximal order
     ///
     /// # Arguments
@@ -291,7 +291,7 @@ impl<F: Field> FunctionFieldMaximalOrder_global<F> {
     /// * `q` - Size of the constant field
     pub fn new(base_field: String, polynomial: String, degree: usize, q: usize) -> Self {
         Self {
-            polymod: FunctionFieldMaximalOrder_polymod::new(base_field, polynomial, degree),
+            polymod: FunctionFieldMaximalOrderPolymod::new(base_field, polynomial, degree),
             constant_field_size: q,
             genus: None,
         }
@@ -359,12 +359,12 @@ impl<F: Field> FunctionFieldMaximalOrder_global<F> {
     }
 
     /// Get the underlying polymod order
-    pub fn polymod_order(&self) -> &FunctionFieldMaximalOrder_polymod<F> {
+    pub fn polymod_order(&self) -> &FunctionFieldMaximalOrderPolymod<F> {
         &self.polymod
     }
 
     /// Get the underlying polymod order mutably
-    pub fn polymod_order_mut(&mut self) -> &mut FunctionFieldMaximalOrder_polymod<F> {
+    pub fn polymod_order_mut(&mut self) -> &mut FunctionFieldMaximalOrderPolymod<F> {
         &mut self.polymod
     }
 }
@@ -386,10 +386,10 @@ impl<F: Field> FunctionFieldMaximalOrder_global<F> {
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::order_polymod::FunctionFieldMaximalOrderInfinite_polymod;
+/// use rustmath_rings::function_field::order_polymod::FunctionFieldMaximalOrderInfinitePolymod;
 /// use rustmath_rationals::Rational;
 ///
-/// let order_inf = FunctionFieldMaximalOrderInfinite_polymod::<Rational>::new(
+/// let order_inf = FunctionFieldMaximalOrderInfinitePolymod::<Rational>::new(
 ///     "Q(x)".to_string(),
 ///     "y^2 - x".to_string(),
 ///     2,
@@ -411,7 +411,7 @@ pub struct FunctionFieldMaximalOrderInfinitePolymod<F: Field> {
     _phantom: PhantomData<F>,
 }
 
-impl<F: Field> FunctionFieldMaximalOrderInfinite_polymod<F> {
+impl<F: Field> FunctionFieldMaximalOrderInfinitePolymod<F> {
     /// Create a new maximal infinite polymod order
     pub fn new(base_field: String, polynomial: String, degree: usize) -> Self {
         assert!(degree > 0, "Degree must be positive");
@@ -511,7 +511,7 @@ mod tests {
 
     #[test]
     fn test_maximal_order_polymod_creation() {
-        let order = FunctionFieldMaximalOrder_polymod::<Rational>::new(
+        let order = FunctionFieldMaximalOrderPolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -525,7 +525,7 @@ mod tests {
 
     #[test]
     fn test_integral_basis() {
-        let mut order = FunctionFieldMaximalOrder_polymod::<Rational>::new(
+        let mut order = FunctionFieldMaximalOrderPolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -539,7 +539,7 @@ mod tests {
 
     #[test]
     fn test_integral_basis_higher_degree() {
-        let mut order = FunctionFieldMaximalOrder_polymod::<Rational>::new(
+        let mut order = FunctionFieldMaximalOrderPolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y^3 - x^2 - x".to_string(),
             3,
@@ -554,7 +554,7 @@ mod tests {
 
     #[test]
     fn test_discriminant() {
-        let mut order = FunctionFieldMaximalOrder_polymod::<Rational>::new(
+        let mut order = FunctionFieldMaximalOrderPolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -567,7 +567,7 @@ mod tests {
 
     #[test]
     fn test_different() {
-        let mut order = FunctionFieldMaximalOrder_polymod::<Rational>::new(
+        let mut order = FunctionFieldMaximalOrderPolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -579,7 +579,7 @@ mod tests {
 
     #[test]
     fn test_decompose_prime() {
-        let order = FunctionFieldMaximalOrder_polymod::<Rational>::new(
+        let order = FunctionFieldMaximalOrderPolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -591,7 +591,7 @@ mod tests {
 
     #[test]
     fn test_class_number() {
-        let order = FunctionFieldMaximalOrder_polymod::<Rational>::new(
+        let order = FunctionFieldMaximalOrderPolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -603,7 +603,7 @@ mod tests {
 
     #[test]
     fn test_picard_group() {
-        let order = FunctionFieldMaximalOrder_polymod::<Rational>::new(
+        let order = FunctionFieldMaximalOrderPolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -615,7 +615,7 @@ mod tests {
 
     #[test]
     fn test_is_pid() {
-        let order = FunctionFieldMaximalOrder_polymod::<Rational>::new(
+        let order = FunctionFieldMaximalOrderPolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -626,7 +626,7 @@ mod tests {
 
     #[test]
     fn test_prime_above() {
-        let order = FunctionFieldMaximalOrder_polymod::<Rational>::new(
+        let order = FunctionFieldMaximalOrderPolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -638,7 +638,7 @@ mod tests {
 
     #[test]
     fn test_ramification_properties() {
-        let order = FunctionFieldMaximalOrder_polymod::<Rational>::new(
+        let order = FunctionFieldMaximalOrderPolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -652,7 +652,7 @@ mod tests {
 
     #[test]
     fn test_global_order_creation() {
-        let order = FunctionFieldMaximalOrder_global::<Rational>::new(
+        let order = FunctionFieldMaximalOrderGlobal::<Rational>::new(
             "F5(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -665,7 +665,7 @@ mod tests {
 
     #[test]
     fn test_genus() {
-        let mut order = FunctionFieldMaximalOrder_global::<Rational>::new(
+        let mut order = FunctionFieldMaximalOrderGlobal::<Rational>::new(
             "F5(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -678,7 +678,7 @@ mod tests {
 
     #[test]
     fn test_set_genus() {
-        let mut order = FunctionFieldMaximalOrder_global::<Rational>::new(
+        let mut order = FunctionFieldMaximalOrderGlobal::<Rational>::new(
             "F5(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -691,7 +691,7 @@ mod tests {
 
     #[test]
     fn test_zeta_degree() {
-        let mut order = FunctionFieldMaximalOrder_global::<Rational>::new(
+        let mut order = FunctionFieldMaximalOrderGlobal::<Rational>::new(
             "F5(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -704,7 +704,7 @@ mod tests {
 
     #[test]
     fn test_count_points() {
-        let mut order = FunctionFieldMaximalOrder_global::<Rational>::new(
+        let mut order = FunctionFieldMaximalOrderGlobal::<Rational>::new(
             "F5(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -720,7 +720,7 @@ mod tests {
 
     #[test]
     fn test_hasse_weil_bound() {
-        let mut order = FunctionFieldMaximalOrder_global::<Rational>::new(
+        let mut order = FunctionFieldMaximalOrderGlobal::<Rational>::new(
             "F5(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -734,7 +734,7 @@ mod tests {
 
     #[test]
     fn test_is_supersingular() {
-        let order = FunctionFieldMaximalOrder_global::<Rational>::new(
+        let order = FunctionFieldMaximalOrderGlobal::<Rational>::new(
             "F5(x)".to_string(),
             "y^2 - x^3 + x".to_string(),
             2,
@@ -747,7 +747,7 @@ mod tests {
 
     #[test]
     fn test_global_class_number() {
-        let order = FunctionFieldMaximalOrder_global::<Rational>::new(
+        let order = FunctionFieldMaximalOrderGlobal::<Rational>::new(
             "F5(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -759,7 +759,7 @@ mod tests {
 
     #[test]
     fn test_polymod_order_access() {
-        let mut order = FunctionFieldMaximalOrder_global::<Rational>::new(
+        let mut order = FunctionFieldMaximalOrderGlobal::<Rational>::new(
             "F5(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -772,7 +772,7 @@ mod tests {
 
     #[test]
     fn test_infinite_polymod_creation() {
-        let order_inf = FunctionFieldMaximalOrderInfinite_polymod::<Rational>::new(
+        let order_inf = FunctionFieldMaximalOrderInfinitePolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -785,7 +785,7 @@ mod tests {
 
     #[test]
     fn test_integral_basis_at_infinity() {
-        let mut order_inf = FunctionFieldMaximalOrderInfinite_polymod::<Rational>::new(
+        let mut order_inf = FunctionFieldMaximalOrderInfinitePolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -797,7 +797,7 @@ mod tests {
 
     #[test]
     fn test_pole_order_at_infinity() {
-        let order_inf = FunctionFieldMaximalOrderInfinite_polymod::<Rational>::new(
+        let order_inf = FunctionFieldMaximalOrderInfinitePolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -809,7 +809,7 @@ mod tests {
 
     #[test]
     fn test_has_finite_pole() {
-        let order_inf = FunctionFieldMaximalOrderInfinite_polymod::<Rational>::new(
+        let order_inf = FunctionFieldMaximalOrderInfinitePolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -821,7 +821,7 @@ mod tests {
 
     #[test]
     fn test_different_at_infinity() {
-        let order_inf = FunctionFieldMaximalOrderInfinite_polymod::<Rational>::new(
+        let order_inf = FunctionFieldMaximalOrderInfinitePolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -834,7 +834,7 @@ mod tests {
 
     #[test]
     fn test_decompose_infinite_place() {
-        let order_inf = FunctionFieldMaximalOrderInfinite_polymod::<Rational>::new(
+        let order_inf = FunctionFieldMaximalOrderInfinitePolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -846,7 +846,7 @@ mod tests {
 
     #[test]
     fn test_ramification_at_infinity() {
-        let order_inf = FunctionFieldMaximalOrderInfinite_polymod::<Rational>::new(
+        let order_inf = FunctionFieldMaximalOrderInfinitePolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -859,7 +859,7 @@ mod tests {
 
     #[test]
     fn test_totally_ramified_at_infinity() {
-        let order_inf = FunctionFieldMaximalOrderInfinite_polymod::<Rational>::new(
+        let order_inf = FunctionFieldMaximalOrderInfinitePolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y^2 - x".to_string(),
             2,
@@ -872,7 +872,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "Degree must be positive")]
     fn test_zero_degree_panics() {
-        let _order = FunctionFieldMaximalOrder_polymod::<Rational>::new(
+        let _order = FunctionFieldMaximalOrderPolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y".to_string(),
             0,
@@ -882,7 +882,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "Degree must be positive")]
     fn test_infinite_zero_degree_panics() {
-        let _order = FunctionFieldMaximalOrderInfinite_polymod::<Rational>::new(
+        let _order = FunctionFieldMaximalOrderInfinitePolymod::<Rational>::new(
             "Q(x)".to_string(),
             "y".to_string(),
             0,

@@ -2,8 +2,8 @@
 //!
 //! This module provides functionality for group homomorphisms (structure-preserving
 //! maps between groups). It includes:
-//! - `GroupMorphism_libgap`: Represents a group homomorphism
-//! - `GroupHomset_libgap`: Represents the set of homomorphisms between two groups
+//! - `GroupMorphismLibgap`: Represents a group homomorphism
+//! - `GroupHomsetLibgap`: Represents the set of homomorphisms between two groups
 //!
 //! # Overview
 //!
@@ -13,9 +13,9 @@
 //! # Example
 //!
 //! ```ignore
-//! use rustmath_groups::libgap_morphism::{GroupMorphism_libgap, GroupHomset_libgap};
+//! use rustmath_groups::libgap_morphism::{GroupMorphismLibgap, GroupHomsetLibgap};
 //!
-//! let phi = GroupMorphism_libgap::new(domain, codomain, mapping);
+//! let phi = GroupMorphismLibgap::new(domain, codomain, mapping);
 //! let ker = phi.kernel();
 //! let im = phi.image();
 //! ```
@@ -51,7 +51,7 @@ where
     is_validated: bool,
 }
 
-impl<G, H> GroupMorphism_libgap<G, H>
+impl<G, H> GroupMorphismLibgap<G, H>
 where
     G: Group,
     H: Group,
@@ -68,7 +68,7 @@ where
     /// # Example
     ///
     /// ```ignore
-    /// let phi = GroupMorphism_libgap::new(g, h, map, true);
+    /// let phi = GroupMorphismLibgap::new(g, h, map, true);
     /// ```
     pub fn new(
         domain: G,
@@ -76,7 +76,7 @@ where
         mapping: HashMap<G::Element, H::Element>,
         validate: bool,
     ) -> Result<Self, String> {
-        let morphism = GroupMorphism_libgap {
+        let morphism = GroupMorphismLibgap {
             domain,
             codomain,
             mapping,
@@ -92,7 +92,7 @@ where
 
     /// Create a trivial homomorphism (maps everything to identity)
     pub fn trivial(domain: G, codomain: H) -> Self {
-        GroupMorphism_libgap {
+        GroupMorphismLibgap {
             domain,
             codomain,
             mapping: HashMap::new(),
@@ -245,7 +245,7 @@ where
     }
 }
 
-impl<G, H> fmt::Display for GroupMorphism_libgap<G, H>
+impl<G, H> fmt::Display for GroupMorphismLibgap<G, H>
 where
     G: Group,
     H: Group,
@@ -275,17 +275,17 @@ where
     codomain: H,
 
     /// Cached homomorphisms (if computed)
-    homomorphisms: Option<Vec<GroupMorphism_libgap<G, H>>>,
+    homomorphisms: Option<Vec<GroupMorphismLibgap<G, H>>>,
 }
 
-impl<G, H> GroupHomset_libgap<G, H>
+impl<G, H> GroupHomsetLibgap<G, H>
 where
     G: Group,
     H: Group,
 {
     /// Create a new homset Hom(G, H)
     pub fn new(domain: G, codomain: H) -> Self {
-        GroupHomset_libgap {
+        GroupHomsetLibgap {
             domain,
             codomain,
             homomorphisms: None,
@@ -293,14 +293,14 @@ where
     }
 
     /// Get the trivial homomorphism (maps everything to identity)
-    pub fn an_element(&self) -> GroupMorphism_libgap<G, H> {
-        GroupMorphism_libgap::trivial(self.domain.clone(), self.codomain.clone())
+    pub fn an_element(&self) -> GroupMorphismLibgap<G, H> {
+        GroupMorphismLibgap::trivial(self.domain.clone(), self.codomain.clone())
     }
 
     /// Create a natural map when possible
     ///
     /// If the groups have the same structure, create a natural isomorphism
-    pub fn natural_map(&self) -> Option<GroupMorphism_libgap<G, H>> {
+    pub fn natural_map(&self) -> Option<GroupMorphismLibgap<G, H>> {
         // For groups of the same order, try to create identity-like map
         if self.domain.order() == self.codomain.order() {
             Some(self.an_element())
@@ -328,7 +328,7 @@ where
     }
 }
 
-impl<G, H> fmt::Display for GroupHomset_libgap<G, H>
+impl<G, H> fmt::Display for GroupHomsetLibgap<G, H>
 where
     G: Group,
     H: Group,
@@ -422,7 +422,7 @@ mod tests {
     fn test_trivial_morphism() {
         let g = CyclicGroup { order: 5 };
         let h = CyclicGroup { order: 7 };
-        let phi = GroupMorphism_libgap::trivial(g.clone(), h.clone());
+        let phi = GroupMorphismLibgap::trivial(g.clone(), h.clone());
 
         let elem = ModInt::new(2, 5);
         let mapped = phi.call(&elem).unwrap();
@@ -441,7 +441,7 @@ mod tests {
         mapping.insert(ModInt::new(2, 4), ModInt::new(0, 2));
         mapping.insert(ModInt::new(3, 4), ModInt::new(1, 2));
 
-        let result = GroupMorphism_libgap::new(g, h, mapping, true);
+        let result = GroupMorphismLibgap::new(g, h, mapping, true);
         assert!(result.is_ok());
     }
 
@@ -456,7 +456,7 @@ mod tests {
         mapping.insert(ModInt::new(2, 4), ModInt::new(0, 2));
         mapping.insert(ModInt::new(3, 4), ModInt::new(1, 2));
 
-        let phi = GroupMorphism_libgap::new(g, h, mapping, false).unwrap();
+        let phi = GroupMorphismLibgap::new(g, h, mapping, false).unwrap();
         let ker = phi.kernel();
 
         // Kernel should be {0, 2}
@@ -476,7 +476,7 @@ mod tests {
         mapping.insert(ModInt::new(2, 4), ModInt::new(0, 2));
         mapping.insert(ModInt::new(3, 4), ModInt::new(1, 2));
 
-        let phi = GroupMorphism_libgap::new(g, h, mapping, false).unwrap();
+        let phi = GroupMorphismLibgap::new(g, h, mapping, false).unwrap();
         let im = phi.image();
 
         // Image should be {0, 1} (all of Z/2Z)
@@ -494,7 +494,7 @@ mod tests {
         mapping.insert(ModInt::new(2, 4), ModInt::new(0, 2));
         mapping.insert(ModInt::new(3, 4), ModInt::new(1, 2));
 
-        let phi = GroupMorphism_libgap::new(g, h, mapping, false).unwrap();
+        let phi = GroupMorphismLibgap::new(g, h, mapping, false).unwrap();
 
         let h_elem = ModInt::new(1, 2);
         let lifted = phi.lift(&h_elem);
@@ -514,7 +514,7 @@ mod tests {
         mapping.insert(ModInt::new(0, 2), ModInt::new(0, 2));
         mapping.insert(ModInt::new(1, 2), ModInt::new(1, 2));
 
-        let phi = GroupMorphism_libgap::new(g, h, mapping, false).unwrap();
+        let phi = GroupMorphismLibgap::new(g, h, mapping, false).unwrap();
         assert!(phi.is_injective());
     }
 
@@ -529,7 +529,7 @@ mod tests {
         mapping.insert(ModInt::new(2, 4), ModInt::new(0, 2));
         mapping.insert(ModInt::new(3, 4), ModInt::new(1, 2));
 
-        let phi = GroupMorphism_libgap::new(g, h, mapping, false).unwrap();
+        let phi = GroupMorphismLibgap::new(g, h, mapping, false).unwrap();
         assert!(phi.is_surjective());
     }
 
@@ -537,7 +537,7 @@ mod tests {
     fn test_homset_creation() {
         let g = CyclicGroup { order: 3 };
         let h = CyclicGroup { order: 5 };
-        let homset = GroupHomset_libgap::new(g, h);
+        let homset = GroupHomsetLibgap::new(g, h);
 
         assert_eq!(homset.domain().order(), Some(3));
         assert_eq!(homset.codomain().order(), Some(5));
@@ -547,7 +547,7 @@ mod tests {
     fn test_homset_an_element() {
         let g = CyclicGroup { order: 4 };
         let h = CyclicGroup { order: 4 };
-        let homset = GroupHomset_libgap::new(g, h);
+        let homset = GroupHomsetLibgap::new(g, h);
 
         let phi = homset.an_element();
         let elem = ModInt::new(2, 4);
@@ -566,7 +566,7 @@ mod tests {
         mapping.insert(ModInt::new(2, 4), ModInt::new(0, 2));
         mapping.insert(ModInt::new(3, 4), ModInt::new(1, 2));
 
-        let phi = GroupMorphism_libgap::new(g, h, mapping, false).unwrap();
+        let phi = GroupMorphismLibgap::new(g, h, mapping, false).unwrap();
         let section = phi.section();
 
         assert_eq!(section.len(), 2); // One lift for each element in image
@@ -583,7 +583,7 @@ mod tests {
         mapping.insert(ModInt::new(2, 4), ModInt::new(0, 2));
         mapping.insert(ModInt::new(3, 4), ModInt::new(1, 2));
 
-        let phi = GroupMorphism_libgap::new(g, h, mapping, false).unwrap();
+        let phi = GroupMorphismLibgap::new(g, h, mapping, false).unwrap();
 
         let subset = vec![ModInt::new(0, 2)];
         let pre = phi.preimage(&subset);

@@ -389,10 +389,10 @@ impl<F: Field> JacobianGroupEmbedding<F> {
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::jacobian_khuri_makdisi::Jacobian_finite_field;
+/// use rustmath_rings::function_field::jacobian_khuri_makdisi::JacobianFiniteField;
 /// use rustmath_rationals::Rational;
 ///
-/// let jac = Jacobian_finite_field::<Rational>::new("C".to_string(), 3, 7);
+/// let jac = JacobianFiniteField::<Rational>::new("C".to_string(), 3, 7);
 /// assert_eq!(jac.field_size(), 7);
 /// ```
 #[derive(Debug, Clone)]
@@ -403,7 +403,7 @@ pub struct JacobianFiniteField<F: Field> {
     field_size: usize,
 }
 
-impl<F: Field> Jacobian_finite_field<F> {
+impl<F: Field> JacobianFiniteField<F> {
     /// Create a new finite field Jacobian
     pub fn new(curve: String, genus: usize, field_size: usize) -> Self {
         Self {
@@ -445,10 +445,10 @@ impl<F: Field> Jacobian_finite_field<F> {
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::jacobian_khuri_makdisi::JacobianPoint_finite_field;
+/// use rustmath_rings::function_field::jacobian_khuri_makdisi::JacobianPointFiniteField;
 /// use rustmath_rationals::Rational;
 ///
-/// let point = JacobianPoint_finite_field::<Rational>::new(
+/// let point = JacobianPointFiniteField::<Rational>::new(
 ///     "Jac(C)".to_string(),
 ///     "D".to_string(),
 ///     3,
@@ -464,7 +464,7 @@ pub struct JacobianPointFiniteField<F: Field> {
     field_size: usize,
 }
 
-impl<F: Field> JacobianPoint_finite_field<F> {
+impl<F: Field> JacobianPointFiniteField<F> {
     /// Create a new finite field point
     pub fn new(jacobian: String, divisor: String, genus: usize, field_size: usize) -> Self {
         Self {
@@ -509,10 +509,10 @@ impl<F: Field> JacobianPoint_finite_field<F> {
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::jacobian_khuri_makdisi::JacobianGroup_finite_field;
+/// use rustmath_rings::function_field::jacobian_khuri_makdisi::JacobianGroupFiniteField;
 /// use rustmath_rationals::Rational;
 ///
-/// let group = JacobianGroup_finite_field::<Rational>::new("C".to_string(), 3, 7);
+/// let group = JacobianGroupFiniteField::<Rational>::new("C".to_string(), 3, 7);
 /// assert_eq!(group.field_size(), 7);
 /// ```
 #[derive(Debug, Clone)]
@@ -523,7 +523,7 @@ pub struct JacobianGroupFiniteField<F: Field> {
     field_size: usize,
 }
 
-impl<F: Field> JacobianGroup_finite_field<F> {
+impl<F: Field> JacobianGroupFiniteField<F> {
     /// Create a new finite field group
     pub fn new(curve: String, genus: usize, field_size: usize) -> Self {
         Self {
@@ -564,10 +564,10 @@ impl<F: Field> JacobianGroup_finite_field<F> {
 /// # Examples
 ///
 /// ```
-/// use rustmath_rings::function_field::jacobian_khuri_makdisi::JacobianGroupEmbedding_finite_field;
+/// use rustmath_rings::function_field::jacobian_khuri_makdisi::JacobianGroupEmbeddingFiniteField;
 /// use rustmath_rationals::Rational;
 ///
-/// let emb = JacobianGroupEmbedding_finite_field::<Rational>::new(
+/// let emb = JacobianGroupEmbeddingFiniteField::<Rational>::new(
 ///     "C".to_string(),
 ///     3,
 ///     7,
@@ -582,7 +582,7 @@ pub struct JacobianGroupEmbeddingFiniteField<F: Field> {
     field_size: usize,
 }
 
-impl<F: Field> JacobianGroupEmbedding_finite_field<F> {
+impl<F: Field> JacobianGroupEmbeddingFiniteField<F> {
     /// Create a new finite field embedding
     pub fn new(curve: String, genus: usize, field_size: usize) -> Self {
         Self {
@@ -602,9 +602,9 @@ impl<F: Field> JacobianGroupEmbedding_finite_field<F> {
     }
 
     /// Apply to a point
-    pub fn apply(&self, point: &str) -> JacobianPoint_finite_field<F> {
+    pub fn apply(&self, point: &str) -> JacobianPointFiniteField<F> {
         let embedded = self.base.apply(point);
-        JacobianPoint_finite_field::new(
+        JacobianPointFiniteField::new(
             embedded.jacobian,
             embedded.divisor,
             embedded.genus,
@@ -767,14 +767,14 @@ mod tests {
 
     #[test]
     fn test_finite_field_jacobian() {
-        let jac = Jacobian_finite_field::<Rational>::new("C".to_string(), 3, 7);
+        let jac = JacobianFiniteField::<Rational>::new("C".to_string(), 3, 7);
         assert_eq!(jac.field_size(), 7);
         assert_eq!(jac.base().genus(), 3);
     }
 
     #[test]
     fn test_approximate_order() {
-        let jac = Jacobian_finite_field::<Rational>::new("C".to_string(), 2, 5);
+        let jac = JacobianFiniteField::<Rational>::new("C".to_string(), 2, 5);
         let order = jac.approximate_order();
         assert!(order > 0);
         // For genus 2 over F_5: order ≈ 6^2 = 36
@@ -784,13 +784,13 @@ mod tests {
 
     #[test]
     fn test_frobenius_polynomial_degree() {
-        let jac = Jacobian_finite_field::<Rational>::new("C".to_string(), 3, 7);
+        let jac = JacobianFiniteField::<Rational>::new("C".to_string(), 3, 7);
         assert_eq!(jac.frobenius_polynomial_degree(), 6); // 2*3
     }
 
     #[test]
     fn test_finite_field_point() {
-        let point = JacobianPoint_finite_field::<Rational>::new(
+        let point = JacobianPointFiniteField::<Rational>::new(
             "Jac(C)".to_string(),
             "D".to_string(),
             3,
@@ -802,7 +802,7 @@ mod tests {
 
     #[test]
     fn test_point_frobenius() {
-        let point = JacobianPoint_finite_field::<Rational>::new(
+        let point = JacobianPointFiniteField::<Rational>::new(
             "Jac(C)".to_string(),
             "D".to_string(),
             3,
@@ -814,7 +814,7 @@ mod tests {
 
     #[test]
     fn test_finite_point_order() {
-        let point = JacobianPoint_finite_field::<Rational>::new(
+        let point = JacobianPointFiniteField::<Rational>::new(
             "Jac(C)".to_string(),
             "D".to_string(),
             3,
@@ -826,21 +826,21 @@ mod tests {
 
     #[test]
     fn test_finite_field_group() {
-        let group = JacobianGroup_finite_field::<Rational>::new("C".to_string(), 3, 7);
+        let group = JacobianGroupFiniteField::<Rational>::new("C".to_string(), 3, 7);
         assert_eq!(group.field_size(), 7);
         assert_eq!(group.genus(), 3);
     }
 
     #[test]
     fn test_finite_group_approximate_order() {
-        let group = JacobianGroup_finite_field::<Rational>::new("C".to_string(), 2, 5);
+        let group = JacobianGroupFiniteField::<Rational>::new("C".to_string(), 2, 5);
         let order = group.approximate_order();
         assert!(order > 0);
     }
 
     #[test]
     fn test_finite_embedding() {
-        let emb = JacobianGroupEmbedding_finite_field::<Rational>::new(
+        let emb = JacobianGroupEmbeddingFiniteField::<Rational>::new(
             "C".to_string(),
             3,
             7,
@@ -850,7 +850,7 @@ mod tests {
 
     #[test]
     fn test_finite_embedding_apply() {
-        let emb = JacobianGroupEmbedding_finite_field::<Rational>::new(
+        let emb = JacobianGroupEmbeddingFiniteField::<Rational>::new(
             "C".to_string(),
             3,
             7,

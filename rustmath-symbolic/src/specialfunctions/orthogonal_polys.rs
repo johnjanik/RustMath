@@ -33,6 +33,7 @@
 //! weight functions on specific intervals. They are solutions to
 //! Sturm-Liouville differential equations.
 
+use std::sync::Arc;
 use crate::expression::Expr;
 
 /// Chebyshev polynomial of the first kind Tₙ(x)

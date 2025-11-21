@@ -40,7 +40,7 @@
 //!
 //! This module provides:
 //!
-//! - `FunctionFieldOrder_base`: Base order class
+//! - `FunctionFieldOrderBase`: Base order class
 //! - `FunctionFieldOrder`: Standard order
 //! - `FunctionFieldOrderInfinite`: Order at infinity
 //! - `FunctionFieldMaximalOrder`: Maximal order (ring of integers)
@@ -74,7 +74,7 @@ pub struct FunctionFieldOrderBase<F: Field> {
     _phantom: PhantomData<F>,
 }
 
-impl<F: Field> FunctionFieldOrder_base<F> {
+impl<F: Field> FunctionFieldOrderBase<F> {
     /// Create a new order
     pub fn new(field: String, name: String) -> Self {
         Self {
@@ -157,21 +157,21 @@ impl<F: Field> FunctionFieldOrder_base<F> {
 #[derive(Debug, Clone)]
 pub struct FunctionFieldOrder<F: Field> {
     /// Base order structure
-    inner: FunctionFieldOrder_base<F>,
+    inner: FunctionFieldOrderBase<F>,
 }
 
 impl<F: Field> FunctionFieldOrder<F> {
     /// Create a new order
     pub fn new(field: String, name: String) -> Self {
         Self {
-            inner: FunctionFieldOrder_base::new(field, name),
+            inner: FunctionFieldOrderBase::new(field, name),
         }
     }
 
     /// Create with basis
     pub fn with_basis(field: String, name: String, basis: Vec<String>) -> Self {
         Self {
-            inner: FunctionFieldOrder_base::with_basis(field, name, basis),
+            inner: FunctionFieldOrderBase::with_basis(field, name, basis),
         }
     }
 
@@ -220,14 +220,14 @@ impl<F: Field> FunctionFieldOrder<F> {
 #[derive(Debug, Clone)]
 pub struct FunctionFieldOrderInfinite<F: Field> {
     /// Base order structure
-    inner: FunctionFieldOrder_base<F>,
+    inner: FunctionFieldOrderBase<F>,
 }
 
 impl<F: Field> FunctionFieldOrderInfinite<F> {
     /// Create a new infinite order
     pub fn new(field: String, name: String) -> Self {
         Self {
-            inner: FunctionFieldOrder_base::new(field, name),
+            inner: FunctionFieldOrderBase::new(field, name),
         }
     }
 
@@ -265,14 +265,14 @@ impl<F: Field> FunctionFieldOrderInfinite<F> {
 #[derive(Debug, Clone)]
 pub struct FunctionFieldMaximalOrder<F: Field> {
     /// Base order structure
-    inner: FunctionFieldOrder_base<F>,
+    inner: FunctionFieldOrderBase<F>,
 }
 
 impl<F: Field> FunctionFieldMaximalOrder<F> {
     /// Create the maximal order
     pub fn new(field: String) -> Self {
         Self {
-            inner: FunctionFieldOrder_base::new(field.clone(), format!("O_{}", field)),
+            inner: FunctionFieldOrderBase::new(field.clone(), format!("O_{}", field)),
         }
     }
 
@@ -375,7 +375,7 @@ mod tests {
 
     #[test]
     fn test_function_field_order_base() {
-        let order = FunctionFieldOrder_base::<Rational>::new(
+        let order = FunctionFieldOrderBase::<Rational>::new(
             "Q(x)".to_string(),
             "O".to_string(),
         );
@@ -388,7 +388,7 @@ mod tests {
     #[test]
     fn test_order_with_basis() {
         let basis = vec!["1".to_string(), "x".to_string()];
-        let order = FunctionFieldOrder_base::<Rational>::with_basis(
+        let order = FunctionFieldOrderBase::<Rational>::with_basis(
             "Q(x)".to_string(),
             "O".to_string(),
             basis.clone(),
@@ -400,7 +400,7 @@ mod tests {
 
     #[test]
     fn test_add_basis_element() {
-        let mut order = FunctionFieldOrder_base::<Rational>::new(
+        let mut order = FunctionFieldOrderBase::<Rational>::new(
             "Q(x)".to_string(),
             "O".to_string(),
         );
@@ -420,7 +420,7 @@ mod tests {
 
     #[test]
     fn test_contains() {
-        let order = FunctionFieldOrder_base::<Rational>::new(
+        let order = FunctionFieldOrderBase::<Rational>::new(
             "Q(x)".to_string(),
             "O".to_string(),
         );
@@ -430,7 +430,7 @@ mod tests {
 
     #[test]
     fn test_discriminant() {
-        let order = FunctionFieldOrder_base::<Rational>::new(
+        let order = FunctionFieldOrderBase::<Rational>::new(
             "Q(x)".to_string(),
             "O".to_string(),
         );
