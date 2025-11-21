@@ -171,7 +171,7 @@ pub enum LazyFieldElement {
     Float(f64),
 
     /// Wrapped complex value
-    Complex(Complex<f64>),
+    Complex(Complex),
 
     /// Mathematical constant
     Constant(MathConstant),
@@ -220,7 +220,7 @@ impl LazyFieldElement {
     }
 
     /// Create a lazy element from a complex number
-    pub fn from_complex(c: Complex<f64>) -> Self {
+    pub fn from_complex(c: Complex) -> Self {
         LazyFieldElement::Complex(c)
     }
 
@@ -458,7 +458,7 @@ impl LazyFieldElement {
     }
 
     /// Evaluate the lazy element to a complex number
-    pub fn eval_to_complex(&self) -> Complex<f64> {
+    pub fn eval_to_complex(&self) -> Complex {
         match self {
             LazyFieldElement::Complex(c) => c.clone(),
             _ => Complex::new(self.eval_to_f64(), 0.0),

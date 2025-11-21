@@ -123,7 +123,7 @@ impl SmoothMap {
             let mut row = Vec::with_capacity(n);
             for j in 0..n {
                 let var = source_chart.coordinate_symbol(j);
-                let derivative = expr.differentiate(&var.name());
+                let derivative = expr.differentiate(&var);
                 row.push(derivative);
             }
             jacobian.push(row);
@@ -180,7 +180,7 @@ impl PushForward {
         let jacobian = map.jacobian(source_chart, target_chart)?;
 
         // Get vector components
-        let v_components = vector.components(source_chart)?;
+        let v_components = vector.components();
 
         // Multiply: (f_* v)^i = Σ_j J^i_j v^j
         let mut pushed = Vec::with_capacity(jacobian.len());
@@ -191,7 +191,10 @@ impl PushForward {
 
         // Create new tangent vector in target manifold
         // This is a simplified version - proper implementation would track the base point
-        Ok(TangentVector::new(pushed))
+        // For now, use the image of the base point under the map
+        let target_point = vector.base_point().clone(); // Simplified - should be f(base_point)
+        let target_manifold = self.map.target();
+        TangentVector::new(target_point, pushed, target_manifold)
     }
 
     /// Apply the pushforward to a vector field
@@ -266,7 +269,7 @@ impl PullBack {
         }
 
         // Create new scalar field on source manifold
-        ScalarField::from_expr(self.map.source.clone(), source_chart, substituted)
+        Ok(ScalarField::from_expr(self.map.source.clone(), source_chart, substituted))
     }
 
     /// Apply the pullback to a 1-form (covector field)
@@ -768,7 +771,7 @@ impl Diffeomorphism {
 /// Substitute a variable in an expression
 fn substitute_in_expr(expr: &Expr, var_name: &str, value: &Expr) -> Expr {
     match expr {
-        Expr::Symbol(s) if s == var_name => value.clone(),
+        Expr::Symbol(s) if s.name() == var_name => value.clone(),
         Expr::Binary(op, left, right) => {
             let new_left = substitute_in_expr(left, var_name, value);
             let new_right = substitute_in_expr(right, var_name, value);

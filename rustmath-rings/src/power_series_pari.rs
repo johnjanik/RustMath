@@ -146,7 +146,12 @@ impl<R: Ring> PowerSeriesPari<R> {
 
         let mut new_coeffs = Vec::with_capacity(self.coefficients.len().saturating_sub(1));
         for (i, coeff) in self.coefficients.iter().enumerate().skip(1) {
-            new_coeffs.push(coeff.clone() * &R::from_usize(i));
+            // Create ring element from index using repeated addition
+            let mut factor = R::zero();
+            for _ in 0..i {
+                factor = factor + R::one();
+            }
+            new_coeffs.push(coeff.clone() * &factor);
         }
 
         Self::new(new_coeffs, self.precision)
@@ -155,13 +160,10 @@ impl<R: Ring> PowerSeriesPari<R> {
     /// Integral of the power series (with constant term 0)
     pub fn integral(&self) -> Self {
         let mut new_coeffs = vec![R::zero()];
-        for (i, coeff) in self.coefficients.iter().enumerate() {
-            if let Some(divisor) = R::from_usize(i + 1) {
-                // This is a simplification; proper division would require a field
-                new_coeffs.push(coeff.clone());
-            } else {
-                new_coeffs.push(R::zero());
-            }
+        for (_i, coeff) in self.coefficients.iter().enumerate() {
+            // This is a simplification; proper division would require a field
+            // For now, just add the coefficient without division
+            new_coeffs.push(coeff.clone());
         }
         new_coeffs.truncate(self.precision);
         Self::new(new_coeffs, self.precision)

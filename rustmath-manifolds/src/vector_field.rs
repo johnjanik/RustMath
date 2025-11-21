@@ -145,7 +145,7 @@ impl VectorField {
             // A full implementation would substitute point coordinates into the expressions
             let val = match comp {
                 Expr::Integer(ref n) => n.to_f64().unwrap_or(0.0),
-                Expr::Rational(ref r) => r.to_f64(),
+                Expr::Rational(ref r) => r.to_f64().unwrap_or(0.0),
                 _ => 0.0, // For now, treat other expressions as 0
             };
             values.push(val);
@@ -215,6 +215,35 @@ impl VectorField {
         for comps in self.chart_components.values() {
             for comp in comps {
                 if !comp.is_zero() {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+
+    /// Check if all components are approximately zero
+    ///
+    /// Returns `true` if all vector field components have absolute value less than epsilon.
+    /// Uses epsilon = 1e-10 as the tolerance threshold.
+    ///
+    /// # Returns
+    ///
+    /// `true` if all components are within epsilon of zero, `false` otherwise.
+    /// If a component cannot be evaluated to a numeric value, returns `false`.
+    pub fn is_approximately_zero(&self) -> bool {
+        const EPSILON: f64 = 1e-10;
+
+        for comps in self.chart_components.values() {
+            for comp in comps {
+                // Try to evaluate the expression to f64
+                let val = match comp {
+                    Expr::Integer(ref n) => n.to_f64().unwrap_or(f64::INFINITY),
+                    Expr::Rational(ref r) => r.to_f64().unwrap_or(f64::INFINITY),
+                    _ => return false, // If we can't evaluate to a number, assume not approximately zero
+                };
+
+                if val.abs() >= EPSILON {
                     return false;
                 }
             }

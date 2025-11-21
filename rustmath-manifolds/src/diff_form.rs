@@ -252,6 +252,23 @@ impl DiffForm {
         self.tensor.is_zero()
     }
 
+    /// Check if this form is closed (i.e., d(form) = 0)
+    ///
+    /// A differential form ω is closed if its exterior derivative is zero: dω = 0.
+    /// This is a key concept in de Rham cohomology.
+    ///
+    /// # Arguments
+    ///
+    /// * `chart` - The chart in which to compute the exterior derivative
+    ///
+    /// # Returns
+    ///
+    /// `true` if the exterior derivative is zero, `false` otherwise
+    pub fn is_closed(&self, chart: &Chart) -> Result<bool> {
+        let d_omega = self.exterior_derivative(chart)?;
+        Ok(d_omega.is_zero())
+    }
+
     /// Create a zero p-form
     pub fn zero(manifold: Arc<DifferentiableManifold>, degree: usize) -> Self {
         Self::new(manifold, degree)

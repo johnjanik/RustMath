@@ -55,4 +55,8 @@ pub enum MathError {
     /// Index out of bounds
     #[error("Index out of bounds: {0}")]
     IndexOutOfBounds(String),
+
+    /// Not divisible
+    #[error("Not divisible: {0}")]
+    NotDivisible(String),
 }

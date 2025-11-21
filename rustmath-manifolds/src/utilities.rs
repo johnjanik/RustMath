@@ -151,7 +151,7 @@ pub fn exterior_derivative(
 
                 // Add to result (or accumulate if already present)
                 result.entry(new_indices)
-                    .and_modify(|e| *e = e.clone() + final_expr.clone())
+                    .and_modify(|e: &mut Expr| *e = e.clone() + final_expr.clone())
                     .or_insert(final_expr);
             }
         }

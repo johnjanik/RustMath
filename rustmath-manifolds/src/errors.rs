@@ -1,6 +1,7 @@
 //! Error types for manifold operations
 
 use thiserror::Error;
+use rustmath_core::MathError;
 
 /// Errors that can occur when working with manifolds
 #[derive(Error, Debug, Clone, PartialEq)]
@@ -77,6 +78,9 @@ pub enum ManifoldError {
 
     #[error("Invalid point: {0}")]
     InvalidPoint(String),
+
+    #[error("Math error: {0}")]
+    MathError(#[from] MathError),
 }
 
 pub type Result<T> = std::result::Result<T, ManifoldError>;

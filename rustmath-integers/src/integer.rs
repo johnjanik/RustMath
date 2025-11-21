@@ -67,6 +67,11 @@ impl Integer {
         EuclideanDomain::extended_gcd(self, other)
     }
 
+    /// Compute self raised to the power exp
+    pub fn pow(&self, exp: u32) -> Self {
+        Ring::pow(self, exp)
+    }
+
     /// Modular exponentiation: compute (self^exp) % modulus efficiently
     pub fn mod_pow(&self, exp: &Self, modulus: &Self) -> Result<Self> {
         if modulus.is_zero() {

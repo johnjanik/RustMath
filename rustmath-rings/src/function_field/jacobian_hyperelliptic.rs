@@ -118,14 +118,16 @@ impl<F: Field> HyperellipticCurve<F> {
 
         // Compute genus
         let genus = if h.is_none() {
-            if deg_f % 2 == 1 {
-                (deg_f - 1) / 2
+            let deg_f_val = deg_f.unwrap_or(0);
+            if deg_f_val % 2 == 1 {
+                (deg_f_val - 1) / 2
             } else {
-                (deg_f - 2) / 2
+                (deg_f_val - 2) / 2
             }
         } else {
             // General case: genus depends on both f and h
-            (deg_f - 2) / 2
+            let deg_f_val = deg_f.unwrap_or(0);
+            (deg_f_val - 2) / 2
         };
 
         Self { f, h, genus }

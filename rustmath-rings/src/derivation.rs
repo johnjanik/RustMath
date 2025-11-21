@@ -18,20 +18,30 @@ use std::fmt;
 /// A derivation D: R → R is a map satisfying:
 /// 1. D(a + b) = D(a) + D(b) (additivity)
 /// 2. D(ab) = aD(b) + D(a)b (Leibniz rule)
-pub trait RingDerivation<R: Ring>: Clone {
+///
+/// # Dyn-Safety
+///
+/// This trait is dyn-safe (object-safe) to allow usage as `Box<dyn RingDerivation<R>>`.
+/// The `compose` method uses `where Self: Sized` to remain dyn-safe while providing
+/// functionality for concrete types. Individual implementations can still implement
+/// `Clone`, but it's not required by the trait to maintain dyn-safety.
+pub trait RingDerivation<R: Ring> {
     /// Apply the derivation to an element
     fn apply(&self, x: &R) -> R;
 
     /// Compose this derivation with another
     ///
     /// Returns D1 ∘ D2, which is generally NOT a derivation
+    ///
+    /// This method is only available for sized types (not trait objects)
     fn compose<D: RingDerivation<R>>(&self, other: &D) -> ComposedDerivation<R, Self, D>
     where
-        Self: Sized
+        Self: Sized + Clone,
+        D: Clone,
     {
         ComposedDerivation {
-            first: other.clone(),
-            second: self.clone(),
+            first: self.clone(),
+            second: other.clone(),
             _phantom: PhantomData,
         }
     }
@@ -198,7 +208,7 @@ where
     }
 }
 
-impl<R: Ring, D: RingDerivation<R>, F> Clone for TwistedDerivation<R, D, F>
+impl<R: Ring, D: RingDerivation<R> + Clone, F> Clone for TwistedDerivation<R, D, F>
 where
     F: Fn(&R) -> R + Clone,
 {
@@ -339,16 +349,10 @@ impl<R: Ring> Default for LinearCombinationDerivation<R> {
     }
 }
 
-impl<R: Ring> Clone for LinearCombinationDerivation<R> {
-    fn clone(&self) -> Self {
-        // Note: This is a simplified clone that creates a zero derivation
-        // A full implementation would require cloning boxed trait objects
-        LinearCombinationDerivation {
-            derivations: Vec::new(),
-            coefficients: Vec::new(),
-        }
-    }
-}
+// Note: Clone is not implemented for LinearCombinationDerivation because it contains
+// boxed trait objects (Box<dyn RingDerivation<R>>), which cannot be cloned without
+// additional infrastructure. If cloning is needed, consider using Rc/Arc or implementing
+// a custom cloning mechanism with a CloneableDerivation trait.
 
 impl<R: Ring> RingDerivation<R> for LinearCombinationDerivation<R> {
     fn apply(&self, x: &R) -> R {

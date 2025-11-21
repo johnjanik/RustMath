@@ -145,7 +145,12 @@ impl<R: Ring> PowerSeriesPoly<R> {
 
         let mut new_coeffs = Vec::with_capacity(self.coefficients.len().saturating_sub(1));
         for (i, coeff) in self.coefficients.iter().enumerate().skip(1) {
-            new_coeffs.push(coeff.clone() * &R::from_usize(i));
+            // Create ring element from index using repeated addition
+            let mut factor = R::zero();
+            for _ in 0..i {
+                factor = factor + R::one();
+            }
+            new_coeffs.push(coeff.clone() * &factor);
         }
 
         Self::new(new_coeffs, self.precision)
