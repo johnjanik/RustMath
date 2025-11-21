@@ -266,7 +266,7 @@ impl<R: Ring> ProjectiveVariety<R> {
         ProjectiveVariety {
             ambient_space: ProjectiveSpace::new(dimension),
             generators,
-            ordering: MonomialOrdering::Grevlex,
+            _ordering: MonomialOrdering::Grevlex,
         }
     }
 
