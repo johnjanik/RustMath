@@ -104,7 +104,7 @@ impl DynkinDiagram {
     /// Compute edges from the Cartan matrix
     fn compute_edges(cartan_matrix: &CartanMatrix, num_nodes: usize) -> Vec<DynkinEdge> {
         let mut edges = Vec::new();
-        let mut processed = HashSet::new();
+        let mut processed: HashSet<(usize, usize)> = HashSet::new();
 
         for i in 0..num_nodes {
             for j in i + 1..num_nodes {

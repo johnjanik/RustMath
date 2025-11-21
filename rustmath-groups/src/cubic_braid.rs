@@ -353,7 +353,7 @@ impl Group for CubicBraidGroup {
 
     fn contains(&self, element: &Self::Element) -> bool {
         // Check if element belongs to this cubic braid group
-        self.n == element.group.n && self.cubic_type == element.group.cubic_type
+        self.n_strands == element.group.n_strands && self.cbg_type == element.group.cbg_type
     }
 }
 
