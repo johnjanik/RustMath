@@ -4,6 +4,7 @@
 //! homogeneous coordinates, extending the basic implementation.
 
 use rustmath_core::Ring;
+use num_traits::{Zero, One};
 use std::fmt;
 
 /// A point in projective space ℙⁿ with homogeneous coordinates
@@ -115,7 +116,10 @@ impl<R: Ring> ProjectivePoint<R> {
     /// Create a projective point from affine coordinates on the i-th chart
     ///
     /// Converts (a₀, ..., âᵢ, ..., aₙ) to [a₀ : ... : 1 : ... : aₙ] where 1 is at position i
-    pub fn from_affine(affine_coords: Vec<R>, chart_index: usize) -> Result<Self, String> {
+    pub fn from_affine(affine_coords: Vec<R>, chart_index: usize) -> Result<Self, String>
+    where
+        R: One,
+    {
         let dimension = affine_coords.len();
         let mut coords = Vec::new();
 
@@ -192,7 +196,10 @@ impl<R: Ring> ProjectiveSpace<R> {
     }
 
     /// Create a standard basis point [0:...:0:1:0:...:0] where 1 is at position i
-    pub fn standard_point(&self, index: usize) -> Result<ProjectivePoint<R>, String> {
+    pub fn standard_point(&self, index: usize) -> Result<ProjectivePoint<R>, String>
+    where
+        R: Zero + One,
+    {
         if index > self.dimension {
             return Err("Index out of bounds".to_string());
         }
@@ -261,7 +268,10 @@ impl<R: Ring> LinearSubspace<R> {
     }
 
     /// Check if a point lies in this subspace
-    pub fn contains(&self, point: &ProjectivePoint<R>) -> bool {
+    pub fn contains(&self, point: &ProjectivePoint<R>) -> bool
+    where
+        R: Zero,
+    {
         // Check if point satisfies all defining equations
         for equation in &self.equations {
             // Compute dot product of equation coefficients with point coordinates
@@ -324,7 +334,10 @@ impl<R: Ring> Hyperplane<R> {
     }
 
     /// Check if a point lies in this hyperplane
-    pub fn contains(&self, point: &ProjectivePoint<R>) -> bool {
+    pub fn contains(&self, point: &ProjectivePoint<R>) -> bool
+    where
+        R: Zero,
+    {
         let mut sum = R::zero();
         for (coeff, coord) in self.coefficients.iter().zip(point.coordinates()) {
             sum = sum + coeff.clone() * coord.clone();

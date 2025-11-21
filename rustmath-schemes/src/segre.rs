@@ -24,6 +24,7 @@
 
 use crate::projective_space::{ProjectivePoint, ProjectiveSpace};
 use rustmath_core::Ring;
+use num_traits::{Zero, One};
 use std::fmt;
 
 /// The Segre embedding σ: ℙⁿ × ℙᵐ → ℙ⁽ⁿ⁺¹⁾⁽ᵐ⁺¹⁾⁻¹
@@ -277,7 +278,10 @@ impl<R: Ring> MultiSegreEmbedding<R> {
     /// Apply the multi-factor Segre embedding
     ///
     /// Maps (p₁, p₂, ..., pₖ) to all products of coordinates
-    pub fn apply(&self, points: &[ProjectivePoint<R>]) -> Result<ProjectivePoint<R>, String> {
+    pub fn apply(&self, points: &[ProjectivePoint<R>]) -> Result<ProjectivePoint<R>, String>
+    where
+        R: One,
+    {
         if points.len() != self.sources.len() {
             return Err("Number of points must match number of source spaces".to_string());
         }

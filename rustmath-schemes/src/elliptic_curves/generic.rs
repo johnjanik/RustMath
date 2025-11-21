@@ -78,6 +78,7 @@
 //! ```
 
 use rustmath_core::{Field, MathError, Result};
+use num_traits::{Zero, One};
 use std::fmt::{self, Debug, Display};
 
 /// A point on an elliptic curve over a field F
@@ -180,7 +181,7 @@ pub struct EllipticCurve<F: Field> {
     b8: Option<F>,
 }
 
-impl<F: Field> EllipticCurve<F> {
+impl<F: Field + Zero + One> EllipticCurve<F> {
     /// Create a new elliptic curve from Weierstrass coefficients
     ///
     /// Creates the curve: y² + a₁xy + a₃y = x³ + a₂x² + a₄x + a₆
@@ -669,7 +670,7 @@ impl<F: Field> EllipticCurve<F> {
     }
 }
 
-impl<F: Field + Display> Display for EllipticCurve<F> {
+impl<F: Field + Zero + One + Display> Display for EllipticCurve<F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.is_short_weierstrass() {
             write!(f, "y² = x³ + ({})x + ({})", self.a4, self.a6)

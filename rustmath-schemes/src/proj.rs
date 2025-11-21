@@ -14,6 +14,7 @@
 
 use crate::graded_ring::{GradedRing, HomogeneousElement, HomogeneousIdeal};
 use rustmath_core::Ring;
+use num_traits::{Zero, One};
 use std::fmt;
 
 /// The Proj scheme of a graded ring
@@ -178,7 +179,10 @@ impl<R: Ring> AffineChart<R> {
     /// Convert affine coordinates to homogeneous coordinates
     ///
     /// For D₊(xᵢ), maps (a₀, ..., âᵢ, ..., aₙ) to [a₀:...:1:...:aₙ] where 1 is at position i
-    pub fn to_homogeneous_coordinates(&self, affine: &[R]) -> Vec<R> {
+    pub fn to_homogeneous_coordinates(&self, affine: &[R]) -> Vec<R>
+    where
+        R: One,
+    {
         let mut homogeneous = Vec::new();
 
         for i in 0..=affine.len() {
@@ -213,7 +217,7 @@ impl<R: Ring> fmt::Display for AffineChart<R> {
 ///
 /// - `projective_space::<i32>(1)` creates ℙ¹ (projective line)
 /// - `projective_space::<i32>(2)` creates ℙ² (projective plane)
-pub fn projective_space<R: Ring>(dimension: usize) -> Proj<R> {
+pub fn projective_space<R: Ring + Zero + One>(dimension: usize) -> Proj<R> {
     let mut ring = GradedRing::new("k".to_string());
 
     // Degree 0: base ring
