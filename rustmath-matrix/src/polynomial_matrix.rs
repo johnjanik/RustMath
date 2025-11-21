@@ -231,7 +231,7 @@ impl<F: Field> PolynomialMatrix<F> {
         }
 
         // Compute quotient and remainder
-        let (q, r) = target.pseudo_div_rem(&pivot)?;
+        let (q, _r) = target.pseudo_div_rem(&pivot)?;
 
         // Column operation: col_j -= q * col_k
         for i in 0..s.rows {
@@ -258,7 +258,7 @@ impl<F: Field> PolynomialMatrix<F> {
         }
 
         // Compute quotient and remainder
-        let (q, r) = target.pseudo_div_rem(&pivot)?;
+        let (q, _r) = target.pseudo_div_rem(&pivot)?;
 
         // Row operation: row_i -= q * row_k
         for j in 0..s.cols {
@@ -275,7 +275,7 @@ impl<F: Field> PolynomialMatrix<F> {
     }
 
     /// Ensure that each diagonal entry divides the next
-    fn ensure_divisibility(s: &mut Self, left: &mut Self, right: &mut Self) -> Result<()> {
+    fn ensure_divisibility(s: &mut Self, _left: &mut Self, _right: &mut Self) -> Result<()> {
         let min_dim = s.rows.min(s.cols);
 
         for i in 0..(min_dim - 1) {
@@ -284,7 +284,7 @@ impl<F: Field> PolynomialMatrix<F> {
 
             if !d_i.is_zero() && !d_next.is_zero() {
                 // Check if d_i divides d_next
-                let (q, r) = d_next.pseudo_div_rem(&d_i)?;
+                let (_q, r) = d_next.pseudo_div_rem(&d_i)?;
 
                 if !r.is_zero() {
                     // d_i doesn't divide d_{i+1}

@@ -202,7 +202,7 @@ impl<F: Field> Matrix<F> {
 
         // Identify free variables (columns without pivots)
         let mut free_vars = Vec::new();
-        let mut pivot_cols: std::collections::HashSet<usize> =
+        let pivot_cols: std::collections::HashSet<usize> =
             rref.pivots.iter().copied().collect();
 
         for col in 0..self.cols() {

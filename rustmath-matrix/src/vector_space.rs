@@ -118,7 +118,7 @@ impl<F: Field> VectorSpace<F> {
         let ambient_dim = self.basis[0].len();
         let other_ambient_dim = other.basis[0].len();
 
-        let combined_ambient_dim = ambient_dim + other_ambient_dim;
+        let _combined_ambient_dim = ambient_dim + other_ambient_dim;
 
         let mut new_basis = Vec::with_capacity(new_dim);
 
@@ -178,7 +178,7 @@ impl<F: Field> VectorSpace<F> {
             }
         }
 
-        let subspace_matrix = Matrix::from_vec(ambient_dim, subspace.dimension, subspace_data)?;
+        let _subspace_matrix = Matrix::from_vec(ambient_dim, subspace.dimension, subspace_data)?;
 
         // Find a complement: vectors in V that are not in the span of W
         // We'll use the basis of V and check which ones are linearly independent mod W
