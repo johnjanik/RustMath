@@ -288,7 +288,7 @@ impl Ring for ExtensionField {
 impl Div for ExtensionField {
     type Output = Self;
 
-    fn div(self, rhs: Self) -> Self::Output {
+    fn div(self, _rhs: Self) -> Self::Output {
         // Division by multiplying by inverse
         // For now, return self (placeholder)
         self
