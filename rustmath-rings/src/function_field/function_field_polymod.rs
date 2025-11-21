@@ -93,7 +93,7 @@ pub struct FunctionFieldPolymod<F: Field> {
 /// Type alias for snake_case compatibility
 pub type FunctionField_polymod<F> = FunctionFieldPolymod<F>;
 
-impl<F: Field> FunctionField_polymod<F> {
+impl<F: Field> FunctionFieldPolymod<F> {
     /// Create a new polymod function field
     pub fn new(base_field: String, variable: String, degree: usize) -> Self {
         Self {
@@ -170,17 +170,17 @@ impl<F: Field> FunctionField_polymod<F> {
 #[derive(Debug, Clone)]
 pub struct FunctionFieldSimple<F: Field> {
     /// Underlying polymod structure
-    inner: FunctionField_polymod<F>,
+    inner: FunctionFieldPolymod<F>,
 }
 
 /// Type alias for snake_case compatibility
 pub type FunctionField_simple<F> = FunctionFieldSimple<F>;
 
-impl<F: Field> FunctionField_simple<F> {
+impl<F: Field> FunctionFieldSimple<F> {
     /// Create a new simple extension
     pub fn new(base_field: String, variable: String, degree: usize) -> Self {
         Self {
-            inner: FunctionField_polymod::new(base_field, variable, degree),
+            inner: FunctionFieldPolymod::new(base_field, variable, degree),
         }
     }
 
@@ -192,7 +192,7 @@ impl<F: Field> FunctionField_simple<F> {
         polynomial: String,
     ) -> Self {
         Self {
-            inner: FunctionField_polymod::with_polynomial(base_field, variable, degree, polynomial),
+            inner: FunctionFieldPolymod::with_polynomial(base_field, variable, degree, polynomial),
         }
     }
 
@@ -224,17 +224,17 @@ impl<F: Field> FunctionField_simple<F> {
 #[derive(Debug, Clone)]
 pub struct FunctionFieldCharZero<F: Field> {
     /// Underlying simple extension
-    inner: FunctionField_simple<F>,
+    inner: FunctionFieldSimple<F>,
 }
 
 /// Type alias for snake_case compatibility
 pub type FunctionField_char_zero<F> = FunctionFieldCharZero<F>;
 
-impl<F: Field> FunctionField_char_zero<F> {
+impl<F: Field> FunctionFieldCharZero<F> {
     /// Create a new characteristic zero extension
     pub fn new(base_field: String, variable: String, degree: usize) -> Self {
         Self {
-            inner: FunctionField_simple::new(base_field, variable, degree),
+            inner: FunctionFieldSimple::new(base_field, variable, degree),
         }
     }
 
@@ -260,17 +260,17 @@ impl<F: Field> FunctionField_char_zero<F> {
 #[derive(Debug, Clone)]
 pub struct FunctionFieldIntegral<F: Field> {
     /// Underlying simple extension
-    inner: FunctionField_simple<F>,
+    inner: FunctionFieldSimple<F>,
 }
 
 /// Type alias for snake_case compatibility
 pub type FunctionField_integral<F> = FunctionFieldIntegral<F>;
 
-impl<F: Field> FunctionField_integral<F> {
+impl<F: Field> FunctionFieldIntegral<F> {
     /// Create a new integral extension
     pub fn new(base_field: String, variable: String, degree: usize) -> Self {
         Self {
-            inner: FunctionField_simple::new(base_field, variable, degree),
+            inner: FunctionFieldSimple::new(base_field, variable, degree),
         }
     }
 
@@ -297,24 +297,24 @@ impl<F: Field> FunctionField_integral<F> {
 #[derive(Debug, Clone)]
 pub struct FunctionFieldCharZeroIntegral<F: Field> {
     /// Characteristic zero structure
-    char_zero: FunctionField_char_zero<F>,
+    char_zero: FunctionFieldCharZero<F>,
     /// Integral structure
-    integral: FunctionField_integral<F>,
+    integral: FunctionFieldIntegral<F>,
 }
 
 /// Type alias for snake_case compatibility
 pub type FunctionField_char_zero_integral<F> = FunctionFieldCharZeroIntegral<F>;
 
-impl<F: Field> FunctionField_char_zero_integral<F> {
+impl<F: Field> FunctionFieldCharZeroIntegral<F> {
     /// Create a new char zero integral extension
     pub fn new(base_field: String, variable: String, degree: usize) -> Self {
         Self {
-            char_zero: FunctionField_char_zero::new(
+            char_zero: FunctionFieldCharZero::new(
                 base_field.clone(),
                 variable.clone(),
                 degree,
             ),
-            integral: FunctionField_integral::new(base_field, variable, degree),
+            integral: FunctionFieldIntegral::new(base_field, variable, degree),
         }
     }
 
@@ -335,7 +335,7 @@ impl<F: Field> FunctionField_char_zero_integral<F> {
 #[derive(Debug, Clone)]
 pub struct FunctionFieldGlobal<F: Field> {
     /// Underlying simple extension
-    inner: FunctionField_simple<F>,
+    inner: FunctionFieldSimple<F>,
     /// Size of constant field
     constant_field_size: usize,
 }
@@ -343,7 +343,7 @@ pub struct FunctionFieldGlobal<F: Field> {
 /// Type alias for snake_case compatibility
 pub type FunctionField_global<F> = FunctionFieldGlobal<F>;
 
-impl<F: Field> FunctionField_global<F> {
+impl<F: Field> FunctionFieldGlobal<F> {
     /// Create a new global function field
     pub fn new(
         base_field: String,
@@ -352,7 +352,7 @@ impl<F: Field> FunctionField_global<F> {
         constant_field_size: usize,
     ) -> Self {
         Self {
-            inner: FunctionField_simple::new(base_field, variable, degree),
+            inner: FunctionFieldSimple::new(base_field, variable, degree),
             constant_field_size,
         }
     }
@@ -392,15 +392,15 @@ impl<F: Field> FunctionField_global<F> {
 #[derive(Debug, Clone)]
 pub struct FunctionFieldGlobalIntegral<F: Field> {
     /// Global structure
-    global: FunctionField_global<F>,
+    global: FunctionFieldGlobal<F>,
     /// Integral structure
-    integral: FunctionField_integral<F>,
+    integral: FunctionFieldIntegral<F>,
 }
 
 /// Type alias for snake_case compatibility
 pub type FunctionField_global_integral<F> = FunctionFieldGlobalIntegral<F>;
 
-impl<F: Field> FunctionField_global_integral<F> {
+impl<F: Field> FunctionFieldGlobalIntegral<F> {
     /// Create a new global integral function field
     pub fn new(
         base_field: String,
@@ -409,13 +409,13 @@ impl<F: Field> FunctionField_global_integral<F> {
         constant_field_size: usize,
     ) -> Self {
         Self {
-            global: FunctionField_global::new(
+            global: FunctionFieldGlobal::new(
                 base_field.clone(),
                 variable.clone(),
                 degree,
                 constant_field_size,
             ),
-            integral: FunctionField_integral::new(base_field, variable, degree),
+            integral: FunctionFieldIntegral::new(base_field, variable, degree),
         }
     }
 

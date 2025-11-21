@@ -84,7 +84,7 @@ pub struct FunctionFieldIdealRational<F: Field> {
 /// Type alias for snake_case compatibility
 pub type FunctionFieldIdeal_rational<F> = FunctionFieldIdealRational<F>;
 
-impl<F: Field> FunctionFieldIdeal_rational<F> {
+impl<F: Field> FunctionFieldIdealRational<F> {
     /// Create a new ideal
     pub fn new(name: String) -> Self {
         Self {
@@ -262,7 +262,7 @@ pub struct FunctionFieldIdealInfiniteRational<F: Field> {
 /// Type alias for snake_case compatibility
 pub type FunctionFieldIdealInfinite_rational<F> = FunctionFieldIdealInfiniteRational<F>;
 
-impl<F: Field> FunctionFieldIdealInfinite_rational<F> {
+impl<F: Field> FunctionFieldIdealInfiniteRational<F> {
     /// Create the infinite ideal
     pub fn new() -> Self {
         Self {
@@ -306,7 +306,7 @@ impl<F: Field> FunctionFieldIdealInfinite_rational<F> {
     }
 }
 
-impl<F: Field> Default for FunctionFieldIdealInfinite_rational<F> {
+impl<F: Field> Default for FunctionFieldIdealInfiniteRational<F> {
     fn default() -> Self {
         Self::new()
     }

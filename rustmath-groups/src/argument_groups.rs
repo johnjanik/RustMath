@@ -248,7 +248,7 @@ impl RootOfUnity {
 
     /// Get the exponent as a rational
     pub fn exponent_rational(&self) -> Rational {
-        Rational::new(self.k.into(), self.n.into())
+        Rational::new(self.k.into(), self.n.into()).unwrap()
     }
 
     /// Get the exponent as a float
@@ -400,7 +400,7 @@ impl Sign {
 
 impl AbstractArgument for Sign {
     fn to_complex(&self) -> Complex {
-        Complex::from(self.to_f64())
+        Complex::from_real(self.to_f64())
     }
 
     fn multiply(&self, other: &Self) -> Self {
@@ -521,7 +521,7 @@ impl AbstractArgument for ArgumentByElement {
         if r == 0.0 {
             Complex::zero()
         } else {
-            self.element.div(&Complex::from(r))
+            self.element.div(&Complex::from_real(r)).unwrap()
         }
     }
 

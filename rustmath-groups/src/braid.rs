@@ -45,7 +45,6 @@
 //! let right = sigma2.multiply(&sigma1).multiply(&sigma2);
 //! ```
 
-use std::collections::HashMap;
 use std::fmt;
 use std::hash::Hash;
 
@@ -112,7 +111,10 @@ impl BraidGroup {
     ///
     /// Note: Internally generators are 0-indexed, but mathematically they're numbered 1 to n-1
     pub fn sigma(&self, i: usize) -> Braid {
-        assert!(i >= 1 && i < self.n, "Generator index must be in range [1, n-1]");
+        assert!(
+            i >= 1 && i < self.n,
+            "Generator index must be in range [1, n-1]"
+        );
         Braid {
             parent: self.clone(),
             element: self.artin_group.gen(i - 1),
@@ -130,9 +132,7 @@ impl BraidGroup {
 
     /// Returns the generators as a vector
     pub fn generators(&self) -> Vec<Braid> {
-        (0..self.num_generators())
-            .map(|i| self.gen(i))
-            .collect()
+        (0..self.num_generators()).map(|i| self.gen(i)).collect()
     }
 
     /// Returns the symmetric group S_n associated with this braid group
@@ -249,8 +249,7 @@ impl Braid {
         let mut perm: Vec<usize> = (0..n).collect();
 
         // Process each generator in the word
-        let word = self.element.word();
-        for (gen, exp) in word.letters() {
+        for &(gen, exp) in self.element.word().word() {
             let i = gen as usize;
             let swaps = exp.abs() as usize;
 
@@ -276,8 +275,11 @@ impl Braid {
 
     /// Get the exponent sum of generator σ_i (1-indexed)
     pub fn exponent_sum(&self, i: usize) -> i32 {
-        assert!(i >= 1 && i < self.parent.strands(), "Generator index out of bounds");
-        self.element.word().exponent_sum(i as i32 - 1)
+        assert!(
+            i >= 1 && i < self.parent.strands(),
+            "Generator index out of bounds"
+        );
+        self.element.word().exponent_sum(i - 1) as i32
     }
 }
 
@@ -457,9 +459,9 @@ impl RightQuantumWord {
         let word_data = braid
             .element
             .word()
-            .letters()
+            .word()
             .iter()
-            .map(|(g, e)| (*g as usize, *e))
+            .map(|&(g, e)| (g as usize, e as i32))
             .collect();
 
         Self {

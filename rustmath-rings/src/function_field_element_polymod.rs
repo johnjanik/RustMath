@@ -31,6 +31,7 @@
 use rustmath_core::{Ring, Field};
 use std::fmt;
 use std::marker::PhantomData;
+use std::hash::{Hash, Hasher};
 
 /// Element of a polynomial-modulus function field
 ///
@@ -60,7 +61,7 @@ pub struct FunctionFieldElementPolymod<F: Field> {
     _field: PhantomData<F>,
 }
 
-impl<F: Field> FunctionFieldElement_polymod<F> {
+impl<F: Field> FunctionFieldElementPolymod<F> {
     /// Create a new polymod function field element
     ///
     /// # Arguments
@@ -72,13 +73,13 @@ impl<F: Field> FunctionFieldElement_polymod<F> {
     ///
     /// ```ignore
     /// // Create element in k(x)[y]/(y^2 - x)
-    /// let elem = FunctionFieldElement_polymod::new(
+    /// let elem = FunctionFieldElementPolymod::new(
     ///     vec!["1".to_string(), "x".to_string()],  // 1 + x*y
     ///     "y^2 - x".to_string(),
     /// );
     /// ```
     pub fn new(coeffs: Vec<String>, defining_poly: String) -> Self {
-        FunctionFieldElement_polymod {
+        FunctionFieldElementPolymod {
             coefficients: coeffs,
             defining_polynomial: defining_poly,
             _field: PhantomData,
@@ -87,7 +88,7 @@ impl<F: Field> FunctionFieldElement_polymod<F> {
 
     /// Create the zero element
     pub fn zero(defining_poly: String) -> Self {
-        FunctionFieldElement_polymod {
+        FunctionFieldElementPolymod {
             coefficients: vec!["0".to_string()],
             defining_polynomial: defining_poly,
             _field: PhantomData,
@@ -96,7 +97,7 @@ impl<F: Field> FunctionFieldElement_polymod<F> {
 
     /// Create the one element
     pub fn one(defining_poly: String) -> Self {
-        FunctionFieldElement_polymod {
+        FunctionFieldElementPolymod {
             coefficients: vec!["1".to_string()],
             defining_polynomial: defining_poly,
             _field: PhantomData,
@@ -210,7 +211,7 @@ impl<F: Field> FunctionFieldElement_polymod<F> {
     }
 }
 
-impl<F: Field> PartialEq for FunctionFieldElement_polymod<F> {
+impl<F: Field> PartialEq for FunctionFieldElementPolymod<F> {
     fn eq(&self, other: &Self) -> bool {
         // Check same defining polynomial
         if self.defining_polynomial != other.defining_polynomial {
@@ -229,9 +230,9 @@ impl<F: Field> PartialEq for FunctionFieldElement_polymod<F> {
     }
 }
 
-impl<F: Field> Eq for FunctionFieldElement_polymod<F> {}
+impl<F: Field> Eq for FunctionFieldElementPolymod<F> {}
 
-impl<F: Field> fmt::Display for FunctionFieldElement_polymod<F> {
+impl<F: Field> fmt::Display for FunctionFieldElementPolymod<F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.is_zero() {
             return write!(f, "0");
@@ -257,7 +258,7 @@ impl<F: Field> fmt::Display for FunctionFieldElement_polymod<F> {
     }
 }
 
-impl<F: Field> std::ops::Add for FunctionFieldElement_polymod<F> {
+impl<F: Field> std::ops::Add for FunctionFieldElementPolymod<F> {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
@@ -275,7 +276,7 @@ impl<F: Field> std::ops::Add for FunctionFieldElement_polymod<F> {
             result_coeffs.push(format!("({}) + ({})", a, b));
         }
 
-        FunctionFieldElement_polymod {
+        FunctionFieldElementPolymod {
             coefficients: result_coeffs,
             defining_polynomial: self.defining_polynomial,
             _field: PhantomData,
@@ -283,7 +284,7 @@ impl<F: Field> std::ops::Add for FunctionFieldElement_polymod<F> {
     }
 }
 
-impl<F: Field> std::ops::Sub for FunctionFieldElement_polymod<F> {
+impl<F: Field> std::ops::Sub for FunctionFieldElementPolymod<F> {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
@@ -300,7 +301,7 @@ impl<F: Field> std::ops::Sub for FunctionFieldElement_polymod<F> {
             result_coeffs.push(format!("({}) - ({})", a, b));
         }
 
-        FunctionFieldElement_polymod {
+        FunctionFieldElementPolymod {
             coefficients: result_coeffs,
             defining_polynomial: self.defining_polynomial,
             _field: PhantomData,
@@ -308,7 +309,7 @@ impl<F: Field> std::ops::Sub for FunctionFieldElement_polymod<F> {
     }
 }
 
-impl<F: Field> std::ops::Mul for FunctionFieldElement_polymod<F> {
+impl<F: Field> std::ops::Mul for FunctionFieldElementPolymod<F> {
     type Output = Self;
 
     fn mul(self, other: Self) -> Self {
@@ -320,7 +321,7 @@ impl<F: Field> std::ops::Mul for FunctionFieldElement_polymod<F> {
         let mut result_coeffs = vec!["0".to_string(); self.coefficients.len()];
         result_coeffs[0] = format!("({}) * ({})", self.coefficients[0], other.coefficients[0]);
 
-        FunctionFieldElement_polymod {
+        FunctionFieldElementPolymod {
             coefficients: result_coeffs,
             defining_polynomial: self.defining_polynomial,
             _field: PhantomData,
@@ -328,7 +329,7 @@ impl<F: Field> std::ops::Mul for FunctionFieldElement_polymod<F> {
     }
 }
 
-impl<F: Field> std::ops::Neg for FunctionFieldElement_polymod<F> {
+impl<F: Field> std::ops::Neg for FunctionFieldElementPolymod<F> {
     type Output = Self;
 
     fn neg(self) -> Self {
@@ -338,11 +339,22 @@ impl<F: Field> std::ops::Neg for FunctionFieldElement_polymod<F> {
             .map(|c| format!("-({})", c))
             .collect();
 
-        FunctionFieldElement_polymod {
+        FunctionFieldElementPolymod {
             coefficients: result_coeffs,
             defining_polynomial: self.defining_polynomial,
             _field: PhantomData,
         }
+    }
+}
+
+impl<F: Field> Hash for FunctionFieldElementPolymod<F> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        // Hash all coefficients
+        for coeff in &self.coefficients {
+            coeff.hash(state);
+        }
+        // Hash the defining polynomial
+        self.defining_polynomial.hash(state);
     }
 }
 
@@ -353,7 +365,7 @@ mod tests {
 
     #[test]
     fn test_creation() {
-        let elem = FunctionFieldElement_polymod::<Rational>::new(
+        let elem = FunctionFieldElementPolymod::<Rational>::new(
             vec!["1".to_string(), "x".to_string()],
             "y^2 - x".to_string(),
         );
@@ -364,8 +376,8 @@ mod tests {
 
     #[test]
     fn test_zero_one() {
-        let zero = FunctionFieldElement_polymod::<Rational>::zero("y^2 - x".to_string());
-        let one = FunctionFieldElement_polymod::<Rational>::one("y^2 - x".to_string());
+        let zero = FunctionFieldElementPolymod::<Rational>::zero("y^2 - x".to_string());
+        let one = FunctionFieldElementPolymod::<Rational>::one("y^2 - x".to_string());
 
         assert!(zero.is_zero());
         assert!(!zero.is_one());
@@ -375,7 +387,7 @@ mod tests {
 
     #[test]
     fn test_degree() {
-        let elem = FunctionFieldElement_polymod::<Rational>::new(
+        let elem = FunctionFieldElementPolymod::<Rational>::new(
             vec!["1".to_string(), "x".to_string(), "x^2".to_string()],
             "y^3 - x".to_string(),
         );
@@ -385,13 +397,13 @@ mod tests {
 
     #[test]
     fn test_is_in_base_field() {
-        let in_base = FunctionFieldElement_polymod::<Rational>::new(
+        let in_base = FunctionFieldElementPolymod::<Rational>::new(
             vec!["x + 1".to_string()],
             "y^2 - x".to_string(),
         );
         assert!(in_base.is_in_base_field());
 
-        let not_in_base = FunctionFieldElement_polymod::<Rational>::new(
+        let not_in_base = FunctionFieldElementPolymod::<Rational>::new(
             vec!["1".to_string(), "x".to_string()],
             "y^2 - x".to_string(),
         );
@@ -400,14 +412,14 @@ mod tests {
 
     #[test]
     fn test_to_base_field() {
-        let elem = FunctionFieldElement_polymod::<Rational>::new(
+        let elem = FunctionFieldElementPolymod::<Rational>::new(
             vec!["x + 1".to_string()],
             "y^2 - x".to_string(),
         );
 
         assert_eq!(elem.to_base_field(), Some("x + 1".to_string()));
 
-        let non_base = FunctionFieldElement_polymod::<Rational>::new(
+        let non_base = FunctionFieldElementPolymod::<Rational>::new(
             vec!["1".to_string(), "x".to_string()],
             "y^2 - x".to_string(),
         );
@@ -417,15 +429,15 @@ mod tests {
 
     #[test]
     fn test_equality() {
-        let a = FunctionFieldElement_polymod::<Rational>::new(
+        let a = FunctionFieldElementPolymod::<Rational>::new(
             vec!["1".to_string(), "x".to_string()],
             "y^2 - x".to_string(),
         );
-        let b = FunctionFieldElement_polymod::<Rational>::new(
+        let b = FunctionFieldElementPolymod::<Rational>::new(
             vec!["1".to_string(), "x".to_string()],
             "y^2 - x".to_string(),
         );
-        let c = FunctionFieldElement_polymod::<Rational>::new(
+        let c = FunctionFieldElementPolymod::<Rational>::new(
             vec!["2".to_string(), "x".to_string()],
             "y^2 - x".to_string(),
         );
@@ -436,7 +448,7 @@ mod tests {
 
     #[test]
     fn test_display() {
-        let elem = FunctionFieldElement_polymod::<Rational>::new(
+        let elem = FunctionFieldElementPolymod::<Rational>::new(
             vec!["1".to_string(), "x".to_string()],
             "y^2 - x".to_string(),
         );
@@ -449,11 +461,11 @@ mod tests {
 
     #[test]
     fn test_arithmetic() {
-        let a = FunctionFieldElement_polymod::<Rational>::new(
+        let a = FunctionFieldElementPolymod::<Rational>::new(
             vec!["1".to_string()],
             "y^2 - x".to_string(),
         );
-        let b = FunctionFieldElement_polymod::<Rational>::new(
+        let b = FunctionFieldElementPolymod::<Rational>::new(
             vec!["2".to_string()],
             "y^2 - x".to_string(),
         );
@@ -467,7 +479,7 @@ mod tests {
 
     #[test]
     fn test_norm_trace() {
-        let elem = FunctionFieldElement_polymod::<Rational>::new(
+        let elem = FunctionFieldElementPolymod::<Rational>::new(
             vec!["1".to_string(), "x".to_string()],
             "y^2 - x".to_string(),
         );
@@ -481,7 +493,7 @@ mod tests {
 
     #[test]
     fn test_is_integral() {
-        let elem = FunctionFieldElement_polymod::<Rational>::new(
+        let elem = FunctionFieldElementPolymod::<Rational>::new(
             vec!["1".to_string(), "x".to_string()],
             "y^2 - x".to_string(),
         );
@@ -492,7 +504,7 @@ mod tests {
 
     #[test]
     fn test_minimal_polynomial() {
-        let elem = FunctionFieldElement_polymod::<Rational>::new(
+        let elem = FunctionFieldElementPolymod::<Rational>::new(
             vec!["x".to_string()],
             "y^2 - x".to_string(),
         );
@@ -503,7 +515,7 @@ mod tests {
 
     #[test]
     fn test_valuation() {
-        let elem = FunctionFieldElement_polymod::<Rational>::new(
+        let elem = FunctionFieldElementPolymod::<Rational>::new(
             vec!["x".to_string()],
             "y^2 - x".to_string(),
         );
@@ -514,7 +526,7 @@ mod tests {
 
     #[test]
     fn test_matrix() {
-        let elem = FunctionFieldElement_polymod::<Rational>::new(
+        let elem = FunctionFieldElementPolymod::<Rational>::new(
             vec!["1".to_string()],
             "y^2 - x".to_string(),
         );

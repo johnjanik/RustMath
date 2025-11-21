@@ -130,7 +130,7 @@ pub struct FunctionFieldValuationBase<F: Field> {
 /// Type alias for snake_case compatibility
 pub type FunctionFieldValuation_base<F> = FunctionFieldValuationBase<F>;
 
-impl<F: Field> FunctionFieldValuation_base<F> {
+impl<F: Field> FunctionFieldValuationBase<F> {
     /// Create a new function field valuation base
     ///
     /// # Arguments
@@ -142,7 +142,7 @@ impl<F: Field> FunctionFieldValuation_base<F> {
     ///
     /// A new FunctionFieldValuation_base instance
     pub fn new(function_field: String, name: String) -> Self {
-        FunctionFieldValuation_base {
+        FunctionFieldValuationBase {
             function_field,
             name,
             field_marker: PhantomData,
@@ -168,7 +168,7 @@ impl<F: Field> FunctionFieldValuation_base<F> {
     }
 }
 
-impl<F: Field> fmt::Display for FunctionFieldValuation_base<F> {
+impl<F: Field> fmt::Display for FunctionFieldValuationBase<F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Valuation {} on {}", self.name, self.function_field)
     }
@@ -184,7 +184,7 @@ impl<F: Field> fmt::Display for FunctionFieldValuation_base<F> {
 #[derive(Clone, Debug)]
 pub struct ClassicalFunctionFieldValuationBase<F: Field> {
     /// Base valuation
-    base: FunctionFieldValuation_base<F>,
+    base: FunctionFieldValuationBase<F>,
     /// Associated place
     place_name: String,
     /// Degree of the place
@@ -194,7 +194,7 @@ pub struct ClassicalFunctionFieldValuationBase<F: Field> {
 /// Type alias for snake_case compatibility
 pub type ClassicalFunctionFieldValuation_base<F> = ClassicalFunctionFieldValuationBase<F>;
 
-impl<F: Field> ClassicalFunctionFieldValuation_base<F> {
+impl<F: Field> ClassicalFunctionFieldValuationBase<F> {
     /// Create a new classical valuation
     ///
     /// # Arguments
@@ -208,8 +208,8 @@ impl<F: Field> ClassicalFunctionFieldValuation_base<F> {
     /// A new ClassicalFunctionFieldValuation_base instance
     pub fn new(function_field: String, place_name: String, place_degree: usize) -> Self {
         let name = format!("v_{}", place_name);
-        ClassicalFunctionFieldValuation_base {
-            base: FunctionFieldValuation_base::new(function_field, name),
+        ClassicalFunctionFieldValuationBase {
+            base: FunctionFieldValuationBase::new(function_field, name),
             place_name,
             place_degree,
         }
@@ -238,12 +238,12 @@ impl<F: Field> ClassicalFunctionFieldValuation_base<F> {
     /// # Returns
     ///
     /// Reference to the base valuation
-    pub fn base(&self) -> &FunctionFieldValuation_base<F> {
+    pub fn base(&self) -> &FunctionFieldValuationBase<F> {
         &self.base
     }
 }
 
-impl<F: Field> DiscreteFunctionFieldValuation<F> for ClassicalFunctionFieldValuation_base<F> {
+impl<F: Field> DiscreteFunctionFieldValuation<F> for ClassicalFunctionFieldValuationBase<F> {
     fn valuation(&self, element: &str) -> i64 {
         // Symbolic computation
         0
@@ -266,7 +266,7 @@ impl<F: Field> DiscreteFunctionFieldValuation<F> for ClassicalFunctionFieldValua
     }
 }
 
-impl<F: Field> fmt::Display for ClassicalFunctionFieldValuation_base<F> {
+impl<F: Field> fmt::Display for ClassicalFunctionFieldValuationBase<F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -286,7 +286,7 @@ impl<F: Field> fmt::Display for ClassicalFunctionFieldValuation_base<F> {
 #[derive(Clone, Debug)]
 pub struct RationalFunctionFieldValuationBase<F: Field> {
     /// Base valuation
-    base: FunctionFieldValuation_base<F>,
+    base: FunctionFieldValuationBase<F>,
     /// Prime polynomial (None for infinite valuation)
     prime_polynomial: Option<String>,
 }
@@ -294,7 +294,7 @@ pub struct RationalFunctionFieldValuationBase<F: Field> {
 /// Type alias for snake_case compatibility
 pub type RationalFunctionFieldValuation_base<F> = RationalFunctionFieldValuationBase<F>;
 
-impl<F: Field> RationalFunctionFieldValuation_base<F> {
+impl<F: Field> RationalFunctionFieldValuationBase<F> {
     /// Create a finite valuation on k(x)
     ///
     /// # Arguments
@@ -307,8 +307,8 @@ impl<F: Field> RationalFunctionFieldValuation_base<F> {
     /// A new RationalFunctionFieldValuation_base instance
     pub fn finite(function_field: String, prime_polynomial: String) -> Self {
         let name = format!("v_{{{}}}", prime_polynomial);
-        RationalFunctionFieldValuation_base {
-            base: FunctionFieldValuation_base::new(function_field, name),
+        RationalFunctionFieldValuationBase {
+            base: FunctionFieldValuationBase::new(function_field, name),
             prime_polynomial: Some(prime_polynomial),
         }
     }
@@ -323,8 +323,8 @@ impl<F: Field> RationalFunctionFieldValuation_base<F> {
     ///
     /// The infinite valuation
     pub fn infinite(function_field: String) -> Self {
-        RationalFunctionFieldValuation_base {
-            base: FunctionFieldValuation_base::new(function_field, "v_∞".to_string()),
+        RationalFunctionFieldValuationBase {
+            base: FunctionFieldValuationBase::new(function_field, "v_∞".to_string()),
             prime_polynomial: None,
         }
     }
@@ -352,12 +352,12 @@ impl<F: Field> RationalFunctionFieldValuation_base<F> {
     /// # Returns
     ///
     /// Reference to the base valuation
-    pub fn base(&self) -> &FunctionFieldValuation_base<F> {
+    pub fn base(&self) -> &FunctionFieldValuationBase<F> {
         &self.base
     }
 }
 
-impl<F: Field> DiscreteFunctionFieldValuation<F> for RationalFunctionFieldValuation_base<F> {
+impl<F: Field> DiscreteFunctionFieldValuation<F> for RationalFunctionFieldValuationBase<F> {
     fn valuation(&self, element: &str) -> i64 {
         // Symbolic computation
         0
@@ -404,7 +404,7 @@ impl<F: Field> DiscreteFunctionFieldValuation<F> for RationalFunctionFieldValuat
     }
 }
 
-impl<F: Field> fmt::Display for RationalFunctionFieldValuation_base<F> {
+impl<F: Field> fmt::Display for RationalFunctionFieldValuationBase<F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.is_infinite() {
             write!(f, "Infinite valuation on {}", self.base.function_field())
@@ -431,7 +431,7 @@ impl<F: Field> fmt::Display for RationalFunctionFieldValuation_base<F> {
 #[derive(Clone, Debug)]
 pub struct FiniteRationalFunctionFieldValuation<F: Field> {
     /// Base valuation
-    base: RationalFunctionFieldValuation_base<F>,
+    base: RationalFunctionFieldValuationBase<F>,
 }
 
 impl<F: Field> FiniteRationalFunctionFieldValuation<F> {
@@ -447,7 +447,7 @@ impl<F: Field> FiniteRationalFunctionFieldValuation<F> {
     /// A new finite valuation
     pub fn new(function_field: String, prime_polynomial: String) -> Self {
         FiniteRationalFunctionFieldValuation {
-            base: RationalFunctionFieldValuation_base::finite(function_field, prime_polynomial),
+            base: RationalFunctionFieldValuationBase::finite(function_field, prime_polynomial),
         }
     }
 
@@ -456,7 +456,7 @@ impl<F: Field> FiniteRationalFunctionFieldValuation<F> {
     /// # Returns
     ///
     /// Reference to the base valuation
-    pub fn base(&self) -> &RationalFunctionFieldValuation_base<F> {
+    pub fn base(&self) -> &RationalFunctionFieldValuationBase<F> {
         &self.base
     }
 }
@@ -499,7 +499,7 @@ impl<F: Field> fmt::Display for FiniteRationalFunctionFieldValuation<F> {
 #[derive(Clone, Debug)]
 pub struct InfiniteRationalFunctionFieldValuation<F: Field> {
     /// Base valuation
-    base: RationalFunctionFieldValuation_base<F>,
+    base: RationalFunctionFieldValuationBase<F>,
 }
 
 impl<F: Field> InfiniteRationalFunctionFieldValuation<F> {
@@ -514,7 +514,7 @@ impl<F: Field> InfiniteRationalFunctionFieldValuation<F> {
     /// The infinite valuation
     pub fn new(function_field: String) -> Self {
         InfiniteRationalFunctionFieldValuation {
-            base: RationalFunctionFieldValuation_base::infinite(function_field),
+            base: RationalFunctionFieldValuationBase::infinite(function_field),
         }
     }
 
@@ -523,7 +523,7 @@ impl<F: Field> InfiniteRationalFunctionFieldValuation<F> {
     /// # Returns
     ///
     /// Reference to the base valuation
-    pub fn base(&self) -> &RationalFunctionFieldValuation_base<F> {
+    pub fn base(&self) -> &RationalFunctionFieldValuationBase<F> {
         &self.base
     }
 }
@@ -567,7 +567,7 @@ impl<F: Field> fmt::Display for InfiniteRationalFunctionFieldValuation<F> {
 #[derive(Clone, Debug)]
 pub struct NonClassicalRationalFunctionFieldValuation<F: Field> {
     /// Base valuation
-    base: FunctionFieldValuation_base<F>,
+    base: FunctionFieldValuationBase<F>,
     /// Description of the valuation
     description: String,
 }
@@ -586,7 +586,7 @@ impl<F: Field> NonClassicalRationalFunctionFieldValuation<F> {
     /// A new non-classical valuation
     pub fn new(function_field: String, name: String, description: String) -> Self {
         NonClassicalRationalFunctionFieldValuation {
-            base: FunctionFieldValuation_base::new(function_field, name),
+            base: FunctionFieldValuationBase::new(function_field, name),
             description,
         }
     }
@@ -605,7 +605,7 @@ impl<F: Field> NonClassicalRationalFunctionFieldValuation<F> {
     /// # Returns
     ///
     /// Reference to the base valuation
-    pub fn base(&self) -> &FunctionFieldValuation_base<F> {
+    pub fn base(&self) -> &FunctionFieldValuationBase<F> {
         &self.base
     }
 }
@@ -653,8 +653,8 @@ mod tests {
 
     #[test]
     fn test_function_field_valuation_base() {
-        let val: FunctionFieldValuation_base<Rational> =
-            FunctionFieldValuation_base::new("Q(x)".to_string(), "v".to_string());
+        let val: FunctionFieldValuationBase<Rational> =
+            FunctionFieldValuationBase::new("Q(x)".to_string(), "v".to_string());
 
         assert_eq!(val.function_field(), "Q(x)");
         assert_eq!(val.name(), "v");
@@ -662,8 +662,8 @@ mod tests {
 
     #[test]
     fn test_classical_valuation() {
-        let val: ClassicalFunctionFieldValuation_base<Rational> =
-            ClassicalFunctionFieldValuation_base::new(
+        let val: ClassicalFunctionFieldValuationBase<Rational> =
+            ClassicalFunctionFieldValuationBase::new(
                 "Q(x)".to_string(),
                 "P".to_string(),
                 1,
@@ -676,8 +676,8 @@ mod tests {
 
     #[test]
     fn test_rational_finite_valuation() {
-        let val: RationalFunctionFieldValuation_base<Rational> =
-            RationalFunctionFieldValuation_base::finite(
+        let val: RationalFunctionFieldValuationBase<Rational> =
+            RationalFunctionFieldValuationBase::finite(
                 "Q(x)".to_string(),
                 "x".to_string(),
             );
@@ -690,8 +690,8 @@ mod tests {
 
     #[test]
     fn test_rational_infinite_valuation() {
-        let val: RationalFunctionFieldValuation_base<Rational> =
-            RationalFunctionFieldValuation_base::infinite("Q(x)".to_string());
+        let val: RationalFunctionFieldValuationBase<Rational> =
+            RationalFunctionFieldValuationBase::infinite("Q(x)".to_string());
 
         assert!(val.is_infinite());
         assert_eq!(val.prime_polynomial(), None);
@@ -736,8 +736,8 @@ mod tests {
 
     #[test]
     fn test_valuation_ring_finite() {
-        let val: RationalFunctionFieldValuation_base<Rational> =
-            RationalFunctionFieldValuation_base::finite(
+        let val: RationalFunctionFieldValuationBase<Rational> =
+            RationalFunctionFieldValuationBase::finite(
                 "Q(x)".to_string(),
                 "x".to_string(),
             );
@@ -748,8 +748,8 @@ mod tests {
 
     #[test]
     fn test_reduce_element() {
-        let val: RationalFunctionFieldValuation_base<Rational> =
-            RationalFunctionFieldValuation_base::finite(
+        let val: RationalFunctionFieldValuationBase<Rational> =
+            RationalFunctionFieldValuationBase::finite(
                 "Q(x)".to_string(),
                 "x - 1".to_string(),
             );
@@ -777,8 +777,8 @@ mod tests {
 
     #[test]
     fn test_display_classical() {
-        let val: ClassicalFunctionFieldValuation_base<Rational> =
-            ClassicalFunctionFieldValuation_base::new(
+        let val: ClassicalFunctionFieldValuationBase<Rational> =
+            ClassicalFunctionFieldValuationBase::new(
                 "Q(x)".to_string(),
                 "P".to_string(),
                 2,
@@ -812,8 +812,8 @@ mod tests {
 
     #[test]
     fn test_valuation_interface() {
-        let val: ClassicalFunctionFieldValuation_base<Rational> =
-            ClassicalFunctionFieldValuation_base::new(
+        let val: ClassicalFunctionFieldValuationBase<Rational> =
+            ClassicalFunctionFieldValuationBase::new(
                 "Q(x)".to_string(),
                 "P".to_string(),
                 1,
