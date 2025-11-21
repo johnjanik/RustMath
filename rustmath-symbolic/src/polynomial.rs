@@ -146,11 +146,10 @@ impl Expr {
                 }
                 BinaryOp::Pow => {
                     if let Expr::Integer(exp) = right.as_ref() {
-                        if let Some(exp_i64) = exp.to_i64() {
-                            if exp_i64 >= 0 {
-                                let base_deg = left.degree_recursive(var)?;
-                                return Some(base_deg * exp_i64);
-                            }
+                        let exp_i64 = exp.to_i64();
+                        if exp_i64 >= 0 {
+                            let base_deg = left.degree_recursive(var)?;
+                            return Some(base_deg * exp_i64);
                         }
                     }
                     // Constant power
@@ -253,28 +252,27 @@ impl Expr {
                 }
                 BinaryOp::Pow => {
                     if let Expr::Integer(exp) = right.as_ref() {
-                        if let Some(exp_i64) = exp.to_i64() {
-                            if exp_i64 >= 0 {
-                                // Simple case: if base doesn't contain var (is constant)
-                                if left.is_polynomial_recursive(var, false) {
-                                    if n == 0 {
-                                        return Some(self.clone());
+                        let exp_i64 = exp.to_i64();
+                        if exp_i64 >= 0 {
+                            // Simple case: if base doesn't contain var (is constant)
+                            if left.is_polynomial_recursive(var, false) {
+                                if n == 0 {
+                                    return Some(self.clone());
+                                } else {
+                                    return Some(Expr::from(0));
+                                }
+                            }
+                            // Simple case: if base is exactly the variable (like x^k)
+                            if let Expr::Symbol(s) = left.as_ref() {
+                                if s == var {
+                                    if n == exp_i64 {
+                                        return Some(Expr::from(1));
                                     } else {
                                         return Some(Expr::from(0));
                                     }
                                 }
-                                // Simple case: if base is exactly the variable (like x^k)
-                                if let Expr::Symbol(s) = left.as_ref() {
-                                    if s == var {
-                                        if n == exp_i64 {
-                                            return Some(Expr::from(1));
-                                        } else {
-                                            return Some(Expr::from(0));
-                                        }
-                                    }
-                                }
-                                // TODO: Full binomial expansion for (a + b)^k
                             }
+                            // TODO: Full binomial expansion for (a + b)^k
                         }
                     }
                     // Constant case

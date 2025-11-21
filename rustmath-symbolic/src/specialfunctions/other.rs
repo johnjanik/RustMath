@@ -194,15 +194,14 @@ pub fn frac(x: &Expr) -> Expr {
 pub fn factorial(n: &Expr) -> Expr {
     if let Expr::Integer(i) = n {
         // Compute factorial for non-negative integers
-        if let Some(n_val) = i.to_i64() {
-            if n_val >= 0 && n_val <= 20 {
-                // Compute directly for small values
-                let mut result = Integer::one();
-                for k in 2..=n_val {
-                    result = result * Integer::from(k);
-                }
-                return Expr::Integer(result);
+        let n_val = i.to_i64();
+        if n_val >= 0 && n_val <= 20 {
+            // Compute directly for small values
+            let mut result = Integer::one();
+            for k in 2..=n_val {
+                result = result * Integer::from(k);
             }
+            return Expr::Integer(result);
         }
     }
 

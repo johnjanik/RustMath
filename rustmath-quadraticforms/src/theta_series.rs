@@ -133,7 +133,7 @@ impl ThetaSeries {
         let c_abs = if c_abs > Integer::one() { c_abs } else { Integer::one() };
         let min_coeff = if a_abs < c_abs { a_abs } else { c_abs };
 
-        let min_float = min_coeff.to_i64().unwrap_or(1) as f64;
+        let min_float = min_coeff.to_i64().max(1) as f64;
 
         // Maximum coordinate is approximately sqrt(precision / min_coeff)
         (precision_float / min_float).sqrt().ceil() as i64 + 2

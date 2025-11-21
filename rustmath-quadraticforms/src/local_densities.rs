@@ -228,7 +228,7 @@ impl LocalDensities {
         let mut count = Integer::zero();
 
         // For small p^k, enumerate all solutions
-        let limit = p_power.to_i64().unwrap_or(1000).min(1000);
+        let limit = p_power.to_i64().min(1000);
 
         for x in 0..limit {
             for y in 0..limit {
