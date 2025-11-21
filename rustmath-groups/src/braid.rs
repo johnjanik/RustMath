@@ -307,6 +307,14 @@ impl std::hash::Hash for Braid {
     }
 }
 
+impl std::ops::Mul for Braid {
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self {
+        self.op(&other)
+    }
+}
+
 impl GroupElement for Braid {
     fn identity() -> Self {
         // Create a minimal braid group with 2 strands for the identity element

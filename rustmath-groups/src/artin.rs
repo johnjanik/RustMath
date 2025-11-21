@@ -370,6 +370,14 @@ impl std::hash::Hash for ArtinGroupElement {
     }
 }
 
+impl std::ops::Mul for ArtinGroupElement {
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self {
+        self.op(&other)
+    }
+}
+
 impl GroupElement for ArtinGroupElement {
     fn identity() -> Self {
         // Create a minimal Artin group with one generator for the identity element

@@ -458,6 +458,14 @@ impl Hash for CubicBraidElement {
 
 use crate::group_traits::GroupElement;
 
+impl std::ops::Mul for CubicBraidElement {
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self {
+        self.op(&other)
+    }
+}
+
 impl GroupElement for CubicBraidElement {
     fn identity() -> Self {
         // Create a minimal default group (2 strands, Coxeter type)

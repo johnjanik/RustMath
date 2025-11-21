@@ -168,6 +168,14 @@ impl std::hash::Hash for NilpotentLieGroupElement {
 
 impl Eq for NilpotentLieGroupElement {}
 
+impl std::ops::Mul for NilpotentLieGroupElement {
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self {
+        self.op(&other)
+    }
+}
+
 impl GroupElement for NilpotentLieGroupElement {
     fn identity() -> Self {
         // Can't determine dimension without context, use 1D as default

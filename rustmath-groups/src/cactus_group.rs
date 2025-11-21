@@ -351,6 +351,14 @@ impl Hash for CactusGroupElement {
 
 use crate::group_traits::GroupElement;
 
+impl std::ops::Mul for CactusGroupElement {
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self {
+        self.op(&other)
+    }
+}
+
 impl GroupElement for CactusGroupElement {
     fn identity() -> Self {
         // Create a minimal default group (1 fruit)
