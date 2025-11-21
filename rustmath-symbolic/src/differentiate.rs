@@ -22,7 +22,7 @@ impl Expr {
     pub fn differentiate(&self, var: &Symbol) -> Self {
         match self {
             // Constant rule: d/dx(c) = 0
-            Expr::Integer(_) | Expr::Rational(_) => Expr::from(0),
+            Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => Expr::from(0),
 
             // Variable rule: d/dx(x) = 1, d/dx(y) = 0 for y ≠ x
             Expr::Symbol(s) => {
@@ -82,6 +82,13 @@ impl Expr {
                         let term2 = g.clone() * df / f.clone();
                         f.pow(g) * (term1 + term2)
                     }
+                }
+
+                // Modulo operation: treat as opaque function for now
+                BinaryOp::Mod => {
+                    // d/dx(f % g) is complex and depends on context
+                    // For now, return 0 (conservative approach)
+                    Expr::from(0)
                 }
             },
 

@@ -16,6 +16,7 @@ pub enum BinaryOp {
     Mul,
     Div,
     Pow,
+    Mod,
 }
 
 /// Unary operations
@@ -52,6 +53,8 @@ pub enum Expr {
     Integer(Integer),
     /// Rational constant
     Rational(Rational),
+    /// Real constant (floating point)
+    Real(f64),
     /// Symbolic variable
     Symbol(Symbol),
     /// Binary operation
@@ -72,7 +75,7 @@ impl Expr {
     /// Check if the expression is constant (contains no symbols)
     pub fn is_constant(&self) -> bool {
         match self {
-            Expr::Integer(_) | Expr::Rational(_) => true,
+            Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => true,
             Expr::Symbol(_) => false,
             Expr::Binary(_, left, right) => left.is_constant() && right.is_constant(),
             Expr::Unary(_, inner) => inner.is_constant(),
@@ -83,7 +86,7 @@ impl Expr {
     /// Check if the expression contains a specific symbol
     pub fn contains_symbol(&self, var: &Symbol) -> bool {
         match self {
-            Expr::Integer(_) | Expr::Rational(_) => false,
+            Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => false,
             Expr::Symbol(s) => s == var,
             Expr::Binary(_, left, right) => {
                 left.contains_symbol(var) || right.contains_symbol(var)
@@ -282,6 +285,7 @@ impl Expr {
         match self {
             Expr::Integer(n) => Some(n > &Integer::zero()),
             Expr::Rational(r) => Some(r > &Rational::zero()),
+            Expr::Real(x) => Some(*x > 0.0),
             Expr::Symbol(s) => {
                 if has_property(s, Property::Positive) {
                     Some(true)
@@ -310,6 +314,7 @@ impl Expr {
         match self {
             Expr::Integer(n) => Some(n < &Integer::zero()),
             Expr::Rational(r) => Some(r < &Rational::zero()),
+            Expr::Real(x) => Some(*x < 0.0),
             Expr::Symbol(s) => {
                 if has_property(s, Property::Negative) {
                     Some(true)
@@ -336,7 +341,7 @@ impl Expr {
         use crate::assumptions::{has_property, Property};
 
         match self {
-            Expr::Integer(_) | Expr::Rational(_) => Some(true),
+            Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => Some(true),
             Expr::Symbol(s) => {
                 if has_property(s, Property::Real) {
                     Some(true)
@@ -360,6 +365,7 @@ impl Expr {
         match self {
             Expr::Integer(_) => Some(true),
             Expr::Rational(r) => Some(r.is_integer()),
+            Expr::Real(x) => Some(x.fract() == 0.0),
             Expr::Symbol(s) => {
                 if has_property(s, Property::Integer) {
                     Some(true)
@@ -433,6 +439,7 @@ impl fmt::Display for Expr {
         match self {
             Expr::Integer(n) => write!(f, "{}", n),
             Expr::Rational(r) => write!(f, "{}", r),
+            Expr::Real(x) => write!(f, "{}", x),
             Expr::Symbol(s) => write!(f, "{}", s),
             Expr::Binary(op, left, right) => {
                 let op_str = match op {
@@ -441,6 +448,7 @@ impl fmt::Display for Expr {
                     BinaryOp::Mul => "*",
                     BinaryOp::Div => "/",
                     BinaryOp::Pow => "^",
+                    BinaryOp::Mod => "%",
                 };
                 write!(f, "({} {} {})", left, op_str, right)
             }

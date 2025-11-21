@@ -25,14 +25,14 @@ impl Expr {
     /// ```
     pub fn expand(&self) -> Expr {
         match self {
-            Expr::Integer(_) | Expr::Rational(_) | Expr::Symbol(_) => self.clone(),
+            Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) | Expr::Symbol(_) => self.clone(),
 
             Expr::Binary(op, left, right) => {
                 let left_exp = left.expand();
                 let right_exp = right.expand();
 
                 match op {
-                    BinaryOp::Add | BinaryOp::Sub => {
+                    BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mod => {
                         // Just recursively expand
                         Expr::Binary(*op, Arc::new(left_exp), Arc::new(right_exp))
                     }

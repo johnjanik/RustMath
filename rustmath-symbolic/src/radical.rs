@@ -36,7 +36,7 @@ impl Expr {
 /// Main canonicalization function
 fn canonicalize_radical_expr(expr: &Expr) -> Expr {
     match expr {
-        Expr::Integer(_) | Expr::Rational(_) | Expr::Symbol(_) => expr.clone(),
+        Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) | Expr::Symbol(_) => expr.clone(),
 
         Expr::Unary(UnaryOp::Sqrt, inner) => canonicalize_sqrt(inner),
 
@@ -65,6 +65,12 @@ fn canonicalize_radical_expr(expr: &Expr) -> Expr {
             let right_canon = canonicalize_radical_expr(right);
             // Rationalize denominators if needed
             rationalize_denominator(&left_canon, &right_canon)
+        }
+
+        Expr::Binary(BinaryOp::Mod, left, right) => {
+            let left_canon = canonicalize_radical_expr(left);
+            let right_canon = canonicalize_radical_expr(right);
+            Expr::Binary(BinaryOp::Mod, Arc::new(left_canon), Arc::new(right_canon))
         }
 
         Expr::Unary(op, inner) => {

@@ -437,6 +437,7 @@ pub fn expr_to_maxima(expr: &Expr) -> String {
     match expr {
         Expr::Integer(i) => format!("{}", i),
         Expr::Rational(r) => format!("{}/{}", r.numerator(), r.denominator()),
+        Expr::Real(x) => format!("{}", x),
         Expr::Symbol(s) => s.name().to_string(),
         Expr::Binary(op, left, right) => {
             let left_str = expr_to_maxima(left);
@@ -448,6 +449,7 @@ pub fn expr_to_maxima(expr: &Expr) -> String {
                 BinaryOp::Mul => format!("({}*{})", left_str, right_str),
                 BinaryOp::Div => format!("({}/{})", left_str, right_str),
                 BinaryOp::Pow => format!("({}^{})", left_str, right_str),
+                BinaryOp::Mod => format!("mod({}, {})", left_str, right_str),
             }
         }
         Expr::Unary(op, inner) => {

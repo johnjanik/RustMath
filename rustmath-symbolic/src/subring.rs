@@ -143,7 +143,7 @@ impl SymbolicSubringAcceptingVars {
     /// Check if an expression contains only accepted variables
     fn check_expr(&self, expr: &Expr) -> bool {
         match expr {
-            Expr::Integer(_) | Expr::Rational(_) => true,
+            Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => true,
             Expr::Symbol(s) => self.accepted_vars.contains(s),
             Expr::Binary(_, left, right) => self.check_expr(left) && self.check_expr(right),
             Expr::Unary(_, inner) => self.check_expr(inner),
@@ -204,7 +204,7 @@ impl SymbolicSubringRejectingVars {
     /// Check if an expression contains any rejected variables
     fn check_expr(&self, expr: &Expr) -> bool {
         match expr {
-            Expr::Integer(_) | Expr::Rational(_) => true,
+            Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => true,
             Expr::Symbol(s) => !self.rejected_vars.contains(s),
             Expr::Binary(_, left, right) => self.check_expr(left) && self.check_expr(right),
             Expr::Unary(_, inner) => self.check_expr(inner),
@@ -256,7 +256,7 @@ impl SymbolicConstantsSubring {
     /// Check if expression is constant (contains no variables)
     fn is_constant(&self, expr: &Expr) -> bool {
         match expr {
-            Expr::Integer(_) | Expr::Rational(_) => true,
+            Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => true,
             Expr::Symbol(_) => false,
             Expr::Binary(_, left, right) => self.is_constant(left) && self.is_constant(right),
             Expr::Unary(_, inner) => self.is_constant(inner),

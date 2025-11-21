@@ -236,7 +236,7 @@ impl Expr {
 /// Simplify an expression
 pub fn simplify(expr: &Expr) -> Expr {
     match expr {
-        Expr::Integer(_) | Expr::Rational(_) | Expr::Symbol(_) => expr.clone(),
+        Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) | Expr::Symbol(_) => expr.clone(),
 
         Expr::Binary(op, left, right) => {
             let left_simp = simplify(left);
@@ -403,6 +403,11 @@ fn simplify_binary(op: BinaryOp, left: Expr, right: Expr) -> Expr {
             }
 
             Expr::Binary(BinaryOp::Pow, Arc::new(left), Arc::new(right))
+        }
+
+        BinaryOp::Mod => {
+            // Pass through unchanged for now
+            Expr::Binary(BinaryOp::Mod, Arc::new(left), Arc::new(right))
         }
     }
 }
