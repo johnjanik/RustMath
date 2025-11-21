@@ -349,7 +349,7 @@ impl<F: Field> HyperellipticJacobian<F> {
             result
         } else {
             // Just -v
-            d.v().negate()
+            d.v().clone().negate()
         };
 
         MumfordDivisor::new(d.u().clone(), neg_v)

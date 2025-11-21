@@ -415,7 +415,7 @@ impl LazyFieldElement {
     pub fn eval_to_f64(&self) -> f64 {
         match self {
             LazyFieldElement::Integer(n) => *n as f64,
-            LazyFieldElement::Rational(r) => r.to_f64(),
+            LazyFieldElement::Rational(r) => r.to_f64().unwrap_or(0.0),
             LazyFieldElement::Float(f) => *f,
             LazyFieldElement::Complex(c) => c.real(), // Take real part for real field
             LazyFieldElement::Constant(c) => c.to_f64(),
@@ -562,7 +562,7 @@ impl RealLazyField {
 
     /// Create a lazy element from a rational number (numerator/denominator)
     pub fn from_rational(&self, num: i64, den: i64) -> LazyFieldElement {
-        LazyFieldElement::from_rational(Rational::new(num.into(), den.into()).unwrap())
+        LazyFieldElement::from_rational(Rational::new::<Integer>(num.into(), den.into()).unwrap())
     }
 
     /// Create a lazy element from a Rational
@@ -633,7 +633,7 @@ impl ComplexLazyField {
 
     /// Create a lazy element from a rational number
     pub fn from_rational(&self, num: i64, den: i64) -> LazyFieldElement {
-        LazyFieldElement::from_rational(Rational::new(num.into(), den.into()).unwrap())
+        LazyFieldElement::from_rational(Rational::new::<Integer>(num.into(), den.into()).unwrap())
     }
 
     /// Create a lazy element from a complex number

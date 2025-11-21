@@ -231,7 +231,7 @@ pub trait CommutativeRingExt: CommutativeRing {
     /// Constructs the fraction field
     ///
     /// For an integral domain R, this returns its field of fractions Frac(R).
-    fn fraction_field(&self) -> Result<Box<dyn Field>, RingError> {
+    fn fraction_field(&self) -> Result<Box<impl Field>, RingError> {
         Err(RingError::NotCommutative)
     }
 }

@@ -32,7 +32,7 @@ use std::f64::consts::PI;
 use std::hash::Hash;
 
 /// A cyclic action on a set, represented as a permutation-like function
-pub trait CyclicAction<T> {
+pub trait CyclicAction<T: Clone> {
     /// Apply the cyclic action once
     fn apply(&self, element: &T) -> T;
 
@@ -244,11 +244,11 @@ where
             return Complex::zero();
         }
 
-        let mut result = Complex::from_real(coeffs.last().unwrap().to_f64());
+        let mut result = Complex::from_real(coeffs.last().unwrap().to_f64().unwrap_or(0.0));
 
         for coeff in coeffs.iter().rev().skip(1) {
             // result = result * z + coeff
-            result = result * z.clone() + Complex::from_real(coeff.to_f64());
+            result = result * z.clone() + Complex::from_real(coeff.to_f64().unwrap_or(0.0));
         }
 
         result

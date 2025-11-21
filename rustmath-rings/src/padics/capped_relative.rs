@@ -368,7 +368,7 @@ impl CappedRelativePadicElement {
 
             // Compute current^p mod p^current_precision
             let modulus = prime.pow(current_precision);
-            current = current.modpow(&prime, &modulus);
+            current = current.modpow(&prime, &modulus)?;
         }
 
         Ok(CappedRelativePadicElement {
