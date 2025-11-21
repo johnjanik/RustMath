@@ -100,6 +100,46 @@ impl AdditiveAbelianGroupElement {
         AdditiveAbelianGroupElement::new(neg, self.parent.clone()).unwrap()
     }
 
+    /// Get the inverse of an element (alias for negate in additive groups)
+    ///
+    /// In an additive group, the inverse is the negation
+    pub fn inverse(&self) -> AdditiveAbelianGroupElement {
+        self.negate()
+    }
+
+    /// Subtract two elements
+    ///
+    /// # Arguments
+    /// * `other` - The element to subtract
+    ///
+    /// # Returns
+    /// A new element representing self - other, or an error if the elements
+    /// are from different groups
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_groups::additive_abelian_group::{additive_abelian_group, AdditiveAbelianGroupElement};
+    ///
+    /// let g = additive_abelian_group(vec![5]).unwrap();
+    /// let e1 = AdditiveAbelianGroupElement::new(vec![3], g.clone()).unwrap();
+    /// let e2 = AdditiveAbelianGroupElement::new(vec![1], g.clone()).unwrap();
+    /// let diff = e1.subtract(&e2).unwrap();
+    /// assert_eq!(diff.coordinates(), &[2]);
+    /// ```
+    pub fn subtract(&self, other: &AdditiveAbelianGroupElement) -> Result<AdditiveAbelianGroupElement, String> {
+        if self.parent != other.parent {
+            return Err("Cannot subtract elements from different groups".to_string());
+        }
+
+        let diff: Vec<i64> = self.coordinates
+            .iter()
+            .zip(other.coordinates.iter())
+            .map(|(a, b)| a - b)
+            .collect();
+
+        AdditiveAbelianGroupElement::new(diff, self.parent.clone())
+    }
+
     /// Scalar multiplication (n * element)
     pub fn scalar_mul(&self, n: i64) -> AdditiveAbelianGroupElement {
         let scaled: Vec<i64> = self.coordinates.iter().map(|x| n * x).collect();
@@ -286,6 +326,44 @@ impl AdditiveAbelianGroup {
         (0..self.rank())
             .map(|i| self.gen(i).unwrap())
             .collect()
+    }
+
+    /// Get the zero element (identity element of the additive group)
+    ///
+    /// This is an alias for `identity()` using additive group terminology
+    pub fn zero(&self) -> AdditiveAbelianGroupElement {
+        self.identity()
+    }
+
+    /// Get all generators (basis elements of the group)
+    ///
+    /// This is an alias for `gens()` for consistency with standard terminology
+    pub fn generators(&self) -> Vec<AdditiveAbelianGroupElement> {
+        self.gens()
+    }
+
+    /// Test if an element belongs to this group
+    ///
+    /// # Arguments
+    /// * `element` - The element to test for membership
+    ///
+    /// # Returns
+    /// `true` if the element belongs to this group, `false` otherwise
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_groups::additive_abelian_group::{additive_abelian_group, AdditiveAbelianGroupElement};
+    ///
+    /// let g1 = additive_abelian_group(vec![6]).unwrap();
+    /// let g2 = additive_abelian_group(vec![5]).unwrap();
+    ///
+    /// let e1 = AdditiveAbelianGroupElement::new(vec![3], g1.clone()).unwrap();
+    /// assert!(g1.contains(&e1));
+    /// assert!(!g2.contains(&e1));
+    /// ```
+    pub fn contains(&self, element: &AdditiveAbelianGroupElement) -> bool {
+        // Check if the element's parent group is the same as this group
+        &element.parent == self
     }
 
     /// Get a short descriptive name
@@ -573,5 +651,89 @@ mod tests {
         // -3 should be reduced to 2 (mod 5)
         let e2 = AdditiveAbelianGroupElement::new(vec![-3], g.clone()).unwrap();
         assert_eq!(e2.coordinates(), &[2]);
+    }
+
+    #[test]
+    fn test_zero_method() {
+        let g = additive_abelian_group(vec![2, 4]).unwrap();
+        let zero = g.zero();
+        assert!(zero.is_identity());
+        assert_eq!(zero.coordinates(), &[0, 0]);
+
+        // zero() should be the same as identity()
+        assert_eq!(g.zero(), g.identity());
+    }
+
+    #[test]
+    fn test_generators_method() {
+        let g = additive_abelian_group(vec![3, 6]).unwrap();
+        let gens = g.generators();
+        assert_eq!(gens.len(), 2);
+        assert_eq!(gens[0].coordinates(), &[1, 0]);
+        assert_eq!(gens[1].coordinates(), &[0, 1]);
+
+        // generators() should be the same as gens()
+        assert_eq!(g.generators(), g.gens());
+    }
+
+    #[test]
+    fn test_contains_method() {
+        let g1 = additive_abelian_group(vec![6]).unwrap();
+        let g2 = additive_abelian_group(vec![5]).unwrap();
+
+        let e1 = AdditiveAbelianGroupElement::new(vec![3], g1.clone()).unwrap();
+        let e2 = AdditiveAbelianGroupElement::new(vec![2], g2.clone()).unwrap();
+
+        // Element belongs to its parent group
+        assert!(g1.contains(&e1));
+        assert!(g2.contains(&e2));
+
+        // Element does not belong to other groups
+        assert!(!g2.contains(&e1));
+        assert!(!g1.contains(&e2));
+    }
+
+    #[test]
+    fn test_subtract_method() {
+        let g = additive_abelian_group(vec![5]).unwrap();
+        let e1 = AdditiveAbelianGroupElement::new(vec![3], g.clone()).unwrap();
+        let e2 = AdditiveAbelianGroupElement::new(vec![1], g.clone()).unwrap();
+
+        let diff = e1.subtract(&e2).unwrap();
+        assert_eq!(diff.coordinates(), &[2]);
+
+        // Test that subtraction wraps correctly
+        let e3 = AdditiveAbelianGroupElement::new(vec![1], g.clone()).unwrap();
+        let e4 = AdditiveAbelianGroupElement::new(vec![3], g.clone()).unwrap();
+        let diff2 = e3.subtract(&e4).unwrap();
+        assert_eq!(diff2.coordinates(), &[3]); // 1 - 3 = -2 ≡ 3 (mod 5)
+    }
+
+    #[test]
+    fn test_subtract_different_groups() {
+        let g1 = additive_abelian_group(vec![5]).unwrap();
+        let g2 = additive_abelian_group(vec![6]).unwrap();
+
+        let e1 = AdditiveAbelianGroupElement::new(vec![1], g1).unwrap();
+        let e2 = AdditiveAbelianGroupElement::new(vec![1], g2).unwrap();
+
+        // Should fail when subtracting elements from different groups
+        assert!(e1.subtract(&e2).is_err());
+    }
+
+    #[test]
+    fn test_inverse_method() {
+        let g = additive_abelian_group(vec![7]).unwrap();
+        let e = AdditiveAbelianGroupElement::new(vec![3], g.clone()).unwrap();
+
+        let inv = e.inverse();
+        assert_eq!(inv.coordinates(), &[4]); // -3 ≡ 4 (mod 7)
+
+        // inverse() should be the same as negate()
+        assert_eq!(e.inverse(), e.negate());
+
+        // Adding an element to its inverse should give identity
+        let sum = e.add(&inv).unwrap();
+        assert!(sum.is_identity());
     }
 }
