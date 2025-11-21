@@ -36,7 +36,7 @@ pub mod export;
 pub use base::{Graphics3d, Graphics3dPrimitive, IndexFaceSet, BoundingBox3D, Point3D, Vector3D, Graphics3dOptions};
 pub use transform::{Transform3D, TransformGroup};
 pub use camera::{Camera, Light};
-pub use shapes::{Sphere, Box, Cylinder, Cone, Torus};
+pub use shapes::{Sphere, BoxShape, Cylinder, Cone, Torus};
 pub use platonic::{tetrahedron, cube, octahedron, dodecahedron, icosahedron, colored_platonic_solid};
 pub use plots::{
     plot3d, parametric_plot3d, list_plot3d, revolution_plot3d,

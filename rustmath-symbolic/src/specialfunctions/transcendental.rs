@@ -88,7 +88,8 @@ fn try_expr_to_f64(expr: &Expr) -> Option<f64> {
 pub fn zeta(s: &Expr) -> Expr {
     // Could implement special values for specific integers
     if let Expr::Integer(n) = s {
-        if let Some(n_val) = n.to_i64() {
+        let n_val = n.to_i64();
+        {
             match n_val {
                 0 => return Expr::from(-1) / Expr::from(2),
                 -1 => return Expr::from(-1) / Expr::from(12),

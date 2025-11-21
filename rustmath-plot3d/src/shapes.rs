@@ -61,8 +61,8 @@ impl Graphics3dPrimitive for Sphere {
         }
     }
 
-    fn clone_box(&self) -> Box<dyn Graphics3dPrimitive> {
-        Box::new(self.clone())
+    fn clone_box(&self) -> std::boxed::Box<dyn Graphics3dPrimitive> {
+        std::boxed::Box::new(self.clone())
     }
 
     fn to_mesh(&self) -> Result<IndexFaceSet> {
@@ -109,8 +109,8 @@ impl Graphics3dPrimitive for Sphere {
         mesh.compute_normals();
 
         // Set uniform color if specified
-        if let Some(color) = self.color {
-            mesh.vertex_colors = Some(vec![color; mesh.vertices.len()]);
+        if let Some(color) = &self.color {
+            mesh.vertex_colors = Some(vec![color.clone(); mesh.vertices.len()]);
         }
 
         Ok(mesh)
@@ -119,7 +119,7 @@ impl Graphics3dPrimitive for Sphere {
 
 /// An axis-aligned box (rectangular prism)
 #[derive(Debug, Clone)]
-pub struct Box {
+pub struct BoxShape {
     /// Minimum corner of the box
     pub min_corner: Point3D,
     /// Maximum corner of the box
@@ -128,7 +128,7 @@ pub struct Box {
     pub color: Option<Color>,
 }
 
-impl Box {
+impl BoxShape {
     /// Create a new box from two corners
     pub fn new(min_corner: Point3D, max_corner: Point3D) -> Self {
         Self {
@@ -165,7 +165,7 @@ impl Box {
     }
 }
 
-impl Graphics3dPrimitive for Box {
+impl Graphics3dPrimitive for BoxShape {
     fn bounding_box(&self) -> BoundingBox3D {
         BoundingBox3D {
             xmin: self.min_corner.x,
@@ -177,7 +177,7 @@ impl Graphics3dPrimitive for Box {
         }
     }
 
-    fn clone_box(&self) -> Box<dyn Graphics3dPrimitive> {
+    fn clone_box(&self) -> std::boxed::Box<dyn Graphics3dPrimitive> {
         std::boxed::Box::new(self.clone())
     }
 
@@ -217,8 +217,8 @@ impl Graphics3dPrimitive for Box {
         mesh.compute_normals();
 
         // Set uniform color if specified
-        if let Some(color) = self.color {
-            mesh.vertex_colors = Some(vec![color; mesh.vertices.len()]);
+        if let Some(color) = &self.color {
+            mesh.vertex_colors = Some(vec![color.clone(); mesh.vertices.len()]);
         }
 
         Ok(mesh)
@@ -346,8 +346,8 @@ impl Graphics3dPrimitive for Cylinder {
         mesh.compute_normals();
 
         // Set uniform color if specified
-        if let Some(color) = self.color {
-            mesh.vertex_colors = Some(vec![color; mesh.vertices.len()]);
+        if let Some(color) = &self.color {
+            mesh.vertex_colors = Some(vec![color.clone(); mesh.vertices.len()]);
         }
 
         Ok(mesh)
@@ -460,8 +460,8 @@ impl Graphics3dPrimitive for Cone {
         mesh.compute_normals();
 
         // Set uniform color if specified
-        if let Some(color) = self.color {
-            mesh.vertex_colors = Some(vec![color; mesh.vertices.len()]);
+        if let Some(color) = &self.color {
+            mesh.vertex_colors = Some(vec![color.clone(); mesh.vertices.len()]);
         }
 
         Ok(mesh)
@@ -571,8 +571,8 @@ impl Graphics3dPrimitive for Torus {
         mesh.compute_normals();
 
         // Set uniform color if specified
-        if let Some(color) = self.color {
-            mesh.vertex_colors = Some(vec![color; mesh.vertices.len()]);
+        if let Some(color) = &self.color {
+            mesh.vertex_colors = Some(vec![color.clone(); mesh.vertices.len()]);
         }
 
         Ok(mesh)
@@ -606,7 +606,7 @@ mod tests {
 
     #[test]
     fn test_box_creation() {
-        let b = Box::centered(2.0, 2.0, 2.0);
+        let b = BoxShape::centered(2.0, 2.0, 2.0);
         let bbox = b.bounding_box();
         assert_eq!(bbox.xmin, -1.0);
         assert_eq!(bbox.xmax, 1.0);
@@ -614,7 +614,7 @@ mod tests {
 
     #[test]
     fn test_box_mesh() {
-        let b = Box::centered(2.0, 2.0, 2.0);
+        let b = BoxShape::centered(2.0, 2.0, 2.0);
         let mesh = b.to_mesh().unwrap();
         assert_eq!(mesh.vertices.len(), 8);
         assert_eq!(mesh.faces.len(), 12); // 2 triangles per face, 6 faces

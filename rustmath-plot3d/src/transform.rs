@@ -300,11 +300,11 @@ impl Graphics3dPrimitive for TransformGroup {
         bbox
     }
 
-    fn to_mesh(&self) -> IndexFaceSet {
-        let mut combined = IndexFaceSet::new();
+    fn to_mesh(&self) -> crate::Result<IndexFaceSet> {
+        let mut combined = IndexFaceSet::new(Vec::new(), Vec::new());
 
         for child in &self.children {
-            let child_mesh = child.to_mesh();
+            let child_mesh = child.to_mesh()?;
             let transformed = self.transform_mesh(&child_mesh);
 
             // Merge into combined mesh
@@ -347,11 +347,11 @@ impl Graphics3dPrimitive for TransformGroup {
             }
         }
 
-        combined
+        Ok(combined)
     }
 
-    fn clone_box(&self) -> Box<dyn Graphics3dPrimitive> {
-        Box::new(self.clone())
+    fn clone_box(&self) -> std::boxed::Box<dyn Graphics3dPrimitive> {
+        std::boxed::Box::new(self.clone())
     }
 }
 
