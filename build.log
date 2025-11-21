@@ -1,3 +1,27 @@
+warning: associated items `new`, `from_points`, `center`, `volume`, and `contains` are never used
+   --> rustmath-plot-core/src/bbox.rs:221:12
+    |
+219 | impl BoundingBox3D {
+    | ------------------ associated items in this implementation
+220 |     /// Create a new 3D bounding box
+221 |     pub fn new(xmin: f64, xmax: f64, ymin: f64, ymax: f64, zmin: f64, zmax: f64) -> Self {
+    |            ^^^
+...
+237 |     pub fn from_points(points: &[Point3D]) -> Result<Self> {
+    |            ^^^^^^^^^^^
+...
+271 |     pub fn center(&self) -> Point3D {
+    |            ^^^^^^
+...
+280 |     pub fn volume(&self) -> f64 {
+    |            ^^^^^^
+...
+285 |     pub fn contains(&self, point: &Point3D) -> bool {
+    |            ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `rustmath-plot-core` (lib) generated 1 warning
 warning: unused import: `Ring`
  --> rustmath-polynomials/src/roots.rs:4:40
   |
@@ -14,8 +38,139 @@ warning: unused import: `NumericConversion`
   |
   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
 
+warning: unused import: `rustmath_integers::Integer`
+  --> rustmath-numbertheory/src/bernoulli.rs:46:5
+   |
+46 | use rustmath_integers::Integer;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `num_bigint::BigInt`
+  --> rustmath-numbertheory/src/bernoulli.rs:48:5
+   |
+48 | use num_bigint::BigInt;
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `FromPrimitive`
+  --> rustmath-numbertheory/src/bernoulli.rs:49:31
+   |
+49 | use num_traits::{ToPrimitive, FromPrimitive};
+   |                               ^^^^^^^^^^^^^
+
+warning: unused import: `NumericConversion`
+  --> rustmath-numbertheory/src/bernoulli.rs:47:27
+   |
+47 | use rustmath_core::{Ring, NumericConversion};
+   |                           ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ToPrimitive`
+  --> rustmath-numbertheory/src/bernoulli.rs:49:18
+   |
+49 | use num_traits::{ToPrimitive, FromPrimitive};
+   |                  ^^^^^^^^^^^
+
+warning: unused import: `Ring`
+ --> rustmath-numbertheory/src/quadratic_forms.rs:9:59
+  |
+9 | use rustmath_core::{MathError, NumericConversion, Result, Ring};
+  |                                                           ^^^^
+
+warning: unused import: `NumericConversion`
+ --> rustmath-numbertheory/src/quadratic_forms.rs:9:32
+  |
+9 | use rustmath_core::{MathError, NumericConversion, Result, Ring};
+  |                                ^^^^^^^^^^^^^^^^^
+
+warning: value assigned to `count` is never read
+   --> rustmath-numbertheory/src/quadratic_forms.rs:432:17
+    |
+432 |         let mut count = Integer::zero();
+    |                 ^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: creating a shared reference to mutable static
+  --> rustmath-numbertheory/src/bernoulli.rs:89:12
+   |
+89 |         if CACHE.is_none() {
+   |            ^^^^^^^^^^^^^^^ shared reference to mutable static
+   |
+   = note: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/static-mut-references.html>
+   = note: shared references to mutable statics are dangerous; it's undefined behavior if the static is mutated or if a mutable reference is created for it while the shared reference lives
+   = note: `#[warn(static_mut_refs)]` (part of `#[warn(rust_2024_compatibility)]`) on by default
+
+warning: creating a mutable reference to mutable static
+  --> rustmath-numbertheory/src/bernoulli.rs:93:21
+   |
+93 |         let cache = CACHE.as_mut().unwrap();
+   |                     ^^^^^^^^^^^^^^ mutable reference to mutable static
+   |
+   = note: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/static-mut-references.html>
+   = note: mutable references to mutable statics are dangerous; it's undefined behavior if any other pointer to the static is used or if any other reference is created for the static while the mutable reference lives
+
+warning: creating a mutable reference to mutable static
+   --> rustmath-numbertheory/src/bernoulli.rs:126:9
+    |
+126 |         CACHE.as_mut().unwrap().insert(n, result.clone());
+    |         ^^^^^^^^^^^^^^ mutable reference to mutable static
+    |
+    = note: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/static-mut-references.html>
+    = note: mutable references to mutable statics are dangerous; it's undefined behavior if any other pointer to the static is used or if any other reference is created for the static while the mutable reference lives
+
+warning: unused import: `std::fmt`
+  --> rustmath-sets/src/finite_set_maps.rs:32:5
+   |
+32 | use std::fmt;
+   |     ^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `rustmath_core::Ring`
+  --> rustmath-constants/src/certificates.rs:12:5
+   |
+12 | use rustmath_core::Ring;
+   |     ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `rustmath_core::Ring`
+ --> rustmath-constants/src/factorizations.rs:8:5
+  |
+8 | use rustmath_core::Ring;
+  |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_core::Ring`
+  --> rustmath-constants/src/sequences.rs:13:5
+   |
+13 | use rustmath_core::Ring;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_core::Ring`
+ --> rustmath-constants/src/tables.rs:6:5
+  |
+6 | use rustmath_core::Ring;
+  |     ^^^^^^^^^^^^^^^^^^^
+
+warning: field `mult_table` is never read
+  --> rustmath-monoids/src/automatic_semigroup.rs:35:5
+   |
+31 | pub struct AutomaticSemigroup {
+   |            ------------------ field in this struct
+...
+35 |     mult_table: Option<HashMap<(usize, usize), usize>>,
+   |     ^^^^^^^^^^
+   |
+   = note: `AutomaticSemigroup` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
 warning: `rustmath-polynomials` (lib) generated 1 warning
 warning: `rustmath-padics` (lib) generated 1 warning
+warning: `rustmath-numbertheory` (lib) generated 11 warnings (run `cargo fix --lib -p rustmath-numbertheory` to apply 3 suggestions)
+warning: `rustmath-sets` (lib) generated 1 warning (run `cargo fix --lib -p rustmath-sets` to apply 1 suggestion)
+warning: `rustmath-constants` (lib) generated 4 warnings
+warning: `rustmath-monoids` (lib) generated 1 warning
 warning: unused imports: `MathError` and `Result`
  --> rustmath-matrix/src/eigenvalues.rs:4:28
   |
@@ -240,207 +395,7 @@ warning: unused variable: `rhs`
     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
 
    Compiling rustmath-symbolic v0.1.0 (/home/john/RustMath/rustmath-symbolic)
-warning: `rustmath-matrix` (lib) generated 24 warnings (run `cargo fix --lib -p rustmath-matrix` to apply 10 suggestions)
-warning: `rustmath-finitefields` (lib) generated 1 warning
-   Compiling rustmath-graphs v0.1.0 (/home/john/RustMath/rustmath-graphs)
-   Compiling rustmath-numberfields v0.1.0 (/home/john/RustMath/rustmath-numberfields)
-warning: associated items `new`, `from_points`, `center`, `volume`, and `contains` are never used
-   --> rustmath-plot-core/src/bbox.rs:221:12
-    |
-219 | impl BoundingBox3D {
-    | ------------------ associated items in this implementation
-220 |     /// Create a new 3D bounding box
-221 |     pub fn new(xmin: f64, xmax: f64, ymin: f64, ymax: f64, zmin: f64, zmax: f64) -> Self {
-    |            ^^^
-...
-237 |     pub fn from_points(points: &[Point3D]) -> Result<Self> {
-    |            ^^^^^^^^^^^
-...
-271 |     pub fn center(&self) -> Point3D {
-    |            ^^^^^^
-...
-280 |     pub fn volume(&self) -> f64 {
-    |            ^^^^^^
-...
-285 |     pub fn contains(&self, point: &Point3D) -> bool {
-    |            ^^^^^^^^
-    |
-    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: `rustmath-plot-core` (lib) generated 1 warning
-   Compiling rustmath-geometry v0.1.0 (/home/john/RustMath/rustmath-geometry)
-warning: unused import: `rustmath_integers::Integer`
-  --> rustmath-numbertheory/src/bernoulli.rs:46:5
-   |
-46 | use rustmath_integers::Integer;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `num_bigint::BigInt`
-  --> rustmath-numbertheory/src/bernoulli.rs:48:5
-   |
-48 | use num_bigint::BigInt;
-   |     ^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `FromPrimitive`
-  --> rustmath-numbertheory/src/bernoulli.rs:49:31
-   |
-49 | use num_traits::{ToPrimitive, FromPrimitive};
-   |                               ^^^^^^^^^^^^^
-
-warning: unused import: `NumericConversion`
-  --> rustmath-numbertheory/src/bernoulli.rs:47:27
-   |
-47 | use rustmath_core::{Ring, NumericConversion};
-   |                           ^^^^^^^^^^^^^^^^^
-
-warning: unused import: `ToPrimitive`
-  --> rustmath-numbertheory/src/bernoulli.rs:49:18
-   |
-49 | use num_traits::{ToPrimitive, FromPrimitive};
-   |                  ^^^^^^^^^^^
-
-warning: unused import: `Ring`
- --> rustmath-numbertheory/src/quadratic_forms.rs:9:59
-  |
-9 | use rustmath_core::{MathError, NumericConversion, Result, Ring};
-  |                                                           ^^^^
-
-warning: unused import: `NumericConversion`
- --> rustmath-numbertheory/src/quadratic_forms.rs:9:32
-  |
-9 | use rustmath_core::{MathError, NumericConversion, Result, Ring};
-  |                                ^^^^^^^^^^^^^^^^^
-
-warning: value assigned to `count` is never read
-   --> rustmath-numbertheory/src/quadratic_forms.rs:432:17
-    |
-432 |         let mut count = Integer::zero();
-    |                 ^^^^^
-    |
-    = help: maybe it is overwritten before being read?
-    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
-
-warning: creating a shared reference to mutable static
-  --> rustmath-numbertheory/src/bernoulli.rs:89:12
-   |
-89 |         if CACHE.is_none() {
-   |            ^^^^^^^^^^^^^^^ shared reference to mutable static
-   |
-   = note: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/static-mut-references.html>
-   = note: shared references to mutable statics are dangerous; it's undefined behavior if the static is mutated or if a mutable reference is created for it while the shared reference lives
-   = note: `#[warn(static_mut_refs)]` (part of `#[warn(rust_2024_compatibility)]`) on by default
-
-warning: creating a mutable reference to mutable static
-  --> rustmath-numbertheory/src/bernoulli.rs:93:21
-   |
-93 |         let cache = CACHE.as_mut().unwrap();
-   |                     ^^^^^^^^^^^^^^ mutable reference to mutable static
-   |
-   = note: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/static-mut-references.html>
-   = note: mutable references to mutable statics are dangerous; it's undefined behavior if any other pointer to the static is used or if any other reference is created for the static while the mutable reference lives
-
-warning: creating a mutable reference to mutable static
-   --> rustmath-numbertheory/src/bernoulli.rs:126:9
-    |
-126 |         CACHE.as_mut().unwrap().insert(n, result.clone());
-    |         ^^^^^^^^^^^^^^ mutable reference to mutable static
-    |
-    = note: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/static-mut-references.html>
-    = note: mutable references to mutable statics are dangerous; it's undefined behavior if any other pointer to the static is used or if any other reference is created for the static while the mutable reference lives
-
-   Compiling rustmath-crypto v0.1.0 (/home/john/RustMath/rustmath-crypto)
-   Compiling rustmath-coding v0.1.0 (/home/john/RustMath/rustmath-coding)
-warning: unused import: `std::f64::consts::PI`
- --> rustmath-stats/src/hypothesis.rs:6:5
-  |
-6 | use std::f64::consts::PI;
-  |     ^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `variance`
- --> rustmath-stats/src/regression.rs:5:31
-  |
-5 | use crate::statistics::{mean, variance};
-  |                               ^^^^^^^^
-
-warning: unused variable: `alpha`
-   --> rustmath-stats/src/hypothesis.rs:195:21
-    |
-195 | fn t_critical_value(alpha: f64, df: usize) -> f64 {
-    |                     ^^^^^ help: if this is intentional, prefix it with an underscore: `_alpha`
-    |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `n_features`
-   --> rustmath-stats/src/regression.rs:131:13
-    |
-131 |         let n_features = x_matrix[0].len();
-    |             ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_n_features`
-
-warning: variable does not need to be mutable
-   --> rustmath-stats/src/regression.rs:134:13
-    |
-134 |         let mut x_with_intercept: Vec<Vec<f64>> = x_matrix
-    |             ----^^^^^^^^^^^^^^^^
-    |             |
-    |             help: remove this `mut`
-    |
-    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `rustmath_core::Ring`
-  --> rustmath-constants/src/certificates.rs:12:5
-   |
-12 | use rustmath_core::Ring;
-   |     ^^^^^^^^^^^^^^^^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `rustmath_core::Ring`
- --> rustmath-constants/src/factorizations.rs:8:5
-  |
-8 | use rustmath_core::Ring;
-  |     ^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `rustmath_core::Ring`
-  --> rustmath-constants/src/sequences.rs:13:5
-   |
-13 | use rustmath_core::Ring;
-   |     ^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `rustmath_core::Ring`
- --> rustmath-constants/src/tables.rs:6:5
-  |
-6 | use rustmath_core::Ring;
-  |     ^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `std::fmt`
-  --> rustmath-sets/src/finite_set_maps.rs:32:5
-   |
-32 | use std::fmt;
-   |     ^^^^^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: field `mult_table` is never read
-  --> rustmath-monoids/src/automatic_semigroup.rs:35:5
-   |
-31 | pub struct AutomaticSemigroup {
-   |            ------------------ field in this struct
-...
-35 |     mult_table: Option<HashMap<(usize, usize), usize>>,
-   |     ^^^^^^^^^^
-   |
-   = note: `AutomaticSemigroup` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: `rustmath-numbertheory` (lib) generated 11 warnings (run `cargo fix --lib -p rustmath-numbertheory` to apply 3 suggestions)
-warning: `rustmath-stats` (lib) generated 5 warnings (run `cargo fix --lib -p rustmath-stats` to apply 3 suggestions)
-warning: `rustmath-constants` (lib) generated 4 warnings
-warning: `rustmath-sets` (lib) generated 1 warning (run `cargo fix --lib -p rustmath-sets` to apply 1 suggestion)
-warning: `rustmath-monoids` (lib) generated 1 warning
+   Compiling rustmath-misc v0.1.0 (/home/john/RustMath/rustmath-misc)
 warning: function `plot_multiple` is never used
   --> rustmath-plot/src/plots/plot.rs:95:8
    |
@@ -545,866 +500,48 @@ warning: function `matrix_plot_spy` is never used
 222 | pub fn matrix_plot_spy(matrix: Vec<Vec<f64>>, threshold: Option<f64>, color: Color) -> Graphics {
     |        ^^^^^^^^^^^^^^^
 
-   Compiling rustmath-misc v0.1.0 (/home/john/RustMath/rustmath-misc)
-   Compiling rustmath-quadraticforms v0.1.0 (/home/john/RustMath/rustmath-quadraticforms)
-warning: `rustmath-plot` (lib) generated 17 warnings
-warning: field `count` is never read
-   --> rustmath-databases/src/oeis.rs:114:5
-    |
-110 | struct OEISResponse {
-    |        ------------ field in this struct
-...
-114 |     count: i32,
-    |     ^^^^^
-    |
-    = note: `OEISResponse` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
-    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: field `data_path` is never read
-   --> rustmath-databases/src/cunningham.rs:205:5
-    |
-201 | pub struct CunninghamTables {
-    |            ---------------- field in this struct
-...
-205 |     data_path: Option<String>,
-    |     ^^^^^^^^^
-
-warning: field `data_path` is never read
-   --> rustmath-databases/src/cremona.rs:385:5
-    |
-381 | pub struct CremonaDatabase {
-    |            --------------- field in this struct
-...
-385 |     data_path: Option<String>,
-    |     ^^^^^^^^^
-
-warning: fields `base_url`, `client`, and `cache` are never read
-   --> rustmath-databases/src/lmfdb.rs:115:5
-    |
-114 | pub struct LMFDBClient {
-    |            ----------- fields in this struct
-115 |     base_url: String,
-    |     ^^^^^^^^
-116 |     client: reqwest::blocking::Client,
-    |     ^^^^^^
-117 |     /// In-memory cache of queries
-118 |     cache: std::sync::Mutex<HashMap<String, String>>,
-    |     ^^^^^
-
-warning: `rustmath-databases` (lib) generated 4 warnings
-warning: unused import: `EuclideanDomain`
-  --> rustmath-numberfields/src/lib.rs:24:21
-   |
-24 | use rustmath_core::{EuclideanDomain, NumericConversion, Ring};
-   |                     ^^^^^^^^^^^^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `rustmath_finitefields::prime_field::PrimeField`
- --> rustmath-coding/src/linear_code.rs:5:5
-  |
-5 | use rustmath_finitefields::prime_field::PrimeField;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `rustmath_matrix::matrix::Matrix`
- --> rustmath-coding/src/linear_code.rs:6:5
-  |
-6 | use rustmath_matrix::matrix::Matrix;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `rustmath_finitefields::prime_field::PrimeField`
- --> rustmath-coding/src/hamming.rs:9:5
-  |
-9 | use rustmath_finitefields::prime_field::PrimeField;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `rustmath_finitefields::prime_field::PrimeField`
- --> rustmath-coding/src/reed_solomon.rs:9:5
-  |
-9 | use rustmath_finitefields::prime_field::PrimeField;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `rustmath_polynomials::univariate::UnivariatePolynomial`
-  --> rustmath-coding/src/reed_solomon.rs:10:5
-   |
-10 | use rustmath_polynomials::univariate::UnivariatePolynomial;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `rustmath_core::Ring`
-  --> rustmath-coding/src/reed_solomon.rs:11:5
-   |
-11 | use rustmath_core::Ring;
-   |     ^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `PrimeField`
- --> rustmath-coding/src/bch.rs:7:42
-  |
-7 | use rustmath_finitefields::prime_field::{PrimeField};
-  |                                          ^^^^^^^^^^
-
-warning: unused import: `rustmath_core::Ring`
- --> rustmath-coding/src/bch.rs:8:5
-  |
-8 | use rustmath_core::Ring;
-  |     ^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `rustmath_finitefields::prime_field::PrimeField`
-  --> rustmath-coding/src/golay.rs:11:5
-   |
-11 | use rustmath_finitefields::prime_field::PrimeField;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `rustmath_finitefields::prime_field::PrimeField`
- --> rustmath-coding/src/syndrome.rs:3:5
-  |
-3 | use rustmath_finitefields::prime_field::PrimeField;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `NumericConversion`
- --> rustmath-quadraticforms/src/quadratic_form.rs:6:27
-  |
-6 | use rustmath_core::{Ring, NumericConversion};
-  |                           ^^^^^^^^^^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused imports: `Ord` and `Ordering`
- --> rustmath-quadraticforms/src/quadratic_form.rs:8:16
-  |
-8 | use std::cmp::{Ord, Ordering};
-  |                ^^^  ^^^^^^^^
-
-warning: unused import: `EuclideanDomain`
- --> rustmath-quadraticforms/src/local_densities.rs:9:46
-  |
-9 | use rustmath_core::{Ring, NumericConversion, EuclideanDomain};
-  |                                              ^^^^^^^^^^^^^^^
-
-warning: unused imports: `CommutativeRing`, `Field`, `MathError`, `Result`, and `Ring`
-  --> rustmath-complex/src/complex_arb.rs:12:21
-   |
-12 | use rustmath_core::{CommutativeRing, Field, MathError, Result, Ring};
-   |                     ^^^^^^^^^^^^^^^  ^^^^^  ^^^^^^^^^  ^^^^^^  ^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `Real`
-  --> rustmath-complex/src/complex_arb.rs:13:22
-   |
-13 | use rustmath_reals::{Real, RealMPFR};
-   |                      ^^^^
-
-warning: unused imports: `CommutativeRing`, `Field`, `MathError`, and `Result`
-  --> rustmath-complex/src/complex_interval.rs:46:21
-   |
-46 | use rustmath_core::{CommutativeRing, Field, MathError, Result, Ring};
-   |                     ^^^^^^^^^^^^^^^  ^^^^^  ^^^^^^^^^  ^^^^^^
-
-warning: unused import: `RealMPFR`
-  --> rustmath-complex/src/complex_interval.rs:47:38
-   |
-47 | use rustmath_reals::{Interval, Real, RealMPFR};
-   |                                      ^^^^^^^^
-
-warning: unused import: `Real`
- --> rustmath-complex/src/complex_interval_field.rs:7:32
-  |
-7 | use rustmath_reals::{Interval, Real};
-  |                                ^^^^
-
-warning: type `ComplexIntervalField_class` should have an upper camel case name
-  --> rustmath-complex/src/complex_interval_field.rs:28:12
-   |
-28 | pub struct ComplexIntervalField_class {
-   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `ComplexIntervalFieldClass`
-   |
-   = note: `#[warn(non_camel_case_types)]` (part of `#[warn(nonstandard_style)]`) on by default
-
-warning: type `MPComplexField_class` should have an upper camel case name
-   --> rustmath-complex/src/complex_mpc_ext.rs:255:12
-    |
-255 | pub struct MPComplexField_class {
-    |            ^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `MpcomplexFieldClass`
-
-warning: unused import: `std::convert::TryInto`
- --> rustmath-crypto/src/authenticated.rs:6:5
-  |
-6 | use std::convert::TryInto;
-  |     ^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `rustmath_core::Ring`
- --> rustmath-coding/src/linear_code.rs:7:5
-  |
-7 | use rustmath_core::Ring;
-  |     ^^^^^^^^^^^^^^^^^^^
-
-warning: unused variable: `field_char`
-   --> rustmath-coding/src/linear_code.rs:209:60
-    |
-209 |     fn compute_parity_check_matrix(generator: &[Vec<u64>], field_char: u64) -> Vec<Vec<u64>> {
-    |                                                            ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_field_char`
-    |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: variable does not need to be mutable
-  --> rustmath-coding/src/hamming.rs:52:13
-   |
-52 |         let mut code = LinearCode::from_generator_matrix(g, 2);
-   |             ----^^^^
-   |             |
-   |             help: remove this `mut`
-   |
-   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `p`
-   --> rustmath-coding/src/reed_solomon.rs:106:13
-    |
-106 |         let p = self.field_char;
-    |             ^ help: if this is intentional, prefix it with an underscore: `_p`
-
-warning: variable does not need to be mutable
-   --> rustmath-coding/src/reed_solomon.rs:109:13
-    |
-109 |         let mut message_poly = message.to_vec();
-    |             ----^^^^^^^^^^^^
-    |             |
-    |             help: remove this `mut`
-
-warning: unused variable: `p`
-   --> rustmath-coding/src/reed_solomon.rs:168:13
-    |
-168 |         let p = self.field_char;
-    |             ^ help: if this is intentional, prefix it with an underscore: `_p`
-
-warning: unused variable: `k`
-  --> rustmath-coding/src/bch.rs:65:38
-   |
-65 |     pub fn with_parameters(n: usize, k: usize, delta: usize) -> Result<Self, String> {
-   |                                      ^ help: if this is intentional, prefix it with an underscore: `_k`
-
-warning: unused variable: `p`
-   --> rustmath-coding/src/syndrome.rs:198:13
-    |
-198 |         let p = self.field_char;
-    |             ^ help: if this is intentional, prefix it with an underscore: `_p`
-
-warning: unused variable: `p`
-   --> rustmath-coding/src/syndrome.rs:206:13
-    |
-206 |         let p = self.field_char;
-    |             ^ help: if this is intentional, prefix it with an underscore: `_p`
-
-warning: field `eval_points` is never read
-  --> rustmath-coding/src/reed_solomon.rs:26:5
-   |
-16 | pub struct ReedSolomonCode {
-   |            --------------- field in this struct
-...
-26 |     eval_points: Vec<u64>,
-   |     ^^^^^^^^^^^
-   |
-   = note: `ReedSolomonCode` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
-   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: fields `m` and `field_char` are never read
-  --> rustmath-coding/src/bch.rs:21:5
-   |
-13 | pub struct BCHCode {
-   |            ------- fields in this struct
-...
-21 |     m: usize,
-   |     ^
-...
-25 |     field_char: u64,
-   |     ^^^^^^^^^^
-   |
-   = note: `BCHCode` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
-
-warning: field `field_char` is never read
-  --> rustmath-coding/src/syndrome.rs:13:5
-   |
- 9 | pub struct SyndromeTable {
-   |            ------------- field in this struct
-...
-13 |     field_char: u64,
-   |     ^^^^^^^^^^
-   |
-   = note: `SyndromeTable` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
-
-error[E0599]: no method named `unwrap_or` found for type `i64` in the current scope
-   --> rustmath-numberfields/src/lib.rs:398:49
-    |
-398 |         if class_one_discs.contains(&d.to_i64().unwrap_or(0)) {
-    |                                                 ^^^^^^^^^ method not found in `i64`
-
-For more information about this error, try `rustc --explain E0599`.
-warning: `rustmath-numberfields` (lib) generated 1 warning
-error: could not compile `rustmath-numberfields` (lib) due to 1 previous error; 1 warning emitted
-warning: build failed, waiting for other jobs to finish...
-error[E0599]: no method named `unwrap_or` found for type `i64` in the current scope
-   --> rustmath-quadraticforms/src/theta_series.rs:136:44
-    |
-136 |         let min_float = min_coeff.to_i64().unwrap_or(1) as f64;
-    |                                            ^^^^^^^^^ method not found in `i64`
-
-error[E0308]: mismatched types
-  --> rustmath-complex/src/mpc.rs:95:31
-   |
-95 |         let real_f64 = if let Some(i) = real.to_i64() {
-   |                               ^^^^^^^   ------------- this expression has type `i64`
-   |                               |
-   |                               expected `i64`, found `Option<_>`
-   |
-   = note: expected type `i64`
-              found enum `Option<_>`
-
-error[E0308]: mismatched types
-   --> rustmath-complex/src/mpc.rs:100:31
-    |
-100 |         let imag_f64 = if let Some(i) = imag.to_i64() {
-    |                               ^^^^^^^   ------------- this expression has type `i64`
-    |                               |
-    |                               expected `i64`, found `Option<_>`
-    |
-    = note: expected type `i64`
-               found enum `Option<_>`
-
 warning: unused import: `std::f64::consts::PI`
- --> rustmath-geometry/src/polygon.rs:4:5
+ --> rustmath-stats/src/hypothesis.rs:6:5
   |
-4 | use std::f64::consts::PI;
+6 | use std::f64::consts::PI;
   |     ^^^^^^^^^^^^^^^^^^^^
   |
   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
 
-error[E0599]: no method named `unwrap_or` found for type `i64` in the current scope
-   --> rustmath-quadraticforms/src/local_densities.rs:231:38
-    |
-231 |         let limit = p_power.to_i64().unwrap_or(1000).min(1000);
-    |                                      ^^^^^^^^^ method not found in `i64`
-
-warning: unused import: `std::collections::HashSet`
- --> rustmath-geometry/src/triangulation.rs:4:5
+warning: unused import: `variance`
+ --> rustmath-stats/src/regression.rs:5:31
   |
-4 | use std::collections::HashSet;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+5 | use crate::statistics::{mean, variance};
+  |                               ^^^^^^^^
 
-warning: unused import: `Mul`
-  --> rustmath-geometry/src/toric.rs:15:26
-   |
-15 | use std::ops::{Add, Sub, Mul};
-   |                          ^^^
-
-warning: unnecessary parentheses around block return value
-   --> rustmath-geometry/src/toric.rs:911:9
+warning: unused variable: `alpha`
+   --> rustmath-stats/src/hypothesis.rs:195:21
     |
-911 |         (sum.abs() / 2.0)
-    |         ^               ^
-    |
-    = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
-help: remove these parentheses
-    |
-911 -         (sum.abs() / 2.0)
-911 +         sum.abs() / 2.0
-    |
-
-warning: unused import: `std::hash::Hash`
-  --> rustmath-geometry/src/convex_set.rs:14:5
-   |
-14 | use std::hash::Hash;
-   |     ^^^^^^^^^^^^^^^
-
-warning: unused import: `std::cmp::Ordering`
-  --> rustmath-geometry/src/newton_polygon.rs:20:5
-   |
-20 | use std::cmp::Ordering;
-   |     ^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `rustmath_integers::Integer`
-  --> rustmath-geometry/src/integral_points.rs:20:5
-   |
-20 | use rustmath_integers::Integer;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: type `Inequality_generic` should have an upper camel case name
-   --> rustmath-geometry/src/integral_points.rs:328:12
-    |
-328 | pub struct Inequality_generic {
-    |            ^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `InequalityGeneric`
-    |
-    = note: `#[warn(non_camel_case_types)]` (part of `#[warn(nonstandard_style)]`) on by default
-
-warning: type `Inequality_int` should have an upper camel case name
-   --> rustmath-geometry/src/integral_points.rs:443:12
-    |
-443 | pub struct Inequality_int {
-    |            ^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `InequalityInt`
-
-warning: unused import: `crate::point::Point2D`
-  --> rustmath-geometry/src/hyperplane_arrangement/plot.rs:18:5
-   |
-18 | use crate::point::Point2D;
-   |     ^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `rustmath_rationals::Rational`
-  --> rustmath-geometry/src/hyperplane_arrangement/plot.rs:19:5
-   |
-19 | use rustmath_rationals::Rational;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `std::collections::HashMap`
-  --> rustmath-geometry/src/hyperplane_arrangement/plot.rs:20:5
-   |
-20 | use std::collections::HashMap;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `rustmath_core::Ring`
-  --> rustmath-geometry/src/lattice_polytope.rs:24:5
-   |
-24 | use rustmath_core::Ring;
-   |     ^^^^^^^^^^^^^^^^^^^
-
-error[E0308]: mismatched types
-   --> rustmath-misc/src/temporary_file.rs:275:9
-    |
-273 |     pub fn persist(mut self) -> io::Result<PathBuf> {
-    |                                 ------------------- expected `Result<PathBuf, std::io::Error>` because of return type
-274 |         let temp = self.inner.take().unwrap();
-275 |         temp.keep()
-    |         ^^^^^^^^^^^ expected `Result<PathBuf, Error>`, found `PathBuf`
-    |
-    = note: expected enum `Result<PathBuf, std::io::Error>`
-             found struct `PathBuf`
-help: try wrapping the expression in `Ok`
-    |
-275 |         Ok(temp.keep())
-    |         +++           +
-
-error[E0308]: mismatched types
-  --> rustmath-complex/src/complex_mpc_ext.rs:98:30
-   |
-98 |         let f64_val = if let Some(i) = n.to_i64() {
-   |                              ^^^^^^^   ---------- this expression has type `i64`
-   |                              |
-   |                              expected `i64`, found `Option<_>`
-   |
-   = note: expected type `i64`
-              found enum `Option<_>`
-
-warning: unused import: `rustmath_core::NumericConversion`
-  --> rustmath-complex/src/complex_mpc_ext.rs:14:5
-   |
-14 | use rustmath_core::NumericConversion;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `NumericConversion`
- --> rustmath-complex/src/complex.rs:3:56
-  |
-3 | use rustmath_core::{CommutativeRing, Field, MathError, NumericConversion, Result, Ring};
-  |                                                        ^^^^^^^^^^^^^^^^^
-
-error[E0277]: the `?` operator can only be applied to values that implement `Try`
-   --> rustmath-misc/src/temporary_file.rs:509:21
-    |
-509 |     let temp_path = temp_dir.keep()?;
-    |                     ^^^^^^^^^^^^^^^^ the `?` operator cannot be applied to type `PathBuf`
-    |
-    = help: the trait `Try` is not implemented for `PathBuf`
-
-warning: variable does not need to be mutable
-   --> rustmath-complex/src/complex_interval.rs:465:13
-    |
-465 |         let mut angles = vec![
-    |             ----^^^^^^
-    |             |
-    |             help: remove this `mut`
-    |
-    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
-
-warning: value assigned to `elem` is never read
-  --> rustmath-complex/src/complex_interval_field.rs:81:17
-   |
-81 |         let mut elem = ComplexIntervalFieldElement::point(real, imag);
-   |                 ^^^^
-   |
-   = help: maybe it is overwritten before being read?
-   = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
-
-warning: variable does not need to be mutable
-  --> rustmath-complex/src/complex_interval_field.rs:99:13
-   |
-99 |         let mut elem = ComplexIntervalFieldElement::from_intervals(real, imag);
-   |             ----^^^^
-   |             |
-   |             help: remove this `mut`
-
-For more information about this error, try `rustc --explain E0308`.
-warning: unused variable: `text`
-   --> rustmath-crypto/src/classical.rs:212:21
-    |
-212 | pub fn hill_decrypt(text: &str, key_matrix: &Matrix<Integer>) -> Result<String> {
-    |                     ^^^^ help: if this is intentional, prefix it with an underscore: `_text`
+195 | fn t_critical_value(alpha: f64, df: usize) -> f64 {
+    |                     ^^^^^ help: if this is intentional, prefix it with an underscore: `_alpha`
     |
     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
 
-warning: unused variable: `key_matrix`
-   --> rustmath-crypto/src/classical.rs:212:33
+warning: unused variable: `n_features`
+   --> rustmath-stats/src/regression.rs:131:13
     |
-212 | pub fn hill_decrypt(text: &str, key_matrix: &Matrix<Integer>) -> Result<String> {
-    |                                 ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_key_matrix`
+131 |         let n_features = x_matrix[0].len();
+    |             ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_n_features`
 
 warning: variable does not need to be mutable
-   --> rustmath-crypto/src/des.rs:162:13
+   --> rustmath-stats/src/regression.rs:134:13
     |
-162 |         let mut key_state = Self::permute(key, &Self::PC1, 64);
-    |             ----^^^^^^^^^
+134 |         let mut x_with_intercept: Vec<Vec<f64>> = x_matrix
+    |             ----^^^^^^^^^^^^^^^^
     |             |
     |             help: remove this `mut`
     |
     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
 
-warning: variable does not need to be mutable
-   --> rustmath-crypto/src/des.rs:239:13
-    |
-239 |         let mut state = Self::permute(plaintext, &Self::IP, 64);
-    |             ----^^^^^
-    |             |
-    |             help: remove this `mut`
-
-warning: variable does not need to be mutable
-   --> rustmath-crypto/src/des.rs:263:13
-    |
-263 |         let mut state = Self::permute(ciphertext, &Self::IP, 64);
-    |             ----^^^^^
-    |             |
-    |             help: remove this `mut`
-
-warning: unused import: `Ring`
- --> rustmath-quadraticforms/src/quadratic_form.rs:6:21
-  |
-6 | use rustmath_core::{Ring, NumericConversion};
-  |                     ^^^^
-
-warning: unused import: `Ring`
- --> rustmath-quadraticforms/src/theta_series.rs:8:21
-  |
-8 | use rustmath_core::{Ring, NumericConversion};
-  |                     ^^^^
-
-warning: unused import: `NumericConversion`
- --> rustmath-quadraticforms/src/theta_series.rs:8:27
-  |
-8 | use rustmath_core::{Ring, NumericConversion};
-  |                           ^^^^^^^^^^^^^^^^^
-
-warning: unused import: `NumericConversion`
- --> rustmath-quadraticforms/src/local_densities.rs:9:27
-  |
-9 | use rustmath_core::{Ring, NumericConversion, EuclideanDomain};
-  |                           ^^^^^^^^^^^^^^^^^
-
-warning: unused import: `Ring`
- --> rustmath-quadraticforms/src/genus_theory.rs:9:21
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                     ^^^^
-
-warning: unused import: `NumericConversion`
- --> rustmath-quadraticforms/src/genus_theory.rs:9:27
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                           ^^^^^^^^^^^^^^^^^
-
-warning: unused import: `Ring`
- --> rustmath-quadraticforms/src/advanced.rs:9:21
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                     ^^^^
-
-warning: unused import: `NumericConversion`
- --> rustmath-quadraticforms/src/advanced.rs:9:27
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                           ^^^^^^^^^^^^^^^^^
-
-warning: variable does not need to be mutable
-  --> rustmath-crypto/src/kdf.rs:47:17
-   |
-47 |             let mut block = Self::derive_block(password, salt, iterations, block_num as u32);
-   |                 ----^^^^^
-   |                 |
-   |                 help: remove this `mut`
-
-warning: variable does not need to be mutable
-   --> rustmath-crypto/src/kdf.rs:184:13
-    |
-184 |         let mut final_block = memory[memory_blocks - 1].clone();
-    |             ----^^^^^^^^^^^
-    |             |
-    |             help: remove this `mut`
-
-warning: unused variable: `j`
-   --> rustmath-crypto/src/kdf.rs:213:17
-    |
-213 |             for j in 0..32 {
-    |                 ^ help: if this is intentional, prefix it with an underscore: `_j`
-
-warning: unused variable: `challenge`
-   --> rustmath-crypto/src/eddsa.rs:351:13
-    |
-351 |         let challenge = SHA256::hash(&challenge_input);
-    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_challenge`
-
-warning: unused variable: `s_point`
-   --> rustmath-crypto/src/eddsa.rs:358:13
-    |
-358 |         let s_point = basepoint.scalar_mul(&signature.s);
-    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_s_point`
-
-warning: unused variable: `r_point`
-   --> rustmath-crypto/src/eddsa.rs:359:13
-    |
-359 |         let r_point = basepoint.scalar_mul(&signature.r);
-    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_r_point`
-
-warning: unused variable: `verify_hash`
-   --> rustmath-crypto/src/eddsa.rs:367:13
-    |
-367 |         let verify_hash = SHA256::hash(&verify_input);
-    |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_verify_hash`
-
-warning: unused import: `std::sync::Arc`
- --> rustmath-symbolic/src/differentiate.rs:6:5
-  |
-6 | use std::sync::Arc;
-  |     ^^^^^^^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused imports: `BinaryOp` and `UnaryOp`
- --> rustmath-symbolic/src/diffeq.rs:6:25
-  |
-6 | use crate::expression::{BinaryOp, Expr, UnaryOp};
-  |                         ^^^^^^^^        ^^^^^^^
-
-warning: unused import: `rustmath_rationals::Rational`
- --> rustmath-symbolic/src/diffeq.rs:9:5
-  |
-9 | use rustmath_rationals::Rational;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `std::sync::Arc`
-  --> rustmath-symbolic/src/diffeq.rs:10:5
-   |
-10 | use std::sync::Arc;
-   |     ^^^^^^^^^^^^^^
-
-warning: unused import: `rustmath_integers::Integer`
- --> rustmath-symbolic/src/expand.rs:5:5
-  |
-5 | use rustmath_integers::Integer;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `crate::polynomial::*`
-  --> rustmath-symbolic/src/expand.rs:99:13
-   |
-99 |         use crate::polynomial::*;
-   |             ^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `std::collections::HashMap`
-   --> rustmath-symbolic/src/expand.rs:100:13
-    |
-100 |         use std::collections::HashMap;
-    |             ^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `NumericConversion`
- --> rustmath-symbolic/src/factor.rs:8:21
-  |
-8 | use rustmath_core::{NumericConversion, Ring};
-  |                     ^^^^^^^^^^^^^^^^^
-
-warning: unused import: `NumericConversion`
-  --> rustmath-symbolic/src/inequalities.rs:13:21
-   |
-13 | use rustmath_core::{NumericConversion, Ring};
-   |                     ^^^^^^^^^^^^^^^^^
-
-warning: `rustmath-complex` (lib) generated 12 warnings
-error: could not compile `rustmath-complex` (lib) due to 3 previous errors; 12 warnings emitted
-warning: unused import: `std::sync::Arc`
-  --> rustmath-symbolic/src/integrate.rs:10:5
-   |
-10 | use std::sync::Arc;
-   |     ^^^^^^^^^^^^^^
-
-warning: unused import: `crate::series::BigO`
-   --> rustmath-symbolic/src/limits.rs:549:13
-    |
-549 |         use crate::series::BigO;
-    |             ^^^^^^^^^^^^^^^^^^^
-
-warning: associated function `quarter_round` is never used
-   --> rustmath-crypto/src/stream_cipher.rs:144:8
-    |
- 88 | impl ChaCha20 {
-    | ------------- associated function in this implementation
-...
-144 |     fn quarter_round(a: &mut u32, b: &mut u32, c: &mut u32, d: &mut u32) {
-    |        ^^^^^^^^^^^^^
-    |
-    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: associated items `P`, `from_bytes`, and `mul_small` are never used
-   --> rustmath-crypto/src/eddsa.rs:52:11
-    |
- 50 | impl FieldElement {
-    | ----------------- associated items in this implementation
- 51 |     /// Prime for Curve25519: 2^255 - 19
- 52 |     const P: [u64; 5] = [
-    |           ^
-...
- 69 |     fn from_bytes(bytes: &[u8; 32]) -> Self {
-    |        ^^^^^^^^^^
-...
-122 |     fn mul_small(&self, scalar: u64) -> FieldElement {
-    |        ^^^^^^^^^
-
-warning: unused import: `std::sync::Arc`
- --> rustmath-symbolic/src/operators.rs:8:5
-  |
-8 | use std::sync::Arc;
-  |     ^^^^^^^^^^^^^^
-
-warning: unused imports: `preceded` and `tuple`
-  --> rustmath-symbolic/src/parser.rs:23:33
-   |
-23 |     sequence::{delimited, pair, preceded, tuple},
-   |                                 ^^^^^^^^  ^^^^^
-
-warning: unused import: `std::collections::HashMap`
- --> rustmath-symbolic/src/polynomial.rs:7:5
-  |
-7 | use std::collections::HashMap;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `std::collections::HashMap`
-  --> rustmath-symbolic/src/radical.rs:10:5
-   |
-10 | use std::collections::HashMap;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused imports: `BinaryOp` and `UnaryOp`
-  --> rustmath-symbolic/src/random_tests.rs:26:25
-   |
-26 | use crate::expression::{BinaryOp, Expr, UnaryOp};
-   |                         ^^^^^^^^        ^^^^^^^
-   |
-help: if this is a test module, consider adding a `#[cfg(test)]` to the containing module
-  --> rustmath-symbolic/src/lib.rs:27:1
-   |
-27 | pub mod random_tests;
-   | ^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `crate::symbol::Symbol`
-  --> rustmath-symbolic/src/random_tests.rs:27:5
-   |
-27 | use crate::symbol::Symbol;
-   |     ^^^^^^^^^^^^^^^^^^^^^
-   |
-help: if this is a test module, consider adding a `#[cfg(test)]` to the containing module
-  --> rustmath-symbolic/src/lib.rs:27:1
-   |
-27 | pub mod random_tests;
-   | ^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `Weak`
- --> rustmath-symbolic/src/registry.rs:9:30
-  |
-9 | use std::sync::{Arc, RwLock, Weak};
-  |                              ^^^^
-
-warning: unused import: `UnaryOp`
- --> rustmath-symbolic/src/series.rs:5:41
-  |
-5 | use crate::expression::{BinaryOp, Expr, UnaryOp};
-  |                                         ^^^^^^^
-
-warning: unused import: `std::sync::Arc`
- --> rustmath-symbolic/src/series.rs:9:5
-  |
-9 | use std::sync::Arc;
-  |     ^^^^^^^^^^^^^^
-
-warning: unused import: `Ring`
-  --> rustmath-symbolic/src/specialfunctions/generalized.rs:33:40
-   |
-33 | use rustmath_core::{NumericConversion, Ring};
-   |                                        ^^^^
-
-warning: unused import: `rustmath_integers::Integer`
-  --> rustmath-symbolic/src/specialfunctions/generalized.rs:34:5
-   |
-34 | use rustmath_integers::Integer;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `rustmath_integers::Integer`
-  --> rustmath-symbolic/src/specialfunctions/orthogonal_polys.rs:38:5
-   |
-38 | use rustmath_integers::Integer;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `Ring`
-  --> rustmath-symbolic/src/specialfunctions/prime_pi.rs:29:40
-   |
-29 | use rustmath_core::{NumericConversion, Ring};
-   |                                        ^^^^
-
-warning: unused import: `rustmath_integers::Integer`
-  --> rustmath-symbolic/src/specialfunctions/prime_pi.rs:30:5
-   |
-30 | use rustmath_integers::Integer;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `std::f64::consts::PI`
-   --> rustmath-symbolic/src/substitute.rs:355:9
-    |
-355 |     use std::f64::consts::PI;
-    |         ^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `rustmath_integers::Integer`
-  --> rustmath-symbolic/src/walker.rs:63:21
-   |
-63 |                 use rustmath_integers::Integer;
-   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Some errors have detailed explanations: E0277, E0308.
-For more information about an error, try `rustc --explain E0277`.
-error: could not compile `rustmath-misc` (lib) due to 2 previous errors
-warning: `rustmath-coding` (lib) generated 22 warnings (run `cargo fix --lib -p rustmath-coding` to apply 12 suggestions)
-warning: unused variable: `d`
-  --> rustmath-quadraticforms/src/local_densities.rs:83:13
-   |
-83 |         let d = (-self.form.discriminant()).clone();
-   |             ^ help: if this is intentional, prefix it with an underscore: `_d`
-   |
-   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `p_power`
-   --> rustmath-quadraticforms/src/local_densities.rs:173:13
-    |
-173 |         let p_power = p_int.pow(k);
-    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_p_power`
-
-warning: unused variable: `n3`
-  --> rustmath-quadraticforms/src/advanced.rs:96:42
-   |
-96 |             if let [(n1, a1), (n2, a2), (n3, a3)] = window {
-   |                                          ^^ help: if this is intentional, prefix it with an underscore: `_n3`
-
+warning: `rustmath-matrix` (lib) generated 24 warnings (run `cargo fix --lib -p rustmath-matrix` to apply 10 suggestions)
+warning: `rustmath-finitefields` (lib) generated 1 warning
+warning: `rustmath-plot` (lib) generated 17 warnings
+warning: `rustmath-stats` (lib) generated 5 warnings (run `cargo fix --lib -p rustmath-stats` to apply 3 suggestions)
 warning: unexpected `cfg` condition value: `random`
    --> rustmath-graphs/src/generators/mod.rs:118:7
     |
@@ -1569,34 +706,6 @@ help: remove these parentheses
 219 +     s + t - 2
     |
 
-warning: `rustmath-quadraticforms` (lib) generated 14 warnings
-error: could not compile `rustmath-quadraticforms` (lib) due to 2 previous errors; 14 warnings emitted
-warning: unused variable: `n`
-   --> rustmath-geometry/src/hyperplane_arrangement/check_freeness.rs:219:9
-    |
-219 |     let n = hyperplanes.len();
-    |         ^ help: if this is intentional, prefix it with an underscore: `_n`
-    |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `obj`
-   --> rustmath-geometry/src/lattice_polytope.rs:540:28
-    |
-540 | pub fn is_lattice_polytope(obj: &LatticePolytopeClass) -> bool {
-    |                            ^^^ help: if this is intentional, prefix it with an underscore: `_obj`
-
-warning: associated function `empty` is never used
-  --> rustmath-geometry/src/hyperplane_arrangement/arrangement.rs:88:8
-   |
-42 | impl<R: Ring> HyperplaneArrangementElement<R> {
-   | --------------------------------------------- associated function in this implementation
-...
-88 |     fn empty(ambient_dim: usize) -> Self {
-   |        ^^^^^
-   |
-   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: `rustmath-crypto` (lib) generated 15 warnings (run `cargo fix --lib -p rustmath-crypto` to apply 6 suggestions)
 warning: unused import: `rustmath_core::Ring`
   --> rustmath-graphs/src/graph_path.rs:10:5
    |
@@ -1698,17 +807,6 @@ warning: variable does not need to be mutable
     |         ----^^^^^^^^^
     |         |
     |         help: remove this `mut`
-
-error[E0308]: mismatched types
-  --> rustmath-symbolic/src/expand.rs:50:36
-   |
-50 | ...                   if let Some(exp_i64) = exp.to_i64() {
-   |                              ^^^^^^^^^^^^^   ------------ this expression has type `i64`
-   |                              |
-   |                              expected `i64`, found `Option<_>`
-   |
-   = note: expected type `i64`
-              found enum `Option<_>`
 
 warning: field `start` is never read
    --> rustmath-graphs/src/backends/c_graph.rs:218:5
@@ -2015,396 +1113,1284 @@ warning: function `SRG_630_85_20_10` should have a snake case name
 370 | pub fn SRG_630_85_20_10() -> Option<Graph> {
     |        ^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `srg_630_85_20_10`
 
-error[E0308]: mismatched types
-   --> rustmath-symbolic/src/integrate.rs:192:58
-    |
-192 |         matches!(self, Expr::Integer(i) if i.to_i64() == Some(1))
-    |                                            ----------    ^^^^^^^ expected `i64`, found `Option<{integer}>`
-    |                                            |
-    |                                            expected because this is `i64`
-    |
-    = note: expected type `i64`
-               found enum `Option<{integer}>`
+warning: unused import: `EuclideanDomain`
+  --> rustmath-numberfields/src/lib.rs:24:21
+   |
+24 | use rustmath_core::{EuclideanDomain, NumericConversion, Ring};
+   |                     ^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
 
-error[E0308]: mismatched types
-   --> rustmath-symbolic/src/integrate.rs:197:58
-    |
-197 |         matches!(self, Expr::Integer(i) if i.to_i64() == Some(-1))
-    |                                            ----------    ^^^^^^^^ expected `i64`, found `Option<{integer}>`
-    |                                            |
-    |                                            expected because this is `i64`
-    |
-    = note: expected type `i64`
-               found enum `Option<{integer}>`
+warning: unused import: `std::f64::consts::PI`
+ --> rustmath-geometry/src/polygon.rs:4:5
+  |
+4 | use std::f64::consts::PI;
+  |     ^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
 
-error[E0308]: mismatched types
-   --> rustmath-symbolic/src/integrate.rs:454:74
-    |
-454 |                 && matches!(**two, Expr::Integer(ref i) if i.to_i64() == Some(2))
-    |                                                            ----------    ^^^^^^^ expected `i64`, found `Option<{integer}>`
-    |                                                            |
-    |                                                            expected because this is `i64`
-    |
-    = note: expected type `i64`
-               found enum `Option<{integer}>`
+warning: unused import: `std::collections::HashSet`
+ --> rustmath-geometry/src/triangulation.rs:4:5
+  |
+4 | use std::collections::HashSet;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-error[E0308]: mismatched types
-   --> rustmath-symbolic/src/integrate.rs:619:25
+warning: unused import: `Mul`
+  --> rustmath-geometry/src/toric.rs:15:26
+   |
+15 | use std::ops::{Add, Sub, Mul};
+   |                          ^^^
+
+warning: unnecessary parentheses around block return value
+   --> rustmath-geometry/src/toric.rs:911:9
     |
-611 |     pub fn polynomial_degree(expr: &Expr, var: &Symbol) -> Option<i64> {
-    |                                                            ----------- expected `Option<i64>` because of return type
+911 |         (sum.abs() / 2.0)
+    |         ^               ^
+    |
+    = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+    |
+911 -         (sum.abs() / 2.0)
+911 +         sum.abs() / 2.0
+    |
+
+warning: unused import: `std::hash::Hash`
+  --> rustmath-geometry/src/convex_set.rs:14:5
+   |
+14 | use std::hash::Hash;
+   |     ^^^^^^^^^^^^^^^
+
+warning: unused import: `std::cmp::Ordering`
+  --> rustmath-geometry/src/newton_polygon.rs:20:5
+   |
+20 | use std::cmp::Ordering;
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_integers::Integer`
+  --> rustmath-geometry/src/integral_points.rs:20:5
+   |
+20 | use rustmath_integers::Integer;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: type `Inequality_generic` should have an upper camel case name
+   --> rustmath-geometry/src/integral_points.rs:328:12
+    |
+328 | pub struct Inequality_generic {
+    |            ^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `InequalityGeneric`
+    |
+    = note: `#[warn(non_camel_case_types)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: type `Inequality_int` should have an upper camel case name
+   --> rustmath-geometry/src/integral_points.rs:443:12
+    |
+443 | pub struct Inequality_int {
+    |            ^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `InequalityInt`
+
+warning: unused import: `crate::point::Point2D`
+  --> rustmath-geometry/src/hyperplane_arrangement/plot.rs:18:5
+   |
+18 | use crate::point::Point2D;
+   |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_rationals::Rational`
+  --> rustmath-geometry/src/hyperplane_arrangement/plot.rs:19:5
+   |
+19 | use rustmath_rationals::Rational;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> rustmath-geometry/src/hyperplane_arrangement/plot.rs:20:5
+   |
+20 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_core::Ring`
+  --> rustmath-geometry/src/lattice_polytope.rs:24:5
+   |
+24 | use rustmath_core::Ring;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `n`
+   --> rustmath-geometry/src/hyperplane_arrangement/check_freeness.rs:219:9
+    |
+219 |     let n = hyperplanes.len();
+    |         ^ help: if this is intentional, prefix it with an underscore: `_n`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `obj`
+   --> rustmath-geometry/src/lattice_polytope.rs:540:28
+    |
+540 | pub fn is_lattice_polytope(obj: &LatticePolytopeClass) -> bool {
+    |                            ^^^ help: if this is intentional, prefix it with an underscore: `_obj`
+
+warning: associated function `empty` is never used
+  --> rustmath-geometry/src/hyperplane_arrangement/arrangement.rs:88:8
+   |
+42 | impl<R: Ring> HyperplaneArrangementElement<R> {
+   | --------------------------------------------- associated function in this implementation
 ...
-619 |                         n.to_i64()
-    |                         ^^^^^^^^^^ expected `Option<i64>`, found `i64`
-    |
-    = note: expected enum `Option<i64>`
-               found type `i64`
-help: try wrapping the expression in `Some`
-    |
-619 |                         Some(n.to_i64())
-    |                         +++++          +
-
-error[E0308]: mismatched types
-   --> rustmath-symbolic/src/integrate.rs:910:94
-    |
-910 | ...                   && matches!(**two, Expr::Integer(ref i) if i.to_i64() == Some(2)) {
-    |                                                                  ----------    ^^^^^^^ expected `i64`, found `Option<{integer}>`
-    |                                                                  |
-    |                                                                  expected because this is `i64`
-    |
-    = note: expected type `i64`
-               found enum `Option<{integer}>`
-
-error[E0599]: `i64` is not an iterator
-   --> rustmath-symbolic/src/limits.rs:324:44
-    |
-324 |             Expr::Integer(i) => i.to_i64().map(|v| v > 0).unwrap_or(false),
-    |                                            ^^^ `i64` is not an iterator
-    |
-    = note: the following trait bounds were not satisfied:
-            `i64: Iterator`
-            which is required by `&mut i64: Iterator`
-
-error[E0599]: `i64` is not an iterator
-   --> rustmath-symbolic/src/limits.rs:333:44
-    |
-333 |             Expr::Integer(i) => i.to_i64().map(|v| v < 0).unwrap_or(false),
-    |                                            ^^^ `i64` is not an iterator
-    |
-    = note: the following trait bounds were not satisfied:
-            `i64: Iterator`
-            which is required by `&mut i64: Iterator`
-
-error[E0308]: mismatched types
-   --> rustmath-symbolic/src/polynomial.rs:149:32
-    |
-149 |                         if let Some(exp_i64) = exp.to_i64() {
-    |                                ^^^^^^^^^^^^^   ------------ this expression has type `i64`
-    |                                |
-    |                                expected `i64`, found `Option<_>`
-    |
-    = note: expected type `i64`
-               found enum `Option<_>`
-
-error[E0308]: mismatched types
-   --> rustmath-symbolic/src/polynomial.rs:256:32
-    |
-256 |                         if let Some(exp_i64) = exp.to_i64() {
-    |                                ^^^^^^^^^^^^^   ------------ this expression has type `i64`
-    |                                |
-    |                                expected `i64`, found `Option<_>`
-    |
-    = note: expected type `i64`
-               found enum `Option<_>`
-
-error[E0599]: no method named `map_or` found for type `i64` in the current scope
-   --> rustmath-symbolic/src/radical.rs:126:31
-    |
-126 |                 if n.to_i64().map_or(false, |x| x % 2 == 0) {
-    |                               ^^^^^^ method not found in `i64`
-
-error[E0308]: mismatched types
-   --> rustmath-symbolic/src/radical.rs:131:24
-    |
-131 |                 if let Some(n_i64) = n.to_i64() {
-    |                        ^^^^^^^^^^^   ---------- this expression has type `i64`
-    |                        |
-    |                        expected `i64`, found `Option<_>`
-    |
-    = note: expected type `i64`
-               found enum `Option<_>`
-
-error[E0599]: no method named `unwrap_or` found for type `i64` in the current scope
-   --> rustmath-symbolic/src/radical.rs:262:83
-    |
-262 |                 Arc::new(Expr::Rational(Rational::new(1, r.denominator().to_i64().unwrap_or(1)).unwrap())),
-    |                                                                                   ^^^^^^^^^ method not found in `i64`
-
-error[E0308]: mismatched types
-  --> rustmath-symbolic/src/series.rs:36:82
+88 |     fn empty(ambient_dim: usize) -> Self {
+   |        ^^^^^
    |
-36 |             let x_minus_a = if matches!(point, Expr::Integer(i) if i.to_i64() == Some(0)) {
-   |                                                                    ----------    ^^^^^^^ expected `i64`, found `Option<{integer}>`
-   |                                                                    |
-   |                                                                    expected because this is `i64`
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `std::convert::TryInto`
+ --> rustmath-crypto/src/authenticated.rs:6:5
+  |
+6 | use std::convert::TryInto;
+  |     ^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `text`
+   --> rustmath-crypto/src/classical.rs:212:21
+    |
+212 | pub fn hill_decrypt(text: &str, key_matrix: &Matrix<Integer>) -> Result<String> {
+    |                     ^^^^ help: if this is intentional, prefix it with an underscore: `_text`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `key_matrix`
+   --> rustmath-crypto/src/classical.rs:212:33
+    |
+212 | pub fn hill_decrypt(text: &str, key_matrix: &Matrix<Integer>) -> Result<String> {
+    |                                 ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_key_matrix`
+
+warning: variable does not need to be mutable
+   --> rustmath-crypto/src/des.rs:162:13
+    |
+162 |         let mut key_state = Self::permute(key, &Self::PC1, 64);
+    |             ----^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> rustmath-crypto/src/des.rs:239:13
+    |
+239 |         let mut state = Self::permute(plaintext, &Self::IP, 64);
+    |             ----^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> rustmath-crypto/src/des.rs:263:13
+    |
+263 |         let mut state = Self::permute(ciphertext, &Self::IP, 64);
+    |             ----^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+  --> rustmath-crypto/src/kdf.rs:47:17
    |
-   = note: expected type `i64`
-              found enum `Option<{integer}>`
+47 |             let mut block = Self::derive_block(password, salt, iterations, block_num as u32);
+   |                 ----^^^^^
+   |                 |
+   |                 help: remove this `mut`
 
-error[E0308]: mismatched types
-   --> rustmath-symbolic/src/series.rs:208:73
+warning: variable does not need to be mutable
+   --> rustmath-crypto/src/kdf.rs:184:13
     |
-208 |         let is_zero = matches!(point, Expr::Integer(i) if i.to_i64() == Some(0));
-    |                                                           ----------    ^^^^^^^ expected `i64`, found `Option<{integer}>`
-    |                                                           |
-    |                                                           expected because this is `i64`
-    |
-    = note: expected type `i64`
-               found enum `Option<{integer}>`
+184 |         let mut final_block = memory[memory_blocks - 1].clone();
+    |             ----^^^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
 
-error[E0308]: mismatched types
-   --> rustmath-symbolic/src/series.rs:235:78
+warning: unused variable: `j`
+   --> rustmath-crypto/src/kdf.rs:213:17
     |
-235 |         let x_minus_a = if matches!(point, Expr::Integer(i) if i.to_i64() == Some(0)) {
-    |                                                                ----------    ^^^^^^^ expected `i64`, found `Option<{integer}>`
-    |                                                                |
-    |                                                                expected because this is `i64`
-    |
-    = note: expected type `i64`
-               found enum `Option<{integer}>`
+213 |             for j in 0..32 {
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_j`
 
-error[E0308]: mismatched types
-   --> rustmath-symbolic/src/solve.rs:874:26
+warning: unused variable: `challenge`
+   --> rustmath-crypto/src/eddsa.rs:351:13
     |
-874 |         if n.to_i64() == Some(1) {
-    |            ----------    ^^^^^^^ expected `i64`, found `Option<{integer}>`
-    |            |
-    |            expected because this is `i64`
-    |
-    = note: expected type `i64`
-               found enum `Option<{integer}>`
+351 |         let challenge = SHA256::hash(&challenge_input);
+    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_challenge`
 
-error[E0308]: mismatched types
-   --> rustmath-symbolic/src/solve.rs:882:33
+warning: unused variable: `s_point`
+   --> rustmath-crypto/src/eddsa.rs:358:13
     |
-882 |         } else if n.to_i64() == Some(-1) {
-    |                   ----------    ^^^^^^^^ expected `i64`, found `Option<{integer}>`
-    |                   |
-    |                   expected because this is `i64`
-    |
-    = note: expected type `i64`
-               found enum `Option<{integer}>`
+358 |         let s_point = basepoint.scalar_mul(&signature.s);
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_s_point`
 
-error[E0308]: mismatched types
-   --> rustmath-symbolic/src/solve.rs:913:26
+warning: unused variable: `r_point`
+   --> rustmath-crypto/src/eddsa.rs:359:13
     |
-913 |         if n.to_i64() == Some(1) {
-    |            ----------    ^^^^^^^ expected `i64`, found `Option<{integer}>`
-    |            |
-    |            expected because this is `i64`
-    |
-    = note: expected type `i64`
-               found enum `Option<{integer}>`
+359 |         let r_point = basepoint.scalar_mul(&signature.r);
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_r_point`
 
-error[E0308]: mismatched types
-   --> rustmath-symbolic/src/solve.rs:917:33
+warning: unused variable: `verify_hash`
+   --> rustmath-crypto/src/eddsa.rs:367:13
     |
-917 |         } else if n.to_i64() == Some(-1) {
-    |                   ----------    ^^^^^^^^ expected `i64`, found `Option<{integer}>`
-    |                   |
-    |                   expected because this is `i64`
+367 |         let verify_hash = SHA256::hash(&verify_input);
+    |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_verify_hash`
+
+warning: associated function `quarter_round` is never used
+   --> rustmath-crypto/src/stream_cipher.rs:144:8
     |
-    = note: expected type `i64`
-               found enum `Option<{integer}>`
-
-error[E0308]: mismatched types
-   --> rustmath-symbolic/src/solve.rs:940:26
+ 88 | impl ChaCha20 {
+    | ------------- associated function in this implementation
+...
+144 |     fn quarter_round(a: &mut u32, b: &mut u32, c: &mut u32, d: &mut u32) {
+    |        ^^^^^^^^^^^^^
     |
-940 |         if n.to_i64() == Some(1) {
-    |            ----------    ^^^^^^^ expected `i64`, found `Option<{integer}>`
-    |            |
-    |            expected because this is `i64`
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated items `P`, `from_bytes`, and `mul_small` are never used
+   --> rustmath-crypto/src/eddsa.rs:52:11
     |
-    = note: expected type `i64`
-               found enum `Option<{integer}>`
+ 50 | impl FieldElement {
+    | ----------------- associated items in this implementation
+ 51 |     /// Prime for Curve25519: 2^255 - 19
+ 52 |     const P: [u64; 5] = [
+    |           ^
+...
+ 69 |     fn from_bytes(bytes: &[u8; 32]) -> Self {
+    |        ^^^^^^^^^^
+...
+122 |     fn mul_small(&self, scalar: u64) -> FieldElement {
+    |        ^^^^^^^^^
 
-error[E0308]: mismatched types
-   --> rustmath-symbolic/src/solve.rs:948:33
+warning: unused import: `rustmath_finitefields::prime_field::PrimeField`
+ --> rustmath-coding/src/linear_code.rs:5:5
+  |
+5 | use rustmath_finitefields::prime_field::PrimeField;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `rustmath_matrix::matrix::Matrix`
+ --> rustmath-coding/src/linear_code.rs:6:5
+  |
+6 | use rustmath_matrix::matrix::Matrix;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_finitefields::prime_field::PrimeField`
+ --> rustmath-coding/src/hamming.rs:9:5
+  |
+9 | use rustmath_finitefields::prime_field::PrimeField;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_finitefields::prime_field::PrimeField`
+ --> rustmath-coding/src/reed_solomon.rs:9:5
+  |
+9 | use rustmath_finitefields::prime_field::PrimeField;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_polynomials::univariate::UnivariatePolynomial`
+  --> rustmath-coding/src/reed_solomon.rs:10:5
+   |
+10 | use rustmath_polynomials::univariate::UnivariatePolynomial;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_core::Ring`
+  --> rustmath-coding/src/reed_solomon.rs:11:5
+   |
+11 | use rustmath_core::Ring;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `PrimeField`
+ --> rustmath-coding/src/bch.rs:7:42
+  |
+7 | use rustmath_finitefields::prime_field::{PrimeField};
+  |                                          ^^^^^^^^^^
+
+warning: unused import: `rustmath_core::Ring`
+ --> rustmath-coding/src/bch.rs:8:5
+  |
+8 | use rustmath_core::Ring;
+  |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_finitefields::prime_field::PrimeField`
+  --> rustmath-coding/src/golay.rs:11:5
+   |
+11 | use rustmath_finitefields::prime_field::PrimeField;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_finitefields::prime_field::PrimeField`
+ --> rustmath-coding/src/syndrome.rs:3:5
+  |
+3 | use rustmath_finitefields::prime_field::PrimeField;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_core::Ring`
+ --> rustmath-coding/src/linear_code.rs:7:5
+  |
+7 | use rustmath_core::Ring;
+  |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `field_char`
+   --> rustmath-coding/src/linear_code.rs:209:60
     |
-948 |         } else if n.to_i64() == Some(-1) {
-    |                   ----------    ^^^^^^^^ expected `i64`, found `Option<{integer}>`
-    |                   |
-    |                   expected because this is `i64`
+209 |     fn compute_parity_check_matrix(generator: &[Vec<u64>], field_char: u64) -> Vec<Vec<u64>> {
+    |                                                            ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_field_char`
     |
-    = note: expected type `i64`
-               found enum `Option<{integer}>`
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
 
-error[E0308]: mismatched types
-    --> rustmath-symbolic/src/solve.rs:1100:20
-     |
-1100 |             if let Some(i) = n.to_i64() {
-     |                    ^^^^^^^   ---------- this expression has type `i64`
-     |                    |
-     |                    expected `i64`, found `Option<_>`
-     |
-     = note: expected type `i64`
-                found enum `Option<_>`
+warning: variable does not need to be mutable
+  --> rustmath-coding/src/hamming.rs:52:13
+   |
+52 |         let mut code = LinearCode::from_generator_matrix(g, 2);
+   |             ----^^^^
+   |             |
+   |             help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
 
-error[E0308]: mismatched types
-    --> rustmath-symbolic/src/solve.rs:1107:21
-     |
-1107 |             if let (Some(num), Some(den)) = (r.numerator().to_i64(), r.denominator().to_i64()) {
-     |                     ^^^^^^^^^               -------------------------------------------------- this expression has type `(i64, i64)`
-     |                     |
-     |                     expected `i64`, found `Option<_>`
-     |
-     = note: expected type `i64`
-                found enum `Option<_>`
+warning: unused variable: `p`
+   --> rustmath-coding/src/reed_solomon.rs:106:13
+    |
+106 |         let p = self.field_char;
+    |             ^ help: if this is intentional, prefix it with an underscore: `_p`
 
-error[E0308]: mismatched types
-    --> rustmath-symbolic/src/solve.rs:1107:32
-     |
-1107 |             if let (Some(num), Some(den)) = (r.numerator().to_i64(), r.denominator().to_i64()) {
-     |                                ^^^^^^^^^    -------------------------------------------------- this expression has type `(i64, i64)`
-     |                                |
-     |                                expected `i64`, found `Option<_>`
-     |
-     = note: expected type `i64`
-                found enum `Option<_>`
+warning: variable does not need to be mutable
+   --> rustmath-coding/src/reed_solomon.rs:109:13
+    |
+109 |         let mut message_poly = message.to_vec();
+    |             ----^^^^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
 
+warning: unused variable: `p`
+   --> rustmath-coding/src/reed_solomon.rs:168:13
+    |
+168 |         let p = self.field_char;
+    |             ^ help: if this is intentional, prefix it with an underscore: `_p`
+
+warning: unused variable: `k`
+  --> rustmath-coding/src/bch.rs:65:38
+   |
+65 |     pub fn with_parameters(n: usize, k: usize, delta: usize) -> Result<Self, String> {
+   |                                      ^ help: if this is intentional, prefix it with an underscore: `_k`
+
+warning: unused variable: `p`
+   --> rustmath-coding/src/syndrome.rs:198:13
+    |
+198 |         let p = self.field_char;
+    |             ^ help: if this is intentional, prefix it with an underscore: `_p`
+
+warning: unused variable: `p`
+   --> rustmath-coding/src/syndrome.rs:206:13
+    |
+206 |         let p = self.field_char;
+    |             ^ help: if this is intentional, prefix it with an underscore: `_p`
+
+warning: field `eval_points` is never read
+  --> rustmath-coding/src/reed_solomon.rs:26:5
+   |
+16 | pub struct ReedSolomonCode {
+   |            --------------- field in this struct
+...
+26 |     eval_points: Vec<u64>,
+   |     ^^^^^^^^^^^
+   |
+   = note: `ReedSolomonCode` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `m` and `field_char` are never read
+  --> rustmath-coding/src/bch.rs:21:5
+   |
+13 | pub struct BCHCode {
+   |            ------- fields in this struct
+...
+21 |     m: usize,
+   |     ^
+...
+25 |     field_char: u64,
+   |     ^^^^^^^^^^
+   |
+   = note: `BCHCode` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: field `field_char` is never read
+  --> rustmath-coding/src/syndrome.rs:13:5
+   |
+ 9 | pub struct SyndromeTable {
+   |            ------------- field in this struct
+...
+13 |     field_char: u64,
+   |     ^^^^^^^^^^
+   |
+   = note: `SyndromeTable` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: unused import: `NumericConversion`
+ --> rustmath-quadraticforms/src/quadratic_form.rs:6:27
+  |
+6 | use rustmath_core::{Ring, NumericConversion};
+  |                           ^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `Ord` and `Ordering`
+ --> rustmath-quadraticforms/src/quadratic_form.rs:8:16
+  |
+8 | use std::cmp::{Ord, Ordering};
+  |                ^^^  ^^^^^^^^
+
+warning: unused import: `EuclideanDomain`
+ --> rustmath-quadraticforms/src/local_densities.rs:9:46
+  |
+9 | use rustmath_core::{Ring, NumericConversion, EuclideanDomain};
+  |                                              ^^^^^^^^^^^^^^^
+
+warning: unused import: `Ring`
+ --> rustmath-quadraticforms/src/quadratic_form.rs:6:21
+  |
+6 | use rustmath_core::{Ring, NumericConversion};
+  |                     ^^^^
+
+warning: unused import: `Ring`
+ --> rustmath-quadraticforms/src/theta_series.rs:8:21
+  |
+8 | use rustmath_core::{Ring, NumericConversion};
+  |                     ^^^^
+
+warning: unused import: `NumericConversion`
+ --> rustmath-quadraticforms/src/theta_series.rs:8:27
+  |
+8 | use rustmath_core::{Ring, NumericConversion};
+  |                           ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `NumericConversion`
+ --> rustmath-quadraticforms/src/local_densities.rs:9:27
+  |
+9 | use rustmath_core::{Ring, NumericConversion, EuclideanDomain};
+  |                           ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Ring`
+ --> rustmath-quadraticforms/src/genus_theory.rs:9:21
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                     ^^^^
+
+warning: unused import: `NumericConversion`
+ --> rustmath-quadraticforms/src/genus_theory.rs:9:27
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                           ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Ring`
+ --> rustmath-quadraticforms/src/advanced.rs:9:21
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                     ^^^^
+
+warning: unused import: `NumericConversion`
+ --> rustmath-quadraticforms/src/advanced.rs:9:27
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                           ^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `d`
+  --> rustmath-quadraticforms/src/local_densities.rs:83:13
+   |
+83 |         let d = (-self.form.discriminant()).clone();
+   |             ^ help: if this is intentional, prefix it with an underscore: `_d`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `p_power`
+   --> rustmath-quadraticforms/src/local_densities.rs:173:13
+    |
+173 |         let p_power = p_int.pow(k);
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_p_power`
+
+warning: unused variable: `n3`
+  --> rustmath-quadraticforms/src/advanced.rs:96:42
+   |
+96 |             if let [(n1, a1), (n2, a2), (n3, a3)] = window {
+   |                                          ^^ help: if this is intentional, prefix it with an underscore: `_n3`
+
+warning: method `p_adic_equivalent` is never used
+   --> rustmath-quadraticforms/src/genus_theory.rs:189:8
+    |
+ 18 | impl GenusTheory {
+    | ---------------- method in this implementation
+...
+189 |     fn p_adic_equivalent(&self, form1: &QuadraticForm, form2: &QuadraticForm, p: u64) -> bool {
+    |        ^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `rustmath-graphs` (lib) generated 84 warnings (run `cargo fix --lib -p rustmath-graphs` to apply 24 suggestions)
+warning: `rustmath-numberfields` (lib) generated 1 warning (run `cargo fix --lib -p rustmath-numberfields` to apply 1 suggestion)
 warning: `rustmath-geometry` (lib) generated 16 warnings (run `cargo fix --lib -p rustmath-geometry` to apply 11 suggestions)
-error[E0599]: `i64` is not an iterator
-    --> rustmath-symbolic/src/solve.rs:1163:40
-     |
-1163 |         Expr::Integer(n) => n.to_i64().map(|i| i > 0).unwrap_or(true),
-     |                                        ^^^ `i64` is not an iterator
-     |
-     = note: the following trait bounds were not satisfied:
-             `i64: Iterator`
-             which is required by `&mut i64: Iterator`
+warning: `rustmath-crypto` (lib) generated 15 warnings (run `cargo fix --lib -p rustmath-crypto` to apply 6 suggestions)
+warning: `rustmath-coding` (lib) generated 22 warnings (run `cargo fix --lib -p rustmath-coding` to apply 12 suggestions)
+warning: `rustmath-quadraticforms` (lib) generated 15 warnings (run `cargo fix --lib -p rustmath-quadraticforms` to apply 3 suggestions)
+   Compiling rustmath-plot3d v0.1.0 (/home/john/RustMath/rustmath-plot3d)
+warning: field `count` is never read
+   --> rustmath-databases/src/oeis.rs:114:5
+    |
+110 | struct OEISResponse {
+    |        ------------ field in this struct
+...
+114 |     count: i32,
+    |     ^^^^^
+    |
+    = note: `OEISResponse` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
 
-error[E0599]: `i64` is not an iterator
-    --> rustmath-symbolic/src/solve.rs:1165:36
-     |
-1165 |             r.numerator().to_i64().map(|i| i > 0).unwrap_or(true)
-     |                                    ^^^ `i64` is not an iterator
-     |
-     = note: the following trait bounds were not satisfied:
-             `i64: Iterator`
-             which is required by `&mut i64: Iterator`
+warning: field `data_path` is never read
+   --> rustmath-databases/src/cunningham.rs:205:5
+    |
+201 | pub struct CunninghamTables {
+    |            ---------------- field in this struct
+...
+205 |     data_path: Option<String>,
+    |     ^^^^^^^^^
 
-error[E0599]: `i64` is not an iterator
-    --> rustmath-symbolic/src/solve.rs:1239:40
-     |
-1239 |         Expr::Integer(n) => n.to_i64().map(|i| i > 0).unwrap_or(true),
-     |                                        ^^^ `i64` is not an iterator
-     |
-     = note: the following trait bounds were not satisfied:
-             `i64: Iterator`
-             which is required by `&mut i64: Iterator`
+warning: field `data_path` is never read
+   --> rustmath-databases/src/cremona.rs:385:5
+    |
+381 | pub struct CremonaDatabase {
+    |            --------------- field in this struct
+...
+385 |     data_path: Option<String>,
+    |     ^^^^^^^^^
 
-error[E0599]: `i64` is not an iterator
-    --> rustmath-symbolic/src/solve.rs:1241:36
-     |
-1241 |             r.numerator().to_i64().map(|i| i > 0).unwrap_or(true)
-     |                                    ^^^ `i64` is not an iterator
-     |
-     = note: the following trait bounds were not satisfied:
-             `i64: Iterator`
-             which is required by `&mut i64: Iterator`
+warning: fields `base_url`, `client`, and `cache` are never read
+   --> rustmath-databases/src/lmfdb.rs:115:5
+    |
+114 | pub struct LMFDBClient {
+    |            ----------- fields in this struct
+115 |     base_url: String,
+    |     ^^^^^^^^
+116 |     client: reqwest::blocking::Client,
+    |     ^^^^^^
+117 |     /// In-memory cache of queries
+118 |     cache: std::sync::Mutex<HashMap<String, String>>,
+    |     ^^^^^
 
-error[E0599]: no method named `and_then` found for type `i64` in the current scope
-    --> rustmath-symbolic/src/solve.rs:1537:40
-     |
-1537 |         Expr::Integer(n) => n.to_i64().and_then(|i| Rational::new(i, 1).ok()),
-     |                                        ^^^^^^^^ method not found in `i64`
-
-error[E0308]: mismatched types
-    --> rustmath-symbolic/src/solve.rs:1564:29
-     |
-1562 | fn expr_to_integer(expr: &Expr) -> Option<i64> {
-     |                                    ----------- expected `Option<i64>` because of return type
-1563 |     match expr {
-1564 |         Expr::Integer(n) => n.to_i64(),
-     |                             ^^^^^^^^^^ expected `Option<i64>`, found `i64`
-     |
-     = note: expected enum `Option<i64>`
-                found type `i64`
-help: try wrapping the expression in `Some`
-     |
-1564 |         Expr::Integer(n) => Some(n.to_i64()),
-     |                             +++++          +
-
-error[E0308]: mismatched types
-  --> rustmath-symbolic/src/specialfunctions/orthogonal_polys.rs:75:16
+warning: `rustmath-databases` (lib) generated 4 warnings
+warning: unused imports: `CommutativeRing`, `Field`, `MathError`, `Result`, and `Ring`
+  --> rustmath-complex/src/complex_arb.rs:12:21
    |
-75 |         if let Some(n_val) = n_int.to_i64() {
-   |                ^^^^^^^^^^^   -------------- this expression has type `i64`
-   |                |
-   |                expected `i64`, found `Option<_>`
+12 | use rustmath_core::{CommutativeRing, Field, MathError, Result, Ring};
+   |                     ^^^^^^^^^^^^^^^  ^^^^^  ^^^^^^^^^  ^^^^^^  ^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `Real`
+  --> rustmath-complex/src/complex_arb.rs:13:22
+   |
+13 | use rustmath_reals::{Real, RealMPFR};
+   |                      ^^^^
+
+warning: unused imports: `CommutativeRing`, `Field`, `MathError`, and `Result`
+  --> rustmath-complex/src/complex_interval.rs:46:21
+   |
+46 | use rustmath_core::{CommutativeRing, Field, MathError, Result, Ring};
+   |                     ^^^^^^^^^^^^^^^  ^^^^^  ^^^^^^^^^  ^^^^^^
+
+warning: unused import: `RealMPFR`
+  --> rustmath-complex/src/complex_interval.rs:47:38
+   |
+47 | use rustmath_reals::{Interval, Real, RealMPFR};
+   |                                      ^^^^^^^^
+
+warning: unused import: `Real`
+ --> rustmath-complex/src/complex_interval_field.rs:7:32
+  |
+7 | use rustmath_reals::{Interval, Real};
+  |                                ^^^^
+
+warning: type `ComplexIntervalField_class` should have an upper camel case name
+  --> rustmath-complex/src/complex_interval_field.rs:28:12
+   |
+28 | pub struct ComplexIntervalField_class {
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `ComplexIntervalFieldClass`
+   |
+   = note: `#[warn(non_camel_case_types)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: type `MPComplexField_class` should have an upper camel case name
+   --> rustmath-complex/src/complex_mpc_ext.rs:255:12
+    |
+255 | pub struct MPComplexField_class {
+    |            ^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `MpcomplexFieldClass`
+
+warning: unused import: `std::f64::consts::PI`
+ --> rustmath-plot3d/src/transform.rs:4:5
+  |
+4 | use std::f64::consts::PI;
+  |     ^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `Vector3D`
+ --> rustmath-plot3d/src/shapes.rs:6:78
+  |
+6 | use crate::base::{Graphics3dPrimitive, IndexFaceSet, BoundingBox3D, Point3D, Vector3D};
+  |                                                                              ^^^^^^^^
+
+warning: unused import: `Vector3D`
+ --> rustmath-plot3d/src/plots/scatter_plot3d.rs:6:54
+  |
+6 | use crate::base::{Graphics3d, IndexFaceSet, Point3D, Vector3D};
+  |                                                      ^^^^^^^^
+
+warning: unused import: `Vector3D`
+ --> rustmath-plot3d/src/plots/implicit_plot3d.rs:6:54
+  |
+6 | use crate::base::{Graphics3d, IndexFaceSet, Point3D, Vector3D};
+  |                                                      ^^^^^^^^
+
+warning: unused import: `Point3D`
+ --> rustmath-plot3d/src/export.rs:6:45
+  |
+6 | use crate::base::{Graphics3d, IndexFaceSet, Point3D, Vector3D};
+  |                                             ^^^^^^^
+
+warning: unused import: `Plot3DError`
+ --> rustmath-plot3d/src/export.rs:7:13
+  |
+7 | use crate::{Plot3DError, Result};
+  |             ^^^^^^^^^^^
+
+error[E0053]: method `to_mesh` has an incompatible type for trait
+   --> rustmath-plot3d/src/transform.rs:303:26
+    |
+303 |     fn to_mesh(&self) -> IndexFaceSet {
+    |                          ^^^^^^^^^^^^ expected `Result<IndexFaceSet, Plot3DError>`, found `IndexFaceSet`
+    |
+note: type in trait
+   --> rustmath-plot3d/src/base.rs:335:26
+    |
+335 |     fn to_mesh(&self) -> crate::Result<IndexFaceSet>;
+    |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: expected signature `fn(&TransformGroup) -> std::result::Result<IndexFaceSet, Plot3DError>`
+               found signature `fn(&TransformGroup) -> IndexFaceSet`
+help: change the output type to match the trait
+    |
+303 -     fn to_mesh(&self) -> IndexFaceSet {
+303 +     fn to_mesh(&self) -> std::result::Result<IndexFaceSet, Plot3DError> {
+    |
+
+error[E0107]: struct takes 0 generic arguments but 1 generic argument was supplied
+   --> rustmath-plot3d/src/shapes.rs:64:28
+    |
+ 64 |     fn clone_box(&self) -> Box<dyn Graphics3dPrimitive> {
+    |                            ^^^------------------------- help: remove the unnecessary generics
+    |                            |
+    |                            expected 0 generic arguments
+    |
+note: struct defined here, with 0 generic parameters
+   --> rustmath-plot3d/src/shapes.rs:122:12
+    |
+122 | pub struct Box {
+    |            ^^^
+
+error[E0053]: method `clone_box` has an incompatible type for trait
+   --> rustmath-plot3d/src/shapes.rs:64:28
+    |
+ 64 |     fn clone_box(&self) -> Box<dyn Graphics3dPrimitive> {
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Box<dyn Graphics3dPrimitive>`, found `shapes::Box`
+    |
+note: type in trait
+   --> rustmath-plot3d/src/base.rs:338:28
+    |
+338 |     fn clone_box(&self) -> Box<dyn Graphics3dPrimitive>;
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: expected signature `fn(&Sphere) -> std::boxed::Box<(dyn Graphics3dPrimitive + 'static)>`
+               found signature `fn(&Sphere) -> shapes::Box`
+help: change the output type to match the trait
+    |
+ 64 -     fn clone_box(&self) -> Box<dyn Graphics3dPrimitive> {
+ 64 +     fn clone_box(&self) -> std::boxed::Box<(dyn Graphics3dPrimitive + 'static)> {
+    |
+
+error[E0107]: struct takes 0 generic arguments but 1 generic argument was supplied
+   --> rustmath-plot3d/src/shapes.rs:180:28
+    |
+180 |     fn clone_box(&self) -> Box<dyn Graphics3dPrimitive> {
+    |                            ^^^------------------------- help: remove the unnecessary generics
+    |                            |
+    |                            expected 0 generic arguments
+    |
+note: struct defined here, with 0 generic parameters
+   --> rustmath-plot3d/src/shapes.rs:122:12
+    |
+122 | pub struct Box {
+    |            ^^^
+
+error[E0053]: method `clone_box` has an incompatible type for trait
+   --> rustmath-plot3d/src/shapes.rs:180:28
+    |
+180 |     fn clone_box(&self) -> Box<dyn Graphics3dPrimitive> {
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Box<dyn Graphics3dPrimitive>`, found `shapes::Box`
+    |
+note: type in trait
+   --> rustmath-plot3d/src/base.rs:338:28
+    |
+338 |     fn clone_box(&self) -> Box<dyn Graphics3dPrimitive>;
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: expected signature `fn(&shapes::Box) -> std::boxed::Box<(dyn Graphics3dPrimitive + 'static)>`
+               found signature `fn(&shapes::Box) -> shapes::Box`
+help: change the output type to match the trait
+    |
+180 -     fn clone_box(&self) -> Box<dyn Graphics3dPrimitive> {
+180 +     fn clone_box(&self) -> std::boxed::Box<(dyn Graphics3dPrimitive + 'static)> {
+    |
+
+error[E0308]: mismatched types
+   --> rustmath-misc/src/temporary_file.rs:275:9
+    |
+273 |     pub fn persist(mut self) -> io::Result<PathBuf> {
+    |                                 ------------------- expected `Result<PathBuf, std::io::Error>` because of return type
+274 |         let temp = self.inner.take().unwrap();
+275 |         temp.keep()
+    |         ^^^^^^^^^^^ expected `Result<PathBuf, Error>`, found `PathBuf`
+    |
+    = note: expected enum `Result<PathBuf, std::io::Error>`
+             found struct `PathBuf`
+help: try wrapping the expression in `Ok`
+    |
+275 |         Ok(temp.keep())
+    |         +++           +
+
+error[E0308]: mismatched types
+  --> rustmath-complex/src/complex_mpc_ext.rs:98:30
+   |
+98 |         let f64_val = if let Some(i) = n.to_i64() {
+   |                              ^^^^^^^   ---------- this expression has type `i64`
+   |                              |
+   |                              expected `i64`, found `Option<_>`
    |
    = note: expected type `i64`
               found enum `Option<_>`
 
-error[E0308]: mismatched types
-   --> rustmath-symbolic/src/specialfunctions/orthogonal_polys.rs:135:16
+warning: unused import: `rustmath_core::NumericConversion`
+  --> rustmath-complex/src/complex_mpc_ext.rs:14:5
+   |
+14 | use rustmath_core::NumericConversion;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `NumericConversion`
+ --> rustmath-complex/src/complex.rs:3:56
+  |
+3 | use rustmath_core::{CommutativeRing, Field, MathError, NumericConversion, Result, Ring};
+  |                                                        ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+ --> rustmath-symbolic/src/differentiate.rs:6:5
+  |
+6 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `BinaryOp` and `UnaryOp`
+ --> rustmath-symbolic/src/diffeq.rs:6:25
+  |
+6 | use crate::expression::{BinaryOp, Expr, UnaryOp};
+  |                         ^^^^^^^^        ^^^^^^^
+
+warning: unused import: `rustmath_rationals::Rational`
+ --> rustmath-symbolic/src/diffeq.rs:9:5
+  |
+9 | use rustmath_rationals::Rational;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> rustmath-symbolic/src/diffeq.rs:10:5
+   |
+10 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_integers::Integer`
+ --> rustmath-symbolic/src/expand.rs:5:5
+  |
+5 | use rustmath_integers::Integer;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::polynomial::*`
+  --> rustmath-symbolic/src/expand.rs:99:13
+   |
+99 |         use crate::polynomial::*;
+   |             ^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+   --> rustmath-symbolic/src/expand.rs:100:13
     |
-135 |         if let Some(n_val) = n_int.to_i64() {
-    |                ^^^^^^^^^^^   -------------- this expression has type `i64`
-    |                |
-    |                expected `i64`, found `Option<_>`
+100 |         use std::collections::HashMap;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `NumericConversion`
+ --> rustmath-symbolic/src/factor.rs:8:21
+  |
+8 | use rustmath_core::{NumericConversion, Ring};
+  |                     ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `NumericConversion`
+  --> rustmath-symbolic/src/inequalities.rs:13:21
+   |
+13 | use rustmath_core::{NumericConversion, Ring};
+   |                     ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> rustmath-symbolic/src/integrate.rs:10:5
+   |
+10 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused import: `crate::series::BigO`
+   --> rustmath-symbolic/src/limits.rs:549:13
     |
-    = note: expected type `i64`
-               found enum `Option<_>`
+549 |         use crate::series::BigO;
+    |             ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+ --> rustmath-symbolic/src/operators.rs:8:5
+  |
+8 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused imports: `preceded` and `tuple`
+  --> rustmath-symbolic/src/parser.rs:23:33
+   |
+23 |     sequence::{delimited, pair, preceded, tuple},
+   |                                 ^^^^^^^^  ^^^^^
+
+warning: unused import: `std::collections::HashMap`
+ --> rustmath-symbolic/src/polynomial.rs:7:5
+  |
+7 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> rustmath-symbolic/src/radical.rs:10:5
+   |
+10 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `BinaryOp` and `UnaryOp`
+  --> rustmath-symbolic/src/random_tests.rs:26:25
+   |
+26 | use crate::expression::{BinaryOp, Expr, UnaryOp};
+   |                         ^^^^^^^^        ^^^^^^^
+   |
+help: if this is a test module, consider adding a `#[cfg(test)]` to the containing module
+  --> rustmath-symbolic/src/lib.rs:27:1
+   |
+27 | pub mod random_tests;
+   | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::symbol::Symbol`
+  --> rustmath-symbolic/src/random_tests.rs:27:5
+   |
+27 | use crate::symbol::Symbol;
+   |     ^^^^^^^^^^^^^^^^^^^^^
+   |
+help: if this is a test module, consider adding a `#[cfg(test)]` to the containing module
+  --> rustmath-symbolic/src/lib.rs:27:1
+   |
+27 | pub mod random_tests;
+   | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Weak`
+ --> rustmath-symbolic/src/registry.rs:9:30
+  |
+9 | use std::sync::{Arc, RwLock, Weak};
+  |                              ^^^^
+
+warning: unused import: `UnaryOp`
+ --> rustmath-symbolic/src/series.rs:5:41
+  |
+5 | use crate::expression::{BinaryOp, Expr, UnaryOp};
+  |                                         ^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+ --> rustmath-symbolic/src/series.rs:9:5
+  |
+9 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-symbolic/src/specialfunctions/generalized.rs:33:40
+   |
+33 | use rustmath_core::{NumericConversion, Ring};
+   |                                        ^^^^
+
+warning: unused import: `rustmath_integers::Integer`
+  --> rustmath-symbolic/src/specialfunctions/generalized.rs:34:5
+   |
+34 | use rustmath_integers::Integer;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_integers::Integer`
+  --> rustmath-symbolic/src/specialfunctions/orthogonal_polys.rs:38:5
+   |
+38 | use rustmath_integers::Integer;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-symbolic/src/specialfunctions/prime_pi.rs:29:40
+   |
+29 | use rustmath_core::{NumericConversion, Ring};
+   |                                        ^^^^
+
+warning: unused import: `rustmath_integers::Integer`
+  --> rustmath-symbolic/src/specialfunctions/prime_pi.rs:30:5
+   |
+30 | use rustmath_integers::Integer;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::f64::consts::PI`
+   --> rustmath-symbolic/src/substitute.rs:355:9
+    |
+355 |     use std::f64::consts::PI;
+    |         ^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_integers::Integer`
+  --> rustmath-symbolic/src/walker.rs:63:21
+   |
+63 |                 use rustmath_integers::Integer;
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: variable does not need to be mutable
+   --> rustmath-complex/src/complex_interval.rs:465:13
+    |
+465 |         let mut angles = vec![
+    |             ----^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `elem` is never read
+  --> rustmath-complex/src/complex_interval_field.rs:81:17
+   |
+81 |         let mut elem = ComplexIntervalFieldElement::point(real, imag);
+   |                 ^^^^
+   |
+   = help: maybe it is overwritten before being read?
+   = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+  --> rustmath-complex/src/complex_interval_field.rs:99:13
+   |
+99 |         let mut elem = ComplexIntervalFieldElement::from_intervals(real, imag);
+   |             ----^^^^
+   |             |
+   |             help: remove this `mut`
+
+For more information about this error, try `rustc --explain E0308`.
+error: could not compile `rustmath-misc` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+warning: `rustmath-complex` (lib) generated 12 warnings
+error: could not compile `rustmath-complex` (lib) due to 1 previous error; 12 warnings emitted
+error[E0061]: this function takes 2 arguments but 0 arguments were supplied
+   --> rustmath-plot3d/src/transform.rs:304:28
+    |
+304 |         let mut combined = IndexFaceSet::new();
+    |                            ^^^^^^^^^^^^^^^^^-- two arguments of type `Vec<Point3D>` and `Vec<[usize; 3]>` are missing
+    |
+note: associated function defined here
+   --> rustmath-plot3d/src/base.rs:205:12
+    |
+205 |     pub fn new(vertices: Vec<Point3D>, faces: Vec<[usize; 3]>) -> Self {
+    |            ^^^ ----------------------  ----------------------
+help: provide the arguments
+    |
+304 |         let mut combined = IndexFaceSet::new(/* Vec<Point3D> */, /* Vec<[usize; 3]> */);
+    |                                              +++++++++++++++++++++++++++++++++++++++++
 
 error[E0308]: mismatched types
-   --> rustmath-symbolic/src/specialfunctions/orthogonal_polys.rs:182:16
+   --> rustmath-plot3d/src/transform.rs:308:51
     |
-182 |         if let Some(n_val) = n_int.to_i64() {
-    |                ^^^^^^^^^^^   -------------- this expression has type `i64`
-    |                |
-    |                expected `i64`, found `Option<_>`
+308 |             let transformed = self.transform_mesh(&child_mesh);
+    |                                    -------------- ^^^^^^^^^^^ expected `&IndexFaceSet`, found `&Result<IndexFaceSet, Plot3DError>`
+    |                                    |
+    |                                    arguments to this method are incorrect
     |
-    = note: expected type `i64`
-               found enum `Option<_>`
+    = note: expected reference `&IndexFaceSet`
+               found reference `&std::result::Result<IndexFaceSet, Plot3DError>`
+note: method defined here
+   --> rustmath-plot3d/src/transform.rs:256:8
+    |
+256 |     fn transform_mesh(&self, mesh: &IndexFaceSet) -> IndexFaceSet {
+    |        ^^^^^^^^^^^^^^        -------------------
+
+error[E0061]: this function takes 2 arguments but 1 argument was supplied
+   --> rustmath-plot3d/src/shapes.rs:65:9
+    |
+ 65 |         Box::new(self.clone())
+    |         ^^^^^^^^--------------
+    |                 ||
+    |                 |expected `Point3D`, found `Sphere`
+    |                 argument #2 of type `Point3D` is missing
+    |
+note: associated function defined here
+   --> rustmath-plot3d/src/shapes.rs:133:12
+    |
+133 |     pub fn new(min_corner: Point3D, max_corner: Point3D) -> Self {
+    |            ^^^ -------------------  -------------------
+help: provide the argument
+    |
+ 65 -         Box::new(self.clone())
+ 65 +         Box::new(/* Point3D */, /* Point3D */)
+    |
 
 error[E0308]: mismatched types
-   --> rustmath-symbolic/src/specialfunctions/orthogonal_polys.rs:250:16
+   --> rustmath-plot3d/src/shapes.rs:181:9
     |
-250 |         if let Some(n_val) = n_int.to_i64() {
-    |                ^^^^^^^^^^^   -------------- this expression has type `i64`
-    |                |
-    |                expected `i64`, found `Option<_>`
+180 |     fn clone_box(&self) -> Box<dyn Graphics3dPrimitive> {
+    |                            ---------------------------- expected `shapes::Box` because of return type
+181 |         std::boxed::Box::new(self.clone())
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Box`, found `Box<Box>`
     |
-    = note: expected type `i64`
-               found enum `Option<_>`
+    = note: `std::boxed::Box<shapes::Box>` and `shapes::Box` have similar names, but are actually distinct types
+note: `std::boxed::Box<shapes::Box>` is defined in crate `alloc`
+   --> /home/john/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/alloc/src/boxed.rs:231:1
+    |
+231 | / pub struct Box<
+232 | |     T: ?Sized,
+233 | |     #[unstable(feature = "allocator_api", issue = "32838")] A: Allocator = Global,
+234 | | >(Unique<T>, A);
+    | |_^
+note: `shapes::Box` is defined in the current crate
+   --> rustmath-plot3d/src/shapes.rs:122:1
+    |
+122 | pub struct Box {
+    | ^^^^^^^^^^^^^^
+help: consider unboxing the value
+    |
+181 |         *std::boxed::Box::new(self.clone())
+    |         +
 
 error[E0308]: mismatched types
-   --> rustmath-symbolic/src/specialfunctions/orthogonal_polys.rs:296:16
+   --> rustmath-plot3d/src/plots/marching_cubes_tri_table.inc:20:5
     |
-296 |         if let Some(n_val) = n_int.to_i64() {
-    |                ^^^^^^^^^^^   -------------- this expression has type `i64`
-    |                |
-    |                expected `i64`, found `Option<_>`
+ 20 |     [9, 8, 10, 10, 8, 11, 255, 255, 255, 255, 255, 255, 255, 255, 255],
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected an array with a size of 16, found one with a size of 15
     |
-    = note: expected type `i64`
-               found enum `Option<_>`
+   ::: rustmath-plot3d/src/plots/implicit_plot3d.rs:285:44
+    |
+285 | const MARCHING_CUBES_TRI_TABLE: [[u8; 16]; 256] = include!("marching_cubes_tri_table.inc");
+    |                                            --- help: consider specifying the actual array length: `15`
+
+error[E0609]: no field `vertices` on type `&std::boxed::Box<dyn Graphics3dPrimitive>`
+   --> rustmath-plot3d/src/export.rs:114:46
+    |
+114 |         writeln!(file, "# {} vertices", mesh.vertices.len())?;
+    |                                              ^^^^^^^^ unknown field
+
+error[E0609]: no field `vertices` on type `&std::boxed::Box<dyn Graphics3dPrimitive>`
+   --> rustmath-plot3d/src/export.rs:115:24
+    |
+115 |         for v in &mesh.vertices {
+    |                        ^^^^^^^^ unknown field
+
+error[E0609]: no field `normals` on type `&std::boxed::Box<dyn Graphics3dPrimitive>`
+   --> rustmath-plot3d/src/export.rs:121:38
+    |
+121 |         if let Some(normals) = &mesh.normals {
+    |                                      ^^^^^^^ unknown field
+
+error[E0609]: no field `faces` on type `&std::boxed::Box<dyn Graphics3dPrimitive>`
+   --> rustmath-plot3d/src/export.rs:130:43
+    |
+130 |         writeln!(file, "# {} faces", mesh.faces.len())?;
+    |                                           ^^^^^ unknown field
+
+error[E0609]: no field `normals` on type `&std::boxed::Box<dyn Graphics3dPrimitive>`
+   --> rustmath-plot3d/src/export.rs:131:17
+    |
+131 |         if mesh.normals.is_some() {
+    |                 ^^^^^^^ unknown field
+
+error[E0609]: no field `faces` on type `&std::boxed::Box<dyn Graphics3dPrimitive>`
+   --> rustmath-plot3d/src/export.rs:132:31
+    |
+132 |             for face in &mesh.faces {
+    |                               ^^^^^ unknown field
+
+error[E0609]: no field `normals` on type `&std::boxed::Box<dyn Graphics3dPrimitive>`
+   --> rustmath-plot3d/src/export.rs:141:35
+    |
+141 |             normal_offset += mesh.normals.as_ref().unwrap().len();
+    |                                   ^^^^^^^ unknown field
+
+error[E0609]: no field `faces` on type `&std::boxed::Box<dyn Graphics3dPrimitive>`
+   --> rustmath-plot3d/src/export.rs:143:31
+    |
+143 |             for face in &mesh.faces {
+    |                               ^^^^^ unknown field
+
+error[E0609]: no field `vertices` on type `&std::boxed::Box<dyn Graphics3dPrimitive>`
+   --> rustmath-plot3d/src/export.rs:154:31
+    |
+154 |         vertex_offset += mesh.vertices.len();
+    |                               ^^^^^^^^ unknown field
+
+error[E0609]: no field `faces` on type `&std::boxed::Box<dyn Graphics3dPrimitive>`
+   --> rustmath-plot3d/src/export.rs:256:64
+    |
+256 |     let total_faces: usize = graphics.objects.iter().map(|m| m.faces.len()).sum();
+    |                                                                ^^^^^ unknown field
+
+error[E0609]: no field `faces` on type `&std::boxed::Box<dyn Graphics3dPrimitive>`
+   --> rustmath-plot3d/src/export.rs:267:38
+    |
+267 |         for (face_idx, face) in mesh.faces.iter().enumerate() {
+    |                                      ^^^^^ unknown field
+
+error[E0609]: no field `vertices` on type `&std::boxed::Box<dyn Graphics3dPrimitive>`
+   --> rustmath-plot3d/src/export.rs:268:28
+    |
+268 |             let v0 = &mesh.vertices[face[0]];
+    |                            ^^^^^^^^ unknown field
+
+error[E0609]: no field `vertices` on type `&std::boxed::Box<dyn Graphics3dPrimitive>`
+   --> rustmath-plot3d/src/export.rs:269:28
+    |
+269 |             let v1 = &mesh.vertices[face[1]];
+    |                            ^^^^^^^^ unknown field
+
+error[E0609]: no field `vertices` on type `&std::boxed::Box<dyn Graphics3dPrimitive>`
+   --> rustmath-plot3d/src/export.rs:270:28
+    |
+270 |             let v2 = &mesh.vertices[face[2]];
+    |                            ^^^^^^^^ unknown field
 
 error[E0308]: mismatched types
-   --> rustmath-symbolic/src/specialfunctions/other.rs:197:16
-    |
-197 |         if let Some(n_val) = i.to_i64() {
-    |                ^^^^^^^^^^^   ---------- this expression has type `i64`
-    |                |
-    |                expected `i64`, found `Option<_>`
-    |
-    = note: expected type `i64`
-               found enum `Option<_>`
+  --> rustmath-symbolic/src/expand.rs:50:36
+   |
+50 | ...                   if let Some(exp_i64) = exp.to_i64() {
+   |                              ^^^^^^^^^^^^^   ------------ this expression has type `i64`
+   |                              |
+   |                              expected `i64`, found `Option<_>`
+   |
+   = note: expected type `i64`
+              found enum `Option<_>`
 
-error[E0308]: mismatched types
-   --> rustmath-symbolic/src/specialfunctions/other.rs:238:17
+error[E0507]: cannot move out of `self.color` as enum variant `Some` which is behind a shared reference
+   --> rustmath-plot3d/src/shapes.rs:112:30
     |
-238 |         if let (Some(n_val), Some(k_val)) = (n_int.to_i64(), k_int.to_i64()) {
+112 |         if let Some(color) = self.color {
+    |                     -----    ^^^^^^^^^^
+    |                     |
+    |                     data moved here
+    |                     move occurs because `color` has type `Color`, which does not implement the `Copy` trait
+    |
+help: consider borrowing here
+    |
+112 |         if let Some(color) = &self.color {
+    |                              +
+
+error[E0507]: cannot move out of `self.color` as enum variant `Some` which is behind a shared reference
+   --> rustmath-plot3d/src/shapes.rs:220:30
+    |
+220 |         if let Some(color) = self.color {
+    |                     -----    ^^^^^^^^^^
+    |                     |
+    |                     data moved here
+    |                     move occurs because `color` has type `Color`, which does not implement the `Copy` trait
+    |
+help: consider borrowing here
+    |
+220 |         if let Some(color) = &self.color {
+    |                              +
+
+error[E0507]: cannot move out of `self.color` as enum variant `Some` which is behind a shared reference
+   --> rustmath-plot3d/src/shapes.rs:349:30
+    |
+349 |         if let Some(color) = self.color {
+    |                     -----    ^^^^^^^^^^
+    |                     |
+    |                     data moved here
+    |                     move occurs because `color` has type `Color`, which does not implement the `Copy` trait
+    |
+help: consider borrowing here
+    |
+349 |         if let Some(color) = &self.color {
+    |                              +
+
+error[E0507]: cannot move out of `self.color` as enum variant `Some` which is behind a shared reference
+   --> rustmath-plot3d/src/shapes.rs:463:30
+    |
+463 |         if let Some(color) = self.color {
+    |                     -----    ^^^^^^^^^^
+    |                     |
+    |                     data moved here
+    |                     move occurs because `color` has type `Color`, which does not implement the `Copy` trait
+    |
+help: consider borrowing here
+    |
+463 |         if let Some(color) = &self.color {
+    |                              +
+
+error[E0507]: cannot move out of `self.color` as enum variant `Some` which is behind a shared reference
+   --> rustmath-plot3d/src/shapes.rs:574:30
+    |
+574 |         if let Some(color) = self.color {
+    |                     -----    ^^^^^^^^^^
+    |                     |
+    |                     data moved here
+    |                     move occurs because `color` has type `Color`, which does not implement the `Copy` trait
+    |
+help: consider borrowing here
+    |
+574 |         if let Some(color) = &self.color {
+    |                              +
+
+error[E0507]: cannot move out of index of `Vec<Color>`
+   --> rustmath-plot3d/src/plots/scatter_plot3d.rs:103:17
+    |
+103 |                 colors[i]
+    |                 ^^^^^^^^^ move occurs because value has type `Color`, which does not implement the `Copy` trait
+    |
+help: consider borrowing here
+    |
+103 |                 &colors[i]
+    |                 +
+help: consider cloning the value if the performance cost is acceptable
+    |
+103 |                 colors[i].clone()
+    |                          ++++++++
+
+error[E0382]: use of moved value: `opts.color`
+   --> rustmath-plot3d/src/plots/scatter_plot3d.rs:105:17
+    |
+105 |                 opts.color.unwrap_or(Color::rgb(0.0, 0.5, 1.0))
+    |                 ^^^^^^^^^^ value moved here, in previous iteration of loop
+...
+108 |             opts.color.unwrap_or(Color::rgb(0.0, 0.5, 1.0))
+    |             ---------- value moved here, in previous iteration of loop
+    |
+    = note: move occurs because `opts.color` has type `Option<Color>`, which does not implement the `Copy` trait
+
+error[E0382]: use of moved value
+   --> rustmath-plot3d/src/plots/vector_field_plot3d.rs:172:29
+    |
+172 |                 if let Some(color) = opts.color {
+    |                             ^^^^^ value moved here, in previous iteration of loop
+    |
+    = note: move occurs because value has type `Color`, which does not implement the `Copy` trait
+help: borrow this binding in the pattern to avoid moving the value
+    |
+172 |                 if let Some(ref color) = opts.color {
+    |                             +++
+
+warning: unused variable: `face_idx`
+   --> rustmath-plot3d/src/export.rs:207:10
+    |
+207 |     for (face_idx, face) in mesh.faces.iter().enumerate() {
+    |          ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_face_idx`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+Some errors have detailed explanations: E0053, E0061, E0107, E0308, E0382, E0507, E0609.
+For more information about an error, try `rustc --explain E0053`.
+warning: `rustmath-plot3d` (lib) generated 7 warnings
+error: could not compile `rustmath-plot3d` (lib) due to 32 previous errors; 7 warnings emitted
+error[E0308]: mismatched types
+   --> rustmath-symbolic/src/specialfunctions/other.rs:237:17
+    |
+237 |         if let (Some(n_val), Some(k_val)) = (n_int.to_i64(), k_int.to_i64()) {
     |                 ^^^^^^^^^^^                 -------------------------------- this expression has type `(i64, i64)`
     |                 |
     |                 expected `i64`, found `Option<_>`
@@ -2413,9 +2399,9 @@ error[E0308]: mismatched types
                found enum `Option<_>`
 
 error[E0308]: mismatched types
-   --> rustmath-symbolic/src/specialfunctions/other.rs:238:30
+   --> rustmath-symbolic/src/specialfunctions/other.rs:237:30
     |
-238 |         if let (Some(n_val), Some(k_val)) = (n_int.to_i64(), k_int.to_i64()) {
+237 |         if let (Some(n_val), Some(k_val)) = (n_int.to_i64(), k_int.to_i64()) {
     |                              ^^^^^^^^^^^    -------------------------------- this expression has type `(i64, i64)`
     |                              |
     |                              expected `i64`, found `Option<_>`
@@ -2688,7 +2674,6 @@ warning: unused variable: `arg_index`
 23 |     fn derivative(&self, args: &[Expr], arg_index: usize) -> Result<Expr, String> {
    |                                         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_arg_index`
 
-warning: `rustmath-graphs` (lib) generated 84 warnings (run `cargo fix --lib -p rustmath-graphs` to apply 24 suggestions)
 warning: unused variable: `initial_velocity`
    --> rustmath-symbolic/src/pde.rs:257:9
     |
@@ -2704,4 +2689,4 @@ warning: unused variable: `c2`
 Some errors have detailed explanations: E0308, E0599.
 For more information about an error, try `rustc --explain E0308`.
 warning: `rustmath-symbolic` (lib) generated 62 warnings
-error: could not compile `rustmath-symbolic` (lib) due to 45 previous errors; 62 warnings emitted
+error: could not compile `rustmath-symbolic` (lib) due to 9 previous errors; 62 warnings emitted
