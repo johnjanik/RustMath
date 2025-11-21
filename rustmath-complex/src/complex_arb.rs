@@ -9,8 +9,7 @@
 //! - `ComplexBallField`: Factory for creating complex balls with specific precision
 //! - `IntegrationContext`: Context for numerical integration with error control
 
-use rustmath_core::{CommutativeRing, Field, MathError, Result, Ring};
-use rustmath_reals::{Real, RealMPFR};
+use rustmath_reals::RealMPFR;
 use std::fmt;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
