@@ -428,7 +428,7 @@ impl IsometryGroup {
     /// Dimension: n(n+1)/2
     pub fn euclidean_space(n: usize) -> Self {
         // Placeholder implementation
-        let manifold: Arc<ComplexManifold> = Arc::new(crate::examples::EuclideanSpace::new(n).into());
+        let manifold: Arc<DifferentiableManifold> = Arc::new(crate::examples::EuclideanSpace::new(n).into());
         let metric = Arc::new(RiemannianMetric::euclidean(manifold.clone()));
 
         let mut group = Self::new(manifold, metric);
@@ -442,7 +442,7 @@ impl IsometryGroup {
     /// Dimension: n(n+1)/2
     pub fn sphere(n: usize) -> Self {
         // Placeholder implementation
-        let manifold: Arc<ComplexManifold> = Arc::new(crate::examples::Sphere2::new().into());
+        let manifold: Arc<DifferentiableManifold> = Arc::new(crate::examples::Sphere2::new().into());
         let metric = Arc::new(RiemannianMetric::round_sphere(manifold.clone()));
 
         let mut group = Self::new(manifold, metric);
@@ -456,7 +456,7 @@ impl IsometryGroup {
     /// Dimension: n(n+1)/2
     pub fn hyperbolic_space(n: usize) -> Self {
         // Placeholder implementation
-        let manifold: Arc<ComplexManifold> = Arc::new(crate::examples::EuclideanSpace::new(n).into());
+        let manifold: Arc<DifferentiableManifold> = Arc::new(crate::examples::EuclideanSpace::new(n).into());
         let metric = Arc::new(RiemannianMetric::hyperbolic(manifold.clone()));
 
         let mut group = Self::new(manifold, metric);

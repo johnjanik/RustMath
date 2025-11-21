@@ -28,7 +28,7 @@ use crate::differentiable::DifferentiableManifold;
 use crate::tangent_space::TangentVector;
 use crate::point::ManifoldPoint;
 use crate::tensor_field::TensorField;
-use rustmath_symbolic::Expr;
+use rustmath_symbolic::{Expr, Symbol};
 use rustmath_matrix::Matrix;
 use rustmath_rationals::Rational;
 use std::sync::Arc;
@@ -149,8 +149,8 @@ impl FinslerFunction {
         let mut components = Vec::with_capacity(dim * dim);
         for i in 0..dim {
             for j in 0..dim {
-                let v_i = Expr::symbol(&format!("v{}", i));
-                let v_j = Expr::symbol(&format!("v{}", j));
+                let v_i = Symbol::new(format!("v{}", i));
+                let v_j = Symbol::new(format!("v{}", j));
 
                 // ∂²F²/∂v^i∂v^j
                 let deriv1 = f_squared.differentiate(&v_i);
@@ -294,9 +294,9 @@ impl CartanTensor {
         for i in 0..dim {
             for j in 0..dim {
                 for k in 0..dim {
-                    let v_i = Expr::symbol(&format!("v{}", i));
-                    let v_j = Expr::symbol(&format!("v{}", j));
-                    let v_k = Expr::symbol(&format!("v{}", k));
+                    let v_i = Symbol::new(format!("v{}", i));
+                    let v_j = Symbol::new(format!("v{}", j));
+                    let v_k = Symbol::new(format!("v{}", k));
 
                     // ∂³F²/∂v^i∂v^j∂v^k
                     let deriv1 = f_squared.differentiate(&v_i);

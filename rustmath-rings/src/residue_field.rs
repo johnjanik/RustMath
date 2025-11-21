@@ -460,7 +460,7 @@ impl ResidueFieldPrimeElement {
     }
 
     /// Compute power
-    pub fn pow(&self, exp: &rustmath_integers::Integer) -> Result<Self, rustmath_core::RingError> {
+    pub fn pow(&self, exp: &rustmath_integers::Integer) -> Result<Self, rustmath_core::MathError> {
         use rustmath_integers::Integer;
 
         if exp.is_zero() {

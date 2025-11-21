@@ -589,10 +589,8 @@ pub fn decompose_character(
             // Convert Integer division result to i64
             let mult_int = sum / total;
             let multiplicity = mult_int.to_i64();
-            if let Some(multiplicity) = multiplicity {
-                if multiplicity > 0 {
-                    multiplicities.insert(rep.partition().clone(), multiplicity);
-                }
+            if multiplicity > 0 {
+                multiplicities.insert(rep.partition().clone(), multiplicity);
             }
         }
     }
