@@ -2,7 +2,6 @@
 //!
 //! Corresponds to sage.graphs.base.dense_graph
 
-use super::c_graph::CGraphBackend;
 use super::generic_backend::GenericGraphBackend;
 use std::collections::HashMap;
 

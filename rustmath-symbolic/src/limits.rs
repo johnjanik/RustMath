@@ -546,7 +546,7 @@ impl Expr {
         dir: Direction,
         series_order: usize,
     ) -> (LimitResult, Option<crate::series::BigO>) {
-        use crate::series::BigO;
+        
 
         // First compute the limit normally
         let limit_result = self.limit(var, point, dir);

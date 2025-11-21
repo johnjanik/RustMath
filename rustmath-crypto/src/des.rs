@@ -159,7 +159,7 @@ impl DES {
         let mut round_keys = [0u64; 16];
 
         // Apply PC-1 to get 56-bit key
-        let mut key_state = Self::permute(key, &Self::PC1, 64);
+        let key_state = Self::permute(key, &Self::PC1, 64);
 
         // Split into two 28-bit halves
         let mut c = (key_state >> 28) & 0x0FFFFFFF;
@@ -236,7 +236,7 @@ impl DES {
     /// Encrypt a 64-bit block
     pub fn encrypt(&self, plaintext: u64) -> u64 {
         // Initial permutation
-        let mut state = Self::permute(plaintext, &Self::IP, 64);
+        let state = Self::permute(plaintext, &Self::IP, 64);
 
         // Split into left and right halves
         let mut left = (state >> 32) as u32;
@@ -260,7 +260,7 @@ impl DES {
     /// Decrypt a 64-bit block
     pub fn decrypt(&self, ciphertext: u64) -> u64 {
         // Initial permutation
-        let mut state = Self::permute(ciphertext, &Self::IP, 64);
+        let state = Self::permute(ciphertext, &Self::IP, 64);
 
         // Split into left and right halves
         let mut left = (state >> 32) as u32;

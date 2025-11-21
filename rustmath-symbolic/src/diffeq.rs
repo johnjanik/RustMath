@@ -3,11 +3,9 @@
 //! This module implements solvers for ordinary differential equations (ODEs).
 //! Includes both symbolic and numerical methods.
 
-use crate::expression::{BinaryOp, Expr, UnaryOp};
+use crate::expression::Expr;
 use crate::symbol::Symbol;
 use rustmath_core::Ring;
-use rustmath_rationals::Rational;
-use std::sync::Arc;
 
 /// Type of differential equation
 #[derive(Debug, Clone, PartialEq, Eq)]

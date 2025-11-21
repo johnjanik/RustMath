@@ -5,7 +5,7 @@
 //! represent intersections or relationships between these objects.
 
 use crate::graph::Graph;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::cmp::{min, max};
 use std::hash::Hash;
 

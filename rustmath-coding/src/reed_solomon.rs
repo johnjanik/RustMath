@@ -6,9 +6,6 @@
 //!
 //! RS codes are widely used in QR codes, CDs, DVDs, and satellite communications.
 
-use rustmath_finitefields::prime_field::PrimeField;
-use rustmath_polynomials::univariate::UnivariatePolynomial;
-use rustmath_core::Ring;
 use std::fmt;
 
 /// A Reed-Solomon code over GF(q)
@@ -106,7 +103,7 @@ impl ReedSolomonCode {
         let p = self.field_char;
 
         // Create message polynomial m(x)
-        let mut message_poly = message.to_vec();
+        let message_poly = message.to_vec();
 
         // Shift by n-k positions: x^(n-k) * m(x)
         let mut shifted = vec![0u64; self.parity_symbols];

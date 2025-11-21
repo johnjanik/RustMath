@@ -8,7 +8,7 @@
 //! with specific properties.
 
 use crate::graph::Graph;
-use std::collections::{VecDeque, HashSet};
+use std::collections::HashSet;
 
 /// Perform lexicographic breadth-first search (Lex-BFS)
 ///

@@ -6,7 +6,6 @@
 //! an independent set of size t.
 
 use crate::graph::Graph;
-use std::collections::HashSet;
 
 /// Find a clique of size k in the graph
 ///
@@ -216,7 +215,7 @@ pub fn ramsey_lower_bound(s: usize, t: usize) -> usize {
 
     // Use bound: R(s,t) >= R(s-1,t) + R(s,t-1)
     // This is a rough approximation
-    (s + t - 2)
+    s + t - 2
 }
 
 /// Get an upper bound on R(s, t) using binomial coefficient bound

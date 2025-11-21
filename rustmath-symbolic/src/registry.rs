@@ -6,7 +6,7 @@
 
 use crate::symbol::Symbol;
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock, Weak};
+use std::sync::{Arc, RwLock};
 
 /// A unique identifier for a chart
 pub type ChartId = String;

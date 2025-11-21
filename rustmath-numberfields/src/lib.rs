@@ -21,7 +21,7 @@
 //! let field = NumberField::new(poly);
 //! ```
 
-use rustmath_core::{EuclideanDomain, NumericConversion, Ring};
+use rustmath_core::{NumericConversion, Ring};
 use rustmath_integers::Integer;
 use rustmath_polynomials::univariate::UnivariatePolynomial;
 use rustmath_rationals::Rational;

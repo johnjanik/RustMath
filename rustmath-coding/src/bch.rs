@@ -4,8 +4,6 @@
 //! using polynomials over finite fields. They generalize Hamming codes and can
 //! correct multiple errors.
 
-use rustmath_finitefields::prime_field::{PrimeField};
-use rustmath_core::Ring;
 use std::fmt;
 
 /// A binary BCH code

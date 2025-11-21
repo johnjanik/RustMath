@@ -13,8 +13,7 @@
 //! These algorithms mirror the functionality found in SageMath's boost_graph module.
 
 use crate::Graph;
-use std::collections::{BinaryHeap, HashMap, HashSet, VecDeque};
-use std::cmp::{Ordering, Reverse};
+use std::collections::{HashSet, VecDeque};
 
 /// Computes the diameter of a graph using the DHV algorithm.
 ///

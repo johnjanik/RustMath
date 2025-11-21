@@ -5,7 +5,6 @@
 
 use crate::expression::Expr;
 use crate::symbol::Symbol;
-use std::sync::Arc;
 
 /// Derivative operator that represents d/dx
 #[derive(Debug, Clone, PartialEq)]

@@ -6,7 +6,6 @@
 //! and disjoint union operations.
 
 use crate::Graph;
-use std::collections::{HashSet, HashMap};
 
 /// Cotree node representation
 #[derive(Debug, Clone, PartialEq)]

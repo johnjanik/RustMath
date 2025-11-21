@@ -26,8 +26,7 @@
 //! via the Prime Number Theorem: π(x) ~ x / ln(x) as x → ∞.
 
 use crate::expression::Expr;
-use rustmath_core::{NumericConversion, Ring};
-use rustmath_integers::Integer;
+use rustmath_core::NumericConversion;
 use std::sync::Arc;
 
 /// Prime counting function π(x)

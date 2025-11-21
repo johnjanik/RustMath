@@ -20,7 +20,7 @@ use nom::{
     combinator::{map, opt, recognize},
     error::{Error, ErrorKind},
     multi::{many0, separated_list0},
-    sequence::{delimited, pair, preceded, tuple},
+    sequence::{delimited, pair},
     IResult,
 };
 use rustmath_integers::Integer;
