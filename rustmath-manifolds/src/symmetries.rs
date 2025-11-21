@@ -164,7 +164,7 @@ impl KillingVectorField {
     /// Check if two Killing fields commute
     pub fn commutes_with(&self, other: &KillingVectorField, chart: &Chart, tolerance: f64) -> Result<bool> {
         let bracket = self.field.lie_bracket(other.field(), chart)?;
-        bracket.is_approximately_zero()
+        Ok(bracket.is_approximately_zero())
     }
 }
 
@@ -269,7 +269,7 @@ impl ConformallKillingVectorField {
                 self.field.manifold().clone(),
                 chart,
                 lambda.clone(),
-            )?;
+            );
 
             self.conformal_factor = Some(conformal_field);
 
@@ -401,7 +401,7 @@ impl IsometryGroup {
         // Compute all Lie brackets
         for i in 0..n {
             for j in 0..n {
-                let bracket = self.killing_fields[i].lie_bracket(&self.killing_fields[j])?;
+                let bracket = self.killing_fields[i].lie_bracket(&self.killing_fields[j], chart)?;
 
                 // Express bracket as linear combination of killing fields
                 // This requires solving a system of equations
@@ -424,7 +424,7 @@ impl IsometryGroup {
     /// Dimension: n(n+1)/2
     pub fn euclidean_space(n: usize) -> Self {
         // Placeholder implementation
-        let manifold = Arc::new(crate::examples::EuclideanSpace::new(n));
+        let manifold = Arc::new(crate::examples::EuclideanSpace::new(n).into());
         let metric = Arc::new(RiemannianMetric::euclidean(manifold.clone()));
 
         let mut group = Self::new(manifold, metric);
@@ -438,7 +438,7 @@ impl IsometryGroup {
     /// Dimension: n(n+1)/2
     pub fn sphere(n: usize) -> Self {
         // Placeholder implementation
-        let manifold = Arc::new(crate::examples::Sphere2::new());
+        let manifold = Arc::new(crate::examples::Sphere2::new().into());
         let metric = Arc::new(RiemannianMetric::round_sphere(manifold.clone()));
 
         let mut group = Self::new(manifold, metric);
@@ -452,7 +452,7 @@ impl IsometryGroup {
     /// Dimension: n(n+1)/2
     pub fn hyperbolic_space(n: usize) -> Self {
         // Placeholder implementation
-        let manifold = Arc::new(crate::examples::EuclideanSpace::new(n));
+        let manifold = Arc::new(crate::examples::EuclideanSpace::new(n).into());
         let metric = Arc::new(RiemannianMetric::hyperbolic(manifold.clone()));
 
         let mut group = Self::new(manifold, metric);

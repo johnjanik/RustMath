@@ -129,7 +129,7 @@ impl SpinStructure {
     /// Create the canonical spin structure on ℝⁿ
     pub fn euclidean(n: usize) -> Self {
         let manifold = Arc::new(DifferentiableManifold::new("ℝⁿ", n));
-        let metric = RiemannianMetric::euclidean(manifold.clone(), n);
+        let metric = RiemannianMetric::euclidean(manifold.clone());
         let spin_group = SpinGroup::new(n);
 
         Self {
@@ -145,7 +145,7 @@ impl SpinStructure {
     /// All spheres admit spin structures
     pub fn sphere(n: usize) -> Result<Self> {
         let manifold = Arc::new(DifferentiableManifold::new(&format!("S{}", n), n));
-        let metric = RiemannianMetric::euclidean(manifold.clone(), n); // TODO: Round metric
+        let metric = RiemannianMetric::euclidean(manifold.clone()); // TODO: Round metric
         let spin_group = SpinGroup::new(n);
 
         Ok(Self {

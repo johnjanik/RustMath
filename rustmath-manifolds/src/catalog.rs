@@ -11,6 +11,7 @@ use crate::riemannian::RiemannianMetric;
 use crate::tensor_field::TensorField;
 use crate::lie_group::LieGroup;
 use crate::complex_manifold::ComplexManifold;
+use crate::point::ManifoldPoint;
 use rustmath_symbolic::Expr;
 use std::sync::Arc;
 use std::f64::consts::PI;
@@ -656,9 +657,14 @@ impl SpecialOrthogonalGroup {
         ));
 
         // Placeholder for identity and multiplication - these would need proper implementation
-        let identity = vec![0.0; dim];
-        let multiplication = Arc::new(|_a: &[f64], _b: &[f64]| vec![0.0; dim]);
-        let lie_group = LieGroup::new(manifold.clone(), dim, identity, multiplication);
+        let identity = ManifoldPoint::from_coordinates(vec![0.0; dim]);
+        let multiplication = Arc::new(|_a: &ManifoldPoint, _b: &ManifoldPoint| -> Result<ManifoldPoint> {
+            Ok(ManifoldPoint::from_coordinates(vec![0.0; dim]))
+        });
+        let inversion = Arc::new(|_g: &ManifoldPoint| -> Result<ManifoldPoint> {
+            Ok(ManifoldPoint::from_coordinates(vec![0.0; dim]))
+        });
+        let lie_group = LieGroup::new(manifold.clone(), identity, multiplication, inversion);
 
         Ok(Self {
             manifold,
@@ -737,9 +743,14 @@ impl SpecialUnitaryGroup {
         ));
 
         // Placeholder for identity and multiplication - these would need proper implementation
-        let identity = vec![0.0; dim];
-        let multiplication = Arc::new(|_a: &[f64], _b: &[f64]| vec![0.0; dim]);
-        let lie_group = LieGroup::new(manifold.clone(), dim, identity, multiplication);
+        let identity = ManifoldPoint::from_coordinates(vec![0.0; dim]);
+        let multiplication = Arc::new(|_a: &ManifoldPoint, _b: &ManifoldPoint| -> Result<ManifoldPoint> {
+            Ok(ManifoldPoint::from_coordinates(vec![0.0; dim]))
+        });
+        let inversion = Arc::new(|_g: &ManifoldPoint| -> Result<ManifoldPoint> {
+            Ok(ManifoldPoint::from_coordinates(vec![0.0; dim]))
+        });
+        let lie_group = LieGroup::new(manifold.clone(), identity, multiplication, inversion);
 
         Ok(Self {
             manifold,

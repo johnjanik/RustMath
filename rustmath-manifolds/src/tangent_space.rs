@@ -72,11 +72,12 @@ impl TangentVector {
         // For now, we'll need to update call sites to use `new` instead
         // Or we need to store manifold info in ManifoldPoint
         // Let's create a version that infers dimension from components
+        let components_cloned = components.clone();
         Ok(Self {
             base_point: base_point.clone(),
-            components,
+            components: components_cloned.clone(),
             // This is a temporary workaround - we need the manifold reference
-            manifold: Arc::new(DifferentiableManifold::new("temp", components.len())),
+            manifold: Arc::new(DifferentiableManifold::new("temp", components_cloned.len())),
         })
     }
 

@@ -564,6 +564,37 @@ fn evaluate_to_float(expr: &Expr) -> Result<f64> {
                 UnaryOp::Arcsinh => val.asinh(),
                 UnaryOp::Arccosh => val.acosh(),
                 UnaryOp::Arctanh => val.atanh(),
+                UnaryOp::Gamma => {
+                    // Gamma function approximation for positive values
+                    // Using Stirling's approximation: Γ(x) ≈ sqrt(2π/x) * (x/e)^x
+                    if val > 0.0 {
+                        ((2.0 * std::f64::consts::PI / val).sqrt() * (val / std::f64::consts::E).powf(val))
+                    } else {
+                        0.0 // Placeholder for non-positive values
+                    }
+                },
+                UnaryOp::Factorial => {
+                    // Factorial via gamma: n! = Γ(n+1)
+                    let x = val + 1.0;
+                    if x > 0.0 {
+                        ((2.0 * std::f64::consts::PI / x).sqrt() * (x / std::f64::consts::E).powf(x))
+                    } else {
+                        0.0
+                    }
+                },
+                UnaryOp::Erf => {
+                    // Error function approximation using Abramowitz and Stegun formula
+                    let sign = if val >= 0.0 { 1.0 } else { -1.0 };
+                    let x = val.abs();
+                    let t = 1.0 / (1.0 + 0.3275911 * x);
+                    let a1 = 0.254829592;
+                    let a2 = -0.284496736;
+                    let a3 = 1.421413741;
+                    let a4 = -1.453152027;
+                    let a5 = 1.061405429;
+                    sign * (1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * (-x * x).exp())
+                },
+                UnaryOp::Conjugate => val, // Real numbers are their own conjugate
             };
             Ok(result)
         }

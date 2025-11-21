@@ -92,7 +92,7 @@ impl SymplecticManifold {
     pub fn standard_symplectic_space(n: usize) -> Result<Self> {
         use crate::examples::EuclideanSpace;
 
-        let manifold = Arc::new(EuclideanSpace::new(2 * n).into());
+        let manifold: Arc<DifferentiableManifold> = Arc::new(EuclideanSpace::new(2 * n).into());
         let symplectic_form = SymplecticForm::standard_form(manifold.clone(), n)?;
 
         Ok(Self {
@@ -133,7 +133,9 @@ impl SymplecticManifold {
     /// {f, g} = X_f(g) = -X_g(f)
     pub fn poisson_bracket(&self, f: &ScalarField, g: &ScalarField) -> Result<ScalarField> {
         let xf = self.hamiltonian_vector_field(f)?;
-        xf.apply_to_function(g)
+        let chart = self.manifold.default_chart()
+            .ok_or(ManifoldError::NoChart)?;
+        xf.apply_to_function(g, chart)
     }
 
     /// Volume form: Ω = ωⁿ/n! where 2n = dim M
