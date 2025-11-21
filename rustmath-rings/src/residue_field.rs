@@ -460,11 +460,11 @@ impl ResidueFieldPrimeElement {
     }
 
     /// Compute power
-    pub fn pow(&self, exp: &rustmath_integers::Integer) -> Self {
+    pub fn pow(&self, exp: &rustmath_integers::Integer) -> Result<Self, rustmath_core::RingError> {
         use rustmath_integers::Integer;
 
         if exp.is_zero() {
-            return ResidueFieldPrimeElement::new(Integer::one(), self.prime.clone());
+            return Ok(ResidueFieldPrimeElement::new(Integer::one(), self.prime.clone()));
         }
 
         if exp < &Integer::zero() {
@@ -475,7 +475,7 @@ impl ResidueFieldPrimeElement {
 
         // Use modular exponentiation
         let result = self.value.mod_pow(exp, &self.prime)?;
-        ResidueFieldPrimeElement::new(result, self.prime.clone())
+        Ok(ResidueFieldPrimeElement::new(result, self.prime.clone()))
     }
 }
 

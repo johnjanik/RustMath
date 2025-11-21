@@ -32,7 +32,7 @@ use std::collections::HashMap;
 /// A complex chart - local coordinate system using complex coordinates
 ///
 /// Maps from a subset of the manifold to ℂⁿ
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ComplexChart {
     /// Name of the chart
     name: String,

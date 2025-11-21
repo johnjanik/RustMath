@@ -7,6 +7,7 @@
 //! - Lie derivatives and their properties
 
 use crate::errors::{ManifoldError, Result};
+use crate::ComplexManifold;
 use crate::chart::Chart;
 use crate::differentiable::DifferentiableManifold;
 use crate::vector_field::VectorField;
@@ -252,7 +253,7 @@ impl ConformallKillingVectorField {
         for i in 0..n {
             for j in 0..n {
                 let idx = i * n + j;
-                let g_ij = &g_comps[idx];
+                let g_ij = &g_comps[i][j];
                 // Try to use diagonal components first
                 if i == j {
                     lambda_expr = Some(lie_comps[idx].clone() / g_ij.clone());
@@ -276,7 +277,9 @@ impl ConformallKillingVectorField {
 
             // Now verify that ℒ_X g = λg for all components
             for idx in 0..lie_comps.len() {
-                let expected = lambda.clone() * g_comps[idx].clone();
+                let i = idx / n;
+                let j = idx % n;
+                let expected = lambda.clone() * g_comps[i][j].clone();
                 let actual = &lie_comps[idx];
 
                 // Check if they're approximately equal
@@ -453,7 +456,7 @@ impl IsometryGroup {
     /// Dimension: n(n+1)/2
     pub fn hyperbolic_space(n: usize) -> Self {
         // Placeholder implementation
-        let manifold = Arc::new(crate::examples::EuclideanSpace::new(n).into());
+        let manifold: Arc<ComplexManifold> = Arc::new(crate::examples::EuclideanSpace::new(n).into());
         let metric = Arc::new(RiemannianMetric::hyperbolic(manifold.clone()));
 
         let mut group = Self::new(manifold, metric);

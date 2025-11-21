@@ -124,7 +124,7 @@ pub trait RingElementMethods: Ring {
         if remainder.is_zero() {
             Ok(quotient)
         } else {
-            Err(MathError::NotDivisible)
+            Err(MathError::NotDivisible("Division not possible".to_string()))
         }
     }
 }

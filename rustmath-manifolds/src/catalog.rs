@@ -744,11 +744,13 @@ impl SpecialUnitaryGroup {
 
         // Placeholder for identity and multiplication - these would need proper implementation
         let identity = ManifoldPoint::from_coordinates(vec![0.0; dim]);
-        let multiplication = Arc::new(|_a: &ManifoldPoint, _b: &ManifoldPoint| -> Result<ManifoldPoint> {
-            Ok(ManifoldPoint::from_coordinates(vec![0.0; dim]))
+        let multiplication = Arc::new(move |_a: &ManifoldPoint, _b: &ManifoldPoint| -> Result<ManifoldPoint> {
+            let d = n * n - 1;
+            Ok(ManifoldPoint::from_coordinates(vec![0.0; d]))
         });
-        let inversion = Arc::new(|_g: &ManifoldPoint| -> Result<ManifoldPoint> {
-            Ok(ManifoldPoint::from_coordinates(vec![0.0; dim]))
+        let inversion = Arc::new(move |_g: &ManifoldPoint| -> Result<ManifoldPoint> {
+            let d = n * n - 1;
+            Ok(ManifoldPoint::from_coordinates(vec![0.0; d]))
         });
         let lie_group = LieGroup::new(manifold.clone(), identity, multiplication, inversion);
 

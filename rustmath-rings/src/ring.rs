@@ -195,7 +195,7 @@ impl<T> fmt::Display for GenericRing<T> {
 ///
 /// This is the Rust equivalent of SageMath's `is_Ring()` function.
 /// Note: In Rust, this is typically done via trait bounds at compile time.
-pub fn is_ring<T>() -> bool {
+pub fn is_ring<T: 'static>() -> bool {
     // Type-level checking in Rust
     std::any::TypeId::of::<T>() == std::any::TypeId::of::<i32>()
         || std::any::TypeId::of::<T>() == std::any::TypeId::of::<i64>()
@@ -232,7 +232,7 @@ pub trait CommutativeRingExt: CommutativeRing {
     ///
     /// For an integral domain R, this returns its field of fractions Frac(R).
     fn fraction_field(&self) -> Result<Box<impl Field>, RingError> {
-        Err(RingError::NotCommutative)
+        Err::<Box<dyn std::any::Any>, _>(RingError::NotCommutative)
     }
 }
 
