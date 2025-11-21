@@ -33,6 +33,26 @@ impl<R: Ring> Matrix<R> {
         Matrix { data, rows, cols }
     }
 
+    /// Create a zero matrix (alias for zeros)
+    ///
+    /// # Arguments
+    ///
+    /// * `rows` - Number of rows
+    /// * `cols` - Number of columns
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_matrix::Matrix;
+    ///
+    /// let m: Matrix<i32> = Matrix::zero(3, 4);
+    /// assert_eq!(m.rows(), 3);
+    /// assert_eq!(m.cols(), 4);
+    /// ```
+    pub fn zero(rows: usize, cols: usize) -> Self {
+        Self::zeros(rows, cols)
+    }
+
     /// Create an identity matrix
     pub fn identity(n: usize) -> Self {
         let mut data = Vec::with_capacity(n * n);
@@ -334,6 +354,56 @@ impl<R: Ring> Matrix<R> {
             rows: self.rows,
             cols: self.cols,
         }
+    }
+
+    /// Matrix multiplication
+    ///
+    /// Multiply this matrix with another matrix.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The matrix to multiply with
+    ///
+    /// # Returns
+    ///
+    /// Returns Ok(result) if dimensions are compatible, Err otherwise
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_matrix::Matrix;
+    ///
+    /// let a = Matrix::from_vec(2, 2, vec![1, 2, 3, 4]).unwrap();
+    /// let b = Matrix::from_vec(2, 2, vec![5, 6, 7, 8]).unwrap();
+    /// let c = a.mul(&b).unwrap();
+    /// ```
+    pub fn mul(&self, other: &Self) -> Result<Self> {
+        if self.cols != other.rows {
+            return Err(MathError::InvalidArgument(format!(
+                "Cannot multiply {}x{} matrix with {}x{} matrix",
+                self.rows, self.cols, other.rows, other.cols
+            )));
+        }
+
+        let mut data = Vec::with_capacity(self.rows * other.cols);
+
+        for i in 0..self.rows {
+            for j in 0..other.cols {
+                let mut sum = R::zero();
+                for k in 0..self.cols {
+                    let a = self.data[i * self.cols + k].clone();
+                    let b = other.data[k * other.cols + j].clone();
+                    sum = sum + a * b;
+                }
+                data.push(sum);
+            }
+        }
+
+        Ok(Matrix {
+            data,
+            rows: self.rows,
+            cols: other.cols,
+        })
     }
 
     /// Matrix power (A^n) for non-negative integer n
