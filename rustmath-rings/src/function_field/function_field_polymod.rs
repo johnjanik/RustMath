@@ -77,7 +77,7 @@ use std::marker::PhantomData;
 /// assert_eq!(field.degree(), 2);
 /// ```
 #[derive(Debug, Clone)]
-pub struct FunctionField_polymod<F: Field> {
+pub struct FunctionFieldPolymod<F: Field> {
     /// Base field name
     base_field: String,
     /// Generator variable name
@@ -165,7 +165,7 @@ impl<F: Field> FunctionField_polymod<F> {
 ///
 /// This is the most common type of function field extension.
 #[derive(Debug, Clone)]
-pub struct FunctionField_simple<F: Field> {
+pub struct FunctionFieldSimple<F: Field> {
     /// Underlying polymod structure
     inner: FunctionField_polymod<F>,
 }
@@ -216,7 +216,7 @@ impl<F: Field> FunctionField_simple<F> {
 ///
 /// These are extensions where the base field has characteristic 0.
 #[derive(Debug, Clone)]
-pub struct FunctionField_char_zero<F: Field> {
+pub struct FunctionFieldCharZero<F: Field> {
     /// Underlying simple extension
     inner: FunctionField_simple<F>,
 }
@@ -249,7 +249,7 @@ impl<F: Field> FunctionField_char_zero<F> {
 ///
 /// An extension is integral if it's integral at all finite places.
 #[derive(Debug, Clone)]
-pub struct FunctionField_integral<F: Field> {
+pub struct FunctionFieldIntegral<F: Field> {
     /// Underlying simple extension
     inner: FunctionField_simple<F>,
 }
@@ -283,7 +283,7 @@ impl<F: Field> FunctionField_integral<F> {
 ///
 /// Combines characteristic zero and integrality properties.
 #[derive(Debug, Clone)]
-pub struct FunctionField_char_zero_integral<F: Field> {
+pub struct FunctionFieldCharZeroIntegral<F: Field> {
     /// Characteristic zero structure
     char_zero: FunctionField_char_zero<F>,
     /// Integral structure
@@ -318,7 +318,7 @@ impl<F: Field> FunctionField_char_zero_integral<F> {
 ///
 /// These are function fields with a finite field of constants.
 #[derive(Debug, Clone)]
-pub struct FunctionField_global<F: Field> {
+pub struct FunctionFieldGlobal<F: Field> {
     /// Underlying simple extension
     inner: FunctionField_simple<F>,
     /// Size of constant field
@@ -372,7 +372,7 @@ impl<F: Field> FunctionField_global<F> {
 ///
 /// Combines global and integral properties.
 #[derive(Debug, Clone)]
-pub struct FunctionField_global_integral<F: Field> {
+pub struct FunctionFieldGlobalIntegral<F: Field> {
     /// Global structure
     global: FunctionField_global<F>,
     /// Integral structure

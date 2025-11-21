@@ -163,7 +163,7 @@ impl<F: Field> RationalFunctionField<F> {
 /// assert!(qx.is_separable());
 /// ```
 #[derive(Debug, Clone)]
-pub struct RationalFunctionField_char_zero<F: Field> {
+pub struct RationalFunctionFieldCharZero<F: Field> {
     /// Underlying rational function field
     inner: RationalFunctionField<F>,
 }
@@ -228,7 +228,7 @@ impl<F: Field> RationalFunctionField_char_zero<F> {
 /// assert_eq!(f2x.genus(), 0);
 /// ```
 #[derive(Debug, Clone)]
-pub struct RationalFunctionField_global<F: Field> {
+pub struct RationalFunctionFieldGlobal<F: Field> {
     /// Underlying rational function field
     inner: RationalFunctionField<F>,
     /// Size of the constant field

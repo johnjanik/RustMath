@@ -72,13 +72,13 @@ pub fn is_paley(params: &SRGParameters) -> bool {
 }
 
 /// Check if parameters correspond to a Mathon pseudocyclic SRG
-pub fn is_mathon_PC_srg(params: &SRGParameters) -> bool {
+pub fn is_mathon_pc_srg(params: &SRGParameters) -> bool {
     // This is a complex check - simplified version
     params.n >= 4 && params.k > 0 && params.lambda < params.k
 }
 
 /// Check if parameters correspond to a Muzychuk S6 graph
-pub fn is_muzychuk_S6(params: &SRGParameters) -> bool {
+pub fn is_muzychuk_s6(params: &SRGParameters) -> bool {
     // Muzychuk S6 graphs have specific parameters
     params.n == 25 && params.k == 12 && params.lambda == 5 && params.mu == 6
 }
@@ -137,28 +137,28 @@ pub fn is_goethals_seidel(params: &SRGParameters) -> bool {
 }
 
 /// Check if parameters correspond to NO (orthogonal) graph over F2
-pub fn is_NO_F2(params: &SRGParameters) -> bool {
+pub fn is_no_f2(params: &SRGParameters) -> bool {
     // NO graphs over F2 have specific parameters
     params.n >= 4 && params.k > 0
 }
 
 /// Check if parameters correspond to NO graph over F3
-pub fn is_NO_F3(params: &SRGParameters) -> bool {
+pub fn is_no_f3(params: &SRGParameters) -> bool {
     params.n >= 4 && params.k > 0
 }
 
 /// Check if parameters correspond to an odd NO graph
-pub fn is_NOodd(params: &SRGParameters) -> bool {
+pub fn is_noodd(params: &SRGParameters) -> bool {
     params.n % 2 == 1 && params.k > 0
 }
 
 /// Check if parameters correspond to NOperp graph over F5
-pub fn is_NOperp_F5(params: &SRGParameters) -> bool {
+pub fn is_noperp_f5(params: &SRGParameters) -> bool {
     params.n >= 5 && params.k > 0
 }
 
 /// Check if parameters correspond to a NU (unitary) graph
-pub fn is_NU(params: &SRGParameters) -> bool {
+pub fn is_nu(params: &SRGParameters) -> bool {
     params.n >= 4 && params.k > 0
 }
 
@@ -191,19 +191,19 @@ pub fn is_polhill(params: &SRGParameters) -> bool {
 }
 
 /// Check if parameters correspond to RSHCD (Regular Symmetric Hadamard with Constant Diagonal)
-pub fn is_RSHCD(params: &SRGParameters) -> bool {
+pub fn is_rshcd(params: &SRGParameters) -> bool {
     // RSHCD graphs have parameters (4n, 2n±n', n±n', n)
     params.n % 4 == 0
 }
 
 /// Create SRG from RSHCD
-pub fn SRG_from_RSHCD(_n: usize, _e: i32) -> Option<Graph> {
+pub fn srg_from_rshcd(_n: usize, _e: i32) -> Option<Graph> {
     // Complex construction - placeholder
     None
 }
 
 /// Check if parameters correspond to GQ(q-1, q+1) generalized quadrangle
-pub fn is_GQqmqp(params: &SRGParameters) -> bool {
+pub fn is_gqqmqp(params: &SRGParameters) -> bool {
     // GQ parameters have specific form
     params.n >= 4 && params.k > 0
 }
@@ -224,7 +224,7 @@ pub fn is_switch_skewhad(params: &SRGParameters) -> bool {
 }
 
 /// Check if parameters correspond to switched orthogonal array
-pub fn is_switch_OA_srg(params: &SRGParameters) -> bool {
+pub fn is_switch_oa_srg(params: &SRGParameters) -> bool {
     params.n >= 4 && params.k > 0
 }
 
@@ -274,100 +274,100 @@ pub fn strongly_regular_from_two_intersection_set(_n: usize) -> Option<Graph> {
 // Specific SRG constructions with known parameters
 // These return graphs with the specified parameters if they exist
 
-pub fn SRG_100_44_18_20() -> Option<Graph> {
+pub fn srg_100_44_18_20() -> Option<Graph> {
     // (100, 44, 18, 20) - would require complex construction
     None
 }
 
-pub fn SRG_100_45_20_20() -> Option<Graph> {
+pub fn srg_100_45_20_20() -> Option<Graph> {
     None
 }
 
-pub fn SRG_105_32_4_12() -> Option<Graph> {
+pub fn srg_105_32_4_12() -> Option<Graph> {
     None
 }
 
-pub fn SRG_120_63_30_36() -> Option<Graph> {
+pub fn srg_120_63_30_36() -> Option<Graph> {
     None
 }
 
-pub fn SRG_120_77_52_44() -> Option<Graph> {
+pub fn srg_120_77_52_44() -> Option<Graph> {
     None
 }
 
-pub fn SRG_126_25_8_4() -> Option<Graph> {
+pub fn srg_126_25_8_4() -> Option<Graph> {
     None
 }
 
-pub fn SRG_126_50_13_24() -> Option<Graph> {
+pub fn srg_126_50_13_24() -> Option<Graph> {
     None
 }
 
-pub fn SRG_1288_792_476_504() -> Option<Graph> {
+pub fn srg_1288_792_476_504() -> Option<Graph> {
     None
 }
 
-pub fn SRG_144_39_6_12() -> Option<Graph> {
+pub fn srg_144_39_6_12() -> Option<Graph> {
     None
 }
 
-pub fn SRG_175_72_20_36() -> Option<Graph> {
+pub fn srg_175_72_20_36() -> Option<Graph> {
     None
 }
 
-pub fn SRG_176_105_68_54() -> Option<Graph> {
+pub fn srg_176_105_68_54() -> Option<Graph> {
     None
 }
 
-pub fn SRG_176_49_12_14() -> Option<Graph> {
+pub fn srg_176_49_12_14() -> Option<Graph> {
     None
 }
 
-pub fn SRG_176_90_38_54() -> Option<Graph> {
+pub fn srg_176_90_38_54() -> Option<Graph> {
     None
 }
 
-pub fn SRG_196_91_42_42() -> Option<Graph> {
+pub fn srg_196_91_42_42() -> Option<Graph> {
     None
 }
 
-pub fn SRG_210_99_48_45() -> Option<Graph> {
+pub fn srg_210_99_48_45() -> Option<Graph> {
     None
 }
 
-pub fn SRG_220_84_38_28() -> Option<Graph> {
+pub fn srg_220_84_38_28() -> Option<Graph> {
     None
 }
 
-pub fn SRG_243_110_37_60() -> Option<Graph> {
+pub fn srg_243_110_37_60() -> Option<Graph> {
     None
 }
 
-pub fn SRG_253_140_87_65() -> Option<Graph> {
+pub fn srg_253_140_87_65() -> Option<Graph> {
     None
 }
 
-pub fn SRG_276_140_58_84() -> Option<Graph> {
+pub fn srg_276_140_58_84() -> Option<Graph> {
     None
 }
 
-pub fn SRG_280_117_44_52() -> Option<Graph> {
+pub fn srg_280_117_44_52() -> Option<Graph> {
     None
 }
 
-pub fn SRG_280_135_70_60() -> Option<Graph> {
+pub fn srg_280_135_70_60() -> Option<Graph> {
     None
 }
 
-pub fn SRG_416_100_36_20() -> Option<Graph> {
+pub fn srg_416_100_36_20() -> Option<Graph> {
     None
 }
 
-pub fn SRG_560_208_72_80() -> Option<Graph> {
+pub fn srg_560_208_72_80() -> Option<Graph> {
     None
 }
 
-pub fn SRG_630_85_20_10() -> Option<Graph> {
+pub fn srg_630_85_20_10() -> Option<Graph> {
     None
 }
 
@@ -487,13 +487,13 @@ mod tests {
         let params = SRGParameters::new(10, 3, 0, 1);
 
         // Just test that functions don't panic
-        is_mathon_PC_srg(&params);
+        is_mathon_pc_srg(&params);
         is_orthogonal_array_block_graph(&params);
         is_steiner(&params);
         is_affine_polar(&params);
-        is_NO_F2(&params);
+        is_no_f2(&params);
         is_haemers(&params);
         is_polhill(&params);
-        is_RSHCD(&params);
+        is_rshcd(&params);
     }
 }

@@ -269,7 +269,7 @@ impl<F: Field> std::ops::Neg for FunctionFieldElement<F> {
 /// let elem = FunctionFieldElement::<Rational>::one();
 /// assert!(is_FunctionFieldElement(&elem));
 /// ```
-pub fn is_FunctionFieldElement<F: Field>(x: &FunctionFieldElement<F>) -> bool {
+pub fn is_function_field_element<F: Field>(x: &FunctionFieldElement<F>) -> bool {
     // In Rust, type checking is done at compile time
     true
 }
@@ -296,7 +296,7 @@ pub fn is_FunctionFieldElement<F: Field>(x: &FunctionFieldElement<F>) -> bool {
 ///
 /// let elem = make_FunctionFieldElement::<Rational, _>((), "x^2 + 1".to_string());
 /// ```
-pub fn make_FunctionFieldElement<F: Field, P>(
+pub fn make_function_field_element<F: Field, P>(
     _parent: P,
     repr: String,
 ) -> FunctionFieldElement<F> {

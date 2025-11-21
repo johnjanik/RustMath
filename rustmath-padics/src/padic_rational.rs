@@ -1,4 +1,4 @@
-//! p-adic rationals Qp
+//! p-adic rationals qp
 
 use crate::PadicInteger;
 use rustmath_core::{CommutativeRing, Field, MathError, NumericConversion, Result, Ring};
@@ -12,7 +12,7 @@ use std::ops::{Add, Div, Mul, Neg, Sub};
 /// Represented as a*p^v where a is a p-adic integer (unit) and v is the valuation
 #[derive(Clone, Debug)]
 pub struct PadicRational {
-    /// p-adic integer part (unit in Zp)
+    /// p-adic integer part (unit in zp)
     unit: PadicInteger,
     /// Valuation (power of p)
     valuation: i32,
@@ -47,7 +47,7 @@ impl PadicRational {
         }
 
         // Now num and den are coprime to p
-        // Compute num/den in Zp
+        // Compute num/den in zp
         let num_padic = PadicInteger::from_integer(num, prime.clone(), precision)?;
         let den_padic = PadicInteger::from_integer(den, prime, precision)?;
 

@@ -18,31 +18,31 @@ pub const DEFAULT_PRECISION: u32 = 53;
 /// # Examples
 ///
 /// ```
-/// use rustmath_complex::ComplexIntervalField_class;
+/// use rustmath_complex::ComplexIntervalFieldClass;
 ///
-/// let field = ComplexIntervalField_class::new(256);
+/// let field = ComplexIntervalFieldClass::new(256);
 /// let z = field.make_interval(1.0, 2.0, 3.0, 4.0);
 /// assert_eq!(z.precision(), 256);
 /// ```
 #[derive(Clone, Debug)]
-pub struct ComplexIntervalField_class {
+pub struct ComplexIntervalFieldClass {
     /// Precision in bits for interval endpoints
     precision: u32,
 }
 
-impl ComplexIntervalField_class {
+impl ComplexIntervalFieldClass {
     /// Create a new complex interval field with specified precision
     ///
     /// # Arguments
     ///
     /// * `precision` - Number of bits of precision for interval endpoints
     pub fn new(precision: u32) -> Self {
-        ComplexIntervalField_class { precision }
+        ComplexIntervalFieldClass { precision }
     }
 
     /// Create a default complex interval field (53-bit precision)
     pub fn default() -> Self {
-        ComplexIntervalField_class {
+        ComplexIntervalFieldClass {
             precision: DEFAULT_PRECISION,
         }
     }
@@ -142,7 +142,7 @@ impl ComplexIntervalField_class {
     }
 }
 
-impl fmt::Display for ComplexIntervalField_class {
+impl fmt::Display for ComplexIntervalFieldClass {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -152,7 +152,7 @@ impl fmt::Display for ComplexIntervalField_class {
     }
 }
 
-impl PartialEq for ComplexIntervalField_class {
+impl PartialEq for ComplexIntervalFieldClass {
     fn eq(&self, other: &Self) -> bool {
         self.precision == other.precision
     }
@@ -178,8 +178,8 @@ impl PartialEq for ComplexIntervalField_class {
 /// // Create field with custom precision (256 bits)
 /// let cif_256 = ComplexIntervalField(Some(256));
 /// ```
-pub fn ComplexIntervalField(precision: Option<u32>) -> ComplexIntervalField_class {
-    ComplexIntervalField_class::new(precision.unwrap_or(DEFAULT_PRECISION))
+pub fn complex_interval_field(precision: Option<u32>) -> ComplexIntervalFieldClass {
+    ComplexIntervalFieldClass::new(precision.unwrap_or(DEFAULT_PRECISION))
 }
 
 #[cfg(test)]
@@ -188,19 +188,19 @@ mod tests {
 
     #[test]
     fn test_field_creation() {
-        let field = ComplexIntervalField_class::new(128);
+        let field = ComplexIntervalFieldClass::new(128);
         assert_eq!(field.precision(), 128);
     }
 
     #[test]
     fn test_default_field() {
-        let field = ComplexIntervalField_class::default();
+        let field = ComplexIntervalFieldClass::default();
         assert_eq!(field.precision(), DEFAULT_PRECISION);
     }
 
     #[test]
     fn test_make_interval() {
-        let field = ComplexIntervalField_class::new(256);
+        let field = ComplexIntervalFieldClass::new(256);
         let z = field.make_interval(1.0, 2.0, 3.0, 4.0);
         assert_eq!(z.precision(), 256);
         assert!(z.contains(1.5, 3.5));
@@ -208,7 +208,7 @@ mod tests {
 
     #[test]
     fn test_make_point() {
-        let field = ComplexIntervalField_class::new(256);
+        let field = ComplexIntervalFieldClass::new(256);
         let z = field.make_point(3.0, 4.0);
         assert_eq!(z.precision(), 256);
         assert!(z.is_point());
@@ -216,7 +216,7 @@ mod tests {
 
     #[test]
     fn test_zero_one_i() {
-        let field = ComplexIntervalField_class::new(128);
+        let field = ComplexIntervalFieldClass::new(128);
 
         let zero = field.zero();
         assert!(zero.is_point());
@@ -233,7 +233,7 @@ mod tests {
 
     #[test]
     fn test_from_real() {
-        let field = ComplexIntervalField_class::new(128);
+        let field = ComplexIntervalFieldClass::new(128);
         let z = field.from_real(2.0, 3.0);
 
         assert!(z.contains(2.5, 0.0));
@@ -242,7 +242,7 @@ mod tests {
 
     #[test]
     fn test_from_imag() {
-        let field = ComplexIntervalField_class::new(128);
+        let field = ComplexIntervalFieldClass::new(128);
         let z = field.from_imag(2.0, 3.0);
 
         assert!(z.contains(0.0, 2.5));
@@ -260,7 +260,7 @@ mod tests {
 
     #[test]
     fn test_field_properties() {
-        let field = ComplexIntervalField_class::new(256);
+        let field = ComplexIntervalFieldClass::new(256);
 
         assert_eq!(field.characteristic(), 0);
         assert!(!field.is_exact());
@@ -269,9 +269,9 @@ mod tests {
 
     #[test]
     fn test_field_equality() {
-        let field1 = ComplexIntervalField_class::new(128);
-        let field2 = ComplexIntervalField_class::new(128);
-        let field3 = ComplexIntervalField_class::new(256);
+        let field1 = ComplexIntervalFieldClass::new(128);
+        let field2 = ComplexIntervalFieldClass::new(128);
+        let field3 = ComplexIntervalFieldClass::new(256);
 
         assert_eq!(field1, field2);
         assert_ne!(field1, field3);
@@ -279,14 +279,14 @@ mod tests {
 
     #[test]
     fn test_display() {
-        let field = ComplexIntervalField_class::new(128);
+        let field = ComplexIntervalFieldClass::new(128);
         let display = format!("{}", field);
         assert!(display.contains("128"));
     }
 
     #[test]
     fn test_interval_arithmetic() {
-        let field = ComplexIntervalField_class::new(256);
+        let field = ComplexIntervalFieldClass::new(256);
         let z1 = field.make_interval(1.0, 2.0, 3.0, 4.0);
         let z2 = field.make_interval(0.5, 1.0, 0.5, 1.0);
 

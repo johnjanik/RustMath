@@ -281,7 +281,7 @@ impl<R: IntegralDomain> fmt::Display for FractionFieldElement<R> {
 /// This is essentially a type alias for `FractionFieldElement<P>` where P is a
 /// univariate polynomial type, but with additional methods specific to rational
 /// functions.
-pub type FractionFieldElement_1poly_field<P> = FractionFieldElement<P>;
+pub type FractionFieldElement1polyField<P> = FractionFieldElement<P>;
 
 /// Type checking: determine if an object is a FractionFieldElement
 ///
@@ -305,7 +305,7 @@ pub type FractionFieldElement_1poly_field<P> = FractionFieldElement<P>;
 /// let frac = FractionFieldElement::new(Integer::from(3), Integer::from(4));
 /// assert!(is_FractionFieldElement(&frac));
 /// ```
-pub fn is_FractionFieldElement<R: IntegralDomain>(x: &FractionFieldElement<R>) -> bool {
+pub fn is_fraction_field_element<R: IntegralDomain>(x: &FractionFieldElement<R>) -> bool {
     // In Rust, type checking is done at compile time
     // If this function is called, the argument is definitely a FractionFieldElement
     true

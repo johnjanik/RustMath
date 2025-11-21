@@ -50,7 +50,7 @@ use std::marker::PhantomData;
 /// a₀ + a₁y + a₂y² + ... where each aᵢ is in the base function field and y
 /// is the algebraic generator.
 #[derive(Clone, Debug)]
-pub struct FunctionFieldElement_polymod<F: Field> {
+pub struct FunctionFieldElementPolymod<F: Field> {
     /// Coefficients as polynomials in the base function field
     /// Each coefficient is represented as a string for simplicity
     coefficients: Vec<String>,

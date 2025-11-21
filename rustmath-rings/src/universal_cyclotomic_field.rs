@@ -260,7 +260,7 @@ impl fmt::Display for UniversalCyclotomicFieldElement {
 ///
 /// # Returns
 /// ζₙ^k where ζₙ = e^(2πi/n)
-pub fn E(n: u64, k: Option<u64>) -> Result<UniversalCyclotomicFieldElement, UCFError> {
+pub fn e(n: u64, k: Option<u64>) -> Result<UniversalCyclotomicFieldElement, UCFError> {
     let power = k.unwrap_or(1);
     UniversalCyclotomicFieldElement::root_of_unity_power(n, power)
 }

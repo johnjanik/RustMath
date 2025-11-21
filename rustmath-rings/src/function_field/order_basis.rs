@@ -82,7 +82,7 @@ use std::marker::PhantomData;
 /// assert_eq!(order.rank(), 3);
 /// ```
 #[derive(Debug, Clone)]
-pub struct FunctionFieldOrder_basis<F: Field> {
+pub struct FunctionFieldOrderBasis<F: Field> {
     /// Function field
     field: String,
     /// Basis elements
@@ -230,7 +230,7 @@ impl<F: Field> FunctionFieldOrder_basis<F> {
 /// assert_eq!(order_inf.rank(), 3);
 /// ```
 #[derive(Debug, Clone)]
-pub struct FunctionFieldOrderInfinite_basis<F: Field> {
+pub struct FunctionFieldOrderInfiniteBasis<F: Field> {
     /// Function field
     field: String,
     /// Basis elements (typically involving negative powers)

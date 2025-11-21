@@ -135,7 +135,7 @@ impl<F: Field> FunctionFieldMorphism<F> {
 /// Morphism φ: K[x]/(f) → L[y]/(g) defined by sending x ↦ α where α is a
 /// root of f in L.
 #[derive(Debug, Clone)]
-pub struct FunctionFieldMorphism_polymod<F: Field> {
+pub struct FunctionFieldMorphismPolymod<F: Field> {
     /// Base morphism
     inner: FunctionFieldMorphism<F>,
     /// Where the generator is sent
@@ -177,7 +177,7 @@ impl<F: Field> FunctionFieldMorphism_polymod<F> {
 ///
 /// Morphism k(x) → L defined by x ↦ f/g for some f, g ∈ L.
 #[derive(Debug, Clone)]
-pub struct FunctionFieldMorphism_rational<F: Field> {
+pub struct FunctionFieldMorphismRational<F: Field> {
     /// Base morphism
     inner: FunctionFieldMorphism<F>,
     /// Image of the variable

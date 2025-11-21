@@ -58,7 +58,7 @@ use super::drinfeld_module::DrinfeldModule;
 /// - **j-invariant**: Classifies isomorphism classes
 /// - **Endomorphism ring**: Determines isogeny class
 #[derive(Clone, Debug)]
-pub struct DrinfeldModule_finite<F: Field, R: Ring> {
+pub struct DrinfeldModuleFinite<F: Field, R: Ring> {
     /// The underlying Drinfeld module
     base_module: DrinfeldModule<F, R>,
     /// Size of the finite field

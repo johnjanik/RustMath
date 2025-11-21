@@ -67,7 +67,7 @@ use std::marker::PhantomData;
 /// assert!(ideal.is_well_defined());
 /// ```
 #[derive(Debug, Clone)]
-pub struct FunctionFieldIdeal_polymod<F: Field> {
+pub struct FunctionFieldIdealPolymod<F: Field> {
     /// Generators of the ideal (as strings for simplicity)
     generators: Vec<String>,
     /// Name/description of the ideal
@@ -224,7 +224,7 @@ impl<F: Field> FunctionFieldIdeal_polymod<F> {
 /// assert!(ideal_inf.is_infinite());
 /// ```
 #[derive(Debug, Clone)]
-pub struct FunctionFieldIdealInfinite_polymod<F: Field> {
+pub struct FunctionFieldIdealInfinitePolymod<F: Field> {
     /// Underlying ideal structure
     inner: FunctionFieldIdeal_polymod<F>,
     /// Valuation at infinity
@@ -281,7 +281,7 @@ impl<F: Field> FunctionFieldIdealInfinite_polymod<F> {
 /// assert_eq!(ideal.constant_field_size(), 2);
 /// ```
 #[derive(Debug, Clone)]
-pub struct FunctionFieldIdeal_global<F: Field> {
+pub struct FunctionFieldIdealGlobal<F: Field> {
     /// Underlying polymod ideal
     inner: FunctionFieldIdeal_polymod<F>,
     /// Size of constant field
