@@ -51,37 +51,14 @@
 pub mod matrix {
     pub use crate::matrix_group::{MatrixGroup, GLn, SLn};
 
-    /// Creates a General Linear Group GL(n) over a ring
-    ///
-    /// # Arguments
-    ///
-    /// * `n` - The dimension of the matrices
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rustmath_groups::groups_catalog::matrix;
-    ///
-    /// let gl3 = matrix::GL(3);
-    /// ```
     // TODO: These functions need to be generic over the field type F
+    // GL(n): General Linear Group
     // pub fn GL<F: Field>(n: usize) -> crate::matrix_group::GLn<F> {
     //     crate::matrix_group::GLn::new(n)
     // }
 
-    /// Creates a Special Linear Group SL(n) over a ring
-    ///
-    /// # Arguments
-    ///
-    /// * `n` - The dimension of the matrices
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rustmath_groups::groups_catalog::matrix;
-    ///
-    /// let sl2 = matrix::SL(2);
     // TODO: These functions need to be generic over the field type F
+    // SL(n): Special Linear Group
     // pub fn SL<F: Field>(n: usize) -> crate::matrix_group::SLn<F> {
     //     crate::matrix_group::SLn::new(n)
     // }

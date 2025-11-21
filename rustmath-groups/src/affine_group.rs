@@ -14,7 +14,7 @@
 use std::fmt;
 use std::ops::Mul;
 use rustmath_matrix::Matrix;
-use rustmath_core::Ring;
+use rustmath_core::{Ring, MathError};
 
 /// An element of an affine group
 ///
@@ -124,7 +124,7 @@ impl<R: Ring> AffineGroupElement<R> {
         }
 
         // Compute A₁ * A₂
-        let new_matrix = self.matrix.mul(&other.matrix)?;
+        let new_matrix = self.matrix.mul(other.matrix).map_err(|e| e.to_string())?;
 
         // Compute A₁ * b₂ + b₁
         let mut new_vector = Vec::new();
@@ -171,15 +171,16 @@ impl<R: Ring> AffineGroupElement<R> {
     /// If self represents (A, b), the inverse is (A⁻¹, -A⁻¹b)
     pub fn inverse(&self) -> Result<Self, String>
     where
-        R: Clone + std::ops::Add<Output = R> + std::ops::Mul<Output = R> + std::ops::Neg<Output = R> + rustmath_core::EuclideanDomain,
+        R: Clone + std::ops::Add<Output = R> + std::ops::Mul<Output = R> + std::ops::Neg<Output = R> + rustmath_core::Field + From<i32>,
     {
         // Compute A⁻¹
-        let inv_matrix = self.matrix.inverse()?;
+        let inv_matrix_opt = self.matrix.inverse().map_err(|e| e.to_string())?;
+        let inv_matrix = inv_matrix_opt.ok_or_else(|| "Matrix is singular and cannot be inverted".to_string())?;
 
         // Compute -A⁻¹ * b
         let mut new_vector = Vec::new();
         for i in 0..self.dimension {
-            let mut sum = R::zero();
+            let mut sum = R::from(0);
             for j in 0..self.dimension {
                 sum = sum + (inv_matrix[(i, j)].clone() * self.vector[j].clone());
             }

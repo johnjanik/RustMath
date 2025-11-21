@@ -127,8 +127,8 @@ where
 
 impl<G, H, F> GroupSemidirectProduct<G, H, F>
 where
-    G: Clone + Mul<Output = G>,
-    H: Clone + Mul<Output = H>,
+    G: Clone + std::ops::Mul<Output = G>,
+    H: Clone + std::ops::Mul<Output = H>,
     F: Fn(&H, &G) -> G,
 {
     /// Multiply two elements in the semidirect product

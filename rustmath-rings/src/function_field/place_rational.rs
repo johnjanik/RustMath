@@ -32,10 +32,10 @@
 //!
 //! The degree of any principal divisor is 0.
 
-use rustmath_core::Field;
-use std::marker::PhantomData;
-use std::fmt;
 use super::place::FunctionFieldPlace;
+use rustmath_core::Field;
+use std::fmt;
+use std::marker::PhantomData;
 
 /// Place for rational function field k(x)
 ///
@@ -99,7 +99,7 @@ impl<F: Field> FunctionFieldPlace_rational<F> {
     /// );
     /// ```
     pub fn new(name: String, degree: usize, prime_polynomial: String) -> Self {
-        FunctionFieldPlace_rational {
+        FunctionFieldPlaceRational {
             base: FunctionFieldPlace::new(name, degree),
             prime_polynomial: Some(prime_polynomial),
             is_infinite_place: false,
@@ -120,7 +120,7 @@ impl<F: Field> FunctionFieldPlace_rational<F> {
     /// assert!(p_inf.is_infinite());
     /// ```
     pub fn infinite() -> Self {
-        FunctionFieldPlace_rational {
+        FunctionFieldPlaceRational {
             base: FunctionFieldPlace::infinite("∞".to_string(), 1),
             prime_polynomial: None,
             is_infinite_place: true,
@@ -277,7 +277,10 @@ impl<F: Field> FunctionFieldPlace_rational<F> {
         if self.is_infinite_place {
             format!("deg({}) - deg({})", denominator, numerator)
         } else if let Some(p) = &self.prime_polynomial {
-            format!("ord_{{{}}}({}) - ord_{{{}}}({})", p, numerator, p, denominator)
+            format!(
+                "ord_{{{}}}({}) - ord_{{{}}}({})",
+                p, numerator, p, denominator
+            )
         } else {
             format!("v({}/ {})", numerator, denominator)
         }
@@ -319,7 +322,12 @@ impl<F: Field> fmt::Display for FunctionFieldPlace_rational<F> {
                 self.base.degree()
             )
         } else {
-            write!(f, "Place {} (degree {})", self.base.name(), self.base.degree())
+            write!(
+                f,
+                "Place {} (degree {})",
+                self.base.name(),
+                self.base.degree()
+            )
         }
     }
 }
@@ -332,11 +340,7 @@ mod tests {
     #[test]
     fn test_rational_place_creation() {
         let place: FunctionFieldPlace_rational<Rational> =
-            FunctionFieldPlace_rational::new(
-                "P_0".to_string(),
-                1,
-                "x".to_string(),
-            );
+            FunctionFieldPlace_rational::new("P_0".to_string(), 1, "x".to_string());
 
         assert_eq!(place.name(), "P_0");
         assert_eq!(place.degree(), 1);
@@ -347,8 +351,7 @@ mod tests {
 
     #[test]
     fn test_infinite_place() {
-        let p_inf: FunctionFieldPlace_rational<Rational> =
-            FunctionFieldPlace_rational::infinite();
+        let p_inf: FunctionFieldPlace_rational<Rational> = FunctionFieldPlace_rational::infinite();
 
         assert!(p_inf.is_infinite());
         assert!(!p_inf.is_finite());
@@ -373,11 +376,7 @@ mod tests {
     #[test]
     fn test_degree_one_places() {
         let p: FunctionFieldPlace_rational<Rational> =
-            FunctionFieldPlace_rational::new(
-                "P".to_string(),
-                1,
-                "x - 3".to_string(),
-            );
+            FunctionFieldPlace_rational::new("P".to_string(), 1, "x - 3".to_string());
 
         assert!(p.is_degree_one());
         assert!(p.splits());
@@ -386,11 +385,7 @@ mod tests {
     #[test]
     fn test_higher_degree_place() {
         let p: FunctionFieldPlace_rational<Rational> =
-            FunctionFieldPlace_rational::new(
-                "P".to_string(),
-                2,
-                "x^2 + 1".to_string(),
-            );
+            FunctionFieldPlace_rational::new("P".to_string(), 2, "x^2 + 1".to_string());
 
         assert_eq!(p.degree(), 2);
         assert!(!p.is_degree_one());
@@ -400,19 +395,14 @@ mod tests {
     #[test]
     fn test_local_uniformizer_finite() {
         let p: FunctionFieldPlace_rational<Rational> =
-            FunctionFieldPlace_rational::new(
-                "P_0".to_string(),
-                1,
-                "x".to_string(),
-            );
+            FunctionFieldPlace_rational::new("P_0".to_string(), 1, "x".to_string());
 
         assert_eq!(p.local_uniformizer(), "x");
     }
 
     #[test]
     fn test_local_uniformizer_infinite() {
-        let p_inf: FunctionFieldPlace_rational<Rational> =
-            FunctionFieldPlace_rational::infinite();
+        let p_inf: FunctionFieldPlace_rational<Rational> = FunctionFieldPlace_rational::infinite();
 
         assert_eq!(p_inf.local_uniformizer(), "1/x");
     }
@@ -420,11 +410,7 @@ mod tests {
     #[test]
     fn test_residue_field_finite() {
         let p: FunctionFieldPlace_rational<Rational> =
-            FunctionFieldPlace_rational::new(
-                "P".to_string(),
-                2,
-                "x^2 + 1".to_string(),
-            );
+            FunctionFieldPlace_rational::new("P".to_string(), 2, "x^2 + 1".to_string());
 
         let res_field = p.residue_field();
         assert!(res_field.contains("k[x]/(x^2 + 1)"));
@@ -432,8 +418,7 @@ mod tests {
 
     #[test]
     fn test_residue_field_infinite() {
-        let p_inf: FunctionFieldPlace_rational<Rational> =
-            FunctionFieldPlace_rational::infinite();
+        let p_inf: FunctionFieldPlace_rational<Rational> = FunctionFieldPlace_rational::infinite();
 
         assert_eq!(p_inf.residue_field(), "k");
     }
@@ -441,11 +426,7 @@ mod tests {
     #[test]
     fn test_valuation_finite() {
         let p: FunctionFieldPlace_rational<Rational> =
-            FunctionFieldPlace_rational::new(
-                "P_0".to_string(),
-                1,
-                "x".to_string(),
-            );
+            FunctionFieldPlace_rational::new("P_0".to_string(), 1, "x".to_string());
 
         let val = p.valuation_of("x^2", "x+1");
         assert!(val.contains("ord"));
@@ -453,8 +434,7 @@ mod tests {
 
     #[test]
     fn test_valuation_infinite() {
-        let p_inf: FunctionFieldPlace_rational<Rational> =
-            FunctionFieldPlace_rational::infinite();
+        let p_inf: FunctionFieldPlace_rational<Rational> = FunctionFieldPlace_rational::infinite();
 
         let val = p_inf.valuation_of("x^2 + 1", "x^3");
         assert!(val.contains("deg"));
@@ -463,11 +443,7 @@ mod tests {
     #[test]
     fn test_inert_place() {
         let p: FunctionFieldPlace_rational<Rational> =
-            FunctionFieldPlace_rational::new(
-                "P".to_string(),
-                3,
-                "x^3 + x + 1".to_string(),
-            );
+            FunctionFieldPlace_rational::new("P".to_string(), 3, "x^3 + x + 1".to_string());
 
         assert!(p.is_inert(3));
         assert!(!p.is_inert(2));
@@ -476,11 +452,7 @@ mod tests {
     #[test]
     fn test_split_place() {
         let p: FunctionFieldPlace_rational<Rational> =
-            FunctionFieldPlace_rational::new(
-                "P_a".to_string(),
-                1,
-                "x - a".to_string(),
-            );
+            FunctionFieldPlace_rational::new("P_a".to_string(), 1, "x - a".to_string());
 
         assert!(p.splits());
     }
@@ -488,11 +460,7 @@ mod tests {
     #[test]
     fn test_clone_equality() {
         let p1: FunctionFieldPlace_rational<Rational> =
-            FunctionFieldPlace_rational::new(
-                "P".to_string(),
-                2,
-                "x^2 + 1".to_string(),
-            );
+            FunctionFieldPlace_rational::new("P".to_string(), 2, "x^2 + 1".to_string());
         let p2 = p1.clone();
 
         assert_eq!(p1, p2);
@@ -501,11 +469,7 @@ mod tests {
     #[test]
     fn test_display_finite() {
         let p: FunctionFieldPlace_rational<Rational> =
-            FunctionFieldPlace_rational::new(
-                "P_0".to_string(),
-                1,
-                "x".to_string(),
-            );
+            FunctionFieldPlace_rational::new("P_0".to_string(), 1, "x".to_string());
 
         let display = format!("{}", p);
         assert!(display.contains("Place P_0"));
@@ -514,8 +478,7 @@ mod tests {
 
     #[test]
     fn test_display_infinite() {
-        let p_inf: FunctionFieldPlace_rational<Rational> =
-            FunctionFieldPlace_rational::infinite();
+        let p_inf: FunctionFieldPlace_rational<Rational> = FunctionFieldPlace_rational::infinite();
 
         let display = format!("{}", p_inf);
         assert!(display.contains("infinity"));
@@ -530,8 +493,7 @@ mod tests {
             FunctionFieldPlace_rational::at_point("0".to_string());
         let p_1: FunctionFieldPlace_rational<Rational> =
             FunctionFieldPlace_rational::at_point("1".to_string());
-        let p_inf: FunctionFieldPlace_rational<Rational> =
-            FunctionFieldPlace_rational::infinite();
+        let p_inf: FunctionFieldPlace_rational<Rational> = FunctionFieldPlace_rational::infinite();
 
         // Verify places are set up correctly
         assert_eq!(p_0.degree(), 1);

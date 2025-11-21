@@ -31,6 +31,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::ops::Mul;
 
+use rustmath_combinatorics::Permutation;
 use crate::group_traits::Group;
 use crate::kernel_subgroup::KernelSubgroup;
 
@@ -383,7 +384,7 @@ impl GroupElement for CactusGroupElement {
 /// The pure cactus group PJ_n
 ///
 /// The pure cactus group is the kernel of the natural homomorphism from J_n to S_n.
-pub type PureCactusGroup = KernelSubgroup<CactusGroup>;
+pub type PureCactusGroup = KernelSubgroup<CactusGroup, Permutation, fn(&CactusGroup) -> Permutation>;
 
 #[cfg(test)]
 mod tests {

@@ -101,7 +101,7 @@ impl<F: Field> FunctionFieldPlace_polymod<F> {
         assert!(ramification_index > 0, "Ramification index must be positive");
         assert!(relative_degree > 0, "Relative degree must be positive");
 
-        FunctionFieldPlace_polymod {
+        FunctionFieldPlacePolymod {
             base: FunctionFieldPlace::new(name, degree),
             prime_id,
             ramification_index,

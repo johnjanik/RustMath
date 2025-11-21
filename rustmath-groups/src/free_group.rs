@@ -191,7 +191,7 @@ impl FreeGroupElement {
     /// # Arguments
     /// * `gen_index` - The generator index (0-based)
     /// * `exponent` - The exponent for the generator
-    pub fn generator(gen_index: i32, exponent: isize) -> Self {
+    pub fn generator(gen_index: isize, exponent: isize) -> Self {
         // Create a minimal free group for this purpose
         let group = FreeGroup::with_default_names((gen_index.abs() + 1) as usize);
 
@@ -248,7 +248,7 @@ impl FreeGroupElement {
                 -(gen + 1)
             };
 
-            for _ in 0..exp.abs() {
+            for _ in 0..(exp.abs() as usize) {
                 result.push(base);
             }
         }
@@ -329,7 +329,7 @@ impl FreeGroupElement {
             .iter()
             .filter(|(gen, _)| *gen == generator as isize)
             .map(|(_, exp)| exp)
-            .sum()
+            .sum::<isize>()
     }
 
     /// Multiply this element by another
@@ -383,7 +383,7 @@ impl FreeGroupElement {
         }
 
         let mut word = Vec::new();
-        for _ in 0..n {
+        for _ in 0..(n as usize) {
             word.extend_from_slice(&self.word);
         }
 
@@ -452,14 +452,14 @@ impl FreeGroupElement {
             if g as usize == gen_index {
                 // Add terms for each occurrence of the generator
                 if e > 0 {
-                    for i in 0..e {
-                        let term = prefix.mul(&self.group.generator(gen_index).unwrap().pow(i));
+                    for i in 0..(e as usize) {
+                        let term = prefix.mul(&self.group.generator(gen_index).unwrap().pow(i as isize));
                         result.push(term);
                     }
                 } else {
                     let gen_elem = self.group.generator(gen_index).unwrap();
-                    for i in 0..(-e) {
-                        let term = prefix.mul(&gen_elem.pow(-i - 1));
+                    for i in 0..((-e) as usize) {
+                        let term = prefix.mul(&gen_elem.pow(-(i as isize) - 1));
                         result.push(term.inverse());
                     }
                 }
@@ -484,7 +484,7 @@ impl FreeGroupElement {
         F: FnMut(usize, isize) -> T,
     {
         if self.word.is_empty() {
-            return f(0, 0); // Identity - need special handling
+            return f(0usize, 0isize); // Identity - need special handling
         }
 
         let mut result = f(self.word[0].0 as usize, self.word[0].1);
@@ -492,7 +492,8 @@ impl FreeGroupElement {
         for &(gen, exp) in &self.word[1..] {
             // This is a simplified version - actual implementation would need
             // proper multiplication operation for type T
-            result = f(gen as usize, exp);
+            let _ = f(gen as usize, exp);
+            // Note: simplified implementation; real version needs multiplication
         }
 
         result
@@ -559,7 +560,7 @@ mod tests {
     fn test_free_group_creation() {
         let f2 = FreeGroup::new(2, vec!["a".to_string(), "b".to_string()]);
         assert_eq!(f2.rank(), 2);
-        assert_eq!(f2.generator_names(), &["a", "b"]);
+        assert_eq!(f2.generator_names(), &["a".to_string(), "b".to_string()]);
         assert!(!f2.is_trivial());
     }
 
@@ -567,7 +568,7 @@ mod tests {
     fn test_default_names() {
         let f3 = FreeGroup::with_default_names(3);
         assert_eq!(f3.rank(), 3);
-        assert_eq!(f3.generator_names(), &["x_0", "x_1", "x_2"]);
+        assert_eq!(f3.generator_names(), &["x_0".to_string(), "x_1".to_string(), "x_2".to_string()]);
     }
 
     #[test]

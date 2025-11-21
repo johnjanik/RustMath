@@ -37,9 +37,16 @@ use crate::free_group::FreeGroupElement;
 pub fn cyclic_presentation(n: usize) -> FinitelyPresentedGroup {
     assert!(n > 0, "Order must be positive");
 
-    let relations = vec![FreeGroupElement::generator(0, n as i32)];
+    let generator_names = vec!["a".to_string()];
+    let relations = vec![
+        FreeGroupElement::generator(0, n as isize)
+            .tietze()
+            .into_iter()
+            .map(|x| x as i32)
+            .collect()
+    ];
 
-    FinitelyPresentedGroup::new(1, relations)
+    FinitelyPresentedGroup::new(generator_names, relations)
 }
 
 /// Create a presentation of a finitely generated abelian group
@@ -68,13 +75,21 @@ pub fn finitely_generated_abelian_presentation(
     assert!(!invariants.is_empty(), "Need at least one generator");
 
     let n_gens = invariants.len();
+    let generator_names: Vec<String> = (0..n_gens)
+        .map(|i| format!("a_{}", i))
+        .collect();
     let mut relations = Vec::new();
 
     // Add power relations for each generator
     for (i, &inv) in invariants.iter().enumerate() {
         if inv > 0 {
             // a_i^{inv} = 1
-            relations.push(FreeGroupElement::generator(i as i32, inv as i32));
+            let rel = FreeGroupElement::generator(i as isize, inv as isize)
+                .tietze()
+                .into_iter()
+                .map(|x| x as i32)
+                .collect();
+            relations.push(rel);
         }
     }
 
@@ -82,17 +97,22 @@ pub fn finitely_generated_abelian_presentation(
     for i in 0..n_gens {
         for j in (i + 1)..n_gens {
             // a_i a_j a_i^{-1} a_j^{-1} = 1
-            let ai = FreeGroupElement::generator(i as i32, 1);
-            let aj = FreeGroupElement::generator(j as i32, 1);
-            let ai_inv = FreeGroupElement::generator(i as i32, -1);
-            let aj_inv = FreeGroupElement::generator(j as i32, -1);
+            let ai = FreeGroupElement::generator(i as isize, 1);
+            let aj = FreeGroupElement::generator(j as isize, 1);
+            let ai_inv = FreeGroupElement::generator(i as isize, -1);
+            let aj_inv = FreeGroupElement::generator(j as isize, -1);
 
             let comm = ai.multiply(&aj).multiply(&ai_inv).multiply(&aj_inv);
-            relations.push(comm);
+            let rel = comm
+                .tietze()
+                .into_iter()
+                .map(|x| x as i32)
+                .collect();
+            relations.push(rel);
         }
     }
 
-    FinitelyPresentedGroup::new(n_gens, relations)
+    FinitelyPresentedGroup::new(generator_names, relations)
 }
 
 /// Create a presentation of the Heisenberg group
@@ -117,18 +137,23 @@ pub fn finitely_generated_heisenberg_presentation(n: usize, p: usize) -> Finitel
     }
 
     // Generators: x_0, ..., x_{n-1}, y_0, ..., y_{n-1}, z
-    let n_gens = 2 * n + 1;
     let z_idx = 2 * n; // z is the last generator
+
+    let generator_names: Vec<String> = (0..n)
+        .map(|i| format!("x_{}", i))
+        .chain((0..n).map(|i| format!("y_{}", i)))
+        .chain(std::iter::once("z".to_string()))
+        .collect();
 
     let mut relations = Vec::new();
 
     // [x_i, y_i] = z for all i
     for i in 0..n {
-        let x_i = FreeGroupElement::generator(i as i32, 1);
-        let y_i = FreeGroupElement::generator((n + i) as i32, 1);
-        let x_i_inv = FreeGroupElement::generator(i as i32, -1);
-        let y_i_inv = FreeGroupElement::generator((n + i) as i32, -1);
-        let z_inv = FreeGroupElement::generator(z_idx as i32, -1);
+        let x_i = FreeGroupElement::generator(i as isize, 1);
+        let y_i = FreeGroupElement::generator((n + i) as isize, 1);
+        let x_i_inv = FreeGroupElement::generator(i as isize, -1);
+        let y_i_inv = FreeGroupElement::generator((n + i) as isize, -1);
+        let z_inv = FreeGroupElement::generator(z_idx as isize, -1);
 
         // x_i y_i x_i^{-1} y_i^{-1} z^{-1} = 1
         let comm = x_i
@@ -136,44 +161,64 @@ pub fn finitely_generated_heisenberg_presentation(n: usize, p: usize) -> Finitel
             .multiply(&x_i_inv)
             .multiply(&y_i_inv)
             .multiply(&z_inv);
-        relations.push(comm);
+        let rel = comm
+            .tietze()
+            .into_iter()
+            .map(|x| x as i32)
+            .collect();
+        relations.push(rel);
     }
 
     // [z, x_i] = 1 for all i
     for i in 0..n {
-        let z = FreeGroupElement::generator(z_idx as i32, 1);
-        let x_i = FreeGroupElement::generator(i as i32, 1);
-        let z_inv = FreeGroupElement::generator(z_idx as i32, -1);
-        let x_i_inv = FreeGroupElement::generator(i as i32, -1);
+        let z = FreeGroupElement::generator(z_idx as isize, 1);
+        let x_i = FreeGroupElement::generator(i as isize, 1);
+        let z_inv = FreeGroupElement::generator(z_idx as isize, -1);
+        let x_i_inv = FreeGroupElement::generator(i as isize, -1);
 
         // z x_i z^{-1} x_i^{-1} = 1
         let comm = z.multiply(&x_i).multiply(&z_inv).multiply(&x_i_inv);
-        relations.push(comm);
+        let rel = comm
+            .tietze()
+            .into_iter()
+            .map(|x| x as i32)
+            .collect();
+        relations.push(rel);
     }
 
     // [z, y_i] = 1 for all i
     for i in 0..n {
-        let z = FreeGroupElement::generator(z_idx as i32, 1);
-        let y_i = FreeGroupElement::generator((n + i) as i32, 1);
-        let z_inv = FreeGroupElement::generator(z_idx as i32, -1);
-        let y_i_inv = FreeGroupElement::generator((n + i) as i32, -1);
+        let z = FreeGroupElement::generator(z_idx as isize, 1);
+        let y_i = FreeGroupElement::generator((n + i) as isize, 1);
+        let z_inv = FreeGroupElement::generator(z_idx as isize, -1);
+        let y_i_inv = FreeGroupElement::generator((n + i) as isize, -1);
 
         // z y_i z^{-1} y_i^{-1} = 1
         let comm = z.multiply(&y_i).multiply(&z_inv).multiply(&y_i_inv);
-        relations.push(comm);
+        let rel = comm
+            .tietze()
+            .into_iter()
+            .map(|x| x as i32)
+            .collect();
+        relations.push(rel);
     }
 
     // [x_i, y_j] = 1 for i ≠ j
     for i in 0..n {
         for j in 0..n {
             if i != j {
-                let x_i = FreeGroupElement::generator(i as i32, 1);
-                let y_j = FreeGroupElement::generator((n + j) as i32, 1);
-                let x_i_inv = FreeGroupElement::generator(i as i32, -1);
-                let y_j_inv = FreeGroupElement::generator((n + j) as i32, -1);
+                let x_i = FreeGroupElement::generator(i as isize, 1);
+                let y_j = FreeGroupElement::generator((n + j) as isize, 1);
+                let x_i_inv = FreeGroupElement::generator(i as isize, -1);
+                let y_j_inv = FreeGroupElement::generator((n + j) as isize, -1);
 
                 let comm = x_i.multiply(&y_j).multiply(&x_i_inv).multiply(&y_j_inv);
-                relations.push(comm);
+                let rel = comm
+                    .tietze()
+                    .into_iter()
+                    .map(|x| x as i32)
+                    .collect();
+                relations.push(rel);
             }
         }
     }
@@ -181,35 +226,50 @@ pub fn finitely_generated_heisenberg_presentation(n: usize, p: usize) -> Finitel
     // [x_i, x_j] = 1 for all i, j
     for i in 0..n {
         for j in (i + 1)..n {
-            let x_i = FreeGroupElement::generator(i as i32, 1);
-            let x_j = FreeGroupElement::generator(j as i32, 1);
-            let x_i_inv = FreeGroupElement::generator(i as i32, -1);
-            let x_j_inv = FreeGroupElement::generator(j as i32, -1);
+            let x_i = FreeGroupElement::generator(i as isize, 1);
+            let x_j = FreeGroupElement::generator(j as isize, 1);
+            let x_i_inv = FreeGroupElement::generator(i as isize, -1);
+            let x_j_inv = FreeGroupElement::generator(j as isize, -1);
 
             let comm = x_i.multiply(&x_j).multiply(&x_i_inv).multiply(&x_j_inv);
-            relations.push(comm);
+            let rel = comm
+                .tietze()
+                .into_iter()
+                .map(|x| x as i32)
+                .collect();
+            relations.push(rel);
         }
     }
 
     // [y_i, y_j] = 1 for all i, j
     for i in 0..n {
         for j in (i + 1)..n {
-            let y_i = FreeGroupElement::generator((n + i) as i32, 1);
-            let y_j = FreeGroupElement::generator((n + j) as i32, 1);
-            let y_i_inv = FreeGroupElement::generator((n + i) as i32, -1);
-            let y_j_inv = FreeGroupElement::generator((n + j) as i32, -1);
+            let y_i = FreeGroupElement::generator((n + i) as isize, 1);
+            let y_j = FreeGroupElement::generator((n + j) as isize, 1);
+            let y_i_inv = FreeGroupElement::generator((n + i) as isize, -1);
+            let y_j_inv = FreeGroupElement::generator((n + j) as isize, -1);
 
             let comm = y_i.multiply(&y_j).multiply(&y_i_inv).multiply(&y_j_inv);
-            relations.push(comm);
+            let rel = comm
+                .tietze()
+                .into_iter()
+                .map(|x| x as i32)
+                .collect();
+            relations.push(rel);
         }
     }
 
     // If p > 0, add z^p = 1
     if p > 0 {
-        relations.push(FreeGroupElement::generator(z_idx as i32, p as i32));
+        let rel = FreeGroupElement::generator(z_idx as isize, p as isize)
+            .tietze()
+            .into_iter()
+            .map(|x| x as i32)
+            .collect();
+        relations.push(rel);
     }
 
-    FinitelyPresentedGroup::new(n_gens, relations)
+    FinitelyPresentedGroup::new(generator_names, relations)
 }
 
 /// Create a presentation of the dihedral group D_n
@@ -225,21 +285,37 @@ pub fn finitely_generated_heisenberg_presentation(n: usize, p: usize) -> Finitel
 pub fn dihedral_presentation(n: usize) -> FinitelyPresentedGroup {
     assert!(n >= 2, "Dihedral group requires n >= 2");
 
+    let generator_names = vec!["a".to_string(), "b".to_string()];
     let mut relations = Vec::new();
 
     // a^n = 1
-    relations.push(FreeGroupElement::generator(0, n as i32));
+    let rel = FreeGroupElement::generator(0, n as isize)
+        .tietze()
+        .into_iter()
+        .map(|x| x as i32)
+        .collect();
+    relations.push(rel);
 
     // b^2 = 1
-    relations.push(FreeGroupElement::generator(1, 2));
+    let rel = FreeGroupElement::generator(1, 2)
+        .tietze()
+        .into_iter()
+        .map(|x| x as i32)
+        .collect();
+    relations.push(rel);
 
     // (ab)^2 = 1, i.e., abab = 1
     let a = FreeGroupElement::generator(0, 1);
     let b = FreeGroupElement::generator(1, 1);
-    let rel = a.multiply(&b).multiply(&a).multiply(&b);
+    let rel_elem = a.multiply(&b).multiply(&a).multiply(&b);
+    let rel = rel_elem
+        .tietze()
+        .into_iter()
+        .map(|x| x as i32)
+        .collect();
     relations.push(rel);
 
-    FinitelyPresentedGroup::new(2, relations)
+    FinitelyPresentedGroup::new(generator_names, relations)
 }
 
 /// Create a presentation of the dicyclic group Dic_n
@@ -255,24 +331,41 @@ pub fn dihedral_presentation(n: usize) -> FinitelyPresentedGroup {
 pub fn dicyclic_presentation(n: usize) -> FinitelyPresentedGroup {
     assert!(n >= 2, "Dicyclic group requires n >= 2");
 
+    let generator_names = vec!["a".to_string(), "b".to_string()];
     let mut relations = Vec::new();
 
     // a^(2n) = 1
-    relations.push(FreeGroupElement::generator(0, (2 * n) as i32));
+    let rel = FreeGroupElement::generator(0, (2 * n) as isize)
+        .tietze()
+        .into_iter()
+        .map(|x| x as i32)
+        .collect();
+    relations.push(rel);
 
     // b^2 a^{-n} = 1
     let b2 = FreeGroupElement::generator(1, 2);
-    let a_neg_n = FreeGroupElement::generator(0, -(n as i32));
-    relations.push(b2.multiply(&a_neg_n));
+    let a_neg_n = FreeGroupElement::generator(0, -(n as isize));
+    let rel_elem = b2.multiply(&a_neg_n);
+    let rel = rel_elem
+        .tietze()
+        .into_iter()
+        .map(|x| x as i32)
+        .collect();
+    relations.push(rel);
 
     // b^{-1} a b a = 1
     let b_inv = FreeGroupElement::generator(1, -1);
     let a = FreeGroupElement::generator(0, 1);
     let b = FreeGroupElement::generator(1, 1);
-    let rel = b_inv.multiply(&a).multiply(&b).multiply(&a);
+    let rel_elem = b_inv.multiply(&a).multiply(&b).multiply(&a);
+    let rel = rel_elem
+        .tietze()
+        .into_iter()
+        .map(|x| x as i32)
+        .collect();
     relations.push(rel);
 
-    FinitelyPresentedGroup::new(2, relations)
+    FinitelyPresentedGroup::new(generator_names, relations)
 }
 
 /// Create a presentation of the quaternion group Q_8
@@ -282,24 +375,41 @@ pub fn dicyclic_presentation(n: usize) -> FinitelyPresentedGroup {
 /// - b^2 = a^2
 /// - bab^{-1} = a^{-1}
 pub fn quaternion_presentation() -> FinitelyPresentedGroup {
+    let generator_names = vec!["a".to_string(), "b".to_string()];
     let mut relations = Vec::new();
 
     // a^4 = 1
-    relations.push(FreeGroupElement::generator(0, 4));
+    let rel = FreeGroupElement::generator(0, 4)
+        .tietze()
+        .into_iter()
+        .map(|x| x as i32)
+        .collect();
+    relations.push(rel);
 
     // b^2 a^{-2} = 1
     let b2 = FreeGroupElement::generator(1, 2);
     let a_neg2 = FreeGroupElement::generator(0, -2);
-    relations.push(b2.multiply(&a_neg2));
+    let rel_elem = b2.multiply(&a_neg2);
+    let rel = rel_elem
+        .tietze()
+        .into_iter()
+        .map(|x| x as i32)
+        .collect();
+    relations.push(rel);
 
     // a b a b^{-1} = 1
     let a = FreeGroupElement::generator(0, 1);
     let b = FreeGroupElement::generator(1, 1);
     let b_inv = FreeGroupElement::generator(1, -1);
-    let rel = a.multiply(&b).multiply(&a).multiply(&b_inv);
+    let rel_elem = a.multiply(&b).multiply(&a).multiply(&b_inv);
+    let rel = rel_elem
+        .tietze()
+        .into_iter()
+        .map(|x| x as i32)
+        .collect();
     relations.push(rel);
 
-    FinitelyPresentedGroup::new(2, relations)
+    FinitelyPresentedGroup::new(generator_names, relations)
 }
 
 /// Create a presentation of the Klein four group
@@ -309,13 +419,24 @@ pub fn quaternion_presentation() -> FinitelyPresentedGroup {
 /// - b^2 = 1
 /// - ab = ba (commutator)
 pub fn klein_four_presentation() -> FinitelyPresentedGroup {
+    let generator_names = vec!["a".to_string(), "b".to_string()];
     let mut relations = Vec::new();
 
     // a^2 = 1
-    relations.push(FreeGroupElement::generator(0, 2));
+    let rel = FreeGroupElement::generator(0, 2)
+        .tietze()
+        .into_iter()
+        .map(|x| x as i32)
+        .collect();
+    relations.push(rel);
 
     // b^2 = 1
-    relations.push(FreeGroupElement::generator(1, 2));
+    let rel = FreeGroupElement::generator(1, 2)
+        .tietze()
+        .into_iter()
+        .map(|x| x as i32)
+        .collect();
+    relations.push(rel);
 
     // a b a^{-1} b^{-1} = 1
     let a = FreeGroupElement::generator(0, 1);
@@ -323,9 +444,14 @@ pub fn klein_four_presentation() -> FinitelyPresentedGroup {
     let a_inv = FreeGroupElement::generator(0, -1);
     let b_inv = FreeGroupElement::generator(1, -1);
     let comm = a.multiply(&b).multiply(&a_inv).multiply(&b_inv);
-    relations.push(comm);
+    let rel = comm
+        .tietze()
+        .into_iter()
+        .map(|x| x as i32)
+        .collect();
+    relations.push(rel);
 
-    FinitelyPresentedGroup::new(2, relations)
+    FinitelyPresentedGroup::new(generator_names, relations)
 }
 
 /// Create a presentation of the binary dihedral group
@@ -341,27 +467,45 @@ pub fn klein_four_presentation() -> FinitelyPresentedGroup {
 pub fn binary_dihedral_presentation(n: usize) -> FinitelyPresentedGroup {
     assert!(n >= 1, "Binary dihedral group requires n >= 1");
 
+    let generator_names = vec!["x".to_string(), "y".to_string(), "z".to_string()];
     let mut relations = Vec::new();
 
     // x^{-2} y^2 = 1
     let x_neg2 = FreeGroupElement::generator(0, -2);
     let y2 = FreeGroupElement::generator(1, 2);
-    relations.push(x_neg2.multiply(&y2));
+    let rel_elem = x_neg2.multiply(&y2);
+    let rel = rel_elem
+        .tietze()
+        .into_iter()
+        .map(|x| x as i32)
+        .collect();
+    relations.push(rel);
 
     // x^{-2} z^n = 1
     let x_neg2_again = FreeGroupElement::generator(0, -2);
-    let zn = FreeGroupElement::generator(2, n as i32);
-    relations.push(x_neg2_again.multiply(&zn));
+    let zn = FreeGroupElement::generator(2, n as isize);
+    let rel_elem = x_neg2_again.multiply(&zn);
+    let rel = rel_elem
+        .tietze()
+        .into_iter()
+        .map(|x| x as i32)
+        .collect();
+    relations.push(rel);
 
     // x^{-2} xyz = 1
     let x_neg2_third = FreeGroupElement::generator(0, -2);
     let x = FreeGroupElement::generator(0, 1);
     let y = FreeGroupElement::generator(1, 1);
     let z = FreeGroupElement::generator(2, 1);
-    let rel = x_neg2_third.multiply(&x).multiply(&y).multiply(&z);
+    let rel_elem = x_neg2_third.multiply(&x).multiply(&y).multiply(&z);
+    let rel = rel_elem
+        .tietze()
+        .into_iter()
+        .map(|x| x as i32)
+        .collect();
     relations.push(rel);
 
-    FinitelyPresentedGroup::new(3, relations)
+    FinitelyPresentedGroup::new(generator_names, relations)
 }
 
 /// Create a presentation of the cactus group J_n
@@ -381,34 +525,48 @@ pub fn binary_dihedral_presentation(n: usize) -> FinitelyPresentedGroup {
 pub fn cactus_presentation(n: usize) -> FinitelyPresentedGroup {
     assert!(n >= 1, "Cactus group requires n >= 1");
 
+    let generator_names: Vec<String> = (0..n)
+        .map(|i| format!("s_{}", i))
+        .collect();
+
     // For a cactus group on n fruits, we have n generators
     // with involution relations s_i^2 = 1 and braid-type relations
     let mut relations = Vec::new();
 
     // All generators are involutions
     for i in 0..n {
-        relations.push(FreeGroupElement::generator(i as i32, 2));
+        let rel = FreeGroupElement::generator(i as isize, 2)
+            .tietze()
+            .into_iter()
+            .map(|x| x as i32)
+            .collect();
+        relations.push(rel);
     }
 
     // Add braid-type relations for adjacent generators
     for i in 0..(n - 1) {
-        let si = FreeGroupElement::generator(i as i32, 1);
-        let si1 = FreeGroupElement::generator((i + 1) as i32, 1);
+        let si = FreeGroupElement::generator(i as isize, 1);
+        let si1 = FreeGroupElement::generator((i + 1) as isize, 1);
         // s_i s_{i+1} s_i = s_{i+1} s_i s_{i+1}
         // Which is equivalent to: s_i s_{i+1} s_i s_{i+1}^{-1} s_i^{-1} s_{i+1}^{-1} = 1
-        let si_inv = FreeGroupElement::generator(i as i32, -1);
-        let si1_inv = FreeGroupElement::generator((i + 1) as i32, -1);
+        let si_inv = FreeGroupElement::generator(i as isize, -1);
+        let si1_inv = FreeGroupElement::generator((i + 1) as isize, -1);
 
-        let rel = si
+        let rel_elem = si
             .multiply(&si1)
             .multiply(&si)
             .multiply(&si1_inv)
             .multiply(&si_inv)
             .multiply(&si1_inv);
+        let rel = rel_elem
+            .tietze()
+            .into_iter()
+            .map(|x| x as i32)
+            .collect();
         relations.push(rel);
     }
 
-    FinitelyPresentedGroup::new(n, relations)
+    FinitelyPresentedGroup::new(generator_names, relations)
 }
 
 /// Create a presentation of the symmetric group S_n
@@ -428,43 +586,61 @@ pub fn symmetric_presentation(n: usize) -> FinitelyPresentedGroup {
     assert!(n >= 2, "Symmetric group requires n >= 2");
 
     let n_gens = n - 1;
+    let generator_names: Vec<String> = (0..n_gens)
+        .map(|i| format!("s_{}", i))
+        .collect();
     let mut relations = Vec::new();
 
     // All generators have order 2: s_i^2 = 1
     for i in 0..n_gens {
-        relations.push(FreeGroupElement::generator(i as i32, 2));
+        let rel = FreeGroupElement::generator(i as isize, 2)
+            .tietze()
+            .into_iter()
+            .map(|x| x as i32)
+            .collect();
+        relations.push(rel);
     }
 
     // Braid relations: s_i s_{i+1} s_i = s_{i+1} s_i s_{i+1}
     for i in 0..(n_gens - 1) {
-        let si = FreeGroupElement::generator(i as i32, 1);
-        let si1 = FreeGroupElement::generator((i + 1) as i32, 1);
-        let si_inv = FreeGroupElement::generator(i as i32, -1);
-        let si1_inv = FreeGroupElement::generator((i + 1) as i32, -1);
+        let si = FreeGroupElement::generator(i as isize, 1);
+        let si1 = FreeGroupElement::generator((i + 1) as isize, 1);
+        let si_inv = FreeGroupElement::generator(i as isize, -1);
+        let si1_inv = FreeGroupElement::generator((i + 1) as isize, -1);
 
-        let rel = si
+        let rel_elem = si
             .multiply(&si1)
             .multiply(&si)
             .multiply(&si1_inv)
             .multiply(&si_inv)
             .multiply(&si1_inv);
+        let rel = rel_elem
+            .tietze()
+            .into_iter()
+            .map(|x| x as i32)
+            .collect();
         relations.push(rel);
     }
 
     // Commuting relations: s_i s_j = s_j s_i for |i - j| >= 2
     for i in 0..n_gens {
         for j in (i + 2)..n_gens {
-            let si = FreeGroupElement::generator(i as i32, 1);
-            let sj = FreeGroupElement::generator(j as i32, 1);
-            let si_inv = FreeGroupElement::generator(i as i32, -1);
-            let sj_inv = FreeGroupElement::generator(j as i32, -1);
+            let si = FreeGroupElement::generator(i as isize, 1);
+            let sj = FreeGroupElement::generator(j as isize, 1);
+            let si_inv = FreeGroupElement::generator(i as isize, -1);
+            let sj_inv = FreeGroupElement::generator(j as isize, -1);
 
-            let rel = si.multiply(&sj).multiply(&si_inv).multiply(&sj_inv);
+            let rel_elem = si.multiply(&sj).multiply(&si_inv).multiply(&sj_inv);
+            let rel = rel_elem
+                .tietze()
+                .into_iter()
+                .map(|x| x as i32)
+                .collect();
             relations.push(rel);
         }
     }
 
-    FinitelyPresentedGroup::new(n_gens, relations)
+    FinitelyPresentedGroup::new(generator_names, relations)
 }
 
 /// Create a presentation of the alternating group A_n
@@ -490,28 +666,41 @@ pub fn alternating_presentation(n: usize) -> FinitelyPresentedGroup {
     // For A_4 and larger, use a more complex presentation
     // This is a simplified version - full implementation would be more involved
     let n_gens = n - 2;
+    let generator_names: Vec<String> = (0..n_gens)
+        .map(|i| format!("s_{}", i))
+        .collect();
     let mut relations = Vec::new();
 
     // Each generator has order 3 (they are 3-cycles)
     for i in 0..n_gens {
-        relations.push(FreeGroupElement::generator(i as i32, 3));
+        let rel = FreeGroupElement::generator(i as isize, 3)
+            .tietze()
+            .into_iter()
+            .map(|x| x as i32)
+            .collect();
+        relations.push(rel);
     }
 
     // Add some commutator relations
     // This is a simplified presentation
     for i in 0..n_gens {
         for j in (i + 2)..n_gens {
-            let si = FreeGroupElement::generator(i as i32, 1);
-            let sj = FreeGroupElement::generator(j as i32, 1);
-            let si_inv = FreeGroupElement::generator(i as i32, -1);
-            let sj_inv = FreeGroupElement::generator(j as i32, -1);
+            let si = FreeGroupElement::generator(i as isize, 1);
+            let sj = FreeGroupElement::generator(j as isize, 1);
+            let si_inv = FreeGroupElement::generator(i as isize, -1);
+            let sj_inv = FreeGroupElement::generator(j as isize, -1);
 
-            let rel = si.multiply(&sj).multiply(&si_inv).multiply(&sj_inv);
+            let rel_elem = si.multiply(&sj).multiply(&si_inv).multiply(&sj_inv);
+            let rel = rel_elem
+                .tietze()
+                .into_iter()
+                .map(|x| x as i32)
+                .collect();
             relations.push(rel);
         }
     }
 
-    FinitelyPresentedGroup::new(n_gens, relations)
+    FinitelyPresentedGroup::new(generator_names, relations)
 }
 
 #[cfg(test)]
