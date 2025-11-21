@@ -125,18 +125,18 @@ impl Group for GroupExp {
 
     fn is_finite(&self) -> bool {
         // The exponential group is finite if the base additive group is finite
-        self.base.is_finite()
+        self.base_group.is_finite()
     }
 
     fn order(&self) -> Option<usize> {
         // Order equals the order of the base additive group
-        self.base.order()
+        self.base_group.order()
     }
 
     fn contains(&self, element: &Self::Element) -> bool {
         // Check if the element's parent matches this group
         // In a full implementation, we'd check if the value is in the base group
-        self.base.contains(&element.value)
+        self.base_group.contains(&element.value)
     }
 }
 
