@@ -69,8 +69,8 @@ impl<R: EuclideanDomain> Matrix<R> {
 
                 // Move pivot to position (k, k)
                 if pi != k {
-                    s.swap_rows(k, pi);
-                    p.swap_rows(k, pi);
+                    s.swap_rows(k, pi)?;
+                    p.swap_rows(k, pi)?;
                 }
                 if pj != k {
                     s.swap_cols(k, pj);
@@ -197,8 +197,8 @@ impl<R: EuclideanDomain> Matrix<R> {
 
             // Move non-zero entry to pivot position
             if current_row != pivot_row {
-                h.swap_rows(pivot_row, current_row);
-                u.swap_rows(pivot_row, current_row);
+                h.swap_rows(pivot_row, current_row)?;
+                u.swap_rows(pivot_row, current_row)?;
                 current_row = pivot_row;
             }
 
@@ -238,8 +238,8 @@ impl<R: EuclideanDomain> Matrix<R> {
                 }
 
                 if smallest_row != current_row {
-                    h.swap_rows(current_row, smallest_row);
-                    u.swap_rows(current_row, smallest_row);
+                    h.swap_rows(current_row, smallest_row)?;
+                    u.swap_rows(current_row, smallest_row)?;
                 }
             }
 
