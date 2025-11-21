@@ -327,7 +327,7 @@ impl<T: Clone> CartesianProduct<T> {
     }
 
     /// Get an iterator over all tuples in the Cartesian product
-    pub fn iter(&self) -> CartesianProductIterator<T> {
+    pub fn iter(&self) -> CartesianProductIterator<'_, T> {
         CartesianProductIterator::new(&self.factors)
     }
 }

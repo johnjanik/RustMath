@@ -476,11 +476,10 @@ impl QuadraticForm {
         }
 
         // Try all values from 0 to modulus-1
-        let m_i64 = if let Some(val) = modulus.to_i64() {
-            val
-        } else {
-            return; // modulus too large
-        };
+        let m_i64 = modulus.to_i64();
+        if m_i64 <= 0 {
+            return; // modulus too large or invalid
+        }
 
         for val in 0..m_i64 {
             current[var_index] = Integer::from(val);

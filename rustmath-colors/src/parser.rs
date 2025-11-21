@@ -127,11 +127,13 @@ fn parse_hex_byte(s: &str) -> Result<f64> {
 }
 
 /// Parse a color from RGB tuple (r, g, b) where values can be 0-255 or 0.0-1.0
+#[allow(dead_code)]
 pub fn parse_color_from_rgb(r: f64, g: f64, b: f64) -> Result<Color> {
     parse_color_from_rgba(r, g, b, 1.0)
 }
 
 /// Parse a color from RGBA tuple (r, g, b, a) where values can be 0-255 or 0.0-1.0
+#[allow(dead_code)]
 pub fn parse_color_from_rgba(r: f64, g: f64, b: f64, a: f64) -> Result<Color> {
     // First check that all values are non-negative
     if r < 0.0 || g < 0.0 || b < 0.0 || a < 0.0 {

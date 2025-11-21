@@ -142,35 +142,35 @@ const EULER_GAMMA_DIGITS: &str = "0.\
 
 /// Get π to a specified number of decimal places (up to 1000)
 pub fn pi_digits(digits: usize) -> &'static str {
-    let max_digits = PI_DIGITS.len().saturating_sub(2); // Subtract "3."
+    let _max_digits = PI_DIGITS.len().saturating_sub(2); // Subtract "3."
     let end = (digits + 2).min(PI_DIGITS.len());
     &PI_DIGITS[..end]
 }
 
 /// Get e to a specified number of decimal places (up to 1000)
 pub fn e_digits(digits: usize) -> &'static str {
-    let max_digits = E_DIGITS.len().saturating_sub(2); // Subtract "2."
+    let _max_digits = E_DIGITS.len().saturating_sub(2); // Subtract "2."
     let end = (digits + 2).min(E_DIGITS.len());
     &E_DIGITS[..end]
 }
 
 /// Get φ to a specified number of decimal places (up to 1000)
 pub fn phi_digits(digits: usize) -> &'static str {
-    let max_digits = PHI_DIGITS.len().saturating_sub(2); // Subtract "1."
+    let _max_digits = PHI_DIGITS.len().saturating_sub(2); // Subtract "1."
     let end = (digits + 2).min(PHI_DIGITS.len());
     &PHI_DIGITS[..end]
 }
 
 /// Get √2 to a specified number of decimal places (up to 1000)
 pub fn sqrt2_digits(digits: usize) -> &'static str {
-    let max_digits = SQRT2_DIGITS.len().saturating_sub(2); // Subtract "1."
+    let _max_digits = SQRT2_DIGITS.len().saturating_sub(2); // Subtract "1."
     let end = (digits + 2).min(SQRT2_DIGITS.len());
     &SQRT2_DIGITS[..end]
 }
 
 /// Get Euler-Mascheroni constant to a specified number of decimal places (up to 1000)
 pub fn euler_gamma_digits(digits: usize) -> &'static str {
-    let max_digits = EULER_GAMMA_DIGITS.len().saturating_sub(2); // Subtract "0."
+    let _max_digits = EULER_GAMMA_DIGITS.len().saturating_sub(2); // Subtract "0."
     let end = (digits + 2).min(EULER_GAMMA_DIGITS.len());
     &EULER_GAMMA_DIGITS[..end]
 }

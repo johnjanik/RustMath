@@ -239,14 +239,14 @@ pub fn bernoulli_mod_p_single(p: i64, n: usize) -> Option<i64> {
     let b_n = bernoulli_number(n);
 
     // Check if denominator is coprime to p
-    let denom_gcd = gcd(b_n.denominator().to_i64().unwrap_or(0), p);
+    let denom_gcd = gcd(b_n.denominator().to_i64(), p);
     if denom_gcd != 1 {
         return None; // Not p-integral
     }
 
     // Compute numerator * inverse(denominator) mod p
-    let numer = b_n.numerator().to_i64().unwrap_or(0) % p;
-    let denom = b_n.denominator().to_i64().unwrap_or(0) % p;
+    let numer = b_n.numerator().to_i64() % p;
+    let denom = b_n.denominator().to_i64() % p;
     let denom_inv = mod_inverse(denom, p)?;
 
     Some((numer * denom_inv).rem_euclid(p))

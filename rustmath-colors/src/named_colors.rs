@@ -68,6 +68,7 @@ pub fn get_named_color(name: &str) -> Option<Color> {
 }
 
 /// Get a list of all named color names
+#[allow(dead_code)]
 pub fn color_names() -> Vec<&'static str> {
     vec![
         "black", "white", "red", "green", "blue", "yellow", "cyan", "magenta", "gray",

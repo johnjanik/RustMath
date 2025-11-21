@@ -22,9 +22,11 @@ pub struct SvgBackend {
     document: Document,
 
     /// Width of the viewport in pixels
+    #[allow(dead_code)]
     width: f64,
 
     /// Height of the viewport in pixels
+    #[allow(dead_code)]
     height: f64,
 
     /// Current transformation matrix

@@ -81,7 +81,8 @@ impl RealMPFR {
     /// Create a new RealMPFR with specified precision from an integer
     pub fn with_val_integer(prec: u32, value: &Integer) -> Self {
         // Convert Integer to i64 or use string representation for large values
-        if let Some(i) = value.to_i64() {
+        let i = value.to_i64();
+        if i >= i64::MIN && i <= i64::MAX {
             RealMPFR {
                 value: Float::with_val(prec, i),
             }
