@@ -482,6 +482,7 @@ where
 /// - δ: Q × Σ → Q is the transition function
 /// - λ: Q → Ω is the output function
 /// - q₀ ∈ Q is the initial state
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct MooreMachine<S, I, O>
 where
@@ -582,6 +583,7 @@ where
 /// - λ: Q × Σ → Ω is the output function
 /// - q₀ ∈ Q is the initial state
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct MealyMachine<S, I, O>
 where
     S: Clone + Eq + Hash,

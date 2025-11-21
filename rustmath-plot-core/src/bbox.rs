@@ -205,6 +205,7 @@ impl BoundingBox {
 }
 
 /// A 3D axis-aligned bounding box
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BoundingBox3D {
     pub xmin: f64,

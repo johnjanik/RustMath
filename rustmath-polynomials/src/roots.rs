@@ -218,7 +218,7 @@ pub fn solve_cubic(
 
     if !rational_roots_found.is_empty() {
         // We found at least one rational root - factor it out
-        let r = &rational_roots_found[0];
+        let _r = &rational_roots_found[0];
 
         // Use synthetic division or polynomial division to get quadratic factor
         // For now, if we have one rational root, we can describe it

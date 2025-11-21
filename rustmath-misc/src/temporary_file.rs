@@ -270,9 +270,9 @@ impl TemporaryDir {
     /// let permanent_path = temp_dir.persist();
     /// // Directory is NOT deleted, even after temp_dir is dropped
     /// ```
-    pub fn persist(mut self) -> PathBuf {
+    pub fn persist(mut self) -> io::Result<PathBuf> {
         let temp = self.inner.take().unwrap();
-        temp.keep().unwrap()
+        temp.keep()
     }
 }
 
@@ -506,7 +506,7 @@ where
     populator(temp_dir.path())?;
 
     // Atomically rename to the final location
-    let temp_path = temp_dir.keep().unwrap();
+    let temp_path = temp_dir.keep()?;
     fs::rename(temp_path, path)?;
 
     Ok(())
@@ -610,7 +610,7 @@ mod tests {
         let temp_dir = TemporaryDir::new().unwrap();
         fs::write(temp_dir.path().join("data.txt"), "persistent").unwrap();
 
-        let path = temp_dir.persist();
+        let path = temp_dir.persist().unwrap();
 
         // Directory should still exist
         assert!(path.exists());
