@@ -20,9 +20,25 @@ impl Integer {
         Integer { value }
     }
 
+    /// Create an integer with value 0
+    pub fn zero() -> Self {
+        Integer::new(BigInt::zero())
+    }
+
+    /// Create an integer with value 1
+    pub fn one() -> Self {
+        Integer::new(BigInt::one())
+    }
+
     /// Get the absolute value
     pub fn abs(&self) -> Self {
         Integer::new(self.value.abs())
+    }
+
+    /// Convert to i64, panicking if the value doesn't fit
+    pub fn to_i64(&self) -> i64 {
+        use num_traits::ToPrimitive;
+        self.value.to_i64().expect("Integer value too large for i64")
     }
 
     /// Get the sign: -1 for negative, 0 for zero, 1 for positive
@@ -367,7 +383,7 @@ impl Integer {
         while !n.is_zero() {
             let (quotient, remainder) = n.div_rem(&base_int)?;
             // Safe to convert to u8 since remainder < base <= 36
-            let digit = remainder.to_i64().unwrap() as u8;
+            let digit = remainder.to_i64() as u8;
             digits.push(digit);
             n = quotient;
         }
