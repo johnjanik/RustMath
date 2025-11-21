@@ -225,8 +225,8 @@ impl RealInterval {
         );
 
         // Create bounds with directed rounding
-        let lower_bound = Float::with_val_round(precision, lower, Round::Down);
-        let upper_bound = Float::with_val_round(precision, upper, Round::Up);
+        let lower_bound = Float::with_val_round(precision, lower, Round::Down).0;
+        let upper_bound = Float::with_val_round(precision, upper, Round::Up).0;
 
         RealInterval {
             lower: lower_bound,
@@ -296,7 +296,7 @@ impl RealInterval {
     ///
     /// Computed as upper - lower (rounded up to ensure correctness)
     pub fn width(&self) -> Float {
-        Float::with_val_round(self.precision, &self.upper - &self.lower, Round::Up)
+        Float::with_val_round(self.precision, &self.upper - &self.lower, Round::Up).0
     }
 
     /// Returns the radius (half-width) of the interval
@@ -368,15 +368,15 @@ impl RealInterval {
 
         let prec = self.precision.max(other.precision);
         let lower = if self.lower >= other.lower {
-            Float::with_val_round(prec, &self.lower, Round::Down)
+            Float::with_val_round(prec, &self.lower, Round::Down).0
         } else {
-            Float::with_val_round(prec, &other.lower, Round::Down)
+            Float::with_val_round(prec, &other.lower, Round::Down).0
         };
 
         let upper = if self.upper <= other.upper {
-            Float::with_val_round(prec, &self.upper, Round::Up)
+            Float::with_val_round(prec, &self.upper, Round::Up).0
         } else {
-            Float::with_val_round(prec, &other.upper, Round::Up)
+            Float::with_val_round(prec, &other.upper, Round::Up).0
         };
 
         Some(RealInterval {
@@ -393,15 +393,15 @@ impl RealInterval {
         let prec = self.precision.max(other.precision);
 
         let lower = if self.lower <= other.lower {
-            Float::with_val_round(prec, &self.lower, Round::Down)
+            Float::with_val_round(prec, &self.lower, Round::Down).0
         } else {
-            Float::with_val_round(prec, &other.lower, Round::Down)
+            Float::with_val_round(prec, &other.lower, Round::Down).0
         };
 
         let upper = if self.upper >= other.upper {
-            Float::with_val_round(prec, &self.upper, Round::Up)
+            Float::with_val_round(prec, &self.upper, Round::Up).0
         } else {
-            Float::with_val_round(prec, &other.upper, Round::Up)
+            Float::with_val_round(prec, &other.upper, Round::Up).0
         };
 
         RealInterval {
@@ -418,14 +418,14 @@ impl RealInterval {
         let mid = self.midpoint();
 
         let left = RealInterval {
-            lower: Float::with_val_round(self.precision, &self.lower, Round::Down),
-            upper: Float::with_val_round(self.precision, &mid, Round::Up),
+            lower: Float::with_val_round(self.precision, &self.lower, Round::Down).0,
+            upper: Float::with_val_round(self.precision, &mid, Round::Up).0,
             precision: self.precision,
         };
 
         let right = RealInterval {
-            lower: Float::with_val_round(self.precision, &mid, Round::Down),
-            upper: Float::with_val_round(self.precision, &self.upper, Round::Up),
+            lower: Float::with_val_round(self.precision, &mid, Round::Down).0,
+            upper: Float::with_val_round(self.precision, &self.upper, Round::Up).0,
             precision: self.precision,
         };
 
@@ -452,7 +452,7 @@ impl RealInterval {
 
             RealInterval {
                 lower: Float::with_val(self.precision, 0),
-                upper: Float::with_val_round(self.precision, max_abs, Round::Up),
+                upper: Float::with_val_round(self.precision, max_abs, Round::Up).0,
                 precision: self.precision,
             }
         }
@@ -471,8 +471,8 @@ impl RealInterval {
             return None;
         }
 
-        let lower = Float::with_val_round(self.precision, &self.lower, Round::Down).sqrt();
-        let upper = Float::with_val_round(self.precision, &self.upper, Round::Up).sqrt();
+        let lower = Float::with_val_round(self.precision, &self.lower, Round::Down).0.sqrt();
+        let upper = Float::with_val_round(self.precision, &self.upper, Round::Up).0.sqrt();
 
         Some(RealInterval {
             lower,
@@ -490,8 +490,8 @@ impl RealInterval {
         }
 
         // 1/[a,b] = [1/b, 1/a] when 0 not in [a,b]
-        let lower = Float::with_val_round(self.precision, 1.0, Round::Down) / &self.upper;
-        let upper = Float::with_val_round(self.precision, 1.0, Round::Up) / &self.lower;
+        let lower = Float::with_val_round(self.precision, 1.0, Round::Down).0 / &self.upper;
+        let upper = Float::with_val_round(self.precision, 1.0, Round::Up).0 / &self.lower;
 
         Ok(RealInterval {
             lower,
@@ -502,8 +502,8 @@ impl RealInterval {
 
     /// Computes e^x for the interval
     pub fn exp(&self) -> RealInterval {
-        let lower = Float::with_val_round(self.precision, &self.lower, Round::Down).exp();
-        let upper = Float::with_val_round(self.precision, &self.upper, Round::Up).exp();
+        let lower = Float::with_val_round(self.precision, &self.lower, Round::Down).0.exp();
+        let upper = Float::with_val_round(self.precision, &self.upper, Round::Up).0.exp();
 
         RealInterval {
             lower,
@@ -520,8 +520,8 @@ impl RealInterval {
             return None;
         }
 
-        let lower = Float::with_val_round(self.precision, &self.lower, Round::Down).ln();
-        let upper = Float::with_val_round(self.precision, &self.upper, Round::Up).ln();
+        let lower = Float::with_val_round(self.precision, &self.lower, Round::Down).0.ln();
+        let upper = Float::with_val_round(self.precision, &self.upper, Round::Up).0.ln();
 
         Some(RealInterval {
             lower,
@@ -553,8 +553,8 @@ impl RealInterval {
         let max = sin_lower.max(&sin_upper);
 
         RealInterval {
-            lower: Float::with_val_round(self.precision, min, Round::Down),
-            upper: Float::with_val_round(self.precision, max, Round::Up),
+            lower: Float::with_val_round(self.precision, min, Round::Down).0,
+            upper: Float::with_val_round(self.precision, max, Round::Up).0,
             precision: self.precision,
         }
     }
@@ -577,8 +577,8 @@ impl RealInterval {
         let max = cos_lower.max(&cos_upper);
 
         RealInterval {
-            lower: Float::with_val_round(self.precision, min, Round::Down),
-            upper: Float::with_val_round(self.precision, max, Round::Up),
+            lower: Float::with_val_round(self.precision, min, Round::Down).0,
+            upper: Float::with_val_round(self.precision, max, Round::Up).0,
             precision: self.precision,
         }
     }
@@ -621,8 +621,8 @@ impl Add for RealInterval {
     fn add(self, other: Self) -> Self {
         let prec = self.precision.max(other.precision);
 
-        let lower = Float::with_val_round(prec, &self.lower + &other.lower, Round::Down);
-        let upper = Float::with_val_round(prec, &self.upper + &other.upper, Round::Up);
+        let lower = Float::with_val_round(prec, &self.lower + &other.lower, Round::Down).0;
+        let upper = Float::with_val_round(prec, &self.upper + &other.upper, Round::Up).0;
 
         RealInterval {
             lower,
@@ -638,8 +638,8 @@ impl<'a, 'b> Add<&'b RealInterval> for &'a RealInterval {
     fn add(self, other: &'b RealInterval) -> RealInterval {
         let prec = self.precision.max(other.precision);
 
-        let lower = Float::with_val_round(prec, &self.lower + &other.lower, Round::Down);
-        let upper = Float::with_val_round(prec, &self.upper + &other.upper, Round::Up);
+        let lower = Float::with_val_round(prec, &self.lower + &other.lower, Round::Down).0;
+        let upper = Float::with_val_round(prec, &self.upper + &other.upper, Round::Up).0;
 
         RealInterval {
             lower,
@@ -658,8 +658,8 @@ impl Sub for RealInterval {
     fn sub(self, other: Self) -> Self {
         let prec = self.precision.max(other.precision);
 
-        let lower = Float::with_val_round(prec, &self.lower - &other.upper, Round::Down);
-        let upper = Float::with_val_round(prec, &self.upper - &other.lower, Round::Up);
+        let lower = Float::with_val_round(prec, &self.lower - &other.upper, Round::Down).0;
+        let upper = Float::with_val_round(prec, &self.upper - &other.lower, Round::Up).0;
 
         RealInterval {
             lower,
@@ -675,8 +675,8 @@ impl<'a, 'b> Sub<&'b RealInterval> for &'a RealInterval {
     fn sub(self, other: &'b RealInterval) -> RealInterval {
         let prec = self.precision.max(other.precision);
 
-        let lower = Float::with_val_round(prec, &self.lower - &other.upper, Round::Down);
-        let upper = Float::with_val_round(prec, &self.upper - &other.lower, Round::Up);
+        let lower = Float::with_val_round(prec, &self.lower - &other.upper, Round::Down).0;
+        let upper = Float::with_val_round(prec, &self.upper - &other.lower, Round::Up).0;
 
         RealInterval {
             lower,
@@ -705,8 +705,8 @@ impl Mul for RealInterval {
         let min_val = p1.clone().min(&p2).min(&p3).min(&p4);
         let max_val = p1.max(&p2).max(&p3).max(&p4);
 
-        let lower = Float::with_val_round(prec, min_val, Round::Down);
-        let upper = Float::with_val_round(prec, max_val, Round::Up);
+        let lower = Float::with_val_round(prec, min_val, Round::Down).0;
+        let upper = Float::with_val_round(prec, max_val, Round::Up).0;
 
         RealInterval {
             lower,
@@ -730,8 +730,8 @@ impl<'a, 'b> Mul<&'b RealInterval> for &'a RealInterval {
         let min_val = p1.clone().min(&p2).min(&p3).min(&p4);
         let max_val = p1.max(&p2).max(&p3).max(&p4);
 
-        let lower = Float::with_val_round(prec, min_val, Round::Down);
-        let upper = Float::with_val_round(prec, max_val, Round::Up);
+        let lower = Float::with_val_round(prec, min_val, Round::Down).0;
+        let upper = Float::with_val_round(prec, max_val, Round::Up).0;
 
         RealInterval {
             lower,

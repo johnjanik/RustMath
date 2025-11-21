@@ -145,7 +145,7 @@ impl VectorField {
             // A full implementation would substitute point coordinates into the expressions
             let val = match comp {
                 Expr::Integer(ref n) => n.to_f64().unwrap_or(0.0),
-                Expr::Rational(ref r) => r.to_f64(),
+                Expr::Rational(ref r) => r.to_f64().unwrap_or(0.0),
                 _ => 0.0, // For now, treat other expressions as 0
             };
             values.push(val);

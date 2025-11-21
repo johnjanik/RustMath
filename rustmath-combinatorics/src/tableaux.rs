@@ -644,6 +644,32 @@ pub fn hillman_grassl(matrix: &[Vec<usize>]) -> Option<(Tableau, Tableau)> {
 /// This is similar to RS insertion but allows repeated values (weakly increasing rows)
 /// while maintaining strictly increasing columns.
 fn hillman_grassl_insert(tableau: &Tableau, value: usize) -> Tableau {
+    let mut rows = tableau.rows().to_vec();
+    let mut current_value = value;
+
+    for row in &mut rows {
+        // Find position where current value should be inserted
+        // For semistandard tableaux, we look for the first element > current_value
+        match row.iter().position(|&x| x > current_value) {
+            Some(pos) => {
+                // Bump the value at this position
+                let bumped = row[pos];
+                row[pos] = current_value;
+                current_value = bumped;
+            }
+            None => {
+                // Append to end of this row
+                row.push(current_value);
+                return Tableau::new(rows).unwrap();
+            }
+        }
+    }
+
+    // If we get here, we need to create a new row
+    rows.push(vec![current_value]);
+    Tableau::new(rows).unwrap()
+}
+
 /// Dual Robinson-Schensted correspondence
 ///
 /// Convert a permutation to a pair of standard tableaux (P, Q) using the dual RSK algorithm.

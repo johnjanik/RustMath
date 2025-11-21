@@ -207,7 +207,9 @@ impl AlgebraicNumber {
     pub fn approximate(&self) -> (f64, f64) {
         match &self.descr {
             ANDescr::Rational(r) => {
-                let val = r.numerator().to_f64() / r.denominator().to_f64();
+                let num = r.numerator().to_f64().unwrap_or(0.0);
+                let den = r.denominator().to_f64().unwrap_or(1.0);
+                let val = num / den;
                 (val, 0.0)
             }
             ANDescr::Root { approx_real, approx_imag, .. } => (*approx_real, *approx_imag),

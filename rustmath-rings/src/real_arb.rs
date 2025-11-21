@@ -199,7 +199,7 @@ impl RealBall {
             None
         } else {
             // Simplified: would need proper log2 implementation
-            Some(-(self.radius.to_f64().log2() as i64))
+            Some(-(self.radius.to_f64().unwrap_or(1.0).log2() as i64))
         }
     }
 
