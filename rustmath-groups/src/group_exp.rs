@@ -238,6 +238,14 @@ impl Hash for GroupExpElement {
 
 use crate::group_traits::GroupElement;
 
+impl std::ops::Mul for GroupExpElement {
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self {
+        self.op(&other)
+    }
+}
+
 impl GroupElement for GroupExpElement {
     fn identity() -> Self {
         // Create a minimal default group (additive group Z_1)

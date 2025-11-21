@@ -436,6 +436,18 @@ where
     }
 }
 
+impl<E1, E2> std::ops::Mul for CartesianProductElement<E1, E2>
+where
+    E1: GroupElement,
+    E2: GroupElement,
+{
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self {
+        self.op(&other)
+    }
+}
+
 impl<E1, E2> GroupElement for CartesianProductElement<E1, E2>
 where
     E1: GroupElement,

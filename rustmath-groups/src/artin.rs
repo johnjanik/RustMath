@@ -371,26 +371,11 @@ impl std::hash::Hash for ArtinGroupElement {
     }
 }
 
-impl Default for ArtinGroupElement {
-    /// Create a default element (identity of a minimal Artin group)
-    fn default() -> Self {
-        <Self as GroupElement>::identity()
-    }
-}
-
-impl Mul for ArtinGroupElement {
+impl std::ops::Mul for ArtinGroupElement {
     type Output = Self;
 
-    fn mul(self, rhs: Self) -> Self::Output {
-        self.multiply(&rhs)
-    }
-}
-
-impl Mul for &ArtinGroupElement {
-    type Output = ArtinGroupElement;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        self.multiply(rhs)
+    fn mul(self, other: Self) -> Self {
+        self.op(&other)
     }
 }
 
