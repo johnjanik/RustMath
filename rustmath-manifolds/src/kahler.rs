@@ -122,7 +122,7 @@ impl KahlerManifold {
         let components = vec![Expr::from(0); num_components];
 
         DiffForm::from_components(
-            manifold,
+            manifold.clone(),
             chart,
             2, // degree
             components,
@@ -174,7 +174,7 @@ impl KahlerManifold {
         let components = vec![Expr::from(0); num_components];
 
         DiffForm::from_components(
-            manifold,
+            manifold.clone(),
             chart,
             2,
             components,

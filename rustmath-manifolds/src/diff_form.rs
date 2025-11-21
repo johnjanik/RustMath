@@ -51,6 +51,31 @@ impl DiffForm {
         Ok(Self { tensor, degree })
     }
 
+    /// Create a differential form from components
+    ///
+    /// # Arguments
+    ///
+    /// * `manifold` - The differentiable manifold
+    /// * `chart` - The chart for the components
+    /// * `degree` - The degree (p) of the form
+    /// * `components` - The components of the form in the given chart
+    pub fn from_components(
+        manifold: Arc<DifferentiableManifold>,
+        chart: &Chart,
+        degree: usize,
+        components: Vec<Expr>,
+    ) -> Result<Self> {
+        let tensor = TensorField::from_components(
+            manifold,
+            0,
+            degree,
+            chart,
+            components,
+        )?;
+
+        Ok(Self { tensor, degree })
+    }
+
     /// Get the degree of the form
     pub fn degree(&self) -> usize {
         self.degree

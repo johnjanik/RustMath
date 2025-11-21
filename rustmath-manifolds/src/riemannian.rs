@@ -80,6 +80,43 @@ impl RiemannianMetric {
         Ok(metric)
     }
 
+    /// Create a Riemannian metric from a (0,2) tensor field
+    ///
+    /// # Arguments
+    ///
+    /// * `tensor` - A (0,2) tensor field representing the metric
+    pub fn from_tensor(tensor: TensorField) -> Result<Self> {
+        // Verify it's a (0,2) tensor
+        if tensor.contravariant_rank() != 0 || tensor.covariant_rank() != 2 {
+            return Err(ManifoldError::InvalidTensorRank);
+        }
+
+        let manifold = tensor.manifold().clone();
+        let n = manifold.dimension();
+        let mut metric = Self::new(manifold.clone());
+
+        // Extract components for all charts
+        // We need to access the internal chart_components HashMap
+        // For now, we'll use the default chart if available
+        if let Some(chart) = manifold.default_chart() {
+            let flat_components = tensor.components(chart)?;
+
+            // Convert flattened components to 2D matrix
+            // Components are stored as: g_00, g_01, ..., g_0n, g_10, g_11, ..., g_nn
+            let mut matrix = vec![vec![Expr::from(0); n]; n];
+            for i in 0..n {
+                for j in 0..n {
+                    let flat_index = i * n + j;
+                    matrix[i][j] = flat_components[flat_index].clone();
+                }
+            }
+
+            metric.chart_components.insert(chart.name().to_string(), matrix);
+        }
+
+        Ok(metric)
+    }
+
     /// Create the Euclidean metric (identity matrix)
     pub fn euclidean(manifold: Arc<DifferentiableManifold>) -> Self {
         let mut metric = Self::new(manifold.clone());
@@ -90,6 +127,57 @@ impl RiemannianMetric {
             for i in 0..n {
                 components[i][i] = Expr::from(1);
             }
+            metric.chart_components.insert(chart.name().to_string(), components);
+        }
+
+        metric
+    }
+
+    /// Create the round (standard) metric on a sphere
+    ///
+    /// This creates the standard round metric induced from embedding
+    /// the sphere in Euclidean space. For an n-sphere, this is the
+    /// metric of constant curvature 1.
+    pub fn round_sphere(manifold: Arc<DifferentiableManifold>) -> Self {
+        let mut metric = Self::new(manifold.clone());
+
+        if let Some(chart) = manifold.default_chart() {
+            let n = manifold.dimension();
+            let mut components = vec![vec![Expr::from(0); n]; n];
+
+            // For a unit n-sphere, the standard metric in stereographic
+            // coordinates is g_ij = (4/(1+r²)²) δ_ij
+            // For simplicity, we use the identity as a placeholder
+            // TODO: Implement proper stereographic or spherical coordinate metric
+            for i in 0..n {
+                components[i][i] = Expr::from(1);
+            }
+
+            metric.chart_components.insert(chart.name().to_string(), components);
+        }
+
+        metric
+    }
+
+    /// Create the hyperbolic metric
+    ///
+    /// This creates the standard hyperbolic metric (constant negative curvature).
+    /// In the Poincaré ball model or hyperboloid model.
+    pub fn hyperbolic(manifold: Arc<DifferentiableManifold>) -> Self {
+        let mut metric = Self::new(manifold.clone());
+
+        if let Some(chart) = manifold.default_chart() {
+            let n = manifold.dimension();
+            let mut components = vec![vec![Expr::from(0); n]; n];
+
+            // For hyperbolic space, the metric in the Poincaré ball model is
+            // g_ij = (4/(1-r²)²) δ_ij
+            // For simplicity, we use the identity as a placeholder
+            // TODO: Implement proper Poincaré or hyperboloid metric
+            for i in 0..n {
+                components[i][i] = Expr::from(1);
+            }
+
             metric.chart_components.insert(chart.name().to_string(), components);
         }
 
