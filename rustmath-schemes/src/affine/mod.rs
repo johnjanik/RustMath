@@ -253,10 +253,11 @@ impl<R: Ring> SchemePoint for AffinePoint<R> {
         true
     }
 
-    fn residue_field(&self) -> Result<Box<dyn Ring>> {
-        // The residue field at a closed point over k is k itself
-        unimplemented!("Residue field computation requires field theory")
-    }
+    // Commented out: Ring is not dyn compatible
+    // fn residue_field(&self) -> Result<Box<dyn Ring>> {
+    //     // The residue field at a closed point over k is k itself
+    //     unimplemented!("Residue field computation requires field theory")
+    // }
 }
 
 /// Morphism between affine schemes

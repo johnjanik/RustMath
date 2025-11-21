@@ -183,7 +183,7 @@ where
     /// # Arguments
     ///
     /// * `element` - An element of the kernel subgroup
-    pub fn lift(&self, element: &KernelSubgroupElement<G>) -> &G {
+    pub fn lift<'a>(&self, element: &'a KernelSubgroupElement<G>) -> &'a G {
         element.lift()
     }
 

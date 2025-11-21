@@ -170,7 +170,9 @@ pub trait SchemePoint: Debug + Clone + PartialEq {
     fn is_closed(&self) -> bool;
 
     /// Compute the residue field at this point
-    fn residue_field(&self) -> Result<Box<dyn Ring>>;
+    /// TODO: Cannot use Box<dyn Ring> as Ring is not dyn compatible
+    /// Consider using an associated type or generic parameter
+    // fn residue_field(&self) -> Result<Box<dyn Ring>>;
 }
 
 /// Dimension theory for schemes
