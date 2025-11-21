@@ -8,6 +8,7 @@
 //! The Proj construction builds schemes from graded rings.
 
 use rustmath_core::Ring;
+use num_traits::{Zero, One};
 use std::collections::BTreeMap;
 use std::fmt;
 
@@ -169,7 +170,7 @@ impl<R: Ring> fmt::Display for HomogeneousElement<R> {
 /// - Degree 1: {x, y, z}
 /// - Degree 2: {x², xy, xz, y², yz, z²}
 /// - Degree d: all monomials of total degree d
-pub fn polynomial_ring_graded<R: Ring>(num_variables: usize, base_ring_name: &str) -> GradedRing<R> {
+pub fn polynomial_ring_graded<R: Ring + Zero + One>(num_variables: usize, base_ring_name: &str) -> GradedRing<R> {
     let mut ring = GradedRing::new(base_ring_name.to_string());
 
     // Degree 0: just the base ring (represented by unit element)

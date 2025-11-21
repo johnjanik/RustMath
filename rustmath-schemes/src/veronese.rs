@@ -24,6 +24,7 @@
 use crate::graded_ring::num_monomials_of_degree;
 use crate::projective_space::{ProjectivePoint, ProjectiveSpace};
 use rustmath_core::Ring;
+use num_traits::{Zero, One};
 use std::fmt;
 
 /// A multi-index representing a monomial x₀^{a₀} ··· xₙ^{aₙ}
@@ -75,7 +76,7 @@ fn multi_indices(degree: usize, nvars: usize) -> Vec<MultiIndex> {
 }
 
 /// Evaluate monomial x₀^{a₀}···xₙ^{aₙ} at a point
-fn evaluate_monomial<R: Ring>(point: &[R], exponents: &MultiIndex) -> R {
+fn evaluate_monomial<R: Ring + One>(point: &[R], exponents: &MultiIndex) -> R {
     let mut result = R::one();
 
     for (i, &exp) in exponents.iter().enumerate() {
@@ -165,7 +166,10 @@ impl<R: Ring> VeroneseEmbedding<R> {
     /// Apply the Veronese embedding to a point
     ///
     /// Maps [x₀ : ... : xₙ] to [... : x₀^{a₀}···xₙ^{aₙ} : ...]
-    pub fn apply(&self, point: &ProjectivePoint<R>) -> Result<ProjectivePoint<R>, String> {
+    pub fn apply(&self, point: &ProjectivePoint<R>) -> Result<ProjectivePoint<R>, String>
+    where
+        R: One,
+    {
         if !self.source.contains_point(point) {
             return Err("Point not in source space".to_string());
         }
