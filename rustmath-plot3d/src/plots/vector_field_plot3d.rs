@@ -169,8 +169,8 @@ where
                 mesh.compute_normals();
 
                 // Apply color
-                if let Some(color) = opts.color {
-                    mesh.vertex_colors = Some(vec![color; mesh.vertices.len()]);
+                if let Some(ref color) = opts.color {
+                    mesh.vertex_colors = Some(vec![color.clone(); mesh.vertices.len()]);
                 }
 
                 graphics.add_mesh(mesh);

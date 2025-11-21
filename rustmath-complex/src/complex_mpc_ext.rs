@@ -95,7 +95,8 @@ impl INTEGERtoMPC {
 
     /// Apply the morphism: convert Integer to ComplexMPFR
     pub fn apply(&self, n: &Integer) -> ComplexMPFR {
-        let f64_val = if let Some(i) = n.to_i64() {
+        let i = n.to_i64();
+        let f64_val = if i >= i64::MIN && i <= i64::MAX {
             i as f64
         } else {
             // For very large integers, parse through string

@@ -95,12 +95,9 @@ impl Expr {
                     BinaryOp::Pow => {
                         // Only handle integer powers
                         if let Expr::Integer(exp) = right.as_ref() {
-                            if let Some(e) = exp.to_i64() {
-                                if e >= 0 && e <= u32::MAX as i64 {
-                                    Some(l.pow(e as u32))
-                                } else {
-                                    None
-                                }
+                            let e = exp.to_i64();
+                            if e >= 0 && e <= u32::MAX as i64 {
+                                Some(l.pow(e as u32))
                             } else {
                                 None
                             }
@@ -133,7 +130,7 @@ impl Expr {
     pub fn eval_float(&self) -> Option<f64> {
         use rustmath_core::NumericConversion as _;
         match self {
-            Expr::Integer(n) => n.to_i64().map(|i| i as f64),
+            Expr::Integer(n) => Some(n.to_i64() as f64),
             Expr::Rational(r) => r.to_f64(),
             Expr::Real(x) => Some(*x),
             Expr::Symbol(_) => None,

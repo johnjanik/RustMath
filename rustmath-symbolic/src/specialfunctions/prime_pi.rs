@@ -66,7 +66,8 @@ use std::sync::Arc;
 pub fn prime_pi(x: &Expr) -> Expr {
     // Try to compute for integer values
     if let Expr::Integer(n) = x {
-        if let Some(n_val) = n.to_i64() {
+        let n_val = n.to_i64();
+        {
             if n_val < 2 {
                 return Expr::from(0);
             }
@@ -140,7 +141,8 @@ fn count_primes_up_to(n: u64) -> usize {
 pub fn legendre_phi(x: &Expr, a: &Expr) -> Expr {
     // Try to compute for small integer values
     if let (Expr::Integer(x_int), Expr::Integer(a_int)) = (x, a) {
-        if let (Some(x_val), Some(a_val)) = (x_int.to_i64(), a_int.to_i64()) {
+        let (x_val, a_val) = (x_int.to_i64(), a_int.to_i64());
+        {
             if x_val >= 0 && a_val >= 0 && x_val <= 1000 && a_val <= 20 {
                 let result = compute_legendre_phi(x_val as u64, a_val as usize);
                 return Expr::from(result as i64);

@@ -100,12 +100,12 @@ pub fn scatter_plot3d(
         // Determine color for this point
         let color = if let Some(ref colors) = opts.colors {
             if i < colors.len() {
-                colors[i]
+                colors[i].clone()
             } else {
-                opts.color.unwrap_or(Color::rgb(0.0, 0.5, 1.0))
+                opts.color.clone().unwrap_or(Color::rgb(0.0, 0.5, 1.0))
             }
         } else {
-            opts.color.unwrap_or(Color::rgb(0.0, 0.5, 1.0))
+            opts.color.clone().unwrap_or(Color::rgb(0.0, 0.5, 1.0))
         };
 
         let mut mesh = sphere_mesh;

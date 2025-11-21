@@ -272,7 +272,7 @@ impl TemporaryDir {
     /// ```
     pub fn persist(mut self) -> io::Result<PathBuf> {
         let temp = self.inner.take().unwrap();
-        temp.keep()
+        Ok(temp.keep())
     }
 }
 

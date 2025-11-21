@@ -47,7 +47,8 @@ impl Expr {
                     BinaryOp::Pow => {
                         // Expand (expr)^n for small integer n
                         if let Expr::Integer(exp) = right.as_ref() {
-                            if let Some(exp_i64) = exp.to_i64() {
+                            let exp_i64 = exp.to_i64();
+                            {
                                 if exp_i64 >= 0 && exp_i64 <= 10 {
                                     return expand_power(&left_exp, exp_i64 as u32);
                                 }

@@ -234,7 +234,8 @@ pub fn factorial(n: &Expr) -> Expr {
 pub fn binomial(n: &Expr, k: &Expr) -> Expr {
     // Try to compute for integer values
     if let (Expr::Integer(n_int), Expr::Integer(k_int)) = (n, k) {
-        if let (Some(n_val), Some(k_val)) = (n_int.to_i64(), k_int.to_i64()) {
+        let (n_val, k_val) = (n_int.to_i64(), k_int.to_i64());
+        {
             if n_val >= 0 && k_val >= 0 && k_val <= n_val && n_val <= 30 {
                 // Compute using multiplicative formula: C(n,k) = n*(n-1)*...*(n-k+1) / k!
                 let mut result = Integer::one();
