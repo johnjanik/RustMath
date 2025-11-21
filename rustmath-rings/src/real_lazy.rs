@@ -550,6 +550,9 @@ pub struct real_lazy_field {
     // (e.g., precision management, caching, etc.)
 }
 
+/// Type alias for PascalCase compatibility
+pub type RealLazyField = real_lazy_field;
+
 impl RealLazyField {
     /// Create a new real lazy field
     pub fn new() -> Self {
@@ -620,6 +623,9 @@ impl Default for RealLazyField {
 pub struct complex_lazy_field {
     // Currently a unit struct, but kept as struct for future extensions
 }
+
+/// Type alias for PascalCase compatibility
+pub type ComplexLazyField = complex_lazy_field;
 
 impl ComplexLazyField {
     /// Create a new complex lazy field

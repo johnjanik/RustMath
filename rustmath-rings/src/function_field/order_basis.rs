@@ -93,6 +93,9 @@ pub struct FunctionFieldOrderBasis<F: Field> {
     _phantom: PhantomData<F>,
 }
 
+/// Type alias for snake_case compatibility
+pub type FunctionFieldOrder_basis<F> = FunctionFieldOrderBasis<F>;
+
 impl<F: Field> FunctionFieldOrder_basis<F> {
     /// Create a new order with explicit basis
     ///
@@ -240,6 +243,9 @@ pub struct FunctionFieldOrderInfiniteBasis<F: Field> {
     /// Phantom data
     _phantom: PhantomData<F>,
 }
+
+/// Type alias for snake_case compatibility
+pub type FunctionFieldOrderInfinite_basis<F> = FunctionFieldOrderInfiniteBasis<F>;
 
 impl<F: Field> FunctionFieldOrderInfinite_basis<F> {
     /// Create a new infinite order with explicit basis

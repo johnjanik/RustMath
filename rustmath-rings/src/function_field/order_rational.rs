@@ -99,6 +99,9 @@ pub struct FunctionFieldMaximalOrderRational<F: Field> {
     _phantom: PhantomData<F>,
 }
 
+/// Type alias for snake_case compatibility
+pub type FunctionFieldMaximalOrder_rational<F> = FunctionFieldMaximalOrderRational<F>;
+
 impl<F: Field> FunctionFieldMaximalOrder_rational<F> {
     /// Create a new maximal order for a rational function field
     ///
@@ -318,6 +321,9 @@ pub struct FunctionFieldMaximalOrderInfiniteRational<F: Field> {
     /// Phantom data
     _phantom: PhantomData<F>,
 }
+
+/// Type alias for snake_case compatibility
+pub type FunctionFieldMaximalOrderInfinite_rational<F> = FunctionFieldMaximalOrderInfiniteRational<F>;
 
 impl<F: Field> FunctionFieldMaximalOrderInfinite_rational<F> {
     /// Create a new maximal order at infinity

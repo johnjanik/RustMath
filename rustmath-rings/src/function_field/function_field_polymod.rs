@@ -90,6 +90,9 @@ pub struct FunctionFieldPolymod<F: Field> {
     _phantom: PhantomData<F>,
 }
 
+/// Type alias for snake_case compatibility
+pub type FunctionField_polymod<F> = FunctionFieldPolymod<F>;
+
 impl<F: Field> FunctionField_polymod<F> {
     /// Create a new polymod function field
     pub fn new(base_field: String, variable: String, degree: usize) -> Self {
@@ -170,6 +173,9 @@ pub struct FunctionFieldSimple<F: Field> {
     inner: FunctionField_polymod<F>,
 }
 
+/// Type alias for snake_case compatibility
+pub type FunctionField_simple<F> = FunctionFieldSimple<F>;
+
 impl<F: Field> FunctionField_simple<F> {
     /// Create a new simple extension
     pub fn new(base_field: String, variable: String, degree: usize) -> Self {
@@ -221,6 +227,9 @@ pub struct FunctionFieldCharZero<F: Field> {
     inner: FunctionField_simple<F>,
 }
 
+/// Type alias for snake_case compatibility
+pub type FunctionField_char_zero<F> = FunctionFieldCharZero<F>;
+
 impl<F: Field> FunctionField_char_zero<F> {
     /// Create a new characteristic zero extension
     pub fn new(base_field: String, variable: String, degree: usize) -> Self {
@@ -253,6 +262,9 @@ pub struct FunctionFieldIntegral<F: Field> {
     /// Underlying simple extension
     inner: FunctionField_simple<F>,
 }
+
+/// Type alias for snake_case compatibility
+pub type FunctionField_integral<F> = FunctionFieldIntegral<F>;
 
 impl<F: Field> FunctionField_integral<F> {
     /// Create a new integral extension
@@ -290,6 +302,9 @@ pub struct FunctionFieldCharZeroIntegral<F: Field> {
     integral: FunctionField_integral<F>,
 }
 
+/// Type alias for snake_case compatibility
+pub type FunctionField_char_zero_integral<F> = FunctionFieldCharZeroIntegral<F>;
+
 impl<F: Field> FunctionField_char_zero_integral<F> {
     /// Create a new char zero integral extension
     pub fn new(base_field: String, variable: String, degree: usize) -> Self {
@@ -324,6 +339,9 @@ pub struct FunctionFieldGlobal<F: Field> {
     /// Size of constant field
     constant_field_size: usize,
 }
+
+/// Type alias for snake_case compatibility
+pub type FunctionField_global<F> = FunctionFieldGlobal<F>;
 
 impl<F: Field> FunctionField_global<F> {
     /// Create a new global function field
@@ -378,6 +396,9 @@ pub struct FunctionFieldGlobalIntegral<F: Field> {
     /// Integral structure
     integral: FunctionField_integral<F>,
 }
+
+/// Type alias for snake_case compatibility
+pub type FunctionField_global_integral<F> = FunctionFieldGlobalIntegral<F>;
 
 impl<F: Field> FunctionField_global_integral<F> {
     /// Create a new global integral function field
