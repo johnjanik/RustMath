@@ -35,10 +35,11 @@
 
 use std::collections::HashMap;
 use std::fmt;
+use std::hash::Hash;
 
 use crate::finitely_presented::FinitelyPresentedGroup;
 use crate::free_group::FreeGroupElement;
-use crate::group_traits::Group;
+use crate::group_traits::{Group, GroupElement};
 
 /// A Coxeter matrix defining the relations of an Artin group
 ///
@@ -361,6 +362,33 @@ impl PartialEq for ArtinGroupElement {
 }
 
 impl Eq for ArtinGroupElement {}
+
+impl std::hash::Hash for ArtinGroupElement {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        // Hash only the word, consistent with PartialEq
+        self.word.hash(state);
+    }
+}
+
+impl GroupElement for ArtinGroupElement {
+    fn identity() -> Self {
+        // Create a minimal Artin group with one generator for the identity element
+        let coxeter_matrix = CoxeterMatrix::new(vec![vec![1]]);
+        let parent = ArtinGroup::new(coxeter_matrix);
+        ArtinGroupElement {
+            parent,
+            word: FreeGroupElement::identity(),
+        }
+    }
+
+    fn inverse(&self) -> Self {
+        self.inverse()
+    }
+
+    fn op(&self, other: &Self) -> Self {
+        self.multiply(other)
+    }
+}
 
 /// A finite-type Artin group (where the Coxeter group is finite)
 ///

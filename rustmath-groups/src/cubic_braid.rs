@@ -447,6 +447,37 @@ impl PartialEq for CubicBraidElement {
 
 impl Eq for CubicBraidElement {}
 
+use std::hash::{Hash, Hasher};
+
+impl Hash for CubicBraidElement {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        // Hash only the word, as elements are compared within the same group context
+        self.word.hash(state);
+    }
+}
+
+use crate::group_traits::GroupElement;
+
+impl GroupElement for CubicBraidElement {
+    fn identity() -> Self {
+        // Create a minimal default group (2 strands, Coxeter type)
+        // Note: Users should prefer calling group.identity() for the specific group
+        let group = CubicBraidGroup::new(2, CubicBraidType::Coxeter);
+        CubicBraidElement {
+            group,
+            word: FreeGroupElement::identity(),
+        }
+    }
+
+    fn inverse(&self) -> Self {
+        Self::inverse(self)
+    }
+
+    fn op(&self, other: &Self) -> Self {
+        self.multiply(other)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

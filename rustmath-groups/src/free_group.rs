@@ -260,6 +260,60 @@ impl FreeGroupElement {
         self.word.is_empty()
     }
 
+    /// Get the unique letters (generator indices) that appear in this element
+    ///
+    /// Returns a vector of unique generator indices in the order they first appear.
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_groups::FreeGroup;
+    ///
+    /// let f3 = FreeGroup::with_default_names(3);
+    /// let x0 = f3.generator(0).unwrap();
+    /// let x1 = f3.generator(1).unwrap();
+    /// let x2 = f3.generator(2).unwrap();
+    ///
+    /// // x0 * x1 * x0^2 * x2 has letters [0, 1, 2]
+    /// let elem = x0.mul(&x1).mul(&x0.pow(2)).mul(&x2);
+    /// let letters = elem.letters();
+    /// assert_eq!(letters, vec![0, 1, 2]);
+    /// ```
+    pub fn letters(&self) -> Vec<usize> {
+        let mut seen = Vec::new();
+        for &(gen, _) in &self.word {
+            let gen_idx = gen as usize;
+            if !seen.contains(&gen_idx) {
+                seen.push(gen_idx);
+            }
+        }
+        seen
+    }
+
+    /// Get the sum of exponents for a given generator
+    ///
+    /// Returns the sum of all exponents for the specified generator in this element.
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_groups::FreeGroup;
+    ///
+    /// let f2 = FreeGroup::with_default_names(2);
+    /// let x0 = f2.generator(0).unwrap();
+    /// let x1 = f2.generator(1).unwrap();
+    ///
+    /// // x0^3 * x1 * x0^-1 has exponent sum 2 for generator 0
+    /// let elem = x0.pow(3).mul(&x1).mul(&x0.pow(-1));
+    /// assert_eq!(elem.exponent_sum(0), 2);
+    /// assert_eq!(elem.exponent_sum(1), 1);
+    /// ```
+    pub fn exponent_sum(&self, generator: usize) -> isize {
+        self.word
+            .iter()
+            .filter(|(gen, _)| *gen == generator as isize)
+            .map(|(_, exp)| exp)
+            .sum()
+    }
+
     /// Multiply this element by another
     pub fn mul(&self, other: &FreeGroupElement) -> FreeGroupElement {
         // Try to unify groups if they're compatible

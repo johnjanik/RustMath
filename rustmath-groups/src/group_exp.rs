@@ -236,6 +236,29 @@ impl Hash for GroupExpElement {
     }
 }
 
+use crate::group_traits::GroupElement;
+
+impl GroupElement for GroupExpElement {
+    fn identity() -> Self {
+        // Create a minimal default group (additive group Z_1)
+        // Note: Users should prefer calling group.identity() for the specific group
+        let additive = AdditiveAbelianGroup::new(vec![1]);
+        let exp_group = GroupExp::new(additive.clone());
+        GroupExpElement {
+            parent: exp_group,
+            value: additive.zero(),
+        }
+    }
+
+    fn inverse(&self) -> Self {
+        Self::inverse(self)
+    }
+
+    fn op(&self, other: &Self) -> Self {
+        self.multiply(other)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

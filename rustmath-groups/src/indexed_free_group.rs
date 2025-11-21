@@ -90,6 +90,20 @@ impl<I: Clone + Eq + Hash + fmt::Debug> IndexedFreeGroup<I> {
     pub fn prefix(&self) -> &str {
         &self.prefix
     }
+
+    /// Returns the number of generators
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_groups::indexed_free_group::IndexedFreeGroup;
+    ///
+    /// let g = IndexedFreeGroup::new(vec!["a", "b", "c"]);
+    /// assert_eq!(g.ngens(), 3);
+    /// ```
+    pub fn ngens(&self) -> usize {
+        self.indices.len()
+    }
 }
 
 impl<I: Clone + Eq + Hash + fmt::Debug> IndexedGroup for IndexedFreeGroup<I> {

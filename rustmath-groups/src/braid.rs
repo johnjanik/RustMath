@@ -47,10 +47,11 @@
 
 use std::collections::HashMap;
 use std::fmt;
+use std::hash::Hash;
 
 use crate::artin::{ArtinGroup, ArtinGroupElement, FiniteTypeArtinGroup, FiniteTypeArtinGroupElement, CoxeterMatrix};
 use crate::free_group::FreeGroupElement;
-use crate::group_traits::Group;
+use crate::group_traits::{Group, GroupElement};
 use crate::permutation_group::PermutationGroup;
 
 /// A braid group on n strands
@@ -297,6 +298,33 @@ impl PartialEq for Braid {
 }
 
 impl Eq for Braid {}
+
+impl std::hash::Hash for Braid {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        // Hash both the parent's strands and the element, consistent with PartialEq
+        self.parent.strands().hash(state);
+        self.element.hash(state);
+    }
+}
+
+impl GroupElement for Braid {
+    fn identity() -> Self {
+        // Create a minimal braid group with 2 strands for the identity element
+        let parent = BraidGroup::new(2);
+        Braid {
+            parent: parent.clone(),
+            element: parent.artin_group.identity(),
+        }
+    }
+
+    fn inverse(&self) -> Self {
+        self.inverse()
+    }
+
+    fn op(&self, other: &Self) -> Self {
+        self.multiply(other)
+    }
+}
 
 /// Type alias for BraidGroup (to match SageMath naming)
 pub type BraidGroup_class = BraidGroup;
