@@ -3,7 +3,7 @@
 //! This module provides structures and operations for inner product spaces,
 //! which are vector spaces equipped with an inner product (bilinear form).
 
-use crate::{Matrix, Vector};
+use crate::Matrix;
 use rustmath_core::{Field, MathError, Result};
 
 /// An inner product space is a vector space with an inner product

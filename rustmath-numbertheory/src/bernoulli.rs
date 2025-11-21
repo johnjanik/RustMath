@@ -43,8 +43,7 @@
 //! ```
 
 use rustmath_rationals::Rational;
-use rustmath_core::{Ring, NumericConversion};
-use num_traits::ToPrimitive;
+use rustmath_core::Ring;
 use std::collections::HashMap;
 
 /// Helper function to create a Rational, unwrapping the Result

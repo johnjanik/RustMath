@@ -1,7 +1,7 @@
 //! Eigenvalue and eigenvector computation
 
 use crate::Matrix;
-use rustmath_core::{Field, MathError, Result};
+use rustmath_core::Field;
 
 /// Result of eigenvalue computation
 #[derive(Debug, Clone)]

@@ -3,7 +3,6 @@
 //! This module provides precomputed tables for common mathematical functions
 //! to allow fast approximation lookups.
 
-use rustmath_core::Ring;
 use once_cell::sync::Lazy;
 use std::f64::consts::PI;
 

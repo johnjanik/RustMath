@@ -4,7 +4,7 @@
 //! over Euclidean domains, particularly useful for integer matrices.
 
 use crate::Matrix;
-use rustmath_core::{EuclideanDomain, MathError, Result};
+use rustmath_core::{EuclideanDomain, Result};
 
 /// Smith Normal Form result
 ///

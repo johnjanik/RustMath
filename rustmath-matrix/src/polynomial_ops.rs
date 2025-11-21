@@ -1,8 +1,5 @@
 //! Polynomial operations on matrices (characteristic polynomial, minimal polynomial, etc.)
 
-use crate::Matrix;
-use rustmath_core::{Field, MathError, Result};
-use rustmath_polynomials::UnivariatePolynomial;
 
 /* // Commented out: Requires Field division and from_i64
 impl<F: Field> Matrix<F> {

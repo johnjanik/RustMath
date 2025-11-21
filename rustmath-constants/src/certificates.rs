@@ -9,7 +9,6 @@
 
 use rustmath_integers::{Integer, primitive_roots};
 use rustmath_integers::prime::{is_prime, factor};
-use rustmath_core::Ring;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 

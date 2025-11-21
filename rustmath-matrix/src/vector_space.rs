@@ -1,6 +1,6 @@
 //! Vector space structures and operations
 
-use crate::{Matrix, Vector};
+use crate::Matrix;
 use rustmath_core::{Field, MathError, Result};
 
 /// A vector space over a field F
