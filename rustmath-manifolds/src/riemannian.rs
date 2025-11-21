@@ -406,7 +406,7 @@ impl CovariantDerivative {
 
         // Placeholder: return zero vector field
         let zero_comps = vec![Expr::from(0); manifold.dimension()];
-        VectorField::from_components(manifold, chart, zero_comps)
+        VectorField::from_components(manifold.clone(), chart, zero_comps)
     }
 }
 

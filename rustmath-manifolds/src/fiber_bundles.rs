@@ -432,10 +432,11 @@ impl CurvatureForm {
         // In a full implementation, we'd compute dω + ½[ω, ω]
         // For now, create a placeholder
 
+        let connection_clone = connection.clone();
         let form = Arc::new(
             move |_p: &ManifoldPoint, _v: &TangentVector, _w: &TangentVector| -> Result<Vec<f64>> {
                 // Placeholder: return zero curvature
-                let dim = connection.principal_bundle().structure_group().dimension();
+                let dim = connection_clone.principal_bundle().structure_group().dimension();
                 Ok(vec![0.0; dim])
             }
         );

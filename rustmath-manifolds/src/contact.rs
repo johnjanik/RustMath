@@ -142,19 +142,22 @@ impl ContactForm {
     ///
     /// α ∧ (dα)^n ≠ 0
     fn is_contact(&self) -> Result<bool> {
+        let chart = self.manifold.default_chart()
+            .ok_or(ManifoldError::NoChart)?;
+
         // Compute dα
-        let d_alpha = self.form.exterior_derivative()?;
+        let d_alpha = self.form.exterior_derivative(chart)?;
 
         // Compute (dα)^n via wedge product
         let n = (self.manifold.dimension() - 1) / 2;
         let mut power = d_alpha.clone();
 
         for _ in 1..n {
-            power = power.wedge(&d_alpha)?;
+            power = power.wedge(&d_alpha, chart)?;
         }
 
         // Compute α ∧ (dα)^n
-        let contact_volume = self.form.wedge(&power)?;
+        let contact_volume = self.form.wedge(&power, chart)?;
 
         // Check if it's non-zero (i.e., a volume form)
         Ok(!contact_volume.is_zero())

@@ -269,7 +269,7 @@ impl PullBack {
         }
 
         // Create new scalar field on source manifold
-        ScalarField::from_expr(self.map.source.clone(), source_chart, substituted)
+        Ok(ScalarField::from_expr(self.map.source.clone(), source_chart, substituted))
     }
 
     /// Apply the pullback to a 1-form (covector field)
