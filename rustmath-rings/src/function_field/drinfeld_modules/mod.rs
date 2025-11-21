@@ -101,9 +101,9 @@ pub mod morphism;
 
 // Re-export main types for convenience
 pub use action::{DrinfeldModuleAction, HasDrinfeldAction};
-pub use charzero_drinfeld_module::{DrinfeldModule, DrinfeldModule_charzero, DrinfeldModule_rational};
+pub use charzero_drinfeld_module::{DrinfeldModule, DrinfeldModuleCharzero, DrinfeldModuleRational};
 pub use drinfeld_module::{DrinfeldModule as BaseDrinfeldModule, DrinfeldModuleFactory};
-pub use finite_drinfeld_module::DrinfeldModule_finite;
+pub use finite_drinfeld_module::DrinfeldModuleFinite;
 pub use homset::{DrinfeldModuleHomset, DrinfeldModuleMorphismAction};
 pub use morphism::DrinfeldModuleMorphism;
 

@@ -177,7 +177,7 @@ impl GroupExpElement {
         );
         Self {
             parent: self.parent.clone(),
-            value: self.value.add(&other.value),
+            value: self.value.add(&other.value).expect("Failed to add group elements"),
         }
     }
 
@@ -250,7 +250,7 @@ impl GroupElement for GroupExpElement {
     fn identity() -> Self {
         // Create a minimal default group (additive group Z_1)
         // Note: Users should prefer calling group.identity() for the specific group
-        let additive = AdditiveAbelianGroup::new(vec![1]);
+        let additive = AdditiveAbelianGroup::new(0, vec![1]).expect("Failed to create group");
         let exp_group = GroupExp::new(additive.clone());
         GroupExpElement {
             parent: exp_group,

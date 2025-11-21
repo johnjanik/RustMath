@@ -107,7 +107,7 @@ impl<I: Clone + Eq + Hash + fmt::Debug> IndexedFreeGroup<I> {
     }
 }
 
-impl<I: Clone + Eq + Hash + fmt::Debug> IndexedGroup for IndexedFreeGroup<I> {
+impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> IndexedGroup for IndexedFreeGroup<I> {
     type Index = I;
     type Element = IndexedFreeGroupElement<I>;
 
@@ -148,7 +148,7 @@ impl<I: Clone + Eq + Hash + fmt::Debug> fmt::Display for IndexedFreeGroup<I> {
     }
 }
 
-impl<I: Clone + Eq + Hash + fmt::Debug> Group for IndexedFreeGroup<I> {
+impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> Group for IndexedFreeGroup<I> {
     type Element = IndexedFreeGroupElement<I>;
 
     fn identity(&self) -> Self::Element {
@@ -445,7 +445,7 @@ impl<I: Clone + Eq + Hash + fmt::Debug> fmt::Display for IndexedFreeAbelianGroup
     }
 }
 
-impl<I: Clone + Eq + Hash + fmt::Debug> Group for IndexedFreeAbelianGroup<I> {
+impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> Group for IndexedFreeAbelianGroup<I> {
     type Element = IndexedFreeAbelianGroupElement<I>;
 
     fn identity(&self) -> Self::Element {
