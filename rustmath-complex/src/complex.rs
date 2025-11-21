@@ -535,6 +535,8 @@ impl PartialEq for Complex {
     }
 }
 
+impl Eq for Complex {}
+
 impl Ring for Complex {
     fn zero() -> Self {
         Complex {

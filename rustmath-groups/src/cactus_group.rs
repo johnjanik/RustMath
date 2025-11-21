@@ -29,6 +29,7 @@
 
 use std::collections::HashMap;
 use std::fmt;
+use std::ops::Mul;
 
 use crate::group_traits::Group;
 use crate::kernel_subgroup::KernelSubgroup;

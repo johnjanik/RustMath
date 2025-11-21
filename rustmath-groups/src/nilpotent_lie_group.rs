@@ -30,6 +30,7 @@
 //! ```
 
 use std::fmt;
+use std::ops::Mul;
 use crate::group_traits::{Group, GroupElement};
 
 /// Element of a nilpotent Lie group

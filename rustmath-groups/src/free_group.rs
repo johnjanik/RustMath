@@ -26,6 +26,7 @@
 
 use std::fmt;
 use std::hash::{Hash, Hasher};
+use std::ops::Mul;
 
 /// A free group on n generators
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -34,6 +35,16 @@ pub struct FreeGroup {
     rank: usize,
     /// Names of generators
     generator_names: Vec<String>,
+}
+
+impl Default for FreeGroup {
+    /// Create a default free group with rank 0 (trivial group)
+    fn default() -> Self {
+        FreeGroup {
+            rank: 0,
+            generator_names: vec![],
+        }
+    }
 }
 
 impl FreeGroup {
@@ -162,6 +173,13 @@ pub struct FreeGroupElement {
     /// The word as (generator_index, exponent) pairs
     /// Invariant: No adjacent pairs have the same generator, and no exponent is 0
     word: Vec<(isize, isize)>,
+}
+
+impl Default for FreeGroupElement {
+    /// Create a default element (identity element)
+    fn default() -> Self {
+        Self::identity()
+    }
 }
 
 impl FreeGroupElement {
@@ -492,6 +510,22 @@ impl Eq for FreeGroupElement {}
 impl Hash for FreeGroupElement {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.word.hash(state);
+    }
+}
+
+impl Mul for FreeGroupElement {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        FreeGroupElement::mul(&self, &rhs)
+    }
+}
+
+impl Mul for &FreeGroupElement {
+    type Output = FreeGroupElement;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        FreeGroupElement::mul(self, rhs)
     }
 }
 

@@ -36,6 +36,7 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::hash::Hash;
+use std::ops::Mul;
 
 use crate::finitely_presented::FinitelyPresentedGroup;
 use crate::free_group::FreeGroupElement;

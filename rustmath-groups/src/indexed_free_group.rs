@@ -17,6 +17,7 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::hash::Hash;
+use std::ops::Mul;
 
 use crate::group_traits::Group;
 
@@ -316,6 +317,29 @@ impl<I: Clone + Eq + Hash + fmt::Debug> PartialEq for IndexedFreeGroupElement<I>
 
 impl<I: Clone + Eq + Hash + fmt::Debug> Eq for IndexedFreeGroupElement<I> {}
 
+impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> Default for IndexedFreeGroupElement<I> {
+    /// Create a default element (identity of a trivial group)
+    fn default() -> Self {
+        <Self as crate::group_traits::GroupElement>::identity()
+    }
+}
+
+impl<I: Clone + Eq + Hash + fmt::Debug> Mul for IndexedFreeGroupElement<I> {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        self.multiply(&rhs)
+    }
+}
+
+impl<I: Clone + Eq + Hash + fmt::Debug> Mul for &IndexedFreeGroupElement<I> {
+    type Output = IndexedFreeGroupElement<I>;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        self.multiply(rhs)
+    }
+}
+
 impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> crate::group_traits::GroupElement for IndexedFreeGroupElement<I> {
     fn identity() -> Self {
         // We need a parent group to create an identity element
@@ -555,6 +579,29 @@ impl<I: Clone + Eq + Hash + fmt::Debug> PartialEq for IndexedFreeAbelianGroupEle
 }
 
 impl<I: Clone + Eq + Hash + fmt::Debug> Eq for IndexedFreeAbelianGroupElement<I> {}
+
+impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> Default for IndexedFreeAbelianGroupElement<I> {
+    /// Create a default element (identity of a trivial group)
+    fn default() -> Self {
+        <Self as crate::group_traits::GroupElement>::identity()
+    }
+}
+
+impl<I: Clone + Eq + Hash + fmt::Debug> Mul for IndexedFreeAbelianGroupElement<I> {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        self.multiply(&rhs)
+    }
+}
+
+impl<I: Clone + Eq + Hash + fmt::Debug> Mul for &IndexedFreeAbelianGroupElement<I> {
+    type Output = IndexedFreeAbelianGroupElement<I>;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        self.multiply(rhs)
+    }
+}
 
 impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> crate::group_traits::GroupElement for IndexedFreeAbelianGroupElement<I> {
     fn identity() -> Self {
