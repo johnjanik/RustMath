@@ -334,7 +334,8 @@ pub use kazhdan_lusztig::{
 };
 pub use constellation::{
     count_genus_0_constellations, path_constellation, star_constellation, trivial_constellation,
-    cube_constellation, tetrahedron_constellation, Constellation, ConstellationEncoding,
+    Constellation, ConstellationEncoding,
+    cube_constellation, tetrahedron_constellation,
 };
 pub use parking_function::{
     count_non_decreasing_parking_functions, count_parking_functions,
