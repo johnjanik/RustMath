@@ -88,11 +88,11 @@ impl<R: Ring> PowerSeriesPari<R> {
     }
 
     /// Get the coefficient of x^n
-    pub fn coeff(&self, n: usize) -> &R {
+    pub fn coeff(&self, n: usize) -> R {
         if n < self.coefficients.len() {
-            &self.coefficients[n]
+            self.coefficients[n].clone()
         } else {
-            &R::zero()
+            R::zero()
         }
     }
 

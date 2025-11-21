@@ -251,10 +251,11 @@ impl ConformallKillingVectorField {
 
         for i in 0..n {
             for j in 0..n {
-                let g_ij = &g_comps[i * n + j];
+                let idx = i * n + j;
+                let g_ij = &g_comps[idx];
                 // Try to use diagonal components first
                 if i == j {
-                    lambda_expr = Some(lie_comps[i * n + j].clone() / g_ij.clone());
+                    lambda_expr = Some(lie_comps[idx].clone() / g_ij.clone());
                     break;
                 }
             }
@@ -424,7 +425,7 @@ impl IsometryGroup {
     /// Dimension: n(n+1)/2
     pub fn euclidean_space(n: usize) -> Self {
         // Placeholder implementation
-        let manifold = Arc::new(crate::examples::EuclideanSpace::new(n).into());
+        let manifold: Arc<ComplexManifold> = Arc::new(crate::examples::EuclideanSpace::new(n).into());
         let metric = Arc::new(RiemannianMetric::euclidean(manifold.clone()));
 
         let mut group = Self::new(manifold, metric);
@@ -438,7 +439,7 @@ impl IsometryGroup {
     /// Dimension: n(n+1)/2
     pub fn sphere(n: usize) -> Self {
         // Placeholder implementation
-        let manifold = Arc::new(crate::examples::Sphere2::new().into());
+        let manifold: Arc<ComplexManifold> = Arc::new(crate::examples::Sphere2::new().into());
         let metric = Arc::new(RiemannianMetric::round_sphere(manifold.clone()));
 
         let mut group = Self::new(manifold, metric);

@@ -141,7 +141,7 @@ impl PeriodMatrix {
 
     /// Get entry (i,j)
     pub fn get(&self, i: usize, j: usize) -> Option<&Complex> {
-        self.omega.get(i, j)
+        self.omega.get(i, j).ok()
     }
 
     /// Check if period matrix is symmetric
@@ -161,7 +161,7 @@ impl PeriodMatrix {
         let mut result = vec![];
         for i in 0..self.genus {
             for j in 0..self.genus {
-                if let Some(c) = self.omega.get(i, j) {
+                if let Ok(c) = self.omega.get(i, j) {
                     result.push(c.imag());
                 } else {
                     result.push(0.0);
@@ -337,7 +337,7 @@ impl ThetaFunction {
         if dim == g {
             // Compute term for this lattice point
             let term = self.compute_term(z, n);
-            *sum = *sum + term;
+            *sum = sum.clone() + term;
             return;
         }
 
@@ -369,7 +369,7 @@ impl ThetaFunction {
         // Compute z + b
         let mut z_plus_b = vec![Complex::zero(); g];
         for i in 0..g {
-            z_plus_b[i] = z[i] + Complex::new(b[i], 0.0);
+            z_plus_b[i] = z[i].clone() + Complex::new(b[i], 0.0);
         }
 
         // Compute ⟨n+a, Ω(n+a)⟩
@@ -377,7 +377,7 @@ impl ThetaFunction {
         for i in 0..g {
             for j in 0..g {
                 if let Some(omega_ij) = self.period_matrix.get(i, j) {
-                    quad_form = quad_form + n_plus_a[i] * *omega_ij * n_plus_a[j];
+                    quad_form = quad_form + n_plus_a[i].clone() * omega_ij.clone() * n_plus_a[j].clone();
                 }
             }
         }
@@ -385,7 +385,7 @@ impl ThetaFunction {
         // Compute ⟨n+a, z+b⟩
         let mut inner_prod = Complex::zero();
         for i in 0..g {
-            inner_prod = inner_prod + n_plus_a[i] * z_plus_b[i];
+            inner_prod = inner_prod + n_plus_a[i].clone() * z_plus_b[i].clone();
         }
 
         // Compute exp(πi ⟨n+a, Ω(n+a)⟩ + 2πi ⟨n+a, z+b⟩)

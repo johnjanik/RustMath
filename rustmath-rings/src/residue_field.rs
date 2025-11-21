@@ -474,7 +474,7 @@ impl ResidueFieldPrimeElement {
         }
 
         // Use modular exponentiation
-        let result = self.value.mod_pow(exp, &self.prime);
+        let result = self.value.mod_pow(exp, &self.prime)?;
         ResidueFieldPrimeElement::new(result, self.prime.clone())
     }
 }

@@ -396,7 +396,7 @@ impl PowComputerExt {
     /// assert_eq!(pc.frobenius_norm_exponent_sum(), Integer::from(7));
     /// ```
     pub fn frobenius_norm_exponent_sum(&self) -> Integer {
-        self.frobenius_trace_exponents().iter().cloned().sum()
+        self.frobenius_trace_exponents().iter().cloned().fold(Integer::from(0), |acc, x| acc + x)
     }
 
     /// Get the uniformizer power (π^e = p for Eisenstein extensions)
