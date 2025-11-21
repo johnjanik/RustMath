@@ -30,7 +30,6 @@
 use crate::Integer;
 use crate::prime::is_prime;
 use rustmath_core::{Ring, NumericConversion};
-use num_traits::ToPrimitive;
 use std::collections::HashMap;
 
 /// A smooth relation: x² ≡ product of primes (mod n)
@@ -72,6 +71,7 @@ fn legendre_symbol(a: &Integer, p: u64) -> i8 {
 /// Find a square root of n modulo p using Tonelli-Shanks algorithm
 ///
 /// Returns Some(r) where r² ≡ n (mod p), or None if no root exists
+#[allow(dead_code)]
 fn tonelli_shanks(n: &Integer, p: u64) -> Option<i64> {
     if p == 2 {
         return Some(n.to_i64().unwrap_or(0) % 2);
@@ -346,7 +346,6 @@ fn try_dependency(
     }
 
     // Compute y = product of prime_i^(sum_of_exponents/2)
-    let mut y_product = Integer::one();
     // We need the actual primes, but we only have indices
     // This is a limitation - we need to pass factor_base here
     // For now, let's reconstruct y from the q values

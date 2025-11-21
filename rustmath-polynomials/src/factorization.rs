@@ -286,7 +286,7 @@ fn find_rational_roots(
         vec![]
     };
 
-    let an_divisors = if !an.is_zero() {
+    let _an_divisors = if !an.is_zero() {
         an.abs().divisors().unwrap_or_else(|_| vec![])
     } else {
         vec![]
@@ -376,7 +376,7 @@ fn factor_out_roots(
 pub fn factor_over_integers(
     poly: &UnivariatePolynomial<rustmath_integers::Integer>,
 ) -> Result<Vec<(UnivariatePolynomial<rustmath_integers::Integer>, u32)>> {
-    use rustmath_integers::Integer;
+
 
     if poly.is_zero() {
         return Ok(vec![]);
@@ -559,7 +559,7 @@ pub fn berlekamp_factor_gf(
                 let a_int = Integer::from(a);
 
                 // Compute v - a
-                let mut v_minus_a = v.clone();
+                let v_minus_a = v.clone();
                 let coeff_0 = (v_minus_a.coeff(0).clone() - a_int.clone()) % p.clone();
                 let coeff_0 = if coeff_0 < Integer::zero() {
                     coeff_0 + p.clone()
@@ -894,7 +894,7 @@ pub fn hensel_lift(
     UnivariatePolynomial<rustmath_integers::Integer>,
     UnivariatePolynomial<rustmath_integers::Integer>,
 )> {
-    use rustmath_integers::Integer;
+
 
     if k == 0 {
         return Err(MathError::InvalidArgument(
@@ -1107,6 +1107,7 @@ fn poly_add_unreduced(
 }
 
 /// Helper: Add two polynomials and reduce coefficients modulo m
+#[allow(dead_code)]
 fn poly_add_mod(
     a: &UnivariatePolynomial<rustmath_integers::Integer>,
     b: &UnivariatePolynomial<rustmath_integers::Integer>,
@@ -1167,7 +1168,7 @@ fn poly_scalar_mul(
     poly: &UnivariatePolynomial<rustmath_integers::Integer>,
     scalar: &rustmath_integers::Integer,
 ) -> UnivariatePolynomial<rustmath_integers::Integer> {
-    use rustmath_integers::Integer;
+
 
     let mut result = Vec::new();
     for i in 0..=poly.degree().unwrap_or(0) {

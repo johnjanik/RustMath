@@ -255,7 +255,7 @@ pub struct ProjectiveVariety<R: Ring> {
     /// Defining homogeneous polynomials
     generators: Vec<MultivariatePolynomial<R>>,
     /// Monomial ordering
-    ordering: MonomialOrdering,
+    _ordering: MonomialOrdering,
 }
 
 impl<R: Ring> ProjectiveVariety<R> {

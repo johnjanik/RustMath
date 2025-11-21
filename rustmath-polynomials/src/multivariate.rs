@@ -421,7 +421,7 @@ impl<R: Ring> MultivariatePolynomial<R> {
                 // For fields this would be r_lc / d_lc, but for general rings
                 // we check if d_lc divides r_lc
                 // For now, assume it divides (works for fields and when it divides)
-                let quotient_coeff = r_lc.clone() * d_lc.clone(); // This is a placeholder
+                let _quotient_coeff = r_lc.clone() * d_lc.clone(); // This is a placeholder
                 // In a proper implementation, we'd need division in the coefficient ring
 
                 // For simplicity, if coefficients are the same, quotient is 1
@@ -489,7 +489,7 @@ impl<R: Ring> MultivariatePolynomial<R> {
             if !division_occurred {
                 // Move leading term to remainder (it's already there, just mark as done)
                 // Actually, we need to remove it and re-add to prevent infinite loop
-                let (lm, lc) = remainder.leading_term(cmp).unwrap();
+                let (lm, _lc) = remainder.leading_term(cmp).unwrap();
                 remainder.terms.remove(&lm);
                 // In a proper implementation, this would go to a separate "final remainder"
                 break;

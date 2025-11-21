@@ -294,7 +294,7 @@ pub fn reduced_groebner_basis<R: Ring>(
     ordering: MonomialOrdering,
 ) -> Vec<MultivariatePolynomial<R>> {
     let mut basis = groebner_basis(generators, ordering);
-    let cmp = get_comparison_fn(ordering);
+    let _cmp = get_comparison_fn(ordering);
 
     // Remove zero polynomials
     basis.retain(|p| !p.is_zero());
