@@ -186,14 +186,14 @@ impl Schwarzschild {
         let m = Expr::from(mass);
 
         // 1 - 2M/r
-        let one_minus_2m_over_r = Expr::from(1) - Expr::from(2) * m.clone() / Expr::Symbol(r.name().to_string());
+        let one_minus_2m_over_r = Expr::from(1) - Expr::from(2) * m.clone() / Expr::Symbol(r.clone());
 
         // r²
-        let r_squared = Expr::Symbol(r.name().to_string()).clone()
-            * Expr::Symbol(r.name().to_string()).clone();
+        let r_squared = Expr::Symbol(r.clone())
+            * Expr::Symbol(r.clone());
 
         // sin²θ
-        let sin_theta = Expr::Function("sin".to_string(), vec![Arc::new(Expr::Symbol(theta.name().to_string()))]);
+        let sin_theta = Expr::Function("sin".to_string(), vec![Arc::new(Expr::Symbol(theta.clone()))]);
         let sin_squared_theta = sin_theta.clone() * sin_theta;
 
         // Metric components: g_μν
@@ -328,8 +328,8 @@ impl Kerr {
         let m = Expr::from(mass);
         let a = Expr::from(spin);
 
-        let r_expr = Expr::Symbol(r.name().to_string());
-        let theta_expr = Expr::Symbol(theta.name().to_string());
+        let r_expr = Expr::Symbol(r.clone());
+        let theta_expr = Expr::Symbol(theta.clone());
 
         // Δ = r² - 2Mr + a²
         let delta = r_expr.clone() * r_expr.clone()
@@ -655,7 +655,10 @@ impl SpecialOrthogonalGroup {
             dim,
         ));
 
-        let lie_group = LieGroup::new(manifold.clone(), dim);
+        // Placeholder for identity and multiplication - these would need proper implementation
+        let identity = vec![0.0; dim];
+        let multiplication = Arc::new(|_a: &[f64], _b: &[f64]| vec![0.0; dim]);
+        let lie_group = LieGroup::new(manifold.clone(), dim, identity, multiplication);
 
         Ok(Self {
             manifold,
@@ -733,7 +736,10 @@ impl SpecialUnitaryGroup {
             dim,
         ));
 
-        let lie_group = LieGroup::new(manifold.clone(), dim);
+        // Placeholder for identity and multiplication - these would need proper implementation
+        let identity = vec![0.0; dim];
+        let multiplication = Arc::new(|_a: &[f64], _b: &[f64]| vec![0.0; dim]);
+        let lie_group = LieGroup::new(manifold.clone(), dim, identity, multiplication);
 
         Ok(Self {
             manifold,

@@ -258,7 +258,7 @@ impl SymplecticForm {
             data[(half + i) * n + i] = Rational::zero() - Rational::one();
         }
 
-        Matrix::from_vec(n, n, data)
+        Matrix::from_vec(n, n, data).map_err(|_| ManifoldError::InvalidOperation("Failed to create matrix".to_string()))
     }
 
     /// Evaluate the form on two vector fields

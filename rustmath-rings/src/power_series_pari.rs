@@ -151,7 +151,7 @@ impl<R: Ring> PowerSeriesPari<R> {
             for _ in 0..i {
                 factor = factor + R::one();
             }
-            new_coeffs.push(coeff.clone() * &factor);
+            new_coeffs.push(coeff.clone() * factor);
         }
 
         Self::new(new_coeffs, self.precision)

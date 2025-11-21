@@ -126,9 +126,9 @@ impl AlmostComplexStructure {
 
         let tensor = TensorField::from_components(
             manifold.clone(),
-            chart,
             1,  // contravariant rank
             1,  // covariant rank
+            chart,
             components,
         ).unwrap();
 
@@ -166,9 +166,9 @@ impl AlmostComplexStructure {
 
         let tensor = TensorField::from_components(
             manifold.clone(),
+            1,
+            1,
             chart,
-            1,
-            1,
             components,
         )?;
 
@@ -227,9 +227,9 @@ impl AlmostComplexStructure {
 
         TensorField::from_components(
             self.manifold.clone(),
-            chart,
             1,  // contravariant
             2,  // covariant
+            chart,
             components,
         )
     }

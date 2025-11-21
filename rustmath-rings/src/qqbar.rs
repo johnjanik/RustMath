@@ -579,7 +579,7 @@ trait ToF64 {
 impl ToF64 for num_bigint::BigInt {
     fn to_f64(&self) -> f64 {
         use num_traits::ToPrimitive;
-        self.to_f64().unwrap_or(0.0)
+        <num_bigint::BigInt as ToPrimitive>::to_f64(self).unwrap_or(0.0)
     }
 }
 

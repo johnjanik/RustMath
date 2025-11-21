@@ -218,7 +218,7 @@ where
 ///
 /// This is the Rust equivalent of SageMath's `is_RingHomset()` function.
 /// In Rust, this is typically done via type checking or trait bounds.
-pub fn is_ring_homset<T>() -> bool {
+pub fn is_ring_homset<T: 'static>() -> bool {
     // In Rust, type checking is compile-time, so this function is mainly
     // for API compatibility. A full implementation would use TypeId.
     std::any::TypeId::of::<T>() == std::any::TypeId::of::<RingHomsetGeneric<i32, i32>>()

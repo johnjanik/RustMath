@@ -83,7 +83,11 @@ impl KillingVectorField {
         let lie_derivative = self.compute_lie_derivative_of_metric(chart)?;
 
         // Check if all components are close to zero
-        let is_killing = lie_derivative.is_approximately_zero(chart, tolerance)?;
+        let is_killing = if lie_derivative.is_approximately_zero() {
+            true
+        } else {
+            false
+        };
 
         if is_killing {
             self.verified = true;
@@ -113,7 +117,7 @@ impl KillingVectorField {
                 for k in 0..n {
                     let x_k = &x_comps[k];
                     let coord_k = chart.coordinate_symbol(k);
-                    let dg_ij_dxk = g_ij.differentiate(&coord_k.name());
+                    let dg_ij_dxk = g_ij.differentiate(&coord_k);
                     term = term.clone() + x_k.clone() * dg_ij_dxk;
                 }
 
@@ -122,7 +126,7 @@ impl KillingVectorField {
                     let g_kj = &g_comps[k][j];
                     let x_k = &x_comps[k];
                     let coord_i = chart.coordinate_symbol(i);
-                    let dx_k_dxi = x_k.differentiate(&coord_i.name());
+                    let dx_k_dxi = x_k.differentiate(&coord_i);
                     term = term.clone() + g_kj.clone() * dx_k_dxi;
                 }
 
@@ -131,7 +135,7 @@ impl KillingVectorField {
                     let g_ik = &g_comps[i][k];
                     let x_k = &x_comps[k];
                     let coord_j = chart.coordinate_symbol(j);
-                    let dx_k_dxj = x_k.differentiate(&coord_j.name());
+                    let dx_k_dxj = x_k.differentiate(&coord_j);
                     term = term.clone() + g_ik.clone() * dx_k_dxj;
                 }
 
@@ -152,15 +156,15 @@ impl KillingVectorField {
     ///
     /// If X and Y are Killing fields, then [X, Y] is also a Killing field.
     /// This gives the Lie algebra structure of Killing fields.
-    pub fn lie_bracket(&self, other: &KillingVectorField) -> Result<KillingVectorField> {
-        let bracket = self.field.lie_bracket(other.field())?;
+    pub fn lie_bracket(&self, other: &KillingVectorField, chart: &Chart) -> Result<KillingVectorField> {
+        let bracket = self.field.lie_bracket(other.field(), chart)?;
         Ok(KillingVectorField::from_verified(bracket, self.metric.clone()))
     }
 
     /// Check if two Killing fields commute
     pub fn commutes_with(&self, other: &KillingVectorField, chart: &Chart, tolerance: f64) -> Result<bool> {
-        let bracket = self.field.lie_bracket(other.field())?;
-        bracket.is_approximately_zero(chart, tolerance)
+        let bracket = self.field.lie_bracket(other.field(), chart)?;
+        bracket.is_approximately_zero()
     }
 }
 

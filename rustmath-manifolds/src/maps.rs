@@ -193,7 +193,7 @@ impl PushForward {
         // This is a simplified version - proper implementation would track the base point
         // For now, use the image of the base point under the map
         let target_point = vector.base_point().clone(); // Simplified - should be f(base_point)
-        let target_manifold = self.map.target();
+        let target_manifold = self.map.target().clone();
         TangentVector::new(target_point, pushed, target_manifold)
     }
 
@@ -269,7 +269,7 @@ impl PullBack {
         }
 
         // Create new scalar field on source manifold
-        Ok(ScalarField::from_expr(self.map.source.clone(), source_chart, substituted))
+        ScalarField::from_expr(self.map.source.clone(), source_chart, substituted)
     }
 
     /// Apply the pullback to a 1-form (covector field)

@@ -260,7 +260,7 @@ impl<K: Field> TateElement<K> {
 
                 result
                     .entry(new_term)
-                    .and_modify(|c| *c = c.clone() + new_coeff.clone())
+                    .and_modify(|c: &mut K| *c = c.clone() + new_coeff.clone())
                     .or_insert(new_coeff);
             }
         }
