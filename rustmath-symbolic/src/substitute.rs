@@ -2,7 +2,6 @@
 
 use crate::expression::{BinaryOp, Expr, UnaryOp};
 use crate::symbol::Symbol;
-use rustmath_core::{NumericConversion, Ring};
 use rustmath_integers::Integer;
 use rustmath_rationals::Rational;
 use std::collections::HashMap;
@@ -128,7 +127,6 @@ impl Expr {
     ///
     /// This uses f64 approximations for transcendental functions.
     pub fn eval_float(&self) -> Option<f64> {
-        use rustmath_core::NumericConversion as _;
         match self {
             Expr::Integer(n) => Some(n.to_i64() as f64),
             Expr::Rational(r) => r.to_f64(),
@@ -349,8 +347,6 @@ fn gamma_approx(x: f64) -> f64 {
 
 /// Approximate error function using Taylor series
 fn erf_approx(x: f64) -> f64 {
-    use std::f64::consts::PI;
-
     // For |x| > 3, erf(x) ≈ ±1
     if x.abs() > 3.0 {
         return if x > 0.0 { 1.0 } else { -1.0 };

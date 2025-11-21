@@ -34,9 +34,6 @@
 //! Sturm-Liouville differential equations.
 
 use crate::expression::Expr;
-use rustmath_core::{NumericConversion, Ring};
-use rustmath_integers::Integer;
-use std::sync::Arc;
 
 /// Chebyshev polynomial of the first kind Tₙ(x)
 ///

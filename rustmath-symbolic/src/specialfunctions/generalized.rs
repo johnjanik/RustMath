@@ -30,10 +30,7 @@
 //! ```
 
 use crate::expression::Expr;
-use rustmath_core::{NumericConversion, Ring};
-use rustmath_integers::Integer;
 use rustmath_rationals::Rational;
-use std::sync::Arc;
 
 /// Helper function to try converting an Expr to f64
 fn try_expr_to_f64(expr: &Expr) -> Option<f64> {

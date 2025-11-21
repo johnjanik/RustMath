@@ -22,7 +22,6 @@
 //! ```
 
 use crate::expression::Expr;
-use rustmath_core::NumericConversion;
 use std::sync::Arc;
 
 /// Helper function to try converting an Expr to f64
