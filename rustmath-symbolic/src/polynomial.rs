@@ -36,7 +36,7 @@ impl Expr {
 
     fn is_polynomial_recursive(&self, var: &Symbol, allow_var: bool) -> bool {
         match self {
-            Expr::Integer(_) | Expr::Rational(_) => true,
+            Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => true,
             Expr::Symbol(s) => {
                 if s == var {
                     allow_var
@@ -48,6 +48,10 @@ impl Expr {
                 BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mul => {
                     left.is_polynomial_recursive(var, allow_var)
                         && right.is_polynomial_recursive(var, allow_var)
+                }
+                BinaryOp::Mod => {
+                    // Modulo is not a polynomial operation
+                    false
                 }
                 BinaryOp::Div => {
                     // Division is only allowed if divisor is constant in var
@@ -108,7 +112,7 @@ impl Expr {
 
     fn degree_recursive(&self, var: &Symbol) -> Option<i64> {
         match self {
-            Expr::Integer(_) | Expr::Rational(_) => Some(0),
+            Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => Some(0),
             Expr::Symbol(s) => {
                 if s == var {
                     Some(1)
@@ -126,6 +130,10 @@ impl Expr {
                     let left_deg = left.degree_recursive(var)?;
                     let right_deg = right.degree_recursive(var)?;
                     Some(left_deg + right_deg)
+                }
+                BinaryOp::Mod => {
+                    // Modulo is not a polynomial operation
+                    None
                 }
                 BinaryOp::Div => {
                     // For polynomials, divisor must be constant
@@ -194,7 +202,7 @@ impl Expr {
         }
 
         match self {
-            Expr::Integer(_) | Expr::Rational(_) => {
+            Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => {
                 if n == 0 {
                     Some(self.clone())
                 } else {
@@ -238,6 +246,10 @@ impl Expr {
                         result = result + (left_coeff * right_coeff);
                     }
                     Some(result)
+                }
+                BinaryOp::Mod => {
+                    // Modulo is not a polynomial operation
+                    None
                 }
                 BinaryOp::Pow => {
                     if let Expr::Integer(exp) = right.as_ref() {

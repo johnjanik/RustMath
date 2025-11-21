@@ -61,7 +61,7 @@ impl Expr {
     /// Advanced limit computation for indeterminate forms
     fn limit_advanced(&self, var: &Symbol, point: &Expr, dir: Direction) -> LimitResult {
         match self {
-            Expr::Integer(_) | Expr::Rational(_) => {
+            Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => {
                 LimitResult::Finite(self.clone())
             }
 
@@ -90,6 +90,18 @@ impl Expr {
                     let left_limit = left.limit(var, point, dir);
                     let right_limit = right.limit(var, point, dir);
                     Self::combine_limits_mul(left_limit, right_limit)
+                }
+
+                BinaryOp::Mod => {
+                    // Modulo operation - compute limits of operands and combine
+                    let left_limit = left.limit(var, point, dir);
+                    let right_limit = right.limit(var, point, dir);
+                    match (left_limit, right_limit) {
+                        (LimitResult::Finite(l), LimitResult::Finite(r)) => {
+                            LimitResult::Finite(Expr::Binary(BinaryOp::Mod, Arc::new(l), Arc::new(r)))
+                        }
+                        _ => LimitResult::Unknown,
+                    }
                 }
 
                 BinaryOp::Div => {

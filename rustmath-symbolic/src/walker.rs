@@ -56,6 +56,14 @@ pub trait ExprVisitor {
         match expr {
             Expr::Integer(i) => self.visit_integer(i),
             Expr::Rational(r) => self.visit_rational(r),
+            Expr::Real(_) => {
+                // Treat Real as a constant similar to Integer/Rational
+                // For visitors that care about the value, they should match on Expr directly
+                // For now, use a dummy rational to satisfy the type system
+                use rustmath_integers::Integer;
+                use rustmath_rationals::Rational;
+                self.visit_rational(&Rational::new(0, 1).unwrap())
+            }
             Expr::Symbol(s) => self.visit_symbol(s),
             Expr::Binary(op, left, right) => self.visit_binary(*op, left, right),
             Expr::Unary(op, inner) => self.visit_unary(*op, inner),
@@ -88,7 +96,7 @@ pub trait ExprMutator {
     /// Transform an expression (default: traverse and rebuild)
     fn mutate(&mut self, expr: &Expr) -> Expr {
         match expr {
-            Expr::Integer(_) | Expr::Rational(_) | Expr::Symbol(_) => expr.clone(),
+            Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) | Expr::Symbol(_) => expr.clone(),
             Expr::Binary(op, left, right) => {
                 let new_left = self.mutate(left);
                 let new_right = self.mutate(right);
@@ -268,7 +276,7 @@ impl ExprMutator for Substituter {
                     expr.clone()
                 }
             }
-            Expr::Integer(_) | Expr::Rational(_) => expr.clone(),
+            Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => expr.clone(),
             Expr::Binary(op, left, right) => {
                 let new_left = self.mutate(left);
                 let new_right = self.mutate(right);

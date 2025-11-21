@@ -14,7 +14,7 @@ impl Expr {
     /// Replaces all occurrences of the given symbol with the provided expression.
     pub fn substitute(&self, sym: &Symbol, replacement: &Expr) -> Expr {
         match self {
-            Expr::Integer(_) | Expr::Rational(_) => self.clone(),
+            Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => self.clone(),
             Expr::Symbol(s) => {
                 if s == sym {
                     replacement.clone()
@@ -46,7 +46,7 @@ impl Expr {
     /// Takes a map of symbol -> expression and performs all substitutions.
     pub fn substitute_many(&self, substitutions: &HashMap<Symbol, Expr>) -> Expr {
         match self {
-            Expr::Integer(_) | Expr::Rational(_) => self.clone(),
+            Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => self.clone(),
             Expr::Symbol(s) => substitutions.get(s).cloned().unwrap_or_else(|| self.clone()),
             Expr::Binary(op, left, right) => {
                 let new_left = left.substitute_many(substitutions);
@@ -75,6 +75,7 @@ impl Expr {
         match self {
             Expr::Integer(n) => Rational::new(n.clone(), Integer::one()).ok(),
             Expr::Rational(r) => Some(r.clone()),
+            Expr::Real(_) => None, // Real numbers are not exact rationals
             Expr::Symbol(_) => None,
             Expr::Binary(op, left, right) => {
                 let l = left.eval_rational()?;
@@ -107,6 +108,10 @@ impl Expr {
                             None
                         }
                     }
+                    BinaryOp::Mod => {
+                        // Modulo operation - not supported for rational evaluation
+                        None
+                    }
                 }
             }
             Expr::Unary(op, inner) => {
@@ -130,6 +135,7 @@ impl Expr {
         match self {
             Expr::Integer(n) => n.to_i64().map(|i| i as f64),
             Expr::Rational(r) => r.to_f64(),
+            Expr::Real(x) => Some(*x),
             Expr::Symbol(_) => None,
             Expr::Binary(op, left, right) => {
                 let l = left.eval_float()?;
@@ -147,6 +153,7 @@ impl Expr {
                         }
                     }
                     BinaryOp::Pow => Some(l.powf(r)),
+                    BinaryOp::Mod => Some(l % r),
                 }
             }
             Expr::Unary(op, inner) => {
@@ -315,7 +322,7 @@ impl Expr {
 
     fn collect_symbols(&self, syms: &mut Vec<Symbol>) {
         match self {
-            Expr::Integer(_) | Expr::Rational(_) => {}
+            Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => {}
             Expr::Symbol(s) => syms.push(s.clone()),
             Expr::Binary(_, left, right) => {
                 left.collect_symbols(syms);

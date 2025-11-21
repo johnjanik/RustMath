@@ -26,7 +26,7 @@ impl Expr {
     pub fn integrate(&self, var: &Symbol) -> Option<Self> {
         match self {
             // ∫ c dx = c*x for constants
-            Expr::Integer(_) | Expr::Rational(_) => {
+            Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => {
                 Some(self.clone() * Expr::Symbol(var.clone()))
             }
 
@@ -57,6 +57,9 @@ impl Expr {
                     let right_integral = right.integrate(var)?;
                     Some(left_integral - right_integral)
                 }
+
+                // Modulo: not integrable in standard sense
+                BinaryOp::Mod => None,
 
                 // Constant multiple: ∫ c*f dx = c*∫f dx
                 BinaryOp::Mul => {
