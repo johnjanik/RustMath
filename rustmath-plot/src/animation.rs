@@ -204,7 +204,7 @@ impl Animation {
     }
 
     /// Save as animated GIF
-    fn save_gif(&self, path: &Path, options: &AnimationOptions) -> Result<()> {
+    fn save_gif(&self, _path: &Path, _options: &AnimationOptions) -> Result<()> {
         // TODO: Implement GIF export using the `gif` crate
         // This requires:
         // 1. Render each frame to a raster image
@@ -216,7 +216,7 @@ impl Animation {
     }
 
     /// Save as animated PNG (APNG)
-    fn save_apng(&self, path: &Path, options: &AnimationOptions) -> Result<()> {
+    fn save_apng(&self, _path: &Path, _options: &AnimationOptions) -> Result<()> {
         // TODO: Implement APNG export
         Err(PlotError::NotImplemented(
             "APNG export not yet implemented".to_string(),
@@ -224,7 +224,7 @@ impl Animation {
     }
 
     /// Save as video file (MP4/WebM)
-    fn save_video(&self, path: &Path, format: &str, options: &AnimationOptions) -> Result<()> {
+    fn save_video(&self, _path: &Path, format: &str, _options: &AnimationOptions) -> Result<()> {
         // TODO: Implement video export by:
         // 1. Render each frame as PNG to temp directory
         // 2. Call ffmpeg to encode as video

@@ -5,7 +5,7 @@
 use crate::primitives::point;
 use crate::Graphics;
 use rustmath_colors::Color;
-use rustmath_plot_core::{MarkerStyle, PlotOptions, Point2D, Result};
+use rustmath_plot_core::{MarkerStyle, PlotOptions, Point2D};
 
 /// Create a scatter plot from data points
 ///

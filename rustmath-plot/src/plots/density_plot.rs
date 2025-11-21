@@ -6,7 +6,7 @@ use crate::backend::ColorInterpolator;
 use crate::primitives::polygon;
 use crate::Graphics;
 use rustmath_colors::{Color, Colormap};
-use rustmath_plot_core::{PlotOptions, Point2D, Result};
+use rustmath_plot_core::{PlotOptions, Point2D};
 
 /// Create a density plot of a 2D function
 ///
@@ -52,8 +52,8 @@ pub fn density_plot<F>(
     x_range: (f64, f64),
     y_range: (f64, f64),
     num_points: Option<usize>,
-    colormap: Option<Colormap>,
-    options: Option<PlotOptions>,
+    _colormap: Option<Colormap>,
+    _options: Option<PlotOptions>,
 ) -> Graphics
 where
     F: Fn(f64, f64) -> f64,
@@ -157,7 +157,7 @@ pub fn density_plot_custom<F, C>(
     y_range: (f64, f64),
     num_points: Option<usize>,
     color_fn: C,
-    options: Option<PlotOptions>,
+    _options: Option<PlotOptions>,
 ) -> Graphics
 where
     F: Fn(f64, f64) -> f64,

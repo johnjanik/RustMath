@@ -5,8 +5,7 @@
 use crate::backend::AdaptiveSampler;
 use crate::primitives::line;
 use crate::Graphics;
-use rustmath_colors::Color;
-use rustmath_plot_core::{PlotOptions, Point2D, Result};
+use rustmath_plot_core::PlotOptions;
 
 /// Plot a function over a given range
 ///
