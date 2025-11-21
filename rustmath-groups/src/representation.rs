@@ -88,7 +88,7 @@ impl<F: Field> Representation<F> {
 /// A character of a representation
 ///
 /// The character χ(g) = tr(ρ(g)) is the trace of the representation matrix
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Character {
     /// Degree of the representation
     degree: usize,
@@ -137,6 +137,11 @@ impl Character {
         self.values.keys().collect()
     }
 
+    /// Get a reference to the internal values HashMap
+    pub fn values(&self) -> &HashMap<String, Complex> {
+        &self.values
+    }
+
     /// Compute the inner product of two characters
     ///
     /// ⟨χ₁, χ₂⟩ = (1/|G|) ∑_{g∈G} χ₁(g) χ₂(g)*
@@ -176,6 +181,16 @@ impl Character {
 impl fmt::Display for Character {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Character(degree={})", self.degree)
+    }
+}
+
+impl Default for Character {
+    /// Create a default character with degree 0 and no values
+    fn default() -> Self {
+        Character {
+            degree: 0,
+            values: HashMap::new(),
+        }
     }
 }
 
