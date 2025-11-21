@@ -121,7 +121,7 @@ pub use bgg_resolution::{
     BGGResolution, DifferentialMap, build_differential, dot_action,
 };
 pub use verma_module::{
-    VermaModule, VermaModuleElement, VermaModuleBasisElement, Weight,
+    VermaModule, VermaModuleElement, VermaModuleBasisElement,
     VermaModuleHomomorphism, VermaModuleHomset, ContravariantForm,
 };
 pub use center_uea::{

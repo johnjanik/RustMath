@@ -64,9 +64,10 @@ pub mod matrix {
     ///
     /// let gl3 = matrix::GL(3);
     /// ```
-    pub fn GL(n: usize) -> crate::matrix_group::GLn {
-        crate::matrix_group::GLn::new(n)
-    }
+    // TODO: These functions need to be generic over the field type F
+    // pub fn GL<F: Field>(n: usize) -> crate::matrix_group::GLn<F> {
+    //     crate::matrix_group::GLn::new(n)
+    // }
 
     /// Creates a Special Linear Group SL(n) over a ring
     ///
@@ -81,9 +82,10 @@ pub mod matrix {
     ///
     /// let sl2 = matrix::SL(2);
     /// ```
-    pub fn SL(n: usize) -> crate::matrix_group::SLn {
-        crate::matrix_group::SLn::new(n)
-    }
+    // TODO: These functions need to be generic over the field type F
+    // pub fn SL<F: Field>(n: usize) -> crate::matrix_group::SLn<F> {
+    //     crate::matrix_group::SLn::new(n)
+    // }
 }
 
 /// Permutation Groups Catalog
@@ -191,9 +193,10 @@ pub mod permutation {
     ///
     /// let d4 = permutation::Dihedral(4);
     /// ```
-    pub fn Dihedral(n: usize) -> crate::semidirect_product::GroupSemidirectProduct {
-        crate::semidirect_product::dihedral_group(n)
-    }
+    // TODO: GroupSemidirectProduct needs 3 generic parameters
+    // pub fn Dihedral(n: usize) -> crate::semidirect_product::GroupSemidirectProduct {
+    //     crate::semidirect_product::dihedral_group(n)
+    // }
 
     /// Creates a dicyclic group
     ///
@@ -386,9 +389,10 @@ pub mod affine {
     ///
     /// let aff3 = affine::Affine(3);
     /// ```
-    pub fn Affine(n: usize) -> AffineGroup {
-        AffineGroup::new(n)
-    }
+    // TODO: AffineGroup needs generic parameter R: Ring
+    // pub fn Affine<R: Ring>(n: usize) -> AffineGroup<R> {
+    //     AffineGroup::new(n)
+    // }
 
     /// Creates a Euclidean group
     ///
@@ -403,9 +407,10 @@ pub mod affine {
     ///
     /// let e3 = affine::Euclidean(3);
     /// ```
-    pub fn Euclidean(n: usize) -> EuclideanGroup {
-        EuclideanGroup::new(n)
-    }
+    // TODO: EuclideanGroup needs generic parameter R: Ring
+    // pub fn Euclidean<R: Ring>(n: usize) -> EuclideanGroup<R> {
+    //     EuclideanGroup::new(n)
+    // }
 }
 
 /// Lie Groups Catalog
@@ -601,9 +606,10 @@ pub mod misc {
     ///
     /// let g = misc::SemimonomialTransformation(3);
     /// ```
-    pub fn SemimonomialTransformation(n: usize) -> SemimonomialTransformationGroup {
-        SemimonomialTransformationGroup::new(n)
-    }
+    // TODO: SemimonomialTransformationGroup needs generic parameters
+    // pub fn SemimonomialTransformation(n: usize) -> SemimonomialTransformationGroup {
+    //     SemimonomialTransformationGroup::new(n)
+    // }
 }
 
 #[cfg(test)]

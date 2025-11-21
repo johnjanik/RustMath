@@ -233,7 +233,8 @@ pub use affine::{
 // Re-export projective scheme types
 // Re-export commonly used types
 pub use elliptic_curves::{EllipticCurve, Point};
-pub use elliptic_curves::rational::{EllipticCurveRational, ReductionType, TorsionGroup};
+// TODO: Re-enable when rational module is implemented
+// pub use elliptic_curves::rational::{EllipticCurveRational, ReductionType, TorsionGroup};
 pub use graded_ring::{GradedRing, HomogeneousElement, HomogeneousIdeal};
 pub use line_bundle::{CanonicalBundle, Divisor, LineBundle, PicardGroup};
 pub use proj::{AffineChart, Proj, TwistingSheaf};
