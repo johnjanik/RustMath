@@ -4,6 +4,7 @@
 
 use crate::algebraic_real::AlgebraicReal;
 use crate::algebraic_number::AlgebraicNumber;
+use rustmath_core::Ring;
 
 /// Compute the nth root of an algebraic real number
 ///
@@ -31,7 +32,7 @@ pub fn nth_root(alpha: &AlgebraicReal, n: u32) -> AlgebraicReal {
         // For now, handle integer case
         // TODO: Handle general rational nth roots
         if r.denominator().is_one() {
-            let num = r.numerator().to_i64().unwrap_or(0);
+            let num = r.numerator().to_i64();
             return AlgebraicReal::nth_root(num, n);
         }
     }

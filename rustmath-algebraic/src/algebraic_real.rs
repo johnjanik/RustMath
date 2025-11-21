@@ -148,7 +148,7 @@ impl AlgebraicReal {
     /// Get a floating-point approximation
     pub fn to_f64(&self, precision: usize) -> f64 {
         if let Some(r) = self.to_rational() {
-            r.to_f64()
+            r.to_f64().unwrap_or(0.0)
         } else {
             // TODO: Implement proper evaluation
             0.0
@@ -160,6 +160,16 @@ impl AlgebraicReal {
         Self {
             inner: self.inner.simplify(),
         }
+    }
+
+    /// Create the zero element (0)
+    pub fn zero() -> Self {
+        Self::from_i64(0)
+    }
+
+    /// Create the one element (1)
+    pub fn one() -> Self {
+        Self::from_i64(1)
     }
 
     /// Check if this is exactly zero
@@ -310,11 +320,11 @@ impl Neg for AlgebraicReal {
 
 impl Ring for AlgebraicReal {
     fn zero() -> Self {
-        Self::from_i64(0)
+        AlgebraicReal::zero()
     }
 
     fn one() -> Self {
-        Self::from_i64(1)
+        AlgebraicReal::one()
     }
 
     fn is_zero(&self) -> bool {

@@ -137,7 +137,7 @@ pub trait Algebra<R: Ring>: Ring {
     fn base_ring(&self) -> &R;
 
     /// Returns the structure map (embedding of base ring)
-    fn structure_map(&self) -> Box<dyn Fn(&R) -> Self>;
+    fn structure_map(&self) -> Box<dyn Fn(&R) -> Self + 'static> where Self: 'static;
 
     /// Checks if this is an algebra over the given base ring
     fn is_algebra_over(&self, base: &R) -> bool;

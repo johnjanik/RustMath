@@ -91,7 +91,6 @@ pub mod tate_algebra;
 pub mod valuation;
 pub mod qqbar;
 pub mod number_field;
-pub mod padics;
 
 // Re-export core ring types from other crates
 pub use rustmath_integers::Integer;

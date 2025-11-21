@@ -11,6 +11,7 @@ use rustmath_rationals::Rational;
 use rustmath_polynomials::UnivariatePolynomial;
 use rustmath_integers::Integer;
 use rustmath_complex::Complex;
+use rustmath_core::{Field, Ring};
 use std::fmt;
 
 /// Descriptor for an algebraic number

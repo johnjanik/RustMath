@@ -52,7 +52,7 @@ impl AlgebraicNumber {
         // TODO: Implement proper evaluation
         // For now, just handle rationals
         if let Some(r) = self.to_rational() {
-            Complex::new(r.to_f64(), 0.0)
+            Complex::new(r.to_f64().unwrap_or(0.0), 0.0)
         } else {
             // Placeholder for non-rational case
             Complex::new(0.0, 0.0)
@@ -69,6 +69,16 @@ impl AlgebraicNumber {
     /// Get the internal descriptor
     pub fn descriptor(&self) -> &AlgebraicDescriptor {
         &self.descriptor
+    }
+
+    /// Create the zero element (0)
+    pub fn zero() -> Self {
+        Self::from_i64(0)
+    }
+
+    /// Create the one element (1)
+    pub fn one() -> Self {
+        Self::from_i64(1)
     }
 
     /// Check if this is exactly zero
@@ -236,11 +246,11 @@ impl Neg for AlgebraicNumber {
 
 impl Ring for AlgebraicNumber {
     fn zero() -> Self {
-        Self::from_i64(0)
+        AlgebraicNumber::zero()
     }
 
     fn one() -> Self {
-        Self::from_i64(1)
+        AlgebraicNumber::one()
     }
 
     fn is_zero(&self) -> bool {

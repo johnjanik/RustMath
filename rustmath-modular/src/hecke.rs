@@ -6,7 +6,7 @@
 use num_bigint::BigInt;
 use num_integer::Integer;
 use num_rational::BigRational;
-use num_traits::{Zero, One};
+use num_traits::{Zero, One, Signed};
 use std::collections::HashMap;
 
 /// A Hecke operator T_n

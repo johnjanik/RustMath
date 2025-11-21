@@ -6,7 +6,7 @@ use rustmath_symbolic::{BinaryOp, Expr, UnaryOp};
 pub fn differentiate(expr: &Expr, var: &str) -> Expr {
     match expr {
         // d/dx(c) = 0 for constants
-        Expr::Integer(_) | Expr::Rational(_) => Expr::from(0),
+        Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => Expr::from(0),
 
         // d/dx(x) = 1, d/dx(y) = 0
         Expr::Symbol(s) => {
@@ -66,6 +66,9 @@ pub fn differentiate(expr: &Expr, var: &str) -> Expr {
                     f.pow(g) * (term1 + term2)
                 }
             }
+
+            // Modulo operation: derivative is complex, return 0 for now
+            BinaryOp::Mod => Expr::from(0),
         },
 
         // Unary operations
