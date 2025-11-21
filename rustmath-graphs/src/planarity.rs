@@ -12,7 +12,7 @@
 //! and E is the number of edges.
 
 use crate::Graph;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 /// Result of planarity testing
 #[derive(Debug, Clone, PartialEq, Eq)]

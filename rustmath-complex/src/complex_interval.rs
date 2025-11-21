@@ -43,8 +43,8 @@
 //! - **Division by zero**: Returns conservative infinite bounds when dividing by zero-containing interval
 //! - **Branch cuts**: `argument_bounds()` handles branch cuts conservatively
 
-use rustmath_core::{CommutativeRing, Field, MathError, Result, Ring};
-use rustmath_reals::{Interval, Real, RealMPFR};
+use rustmath_core::Ring;
+use rustmath_reals::{Interval, Real};
 use std::fmt;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
@@ -462,7 +462,7 @@ impl ComplexIntervalFieldElement {
         }
 
         // Compute arguments at all four corners
-        let mut angles = vec![
+        let angles = vec![
             il.atan2(rl),
             il.atan2(ru),
             iu.atan2(rl),

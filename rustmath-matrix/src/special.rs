@@ -996,7 +996,7 @@ pub fn random_diagonalizable_matrix(
     let d = diagonal_matrix(diag_entries);
 
     // Create a random invertible matrix P (use unimodular for guaranteed invertibility)
-    let p = random_unimodular_matrix(size, 10);
+    let _p = random_unimodular_matrix(size, 10);
 
     // Compute P * D
     // Note: This is a simplified version. Full implementation would need matrix inverse.

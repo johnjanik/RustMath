@@ -29,7 +29,6 @@
 
 use crate::Integer;
 use crate::prime::{is_prime, factor};
-use rustmath_core::Ring;
 use rand::Rng;
 
 /// Point on an elliptic curve in projective coordinates (X:Y:Z)

@@ -2,8 +2,6 @@
 //!
 //! A linear [n,k,d] code is a k-dimensional subspace of F^n with minimum distance d.
 
-use rustmath_finitefields::prime_field::PrimeField;
-use rustmath_matrix::matrix::Matrix;
 use rustmath_core::Ring;
 use std::fmt;
 

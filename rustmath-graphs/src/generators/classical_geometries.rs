@@ -665,8 +665,8 @@ pub fn unitary_dual_polar_graph(m: usize, q: usize) -> Graph {
             // Product formula for Gaussian binomial coefficient
             let mut count = 1;
             for i in 0..k {
-                count *= (q2.pow((m - i) as u32) - 1);
-                count /= (q2.pow((i + 1) as u32) - 1);
+                count *= q2.pow((m - i) as u32) - 1;
+                count /= q2.pow((i + 1) as u32) - 1;
             }
             count
         }

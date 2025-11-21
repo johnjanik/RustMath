@@ -178,7 +178,7 @@ impl ColorPartition {
     /// Create partition based on vertex degrees
     fn from_degrees(g: &Graph) -> Self {
         let n = g.num_vertices();
-        let mut degrees: Vec<usize> = (0..n)
+        let degrees: Vec<usize> = (0..n)
             .map(|v| g.degree(v).unwrap_or(0))
             .collect();
 
@@ -355,7 +355,7 @@ pub fn is_automorphism(g: &Graph, perm: &Permutation) -> bool {
 
 /// Count the number of automorphisms (order of automorphism group)
 pub fn automorphism_count(g: &Graph) -> usize {
-    let mut aut_group = automorphisms(g);
+    let aut_group = automorphisms(g);
     let n = g.num_vertices();
 
     if let Some(elems) = aut_group.elements(n) {

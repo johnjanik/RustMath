@@ -11,7 +11,6 @@ use crate::mpc::ComplexMPFR;
 use crate::complex::Complex;
 use rustmath_integers::Integer;
 use rustmath_reals::RealMPFR;
-use rustmath_core::NumericConversion;
 use std::fmt;
 
 /// Default precision for MPC numbers (53 bits = f64 equivalent)
@@ -229,9 +228,9 @@ impl fmt::Display for MPFRtoMPC {
 /// # Examples
 ///
 /// ```
-/// use rustmath_complex::MPComplexField;
+/// use rustmath_complex::mp_complex_field;
 ///
-/// let field = MPComplexField(Some(256));
+/// let field = mp_complex_field(Some(256));
 /// // Use field for creating high-precision complex numbers
 /// ```
 pub fn mpcomplex_field(precision: Option<u32>) -> MpcomplexFieldClass {
@@ -501,7 +500,7 @@ mod tests {
 
     #[test]
     fn test_mp_complex_field() {
-        let field = MPComplexField(Some(256));
+        let field = mp_complex_field(Some(256));
         assert_eq!(field.precision(), 256);
 
         let z = field.make_complex(3.0, 4.0);

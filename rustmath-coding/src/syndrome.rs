@@ -1,6 +1,5 @@
 //! Syndrome decoding utilities for error correction codes
 
-use rustmath_finitefields::prime_field::PrimeField;
 
 /// Syndrome decoding table for efficient error correction
 ///

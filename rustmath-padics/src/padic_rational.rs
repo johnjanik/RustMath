@@ -1,7 +1,7 @@
 //! p-adic rationals qp
 
 use crate::PadicInteger;
-use rustmath_core::{CommutativeRing, Field, MathError, NumericConversion, Result, Ring};
+use rustmath_core::{CommutativeRing, Field, MathError, Result, Ring};
 use rustmath_integers::Integer;
 use rustmath_rationals::Rational;
 use std::fmt;

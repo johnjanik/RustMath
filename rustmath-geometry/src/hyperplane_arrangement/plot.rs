@@ -15,9 +15,6 @@
 //!
 //! External plotting libraries can then consume this data to create actual visualizations.
 
-use crate::point::Point2D;
-use rustmath_rationals::Rational;
-use std::collections::HashMap;
 
 /// RGB color representation
 #[derive(Debug, Clone, Copy, PartialEq)]

@@ -4,7 +4,7 @@
 //! complex intervals with consistent precision settings.
 
 use crate::complex_interval::ComplexIntervalFieldElement;
-use rustmath_reals::{Interval, Real};
+use rustmath_reals::Interval;
 use std::fmt;
 
 /// Default precision for complex interval fields (53 bits = f64 equivalent)
@@ -78,16 +78,14 @@ impl ComplexIntervalFieldClass {
 
     /// Create a point interval (exact complex number) in this field
     pub fn make_point(&self, real: f64, imag: f64) -> ComplexIntervalFieldElement {
-        let mut elem = ComplexIntervalFieldElement::point(real, imag);
         // Update precision (note: this is a simplified approach)
-        elem = ComplexIntervalFieldElement::with_precision(
+        ComplexIntervalFieldElement::with_precision(
             self.precision,
             real,
             real,
             imag,
             imag,
-        );
-        elem
+        )
     }
 
     /// Create complex interval from real and imaginary intervals
@@ -96,9 +94,8 @@ impl ComplexIntervalFieldClass {
         real: Interval,
         imag: Interval,
     ) -> ComplexIntervalFieldElement {
-        let mut elem = ComplexIntervalFieldElement::from_intervals(real, imag);
+        ComplexIntervalFieldElement::from_intervals(real, imag)
         // Note: precision is embedded in the element creation
-        elem
     }
 
     /// Create zero in this field
@@ -170,13 +167,13 @@ impl PartialEq for ComplexIntervalFieldClass {
 /// # Examples
 ///
 /// ```
-/// use rustmath_complex::ComplexIntervalField;
+/// use rustmath_complex::complex_interval_field;
 ///
 /// // Create field with default precision (53 bits)
-/// let cif = ComplexIntervalField(None);
+/// let cif = complex_interval_field(None);
 ///
 /// // Create field with custom precision (256 bits)
-/// let cif_256 = ComplexIntervalField(Some(256));
+/// let cif_256 = complex_interval_field(Some(256));
 /// ```
 pub fn complex_interval_field(precision: Option<u32>) -> ComplexIntervalFieldClass {
     ComplexIntervalFieldClass::new(precision.unwrap_or(DEFAULT_PRECISION))
@@ -251,10 +248,10 @@ mod tests {
 
     #[test]
     fn test_factory_function() {
-        let field1 = ComplexIntervalField(None);
+        let field1 = complex_interval_field(None);
         assert_eq!(field1.precision(), DEFAULT_PRECISION);
 
-        let field2 = ComplexIntervalField(Some(512));
+        let field2 = complex_interval_field(Some(512));
         assert_eq!(field2.precision(), 512);
     }
 

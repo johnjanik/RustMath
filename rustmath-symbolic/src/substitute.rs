@@ -349,7 +349,7 @@ fn gamma_approx(x: f64) -> f64 {
 
 /// Approximate error function using Taylor series
 fn erf_approx(x: f64) -> f64 {
-    use std::f64::consts::PI;
+    
 
     // For |x| > 3, erf(x) ≈ ±1
     if x.abs() > 3.0 {

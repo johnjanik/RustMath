@@ -7,7 +7,7 @@
 //! operations and has applications in quantum group theory and the Yang-Baxter equation.
 
 use crate::digraph::DiGraph;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 

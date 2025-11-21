@@ -2,7 +2,6 @@
 
 use crate::expression::{BinaryOp, Expr, UnaryOp};
 use rustmath_core::{NumericConversion, Ring};
-use rustmath_integers::Integer;
 use std::sync::Arc;
 
 impl Expr {
@@ -97,8 +96,8 @@ impl Expr {
     /// let collected = expr.collect(&Symbol::new("x"));
     /// ```
     pub fn collect(&self, var: &crate::symbol::Symbol) -> Expr {
-        use crate::polynomial::*;
-        use std::collections::HashMap;
+        
+        
 
         // Only works for polynomials
         if !self.is_polynomial(var) {

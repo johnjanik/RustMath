@@ -6,7 +6,6 @@
 //! A Hamming code has parameters [2^r - 1, 2^r - r - 1, 3] where r ≥ 2.
 
 use crate::linear_code::LinearCode;
-use rustmath_finitefields::prime_field::PrimeField;
 use std::fmt;
 
 /// A binary Hamming code
@@ -49,7 +48,7 @@ impl HammingCode {
         // Build generator matrix G from H
         let g = Self::build_generator_matrix(r, k, n, &h);
 
-        let mut code = LinearCode::from_generator_matrix(g, 2);
+        let code = LinearCode::from_generator_matrix(g, 2);
 
         HammingCode { r, code }
     }

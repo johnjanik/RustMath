@@ -23,8 +23,7 @@
 //! - Antisymmetric: if a < b, then !(b < a)
 //! - Total: for any a, b either a < b, b < a, or a == b
 
-use crate::expression::{BinaryOp, Expr, UnaryOp};
-use crate::symbol::Symbol;
+use crate::expression::Expr;
 use rand::Rng;
 
 /// Probability list for choosing operations
