@@ -395,7 +395,7 @@ impl FreeAbelianMonoidFactory {
 ///
 /// This function provides an interface compatible with SageMath's
 /// `FreeAbelianMonoid_class` constructor.
-pub fn FreeAbelianMonoid_class(generators: Vec<String>) -> FreeAbelianMonoid {
+pub fn free_abelian_monoid_class(generators: Vec<String>) -> FreeAbelianMonoid {
     FreeAbelianMonoid::new(generators)
 }
 
@@ -403,7 +403,7 @@ pub fn FreeAbelianMonoid_class(generators: Vec<String>) -> FreeAbelianMonoid {
 ///
 /// In Rust's type system, if we have a `FreeAbelianMonoid` reference,
 /// it is always a valid free abelian monoid.
-pub fn is_FreeAbelianMonoid(_obj: &FreeAbelianMonoid) -> bool {
+pub fn is_free_abelian_monoid(_obj: &FreeAbelianMonoid) -> bool {
     true
 }
 
@@ -411,7 +411,7 @@ pub fn is_FreeAbelianMonoid(_obj: &FreeAbelianMonoid) -> bool {
 ///
 /// In Rust's type system, if we have a `FreeAbelianMonoidElement` reference,
 /// it is always a valid free abelian monoid element.
-pub fn is_FreeAbelianMonoidElement(_obj: &FreeAbelianMonoidElement) -> bool {
+pub fn is_free_abelian_monoid_element(_obj: &FreeAbelianMonoidElement) -> bool {
     true
 }
 
@@ -679,18 +679,18 @@ mod tests {
     #[test]
     fn test_is_FreeAbelianMonoid() {
         let M = FreeAbelianMonoid::with_rank(3);
-        assert!(is_FreeAbelianMonoid(&M));
+        assert!(is_free_abelian_monoid(&M));
     }
 
     #[test]
     fn test_is_FreeAbelianMonoidElement() {
         let elem = FreeAbelianMonoidElement::identity(2);
-        assert!(is_FreeAbelianMonoidElement(&elem));
+        assert!(is_free_abelian_monoid_element(&elem));
     }
 
     #[test]
     fn test_FreeAbelianMonoid_class() {
-        let M = FreeAbelianMonoid_class(vec!["x".to_string(), "y".to_string()]);
+        let M = free_abelian_monoid_class(vec!["x".to_string(), "y".to_string()]);
         assert_eq!(M.rank(), 2);
     }
 

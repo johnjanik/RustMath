@@ -4,7 +4,7 @@
 
 use crate::primitives::polygon;
 use crate::Graphics;
-use rustmath_plot_core::{PlotOptions, Point2D, Result};
+use rustmath_plot_core::{PlotOptions, Point2D};
 
 /// Create a histogram from data
 ///

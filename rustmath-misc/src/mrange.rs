@@ -57,7 +57,7 @@ impl Iterator for XMRange {
             return self.current.clone();
         }
 
-        let mut current = self.current.as_mut().unwrap();
+        let current = self.current.as_mut().unwrap();
 
         // Increment the indices (rightmost first)
         let mut i = current.len();
@@ -138,7 +138,7 @@ impl<T: Clone> Iterator for XMRangeIter<T> {
             return Some(result);
         }
 
-        let mut indices = self.current_indices.as_mut().unwrap();
+        let indices = self.current_indices.as_mut().unwrap();
 
         // Increment the indices (rightmost first)
         let mut i = indices.len();

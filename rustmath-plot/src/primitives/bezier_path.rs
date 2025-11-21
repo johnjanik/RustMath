@@ -232,7 +232,7 @@ impl BezierPath {
     }
 
     /// Calculate arc length of a cubic Bezier segment
-    fn arc_length_cubic(p0: Point2D, p1: Point2D, p2: Point2D, p3: Point2D, tolerance: f64) -> f64 {
+    fn arc_length_cubic(p0: Point2D, p1: Point2D, p2: Point2D, p3: Point2D, _tolerance: f64) -> f64 {
         // Approximate by sampling
         let samples = 100;
         let mut length = 0.0;
@@ -251,7 +251,7 @@ impl BezierPath {
     }
 
     /// Calculate arc length of a quadratic Bezier segment
-    fn arc_length_quadratic(p0: Point2D, p1: Point2D, p2: Point2D, tolerance: f64) -> f64 {
+    fn arc_length_quadratic(p0: Point2D, p1: Point2D, p2: Point2D, _tolerance: f64) -> f64 {
         let samples = 100;
         let mut length = 0.0;
         let mut prev = p0;

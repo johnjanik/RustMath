@@ -3,4 +3,4 @@
 // Stub implementation for sage.misc.test_nested_class
 
 #[derive(Clone, Debug)]
-pub struct Test_nested_class;
+pub struct TestNestedClass;

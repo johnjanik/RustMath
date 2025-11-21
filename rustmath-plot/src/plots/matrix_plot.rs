@@ -6,7 +6,7 @@ use crate::backend::ColorInterpolator;
 use crate::primitives::polygon;
 use crate::Graphics;
 use rustmath_colors::{Color, Colormap};
-use rustmath_plot_core::{PlotOptions, Point2D, Result};
+use rustmath_plot_core::{PlotOptions, Point2D};
 
 /// Create a heatmap visualization of a matrix
 ///
@@ -43,15 +43,15 @@ use rustmath_plot_core::{PlotOptions, Point2D, Result};
 /// ```
 pub fn matrix_plot(
     matrix: Vec<Vec<f64>>,
-    colormap: Option<Colormap>,
-    options: Option<PlotOptions>,
+    _colormap: Option<Colormap>,
+    _options: Option<PlotOptions>,
 ) -> Graphics {
     if matrix.is_empty() || matrix[0].is_empty() {
         return Graphics::new();
     }
 
     let rows = matrix.len();
-    let cols = matrix[0].len();
+    let _cols = matrix[0].len();
 
     // Find min and max values for normalization
     let mut min_val = f64::INFINITY;
@@ -120,15 +120,15 @@ pub fn matrix_plot_range(
     matrix: Vec<Vec<f64>>,
     vmin: f64,
     vmax: f64,
-    colormap: Option<Colormap>,
-    options: Option<PlotOptions>,
+    _colormap: Option<Colormap>,
+    _options: Option<PlotOptions>,
 ) -> Graphics {
     if matrix.is_empty() || matrix[0].is_empty() {
         return Graphics::new();
     }
 
     let rows = matrix.len();
-    let cols = matrix[0].len();
+    let _cols = matrix[0].len();
 
     let mut g = Graphics::new();
 
@@ -180,7 +180,7 @@ pub fn matrix_plot_binary(
     }
 
     let rows = matrix.len();
-    let cols = matrix[0].len();
+    let _cols = matrix[0].len();
 
     let mut g = Graphics::new();
 

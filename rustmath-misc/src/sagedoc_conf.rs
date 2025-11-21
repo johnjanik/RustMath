@@ -3,4 +3,4 @@
 // Stub implementation for sage.misc.sagedoc_conf
 
 #[derive(Clone, Debug)]
-pub struct Sagedoc_conf;
+pub struct SagedocConf;

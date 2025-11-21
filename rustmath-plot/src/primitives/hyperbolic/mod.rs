@@ -31,7 +31,7 @@ pub mod utils {
     /// Convert from upper half-plane to Poincaré disk coordinates
     pub fn uhp_to_poincare(z: (f64, f64)) -> Point2D {
         let (x, y) = z;
-        let denom = (x * x + (y + 1.0) * (y + 1.0));
+        let denom = x * x + (y + 1.0) * (y + 1.0);
         let u = 2.0 * x / denom;
         let v = (x * x + y * y - 1.0) / denom;
         Point2D::new(u, v)

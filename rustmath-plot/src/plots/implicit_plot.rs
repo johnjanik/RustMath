@@ -4,8 +4,7 @@
 
 use crate::primitives::line;
 use crate::Graphics;
-use rustmath_colors::Color;
-use rustmath_plot_core::{PlotOptions, Point2D, Result};
+use rustmath_plot_core::{PlotOptions, Point2D};
 
 /// Plot an implicit curve defined by f(x, y) = 0
 ///
@@ -157,12 +156,12 @@ pub fn implicit_plot_multiple<F>(
 where
     F: Fn(f64, f64) -> f64,
 {
-    let mut g = Graphics::new();
+    let g = Graphics::new();
 
     for (f, opts) in equations {
         let curve = implicit_plot(f, x_range, y_range, num_points, opts);
         // Combine the plots
-        for primitive in curve.primitives() {
+        for _primitive in curve.primitives() {
             // Note: This requires some refactoring of combine() in graphics.rs
             // For now, we'll need to work around this limitation
         }

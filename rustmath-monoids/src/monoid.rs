@@ -42,17 +42,17 @@ pub trait Monoid: Clone + Debug + Eq + Hash {
 
 /// Base class for monoid implementations
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Monoid_class<T: Monoid> {
+pub struct MonoidClass<T: Monoid> {
     /// Identity element
     identity: T,
     /// Name of the monoid
     name: Option<String>,
 }
 
-impl<T: Monoid> Monoid_class<T> {
+impl<T: Monoid> MonoidClass<T> {
     /// Create a new monoid
     pub fn new() -> Self {
-        Monoid_class {
+        MonoidClass {
             identity: T::identity(),
             name: None,
         }
@@ -60,7 +60,7 @@ impl<T: Monoid> Monoid_class<T> {
 
     /// Create a new monoid with a name
     pub fn with_name(name: String) -> Self {
-        Monoid_class {
+        MonoidClass {
             identity: T::identity(),
             name: Some(name),
         }
@@ -100,7 +100,7 @@ impl<T: Monoid> Monoid_class<T> {
     }
 }
 
-impl<T: Monoid> Default for Monoid_class<T> {
+impl<T: Monoid> Default for MonoidClass<T> {
     fn default() -> Self {
         Self::new()
     }
@@ -151,7 +151,7 @@ mod tests {
 
     #[test]
     fn test_monoid_class() {
-        let m = Monoid_class::<TestMonoid>::new();
+        let m = MonoidClass::<TestMonoid>::new();
         assert_eq!(m.identity().value, 0);
         assert!(!m.is_finite());
     }

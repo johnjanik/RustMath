@@ -272,7 +272,7 @@ impl TemporaryDir {
     /// ```
     pub fn persist(mut self) -> PathBuf {
         let temp = self.inner.take().unwrap();
-        temp.into_path()
+        temp.keep().unwrap()
     }
 }
 
@@ -506,7 +506,7 @@ where
     populator(temp_dir.path())?;
 
     // Atomically rename to the final location
-    let temp_path = temp_dir.into_path();
+    let temp_path = temp_dir.keep().unwrap();
     fs::rename(temp_path, path)?;
 
     Ok(())

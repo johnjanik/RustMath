@@ -146,13 +146,13 @@ impl FreeMonoid {
 }
 
 /// Check if an object is a free monoid
-pub fn is_FreeMonoid(obj: &FreeMonoid) -> bool {
+pub fn is_free_monoid(_obj: &FreeMonoid) -> bool {
     // In Rust, this is always true if we have the object
     true
 }
 
 /// Check if an object is a free monoid element
-pub fn is_FreeMonoidElement(obj: &FreeMonoidElement) -> bool {
+pub fn is_free_monoid_element(_obj: &FreeMonoidElement) -> bool {
     // In Rust, this is always true if we have the object
     true
 }
@@ -223,12 +223,12 @@ mod tests {
     #[test]
     fn test_is_FreeMonoid() {
         let M = FreeMonoid::with_rank(3);
-        assert!(is_FreeMonoid(&M));
+        assert!(is_free_monoid(&M));
     }
 
     #[test]
     fn test_is_FreeMonoidElement() {
         let elem = FreeMonoidElement::new(vec![0, 1, 0]);
-        assert!(is_FreeMonoidElement(&elem));
+        assert!(is_free_monoid_element(&elem));
     }
 }

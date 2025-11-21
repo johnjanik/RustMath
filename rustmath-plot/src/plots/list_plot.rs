@@ -4,7 +4,7 @@
 
 use crate::primitives::{line, point};
 use crate::Graphics;
-use rustmath_plot_core::{PlotOptions, Point2D, Result};
+use rustmath_plot_core::{PlotOptions, Point2D};
 
 /// Plot a list of data points
 ///

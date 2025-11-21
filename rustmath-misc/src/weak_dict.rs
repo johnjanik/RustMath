@@ -3,4 +3,4 @@
 // Stub implementation for sage.misc.weak_dict
 
 #[derive(Clone, Debug)]
-pub struct Weak_dict;
+pub struct WeakDict;

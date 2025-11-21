@@ -4,8 +4,8 @@
 
 use crate::primitives::line;
 use crate::Graphics;
-use rustmath_colors::{Color, Colormap};
-use rustmath_plot_core::{PlotOptions, Point2D, Result};
+use rustmath_colors::Colormap;
+use rustmath_plot_core::{PlotOptions, Point2D};
 
 /// Create a contour plot of a 2D function
 ///
@@ -124,7 +124,7 @@ pub fn contour_plot_filled<F>(
     x_range: (f64, f64),
     y_range: (f64, f64),
     levels: Option<Vec<f64>>,
-    colormap: Option<Colormap>,
+    _colormap: Option<Colormap>,
     num_points: Option<usize>,
 ) -> Graphics
 where
