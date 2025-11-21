@@ -296,6 +296,7 @@ pub use expnums::{EGF, ExpNum};
 pub use tiling::{
     build_transfer_matrix, count_domino_tilings, count_monomino_tilings,
     count_polyomino_tilings, count_tilings, ColumnState, Polyomino,
+};
 pub use debruijn::{
     debruijn_graph_path, debruijn_prefer_one, debruijn_prefer_zero, debruijn_sequence,
     debruijn_sequence_binary, universal_cycle_permutations, universal_cycle_subsets,
@@ -307,14 +308,17 @@ pub use path_tableaux::{
 };
 pub use interval_posets::{
     interval_representation, is_interval_order, is_semiorder, Interval, IntervalPoset,
+};
 pub use ribbon_tableau::{
     fermionic_formula, kostka_foulkes_ribbon, ribbon_tableaux, RibbonDecomposition, RibbonTableau,
 };
 pub use subword::{
     all_subwords, count_distinct_subwords, is_subword, reduced_pipe_dreams, subword_order,
     subword_positions, PipeDream, SubwordComplex,
+};
 pub use skew_partition::{
     ribbon_shaped_tableaux, RibbonTableau, SkewPartition, SkewTableau,
+};
 pub use similarity_class_type::{
     centralizer_algebra_dim, centralizer_group_cardinality, dictionary_from_generator,
     ext_orbit_centralizers, ext_orbits, fq, input_parsing,
@@ -327,10 +331,12 @@ pub use similarity_class_type::{
 pub use skew_partition::{SkewPartition, SkewTableau};
 pub use kazhdan_lusztig::{
     bruhat_interval, bruhat_le, bruhat_poset, kazhdan_lusztig_polynomial, length, r_polynomial,
+};
 pub use constellation::{
     count_genus_0_constellations, path_constellation, star_constellation, trivial_constellation,
     Constellation, ConstellationEncoding,
-    cube_constellation, tetrahedron_constellation, Constellation, ConstellationEncoding,
+    cube_constellation, tetrahedron_constellation,
+};
 pub use parking_function::{
     count_non_decreasing_parking_functions, count_parking_functions,
     non_decreasing_parking_functions, non_decreasing_parking_functions_with_area,
