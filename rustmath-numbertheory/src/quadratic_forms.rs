@@ -6,7 +6,7 @@
 //! Every quadratic form can be represented by a symmetric matrix A such that
 //! Q(x) = x^T A x, where x is a column vector.
 
-use rustmath_core::{MathError, NumericConversion, Result, Ring};
+use rustmath_core::{MathError, Result};
 use rustmath_integers::Integer;
 
 /// A quadratic form over the integers

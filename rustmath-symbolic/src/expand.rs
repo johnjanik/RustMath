@@ -2,6 +2,7 @@
 
 use std::sync::Arc;
 use crate::expression::{BinaryOp, Expr, UnaryOp};
+use rustmath_core::Ring;
 
 impl Expr {
     /// Expand the expression

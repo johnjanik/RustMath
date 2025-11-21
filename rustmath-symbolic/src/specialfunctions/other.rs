@@ -31,6 +31,7 @@
 
 use crate::expression::Expr;
 use crate::symbol::Symbol;
+use rustmath_core::Ring;
 use rustmath_integers::Integer;
 use rustmath_rationals::Rational;
 use std::sync::Arc;

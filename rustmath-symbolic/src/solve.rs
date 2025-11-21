@@ -4,6 +4,7 @@
 
 use crate::expression::{BinaryOp, Expr, UnaryOp};
 use crate::symbol::Symbol;
+use rustmath_core::Ring;
 use rustmath_integers::Integer;
 use rustmath_polynomials::{solve_cubic, solve_quadratic, solve_quartic, QuadraticRoots};
 use rustmath_rationals::Rational;
