@@ -211,13 +211,13 @@ impl DirichletLFunction {
                 continue;
             }
             let n_f = n as f64;
-            let n_to_minus_s = (n_f).powc(-s);
+            let n_to_minus_s = Complex64::from(n_f).powc(-s);
             sum1 += self.character_to_complex(chi_n) * n_to_minus_s;
         }
 
         // Second sum: from functional equation
         let W = self.root_number();
-        let N_power = N.powc(0.5 - s);
+        let N_power = Complex64::from(N).powc(Complex64::from(0.5) - s);
 
         let mut sum2 = Complex64::zero();
         for n in 1..=cutoff {
@@ -227,7 +227,7 @@ impl DirichletLFunction {
             }
             let n_f = n as f64;
             let one_minus_s = Complex64::new(1.0, 0.0) - s;
-            let n_to_minus_one_plus_s = (n_f).powc(-one_minus_s);
+            let n_to_minus_one_plus_s = Complex64::from(n_f).powc(-one_minus_s);
             sum2 += self.character_to_complex(-chi_n_bar) * n_to_minus_one_plus_s;
         }
 
