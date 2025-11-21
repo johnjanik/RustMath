@@ -42,7 +42,7 @@ use super::place::FunctionFieldPlace;
 /// - Relative degree: f(P|p)
 /// - Absolute degree: deg(P) = deg(p) * f(P|p)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct FunctionFieldPlace_polymod<F: Field> {
+pub struct FunctionFieldPlacePolymod<F: Field> {
     /// Base place structure
     base: FunctionFieldPlace<F>,
     /// Prime ideal factorization data

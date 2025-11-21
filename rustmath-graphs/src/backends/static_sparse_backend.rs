@@ -5,7 +5,6 @@
 //! This module provides an immutable (static) sparse graph representation
 //! optimized for query performance.
 
-use super::c_graph::CGraphBackend;
 use super::generic_backend::GenericGraphBackend;
 use std::collections::HashMap;
 

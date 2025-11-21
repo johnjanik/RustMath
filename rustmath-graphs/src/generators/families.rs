@@ -4,7 +4,6 @@
 //! trees, cubes, Petersen variations, and many other well-known graph families.
 
 use crate::graph::Graph;
-use std::collections::{HashMap, HashSet, VecDeque};
 
 /// Helper function to compute binomial coefficient
 fn binomial(n: usize, k: usize) -> usize {
@@ -648,7 +647,7 @@ pub fn wheel_graph_family(n: usize) -> Graph {
 /// assert!(g.num_vertices() > 0);
 /// ```
 pub fn truncated_biwheel_graph(n: usize) -> Graph {
-    let mut g = biwheel_graph(n);
+    let g = biwheel_graph(n);
     // Truncate by removing some spoke edges
     // For simplicity, return base biwheel
     g

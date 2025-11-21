@@ -3,7 +3,6 @@
 //! Provides encryption with authentication (AEAD - Authenticated Encryption with Associated Data)
 //! Currently implements GCM (Galois/Counter Mode)
 
-use std::convert::TryInto;
 
 /// GCM (Galois/Counter Mode) - Authenticated Encryption with Associated Data
 ///

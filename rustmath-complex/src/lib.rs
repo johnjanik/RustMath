@@ -24,10 +24,10 @@ pub use complex_interval::{
     ComplexIntervalFieldElement, create_complex_interval_field_element,
     is_complex_interval_field_element, make_complex_interval_field_element0,
 };
-pub use complex_interval_field::{ComplexIntervalField, ComplexIntervalField_class};
+pub use complex_interval_field::{complex_interval_field, ComplexIntervalFieldClass};
 pub use complex_mpc_ext::{
-    CCtoMPC, INTEGERtoMPC, MPCtoMPC, MPFRtoMPC, MPComplexField,
-    MPComplexField_class, MPComplexNumber, late_import, split_complex_string,
+    CCtoMPC, INTEGERtoMPC, MPCtoMPC, MPFRtoMPC, mpcomplex_field,
+    MpcomplexFieldClass, MPComplexNumber, late_import, split_complex_string,
 };
 
 #[cfg(test)]

@@ -11,7 +11,6 @@
 //! - ConvexSetOpen: Open convex sets
 
 use std::fmt::Debug;
-use std::hash::Hash;
 
 /// Base trait for all convex sets
 ///

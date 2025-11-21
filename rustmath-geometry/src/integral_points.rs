@@ -17,7 +17,6 @@
 //! assert_eq!(points.len(), 12); // 3 × 4 = 12 points
 //! ```
 
-use rustmath_integers::Integer;
 use rustmath_matrix::Matrix;
 use rustmath_rationals::Rational;
 use std::collections::HashMap;
@@ -315,24 +314,24 @@ where
 /// # Examples
 ///
 /// ```
-/// use rustmath_geometry::integral_points::Inequality_generic;
+/// use rustmath_geometry::integral_points::InequalityGeneric;
 /// use rustmath_rationals::Rational;
 ///
 /// // Inequality: 2x + 3y - 5 ≥ 0
 /// let coeffs = vec![Rational::from(2), Rational::from(3)];
 /// let constant = Rational::from(-5);
-/// let ineq = Inequality_generic::new(coeffs, constant);
+/// let ineq = InequalityGeneric::new(coeffs, constant);
 /// assert_eq!(ineq.dimension(), 2);
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Inequality_generic {
+pub struct InequalityGeneric {
     /// Coefficients of the variables (a₁, a₂, ..., aₙ)
     coefficients: Vec<Rational>,
     /// Constant term (b)
     constant: Rational,
 }
 
-impl Inequality_generic {
+impl InequalityGeneric {
     /// Create a new generic inequality
     ///
     /// # Arguments
@@ -343,10 +342,10 @@ impl Inequality_generic {
     /// # Examples
     ///
     /// ```
-    /// use rustmath_geometry::integral_points::Inequality_generic;
+    /// use rustmath_geometry::integral_points::InequalityGeneric;
     /// use rustmath_rationals::Rational;
     ///
-    /// let ineq = Inequality_generic::new(
+    /// let ineq = InequalityGeneric::new(
     ///     vec![Rational::from(1), Rational::from(-1)],
     ///     Rational::from(0)
     /// );
@@ -405,7 +404,7 @@ impl Inequality_generic {
     }
 }
 
-impl fmt::Display for Inequality_generic {
+impl fmt::Display for InequalityGeneric {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (i, coeff) in self.coefficients.iter().enumerate() {
             if i > 0 && coeff >= &Rational::from(0) {
@@ -426,28 +425,28 @@ impl fmt::Display for Inequality_generic {
 
 /// Linear inequality with integer coefficients
 ///
-/// A specialized version of `Inequality_generic` where all coefficients
+/// A specialized version of `InequalityGeneric` where all coefficients
 /// are integers. This is commonly used in polytope computations where
 /// we work with lattice points.
 ///
 /// # Examples
 ///
 /// ```
-/// use rustmath_geometry::integral_points::Inequality_int;
+/// use rustmath_geometry::integral_points::InequalityInt;
 ///
 /// // Inequality: 2x + 3y - 5 ≥ 0
-/// let ineq = Inequality_int::new(vec![2, 3], -5);
+/// let ineq = InequalityInt::new(vec![2, 3], -5);
 /// assert!(ineq.satisfied_by(&[3, 1])); // 2*3 + 3*1 - 5 = 4 ≥ 0
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Inequality_int {
+pub struct InequalityInt {
     /// Coefficients of the variables (a₁, a₂, ..., aₙ)
     coefficients: Vec<i64>,
     /// Constant term (b)
     constant: i64,
 }
 
-impl Inequality_int {
+impl InequalityInt {
     /// Create a new integer inequality
     ///
     /// # Arguments
@@ -458,9 +457,9 @@ impl Inequality_int {
     /// # Examples
     ///
     /// ```
-    /// use rustmath_geometry::integral_points::Inequality_int;
+    /// use rustmath_geometry::integral_points::InequalityInt;
     ///
-    /// let ineq = Inequality_int::new(vec![1, -1], 0);
+    /// let ineq = InequalityInt::new(vec![1, -1], 0);
     /// assert_eq!(ineq.dimension(), 2);
     /// ```
     pub fn new(coefficients: Vec<i64>, constant: i64) -> Self {
@@ -517,18 +516,18 @@ impl Inequality_int {
     }
 
     /// Convert to a generic inequality
-    pub fn to_generic(&self) -> Inequality_generic {
+    pub fn to_generic(&self) -> InequalityGeneric {
         let coeffs = self
             .coefficients
             .iter()
             .map(|&c| Rational::from(c))
             .collect();
         let constant = Rational::from(self.constant);
-        Inequality_generic::new(coeffs, constant)
+        InequalityGeneric::new(coeffs, constant)
     }
 }
 
-impl fmt::Display for Inequality_int {
+impl fmt::Display for InequalityInt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (i, coeff) in self.coefficients.iter().enumerate() {
             if i > 0 && coeff >= &0 {
@@ -556,16 +555,16 @@ impl fmt::Display for Inequality_int {
 /// # Examples
 ///
 /// ```
-/// use rustmath_geometry::integral_points::{InequalityCollection, Inequality_int};
+/// use rustmath_geometry::integral_points::{InequalityCollection, InequalityInt};
 ///
 /// // Create inequalities for a square [0,1] × [0,1]:
 /// // x ≥ 0, y ≥ 0, x ≤ 1, y ≤ 1
 /// // Written as: x ≥ 0, y ≥ 0, -x + 1 ≥ 0, -y + 1 ≥ 0
 /// let mut collection = InequalityCollection::new(2);
-/// collection.add_int(Inequality_int::new(vec![1, 0], 0));  // x ≥ 0
-/// collection.add_int(Inequality_int::new(vec![0, 1], 0));  // y ≥ 0
-/// collection.add_int(Inequality_int::new(vec![-1, 0], 1)); // -x + 1 ≥ 0
-/// collection.add_int(Inequality_int::new(vec![0, -1], 1)); // -y + 1 ≥ 0
+/// collection.add_int(InequalityInt::new(vec![1, 0], 0));  // x ≥ 0
+/// collection.add_int(InequalityInt::new(vec![0, 1], 0));  // y ≥ 0
+/// collection.add_int(InequalityInt::new(vec![-1, 0], 1)); // -x + 1 ≥ 0
+/// collection.add_int(InequalityInt::new(vec![0, -1], 1)); // -y + 1 ≥ 0
 ///
 /// assert_eq!(collection.len(), 4);
 /// ```
@@ -574,9 +573,9 @@ pub struct InequalityCollection {
     /// The dimension of the ambient space
     dimension: usize,
     /// Integer inequalities
-    int_inequalities: Vec<Inequality_int>,
+    int_inequalities: Vec<InequalityInt>,
     /// Generic (rational) inequalities
-    generic_inequalities: Vec<Inequality_generic>,
+    generic_inequalities: Vec<InequalityGeneric>,
 }
 
 impl InequalityCollection {
@@ -623,7 +622,7 @@ impl InequalityCollection {
     /// # Panics
     ///
     /// Panics if the inequality dimension doesn't match the collection dimension
-    pub fn add_int(&mut self, ineq: Inequality_int) {
+    pub fn add_int(&mut self, ineq: InequalityInt) {
         assert_eq!(
             ineq.dimension(),
             self.dimension,
@@ -637,7 +636,7 @@ impl InequalityCollection {
     /// # Panics
     ///
     /// Panics if the inequality dimension doesn't match the collection dimension
-    pub fn add_generic(&mut self, ineq: Inequality_generic) {
+    pub fn add_generic(&mut self, ineq: InequalityGeneric) {
         assert_eq!(
             ineq.dimension(),
             self.dimension,
@@ -647,12 +646,12 @@ impl InequalityCollection {
     }
 
     /// Get all integer inequalities
-    pub fn int_inequalities(&self) -> &[Inequality_int] {
+    pub fn int_inequalities(&self) -> &[InequalityInt] {
         &self.int_inequalities
     }
 
     /// Get all generic inequalities
-    pub fn generic_inequalities(&self) -> &[Inequality_generic] {
+    pub fn generic_inequalities(&self) -> &[InequalityGeneric] {
         &self.generic_inequalities
     }
 
@@ -1001,7 +1000,7 @@ mod tests {
     #[test]
     fn test_inequality_int_basic() {
         // Test inequality: 2x + 3y - 5 ≥ 0
-        let ineq = Inequality_int::new(vec![2, 3], -5);
+        let ineq = InequalityInt::new(vec![2, 3], -5);
         assert_eq!(ineq.dimension(), 2);
 
         // Point (3, 1): 2*3 + 3*1 - 5 = 4 ≥ 0 ✓
@@ -1017,7 +1016,7 @@ mod tests {
     #[test]
     fn test_inequality_generic_basic() {
         // Test inequality: x + y - 1/2 ≥ 0
-        let ineq = Inequality_generic::new(
+        let ineq = InequalityGeneric::new(
             vec![Rational::from(1), Rational::from(1)],
             Rational::new(-1, 2).unwrap(),
         );
@@ -1034,10 +1033,10 @@ mod tests {
         // Create a unit square: 0 ≤ x ≤ 1, 0 ≤ y ≤ 1
         let mut collection = InequalityCollection::new(2);
 
-        collection.add_int(Inequality_int::new(vec![1, 0], 0)); // x ≥ 0
-        collection.add_int(Inequality_int::new(vec![0, 1], 0)); // y ≥ 0
-        collection.add_int(Inequality_int::new(vec![-1, 0], 1)); // -x + 1 ≥ 0
-        collection.add_int(Inequality_int::new(vec![0, -1], 1)); // -y + 1 ≥ 0
+        collection.add_int(InequalityInt::new(vec![1, 0], 0)); // x ≥ 0
+        collection.add_int(InequalityInt::new(vec![0, 1], 0)); // y ≥ 0
+        collection.add_int(InequalityInt::new(vec![-1, 0], 1)); // -x + 1 ≥ 0
+        collection.add_int(InequalityInt::new(vec![0, -1], 1)); // -y + 1 ≥ 0
 
         assert_eq!(collection.len(), 4);
         assert_eq!(collection.dimension(), 2);
@@ -1053,8 +1052,8 @@ mod tests {
     fn test_inequality_collection_tight() {
         let mut collection = InequalityCollection::new(2);
 
-        collection.add_int(Inequality_int::new(vec![1, 0], 0)); // x ≥ 0
-        collection.add_int(Inequality_int::new(vec![0, 1], 0)); // y ≥ 0
+        collection.add_int(InequalityInt::new(vec![1, 0], 0)); // x ≥ 0
+        collection.add_int(InequalityInt::new(vec![0, 1], 0)); // y ≥ 0
 
         // Point (0, 0) should be tight for both inequalities
         let tight = collection.tight_at_int(&[0, 0]);
@@ -1069,7 +1068,7 @@ mod tests {
 
     #[test]
     fn test_inequality_to_generic() {
-        let int_ineq = Inequality_int::new(vec![2, 3], -5);
+        let int_ineq = InequalityInt::new(vec![2, 3], -5);
         let gen_ineq = int_ineq.to_generic();
 
         assert_eq!(gen_ineq.dimension(), 2);
@@ -1121,8 +1120,8 @@ mod tests {
     #[test]
     fn test_inequality_collection_to_matrix() {
         let mut collection = InequalityCollection::new(2);
-        collection.add_int(Inequality_int::new(vec![1, 0], 0)); // x ≥ 0
-        collection.add_int(Inequality_int::new(vec![0, 1], 0)); // y ≥ 0
+        collection.add_int(InequalityInt::new(vec![1, 0], 0)); // x ≥ 0
+        collection.add_int(InequalityInt::new(vec![0, 1], 0)); // y ≥ 0
 
         let (matrix, constants) = collection.to_matrix();
 

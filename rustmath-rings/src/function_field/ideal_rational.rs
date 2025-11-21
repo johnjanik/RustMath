@@ -70,7 +70,7 @@ use std::marker::PhantomData;
 /// assert!(!ideal.is_zero());
 /// ```
 #[derive(Debug, Clone)]
-pub struct FunctionFieldIdeal_rational<F: Field> {
+pub struct FunctionFieldIdealRational<F: Field> {
     /// Generator polynomial (as string for simplicity)
     generator: String,
     /// Name of the ideal
@@ -251,7 +251,7 @@ impl<F: Field> FunctionFieldIdeal_rational<F> {
 /// assert_eq!(ideal_inf.degree(), 1);
 /// ```
 #[derive(Debug, Clone)]
-pub struct FunctionFieldIdealInfinite_rational<F: Field> {
+pub struct FunctionFieldIdealInfiniteRational<F: Field> {
     /// Phantom data for field type
     _phantom: PhantomData<F>,
 }

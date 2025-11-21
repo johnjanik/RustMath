@@ -1,4 +1,4 @@
-//! p-adic integers Zp
+//! p-adic integers zp
 
 use rustmath_core::{MathError, Result, Ring};
 use rustmath_integers::Integer;
@@ -7,7 +7,7 @@ use std::ops::{Add, Mul, Neg, Sub};
 
 /// p-adic integer with finite precision
 ///
-/// Represents an element of Zp truncated to precision n.
+/// Represents an element of zp truncated to precision n.
 /// Stored as an integer modulo p^n.
 #[derive(Clone, Debug)]
 pub struct PadicInteger {

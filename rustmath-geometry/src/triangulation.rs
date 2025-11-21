@@ -1,7 +1,6 @@
 //! 2D triangulation algorithms
 
 use crate::point::Point2D;
-use std::collections::HashSet;
 
 /// A triangle in 2D space
 #[derive(Debug, Clone, Copy, PartialEq)]

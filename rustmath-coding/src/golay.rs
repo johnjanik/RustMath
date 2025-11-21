@@ -8,7 +8,6 @@
 //! besides Hamming codes.
 
 use crate::linear_code::LinearCode;
-use rustmath_finitefields::prime_field::PrimeField;
 use std::fmt;
 
 /// Binary Golay code [23, 12, 7]

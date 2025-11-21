@@ -29,7 +29,6 @@
 
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::fmt;
 
 /// A function (map) from a finite domain to a finite codomain.
 ///

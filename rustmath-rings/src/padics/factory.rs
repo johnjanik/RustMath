@@ -50,20 +50,20 @@
 //! ## Examples
 //!
 //! ```rust
-//! use rustmath_rings::padics::factory::{Zp, Qp, PrecisionModel};
+//! use rustmath_rings::padics::factory::{zp, qp, PrecisionModel};
 //! use rustmath_integers::Integer;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! // Create 5-adic integers with capped relative precision
-//! let zp = Zp(Integer::from(5), 20, PrecisionModel::CappedRelative)?;
+//! let zp = zp(Integer::from(5), 20, PrecisionModel::CappedRelative)?;
 //! let x = zp.from_int(7)?;
 //!
 //! // Create 7-adic field with capped absolute precision
-//! let qp = Qp(Integer::from(7), 15, PrecisionModel::CappedAbsolute)?;
+//! let qp = qp(Integer::from(7), 15, PrecisionModel::CappedAbsolute)?;
 //! let y = qp.from_rational_nums(3, 7)?;
 //!
 //! // Fixed modulus for fastest performance
-//! let zp_fast = Zp(Integer::from(3), 10, PrecisionModel::FixedModulus)?;
+//! let zp_fast = zp(Integer::from(3), 10, PrecisionModel::FixedModulus)?;
 //! # Ok(())
 //! # }
 //! ```
@@ -513,19 +513,19 @@ impl fmt::Display for PadicFieldExtension {
 /// # Examples
 ///
 /// ```rust
-/// use rustmath_rings::padics::factory::{Zp, PrecisionModel};
+/// use rustmath_rings::padics::factory::{zp, PrecisionModel};
 /// use rustmath_integers::Integer;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// // Create 5-adic integers with default (capped relative) precision
-/// let zp5 = Zp(Integer::from(5), 20, PrecisionModel::CappedRelative)?;
+/// let zp5 = zp(Integer::from(5), 20, PrecisionModel::CappedRelative)?;
 ///
 /// // Create element
 /// let x = zp5.from_int(42)?;
 /// # Ok(())
 /// # }
 /// ```
-pub fn Zp(p: Integer, prec: usize, model: PrecisionModel) -> Result<PadicIntegerRing> {
+pub fn zp(p: Integer, prec: usize, model: PrecisionModel) -> Result<PadicIntegerRing> {
     PadicIntegerRing::new(p, prec, model)
 }
 
@@ -540,19 +540,19 @@ pub fn Zp(p: Integer, prec: usize, model: PrecisionModel) -> Result<PadicInteger
 /// # Examples
 ///
 /// ```rust
-/// use rustmath_rings::padics::factory::{Qp, PrecisionModel};
+/// use rustmath_rings::padics::factory::{qp, PrecisionModel};
 /// use rustmath_integers::Integer;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// // Create 7-adic field with capped absolute precision
-/// let qp7 = Qp(Integer::from(7), 15, PrecisionModel::CappedAbsolute)?;
+/// let qp7 = qp(Integer::from(7), 15, PrecisionModel::CappedAbsolute)?;
 ///
 /// // Create element 3/7
 /// let x = qp7.from_rational_nums(3, 7)?;
 /// # Ok(())
 /// # }
 /// ```
-pub fn Qp(p: Integer, prec: usize, model: PrecisionModel) -> Result<PadicField> {
+pub fn qp(p: Integer, prec: usize, model: PrecisionModel) -> Result<PadicField> {
     PadicField::new(p, prec, model)
 }
 
@@ -570,16 +570,16 @@ pub fn Qp(p: Integer, prec: usize, model: PrecisionModel) -> Result<PadicField> 
 /// # Examples
 ///
 /// ```rust
-/// use rustmath_rings::padics::factory::{Zq, PrecisionModel};
+/// use rustmath_rings::padics::factory::{zq, PrecisionModel};
 /// use rustmath_integers::Integer;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// // Create Z_{5^3} with generator 'a'
-/// let zq = Zq(Integer::from(5), 3, 10, PrecisionModel::CappedRelative, "a".to_string(), None)?;
+/// let zq = zq(Integer::from(5), 3, 10, PrecisionModel::CappedRelative, "a".to_string(), None)?;
 /// # Ok(())
 /// # }
 /// ```
-pub fn Zq(
+pub fn zq(
     p: Integer,
     n: usize,
     prec: usize,
@@ -587,7 +587,7 @@ pub fn Zq(
     name: String,
     modulus: Option<UnivariatePolynomial<Integer>>,
 ) -> Result<PadicIntegerExtension> {
-    let base_ring = Zp(p, prec, model)?;
+    let base_ring = zp(p, prec, model)?;
     PadicIntegerExtension::new(base_ring, n, name, modulus)
 }
 
@@ -605,16 +605,16 @@ pub fn Zq(
 /// # Examples
 ///
 /// ```rust
-/// use rustmath_rings::padics::factory::{Qq, PrecisionModel};
+/// use rustmath_rings::padics::factory::{qq, PrecisionModel};
 /// use rustmath_integers::Integer;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// // Create Q_{7^2} with generator 'a'
-/// let qq = Qq(Integer::from(7), 2, 15, PrecisionModel::CappedRelative, "a".to_string(), None)?;
+/// let qq = qq(Integer::from(7), 2, 15, PrecisionModel::CappedRelative, "a".to_string(), None)?;
 /// # Ok(())
 /// # }
 /// ```
-pub fn Qq(
+pub fn qq(
     p: Integer,
     n: usize,
     prec: usize,
@@ -622,7 +622,7 @@ pub fn Qq(
     name: String,
     modulus: Option<UnivariatePolynomial<Integer>>,
 ) -> Result<PadicFieldExtension> {
-    let base_field = Qp(p, prec, model)?;
+    let base_field = qp(p, prec, model)?;
     PadicFieldExtension::new(base_field, n, name, modulus)
 }
 
@@ -636,7 +636,7 @@ mod tests {
 
     #[test]
     fn test_zp_creation() {
-        let zp5 = Zp(Integer::from(5), 20, PrecisionModel::CappedRelative).unwrap();
+        let zp5 = zp(Integer::from(5), 20, PrecisionModel::CappedRelative).unwrap();
         assert_eq!(*zp5.prime(), Integer::from(5));
         assert_eq!(zp5.precision(), 20);
         assert_eq!(zp5.model(), PrecisionModel::CappedRelative);
@@ -644,7 +644,7 @@ mod tests {
 
     #[test]
     fn test_zp_elements() {
-        let zp = Zp(Integer::from(7), 10, PrecisionModel::CappedRelative).unwrap();
+        let zp = zp(Integer::from(7), 10, PrecisionModel::CappedRelative).unwrap();
 
         let x = zp.from_int(42).unwrap();
         let y = zp.from_int(13).unwrap();
@@ -659,7 +659,7 @@ mod tests {
 
     #[test]
     fn test_qp_creation() {
-        let qp7 = Qp(Integer::from(7), 15, PrecisionModel::CappedAbsolute).unwrap();
+        let qp7 = qp(Integer::from(7), 15, PrecisionModel::CappedAbsolute).unwrap();
         assert_eq!(*qp7.prime(), Integer::from(7));
         assert_eq!(qp7.precision(), 15);
         assert_eq!(qp7.model(), PrecisionModel::CappedAbsolute);
@@ -667,7 +667,7 @@ mod tests {
 
     #[test]
     fn test_qp_elements() {
-        let qp = Qp(Integer::from(5), 10, PrecisionModel::CappedRelative).unwrap();
+        let qp = qp(Integer::from(5), 10, PrecisionModel::CappedRelative).unwrap();
 
         // Create 3/5 in Q_5
         let x = qp.from_rational_nums(3, 5).unwrap();
@@ -688,7 +688,7 @@ mod tests {
         ];
 
         for model in &models {
-            let zp = Zp(Integer::from(3), 15, *model).unwrap();
+            let zp = zp(Integer::from(3), 15, *model).unwrap();
             let x = zp.from_int(10).unwrap();
             assert_eq!(x.precision(), 15);
         }
@@ -696,7 +696,7 @@ mod tests {
 
     #[test]
     fn test_capped_relative_precision() {
-        let zp = Zp(Integer::from(5), 10, PrecisionModel::CappedRelative).unwrap();
+        let zp = zp(Integer::from(5), 10, PrecisionModel::CappedRelative).unwrap();
 
         // Element with valuation 0
         let x = zp.from_int(7).unwrap();
@@ -711,7 +711,7 @@ mod tests {
 
     #[test]
     fn test_capped_absolute_precision() {
-        let zp = Zp(Integer::from(5), 10, PrecisionModel::CappedAbsolute).unwrap();
+        let zp = zp(Integer::from(5), 10, PrecisionModel::CappedAbsolute).unwrap();
 
         let x = zp.from_int(7).unwrap();
         let adjusted = zp.adjust_precision(x.clone());
@@ -720,7 +720,7 @@ mod tests {
 
     #[test]
     fn test_fixed_modulus() {
-        let zp = Zp(Integer::from(5), 8, PrecisionModel::FixedModulus).unwrap();
+        let zp = zp(Integer::from(5), 8, PrecisionModel::FixedModulus).unwrap();
 
         let x = zp.from_int(100).unwrap();
         let adjusted = zp.adjust_precision(x);
@@ -729,7 +729,7 @@ mod tests {
 
     #[test]
     fn test_zq_extension() {
-        let zq = Zq(
+        let zq = zq(
             Integer::from(5),
             3,
             10,
@@ -747,7 +747,7 @@ mod tests {
 
     #[test]
     fn test_qq_extension() {
-        let qq = Qq(
+        let qq = qq(
             Integer::from(7),
             2,
             15,
@@ -766,7 +766,7 @@ mod tests {
 
     #[test]
     fn test_integer_ring_from_field() {
-        let qp = Qp(Integer::from(5), 10, PrecisionModel::CappedRelative).unwrap();
+        let qp = qp(Integer::from(5), 10, PrecisionModel::CappedRelative).unwrap();
         let zp = qp.integer_ring().unwrap();
 
         assert_eq!(*zp.prime(), Integer::from(5));
@@ -776,7 +776,7 @@ mod tests {
 
     #[test]
     fn test_extension_integer_ring() {
-        let qq = Qq(
+        let qq = qq(
             Integer::from(3),
             4,
             12,
@@ -793,13 +793,13 @@ mod tests {
 
     #[test]
     fn test_display_formatting() {
-        let zp = Zp(Integer::from(5), 20, PrecisionModel::CappedRelative).unwrap();
+        let zp = zp(Integer::from(5), 20, PrecisionModel::CappedRelative).unwrap();
         let display = format!("{}", zp);
         assert!(display.contains("5-adic"));
         assert!(display.contains("20"));
         assert!(display.contains("capped-rel"));
 
-        let qp = Qp(Integer::from(7), 15, PrecisionModel::CappedAbsolute).unwrap();
+        let qp = qp(Integer::from(7), 15, PrecisionModel::CappedAbsolute).unwrap();
         let display = format!("{}", qp);
         assert!(display.contains("7-adic"));
         assert!(display.contains("15"));
@@ -808,7 +808,7 @@ mod tests {
 
     #[test]
     fn test_zero_and_one() {
-        let zp = Zp(Integer::from(5), 10, PrecisionModel::CappedRelative).unwrap();
+        let zp = zp(Integer::from(5), 10, PrecisionModel::CappedRelative).unwrap();
 
         let zero = zp.zero().unwrap();
         assert!(zero.is_zero());
@@ -819,7 +819,7 @@ mod tests {
 
     #[test]
     fn test_qp_zero_and_one() {
-        let qp = Qp(Integer::from(7), 10, PrecisionModel::CappedRelative).unwrap();
+        let qp = qp(Integer::from(7), 10, PrecisionModel::CappedRelative).unwrap();
 
         let zero = qp.zero().unwrap();
         assert!(zero.is_zero());
@@ -831,14 +831,14 @@ mod tests {
     #[test]
     fn test_invalid_parameters() {
         // Invalid prime
-        assert!(Zp(Integer::from(1), 10, PrecisionModel::CappedRelative).is_err());
-        assert!(Zp(Integer::from(0), 10, PrecisionModel::CappedRelative).is_err());
+        assert!(zp(Integer::from(1), 10, PrecisionModel::CappedRelative).is_err());
+        assert!(zp(Integer::from(0), 10, PrecisionModel::CappedRelative).is_err());
 
         // Invalid precision
-        assert!(Zp(Integer::from(5), 0, PrecisionModel::CappedRelative).is_err());
+        assert!(zp(Integer::from(5), 0, PrecisionModel::CappedRelative).is_err());
 
         // Invalid extension degree
-        assert!(Zq(
+        assert!(zq(
             Integer::from(5),
             0,
             10,

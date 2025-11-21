@@ -448,19 +448,19 @@ mod tests {
 
 /// ModularAbelianVariety constructed from modular symbols
 #[derive(Debug, Clone)]
-pub struct ModularAbelianVariety_modsym {
+pub struct ModularAbelianVarietyModsym {
     /// Base modular abelian variety
     base: ModularAbelianVariety,
     /// Associated modular symbol space
     modsym_space: Option<ModularSymbolSpace>,
 }
 
-impl ModularAbelianVariety_modsym {
+impl ModularAbelianVarietyModsym {
     /// Create from a modular symbol space
     pub fn from_modsym_space(space: ModularSymbolSpace) -> Self {
         let level = space.level();
         let dimension = space.dimension();
-        ModularAbelianVariety_modsym {
+        ModularAbelianVarietyModsym {
             base: ModularAbelianVariety::new(level, dimension),
             modsym_space: Some(space),
         }
@@ -571,17 +571,17 @@ impl FiniteSubgroup {
 
 /// Finite subgroup defined by a lattice
 #[derive(Debug, Clone)]
-pub struct FiniteSubgroup_lattice {
+pub struct FiniteSubgroupLattice {
     /// Base finite subgroup
     base: FiniteSubgroup,
     /// Lattice basis
     lattice_basis: Vec<Vec<BigInt>>,
 }
 
-impl FiniteSubgroup_lattice {
+impl FiniteSubgroupLattice {
     /// Create from a lattice
     pub fn new(abvar: ModularAbelianVariety, lattice_basis: Vec<Vec<BigInt>>) -> Self {
-        FiniteSubgroup_lattice {
+        FiniteSubgroupLattice {
             base: FiniteSubgroup::new(abvar),
             lattice_basis,
         }
@@ -673,15 +673,15 @@ impl Lseries {
 
 /// Complex L-series
 #[derive(Debug, Clone)]
-pub struct Lseries_complex {
+pub struct LseriesComplex {
     /// Base L-series
     base: Lseries,
 }
 
-impl Lseries_complex {
+impl LseriesComplex {
     /// Create complex L-series
     pub fn new(abvar: ModularAbelianVariety) -> Self {
-        Lseries_complex {
+        LseriesComplex {
             base: Lseries::new(abvar),
         }
     }
@@ -695,17 +695,17 @@ impl Lseries_complex {
 
 /// p-adic L-series
 #[derive(Debug, Clone)]
-pub struct Lseries_padic {
+pub struct LseriesPadic {
     /// Base L-series
     base: Lseries,
     /// Prime p
     p: u64,
 }
 
-impl Lseries_padic {
+impl LseriesPadic {
     /// Create p-adic L-series
     pub fn new(abvar: ModularAbelianVariety, p: u64) -> Self {
-        Lseries_padic {
+        LseriesPadic {
             base: Lseries::new(abvar),
             p,
         }
@@ -790,17 +790,17 @@ impl DegeneracyMap {
 
 /// Homology with additional structure
 #[derive(Debug, Clone)]
-pub struct Homology_over_base {
+pub struct HomologyOverBase {
     /// Base homology
     base: Homology,
     /// Base ring (Z, Q, Z/NZ, etc.)
     base_ring: String,
 }
 
-impl Homology_over_base {
+impl HomologyOverBase {
     /// Create homology over a specific base
     pub fn new(abvar: ModularAbelianVariety, base_ring: String) -> Self {
-        Homology_over_base {
+        HomologyOverBase {
             base: Homology::new(abvar),
             base_ring,
         }
@@ -819,17 +819,17 @@ impl Homology_over_base {
 
 /// Homology submodule
 #[derive(Debug, Clone)]
-pub struct Homology_submodule {
+pub struct HomologySubmodule {
     /// Ambient homology
     ambient: Homology,
     /// Generators of the submodule
     generators: Vec<Vec<BigInt>>,
 }
 
-impl Homology_submodule {
+impl HomologySubmodule {
     /// Create a submodule
     pub fn new(ambient: Homology, generators: Vec<Vec<BigInt>>) -> Self {
-        Homology_submodule {
+        HomologySubmodule {
             ambient,
             generators,
         }

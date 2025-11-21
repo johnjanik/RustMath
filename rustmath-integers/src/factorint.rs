@@ -136,7 +136,7 @@
 
 use crate::Integer;
 use crate::prime::factor;
-use rustmath_core::{NumericConversion, Ring};
+use rustmath_core::NumericConversion;
 
 /// Perform trial division factorization up to a given bound
 ///

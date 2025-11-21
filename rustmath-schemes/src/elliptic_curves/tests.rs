@@ -3,7 +3,7 @@
 //! Tests elliptic curve arithmetic over:
 //! - Rationals (Q)
 //! - Prime finite fields (GF(p))
-//! - p-adic rationals (Qp)
+//! - p-adic rationals (qp)
 
 #[cfg(test)]
 mod tests {
@@ -327,7 +327,7 @@ mod tests {
     }
 
     // ============================================================================
-    // Tests over p-adic Rationals (Qp)
+    // Tests over p-adic Rationals (qp)
     // ============================================================================
     //
     // Note: These tests are currently ignored because PadicRational's Ring::zero()

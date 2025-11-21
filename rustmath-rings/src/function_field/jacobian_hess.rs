@@ -339,7 +339,7 @@ impl<F: Field> JacobianGroupEmbedding<F> {
 /// assert_eq!(jac.field_size(), 5);
 /// ```
 #[derive(Debug, Clone)]
-pub struct Jacobian_finite_field<F: Field> {
+pub struct JacobianFiniteField<F: Field> {
     /// Base Jacobian
     base: Jacobian<F>,
     /// Field size
@@ -398,7 +398,7 @@ impl<F: Field> Jacobian_finite_field<F> {
 /// assert_eq!(point.field_size(), 5);
 /// ```
 #[derive(Debug, Clone)]
-pub struct JacobianPoint_finite_field<F: Field> {
+pub struct JacobianPointFiniteField<F: Field> {
     /// Base point
     base: JacobianPoint<F>,
     /// Field size
@@ -456,7 +456,7 @@ impl<F: Field> JacobianPoint_finite_field<F> {
 /// assert_eq!(group.field_size(), 5);
 /// ```
 #[derive(Debug, Clone)]
-pub struct JacobianGroup_finite_field<F: Field> {
+pub struct JacobianGroupFiniteField<F: Field> {
     /// Base group
     base: JacobianGroup<F>,
     /// Field size
@@ -508,7 +508,7 @@ impl<F: Field> JacobianGroup_finite_field<F> {
 /// assert_eq!(embedding.field_size(), 5);
 /// ```
 #[derive(Debug, Clone)]
-pub struct JacobianGroupEmbedding_finite_field<F: Field> {
+pub struct JacobianGroupEmbeddingFiniteField<F: Field> {
     /// Base embedding
     base: JacobianGroupEmbedding<F>,
     /// Field size

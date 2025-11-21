@@ -335,7 +335,7 @@ impl GroupElement for Braid {
 }
 
 /// Type alias for BraidGroup (to match SageMath naming)
-pub type BraidGroup_class = BraidGroup;
+pub type BraidGroupClass = BraidGroup;
 
 /// Factory function to create a braid group
 ///

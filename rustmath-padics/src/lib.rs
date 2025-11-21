@@ -1,8 +1,8 @@
-//! p-adic numbers Qp and Zp
+//! p-adic numbers qp and zp
 //!
 //! Provides arithmetic in p-adic number fields and rings.
-//! - Qp: p-adic field (field of fractions of Zp)
-//! - Zp: p-adic integers (ring)
+//! - qp: p-adic field (field of fractions of zp)
+//! - zp: p-adic integers (ring)
 
 pub mod padic_integer;
 pub mod padic_rational;

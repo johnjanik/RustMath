@@ -516,7 +516,7 @@ impl<'a, F: Field> Iterator for SparseMatrixIterator<'a, F> {
 
     fn next(&mut self) -> Option<Self::Item> {
         while self.row < self.matrix.rows() {
-            let row_start = self.matrix.row_ptrs[self.row];
+            let _row_start = self.matrix.row_ptrs[self.row];
             let row_end = self.matrix.row_ptrs[self.row + 1];
 
             if self.idx < row_end {

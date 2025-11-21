@@ -1,6 +1,6 @@
 //! Complex number implementation
 
-use rustmath_core::{CommutativeRing, Field, MathError, NumericConversion, Result, Ring};
+use rustmath_core::{CommutativeRing, Field, MathError, Result, Ring};
 use rustmath_reals::{Real, RealField};
 use std::fmt;
 use std::ops::{Add, Div, Mul, Neg, Sub};

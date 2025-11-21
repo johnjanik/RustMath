@@ -6,7 +6,7 @@
 use crate::quadratic_form::QuadraticForm;
 use rustmath_integers::{Integer, prime::is_prime};
 use rustmath_rationals::Rational;
-use rustmath_core::{Ring, NumericConversion, EuclideanDomain};
+use rustmath_core::{Ring, NumericConversion};
 
 /// Local densities for a quadratic form
 ///

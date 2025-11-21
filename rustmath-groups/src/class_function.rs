@@ -273,13 +273,13 @@ impl PartialEq for ClassFunction {
 /// In SageMath, this wraps GAP's ClassFunction. In RustMath, we provide a
 /// simplified implementation that doesn't depend on GAP but provides similar
 /// functionality.
-pub type ClassFunction_gap = ClassFunction;
+pub type ClassFunctionGap = ClassFunction;
 
 /// ClassFunction_libgap - Modern LibGAP interface wrapper
 ///
 /// In SageMath, this uses the LibGAP library interface. In RustMath, we use
 /// the same implementation as ClassFunction since we don't have GAP integration.
-pub type ClassFunction_libgap = ClassFunction;
+pub type ClassFunctionLibgap = ClassFunction;
 
 /// Factory function to create a class function
 ///

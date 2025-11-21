@@ -9,7 +9,7 @@
 //! This module implements efficient algorithms for testing these properties.
 
 use crate::graph::Graph;
-use std::collections::{HashSet, VecDeque};
+use std::collections::VecDeque;
 
 /// Check if a graph is free of long holes (induced cycles of length >= 5)
 ///

@@ -206,18 +206,18 @@ impl fmt::Display for BigO {
 /// # Examples
 ///
 /// ```rust
-/// use rustmath_rings::big_oh::O;
+/// use rustmath_rings::big_oh::o;
 ///
 /// // Power series: O(x^5)
-/// let o1 = O("x^5");
+/// let o1 = o("x^5");
 ///
 /// // p-adic: O(7^6)
-/// let o2 = O("7^6");
+/// let o2 = o("7^6");
 ///
 /// // Asymptotic: O(n^2)
-/// let o3 = O("n^2");
+/// let o3 = o("n^2");
 /// ```
-pub fn O(input: &str) -> Option<BigO> {
+pub fn o(input: &str) -> Option<BigO> {
     // Try to parse as var^exp or p^exp
     if let Some((base, exp_str)) = input.split_once('^') {
         // Check if exponent has fraction

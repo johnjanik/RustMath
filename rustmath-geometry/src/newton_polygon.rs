@@ -17,7 +17,6 @@
 //! assert_eq!(polygon.num_vertices(), 3); // Only lower convex hull vertices
 //! ```
 
-use std::cmp::Ordering;
 use std::fmt;
 
 /// A Newton polygon

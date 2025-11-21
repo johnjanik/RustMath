@@ -33,7 +33,7 @@ use crate::group_traits::{Group, GroupElement};
 /// - `G`: The domain group type
 /// - `H`: The codomain group type
 #[derive(Clone, Debug)]
-pub struct GroupMorphism_libgap<G, H>
+pub struct GroupMorphismLibgap<G, H>
 where
     G: Group,
     H: Group,
@@ -263,7 +263,7 @@ where
 ///
 /// Represents Hom(G, H), the set of all group homomorphisms from G to H.
 #[derive(Clone, Debug)]
-pub struct GroupHomset_libgap<G, H>
+pub struct GroupHomsetLibgap<G, H>
 where
     G: Group,
     H: Group,

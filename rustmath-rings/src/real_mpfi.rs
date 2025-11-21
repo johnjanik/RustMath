@@ -808,7 +808,7 @@ pub fn real_interval(lower: f64, upper: f64, precision: u32) -> RealInterval {
 pub type RIF = RealIntervalField;
 
 /// Creates the default real interval field (53-bit precision)
-pub fn RIF_default() -> RealIntervalField {
+pub fn rif_default() -> RealIntervalField {
     RealIntervalField::default()
 }
 

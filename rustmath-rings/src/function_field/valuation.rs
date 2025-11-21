@@ -118,7 +118,7 @@ pub trait DiscreteFunctionFieldValuation<F: Field> {
 ///
 /// - `F`: The constant field type
 #[derive(Clone, Debug)]
-pub struct FunctionFieldValuation_base<F: Field> {
+pub struct FunctionFieldValuationBase<F: Field> {
     /// Name of the function field
     function_field: String,
     /// Name of the valuation
@@ -179,7 +179,7 @@ impl<F: Field> fmt::Display for FunctionFieldValuation_base<F> {
 ///
 /// - `F`: The constant field type
 #[derive(Clone, Debug)]
-pub struct ClassicalFunctionFieldValuation_base<F: Field> {
+pub struct ClassicalFunctionFieldValuationBase<F: Field> {
     /// Base valuation
     base: FunctionFieldValuation_base<F>,
     /// Associated place
@@ -278,7 +278,7 @@ impl<F: Field> fmt::Display for ClassicalFunctionFieldValuation_base<F> {
 ///
 /// - `F`: The constant field type
 #[derive(Clone, Debug)]
-pub struct RationalFunctionFieldValuation_base<F: Field> {
+pub struct RationalFunctionFieldValuationBase<F: Field> {
     /// Base valuation
     base: FunctionFieldValuation_base<F>,
     /// Prime polynomial (None for infinite valuation)

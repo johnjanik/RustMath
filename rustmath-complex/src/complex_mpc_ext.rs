@@ -11,7 +11,6 @@ use crate::mpc::ComplexMPFR;
 use crate::complex::Complex;
 use rustmath_integers::Integer;
 use rustmath_reals::RealMPFR;
-use rustmath_core::NumericConversion;
 use std::fmt;
 
 /// Default precision for MPC numbers (53 bits = f64 equivalent)
@@ -229,13 +228,13 @@ impl fmt::Display for MPFRtoMPC {
 /// # Examples
 ///
 /// ```
-/// use rustmath_complex::MPComplexField;
+/// use rustmath_complex::mp_complex_field;
 ///
-/// let field = MPComplexField(Some(256));
+/// let field = mp_complex_field(Some(256));
 /// // Use field for creating high-precision complex numbers
 /// ```
-pub fn MPComplexField(precision: Option<u32>) -> MPComplexField_class {
-    MPComplexField_class::new(precision.unwrap_or(DEFAULT_PRECISION))
+pub fn mpcomplex_field(precision: Option<u32>) -> MpcomplexFieldClass {
+    MpcomplexFieldClass::new(precision.unwrap_or(DEFAULT_PRECISION))
 }
 
 /// Multi-precision complex field class
@@ -246,27 +245,27 @@ pub fn MPComplexField(precision: Option<u32>) -> MPComplexField_class {
 /// # Examples
 ///
 /// ```
-/// use rustmath_complex::MPComplexField_class;
+/// use rustmath_complex::MpcomplexFieldClass;
 ///
-/// let field = MPComplexField_class::new(256);
+/// let field = MpcomplexFieldClass::new(256);
 /// let z = field.make_complex(3.0, 4.0);
 /// assert_eq!(z.precision(), 256);
 /// ```
 #[derive(Clone, Debug)]
-pub struct MPComplexField_class {
+pub struct MpcomplexFieldClass {
     /// Precision in bits
     precision: u32,
 }
 
-impl MPComplexField_class {
+impl MpcomplexFieldClass {
     /// Create a new multi-precision complex field
     pub fn new(precision: u32) -> Self {
-        MPComplexField_class { precision }
+        MpcomplexFieldClass { precision }
     }
 
     /// Create default field (53-bit precision)
     pub fn default() -> Self {
-        MPComplexField_class {
+        MpcomplexFieldClass {
             precision: DEFAULT_PRECISION,
         }
     }
@@ -327,13 +326,13 @@ impl MPComplexField_class {
     }
 }
 
-impl fmt::Display for MPComplexField_class {
+impl fmt::Display for MpcomplexFieldClass {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "MPComplexField(precision={})", self.precision)
     }
 }
 
-impl PartialEq for MPComplexField_class {
+impl PartialEq for MpcomplexFieldClass {
     fn eq(&self, other: &Self) -> bool {
         self.precision == other.precision
     }
@@ -501,7 +500,7 @@ mod tests {
 
     #[test]
     fn test_mp_complex_field() {
-        let field = MPComplexField(Some(256));
+        let field = mp_complex_field(Some(256));
         assert_eq!(field.precision(), 256);
 
         let z = field.make_complex(3.0, 4.0);
@@ -510,7 +509,7 @@ mod tests {
 
     #[test]
     fn test_mp_complex_field_class() {
-        let field = MPComplexField_class::new(256);
+        let field = MpcomplexFieldClass::new(256);
 
         let zero = field.zero();
         assert!(zero.is_zero());
@@ -572,7 +571,7 @@ mod tests {
 
     #[test]
     fn test_field_parse() {
-        let field = MPComplexField_class::new(128);
+        let field = MpcomplexFieldClass::new(128);
 
         let z = field.parse("3.0 + 4.0i").unwrap();
         assert!((z.real() - 3.0).abs() < 1e-10);
@@ -581,7 +580,7 @@ mod tests {
 
     #[test]
     fn test_field_from_integers() {
-        let field = MPComplexField_class::new(128);
+        let field = MpcomplexFieldClass::new(128);
         let real = Integer::from(3);
         let imag = Integer::from(4);
 
@@ -592,7 +591,7 @@ mod tests {
 
     #[test]
     fn test_field_properties() {
-        let field = MPComplexField_class::new(256);
+        let field = MpcomplexFieldClass::new(256);
         assert_eq!(field.characteristic(), 0);
         assert!(field.name().contains("256"));
     }

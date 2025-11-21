@@ -63,7 +63,7 @@ use std::marker::PhantomData;
 ///
 /// * `F` - The coefficient field type
 #[derive(Debug, Clone)]
-pub struct FunctionFieldOrder_base<F: Field> {
+pub struct FunctionFieldOrderBase<F: Field> {
     /// Field in which this order lives
     field: String,
     /// Name/description of the order
