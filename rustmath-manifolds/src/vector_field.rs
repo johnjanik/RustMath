@@ -25,7 +25,7 @@ pub type ChartId = String;
 /// A vector field assigns a tangent vector to each point on a manifold.
 /// In local coordinates (x¹, ..., xⁿ), a vector field is written as:
 /// X = X¹ ∂/∂x¹ + ... + Xⁿ ∂/∂xⁿ
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct VectorField {
     /// The underlying manifold
     manifold: Arc<DifferentiableManifold>,
