@@ -6,7 +6,6 @@
 
 use crate::expression::{BinaryOp, Expr, UnaryOp};
 use crate::symbol::Symbol;
-use rustmath_core::{Ring, NumericConversion};
 
 impl Expr {
     /// Integrate the expression with respect to a symbol

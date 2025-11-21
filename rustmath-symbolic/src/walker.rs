@@ -60,8 +60,6 @@ pub trait ExprVisitor {
                 // Treat Real as a constant similar to Integer/Rational
                 // For visitors that care about the value, they should match on Expr directly
                 // For now, use a dummy rational to satisfy the type system
-                
-                use rustmath_rationals::Rational;
                 self.visit_rational(&Rational::new(0, 1).unwrap())
             }
             Expr::Symbol(s) => self.visit_symbol(s),

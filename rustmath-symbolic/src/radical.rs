@@ -4,7 +4,6 @@
 //! particularly square roots and rational exponents.
 
 use crate::expression::{BinaryOp, Expr, UnaryOp};
-use rustmath_core::{NumericConversion, Ring};
 use rustmath_integers::Integer;
 use rustmath_rationals::Rational;
 use std::sync::Arc;

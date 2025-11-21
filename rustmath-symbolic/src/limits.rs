@@ -5,8 +5,6 @@
 
 use crate::expression::{BinaryOp, Expr, UnaryOp};
 use crate::symbol::Symbol;
-use rustmath_core::{Ring, NumericConversion};
-use std::sync::Arc;
 
 /// Direction for one-sided limits
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -546,8 +544,6 @@ impl Expr {
         dir: Direction,
         series_order: usize,
     ) -> (LimitResult, Option<crate::series::BigO>) {
-        
-
         // First compute the limit normally
         let limit_result = self.limit(var, point, dir);
 

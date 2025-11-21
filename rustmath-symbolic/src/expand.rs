@@ -1,8 +1,6 @@
 //! Expression expansion operations
 
 use crate::expression::{BinaryOp, Expr, UnaryOp};
-use rustmath_core::{NumericConversion, Ring};
-use std::sync::Arc;
 
 impl Expr {
     /// Expand the expression
@@ -96,9 +94,6 @@ impl Expr {
     /// let collected = expr.collect(&Symbol::new("x"));
     /// ```
     pub fn collect(&self, var: &crate::symbol::Symbol) -> Expr {
-        
-        
-
         // Only works for polynomials
         if !self.is_polynomial(var) {
             return self.clone();

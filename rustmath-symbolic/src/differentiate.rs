@@ -2,7 +2,6 @@
 
 use crate::expression::{BinaryOp, Expr, UnaryOp};
 use crate::symbol::Symbol;
-use rustmath_core::Ring;
 
 impl Expr {
     /// Differentiate the expression with respect to a symbol

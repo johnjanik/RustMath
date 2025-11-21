@@ -5,7 +5,6 @@
 
 use crate::expression::Expr;
 use crate::symbol::Symbol;
-use rustmath_core::Ring;
 
 /// Type of differential equation
 #[derive(Debug, Clone, PartialEq, Eq)]

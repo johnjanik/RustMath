@@ -4,7 +4,6 @@
 
 use crate::expression::{BinaryOp, Expr};
 use crate::symbol::Symbol;
-use rustmath_core::{Ring, NumericConversion};
 use rustmath_integers::Integer;
 
 impl Expr {

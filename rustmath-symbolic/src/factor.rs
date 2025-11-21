@@ -5,7 +5,6 @@
 
 use crate::expression::{BinaryOp, Expr, UnaryOp};
 use crate::symbol::Symbol;
-use rustmath_core::Ring;
 use rustmath_integers::Integer;
 use rustmath_polynomials::{factor_over_integers, UnivariatePolynomial};
 use std::sync::Arc;

@@ -1,7 +1,6 @@
 //! Expression simplification
 
 use crate::expression::{BinaryOp, Expr, UnaryOp};
-use rustmath_core::Ring;
 use rustmath_integers::Integer;
 use std::sync::Arc;
 
