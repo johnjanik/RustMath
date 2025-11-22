@@ -1884,26 +1884,6 @@ warning: function `ComplexLazyField` should have a snake case name
 
    Compiling rustmath-liealgebras v0.1.0 (/home/john/RustMath/rustmath-liealgebras)
 warning: `rustmath-rings` (lib) generated 103 warnings
-warning: variable `N` should have a snake case name
-   --> rustmath-ellipticcurves/src/lfunction.rs:228:13
-    |
-228 |         let N = self.conductor.to_f64().unwrap_or(1.0);
-    |             ^ help: convert the identifier to snake case: `n`
-    |
-    = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
-
-warning: variable `L_value` should have a snake case name
-   --> rustmath-ellipticcurves/src/lfunction.rs:231:13
-    |
-231 |         let L_value = self.evaluate(s, 1000);
-    |             ^^^^^^^ help: convert the identifier to snake case: `l_value`
-
-warning: variable `N_to_s_half` should have a snake case name
-   --> rustmath-ellipticcurves/src/lfunction.rs:233:13
-    |
-233 |         let N_to_s_half = N.powf(s.re / 2.0) * ComplexNum::new(
-    |             ^^^^^^^^^^^ help: convert the identifier to snake case: `n_to_s_half`
-
 warning: unused variable: `n`
    --> rustmath-geometry/src/hyperplane_arrangement/check_freeness.rs:219:9
     |
@@ -1928,6 +1908,26 @@ warning: associated function `empty` is never used
    |        ^^^^^
    |
    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable `N` should have a snake case name
+   --> rustmath-ellipticcurves/src/lfunction.rs:228:13
+    |
+228 |         let N = self.conductor.to_f64().unwrap_or(1.0);
+    |             ^ help: convert the identifier to snake case: `n`
+    |
+    = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: variable `L_value` should have a snake case name
+   --> rustmath-ellipticcurves/src/lfunction.rs:231:13
+    |
+231 |         let L_value = self.evaluate(s, 1000);
+    |             ^^^^^^^ help: convert the identifier to snake case: `l_value`
+
+warning: variable `N_to_s_half` should have a snake case name
+   --> rustmath-ellipticcurves/src/lfunction.rs:233:13
+    |
+233 |         let N_to_s_half = N.powf(s.re / 2.0) * ComplexNum::new(
+    |             ^^^^^^^^^^^ help: convert the identifier to snake case: `n_to_s_half`
 
 warning: unused variable: `cell_res`
    --> rustmath-quantumgroups/src/fock_space.rs:274:37
@@ -2461,6 +2461,76 @@ warning: variable `I` should have a snake case name
 467 |     for (I, f_coeff) in &f_mono.coeffs {
     |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
 
+warning: unused variable: `text`
+   --> rustmath-crypto/src/classical.rs:212:21
+    |
+212 | pub fn hill_decrypt(text: &str, key_matrix: &Matrix<Integer>) -> Result<String> {
+    |                     ^^^^ help: if this is intentional, prefix it with an underscore: `_text`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `key_matrix`
+   --> rustmath-crypto/src/classical.rs:212:33
+    |
+212 | pub fn hill_decrypt(text: &str, key_matrix: &Matrix<Integer>) -> Result<String> {
+    |                                 ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_key_matrix`
+
+warning: unused variable: `j`
+   --> rustmath-crypto/src/kdf.rs:213:17
+    |
+213 |             for j in 0..32 {
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_j`
+
+warning: unused variable: `challenge`
+   --> rustmath-crypto/src/eddsa.rs:351:13
+    |
+351 |         let challenge = SHA256::hash(&challenge_input);
+    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_challenge`
+
+warning: unused variable: `s_point`
+   --> rustmath-crypto/src/eddsa.rs:358:13
+    |
+358 |         let s_point = basepoint.scalar_mul(&signature.s);
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_s_point`
+
+warning: unused variable: `r_point`
+   --> rustmath-crypto/src/eddsa.rs:359:13
+    |
+359 |         let r_point = basepoint.scalar_mul(&signature.r);
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_r_point`
+
+warning: unused variable: `verify_hash`
+   --> rustmath-crypto/src/eddsa.rs:367:13
+    |
+367 |         let verify_hash = SHA256::hash(&verify_input);
+    |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_verify_hash`
+
+warning: associated function `quarter_round` is never used
+   --> rustmath-crypto/src/stream_cipher.rs:144:8
+    |
+ 88 | impl ChaCha20 {
+    | ------------- associated function in this implementation
+...
+144 |     fn quarter_round(a: &mut u32, b: &mut u32, c: &mut u32, d: &mut u32) {
+    |        ^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated items `P`, `from_bytes`, and `mul_small` are never used
+   --> rustmath-crypto/src/eddsa.rs:52:11
+    |
+ 50 | impl FieldElement {
+    | ----------------- associated items in this implementation
+ 51 |     /// Prime for Curve25519: 2^255 - 19
+ 52 |     const P: [u64; 5] = [
+    |           ^
+...
+ 69 |     fn from_bytes(bytes: &[u8; 32]) -> Self {
+    |        ^^^^^^^^^^
+...
+122 |     fn mul_small(&self, scalar: u64) -> FieldElement {
+    |        ^^^^^^^^^
+
 warning: unused import: `rustmath_core::Ring`
  --> rustmath-coding/src/linear_code.rs:5:5
   |
@@ -2595,267 +2665,6 @@ warning: methods `fft_recursive` and `dft_fallback` are never used
 ...
 116 |     fn dft_fallback(&self, input: &[Complex]) -> Vec<Complex> {
     |        ^^^^^^^^^^^^
-
-warning: unused variable: `text`
-   --> rustmath-crypto/src/classical.rs:212:21
-    |
-212 | pub fn hill_decrypt(text: &str, key_matrix: &Matrix<Integer>) -> Result<String> {
-    |                     ^^^^ help: if this is intentional, prefix it with an underscore: `_text`
-    |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `key_matrix`
-   --> rustmath-crypto/src/classical.rs:212:33
-    |
-212 | pub fn hill_decrypt(text: &str, key_matrix: &Matrix<Integer>) -> Result<String> {
-    |                                 ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_key_matrix`
-
-warning: unused variable: `j`
-   --> rustmath-crypto/src/kdf.rs:213:17
-    |
-213 |             for j in 0..32 {
-    |                 ^ help: if this is intentional, prefix it with an underscore: `_j`
-
-warning: unused variable: `challenge`
-   --> rustmath-crypto/src/eddsa.rs:351:13
-    |
-351 |         let challenge = SHA256::hash(&challenge_input);
-    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_challenge`
-
-warning: unused variable: `s_point`
-   --> rustmath-crypto/src/eddsa.rs:358:13
-    |
-358 |         let s_point = basepoint.scalar_mul(&signature.s);
-    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_s_point`
-
-warning: unused variable: `r_point`
-   --> rustmath-crypto/src/eddsa.rs:359:13
-    |
-359 |         let r_point = basepoint.scalar_mul(&signature.r);
-    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_r_point`
-
-warning: unused variable: `verify_hash`
-   --> rustmath-crypto/src/eddsa.rs:367:13
-    |
-367 |         let verify_hash = SHA256::hash(&verify_input);
-    |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_verify_hash`
-
-warning: associated function `quarter_round` is never used
-   --> rustmath-crypto/src/stream_cipher.rs:144:8
-    |
- 88 | impl ChaCha20 {
-    | ------------- associated function in this implementation
-...
-144 |     fn quarter_round(a: &mut u32, b: &mut u32, c: &mut u32, d: &mut u32) {
-    |        ^^^^^^^^^^^^^
-    |
-    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: associated items `P`, `from_bytes`, and `mul_small` are never used
-   --> rustmath-crypto/src/eddsa.rs:52:11
-    |
- 50 | impl FieldElement {
-    | ----------------- associated items in this implementation
- 51 |     /// Prime for Curve25519: 2^255 - 19
- 52 |     const P: [u64; 5] = [
-    |           ^
-...
- 69 |     fn from_bytes(bytes: &[u8; 32]) -> Self {
-    |        ^^^^^^^^^^
-...
-122 |     fn mul_small(&self, scalar: u64) -> FieldElement {
-    |        ^^^^^^^^^
-
-warning: `rustmath-ellipticcurves` (lib) generated 3 warnings
-warning: `rustmath-geometry` (lib) generated 3 warnings
-warning: `rustmath-quantumgroups` (lib) generated 2 warnings
-warning: `rustmath-affineschemes` (lib) generated 6 warnings
-warning: `rustmath-crystals` (lib) generated 21 warnings
-warning: `rustmath-symmetricfunctions` (lib) generated 56 warnings
-warning: `rustmath-coding` (lib) generated 10 warnings
-warning: `rustmath-calculus` (lib) generated 6 warnings
-warning: `rustmath-crypto` (lib) generated 9 warnings
-warning: function `list_plot_multiple` is never used
-   --> rustmath-plot/src/plots/list_plot.rs:138:8
-    |
-138 | pub fn list_plot_multiple(
-    |        ^^^^^^^^^^^^^^^^^^
-    |
-    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: function `scatter_plot_y` is never used
-  --> rustmath-plot/src/plots/scatter_plot.rs:77:8
-   |
-77 | pub fn scatter_plot_y(
-   |        ^^^^^^^^^^^^^^
-
-warning: function `scatter_plot_colored` is never used
-   --> rustmath-plot/src/plots/scatter_plot.rs:116:8
-    |
-116 | pub fn scatter_plot_colored(
-    |        ^^^^^^^^^^^^^^^^^^^^
-
-warning: function `scatter_plot_sized` is never used
-   --> rustmath-plot/src/plots/scatter_plot.rs:160:8
-    |
-160 | pub fn scatter_plot_sized(
-    |        ^^^^^^^^^^^^^^^^^^
-
-warning: function `contour_plot_filled` is never used
-   --> rustmath-plot/src/plots/contour_plot.rs:122:8
-    |
-122 | pub fn contour_plot_filled<F>(
-    |        ^^^^^^^^^^^^^^^^^^^
-
-warning: function `density_plot_custom` is never used
-   --> rustmath-plot/src/plots/density_plot.rs:154:8
-    |
-154 | pub fn density_plot_custom<F, C>(
-    |        ^^^^^^^^^^^^^^^^^^^
-
-warning: function `histogram_custom_bins` is never used
-   --> rustmath-plot/src/plots/histogram.rs:132:8
-    |
-132 | pub fn histogram_custom_bins(
-    |        ^^^^^^^^^^^^^^^^^^^^^
-
-warning: function `bar_chart_horizontal` is never used
-  --> rustmath-plot/src/plots/bar_chart.rs:77:8
-   |
-77 | pub fn bar_chart_horizontal(
-   |        ^^^^^^^^^^^^^^^^^^^^
-
-warning: function `bar_chart_colored` is never used
-   --> rustmath-plot/src/plots/bar_chart.rs:122:8
-    |
-122 | pub fn bar_chart_colored(data: Vec<(f64, f64, Color)>, bar_width: Option<f64>) -> Graphics {
-    |        ^^^^^^^^^^^^^^^^^
-
-warning: function `bar_chart_grouped` is never used
-   --> rustmath-plot/src/plots/bar_chart.rs:166:8
-    |
-166 | pub fn bar_chart_grouped(
-    |        ^^^^^^^^^^^^^^^^^
-
-warning: function `bar_chart_stacked` is never used
-   --> rustmath-plot/src/plots/bar_chart.rs:232:8
-    |
-232 | pub fn bar_chart_stacked(data: Vec<(f64, Vec<f64>, Vec<Color>)>, bar_width: Option<f64>) -> Graphics {
-    |        ^^^^^^^^^^^^^^^^^
-
-warning: function `matrix_plot_range` is never used
-   --> rustmath-plot/src/plots/matrix_plot.rs:119:8
-    |
-119 | pub fn matrix_plot_range(
-    |        ^^^^^^^^^^^^^^^^^
-
-warning: function `matrix_plot_binary` is never used
-   --> rustmath-plot/src/plots/matrix_plot.rs:173:8
-    |
-173 | pub fn matrix_plot_binary(
-    |        ^^^^^^^^^^^^^^^^^^
-
-warning: function `matrix_plot_spy` is never used
-   --> rustmath-plot/src/plots/matrix_plot.rs:222:8
-    |
-222 | pub fn matrix_plot_spy(matrix: Vec<Vec<f64>>, threshold: Option<f64>, color: Color) -> Graphics {
-    |        ^^^^^^^^^^^^^^^
-
-warning: unused import: `rustmath_core::Ring`
- --> rustmath-quadraticforms/src/quadratic_form.rs:6:5
-  |
-6 | use rustmath_core::Ring;
-  |     ^^^^^^^^^^^^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `Ring`
- --> rustmath-quadraticforms/src/theta_series.rs:8:21
-  |
-8 | use rustmath_core::{Ring, NumericConversion};
-  |                     ^^^^
-
-warning: unused import: `NumericConversion`
- --> rustmath-quadraticforms/src/theta_series.rs:8:27
-  |
-8 | use rustmath_core::{Ring, NumericConversion};
-  |                           ^^^^^^^^^^^^^^^^^
-
-warning: unused import: `Ring`
- --> rustmath-quadraticforms/src/local_densities.rs:9:21
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                     ^^^^
-
-warning: unused import: `NumericConversion`
- --> rustmath-quadraticforms/src/local_densities.rs:9:27
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                           ^^^^^^^^^^^^^^^^^
-
-warning: unused import: `Ring`
- --> rustmath-quadraticforms/src/genus_theory.rs:9:21
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                     ^^^^
-
-warning: unused import: `NumericConversion`
- --> rustmath-quadraticforms/src/genus_theory.rs:9:27
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                           ^^^^^^^^^^^^^^^^^
-
-warning: unused import: `Ring`
- --> rustmath-quadraticforms/src/advanced.rs:9:21
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                     ^^^^
-
-warning: unused import: `NumericConversion`
- --> rustmath-quadraticforms/src/advanced.rs:9:27
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                           ^^^^^^^^^^^^^^^^^
-
-warning: unused variable: `d`
-  --> rustmath-quadraticforms/src/local_densities.rs:83:13
-   |
-83 |         let d = (-self.form.discriminant()).clone();
-   |             ^ help: if this is intentional, prefix it with an underscore: `_d`
-   |
-   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `p_power`
-   --> rustmath-quadraticforms/src/local_densities.rs:173:13
-    |
-173 |         let p_power = p_int.pow(k);
-    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_p_power`
-
-warning: unused variable: `n3`
-  --> rustmath-quadraticforms/src/advanced.rs:96:42
-   |
-96 |             if let [(n1, a1), (n2, a2), (n3, a3)] = window {
-   |                                          ^^ help: if this is intentional, prefix it with an underscore: `_n3`
-
-warning: method `p_adic_equivalent` is never used
-   --> rustmath-quadraticforms/src/genus_theory.rs:189:8
-    |
- 18 | impl GenusTheory {
-    | ---------------- method in this implementation
-...
-189 |     fn p_adic_equivalent(&self, form1: &QuadraticForm, form2: &QuadraticForm, p: u64) -> bool {
-    |        ^^^^^^^^^^^^^^^^^
-    |
-    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-   Compiling rustmath-schemes v0.1.0 (/home/john/RustMath/rustmath-schemes)
-warning: unused variable: `face_idx`
-   --> rustmath-plot3d/src/export.rs:209:10
-    |
-209 |     for (face_idx, face) in mesh.faces.iter().enumerate() {
-    |          ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_face_idx`
-    |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
 
 warning: unused imports: `ManifoldError`, `ManifoldPoint`, `Result`, and `TopologicalManifold`
  --> rustmath-manifolds/src/vector_bundle.rs:7:13
@@ -3849,6 +3658,198 @@ warning: field `dirac` is never read
 264 |     dirac: Arc<DiracOperator>,
     |     ^^^^^
 
+warning: `rustmath-geometry` (lib) generated 3 warnings
+warning: `rustmath-ellipticcurves` (lib) generated 3 warnings
+warning: `rustmath-quantumgroups` (lib) generated 2 warnings
+warning: `rustmath-affineschemes` (lib) generated 6 warnings
+warning: `rustmath-crystals` (lib) generated 21 warnings
+warning: `rustmath-symmetricfunctions` (lib) generated 56 warnings
+warning: `rustmath-crypto` (lib) generated 9 warnings
+warning: `rustmath-coding` (lib) generated 10 warnings
+warning: `rustmath-calculus` (lib) generated 6 warnings
+warning: `rustmath-manifolds` (lib) generated 130 warnings (run `cargo fix --lib -p rustmath-manifolds` to apply 48 suggestions)
+warning: unused variable: `face_idx`
+   --> rustmath-plot3d/src/export.rs:209:10
+    |
+209 |     for (face_idx, face) in mesh.faces.iter().enumerate() {
+    |          ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_face_idx`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+   Compiling rustmath-schemes v0.1.0 (/home/john/RustMath/rustmath-schemes)
+warning: unused import: `rustmath_core::Ring`
+ --> rustmath-quadraticforms/src/quadratic_form.rs:6:5
+  |
+6 | use rustmath_core::Ring;
+  |     ^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `Ring`
+ --> rustmath-quadraticforms/src/theta_series.rs:8:21
+  |
+8 | use rustmath_core::{Ring, NumericConversion};
+  |                     ^^^^
+
+warning: unused import: `NumericConversion`
+ --> rustmath-quadraticforms/src/theta_series.rs:8:27
+  |
+8 | use rustmath_core::{Ring, NumericConversion};
+  |                           ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Ring`
+ --> rustmath-quadraticforms/src/local_densities.rs:9:21
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                     ^^^^
+
+warning: unused import: `NumericConversion`
+ --> rustmath-quadraticforms/src/local_densities.rs:9:27
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                           ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Ring`
+ --> rustmath-quadraticforms/src/genus_theory.rs:9:21
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                     ^^^^
+
+warning: unused import: `NumericConversion`
+ --> rustmath-quadraticforms/src/genus_theory.rs:9:27
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                           ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Ring`
+ --> rustmath-quadraticforms/src/advanced.rs:9:21
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                     ^^^^
+
+warning: unused import: `NumericConversion`
+ --> rustmath-quadraticforms/src/advanced.rs:9:27
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                           ^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `d`
+  --> rustmath-quadraticforms/src/local_densities.rs:83:13
+   |
+83 |         let d = (-self.form.discriminant()).clone();
+   |             ^ help: if this is intentional, prefix it with an underscore: `_d`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `p_power`
+   --> rustmath-quadraticforms/src/local_densities.rs:173:13
+    |
+173 |         let p_power = p_int.pow(k);
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_p_power`
+
+warning: unused variable: `n3`
+  --> rustmath-quadraticforms/src/advanced.rs:96:42
+   |
+96 |             if let [(n1, a1), (n2, a2), (n3, a3)] = window {
+   |                                          ^^ help: if this is intentional, prefix it with an underscore: `_n3`
+
+warning: method `p_adic_equivalent` is never used
+   --> rustmath-quadraticforms/src/genus_theory.rs:189:8
+    |
+ 18 | impl GenusTheory {
+    | ---------------- method in this implementation
+...
+189 |     fn p_adic_equivalent(&self, form1: &QuadraticForm, form2: &QuadraticForm, p: u64) -> bool {
+    |        ^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `list_plot_multiple` is never used
+   --> rustmath-plot/src/plots/list_plot.rs:138:8
+    |
+138 | pub fn list_plot_multiple(
+    |        ^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `scatter_plot_y` is never used
+  --> rustmath-plot/src/plots/scatter_plot.rs:77:8
+   |
+77 | pub fn scatter_plot_y(
+   |        ^^^^^^^^^^^^^^
+
+warning: function `scatter_plot_colored` is never used
+   --> rustmath-plot/src/plots/scatter_plot.rs:116:8
+    |
+116 | pub fn scatter_plot_colored(
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `scatter_plot_sized` is never used
+   --> rustmath-plot/src/plots/scatter_plot.rs:160:8
+    |
+160 | pub fn scatter_plot_sized(
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `contour_plot_filled` is never used
+   --> rustmath-plot/src/plots/contour_plot.rs:122:8
+    |
+122 | pub fn contour_plot_filled<F>(
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: function `density_plot_custom` is never used
+   --> rustmath-plot/src/plots/density_plot.rs:154:8
+    |
+154 | pub fn density_plot_custom<F, C>(
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: function `histogram_custom_bins` is never used
+   --> rustmath-plot/src/plots/histogram.rs:132:8
+    |
+132 | pub fn histogram_custom_bins(
+    |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `bar_chart_horizontal` is never used
+  --> rustmath-plot/src/plots/bar_chart.rs:77:8
+   |
+77 | pub fn bar_chart_horizontal(
+   |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `bar_chart_colored` is never used
+   --> rustmath-plot/src/plots/bar_chart.rs:122:8
+    |
+122 | pub fn bar_chart_colored(data: Vec<(f64, f64, Color)>, bar_width: Option<f64>) -> Graphics {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: function `bar_chart_grouped` is never used
+   --> rustmath-plot/src/plots/bar_chart.rs:166:8
+    |
+166 | pub fn bar_chart_grouped(
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: function `bar_chart_stacked` is never used
+   --> rustmath-plot/src/plots/bar_chart.rs:232:8
+    |
+232 | pub fn bar_chart_stacked(data: Vec<(f64, Vec<f64>, Vec<Color>)>, bar_width: Option<f64>) -> Graphics {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: function `matrix_plot_range` is never used
+   --> rustmath-plot/src/plots/matrix_plot.rs:119:8
+    |
+119 | pub fn matrix_plot_range(
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: function `matrix_plot_binary` is never used
+   --> rustmath-plot/src/plots/matrix_plot.rs:173:8
+    |
+173 | pub fn matrix_plot_binary(
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `matrix_plot_spy` is never used
+   --> rustmath-plot/src/plots/matrix_plot.rs:222:8
+    |
+222 | pub fn matrix_plot_spy(matrix: Vec<Vec<f64>>, threshold: Option<f64>, color: Color) -> Graphics {
+    |        ^^^^^^^^^^^^^^^
+
 warning: unused variable: `precision`
   --> rustmath-algebraic/src/algebraic_number.rs:51:30
    |
@@ -4200,25 +4201,84 @@ warning: variable `N` should have a snake case name
 323 |     N: &BigInt,
     |     ^ help: convert the identifier to snake case: `n`
 
-warning: `rustmath-plot` (lib) generated 14 warnings
-warning: `rustmath-quadraticforms` (lib) generated 13 warnings
 warning: `rustmath-plot3d` (lib) generated 1 warning
-warning: `rustmath-manifolds` (lib) generated 130 warnings (run `cargo fix --lib -p rustmath-manifolds` to apply 48 suggestions)
+warning: `rustmath-quadraticforms` (lib) generated 13 warnings
+warning: `rustmath-plot` (lib) generated 14 warnings
 warning: `rustmath-algebraic` (lib) generated 3 warnings
 warning: `rustmath-modular` (lib) generated 51 warnings
 error: expected item after doc comment
-   --> rustmath-groups/src/groups_catalog.rs:366:5
+   --> rustmath-groups/src/groups_catalog.rs:360:5
     |
 355 | /     /// Creates an affine group
 356 | |     ///
 357 | |     /// # Arguments
 358 | |     ///
-...   |
-364 | |     /// use rustmath_groups::groups_catalog::affine;
-365 | |     ///
-    | |_______- other attributes here
-366 |       /// let aff3 = affine::Affine(3);
-    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this doc comment doesn't document anything
+359 | |     /// * `n` - The dimension
+    | |_____________________________- other attributes here
+360 |       ///
+    |       ^^^ this doc comment doesn't document anything
+
+warning: unused import: `MathError`
+  --> rustmath-schemes/src/generic/mod.rs:52:21
+   |
+52 | use rustmath_core::{MathError, Result, Ring};
+   |                     ^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `DimensionTheory`
+  --> rustmath-schemes/src/affine/mod.rs:59:59
+   |
+59 | use crate::generic::{Scheme, SchemeMorphism, SchemePoint, DimensionTheory, Separated};
+   |                                                           ^^^^^^^^^^^^^^^
+
+warning: unused import: `std::fmt`
+  --> rustmath-schemes/src/affine/mod.rs:60:5
+   |
+60 | use std::fmt;
+   |     ^^^^^^^^
+
+warning: unused import: `ToPrimitive`
+  --> rustmath-schemes/src/elliptic_curves/isogeny.rs:75:23
+   |
+75 | use num_traits::{One, ToPrimitive, Zero};
+   |                       ^^^^^^^^^^^
+
+warning: unused import: `num_bigint::BigInt`
+  --> rustmath-schemes/src/elliptic_curves/heegner.rs:77:5
+   |
+77 | use num_bigint::BigInt;
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `One`
+  --> rustmath-schemes/src/elliptic_curves/heegner.rs:79:24
+   |
+79 | use num_traits::{Zero, One, Signed, ToPrimitive};
+   |                        ^^^
+
+warning: unused import: `Ring`
+   --> rustmath-schemes/src/elliptic_curves/mod.rs:158:28
+    |
+158 | use rustmath_core::{Field, Ring};
+    |                            ^^^^
+
+warning: unused import: `crate::projective_space::ProjectiveSpace`
+  --> rustmath-schemes/src/line_bundle.rs:17:5
+   |
+17 | use crate::projective_space::ProjectiveSpace;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Zero`
+  --> rustmath-schemes/src/segre.rs:27:18
+   |
+27 | use num_traits::{Zero, One};
+   |                  ^^^^
+
+warning: unused import: `Zero`
+  --> rustmath-schemes/src/veronese.rs:27:18
+   |
+27 | use num_traits::{Zero, One};
+   |                  ^^^^
 
 warning: unused import: `rustmath_rationals::Rational`
  --> rustmath-groups/src/matrix_group.rs:7:5
@@ -4330,71 +4390,6 @@ warning: unused imports: `HashMap` and `HashSet`
 44 | use std::collections::{HashMap, HashSet};
    |                        ^^^^^^^  ^^^^^^^
 
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:233:25
-    |
-233 |         Self::new(<F as Ring>::zero(), <F as Ring>::zero(), <F as Ring>::zero(), a, b)
-    |                         ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:233:46
-    |
-233 |         Self::new(<F as Ring>::zero(), <F as Ring>::zero(), <F as Ring>::zero(), a, b)
-    |                                              ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:233:67
-    |
-233 |         Self::new(<F as Ring>::zero(), <F as Ring>::zero(), <F as Ring>::zero(), a, b)
-    |                                                                   ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:272:26
-    |
-272 |         let four = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
-    |                          ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:272:47
-    |
-272 |         let four = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
-    |                                               ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
 warning: unused import: `std::collections::HashSet`
   --> rustmath-liealgebras/src/root_system.rs:12:5
    |
@@ -4402,19 +4397,6 @@ warning: unused import: `std::collections::HashSet`
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:272:68
-    |
-272 |         let four = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
-    |                                                                    ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
 
 warning: unused import: `rustmath_combinatorics::permutations::Permutation`
   --> rustmath-liealgebras/src/weyl_group.rs:10:5
@@ -4427,45 +4409,6 @@ warning: unused import: `Mul`
    |
 18 | use std::ops::{Add, Mul, Neg};
    |                     ^^^
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:272:89
-    |
-272 |         let four = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
-    |                                                                                         ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:284:25
-    |
-284 |         let two = <F as Ring>::one() + <F as Ring>::one();
-    |                         ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:284:46
-    |
-284 |         let two = <F as Ring>::one() + <F as Ring>::one();
-    |                                              ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
 
 warning: unused import: `Affinity`
   --> rustmath-liealgebras/src/dynkin_diagram.rs:15:52
@@ -4491,19 +4434,6 @@ warning: unused import: `rustmath_matrix::Matrix`
 31 | use rustmath_matrix::Matrix;
    |     ^^^^^^^^^^^^^^^^^^^^^^^
 
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:296:26
-    |
-296 |         let four = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
-    |                          ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
 warning: unused import: `Mul`
   --> rustmath-liealgebras/src/lie_algebra_element.rs:35:26
    |
@@ -4515,32 +4445,6 @@ warning: unused import: `std::marker::PhantomData`
    |
 36 | use std::marker::PhantomData;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:296:47
-    |
-296 |         let four = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
-    |                                               ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:296:68
-    |
-296 |         let four = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
-    |                                                                    ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
 
 warning: unused import: `Mul`
   --> rustmath-liealgebras/src/poincare_birkhoff_witt.rs:42:26
@@ -4566,45 +4470,6 @@ warning: unused import: `Mul`
 41 | use std::ops::{Add, Sub, Mul, Neg};
    |                          ^^^
 
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:296:89
-    |
-296 |         let four = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
-    |                                                                                         ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:310:26
-    |
-310 |         let four = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
-    |                          ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:310:47
-    |
-310 |         let four = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
-    |                                               ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
 warning: unused import: `std::collections::HashMap`
   --> rustmath-liealgebras/src/abelian.rs:17:5
    |
@@ -4616,97 +4481,6 @@ warning: unused import: `std::collections::HashMap`
    |
 26 | use std::collections::HashMap;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:310:68
-    |
-310 |         let four = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
-    |                                                                    ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:310:89
-    |
-310 |         let four = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
-    |                                                                                         ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:338:27
-    |
-338 |         let eight = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one()
-    |                           ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:338:48
-    |
-338 |         let eight = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one()
-    |                                                ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:338:69
-    |
-338 |         let eight = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one()
-    |                                                                     ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:338:90
-    |
-338 |         let eight = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one()
-    |                                                                                          ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:339:21
-    |
-339 |             + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
-    |                     ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
 
 warning: unused import: `LieBracket`
   --> rustmath-liealgebras/src/bch.rs:21:54
@@ -4720,19 +4494,6 @@ warning: unused import: `std::collections::HashMap`
 45 | use std::collections::HashMap;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:339:42
-    |
-339 |             + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
-    |                                          ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
 warning: unused import: `HashSet`
   --> rustmath-liealgebras/src/bgg_dual_module.rs:44:33
    |
@@ -4745,37 +4506,11 @@ warning: unused import: `std::marker::PhantomData`
 46 | use std::marker::PhantomData;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^
 
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:339:63
-    |
-339 |             + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
-    |                                                               ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
 warning: unused imports: `BGGDualModule` and `SimpleModule`
   --> rustmath-liealgebras/src/bgg_resolution.rs:37:30
    |
 37 | use crate::bgg_dual_module::{SimpleModule, BGGDualModule};
    |                              ^^^^^^^^^^^^  ^^^^^^^^^^^^^
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:339:84
-    |
-339 |             + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
-    |                                                                                    ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
 
 warning: unused import: `HashMap`
   --> rustmath-liealgebras/src/verma_module.rs:19:24
@@ -4788,19 +4523,6 @@ warning: unused imports: `Mul` and `Sub`
    |
 21 | use std::ops::{Add, Mul, Neg, Sub};
    |                     ^^^       ^^^
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:340:42
-    |
-340 |         let nine = eight.clone() + <F as Ring>::one();
-    |                                          ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
 
 warning: unused import: `PBWElement`
   --> rustmath-liealgebras/src/verma_module.rs:22:37
@@ -4820,19 +4542,6 @@ warning: unused import: `WeylGroup`
 25 | use crate::weyl_group::{WeylGroup, WeylGroupElement};
    |                         ^^^^^^^^^
 
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:364:30
-    |
-364 |             let four = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
-    |                              ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
 warning: unused import: `BTreeSet`
   --> rustmath-liealgebras/src/center_uea.rs:16:43
    |
@@ -4844,19 +4553,6 @@ warning: unused imports: `PBWMonomial` and `PoincareBirkhoffWittBasis`
    |
 19 | use crate::poincare_birkhoff_witt::{PBWElement, PBWMonomial, PoincareBirkhoffWittBasis};
    |                                                 ^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:364:51
-    |
-364 |             let four = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
-    |                                                   ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
 
 warning: unused import: `FinitelyGeneratedLieAlgebra`
   --> rustmath-liealgebras/src/center_uea.rs:20:42
@@ -4870,76 +4566,11 @@ warning: unused import: `Field`
 20 | use rustmath_core::{Ring, Field, MathError, Result};
    |                           ^^^^^
 
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:364:72
-    |
-364 |             let four = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
-    |                                                                        ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
 warning: unused import: `HashMap`
   --> rustmath-liealgebras/src/symplectic_derivation.rs:21:24
    |
 21 | use std::collections::{HashMap, BTreeMap};
    |                        ^^^^^^^
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:364:93
-    |
-364 |             let four = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
-    |                                                                                             ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:365:44
-    |
-365 |             let six = four.clone() + <F as Ring>::one() + <F as Ring>::one();
-    |                                            ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:365:65
-    |
-365 |             let six = four.clone() + <F as Ring>::one() + <F as Ring>::one();
-    |                                                                 ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:540:29
-    |
-540 |             let two = <F as Ring>::one() + <F as Ring>::one();
-    |                             ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
 
 warning: unused imports: `HashMap` and `HashSet`
   --> rustmath-liealgebras/src/subalgebra.rs:14:24
@@ -4947,343 +4578,11 @@ warning: unused imports: `HashMap` and `HashSet`
 14 | use std::collections::{HashMap, HashSet};
    |                        ^^^^^^^  ^^^^^^^
 
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:540:50
-    |
-540 |             let two = <F as Ring>::one() + <F as Ring>::one();
-    |                                                  ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
 warning: unused import: `rustmath_rationals::Rational`
   --> rustmath-liealgebras/src/compact_real_form.rs:31:5
    |
 31 | use rustmath_rationals::Rational;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:541:45
-    |
-541 |             let three = two.clone() + <F as Ring>::one();
-    |                                             ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:563:25
-    |
-563 |         let two = <F as Ring>::one() + <F as Ring>::one();
-    |                         ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:563:46
-    |
-563 |         let two = <F as Ring>::one() + <F as Ring>::one();
-    |                                              ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-error[E0405]: cannot find trait `Ring` in this scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:564:41
-    |
-564 |         let three = two.clone() + <F as Ring>::one();
-    |                                         ^^^^ not found in this scope
-    |
-help: consider importing one of these traits
-    |
- 80 + use rustmath_core::Ring;
-    |
- 80 + use rustmath_rings::Ring;
-    |
-
-warning: unused import: `MathError`
-  --> rustmath-schemes/src/generic/mod.rs:52:21
-   |
-52 | use rustmath_core::{MathError, Result, Ring};
-   |                     ^^^^^^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `DimensionTheory`
-  --> rustmath-schemes/src/affine/mod.rs:59:59
-   |
-59 | use crate::generic::{Scheme, SchemeMorphism, SchemePoint, DimensionTheory, Separated};
-   |                                                           ^^^^^^^^^^^^^^^
-
-warning: unused import: `std::fmt`
-  --> rustmath-schemes/src/affine/mod.rs:60:5
-   |
-60 | use std::fmt;
-   |     ^^^^^^^^
-
-warning: unused import: `ToPrimitive`
-  --> rustmath-schemes/src/elliptic_curves/isogeny.rs:75:23
-   |
-75 | use num_traits::{One, ToPrimitive, Zero};
-   |                       ^^^^^^^^^^^
-
-warning: unused import: `num_bigint::BigInt`
-  --> rustmath-schemes/src/elliptic_curves/heegner.rs:77:5
-   |
-77 | use num_bigint::BigInt;
-   |     ^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `One`
-  --> rustmath-schemes/src/elliptic_curves/heegner.rs:79:24
-   |
-79 | use num_traits::{Zero, One, Signed, ToPrimitive};
-   |                        ^^^
-
-warning: unused import: `crate::projective_space::ProjectiveSpace`
-  --> rustmath-schemes/src/line_bundle.rs:17:5
-   |
-17 | use crate::projective_space::ProjectiveSpace;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `Zero`
-  --> rustmath-schemes/src/segre.rs:27:18
-   |
-27 | use num_traits::{Zero, One};
-   |                  ^^^^
-
-warning: unused import: `Zero`
-  --> rustmath-schemes/src/veronese.rs:27:18
-   |
-27 | use num_traits::{Zero, One};
-   |                  ^^^^
-
-error[E0277]: the trait bound `IndexedFreeAbelianGroupElement<I>: Hash` is not satisfied
-   --> rustmath-groups/src/indexed_free_group.rs:449:20
-    |
-449 |     type Element = IndexedFreeAbelianGroupElement<I>;
-    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
-    |
-help: the trait `Hash` is not implemented for `IndexedFreeAbelianGroupElement<I>`
-   --> rustmath-groups/src/indexed_free_group.rs:483:1
-    |
-483 | pub struct IndexedFreeAbelianGroupElement<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> {
-    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    = help: the following other types implement trait `group_traits::GroupElement`:
-              ArtinGroupElement
-              Braid
-              CactusGroupElement
-              CubicBraidElement
-              GenericElementWrapper<E>
-              GroupExpElement
-              IndexedFreeAbelianGroupElement<I>
-              IndexedFreeGroupElement<I>
-            and 2 others
-note: required for `<IndexedFreeAbelianGroup<I> as group_traits::Group>::Element` to implement `group_traits::GroupElement`
-   --> rustmath-groups/src/group_traits.rs:104:11
-    |
-104 | pub trait GroupElement: Clone + Eq + Hash + fmt::Debug + fmt::Display {
-    |           ^^^^^^^^^^^^
-note: required by a bound in `group_traits::Group::Element`
-   --> rustmath-groups/src/group_traits.rs:18:19
-    |
- 18 |     type Element: GroupElement;
-    |                   ^^^^^^^^^^^^ required by this bound in `Group::Element`
-
-error[E0277]: the trait bound `IndexedFreeAbelianGroupElement<I>: Hash` is not satisfied
-   --> rustmath-groups/src/indexed_free_group.rs:606:94
-    |
-606 | impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> crate::group_traits::GroupElement for IndexedFreeAbelianGroupElement<I> {
-    |                                                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
-    |
-help: the trait `Hash` is not implemented for `IndexedFreeAbelianGroupElement<I>`
-   --> rustmath-groups/src/indexed_free_group.rs:483:1
-    |
-483 | pub struct IndexedFreeAbelianGroupElement<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> {
-    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: required by a bound in `group_traits::GroupElement`
-   --> rustmath-groups/src/group_traits.rs:104:38
-    |
-104 | pub trait GroupElement: Clone + Eq + Hash + fmt::Debug + fmt::Display {
-    |                                      ^^^^ required by this bound in `GroupElement`
-
-error[E0034]: multiple applicable items in scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:263:17
-    |
-263 |         self.a1.is_zero() && self.a2.is_zero() && self.a3.is_zero()
-    |                 ^^^^^^^ multiple `is_zero` found
-    |
-note: candidate #1 is defined in the trait `Ring`
-   --> /home/john/RustMath/rustmath-core/src/traits.rs:63:5
-    |
- 63 |     fn is_zero(&self) -> bool;
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: candidate #2 is defined in the trait `num_traits::Zero`
-   --> /home/john/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-traits-0.2.19/src/identities.rs:28:5
-    |
- 28 |     fn is_zero(&self) -> bool;
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-help: disambiguate the method for candidate #1
-    |
-263 -         self.a1.is_zero() && self.a2.is_zero() && self.a3.is_zero()
-263 +         Ring::is_zero(&self.a1) && self.a2.is_zero() && self.a3.is_zero()
-    |
-help: disambiguate the method for candidate #2
-    |
-263 -         self.a1.is_zero() && self.a2.is_zero() && self.a3.is_zero()
-263 +         num_traits::Zero::is_zero(&self.a1) && self.a2.is_zero() && self.a3.is_zero()
-    |
-
-error[E0034]: multiple applicable items in scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:263:38
-    |
-263 |         self.a1.is_zero() && self.a2.is_zero() && self.a3.is_zero()
-    |                                      ^^^^^^^ multiple `is_zero` found
-    |
-note: candidate #1 is defined in the trait `Ring`
-   --> /home/john/RustMath/rustmath-core/src/traits.rs:63:5
-    |
- 63 |     fn is_zero(&self) -> bool;
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: candidate #2 is defined in the trait `num_traits::Zero`
-   --> /home/john/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-traits-0.2.19/src/identities.rs:28:5
-    |
- 28 |     fn is_zero(&self) -> bool;
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-help: disambiguate the method for candidate #1
-    |
-263 -         self.a1.is_zero() && self.a2.is_zero() && self.a3.is_zero()
-263 +         self.a1.is_zero() && Ring::is_zero(&self.a2) && self.a3.is_zero()
-    |
-help: disambiguate the method for candidate #2
-    |
-263 -         self.a1.is_zero() && self.a2.is_zero() && self.a3.is_zero()
-263 +         self.a1.is_zero() && num_traits::Zero::is_zero(&self.a2) && self.a3.is_zero()
-    |
-
-error[E0034]: multiple applicable items in scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:263:59
-    |
-263 |         self.a1.is_zero() && self.a2.is_zero() && self.a3.is_zero()
-    |                                                           ^^^^^^^ multiple `is_zero` found
-    |
-note: candidate #1 is defined in the trait `Ring`
-   --> /home/john/RustMath/rustmath-core/src/traits.rs:63:5
-    |
- 63 |     fn is_zero(&self) -> bool;
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: candidate #2 is defined in the trait `num_traits::Zero`
-   --> /home/john/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-traits-0.2.19/src/identities.rs:28:5
-    |
- 28 |     fn is_zero(&self) -> bool;
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-help: disambiguate the method for candidate #1
-    |
-263 -         self.a1.is_zero() && self.a2.is_zero() && self.a3.is_zero()
-263 +         self.a1.is_zero() && self.a2.is_zero() && Ring::is_zero(&self.a3)
-    |
-help: disambiguate the method for candidate #2
-    |
-263 -         self.a1.is_zero() && self.a2.is_zero() && self.a3.is_zero()
-263 +         self.a1.is_zero() && self.a2.is_zero() && num_traits::Zero::is_zero(&self.a3)
-    |
-
-error[E0034]: multiple applicable items in scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:355:29
-    |
-355 |         self.discriminant().is_zero()
-    |                             ^^^^^^^ multiple `is_zero` found
-    |
-note: candidate #1 is defined in the trait `Ring`
-   --> /home/john/RustMath/rustmath-core/src/traits.rs:63:5
-    |
- 63 |     fn is_zero(&self) -> bool;
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: candidate #2 is defined in the trait `num_traits::Zero`
-   --> /home/john/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-traits-0.2.19/src/identities.rs:28:5
-    |
- 28 |     fn is_zero(&self) -> bool;
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-help: disambiguate the method for candidate #1
-    |
-355 -         self.discriminant().is_zero()
-355 +         Ring::is_zero(&self.discriminant())
-    |
-help: disambiguate the method for candidate #2
-    |
-355 -         self.discriminant().is_zero()
-355 +         num_traits::Zero::is_zero(&self.discriminant())
-    |
-
-error[E0034]: multiple applicable items in scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:381:17
-    |
-381 |         if disc.is_zero() {
-    |                 ^^^^^^^ multiple `is_zero` found
-    |
-note: candidate #1 is defined in the trait `Ring`
-   --> /home/john/RustMath/rustmath-core/src/traits.rs:63:5
-    |
- 63 |     fn is_zero(&self) -> bool;
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: candidate #2 is defined in the trait `num_traits::Zero`
-   --> /home/john/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-traits-0.2.19/src/identities.rs:28:5
-    |
- 28 |     fn is_zero(&self) -> bool;
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-help: disambiguate the method for candidate #1
-    |
-381 -         if disc.is_zero() {
-381 +         if Ring::is_zero(&disc) {
-    |
-help: disambiguate the method for candidate #2
-    |
-381 -         if disc.is_zero() {
-381 +         if num_traits::Zero::is_zero(&disc) {
-    |
-
-error[E0034]: multiple applicable items in scope
-   --> rustmath-schemes/src/elliptic_curves/generic.rs:544:18
-    |
-544 |             if y.is_zero() {
-    |                  ^^^^^^^ multiple `is_zero` found
-    |
-note: candidate #1 is defined in the trait `Ring`
-   --> /home/john/RustMath/rustmath-core/src/traits.rs:63:5
-    |
- 63 |     fn is_zero(&self) -> bool;
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: candidate #2 is defined in the trait `num_traits::Zero`
-   --> /home/john/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-traits-0.2.19/src/identities.rs:28:5
-    |
- 28 |     fn is_zero(&self) -> bool;
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-help: disambiguate the method for candidate #1
-    |
-544 -             if y.is_zero() {
-544 +             if Ring::is_zero(&y) {
-    |
-help: disambiguate the method for candidate #2
-    |
-544 -             if y.is_zero() {
-544 +             if num_traits::Zero::is_zero(&y) {
-    |
 
 error[E0034]: multiple applicable items in scope
    --> rustmath-schemes/src/graded_ring.rs:177:30
@@ -5657,6 +4956,12 @@ warning: unused variable: `ell`
 519 |     fn find_ell_isogenies(curve: &EllipticCurve, ell: usize) -> Vec<Isogeny> {
     |                                                  ^^^ help: if this is intentional, prefix it with an underscore: `_ell`
 
+warning: unused variable: `dim`
+   --> rustmath-schemes/src/line_bundle.rs:136:21
+    |
+136 |         if let Some(dim) = self.scheme.dimension() {
+    |                     ^^^ help: if this is intentional, prefix it with an underscore: `_dim`
+
 error[E0308]: mismatched types
    --> rustmath-groups/src/artin.rs:261:47
     |
@@ -5674,6 +4979,12 @@ help: you can convert an `i32` to an `isize` and panic if the converted value do
     |
 261 |             word: FreeGroupElement::generator((i as i32).try_into().unwrap(), 1),
     |                                               +        +++++++++++++++++++++
+
+warning: unused variable: `denom`
+   --> rustmath-schemes/src/proj.rs:165:13
+    |
+165 |         let denom = &homogeneous[self.index];
+    |             ^^^^^ help: if this is intentional, prefix it with an underscore: `_denom`
 
 error[E0308]: mismatched types
    --> rustmath-groups/src/artin.rs:347:33
@@ -5693,39 +5004,12 @@ help: you can convert an `i32` to an `isize` and panic if the converted value do
 347 |             word: self.word.pow(n.try_into().unwrap()),
     |                                  ++++++++++++++++++++
 
-error[E0308]: mismatched types
-   --> rustmath-groups/src/class_function.rs:196:40
-    |
-196 |         self.scalar_mul(&Complex::from(-1.0))
-    |                          ------------- ^^^^ expected `Complex`, found floating-point number
-    |                          |
-    |                          arguments to this function are incorrect
-    |
-note: associated function defined here
-   --> /home/john/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/convert/mod.rs:592:8
-    |
-592 |     fn from(value: T) -> Self;
-    |        ^^^^
-
-error[E0308]: mismatched types
-   --> rustmath-groups/src/class_function.rs:222:37
-    |
-222 |         Some(sum.div(&Complex::from(order)))
-    |                       ------------- ^^^^^ expected `Complex`, found `f64`
-    |                       |
-    |                       arguments to this function are incorrect
-    |
-note: associated function defined here
-   --> /home/john/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/convert/mod.rs:592:8
-    |
-592 |     fn from(value: T) -> Self;
-    |        ^^^^
-
+For more information about this error, try `rustc --explain E0034`.
 error[E0308]: mismatched types
    --> rustmath-groups/src/class_function.rs:222:14
     |
-222 |         Some(sum.div(&Complex::from(order)))
-    |         ---- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Complex`, found `Result<Complex, MathError>`
+222 |         Some(sum.div(&Complex::new(order, 0.0)))
+    |         ---- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Complex`, found `Result<Complex, MathError>`
     |         |
     |         arguments to this enum variant are incorrect
     |
@@ -5734,8 +5018,8 @@ error[E0308]: mismatched types
 help: the type constructed contains `Result<Complex, MathError>` due to the type of the argument passed
    --> rustmath-groups/src/class_function.rs:222:9
     |
-222 |         Some(sum.div(&Complex::from(order)))
-    |         ^^^^^------------------------------^
+222 |         Some(sum.div(&Complex::new(order, 0.0)))
+    |         ^^^^^----------------------------------^
     |              |
     |              this argument influences the type of `Some`
 note: tuple variant defined here
@@ -5745,42 +5029,12 @@ note: tuple variant defined here
     |     ^^^^
 help: consider using `Result::expect` to unwrap the `Result<Complex, MathError>` value, panicking if the value is a `Result::Err`
     |
-222 |         Some(sum.div(&Complex::from(order)).expect("REASON"))
-    |                                            +++++++++++++++++
+222 |         Some(sum.div(&Complex::new(order, 0.0)).expect("REASON"))
+    |                                                +++++++++++++++++
 
-error[E0308]: mismatched types
-   --> rustmath-groups/src/class_function.rs:315:44
-    |
-315 |         values.insert(class, Complex::from(1.0));
-    |                              ------------- ^^^ expected `Complex`, found floating-point number
-    |                              |
-    |                              arguments to this function are incorrect
-    |
-note: associated function defined here
-   --> /home/john/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/convert/mod.rs:592:8
-    |
-592 |     fn from(value: T) -> Self;
-    |        ^^^^
-
-warning: unused variable: `dim`
-   --> rustmath-schemes/src/line_bundle.rs:136:21
-    |
-136 |         if let Some(dim) = self.scheme.dimension() {
-    |                     ^^^ help: if this is intentional, prefix it with an underscore: `_dim`
-
-error[E0308]: mismatched types
-   --> rustmath-liealgebras/src/weight_lattice.rs:125:71
-    |
-125 |         self.coefficients.iter().fold(Integer::zero(), |acc, c| acc + c)
-    |                                                                 ---   ^ expected `Integer`, found `&Integer`
-    |                                                                 |
-    |                                                                 expected because this is `Integer`
-    |
-help: consider using clone here
-    |
-125 |         self.coefficients.iter().fold(Integer::zero(), |acc, c| acc + c.clone())
-    |                                                                        ++++++++
-
+warning: `rustmath-schemes` (lib) generated 18 warnings
+error: could not compile `rustmath-schemes` (lib) due to 13 previous errors; 18 warnings emitted
+warning: build failed, waiting for other jobs to finish...
 error[E0308]: mismatched types
    --> rustmath-groups/src/cubic_braid.rs:97:51
     |
@@ -5835,11 +5089,18 @@ help: you can convert an `i32` to an `isize` and panic if the converted value do
 105 |                 let sj = FreeGroupElement::generator((j as i32).try_into().unwrap(), 1);
     |                                                      +        +++++++++++++++++++++
 
-warning: unused variable: `denom`
-   --> rustmath-schemes/src/proj.rs:165:13
+error[E0308]: mismatched types
+   --> rustmath-liealgebras/src/weight_lattice.rs:125:71
     |
-165 |         let denom = &homogeneous[self.index];
-    |             ^^^^^ help: if this is intentional, prefix it with an underscore: `_denom`
+125 |         self.coefficients.iter().fold(Integer::zero(), |acc, c| acc + c)
+    |                                                                 ---   ^ expected `Integer`, found `&Integer`
+    |                                                                 |
+    |                                                                 expected because this is `Integer`
+    |
+help: consider using clone here
+    |
+125 |         self.coefficients.iter().fold(Integer::zero(), |acc, c| acc + c.clone())
+    |                                                                        ++++++++
 
 error[E0308]: mismatched types
    --> rustmath-groups/src/cubic_braid.rs:106:58
@@ -5967,18 +5228,18 @@ note: expected `Vec<String>`, found `usize`
     |                                                    ^^^^^^
     = note: expected struct `Vec<String>`
                  found type `usize`
-note: expected `Vec<Vec<i32>>`, found `Vec<FreeGroupElement>`
+note: expected `Vec<Vec<isize>>`, found `Vec<FreeGroupElement>`
    --> rustmath-groups/src/cubic_braid.rs:196:60
     |
 196 |         let fp_group = FinitelyPresentedGroup::new(n_gens, relations);
     |                                                            ^^^^^^^^^
-    = note: expected struct `Vec<Vec<i32>>`
+    = note: expected struct `Vec<Vec<isize>>`
                found struct `Vec<FreeGroupElement>`
 note: associated function defined here
    --> rustmath-groups/src/finitely_presented.rs:109:12
     |
-109 |     pub fn new(generator_names: Vec<String>, relations: Vec<Vec<i32>>) -> Self {
-    |            ^^^ ----------------------------  ------------------------
+109 |     pub fn new(generator_names: Vec<String>, relations: Vec<Vec<isize>>) -> Self {
+    |            ^^^ ----------------------------  --------------------------
 
 error[E0308]: mismatched types
    --> rustmath-groups/src/cubic_braid.rs:393:47
@@ -6123,8 +5384,6 @@ help: consider removing the borrow
 456 +                         let term = prefix.mul(self.group.generator(gen_index).unwrap().pow(i as isize));
     |
 
-Some errors have detailed explanations: E0034, E0405.
-For more information about an error, try `rustc --explain E0034`.
 error[E0308]: mismatched types
    --> rustmath-groups/src/free_group.rs:462:47
     |
@@ -6186,9 +5445,22 @@ help: consider removing the borrow
 469 +             prefix = prefix.mul(FreeGroupElement {
     |
 
-warning: `rustmath-schemes` (lib) generated 17 warnings
-error: could not compile `rustmath-schemes` (lib) due to 57 previous errors; 17 warnings emitted
-warning: build failed, waiting for other jobs to finish...
+error[E0308]: mismatched types
+    --> rustmath-groups/src/finitely_presented.rs:209:25
+     |
+ 209 |             matrix.push(row);
+     |                    ---- ^^^ expected `Vec<isize>`, found `Vec<i32>`
+     |                    |
+     |                    arguments to this method are incorrect
+     |
+     = note: expected struct `Vec<isize>`
+                found struct `Vec<i32>`
+note: method defined here
+    --> /home/john/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/alloc/src/vec/mod.rs:2571:12
+     |
+2571 |     pub fn push(&mut self, value: T) {
+     |            ^^^^
+
 error[E0308]: mismatched types
    --> rustmath-groups/src/finitely_presented.rs:329:33
     |
@@ -6214,25 +5486,30 @@ help: consider using clone here
 329 |             result = result.mul(self.clone());
     |                                     ++++++++
 
-error[E0277]: the trait bound `IndexedFreeAbelianGroupElement<I>: Hash` is not satisfied
-   --> rustmath-groups/src/indexed_free_group.rs:586:10
+error[E0277]: the trait bound `HashMap<I, i32>: Hash` is not satisfied
+   --> rustmath-groups/src/indexed_free_group.rs:485:5
     |
-586 |         <Self as crate::group_traits::GroupElement>::identity()
-    |          ^^^^ unsatisfied trait bound
+482 | #[derive(Clone, Debug, Hash)]
+    |                        ---- in this derive macro expansion
+...
+485 |     exponents: HashMap<I, i32>,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Hash` is not implemented for `HashMap<I, i32>`
+
+error[E0308]: mismatched types
+   --> rustmath-groups/src/misc_groups.rs:37:50
     |
-help: the trait `Hash` is not implemented for `IndexedFreeAbelianGroupElement<I>`
-   --> rustmath-groups/src/indexed_free_group.rs:483:1
+ 37 |     FinitelyPresentedGroup::new(generator_names, relations)
+    |     ---------------------------                  ^^^^^^^^^ expected `Vec<Vec<isize>>`, found `Vec<Vec<i32>>`
+    |     |
+    |     arguments to this function are incorrect
     |
-483 | pub struct IndexedFreeAbelianGroupElement<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> {
-    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: required by a bound in `group_traits::GroupElement::identity`
-   --> rustmath-groups/src/group_traits.rs:104:38
+    = note: expected struct `Vec<Vec<isize>>`
+               found struct `Vec<Vec<i32>>`
+note: associated function defined here
+   --> rustmath-groups/src/finitely_presented.rs:109:12
     |
-104 | pub trait GroupElement: Clone + Eq + Hash + fmt::Debug + fmt::Display {
-    |                                      ^^^^ required by this bound in `GroupElement::identity`
-105 |     /// Get the identity element
-106 |     fn identity() -> Self;
-    |        -------- required by a bound in this associated function
+109 |     pub fn new(generator_names: Vec<String>, relations: Vec<Vec<isize>>) -> Self {
+    |            ^^^                               --------------------------
 
 warning: unused import: `std::hash::Hash`
   --> rustmath-groups/src/libgap_group.rs:19:5
@@ -6266,6 +5543,12 @@ warning: unused variable: `element`
     |
     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
 
+warning: unused variable: `p`
+   --> rustmath-groups/src/additive_abelian_wrapper.rs:442:5
+    |
+442 |     p: usize,
+    |     ^ help: if this is intentional, prefix it with an underscore: `_p`
+
 warning: unused import: `NumericConversion`
   --> rustmath-liealgebras/src/chevalley_basis.rs:27:27
    |
@@ -6295,12 +5578,6 @@ warning: unused import: `Ring`
    |
 15 | use rustmath_core::{Ring, Field, MathError, Result};
    |                     ^^^^
-
-warning: unused variable: `p`
-   --> rustmath-groups/src/additive_abelian_wrapper.rs:442:5
-    |
-442 |     p: usize,
-    |     ^ help: if this is intentional, prefix it with an underscore: `_p`
 
 warning: unused variable: `size`
    --> rustmath-liealgebras/src/cartan_matrix.rs:293:13
@@ -6396,12 +5673,6 @@ warning: unused variable: `i`
 578 |     fn affine_coroot(i: usize) -> Self
     |                      ^ help: if this is intentional, prefix it with an underscore: `_i`
 
-warning: unused variable: `gen_index`
-   --> rustmath-liealgebras/src/bgg_dual_module.rs:442:9
-    |
-442 |         gen_index: usize,
-    |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_gen_index`
-
 warning: variable does not need to be mutable
    --> rustmath-groups/src/nilpotent_lie_group.rs:196:17
     |
@@ -6409,6 +5680,12 @@ warning: variable does not need to be mutable
     |                 ----^^^^^^
     |                 |
     |                 help: remove this `mut`
+
+warning: unused variable: `gen_index`
+   --> rustmath-liealgebras/src/bgg_dual_module.rs:442:9
+    |
+442 |         gen_index: usize,
+    |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_gen_index`
 
 warning: unused variable: `degree`
    --> rustmath-liealgebras/src/bgg_resolution.rs:137:36
@@ -6450,6 +5727,8 @@ warning: variable does not need to be mutable
 
 Some errors have detailed explanations: E0277, E0308.
 For more information about an error, try `rustc --explain E0277`.
+warning: `rustmath-groups` (lib) generated 30 warnings
+error: could not compile `rustmath-groups` (lib) due to 26 previous errors; 30 warnings emitted
 warning: unused variable: `pbw_element`
    --> rustmath-liealgebras/src/center_uea.rs:345:27
     |
@@ -6462,8 +5741,6 @@ warning: unused variable: `pbw_element`
 352 |     pub fn is_central(&self, pbw_element: &PBWElement<F>) -> bool {
     |                              ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_pbw_element`
 
-warning: `rustmath-groups` (lib) generated 30 warnings
-error: could not compile `rustmath-groups` (lib) due to 29 previous errors; 30 warnings emitted
 For more information about this error, try `rustc --explain E0308`.
 warning: `rustmath-liealgebras` (lib) generated 54 warnings
 error: could not compile `rustmath-liealgebras` (lib) due to 1 previous error; 54 warnings emitted
