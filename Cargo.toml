@@ -64,6 +64,8 @@ members = [
     "rustmath-schemes",
     "rustmath-trees",
     "rustmath-automata",
+    "rustmath-misc",
+    "rustmath-curves",
 ]
 
 [workspace.package]
