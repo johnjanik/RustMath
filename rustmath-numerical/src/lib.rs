@@ -118,7 +118,7 @@ pub trait Optimizable<T: NumericalScalar> {
     fn eval(&self, x: T) -> T;
 
     /// Evaluate the gradient (if available)
-    fn gradient(&self, x: T) -> Option<T> {
+    fn gradient(&self, _x: T) -> Option<T> {
         None
     }
 

@@ -229,7 +229,7 @@ pub fn polynomial_degree(expr: &Expr, var: &str) -> Option<i64> {
                         let left_deg = polynomial_degree(left, var)?;
                         // Convert Integer to i64 for multiplication
                         // This is a simplification - would need better conversion in production
-                        use rustmath_core::Ring;
+                        
                         let n_str = format!("{}", n);
                         let n_val: i64 = n_str.parse().ok()?;
                         Some(left_deg * n_val)

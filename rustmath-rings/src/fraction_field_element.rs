@@ -30,10 +30,8 @@
 //! assert!(is_FractionFieldElement(&frac));
 //! ```
 
-use rustmath_core::{Ring, IntegralDomain, Field, EuclideanDomain};
+use rustmath_core::{Ring, IntegralDomain, Field};
 use std::fmt;
-use std::marker::PhantomData;
-use std::hash::{Hash, Hasher};
 
 /// Element of a fraction field
 ///

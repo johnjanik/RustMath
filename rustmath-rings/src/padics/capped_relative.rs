@@ -41,7 +41,7 @@
 //! x - y = O(5^10)      (exact zero or very high valuation)
 //! ```
 
-use rustmath_core::{CommutativeRing, Field, IntegralDomain, MathError, Result, Ring};
+use rustmath_core::{MathError, Result, Ring};
 use rustmath_integers::Integer;
 use rustmath_rationals::Rational;
 use std::cmp;

@@ -26,7 +26,6 @@
 
 use rustmath_core::{Ring, Field};
 use std::fmt;
-use std::marker::PhantomData;
 
 /// Element of a rational function field k(x)
 ///

@@ -35,7 +35,7 @@
 //! let const_ext = ConstantFieldExtension::new("Fq".to_string(), "Fq2".to_string());
 //! ```
 
-use rustmath_core::{Ring, Field};
+use rustmath_core::Field;
 use std::marker::PhantomData;
 use std::fmt;
 

@@ -170,6 +170,7 @@ where
 
     // Skip transient
     for _ in 0..transient {
+        _ = x_prev; // Suppress unused assignment warning
         x_prev = x;
         x = f(x);
     }

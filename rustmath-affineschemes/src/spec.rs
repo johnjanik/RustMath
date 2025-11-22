@@ -4,8 +4,7 @@
 //! ideals of R, equipped with the Zariski topology.
 
 use crate::prime_ideal::{Ideal, PrimeIdeal};
-use rustmath_core::{CommutativeRing, Ring, MathError, Result};
-use std::collections::HashSet;
+use rustmath_core::{CommutativeRing, Ring};
 use std::fmt;
 use std::marker::PhantomData;
 

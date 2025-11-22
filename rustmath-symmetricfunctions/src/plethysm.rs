@@ -7,8 +7,6 @@
 
 use crate::{SymFun, SymmetricFunctionBasis};
 use rustmath_combinatorics::Partition;
-use rustmath_rationals::Rational;
-use rustmath_core::Ring;
 
 /// Compute the plethysm f[g] of two symmetric functions
 ///

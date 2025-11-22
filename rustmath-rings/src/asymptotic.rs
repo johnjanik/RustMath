@@ -41,10 +41,8 @@
 //! // (simplified example - actual API would be more complex)
 //! ```
 
-use rustmath_core::{Ring, CommutativeRing};
-use rustmath_rationals::Rational;
+use rustmath_core::Ring;
 use num_rational::BigRational;
-use num_bigint::BigInt;
 use num_traits::{Zero, One, Signed};
 use std::fmt::{self, Debug, Display};
 use std::cmp::Ordering;

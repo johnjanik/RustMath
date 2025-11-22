@@ -32,15 +32,10 @@
 //! ```
 
 use crate::growth_group::{
-    GrowthElement, GrowthGroup, MonomialGrowthElement, MonomialGrowthGroup,
-    ExponentialGrowthElement, ExponentialGrowthGroup, Variable, GrowthGroupFactor,
+    GrowthElement, GrowthGroup, Variable, GrowthGroupFactor,
 };
-use num_bigint::BigInt;
-use num_rational::BigRational;
-use num_traits::{Zero, One};
 use std::cmp::Ordering;
 use std::fmt::{self, Debug, Display};
-use std::sync::Arc;
 
 // ======================================================================================
 // CARTESIAN PRODUCT ELEMENT

@@ -5,7 +5,7 @@
 
 use crate::prime_ideal::{Ideal, PrimeIdeal};
 use crate::spec::AffineScheme;
-use rustmath_core::{CommutativeRing, Ring};
+use rustmath_core::CommutativeRing;
 use std::marker::PhantomData;
 
 /// The Krull dimension of a ring (and its spectrum)

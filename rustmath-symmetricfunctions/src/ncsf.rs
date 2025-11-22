@@ -11,10 +11,9 @@
 //!
 //! NCSF forms a Hopf algebra that is dual to the algebra of quasi-symmetric functions (QSym).
 
-use rustmath_combinatorics::{Composition, compositions, compositions_k};
+use rustmath_combinatorics::Composition;
 use rustmath_core::Ring;
 use rustmath_rationals::Rational;
-use rustmath_integers::Integer;
 use std::collections::HashMap;
 use std::fmt;
 

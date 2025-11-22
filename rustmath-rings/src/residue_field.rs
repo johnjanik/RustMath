@@ -21,10 +21,9 @@
 //! - `LiftingMap`: Section R/I → R (canonical lift)
 //! - `ResidueFieldFactory`: Factory for creating residue fields
 
-use rustmath_core::{Ring, Field, IntegralDomain, CommutativeRing};
+use rustmath_core::{Ring, Field};
 use std::fmt;
 use std::marker::PhantomData;
-use std::hash::{Hash, Hasher};
 
 /// An element of a residue field R/I
 ///
@@ -361,7 +360,7 @@ impl ResidueFieldPrime {
 
     /// Create an element in this residue field
     pub fn element(&self, value: rustmath_integers::Integer) -> ResidueFieldPrimeElement {
-        use rustmath_integers::Integer;
+        
 
         // Reduce modulo p to get canonical representative
         let reduced = value.modulo(&self.prime);
@@ -442,7 +441,7 @@ impl ResidueFieldPrimeElement {
     ///
     /// Returns None if the element is zero
     pub fn inverse(&self) -> Option<Self> {
-        use rustmath_integers::Integer;
+        
 
         if self.is_zero() {
             return None;
@@ -540,7 +539,7 @@ impl std::ops::Neg for ResidueFieldPrimeElement {
     type Output = Self;
 
     fn neg(self) -> Self {
-        use rustmath_integers::Integer;
+        
 
         if self.is_zero() {
             self

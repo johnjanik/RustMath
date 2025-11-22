@@ -169,7 +169,7 @@ where
         // Try inverse quadratic interpolation or secant method
         let mut p;
         let mut q;
-        let mut s;
+        let s;
 
         if e.abs() >= tol1 && fa.abs() > fb.abs() {
             // Inverse quadratic interpolation
@@ -319,6 +319,7 @@ pub fn golden_section_search<F>(
 where
     F: Fn(f64) -> f64,
 {
+    #[allow(dead_code)]
     const PHI: f64 = 1.618033988749895; // Golden ratio
     const RESPHI: f64 = 0.6180339887498949; // 1/φ = φ - 1
 

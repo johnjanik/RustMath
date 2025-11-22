@@ -39,7 +39,7 @@
 //! }
 //! ```
 
-use rustmath_core::{Ring, Field};
+use rustmath_core::Field;
 use std::marker::PhantomData;
 use std::fmt;
 use std::collections::HashSet;

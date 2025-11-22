@@ -6,7 +6,7 @@
 //! For affine type A_n^(1), the affine crystal structure on tableaux involves
 //! a "rotation" that treats 0 and n+1 as the same.
 
-use crate::operators::{Crystal, CrystalElement};
+use crate::operators::Crystal;
 use crate::weight::Weight;
 
 /// An element in an affine crystal

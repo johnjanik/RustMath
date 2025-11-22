@@ -21,11 +21,6 @@ pub mod utility;
 
 // Re-export commonly used functions
 pub use elementary::*;
-pub use exponential::*;
-pub use hyperbolic::*;
-pub use power::*;
-pub use trigonometric::*;
-pub use utility::*;
 
 use rustmath_symbolic::Expr;
 

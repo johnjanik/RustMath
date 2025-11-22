@@ -38,7 +38,7 @@
 //! let ball = field.create_ball(Rational::new(355, 113), Rational::new(1, 1000));
 //! ```
 
-use rustmath_core::{Field, Ring};
+use rustmath_core::Ring;
 use rustmath_rationals::Rational;
 use std::fmt;
 

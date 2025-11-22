@@ -4,7 +4,7 @@
 
 use crate::curve::EllipticCurve;
 use num_bigint::BigInt;
-use num_traits::{ToPrimitive, Zero, One};
+use num_traits::{ToPrimitive, One};
 use std::f64::consts::PI;
 
 /// Complex number for L-function computations

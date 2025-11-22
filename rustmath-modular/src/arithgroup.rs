@@ -6,8 +6,7 @@
 
 use num_bigint::BigInt;
 use num_integer::Integer;
-use num_rational::BigRational;
-use num_traits::{Zero, One, Signed};
+use num_traits::{Zero, One};
 use std::fmt;
 
 /// Element of an arithmetic subgroup (2x2 matrix with integer entries)

@@ -3,7 +3,6 @@
 //! This module handles nth roots and radical simplification.
 
 use crate::algebraic_real::AlgebraicReal;
-use crate::algebraic_number::AlgebraicNumber;
 use rustmath_core::Ring;
 
 /// Compute the nth root of an algebraic real number

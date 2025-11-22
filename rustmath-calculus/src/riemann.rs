@@ -306,7 +306,7 @@ pub fn analytic_boundary(t: f64, n: f64, epsilon: f64) -> Complex {
     // For an ellipse with semi-axes a and b, n = (a+b)/(a-b)
     // The coefficients decay exponentially
 
-    let mut result = Complex::new(t.cos(), t.sin());
+    let result = Complex::new(t.cos(), t.sin());
     let mut correction = Complex::zero();
 
     // Compute series coefficients

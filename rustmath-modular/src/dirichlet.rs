@@ -7,10 +7,9 @@
 //! (Z/NZ)* to the multiplicative group of complex numbers.
 
 use num_bigint::BigInt;
-use num_traits::{Zero, One, ToPrimitive, Signed};
+use num_traits::{One, ToPrimitive, Signed};
 use num_integer::Integer;
 use std::collections::HashMap;
-use std::f64::consts::PI;
 
 /// A Dirichlet character modulo N
 #[derive(Debug, Clone)]

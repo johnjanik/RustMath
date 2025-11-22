@@ -112,9 +112,11 @@ pub struct DirichletCharacter {
 ///
 /// Provides methods to query various mathematical objects from LMFDB.
 pub struct LMFDBClient {
+    #[allow(dead_code)]
     base_url: String,
-    client: reqwest::blocking::Client,
+    #[allow(dead_code)] client: reqwest::blocking::Client,
     /// In-memory cache of queries
+    #[allow(dead_code)]
     cache: std::sync::Mutex<HashMap<String, String>>,
 }
 
@@ -129,6 +131,7 @@ impl LMFDBClient {
     }
 
     /// Create a new LMFDB client with custom base URL
+    #[allow(dead_code)]
     pub fn with_base_url(base_url: String) -> Self {
         LMFDBClient {
             base_url,

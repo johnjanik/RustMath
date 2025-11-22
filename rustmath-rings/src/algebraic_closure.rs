@@ -22,7 +22,6 @@
 //! We use a "pseudo-Conway" approach where elements are stored in the smallest extension
 //! containing them. Operations may require lifting to a common extension field.
 
-use rustmath_core::{CommutativeRing, Field, IntegralDomain};
 use std::fmt::{self, Debug, Display};
 use num_bigint::BigInt;
 use num_traits::{Zero, One};

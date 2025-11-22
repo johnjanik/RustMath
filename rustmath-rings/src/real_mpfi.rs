@@ -48,7 +48,6 @@
 //! - `real_arb`: Ball arithmetic using arb library semantics
 //! - `rustmath-reals`: Core real number and interval implementations
 
-use rustmath_core::Ring;
 use rug::float::Round;
 use rug::Float;
 use std::fmt;

@@ -2,8 +2,7 @@
 //!
 //! This module implements basic structures for modular forms on congruence subgroups.
 
-use crate::arithgroup::{ArithmeticSubgroup, CongruenceSubgroup, Gamma0, Gamma1};
-use crate::cusps::Cusp;
+use crate::arithgroup::ArithmeticSubgroup;
 use num_bigint::BigInt;
 use num_complex::Complex;
 use num_rational::BigRational;

@@ -108,6 +108,7 @@ where
 ///
 /// # Returns
 /// A `Graphics` object containing the parametric curve
+#[allow(dead_code)]
 pub fn parametric_plot_adaptive<F, G>(
     x_func: F,
     y_func: G,

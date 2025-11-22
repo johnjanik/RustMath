@@ -32,6 +32,7 @@ pub struct AutomaticSemigroup {
     /// Number of generators
     num_generators: usize,
     /// Multiplication table (if finite)
+    #[allow(dead_code)]
     mult_table: Option<HashMap<(usize, usize), usize>>,
 }
 

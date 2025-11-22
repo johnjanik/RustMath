@@ -111,6 +111,7 @@ struct OEISResponse {
     #[serde(default)]
     results: Vec<OEISResult>,
     #[serde(default)]
+    #[allow(dead_code)]
     count: i32,
 }
 

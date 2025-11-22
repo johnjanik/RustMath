@@ -30,7 +30,7 @@
 //! let field = factory.create(/* base field */, "x".to_string());
 //! ```
 
-use rustmath_core::{Ring, Field, IntegralDomain};
+use rustmath_core::Field;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::marker::PhantomData;

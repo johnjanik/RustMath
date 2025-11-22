@@ -42,7 +42,7 @@
 //! - **Domain**: R/I is an integral domain ⟺ I is prime
 //! - **Noetherian**: If R is Noetherian, so is R/I
 
-use rustmath_core::{Ring, CommutativeRing, Field, IntegralDomain};
+use rustmath_core::{Ring, CommutativeRing};
 use std::fmt;
 use std::marker::PhantomData;
 use thiserror::Error;

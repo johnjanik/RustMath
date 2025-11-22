@@ -10,7 +10,7 @@
 use crate::dimension::krull_dimension;
 use crate::prime_ideal::Ideal;
 use crate::spec::AffineScheme;
-use rustmath_core::{CommutativeRing, Field, Ring};
+use rustmath_core::{CommutativeRing, Field};
 use std::fmt;
 use std::marker::PhantomData;
 

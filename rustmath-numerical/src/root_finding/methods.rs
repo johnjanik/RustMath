@@ -32,7 +32,7 @@ where
     F: Fn(f64) -> f64,
 {
     let mut fa = f(a);
-    let mut fb = f(b);
+    let fb = f(b);
 
     // Check if f(a) and f(b) have opposite signs
     if fa * fb > 0.0 {
@@ -57,7 +57,7 @@ where
 
         if fa * fc < 0.0 {
             b = c;
-            fb = fc;
+            // fb = fc; // Unused assignment removed
         } else {
             a = c;
             fa = fc;

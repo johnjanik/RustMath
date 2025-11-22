@@ -3,7 +3,7 @@
 //! Nakajima introduced a monomial realization of crystals using commuting variables.
 //! This provides an explicit realization for many important crystals.
 
-use crate::operators::{Crystal, CrystalElement};
+use crate::operators::Crystal;
 use crate::root_system::RootSystem;
 use crate::weight::Weight;
 use std::collections::BTreeMap;

@@ -21,9 +21,9 @@
 //! - A. Schilling, "A bijection between type D_n^(1) crystals and rigged configurations",
 //!   J. Algebra 285 (2005), 292-334.
 
-use crate::operators::{Crystal, CrystalElement};
+use crate::operators::Crystal;
 use crate::weight::Weight;
-use crate::kr_crystal::{KRCrystal, KRElement};
+use crate::kr_crystal::KRElement;
 use std::collections::HashMap;
 use std::fmt;
 

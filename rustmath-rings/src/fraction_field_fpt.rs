@@ -34,10 +34,9 @@
 //! let elem = field.element(num, den);
 //! ```
 
-use rustmath_core::{Ring, Field, IntegralDomain};
+use rustmath_core::{Ring, Field};
 use rustmath_integers::Integer;
 use std::fmt;
-use std::hash::{Hash, Hasher};
 
 /// Polynomial representation using coefficient vector
 ///

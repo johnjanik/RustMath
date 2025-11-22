@@ -26,7 +26,7 @@
 use rustmath_core::Ring;
 use std::collections::HashMap;
 use std::fmt;
-use std::ops::{Add, Sub, Mul};
+use std::ops::{Add, Sub};
 
 /// Monomial ordering for multivariate power series
 ///

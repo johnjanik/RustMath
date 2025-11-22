@@ -3,7 +3,7 @@
 //! This module provides specialized interpolation methods including
 //! complex cubic splines and polygon splines.
 
-use crate::interpolation::{CubicSpline, linear_interp};
+use crate::interpolation::CubicSpline;
 
 /// Complex cubic spline interpolator
 ///

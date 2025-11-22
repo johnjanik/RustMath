@@ -10,10 +10,9 @@
 //! QSym forms a commutative Hopf algebra that is dual to the algebra of
 //! noncommutative symmetric functions (NCSF).
 
-use rustmath_combinatorics::{Composition, compositions, compositions_k};
+use rustmath_combinatorics::{Composition, compositions};
 use rustmath_core::Ring;
 use rustmath_rationals::Rational;
-use rustmath_integers::Integer;
 use std::collections::HashMap;
 use std::fmt;
 
@@ -446,7 +445,7 @@ fn reverse_composition(comp: &Composition) -> Composition {
 /// Computes ⟨f, g⟩ where f is in QSym and g is in NCSF
 /// The pairing is defined so that ⟨M_I, S_J⟩ = δ_{I,J}
 pub fn duality_pairing(f: &QSym, g: &crate::ncsf::NCSF) -> Rational {
-    use crate::ncsf::{NCSFBasis, complete_to_monomial};
+    use crate::ncsf::NCSFBasis;
 
     // Convert to Monomial/Complete bases
     let f_mono = if f.basis == QSymBasis::Monomial {

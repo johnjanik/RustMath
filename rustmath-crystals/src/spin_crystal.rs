@@ -5,7 +5,7 @@
 //!
 //! Elements are represented as sequences of + and - signs.
 
-use crate::operators::{Crystal, CrystalElement};
+use crate::operators::Crystal;
 use crate::root_system::{RootSystem, RootSystemType};
 use crate::weight::Weight;
 

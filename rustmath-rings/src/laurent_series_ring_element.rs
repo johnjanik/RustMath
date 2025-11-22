@@ -36,7 +36,7 @@
 
 use rustmath_core::Ring;
 use std::fmt;
-use std::ops::{Add, Sub, Mul};
+use std::ops::{Add, Sub};
 
 /// Represents a Laurent series as a power of the variable multiplied by a power series
 ///

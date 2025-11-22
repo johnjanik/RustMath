@@ -3,8 +3,8 @@
 //! This module provides functionality to export 3D graphics to common file formats
 //! like OBJ and STL for use in other 3D modeling and rendering software.
 
-use crate::base::{Graphics3d, IndexFaceSet, Point3D, Vector3D};
-use crate::{Plot3DError, Result};
+use crate::base::{Graphics3d, IndexFaceSet, Vector3D};
+use crate::Result;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;

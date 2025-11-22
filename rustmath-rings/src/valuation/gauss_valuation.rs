@@ -2,7 +2,7 @@
 //!
 //! Valuation on polynomial rings extending a base valuation
 
-use super::valuation::{DiscretePseudoValuation, ValuationValue};
+use super::valuation::DiscretePseudoValuation;
 use rustmath_core::Ring;
 
 /// Gauss valuation on polynomial ring

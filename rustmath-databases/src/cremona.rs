@@ -382,6 +382,7 @@ pub struct CremonaDatabase {
     /// In-memory cache of curves
     curves: HashMap<String, EllipticCurve>,
     /// Path to data directory (if using local files)
+    #[allow(dead_code)]
     data_path: Option<String>,
 }
 

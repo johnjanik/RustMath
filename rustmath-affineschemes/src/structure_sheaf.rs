@@ -5,8 +5,8 @@
 //! defined via localization of the coordinate ring.
 
 use crate::prime_ideal::{Ideal, PrimeIdeal};
-use crate::spec::{AffineScheme, ZariskiOpen};
-use rustmath_core::{CommutativeRing, Ring, MathError, Result};
+use crate::spec::ZariskiOpen;
+use rustmath_core::{CommutativeRing, Ring};
 use std::fmt;
 use std::marker::PhantomData;
 

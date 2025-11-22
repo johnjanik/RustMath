@@ -40,7 +40,7 @@
 //! let i = AlgebraicNumber::imaginary_unit();
 //! ```
 
-use rustmath_core::{CommutativeRing, Field, IntegralDomain, Ring};
+use rustmath_core::Ring;
 use rustmath_rationals::Rational;
 use rustmath_polynomials::UnivariatePolynomial;
 use std::fmt::{self, Debug, Display};

@@ -5,7 +5,7 @@
 
 use crate::algebraic_number::AlgebraicNumber;
 use crate::descriptor::{
-    AlgebraicDescriptor, ANRoot, ANRational, ANUnaryExpr, ANBinaryExpr, BinaryOp, UnaryOp,
+    AlgebraicDescriptor, ANRoot, ANUnaryExpr, UnaryOp,
 };
 use rustmath_core::{Field, Ring, MathError, Result};
 use rustmath_rationals::Rational;

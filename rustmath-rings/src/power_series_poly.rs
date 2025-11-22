@@ -31,7 +31,7 @@
 use rustmath_core::Ring;
 use std::fmt;
 use std::marker::PhantomData;
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, Mul, Neg, Sub};
 
 /// Power series backed by polynomial representation
 ///

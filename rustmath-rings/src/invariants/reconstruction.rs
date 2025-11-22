@@ -24,7 +24,7 @@
 //! - Salmon, G. "Lessons Introductory to the Modern Higher Algebra" (1885)
 //! - Dolgachev, I. "Lectures on Invariant Theory" (2003)
 
-use rustmath_core::{Ring, Field};
+use rustmath_core::Ring;
 use std::fmt;
 
 /// Scaling options for reconstructed forms

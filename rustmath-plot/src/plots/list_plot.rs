@@ -88,6 +88,7 @@ pub fn list_plot(
 /// let y_values = vec![1.0, 4.0, 2.0, 8.0, 5.0, 7.0];
 /// let g = list_plot_y(y_values, None, None);
 /// ```
+#[allow(dead_code)]
 pub fn list_plot_y(
     y_values: Vec<f64>,
     plotjoined: Option<bool>,

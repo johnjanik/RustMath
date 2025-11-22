@@ -32,9 +32,8 @@
 //! ```
 
 use rustmath_core::{Field, Ring};
-use std::cmp::Ordering;
 use std::fmt;
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, Mul, Neg, Sub};
 
 /// Element of a Puiseux series ring
 ///

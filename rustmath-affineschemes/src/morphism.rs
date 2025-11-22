@@ -7,10 +7,10 @@
 //! Spec is a contravariant functor: CommRings^op → Schemes
 //! A ring homomorphism φ: R → S induces a scheme morphism Spec(φ): Spec(S) → Spec(R)
 
-use crate::prime_ideal::{Ideal, PrimeIdeal};
+use crate::prime_ideal::Ideal;
 use crate::spec::{AffineScheme, SpecPoint};
 use crate::structure_sheaf::StructureSheaf;
-use rustmath_core::{CommutativeRing, Ring, MathError, Result};
+use rustmath_core::{CommutativeRing, Ring};
 use std::fmt;
 use std::marker::PhantomData;
 

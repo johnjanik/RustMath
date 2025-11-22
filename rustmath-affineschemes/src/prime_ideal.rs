@@ -4,9 +4,7 @@
 //! The spectrum Spec(R) of a ring R is the set of all prime ideals of R.
 
 use rustmath_core::{Ring, CommutativeRing, MathError, Result};
-use std::collections::HashSet;
 use std::fmt;
-use std::hash::Hash;
 use std::marker::PhantomData;
 
 /// An ideal in a commutative ring

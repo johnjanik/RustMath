@@ -11,7 +11,6 @@
 
 use crate::morphism::RingHomomorphism;
 use rustmath_core::Ring;
-use std::fmt;
 use std::marker::PhantomData;
 
 /// A homomorphism between ring extensions

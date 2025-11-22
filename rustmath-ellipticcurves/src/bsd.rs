@@ -6,8 +6,7 @@ use crate::curve::{EllipticCurve, Point};
 use crate::descent::TwoDescent;
 use crate::lfunction::LFunction;
 use num_bigint::BigInt;
-use num_rational::BigRational;
-use num_traits::{ToPrimitive, Zero, One, Signed};
+use num_traits::{ToPrimitive, Zero, Signed};
 
 /// Result of BSD conjecture verification
 #[derive(Debug, Clone)]

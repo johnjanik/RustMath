@@ -8,7 +8,7 @@
 
 use crate::morphism::SchemeMorphism;
 use crate::spec::AffineScheme;
-use rustmath_core::{CommutativeRing, Ring};
+use rustmath_core::CommutativeRing;
 use std::fmt;
 use std::marker::PhantomData;
 

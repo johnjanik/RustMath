@@ -35,7 +35,6 @@
 //!
 //! - `monomials`: Generate all monomials up to a given degree
 
-use std::collections::HashSet;
 
 /// Monomial representation as exponent vector
 ///
