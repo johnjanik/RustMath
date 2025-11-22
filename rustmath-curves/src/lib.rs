@@ -7,6 +7,9 @@
 //! - Hyperelliptic curves
 //! - Curve parameterization
 //! - Weierstrass form transformations
+//! - Riemann-Roch theorem and applications
+//! - Differential forms and canonical divisors
+//! - Special divisors and Brill-Noether theory
 //!
 //! ## Examples
 //!
@@ -25,6 +28,9 @@ pub mod genus;
 pub mod hyperelliptic;
 pub mod parameterization;
 pub mod weierstrass;
+pub mod riemann_roch;
+pub mod differentials;
+pub mod special_divisors;
 
 pub use plane_curve::{PlaneCurve, AffineCurve, ProjectiveCurve};
 pub use singularities::{Singularity, SingularityType};
@@ -32,6 +38,9 @@ pub use genus::compute_genus;
 pub use hyperelliptic::HyperellipticCurve;
 pub use parameterization::{CurveParameterization, RationalParameterization};
 pub use weierstrass::{WeierstrassForm, weierstrass_transform};
+pub use riemann_roch::{RiemannRochSpace, DivisorData, riemann_roch_dimension};
+pub use differentials::{DifferentialForm, HolomorphicDifferentials, CanonicalDivisor};
+pub use special_divisors::{SpecialDivisor, BrillNoetherVariety, brill_noether_number};
 
 #[cfg(test)]
 mod tests {
