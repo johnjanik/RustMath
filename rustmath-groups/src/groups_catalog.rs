@@ -370,18 +370,6 @@ pub mod affine {
     //     AffineGroup::new(n)
     // }
 
-    /// Creates a Euclidean group
-    ///
-    /// # Arguments
-    ///
-    /// * `n` - The dimension
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rustmath_groups::groups_catalog::affine;
-    ///
-    /// let e3 = affine::Euclidean(3);
     // TODO: EuclideanGroup needs generic parameter R: Ring
     // pub fn Euclidean<R: Ring>(n: usize) -> EuclideanGroup<R> {
     //     EuclideanGroup::new(n)

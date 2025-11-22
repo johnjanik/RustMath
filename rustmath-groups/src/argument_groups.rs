@@ -42,6 +42,7 @@ use std::f64::consts::PI;
 use std::fmt;
 
 use rustmath_complex::Complex;
+use rustmath_integers::Integer;
 use rustmath_rationals::Rational;
 
 // ============================================================================

@@ -1,7 +1,7 @@
 //! Univariate polynomials (polynomials in one variable)
 
 use crate::polynomial::Polynomial;
-use rustmath_core::{EuclideanDomain, MathError, Result, Ring};
+use rustmath_core::{EuclideanDomain, IntegralDomain, MathError, Result, Ring};
 use std::fmt;
 use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
@@ -768,6 +768,9 @@ where
         }
     }
 }
+
+// IntegralDomain implementation for polynomials over integral domains
+impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
 
 impl<R: Ring> Add for UnivariatePolynomial<R> {
     type Output = Self;
