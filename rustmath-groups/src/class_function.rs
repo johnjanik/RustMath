@@ -31,8 +31,8 @@
 //!
 //! // Create a class function from values on conjugacy classes
 //! let mut values = HashMap::new();
-//! values.insert("e".to_string(), Complex::from(3.0));
-//! values.insert("g".to_string(), Complex::from(-1.0));
+//! values.insert("e".to_string(), Complex::new(3.0, 0.0));
+//! values.insert("g".to_string(), Complex::new(-1.0, 0.0));
 //!
 //! let cf = class_function(3, values);
 //! assert_eq!(cf.degree(), 3);
@@ -193,7 +193,7 @@ impl ClassFunction {
 
     /// Negation
     pub fn neg(&self) -> Self {
-        self.scalar_mul(&Complex::from(-1.0))
+        self.scalar_mul(&Complex::new(-1.0, 0.0))
     }
 
     /// Inner product of two class functions
@@ -219,7 +219,7 @@ impl ClassFunction {
             }
         }
 
-        Some(sum.div(&Complex::from(order)))
+        Some(sum.div(&Complex::new(order, 0.0)))
     }
 
     /// Norm of a class function: ||f|| = √⟨f, f⟩
@@ -299,8 +299,8 @@ pub type ClassFunctionLibgap = ClassFunction;
 /// use std::collections::HashMap;
 ///
 /// let mut values = HashMap::new();
-/// values.insert("e".to_string(), Complex::from(3.0));
-/// values.insert("g".to_string(), Complex::from(0.0));
+/// values.insert("e".to_string(), Complex::new(3.0, 0.0));
+/// values.insert("g".to_string(), Complex::new(0.0, 0.0));
 ///
 /// let cf = class_function(3, values);
 /// ```
@@ -312,7 +312,7 @@ pub fn class_function(degree: usize, values: HashMap<String, Complex>) -> ClassF
 pub fn trivial_class_function(conjugacy_classes: Vec<String>) -> ClassFunction {
     let mut values = HashMap::new();
     for class in conjugacy_classes {
-        values.insert(class, Complex::from(1.0));
+        values.insert(class, Complex::new(1.0, 0.0));
     }
     ClassFunction::new(1, values)
 }
@@ -341,8 +341,8 @@ mod tests {
 
     fn make_simple_class_function() -> ClassFunction {
         let mut values = HashMap::new();
-        values.insert("e".to_string(), Complex::from(2.0));
-        values.insert("g".to_string(), Complex::from(-1.0));
+        values.insert("e".to_string(), Complex::new(2.0, 0.0));
+        values.insert("g".to_string(), Complex::new(-1.0, 0.0));
         ClassFunction::new(2, values)
     }
 
@@ -356,7 +356,7 @@ mod tests {
     #[test]
     fn test_class_function_factory() {
         let mut values = HashMap::new();
-        values.insert("e".to_string(), Complex::from(1.0));
+        values.insert("e".to_string(), Complex::new(1.0, 0.0));
         let cf = class_function(1, values);
         assert_eq!(cf.degree(), 1);
     }
@@ -403,7 +403,7 @@ mod tests {
     #[test]
     fn test_scalar_multiplication() {
         let cf = make_simple_class_function();
-        let scaled = cf.scalar_mul(&Complex::from(2.0));
+        let scaled = cf.scalar_mul(&Complex::new(2.0, 0.0));
 
         assert_eq!(scaled.value("e").unwrap().real(), 4.0);
         assert_eq!(scaled.value("g").unwrap().real(), -2.0);
@@ -422,8 +422,8 @@ mod tests {
     #[test]
     fn test_inner_product() {
         let mut values = HashMap::new();
-        values.insert("e".to_string(), Complex::from(1.0));
-        values.insert("g".to_string(), Complex::from(1.0));
+        values.insert("e".to_string(), Complex::new(1.0, 0.0));
+        values.insert("g".to_string(), Complex::new(1.0, 0.0));
         let mut cf = ClassFunction::new(1, values);
         cf.set_group_order(2);
 
@@ -446,7 +446,7 @@ mod tests {
 
     #[test]
     fn test_class_function_from_values() {
-        let values = vec![Complex::from(3.0), Complex::from(0.0), Complex::from(-1.0)];
+        let values = vec![Complex::new(3.0, 0.0), Complex::new(0.0, 0.0), Complex::new(-1.0, 0.0)];
         let classes = vec!["e".to_string(), "g".to_string(), "h".to_string()];
 
         let cf = class_function_from_values(values, classes).unwrap();
@@ -462,8 +462,8 @@ mod tests {
         assert_eq!(cf1, cf2);
 
         let mut values = HashMap::new();
-        values.insert("e".to_string(), Complex::from(3.0));
-        values.insert("g".to_string(), Complex::from(0.0));
+        values.insert("e".to_string(), Complex::new(3.0, 0.0));
+        values.insert("g".to_string(), Complex::new(0.0, 0.0));
         let cf3 = ClassFunction::new(3, values);
         assert_ne!(cf1, cf3);
     }
@@ -486,7 +486,7 @@ mod tests {
     #[test]
     fn test_from_character() {
         let mut values = HashMap::new();
-        values.insert("e".to_string(), Complex::from(2.0));
+        values.insert("e".to_string(), Complex::new(2.0, 0.0));
         let character = Character::new(2, values);
 
         let cf = ClassFunction::from_character(&character);
@@ -505,7 +505,7 @@ mod tests {
     #[test]
     fn test_norm() {
         let mut values = HashMap::new();
-        values.insert("e".to_string(), Complex::from(1.0));
+        values.insert("e".to_string(), Complex::new(1.0, 0.0));
         let mut cf = ClassFunction::new(1, values);
         cf.set_group_order(1);
 
