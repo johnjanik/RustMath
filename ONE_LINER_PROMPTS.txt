@@ -1,0 +1,66 @@
+RustMath Build Fixes - One-Liner Prompts
+==========================================
+
+EXECUTION ORDER:
+1. Execute CRITICAL first (alone)
+2. Execute HIGH PRIORITY second (alone)
+3. Execute all LOW PRIORITY in parallel
+
+==========================================
+🔴 CRITICAL (Execute First)
+==========================================
+
+Fix the missing Ring and CommutativeRing trait implementations in rustmath-polynomials/src/univariate.rs at line 772 by adding the trait impls before the IntegralDomain impl, then verify the fix resolves all 35 cascading build failures.
+
+==========================================
+🟡 HIGH PRIORITY (Execute Second)
+==========================================
+
+Replace the unsafe mutable static CACHE in rustmath-numbertheory/src/bernoulli.rs with a thread-safe Lazy<Mutex<HashMap>> to fix undefined behavior and Rust 2024 compatibility issues.
+
+==========================================
+🟢 LOW PRIORITY (Execute All in Parallel)
+==========================================
+
+Fix all warnings in rustmath-special-functions by: (1) prefixing unused variables mu, k_f, x2 with underscore, (2) removing unused imports Float, One, Zero, E, PI, (3) fixing or removing unused assignment to variable 'a'.
+
+Fix all warnings in rustmath-stats by removing unused imports and variables, and removing unnecessary mutability.
+
+Fix all warnings in rustmath-numerical by prefixing unused variables with underscore, removing unnecessary mutability, and fixing unused assignment to 'fb'.
+
+Fix unused assignment warnings in rustmath-dynamics by fixing or removing the two unused assignments to 'x_prev'.
+
+Fix the unused assignment warning in rustmath-numbertheory/src/quadratic_forms.rs:432 for variable 'count'.
+
+Remove unused struct fields in rustmath-databases: count, data_path, base_url, client, cache.
+
+Remove unused struct field 'mult_table' in rustmath-monoids or add it to methods if intended for use.
+
+Remove unused struct field 'headers' in rustmath-misc or use it in implementation.
+
+Remove unused functions in rustmath-plot: plot_multiple, parametric_plot_adaptive, list_plot_y.
+
+Remove unused associated items in rustmath-plot-core: new, from_points, center, volume, contains.
+
+==========================================
+VERIFICATION COMMANDS
+==========================================
+
+After CRITICAL fix:
+  cargo build --all
+
+After HIGH PRIORITY fix:
+  cargo build -p rustmath-numbertheory
+
+After ALL fixes:
+  cargo build --all
+  cargo clippy --all
+  cargo test --all
+
+==========================================
+EXPECTED OUTCOMES
+==========================================
+
+After CRITICAL: 0 errors, ~40 warnings, 59/59 crates building
+After HIGH PRIORITY: 0 errors, ~36 warnings
+After ALL: 0 errors, 0 warnings, all tests passing
