@@ -45,6 +45,8 @@
 use rustmath_rationals::Rational;
 use rustmath_core::Ring;
 use std::collections::HashMap;
+use std::sync::Mutex;
+use once_cell::sync::Lazy;
 
 /// Helper function to create a Rational, unwrapping the Result
 fn rational(numer: i64, denom: i64) -> Rational {
@@ -78,17 +80,13 @@ fn rational(numer: i64, denom: i64) -> Rational {
 /// assert_eq!(bernoulli_number(2), Rational::new(1, 6));
 /// assert_eq!(bernoulli_number(4), Rational::new(-1, 30));
 /// ```
+/// Thread-safe cache for memoizing Bernoulli numbers
+static CACHE: Lazy<Mutex<HashMap<usize, Rational>>> = Lazy::new(|| Mutex::new(HashMap::new()));
+
 pub fn bernoulli_number(n: usize) -> Rational {
-    // Use cache for efficiency
-    static mut CACHE: Option<HashMap<usize, Rational>> = None;
-
-    unsafe {
-        if CACHE.is_none() {
-            CACHE = Some(HashMap::new());
-        }
-
-        let cache = CACHE.as_mut().unwrap();
-
+    // Check cache first
+    {
+        let cache = CACHE.lock().unwrap();
         if let Some(result) = cache.get(&n) {
             return result.clone();
         }
@@ -119,8 +117,10 @@ pub fn bernoulli_number(n: usize) -> Rational {
 
     let result = -sum / Rational::from(n as i64 + 1);
 
-    unsafe {
-        CACHE.as_mut().unwrap().insert(n, result.clone());
+    // Store in cache
+    {
+        let mut cache = CACHE.lock().unwrap();
+        cache.insert(n, result.clone());
     }
 
     result
