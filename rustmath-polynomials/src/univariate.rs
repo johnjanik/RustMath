@@ -1,7 +1,7 @@
 //! Univariate polynomials (polynomials in one variable)
 
 use crate::polynomial::Polynomial;
-use rustmath_core::{EuclideanDomain, IntegralDomain, MathError, Result, Ring};
+use rustmath_core::{CommutativeRing, EuclideanDomain, IntegralDomain, MathError, Result, Ring};
 use std::fmt;
 use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
@@ -768,6 +768,28 @@ where
         }
     }
 }
+
+// Ring implementation for polynomials over rings
+impl<R: Ring> Ring for UnivariatePolynomial<R> {
+    fn zero() -> Self {
+        UnivariatePolynomial::new(vec![R::zero()])
+    }
+
+    fn one() -> Self {
+        UnivariatePolynomial::new(vec![R::one()])
+    }
+
+    fn is_zero(&self) -> bool {
+        self.coeffs.len() == 1 && self.coeffs[0].is_zero()
+    }
+
+    fn is_one(&self) -> bool {
+        self.coeffs.len() == 1 && self.coeffs[0].is_one()
+    }
+}
+
+// CommutativeRing implementation for polynomials over commutative rings
+impl<R: CommutativeRing> CommutativeRing for UnivariatePolynomial<R> {}
 
 // IntegralDomain implementation for polynomials over integral domains
 impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
