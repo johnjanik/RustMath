@@ -1,7 +1,7 @@
 # RustMath Implementation Checklist
 
 This document tracks the implementation of SageMath functionality in RustMath.
-Based on SageMath documentation: https://doc.sagemath.org/html/en/reference/index.html
+Based on SageMath documentation: https://doc.sagemath.org/html/en/reference/index.html, https://doc.sagemath.org/html/en/reference/index-pdf.html, 
 and source code: https://github.com/sagemath/sage/tree/develop/src/sage
 
 **Legend**:
