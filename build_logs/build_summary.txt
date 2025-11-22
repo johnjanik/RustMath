@@ -1,0 +1,417 @@
+Build Summary - Sat Nov 22 02:04:56 UTC 2025
+======================================
+
+✅ SUCCESS: rustmath-core
+✅ SUCCESS: rustmath-features
+✅ SUCCESS: rustmath-typesetting
+✅ SUCCESS: rustmath-integers
+✅ SUCCESS: rustmath-rationals
+✅ SUCCESS: rustmath-reals
+✅ SUCCESS: rustmath-complex
+❌ FAILED: rustmath-polynomials
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+❌ FAILED: rustmath-powerseries
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+❌ FAILED: rustmath-finitefields
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+✅ SUCCESS: rustmath-padics
+❌ FAILED: rustmath-algebraic
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+❌ FAILED: rustmath-matrix
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+    warning: build failed, waiting for other jobs to finish...
+
+❌ FAILED: rustmath-calculus
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+    warning: build failed, waiting for other jobs to finish...
+
+⚠️  SUCCESS with warnings: rustmath-numbertheory
+  Warnings: 5
+    warning: value assigned to `count` is never read
+    warning: creating a shared reference to mutable static
+    warning: creating a mutable reference to mutable static
+    warning: creating a mutable reference to mutable static
+    warning: `rustmath-numbertheory` (lib) generated 4 warnings
+
+❌ FAILED: rustmath-combinatorics
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+    warning: build failed, waiting for other jobs to finish...
+
+✅ SUCCESS: rustmath-constants
+❌ FAILED: rustmath-crystals
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+    warning: build failed, waiting for other jobs to finish...
+
+❌ FAILED: rustmath-geometry
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+❌ FAILED: rustmath-graphs
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+❌ FAILED: rustmath-symbolic
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+❌ FAILED: rustmath-symmetricfunctions
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+❌ FAILED: rustmath-functions
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+⚠️  SUCCESS with warnings: rustmath-special-functions
+  Warnings: 7
+    warning: unused imports: `Float`, `One`, and `Zero`
+    warning: unused imports: `E` and `PI`
+    warning: unused variable: `mu`
+    warning: unused variable: `k_f`
+    warning: unused variable: `x2`
+
+❌ FAILED: rustmath-crypto
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+❌ FAILED: rustmath-groups
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+❌ FAILED: rustmath-homology
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+❌ FAILED: rustmath-category
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+⚠️  SUCCESS with warnings: rustmath-stats
+  Warnings: 6
+    warning: unused import: `std::f64::consts::PI`
+    warning: unused import: `variance`
+    warning: unused variable: `alpha`
+    warning: unused variable: `n_features`
+    warning: variable does not need to be mutable
+
+⚠️  SUCCESS with warnings: rustmath-numerical
+  Warnings: 7
+    warning: unused variable: `x`
+    warning: value assigned to `fb` is never read
+    warning: variable does not need to be mutable
+    warning: unused variable: `b`
+    warning: unused variable: `max_iter`
+
+✅ SUCCESS: rustmath-logic
+⚠️  SUCCESS with warnings: rustmath-dynamics
+  Warnings: 3
+    warning: value assigned to `x_prev` is never read
+    warning: value assigned to `x_prev` is never read
+    warning: `rustmath-dynamics` (lib) generated 2 warnings
+
+❌ FAILED: rustmath-coding
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+⚠️  SUCCESS with warnings: rustmath-databases
+  Warnings: 5
+    warning: field `count` is never read
+    warning: field `data_path` is never read
+    warning: field `data_path` is never read
+    warning: fields `base_url`, `client`, and `cache` are never read
+    warning: `rustmath-databases` (lib) generated 4 warnings
+
+❌ FAILED: rustmath-ellipticcurves
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+❌ FAILED: rustmath-quadraticforms
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+    warning: build failed, waiting for other jobs to finish...
+
+❌ FAILED: rustmath-numberfields
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+❌ FAILED: rustmath-manifolds
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+❌ FAILED: rustmath-modular
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+    warning: build failed, waiting for other jobs to finish...
+
+⚠️  SUCCESS with warnings: rustmath-monoids
+  Warnings: 2
+    warning: field `mult_table` is never read
+    warning: `rustmath-monoids` (lib) generated 1 warning
+
+❌ FAILED: rustmath-modules
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+    warning: build failed, waiting for other jobs to finish...
+
+⚠️  SUCCESS with warnings: rustmath-misc
+  Warnings: 2
+    warning: field `headers` is never read
+    warning: `rustmath-misc` (lib) generated 1 warning
+
+❌ FAILED: rustmath-algebras
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+❌ FAILED: rustmath-quantumgroups
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+❌ FAILED: rustmath-liealgebras
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+❌ FAILED: rustmath-lieconformal
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+❌ FAILED: rustmath-quivers
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+✅ SUCCESS: rustmath-colors
+⚠️  SUCCESS with warnings: rustmath-plot-core
+  Warnings: 2
+    warning: associated items `new`, `from_points`, `center`, `volume`, and `contains` are never used
+    warning: `rustmath-plot-core` (lib) generated 1 warning
+
+⚠️  SUCCESS with warnings: rustmath-plot
+  Warnings: 20
+    warning: associated items `new`, `from_points`, `center`, `volume`, and `contains` are never used
+    warning: `rustmath-plot-core` (lib) generated 1 warning
+    warning: function `plot_multiple` is never used
+    warning: function `parametric_plot_adaptive` is never used
+    warning: function `list_plot_y` is never used
+
+❌ FAILED: rustmath-plot3d
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+❌ FAILED: rustmath-rings
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+❌ FAILED: rustmath-topology
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+✅ SUCCESS: rustmath-sets
+❌ FAILED: rustmath-interfaces
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+    warning: build failed, waiting for other jobs to finish...
+
+❌ FAILED: rustmath-affineschemes
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+❌ FAILED: rustmath-schemes
+  Errors:
+    error[E0277]: the trait bound `UnivariatePolynomial<R>: CommutativeRing` is not satisfied
+       --> rustmath-polynomials/src/univariate.rs:773:44
+        |
+    773 | impl<R: IntegralDomain> IntegralDomain for UnivariatePolynomial<R> {}
+    --
+    error: could not compile `rustmath-polynomials` (lib) due to 1 previous error
+
+✅ SUCCESS: rustmath-trees
+✅ SUCCESS: rustmath-automata
+
+======================================
+Summary:
+  Total crates: 59
+  Successful: 14
+  With warnings: 10
+  Failed: 35
+======================================
