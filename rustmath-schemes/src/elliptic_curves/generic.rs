@@ -77,7 +77,7 @@
 //! let curve = EllipticCurve::new(zero.clone(), zero.clone(), zero, a, b);
 //! ```
 
-use rustmath_core::{Field, MathError, Result};
+use rustmath_core::{Field, MathError, Result, Ring};
 use num_traits::{Zero, One};
 use std::fmt::{self, Debug, Display};
 

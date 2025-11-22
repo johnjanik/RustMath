@@ -155,7 +155,7 @@ pub use heegner::{
 // Note: EllipticCurve, Point, Isogeny and related types are re-exported from submodules above.
 // Additional helper types specific to this module:
 
-use rustmath_core::Field;
+use rustmath_core::{Field, Ring};
 
 /// Torsion subgroup E[n] of n-torsion points
 ///
