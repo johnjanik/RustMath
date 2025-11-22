@@ -123,7 +123,7 @@ pub fn test_loop_3() -> Result<()> {
     println!("Running test_loop_3 with {} iterations...", iterations);
     let start = Instant::now();
 
-    for i in 0..iterations {
+    for i in 0_usize..iterations {
         // Create variables
         gap.execute(&format!("var_{} := {};", i, i * i))?;
 

@@ -27,6 +27,11 @@ impl<R: Ring> UnivariatePolynomial<R> {
         UnivariatePolynomial { coeffs }
     }
 
+    /// Create a polynomial from coefficients (alias for new)
+    pub fn from_coefficients(coeffs: Vec<R>) -> Self {
+        Self::new(coeffs)
+    }
+
     /// Create a constant polynomial
     pub fn constant(c: R) -> Self {
         UnivariatePolynomial::new(vec![c])
@@ -332,6 +337,28 @@ impl<R: Ring> UnivariatePolynomial<R> {
         }
     }
 
+    /// Make the polynomial monic (leading coefficient = 1)
+    ///
+    /// Divides all coefficients by the leading coefficient
+    pub fn make_monic(self) -> Self
+    where
+        R: rustmath_core::Field,
+    {
+        if self.is_zero() {
+            return self;
+        }
+
+        if self.is_monic() {
+            return self;
+        }
+
+        let lc = self.leading_coeff().unwrap().clone();
+        let lc_inv = lc.inverse().unwrap();
+
+        let coeffs = self.coeffs.into_iter().map(|c| c * lc_inv.clone()).collect();
+        UnivariatePolynomial::new(coeffs)
+    }
+
     /// Get the content of the polynomial (GCD of all coefficients)
     ///
     /// Only works for coefficients in a Euclidean domain
@@ -351,6 +378,30 @@ impl<R: Ring> UnivariatePolynomial<R> {
             }
         }
         gcd
+    }
+
+    /// Check if polynomial is square-free (has no repeated factors)
+    ///
+    /// A polynomial is square-free if it has no repeated factors,
+    /// which is equivalent to gcd(f, f') = 1 where f' is the derivative
+    pub fn is_square_free(&self) -> bool
+    where
+        R: EuclideanDomain,
+    {
+        if self.is_zero() {
+            return false;
+        }
+
+        let derivative = self.derivative();
+
+        // If derivative is zero, polynomial is not square-free
+        // (unless it's a constant, but we handle that above)
+        if derivative.is_zero() {
+            return false;
+        }
+
+        let g = self.gcd(&derivative);
+        g.is_one()
     }
 
     /// Construct the Sylvester matrix of two polynomials

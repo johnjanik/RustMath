@@ -10,7 +10,7 @@
 //! The divisor represents the formal sum: Σ(xᵢ, v(xᵢ)) - deg(u) * ∞
 //! where xᵢ are the roots of u(x).
 
-use rustmath_core::{Ring, Field};
+use rustmath_core::{Ring, Field, EuclideanDomain};
 use rustmath_polynomials::UnivariatePolynomial;
 use std::fmt;
 
@@ -118,7 +118,10 @@ impl<F: Field + Clone + PartialEq> MumfordDivisor<F> {
     /// Verify that this divisor satisfies the Mumford relation
     ///
     /// Checks that v^2 ≡ f (mod u) for the given curve polynomial f
-    pub fn verify(&self, f: &Polynomial<F>) -> bool {
+    pub fn verify(&self, f: &Polynomial<F>) -> bool
+    where
+        F: EuclideanDomain,
+    {
         // Compute v^2 - f
         let v_squared = self.v.clone() * self.v.clone();
         let diff = v_squared - f.clone();

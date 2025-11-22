@@ -16,7 +16,7 @@ use std::fmt;
 /// - Axioms that objects must satisfy
 ///
 /// Categories can have subcategories that refine or extend the base category.
-pub trait Category: Clone + fmt::Debug {
+pub trait Category: fmt::Debug {
     /// Get the name of this category
     fn name(&self) -> &str;
 

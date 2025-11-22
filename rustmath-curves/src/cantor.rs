@@ -22,7 +22,7 @@
 //!
 //! This algorithm runs in polynomial time and produces a unique reduced divisor.
 
-use rustmath_core::{Ring, Field};
+use rustmath_core::{Ring, Field, EuclideanDomain};
 use rustmath_polynomials::UnivariatePolynomial;
 use crate::divisor::MumfordDivisor;
 
@@ -35,7 +35,7 @@ impl CantorAlgorithm {
     /// Add two divisors using Cantor's algorithm
     ///
     /// Given D₁ = (u₁, v₁) and D₂ = (u₂, v₂), compute D₁ + D₂
-    pub fn add<F: Field + Clone + PartialEq>(
+    pub fn add<F: Field + Clone + PartialEq + EuclideanDomain>(
         d1: &MumfordDivisor<F>,
         d2: &MumfordDivisor<F>,
         f: &Polynomial<F>,
@@ -59,7 +59,7 @@ impl CantorAlgorithm {
     /// Compose two divisors (without reduction)
     ///
     /// This computes the "raw" sum before reduction to deg ≤ g
-    fn compose<F: Field + Clone + PartialEq>(
+    fn compose<F: Field + Clone + PartialEq + EuclideanDomain>(
         d1: &MumfordDivisor<F>,
         d2: &MumfordDivisor<F>,
     ) -> MumfordDivisor<F> {
@@ -135,7 +135,7 @@ impl CantorAlgorithm {
     /// Reduce a divisor to reduced form (deg(u) ≤ genus)
     ///
     /// Uses the reduction step of Cantor's algorithm
-    pub fn reduce<F: Field + Clone + PartialEq>(
+    pub fn reduce<F: Field + Clone + PartialEq + EuclideanDomain>(
         mut divisor: MumfordDivisor<F>,
         f: &Polynomial<F>,
         genus: usize,
@@ -158,7 +158,7 @@ impl CantorAlgorithm {
     /// Given (u, v) with deg(u) > g, compute (u', v') where:
     /// - u' = (f - v²) / u
     /// - v' ≡ -v (mod u')
-    fn reduction_step<F: Field + Clone + PartialEq>(
+    fn reduction_step<F: Field + Clone + PartialEq + EuclideanDomain>(
         divisor: &MumfordDivisor<F>,
         f: &Polynomial<F>,
     ) -> MumfordDivisor<F> {
@@ -196,7 +196,7 @@ impl CantorAlgorithm {
     /// Double a divisor (compute 2*D)
     ///
     /// This is a specialized version of add for D + D
-    pub fn double<F: Field + Clone + PartialEq>(
+    pub fn double<F: Field + Clone + PartialEq + EuclideanDomain>(
         divisor: &MumfordDivisor<F>,
         f: &Polynomial<F>,
         genus: usize,
@@ -207,7 +207,7 @@ impl CantorAlgorithm {
     /// Compute the scalar multiplication n*D
     ///
     /// Uses the double-and-add algorithm for efficiency
-    pub fn scalar_multiply<F: Field + Clone + PartialEq>(
+    pub fn scalar_multiply<F: Field + Clone + PartialEq + EuclideanDomain>(
         divisor: &MumfordDivisor<F>,
         n: i64,
         f: &Polynomial<F>,
@@ -248,7 +248,7 @@ impl CantorAlgorithm {
     ///
     /// Returns None if the divisor has infinite order
     /// This is computationally expensive and may not terminate
-    pub fn order<F: Field + Clone + PartialEq>(
+    pub fn order<F: Field + Clone + PartialEq + EuclideanDomain>(
         divisor: &MumfordDivisor<F>,
         f: &Polynomial<F>,
         genus: usize,
