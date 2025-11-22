@@ -65,6 +65,9 @@ pub use generic::{EllipticCurve, Point};
 // of complex multiplication.
 
 pub mod heegner;
+pub mod rational;
+pub mod rational_points;
+pub mod chabauty;
 
 // Re-export main types
 pub use heegner::{
@@ -76,6 +79,29 @@ pub use heegner::{
     GrossZagierFormula,
     BSDHeegner,
     BSDVerificationResult,
+};
+
+// Re-export rational curve types
+pub use rational::{
+    EllipticCurveRational,
+    RationalPoint,
+    ReductionType,
+    TorsionGroup,
+};
+
+// Re-export rational points algorithms
+pub use rational_points::{
+    naive_height,
+    logarithmic_height,
+    weil_height,
+    BoundedHeightSearch,
+};
+
+// Re-export Chabauty-Coleman method
+pub use chabauty::{
+    ChabautyColeman,
+    ColemanIntegral,
+    QuadraticChabauty,
 };
 // Elliptic Curves
 //
