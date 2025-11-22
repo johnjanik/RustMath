@@ -77,12 +77,12 @@ fn multi_indices(degree: usize, nvars: usize) -> Vec<MultiIndex> {
 
 /// Evaluate monomial x₀^{a₀}···xₙ^{aₙ} at a point
 fn evaluate_monomial<R: Ring + One>(point: &[R], exponents: &MultiIndex) -> R {
-    let mut result = R::one();
+    let mut result = <R as Ring>::one();
 
     for (i, &exp) in exponents.iter().enumerate() {
         if let Some(coord) = point.get(i) {
             // Compute coord^exp
-            let mut power = R::one();
+            let mut power = <R as Ring>::one();
             for _ in 0..exp {
                 power = power * coord.clone();
             }

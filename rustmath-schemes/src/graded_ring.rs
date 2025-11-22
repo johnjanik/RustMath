@@ -174,13 +174,13 @@ pub fn polynomial_ring_graded<R: Ring + Zero + One>(num_variables: usize, base_r
     let mut ring = GradedRing::new(base_ring_name.to_string());
 
     // Degree 0: just the base ring (represented by unit element)
-    ring.add_generator(0, R::one());
+    ring.add_generator(0, <R as Ring>::one());
 
     // Degree 1: one generator for each variable
     for _ in 0..num_variables {
         // In a full implementation, these would be actual polynomial variables
         // For now, we use a placeholder
-        ring.add_generator(1, R::one());
+        ring.add_generator(1, <R as Ring>::one());
     }
 
     ring

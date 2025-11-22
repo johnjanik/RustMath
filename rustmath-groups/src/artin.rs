@@ -258,7 +258,7 @@ impl ArtinGroup {
         assert!(i < self.rank(), "Generator index out of bounds");
         ArtinGroupElement {
             parent: self.clone(),
-            word: FreeGroupElement::generator(i as i32, 1),
+            word: FreeGroupElement::generator(i as isize, 1),
         }
     }
 }
@@ -341,7 +341,7 @@ impl ArtinGroupElement {
     }
 
     /// Raise to a power
-    pub fn pow(&self, n: i32) -> Self {
+    pub fn pow(&self, n: isize) -> Self {
         Self {
             parent: self.parent.clone(),
             word: self.word.pow(n),

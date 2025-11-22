@@ -94,17 +94,17 @@ impl CubicBraidGroup {
 
         // Cubic relations: s_i^3 = 1
         for i in 0..n_gens {
-            let gen = FreeGroupElement::generator(i as i32, 3);
+            let gen = FreeGroupElement::generator(i as isize, 3);
             relations.push(gen);
         }
 
         // Braid relations: s_i s_j = s_j s_i for |i-j| >= 2
         for i in 0..n_gens {
             for j in (i + 2)..n_gens {
-                let si = FreeGroupElement::generator(i as i32, 1);
-                let sj = FreeGroupElement::generator(j as i32, 1);
-                let si_inv = FreeGroupElement::generator(i as i32, -1);
-                let sj_inv = FreeGroupElement::generator(j as i32, -1);
+                let si = FreeGroupElement::generator(i as isize, 1);
+                let sj = FreeGroupElement::generator(j as isize, 1);
+                let si_inv = FreeGroupElement::generator(i as isize, -1);
+                let sj_inv = FreeGroupElement::generator(j as isize, -1);
 
                 // s_i s_j s_i^{-1} s_j^{-1} = 1
                 let rel = si.multiply(&sj).multiply(&si_inv).multiply(&sj_inv);
@@ -114,10 +114,10 @@ impl CubicBraidGroup {
 
         // Braid relations: s_i s_{i+1} s_i = s_{i+1} s_i s_{i+1}
         for i in 0..(n_gens - 1) {
-            let si = FreeGroupElement::generator(i as i32, 1);
-            let si1 = FreeGroupElement::generator((i + 1) as i32, 1);
-            let si_inv = FreeGroupElement::generator(i as i32, -1);
-            let si1_inv = FreeGroupElement::generator((i + 1) as i32, -1);
+            let si = FreeGroupElement::generator(i as isize, 1);
+            let si1 = FreeGroupElement::generator((i + 1) as isize, 1);
+            let si_inv = FreeGroupElement::generator(i as isize, -1);
+            let si1_inv = FreeGroupElement::generator((i + 1) as isize, -1);
 
             // s_i s_{i+1} s_i s_{i+1}^{-1} s_i^{-1} s_{i+1}^{-1} = 1
             let rel = si
@@ -390,7 +390,7 @@ impl CubicBraidElement {
         );
         Self {
             group: group.clone(),
-            word: FreeGroupElement::generator(i as i32, 1),
+            word: FreeGroupElement::generator(i as isize, 1),
         }
     }
 

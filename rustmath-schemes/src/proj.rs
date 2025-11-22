@@ -187,7 +187,7 @@ impl<R: Ring> AffineChart<R> {
 
         for i in 0..=affine.len() {
             if i == self.index {
-                homogeneous.push(R::one());
+                homogeneous.push(<R as Ring>::one());
             } else if i < self.index {
                 homogeneous.push(affine[i].clone());
             } else {
@@ -221,11 +221,11 @@ pub fn projective_space<R: Ring + Zero + One>(dimension: usize) -> Proj<R> {
     let mut ring = GradedRing::new("k".to_string());
 
     // Degree 0: base ring
-    ring.add_generator(0, R::one());
+    ring.add_generator(0, <R as Ring>::one());
 
     // Degree 1: n+1 generators for ℙⁿ
     for _ in 0..=dimension {
-        ring.add_generator(1, R::one());
+        ring.add_generator(1, <R as Ring>::one());
     }
 
     Proj::new(ring).with_dimension(dimension)
