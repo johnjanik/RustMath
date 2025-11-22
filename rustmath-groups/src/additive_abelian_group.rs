@@ -36,7 +36,7 @@ pub fn additive_abelian_group(invariants: Vec<usize>) -> Result<AdditiveAbelianG
 ///
 /// Represents an element as a vector of coordinates with respect to
 /// the group's generators
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct AdditiveAbelianGroupElement {
     /// Coordinates with respect to generators
     coordinates: Vec<i64>,

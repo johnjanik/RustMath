@@ -124,7 +124,7 @@ impl<R: Ring> AffineGroupElement<R> {
         }
 
         // Compute A₁ * A₂
-        let new_matrix = self.matrix.mul(other.matrix).map_err(|e| e.to_string())?;
+        let new_matrix = self.matrix.clone().mul(other.matrix.clone()).map_err(|e| e.to_string())?;
 
         // Compute A₁ * b₂ + b₁
         let mut new_vector = Vec::new();
