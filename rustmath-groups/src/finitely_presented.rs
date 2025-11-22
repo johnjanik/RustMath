@@ -333,7 +333,7 @@ impl FinitelyPresentedGroupElement {
 
     /// Compute the commutator [self, other] = self * other * self^{-1} * other^{-1}
     pub fn commutator(&self, other: &Self) -> Self {
-        self.mul(other).mul(&self.inverse()).mul(&other.inverse())
+        self.mul(other).mul(self.inverse()).mul(other.inverse())
     }
 }
 

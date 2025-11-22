@@ -195,7 +195,7 @@ pub struct CanonicalBundle<R: Ring> {
     line_bundle: LineBundle<R>,
 }
 
-impl<R: Ring> CanonicalBundle<R> {
+impl<R: Ring + num_traits::Zero + num_traits::One> CanonicalBundle<R> {
     /// Create the canonical bundle of a projective space
     ///
     /// For ℙⁿ, K_{ℙⁿ} = 𝒪(-n-1)
@@ -249,7 +249,7 @@ pub struct PicardGroup<R: Ring> {
     generator: LineBundle<R>,
 }
 
-impl<R: Ring> PicardGroup<R> {
+impl<R: Ring + num_traits::Zero + num_traits::One> PicardGroup<R> {
     /// Create the Picard group of a projective space
     ///
     /// Pic(ℙⁿ) ≅ ℤ with generator 𝒪(1)

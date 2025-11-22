@@ -207,13 +207,13 @@ impl ArtinGroup {
 
                     for k in 0..m_ij {
                         if k % 2 == 0 {
-                            left_word = left_word.multiply(&FreeGroupElement::generator(i as i32, 1));
+                            left_word = left_word.multiply(&FreeGroupElement::generator(i as isize, 1));
                             right_word =
-                                right_word.multiply(&FreeGroupElement::generator(j as i32, 1));
+                                right_word.multiply(&FreeGroupElement::generator(j as isize, 1));
                         } else {
-                            left_word = left_word.multiply(&FreeGroupElement::generator(j as i32, 1));
+                            left_word = left_word.multiply(&FreeGroupElement::generator(j as isize, 1));
                             right_word =
-                                right_word.multiply(&FreeGroupElement::generator(i as i32, 1));
+                                right_word.multiply(&FreeGroupElement::generator(i as isize, 1));
                         }
                     }
 
@@ -224,7 +224,7 @@ impl ArtinGroup {
             }
         }
 
-        let fp_group = FinitelyPresentedGroup::new(rank, relations);
+        let fp_group = FinitelyPresentedGroup::new(generator_names.clone(), relations.iter().map(|r| r.word().iter().flat_map(|(gen, exp)| vec![*gen as i32, *exp as i32]).collect()).collect());
 
         Self {
             coxeter_matrix,

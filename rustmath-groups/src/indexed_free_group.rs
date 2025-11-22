@@ -48,7 +48,7 @@ pub trait IndexedGroup {
 ///
 /// Unlike traditional free groups where generators are numbered 0, 1, 2, ...,
 /// this allows generators to be indexed by any hashable type (strings, tuples, etc.).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash)]
 pub struct IndexedFreeGroup<I: Clone + Eq + Hash + fmt::Debug> {
     /// The index set for generators
     indices: Vec<I>,
@@ -365,7 +365,7 @@ impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> crate::group_traits::Grou
 ///
 /// This is the commutative version of IndexedFreeGroup, where elements
 /// are represented as dictionaries mapping indices to exponents.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash)]
 pub struct IndexedFreeAbelianGroup<I: Clone + Eq + Hash + fmt::Debug> {
     /// The index set for generators
     indices: Vec<I>,
@@ -479,7 +479,7 @@ impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> Group for IndexedFreeAbel
 /// An element of an indexed free abelian group
 ///
 /// Elements are represented as dictionaries mapping indices to exponents.
-#[derive(Clone, Hash, Debug)]
+#[derive(Clone, Debug)]
 pub struct IndexedFreeAbelianGroupElement<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> {
     parent: IndexedFreeAbelianGroup<I>,
     exponents: HashMap<I, i32>,
