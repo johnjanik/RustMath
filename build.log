@@ -99,8 +99,95 @@ warning: variable `N` should have a snake case name
 553 | pub fn krawtchouk_polynomial(n: &Expr, x: &Expr, p: &Expr, N: &Expr) -> Expr {
     |                                                            ^ help: convert the identifier to snake case: `n`
 
+warning: function `list_plot_multiple` is never used
+   --> rustmath-plot/src/plots/list_plot.rs:138:8
+    |
+138 | pub fn list_plot_multiple(
+    |        ^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `scatter_plot_y` is never used
+  --> rustmath-plot/src/plots/scatter_plot.rs:77:8
+   |
+77 | pub fn scatter_plot_y(
+   |        ^^^^^^^^^^^^^^
+
+warning: function `scatter_plot_colored` is never used
+   --> rustmath-plot/src/plots/scatter_plot.rs:116:8
+    |
+116 | pub fn scatter_plot_colored(
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `scatter_plot_sized` is never used
+   --> rustmath-plot/src/plots/scatter_plot.rs:160:8
+    |
+160 | pub fn scatter_plot_sized(
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `contour_plot_filled` is never used
+   --> rustmath-plot/src/plots/contour_plot.rs:122:8
+    |
+122 | pub fn contour_plot_filled<F>(
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: function `density_plot_custom` is never used
+   --> rustmath-plot/src/plots/density_plot.rs:154:8
+    |
+154 | pub fn density_plot_custom<F, C>(
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: function `histogram_custom_bins` is never used
+   --> rustmath-plot/src/plots/histogram.rs:132:8
+    |
+132 | pub fn histogram_custom_bins(
+    |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `bar_chart_horizontal` is never used
+  --> rustmath-plot/src/plots/bar_chart.rs:77:8
+   |
+77 | pub fn bar_chart_horizontal(
+   |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `bar_chart_colored` is never used
+   --> rustmath-plot/src/plots/bar_chart.rs:122:8
+    |
+122 | pub fn bar_chart_colored(data: Vec<(f64, f64, Color)>, bar_width: Option<f64>) -> Graphics {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: function `bar_chart_grouped` is never used
+   --> rustmath-plot/src/plots/bar_chart.rs:166:8
+    |
+166 | pub fn bar_chart_grouped(
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: function `bar_chart_stacked` is never used
+   --> rustmath-plot/src/plots/bar_chart.rs:232:8
+    |
+232 | pub fn bar_chart_stacked(data: Vec<(f64, Vec<f64>, Vec<Color>)>, bar_width: Option<f64>) -> Graphics {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: function `matrix_plot_range` is never used
+   --> rustmath-plot/src/plots/matrix_plot.rs:119:8
+    |
+119 | pub fn matrix_plot_range(
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: function `matrix_plot_binary` is never used
+   --> rustmath-plot/src/plots/matrix_plot.rs:173:8
+    |
+173 | pub fn matrix_plot_binary(
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `matrix_plot_spy` is never used
+   --> rustmath-plot/src/plots/matrix_plot.rs:222:8
+    |
+222 | pub fn matrix_plot_spy(matrix: Vec<Vec<f64>>, threshold: Option<f64>, color: Color) -> Graphics {
+    |        ^^^^^^^^^^^^^^^
+
 warning: `rustmath-matrix` (lib) generated 1 warning
 warning: `rustmath-symbolic` (lib) generated 14 warnings
+warning: `rustmath-plot` (lib) generated 14 warnings
 warning: unused `#[macro_use]` import
  --> rustmath-combinatorics/src/lib.rs:6:1
   |
@@ -1099,791 +1186,26 @@ warning: associated function `trivial` is never used
 171 |     fn trivial(n: usize) -> Self {
     |        ^^^^^^^
 
-warning: `rustmath-combinatorics` (lib) generated 98 warnings (run `cargo fix --lib -p rustmath-combinatorics` to apply 39 suggestions)
-warning: `rustmath-graphs` (lib) generated 16 warnings
-   Compiling rustmath-groups v0.1.0 (/home/john/RustMath/rustmath-groups)
-warning: type `IdealMonoid_nc` should have an upper camel case name
-  --> rustmath-rings/src/noncommutative_ideals.rs:67:10
-   |
-67 | pub type IdealMonoid_nc = IdealMonoidNc;
-   |          ^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `IdealMonoidNc`
-   |
-   = note: `#[warn(non_camel_case_types)]` (part of `#[warn(nonstandard_style)]`) on by default
-
-warning: type `Ideal_nc` should have an upper camel case name
-   --> rustmath-rings/src/noncommutative_ideals.rs:196:10
-    |
-196 | pub type Ideal_nc = IdealNc;
-    |          ^^^^^^^^ help: convert the identifier to upper camel case: `IdealNc`
-
-warning: type `FunctionFieldPlace_polymod` should have an upper camel case name
-  --> rustmath-rings/src/function_field/place_polymod.rs:61:10
-   |
-61 | pub type FunctionFieldPlace_polymod<F> = FunctionFieldPlacePolymod<F>;
-   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldPlacePolymod`
-
-warning: type `FunctionFieldPlace_rational` should have an upper camel case name
-  --> rustmath-rings/src/function_field/place_rational.rs:69:10
-   |
-69 | pub type FunctionFieldPlace_rational<F> = FunctionFieldPlaceRational<F>;
-   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldPlaceRational`
-
-warning: type `FunctionFieldValuation_base` should have an upper camel case name
-   --> rustmath-rings/src/function_field/valuation.rs:131:10
-    |
-131 | pub type FunctionFieldValuation_base<F> = FunctionFieldValuationBase<F>;
-    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldValuationBase`
-
-warning: type `ClassicalFunctionFieldValuation_base` should have an upper camel case name
-   --> rustmath-rings/src/function_field/valuation.rs:195:10
-    |
-195 | pub type ClassicalFunctionFieldValuation_base<F> = ClassicalFunctionFieldValuationBase<F>;
-    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `ClassicalFunctionFieldValuationBase`
-
-warning: type `RationalFunctionFieldValuation_base` should have an upper camel case name
-   --> rustmath-rings/src/function_field/valuation.rs:295:10
-    |
-295 | pub type RationalFunctionFieldValuation_base<F> = RationalFunctionFieldValuationBase<F>;
-    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `RationalFunctionFieldValuationBase`
-
-warning: type `FunctionField_polymod` should have an upper camel case name
-  --> rustmath-rings/src/function_field/function_field_polymod.rs:94:10
-   |
-94 | pub type FunctionField_polymod<F> = FunctionFieldPolymod<F>;
-   |          ^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldPolymod`
-
-warning: type `FunctionField_simple` should have an upper camel case name
-   --> rustmath-rings/src/function_field/function_field_polymod.rs:177:10
-    |
-177 | pub type FunctionField_simple<F> = FunctionFieldSimple<F>;
-    |          ^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldSimple`
-
-warning: type `FunctionField_char_zero` should have an upper camel case name
-   --> rustmath-rings/src/function_field/function_field_polymod.rs:231:10
-    |
-231 | pub type FunctionField_char_zero<F> = FunctionFieldCharZero<F>;
-    |          ^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldCharZero`
-
-warning: type `FunctionField_integral` should have an upper camel case name
-   --> rustmath-rings/src/function_field/function_field_polymod.rs:267:10
-    |
-267 | pub type FunctionField_integral<F> = FunctionFieldIntegral<F>;
-    |          ^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldIntegral`
-
-warning: type `FunctionField_char_zero_integral` should have an upper camel case name
-   --> rustmath-rings/src/function_field/function_field_polymod.rs:306:10
-    |
-306 | pub type FunctionField_char_zero_integral<F> = FunctionFieldCharZeroIntegral<F>;
-    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldCharZeroIntegral`
-
-warning: type `FunctionField_global` should have an upper camel case name
-   --> rustmath-rings/src/function_field/function_field_polymod.rs:344:10
-    |
-344 | pub type FunctionField_global<F> = FunctionFieldGlobal<F>;
-    |          ^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldGlobal`
-
-warning: type `FunctionField_global_integral` should have an upper camel case name
-   --> rustmath-rings/src/function_field/function_field_polymod.rs:401:10
-    |
-401 | pub type FunctionField_global_integral<F> = FunctionFieldGlobalIntegral<F>;
-    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldGlobalIntegral`
-
-warning: type `RationalFunctionField_char_zero` should have an upper camel case name
-   --> rustmath-rings/src/function_field/function_field_rational.rs:172:10
-    |
-172 | pub type RationalFunctionField_char_zero<F> = RationalFunctionFieldCharZero<F>;
-    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `RationalFunctionFieldCharZero`
-
-warning: type `RationalFunctionField_global` should have an upper camel case name
-   --> rustmath-rings/src/function_field/function_field_rational.rs:242:10
-    |
-242 | pub type RationalFunctionField_global<F> = RationalFunctionFieldGlobal<F>;
-    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `RationalFunctionFieldGlobal`
-
-warning: type `FunctionFieldIdeal_rational` should have an upper camel case name
-  --> rustmath-rings/src/function_field/ideal_rational.rs:85:10
-   |
-85 | pub type FunctionFieldIdeal_rational<F> = FunctionFieldIdealRational<F>;
-   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldIdealRational`
-
-warning: type `FunctionFieldIdealInfinite_rational` should have an upper camel case name
-   --> rustmath-rings/src/function_field/ideal_rational.rs:263:10
-    |
-263 | pub type FunctionFieldIdealInfinite_rational<F> = FunctionFieldIdealInfiniteRational<F>;
-    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldIdealInfiniteRational`
-
-warning: type `FunctionFieldMorphism_polymod` should have an upper camel case name
-   --> rustmath-rings/src/function_field/maps.rs:146:10
-    |
-146 | pub type FunctionFieldMorphism_polymod<F> = FunctionFieldMorphismPolymod<F>;
-    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldMorphismPolymod`
-
-warning: type `FunctionFieldMorphism_rational` should have an upper camel case name
-   --> rustmath-rings/src/function_field/maps.rs:191:10
-    |
-191 | pub type FunctionFieldMorphism_rational<F> = FunctionFieldMorphismRational<F>;
-    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldMorphismRational`
-
-warning: type `FunctionFieldOrder_basis` should have an upper camel case name
-  --> rustmath-rings/src/function_field/order_basis.rs:97:10
-   |
-97 | pub type FunctionFieldOrder_basis<F> = FunctionFieldOrderBasis<F>;
-   |          ^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldOrderBasis`
-
-warning: type `FunctionFieldOrderInfinite_basis` should have an upper camel case name
-   --> rustmath-rings/src/function_field/order_basis.rs:248:10
-    |
-248 | pub type FunctionFieldOrderInfinite_basis<F> = FunctionFieldOrderInfiniteBasis<F>;
-    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldOrderInfiniteBasis`
-
-warning: type `FunctionFieldMaximalOrder_rational` should have an upper camel case name
-   --> rustmath-rings/src/function_field/order_rational.rs:103:10
-    |
-103 | pub type FunctionFieldMaximalOrder_rational<F> = FunctionFieldMaximalOrderRational<F>;
-    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldMaximalOrderRational`
-
-warning: type `FunctionFieldMaximalOrderInfinite_rational` should have an upper camel case name
-   --> rustmath-rings/src/function_field/order_rational.rs:326:10
-    |
-326 | pub type FunctionFieldMaximalOrderInfinite_rational<F> = FunctionFieldMaximalOrderInfiniteRational<F>;
-    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldMaximalOrderInfiniteRational`
-
-warning: type `real_lazy_field` should have an upper camel case name
-   --> rustmath-rings/src/real_lazy.rs:548:12
-    |
-548 | pub struct real_lazy_field {
-    |            ^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `RealLazyField`
-
-warning: type `complex_lazy_field` should have an upper camel case name
-   --> rustmath-rings/src/real_lazy.rs:623:12
-    |
-623 | pub struct complex_lazy_field {
-    |            ^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `ComplexLazyField`
-
-warning: unused import: `Ring`
-  --> rustmath-rings/src/abc.rs:24:21
-   |
-24 | use rustmath_core::{Ring, CommutativeRing, Field, IntegralDomain};
-   |                     ^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `rustmath_core::Ring`
-  --> rustmath-rings/src/asymptotic.rs:44:5
-   |
-44 | use rustmath_core::Ring;
-   |     ^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `Ring`
-  --> rustmath-rings/src/differential.rs:40:21
-   |
-40 | use rustmath_core::{Ring, Field};
-   |                     ^^^^
-
-warning: unused import: `Ring`
-  --> rustmath-rings/src/divisor.rs:43:21
-   |
-43 | use rustmath_core::{Ring, Field};
-   |                     ^^^^
-
-warning: unused import: `Ring`
-  --> rustmath-rings/src/fraction_field.rs:12:21
-   |
-12 | use rustmath_core::{Ring, IntegralDomain};
-   |                     ^^^^
-
-warning: unused import: `Ring`
-  --> rustmath-rings/src/fraction_field_element.rs:33:21
-   |
-33 | use rustmath_core::{Ring, IntegralDomain, Field};
-   |                     ^^^^
-
-warning: unused import: `Field`
-  --> rustmath-rings/src/fraction_field_element.rs:33:43
-   |
-33 | use rustmath_core::{Ring, IntegralDomain, Field};
-   |                                           ^^^^^
-
-warning: unused import: `Ring`
-  --> rustmath-rings/src/fraction_field_fpt.rs:37:21
-   |
-37 | use rustmath_core::{Ring, Field};
-   |                     ^^^^
-
-warning: unused import: `Field`
-  --> rustmath-rings/src/fraction_field_fpt.rs:37:27
-   |
-37 | use rustmath_core::{Ring, Field};
-   |                           ^^^^^
-
-warning: unused import: `Ring`
-  --> rustmath-rings/src/function_field_element.rs:31:21
-   |
-31 | use rustmath_core::{Ring, Field};
-   |                     ^^^^
-
-warning: unused import: `Ring`
-  --> rustmath-rings/src/function_field_element_polymod.rs:31:21
-   |
-31 | use rustmath_core::{Ring, Field};
-   |                     ^^^^
-
-warning: unused import: `Ring`
-  --> rustmath-rings/src/function_field_element_rational.rs:27:21
-   |
-27 | use rustmath_core::{Ring, Field};
-   |                     ^^^^
-
-warning: unused import: `Hasher`
-  --> rustmath-rings/src/growth_group.rs:50:23
-   |
-50 | use std::hash::{Hash, Hasher};
-   |                       ^^^^^^
-
-warning: unused import: `Ring`
-  --> rustmath-rings/src/function_field/ideal_polymod.rs:48:28
-   |
-48 | use rustmath_core::{Field, Ring};
-   |                            ^^^^
-
-warning: unused import: `GrowthGroup`
-  --> rustmath-rings/src/growth_group_cartesian.rs:35:20
-   |
-35 |     GrowthElement, GrowthGroup, Variable, GrowthGroupFactor,
-   |                    ^^^^^^^^^^^
-
-warning: unused import: `Ring`
-  --> rustmath-rings/src/function_field/picard_group.rs:57:28
-   |
-57 | use rustmath_core::{Field, Ring};
-   |                            ^^^^
-
-warning: unused import: `Ring`
-  --> rustmath-rings/src/padics/capped_relative.rs:44:40
-   |
-44 | use rustmath_core::{MathError, Result, Ring};
-   |                                        ^^^^
-
-warning: unused import: `Ring`
-  --> rustmath-rings/src/padics/factory.rs:71:40
-   |
-71 | use rustmath_core::{MathError, Result, Ring};
-   |                                        ^^^^
-
-warning: unused import: `Ring`
-  --> rustmath-rings/src/puiseux_series_ring_element.rs:34:28
-   |
-34 | use rustmath_core::{Field, Ring};
-   |                            ^^^^
-
-warning: unused import: `Ring`
-  --> rustmath-rings/src/puiseux_series_ring.rs:40:28
-   |
-40 | use rustmath_core::{Field, Ring};
-   |                            ^^^^
-
-warning: unused import: `Ring`
-  --> rustmath-rings/src/tate_algebra.rs:37:28
-   |
-37 | use rustmath_core::{Field, Ring};
-   |                            ^^^^
-
-warning: unused import: `Field`
-  --> rustmath-rings/src/residue_field.rs:24:27
-   |
-24 | use rustmath_core::{Ring, Field};
-   |                           ^^^^^
-
-warning: unused import: `rustmath_core::Ring`
-  --> rustmath-rings/src/semirings/non_negative_integer_semiring.rs:40:5
-   |
-40 | use rustmath_core::Ring;
-   |     ^^^^^^^^^^^^^^^^^^^
-
-warning: unused variable: `place`
-   --> rustmath-rings/src/differential.rs:122:29
-    |
-122 |     pub fn valuation(&self, place: &str) -> i64 {
-    |                             ^^^^^ help: if this is intentional, prefix it with an underscore: `_place`
-    |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `function`
-   --> rustmath-rings/src/divisor.rs:219:30
-    |
-219 |     pub fn principal_divisor(function: String) -> Self {
-    |                              ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_function`
-
-warning: unused variable: `x`
-   --> rustmath-rings/src/fraction_field.rs:287:53
-    |
-287 | pub fn is_fraction_field_element<R: IntegralDomain>(x: &FractionFieldElement<R>) -> bool {
-    |                                                     ^ help: if this is intentional, prefix it with an underscore: `_x`
-
-warning: unused variable: `x`
-   --> rustmath-rings/src/fraction_field_element.rs:306:53
-    |
-306 | pub fn is_fraction_field_element<R: IntegralDomain>(x: &FractionFieldElement<R>) -> bool {
-    |                                                     ^ help: if this is intentional, prefix it with an underscore: `_x`
-
-warning: unused variable: `x`
-   --> rustmath-rings/src/function_field_element.rs:272:44
-    |
-272 | pub fn is_function_field_element<F: Field>(x: &FunctionFieldElement<F>) -> bool {
-    |                                            ^ help: if this is intentional, prefix it with an underscore: `_x`
-
-warning: unused variable: `num_val`
-   --> rustmath-rings/src/function_field_element_rational.rs:153:13
-    |
-153 |         let num_val = self.eval_poly(&self.numerator, point);
-    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_num_val`
-
-warning: unused variable: `value`
-   --> rustmath-rings/src/infinity.rs:331:32
-    |
-331 | pub fn is_infinite<T: 'static>(value: &T) -> bool {
-    |                                ^^^^^ help: if this is intentional, prefix it with an underscore: `_value`
-
-warning: unused variable: `prev`
-    --> rustmath-rings/src/padics/extension.rs:1047:17
-     |
-1047 |             let prev = automorphisms.last().unwrap();
-     |                 ^^^^ help: if this is intentional, prefix it with an underscore: `_prev`
-
-warning: unused variable: `ring2`
-   --> rustmath-rings/src/ring_extension.rs:310:34
-    |
-310 | pub fn common_base<R>(ring1: &R, ring2: &R) -> Result<R, RingExtensionError>
-    |                                  ^^^^^ help: if this is intentional, prefix it with an underscore: `_ring2`
-
-warning: unused variable: `sqrt_abs`
-   --> rustmath-rings/src/universal_cyclotomic_field.rs:278:13
-    |
-278 |         let sqrt_abs = ucf_sqrt_int(-n)?;
-    |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_sqrt_abs`
-
-warning: unused variable: `element`
-   --> rustmath-rings/src/function_field/valuation.rs:247:25
-    |
-247 |     fn valuation(&self, element: &str) -> i64 {
-    |                         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_element`
-
-warning: unused variable: `element`
-   --> rustmath-rings/src/function_field/valuation.rs:361:25
-    |
-361 |     fn valuation(&self, element: &str) -> i64 {
-    |                         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_element`
-
-warning: unused variable: `g`
-   --> rustmath-rings/src/function_field/order_polymod.rs:336:13
-    |
-336 |         let g = self.genus();
-    |             ^ help: if this is intentional, prefix it with an underscore: `_g`
-
-warning: unused variable: `d2`
-   --> rustmath-rings/src/function_field/jacobian_hyperelliptic.rs:327:47
-    |
-327 |     pub fn add(&self, d1: &MumfordDivisor<F>, d2: &MumfordDivisor<F>) -> MumfordDivisor<F> {
-    |                                               ^^ help: if this is intentional, prefix it with an underscore: `_d2`
-
-warning: unused variable: `h`
-   --> rustmath-rings/src/function_field/jacobian_hyperelliptic.rs:343:33
-    |
-343 |         let neg_v = if let Some(h) = self.curve.h() {
-    |                                 ^ help: if this is intentional, prefix it with an underscore: `_h`
-
-warning: unused variable: `d`
-   --> rustmath-rings/src/function_field/jacobian_hyperelliptic.rs:385:28
-    |
-385 |     pub fn contains(&self, d: &MumfordDivisor<F>) -> bool {
-    |                            ^ help: if this is intentional, prefix it with an underscore: `_d`
-
-warning: unused variable: `a`
-   --> rustmath-rings/src/invariants/reconstruction.rs:103:9
-    |
-103 |     let a = R::from(1);
-    |         ^ help: if this is intentional, prefix it with an underscore: `_a`
-
-warning: unused variable: `b`
-   --> rustmath-rings/src/invariants/reconstruction.rs:104:9
-    |
-104 |     let b = R::from(0);
-    |         ^ help: if this is intentional, prefix it with an underscore: `_b`
-
-warning: unused variable: `element`
-   --> rustmath-rings/src/power_series_poly.rs:279:23
-    |
-279 |     pub fn act(&self, element: &R, series: &PowerSeriesPoly<R>) -> PowerSeriesPoly<R> {
-    |                       ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_element`
-
-warning: unused variable: `other_exp`
-   --> rustmath-rings/src/puiseux_series_ring_element.rs:221:24
-    |
-221 |         let (self_exp, other_exp) = self.to_common_ramification(&PuiseuxSeries::new(
-    |                        ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_other_exp`
-
-warning: methods `numerator_mut` and `denominator_mut` are never used
-   --> rustmath-rings/src/fraction_field_element.rs:105:8
-    |
- 57 | impl<R: IntegralDomain> FractionFieldElement<R> {
-    | ----------------------------------------------- methods in this implementation
-...
-105 |     fn numerator_mut(&mut self) -> &mut R {
-    |        ^^^^^^^^^^^^^
-...
-110 |     fn denominator_mut(&mut self) -> &mut R {
-    |        ^^^^^^^^^^^^^^^
-    |
-    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: field `source` is never read
-   --> rustmath-rings/src/fraction_field_fpt.rs:499:5
-    |
-498 | pub struct FpTToFpSection {
-    |            -------------- field in this struct
-499 |     source: FpT,
-    |     ^^^^^^
-
-warning: field `max_degree` is never read
-   --> rustmath-rings/src/fraction_field_fpt.rs:545:5
-    |
-543 | pub struct FpTIterator {
-    |            ----------- field in this struct
-544 |     field: FpT,
-545 |     max_degree: usize,
-    |     ^^^^^^^^^^
-
-warning: field `error` is never read
-   --> rustmath-rings/src/growth_group.rs:132:5
-    |
-130 | pub struct PartialConversionElement<T> {
-    |            ------------------------ field in this struct
-131 |     value: Option<T>,
-132 |     error: Option<String>,
-    |     ^^^^^
-    |
-    = note: `PartialConversionElement` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
-
-warning: field `map_fn` is never read
-   --> rustmath-rings/src/morphism.rs:117:5
-    |
-111 | pub struct RingMap<R: Ring, S: Ring, F>
-    |            ------- field in this struct
-...
-117 |     map_fn: F,
-    |     ^^^^^^
-    |
-    = note: `RingMap` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: fields `is_injective_cached` and `is_surjective_cached` are never read
-   --> rustmath-rings/src/morphism.rs:151:5
-    |
-143 | pub struct RingHomomorphism<R, S>
-    |            ---------------- fields in this struct
-...
-151 |     is_injective_cached: Option<bool>,
-    |     ^^^^^^^^^^^^^^^^^^^
-152 |     /// Cached surjectivity status
-153 |     is_surjective_cached: Option<bool>,
-    |     ^^^^^^^^^^^^^^^^^^^^
-    |
-    = note: `RingHomomorphism` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `base` is never read
-   --> rustmath-rings/src/morphism.rs:199:5
-    |
-194 | pub struct RingHomomorphismImGens<R, S>
-    |            ---------------------- field in this struct
-...
-199 |     base: RingHomomorphism<R, S>,
-    |     ^^^^
-    |
-    = note: `RingHomomorphismImGens` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `base` is never read
-   --> rustmath-rings/src/morphism.rs:273:5
-    |
-268 | pub struct RingHomomorphismFromBase<R, S>
-    |            ------------------------ field in this struct
-...
-273 |     base: RingHomomorphism<R, S>,
-    |     ^^^^
-    |
-    = note: `RingHomomorphismFromBase` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `base` is never read
-   --> rustmath-rings/src/morphism.rs:309:5
-    |
-304 | pub struct RingHomomorphismFromFractionField<R, S>
-    |            --------------------------------- field in this struct
-...
-309 |     base: RingHomomorphism<R, S>,
-    |     ^^^^
-    |
-    = note: `RingHomomorphismFromFractionField` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `base` is never read
-   --> rustmath-rings/src/morphism.rs:344:5
-    |
-339 | pub struct RingHomomorphismFromQuotient<R, S>
-    |            ---------------------------- field in this struct
-...
-344 |     base: RingHomomorphism<R, S>,
-    |     ^^^^
-    |
-    = note: `RingHomomorphismFromQuotient` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `base` is never read
-   --> rustmath-rings/src/morphism.rs:378:5
-    |
-374 | pub struct RingHomomorphismCover<R>
-    |            --------------------- field in this struct
-...
-378 |     base: RingHomomorphism<R, R>,
-    |     ^^^^
-    |
-    = note: `RingHomomorphismCover` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `base` is never read
-   --> rustmath-rings/src/morphism.rs:411:5
-    |
-407 | pub struct FrobeniusEndomorphism<R>
-    |            --------------------- field in this struct
-...
-411 |     base: RingHomomorphism<R, R>,
-    |     ^^^^
-    |
-    = note: `FrobeniusEndomorphism` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: methods `coefficients_mut` and `reduce` are never used
-   --> rustmath-rings/src/padics/extension.rs:461:8
-    |
-393 | impl PadicExtensionElement {
-    | -------------------------- methods in this implementation
-...
-461 |     fn coefficients_mut(&mut self) -> &mut Vec<PadicRational> {
-    |        ^^^^^^^^^^^^^^^^
-...
-594 |     fn reduce(&mut self) {
-    |        ^^^^^^
-
-warning: field `modulus` is never read
-   --> rustmath-rings/src/padics/factory.rs:350:5
-    |
-347 | pub struct PadicIntegerExtension {
-    |            --------------------- field in this struct
-...
-350 |     modulus: Option<UnivariatePolynomial<Integer>>,
-    |     ^^^^^^^
-    |
-    = note: `PadicIntegerExtension` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `quotient` is never read
-   --> rustmath-rings/src/quotient_ring.rs:268:5
-    |
-266 | pub struct QuotientRingIdealGeneric<R: Ring> {
-    |            ------------------------ field in this struct
-267 |     /// The quotient ring this ideal belongs to
-268 |     quotient: QuotientRingNc<R>,
-    |     ^^^^^^^^
-    |
-    = note: `QuotientRingIdealGeneric` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `base` is never read
-   --> rustmath-rings/src/quotient_ring.rs:293:5
-    |
-292 | pub struct QuotientRingIdealPrincipal<R: Ring> {
-    |            -------------------------- field in this struct
-293 |     base: QuotientRingIdealGeneric<R>,
-    |     ^^^^
-    |
-    = note: `QuotientRingIdealPrincipal` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `base` is never read
-   --> rustmath-rings/src/ring_extension.rs:154:5
-    |
-149 | pub struct RingExtensionWithBasis<K, L>
-    |            ---------------------- field in this struct
-...
-154 |     base: RingExtensionGeneric<K, L>,
-    |     ^^^^
-    |
-    = note: `RingExtensionWithBasis` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `base` is never read
-   --> rustmath-rings/src/ring_extension.rs:257:5
-    |
-252 | pub struct RingExtensionFractionField<K, L>
-    |            -------------------------- field in this struct
-...
-257 |     base: RingExtensionGeneric<K, L>,
-    |     ^^^^
-    |
-    = note: `RingExtensionFractionField` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `base` is never read
-  --> rustmath-rings/src/ring_extension_morphism.rs:28:5
-   |
-20 | pub struct RingExtensionHomomorphism<K, L, M, N>
-   |            ------------------------- field in this struct
-...
-28 |     base: RingHomomorphism<L, N>,
-   |     ^^^^
-   |
-   = note: `RingExtensionHomomorphism` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `finite` is never read
-   --> rustmath-rings/src/augmented_valuation.rs:261:5
-    |
-260 | pub struct FinalFiniteAugmentedValuation<R> {
-    |            ----------------------------- field in this struct
-261 |     finite: FiniteAugmentedValuation<R>,
-    |     ^^^^^^
-    |
-    = note: `FinalFiniteAugmentedValuation` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `integral` is never read
-   --> rustmath-rings/src/function_field/function_field_polymod.rs:397:5
-    |
-393 | pub struct FunctionFieldGlobalIntegral<F: Field> {
-    |            --------------------------- field in this struct
-...
-397 |     integral: FunctionFieldIntegral<F>,
-    |     ^^^^^^^^
-    |
-    = note: `FunctionFieldGlobalIntegral` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `inner` is never read
-   --> rustmath-rings/src/function_field/maps.rs:496:5
-    |
-494 | pub struct FractionFieldToFunctionField<F: Field> {
-    |            ---------------------------- field in this struct
-495 |     /// Vector space isomorphism
-496 |     inner: FunctionFieldVectorSpaceIsomorphism<F>,
-    |     ^^^^^
-    |
-    = note: `FractionFieldToFunctionField` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `inner` is never read
-   --> rustmath-rings/src/function_field/maps.rs:512:5
-    |
-510 | pub struct FunctionFieldToFractionField<F: Field> {
-    |            ---------------------------- field in this struct
-511 |     /// Vector space isomorphism
-512 |     inner: FunctionFieldVectorSpaceIsomorphism<F>,
-    |     ^^^^^
-    |
-    = note: `FunctionFieldToFractionField` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `inner` is never read
-   --> rustmath-rings/src/function_field/maps.rs:528:5
-    |
-526 | pub struct FunctionFieldRingMorphism<F: Field> {
-    |            ------------------------- field in this struct
-527 |     /// Base morphism
-528 |     inner: FunctionFieldMorphism<F>,
-    |     ^^^^^
-    |
-    = note: `FunctionFieldRingMorphism` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: fields `field` and `constant_field` are never read
-   --> rustmath-rings/src/function_field/maps.rs:549:5
-    |
-547 | pub struct FunctionFieldConversionToConstantBaseField<F: Field> {
-    |            ------------------------------------------ fields in this struct
-548 |     /// Function field
-549 |     field: String,
-    |     ^^^^^
-550 |     /// Constant field
-551 |     constant_field: String,
-    |     ^^^^^^^^^^^^^^
-    |
-    = note: `FunctionFieldConversionToConstantBaseField` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `source` is never read
-   --> rustmath-rings/src/function_field/jacobian_hess.rs:295:5
-    |
-293 | pub struct JacobianGroupEmbedding<F: Field> {
-    |            ---------------------- field in this struct
-294 |     /// Source curve
-295 |     source: String,
-    |     ^^^^^^
-    |
-    = note: `JacobianGroupEmbedding` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `forms` is never read
-   --> rustmath-rings/src/invariants/invariant_theory.rs:439:5
-    |
-437 | pub struct TwoTernaryQuadratics<R: Ring> {
-    |            -------------------- field in this struct
-438 |     /// The underlying pair of forms
-439 |     forms: TwoAlgebraicForms<R>,
-    |     ^^^^^
-    |
-    = note: `TwoTernaryQuadratics` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
-
-warning: field `forms` is never read
-   --> rustmath-rings/src/invariants/invariant_theory.rs:457:5
-    |
-455 | pub struct TwoQuaternaryQuadratics<R: Ring> {
-    |            ----------------------- field in this struct
-456 |     /// The underlying pair of forms
-457 |     forms: TwoAlgebraicForms<R>,
-    |     ^^^^^
-    |
-    = note: `TwoQuaternaryQuadratics` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
-
-warning: field `complete` is never read
-  --> rustmath-rings/src/lazy_series.rs:60:5
-   |
-56 | pub struct LazyModuleElement<R: Ring> {
-   |            ----------------- field in this struct
-...
-60 |     complete: bool,
-   |     ^^^^^^^^
-   |
-   = note: `LazyModuleElement` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
-
-warning: field `base_valuation` is never read
-  --> rustmath-rings/src/valuation/gauss_valuation.rs:14:5
-   |
-13 | pub struct GaussValuation<R: Ring> {
-   |            -------------- field in this struct
-14 |     base_valuation: Box<dyn DiscretePseudoValuation<R>>,
-   |     ^^^^^^^^^^^^^^
-   |
-   = note: `GaussValuation` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
-
-warning: trait `ToF64` is never used
-   --> rustmath-rings/src/qqbar.rs:575:7
-    |
-575 | trait ToF64 {
-    |       ^^^^^
-
-warning: using `.clone()` on a double reference, which returns `&Ratio<BigInt>` instead of cloning the inner type
-   --> rustmath-rings/src/asymptotic.rs:783:60
-    |
-783 |             let abs_coeff = if coeff.is_negative() { -coeff.clone() } else { (*coeff).clone() };
-    |                                                            ^^^^^^^^
-    |
-    = note: `#[warn(suspicious_double_ref_op)]` on by default
-
-warning: function `RealLazyField` should have a snake case name
-   --> rustmath-rings/src/real_lazy.rs:688:8
-    |
-688 | pub fn RealLazyField() -> RealLazyField {
-    |        ^^^^^^^^^^^^^ help: convert the identifier to snake case: `real_lazy_field`
+warning: variable `N` should have a snake case name
+   --> rustmath-ellipticcurves/src/lfunction.rs:228:13
+    |
+228 |         let N = self.conductor.to_f64().unwrap_or(1.0);
+    |             ^ help: convert the identifier to snake case: `n`
     |
     = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
 
-warning: function `ComplexLazyField` should have a snake case name
-   --> rustmath-rings/src/real_lazy.rs:693:8
+warning: variable `L_value` should have a snake case name
+   --> rustmath-ellipticcurves/src/lfunction.rs:231:13
     |
-693 | pub fn ComplexLazyField() -> ComplexLazyField {
-    |        ^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `complex_lazy_field`
+231 |         let L_value = self.evaluate(s, 1000);
+    |             ^^^^^^^ help: convert the identifier to snake case: `l_value`
 
-   Compiling rustmath-liealgebras v0.1.0 (/home/john/RustMath/rustmath-liealgebras)
-warning: `rustmath-rings` (lib) generated 103 warnings
+warning: variable `N_to_s_half` should have a snake case name
+   --> rustmath-ellipticcurves/src/lfunction.rs:233:13
+    |
+233 |         let N_to_s_half = N.powf(s.re / 2.0) * ComplexNum::new(
+    |             ^^^^^^^^^^^ help: convert the identifier to snake case: `n_to_s_half`
+
 warning: unused variable: `n`
    --> rustmath-geometry/src/hyperplane_arrangement/check_freeness.rs:219:9
     |
@@ -1909,557 +1231,164 @@ warning: associated function `empty` is never used
    |
    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
 
-warning: variable `N` should have a snake case name
-   --> rustmath-ellipticcurves/src/lfunction.rs:228:13
-    |
-228 |         let N = self.conductor.to_f64().unwrap_or(1.0);
-    |             ^ help: convert the identifier to snake case: `n`
-    |
-    = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
-
-warning: variable `L_value` should have a snake case name
-   --> rustmath-ellipticcurves/src/lfunction.rs:231:13
-    |
-231 |         let L_value = self.evaluate(s, 1000);
-    |             ^^^^^^^ help: convert the identifier to snake case: `l_value`
-
-warning: variable `N_to_s_half` should have a snake case name
-   --> rustmath-ellipticcurves/src/lfunction.rs:233:13
-    |
-233 |         let N_to_s_half = N.powf(s.re / 2.0) * ComplexNum::new(
-    |             ^^^^^^^^^^^ help: convert the identifier to snake case: `n_to_s_half`
-
-warning: unused variable: `cell_res`
-   --> rustmath-quantumgroups/src/fock_space.rs:274:37
-    |
-274 | ...   if let Some(cell_res) = lambda.cell_residue(comp_idx, row, col, &self.params.multicharge, self....
-    |                   ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_cell_res`
-    |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `min_power`
-   --> rustmath-quantumgroups/src/q_bernoulli.rs:113:36
-    |
-113 |         let (q_int_num, q_int_den, min_power) = laurent_to_rational(&q_int_laurent);
-    |                                    ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_min_power`
-
-warning: unused import: `Ring`
- --> rustmath-affineschemes/src/prime_ideal.rs:6:21
+warning: unused import: `rustmath_core::Ring`
+ --> rustmath-quadraticforms/src/quadratic_form.rs:6:5
   |
-6 | use rustmath_core::{Ring, CommutativeRing, MathError, Result};
-  |                     ^^^^
+6 | use rustmath_core::Ring;
+  |     ^^^^^^^^^^^^^^^^^^^
   |
   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
 
 warning: unused import: `Ring`
- --> rustmath-affineschemes/src/spec.rs:7:38
+ --> rustmath-quadraticforms/src/theta_series.rs:8:21
   |
-7 | use rustmath_core::{CommutativeRing, Ring};
-  |                                      ^^^^
+8 | use rustmath_core::{Ring, NumericConversion};
+  |                     ^^^^
+
+warning: unused import: `NumericConversion`
+ --> rustmath-quadraticforms/src/theta_series.rs:8:27
+  |
+8 | use rustmath_core::{Ring, NumericConversion};
+  |                           ^^^^^^^^^^^^^^^^^
 
 warning: unused import: `Ring`
- --> rustmath-affineschemes/src/structure_sheaf.rs:9:38
+ --> rustmath-quadraticforms/src/local_densities.rs:9:21
   |
-9 | use rustmath_core::{CommutativeRing, Ring};
-  |                                      ^^^^
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                     ^^^^
+
+warning: unused import: `NumericConversion`
+ --> rustmath-quadraticforms/src/local_densities.rs:9:27
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                           ^^^^^^^^^^^^^^^^^
 
 warning: unused import: `Ring`
-  --> rustmath-affineschemes/src/morphism.rs:13:38
-   |
-13 | use rustmath_core::{CommutativeRing, Ring};
-   |                                      ^^^^
+ --> rustmath-quadraticforms/src/genus_theory.rs:9:21
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                     ^^^^
 
-warning: fields `first` and `second` are never read
-  --> rustmath-affineschemes/src/fiber_product.rs:38:5
+warning: unused import: `NumericConversion`
+ --> rustmath-quadraticforms/src/genus_theory.rs:9:27
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                           ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Ring`
+ --> rustmath-quadraticforms/src/advanced.rs:9:21
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                     ^^^^
+
+warning: unused import: `NumericConversion`
+ --> rustmath-quadraticforms/src/advanced.rs:9:27
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                           ^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `d`
+  --> rustmath-quadraticforms/src/local_densities.rs:83:13
    |
-29 | pub struct FiberProduct<R, S, T>
-   |            ------------ fields in this struct
+83 |         let d = (-self.form.discriminant()).clone();
+   |             ^ help: if this is intentional, prefix it with an underscore: `_d`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `p_power`
+   --> rustmath-quadraticforms/src/local_densities.rs:173:13
+    |
+173 |         let p_power = p_int.pow(k);
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_p_power`
+
+warning: unused variable: `n3`
+  --> rustmath-quadraticforms/src/advanced.rs:96:42
+   |
+96 |             if let [(n1, a1), (n2, a2), (n3, a3)] = window {
+   |                                          ^^ help: if this is intentional, prefix it with an underscore: `_n3`
+
+warning: method `p_adic_equivalent` is never used
+   --> rustmath-quadraticforms/src/genus_theory.rs:189:8
+    |
+ 18 | impl GenusTheory {
+    | ---------------- method in this implementation
 ...
-38 |     first: AffineScheme<S>,
-   |     ^^^^^
-39 |     /// The second scheme Spec(T)
-40 |     second: AffineScheme<T>,
-   |     ^^^^^^
+189 |     fn p_adic_equivalent(&self, form1: &QuadraticForm, form2: &QuadraticForm, p: u64) -> bool {
+    |        ^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `precision`
+  --> rustmath-algebraic/src/algebraic_number.rs:51:30
    |
-   = note: `FiberProduct` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+51 |     pub fn to_complex(&self, precision: usize) -> Complex {
+   |                              ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_precision`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `precision`
+   --> rustmath-algebraic/src/algebraic_real.rs:149:26
+    |
+149 |     pub fn to_f64(&self, precision: usize) -> f64 {
+    |                          ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_precision`
+
+warning: unused variable: `min_poly`
+  --> rustmath-algebraic/src/conjugates.rs:18:9
+   |
+18 |     let min_poly = minimal_polynomial(alpha);
+   |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_min_poly`
+
+warning: unused import: `rustmath_core::Ring`
+  --> rustmath-calculus/src/riemann.rs:26:5
+   |
+26 | use rustmath_core::Ring;
+   |     ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `rustmath_core::NumericConversion`
+ --> rustmath-calculus/src/sum.rs:6:5
+  |
+6 | use rustmath_core::NumericConversion;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `dy`
+   --> rustmath-calculus/src/riemann.rs:182:17
+    |
+182 |             let dy = if i == 0 {
+    |                 ^^ help: if this is intentional, prefix it with an underscore: `_dy`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `m`
+   --> rustmath-calculus/src/transforms/dwt.rs:371:9
+    |
+371 |     let m = filter.len();
+    |         ^ help: if this is intentional, prefix it with an underscore: `_m`
+
+warning: field `wavelet` is never read
+  --> rustmath-calculus/src/transforms/dwt.rs:36:5
+   |
+34 | pub struct DiscreteWaveletTransform {
+   |            ------------------------ field in this struct
+35 |     /// Wavelet family
+36 |     wavelet: WaveletFamily,
+   |     ^^^^^^^
+   |
+   = note: `DiscreteWaveletTransform` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
 
-warning: field `source` is never read
-   --> rustmath-affineschemes/src/varieties.rs:247:5
+warning: methods `fft_recursive` and `dft_fallback` are never used
+   --> rustmath-calculus/src/transforms/fft.rs:67:8
     |
-241 | pub struct VarietyMorphism<K, A, B>
-    |            --------------- field in this struct
+ 32 | impl FastFourierTransformComplex {
+    | -------------------------------- methods in this implementation
 ...
-247 |     source: AffineVariety<K, A>,
-    |     ^^^^^^
-
-warning: unused variable: `rank`
-   --> rustmath-crystals/src/character.rs:139:47
-    |
-139 | pub fn weyl_character(highest_weight: Weight, rank: usize) -> Character {
-    |                                               ^^^^ help: if this is intentional, prefix it with an underscore: `_rank`
-    |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `hw_weight`
-   --> rustmath-crystals/src/character.rs:155:13
-    |
-155 |         let hw_weight = crystal.weight(&hw);
-    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_hw_weight`
-
-warning: unused variable: `diff`
-  --> rustmath-crystals/src/littelmann.rs:73:13
-   |
-73 |         let diff = v2 - v1;
-   |             ^^^^ help: if this is intentional, prefix it with an underscore: `_diff`
-
-warning: unused variable: `min_val`
-   --> rustmath-crystals/src/littelmann.rs:185:23
-    |
-185 |         let (min_idx, min_val) = path.i_string_min(i, &self.root_system);
-    |                       ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_min_val`
-
-warning: unused variable: `tab`
-   --> rustmath-crystals/src/kr_crystal.rs:222:32
-    |
-222 |             KRElement::Tableau(tab) => {
-    |                                ^^^ help: if this is intentional, prefix it with an underscore: `_tab`
-
-warning: unused variable: `i`
-   --> rustmath-crystals/src/kr_crystal.rs:220:42
-    |
-220 |     fn apply_ei(&self, elem: &KRElement, i: usize) -> Option<KRElement> {
-    |                                          ^ help: if this is intentional, prefix it with an underscore: `_i`
-
-warning: unused variable: `tab`
-   --> rustmath-crystals/src/kr_crystal.rs:235:32
-    |
-235 |             KRElement::Tableau(tab) => {
-    |                                ^^^ help: if this is intentional, prefix it with an underscore: `_tab`
-
-warning: unused variable: `i`
-   --> rustmath-crystals/src/kr_crystal.rs:233:42
-    |
-233 |     fn apply_fi(&self, elem: &KRElement, i: usize) -> Option<KRElement> {
-    |                                          ^ help: if this is intentional, prefix it with an underscore: `_i`
-
-warning: unused variable: `crystal`
-   --> rustmath-crystals/src/kr_crystal.rs:308:24
-    |
-308 | pub fn energy_function(crystal: &KRCrystal, elem: &KRElement) -> i64 {
-    |                        ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_crystal`
-
-warning: unused variable: `elem`
-   --> rustmath-crystals/src/kr_crystal.rs:308:45
-    |
-308 | pub fn energy_function(crystal: &KRCrystal, elem: &KRElement) -> i64 {
-    |                                             ^^^^ help: if this is intentional, prefix it with an underscore: `_elem`
-
-warning: unused variable: `k`
-  --> rustmath-crystals/src/nakajima.rs:70:19
-   |
-70 |         for (&(i, k), &exp) in &self.exponents {
-   |                   ^ help: if this is intentional, prefix it with an underscore: `_k`
-
-warning: unused variable: `other_part`
-   --> rustmath-crystals/src/rigged_configurations.rs:218:18
-    |
-218 |             for &other_part in &other_partition.parts {
-    |                  ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_other_part`
-
-warning: unused variable: `i`
-   --> rustmath-crystals/src/rigged_configurations.rs:364:38
-    |
-364 | fn compute_epsilon_i(rc: &RCElement, i: usize) -> i64 {
-    |                                      ^ help: if this is intentional, prefix it with an underscore: `_i`
-
-warning: unused variable: `rc`
-   --> rustmath-crystals/src/rigged_configurations.rs:408:12
-    |
-408 | fn phi_map(rc: &RCElement, tensor_shape: &[(usize, usize)]) -> TensorProductImage {
-    |            ^^ help: if this is intentional, prefix it with an underscore: `_rc`
-
-warning: unused variable: `tp`
-   --> rustmath-crystals/src/rigged_configurations.rs:429:16
-    |
-429 | fn phi_inverse(tp: &TensorProductImage, rank: usize) -> RCElement {
-    |                ^^ help: if this is intentional, prefix it with an underscore: `_tp`
-
-warning: unused variable: `tensor_shape`
-   --> rustmath-crystals/src/rigged_configurations.rs:437:52
-    |
-437 | fn generate_all_rigged_configurations(rank: usize, tensor_shape: &[(usize, usize)]) -> Vec<RCElement> {
-    |                                                    ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tensor_shape`
-
-warning: unused variable: `highest_weight`
-   --> rustmath-crystals/src/rigged_configurations.rs:523:29
-    |
-523 |     pub fn new(rank: usize, highest_weight: Weight) -> Self {
-    |                             ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_highest_weight`
-
-warning: unused variable: `node`
-   --> rustmath-crystals/src/rigged_configurations.rs:544:22
-    |
-544 | fn build_kleber_tree(node: &mut KleberNode, rank: usize) {
-    |                      ^^^^ help: if this is intentional, prefix it with an underscore: `_node`
-
-warning: unused variable: `rank`
-   --> rustmath-crystals/src/rigged_configurations.rs:544:45
-    |
-544 | fn build_kleber_tree(node: &mut KleberNode, rank: usize) {
-    |                                             ^^^^ help: if this is intentional, prefix it with an underscore: `_rank`
-
-warning: unused variable: `rc`
-   --> rustmath-crystals/src/rigged_configurations.rs:713:23
-    |
-713 |     pub fn e_0(&self, rc: &RCElement) -> Option<RCElement> {
-    |                       ^^ help: if this is intentional, prefix it with an underscore: `_rc`
-
-warning: unused variable: `rc`
-   --> rustmath-crystals/src/rigged_configurations.rs:719:23
-    |
-719 |     pub fn f_0(&self, rc: &RCElement) -> Option<RCElement> {
-    |                       ^^ help: if this is intentional, prefix it with an underscore: `_rc`
-
-warning: unused variable: `outer`
-   --> rustmath-symmetricfunctions/src/ribbon.rs:188:5
-    |
-188 |     outer: &Partition,
-    |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_outer`
-    |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `inner`
-   --> rustmath-symmetricfunctions/src/ribbon.rs:189:5
-    |
-189 |     inner: &Partition,
-    |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_inner`
-
-warning: unused variable: `f`
-   --> rustmath-symmetricfunctions/src/operations.rs:207:18
-    |
-207 | pub fn coproduct(f: &SymFun) -> Vec<(SymFun, SymFun)> {
-    |                  ^ help: if this is intentional, prefix it with an underscore: `_f`
-
-warning: unused variable: `max_degree`
-  --> rustmath-symmetricfunctions/src/plethysm.rs:68:35
-   |
-68 | pub fn plethystic_exp(f: &SymFun, max_degree: usize) -> SymFun {
-   |                                   ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_max_degree`
-
-warning: unused variable: `f`
-  --> rustmath-symmetricfunctions/src/plethysm.rs:90:25
-   |
-90 | pub fn internal_product(f: &SymFun, g: &SymFun) -> Option<SymFun> {
-   |                         ^ help: if this is intentional, prefix it with an underscore: `_f`
-
-warning: unused variable: `g`
-  --> rustmath-symmetricfunctions/src/plethysm.rs:90:37
-   |
-90 | pub fn internal_product(f: &SymFun, g: &SymFun) -> Option<SymFun> {
-   |                                     ^ help: if this is intentional, prefix it with an underscore: `_g`
-
-warning: unused variable: `f`
-   --> rustmath-symmetricfunctions/src/plethysm.rs:101:26
-    |
-101 | pub fn kronecker_product(f: &SymFun, g: &SymFun) -> Option<SymFun> {
-    |                          ^ help: if this is intentional, prefix it with an underscore: `_f`
-
-warning: unused variable: `g`
-   --> rustmath-symmetricfunctions/src/plethysm.rs:101:38
-    |
-101 | pub fn kronecker_product(f: &SymFun, g: &SymFun) -> Option<SymFun> {
-    |                                      ^ help: if this is intentional, prefix it with an underscore: `_g`
-
-warning: unused variable: `lambda`
-   --> rustmath-symmetricfunctions/src/plethysm.rs:110:32
-    |
-110 | pub fn schur_complete_plethysm(lambda: &Partition, m: usize) -> SymFun {
-    |                                ^^^^^^ help: if this is intentional, prefix it with an underscore: `_lambda`
-
-warning: unused variable: `m`
-   --> rustmath-symmetricfunctions/src/plethysm.rs:110:52
-    |
-110 | pub fn schur_complete_plethysm(lambda: &Partition, m: usize) -> SymFun {
-    |                                                    ^ help: if this is intentional, prefix it with an underscore: `_m`
-
-warning: unused variable: `lambda`
-   --> rustmath-symmetricfunctions/src/plethysm.rs:119:34
-    |
-119 | pub fn schur_elementary_plethysm(lambda: &Partition, m: usize) -> SymFun {
-    |                                  ^^^^^^ help: if this is intentional, prefix it with an underscore: `_lambda`
-
-warning: unused variable: `m`
-   --> rustmath-symmetricfunctions/src/plethysm.rs:119:54
-    |
-119 | pub fn schur_elementary_plethysm(lambda: &Partition, m: usize) -> SymFun {
-    |                                                      ^ help: if this is intentional, prefix it with an underscore: `_m`
-
-warning: unused variable: `n`
-   --> rustmath-symmetricfunctions/src/ncsf.rs:265:13
-    |
-265 |         let n = I.sum();
-    |             ^ help: if this is intentional, prefix it with an underscore: `_n`
-
-warning: unused variable: `n`
-   --> rustmath-symmetricfunctions/src/qsym.rs:338:9
-    |
-338 |     let n: usize = parts.iter().sum();
-    |         ^ help: if this is intentional, prefix it with an underscore: `_n`
-
-warning: unused variable: `n`
-  --> rustmath-symmetricfunctions/src/super_schur.rs:76:9
-   |
-76 |     let n = shape.sum();
-   |         ^ help: if this is intentional, prefix it with an underscore: `_n`
-
-warning: variable `I` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:175:20
-    |
-175 | pub fn concatenate(I: &Composition, J: &Composition) -> Composition {
-    |                    ^ help: convert the identifier to snake case (notice the capitalization): `i`
-    |
-    = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
-
-warning: variable `J` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:175:37
-    |
-175 | pub fn concatenate(I: &Composition, J: &Composition) -> Composition {
-    |                                     ^ help: convert the identifier to snake case: `j`
-
-warning: variable `I` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:218:10
-    |
-218 |     for (I, coeff_I) in &f.coeffs {
-    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
-
-warning: variable `coeff_I` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:218:13
-    |
-218 |     for (I, coeff_I) in &f.coeffs {
-    |             ^^^^^^^ help: convert the identifier to snake case (notice the capitalization): `coeff_i`
-
-warning: variable `J` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:219:14
-    |
-219 |         for (J, coeff_J) in &g.coeffs {
-    |              ^ help: convert the identifier to snake case: `j`
-
-warning: variable `coeff_J` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:219:17
-    |
-219 |         for (J, coeff_J) in &g.coeffs {
-    |                 ^^^^^^^ help: convert the identifier to snake case: `coeff_j`
-
-warning: variable `IJ` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:220:17
-    |
-220 |             let IJ = concatenate(I, J);
-    |                 ^^ help: convert the identifier to snake case: `ij`
-
-warning: variable `I` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:241:10
-    |
-241 |     for (I, coeff) in &f.coeffs {
-    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
-
-warning: variable `J` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:242:14
-    |
-242 |         for (J, K) in composition_splits(I) {
-    |              ^ help: convert the identifier to snake case: `j`
-
-warning: variable `K` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:242:17
-    |
-242 |         for (J, K) in composition_splits(I) {
-    |                 ^ help: convert the identifier to snake case (notice the capitalization): `k`
-
-warning: variable `I` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:264:10
-    |
-264 |     for (I, coeff) in &f.coeffs {
-    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
-
-warning: variable `J_comp` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:273:13
-    |
-273 |         let J_comp = I.clone(); // Placeholder - needs proper implementation
-    |             ^^^^^^ help: convert the identifier to snake case: `j_comp`
-
-warning: variable `I` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:288:10
-    |
-288 |     for (I, coeff) in &f.coeffs {
-    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
-
-warning: variable `J_comp` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:289:13
-    |
-289 |         let J_comp = I.clone(); // Placeholder - needs proper implementation
-    |             ^^^^^^ help: convert the identifier to snake case: `j_comp`
-
-warning: variable `I` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:307:10
-    |
-307 |     for (I, coeff) in &f.coeffs {
-    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
-
-warning: variable `I` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:324:10
-    |
-324 |     for (I, coeff) in &f.coeffs {
-    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
-
-warning: variable `I` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:389:10
-    |
-389 |     for (I, coeff) in &f.coeffs {
-    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
-
-warning: variable `J` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:401:16
-    |
-401 | pub fn refines(J: &Composition, I: &Composition) -> bool {
-    |                ^ help: convert the identifier to snake case: `j`
-
-warning: variable `I` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:401:33
-    |
-401 | pub fn refines(J: &Composition, I: &Composition) -> bool {
-    |                                 ^ help: convert the identifier to snake case (notice the capitalization): `i`
-
-warning: variable `I_parts` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:402:9
-    |
-402 |     let I_parts = I.parts();
-    |         ^^^^^^^ help: convert the identifier to snake case (notice the capitalization): `i_parts`
-
-warning: variable `J_parts` should have a snake case name
-   --> rustmath-symmetricfunctions/src/ncsf.rs:403:9
-    |
-403 |     let J_parts = J.parts();
-    |         ^^^^^^^ help: convert the identifier to snake case: `j_parts`
-
-warning: variable `I` should have a snake case name
-   --> rustmath-symmetricfunctions/src/qsym.rs:235:10
-    |
-235 |     for (I, coeff_I) in &f.coeffs {
-    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
-
-warning: variable `coeff_I` should have a snake case name
-   --> rustmath-symmetricfunctions/src/qsym.rs:235:13
-    |
-235 |     for (I, coeff_I) in &f.coeffs {
-    |             ^^^^^^^ help: convert the identifier to snake case (notice the capitalization): `coeff_i`
-
-warning: variable `J` should have a snake case name
-   --> rustmath-symmetricfunctions/src/qsym.rs:236:14
-    |
-236 |         for (J, coeff_J) in &g.coeffs {
-    |              ^ help: convert the identifier to snake case: `j`
-
-warning: variable `coeff_J` should have a snake case name
-   --> rustmath-symmetricfunctions/src/qsym.rs:236:17
-    |
-236 |         for (J, coeff_J) in &g.coeffs {
-    |                 ^^^^^^^ help: convert the identifier to snake case: `coeff_j`
-
-warning: variable `I` should have a snake case name
-   --> rustmath-symmetricfunctions/src/qsym.rs:254:18
-    |
-254 | fn quasi_shuffle(I: &Composition, J: &Composition) -> Vec<Composition> {
-    |                  ^ help: convert the identifier to snake case (notice the capitalization): `i`
-
-warning: variable `J` should have a snake case name
-   --> rustmath-symmetricfunctions/src/qsym.rs:254:35
-    |
-254 | fn quasi_shuffle(I: &Composition, J: &Composition) -> Vec<Composition> {
-    |                                   ^ help: convert the identifier to snake case: `j`
-
-warning: variable `I_parts` should have a snake case name
-   --> rustmath-symmetricfunctions/src/qsym.rs:255:9
-    |
-255 |     let I_parts = I.parts();
-    |         ^^^^^^^ help: convert the identifier to snake case (notice the capitalization): `i_parts`
-
-warning: variable `J_parts` should have a snake case name
-   --> rustmath-symmetricfunctions/src/qsym.rs:256:9
-    |
-256 |     let J_parts = J.parts();
-    |         ^^^^^^^ help: convert the identifier to snake case: `j_parts`
-
-warning: variable `I_parts` should have a snake case name
-   --> rustmath-symmetricfunctions/src/qsym.rs:269:9
-    |
-269 |         I_parts: &[usize],
-    |         ^^^^^^^ help: convert the identifier to snake case (notice the capitalization): `i_parts`
-
-warning: variable `J_parts` should have a snake case name
-   --> rustmath-symmetricfunctions/src/qsym.rs:270:9
-    |
-270 |         J_parts: &[usize],
-    |         ^^^^^^^ help: convert the identifier to snake case: `j_parts`
-
-warning: variable `I` should have a snake case name
-   --> rustmath-symmetricfunctions/src/qsym.rs:321:10
-    |
-321 |     for (I, coeff) in &f.coeffs {
-    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
-
-warning: variable `J` should have a snake case name
-   --> rustmath-symmetricfunctions/src/qsym.rs:323:14
-    |
-323 |         for (J, K) in splits {
-    |              ^ help: convert the identifier to snake case: `j`
-
-warning: variable `K` should have a snake case name
-   --> rustmath-symmetricfunctions/src/qsym.rs:323:17
-    |
-323 |         for (J, K) in splits {
-    |                 ^ help: convert the identifier to snake case (notice the capitalization): `k`
-
-warning: variable `I` should have a snake case name
-   --> rustmath-symmetricfunctions/src/qsym.rs:388:10
-    |
-388 |     for (I, coeff) in &f.coeffs {
-    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
-
-warning: variable `I` should have a snake case name
-   --> rustmath-symmetricfunctions/src/qsym.rs:408:10
-    |
-408 |     for (I, coeff) in &f.coeffs {
-    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
-
-warning: variable `I_len` should have a snake case name
-   --> rustmath-symmetricfunctions/src/qsym.rs:409:13
-    |
-409 |         let I_len = I.length();
-    |             ^^^^^ help: convert the identifier to snake case (notice the capitalization): `i_len`
-
-warning: variable `J` should have a snake case name
-   --> rustmath-symmetricfunctions/src/qsym.rs:412:13
-    |
-412 |         for J in refinements(I) {
-    |             ^ help: convert the identifier to snake case: `j`
-
-warning: variable `J_len` should have a snake case name
-   --> rustmath-symmetricfunctions/src/qsym.rs:413:17
-    |
-413 |             let J_len = J.length();
-    |                 ^^^^^ help: convert the identifier to snake case: `j_len`
-
-warning: variable `I` should have a snake case name
-   --> rustmath-symmetricfunctions/src/qsym.rs:426:10
-    |
-426 |     for (I, coeff) in &f.coeffs {
-    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
-
-warning: variable `I` should have a snake case name
-   --> rustmath-symmetricfunctions/src/qsym.rs:467:10
-    |
-467 |     for (I, f_coeff) in &f_mono.coeffs {
-    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
+ 67 |     fn fft_recursive(&self, input: &[Complex]) -> Vec<Complex> {
+    |        ^^^^^^^^^^^^^
+...
+116 |     fn dft_fallback(&self, input: &[Complex]) -> Vec<Complex> {
+    |        ^^^^^^^^^^^^
 
 warning: unused variable: `text`
    --> rustmath-crypto/src/classical.rs:212:21
@@ -2614,57 +1543,336 @@ warning: field `field_char` is never read
    |
    = note: `SyndromeTable` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
 
-warning: unused import: `rustmath_core::Ring`
-  --> rustmath-calculus/src/riemann.rs:26:5
-   |
-26 | use rustmath_core::Ring;
-   |     ^^^^^^^^^^^^^^^^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `rustmath_core::NumericConversion`
- --> rustmath-calculus/src/sum.rs:6:5
-  |
-6 | use rustmath_core::NumericConversion;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused variable: `dy`
-   --> rustmath-calculus/src/riemann.rs:182:17
+warning: unused variable: `obj`
+   --> rustmath-modular/src/abvar.rs:490:35
     |
-182 |             let dy = if i == 0 {
-    |                 ^^ help: if this is intentional, prefix it with an underscore: `_dy`
+490 | pub fn is_modular_abelian_variety(obj: &ModularAbelianVariety) -> bool {
+    |                                   ^^^ help: if this is intentional, prefix it with an underscore: `_obj`
     |
     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
 
-warning: unused variable: `m`
-   --> rustmath-calculus/src/transforms/dwt.rs:371:9
+warning: unused variable: `space`
+   --> rustmath-modular/src/abvar.rs:519:24
     |
-371 |     let m = filter.len();
-    |         ^ help: if this is intentional, prefix it with an underscore: `_m`
+519 | pub fn modsym_lattices(space: &ModularSymbolSpace) -> Vec<Vec<BigRational>> {
+    |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_space`
 
-warning: field `wavelet` is never read
-  --> rustmath-calculus/src/transforms/dwt.rs:36:5
+warning: unused variable: `coeffs`
+   --> rustmath-modular/src/abvar.rs:531:18
+    |
+531 | pub fn sqrt_poly(coeffs: &[BigRational]) -> Option<Vec<BigRational>> {
+    |                  ^^^^^^ help: if this is intentional, prefix it with an underscore: `_coeffs`
+
+warning: unused variable: `h_subgroup`
+   --> rustmath-modular/src/abvar.rs:935:27
+    |
+935 |     pub fn jh(level: u64, h_subgroup: Vec<u64>) -> ModularAbelianVariety {
+    |                           ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_h_subgroup`
+
+warning: unused variable: `obj`
+   --> rustmath-modular/src/dirichlet.rs:213:31
+    |
+213 | pub fn is_dirichlet_character(obj: &DirichletCharacter) -> bool {
+    |                               ^^^ help: if this is intentional, prefix it with an underscore: `_obj`
+
+warning: unused variable: `obj`
+   --> rustmath-modular/src/dirichlet.rs:219:27
+    |
+219 | pub fn is_dirichlet_group(obj: &DirichletGroup) -> bool {
+    |                           ^^^ help: if this is intentional, prefix it with an underscore: `_obj`
+
+warning: unused variable: `N`
+   --> rustmath-modular/src/etaproducts.rs:323:5
+    |
+323 |     N: &BigInt,
+    |     ^ help: if this is intentional, prefix it with an underscore: `_N`
+
+warning: unused variable: `degree`
+   --> rustmath-modular/src/etaproducts.rs:324:5
+    |
+324 |     degree: usize,
+    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_degree`
+
+warning: unused variable: `p`
+ --> rustmath-modular/src/btquotients/btquotient.rs:6:16
+  |
+6 |     pub fn new(p: u64, level: u64) -> Self {
+  |                ^ help: if this is intentional, prefix it with an underscore: `_p`
+
+warning: unused variable: `level`
+ --> rustmath-modular/src/btquotients/btquotient.rs:6:24
+  |
+6 |     pub fn new(p: u64, level: u64) -> Self {
+  |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_level`
+
+warning: unused variable: `weight`
+ --> rustmath-modular/src/btquotients/pautomorphicform.rs:6:16
+  |
+6 |     pub fn new(weight: i32) -> Self {
+  |                ^^^^^^ help: if this is intentional, prefix it with an underscore: `_weight`
+
+warning: unused variable: `coeffs`
+ --> rustmath-modular/src/drinfeld_modform/element.rs:6:16
+  |
+6 |     pub fn new(coeffs: Vec<f64>) -> Self {
+  |                ^^^^^^ help: if this is intentional, prefix it with an underscore: `_coeffs`
+
+warning: unused variable: `rank`
+ --> rustmath-modular/src/drinfeld_modform/ring.rs:6:16
+  |
+6 |     pub fn new(rank: usize) -> Self {
+  |                ^^^^ help: if this is intentional, prefix it with an underscore: `_rank`
+
+warning: unused variable: `level`
+ --> rustmath-modular/src/quatalg/brandt.rs:6:16
+  |
+6 |     pub fn new(level: u64) -> Self {
+  |                ^^^^^ help: if this is intentional, prefix it with an underscore: `_level`
+
+warning: unused variable: `p`
+ --> rustmath-modular/src/ssmod/ssmod.rs:6:16
+  |
+6 |     pub fn new(p: u64) -> Self {
+  |                ^ help: if this is intentional, prefix it with an underscore: `_p`
+
+warning: unused variable: `alpha`
+  --> rustmath-modular/src/hypergeometric_motive.rs:29:26
    |
-34 | pub struct DiscreteWaveletTransform {
-   |            ------------------------ field in this struct
-35 |     /// Wavelet family
-36 |     wavelet: WaveletFamily,
-   |     ^^^^^^^
+29 |     fn compute_conductor(alpha: &[f64], beta: &[f64]) -> u64 {
+   |                          ^^^^^ help: if this is intentional, prefix it with an underscore: `_alpha`
+
+warning: unused variable: `beta`
+  --> rustmath-modular/src/hypergeometric_motive.rs:29:41
    |
-   = note: `DiscreteWaveletTransform` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+29 |     fn compute_conductor(alpha: &[f64], beta: &[f64]) -> u64 {
+   |                                         ^^^^ help: if this is intentional, prefix it with an underscore: `_beta`
+
+warning: unused variable: `p`
+  --> rustmath-modular/src/hypergeometric_motive.rs:35:32
+   |
+35 |     pub fn euler_factor(&self, p: u64) -> Vec<f64> {
+   |                                ^ help: if this is intentional, prefix it with an underscore: `_p`
+
+warning: unused variable: `p`
+  --> rustmath-modular/src/hypergeometric_motive.rs:41:38
+   |
+41 |     pub fn is_wildly_ramified(&self, p: u64) -> bool {
+   |                                      ^ help: if this is intentional, prefix it with an underscore: `_p`
+
+warning: unused variable: `precision`
+  --> rustmath-modular/src/multiple_zeta.rs:30:35
+   |
+30 |     pub fn numerical_value(&self, precision: usize) -> f64 {
+   |                                   ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_precision`
+
+warning: field `matrix` is never read
+  --> rustmath-modular/src/hecke.rs:20:5
+   |
+14 | pub struct HeckeOperator {
+   |            ------------- field in this struct
+...
+20 |     matrix: Option<Vec<Vec<BigRational>>>,
+   |     ^^^^^^
+   |
+   = note: `HeckeOperator` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
 
-warning: methods `fft_recursive` and `dft_fallback` are never used
-   --> rustmath-calculus/src/transforms/fft.rs:67:8
+warning: field `base` is never read
+   --> rustmath-modular/src/abvar.rs:575:5
     |
- 32 | impl FastFourierTransformComplex {
-    | -------------------------------- methods in this implementation
-...
- 67 |     fn fft_recursive(&self, input: &[Complex]) -> Vec<Complex> {
-    |        ^^^^^^^^^^^^^
-...
-116 |     fn dft_fallback(&self, input: &[Complex]) -> Vec<Complex> {
-    |        ^^^^^^^^^^^^
+573 | pub struct FiniteSubgroupLattice {
+    |            --------------------- field in this struct
+574 |     /// Base finite subgroup
+575 |     base: FiniteSubgroup,
+    |     ^^^^
+    |
+    = note: `FiniteSubgroupLattice` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `base` is never read
+   --> rustmath-modular/src/abvar.rs:677:5
+    |
+675 | pub struct LseriesComplex {
+    |            -------------- field in this struct
+676 |     /// Base L-series
+677 |     base: Lseries,
+    |     ^^^^
+    |
+    = note: `LseriesComplex` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `base` is never read
+   --> rustmath-modular/src/abvar.rs:699:5
+    |
+697 | pub struct LseriesPadic {
+    |            ------------ field in this struct
+698 |     /// Base L-series
+699 |     base: Lseries,
+    |     ^^^^
+    |
+    = note: `LseriesPadic` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: variable `N` should have a snake case name
+  --> rustmath-modular/src/dims.rs:54:14
+   |
+54 | pub fn eisen(N: &BigInt, k: i64) -> BigInt {
+   |              ^ help: convert the identifier to snake case: `n`
+   |
+   = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: variable `N` should have a snake case name
+  --> rustmath-modular/src/dims.rs:79:17
+   |
+79 | pub fn co_delta(N: &BigInt) -> BigInt {
+   |                 ^ help: convert the identifier to snake case: `n`
+
+warning: variable `N` should have a snake case name
+   --> rustmath-modular/src/dims.rs:109:14
+    |
+109 | pub fn co_nu(N: &BigInt) -> BigInt {
+    |              ^ help: convert the identifier to snake case: `n`
+
+warning: variable `N` should have a snake case name
+   --> rustmath-modular/src/dims.rs:141:23
+    |
+141 | pub fn cohen_oesterle(N: &BigInt, k: i64) -> BigInt {
+    |                       ^ help: convert the identifier to snake case: `n`
+
+warning: variable `N` should have a snake case name
+   --> rustmath-modular/src/dims.rs:173:33
+    |
+173 | pub fn dimension_new_cusp_forms(N: &BigInt, k: i64) -> BigInt {
+    |                                 ^ help: convert the identifier to snake case: `n`
+
+warning: variable `N` should have a snake case name
+   --> rustmath-modular/src/dims.rs:202:29
+    |
+202 | pub fn dimension_cusp_forms(N: &BigInt, k: i64) -> BigInt {
+    |                             ^ help: convert the identifier to snake case: `n`
+
+warning: variable `N` should have a snake case name
+   --> rustmath-modular/src/dims.rs:241:22
+    |
+241 | pub fn dimension_eis(N: &BigInt, k: i64) -> BigInt {
+    |                      ^ help: convert the identifier to snake case: `n`
+
+warning: variable `N` should have a snake case name
+   --> rustmath-modular/src/dims.rs:253:32
+    |
+253 | pub fn dimension_modular_forms(N: &BigInt, k: i64) -> BigInt {
+    |                                ^ help: convert the identifier to snake case: `n`
+
+warning: variable `N` should have a snake case name
+   --> rustmath-modular/src/dims.rs:280:20
+    |
+280 | pub fn sturm_bound(N: &BigInt, k: i64) -> BigInt {
+    |                    ^ help: convert the identifier to snake case: `n`
+
+warning: variable `N` should have a snake case name
+   --> rustmath-modular/src/dirichlet.rs:208:30
+    |
+208 | pub fn dirichlet_group_class(N: BigInt) -> DirichletGroup {
+    |                              ^ help: convert the identifier to snake case: `n`
+
+warning: variable `N` should have a snake case name
+   --> rustmath-modular/src/dirichlet.rs:231:26
+    |
+231 | pub fn trivial_character(N: BigInt) -> DirichletCharacter {
+    |                          ^ help: convert the identifier to snake case: `n`
+
+warning: variable `N` should have a snake case name
+   --> rustmath-modular/src/dirichlet.rs:265:28
+    |
+265 | pub fn principal_character(N: BigInt) -> DirichletCharacter {
+    |                            ^ help: convert the identifier to snake case: `n`
+
+warning: variable `N` should have a snake case name
+   --> rustmath-modular/src/lfunction.rs:141:13
+    |
+141 |         let N = self.conductor as f64;
+    |             ^ help: convert the identifier to snake case: `n`
+
+warning: variable `N_power` should have a snake case name
+   --> rustmath-modular/src/lfunction.rs:145:13
+    |
+145 |         let N_power = Complex64::new(
+    |             ^^^^^^^ help: convert the identifier to snake case: `n_power`
+
+warning: variable `L_value` should have a snake case name
+   --> rustmath-modular/src/lfunction.rs:161:13
+    |
+161 |         let L_value = self.evaluate_series(s, 1000);
+    |             ^^^^^^^ help: convert the identifier to snake case: `l_value`
+
+warning: variable `N` should have a snake case name
+   --> rustmath-modular/src/lfunction.rs:203:13
+    |
+203 |         let N = self.conductor as f64;
+    |             ^ help: convert the identifier to snake case: `n`
+
+warning: variable `W` should have a snake case name
+   --> rustmath-modular/src/lfunction.rs:219:13
+    |
+219 |         let W = self.root_number();
+    |             ^ help: convert the identifier to snake case (notice the capitalization): `w`
+
+warning: variable `N_power` should have a snake case name
+   --> rustmath-modular/src/lfunction.rs:220:13
+    |
+220 |         let N_power = Complex64::from(N).powc(Complex64::from(0.5) - s);
+    |             ^^^^^^^ help: convert the identifier to snake case: `n_power`
+
+warning: variable `N` should have a snake case name
+   --> rustmath-modular/src/lfunction.rs:310:13
+    |
+310 |         let N = self.conductor as f64;
+    |             ^ help: convert the identifier to snake case: `n`
+
+warning: variable `sqrt_N` should have a snake case name
+   --> rustmath-modular/src/lfunction.rs:314:13
+    |
+314 |         let sqrt_N = N.sqrt();
+    |             ^^^^^^ help: convert the identifier to snake case: `sqrt_n`
+
+warning: variable `N` should have a snake case name
+   --> rustmath-modular/src/lfunction.rs:323:13
+    |
+323 |         let N = self.conductor;
+    |             ^ help: convert the identifier to snake case: `n`
+
+warning: variable `N` should have a snake case name
+   --> rustmath-modular/src/lfunction.rs:346:13
+    |
+346 |         let N = self.conductor;
+    |             ^ help: convert the identifier to snake case: `n`
+
+warning: variable `N` should have a snake case name
+   --> rustmath-modular/src/etaproducts.rs:169:24
+    |
+169 | pub fn eta_group_class(N: BigInt) -> EtaGroup {
+    |                        ^ help: convert the identifier to snake case: `n`
+
+warning: variable `N` should have a snake case name
+   --> rustmath-modular/src/etaproducts.rs:178:20
+    |
+178 | pub fn eta_product(N: BigInt, powers: HashMap<BigInt, i64>) -> EtaGroupElement {
+    |                    ^ help: convert the identifier to snake case: `n`
+
+warning: variable `N` should have a snake case name
+   --> rustmath-modular/src/etaproducts.rs:260:18
+    |
+260 | pub fn all_cusps(N: BigInt) -> Vec<(BigInt, BigInt)> {
+    |                  ^ help: convert the identifier to snake case: `n`
+
+warning: variable `N` should have a snake case name
+   --> rustmath-modular/src/etaproducts.rs:283:27
+    |
+283 | pub fn num_cusps_of_width(N: &BigInt, width: &BigInt) -> usize {
+    |                           ^ help: convert the identifier to snake case: `n`
+
+warning: variable `N` should have a snake case name
+   --> rustmath-modular/src/etaproducts.rs:323:5
+    |
+323 |     N: &BigInt,
+    |     ^ help: convert the identifier to snake case: `n`
 
 warning: unused imports: `ManifoldError`, `ManifoldPoint`, `Result`, and `TopologicalManifold`
  --> rustmath-manifolds/src/vector_bundle.rs:7:13
@@ -3658,16 +2866,1267 @@ warning: field `dirac` is never read
 264 |     dirac: Arc<DiracOperator>,
     |     ^^^^^
 
-warning: `rustmath-geometry` (lib) generated 3 warnings
+warning: `rustmath-combinatorics` (lib) generated 98 warnings (run `cargo fix --lib -p rustmath-combinatorics` to apply 39 suggestions)
+warning: `rustmath-graphs` (lib) generated 16 warnings
 warning: `rustmath-ellipticcurves` (lib) generated 3 warnings
-warning: `rustmath-quantumgroups` (lib) generated 2 warnings
-warning: `rustmath-affineschemes` (lib) generated 6 warnings
-warning: `rustmath-crystals` (lib) generated 21 warnings
-warning: `rustmath-symmetricfunctions` (lib) generated 56 warnings
+warning: `rustmath-geometry` (lib) generated 3 warnings
+warning: `rustmath-quadraticforms` (lib) generated 13 warnings
+warning: `rustmath-algebraic` (lib) generated 3 warnings
+warning: `rustmath-calculus` (lib) generated 6 warnings
 warning: `rustmath-crypto` (lib) generated 9 warnings
 warning: `rustmath-coding` (lib) generated 10 warnings
-warning: `rustmath-calculus` (lib) generated 6 warnings
+warning: `rustmath-modular` (lib) generated 51 warnings
 warning: `rustmath-manifolds` (lib) generated 130 warnings (run `cargo fix --lib -p rustmath-manifolds` to apply 48 suggestions)
+   Compiling rustmath-groups v0.1.0 (/home/john/RustMath/rustmath-groups)
+warning: type `IdealMonoid_nc` should have an upper camel case name
+  --> rustmath-rings/src/noncommutative_ideals.rs:67:10
+   |
+67 | pub type IdealMonoid_nc = IdealMonoidNc;
+   |          ^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `IdealMonoidNc`
+   |
+   = note: `#[warn(non_camel_case_types)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: type `Ideal_nc` should have an upper camel case name
+   --> rustmath-rings/src/noncommutative_ideals.rs:196:10
+    |
+196 | pub type Ideal_nc = IdealNc;
+    |          ^^^^^^^^ help: convert the identifier to upper camel case: `IdealNc`
+
+warning: type `FunctionFieldPlace_polymod` should have an upper camel case name
+  --> rustmath-rings/src/function_field/place_polymod.rs:61:10
+   |
+61 | pub type FunctionFieldPlace_polymod<F> = FunctionFieldPlacePolymod<F>;
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldPlacePolymod`
+
+warning: type `FunctionFieldPlace_rational` should have an upper camel case name
+  --> rustmath-rings/src/function_field/place_rational.rs:69:10
+   |
+69 | pub type FunctionFieldPlace_rational<F> = FunctionFieldPlaceRational<F>;
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldPlaceRational`
+
+warning: type `FunctionFieldValuation_base` should have an upper camel case name
+   --> rustmath-rings/src/function_field/valuation.rs:131:10
+    |
+131 | pub type FunctionFieldValuation_base<F> = FunctionFieldValuationBase<F>;
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldValuationBase`
+
+warning: type `ClassicalFunctionFieldValuation_base` should have an upper camel case name
+   --> rustmath-rings/src/function_field/valuation.rs:195:10
+    |
+195 | pub type ClassicalFunctionFieldValuation_base<F> = ClassicalFunctionFieldValuationBase<F>;
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `ClassicalFunctionFieldValuationBase`
+
+warning: type `RationalFunctionFieldValuation_base` should have an upper camel case name
+   --> rustmath-rings/src/function_field/valuation.rs:295:10
+    |
+295 | pub type RationalFunctionFieldValuation_base<F> = RationalFunctionFieldValuationBase<F>;
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `RationalFunctionFieldValuationBase`
+
+warning: type `FunctionField_polymod` should have an upper camel case name
+  --> rustmath-rings/src/function_field/function_field_polymod.rs:94:10
+   |
+94 | pub type FunctionField_polymod<F> = FunctionFieldPolymod<F>;
+   |          ^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldPolymod`
+
+warning: type `FunctionField_simple` should have an upper camel case name
+   --> rustmath-rings/src/function_field/function_field_polymod.rs:177:10
+    |
+177 | pub type FunctionField_simple<F> = FunctionFieldSimple<F>;
+    |          ^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldSimple`
+
+warning: type `FunctionField_char_zero` should have an upper camel case name
+   --> rustmath-rings/src/function_field/function_field_polymod.rs:231:10
+    |
+231 | pub type FunctionField_char_zero<F> = FunctionFieldCharZero<F>;
+    |          ^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldCharZero`
+
+warning: type `FunctionField_integral` should have an upper camel case name
+   --> rustmath-rings/src/function_field/function_field_polymod.rs:267:10
+    |
+267 | pub type FunctionField_integral<F> = FunctionFieldIntegral<F>;
+    |          ^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldIntegral`
+
+warning: type `FunctionField_char_zero_integral` should have an upper camel case name
+   --> rustmath-rings/src/function_field/function_field_polymod.rs:306:10
+    |
+306 | pub type FunctionField_char_zero_integral<F> = FunctionFieldCharZeroIntegral<F>;
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldCharZeroIntegral`
+
+warning: type `FunctionField_global` should have an upper camel case name
+   --> rustmath-rings/src/function_field/function_field_polymod.rs:344:10
+    |
+344 | pub type FunctionField_global<F> = FunctionFieldGlobal<F>;
+    |          ^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldGlobal`
+
+warning: type `FunctionField_global_integral` should have an upper camel case name
+   --> rustmath-rings/src/function_field/function_field_polymod.rs:401:10
+    |
+401 | pub type FunctionField_global_integral<F> = FunctionFieldGlobalIntegral<F>;
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldGlobalIntegral`
+
+warning: type `RationalFunctionField_char_zero` should have an upper camel case name
+   --> rustmath-rings/src/function_field/function_field_rational.rs:172:10
+    |
+172 | pub type RationalFunctionField_char_zero<F> = RationalFunctionFieldCharZero<F>;
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `RationalFunctionFieldCharZero`
+
+warning: type `RationalFunctionField_global` should have an upper camel case name
+   --> rustmath-rings/src/function_field/function_field_rational.rs:242:10
+    |
+242 | pub type RationalFunctionField_global<F> = RationalFunctionFieldGlobal<F>;
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `RationalFunctionFieldGlobal`
+
+warning: type `FunctionFieldIdeal_rational` should have an upper camel case name
+  --> rustmath-rings/src/function_field/ideal_rational.rs:85:10
+   |
+85 | pub type FunctionFieldIdeal_rational<F> = FunctionFieldIdealRational<F>;
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldIdealRational`
+
+warning: type `FunctionFieldIdealInfinite_rational` should have an upper camel case name
+   --> rustmath-rings/src/function_field/ideal_rational.rs:263:10
+    |
+263 | pub type FunctionFieldIdealInfinite_rational<F> = FunctionFieldIdealInfiniteRational<F>;
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldIdealInfiniteRational`
+
+warning: type `FunctionFieldMorphism_polymod` should have an upper camel case name
+   --> rustmath-rings/src/function_field/maps.rs:146:10
+    |
+146 | pub type FunctionFieldMorphism_polymod<F> = FunctionFieldMorphismPolymod<F>;
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldMorphismPolymod`
+
+warning: type `FunctionFieldMorphism_rational` should have an upper camel case name
+   --> rustmath-rings/src/function_field/maps.rs:191:10
+    |
+191 | pub type FunctionFieldMorphism_rational<F> = FunctionFieldMorphismRational<F>;
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldMorphismRational`
+
+warning: type `FunctionFieldOrder_basis` should have an upper camel case name
+  --> rustmath-rings/src/function_field/order_basis.rs:97:10
+   |
+97 | pub type FunctionFieldOrder_basis<F> = FunctionFieldOrderBasis<F>;
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldOrderBasis`
+
+warning: type `FunctionFieldOrderInfinite_basis` should have an upper camel case name
+   --> rustmath-rings/src/function_field/order_basis.rs:248:10
+    |
+248 | pub type FunctionFieldOrderInfinite_basis<F> = FunctionFieldOrderInfiniteBasis<F>;
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldOrderInfiniteBasis`
+
+warning: type `FunctionFieldMaximalOrder_rational` should have an upper camel case name
+   --> rustmath-rings/src/function_field/order_rational.rs:103:10
+    |
+103 | pub type FunctionFieldMaximalOrder_rational<F> = FunctionFieldMaximalOrderRational<F>;
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldMaximalOrderRational`
+
+warning: type `FunctionFieldMaximalOrderInfinite_rational` should have an upper camel case name
+   --> rustmath-rings/src/function_field/order_rational.rs:326:10
+    |
+326 | pub type FunctionFieldMaximalOrderInfinite_rational<F> = FunctionFieldMaximalOrderInfiniteRational<F>;
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `FunctionFieldMaximalOrderInfiniteRational`
+
+warning: type `real_lazy_field` should have an upper camel case name
+   --> rustmath-rings/src/real_lazy.rs:548:12
+    |
+548 | pub struct real_lazy_field {
+    |            ^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `RealLazyField`
+
+warning: type `complex_lazy_field` should have an upper camel case name
+   --> rustmath-rings/src/real_lazy.rs:623:12
+    |
+623 | pub struct complex_lazy_field {
+    |            ^^^^^^^^^^^^^^^^^^ help: convert the identifier to upper camel case: `ComplexLazyField`
+
+warning: unused import: `Ring`
+  --> rustmath-rings/src/abc.rs:24:21
+   |
+24 | use rustmath_core::{Ring, CommutativeRing, Field, IntegralDomain};
+   |                     ^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `rustmath_core::Ring`
+  --> rustmath-rings/src/asymptotic.rs:44:5
+   |
+44 | use rustmath_core::Ring;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-rings/src/differential.rs:40:21
+   |
+40 | use rustmath_core::{Ring, Field};
+   |                     ^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-rings/src/divisor.rs:43:21
+   |
+43 | use rustmath_core::{Ring, Field};
+   |                     ^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-rings/src/fraction_field.rs:12:21
+   |
+12 | use rustmath_core::{Ring, IntegralDomain};
+   |                     ^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-rings/src/fraction_field_element.rs:33:21
+   |
+33 | use rustmath_core::{Ring, IntegralDomain, Field};
+   |                     ^^^^
+
+warning: unused import: `Field`
+  --> rustmath-rings/src/fraction_field_element.rs:33:43
+   |
+33 | use rustmath_core::{Ring, IntegralDomain, Field};
+   |                                           ^^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-rings/src/fraction_field_fpt.rs:37:21
+   |
+37 | use rustmath_core::{Ring, Field};
+   |                     ^^^^
+
+warning: unused import: `Field`
+  --> rustmath-rings/src/fraction_field_fpt.rs:37:27
+   |
+37 | use rustmath_core::{Ring, Field};
+   |                           ^^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-rings/src/function_field_element.rs:31:21
+   |
+31 | use rustmath_core::{Ring, Field};
+   |                     ^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-rings/src/function_field_element_polymod.rs:31:21
+   |
+31 | use rustmath_core::{Ring, Field};
+   |                     ^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-rings/src/function_field_element_rational.rs:27:21
+   |
+27 | use rustmath_core::{Ring, Field};
+   |                     ^^^^
+
+warning: unused import: `Hasher`
+  --> rustmath-rings/src/growth_group.rs:50:23
+   |
+50 | use std::hash::{Hash, Hasher};
+   |                       ^^^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-rings/src/function_field/ideal_polymod.rs:48:28
+   |
+48 | use rustmath_core::{Field, Ring};
+   |                            ^^^^
+
+warning: unused import: `GrowthGroup`
+  --> rustmath-rings/src/growth_group_cartesian.rs:35:20
+   |
+35 |     GrowthElement, GrowthGroup, Variable, GrowthGroupFactor,
+   |                    ^^^^^^^^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-rings/src/function_field/picard_group.rs:57:28
+   |
+57 | use rustmath_core::{Field, Ring};
+   |                            ^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-rings/src/padics/capped_relative.rs:44:40
+   |
+44 | use rustmath_core::{MathError, Result, Ring};
+   |                                        ^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-rings/src/padics/factory.rs:71:40
+   |
+71 | use rustmath_core::{MathError, Result, Ring};
+   |                                        ^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-rings/src/puiseux_series_ring_element.rs:34:28
+   |
+34 | use rustmath_core::{Field, Ring};
+   |                            ^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-rings/src/puiseux_series_ring.rs:40:28
+   |
+40 | use rustmath_core::{Field, Ring};
+   |                            ^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-rings/src/tate_algebra.rs:37:28
+   |
+37 | use rustmath_core::{Field, Ring};
+   |                            ^^^^
+
+warning: unused import: `Field`
+  --> rustmath-rings/src/residue_field.rs:24:27
+   |
+24 | use rustmath_core::{Ring, Field};
+   |                           ^^^^^
+
+warning: unused import: `rustmath_core::Ring`
+  --> rustmath-rings/src/semirings/non_negative_integer_semiring.rs:40:5
+   |
+40 | use rustmath_core::Ring;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `place`
+   --> rustmath-rings/src/differential.rs:122:29
+    |
+122 |     pub fn valuation(&self, place: &str) -> i64 {
+    |                             ^^^^^ help: if this is intentional, prefix it with an underscore: `_place`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `function`
+   --> rustmath-rings/src/divisor.rs:219:30
+    |
+219 |     pub fn principal_divisor(function: String) -> Self {
+    |                              ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_function`
+
+warning: unused variable: `x`
+   --> rustmath-rings/src/fraction_field.rs:287:53
+    |
+287 | pub fn is_fraction_field_element<R: IntegralDomain>(x: &FractionFieldElement<R>) -> bool {
+    |                                                     ^ help: if this is intentional, prefix it with an underscore: `_x`
+
+warning: unused variable: `x`
+   --> rustmath-rings/src/fraction_field_element.rs:306:53
+    |
+306 | pub fn is_fraction_field_element<R: IntegralDomain>(x: &FractionFieldElement<R>) -> bool {
+    |                                                     ^ help: if this is intentional, prefix it with an underscore: `_x`
+
+warning: unused variable: `x`
+   --> rustmath-rings/src/function_field_element.rs:272:44
+    |
+272 | pub fn is_function_field_element<F: Field>(x: &FunctionFieldElement<F>) -> bool {
+    |                                            ^ help: if this is intentional, prefix it with an underscore: `_x`
+
+warning: unused variable: `num_val`
+   --> rustmath-rings/src/function_field_element_rational.rs:153:13
+    |
+153 |         let num_val = self.eval_poly(&self.numerator, point);
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_num_val`
+
+warning: unused variable: `value`
+   --> rustmath-rings/src/infinity.rs:331:32
+    |
+331 | pub fn is_infinite<T: 'static>(value: &T) -> bool {
+    |                                ^^^^^ help: if this is intentional, prefix it with an underscore: `_value`
+
+warning: unused variable: `prev`
+    --> rustmath-rings/src/padics/extension.rs:1047:17
+     |
+1047 |             let prev = automorphisms.last().unwrap();
+     |                 ^^^^ help: if this is intentional, prefix it with an underscore: `_prev`
+
+warning: unused variable: `ring2`
+   --> rustmath-rings/src/ring_extension.rs:310:34
+    |
+310 | pub fn common_base<R>(ring1: &R, ring2: &R) -> Result<R, RingExtensionError>
+    |                                  ^^^^^ help: if this is intentional, prefix it with an underscore: `_ring2`
+
+warning: unused variable: `sqrt_abs`
+   --> rustmath-rings/src/universal_cyclotomic_field.rs:278:13
+    |
+278 |         let sqrt_abs = ucf_sqrt_int(-n)?;
+    |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_sqrt_abs`
+
+warning: unused variable: `element`
+   --> rustmath-rings/src/function_field/valuation.rs:247:25
+    |
+247 |     fn valuation(&self, element: &str) -> i64 {
+    |                         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_element`
+
+warning: unused variable: `element`
+   --> rustmath-rings/src/function_field/valuation.rs:361:25
+    |
+361 |     fn valuation(&self, element: &str) -> i64 {
+    |                         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_element`
+
+warning: unused variable: `g`
+   --> rustmath-rings/src/function_field/order_polymod.rs:336:13
+    |
+336 |         let g = self.genus();
+    |             ^ help: if this is intentional, prefix it with an underscore: `_g`
+
+warning: unused variable: `d2`
+   --> rustmath-rings/src/function_field/jacobian_hyperelliptic.rs:327:47
+    |
+327 |     pub fn add(&self, d1: &MumfordDivisor<F>, d2: &MumfordDivisor<F>) -> MumfordDivisor<F> {
+    |                                               ^^ help: if this is intentional, prefix it with an underscore: `_d2`
+
+warning: unused variable: `h`
+   --> rustmath-rings/src/function_field/jacobian_hyperelliptic.rs:343:33
+    |
+343 |         let neg_v = if let Some(h) = self.curve.h() {
+    |                                 ^ help: if this is intentional, prefix it with an underscore: `_h`
+
+warning: unused variable: `d`
+   --> rustmath-rings/src/function_field/jacobian_hyperelliptic.rs:385:28
+    |
+385 |     pub fn contains(&self, d: &MumfordDivisor<F>) -> bool {
+    |                            ^ help: if this is intentional, prefix it with an underscore: `_d`
+
+warning: unused variable: `a`
+   --> rustmath-rings/src/invariants/reconstruction.rs:103:9
+    |
+103 |     let a = R::from(1);
+    |         ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: unused variable: `b`
+   --> rustmath-rings/src/invariants/reconstruction.rs:104:9
+    |
+104 |     let b = R::from(0);
+    |         ^ help: if this is intentional, prefix it with an underscore: `_b`
+
+warning: unused variable: `element`
+   --> rustmath-rings/src/power_series_poly.rs:279:23
+    |
+279 |     pub fn act(&self, element: &R, series: &PowerSeriesPoly<R>) -> PowerSeriesPoly<R> {
+    |                       ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_element`
+
+warning: unused variable: `other_exp`
+   --> rustmath-rings/src/puiseux_series_ring_element.rs:221:24
+    |
+221 |         let (self_exp, other_exp) = self.to_common_ramification(&PuiseuxSeries::new(
+    |                        ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_other_exp`
+
+warning: methods `numerator_mut` and `denominator_mut` are never used
+   --> rustmath-rings/src/fraction_field_element.rs:105:8
+    |
+ 57 | impl<R: IntegralDomain> FractionFieldElement<R> {
+    | ----------------------------------------------- methods in this implementation
+...
+105 |     fn numerator_mut(&mut self) -> &mut R {
+    |        ^^^^^^^^^^^^^
+...
+110 |     fn denominator_mut(&mut self) -> &mut R {
+    |        ^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `source` is never read
+   --> rustmath-rings/src/fraction_field_fpt.rs:499:5
+    |
+498 | pub struct FpTToFpSection {
+    |            -------------- field in this struct
+499 |     source: FpT,
+    |     ^^^^^^
+
+warning: field `max_degree` is never read
+   --> rustmath-rings/src/fraction_field_fpt.rs:545:5
+    |
+543 | pub struct FpTIterator {
+    |            ----------- field in this struct
+544 |     field: FpT,
+545 |     max_degree: usize,
+    |     ^^^^^^^^^^
+
+warning: field `error` is never read
+   --> rustmath-rings/src/growth_group.rs:132:5
+    |
+130 | pub struct PartialConversionElement<T> {
+    |            ------------------------ field in this struct
+131 |     value: Option<T>,
+132 |     error: Option<String>,
+    |     ^^^^^
+    |
+    = note: `PartialConversionElement` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: field `map_fn` is never read
+   --> rustmath-rings/src/morphism.rs:117:5
+    |
+111 | pub struct RingMap<R: Ring, S: Ring, F>
+    |            ------- field in this struct
+...
+117 |     map_fn: F,
+    |     ^^^^^^
+    |
+    = note: `RingMap` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: fields `is_injective_cached` and `is_surjective_cached` are never read
+   --> rustmath-rings/src/morphism.rs:151:5
+    |
+143 | pub struct RingHomomorphism<R, S>
+    |            ---------------- fields in this struct
+...
+151 |     is_injective_cached: Option<bool>,
+    |     ^^^^^^^^^^^^^^^^^^^
+152 |     /// Cached surjectivity status
+153 |     is_surjective_cached: Option<bool>,
+    |     ^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `RingHomomorphism` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `base` is never read
+   --> rustmath-rings/src/morphism.rs:199:5
+    |
+194 | pub struct RingHomomorphismImGens<R, S>
+    |            ---------------------- field in this struct
+...
+199 |     base: RingHomomorphism<R, S>,
+    |     ^^^^
+    |
+    = note: `RingHomomorphismImGens` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `base` is never read
+   --> rustmath-rings/src/morphism.rs:273:5
+    |
+268 | pub struct RingHomomorphismFromBase<R, S>
+    |            ------------------------ field in this struct
+...
+273 |     base: RingHomomorphism<R, S>,
+    |     ^^^^
+    |
+    = note: `RingHomomorphismFromBase` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `base` is never read
+   --> rustmath-rings/src/morphism.rs:309:5
+    |
+304 | pub struct RingHomomorphismFromFractionField<R, S>
+    |            --------------------------------- field in this struct
+...
+309 |     base: RingHomomorphism<R, S>,
+    |     ^^^^
+    |
+    = note: `RingHomomorphismFromFractionField` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `base` is never read
+   --> rustmath-rings/src/morphism.rs:344:5
+    |
+339 | pub struct RingHomomorphismFromQuotient<R, S>
+    |            ---------------------------- field in this struct
+...
+344 |     base: RingHomomorphism<R, S>,
+    |     ^^^^
+    |
+    = note: `RingHomomorphismFromQuotient` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `base` is never read
+   --> rustmath-rings/src/morphism.rs:378:5
+    |
+374 | pub struct RingHomomorphismCover<R>
+    |            --------------------- field in this struct
+...
+378 |     base: RingHomomorphism<R, R>,
+    |     ^^^^
+    |
+    = note: `RingHomomorphismCover` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `base` is never read
+   --> rustmath-rings/src/morphism.rs:411:5
+    |
+407 | pub struct FrobeniusEndomorphism<R>
+    |            --------------------- field in this struct
+...
+411 |     base: RingHomomorphism<R, R>,
+    |     ^^^^
+    |
+    = note: `FrobeniusEndomorphism` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: methods `coefficients_mut` and `reduce` are never used
+   --> rustmath-rings/src/padics/extension.rs:461:8
+    |
+393 | impl PadicExtensionElement {
+    | -------------------------- methods in this implementation
+...
+461 |     fn coefficients_mut(&mut self) -> &mut Vec<PadicRational> {
+    |        ^^^^^^^^^^^^^^^^
+...
+594 |     fn reduce(&mut self) {
+    |        ^^^^^^
+
+warning: field `modulus` is never read
+   --> rustmath-rings/src/padics/factory.rs:350:5
+    |
+347 | pub struct PadicIntegerExtension {
+    |            --------------------- field in this struct
+...
+350 |     modulus: Option<UnivariatePolynomial<Integer>>,
+    |     ^^^^^^^
+    |
+    = note: `PadicIntegerExtension` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `quotient` is never read
+   --> rustmath-rings/src/quotient_ring.rs:268:5
+    |
+266 | pub struct QuotientRingIdealGeneric<R: Ring> {
+    |            ------------------------ field in this struct
+267 |     /// The quotient ring this ideal belongs to
+268 |     quotient: QuotientRingNc<R>,
+    |     ^^^^^^^^
+    |
+    = note: `QuotientRingIdealGeneric` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `base` is never read
+   --> rustmath-rings/src/quotient_ring.rs:293:5
+    |
+292 | pub struct QuotientRingIdealPrincipal<R: Ring> {
+    |            -------------------------- field in this struct
+293 |     base: QuotientRingIdealGeneric<R>,
+    |     ^^^^
+    |
+    = note: `QuotientRingIdealPrincipal` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `base` is never read
+   --> rustmath-rings/src/ring_extension.rs:154:5
+    |
+149 | pub struct RingExtensionWithBasis<K, L>
+    |            ---------------------- field in this struct
+...
+154 |     base: RingExtensionGeneric<K, L>,
+    |     ^^^^
+    |
+    = note: `RingExtensionWithBasis` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `base` is never read
+   --> rustmath-rings/src/ring_extension.rs:257:5
+    |
+252 | pub struct RingExtensionFractionField<K, L>
+    |            -------------------------- field in this struct
+...
+257 |     base: RingExtensionGeneric<K, L>,
+    |     ^^^^
+    |
+    = note: `RingExtensionFractionField` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `base` is never read
+  --> rustmath-rings/src/ring_extension_morphism.rs:28:5
+   |
+20 | pub struct RingExtensionHomomorphism<K, L, M, N>
+   |            ------------------------- field in this struct
+...
+28 |     base: RingHomomorphism<L, N>,
+   |     ^^^^
+   |
+   = note: `RingExtensionHomomorphism` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `finite` is never read
+   --> rustmath-rings/src/augmented_valuation.rs:261:5
+    |
+260 | pub struct FinalFiniteAugmentedValuation<R> {
+    |            ----------------------------- field in this struct
+261 |     finite: FiniteAugmentedValuation<R>,
+    |     ^^^^^^
+    |
+    = note: `FinalFiniteAugmentedValuation` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `integral` is never read
+   --> rustmath-rings/src/function_field/function_field_polymod.rs:397:5
+    |
+393 | pub struct FunctionFieldGlobalIntegral<F: Field> {
+    |            --------------------------- field in this struct
+...
+397 |     integral: FunctionFieldIntegral<F>,
+    |     ^^^^^^^^
+    |
+    = note: `FunctionFieldGlobalIntegral` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `inner` is never read
+   --> rustmath-rings/src/function_field/maps.rs:496:5
+    |
+494 | pub struct FractionFieldToFunctionField<F: Field> {
+    |            ---------------------------- field in this struct
+495 |     /// Vector space isomorphism
+496 |     inner: FunctionFieldVectorSpaceIsomorphism<F>,
+    |     ^^^^^
+    |
+    = note: `FractionFieldToFunctionField` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `inner` is never read
+   --> rustmath-rings/src/function_field/maps.rs:512:5
+    |
+510 | pub struct FunctionFieldToFractionField<F: Field> {
+    |            ---------------------------- field in this struct
+511 |     /// Vector space isomorphism
+512 |     inner: FunctionFieldVectorSpaceIsomorphism<F>,
+    |     ^^^^^
+    |
+    = note: `FunctionFieldToFractionField` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `inner` is never read
+   --> rustmath-rings/src/function_field/maps.rs:528:5
+    |
+526 | pub struct FunctionFieldRingMorphism<F: Field> {
+    |            ------------------------- field in this struct
+527 |     /// Base morphism
+528 |     inner: FunctionFieldMorphism<F>,
+    |     ^^^^^
+    |
+    = note: `FunctionFieldRingMorphism` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: fields `field` and `constant_field` are never read
+   --> rustmath-rings/src/function_field/maps.rs:549:5
+    |
+547 | pub struct FunctionFieldConversionToConstantBaseField<F: Field> {
+    |            ------------------------------------------ fields in this struct
+548 |     /// Function field
+549 |     field: String,
+    |     ^^^^^
+550 |     /// Constant field
+551 |     constant_field: String,
+    |     ^^^^^^^^^^^^^^
+    |
+    = note: `FunctionFieldConversionToConstantBaseField` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `source` is never read
+   --> rustmath-rings/src/function_field/jacobian_hess.rs:295:5
+    |
+293 | pub struct JacobianGroupEmbedding<F: Field> {
+    |            ---------------------- field in this struct
+294 |     /// Source curve
+295 |     source: String,
+    |     ^^^^^^
+    |
+    = note: `JacobianGroupEmbedding` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `forms` is never read
+   --> rustmath-rings/src/invariants/invariant_theory.rs:439:5
+    |
+437 | pub struct TwoTernaryQuadratics<R: Ring> {
+    |            -------------------- field in this struct
+438 |     /// The underlying pair of forms
+439 |     forms: TwoAlgebraicForms<R>,
+    |     ^^^^^
+    |
+    = note: `TwoTernaryQuadratics` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: field `forms` is never read
+   --> rustmath-rings/src/invariants/invariant_theory.rs:457:5
+    |
+455 | pub struct TwoQuaternaryQuadratics<R: Ring> {
+    |            ----------------------- field in this struct
+456 |     /// The underlying pair of forms
+457 |     forms: TwoAlgebraicForms<R>,
+    |     ^^^^^
+    |
+    = note: `TwoQuaternaryQuadratics` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: field `complete` is never read
+  --> rustmath-rings/src/lazy_series.rs:60:5
+   |
+56 | pub struct LazyModuleElement<R: Ring> {
+   |            ----------------- field in this struct
+...
+60 |     complete: bool,
+   |     ^^^^^^^^
+   |
+   = note: `LazyModuleElement` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: field `base_valuation` is never read
+  --> rustmath-rings/src/valuation/gauss_valuation.rs:14:5
+   |
+13 | pub struct GaussValuation<R: Ring> {
+   |            -------------- field in this struct
+14 |     base_valuation: Box<dyn DiscretePseudoValuation<R>>,
+   |     ^^^^^^^^^^^^^^
+   |
+   = note: `GaussValuation` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: trait `ToF64` is never used
+   --> rustmath-rings/src/qqbar.rs:575:7
+    |
+575 | trait ToF64 {
+    |       ^^^^^
+
+warning: using `.clone()` on a double reference, which returns `&Ratio<BigInt>` instead of cloning the inner type
+   --> rustmath-rings/src/asymptotic.rs:783:60
+    |
+783 |             let abs_coeff = if coeff.is_negative() { -coeff.clone() } else { (*coeff).clone() };
+    |                                                            ^^^^^^^^
+    |
+    = note: `#[warn(suspicious_double_ref_op)]` on by default
+
+warning: function `RealLazyField` should have a snake case name
+   --> rustmath-rings/src/real_lazy.rs:688:8
+    |
+688 | pub fn RealLazyField() -> RealLazyField {
+    |        ^^^^^^^^^^^^^ help: convert the identifier to snake case: `real_lazy_field`
+    |
+    = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: function `ComplexLazyField` should have a snake case name
+   --> rustmath-rings/src/real_lazy.rs:693:8
+    |
+693 | pub fn ComplexLazyField() -> ComplexLazyField {
+    |        ^^^^^^^^^^^^^^^^ help: convert the identifier to snake case: `complex_lazy_field`
+
+   Compiling rustmath-liealgebras v0.1.0 (/home/john/RustMath/rustmath-liealgebras)
+warning: unused variable: `rank`
+   --> rustmath-crystals/src/character.rs:139:47
+    |
+139 | pub fn weyl_character(highest_weight: Weight, rank: usize) -> Character {
+    |                                               ^^^^ help: if this is intentional, prefix it with an underscore: `_rank`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `hw_weight`
+   --> rustmath-crystals/src/character.rs:155:13
+    |
+155 |         let hw_weight = crystal.weight(&hw);
+    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_hw_weight`
+
+warning: unused variable: `diff`
+  --> rustmath-crystals/src/littelmann.rs:73:13
+   |
+73 |         let diff = v2 - v1;
+   |             ^^^^ help: if this is intentional, prefix it with an underscore: `_diff`
+
+warning: unused variable: `min_val`
+   --> rustmath-crystals/src/littelmann.rs:185:23
+    |
+185 |         let (min_idx, min_val) = path.i_string_min(i, &self.root_system);
+    |                       ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_min_val`
+
+warning: unused variable: `tab`
+   --> rustmath-crystals/src/kr_crystal.rs:222:32
+    |
+222 |             KRElement::Tableau(tab) => {
+    |                                ^^^ help: if this is intentional, prefix it with an underscore: `_tab`
+
+warning: unused variable: `i`
+   --> rustmath-crystals/src/kr_crystal.rs:220:42
+    |
+220 |     fn apply_ei(&self, elem: &KRElement, i: usize) -> Option<KRElement> {
+    |                                          ^ help: if this is intentional, prefix it with an underscore: `_i`
+
+warning: unused variable: `tab`
+   --> rustmath-crystals/src/kr_crystal.rs:235:32
+    |
+235 |             KRElement::Tableau(tab) => {
+    |                                ^^^ help: if this is intentional, prefix it with an underscore: `_tab`
+
+warning: unused variable: `i`
+   --> rustmath-crystals/src/kr_crystal.rs:233:42
+    |
+233 |     fn apply_fi(&self, elem: &KRElement, i: usize) -> Option<KRElement> {
+    |                                          ^ help: if this is intentional, prefix it with an underscore: `_i`
+
+warning: unused variable: `crystal`
+   --> rustmath-crystals/src/kr_crystal.rs:308:24
+    |
+308 | pub fn energy_function(crystal: &KRCrystal, elem: &KRElement) -> i64 {
+    |                        ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_crystal`
+
+warning: unused variable: `elem`
+   --> rustmath-crystals/src/kr_crystal.rs:308:45
+    |
+308 | pub fn energy_function(crystal: &KRCrystal, elem: &KRElement) -> i64 {
+    |                                             ^^^^ help: if this is intentional, prefix it with an underscore: `_elem`
+
+warning: unused variable: `k`
+  --> rustmath-crystals/src/nakajima.rs:70:19
+   |
+70 |         for (&(i, k), &exp) in &self.exponents {
+   |                   ^ help: if this is intentional, prefix it with an underscore: `_k`
+
+warning: unused variable: `other_part`
+   --> rustmath-crystals/src/rigged_configurations.rs:218:18
+    |
+218 |             for &other_part in &other_partition.parts {
+    |                  ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_other_part`
+
+warning: unused variable: `i`
+   --> rustmath-crystals/src/rigged_configurations.rs:364:38
+    |
+364 | fn compute_epsilon_i(rc: &RCElement, i: usize) -> i64 {
+    |                                      ^ help: if this is intentional, prefix it with an underscore: `_i`
+
+warning: unused variable: `rc`
+   --> rustmath-crystals/src/rigged_configurations.rs:408:12
+    |
+408 | fn phi_map(rc: &RCElement, tensor_shape: &[(usize, usize)]) -> TensorProductImage {
+    |            ^^ help: if this is intentional, prefix it with an underscore: `_rc`
+
+warning: unused variable: `tp`
+   --> rustmath-crystals/src/rigged_configurations.rs:429:16
+    |
+429 | fn phi_inverse(tp: &TensorProductImage, rank: usize) -> RCElement {
+    |                ^^ help: if this is intentional, prefix it with an underscore: `_tp`
+
+warning: unused variable: `tensor_shape`
+   --> rustmath-crystals/src/rigged_configurations.rs:437:52
+    |
+437 | fn generate_all_rigged_configurations(rank: usize, tensor_shape: &[(usize, usize)]) -> Vec<RCElement> {
+    |                                                    ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tensor_shape`
+
+warning: unused variable: `highest_weight`
+   --> rustmath-crystals/src/rigged_configurations.rs:523:29
+    |
+523 |     pub fn new(rank: usize, highest_weight: Weight) -> Self {
+    |                             ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_highest_weight`
+
+warning: unused variable: `node`
+   --> rustmath-crystals/src/rigged_configurations.rs:544:22
+    |
+544 | fn build_kleber_tree(node: &mut KleberNode, rank: usize) {
+    |                      ^^^^ help: if this is intentional, prefix it with an underscore: `_node`
+
+warning: unused variable: `rank`
+   --> rustmath-crystals/src/rigged_configurations.rs:544:45
+    |
+544 | fn build_kleber_tree(node: &mut KleberNode, rank: usize) {
+    |                                             ^^^^ help: if this is intentional, prefix it with an underscore: `_rank`
+
+warning: unused variable: `rc`
+   --> rustmath-crystals/src/rigged_configurations.rs:713:23
+    |
+713 |     pub fn e_0(&self, rc: &RCElement) -> Option<RCElement> {
+    |                       ^^ help: if this is intentional, prefix it with an underscore: `_rc`
+
+warning: unused variable: `rc`
+   --> rustmath-crystals/src/rigged_configurations.rs:719:23
+    |
+719 |     pub fn f_0(&self, rc: &RCElement) -> Option<RCElement> {
+    |                       ^^ help: if this is intentional, prefix it with an underscore: `_rc`
+
+warning: unused variable: `outer`
+   --> rustmath-symmetricfunctions/src/ribbon.rs:188:5
+    |
+188 |     outer: &Partition,
+    |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_outer`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `inner`
+   --> rustmath-symmetricfunctions/src/ribbon.rs:189:5
+    |
+189 |     inner: &Partition,
+    |     ^^^^^ help: if this is intentional, prefix it with an underscore: `_inner`
+
+warning: unused variable: `f`
+   --> rustmath-symmetricfunctions/src/operations.rs:207:18
+    |
+207 | pub fn coproduct(f: &SymFun) -> Vec<(SymFun, SymFun)> {
+    |                  ^ help: if this is intentional, prefix it with an underscore: `_f`
+
+warning: unused variable: `max_degree`
+  --> rustmath-symmetricfunctions/src/plethysm.rs:68:35
+   |
+68 | pub fn plethystic_exp(f: &SymFun, max_degree: usize) -> SymFun {
+   |                                   ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_max_degree`
+
+warning: unused variable: `f`
+  --> rustmath-symmetricfunctions/src/plethysm.rs:90:25
+   |
+90 | pub fn internal_product(f: &SymFun, g: &SymFun) -> Option<SymFun> {
+   |                         ^ help: if this is intentional, prefix it with an underscore: `_f`
+
+warning: unused variable: `g`
+  --> rustmath-symmetricfunctions/src/plethysm.rs:90:37
+   |
+90 | pub fn internal_product(f: &SymFun, g: &SymFun) -> Option<SymFun> {
+   |                                     ^ help: if this is intentional, prefix it with an underscore: `_g`
+
+warning: unused variable: `f`
+   --> rustmath-symmetricfunctions/src/plethysm.rs:101:26
+    |
+101 | pub fn kronecker_product(f: &SymFun, g: &SymFun) -> Option<SymFun> {
+    |                          ^ help: if this is intentional, prefix it with an underscore: `_f`
+
+warning: unused variable: `g`
+   --> rustmath-symmetricfunctions/src/plethysm.rs:101:38
+    |
+101 | pub fn kronecker_product(f: &SymFun, g: &SymFun) -> Option<SymFun> {
+    |                                      ^ help: if this is intentional, prefix it with an underscore: `_g`
+
+warning: unused variable: `lambda`
+   --> rustmath-symmetricfunctions/src/plethysm.rs:110:32
+    |
+110 | pub fn schur_complete_plethysm(lambda: &Partition, m: usize) -> SymFun {
+    |                                ^^^^^^ help: if this is intentional, prefix it with an underscore: `_lambda`
+
+warning: unused variable: `m`
+   --> rustmath-symmetricfunctions/src/plethysm.rs:110:52
+    |
+110 | pub fn schur_complete_plethysm(lambda: &Partition, m: usize) -> SymFun {
+    |                                                    ^ help: if this is intentional, prefix it with an underscore: `_m`
+
+warning: unused variable: `lambda`
+   --> rustmath-symmetricfunctions/src/plethysm.rs:119:34
+    |
+119 | pub fn schur_elementary_plethysm(lambda: &Partition, m: usize) -> SymFun {
+    |                                  ^^^^^^ help: if this is intentional, prefix it with an underscore: `_lambda`
+
+warning: unused variable: `m`
+   --> rustmath-symmetricfunctions/src/plethysm.rs:119:54
+    |
+119 | pub fn schur_elementary_plethysm(lambda: &Partition, m: usize) -> SymFun {
+    |                                                      ^ help: if this is intentional, prefix it with an underscore: `_m`
+
+warning: unused variable: `n`
+   --> rustmath-symmetricfunctions/src/ncsf.rs:265:13
+    |
+265 |         let n = I.sum();
+    |             ^ help: if this is intentional, prefix it with an underscore: `_n`
+
+warning: unused variable: `n`
+   --> rustmath-symmetricfunctions/src/qsym.rs:338:9
+    |
+338 |     let n: usize = parts.iter().sum();
+    |         ^ help: if this is intentional, prefix it with an underscore: `_n`
+
+warning: unused variable: `n`
+  --> rustmath-symmetricfunctions/src/super_schur.rs:76:9
+   |
+76 |     let n = shape.sum();
+   |         ^ help: if this is intentional, prefix it with an underscore: `_n`
+
+warning: variable `I` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:175:20
+    |
+175 | pub fn concatenate(I: &Composition, J: &Composition) -> Composition {
+    |                    ^ help: convert the identifier to snake case (notice the capitalization): `i`
+    |
+    = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: variable `J` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:175:37
+    |
+175 | pub fn concatenate(I: &Composition, J: &Composition) -> Composition {
+    |                                     ^ help: convert the identifier to snake case: `j`
+
+warning: variable `I` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:218:10
+    |
+218 |     for (I, coeff_I) in &f.coeffs {
+    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
+
+warning: variable `coeff_I` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:218:13
+    |
+218 |     for (I, coeff_I) in &f.coeffs {
+    |             ^^^^^^^ help: convert the identifier to snake case (notice the capitalization): `coeff_i`
+
+warning: variable `J` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:219:14
+    |
+219 |         for (J, coeff_J) in &g.coeffs {
+    |              ^ help: convert the identifier to snake case: `j`
+
+warning: variable `coeff_J` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:219:17
+    |
+219 |         for (J, coeff_J) in &g.coeffs {
+    |                 ^^^^^^^ help: convert the identifier to snake case: `coeff_j`
+
+warning: variable `IJ` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:220:17
+    |
+220 |             let IJ = concatenate(I, J);
+    |                 ^^ help: convert the identifier to snake case: `ij`
+
+warning: variable `I` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:241:10
+    |
+241 |     for (I, coeff) in &f.coeffs {
+    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
+
+warning: variable `J` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:242:14
+    |
+242 |         for (J, K) in composition_splits(I) {
+    |              ^ help: convert the identifier to snake case: `j`
+
+warning: variable `K` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:242:17
+    |
+242 |         for (J, K) in composition_splits(I) {
+    |                 ^ help: convert the identifier to snake case (notice the capitalization): `k`
+
+warning: variable `I` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:264:10
+    |
+264 |     for (I, coeff) in &f.coeffs {
+    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
+
+warning: variable `J_comp` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:273:13
+    |
+273 |         let J_comp = I.clone(); // Placeholder - needs proper implementation
+    |             ^^^^^^ help: convert the identifier to snake case: `j_comp`
+
+warning: variable `I` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:288:10
+    |
+288 |     for (I, coeff) in &f.coeffs {
+    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
+
+warning: variable `J_comp` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:289:13
+    |
+289 |         let J_comp = I.clone(); // Placeholder - needs proper implementation
+    |             ^^^^^^ help: convert the identifier to snake case: `j_comp`
+
+warning: variable `I` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:307:10
+    |
+307 |     for (I, coeff) in &f.coeffs {
+    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
+
+warning: variable `I` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:324:10
+    |
+324 |     for (I, coeff) in &f.coeffs {
+    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
+
+warning: variable `I` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:389:10
+    |
+389 |     for (I, coeff) in &f.coeffs {
+    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
+
+warning: variable `J` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:401:16
+    |
+401 | pub fn refines(J: &Composition, I: &Composition) -> bool {
+    |                ^ help: convert the identifier to snake case: `j`
+
+warning: variable `I` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:401:33
+    |
+401 | pub fn refines(J: &Composition, I: &Composition) -> bool {
+    |                                 ^ help: convert the identifier to snake case (notice the capitalization): `i`
+
+warning: variable `I_parts` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:402:9
+    |
+402 |     let I_parts = I.parts();
+    |         ^^^^^^^ help: convert the identifier to snake case (notice the capitalization): `i_parts`
+
+warning: variable `J_parts` should have a snake case name
+   --> rustmath-symmetricfunctions/src/ncsf.rs:403:9
+    |
+403 |     let J_parts = J.parts();
+    |         ^^^^^^^ help: convert the identifier to snake case: `j_parts`
+
+warning: variable `I` should have a snake case name
+   --> rustmath-symmetricfunctions/src/qsym.rs:235:10
+    |
+235 |     for (I, coeff_I) in &f.coeffs {
+    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
+
+warning: variable `coeff_I` should have a snake case name
+   --> rustmath-symmetricfunctions/src/qsym.rs:235:13
+    |
+235 |     for (I, coeff_I) in &f.coeffs {
+    |             ^^^^^^^ help: convert the identifier to snake case (notice the capitalization): `coeff_i`
+
+warning: variable `J` should have a snake case name
+   --> rustmath-symmetricfunctions/src/qsym.rs:236:14
+    |
+236 |         for (J, coeff_J) in &g.coeffs {
+    |              ^ help: convert the identifier to snake case: `j`
+
+warning: variable `coeff_J` should have a snake case name
+   --> rustmath-symmetricfunctions/src/qsym.rs:236:17
+    |
+236 |         for (J, coeff_J) in &g.coeffs {
+    |                 ^^^^^^^ help: convert the identifier to snake case: `coeff_j`
+
+warning: variable `I` should have a snake case name
+   --> rustmath-symmetricfunctions/src/qsym.rs:254:18
+    |
+254 | fn quasi_shuffle(I: &Composition, J: &Composition) -> Vec<Composition> {
+    |                  ^ help: convert the identifier to snake case (notice the capitalization): `i`
+
+warning: variable `J` should have a snake case name
+   --> rustmath-symmetricfunctions/src/qsym.rs:254:35
+    |
+254 | fn quasi_shuffle(I: &Composition, J: &Composition) -> Vec<Composition> {
+    |                                   ^ help: convert the identifier to snake case: `j`
+
+warning: variable `I_parts` should have a snake case name
+   --> rustmath-symmetricfunctions/src/qsym.rs:255:9
+    |
+255 |     let I_parts = I.parts();
+    |         ^^^^^^^ help: convert the identifier to snake case (notice the capitalization): `i_parts`
+
+warning: variable `J_parts` should have a snake case name
+   --> rustmath-symmetricfunctions/src/qsym.rs:256:9
+    |
+256 |     let J_parts = J.parts();
+    |         ^^^^^^^ help: convert the identifier to snake case: `j_parts`
+
+warning: variable `I_parts` should have a snake case name
+   --> rustmath-symmetricfunctions/src/qsym.rs:269:9
+    |
+269 |         I_parts: &[usize],
+    |         ^^^^^^^ help: convert the identifier to snake case (notice the capitalization): `i_parts`
+
+warning: variable `J_parts` should have a snake case name
+   --> rustmath-symmetricfunctions/src/qsym.rs:270:9
+    |
+270 |         J_parts: &[usize],
+    |         ^^^^^^^ help: convert the identifier to snake case: `j_parts`
+
+warning: variable `I` should have a snake case name
+   --> rustmath-symmetricfunctions/src/qsym.rs:321:10
+    |
+321 |     for (I, coeff) in &f.coeffs {
+    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
+
+warning: variable `J` should have a snake case name
+   --> rustmath-symmetricfunctions/src/qsym.rs:323:14
+    |
+323 |         for (J, K) in splits {
+    |              ^ help: convert the identifier to snake case: `j`
+
+warning: variable `K` should have a snake case name
+   --> rustmath-symmetricfunctions/src/qsym.rs:323:17
+    |
+323 |         for (J, K) in splits {
+    |                 ^ help: convert the identifier to snake case (notice the capitalization): `k`
+
+warning: variable `I` should have a snake case name
+   --> rustmath-symmetricfunctions/src/qsym.rs:388:10
+    |
+388 |     for (I, coeff) in &f.coeffs {
+    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
+
+warning: variable `I` should have a snake case name
+   --> rustmath-symmetricfunctions/src/qsym.rs:408:10
+    |
+408 |     for (I, coeff) in &f.coeffs {
+    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
+
+warning: variable `I_len` should have a snake case name
+   --> rustmath-symmetricfunctions/src/qsym.rs:409:13
+    |
+409 |         let I_len = I.length();
+    |             ^^^^^ help: convert the identifier to snake case (notice the capitalization): `i_len`
+
+warning: variable `J` should have a snake case name
+   --> rustmath-symmetricfunctions/src/qsym.rs:412:13
+    |
+412 |         for J in refinements(I) {
+    |             ^ help: convert the identifier to snake case: `j`
+
+warning: variable `J_len` should have a snake case name
+   --> rustmath-symmetricfunctions/src/qsym.rs:413:17
+    |
+413 |             let J_len = J.length();
+    |                 ^^^^^ help: convert the identifier to snake case: `j_len`
+
+warning: variable `I` should have a snake case name
+   --> rustmath-symmetricfunctions/src/qsym.rs:426:10
+    |
+426 |     for (I, coeff) in &f.coeffs {
+    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
+
+warning: variable `I` should have a snake case name
+   --> rustmath-symmetricfunctions/src/qsym.rs:467:10
+    |
+467 |     for (I, f_coeff) in &f_mono.coeffs {
+    |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
+
 warning: unused variable: `face_idx`
    --> rustmath-plot3d/src/export.rs:209:10
     |
@@ -3676,547 +4135,73 @@ warning: unused variable: `face_idx`
     |
     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
 
-   Compiling rustmath-schemes v0.1.0 (/home/john/RustMath/rustmath-schemes)
-warning: unused import: `rustmath_core::Ring`
- --> rustmath-quadraticforms/src/quadratic_form.rs:6:5
+warning: `rustmath-rings` (lib) generated 103 warnings
+warning: `rustmath-crystals` (lib) generated 21 warnings
+warning: `rustmath-symmetricfunctions` (lib) generated 56 warnings
+warning: `rustmath-plot3d` (lib) generated 1 warning
+warning: unused variable: `cell_res`
+   --> rustmath-quantumgroups/src/fock_space.rs:274:37
+    |
+274 | ...   if let Some(cell_res) = lambda.cell_residue(comp_idx, row, col, &self.params.multicharge, self....
+    |                   ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_cell_res`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `min_power`
+   --> rustmath-quantumgroups/src/q_bernoulli.rs:113:36
+    |
+113 |         let (q_int_num, q_int_den, min_power) = laurent_to_rational(&q_int_laurent);
+    |                                    ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_min_power`
+
+warning: unused import: `Ring`
+ --> rustmath-affineschemes/src/prime_ideal.rs:6:21
   |
-6 | use rustmath_core::Ring;
-  |     ^^^^^^^^^^^^^^^^^^^
+6 | use rustmath_core::{Ring, CommutativeRing, MathError, Result};
+  |                     ^^^^
   |
   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
 
 warning: unused import: `Ring`
- --> rustmath-quadraticforms/src/theta_series.rs:8:21
+ --> rustmath-affineschemes/src/spec.rs:7:38
   |
-8 | use rustmath_core::{Ring, NumericConversion};
-  |                     ^^^^
-
-warning: unused import: `NumericConversion`
- --> rustmath-quadraticforms/src/theta_series.rs:8:27
-  |
-8 | use rustmath_core::{Ring, NumericConversion};
-  |                           ^^^^^^^^^^^^^^^^^
+7 | use rustmath_core::{CommutativeRing, Ring};
+  |                                      ^^^^
 
 warning: unused import: `Ring`
- --> rustmath-quadraticforms/src/local_densities.rs:9:21
+ --> rustmath-affineschemes/src/structure_sheaf.rs:9:38
   |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                     ^^^^
-
-warning: unused import: `NumericConversion`
- --> rustmath-quadraticforms/src/local_densities.rs:9:27
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                           ^^^^^^^^^^^^^^^^^
+9 | use rustmath_core::{CommutativeRing, Ring};
+  |                                      ^^^^
 
 warning: unused import: `Ring`
- --> rustmath-quadraticforms/src/genus_theory.rs:9:21
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                     ^^^^
-
-warning: unused import: `NumericConversion`
- --> rustmath-quadraticforms/src/genus_theory.rs:9:27
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                           ^^^^^^^^^^^^^^^^^
-
-warning: unused import: `Ring`
- --> rustmath-quadraticforms/src/advanced.rs:9:21
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                     ^^^^
-
-warning: unused import: `NumericConversion`
- --> rustmath-quadraticforms/src/advanced.rs:9:27
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                           ^^^^^^^^^^^^^^^^^
-
-warning: unused variable: `d`
-  --> rustmath-quadraticforms/src/local_densities.rs:83:13
+  --> rustmath-affineschemes/src/morphism.rs:13:38
    |
-83 |         let d = (-self.form.discriminant()).clone();
-   |             ^ help: if this is intentional, prefix it with an underscore: `_d`
+13 | use rustmath_core::{CommutativeRing, Ring};
+   |                                      ^^^^
+
+warning: fields `first` and `second` are never read
+  --> rustmath-affineschemes/src/fiber_product.rs:38:5
    |
-   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `p_power`
-   --> rustmath-quadraticforms/src/local_densities.rs:173:13
-    |
-173 |         let p_power = p_int.pow(k);
-    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_p_power`
-
-warning: unused variable: `n3`
-  --> rustmath-quadraticforms/src/advanced.rs:96:42
-   |
-96 |             if let [(n1, a1), (n2, a2), (n3, a3)] = window {
-   |                                          ^^ help: if this is intentional, prefix it with an underscore: `_n3`
-
-warning: method `p_adic_equivalent` is never used
-   --> rustmath-quadraticforms/src/genus_theory.rs:189:8
-    |
- 18 | impl GenusTheory {
-    | ---------------- method in this implementation
+29 | pub struct FiberProduct<R, S, T>
+   |            ------------ fields in this struct
 ...
-189 |     fn p_adic_equivalent(&self, form1: &QuadraticForm, form2: &QuadraticForm, p: u64) -> bool {
-    |        ^^^^^^^^^^^^^^^^^
-    |
-    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: function `list_plot_multiple` is never used
-   --> rustmath-plot/src/plots/list_plot.rs:138:8
-    |
-138 | pub fn list_plot_multiple(
-    |        ^^^^^^^^^^^^^^^^^^
-    |
-    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: function `scatter_plot_y` is never used
-  --> rustmath-plot/src/plots/scatter_plot.rs:77:8
-   |
-77 | pub fn scatter_plot_y(
-   |        ^^^^^^^^^^^^^^
-
-warning: function `scatter_plot_colored` is never used
-   --> rustmath-plot/src/plots/scatter_plot.rs:116:8
-    |
-116 | pub fn scatter_plot_colored(
-    |        ^^^^^^^^^^^^^^^^^^^^
-
-warning: function `scatter_plot_sized` is never used
-   --> rustmath-plot/src/plots/scatter_plot.rs:160:8
-    |
-160 | pub fn scatter_plot_sized(
-    |        ^^^^^^^^^^^^^^^^^^
-
-warning: function `contour_plot_filled` is never used
-   --> rustmath-plot/src/plots/contour_plot.rs:122:8
-    |
-122 | pub fn contour_plot_filled<F>(
-    |        ^^^^^^^^^^^^^^^^^^^
-
-warning: function `density_plot_custom` is never used
-   --> rustmath-plot/src/plots/density_plot.rs:154:8
-    |
-154 | pub fn density_plot_custom<F, C>(
-    |        ^^^^^^^^^^^^^^^^^^^
-
-warning: function `histogram_custom_bins` is never used
-   --> rustmath-plot/src/plots/histogram.rs:132:8
-    |
-132 | pub fn histogram_custom_bins(
-    |        ^^^^^^^^^^^^^^^^^^^^^
-
-warning: function `bar_chart_horizontal` is never used
-  --> rustmath-plot/src/plots/bar_chart.rs:77:8
-   |
-77 | pub fn bar_chart_horizontal(
-   |        ^^^^^^^^^^^^^^^^^^^^
-
-warning: function `bar_chart_colored` is never used
-   --> rustmath-plot/src/plots/bar_chart.rs:122:8
-    |
-122 | pub fn bar_chart_colored(data: Vec<(f64, f64, Color)>, bar_width: Option<f64>) -> Graphics {
-    |        ^^^^^^^^^^^^^^^^^
-
-warning: function `bar_chart_grouped` is never used
-   --> rustmath-plot/src/plots/bar_chart.rs:166:8
-    |
-166 | pub fn bar_chart_grouped(
-    |        ^^^^^^^^^^^^^^^^^
-
-warning: function `bar_chart_stacked` is never used
-   --> rustmath-plot/src/plots/bar_chart.rs:232:8
-    |
-232 | pub fn bar_chart_stacked(data: Vec<(f64, Vec<f64>, Vec<Color>)>, bar_width: Option<f64>) -> Graphics {
-    |        ^^^^^^^^^^^^^^^^^
-
-warning: function `matrix_plot_range` is never used
-   --> rustmath-plot/src/plots/matrix_plot.rs:119:8
-    |
-119 | pub fn matrix_plot_range(
-    |        ^^^^^^^^^^^^^^^^^
-
-warning: function `matrix_plot_binary` is never used
-   --> rustmath-plot/src/plots/matrix_plot.rs:173:8
-    |
-173 | pub fn matrix_plot_binary(
-    |        ^^^^^^^^^^^^^^^^^^
-
-warning: function `matrix_plot_spy` is never used
-   --> rustmath-plot/src/plots/matrix_plot.rs:222:8
-    |
-222 | pub fn matrix_plot_spy(matrix: Vec<Vec<f64>>, threshold: Option<f64>, color: Color) -> Graphics {
-    |        ^^^^^^^^^^^^^^^
-
-warning: unused variable: `precision`
-  --> rustmath-algebraic/src/algebraic_number.rs:51:30
-   |
-51 |     pub fn to_complex(&self, precision: usize) -> Complex {
-   |                              ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_precision`
-   |
-   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `precision`
-   --> rustmath-algebraic/src/algebraic_real.rs:149:26
-    |
-149 |     pub fn to_f64(&self, precision: usize) -> f64 {
-    |                          ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_precision`
-
-warning: unused variable: `min_poly`
-  --> rustmath-algebraic/src/conjugates.rs:18:9
-   |
-18 |     let min_poly = minimal_polynomial(alpha);
-   |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_min_poly`
-
-warning: unused variable: `obj`
-   --> rustmath-modular/src/abvar.rs:490:35
-    |
-490 | pub fn is_modular_abelian_variety(obj: &ModularAbelianVariety) -> bool {
-    |                                   ^^^ help: if this is intentional, prefix it with an underscore: `_obj`
-    |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `space`
-   --> rustmath-modular/src/abvar.rs:519:24
-    |
-519 | pub fn modsym_lattices(space: &ModularSymbolSpace) -> Vec<Vec<BigRational>> {
-    |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_space`
-
-warning: unused variable: `coeffs`
-   --> rustmath-modular/src/abvar.rs:531:18
-    |
-531 | pub fn sqrt_poly(coeffs: &[BigRational]) -> Option<Vec<BigRational>> {
-    |                  ^^^^^^ help: if this is intentional, prefix it with an underscore: `_coeffs`
-
-warning: unused variable: `h_subgroup`
-   --> rustmath-modular/src/abvar.rs:935:27
-    |
-935 |     pub fn jh(level: u64, h_subgroup: Vec<u64>) -> ModularAbelianVariety {
-    |                           ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_h_subgroup`
-
-warning: unused variable: `obj`
-   --> rustmath-modular/src/dirichlet.rs:213:31
-    |
-213 | pub fn is_dirichlet_character(obj: &DirichletCharacter) -> bool {
-    |                               ^^^ help: if this is intentional, prefix it with an underscore: `_obj`
-
-warning: unused variable: `obj`
-   --> rustmath-modular/src/dirichlet.rs:219:27
-    |
-219 | pub fn is_dirichlet_group(obj: &DirichletGroup) -> bool {
-    |                           ^^^ help: if this is intentional, prefix it with an underscore: `_obj`
-
-warning: unused variable: `N`
-   --> rustmath-modular/src/etaproducts.rs:323:5
-    |
-323 |     N: &BigInt,
-    |     ^ help: if this is intentional, prefix it with an underscore: `_N`
-
-warning: unused variable: `degree`
-   --> rustmath-modular/src/etaproducts.rs:324:5
-    |
-324 |     degree: usize,
-    |     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_degree`
-
-warning: unused variable: `p`
- --> rustmath-modular/src/btquotients/btquotient.rs:6:16
-  |
-6 |     pub fn new(p: u64, level: u64) -> Self {
-  |                ^ help: if this is intentional, prefix it with an underscore: `_p`
-
-warning: unused variable: `level`
- --> rustmath-modular/src/btquotients/btquotient.rs:6:24
-  |
-6 |     pub fn new(p: u64, level: u64) -> Self {
-  |                        ^^^^^ help: if this is intentional, prefix it with an underscore: `_level`
-
-warning: unused variable: `weight`
- --> rustmath-modular/src/btquotients/pautomorphicform.rs:6:16
-  |
-6 |     pub fn new(weight: i32) -> Self {
-  |                ^^^^^^ help: if this is intentional, prefix it with an underscore: `_weight`
-
-warning: unused variable: `coeffs`
- --> rustmath-modular/src/drinfeld_modform/element.rs:6:16
-  |
-6 |     pub fn new(coeffs: Vec<f64>) -> Self {
-  |                ^^^^^^ help: if this is intentional, prefix it with an underscore: `_coeffs`
-
-warning: unused variable: `rank`
- --> rustmath-modular/src/drinfeld_modform/ring.rs:6:16
-  |
-6 |     pub fn new(rank: usize) -> Self {
-  |                ^^^^ help: if this is intentional, prefix it with an underscore: `_rank`
-
-warning: unused variable: `level`
- --> rustmath-modular/src/quatalg/brandt.rs:6:16
-  |
-6 |     pub fn new(level: u64) -> Self {
-  |                ^^^^^ help: if this is intentional, prefix it with an underscore: `_level`
-
-warning: unused variable: `p`
- --> rustmath-modular/src/ssmod/ssmod.rs:6:16
-  |
-6 |     pub fn new(p: u64) -> Self {
-  |                ^ help: if this is intentional, prefix it with an underscore: `_p`
-
-warning: unused variable: `alpha`
-  --> rustmath-modular/src/hypergeometric_motive.rs:29:26
-   |
-29 |     fn compute_conductor(alpha: &[f64], beta: &[f64]) -> u64 {
-   |                          ^^^^^ help: if this is intentional, prefix it with an underscore: `_alpha`
-
-warning: unused variable: `beta`
-  --> rustmath-modular/src/hypergeometric_motive.rs:29:41
-   |
-29 |     fn compute_conductor(alpha: &[f64], beta: &[f64]) -> u64 {
-   |                                         ^^^^ help: if this is intentional, prefix it with an underscore: `_beta`
-
-warning: unused variable: `p`
-  --> rustmath-modular/src/hypergeometric_motive.rs:35:32
-   |
-35 |     pub fn euler_factor(&self, p: u64) -> Vec<f64> {
-   |                                ^ help: if this is intentional, prefix it with an underscore: `_p`
-
-warning: unused variable: `p`
-  --> rustmath-modular/src/hypergeometric_motive.rs:41:38
-   |
-41 |     pub fn is_wildly_ramified(&self, p: u64) -> bool {
-   |                                      ^ help: if this is intentional, prefix it with an underscore: `_p`
-
-warning: unused variable: `precision`
-  --> rustmath-modular/src/multiple_zeta.rs:30:35
-   |
-30 |     pub fn numerical_value(&self, precision: usize) -> f64 {
-   |                                   ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_precision`
-
-warning: field `matrix` is never read
-  --> rustmath-modular/src/hecke.rs:20:5
-   |
-14 | pub struct HeckeOperator {
-   |            ------------- field in this struct
-...
-20 |     matrix: Option<Vec<Vec<BigRational>>>,
+38 |     first: AffineScheme<S>,
+   |     ^^^^^
+39 |     /// The second scheme Spec(T)
+40 |     second: AffineScheme<T>,
    |     ^^^^^^
    |
-   = note: `HeckeOperator` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `FiberProduct` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
 
-warning: field `base` is never read
-   --> rustmath-modular/src/abvar.rs:575:5
+warning: field `source` is never read
+   --> rustmath-affineschemes/src/varieties.rs:247:5
     |
-573 | pub struct FiniteSubgroupLattice {
-    |            --------------------- field in this struct
-574 |     /// Base finite subgroup
-575 |     base: FiniteSubgroup,
-    |     ^^^^
-    |
-    = note: `FiniteSubgroupLattice` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `base` is never read
-   --> rustmath-modular/src/abvar.rs:677:5
-    |
-675 | pub struct LseriesComplex {
-    |            -------------- field in this struct
-676 |     /// Base L-series
-677 |     base: Lseries,
-    |     ^^^^
-    |
-    = note: `LseriesComplex` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `base` is never read
-   --> rustmath-modular/src/abvar.rs:699:5
-    |
-697 | pub struct LseriesPadic {
-    |            ------------ field in this struct
-698 |     /// Base L-series
-699 |     base: Lseries,
-    |     ^^^^
-    |
-    = note: `LseriesPadic` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: variable `N` should have a snake case name
-  --> rustmath-modular/src/dims.rs:54:14
-   |
-54 | pub fn eisen(N: &BigInt, k: i64) -> BigInt {
-   |              ^ help: convert the identifier to snake case: `n`
-   |
-   = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
-
-warning: variable `N` should have a snake case name
-  --> rustmath-modular/src/dims.rs:79:17
-   |
-79 | pub fn co_delta(N: &BigInt) -> BigInt {
-   |                 ^ help: convert the identifier to snake case: `n`
-
-warning: variable `N` should have a snake case name
-   --> rustmath-modular/src/dims.rs:109:14
-    |
-109 | pub fn co_nu(N: &BigInt) -> BigInt {
-    |              ^ help: convert the identifier to snake case: `n`
-
-warning: variable `N` should have a snake case name
-   --> rustmath-modular/src/dims.rs:141:23
-    |
-141 | pub fn cohen_oesterle(N: &BigInt, k: i64) -> BigInt {
-    |                       ^ help: convert the identifier to snake case: `n`
-
-warning: variable `N` should have a snake case name
-   --> rustmath-modular/src/dims.rs:173:33
-    |
-173 | pub fn dimension_new_cusp_forms(N: &BigInt, k: i64) -> BigInt {
-    |                                 ^ help: convert the identifier to snake case: `n`
-
-warning: variable `N` should have a snake case name
-   --> rustmath-modular/src/dims.rs:202:29
-    |
-202 | pub fn dimension_cusp_forms(N: &BigInt, k: i64) -> BigInt {
-    |                             ^ help: convert the identifier to snake case: `n`
-
-warning: variable `N` should have a snake case name
-   --> rustmath-modular/src/dims.rs:241:22
-    |
-241 | pub fn dimension_eis(N: &BigInt, k: i64) -> BigInt {
-    |                      ^ help: convert the identifier to snake case: `n`
-
-warning: variable `N` should have a snake case name
-   --> rustmath-modular/src/dims.rs:253:32
-    |
-253 | pub fn dimension_modular_forms(N: &BigInt, k: i64) -> BigInt {
-    |                                ^ help: convert the identifier to snake case: `n`
-
-warning: variable `N` should have a snake case name
-   --> rustmath-modular/src/dims.rs:280:20
-    |
-280 | pub fn sturm_bound(N: &BigInt, k: i64) -> BigInt {
-    |                    ^ help: convert the identifier to snake case: `n`
-
-warning: variable `N` should have a snake case name
-   --> rustmath-modular/src/dirichlet.rs:208:30
-    |
-208 | pub fn dirichlet_group_class(N: BigInt) -> DirichletGroup {
-    |                              ^ help: convert the identifier to snake case: `n`
-
-warning: variable `N` should have a snake case name
-   --> rustmath-modular/src/dirichlet.rs:231:26
-    |
-231 | pub fn trivial_character(N: BigInt) -> DirichletCharacter {
-    |                          ^ help: convert the identifier to snake case: `n`
-
-warning: variable `N` should have a snake case name
-   --> rustmath-modular/src/dirichlet.rs:265:28
-    |
-265 | pub fn principal_character(N: BigInt) -> DirichletCharacter {
-    |                            ^ help: convert the identifier to snake case: `n`
-
-warning: variable `N` should have a snake case name
-   --> rustmath-modular/src/lfunction.rs:141:13
-    |
-141 |         let N = self.conductor as f64;
-    |             ^ help: convert the identifier to snake case: `n`
-
-warning: variable `N_power` should have a snake case name
-   --> rustmath-modular/src/lfunction.rs:145:13
-    |
-145 |         let N_power = Complex64::new(
-    |             ^^^^^^^ help: convert the identifier to snake case: `n_power`
-
-warning: variable `L_value` should have a snake case name
-   --> rustmath-modular/src/lfunction.rs:161:13
-    |
-161 |         let L_value = self.evaluate_series(s, 1000);
-    |             ^^^^^^^ help: convert the identifier to snake case: `l_value`
-
-warning: variable `N` should have a snake case name
-   --> rustmath-modular/src/lfunction.rs:203:13
-    |
-203 |         let N = self.conductor as f64;
-    |             ^ help: convert the identifier to snake case: `n`
-
-warning: variable `W` should have a snake case name
-   --> rustmath-modular/src/lfunction.rs:219:13
-    |
-219 |         let W = self.root_number();
-    |             ^ help: convert the identifier to snake case (notice the capitalization): `w`
-
-warning: variable `N_power` should have a snake case name
-   --> rustmath-modular/src/lfunction.rs:220:13
-    |
-220 |         let N_power = Complex64::from(N).powc(Complex64::from(0.5) - s);
-    |             ^^^^^^^ help: convert the identifier to snake case: `n_power`
-
-warning: variable `N` should have a snake case name
-   --> rustmath-modular/src/lfunction.rs:310:13
-    |
-310 |         let N = self.conductor as f64;
-    |             ^ help: convert the identifier to snake case: `n`
-
-warning: variable `sqrt_N` should have a snake case name
-   --> rustmath-modular/src/lfunction.rs:314:13
-    |
-314 |         let sqrt_N = N.sqrt();
-    |             ^^^^^^ help: convert the identifier to snake case: `sqrt_n`
-
-warning: variable `N` should have a snake case name
-   --> rustmath-modular/src/lfunction.rs:323:13
-    |
-323 |         let N = self.conductor;
-    |             ^ help: convert the identifier to snake case: `n`
-
-warning: variable `N` should have a snake case name
-   --> rustmath-modular/src/lfunction.rs:346:13
-    |
-346 |         let N = self.conductor;
-    |             ^ help: convert the identifier to snake case: `n`
-
-warning: variable `N` should have a snake case name
-   --> rustmath-modular/src/etaproducts.rs:169:24
-    |
-169 | pub fn eta_group_class(N: BigInt) -> EtaGroup {
-    |                        ^ help: convert the identifier to snake case: `n`
-
-warning: variable `N` should have a snake case name
-   --> rustmath-modular/src/etaproducts.rs:178:20
-    |
-178 | pub fn eta_product(N: BigInt, powers: HashMap<BigInt, i64>) -> EtaGroupElement {
-    |                    ^ help: convert the identifier to snake case: `n`
-
-warning: variable `N` should have a snake case name
-   --> rustmath-modular/src/etaproducts.rs:260:18
-    |
-260 | pub fn all_cusps(N: BigInt) -> Vec<(BigInt, BigInt)> {
-    |                  ^ help: convert the identifier to snake case: `n`
-
-warning: variable `N` should have a snake case name
-   --> rustmath-modular/src/etaproducts.rs:283:27
-    |
-283 | pub fn num_cusps_of_width(N: &BigInt, width: &BigInt) -> usize {
-    |                           ^ help: convert the identifier to snake case: `n`
-
-warning: variable `N` should have a snake case name
-   --> rustmath-modular/src/etaproducts.rs:323:5
-    |
-323 |     N: &BigInt,
-    |     ^ help: convert the identifier to snake case: `n`
-
-warning: `rustmath-plot3d` (lib) generated 1 warning
-warning: `rustmath-quadraticforms` (lib) generated 13 warnings
-warning: `rustmath-plot` (lib) generated 14 warnings
-warning: `rustmath-algebraic` (lib) generated 3 warnings
-warning: `rustmath-modular` (lib) generated 51 warnings
-error: expected item after doc comment
-   --> rustmath-groups/src/groups_catalog.rs:360:5
-    |
-355 | /     /// Creates an affine group
-356 | |     ///
-357 | |     /// # Arguments
-358 | |     ///
-359 | |     /// * `n` - The dimension
-    | |_____________________________- other attributes here
-360 |       ///
-    |       ^^^ this doc comment doesn't document anything
+241 | pub struct VarietyMorphism<K, A, B>
+    |            --------------- field in this struct
+...
+247 |     source: AffineVariety<K, A>,
+    |     ^^^^^^
 
 warning: unused import: `MathError`
   --> rustmath-schemes/src/generic/mod.rs:52:21
@@ -4279,6 +4264,135 @@ warning: unused import: `Zero`
    |
 27 | use num_traits::{Zero, One};
    |                  ^^^^
+
+warning: unused import: `Signed`
+  --> rustmath-schemes/src/elliptic_curves/heegner.rs:79:29
+   |
+79 | use num_traits::{Zero, One, Signed, ToPrimitive};
+   |                             ^^^^^^
+
+warning: unused variable: `n`
+  --> rustmath-schemes/src/affine/mod.rs:96:25
+   |
+96 |     pub fn affine_space(n: usize, base_ring: R) -> Self {
+   |                         ^ help: if this is intentional, prefix it with an underscore: `_n`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: function cannot return without recursing
+  --> rustmath-schemes/src/projective/mod.rs:82:5
+   |
+82 |     fn base_ring(&self) -> &Self::BaseRing {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot return without recursing
+83 |         self.base_ring()
+   |         ---------------- recursive call site
+   |
+   = help: a `loop` may express intention better if this is on purpose
+   = note: `#[warn(unconditional_recursion)]` on by default
+
+warning: function cannot return without recursing
+   --> rustmath-schemes/src/projective/mod.rs:120:5
+    |
+120 |     fn base_ring(&self) -> &Self::BaseRing {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot return without recursing
+121 |         self.base_ring()
+    |         ---------------- recursive call site
+    |
+    = help: a `loop` may express intention better if this is on purpose
+
+warning: unused variable: `curve`
+   --> rustmath-schemes/src/elliptic_curves/isogeny.rs:519:27
+    |
+519 |     fn find_ell_isogenies(curve: &EllipticCurve, ell: usize) -> Vec<Isogeny> {
+    |                           ^^^^^ help: if this is intentional, prefix it with an underscore: `_curve`
+
+warning: unused variable: `ell`
+   --> rustmath-schemes/src/elliptic_curves/isogeny.rs:519:50
+    |
+519 |     fn find_ell_isogenies(curve: &EllipticCurve, ell: usize) -> Vec<Isogeny> {
+    |                                                  ^^^ help: if this is intentional, prefix it with an underscore: `_ell`
+
+warning: unused variable: `dim`
+   --> rustmath-schemes/src/line_bundle.rs:136:21
+    |
+136 |         if let Some(dim) = self.scheme.dimension() {
+    |                     ^^^ help: if this is intentional, prefix it with an underscore: `_dim`
+
+warning: unused variable: `denom`
+   --> rustmath-schemes/src/proj.rs:165:13
+    |
+165 |         let denom = &homogeneous[self.index];
+    |             ^^^^^ help: if this is intentional, prefix it with an underscore: `_denom`
+
+warning: field `curve` is never read
+   --> rustmath-schemes/src/elliptic_curves/mod.rs:169:5
+    |
+168 | pub struct TorsionSubgroup<F: Field> {
+    |            --------------- field in this struct
+169 |     curve: EllipticCurve<F>,
+    |     ^^^^^
+    |
+    = note: `TorsionSubgroup` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `v` and `w` are never read
+   --> rustmath-schemes/src/elliptic_curves/isogeny.rs:98:5
+    |
+ 88 | pub struct Isogeny {
+    |            ------- fields in this struct
+...
+ 98 |     v: BigRational,
+    |     ^
+ 99 |     /// Vélu's w coefficient
+100 |     w: BigRational,
+    |     ^
+    |
+    = note: `Isogeny` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `heights_cache` is never read
+   --> rustmath-schemes/src/elliptic_curves/heegner.rs:518:5
+    |
+516 | pub struct HeightPairing {
+    |            ------------- field in this struct
+517 |     /// Cached heights of points
+518 |     heights_cache: HashMap<String, CanonicalHeight>,
+    |     ^^^^^^^^^^^^^
+    |
+    = note: `HeightPairing` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: field `morphism` is never read
+   --> rustmath-schemes/src/projective_morphism.rs:265:5
+    |
+263 | pub struct BaseLocus<R: Ring> {
+    |            --------- field in this struct
+264 |     /// The morphism
+265 |     morphism: ProjectiveMorphism<R>,
+    |     ^^^^^^^^
+    |
+    = note: `BaseLocus` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: comparison is useless due to type limits
+  --> rustmath-schemes/src/graded_ring.rs:64:41
+   |
+64 |         self.components.keys().all(|&d| d >= 0)
+   |                                         ^^^^^^
+   |
+   = note: `#[warn(unused_comparisons)]` on by default
+
+warning: `rustmath-quantumgroups` (lib) generated 2 warnings
+warning: `rustmath-affineschemes` (lib) generated 6 warnings
+warning: `rustmath-schemes` (lib) generated 23 warnings (run `cargo fix --lib -p rustmath-schemes` to apply 10 suggestions)
+error: expected item after doc comment
+   --> rustmath-groups/src/groups_catalog.rs:360:5
+    |
+355 | /     /// Creates an affine group
+356 | |     ///
+357 | |     /// # Arguments
+358 | |     ///
+359 | |     /// * `n` - The dimension
+    | |_____________________________- other attributes here
+360 |       ///
+    |       ^^^ this doc comment doesn't document anything
 
 warning: unused import: `rustmath_rationals::Rational`
  --> rustmath-groups/src/matrix_group.rs:7:5
@@ -4584,427 +4698,24 @@ warning: unused import: `rustmath_rationals::Rational`
 31 | use rustmath_rationals::Rational;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-error[E0034]: multiple applicable items in scope
-   --> rustmath-schemes/src/graded_ring.rs:177:30
-    |
-177 |     ring.add_generator(0, R::one());
-    |                              ^^^ multiple `one` found
-    |
-note: candidate #1 is defined in the trait `One`
-   --> /home/john/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-traits-0.2.19/src/identities.rs:115:5
-    |
-115 |     fn one() -> Self;
-    |     ^^^^^^^^^^^^^^^^^
-note: candidate #2 is defined in the trait `Ring`
-   --> /home/john/RustMath/rustmath-core/src/traits.rs:60:5
-    |
- 60 |     fn one() -> Self;
-    |     ^^^^^^^^^^^^^^^^^
-help: use fully-qualified syntax to disambiguate
-    |
-177 -     ring.add_generator(0, R::one());
-177 +     ring.add_generator(0, <R as One>::one());
-    |
-177 -     ring.add_generator(0, R::one());
-177 +     ring.add_generator(0, <R as Ring>::one());
-    |
-
-error[E0034]: multiple applicable items in scope
-   --> rustmath-schemes/src/graded_ring.rs:183:34
-    |
-183 |         ring.add_generator(1, R::one());
-    |                                  ^^^ multiple `one` found
-    |
-note: candidate #1 is defined in the trait `One`
-   --> /home/john/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-traits-0.2.19/src/identities.rs:115:5
-    |
-115 |     fn one() -> Self;
-    |     ^^^^^^^^^^^^^^^^^
-note: candidate #2 is defined in the trait `Ring`
-   --> /home/john/RustMath/rustmath-core/src/traits.rs:60:5
-    |
- 60 |     fn one() -> Self;
-    |     ^^^^^^^^^^^^^^^^^
-help: use fully-qualified syntax to disambiguate
-    |
-183 -         ring.add_generator(1, R::one());
-183 +         ring.add_generator(1, <R as One>::one());
-    |
-183 -         ring.add_generator(1, R::one());
-183 +         ring.add_generator(1, <R as Ring>::one());
-    |
-
-error[E0034]: multiple applicable items in scope
-   --> rustmath-schemes/src/proj.rs:190:37
-    |
-190 |                 homogeneous.push(R::one());
-    |                                     ^^^ multiple `one` found
-    |
-note: candidate #1 is defined in the trait `One`
-   --> /home/john/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-traits-0.2.19/src/identities.rs:115:5
-    |
-115 |     fn one() -> Self;
-    |     ^^^^^^^^^^^^^^^^^
-note: candidate #2 is defined in the trait `Ring`
-   --> /home/john/RustMath/rustmath-core/src/traits.rs:60:5
-    |
- 60 |     fn one() -> Self;
-    |     ^^^^^^^^^^^^^^^^^
-help: use fully-qualified syntax to disambiguate
-    |
-190 -                 homogeneous.push(R::one());
-190 +                 homogeneous.push(<R as One>::one());
-    |
-190 -                 homogeneous.push(R::one());
-190 +                 homogeneous.push(<R as Ring>::one());
-    |
-
-error[E0034]: multiple applicable items in scope
-   --> rustmath-schemes/src/proj.rs:224:30
-    |
-224 |     ring.add_generator(0, R::one());
-    |                              ^^^ multiple `one` found
-    |
-note: candidate #1 is defined in the trait `One`
-   --> /home/john/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-traits-0.2.19/src/identities.rs:115:5
-    |
-115 |     fn one() -> Self;
-    |     ^^^^^^^^^^^^^^^^^
-note: candidate #2 is defined in the trait `Ring`
-   --> /home/john/RustMath/rustmath-core/src/traits.rs:60:5
-    |
- 60 |     fn one() -> Self;
-    |     ^^^^^^^^^^^^^^^^^
-help: use fully-qualified syntax to disambiguate
-    |
-224 -     ring.add_generator(0, R::one());
-224 +     ring.add_generator(0, <R as One>::one());
-    |
-224 -     ring.add_generator(0, R::one());
-224 +     ring.add_generator(0, <R as Ring>::one());
-    |
-
-error[E0034]: multiple applicable items in scope
-   --> rustmath-schemes/src/proj.rs:228:34
-    |
-228 |         ring.add_generator(1, R::one());
-    |                                  ^^^ multiple `one` found
-    |
-note: candidate #1 is defined in the trait `One`
-   --> /home/john/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-traits-0.2.19/src/identities.rs:115:5
-    |
-115 |     fn one() -> Self;
-    |     ^^^^^^^^^^^^^^^^^
-note: candidate #2 is defined in the trait `Ring`
-   --> /home/john/RustMath/rustmath-core/src/traits.rs:60:5
-    |
- 60 |     fn one() -> Self;
-    |     ^^^^^^^^^^^^^^^^^
-help: use fully-qualified syntax to disambiguate
-    |
-228 -         ring.add_generator(1, R::one());
-228 +         ring.add_generator(1, <R as One>::one());
-    |
-228 -         ring.add_generator(1, R::one());
-228 +         ring.add_generator(1, <R as Ring>::one());
-    |
-
-error[E0034]: multiple applicable items in scope
-   --> rustmath-schemes/src/projective_space.rs:128:32
-    |
-128 |                 coords.push(R::one());
-    |                                ^^^ multiple `one` found
-    |
-note: candidate #1 is defined in the trait `One`
-   --> /home/john/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-traits-0.2.19/src/identities.rs:115:5
-    |
-115 |     fn one() -> Self;
-    |     ^^^^^^^^^^^^^^^^^
-note: candidate #2 is defined in the trait `Ring`
-   --> /home/john/RustMath/rustmath-core/src/traits.rs:60:5
-    |
- 60 |     fn one() -> Self;
-    |     ^^^^^^^^^^^^^^^^^
-help: use fully-qualified syntax to disambiguate
-    |
-128 -                 coords.push(R::one());
-128 +                 coords.push(<R as One>::one());
-    |
-128 -                 coords.push(R::one());
-128 +                 coords.push(<R as Ring>::one());
-    |
-
-error[E0034]: multiple applicable items in scope
-   --> rustmath-schemes/src/projective_space.rs:207:34
-    |
-207 |         let mut coords = vec![R::zero(); self.num_coordinates()];
-    |                                  ^^^^ multiple `zero` found
-    |
-note: candidate #1 is defined in the trait `Ring`
-   --> /home/john/RustMath/rustmath-core/src/traits.rs:57:5
-    |
- 57 |     fn zero() -> Self;
-    |     ^^^^^^^^^^^^^^^^^^
-note: candidate #2 is defined in the trait `num_traits::Zero`
-   --> /home/john/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-traits-0.2.19/src/identities.rs:20:5
-    |
- 20 |     fn zero() -> Self;
-    |     ^^^^^^^^^^^^^^^^^^
-help: use fully-qualified syntax to disambiguate
-    |
-207 -         let mut coords = vec![R::zero(); self.num_coordinates()];
-207 +         let mut coords = vec![<R as Ring>::zero(); self.num_coordinates()];
-    |
-207 -         let mut coords = vec![R::zero(); self.num_coordinates()];
-207 +         let mut coords = vec![<R as num_traits::Zero>::zero(); self.num_coordinates()];
-    |
-
-error[E0034]: multiple applicable items in scope
-   --> rustmath-schemes/src/projective_space.rs:208:28
-    |
-208 |         coords[index] = R::one();
-    |                            ^^^ multiple `one` found
-    |
-note: candidate #1 is defined in the trait `One`
-   --> /home/john/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-traits-0.2.19/src/identities.rs:115:5
-    |
-115 |     fn one() -> Self;
-    |     ^^^^^^^^^^^^^^^^^
-note: candidate #2 is defined in the trait `Ring`
-   --> /home/john/RustMath/rustmath-core/src/traits.rs:60:5
-    |
- 60 |     fn one() -> Self;
-    |     ^^^^^^^^^^^^^^^^^
-help: use fully-qualified syntax to disambiguate
-    |
-208 -         coords[index] = R::one();
-208 +         coords[index] = <R as One>::one();
-    |
-208 -         coords[index] = R::one();
-208 +         coords[index] = <R as Ring>::one();
-    |
-
-error[E0034]: multiple applicable items in scope
-   --> rustmath-schemes/src/projective_space.rs:278:30
-    |
-278 |             let mut sum = R::zero();
-    |                              ^^^^ multiple `zero` found
-    |
-note: candidate #1 is defined in the trait `Ring`
-   --> /home/john/RustMath/rustmath-core/src/traits.rs:57:5
-    |
- 57 |     fn zero() -> Self;
-    |     ^^^^^^^^^^^^^^^^^^
-note: candidate #2 is defined in the trait `num_traits::Zero`
-   --> /home/john/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-traits-0.2.19/src/identities.rs:20:5
-    |
- 20 |     fn zero() -> Self;
-    |     ^^^^^^^^^^^^^^^^^^
-help: use fully-qualified syntax to disambiguate
-    |
-278 -             let mut sum = R::zero();
-278 +             let mut sum = <R as Ring>::zero();
-    |
-278 -             let mut sum = R::zero();
-278 +             let mut sum = <R as num_traits::Zero>::zero();
-    |
-
-error[E0034]: multiple applicable items in scope
-   --> rustmath-schemes/src/projective_space.rs:341:26
-    |
-341 |         let mut sum = R::zero();
-    |                          ^^^^ multiple `zero` found
-    |
-note: candidate #1 is defined in the trait `Ring`
-   --> /home/john/RustMath/rustmath-core/src/traits.rs:57:5
-    |
- 57 |     fn zero() -> Self;
-    |     ^^^^^^^^^^^^^^^^^^
-note: candidate #2 is defined in the trait `num_traits::Zero`
-   --> /home/john/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-traits-0.2.19/src/identities.rs:20:5
-    |
- 20 |     fn zero() -> Self;
-    |     ^^^^^^^^^^^^^^^^^^
-help: use fully-qualified syntax to disambiguate
-    |
-341 -         let mut sum = R::zero();
-341 +         let mut sum = <R as Ring>::zero();
-    |
-341 -         let mut sum = R::zero();
-341 +         let mut sum = <R as num_traits::Zero>::zero();
-    |
-
-error[E0034]: multiple applicable items in scope
-   --> rustmath-schemes/src/segre.rs:297:65
-    |
-297 |         let target_coords = self.compute_products(points, 0, R::one());
-    |                                                                 ^^^ multiple `one` found
-    |
-note: candidate #1 is defined in the trait `One`
-   --> /home/john/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-traits-0.2.19/src/identities.rs:115:5
-    |
-115 |     fn one() -> Self;
-    |     ^^^^^^^^^^^^^^^^^
-note: candidate #2 is defined in the trait `Ring`
-   --> /home/john/RustMath/rustmath-core/src/traits.rs:60:5
-    |
- 60 |     fn one() -> Self;
-    |     ^^^^^^^^^^^^^^^^^
-help: use fully-qualified syntax to disambiguate
-    |
-297 -         let target_coords = self.compute_products(points, 0, R::one());
-297 +         let target_coords = self.compute_products(points, 0, <R as One>::one());
-    |
-297 -         let target_coords = self.compute_products(points, 0, R::one());
-297 +         let target_coords = self.compute_products(points, 0, <R as Ring>::one());
-    |
-
-error[E0034]: multiple applicable items in scope
-   --> rustmath-schemes/src/veronese.rs:80:25
-    |
- 80 |     let mut result = R::one();
-    |                         ^^^ multiple `one` found
-    |
-note: candidate #1 is defined in the trait `One`
-   --> /home/john/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-traits-0.2.19/src/identities.rs:115:5
-    |
-115 |     fn one() -> Self;
-    |     ^^^^^^^^^^^^^^^^^
-note: candidate #2 is defined in the trait `Ring`
-   --> /home/john/RustMath/rustmath-core/src/traits.rs:60:5
-    |
- 60 |     fn one() -> Self;
-    |     ^^^^^^^^^^^^^^^^^
-help: use fully-qualified syntax to disambiguate
-    |
- 80 -     let mut result = R::one();
- 80 +     let mut result = <R as One>::one();
-    |
- 80 -     let mut result = R::one();
- 80 +     let mut result = <R as Ring>::one();
-    |
-
-error[E0034]: multiple applicable items in scope
-   --> rustmath-schemes/src/veronese.rs:85:32
-    |
- 85 |             let mut power = R::one();
-    |                                ^^^ multiple `one` found
-    |
-note: candidate #1 is defined in the trait `One`
-   --> /home/john/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-traits-0.2.19/src/identities.rs:115:5
-    |
-115 |     fn one() -> Self;
-    |     ^^^^^^^^^^^^^^^^^
-note: candidate #2 is defined in the trait `Ring`
-   --> /home/john/RustMath/rustmath-core/src/traits.rs:60:5
-    |
- 60 |     fn one() -> Self;
-    |     ^^^^^^^^^^^^^^^^^
-help: use fully-qualified syntax to disambiguate
-    |
- 85 -             let mut power = R::one();
- 85 +             let mut power = <R as One>::one();
-    |
- 85 -             let mut power = R::one();
- 85 +             let mut power = <R as Ring>::one();
-    |
-
-warning: unused import: `Signed`
-  --> rustmath-schemes/src/elliptic_curves/heegner.rs:79:29
-   |
-79 | use num_traits::{Zero, One, Signed, ToPrimitive};
-   |                             ^^^^^^
-
-warning: unused variable: `n`
-  --> rustmath-schemes/src/affine/mod.rs:96:25
-   |
-96 |     pub fn affine_space(n: usize, base_ring: R) -> Self {
-   |                         ^ help: if this is intentional, prefix it with an underscore: `_n`
-   |
-   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: function cannot return without recursing
-  --> rustmath-schemes/src/projective/mod.rs:82:5
-   |
-82 |     fn base_ring(&self) -> &Self::BaseRing {
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot return without recursing
-83 |         self.base_ring()
-   |         ---------------- recursive call site
-   |
-   = help: a `loop` may express intention better if this is on purpose
-   = note: `#[warn(unconditional_recursion)]` on by default
-
-warning: function cannot return without recursing
-   --> rustmath-schemes/src/projective/mod.rs:120:5
-    |
-120 |     fn base_ring(&self) -> &Self::BaseRing {
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot return without recursing
-121 |         self.base_ring()
-    |         ---------------- recursive call site
-    |
-    = help: a `loop` may express intention better if this is on purpose
-
-warning: unused variable: `curve`
-   --> rustmath-schemes/src/elliptic_curves/isogeny.rs:519:27
-    |
-519 |     fn find_ell_isogenies(curve: &EllipticCurve, ell: usize) -> Vec<Isogeny> {
-    |                           ^^^^^ help: if this is intentional, prefix it with an underscore: `_curve`
-
-warning: unused variable: `ell`
-   --> rustmath-schemes/src/elliptic_curves/isogeny.rs:519:50
-    |
-519 |     fn find_ell_isogenies(curve: &EllipticCurve, ell: usize) -> Vec<Isogeny> {
-    |                                                  ^^^ help: if this is intentional, prefix it with an underscore: `_ell`
-
-warning: unused variable: `dim`
-   --> rustmath-schemes/src/line_bundle.rs:136:21
-    |
-136 |         if let Some(dim) = self.scheme.dimension() {
-    |                     ^^^ help: if this is intentional, prefix it with an underscore: `_dim`
-
 error[E0308]: mismatched types
-   --> rustmath-groups/src/artin.rs:261:47
+   --> rustmath-groups/src/braid.rs:240:39
     |
-261 |             word: FreeGroupElement::generator(i as i32, 1),
-    |                   --------------------------- ^^^^^^^^ expected `isize`, found `i32`
-    |                   |
-    |                   arguments to this function are incorrect
-    |
-note: associated function defined here
-   --> rustmath-groups/src/free_group.rs:194:12
-    |
-194 |     pub fn generator(gen_index: isize, exponent: isize) -> Self {
-    |            ^^^^^^^^^ ----------------
-help: you can convert an `i32` to an `isize` and panic if the converted value doesn't fit
-    |
-261 |             word: FreeGroupElement::generator((i as i32).try_into().unwrap(), 1),
-    |                                               +        +++++++++++++++++++++
-
-warning: unused variable: `denom`
-   --> rustmath-schemes/src/proj.rs:165:13
-    |
-165 |         let denom = &homogeneous[self.index];
-    |             ^^^^^ help: if this is intentional, prefix it with an underscore: `_denom`
-
-error[E0308]: mismatched types
-   --> rustmath-groups/src/artin.rs:347:33
-    |
-347 |             word: self.word.pow(n),
-    |                             --- ^ expected `isize`, found `i32`
-    |                             |
-    |                             arguments to this method are incorrect
+240 |             element: self.element.pow(n),
+    |                                   --- ^ expected `isize`, found `i32`
+    |                                   |
+    |                                   arguments to this method are incorrect
     |
 note: method defined here
-   --> rustmath-groups/src/free_group.rs:376:12
+   --> rustmath-groups/src/artin.rs:344:12
     |
-376 |     pub fn pow(&self, n: isize) -> FreeGroupElement {
+344 |     pub fn pow(&self, n: isize) -> Self {
     |            ^^^        --------
 help: you can convert an `i32` to an `isize` and panic if the converted value doesn't fit
     |
-347 |             word: self.word.pow(n.try_into().unwrap()),
-    |                                  ++++++++++++++++++++
+240 |             element: self.element.pow(n.try_into().unwrap()),
+    |                                        ++++++++++++++++++++
 
-For more information about this error, try `rustc --explain E0034`.
 error[E0308]: mismatched types
    --> rustmath-groups/src/class_function.rs:222:14
     |
@@ -5032,63 +4743,6 @@ help: consider using `Result::expect` to unwrap the `Result<Complex, MathError>`
 222 |         Some(sum.div(&Complex::new(order, 0.0)).expect("REASON"))
     |                                                +++++++++++++++++
 
-warning: `rustmath-schemes` (lib) generated 18 warnings
-error: could not compile `rustmath-schemes` (lib) due to 13 previous errors; 18 warnings emitted
-warning: build failed, waiting for other jobs to finish...
-error[E0308]: mismatched types
-   --> rustmath-groups/src/cubic_braid.rs:97:51
-    |
- 97 |             let gen = FreeGroupElement::generator(i as i32, 3);
-    |                       --------------------------- ^^^^^^^^ expected `isize`, found `i32`
-    |                       |
-    |                       arguments to this function are incorrect
-    |
-note: associated function defined here
-   --> rustmath-groups/src/free_group.rs:194:12
-    |
-194 |     pub fn generator(gen_index: isize, exponent: isize) -> Self {
-    |            ^^^^^^^^^ ----------------
-help: you can convert an `i32` to an `isize` and panic if the converted value doesn't fit
-    |
- 97 |             let gen = FreeGroupElement::generator((i as i32).try_into().unwrap(), 3);
-    |                                                   +        +++++++++++++++++++++
-
-error[E0308]: mismatched types
-   --> rustmath-groups/src/cubic_braid.rs:104:54
-    |
-104 |                 let si = FreeGroupElement::generator(i as i32, 1);
-    |                          --------------------------- ^^^^^^^^ expected `isize`, found `i32`
-    |                          |
-    |                          arguments to this function are incorrect
-    |
-note: associated function defined here
-   --> rustmath-groups/src/free_group.rs:194:12
-    |
-194 |     pub fn generator(gen_index: isize, exponent: isize) -> Self {
-    |            ^^^^^^^^^ ----------------
-help: you can convert an `i32` to an `isize` and panic if the converted value doesn't fit
-    |
-104 |                 let si = FreeGroupElement::generator((i as i32).try_into().unwrap(), 1);
-    |                                                      +        +++++++++++++++++++++
-
-error[E0308]: mismatched types
-   --> rustmath-groups/src/cubic_braid.rs:105:54
-    |
-105 |                 let sj = FreeGroupElement::generator(j as i32, 1);
-    |                          --------------------------- ^^^^^^^^ expected `isize`, found `i32`
-    |                          |
-    |                          arguments to this function are incorrect
-    |
-note: associated function defined here
-   --> rustmath-groups/src/free_group.rs:194:12
-    |
-194 |     pub fn generator(gen_index: isize, exponent: isize) -> Self {
-    |            ^^^^^^^^^ ----------------
-help: you can convert an `i32` to an `isize` and panic if the converted value doesn't fit
-    |
-105 |                 let sj = FreeGroupElement::generator((j as i32).try_into().unwrap(), 1);
-    |                                                      +        +++++++++++++++++++++
-
 error[E0308]: mismatched types
    --> rustmath-liealgebras/src/weight_lattice.rs:125:71
     |
@@ -5101,114 +4755,6 @@ help: consider using clone here
     |
 125 |         self.coefficients.iter().fold(Integer::zero(), |acc, c| acc + c.clone())
     |                                                                        ++++++++
-
-error[E0308]: mismatched types
-   --> rustmath-groups/src/cubic_braid.rs:106:58
-    |
-106 |                 let si_inv = FreeGroupElement::generator(i as i32, -1);
-    |                              --------------------------- ^^^^^^^^ expected `isize`, found `i32`
-    |                              |
-    |                              arguments to this function are incorrect
-    |
-note: associated function defined here
-   --> rustmath-groups/src/free_group.rs:194:12
-    |
-194 |     pub fn generator(gen_index: isize, exponent: isize) -> Self {
-    |            ^^^^^^^^^ ----------------
-help: you can convert an `i32` to an `isize` and panic if the converted value doesn't fit
-    |
-106 |                 let si_inv = FreeGroupElement::generator((i as i32).try_into().unwrap(), -1);
-    |                                                          +        +++++++++++++++++++++
-
-error[E0308]: mismatched types
-   --> rustmath-groups/src/cubic_braid.rs:107:58
-    |
-107 |                 let sj_inv = FreeGroupElement::generator(j as i32, -1);
-    |                              --------------------------- ^^^^^^^^ expected `isize`, found `i32`
-    |                              |
-    |                              arguments to this function are incorrect
-    |
-note: associated function defined here
-   --> rustmath-groups/src/free_group.rs:194:12
-    |
-194 |     pub fn generator(gen_index: isize, exponent: isize) -> Self {
-    |            ^^^^^^^^^ ----------------
-help: you can convert an `i32` to an `isize` and panic if the converted value doesn't fit
-    |
-107 |                 let sj_inv = FreeGroupElement::generator((j as i32).try_into().unwrap(), -1);
-    |                                                          +        +++++++++++++++++++++
-
-error[E0308]: mismatched types
-   --> rustmath-groups/src/cubic_braid.rs:117:50
-    |
-117 |             let si = FreeGroupElement::generator(i as i32, 1);
-    |                      --------------------------- ^^^^^^^^ expected `isize`, found `i32`
-    |                      |
-    |                      arguments to this function are incorrect
-    |
-note: associated function defined here
-   --> rustmath-groups/src/free_group.rs:194:12
-    |
-194 |     pub fn generator(gen_index: isize, exponent: isize) -> Self {
-    |            ^^^^^^^^^ ----------------
-help: you can convert an `i32` to an `isize` and panic if the converted value doesn't fit
-    |
-117 |             let si = FreeGroupElement::generator((i as i32).try_into().unwrap(), 1);
-    |                                                  +        +++++++++++++++++++++
-
-error[E0308]: mismatched types
-   --> rustmath-groups/src/cubic_braid.rs:118:51
-    |
-118 |             let si1 = FreeGroupElement::generator((i + 1) as i32, 1);
-    |                       --------------------------- ^^^^^^^^^^^^^^ expected `isize`, found `i32`
-    |                       |
-    |                       arguments to this function are incorrect
-    |
-note: associated function defined here
-   --> rustmath-groups/src/free_group.rs:194:12
-    |
-194 |     pub fn generator(gen_index: isize, exponent: isize) -> Self {
-    |            ^^^^^^^^^ ----------------
-help: you can convert an `i32` to an `isize` and panic if the converted value doesn't fit
-    |
-118 |             let si1 = FreeGroupElement::generator(((i + 1) as i32).try_into().unwrap(), 1);
-    |                                                   +              +++++++++++++++++++++
-
-error[E0308]: mismatched types
-   --> rustmath-groups/src/cubic_braid.rs:119:54
-    |
-119 |             let si_inv = FreeGroupElement::generator(i as i32, -1);
-    |                          --------------------------- ^^^^^^^^ expected `isize`, found `i32`
-    |                          |
-    |                          arguments to this function are incorrect
-    |
-note: associated function defined here
-   --> rustmath-groups/src/free_group.rs:194:12
-    |
-194 |     pub fn generator(gen_index: isize, exponent: isize) -> Self {
-    |            ^^^^^^^^^ ----------------
-help: you can convert an `i32` to an `isize` and panic if the converted value doesn't fit
-    |
-119 |             let si_inv = FreeGroupElement::generator((i as i32).try_into().unwrap(), -1);
-    |                                                      +        +++++++++++++++++++++
-
-error[E0308]: mismatched types
-   --> rustmath-groups/src/cubic_braid.rs:120:55
-    |
-120 |             let si1_inv = FreeGroupElement::generator((i + 1) as i32, -1);
-    |                           --------------------------- ^^^^^^^^^^^^^^ expected `isize`, found `i32`
-    |                           |
-    |                           arguments to this function are incorrect
-    |
-note: associated function defined here
-   --> rustmath-groups/src/free_group.rs:194:12
-    |
-194 |     pub fn generator(gen_index: isize, exponent: isize) -> Self {
-    |            ^^^^^^^^^ ----------------
-help: you can convert an `i32` to an `isize` and panic if the converted value doesn't fit
-    |
-120 |             let si1_inv = FreeGroupElement::generator(((i + 1) as i32).try_into().unwrap(), -1);
-    |                                                       +              +++++++++++++++++++++
 
 error[E0308]: arguments to this function are incorrect
    --> rustmath-groups/src/cubic_braid.rs:196:24
@@ -5240,24 +4786,6 @@ note: associated function defined here
     |
 109 |     pub fn new(generator_names: Vec<String>, relations: Vec<Vec<isize>>) -> Self {
     |            ^^^ ----------------------------  --------------------------
-
-error[E0308]: mismatched types
-   --> rustmath-groups/src/cubic_braid.rs:393:47
-    |
-393 |             word: FreeGroupElement::generator(i as i32, 1),
-    |                   --------------------------- ^^^^^^^^ expected `isize`, found `i32`
-    |                   |
-    |                   arguments to this function are incorrect
-    |
-note: associated function defined here
-   --> rustmath-groups/src/free_group.rs:194:12
-    |
-194 |     pub fn generator(gen_index: isize, exponent: isize) -> Self {
-    |            ^^^^^^^^^ ----------------
-help: you can convert an `i32` to an `isize` and panic if the converted value doesn't fit
-    |
-393 |             word: FreeGroupElement::generator((i as i32).try_into().unwrap(), 1),
-    |                                               +        +++++++++++++++++++++
 
 error[E0308]: mismatched types
    --> rustmath-groups/src/cubic_braid.rs:426:33
@@ -5661,6 +5189,14 @@ warning: variable does not need to be mutable
     |             |
     |             help: remove this `mut`
 
+warning: variable does not need to be mutable
+   --> rustmath-groups/src/nilpotent_lie_group.rs:196:17
+    |
+196 |             let mut coords = vec![0.0; self.dim];
+    |                 ----^^^^^^
+    |                 |
+    |                 help: remove this `mut`
+
 warning: unused variable: `i`
    --> rustmath-liealgebras/src/affine_lie_algebra.rs:565:20
     |
@@ -5672,14 +5208,6 @@ warning: unused variable: `i`
     |
 578 |     fn affine_coroot(i: usize) -> Self
     |                      ^ help: if this is intentional, prefix it with an underscore: `_i`
-
-warning: variable does not need to be mutable
-   --> rustmath-groups/src/nilpotent_lie_group.rs:196:17
-    |
-196 |             let mut coords = vec![0.0; self.dim];
-    |                 ----^^^^^^
-    |                 |
-    |                 help: remove this `mut`
 
 warning: unused variable: `gen_index`
    --> rustmath-liealgebras/src/bgg_dual_module.rs:442:9
@@ -5728,7 +5256,8 @@ warning: variable does not need to be mutable
 Some errors have detailed explanations: E0277, E0308.
 For more information about an error, try `rustc --explain E0277`.
 warning: `rustmath-groups` (lib) generated 30 warnings
-error: could not compile `rustmath-groups` (lib) due to 26 previous errors; 30 warnings emitted
+error: could not compile `rustmath-groups` (lib) due to 15 previous errors; 30 warnings emitted
+warning: build failed, waiting for other jobs to finish...
 warning: unused variable: `pbw_element`
    --> rustmath-liealgebras/src/center_uea.rs:345:27
     |
