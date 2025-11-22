@@ -294,7 +294,7 @@ impl<R: Ring> MultiSegreEmbedding<R> {
         }
 
         // Compute all products recursively
-        let target_coords = self.compute_products(points, 0, R::one());
+        let target_coords = self.compute_products(points, 0, <R as Ring>::one());
 
         ProjectivePoint::new(target_coords)
     }

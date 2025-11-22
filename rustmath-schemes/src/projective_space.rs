@@ -125,7 +125,7 @@ impl<R: Ring> ProjectivePoint<R> {
 
         for i in 0..=dimension {
             if i == chart_index {
-                coords.push(R::one());
+                coords.push(<R as Ring>::one());
             } else if i < chart_index {
                 coords.push(affine_coords[i].clone());
             } else {
@@ -204,8 +204,8 @@ impl<R: Ring> ProjectiveSpace<R> {
             return Err("Index out of bounds".to_string());
         }
 
-        let mut coords = vec![R::zero(); self.num_coordinates()];
-        coords[index] = R::one();
+        let mut coords = vec![<R as Ring>::zero(); self.num_coordinates()];
+        coords[index] = <R as Ring>::one();
 
         ProjectivePoint::new(coords)
     }
@@ -275,12 +275,12 @@ impl<R: Ring> LinearSubspace<R> {
         // Check if point satisfies all defining equations
         for equation in &self.equations {
             // Compute dot product of equation coefficients with point coordinates
-            let mut sum = R::zero();
+            let mut sum = <R as Ring>::zero();
             for (coeff, coord) in equation.iter().zip(point.coordinates()) {
                 sum = sum + coeff.clone() * coord.clone();
             }
 
-            if !sum.is_zero() {
+            if !Ring::is_zero(&sum) {
                 return false;
             }
         }
@@ -338,11 +338,11 @@ impl<R: Ring> Hyperplane<R> {
     where
         R: Zero,
     {
-        let mut sum = R::zero();
+        let mut sum = <R as Ring>::zero();
         for (coeff, coord) in self.coefficients.iter().zip(point.coordinates()) {
             sum = sum + coeff.clone() * coord.clone();
         }
-        sum.is_zero()
+        Ring::is_zero(&sum)
     }
 
     /// Convert to linear subspace
