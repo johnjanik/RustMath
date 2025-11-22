@@ -236,17 +236,97 @@ impl<F: Field + Clone> WeierstrassForm<F> {
 pub fn weierstrass_transform<F: Field + Clone + PartialEq>(
     curve: &MultiPoly<F>,
 ) -> Option<WeierstrassForm<F>> {
-    // Check that the curve is a cubic
+    // Check that the curve is a cubic (genus 1 if smooth)
     if curve.total_degree() != 3 {
         return None;
     }
 
-    // This is a complex transformation that requires:
-    // 1. Finding a rational point on the curve (if it exists)
-    // 2. Performing a change of coordinates to move that point to infinity
-    // 3. Simplifying to Weierstrass form
+    // This transformation requires finding a flex point (inflection point)
+    // or a rational point on the curve, then translating coordinates
 
-    // Simplified implementation: return None
+    // For a complete implementation, we would:
+    // 1. Find a rational point P on the curve (requires root-finding)
+    // 2. Translate so P is at the origin: (x, y) → (x - P.x, y - P.y)
+    // 3. Apply a linear transformation to normalize the tangent line
+    // 4. Project to get Weierstrass form
+
+    // Algorithm for genus 1 curves:
+    // 1. Verify the curve is non-singular (check discriminant ≠ 0)
+    // 2. Find a flex point (where Hessian vanishes)
+    // 3. Move flex point to origin and tangent to horizontal
+    // 4. Apply birational transformation to get y² = x³ + ax + b
+
+    use rustmath_polynomials::multivariate::MultiPoly;
+
+    // Check if already in Weierstrass-like form: y² - x³ - ax - b = 0
+    // This is a simplified heuristic check
+    let vars = curve.variables();
+    if vars.len() != 2 {
+        return None;
+    }
+
+    // For now, we implement a simple case: if the curve is already close to
+    // Weierstrass form (has y² and x³ terms), extract coefficients
+
+    // Try to match pattern: c₁y² + c₂x³ + c₃x + c₄ = 0
+    // where c₁, c₂ are non-zero
+
+    use rustmath_polynomials::multivariate::Monomial;
+    use std::collections::BTreeMap;
+
+    // Create monomials for y², x³, x, constant
+    let mut y2_exp = BTreeMap::new();
+    y2_exp.insert(1, 2); // y²
+    let y2_monomial = Monomial::from_exponents(y2_exp);
+
+    let mut x3_exp = BTreeMap::new();
+    x3_exp.insert(0, 3); // x³
+    let x3_monomial = Monomial::from_exponents(x3_exp);
+
+    let mut x1_exp = BTreeMap::new();
+    x1_exp.insert(0, 1); // x
+    let x1_monomial = Monomial::from_exponents(x1_exp);
+
+    let const_monomial = Monomial::new(); // constant term
+
+    let y2_coeff = curve.coefficient(&y2_monomial);
+    let x3_coeff = curve.coefficient(&x3_monomial);
+    let x_coeff = curve.coefficient(&x1_monomial);
+    let const_coeff = curve.coefficient(&const_monomial);
+
+    // Check if we have the main terms (y² and x³)
+    if y2_coeff == F::zero() || x3_coeff == F::zero() {
+        // Not in recognizable Weierstrass form
+        // Would need general birational transformation
+        return None;
+    }
+
+    // Normalize to y² = x³ + ax + b form
+    // From: c₁y² + c₂x³ + c₃x + c₄ = 0
+    // To: y² = -(c₂/c₁)x³ - (c₃/c₁)x - (c₄/c₁)
+    // Which is: y² = x³ + a*x + b where a = -c₃/c₁, b = -c₄/c₁
+    // (assuming c₂/c₁ = -1, otherwise need to scale)
+
+    let norm_x3 = x3_coeff.clone() / y2_coeff.clone();
+    let norm_x = x_coeff.clone() / y2_coeff.clone();
+    let norm_const = const_coeff.clone() / y2_coeff.clone();
+
+    // Check if x³ coefficient is -1 (standard form)
+    if norm_x3 == -F::one() {
+        let a = -norm_x;
+        let b = -norm_const;
+        return Some(WeierstrassForm::short(a, b));
+    }
+
+    // If coefficient is 1, we need to negate
+    if norm_x3 == F::one() {
+        let a = norm_x;
+        let b = norm_const;
+        return Some(WeierstrassForm::short(a, b));
+    }
+
+    // General case: would require variable scaling
+    // For now, return None
     None
 }
 

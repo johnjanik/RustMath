@@ -104,16 +104,51 @@ impl<R: Ring + fmt::Display> fmt::Display for Singularity<R> {
 pub fn find_singularities<R: Ring + Clone + PartialEq>(
     poly: &MultiPoly<R>,
 ) -> Vec<Singularity<R>> {
+    use rustmath_polynomials::groebner::{groebner_basis, MonomialOrdering};
+
     // Find points where F = ∂F/∂x = ∂F/∂y = 0
-    // This requires solving a system of polynomial equations
-    // For now, we return an empty vector (simplified implementation)
+    // This requires solving a system of polynomial equations using Gröbner bases
 
-    // A complete implementation would:
-    // 1. Compute partial derivatives
-    // 2. Use Gröbner bases to solve the system
-    // 3. Classify each singular point
+    let num_vars = poly.variables().len();
+    if num_vars == 0 {
+        return vec![];
+    }
 
-    vec![]
+    // Compute partial derivatives for all variables
+    let mut ideal_generators = vec![poly.clone()];
+    for var in 0..num_vars {
+        ideal_generators.push(poly.partial_derivative(var));
+    }
+
+    // Compute Gröbner basis to solve the system
+    // Use lexicographic ordering for elimination
+    let basis = groebner_basis(ideal_generators, MonomialOrdering::Lex);
+
+    // Extract solutions from the Gröbner basis
+    // In general, this requires sophisticated root-finding algorithms
+    // For now, we check if the basis contains only constants (no solutions)
+    // or if it contains univariate polynomials (which we could solve)
+
+    let mut singularities = Vec::new();
+
+    // Check if the ideal is trivial (contains a non-zero constant)
+    for poly in &basis {
+        if poly.is_constant() && poly != &MultiPoly::zero() {
+            // Ideal is the whole ring, no common zeros
+            return vec![];
+        }
+    }
+
+    // For a complete implementation, we would:
+    // 1. Extract univariate polynomials from the basis
+    // 2. Solve them to find candidate points
+    // 3. Substitute back to find all coordinates
+    // 4. Classify each singular point
+    //
+    // For now, return an empty vector indicating that solving
+    // requires more advanced algebraic methods (resultants, etc.)
+
+    singularities
 }
 
 /// Classify a singular point by examining the Hessian matrix
@@ -139,6 +174,7 @@ pub fn classify_singularity<R: Ring + Clone + PartialEq>(
         return SingularityType::Smooth;
     }
 
+    // It's a singular point; now classify using the Hessian matrix
     // Compute the Hessian (second derivatives)
     let fxx = fx.partial_derivative(0);
     let fxy = fx.partial_derivative(1);
@@ -148,12 +184,62 @@ pub fn classify_singularity<R: Ring + Clone + PartialEq>(
     let fxy_val = fxy.evaluate(point);
     let fyy_val = fyy.evaluate(point);
 
-    // Compute discriminant of Hessian: fxx * fyy - fxy^2
-    // This helps classify the singularity
+    // Compute determinant of Hessian: det(H) = fxx * fyy - fxy^2
+    let det = fxx_val.clone() * fyy_val.clone() - fxy_val.clone() * fxy_val.clone();
 
-    // For now, return a generic classification
-    // A full implementation would analyze the Hessian determinant
-    SingularityType::Node
+    // Classification based on Hessian analysis:
+    // - If det ≠ 0: Ordinary double point (node)
+    // - If det = 0 but Hessian is non-zero: Cusp or higher order
+    // - If all second derivatives are zero: Higher order singularity
+
+    if det != R::zero() {
+        // Non-degenerate Hessian indicates a node (ordinary double point)
+        return SingularityType::Node;
+    }
+
+    // Check if all second derivatives vanish
+    if fxx_val == R::zero() && fxy_val == R::zero() && fyy_val == R::zero() {
+        // All second derivatives vanish - need to check higher order terms
+        // Compute third derivatives to distinguish cusp from higher order
+        let fxxx = fxx.partial_derivative(0);
+        let fxxy = fxx.partial_derivative(1);
+        let fxyy = fxy.partial_derivative(1);
+        let fyyy = fyy.partial_derivative(1);
+
+        let fxxx_val = fxxx.evaluate(point);
+        let fxxy_val = fxxy.evaluate(point);
+        let fxyy_val = fxyy.evaluate(point);
+        let fyyy_val = fyyy.evaluate(point);
+
+        if fxxx_val != R::zero() || fxxy_val != R::zero() ||
+           fxyy_val != R::zero() || fyyy_val != R::zero() {
+            // Some third derivative is non-zero: likely a higher order singularity
+            return SingularityType::TriplePoint;
+        } else {
+            // Even higher order
+            return SingularityType::Higher(4);
+        }
+    }
+
+    // Hessian determinant is zero but not all entries are zero
+    // This typically indicates a cusp or tacnode
+    // A more refined classification would examine the rank and signature of the Hessian
+
+    // For cusps, one eigenvalue is non-zero
+    // For tacnodes, both eigenvalues are zero but matrix is non-zero
+
+    // Trace of Hessian: tr(H) = fxx + fyy
+    let trace = fxx_val.clone() + fyy_val.clone();
+
+    if trace != R::zero() {
+        // At least one diagonal entry is non-zero with zero determinant
+        // This suggests a cusp (one branch with self-tangency)
+        SingularityType::Cusp
+    } else {
+        // Trace is zero but off-diagonal might be non-zero
+        // This suggests a tacnode (two branches with same tangent)
+        SingularityType::Tacnode
+    }
 }
 
 /// Compute the multiplicity of a point on a curve
