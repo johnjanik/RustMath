@@ -56,7 +56,7 @@ impl<R: EuclideanDomain> Matrix<R> {
 }
 ```
 
-### Module Structure (19+ crates)
+### Module Structure (60+ workspace members)
 - **rustmath-core**: Fundamental traits (Ring, Field, EuclideanDomain)
 - **rustmath-features**: Feature detection and optional dependency management
 - **rustmath-interfaces**: External system interfaces (GAP, PARI, etc.) (NEW)
@@ -175,11 +175,12 @@ Tests are organized within each crate's `src/lib.rs` or dedicated test modules:
 
 ### Known Issues and Limitations
 
-1. **Sparse Matrix Tests**: Won't compile due to trait bound issues with generic parameters
-2. **No Symbolic Integration**: Only differentiation implemented
-3. **No Expression Parsing**: Cannot parse strings like "x^2 + 3*x + 2"
-4. **Real Numbers**: Currently f64-based; arbitrary precision planned
-5. **Gröbner Bases**: Partially implemented for multivariate polynomial ideals
+1. **rustmath-category**: Compilation errors due to Category trait not being dyn-compatible (see root_cause_analysis.md)
+2. **rustmath-interfaces**: Missing Clone implementation on GapInterface (see root_cause_analysis.md)
+3. **No Symbolic Integration**: Only differentiation implemented
+4. **No Expression Parsing**: Cannot parse strings like "x^2 + 3*x + 2"
+5. **Real Numbers**: Currently f64-based; arbitrary precision planned
+6. **Gröbner Bases**: Partially implemented for multivariate polynomial ideals
 
 ### Development Workflow
 
@@ -193,5 +194,5 @@ Tests are organized within each crate's `src/lib.rs` or dedicated test modules:
 
 - **THINGS_TO_DO.md**: Detailed progress tracking (which SageMath sections are complete)
 - **README.md**: Project overview and goals
-- **Cargo.toml**: Workspace configuration with all 17 crates
+- **Cargo.toml**: Workspace configuration with 60+ workspace members
 - Each crate's **src/lib.rs**: Entry point with public API exports
