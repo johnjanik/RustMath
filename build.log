@@ -631,7 +631,7 @@ help: you might have meant to pattern match on the similarly named constant `SIM
 warning: unused variable: `left_size`
    --> rustmath-combinatorics/src/ranking.rs:450:60
     |
-450 | fn combine_tree_ranks(left_rank: usize, right_rank: usize, left_size: usize, right_size: usize) -> us...
+450 | fn combine_tree_ranks(left_rank: usize, right_rank: usize, left_size: usize, right_size: usize) -> usize {
     |                                                            ^^^^^^^^^
     |
 help: if this is intentional, prefix it with an underscore
@@ -1099,8 +1099,29 @@ warning: associated function `trivial` is never used
 171 |     fn trivial(n: usize) -> Self {
     |        ^^^^^^^
 
+warning: variable `N` should have a snake case name
+   --> rustmath-ellipticcurves/src/lfunction.rs:228:13
+    |
+228 |         let N = self.conductor.to_f64().unwrap_or(1.0);
+    |             ^ help: convert the identifier to snake case: `n`
+    |
+    = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: variable `L_value` should have a snake case name
+   --> rustmath-ellipticcurves/src/lfunction.rs:231:13
+    |
+231 |         let L_value = self.evaluate(s, 1000);
+    |             ^^^^^^^ help: convert the identifier to snake case: `l_value`
+
+warning: variable `N_to_s_half` should have a snake case name
+   --> rustmath-ellipticcurves/src/lfunction.rs:233:13
+    |
+233 |         let N_to_s_half = N.powf(s.re / 2.0) * ComplexNum::new(
+    |             ^^^^^^^^^^^ help: convert the identifier to snake case: `n_to_s_half`
+
 warning: `rustmath-combinatorics` (lib) generated 98 warnings (run `cargo fix --lib -p rustmath-combinatorics` to apply 39 suggestions)
 warning: `rustmath-graphs` (lib) generated 16 warnings
+warning: `rustmath-ellipticcurves` (lib) generated 3 warnings
 warning: unused import: `rustmath_rationals::Rational`
  --> rustmath-groups/src/matrix_group.rs:7:5
   |
@@ -1148,7 +1169,7 @@ warning: unused import: `std::ops::Mul`
 warning: unused import: `ArtinGroupElement`
   --> rustmath-groups/src/braid.rs:51:32
    |
-51 | use crate::artin::{ArtinGroup, ArtinGroupElement, FiniteTypeArtinGroup, FiniteTypeArtinGroupElement, C...
+51 | use crate::artin::{ArtinGroup, ArtinGroupElement, FiniteTypeArtinGroup, FiniteTypeArtinGroupElement, CoxeterMatrix};
    |                                ^^^^^^^^^^^^^^^^^
 
 warning: unused import: `crate::free_group::FreeGroupElement`
@@ -2725,6 +2746,14 @@ help: use `let _ = ...` to ignore the resulting value
 329 |             let _ = mat.set(i + 1, i + 1, R::from(-1));
     |             +++++++
 
+warning: unused import: `HashSet`
+  --> rustmath-geometry/src/plane_curve_ops.rs:17:24
+   |
+17 | use std::collections::{HashSet, HashMap};
+   |                        ^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
 warning: unused variable: `n`
    --> rustmath-geometry/src/hyperplane_arrangement/check_freeness.rs:219:9
     |
@@ -2749,154 +2778,6 @@ warning: associated function `empty` is never used
    |        ^^^^^
    |
    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: variable `N` should have a snake case name
-   --> rustmath-ellipticcurves/src/lfunction.rs:228:13
-    |
-228 |         let N = self.conductor.to_f64().unwrap_or(1.0);
-    |             ^ help: convert the identifier to snake case: `n`
-    |
-    = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
-
-warning: variable `L_value` should have a snake case name
-   --> rustmath-ellipticcurves/src/lfunction.rs:231:13
-    |
-231 |         let L_value = self.evaluate(s, 1000);
-    |             ^^^^^^^ help: convert the identifier to snake case: `l_value`
-
-warning: variable `N_to_s_half` should have a snake case name
-   --> rustmath-ellipticcurves/src/lfunction.rs:233:13
-    |
-233 |         let N_to_s_half = N.powf(s.re / 2.0) * ComplexNum::new(
-    |             ^^^^^^^^^^^ help: convert the identifier to snake case: `n_to_s_half`
-
-warning: unused variable: `rank`
-   --> rustmath-crystals/src/character.rs:139:47
-    |
-139 | pub fn weyl_character(highest_weight: Weight, rank: usize) -> Character {
-    |                                               ^^^^ help: if this is intentional, prefix it with an underscore: `_rank`
-    |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `hw_weight`
-   --> rustmath-crystals/src/character.rs:155:13
-    |
-155 |         let hw_weight = crystal.weight(&hw);
-    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_hw_weight`
-
-warning: unused variable: `diff`
-  --> rustmath-crystals/src/littelmann.rs:73:13
-   |
-73 |         let diff = v2 - v1;
-   |             ^^^^ help: if this is intentional, prefix it with an underscore: `_diff`
-
-warning: unused variable: `min_val`
-   --> rustmath-crystals/src/littelmann.rs:185:23
-    |
-185 |         let (min_idx, min_val) = path.i_string_min(i, &self.root_system);
-    |                       ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_min_val`
-
-warning: unused variable: `tab`
-   --> rustmath-crystals/src/kr_crystal.rs:222:32
-    |
-222 |             KRElement::Tableau(tab) => {
-    |                                ^^^ help: if this is intentional, prefix it with an underscore: `_tab`
-
-warning: unused variable: `i`
-   --> rustmath-crystals/src/kr_crystal.rs:220:42
-    |
-220 |     fn apply_ei(&self, elem: &KRElement, i: usize) -> Option<KRElement> {
-    |                                          ^ help: if this is intentional, prefix it with an underscore: `_i`
-
-warning: unused variable: `tab`
-   --> rustmath-crystals/src/kr_crystal.rs:235:32
-    |
-235 |             KRElement::Tableau(tab) => {
-    |                                ^^^ help: if this is intentional, prefix it with an underscore: `_tab`
-
-warning: unused variable: `i`
-   --> rustmath-crystals/src/kr_crystal.rs:233:42
-    |
-233 |     fn apply_fi(&self, elem: &KRElement, i: usize) -> Option<KRElement> {
-    |                                          ^ help: if this is intentional, prefix it with an underscore: `_i`
-
-warning: unused variable: `crystal`
-   --> rustmath-crystals/src/kr_crystal.rs:308:24
-    |
-308 | pub fn energy_function(crystal: &KRCrystal, elem: &KRElement) -> i64 {
-    |                        ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_crystal`
-
-warning: unused variable: `elem`
-   --> rustmath-crystals/src/kr_crystal.rs:308:45
-    |
-308 | pub fn energy_function(crystal: &KRCrystal, elem: &KRElement) -> i64 {
-    |                                             ^^^^ help: if this is intentional, prefix it with an underscore: `_elem`
-
-warning: unused variable: `k`
-  --> rustmath-crystals/src/nakajima.rs:70:19
-   |
-70 |         for (&(i, k), &exp) in &self.exponents {
-   |                   ^ help: if this is intentional, prefix it with an underscore: `_k`
-
-warning: unused variable: `other_part`
-   --> rustmath-crystals/src/rigged_configurations.rs:218:18
-    |
-218 |             for &other_part in &other_partition.parts {
-    |                  ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_other_part`
-
-warning: unused variable: `i`
-   --> rustmath-crystals/src/rigged_configurations.rs:364:38
-    |
-364 | fn compute_epsilon_i(rc: &RCElement, i: usize) -> i64 {
-    |                                      ^ help: if this is intentional, prefix it with an underscore: `_i`
-
-warning: unused variable: `rc`
-   --> rustmath-crystals/src/rigged_configurations.rs:408:12
-    |
-408 | fn phi_map(rc: &RCElement, tensor_shape: &[(usize, usize)]) -> TensorProductImage {
-    |            ^^ help: if this is intentional, prefix it with an underscore: `_rc`
-
-warning: unused variable: `tp`
-   --> rustmath-crystals/src/rigged_configurations.rs:429:16
-    |
-429 | fn phi_inverse(tp: &TensorProductImage, rank: usize) -> RCElement {
-    |                ^^ help: if this is intentional, prefix it with an underscore: `_tp`
-
-warning: unused variable: `tensor_shape`
-   --> rustmath-crystals/src/rigged_configurations.rs:437:52
-    |
-437 | fn generate_all_rigged_configurations(rank: usize, tensor_shape: &[(usize, usize)]) -> Vec<RCElement> {
-    |                                                    ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tensor_shape`
-
-warning: unused variable: `highest_weight`
-   --> rustmath-crystals/src/rigged_configurations.rs:523:29
-    |
-523 |     pub fn new(rank: usize, highest_weight: Weight) -> Self {
-    |                             ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_highest_weight`
-
-warning: unused variable: `node`
-   --> rustmath-crystals/src/rigged_configurations.rs:544:22
-    |
-544 | fn build_kleber_tree(node: &mut KleberNode, rank: usize) {
-    |                      ^^^^ help: if this is intentional, prefix it with an underscore: `_node`
-
-warning: unused variable: `rank`
-   --> rustmath-crystals/src/rigged_configurations.rs:544:45
-    |
-544 | fn build_kleber_tree(node: &mut KleberNode, rank: usize) {
-    |                                             ^^^^ help: if this is intentional, prefix it with an underscore: `_rank`
-
-warning: unused variable: `rc`
-   --> rustmath-crystals/src/rigged_configurations.rs:713:23
-    |
-713 |     pub fn e_0(&self, rc: &RCElement) -> Option<RCElement> {
-    |                       ^^ help: if this is intentional, prefix it with an underscore: `_rc`
-
-warning: unused variable: `rc`
-   --> rustmath-crystals/src/rigged_configurations.rs:719:23
-    |
-719 |     pub fn f_0(&self, rc: &RCElement) -> Option<RCElement> {
-    |                       ^^ help: if this is intentional, prefix it with an underscore: `_rc`
 
 warning: unused variable: `outer`
    --> rustmath-symmetricfunctions/src/ribbon.rs:188:5
@@ -3238,6 +3119,1205 @@ warning: variable `I` should have a snake case name
 467 |     for (I, f_coeff) in &f_mono.coeffs {
     |          ^ help: convert the identifier to snake case (notice the capitalization): `i`
 
+warning: unused variable: `rank`
+   --> rustmath-crystals/src/character.rs:139:47
+    |
+139 | pub fn weyl_character(highest_weight: Weight, rank: usize) -> Character {
+    |                                               ^^^^ help: if this is intentional, prefix it with an underscore: `_rank`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `hw_weight`
+   --> rustmath-crystals/src/character.rs:155:13
+    |
+155 |         let hw_weight = crystal.weight(&hw);
+    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_hw_weight`
+
+warning: unused variable: `diff`
+  --> rustmath-crystals/src/littelmann.rs:73:13
+   |
+73 |         let diff = v2 - v1;
+   |             ^^^^ help: if this is intentional, prefix it with an underscore: `_diff`
+
+warning: unused variable: `min_val`
+   --> rustmath-crystals/src/littelmann.rs:185:23
+    |
+185 |         let (min_idx, min_val) = path.i_string_min(i, &self.root_system);
+    |                       ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_min_val`
+
+warning: unused variable: `tab`
+   --> rustmath-crystals/src/kr_crystal.rs:222:32
+    |
+222 |             KRElement::Tableau(tab) => {
+    |                                ^^^ help: if this is intentional, prefix it with an underscore: `_tab`
+
+warning: unused variable: `i`
+   --> rustmath-crystals/src/kr_crystal.rs:220:42
+    |
+220 |     fn apply_ei(&self, elem: &KRElement, i: usize) -> Option<KRElement> {
+    |                                          ^ help: if this is intentional, prefix it with an underscore: `_i`
+
+warning: unused variable: `tab`
+   --> rustmath-crystals/src/kr_crystal.rs:235:32
+    |
+235 |             KRElement::Tableau(tab) => {
+    |                                ^^^ help: if this is intentional, prefix it with an underscore: `_tab`
+
+warning: unused variable: `i`
+   --> rustmath-crystals/src/kr_crystal.rs:233:42
+    |
+233 |     fn apply_fi(&self, elem: &KRElement, i: usize) -> Option<KRElement> {
+    |                                          ^ help: if this is intentional, prefix it with an underscore: `_i`
+
+warning: unused variable: `crystal`
+   --> rustmath-crystals/src/kr_crystal.rs:308:24
+    |
+308 | pub fn energy_function(crystal: &KRCrystal, elem: &KRElement) -> i64 {
+    |                        ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_crystal`
+
+warning: unused variable: `elem`
+   --> rustmath-crystals/src/kr_crystal.rs:308:45
+    |
+308 | pub fn energy_function(crystal: &KRCrystal, elem: &KRElement) -> i64 {
+    |                                             ^^^^ help: if this is intentional, prefix it with an underscore: `_elem`
+
+warning: unused variable: `k`
+  --> rustmath-crystals/src/nakajima.rs:70:19
+   |
+70 |         for (&(i, k), &exp) in &self.exponents {
+   |                   ^ help: if this is intentional, prefix it with an underscore: `_k`
+
+warning: unused variable: `other_part`
+   --> rustmath-crystals/src/rigged_configurations.rs:218:18
+    |
+218 |             for &other_part in &other_partition.parts {
+    |                  ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_other_part`
+
+warning: unused variable: `i`
+   --> rustmath-crystals/src/rigged_configurations.rs:364:38
+    |
+364 | fn compute_epsilon_i(rc: &RCElement, i: usize) -> i64 {
+    |                                      ^ help: if this is intentional, prefix it with an underscore: `_i`
+
+warning: unused variable: `rc`
+   --> rustmath-crystals/src/rigged_configurations.rs:408:12
+    |
+408 | fn phi_map(rc: &RCElement, tensor_shape: &[(usize, usize)]) -> TensorProductImage {
+    |            ^^ help: if this is intentional, prefix it with an underscore: `_rc`
+
+warning: unused variable: `tp`
+   --> rustmath-crystals/src/rigged_configurations.rs:429:16
+    |
+429 | fn phi_inverse(tp: &TensorProductImage, rank: usize) -> RCElement {
+    |                ^^ help: if this is intentional, prefix it with an underscore: `_tp`
+
+warning: unused variable: `tensor_shape`
+   --> rustmath-crystals/src/rigged_configurations.rs:437:52
+    |
+437 | fn generate_all_rigged_configurations(rank: usize, tensor_shape: &[(usize, usize)]) -> Vec<RCElement> {
+    |                                                    ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tensor_shape`
+
+warning: unused variable: `highest_weight`
+   --> rustmath-crystals/src/rigged_configurations.rs:523:29
+    |
+523 |     pub fn new(rank: usize, highest_weight: Weight) -> Self {
+    |                             ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_highest_weight`
+
+warning: unused variable: `node`
+   --> rustmath-crystals/src/rigged_configurations.rs:544:22
+    |
+544 | fn build_kleber_tree(node: &mut KleberNode, rank: usize) {
+    |                      ^^^^ help: if this is intentional, prefix it with an underscore: `_node`
+
+warning: unused variable: `rank`
+   --> rustmath-crystals/src/rigged_configurations.rs:544:45
+    |
+544 | fn build_kleber_tree(node: &mut KleberNode, rank: usize) {
+    |                                             ^^^^ help: if this is intentional, prefix it with an underscore: `_rank`
+
+warning: unused variable: `rc`
+   --> rustmath-crystals/src/rigged_configurations.rs:713:23
+    |
+713 |     pub fn e_0(&self, rc: &RCElement) -> Option<RCElement> {
+    |                       ^^ help: if this is intentional, prefix it with an underscore: `_rc`
+
+warning: unused variable: `rc`
+   --> rustmath-crystals/src/rigged_configurations.rs:719:23
+    |
+719 |     pub fn f_0(&self, rc: &RCElement) -> Option<RCElement> {
+    |                       ^^ help: if this is intentional, prefix it with an underscore: `_rc`
+
+warning: unused import: `rustmath_core::Ring`
+ --> rustmath-coding/src/linear_code.rs:5:5
+  |
+5 | use rustmath_core::Ring;
+  |     ^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `field_char`
+   --> rustmath-coding/src/linear_code.rs:207:60
+    |
+207 |     fn compute_parity_check_matrix(generator: &[Vec<u64>], field_char: u64) -> Vec<Vec<u64>> {
+    |                                                            ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_field_char`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `p`
+   --> rustmath-coding/src/reed_solomon.rs:103:13
+    |
+103 |         let p = self.field_char;
+    |             ^ help: if this is intentional, prefix it with an underscore: `_p`
+
+warning: unused variable: `p`
+   --> rustmath-coding/src/reed_solomon.rs:165:13
+    |
+165 |         let p = self.field_char;
+    |             ^ help: if this is intentional, prefix it with an underscore: `_p`
+
+warning: unused variable: `k`
+  --> rustmath-coding/src/bch.rs:63:38
+   |
+63 |     pub fn with_parameters(n: usize, k: usize, delta: usize) -> Result<Self, String> {
+   |                                      ^ help: if this is intentional, prefix it with an underscore: `_k`
+
+warning: unused variable: `p`
+   --> rustmath-coding/src/syndrome.rs:197:13
+    |
+197 |         let p = self.field_char;
+    |             ^ help: if this is intentional, prefix it with an underscore: `_p`
+
+warning: unused variable: `p`
+   --> rustmath-coding/src/syndrome.rs:205:13
+    |
+205 |         let p = self.field_char;
+    |             ^ help: if this is intentional, prefix it with an underscore: `_p`
+
+warning: field `eval_points` is never read
+  --> rustmath-coding/src/reed_solomon.rs:23:5
+   |
+13 | pub struct ReedSolomonCode {
+   |            --------------- field in this struct
+...
+23 |     eval_points: Vec<u64>,
+   |     ^^^^^^^^^^^
+   |
+   = note: `ReedSolomonCode` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `m` and `field_char` are never read
+  --> rustmath-coding/src/bch.rs:19:5
+   |
+11 | pub struct BCHCode {
+   |            ------- fields in this struct
+...
+19 |     m: usize,
+   |     ^
+...
+23 |     field_char: u64,
+   |     ^^^^^^^^^^
+   |
+   = note: `BCHCode` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: field `field_char` is never read
+  --> rustmath-coding/src/syndrome.rs:12:5
+   |
+ 8 | pub struct SyndromeTable {
+   |            ------------- field in this struct
+...
+12 |     field_char: u64,
+   |     ^^^^^^^^^^
+   |
+   = note: `SyndromeTable` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: `rustmath-groups` (lib) generated 54 warnings (run `cargo fix --lib -p rustmath-groups` to apply 22 suggestions)
+warning: `rustmath-rings` (lib) generated 103 warnings
+warning: `rustmath-liealgebras` (lib) generated 69 warnings (run `cargo fix --lib -p rustmath-liealgebras` to apply 34 suggestions)
+warning: `rustmath-geometry` (lib) generated 4 warnings (run `cargo fix --lib -p rustmath-geometry` to apply 1 suggestion)
+warning: `rustmath-symmetricfunctions` (lib) generated 56 warnings
+warning: `rustmath-crystals` (lib) generated 21 warnings
+warning: `rustmath-coding` (lib) generated 10 warnings
+   Compiling rustmath-category v0.1.0 (/home/john/RustMath/rustmath-category)
+warning: unused import: `MathError`
+  --> rustmath-schemes/src/generic/mod.rs:52:21
+   |
+52 | use rustmath_core::{MathError, Result, Ring};
+   |                     ^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `DimensionTheory`
+  --> rustmath-schemes/src/affine/mod.rs:59:59
+   |
+59 | use crate::generic::{Scheme, SchemeMorphism, SchemePoint, DimensionTheory, Separated};
+   |                                                           ^^^^^^^^^^^^^^^
+
+warning: unused import: `std::fmt`
+  --> rustmath-schemes/src/affine/mod.rs:60:5
+   |
+60 | use std::fmt;
+   |     ^^^^^^^^
+
+warning: unused import: `ToPrimitive`
+  --> rustmath-schemes/src/elliptic_curves/isogeny.rs:75:23
+   |
+75 | use num_traits::{One, ToPrimitive, Zero};
+   |                       ^^^^^^^^^^^
+
+warning: unused import: `num_bigint::BigInt`
+  --> rustmath-schemes/src/elliptic_curves/heegner.rs:77:5
+   |
+77 | use num_bigint::BigInt;
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `One`
+  --> rustmath-schemes/src/elliptic_curves/heegner.rs:79:24
+   |
+79 | use num_traits::{Zero, One, Signed, ToPrimitive};
+   |                        ^^^
+
+warning: unused import: `ToPrimitive`
+  --> rustmath-schemes/src/elliptic_curves/rational.rs:71:37
+   |
+71 | use num_traits::{One, Zero, Signed, ToPrimitive};
+   |                                     ^^^^^^^^^^^
+
+warning: unused import: `rustmath_integers::Integer`
+  --> rustmath-schemes/src/elliptic_curves/rational.rs:76:5
+   |
+76 | use rustmath_integers::Integer;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_rationals::Rational`
+  --> rustmath-schemes/src/elliptic_curves/rational.rs:77:5
+   |
+77 | use rustmath_rationals::Rational;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Ring`
+   --> rustmath-schemes/src/elliptic_curves/mod.rs:184:28
+    |
+184 | use rustmath_core::{Field, Ring};
+    |                            ^^^^
+
+warning: unused import: `crate::projective_space::ProjectiveSpace`
+  --> rustmath-schemes/src/line_bundle.rs:17:5
+   |
+17 | use crate::projective_space::ProjectiveSpace;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Zero`
+  --> rustmath-schemes/src/segre.rs:27:18
+   |
+27 | use num_traits::{Zero, One};
+   |                  ^^^^
+
+warning: unused import: `Zero`
+  --> rustmath-schemes/src/veronese.rs:27:18
+   |
+27 | use num_traits::{Zero, One};
+   |                  ^^^^
+
+warning: unused import: `Signed`
+  --> rustmath-schemes/src/elliptic_curves/chabauty.rs:77:29
+   |
+77 | use num_traits::{Zero, One, Signed, ToPrimitive};
+   |                             ^^^^^^
+
+warning: unused import: `Signed`
+  --> rustmath-schemes/src/elliptic_curves/heegner.rs:79:29
+   |
+79 | use num_traits::{Zero, One, Signed, ToPrimitive};
+   |                             ^^^^^^
+
+warning: unused import: `rustmath_core::Ring`
+  --> rustmath-schemes/src/elliptic_curves/rational.rs:72:5
+   |
+72 | use rustmath_core::Ring;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `n`
+  --> rustmath-schemes/src/affine/mod.rs:96:25
+   |
+96 |     pub fn affine_space(n: usize, base_ring: R) -> Self {
+   |                         ^ help: if this is intentional, prefix it with an underscore: `_n`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: function cannot return without recursing
+  --> rustmath-schemes/src/projective/mod.rs:82:5
+   |
+82 |     fn base_ring(&self) -> &Self::BaseRing {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot return without recursing
+83 |         self.base_ring()
+   |         ---------------- recursive call site
+   |
+   = help: a `loop` may express intention better if this is on purpose
+   = note: `#[warn(unconditional_recursion)]` on by default
+
+warning: function cannot return without recursing
+   --> rustmath-schemes/src/projective/mod.rs:120:5
+    |
+120 |     fn base_ring(&self) -> &Self::BaseRing {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot return without recursing
+121 |         self.base_ring()
+    |         ---------------- recursive call site
+    |
+    = help: a `loop` may express intention better if this is on purpose
+
+warning: unused variable: `curve`
+   --> rustmath-schemes/src/elliptic_curves/isogeny.rs:519:27
+    |
+519 |     fn find_ell_isogenies(curve: &EllipticCurve, ell: usize) -> Vec<Isogeny> {
+    |                           ^^^^^ help: if this is intentional, prefix it with an underscore: `_curve`
+
+warning: unused variable: `ell`
+   --> rustmath-schemes/src/elliptic_curves/isogeny.rs:519:50
+    |
+519 |     fn find_ell_isogenies(curve: &EllipticCurve, ell: usize) -> Vec<Isogeny> {
+    |                                                  ^^^ help: if this is intentional, prefix it with an underscore: `_ell`
+
+warning: unused variable: `disc_abs`
+   --> rustmath-schemes/src/elliptic_curves/rational.rs:354:13
+    |
+354 |         let disc_abs = self.discriminant.abs();
+    |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_disc_abs`
+
+warning: unused variable: `v_p_disc`
+   --> rustmath-schemes/src/elliptic_curves/rational.rs:400:13
+    |
+400 |         let v_p_disc = self.valuation(p, &self.discriminant);
+    |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_v_p_disc`
+
+warning: unused variable: `coleman`
+   --> rustmath-schemes/src/elliptic_curves/chabauty.rs:344:13
+    |
+344 |         let coleman = ColemanIntegral::new(self.prime.clone(), self.precision);
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_coleman`
+
+warning: variable does not need to be mutable
+   --> rustmath-schemes/src/elliptic_curves/chabauty.rs:341:13
+    |
+341 |         let mut points = vec![RationalPoint::infinity()];
+    |             ----^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `dim`
+   --> rustmath-schemes/src/line_bundle.rs:136:21
+    |
+136 |         if let Some(dim) = self.scheme.dimension() {
+    |                     ^^^ help: if this is intentional, prefix it with an underscore: `_dim`
+
+warning: unused variable: `denom`
+   --> rustmath-schemes/src/proj.rs:165:13
+    |
+165 |         let denom = &homogeneous[self.index];
+    |             ^^^^^ help: if this is intentional, prefix it with an underscore: `_denom`
+
+warning: field `curve` is never read
+   --> rustmath-schemes/src/elliptic_curves/mod.rs:195:5
+    |
+194 | pub struct TorsionSubgroup<F: Field> {
+    |            --------------- field in this struct
+195 |     curve: EllipticCurve<F>,
+    |     ^^^^^
+    |
+    = note: `TorsionSubgroup` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `v` and `w` are never read
+   --> rustmath-schemes/src/elliptic_curves/isogeny.rs:98:5
+    |
+ 88 | pub struct Isogeny {
+    |            ------- fields in this struct
+...
+ 98 |     v: BigRational,
+    |     ^
+ 99 |     /// Vélu's w coefficient
+100 |     w: BigRational,
+    |     ^
+    |
+    = note: `Isogeny` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `heights_cache` is never read
+   --> rustmath-schemes/src/elliptic_curves/heegner.rs:518:5
+    |
+516 | pub struct HeightPairing {
+    |            ------------- field in this struct
+517 |     /// Cached heights of points
+518 |     heights_cache: HashMap<String, CanonicalHeight>,
+    |     ^^^^^^^^^^^^^
+    |
+    = note: `HeightPairing` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: fields `prime` and `precision` are never read
+  --> rustmath-schemes/src/elliptic_curves/chabauty.rs:88:5
+   |
+86 | pub struct ColemanIntegral {
+   |            --------------- fields in this struct
+87 |     /// The prime p for p-adic analysis
+88 |     prime: BigInt,
+   |     ^^^^^
+89 |     /// Precision for p-adic computations
+90 |     precision: usize,
+   |     ^^^^^^^^^
+
+warning: methods `padic_log` and `frobenius_lift` are never used
+   --> rustmath-schemes/src/elliptic_curves/chabauty.rs:141:8
+    |
+ 93 | impl ColemanIntegral {
+    | -------------------- methods in this implementation
+...
+141 |     fn padic_log(&self, _x: &BigRational) -> BigRational {
+    |        ^^^^^^^^^
+...
+150 |     fn frobenius_lift(&self, _point: &RationalPoint) -> RationalPoint {
+    |        ^^^^^^^^^^^^^^
+
+warning: methods `find_two_torsion` and `is_rational_point` are never used
+   --> rustmath-schemes/src/elliptic_curves/chabauty.rs:304:8
+    |
+173 | impl ChabautyColeman {
+    | -------------------- methods in this implementation
+...
+304 |     fn find_two_torsion(&self) -> Vec<RationalPoint> {
+    |        ^^^^^^^^^^^^^^^^
+...
+407 |     fn is_rational_point(&self, point: &RationalPoint) -> bool {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: associated function `poly_add` is never used
+   --> rustmath-schemes/src/elliptic_curves/chabauty.rs:617:8
+    |
+480 | impl DivisionPolynomials {
+    | ------------------------ associated function in this implementation
+...
+617 |     fn poly_add(p: &[BigRational], q: &[BigRational]) -> Vec<BigRational> {
+    |        ^^^^^^^^
+
+warning: methods `padic_height` and `padic_height_pairing` are never used
+    --> rustmath-schemes/src/elliptic_curves/chabauty.rs:1097:8
+     |
+ 904 | impl QuadraticChabauty {
+     | ---------------------- methods in this implementation
+...
+1097 |     fn padic_height(&self, _point: &RationalPoint) -> BigRational {
+     |        ^^^^^^^^^^^^
+...
+1105 |     fn padic_height_pairing(
+     |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: field `morphism` is never read
+   --> rustmath-schemes/src/projective_morphism.rs:265:5
+    |
+263 | pub struct BaseLocus<R: Ring> {
+    |            --------- field in this struct
+264 |     /// The morphism
+265 |     morphism: ProjectiveMorphism<R>,
+    |     ^^^^^^^^
+    |
+    = note: `BaseLocus` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: comparison is useless due to type limits
+  --> rustmath-schemes/src/graded_ring.rs:64:41
+   |
+64 |         self.components.keys().all(|&d| d >= 0)
+   |                                         ^^^^^^
+   |
+   = note: `#[warn(unused_comparisons)]` on by default
+
+   Compiling rustmath-interfaces v0.1.0 (/home/john/RustMath/rustmath-interfaces)
+warning: unused import: `rustmath_core::Ring`
+ --> rustmath-quadraticforms/src/quadratic_form.rs:6:5
+  |
+6 | use rustmath_core::Ring;
+  |     ^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `Ring`
+ --> rustmath-quadraticforms/src/theta_series.rs:8:21
+  |
+8 | use rustmath_core::{Ring, NumericConversion};
+  |                     ^^^^
+
+warning: unused import: `NumericConversion`
+ --> rustmath-quadraticforms/src/theta_series.rs:8:27
+  |
+8 | use rustmath_core::{Ring, NumericConversion};
+  |                           ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Ring`
+ --> rustmath-quadraticforms/src/local_densities.rs:9:21
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                     ^^^^
+
+warning: unused import: `NumericConversion`
+ --> rustmath-quadraticforms/src/local_densities.rs:9:27
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                           ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Ring`
+ --> rustmath-quadraticforms/src/genus_theory.rs:9:21
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                     ^^^^
+
+warning: unused import: `NumericConversion`
+ --> rustmath-quadraticforms/src/genus_theory.rs:9:27
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                           ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Ring`
+ --> rustmath-quadraticforms/src/advanced.rs:9:21
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                     ^^^^
+
+warning: unused import: `NumericConversion`
+ --> rustmath-quadraticforms/src/advanced.rs:9:27
+  |
+9 | use rustmath_core::{Ring, NumericConversion};
+  |                           ^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `d`
+  --> rustmath-quadraticforms/src/local_densities.rs:83:13
+   |
+83 |         let d = (-self.form.discriminant()).clone();
+   |             ^ help: if this is intentional, prefix it with an underscore: `_d`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `p_power`
+   --> rustmath-quadraticforms/src/local_densities.rs:173:13
+    |
+173 |         let p_power = p_int.pow(k);
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_p_power`
+
+warning: unused variable: `n3`
+  --> rustmath-quadraticforms/src/advanced.rs:96:42
+   |
+96 |             if let [(n1, a1), (n2, a2), (n3, a3)] = window {
+   |                                          ^^ help: if this is intentional, prefix it with an underscore: `_n3`
+
+warning: method `p_adic_equivalent` is never used
+   --> rustmath-quadraticforms/src/genus_theory.rs:189:8
+    |
+ 18 | impl GenusTheory {
+    | ---------------- method in this implementation
+...
+189 |     fn p_adic_equivalent(&self, form1: &QuadraticForm, form2: &QuadraticForm, p: u64) -> bool {
+    |        ^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `cell_res`
+   --> rustmath-quantumgroups/src/fock_space.rs:274:37
+    |
+274 | ...   if let Some(cell_res) = lambda.cell_residue(comp_idx, row, col, &self.params.multicharge, self.params.n) {
+    |                   ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_cell_res`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `min_power`
+   --> rustmath-quantumgroups/src/q_bernoulli.rs:113:36
+    |
+113 |         let (q_int_num, q_int_den, min_power) = laurent_to_rational(&q_int_laurent);
+    |                                    ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_min_power`
+
+warning: unused import: `Ring`
+ --> rustmath-affineschemes/src/prime_ideal.rs:6:21
+  |
+6 | use rustmath_core::{Ring, CommutativeRing, MathError, Result};
+  |                     ^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `Ring`
+ --> rustmath-affineschemes/src/spec.rs:7:38
+  |
+7 | use rustmath_core::{CommutativeRing, Ring};
+  |                                      ^^^^
+
+warning: unused import: `Ring`
+ --> rustmath-affineschemes/src/structure_sheaf.rs:9:38
+  |
+9 | use rustmath_core::{CommutativeRing, Ring};
+  |                                      ^^^^
+
+warning: unused import: `Ring`
+  --> rustmath-affineschemes/src/morphism.rs:13:38
+   |
+13 | use rustmath_core::{CommutativeRing, Ring};
+   |                                      ^^^^
+
+warning: fields `first` and `second` are never read
+  --> rustmath-affineschemes/src/fiber_product.rs:38:5
+   |
+29 | pub struct FiberProduct<R, S, T>
+   |            ------------ fields in this struct
+...
+38 |     first: AffineScheme<S>,
+   |     ^^^^^
+39 |     /// The second scheme Spec(T)
+40 |     second: AffineScheme<T>,
+   |     ^^^^^^
+   |
+   = note: `FiberProduct` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `source` is never read
+   --> rustmath-affineschemes/src/varieties.rs:247:5
+    |
+241 | pub struct VarietyMorphism<K, A, B>
+    |            --------------- field in this struct
+...
+247 |     source: AffineVariety<K, A>,
+    |     ^^^^^^
+
+warning: unused import: `crate::lie_conformal_algebra::GeneratorIndex`
+  --> rustmath-lieconformal/src/lie_conformal_algebra_element.rs:14:5
+   |
+14 | use crate::lie_conformal_algebra::GeneratorIndex;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `std::collections::HashMap`
+  --> rustmath-lieconformal/src/graded_lie_conformal_algebra.rs:13:5
+   |
+13 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `GeneratorIndex`
+  --> rustmath-lieconformal/src/graded_lie_conformal_algebra.rs:15:57
+   |
+15 | use crate::lie_conformal_algebra::{LieConformalAlgebra, GeneratorIndex};
+   |                                                         ^^^^^^^^^^^^^^
+
+warning: unused import: `crate::lie_conformal_algebra_element::LieConformalAlgebraElement`
+  --> rustmath-lieconformal/src/graded_lie_conformal_algebra.rs:16:5
+   |
+16 | use crate::lie_conformal_algebra_element::LieConformalAlgebraElement;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `LambdaBracket`
+  --> rustmath-lieconformal/src/lie_conformal_algebra_with_basis.rs:12:57
+   |
+12 | use crate::lie_conformal_algebra::{LieConformalAlgebra, LambdaBracket, GeneratorIndex};
+   |                                                         ^^^^^^^^^^^^^
+
+warning: unused variable: `degree`
+   --> rustmath-lieconformal/src/graded_lie_conformal_algebra.rs:121:37
+    |
+121 |     fn homogeneous_component(&self, degree: Degree) -> Vec<Self::Element> {
+    |                                     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_degree`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `a`
+   --> rustmath-lieconformal/src/virasoro_lie_conformal_algebra.rs:159:9
+    |
+159 |         a: &VirasoroLCAElement<R>,
+    |         ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: unused variable: `b`
+   --> rustmath-lieconformal/src/virasoro_lie_conformal_algebra.rs:160:9
+    |
+160 |         b: &VirasoroLCAElement<R>,
+    |         ^ help: if this is intentional, prefix it with an underscore: `_b`
+
+warning: unused variable: `ngens`
+   --> rustmath-lieconformal/src/affine_lie_conformal_algebra.rs:110:13
+    |
+110 |         let ngens = dim + 1;
+    |             ^^^^^ help: if this is intentional, prefix it with an underscore: `_ngens`
+
+warning: unused variable: `ct`
+   --> rustmath-lieconformal/src/affine_lie_conformal_algebra.rs:202:31
+    |
+202 |     fn compute_structure_data(ct: &CartanType, base_ring: &R) ->
+    |                               ^^ help: if this is intentional, prefix it with an underscore: `_ct`
+
+warning: unused variable: `base_ring`
+   --> rustmath-lieconformal/src/affine_lie_conformal_algebra.rs:202:48
+    |
+202 |     fn compute_structure_data(ct: &CartanType, base_ring: &R) ->
+    |                                                ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_base_ring`
+
+warning: unused variable: `poly_a`
+   --> rustmath-lieconformal/src/affine_lie_conformal_algebra.rs:350:23
+    |
+350 |         for (basis_a, poly_a) in a.terms() {
+    |                       ^^^^^^ help: if this is intentional, prefix it with an underscore: `_poly_a`
+
+warning: unused variable: `poly_b`
+   --> rustmath-lieconformal/src/affine_lie_conformal_algebra.rs:351:27
+    |
+351 |             for (basis_b, poly_b) in b.terms() {
+    |                           ^^^^^^ help: if this is intentional, prefix it with an underscore: `_poly_b`
+
+warning: method `T` should have a snake case name
+   --> rustmath-lieconformal/src/lie_conformal_algebra_element.rs:296:12
+    |
+296 |     pub fn T(&self, n: usize) -> Self
+    |            ^ help: convert the identifier to snake case: `t`
+    |
+    = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+warning: method `T` should have a snake case name
+   --> rustmath-lieconformal/src/lie_conformal_algebra_element.rs:452:12
+    |
+452 |     pub fn T(&self, n: usize) -> Self
+    |            ^ help: convert the identifier to snake case: `t`
+
+warning: unused import: `rustmath_core::Ring`
+ --> rustmath-topology/src/cell_complex.rs:8:5
+  |
+8 | use rustmath_core::Ring;
+  |     ^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `rustmath_matrix::Matrix`
+  --> rustmath-topology/src/cell_complex.rs:10:5
+   |
+10 | use rustmath_matrix::Matrix;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `HashSet`
+  --> rustmath-topology/src/delta_complex.rs:12:33
+   |
+12 | use std::collections::{HashMap, HashSet};
+   |                                 ^^^^^^^
+
+warning: unused import: `rustmath_integers::Integer`
+  --> rustmath-topology/src/filtered_simplicial_complex.rs:10:5
+   |
+10 | use rustmath_integers::Integer;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `HashMap` and `HashSet`
+  --> rustmath-topology/src/filtered_simplicial_complex.rs:11:24
+   |
+11 | use std::collections::{HashMap, HashSet};
+   |                        ^^^^^^^  ^^^^^^^
+
+warning: unused import: `rustmath_integers::Integer`
+  --> rustmath-topology/src/moment_angle_complex.rs:10:5
+   |
+10 | use rustmath_integers::Integer;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::cell_complex::GenericCellComplex`
+  --> rustmath-topology/src/simplicial_complex.rs:11:5
+   |
+11 | use crate::cell_complex::GenericCellComplex;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `HashSet`
+  --> rustmath-topology/src/simplicial_set.rs:12:33
+   |
+12 | use std::collections::{HashMap, HashSet};
+   |                                 ^^^^^^^
+
+warning: unused import: `AbstractSimplex`
+ --> rustmath-topology/src/simplicial_set_morphism.rs:7:44
+  |
+7 | use crate::simplicial_set::{SimplicialSet, AbstractSimplex};
+  |                                            ^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> rustmath-topology/src/reidemeister.rs:16:5
+   |
+16 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `CrossingType`
+  --> rustmath-topology/src/knot_polynomials.rs:34:25
+   |
+34 | use crate::knot::{Knot, CrossingType};
+   |                         ^^^^^^^^^^^^
+
+warning: unused imports: `ReidemeisterMoveType` and `ReidemeisterMove`
+  --> rustmath-topology/src/knot_invariants.rs:29:42
+   |
+29 | use crate::reidemeister::{simplify_knot, ReidemeisterMove, ReidemeisterMoveType};
+   |                                          ^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashSet`
+  --> rustmath-topology/src/knot_invariants.rs:30:5
+   |
+30 | use std::collections::HashSet;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `CrossingType` and `Crossing`
+  --> rustmath-topology/src/link.rs:28:25
+   |
+28 | use crate::knot::{Knot, Crossing, CrossingType};
+   |                         ^^^^^^^^  ^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> rustmath-topology/src/link.rs:29:5
+   |
+29 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `max_dim`
+   --> rustmath-topology/src/cell_complex.rs:108:21
+    |
+108 |         if let Some(max_dim) = self.dimension {
+    |                     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_max_dim`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `obj`
+  --> rustmath-topology/src/simplicial_complex_homset.rs:80:37
+   |
+80 | pub fn is_simplicial_complex_homset(obj: &SimplicialComplexHomset) -> bool {
+   |                                     ^^^ help: if this is intentional, prefix it with an underscore: `_obj`
+
+warning: unused variable: `obj`
+   --> rustmath-topology/src/simplicial_complex_morphism.rs:173:39
+    |
+173 | pub fn is_simplicial_complex_morphism(obj: &SimplicialComplexMorphism) -> bool {
+    |                                       ^^^ help: if this is intentional, prefix it with an underscore: `_obj`
+
+warning: unused variable: `base_point`
+  --> rustmath-topology/src/simplicial_set_constructions.rs:17:9
+   |
+17 |     let base_point = cone.add_simplex(AbstractSimplex::with_name(0, 0, "cone_point"));
+   |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_base_point`
+
+warning: unused variable: `north`
+  --> rustmath-topology/src/simplicial_set_constructions.rs:33:9
+   |
+33 |     let north = suspension.add_simplex(AbstractSimplex::with_name(0, 0, "north"));
+   |         ^^^^^ help: if this is intentional, prefix it with an underscore: `_north`
+
+warning: unused variable: `south`
+  --> rustmath-topology/src/simplicial_set_constructions.rs:34:9
+   |
+34 |     let south = suspension.add_simplex(AbstractSimplex::with_name(0, 1, "south"));
+   |         ^^^^^ help: if this is intentional, prefix it with an underscore: `_south`
+
+warning: variable does not need to be mutable
+  --> rustmath-topology/src/simplicial_set_constructions.rs:47:9
+   |
+47 |     let mut product = SimplicialSet::with_name(&name);
+   |         ----^^^^^^^
+   |         |
+   |         help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `base`
+  --> rustmath-topology/src/simplicial_set_constructions.rs:65:9
+   |
+65 |     let base = wedge.add_simplex(AbstractSimplex::with_name(0, 0, "base"));
+   |         ^^^^ help: if this is intentional, prefix it with an underscore: `_base`
+
+warning: variable does not need to be mutable
+  --> rustmath-topology/src/simplicial_set_constructions.rs:95:9
+   |
+95 |     let mut union = SimplicialSet::with_name(&name);
+   |         ----^^^^^
+   |         |
+   |         help: remove this `mut`
+
+warning: unused variable: `sigma`
+  --> rustmath-topology/src/simplicial_set_examples.rs:88:9
+   |
+88 |     let sigma = ss.add_simplex(AbstractSimplex::with_name(2, 0, "σ"));
+   |         ^^^^^ help: if this is intentional, prefix it with an underscore: `_sigma`
+
+warning: unused variable: `crossing_data`
+  --> rustmath-topology/src/knot.rs:96:17
+   |
+96 |         for (i, crossing_data) in pd_code.iter().enumerate() {
+   |                 ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_crossing_data`
+
+warning: unused variable: `label`
+   --> rustmath-topology/src/knot.rs:308:10
+    |
+308 |     for (label, positions) in crossing_positions.iter() {
+    |          ^^^^^ help: if this is intentional, prefix it with an underscore: `_label`
+
+warning: unused variable: `i`
+   --> rustmath-topology/src/braid.rs:117:17
+    |
+117 |             let i = gen.index;
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_i`
+
+warning: unused variable: `crossing`
+   --> rustmath-topology/src/knot_polynomials.rs:220:9
+    |
+220 |     let crossing = pd_code[0];
+    |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_crossing`
+
+warning: unused variable: `a_smoothing`
+   --> rustmath-topology/src/knot_polynomials.rs:238:65
+    |
+238 | fn apply_smoothing(pd_code: &[[usize; 4]], crossing_idx: usize, a_smoothing: bool) -> Vec<[usize; 4]> {
+    |                                                                 ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_a_smoothing`
+
+warning: unused variable: `num_comp`
+  --> rustmath-topology/src/link.rs:71:13
+   |
+71 |         let num_comp = knot.num_components();
+   |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_num_comp`
+
+warning: unused variable: `crossing`
+   --> rustmath-topology/src/link.rs:103:13
+    |
+103 |         for crossing in &self.pd_code {
+    |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_crossing`
+
+warning: field `base` is never read
+   --> rustmath-topology/src/cubical_complex.rs:127:5
+    |
+125 | pub struct CubicalComplex {
+    |            -------------- field in this struct
+126 |     /// The underlying cell complex
+127 |     base: GenericCellComplex,
+    |     ^^^^
+    |
+    = note: `CubicalComplex` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `base` is never read
+  --> rustmath-topology/src/delta_complex.rs:48:5
+   |
+46 | pub struct DeltaComplex {
+   |            ------------ field in this struct
+47 |     /// The underlying cell complex
+48 |     base: GenericCellComplex,
+   |     ^^^^
+   |
+   = note: `DeltaComplex` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: unused variable: `face_idx`
+   --> rustmath-plot3d/src/export.rs:209:10
+    |
+209 |     for (face_idx, face) in mesh.faces.iter().enumerate() {
+    |          ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_face_idx`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `list_plot_multiple` is never used
+   --> rustmath-plot/src/plots/list_plot.rs:138:8
+    |
+138 | pub fn list_plot_multiple(
+    |        ^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `scatter_plot_y` is never used
+  --> rustmath-plot/src/plots/scatter_plot.rs:77:8
+   |
+77 | pub fn scatter_plot_y(
+   |        ^^^^^^^^^^^^^^
+
+warning: function `scatter_plot_colored` is never used
+   --> rustmath-plot/src/plots/scatter_plot.rs:116:8
+    |
+116 | pub fn scatter_plot_colored(
+    |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `scatter_plot_sized` is never used
+   --> rustmath-plot/src/plots/scatter_plot.rs:160:8
+    |
+160 | pub fn scatter_plot_sized(
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `contour_plot_filled` is never used
+   --> rustmath-plot/src/plots/contour_plot.rs:122:8
+    |
+122 | pub fn contour_plot_filled<F>(
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: function `density_plot_custom` is never used
+   --> rustmath-plot/src/plots/density_plot.rs:154:8
+    |
+154 | pub fn density_plot_custom<F, C>(
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: function `histogram_custom_bins` is never used
+   --> rustmath-plot/src/plots/histogram.rs:132:8
+    |
+132 | pub fn histogram_custom_bins(
+    |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `bar_chart_horizontal` is never used
+  --> rustmath-plot/src/plots/bar_chart.rs:77:8
+   |
+77 | pub fn bar_chart_horizontal(
+   |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `bar_chart_colored` is never used
+   --> rustmath-plot/src/plots/bar_chart.rs:122:8
+    |
+122 | pub fn bar_chart_colored(data: Vec<(f64, f64, Color)>, bar_width: Option<f64>) -> Graphics {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: function `bar_chart_grouped` is never used
+   --> rustmath-plot/src/plots/bar_chart.rs:166:8
+    |
+166 | pub fn bar_chart_grouped(
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: function `bar_chart_stacked` is never used
+   --> rustmath-plot/src/plots/bar_chart.rs:232:8
+    |
+232 | pub fn bar_chart_stacked(data: Vec<(f64, Vec<f64>, Vec<Color>)>, bar_width: Option<f64>) -> Graphics {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: function `matrix_plot_range` is never used
+   --> rustmath-plot/src/plots/matrix_plot.rs:119:8
+    |
+119 | pub fn matrix_plot_range(
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: function `matrix_plot_binary` is never used
+   --> rustmath-plot/src/plots/matrix_plot.rs:173:8
+    |
+173 | pub fn matrix_plot_binary(
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: function `matrix_plot_spy` is never used
+   --> rustmath-plot/src/plots/matrix_plot.rs:222:8
+    |
+222 | pub fn matrix_plot_spy(matrix: Vec<Vec<f64>>, threshold: Option<f64>, color: Color) -> Graphics {
+    |        ^^^^^^^^^^^^^^^
+
+warning: unused variable: `text`
+   --> rustmath-crypto/src/classical.rs:212:21
+    |
+212 | pub fn hill_decrypt(text: &str, key_matrix: &Matrix<Integer>) -> Result<String> {
+    |                     ^^^^ help: if this is intentional, prefix it with an underscore: `_text`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `key_matrix`
+   --> rustmath-crypto/src/classical.rs:212:33
+    |
+212 | pub fn hill_decrypt(text: &str, key_matrix: &Matrix<Integer>) -> Result<String> {
+    |                                 ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_key_matrix`
+
+warning: unused variable: `j`
+   --> rustmath-crypto/src/kdf.rs:213:17
+    |
+213 |             for j in 0..32 {
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_j`
+
+warning: unused variable: `challenge`
+   --> rustmath-crypto/src/eddsa.rs:351:13
+    |
+351 |         let challenge = SHA256::hash(&challenge_input);
+    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_challenge`
+
+warning: unused variable: `s_point`
+   --> rustmath-crypto/src/eddsa.rs:358:13
+    |
+358 |         let s_point = basepoint.scalar_mul(&signature.s);
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_s_point`
+
+warning: unused variable: `r_point`
+   --> rustmath-crypto/src/eddsa.rs:359:13
+    |
+359 |         let r_point = basepoint.scalar_mul(&signature.r);
+    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_r_point`
+
+warning: unused variable: `verify_hash`
+   --> rustmath-crypto/src/eddsa.rs:367:13
+    |
+367 |         let verify_hash = SHA256::hash(&verify_input);
+    |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_verify_hash`
+
+warning: associated function `quarter_round` is never used
+   --> rustmath-crypto/src/stream_cipher.rs:144:8
+    |
+ 88 | impl ChaCha20 {
+    | ------------- associated function in this implementation
+...
+144 |     fn quarter_round(a: &mut u32, b: &mut u32, c: &mut u32, d: &mut u32) {
+    |        ^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: associated items `P`, `from_bytes`, and `mul_small` are never used
+   --> rustmath-crypto/src/eddsa.rs:52:11
+    |
+ 50 | impl FieldElement {
+    | ----------------- associated items in this implementation
+ 51 |     /// Prime for Curve25519: 2^255 - 19
+ 52 |     const P: [u64; 5] = [
+    |           ^
+...
+ 69 |     fn from_bytes(bytes: &[u8; 32]) -> Self {
+    |        ^^^^^^^^^^
+...
+122 |     fn mul_small(&self, scalar: u64) -> FieldElement {
+    |        ^^^^^^^^^
+
+warning: unused import: `rustmath_core::Ring`
+  --> rustmath-calculus/src/riemann.rs:26:5
+   |
+26 | use rustmath_core::Ring;
+   |     ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `rustmath_core::NumericConversion`
+ --> rustmath-calculus/src/sum.rs:6:5
+  |
+6 | use rustmath_core::NumericConversion;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `dy`
+   --> rustmath-calculus/src/riemann.rs:182:17
+    |
+182 |             let dy = if i == 0 {
+    |                 ^^ help: if this is intentional, prefix it with an underscore: `_dy`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `m`
+   --> rustmath-calculus/src/transforms/dwt.rs:371:9
+    |
+371 |     let m = filter.len();
+    |         ^ help: if this is intentional, prefix it with an underscore: `_m`
+
+warning: field `wavelet` is never read
+  --> rustmath-calculus/src/transforms/dwt.rs:36:5
+   |
+34 | pub struct DiscreteWaveletTransform {
+   |            ------------------------ field in this struct
+35 |     /// Wavelet family
+36 |     wavelet: WaveletFamily,
+   |     ^^^^^^^
+   |
+   = note: `DiscreteWaveletTransform` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: methods `fft_recursive` and `dft_fallback` are never used
+   --> rustmath-calculus/src/transforms/fft.rs:67:8
+    |
+ 32 | impl FastFourierTransformComplex {
+    | -------------------------------- methods in this implementation
+...
+ 67 |     fn fft_recursive(&self, input: &[Complex]) -> Vec<Complex> {
+    |        ^^^^^^^^^^^^^
+...
+116 |     fn dft_fallback(&self, input: &[Complex]) -> Vec<Complex> {
+    |        ^^^^^^^^^^^^
+
 warning: unused variable: `precision`
   --> rustmath-algebraic/src/algebraic_number.rs:51:30
    |
@@ -3377,8 +4457,8 @@ warning: unused import: `std::f64::consts::PI`
 warning: unnecessary parentheses around block return value
    --> rustmath-manifolds/src/integration.rs:571:25
     |
-571 | ...   ((2.0 * std::f64::consts::PI / val).sqrt() * (val / std::f64::consts::E).powf(val))
-    |       ^                                                                                 ^
+571 |                         ((2.0 * std::f64::consts::PI / val).sqrt() * (val / std::f64::consts::E).powf(val))
+    |                         ^                                                                                 ^
     |
     = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
 help: remove these parentheses
@@ -3768,7 +4848,7 @@ help: you might have meant to pattern match on the similarly named constant `EPS
 warning: unused variable: `tolerance`
    --> rustmath-manifolds/src/symmetries.rs:166:76
     |
-166 |     pub fn commutes_with(&self, other: &KillingVectorField, chart: &Chart, tolerance: f64) -> Result<...
+166 |     pub fn commutes_with(&self, other: &KillingVectorField, chart: &Chart, tolerance: f64) -> Result<bool> {
     |                                                                            ^^^^^^^^^
     |
 help: if this is intentional, prefix it with an underscore
@@ -4056,10 +5136,10 @@ warning: fields `left_translation_cache` and `right_translation_cache` are never
 32 | pub struct LieGroup {
    |            -------- fields in this struct
 ...
-48 |     left_translation_cache: Arc<std::sync::RwLock<HashMap<String, Box<dyn Fn(&ManifoldPoint) -> Result...
+48 |     left_translation_cache: Arc<std::sync::RwLock<HashMap<String, Box<dyn Fn(&ManifoldPoint) -> Result<ManifoldPoint> + ...
    |     ^^^^^^^^^^^^^^^^^^^^^^
 ...
-51 |     right_translation_cache: Arc<std::sync::RwLock<HashMap<String, Box<dyn Fn(&ManifoldPoint) -> Resul...
+51 |     right_translation_cache: Arc<std::sync::RwLock<HashMap<String, Box<dyn Fn(&ManifoldPoint) -> Result<ManifoldPoint> +...
    |     ^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: `LieGroup` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
@@ -4090,7 +5170,7 @@ warning: fields `name`, `domain_in_base`, `chart`, `trivialization_map`, and `in
 62 |     chart: Chart,
    |     ^^^^^
 ...
-65 |     trivialization_map: Arc<dyn Fn(&ManifoldPoint) -> Result<(ManifoldPoint, ManifoldPoint)> + Send + ...
+65 |     trivialization_map: Arc<dyn Fn(&ManifoldPoint) -> Result<(ManifoldPoint, ManifoldPoint)> + Send + Sync>,
    |     ^^^^^^^^^^^^^^^^^^
 ...
 68 |     inverse_map: Arc<dyn Fn(&ManifoldPoint, &ManifoldPoint) -> Result<ManifoldPoint> + Send + Sync>,
@@ -4249,964 +5329,6 @@ warning: field `dirac` is never read
 263 |     /// The Dirac operator
 264 |     dirac: Arc<DiracOperator>,
     |     ^^^^^
-
-warning: `rustmath-groups` (lib) generated 54 warnings (run `cargo fix --lib -p rustmath-groups` to apply 22 suggestions)
-warning: `rustmath-rings` (lib) generated 103 warnings
-warning: `rustmath-liealgebras` (lib) generated 69 warnings (run `cargo fix --lib -p rustmath-liealgebras` to apply 34 suggestions)
-warning: `rustmath-geometry` (lib) generated 3 warnings
-warning: `rustmath-ellipticcurves` (lib) generated 3 warnings
-warning: `rustmath-crystals` (lib) generated 21 warnings
-warning: `rustmath-symmetricfunctions` (lib) generated 56 warnings
-warning: `rustmath-algebraic` (lib) generated 3 warnings
-warning: `rustmath-manifolds` (lib) generated 130 warnings (run `cargo fix --lib -p rustmath-manifolds` to apply 48 suggestions)
-   Compiling rustmath-category v0.1.0 (/home/john/RustMath/rustmath-category)
-warning: unused variable: `cell_res`
-   --> rustmath-quantumgroups/src/fock_space.rs:274:37
-    |
-274 | ...   if let Some(cell_res) = lambda.cell_residue(comp_idx, row, col, &self.params.multicharge, self....
-    |                   ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_cell_res`
-    |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `min_power`
-   --> rustmath-quantumgroups/src/q_bernoulli.rs:113:36
-    |
-113 |         let (q_int_num, q_int_den, min_power) = laurent_to_rational(&q_int_laurent);
-    |                                    ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_min_power`
-
-warning: unused variable: `face_idx`
-   --> rustmath-plot3d/src/export.rs:209:10
-    |
-209 |     for (face_idx, face) in mesh.faces.iter().enumerate() {
-    |          ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_face_idx`
-    |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `MathError`
-  --> rustmath-schemes/src/generic/mod.rs:52:21
-   |
-52 | use rustmath_core::{MathError, Result, Ring};
-   |                     ^^^^^^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `DimensionTheory`
-  --> rustmath-schemes/src/affine/mod.rs:59:59
-   |
-59 | use crate::generic::{Scheme, SchemeMorphism, SchemePoint, DimensionTheory, Separated};
-   |                                                           ^^^^^^^^^^^^^^^
-
-warning: unused import: `std::fmt`
-  --> rustmath-schemes/src/affine/mod.rs:60:5
-   |
-60 | use std::fmt;
-   |     ^^^^^^^^
-
-warning: unused import: `ToPrimitive`
-  --> rustmath-schemes/src/elliptic_curves/isogeny.rs:75:23
-   |
-75 | use num_traits::{One, ToPrimitive, Zero};
-   |                       ^^^^^^^^^^^
-
-warning: unused import: `num_bigint::BigInt`
-  --> rustmath-schemes/src/elliptic_curves/heegner.rs:77:5
-   |
-77 | use num_bigint::BigInt;
-   |     ^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `One`
-  --> rustmath-schemes/src/elliptic_curves/heegner.rs:79:24
-   |
-79 | use num_traits::{Zero, One, Signed, ToPrimitive};
-   |                        ^^^
-
-warning: unused import: `Ring`
-   --> rustmath-schemes/src/elliptic_curves/mod.rs:158:28
-    |
-158 | use rustmath_core::{Field, Ring};
-    |                            ^^^^
-
-warning: unused import: `crate::projective_space::ProjectiveSpace`
-  --> rustmath-schemes/src/line_bundle.rs:17:5
-   |
-17 | use crate::projective_space::ProjectiveSpace;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `Zero`
-  --> rustmath-schemes/src/segre.rs:27:18
-   |
-27 | use num_traits::{Zero, One};
-   |                  ^^^^
-
-warning: unused import: `Zero`
-  --> rustmath-schemes/src/veronese.rs:27:18
-   |
-27 | use num_traits::{Zero, One};
-   |                  ^^^^
-
-warning: unused import: `Signed`
-  --> rustmath-schemes/src/elliptic_curves/heegner.rs:79:29
-   |
-79 | use num_traits::{Zero, One, Signed, ToPrimitive};
-   |                             ^^^^^^
-
-warning: unused variable: `n`
-  --> rustmath-schemes/src/affine/mod.rs:96:25
-   |
-96 |     pub fn affine_space(n: usize, base_ring: R) -> Self {
-   |                         ^ help: if this is intentional, prefix it with an underscore: `_n`
-   |
-   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: function cannot return without recursing
-  --> rustmath-schemes/src/projective/mod.rs:82:5
-   |
-82 |     fn base_ring(&self) -> &Self::BaseRing {
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot return without recursing
-83 |         self.base_ring()
-   |         ---------------- recursive call site
-   |
-   = help: a `loop` may express intention better if this is on purpose
-   = note: `#[warn(unconditional_recursion)]` on by default
-
-warning: function cannot return without recursing
-   --> rustmath-schemes/src/projective/mod.rs:120:5
-    |
-120 |     fn base_ring(&self) -> &Self::BaseRing {
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot return without recursing
-121 |         self.base_ring()
-    |         ---------------- recursive call site
-    |
-    = help: a `loop` may express intention better if this is on purpose
-
-warning: unused variable: `curve`
-   --> rustmath-schemes/src/elliptic_curves/isogeny.rs:519:27
-    |
-519 |     fn find_ell_isogenies(curve: &EllipticCurve, ell: usize) -> Vec<Isogeny> {
-    |                           ^^^^^ help: if this is intentional, prefix it with an underscore: `_curve`
-
-warning: unused variable: `ell`
-   --> rustmath-schemes/src/elliptic_curves/isogeny.rs:519:50
-    |
-519 |     fn find_ell_isogenies(curve: &EllipticCurve, ell: usize) -> Vec<Isogeny> {
-    |                                                  ^^^ help: if this is intentional, prefix it with an underscore: `_ell`
-
-warning: unused variable: `dim`
-   --> rustmath-schemes/src/line_bundle.rs:136:21
-    |
-136 |         if let Some(dim) = self.scheme.dimension() {
-    |                     ^^^ help: if this is intentional, prefix it with an underscore: `_dim`
-
-warning: unused variable: `denom`
-   --> rustmath-schemes/src/proj.rs:165:13
-    |
-165 |         let denom = &homogeneous[self.index];
-    |             ^^^^^ help: if this is intentional, prefix it with an underscore: `_denom`
-
-warning: field `curve` is never read
-   --> rustmath-schemes/src/elliptic_curves/mod.rs:169:5
-    |
-168 | pub struct TorsionSubgroup<F: Field> {
-    |            --------------- field in this struct
-169 |     curve: EllipticCurve<F>,
-    |     ^^^^^
-    |
-    = note: `TorsionSubgroup` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: fields `v` and `w` are never read
-   --> rustmath-schemes/src/elliptic_curves/isogeny.rs:98:5
-    |
- 88 | pub struct Isogeny {
-    |            ------- fields in this struct
-...
- 98 |     v: BigRational,
-    |     ^
- 99 |     /// Vélu's w coefficient
-100 |     w: BigRational,
-    |     ^
-    |
-    = note: `Isogeny` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: field `heights_cache` is never read
-   --> rustmath-schemes/src/elliptic_curves/heegner.rs:518:5
-    |
-516 | pub struct HeightPairing {
-    |            ------------- field in this struct
-517 |     /// Cached heights of points
-518 |     heights_cache: HashMap<String, CanonicalHeight>,
-    |     ^^^^^^^^^^^^^
-    |
-    = note: `HeightPairing` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
-
-warning: field `morphism` is never read
-   --> rustmath-schemes/src/projective_morphism.rs:265:5
-    |
-263 | pub struct BaseLocus<R: Ring> {
-    |            --------- field in this struct
-264 |     /// The morphism
-265 |     morphism: ProjectiveMorphism<R>,
-    |     ^^^^^^^^
-    |
-    = note: `BaseLocus` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
-
-warning: comparison is useless due to type limits
-  --> rustmath-schemes/src/graded_ring.rs:64:41
-   |
-64 |         self.components.keys().all(|&d| d >= 0)
-   |                                         ^^^^^^
-   |
-   = note: `#[warn(unused_comparisons)]` on by default
-
-warning: unused import: `crate::lie_conformal_algebra::GeneratorIndex`
-  --> rustmath-lieconformal/src/lie_conformal_algebra_element.rs:14:5
-   |
-14 | use crate::lie_conformal_algebra::GeneratorIndex;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `std::collections::HashMap`
-  --> rustmath-lieconformal/src/graded_lie_conformal_algebra.rs:13:5
-   |
-13 | use std::collections::HashMap;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `GeneratorIndex`
-  --> rustmath-lieconformal/src/graded_lie_conformal_algebra.rs:15:57
-   |
-15 | use crate::lie_conformal_algebra::{LieConformalAlgebra, GeneratorIndex};
-   |                                                         ^^^^^^^^^^^^^^
-
-warning: unused import: `crate::lie_conformal_algebra_element::LieConformalAlgebraElement`
-  --> rustmath-lieconformal/src/graded_lie_conformal_algebra.rs:16:5
-   |
-16 | use crate::lie_conformal_algebra_element::LieConformalAlgebraElement;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `LambdaBracket`
-  --> rustmath-lieconformal/src/lie_conformal_algebra_with_basis.rs:12:57
-   |
-12 | use crate::lie_conformal_algebra::{LieConformalAlgebra, LambdaBracket, GeneratorIndex};
-   |                                                         ^^^^^^^^^^^^^
-
-warning: unused variable: `degree`
-   --> rustmath-lieconformal/src/graded_lie_conformal_algebra.rs:121:37
-    |
-121 |     fn homogeneous_component(&self, degree: Degree) -> Vec<Self::Element> {
-    |                                     ^^^^^^ help: if this is intentional, prefix it with an underscore: `_degree`
-    |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `a`
-   --> rustmath-lieconformal/src/virasoro_lie_conformal_algebra.rs:159:9
-    |
-159 |         a: &VirasoroLCAElement<R>,
-    |         ^ help: if this is intentional, prefix it with an underscore: `_a`
-
-warning: unused variable: `b`
-   --> rustmath-lieconformal/src/virasoro_lie_conformal_algebra.rs:160:9
-    |
-160 |         b: &VirasoroLCAElement<R>,
-    |         ^ help: if this is intentional, prefix it with an underscore: `_b`
-
-warning: unused variable: `ngens`
-   --> rustmath-lieconformal/src/affine_lie_conformal_algebra.rs:110:13
-    |
-110 |         let ngens = dim + 1;
-    |             ^^^^^ help: if this is intentional, prefix it with an underscore: `_ngens`
-
-warning: unused variable: `ct`
-   --> rustmath-lieconformal/src/affine_lie_conformal_algebra.rs:202:31
-    |
-202 |     fn compute_structure_data(ct: &CartanType, base_ring: &R) ->
-    |                               ^^ help: if this is intentional, prefix it with an underscore: `_ct`
-
-warning: unused variable: `base_ring`
-   --> rustmath-lieconformal/src/affine_lie_conformal_algebra.rs:202:48
-    |
-202 |     fn compute_structure_data(ct: &CartanType, base_ring: &R) ->
-    |                                                ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_base_ring`
-
-warning: unused variable: `poly_a`
-   --> rustmath-lieconformal/src/affine_lie_conformal_algebra.rs:350:23
-    |
-350 |         for (basis_a, poly_a) in a.terms() {
-    |                       ^^^^^^ help: if this is intentional, prefix it with an underscore: `_poly_a`
-
-warning: unused variable: `poly_b`
-   --> rustmath-lieconformal/src/affine_lie_conformal_algebra.rs:351:27
-    |
-351 |             for (basis_b, poly_b) in b.terms() {
-    |                           ^^^^^^ help: if this is intentional, prefix it with an underscore: `_poly_b`
-
-warning: method `T` should have a snake case name
-   --> rustmath-lieconformal/src/lie_conformal_algebra_element.rs:296:12
-    |
-296 |     pub fn T(&self, n: usize) -> Self
-    |            ^ help: convert the identifier to snake case: `t`
-    |
-    = note: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
-
-warning: method `T` should have a snake case name
-   --> rustmath-lieconformal/src/lie_conformal_algebra_element.rs:452:12
-    |
-452 |     pub fn T(&self, n: usize) -> Self
-    |            ^ help: convert the identifier to snake case: `t`
-
-warning: unused import: `rustmath_core::Ring`
- --> rustmath-quadraticforms/src/quadratic_form.rs:6:5
-  |
-6 | use rustmath_core::Ring;
-  |     ^^^^^^^^^^^^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `Ring`
- --> rustmath-quadraticforms/src/theta_series.rs:8:21
-  |
-8 | use rustmath_core::{Ring, NumericConversion};
-  |                     ^^^^
-
-warning: unused import: `NumericConversion`
- --> rustmath-quadraticforms/src/theta_series.rs:8:27
-  |
-8 | use rustmath_core::{Ring, NumericConversion};
-  |                           ^^^^^^^^^^^^^^^^^
-
-warning: unused import: `Ring`
- --> rustmath-quadraticforms/src/local_densities.rs:9:21
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                     ^^^^
-
-warning: unused import: `NumericConversion`
- --> rustmath-quadraticforms/src/local_densities.rs:9:27
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                           ^^^^^^^^^^^^^^^^^
-
-warning: unused import: `Ring`
- --> rustmath-quadraticforms/src/genus_theory.rs:9:21
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                     ^^^^
-
-warning: unused import: `NumericConversion`
- --> rustmath-quadraticforms/src/genus_theory.rs:9:27
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                           ^^^^^^^^^^^^^^^^^
-
-warning: unused import: `Ring`
- --> rustmath-quadraticforms/src/advanced.rs:9:21
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                     ^^^^
-
-warning: unused import: `NumericConversion`
- --> rustmath-quadraticforms/src/advanced.rs:9:27
-  |
-9 | use rustmath_core::{Ring, NumericConversion};
-  |                           ^^^^^^^^^^^^^^^^^
-
-warning: unused variable: `d`
-  --> rustmath-quadraticforms/src/local_densities.rs:83:13
-   |
-83 |         let d = (-self.form.discriminant()).clone();
-   |             ^ help: if this is intentional, prefix it with an underscore: `_d`
-   |
-   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `p_power`
-   --> rustmath-quadraticforms/src/local_densities.rs:173:13
-    |
-173 |         let p_power = p_int.pow(k);
-    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_p_power`
-
-warning: unused variable: `n3`
-  --> rustmath-quadraticforms/src/advanced.rs:96:42
-   |
-96 |             if let [(n1, a1), (n2, a2), (n3, a3)] = window {
-   |                                          ^^ help: if this is intentional, prefix it with an underscore: `_n3`
-
-warning: method `p_adic_equivalent` is never used
-   --> rustmath-quadraticforms/src/genus_theory.rs:189:8
-    |
- 18 | impl GenusTheory {
-    | ---------------- method in this implementation
-...
-189 |     fn p_adic_equivalent(&self, form1: &QuadraticForm, form2: &QuadraticForm, p: u64) -> bool {
-    |        ^^^^^^^^^^^^^^^^^
-    |
-    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-   Compiling rustmath-interfaces v0.1.0 (/home/john/RustMath/rustmath-interfaces)
-warning: unused import: `Ring`
- --> rustmath-affineschemes/src/prime_ideal.rs:6:21
-  |
-6 | use rustmath_core::{Ring, CommutativeRing, MathError, Result};
-  |                     ^^^^
-  |
-  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `Ring`
- --> rustmath-affineschemes/src/spec.rs:7:38
-  |
-7 | use rustmath_core::{CommutativeRing, Ring};
-  |                                      ^^^^
-
-warning: unused import: `Ring`
- --> rustmath-affineschemes/src/structure_sheaf.rs:9:38
-  |
-9 | use rustmath_core::{CommutativeRing, Ring};
-  |                                      ^^^^
-
-warning: unused import: `Ring`
-  --> rustmath-affineschemes/src/morphism.rs:13:38
-   |
-13 | use rustmath_core::{CommutativeRing, Ring};
-   |                                      ^^^^
-
-warning: fields `first` and `second` are never read
-  --> rustmath-affineschemes/src/fiber_product.rs:38:5
-   |
-29 | pub struct FiberProduct<R, S, T>
-   |            ------------ fields in this struct
-...
-38 |     first: AffineScheme<S>,
-   |     ^^^^^
-39 |     /// The second scheme Spec(T)
-40 |     second: AffineScheme<T>,
-   |     ^^^^^^
-   |
-   = note: `FiberProduct` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
-   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: field `source` is never read
-   --> rustmath-affineschemes/src/varieties.rs:247:5
-    |
-241 | pub struct VarietyMorphism<K, A, B>
-    |            --------------- field in this struct
-...
-247 |     source: AffineVariety<K, A>,
-    |     ^^^^^^
-
-warning: function `list_plot_multiple` is never used
-   --> rustmath-plot/src/plots/list_plot.rs:138:8
-    |
-138 | pub fn list_plot_multiple(
-    |        ^^^^^^^^^^^^^^^^^^
-    |
-    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: function `scatter_plot_y` is never used
-  --> rustmath-plot/src/plots/scatter_plot.rs:77:8
-   |
-77 | pub fn scatter_plot_y(
-   |        ^^^^^^^^^^^^^^
-
-warning: function `scatter_plot_colored` is never used
-   --> rustmath-plot/src/plots/scatter_plot.rs:116:8
-    |
-116 | pub fn scatter_plot_colored(
-    |        ^^^^^^^^^^^^^^^^^^^^
-
-warning: function `scatter_plot_sized` is never used
-   --> rustmath-plot/src/plots/scatter_plot.rs:160:8
-    |
-160 | pub fn scatter_plot_sized(
-    |        ^^^^^^^^^^^^^^^^^^
-
-warning: function `contour_plot_filled` is never used
-   --> rustmath-plot/src/plots/contour_plot.rs:122:8
-    |
-122 | pub fn contour_plot_filled<F>(
-    |        ^^^^^^^^^^^^^^^^^^^
-
-warning: function `density_plot_custom` is never used
-   --> rustmath-plot/src/plots/density_plot.rs:154:8
-    |
-154 | pub fn density_plot_custom<F, C>(
-    |        ^^^^^^^^^^^^^^^^^^^
-
-warning: function `histogram_custom_bins` is never used
-   --> rustmath-plot/src/plots/histogram.rs:132:8
-    |
-132 | pub fn histogram_custom_bins(
-    |        ^^^^^^^^^^^^^^^^^^^^^
-
-warning: function `bar_chart_horizontal` is never used
-  --> rustmath-plot/src/plots/bar_chart.rs:77:8
-   |
-77 | pub fn bar_chart_horizontal(
-   |        ^^^^^^^^^^^^^^^^^^^^
-
-warning: function `bar_chart_colored` is never used
-   --> rustmath-plot/src/plots/bar_chart.rs:122:8
-    |
-122 | pub fn bar_chart_colored(data: Vec<(f64, f64, Color)>, bar_width: Option<f64>) -> Graphics {
-    |        ^^^^^^^^^^^^^^^^^
-
-warning: function `bar_chart_grouped` is never used
-   --> rustmath-plot/src/plots/bar_chart.rs:166:8
-    |
-166 | pub fn bar_chart_grouped(
-    |        ^^^^^^^^^^^^^^^^^
-
-warning: function `bar_chart_stacked` is never used
-   --> rustmath-plot/src/plots/bar_chart.rs:232:8
-    |
-232 | pub fn bar_chart_stacked(data: Vec<(f64, Vec<f64>, Vec<Color>)>, bar_width: Option<f64>) -> Graphics {
-    |        ^^^^^^^^^^^^^^^^^
-
-warning: function `matrix_plot_range` is never used
-   --> rustmath-plot/src/plots/matrix_plot.rs:119:8
-    |
-119 | pub fn matrix_plot_range(
-    |        ^^^^^^^^^^^^^^^^^
-
-warning: function `matrix_plot_binary` is never used
-   --> rustmath-plot/src/plots/matrix_plot.rs:173:8
-    |
-173 | pub fn matrix_plot_binary(
-    |        ^^^^^^^^^^^^^^^^^^
-
-warning: function `matrix_plot_spy` is never used
-   --> rustmath-plot/src/plots/matrix_plot.rs:222:8
-    |
-222 | pub fn matrix_plot_spy(matrix: Vec<Vec<f64>>, threshold: Option<f64>, color: Color) -> Graphics {
-    |        ^^^^^^^^^^^^^^^
-
-warning: unused import: `rustmath_core::Ring`
- --> rustmath-topology/src/cell_complex.rs:8:5
-  |
-8 | use rustmath_core::Ring;
-  |     ^^^^^^^^^^^^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `rustmath_matrix::Matrix`
-  --> rustmath-topology/src/cell_complex.rs:10:5
-   |
-10 | use rustmath_matrix::Matrix;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `HashSet`
-  --> rustmath-topology/src/delta_complex.rs:12:33
-   |
-12 | use std::collections::{HashMap, HashSet};
-   |                                 ^^^^^^^
-
-warning: unused import: `rustmath_integers::Integer`
-  --> rustmath-topology/src/filtered_simplicial_complex.rs:10:5
-   |
-10 | use rustmath_integers::Integer;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused imports: `HashMap` and `HashSet`
-  --> rustmath-topology/src/filtered_simplicial_complex.rs:11:24
-   |
-11 | use std::collections::{HashMap, HashSet};
-   |                        ^^^^^^^  ^^^^^^^
-
-warning: unused import: `rustmath_integers::Integer`
-  --> rustmath-topology/src/moment_angle_complex.rs:10:5
-   |
-10 | use rustmath_integers::Integer;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `crate::cell_complex::GenericCellComplex`
-  --> rustmath-topology/src/simplicial_complex.rs:11:5
-   |
-11 | use crate::cell_complex::GenericCellComplex;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `HashSet`
-  --> rustmath-topology/src/simplicial_set.rs:12:33
-   |
-12 | use std::collections::{HashMap, HashSet};
-   |                                 ^^^^^^^
-
-warning: unused import: `AbstractSimplex`
- --> rustmath-topology/src/simplicial_set_morphism.rs:7:44
-  |
-7 | use crate::simplicial_set::{SimplicialSet, AbstractSimplex};
-  |                                            ^^^^^^^^^^^^^^^
-
-warning: unused import: `std::collections::HashMap`
-  --> rustmath-topology/src/reidemeister.rs:16:5
-   |
-16 | use std::collections::HashMap;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `CrossingType`
-  --> rustmath-topology/src/knot_polynomials.rs:34:25
-   |
-34 | use crate::knot::{Knot, CrossingType};
-   |                         ^^^^^^^^^^^^
-
-warning: unused imports: `ReidemeisterMoveType` and `ReidemeisterMove`
-  --> rustmath-topology/src/knot_invariants.rs:29:42
-   |
-29 | use crate::reidemeister::{simplify_knot, ReidemeisterMove, ReidemeisterMoveType};
-   |                                          ^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^
-
-warning: unused import: `std::collections::HashSet`
-  --> rustmath-topology/src/knot_invariants.rs:30:5
-   |
-30 | use std::collections::HashSet;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused imports: `CrossingType` and `Crossing`
-  --> rustmath-topology/src/link.rs:28:25
-   |
-28 | use crate::knot::{Knot, Crossing, CrossingType};
-   |                         ^^^^^^^^  ^^^^^^^^^^^^
-
-warning: unused import: `std::collections::HashMap`
-  --> rustmath-topology/src/link.rs:29:5
-   |
-29 | use std::collections::HashMap;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused variable: `max_dim`
-   --> rustmath-topology/src/cell_complex.rs:108:21
-    |
-108 |         if let Some(max_dim) = self.dimension {
-    |                     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_max_dim`
-    |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `obj`
-  --> rustmath-topology/src/simplicial_complex_homset.rs:80:37
-   |
-80 | pub fn is_simplicial_complex_homset(obj: &SimplicialComplexHomset) -> bool {
-   |                                     ^^^ help: if this is intentional, prefix it with an underscore: `_obj`
-
-warning: unused variable: `obj`
-   --> rustmath-topology/src/simplicial_complex_morphism.rs:173:39
-    |
-173 | pub fn is_simplicial_complex_morphism(obj: &SimplicialComplexMorphism) -> bool {
-    |                                       ^^^ help: if this is intentional, prefix it with an underscore: `_obj`
-
-warning: unused variable: `base_point`
-  --> rustmath-topology/src/simplicial_set_constructions.rs:17:9
-   |
-17 |     let base_point = cone.add_simplex(AbstractSimplex::with_name(0, 0, "cone_point"));
-   |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_base_point`
-
-warning: unused variable: `north`
-  --> rustmath-topology/src/simplicial_set_constructions.rs:33:9
-   |
-33 |     let north = suspension.add_simplex(AbstractSimplex::with_name(0, 0, "north"));
-   |         ^^^^^ help: if this is intentional, prefix it with an underscore: `_north`
-
-warning: unused variable: `south`
-  --> rustmath-topology/src/simplicial_set_constructions.rs:34:9
-   |
-34 |     let south = suspension.add_simplex(AbstractSimplex::with_name(0, 1, "south"));
-   |         ^^^^^ help: if this is intentional, prefix it with an underscore: `_south`
-
-warning: variable does not need to be mutable
-  --> rustmath-topology/src/simplicial_set_constructions.rs:47:9
-   |
-47 |     let mut product = SimplicialSet::with_name(&name);
-   |         ----^^^^^^^
-   |         |
-   |         help: remove this `mut`
-   |
-   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `base`
-  --> rustmath-topology/src/simplicial_set_constructions.rs:65:9
-   |
-65 |     let base = wedge.add_simplex(AbstractSimplex::with_name(0, 0, "base"));
-   |         ^^^^ help: if this is intentional, prefix it with an underscore: `_base`
-
-warning: variable does not need to be mutable
-  --> rustmath-topology/src/simplicial_set_constructions.rs:95:9
-   |
-95 |     let mut union = SimplicialSet::with_name(&name);
-   |         ----^^^^^
-   |         |
-   |         help: remove this `mut`
-
-warning: unused variable: `sigma`
-  --> rustmath-topology/src/simplicial_set_examples.rs:88:9
-   |
-88 |     let sigma = ss.add_simplex(AbstractSimplex::with_name(2, 0, "σ"));
-   |         ^^^^^ help: if this is intentional, prefix it with an underscore: `_sigma`
-
-warning: unused variable: `crossing_data`
-  --> rustmath-topology/src/knot.rs:96:17
-   |
-96 |         for (i, crossing_data) in pd_code.iter().enumerate() {
-   |                 ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_crossing_data`
-
-warning: unused variable: `label`
-   --> rustmath-topology/src/knot.rs:308:10
-    |
-308 |     for (label, positions) in crossing_positions.iter() {
-    |          ^^^^^ help: if this is intentional, prefix it with an underscore: `_label`
-
-warning: unused variable: `i`
-   --> rustmath-topology/src/braid.rs:117:17
-    |
-117 |             let i = gen.index;
-    |                 ^ help: if this is intentional, prefix it with an underscore: `_i`
-
-warning: unused variable: `crossing`
-   --> rustmath-topology/src/knot_polynomials.rs:220:9
-    |
-220 |     let crossing = pd_code[0];
-    |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_crossing`
-
-warning: unused variable: `a_smoothing`
-   --> rustmath-topology/src/knot_polynomials.rs:238:65
-    |
-238 | fn apply_smoothing(pd_code: &[[usize; 4]], crossing_idx: usize, a_smoothing: bool) -> Vec<[usize; 4]> {
-    |                                                                 ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_a_smoothing`
-
-warning: unused variable: `num_comp`
-  --> rustmath-topology/src/link.rs:71:13
-   |
-71 |         let num_comp = knot.num_components();
-   |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_num_comp`
-
-warning: unused variable: `crossing`
-   --> rustmath-topology/src/link.rs:103:13
-    |
-103 |         for crossing in &self.pd_code {
-    |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_crossing`
-
-warning: field `base` is never read
-   --> rustmath-topology/src/cubical_complex.rs:127:5
-    |
-125 | pub struct CubicalComplex {
-    |            -------------- field in this struct
-126 |     /// The underlying cell complex
-127 |     base: GenericCellComplex,
-    |     ^^^^
-    |
-    = note: `CubicalComplex` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: field `base` is never read
-  --> rustmath-topology/src/delta_complex.rs:48:5
-   |
-46 | pub struct DeltaComplex {
-   |            ------------ field in this struct
-47 |     /// The underlying cell complex
-48 |     base: GenericCellComplex,
-   |     ^^^^
-   |
-   = note: `DeltaComplex` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-
-warning: unused import: `rustmath_core::Ring`
-  --> rustmath-calculus/src/riemann.rs:26:5
-   |
-26 | use rustmath_core::Ring;
-   |     ^^^^^^^^^^^^^^^^^^^
-   |
-   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `rustmath_core::NumericConversion`
- --> rustmath-calculus/src/sum.rs:6:5
-  |
-6 | use rustmath_core::NumericConversion;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: unused variable: `dy`
-   --> rustmath-calculus/src/riemann.rs:182:17
-    |
-182 |             let dy = if i == 0 {
-    |                 ^^ help: if this is intentional, prefix it with an underscore: `_dy`
-    |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `m`
-   --> rustmath-calculus/src/transforms/dwt.rs:371:9
-    |
-371 |     let m = filter.len();
-    |         ^ help: if this is intentional, prefix it with an underscore: `_m`
-
-warning: field `wavelet` is never read
-  --> rustmath-calculus/src/transforms/dwt.rs:36:5
-   |
-34 | pub struct DiscreteWaveletTransform {
-   |            ------------------------ field in this struct
-35 |     /// Wavelet family
-36 |     wavelet: WaveletFamily,
-   |     ^^^^^^^
-   |
-   = note: `DiscreteWaveletTransform` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: methods `fft_recursive` and `dft_fallback` are never used
-   --> rustmath-calculus/src/transforms/fft.rs:67:8
-    |
- 32 | impl FastFourierTransformComplex {
-    | -------------------------------- methods in this implementation
-...
- 67 |     fn fft_recursive(&self, input: &[Complex]) -> Vec<Complex> {
-    |        ^^^^^^^^^^^^^
-...
-116 |     fn dft_fallback(&self, input: &[Complex]) -> Vec<Complex> {
-    |        ^^^^^^^^^^^^
-
-warning: unused variable: `text`
-   --> rustmath-crypto/src/classical.rs:212:21
-    |
-212 | pub fn hill_decrypt(text: &str, key_matrix: &Matrix<Integer>) -> Result<String> {
-    |                     ^^^^ help: if this is intentional, prefix it with an underscore: `_text`
-    |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `key_matrix`
-   --> rustmath-crypto/src/classical.rs:212:33
-    |
-212 | pub fn hill_decrypt(text: &str, key_matrix: &Matrix<Integer>) -> Result<String> {
-    |                                 ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_key_matrix`
-
-warning: unused variable: `j`
-   --> rustmath-crypto/src/kdf.rs:213:17
-    |
-213 |             for j in 0..32 {
-    |                 ^ help: if this is intentional, prefix it with an underscore: `_j`
-
-warning: unused variable: `challenge`
-   --> rustmath-crypto/src/eddsa.rs:351:13
-    |
-351 |         let challenge = SHA256::hash(&challenge_input);
-    |             ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_challenge`
-
-warning: unused variable: `s_point`
-   --> rustmath-crypto/src/eddsa.rs:358:13
-    |
-358 |         let s_point = basepoint.scalar_mul(&signature.s);
-    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_s_point`
-
-warning: unused variable: `r_point`
-   --> rustmath-crypto/src/eddsa.rs:359:13
-    |
-359 |         let r_point = basepoint.scalar_mul(&signature.r);
-    |             ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_r_point`
-
-warning: unused variable: `verify_hash`
-   --> rustmath-crypto/src/eddsa.rs:367:13
-    |
-367 |         let verify_hash = SHA256::hash(&verify_input);
-    |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_verify_hash`
-
-warning: associated function `quarter_round` is never used
-   --> rustmath-crypto/src/stream_cipher.rs:144:8
-    |
- 88 | impl ChaCha20 {
-    | ------------- associated function in this implementation
-...
-144 |     fn quarter_round(a: &mut u32, b: &mut u32, c: &mut u32, d: &mut u32) {
-    |        ^^^^^^^^^^^^^
-    |
-    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: associated items `P`, `from_bytes`, and `mul_small` are never used
-   --> rustmath-crypto/src/eddsa.rs:52:11
-    |
- 50 | impl FieldElement {
-    | ----------------- associated items in this implementation
- 51 |     /// Prime for Curve25519: 2^255 - 19
- 52 |     const P: [u64; 5] = [
-    |           ^
-...
- 69 |     fn from_bytes(bytes: &[u8; 32]) -> Self {
-    |        ^^^^^^^^^^
-...
-122 |     fn mul_small(&self, scalar: u64) -> FieldElement {
-    |        ^^^^^^^^^
-
-warning: unused import: `rustmath_core::Ring`
- --> rustmath-coding/src/linear_code.rs:5:5
-  |
-5 | use rustmath_core::Ring;
-  |     ^^^^^^^^^^^^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `field_char`
-   --> rustmath-coding/src/linear_code.rs:207:60
-    |
-207 |     fn compute_parity_check_matrix(generator: &[Vec<u64>], field_char: u64) -> Vec<Vec<u64>> {
-    |                                                            ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_field_char`
-    |
-    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused variable: `p`
-   --> rustmath-coding/src/reed_solomon.rs:103:13
-    |
-103 |         let p = self.field_char;
-    |             ^ help: if this is intentional, prefix it with an underscore: `_p`
-
-warning: unused variable: `p`
-   --> rustmath-coding/src/reed_solomon.rs:165:13
-    |
-165 |         let p = self.field_char;
-    |             ^ help: if this is intentional, prefix it with an underscore: `_p`
-
-warning: unused variable: `k`
-  --> rustmath-coding/src/bch.rs:63:38
-   |
-63 |     pub fn with_parameters(n: usize, k: usize, delta: usize) -> Result<Self, String> {
-   |                                      ^ help: if this is intentional, prefix it with an underscore: `_k`
-
-warning: unused variable: `p`
-   --> rustmath-coding/src/syndrome.rs:197:13
-    |
-197 |         let p = self.field_char;
-    |             ^ help: if this is intentional, prefix it with an underscore: `_p`
-
-warning: unused variable: `p`
-   --> rustmath-coding/src/syndrome.rs:205:13
-    |
-205 |         let p = self.field_char;
-    |             ^ help: if this is intentional, prefix it with an underscore: `_p`
-
-warning: field `eval_points` is never read
-  --> rustmath-coding/src/reed_solomon.rs:23:5
-   |
-13 | pub struct ReedSolomonCode {
-   |            --------------- field in this struct
-...
-23 |     eval_points: Vec<u64>,
-   |     ^^^^^^^^^^^
-   |
-   = note: `ReedSolomonCode` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
-   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: fields `m` and `field_char` are never read
-  --> rustmath-coding/src/bch.rs:19:5
-   |
-11 | pub struct BCHCode {
-   |            ------- fields in this struct
-...
-19 |     m: usize,
-   |     ^
-...
-23 |     field_char: u64,
-   |     ^^^^^^^^^^
-   |
-   = note: `BCHCode` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
-
-warning: field `field_char` is never read
-  --> rustmath-coding/src/syndrome.rs:12:5
-   |
- 8 | pub struct SyndromeTable {
-   |            ------------- field in this struct
-...
-12 |     field_char: u64,
-   |     ^^^^^^^^^^
-   |
-   = note: `SyndromeTable` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
 
 warning: unused variable: `obj`
    --> rustmath-modular/src/abvar.rs:490:35
@@ -5539,18 +5661,20 @@ warning: variable `N` should have a snake case name
 323 |     N: &BigInt,
     |     ^ help: convert the identifier to snake case: `n`
 
-warning: `rustmath-quantumgroups` (lib) generated 2 warnings
-warning: `rustmath-plot3d` (lib) generated 1 warning
-warning: `rustmath-schemes` (lib) generated 23 warnings (run `cargo fix --lib -p rustmath-schemes` to apply 10 suggestions)
-warning: `rustmath-lieconformal` (lib) generated 15 warnings (run `cargo fix --lib -p rustmath-lieconformal` to apply 5 suggestions)
+warning: `rustmath-schemes` (lib) generated 37 warnings (run `cargo fix --lib -p rustmath-schemes` to apply 14 suggestions)
 warning: `rustmath-quadraticforms` (lib) generated 13 warnings
+warning: `rustmath-quantumgroups` (lib) generated 2 warnings
 warning: `rustmath-affineschemes` (lib) generated 6 warnings
-warning: `rustmath-plot` (lib) generated 14 warnings
+warning: `rustmath-lieconformal` (lib) generated 15 warnings (run `cargo fix --lib -p rustmath-lieconformal` to apply 5 suggestions)
 warning: `rustmath-topology` (lib) generated 34 warnings (run `cargo fix --lib -p rustmath-topology` to apply 17 suggestions)
-warning: `rustmath-calculus` (lib) generated 6 warnings
+warning: `rustmath-plot3d` (lib) generated 1 warning
+warning: `rustmath-plot` (lib) generated 14 warnings
 warning: `rustmath-crypto` (lib) generated 9 warnings
-warning: `rustmath-coding` (lib) generated 10 warnings
+warning: `rustmath-calculus` (lib) generated 6 warnings
+warning: `rustmath-algebraic` (lib) generated 3 warnings
+warning: `rustmath-manifolds` (lib) generated 130 warnings (run `cargo fix --lib -p rustmath-manifolds` to apply 48 suggestions)
 warning: `rustmath-modular` (lib) generated 51 warnings
+   Compiling rustmath-curves v0.1.0 (/home/john/RustMath/rustmath-curves)
 warning: unused import: `Morphism`
   --> rustmath-category/src/coercion.rs:24:47
    |
@@ -5682,6 +5806,94 @@ warning: unused import: `GapError`
    |
 28 | use crate::gap::{GapError, GapInterface, Result};
    |                  ^^^^^^^^
+
+error[E0603]: trait `Polynomial` is private
+  --> rustmath-curves/src/hyperelliptic.rs:15:39
+   |
+15 | use rustmath_polynomials::univariate::Polynomial;
+   |                                       ^^^^^^^^^^ private trait
+   |
+note: the trait `Polynomial` is defined here
+  --> /home/john/RustMath/rustmath-polynomials/src/univariate.rs:3:5
+   |
+ 3 | use crate::polynomial::Polynomial;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: import `Polynomial` directly
+   |
+15 - use rustmath_polynomials::univariate::Polynomial;
+15 + use rustmath_polynomials::polynomial::Polynomial;
+   |
+
+error[E0603]: trait `Polynomial` is private
+  --> rustmath-curves/src/divisor.rs:14:39
+   |
+14 | use rustmath_polynomials::univariate::Polynomial;
+   |                                       ^^^^^^^^^^ private trait
+   |
+note: the trait `Polynomial` is defined here
+  --> /home/john/RustMath/rustmath-polynomials/src/univariate.rs:3:5
+   |
+ 3 | use crate::polynomial::Polynomial;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: import `Polynomial` directly
+   |
+14 - use rustmath_polynomials::univariate::Polynomial;
+14 + use rustmath_polynomials::polynomial::Polynomial;
+   |
+
+error[E0603]: trait `Polynomial` is private
+  --> rustmath-curves/src/cantor.rs:26:39
+   |
+26 | use rustmath_polynomials::univariate::Polynomial;
+   |                                       ^^^^^^^^^^ private trait
+   |
+note: the trait `Polynomial` is defined here
+  --> /home/john/RustMath/rustmath-polynomials/src/univariate.rs:3:5
+   |
+ 3 | use crate::polynomial::Polynomial;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: import `Polynomial` directly
+   |
+26 - use rustmath_polynomials::univariate::Polynomial;
+26 + use rustmath_polynomials::polynomial::Polynomial;
+   |
+
+error[E0603]: trait `Polynomial` is private
+  --> rustmath-curves/src/jacobian.rs:21:39
+   |
+21 | use rustmath_polynomials::univariate::Polynomial;
+   |                                       ^^^^^^^^^^ private trait
+   |
+note: the trait `Polynomial` is defined here
+  --> /home/john/RustMath/rustmath-polynomials/src/univariate.rs:3:5
+   |
+ 3 | use crate::polynomial::Polynomial;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: import `Polynomial` directly
+   |
+21 - use rustmath_polynomials::univariate::Polynomial;
+21 + use rustmath_polynomials::polynomial::Polynomial;
+   |
+
+warning: unused import: `rustmath_symbolic::expression::Expr`
+ --> rustmath-curves/src/plane_curve.rs:9:5
+  |
+9 | use rustmath_symbolic::expression::Expr;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `rustmath_matrix::matrix::Matrix`
+  --> rustmath-curves/src/singularities.rs:12:5
+   |
+12 | use rustmath_matrix::matrix::Matrix;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rustmath_polynomials::multivariate::MultiPoly`
+   --> rustmath-curves/src/weierstrass.rs:296:9
+    |
+296 |     use rustmath_polynomials::multivariate::MultiPoly;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0277]: `T` doesn't implement `Debug`
   --> rustmath-category/src/coercion.rs:81:5
@@ -6072,6 +6284,24 @@ help: you might have meant to use `Self` to refer to the implementing type
 31 +     fn is_subcategory_of(&self, other: &Self) -> bool {
    |
 
+error[E0599]: no method named `iter` found for reference `&Monomial` in the current scope
+   --> rustmath-curves/src/singularities.rs:272:43
+    |
+272 |             let degree: usize = exponents.iter().sum();
+    |                                           ^^^^ method not found in `&Monomial`
+
+error[E0308]: mismatched types
+   --> rustmath-curves/src/singularities.rs:273:25
+    |
+267 | fn min_degree<R: Ring + Clone + PartialEq>(poly: &MultiPoly<R>) -> usize {
+    |               - expected this type parameter
+...
+273 |             if degree < min {
+    |                         ^^^ expected type parameter `R`, found `usize`
+    |
+    = note: expected type parameter `R`
+                         found type `usize`
+
 error[E0277]: the trait bound `dyn Axiom: Clone` is not satisfied
    --> rustmath-category/src/axioms.rs:299:5
     |
@@ -6084,6 +6314,42 @@ error[E0277]: the trait bound `dyn Axiom: Clone` is not satisfied
     = note: required for `Box<dyn Axiom>` to implement `Clone`
     = note: 1 redundant requirement hidden
     = note: required for `Vec<Box<dyn Axiom>>` to implement `Clone`
+
+error[E0308]: mismatched types
+  --> rustmath-curves/src/hyperelliptic.rs:37:18
+   |
+28 | impl<F: Field + Clone + PartialEq> HyperellipticCurve<F> {
+   |      - expected this type parameter
+...
+37 |         if deg < 3 {
+   |                  ^ expected type parameter `F`, found integer
+   |
+   = note: expected type parameter `F`
+                        found type `{integer}`
+
+error[E0308]: mismatched types
+  --> rustmath-curves/src/hyperelliptic.rs:48:35
+   |
+28 | impl<F: Field + Clone + PartialEq> HyperellipticCurve<F> {
+   |      - expected this type parameter
+...
+48 |         let genus = if deg % 2 == 0 {
+   |                                   ^ expected type parameter `F`, found integer
+   |
+   = note: expected type parameter `F`
+                        found type `{integer}`
+
+error[E0308]: mismatched types
+  --> rustmath-curves/src/hyperelliptic.rs:49:20
+   |
+28 | impl<F: Field + Clone + PartialEq> HyperellipticCurve<F> {
+   |      - expected this type parameter
+...
+49 |             (deg - 2) / 2
+   |                    ^ expected type parameter `F`, found integer
+   |
+   = note: expected type parameter `F`
+                        found type `{integer}`
 
 error[E0038]: the trait `Category` is not dyn compatible
   --> rustmath-category/src/category.rs:27:9
@@ -6111,6 +6377,18 @@ note: for a trait to be dyn compatible it needs to allow building a vtable
            implementing `Category` for this new enum and using it instead
    = note: `Category` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
 
+error[E0308]: mismatched types
+  --> rustmath-curves/src/hyperelliptic.rs:49:25
+   |
+28 | impl<F: Field + Clone + PartialEq> HyperellipticCurve<F> {
+   |      - expected this type parameter
+...
+49 |             (deg - 2) / 2
+   |                         ^ expected type parameter `F`, found integer
+   |
+   = note: expected type parameter `F`
+                        found type `{integer}`
+
 error[E0038]: the trait `Category` is not dyn compatible
   --> rustmath-category/src/category.rs:36:28
    |
@@ -6137,6 +6415,18 @@ note: for a trait to be dyn compatible it needs to allow building a vtable
            implementing `Category` for this new enum and using it instead
    = note: `Category` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
 
+error[E0308]: mismatched types
+  --> rustmath-curves/src/hyperelliptic.rs:51:20
+   |
+28 | impl<F: Field + Clone + PartialEq> HyperellipticCurve<F> {
+   |      - expected this type parameter
+...
+51 |             (deg - 1) / 2
+   |                    ^ expected type parameter `F`, found integer
+   |
+   = note: expected type parameter `F`
+                        found type `{integer}`
+
 error[E0038]: the trait `Category` is not dyn compatible
   --> rustmath-category/src/category.rs:36:23
    |
@@ -6162,6 +6452,35 @@ note: for a trait to be dyn compatible it needs to allow building a vtable
            consider defining an enum where each variant holds one of these types,
            implementing `Category` for this new enum and using it instead
    = note: `Category` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
+
+error[E0308]: mismatched types
+  --> rustmath-curves/src/hyperelliptic.rs:51:25
+   |
+28 | impl<F: Field + Clone + PartialEq> HyperellipticCurve<F> {
+   |      - expected this type parameter
+...
+51 |             (deg - 1) / 2
+   |                         ^ expected type parameter `F`, found integer
+   |
+   = note: expected type parameter `F`
+                        found type `{integer}`
+
+error[E0283]: type annotations needed
+  --> rustmath-curves/src/hyperelliptic.rs:76:24
+   |
+76 |         let deg = self.degree();
+   |                        ^^^^^^ cannot infer type for type parameter `F`
+   |
+   = note: cannot satisfy `_: rustmath_core::Field`
+   = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `HyperellipticCurve::<F>::degree`
+  --> rustmath-curves/src/hyperelliptic.rs:28:9
+   |
+28 | impl<F: Field + Clone + PartialEq> HyperellipticCurve<F> {
+   |         ^^^^^ required by this bound in `HyperellipticCurve::<F>::degree`
+...
+58 |     pub fn degree(&self) -> usize {
+   |            ------ required by a bound in this associated function
 
 error[E0038]: the trait `Category` is not dyn compatible
    --> rustmath-category/src/group_category.rs:242:9
@@ -6545,6 +6864,18 @@ help: consider annotating `GapInterface` with `#[derive(Clone)]`
     |
 
 error[E0308]: mismatched types
+  --> rustmath-curves/src/divisor.rs:35:25
+   |
+28 | impl<F: Field + Clone + PartialEq> MumfordDivisor<F> {
+   |      - expected this type parameter
+...
+35 |         if u.degree() > 0 && !u.is_monic() {
+   |                         ^ expected type parameter `F`, found integer
+   |
+   = note: expected type parameter `F`
+                        found type `{integer}`
+
+error[E0308]: mismatched types
    --> rustmath-interfaces/src/gap_element.rs:490:27
     |
 490 |             gap: Arc::new(gap.clone()),
@@ -6568,6 +6899,18 @@ help: consider annotating `GapInterface` with `#[derive(Clone)]`
 192 + #[derive(Clone)]
 193 | pub struct GapInterface {
     |
+
+error[E0308]: mismatched types
+  --> rustmath-curves/src/divisor.rs:59:28
+   |
+28 | impl<F: Field + Clone + PartialEq> MumfordDivisor<F> {
+   |      - expected this type parameter
+...
+59 |         self.u.degree() == 0 && self.v.is_zero()
+   |                            ^ expected type parameter `F`, found integer
+   |
+   = note: expected type parameter `F`
+                        found type `{integer}`
 
 error[E0038]: the trait `Category` is not dyn compatible
   --> rustmath-category/src/ring_category.rs:94:9
@@ -6595,6 +6938,49 @@ note: for a trait to be dyn compatible it needs to allow building a vtable
            implementing `Category` for this new enum and using it instead
    = note: `Category` may be implemented in other crates; if you want to support your users passing their own types here, you can't refer to a specific type
    = note: this error originates in the macro `vec` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0308]: mismatched types
+   --> rustmath-curves/src/divisor.rs:107:49
+    |
+ 28 | impl<F: Field + Clone + PartialEq> MumfordDivisor<F> {
+    |      - expected this type parameter
+...
+107 |         let slope = (y2.clone() - y1.clone()) * (x2.clone() - x1.clone()).inverse();
+    |                     -------------------------   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected type parameter `F`, found `Result<F, MathError>`
+    |                     |
+    |                     expected because this is `F`
+    |
+    = note: expected type parameter `F`
+                         found enum `Result<F, MathError>`
+help: consider using `Result::expect` to unwrap the `Result<F, MathError>` value, panicking if the value is a `Result::Err`
+    |
+107 |         let slope = (y2.clone() - y1.clone()) * (x2.clone() - x1.clone()).inverse().expect("REASON");
+    |                                                                                    +++++++++++++++++
+
+error[E0308]: mismatched types
+   --> rustmath-interfaces/src/gap_element.rs:557:27
+    |
+557 |             gap: Arc::new(gap.clone()),
+    |                  -------- ^^^^^^^^^^^ expected `GapInterface`, found `&GapInterface`
+    |                  |
+    |                  arguments to this function are incorrect
+    |
+note: `GapInterface` does not implement `Clone`, so `&GapInterface` was cloned instead
+   --> rustmath-interfaces/src/gap_element.rs:557:27
+    |
+557 |             gap: Arc::new(gap.clone()),
+    |                           ^^^
+note: associated function defined here
+   --> /home/john/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/alloc/src/sync.rs:406:12
+    |
+406 |     pub fn new(data: T) -> Arc<T> {
+    |            ^^^
+help: consider annotating `GapInterface` with `#[derive(Clone)]`
+   --> rustmath-interfaces/src/gap.rs:192:1
+    |
+192 + #[derive(Clone)]
+193 | pub struct GapInterface {
+    |
 
 error[E0038]: the trait `Category` is not dyn compatible
    --> rustmath-category/src/ring_category.rs:139:9
@@ -6624,17 +7010,17 @@ note: for a trait to be dyn compatible it needs to allow building a vtable
     = note: this error originates in the macro `vec` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0308]: mismatched types
-   --> rustmath-interfaces/src/gap_element.rs:557:27
+   --> rustmath-interfaces/src/gap_element.rs:565:27
     |
-557 |             gap: Arc::new(gap.clone()),
+565 |             gap: Arc::new(gap.clone()),
     |                  -------- ^^^^^^^^^^^ expected `GapInterface`, found `&GapInterface`
     |                  |
     |                  arguments to this function are incorrect
     |
 note: `GapInterface` does not implement `Clone`, so `&GapInterface` was cloned instead
-   --> rustmath-interfaces/src/gap_element.rs:557:27
+   --> rustmath-interfaces/src/gap_element.rs:565:27
     |
-557 |             gap: Arc::new(gap.clone()),
+565 |             gap: Arc::new(gap.clone()),
     |                           ^^^
 note: associated function defined here
    --> /home/john/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/alloc/src/sync.rs:406:12
@@ -6648,30 +7034,85 @@ help: consider annotating `GapInterface` with `#[derive(Clone)]`
 193 | pub struct GapInterface {
     |
 
+error[E0283]: type annotations needed
+   --> rustmath-curves/src/divisor.rs:154:14
+    |
+154 |         self.degree()
+    |              ^^^^^^ cannot infer type for type parameter `F`
+    |
+    = note: cannot satisfy `_: rustmath_core::Field`
+    = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `MumfordDivisor::<F>::degree`
+   --> rustmath-curves/src/divisor.rs:28:9
+    |
+ 28 | impl<F: Field + Clone + PartialEq> MumfordDivisor<F> {
+    |         ^^^^^ required by this bound in `MumfordDivisor::<F>::degree`
+...
+ 63 |     pub fn degree(&self) -> usize {
+    |            ------ required by a bound in this associated function
+
+error[E0283]: type annotations needed
+   --> rustmath-curves/src/divisor.rs:161:14
+    |
+161 |         self.degree() <= genus
+    |              ^^^^^^ cannot infer type for type parameter `F`
+    |
+    = note: cannot satisfy `_: rustmath_core::Field`
+    = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `MumfordDivisor::<F>::degree`
+   --> rustmath-curves/src/divisor.rs:28:9
+    |
+ 28 | impl<F: Field + Clone + PartialEq> MumfordDivisor<F> {
+    |         ^^^^^ required by this bound in `MumfordDivisor::<F>::degree`
+...
+ 63 |     pub fn degree(&self) -> usize {
+    |            ------ required by a bound in this associated function
+
 error[E0308]: mismatched types
-   --> rustmath-interfaces/src/gap_element.rs:565:27
+   --> rustmath-curves/src/divisor.rs:172:30
     |
-565 |             gap: Arc::new(gap.clone()),
-    |                  -------- ^^^^^^^^^^^ expected `GapInterface`, found `&GapInterface`
-    |                  |
-    |                  arguments to this function are incorrect
+ 28 | impl<F: Field + Clone + PartialEq> MumfordDivisor<F> {
+    |      - expected this type parameter
+...
+172 |         if self.u.degree() > 0 && !self.u.is_monic() {
+    |                              ^ expected type parameter `F`, found integer
     |
-note: `GapInterface` does not implement `Clone`, so `&GapInterface` was cloned instead
-   --> rustmath-interfaces/src/gap_element.rs:565:27
+    = note: expected type parameter `F`
+                         found type `{integer}`
+
+error[E0283]: type annotations needed
+   --> rustmath-curves/src/divisor.rs:187:14
     |
-565 |             gap: Arc::new(gap.clone()),
-    |                           ^^^
-note: associated function defined here
-   --> /home/john/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/alloc/src/sync.rs:406:12
+187 |         self.equals(other)
+    |              ^^^^^^ cannot infer type for type parameter `F`
     |
-406 |     pub fn new(data: T) -> Arc<T> {
-    |            ^^^
-help: consider annotating `GapInterface` with `#[derive(Clone)]`
-   --> rustmath-interfaces/src/gap.rs:192:1
+    = note: cannot satisfy `_: rustmath_core::Field`
+    = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `MumfordDivisor::<F>::equals`
+   --> rustmath-curves/src/divisor.rs:28:9
     |
-192 + #[derive(Clone)]
-193 | pub struct GapInterface {
+ 28 | impl<F: Field + Clone + PartialEq> MumfordDivisor<F> {
+    |         ^^^^^ required by this bound in `MumfordDivisor::<F>::equals`
+...
+145 |     pub fn equals(&self, other: &Self) -> bool {
+    |            ------ required by a bound in this associated function
+
+error[E0283]: type annotations needed
+   --> rustmath-curves/src/cantor.rs:242:17
     |
+242 |         divisor.degree() <= genus
+    |                 ^^^^^^ cannot infer type for type parameter `F`
+    |
+    = note: cannot satisfy `_: rustmath_core::Field`
+    = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `MumfordDivisor::<F>::degree`
+   --> rustmath-curves/src/divisor.rs:28:9
+    |
+ 28 | impl<F: Field + Clone + PartialEq> MumfordDivisor<F> {
+    |         ^^^^^ required by this bound in `MumfordDivisor::<F>::degree`
+...
+ 63 |     pub fn degree(&self) -> usize {
+    |            ------ required by a bound in this associated function
 
 error[E0308]: mismatched types
    --> rustmath-interfaces/src/gap_element.rs:665:27
@@ -6698,6 +7139,41 @@ help: consider annotating `GapInterface` with `#[derive(Clone)]`
 193 | pub struct GapInterface {
     |
 
+error[E0283]: type annotations needed
+  --> rustmath-curves/src/jacobian.rs:33:5
+   |
+30 | #[derive(Debug, Clone)]
+   |                 ----- in this derive macro expansion
+...
+33 |     pub curve: HyperellipticCurve<F>,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ cannot infer type
+   |
+   = note: cannot satisfy `_: rustmath_core::Field`
+   = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `Jacobian`
+  --> rustmath-curves/src/jacobian.rs:31:24
+   |
+31 | pub struct Jacobian<F: Field> {
+   |                        ^^^^^ required by this bound in `Jacobian`
+
+error[E0283]: type annotations needed
+  --> rustmath-curves/src/jacobian.rs:39:9
+   |
+39 |         Jacobian { curve }
+   |         ^^^^^^^^^^^^^^^^^^ cannot infer type of the type parameter `F` declared on the struct `Jacobian`
+   |
+   = note: cannot satisfy `_: rustmath_core::Field`
+   = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `Jacobian`
+  --> rustmath-curves/src/jacobian.rs:31:24
+   |
+31 | pub struct Jacobian<F: Field> {
+   |                        ^^^^^ required by this bound in `Jacobian`
+help: consider specifying the generic argument
+   |
+39 |         Jacobian::<F> { curve }
+   |                 +++++
+
 error[E0308]: mismatched types
    --> rustmath-interfaces/src/gap_element.rs:673:27
     |
@@ -6722,6 +7198,69 @@ help: consider annotating `GapInterface` with `#[derive(Clone)]`
 192 + #[derive(Clone)]
 193 | pub struct GapInterface {
     |
+
+error[E0283]: type annotations needed
+   --> rustmath-curves/src/jacobian.rs:62:9
+    |
+ 62 | /         JacobianElement {
+ 63 | |             divisor,
+ 64 | |             jacobian: self.clone(),
+ 65 | |         }
+    | |_________^ cannot infer type of the type parameter `F` declared on the struct `JacobianElement`
+    |
+    = note: cannot satisfy `_: rustmath_core::Field`
+    = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `JacobianElement`
+   --> rustmath-curves/src/jacobian.rs:163:31
+    |
+163 | pub struct JacobianElement<F: Field> {
+    |                               ^^^^^ required by this bound in `JacobianElement`
+help: consider specifying the generic argument
+    |
+ 62 |         JacobianElement::<F> {
+    |                        +++++
+
+error[E0283]: type annotations needed
+   --> rustmath-curves/src/jacobian.rs:70:9
+    |
+ 70 | /         JacobianElement {
+ 71 | |             divisor: MumfordDivisor::zero(),
+ 72 | |             jacobian: self.clone(),
+ 73 | |         }
+    | |_________^ cannot infer type of the type parameter `F` declared on the struct `JacobianElement`
+    |
+    = note: cannot satisfy `_: rustmath_core::Field`
+    = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `JacobianElement`
+   --> rustmath-curves/src/jacobian.rs:163:31
+    |
+163 | pub struct JacobianElement<F: Field> {
+    |                               ^^^^^ required by this bound in `JacobianElement`
+help: consider specifying the generic argument
+    |
+ 70 |         JacobianElement::<F> {
+    |                        +++++
+
+error[E0283]: type annotations needed
+   --> rustmath-curves/src/jacobian.rs:121:9
+    |
+121 | /         JacobianElement {
+122 | |             divisor: element.divisor.negate(),
+123 | |             jacobian: self.clone(),
+124 | |         }
+    | |_________^ cannot infer type of the type parameter `F` declared on the struct `JacobianElement`
+    |
+    = note: cannot satisfy `_: rustmath_core::Field`
+    = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `JacobianElement`
+   --> rustmath-curves/src/jacobian.rs:163:31
+    |
+163 | pub struct JacobianElement<F: Field> {
+    |                               ^^^^^ required by this bound in `JacobianElement`
+help: consider specifying the generic argument
+    |
+121 |         JacobianElement::<F> {
+    |                        +++++
 
 error[E0308]: mismatched types
    --> rustmath-interfaces/src/gap_element.rs:734:27
@@ -6748,6 +7287,156 @@ help: consider annotating `GapInterface` with `#[derive(Clone)]`
 193 | pub struct GapInterface {
     |
 
+error[E0283]: type annotations needed
+   --> rustmath-curves/src/jacobian.rs:162:17
+    |
+162 | #[derive(Debug, Clone)]
+    |                 ^ cannot infer type
+    |
+    = note: cannot satisfy `_: rustmath_core::Field`
+    = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `JacobianElement`
+   --> rustmath-curves/src/jacobian.rs:163:31
+    |
+163 | pub struct JacobianElement<F: Field> {
+    |                               ^^^^^ required by this bound in `JacobianElement`
+
+error[E0283]: type annotations needed
+   --> rustmath-curves/src/jacobian.rs:173:23
+    |
+173 |         self.jacobian.add(self, other)
+    |                       ^^^ cannot infer type for type parameter `F`
+    |
+    = note: cannot satisfy `_: rustmath_core::Field`
+    = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `Jacobian::<F>::add`
+   --> rustmath-curves/src/jacobian.rs:36:9
+    |
+ 36 | impl<F: Field + Clone + PartialEq> Jacobian<F> {
+    |         ^^^^^ required by this bound in `Jacobian::<F>::add`
+...
+110 |     pub fn add(&self, a: &JacobianElement<F>, b: &JacobianElement<F>) -> JacobianElement<F> {
+    |            --- required by a bound in this associated function
+
+error[E0283]: type annotations needed
+   --> rustmath-curves/src/jacobian.rs:178:23
+    |
+178 |         self.jacobian.negate(self)
+    |                       ^^^^^^ cannot infer type for type parameter `F`
+    |
+    = note: cannot satisfy `_: rustmath_core::Field`
+    = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `Jacobian::<F>::negate`
+   --> rustmath-curves/src/jacobian.rs:36:9
+    |
+ 36 | impl<F: Field + Clone + PartialEq> Jacobian<F> {
+    |         ^^^^^ required by this bound in `Jacobian::<F>::negate`
+...
+120 |     pub fn negate(&self, element: &JacobianElement<F>) -> JacobianElement<F> {
+    |            ------ required by a bound in this associated function
+
+error[E0283]: type annotations needed
+   --> rustmath-curves/src/jacobian.rs:183:23
+    |
+183 |         self.jacobian.scalar_multiply(self, n)
+    |                       ^^^^^^^^^^^^^^^ cannot infer type for type parameter `F`
+    |
+    = note: cannot satisfy `_: rustmath_core::Field`
+    = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `Jacobian::<F>::scalar_multiply`
+   --> rustmath-curves/src/jacobian.rs:36:9
+    |
+ 36 | impl<F: Field + Clone + PartialEq> Jacobian<F> {
+    |         ^^^^^ required by this bound in `Jacobian::<F>::scalar_multiply`
+...
+128 |     pub fn scalar_multiply(&self, element: &JacobianElement<F>, n: i64) -> JacobianElement<F> {
+    |            --------------- required by a bound in this associated function
+
+error[E0283]: type annotations needed
+   --> rustmath-curves/src/jacobian.rs:188:23
+    |
+188 |         self.jacobian.order(self, max_iter)
+    |                       ^^^^^ cannot infer type for type parameter `F`
+    |
+    = note: cannot satisfy `_: rustmath_core::Field`
+    = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `Jacobian::<F>::order`
+   --> rustmath-curves/src/jacobian.rs:36:9
+    |
+ 36 | impl<F: Field + Clone + PartialEq> Jacobian<F> {
+    |         ^^^^^ required by this bound in `Jacobian::<F>::order`
+...
+145 |     pub fn order(&self, element: &JacobianElement<F>, max_iter: usize) -> Option<usize> {
+    |            ----- required by a bound in this associated function
+
+error[E0283]: type annotations needed
+   --> rustmath-curves/src/jacobian.rs:193:22
+    |
+193 |         self.divisor.is_zero()
+    |                      ^^^^^^^ cannot infer type for type parameter `F`
+    |
+    = note: cannot satisfy `_: rustmath_core::Field`
+    = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `MumfordDivisor::<F>::is_zero`
+   --> rustmath-curves/src/divisor.rs:28:9
+    |
+ 28 | impl<F: Field + Clone + PartialEq> MumfordDivisor<F> {
+    |         ^^^^^ required by this bound in `MumfordDivisor::<F>::is_zero`
+...
+ 58 |     pub fn is_zero(&self) -> bool {
+    |            ------- required by a bound in this associated function
+
+error[E0283]: type annotations needed
+   --> rustmath-curves/src/jacobian.rs:198:22
+    |
+198 |         self.divisor.degree()
+    |                      ^^^^^^ cannot infer type for type parameter `F`
+    |
+    = note: cannot satisfy `_: rustmath_core::Field`
+    = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `MumfordDivisor::<F>::degree`
+   --> rustmath-curves/src/divisor.rs:28:9
+    |
+ 28 | impl<F: Field + Clone + PartialEq> MumfordDivisor<F> {
+    |         ^^^^^ required by this bound in `MumfordDivisor::<F>::degree`
+...
+ 63 |     pub fn degree(&self) -> usize {
+    |            ------ required by a bound in this associated function
+
+error[E0283]: type annotations needed
+   --> rustmath-curves/src/jacobian.rs:203:22
+    |
+203 |         self.divisor.is_reduced(self.jacobian.genus())
+    |                      ^^^^^^^^^^ cannot infer type for type parameter `F`
+    |
+    = note: cannot satisfy `_: rustmath_core::Field`
+    = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `MumfordDivisor::<F>::is_reduced`
+   --> rustmath-curves/src/divisor.rs:28:9
+    |
+ 28 | impl<F: Field + Clone + PartialEq> MumfordDivisor<F> {
+    |         ^^^^^ required by this bound in `MumfordDivisor::<F>::is_reduced`
+...
+160 |     pub fn is_reduced(&self, genus: usize) -> bool {
+    |            ---------- required by a bound in this associated function
+
+error[E0283]: type annotations needed
+   --> rustmath-curves/src/jacobian.rs:227:14
+    |
+227 |         self.add(&other.negate())
+    |              ^^^ cannot infer type for type parameter `F`
+    |
+    = note: cannot satisfy `_: rustmath_core::Field`
+    = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `JacobianElement::<F>::add`
+   --> rustmath-curves/src/jacobian.rs:170:9
+    |
+170 | impl<F: Field + Clone + PartialEq> JacobianElement<F> {
+    |         ^^^^^ required by this bound in `JacobianElement::<F>::add`
+171 |     /// Add this element with another
+172 |     pub fn add(&self, other: &JacobianElement<F>) -> JacobianElement<F> {
+    |            --- required by a bound in this associated function
+
 error[E0308]: mismatched types
    --> rustmath-interfaces/src/gap_element.rs:811:27
     |
@@ -6772,6 +7461,64 @@ help: consider annotating `GapInterface` with `#[derive(Clone)]`
 192 + #[derive(Clone)]
 193 | pub struct GapInterface {
     |
+
+error[E0283]: type annotations needed
+   --> rustmath-curves/src/jacobian.rs:250:9
+    |
+250 |         JacobianElement::add(&self, &other)
+    |         ^^^^^^^^^^^^^^^^^^^^ cannot infer type of the type parameter `F` declared on the struct `JacobianElement`
+    |
+    = note: cannot satisfy `_: rustmath_core::Field`
+    = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `JacobianElement`
+   --> rustmath-curves/src/jacobian.rs:163:31
+    |
+163 | pub struct JacobianElement<F: Field> {
+    |                               ^^^^^ required by this bound in `JacobianElement`
+help: consider specifying the generic argument
+    |
+250 |         JacobianElement::<F>::add(&self, &other)
+    |                        +++++
+
+error[E0283]: type annotations needed
+   --> rustmath-curves/src/jacobian.rs:258:14
+    |
+258 |         self.negate()
+    |              ^^^^^^ cannot infer type for type parameter `F`
+    |
+    = note: cannot satisfy `_: rustmath_core::Field`
+    = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `JacobianElement::<F>::negate`
+   --> rustmath-curves/src/jacobian.rs:170:9
+    |
+170 | impl<F: Field + Clone + PartialEq> JacobianElement<F> {
+    |         ^^^^^ required by this bound in `JacobianElement::<F>::negate`
+...
+177 |     pub fn negate(&self) -> JacobianElement<F> {
+    |            ------ required by a bound in this associated function
+
+error[E0283]: type annotations needed
+   --> rustmath-curves/src/jacobian.rs:266:14
+    |
+266 |         self.subtract(&other)
+    |              ^^^^^^^^ cannot infer type for type parameter `F`
+    |
+    = note: cannot satisfy `_: rustmath_core::Field`
+    = help: the trait `rustmath_core::Field` is implemented for `rustmath_rationals::Rational`
+note: required by a bound in `JacobianElement::<F>::subtract`
+   --> rustmath-curves/src/jacobian.rs:170:9
+    |
+170 | impl<F: Field + Clone + PartialEq> JacobianElement<F> {
+    |         ^^^^^ required by this bound in `JacobianElement::<F>::subtract`
+...
+226 |     pub fn subtract(&self, other: &JacobianElement<F>) -> JacobianElement<F> {
+    |            -------- required by a bound in this associated function
+
+warning: unused import: `Ring`
+  --> rustmath-curves/src/jacobian.rs:20:21
+   |
+20 | use rustmath_core::{Ring, Field};
+   |                     ^^^^
 
 error[E0308]: mismatched types
    --> rustmath-interfaces/src/gap_element.rs:819:27
@@ -6933,6 +7680,16 @@ help: consider annotating `GapInterface` with `#[derive(Clone)]`
 193 | pub struct GapInterface {
     |
 
+warning: variable does not need to be mutable
+   --> rustmath-curves/src/singularities.rs:132:9
+    |
+132 |     let mut singularities = Vec::new();
+    |         ----^^^^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
 warning: unused variable: `coercion`
    --> rustmath-category/src/coercion.rs:369:5
     |
@@ -6940,6 +7697,26 @@ warning: unused variable: `coercion`
     |     ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_coercion`
     |
     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `point`
+   --> rustmath-curves/src/singularities.rs:260:62
+    |
+260 | fn translate_to_origin<R: Ring + Clone>(poly: &MultiPoly<R>, point: &[R]) -> MultiPoly<R> {
+    |                                                              ^^^^^ help: if this is intentional, prefix it with an underscore: `_point`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `unit`
+   --> rustmath-curves/src/parameterization.rs:161:13
+    |
+161 |         let unit = Self::unit_circle();
+    |             ^^^^ help: if this is intentional, prefix it with an underscore: `_unit`
+
+warning: unused variable: `two`
+   --> rustmath-curves/src/weierstrass.rs:137:13
+    |
+137 |         let two = F::one() + F::one();
+    |             ^^^ help: if this is intentional, prefix it with an underscore: `_two`
 
 error[E0308]: mismatched types
    --> rustmath-interfaces/src/test_long.rs:110:60
@@ -6951,6 +7728,28 @@ help: you can convert a `usize` to a `u32` and panic if the converted value does
     |
 110 |     println!("Average time per operation: {:?}", elapsed / iterations.try_into().unwrap());
     |                                                                      ++++++++++++++++++++
+
+warning: unused variable: `upper_bound`
+   --> rustmath-curves/src/riemann_roch.rs:263:17
+    |
+263 |             let upper_bound = d + 1;
+    |                 ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_upper_bound`
+
+warning: variable does not need to be mutable
+   --> rustmath-curves/src/riemann_roch.rs:347:21
+    |
+347 |                 let mut func = FunctionFieldElement::monomial(i, primary_place);
+    |                     ----^^^^
+    |                     |
+    |                     help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> rustmath-curves/src/riemann_roch.rs:385:29
+    |
+385 |                         let mut func = FunctionFieldElement::monomial(i, place);
+    |                             ----^^^^
+    |                             |
+    |                             help: remove this `mut`
 
 error[E0689]: can't call method `saturating_sub` on ambiguous numeric type `{integer}`
    --> rustmath-interfaces/src/test_long.rs:146:25
@@ -7022,11 +7821,15 @@ help: consider annotating `GapInterface` with `#[derive(Clone)]`
 193 | pub struct GapInterface {
     |
 
+Some errors have detailed explanations: E0283, E0308, E0599, E0603.
+For more information about an error, try `rustc --explain E0283`.
 Some errors have detailed explanations: E0038, E0277.
 For more information about an error, try `rustc --explain E0038`.
+warning: `rustmath-curves` (lib) generated 11 warnings
+error: could not compile `rustmath-curves` (lib) due to 38 previous errors; 11 warnings emitted
+warning: build failed, waiting for other jobs to finish...
 warning: `rustmath-category` (lib) generated 6 warnings
 error: could not compile `rustmath-category` (lib) due to 33 previous errors; 6 warnings emitted
-warning: build failed, waiting for other jobs to finish...
 warning: unused variable: `interface`
   --> rustmath-interfaces/src/libgap.rs:74:13
    |
