@@ -260,7 +260,7 @@ impl<F: Field + Zero + One> EllipticCurve<F> {
 
     /// Check if this is in short Weierstrass form (y² = x³ + ax + b)
     pub fn is_short_weierstrass(&self) -> bool {
-        self.a1.is_zero() && self.a2.is_zero() && self.a3.is_zero()
+        Ring::is_zero(&self.a1) && Ring::is_zero(&self.a2) && Ring::is_zero(&self.a3)
     }
 
     /// Compute the b₂ invariant: b₂ = a₁² + 4a₂
@@ -352,7 +352,7 @@ impl<F: Field + Zero + One> EllipticCurve<F> {
 
     /// Check if the curve is singular (discriminant is zero)
     pub fn is_singular(&mut self) -> bool {
-        self.discriminant().is_zero()
+        Ring::is_zero(&self.discriminant())
     }
 
     /// Compute the c₄ invariant: c₄ = b₂² - 24b₄
@@ -378,7 +378,7 @@ impl<F: Field + Zero + One> EllipticCurve<F> {
     /// they have the same j-invariant.
     pub fn j_invariant(&mut self) -> Result<F> {
         let disc = self.discriminant();
-        if disc.is_zero() {
+        if Ring::is_zero(&disc) {
             return Err(MathError::InvalidArgument(
                 "j-invariant undefined for singular curve".to_string(),
             ));
@@ -541,7 +541,7 @@ impl<F: Field + Zero + One> EllipticCurve<F> {
             let three = two.clone() + <F as Ring>::one();
 
             // Check if y = 0 (tangent is vertical)
-            if y.is_zero() {
+            if Ring::is_zero(y) {
                 return Ok(Point::infinity());
             }
 
@@ -565,7 +565,7 @@ impl<F: Field + Zero + One> EllipticCurve<F> {
 
         // Check if tangent is vertical: 2y + a₁x + a₃ = 0
         let denom_check = two.clone() * y.clone() + self.a1.clone() * x.clone() + self.a3.clone();
-        if denom_check.is_zero() {
+        if Ring::is_zero(&denom_check) {
             return Ok(Point::infinity());
         }
 
