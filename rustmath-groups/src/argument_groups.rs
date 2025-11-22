@@ -248,7 +248,7 @@ impl RootOfUnity {
 
     /// Get the exponent as a rational
     pub fn exponent_rational(&self) -> Rational {
-        Rational::new(self.k.into(), self.n.into()).unwrap()
+        Rational::new(Integer::from(self.k), Integer::from(self.n)).unwrap()
     }
 
     /// Get the exponent as a float

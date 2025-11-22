@@ -49,7 +49,7 @@ pub struct FunctionFieldElementRational<F: Field> {
     denominator: Vec<F>,
 }
 
-impl<F: Field> FunctionFieldElement_rational<F> {
+impl<F: Field> FunctionFieldElementRational<F> {
     /// Create a new rational function element
     ///
     /// # Arguments
@@ -65,7 +65,7 @@ impl<F: Field> FunctionFieldElement_rational<F> {
             panic!("Denominator cannot be zero polynomial");
         }
 
-        FunctionFieldElement_rational {
+        FunctionFieldElementRational {
             numerator: num,
             denominator: den,
         }
@@ -73,7 +73,7 @@ impl<F: Field> FunctionFieldElement_rational<F> {
 
     /// Create the zero element (0/1)
     pub fn zero() -> Self {
-        FunctionFieldElement_rational {
+        FunctionFieldElementRational {
             numerator: vec![F::zero()],
             denominator: vec![F::one()],
         }
@@ -81,7 +81,7 @@ impl<F: Field> FunctionFieldElement_rational<F> {
 
     /// Create the one element (1/1)
     pub fn one() -> Self {
-        FunctionFieldElement_rational {
+        FunctionFieldElementRational {
             numerator: vec![F::one()],
             denominator: vec![F::one()],
         }
@@ -89,7 +89,7 @@ impl<F: Field> FunctionFieldElement_rational<F> {
 
     /// Create the variable x (x/1)
     pub fn variable() -> Self {
-        FunctionFieldElement_rational {
+        FunctionFieldElementRational {
             numerator: vec![F::zero(), F::one()],  // 0 + 1*x
             denominator: vec![F::one()],
         }
@@ -140,7 +140,7 @@ impl<F: Field> FunctionFieldElement_rational<F> {
         if self.is_zero() {
             None
         } else {
-            Some(FunctionFieldElement_rational {
+            Some(FunctionFieldElementRational {
                 numerator: self.denominator.clone(),
                 denominator: self.numerator.clone(),
             })
@@ -196,7 +196,7 @@ impl<F: Field> FunctionFieldElement_rational<F> {
         // g²
         let denominator = Self::poly_mul(&self.denominator, &self.denominator);
 
-        FunctionFieldElement_rational {
+        FunctionFieldElementRational {
             numerator,
             denominator,
         }
@@ -271,7 +271,7 @@ impl<F: Field> FunctionFieldElement_rational<F> {
     }
 }
 
-impl<F: Field> PartialEq for FunctionFieldElement_rational<F> {
+impl<F: Field> PartialEq for FunctionFieldElementRational<F> {
     fn eq(&self, other: &Self) -> bool {
         // Cross multiply: f/g == h/k iff fk == gh
         let lhs = Self::poly_mul(&self.numerator, &other.denominator);
@@ -285,9 +285,9 @@ impl<F: Field> PartialEq for FunctionFieldElement_rational<F> {
     }
 }
 
-impl<F: Field> Eq for FunctionFieldElement_rational<F> {}
+impl<F: Field> Eq for FunctionFieldElementRational<F> {}
 
-impl<F: Field> fmt::Display for FunctionFieldElement_rational<F> {
+impl<F: Field> fmt::Display for FunctionFieldElementRational<F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let format_poly = |coeffs: &[F]| -> String {
             if coeffs.is_empty() || coeffs.iter().all(|c| c.is_zero()) {
@@ -331,7 +331,7 @@ mod tests {
 
     #[test]
     fn test_creation() {
-        let elem = FunctionFieldElement_rational::new(
+        let elem = FunctionFieldElementRational::new(
             vec![Rational::from(1)],
             vec![Rational::from(1)],
         );
@@ -343,7 +343,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "Denominator cannot be zero polynomial")]
     fn test_zero_denominator() {
-        let _ = FunctionFieldElement_rational::<Rational>::new(
+        let _ = FunctionFieldElementRational::<Rational>::new(
             vec![Rational::from(1)],
             vec![],
         );
@@ -351,8 +351,8 @@ mod tests {
 
     #[test]
     fn test_zero_one() {
-        let zero = FunctionFieldElement_rational::<Rational>::zero();
-        let one = FunctionFieldElement_rational::<Rational>::one();
+        let zero = FunctionFieldElementRational::<Rational>::zero();
+        let one = FunctionFieldElementRational::<Rational>::one();
 
         assert!(zero.is_zero());
         assert!(!zero.is_one());
@@ -362,14 +362,14 @@ mod tests {
 
     #[test]
     fn test_variable() {
-        let x = FunctionFieldElement_rational::<Rational>::variable();
+        let x = FunctionFieldElementRational::<Rational>::variable();
         assert_eq!(x.numerator().len(), 2);
         assert_eq!(x.denominator().len(), 1);
     }
 
     #[test]
     fn test_inverse() {
-        let elem = FunctionFieldElement_rational::new(
+        let elem = FunctionFieldElementRational::new(
             vec![Rational::from(2)],
             vec![Rational::from(3)],
         );
@@ -379,21 +379,21 @@ mod tests {
         assert_eq!(inv.denominator()[0], Rational::from(2));
 
         // Zero has no inverse
-        let zero = FunctionFieldElement_rational::<Rational>::zero();
+        let zero = FunctionFieldElementRational::<Rational>::zero();
         assert!(zero.inverse().is_none());
     }
 
     #[test]
     fn test_is_integral() {
         // Polynomial (integral)
-        let poly = FunctionFieldElement_rational::new(
+        let poly = FunctionFieldElementRational::new(
             vec![Rational::from(1), Rational::from(2)],  // 1 + 2x
             vec![Rational::from(1)],
         );
         assert!(poly.is_integral());
 
         // Proper rational function (not integral)
-        let rat = FunctionFieldElement_rational::new(
+        let rat = FunctionFieldElementRational::new(
             vec![Rational::from(1)],
             vec![Rational::from(1), Rational::from(1)],  // 1/(1+x)
         );
@@ -402,7 +402,7 @@ mod tests {
 
     #[test]
     fn test_degrees() {
-        let elem = FunctionFieldElement_rational::new(
+        let elem = FunctionFieldElementRational::new(
             vec![Rational::from(1), Rational::from(2), Rational::from(3)],  // 1 + 2x + 3x^2
             vec![Rational::from(1), Rational::from(1)],  // 1 + x
         );
@@ -413,7 +413,7 @@ mod tests {
 
     #[test]
     fn test_divisor_info() {
-        let elem = FunctionFieldElement_rational::new(
+        let elem = FunctionFieldElementRational::new(
             vec![Rational::from(1), Rational::from(2)],
             vec![Rational::from(1), Rational::from(1)],
         );
@@ -426,11 +426,11 @@ mod tests {
     #[test]
     fn test_equality() {
         // 2/4 should equal 1/2 (after cross multiply)
-        let a = FunctionFieldElement_rational::new(
+        let a = FunctionFieldElementRational::new(
             vec![Rational::from(2)],
             vec![Rational::from(4)],
         );
-        let b = FunctionFieldElement_rational::new(
+        let b = FunctionFieldElementRational::new(
             vec![Rational::from(1)],
             vec![Rational::from(2)],
         );
