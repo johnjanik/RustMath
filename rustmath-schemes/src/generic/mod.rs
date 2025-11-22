@@ -169,9 +169,8 @@ pub trait SchemePoint: Debug + Clone + PartialEq {
     /// A point is closed if its closure is just itself.
     fn is_closed(&self) -> bool;
 
-    /// Compute the residue field at this point
-    /// TODO: Cannot use Box<dyn Ring> as Ring is not dyn compatible
-    /// Consider using an associated type or generic parameter
+    // TODO: Cannot use Box<dyn Ring> as Ring is not dyn compatible
+    // Consider using an associated type or generic parameter
     // fn residue_field(&self) -> Result<Box<dyn Ring>>;
 }
 

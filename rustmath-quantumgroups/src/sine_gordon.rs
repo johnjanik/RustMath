@@ -405,7 +405,7 @@ impl SineGordonBuilder {
         self.beta_squared = Some(Rational::new(
             Integer::from(numerator),
             Integer::from(denominator),
-        ));
+        ).unwrap());
         self
     }
 
