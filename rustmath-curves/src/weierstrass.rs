@@ -42,10 +42,17 @@ impl<F: Field + Clone> LongWeierstrassForm<F> {
         let b6 = self.b6();
         let b8 = self.b8();
 
+        // Compute constants using repeated addition
+        let two = F::one() + F::one();
+        let four = two.clone() + two.clone();
+        let eight = four.clone() + four.clone();
+        let nine = eight.clone() + F::one();
+        let twentyseven = nine.clone() + nine.clone() + nine.clone();
+
         let term1 = -(b2.clone() * b2.clone() * b8.clone());
-        let term2 = -(F::from_int(8) * b4.clone() * b4.clone() * b4.clone());
-        let term3 = -(F::from_int(27) * b6.clone() * b6.clone());
-        let term4 = F::from_int(9) * b2 * b4 * b6;
+        let term2 = -(eight * b4.clone() * b4.clone() * b4.clone());
+        let term3 = -(twentyseven * b6.clone() * b6.clone());
+        let term4 = nine * b2 * b4 * b6;
 
         term1 + term2 + term3 + term4
     }
@@ -66,19 +73,22 @@ impl<F: Field + Clone> LongWeierstrassForm<F> {
     /// Compute auxiliary quantity b₂
     fn b2(&self) -> F {
         let a1_sq = self.a1.clone() * self.a1.clone();
-        a1_sq + F::from_int(4) * self.a2.clone()
+        let four = F::one() + F::one() + F::one() + F::one();
+        a1_sq + four * self.a2.clone()
     }
 
     /// Compute auxiliary quantity b₄
     fn b4(&self) -> F {
         let a1a3 = self.a1.clone() * self.a3.clone();
-        F::from_int(2) * self.a4.clone() + a1a3
+        let two = F::one() + F::one();
+        two * self.a4.clone() + a1a3
     }
 
     /// Compute auxiliary quantity b₆
     fn b6(&self) -> F {
         let a3_sq = self.a3.clone() * self.a3.clone();
-        a3_sq + F::from_int(4) * self.a6.clone()
+        let four = F::one() + F::one() + F::one() + F::one();
+        a3_sq + four * self.a6.clone()
     }
 
     /// Compute auxiliary quantity b₈
@@ -94,7 +104,8 @@ impl<F: Field + Clone> LongWeierstrassForm<F> {
 
         let a4_sq = self.a4.clone() * self.a4.clone();
 
-        a1_sq_a6 + F::from_int(4) * a2_sq_a6 - a1a3a4 + a2a3_sq - a4_sq
+        let four = F::one() + F::one() + F::one() + F::one();
+        a1_sq_a6 + four * a2_sq_a6 - a1a3a4 + a2a3_sq - a4_sq
     }
 
     /// Compute auxiliary quantity c₄
@@ -103,7 +114,10 @@ impl<F: Field + Clone> LongWeierstrassForm<F> {
         let b4 = self.b4();
         let b2_sq = b2.clone() * b2;
 
-        b2_sq - F::from_int(24) * b4
+        let four = F::one() + F::one() + F::one() + F::one();
+        let six = four.clone() + F::one() + F::one();
+        let twentyfour = six.clone() + six.clone() + six.clone() + six.clone();
+        b2_sq - twentyfour * b4
     }
 
     /// Compute auxiliary quantity c₆
@@ -112,10 +126,19 @@ impl<F: Field + Clone> LongWeierstrassForm<F> {
         let b4 = self.b4();
         let b6 = self.b6();
 
-        let b2_cubed = b2.clone() * b2.clone() * b2;
+        let b2_cubed = b2.clone() * b2.clone() * b2.clone();
         let term1 = -(b2_cubed);
-        let term2 = F::from_int(36) * b2 * b4;
-        let term3 = -(F::from_int(216) * b6);
+
+        let four = F::one() + F::one() + F::one() + F::one();
+        let six = four.clone() + F::one() + F::one();
+        let thirtysix = six.clone() * six.clone();
+        let term2 = thirtysix * b2 * b4;
+
+        let two = F::one() + F::one();
+        let eight = four.clone() + four.clone();
+        let twentyseven = eight.clone() + eight.clone() + eight.clone() + F::one() + F::one() + F::one();
+        let twosixteen = twentyseven.clone() * eight;
+        let term3 = -(twosixteen * b6);
 
         term1 + term2 + term3
     }
@@ -139,10 +162,16 @@ impl<F: Field + Clone> ShortWeierstrassForm<F> {
         let a_cubed = self.a.clone() * self.a.clone() * self.a.clone();
         let b_squared = self.b.clone() * self.b.clone();
 
-        let four_a_cubed = F::from_int(4) * a_cubed;
-        let twentyseven_b_sq = F::from_int(27) * b_squared;
+        let two = F::one() + F::one();
+        let four = two.clone() + two.clone();
+        let eight = four.clone() + four.clone();
+        let sixteen = eight.clone() + eight.clone();
+        let twentyseven = eight.clone() + eight.clone() + eight.clone() + F::one() + F::one() + F::one();
 
-        -(F::from_int(16) * (four_a_cubed + twentyseven_b_sq))
+        let four_a_cubed = four * a_cubed;
+        let twentyseven_b_sq = twentyseven * b_squared;
+
+        -(sixteen * (four_a_cubed + twentyseven_b_sq))
     }
 
     /// Compute the j-invariant: j = 1728 * 4a³ / Δ
@@ -154,7 +183,15 @@ impl<F: Field + Clone> ShortWeierstrassForm<F> {
         }
 
         let a_cubed = self.a.clone() * self.a.clone() * self.a.clone();
-        let numerator = F::from_int(1728) * F::from_int(4) * a_cubed;
+
+        // Compute 1728 = 12^3 = (4*3)^3
+        let two = F::one() + F::one();
+        let three = two.clone() + F::one();
+        let four = two.clone() + two.clone();
+        let twelve = three.clone() * four.clone();
+        let onethousandseventwentyeight = twelve.clone() * twelve.clone() * twelve;
+
+        let numerator = onethousandseventwentyeight * four * a_cubed;
 
         numerator / delta
     }
