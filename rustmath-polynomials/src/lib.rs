@@ -29,7 +29,7 @@ pub use groebner::{
 pub use ideal::{cyclic_ideal, is_ideal, katsura_ideal, FieldIdeal, Ideal};
 pub use ideal_monoid::{is_ideal_monoid, IdealMonoid};
 pub use laurent::LaurentPolynomial;
-pub use multivariate::{Monomial, MultivariatePolynomial};
+pub use multivariate::{Monomial, MultiPoly, MultivariatePolynomial};
 pub use polynomial::Polynomial;
 pub use quotient::{QuotientElement, QuotientRing};
 pub use roots::{

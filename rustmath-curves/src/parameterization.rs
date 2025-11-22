@@ -32,13 +32,10 @@ impl CurveParameterization {
     }
 
     /// Evaluate the parameterization at a specific parameter value
-    pub fn evaluate(&self, t: f64) -> (f64, f64) {
-        use rustmath_symbolic::substitute::substitute;
-
-        let x_val = substitute(&self.x, &self.parameter, &Expr::number(t as i64));
-        let y_val = substitute(&self.y, &self.parameter, &Expr::number(t as i64));
-
-        // Convert to floats (simplified)
+    pub fn evaluate(&self, _t: f64) -> (f64, f64) {
+        // Note: This would require symbolic expression evaluation
+        // which is beyond the scope of this implementation
+        // Return placeholder
         (0.0, 0.0) // Placeholder
     }
 }
@@ -190,24 +187,164 @@ pub mod find_parameterization {
     /// This works for:
     /// - Lines (degree 1)
     /// - Conics (degree 2) with a rational point
-    /// - Cubics with a singular point
+    /// - Cubics with a singular point (genus 0)
     pub fn rational_parameterization<F: Field + Clone + PartialEq>(
         curve: &MultiPoly<F>,
     ) -> Option<RationalParameterization<F>> {
         let degree = curve.total_degree();
 
+        use rustmath_polynomials::multivariate::Monomial;
+        use std::collections::BTreeMap;
+
         match degree {
+            0 => {
+                // Constant curve - no parameterization
+                None
+            }
             1 => {
                 // Lines are always rationally parameterizable
-                // Use parametric form (x,y) = p + t*d
-                None // Simplified implementation
+                // For a line ax + by + c = 0, parameterize as:
+                // If b ≠ 0: x = t, y = -(a*t + c)/b
+                // If b = 0: y = t, x = -c/a
+
+                // Extract coefficients
+                let mut x_exp = BTreeMap::new();
+                x_exp.insert(0, 1);
+                let x_monomial = Monomial::from_exponents(x_exp);
+
+                let mut y_exp = BTreeMap::new();
+                y_exp.insert(1, 1);
+                let y_monomial = Monomial::from_exponents(y_exp);
+
+                let const_monomial = Monomial::new();
+
+                let a = curve.coefficient(&x_monomial);
+                let b = curve.coefficient(&y_monomial);
+                let c = curve.coefficient(&const_monomial);
+
+                if b != F::zero() {
+                    // x = t, y = -(a*t + c)/b
+                    let x_num = vec![F::zero(), F::one()]; // t
+                    let x_den = vec![F::one()]; // 1
+
+                    // y = -a*t/b - c/b
+                    let y_coeff = -(a / b.clone());
+                    let y_const = -(c / b);
+                    let y_num = vec![y_const, y_coeff]; // -c/b - (a/b)*t
+                    let y_den = vec![F::one()]; // 1
+
+                    return Some(RationalParameterization::new(x_num, x_den, y_num, y_den));
+                } else if a != F::zero() {
+                    // y = t, x = -c/a
+                    let x_const = -(c / a);
+                    let x_num = vec![x_const]; // -c/a
+                    let x_den = vec![F::one()]; // 1
+
+                    let y_num = vec![F::zero(), F::one()]; // t
+                    let y_den = vec![F::one()]; // 1
+
+                    return Some(RationalParameterization::new(x_num, x_den, y_num, y_den));
+                }
+
+                // Both coefficients are zero - degenerate case
+                None
             }
             2 => {
                 // Conics with a rational point can be parameterized
                 // using stereographic projection from that point
-                None // Simplified implementation
+                //
+                // Algorithm:
+                // 1. Find a rational point P on the conic
+                // 2. Parameterize lines through P: P + t*v
+                // 3. Find the other intersection point with the conic
+                //
+                // For a circle x² + y² = r², using point (r, 0):
+                // Line through (r, 0) with slope t: x = r - s, y = t*s
+                // Substituting: (r-s)² + t²s² = r²
+                // Solving for s gives the parameterization
+
+                // For now, check if it's a circle: x² + y² - r² = 0
+                let mut x2_exp = BTreeMap::new();
+                x2_exp.insert(0, 2);
+                let x2_monomial = Monomial::from_exponents(x2_exp);
+
+                let mut y2_exp = BTreeMap::new();
+                y2_exp.insert(1, 2);
+                let y2_monomial = Monomial::from_exponents(y2_exp);
+
+                let const_monomial = Monomial::new();
+
+                let x2_coeff = curve.coefficient(&x2_monomial);
+                let y2_coeff = curve.coefficient(&y2_monomial);
+                let const_coeff = curve.coefficient(&const_monomial);
+
+                // Check if it's of form x² + y² + c = 0 (circle)
+                if x2_coeff == F::one() && y2_coeff == F::one() && curve.num_terms() <= 3 {
+                    // Circle: x² + y² - r² = 0 where r² = -c
+                    // Use stereographic projection from (1, 0) or origin
+
+                    // Standard parameterization using rational functions:
+                    // x = (1 - t²)/(1 + t²), y = 2t/(1 + t²)
+                    // This parameterizes the unit circle x² + y² = 1
+
+                    // For x² + y² = -c, scale by sqrt(-c)
+                    // x = sqrt(-c) * (1-t²)/(1+t²)
+                    // y = sqrt(-c) * 2t/(1+t²)
+
+                    // Note: This only works if -c is a square in F
+                    // For simplicity, assume unit circle case (c = -1)
+
+                    if const_coeff == -F::one() {
+                        // Unit circle
+                        let x_num = vec![F::one(), F::zero(), -F::one()]; // 1 - t²
+                        let x_den = vec![F::one(), F::zero(), F::one()]; // 1 + t²
+
+                        let two = F::one() + F::one(); // 2
+                        let y_num = vec![F::zero(), two]; // 2t
+                        let y_den = vec![F::one(), F::zero(), F::one()]; // 1 + t²
+
+                        return Some(RationalParameterization::new(x_num, x_den, y_num, y_den));
+                    }
+                }
+
+                // General conic case requires finding a point and doing stereographic projection
+                // This is more complex and requires solving quadratic equations
+                None
             }
-            _ => None,
+            3 => {
+                // Cubics with a singular point have genus 0 and can be parameterized
+                // The singular point serves as the base point for parameterization
+                //
+                // Algorithm:
+                // 1. Find singular points (where F = ∂F/∂x = ∂F/∂y = 0)
+                // 2. If there's a singular point P, lines through P intersect the
+                //    cubic at P (with multiplicity 2) and one other point
+                // 3. This gives a birational map from P¹ to the curve
+
+                use crate::singularities::find_singularities;
+
+                let singularities = find_singularities(curve);
+
+                if !singularities.is_empty() {
+                    // Found singular point(s) - curve has genus 0
+                    // Would implement rational parameterization using the singular point
+                    // This requires solving cubic equations symbolically
+                    //
+                    // For example, for a nodal cubic y² = x³ + x²:
+                    // Parameterize as x = t² - 1, y = t(t² - 1)
+
+                    // For now, return None (requires symbolic equation solving)
+                    None
+                } else {
+                    // Smooth cubic has genus 1, not rationally parameterizable
+                    None
+                }
+            }
+            _ => {
+                // Higher degree curves are generally not rationally parameterizable
+                // (unless they have enough singularities to reduce the genus to 0)
+                None
+            }
         }
     }
 

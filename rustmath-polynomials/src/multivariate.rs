@@ -235,6 +235,9 @@ pub struct MultivariatePolynomial<R: Ring> {
     terms: BTreeMap<Monomial, R>,
 }
 
+/// Type alias for convenience
+pub type MultiPoly<R> = MultivariatePolynomial<R>;
+
 impl<R: Ring> MultivariatePolynomial<R> {
     /// Create a new zero polynomial
     pub fn zero() -> Self {
@@ -497,6 +500,82 @@ impl<R: Ring> MultivariatePolynomial<R> {
         }
 
         (quotients, remainder)
+    }
+
+    /// Evaluate the polynomial at a given point
+    ///
+    /// Substitutes the variables with the given values and returns the result
+    pub fn evaluate(&self, point: &[R]) -> R {
+        let mut result = R::zero();
+
+        for (monomial, coeff) in &self.terms {
+            // Evaluate the monomial at the point
+            let mut monomial_value = R::one();
+            for (var, exp) in monomial.iter_exponents() {
+                if *var < point.len() {
+                    // Compute point[var]^exp
+                    let mut power = R::one();
+                    for _ in 0..*exp {
+                        power = power * point[*var].clone();
+                    }
+                    monomial_value = monomial_value * power;
+                } else {
+                    // Variable not provided, treat as 0
+                    if *exp > 0 {
+                        monomial_value = R::zero();
+                        break;
+                    }
+                }
+            }
+
+            result = result + coeff.clone() * monomial_value;
+        }
+
+        result
+    }
+
+    /// Compute the partial derivative with respect to a variable
+    ///
+    /// Returns ∂f/∂xᵢ where i is the variable index
+    pub fn partial_derivative(&self, var: usize) -> Self {
+        let mut result = Self::zero();
+
+        for (monomial, coeff) in &self.terms {
+            let exp = monomial.exponent(var);
+
+            if exp == 0 {
+                // Derivative is zero for terms not containing this variable
+                continue;
+            }
+
+            // Derivative: d/dx(c*x^n) = c*n*x^(n-1)
+            // Multiply coefficient by exp using repeated addition
+            let mut new_coeff = R::zero();
+            for _ in 0..exp {
+                new_coeff = new_coeff + coeff.clone();
+            }
+
+            // Create new monomial with exponent decreased by 1
+            let mut new_exponents = BTreeMap::new();
+            for (v, e) in monomial.iter_exponents() {
+                if *v == var {
+                    if *e > 1 {
+                        new_exponents.insert(*v, e - 1);
+                    }
+                } else {
+                    new_exponents.insert(*v, *e);
+                }
+            }
+
+            result.add_term(Monomial::from_exponents(new_exponents), new_coeff);
+        }
+
+        result
+    }
+
+    /// Get the total degree of the polynomial (same as degree)
+    pub fn total_degree(&self) -> usize {
+        self.degree().unwrap_or(0) as usize
     }
 }
 
