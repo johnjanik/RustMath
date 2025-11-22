@@ -129,7 +129,7 @@ pub mod theta_functions;
 
 // Re-export main types for convenience
 pub use drinfeld_modules::{
-    DrinfeldModule, DrinfeldModule_charzero, DrinfeldModule_finite, DrinfeldModule_rational,
+    DrinfeldModule, DrinfeldModuleCharzero, DrinfeldModuleFinite, DrinfeldModuleRational,
     DrinfeldModuleAction, DrinfeldModuleFactory, DrinfeldModuleHomset, DrinfeldModuleMorphism,
 };
 
@@ -255,8 +255,8 @@ mod tests {
     #[test]
     fn test_module_imports() {
         // Test that all main types are accessible
-        let _module: DrinfeldModule_charzero<Rational> =
-            DrinfeldModule_charzero::new("Q(T)".to_string(), 1);
+        let _module: DrinfeldModuleCharzero<Rational> =
+            DrinfeldModuleCharzero::new("Q(T)".to_string(), 1);
 
         let _ext: FunctionFieldExtension<Rational> =
             FunctionFieldExtension::new("K".to_string(), "L".to_string(), 2);
@@ -273,8 +273,8 @@ mod tests {
         // Test a complete Drinfeld module workflow
 
         // 1. Create a finite Drinfeld module over F4
-        let phi: DrinfeldModule_finite<Rational, Integer> =
-            DrinfeldModule_finite::new("F4".to_string(), 1);
+        let phi: DrinfeldModuleFinite<Rational, Integer> =
+            DrinfeldModuleFinite::new("F4".to_string(), 1);
 
         assert_eq!(phi.rank(), 1);
         assert_eq!(phi.field_size(), 4);

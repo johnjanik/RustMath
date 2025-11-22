@@ -73,7 +73,7 @@ pub struct DrinfeldModuleCharzero<F: Field> {
     field_marker: PhantomData<F>,
 }
 
-impl<F: Field> DrinfeldModule_charzero<F> {
+impl<F: Field> DrinfeldModuleCharzero<F> {
     /// Create a new characteristic zero Drinfeld module
     ///
     /// # Arguments
@@ -95,7 +95,7 @@ impl<F: Field> DrinfeldModule_charzero<F> {
     /// ```
     pub fn new(base_field: String, rank: usize) -> Self {
         assert!(rank > 0, "Rank must be positive");
-        DrinfeldModule_charzero {
+        DrinfeldModuleCharzero {
             base_field,
             rank,
             field_marker: PhantomData,
@@ -139,7 +139,7 @@ impl<F: Field> DrinfeldModule_charzero<F> {
     }
 }
 
-impl<F: Field> DrinfeldModule for DrinfeldModule_charzero<F> {
+impl<F: Field> DrinfeldModule for DrinfeldModuleCharzero<F> {
     fn rank(&self) -> usize {
         self.rank
     }
@@ -153,7 +153,7 @@ impl<F: Field> DrinfeldModule for DrinfeldModule_charzero<F> {
     }
 }
 
-impl<F: Field> fmt::Display for DrinfeldModule_charzero<F> {
+impl<F: Field> fmt::Display for DrinfeldModuleCharzero<F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -181,12 +181,12 @@ impl<F: Field> fmt::Display for DrinfeldModule_charzero<F> {
 #[derive(Clone, Debug)]
 pub struct DrinfeldModuleRational<F: Field> {
     /// The underlying characteristic zero module
-    base_module: DrinfeldModule_charzero<F>,
+    base_module: DrinfeldModuleCharzero<F>,
     /// Generator element name (typically "T")
     generator: String,
 }
 
-impl<F: Field> DrinfeldModule_rational<F> {
+impl<F: Field> DrinfeldModuleRational<F> {
     /// Create a new rational Drinfeld module
     ///
     /// # Arguments
@@ -206,8 +206,8 @@ impl<F: Field> DrinfeldModule_rational<F> {
     /// assert_eq!(module.generator(), "T");
     /// ```
     pub fn new(base_field: String) -> Self {
-        DrinfeldModule_rational {
-            base_module: DrinfeldModule_charzero::new(base_field, 1),
+        DrinfeldModuleRational {
+            base_module: DrinfeldModuleCharzero::new(base_field, 1),
             generator: "T".to_string(),
         }
     }
@@ -223,8 +223,8 @@ impl<F: Field> DrinfeldModule_rational<F> {
     ///
     /// A new DrinfeldModule_rational instance with specified rank
     pub fn with_rank(base_field: String, rank: usize) -> Self {
-        DrinfeldModule_rational {
-            base_module: DrinfeldModule_charzero::new(base_field, rank),
+        DrinfeldModuleRational {
+            base_module: DrinfeldModuleCharzero::new(base_field, rank),
             generator: "T".to_string(),
         }
     }
@@ -257,7 +257,7 @@ impl<F: Field> DrinfeldModule_rational<F> {
     }
 }
 
-impl<F: Field> DrinfeldModule for DrinfeldModule_rational<F> {
+impl<F: Field> DrinfeldModule for DrinfeldModuleRational<F> {
     fn rank(&self) -> usize {
         self.base_module.rank()
     }
@@ -271,7 +271,7 @@ impl<F: Field> DrinfeldModule for DrinfeldModule_rational<F> {
     }
 }
 
-impl<F: Field> fmt::Display for DrinfeldModule_rational<F> {
+impl<F: Field> fmt::Display for DrinfeldModuleRational<F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -290,8 +290,8 @@ mod tests {
 
     #[test]
     fn test_charzero_module_creation() {
-        let module: DrinfeldModule_charzero<Rational> =
-            DrinfeldModule_charzero::new("Q(T)".to_string(), 1);
+        let module: DrinfeldModuleCharzero<Rational> =
+            DrinfeldModuleCharzero::new("Q(T)".to_string(), 1);
 
         assert_eq!(module.rank(), 1);
         assert_eq!(module.base_field(), "Q(T)");
@@ -301,8 +301,8 @@ mod tests {
 
     #[test]
     fn test_charzero_rank2_module() {
-        let module: DrinfeldModule_charzero<Rational> =
-            DrinfeldModule_charzero::new("Q(T)".to_string(), 2);
+        let module: DrinfeldModuleCharzero<Rational> =
+            DrinfeldModuleCharzero::new("Q(T)".to_string(), 2);
 
         assert_eq!(module.rank(), 2);
         assert_eq!(module.height(), 2);
@@ -311,14 +311,14 @@ mod tests {
     #[test]
     #[should_panic(expected = "Rank must be positive")]
     fn test_charzero_invalid_rank() {
-        let _module: DrinfeldModule_charzero<Rational> =
-            DrinfeldModule_charzero::new("Q(T)".to_string(), 0);
+        let _module: DrinfeldModuleCharzero<Rational> =
+            DrinfeldModuleCharzero::new("Q(T)".to_string(), 0);
     }
 
     #[test]
     fn test_charzero_convergence() {
-        let module: DrinfeldModule_charzero<Rational> =
-            DrinfeldModule_charzero::new("Q(T)".to_string(), 1);
+        let module: DrinfeldModuleCharzero<Rational> =
+            DrinfeldModuleCharzero::new("Q(T)".to_string(), 1);
 
         assert!(module.exponential_converges());
         assert!(module.logarithm_defined());
@@ -326,8 +326,8 @@ mod tests {
 
     #[test]
     fn test_rational_module_creation() {
-        let module: DrinfeldModule_rational<Rational> =
-            DrinfeldModule_rational::new("Q".to_string());
+        let module: DrinfeldModuleRational<Rational> =
+            DrinfeldModuleRational::new("Q".to_string());
 
         assert_eq!(module.rank(), 1);
         assert_eq!(module.base_field(), "Q");
@@ -337,8 +337,8 @@ mod tests {
 
     #[test]
     fn test_rational_module_with_rank() {
-        let module: DrinfeldModule_rational<Rational> =
-            DrinfeldModule_rational::with_rank("Q".to_string(), 3);
+        let module: DrinfeldModuleRational<Rational> =
+            DrinfeldModuleRational::with_rank("Q".to_string(), 3);
 
         assert_eq!(module.rank(), 3);
         assert!(!module.is_carlitz());
@@ -346,16 +346,16 @@ mod tests {
 
     #[test]
     fn test_carlitz_module() {
-        let module: DrinfeldModule_rational<Rational> =
-            DrinfeldModule_rational::new("Q".to_string());
+        let module: DrinfeldModuleRational<Rational> =
+            DrinfeldModuleRational::new("Q".to_string());
 
         assert!(module.is_carlitz());
     }
 
     #[test]
     fn test_custom_generator() {
-        let mut module: DrinfeldModule_rational<Rational> =
-            DrinfeldModule_rational::new("Q".to_string());
+        let mut module: DrinfeldModuleRational<Rational> =
+            DrinfeldModuleRational::new("Q".to_string());
 
         assert_eq!(module.generator(), "T");
         module.set_generator("X".to_string());
@@ -364,8 +364,8 @@ mod tests {
 
     #[test]
     fn test_module_display() {
-        let module: DrinfeldModule_charzero<Rational> =
-            DrinfeldModule_charzero::new("Q(T)".to_string(), 2);
+        let module: DrinfeldModuleCharzero<Rational> =
+            DrinfeldModuleCharzero::new("Q(T)".to_string(), 2);
 
         let display = format!("{}", module);
         assert!(display.contains("DrinfeldModule_charzero"));
@@ -375,8 +375,8 @@ mod tests {
 
     #[test]
     fn test_rational_display() {
-        let module: DrinfeldModule_rational<Rational> =
-            DrinfeldModule_rational::new("Q".to_string());
+        let module: DrinfeldModuleRational<Rational> =
+            DrinfeldModuleRational::new("Q".to_string());
 
         let display = format!("{}", module);
         assert!(display.contains("DrinfeldModule_rational"));
@@ -385,8 +385,8 @@ mod tests {
 
     #[test]
     fn test_module_clone() {
-        let module1: DrinfeldModule_charzero<Rational> =
-            DrinfeldModule_charzero::new("Q(T)".to_string(), 1);
+        let module1: DrinfeldModuleCharzero<Rational> =
+            DrinfeldModuleCharzero::new("Q(T)".to_string(), 1);
         let module2 = module1.clone();
 
         assert_eq!(module1.rank(), module2.rank());

@@ -119,11 +119,11 @@ mod tests {
         let _action: DrinfeldModuleAction<Rational, Integer> =
             DrinfeldModuleAction::new("test".to_string());
 
-        let _charzero: DrinfeldModule_charzero<Rational> =
-            DrinfeldModule_charzero::new("Q(T)".to_string(), 1);
+        let _charzero: DrinfeldModuleCharzero<Rational> =
+            DrinfeldModuleCharzero::new("Q(T)".to_string(), 1);
 
-        let _finite: DrinfeldModule_finite<Rational, Integer> =
-            DrinfeldModule_finite::new("F4".to_string(), 1);
+        let _finite: DrinfeldModuleFinite<Rational, Integer> =
+            DrinfeldModuleFinite::new("F4".to_string(), 1);
 
         let _homset: DrinfeldModuleHomset<Rational, Integer> =
             DrinfeldModuleHomset::new("φ".to_string(), "ψ".to_string());
@@ -143,8 +143,8 @@ mod tests {
 
     #[test]
     fn test_rational_drinfeld_module() {
-        let module: DrinfeldModule_rational<Rational> =
-            DrinfeldModule_rational::new("Q".to_string());
+        let module: DrinfeldModuleRational<Rational> =
+            DrinfeldModuleRational::new("Q".to_string());
 
         assert!(module.is_carlitz());
         assert_eq!(module.generator(), "T");
@@ -182,8 +182,8 @@ mod tests {
         // Simulate a typical workflow with Drinfeld modules
 
         // 1. Create a finite Drinfeld module
-        let phi: DrinfeldModule_finite<Rational, Integer> =
-            DrinfeldModule_finite::new("F4".to_string(), 2);
+        let phi: DrinfeldModuleFinite<Rational, Integer> =
+            DrinfeldModuleFinite::new("F4".to_string(), 2);
 
         assert_eq!(phi.rank(), 2);
         assert_eq!(phi.field_size(), 4);

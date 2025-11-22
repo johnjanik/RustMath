@@ -67,7 +67,7 @@ pub struct DrinfeldModuleFinite<F: Field, R: Ring> {
     j_invariant: Option<String>,
 }
 
-impl<F: Field, R: Ring> DrinfeldModule_finite<F, R> {
+impl<F: Field, R: Ring> DrinfeldModuleFinite<F, R> {
     /// Create a new finite Drinfeld module
     ///
     /// # Arguments
@@ -90,7 +90,7 @@ impl<F: Field, R: Ring> DrinfeldModule_finite<F, R> {
         // Extract field size from name (simplified parsing)
         let field_size = parse_field_size(&field_name);
 
-        DrinfeldModule_finite {
+        DrinfeldModuleFinite {
             base_module: DrinfeldModule::with_characteristic(
                 format!("{}[T]", field_name),
                 field_name.clone(),
@@ -116,7 +116,7 @@ impl<F: Field, R: Ring> DrinfeldModule_finite<F, R> {
     pub fn with_field_size(field_name: String, field_size: usize, rank: usize) -> Self {
         assert!(is_prime_power(field_size), "Field size must be a prime power");
 
-        DrinfeldModule_finite {
+        DrinfeldModuleFinite {
             base_module: DrinfeldModule::with_characteristic(
                 format!("{}[T]", field_name),
                 field_name,
@@ -232,7 +232,7 @@ impl<F: Field, R: Ring> DrinfeldModule_finite<F, R> {
     }
 }
 
-impl<F: Field, R: Ring> fmt::Display for DrinfeldModule_finite<F, R> {
+impl<F: Field, R: Ring> fmt::Display for DrinfeldModuleFinite<F, R> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -287,8 +287,8 @@ mod tests {
 
     #[test]
     fn test_finite_module_creation() {
-        let module: DrinfeldModule_finite<Rational, Integer> =
-            DrinfeldModule_finite::new("F4".to_string(), 1);
+        let module: DrinfeldModuleFinite<Rational, Integer> =
+            DrinfeldModuleFinite::new("F4".to_string(), 1);
 
         assert_eq!(module.rank(), 1);
         assert_eq!(module.field_size(), 4);
@@ -297,8 +297,8 @@ mod tests {
 
     #[test]
     fn test_finite_module_f9() {
-        let module: DrinfeldModule_finite<Rational, Integer> =
-            DrinfeldModule_finite::new("F9".to_string(), 2);
+        let module: DrinfeldModuleFinite<Rational, Integer> =
+            DrinfeldModuleFinite::new("F9".to_string(), 2);
 
         assert_eq!(module.rank(), 2);
         assert_eq!(module.field_size(), 9);
@@ -307,8 +307,8 @@ mod tests {
 
     #[test]
     fn test_with_field_size() {
-        let module: DrinfeldModule_finite<Rational, Integer> =
-            DrinfeldModule_finite::with_field_size("GF(8)".to_string(), 8, 1);
+        let module: DrinfeldModuleFinite<Rational, Integer> =
+            DrinfeldModuleFinite::with_field_size("GF(8)".to_string(), 8, 1);
 
         assert_eq!(module.field_size(), 8);
         assert_eq!(module.characteristic(), 2);
@@ -317,14 +317,14 @@ mod tests {
     #[test]
     #[should_panic(expected = "Field size must be a prime power")]
     fn test_invalid_field_size() {
-        let _module: DrinfeldModule_finite<Rational, Integer> =
-            DrinfeldModule_finite::with_field_size("F6".to_string(), 6, 1);
+        let _module: DrinfeldModuleFinite<Rational, Integer> =
+            DrinfeldModuleFinite::with_field_size("F6".to_string(), 6, 1);
     }
 
     #[test]
     fn test_point_count() {
-        let module: DrinfeldModule_finite<Rational, Integer> =
-            DrinfeldModule_finite::new("F4".to_string(), 1);
+        let module: DrinfeldModuleFinite<Rational, Integer> =
+            DrinfeldModuleFinite::new("F4".to_string(), 1);
 
         assert_eq!(module.point_count(1), 4); // q^(r*1) = 4^1 = 4
         assert_eq!(module.point_count(2), 16); // q^(r*2) = 4^2 = 16
@@ -332,8 +332,8 @@ mod tests {
 
     #[test]
     fn test_point_count_rank2() {
-        let module: DrinfeldModule_finite<Rational, Integer> =
-            DrinfeldModule_finite::new("F2".to_string(), 2);
+        let module: DrinfeldModuleFinite<Rational, Integer> =
+            DrinfeldModuleFinite::new("F2".to_string(), 2);
 
         assert_eq!(module.point_count(1), 4); // q^(r*1) = 2^2 = 4
         assert_eq!(module.point_count(2), 16); // q^(r*2) = 2^4 = 16
@@ -341,8 +341,8 @@ mod tests {
 
     #[test]
     fn test_j_invariant() {
-        let mut module: DrinfeldModule_finite<Rational, Integer> =
-            DrinfeldModule_finite::new("F4".to_string(), 1);
+        let mut module: DrinfeldModuleFinite<Rational, Integer> =
+            DrinfeldModuleFinite::new("F4".to_string(), 1);
 
         assert_eq!(module.j_invariant(), None);
 
@@ -352,8 +352,8 @@ mod tests {
 
     #[test]
     fn test_ordinary() {
-        let module: DrinfeldModule_finite<Rational, Integer> =
-            DrinfeldModule_finite::new("F4".to_string(), 1);
+        let module: DrinfeldModuleFinite<Rational, Integer> =
+            DrinfeldModuleFinite::new("F4".to_string(), 1);
 
         assert!(module.is_ordinary());
         assert!(!module.has_cm());
@@ -361,8 +361,8 @@ mod tests {
 
     #[test]
     fn test_frobenius_period() {
-        let module: DrinfeldModule_finite<Rational, Integer> =
-            DrinfeldModule_finite::new("F4".to_string(), 1);
+        let module: DrinfeldModuleFinite<Rational, Integer> =
+            DrinfeldModuleFinite::new("F4".to_string(), 1);
 
         assert_eq!(module.frobenius_period(), 1);
     }
@@ -389,8 +389,8 @@ mod tests {
 
     #[test]
     fn test_display() {
-        let module: DrinfeldModule_finite<Rational, Integer> =
-            DrinfeldModule_finite::new("F4".to_string(), 1);
+        let module: DrinfeldModuleFinite<Rational, Integer> =
+            DrinfeldModuleFinite::new("F4".to_string(), 1);
 
         let display = format!("{}", module);
         assert!(display.contains("DrinfeldModule_finite"));
@@ -400,8 +400,8 @@ mod tests {
 
     #[test]
     fn test_clone() {
-        let module1: DrinfeldModule_finite<Rational, Integer> =
-            DrinfeldModule_finite::new("F4".to_string(), 1);
+        let module1: DrinfeldModuleFinite<Rational, Integer> =
+            DrinfeldModuleFinite::new("F4".to_string(), 1);
         let module2 = module1.clone();
 
         assert_eq!(module1.rank(), module2.rank());

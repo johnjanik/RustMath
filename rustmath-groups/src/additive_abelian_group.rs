@@ -237,7 +237,7 @@ impl fmt::Display for AdditiveAbelianGroupElement {
 /// A finitely generated additive abelian group
 ///
 /// Represents groups of the form Z^r ⊕ Z/n₁Z ⊕ Z/n₂Z ⊕ ... ⊕ Z/nₖZ
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct AdditiveAbelianGroup {
     /// Free rank (number of Z factors)
     free_rank: usize,

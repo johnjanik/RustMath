@@ -398,7 +398,7 @@ impl<I: Clone + Eq + Hash + fmt::Debug> IndexedFreeAbelianGroup<I> {
     }
 }
 
-impl<I: Clone + Eq + Hash + fmt::Debug> IndexedGroup for IndexedFreeAbelianGroup<I> {
+impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> IndexedGroup for IndexedFreeAbelianGroup<I> {
     type Index = I;
     type Element = IndexedFreeAbelianGroupElement<I>;
 
