@@ -69,6 +69,7 @@
 use num_bigint::BigInt;
 use num_rational::BigRational;
 use num_traits::{One, Zero, Signed, ToPrimitive};
+use rustmath_core::Ring;
 use std::collections::HashMap;
 use std::fmt;
 
