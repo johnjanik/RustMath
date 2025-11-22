@@ -58,7 +58,7 @@ pub use argument_groups::{
 };
 pub use artin::{ArtinGroup, ArtinGroupElement, FiniteTypeArtinGroup, FiniteTypeArtinGroupElement, CoxeterMatrix};
 pub use braid::{BraidGroup, BraidGroupClass, Braid, braid_group, MappingClassGroupAction, MappingClass, RightQuantumWord};
-pub use cactus_group::{CactusGroup, CactusGroupElement, PureCactusGroup, Interval};
+pub use cactus_group::{CactusGroup, CactusGroupElement, Interval};
 pub use class_function::{ClassFunction, ClassFunctionGap, ClassFunctionLibgap, class_function, trivial_class_function, class_function_from_values};
 pub use conjugacy_classes::{ConjugacyClass, conjugacy_classes, num_conjugacy_classes, GroupElement as ConjugacyGroupElement};
 pub use cubic_braid::{CubicBraidGroup, CubicBraidElement, CubicBraidType};

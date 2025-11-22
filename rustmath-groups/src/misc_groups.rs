@@ -34,7 +34,11 @@ fn make_fp_group(num_gens: usize, relations: Vec<Vec<i32>>) -> FinitelyPresented
     let generator_names: Vec<String> = (0..num_gens)
         .map(|i| format!("x{}", i))
         .collect();
-    FinitelyPresentedGroup::new(generator_names, relations)
+    let relations_isize: Vec<Vec<isize>> = relations
+        .into_iter()
+        .map(|rel| rel.into_iter().map(|x| x as isize).collect())
+        .collect();
+    FinitelyPresentedGroup::new(generator_names, relations_isize)
 }
 
 /// The Klein four-group V_4

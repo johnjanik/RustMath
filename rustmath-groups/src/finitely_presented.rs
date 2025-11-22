@@ -197,7 +197,7 @@ impl FinitelyPresentedGroup {
 
         // Add relations from the group
         for rel in &self.relations {
-            let mut row = vec![0i32; n];
+            let mut row = vec![0isize; n];
             for &g in rel {
                 let idx = (g.abs() - 1) as usize;
                 if g > 0 {
@@ -326,7 +326,7 @@ impl FinitelyPresentedGroupElement {
 
         let mut result = self.group.identity();
         for _ in 0..n {
-            result = result.mul(self);
+            result = result.mul(self.clone());
         }
         result
     }

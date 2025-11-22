@@ -398,13 +398,13 @@ impl FreeGroupElement {
     /// Compute the commutator [self, other] = self * other * self^-1 * other^-1
     pub fn commutator(&self, other: &FreeGroupElement) -> FreeGroupElement {
         self.mul(other)
-            .mul(&self.inverse())
-            .mul(&other.inverse())
+            .mul(self.inverse())
+            .mul(other.inverse())
     }
 
     /// Compute the conjugate by another element: other * self * other^-1
     pub fn conjugate_by(&self, other: &FreeGroupElement) -> FreeGroupElement {
-        other.mul(self).mul(&other.inverse())
+        other.mul(self).mul(other.inverse())
     }
 
     /// Reduce the word to canonical form
@@ -453,20 +453,20 @@ impl FreeGroupElement {
                 // Add terms for each occurrence of the generator
                 if e > 0 {
                     for i in 0..(e as usize) {
-                        let term = prefix.mul(&self.group.generator(gen_index).unwrap().pow(i as isize));
+                        let term = prefix.clone().mul(self.group.generator(gen_index).unwrap().pow(i as isize));
                         result.push(term);
                     }
                 } else {
                     let gen_elem = self.group.generator(gen_index).unwrap();
                     for i in 0..((-e) as usize) {
-                        let term = prefix.mul(&gen_elem.pow(-(i as isize) - 1));
+                        let term = prefix.clone().mul(gen_elem.pow(-(i as isize) - 1));
                         result.push(term.inverse());
                     }
                 }
             }
 
             // Update prefix for next iteration
-            prefix = prefix.mul(&FreeGroupElement {
+            prefix = prefix.mul(FreeGroupElement {
                 group: self.group.clone(),
                 word: vec![(g, e)],
             });

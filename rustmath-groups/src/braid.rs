@@ -237,7 +237,7 @@ impl Braid {
     pub fn pow(&self, n: i32) -> Self {
         Self {
             parent: self.parent.clone(),
-            element: self.element.pow(n),
+            element: self.element.pow(n as isize),
         }
     }
 

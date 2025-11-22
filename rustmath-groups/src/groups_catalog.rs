@@ -77,6 +77,7 @@ pub mod matrix {
 /// - And other named permutation groups
 pub mod permutation {
     pub use crate::permutation_group::{PermutationGroup, SymmetricGroup, AlternatingGroup};
+    use crate::FinitelyPresentedGroup;
 
     /// Creates a symmetric group S_n
     ///
@@ -139,7 +140,7 @@ pub mod permutation {
     ///
     /// let v4 = permutation::KleinFour();
     /// ```
-    pub fn KleinFour() -> crate::abelian_group::AbelianGroup {
+    pub fn KleinFour() -> FinitelyPresentedGroup {
         crate::misc_groups::klein_four_group()
     }
 
@@ -152,7 +153,7 @@ pub mod permutation {
     ///
     /// let q8 = permutation::Quaternion();
     /// ```
-    pub fn Quaternion() -> crate::abelian_group::AbelianGroup {
+    pub fn Quaternion() -> FinitelyPresentedGroup {
         crate::misc_groups::quaternion_group()
     }
 
@@ -187,7 +188,7 @@ pub mod permutation {
     ///
     /// let dic3 = permutation::DiCyclic(3);
     /// ```
-    pub fn DiCyclic(n: usize) -> crate::abelian_group::AbelianGroup {
+    pub fn DiCyclic(n: usize) -> FinitelyPresentedGroup {
         crate::misc_groups::dicyclic_group(n)
     }
 }
@@ -290,7 +291,7 @@ pub mod presentation {
     /// let g = presentation::FGAbelian(vec![2, 3, 5]);
     /// ```
     pub fn FGAbelian(invariants: Vec<usize>) -> FinitelyPresentedGroup {
-        finitely_generated_abelian_presentation(invariants)
+        finitely_generated_abelian_presentation(&invariants)
     }
 
     /// Creates a symmetric group presentation
@@ -352,12 +353,9 @@ pub mod affine {
     pub use crate::affine_group::{AffineGroup, AffineGroupElement};
     pub use crate::euclidean_group::EuclideanGroup;
 
-    /// Creates an affine group
-    ///
-    /// # Arguments
-    ///
-    /// * `n` - The dimension
-    ///
+    // TODO: Creates an affine group
+    // Arguments:
+    // * `n` - The dimension
     // TODO: AffineGroup needs generic parameter R: Ring
     // pub fn Affine<R: Ring>(n: usize) -> AffineGroup<R> {
     //     AffineGroup::new(n)
@@ -389,7 +387,8 @@ pub mod lie {
     /// let h3 = lie::Nilpotent("Heisenberg3");
     /// ```
     pub fn Nilpotent(name: &str) -> NilpotentLieGroup {
-        NilpotentLieGroup::new(name.to_string())
+        // Create a default 3-dimensional nilpotent Lie group (Heisenberg)
+        NilpotentLieGroup::new(3, 2)
     }
 }
 
@@ -451,16 +450,10 @@ pub mod misc {
     ///
     /// * `n` - The number of strands
     ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rustmath_groups::groups_catalog::misc;
-    ///
-    /// let pj3 = misc::PureCactus(3);
-    /// ```
-    pub fn PureCactus(n: usize) -> PureCactusGroup {
-        PureCactusGroup::new(n)
-    }
+    // TODO: PureCactusGroup not yet implemented
+    // pub fn PureCactus(n: usize) -> PureCactusGroup {
+    //     PureCactusGroup::new(n)
+    // }
 
     /// Creates a free group
     ///
@@ -476,7 +469,8 @@ pub mod misc {
     /// let f3 = misc::Free(3);
     /// ```
     pub fn Free(n: usize) -> FreeGroup {
-        FreeGroup::new(n)
+        let names: Vec<String> = (0..n).map(|i| format!("x{}", i)).collect();
+        FreeGroup::new(n, names)
     }
 
     /// Creates a right-angled Artin group
@@ -493,9 +487,10 @@ pub mod misc {
     /// let graph = vec![vec![1], vec![0]]; // Two vertices with edge between them
     /// let raag = misc::RightAngledArtin(graph);
     /// ```
-    pub fn RightAngledArtin(graph: Vec<Vec<usize>>) -> RightAngledArtinGroup {
-        RightAngledArtinGroup::from_graph(graph)
-    }
+    // TODO: RightAngledArtinGroup::from_graph not yet implemented
+    // pub fn RightAngledArtin(graph: Vec<Vec<usize>>) -> RightAngledArtinGroup {
+    //     RightAngledArtinGroup::from_graph(graph)
+    // }
 
     /// Creates an Artin group
     ///
@@ -511,9 +506,10 @@ pub mod misc {
     /// let matrix = vec![vec![1, 3], vec![3, 1]]; // A_2 type
     /// let artin = misc::CoxeterGroup(matrix);
     /// ```
-    pub fn CoxeterGroup(coxeter_matrix: Vec<Vec<usize>>) -> ArtinGroup {
-        ArtinGroup::from_coxeter_matrix(coxeter_matrix)
-    }
+    // TODO: ArtinGroup::from_coxeter_matrix not yet implemented
+    // pub fn CoxeterGroup(coxeter_matrix: Vec<Vec<usize>>) -> ArtinGroup {
+    //     ArtinGroup::from_coxeter_matrix(coxeter_matrix)
+    // }
 
     /// Creates an additive abelian group
     ///
@@ -529,7 +525,8 @@ pub mod misc {
     /// let g = misc::AdditiveAbelian(vec![2, 3, 5]);
     /// ```
     pub fn AdditiveAbelian(invariants: Vec<i32>) -> AdditiveAbelianGroup {
-        additive_abelian_group(invariants)
+        let inv_usize: Vec<usize> = invariants.iter().map(|&x| x.abs() as usize).collect();
+        additive_abelian_group(inv_usize).unwrap()
     }
 
     /// Creates a cyclic additive group (integers mod n)
@@ -546,22 +543,15 @@ pub mod misc {
     /// let z12 = misc::AdditiveCyclic(12);
     /// ```
     pub fn AdditiveCyclic(n: i32) -> AdditiveAbelianGroup {
-        additive_abelian_group(vec![n])
+        additive_abelian_group(vec![n.abs() as usize]).unwrap()
     }
 
-    /// Creates a semimonomial transformation group
-    ///
-    /// # Arguments
-    ///
-    /// * `n` - The dimension
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rustmath_groups::groups_catalog::misc;
-    ///
-    /// let g = misc::SemimonomialTransformation(3);
-    /// ```
+    // TODO: Creates a semimonomial transformation group
+    // Arguments:
+    // * `n` - The dimension
+    // Examples:
+    // use rustmath_groups::groups_catalog::misc;
+    // let g = misc::SemimonomialTransformation(3);
     // TODO: SemimonomialTransformationGroup needs generic parameters
     // pub fn SemimonomialTransformation(n: usize) -> SemimonomialTransformationGroup {
     //     SemimonomialTransformationGroup::new(n)
