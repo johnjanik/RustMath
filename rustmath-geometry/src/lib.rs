@@ -26,6 +26,7 @@ pub mod lattice_polytope;
 pub mod pseudolines;
 pub mod ribbon_graph;
 pub mod riemannian_manifolds;
+pub mod plane_curve_ops;
 
 pub use point::{Point2D, Point3D};
 pub use line::{Line2D, LineSegment2D};
@@ -52,6 +53,10 @@ pub use lattice_polytope::{
 pub use pseudolines::{PseudolineArrangement, Encoding};
 pub use ribbon_graph::{RibbonGraph, make_ribbon, bipartite_ribbon_graph};
 pub use riemannian_manifolds::{ParametrizedSurface3D, SurfaceGenerators};
+pub use plane_curve_ops::{
+    PlaneCurve, DualCurveInfo, bezout_intersection_count,
+    intersection_multiplicity, curve_intersection_system,
+};
 pub use integral_points::{
     rectangular_box_points, simplex_points, parallelotope_points,
     loop_over_parallelotope_points, ParallelotopePointsIter,
