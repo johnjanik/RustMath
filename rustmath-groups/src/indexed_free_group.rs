@@ -479,7 +479,7 @@ impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> Group for IndexedFreeAbel
 /// An element of an indexed free abelian group
 ///
 /// Elements are represented as dictionaries mapping indices to exponents.
-#[derive(Clone, Debug, Hash)]
+#[derive(Clone, Debug)]
 pub struct IndexedFreeAbelianGroupElement<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> {
     parent: IndexedFreeAbelianGroup<I>,
     exponents: HashMap<I, i32>,
@@ -579,6 +579,19 @@ impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> PartialEq for IndexedFree
 }
 
 impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> Eq for IndexedFreeAbelianGroupElement<I> {}
+
+impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> Hash for IndexedFreeAbelianGroupElement<I> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        // Hash the parent indices and exponents
+        // We need to sort the exponents to ensure consistent hashing
+        let mut items: Vec<_> = self.exponents.iter().collect();
+        items.sort_by_key(|(k, _)| format!("{:?}", k));
+        for (k, v) in items {
+            format!("{:?}", k).hash(state);
+            v.hash(state);
+        }
+    }
+}
 
 impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> Default for IndexedFreeAbelianGroupElement<I> {
     /// Create a default element (identity of a trivial group)

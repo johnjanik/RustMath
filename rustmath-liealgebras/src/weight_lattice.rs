@@ -122,7 +122,7 @@ impl Weight {
     ///
     /// Useful for affine Lie algebras
     pub fn level(&self) -> Integer {
-        self.coefficients.iter().fold(Integer::zero(), |acc, c| acc + c)
+        self.coefficients.iter().fold(Integer::zero(), |acc, c| acc + c.clone())
     }
 }
 

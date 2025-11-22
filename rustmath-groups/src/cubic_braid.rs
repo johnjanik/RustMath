@@ -193,7 +193,7 @@ impl CubicBraidGroup {
             }
         }
 
-        let fp_group = FinitelyPresentedGroup::new(n_gens, relations);
+        let fp_group = FinitelyPresentedGroup::new(generator_names.clone(), vec![]);
 
         Self {
             n_strands,
@@ -423,7 +423,7 @@ impl CubicBraidElement {
     pub fn pow(&self, n: i32) -> Self {
         Self {
             group: self.group.clone(),
-            word: self.word.pow(n),
+            word: self.word.pow(n as isize),
         }
     }
 }

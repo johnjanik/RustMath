@@ -219,7 +219,7 @@ impl ClassFunction {
             }
         }
 
-        Some(sum.div(&Complex::new(order, 0.0)))
+        Some(sum.div(&Complex::new(order, 0.0)).unwrap())
     }
 
     /// Norm of a class function: ||f|| = √⟨f, f⟩
