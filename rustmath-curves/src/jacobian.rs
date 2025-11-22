@@ -18,11 +18,13 @@
 //! Cantor's algorithm implemented in the `cantor` module.
 
 use rustmath_core::{Ring, Field};
-use rustmath_polynomials::univariate::Polynomial;
+use rustmath_polynomials::UnivariatePolynomial;
 use crate::hyperelliptic::HyperellipticCurve;
 use crate::divisor::MumfordDivisor;
 use crate::cantor::CantorAlgorithm;
 use std::fmt;
+
+type Polynomial<R> = UnivariatePolynomial<R>;
 
 /// The Jacobian (Picard group) of a hyperelliptic curve
 ///

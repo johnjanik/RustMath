@@ -265,11 +265,11 @@ fn translate_to_origin<R: Ring + Clone>(poly: &MultiPoly<R>, point: &[R]) -> Mul
 
 /// Find the minimum degree of non-zero terms in a polynomial
 fn min_degree<R: Ring + Clone + PartialEq>(poly: &MultiPoly<R>) -> usize {
-    let mut min = usize::MAX;
+    let mut min: usize = usize::MAX;
 
-    for (exponents, coeff) in poly.terms() {
+    for (monomial, coeff) in poly.terms() {
         if coeff != &R::zero() {
-            let degree: usize = exponents.iter().sum();
+            let degree: usize = monomial.degree() as usize;
             if degree < min {
                 min = degree;
             }

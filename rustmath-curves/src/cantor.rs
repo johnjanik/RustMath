@@ -23,8 +23,10 @@
 //! This algorithm runs in polynomial time and produces a unique reduced divisor.
 
 use rustmath_core::{Ring, Field};
-use rustmath_polynomials::univariate::Polynomial;
+use rustmath_polynomials::UnivariatePolynomial;
 use crate::divisor::MumfordDivisor;
+
+type Polynomial<R> = UnivariatePolynomial<R>;
 
 /// Cantor's algorithm for divisor arithmetic
 pub struct CantorAlgorithm;
