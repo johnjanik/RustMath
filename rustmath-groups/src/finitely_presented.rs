@@ -47,7 +47,7 @@ pub struct FinitelyPresentedGroup {
     /// Relations as words in Tietze form
     /// Positive integers i represent generator x_{i-1}
     /// Negative integers -i represent inverse of generator x_{i-1}
-    relations: Vec<Vec<i32>>,
+    relations: Vec<Vec<isize>>,
 }
 
 /// An element of a finitely presented group
@@ -61,7 +61,7 @@ pub struct FinitelyPresentedGroupElement {
     /// The group this element belongs to
     group: FinitelyPresentedGroup,
     /// Word representation in Tietze form
-    word: Vec<i32>,
+    word: Vec<isize>,
 }
 
 /// A rewriting system for reducing words in a finitely presented group
@@ -73,7 +73,7 @@ pub struct RewritingSystem {
     /// The group this system applies to
     group: FinitelyPresentedGroup,
     /// Rewriting rules (lhs -> rhs), both in Tietze form
-    rules: Vec<(Vec<i32>, Vec<i32>)>,
+    rules: Vec<(Vec<isize>, Vec<isize>)>,
 }
 
 impl Default for FinitelyPresentedGroup {
@@ -106,7 +106,7 @@ impl FinitelyPresentedGroup {
     ///     vec![vec![1, 1, 1]]
     /// );
     /// ```
-    pub fn new(generator_names: Vec<String>, relations: Vec<Vec<i32>>) -> Self {
+    pub fn new(generator_names: Vec<String>, relations: Vec<Vec<isize>>) -> Self {
         let num_generators = generator_names.len();
         FinitelyPresentedGroup {
             generator_names,
@@ -126,7 +126,7 @@ impl FinitelyPresentedGroup {
     }
 
     /// Get the relations
-    pub fn relations(&self) -> &[Vec<i32>] {
+    pub fn relations(&self) -> &[Vec<isize>] {
         &self.relations
     }
 
@@ -143,7 +143,7 @@ impl FinitelyPresentedGroup {
         assert!(index < self.num_generators, "Generator index out of bounds");
         FinitelyPresentedGroupElement {
             group: self.clone(),
-            word: vec![(index + 1) as i32],
+            word: vec![(index + 1) as isize],
         }
     }
 
@@ -164,7 +164,7 @@ impl FinitelyPresentedGroup {
     /// # Panics
     ///
     /// Panics if any generator index in the word is out of bounds
-    pub fn element_from_word(&self, word: Vec<i32>) -> FinitelyPresentedGroupElement {
+    pub fn element_from_word(&self, word: Vec<isize>) -> FinitelyPresentedGroupElement {
         // Validate word
         for &g in &word {
             let abs_g = g.abs() as usize;
@@ -193,7 +193,7 @@ impl FinitelyPresentedGroup {
         // Relations become linear equations
 
         let n = self.num_generators;
-        let mut matrix: Vec<Vec<i32>> = Vec::new();
+        let mut matrix: Vec<Vec<isize>> = Vec::new();
 
         // Add relations from the group
         for rel in &self.relations {
@@ -225,7 +225,7 @@ impl FinitelyPresentedGroup {
         for i in 0..self.num_generators {
             let mut has_power_relation = false;
             for rel in &self.relations {
-                if rel.iter().all(|&g| g.abs() == (i + 1) as i32) && !rel.is_empty() {
+                if rel.iter().all(|&g| g.abs() == (i + 1) as isize) && !rel.is_empty() {
                     has_power_relation = true;
                     break;
                 }
@@ -247,7 +247,7 @@ impl Default for FinitelyPresentedGroupElement {
 
 impl FinitelyPresentedGroupElement {
     /// Get the word representation in Tietze form
-    pub fn word(&self) -> &[i32] {
+    pub fn word(&self) -> &[isize] {
         &self.word
     }
 
@@ -258,7 +258,7 @@ impl FinitelyPresentedGroupElement {
 
     /// Compute the inverse of this element
     pub fn inverse(&self) -> Self {
-        let inv_word: Vec<i32> = self.word.iter().rev().map(|&g| -g).collect();
+        let inv_word: Vec<isize> = self.word.iter().rev().map(|&g| -g).collect();
         FinitelyPresentedGroupElement {
             group: self.group.clone(),
             word: inv_word,
@@ -317,7 +317,7 @@ impl FinitelyPresentedGroupElement {
     }
 
     /// Raise this element to a power
-    pub fn pow(&self, n: i32) -> Self {
+    pub fn pow(&self, n: isize) -> Self {
         if n == 0 {
             return self.group.identity();
         } else if n < 0 {
@@ -384,7 +384,7 @@ impl fmt::Display for FinitelyPresentedGroupElement {
     }
 }
 
-fn write_word(f: &mut fmt::Formatter<'_>, word: &[i32], gen_names: &[String]) -> fmt::Result {
+fn write_word(f: &mut fmt::Formatter<'_>, word: &[isize], gen_names: &[String]) -> fmt::Result {
     if word.is_empty() {
         return write!(f, "e");
     }
@@ -421,7 +421,7 @@ impl RewritingSystem {
         }
 
         // Add inverse rules: g * g^{-1} -> ε
-        for i in 1..=group.num_generators as i32 {
+        for i in 1..=group.num_generators as isize {
             rules.push((vec![i, -i], vec![]));
             rules.push((vec![-i, i], vec![]));
         }
@@ -430,7 +430,7 @@ impl RewritingSystem {
     }
 
     /// Add a rewriting rule
-    pub fn add_rule(&mut self, lhs: Vec<i32>, rhs: Vec<i32>) {
+    pub fn add_rule(&mut self, lhs: Vec<isize>, rhs: Vec<isize>) {
         self.rules.push((lhs, rhs));
     }
 
@@ -463,7 +463,7 @@ impl RewritingSystem {
 }
 
 /// Find the first occurrence of a subword in a word
-fn find_subword(word: &[i32], subword: &[i32]) -> Option<usize> {
+fn find_subword(word: &[isize], subword: &[isize]) -> Option<usize> {
     if subword.is_empty() {
         return None;
     }
@@ -475,7 +475,7 @@ fn find_subword(word: &[i32], subword: &[i32]) -> Option<usize> {
 /// Compute Smith normal form and return abelian invariants
 ///
 /// This is a simplified version that computes elementary divisors
-fn smith_normal_form(matrix: &[Vec<i32>]) -> Vec<usize> {
+fn smith_normal_form(matrix: &[Vec<isize>]) -> Vec<usize> {
     if matrix.is_empty() {
         return vec![];
     }

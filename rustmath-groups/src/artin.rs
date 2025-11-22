@@ -224,7 +224,7 @@ impl ArtinGroup {
             }
         }
 
-        let fp_group = FinitelyPresentedGroup::new(generator_names.clone(), relations.iter().map(|r| r.word().iter().flat_map(|(gen, exp)| vec![*gen as i32, *exp as i32]).collect()).collect());
+        let fp_group = FinitelyPresentedGroup::new(generator_names.clone(), relations.iter().map(|r| r.word().iter().flat_map(|(gen, exp)| vec![*gen, *exp]).collect()).collect());
 
         Self {
             coxeter_matrix,

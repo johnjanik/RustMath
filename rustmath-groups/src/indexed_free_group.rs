@@ -479,7 +479,7 @@ impl<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> Group for IndexedFreeAbel
 /// An element of an indexed free abelian group
 ///
 /// Elements are represented as dictionaries mapping indices to exponents.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct IndexedFreeAbelianGroupElement<I: Clone + Eq + Hash + fmt::Debug + fmt::Display> {
     parent: IndexedFreeAbelianGroup<I>,
     exponents: HashMap<I, i32>,

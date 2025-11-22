@@ -42,7 +42,7 @@ pub fn cyclic_presentation(n: usize) -> FinitelyPresentedGroup {
         FreeGroupElement::generator(0, n as isize)
             .tietze()
             .into_iter()
-            .map(|x| x as i32)
+            
             .collect()
     ];
 
@@ -87,7 +87,7 @@ pub fn finitely_generated_abelian_presentation(
             let rel = FreeGroupElement::generator(i as isize, inv as isize)
                 .tietze()
                 .into_iter()
-                .map(|x| x as i32)
+                
                 .collect();
             relations.push(rel);
         }
@@ -106,7 +106,7 @@ pub fn finitely_generated_abelian_presentation(
             let rel = comm
                 .tietze()
                 .into_iter()
-                .map(|x| x as i32)
+                
                 .collect();
             relations.push(rel);
         }
@@ -164,7 +164,7 @@ pub fn finitely_generated_heisenberg_presentation(n: usize, p: usize) -> Finitel
         let rel = comm
             .tietze()
             .into_iter()
-            .map(|x| x as i32)
+            
             .collect();
         relations.push(rel);
     }
@@ -181,7 +181,7 @@ pub fn finitely_generated_heisenberg_presentation(n: usize, p: usize) -> Finitel
         let rel = comm
             .tietze()
             .into_iter()
-            .map(|x| x as i32)
+            
             .collect();
         relations.push(rel);
     }
@@ -198,7 +198,7 @@ pub fn finitely_generated_heisenberg_presentation(n: usize, p: usize) -> Finitel
         let rel = comm
             .tietze()
             .into_iter()
-            .map(|x| x as i32)
+            
             .collect();
         relations.push(rel);
     }
@@ -216,7 +216,7 @@ pub fn finitely_generated_heisenberg_presentation(n: usize, p: usize) -> Finitel
                 let rel = comm
                     .tietze()
                     .into_iter()
-                    .map(|x| x as i32)
+                    
                     .collect();
                 relations.push(rel);
             }
@@ -235,7 +235,7 @@ pub fn finitely_generated_heisenberg_presentation(n: usize, p: usize) -> Finitel
             let rel = comm
                 .tietze()
                 .into_iter()
-                .map(|x| x as i32)
+                
                 .collect();
             relations.push(rel);
         }
@@ -253,7 +253,7 @@ pub fn finitely_generated_heisenberg_presentation(n: usize, p: usize) -> Finitel
             let rel = comm
                 .tietze()
                 .into_iter()
-                .map(|x| x as i32)
+                
                 .collect();
             relations.push(rel);
         }
@@ -264,7 +264,7 @@ pub fn finitely_generated_heisenberg_presentation(n: usize, p: usize) -> Finitel
         let rel = FreeGroupElement::generator(z_idx as isize, p as isize)
             .tietze()
             .into_iter()
-            .map(|x| x as i32)
+            
             .collect();
         relations.push(rel);
     }
@@ -292,7 +292,7 @@ pub fn dihedral_presentation(n: usize) -> FinitelyPresentedGroup {
     let rel = FreeGroupElement::generator(0, n as isize)
         .tietze()
         .into_iter()
-        .map(|x| x as i32)
+        
         .collect();
     relations.push(rel);
 
@@ -300,7 +300,7 @@ pub fn dihedral_presentation(n: usize) -> FinitelyPresentedGroup {
     let rel = FreeGroupElement::generator(1, 2)
         .tietze()
         .into_iter()
-        .map(|x| x as i32)
+        
         .collect();
     relations.push(rel);
 
@@ -311,7 +311,7 @@ pub fn dihedral_presentation(n: usize) -> FinitelyPresentedGroup {
     let rel = rel_elem
         .tietze()
         .into_iter()
-        .map(|x| x as i32)
+        
         .collect();
     relations.push(rel);
 
@@ -338,7 +338,7 @@ pub fn dicyclic_presentation(n: usize) -> FinitelyPresentedGroup {
     let rel = FreeGroupElement::generator(0, (2 * n) as isize)
         .tietze()
         .into_iter()
-        .map(|x| x as i32)
+        
         .collect();
     relations.push(rel);
 
@@ -349,7 +349,7 @@ pub fn dicyclic_presentation(n: usize) -> FinitelyPresentedGroup {
     let rel = rel_elem
         .tietze()
         .into_iter()
-        .map(|x| x as i32)
+        
         .collect();
     relations.push(rel);
 
@@ -361,7 +361,7 @@ pub fn dicyclic_presentation(n: usize) -> FinitelyPresentedGroup {
     let rel = rel_elem
         .tietze()
         .into_iter()
-        .map(|x| x as i32)
+        
         .collect();
     relations.push(rel);
 
@@ -382,7 +382,7 @@ pub fn quaternion_presentation() -> FinitelyPresentedGroup {
     let rel = FreeGroupElement::generator(0, 4)
         .tietze()
         .into_iter()
-        .map(|x| x as i32)
+        
         .collect();
     relations.push(rel);
 
@@ -393,7 +393,7 @@ pub fn quaternion_presentation() -> FinitelyPresentedGroup {
     let rel = rel_elem
         .tietze()
         .into_iter()
-        .map(|x| x as i32)
+        
         .collect();
     relations.push(rel);
 
@@ -405,7 +405,7 @@ pub fn quaternion_presentation() -> FinitelyPresentedGroup {
     let rel = rel_elem
         .tietze()
         .into_iter()
-        .map(|x| x as i32)
+        
         .collect();
     relations.push(rel);
 
@@ -426,7 +426,7 @@ pub fn klein_four_presentation() -> FinitelyPresentedGroup {
     let rel = FreeGroupElement::generator(0, 2)
         .tietze()
         .into_iter()
-        .map(|x| x as i32)
+        
         .collect();
     relations.push(rel);
 
@@ -434,7 +434,7 @@ pub fn klein_four_presentation() -> FinitelyPresentedGroup {
     let rel = FreeGroupElement::generator(1, 2)
         .tietze()
         .into_iter()
-        .map(|x| x as i32)
+        
         .collect();
     relations.push(rel);
 
@@ -447,7 +447,7 @@ pub fn klein_four_presentation() -> FinitelyPresentedGroup {
     let rel = comm
         .tietze()
         .into_iter()
-        .map(|x| x as i32)
+        
         .collect();
     relations.push(rel);
 
@@ -477,7 +477,7 @@ pub fn binary_dihedral_presentation(n: usize) -> FinitelyPresentedGroup {
     let rel = rel_elem
         .tietze()
         .into_iter()
-        .map(|x| x as i32)
+        
         .collect();
     relations.push(rel);
 
@@ -488,7 +488,7 @@ pub fn binary_dihedral_presentation(n: usize) -> FinitelyPresentedGroup {
     let rel = rel_elem
         .tietze()
         .into_iter()
-        .map(|x| x as i32)
+        
         .collect();
     relations.push(rel);
 
@@ -501,7 +501,7 @@ pub fn binary_dihedral_presentation(n: usize) -> FinitelyPresentedGroup {
     let rel = rel_elem
         .tietze()
         .into_iter()
-        .map(|x| x as i32)
+        
         .collect();
     relations.push(rel);
 
@@ -538,7 +538,7 @@ pub fn cactus_presentation(n: usize) -> FinitelyPresentedGroup {
         let rel = FreeGroupElement::generator(i as isize, 2)
             .tietze()
             .into_iter()
-            .map(|x| x as i32)
+            
             .collect();
         relations.push(rel);
     }
@@ -561,7 +561,7 @@ pub fn cactus_presentation(n: usize) -> FinitelyPresentedGroup {
         let rel = rel_elem
             .tietze()
             .into_iter()
-            .map(|x| x as i32)
+            
             .collect();
         relations.push(rel);
     }
@@ -596,7 +596,7 @@ pub fn symmetric_presentation(n: usize) -> FinitelyPresentedGroup {
         let rel = FreeGroupElement::generator(i as isize, 2)
             .tietze()
             .into_iter()
-            .map(|x| x as i32)
+            
             .collect();
         relations.push(rel);
     }
@@ -617,7 +617,7 @@ pub fn symmetric_presentation(n: usize) -> FinitelyPresentedGroup {
         let rel = rel_elem
             .tietze()
             .into_iter()
-            .map(|x| x as i32)
+            
             .collect();
         relations.push(rel);
     }
@@ -634,7 +634,7 @@ pub fn symmetric_presentation(n: usize) -> FinitelyPresentedGroup {
             let rel = rel_elem
                 .tietze()
                 .into_iter()
-                .map(|x| x as i32)
+                
                 .collect();
             relations.push(rel);
         }
@@ -676,7 +676,7 @@ pub fn alternating_presentation(n: usize) -> FinitelyPresentedGroup {
         let rel = FreeGroupElement::generator(i as isize, 3)
             .tietze()
             .into_iter()
-            .map(|x| x as i32)
+            
             .collect();
         relations.push(rel);
     }
@@ -694,7 +694,7 @@ pub fn alternating_presentation(n: usize) -> FinitelyPresentedGroup {
             let rel = rel_elem
                 .tietze()
                 .into_iter()
-                .map(|x| x as i32)
+                
                 .collect();
             relations.push(rel);
         }
