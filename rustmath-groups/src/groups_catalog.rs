@@ -364,7 +364,7 @@ pub mod affine {
     /// use rustmath_groups::groups_catalog::affine;
     ///
     /// let aff3 = affine::Affine(3);
-    /// ```
+    //
     // TODO: AffineGroup needs generic parameter R: Ring
     // pub fn Affine<R: Ring>(n: usize) -> AffineGroup<R> {
     //     AffineGroup::new(n)

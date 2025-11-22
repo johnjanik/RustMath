@@ -273,11 +273,8 @@ impl<R: Ring + Clone + From<i64>> LieAlgebraChevalleyBasis<R> {
     /// Convert Integer to Ring element
     fn integer_to_ring(i: &Integer) -> R {
         // Try to convert to i64 first, otherwise use 0 as fallback
-        if let Some(val) = i.to_i64() {
-            R::from(val)
-        } else {
-            R::from(0)
-        }
+        let val = i.to_i64();
+        R::from(val)
     }
 
     /// Compute ⟨β, α^∨⟩ = 2⟨β, α⟩ / ⟨α, α⟩

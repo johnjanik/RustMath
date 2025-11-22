@@ -230,7 +230,7 @@ impl<F: Field + Zero + One> EllipticCurve<F> {
     /// );
     /// ```
     pub fn short_weierstrass(a: F, b: F) -> Self {
-        Self::new(F::zero(), F::zero(), F::zero(), a, b)
+        Self::new(<F as Ring>::zero(), <F as Ring>::zero(), <F as Ring>::zero(), a, b)
     }
 
     /// Get coefficient a₁
@@ -269,7 +269,7 @@ impl<F: Field + Zero + One> EllipticCurve<F> {
             return b2.clone();
         }
 
-        let four = F::one() + F::one() + F::one() + F::one();
+        let four = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
         let b2 = self.a1.clone() * self.a1.clone() + four * self.a2.clone();
         self.b2 = Some(b2.clone());
         b2
@@ -281,7 +281,7 @@ impl<F: Field + Zero + One> EllipticCurve<F> {
             return b4.clone();
         }
 
-        let two = F::one() + F::one();
+        let two = <F as Ring>::one() + <F as Ring>::one();
         let b4 = two * self.a4.clone() + self.a1.clone() * self.a3.clone();
         self.b4 = Some(b4.clone());
         b4
@@ -293,7 +293,7 @@ impl<F: Field + Zero + One> EllipticCurve<F> {
             return b6.clone();
         }
 
-        let four = F::one() + F::one() + F::one() + F::one();
+        let four = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
         let b6 = self.a3.clone() * self.a3.clone() + four * self.a6.clone();
         self.b6 = Some(b6.clone());
         b6
@@ -307,7 +307,7 @@ impl<F: Field + Zero + One> EllipticCurve<F> {
             return b8.clone();
         }
 
-        let four = F::one() + F::one() + F::one() + F::one();
+        let four = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
 
         let term1 = self.a1.clone() * self.a1.clone() * self.a6.clone();
         let term2 = four * self.a2.clone() * self.a6.clone();
@@ -335,9 +335,9 @@ impl<F: Field + Zero + One> EllipticCurve<F> {
         let b6 = self.b6();
         let b8 = self.b8();
 
-        let eight = F::one() + F::one() + F::one() + F::one()
-            + F::one() + F::one() + F::one() + F::one();
-        let nine = eight.clone() + F::one();
+        let eight = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one()
+            + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
+        let nine = eight.clone() + <F as Ring>::one();
         let twenty_seven = nine.clone() + nine.clone() + nine.clone();
 
         let term1 = -(b2.clone() * b2.clone() * b8);
@@ -361,8 +361,8 @@ impl<F: Field + Zero + One> EllipticCurve<F> {
         let b4 = self.b4();
 
         let twenty_four = {
-            let four = F::one() + F::one() + F::one() + F::one();
-            let six = four.clone() + F::one() + F::one();
+            let four = <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one() + <F as Ring>::one();
+            let six = four.clone() + <F as Ring>::one() + <F as Ring>::one();
             four * six
         };
 
@@ -537,8 +537,8 @@ impl<F: Field + Zero + One> EllipticCurve<F> {
 
         // For short Weierstrass form: y² = x³ + ax + b
         if self.is_short_weierstrass() {
-            let two = F::one() + F::one();
-            let three = two.clone() + F::one();
+            let two = <F as Ring>::one() + <F as Ring>::one();
+            let three = two.clone() + <F as Ring>::one();
 
             // Check if y = 0 (tangent is vertical)
             if y.is_zero() {
@@ -560,8 +560,8 @@ impl<F: Field + Zero + One> EllipticCurve<F> {
         }
 
         // General Weierstrass form
-        let two = F::one() + F::one();
-        let three = two.clone() + F::one();
+        let two = <F as Ring>::one() + <F as Ring>::one();
+        let three = two.clone() + <F as Ring>::one();
 
         // Check if tangent is vertical: 2y + a₁x + a₃ = 0
         let denom_check = two.clone() * y.clone() + self.a1.clone() * x.clone() + self.a3.clone();
