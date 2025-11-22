@@ -189,6 +189,7 @@ impl Drop for GapProcess {
 ///
 /// This provides a convenient API for using GAP to perform group theory
 /// computations. It manages a GAP process internally.
+#[derive(Clone)]
 pub struct GapInterface {
     process: Arc<Mutex<GapProcess>>,
 }

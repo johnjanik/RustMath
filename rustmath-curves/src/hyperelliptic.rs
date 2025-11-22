@@ -27,7 +27,7 @@ pub struct HyperellipticCurve<F: Field> {
     pub genus: usize,
 }
 
-impl<F: Field + Clone + PartialEq> HyperellipticCurve<F> {
+impl<F: Field + Clone + PartialEq + rustmath_core::NumericConversion> HyperellipticCurve<F> {
     /// Create a new hyperelliptic curve y^2 = f(x)
     ///
     /// The genus is computed as:
@@ -47,10 +47,10 @@ impl<F: Field + Clone + PartialEq> HyperellipticCurve<F> {
         }
 
         // Compute genus
-        let genus = if deg % 2 == 0 {
-            (deg - 2) / 2
+        let genus = if deg.unwrap() % 2 == 0 {
+            (deg.unwrap() - 2) / 2
         } else {
-            (deg - 1) / 2
+            (deg.unwrap() - 1) / 2
         };
 
         Ok(HyperellipticCurve { f, genus })
