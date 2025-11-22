@@ -26,7 +26,6 @@
 //! assert_eq!(a*a + b*b + c*c + d*d, 7);
 //! ```
 
-use rustmath_integers::Integer;
 
 /// Check if a positive integer can be expressed as sum of two squares
 ///

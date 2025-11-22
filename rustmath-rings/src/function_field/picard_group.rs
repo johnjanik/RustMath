@@ -55,7 +55,6 @@
 //! - SageMath: `sage.schemes.generic.divisor`
 
 use rustmath_core::{Field, Ring};
-use rustmath_integers::Integer;
 use std::collections::HashMap;
 use std::fmt;
 

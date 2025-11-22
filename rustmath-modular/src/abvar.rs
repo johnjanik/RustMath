@@ -3,13 +3,12 @@
 //! This module implements modular abelian varieties, which are abelian varieties
 //! arising from modular forms.
 
-use crate::arithgroup::{ArithmeticSubgroup, CongruenceSubgroup, Gamma0, Gamma1};
+use crate::arithgroup::{ArithmeticSubgroup, Gamma0, Gamma1};
 use crate::hecke::{HeckeOperator, Newform};
 use crate::modsym::ModularSymbolSpace;
 use num_bigint::BigInt;
 use num_rational::BigRational;
-use num_traits::{Zero, One};
-use std::collections::HashMap;
+use num_traits::One;
 
 /// A modular abelian variety
 #[derive(Debug, Clone)]

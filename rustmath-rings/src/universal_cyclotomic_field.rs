@@ -38,7 +38,7 @@
 //! - Number theory (cyclotomic extensions)
 //! - Quantum computing (gates and circuits)
 
-use rustmath_core::{Field, Ring};
+use rustmath_core::Ring;
 use rustmath_rationals::Rational;
 use std::collections::HashMap;
 use std::fmt;

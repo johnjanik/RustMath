@@ -4,6 +4,7 @@
 #[derive(Clone, Debug)]
 pub struct Table {
     rows: Vec<Vec<String>>,
+    #[allow(dead_code)]
     headers: Option<Vec<String>>,
 }
 

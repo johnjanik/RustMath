@@ -9,10 +9,9 @@
 //! - Frac(ℤ) = ℚ (rationals are fractions of integers)
 //! - Frac(k[x]) = k(x) (rational functions over field k)
 
-use rustmath_core::{Ring, IntegralDomain, Field};
+use rustmath_core::{Ring, IntegralDomain};
 use std::fmt;
 use std::marker::PhantomData;
-use std::hash::{Hash, Hasher};
 
 /// Element of a fraction field
 ///

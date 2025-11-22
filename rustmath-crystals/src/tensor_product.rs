@@ -8,7 +8,6 @@
 
 use crate::operators::{Crystal, CrystalElement};
 use crate::weight::Weight;
-use std::marker::PhantomData;
 
 /// An element in a tensor product crystal
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

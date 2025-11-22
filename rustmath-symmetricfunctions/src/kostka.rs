@@ -4,7 +4,7 @@
 //! of shape λ and content μ. They appear in the expansion of Schur functions
 //! in the monomial basis: s_λ = sum_μ K_{λμ} m_μ.
 
-use rustmath_combinatorics::{Partition, Tableau};
+use rustmath_combinatorics::Partition;
 
 /// Compute the Kostka number K_{λμ}
 ///

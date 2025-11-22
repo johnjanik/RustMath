@@ -39,7 +39,6 @@
 use rustmath_core::{Ring, Field};
 use std::marker::PhantomData;
 use std::fmt;
-use std::collections::HashMap;
 
 /// Generic Drinfeld module structure
 ///

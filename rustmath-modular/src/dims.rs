@@ -16,7 +16,7 @@
 //! - `CohenOesterle`: Cohen-Oesterle formula for dimension of cusp forms
 
 use num_bigint::BigInt;
-use num_traits::{Zero, One, ToPrimitive};
+use num_traits::{Zero, One};
 use num_integer::Integer;
 
 /// Compute the number of divisors of n

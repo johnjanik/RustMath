@@ -40,8 +40,6 @@
 //! - Cohen, H. (1993). "A Course in Computational Algebraic Number Theory"
 //! - Storjohann, A. (1996). "Near Optimal Algorithms for Computing Smith Normal Forms"
 
-use rustmath_core::{EuclideanDomain, Ring};
-use std::fmt::Debug;
 
 /// Compute the reversed Hermite normal form of a polynomial matrix
 ///

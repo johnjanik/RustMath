@@ -8,7 +8,7 @@
 
 use num_bigint::BigInt;
 use num_rational::BigRational;
-use num_traits::{Zero, One, ToPrimitive};
+use num_traits::{Zero, One};
 use num_integer::Integer;
 use std::collections::HashMap;
 

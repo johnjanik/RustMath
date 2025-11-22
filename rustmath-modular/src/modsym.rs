@@ -4,12 +4,11 @@
 //! homological algebra. They form a link between modular forms and
 //! homology groups.
 
-use crate::arithgroup::{ArithmeticSubgroup, CongruenceSubgroup};
+use crate::arithgroup::ArithmeticSubgroup;
 use crate::cusps::Cusp;
 use num_bigint::BigInt;
 use num_rational::BigRational;
 use num_traits::{Zero, One};
-use std::collections::HashMap;
 
 /// A modular symbol {α → β}
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -61,7 +61,7 @@ fn bessel_j_series(n: i32, x: f64) -> f64 {
 
 fn bessel_j_asymptotic(n: i32, x: f64) -> f64 {
     // Asymptotic expansion for large x
-    let mu = 4.0 * (n as f64).powi(2);
+    let _mu = 4.0 * (n as f64).powi(2);
     let sqrt_term = (2.0 / (PI * x)).sqrt();
     let cos_term = (x - (n as f64) * PI / 2.0 - PI / 4.0).cos();
 
@@ -117,7 +117,7 @@ fn bessel_y0_series(x: f64) -> f64 {
 
     const MAX_TERMS: usize = 50;
     for k in 1..MAX_TERMS {
-        let k_f = k as f64;
+        let _k_f = k as f64;
         let sign = if k % 2 == 0 { 1.0 } else { -1.0 };
         let term = sign * half_x.powi(2 * k as i32) * harmonic(k) / (factorial(k).powi(2));
         sum += term;

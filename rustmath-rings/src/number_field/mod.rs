@@ -144,7 +144,6 @@ pub use rustmath_numberfields::{
 };
 
 use rustmath_core::Ring;
-use rustmath_integers::Integer;
 use rustmath_polynomials::univariate::UnivariatePolynomial;
 use rustmath_rationals::Rational;
 

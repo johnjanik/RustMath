@@ -17,8 +17,8 @@ pub struct SimplexResult {
 pub fn simplex(
     c: &[f64],
     a: &[Vec<f64>],
-    b: &[f64],
-    max_iter: usize,
+    _b: &[f64],
+    _max_iter: usize,
 ) -> Option<SimplexResult> {
     if a.is_empty() || c.is_empty() {
         return None;

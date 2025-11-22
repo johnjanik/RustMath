@@ -39,7 +39,6 @@
 //! ```
 
 use rustmath_rationals::Rational;
-use rustmath_core::Ring;
 use std::fmt;
 
 /// A C-finite sequence defined by a linear recurrence relation

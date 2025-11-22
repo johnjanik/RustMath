@@ -50,7 +50,7 @@
 //! - SageMath: `sage.rings.function_field.function_field_polymod`
 //! - Stichtenoth, H. (2009). "Algebraic Function Fields and Codes"
 
-use rustmath_core::{Field, Ring};
+use rustmath_core::Field;
 use std::marker::PhantomData;
 
 /// Represents a function field defined as a polynomial extension

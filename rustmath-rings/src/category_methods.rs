@@ -20,8 +20,7 @@
 //! use rustmath_rings::category_methods::{RingElementMethods, RingParentMethods};
 //! ```
 
-use rustmath_core::{Ring, CommutativeRing, Field, IntegralDomain, EuclideanDomain, MathError, Result};
-use std::fmt::Debug;
+use rustmath_core::{Ring, EuclideanDomain, MathError, Result};
 
 // ============================================================================
 // ElementMethods - Methods for ring elements

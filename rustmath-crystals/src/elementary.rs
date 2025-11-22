@@ -6,7 +6,7 @@
 //! - R_λ: Seminormal crystals
 //! - Elementary crystals for each Dynkin node
 
-use crate::operators::{Crystal, CrystalElement};
+use crate::operators::Crystal;
 use crate::root_system::RootSystem;
 use crate::weight::Weight;
 use std::collections::BTreeMap;

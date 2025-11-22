@@ -92,6 +92,7 @@ where
 ///
 /// let g = plot_multiple(functions, 0.0, 2.0 * std::f64::consts::PI);
 /// ```
+#[allow(dead_code)]
 pub fn plot_multiple<F>(
     functions: Vec<(F, Option<PlotOptions>)>,
     x_min: f64,

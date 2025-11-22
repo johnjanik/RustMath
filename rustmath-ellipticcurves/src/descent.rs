@@ -5,7 +5,6 @@
 use crate::curve::{EllipticCurve, Point};
 use num_bigint::BigInt;
 use num_traits::{Zero, One, ToPrimitive, Signed};
-use std::collections::HashSet;
 
 /// A quartic equation arising from a 2-covering
 #[derive(Debug, Clone, PartialEq, Eq)]

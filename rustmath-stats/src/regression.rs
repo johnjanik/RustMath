@@ -2,7 +2,7 @@
 //!
 //! Simple and multiple linear regression models
 
-use crate::statistics::{mean, variance};
+use crate::statistics::mean;
 
 /// Simple linear regression model: y = a + bx
 #[derive(Clone, Debug)]
@@ -128,10 +128,10 @@ impl MultipleRegression {
         }
 
         let n = y.len();
-        let n_features = x_matrix[0].len();
+        let _n_features = x_matrix[0].len();
 
         // Add intercept column (all 1s)
-        let mut x_with_intercept: Vec<Vec<f64>> = x_matrix
+        let x_with_intercept: Vec<Vec<f64>> = x_matrix
             .iter()
             .map(|row| {
                 let mut new_row = vec![1.0];

@@ -66,7 +66,7 @@ fn erf_series(x: f64) -> f64 {
     const EPSILON: f64 = 1e-15;
 
     let mut sum = 0.0;
-    let x2 = x * x;
+    let _x2 = x * x;
 
     for n in 0..MAX_TERMS {
         let sign = if n % 2 == 0 { 1.0 } else { -1.0 };
@@ -90,7 +90,7 @@ fn erfc_continued_fraction(x: f64) -> f64 {
     const EPSILON: f64 = 1e-15;
 
     let x2 = x * x;
-    let mut a = 1.0;
+    #[allow(unused_assignments)] let mut a = 0.0; // Initialized but immediately overwritten in loop
     let mut b = x2 + 0.5;
     let mut c = b;
     let mut d = 1.0 / b;

@@ -2,7 +2,7 @@
 //!
 //! A valuation scaled by a positive rational number
 
-use super::valuation::{DiscretePseudoValuation, DiscreteValuation, ValuationValue};
+use super::valuation::{DiscretePseudoValuation, ValuationValue};
 use rustmath_core::Ring;
 
 /// Scaled valuation: s·v where s > 0

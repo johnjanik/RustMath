@@ -70,7 +70,6 @@
 //! - SageMath: `sage.schemes.riemann_surfaces.riemann_theta`
 
 use rustmath_complex::Complex;
-use rustmath_core::Field;
 use rustmath_matrix::Matrix;
 use std::f64::consts::PI;
 

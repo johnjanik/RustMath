@@ -5,7 +5,7 @@
 //!
 //! A path is a sequence of weights π: [0,1] → P where P is the weight lattice.
 
-use crate::operators::{Crystal, CrystalElement};
+use crate::operators::Crystal;
 use crate::root_system::RootSystem;
 use crate::weight::Weight;
 

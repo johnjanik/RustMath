@@ -8,8 +8,7 @@
 //! - Derivation module structure
 //! - Various types of derivations (zero, constant, composition, etc.)
 
-use rustmath_core::{Ring, EuclideanDomain};
-use std::collections::HashMap;
+use rustmath_core::Ring;
 use std::marker::PhantomData;
 use std::fmt;
 

@@ -3,7 +3,7 @@
 //! Plots surfaces defined by implicit equations f(x, y, z) = 0 or f(x, y, z) = c
 //! using the marching cubes algorithm to triangulate the isosurface.
 
-use crate::base::{Graphics3d, IndexFaceSet, Point3D, Vector3D};
+use crate::base::{Graphics3d, IndexFaceSet, Point3D};
 use crate::{Plot3DError, Result};
 use rustmath_colors::Color;
 

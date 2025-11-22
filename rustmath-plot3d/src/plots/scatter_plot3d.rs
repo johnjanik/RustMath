@@ -3,7 +3,7 @@
 //! Scatter plots display discrete 3D points, optionally with different sizes
 //! and colors based on data values.
 
-use crate::base::{Graphics3d, IndexFaceSet, Point3D, Vector3D};
+use crate::base::{Graphics3d, IndexFaceSet, Point3D};
 use crate::Result;
 use rustmath_colors::Color;
 

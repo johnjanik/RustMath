@@ -3,9 +3,8 @@
 //! Crystals based on semistandard Young tableaux. These are crystals of type A_n.
 //! The crystal operators are defined using the signature rule.
 
-use crate::operators::{Crystal, CrystalElement};
+use crate::operators::Crystal;
 use crate::weight::Weight;
-use rustmath_combinatorics::Tableau;
 
 /// A tableau crystal element
 ///

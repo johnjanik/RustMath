@@ -35,9 +35,7 @@
 //! - **Free Extension**: L is free as K-module
 //! - **Tower Law**: [M : K] = [M : L] · [L : K]
 
-use crate::morphism::RingHomomorphism;
-use rustmath_core::{Ring, CommutativeRing, Field};
-use std::collections::HashMap;
+use rustmath_core::Ring;
 use std::fmt;
 use std::marker::PhantomData;
 use thiserror::Error;

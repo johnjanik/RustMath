@@ -3,7 +3,7 @@
 //! Highest weight crystals are crystals with a unique highest weight element.
 //! They correspond to irreducible representations of the Lie algebra.
 
-use crate::operators::{Crystal, CrystalElement};
+use crate::operators::Crystal;
 use crate::root_system::RootSystem;
 use crate::weight::Weight;
 

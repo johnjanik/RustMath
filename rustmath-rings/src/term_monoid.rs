@@ -35,10 +35,9 @@
 //! // Terms represent expressions like "3*n^2"
 //! ```
 
-use crate::growth_group::{GrowthElement, GrowthGroup, MonomialGrowthElement, Variable};
-use num_bigint::BigInt;
+use crate::growth_group::GrowthElement;
 use num_rational::BigRational;
-use num_traits::{Zero, One, Signed};
+use num_traits::{Zero, One};
 use std::cmp::Ordering;
 use std::fmt::{self, Debug, Display};
 use std::marker::PhantomData;

@@ -40,7 +40,7 @@
 use rustmath_core::{Ring, Field};
 use std::marker::PhantomData;
 use std::fmt;
-use std::ops::{Add, Mul, Neg, Div};
+use std::ops::{Add, Neg, Div};
 
 /// Differential form on a function field
 ///

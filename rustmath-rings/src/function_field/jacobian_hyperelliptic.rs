@@ -67,7 +67,6 @@
 
 use rustmath_core::Field;
 use rustmath_polynomials::univariate::UnivariatePolynomial;
-use std::marker::PhantomData;
 
 /// A hyperelliptic curve
 ///

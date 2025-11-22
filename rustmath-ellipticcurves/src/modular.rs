@@ -189,7 +189,7 @@ impl HeckeOperator {
             let a_m = form.coefficient(m);
             if a_m != 0 {
                 let new_coeff = self.compute_hecke_action(m, a_m, form.weight);
-                result.set_coefficient((m * self.index as usize), new_coeff);
+                result.set_coefficient(m * self.index as usize, new_coeff);
             }
         }
 

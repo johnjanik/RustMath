@@ -43,9 +43,8 @@
 //! assert!(n_squared < n_cubed);
 //! ```
 
-use num_bigint::BigInt;
 use num_rational::BigRational;
-use num_traits::{Zero, One, Signed};
+use num_traits::{Zero, One};
 use std::cmp::Ordering;
 use std::fmt::{self, Debug, Display};
 use std::hash::{Hash, Hasher};

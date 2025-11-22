@@ -429,7 +429,7 @@ impl QuadraticForm {
         }
 
         // Count solutions modulo p^precision
-        let mut count = Integer::zero();
+        let count;
         let total_count = self.count_local_solutions(n, &modulus);
         count = Integer::from(total_count as i64);
 

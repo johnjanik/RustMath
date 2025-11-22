@@ -22,9 +22,7 @@
 //! - Hilbert, D. "Theory of Algebraic Invariants" (1993)
 //! - Sturmfels, B. "Algorithms in Invariant Theory" (2008)
 
-use rustmath_core::{Ring, Field, CommutativeRing};
-use std::fmt;
-use std::marker::PhantomData;
+use rustmath_core::Ring;
 
 /// Base trait for all algebraic forms
 ///

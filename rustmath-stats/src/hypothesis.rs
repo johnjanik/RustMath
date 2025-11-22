@@ -3,7 +3,6 @@
 //! Statistical hypothesis tests including t-tests and chi-squared tests
 
 use crate::statistics::{mean, std_dev, variance};
-use std::f64::consts::PI;
 
 /// Result of a hypothesis test
 #[derive(Clone, Debug)]
@@ -192,7 +191,7 @@ pub fn confidence_interval(data: &[f64], confidence_level: f64) -> Option<(f64, 
 }
 
 /// Get critical value for t-distribution (approximation)
-fn t_critical_value(alpha: f64, df: usize) -> f64 {
+fn t_critical_value(_alpha: f64, df: usize) -> f64 {
     // Simplified - use normal approximation for df > 30
     if df > 30 {
         // For 95% confidence (alpha=0.025), z ≈ 1.96

@@ -6,7 +6,7 @@
 //! These crystals play a crucial role in the theory of affine crystals and
 //! are used to construct crystal bases for integrable highest weight modules.
 
-use crate::operators::{Crystal, CrystalElement};
+use crate::operators::Crystal;
 use crate::root_system::{RootSystem, RootSystemType};
 use crate::weight::Weight;
 use crate::tableau_crystal::TableauElement;

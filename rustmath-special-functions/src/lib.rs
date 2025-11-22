@@ -9,8 +9,8 @@
 //!
 //! These implementations use series expansions and asymptotic approximations.
 
-use num_traits::{Float, One, Zero};
-use std::f64::consts::{E, PI};
+// Unused imports removed
+// These modules import what they need
 
 pub mod gamma;
 pub mod beta;

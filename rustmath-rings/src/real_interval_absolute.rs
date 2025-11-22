@@ -39,7 +39,6 @@
 //! - `diameter`: Width of interval in same units
 //! - Actual interval: [mantissa >> prec, (mantissa + diameter) >> prec]
 
-use rustmath_core::Field;
 use std::fmt;
 use thiserror::Error;
 

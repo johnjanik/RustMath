@@ -1,7 +1,6 @@
 //! 3D transformation system
 
 use crate::base::{Graphics3dPrimitive, Point3D, Vector3D, BoundingBox3D, IndexFaceSet};
-use std::f64::consts::PI;
 
 /// 4x4 transformation matrix for 3D graphics
 ///

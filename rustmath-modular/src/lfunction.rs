@@ -20,7 +20,7 @@
 use crate::dirichlet::DirichletCharacter;
 use num_bigint::BigInt;
 use num_complex::Complex64;
-use num_traits::{One, ToPrimitive, Zero};
+use num_traits::{ToPrimitive, Zero};
 use std::f64::consts::PI;
 
 /// A Dirichlet L-function L(s, χ)

@@ -202,6 +202,7 @@ pub struct CunninghamTables {
     /// In-memory cache of factorizations
     factorizations: HashMap<CunninghamNumber, Factorization>,
     /// Path to data directory (if using local files)
+    #[allow(dead_code)]
     data_path: Option<String>,
 }
 

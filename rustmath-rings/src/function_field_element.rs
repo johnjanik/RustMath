@@ -28,7 +28,7 @@
 //! assert!(is_FunctionFieldElement(&elem));
 //! ```
 
-use rustmath_core::{Ring, Field, IntegralDomain};
+use rustmath_core::{Ring, Field};
 use std::fmt;
 use std::marker::PhantomData;
 

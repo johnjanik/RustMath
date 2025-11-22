@@ -56,12 +56,12 @@
 //! let ext = PadicExtension::eisenstein(p, poly, 10).unwrap();
 //! ```
 
-use rustmath_core::{CommutativeRing, Field, MathError, Result, Ring};
+use rustmath_core::{CommutativeRing, MathError, Result, Ring};
 use rustmath_integers::Integer;
 use rustmath_padics::{PadicInteger, PadicRational};
 use rustmath_polynomials::UnivariatePolynomial;
 use std::fmt;
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, Mul, Neg, Sub};
 use std::sync::Arc;
 
 /// Type of p-adic extension

@@ -218,6 +218,7 @@ pub struct BoundingBox3D {
 
 impl BoundingBox3D {
     /// Create a new 3D bounding box
+    #[allow(dead_code)]
     pub fn new(xmin: f64, xmax: f64, ymin: f64, ymax: f64, zmin: f64, zmax: f64) -> Self {
         assert!(xmin <= xmax);
         assert!(ymin <= ymax);
@@ -234,6 +235,7 @@ impl BoundingBox3D {
     }
 
     /// Create a bounding box from a list of 3D points
+    #[allow(dead_code)]
     pub fn from_points(points: &[Point3D]) -> Result<Self> {
         if points.is_empty() {
             return Err(PlotError::InvalidBoundingBox(
@@ -268,6 +270,7 @@ impl BoundingBox3D {
     }
 
     /// Get the center point of the bounding box
+    #[allow(dead_code)]
     pub fn center(&self) -> Point3D {
         Point3D::new(
             (self.xmin + self.xmax) / 2.0,
@@ -277,11 +280,13 @@ impl BoundingBox3D {
     }
 
     /// Get the volume of the bounding box
+    #[allow(dead_code)]
     pub fn volume(&self) -> f64 {
         (self.xmax - self.xmin) * (self.ymax - self.ymin) * (self.zmax - self.zmin)
     }
 
     /// Check if a point is inside the bounding box
+    #[allow(dead_code)]
     pub fn contains(&self, point: &Point3D) -> bool {
         point.x >= self.xmin
             && point.x <= self.xmax

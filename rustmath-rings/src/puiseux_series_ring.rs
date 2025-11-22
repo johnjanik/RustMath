@@ -131,7 +131,7 @@ impl<F: Field> PuiseuxSeriesRing<F> {
 
     /// Get the Laurent series ring of ramification e
     /// Returns a conceptual reference - in practice, Puiseux series can handle any ramification
-    pub fn laurent_series_ring(&self, ramification: usize) -> LaurentSeriesRingView<F> {
+    pub fn laurent_series_ring(&self, ramification: usize) -> LaurentSeriesRingView<'_, F> {
         LaurentSeriesRingView {
             parent: self,
             ramification,

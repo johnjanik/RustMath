@@ -27,8 +27,6 @@
 //! ```
 
 use rustmath_core::Ring;
-use std::fmt;
-use std::marker::PhantomData;
 
 /// Base trait for lazy module elements
 ///

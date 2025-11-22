@@ -7,8 +7,7 @@
 //! - Embeddings and projections
 //! - Virtual crystals
 
-use crate::operators::{Crystal, CrystalElement};
-use crate::weight::Weight;
+use crate::operators::Crystal;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 

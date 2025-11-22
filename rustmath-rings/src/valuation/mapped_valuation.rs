@@ -2,7 +2,7 @@
 //!
 //! Valuation obtained by composition with a ring homomorphism
 
-use super::valuation::{DiscretePseudoValuation, DiscreteValuation, ValuationValue};
+use super::valuation::{DiscretePseudoValuation, ValuationValue};
 use rustmath_core::Ring;
 
 /// Mapped valuation base

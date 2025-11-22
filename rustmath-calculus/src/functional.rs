@@ -41,7 +41,7 @@ pub fn expand(expr: &Expr) -> Expr {
                 // Expand power: (a+b)^n
                 BinaryOp::Pow => {
                     if let Expr::Integer(n) = &right_exp {
-                        use rustmath_integers::Integer;
+                        
                         let n_str = format!("{}", n);
                         if let Ok(n_val) = n_str.parse::<i64>() {
                             if n_val >= 0 && n_val <= 10 {

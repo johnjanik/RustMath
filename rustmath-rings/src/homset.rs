@@ -37,8 +37,8 @@
 //! - **Morphisms**: Ring homomorphisms
 //! - **Hom-sets**: Collections of morphisms between any two objects
 
-use crate::morphism::{RingHomomorphism, RingHomomorphismFromQuotient, MorphismError};
-use rustmath_core::{Ring, CommutativeRing};
+use crate::morphism::RingHomomorphism;
+use rustmath_core::Ring;
 use std::fmt;
 use std::marker::PhantomData;
 

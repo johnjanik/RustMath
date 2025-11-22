@@ -43,10 +43,9 @@
 //! - `0 × ∞` → SignError (undefined)
 //! - `∞ + (-∞)` → SignError (indeterminate)
 
-use rustmath_core::{Ring, Field, CommutativeRing};
 use std::cmp::Ordering;
 use std::fmt;
-use std::ops::{Add, Sub, Mul, Div, Neg};
+use std::ops::Neg;
 use thiserror::Error;
 
 /// Errors that can occur when working with infinities

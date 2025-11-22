@@ -8,11 +8,8 @@
 
 use crate::{SymFun, kostka_number};
 use rustmath_combinatorics::{Partition, partitions};
-use rustmath_core::{Ring, Field};
-use rustmath_integers::Integer;
-use rustmath_matrix::Matrix;
+use rustmath_core::Ring;
 use rustmath_rationals::Rational;
-use std::collections::HashMap;
 
 /// The different bases for symmetric functions
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

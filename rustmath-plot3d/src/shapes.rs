@@ -3,7 +3,7 @@
 //! This module provides basic 3D geometric shapes that can be rendered
 //! as triangle meshes. All shapes implement the Graphics3dPrimitive trait.
 
-use crate::base::{Graphics3dPrimitive, IndexFaceSet, BoundingBox3D, Point3D, Vector3D};
+use crate::base::{Graphics3dPrimitive, IndexFaceSet, BoundingBox3D, Point3D};
 use crate::Result;
 use rustmath_colors::Color;
 use std::f64::consts::PI;

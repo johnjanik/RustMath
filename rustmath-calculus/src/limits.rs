@@ -3,7 +3,7 @@
 //! This module provides functionality for computing limits of expressions
 //! as a variable approaches a value.
 
-use rustmath_symbolic::{BinaryOp, Expr, UnaryOp};
+use rustmath_symbolic::{BinaryOp, Expr};
 
 /// Direction for limit computation
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
