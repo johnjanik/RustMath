@@ -54,9 +54,17 @@ pub trait Coercion: Clone + fmt::Debug {
 /// Identity coercion: S → S
 ///
 /// Maps every element to itself
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct IdentityCoercion<T> {
     _phantom: PhantomData<T>,
+}
+
+impl<T> fmt::Debug for IdentityCoercion<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("IdentityCoercion")
+            .field("_phantom", &self._phantom)
+            .finish()
+    }
 }
 
 impl<T> IdentityCoercion<T> {

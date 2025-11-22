@@ -122,6 +122,11 @@ impl Monomial {
         self.exponents.keys().copied().collect()
     }
 
+    /// Get an iterator over the (variable, exponent) pairs
+    pub fn exponents(&self) -> impl Iterator<Item = (&usize, &u32)> {
+        self.exponents.iter()
+    }
+
     /// Iterate over the (variable, exponent) pairs
     pub fn iter_exponents(&self) -> impl Iterator<Item = (&usize, &u32)> {
         self.exponents.iter()

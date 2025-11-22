@@ -12,9 +12,11 @@
 //! When g ≥ 2, this is a hyperelliptic curve of genus g.
 
 use rustmath_core::{Ring, Field};
-use rustmath_polynomials::univariate::Polynomial;
+use rustmath_polynomials::UnivariatePolynomial;
 use rustmath_rationals::Rational;
 use std::fmt;
+
+type Polynomial<R> = UnivariatePolynomial<R>;
 
 /// A hyperelliptic curve y^2 = f(x)
 #[derive(Debug, Clone)]
@@ -34,7 +36,7 @@ impl<F: Field + Clone + PartialEq> HyperellipticCurve<F> {
     pub fn new(f: Polynomial<F>) -> Result<Self, String> {
         let deg = f.degree();
 
-        if deg < 3 {
+        if deg.map_or(true, |d| d < 3) {
             return Err("Degree of f must be at least 3 for a hyperelliptic curve".to_string());
         }
 

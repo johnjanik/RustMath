@@ -20,28 +20,6 @@ pub trait Category: Clone + fmt::Debug {
     /// Get the name of this category
     fn name(&self) -> &str;
 
-    /// Get the parent category (if any)
-    ///
-    /// Returns None for top-level categories
-    fn super_categories(&self) -> Vec<Box<dyn Category>> {
-        Vec::new()
-    }
-
-    /// Check if this category is a subcategory of another
-    fn is_subcategory_of(&self, other: &dyn Category) -> bool {
-        if self.name() == other.name() {
-            return true;
-        }
-
-        for parent in self.super_categories() {
-            if parent.is_subcategory_of(other) {
-                return true;
-            }
-        }
-
-        false
-    }
-
     /// Get all axioms this category requires
     fn axioms(&self) -> Vec<&str> {
         Vec::new()
@@ -134,12 +112,12 @@ mod tests {
     }
 
     #[test]
-    fn test_is_subcategory_of() {
+    fn test_category_comparison() {
         let cat1 = TestCategory::new("Test");
         let cat2 = TestCategory::new("Test");
         let cat3 = TestCategory::new("Other");
 
-        assert!(cat1.is_subcategory_of(&cat2));
-        assert!(!cat1.is_subcategory_of(&cat3));
+        assert_eq!(cat1.name(), cat2.name());
+        assert_ne!(cat1.name(), cat3.name());
     }
 }

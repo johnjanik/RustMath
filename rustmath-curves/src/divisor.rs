@@ -11,8 +11,10 @@
 //! where xᵢ are the roots of u(x).
 
 use rustmath_core::{Ring, Field};
-use rustmath_polynomials::univariate::Polynomial;
+use rustmath_polynomials::UnivariatePolynomial;
 use std::fmt;
+
+type Polynomial<R> = UnivariatePolynomial<R>;
 
 /// A divisor on a hyperelliptic curve in Mumford representation
 ///
