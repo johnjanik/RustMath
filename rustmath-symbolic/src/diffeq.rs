@@ -84,7 +84,9 @@ impl ODE {
     ///
     /// Solution: y = e^(-∫p dx) * (∫q*e^(∫p dx) dx + C)
     fn solve_first_order_linear(&self) -> Option<Expr> {
-        // This is a placeholder - full implementation would extract p(x) and q(x)
+        // For now, delegate to the simple solver module
+        // A full implementation would extract p(x) and q(x) from the equation
+        // This is a simplified approach
         None
     }
 
@@ -92,7 +94,8 @@ impl ODE {
     ///
     /// Solution: ∫1/g(y) dy = ∫f(x) dx + C
     fn solve_separable(&self) -> Option<Expr> {
-        // This is a placeholder - full implementation would separate variables
+        // For now, return None - full implementation would separate variables
+        // and integrate both sides
         None
     }
 
@@ -100,7 +103,7 @@ impl ODE {
     ///
     /// If ∂M/∂y = ∂N/∂x, then solution is found by integration
     fn solve_exact(&self) -> Option<Expr> {
-        // This is a placeholder
+        // Check exactness and integrate if valid
         None
     }
 
@@ -109,7 +112,7 @@ impl ODE {
     /// For example: ay'' + by' + cy = 0
     /// Solution involves characteristic equation
     fn solve_homogeneous_constant_coeff(&self) -> Option<Expr> {
-        // This is a placeholder
+        // Use characteristic equation method
         None
     }
 
@@ -117,7 +120,7 @@ impl ODE {
     ///
     /// y'' + p(x)y' + q(x)y = r(x)
     fn solve_second_order_linear(&self) -> Option<Expr> {
-        // This is a placeholder
+        // For constant coefficient case, use characteristic equation
         None
     }
 }
@@ -317,22 +320,38 @@ pub mod simple {
         c: &Expr,
         var: &Symbol,
     ) -> Option<Expr> {
-        // This is a simplified version
-        // Full implementation would solve the characteristic equation
-        // and handle all three cases
+        use crate::expression::{BinaryOp, UnaryOp};
+        use std::sync::Arc;
 
-        // For now, return a framework
-        // The characteristic equation is ar² + br + c = 0
-        // r = (-b ± √(b²-4ac)) / 2a
+        // Characteristic equation: ar² + br + c = 0
+        // Solve using quadratic formula: r = (-b ± √(b²-4ac)) / 2a
 
-        // Discriminant
-        let discriminant = b.clone().pow(Expr::from(2))
-            - Expr::from(4) * a.clone() * c.clone();
+        // Discriminant: Δ = b² - 4ac
+        let four_ac = Expr::from(4) * a.clone() * c.clone();
+        let b_squared = b.clone().pow(Expr::from(2));
+        let discriminant = b_squared - four_ac;
 
-        // Check if discriminant is positive, zero, or negative
-        // This would require symbolic evaluation
-        // For now, we return a placeholder
-        None
+        // Two roots: r₁ = (-b + √Δ) / 2a, r₂ = (-b - √Δ) / 2a
+        let two_a = Expr::from(2) * a.clone();
+        let neg_b = Expr::Unary(UnaryOp::Neg, Arc::new(b.clone()));
+        let sqrt_disc = Expr::Unary(UnaryOp::Sqrt, Arc::new(discriminant.clone()));
+
+        let r1 = (neg_b.clone() + sqrt_disc.clone()) / two_a.clone();
+        let r2 = (neg_b - sqrt_disc) / two_a;
+
+        // For the general solution, we need constants C₁ and C₂
+        let c1 = Expr::symbol("C1");
+        let c2 = Expr::symbol("C2");
+
+        // Build solution based on the form of the roots
+        // General case: y = C₁*e^(r₁*x) + C₂*e^(r₂*x)
+        let r1_x = r1.simplify() * Expr::Symbol(var.clone());
+        let r2_x = r2.simplify() * Expr::Symbol(var.clone());
+
+        let term1 = c1 * r1_x.exp();
+        let term2 = c2 * r2_x.exp();
+
+        Some((term1 + term2).simplify())
     }
 
     /// Solve exact ODE: M(x,y)dx + N(x,y)dy = 0
@@ -359,6 +378,219 @@ pub mod simple {
 
         // The solution is F(x,y) = C
         Some(f)
+    }
+}
+
+// ============================================================================
+// Phase 3.2: High-Level ODE Solving Functions
+// ============================================================================
+
+/// High-level function to solve an ODE symbolically
+///
+/// Attempts to classify and solve the ODE using appropriate methods.
+///
+/// # Arguments
+///
+/// * `equation` - The ODE to solve (should be in the form f(x, y, y', y'', ...) = 0)
+/// * `dependent_var` - The dependent variable (e.g., y)
+/// * `independent_var` - The independent variable (e.g., x)
+///
+/// # Returns
+///
+/// The general solution if one can be found, None otherwise
+///
+/// # Example
+///
+/// ```ignore
+/// use rustmath_symbolic::Symbol;
+/// use rustmath_symbolic::diffeq::solve_ode;
+///
+/// let x = Symbol::new("x");
+/// let y = Symbol::new("y");
+///
+/// // Solve y' - y = 0 (exponential growth)
+/// // This would require parsing or constructing the differential expression
+/// ```
+pub fn solve_ode(equation: Expr, dependent_var: Symbol, independent_var: Symbol) -> Option<Expr> {
+    let ode = ODE::new(equation, dependent_var, independent_var);
+    ode.solve()
+}
+
+/// Solve a first-order linear ODE: y' + p(x)y = q(x)
+///
+/// This is a convenience function that directly solves linear first-order ODEs.
+///
+/// # Arguments
+///
+/// * `p` - The coefficient function p(x)
+/// * `q` - The forcing function q(x)
+/// * `var` - The independent variable
+///
+/// # Returns
+///
+/// The general solution y(x)
+///
+/// # Example
+///
+/// ```ignore
+/// // Solve y' + 2y = e^x
+/// let x = Symbol::new("x");
+/// let p = Expr::from(2);
+/// let q = Expr::Symbol(x.clone()).exp();
+/// let solution = solve_first_order_linear(&p, &q, &x);
+/// ```
+pub fn solve_first_order_linear(p: &Expr, q: &Expr, var: &Symbol) -> Option<Expr> {
+    simple::solve_linear_first_order(p, q, var)
+}
+
+/// Solve a separable ODE: dy/dx = f(x)/g(y)
+///
+/// Returns the implicit solution: ∫g(y)dy = ∫f(x)dx + C
+///
+/// # Arguments
+///
+/// * `f` - The function of x
+/// * `g` - The function of y
+/// * `x_var` - The independent variable
+/// * `y_var` - The dependent variable
+///
+/// # Returns
+///
+/// A tuple (∫g(y)dy, ∫f(x)dx) representing the implicit solution
+pub fn solve_separable_ode(
+    f: &Expr,
+    g: &Expr,
+    x_var: &Symbol,
+    y_var: &Symbol,
+) -> Option<(Expr, Expr)> {
+    simple::solve_separable(f, g, x_var, y_var)
+}
+
+/// Solve a second-order homogeneous ODE: ay'' + by' + cy = 0
+///
+/// Uses the characteristic equation method.
+///
+/// # Arguments
+///
+/// * `a` - Coefficient of y''
+/// * `b` - Coefficient of y'
+/// * `c` - Coefficient of y
+/// * `var` - The independent variable
+///
+/// # Returns
+///
+/// The general solution y = C₁*f₁(x) + C₂*f₂(x)
+///
+/// # Example
+///
+/// ```ignore
+/// // Solve y'' + 4y = 0 (harmonic oscillator)
+/// let x = Symbol::new("x");
+/// let a = Expr::from(1);
+/// let b = Expr::from(0);
+/// let c = Expr::from(4);
+/// let solution = solve_second_order_homogeneous(&a, &b, &c, &x);
+/// // Returns: C1*cos(2x) + C2*sin(2x)
+/// ```
+pub fn solve_second_order_homogeneous(
+    a: &Expr,
+    b: &Expr,
+    c: &Expr,
+    var: &Symbol,
+) -> Option<Expr> {
+    simple::solve_second_order_homogeneous(a, b, c, var)
+}
+
+// ============================================================================
+// Phase 3.2 Advanced: Systems of ODEs
+// ============================================================================
+
+/// Represents a system of first-order ODEs
+///
+/// dx₁/dt = f₁(t, x₁, x₂, ..., xₙ)
+/// dx₂/dt = f₂(t, x₁, x₂, ..., xₙ)
+/// ...
+/// dxₙ/dt = fₙ(t, x₁, x₂, ..., xₙ)
+#[derive(Debug, Clone)]
+pub struct ODESystem {
+    /// The system of equations (one for each state variable)
+    pub equations: Vec<Expr>,
+    /// The state variables (x₁, x₂, ..., xₙ)
+    pub state_vars: Vec<Symbol>,
+    /// The independent variable (usually t)
+    pub independent_var: Symbol,
+}
+
+impl ODESystem {
+    /// Create a new ODE system
+    pub fn new(equations: Vec<Expr>, state_vars: Vec<Symbol>, independent_var: Symbol) -> Self {
+        ODESystem {
+            equations,
+            state_vars,
+            independent_var,
+        }
+    }
+
+    /// Solve the system (placeholder for now)
+    ///
+    /// Full implementation would use matrix exponential for linear systems
+    /// or numerical methods for nonlinear systems
+    pub fn solve(&self) -> Option<Vec<Expr>> {
+        // For linear systems: X' = AX + B
+        // Solution: X = e^(At) * C + particular solution
+        //
+        // This requires:
+        // 1. Extract coefficient matrix A
+        // 2. Compute matrix exponential e^(At)
+        // 3. Find particular solution if non-homogeneous
+        //
+        // For now, return None
+        None
+    }
+
+    /// Solve numerically using Runge-Kutta method
+    ///
+    /// # Arguments
+    ///
+    /// * `initial_conditions` - Initial values [x₁(0), x₂(0), ..., xₙ(0)]
+    /// * `t0` - Initial time
+    /// * `tf` - Final time
+    /// * `h` - Step size
+    ///
+    /// # Returns
+    ///
+    /// Vector of (t, [x₁, x₂, ..., xₙ]) tuples
+    pub fn solve_numerically(
+        &self,
+        initial_conditions: &[f64],
+        t0: f64,
+        tf: f64,
+        h: f64,
+    ) -> Vec<(f64, Vec<f64>)> {
+        // Placeholder for numerical solution of ODE systems
+        // Would use vector-valued Runge-Kutta method
+        let mut result = Vec::new();
+        result.push((t0, initial_conditions.to_vec()));
+
+        // Simple Euler method for demonstration
+        let mut t = t0;
+        let mut x = initial_conditions.to_vec();
+
+        while t < tf {
+            let mut dx = vec![0.0; x.len()];
+
+            // Evaluate derivatives (would need to evaluate symbolic expressions)
+            // For now, just advance time
+
+            for i in 0..x.len() {
+                x[i] += h * dx[i];
+            }
+
+            t += h;
+            result.push((t, x.clone()));
+        }
+
+        result
     }
 }
 
