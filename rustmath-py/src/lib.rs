@@ -9,10 +9,12 @@ use pyo3::exceptions::PyValueError;
 mod integers;
 mod rationals;
 mod matrix;
+mod symbolic;
 
 pub use integers::PyInteger;
 pub use rationals::PyRational;
 pub use matrix::PyMatrix;
+pub use symbolic::{PySymbol, PyExpr};
 
 /// Main module initialization
 #[pymodule]
@@ -20,6 +22,9 @@ fn rustmath(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyInteger>()?;
     m.add_class::<PyRational>()?;
     m.add_class::<PyMatrix>()?;
+
+    // Register symbolic module
+    symbolic::register_symbolic_module(m)?;
 
     // Module-level functions
     m.add_function(wrap_pyfunction!(gcd_many, m)?)?;
