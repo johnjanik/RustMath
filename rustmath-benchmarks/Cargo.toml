@@ -1,0 +1,33 @@
+[package]
+name = "rustmath-benchmarks"
+version = "0.1.0"
+edition = "2021"
+authors = ["RustMath Contributors"]
+description = "Performance benchmarks for RustMath vs SymPy comparison"
+
+[dependencies]
+rustmath-core = { path = "../rustmath-core" }
+rustmath-integers = { path = "../rustmath-integers" }
+rustmath-rationals = { path = "../rustmath-rationals" }
+rustmath-symbolic = { path = "../rustmath-symbolic" }
+rustmath-polynomials = { path = "../rustmath-polynomials" }
+rustmath-matrix = { path = "../rustmath-matrix" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+clap = { version = "4.0", features = ["derive"] }
+
+[[bin]]
+name = "bench_symbolic"
+path = "src/bench_symbolic.rs"
+
+[[bin]]
+name = "bench_polynomials"
+path = "src/bench_polynomials.rs"
+
+[[bin]]
+name = "bench_matrix"
+path = "src/bench_matrix.rs"
+
+[[bin]]
+name = "bench_integers"
+path = "src/bench_integers.rs"

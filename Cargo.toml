@@ -66,6 +66,7 @@ members = [
     "rustmath-automata",
     "rustmath-misc",
     "rustmath-curves",
+    "rustmath-benchmarks",
 ]
 
 [workspace.package]
