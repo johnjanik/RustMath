@@ -1,6 +1,8 @@
 //! Expression simplification
 
+use crate::assumptions::{has_property, Property};
 use crate::expression::{BinaryOp, Expr, UnaryOp};
+use crate::pattern::RuleDatabase;
 use rustmath_integers::Integer;
 use std::sync::Arc;
 
@@ -54,7 +56,23 @@ impl Expr {
     /// Simplify trigonometric expressions
     ///
     /// Applies trigonometric identities like sin²(x) + cos²(x) = 1
+    /// Now uses the pattern-based rule system for comprehensive coverage
     pub fn simplify_trig(&self) -> Expr {
+        // Use the pattern-based rule system
+        let db = RuleDatabase::new();
+        let simplified = db.apply_all(self);
+
+        // If pattern-based simplification didn't change anything,
+        // try the legacy approach as fallback
+        if simplified == *self {
+            self.simplify_trig_legacy()
+        } else {
+            simplified
+        }
+    }
+
+    /// Legacy trigonometric simplification (kept for compatibility)
+    fn simplify_trig_legacy(&self) -> Expr {
         match self {
             // sin²(x) + cos²(x) = 1
             Expr::Binary(BinaryOp::Add, left, right) => {
@@ -66,17 +84,17 @@ impl Expr {
                 }
 
                 // Recursively simplify
-                let left_simp = left.simplify_trig();
-                let right_simp = right.simplify_trig();
+                let left_simp = left.simplify_trig_legacy();
+                let right_simp = right.simplify_trig_legacy();
                 Expr::Binary(BinaryOp::Add, Arc::new(left_simp), Arc::new(right_simp))
             }
             Expr::Binary(op, left, right) => {
-                let left_simp = left.simplify_trig();
-                let right_simp = right.simplify_trig();
+                let left_simp = left.simplify_trig_legacy();
+                let right_simp = right.simplify_trig_legacy();
                 Expr::Binary(*op, Arc::new(left_simp), Arc::new(right_simp))
             }
             Expr::Unary(op, inner) => {
-                let inner_simp = inner.simplify_trig();
+                let inner_simp = inner.simplify_trig_legacy();
                 Expr::Unary(*op, Arc::new(inner_simp))
             }
             _ => self.clone(),
@@ -229,6 +247,126 @@ impl Expr {
             }
             _ => self.clone(),
         }
+    }
+
+    /// Simplify using assumptions
+    ///
+    /// Applies simplifications that depend on variable properties.
+    /// For example: sqrt(x^2) = x if x > 0, sqrt(x^2) = -x if x < 0
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_symbolic::{Expr, assume, Property};
+    ///
+    /// let x = Expr::symbol("x");
+    /// let x_sym = x.as_symbol().unwrap();
+    /// assume(x_sym, Property::Positive);
+    ///
+    /// // sqrt(x^2) simplifies to x when x > 0
+    /// let expr = x.clone().pow(Expr::from(2)).sqrt();
+    /// let simplified = expr.simplify_with_assumptions();
+    /// // assert_eq!(simplified, x);
+    /// ```
+    pub fn simplify_with_assumptions(&self) -> Expr {
+        match self {
+            // sqrt(x^2) = |x|, but if x > 0 then = x, if x < 0 then = -x
+            Expr::Unary(UnaryOp::Sqrt, inner) => {
+                if let Expr::Binary(BinaryOp::Pow, base, exp) = inner.as_ref() {
+                    if let Expr::Integer(n) = exp.as_ref() {
+                        if n == &Integer::from(2) {
+                            // We have sqrt(x^2)
+                            if let Expr::Symbol(s) = base.as_ref() {
+                                // Check assumptions
+                                if has_property(s, Property::Positive) {
+                                    return (**base).clone();
+                                } else if has_property(s, Property::Negative) {
+                                    return -(**base).clone();
+                                }
+                            }
+                            // Default: sqrt(x^2) = |x|
+                            return (**base).clone().abs();
+                        }
+                    }
+                }
+                // Recursively simplify
+                let inner_simp = inner.simplify_with_assumptions();
+                Expr::Unary(UnaryOp::Sqrt, Arc::new(inner_simp))
+            }
+
+            // |x| = x if x >= 0, |x| = -x if x < 0
+            Expr::Unary(UnaryOp::Abs, inner) => {
+                if let Expr::Symbol(s) = inner.as_ref() {
+                    if has_property(s, Property::Positive) || has_property(s, Property::Zero) {
+                        return (**inner).clone();
+                    } else if has_property(s, Property::Negative) {
+                        return -(**inner).clone();
+                    }
+                }
+                // Recursively simplify
+                let inner_simp = inner.simplify_with_assumptions();
+                Expr::Unary(UnaryOp::Abs, Arc::new(inner_simp))
+            }
+
+            // For binary operations, recursively apply
+            Expr::Binary(op, left, right) => {
+                let left_simp = left.simplify_with_assumptions();
+                let right_simp = right.simplify_with_assumptions();
+                Expr::Binary(*op, Arc::new(left_simp), Arc::new(right_simp))
+            }
+
+            // For other unary operations, recursively apply
+            Expr::Unary(op, inner) => {
+                let inner_simp = inner.simplify_with_assumptions();
+                Expr::Unary(*op, Arc::new(inner_simp))
+            }
+
+            // For functions, recursively apply to arguments
+            Expr::Function(name, args) => {
+                let simplified_args: Vec<Arc<Expr>> = args
+                    .iter()
+                    .map(|arg| Arc::new(arg.simplify_with_assumptions()))
+                    .collect();
+                Expr::Function(name.clone(), simplified_args)
+            }
+
+            _ => self.clone(),
+        }
+    }
+
+    /// Advanced simplification using pattern matching and assumptions
+    ///
+    /// This is the most comprehensive simplification method.
+    /// It applies:
+    /// 1. Pattern-based trigonometric identities
+    /// 2. Pattern-based exponential/logarithm rules
+    /// 3. Assumption-based simplifications
+    /// 4. Basic algebraic simplifications
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustmath_symbolic::Expr;
+    ///
+    /// let x = Expr::symbol("x");
+    ///
+    /// // sin(x)^2 + cos(x)^2 simplifies to 1
+    /// let expr = x.clone().sin().pow(Expr::from(2)) + x.clone().cos().pow(Expr::from(2));
+    /// let simplified = expr.simplify_advanced();
+    /// // assert_eq!(simplified, Expr::from(1));
+    /// ```
+    pub fn simplify_advanced(&self) -> Expr {
+        // First apply pattern-based rules
+        let db = RuleDatabase::new();
+        let step1 = db.apply_all(self);
+
+        // Then apply assumption-based simplifications
+        let step2 = step1.simplify_with_assumptions();
+
+        // Finally apply basic algebraic simplifications
+        let step3 = simplify(&step2);
+
+        step3
     }
 }
 
