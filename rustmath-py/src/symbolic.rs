@@ -99,12 +99,12 @@ impl PyExpr {
 
     /// String representation (debug format)
     fn __repr__(&self) -> String {
-        format!("{:?}", self.inner)
+        format!("Expr({})", self.unicode())
     }
 
     /// String representation (display format)
     fn __str__(&self) -> String {
-        format!("{:?}", self.inner)
+        self.unicode()
     }
 
     /// Differentiate with respect to a symbol
@@ -196,6 +196,27 @@ impl PyExpr {
         PyExpr {
             inner: self.inner.clone().abs(),
         }
+    }
+
+    /// Get Unicode representation of the expression
+    ///
+    /// Returns a string with Unicode mathematical symbols (e.g., x² + 2x + 1)
+    fn unicode(&self) -> String {
+        rustmath_symbolic::printing::to_unicode(&self.inner)
+    }
+
+    /// Get LaTeX representation of the expression
+    ///
+    /// Returns LaTeX code suitable for rendering in Jupyter notebooks
+    fn latex(&self) -> String {
+        rustmath_symbolic::printing::to_latex(&self.inner)
+    }
+
+    /// Jupyter notebook LaTeX representation
+    ///
+    /// This is automatically called by Jupyter to render expressions
+    fn _repr_latex_(&self) -> String {
+        format!("${}$", self.latex())
     }
 }
 
