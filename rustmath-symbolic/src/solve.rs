@@ -1516,6 +1516,164 @@ pub fn solve_linear_system(
     SystemSolution::Unknown
 }
 
+// ============================================================================
+// Phase 3.1 Enhancements: Rational Equation Solving
+// ============================================================================
+
+/// Solve rational equations by clearing denominators
+///
+/// For equations of the form p(x)/q(x) = r(x)/s(x), multiply through
+/// by q(x)*s(x) and solve the resulting polynomial equation.
+///
+/// # Example
+///
+/// ```ignore
+/// // Solve (x+1)/(x-1) = 2
+/// // Multiply by (x-1): x+1 = 2(x-1)
+/// // Simplify: x+1 = 2x-2
+/// // Solve: x = 3
+/// ```
+pub fn solve_rational_equation(expr: &Expr, var: &Symbol) -> Solution {
+    // Try to identify rational equation structure: numerator/denominator = constant
+    match expr {
+        Expr::Binary(BinaryOp::Sub, left, right) => {
+            // Pattern: (p/q) - c = 0
+            if let Expr::Binary(BinaryOp::Div, num, den) = left.as_ref() {
+                if !expr_contains_var(right, var) {
+                    // We have (p/q) = c
+                    // Multiply both sides by q: p = c*q
+                    let cleared = Expr::Binary(
+                        BinaryOp::Sub,
+                        num.clone(),
+                        Arc::new(Expr::Binary(BinaryOp::Mul, right.clone(), den.clone())),
+                    ).simplify();
+
+                    // Solve the cleared equation
+                    let solutions = solve_equation(&cleared, var);
+
+                    // Filter out solutions that make the denominator zero
+                    return filter_invalid_rational_solutions(solutions, den, var);
+                }
+            }
+
+            // Pattern: (p/q) - (r/s) = 0
+            if let (Expr::Binary(BinaryOp::Div, num1, den1), Expr::Binary(BinaryOp::Div, num2, den2)) =
+                (left.as_ref(), right.as_ref()) {
+                // Cross multiply: p*s = r*q
+                let cleared = Expr::Binary(
+                    BinaryOp::Sub,
+                    Arc::new(Expr::Binary(BinaryOp::Mul, num1.clone(), den2.clone())),
+                    Arc::new(Expr::Binary(BinaryOp::Mul, num2.clone(), den1.clone())),
+                ).simplify();
+
+                let solutions = solve_equation(&cleared, var);
+
+                // Filter solutions that make either denominator zero
+                let filtered1 = filter_invalid_rational_solutions(solutions, den1, var);
+                return filter_invalid_rational_solutions(filtered1, den2, var);
+            }
+        }
+        _ => {}
+    }
+
+    Solution::None
+}
+
+/// Filter out solutions that make the denominator zero
+fn filter_invalid_rational_solutions(solution: Solution, den: &Expr, var: &Symbol) -> Solution {
+    match solution {
+        Solution::Expr(sol) => {
+            // Check if this solution makes the denominator zero
+            let den_value = den.substitute(var, &sol).simplify();
+            if is_zero(&den_value) {
+                Solution::None
+            } else {
+                Solution::Expr(sol)
+            }
+        }
+        Solution::Multiple(sols) => {
+            // Filter out solutions that make denominator zero
+            let valid: Vec<Expr> = sols.into_iter().filter(|sol| {
+                let den_value = den.substitute(var, sol).simplify();
+                !is_zero(&den_value)
+            }).collect();
+
+            match valid.len() {
+                0 => Solution::None,
+                1 => Solution::Expr(valid[0].clone()),
+                _ => Solution::Multiple(valid),
+            }
+        }
+        other => other,
+    }
+}
+
+/// Solve equations involving absolute values
+///
+/// For |f(x)| = c, consider two cases: f(x) = c and f(x) = -c
+///
+/// # Example
+///
+/// ```ignore
+/// // Solve |x - 2| = 3
+/// // Case 1: x - 2 = 3 => x = 5
+/// // Case 2: x - 2 = -3 => x = -1
+/// // Solutions: x = -1 or x = 5
+/// ```
+pub fn solve_absolute_value(expr: &Expr, var: &Symbol) -> Solution {
+    match expr {
+        Expr::Binary(BinaryOp::Sub, left, right) => {
+            // Pattern: |f(x)| - c = 0 => |f(x)| = c
+            if let Expr::Unary(UnaryOp::Abs, inner) = left.as_ref() {
+                if !expr_contains_var(right, var) {
+                    // Case 1: f(x) = c
+                    let case1_eq = Expr::Binary(BinaryOp::Sub, inner.clone(), right.clone());
+                    let sol1 = solve_equation(&case1_eq, var);
+
+                    // Case 2: f(x) = -c
+                    let neg_c = Expr::Unary(UnaryOp::Neg, right.clone());
+                    let case2_eq = Expr::Binary(BinaryOp::Sub, inner.clone(), Arc::new(neg_c));
+                    let sol2 = solve_equation(&case2_eq, var);
+
+                    // Combine solutions
+                    return combine_solutions(sol1, sol2);
+                }
+            }
+        }
+        _ => {}
+    }
+
+    Solution::None
+}
+
+/// Combine two solution sets
+fn combine_solutions(sol1: Solution, sol2: Solution) -> Solution {
+    let mut all_solutions = Vec::new();
+
+    // Extract solutions from sol1
+    match sol1 {
+        Solution::Expr(e) => all_solutions.push(e),
+        Solution::Multiple(v) => all_solutions.extend(v),
+        _ => {}
+    }
+
+    // Extract solutions from sol2
+    match sol2 {
+        Solution::Expr(e) => all_solutions.push(e),
+        Solution::Multiple(v) => all_solutions.extend(v),
+        _ => {}
+    }
+
+    // Remove duplicates (simple comparison)
+    all_solutions.dedup();
+
+    match all_solutions.len() {
+        0 => Solution::None,
+        1 => Solution::Expr(all_solutions[0].clone()),
+        _ => Solution::Multiple(all_solutions),
+    }
+}
+
 /// Check if an expression is zero
 fn is_zero(expr: &Expr) -> bool {
     match expr {
