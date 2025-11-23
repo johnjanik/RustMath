@@ -224,12 +224,10 @@ impl PyRational {
         let num = self.inner.numerator();
         let den = self.inner.denominator();
 
-        // Convert to i64 if possible, otherwise use approximation
-        use rustmath_core::NumericConversion;
-        match (num.to_i64(), den.to_i64()) {
-            (Some(n), Some(d)) => (n as f64) / (d as f64),
-            _ => f64::NAN, // Number too large for f64
-        }
+        // Direct conversion
+        let n = num.to_i64();
+        let d = den.to_i64();
+        (n as f64) / (d as f64)
     }
 
     // ========== String Representation ==========

@@ -1,0 +1,37 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "rustmath"
+version = "0.1.0"
+description = "RustMath: A fast symbolic mathematics library for Python, 10-100x faster than SymPy"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "GPL-2.0-or-later" }
+authors = [
+    { name = "RustMath Contributors" }
+]
+keywords = ["mathematics", "symbolic", "algebra", "calculus", "computer-algebra"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Rust",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+
+[project.urls]
+Repository = "https://github.com/johnjanik/RustMath"
+
+[tool.maturin]
+python-source = "python"
+module-name = "rustmath"
+features = ["pyo3/extension-module"]

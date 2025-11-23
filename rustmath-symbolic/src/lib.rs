@@ -21,6 +21,7 @@ pub mod maxima_wrapper;
 pub mod numerical;
 pub mod operators;
 pub mod parser;
+pub mod printing;
 pub mod pde;
 pub mod polynomial;
 pub mod radical;
