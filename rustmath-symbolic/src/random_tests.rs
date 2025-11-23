@@ -393,6 +393,7 @@ pub fn test_symbolic_expression_order<R: Rng>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::symbol::Symbol;
     use rand::SeedableRng;
     use rand::rngs::StdRng;
 

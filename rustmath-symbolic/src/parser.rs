@@ -106,9 +106,34 @@ fn identifier(input: &str) -> IResult<&str, &str> {
     ))(input)
 }
 
-// Parse a variable
+// Parse a variable or mathematical constant
 fn variable(input: &str) -> IResult<&str, Expr> {
-    map(identifier, |name: &str| Expr::symbol(name))(input)
+    map(identifier, |name: &str| {
+        // Handle mathematical constants
+        match name {
+            "pi" | "π" => {
+                // For now, use a symbol named "pi"
+                // TODO: Add Expr::Pi variant for exact symbolic representation
+                Expr::symbol("pi")
+            }
+            "e" => {
+                // Euler's number
+                // TODO: Add Expr::E variant for exact symbolic representation
+                Expr::symbol("e")
+            }
+            "I" | "i" => {
+                // Imaginary unit (note: lowercase 'i' might conflict with variables)
+                // Using uppercase 'I' as primary
+                Expr::symbol("I")
+            }
+            "oo" | "inf" | "infinity" => {
+                // Infinity
+                // TODO: Add Expr::Infinity variant
+                Expr::symbol("oo")
+            }
+            _ => Expr::symbol(name),
+        }
+    })(input)
 }
 
 // Parse a function name and determine the appropriate UnaryOp or Function variant
@@ -621,5 +646,122 @@ mod tests {
         assert!(parse("x + y)").is_err());
         assert!(parse("sin(").is_err());
         assert!(parse("sin)").is_err());
+    }
+
+    #[test]
+    fn test_parse_constant_pi() {
+        let expr = parse("pi").unwrap();
+        if let Expr::Symbol(sym) = expr {
+            assert_eq!(sym.name(), "pi");
+        } else {
+            panic!("Expected Symbol for pi");
+        }
+    }
+
+    #[test]
+    fn test_parse_constant_e() {
+        let expr = parse("e").unwrap();
+        if let Expr::Symbol(sym) = expr {
+            assert_eq!(sym.name(), "e");
+        } else {
+            panic!("Expected Symbol for e");
+        }
+    }
+
+    #[test]
+    fn test_parse_constant_I() {
+        let expr = parse("I").unwrap();
+        if let Expr::Symbol(sym) = expr {
+            assert_eq!(sym.name(), "I");
+        } else {
+            panic!("Expected Symbol for I");
+        }
+    }
+
+    #[test]
+    fn test_parse_constant_infinity() {
+        let expr = parse("oo").unwrap();
+        if let Expr::Symbol(sym) = expr {
+            assert_eq!(sym.name(), "oo");
+        } else {
+            panic!("Expected Symbol for oo");
+        }
+
+        // Test alternative names
+        let expr2 = parse("infinity").unwrap();
+        if let Expr::Symbol(sym) = expr2 {
+            assert_eq!(sym.name(), "oo");
+        } else {
+            panic!("Expected Symbol for infinity");
+        }
+    }
+
+    #[test]
+    fn test_parse_expression_with_pi() {
+        // 2*pi
+        let expr = parse("2 * pi").unwrap();
+        match expr {
+            Expr::Binary(BinaryOp::Mul, left, right) => {
+                assert!(matches!(left.as_ref(), Expr::Integer(_)));
+                if let Expr::Symbol(sym) = right.as_ref() {
+                    assert_eq!(sym.name(), "pi");
+                } else {
+                    panic!("Expected pi symbol");
+                }
+            }
+            _ => panic!("Expected Mul operation"),
+        }
+    }
+
+    #[test]
+    fn test_parse_expression_with_e() {
+        // e^x
+        let expr = parse("e ^ x").unwrap();
+        match expr {
+            Expr::Binary(BinaryOp::Pow, left, right) => {
+                if let Expr::Symbol(sym) = left.as_ref() {
+                    assert_eq!(sym.name(), "e");
+                } else {
+                    panic!("Expected e symbol");
+                }
+                assert!(matches!(right.as_ref(), Expr::Symbol(_)));
+            }
+            _ => panic!("Expected Pow operation"),
+        }
+    }
+
+    #[test]
+    fn test_parse_complex_expression_with_I() {
+        // 3 + 2*I
+        let expr = parse("3 + 2 * I").unwrap();
+        match expr {
+            Expr::Binary(BinaryOp::Add, _, right) => {
+                if let Expr::Binary(BinaryOp::Mul, _, i_part) = right.as_ref() {
+                    if let Expr::Symbol(sym) = i_part.as_ref() {
+                        assert_eq!(sym.name(), "I");
+                    } else {
+                        panic!("Expected I symbol");
+                    }
+                } else {
+                    panic!("Expected multiplication with I");
+                }
+            }
+            _ => panic!("Expected Add operation"),
+        }
+    }
+
+    #[test]
+    fn test_parse_trig_with_pi() {
+        // sin(pi/2)
+        let expr = parse("sin(pi / 2)").unwrap();
+        match expr {
+            Expr::Unary(UnaryOp::Sin, arg) => {
+                if let Expr::Binary(BinaryOp::Div, _, _) = arg.as_ref() {
+                } else {
+                    panic!("Expected division inside sin");
+                }
+            }
+            _ => panic!("Expected Sin operation"),
+        }
     }
 }

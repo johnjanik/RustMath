@@ -259,6 +259,7 @@ pub fn kronecker_delta(i: &Expr, j: &Expr) -> Expr {
 mod tests {
     use super::*;
     use crate::symbol::Symbol;
+    use rustmath_integers::Integer;
 
     #[test]
     fn test_dirac_delta_constant() {

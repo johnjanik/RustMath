@@ -161,6 +161,7 @@ pub fn partial_derivative(expr: Expr, derivatives: Vec<(Symbol, usize)>) -> Expr
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Arc;
 
     #[test]
     fn test_derivative_operator_basic() {
