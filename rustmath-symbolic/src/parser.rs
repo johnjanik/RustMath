@@ -11,6 +11,65 @@
 //! let expr2 = parse("sin(x) * exp(-x)").unwrap();
 //! let expr3 = parse("(x + y) * z").unwrap();
 //! ```
+//!
+//! # Future Enhancements (TODO)
+//!
+//! ## Unicode Mathematical Notation Support
+//! - **Unicode operators**: ×, ÷, ⋅ (multiplication), √ (sqrt), ∫ (integral)
+//! - **Greek letters**: Direct input like `α`, `β`, `γ` instead of "alpha", "beta"
+//! - **Superscripts/subscripts**: Parse x² as x^2, x₁ as x_1
+//! - **Special symbols**: ∑ (sum), ∏ (product), ∂ (partial derivative)
+//! - **Combining characters**: Handle composed Unicode properly
+//!
+//! ## Implicit Multiplication
+//! - `2x` → `2*x` (number followed by variable)
+//! - `(x+1)(x-1)` → `(x+1)*(x-1)` (adjacent parentheses)
+//! - `sin x` → `sin(x)` (function followed by expression)
+//! - `xy` → `x*y` (adjacent variables, careful with multi-char symbols!)
+//!
+//! ## Enhanced Error Messages
+//! - **Position tracking**: Show exactly where the error occurred
+//! - **Suggestions**: "Did you mean 'sin(x)' instead of 'sine(x)'?"
+//! - **Context**: Show the input with error highlighted
+//! - **Recovery**: Try to continue parsing after errors
+//!
+//! ## Extended Mathematical Notation
+//! - **Scientific notation**: `1.23e-4`, `6.02e23`
+//! - **Complex numbers**: `3+4i`, `2∠45°` (polar form)
+//! - **Matrices**: `[[1,2],[3,4]]` or `⌈1 2⌉` notation
+//! - **Intervals**: `[0, 1]`, `(0, ∞)`, `[a, b)`
+//! - **Sets**: `{1, 2, 3}`, `{x | x > 0}`
+//! - **Vectors**: `⟨1, 2, 3⟩` or `<1, 2, 3>`
+//!
+//! ## Functions and Operators
+//! - **Derivatives**: `d/dx(x^2)`, `∂f/∂x`
+//! - **Integrals**: `∫ x dx`, `∫₀¹ x² dx`
+//! - **Limits**: `lim(x→0) sin(x)/x`
+//! - **Summations**: `∑(i=1 to n) i²`, `∑ᵢ₌₁ⁿ i²`
+//! - **Products**: `∏(i=1 to n) i`
+//!
+//! ## Performance & Safety
+//! - **Input size limits**: Prevent OOM with very long expressions
+//! - **Recursion depth limits**: Prevent stack overflow
+//! - **Timeout mechanism**: Prevent infinite parsing loops
+//! - **Fuzzing**: Add comprehensive fuzz testing
+//!
+//! ## Internationalization
+//! - **Decimal separators**: Support both `.` and `,` (European notation)
+//! - **Function names**: Support localized function names (sin/sen/sinus)
+//! - **Number formats**: Different digit grouping (1,000 vs 1.000 vs 1'000)
+//!
+//! ## Compatibility Modes
+//! - **SymPy mode**: Match SymPy's parsing behavior exactly
+//! - **Mathematica mode**: Support Mathematica-style notation
+//! - **LaTeX mode**: Parse LaTeX math expressions
+//! - **Strict mode**: Only allow explicit operators (no implicit multiplication)
+//!
+//! ## Implementation Notes
+//! - Consider switching to a more powerful parser generator if needed
+//! - Maintain backward compatibility with existing parse() API
+//! - Add feature flags for optional parsing modes
+//! - Comprehensive test suite for each new feature (1000+ test cases)
 
 use crate::expression::{BinaryOp, Expr, UnaryOp};
 use nom::{
@@ -52,13 +111,27 @@ impl std::error::Error for ParseError {}
 /// let expr2 = parse("sin(x) * exp(-x)").unwrap();
 /// ```
 pub fn parse(input: &str) -> Result<Expr, ParseError> {
+    // TODO: Add input validation and safety checks
+    // - Check input length (prevent OOM): if input.len() > MAX_INPUT_LENGTH
+    // - Validate UTF-8 (should be guaranteed by &str, but check for edge cases)
+    // - Normalize Unicode (NFC/NFD) for consistent parsing
+    // - Check for null bytes or other problematic characters
+    //
+    // TODO: Add better error reporting
+    // - Track line and column numbers
+    // - Provide suggestions for common mistakes
+    // - Show context around the error
+    // - Support error recovery for interactive use
+
     match expression(input) {
         Ok(("", expr)) => Ok(expr),
         Ok((remaining, _)) => Err(ParseError {
             message: format!("Unexpected input remaining: '{}'", remaining),
+            // TODO: Add position information: message: format!("at position {}", input.len() - remaining.len())
         }),
         Err(e) => Err(ParseError {
             message: format!("Failed to parse expression: {}", e),
+            // TODO: Convert nom error to more helpful message
         }),
     }
 }
@@ -108,12 +181,20 @@ fn identifier(input: &str) -> IResult<&str, &str> {
 
 // Parse a variable or mathematical constant
 fn variable(input: &str) -> IResult<&str, Expr> {
+    // TODO: Unicode Greek letter support
+    // Currently we parse "alpha" as a string, but we should also accept "α" directly
+    // This requires handling multi-byte UTF-8 characters in the identifier parser
+    //
+    // TODO: Subscript support
+    // Parse x₁, x₂ as x_1, x_2 (requires Unicode normalization)
+
     map(identifier, |name: &str| {
         // Handle mathematical constants
         match name {
             "pi" | "π" => {
                 // For now, use a symbol named "pi"
                 // TODO: Add Expr::Pi variant for exact symbolic representation
+                // This would enable exact arithmetic: pi * 2 stays as Pi(2) not Symbol("pi") * 2
                 Expr::symbol("pi")
             }
             "e" => {
@@ -124,11 +205,12 @@ fn variable(input: &str) -> IResult<&str, Expr> {
             "I" | "i" => {
                 // Imaginary unit (note: lowercase 'i' might conflict with variables)
                 // Using uppercase 'I' as primary
+                // TODO: Add Expr::Complex variant for proper complex number support
                 Expr::symbol("I")
             }
             "oo" | "inf" | "infinity" => {
                 // Infinity
-                // TODO: Add Expr::Infinity variant
+                // TODO: Add Expr::Infinity variant with sign (PositiveInfinity, NegativeInfinity)
                 Expr::symbol("oo")
             }
             _ => Expr::symbol(name),
@@ -237,6 +319,18 @@ fn unary(input: &str) -> IResult<&str, Expr> {
 
 // Parse multiplicative expression (*, /)
 fn multiplicative(input: &str) -> IResult<&str, Expr> {
+    // TODO: Implicit multiplication support
+    // Detect and insert implicit * in cases like:
+    // - "2x" → "2*x" (number followed by identifier)
+    // - "2(x+1)" → "2*(x+1)" (number followed by parenthesis)
+    // - "(x+1)(x-1)" → "(x+1)*(x-1)" (adjacent parentheses)
+    // - "x y" → "x*y" (adjacent identifiers, only if no whitespace in strict mode)
+    //
+    // Challenges:
+    // - Must not break multi-character symbols like "sin", "alpha"
+    // - Need lookahead to distinguish "2e5" (scientific) from "2e" (2*e)
+    // - Unicode operators (×, ⋅) should also be recognized
+
     let (input, mut expr) = unary(input)?;
 
     let mut input = input;
