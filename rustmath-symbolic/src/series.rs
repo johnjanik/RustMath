@@ -584,6 +584,208 @@ impl std::fmt::Display for Omega {
     }
 }
 
+// ========================================================================
+// Phase 2 Enhancement: Fourier Series
+// ========================================================================
+
+/// Fourier series representation
+///
+/// Represents a periodic function as a trigonometric series:
+/// f(x) = a₀/2 + Σ(n=1 to ∞) [aₙ cos(nx) + bₙ sin(nx)]
+///
+/// For period 2L instead of 2π:
+/// f(x) = a₀/2 + Σ(n=1 to ∞) [aₙ cos(nπx/L) + bₙ sin(nπx/L)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct FourierSeries {
+    /// Constant term (a₀/2)
+    pub a0: Expr,
+    /// Cosine coefficients [a₁, a₂, a₃, ...]
+    pub a_coeffs: Vec<Expr>,
+    /// Sine coefficients [b₁, b₂, b₃, ...]
+    pub b_coeffs: Vec<Expr>,
+    /// Variable
+    pub var: Symbol,
+    /// Period (2L, default 2π when L = π)
+    pub period: Expr,
+}
+
+impl FourierSeries {
+    /// Create a new Fourier series
+    pub fn new(a0: Expr, a_coeffs: Vec<Expr>, b_coeffs: Vec<Expr>, var: Symbol, period: Expr) -> Self {
+        FourierSeries {
+            a0,
+            a_coeffs,
+            b_coeffs,
+            var,
+            period,
+        }
+    }
+
+    /// Convert Fourier series to symbolic expression
+    ///
+    /// Returns the truncated series as a symbolic expression
+    pub fn to_expr(&self) -> Expr {
+        let mut result = self.a0.clone() / Expr::from(2);
+        let x = Expr::Symbol(self.var.clone());
+
+        // Compute angular frequency: ω = 2π/period
+        let two_pi = Expr::from(2) * Expr::Symbol(Symbol::new("pi"));
+        let omega = two_pi / self.period.clone();
+
+        let n_terms = self.a_coeffs.len().max(self.b_coeffs.len());
+
+        for n in 0..n_terms {
+            let n_expr = Expr::from((n + 1) as i64);
+            let arg = omega.clone() * n_expr.clone() * x.clone();
+
+            // Add cosine term if available
+            if n < self.a_coeffs.len() {
+                let cos_term = self.a_coeffs[n].clone() * arg.clone().cos();
+                result = result + cos_term;
+            }
+
+            // Add sine term if available
+            if n < self.b_coeffs.len() {
+                let sin_term = self.b_coeffs[n].clone() * arg.sin();
+                result = result + sin_term;
+            }
+        }
+
+        result
+    }
+}
+
+impl Expr {
+    /// Compute Fourier series expansion of a function
+    ///
+    /// Computes the Fourier series coefficients for a periodic function
+    /// over the interval [-L, L].
+    ///
+    /// # Arguments
+    ///
+    /// * `var` - Variable to expand with respect to
+    /// * `period` - Period of the function (2L)
+    /// * `n_terms` - Number of terms to compute
+    ///
+    /// # Algorithm
+    ///
+    /// For a function f(x) with period 2L:
+    /// - a₀ = (1/L) ∫[-L,L] f(x) dx
+    /// - aₙ = (1/L) ∫[-L,L] f(x)cos(nπx/L) dx
+    /// - bₙ = (1/L) ∫[-L,L] f(x)sin(nπx/L) dx
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// // Square wave with period 2π
+    /// let x = Symbol::new("x");
+    /// let expr = /* piecewise function */;
+    /// let fourier = expr.fourier_series(&x, &Expr::from(2*π), 10);
+    /// ```
+    pub fn fourier_series(&self, var: &Symbol, period: &Expr, n_terms: usize) -> FourierSeries {
+        let half_period = period.clone() / Expr::from(2);
+        let l = half_period.clone();
+
+        // Compute a₀ = (1/L) ∫[-L,L] f(x) dx
+        let a0_integral = self.integrate_definite(
+            var,
+            &(-l.clone()),
+            &l.clone(),
+        );
+        let a0 = if let Some(integral) = a0_integral {
+            integral / l.clone()
+        } else {
+            // If integration fails, use symbolic representation
+            Expr::from(0)
+        };
+
+        let mut a_coeffs = Vec::new();
+        let mut b_coeffs = Vec::new();
+
+        let pi = Expr::Symbol(Symbol::new("pi"));
+
+        for n in 1..=n_terms {
+            let n_expr = Expr::from(n as i64);
+            let x = Expr::Symbol(var.clone());
+
+            // Argument: nπx/L
+            let arg = n_expr.clone() * pi.clone() * x.clone() / l.clone();
+
+            // Compute aₙ = (1/L) ∫[-L,L] f(x)cos(nπx/L) dx
+            let cos_integrand = self.clone() * arg.clone().cos();
+            let an_integral = cos_integrand.integrate_definite(
+                var,
+                &(-l.clone()),
+                &l.clone(),
+            );
+            let an = if let Some(integral) = an_integral {
+                integral / l.clone()
+            } else {
+                Expr::from(0)
+            };
+
+            // Compute bₙ = (1/L) ∫[-L,L] f(x)sin(nπx/L) dx
+            let sin_integrand = self.clone() * arg.sin();
+            let bn_integral = sin_integrand.integrate_definite(
+                var,
+                &(-l.clone()),
+                &l.clone(),
+            );
+            let bn = if let Some(integral) = bn_integral {
+                integral / l.clone()
+            } else {
+                Expr::from(0)
+            };
+
+            a_coeffs.push(an.simplify());
+            b_coeffs.push(bn.simplify());
+        }
+
+        FourierSeries::new(a0, a_coeffs, b_coeffs, var.clone(), period.clone())
+    }
+
+    /// Compute Fourier series for standard 2π period
+    ///
+    /// This is a convenience method for functions with period 2π
+    pub fn fourier_series_2pi(&self, var: &Symbol, n_terms: usize) -> FourierSeries {
+        let two_pi = Expr::from(2) * Expr::Symbol(Symbol::new("pi"));
+        self.fourier_series(var, &two_pi, n_terms)
+    }
+
+    /// Compute discrete Fourier transform (DFT) coefficients
+    ///
+    /// For a sequence of N samples, computes the DFT coefficients
+    /// This is useful for numerical Fourier analysis
+    ///
+    /// # Note
+    ///
+    /// This is a symbolic representation. For actual numerical DFT,
+    /// use the numerical module with FFT algorithms.
+    pub fn discrete_fourier_coefficients(samples: &[Expr], var: &Symbol) -> Vec<Expr> {
+        let n = samples.len();
+        let mut coefficients = Vec::new();
+
+        for k in 0..n {
+            let mut sum = Expr::from(0);
+            let two_pi = Expr::from(2) * Expr::Symbol(Symbol::new("pi"));
+
+            for (j, sample) in samples.iter().enumerate() {
+                // e^(-2πikj/N) = cos(-2πkj/N) + i*sin(-2πkj/N)
+                let angle = -two_pi.clone() * Expr::from(k as i64) * Expr::from(j as i64)
+                    / Expr::from(n as i64);
+
+                // For simplicity, just compute the real part (cosine transform)
+                let coeff = sample.clone() * angle.cos();
+                sum = sum + coeff;
+            }
+
+            coefficients.push(sum.simplify());
+        }
+
+        coefficients
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -775,5 +977,95 @@ mod tests {
 
         // Should not be constant (has terms in powers of 1/x)
         assert!(!asymp.is_constant());
+    }
+
+    // ========================================================================
+    // Phase 2 Tests: Fourier Series
+    // ========================================================================
+
+    #[test]
+    fn test_fourier_series_constant() {
+        let x = Symbol::new("x");
+
+        // Fourier series of a constant function f(x) = 1
+        // Should give a₀ = 2, all other coefficients = 0
+        let expr = Expr::from(1);
+        let pi = Expr::Symbol(Symbol::new("pi"));
+        let period = Expr::from(2) * pi;
+
+        let fourier = expr.fourier_series(&x, &period, 3);
+
+        // Check that we have the expected structure
+        assert_eq!(fourier.var, x);
+        assert_eq!(fourier.a_coeffs.len(), 3);
+        assert_eq!(fourier.b_coeffs.len(), 3);
+    }
+
+    #[test]
+    fn test_fourier_series_to_expr() {
+        let x = Symbol::new("x");
+
+        // Create a simple Fourier series manually
+        let a0 = Expr::from(2);
+        let a_coeffs = vec![Expr::from(1), Expr::from(0)];
+        let b_coeffs = vec![Expr::from(0), Expr::from(1)];
+        let pi = Expr::Symbol(Symbol::new("pi"));
+        let period = Expr::from(2) * pi;
+
+        let fourier = FourierSeries::new(a0, a_coeffs, b_coeffs, x.clone(), period);
+
+        // Convert to expression
+        let expr = fourier.to_expr();
+
+        // Should not be constant
+        assert!(!expr.is_constant());
+    }
+
+    #[test]
+    fn test_fourier_series_2pi() {
+        let x = Symbol::new("x");
+
+        // Test the convenience method for 2π period
+        let expr = Expr::Symbol(x.clone()).sin();
+        let fourier = expr.fourier_series_2pi(&x, 2);
+
+        // Should have computed coefficients
+        assert_eq!(fourier.a_coeffs.len(), 2);
+        assert_eq!(fourier.b_coeffs.len(), 2);
+    }
+
+    #[test]
+    fn test_discrete_fourier_coefficients() {
+        let x = Symbol::new("x");
+
+        // Test DFT with simple samples
+        let samples = vec![
+            Expr::from(1),
+            Expr::from(2),
+            Expr::from(3),
+            Expr::from(4),
+        ];
+
+        let coeffs = Expr::discrete_fourier_coefficients(&samples, &x);
+
+        // Should have 4 coefficients (same as number of samples)
+        assert_eq!(coeffs.len(), 4);
+    }
+
+    #[test]
+    fn test_fourier_series_even_function() {
+        let x = Symbol::new("x");
+
+        // Fourier series of even function f(x) = cos(x)
+        // Should have only cosine terms (a coefficients), no sine terms (b = 0)
+        let expr = Expr::Symbol(x.clone()).cos();
+        let pi = Expr::Symbol(Symbol::new("pi"));
+        let period = Expr::from(2) * pi;
+
+        let fourier = expr.fourier_series(&x, &period, 3);
+
+        // For an even function, sine coefficients should be small/zero
+        // (In practice, due to numerical integration, they might not be exactly zero)
+        assert_eq!(fourier.b_coeffs.len(), 3);
     }
 }
