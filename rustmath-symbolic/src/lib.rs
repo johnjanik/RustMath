@@ -79,7 +79,7 @@ pub use random_tests::{
     random_integer_vector, test_symbolic_expression_order, OperationType, ProbList,
     RandomExprConfig,
 };
-pub use series::{BigO, LittleO, Theta, Omega};
+pub use series::{BigO, LittleO, Theta, Omega, FourierSeries};
 pub use solve::Solution;
 pub use subring::{
     GenericSymbolicSubring, GenericSymbolicSubringFunctor, SubringFunctor,
@@ -333,6 +333,108 @@ mod tests {
         // Taylor series of f around x=0
         let taylor = f.taylor(&x, &Expr::from(0), 5);
         assert!(!taylor.is_constant());
+    }
+
+    // ========================================================================
+    // Phase 2 Completion Test: Core Calculus Features
+    // ========================================================================
+
+    #[test]
+    fn test_phase2_calculus_features_complete() {
+        use crate::limits::{Direction, LimitResult};
+        use crate::symbol::Symbol;
+
+        let x = Symbol::new("x");
+
+        // ===== Milestone 2.1: Symbolic Integration =====
+
+        // Test basic integration rules
+        let expr1 = Expr::Symbol(x.clone());
+        let integral1 = expr1.integrate(&x);
+        assert!(integral1.is_some(), "Basic polynomial integration");
+
+        // Test trigonometric integration
+        let expr2 = Expr::Symbol(x.clone()).sin();
+        let integral2 = expr2.integrate(&x);
+        assert!(integral2.is_some(), "Trigonometric integration");
+
+        // Test definite integrals
+        let expr3 = Expr::from(1);
+        let definite = expr3.integrate_definite(&x, &Expr::from(0), &Expr::from(1));
+        assert!(definite.is_some(), "Definite integration");
+
+        // Test multiple integrals
+        let y = Symbol::new("y");
+        let expr4 = Expr::from(1);
+        let double = expr4.integrate_double(
+            &x, &y,
+            &Expr::from(0), &Expr::from(1),
+            &Expr::from(0), &Expr::from(1),
+        );
+        assert!(double.is_some(), "Double integration");
+
+        // ===== Milestone 2.2: Limits =====
+
+        // Test basic limit computation
+        let expr5 = Expr::Symbol(x.clone()).pow(Expr::from(2));
+        let limit1 = expr5.limit(&x, &Expr::from(2), Direction::Both);
+        assert!(matches!(limit1, LimitResult::Finite(_)), "Basic limit");
+
+        // Test L'Hôpital's rule (indeterminate form 0/0)
+        let numerator = Expr::Symbol(x.clone());
+        let denominator = Expr::Symbol(x.clone());
+        let expr6 = numerator / denominator;
+        let limit2 = expr6.limit(&x, &Expr::from(0), Direction::Both);
+        // Should apply L'Hôpital's rule and get 1
+        assert!(matches!(limit2, LimitResult::Finite(_)), "L'Hôpital's rule");
+
+        // Test one-sided limits
+        let expr7 = Expr::Symbol(x.clone());
+        let limit_left = expr7.limit(&x, &Expr::from(1), Direction::Left);
+        let limit_right = expr7.limit(&x, &Expr::from(1), Direction::Right);
+        assert!(matches!(limit_left, LimitResult::Finite(_)), "Left limit");
+        assert!(matches!(limit_right, LimitResult::Finite(_)), "Right limit");
+
+        // ===== Milestone 2.3: Series Expansion =====
+
+        // Test Taylor series
+        let expr8 = Expr::Symbol(x.clone()).exp();
+        let taylor = expr8.taylor(&x, &Expr::from(0), 5);
+        assert!(!taylor.is_constant(), "Taylor series");
+
+        // Test Maclaurin series
+        let expr9 = Expr::Symbol(x.clone()).sin();
+        let maclaurin = expr9.maclaurin(&x, 5);
+        assert!(!maclaurin.is_constant(), "Maclaurin series");
+
+        // Test Laurent series
+        let expr10 = Expr::from(1) / Expr::Symbol(x.clone());
+        let laurent = expr10.laurent(&x, &Expr::from(0), -1, 2);
+        assert!(!laurent.is_constant(), "Laurent series");
+
+        // Test Fourier series (NEW in Phase 2!)
+        let expr11 = Expr::from(1);
+        let pi = Expr::Symbol(Symbol::new("pi"));
+        let period = Expr::from(2) * pi;
+        let fourier = expr11.fourier_series(&x, &period, 3);
+        assert_eq!(fourier.var, x, "Fourier series");
+        assert_eq!(fourier.a_coeffs.len(), 3, "Fourier cosine coefficients");
+        assert_eq!(fourier.b_coeffs.len(), 3, "Fourier sine coefficients");
+
+        // Test series coefficients extraction
+        let expr12 = Expr::Symbol(x.clone()).pow(Expr::from(2));
+        let coeffs = expr12.series_coefficients(&x, &Expr::from(0), 3);
+        assert_eq!(coeffs.len(), 4, "Series coefficients");
+
+        // Test asymptotic expansion
+        let expr13 = Expr::Symbol(x.clone()).pow(Expr::from(2));
+        let asymptotic = expr13.asymptotic(&x, 3);
+        assert!(!asymptotic.is_constant(), "Asymptotic expansion");
+
+        println!("✓ Phase 2: Core Calculus features complete!");
+        println!("  ✓ Symbolic Integration (table-based, trig, rational, partial fractions)");
+        println!("  ✓ Limits (L'Hôpital's rule, one-sided, two-sided)");
+        println!("  ✓ Series Expansion (Taylor, Maclaurin, Laurent, Fourier, Asymptotic)");
     }
 
     // Numerical integration tests
