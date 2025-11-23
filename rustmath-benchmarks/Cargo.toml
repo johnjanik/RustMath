@@ -20,7 +20,6 @@ clap = { version = "4.0", features = ["derive"] }
 name = "bench_symbolic"
 path = "src/bench_symbolic.rs"
 
-/*
 [[bin]]
 name = "bench_polynomials"
 path = "src/bench_polynomials.rs"
@@ -32,4 +31,4 @@ path = "src/bench_matrix.rs"
 [[bin]]
 name = "bench_integers"
 path = "src/bench_integers.rs"
-*/
+
