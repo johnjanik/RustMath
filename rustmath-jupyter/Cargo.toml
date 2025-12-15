@@ -1,0 +1,58 @@
+[package]
+name = "rustmath-jupyter"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Jupyter kernel for RustMath - native Rust implementation of Jupyter protocol"
+
+[[bin]]
+name = "rustmath-kernel"
+path = "src/main.rs"
+
+[dependencies]
+# ZeroMQ for Jupyter protocol
+zeromq = "0.4"
+bytes = "1.0"
+
+# Serialization
+serde = { workspace = true }
+serde_json = "1.0"
+
+# Cryptographic signing
+hmac = "0.12"
+sha2 = "0.10"
+hex = "0.4"
+
+# UUID generation
+uuid = { version = "1.0", features = ["v4"] }
+
+# Date/time
+chrono = { version = "0.4", features = ["serde"] }
+
+# CLI
+clap = { version = "4.0", features = ["derive"] }
+
+# Async runtime
+tokio = { version = "1.0", features = ["full"] }
+
+# Directories for kernel installation
+dirs = "5.0"
+
+# Arbitrary precision integers
+num-bigint = "0.4"
+
+# RustMath dependencies for evaluation
+rustmath-core = { path = "../rustmath-core" }
+rustmath-integers = { path = "../rustmath-integers" }
+rustmath-rationals = { path = "../rustmath-rationals" }
+rustmath-symbolic = { path = "../rustmath-symbolic" }
+rustmath-matrix = { path = "../rustmath-matrix" }
+rustmath-polynomials = { path = "../rustmath-polynomials" }
+rustmath-complex = { path = "../rustmath-complex" }
+rustmath-finitefields = { path = "../rustmath-finitefields" }
+rustmath-typesetting = { path = "../rustmath-typesetting" }
+
+[dev-dependencies]
+tempfile = "3.0"

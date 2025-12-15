@@ -19,3 +19,7 @@ Thumbs.db
 *.log
 __pycache__/
 *.py
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb

@@ -67,6 +67,7 @@ members = [
     "rustmath-misc",
     "rustmath-curves",
     "rustmath-benchmarks",
+    "rustmath-jupyter",
 ]
 
 [workspace.package]
