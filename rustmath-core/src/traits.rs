@@ -65,6 +65,11 @@ pub trait Ring:
     /// Check if this element is one
     fn is_one(&self) -> bool;
 
+    /// Negate this element (additive inverse)
+    fn negate(&self) -> Self {
+        -self.clone()
+    }
+
     /// Compute self raised to the power n (for non-negative n)
     fn pow(&self, n: u32) -> Self {
         if n == 0 {

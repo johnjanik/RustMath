@@ -29,6 +29,11 @@ pub trait Category: fmt::Debug {
     fn description(&self) -> String {
         format!("Category: {}", self.name())
     }
+
+    /// Get super categories (parent categories in the hierarchy)
+    fn super_categories(&self) -> Vec<Box<dyn Category>> {
+        Vec::new()
+    }
 }
 
 /// Marker trait for categories that support finite structures

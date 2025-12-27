@@ -203,7 +203,7 @@ impl<R: Ring> ACEOnsagerElement<R> {
         let mut result = self.terms.clone();
         for (monomial, coeff) in &other.terms {
             let entry = result.entry(monomial.clone()).or_insert_with(R::zero);
-            *entry = entry.add(coeff);
+            *entry = entry.clone().add(coeff.clone());
         }
         // Remove zero coefficients
         result.retain(|_, v| !v.is_zero());
@@ -218,17 +218,17 @@ impl<R: Ring> ACEOnsagerElement<R> {
         let terms: HashMap<_, _> = self
             .terms
             .iter()
-            .map(|(m, c)| (m.clone(), c.mul(scalar)))
+            .map(|(m, c)| (m.clone(), c.clone().mul(scalar.clone())))
             .collect();
         ACEOnsagerElement { terms }
     }
 
     /// Negate the element
-    pub fn negate(&self) -> ACEOnsagerElement<R> {
+    pub fn neg_elem(&self) -> ACEOnsagerElement<R> {
         let terms: HashMap<_, _> = self
             .terms
             .iter()
-            .map(|(m, c)| (m.clone(), c.neg()))
+            .map(|(m, c)| (m.clone(), c.clone().negate()))
             .collect();
         ACEOnsagerElement { terms }
     }

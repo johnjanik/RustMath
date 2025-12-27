@@ -12,7 +12,7 @@
 
 use rustmath_core::Ring;
 use rustmath_liealgebras::cartan_type::{Affinity, CartanLetter, CartanType};
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 use std::fmt::{self, Display};
 
 /// Check if a Cartan type is tamely-laced
@@ -94,23 +94,23 @@ impl Display for QIndex {
 }
 
 /// A monomial in the Q-system (product of Q indices with exponents)
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct QMonomial {
-    /// Map from Q-index to exponent
-    factors: HashMap<QIndex, usize>,
+    /// Map from Q-index to exponent (using BTreeMap for Hash support)
+    factors: BTreeMap<QIndex, usize>,
 }
 
 impl QMonomial {
     /// Create the unit monomial (identity)
     pub fn one() -> Self {
         QMonomial {
-            factors: HashMap::new(),
+            factors: BTreeMap::new(),
         }
     }
 
     /// Create a monomial from a single Q-index
     pub fn from_index(index: QIndex) -> Self {
-        let mut factors = HashMap::new();
+        let mut factors = BTreeMap::new();
         factors.insert(index, 1);
         QMonomial { factors }
     }
@@ -210,7 +210,7 @@ impl<R: Ring> QElement<R> {
         let mut result = self.terms.clone();
         for (monomial, coeff) in &other.terms {
             let entry = result.entry(monomial.clone()).or_insert_with(R::zero);
-            *entry = entry.add(coeff);
+            *entry = entry.clone().add(coeff.clone());
         }
         // Remove zero coefficients
         result.retain(|_, v| !v.is_zero());
@@ -225,7 +225,7 @@ impl<R: Ring> QElement<R> {
         let terms: HashMap<_, _> = self
             .terms
             .iter()
-            .map(|(m, c)| (m.clone(), c.mul(scalar)))
+            .map(|(m, c)| (m.clone(), c.clone().mul(scalar.clone())))
             .collect();
         QElement { terms }
     }
@@ -236,11 +236,11 @@ impl<R: Ring> QElement<R> {
         for (m1, c1) in &self.terms {
             for (m2, c2) in &other.terms {
                 let new_monomial = m1.multiply(m2);
-                let new_coeff = c1.mul(c2);
+                let new_coeff = c1.clone().mul(c2.clone());
                 let entry = result
                     .entry(new_monomial)
                     .or_insert_with(R::zero);
-                *entry = entry.add(&new_coeff);
+                *entry = entry.clone().add(new_coeff);
             }
         }
         // Remove zero coefficients
@@ -249,18 +249,18 @@ impl<R: Ring> QElement<R> {
     }
 
     /// Negate the element
-    pub fn negate(&self) -> QElement<R> {
+    pub fn neg_elem(&self) -> QElement<R> {
         let terms: HashMap<_, _> = self
             .terms
             .iter()
-            .map(|(m, c)| (m.clone(), c.neg()))
+            .map(|(m, c)| (m.clone(), c.clone().negate()))
             .collect();
         QElement { terms }
     }
 
     /// Subtract two elements
     pub fn subtract(&self, other: &QElement<R>) -> QElement<R> {
-        self.add(&other.negate())
+        self.add(&other.neg_elem())
     }
 
     /// Check if this is the zero element

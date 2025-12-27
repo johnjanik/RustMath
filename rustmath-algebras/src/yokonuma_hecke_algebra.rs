@@ -222,13 +222,13 @@ impl<R: Ring> YokonumaElement<R> {
     }
 
     /// Negation
-    pub fn negate(&self) -> Self {
-        self.scalar_mul(&R::zero().sub(&R::one()))
+    pub fn neg_elem(&self) -> Self {
+        self.scalar_mul(&R::zero().sub(R::one()))
     }
 
     /// Subtraction
     pub fn sub(&self, other: &Self) -> Self {
-        self.add(&other.negate())
+        self.add(&other.neg_elem())
     }
 
     /// Naive multiplication (concatenation without applying relations)

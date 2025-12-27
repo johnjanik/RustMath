@@ -105,7 +105,6 @@ impl RustMathKernel {
 
     async fn handle_shell_message(&mut self, msg: JupyterMessage) -> Result<(), Box<dyn std::error::Error>> {
         let msg_type = &msg.header.msg_type;
-        eprintln!("Received shell message: {}", msg_type);
 
         match msg_type.as_str() {
             "kernel_info_request" => {
@@ -140,7 +139,6 @@ impl RustMathKernel {
 
     async fn handle_control_message(&mut self, msg: JupyterMessage) -> Result<(), Box<dyn std::error::Error>> {
         let msg_type = &msg.header.msg_type;
-        eprintln!("Received control message: {}", msg_type);
 
         match msg_type.as_str() {
             "kernel_info_request" => {

@@ -13,7 +13,13 @@ num-bigint = "0.4"
 rustmath-core = { path = "../rustmath-core" }
 rustmath-integers = { path = "../rustmath-integers" }
 rustmath-rationals = { path = "../rustmath-rationals" }
+rustmath-complex = { path = "../rustmath-complex" }
+rustmath-reals = { path = "../rustmath-reals" }
 rustmath-matrix = { path = "../rustmath-matrix" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
 rustmath-symbolic = { path = "../rustmath-symbolic" }
 rustmath-finitefields = { path = "../rustmath-finitefields" }
+rustmath-plot = { path = "../rustmath-plot" }
+rustmath-plot-core = { path = "../rustmath-plot-core" }
+rustmath-colors = { path = "../rustmath-colors" }
+rayon = "1.8"

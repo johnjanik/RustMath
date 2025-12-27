@@ -2,6 +2,8 @@
 //!
 //! This crate provides Python bindings for RustMath, allowing direct
 //! integration with SageMath for testing and validation.
+//!
+//! Includes full plotting support for Jupyter notebooks via `_repr_svg_()`.
 
 use pyo3::prelude::*;
 use pyo3::exceptions::PyValueError;
@@ -10,11 +12,13 @@ mod integers;
 mod rationals;
 mod matrix;
 mod symbolic;
+mod plot;
 
 pub use integers::PyInteger;
 pub use rationals::PyRational;
 pub use matrix::PyMatrix;
 pub use symbolic::{PySymbol, PyExpr};
+pub use plot::PyGraphics;
 
 /// Main module initialization
 #[pymodule]
@@ -22,9 +26,11 @@ fn rustmath(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyInteger>()?;
     m.add_class::<PyRational>()?;
     m.add_class::<PyMatrix>()?;
+    m.add_class::<PyGraphics>()?;
 
-    // Register symbolic module
+    // Register submodules
     symbolic::register_symbolic_module(m)?;
+    plot::register_plot_module(m)?;
 
     // Module-level functions
     m.add_function(wrap_pyfunction!(gcd_many, m)?)?;

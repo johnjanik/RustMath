@@ -21,6 +21,7 @@ use std::fmt::{self, Display};
 ///
 /// Defined by two parameters a and b from the base ring,
 /// representing the relations i² = a and j² = b
+#[derive(Debug, Clone)]
 pub struct QuaternionAlgebra<R: Ring> {
     /// The base ring
     base_ring: std::marker::PhantomData<R>,

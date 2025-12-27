@@ -17,31 +17,34 @@ use std::marker::PhantomData;
 /// For a morphism f: M → N, we store f(e_i) for each basis element e_i of M.
 ///
 /// # Type Parameters
-/// - `I`: Index type for basis elements
+/// - `IM`: Index type for source module basis elements
+/// - `IN`: Index type for target module basis elements
 /// - `R`: Coefficient ring type
 /// - `M`: Source module type
 /// - `N`: Target module type
 #[derive(Clone, Debug)]
-pub struct ModuleWithBasisMorphism<I, R, M, N>
+pub struct ModuleWithBasisMorphism<IM, IN, R, M, N>
 where
-    I: Ord + Clone,
+    IM: Ord + Clone,
+    IN: Ord + Clone,
     R: Ring,
-    M: ModuleWithBasis<BasisIndex = I, BaseRing = R>,
-    N: ModuleWithBasis<BasisIndex = I, BaseRing = R>,
+    M: ModuleWithBasis<BasisIndex = IM, BaseRing = R>,
+    N: ModuleWithBasis<BasisIndex = IN, BaseRing = R>,
 {
     source: M,
     target: N,
     /// The action on basis elements: maps source basis index to target element
-    basis_action: BTreeMap<I, ModuleWithBasisElement<I, R>>,
+    basis_action: BTreeMap<IM, ModuleWithBasisElement<IN, R>>,
     _phantom: PhantomData<R>,
 }
 
-impl<I, R, M, N> ModuleWithBasisMorphism<I, R, M, N>
+impl<IM, IN, R, M, N> ModuleWithBasisMorphism<IM, IN, R, M, N>
 where
-    I: Ord + Clone + fmt::Debug,
+    IM: Ord + Clone + fmt::Debug,
+    IN: Ord + Clone + fmt::Debug,
     R: Ring,
-    M: ModuleWithBasis<BasisIndex = I, BaseRing = R, Element = ModuleWithBasisElement<I, R>>,
-    N: ModuleWithBasis<BasisIndex = I, BaseRing = R, Element = ModuleWithBasisElement<I, R>>,
+    M: ModuleWithBasis<BasisIndex = IM, BaseRing = R>,
+    N: ModuleWithBasis<BasisIndex = IN, BaseRing = R>,
 {
     /// Create a new morphism from basis action
     ///
@@ -52,7 +55,7 @@ where
     pub fn new(
         source: M,
         target: N,
-        basis_action: BTreeMap<I, ModuleWithBasisElement<I, R>>,
+        basis_action: BTreeMap<IM, ModuleWithBasisElement<IN, R>>,
     ) -> Self {
         ModuleWithBasisMorphism {
             source,
@@ -65,7 +68,7 @@ where
     /// Create a morphism from a function on basis elements
     pub fn from_function<F>(source: M, target: N, f: F) -> Self
     where
-        F: Fn(&I) -> ModuleWithBasisElement<I, R>,
+        F: Fn(&IM) -> ModuleWithBasisElement<IN, R>,
     {
         let mut basis_action = BTreeMap::new();
         for index in source.basis_indices() {
@@ -93,33 +96,13 @@ where
         }
     }
 
-    /// Create the identity morphism
-    pub fn identity(module: M) -> Self
-    where
-        N: From<M>,
-    {
-        let target = N::from(module.clone());
-        let mut basis_action = BTreeMap::new();
-        for index in module.basis_indices() {
-            if let Some(elem) = module.basis_element(&index) {
-                basis_action.insert(index, elem);
-            }
-        }
-        ModuleWithBasisMorphism {
-            source: module,
-            target,
-            basis_action,
-            _phantom: PhantomData,
-        }
-    }
-
     /// Get the action on a basis element
-    pub fn on_basis(&self, index: &I) -> Option<&ModuleWithBasisElement<I, R>> {
+    pub fn on_basis(&self, index: &IM) -> Option<&ModuleWithBasisElement<IN, R>> {
         self.basis_action.get(index)
     }
 
     /// Apply the morphism to an element
-    pub fn apply(&self, elem: &ModuleWithBasisElement<I, R>) -> ModuleWithBasisElement<I, R> {
+    pub fn apply(&self, elem: &ModuleWithBasisElement<IM, R>) -> ModuleWithBasisElement<IN, R> {
         let mut result = ModuleWithBasisElement::zero();
 
         for (index, coeff) in elem.items() {
@@ -174,7 +157,7 @@ where
     /// Compute the kernel of this morphism
     ///
     /// Returns basis elements that span the kernel
-    pub fn kernel(&self) -> Vec<ModuleWithBasisElement<I, R>> {
+    pub fn kernel(&self) -> Vec<ModuleWithBasisElement<IM, R>> {
         // TODO: Implement proper kernel computation via linear algebra
         // For now, return empty (indicating trivial kernel)
         vec![]
@@ -183,7 +166,7 @@ where
     /// Compute the image of this morphism
     ///
     /// Returns basis elements that span the image
-    pub fn image(&self) -> Vec<ModuleWithBasisElement<I, R>> {
+    pub fn image(&self) -> Vec<ModuleWithBasisElement<IN, R>> {
         // The image is spanned by the images of the source basis
         self.basis_action.values().cloned().collect()
     }
@@ -217,11 +200,37 @@ where
     }
 }
 
-impl<I, R, M> ModuleWithBasisMorphism<I, R, M, M>
+// Specialized impl for endomorphisms (same index type)
+impl<I, R, M, N> ModuleWithBasisMorphism<I, I, R, M, N>
 where
     I: Ord + Clone + fmt::Debug,
     R: Ring,
     M: ModuleWithBasis<BasisIndex = I, BaseRing = R, Element = ModuleWithBasisElement<I, R>>,
+    N: ModuleWithBasis<BasisIndex = I, BaseRing = R, Element = ModuleWithBasisElement<I, R>> + From<M>,
+{
+    /// Create the identity morphism (only for endomorphisms)
+    pub fn identity(module: M) -> Self {
+        let target = N::from(module.clone());
+        let mut basis_action = BTreeMap::new();
+        for index in module.basis_indices() {
+            if let Some(elem) = module.basis_element(&index) {
+                basis_action.insert(index, elem);
+            }
+        }
+        ModuleWithBasisMorphism {
+            source: module,
+            target,
+            basis_action,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<I, R, M> ModuleWithBasisMorphism<I, I, R, M, M>
+where
+    I: Ord + Clone + fmt::Debug,
+    R: Ring,
+    M: ModuleWithBasis<BasisIndex = I, BaseRing = R, Element = ModuleWithBasisElement<I, R>> + Clone,
 {
     /// Compose two endomorphisms: self ∘ other
     pub fn compose_endo(&self, other: &Self) -> Self {
@@ -244,7 +253,11 @@ where
     }
 
     /// Compute powers of an endomorphism
-    pub fn power(&self, n: usize) -> Self {
+    pub fn power(&self, n: usize) -> Self
+    where
+        Self: Clone,
+        M: From<M>,
+    {
         if n == 0 {
             return Self::identity(self.source.clone());
         }
@@ -269,11 +282,11 @@ where
 }
 
 // Implement Morphism trait from rustmath-category for endomorphisms (M = N)
-impl<I, R, M> Morphism for ModuleWithBasisMorphism<I, R, M, M>
+impl<I, R, M> Morphism for ModuleWithBasisMorphism<I, I, R, M, M>
 where
     I: Ord + Clone + fmt::Debug,
     R: Ring,
-    M: ModuleWithBasis<BasisIndex = I, BaseRing = R, Element = ModuleWithBasisElement<I, R>>,
+    M: ModuleWithBasis<BasisIndex = I, BaseRing = R, Element = ModuleWithBasisElement<I, R>> + Clone,
 {
     type Object = M;
 
@@ -305,21 +318,22 @@ where
 }
 
 /// Morphism methods - additional methods for morphisms
-pub trait ModuleWithBasisMorphismMethods<I, R, M, N>
+pub trait ModuleWithBasisMorphismMethods<IM, IN, R, M, N>
 where
-    I: Ord + Clone,
+    IM: Ord + Clone,
+    IN: Ord + Clone,
     R: Ring,
-    M: ModuleWithBasis<BasisIndex = I, BaseRing = R>,
-    N: ModuleWithBasis<BasisIndex = I, BaseRing = R>,
+    M: ModuleWithBasis<BasisIndex = IM, BaseRing = R>,
+    N: ModuleWithBasis<BasisIndex = IN, BaseRing = R>,
 {
     /// Get the matrix representation with respect to given bases
-    fn matrix_wrt_bases(&self, source_basis: &[I], target_basis: &[I]) -> Vec<Vec<R>>;
+    fn matrix_wrt_bases(&self, source_basis: &[IM], target_basis: &[IN]) -> Vec<Vec<R>>;
 
     /// Restrict to a submodule
-    fn restrict(&self, submodule: M) -> ModuleWithBasisMorphism<I, R, M, N>;
+    fn restrict(&self, submodule: M) -> ModuleWithBasisMorphism<IM, IN, R, M, N>;
 
     /// Lift from a quotient module
-    fn lift(&self) -> Option<ModuleWithBasisMorphism<I, R, M, N>>;
+    fn lift(&self) -> Option<ModuleWithBasisMorphism<IM, IN, R, M, N>>;
 }
 
 /// Legacy struct for compatibility

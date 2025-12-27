@@ -20,21 +20,30 @@ pub mod clifford_algebra;
 pub mod group_algebra;
 pub mod symmetric_group_algebra;
 pub mod traits;
+#[cfg(feature = "full")]
 pub mod affine_nil_temperley_lieb;
 pub mod blob_algebra;
+#[cfg(feature = "full")]
 pub mod down_up_algebra;
+#[cfg(feature = "full")]
 pub mod algebra_morphism;
 pub mod algebra_with_parent;
 pub mod cached_algebra;
+#[cfg(feature = "full")]
 pub mod askey_wilson;
+#[cfg(feature = "full")]
 pub mod associated_graded;
+#[cfg(feature = "full")]
 pub mod cellular_basis;
 pub mod cluster_algebra;
 pub mod cluster_variable;
 pub mod cluster_integration;
 pub mod commutative_dga;
+#[cfg(feature = "full")]
 pub mod finite_gca;
+#[cfg(feature = "full")]
 pub mod free_zinbiel_algebra;
+#[cfg(feature = "full")]
 pub mod hall_algebra;
 pub mod jordan_algebra;
 pub mod ariki_koike_algebra;
@@ -45,9 +54,13 @@ pub mod iwahori_hecke_algebra;
 pub mod nil_coxeter_algebra;
 pub mod catalog;
 pub mod diagram;
+#[cfg(feature = "full")]
 pub mod brauer_algebra;
+#[cfg(feature = "full")]
 pub mod temperley_lieb_algebra;
+#[cfg(feature = "full")]
 pub mod partition_algebra;
+#[cfg(feature = "full")]
 pub mod planar_algebra;
 pub mod poly_tup_engine;
 pub mod fusion_ring;
@@ -78,7 +91,6 @@ pub mod weyl_algebra;
 pub mod e_one_star;
 pub mod yangian;
 pub mod yokonuma_hecke_algebra;
-pub mod partition_algebra;
 
 pub use free_algebra::*;
 pub use finite_dimensional_algebra::*;
@@ -103,11 +115,16 @@ pub use symmetric_group_algebra::{
     verify_coxeter_relations,
 };
 pub use traits::*;
+#[cfg(feature = "full")]
 pub use affine_nil_temperley_lieb::{AffineNilTemperleyLiebTypeA, Element as AffineNilTemperleyLiebElement};
 pub use blob_algebra::{BlobAlgebra, BlobElement, BlobBasisElement};
+#[cfg(feature = "full")]
 pub use algebra_morphism::{AlgebraMorphism, AlgebraEndomorphism, AlgebraAutomorphism};
+#[cfg(feature = "full")]
 pub use askey_wilson::{AskeyWilsonAlgebra, AskeyWilsonIndex};
+#[cfg(feature = "full")]
 pub use associated_graded::AssociatedGradedAlgebra;
+#[cfg(feature = "full")]
 pub use cellular_basis::{CellularBasis, CellularIndex};
 pub use cluster_algebra::{
     ClusterAlgebra, ClusterAlgebraElement, ClusterAlgebraSeed,
@@ -128,10 +145,13 @@ pub use commutative_dga::{
     CohomologyClass, GCAlgebraHomset, GCAlgebraMorphism,
     Degree, Generator, GCAlgebraElement,
 };
+#[cfg(feature = "full")]
 pub use finite_gca::{FiniteGCAlgebra, FiniteGCABasisElement, FiniteGCAlgebraElement};
+#[cfg(feature = "full")]
 pub use free_zinbiel_algebra::{
     FreeZinbielAlgebra, FreeZinbielAlgebraElement, ZinbielWord, ZinbielFunctor,
 };
+#[cfg(feature = "full")]
 pub use hall_algebra::{
     HallAlgebra, HallAlgebraMonomials, HallAlgebraElement, Partition as HallPartition, transpose_cmp,
 };
@@ -175,7 +195,7 @@ pub use ariki_koike_specht_modules::{SpechtModule, SpechtModuleElement, Multipar
 pub use octonion_algebra::{OctonionAlgebra, Octonion};
 pub use q_system::{QSystem, QElement, QIndex, QMonomial, is_tamely_laced};
 pub use quantum_oscillator::{
-    QuantumOscillatorAlgebra, OscillatorElement, OscillatorIndex, Generator,
+    QuantumOscillatorAlgebra, OscillatorElement, OscillatorIndex, Generator as OscillatorGenerator,
     FockSpaceRepresentation, FockSpaceElement,
 };
 pub use quantum_clifford::{
@@ -242,16 +262,18 @@ pub use yokonuma_hecke_algebra::{
 };
 pub use e_one_star::{
     E1Algebra, E1Element, E1Generator, E1Monomial, BiDegree,
+};
 pub use diagram::{
     PartitionDiagram, BrauerDiagram, TemperleyLiebDiagram,
 };
+#[cfg(feature = "full")]
 pub use brauer_algebra::{BrauerAlgebra, BrauerElement};
+#[cfg(feature = "full")]
 pub use temperley_lieb_algebra::{TemperleyLiebAlgebra, TLElement};
+#[cfg(feature = "full")]
 pub use partition_algebra::{PartitionAlgebra, PartitionElement};
+#[cfg(feature = "full")]
 pub use planar_algebra::{PlanarAlgebra, PlanarElement, PlanarDiagram};
-pub use partition_algebra::{
-    PartitionAlgebra, PartitionAlgebraElement, PartitionDiagram,
-};
 
 #[cfg(test)]
 mod tests {

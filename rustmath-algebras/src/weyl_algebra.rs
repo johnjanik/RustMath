@@ -248,13 +248,13 @@ impl<R: Ring> WeylElement<R> {
     }
 
     /// Negation
-    pub fn negate(&self) -> Self {
-        self.scalar_mul(&R::zero().sub(&R::one()))
+    pub fn neg_elem(&self) -> Self {
+        self.scalar_mul(&R::zero().sub(R::one()))
     }
 
     /// Subtraction
     pub fn sub(&self, other: &Self) -> Self {
-        self.add(&other.negate())
+        self.add(&other.neg_elem())
     }
 
     /// Multiply two monomials using commutation relations
@@ -323,7 +323,12 @@ impl<R: Ring> WeylElement<R> {
             for (m2, c2) in &other.terms {
                 let products = Self::multiply_monomials(m1, m2);
                 for (monomial, factor) in products {
-                    let coeff = c1.clone() * c2.clone() * R::from_int(factor as i64);
+                    // Create R::from integer by repeated addition
+                    let mut factor_r = R::zero();
+                    for _ in 0..factor {
+                        factor_r = factor_r.add(R::one());
+                    }
+                    let coeff = c1.clone() * c2.clone() * factor_r;
                     result.add_term(monomial, coeff);
                 }
             }

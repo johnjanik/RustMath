@@ -194,7 +194,7 @@ where
             if !coeff.is_zero() {
                 coefficients
                     .entry(idx)
-                    .and_modify(|c| *c = c.clone() + coeff.clone())
+                    .and_modify(|c: &mut R| *c = c.clone() + coeff.clone())
                     .or_insert(coeff);
             }
         }

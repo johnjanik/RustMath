@@ -55,9 +55,7 @@ pub async fn handle_execute(
     ctx: &mut ReplContext,
     sockets: &mut KernelSockets,
 ) -> Result<JupyterMessage, Box<dyn std::error::Error>> {
-    eprintln!("DEBUG: handle_execute started");
     let request: ExecuteRequest = serde_json::from_value(msg.content.clone())?;
-    eprintln!("DEBUG: code = {:?}", request.code);
 
     // Increment execution count if storing history
     if request.store_history {
@@ -65,11 +63,9 @@ pub async fn handle_execute(
     }
 
     let execution_count = ctx.execution_count();
-    eprintln!("DEBUG: execution_count = {}", execution_count);
 
     // Publish busy status
     publish_status(sockets, msg, "busy").await?;
-    eprintln!("DEBUG: published busy status");
 
     // Publish execute_input if not silent
     if !request.silent {
@@ -79,13 +75,10 @@ pub async fn handle_execute(
         };
         let input_msg = msg.reply("execute_input", serde_json::to_value(input_content)?);
         sockets.publish(&input_msg).await?;
-        eprintln!("DEBUG: published execute_input");
     }
 
     // Execute the code
-    eprintln!("DEBUG: evaluating code...");
     let result = ctx.eval(&request.code);
-    eprintln!("DEBUG: eval result = {:?}", result.as_ref().map(|r| &r.text));
 
     // Handle stdout
     let stdout = ctx.stdout().to_string();
@@ -111,7 +104,6 @@ pub async fn handle_execute(
 
     let reply = match result {
         Ok(eval_result) => {
-            eprintln!("DEBUG: eval succeeded, has_output = {}", eval_result.has_output);
             // Publish result if there's output
             if eval_result.has_output && !request.silent {
                 let result_content = ExecuteResultContent {
@@ -119,10 +111,8 @@ pub async fn handle_execute(
                     data: eval_result.to_data(),
                     metadata: HashMap::new(),
                 };
-                eprintln!("DEBUG: publishing execute_result with data: {:?}", result_content.data);
                 let result_msg = msg.reply("execute_result", serde_json::to_value(result_content)?);
                 sockets.publish(&result_msg).await?;
-                eprintln!("DEBUG: published execute_result");
             }
 
             ExecuteReply {
@@ -136,7 +126,6 @@ pub async fn handle_execute(
             }
         }
         Err(eval_error) => {
-            eprintln!("DEBUG: eval failed: {} - {}", eval_error.name, eval_error.message);
             // Publish error
             if !request.silent {
                 let error_content = ErrorContent {
@@ -161,9 +150,7 @@ pub async fn handle_execute(
     };
 
     // Publish idle status
-    eprintln!("DEBUG: publishing idle status");
     publish_status(sockets, msg, "idle").await?;
-    eprintln!("DEBUG: published idle status, returning reply");
 
     Ok(msg.reply("execute_reply", serde_json::to_value(reply)?))
 }

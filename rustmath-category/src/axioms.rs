@@ -294,7 +294,7 @@ impl Axiom for NoZeroDivisors {
 ///
 /// This allows grouping multiple axioms together to define structures like
 /// groups, rings, fields, etc.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct AxiomSet {
     axioms: Vec<Box<dyn Axiom>>,
 }

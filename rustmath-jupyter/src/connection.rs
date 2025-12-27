@@ -126,7 +126,6 @@ impl KernelSockets {
         let mut frames: Vec<bytes::Bytes> = Vec::new();
 
         // Add identities (required for ROUTER socket replies)
-        eprintln!("DEBUG serialize: {} identities, msg_type={}", msg.identities.len(), msg.header.msg_type);
         for ident in &msg.identities {
             frames.push(ident.clone().into());
         }
@@ -143,8 +142,6 @@ impl KernelSockets {
         frames.push(metadata.into());
         frames.push(content.into());
 
-        eprintln!("DEBUG serialize: total {} frames", frames.len());
-
         // Convert to ZmqMessage (requires at least one frame, which we always have: delimiter)
         let zmq_msg = ZmqMessage::try_from(frames)
             .map_err(|_| "Failed to create ZMQ message")?;
@@ -156,8 +153,6 @@ impl KernelSockets {
     pub fn deserialize_message(&self, msg: ZmqMessage) -> Result<JupyterMessage, Box<dyn std::error::Error>> {
         let parts: Vec<Vec<u8>> = msg.iter().map(|f| f.to_vec()).collect();
 
-        eprintln!("DEBUG deserialize: {} total parts", parts.len());
-
         // Find delimiter position
         let delim_pos = parts.iter()
             .position(|p| p.as_slice() == DELIMITER)
@@ -165,7 +160,6 @@ impl KernelSockets {
 
         // Extract identities (before delimiter)
         let identities: Vec<Vec<u8>> = parts[..delim_pos].to_vec();
-        eprintln!("DEBUG deserialize: {} identities (delim at pos {})", identities.len(), delim_pos);
 
         // Parts after delimiter: signature, header, parent_header, metadata, content
         if parts.len() < delim_pos + 6 {
@@ -233,8 +227,6 @@ impl KernelSockets {
     /// Publish a message on the IOPub socket
     /// IOPub uses PUB/SUB pattern and needs a topic as the first frame
     pub async fn publish(&mut self, msg: &JupyterMessage) -> Result<(), Box<dyn std::error::Error>> {
-        eprintln!("DEBUG publish: msg_type={}", msg.header.msg_type);
-
         let header = serde_json::to_vec(&msg.header)?;
         let parent = match &msg.parent_header {
             Some(p) => serde_json::to_vec(p)?,
@@ -264,12 +256,10 @@ impl KernelSockets {
         frames.push(metadata.into());
         frames.push(content.into());
 
-        let frame_count = frames.len();
         let zmq_msg = ZmqMessage::try_from(frames)
             .map_err(|_| "Failed to create ZMQ message")?;
 
         self.iopub.send(zmq_msg).await?;
-        eprintln!("DEBUG publish: sent {} frames", frame_count);
         Ok(())
     }
 

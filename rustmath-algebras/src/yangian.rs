@@ -65,7 +65,7 @@ impl fmt::Display for YangianIndex {
 }
 
 /// A monomial in the Yangian (product of generators)
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct YangianMonomial {
     /// List of generator indices in the product
     factors: Vec<YangianIndex>,
@@ -226,13 +226,13 @@ impl<R: Ring> YangianElement<R> {
     }
 
     /// Negation
-    pub fn negate(&self) -> Self {
-        self.scalar_mul(&R::zero().sub(&R::one()))
+    pub fn neg_elem(&self) -> Self {
+        self.scalar_mul(&R::zero().sub(R::one()))
     }
 
     /// Subtraction
     pub fn sub(&self, other: &Self) -> Self {
-        self.add(&other.negate())
+        self.add(&other.neg_elem())
     }
 
     /// Naive multiplication (without applying relations)

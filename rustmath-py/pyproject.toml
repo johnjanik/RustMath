@@ -32,6 +32,5 @@ classifiers = [
 Repository = "https://github.com/johnjanik/RustMath"
 
 [tool.maturin]
-python-source = "python"
 module-name = "rustmath"
 features = ["pyo3/extension-module"]

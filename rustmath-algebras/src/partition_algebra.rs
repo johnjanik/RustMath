@@ -118,10 +118,10 @@ impl<R: Ring> PartitionAlgebra<R> {
     pub fn diagram_from_set_partition(&self, partition: &SetPartition) -> Result<PartitionDiagram> {
         let n = self.order;
 
-        if partition.num_elements() != 2 * n {
+        if partition.size() != 2 * n {
             return Err(MathError::InvalidArgument(
                 format!("Set partition must have {} elements, got {}",
-                    2 * n, partition.num_elements())
+                    2 * n, partition.size())
             ));
         }
 

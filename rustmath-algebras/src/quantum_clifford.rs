@@ -197,7 +197,7 @@ impl<F: Field> CliffordElement<F> {
         let mut result = self.terms.clone();
         for (index, coeff) in &other.terms {
             let entry = result.entry(index.clone()).or_insert_with(F::zero);
-            *entry = entry.add(coeff);
+            *entry = entry.clone().add(coeff.clone());
         }
         // Remove zero coefficients
         result.retain(|_, v| !v.is_zero());
@@ -212,17 +212,17 @@ impl<F: Field> CliffordElement<F> {
         let terms: HashMap<_, _> = self
             .terms
             .iter()
-            .map(|(idx, c)| (idx.clone(), c.mul(scalar)))
+            .map(|(idx, c)| (idx.clone(), c.clone().mul(scalar.clone())))
             .collect();
         CliffordElement { terms }
     }
 
     /// Negate the element
-    pub fn negate(&self) -> CliffordElement<F> {
+    pub fn neg_elem(&self) -> CliffordElement<F> {
         let terms: HashMap<_, _> = self
             .terms
             .iter()
-            .map(|(idx, c)| (idx.clone(), c.neg()))
+            .map(|(idx, c)| (idx.clone(), c.clone().negate()))
             .collect();
         CliffordElement { terms }
     }

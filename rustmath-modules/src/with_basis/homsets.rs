@@ -71,7 +71,7 @@ where
     pub fn element_to_morphism(
         &self,
         elem: &ModuleWithBasisElement<HomIndex<M::BasisIndex, N::BasisIndex>, M::BaseRing>,
-    ) -> ModuleWithBasisMorphism<M::BasisIndex, M::BaseRing, M, N>
+    ) -> ModuleWithBasisMorphism<M::BasisIndex, N::BasisIndex, M::BaseRing, M, N>
     where
         M::BasisIndex: Ord + Clone + Debug,
         N::BasisIndex: Ord + Clone + Debug,
@@ -104,7 +104,7 @@ where
     /// Convert a morphism to its representation in the standard basis of Hom(M, N)
     pub fn morphism_to_element(
         &self,
-        morphism: &ModuleWithBasisMorphism<M::BasisIndex, M::BaseRing, M, N>,
+        morphism: &ModuleWithBasisMorphism<M::BasisIndex, N::BasisIndex, M::BaseRing, M, N>,
     ) -> ModuleWithBasisElement<HomIndex<M::BasisIndex, N::BasisIndex>, M::BaseRing>
     where
         M::BasisIndex: Ord + Clone + Debug,
@@ -128,7 +128,7 @@ where
     }
 
     /// Compute the zero morphism
-    pub fn zero_morphism(&self) -> ModuleWithBasisMorphism<M::BasisIndex, M::BaseRing, M, N>
+    pub fn zero_morphism(&self) -> ModuleWithBasisMorphism<M::BasisIndex, N::BasisIndex, M::BaseRing, M, N>
     where
         M::BasisIndex: Ord + Clone + Debug,
         N::BasisIndex: Ord + Clone + Debug,
@@ -144,7 +144,7 @@ where
         &self,
         source_idx: &M::BasisIndex,
         target_idx: &N::BasisIndex,
-    ) -> Option<ModuleWithBasisMorphism<M::BasisIndex, M::BaseRing, M, N>>
+    ) -> Option<ModuleWithBasisMorphism<M::BasisIndex, N::BasisIndex, M::BaseRing, M, N>>
     where
         M::BasisIndex: Ord + Clone + Debug,
         N::BasisIndex: Ord + Clone + Debug,
@@ -178,7 +178,7 @@ where
     /// Compose with a morphism on the left: Hom(M, N) → Hom(M, P) via g ↦ h ∘ g
     pub fn compose_left<P>(
         &self,
-        h: &ModuleWithBasisMorphism<N::BasisIndex, M::BaseRing, N, P>,
+        h: &ModuleWithBasisMorphism<N::BasisIndex, P::BasisIndex, M::BaseRing, N, P>,
     ) -> HomSpace<M, P>
     where
         P: ModuleWithBasis<BaseRing = M::BaseRing>,
@@ -192,7 +192,7 @@ where
     /// Compose with a morphism on the right: Hom(M, N) → Hom(L, N) via g ↦ g ∘ h
     pub fn compose_right<L>(
         &self,
-        _h: &ModuleWithBasisMorphism<L::BasisIndex, M::BaseRing, L, M>,
+        _h: &ModuleWithBasisMorphism<L::BasisIndex, M::BasisIndex, M::BaseRing, L, M>,
     ) -> HomSpace<L, N>
     where
         L: ModuleWithBasis<BaseRing = M::BaseRing>,

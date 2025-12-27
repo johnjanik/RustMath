@@ -53,6 +53,13 @@ rustmath-polynomials = { path = "../rustmath-polynomials" }
 rustmath-complex = { path = "../rustmath-complex" }
 rustmath-finitefields = { path = "../rustmath-finitefields" }
 rustmath-typesetting = { path = "../rustmath-typesetting" }
+rustmath-combinatorics = { path = "../rustmath-combinatorics" }
+rustmath-stats = { path = "../rustmath-stats" }
+rustmath-numerical = { path = "../rustmath-numerical" }
+rustmath-graphs = { path = "../rustmath-graphs" }
+rustmath-geometry = { path = "../rustmath-geometry" }
+rustmath-algebras = { path = "../rustmath-algebras", features = ["full"] }
+rustmath-manifolds = { path = "../rustmath-manifolds" }
 
 [dev-dependencies]
 tempfile = "3.0"

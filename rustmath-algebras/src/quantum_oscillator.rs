@@ -187,7 +187,7 @@ impl<R: Ring> OscillatorElement<R> {
         let mut result = self.terms.clone();
         for (index, coeff) in &other.terms {
             let entry = result.entry(*index).or_insert_with(R::zero);
-            *entry = entry.add(coeff);
+            *entry = entry.clone().add(coeff.clone());
         }
         // Remove zero coefficients
         result.retain(|_, v| !v.is_zero());
@@ -202,17 +202,17 @@ impl<R: Ring> OscillatorElement<R> {
         let terms: HashMap<_, _> = self
             .terms
             .iter()
-            .map(|(idx, c)| (*idx, c.mul(scalar)))
+            .map(|(idx, c)| (*idx, c.clone().mul(scalar.clone())))
             .collect();
         OscillatorElement { terms }
     }
 
     /// Negate the element
-    pub fn negate(&self) -> OscillatorElement<R> {
+    pub fn neg_elem(&self) -> OscillatorElement<R> {
         let terms: HashMap<_, _> = self
             .terms
             .iter()
-            .map(|(idx, c)| (*idx, c.neg()))
+            .map(|(idx, c)| (*idx, c.clone().negate()))
             .collect();
         OscillatorElement { terms }
     }
