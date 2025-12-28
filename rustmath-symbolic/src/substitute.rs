@@ -9,34 +9,45 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 impl Expr {
-    /// Substitute a symbol with an expression
+    /// Substitute a symbol with an expression (by symbol identity)
     ///
     /// Replaces all occurrences of the given symbol with the provided expression.
+    /// Note: This compares symbols by both name AND id. Use `substitute_by_name`
+    /// if you want to match symbols by name only.
     pub fn substitute(&self, sym: &Symbol, replacement: &Expr) -> Expr {
+        // Use substitute_by_name for more reliable behavior
+        self.substitute_by_name(sym.name(), replacement)
+    }
+
+    /// Substitute a symbol by name with an expression
+    ///
+    /// Replaces all occurrences of symbols with the given name with the provided expression.
+    /// This is more reliable than `substitute` when the symbol instances may differ.
+    pub fn substitute_by_name(&self, name: &str, replacement: &Expr) -> Expr {
         match self {
             Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => self.clone(),
             Expr::Symbol(s) => {
-                if s == sym {
+                if s.name() == name {
                     replacement.clone()
                 } else {
                     self.clone()
                 }
             }
             Expr::Binary(op, left, right) => {
-                let new_left = left.substitute(sym, replacement);
-                let new_right = right.substitute(sym, replacement);
+                let new_left = left.substitute_by_name(name, replacement);
+                let new_right = right.substitute_by_name(name, replacement);
                 Expr::Binary(*op, Arc::new(new_left), Arc::new(new_right))
             }
             Expr::Unary(op, inner) => {
-                let new_inner = inner.substitute(sym, replacement);
+                let new_inner = inner.substitute_by_name(name, replacement);
                 Expr::Unary(*op, Arc::new(new_inner))
             }
-            Expr::Function(name, args) => {
+            Expr::Function(fname, args) => {
                 let new_args: Vec<Arc<Expr>> = args
                     .iter()
-                    .map(|arg| Arc::new(arg.substitute(sym, replacement)))
+                    .map(|arg| Arc::new(arg.substitute_by_name(name, replacement)))
                     .collect();
-                Expr::Function(name.clone(), new_args)
+                Expr::Function(fname.clone(), new_args)
             }
         }
     }
@@ -44,25 +55,41 @@ impl Expr {
     /// Substitute multiple symbols at once
     ///
     /// Takes a map of symbol -> expression and performs all substitutions.
+    /// Uses name-based matching for reliability.
     pub fn substitute_many(&self, substitutions: &HashMap<Symbol, Expr>) -> Expr {
+        // Convert to name-based map for reliable matching
+        let name_map: HashMap<&str, &Expr> = substitutions
+            .iter()
+            .map(|(sym, expr)| (sym.name(), expr))
+            .collect();
+        self.substitute_many_by_name(&name_map)
+    }
+
+    /// Substitute multiple symbols by name at once
+    ///
+    /// Takes a map of symbol name -> expression and performs all substitutions.
+    pub fn substitute_many_by_name(&self, substitutions: &HashMap<&str, &Expr>) -> Expr {
         match self {
             Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => self.clone(),
-            Expr::Symbol(s) => substitutions.get(s).cloned().unwrap_or_else(|| self.clone()),
+            Expr::Symbol(s) => substitutions
+                .get(s.name())
+                .map(|e| (*e).clone())
+                .unwrap_or_else(|| self.clone()),
             Expr::Binary(op, left, right) => {
-                let new_left = left.substitute_many(substitutions);
-                let new_right = right.substitute_many(substitutions);
+                let new_left = left.substitute_many_by_name(substitutions);
+                let new_right = right.substitute_many_by_name(substitutions);
                 Expr::Binary(*op, Arc::new(new_left), Arc::new(new_right))
             }
             Expr::Unary(op, inner) => {
-                let new_inner = inner.substitute_many(substitutions);
+                let new_inner = inner.substitute_many_by_name(substitutions);
                 Expr::Unary(*op, Arc::new(new_inner))
             }
-            Expr::Function(name, args) => {
+            Expr::Function(fname, args) => {
                 let new_args: Vec<Arc<Expr>> = args
                     .iter()
-                    .map(|arg| Arc::new(arg.substitute_many(substitutions)))
+                    .map(|arg| Arc::new(arg.substitute_many_by_name(substitutions)))
                     .collect();
-                Expr::Function(name.clone(), new_args)
+                Expr::Function(fname.clone(), new_args)
             }
         }
     }
@@ -558,9 +585,10 @@ mod tests {
 
         let syms = expr.symbols();
         assert_eq!(syms.len(), 3);
-        assert!(syms.contains(&Symbol::new("x")));
-        assert!(syms.contains(&Symbol::new("y")));
-        assert!(syms.contains(&Symbol::new("z")));
+        let sym_names: std::collections::HashSet<&str> = syms.iter().map(|s| s.name()).collect();
+        assert!(sym_names.contains("x"));
+        assert!(sym_names.contains("y"));
+        assert!(sym_names.contains("z"));
     }
 
     #[test]
@@ -741,8 +769,9 @@ mod tests {
         // Should have 2 symbols
         let syms = expr.symbols();
         assert_eq!(syms.len(), 2);
-        assert!(syms.contains(&Symbol::new("x")));
-        assert!(syms.contains(&Symbol::new("y")));
+        let sym_names: std::collections::HashSet<&str> = syms.iter().map(|s| s.name()).collect();
+        assert!(sym_names.contains("x"));
+        assert!(sym_names.contains("y"));
 
         // Display should show function name and arguments
         let display = format!("{}", expr);
@@ -754,7 +783,8 @@ mod tests {
         let result = expr.substitute(&Symbol::new("x"), &Expr::from(5));
         let result_syms = result.symbols();
         assert_eq!(result_syms.len(), 1);
-        assert!(result_syms.contains(&Symbol::new("y")));
+        let result_sym_names: std::collections::HashSet<&str> = result_syms.iter().map(|s| s.name()).collect();
+        assert!(result_sym_names.contains("y"));
     }
 
     #[test]

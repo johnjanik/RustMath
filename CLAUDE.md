@@ -181,6 +181,7 @@ Tests are organized within each crate's `src/lib.rs` or dedicated test modules:
 4. **No Expression Parsing**: Cannot parse strings like "x^2 + 3*x + 2"
 5. **Real Numbers**: Currently f64-based; arbitrary precision planned
 6. **Gröbner Bases**: Partially implemented for multivariate polynomial ideals
+7. **Jupyter 3D Plot Rotation**: `parametric_plot3d` (curves) and `implicit_plot3d` do not support click-and-drag rotation in Jupyter notebooks, while other 3D plots (`plot3d`, `spherical_plot3d`, parametric surfaces) work correctly. The issue is related to how Jupyter handles inline JavaScript in SVG content. Functions are in `rustmath-jupyter/src/repl.rs`: `generate_3d_curve_svg` and `generate_implicit_surface_svg`.
 
 ### Development Workflow
 

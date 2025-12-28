@@ -79,7 +79,7 @@ use nom::{
     combinator::{map, opt, recognize},
     error::{Error, ErrorKind},
     multi::{many0, separated_list0},
-    sequence::{delimited, pair},
+    sequence::{delimited, pair, tuple},
     IResult,
 };
 use rustmath_integers::Integer;
@@ -171,6 +171,28 @@ fn rational(input: &str) -> IResult<&str, Rational> {
     }
 }
 
+// Parse a floating-point number (must have decimal point)
+// Examples: 3.14, 0.7, -1.5, 1.5e-3, 2.0E10
+fn float(input: &str) -> IResult<&str, f64> {
+    // Recognize the full float pattern
+    let (input, num_str) = recognize(tuple((
+        opt(char('-')),
+        digit1,
+        char('.'),
+        digit1,
+        opt(tuple((
+            alt((char('e'), char('E'))),
+            opt(alt((char('+'), char('-')))),
+            digit1,
+        ))),
+    )))(input)?;
+
+    let num = num_str.parse::<f64>().map_err(|_| {
+        nom::Err::Error(Error::new(input, ErrorKind::Float))
+    })?;
+    Ok((input, num))
+}
+
 // Parse a variable/symbol name
 fn identifier(input: &str) -> IResult<&str, &str> {
     recognize(pair(
@@ -260,8 +282,13 @@ fn function_call(input: &str) -> IResult<&str, Expr> {
     Ok((input, expr))
 }
 
-// Parse a number (integer or rational)
+// Parse a number (float, integer, or rational)
 fn number(input: &str) -> IResult<&str, Expr> {
+    // Try to parse as float first (with decimal point)
+    if let Ok((remaining, f)) = float(input) {
+        return Ok((remaining, Expr::Real(f)));
+    }
+    // Fall back to rational (integer or fraction)
     map(rational, |r| {
         if r.denominator() == &Integer::from(1) {
             Expr::Integer(r.numerator().clone())
@@ -398,6 +425,101 @@ mod tests {
             expr,
             Expr::Rational(Rational::new(Integer::from(1), Integer::from(3)).unwrap())
         );
+    }
+
+    #[test]
+    fn test_parse_float() {
+        let expr = parse("3.14159").unwrap();
+        if let Expr::Real(f) = expr {
+            assert!((f - 3.14159).abs() < 1e-10);
+        } else {
+            panic!("Expected Real, got {:?}", expr);
+        }
+    }
+
+    #[test]
+    fn test_parse_float_small() {
+        let expr = parse("0.7").unwrap();
+        if let Expr::Real(f) = expr {
+            assert!((f - 0.7).abs() < 1e-10);
+        } else {
+            panic!("Expected Real, got {:?}", expr);
+        }
+    }
+
+    #[test]
+    fn test_parse_float_negative() {
+        let expr = parse("-1.5").unwrap();
+        // Negative floats are parsed as Unary(Neg, Real(1.5))
+        if let Expr::Unary(UnaryOp::Neg, inner) = expr {
+            if let Expr::Real(f) = inner.as_ref() {
+                assert!((f - 1.5).abs() < 1e-10);
+            } else {
+                panic!("Expected inner Real, got {:?}", inner);
+            }
+        } else {
+            panic!("Expected Unary Neg, got {:?}", expr);
+        }
+    }
+
+    #[test]
+    fn test_parse_float_scientific() {
+        let expr = parse("1.5e-3").unwrap();
+        if let Expr::Real(f) = expr {
+            assert!((f - 0.0015).abs() < 1e-10);
+        } else {
+            panic!("Expected Real, got {:?}", expr);
+        }
+    }
+
+    #[test]
+    fn test_parse_float_scientific_positive_exp() {
+        let expr = parse("2.0e10").unwrap();
+        if let Expr::Real(f) = expr {
+            assert!((f - 2.0e10).abs() < 1e5);
+        } else {
+            panic!("Expected Real, got {:?}", expr);
+        }
+    }
+
+    #[test]
+    fn test_parse_float_in_expression() {
+        let expr = parse("0.7 * x").unwrap();
+        match expr {
+            Expr::Binary(BinaryOp::Mul, left, right) => {
+                if let Expr::Real(f) = left.as_ref() {
+                    assert!((f - 0.7).abs() < 1e-10);
+                } else {
+                    panic!("Expected left to be Real, got {:?}", left);
+                }
+                if let Expr::Symbol(s) = right.as_ref() {
+                    assert_eq!(s.name(), "x");
+                } else {
+                    panic!("Expected right to be Symbol");
+                }
+            }
+            _ => panic!("Expected Mul at top level"),
+        }
+    }
+
+    #[test]
+    fn test_parse_float_addition() {
+        let expr = parse("3.14 + 2.71").unwrap();
+        match expr {
+            Expr::Binary(BinaryOp::Add, left, right) => {
+                if let Expr::Real(f) = left.as_ref() {
+                    assert!((f - 3.14).abs() < 1e-10);
+                } else {
+                    panic!("Expected left to be Real");
+                }
+                if let Expr::Real(f) = right.as_ref() {
+                    assert!((f - 2.71).abs() < 1e-10);
+                } else {
+                    panic!("Expected right to be Real");
+                }
+            }
+            _ => panic!("Expected Add at top level"),
+        }
     }
 
     #[test]

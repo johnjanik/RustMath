@@ -171,6 +171,113 @@ pub enum RustMathValue {
     None,
 }
 
+/// Options for 3D plotting - matches SageMath defaults
+#[derive(Clone, Debug)]
+pub struct Plot3DOptions {
+    /// Surface color (default: SageMath blue #6666ff)
+    pub color: String,
+    /// Surface opacity (default: 1.0)
+    pub opacity: f64,
+    /// Show mesh grid lines (default: false, like SageMath)
+    pub mesh: bool,
+    /// Mesh line color
+    pub mesh_color: String,
+    /// Number of plot points per axis
+    pub plot_points: usize,
+    /// Enable interactive mode with zoom/rotate
+    pub interactive: bool,
+    /// Background color
+    pub background: String,
+    /// Show axes
+    pub axes: bool,
+    /// Enable lighting/shading
+    pub shading: bool,
+}
+
+impl Default for Plot3DOptions {
+    fn default() -> Self {
+        Self {
+            color: "#6666ff".to_string(),  // SageMath default blue
+            opacity: 1.0,
+            mesh: false,  // SageMath default: no mesh
+            mesh_color: "#333333".to_string(),
+            plot_points: 40,
+            interactive: true,  // Enable zoom/rotate by default
+            background: "#ffffff".to_string(),
+            axes: true,
+            shading: true,  // Enable realistic shading
+        }
+    }
+}
+
+impl Plot3DOptions {
+    /// Parse options from keyword arguments like "color='red', mesh=True, opacity=0.8"
+    pub fn parse_from_args(args: &[&str]) -> Self {
+        let mut opts = Self::default();
+
+        for arg in args {
+            let arg = arg.trim();
+            if let Some(eq_pos) = arg.find('=') {
+                let key = arg[..eq_pos].trim().to_lowercase();
+                let value = arg[eq_pos + 1..].trim();
+
+                match key.as_str() {
+                    "color" | "rgbcolor" => {
+                        // Remove quotes if present
+                        let color = value.trim_matches(|c| c == '\'' || c == '"');
+                        opts.color = Self::parse_color(color);
+                    }
+                    "opacity" => {
+                        if let Ok(o) = value.parse::<f64>() {
+                            opts.opacity = o.clamp(0.0, 1.0);
+                        }
+                    }
+                    "mesh" => {
+                        opts.mesh = value == "True" || value == "true" || value == "1";
+                    }
+                    "plot_points" => {
+                        if let Ok(n) = value.parse::<usize>() {
+                            opts.plot_points = n.clamp(10, 100);
+                        }
+                    }
+                    "interactive" => {
+                        opts.interactive = value == "True" || value == "true" || value == "1";
+                    }
+                    "axes" => {
+                        opts.axes = value == "True" || value == "true" || value == "1";
+                    }
+                    "shading" => {
+                        opts.shading = value == "True" || value == "true" || value == "1";
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        opts
+    }
+
+    /// Parse color names to hex codes
+    fn parse_color(color: &str) -> String {
+        match color.to_lowercase().as_str() {
+            "blue" => "#6666ff".to_string(),
+            "red" => "#ff6666".to_string(),
+            "green" => "#66ff66".to_string(),
+            "yellow" => "#ffff66".to_string(),
+            "orange" => "#ff9933".to_string(),
+            "purple" => "#9966ff".to_string(),
+            "cyan" => "#66ffff".to_string(),
+            "magenta" => "#ff66ff".to_string(),
+            "white" => "#ffffff".to_string(),
+            "black" => "#333333".to_string(),
+            "gray" | "grey" => "#999999".to_string(),
+            _ if color.starts_with('#') => color.to_string(),
+            _ if color.starts_with("0x") => format!("#{}", &color[2..]),
+            _ => "#6666ff".to_string(), // Default to SageMath blue
+        }
+    }
+}
+
 impl RustMathValue {
     pub fn to_display(&self) -> EvalResult {
         match self {
@@ -290,8 +397,36 @@ impl RustMathValue {
                 EvalResult::text(text)
             }
             RustMathValue::Plot { description, svg } => {
-                let mut result = EvalResult::text(description);
-                result.svg = Some(svg.clone());
+                let mut result = EvalResult::text(description.clone());
+                // Check if SVG contains script (interactive) - send as HTML to preserve JS
+                if svg.contains("<script") {
+                    // Wrap in a container with unique ID for reliable JS targeting
+                    use std::time::{SystemTime, UNIX_EPOCH};
+                    let timestamp = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .map(|d| d.as_nanos())
+                        .unwrap_or(0);
+                    let container_id = format!("rustmath-plot-{}", timestamp);
+
+                    // Replace document.currentScript.parentElement with container-based lookup
+                    // Match with 4-space indentation as used in SVG templates
+                    let modified_svg = svg
+                        .replace(
+                            "    var svg = document.currentScript.parentElement;",
+                            &format!(
+                                "    var container = document.getElementById('{}'); var svg = container ? container.querySelector('svg') : null; if (!svg) return;",
+                                container_id
+                            )
+                        );
+
+                    let html = format!(
+                        r#"<div id="{}">{}</div>"#,
+                        container_id, modified_svg
+                    );
+                    result.html = Some(html);
+                } else {
+                    result.svg = Some(svg.clone());
+                }
                 result
             }
             RustMathValue::CliffordAlg(cl) => {
@@ -546,6 +681,13 @@ impl ReplContext {
         if expr.chars().all(|c| c.is_ascii_digit() || c == '-') && !expr.is_empty() {
             if let Ok(n) = BigInt::from_str(expr) {
                 return Ok(RustMathValue::Integer(Integer::new(n)));
+            }
+        }
+
+        // Try to parse as float (e.g., 0.7, 3.14, 1.5e-3)
+        if expr.contains('.') || expr.contains('e') || expr.contains('E') {
+            if let Ok(f) = expr.parse::<f64>() {
+                return Ok(RustMathValue::Float(f));
             }
         }
 
@@ -3039,10 +3181,16 @@ impl ReplContext {
             }
 
             // 3D scatter plot (2D projection): plot3d([Point3D(0,0,0), ...])
-            "plot3d" | "scatter3d" => {
+            // OR surface plot: plot3d(f(x,y), (x, xmin, xmax), (y, ymin, ymax))
+            "plot3d" => {
+                return self.eval_plot3d(args_str);
+            }
+
+            // Scatter3d is specifically for point lists
+            "scatter3d" => {
                 let args = self.parse_args(args_str)?;
                 if args.len() != 1 {
-                    return Err(EvalError::new("ArgumentError", "plot3d requires 1 argument (list of 3D points)"));
+                    return Err(EvalError::new("ArgumentError", "scatter3d requires 1 argument (list of 3D points)"));
                 }
                 match &args[0] {
                     RustMathValue::List(pts) => {
@@ -3051,8 +3199,54 @@ impl ReplContext {
                         let description = format!("3D plot with {} points", coords.len());
                         return Ok(RustMathValue::Plot { description, svg });
                     }
-                    _ => return Err(EvalError::new("TypeError", "plot3d requires a list of 3D points")),
+                    _ => return Err(EvalError::new("TypeError", "scatter3d requires a list of 3D points")),
                 }
+            }
+
+            // Parametric 3D plot: parametric_plot3d((x(t), y(t), z(t)), (t, tmin, tmax))
+            // Or parametric surface: parametric_plot3d((x(u,v), y(u,v), z(u,v)), (u, umin, umax), (v, vmin, vmax))
+            "parametric_plot3d" => {
+                return self.eval_parametric_plot3d(args_str);
+            }
+
+            // Implicit 3D plot: implicit_plot3d(f(x,y,z), (x, xmin, xmax), (y, ymin, ymax), (z, zmin, zmax))
+            "implicit_plot3d" => {
+                return self.eval_implicit_plot3d(args_str);
+            }
+
+            // 3D line plot: line3d([(x1,y1,z1), (x2,y2,z2), ...])
+            "line3d" => {
+                return self.eval_line3d(args_str);
+            }
+
+            // 3D arrow: arrow3d((x1,y1,z1), (x2,y2,z2))
+            "arrow3d" => {
+                return self.eval_arrow3d(args_str);
+            }
+
+            // Sphere: sphere(center=(0,0,0), radius=1)
+            "sphere" => {
+                return self.eval_sphere(args_str);
+            }
+
+            // Cylinder: cylinder(start, end, radius)
+            "cylinder" => {
+                return self.eval_cylinder(args_str);
+            }
+
+            // Revolution surface: revolution_plot3d(curve, (t, tmin, tmax), axis='z')
+            "revolution_plot3d" => {
+                return self.eval_revolution_plot3d(args_str);
+            }
+
+            // Spherical plot: spherical_plot3d(f(theta, phi), (theta, 0, pi), (phi, 0, 2*pi))
+            "spherical_plot3d" => {
+                return self.eval_spherical_plot3d(args_str);
+            }
+
+            // Cylindrical plot: cylindrical_plot3d(f(r, theta), (r, rmin, rmax), (theta, 0, 2*pi))
+            "cylindrical_plot3d" => {
+                return self.eval_cylindrical_plot3d(args_str);
             }
 
             // Slope field (direction field) for ODEs
@@ -3540,8 +3734,30 @@ impl ReplContext {
         }
 
         // Try to parse directly as expression
-        parse_expr(s)
-            .map_err(|e| EvalError::new("ParseError", format!("Cannot parse expression: {}", e)))
+        let expr = parse_expr(s)
+            .map_err(|e| EvalError::new("ParseError", format!("Cannot parse expression: {}", e)))?;
+
+        // Substitute any REPL variables that have numeric values
+        let expr = self.substitute_repl_variables(expr);
+
+        Ok(expr)
+    }
+
+    /// Substitute REPL variables with their numeric values into an expression
+    fn substitute_repl_variables(&self, expr: Expr) -> Expr {
+        let mut result = expr;
+        for (name, value) in &self.variables {
+            let replacement = match value {
+                RustMathValue::Integer(n) => Some(Expr::Integer(n.clone())),
+                RustMathValue::Float(f) => Some(Expr::Real(*f)),
+                RustMathValue::Rational(r) => Some(Expr::Rational(r.clone())),
+                _ => None,
+            };
+            if let Some(repl_expr) = replacement {
+                result = result.substitute_by_name(name, &repl_expr);
+            }
+        }
+        result
     }
 
     /// Parse a single symbolic expression argument
@@ -5520,6 +5736,1934 @@ impl ReplContext {
         svg
     }
 
+    // ===== 3D PLOTTING IMPLEMENTATIONS =====
+
+    /// Evaluate plot3d - either surface plot or scatter plot
+    /// plot3d(f(x,y), (x, xmin, xmax), (y, ymin, ymax)) - surface
+    /// plot3d([Point3D(...)]) - scatter
+    fn eval_plot3d(&mut self, args_str: &str) -> Result<RustMathValue, EvalError> {
+        let args_str = args_str.trim();
+        let parts = self.split_at_depth_zero(args_str, ',');
+
+        // Check if it's a list (scatter plot)
+        if parts.len() == 1 {
+            let arg = self.eval_expr(parts[0].trim())?;
+            if let RustMathValue::List(pts) = arg {
+                let coords = self.extract_3d_coords(&pts)?;
+                let svg = self.generate_3d_scatter_svg(&coords, "3D Scatter Plot");
+                let description = format!("3D plot with {} points", coords.len());
+                return Ok(RustMathValue::Plot { description, svg });
+            }
+        }
+
+        // Otherwise it's a surface plot: plot3d(f, (x, xmin, xmax), (y, ymin, ymax))
+        if parts.len() < 3 {
+            return Err(EvalError::new("ArgumentError",
+                "plot3d requires f(x,y), (x, xmin, xmax), (y, ymin, ymax) or a list of 3D points"));
+        }
+
+        let expr = self.parse_symbolic_arg(&parts[0])?;
+
+        // Parse x range
+        let x_range_str = parts[1].trim();
+        if !x_range_str.starts_with('(') || !x_range_str.ends_with(')') {
+            return Err(EvalError::new("SyntaxError", "x range must be (var, min, max)"));
+        }
+        let x_inner = &x_range_str[1..x_range_str.len()-1];
+        let x_parts: Vec<&str> = self.split_at_depth_zero(x_inner, ',');
+        if x_parts.len() != 3 {
+            return Err(EvalError::new("ArgumentError", "x range must have 3 parts: (var, min, max)"));
+        }
+        let x_var_name = x_parts[0].trim();
+        let x_min = self.eval_to_f64(x_parts[1].trim())?;
+        let x_max = self.eval_to_f64(x_parts[2].trim())?;
+
+        // Parse y range
+        let y_range_str = parts[2].trim();
+        if !y_range_str.starts_with('(') || !y_range_str.ends_with(')') {
+            return Err(EvalError::new("SyntaxError", "y range must be (var, min, max)"));
+        }
+        let y_inner = &y_range_str[1..y_range_str.len()-1];
+        let y_parts: Vec<&str> = self.split_at_depth_zero(y_inner, ',');
+        if y_parts.len() != 3 {
+            return Err(EvalError::new("ArgumentError", "y range must have 3 parts: (var, min, max)"));
+        }
+        let y_var_name = y_parts[0].trim();
+        let y_min = self.eval_to_f64(y_parts[1].trim())?;
+        let y_max = self.eval_to_f64(y_parts[2].trim())?;
+
+        let x_sym = Symbol::new(x_var_name);
+        let y_sym = Symbol::new(y_var_name);
+        let expr_symbols = expr.symbols();
+
+        // Generate surface
+        let n_grid = 30;
+        let mut z_values: Vec<Vec<f64>> = Vec::new();
+
+        for j in 0..n_grid {
+            let y = y_min + (y_max - y_min) * j as f64 / (n_grid - 1) as f64;
+            let mut row = Vec::new();
+            for i in 0..n_grid {
+                let x = x_min + (x_max - x_min) * i as f64 / (n_grid - 1) as f64;
+
+                let mut eval_expr = expr.clone();
+                for sym in &expr_symbols {
+                    if sym.name() == x_sym.name() {
+                        eval_expr = eval_expr.substitute(sym, &Expr::Real(x));
+                    } else if sym.name() == y_sym.name() {
+                        eval_expr = eval_expr.substitute(sym, &Expr::Real(y));
+                    }
+                }
+
+                let z = try_eval_to_f64(&eval_expr).unwrap_or(f64::NAN);
+                row.push(z);
+            }
+            z_values.push(row);
+        }
+
+        let svg = self.generate_surface_svg(&z_values, x_min, x_max, y_min, y_max, "Surface Plot z = f(x,y)");
+        let description = format!("Surface plot over [{:.2}, {:.2}] x [{:.2}, {:.2}]", x_min, x_max, y_min, y_max);
+        Ok(RustMathValue::Plot { description, svg })
+    }
+
+    /// Evaluate parametric_plot3d
+    /// Curve: parametric_plot3d((x(t), y(t), z(t)), (t, tmin, tmax))
+    /// Surface: parametric_plot3d((x(u,v), y(u,v), z(u,v)), (u, umin, umax), (v, vmin, vmax))
+    fn eval_parametric_plot3d(&mut self, args_str: &str) -> Result<RustMathValue, EvalError> {
+        let args_str = args_str.trim();
+        let parts = self.split_at_depth_zero(args_str, ',');
+
+        if parts.len() < 2 {
+            return Err(EvalError::new("ArgumentError",
+                "parametric_plot3d requires (x,y,z), (t, tmin, tmax) or (x,y,z), (u, umin, umax), (v, vmin, vmax)"));
+        }
+
+        // Parse the (x, y, z) expressions tuple
+        let xyz_str = parts[0].trim();
+        let xyz_str = xyz_str.strip_prefix('(').and_then(|s| s.strip_suffix(')'))
+            .ok_or_else(|| EvalError::new("SyntaxError", "first argument must be (x(t), y(t), z(t))"))?;
+        let xyz_parts = self.split_at_depth_zero(xyz_str, ',');
+        if xyz_parts.len() != 3 {
+            return Err(EvalError::new("ArgumentError", "tuple must have 3 expressions: (x, y, z)"));
+        }
+
+        // Parse expressions symbolically
+        let x_expr = self.parse_symbolic_arg(xyz_parts[0].trim())?;
+        let y_expr = self.parse_symbolic_arg(xyz_parts[1].trim())?;
+        let z_expr = self.parse_symbolic_arg(xyz_parts[2].trim())?;
+
+        // Check if it's a curve (2 args) or surface (3 args)
+        if parts.len() == 2 {
+            // Parametric curve
+            let t_range_str = parts[1].trim();
+            let t_range_str = t_range_str.strip_prefix('(').and_then(|s| s.strip_suffix(')'))
+                .ok_or_else(|| EvalError::new("SyntaxError", "parameter range must be (var, min, max)"))?;
+            let t_parts = self.split_at_depth_zero(t_range_str, ',');
+            if t_parts.len() != 3 {
+                return Err(EvalError::new("ArgumentError", "parameter range must have 3 parts"));
+            }
+            let t_var_name = t_parts[0].trim();
+            let t_min = self.eval_to_f64(t_parts[1].trim())?;
+            let t_max = self.eval_to_f64(t_parts[2].trim())?;
+            let t_sym = Symbol::new(t_var_name);
+
+            // Generate curve points
+            let n_points = 200;
+            let mut coords = Vec::new();
+
+            for i in 0..=n_points {
+                let t = t_min + (t_max - t_min) * i as f64 / n_points as f64;
+
+                let x_eval = x_expr.substitute(&t_sym, &Expr::Real(t));
+                let y_eval = y_expr.substitute(&t_sym, &Expr::Real(t));
+                let z_eval = z_expr.substitute(&t_sym, &Expr::Real(t));
+
+                let x = try_eval_to_f64(&x_eval).unwrap_or(f64::NAN);
+                let y = try_eval_to_f64(&y_eval).unwrap_or(f64::NAN);
+                let z = try_eval_to_f64(&z_eval).unwrap_or(f64::NAN);
+
+                if x.is_finite() && y.is_finite() && z.is_finite() {
+                    coords.push((x, y, z));
+                }
+            }
+
+            let svg = self.generate_3d_curve_svg(&coords, "3D Parametric Curve");
+            let description = format!("Parametric curve with {} points", coords.len());
+            Ok(RustMathValue::Plot { description, svg })
+        } else {
+            // Parametric surface (3 args including the tuple)
+            // Parse u range
+            let u_range_str = parts[1].trim();
+            let u_range_str = u_range_str.strip_prefix('(').and_then(|s| s.strip_suffix(')'))
+                .ok_or_else(|| EvalError::new("SyntaxError", "u range must be (var, min, max)"))?;
+            let u_parts = self.split_at_depth_zero(u_range_str, ',');
+            if u_parts.len() != 3 {
+                return Err(EvalError::new("ArgumentError", "u range must have 3 parts"));
+            }
+            let u_var_name = u_parts[0].trim();
+            let u_min = self.eval_to_f64(u_parts[1].trim())?;
+            let u_max = self.eval_to_f64(u_parts[2].trim())?;
+            let u_sym = Symbol::new(u_var_name);
+
+            // Parse v range
+            let v_range_str = parts[2].trim();
+            let v_range_str = v_range_str.strip_prefix('(').and_then(|s| s.strip_suffix(')'))
+                .ok_or_else(|| EvalError::new("SyntaxError", "v range must be (var, min, max)"))?;
+            let v_parts = self.split_at_depth_zero(v_range_str, ',');
+            if v_parts.len() != 3 {
+                return Err(EvalError::new("ArgumentError", "v range must have 3 parts"));
+            }
+            let v_var_name = v_parts[0].trim();
+            let v_min = self.eval_to_f64(v_parts[1].trim())?;
+            let v_max = self.eval_to_f64(v_parts[2].trim())?;
+            let v_sym = Symbol::new(v_var_name);
+
+            // Generate parametric surface
+            let n_u = 30;
+            let n_v = 30;
+            let mut surface_points: Vec<Vec<(f64, f64, f64)>> = Vec::new();
+
+            for j in 0..n_v {
+                let v = v_min + (v_max - v_min) * j as f64 / (n_v - 1) as f64;
+                let mut row = Vec::new();
+                for i in 0..n_u {
+                    let u = u_min + (u_max - u_min) * i as f64 / (n_u - 1) as f64;
+
+                    let x_eval = x_expr.substitute(&u_sym, &Expr::Real(u))
+                                       .substitute(&v_sym, &Expr::Real(v));
+                    let y_eval = y_expr.substitute(&u_sym, &Expr::Real(u))
+                                       .substitute(&v_sym, &Expr::Real(v));
+                    let z_eval = z_expr.substitute(&u_sym, &Expr::Real(u))
+                                       .substitute(&v_sym, &Expr::Real(v));
+
+                    let x = try_eval_to_f64(&x_eval).unwrap_or(f64::NAN);
+                    let y = try_eval_to_f64(&y_eval).unwrap_or(f64::NAN);
+                    let z = try_eval_to_f64(&z_eval).unwrap_or(f64::NAN);
+
+                    row.push((x, y, z));
+                }
+                surface_points.push(row);
+            }
+
+            let svg = self.generate_parametric_surface_svg(&surface_points, "3D Parametric Surface");
+            let description = format!("Parametric surface ({}×{} grid)", n_u, n_v);
+            Ok(RustMathValue::Plot { description, svg })
+        }
+    }
+
+    /// Evaluate implicit_plot3d
+    /// implicit_plot3d(f(x,y,z), (x, xmin, xmax), (y, ymin, ymax), (z, zmin, zmax))
+    fn eval_implicit_plot3d(&mut self, args_str: &str) -> Result<RustMathValue, EvalError> {
+        let args_str = args_str.trim();
+        let parts = self.split_at_depth_zero(args_str, ',');
+
+        if parts.len() < 4 {
+            return Err(EvalError::new("ArgumentError",
+                "implicit_plot3d requires f(x,y,z), (x, xmin, xmax), (y, ymin, ymax), (z, zmin, zmax)"));
+        }
+
+        // Parse expression symbolically
+        let f_expr = self.parse_symbolic_arg(parts[0].trim())?;
+
+        // Parse x range
+        let x_range_str = parts[1].trim();
+        let x_range_str = x_range_str.strip_prefix('(').and_then(|s| s.strip_suffix(')'))
+            .ok_or_else(|| EvalError::new("SyntaxError", "x range must be (var, min, max)"))?;
+        let x_parts = self.split_at_depth_zero(x_range_str, ',');
+        if x_parts.len() != 3 {
+            return Err(EvalError::new("ArgumentError", "x range must have 3 parts"));
+        }
+        let x_var_name = x_parts[0].trim();
+        let x_min = self.eval_to_f64(x_parts[1].trim())?;
+        let x_max = self.eval_to_f64(x_parts[2].trim())?;
+        let x_sym = Symbol::new(x_var_name);
+
+        // Parse y range
+        let y_range_str = parts[2].trim();
+        let y_range_str = y_range_str.strip_prefix('(').and_then(|s| s.strip_suffix(')'))
+            .ok_or_else(|| EvalError::new("SyntaxError", "y range must be (var, min, max)"))?;
+        let y_parts = self.split_at_depth_zero(y_range_str, ',');
+        if y_parts.len() != 3 {
+            return Err(EvalError::new("ArgumentError", "y range must have 3 parts"));
+        }
+        let y_var_name = y_parts[0].trim();
+        let y_min = self.eval_to_f64(y_parts[1].trim())?;
+        let y_max = self.eval_to_f64(y_parts[2].trim())?;
+        let y_sym = Symbol::new(y_var_name);
+
+        // Parse z range
+        let z_range_str = parts[3].trim();
+        let z_range_str = z_range_str.strip_prefix('(').and_then(|s| s.strip_suffix(')'))
+            .ok_or_else(|| EvalError::new("SyntaxError", "z range must be (var, min, max)"))?;
+        let z_parts = self.split_at_depth_zero(z_range_str, ',');
+        if z_parts.len() != 3 {
+            return Err(EvalError::new("ArgumentError", "z range must have 3 parts"));
+        }
+        let z_var_name = z_parts[0].trim();
+        let z_min = self.eval_to_f64(z_parts[1].trim())?;
+        let z_max = self.eval_to_f64(z_parts[2].trim())?;
+        let z_sym = Symbol::new(z_var_name);
+
+        // Use marching cubes to find the isosurface
+        let n = 20; // Grid resolution
+        let mut triangles: Vec<[(f64, f64, f64); 3]> = Vec::new();
+
+        // Evaluate function on grid
+        let mut grid: Vec<Vec<Vec<f64>>> = Vec::new();
+        for k in 0..=n {
+            let zv = z_min + (z_max - z_min) * k as f64 / n as f64;
+            let mut plane = Vec::new();
+            for j in 0..=n {
+                let yv = y_min + (y_max - y_min) * j as f64 / n as f64;
+                let mut row = Vec::new();
+                for i in 0..=n {
+                    let xv = x_min + (x_max - x_min) * i as f64 / n as f64;
+
+                    let eval_expr = f_expr.substitute(&x_sym, &Expr::Real(xv))
+                                          .substitute(&y_sym, &Expr::Real(yv))
+                                          .substitute(&z_sym, &Expr::Real(zv));
+                    let val = try_eval_to_f64(&eval_expr).unwrap_or(f64::NAN);
+                    row.push(val);
+                }
+                plane.push(row);
+            }
+            grid.push(plane);
+        }
+
+        // Marching cubes (simplified - just extract isosurface points)
+        let level = 0.0;
+        let dx = (x_max - x_min) / n as f64;
+        let dy = (y_max - y_min) / n as f64;
+        let dz = (z_max - z_min) / n as f64;
+
+        for k in 0..n {
+            for j in 0..n {
+                for i in 0..n {
+                    // Get 8 corner values
+                    let v = [
+                        grid[k][j][i], grid[k][j][i+1], grid[k][j+1][i+1], grid[k][j+1][i],
+                        grid[k+1][j][i], grid[k+1][j][i+1], grid[k+1][j+1][i+1], grid[k+1][j+1][i],
+                    ];
+
+                    // Simple crossing detection: if any edge has sign change, add a point
+                    let x0 = x_min + i as f64 * dx;
+                    let y0 = y_min + j as f64 * dy;
+                    let z0 = z_min + k as f64 * dz;
+
+                    // Check for sign changes and interpolate vertices
+                    let mut vertices = Vec::new();
+
+                    // Edge 0-1 (x direction, bottom front)
+                    if (v[0] - level) * (v[1] - level) < 0.0 && v[0].is_finite() && v[1].is_finite() {
+                        let t = (level - v[0]) / (v[1] - v[0]);
+                        vertices.push((x0 + t * dx, y0, z0));
+                    }
+                    // Edge 1-2 (y direction, right front)
+                    if (v[1] - level) * (v[2] - level) < 0.0 && v[1].is_finite() && v[2].is_finite() {
+                        let t = (level - v[1]) / (v[2] - v[1]);
+                        vertices.push((x0 + dx, y0 + t * dy, z0));
+                    }
+                    // Edge 2-3 (x direction, bottom back)
+                    if (v[2] - level) * (v[3] - level) < 0.0 && v[2].is_finite() && v[3].is_finite() {
+                        let t = (level - v[2]) / (v[3] - v[2]);
+                        vertices.push((x0 + (1.0 - t) * dx, y0 + dy, z0));
+                    }
+                    // Edge 3-0 (y direction, left front)
+                    if (v[3] - level) * (v[0] - level) < 0.0 && v[3].is_finite() && v[0].is_finite() {
+                        let t = (level - v[3]) / (v[0] - v[3]);
+                        vertices.push((x0, y0 + (1.0 - t) * dy, z0));
+                    }
+                    // Edge 4-5 (x direction, top front)
+                    if (v[4] - level) * (v[5] - level) < 0.0 && v[4].is_finite() && v[5].is_finite() {
+                        let t = (level - v[4]) / (v[5] - v[4]);
+                        vertices.push((x0 + t * dx, y0, z0 + dz));
+                    }
+                    // Edge 5-6 (y direction, right back)
+                    if (v[5] - level) * (v[6] - level) < 0.0 && v[5].is_finite() && v[6].is_finite() {
+                        let t = (level - v[5]) / (v[6] - v[5]);
+                        vertices.push((x0 + dx, y0 + t * dy, z0 + dz));
+                    }
+                    // Edge 6-7 (x direction, top back)
+                    if (v[6] - level) * (v[7] - level) < 0.0 && v[6].is_finite() && v[7].is_finite() {
+                        let t = (level - v[6]) / (v[7] - v[6]);
+                        vertices.push((x0 + (1.0 - t) * dx, y0 + dy, z0 + dz));
+                    }
+                    // Edge 7-4 (y direction, left back)
+                    if (v[7] - level) * (v[4] - level) < 0.0 && v[7].is_finite() && v[4].is_finite() {
+                        let t = (level - v[7]) / (v[4] - v[7]);
+                        vertices.push((x0, y0 + (1.0 - t) * dy, z0 + dz));
+                    }
+                    // Edge 0-4 (z direction, front left)
+                    if (v[0] - level) * (v[4] - level) < 0.0 && v[0].is_finite() && v[4].is_finite() {
+                        let t = (level - v[0]) / (v[4] - v[0]);
+                        vertices.push((x0, y0, z0 + t * dz));
+                    }
+                    // Edge 1-5 (z direction, front right)
+                    if (v[1] - level) * (v[5] - level) < 0.0 && v[1].is_finite() && v[5].is_finite() {
+                        let t = (level - v[1]) / (v[5] - v[1]);
+                        vertices.push((x0 + dx, y0, z0 + t * dz));
+                    }
+                    // Edge 2-6 (z direction, back right)
+                    if (v[2] - level) * (v[6] - level) < 0.0 && v[2].is_finite() && v[6].is_finite() {
+                        let t = (level - v[2]) / (v[6] - v[2]);
+                        vertices.push((x0 + dx, y0 + dy, z0 + t * dz));
+                    }
+                    // Edge 3-7 (z direction, back left)
+                    if (v[3] - level) * (v[7] - level) < 0.0 && v[3].is_finite() && v[7].is_finite() {
+                        let t = (level - v[3]) / (v[7] - v[3]);
+                        vertices.push((x0, y0 + dy, z0 + t * dz));
+                    }
+
+                    // Create triangles from vertices (fan triangulation from centroid)
+                    if vertices.len() >= 3 {
+                        let centroid = (
+                            vertices.iter().map(|v| v.0).sum::<f64>() / vertices.len() as f64,
+                            vertices.iter().map(|v| v.1).sum::<f64>() / vertices.len() as f64,
+                            vertices.iter().map(|v| v.2).sum::<f64>() / vertices.len() as f64,
+                        );
+                        for w in 0..vertices.len() {
+                            let next = (w + 1) % vertices.len();
+                            triangles.push([vertices[w], vertices[next], centroid]);
+                        }
+                    }
+                }
+            }
+        }
+
+        let svg = self.generate_implicit_surface_svg(&triangles, "Implicit Surface f(x,y,z) = 0");
+        let description = format!("Implicit surface with {} triangles", triangles.len());
+        Ok(RustMathValue::Plot { description, svg })
+    }
+
+    /// Evaluate line3d
+    fn eval_line3d(&mut self, args_str: &str) -> Result<RustMathValue, EvalError> {
+        let arg = self.eval_expr(args_str.trim())?;
+        match arg {
+            RustMathValue::List(pts) => {
+                let coords = self.extract_3d_coords(&pts)?;
+                let svg = self.generate_3d_curve_svg(&coords, "3D Line");
+                let description = format!("3D line with {} vertices", coords.len());
+                Ok(RustMathValue::Plot { description, svg })
+            }
+            _ => Err(EvalError::new("TypeError", "line3d requires a list of points")),
+        }
+    }
+
+    /// Evaluate arrow3d
+    fn eval_arrow3d(&mut self, args_str: &str) -> Result<RustMathValue, EvalError> {
+        let parts = self.split_at_depth_zero(args_str.trim(), ',');
+        if parts.len() < 2 {
+            return Err(EvalError::new("ArgumentError", "arrow3d requires start and end points"));
+        }
+
+        // Parse start point
+        let start_val = self.eval_expr(parts[0].trim())?;
+        let start = match &start_val {
+            RustMathValue::Point3D(p) => (p.x, p.y, p.z),
+            RustMathValue::List(v) if v.len() == 3 => {
+                (self.value_to_f64(&v[0])?, self.value_to_f64(&v[1])?, self.value_to_f64(&v[2])?)
+            }
+            _ => return Err(EvalError::new("TypeError", "start must be Point3D or [x,y,z]")),
+        };
+
+        // Parse end point
+        let end_val = self.eval_expr(parts[1].trim())?;
+        let end = match &end_val {
+            RustMathValue::Point3D(p) => (p.x, p.y, p.z),
+            RustMathValue::List(v) if v.len() == 3 => {
+                (self.value_to_f64(&v[0])?, self.value_to_f64(&v[1])?, self.value_to_f64(&v[2])?)
+            }
+            _ => return Err(EvalError::new("TypeError", "end must be Point3D or [x,y,z]")),
+        };
+
+        let svg = self.generate_3d_arrow_svg(start, end, "3D Arrow");
+        let description = format!("Arrow from ({:.2},{:.2},{:.2}) to ({:.2},{:.2},{:.2})",
+            start.0, start.1, start.2, end.0, end.1, end.2);
+        Ok(RustMathValue::Plot { description, svg })
+    }
+
+    /// Evaluate sphere
+    fn eval_sphere(&mut self, args_str: &str) -> Result<RustMathValue, EvalError> {
+        let args_str = args_str.trim();
+        let parts = self.split_at_depth_zero(args_str, ',');
+
+        let (center, radius) = if parts.is_empty() || args_str.is_empty() {
+            // Default: unit sphere at origin
+            ((0.0, 0.0, 0.0), 1.0)
+        } else if parts.len() == 1 {
+            // Just radius
+            let r = self.eval_to_f64(parts[0].trim())?;
+            ((0.0, 0.0, 0.0), r)
+        } else {
+            // center, radius
+            let center_val = self.eval_expr(parts[0].trim())?;
+            let center = match &center_val {
+                RustMathValue::Point3D(p) => (p.x, p.y, p.z),
+                RustMathValue::List(v) if v.len() == 3 => {
+                    (self.value_to_f64(&v[0])?, self.value_to_f64(&v[1])?, self.value_to_f64(&v[2])?)
+                }
+                _ => return Err(EvalError::new("TypeError", "center must be Point3D or [x,y,z]")),
+            };
+            let r = self.eval_to_f64(parts[1].trim())?;
+            (center, r)
+        };
+
+        // Generate sphere as parametric surface
+        let n = 30;
+        let mut surface_points: Vec<Vec<(f64, f64, f64)>> = Vec::new();
+
+        for j in 0..=n {
+            let phi = std::f64::consts::PI * j as f64 / n as f64;
+            let mut row = Vec::new();
+            for i in 0..=n {
+                let theta = 2.0 * std::f64::consts::PI * i as f64 / n as f64;
+
+                let x = center.0 + radius * phi.sin() * theta.cos();
+                let y = center.1 + radius * phi.sin() * theta.sin();
+                let z = center.2 + radius * phi.cos();
+                row.push((x, y, z));
+            }
+            surface_points.push(row);
+        }
+
+        let svg = self.generate_parametric_surface_svg(&surface_points, "Sphere");
+        let description = format!("Sphere center=({:.2},{:.2},{:.2}), radius={:.2}",
+            center.0, center.1, center.2, radius);
+        Ok(RustMathValue::Plot { description, svg })
+    }
+
+    /// Evaluate cylinder
+    fn eval_cylinder(&mut self, args_str: &str) -> Result<RustMathValue, EvalError> {
+        let parts = self.split_at_depth_zero(args_str.trim(), ',');
+
+        let (start, end, radius) = if parts.len() >= 3 {
+            let start_val = self.eval_expr(parts[0].trim())?;
+            let start = match &start_val {
+                RustMathValue::Point3D(p) => (p.x, p.y, p.z),
+                RustMathValue::List(v) if v.len() == 3 => {
+                    (self.value_to_f64(&v[0])?, self.value_to_f64(&v[1])?, self.value_to_f64(&v[2])?)
+                }
+                _ => return Err(EvalError::new("TypeError", "start must be Point3D or [x,y,z]")),
+            };
+            let end_val = self.eval_expr(parts[1].trim())?;
+            let end = match &end_val {
+                RustMathValue::Point3D(p) => (p.x, p.y, p.z),
+                RustMathValue::List(v) if v.len() == 3 => {
+                    (self.value_to_f64(&v[0])?, self.value_to_f64(&v[1])?, self.value_to_f64(&v[2])?)
+                }
+                _ => return Err(EvalError::new("TypeError", "end must be Point3D or [x,y,z]")),
+            };
+            let r = self.eval_to_f64(parts[2].trim())?;
+            (start, end, r)
+        } else {
+            // Default: vertical unit cylinder
+            ((0.0, 0.0, 0.0), (0.0, 0.0, 1.0), 1.0)
+        };
+
+        // Generate cylinder as parametric surface
+        let n_theta = 30;
+        let n_h = 10;
+        let mut surface_points: Vec<Vec<(f64, f64, f64)>> = Vec::new();
+
+        // Compute axis direction
+        let axis = (end.0 - start.0, end.1 - start.1, end.2 - start.2);
+        let axis_len = (axis.0*axis.0 + axis.1*axis.1 + axis.2*axis.2).sqrt();
+
+        // Find perpendicular vectors
+        let (perp1, perp2) = if axis.0.abs() < 0.9 {
+            let p1 = (0.0, -axis.2, axis.1);
+            let p1_len = (p1.1*p1.1 + p1.2*p1.2).sqrt();
+            let p1 = (p1.0/p1_len, p1.1/p1_len, p1.2/p1_len);
+            let p2 = (axis.1*p1.2 - axis.2*p1.1, axis.2*p1.0 - axis.0*p1.2, axis.0*p1.1 - axis.1*p1.0);
+            let p2_len = (p2.0*p2.0 + p2.1*p2.1 + p2.2*p2.2).sqrt();
+            (p1, (p2.0/p2_len, p2.1/p2_len, p2.2/p2_len))
+        } else {
+            let p1 = (-axis.1, axis.0, 0.0);
+            let p1_len = (p1.0*p1.0 + p1.1*p1.1).sqrt();
+            let p1 = (p1.0/p1_len, p1.1/p1_len, p1.2/p1_len);
+            let p2 = (axis.1*p1.2 - axis.2*p1.1, axis.2*p1.0 - axis.0*p1.2, axis.0*p1.1 - axis.1*p1.0);
+            let p2_len = (p2.0*p2.0 + p2.1*p2.1 + p2.2*p2.2).sqrt();
+            (p1, (p2.0/p2_len, p2.1/p2_len, p2.2/p2_len))
+        };
+
+        for j in 0..=n_h {
+            let t = j as f64 / n_h as f64;
+            let base = (
+                start.0 + t * axis.0,
+                start.1 + t * axis.1,
+                start.2 + t * axis.2,
+            );
+            let mut row = Vec::new();
+            for i in 0..=n_theta {
+                let theta = 2.0 * std::f64::consts::PI * i as f64 / n_theta as f64;
+                let x = base.0 + radius * (theta.cos() * perp1.0 + theta.sin() * perp2.0);
+                let y = base.1 + radius * (theta.cos() * perp1.1 + theta.sin() * perp2.1);
+                let z = base.2 + radius * (theta.cos() * perp1.2 + theta.sin() * perp2.2);
+                row.push((x, y, z));
+            }
+            surface_points.push(row);
+        }
+
+        let svg = self.generate_parametric_surface_svg(&surface_points, "Cylinder");
+        let description = format!("Cylinder radius={:.2}, height={:.2}", radius, axis_len);
+        Ok(RustMathValue::Plot { description, svg })
+    }
+
+    /// Evaluate revolution_plot3d
+    /// revolution_plot3d(curve, (t, tmin, tmax), axis='z')
+    fn eval_revolution_plot3d(&mut self, args_str: &str) -> Result<RustMathValue, EvalError> {
+        let parts = self.split_at_depth_zero(args_str.trim(), ',');
+        if parts.len() < 2 {
+            return Err(EvalError::new("ArgumentError",
+                "revolution_plot3d requires curve and (t, tmin, tmax)"));
+        }
+
+        // Parse curve: either (r(t), z(t)) or just r(t) where z = t
+        let curve_str = parts[0].trim();
+        let (r_expr_str, h_expr_str) = if curve_str.starts_with('(') && curve_str.ends_with(')') {
+            let inner = &curve_str[1..curve_str.len()-1];
+            let curve_parts = self.split_at_depth_zero(inner, ',');
+            if curve_parts.len() >= 2 {
+                (curve_parts[0].trim(), curve_parts[1].trim())
+            } else {
+                (curve_parts[0].trim(), "t")
+            }
+        } else {
+            (curve_str, "t")
+        };
+
+        // Parse expressions symbolically
+        let r_expr = self.parse_symbolic_arg(r_expr_str)?;
+        let h_expr = self.parse_symbolic_arg(h_expr_str)?;
+
+        // Parse t range
+        let t_range_str = parts[1].trim();
+        let t_range_str = t_range_str.strip_prefix('(').and_then(|s| s.strip_suffix(')'))
+            .ok_or_else(|| EvalError::new("SyntaxError", "t range must be (var, min, max)"))?;
+        let t_parts = self.split_at_depth_zero(t_range_str, ',');
+        if t_parts.len() != 3 {
+            return Err(EvalError::new("ArgumentError", "t range must have 3 parts"));
+        }
+        let t_var_name = t_parts[0].trim();
+        let t_min = self.eval_to_f64(t_parts[1].trim())?;
+        let t_max = self.eval_to_f64(t_parts[2].trim())?;
+        let t_sym = Symbol::new(t_var_name);
+
+        // Parse axis (default z)
+        let axis = if parts.len() > 2 {
+            let axis_str = parts[2].trim().trim_matches('"').trim_matches('\'');
+            axis_str.to_lowercase()
+        } else {
+            "z".to_string()
+        };
+
+        // Generate surface of revolution
+        let n_t = 50;
+        let n_theta = 40;
+        let mut surface_points: Vec<Vec<(f64, f64, f64)>> = Vec::new();
+
+        for j in 0..=n_theta {
+            let theta = 2.0 * std::f64::consts::PI * j as f64 / n_theta as f64;
+            let mut row = Vec::new();
+            for i in 0..=n_t {
+                let t = t_min + (t_max - t_min) * i as f64 / n_t as f64;
+
+                let r_eval = r_expr.substitute(&t_sym, &Expr::Real(t));
+                let h_eval = h_expr.substitute(&t_sym, &Expr::Real(t));
+                let r = try_eval_to_f64(&r_eval).unwrap_or(f64::NAN);
+                let h = try_eval_to_f64(&h_eval).unwrap_or(f64::NAN);
+
+                let (x, y, z) = match axis.as_str() {
+                    "x" => (h, r * theta.cos(), r * theta.sin()),
+                    "y" => (r * theta.cos(), h, r * theta.sin()),
+                    _ => (r * theta.cos(), r * theta.sin(), h), // z axis
+                };
+                row.push((x, y, z));
+            }
+            surface_points.push(row);
+        }
+
+        let svg = self.generate_parametric_surface_svg(&surface_points, "Surface of Revolution");
+        let description = "Surface of revolution".to_string();
+        Ok(RustMathValue::Plot { description, svg })
+    }
+
+    /// Evaluate spherical_plot3d
+    /// spherical_plot3d(r(theta, phi), (theta, 0, pi), (phi, 0, 2*pi))
+    fn eval_spherical_plot3d(&mut self, args_str: &str) -> Result<RustMathValue, EvalError> {
+        let parts = self.split_at_depth_zero(args_str.trim(), ',');
+        if parts.len() < 3 {
+            return Err(EvalError::new("ArgumentError",
+                "spherical_plot3d requires r(theta,phi), (theta, min, max), (phi, min, max)"));
+        }
+
+        // Parse expression symbolically
+        let r_expr = self.parse_symbolic_arg(parts[0].trim())?;
+
+        // Parse theta range
+        let theta_range_str = parts[1].trim();
+        let theta_range_str = theta_range_str.strip_prefix('(').and_then(|s| s.strip_suffix(')'))
+            .ok_or_else(|| EvalError::new("SyntaxError", "theta range must be (var, min, max)"))?;
+        let theta_parts = self.split_at_depth_zero(theta_range_str, ',');
+        if theta_parts.len() != 3 {
+            return Err(EvalError::new("ArgumentError", "theta range must have 3 parts"));
+        }
+        let theta_var_name = theta_parts[0].trim();
+        let theta_min = self.eval_to_f64(theta_parts[1].trim())?;
+        let theta_max = self.eval_to_f64(theta_parts[2].trim())?;
+        let theta_sym = Symbol::new(theta_var_name);
+
+        // Parse phi range
+        let phi_range_str = parts[2].trim();
+        let phi_range_str = phi_range_str.strip_prefix('(').and_then(|s| s.strip_suffix(')'))
+            .ok_or_else(|| EvalError::new("SyntaxError", "phi range must be (var, min, max)"))?;
+        let phi_parts = self.split_at_depth_zero(phi_range_str, ',');
+        if phi_parts.len() != 3 {
+            return Err(EvalError::new("ArgumentError", "phi range must have 3 parts"));
+        }
+        let phi_var_name = phi_parts[0].trim();
+        let phi_min = self.eval_to_f64(phi_parts[1].trim())?;
+        let phi_max = self.eval_to_f64(phi_parts[2].trim())?;
+        let phi_sym = Symbol::new(phi_var_name);
+
+        // Generate surface
+        let n_theta = 40;
+        let n_phi = 40;
+        let mut surface_points: Vec<Vec<(f64, f64, f64)>> = Vec::new();
+
+        for j in 0..=n_phi {
+            let phi = phi_min + (phi_max - phi_min) * j as f64 / n_phi as f64;
+            let mut row = Vec::new();
+            for i in 0..=n_theta {
+                let theta = theta_min + (theta_max - theta_min) * i as f64 / n_theta as f64;
+
+                let r_eval = r_expr.substitute(&theta_sym, &Expr::Real(theta))
+                                   .substitute(&phi_sym, &Expr::Real(phi));
+                let r = try_eval_to_f64(&r_eval).unwrap_or(1.0);
+
+                let x = r * theta.sin() * phi.cos();
+                let y = r * theta.sin() * phi.sin();
+                let z = r * theta.cos();
+                row.push((x, y, z));
+            }
+            surface_points.push(row);
+        }
+
+        let svg = self.generate_parametric_surface_svg(&surface_points, "Spherical Plot");
+        let description = "Spherical coordinate surface".to_string();
+        Ok(RustMathValue::Plot { description, svg })
+    }
+
+    /// Evaluate cylindrical_plot3d
+    /// cylindrical_plot3d(z(r, theta), (r, rmin, rmax), (theta, 0, 2*pi))
+    fn eval_cylindrical_plot3d(&mut self, args_str: &str) -> Result<RustMathValue, EvalError> {
+        let parts = self.split_at_depth_zero(args_str.trim(), ',');
+        if parts.len() < 3 {
+            return Err(EvalError::new("ArgumentError",
+                "cylindrical_plot3d requires z(r,theta), (r, min, max), (theta, min, max)"));
+        }
+
+        // Parse expression symbolically
+        let z_expr = self.parse_symbolic_arg(parts[0].trim())?;
+
+        // Parse r range
+        let r_range_str = parts[1].trim();
+        let r_range_str = r_range_str.strip_prefix('(').and_then(|s| s.strip_suffix(')'))
+            .ok_or_else(|| EvalError::new("SyntaxError", "r range must be (var, min, max)"))?;
+        let r_parts = self.split_at_depth_zero(r_range_str, ',');
+        if r_parts.len() != 3 {
+            return Err(EvalError::new("ArgumentError", "r range must have 3 parts"));
+        }
+        let r_var_name = r_parts[0].trim();
+        let r_min = self.eval_to_f64(r_parts[1].trim())?;
+        let r_max = self.eval_to_f64(r_parts[2].trim())?;
+        let r_sym = Symbol::new(r_var_name);
+
+        // Parse theta range
+        let theta_range_str = parts[2].trim();
+        let theta_range_str = theta_range_str.strip_prefix('(').and_then(|s| s.strip_suffix(')'))
+            .ok_or_else(|| EvalError::new("SyntaxError", "theta range must be (var, min, max)"))?;
+        let theta_parts = self.split_at_depth_zero(theta_range_str, ',');
+        if theta_parts.len() != 3 {
+            return Err(EvalError::new("ArgumentError", "theta range must have 3 parts"));
+        }
+        let theta_var_name = theta_parts[0].trim();
+        let theta_min = self.eval_to_f64(theta_parts[1].trim())?;
+        let theta_max = self.eval_to_f64(theta_parts[2].trim())?;
+        let theta_sym = Symbol::new(theta_var_name);
+
+        // Generate surface
+        let n_r = 30;
+        let n_theta = 40;
+        let mut surface_points: Vec<Vec<(f64, f64, f64)>> = Vec::new();
+
+        for j in 0..=n_theta {
+            let theta = theta_min + (theta_max - theta_min) * j as f64 / n_theta as f64;
+            let mut row = Vec::new();
+            for i in 0..=n_r {
+                let r = r_min + (r_max - r_min) * i as f64 / n_r as f64;
+
+                let z_eval = z_expr.substitute(&r_sym, &Expr::Real(r))
+                                   .substitute(&theta_sym, &Expr::Real(theta));
+                let z = try_eval_to_f64(&z_eval).unwrap_or(f64::NAN);
+
+                let x = r * theta.cos();
+                let y = r * theta.sin();
+                row.push((x, y, z));
+            }
+            surface_points.push(row);
+        }
+
+        let svg = self.generate_parametric_surface_svg(&surface_points, "Cylindrical Plot");
+        let description = "Cylindrical coordinate surface".to_string();
+        Ok(RustMathValue::Plot { description, svg })
+    }
+
+    // ===== 3D SVG GENERATION HELPERS =====
+
+    /// Generate SVG for a 3D surface z = f(x, y) with SageMath-style defaults
+    fn generate_surface_svg(&self, z_values: &Vec<Vec<f64>>, x_min: f64, x_max: f64,
+                            y_min: f64, y_max: f64, title: &str) -> String {
+        // Use default options (SageMath-like)
+        self.generate_surface_svg_with_options(z_values, x_min, x_max, y_min, y_max, title, &Plot3DOptions::default())
+    }
+
+    /// Generate SVG for a 3D surface with configurable options
+    fn generate_surface_svg_with_options(&self, z_values: &Vec<Vec<f64>>, x_min: f64, x_max: f64,
+                            y_min: f64, y_max: f64, title: &str, opts: &Plot3DOptions) -> String {
+        let n_y = z_values.len();
+        let n_x = if n_y > 0 { z_values[0].len() } else { 0 };
+        if n_x == 0 || n_y == 0 { return String::new(); }
+
+        // Find z bounds
+        let mut z_min = f64::INFINITY;
+        let mut z_max = f64::NEG_INFINITY;
+        for row in z_values {
+            for &z in row {
+                if z.is_finite() {
+                    z_min = z_min.min(z);
+                    z_max = z_max.max(z);
+                }
+            }
+        }
+        if !z_min.is_finite() { z_min = 0.0; }
+        if !z_max.is_finite() { z_max = 1.0; }
+        let z_range = if (z_max - z_min).abs() < 1e-10 { 1.0 } else { z_max - z_min };
+
+        let width = 600.0;
+        let height = 500.0;
+        let scale = 150.0;
+
+        // Light direction for shading (normalized, pointing from upper-left-front)
+        let light_dir = (0.5_f64, -0.5_f64, 0.7_f64);
+        let light_len = (light_dir.0.powi(2) + light_dir.1.powi(2) + light_dir.2.powi(2)).sqrt();
+        let light_dir = (light_dir.0 / light_len, light_dir.1 / light_len, light_dir.2 / light_len);
+
+        // Parse base color
+        let base_color = Self::parse_hex_color(&opts.color);
+
+        let dx = (x_max - x_min) / (n_x - 1) as f64;
+        let dy = (y_max - y_min) / (n_y - 1) as f64;
+
+        // Build mesh data for interactive rotation
+        // Normalize all coordinates to [-0.5, 0.5] range
+        let mut quads_data: Vec<((f64, f64, f64), (f64, f64, f64), (f64, f64, f64), (f64, f64, f64), String)> = Vec::new();
+
+        for j in 0..n_y-1 {
+            for i in 0..n_x-1 {
+                let x0 = x_min + i as f64 * dx;
+                let x1 = x_min + (i + 1) as f64 * dx;
+                let y0 = y_min + j as f64 * dy;
+                let y1 = y_min + (j + 1) as f64 * dy;
+
+                let z00 = z_values[j][i];
+                let z10 = z_values[j][i+1];
+                let z01 = z_values[j+1][i];
+                let z11 = z_values[j+1][i+1];
+
+                if !z00.is_finite() || !z10.is_finite() || !z01.is_finite() || !z11.is_finite() {
+                    continue;
+                }
+
+                // Normalize coordinates to [-0.5, 0.5]
+                let nx00 = (x0 - x_min) / (x_max - x_min) - 0.5;
+                let ny00 = (y0 - y_min) / (y_max - y_min) - 0.5;
+                let nz00 = (z00 - z_min) / z_range - 0.5;
+
+                let nx10 = (x1 - x_min) / (x_max - x_min) - 0.5;
+                let ny10 = (y0 - y_min) / (y_max - y_min) - 0.5;
+                let nz10 = (z10 - z_min) / z_range - 0.5;
+
+                let nx01 = (x0 - x_min) / (x_max - x_min) - 0.5;
+                let ny01 = (y1 - y_min) / (y_max - y_min) - 0.5;
+                let nz01 = (z01 - z_min) / z_range - 0.5;
+
+                let nx11 = (x1 - x_min) / (x_max - x_min) - 0.5;
+                let ny11 = (y1 - y_min) / (y_max - y_min) - 0.5;
+                let nz11 = (z11 - z_min) / z_range - 0.5;
+
+                // Compute surface normal for shading
+                let v1 = (dx, 0.0, z10 - z00);
+                let v2 = (0.0, dy, z01 - z00);
+                let normal_x = v1.1 * v2.2 - v1.2 * v2.1;
+                let normal_y = v1.2 * v2.0 - v1.0 * v2.2;
+                let normal_z = v1.0 * v2.1 - v1.1 * v2.0;
+                let n_len = (normal_x * normal_x + normal_y * normal_y + normal_z * normal_z).sqrt();
+                let (normal_x, normal_y, normal_z) = if n_len > 1e-10 {
+                    (normal_x / n_len, normal_y / n_len, normal_z / n_len)
+                } else {
+                    (0.0, 0.0, 1.0)
+                };
+
+                let intensity = if opts.shading {
+                    let dot = (normal_x * light_dir.0 + normal_y * light_dir.1 + normal_z * light_dir.2).abs();
+                    0.3 + 0.7 * dot
+                } else {
+                    1.0
+                };
+
+                let shaded_color = Self::shade_color(&base_color, intensity);
+
+                quads_data.push((
+                    (nx00, ny00, nz00),
+                    (nx10, ny10, nz10),
+                    (nx01, ny01, nz01),
+                    (nx11, ny11, nz11),
+                    shaded_color,
+                ));
+            }
+        }
+
+        // Build bounding box corners (normalized)
+        let box_corners = [
+            (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5),
+            (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5),
+            (-0.5, -0.5, 0.5), (0.5, -0.5, 0.5),
+            (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5),
+        ];
+
+        // Start SVG with interactive rotation
+        let svg = if opts.interactive {
+            // Build mesh data as JSON for JavaScript
+            let mut mesh_json = String::from("[");
+            for (idx, (v0, v1, v2, v3, color)) in quads_data.iter().enumerate() {
+                if idx > 0 { mesh_json.push(','); }
+                mesh_json.push_str(&format!(
+                    "{{\"v\":[[{:.4},{:.4},{:.4}],[{:.4},{:.4},{:.4}],[{:.4},{:.4},{:.4}],[{:.4},{:.4},{:.4}]],\"c\":\"{}\"}}",
+                    v0.0, v0.1, v0.2, v1.0, v1.1, v1.2, v3.0, v3.1, v3.2, v2.0, v2.1, v2.2, color
+                ));
+            }
+            mesh_json.push(']');
+
+            // Box corners JSON
+            let box_json = format!(
+                "[[{:.1},{:.1},{:.1}],[{:.1},{:.1},{:.1}],[{:.1},{:.1},{:.1}],[{:.1},{:.1},{:.1}],[{:.1},{:.1},{:.1}],[{:.1},{:.1},{:.1}],[{:.1},{:.1},{:.1}],[{:.1},{:.1},{:.1}]]",
+                box_corners[0].0, box_corners[0].1, box_corners[0].2,
+                box_corners[1].0, box_corners[1].1, box_corners[1].2,
+                box_corners[2].0, box_corners[2].1, box_corners[2].2,
+                box_corners[3].0, box_corners[3].1, box_corners[3].2,
+                box_corners[4].0, box_corners[4].1, box_corners[4].2,
+                box_corners[5].0, box_corners[5].1, box_corners[5].2,
+                box_corners[6].0, box_corners[6].1, box_corners[6].2,
+                box_corners[7].0, box_corners[7].1, box_corners[7].2,
+            );
+
+            let mesh_enabled = if opts.mesh { "true" } else { "false" };
+
+            format!(
+                r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" height="{height}" style="cursor: grab;">
+<rect width="{width}" height="{height}" fill="{bg}"/>
+<text x="{title_x}" y="25" text-anchor="middle" font-size="14" font-family="sans-serif" fill="#333">{title}</text>
+<g id="mesh-group"></g>
+<g id="box-group"></g>
+<text x="{title_x}" y="{hint_y}" font-size="10" fill="#999" text-anchor="middle">Drag to rotate, scroll to zoom</text>
+<script type="text/javascript"><![CDATA[
+(function() {{
+    var svg = document.currentScript.parentElement;
+    var meshGroup = svg.getElementById('mesh-group');
+    var boxGroup = svg.getElementById('box-group');
+    var mesh = {mesh_json};
+    var boxCorners = {box_json};
+    var boxEdges = [[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7],[0,4],[1,5],[2,6],[3,7]];
+    var width = {width}, height = {height}, scale = {scale}, centerX = width/2, centerY = height/2 + 30;
+    var theta = 0.7854, phi = 0.6155; // Initial rotation (45°, 35°)
+    var zoom = 1.0, isDragging = false, lastX, lastY;
+    var showMesh = {mesh_enabled};
+
+    function rotate(x, y, z) {{
+        var cosT = Math.cos(theta), sinT = Math.sin(theta);
+        var cosP = Math.cos(phi), sinP = Math.sin(phi);
+        var x1 = x * cosT - y * sinT;
+        var y1 = x * sinT + y * cosT;
+        var z1 = z;
+        var x2 = x1;
+        var y2 = y1 * cosP - z1 * sinP;
+        var z2 = y1 * sinP + z1 * cosP;
+        return [x2, y2, z2];
+    }}
+
+    function project(x, y, z) {{
+        var r = rotate(x, y, z);
+        return {{
+            px: centerX + scale * zoom * r[0],
+            py: centerY - scale * zoom * r[2],
+            depth: r[1]
+        }};
+    }}
+
+    function render() {{
+        // Project and sort quads
+        var quads = mesh.map(function(q, idx) {{
+            var pts = q.v.map(function(v) {{ return project(v[0], v[1], v[2]); }});
+            var avgDepth = (pts[0].depth + pts[1].depth + pts[2].depth + pts[3].depth) / 4;
+            return {{ pts: pts, color: q.c, depth: avgDepth, idx: idx }};
+        }});
+        quads.sort(function(a, b) {{ return a.depth - b.depth; }});
+
+        // Clear and redraw mesh
+        meshGroup.innerHTML = '';
+        quads.forEach(function(q) {{
+            var poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            var points = q.pts.map(function(p) {{ return p.px.toFixed(1) + ',' + p.py.toFixed(1); }}).join(' ');
+            poly.setAttribute('points', points);
+            poly.setAttribute('fill', q.color);
+            poly.setAttribute('fill-opacity', '{opacity}');
+            if (showMesh) {{
+                poly.setAttribute('stroke', '{mesh_color}');
+                poly.setAttribute('stroke-width', '0.5');
+            }}
+            meshGroup.appendChild(poly);
+        }});
+
+        // Redraw bounding box
+        boxGroup.innerHTML = '';
+        var projBox = boxCorners.map(function(c) {{ return project(c[0], c[1], c[2]); }});
+        boxEdges.forEach(function(e) {{
+            var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', projBox[e[0]].px.toFixed(1));
+            line.setAttribute('y1', projBox[e[0]].py.toFixed(1));
+            line.setAttribute('x2', projBox[e[1]].px.toFixed(1));
+            line.setAttribute('y2', projBox[e[1]].py.toFixed(1));
+            line.setAttribute('stroke', '#888');
+            line.setAttribute('stroke-width', '1');
+            line.setAttribute('stroke-dasharray', '4,2');
+            boxGroup.appendChild(line);
+        }});
+
+        // Axis labels
+        var labels = [['x', 1], ['y', 2], ['z', 4]];
+        labels.forEach(function(l) {{
+            var p = projBox[l[1]];
+            var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', (p.px + (l[0]==='y' ? -12 : 8)).toFixed(0));
+            text.setAttribute('y', (p.py + (l[0]==='z' ? -5 : 4)).toFixed(0));
+            text.setAttribute('font-size', '12');
+            text.setAttribute('fill', '#333');
+            text.setAttribute('font-weight', 'bold');
+            text.textContent = l[0];
+            boxGroup.appendChild(text);
+        }});
+    }}
+
+    svg.addEventListener('mousedown', function(e) {{
+        isDragging = true;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        svg.style.cursor = 'grabbing';
+    }});
+
+    svg.addEventListener('mousemove', function(e) {{
+        if (isDragging) {{
+            var dx = e.clientX - lastX;
+            var dy = e.clientY - lastY;
+            theta += dx * 0.01;
+            phi += dy * 0.01;
+            phi = Math.max(-1.5, Math.min(1.5, phi));
+            lastX = e.clientX;
+            lastY = e.clientY;
+            render();
+        }}
+    }});
+
+    svg.addEventListener('mouseup', function() {{
+        isDragging = false;
+        svg.style.cursor = 'grab';
+    }});
+
+    svg.addEventListener('mouseleave', function() {{
+        isDragging = false;
+        svg.style.cursor = 'grab';
+    }});
+
+    svg.addEventListener('wheel', function(e) {{
+        e.preventDefault();
+        zoom *= e.deltaY > 0 ? 0.9 : 1.1;
+        zoom = Math.max(0.3, Math.min(3.0, zoom));
+        render();
+    }});
+
+    render();
+}})();
+]]></script></svg>"##,
+                width = width,
+                height = height,
+                bg = opts.background,
+                title_x = width / 2.0,
+                title = title,
+                hint_y = height - 10.0,
+                mesh_json = mesh_json,
+                box_json = box_json,
+                scale = scale,
+                opacity = opts.opacity,
+                mesh_color = opts.mesh_color,
+                mesh_enabled = mesh_enabled,
+            )
+        } else {
+            // Non-interactive: use static isometric projection
+            let center_x = width / 2.0;
+            let center_y = height / 2.0 + 30.0;
+
+            let project = |x: f64, y: f64, z: f64| -> (f64, f64, f64) {
+                let px = center_x + scale * (x - y) * 0.866;
+                let py = center_y - scale * (x + y) * 0.5 - scale * z;
+                let depth = x + y - z;
+                (px, py, depth)
+            };
+
+            let mut svg_str = format!(
+                r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {} {}" width="{}" height="{}">"#,
+                width, height, width, height
+            );
+
+            svg_str.push_str(&format!(r#"<rect width="{}" height="{}" fill="{}"/>"#, width * 2.0, height * 2.0, opts.background));
+            svg_str.push_str(&format!(
+                r##"<text x="{}" y="25" text-anchor="middle" font-size="14" font-family="sans-serif" fill="#333">{}</text>"##,
+                width / 2.0, title
+            ));
+
+            // Collect and sort quads
+            let mut quads: Vec<(f64, String)> = Vec::new();
+            for (v0, v1, v2, v3, color) in &quads_data {
+                let (px0, py0, d0) = project(v0.0, v0.1, v0.2);
+                let (px1, py1, _) = project(v1.0, v1.1, v1.2);
+                let (px2, py2, _) = project(v2.0, v2.1, v2.2);
+                let (px3, py3, _) = project(v3.0, v3.1, v3.2);
+
+                let stroke = if opts.mesh {
+                    format!(r#" stroke="{}" stroke-width="0.5""#, opts.mesh_color)
+                } else {
+                    String::new()
+                };
+
+                let quad_svg = format!(
+                    r##"<polygon points="{:.1},{:.1} {:.1},{:.1} {:.1},{:.1} {:.1},{:.1}" fill="{}" fill-opacity="{}"{}/>"##,
+                    px0, py0, px1, py1, px2, py2, px3, py3, color, opts.opacity, stroke
+                );
+                quads.push((d0, quad_svg));
+            }
+
+            quads.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+            for (_, quad_svg) in quads {
+                svg_str.push_str(&quad_svg);
+            }
+
+            // Draw bounding box
+            if opts.axes {
+                let projected: Vec<(f64, f64)> = box_corners.iter()
+                    .map(|&(x, y, z)| { let (px, py, _) = project(x, y, z); (px, py) })
+                    .collect();
+
+                let edges = [
+                    (0, 1), (2, 3), (4, 5), (6, 7),
+                    (0, 2), (1, 3), (4, 6), (5, 7),
+                    (0, 4), (1, 5), (2, 6), (3, 7),
+                ];
+
+                for (i, j) in edges {
+                    svg_str.push_str(&format!(
+                        r##"<line x1="{:.1}" y1="{:.1}" x2="{:.1}" y2="{:.1}" stroke="#888" stroke-width="1" stroke-dasharray="4,2"/>"##,
+                        projected[i].0, projected[i].1, projected[j].0, projected[j].1
+                    ));
+                }
+
+                let (xx, xy) = projected[1];
+                let (yx, yy) = projected[2];
+                let (zx, zy) = projected[4];
+                svg_str.push_str(&format!(r##"<text x="{:.0}" y="{:.0}" font-size="12" fill="#333" font-weight="bold">x</text>"##, xx + 8.0, xy + 4.0));
+                svg_str.push_str(&format!(r##"<text x="{:.0}" y="{:.0}" font-size="12" fill="#333" font-weight="bold">y</text>"##, yx - 12.0, yy + 4.0));
+                svg_str.push_str(&format!(r##"<text x="{:.0}" y="{:.0}" font-size="12" fill="#333" font-weight="bold">z</text>"##, zx - 12.0, zy - 5.0));
+            }
+
+            svg_str.push_str("</svg>");
+            return svg_str;
+        };
+
+        svg
+    }
+
+    /// Parse hex color string to (r, g, b) tuple
+    fn parse_hex_color(hex: &str) -> (u8, u8, u8) {
+        let hex = hex.trim_start_matches('#');
+        if hex.len() >= 6 {
+            let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(102);
+            let g = u8::from_str_radix(&hex[2..4], 16).unwrap_or(102);
+            let b = u8::from_str_radix(&hex[4..6], 16).unwrap_or(255);
+            (r, g, b)
+        } else {
+            (102, 102, 255)  // Default SageMath blue
+        }
+    }
+
+    /// Apply shading intensity to a color
+    fn shade_color(color: &(u8, u8, u8), intensity: f64) -> String {
+        let r = (color.0 as f64 * intensity).min(255.0) as u8;
+        let g = (color.1 as f64 * intensity).min(255.0) as u8;
+        let b = (color.2 as f64 * intensity).min(255.0) as u8;
+        format!("#{:02x}{:02x}{:02x}", r, g, b)
+    }
+
+    /// Generate SVG for a 3D parametric curve with rotation support
+    fn generate_3d_curve_svg(&self, coords: &[(f64, f64, f64)], title: &str) -> String {
+        if coords.is_empty() { return String::new(); }
+
+        let width = 500.0;
+        let height = 400.0;
+        let scale = 100.0;
+
+        // Generate unique ID for this SVG
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let svg_id = format!("curve3d-{}", SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0));
+
+        // Find bounds
+        let (min_x, max_x) = coords.iter().map(|p| p.0).fold((f64::INFINITY, f64::NEG_INFINITY), |(min, max), v| (min.min(v), max.max(v)));
+        let (min_y, max_y) = coords.iter().map(|p| p.1).fold((f64::INFINITY, f64::NEG_INFINITY), |(min, max), v| (min.min(v), max.max(v)));
+        let (min_z, max_z) = coords.iter().map(|p| p.2).fold((f64::INFINITY, f64::NEG_INFINITY), |(min, max), v| (min.min(v), max.max(v)));
+
+        let range_x = if (max_x - min_x).abs() < 1e-10 { 1.0 } else { max_x - min_x };
+        let range_y = if (max_y - min_y).abs() < 1e-10 { 1.0 } else { max_y - min_y };
+        let range_z = if (max_z - min_z).abs() < 1e-10 { 1.0 } else { max_z - min_z };
+        let max_range = range_x.max(range_y).max(range_z);
+        let mid_x = (min_x + max_x) / 2.0;
+        let mid_y = (min_y + max_y) / 2.0;
+        let mid_z = (min_z + max_z) / 2.0;
+
+        // Normalize coordinates
+        let normalized: Vec<(f64, f64, f64)> = coords.iter()
+            .map(|&(x, y, z)| ((x - mid_x) / max_range, (y - mid_y) / max_range, (z - mid_z) / max_range))
+            .collect();
+
+        // Build points JSON
+        let mut points_json = String::from("[");
+        for (idx, &(nx, ny, nz)) in normalized.iter().enumerate() {
+            if idx > 0 { points_json.push(','); }
+            points_json.push_str(&format!("[{:.4},{:.4},{:.4}]", nx, ny, nz));
+        }
+        points_json.push(']');
+
+        // Bounding box corners (normalized)
+        let box_json = "[[-0.5,-0.5,-0.5],[0.5,-0.5,-0.5],[-0.5,0.5,-0.5],[0.5,0.5,-0.5],[-0.5,-0.5,0.5],[0.5,-0.5,0.5],[-0.5,0.5,0.5],[0.5,0.5,0.5]]";
+
+        format!(
+            r##"<svg xmlns="http://www.w3.org/2000/svg" id="{svg_id}" viewBox="0 0 {width} {height}" width="{width}" height="{height}" style="cursor: grab;">
+<rect width="{width}" height="{height}" fill="white"/>
+<text x="{title_x}" y="25" text-anchor="middle" font-size="14" font-family="sans-serif">{title}</text>
+<g id="{svg_id}-box"></g>
+<path id="{svg_id}-curve" fill="none" stroke="#2563eb" stroke-width="2"/>
+<text x="{title_x}" y="{hint_y}" font-size="10" fill="#999" text-anchor="middle">Drag to rotate, scroll to zoom</text>
+<script type="text/javascript"><![CDATA[
+(function() {{
+    var svg = document.getElementById('{svg_id}');
+    if (!svg) return;
+    var boxGroup = document.getElementById('{svg_id}-box');
+    var curvePath = document.getElementById('{svg_id}-curve');
+    var points = {points_json};
+    var boxCorners = {box_json};
+    var boxEdges = [[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7],[0,4],[1,5],[2,6],[3,7]];
+    var width = {width}, height = {height}, scale = {scale}, centerX = width/2, centerY = height/2;
+    var theta = 0.7854, phi = 0.6155;
+    var zoom = 1.0, isDragging = false, lastX, lastY;
+
+    function rotate(x, y, z) {{
+        var cosT = Math.cos(theta), sinT = Math.sin(theta);
+        var cosP = Math.cos(phi), sinP = Math.sin(phi);
+        var x1 = x * cosT - y * sinT, y1 = x * sinT + y * cosT, z1 = z;
+        return [x1, y1 * cosP - z1 * sinP, y1 * sinP + z1 * cosP];
+    }}
+
+    function project(x, y, z) {{
+        var r = rotate(x, y, z);
+        return {{ px: centerX + scale * zoom * r[0], py: centerY - scale * zoom * r[2] }};
+    }}
+
+    function render() {{
+        var d = points.map(function(p, i) {{
+            var proj = project(p[0], p[1], p[2]);
+            return (i === 0 ? 'M ' : ' L ') + proj.px.toFixed(1) + ' ' + proj.py.toFixed(1);
+        }}).join('');
+        curvePath.setAttribute('d', d);
+
+        boxGroup.innerHTML = '';
+        var projBox = boxCorners.map(function(c) {{ return project(c[0], c[1], c[2]); }});
+        boxEdges.forEach(function(e) {{
+            var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', projBox[e[0]].px.toFixed(1));
+            line.setAttribute('y1', projBox[e[0]].py.toFixed(1));
+            line.setAttribute('x2', projBox[e[1]].px.toFixed(1));
+            line.setAttribute('y2', projBox[e[1]].py.toFixed(1));
+            line.setAttribute('stroke', '#888');
+            line.setAttribute('stroke-width', '1');
+            line.setAttribute('stroke-dasharray', '4,2');
+            boxGroup.appendChild(line);
+        }});
+
+        var labels = [['x', 1], ['y', 2], ['z', 4]];
+        labels.forEach(function(l) {{
+            var p = projBox[l[1]];
+            var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', (p.px + (l[0]==='y' ? -12 : 8)).toFixed(0));
+            text.setAttribute('y', (p.py + (l[0]==='z' ? -5 : 4)).toFixed(0));
+            text.setAttribute('font-size', '12');
+            text.setAttribute('fill', '#333');
+            text.setAttribute('font-weight', 'bold');
+            text.textContent = l[0];
+            boxGroup.appendChild(text);
+        }});
+    }}
+
+    svg.addEventListener('mousedown', function(e) {{ isDragging = true; lastX = e.clientX; lastY = e.clientY; svg.style.cursor = 'grabbing'; }});
+    svg.addEventListener('mousemove', function(e) {{
+        if (isDragging) {{
+            theta += (e.clientX - lastX) * 0.01;
+            phi += (e.clientY - lastY) * 0.01;
+            phi = Math.max(-1.5, Math.min(1.5, phi));
+            lastX = e.clientX; lastY = e.clientY;
+            render();
+        }}
+    }});
+    svg.addEventListener('mouseup', function() {{ isDragging = false; svg.style.cursor = 'grab'; }});
+    svg.addEventListener('mouseleave', function() {{ isDragging = false; svg.style.cursor = 'grab'; }});
+    svg.addEventListener('wheel', function(e) {{ e.preventDefault(); zoom *= e.deltaY > 0 ? 0.9 : 1.1; zoom = Math.max(0.3, Math.min(3.0, zoom)); render(); }});
+    render();
+}})();
+]]></script></svg>"##,
+            svg_id = svg_id,
+            width = width,
+            height = height,
+            title_x = width / 2.0,
+            title = title,
+            hint_y = height - 10.0,
+            points_json = points_json,
+            box_json = box_json,
+            scale = scale,
+        )
+    }
+
+    /// Generate SVG for a 3D parametric surface with SageMath-style defaults
+    fn generate_parametric_surface_svg(&self, surface: &Vec<Vec<(f64, f64, f64)>>, title: &str) -> String {
+        self.generate_parametric_surface_svg_with_options(surface, title, &Plot3DOptions::default())
+    }
+
+    /// Generate SVG for a 3D parametric surface with configurable options
+    fn generate_parametric_surface_svg_with_options(&self, surface: &Vec<Vec<(f64, f64, f64)>>, title: &str, opts: &Plot3DOptions) -> String {
+        if surface.is_empty() || surface[0].is_empty() { return String::new(); }
+
+        let width = 600.0;
+        let height = 500.0;
+        let scale = 140.0;
+
+        // Light direction for shading
+        let light_dir = (0.5_f64, -0.5_f64, 0.7_f64);
+        let light_len = (light_dir.0.powi(2) + light_dir.1.powi(2) + light_dir.2.powi(2)).sqrt();
+        let light_dir = (light_dir.0 / light_len, light_dir.1 / light_len, light_dir.2 / light_len);
+
+        // Parse base color
+        let base_color = Self::parse_hex_color(&opts.color);
+
+        // Find bounds
+        let mut min_x = f64::INFINITY; let mut max_x = f64::NEG_INFINITY;
+        let mut min_y = f64::INFINITY; let mut max_y = f64::NEG_INFINITY;
+        let mut min_z = f64::INFINITY; let mut max_z = f64::NEG_INFINITY;
+
+        for row in surface {
+            for &(x, y, z) in row {
+                if x.is_finite() { min_x = min_x.min(x); max_x = max_x.max(x); }
+                if y.is_finite() { min_y = min_y.min(y); max_y = max_y.max(y); }
+                if z.is_finite() { min_z = min_z.min(z); max_z = max_z.max(z); }
+            }
+        }
+
+        let max_range = (max_x - min_x).max(max_y - min_y).max(max_z - min_z).max(1e-10);
+        let mid_x = (min_x + max_x) / 2.0;
+        let mid_y = (min_y + max_y) / 2.0;
+        let mid_z = (min_z + max_z) / 2.0;
+
+        // Collect normalized quads with their shaded colors
+        let mut quads_data: Vec<((f64, f64, f64), (f64, f64, f64), (f64, f64, f64), (f64, f64, f64), String)> = Vec::new();
+
+        for j in 0..surface.len()-1 {
+            for i in 0..surface[j].len()-1 {
+                let p00 = surface[j][i];
+                let p10 = surface[j][i+1];
+                let p01 = surface[j+1][i];
+                let p11 = surface[j+1][i+1];
+
+                if !p00.0.is_finite() || !p10.0.is_finite() || !p01.0.is_finite() || !p11.0.is_finite() {
+                    continue;
+                }
+
+                // Normalize coordinates
+                let n00 = ((p00.0 - mid_x) / max_range, (p00.1 - mid_y) / max_range, (p00.2 - mid_z) / max_range);
+                let n10 = ((p10.0 - mid_x) / max_range, (p10.1 - mid_y) / max_range, (p10.2 - mid_z) / max_range);
+                let n01 = ((p01.0 - mid_x) / max_range, (p01.1 - mid_y) / max_range, (p01.2 - mid_z) / max_range);
+                let n11 = ((p11.0 - mid_x) / max_range, (p11.1 - mid_y) / max_range, (p11.2 - mid_z) / max_range);
+
+                // Compute surface normal for shading
+                let v1 = (p10.0 - p00.0, p10.1 - p00.1, p10.2 - p00.2);
+                let v2 = (p01.0 - p00.0, p01.1 - p00.1, p01.2 - p00.2);
+                let nx = v1.1 * v2.2 - v1.2 * v2.1;
+                let ny = v1.2 * v2.0 - v1.0 * v2.2;
+                let nz = v1.0 * v2.1 - v1.1 * v2.0;
+                let n_len = (nx * nx + ny * ny + nz * nz).sqrt();
+                let (nx, ny, nz) = if n_len > 1e-10 {
+                    (nx / n_len, ny / n_len, nz / n_len)
+                } else {
+                    (0.0, 0.0, 1.0)
+                };
+
+                let intensity = if opts.shading {
+                    let dot = (nx * light_dir.0 + ny * light_dir.1 + nz * light_dir.2).abs();
+                    0.3 + 0.7 * dot
+                } else {
+                    1.0
+                };
+
+                let shaded_color = Self::shade_color(&base_color, intensity);
+                quads_data.push((n00, n10, n01, n11, shaded_color));
+            }
+        }
+
+        // Bounding box corners (normalized)
+        let box_corners = [
+            (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5),
+            (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5),
+            (-0.5, -0.5, 0.5), (0.5, -0.5, 0.5),
+            (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5),
+        ];
+
+        let svg = if opts.interactive {
+            // Build mesh data as JSON
+            let mut mesh_json = String::from("[");
+            for (idx, (v0, v1, v2, v3, color)) in quads_data.iter().enumerate() {
+                if idx > 0 { mesh_json.push(','); }
+                mesh_json.push_str(&format!(
+                    "{{\"v\":[[{:.4},{:.4},{:.4}],[{:.4},{:.4},{:.4}],[{:.4},{:.4},{:.4}],[{:.4},{:.4},{:.4}]],\"c\":\"{}\"}}",
+                    v0.0, v0.1, v0.2, v1.0, v1.1, v1.2, v3.0, v3.1, v3.2, v2.0, v2.1, v2.2, color
+                ));
+            }
+            mesh_json.push(']');
+
+            let box_json = format!(
+                "[[{:.1},{:.1},{:.1}],[{:.1},{:.1},{:.1}],[{:.1},{:.1},{:.1}],[{:.1},{:.1},{:.1}],[{:.1},{:.1},{:.1}],[{:.1},{:.1},{:.1}],[{:.1},{:.1},{:.1}],[{:.1},{:.1},{:.1}]]",
+                box_corners[0].0, box_corners[0].1, box_corners[0].2,
+                box_corners[1].0, box_corners[1].1, box_corners[1].2,
+                box_corners[2].0, box_corners[2].1, box_corners[2].2,
+                box_corners[3].0, box_corners[3].1, box_corners[3].2,
+                box_corners[4].0, box_corners[4].1, box_corners[4].2,
+                box_corners[5].0, box_corners[5].1, box_corners[5].2,
+                box_corners[6].0, box_corners[6].1, box_corners[6].2,
+                box_corners[7].0, box_corners[7].1, box_corners[7].2,
+            );
+
+            let mesh_enabled = if opts.mesh { "true" } else { "false" };
+
+            format!(
+                r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" height="{height}" style="cursor: grab;">
+<rect width="{width}" height="{height}" fill="{bg}"/>
+<text x="{title_x}" y="25" text-anchor="middle" font-size="14" font-family="sans-serif" fill="#333">{title}</text>
+<g id="mesh-group"></g>
+<g id="box-group"></g>
+<text x="{title_x}" y="{hint_y}" font-size="10" fill="#999" text-anchor="middle">Drag to rotate, scroll to zoom</text>
+<script type="text/javascript"><![CDATA[
+(function() {{
+    var svg = document.currentScript.parentElement;
+    var meshGroup = svg.getElementById('mesh-group');
+    var boxGroup = svg.getElementById('box-group');
+    var mesh = {mesh_json};
+    var boxCorners = {box_json};
+    var boxEdges = [[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7],[0,4],[1,5],[2,6],[3,7]];
+    var width = {width}, height = {height}, scale = {scale}, centerX = width/2, centerY = height/2 + 30;
+    var theta = 0.7854, phi = 0.6155;
+    var zoom = 1.0, isDragging = false, lastX, lastY;
+    var showMesh = {mesh_enabled};
+
+    function rotate(x, y, z) {{
+        var cosT = Math.cos(theta), sinT = Math.sin(theta);
+        var cosP = Math.cos(phi), sinP = Math.sin(phi);
+        var x1 = x * cosT - y * sinT;
+        var y1 = x * sinT + y * cosT;
+        var z1 = z;
+        var x2 = x1;
+        var y2 = y1 * cosP - z1 * sinP;
+        var z2 = y1 * sinP + z1 * cosP;
+        return [x2, y2, z2];
+    }}
+
+    function project(x, y, z) {{
+        var r = rotate(x, y, z);
+        return {{ px: centerX + scale * zoom * r[0], py: centerY - scale * zoom * r[2], depth: r[1] }};
+    }}
+
+    function render() {{
+        var quads = mesh.map(function(q) {{
+            var pts = q.v.map(function(v) {{ return project(v[0], v[1], v[2]); }});
+            var avgDepth = (pts[0].depth + pts[1].depth + pts[2].depth + pts[3].depth) / 4;
+            return {{ pts: pts, color: q.c, depth: avgDepth }};
+        }});
+        quads.sort(function(a, b) {{ return a.depth - b.depth; }});
+
+        meshGroup.innerHTML = '';
+        quads.forEach(function(q) {{
+            var poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            var points = q.pts.map(function(p) {{ return p.px.toFixed(1) + ',' + p.py.toFixed(1); }}).join(' ');
+            poly.setAttribute('points', points);
+            poly.setAttribute('fill', q.color);
+            poly.setAttribute('fill-opacity', '{opacity}');
+            if (showMesh) {{ poly.setAttribute('stroke', '{mesh_color}'); poly.setAttribute('stroke-width', '0.5'); }}
+            meshGroup.appendChild(poly);
+        }});
+
+        boxGroup.innerHTML = '';
+        var projBox = boxCorners.map(function(c) {{ return project(c[0], c[1], c[2]); }});
+        boxEdges.forEach(function(e) {{
+            var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', projBox[e[0]].px.toFixed(1));
+            line.setAttribute('y1', projBox[e[0]].py.toFixed(1));
+            line.setAttribute('x2', projBox[e[1]].px.toFixed(1));
+            line.setAttribute('y2', projBox[e[1]].py.toFixed(1));
+            line.setAttribute('stroke', '#888');
+            line.setAttribute('stroke-width', '1');
+            line.setAttribute('stroke-dasharray', '4,2');
+            boxGroup.appendChild(line);
+        }});
+
+        var labels = [['x', 1], ['y', 2], ['z', 4]];
+        labels.forEach(function(l) {{
+            var p = projBox[l[1]];
+            var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', (p.px + (l[0]==='y' ? -12 : 8)).toFixed(0));
+            text.setAttribute('y', (p.py + (l[0]==='z' ? -5 : 4)).toFixed(0));
+            text.setAttribute('font-size', '12');
+            text.setAttribute('fill', '#333');
+            text.setAttribute('font-weight', 'bold');
+            text.textContent = l[0];
+            boxGroup.appendChild(text);
+        }});
+    }}
+
+    svg.addEventListener('mousedown', function(e) {{ isDragging = true; lastX = e.clientX; lastY = e.clientY; svg.style.cursor = 'grabbing'; }});
+    svg.addEventListener('mousemove', function(e) {{
+        if (isDragging) {{
+            theta += (e.clientX - lastX) * 0.01;
+            phi += (e.clientY - lastY) * 0.01;
+            phi = Math.max(-1.5, Math.min(1.5, phi));
+            lastX = e.clientX; lastY = e.clientY;
+            render();
+        }}
+    }});
+    svg.addEventListener('mouseup', function() {{ isDragging = false; svg.style.cursor = 'grab'; }});
+    svg.addEventListener('mouseleave', function() {{ isDragging = false; svg.style.cursor = 'grab'; }});
+    svg.addEventListener('wheel', function(e) {{ e.preventDefault(); zoom *= e.deltaY > 0 ? 0.9 : 1.1; zoom = Math.max(0.3, Math.min(3.0, zoom)); render(); }});
+    render();
+}})();
+]]></script></svg>"##,
+                width = width,
+                height = height,
+                bg = opts.background,
+                title_x = width / 2.0,
+                title = title,
+                hint_y = height - 10.0,
+                mesh_json = mesh_json,
+                box_json = box_json,
+                scale = scale,
+                opacity = opts.opacity,
+                mesh_color = opts.mesh_color,
+                mesh_enabled = mesh_enabled,
+            )
+        } else {
+            // Non-interactive: static isometric projection
+            let center_x = width / 2.0;
+            let center_y = height / 2.0 + 30.0;
+
+            let project = |x: f64, y: f64, z: f64| -> (f64, f64, f64) {
+                let px = center_x + scale * (x - y) * 0.866;
+                let py = center_y - scale * (x + y) * 0.5 - scale * z;
+                let depth = x + y - z;
+                (px, py, depth)
+            };
+
+            let mut svg_str = format!(
+                r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {} {}" width="{}" height="{}">"#,
+                width, height, width, height
+            );
+
+            svg_str.push_str(&format!(r#"<rect width="{}" height="{}" fill="{}"/>"#, width * 2.0, height * 2.0, opts.background));
+            svg_str.push_str(&format!(
+                r##"<text x="{}" y="25" text-anchor="middle" font-size="14" font-family="sans-serif" fill="#333">{}</text>"##,
+                width / 2.0, title
+            ));
+
+            let mut quads: Vec<(f64, String)> = Vec::new();
+            for (v0, v1, v2, v3, color) in &quads_data {
+                let (px0, py0, d0) = project(v0.0, v0.1, v0.2);
+                let (px1, py1, _) = project(v1.0, v1.1, v1.2);
+                let (px2, py2, _) = project(v2.0, v2.1, v2.2);
+                let (px3, py3, _) = project(v3.0, v3.1, v3.2);
+
+                let stroke = if opts.mesh {
+                    format!(r#" stroke="{}" stroke-width="0.5""#, opts.mesh_color)
+                } else {
+                    String::new()
+                };
+
+                let quad_svg = format!(
+                    r##"<polygon points="{:.1},{:.1} {:.1},{:.1} {:.1},{:.1} {:.1},{:.1}" fill="{}" fill-opacity="{}"{}/>"##,
+                    px0, py0, px1, py1, px3, py3, px2, py2, color, opts.opacity, stroke
+                );
+                quads.push((d0, quad_svg));
+            }
+
+            quads.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+            for (_, quad_svg) in quads {
+                svg_str.push_str(&quad_svg);
+            }
+
+            if opts.axes {
+                let projected: Vec<(f64, f64)> = box_corners.iter()
+                    .map(|&(x, y, z)| { let (px, py, _) = project(x, y, z); (px, py) })
+                    .collect();
+
+                let edges = [(0, 1), (2, 3), (4, 5), (6, 7), (0, 2), (1, 3), (4, 6), (5, 7), (0, 4), (1, 5), (2, 6), (3, 7)];
+                for (i, j) in edges {
+                    svg_str.push_str(&format!(
+                        r##"<line x1="{:.1}" y1="{:.1}" x2="{:.1}" y2="{:.1}" stroke="#888" stroke-width="1" stroke-dasharray="4,2"/>"##,
+                        projected[i].0, projected[i].1, projected[j].0, projected[j].1
+                    ));
+                }
+
+                let (xx, xy) = projected[1]; let (yx, yy) = projected[2]; let (zx, zy) = projected[4];
+                svg_str.push_str(&format!(r##"<text x="{:.0}" y="{:.0}" font-size="12" fill="#333" font-weight="bold">x</text>"##, xx + 8.0, xy + 4.0));
+                svg_str.push_str(&format!(r##"<text x="{:.0}" y="{:.0}" font-size="12" fill="#333" font-weight="bold">y</text>"##, yx - 12.0, yy + 4.0));
+                svg_str.push_str(&format!(r##"<text x="{:.0}" y="{:.0}" font-size="12" fill="#333" font-weight="bold">z</text>"##, zx - 12.0, zy - 5.0));
+            }
+
+            svg_str.push_str("</svg>");
+            svg_str
+        };
+
+        svg
+    }
+
+    /// Generate SVG for a 3D arrow
+    fn generate_3d_arrow_svg(&self, start: (f64, f64, f64), end: (f64, f64, f64), title: &str) -> String {
+        let width = 400.0;
+        let height = 350.0;
+        let center_x = width / 2.0;
+        let center_y = height / 2.0;
+        let scale = 80.0;
+
+        let all_coords = vec![start, end, (0.0, 0.0, 0.0)];
+        let min_x = all_coords.iter().map(|p| p.0).fold(f64::INFINITY, f64::min);
+        let max_x = all_coords.iter().map(|p| p.0).fold(f64::NEG_INFINITY, f64::max);
+        let min_y = all_coords.iter().map(|p| p.1).fold(f64::INFINITY, f64::min);
+        let max_y = all_coords.iter().map(|p| p.1).fold(f64::NEG_INFINITY, f64::max);
+        let min_z = all_coords.iter().map(|p| p.2).fold(f64::INFINITY, f64::min);
+        let max_z = all_coords.iter().map(|p| p.2).fold(f64::NEG_INFINITY, f64::max);
+
+        let range = (max_x - min_x).max(max_y - min_y).max(max_z - min_z).max(1.0);
+        let mid = ((min_x + max_x) / 2.0, (min_y + max_y) / 2.0, (min_z + max_z) / 2.0);
+
+        let project = |x: f64, y: f64, z: f64| -> (f64, f64) {
+            let nx = (x - mid.0) / range;
+            let ny = (y - mid.1) / range;
+            let nz = (z - mid.2) / range;
+
+            let px = center_x + scale * (nx - ny) * 0.866;
+            let py = center_y - scale * (nx + ny) * 0.5 - scale * nz;
+            (px, py)
+        };
+
+        let mut svg = format!(
+            r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {} {}" width="{}" height="{}" style="cursor: grab;">
+<script type="text/javascript"><![CDATA[
+(function() {{
+    var svg = document.currentScript.parentElement;
+    var viewBox = svg.viewBox.baseVal;
+    var zoom = 1.0, panX = 0, panY = 0, isDragging = false, startX, startY;
+    svg.addEventListener('wheel', function(e) {{
+        e.preventDefault();
+        zoom *= e.deltaY > 0 ? 1.1 : 0.9;
+        zoom = Math.max(0.5, Math.min(3.0, zoom));
+        var w = {} * zoom, h = {} * zoom;
+        viewBox.x = ({} - w) / 2 + panX; viewBox.y = ({} - h) / 2 + panY;
+        viewBox.width = w; viewBox.height = h;
+    }});
+    svg.addEventListener('mousedown', function(e) {{ isDragging = true; startX = e.clientX; startY = e.clientY; }});
+    svg.addEventListener('mousemove', function(e) {{
+        if (isDragging) {{
+            panX -= (e.clientX - startX) * zoom; panY -= (e.clientY - startY) * zoom;
+            startX = e.clientX; startY = e.clientY;
+            var w = {} * zoom, h = {} * zoom;
+            viewBox.x = ({} - w) / 2 + panX; viewBox.y = ({} - h) / 2 + panY;
+            viewBox.width = w; viewBox.height = h;
+        }}
+    }});
+    svg.addEventListener('mouseup', function() {{ isDragging = false; }});
+    svg.addEventListener('mouseleave', function() {{ isDragging = false; }});
+}})();
+]]></script>"##,
+            width, height, width, height, width, height, width, height, width, height, width, height
+        );
+
+        svg.push_str(&format!(r#"<rect width="{}" height="{}" fill="white"/>"#, width, height));
+        svg.push_str(&format!(
+            r#"<text x="{}" y="25" text-anchor="middle" font-size="14" font-family="sans-serif">{}</text>"#,
+            width / 2.0, title
+        ));
+
+        // Draw 3D bounding box
+        let corners = [
+            (min_x, min_y, min_z), (max_x, min_y, min_z),
+            (min_x, max_y, min_z), (max_x, max_y, min_z),
+            (min_x, min_y, max_z), (max_x, min_y, max_z),
+            (min_x, max_y, max_z), (max_x, max_y, max_z),
+        ];
+        let projected_corners: Vec<(f64, f64)> = corners.iter()
+            .map(|&(x, y, z)| project(x, y, z))
+            .collect();
+
+        // 12 edges of the box
+        let edges = [
+            (0, 1), (2, 3), (4, 5), (6, 7),  // x-direction edges
+            (0, 2), (1, 3), (4, 6), (5, 7),  // y-direction edges
+            (0, 4), (1, 5), (2, 6), (3, 7),  // z-direction edges
+        ];
+
+        for (i, j) in edges {
+            svg.push_str(&format!(
+                r##"<line x1="{:.1}" y1="{:.1}" x2="{:.1}" y2="{:.1}" stroke="#888" stroke-width="1" stroke-dasharray="4,2"/>"##,
+                projected_corners[i].0, projected_corners[i].1, projected_corners[j].0, projected_corners[j].1
+            ));
+        }
+
+        // Axis labels
+        let (xx, xy) = projected_corners[1];
+        let (yx, yy) = projected_corners[2];
+        let (zx, zy) = projected_corners[4];
+        svg.push_str(&format!(r##"<text x="{:.0}" y="{:.0}" font-size="12" fill="#333" font-weight="bold">x</text>"##, xx + 8.0, xy + 4.0));
+        svg.push_str(&format!(r##"<text x="{:.0}" y="{:.0}" font-size="12" fill="#333" font-weight="bold">y</text>"##, yx - 12.0, yy + 4.0));
+        svg.push_str(&format!(r##"<text x="{:.0}" y="{:.0}" font-size="12" fill="#333" font-weight="bold">z</text>"##, zx - 12.0, zy - 5.0));
+
+        let (sx, sy) = project(start.0, start.1, start.2);
+        let (ex, ey) = project(end.0, end.1, end.2);
+
+        svg.push_str(&format!(
+            r##"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="#2563eb" stroke-width="3" marker-end="url(#arrowhead)"/>"##,
+            sx, sy, ex, ey
+        ));
+
+        // Arrowhead marker
+        svg.push_str(r##"<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/></marker></defs>"##);
+
+        svg.push_str(&format!(
+            r##"<text x="{}" y="{}" font-size="10" fill="#999" text-anchor="middle">Scroll to zoom, drag to pan</text>"##,
+            width / 2.0, height - 10.0
+        ));
+
+        svg.push_str("</svg>");
+        svg
+    }
+
+    /// Generate SVG for implicit surface (triangles) with rotation support
+    fn generate_implicit_surface_svg(&self, triangles: &[[(f64, f64, f64); 3]], title: &str) -> String {
+        if triangles.is_empty() { return String::new(); }
+
+        let opts = Plot3DOptions::default();
+        let width = 600.0;
+        let height = 500.0;
+        let scale = 140.0;
+
+        // Generate unique ID for this SVG
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let svg_id = format!("implicit3d-{}", SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0));
+
+        // Light direction for shading
+        let light_dir = (0.5_f64, -0.5_f64, 0.7_f64);
+        let light_len = (light_dir.0.powi(2) + light_dir.1.powi(2) + light_dir.2.powi(2)).sqrt();
+        let light_dir = (light_dir.0 / light_len, light_dir.1 / light_len, light_dir.2 / light_len);
+        let base_color = Self::parse_hex_color(&opts.color);
+
+        // Find bounds
+        let mut min_x = f64::INFINITY; let mut max_x = f64::NEG_INFINITY;
+        let mut min_y = f64::INFINITY; let mut max_y = f64::NEG_INFINITY;
+        let mut min_z = f64::INFINITY; let mut max_z = f64::NEG_INFINITY;
+
+        for tri in triangles {
+            for &(x, y, z) in tri {
+                if x.is_finite() { min_x = min_x.min(x); max_x = max_x.max(x); }
+                if y.is_finite() { min_y = min_y.min(y); max_y = max_y.max(y); }
+                if z.is_finite() { min_z = min_z.min(z); max_z = max_z.max(z); }
+            }
+        }
+
+        let max_range = (max_x - min_x).max(max_y - min_y).max(max_z - min_z).max(1.0);
+        let mid = ((min_x + max_x) / 2.0, (min_y + max_y) / 2.0, (min_z + max_z) / 2.0);
+
+        // Build triangles JSON with normalized coordinates and shaded colors
+        let mut tris_json = String::from("[");
+        for (idx, tri) in triangles.iter().enumerate() {
+            if idx > 0 { tris_json.push(','); }
+
+            // Normalize vertices
+            let v0 = ((tri[0].0 - mid.0) / max_range, (tri[0].1 - mid.1) / max_range, (tri[0].2 - mid.2) / max_range);
+            let v1 = ((tri[1].0 - mid.0) / max_range, (tri[1].1 - mid.1) / max_range, (tri[1].2 - mid.2) / max_range);
+            let v2 = ((tri[2].0 - mid.0) / max_range, (tri[2].1 - mid.1) / max_range, (tri[2].2 - mid.2) / max_range);
+
+            // Compute surface normal for shading
+            let e1 = (tri[1].0 - tri[0].0, tri[1].1 - tri[0].1, tri[1].2 - tri[0].2);
+            let e2 = (tri[2].0 - tri[0].0, tri[2].1 - tri[0].1, tri[2].2 - tri[0].2);
+            let nx = e1.1 * e2.2 - e1.2 * e2.1;
+            let ny = e1.2 * e2.0 - e1.0 * e2.2;
+            let nz = e1.0 * e2.1 - e1.1 * e2.0;
+            let n_len = (nx * nx + ny * ny + nz * nz).sqrt();
+            let (nx, ny, nz) = if n_len > 1e-10 { (nx / n_len, ny / n_len, nz / n_len) } else { (0.0, 0.0, 1.0) };
+
+            let dot = (nx * light_dir.0 + ny * light_dir.1 + nz * light_dir.2).abs();
+            let intensity = 0.3 + 0.7 * dot;
+            let shaded_color = Self::shade_color(&base_color, intensity);
+
+            tris_json.push_str(&format!(
+                "{{\"v\":[[{:.4},{:.4},{:.4}],[{:.4},{:.4},{:.4}],[{:.4},{:.4},{:.4}]],\"c\":\"{}\"}}",
+                v0.0, v0.1, v0.2, v1.0, v1.1, v1.2, v2.0, v2.1, v2.2, shaded_color
+            ));
+        }
+        tris_json.push(']');
+
+        let box_json = "[[-0.5,-0.5,-0.5],[0.5,-0.5,-0.5],[-0.5,0.5,-0.5],[0.5,0.5,-0.5],[-0.5,-0.5,0.5],[0.5,-0.5,0.5],[-0.5,0.5,0.5],[0.5,0.5,0.5]]";
+
+        format!(
+            r##"<svg xmlns="http://www.w3.org/2000/svg" id="{svg_id}" viewBox="0 0 {width} {height}" width="{width}" height="{height}" style="cursor: grab;">
+<rect width="{width}" height="{height}" fill="{bg}"/>
+<text x="{title_x}" y="25" text-anchor="middle" font-size="14" font-family="sans-serif" fill="#333">{title}</text>
+<g id="{svg_id}-mesh"></g>
+<g id="{svg_id}-box"></g>
+<text x="{title_x}" y="{hint_y}" font-size="10" fill="#999" text-anchor="middle">Drag to rotate, scroll to zoom</text>
+<script type="text/javascript"><![CDATA[
+(function() {{
+    var svg = document.getElementById('{svg_id}');
+    if (!svg) return;
+    var meshGroup = document.getElementById('{svg_id}-mesh');
+    var boxGroup = document.getElementById('{svg_id}-box');
+    var tris = {tris_json};
+    var boxCorners = {box_json};
+    var boxEdges = [[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7],[0,4],[1,5],[2,6],[3,7]];
+    var width = {width}, height = {height}, scale = {scale}, centerX = width/2, centerY = height/2 + 30;
+    var theta = 0.7854, phi = 0.6155;
+    var zoom = 1.0, isDragging = false, lastX, lastY;
+
+    function rotate(x, y, z) {{
+        var cosT = Math.cos(theta), sinT = Math.sin(theta);
+        var cosP = Math.cos(phi), sinP = Math.sin(phi);
+        var x1 = x * cosT - y * sinT, y1 = x * sinT + y * cosT, z1 = z;
+        return [x1, y1 * cosP - z1 * sinP, y1 * sinP + z1 * cosP];
+    }}
+
+    function project(x, y, z) {{
+        var r = rotate(x, y, z);
+        return {{ px: centerX + scale * zoom * r[0], py: centerY - scale * zoom * r[2], depth: r[1] }};
+    }}
+
+    function render() {{
+        var projected = tris.map(function(t) {{
+            var pts = t.v.map(function(v) {{ return project(v[0], v[1], v[2]); }});
+            var avgDepth = (pts[0].depth + pts[1].depth + pts[2].depth) / 3;
+            return {{ pts: pts, color: t.c, depth: avgDepth }};
+        }});
+        projected.sort(function(a, b) {{ return a.depth - b.depth; }});
+
+        meshGroup.innerHTML = '';
+        projected.forEach(function(t) {{
+            var poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            var points = t.pts.map(function(p) {{ return p.px.toFixed(1) + ',' + p.py.toFixed(1); }}).join(' ');
+            poly.setAttribute('points', points);
+            poly.setAttribute('fill', t.color);
+            poly.setAttribute('fill-opacity', '{opacity}');
+            meshGroup.appendChild(poly);
+        }});
+
+        boxGroup.innerHTML = '';
+        var projBox = boxCorners.map(function(c) {{ return project(c[0], c[1], c[2]); }});
+        boxEdges.forEach(function(e) {{
+            var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', projBox[e[0]].px.toFixed(1));
+            line.setAttribute('y1', projBox[e[0]].py.toFixed(1));
+            line.setAttribute('x2', projBox[e[1]].px.toFixed(1));
+            line.setAttribute('y2', projBox[e[1]].py.toFixed(1));
+            line.setAttribute('stroke', '#888');
+            line.setAttribute('stroke-width', '1');
+            line.setAttribute('stroke-dasharray', '4,2');
+            boxGroup.appendChild(line);
+        }});
+
+        var labels = [['x', 1], ['y', 2], ['z', 4]];
+        labels.forEach(function(l) {{
+            var p = projBox[l[1]];
+            var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', (p.px + (l[0]==='y' ? -12 : 8)).toFixed(0));
+            text.setAttribute('y', (p.py + (l[0]==='z' ? -5 : 4)).toFixed(0));
+            text.setAttribute('font-size', '12');
+            text.setAttribute('fill', '#333');
+            text.setAttribute('font-weight', 'bold');
+            text.textContent = l[0];
+            boxGroup.appendChild(text);
+        }});
+    }}
+
+    svg.addEventListener('mousedown', function(e) {{ isDragging = true; lastX = e.clientX; lastY = e.clientY; svg.style.cursor = 'grabbing'; }});
+    svg.addEventListener('mousemove', function(e) {{
+        if (isDragging) {{
+            theta += (e.clientX - lastX) * 0.01;
+            phi += (e.clientY - lastY) * 0.01;
+            phi = Math.max(-1.5, Math.min(1.5, phi));
+            lastX = e.clientX; lastY = e.clientY;
+            render();
+        }}
+    }});
+    svg.addEventListener('mouseup', function() {{ isDragging = false; svg.style.cursor = 'grab'; }});
+    svg.addEventListener('mouseleave', function() {{ isDragging = false; svg.style.cursor = 'grab'; }});
+    svg.addEventListener('wheel', function(e) {{ e.preventDefault(); zoom *= e.deltaY > 0 ? 0.9 : 1.1; zoom = Math.max(0.3, Math.min(3.0, zoom)); render(); }});
+    render();
+}})();
+]]></script></svg>"##,
+            svg_id = svg_id,
+            width = width,
+            height = height,
+            bg = opts.background,
+            title_x = width / 2.0,
+            title = title,
+            hint_y = height - 10.0,
+            tris_json = tris_json,
+            box_json = box_json,
+            scale = scale,
+            opacity = opts.opacity,
+        )
+    }
+
     /// Convert a list of RustMathValues to Vec<f64> for statistics functions
     fn list_to_floats(&self, values: &[RustMathValue]) -> Result<Vec<f64>, EvalError> {
         values.iter().map(|v| {
@@ -5631,6 +7775,72 @@ impl ReplContext {
             Some(v) => Ok(v),
             None => Err(EvalError::new("ValueError", "could not evaluate expression to a number")),
         }
+    }
+
+    /// Substitute a variable in an expression string with a numeric value
+    /// This is a simple textual substitution for use in plotting functions
+    fn substitute_var(&self, expr_str: &str, var_name: &str, value: f64) -> String {
+        // Use regex-like pattern matching to replace variable occurrences
+        // We need to be careful to only replace whole variable names, not partial matches
+        let mut result = String::new();
+        let mut chars = expr_str.chars().peekable();
+        let var_chars: Vec<char> = var_name.chars().collect();
+
+        while let Some(c) = chars.next() {
+            // Check if this might be the start of our variable
+            if c == var_chars[0] {
+                let mut matched = true;
+                let mut consumed: Vec<char> = vec![c];
+
+                // Try to match rest of variable name
+                for &vc in &var_chars[1..] {
+                    if let Some(&next) = chars.peek() {
+                        if next == vc {
+                            consumed.push(chars.next().unwrap());
+                        } else {
+                            matched = false;
+                            break;
+                        }
+                    } else {
+                        matched = false;
+                        break;
+                    }
+                }
+
+                if matched {
+                    // Check that we're not in the middle of a larger identifier
+                    let is_word_boundary = match chars.peek() {
+                        Some(&next) => !next.is_alphanumeric() && next != '_',
+                        None => true,
+                    };
+
+                    // Also check if previous char was a word char (harder - we use a simpler heuristic)
+                    // For now, check if result ends with an alphanumeric
+                    let prev_is_boundary = result.chars().last()
+                        .map(|prev| !prev.is_alphanumeric() && prev != '_')
+                        .unwrap_or(true);
+
+                    if is_word_boundary && prev_is_boundary {
+                        // Wrap in parentheses for safety with negative numbers
+                        result.push_str(&format!("({})", value));
+                    } else {
+                        // Not a standalone variable, push back consumed chars
+                        for ch in consumed {
+                            result.push(ch);
+                        }
+                    }
+                } else {
+                    // Didn't fully match, push back what we consumed
+                    for ch in consumed {
+                        result.push(ch);
+                    }
+                }
+            } else {
+                result.push(c);
+            }
+        }
+
+        result
     }
 
     /// Generate SVG for a 2D scatter or line plot
@@ -5886,8 +8096,35 @@ impl ReplContext {
         };
 
         let mut svg = format!(
-            r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {} {}" width="{}" height="{}">"#,
-            width, height, width, height
+            r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {} {}" width="{}" height="{}" style="cursor: grab;">
+<script type="text/javascript"><![CDATA[
+(function() {{
+    var svg = document.currentScript.parentElement;
+    var viewBox = svg.viewBox.baseVal;
+    var zoom = 1.0, panX = 0, panY = 0, isDragging = false, startX, startY;
+    svg.addEventListener('wheel', function(e) {{
+        e.preventDefault();
+        zoom *= e.deltaY > 0 ? 1.1 : 0.9;
+        zoom = Math.max(0.5, Math.min(3.0, zoom));
+        var w = {} * zoom, h = {} * zoom;
+        viewBox.x = ({} - w) / 2 + panX; viewBox.y = ({} - h) / 2 + panY;
+        viewBox.width = w; viewBox.height = h;
+    }});
+    svg.addEventListener('mousedown', function(e) {{ isDragging = true; startX = e.clientX; startY = e.clientY; }});
+    svg.addEventListener('mousemove', function(e) {{
+        if (isDragging) {{
+            panX -= (e.clientX - startX) * zoom; panY -= (e.clientY - startY) * zoom;
+            startX = e.clientX; startY = e.clientY;
+            var w = {} * zoom, h = {} * zoom;
+            viewBox.x = ({} - w) / 2 + panX; viewBox.y = ({} - h) / 2 + panY;
+            viewBox.width = w; viewBox.height = h;
+        }}
+    }});
+    svg.addEventListener('mouseup', function() {{ isDragging = false; }});
+    svg.addEventListener('mouseleave', function() {{ isDragging = false; }});
+}})();
+]]></script>"##,
+            width, height, width, height, width, height, width, height, width, height, width, height
         );
 
         svg.push_str(&format!(r#"<rect width="{}" height="{}" fill="white"/>"#, width, height));
@@ -5896,39 +8133,38 @@ impl ReplContext {
             width / 2.0, title
         ));
 
-        // Draw axes
-        let origin = project(min_x, min_y, min_z);
-        let x_end = project(max_x, min_y, min_z);
-        let y_end = project(min_x, max_y, min_z);
-        let z_end = project(min_x, min_y, max_z);
+        // Draw 3D bounding box
+        let corners = [
+            (min_x, min_y, min_z), (max_x, min_y, min_z),
+            (min_x, max_y, min_z), (max_x, max_y, min_z),
+            (min_x, min_y, max_z), (max_x, min_y, max_z),
+            (min_x, max_y, max_z), (max_x, max_y, max_z),
+        ];
+        let projected_corners: Vec<(f64, f64)> = corners.iter()
+            .map(|&(x, y, z)| project(x, y, z))
+            .collect();
 
-        let gray = "#999";
-        svg.push_str(&format!(
-            r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="1"/>"#,
-            origin.0, origin.1, x_end.0, x_end.1, gray
-        ));
-        svg.push_str(&format!(
-            r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="1"/>"#,
-            origin.0, origin.1, y_end.0, y_end.1, gray
-        ));
-        svg.push_str(&format!(
-            r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="1"/>"#,
-            origin.0, origin.1, z_end.0, z_end.1, gray
-        ));
+        // 12 edges of the box
+        let edges = [
+            (0, 1), (2, 3), (4, 5), (6, 7),  // x-direction edges
+            (0, 2), (1, 3), (4, 6), (5, 7),  // y-direction edges
+            (0, 4), (1, 5), (2, 6), (3, 7),  // z-direction edges
+        ];
+
+        for (i, j) in edges {
+            svg.push_str(&format!(
+                r##"<line x1="{:.1}" y1="{:.1}" x2="{:.1}" y2="{:.1}" stroke="#888" stroke-width="1" stroke-dasharray="4,2"/>"##,
+                projected_corners[i].0, projected_corners[i].1, projected_corners[j].0, projected_corners[j].1
+            ));
+        }
 
         // Axis labels
-        svg.push_str(&format!(
-            r#"<text x="{}" y="{}" font-size="10" font-family="sans-serif">X</text>"#,
-            x_end.0 + 5.0, x_end.1
-        ));
-        svg.push_str(&format!(
-            r#"<text x="{}" y="{}" font-size="10" font-family="sans-serif">Y</text>"#,
-            y_end.0 + 5.0, y_end.1
-        ));
-        svg.push_str(&format!(
-            r#"<text x="{}" y="{}" font-size="10" font-family="sans-serif">Z</text>"#,
-            z_end.0 - 10.0, z_end.1 - 5.0
-        ));
+        let (xx, xy) = projected_corners[1];
+        let (yx, yy) = projected_corners[2];
+        let (zx, zy) = projected_corners[4];
+        svg.push_str(&format!(r##"<text x="{:.0}" y="{:.0}" font-size="12" fill="#333" font-weight="bold">x</text>"##, xx + 8.0, xy + 4.0));
+        svg.push_str(&format!(r##"<text x="{:.0}" y="{:.0}" font-size="12" fill="#333" font-weight="bold">y</text>"##, yx - 12.0, yy + 4.0));
+        svg.push_str(&format!(r##"<text x="{:.0}" y="{:.0}" font-size="12" fill="#333" font-weight="bold">z</text>"##, zx - 12.0, zy - 5.0));
 
         // Sort by depth for proper z-ordering (back to front)
         let mut points_with_depth: Vec<_> = coords.iter()
@@ -5948,6 +8184,11 @@ impl ReplContext {
                 px, py, blue
             ));
         }
+
+        svg.push_str(&format!(
+            r##"<text x="{}" y="{}" font-size="10" fill="#999" text-anchor="middle">Scroll to zoom, drag to pan</text>"##,
+            width / 2.0, height - 10.0
+        ));
 
         svg.push_str("</svg>");
         svg
