@@ -1200,6 +1200,442 @@ impl ReplContext {
                 }
             }
 
+            // Matrix rank: rank(M)
+            "rank" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::Matrix(m) => {
+                        // Convert to Rational for rank computation
+                        let rows = m.rows();
+                        let cols = m.cols();
+                        let mut data: Vec<Rational> = Vec::with_capacity(rows * cols);
+                        for i in 0..rows {
+                            for j in 0..cols {
+                                if let Ok(val) = m.get(i, j) {
+                                    data.push(Rational::from(val.to_i64()));
+                                }
+                            }
+                        }
+                        let m_rat: Matrix<Rational> = Matrix::from_vec(rows, cols, data)
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                        let r = m_rat.rank()
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                        Ok(RustMathValue::Integer(Integer::from(r as i64)))
+                    }
+                    _ => Err(EvalError::new("TypeError", "rank requires a matrix")),
+                }
+            }
+
+            // Matrix inverse: inverse(M)
+            "matrix_inverse" | "inv" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::Matrix(m) => {
+                        let rows = m.rows();
+                        let cols = m.cols();
+                        let mut data: Vec<Rational> = Vec::with_capacity(rows * cols);
+                        for i in 0..rows {
+                            for j in 0..cols {
+                                if let Ok(val) = m.get(i, j) {
+                                    data.push(Rational::from(val.to_i64()));
+                                }
+                            }
+                        }
+                        let m_rat: Matrix<Rational> = Matrix::from_vec(rows, cols, data)
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                        match m_rat.inverse() {
+                            Ok(Some(inv)) => {
+                                // Format as string showing rational entries
+                                let mut result_rows = Vec::new();
+                                for i in 0..inv.rows() {
+                                    let mut row = Vec::new();
+                                    for j in 0..inv.cols() {
+                                        if let Ok(val) = inv.get(i, j) {
+                                            row.push(format!("{}", val));
+                                        }
+                                    }
+                                    result_rows.push(format!("[{}]", row.join(", ")));
+                                }
+                                Ok(RustMathValue::String(format!("[{}]", result_rows.join(", "))))
+                            }
+                            Ok(None) => Err(EvalError::new("ValueError", "Matrix is singular (not invertible)")),
+                            Err(e) => Err(EvalError::new("MatrixError", format!("{:?}", e))),
+                        }
+                    }
+                    _ => Err(EvalError::new("TypeError", "inverse requires a matrix")),
+                }
+            }
+
+            // Row echelon form: rref(M) or echelon(M)
+            "rref" | "echelon" | "reduced_row_echelon" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::Matrix(m) => {
+                        let rows = m.rows();
+                        let cols = m.cols();
+                        let mut data: Vec<Rational> = Vec::with_capacity(rows * cols);
+                        for i in 0..rows {
+                            for j in 0..cols {
+                                if let Ok(val) = m.get(i, j) {
+                                    data.push(Rational::from(val.to_i64()));
+                                }
+                            }
+                        }
+                        let m_rat: Matrix<Rational> = Matrix::from_vec(rows, cols, data)
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                        let rref = m_rat.reduced_row_echelon_form()
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                        // Format the matrix
+                        let mut result_rows = Vec::new();
+                        for i in 0..rref.matrix.rows() {
+                            let mut row = Vec::new();
+                            for j in 0..rref.matrix.cols() {
+                                if let Ok(val) = rref.matrix.get(i, j) {
+                                    row.push(format!("{}", val));
+                                }
+                            }
+                            result_rows.push(format!("[{}]", row.join(", ")));
+                        }
+                        Ok(RustMathValue::String(format!("[{}]", result_rows.join(", "))))
+                    }
+                    _ => Err(EvalError::new("TypeError", "rref requires a matrix")),
+                }
+            }
+
+            // Kernel (null space): kernel(M) or nullspace(M)
+            "kernel" | "nullspace" | "null_space" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::Matrix(m) => {
+                        let rows = m.rows();
+                        let cols = m.cols();
+                        let mut data: Vec<Rational> = Vec::with_capacity(rows * cols);
+                        for i in 0..rows {
+                            for j in 0..cols {
+                                if let Ok(val) = m.get(i, j) {
+                                    data.push(Rational::from(val.to_i64()));
+                                }
+                            }
+                        }
+                        let m_rat: Matrix<Rational> = Matrix::from_vec(rows, cols, data)
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                        let kern = m_rat.kernel()
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                        // Format as list of vectors
+                        let vectors: Vec<String> = kern.iter()
+                            .map(|v| format!("[{}]", v.iter().map(|x| format!("{}", x)).collect::<Vec<_>>().join(", ")))
+                            .collect();
+                        Ok(RustMathValue::String(format!("[{}]", vectors.join(", "))))
+                    }
+                    _ => Err(EvalError::new("TypeError", "kernel requires a matrix")),
+                }
+            }
+
+            // Image (column space): image(M) or columnspace(M)
+            "image" | "columnspace" | "column_space" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::Matrix(m) => {
+                        let rows = m.rows();
+                        let cols = m.cols();
+                        let mut data: Vec<Rational> = Vec::with_capacity(rows * cols);
+                        for i in 0..rows {
+                            for j in 0..cols {
+                                if let Ok(val) = m.get(i, j) {
+                                    data.push(Rational::from(val.to_i64()));
+                                }
+                            }
+                        }
+                        let m_rat: Matrix<Rational> = Matrix::from_vec(rows, cols, data)
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                        let img = m_rat.image()
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                        let vectors: Vec<String> = img.iter()
+                            .map(|v| format!("[{}]", v.iter().map(|x| format!("{}", x)).collect::<Vec<_>>().join(", ")))
+                            .collect();
+                        Ok(RustMathValue::String(format!("[{}]", vectors.join(", "))))
+                    }
+                    _ => Err(EvalError::new("TypeError", "image requires a matrix")),
+                }
+            }
+
+            // LU decomposition: lu(M)
+            "lu" | "lu_decomposition" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::Matrix(m) => {
+                        let rows = m.rows();
+                        let cols = m.cols();
+                        let mut data: Vec<Rational> = Vec::with_capacity(rows * cols);
+                        for i in 0..rows {
+                            for j in 0..cols {
+                                if let Ok(val) = m.get(i, j) {
+                                    data.push(Rational::from(val.to_i64()));
+                                }
+                            }
+                        }
+                        let m_rat: Matrix<Rational> = Matrix::from_vec(rows, cols, data)
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                        let lu = m_rat.lu_decomposition()
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                        Ok(RustMathValue::String(format!("L:\n{}\nU:\n{}",
+                            self.format_rational_matrix(&lu.l),
+                            self.format_rational_matrix(&lu.u))))
+                    }
+                    _ => Err(EvalError::new("TypeError", "lu requires a matrix")),
+                }
+            }
+
+            // PLU decomposition: plu(M)
+            "plu" | "plu_decomposition" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::Matrix(m) => {
+                        let rows = m.rows();
+                        let cols = m.cols();
+                        let mut data: Vec<Rational> = Vec::with_capacity(rows * cols);
+                        for i in 0..rows {
+                            for j in 0..cols {
+                                if let Ok(val) = m.get(i, j) {
+                                    data.push(Rational::from(val.to_i64()));
+                                }
+                            }
+                        }
+                        let m_rat: Matrix<Rational> = Matrix::from_vec(rows, cols, data)
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                        let plu = m_rat.plu_decomposition()
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                        Ok(RustMathValue::String(format!("P:\n{}\nL:\n{}\nU:\n{}",
+                            self.format_rational_matrix(&plu.p),
+                            self.format_rational_matrix(&plu.l),
+                            self.format_rational_matrix(&plu.u))))
+                    }
+                    _ => Err(EvalError::new("TypeError", "plu requires a matrix")),
+                }
+            }
+
+            // Solve linear system: solve_linear(A, b)
+            "solve_linear" | "linsolve" => {
+                let args = self.parse_args(args_str)?;
+                if args.len() != 2 {
+                    return Err(EvalError::new("ArgumentError", "solve_linear requires 2 arguments (matrix, vector)"));
+                }
+                match (&args[0], &args[1]) {
+                    (RustMathValue::Matrix(m), RustMathValue::List(b_list)) => {
+                        let rows = m.rows();
+                        let cols = m.cols();
+                        let mut data: Vec<Rational> = Vec::with_capacity(rows * cols);
+                        for i in 0..rows {
+                            for j in 0..cols {
+                                if let Ok(val) = m.get(i, j) {
+                                    data.push(Rational::from(val.to_i64()));
+                                }
+                            }
+                        }
+                        let m_rat: Matrix<Rational> = Matrix::from_vec(rows, cols, data)
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+
+                        let b: Vec<Rational> = b_list.iter()
+                            .map(|v| match v {
+                                RustMathValue::Integer(n) => Ok(Rational::from(n.to_i64())),
+                                RustMathValue::Rational(r) => Ok(r.clone()),
+                                _ => Err(EvalError::new("TypeError", "vector elements must be numbers")),
+                            })
+                            .collect::<Result<Vec<_>, _>>()?;
+
+                        match m_rat.solve(&b) {
+                            Ok(Some(solution)) => {
+                                let sol_str: Vec<String> = solution.iter()
+                                    .map(|x| format!("{}", x))
+                                    .collect();
+                                Ok(RustMathValue::String(format!("[{}]", sol_str.join(", "))))
+                            }
+                            Ok(None) => Err(EvalError::new("ValueError", "No solution exists")),
+                            Err(e) => Err(EvalError::new("MatrixError", format!("{:?}", e))),
+                        }
+                    }
+                    _ => Err(EvalError::new("TypeError", "solve_linear requires (matrix, list)")),
+                }
+            }
+
+            // Characteristic polynomial: charpoly(M)
+            "charpoly" | "characteristic_polynomial" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::Matrix(m) => {
+                        let rows = m.rows();
+                        let cols = m.cols();
+                        let mut data: Vec<Rational> = Vec::with_capacity(rows * cols);
+                        for i in 0..rows {
+                            for j in 0..cols {
+                                if let Ok(val) = m.get(i, j) {
+                                    data.push(Rational::from(val.to_i64()));
+                                }
+                            }
+                        }
+                        let m_rat: Matrix<Rational> = Matrix::from_vec(rows, cols, data)
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                        use rustmath_matrix::characteristic_polynomial;
+                        let poly = characteristic_polynomial(&m_rat)
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                        Ok(RustMathValue::String(format!("{}", poly)))
+                    }
+                    _ => Err(EvalError::new("TypeError", "charpoly requires a matrix")),
+                }
+            }
+
+            // Diagonal matrix: diagonal([a, b, c, ...])
+            "diagonal" | "diag" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::List(entries) => {
+                        let n = entries.len();
+                        let mut data = vec![Integer::from(0); n * n];
+                        for (i, entry) in entries.iter().enumerate() {
+                            match entry {
+                                RustMathValue::Integer(v) => data[i * n + i] = v.clone(),
+                                _ => return Err(EvalError::new("TypeError", "diagonal entries must be integers")),
+                            }
+                        }
+                        let m = Matrix::from_vec(n, n, data)
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                        Ok(RustMathValue::Matrix(m))
+                    }
+                    _ => Err(EvalError::new("TypeError", "diagonal requires a list")),
+                }
+            }
+
+            // Ones matrix: ones(m, n)
+            "ones" => {
+                let args = self.parse_args(args_str)?;
+                if args.len() != 2 {
+                    return Err(EvalError::new("ArgumentError", "ones requires 2 arguments (rows, cols)"));
+                }
+                match (&args[0], &args[1]) {
+                    (RustMathValue::Integer(r), RustMathValue::Integer(c)) => {
+                        let rows = r.to_i64() as usize;
+                        let cols = c.to_i64() as usize;
+                        if rows > 100 || cols > 100 {
+                            return Err(EvalError::new("ValueError", "Matrix size too large"));
+                        }
+                        let data = vec![Integer::from(1); rows * cols];
+                        let m = Matrix::from_vec(rows, cols, data)
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                        Ok(RustMathValue::Matrix(m))
+                    }
+                    _ => Err(EvalError::new("TypeError", "ones requires integer dimensions")),
+                }
+            }
+
+            // Matrix power: matrix_power(M, n)
+            "matrix_power" | "mpow" => {
+                let args = self.parse_args(args_str)?;
+                if args.len() != 2 {
+                    return Err(EvalError::new("ArgumentError", "matrix_power requires 2 arguments (matrix, exponent)"));
+                }
+                match (&args[0], &args[1]) {
+                    (RustMathValue::Matrix(m), RustMathValue::Integer(n)) => {
+                        let exp = n.to_i64();
+                        if exp < 0 {
+                            return Err(EvalError::new("ValueError", "Negative exponent not supported"));
+                        }
+                        let result = m.pow(exp as u32)
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                        Ok(RustMathValue::Matrix(result))
+                    }
+                    _ => Err(EvalError::new("TypeError", "matrix_power requires (matrix, integer)")),
+                }
+            }
+
+            // Frobenius norm: norm(M) or frobenius_norm(M)
+            "norm" | "frobenius_norm" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::Matrix(m) => {
+                        let n = m.frobenius_norm();
+                        Ok(RustMathValue::Float(n))
+                    }
+                    _ => Err(EvalError::new("TypeError", "norm requires a matrix")),
+                }
+            }
+
+            // Check if upper triangular: is_upper_triangular(M)
+            "is_upper_triangular" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::Matrix(m) => {
+                        Ok(RustMathValue::Bool(m.is_upper_triangular()))
+                    }
+                    _ => Err(EvalError::new("TypeError", "is_upper_triangular requires a matrix")),
+                }
+            }
+
+            // Check if lower triangular: is_lower_triangular(M)
+            "is_lower_triangular" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::Matrix(m) => {
+                        Ok(RustMathValue::Bool(m.is_lower_triangular()))
+                    }
+                    _ => Err(EvalError::new("TypeError", "is_lower_triangular requires a matrix")),
+                }
+            }
+
+            // Get row: row(M, i)
+            "row" => {
+                let args = self.parse_args(args_str)?;
+                if args.len() != 2 {
+                    return Err(EvalError::new("ArgumentError", "row requires 2 arguments (matrix, index)"));
+                }
+                match (&args[0], &args[1]) {
+                    (RustMathValue::Matrix(m), RustMathValue::Integer(i)) => {
+                        let idx = i.to_i64() as usize;
+                        let r = m.row(idx)
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                        let list: Vec<RustMathValue> = r.into_iter()
+                            .map(RustMathValue::Integer)
+                            .collect();
+                        Ok(RustMathValue::List(list))
+                    }
+                    _ => Err(EvalError::new("TypeError", "row requires (matrix, integer)")),
+                }
+            }
+
+            // Get column: col(M, j)
+            "col" | "column" => {
+                let args = self.parse_args(args_str)?;
+                if args.len() != 2 {
+                    return Err(EvalError::new("ArgumentError", "col requires 2 arguments (matrix, index)"));
+                }
+                match (&args[0], &args[1]) {
+                    (RustMathValue::Matrix(m), RustMathValue::Integer(j)) => {
+                        let idx = j.to_i64() as usize;
+                        let c = m.col(idx)
+                            .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                        let list: Vec<RustMathValue> = c.into_iter()
+                            .map(RustMathValue::Integer)
+                            .collect();
+                        Ok(RustMathValue::List(list))
+                    }
+                    _ => Err(EvalError::new("TypeError", "col requires (matrix, integer)")),
+                }
+            }
+
+            // Scalar multiplication: scalar_mul(M, k)
+            "scalar_mul" | "scale" => {
+                let args = self.parse_args(args_str)?;
+                if args.len() != 2 {
+                    return Err(EvalError::new("ArgumentError", "scalar_mul requires 2 arguments (matrix, scalar)"));
+                }
+                match (&args[0], &args[1]) {
+                    (RustMathValue::Matrix(m), RustMathValue::Integer(k)) => {
+                        let result = m.scalar_mul(k);
+                        Ok(RustMathValue::Matrix(result))
+                    }
+                    _ => Err(EvalError::new("TypeError", "scalar_mul requires (matrix, integer)")),
+                }
+            }
+
             // ====== POLYNOMIAL OPERATIONS ======
 
             // Polynomial constructor from coefficients: Polynomial([1,2,3]) = 1 + 2x + 3x^2
@@ -8397,6 +8833,21 @@ impl ReplContext {
     /// Convert a list of RustMathValues to Vec<f64>
     fn list_to_f64s(&self, list: &[RustMathValue]) -> Result<Vec<f64>, EvalError> {
         list.iter().map(|v| self.value_to_f64(v)).collect()
+    }
+
+    /// Format a Rational matrix as a string
+    fn format_rational_matrix(&self, m: &Matrix<Rational>) -> String {
+        let mut rows = Vec::new();
+        for i in 0..m.rows() {
+            let mut row = Vec::new();
+            for j in 0..m.cols() {
+                if let Ok(val) = m.get(i, j) {
+                    row.push(format!("{}", val));
+                }
+            }
+            rows.push(format!("[{}]", row.join(", ")));
+        }
+        format!("[{}]", rows.join(", "))
     }
 
     /// Extract 2D coordinates from a list of points or [x, y] pairs
