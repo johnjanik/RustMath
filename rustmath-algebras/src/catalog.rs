@@ -51,16 +51,24 @@ pub use crate::group_algebra::GroupAlgebra;
 pub use crate::finite_dimensional_algebra::FiniteDimensionalAlgebra;
 pub use crate::ariki_koike_algebra::ArikiKoikeAlgebra;
 pub use crate::cubic_hecke_algebra::CubicHeckeAlgebra;
-pub use crate::jordan_algebra::JordanAlgebra;
+pub use crate::jordan_algebra::{JordanAlgebraSymmetricBilinear, SpecialJordanAlgebra, ExceptionalJordanAlgebra};
+#[cfg(feature = "full")]
 pub use crate::hall_algebra::HallAlgebra;
+#[cfg(feature = "full")]
 pub use crate::askey_wilson::AskeyWilsonAlgebra;
 pub use crate::cluster_algebra::ClusterAlgebra;
+#[cfg(feature = "full")]
 pub use crate::down_up_algebra::DownUpAlgebra;
+#[cfg(feature = "full")]
 pub use crate::free_zinbiel_algebra::FreeZinbielAlgebra;
+#[cfg(feature = "full")]
 pub use crate::affine_nil_temperley_lieb::AffineNilTemperleyLiebTypeA;
+#[cfg(feature = "full")]
 pub use crate::associated_graded::AssociatedGradedAlgebra;
+#[cfg(feature = "full")]
 pub use crate::cellular_basis::CellularBasis;
 pub use crate::commutative_dga::{GCAlgebra, DifferentialGCAlgebra};
+#[cfg(feature = "full")]
 pub use crate::finite_gca::FiniteGCAlgebra;
 
 #[cfg(test)]

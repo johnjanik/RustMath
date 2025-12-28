@@ -600,8 +600,8 @@ mod tests {
     #[test]
     fn test_with_rational_parameters() {
         // Test with rational parameters (common in mathematical applications)
-        let delta = Rational::new(Integer::from(2), Integer::from(1));
-        let alpha = Rational::new(Integer::from(-1), Integer::from(1));
+        let delta = Rational::new(Integer::from(2), Integer::from(1)).unwrap();
+        let alpha = Rational::new(Integer::from(-1), Integer::from(1)).unwrap();
         let algebra = BlobAlgebra::new(3, delta.clone(), alpha.clone()).unwrap();
 
         let e1 = algebra.e_generator(1).unwrap();

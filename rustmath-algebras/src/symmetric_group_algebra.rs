@@ -314,6 +314,7 @@ pub fn verify_coxeter_relations<R: Ring>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::traits::Algebra;
 
     #[test]
     fn test_symmetric_group_element_identity() {

@@ -27,7 +27,9 @@ pub mod blob_algebra;
 pub mod down_up_algebra;
 #[cfg(feature = "full")]
 pub mod algebra_morphism;
+#[cfg(feature = "full")]
 pub mod algebra_with_parent;
+#[cfg(feature = "full")]
 pub mod cached_algebra;
 #[cfg(feature = "full")]
 pub mod askey_wilson;
@@ -156,8 +158,10 @@ pub use hall_algebra::{
     HallAlgebra, HallAlgebraMonomials, HallAlgebraElement, Partition as HallPartition, transpose_cmp,
 };
 pub use jordan_algebra::{
-    JordanAlgebra, JordanAlgebraElement, JordanAlgebraType, JordanAlgebraTrait,
-    SpecialJordanAlgebra, JordanAlgebraSymmetricBilinear, ExceptionalJordanAlgebra,
+    JordanAlgebraElement, JordanAlgebraType,
+    SpecialJordanAlgebra, SpecialJordanElement,
+    JordanAlgebraSymmetricBilinear, SymmetricBilinearElement,
+    ExceptionalJordanAlgebra, AlbertElement,
 };
 pub use ariki_koike_algebra::{
     ArikiKoikeAlgebra, ArikiKoikeElement, ArikiKoikeWord, ArikiKoikeBasis,

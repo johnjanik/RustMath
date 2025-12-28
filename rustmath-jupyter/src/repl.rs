@@ -38,6 +38,9 @@ use rustmath_geometry::{Point2D, Point3D, convex_hull, Polygon};
 use rustmath_algebras::{
     CliffordAlgebra, CliffordAlgebraElement, CliffordBasisElement,
     ExteriorAlgebra,
+    JordanAlgebraSymmetricBilinear, SymmetricBilinearElement,
+    SpecialJordanAlgebra, SpecialJordanElement,
+    ExceptionalJordanAlgebra, AlbertElement,
 };
 use rustmath_manifolds::{
     DifferentiableManifold, Chart, DiffForm, VectorField,
@@ -160,6 +163,18 @@ pub enum RustMathValue {
     CliffordElem(CliffordAlgebraElement<Rational>),
     /// Exterior algebra (parent structure)
     ExteriorAlg(ExteriorAlgebra<Rational>),
+    /// Jordan algebra from symmetric bilinear form
+    JordanSymBilinear(JordanAlgebraSymmetricBilinear<Rational>),
+    /// Element of Jordan algebra from symmetric bilinear form
+    JordanSymBilinearElem(SymmetricBilinearElement<Rational>),
+    /// Special Jordan algebra (from matrices)
+    SpecialJordan(SpecialJordanAlgebra<Rational>),
+    /// Element of special Jordan algebra
+    SpecialJordanElem(SpecialJordanElement<Rational>),
+    /// Exceptional Jordan algebra (Albert algebra)
+    ExceptionalJordan(ExceptionalJordanAlgebra<Rational>),
+    /// Element of exceptional Jordan algebra
+    AlbertElem(AlbertElement<Rational>),
     /// Differentiable manifold
     Manifold(Arc<DifferentiableManifold>),
     /// Chart on a manifold
@@ -445,6 +460,33 @@ impl RustMathValue {
                 let latex = format!("$\\Lambda(\\mathbb{{Q}}^{})$", ext.dimension());
                 EvalResult::text(text).with_latex(latex)
             }
+            RustMathValue::JordanSymBilinear(j) => {
+                let text = format!("JordanAlgebra(dim={}, type=SymmetricBilinear)", j.dimension());
+                let latex = format!("$J(\\mathbb{{Q}}^{})$", j.dimension());
+                EvalResult::text(text).with_latex(latex)
+            }
+            RustMathValue::JordanSymBilinearElem(elem) => {
+                let text = format!("{}", elem);
+                EvalResult::text(text)
+            }
+            RustMathValue::SpecialJordan(j) => {
+                let text = format!("SpecialJordanAlgebra(matrix_size={})", j.matrix_size());
+                let latex = format!("$J(M_{}(\\mathbb{{Q}}))$", j.matrix_size());
+                EvalResult::text(text).with_latex(latex)
+            }
+            RustMathValue::SpecialJordanElem(elem) => {
+                let text = format!("{}", elem);
+                EvalResult::text(text)
+            }
+            RustMathValue::ExceptionalJordan(_j) => {
+                let text = "AlbertAlgebra(dim=27)".to_string();
+                let latex = "$\\mathfrak{A}$ (Albert algebra)".to_string();
+                EvalResult::text(text).with_latex(latex)
+            }
+            RustMathValue::AlbertElem(elem) => {
+                let text = format!("{}", elem);
+                EvalResult::text(text)
+            }
             RustMathValue::Manifold(m) => {
                 let text = format!("Manifold('{}', dim={})", m.name(), m.dimension());
                 EvalResult::text(text)
@@ -705,14 +747,40 @@ impl ReplContext {
             }
         }
 
-        // Function calls
-        if expr.contains('(') && expr.ends_with(')') {
-            return self.eval_function_call(expr);
-        }
-
-        // Binary operations
+        // Binary operations - check BEFORE function calls to handle e(0)*e(1) correctly
         if let Some(result) = self.try_eval_binary_op(expr)? {
             return Ok(result);
+        }
+
+        // Function calls - only if the closing ) matches the opening ( after the function name
+        if expr.contains('(') && expr.ends_with(')') {
+            // Find the first '(' and verify the last ')' matches it (not a nested one)
+            if let Some(open_pos) = expr.find('(') {
+                let func_name = &expr[..open_pos];
+                if is_valid_identifier(func_name.trim()) {
+                    // Count parentheses to verify the last ')' matches the first '('
+                    let args_part = &expr[open_pos..];
+                    let mut depth = 0;
+                    let mut valid = true;
+                    for (i, ch) in args_part.chars().enumerate() {
+                        match ch {
+                            '(' => depth += 1,
+                            ')' => {
+                                depth -= 1;
+                                // If depth goes to 0 before the end, it's not a simple function call
+                                if depth == 0 && i != args_part.len() - 1 {
+                                    valid = false;
+                                    break;
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                    if valid && depth == 0 {
+                        return self.eval_function_call(expr);
+                    }
+                }
+            }
         }
 
         // String literal
@@ -3334,24 +3402,55 @@ impl ReplContext {
                 }
             }
 
-            // e(i) - Create basis element e_i for Clifford/Exterior algebra
+            // e(i) or e(algebra, i) - Create basis element e_i for Clifford/Exterior algebra
             "e" => {
-                let arg = self.eval_expr(args_str)?;
-                match arg {
-                    RustMathValue::Integer(i) => {
-                        let idx = i.to_i64() as usize;
-                        // Create a generator basis element with coefficient 1
-                        let basis = CliffordBasisElement::generator(idx);
-                        // Create element with single term
-                        let elem = CliffordAlgebraElement::from_term(
-                            Rational::from(1i64),
-                            basis,
-                            1, // dimension placeholder
-                            vec![Rational::from(1i64)], // Q form placeholder
-                        );
-                        Ok(RustMathValue::CliffordElem(elem))
+                let args = self.parse_args(args_str)?;
+                match args.len() {
+                    1 => {
+                        // e(i) - create with default Euclidean metric, dimension 10
+                        match &args[0] {
+                            RustMathValue::Integer(i) => {
+                                let idx = i.to_i64() as usize;
+                                if idx >= 10 {
+                                    return Err(EvalError::new("ValueError", "Index must be less than 10"));
+                                }
+                                let basis = CliffordBasisElement::generator(idx);
+                                // Use dimension 10 with Euclidean metric to avoid index out of bounds
+                                let dim = 10;
+                                let qform: Vec<Rational> = (0..dim).map(|_| Rational::from(1i64)).collect();
+                                let elem = CliffordAlgebraElement::from_term(
+                                    Rational::from(1i64),
+                                    basis,
+                                    dim,
+                                    qform,
+                                );
+                                Ok(RustMathValue::CliffordElem(elem))
+                            }
+                            _ => Err(EvalError::new("TypeError", "e requires an integer index")),
+                        }
                     }
-                    _ => Err(EvalError::new("TypeError", "e requires an integer index")),
+                    2 => {
+                        // e(algebra, i) - use algebra's dimension and quadratic form
+                        match (&args[0], &args[1]) {
+                            (RustMathValue::CliffordAlg(alg), RustMathValue::Integer(i)) => {
+                                let idx = i.to_i64() as usize;
+                                if idx >= alg.dimension() {
+                                    return Err(EvalError::new("ValueError",
+                                        format!("Index {} out of range for {}-dimensional algebra", idx, alg.dimension())));
+                                }
+                                let basis = CliffordBasisElement::generator(idx);
+                                let elem = CliffordAlgebraElement::from_term(
+                                    Rational::from(1i64),
+                                    basis,
+                                    alg.dimension(),
+                                    alg.quadratic_form().to_vec(),
+                                );
+                                Ok(RustMathValue::CliffordElem(elem))
+                            }
+                            _ => Err(EvalError::new("TypeError", "e(algebra, index) requires (CliffordAlgebra, integer)")),
+                        }
+                    }
+                    _ => Err(EvalError::new("ArgumentError", "e requires 1 argument (index) or 2 arguments (algebra, index)")),
                 }
             }
 
@@ -3368,6 +3467,457 @@ impl ReplContext {
                         Ok(RustMathValue::CliffordElem(graded))
                     }
                     _ => Err(EvalError::new("TypeError", "grade requires (CliffordElement, integer)")),
+                }
+            }
+
+            // pseudoscalar(algebra) - Get the pseudoscalar (top-degree element)
+            "pseudoscalar" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::CliffordAlg(ref cl) => {
+                        let ps = cl.pseudoscalar();
+                        Ok(RustMathValue::CliffordElem(ps))
+                    }
+                    _ => Err(EvalError::new("TypeError", "pseudoscalar requires a CliffordAlgebra")),
+                }
+            }
+
+            // volume_form(algebra) - Get the volume form (alias for pseudoscalar)
+            "volume_form" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::CliffordAlg(ref cl) => {
+                        let vf = cl.volume_form();
+                        Ok(RustMathValue::CliffordElem(vf))
+                    }
+                    _ => Err(EvalError::new("TypeError", "volume_form requires a CliffordAlgebra")),
+                }
+            }
+
+            // even_part(elem) - Get the even-graded component
+            "even_part" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::CliffordElem(ref elem) => {
+                        let ep = elem.even_part();
+                        Ok(RustMathValue::CliffordElem(ep))
+                    }
+                    _ => Err(EvalError::new("TypeError", "even_part requires a CliffordElement")),
+                }
+            }
+
+            // odd_part(elem) - Get the odd-graded component
+            "odd_part" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::CliffordElem(ref elem) => {
+                        let op = elem.odd_part();
+                        Ok(RustMathValue::CliffordElem(op))
+                    }
+                    _ => Err(EvalError::new("TypeError", "odd_part requires a CliffordElement")),
+                }
+            }
+
+            // is_even(elem) - Check if element is even-graded
+            "is_even" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::CliffordElem(ref elem) => {
+                        Ok(RustMathValue::Bool(elem.is_even()))
+                    }
+                    _ => Err(EvalError::new("TypeError", "is_even requires a CliffordElement")),
+                }
+            }
+
+            // is_odd(elem) - Check if element is odd-graded
+            "is_odd" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::CliffordElem(ref elem) => {
+                        Ok(RustMathValue::Bool(elem.is_odd()))
+                    }
+                    _ => Err(EvalError::new("TypeError", "is_odd requires a CliffordElement")),
+                }
+            }
+
+            // is_homogeneous(elem) - Check if element is homogeneous
+            "is_homogeneous" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::CliffordElem(ref elem) => {
+                        Ok(RustMathValue::Bool(elem.is_homogeneous()))
+                    }
+                    _ => Err(EvalError::new("TypeError", "is_homogeneous requires a CliffordElement")),
+                }
+            }
+
+            // reverse(elem) - Clifford reverse (reverses basis element order)
+            "reverse" | "clifford_reverse" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::CliffordElem(ref elem) => {
+                        let rev = elem.reverse();
+                        Ok(RustMathValue::CliffordElem(rev))
+                    }
+                    _ => Err(EvalError::new("TypeError", "reverse requires a CliffordElement")),
+                }
+            }
+
+            // grade_involution(elem) - Grade involution α (negates odd-graded parts)
+            "grade_involution" | "alpha" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::CliffordElem(ref elem) => {
+                        let gi = elem.grade_involution();
+                        Ok(RustMathValue::CliffordElem(gi))
+                    }
+                    _ => Err(EvalError::new("TypeError", "grade_involution requires a CliffordElement")),
+                }
+            }
+
+            // clifford_conjugate(elem) - Clifford conjugate (reverse + grade involution)
+            "clifford_conjugate" | "conjugate_clifford" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::CliffordElem(ref elem) => {
+                        let cc = elem.clifford_conjugate();
+                        Ok(RustMathValue::CliffordElem(cc))
+                    }
+                    _ => Err(EvalError::new("TypeError", "clifford_conjugate requires a CliffordElement")),
+                }
+            }
+
+            // counit(algebra, elem) - Hopf algebra counit (extract scalar part)
+            "counit" => {
+                let args = self.parse_args(args_str)?;
+                if args.len() != 2 {
+                    return Err(EvalError::new("ArgumentError", "counit requires 2 arguments: algebra and element"));
+                }
+                match (&args[0], &args[1]) {
+                    (RustMathValue::CliffordAlg(alg), RustMathValue::CliffordElem(elem)) => {
+                        let cu = alg.counit(elem);
+                        Ok(RustMathValue::Rational(cu))
+                    }
+                    _ => Err(EvalError::new("TypeError", "counit requires (CliffordAlgebra, CliffordElement)")),
+                }
+            }
+
+            // antipode(algebra, elem) - Hopf algebra antipode
+            "antipode" => {
+                let args = self.parse_args(args_str)?;
+                if args.len() != 2 {
+                    return Err(EvalError::new("ArgumentError", "antipode requires 2 arguments: algebra and element"));
+                }
+                match (&args[0], &args[1]) {
+                    (RustMathValue::CliffordAlg(alg), RustMathValue::CliffordElem(elem)) => {
+                        let ap = alg.antipode(elem);
+                        Ok(RustMathValue::CliffordElem(ap))
+                    }
+                    _ => Err(EvalError::new("TypeError", "antipode requires (CliffordAlgebra, CliffordElement)")),
+                }
+            }
+
+            // interior_product(algebra, form, vector) - Interior product (contraction)
+            "interior_product" | "contract" => {
+                let args = self.parse_args(args_str)?;
+                if args.len() != 3 {
+                    return Err(EvalError::new("ArgumentError", "interior_product requires 3 arguments: algebra, form, and vector"));
+                }
+                match (&args[0], &args[1], &args[2]) {
+                    (RustMathValue::CliffordAlg(alg), RustMathValue::CliffordElem(form), RustMathValue::CliffordElem(vec)) => {
+                        let ip = alg.interior_product(form, vec);
+                        Ok(RustMathValue::CliffordElem(ip))
+                    }
+                    _ => Err(EvalError::new("TypeError", "interior_product requires (CliffordAlgebra, CliffordElement, CliffordElement)")),
+                }
+            }
+
+            // center(algebra) - Get basis for center of algebra
+            "center" | "center_basis" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::CliffordAlg(ref cl) => {
+                        let cb = cl.center_basis();
+                        let list: Vec<RustMathValue> = cb.into_iter()
+                            .map(|e| RustMathValue::CliffordElem(e))
+                            .collect();
+                        Ok(RustMathValue::List(list))
+                    }
+                    _ => Err(EvalError::new("TypeError", "center requires a CliffordAlgebra")),
+                }
+            }
+
+            // supercenter(algebra) - Get basis for supercenter of algebra
+            "supercenter" | "supercenter_basis" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::CliffordAlg(ref cl) => {
+                        let scb = cl.supercenter_basis();
+                        let list: Vec<RustMathValue> = scb.into_iter()
+                            .map(|e| RustMathValue::CliffordElem(e))
+                            .collect();
+                        Ok(RustMathValue::List(list))
+                    }
+                    _ => Err(EvalError::new("TypeError", "supercenter requires a CliffordAlgebra")),
+                }
+            }
+
+            // algebra_basis(algebra) - Get all basis elements
+            "algebra_basis" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::CliffordAlg(ref cl) => {
+                        let basis = cl.basis();
+                        let list: Vec<RustMathValue> = basis.into_iter()
+                            .map(|e| RustMathValue::CliffordElem(e))
+                            .collect();
+                        Ok(RustMathValue::List(list))
+                    }
+                    _ => Err(EvalError::new("TypeError", "algebra_basis requires a CliffordAlgebra")),
+                }
+            }
+
+            // basis_of_grade(algebra, k) - Get basis elements of grade k
+            "basis_of_grade" => {
+                let args = self.parse_args(args_str)?;
+                if args.len() != 2 {
+                    return Err(EvalError::new("ArgumentError", "basis_of_grade requires 2 arguments: algebra and grade"));
+                }
+                match (&args[0], &args[1]) {
+                    (RustMathValue::CliffordAlg(alg), RustMathValue::Integer(k)) => {
+                        let grade = k.to_i64() as usize;
+                        let basis = alg.basis_of_grade(grade);
+                        let list: Vec<RustMathValue> = basis.into_iter()
+                            .map(|e| RustMathValue::CliffordElem(e))
+                            .collect();
+                        Ok(RustMathValue::List(list))
+                    }
+                    _ => Err(EvalError::new("TypeError", "basis_of_grade requires (CliffordAlgebra, integer)")),
+                }
+            }
+
+            // quadratic_form(algebra) - Get the quadratic form values
+            "quadratic_form" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::CliffordAlg(ref cl) => {
+                        let qf = cl.quadratic_form();
+                        let list: Vec<RustMathValue> = qf.iter()
+                            .map(|r| RustMathValue::Rational(r.clone()))
+                            .collect();
+                        Ok(RustMathValue::List(list))
+                    }
+                    _ => Err(EvalError::new("TypeError", "quadratic_form requires a CliffordAlgebra")),
+                }
+            }
+
+            // is_exterior(algebra) - Check if this is an exterior algebra (Q=0)
+            "is_exterior" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::CliffordAlg(ref cl) => {
+                        Ok(RustMathValue::Bool(cl.is_exterior()))
+                    }
+                    _ => Err(EvalError::new("TypeError", "is_exterior requires a CliffordAlgebra")),
+                }
+            }
+
+            // ===== JORDAN ALGEBRA FUNCTIONS =====
+
+            // JordanAlgebra(form_matrix) - Create Jordan algebra from symmetric bilinear form
+            // JordanAlgebra(n) - Create with identity form
+            "JordanAlgebra" => {
+                let args = self.parse_args(args_str)?;
+                match args.len() {
+                    1 => {
+                        match &args[0] {
+                            RustMathValue::Integer(n) => {
+                                // Create with identity form of dimension n
+                                let dim = n.to_i64() as usize;
+                                if dim > 20 {
+                                    return Err(EvalError::new("ValueError", "Jordan algebra dimension too large (max 20)"));
+                                }
+                                let j = JordanAlgebraSymmetricBilinear::<Rational>::standard(dim);
+                                Ok(RustMathValue::JordanSymBilinear(j))
+                            }
+                            RustMathValue::Matrix(m) => {
+                                // Create from form matrix
+                                if m.rows() != m.cols() {
+                                    return Err(EvalError::new("ValueError", "Form matrix must be square"));
+                                }
+                                let n = m.rows();
+                                let mut form = vec![vec![Rational::from(0i64); n]; n];
+                                for i in 0..n {
+                                    for k in 0..n {
+                                        if let Ok(val) = m.get(i, k) {
+                                            form[i][k] = Rational::from(val.to_i64());
+                                        }
+                                    }
+                                }
+                                let ja = JordanAlgebraSymmetricBilinear::new(form);
+                                Ok(RustMathValue::JordanSymBilinear(ja))
+                            }
+                            _ => Err(EvalError::new("TypeError", "JordanAlgebra requires integer (dimension) or matrix (form)")),
+                        }
+                    }
+                    _ => Err(EvalError::new("ArgumentError", "JordanAlgebra requires 1 argument")),
+                }
+            }
+
+            // SpecialJordanAlgebra(n) - Create special Jordan algebra from n x n matrices
+            "SpecialJordanAlgebra" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::Integer(n) => {
+                        let size = n.to_i64() as usize;
+                        if size > 10 {
+                            return Err(EvalError::new("ValueError", "Matrix size too large (max 10)"));
+                        }
+                        let j = SpecialJordanAlgebra::<Rational>::new(size);
+                        Ok(RustMathValue::SpecialJordan(j))
+                    }
+                    _ => Err(EvalError::new("TypeError", "SpecialJordanAlgebra requires integer matrix size")),
+                }
+            }
+
+            // AlbertAlgebra() - Create exceptional Jordan algebra (27-dimensional)
+            "AlbertAlgebra" | "ExceptionalJordanAlgebra" => {
+                let j = ExceptionalJordanAlgebra::<Rational>::new();
+                Ok(RustMathValue::ExceptionalJordan(j))
+            }
+
+            // jordan_one(algebra) - Get identity element
+            "jordan_one" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::JordanSymBilinear(ref j) => {
+                        Ok(RustMathValue::JordanSymBilinearElem(j.one()))
+                    }
+                    RustMathValue::SpecialJordan(ref j) => {
+                        Ok(RustMathValue::SpecialJordanElem(j.one()))
+                    }
+                    RustMathValue::ExceptionalJordan(ref j) => {
+                        Ok(RustMathValue::AlbertElem(j.one()))
+                    }
+                    _ => Err(EvalError::new("TypeError", "jordan_one requires a Jordan algebra")),
+                }
+            }
+
+            // jordan_zero(algebra) - Get zero element
+            "jordan_zero" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::JordanSymBilinear(ref j) => {
+                        Ok(RustMathValue::JordanSymBilinearElem(j.zero()))
+                    }
+                    RustMathValue::SpecialJordan(ref j) => {
+                        Ok(RustMathValue::SpecialJordanElem(j.zero()))
+                    }
+                    RustMathValue::ExceptionalJordan(ref j) => {
+                        Ok(RustMathValue::AlbertElem(j.zero()))
+                    }
+                    _ => Err(EvalError::new("TypeError", "jordan_zero requires a Jordan algebra")),
+                }
+            }
+
+            // jordan_basis(algebra) - Get basis elements
+            "jordan_basis" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::JordanSymBilinear(ref j) => {
+                        let basis = j.basis();
+                        let list: Vec<RustMathValue> = basis.into_iter()
+                            .map(RustMathValue::JordanSymBilinearElem)
+                            .collect();
+                        Ok(RustMathValue::List(list))
+                    }
+                    RustMathValue::ExceptionalJordan(ref j) => {
+                        let basis = j.basis();
+                        let list: Vec<RustMathValue> = basis.into_iter()
+                            .map(RustMathValue::AlbertElem)
+                            .collect();
+                        Ok(RustMathValue::List(list))
+                    }
+                    _ => Err(EvalError::new("TypeError", "jordan_basis requires a Jordan algebra")),
+                }
+            }
+
+            // jordan_multiply(algebra, a, b) - Jordan product
+            "jordan_multiply" | "jordan_product" => {
+                let args = self.parse_args(args_str)?;
+                if args.len() != 3 {
+                    return Err(EvalError::new("ArgumentError", "jordan_multiply requires 3 arguments: algebra, element, element"));
+                }
+                match (&args[0], &args[1], &args[2]) {
+                    (RustMathValue::JordanSymBilinear(j), RustMathValue::JordanSymBilinearElem(a), RustMathValue::JordanSymBilinearElem(b)) => {
+                        let product = j.multiply(a, b);
+                        Ok(RustMathValue::JordanSymBilinearElem(product))
+                    }
+                    (RustMathValue::SpecialJordan(j), RustMathValue::SpecialJordanElem(a), RustMathValue::SpecialJordanElem(b)) => {
+                        let product = j.multiply(a, b);
+                        Ok(RustMathValue::SpecialJordanElem(product))
+                    }
+                    (RustMathValue::ExceptionalJordan(j), RustMathValue::AlbertElem(a), RustMathValue::AlbertElem(b)) => {
+                        let product = j.multiply(a, b);
+                        Ok(RustMathValue::AlbertElem(product))
+                    }
+                    _ => Err(EvalError::new("TypeError", "jordan_multiply requires matching algebra and element types")),
+                }
+            }
+
+            // jordan_trace(element) - Get trace of Jordan element
+            "jordan_trace" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::JordanSymBilinearElem(ref e) => {
+                        let tr = e.trace();
+                        Ok(RustMathValue::Rational(tr))
+                    }
+                    _ => Err(EvalError::new("TypeError", "jordan_trace requires a SymmetricBilinear Jordan element")),
+                }
+            }
+
+            // jordan_norm(algebra, element) - Get norm of Jordan element
+            "jordan_norm" => {
+                let args = self.parse_args(args_str)?;
+                if args.len() != 2 {
+                    return Err(EvalError::new("ArgumentError", "jordan_norm requires 2 arguments: algebra, element"));
+                }
+                match (&args[0], &args[1]) {
+                    (RustMathValue::JordanSymBilinear(j), RustMathValue::JordanSymBilinearElem(e)) => {
+                        let norm = e.norm(j);
+                        Ok(RustMathValue::Rational(norm))
+                    }
+                    _ => Err(EvalError::new("TypeError", "jordan_norm requires (JordanAlgebra, JordanElement)")),
+                }
+            }
+
+            // jordan_bar(element) - Bar involution
+            "jordan_bar" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::JordanSymBilinearElem(ref e) => {
+                        let bar = e.bar();
+                        Ok(RustMathValue::JordanSymBilinearElem(bar))
+                    }
+                    _ => Err(EvalError::new("TypeError", "jordan_bar requires a SymmetricBilinear Jordan element")),
+                }
+            }
+
+            // jordan_dimension(algebra) - Get dimension
+            "jordan_dimension" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::JordanSymBilinear(ref j) => {
+                        Ok(RustMathValue::Integer(Integer::from(j.dimension() as i64)))
+                    }
+                    RustMathValue::SpecialJordan(ref j) => {
+                        Ok(RustMathValue::Integer(Integer::from(j.dimension() as i64)))
+                    }
+                    RustMathValue::ExceptionalJordan(ref j) => {
+                        Ok(RustMathValue::Integer(Integer::from(j.dimension() as i64)))
+                    }
+                    _ => Err(EvalError::new("TypeError", "jordan_dimension requires a Jordan algebra")),
                 }
             }
 
@@ -8554,26 +9104,26 @@ impl ReplContext {
                 Ok(CliffordElem(a.clone() * b.clone()))
             }
             // Mixed type operations for Clifford elements
-            // Integer + CliffordElem: create scalar element and add
+            // Integer + CliffordElem: create scalar element with matching dimension and add
             (Integer(k), "+", CliffordElem(a)) | (CliffordElem(a), "+", Integer(k)) => {
                 let coeff = rustmath_rationals::Rational::from(k.to_i64());
-                let scalar = CliffordAlgebraElement::scalar(coeff, 1, vec![rustmath_rationals::Rational::from(1i64)]);
+                let scalar = CliffordAlgebraElement::scalar(coeff, a.dimension(), a.quadratic_form().to_vec());
                 Ok(CliffordElem(scalar + a.clone()))
             }
             (Integer(k), "-", CliffordElem(a)) => {
                 let coeff = rustmath_rationals::Rational::from(k.to_i64());
-                let scalar = CliffordAlgebraElement::scalar(coeff, 1, vec![rustmath_rationals::Rational::from(1i64)]);
+                let scalar = CliffordAlgebraElement::scalar(coeff, a.dimension(), a.quadratic_form().to_vec());
                 Ok(CliffordElem(scalar - a.clone()))
             }
             (CliffordElem(a), "-", Integer(k)) => {
                 let coeff = rustmath_rationals::Rational::from(k.to_i64());
-                let scalar = CliffordAlgebraElement::scalar(coeff, 1, vec![rustmath_rationals::Rational::from(1i64)]);
+                let scalar = CliffordAlgebraElement::scalar(coeff, a.dimension(), a.quadratic_form().to_vec());
                 Ok(CliffordElem(a.clone() - scalar))
             }
             // Scalar multiplication: Integer * CliffordElem
             (Integer(k), "*", CliffordElem(a)) | (CliffordElem(a), "*", Integer(k)) => {
                 let coeff = rustmath_rationals::Rational::from(k.to_i64());
-                let scalar = CliffordAlgebraElement::scalar(coeff, 1, vec![rustmath_rationals::Rational::from(1i64)]);
+                let scalar = CliffordAlgebraElement::scalar(coeff, a.dimension(), a.quadratic_form().to_vec());
                 Ok(CliffordElem(scalar * a.clone()))
             }
             // Scalar division: CliffordElem / Integer
@@ -8585,16 +9135,16 @@ impl ReplContext {
                 let one = rustmath_rationals::Rational::from(1i64);
                 let divisor = rustmath_rationals::Rational::from(k.to_i64());
                 let coeff = one / divisor;
-                let scalar = CliffordAlgebraElement::scalar(coeff, 1, vec![rustmath_rationals::Rational::from(1i64)]);
+                let scalar = CliffordAlgebraElement::scalar(coeff, a.dimension(), a.quadratic_form().to_vec());
                 Ok(CliffordElem(scalar * a.clone()))
             }
             // Rational operations with Clifford elements
             (Rational(r), "+", CliffordElem(a)) | (CliffordElem(a), "+", Rational(r)) => {
-                let scalar = CliffordAlgebraElement::scalar(r.clone(), 1, vec![rustmath_rationals::Rational::from(1i64)]);
+                let scalar = CliffordAlgebraElement::scalar(r.clone(), a.dimension(), a.quadratic_form().to_vec());
                 Ok(CliffordElem(scalar + a.clone()))
             }
             (Rational(r), "*", CliffordElem(a)) | (CliffordElem(a), "*", Rational(r)) => {
-                let scalar = CliffordAlgebraElement::scalar(r.clone(), 1, vec![rustmath_rationals::Rational::from(1i64)]);
+                let scalar = CliffordAlgebraElement::scalar(r.clone(), a.dimension(), a.quadratic_form().to_vec());
                 Ok(CliffordElem(scalar * a.clone()))
             }
 
@@ -9474,6 +10024,97 @@ mod tests {
         let result = ctx.eval("E4 = ExteriorAlgebra(4)").unwrap();
         // ExteriorAlgebra is a type alias for CliffordAlgebra with Q=0
         assert!(result.text.contains("Clifford"), "Expected Clifford/Exterior algebra: {}", result.text);
+    }
+
+    #[test]
+    fn test_clifford_new_functions() {
+        let mut ctx = ReplContext::new();
+
+        // Create Cl(R^3)
+        ctx.eval("Cl3 = CliffordAlgebra(3)").unwrap();
+
+        // Test quadratic_form
+        let qf = ctx.eval("quadratic_form(Cl3)").unwrap();
+        assert!(qf.text.contains("1"), "Expected quadratic form with 1s: {}", qf.text);
+
+        // Test is_exterior
+        let is_ext = ctx.eval("is_exterior(Cl3)").unwrap();
+        assert!(is_ext.text.contains("false") || is_ext.text.contains("False"),
+            "Expected false for Clifford algebra: {}", is_ext.text);
+
+        // Test pseudoscalar
+        let ps = ctx.eval("pseudoscalar(Cl3)").unwrap();
+        assert!(ps.text.contains("0, 1, 2") || ps.text.contains("CliffordAlgebraElement"),
+            "Expected pseudoscalar: {}", ps.text);
+
+        // Test basis_of_grade
+        let grade2 = ctx.eval("basis_of_grade(Cl3, 2)").unwrap();
+        assert!(grade2.text.contains("[") || grade2.text.contains("CliffordAlgebraElement"),
+            "Expected list of grade-2 basis elements: {}", grade2.text);
+
+        // Test algebra_basis
+        let basis = ctx.eval("algebra_basis(Cl3)").unwrap();
+        assert!(basis.text.contains("[") || basis.text.contains("CliffordAlgebraElement"),
+            "Expected list of all basis elements: {}", basis.text);
+
+        // Test center
+        let center_result = ctx.eval("center(Cl3)").unwrap();
+        assert!(center_result.text.contains("[") || center_result.text.contains("CliffordAlgebraElement"),
+            "Expected center basis: {}", center_result.text);
+
+        // Create element and test element functions
+        ctx.eval("e0 = e(0)").unwrap();
+        ctx.eval("e1 = e(1)").unwrap();
+        ctx.eval("mixed = e0 + e0*e1").unwrap();
+
+        // Test even_part
+        let even = ctx.eval("even_part(mixed)").unwrap();
+        assert!(even.text.contains("CliffordAlgebraElement"),
+            "Expected even part: {}", even.text);
+
+        // Test odd_part
+        let odd = ctx.eval("odd_part(mixed)").unwrap();
+        assert!(odd.text.contains("CliffordAlgebraElement"),
+            "Expected odd part: {}", odd.text);
+
+        // Test is_homogeneous
+        let homog = ctx.eval("is_homogeneous(e0)").unwrap();
+        assert!(homog.text.contains("true") || homog.text.contains("True"),
+            "Expected true for generator: {}", homog.text);
+
+        // Test reverse
+        let rev = ctx.eval("reverse(e0)").unwrap();
+        assert!(rev.text.contains("CliffordAlgebraElement"),
+            "Expected reverse: {}", rev.text);
+
+        // Test grade_involution
+        let gi = ctx.eval("grade_involution(e0)").unwrap();
+        assert!(gi.text.contains("CliffordAlgebraElement"),
+            "Expected grade involution: {}", gi.text);
+
+        // Test clifford_conjugate
+        let cc = ctx.eval("clifford_conjugate(e0)").unwrap();
+        assert!(cc.text.contains("CliffordAlgebraElement"),
+            "Expected clifford conjugate: {}", cc.text);
+
+        // Test exterior algebra specific functions
+        ctx.eval("E3 = ExteriorAlgebra(3)").unwrap();
+
+        // Test is_exterior on exterior algebra
+        let is_ext2 = ctx.eval("is_exterior(E3)").unwrap();
+        assert!(is_ext2.text.contains("true") || is_ext2.text.contains("True"),
+            "Expected true for exterior algebra: {}", is_ext2.text);
+
+        // Test counit
+        ctx.eval("elem = e(0)").unwrap();
+        let cu = ctx.eval("counit(E3, elem)").unwrap();
+        assert!(cu.text.contains("0") || cu.text.contains("Rational"),
+            "Expected counit: {}", cu.text);
+
+        // Test antipode
+        let ap = ctx.eval("antipode(E3, elem)").unwrap();
+        assert!(ap.text.contains("CliffordAlgebraElement"),
+            "Expected antipode: {}", ap.text);
     }
 
     #[test]

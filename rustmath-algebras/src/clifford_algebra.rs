@@ -347,6 +347,16 @@ impl<R: Ring> CliffordAlgebraElement<R> {
         }
     }
 
+    /// Get the dimension of the underlying vector space
+    pub fn dimension(&self) -> usize {
+        self.dimension
+    }
+
+    /// Get the quadratic form values
+    pub fn quadratic_form(&self) -> &[R] {
+        &self.quadratic_form
+    }
+
     /// Get the grade-k component
     pub fn grade_component(&self, k: usize) -> Self {
         let mut result = Self::new(self.dimension, self.quadratic_form.clone());
@@ -354,6 +364,120 @@ impl<R: Ring> CliffordAlgebraElement<R> {
             if basis.grade() == k {
                 result.add_term(coeff.clone(), basis.clone());
             }
+        }
+        result
+    }
+
+    /// Get the even part (sum of all even-grade components)
+    ///
+    /// Returns the sum of grade 0, 2, 4, ... components.
+    pub fn even_part(&self) -> Self {
+        let mut result = Self::new(self.dimension, self.quadratic_form.clone());
+        for (basis, coeff) in &self.terms {
+            if basis.grade() % 2 == 0 {
+                result.add_term(coeff.clone(), basis.clone());
+            }
+        }
+        result
+    }
+
+    /// Get the odd part (sum of all odd-grade components)
+    ///
+    /// Returns the sum of grade 1, 3, 5, ... components.
+    pub fn odd_part(&self) -> Self {
+        let mut result = Self::new(self.dimension, self.quadratic_form.clone());
+        for (basis, coeff) in &self.terms {
+            if basis.grade() % 2 == 1 {
+                result.add_term(coeff.clone(), basis.clone());
+            }
+        }
+        result
+    }
+
+    /// Check if the element is purely even-graded
+    pub fn is_even(&self) -> bool {
+        self.terms.keys().all(|b| b.grade() % 2 == 0)
+    }
+
+    /// Check if the element is purely odd-graded
+    pub fn is_odd(&self) -> bool {
+        !self.terms.is_empty() && self.terms.keys().all(|b| b.grade() % 2 == 1)
+    }
+
+    /// Check if the element is homogeneous (all terms have the same grade)
+    pub fn is_homogeneous(&self) -> bool {
+        if self.terms.is_empty() {
+            return true;
+        }
+        let first_grade = self.terms.keys().next().map(|b| b.grade());
+        first_grade.map_or(true, |g| self.terms.keys().all(|b| b.grade() == g))
+    }
+
+    /// Get the grade if the element is homogeneous, None otherwise
+    pub fn homogeneous_degree(&self) -> Option<usize> {
+        if self.terms.is_empty() {
+            return Some(0); // Zero element is considered grade 0
+        }
+
+        let first_grade = self.terms.keys().next().map(|b| b.grade())?;
+        if self.terms.keys().all(|b| b.grade() == first_grade) {
+            Some(first_grade)
+        } else {
+            None
+        }
+    }
+
+    /// Get the maximum grade appearing in this element
+    pub fn max_grade(&self) -> usize {
+        self.terms.keys().map(|b| b.grade()).max().unwrap_or(0)
+    }
+
+    /// Get the minimum grade appearing in this element (excluding zero terms)
+    pub fn min_grade(&self) -> usize {
+        self.terms.keys().map(|b| b.grade()).min().unwrap_or(0)
+    }
+
+    /// Get the dimension of the underlying vector space
+    pub fn dim(&self) -> usize {
+        self.dimension
+    }
+
+    /// Compute the reverse (reversion) of the element
+    ///
+    /// For a k-blade, the reverse is (-1)^{k(k-1)/2} times the blade.
+    /// This extends linearly to all elements.
+    pub fn reverse(&self) -> Self {
+        let mut result = Self::new(self.dimension, self.quadratic_form.clone());
+        for (basis, coeff) in &self.terms {
+            let k = basis.grade();
+            let sign = if (k * (k - 1) / 2) % 2 == 0 { R::one() } else { -R::one() };
+            result.add_term(coeff.clone() * sign, basis.clone());
+        }
+        result
+    }
+
+    /// Compute the grade involution (main involution)
+    ///
+    /// For a k-blade, returns (-1)^k times the blade.
+    pub fn grade_involution(&self) -> Self {
+        let mut result = Self::new(self.dimension, self.quadratic_form.clone());
+        for (basis, coeff) in &self.terms {
+            let sign = if basis.grade() % 2 == 0 { R::one() } else { -R::one() };
+            result.add_term(coeff.clone() * sign, basis.clone());
+        }
+        result
+    }
+
+    /// Compute the Clifford conjugate
+    ///
+    /// This is the composition of reverse and grade involution:
+    /// x† = (-1)^{k(k+1)/2} x for a k-blade
+    pub fn clifford_conjugate(&self) -> Self {
+        let mut result = Self::new(self.dimension, self.quadratic_form.clone());
+        for (basis, coeff) in &self.terms {
+            let k = basis.grade();
+            let sign = if (k * (k + 1) / 2) % 2 == 0 { R::one() } else { -R::one() };
+            result.add_term(coeff.clone() * sign, basis.clone());
         }
         result
     }
@@ -594,6 +718,272 @@ impl<R: Ring> CliffordAlgebra<R> {
         (0..self.dimension)
             .map(|i| self.generator(i).unwrap())
             .collect()
+    }
+
+    /// Get the quadratic form values
+    ///
+    /// Returns Q(e_i) for each basis vector e_i
+    pub fn quadratic_form(&self) -> &[R] {
+        &self.quadratic_form
+    }
+
+    /// Get the pseudoscalar element e_0 ∧ e_1 ∧ ... ∧ e_{n-1}
+    ///
+    /// This is the unique (up to sign) top-degree element in the algebra.
+    /// Also known as the volume element.
+    pub fn pseudoscalar(&self) -> CliffordAlgebraElement<R> {
+        if self.dimension == 0 {
+            return self.one();
+        }
+
+        // Create basis element with all indices
+        let all_indices: Vec<usize> = (0..self.dimension).collect();
+        let basis = CliffordBasisElement::new(all_indices);
+        CliffordAlgebraElement::from_term(
+            R::one(),
+            basis,
+            self.dimension,
+            self.quadratic_form.clone(),
+        )
+    }
+
+    /// Get the volume form (alias for pseudoscalar)
+    ///
+    /// This is the standard terminology for exterior algebras.
+    pub fn volume_form(&self) -> CliffordAlgebraElement<R> {
+        self.pseudoscalar()
+    }
+
+    /// Check if this is an exterior algebra (all Q(e_i) = 0)
+    pub fn is_exterior(&self) -> bool {
+        self.quadratic_form.iter().all(|q| q.is_zero())
+    }
+
+    /// Compute a basis for the center of the Clifford algebra
+    ///
+    /// The center Z(Cl(V,Q)) consists of elements that commute with all elements.
+    /// - For odd n: center = span{1}
+    /// - For even n: center = span{1, pseudoscalar} (if pseudoscalar is central)
+    ///
+    /// Note: This is for the standard Euclidean case. The general case depends on
+    /// the specific quadratic form.
+    pub fn center_basis(&self) -> Vec<CliffordAlgebraElement<R>> {
+        let mut basis = vec![self.one()];
+
+        // For even dimension, the pseudoscalar is also central
+        if self.dimension % 2 == 0 && self.dimension > 0 {
+            basis.push(self.pseudoscalar());
+        }
+
+        basis
+    }
+
+    /// Compute a basis for the supercenter of the Clifford algebra
+    ///
+    /// The supercenter consists of elements that super-commute with all elements:
+    /// xy = (-1)^{|x||y|} yx where |x| is the parity (0 for even, 1 for odd grade).
+    ///
+    /// For the Clifford algebra, this includes all elements that either:
+    /// - Commute with all elements (center), or
+    /// - Anticommute with odd elements and commute with even elements
+    pub fn supercenter_basis(&self) -> Vec<CliffordAlgebraElement<R>> {
+        // The supercenter is larger than the center
+        // For now, return the center basis as a starting point
+        // Full implementation would require checking super-commutation relations
+        self.center_basis()
+    }
+
+    /// Get all basis elements of a specific grade
+    pub fn basis_of_grade(&self, k: usize) -> Vec<CliffordAlgebraElement<R>> {
+        if k > self.dimension {
+            return Vec::new();
+        }
+
+        let indices = CliffordAlgebraIndices::new(self.dimension, Some(k));
+        indices.all_indices()
+            .into_iter()
+            .map(|idx| {
+                let basis = CliffordBasisElement::new(idx);
+                CliffordAlgebraElement::from_term(
+                    R::one(),
+                    basis,
+                    self.dimension,
+                    self.quadratic_form.clone(),
+                )
+            })
+            .collect()
+    }
+
+    /// Get all basis elements of the algebra
+    pub fn basis(&self) -> Vec<CliffordAlgebraElement<R>> {
+        (0..=self.dimension)
+            .flat_map(|k| self.basis_of_grade(k))
+            .collect()
+    }
+
+    // === Hopf Algebra Operations (for Exterior Algebras) ===
+
+    /// Compute the counit ε: Λ(V) → R
+    ///
+    /// The counit extracts the scalar (degree 0) coefficient.
+    /// ε(1) = 1, ε(e_i) = 0 for generators
+    pub fn counit(&self, element: &CliffordAlgebraElement<R>) -> R {
+        element.terms
+            .get(&CliffordBasisElement::scalar())
+            .cloned()
+            .unwrap_or_else(R::zero)
+    }
+
+    /// Compute the antipode S: Λ(V) → Λ(V)
+    ///
+    /// For exterior algebras: S(ω) = (-1)^{deg(ω)} ω
+    /// This makes Λ(V) a Hopf algebra.
+    pub fn antipode(&self, element: &CliffordAlgebraElement<R>) -> CliffordAlgebraElement<R> {
+        let mut result = self.zero();
+        for (basis, coeff) in &element.terms {
+            let sign = if basis.grade() % 2 == 0 { R::one() } else { -R::one() };
+            result.add_term(coeff.clone() * sign, basis.clone());
+        }
+        result
+    }
+
+    /// Compute the coproduct Δ: Λ(V) → Λ(V) ⊗ Λ(V)
+    ///
+    /// For a basis element e_{i1} ∧ ... ∧ e_{ik}, the coproduct is:
+    /// Δ(ω) = Σ_{S ⊆ {i1,...,ik}} e_S ⊗ e_{complement of S}
+    ///
+    /// Returns pairs (left_tensor, right_tensor) representing the coproduct.
+    pub fn coproduct(&self, element: &CliffordAlgebraElement<R>)
+        -> Vec<(CliffordAlgebraElement<R>, CliffordAlgebraElement<R>)>
+    {
+        let mut result = Vec::new();
+
+        for (basis, coeff) in &element.terms {
+            let basis_coproduct = self.coproduct_on_basis(basis);
+            for (left_basis, right_basis, sign) in basis_coproduct {
+                let left = CliffordAlgebraElement::from_term(
+                    coeff.clone() * sign,
+                    left_basis,
+                    self.dimension,
+                    self.quadratic_form.clone(),
+                );
+                let right = CliffordAlgebraElement::from_term(
+                    R::one(),
+                    right_basis,
+                    self.dimension,
+                    self.quadratic_form.clone(),
+                );
+                result.push((left, right));
+            }
+        }
+
+        result
+    }
+
+    /// Compute coproduct on a single basis element
+    ///
+    /// Returns tuples (left_basis, right_basis, sign) where sign accounts for
+    /// the reordering needed when splitting the indices.
+    fn coproduct_on_basis(&self, basis: &CliffordBasisElement)
+        -> Vec<(CliffordBasisElement, CliffordBasisElement, R)>
+    {
+        let indices = &basis.indices;
+        let n = indices.len();
+        let mut result = Vec::new();
+
+        // Iterate over all subsets of the index set
+        for mask in 0..(1usize << n) {
+            let mut left_indices = Vec::new();
+            let mut right_indices = Vec::new();
+
+            for (i, &idx) in indices.iter().enumerate() {
+                if (mask & (1 << i)) != 0 {
+                    left_indices.push(idx);
+                } else {
+                    right_indices.push(idx);
+                }
+            }
+
+            // Compute the sign from the shuffle
+            // This is the sign needed to reorder (left ∧ right) back to the original order
+            let sign = Self::shuffle_sign(&left_indices, &right_indices);
+            let sign_r = if sign { R::one() } else { -R::one() };
+
+            result.push((
+                CliffordBasisElement::new(left_indices),
+                CliffordBasisElement::new(right_indices),
+                sign_r,
+            ));
+        }
+
+        result
+    }
+
+    /// Compute the sign of a shuffle permutation
+    ///
+    /// Given two sorted sequences that were split from a merged sequence,
+    /// returns true for positive sign, false for negative.
+    fn shuffle_sign(left: &[usize], right: &[usize]) -> bool {
+        // Count inversions: how many pairs (l, r) have l > r
+        let mut inversions = 0;
+        for &l in left {
+            for &r in right {
+                if l > r {
+                    inversions += 1;
+                }
+            }
+        }
+        inversions % 2 == 0
+    }
+
+    /// Compute the interior product ι_v(ω) (contraction)
+    ///
+    /// For a 1-form v and k-form ω, returns a (k-1)-form.
+    /// This is the adjoint of the wedge product with respect to the inner product.
+    pub fn interior_product(
+        &self,
+        form: &CliffordAlgebraElement<R>,
+        vector: &CliffordAlgebraElement<R>,
+    ) -> CliffordAlgebraElement<R> {
+        // Verify vector is degree 1 (or handle general case)
+        let mut result = self.zero();
+
+        for (form_basis, form_coeff) in &form.terms {
+            for (vec_basis, vec_coeff) in &vector.terms {
+                // For each generator index in the vector
+                for &vec_idx in &vec_basis.indices {
+                    // Try to contract with the form
+                    if let Some((sign, new_basis)) = self.contract_basis(form_basis, vec_idx) {
+                        let coeff = form_coeff.clone() * vec_coeff.clone() * sign;
+                        result.add_term(coeff, new_basis);
+                    }
+                }
+            }
+        }
+
+        result
+    }
+
+    /// Contract a basis element with a single generator index
+    ///
+    /// Returns Some((sign, new_basis)) if the index is present in the basis,
+    /// None otherwise.
+    fn contract_basis(&self, basis: &CliffordBasisElement, index: usize)
+        -> Option<(R, CliffordBasisElement)>
+    {
+        // Find the position of the index in the basis
+        if let Some(pos) = basis.indices.iter().position(|&i| i == index) {
+            // Remove this index
+            let mut new_indices = basis.indices.clone();
+            new_indices.remove(pos);
+
+            // Sign from moving the index to the front: (-1)^pos
+            let sign = if pos % 2 == 0 { R::one() } else { -R::one() };
+
+            Some((sign, CliffordBasisElement::new(new_indices)))
+        } else {
+            None
+        }
     }
 }
 
@@ -981,7 +1371,7 @@ mod tests {
     fn test_clifford_indices_sample() {
         let indices1 = CliffordAlgebraIndices::new(3, None);
         let sample1 = indices1.sample_element();
-        assert_eq!(sample1, vec![]);
+        assert_eq!(sample1, Vec::<usize>::new());
 
         let indices2 = CliffordAlgebraIndices::new(3, Some(2));
         let sample2 = indices2.sample_element();
@@ -1132,5 +1522,229 @@ mod tests {
 
         let basis3 = CliffordBasisElement::new(vec![0, 1, 2]);
         assert_eq!(basis3.grade(), 3);
+    }
+
+    #[test]
+    fn test_pseudoscalar() {
+        let alg: CliffordAlgebra<Integer> = CliffordAlgebra::exterior(3);
+        let ps = alg.pseudoscalar();
+
+        // Should be e0 ∧ e1 ∧ e2
+        assert!(ps.is_homogeneous());
+        assert_eq!(ps.homogeneous_degree(), Some(3));
+
+        // Pseudoscalar squared should be 0 in exterior algebra
+        let ps_squared = ps.clone() * ps.clone();
+        assert!(ps_squared.is_zero());
+    }
+
+    #[test]
+    fn test_volume_form() {
+        let alg: CliffordAlgebra<Integer> = CliffordAlgebra::exterior(2);
+        let vf = alg.volume_form();
+
+        assert!(vf.is_homogeneous());
+        assert_eq!(vf.homogeneous_degree(), Some(2));
+    }
+
+    #[test]
+    fn test_quadratic_form_access() {
+        let alg: CliffordAlgebra<Integer> = CliffordAlgebra::standard(3);
+        let qf = alg.quadratic_form();
+
+        assert_eq!(qf.len(), 3);
+        assert!(qf.iter().all(|q| q.is_one()));
+    }
+
+    #[test]
+    fn test_is_exterior() {
+        let exterior: CliffordAlgebra<Integer> = CliffordAlgebra::exterior(3);
+        assert!(exterior.is_exterior());
+
+        let standard: CliffordAlgebra<Integer> = CliffordAlgebra::standard(3);
+        assert!(!standard.is_exterior());
+    }
+
+    #[test]
+    fn test_even_odd_parts() {
+        let alg: CliffordAlgebra<Integer> = CliffordAlgebra::exterior(3);
+        let e0 = alg.generator(0).unwrap();
+        let e1 = alg.generator(1).unwrap();
+        let e2 = alg.generator(2).unwrap();
+
+        // 1 + e0 + e0∧e1 + e0∧e1∧e2
+        let mixed = alg.one() + e0.clone() + e0.clone() * e1.clone()
+            + e0.clone() * e1.clone() * e2.clone();
+
+        let even = mixed.even_part();
+        let odd = mixed.odd_part();
+
+        assert!(even.is_even());
+        assert!(odd.is_odd());
+
+        // Even + Odd should equal original
+        assert_eq!(even + odd, mixed);
+    }
+
+    #[test]
+    fn test_is_homogeneous() {
+        let alg: CliffordAlgebra<Integer> = CliffordAlgebra::exterior(3);
+        let e0 = alg.generator(0).unwrap();
+        let e1 = alg.generator(1).unwrap();
+
+        // Single generator is homogeneous
+        assert!(e0.is_homogeneous());
+        assert_eq!(e0.homogeneous_degree(), Some(1));
+
+        // Product of two generators is homogeneous
+        let two_form = e0.clone() * e1.clone();
+        assert!(two_form.is_homogeneous());
+        assert_eq!(two_form.homogeneous_degree(), Some(2));
+
+        // Sum of different grades is not homogeneous
+        let mixed = e0.clone() + two_form;
+        assert!(!mixed.is_homogeneous());
+        assert_eq!(mixed.homogeneous_degree(), None);
+    }
+
+    #[test]
+    fn test_center_basis() {
+        // For odd dimension, center is just scalars
+        let alg3: CliffordAlgebra<Integer> = CliffordAlgebra::standard(3);
+        let center3 = alg3.center_basis();
+        assert_eq!(center3.len(), 1);
+
+        // For even dimension, center includes pseudoscalar
+        let alg2: CliffordAlgebra<Integer> = CliffordAlgebra::standard(2);
+        let center2 = alg2.center_basis();
+        assert_eq!(center2.len(), 2);
+    }
+
+    #[test]
+    fn test_counit() {
+        let alg: CliffordAlgebra<Integer> = CliffordAlgebra::exterior(3);
+        let e0 = alg.generator(0).unwrap();
+
+        // Counit of 1 is 1
+        assert_eq!(alg.counit(&alg.one()), Integer::from(1));
+
+        // Counit of generator is 0
+        assert_eq!(alg.counit(&e0), Integer::from(0));
+
+        // Counit of 2 + e0 is 2
+        let elem = CliffordAlgebraElement::scalar(
+            Integer::from(2),
+            3,
+            vec![Integer::zero(), Integer::zero(), Integer::zero()],
+        ) + e0;
+        assert_eq!(alg.counit(&elem), Integer::from(2));
+    }
+
+    #[test]
+    fn test_antipode() {
+        let alg: CliffordAlgebra<Integer> = CliffordAlgebra::exterior(3);
+        let e0 = alg.generator(0).unwrap();
+        let e1 = alg.generator(1).unwrap();
+
+        // Antipode of scalar is scalar
+        let one_antipode = alg.antipode(&alg.one());
+        assert_eq!(one_antipode, alg.one());
+
+        // Antipode of degree-1 element is negation
+        let e0_antipode = alg.antipode(&e0);
+        assert_eq!(e0_antipode, -e0.clone());
+
+        // Antipode of degree-2 element is unchanged
+        let two_form = e0.clone() * e1.clone();
+        let two_form_antipode = alg.antipode(&two_form);
+        assert_eq!(two_form_antipode, two_form);
+    }
+
+    #[test]
+    fn test_coproduct() {
+        let alg: CliffordAlgebra<Integer> = CliffordAlgebra::exterior(2);
+        let e0 = alg.generator(0).unwrap();
+
+        // Coproduct of e0 should give: 1 ⊗ e0 + e0 ⊗ 1
+        let coprod = alg.coproduct(&e0);
+        assert_eq!(coprod.len(), 2);
+    }
+
+    #[test]
+    fn test_interior_product() {
+        let alg: CliffordAlgebra<Integer> = CliffordAlgebra::exterior(3);
+        let e0 = alg.generator(0).unwrap();
+        let e1 = alg.generator(1).unwrap();
+        let e2 = alg.generator(2).unwrap();
+
+        // ι_{e0}(e0 ∧ e1) = e1
+        let two_form = e0.clone() * e1.clone();
+        let contracted = alg.interior_product(&two_form, &e0);
+        assert_eq!(contracted, e1);
+
+        // ι_{e1}(e0 ∧ e1) = -e0
+        let contracted2 = alg.interior_product(&two_form, &e1);
+        assert_eq!(contracted2, -e0.clone());
+
+        // ι_{e2}(e0 ∧ e1) = 0 (e2 not in the form)
+        let contracted3 = alg.interior_product(&two_form, &e2);
+        assert!(contracted3.is_zero());
+    }
+
+    #[test]
+    fn test_reverse() {
+        let alg: CliffordAlgebra<Integer> = CliffordAlgebra::exterior(3);
+        let e0 = alg.generator(0).unwrap();
+        let e1 = alg.generator(1).unwrap();
+        let e2 = alg.generator(2).unwrap();
+
+        // Grade 0: unchanged
+        assert_eq!(alg.one().reverse(), alg.one());
+
+        // Grade 1: unchanged (1*0/2 = 0, even)
+        assert_eq!(e0.reverse(), e0.clone());
+
+        // Grade 2: sign flip (2*1/2 = 1, odd)
+        let two_form = e0.clone() * e1.clone();
+        assert_eq!(two_form.reverse(), -two_form.clone());
+
+        // Grade 3: sign flip (3*2/2 = 3, odd)
+        let three_form = e0.clone() * e1.clone() * e2.clone();
+        assert_eq!(three_form.reverse(), -three_form.clone());
+    }
+
+    #[test]
+    fn test_grade_involution() {
+        let alg: CliffordAlgebra<Integer> = CliffordAlgebra::exterior(2);
+        let e0 = alg.generator(0).unwrap();
+        let e1 = alg.generator(1).unwrap();
+
+        // Even grades unchanged
+        assert_eq!(alg.one().grade_involution(), alg.one());
+        let two_form = e0.clone() * e1.clone();
+        assert_eq!(two_form.grade_involution(), two_form);
+
+        // Odd grades negated
+        assert_eq!(e0.grade_involution(), -e0.clone());
+    }
+
+    #[test]
+    fn test_basis_of_grade() {
+        let alg: CliffordAlgebra<Integer> = CliffordAlgebra::exterior(3);
+
+        // Grade 0: just 1
+        assert_eq!(alg.basis_of_grade(0).len(), 1);
+
+        // Grade 1: e0, e1, e2
+        assert_eq!(alg.basis_of_grade(1).len(), 3);
+
+        // Grade 2: e01, e02, e12
+        assert_eq!(alg.basis_of_grade(2).len(), 3);
+
+        // Grade 3: e012
+        assert_eq!(alg.basis_of_grade(3).len(), 1);
+
+        // Total basis
+        assert_eq!(alg.basis().len(), 8); // 2^3
     }
 }

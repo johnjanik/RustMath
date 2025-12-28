@@ -269,7 +269,7 @@ impl<R: Ring> Display for IwahoriHeckeAlgebra<R> {
 /// let one: IwahoriHeckeElement<Integer> = IwahoriHeckeElement::one();
 /// let gen: IwahoriHeckeElement<Integer> = IwahoriHeckeElement::generator(0);
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct IwahoriHeckeElement<R: Ring> {
     /// Basis elements: map from word (as vec of indices) to coefficient
     /// The word [0, 1, 0] represents s₀s₁s₀
