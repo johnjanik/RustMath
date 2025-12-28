@@ -2483,45 +2483,122 @@ impl ReplContext {
                 Ok(RustMathValue::Float(result))
             }
 
-            // Numerical root finding: find_root(expr, var, a, b) or nsolve(...)
+            // Numerical root finding with multiple syntaxes:
+            // SageMath style: find_root(cos(x)==sin(x), 0, pi/2) or find_root(f(x), 0, 1)
+            // Extended: find_root(expr, var, a, b)
             "find_root" | "nsolve" => {
-                let args = self.parse_args(args_str)?;
-                if args.len() < 4 {
-                    return Err(EvalError::new("ArgumentError", "find_root requires 4 arguments (expr, var, a, b)"));
-                }
-                let expr_clone = match &args[0] {
-                    RustMathValue::Expr(e) => e.clone(),
-                    _ => return Err(EvalError::new("TypeError", "first argument must be an expression")),
-                };
-                // Get variable name from argument
-                let var_name = match &args[1] {
-                    RustMathValue::Symbol(s) => s.name().to_string(),
-                    RustMathValue::String(s) => s.clone(),
-                    _ => return Err(EvalError::new("TypeError", "second argument must be a variable")),
-                };
-                // Find the actual symbol in the expression (important: symbols have unique IDs)
-                let expr_symbols = expr_clone.symbols();
-                let var_sym = expr_symbols.iter()
-                    .find(|s| s.name() == var_name)
-                    .cloned()
-                    .ok_or_else(|| EvalError::new("ValueError",
-                        format!("Variable '{}' not found in expression", var_name)))?;
-                let a = match &args[2] {
-                    RustMathValue::Integer(n) => n.to_f64().ok_or_else(|| EvalError::new("ValueError", "invalid lower bound"))?,
-                    RustMathValue::Float(f) => *f,
-                    RustMathValue::Rational(r) => r.numerator().to_f64().unwrap() / r.denominator().to_f64().unwrap(),
-                    _ => return Err(EvalError::new("TypeError", "lower bound must be a number")),
-                };
-                let b = match &args[3] {
-                    RustMathValue::Integer(n) => n.to_f64().ok_or_else(|| EvalError::new("ValueError", "invalid upper bound"))?,
-                    RustMathValue::Float(f) => *f,
-                    RustMathValue::Rational(r) => r.numerator().to_f64().unwrap() / r.denominator().to_f64().unwrap(),
-                    _ => return Err(EvalError::new("TypeError", "upper bound must be a number")),
+                // First, check if the first argument contains "==" (equation)
+                // Parse the args_str to detect equation syntax
+                let trimmed = args_str.trim();
+
+                // Try to find "==" in the expression (for equation syntax)
+                let (expr_to_solve, bounds_start) = if let Some(eq_pos) = self.find_equation_operator(trimmed) {
+                    // Equation syntax: lhs == rhs, a, b
+                    // Convert to lhs - rhs and find where it's zero
+                    let lhs_str = &trimmed[..eq_pos];
+                    let rhs_and_bounds = &trimmed[eq_pos + 2..];
+
+                    // Find the comma that separates rhs from bounds
+                    let (rhs_str, bounds_str) = self.split_rhs_and_bounds(rhs_and_bounds)?;
+
+                    // Parse lhs and rhs as expressions
+                    let lhs = self.eval_expr(lhs_str.trim())?;
+                    let rhs = self.eval_expr(rhs_str.trim())?;
+
+                    // Convert to lhs - rhs
+                    let diff_expr = match (lhs, rhs) {
+                        (RustMathValue::Expr(l), RustMathValue::Expr(r)) => l - r,
+                        (RustMathValue::Expr(l), RustMathValue::Integer(n)) => l - Expr::Integer(n),
+                        (RustMathValue::Expr(l), RustMathValue::Float(f)) => l - Expr::Real(f),
+                        (RustMathValue::Integer(n), RustMathValue::Expr(r)) => Expr::Integer(n) - r,
+                        (RustMathValue::Float(f), RustMathValue::Expr(r)) => Expr::Real(f) - r,
+                        _ => return Err(EvalError::new("TypeError", "equation must involve symbolic expressions")),
+                    };
+                    (diff_expr, bounds_str)
+                } else {
+                    // No equation, use standard parsing
+                    let args = self.parse_args(args_str)?;
+
+                    if args.len() == 3 {
+                        // find_root(expr, a, b) - auto-detect variable
+                        let expr_clone = match &args[0] {
+                            RustMathValue::Expr(e) => e.clone(),
+                            _ => return Err(EvalError::new("TypeError", "first argument must be an expression")),
+                        };
+                        let a = self.value_to_f64(&args[1])?;
+                        let b = self.value_to_f64(&args[2])?;
+
+                        // Auto-detect variable
+                        let symbols = expr_clone.symbols();
+                        if symbols.is_empty() {
+                            return Err(EvalError::new("ValueError", "expression has no variables"));
+                        }
+                        let var_sym = symbols[0].clone();
+
+                        let f = move |x: f64| -> f64 {
+                            let val = Expr::Real(x);
+                            let substituted = expr_clone.substitute(&var_sym, &val);
+                            substituted.eval_float().unwrap_or(f64::NAN)
+                        };
+
+                        return match bisection(f, a, b, 1e-10, 1000) {
+                            Some(result) => Ok(RustMathValue::Float(result.root)),
+                            None => Err(EvalError::new("ValueError", "No root found in interval")),
+                        };
+                    } else if args.len() >= 4 {
+                        // find_root(expr, var, a, b) - original syntax
+                        let expr_clone = match &args[0] {
+                            RustMathValue::Expr(e) => e.clone(),
+                            _ => return Err(EvalError::new("TypeError", "first argument must be an expression")),
+                        };
+                        let var_name = match &args[1] {
+                            RustMathValue::Symbol(s) => s.name().to_string(),
+                            RustMathValue::String(s) => s.clone(),
+                            _ => return Err(EvalError::new("TypeError", "second argument must be a variable")),
+                        };
+                        let expr_symbols = expr_clone.symbols();
+                        let var_sym = expr_symbols.iter()
+                            .find(|s| s.name() == var_name)
+                            .cloned()
+                            .ok_or_else(|| EvalError::new("ValueError",
+                                format!("Variable '{}' not found in expression", var_name)))?;
+                        let a = self.value_to_f64(&args[2])?;
+                        let b = self.value_to_f64(&args[3])?;
+
+                        let f = move |x: f64| -> f64 {
+                            let val = Expr::Real(x);
+                            let substituted = expr_clone.substitute(&var_sym, &val);
+                            substituted.eval_float().unwrap_or(f64::NAN)
+                        };
+
+                        return match bisection(f, a, b, 1e-10, 1000) {
+                            Some(result) => Ok(RustMathValue::Float(result.root)),
+                            None => Err(EvalError::new("ValueError", "No root found in interval")),
+                        };
+                    } else {
+                        return Err(EvalError::new("ArgumentError",
+                            "find_root requires: (equation, a, b) or (expr, a, b) or (expr, var, a, b)"));
+                    }
                 };
 
-                let f = |x: f64| -> f64 {
+                // Handle equation syntax result
+                let symbols = expr_to_solve.symbols();
+                if symbols.is_empty() {
+                    return Err(EvalError::new("ValueError", "equation has no variables"));
+                }
+                let var_sym = symbols[0].clone();
+
+                // Parse bounds from bounds_start
+                let bounds: Vec<&str> = bounds_start.split(',').map(|s| s.trim()).collect();
+                if bounds.len() < 2 {
+                    return Err(EvalError::new("ArgumentError", "need lower and upper bounds"));
+                }
+                let a = self.eval_to_f64(bounds[0])?;
+                let b = self.eval_to_f64(bounds[1])?;
+
+                let f = move |x: f64| -> f64 {
                     let val = Expr::Real(x);
-                    let substituted = expr_clone.substitute(&var_sym, &val);
+                    let substituted = expr_to_solve.substitute(&var_sym, &val);
                     substituted.eval_float().unwrap_or(f64::NAN)
                 };
 
@@ -8277,6 +8354,44 @@ impl ReplContext {
             }
             _ => Err(EvalError::new("TypeError", "expected a number")),
         }
+    }
+
+    /// Find the position of "==" operator in a string, respecting parentheses
+    fn find_equation_operator(&self, s: &str) -> Option<usize> {
+        let chars: Vec<char> = s.chars().collect();
+        let mut depth = 0;
+
+        for i in 0..chars.len().saturating_sub(1) {
+            match chars[i] {
+                '(' | '[' => depth += 1,
+                ')' | ']' => depth -= 1,
+                '=' if depth == 0 && chars.get(i + 1) == Some(&'=') => {
+                    return Some(i);
+                }
+                _ => {}
+            }
+        }
+        None
+    }
+
+    /// Split "rhs, a, b" into (rhs, "a, b")
+    fn split_rhs_and_bounds(&self, s: &str) -> Result<(String, String), EvalError> {
+        let mut depth = 0;
+        let chars: Vec<char> = s.chars().collect();
+
+        for (i, &ch) in chars.iter().enumerate() {
+            match ch {
+                '(' | '[' => depth += 1,
+                ')' | ']' => depth -= 1,
+                ',' if depth == 0 => {
+                    let rhs = s[..i].to_string();
+                    let bounds = s[i + 1..].to_string();
+                    return Ok((rhs, bounds));
+                }
+                _ => {}
+            }
+        }
+        Err(EvalError::new("SyntaxError", "could not parse equation bounds"))
     }
 
     /// Convert a list of RustMathValues to Vec<f64>
