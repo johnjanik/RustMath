@@ -896,6 +896,9 @@ pub fn hensel_lift(
 )> {
 
 
+    use crate::zp_hensel;
+    use rustmath_integers::Integer;
+
     if k == 0 {
         return Err(MathError::InvalidArgument(
             "Hensel lifting requires k >= 1".to_string(),
@@ -907,88 +910,50 @@ pub fn hensel_lift(
         return Ok((g0.clone(), h0.clone()));
     }
 
-    // Step 1: Compute extended GCD to find s₀, t₀ such that s₀·g₀ + t₀·h₀ ≡ 1 (mod p)
-    let (s0, t0) = extended_gcd_poly_gf(g0, h0, p)?;
-
-    // Verify that gcd(g₀, h₀) = 1 (mod p)
-    let gcd = gcd_poly_gf(g0, h0, p);
-    if gcd.degree() != Some(0) && !gcd.is_constant() {
+    // The lift runs on the small-prime engine in `zp_hensel` (a faithful port of
+    // the p-adelic calculator's verified ZpPoly/FpPoly routines). The earlier
+    // in-place implementation had a Bezout-side mismatch (the Δg/Δh corrections
+    // were reduced against the wrong cofactor), which is why its tests were
+    // marked `#[ignore]`. We convert to coefficient vectors, delegate, and
+    // convert back.
+    let p_i64 = p.to_i64();
+    if p_i64 <= 1 {
         return Err(MathError::InvalidArgument(
-            "Hensel lifting requires gcd(g₀, h₀) = 1 (mod p)".to_string(),
+            "Hensel lifting requires a prime p >= 2 that fits in i64".to_string(),
         ));
     }
 
-    let mut g = g0.clone();
-    let mut h = h0.clone();
-    let s = s0;
-    let t = t0;
+    // f as Z[x]; g0, h0 reduced to F_p[x] (Vec<i64> in [0, p)).
+    let f_coeffs: Vec<Integer> = f.coefficients().to_vec();
+    let pm = p.clone();
+    let to_fp = |poly: &UnivariatePolynomial<Integer>| -> Vec<i64> {
+        poly.coefficients()
+            .iter()
+            .map(|c| {
+                let r = c % &pm;
+                (&(&r + &pm) % &pm).to_i64()
+            })
+            .collect()
+    };
+    let g0_fp = to_fp(g0);
+    let h0_fp = to_fp(h0);
 
-    // Current modulus p^i
-    let mut p_power = p.clone();
-
-    // Step 2: Lift from p^i to p^(i+1) for i = 1..k-1
-    for _i in 1..k {
-        let next_p_power = p_power.clone() * p.clone();
-
-        // Compute product g·h WITHOUT modular reduction first
-        let gh = poly_mul_unreduced(&g, &h);
-
-        // Compute error: e = (f - g·h) / p^i
-        let mut e_coeffs = Vec::new();
-        let max_deg = f.degree().unwrap_or(0).max(gh.degree().unwrap_or(0));
-
-        for j in 0..=max_deg {
-            let f_coeff = f.coeff(j).clone();
-            let gh_coeff = gh.coeff(j).clone();
-            let diff = f_coeff - gh_coeff;
-
-            // Divide by p^i
-            let (e_val, rem) = diff.div_rem(&p_power)?;
-            if !rem.is_zero() {
-                return Err(MathError::InvalidArgument(
-                    format!("Hensel lifting failed: f - g·h not divisible by p^i at coeff {}: {} not divisible by {}",
-                            j, diff, p_power),
-                ));
-            }
-            e_coeffs.push(e_val);
-        }
-
-        let e = UnivariatePolynomial::new(e_coeffs);
-
-        // Solve for Δg, Δh: s·e ≡ Δg·h + g·Δh (mod p)
-        // Using: Δg ≡ s·e (mod h₀, p) and Δh ≡ t·e (mod g₀, p)
-
-        let se = poly_mul_mod(&s, &e, p);
-        let te = poly_mul_mod(&t, &e, p);
-
-        // Δg ≡ (s·e) mod h₀
-        let (_, delta_g_unreduced) = div_poly_gf(&se, h0, p)?;
-        let delta_g = reduce_poly_mod(&delta_g_unreduced, p);
-
-        // Δh ≡ (t·e) mod g₀
-        let (_, delta_h_unreduced) = div_poly_gf(&te, g0, p)?;
-        let delta_h = reduce_poly_mod(&delta_h_unreduced, p);
-
-        // Update: g ← g + p^i·Δg, h ← h + p^i·Δh
-        let delta_g_scaled = poly_scalar_mul(&delta_g, &p_power);
-        let delta_h_scaled = poly_scalar_mul(&delta_h, &p_power);
-
-        g = poly_add_unreduced(&g, &delta_g_scaled);
-        h = poly_add_unreduced(&h, &delta_h_scaled);
-
-        // Update s, t for next iteration: s·g + t·h ≡ 1 (mod p^(i+1))
-        // This is optional for the basic algorithm, but improves stability
-
-        p_power = next_p_power;
+    match zp_hensel::hensel_lift(&f_coeffs, &g0_fp, &h0_fp, p_i64, k) {
+        Some((big_g, big_h)) => Ok((
+            UnivariatePolynomial::new(big_g),
+            UnivariatePolynomial::new(big_h),
+        )),
+        None => Err(MathError::InvalidArgument(
+            "Hensel lifting requires coprime monic factors with f ≡ g₀·h₀ (mod p)".to_string(),
+        )),
     }
-
-    Ok((g, h))
 }
 
 /// Extended GCD for polynomials over GF(p)
 ///
 /// Computes s, t such that s·a + t·b ≡ gcd(a,b) (mod p)
 /// Assumes gcd(a,b) = 1 (mod p), so returns s, t with s·a + t·b ≡ 1 (mod p)
+#[allow(dead_code)]
 fn extended_gcd_poly_gf(
     a: &UnivariatePolynomial<rustmath_integers::Integer>,
     b: &UnivariatePolynomial<rustmath_integers::Integer>,
@@ -1043,6 +1008,7 @@ fn extended_gcd_poly_gf(
 }
 
 /// Helper: Multiply two polynomials WITHOUT modular reduction
+#[allow(dead_code)]
 fn poly_mul_unreduced(
     a: &UnivariatePolynomial<rustmath_integers::Integer>,
     b: &UnivariatePolynomial<rustmath_integers::Integer>,
@@ -1064,6 +1030,7 @@ fn poly_mul_unreduced(
 }
 
 /// Helper: Multiply two polynomials and reduce coefficients modulo m
+#[allow(dead_code)]
 fn poly_mul_mod(
     a: &UnivariatePolynomial<rustmath_integers::Integer>,
     b: &UnivariatePolynomial<rustmath_integers::Integer>,
@@ -1086,6 +1053,7 @@ fn poly_mul_mod(
 }
 
 /// Helper: Add two polynomials WITHOUT modular reduction
+#[allow(dead_code)]
 fn poly_add_unreduced(
     a: &UnivariatePolynomial<rustmath_integers::Integer>,
     b: &UnivariatePolynomial<rustmath_integers::Integer>,
@@ -1136,6 +1104,7 @@ fn poly_add_mod(
 }
 
 /// Helper: Subtract two polynomials and reduce coefficients modulo m
+#[allow(dead_code)]
 fn poly_sub_mod(
     a: &UnivariatePolynomial<rustmath_integers::Integer>,
     b: &UnivariatePolynomial<rustmath_integers::Integer>,
@@ -1164,6 +1133,7 @@ fn poly_sub_mod(
 }
 
 /// Helper: Multiply polynomial by scalar and reduce modulo m
+#[allow(dead_code)]
 fn poly_scalar_mul(
     poly: &UnivariatePolynomial<rustmath_integers::Integer>,
     scalar: &rustmath_integers::Integer,
@@ -1179,6 +1149,7 @@ fn poly_scalar_mul(
 }
 
 /// Helper: Multiply polynomial by scalar and reduce modulo m
+#[allow(dead_code)]
 fn poly_scalar_mul_mod(
     poly: &UnivariatePolynomial<rustmath_integers::Integer>,
     scalar: &rustmath_integers::Integer,
@@ -1201,6 +1172,7 @@ fn poly_scalar_mul_mod(
 }
 
 /// Helper: Reduce polynomial coefficients modulo m
+#[allow(dead_code)]
 fn reduce_poly_mod(
     poly: &UnivariatePolynomial<rustmath_integers::Integer>,
     m: &rustmath_integers::Integer,
@@ -1524,11 +1496,8 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Hensel lifting has a bug in the algorithm - needs further investigation"]
     fn test_hensel_lift_simple() {
-        // TODO: Fix Hensel lifting algorithm
-        // The current implementation has an issue with the lifting formula
-        // that causes g*h to not equal f modulo p^k
+        // f = x² - 1 = (x + 4)(x + 1) mod 5, coprime factors.
         let f = UnivariatePolynomial::new(vec![
             Integer::from(-1),
             Integer::from(0),
@@ -1551,14 +1520,18 @@ mod tests {
         let prod_init = poly_mul_mod(&g0, &h0, &p);
         assert_eq!(prod_init.coeff(0).clone() % p.clone(), Integer::from(4));
 
-        // Lift to p² = 25
-        let (_g, _h) = hensel_lift(&f, &g0, &h0, &p, 2).unwrap();
-
-        // TODO: Verify that g*h ≡ f (mod p^2)
+        // Lift to p² = 25 and verify g·h ≡ f (mod 25).
+        let (g, h) = hensel_lift(&f, &g0, &h0, &p, 2).unwrap();
+        let p2 = Integer::from(25);
+        let product = poly_mul_mod(&g, &h, &p2);
+        for i in 0..=2 {
+            let prod_coeff = ((product.coeff(i).clone() % p2.clone()) + p2.clone()) % p2.clone();
+            let f_coeff = ((f.coeff(i).clone() % p2.clone()) + p2.clone()) % p2.clone();
+            assert_eq!(prod_coeff, f_coeff, "Coefficient {} mismatch mod 25", i);
+        }
     }
 
     #[test]
-    #[ignore = "Hensel lifting has a bug - see test_hensel_lift_simple"]
     fn test_hensel_lift_quadratic() {
         // Test with x² + 1 over GF(5)
         // Over GF(5): x² + 1 = (x + 2)(x + 3)
