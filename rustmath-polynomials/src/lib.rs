@@ -10,6 +10,8 @@ pub mod ideal;
 pub mod ideal_monoid;
 pub mod laurent;
 pub mod multivariate;
+pub mod newton;
+pub mod padic_factor;
 pub mod polynomial;
 pub mod quotient;
 pub mod roots;
