@@ -3,6 +3,7 @@
 //! This crate provides polynomial arithmetic over various coefficient rings.
 
 pub mod algebraic_geometry;
+pub mod disc;
 pub mod factorization;
 pub mod fp_factor;
 pub mod groebner;
