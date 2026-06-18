@@ -9,8 +9,13 @@ repository.workspace = true
 [dependencies]
 rustmath-core = { path = "../rustmath-core" }
 rustmath-integers = { path = "../rustmath-integers" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 rustmath-matrix = { path = "../rustmath-matrix" }
 rustmath-combinatorics = { path = "../rustmath-combinatorics" }
 rustmath-rationals = { path = "../rustmath-rationals" }
 rustmath-complex = { path = "../rustmath-complex" }
 rustmath-graphs = { path = "../rustmath-graphs" }
+
+[dev-dependencies]
+rustmath-polynomials = { path = "../rustmath-polynomials" }

@@ -8,6 +8,7 @@
 //! - Generic group operations
 //! - Representation theory
 
+pub mod transitive24;
 pub mod permutation_group;
 pub mod matrix_group;
 pub mod abelian_group;
