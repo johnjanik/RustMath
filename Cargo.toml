@@ -68,6 +68,7 @@ members = [
     "rustmath-curves",
     "rustmath-benchmarks",
     "rustmath-jupyter",
+    "rustmath-igp24",
 ]
 
 [workspace.package]
