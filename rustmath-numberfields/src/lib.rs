@@ -28,6 +28,7 @@ use rustmath_rationals::Rational;
 use std::fmt;
 use thiserror::Error;
 
+pub mod polred;
 #[derive(Debug, Error)]
 pub enum NumberFieldError {
     #[error("Polynomial must be irreducible")]
