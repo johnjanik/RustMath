@@ -29,6 +29,7 @@ use std::fmt;
 use thiserror::Error;
 
 pub mod polred;
+pub mod round2;
 #[derive(Debug, Error)]
 pub enum NumberFieldError {
     #[error("Polynomial must be irreducible")]
