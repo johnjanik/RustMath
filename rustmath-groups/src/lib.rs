@@ -10,6 +10,7 @@
 
 pub mod transitive24;
 pub mod ksubset_orbits;
+pub mod pgalois;
 pub mod permutation_group;
 pub mod matrix_group;
 pub mod abelian_group;
