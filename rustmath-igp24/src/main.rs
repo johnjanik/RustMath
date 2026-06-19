@@ -122,6 +122,10 @@ fn main() {
     //   --galois  native Galois-group identification: Frobenius support -> candidate
     //             class (sound) -> k=2 resolvent orbit-signature narrowing. ~seconds.
     let want_galois = argv.iter().any(|a| a == "--galois");
+    //   --galois-fast  candidate class (sound superset) + in_alternating only; skips
+    //                  the expensive degree-C(n,2) pair-sum resolvent. Sub-second;
+    //                  for use as a soundness GATE on an external identification.
+    let want_galois_fast = argv.iter().any(|a| a == "--galois-fast");
     let prime_arg = argv.iter().skip(2).find(|a| !a.starts_with("--"));
     let primes: Vec<i64> = if let Some(pa) = prime_arg {
         pa
@@ -196,9 +200,11 @@ fn main() {
 
     // Native Galois identification: Frobenius support -> sound candidate class ->
     // k=2 resolvent orbit-signature narrowing (Stauduhar), no MAGMA / no slot.
-    let galois_json = if want_galois && irreducible && n == 24 {
+    let galois_json = if (want_galois || want_galois_fast) && irreducible && n == 24 {
         let mut obs: Vec<Vec<usize>> = Vec::new();
-        for p in small_primes(160) {
+        // Wider observation => tighter (still sound) candidate class: support
+        // containment is monotone, the true group is never dropped.
+        for p in small_primes(600) {
             if let Some(ct) = cycle_type(&coeffs, p) {
                 if !obs.contains(&ct) {
                     obs.push(ct);
@@ -212,7 +218,7 @@ fn main() {
         };
         let mut narrowed = cands.clone();
         let mut sig: Vec<usize> = Vec::new();
-        if cands.len() > 1 {
+        if !want_galois_fast && cands.len() > 1 {
             if let Ok(db) = Db::load_default() {
                 let res = subset_sum_resolvent(&coeffs, 2);
                 if let Ok(s) = resolvent_orbit_signature(&res) {
