@@ -3,6 +3,7 @@
 //! This crate provides polynomial arithmetic over various coefficient rings.
 
 pub mod algebraic_geometry;
+pub mod bivariate;
 pub mod disc;
 pub mod factorization;
 pub mod fp_factor;
@@ -10,10 +11,12 @@ pub mod groebner;
 pub mod ideal;
 pub mod ideal_monoid;
 pub mod laurent;
+pub mod mestre;
 pub mod multivariate;
 pub mod newton;
 pub mod padic_factor;
 pub mod polynomial;
+pub mod real_roots;
 pub mod quotient;
 pub mod roots;
 pub mod univariate;
