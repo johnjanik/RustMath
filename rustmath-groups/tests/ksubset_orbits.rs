@@ -2,7 +2,9 @@
 //! hand-computed actions and the PARI/GP-validated resolvent factor degrees.
 
 use rustmath_groups::ksubset_orbits::{orbit_lengths_on_ksubsets, orbit_lengths_on_pairs};
-use rustmath_groups::transitive24::{perm_from_cycles, Perm};
+use rustmath_groups::transitive24::{
+    pair_orbit_signature, perm_from_cycles, separate_by_pair_orbits, CycleTypeSupport, Db, Perm,
+};
 
 fn pc(cycles: &[&[u8]]) -> Perm {
     let v: Vec<Vec<u8>> = cycles.iter().map(|c| c.to_vec()).collect();
@@ -58,4 +60,49 @@ fn full_symmetric_24_on_pairs() {
     let big: Vec<u8> = (1..=24).collect();
     let gens = [pc(&[&[1, 2]]), pc(&[&big])];
     assert_eq!(orbit_lengths_on_pairs(&gens, 24), vec![276]);
+}
+
+/// DB-backed: pair-orbit signatures separate real degree-24 Frobenius-blind
+/// classes. Skips gracefully if the (gitignored) data files are absent.
+#[test]
+fn pair_orbits_separate_degree24_blind_classes() {
+    let db = match Db::load_default() {
+        Ok(d) => d,
+        Err(_) => return, // data not present (gitignored) — skip
+    };
+    let sup = match CycleTypeSupport::load_default() {
+        Ok(s) => s,
+        Err(_) => return,
+    };
+
+    let mut any_separation = false;
+    // Sample true groups drawn from the validation polynomials' Galois labels.
+    for &t_star in &[21usize, 2, 22, 49, 50, 39, 65, 72] {
+        let support: Vec<Vec<usize>> = match sup.by_t.get(&t_star) {
+            Some(s) => s.iter().cloned().collect(),
+            None => continue,
+        };
+        // The Frobenius-blind class containing the true group t_star.
+        let blind = sup.blind_class(&support);
+        assert!(blind.contains(&t_star), "blind class must contain its own group");
+
+        // Pair-orbit signature of the true group = its pair-sum resolvent's factor
+        // degrees (conjugacy-invariant), and it tiles C(24,2)=276.
+        let g = db.groups.iter().find(|g| g.t == t_star).unwrap();
+        let sig = pair_orbit_signature(&g.gens);
+        assert_eq!(sig.iter().sum::<usize>(), 276);
+
+        // Feeding the true group's own signature must retain it (soundness)…
+        let filtered = separate_by_pair_orbits(&db, &blind, &sig);
+        assert!(filtered.contains(&t_star), "true group survives its own signature");
+        assert!(filtered.len() <= blind.len());
+        // …and on at least one class it strictly shrinks the candidate set.
+        if filtered.len() < blind.len() {
+            any_separation = true;
+        }
+    }
+    assert!(
+        any_separation,
+        "pair-sum resolvent should split at least one sampled blind class"
+    );
 }

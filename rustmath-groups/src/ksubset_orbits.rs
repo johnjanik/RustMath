@@ -32,14 +32,24 @@ fn apply(g: &Perm, mask: u32) -> u32 {
     out
 }
 
-/// All `k`-subset bitmasks of `{0,…,n−1}` (`0 ≤ k ≤ n ≤ DEG`).
+/// All `k`-subset bitmasks of `{0,…,n−1}` (`0 ≤ k ≤ n ≤ DEG`), enumerated directly
+/// in `O(C(n,k))` via Gosper's hack (next bitmask with the same popcount) — not by
+/// scanning all `2ⁿ` masks, so degree-24 stays cheap.
 fn ksubset_masks(n: usize, k: usize) -> Vec<u32> {
     assert!(n <= DEG && k <= n, "need k ≤ n ≤ {DEG}");
     let mut out = Vec::new();
-    for mask in 0u32..(1u32 << n) {
-        if mask.count_ones() as usize == k {
-            out.push(mask);
-        }
+    if k == 0 {
+        out.push(0);
+        return out;
+    }
+    let limit = if n == 32 { u32::MAX } else { 1u32 << n };
+    let mut x: u32 = (1u32 << k) - 1; // lowest k-subset: bits 0..k-1
+    while x < limit {
+        out.push(x);
+        // Gosper's hack: next integer with the same number of set bits.
+        let c = x & x.wrapping_neg();
+        let r = x + c;
+        x = (((x ^ r) >> 2) / c) | r;
     }
     out
 }

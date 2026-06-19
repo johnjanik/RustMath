@@ -241,6 +241,44 @@ pub fn candidates(db: &mut Db, observed: &[Vec<usize>], enum_cap: usize) -> Vec<
 }
 
 // --------------------------------------------------------------------------- //
+// Resolvent separation: pair-orbit signatures (the group side of Module 18)
+// --------------------------------------------------------------------------- //
+/// Pair-orbit signature of a group: sorted orbit lengths of `⟨gens⟩` on 2-subsets
+/// of the 24 points. Equal to the irreducible-factor degrees of the group's
+/// pair-sum resolvent (`rustmath_polynomials::resolvent::pair_sum_resolvent`) when
+/// that resolvent is separable.
+pub fn pair_orbit_signature(gens: &[Perm]) -> Vec<usize> {
+    crate::ksubset_orbits::orbit_lengths_on_pairs(gens, DEG)
+}
+
+/// Separate a blind class by the **pair-sum resolvent**: keep the candidate `24Tt`
+/// whose pair-orbit signature equals `observed` — the factor-degree multiset of a
+/// candidate polynomial's pair-sum resolvent.
+///
+/// Sound when the resolvent is separable (distinct pair-sums `αᵢ+αⱼ`): the true
+/// group's pair-orbit signature then equals `observed`, so it is retained. Groups
+/// in the blind class with a different pair-orbit signature are eliminated. Returns
+/// sorted `t`'s; computing each signature is a 276-pair BFS, cheap even for large
+/// groups.
+pub fn separate_by_pair_orbits(db: &Db, cands: &[usize], observed: &[usize]) -> Vec<usize> {
+    let mut want = observed.to_vec();
+    want.sort_unstable();
+    let mut out: Vec<usize> = cands
+        .iter()
+        .copied()
+        .filter(|&t| {
+            db.groups
+                .iter()
+                .find(|g| g.t == t)
+                .map(|g| pair_orbit_signature(&g.gens) == want)
+                .unwrap_or(false)
+        })
+        .collect();
+    out.sort_unstable();
+    out
+}
+
+// --------------------------------------------------------------------------- //
 // Sharp narrowing via precomputed cycle-type support (the Frobenius-blind data)
 // --------------------------------------------------------------------------- //
 /// Per-group cycle-type **support** (the set of cycle types that occur in each
