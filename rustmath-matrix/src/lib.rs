@@ -11,6 +11,7 @@ pub mod eigenvalues;
 pub mod inner_product;
 pub mod integer_forms;
 pub mod linear_solve;
+pub mod enumerate;
 pub mod lll;
 pub mod matrix;
 pub mod polynomial_matrix;
