@@ -33,6 +33,7 @@ pub mod different;
 pub mod ideals;
 pub mod local_field;
 pub mod polred;
+pub mod ramification;
 pub mod round2;
 pub mod units;
 #[derive(Debug, Error)]
