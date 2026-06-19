@@ -32,6 +32,7 @@ pub mod classgroup;
 pub mod different;
 pub mod ideals;
 pub mod local_field;
+pub mod panayi;
 pub mod polred;
 pub mod ramification;
 pub mod round2;

@@ -523,6 +523,11 @@ impl EisensteinElement {
         Self::new(self.prime, self.precision, self.g.clone(), c)
     }
 
+    pub fn neg(&self) -> Self {
+        let c = self.coeffs.iter().map(|c| -c.clone()).collect();
+        Self::new(self.prime, self.precision, self.g.clone(), c)
+    }
+
     pub fn mul(&self, other: &Self) -> Self {
         let e = self.e_deg();
         let mut raw = vec![Integer::zero(); 2 * e - 1];
@@ -563,6 +568,46 @@ impl EisensteinElement {
             }
         }
         result
+    }
+
+    /// Residue digit in `F_p = O_K/π`: the constant coordinate mod `p`.
+    pub fn residue_digit(&self) -> i64 {
+        let p = self.prime;
+        let r = (self.coeffs[0].clone() % Integer::from(p)).to_i64();
+        ((r % p) + p) % p
+    }
+
+    /// Multiply every coordinate by the integer `k` (mod `p^precision`).
+    pub fn scale_int(&self, k: &Integer) -> Self {
+        let c = self.coeffs.iter().map(|c| c.clone() * k.clone()).collect();
+        Self::new(self.prime, self.precision, self.g.clone(), c)
+    }
+
+    /// Divide every coordinate by `p` exactly (caller guarantees `p | every coeff`,
+    /// i.e. `v_K(self) ≥ e`).
+    fn div_by_p(&self) -> Self {
+        let pi = Integer::from(self.prime);
+        let c = self.coeffs.iter().map(|c| c.clone() / pi.clone()).collect();
+        Self::new(self.prime, self.precision, self.g.clone(), c)
+    }
+
+    /// Divide by the uniformizer `π` (caller guarantees `v_K(self) ≥ 1`). Uses
+    /// `π⁻¹ = −w/g₀` with `w = Σ_{j=1}^{e} g_j π^{j−1}` and `g₀ = p·u₀`, so
+    /// `self/π = −((self·w)/p)·u₀⁻¹`.
+    pub fn div_by_uniformizer(&self) -> Self {
+        let e = self.e_deg();
+        let p = self.prime;
+        let modulus = Integer::from(p).pow(self.precision);
+        // w = [g_1, g_2, …, g_e] (little-endian coords of Σ g_j π^{j−1}).
+        let w_coords: Vec<Integer> = (1..=e).map(|j| self.g[j].clone()).collect();
+        let w = Self::new(p, self.precision, self.g.clone(), w_coords);
+        let xw_over_p = self.mul(&w).div_by_p(); // (self·w)/p, valid since v_K ≥ e
+        let mut u0 = (self.g[0].clone() / Integer::from(p)) % modulus.clone(); // g_0/p mod p^N
+        if u0.signum() < 0 {
+            u0 = u0 + modulus.clone();
+        }
+        let u0inv = u0.mod_inverse(&modulus).expect("g_0/p is a unit");
+        xw_over_p.scale_int(&u0inv).neg()
     }
 
     /// `π`-adic valuation (`v_π(π)=1`, `v_π(p)=e`): `min_j (e·v_p(cⱼ) + j)`; `None`
@@ -871,6 +916,24 @@ mod tests {
         let gprime = pi.mul(&two).valuation(); // 2π → v_π = 3
         assert_eq!(gprime, Some(3));
         assert_eq!(gprime.unwrap(), eisenstein_different_exponent(&g, 2));
+    }
+
+    #[test]
+    fn eisenstein_div_by_uniformizer() {
+        // K = ℚ_2[π]/(π²−2): π·(x/π) = x for any x with v_K(x) ≥ 1.
+        let p = 2i64;
+        let prec = 10u32;
+        let g = iz(&[-2, 0, 1]);
+        let pi = EisensteinElement::uniformizer(p, prec, g.clone());
+        // x = π² (=2): x/π = π.
+        let x = pi.mul(&pi);
+        assert_eq!(x.div_by_uniformizer(), pi);
+        // x = π³ + π (v_K=1): (x/π) = π² + 1, and π·(x/π) = x.
+        let x2 = pi.pow(3).add(&pi);
+        assert_eq!(pi.mul(&x2.div_by_uniformizer()), x2);
+        // x = 2·π = π³ (v_K=3): /π = π² = 2.
+        let two = EisensteinElement::from_int(p, prec, g.clone(), Integer::from(2));
+        assert_eq!(two.mul(&pi).div_by_uniformizer(), two);
     }
 
     #[test]
