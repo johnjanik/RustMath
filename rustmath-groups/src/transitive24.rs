@@ -251,6 +251,43 @@ pub fn pair_orbit_signature(gens: &[Perm]) -> Vec<usize> {
     crate::ksubset_orbits::orbit_lengths_on_pairs(gens, DEG)
 }
 
+/// k-subset orbit signature of a group: sorted orbit lengths of `⟨gens⟩` on
+/// `k`-subsets of the 24 points = the irreducible-factor degrees of the group's
+/// `k`-subset resolvent (`rustmath_polynomials::resolvent::subset_sum_resolvent`)
+/// when separable. This is the Stauduhar resolvent for descending to the `k`-set
+/// stabilizer `Sₖ × S_{24−k}`.
+pub fn ksubset_orbit_signature(gens: &[Perm], k: usize) -> Vec<usize> {
+    crate::ksubset_orbits::orbit_lengths_on_ksubsets(gens, DEG, k)
+}
+
+/// Separate a blind class by the **k-subset resolvent**: keep candidates whose
+/// `k`-subset orbit signature equals `observed` (the factor-degree multiset of the
+/// candidate polynomial's `k`-subset resolvent). Sound when the resolvent is
+/// separable; larger `k` resolves finer structure (Stauduhar descent). Returns
+/// sorted `t`'s.
+pub fn separate_by_ksubset_orbits(
+    db: &Db,
+    cands: &[usize],
+    k: usize,
+    observed: &[usize],
+) -> Vec<usize> {
+    let mut want = observed.to_vec();
+    want.sort_unstable();
+    let mut out: Vec<usize> = cands
+        .iter()
+        .copied()
+        .filter(|&t| {
+            db.groups
+                .iter()
+                .find(|g| g.t == t)
+                .map(|g| ksubset_orbit_signature(&g.gens, k) == want)
+                .unwrap_or(false)
+        })
+        .collect();
+    out.sort_unstable();
+    out
+}
+
 /// Separate a blind class by the **pair-sum resolvent**: keep the candidate `24Tt`
 /// whose pair-orbit signature equals `observed` — the factor-degree multiset of a
 /// candidate polynomial's pair-sum resolvent.
