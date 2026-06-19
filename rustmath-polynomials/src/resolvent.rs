@@ -184,6 +184,172 @@ pub fn pair_sum_resolvent(f: &[Integer]) -> Vec<Integer> {
     trim_z(to_z(&root))
 }
 
+// --------------------------------------------------------------------------- //
+// General k-subset resolvent via power sums (exact, any k)
+// --------------------------------------------------------------------------- //
+
+/// Truncated product of two power series over `ℚ` (coefficients to degree `n`).
+fn series_mul(a: &[Rational], b: &[Rational], n: usize) -> Vec<Rational> {
+    let mut c = vec![rzero(); n + 1];
+    for (i, ai) in a.iter().enumerate().take(n + 1) {
+        if *ai == rzero() {
+            continue;
+        }
+        for (j, bj) in b.iter().enumerate().take(n + 1 - i) {
+            c[i + j] = c[i + j].clone() + ai.clone() * bj.clone();
+        }
+    }
+    c
+}
+
+/// Power sums `π_r = Σ αᵢ^r` (`r = 0..=upto`) of the roots of monic `f`
+/// (little-endian, `ℚ`), via Newton's identities. `eⱼ = (−1)ʲ a_{n−j}`.
+fn power_sums(f: &[Rational], upto: usize) -> Vec<Rational> {
+    let n = f.len() - 1;
+    let e = |j: usize| -> Rational {
+        let a = f[n - j].clone();
+        if j % 2 == 0 {
+            a
+        } else {
+            -a
+        }
+    };
+    let mut p = vec![rzero(); upto + 1];
+    p[0] = rq(n as i64);
+    for r in 1..=upto {
+        let mut acc = rzero();
+        let sum_lim = (r - 1).min(n);
+        for j in 1..=sum_lim {
+            let term = e(j) * p[r - j].clone();
+            acc = if j % 2 == 1 { acc + term } else { acc - term };
+        }
+        if r <= n {
+            let term = e(r) * rq(r as i64);
+            acc = if r % 2 == 1 { acc + term } else { acc - term };
+        }
+        p[r] = acc;
+    }
+    p
+}
+
+/// The exact **k-subset-sum resolvent** `∏_{|S|=k}(Y − Σ_{i∈S} αᵢ)` of a monic
+/// `f ∈ ℤ[x]` of degree `n`, of degree `C(n, k)`, returned little-endian over `ℤ`.
+///
+/// This is the absolute resolvent for descending `Sₙ` to the stabilizer of a
+/// `k`-set (the intransitive maximal subgroup `Sₖ × S_{n−k}`) — a genuine Stauduhar
+/// resolvent. Its irreducible-factor degrees are the orbit lengths of `Gal(f)` on
+/// `k`-subsets of the roots (when the subset-sums are distinct), matched on the
+/// group side by [`rustmath_groups`]`::ksubset_orbits::orbit_lengths_on_ksubsets`.
+///
+/// Built exactly from the power sums of the subset-sums:
+/// `Σ_{|S|=k} e^{t·Σ_{i∈S}αᵢ} = e_k(e^{tα₁},…,e^{tαₙ})`, computing `e_k` of the
+/// `yᵢ = e^{tαᵢ}` via Newton's identities on `P_j = Σᵢ yᵢ^j = Σ_r (jʳ π_r / r!) tʳ`,
+/// then recovering the resolvent coefficients from its power sums `q_m = m!·[tᵐ]e_k`.
+///
+/// `k` must satisfy `1 ≤ k ≤ n`; panics if `C(n,k) > 4096` (resolvent too large to
+/// build exactly) or if `f` is not monic.
+pub fn subset_sum_resolvent(f: &[Integer], k: usize) -> Vec<Integer> {
+    let n = f.len() - 1;
+    assert!(k >= 1 && k <= n, "need 1 ≤ k ≤ n");
+    assert!(f[n] == Integer::one(), "subset_sum_resolvent requires a monic f");
+    let big_n = binom_usize(n, k);
+    assert!(big_n <= 4096, "C(n,k) = {big_n} too large to build exactly");
+    let fq = to_q(f);
+
+    // Factorials 0!..N! as ℚ, and π_0..π_N.
+    let nn = big_n;
+    let mut fact = vec![rq(1); nn + 1];
+    for r in 1..=nn {
+        fact[r] = fact[r - 1].clone() * rq(r as i64);
+    }
+    let pi = power_sums(&fq, nn);
+
+    // P_j = Σ_r (j^r π_r / r!) t^r, for j = 1..=k.
+    let pseries: Vec<Vec<Rational>> = (1..=k)
+        .map(|j| {
+            (0..=nn)
+                .map(|r| {
+                    let jp = Integer::from(j as i64).pow(r as u32);
+                    pi[r].clone() * Rational::new(jp, fact_int(r)).unwrap()
+                })
+                .collect()
+        })
+        .collect();
+
+    // e_i (series) via Newton: i·e_i = Σ_{j=1}^{i} (−1)^{j−1} e_{i−j} P_j.
+    let mut es: Vec<Vec<Rational>> = Vec::with_capacity(k + 1);
+    let mut e0 = vec![rzero(); nn + 1];
+    e0[0] = rq(1);
+    es.push(e0);
+    for i in 1..=k {
+        let mut acc = vec![rzero(); nn + 1];
+        for j in 1..=i {
+            let prod = series_mul(&es[i - j], &pseries[j - 1], nn);
+            for r in 0..=nn {
+                acc[r] = if j % 2 == 1 {
+                    acc[r].clone() + prod[r].clone()
+                } else {
+                    acc[r].clone() - prod[r].clone()
+                };
+            }
+        }
+        let inv_i = Rational::new(Integer::one(), Integer::from(i as i64)).unwrap();
+        for r in 0..=nn {
+            acc[r] = acc[r].clone() * inv_i.clone();
+        }
+        es.push(acc);
+    }
+
+    // q_m = m! · [t^m] e_k = power sums of the subset-sums.
+    let ek = &es[k];
+    let q: Vec<Rational> = (0..=nn).map(|m| fact[m].clone() * ek[m].clone()).collect();
+
+    // Recover elementary symmetric E_m of the subset-sums from q via Newton.
+    let mut bige = vec![rzero(); nn + 1];
+    bige[0] = rq(1);
+    for m in 1..=nn {
+        let mut acc = rzero();
+        for j in 1..=m {
+            let term = bige[m - j].clone() * q[j].clone();
+            acc = if j % 2 == 1 { acc + term } else { acc - term };
+        }
+        bige[m] = acc * Rational::new(Integer::one(), Integer::from(m as i64)).unwrap();
+    }
+
+    // R(Y) = ∏(Y − s_S) = Σ_m (−1)^m E_m Y^{N−m}; little-endian coeff[N−m]=(−1)^m E_m.
+    let mut coeffs = vec![rzero(); nn + 1];
+    for m in 0..=nn {
+        coeffs[nn - m] = if m % 2 == 0 {
+            bige[m].clone()
+        } else {
+            -bige[m].clone()
+        };
+    }
+    trim_z(to_z(&coeffs))
+}
+
+fn fact_int(r: usize) -> Integer {
+    let mut f = Integer::one();
+    for i in 1..=r {
+        f = f * Integer::from(i as i64);
+    }
+    f
+}
+
+fn binom_usize(n: usize, k: usize) -> usize {
+    if k > n {
+        return 0;
+    }
+    let k = k.min(n - k);
+    let mut num = 1u128;
+    let mut den = 1u128;
+    for i in 0..k {
+        num *= (n - i) as u128;
+        den *= (i + 1) as u128;
+    }
+    (num / den) as usize
+}
+
 /// Orbit signature of a resolvent: the sorted multiset of irreducible-factor
 /// degrees of `resolvent` over `ℚ` (constant factors dropped, multiplicities kept).
 /// For a separable resolvent these are the Galois orbit lengths on the underlying
@@ -257,6 +423,46 @@ mod tests {
             pair_sum_resolvent(&iz(&[-1, -1, 0, 0, 0, 1])),
             iz(&[-1, 4, -4, 0, 0, 11, 3, 0, 0, 0, 1])
         );
+    }
+
+    #[test]
+    fn subset_sum_k2_agrees_with_resultant_method() {
+        // Two independent algorithms (power-sum vs resultant) must agree for k=2.
+        for f in [
+            iz(&[-2, 0, 0, 1]),       // x³−2
+            iz(&[1, 1, 0, 0, 1]),     // x⁴+x+1
+            iz(&[-2, 0, 0, 0, 1]),    // x⁴−2
+            iz(&[-1, -1, 0, 0, 0, 1]),// x⁵−x−1
+            iz(&[7, 0, -3, 0, 1]),    // x⁴−3x²+7
+        ] {
+            assert_eq!(subset_sum_resolvent(&f, 2), pair_sum_resolvent(&f), "k=2 mismatch for {f:?}");
+        }
+    }
+
+    #[test]
+    fn subset_sum_k3_matches_pari_gp() {
+        // x⁴+x+1, k=3: 3-subset sums = e₁−αᵢ = −αᵢ ⇒ Y⁴ − Y + 1.
+        assert_eq!(subset_sum_resolvent(&iz(&[1, 1, 0, 0, 1]), 3), iz(&[1, -1, 0, 0, 1]));
+        // x⁵−x−1, k=3 (degree C(5,3)=10), from PARI/GP.
+        assert_eq!(
+            subset_sum_resolvent(&iz(&[-1, -1, 0, 0, 0, 1]), 3),
+            iz(&[-1, -4, -4, 0, 0, -11, 3, 0, 0, 0, 1])
+        );
+        // x⁵−x−1, k=2 from PARI/GP (also cross-checks k=2 path).
+        assert_eq!(
+            subset_sum_resolvent(&iz(&[-1, -1, 0, 0, 0, 1]), 2),
+            iz(&[-1, 4, -4, 0, 0, 11, 3, 0, 0, 0, 1])
+        );
+    }
+
+    #[test]
+    fn subset_sum_k1_is_f_and_complement_reflects() {
+        // k=1: the 1-subset sums are the roots ⇒ resolvent = f.
+        let f = iz(&[-1, -1, 0, 0, 0, 1]); // x⁵−x−1
+        assert_eq!(subset_sum_resolvent(&f, 1), f);
+        // k=n: the single n-subset sum is the trace = −a_{n−1}; degree-1 (Y − tr).
+        let r = subset_sum_resolvent(&iz(&[1, 1, 0, 0, 1]), 4); // trace 0
+        assert_eq!(r, iz(&[0, 1]));
     }
 
     #[test]
