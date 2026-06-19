@@ -412,6 +412,272 @@ pub fn unramified_modulus(p: i64, f: usize) -> Option<Vec<Integer>> {
     None
 }
 
+// --------------------------------------------------------------------------- //
+// Ramified (Eisenstein) extensions  K = ℚ_p[π]/(g),  g Eisenstein
+// --------------------------------------------------------------------------- //
+
+/// Is `g` (little-endian, monic of degree `e`) **Eisenstein** at `p`:
+/// `p ∣ gᵢ` for `0 ≤ i < e` and `p² ∤ g₀`? Such a `g` is irreducible over `ℚ_p` and
+/// `K = ℚ_p[π]/(g)` is totally ramified of degree `e` with uniformizer `π`.
+pub fn is_eisenstein(g: &[Integer], p: i64) -> bool {
+    let e = g.len() - 1;
+    if e < 1 || g[e] != Integer::one() {
+        return false;
+    }
+    let pi = Integer::from(p);
+    for c in g.iter().take(e) {
+        if !(c.clone() % pi.clone()).is_zero() {
+            return false;
+        }
+    }
+    let p2 = pi.clone() * pi;
+    (g[0].clone() % p2).is_zero() == false && !g[0].is_zero()
+}
+
+/// Different exponent `d = v_𝔭(𝔡_{K/ℚ_p}) = v_π(g'(π))` of the totally ramified
+/// `K = ℚ_p[π]/(g)` (`g` Eisenstein, `v_π(π)=1`, `v_π(p)=e`). Since `g'(π)` has degree
+/// `e−1` (already reduced), `g'(π) = Σᵢ i·gᵢ π^{i−1}` and the terms have distinct
+/// `v_π` (distinct residues mod `e`), so
+/// `d = min_{i: i·gᵢ≠0} ( e·v_p(i·gᵢ) + (i−1) )`. The discriminant exponent is `d`
+/// (residue degree `1`). Tame (`p∤e`) ⇒ `d = e−1`; wild ⇒ larger.
+pub fn eisenstein_different_exponent(g: &[Integer], p: i64) -> i64 {
+    let e = g.len() - 1;
+    let pi = Integer::from(p);
+    let mut d: Option<i64> = None;
+    for i in 1..=e {
+        let coeff = g[i].clone() * Integer::from(i as i64); // i·gᵢ
+        if coeff.is_zero() {
+            continue;
+        }
+        let v = e as i64 * coeff.abs().valuation(&pi) as i64 + (i as i64 - 1);
+        d = Some(d.map_or(v, |cur| cur.min(v)));
+    }
+    d.unwrap_or(0)
+}
+
+/// An element of a totally ramified extension `K = ℤ_p[π]/(g)`, `g` Eisenstein of
+/// degree `e`, truncated to precision `p^N`. `coeffs` (length `e`) are the
+/// `c₀ + c₁π + … + c_{e−1}π^{e−1}` coordinates with `cⱼ ∈ ℤ/p^N`. The valuation is
+/// `π`-adic: `v_π(π)=1`, `v_π(p)=e`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EisensteinElement {
+    pub prime: i64,
+    pub precision: u32,
+    /// Monic Eisenstein modulus (little-endian).
+    pub g: Vec<Integer>,
+    pub coeffs: Vec<Integer>,
+}
+
+impl EisensteinElement {
+    fn e_deg(&self) -> usize {
+        self.g.len() - 1
+    }
+
+    fn norm(prime: i64, precision: u32, mut coeffs: Vec<Integer>, e: usize) -> Vec<Integer> {
+        let m = Integer::from(prime).pow(precision);
+        coeffs.resize(e, Integer::zero());
+        for c in coeffs.iter_mut() {
+            let r = c.clone() % m.clone();
+            *c = if r.signum() < 0 { r + m.clone() } else { r };
+        }
+        coeffs
+    }
+
+    pub fn new(prime: i64, precision: u32, g: Vec<Integer>, coeffs: Vec<Integer>) -> Self {
+        let e = g.len() - 1;
+        let coeffs = Self::norm(prime, precision, coeffs, e);
+        EisensteinElement { prime, precision, g, coeffs }
+    }
+
+    pub fn zero(prime: i64, precision: u32, g: Vec<Integer>) -> Self {
+        let e = g.len() - 1;
+        EisensteinElement { prime, precision, g, coeffs: vec![Integer::zero(); e] }
+    }
+
+    pub fn one(prime: i64, precision: u32, g: Vec<Integer>) -> Self {
+        Self::new(prime, precision, g, vec![Integer::one()])
+    }
+
+    /// The uniformizer `π` (a root of `g`).
+    pub fn uniformizer(prime: i64, precision: u32, g: Vec<Integer>) -> Self {
+        Self::new(prime, precision, g, vec![Integer::zero(), Integer::one()])
+    }
+
+    pub fn from_int(prime: i64, precision: u32, g: Vec<Integer>, n: Integer) -> Self {
+        Self::new(prime, precision, g, vec![n])
+    }
+
+    pub fn is_zero(&self) -> bool {
+        self.coeffs.iter().all(|c| c.is_zero())
+    }
+
+    pub fn add(&self, other: &Self) -> Self {
+        let e = self.e_deg();
+        let c = (0..e).map(|i| self.coeffs[i].clone() + other.coeffs[i].clone()).collect();
+        Self::new(self.prime, self.precision, self.g.clone(), c)
+    }
+
+    pub fn sub(&self, other: &Self) -> Self {
+        let e = self.e_deg();
+        let c = (0..e).map(|i| self.coeffs[i].clone() - other.coeffs[i].clone()).collect();
+        Self::new(self.prime, self.precision, self.g.clone(), c)
+    }
+
+    pub fn mul(&self, other: &Self) -> Self {
+        let e = self.e_deg();
+        let mut raw = vec![Integer::zero(); 2 * e - 1];
+        for i in 0..e {
+            if self.coeffs[i].is_zero() {
+                continue;
+            }
+            for j in 0..e {
+                raw[i + j] = raw[i + j].clone() + self.coeffs[i].clone() * other.coeffs[j].clone();
+            }
+        }
+        // Reduce by the monic g: π^e = −Σ_{i<e} gᵢ π^i.
+        for k in (e..=2 * e - 2).rev() {
+            let leading = raw[k].clone();
+            if leading.is_zero() {
+                continue;
+            }
+            for i in 0..e {
+                let idx = (k - e) + i;
+                raw[idx] = raw[idx].clone() - leading.clone() * self.g[i].clone();
+            }
+            raw[k] = Integer::zero();
+        }
+        raw.truncate(e);
+        Self::new(self.prime, self.precision, self.g.clone(), raw)
+    }
+
+    pub fn pow(&self, mut n: u64) -> Self {
+        let mut result = Self::one(self.prime, self.precision, self.g.clone());
+        let mut base = self.clone();
+        while n > 0 {
+            if n & 1 == 1 {
+                result = result.mul(&base);
+            }
+            n >>= 1;
+            if n > 0 {
+                base = base.mul(&base);
+            }
+        }
+        result
+    }
+
+    /// `π`-adic valuation (`v_π(π)=1`, `v_π(p)=e`): `min_j (e·v_p(cⱼ) + j)`; `None`
+    /// for `0`. Coefficients with `v_p ≥ precision` are treated as exact zeros.
+    pub fn valuation(&self) -> Option<i64> {
+        let e = self.e_deg() as i64;
+        let pi = Integer::from(self.prime);
+        let mut v: Option<i64> = None;
+        for (j, c) in self.coeffs.iter().enumerate() {
+            if c.is_zero() {
+                continue;
+            }
+            let vj = e * c.abs().valuation(&pi) as i64 + j as i64;
+            v = Some(v.map_or(vj, |cur| cur.min(vj)));
+        }
+        v
+    }
+}
+
+// --------------------------------------------------------------------------- //
+// Local Galois group descriptor
+// --------------------------------------------------------------------------- //
+
+/// Structure of the local Galois group `Gal(K_𝔭/ℚ_p)` in the rigorously
+/// determinable cases.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LocalGroup {
+    /// Cyclic of the given order.
+    Cyclic(usize),
+    /// Metacyclic `C_e ⋊ C_f` of order `e·f` (a Galois tame, non-cyclic case).
+    Metacyclic { e: usize, f: usize },
+    /// Galois, but the precise structure is not determined here.
+    GaloisUndetermined,
+    /// Not Galois over `ℚ_p`.
+    NotGalois,
+    /// Galois-ness undetermined (e.g. wild of degree > 2).
+    Undetermined,
+}
+
+/// Ramification + Galois data of a local field `K_𝔭/ℚ_p` of residue degree `f` and
+/// ramification `e`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LocalGaloisGroup {
+    pub e: usize,
+    pub f: usize,
+    pub ramification: Ramification,
+    /// Tame part of `e` (`e / p^{v_p(e)}`).
+    pub tame_degree: usize,
+    /// Wild part of `e` (`p^{v_p(e)}`, the order of the wild inertia for a Galois ext).
+    pub wild_degree: usize,
+    pub different_exp: Option<i64>,
+    pub group: LocalGroup,
+}
+
+/// Classify the local field of ramification `e`, residue degree `f` over `ℚ_p`.
+/// `different_exp` is carried through if known.
+pub fn local_galois_group(
+    p: i64,
+    e: usize,
+    f: usize,
+    different_exp: Option<i64>,
+) -> LocalGaloisGroup {
+    let pu = p as usize;
+    // wild part = p^{v_p(e)}.
+    let mut wild = 1usize;
+    let mut ee = e;
+    while ee % pu == 0 {
+        wild *= pu;
+        ee /= pu;
+    }
+    let tame = e / wild;
+    let ramification = if e == 1 {
+        Ramification::Unramified
+    } else if e % pu != 0 {
+        Ramification::Tame
+    } else {
+        Ramification::Wild
+    };
+
+    // p^f − 1, for the tame Galois criterion (e | p^f − 1).
+    let pf_minus_1 = Integer::from(p).pow(f as u32) - Integer::one();
+    let divides = |n: usize| (pf_minus_1.clone() % Integer::from(n as i64)).is_zero();
+
+    let group = if e == 1 {
+        LocalGroup::Cyclic(f) // unramified: Frobenius, C_f
+    } else if e * f == 2 {
+        LocalGroup::Cyclic(2) // any degree-2 extension is Galois
+    } else if e % pu != 0 {
+        // tame: Galois over ℚ_p iff e | p^f − 1.
+        if divides(e) {
+            if f == 1 {
+                LocalGroup::Cyclic(e)
+            } else if e == 1 {
+                LocalGroup::Cyclic(f)
+            } else {
+                LocalGroup::Metacyclic { e, f }
+            }
+        } else {
+            LocalGroup::NotGalois
+        }
+    } else {
+        LocalGroup::Undetermined // wild, degree > 2
+    };
+
+    LocalGaloisGroup {
+        e,
+        f,
+        ramification,
+        tame_degree: tame,
+        wild_degree: wild,
+        different_exp,
+        group,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -561,5 +827,82 @@ mod tests {
         // An inverse times itself is one (sanity for ℤ_q inversion used by Frobenius).
         let u = w.add(&UnramifiedElement::one(p, prec, m.clone()));
         assert_eq!(u.mul(&u.inverse()), UnramifiedElement::one(p, prec, m));
+    }
+
+    // ---- ramified (Eisenstein) extensions ----
+
+    #[test]
+    fn eisenstein_recognition() {
+        assert!(is_eisenstein(&iz(&[-2, 0, 1]), 2)); // x²−2
+        assert!(is_eisenstein(&iz(&[2, -2, 1]), 2)); // x²−2x+2
+        assert!(!is_eisenstein(&iz(&[1, 0, 1]), 2)); // x²+1, 2∤1
+        assert!(!is_eisenstein(&iz(&[-4, 0, 1]), 2)); // x²−4, 2²∣4
+        assert!(!is_eisenstein(&iz(&[-5, 0, 1]), 2)); // x²−5, 2∤5
+        assert!(is_eisenstein(&iz(&[-5, 0, 1]), 5)); // x²−5 at 5
+    }
+
+    #[test]
+    fn eisenstein_different_matches_pari_gp() {
+        // Cross-checked against PARI/GP idealval(K.diff, P).
+        assert_eq!(eisenstein_different_exponent(&iz(&[2, -2, 1]), 2), 2); // Q_2(i)
+        assert_eq!(eisenstein_different_exponent(&iz(&[-2, 0, 1]), 2), 3); // Q_2(√2)
+        assert_eq!(eisenstein_different_exponent(&iz(&[-5, 0, 1]), 5), 1); // tame
+        assert_eq!(eisenstein_different_exponent(&iz(&[-3, 0, 0, 1]), 3), 5); // Q_3(3^⅓)
+        assert_eq!(eisenstein_different_exponent(&iz(&[-2, 0, 0, 1]), 2), 2); // x³−2, tame
+        assert_eq!(eisenstein_different_exponent(&iz(&[-2, 0, 0, 0, 1]), 2), 11); // x⁴−2
+        assert_eq!(eisenstein_different_exponent(&iz(&[-3, 0, 1]), 3), 1); // tame
+    }
+
+    #[test]
+    fn eisenstein_element_arithmetic_and_valuation() {
+        // K = ℚ_2[π]/(π²−2): v(π)=1/2, v(2)=1 ⇒ v_π(π)=1, v_π(2)=2.
+        let p = 2i64;
+        let prec = 8u32;
+        let g = iz(&[-2, 0, 1]);
+        let pi = EisensteinElement::uniformizer(p, prec, g.clone());
+        // π² = 2 (the modulus relation).
+        let two = EisensteinElement::from_int(p, prec, g.clone(), Integer::from(2));
+        assert_eq!(pi.mul(&pi), two);
+        // v_π(π)=1, v_π(2)=2, v_π(π³)=3.
+        assert_eq!(pi.valuation(), Some(1));
+        assert_eq!(two.valuation(), Some(2));
+        assert_eq!(pi.pow(3).valuation(), Some(3));
+        // The intrinsic different via the element g'(π) equals the closed form: g'(x)=2x.
+        let gprime = pi.mul(&two).valuation(); // 2π → v_π = 3
+        assert_eq!(gprime, Some(3));
+        assert_eq!(gprime.unwrap(), eisenstein_different_exponent(&g, 2));
+    }
+
+    #[test]
+    fn local_galois_group_clean_cases() {
+        // Unramified degree f ⇒ C_f (Frobenius).
+        let u = local_galois_group(5, 1, 3, Some(0));
+        assert_eq!(u.group, LocalGroup::Cyclic(3));
+        assert_eq!(u.ramification, Ramification::Unramified);
+
+        // Any degree-2 extension is Galois (C_2), even wild Q_2(i).
+        let q2i = local_galois_group(2, 2, 1, Some(2));
+        assert_eq!(q2i.group, LocalGroup::Cyclic(2));
+        assert_eq!(q2i.ramification, Ramification::Wild);
+        assert_eq!((q2i.tame_degree, q2i.wild_degree), (1, 2));
+
+        // Tame totally ramified: Galois iff e | p−1.
+        // Q_5(5^{1/4}): e=4 | 5−1=4 ⇒ Galois C_4.
+        assert_eq!(local_galois_group(5, 4, 1, Some(3)).group, LocalGroup::Cyclic(4));
+        // Q_7(7^{1/3}): e=3 | 7−1=6 ⇒ Galois C_3.
+        assert_eq!(local_galois_group(7, 3, 1, Some(2)).group, LocalGroup::Cyclic(3));
+        // Q_5(5^{1/3}): e=3 ∤ 4 ⇒ NOT Galois over ℚ_5.
+        assert_eq!(local_galois_group(5, 3, 1, Some(2)).group, LocalGroup::NotGalois);
+
+        // Tame, e=2,f=2: e=2 | p^f−1=3²−1=8 ⇒ Galois metacyclic C_2⋊C_2.
+        assert_eq!(
+            local_galois_group(3, 2, 2, Some(1)).group,
+            LocalGroup::Metacyclic { e: 2, f: 2 }
+        );
+
+        // Wild degree > 2: Galois-ness undetermined here.
+        let wild = local_galois_group(2, 4, 1, Some(11));
+        assert_eq!(wild.group, LocalGroup::Undetermined);
+        assert_eq!((wild.tame_degree, wild.wild_degree), (1, 4));
     }
 }
