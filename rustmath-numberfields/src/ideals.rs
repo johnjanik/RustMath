@@ -24,13 +24,20 @@ pub struct PrimeIdeal {
 pub struct Factorization {
     pub p: i64,
     pub primes: Vec<PrimeIdeal>,
-    /// `true` if `p | [O_K : ℤ[θ]]`, in which case `primes` is **not** the true
-    /// decomposition and the maximal-order method is required.
+    /// `true` if `p | [O_K : ℤ[θ]]`. When set, the Dedekind–Kummer generators
+    /// `(p, gᵢ(θ))` are **not** valid, but `primes`/`ef()` still carry the true
+    /// `(e, f)` decomposition whenever `montes_resolved` holds (the index-dividing
+    /// data is recovered by the Montes/Newton-polygon method).
     pub p_divides_index: bool,
+    /// `true` if the `(e, f)` data in `primes` is the true decomposition: either
+    /// `p ∤ index` (Dedekind–Kummer exact) or the Montes fallback succeeded. `false`
+    /// only when `p | index` *and* the Newton polygon is non-regular (a higher-order
+    /// Montes / Round-4 case we do not yet resolve) — then `primes` is unreliable.
+    pub montes_resolved: bool,
 }
 
 impl Factorization {
-    /// Sorted `(e, f)` multiset (the true decomposition iff `!p_divides_index`).
+    /// Sorted `(e, f)` multiset — the true decomposition whenever `montes_resolved`.
     pub fn ef(&self) -> Vec<(usize, usize)> {
         let mut v: Vec<(usize, usize)> = self.primes.iter().map(|pr| (pr.e, pr.f)).collect();
         v.sort_unstable();
@@ -137,7 +144,21 @@ pub fn prime_decomposition(f: &[Integer], p: i64) -> Factorization {
     let common = fp_factor::gcd(&fp_factor::gcd(&tbar, &gbar, p), &hbar, p);
     let p_divides_index = fp_factor::degree(&common) > 0;
 
-    Factorization { p, primes, p_divides_index }
+    // When p | index the Dedekind–Kummer (e,f) above is wrong; recover the true
+    // decomposition from the Montes/Newton-polygon factorization over ℚ_p, which is
+    // valid regardless of the index (it works p-adically on f, not via ℤ[θ]/p).
+    let mut montes_resolved = true;
+    if p_divides_index {
+        match rustmath_polynomials::padic_factor::ramification_type(f, p) {
+            Ok(ef) => {
+                primes = ef.into_iter().map(|(e, f)| PrimeIdeal { e, f }).collect();
+            }
+            // Non-regular Newton polygon (higher-order Montes / Round-4 needed).
+            Err(_) => montes_resolved = false,
+        }
+    }
+
+    Factorization { p, primes, p_divides_index, montes_resolved }
 }
 
 #[cfg(test)]
@@ -180,6 +201,30 @@ mod tests {
         assert!(!d5.p_divides_index);
         // sum of e·f equals the degree
         assert_eq!(d5.ef().iter().map(|(e, f)| e * f).sum::<usize>(), 3);
+    }
+
+    #[test]
+    fn index_dividing_decomposition_via_montes() {
+        // Index-dividing primes: Dedekind–Kummer's (e,f) is wrong, but the Montes
+        // fallback recovers the true decomposition. Ground truth: PARI/GP
+        // idealprimedec.
+        // Dedekind cubic x³−x²−2x−8 at p=2 (index²=4): totally split (1,1)(1,1)(1,1).
+        let d = prime_decomposition(&iz(&[-8, -2, -1, 1]), 2);
+        assert!(d.p_divides_index && d.montes_resolved);
+        assert_eq!(d.ef(), vec![(1, 1), (1, 1), (1, 1)]);
+
+        // x³ + x² − 2x + 8 at p=2 (index²=4): also totally split.
+        let d2 = prime_decomposition(&iz(&[8, -2, 1, 1]), 2);
+        assert!(d2.p_divides_index && d2.montes_resolved);
+        assert_eq!(d2.ef(), vec![(1, 1), (1, 1), (1, 1)]);
+
+        // x⁴ − 2x² + 9 at p=2 (index²=576): f ≡ (x+1)⁴ mod 2 ⇒ non-regular
+        // first-order Newton polygon, so Montes (order 1) cannot resolve it: we
+        // honestly flag montes_resolved=false rather than emit wrong (e,f).
+        // (True decomposition is the single prime (4,1).)
+        let d3 = prime_decomposition(&iz(&[9, 0, -2, 0, 1]), 2);
+        assert!(d3.p_divides_index);
+        assert!(!d3.montes_resolved, "expected non-regular flag for x⁴−2x²+9 at 2");
     }
 }
 
