@@ -9,6 +9,7 @@
 //! - Representation theory
 
 pub mod transitive24;
+pub mod ksubset_orbits;
 pub mod permutation_group;
 pub mod matrix_group;
 pub mod abelian_group;
