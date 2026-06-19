@@ -365,6 +365,17 @@ impl UnramifiedElement {
         result
     }
 
+    /// `p`-adic valuation `v_q(self) = v_p(self)` in the unramified `ℚ_q` (unramified,
+    /// so `v_q = v_p`): the least `v_p` of the coordinates, or `None` for `0`.
+    pub fn pval(&self) -> Option<u32> {
+        let pi = Integer::from(self.prime);
+        self.coeffs
+            .iter()
+            .filter(|c| !c.is_zero())
+            .map(|c| c.abs().valuation(&pi))
+            .min()
+    }
+
     /// Reduction to the residue field `F_{p^f}`: the coefficient vector mod `p`
     /// (little-endian, length `f`).
     pub fn residue(&self) -> Vec<i64> {
@@ -624,6 +635,143 @@ impl EisensteinElement {
             v = Some(v.map_or(vj, |cur| cur.min(vj)));
         }
         v
+    }
+}
+
+// --------------------------------------------------------------------------- //
+// Mixed-ramification tower  K = ℚ_q[π]/(h),  h Eisenstein over the unramified ℚ_q
+// --------------------------------------------------------------------------- //
+
+/// An element of a general local field `K = ℚ_q[π]/(h)` of degree `e·f` over `ℚ_p`,
+/// where `ℚ_q` is the unramified extension of degree `f` and `h` is Eisenstein of
+/// degree `e` over `ℚ_q` (the **mixed-ramification tower**). Coefficients of
+/// `c₀ + c₁π + … + c_{e−1}π^{e−1}` are [`UnramifiedElement`]s of `ℚ_q`. Valuation is
+/// `π`-adic: `v_π(π)=1`, `v_π(p)=e`, residue field `F_{p^f}`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TowerElement {
+    pub prime: i64,
+    pub precision: u32,
+    /// Unramified modulus defining `ℚ_q` (lift of an irreducible over `F_p`).
+    pub unram_modulus: Vec<Integer>,
+    /// Eisenstein modulus `h` over `ℚ_q` (monic, little-endian, `UnramifiedElement` coeffs).
+    pub h: Vec<UnramifiedElement>,
+    /// Coordinates over the `ℚ_q`-basis `1, π, …, π^{e−1}`.
+    pub coeffs: Vec<UnramifiedElement>,
+}
+
+impl TowerElement {
+    fn e_deg(&self) -> usize {
+        self.h.len() - 1
+    }
+    fn q_zero(&self) -> UnramifiedElement {
+        UnramifiedElement::zero(self.prime, self.precision, self.unram_modulus.clone())
+    }
+
+    /// Build from `ℚ_q`-coordinates (length padded/truncated to `e`).
+    pub fn new(
+        prime: i64,
+        precision: u32,
+        unram_modulus: Vec<Integer>,
+        h: Vec<UnramifiedElement>,
+        mut coeffs: Vec<UnramifiedElement>,
+    ) -> Self {
+        let e = h.len() - 1;
+        let z = UnramifiedElement::zero(prime, precision, unram_modulus.clone());
+        coeffs.resize(e, z);
+        TowerElement { prime, precision, unram_modulus, h, coeffs }
+    }
+
+    pub fn zero(prime: i64, precision: u32, um: Vec<Integer>, h: Vec<UnramifiedElement>) -> Self {
+        let e = h.len() - 1;
+        let z = UnramifiedElement::zero(prime, precision, um.clone());
+        TowerElement { prime, precision, unram_modulus: um, h, coeffs: vec![z; e] }
+    }
+
+    pub fn one(prime: i64, precision: u32, um: Vec<Integer>, h: Vec<UnramifiedElement>) -> Self {
+        let mut t = Self::zero(prime, precision, um.clone(), h);
+        t.coeffs[0] = UnramifiedElement::one(prime, precision, um);
+        t
+    }
+
+    /// The ramified uniformizer `π` (a root of `h`).
+    pub fn uniformizer(prime: i64, precision: u32, um: Vec<Integer>, h: Vec<UnramifiedElement>) -> Self {
+        let mut t = Self::zero(prime, precision, um.clone(), h);
+        t.coeffs[1] = UnramifiedElement::one(prime, precision, um);
+        t
+    }
+
+    /// Embed an element of `ℚ_q` as a constant.
+    pub fn from_unram(prime: i64, precision: u32, um: Vec<Integer>, h: Vec<UnramifiedElement>, c: UnramifiedElement) -> Self {
+        let mut t = Self::zero(prime, precision, um, h);
+        t.coeffs[0] = c;
+        t
+    }
+
+    pub fn is_zero(&self) -> bool {
+        self.coeffs.iter().all(|c| c.is_zero())
+    }
+
+    pub fn add(&self, other: &Self) -> Self {
+        let c = self.coeffs.iter().zip(&other.coeffs).map(|(a, b)| a.add(b)).collect();
+        Self::new(self.prime, self.precision, self.unram_modulus.clone(), self.h.clone(), c)
+    }
+
+    pub fn sub(&self, other: &Self) -> Self {
+        let c = self.coeffs.iter().zip(&other.coeffs).map(|(a, b)| a.sub(b)).collect();
+        Self::new(self.prime, self.precision, self.unram_modulus.clone(), self.h.clone(), c)
+    }
+
+    pub fn mul(&self, other: &Self) -> Self {
+        let e = self.e_deg();
+        let mut raw = vec![self.q_zero(); 2 * e - 1];
+        for i in 0..e {
+            if self.coeffs[i].is_zero() {
+                continue;
+            }
+            for j in 0..e {
+                raw[i + j] = raw[i + j].add(&self.coeffs[i].mul(&other.coeffs[j]));
+            }
+        }
+        // Reduce by monic h: π^e = −Σ_{i<e} h_i π^i.
+        for k in (e..=2 * e - 2).rev() {
+            let lead = raw[k].clone();
+            if lead.is_zero() {
+                continue;
+            }
+            for i in 0..e {
+                let idx = (k - e) + i;
+                raw[idx] = raw[idx].sub(&lead.mul(&self.h[i]));
+            }
+            raw[k] = self.q_zero();
+        }
+        raw.truncate(e);
+        Self::new(self.prime, self.precision, self.unram_modulus.clone(), self.h.clone(), raw)
+    }
+
+    pub fn pow(&self, mut n: u64) -> Self {
+        let mut result = Self::one(self.prime, self.precision, self.unram_modulus.clone(), self.h.clone());
+        let mut base = self.clone();
+        while n > 0 {
+            if n & 1 == 1 {
+                result = result.mul(&base);
+            }
+            n >>= 1;
+            if n > 0 {
+                base = base.mul(&base);
+            }
+        }
+        result
+    }
+
+    /// `π`-adic valuation (`v_π(π)=1`, `v_π(p)=e`): `min_j (e·v_q(c_j) + j)`; `None`
+    /// for `0`.
+    pub fn valuation(&self) -> Option<i64> {
+        let e = self.e_deg() as i64;
+        self.coeffs
+            .iter()
+            .enumerate()
+            .filter_map(|(j, c)| c.pval().map(|v| e * v as i64 + j as i64))
+            .min()
     }
 }
 
@@ -934,6 +1082,44 @@ mod tests {
         // x = 2·π = π³ (v_K=3): /π = π² = 2.
         let two = EisensteinElement::from_int(p, prec, g.clone(), Integer::from(2));
         assert_eq!(two.mul(&pi).div_by_uniformizer(), two);
+    }
+
+    #[test]
+    fn mixed_tower_e2_f2_arithmetic() {
+        // K = ℚ_2(ω, √2): ℚ_4 = ℚ_2[ω]/(ω²+ω+1) (f=2, unramified), then π²−2 over ℚ_4
+        // (e=2, Eisenstein). [K:ℚ_2] = 4, e=2, f=2, residue field F_4.
+        let p = 2i64;
+        let prec = 8u32;
+        let um = unramified_modulus(p, 2).unwrap(); // ω²+ω+1
+        let uq = |n: i64| UnramifiedElement::from_int(p, prec, um.clone(), Integer::from(n));
+        // h = π² − 2 over ℚ_4: coeffs [−2, 0, 1] (as ℚ_4 constants).
+        let h = vec![uq(-2), uq(0), uq(1)];
+        let mk = |c: Vec<UnramifiedElement>| TowerElement::new(p, prec, um.clone(), h.clone(), c);
+
+        let pi = TowerElement::uniformizer(p, prec, um.clone(), h.clone());
+        let one = TowerElement::one(p, prec, um.clone(), h.clone());
+        let omega = TowerElement::from_unram(
+            p, prec, um.clone(), h.clone(),
+            UnramifiedElement::generator(p, prec, um.clone()),
+        );
+
+        // π² = 2 (the Eisenstein relation).
+        assert_eq!(pi.mul(&pi), mk(vec![uq(2), uq(0)]));
+        // ω² + ω + 1 = 0 in ℚ_4 ⇒ (ω²+ω+1) = 0 as a tower constant.
+        assert!(omega.mul(&omega).add(&omega).add(&one).is_zero());
+        // Distributivity: (1+ω)·π = π + ω·π.
+        let lhs = one.add(&omega).mul(&pi);
+        let rhs = pi.add(&omega.mul(&pi));
+        assert_eq!(lhs, rhs);
+
+        // Valuations: v_π(π)=1, v_π(2)=e=2, v_π(ω)=0 (ω is a unit), v_π(ω·π)=1.
+        assert_eq!(pi.valuation(), Some(1));
+        assert_eq!(mk(vec![uq(2), uq(0)]).valuation(), Some(2));
+        assert_eq!(omega.valuation(), Some(0));
+        assert_eq!(omega.mul(&pi).valuation(), Some(1));
+        // v_π(2ω·π³): 2ω has v_q=1 ⇒ v_π=2, times π³ ⇒ 5.
+        let two_omega_pi3 = omega.mul(&mk(vec![uq(2), uq(0)])).mul(&pi.pow(3));
+        assert_eq!(two_omega_pi3.valuation(), Some(5));
     }
 
     #[test]
