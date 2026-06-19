@@ -317,6 +317,136 @@ pub fn galois_filtration(g: &[Integer], p: i64) -> Option<crate::ramification::R
     Some(crate::ramification::RamificationFiltration::new(orders))
 }
 
+// --------------------------------------------------------------------------- //
+// Naming the local Galois group of a quartic (the splitting field / closure)
+// --------------------------------------------------------------------------- //
+
+/// Is the integer `d` a square in `ℚ_p`? (`v_p(d)` even and the unit part is a square
+/// — a QR mod `p` for odd `p`, or `≡ 1 mod 8` for `p = 2`.)
+pub fn is_padic_square(d: &Integer, p: i64) -> bool {
+    if d.is_zero() {
+        return true;
+    }
+    let pi = Integer::from(p);
+    let v = d.abs().valuation(&pi);
+    if v % 2 == 1 {
+        return false;
+    }
+    let mut u = d.clone() / pi.pow(v);
+    if p == 2 {
+        let mut m = u % Integer::from(8);
+        if m.signum() < 0 {
+            m = m + Integer::from(8);
+        }
+        m == Integer::one()
+    } else {
+        let mut m = u.clone() % pi.clone();
+        if m.signum() < 0 {
+            m = m + pi.clone();
+        }
+        u = m;
+        // Legendre symbol via Euler's criterion: u^{(p-1)/2} ≡ 1 (mod p).
+        let exp = Integer::from((p - 1) / 2);
+        u.modpow(&exp, &pi).map(|r| r == Integer::one()).unwrap_or(false)
+    }
+}
+
+/// Is `f` irreducible modulo `p` (so `K = ℚ_p[x]/(f)` is the unramified extension of
+/// degree `deg f`, hence Galois cyclic)?
+fn irreducible_mod_p(f: &[Integer], p: i64) -> bool {
+    let fbar: Vec<i64> = f
+        .iter()
+        .map(|c| {
+            let r = (c.clone() % Integer::from(p)).to_i64();
+            ((r % p) + p) % p
+        })
+        .collect();
+    let deg = {
+        let mut d = fbar.len();
+        while d > 1 && fbar[d - 1] == 0 {
+            d -= 1;
+        }
+        d - 1
+    };
+    if deg < 1 {
+        return false;
+    }
+    let fac = rustmath_polynomials::fp_factor::factor(&fbar, p);
+    fac.len() == 1 && {
+        let g = &fac[0];
+        let mut gd = g.len();
+        while gd > 1 && g[gd - 1] == 0 {
+            gd -= 1;
+        }
+        gd - 1 == deg
+    }
+}
+
+/// The resolvent cubic of a monic quartic `f = x⁴ + b x³ + c x² + d x + e`:
+/// `y³ − c y² + (bd − 4e) y − (b²e − 4ce + d²)`.
+fn resolvent_cubic(f: &[Integer]) -> Vec<Integer> {
+    let e = f[0].clone();
+    let d = f[1].clone();
+    let c = f[2].clone();
+    let b = f[3].clone();
+    let four = Integer::from(4);
+    let c0 = -(b.clone() * b.clone() * e.clone() - four.clone() * c.clone() * e.clone()
+        + d.clone() * d.clone());
+    let c1 = b.clone() * d.clone() - four * e;
+    let c2 = -c;
+    vec![c0, c1, c2, Integer::one()]
+}
+
+/// The local Galois group of an **irreducible quartic** `f` over `ℚ_p`: its name
+/// among the transitive degree-4 groups, the group order (= degree of the splitting
+/// field / Galois closure), and the `4Tt` label.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct QuarticGalois {
+    pub name: &'static str,
+    pub order: usize,
+    pub label: &'static str,
+}
+
+/// Identify `Gal(f / ℚ_p)` for an irreducible quartic `f`, via the resolvent cubic
+/// factorization over `ℚ_p`, the `ℚ_p`-square class of `disc(f)`, and (for the
+/// `C₄`/`D₄` split) whether `K = ℚ_p[x]/(f)` is itself Galois. Returns `None` if the
+/// `C₄`/`D₄` case cannot be decided (mixed ramification not covered here).
+pub fn quartic_local_galois_group(f: &[Integer], p: i64) -> Option<QuarticGalois> {
+    if f.len() != 5 {
+        return None;
+    }
+    let r3 = resolvent_cubic(f);
+    let nr = count_roots_qp(&r3, p);
+    let disc = rustmath_polynomials::disc::discriminant(f);
+    let dsq = is_padic_square(&disc, p);
+    match nr {
+        3 => Some(QuarticGalois { name: "V4", order: 4, label: "4T2" }),
+        0 => {
+            if dsq {
+                Some(QuarticGalois { name: "A4", order: 12, label: "4T4" })
+            } else {
+                Some(QuarticGalois { name: "S4", order: 24, label: "4T5" })
+            }
+        }
+        1 => {
+            // C₄ ⟺ the splitting field is K itself (degree 4, K Galois); else D₄.
+            let k_galois = if irreducible_mod_p(f, p) {
+                Some(true) // unramified ⇒ cyclic C₄
+            } else if crate::local_field::is_eisenstein(f, p) {
+                Some(is_eisenstein_galois(f, p).0)
+            } else {
+                None // mixed ramification: not decided here
+            };
+            match k_galois {
+                Some(true) => Some(QuarticGalois { name: "C4", order: 4, label: "4T1" }),
+                Some(false) => Some(QuarticGalois { name: "D4", order: 8, label: "4T3" }),
+                None => None,
+            }
+        }
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -390,5 +520,39 @@ mod tests {
         }
         // Non-Galois ⇒ None.
         assert!(galois_filtration(&iz(&[-2, 0, 0, 0, 1]), 2).is_none()); // x⁴−2
+    }
+
+    #[test]
+    fn padic_square_classes() {
+        assert!(!is_padic_square(&Integer::from(-2048), 2)); // v_2=11 odd
+        assert!(is_padic_square(&Integer::from(256), 2)); // 2^8
+        assert!(!is_padic_square(&Integer::from(125), 2)); // 5^3, unit 5 mod 8
+        assert!(is_padic_square(&Integer::from(2), 7)); // 2 is a QR mod 7 (3²=2)
+        assert!(!is_padic_square(&Integer::from(3), 7)); // 3 is not a QR mod 7
+    }
+
+    #[test]
+    fn quartic_galois_groups_named() {
+        let q = |v: &[i64], p: i64| quartic_local_galois_group(&iz(v), p).unwrap();
+        // x⁴−2 over ℚ_2: the Galois CLOSURE is ℚ_2(2^¼, i), degree 8 ⇒ D₄ = 4T3.
+        assert_eq!(q(&[-2, 0, 0, 0, 1], 2), QuarticGalois { name: "D4", order: 8, label: "4T3" });
+        // x⁴+1 over ℚ_2 = ℚ_2(ζ_8): V₄, splitting field degree 4.
+        assert_eq!(q(&[1, 0, 0, 0, 1], 2), QuarticGalois { name: "V4", order: 4, label: "4T2" });
+        // Φ_5 over ℚ_2 (irreducible mod 2, unramified): cyclic C₄.
+        assert_eq!(q(&[1, 1, 1, 1, 1], 2), QuarticGalois { name: "C4", order: 4, label: "4T1" });
+        // x⁴+x+1 over ℚ_2 (irreducible mod 2, unramified): C₄.
+        assert_eq!(q(&[1, 1, 0, 0, 1], 2), QuarticGalois { name: "C4", order: 4, label: "4T1" });
+    }
+
+    #[test]
+    fn x4_minus_2_closure_degree_is_group_order() {
+        // The Galois closure degree [L:ℚ_2] equals |Gal| = 8: K=ℚ_2(2^¼) is degree 4
+        // and NOT Galois (2 automorphisms), and the splitting field adjoins i (the
+        // root of the irreducible factor x²+√2 of x⁴−2 over K), giving 4·2 = 8.
+        let (gal, auts) = is_eisenstein_galois(&iz(&[-2, 0, 0, 0, 1]), 2);
+        assert!(!gal && auts == 2); // K not Galois, [K:ℚ_2]=4, |Aut(K)|=2
+        let g = quartic_local_galois_group(&iz(&[-2, 0, 0, 0, 1]), 2).unwrap();
+        assert_eq!(g.order, 8); // |Gal| = closure degree [L:ℚ_2]
+        assert_eq!(g.order / 4, 2); // [L:K] = [L:ℚ_2] / [K:ℚ_2] = 8/4 = 2
     }
 }
