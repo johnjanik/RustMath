@@ -295,6 +295,28 @@ pub fn is_eisenstein_galois(g: &[Integer], p: i64) -> (bool, usize) {
     (roots.len() == e, roots.len())
 }
 
+/// The **true** lower-numbering ramification filtration of `K = ℚ_p[x]/(g)` when it
+/// is Galois — computed from the automorphisms themselves: the roots `β` of `g` in
+/// `K` are the images `σ(π)`, and `|G_i| = 1 + #{β : v_K(β − π) ≥ i+1}`. Returns
+/// `None` if `K/ℚ_p` is not Galois (`g` does not split in `K`). This cross-checks
+/// `ramification::wild_filtration_from_eisenstein`, which gets the same filtration
+/// from the ramification polygon without root-finding.
+pub fn galois_filtration(g: &[Integer], p: i64) -> Option<crate::ramification::RamificationFiltration> {
+    let e = g.len() - 1;
+    let roots = roots_in_eisenstein(g, g, p);
+    if roots.len() != e {
+        return None;
+    }
+    let n = roots[0].precision;
+    let pi = EisensteinElement::uniformizer(p, n, g.to_vec());
+    // m(β) = v_K(β − π); the identity (β = π) gives ∞ and is skipped.
+    let ms: Vec<i64> = roots.iter().filter_map(|b| b.sub(&pi).valuation()).collect();
+    let maxm = ms.iter().copied().max().unwrap_or(0);
+    let orders: Vec<usize> =
+        (0..maxm).map(|i| 1 + ms.iter().filter(|&&m| m >= i + 1).count()).collect();
+    Some(crate::ramification::RamificationFiltration::new(orders))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -345,5 +367,28 @@ mod tests {
         assert_eq!(is_eisenstein_galois(&iz(&[-2, 0, 0, 0, 1]), 2), (false, 2));
         // x³−3 over ℚ_3 = ℚ_3(3^⅓): not Galois (needs ζ_3); only the identity aut.
         assert_eq!(is_eisenstein_galois(&iz(&[-3, 0, 0, 1]), 3), (false, 1));
+    }
+
+    #[test]
+    fn galois_filtration_from_automorphisms() {
+        use crate::ramification::{wild_filtration_from_eisenstein, RamificationFiltration};
+        let f = |v: &[usize]| RamificationFiltration::new(v.to_vec());
+        // The filtration computed from the actual automorphisms (Panayi roots) agrees
+        // with the ramification-polygon filtration and the gp-validated known ones.
+        let cases: &[(&[i64], i64, &[usize])] = &[
+            (&[-2, 0, 1], 2, &[2, 2, 2]),          // Q_2(√2)
+            (&[2, -2, 1], 2, &[2, 2]),             // Q_2(i)
+            (&[2, 4, 6, 4, 1], 2, &[4, 4, 2, 2]),  // Q_2(ζ_8), V_4
+            (&[3, 9, 18, 21, 15, 6, 1], 3, &[6, 3, 3]), // Q_3(ζ_9), C_6
+        ];
+        for &(g, p, expected) in cases {
+            let gz: Vec<Integer> = g.iter().map(|&x| Integer::from(x)).collect();
+            let from_auts = galois_filtration(&gz, p).expect("Galois");
+            assert_eq!(from_auts, f(expected), "automorphism filtration for {g:?}");
+            // matches the ramification-polygon route (no root-finding):
+            assert_eq!(from_auts, wild_filtration_from_eisenstein(&gz, p).unwrap());
+        }
+        // Non-Galois ⇒ None.
+        assert!(galois_filtration(&iz(&[-2, 0, 0, 0, 1]), 2).is_none()); // x⁴−2
     }
 }
