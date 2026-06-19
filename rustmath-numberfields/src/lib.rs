@@ -33,6 +33,7 @@ pub mod different;
 pub mod ideals;
 pub mod polred;
 pub mod round2;
+pub mod units;
 #[derive(Debug, Error)]
 pub enum NumberFieldError {
     #[error("Polynomial must be irreducible")]
