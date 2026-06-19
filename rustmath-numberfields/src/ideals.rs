@@ -231,7 +231,7 @@ fn canonicalize(mut basis: Vec<Vec<Integer>>, n: usize) -> Vec<Vec<Integer>> {
 
 /// Build a (fractional) ideal `(1/denom)·span(cols)`: cancel the common factor of
 /// `denom` and all entries, then take the canonical HNF.
-fn make_ideal(cols: &[Vec<Integer>], denom: Integer, n: usize) -> Ideal {
+pub(crate) fn make_ideal(cols: &[Vec<Integer>], denom: Integer, n: usize) -> Ideal {
     // cancel gcd(denom, all entries)
     let mut g = denom.abs();
     for c in cols {
