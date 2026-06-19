@@ -5,7 +5,7 @@
 //! lattice (columns of `T⁻¹`); the **different** `𝔡 = (𝔡⁻¹)⁻¹` is an integral ideal
 //! with `N(𝔡) = |disc_K|`. Built on the ideal inverse ([`crate::ideals`]).
 
-use crate::ideals::{make_ideal, Ideal};
+use crate::ideals::{ideal_from_generators, ideal_mul, make_ideal, Ideal};
 use crate::round2::{bareiss_det, OrderData};
 use rustmath_integers::Integer;
 
@@ -80,6 +80,23 @@ pub fn different(ord: &OrderData) -> Ideal {
     crate::ideals::ideal_inverse(ord, &codifferent(ord))
 }
 
+/// The conductor `𝔣 = (O_K : ℤ[θ])` of the equation order in `O_K`, an integral
+/// `O_K`-ideal with `N(𝔣) = [O_K : ℤ[θ]]² = disc(f)/disc_K`. Computed from the
+/// suborder-different relation `(f'(θ)) = 𝔣·𝔡_K`, i.e. `𝔣 = (f'(θ))·𝔡_K⁻¹`.
+pub fn conductor(f: &[Integer], ord: &OrderData) -> Ideal {
+    let n = ord.n;
+    // f'(θ) in power-basis coordinates, then to integral-basis coordinates
+    let mut fprime = vec![Integer::zero(); n];
+    for i in 1..f.len() {
+        if i - 1 < n {
+            fprime[i - 1] = f[i].clone() * Integer::from(i as i64);
+        }
+    }
+    let fp = ord.power_to_order(&fprime);
+    let fp_ideal = ideal_from_generators(ord, &[fp]); // (f'(θ))
+    ideal_mul(ord, &fp_ideal, &codifferent(ord)) // (f'(θ))·𝔡_K⁻¹
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -115,5 +132,20 @@ mod tests {
         let f = iz(&[1, 0, 1]);
         let ord = maximal_order_data(&f);
         assert_eq!(different(&ord), rational_prime_ideal(&ord, 2));
+    }
+
+    #[test]
+    fn conductor_norm_is_index_squared() {
+        use crate::ideals::ideal_norm;
+        // N(𝔣) = [O_K:Z[θ]]^2 = disc(f)/disc_K.
+        let check = |f: &[Integer], idx2: i64| {
+            let ord = maximal_order_data(f);
+            let c = conductor(f, &ord);
+            assert!(c.denom.is_one());
+            assert_eq!(ideal_norm(&c), Integer::from(idx2));
+        };
+        check(&iz(&[1, 0, 1]), 1); // Q(i): index 1
+        check(&iz(&[23, 0, 1]), 4); // x^2+23: disc -92, disc_K -23, index 2 → 4
+        check(&iz(&[-8, -2, -1, 1]), 4); // Dedekind cubic: index 2 → 4
     }
 }
