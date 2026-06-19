@@ -329,3 +329,104 @@ mod tests {
         assert_eq!(roots_of_unity_count(&iz(&[5, 0, 1])), 2); // Q(sqrt-5): ±1
     }
 }
+
+/// Sign vector of `α` at the real embeddings (`0` if `σᵢ(α) > 0`, `1` if `< 0`).
+fn sign_vector(ord: &OrderData, alpha: &[Integer], reals: &[C]) -> Vec<u8> {
+    let n = ord.n;
+    let dd = ord.d.to_f64().unwrap_or(1.0);
+    let pow: Vec<f64> = (0..n)
+        .map(|i| {
+            let mut s = 0.0f64;
+            for k in 0..n {
+                s += ord.w[i][k].to_f64().unwrap_or(0.0) * alpha[k].to_f64().unwrap_or(0.0);
+            }
+            s
+        })
+        .collect();
+    reals
+        .iter()
+        .map(|r| {
+            let mut acc = 0.0f64;
+            let mut pw = 1.0f64;
+            for &coef in &pow {
+                acc += coef * pw;
+                pw *= r.re;
+            }
+            if acc / dd < 0.0 {
+                1
+            } else {
+                0
+            }
+        })
+        .collect()
+}
+
+/// `F₂`-rank of a set of sign vectors.
+fn f2_rank(vecs: &[Vec<u8>], dim: usize) -> usize {
+    let mut rows: Vec<Vec<u8>> = vecs.to_vec();
+    let mut rank = 0usize;
+    for col in 0..dim {
+        let mut piv = None;
+        for r in rank..rows.len() {
+            if rows[r][col] == 1 {
+                piv = Some(r);
+                break;
+            }
+        }
+        if let Some(p) = piv {
+            rows.swap(rank, p);
+            for r in 0..rows.len() {
+                if r != rank && rows[r][col] == 1 {
+                    for c in 0..dim {
+                        rows[r][c] ^= rows[rank][c];
+                    }
+                }
+            }
+            rank += 1;
+        }
+    }
+    rank
+}
+
+/// The narrow class number `h⁺ = h · 2^{r₁ − rank(sign map)}`, where the sign map
+/// sends `O_K^×` to its vector of signs at the real places. Equals `h` for totally
+/// imaginary fields and when a unit of norm `−1` exists; doubles (per independent
+/// sign) otherwise. `None` if the class number is unavailable. Validated vs
+/// `gp bnfnarrow`.
+pub fn narrow_class_number(f: &[Integer]) -> Option<usize> {
+    let cg = crate::classgroup::class_group(f)?;
+    let h: usize = cg.iter().product::<usize>().max(1);
+    let (r1, _r2) = signature(f);
+    if r1 == 0 {
+        return Some(h);
+    }
+    let ord = maximal_order_data(f);
+    let rts = roots(f);
+    let (reals, cplx) = embeddings(&rts);
+    let b = if f.len() - 1 <= 2 { 30 } else { 6 };
+    let units = small_units(&ord, &reals, &cplx, b);
+    let sign_vecs: Vec<Vec<u8>> = units.iter().map(|(a, _)| sign_vector(&ord, a, &reals)).collect();
+    let rank = f2_rank(&sign_vecs, r1);
+    Some(h * (1usize << (r1 - rank)))
+}
+
+#[cfg(test)]
+mod narrow_tests {
+    use super::*;
+
+    fn iz(v: &[i64]) -> Vec<Integer> {
+        v.iter().map(|&x| Integer::from(x)).collect()
+    }
+
+    #[test]
+    fn narrow_class_number_matches_gp() {
+        assert_eq!(narrow_class_number(&iz(&[-2, 0, 1])), Some(1)); // Q(sqrt2)
+        assert_eq!(narrow_class_number(&iz(&[-3, 0, 1])), Some(2)); // Q(sqrt3): norm+1 unit
+        assert_eq!(narrow_class_number(&iz(&[-5, 0, 1])), Some(1)); // Q(sqrt5)
+        assert_eq!(narrow_class_number(&iz(&[1, 0, 1])), Some(1)); // Q(i)
+        assert_eq!(narrow_class_number(&iz(&[5, 0, 1])), Some(2)); // Q(sqrt-5)
+        assert_eq!(narrow_class_number(&iz(&[-10, 0, 1])), Some(2)); // Q(sqrt10)
+        assert_eq!(narrow_class_number(&iz(&[6, -1, 1])), Some(3)); // Q(sqrt-23)
+        assert_eq!(narrow_class_number(&iz(&[-79, 0, 1])), Some(6)); // Q(sqrt79): h=3, h+=6
+    }
+}
