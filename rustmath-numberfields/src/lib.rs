@@ -28,6 +28,7 @@ use rustmath_rationals::Rational;
 use std::fmt;
 use thiserror::Error;
 
+pub mod classgroup;
 pub mod different;
 pub mod ideals;
 pub mod polred;
