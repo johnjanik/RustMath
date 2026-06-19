@@ -20,11 +20,130 @@
 //! `ℚ₂(i)`→2, `ℚ₂(√2)`→3, `ℚ₃(ζ₉)`→9, `ℚ₂(ζ₈)`→8, `ℚ₃(ζ₂₇)`→45; and the upper
 //! breaks reproduce the textbook cyclotomic breaks (integers, per Hasse–Arf).
 
+use crate::local_field::{eisenstein_different_exponent, EisensteinElement};
 use rustmath_integers::Integer;
 use rustmath_rationals::Rational;
 
 fn rq(n: i64) -> Rational {
     Rational::from_i64(n)
+}
+
+fn binom_int(n: usize, k: usize) -> Integer {
+    if k > n {
+        return Integer::zero();
+    }
+    let k = k.min(n - k);
+    let mut num = Integer::one();
+    let mut den = Integer::one();
+    for i in 0..k {
+        num = num * Integer::from((n - i) as i64);
+        den = den * Integer::from((i + 1) as i64);
+    }
+    num / den
+}
+
+/// Lower convex hull of integer points sorted by `x` (monotone chain): keep the
+/// vertices of the Newton polygon.
+fn lower_hull(pts: &[(i64, i64)]) -> Vec<(i64, i64)> {
+    let mut h: Vec<(i64, i64)> = Vec::new();
+    for &p in pts {
+        while h.len() >= 2 {
+            let (x1, y1) = h[h.len() - 2];
+            let (x2, y2) = h[h.len() - 1];
+            let (x3, y3) = p;
+            // cross product of edges (p1→p2) and (p1→p3); pop while not a left turn.
+            let cross = (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1);
+            if cross <= 0 {
+                h.pop();
+            } else {
+                break;
+            }
+        }
+        h.push(p);
+    }
+    h
+}
+
+/// The **ramification polygon** of an Eisenstein polynomial `g` (degree `e`,
+/// uniformizer `π`): the Newton polygon (over `K = ℚ_p[π]/(g)`, `v_K(π)=1`) of
+/// `ρ(x) = g(πx + π)`. Its `e−1` roots are `(βᵢ − π)/π` for the conjugates `βᵢ ≠ π`,
+/// so the slopes give the conjugate valuations `mᵢ = v_K(βᵢ − π)`. Returns the
+/// multiset `{mᵢ}` (length `e−1`), computed **directly from `g`** with no
+/// root-finding. `Σ mᵢ = v_K(g'(π)) =` the different exponent.
+pub fn ramification_polygon(g: &[Integer], p: i64) -> Vec<Rational> {
+    let e = g.len() - 1;
+    if e <= 1 {
+        return Vec::new();
+    }
+    // Precision in ℤ_p high enough to see v_K up to ~ different + e (≤ e² + e).
+    let prec = (4 * e + 24) as u32;
+    let gv = g.to_vec();
+    let pi = EisensteinElement::uniformizer(p, prec, gv.clone());
+    // π^i for i = 0..=e.
+    let mut pip = vec![EisensteinElement::one(p, prec, gv.clone())];
+    for _ in 1..=e {
+        pip.push(pip.last().unwrap().mul(&pi));
+    }
+    // ρ_k = Σ_{i=k}^e g_i·C(i,k)·π^i (coefficient of x^k in g(πx+π) = Σ_i g_i π^i (x+1)^i).
+    let mut pts: Vec<(i64, i64)> = Vec::new();
+    for k in 1..=e {
+        let mut rho = EisensteinElement::zero(p, prec, gv.clone());
+        for i in k..=e {
+            let scalar = g[i].clone() * binom_int(i, k);
+            if scalar.is_zero() {
+                continue;
+            }
+            let term =
+                EisensteinElement::from_int(p, prec, gv.clone(), scalar).mul(&pip[i]);
+            rho = rho.add(&term);
+        }
+        if let Some(v) = rho.valuation() {
+            pts.push((k as i64, v));
+        }
+    }
+    // Slopes of the lower hull → conjugate valuations m = −slope + 1, with
+    // multiplicity = horizontal length of the segment.
+    let hull = lower_hull(&pts);
+    let mut ms: Vec<Rational> = Vec::new();
+    for w in hull.windows(2) {
+        let (k1, v1) = w[0];
+        let (k2, v2) = w[1];
+        let length = (k2 - k1) as usize;
+        // m = −slope + 1 = (v1 − v2)/(k2 − k1) + 1.
+        let m = Rational::new(Integer::from(v1 - v2), Integer::from(k2 - k1)).unwrap() + rq(1);
+        for _ in 0..length {
+            ms.push(m.clone());
+        }
+    }
+    ms
+}
+
+/// The lower-numbering ramification filtration built from the ramification polygon
+/// of an Eisenstein `g`, via `|G_i| = 1 + #{ conjugates β : v_K(β−π) ≥ i+1 }`.
+///
+/// **This is the true `Gal(K/ℚ_p)` filtration exactly when `K/ℚ_p` is Galois** (then
+/// the `e−1` conjugates are the non-trivial automorphisms). For a non-Galois `K` the
+/// conjugates are not automorphisms, so the returned object is the *ramification-
+/// polygon shape*, not a literal group filtration — e.g. `x⁴−2` (Galois group `D₄`)
+/// yields `[4,4,4,2,2]`, the shape of a `C₄`, because its closure is not seen here.
+/// The caller must supply Galois-ness (e.g. via the residual/segmental data or the
+/// splitting field). Its different always equals `eisenstein_different_exponent(g,p)`.
+///
+/// Returns `None` when the polygon has a non-integer slope — which *does* prove
+/// `K/ℚ_p` is **not Galois** (a conjugate valuation `v_K(β−π) ∉ ℤ` forces `β ∉ K`).
+pub fn wild_filtration_from_eisenstein(g: &[Integer], p: i64) -> Option<RamificationFiltration> {
+    let ms = ramification_polygon(g, p);
+    if ms.is_empty() || !ms.iter().all(|m| m.is_integer()) {
+        return None;
+    }
+    let mvals: Vec<i64> = ms.iter().map(|m| m.numerator().to_i64()).collect();
+    let maxm = *mvals.iter().max().unwrap();
+    let mut orders = Vec::new();
+    for i in 0..maxm {
+        let gi = 1 + mvals.iter().filter(|&&m| m >= i + 1).count();
+        orders.push(gi);
+    }
+    Some(RamificationFiltration::new(orders))
 }
 
 /// The lower-numbering ramification filtration of a Galois local extension, as the
@@ -254,6 +373,69 @@ mod tests {
         assert_eq!(cyclic_p_filtration(3, 1).different_exponent(), 4);
         assert_eq!(cyclic_p_break_from_different(3, 4), Some(1));
         assert_eq!(cyclic_p_break_from_different(2, 5), Some(4));
+    }
+
+    #[test]
+    fn ramification_polygon_sum_is_different() {
+        // Σ m_i = different exponent (the product formula g'(π) = ∏(π − β)).
+        let cases: &[(&[i64], i64)] = &[
+            (&[2, -2, 1], 2),                  // Q_2(i), d=2
+            (&[-2, 0, 1], 2),                  // Q_2(√2), d=3
+            (&[2, 4, 6, 4, 1], 2),             // Φ_8(x+1), Q_2(ζ_8), d=8
+            (&[-2, 0, 0, 0, 1], 2),            // x⁴−2, d=11 (NOT Galois)
+            (&[3, 9, 18, 21, 15, 6, 1], 3),    // Φ_9(x+1), Q_3(ζ_9), d=9
+        ];
+        for &(g, p) in cases {
+            let gz: Vec<Integer> = g.iter().map(|&x| Integer::from(x)).collect();
+            let ms = ramification_polygon(&gz, p);
+            assert_eq!(ms.len(), g.len() - 2, "e−1 conjugate valuations for {g:?}");
+            let sum: Rational = ms.iter().fold(rq(0), |a, m| a + m.clone());
+            assert_eq!(
+                sum,
+                rq(eisenstein_different_exponent(&gz, p)),
+                "Σ m_i = different for {g:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn wild_filtration_from_polynomial_matches_known() {
+        let g = |v: &[i64]| -> Vec<Integer> { v.iter().map(|&x| Integer::from(x)).collect() };
+        // Q_2(i): C_2, filtration [2,2].
+        assert_eq!(
+            wild_filtration_from_eisenstein(&g(&[2, -2, 1]), 2).unwrap(),
+            filt(&[2, 2])
+        );
+        // Q_2(√2): C_2, filtration [2,2,2].
+        assert_eq!(
+            wild_filtration_from_eisenstein(&g(&[-2, 0, 1]), 2).unwrap(),
+            filt(&[2, 2, 2])
+        );
+        // Q_2(ζ_8): V_4, filtration [4,4,2,2] — computed straight from Φ_8(x+1).
+        let z8 = wild_filtration_from_eisenstein(&g(&[2, 4, 6, 4, 1]), 2).unwrap();
+        assert_eq!(z8, filt(&[4, 4, 2, 2]));
+        assert_eq!(z8.different_exponent(), 8);
+        assert_eq!(z8.upper_breaks(), vec![rq(1), rq(2)]);
+        // Q_3(ζ_9): C_6, filtration [6,3,3] from Φ_9(x+1).
+        let z9 = wild_filtration_from_eisenstein(&g(&[3, 9, 18, 21, 15, 6, 1]), 3).unwrap();
+        assert_eq!(z9, filt(&[6, 3, 3]));
+        assert_eq!(z9.different_exponent(), 9);
+    }
+
+    #[test]
+    fn ramification_polygon_non_galois_x4_minus_2() {
+        // x⁴−2 (Galois group D₄, not Galois as a degree-4 ext over ℚ_2 — needs i).
+        // Its ramification polygon still gives integer conjugate valuations {3,3,5}
+        // (Σ = 11 = different); integer slopes do NOT imply Galois, so the
+        // "filtration" [4,4,4,2,2] is the polygon shape (of a C₄), not Gal(D₄).
+        let g: Vec<Integer> = [-2, 0, 0, 0, 1].iter().map(|&x| Integer::from(x)).collect();
+        let mut ms: Vec<i64> =
+            ramification_polygon(&g, 2).iter().map(|m| m.numerator().to_i64()).collect();
+        ms.sort_unstable();
+        assert_eq!(ms, vec![3, 3, 5]);
+        let shape = wild_filtration_from_eisenstein(&g, 2).unwrap();
+        assert_eq!(shape, filt(&[4, 4, 4, 2, 2]));
+        assert_eq!(shape.different_exponent(), 11);
     }
 
     #[test]
