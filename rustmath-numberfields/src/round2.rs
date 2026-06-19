@@ -247,7 +247,7 @@ impl Order {
 
 /// Solve `L x = b` for a lower-triangular integer matrix `L` (nonzero diagonal),
 /// all divisions exact. `L[i][j]` is row `i`, column `j`; `L[i][j] = 0` for `j > i`.
-fn forward_solve_lower(l: &[Vec<Integer>], b: &[Integer], n: usize) -> Vec<Integer> {
+pub(crate) fn forward_solve_lower(l: &[Vec<Integer>], b: &[Integer], n: usize) -> Vec<Integer> {
     let mut x = vec![izero(); n];
     for k in 0..n {
         let mut acc = b[k].clone();
@@ -335,7 +335,7 @@ fn kernel_fp(rows: &[Vec<i64>], c: usize, p: i64) -> Vec<Vec<i64>> {
 /// Hermite basis of the lattice spanned by integer column generators (each a
 /// length-`n` vector). Returns `n` columns (full-rank lattices only). Pivot for
 /// row `r` lands in `out[r]`.
-fn hnf_basis(gens: &[Vec<Integer>], n: usize) -> Vec<Vec<Integer>> {
+pub(crate) fn hnf_basis(gens: &[Vec<Integer>], n: usize) -> Vec<Vec<Integer>> {
     let mut cols: Vec<Vec<Integer>> = gens.iter().filter(|c| c.iter().any(|x| !x.is_zero())).cloned().collect();
     let mut basis: Vec<Vec<Integer>> = vec![vec![izero(); n]; n];
     for row in 0..n {
@@ -395,7 +395,7 @@ fn floor_div(a: &Integer, b: &Integer) -> Integer {
 }
 
 /// Exact determinant of an `n×n` integer matrix (Bareiss fraction-free).
-fn bareiss_det(mat: &[Vec<Integer>]) -> Integer {
+pub(crate) fn bareiss_det(mat: &[Vec<Integer>]) -> Integer {
     let n = mat.len();
     if n == 0 {
         return ione();
@@ -1030,4 +1030,62 @@ mod polredabs_tests {
         let s = ratio.sqrt().unwrap();
         assert_eq!(s.clone() * s, ratio);
     }
+}
+
+// --------------------------------------------------------------------------- //
+// Exposed maximal-order data for ideal arithmetic
+// --------------------------------------------------------------------------- //
+/// The maximal order `O_K` with the data needed for ideal arithmetic: the integral
+/// basis (power-coordinate matrix `w`/denominator `d`) and the integer structure
+/// constants `sc[i][j][k]` (`ω_i·ω_j = Σ_k sc[i][j][k] ω_k`).
+pub struct OrderData {
+    pub n: usize,
+    pub w: Vec<Vec<Integer>>,
+    pub d: Integer,
+    pub sc: Vec<Vec<Vec<Integer>>>,
+}
+
+impl OrderData {
+    /// Product of two elements given in integral-basis coordinates.
+    pub fn mul(&self, a: &[Integer], b: &[Integer]) -> Vec<Integer> {
+        let n = self.n;
+        let mut out = vec![izero(); n];
+        for i in 0..n {
+            if a[i].is_zero() {
+                continue;
+            }
+            for j in 0..n {
+                if b[j].is_zero() {
+                    continue;
+                }
+                let ab = a[i].clone() * b[j].clone();
+                for k in 0..n {
+                    out[k] = out[k].clone() + ab.clone() * self.sc[i][j][k].clone();
+                }
+            }
+        }
+        out
+    }
+
+    /// Coordinates of `1` in the integral basis.
+    pub fn one(&self) -> Vec<Integer> {
+        let mut v = vec![izero(); self.n];
+        v[0] = ione();
+        self.power_to_order(&v)
+    }
+
+    /// Convert an element given in power-basis coordinates (a member of `O_K`) to
+    /// integral-basis coordinates: solve `W·c = d·v` (forward substitution).
+    pub fn power_to_order(&self, v: &[Integer]) -> Vec<Integer> {
+        let rhs: Vec<Integer> = v.iter().map(|x| x.clone() * self.d.clone()).collect();
+        forward_solve_lower(&self.w, &rhs, self.n)
+    }
+}
+
+/// Compute the maximal order `O_K` of `K = ℚ[x]/(f)` with its structure constants.
+pub fn maximal_order_data(f: &[Integer]) -> OrderData {
+    let (o, _disc) = maximal_order(f, 100_000);
+    let table = power_table(f);
+    let sc = o.structure_constants(&table);
+    OrderData { n: o.n, w: o.w.clone(), d: o.d.clone(), sc }
 }
