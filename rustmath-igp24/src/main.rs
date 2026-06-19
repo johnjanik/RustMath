@@ -22,6 +22,23 @@ use rustmath_polynomials::padic_factor::{cycle_type, ramification_type};
 use rustmath_polynomials::{factor_over_integers, is_irreducible_over_integers, UnivariatePolynomial};
 use rustmath_numberfields::polred::polred;
 use rustmath_numberfields::round2::{field_discriminant, polredabs};
+use rustmath_polynomials::resolvent::{
+    galois_in_alternating, resolvent_orbit_signature, subset_sum_resolvent,
+};
+use rustmath_groups::transitive24::{separate_by_ksubset_orbits, CycleTypeSupport, Db};
+
+/// First `n` primes (small sieve) for observing the Frobenius cycle-type support.
+fn small_primes(n: usize) -> Vec<i64> {
+    let mut ps = Vec::with_capacity(n);
+    let mut x: i64 = 2;
+    while ps.len() < n {
+        if (2..).take_while(|d| d * d <= x).all(|d| x % d != 0) {
+            ps.push(x);
+        }
+        x += 1;
+    }
+    ps
+}
 
 const DEFAULT_PRIMES: &[i64] = &[
     5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79,
@@ -102,6 +119,9 @@ fn main() {
     let want_polred = argv.iter().any(|a| a == "--polred");
     let want_polredabs = argv.iter().any(|a| a == "--polredabs");
     let want_fielddisc = argv.iter().any(|a| a == "--fielddisc");
+    //   --galois  native Galois-group identification: Frobenius support -> candidate
+    //             class (sound) -> k=2 resolvent orbit-signature narrowing. ~seconds.
+    let want_galois = argv.iter().any(|a| a == "--galois");
     let prime_arg = argv.iter().skip(2).find(|a| !a.starts_with("--"));
     let primes: Vec<i64> = if let Some(pa) = prime_arg {
         pa
@@ -174,11 +194,55 @@ fn main() {
         "null".to_string()
     };
 
+    // Native Galois identification: Frobenius support -> sound candidate class ->
+    // k=2 resolvent orbit-signature narrowing (Stauduhar), no MAGMA / no slot.
+    let galois_json = if want_galois && irreducible && n == 24 {
+        let mut obs: Vec<Vec<usize>> = Vec::new();
+        for p in small_primes(160) {
+            if let Some(ct) = cycle_type(&coeffs, p) {
+                if !obs.contains(&ct) {
+                    obs.push(ct);
+                }
+            }
+        }
+        let in_an = galois_in_alternating(&coeffs);
+        let cands = match CycleTypeSupport::load_default() {
+            Ok(cts) => cts.candidates(&obs),     // support ⊇ observed: true group retained
+            Err(_) => Vec::new(),
+        };
+        let mut narrowed = cands.clone();
+        let mut sig: Vec<usize> = Vec::new();
+        if cands.len() > 1 {
+            if let Ok(db) = Db::load_default() {
+                let res = subset_sum_resolvent(&coeffs, 2);
+                if let Ok(s) = resolvent_orbit_signature(&res) {
+                    sig = s.clone();
+                    let sep = separate_by_ksubset_orbits(&db, &cands, 2, &s);
+                    if !sep.is_empty() {
+                        narrowed = sep;
+                    }
+                }
+            }
+        }
+        let uniq = if narrowed.len() == 1 {
+            narrowed[0].to_string()
+        } else {
+            "null".to_string()
+        };
+        format!(
+            "{{\"candidate_class\":{:?},\"in_alternating\":{},\"k2_orbit_signature\":{:?},\
+\"narrowed\":{:?},\"unique_t\":{}}}",
+            cands, in_an, sig, narrowed, uniq
+        )
+    } else {
+        "null".to_string()
+    };
+
     println!(
         "{{\"degree\":{n},\"irreducible\":{irreducible},\"discriminant\":{disc},\
 \"disc_is_square\":{disc_sq},\"factors\":[{}],\"cycle_types\":{{{}}},\
 \"ramification\":{{{}}},\"polred\":{polred_json},\"polredabs\":{polredabs_json},\
-\"field_discriminant\":{fielddisc_json}}}",
+\"field_discriminant\":{fielddisc_json},\"galois\":{galois_json}}}",
         factors_json.join(","),
         cyc_json.join(","),
         ram_json.join(",")
