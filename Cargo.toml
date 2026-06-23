@@ -69,6 +69,8 @@ members = [
     "rustmath-benchmarks",
     "rustmath-jupyter",
     "rustmath-igp24",
+    "rustmath-lava/crates/lava-core",
+    "rustmath-lava/crates/lava",
 ]
 
 [workspace.package]
@@ -79,6 +81,7 @@ authors = ["RustMath Contributors"]
 repository = "https://github.com/johnjanik/RustMath"
 
 [workspace.dependencies]
+tree-sitter-magma = { git = "https://github.com/edgarcosta/tree-sitter-magma.git", rev = "75b31f4695261967c7aa87d552d69805dc03c77b" }
 num-bigint = "0.4"
 num-rational = "0.4"
 num-traits = "0.2"

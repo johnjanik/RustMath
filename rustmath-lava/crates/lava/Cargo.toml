@@ -1,0 +1,30 @@
+[package]
+name = "lava-cli"
+version = "0.1.1"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/havarddj/lava"
+description = "lava: a community-maintained multi-tool for the Magma language"
+
+[[bin]]
+name = "lava"
+path = "src/main.rs"
+
+[dependencies]
+lava-core = { path = "../lava-core" }
+clap = { version = "4", features = ["derive", "wrap_help"] }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "process"] }
+futures = "0.3"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1"
+tempfile = "3"
+ignore = "0.4"
+nu-ansi-term = "0.50"
+similar = "2"
+which = "7"
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"
+pretty_assertions = "1"

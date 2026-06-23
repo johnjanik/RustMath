@@ -1,0 +1,25 @@
+[package]
+name = "lava-core"
+version = "0.1.1"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/havarddj/lava"
+description = "Library powering the lava CLI for Magma source code"
+publish = false
+
+[dependencies]
+topiary-core = "0.7"
+topiary-tree-sitter-facade = "0.7"
+tree-sitter = "0.26"
+tree-sitter-highlight = "0.26.8"
+tree-sitter-magma = { workspace = true }
+streaming-iterator = "0.1"
+thiserror = "1"
+tracing = "0.1"
+dirs = "5"
+nu-ansi-term = "0.50"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt", "macros"] }
+pretty_assertions = "1"
+tempfile = "3"
