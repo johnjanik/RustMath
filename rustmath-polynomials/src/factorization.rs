@@ -2,8 +2,95 @@
 
 use crate::polynomial::Polynomial;
 use crate::univariate::UnivariatePolynomial;
+use crate::zassenhaus;
 use rustmath_core::{EuclideanDomain, MathError, Result, Ring};
 use std::fmt::Debug;
+
+/// Scale every coefficient by `s`.
+fn scalar_mul_poly<R: Ring + Clone>(p: &UnivariatePolynomial<R>, s: &R) -> UnivariatePolynomial<R> {
+    UnivariatePolynomial::new(p.coefficients().iter().map(|c| c.clone() * s.clone()).collect())
+}
+
+/// Multiply `p` by `x^k`.
+fn shift_poly<R: Ring + Clone>(p: &UnivariatePolynomial<R>, k: usize) -> UnivariatePolynomial<R> {
+    if p.is_zero() {
+        return p.clone();
+    }
+    let mut v = vec![R::zero(); k];
+    v.extend(p.coefficients().iter().cloned());
+    UnivariatePolynomial::new(v)
+}
+
+/// Pseudo-remainder of `a` by `b` using only ring operations (never divides by the
+/// leading coefficient), so it is valid over ℤ[x] where the Euclidean remainder
+/// sequence diverges. Mirrors [`crate::zx::pseudo_rem`] for the generic type.
+fn poly_pseudo_rem<R>(
+    a: &UnivariatePolynomial<R>,
+    b: &UnivariatePolynomial<R>,
+) -> UnivariatePolynomial<R>
+where
+    R: Ring + Clone + Debug,
+{
+    let db = match b.degree() {
+        Some(d) => d,
+        None => return a.clone(),
+    };
+    let lcb = b.coeff(db).clone();
+    let mut r = a.clone();
+    let mut e = match r.degree() {
+        Some(da) if da >= db => (da - db + 1) as u32,
+        _ => 0,
+    };
+    while let Some(dr) = r.degree() {
+        if dr < db {
+            break;
+        }
+        let lcr = r.coeff(dr).clone();
+        let shifted = shift_poly(&scalar_mul_poly(b, &lcr), dr - db);
+        r = scalar_mul_poly(&r, &lcb) - shifted;
+        e -= 1;
+    }
+    for _ in 0..e {
+        r = scalar_mul_poly(&r, &lcb);
+    }
+    r
+}
+
+/// GCD over a polynomial ring with non-field coefficients, via the **primitive
+/// pseudo-remainder sequence** (re-primitivizing each step to curb growth). Returns
+/// a primitive GCD; the constant `1` when the inputs are coprime. Correct over ℤ[x],
+/// where `UnivariatePolynomial::gcd`'s Euclidean loop fails to terminate.
+fn poly_gcd_prem<R>(
+    a: &UnivariatePolynomial<R>,
+    b: &UnivariatePolynomial<R>,
+) -> UnivariatePolynomial<R>
+where
+    R: Ring + EuclideanDomain + Clone + Debug,
+{
+    if a.is_zero() {
+        return primitive_part(b);
+    }
+    if b.is_zero() {
+        return primitive_part(a);
+    }
+    let mut a = primitive_part(a);
+    let mut b = primitive_part(b);
+    if a.degree() < b.degree() {
+        std::mem::swap(&mut a, &mut b);
+    }
+    loop {
+        let r = poly_pseudo_rem(&a, &b);
+        if r.is_zero() {
+            break;
+        }
+        if r.degree() == Some(0) {
+            return UnivariatePolynomial::new(vec![R::one()]);
+        }
+        a = b;
+        b = primitive_part(&r);
+    }
+    primitive_part(&b)
+}
 
 /// Compute the content of a polynomial (GCD of all coefficients)
 ///
@@ -93,8 +180,8 @@ where
         ));
     }
 
-    // Compute gcd(f, f')
-    let g = f.gcd(&f_prime);
+    // Compute gcd(f, f') via pseudo-division (Euclidean gcd diverges over ℤ[x])
+    let g = poly_gcd_prem(&f, &f_prime);
 
     // If gcd is 1, f is already square-free
     if g.degree() == Some(0) || g.is_constant() {
@@ -110,7 +197,7 @@ where
     let mut g_remaining = g;
 
     while !g_remaining.is_constant() {
-        let g_next = current.gcd(&g_remaining);
+        let g_next = poly_gcd_prem(&current, &g_remaining);
 
         if g_next.degree() == Some(0) || g_next.is_constant() {
             // current is a square-free factor with this multiplicity
@@ -161,7 +248,7 @@ where
         return Ok(false);
     }
 
-    let g = poly.gcd(&derivative);
+    let g = poly_gcd_prem(poly, &derivative);
     Ok(g.degree() == Some(0) || g.is_constant())
 }
 
@@ -259,6 +346,10 @@ where
 /// - q divides a_n (leading coefficient)
 ///
 /// Returns a list of rational roots found (as Integers when they're integers)
+///
+/// Retained as a cheap linear-root pre-filter and exercised by unit tests; the
+/// main factorization path is now [`factor_over_integers`] (Zassenhaus).
+#[allow(dead_code)]
 fn find_rational_roots(
     poly: &UnivariatePolynomial<rustmath_integers::Integer>,
 ) -> Vec<rustmath_integers::Integer> {
@@ -317,6 +408,7 @@ fn find_rational_roots(
 /// Factor out known linear factors from a polynomial
 ///
 /// Given a polynomial and a list of roots, divide out the corresponding linear factors
+#[allow(dead_code)]
 fn factor_out_roots(
     poly: &UnivariatePolynomial<rustmath_integers::Integer>,
     roots: &[rustmath_integers::Integer],
@@ -376,60 +468,57 @@ fn factor_out_roots(
 pub fn factor_over_integers(
     poly: &UnivariatePolynomial<rustmath_integers::Integer>,
 ) -> Result<Vec<(UnivariatePolynomial<rustmath_integers::Integer>, u32)>> {
-
+    use rustmath_integers::Integer;
 
     if poly.is_zero() {
         return Ok(vec![]);
     }
-
     if poly.is_constant() {
         return Ok(vec![(poly.clone(), 1)]);
     }
 
-    let mut all_factors = Vec::new();
+    // Delegate to the Zassenhaus factorizer (Vec<Integer>, little-endian).
+    let coeffs: Vec<Integer> = poly.coefficients().to_vec();
+    let (content_int, factors) = zassenhaus::factor(&coeffs).map_err(|_| {
+        MathError::NotSupported(
+            "Zassenhaus recombination exceeded the subset bound (pathological factor count)"
+                .to_string(),
+        )
+    })?;
 
-    // Step 1: Extract content
-    let cont = content(poly);
-    if !cont.is_one() && !cont.is_zero() {
-        let constant_poly = UnivariatePolynomial::new(vec![cont]);
-        all_factors.push((constant_poly, 1));
+    let mut all_factors: Vec<(UnivariatePolynomial<Integer>, u32)> = Vec::new();
+
+    // Emit the integer content as a constant factor unless it is 1.
+    if !content_int.is_one() {
+        all_factors.push((UnivariatePolynomial::new(vec![content_int]), 1));
     }
 
-    let primitive = primitive_part(poly);
-
-    // Step 2: Square-free factorization
-    let square_free_factors = square_free_factorization(&primitive)?;
-
-    // Step 3: For each square-free factor, try to find rational roots
-    for (sf_poly, multiplicity) in square_free_factors {
-        if sf_poly.is_constant() {
-            continue;
-        }
-
-        // Find rational roots
-        let roots = find_rational_roots(&sf_poly);
-
-        // Factor out the roots
-        let (linear_factors, remaining) = factor_out_roots(&sf_poly, &roots)?;
-
-        // Add linear factors with their multiplicities
-        for (linear, linear_mult) in linear_factors {
-            all_factors.push((linear, linear_mult * multiplicity));
-        }
-
-        // Add remaining polynomial if it's not constant
-        if !remaining.is_constant() && !remaining.is_zero() {
-            // The remaining polynomial is irreducible over Q (or we can't factor it)
-            all_factors.push((remaining, multiplicity));
-        }
+    for (g, mult) in factors {
+        all_factors.push((UnivariatePolynomial::new(g), mult));
     }
 
     if all_factors.is_empty() {
-        // No factorization found, return the original
-        Ok(vec![(poly.clone(), 1)])
-    } else {
-        Ok(all_factors)
+        all_factors.push((poly.clone(), 1));
     }
+    Ok(all_factors)
+}
+
+/// Test irreducibility of a polynomial over ℚ (equivalently, over ℤ for a
+/// primitive polynomial) via complete Zassenhaus factorization. A constant is not
+/// irreducible. This is the reliable integer-specific complement to the generic,
+/// conservative [`is_irreducible`].
+pub fn is_irreducible_over_integers(
+    poly: &UnivariatePolynomial<rustmath_integers::Integer>,
+) -> Result<bool> {
+    if poly.is_zero() || poly.is_constant() {
+        return Ok(false);
+    }
+    let coeffs: Vec<rustmath_integers::Integer> = poly.coefficients().to_vec();
+    let (_, factors) = zassenhaus::factor(&coeffs).map_err(|_| {
+        MathError::NotSupported("Zassenhaus recombination exceeded the subset bound".to_string())
+    })?;
+    // Irreducible iff exactly one non-constant factor, with multiplicity one.
+    Ok(factors.len() == 1 && factors[0].1 == 1)
 }
 
 /// Berlekamp's factorization algorithm for polynomials over finite fields
@@ -896,6 +985,9 @@ pub fn hensel_lift(
 )> {
 
 
+    use crate::zp_hensel;
+    use rustmath_integers::Integer;
+
     if k == 0 {
         return Err(MathError::InvalidArgument(
             "Hensel lifting requires k >= 1".to_string(),
@@ -907,88 +999,50 @@ pub fn hensel_lift(
         return Ok((g0.clone(), h0.clone()));
     }
 
-    // Step 1: Compute extended GCD to find s₀, t₀ such that s₀·g₀ + t₀·h₀ ≡ 1 (mod p)
-    let (s0, t0) = extended_gcd_poly_gf(g0, h0, p)?;
-
-    // Verify that gcd(g₀, h₀) = 1 (mod p)
-    let gcd = gcd_poly_gf(g0, h0, p);
-    if gcd.degree() != Some(0) && !gcd.is_constant() {
+    // The lift runs on the small-prime engine in `zp_hensel` (a faithful port of
+    // the p-adelic calculator's verified ZpPoly/FpPoly routines). The earlier
+    // in-place implementation had a Bezout-side mismatch (the Δg/Δh corrections
+    // were reduced against the wrong cofactor), which is why its tests were
+    // marked `#[ignore]`. We convert to coefficient vectors, delegate, and
+    // convert back.
+    let p_i64 = p.to_i64();
+    if p_i64 <= 1 {
         return Err(MathError::InvalidArgument(
-            "Hensel lifting requires gcd(g₀, h₀) = 1 (mod p)".to_string(),
+            "Hensel lifting requires a prime p >= 2 that fits in i64".to_string(),
         ));
     }
 
-    let mut g = g0.clone();
-    let mut h = h0.clone();
-    let s = s0;
-    let t = t0;
+    // f as Z[x]; g0, h0 reduced to F_p[x] (Vec<i64> in [0, p)).
+    let f_coeffs: Vec<Integer> = f.coefficients().to_vec();
+    let pm = p.clone();
+    let to_fp = |poly: &UnivariatePolynomial<Integer>| -> Vec<i64> {
+        poly.coefficients()
+            .iter()
+            .map(|c| {
+                let r = c % &pm;
+                (&(&r + &pm) % &pm).to_i64()
+            })
+            .collect()
+    };
+    let g0_fp = to_fp(g0);
+    let h0_fp = to_fp(h0);
 
-    // Current modulus p^i
-    let mut p_power = p.clone();
-
-    // Step 2: Lift from p^i to p^(i+1) for i = 1..k-1
-    for _i in 1..k {
-        let next_p_power = p_power.clone() * p.clone();
-
-        // Compute product g·h WITHOUT modular reduction first
-        let gh = poly_mul_unreduced(&g, &h);
-
-        // Compute error: e = (f - g·h) / p^i
-        let mut e_coeffs = Vec::new();
-        let max_deg = f.degree().unwrap_or(0).max(gh.degree().unwrap_or(0));
-
-        for j in 0..=max_deg {
-            let f_coeff = f.coeff(j).clone();
-            let gh_coeff = gh.coeff(j).clone();
-            let diff = f_coeff - gh_coeff;
-
-            // Divide by p^i
-            let (e_val, rem) = diff.div_rem(&p_power)?;
-            if !rem.is_zero() {
-                return Err(MathError::InvalidArgument(
-                    format!("Hensel lifting failed: f - g·h not divisible by p^i at coeff {}: {} not divisible by {}",
-                            j, diff, p_power),
-                ));
-            }
-            e_coeffs.push(e_val);
-        }
-
-        let e = UnivariatePolynomial::new(e_coeffs);
-
-        // Solve for Δg, Δh: s·e ≡ Δg·h + g·Δh (mod p)
-        // Using: Δg ≡ s·e (mod h₀, p) and Δh ≡ t·e (mod g₀, p)
-
-        let se = poly_mul_mod(&s, &e, p);
-        let te = poly_mul_mod(&t, &e, p);
-
-        // Δg ≡ (s·e) mod h₀
-        let (_, delta_g_unreduced) = div_poly_gf(&se, h0, p)?;
-        let delta_g = reduce_poly_mod(&delta_g_unreduced, p);
-
-        // Δh ≡ (t·e) mod g₀
-        let (_, delta_h_unreduced) = div_poly_gf(&te, g0, p)?;
-        let delta_h = reduce_poly_mod(&delta_h_unreduced, p);
-
-        // Update: g ← g + p^i·Δg, h ← h + p^i·Δh
-        let delta_g_scaled = poly_scalar_mul(&delta_g, &p_power);
-        let delta_h_scaled = poly_scalar_mul(&delta_h, &p_power);
-
-        g = poly_add_unreduced(&g, &delta_g_scaled);
-        h = poly_add_unreduced(&h, &delta_h_scaled);
-
-        // Update s, t for next iteration: s·g + t·h ≡ 1 (mod p^(i+1))
-        // This is optional for the basic algorithm, but improves stability
-
-        p_power = next_p_power;
+    match zp_hensel::hensel_lift(&f_coeffs, &g0_fp, &h0_fp, p_i64, k) {
+        Some((big_g, big_h)) => Ok((
+            UnivariatePolynomial::new(big_g),
+            UnivariatePolynomial::new(big_h),
+        )),
+        None => Err(MathError::InvalidArgument(
+            "Hensel lifting requires coprime monic factors with f ≡ g₀·h₀ (mod p)".to_string(),
+        )),
     }
-
-    Ok((g, h))
 }
 
 /// Extended GCD for polynomials over GF(p)
 ///
 /// Computes s, t such that s·a + t·b ≡ gcd(a,b) (mod p)
 /// Assumes gcd(a,b) = 1 (mod p), so returns s, t with s·a + t·b ≡ 1 (mod p)
+#[allow(dead_code)]
 fn extended_gcd_poly_gf(
     a: &UnivariatePolynomial<rustmath_integers::Integer>,
     b: &UnivariatePolynomial<rustmath_integers::Integer>,
@@ -1043,6 +1097,7 @@ fn extended_gcd_poly_gf(
 }
 
 /// Helper: Multiply two polynomials WITHOUT modular reduction
+#[allow(dead_code)]
 fn poly_mul_unreduced(
     a: &UnivariatePolynomial<rustmath_integers::Integer>,
     b: &UnivariatePolynomial<rustmath_integers::Integer>,
@@ -1064,6 +1119,7 @@ fn poly_mul_unreduced(
 }
 
 /// Helper: Multiply two polynomials and reduce coefficients modulo m
+#[allow(dead_code)]
 fn poly_mul_mod(
     a: &UnivariatePolynomial<rustmath_integers::Integer>,
     b: &UnivariatePolynomial<rustmath_integers::Integer>,
@@ -1086,6 +1142,7 @@ fn poly_mul_mod(
 }
 
 /// Helper: Add two polynomials WITHOUT modular reduction
+#[allow(dead_code)]
 fn poly_add_unreduced(
     a: &UnivariatePolynomial<rustmath_integers::Integer>,
     b: &UnivariatePolynomial<rustmath_integers::Integer>,
@@ -1136,6 +1193,7 @@ fn poly_add_mod(
 }
 
 /// Helper: Subtract two polynomials and reduce coefficients modulo m
+#[allow(dead_code)]
 fn poly_sub_mod(
     a: &UnivariatePolynomial<rustmath_integers::Integer>,
     b: &UnivariatePolynomial<rustmath_integers::Integer>,
@@ -1164,6 +1222,7 @@ fn poly_sub_mod(
 }
 
 /// Helper: Multiply polynomial by scalar and reduce modulo m
+#[allow(dead_code)]
 fn poly_scalar_mul(
     poly: &UnivariatePolynomial<rustmath_integers::Integer>,
     scalar: &rustmath_integers::Integer,
@@ -1179,6 +1238,7 @@ fn poly_scalar_mul(
 }
 
 /// Helper: Multiply polynomial by scalar and reduce modulo m
+#[allow(dead_code)]
 fn poly_scalar_mul_mod(
     poly: &UnivariatePolynomial<rustmath_integers::Integer>,
     scalar: &rustmath_integers::Integer,
@@ -1201,6 +1261,7 @@ fn poly_scalar_mul_mod(
 }
 
 /// Helper: Reduce polynomial coefficients modulo m
+#[allow(dead_code)]
 fn reduce_poly_mod(
     poly: &UnivariatePolynomial<rustmath_integers::Integer>,
     m: &rustmath_integers::Integer,
@@ -1266,18 +1327,14 @@ mod tests {
         ]);
         assert!(is_square_free(&p1).unwrap());
 
-        // TODO: The following test exposes a limitation in the current GCD algorithm
-        // for polynomials over integers. The Euclidean algorithm requires exact division,
-        // but for integer polynomials, we need pseudo-division or subresultant GCD.
-        // Uncomment when proper integer polynomial GCD is implemented.
-
-        // (x - 1)² = x² - 2x + 1 is not square-free
-        // let p2 = UnivariatePolynomial::new(vec![
-        //     Integer::from(1),
-        //     Integer::from(-2),
-        //     Integer::from(1),
-        // ]);
-        // assert!(!is_square_free(&p2).unwrap());
+        // (x - 1)² = x² - 2x + 1 is not square-free. This previously hung in the
+        // Euclidean ℤ[x] GCD; now handled by the pseudo-division GCD.
+        let p2 = UnivariatePolynomial::new(vec![
+            Integer::from(1),
+            Integer::from(-2),
+            Integer::from(1),
+        ]);
+        assert!(!is_square_free(&p2).unwrap());
     }
 
     #[test]
@@ -1291,7 +1348,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Requires proper integer polynomial GCD with pseudo-division"]
     fn test_square_free_factorization_repeated() {
         // x² = x * x (x with multiplicity 2)
         // TODO: This test exposes the same GCD limitation as test_is_square_free.
@@ -1524,11 +1580,8 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Hensel lifting has a bug in the algorithm - needs further investigation"]
     fn test_hensel_lift_simple() {
-        // TODO: Fix Hensel lifting algorithm
-        // The current implementation has an issue with the lifting formula
-        // that causes g*h to not equal f modulo p^k
+        // f = x² - 1 = (x + 4)(x + 1) mod 5, coprime factors.
         let f = UnivariatePolynomial::new(vec![
             Integer::from(-1),
             Integer::from(0),
@@ -1551,14 +1604,18 @@ mod tests {
         let prod_init = poly_mul_mod(&g0, &h0, &p);
         assert_eq!(prod_init.coeff(0).clone() % p.clone(), Integer::from(4));
 
-        // Lift to p² = 25
-        let (_g, _h) = hensel_lift(&f, &g0, &h0, &p, 2).unwrap();
-
-        // TODO: Verify that g*h ≡ f (mod p^2)
+        // Lift to p² = 25 and verify g·h ≡ f (mod 25).
+        let (g, h) = hensel_lift(&f, &g0, &h0, &p, 2).unwrap();
+        let p2 = Integer::from(25);
+        let product = poly_mul_mod(&g, &h, &p2);
+        for i in 0..=2 {
+            let prod_coeff = ((product.coeff(i).clone() % p2.clone()) + p2.clone()) % p2.clone();
+            let f_coeff = ((f.coeff(i).clone() % p2.clone()) + p2.clone()) % p2.clone();
+            assert_eq!(prod_coeff, f_coeff, "Coefficient {} mismatch mod 25", i);
+        }
     }
 
     #[test]
-    #[ignore = "Hensel lifting has a bug - see test_hensel_lift_simple"]
     fn test_hensel_lift_quadratic() {
         // Test with x² + 1 over GF(5)
         // Over GF(5): x² + 1 = (x + 2)(x + 3)
