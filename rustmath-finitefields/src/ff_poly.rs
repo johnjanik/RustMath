@@ -72,6 +72,35 @@ pub trait FiniteFieldElement: Clone + PartialEq + fmt::Debug {
         result
     }
 
+    /// Degree `k` of the field GF(p^k) over its prime subfield GF(p).
+    ///
+    /// The default is `1` (the field is its own prime subfield, i.e. GF(p)).
+    /// Proper extensions override this.
+    fn degree_over_prime(&self) -> usize {
+        1
+    }
+
+    /// Build a (pseudo-)random element of the **full** field GF(q), drawing
+    /// fresh randomness from `next` (each call returns a `u64`).
+    ///
+    /// This is the primitive Cantor–Zassenhaus equal-degree splitting needs over
+    /// an extension field: the splitting polynomial's coefficients must range
+    /// over all of GF(q) = GF(p^k), not merely the prime subfield GF(p).
+    ///
+    /// The default implementation (correct for GF(p)) reduces a single random
+    /// draw modulo `p`. Extension fields override this to populate every
+    /// prime-subfield coordinate independently.
+    fn random_element(&self, next: &mut dyn FnMut() -> u64) -> Self {
+        let p = self.characteristic();
+        // p fits in u64 for the prime fields we factor over; fall back to 2.
+        let p_u = {
+            use rustmath_core::NumericConversion;
+            p.to_usize().unwrap_or(2).max(2) as u64
+        };
+        let v = (next() % p_u) as i64;
+        self.from_int(&Integer::from(v))
+    }
+
     /// Raise to an integer power using square-and-multiply.
     fn pow(&self, exp: &Integer) -> Self {
         let mut result = self.one();
@@ -707,6 +736,25 @@ impl FiniteFieldElement for Gfpn {
     }
     fn order(&self) -> Integer {
         self.p.pow(self.extension_degree() as u32)
+    }
+    fn degree_over_prime(&self) -> usize {
+        self.extension_degree()
+    }
+    fn random_element(&self, next: &mut dyn FnMut() -> u64) -> Self {
+        use rustmath_core::NumericConversion;
+        let n = self.extension_degree();
+        let p_u = self.p.to_usize().unwrap_or(2).max(2) as u64;
+        // Draw each prime-subfield coordinate independently so the element
+        // ranges over all of GF(p^n), not just GF(p).
+        let mut coeffs = vec![Integer::zero(); n];
+        for c in coeffs.iter_mut() {
+            *c = Integer::from((next() % p_u) as i64);
+        }
+        Gfpn {
+            coeffs,
+            p: self.p.clone(),
+            modulus: self.modulus.clone(),
+        }
     }
 }
 

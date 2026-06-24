@@ -52,21 +52,22 @@ fn seed_from_poly<F: FiniteFieldElement>(f: &FFPoly<F>) -> u64 {
     h.wrapping_mul(0x100000001b3) | 1
 }
 
-/// A random field element drawn from the PRNG. Builds the element from a random
-/// integer in `[0, q)` via the prime-subfield embedding for GF(p); for GF(p^n)
-/// it builds each coordinate from `from_int`, which is enough to seed the
-/// splitting polynomials used by equal-degree factorization.
+/// A random polynomial of degree `< deg` whose coefficients range over the
+/// **full** field GF(q) = GF(p^k), drawn from the PRNG.
+///
+/// This is the fix for the GF(p^n) equal-degree split: coefficients must be
+/// arbitrary elements of GF(q), not just the prime subfield GF(p). For GF(p)
+/// (k = 1) `random_element` reduces to the prime-subfield draw; for an
+/// extension it populates every prime-subfield coordinate independently.
 fn random_poly_below_degree<F: FiniteFieldElement>(
     sample: &F,
     deg: usize,
     rng: &mut SplitMix64,
 ) -> FFPoly<F> {
-    let p = sample.characteristic();
-    let p_u = p.to_usize().unwrap_or(2).max(2) as u64;
     let mut coeffs = Vec::with_capacity(deg);
+    let mut next = || rng.next_u64();
     for _ in 0..deg {
-        let v = (rng.next_u64() % p_u) as i64;
-        coeffs.push(sample.from_int(&Integer::from(v)));
+        coeffs.push(sample.random_element(&mut next));
     }
     FFPoly::new(coeffs, sample.clone())
 }
@@ -222,8 +223,12 @@ pub fn equal_degree_factorization<F: FiniteFieldElement>(
     let two = Integer::from(2);
     let q = sample.order();
     let char_is_two = sample.characteristic() == two;
+    // Extension degree n of GF(q) = GF(p^n) over the prime field GF(p).
+    let n_ext = sample.degree_over_prime();
 
-    // exponent (q^d - 1) / 2 for odd characteristic
+    // exponent (q^d - 1) / 2 for odd characteristic, where q = p^n is the FULL
+    // field order (NOT the characteristic p). This is essential over a proper
+    // extension: using p here instead of q fails to split factors.
     let qd = q.pow(d as u32);
     let exp_odd = if char_is_two {
         Integer::zero()
@@ -255,15 +260,20 @@ pub fn equal_degree_factorization<F: FiniteFieldElement>(
         }
 
         let candidate = if char_is_two {
-            // Trace-based splitting for characteristic 2 over GF(q):
-            //   T(a) = a + a^q + a^(q^2) + ... + a^(q^(d-1))  (mod g),
-            // then gcd(T(a), g). Each successive term applies the q-power
-            // Frobenius (raising to q = p^m), which reduces to squaring only
-            // when the base field is the prime field GF(2).
+            // Trace-based splitting for characteristic 2. The roots of g live in
+            // GF(2^(n*d)) (n = [GF(q):GF(2)], d the common factor degree), so we
+            // use the absolute trace down to GF(2):
+            //   Tr(a) = a + a^2 + a^4 + ... + a^(2^(n*d - 1))  (mod g),
+            // i.e. (n*d) terms, accumulated with (n*d - 1) repeated squarings.
+            // gcd(Tr(a), g) then splits g, because Tr(a) lands in GF(2) at each
+            // root and the random a takes value 0 at roughly half of them.
+            // NOTE: squaring count is n*d, NOT d — tracing only to GF(q) (d-1
+            // q-power steps) does not map into GF(2) and fails to split.
+            let squarings = n_ext * d;
             let mut t = a.rem(&g).expect("nonzero");
             let mut acc = t.clone();
-            for _ in 1..d {
-                t = t.pow_mod(&q, &g).expect("monic divisor"); // t := t^q mod g
+            for _ in 1..squarings {
+                t = t.mul(&t).rem(&g).expect("monic divisor"); // t := t^2 mod g
                 acc = acc.add(&t);
             }
             acc.rem(&g).expect("nonzero")
@@ -468,11 +478,26 @@ mod tests {
         assert_eq!(m3.0, poly(&[1, 1], 5));
     }
 
-    // FIXME(WP-GFPN): equal-degree splitting over a proper extension field GF(p^n)
-    // is buggy (factoring over GF(4) here fails). GF(p) factoring works; this
-    // extension-field path needs the splitting polynomial drawn from the full
-    // field GF(q), not the prime subfield. Ignored until fixed.
-    #[ignore]
+    // Helper: build a Gfpn element in GF(p^n) from low-degree-first coefficients.
+    fn gfpn(coeffs: &[i64], p: i64, modu: &[i64]) -> Gfpn {
+        Gfpn::new(
+            coeffs.iter().map(|&v| Integer::from(v)).collect(),
+            Integer::from(p),
+            modu.iter().map(|&v| Integer::from(v)).collect(),
+        )
+    }
+
+    /// Multiply a list of (factor, mult) pairs over an arbitrary finite field.
+    fn product_gfpn(factors: &[(FFPoly<Gfpn>, usize)], sample: &Gfpn) -> FFPoly<Gfpn> {
+        let mut acc = FFPoly::one(sample.clone());
+        for (g, m) in factors {
+            for _ in 0..*m {
+                acc = acc.mul(g);
+            }
+        }
+        acc
+    }
+
     #[test]
     fn test_factor_over_gfpn() {
         // Factor over GF(2^2). Modulus x^2 + x + 1; let w be a root (omega).
@@ -505,6 +530,82 @@ mod tests {
         for (g, _) in &factors {
             assert_eq!(g.degree(), Some(1));
             assert!(is_irreducible(g));
+        }
+    }
+
+    #[test]
+    fn test_factor_over_gf9_odd() {
+        // Odd-characteristic extension GF(3^2) = GF(9), modulus x^2 + 1.
+        // Build f(y) = (y - a)(y - b) with two DISTINCT elements of GF(9):
+        //   a = i (the root of x^2+1), b = 1 + i.
+        let p = 3;
+        let modu = [1, 0, 1]; // x^2 + 1
+        let zero = gfpn(&[0], p, &modu);
+        let one = zero.one();
+        let i = gfpn(&[0, 1], p, &modu); // x  (a root of x^2+1)
+        let b = i.add(&one); // 1 + i
+
+        let ffp = |coeffs: Vec<Gfpn>| FFPoly::new(coeffs, zero.clone());
+        let lin1 = ffp(vec![i.neg(), one.clone()]); // y - i
+        let lin2 = ffp(vec![b.neg(), one.clone()]); // y - (1+i)
+        let f = lin1.mul(&lin2);
+
+        let (unit, factors) = factor(&f);
+        assert!(unit.is_one());
+        let recon = product_gfpn(&factors, &zero).scalar_mul(&unit);
+        assert_eq!(recon, f);
+        assert_eq!(factors.len(), 2);
+        for (g, _) in &factors {
+            assert_eq!(g.degree(), Some(1));
+            assert!(is_irreducible(g));
+        }
+        // both roots recovered: f vanishes at i and at b
+        assert!(f.evaluate(&i).is_zero());
+        assert!(f.evaluate(&b).is_zero());
+    }
+
+    #[test]
+    fn test_split_irreducible_over_extension_gf8() {
+        // The "root of g in GF(p^M)" operation P2 needs: a cubic that is
+        // irreducible over GF(2) splits into 3 distinct LINEAR factors over
+        // GF(2^3) = GF(8) (since 3 | 3, the field contains all its roots).
+        //
+        // g(y) = y^3 + y + 1 is irreducible over GF(2). Over GF(8) it has 3
+        // distinct roots (a primitive element and its Frobenius conjugates),
+        // so it must factor into 3 linear factors.
+        let p = 2;
+        let modu = [1, 1, 0, 1]; // x^3 + x + 1, irreducible over GF(2) -> GF(8)
+        let zero = gfpn(&[0], p, &modu);
+        let one = zero.one();
+        let ffp = |coeffs: Vec<Gfpn>| FFPoly::new(coeffs, zero.clone());
+
+        // g(y) = y^3 + y + 1 with coefficients in GF(8) (all in the prime field)
+        let g = ffp(vec![one.clone(), one.clone(), zero.clone(), one.clone()]);
+
+        let (unit, factors) = factor(&g);
+        assert!(unit.is_one());
+        let recon = product_gfpn(&factors, &zero).scalar_mul(&unit);
+        assert_eq!(recon, g);
+        // exactly 3 distinct linear factors
+        assert_eq!(factors.len(), 3, "expected 3 linear factors, got {:?}", factors);
+        for (h, m) in &factors {
+            assert_eq!(h.degree(), Some(1));
+            assert_eq!(*m, 1);
+            assert!(is_irreducible(h));
+        }
+        // the roots: a linear factor y - r means r = -(constant); each must be a
+        // genuine root of g, and all three must be distinct.
+        let mut roots: Vec<Gfpn> = Vec::new();
+        for (h, _) in &factors {
+            // h = c0 + c1*y, monic => c1 = 1, root r = -c0
+            let r = h.coeffs()[0].neg();
+            assert!(g.evaluate(&r).is_zero(), "{:?} is not a root of g", r);
+            roots.push(r);
+        }
+        for a in 0..roots.len() {
+            for b2 in (a + 1)..roots.len() {
+                assert!(roots[a] != roots[b2], "roots not distinct");
+            }
         }
     }
 }
