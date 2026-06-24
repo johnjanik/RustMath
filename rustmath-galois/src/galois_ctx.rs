@@ -245,6 +245,18 @@ pub struct GaloisCtx {
 }
 
 impl GaloisCtx {
+    /// The defining polynomial `f` (little-endian integer coefficients, monic).
+    pub fn f_coeffs(&self) -> &[Integer] {
+        &self.f
+    }
+
+    /// The mod-`p` defining polynomial `g_i` of the `i`-th factor (its `GF(p^d)`
+    /// modulus): little-endian, length `d+1`, monic, coeffs in `[0, p)`. Used by
+    /// the common-ring embedding to place each factor's roots into `Z_{p^M}`.
+    pub fn factor_gf_modulus(&self, i: usize) -> &[Integer] {
+        &self.rings[i].gf_modulus
+    }
+
     /// The chosen good prime.
     pub fn prime(&self) -> i64 {
         self.p
