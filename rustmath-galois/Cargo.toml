@@ -12,6 +12,7 @@ rustmath-rationals = { path = "../rustmath-rationals" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
 rustmath-groups = { path = "../rustmath-groups" }
 rustmath-numberfields = { path = "../rustmath-numberfields" }
+rustmath-finitefields = { path = "../rustmath-finitefields" }
 num-traits = { workspace = true }
 
 [features]

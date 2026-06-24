@@ -37,6 +37,7 @@
 
 pub mod deg24;
 pub mod descent;
+pub mod galois_ctx;
 pub mod labels;
 pub mod perm;
 pub mod resolvent_eval;
@@ -44,5 +45,6 @@ pub mod short_coset;
 pub mod subgroups;
 
 pub use descent::{galois_group, Config, GaloisResult};
+pub use galois_ctx::{build_ctx, galois_ctx, GaloisCtx, PadicElt};
 pub use labels::{identify, NamedGroup};
 pub use short_coset::{conjugation_perm, descent_impossible, short_coset_count, short_cosets};
