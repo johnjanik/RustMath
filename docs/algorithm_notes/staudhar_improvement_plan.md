@@ -33,6 +33,13 @@ Reuse `rustmath_polynomials::root_label::padic_roots` + `zp_hensel`; extend to t
 unramified-extension case (roots of the irreducible mod-p factors lifted into
 `GF(p^d)` then Hensel-lifted). **This is what makes short cosets usable at deg 24.**
 
+### P1.5 — **GFPN extension-field factoring fix** (newly-found prerequisite for P2)
+P2's common-ring embedding finds roots of `g_i` in `GF(p^M)` by factoring over that
+extension — which hits the **known-broken** `rustmath-finitefields` GF(pⁿ) equal-degree
+split (Wave-1 `test_factor_over_gfpn` is `#[ignore]`'d: it draws the splitting element
+from the prime subfield `GF(p)` not the full `GF(q)`). Symptom in P2: `root_in_gfpm`
+returns `None` and the suite runs 617 s (pathological retry). **Fix this first**, then P2.
+
 ### P2 — separable **relative invariants** (not absolute subset-sum resolvents)
 For `Stab_G(I)=H`, build `I` from group/block structure (note §Stage 3):
 block sums `S_i=α_{i,0}+α_{i,1}`, block discriminants `D_i=(α_{i,0}-α_{i,1})²`,
