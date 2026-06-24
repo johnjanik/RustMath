@@ -36,6 +36,7 @@ pub mod panayi;
 pub mod polred;
 pub mod ramification;
 pub mod round2;
+pub mod s_unit_gens;
 pub mod s_units;
 pub mod units;
 #[derive(Debug, Error)]
