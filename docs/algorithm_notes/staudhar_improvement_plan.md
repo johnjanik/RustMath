@@ -41,9 +41,16 @@ skip every larger overgroup). Result on 24T2672: `unique_t=Some(2672)`, `min_acc
 to reject), in **~44s** (was >300s). The confidence certificate is sound; the residual false-accept
 risk (a strictly-smaller group accepting via a non-separable invariant) is surfaced by the flag.
 
-**Only remaining cost floor:** the one-time M=12 common-ring `embed_roots` (~26s) — a P2-embedding
-optimization (faster Cantor–Zassenhaus / Hensel over GF(p^M)), independent of the descent logic.
-P4 (Tschirnhaus) / P5 (block-(B,V,[a]) shortcut) remain optional sharpeners for harder cases.
+**Pipeline integration + perf (efab747, 63d18b8):** `narrow_degree24_short` is wired into the
+`rustmath-igp24` CLI as `--galois-short` (emits prime, σ cycle type, candidate sizes, `min_accepted_t`,
+`confident`, `unique_t`) — the native replacement for the OSCAR oracle. **In release it runs on
+24T2672 in ~5s** (`confident:true, unique_t:2672`). The earlier "~26s embed / ~44s total" were
+**debug-mode** (`cargo test`, unoptimized); release was always <10s, so no embed rewrite was needed.
+Investigated minimising the embedding degree `M` (M=2 prime ⇒ embed ~80ms) but it **regresses** the
+descent (large `|C(σ)|` breaks fast-accept ⇒ slow exhaustive fall-through), so prime selection keeps
+the exhaustible-small-`|C(σ)|` choice. Kept a robustness fix: alignment enumeration is now bounded
+(no `perms_of(m)` OOM on high-multiplicity cycle types). P4 (Tschirnhaus) / P5 (block-(B,V,[a])
+shortcut) remain optional sharpeners for harder targets.
 
 ## Build order (each piece is testable on its own)
 
