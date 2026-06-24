@@ -44,6 +44,7 @@ members = [
     "rustmath-quadraticforms",
     "rustmath-numberfields",
     "rustmath-functionfields",
+    "rustmath-galois",
     "rustmath-manifolds",
     "rustmath-modular",
     "rustmath-monoids",
