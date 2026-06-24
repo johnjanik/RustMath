@@ -14,6 +14,19 @@
 > *directed module-hitting*, not disc. NB: disc only matters for *contested* pairs; open (k=0)
 > pairs score 1.0 regardless, so this is a secondary lever behind open-pair harvesting (105
 > sunit pairs banked so far with v1).
+>
+> **2-ADIC CONDITIONING ALSO TESTED (2026-06-24, `sunit_2adic.sage`) — also does not help here.**
+> Implemented the local-square-at-2 condition via Hilbert symbols (`K.hilbert_symbol`) and ranked
+> dim-4 hits by the 2-adic part of the EXACT relative disc. On 12T34: 2 is *unramified* in K
+> (𝔭|2 have e=1, f=6), and the **2-part of `N(𝔡_{L/K})` is structurally fixed at exponent 24**
+> (≈7.2 digits) across *all* 4 dim-4 hits — the Hilbert constraint has rank 14/15, so the
+> local-square-at-2 sublattice is essentially trivial and **no nontrivial dim-4 γ is unramified
+> at 2** (0/4). 2-adic conditioning is *incompatible* with the dim-4 module on this base.
+> Decomposing `log10|D_L| = 33.4 = D_K²(26.2) + 2-part(7.2) + odd(≈0)`: the **dominant, binding
+> lever is a smaller-disc base field** (D_K enters *squared*) — the note's Layer-1 ("smaller top
+> fields"), NOT LLL or 2-adic conditioning. To beat KLPB (28–32) on a *contested* (B,V,r), pull a
+> smaller-|D_K| field of the target top group `12Tj` (LMFDB), since `26.2` of the `33.4` digits is
+> `D_K²`. **Bottom line for the S-unit disc lever: it's base selection, not the squareclass γ.**
 
 an LLL-on-log-lattice/Buchmann unit routine for S-unit computation should be a **bounded (S)-unit squareclass engine**, not a full general-purpose class-field package at first.
 
