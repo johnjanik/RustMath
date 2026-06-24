@@ -258,45 +258,45 @@ fn lcm_of(ct: &[usize]) -> usize {
     ct.iter().fold(1usize, |a, &b| a / gcd(a, b.max(1)) * b.max(1))
 }
 
-/// Centraliser cap for prime selection: a σ whose centraliser exceeds this makes
-/// the per-candidate alignment family too large to enumerate exhaustively within
-/// the default budget, so we avoid such primes when an exhaustible one exists.
+/// Centraliser cap for prime selection. A σ whose centraliser exceeds this makes
+/// the per-candidate alignment family too large for fast-accept to land on the
+/// conjugate equal to `Gal(f)` within a few tries (and too large to exhaust for a
+/// sound reject), so we avoid such primes when an exhaustible one exists.
 const CENTRALIZER_CAP: u128 = 2048;
 
-/// Choose the prime whose Frobenius σ best supports the short-coset test. Two
-/// costs compete: the one-time common-ring embedding (cheaper for small
-/// `M = lcm(cycle lengths)` and small prime), and the per-candidate alignment
-/// enumeration (cheaper, and exhaustible — hence soundly able to *reject* — for
-/// small centraliser `|C(σ)|`). We therefore prefer, lexicographically:
-/// `(|C(σ)| > CAP , M , prime)`:
-///   1. first restrict to primes whose alignment family is exhaustible (`≤ CAP`),
-///      so rejection is sound and cheap;
-///   2. among those, minimise the embedding degree `M`;
-///   3. then minimise the prime magnitude (faster `GF(p^M)` arithmetic / embed).
-/// If no prime is exhaustible, we still return the least-`M`/least-prime one (the
-/// run will then mostly *keep* candidates — sound, just less narrowing).
+/// Choose the prime whose Frobenius σ best supports the short-coset test. Two costs
+/// compete: the one-time `GF(p^M)` common-ring embedding (cheaper for small
+/// `M = lcm(cycle lengths)`), and the per-candidate alignment family `|C(σ)|`.
+/// CRUCIALLY, a SMALL `|C(σ)|` is load-bearing: fast-accept must hit the alignment
+/// whose conjugate equals `Gal(f)` within a few tries, which only happens when the
+/// σ-short family is small — a large `|C(σ)|` (typical of small-M, high-multiplicity
+/// cycle types) makes fast-accept fall through to the slow exhaustive path. So we
+/// prefer lexicographically `(|C(σ)| > CAP, M, prime)`: first restrict to
+/// exhaustible σ (`≤ CAP`), then minimise the embedding degree `M`, then the prime.
+/// (Measured: minimising `M` alone — e.g. an M=2 prime with `|C(σ)| ~ 1e11` — drops
+/// the embed to ~80 ms but regresses the descent loop to minutes; the exhaustible
+/// `|C(σ)|` is the better global choice even when its `M` (and embed) is larger.)
 fn pick_min_centralizer_prime(f: &[Integer], prime_limit: i64) -> Option<i64> {
     // (over_cap, M, prime) — smaller is better lexicographically.
     let mut best: Option<(bool, usize, i64)> = None;
     let mut scanned = 0usize;
     for p in small_primes(prime_limit) {
-        if scanned >= 40 {
+        if scanned >= 60 {
             break;
         }
         if let Some(ctx) = crate::galois_ctx::build_ctx(f, p, 2) {
             scanned += 1;
             let ct = cycle_type(ctx.frobenius());
-            let c = centralizer_order(&ct);
-            let key = (c > CENTRALIZER_CAP, lcm_of(&ct), p);
-            let better = match best {
-                Some(b) => key < b,
-                None => true,
-            };
-            if better {
+            let m = lcm_of(&ct);
+            if m < 2 {
+                continue; // σ = identity carries no Frobenius information
+            }
+            let key = (centralizer_order(&ct) > CENTRALIZER_CAP, m, p);
+            if best.map_or(true, |b| key < b) {
                 best = Some(key);
             }
             // Exhaustible and small M ⇒ near-ideal; stop scanning early.
-            if matches!(best, Some((false, m, _)) if m <= 12) {
+            if matches!(best, Some((false, mm, _)) if mm <= 12) {
                 break;
             }
         }
@@ -390,10 +390,22 @@ fn enumerate_alignments(sigma: &Perm, s: &Perm, budget: usize) -> (Vec<Perm>, bo
     // of σ-cycles -> s-cycles of that length [count! options], and (b) every cyclic
     // rotation of each matched s-cycle [len^count options]. The full alignment set
     // is the Cartesian product of the length classes' partial-alignment lists.
+    // Bound each length-class's partial-alignment list by `budget`: a class with
+    // many equal-length cycles has count!·len^count alignments (e.g. 10 two-cycles
+    // ⇒ 10!·2^10 ≈ 3.7e9), which must NOT be materialised. We cap generation so the
+    // whole enumeration stays O(budget); if any class is truncated the family is
+    // non-exhaustive (⇒ the caller soundly *keeps* rather than rejects).
+    let mut class_truncated = false;
     let per_class: Vec<Vec<Vec<(usize, usize)>>> = sig_by_len
         .iter()
         .zip(s_by_len.iter())
-        .map(|((_, sv), (_, tv))| class_partial_alignments(sv, tv))
+        .map(|((_, sv), (_, tv))| {
+            let (alns, exh) = class_partial_alignments(sv, tv, budget.max(1));
+            if !exh {
+                class_truncated = true;
+            }
+            alns
+        })
         .collect();
 
     // Cartesian product across classes, with a budget cutoff.
@@ -435,6 +447,9 @@ fn enumerate_alignments(sigma: &Perm, s: &Perm, budget: usize) -> (Vec<Perm>, bo
     if results.len() >= budget && total > results.len() {
         exhaustive = false;
     }
+    if class_truncated {
+        exhaustive = false;
+    }
     (results, exhaustive)
 }
 
@@ -444,11 +459,12 @@ fn enumerate_alignments(sigma: &Perm, s: &Perm, budget: usize) -> (Vec<Perm>, bo
 fn class_partial_alignments(
     sig: &[Vec<usize>],
     s: &[Vec<usize>],
-) -> Vec<Vec<(usize, usize)>> {
+    cap: usize,
+) -> (Vec<Vec<(usize, usize)>>, bool) {
     let m = sig.len();
     let mut out: Vec<Vec<(usize, usize)>> = Vec::new();
     if m == 0 {
-        return out;
+        return (out, true);
     }
     let cyc_len = sig[0].len();
     // rotations of each s-cycle (precomputed)
@@ -460,11 +476,19 @@ fn class_partial_alignments(
                 .collect()
         })
         .collect();
-    for perm in perms_of(m) {
+    // Lazily enumerate cycle-bijections (lex permutations of 0..m) and rotations,
+    // stopping at `cap`. NEVER materialise all m! permutations (m can be ~10+).
+    let mut perm: Vec<usize> = (0..m).collect();
+    let mut exhaustive = true;
+    'outer: loop {
         // perm[i] = index of the s-cycle matched to σ-cycle i.
         let rot_counts: Vec<usize> = (0..m).map(|i| rotations[perm[i]].len().max(1)).collect();
         let rot_total: usize = rot_counts.iter().product::<usize>().max(1);
         for rcode in 0..rot_total {
+            if out.len() >= cap {
+                exhaustive = false;
+                break 'outer;
+            }
             let mut code = rcode;
             let mut pairs: Vec<(usize, usize)> = Vec::with_capacity(m * cyc_len);
             for i in 0..m {
@@ -480,34 +504,25 @@ fn class_partial_alignments(
             }
             out.push(pairs);
         }
-    }
-    out
-}
-
-/// Lexicographic enumeration of all permutations of `0..m`.
-fn perms_of(m: usize) -> Vec<Vec<usize>> {
-    let mut out = Vec::new();
-    let mut p: Vec<usize> = (0..m).collect();
-    loop {
-        out.push(p.clone());
+        // advance perm to the next lex permutation; break when exhausted.
         if m < 2 {
             break;
         }
         let mut i = m - 1;
-        while i > 0 && p[i - 1] >= p[i] {
+        while i > 0 && perm[i - 1] >= perm[i] {
             i -= 1;
         }
         if i == 0 {
             break;
         }
         let mut j = m - 1;
-        while p[j] <= p[i - 1] {
+        while perm[j] <= perm[i - 1] {
             j -= 1;
         }
-        p.swap(i - 1, j);
-        p[i..].reverse();
+        perm.swap(i - 1, j);
+        perm[i..].reverse();
     }
-    out
+    (out, exhaustive)
 }
 
 // ---------------------------------------------------------------------------
