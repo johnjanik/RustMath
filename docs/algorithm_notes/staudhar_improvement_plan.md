@@ -32,12 +32,18 @@ selected relative invariant → proof resolvent only at the end`.
   degree-2024 resolvent** (was >300s). ✅ short_cosets primitive (ab7a052) + conjugation
   Frobenius already in.
 
-**Remaining to reach unique-t (tightening, not architecture):** P3's Accept path lacks a
-**separability gate**, so it over-accepts (sound but loose narrowing). Add: establish the
-relative invariant's separability (mod-p collision test / precomputed) so an integer value at
-a short coset is a *simple* root ⇒ genuine descent. Then P4 (Tschirnhaus preselection) and P5
-(block-2 (B,V,[a]) shortcut) sharpen toward unique-t. The >300s→21s architecture win is done;
-unique-t is incremental from here.
+**Unique-t reached on 24T2672** (6feaad0 + 5499fff): instead of a per-candidate separability
+gate (Stab(I)=H is hard to certify at degree 24), the tightening uses the *structure* — Accepted
+= overgroups-of-Gal, Gal always accepts, so the **minimal-order accepted candidate = Gal**.
+Throughput: **fast-accept** (one σ-conjugate eval) + **ascending-order early-stop** (accept Gal,
+skip every larger overgroup). Result on 24T2672: `unique_t=Some(2672)`, `min_accepted_confident=true`
+(rigorous: 2672 is the minimal-order group in its cycle-type class ⇒ no strictly-smaller candidate
+to reject), in **~44s** (was >300s). The confidence certificate is sound; the residual false-accept
+risk (a strictly-smaller group accepting via a non-separable invariant) is surfaced by the flag.
+
+**Only remaining cost floor:** the one-time M=12 common-ring `embed_roots` (~26s) — a P2-embedding
+optimization (faster Cantor–Zassenhaus / Hensel over GF(p^M)), independent of the descent logic.
+P4 (Tschirnhaus) / P5 (block-(B,V,[a]) shortcut) remain optional sharpeners for harder cases.
 
 ## Build order (each piece is testable on its own)
 
