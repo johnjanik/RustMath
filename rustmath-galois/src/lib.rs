@@ -40,7 +40,9 @@ pub mod descent;
 pub mod labels;
 pub mod perm;
 pub mod resolvent_eval;
+pub mod short_coset;
 pub mod subgroups;
 
 pub use descent::{galois_group, Config, GaloisResult};
 pub use labels::{identify, NamedGroup};
+pub use short_coset::{conjugation_perm, descent_impossible, short_coset_count, short_cosets};
