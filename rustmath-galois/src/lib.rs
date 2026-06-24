@@ -37,6 +37,7 @@
 
 pub mod deg24;
 pub mod descent;
+pub mod descent24;
 pub mod galois_ctx;
 pub mod relative_invariant;
 pub mod labels;
