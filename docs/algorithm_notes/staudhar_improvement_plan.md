@@ -22,6 +22,23 @@ Replace `deg24.rs`'s absolute resolvent with the OSCAR/Magma pipeline:
 `Frobenius → subfields/blocks → wreath fingerprint → short cosets → Tschirnhaus-
 selected relative invariant → proof resolvent only at the end`.
 
+## STATUS (2026-06-24): P1, P1.5, P2, P3 DONE and merged to integrate-lava-galois
+
+- **P1** (5339327) GaloisCtx with explicit Frobenius — 8 tests. ✅
+- **P1.5** (a1300d5) GFPN extension-field factoring fix (discovered prerequisite) — 52 tests. ✅
+- **P2** (da9bdbf) common-ring Z_{p^M} embedding + separable relative invariants — 40 tests,
+  0.04s (was 617s once GFPN fixed). ✅
+- **P3** (a6a59c1) short-coset degree-24 descent — **24T2672 narrows in ~21s, SOUND, no
+  degree-2024 resolvent** (was >300s). ✅ short_cosets primitive (ab7a052) + conjugation
+  Frobenius already in.
+
+**Remaining to reach unique-t (tightening, not architecture):** P3's Accept path lacks a
+**separability gate**, so it over-accepts (sound but loose narrowing). Add: establish the
+relative invariant's separability (mod-p collision test / precomputed) so an integer value at
+a short coset is a *simple* root ⇒ genuine descent. Then P4 (Tschirnhaus preselection) and P5
+(block-2 (B,V,[a]) shortcut) sharpen toward unique-t. The >300s→21s architecture win is done;
+unique-t is incremental from here.
+
 ## Build order (each piece is testable on its own)
 
 ### P1 — p-adic `GaloisCtx` (the keystone primitive)
