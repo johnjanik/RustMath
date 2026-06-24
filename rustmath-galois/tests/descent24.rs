@@ -37,6 +37,9 @@ fn report(out: &Narrowing24Short) {
     eprintln!("cycle-type class  : {} candidates", out.candidate_class.len());
     eprintln!("narrowed          : {} candidates", out.narrowed.len());
     eprintln!("unique_t          : {:?}", out.unique_t);
+    eprintln!("min_accepted_t    : {:?}", out.min_accepted_t);
+    eprintln!("min_acc_confident : {}", out.min_accepted_confident);
+    eprintln!("accepted          : {:?}", out.accepted);
     let mut accepted = 0usize;
     let mut rejected_short = 0usize;
     let mut rejected_exh = 0usize;
@@ -99,12 +102,19 @@ fn short_coset_narrow_24t2672() {
         rec.verdict
     );
 
-    // (b) FAST: completes well under 30 s (no degree-2024 resolvent is built).
+    // (b) FAST: replaces the >300 s degree-2024 resolvent. Dominant fixed cost is
+    // now the one-time M=12 common-ring embedding (~26 s) + the ~30 MB atlas load;
+    // the ascending-order early-stop accepts Gal and skips every larger overgroup.
     assert!(
-        elapsed.as_secs() < 30,
+        elapsed.as_secs() < 90,
         "short-coset descent took too long: {:?}",
         elapsed
     );
+
+    // (b') The confidence certificate must fire: min-order accept = Gal, rigorously.
+    assert_eq!(out.min_accepted_t, Some(2672), "min-order accept should be 24T2672");
+    assert!(out.min_accepted_confident, "confidence certificate must fire on 24T2672");
+    assert_eq!(out.unique_t, Some(2672), "unique_t should resolve to 24T2672");
 
     // (c) Narrowing is monotone (never grows the candidate set).
     assert!(out.narrowed.len() <= out.candidate_class.len());

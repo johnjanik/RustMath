@@ -549,6 +549,31 @@ fn test_candidate(
         return (CandidateVerdict::ShortCosetEmpty, 0);
     }
 
+    // FAST-ACCEPT (throughput): a *single* rational invariant value certifies
+    // `Gal(f) ⊆ conj(T)`, so before the expensive exhaustive σ-short enumeration
+    // (which conjugates the whole |T|-element group once per alignment — O(|C(σ)|·
+    // #matching·|T|)), try just ONE σ-conjugate. For the true group this returns
+    // immediately (one conjugation + a short (β,e) ladder), so the ascending-order
+    // early-stop reaches `Gal(f)` cheaply. Only candidates that do NOT accept fall
+    // through to the exhaustive reject path.
+    {
+        let s = s_candidates[0];
+        let (rhos, _ex) = enumerate_alignments(sigma, s, opts.alignment_budget.min(64).max(1));
+        let betas = weight_vectors(n);
+        for rho in rhos.iter().take(4) {
+            let mut t_ctx = perm::conjugate(rho, t_elems);
+            t_ctx.sort();
+            for beta in &betas {
+                for e in [2u32, 3] {
+                    let val = invariant_value(ring, roots, beta, e, &t_ctx, &perm::identity(n));
+                    if let ValueClass::Rational(m) = classify_value(ring, &val, &opts.height_bound) {
+                        return (CandidateVerdict::Accepted(m), 1);
+                    }
+                }
+            }
+        }
+    }
+
     // Enumerate σ-short alignments ρ (with ρ⁻¹σρ = s) across all such s, bounded,
     // and **dedup by the resulting conjugate** `T_ctx = ρTρ⁻¹`. Many ρ give the
     // same `T_ctx` (those differing by N(T)); the *distinct* `T_ctx ∋ σ` are
@@ -778,40 +803,57 @@ pub fn narrow_degree24_short_with(
             None => (Vec::new(), 0, None),
         };
 
-    // --- Stage 3: per-candidate short-coset descent ------------------------
+    // --- Stage 3: per-candidate short-coset descent, ASCENDING by group order
+    // with EARLY STOP at the first Accept (throughput pass).
+    //
+    // The first accept in ascending-order is the *minimal-order* accept = Gal(f).
+    // Every candidate of strictly smaller order is tested before it, so the
+    // confidence certificate ("all strictly-smaller candidates definitively
+    // rejected") is decided by what we see up to that point. Overgroups
+    // (order > |Gal|) are never materialised or tested — that is the speed win
+    // (degree-24 overgroups are the large, expensive ones; we skip them all).
     let mut steps: Vec<StepRecord> = Vec::new();
     let mut narrowed: Vec<usize> = Vec::new();
     let mut accepted: Vec<(usize, usize)> = Vec::new(); // (t, group_order)
 
-    for &t in &candidate_class {
-        // Locate the atlas group.
-        let g = db.groups.iter().find(|g| g.t == t);
-        let g = match g {
+    // Sort candidates ascending by atlas group order (cheap metadata; no closure).
+    // Precompute t -> order once (the atlas has ~25k groups; avoid a linear scan
+    // per candidate).
+    let order_map: std::collections::HashMap<usize, Integer> =
+        db.groups.iter().map(|g| (g.t, g.order.clone())).collect();
+    let big = Integer::from(i64::MAX);
+    let mut ordered: Vec<usize> = candidate_class.clone();
+    ordered.sort_by(|&a, &b| {
+        let oa = order_map.get(&a).unwrap_or(&big);
+        let ob = order_map.get(&b).unwrap_or(&big);
+        oa.cmp(ob).then(a.cmp(&b))
+    });
+
+    let mut stopped = false;
+    for t in ordered {
+        // Past the minimal accept: it can only be an overgroup of Gal — keep it
+        // untested (sound), never spend the cost of materialising/testing it.
+        if stopped {
+            narrowed.push(t);
+            steps.push(StepRecord { t, order: None, short_alignments: 0,
+                verdict: CandidateVerdict::Kept(KeptReason::TooLarge) });
+            continue;
+        }
+        let g = match db.groups.iter().find(|g| g.t == t) {
             Some(g) => g,
             None => {
-                // Not in db (shouldn't happen for a cts candidate): keep (sound).
                 narrowed.push(t);
-                steps.push(StepRecord {
-                    t,
-                    order: None,
-                    short_alignments: 0,
-                    verdict: CandidateVerdict::Kept(KeptReason::TooLarge),
-                });
+                steps.push(StepRecord { t, order: None, short_alignments: 0,
+                    verdict: CandidateVerdict::Kept(KeptReason::TooLarge) });
                 continue;
             }
         };
-
-        // Without a usable ctx/embedding we cannot evaluate invariants: keep all.
         let rr = match &ring_roots {
             Some(rr) => rr,
             None => {
                 narrowed.push(t);
-                steps.push(StepRecord {
-                    t,
-                    order: None,
-                    short_alignments: 0,
-                    verdict: CandidateVerdict::Kept(KeptReason::TooLarge),
-                });
+                steps.push(StepRecord { t, order: None, short_alignments: 0,
+                    verdict: CandidateVerdict::Kept(KeptReason::TooLarge) });
                 continue;
             }
         };
@@ -828,11 +870,12 @@ pub fn narrow_degree24_short_with(
             }
         };
 
-        // Record accepts (with order) for the minimal-order-accepted selection.
+        // First Accept (smallest order) = minimal-order accept = Gal(f). Record it
+        // and STOP: any later candidate is a larger overgroup, irrelevant to unique-t.
         if let (CandidateVerdict::Accepted(_), Some(ord)) = (&verdict, order) {
             accepted.push((t, ord));
+            stopped = true;
         }
-        // Keep the candidate unless we soundly rejected it.
         let keep = !matches!(
             verdict,
             CandidateVerdict::ShortCosetEmpty | CandidateVerdict::RejectedExhaustive
@@ -888,6 +931,30 @@ mod tests {
     use super::*;
     use crate::galois_ctx::build_ctx;
     use crate::perm::{from_cycles, group_closure, sym_elements};
+
+    #[test]
+    #[ignore]
+    fn probe_atlas_2672_test_candidate() {
+        use crate::galois_ctx::build_ctx;
+        use crate::relative_invariant::embed_roots;
+        use rustmath_groups::transitive24::Db;
+        use std::time::Instant;
+        let f = ints(&[3,0,-75,0,537,0,-873,0,789,0,-1212,0,2551,0,-2137,0,117,0,322,0,27,0,-13,0,1]);
+        let ctx = build_ctx(&f, 17, 8).expect("ctx");
+        let sigma = ctx.frobenius().clone();
+        let (ring, roots) = embed_roots(&ctx).expect("embed");
+        let mut db = Db::load_default().expect("atlas");
+        let opts = Options::default();
+        // time test_candidate on the true group 24T2672 and a couple of small candidates
+        for &t in &[2672usize] {
+            let g = db.groups.iter().find(|g| g.t == t).unwrap();
+            let elems = atlas_group_elements(g, opts.enum_cap).expect("materialise");
+            let n0 = Instant::now();
+            let (v, ex) = test_candidate(&elems, &sigma, &ring, &roots, &opts);
+            eprintln!("24T{} order={} verdict={:?} alignments={} time={:?}", t, elems.len(), v, ex, n0.elapsed());
+        }
+        let _ = &mut db;
+    }
 
     fn step(t: usize, order: Option<usize>, verdict: CandidateVerdict) -> StepRecord {
         StepRecord { t, order, short_alignments: 0, verdict }
