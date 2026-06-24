@@ -15,4 +15,5 @@ rustmath-integers = { path = "../rustmath-integers" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
 rustmath-numberfields = { path = "../rustmath-numberfields" }
 rustmath-groups = { path = "../rustmath-groups" }
+rustmath-galois = { path = "../rustmath-galois" }
 num-bigint = { workspace = true }
