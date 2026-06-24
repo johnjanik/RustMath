@@ -18,6 +18,8 @@ pub mod padic_factor;
 pub mod polynomial;
 pub mod real_roots;
 pub mod resolvent;
+pub mod root_label;
+pub mod tschirnhaus;
 pub mod quotient;
 pub mod roots;
 pub mod univariate;

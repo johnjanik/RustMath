@@ -4,6 +4,8 @@
 //! - qp: p-adic field (field of fractions of zp)
 //! - zp: p-adic integers (ring)
 
+pub mod montes;
+pub mod newton_polygon;
 pub mod padic_integer;
 pub mod padic_rational;
 
@@ -22,6 +24,7 @@ mod tests {
 
         let a = PadicInteger::from_integer(Integer::from(7), p.clone(), precision).unwrap();
 
-        assert_eq!(a.residue(), &Integer::from(7));
+        // residue() is value mod p: 7 mod 5 = 2 (pre-existing test had the wrong expected value).
+        assert_eq!(a.residue(), Integer::from(2));
     }
 }

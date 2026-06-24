@@ -43,6 +43,7 @@ members = [
     "rustmath-ellipticcurves",
     "rustmath-quadraticforms",
     "rustmath-numberfields",
+    "rustmath-functionfields",
     "rustmath-manifolds",
     "rustmath-modular",
     "rustmath-monoids",
