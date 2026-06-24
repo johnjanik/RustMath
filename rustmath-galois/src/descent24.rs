@@ -139,7 +139,26 @@ pub struct Narrowing24Short {
     pub steps: Vec<StepRecord>,
     /// Final narrowed candidate `24Tt` list (Accepted ∪ Kept).
     pub narrowed: Vec<usize>,
-    /// The unique surviving `t` if exactly one remains, else `None`.
+    /// Candidates that **Accepted** (a relative-invariant value was a rational
+    /// integer ⇒ `Gal(f) ⊆ conj(t)`), as `(t, group_order)`. Every accepted `t`
+    /// is an overgroup of `Gal(f)`; `Gal(f)` itself always accepts (its invariant
+    /// is Galois-fixed), so the **minimum-order** accepted candidate equals
+    /// `Gal(f)` — *unless* a strictly smaller group false-accepts via a
+    /// non-separable invariant.
+    pub accepted: Vec<(usize, usize)>,
+    /// The minimal-order accepted candidate — the Stauduhar "unique t" under the
+    /// separability assumption (no smaller group false-accepts). `None` if nothing
+    /// accepted. This is the engine's best single-`t` answer.
+    pub min_accepted_t: Option<usize>,
+    /// `true` iff `min_accepted_t` is **rigorously** `Gal(f)`: every candidate of
+    /// strictly smaller group order was *definitively rejected*
+    /// (`ShortCosetEmpty`/`RejectedExhaustive`). Then `min_accepted_t` is the
+    /// smallest non-rejected group, which must equal `Gal(f)` (Gal cannot be
+    /// rejected — its invariant is Galois-fixed). When `false`, `min_accepted_t`
+    /// is the best guess but a strictly smaller candidate was left undecided.
+    pub min_accepted_confident: bool,
+    /// The unique surviving `t`: the minimal-order accepted candidate if any
+    /// accepted, else the lone survivor of `narrowed` if it is a singleton.
     pub unique_t: Option<usize>,
 }
 
@@ -693,6 +712,29 @@ pub fn narrow_degree24_short(f: &[Integer], opts: &Options) -> std::io::Result<N
 }
 
 /// Narrow with caller-supplied (already-loaded) atlas tables.
+/// Select the minimal-order accepted candidate and decide whether it is
+/// **rigorously** `Gal(f)`. `accepted_sorted` is `(t, order)` sorted ascending by
+/// order; returns `(min_accepted_t, confident)`. Confident iff every candidate of
+/// strictly smaller order than the chosen one was definitively rejected — then the
+/// chosen `t` is the smallest non-rejected group, which must be `Gal(f)`.
+fn select_min_accepted(
+    accepted_sorted: &[(usize, usize)],
+    steps: &[StepRecord],
+) -> (Option<usize>, bool) {
+    let min_accepted = accepted_sorted.first().copied();
+    let confident = match min_accepted {
+        Some((_, ord_min)) => steps.iter().all(|s| match s.order {
+            Some(o) if o < ord_min => matches!(
+                s.verdict,
+                CandidateVerdict::ShortCosetEmpty | CandidateVerdict::RejectedExhaustive
+            ),
+            _ => true,
+        }),
+        None => false,
+    };
+    (min_accepted.map(|(t, _)| t), confident)
+}
+
 pub fn narrow_degree24_short_with(
     f: &[Integer],
     opts: &Options,
@@ -739,6 +781,7 @@ pub fn narrow_degree24_short_with(
     // --- Stage 3: per-candidate short-coset descent ------------------------
     let mut steps: Vec<StepRecord> = Vec::new();
     let mut narrowed: Vec<usize> = Vec::new();
+    let mut accepted: Vec<(usize, usize)> = Vec::new(); // (t, group_order)
 
     for &t in &candidate_class {
         // Locate the atlas group.
@@ -785,6 +828,10 @@ pub fn narrow_degree24_short_with(
             }
         };
 
+        // Record accepts (with order) for the minimal-order-accepted selection.
+        if let (CandidateVerdict::Accepted(_), Some(ord)) = (&verdict, order) {
+            accepted.push((t, ord));
+        }
         // Keep the candidate unless we soundly rejected it.
         let keep = !matches!(
             verdict,
@@ -803,11 +850,19 @@ pub fn narrow_degree24_short_with(
 
     narrowed.sort_unstable();
     narrowed.dedup();
-    let unique_t = if narrowed.len() == 1 {
+
+    // Minimal-order accepted candidate = the Galois group (the smallest group
+    // proven to contain Gal(f); Gal accepts and is minimal among its overgroups).
+    // Ties broken by smallest t for determinism.
+    accepted.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
+    let (min_accepted_t, min_accepted_confident) = select_min_accepted(&accepted, &steps);
+
+    // Best single-t answer: the minimal-order accept, else a singleton survivor.
+    let unique_t = min_accepted_t.or(if narrowed.len() == 1 {
         Some(narrowed[0])
     } else {
         None
-    };
+    });
 
     Narrowing24Short {
         sigma_cycle_type,
@@ -816,6 +871,9 @@ pub fn narrow_degree24_short_with(
         candidate_class,
         steps,
         narrowed,
+        accepted,
+        min_accepted_t,
+        min_accepted_confident,
         unique_t,
     }
 }
@@ -830,6 +888,44 @@ mod tests {
     use super::*;
     use crate::galois_ctx::build_ctx;
     use crate::perm::{from_cycles, group_closure, sym_elements};
+
+    fn step(t: usize, order: Option<usize>, verdict: CandidateVerdict) -> StepRecord {
+        StepRecord { t, order, short_alignments: 0, verdict }
+    }
+
+    #[test]
+    fn min_accepted_selection_and_confidence() {
+        // Three accepts: t=10 (order 1152 = Gal), t=20 (order 2304 overgroup),
+        // t=30 (order 5000 overgroup). Smaller candidates all rejected -> confident.
+        let accepted = vec![(10usize, 1152usize), (20, 2304), (30, 5000)];
+        let mut acc = accepted.clone();
+        acc.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
+        let steps = vec![
+            step(5, Some(96), CandidateVerdict::RejectedExhaustive),
+            step(6, Some(576), CandidateVerdict::ShortCosetEmpty),
+            step(10, Some(1152), CandidateVerdict::Accepted(Integer::from(7i64))),
+            step(20, Some(2304), CandidateVerdict::Accepted(Integer::from(3i64))),
+            step(30, Some(5000), CandidateVerdict::Accepted(Integer::from(9i64))),
+        ];
+        let (t, conf) = select_min_accepted(&acc, &steps);
+        assert_eq!(t, Some(10), "minimal-order accept is Gal");
+        assert!(conf, "all strictly-smaller candidates rejected => confident");
+
+        // Now a strictly-smaller candidate is left Kept(Inconclusive) -> NOT confident.
+        let steps2 = vec![
+            step(5, Some(96), CandidateVerdict::RejectedExhaustive),
+            step(7, Some(800), CandidateVerdict::Kept(KeptReason::Inconclusive)),
+            step(10, Some(1152), CandidateVerdict::Accepted(Integer::from(7i64))),
+        ];
+        let (t2, conf2) = select_min_accepted(&acc, &steps2);
+        assert_eq!(t2, Some(10));
+        assert!(!conf2, "a smaller undecided candidate blocks confidence");
+
+        // No accepts -> None, not confident.
+        let (t3, conf3) = select_min_accepted(&[], &steps);
+        assert_eq!(t3, None);
+        assert!(!conf3);
+    }
 
     fn ints(v: &[i64]) -> Vec<Integer> {
         v.iter().map(|&c| Integer::from(c)).collect()
