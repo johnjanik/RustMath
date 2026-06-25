@@ -67,6 +67,32 @@ Numberfields `lib.rs` collects ≤5 `pub mod` lines; groups `lib.rs` ≤2; I mer
    constructed at chosen `r`, `polredabs`-reduced, confirmed by `--galois-short` to be exactly `t` with
    real-root count exactly `r`. **Scale only after this closes.**
 
+## STATUS (2026-06-25)
+
+- **Phase 0 ✅ merged** (f35ef1e): rayclass (PARI-`bnrinit`-validated, incl. signature lever),
+  solvtower (chief series), disc_score. 
+- **Phase 1 ✅ merged** (0af9fea): artin (Artin map / NormGroup / Conductor→disc) + abext.
+  Construction gates pass: cyclic cubic cond 7→disc 49, cyclic quartic cond 5→disc 125, Q(√5)→disc 5,
+  real-place-ramified signature lever. Two tracked defects: (a) Artin map discrete-log is **wrong for
+  ideals with primes outside the Minkowski factor base** (`#[ignore]`'d FIXME); (b) abext realizes
+  **only K=ℚ** (Gaussian periods, prime conductor) + partial Kummer — general relative abelian
+  extensions over K≠ℚ are `ConstructionMethod::Abstract`.
+
+## Phase-2 scoping (the milestone is harder than a driver)
+
+Crossing `open_cells.json` (116,426 cells) with the atlas: **19,911 / 20,405 open `24Tt` are solvable**
+(confirms the thesis) but **0 are abelian** (abelian degree-24 are in LMFDB ⇒ excluded from open). The
+smallest-order solvable open targets are **|G| = 96 = 2⁵·3, all non-abelian** (e.g. 24T87 r=8, 24T127
+r=4, 24T140 r=6). So every milestone candidate is a **multi-layer non-abelian tower**, whose layers
+after the first live over **K ≠ ℚ**. Therefore Phase 2 needs, before the driver:
+
+- **P2a — relative abelian extension over K≠ℚ** (the real ray-class-field construction; abext is ℚ-only)
+  **+ Artin-map completeness** (large-prime principalization — needed for relative conductors/norm groups).
+  This is the CFT crux that the ℚ-specialized Phase-1 abext does not yet provide.
+- **P2b — tower driver** `construct_field(t,r)`: solvtower layers → relative abext per layer (conductor
+  min disc, m_∞ for signature) → compose → polredabs → verify `--galois-short`. **Milestone: one of the
+  |G|=96 targets** (e.g. 24T127 r=4), group + signature confirmed.
+
 ## Execution
 
 I launch each phase's agents in worktrees off `integrate-lava-galois`, validate against PARI + tests,
