@@ -145,9 +145,19 @@ note), `h_K=[3]`, rel disc `d_{F/K}=1`, `polredabs → x⁶−3x⁵+5x⁴−5x³
    `(−23)³ = −12167` via the model-independent invariant `poldisc = d^h·index²` (index ≈ 3.2×10¹⁸ — the
    raw compositum model is highly non-maximal). Replaces the `hcf_qsqrtm23` panic. 4/4 tests green.
    **Note:** the in-repo `polredabs`/`field_discriminant` are too weak to *reduce/identify* a model
-   this large — recorded as a downstream reduction gap (not a §3B blocker). **Step 2 (TODO):** compute
-   `H_d` itself from high-precision `j(τ)` (the `rug`/MPC singular-moduli piece) so the input isn't
-   required; validate the computed `H_{−23}` against `polclass(-23)`.
+   this large — recorded as a downstream reduction gap (not a §3B blocker). ✅ **Step 2 DONE +
+   validated:** `hilbert_class_polynomial(d)` computes `H_d` from high-precision `j(τ) = E₄³/Δ`
+   (`rug`/MPC, `ComplexMPFR`) over the reduced-form CM points, rounding the symmetric functions to
+   integers; `hilbert_class_field(d)` chains it into the Alg 1A assembly. **Validated:** `H_{−23}`
+   matches PARI `polclass(-23)` exactly; `H_{−3}/H_{−4}/H_{−163}` (incl. the `j=−640320³` precision
+   stress) correct; full pipeline field disc `= d^h` for `−23,−31,−47`. **Foundation fixes required
+   en route** (separate commit): `ComplexMPFR::with_val_reals` rounded through `f64` (capped ~53 bits);
+   `RealMPFR::round/floor/ceil` converted through `f64` with a `0` placeholder above `i64::MAX` — both
+   now exact bignum; added `Integer::from_decimal_str`, `RealMPFR::as_float`.
+
+   **Strategic payoff:** an imaginary quadratic with `h=12` has a **degree-24** HCF with generalized-
+   dihedral group `Cl_K ⋊ C₂` — a direct candidate source for open `24Tt` cells (pending a good
+   reduction step for small discriminant).
 4. **Alg 4 — fast ray Artin log** (replaces the per-call `is_principal` regression). Precompute
    factor-base ray logs once; per call: LLL-reduce ideal → factor over base → `Σeᵢℓᵢ − κ(η)`.
 

@@ -26,10 +26,12 @@
 //! `rug`/MPC piece added on top.
 
 use crate::rnfeq::{absolute_defining_polynomial, AbsoluteField};
+use rustmath_complex::mpc::ComplexMPFR;
 use rustmath_integers::Integer;
 use rustmath_polynomials::disc::discriminant as poly_discriminant_fn;
 use rustmath_polynomials::univariate::UnivariatePolynomial;
 use rustmath_rationals::Rational;
+use rustmath_reals::mpfr::RealMPFR;
 
 /// Reduced primitive positive-definite binary quadratic forms `[a, b, c]` of
 /// discriminant `d = b² − 4ac < 0`.
@@ -194,6 +196,112 @@ pub fn hilbert_class_field_from_hcp(
     })
 }
 
+/// Sum of cubes of the divisors of `n` (`σ₃(n)`), for the `E₄` q-series.
+fn sigma3(n: u64) -> Integer {
+    let mut s = Integer::from(0);
+    let mut k = 1u64;
+    while k * k <= n {
+        if n % k == 0 {
+            let d1 = k;
+            let d2 = n / k;
+            s = s + Integer::from(d1).pow(3);
+            if d2 != d1 {
+                s = s + Integer::from(d2).pow(3);
+            }
+        }
+        k += 1;
+    }
+    s
+}
+
+/// `j(τ) = E₄(τ)³ / Δ(τ)` from the q-series, `q = e^{2πiτ}`, truncated at
+/// `nterms` (chosen so `|q|^{nterms} < 2^{-prec}`):
+///   `Δ = q · ∏_{n≥1}(1−qⁿ)²⁴`,  `E₄ = 1 + 240·Σ_{n≥1} σ₃(n) qⁿ`.
+fn j_invariant(q: &ComplexMPFR, one: &ComplexMPFR, prec: u32, nterms: usize) -> ComplexMPFR {
+    let mut qn = q.clone(); // qⁿ, starting at q¹
+    let mut delta_prod = one.clone();
+    let mut e4 = one.clone();
+    for n in 1..=nterms {
+        let factor = (one - &qn).powi(24); // (1−qⁿ)²⁴
+        delta_prod = &delta_prod * &factor;
+        let coeff = ComplexMPFR::with_val_integers(
+            prec,
+            &(Integer::from(240) * sigma3(n as u64)),
+            &Integer::from(0),
+        );
+        e4 = &e4 + &(&coeff * &qn);
+        qn = &qn * q;
+    }
+    let delta = q * &delta_prod;
+    let e4_cubed = e4.powi(3);
+    &e4_cubed / &delta
+}
+
+/// Multiply the polynomial `poly` (coeffs low→high) by `(X − j)`.
+fn mul_linear(poly: &[ComplexMPFR], j: &ComplexMPFR, prec: u32) -> Vec<ComplexMPFR> {
+    let zero = ComplexMPFR::with_val(prec, (0.0, 0.0));
+    let n = poly.len();
+    let mut out = vec![zero; n + 1];
+    for i in 0..n {
+        out[i + 1] = &out[i + 1] + &poly[i]; // X · p_i
+        out[i] = &out[i] - &(j * &poly[i]); // − j · p_i
+    }
+    out
+}
+
+/// Compute the Hilbert class polynomial `H_d ∈ ℤ[X]` for a fundamental
+/// discriminant `d < 0`, by the CM/singular-moduli route: evaluate `j(τ)` at
+/// each reduced-form CM point to high precision and round the symmetric
+/// functions to integers. Returns the coefficients low→high (monic, degree
+/// `h(d)`).
+pub fn hilbert_class_polynomial(d: i64) -> Vec<Integer> {
+    let forms = reduced_forms(d);
+    let absd = -d;
+
+    // Precision (bits): the largest |coeff| of H_d is ~ exp(π√|d| · Σ 1/a).
+    let sum_inv_a: f64 = forms.iter().map(|&(a, _, _)| 1.0 / (a as f64)).sum();
+    let need =
+        std::f64::consts::PI * (absd as f64).sqrt() * sum_inv_a / std::f64::consts::LN_2;
+    let prec: u32 = need.ceil() as u32 + 80; // generous rounding margin
+
+    // q-series length: need |q|^N < 2^-prec with |q| = exp(−π√|d|/a_max).
+    let a_max = forms.iter().map(|&(a, _, _)| a).max().unwrap_or(1);
+    let nterms = (prec as f64 * std::f64::consts::LN_2 * a_max as f64
+        / (std::f64::consts::PI * (absd as f64).sqrt()))
+    .ceil() as usize
+        + 5;
+
+    let pi = RealMPFR::pi(prec);
+    let two_pi = &pi * &RealMPFR::with_val(prec, 2.0);
+    let sqrt_absd = RealMPFR::with_val_integer(prec, &Integer::from(absd)).sqrt();
+    let zero_r = RealMPFR::with_val(prec, 0.0);
+    let one_c = ComplexMPFR::with_val(prec, (1.0, 0.0));
+
+    let mut poly: Vec<ComplexMPFR> = vec![one_c.clone()];
+    for &(a, b, _c) in &forms {
+        // τ = −b/(2a) + i·√|d|/(2a)
+        let tau_re = RealMPFR::with_val_rational(prec, &Rational::new(-b, 2 * a).unwrap());
+        let tau_im = &sqrt_absd / &RealMPFR::with_val(prec, (2 * a) as f64);
+        let tau = ComplexMPFR::with_val_reals(tau_re, tau_im);
+
+        // q = exp(2πiτ)
+        let two_pi_i = ComplexMPFR::with_val_reals(zero_r.clone(), two_pi.clone());
+        let q = (&two_pi_i * &tau).exp();
+
+        let j = j_invariant(&q, &one_c, prec, nterms);
+        poly = mul_linear(&poly, &j, prec);
+    }
+
+    poly.iter().map(|c| c.real_part().round()).collect()
+}
+
+/// Full imaginary-quadratic Hilbert class field of `K = ℚ(√d)` from scratch:
+/// compute `H_d` by CM, then assemble the absolute field via Algorithm 1A.
+pub fn hilbert_class_field(d: i64) -> Result<HilbertClassField, String> {
+    let hcp = hilbert_class_polynomial(d);
+    hilbert_class_field_from_hcp(d, &hcp)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -242,5 +350,40 @@ mod tests {
             .expect("poly disc must be d^h times a perfect square");
         assert_eq!(dfield, Integer::from(-12167));
         assert!(index > Integer::from(1), "the raw compositum model is non-maximal");
+    }
+
+    #[test]
+    fn class_poly_h1_cases() {
+        // h(−3)=h(−4)=1. j(ω)=0, j(i)=1728.  H_d = X − j.
+        assert_eq!(hilbert_class_polynomial(-3), ints(&[0, 1]));
+        assert_eq!(hilbert_class_polynomial(-4), ints(&[-1728, 1]));
+        // d=−163 (h=1): j = −640320³ = −262537412640768000 (precision stress).
+        assert_eq!(
+            hilbert_class_polynomial(-163),
+            ints(&[262537412640768000, 1])
+        );
+    }
+
+    #[test]
+    fn class_poly_m23_matches_polclass() {
+        // CM computation of H_{−23} must match PARI polclass(-23).
+        assert_eq!(
+            hilbert_class_polynomial(-23),
+            ints(&[12771880859375, -5151296875, 3491750, 1])
+        );
+    }
+
+    #[test]
+    fn hilbert_class_field_from_scratch_disc_invariant() {
+        // Full pipeline j(τ) → H_d → absolute HCF; the field discriminant must
+        // be d^h for each (the unramified Hilbert class field). Validates the
+        // CM computation arithmetically without hardcoding each H_d.
+        for &d in &[-23i64, -31, -47] {
+            let hk = hilbert_class_field(d).expect("HCF from scratch");
+            let (dfield, _idx) = hk
+                .field_discriminant()
+                .expect("poldisc = d^h · square");
+            assert_eq!(dfield, Integer::from(d).pow(hk.class_number as u32));
+        }
     }
 }
