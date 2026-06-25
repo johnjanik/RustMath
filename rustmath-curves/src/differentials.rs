@@ -200,10 +200,10 @@ impl<F: Field> HolomorphicDifferentials<F> {
         // Generate a basis (placeholder implementation)
         // For hyperelliptic curves: x^i dx/y for i = 0, ..., g-1
         for i in 0..self.genus {
-            let numerator = if i == 0 {
-                "1/y".to_string()
-            } else {
-                format!("x^{}/y", i)
+            let numerator = match i {
+                0 => "1/y".to_string(),
+                1 => "x/y".to_string(),
+                _ => format!("x^{}/y", i),
             };
             basis.push(DifferentialForm::holomorphic(numerator));
         }

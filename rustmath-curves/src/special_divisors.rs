@@ -604,7 +604,7 @@ mod tests {
             let w = BrillNoetherVariety::new(g, 1, 2);
             // ρ(g,1,2) = g - 2(g-2+1) = g - 2g + 2 = 2 - g
             // For g=2: ρ=0, for g=3: ρ=-1, for g=4: ρ=-2
-            let expected_rho = (2 - g) as i64;
+            let expected_rho = 2 - g as i64;
             assert_eq!(w.rho(), expected_rho);
         }
     }

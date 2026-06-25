@@ -400,8 +400,12 @@ impl<R: Ring> UnivariatePolynomial<R> {
             return false;
         }
 
+        // f is square-free ⟺ gcd(f, f′) is a nonzero *constant*. Testing the degree
+        // (rather than `g.is_one()`) is robust to the GCD not being normalised to a
+        // monic/unit leading coefficient — over a field the Euclidean GCD ends at an
+        // arbitrary nonzero scalar multiple of 1, which is still degree 0.
         let g = self.gcd(&derivative);
-        g.is_one()
+        g.degree() == Some(0)
     }
 
     /// Construct the Sylvester matrix of two polynomials

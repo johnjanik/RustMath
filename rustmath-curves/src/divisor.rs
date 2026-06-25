@@ -34,7 +34,7 @@ impl<F: Field + Clone + PartialEq> MumfordDivisor<F> {
     /// Panics if u is not monic or if deg(v) >= deg(u)
     pub fn new(u: Polynomial<F>, v: Polynomial<F>) -> Self {
         // Check that u is monic
-        if u.degree() > 0 && !u.is_monic() {
+        if u.degree().unwrap_or(0) > 0 && !u.is_monic() {
             panic!("u polynomial must be monic");
         }
 
@@ -58,12 +58,12 @@ impl<F: Field + Clone + PartialEq> MumfordDivisor<F> {
 
     /// Check if this is the zero divisor
     pub fn is_zero(&self) -> bool {
-        self.u.degree() == 0 && self.v.is_zero()
+        self.u.degree().unwrap_or(0) == 0 && self.v.is_zero()
     }
 
     /// Get the degree of the divisor (degree of u)
     pub fn degree(&self) -> usize {
-        self.u.degree()
+        self.u.degree().unwrap_or(0)
     }
 
     /// Create a divisor from a single point (x, y)
@@ -106,7 +106,7 @@ impl<F: Field + Clone + PartialEq> MumfordDivisor<F> {
 
         // v(X) is the unique polynomial of degree < 2 with v(x1) = y1, v(x2) = y2
         // v(X) = y1 + (y2 - y1)/(x2 - x1) * (X - x1)
-        let slope = (y2.clone() - y1.clone()) * (x2.clone() - x1.clone()).inverse();
+        let slope = (y2.clone() - y1.clone()) * (x2.clone() - x1.clone()).inverse().unwrap();
         let v = Polynomial::from_coefficients(vec![
             y1.clone() - slope.clone() * x1.clone(),
             slope,
@@ -131,7 +131,10 @@ impl<F: Field + Clone + PartialEq> MumfordDivisor<F> {
             return diff.is_zero();
         }
 
-        let (_, remainder) = diff.div_rem(&self.u);
+        let (_, remainder) = match diff.div_rem(&self.u) {
+            Ok(qr) => qr,
+            Err(_) => return false,
+        };
         remainder.is_zero()
     }
 
@@ -174,7 +177,7 @@ impl<F: Field + Clone + PartialEq> MumfordDivisor<F> {
         // Basic invariants:
         // 1. u is monic (if deg > 0)
         // 2. deg(v) < deg(u)
-        if self.u.degree() > 0 && !self.u.is_monic() {
+        if self.u.degree().unwrap_or(0) > 0 && !self.u.is_monic() {
             return false;
         }
         self.v.degree() < self.u.degree() || self.v.is_zero()
@@ -213,11 +216,11 @@ mod tests {
         let d = MumfordDivisor::from_point(Rational::from(2), Rational::from(3));
 
         // u(X) = X - 2
-        assert_eq!(d.u.degree(), 1);
+        assert_eq!(d.u.degree(), Some(1));
         assert_eq!(d.u.evaluate(&Rational::from(2)), Rational::zero());
 
         // v(X) = 3
-        assert_eq!(d.v.degree(), 0);
+        assert_eq!(d.v.degree(), Some(0));
         assert_eq!(d.v.evaluate(&Rational::from(0)), Rational::from(3));
     }
 
@@ -232,7 +235,7 @@ mod tests {
         );
 
         // u should have roots at 1 and 3
-        assert_eq!(d.u.degree(), 2);
+        assert_eq!(d.u.degree(), Some(2));
         assert_eq!(d.u.evaluate(&Rational::from(1)), Rational::zero());
         assert_eq!(d.u.evaluate(&Rational::from(3)), Rational::zero());
 

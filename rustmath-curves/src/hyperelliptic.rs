@@ -27,7 +27,7 @@ pub struct HyperellipticCurve<F: Field> {
     pub genus: usize,
 }
 
-impl<F: Field + Clone + PartialEq + rustmath_core::NumericConversion> HyperellipticCurve<F> {
+impl<F: Field + Clone + PartialEq + rustmath_core::NumericConversion + rustmath_core::EuclideanDomain> HyperellipticCurve<F> {
     /// Create a new hyperelliptic curve y^2 = f(x)
     ///
     /// The genus is computed as:
@@ -58,7 +58,7 @@ impl<F: Field + Clone + PartialEq + rustmath_core::NumericConversion> Hyperellip
 
     /// Get the degree of the defining polynomial
     pub fn degree(&self) -> usize {
-        self.f.degree()
+        self.f.degree().unwrap_or(0)
     }
 
     /// Check if a point (x, y) lies on the curve
@@ -85,7 +85,7 @@ impl<F: Field + Clone + PartialEq + rustmath_core::NumericConversion> Hyperellip
 
     /// Compute the discriminant of the curve (up to a scalar)
     pub fn discriminant(&self) -> F {
-        self.f.discriminant()
+        self.f.discriminant().unwrap_or_else(F::zero)
     }
 
     /// Check if the curve is singular

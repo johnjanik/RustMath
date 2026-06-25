@@ -35,7 +35,7 @@ pub struct Jacobian<F: Field> {
     pub curve: HyperellipticCurve<F>,
 }
 
-impl<F: Field + Clone + PartialEq> Jacobian<F> {
+impl<F: Field + Clone + PartialEq + rustmath_core::EuclideanDomain + rustmath_core::NumericConversion> Jacobian<F> {
     /// Create the Jacobian of a hyperelliptic curve
     pub fn new(curve: HyperellipticCurve<F>) -> Self {
         Jacobian { curve }
@@ -169,7 +169,7 @@ pub struct JacobianElement<F: Field> {
     jacobian: Jacobian<F>,
 }
 
-impl<F: Field + Clone + PartialEq> JacobianElement<F> {
+impl<F: Field + Clone + PartialEq + rustmath_core::EuclideanDomain + rustmath_core::NumericConversion> JacobianElement<F> {
     /// Add this element with another
     pub fn add(&self, other: &JacobianElement<F>) -> JacobianElement<F> {
         self.jacobian.add(self, other)
@@ -245,7 +245,7 @@ impl<F: Field + fmt::Display> fmt::Display for JacobianElement<F> {
 }
 
 /// Operations for the Jacobian element using standard operators
-impl<F: Field + Clone + PartialEq> std::ops::Add for JacobianElement<F> {
+impl<F: Field + Clone + PartialEq + rustmath_core::EuclideanDomain + rustmath_core::NumericConversion> std::ops::Add for JacobianElement<F> {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
@@ -253,7 +253,7 @@ impl<F: Field + Clone + PartialEq> std::ops::Add for JacobianElement<F> {
     }
 }
 
-impl<F: Field + Clone + PartialEq> std::ops::Neg for JacobianElement<F> {
+impl<F: Field + Clone + PartialEq + rustmath_core::EuclideanDomain + rustmath_core::NumericConversion> std::ops::Neg for JacobianElement<F> {
     type Output = Self;
 
     fn neg(self) -> Self {
@@ -261,7 +261,7 @@ impl<F: Field + Clone + PartialEq> std::ops::Neg for JacobianElement<F> {
     }
 }
 
-impl<F: Field + Clone + PartialEq> std::ops::Sub for JacobianElement<F> {
+impl<F: Field + Clone + PartialEq + rustmath_core::EuclideanDomain + rustmath_core::NumericConversion> std::ops::Sub for JacobianElement<F> {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
