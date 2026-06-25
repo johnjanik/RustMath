@@ -117,6 +117,35 @@ piece and needs an **incremental, bounded, per-case** build — NOT one big agen
    doesn't regress — or gate the slow path so abext uses only the factor-base-smooth fast path.
 **P2b (tower driver) is BLOCKED** until a relative-abext case is validated.
 
+## P2a redo path — VALIDATED against PARI (`docs/algorithm_notes/abext_notes.md`, 2026-06-25)
+
+The note diagnoses every P2a#1 hang/crash as an **unbounded element/coefficient search** and replaces
+each with **finite linear algebra over an explicit finite space**. I confirmed its Q(√−23) worked example
+end-to-end in `gp` (`/tmp/chk23.gp`): `rnfequation(K, x³−x−1) = y⁶+67y⁴−2y³+1588y²+140y+13249` (matches the
+note), `h_K=[3]`, rel disc `d_{F/K}=1`, `polredabs → x⁶−3x⁵+5x⁴−5x³+5x²−3x+1`, `polgalois` order 6 = S₃,
+`|disc|=23³`. Build order (note's "final implementation priorities"), each bounded + validatable:
+
+1. **Alg 1A — multiplication-matrix `rnfequation`** ✅ DONE + validated
+   (`rustmath-numberfields/src/rnfeq.rs`, `absolute_defining_polynomial`). Basis `{θⁱαʲ}`; builds
+   mult-by-θ and mult-by-α matrices once, `M_s = T + sA`, `F_s = charpoly(M_s)`; primitivity tested by
+   **square-freeness** of `F_s` (≡ distinct conjugates; with `h` irred / `g` irred ⟹ `F_s` irreducible
+   of degree `dn`); bounded loop `s = 0..C(dn,2)`. Keystone — unblocks absolute polys for BOTH Kummer
+   towers and descent, and **replaces the `bivariate.rs:79` resultant crash**. **Oracle PASSED:**
+   `x³−x−1` over Q(√−23) returns exactly `y⁶+67y⁴−2y³+1588y²+140y+13249` at `s=1` (exact 6-coeff match
+   vs PARI `rnfequation`); 5/5 tests green. Square-free test depends on the `univariate.rs` fix
+   (committed separately as the post-merge baseline).
+2. **Alg 2 — finite `K(S,n)` Kummer enumeration** (replaces the `real_quadratic_rcf_qsqrt3` hang).
+   `S = primes | n·m₀`; build `K(S,n)` via the exact seq `O_{K,S}*/n ↪ K(S,n) ↠ Cl_{K,S}[n]`; enumerate
+   the 𝔽_ℓ-space, conductor-filter (local + sign at real places), pick chars annihilating `H`.
+3. **§3B — imaginary-quadratic HCF** (replaces the `hcf_qsqrtm23` panic). For Q(√−23): `x³−x−1` directly.
+4. **Alg 4 — fast ray Artin log** (replaces the per-call `is_principal` regression). Precompute
+   factor-base ray logs once; per call: LLL-reduce ideal → factor over base → `Σeᵢℓᵢ − κ(η)`.
+
+**Anti-hang invariants (must hold in every primitive):** all radical candidates come from a finite
+`K(S,n)` basis; all ray logs use precomputed factor-base logs, never a per-call principality search;
+every primitive-element shift loops a bounded `s ≤ C(dn,2)`. Validate each primitive against `gp`
+(`rnfequation`/`bnrclassfield`/`rnfdisc`/`polgalois`) on the Q(√−23) case before generalizing.
+
 ## Execution
 
 I launch each phase's agents in worktrees off `integrate-lava-galois`, validate against PARI + tests,
