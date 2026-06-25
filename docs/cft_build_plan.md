@@ -137,7 +137,17 @@ note), `h_K=[3]`, rel disc `d_{F/K}=1`, `polredabs → x⁶−3x⁵+5x⁴−5x³
 2. **Alg 2 — finite `K(S,n)` Kummer enumeration** (replaces the `real_quadratic_rcf_qsqrt3` hang).
    `S = primes | n·m₀`; build `K(S,n)` via the exact seq `O_{K,S}*/n ↪ K(S,n) ↠ Cl_{K,S}[n]`; enumerate
    the 𝔽_ℓ-space, conductor-filter (local + sign at real places), pick chars annihilating `H`.
-3. **§3B — imaginary-quadratic HCF** (replaces the `hcf_qsqrtm23` panic). For Q(√−23): `x³−x−1` directly.
+3. **§3B — imaginary-quadratic HCF** ✅ Step 1 DONE + validated
+   (`rustmath-numberfields/src/hcf.rs`). `reduced_forms(d)` enumerates the `h(d)` reduced
+   primitive pos-def forms; `hilbert_class_field_from_hcp(d, H_d)` assembles the **absolute** HCF as
+   the compositum `ℚ(√d, j)` by **reusing Alg 1A** (`g = T²−d`, `H_d` as the monic relative poly over
+   `K`). **Validated on D=−23:** class number 3, absolute degree 6, field discriminant exactly
+   `(−23)³ = −12167` via the model-independent invariant `poldisc = d^h·index²` (index ≈ 3.2×10¹⁸ — the
+   raw compositum model is highly non-maximal). Replaces the `hcf_qsqrtm23` panic. 4/4 tests green.
+   **Note:** the in-repo `polredabs`/`field_discriminant` are too weak to *reduce/identify* a model
+   this large — recorded as a downstream reduction gap (not a §3B blocker). **Step 2 (TODO):** compute
+   `H_d` itself from high-precision `j(τ)` (the `rug`/MPC singular-moduli piece) so the input isn't
+   required; validate the computed `H_{−23}` against `polclass(-23)`.
 4. **Alg 4 — fast ray Artin log** (replaces the per-call `is_principal` regression). Precompute
    factor-base ray logs once; per call: LLL-reduce ideal → factor over base → `Σeᵢℓᵢ − κ(η)`.
 
