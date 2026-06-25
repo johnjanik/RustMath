@@ -115,8 +115,12 @@ pub struct RayClassGroup {
     f: Vec<Integer>,
     /// Finite conductor.
     m0: i64,
+    /// Real infinite places in `m_∞` (indices into the sorted real embeddings).
+    real_places: Vec<usize>,
     /// Factor-base prime ideals (coprime to `m₀`); generator columns `0..g`.
     fb: Vec<Ideal>,
+    /// Number of factor-base generator columns (`g`); R-generators occupy `g..num_gens`.
+    g: usize,
     /// Total number of presentation generators (`g + R`-generators).
     num_gens: usize,
     /// `transform[i]` is a length-`num_gens` row: invariant-coordinate `i` as an
@@ -872,7 +876,9 @@ pub fn ray_class_group(f: &[Integer], m: &Modulus) -> Option<RayClassGroup> {
         grh_conditional: grh,
         f: f.to_vec(),
         m0,
+        real_places: m.real_places.clone(),
         fb,
+        g,
         num_gens,
         transform,
     })
@@ -963,6 +969,97 @@ impl RayClassGroup {
     /// Defining polynomial accessor (for callers re-deriving the order).
     pub fn defining_poly(&self) -> &[Integer] {
         &self.f
+    }
+
+    // ----------------------------------------------------------------------- //
+    // Accessors added for the Artin/abext layer (Phase 1). These expose the
+    // factor base, the finite/infinite modulus parts, and the residue+sign
+    // (`R`) coordinate of a principal generator, plus a way to push a *full*
+    // generator-coordinate vector (factor-base columns AND `R` columns) through
+    // the SNF transform. `artin.rs` orchestrates the class-group reduction
+    // (multiplying an ideal by factor-base primes until principal) on top of
+    // these primitives; the residue-ring logic stays here where it lives.
+    // ----------------------------------------------------------------------- //
+
+    /// The factor-base prime ideals (coprime to `m₀`); these are the columns
+    /// `0..g` of the presentation.
+    pub fn factor_base(&self) -> &[Ideal] {
+        &self.fb
+    }
+
+    /// Number of factor-base generator columns `g` (`R`-generators are `g..`).
+    pub fn num_factor_base(&self) -> usize {
+        self.g
+    }
+
+    /// Total number of presentation generators (`g + #R`-generators).
+    pub fn num_generators(&self) -> usize {
+        self.num_gens
+    }
+
+    /// The finite conductor `m` (with `m₀ = m·O_K`).
+    pub fn modulus_finite(&self) -> i64 {
+        self.m0
+    }
+
+    /// The indices of the real infinite places in `m_∞`.
+    pub fn modulus_real_places(&self) -> &[usize] {
+        &self.real_places
+    }
+
+    /// Class of an element-generated principal ideal `(α)` in `Cl_m`, mapped via
+    /// the residue+sign coordinate of `α` (`α` must be coprime to `m₀`). This is
+    /// the part of the Artin map carried by the principal correction. Returns
+    /// `None` if `α` is not coprime to `m₀` (no well-defined `R`-residue).
+    pub fn class_of_principal(
+        &self,
+        ord: &OrderData,
+        alpha: &[Integer],
+    ) -> Option<AdditiveAbelianGroupElement> {
+        let gv = self.principal_gen_vector(ord, alpha)?;
+        Some(self.element_from_generator_vector(&gv))
+    }
+
+    /// Full generator-coordinate vector of the principal ideal `(α)`: zeros in
+    /// the factor-base slots, the residue+sign (`R`) coordinates of `α` in the
+    /// `R` slots. `None` if `α` is not coprime to `m₀`. Length `num_gens`.
+    pub fn principal_gen_vector(
+        &self,
+        ord: &OrderData,
+        alpha: &[Integer],
+    ) -> Option<Vec<i64>> {
+        let rr = ResidueRing::build(ord, self.m0);
+        let reals = real_embeddings(&self.f);
+        let real_thetas: Vec<f64> = self
+            .real_places
+            .iter()
+            .map(|&i| *reals.get(i).unwrap_or(&0.0))
+            .collect();
+        let rc = r_coordinate(&rr, ord, alpha, &real_thetas)?;
+        let mut gv = vec![0i64; self.num_gens];
+        for (i, &c) in rc.iter().enumerate() {
+            gv[self.g + i] = c;
+        }
+        Some(gv)
+    }
+
+    /// Valuation of an ideal `a` over the factor-base prime in column `j`.
+    pub fn factor_base_valuation(&self, ord: &OrderData, a: &Ideal, j: usize) -> usize {
+        ideal_valuation(ord, a, &self.fb[j])
+    }
+
+    /// Map a *full* generator-coordinate vector (factor-base columns AND `R`
+    /// columns) to a class in `Cl_m` via the SNF transform. This is the public
+    /// hook `artin.rs` uses to combine a factor-base exponent vector with a
+    /// residue contribution.
+    pub fn class_from_full_gen_vector(&self, gen: &[i64]) -> AdditiveAbelianGroupElement {
+        self.element_from_generator_vector(gen)
+    }
+
+    /// Invariant-factor coordinates of a full generator-coordinate vector
+    /// (public form of the internal transform application).
+    pub fn invariant_coords_of(&self, gen: &[i64]) -> Vec<i64> {
+        self.invariant_coords(gen)
     }
 }
 
