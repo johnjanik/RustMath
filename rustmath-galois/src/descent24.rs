@@ -763,13 +763,33 @@ fn select_min_accepted(
 ) -> (Option<usize>, bool) {
     let min_accepted = accepted_sorted.first().copied();
     let confident = match min_accepted {
-        Some((_, ord_min)) => steps.iter().all(|s| match s.order {
-            Some(o) if o < ord_min => matches!(
-                s.verdict,
-                CandidateVerdict::ShortCosetEmpty | CandidateVerdict::RejectedExhaustive
-            ),
-            _ => true,
-        }),
+        Some((_, ord_min)) => {
+            // (a) every candidate of strictly smaller order was definitively rejected, AND
+            // (b) the chosen accept is UNIQUE at its order. Without (b), a same-order group
+            // can false-accept via a non-separable invariant — e.g. 24T1=C24 vs 24T13=Dih(C12),
+            // both order 24 (regular reps): picking min-t then claiming "all smaller-order
+            // rejected" is vacuously true and yields a FALSE-confident wrong answer. A same-order
+            // co-accept means order/t cannot single out Gal(f); the separability gate is needed,
+            // so report not-confident rather than guess.
+            let smaller_all_rejected = steps.iter().all(|s| match s.order {
+                Some(o) if o < ord_min => matches!(
+                    s.verdict,
+                    CandidateVerdict::ShortCosetEmpty | CandidateVerdict::RejectedExhaustive
+                ),
+                _ => true,
+            });
+            let unique_at_min_order =
+                accepted_sorted.iter().filter(|(_, o)| *o == ord_min).count() == 1;
+            // A degree-24 field with |Gal| = 24 is GALOIS (a regular representation): order equals
+            // the degree, the minimum possible. There the "all strictly-smaller-order rejected"
+            // test is vacuous, AND many order-24 groups share Frobenius cycle types, so the
+            // over-accepting invariant test (no separability gate yet) can false-accept any of them
+            // -- e.g. 24T1=C24 on a Dih(C12)=24T13 field. Until the separability gate lands we
+            // cannot soundly single out Gal(f) among the regular reps; report not-confident.
+            // Non-Galois fields (order > 24) are unaffected (e.g. 24T2672 stays confident).
+            let not_regular_rep = ord_min > 24;
+            smaller_all_rejected && unique_at_min_order && not_regular_rep
+        }
         None => false,
     };
     (min_accepted.map(|(t, _)| t), confident)
@@ -915,12 +935,17 @@ pub fn narrow_degree24_short_with(
     accepted.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
     let (min_accepted_t, min_accepted_confident) = select_min_accepted(&accepted, &steps);
 
-    // Best single-t answer: the minimal-order accept, else a singleton survivor.
-    let unique_t = min_accepted_t.or(if narrowed.len() == 1 {
+    // Best single-t answer: the minimal-order accept ONLY when rigorously confident
+    // (no smaller-order survivor AND unique at its order); else the lone narrowed survivor;
+    // else none. Gating on `min_accepted_confident` prevents emitting a false unique_t off a
+    // vacuous minimum (the C24/Dih(C12) same-order false-accept).
+    let unique_t = if min_accepted_confident {
+        min_accepted_t
+    } else if narrowed.len() == 1 {
         Some(narrowed[0])
     } else {
         None
-    });
+    };
 
     Narrowing24Short {
         sigma_cycle_type,
@@ -1007,6 +1032,20 @@ mod tests {
         let (t3, conf3) = select_min_accepted(&[], &steps);
         assert_eq!(t3, None);
         assert!(!conf3);
+
+        // Regression (the CM/HCF false-confidence bug): two groups accept at the SAME order
+        // -- e.g. 24T1=C24 and 24T13=Dih(C12), both order 24 (regular reps). Min-by-(order,t)
+        // picks 24T1 and every strictly-smaller order is vacuously rejected, so the OLD code
+        // reported confident -- wrong. A same-order co-accept must NOT be confident.
+        let mut acc_same = vec![(1usize, 24usize), (13usize, 24usize)];
+        acc_same.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
+        let steps_same = vec![
+            step(1, Some(24), CandidateVerdict::Accepted(Integer::from(2i64))),
+            step(13, Some(24), CandidateVerdict::Accepted(Integer::from(2i64))),
+        ];
+        let (t4, conf4) = select_min_accepted(&acc_same, &steps_same);
+        assert_eq!(t4, Some(1), "min-t still chosen at the shared order");
+        assert!(!conf4, "same-order co-accept must NOT be confident (CM/HCF bug)");
     }
 
     fn ints(v: &[i64]) -> Vec<Integer> {
