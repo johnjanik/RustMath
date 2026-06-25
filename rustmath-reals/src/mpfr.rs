@@ -51,10 +51,29 @@ pub struct RealMPFR {
     value: Float,
 }
 
+/// Convert an integer-valued `rug::Float` to an exact bignum [`Integer`],
+/// without rounding through `f64` (which would cap at `i64`/`2^53`). The input
+/// is expected to already be an integer value (e.g. from `floor`/`round`).
+fn float_to_integer(f: Float) -> Integer {
+    match f.to_integer() {
+        Some(ri) => Integer::from_decimal_str(&ri.to_string()).unwrap_or_else(Integer::zero),
+        None => Integer::zero(), // non-finite
+    }
+}
+
 impl RealMPFR {
     /// Create a new RealMPFR from a rug::Float
     pub fn from_float(value: Float) -> Self {
         RealMPFR { value }
+    }
+
+    /// Borrow the underlying `rug::Float` without precision loss.
+    ///
+    /// Unlike [`RealMPFR::to_f64`], this preserves the full arbitrary-precision
+    /// mantissa, so it must be used by any consumer that needs the exact value
+    /// (e.g. building a high-precision `ComplexMPFR`).
+    pub fn as_float(&self) -> &Float {
+        &self.value
     }
 
     /// Create a new RealMPFR with specified precision from an f64
@@ -284,37 +303,17 @@ impl RealMPFR {
 
     /// Get the floor (greatest integer ≤ self)
     pub fn floor(&self) -> Integer {
-        let f = self.value.clone().floor();
-        // Convert to integer via f64 for reasonable-sized values
-        let f64_val = f.to_f64();
-        if f64_val.is_finite() && f64_val.abs() < (i64::MAX as f64) {
-            Integer::from(f64_val as i64)
-        } else {
-            // For very large values, this is an approximation
-            Integer::from(0) // Placeholder for now
-        }
+        float_to_integer(self.value.clone().floor())
     }
 
     /// Get the ceiling (smallest integer ≥ self)
     pub fn ceil(&self) -> Integer {
-        let c = self.value.clone().ceil();
-        let f64_val = c.to_f64();
-        if f64_val.is_finite() && f64_val.abs() < (i64::MAX as f64) {
-            Integer::from(f64_val as i64)
-        } else {
-            Integer::from(0) // Placeholder for now
-        }
+        float_to_integer(self.value.clone().ceil())
     }
 
     /// Round to nearest integer
     pub fn round(&self) -> Integer {
-        let r = self.value.clone().round();
-        let f64_val = r.to_f64();
-        if f64_val.is_finite() && f64_val.abs() < (i64::MAX as f64) {
-            Integer::from(f64_val as i64)
-        } else {
-            Integer::from(0) // Placeholder for now
-        }
+        float_to_integer(self.value.clone().round())
     }
 }
 

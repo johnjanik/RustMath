@@ -82,11 +82,10 @@ impl ComplexMPFR {
     /// Create a new ComplexMPFR with specified precision from RealMPFR values
     pub fn with_val_reals(real: RealMPFR, imag: RealMPFR) -> Self {
         let prec = real.precision().max(imag.precision());
-        // Extract the underlying rug::Float values
-        let real_f64 = real.to_f64();
-        let imag_f64 = imag.to_f64();
+        // Preserve the full arbitrary-precision mantissa: build directly from the
+        // underlying rug::Float values rather than rounding through f64.
         ComplexMPFR {
-            value: RugComplex::with_val(prec, (real_f64, imag_f64)),
+            value: RugComplex::with_val(prec, (real.as_float(), imag.as_float())),
         }
     }
 
