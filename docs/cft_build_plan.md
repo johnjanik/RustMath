@@ -158,8 +158,17 @@ note), `h_K=[3]`, rel disc `d_{F/K}=1`, `polredabs → x⁶−3x⁵+5x⁴−5x³
    **Strategic payoff:** an imaginary quadratic with `h=12` has a **degree-24** HCF with generalized-
    dihedral group `Cl_K ⋊ C₂` — a direct candidate source for open `24Tt` cells (pending a good
    reduction step for small discriminant).
-4. **Alg 4 — fast ray Artin log** (replaces the per-call `is_principal` regression). Precompute
-   factor-base ray logs once; per call: LLL-reduce ideal → factor over base → `Σeᵢℓᵢ − κ(η)`.
+4. **Alg 4 — fast ray Artin log** ✅ DONE + validated
+   (`artin.rs` `artin_gen_vector_fast`/`reduce_ideal` + `classgroup::short_ideal_elements`).
+   Per call: one **LLL ideal reduction** `𝔟 = (η)·a⁻¹` (`η ∈ a` near-minimal-norm via `short_ideal_
+   elements`, coprime to `m₀`) → factor the small `𝔟` over the factor base →
+   `[a]_m = R(η) − Σ_j v_{𝔭_j}(𝔟)·[𝔭_j]_m`. **No per-call principality search** (fixes the P2a
+   regression) and **total on primes above the Minkowski bound** (fixes the documented Phase-1 defect).
+   Falls back to the old bounded search if `𝔟` isn't factor-base-smooth. **Validated:** the previously
+   `#[ignore]`'d `artin_total_qi_m5` now passes (total on `(11+5i)`, prime above 73); new
+   `artin_nonprincipal_prime_above_minkowski` maps `𝔭₇` of Q(√−5) (norm 7 > MK bound ≈ 5, outside FB)
+   to an order-2 class — cross-checked with gp `bnfisprincipal = [1]~`. artin 6/6, classgroup/abext/
+   rayclass all green (no regression).
 
 **Anti-hang invariants (must hold in every primitive):** all radical candidates come from a finite
 `K(S,n)` basis; all ray logs use precomputed factor-base logs, never a per-call principality search;

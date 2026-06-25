@@ -48,8 +48,8 @@
 //! GRH/heuristic flags propagate from the ray class group
 //! (`RayClassGroup::grh_conditional`).
 
-use crate::classgroup::is_principal;
-use crate::ideals::{ideal_inverse, ideal_mul, ideal_norm, Ideal};
+use crate::classgroup::{element_norm, is_principal, short_ideal_elements};
+use crate::ideals::{ideal_from_generators, ideal_inverse, ideal_mul, ideal_norm, Ideal};
 use crate::rayclass::{ray_class_group, Modulus, RayClassGroup};
 use crate::round2::{field_discriminant, maximal_order_data, OrderData};
 use rustmath_groups::additive_abelian_group::AdditiveAbelianGroupElement;
@@ -118,9 +118,79 @@ impl ArtinMap {
     }
 
     /// The full presentation generator-coordinate vector of `[a]` (factor-base
-    /// columns then `R` columns), per the factor-base discrete-log algorithm in
-    /// the module docs.
+    /// columns then `R` columns). Tries the **fast ideal-reduction** path first
+    /// (note Alg 4 — one LLL reduction, total on *any* ideal coprime to `m₀`,
+    /// including primes above the Minkowski bound), then falls back to the
+    /// original bounded factor-base-multiply search if reduction fails to land a
+    /// factor-base-smooth representative.
     fn artin_gen_vector(&self, a: &Ideal) -> Option<Vec<i64>> {
+        if let Some(gv) = self.artin_gen_vector_fast(a) {
+            return Some(gv);
+        }
+        self.artin_gen_vector_slow(a)
+    }
+
+    /// Note Alg 4 (`docs/algorithm_notes/abext_notes.md` §4): fast ray discrete
+    /// log by **ideal reduction**. Reduce `a` to a small factor-base-smooth
+    /// `𝔟 = (η)·a⁻¹` (`η ∈ a` near-minimal-norm, coprime to `m₀`), then
+    /// `[a]_m = [(η)]_m − [𝔟]_m = R(η) − Σ_j v_{𝔭_j}(𝔟)·[𝔭_j]_m`.
+    /// No per-call principality search; one LLL reduction handles arbitrary
+    /// primes (the prior path returned `None` for primes outside the factor base).
+    fn artin_gen_vector_fast(&self, a: &Ideal) -> Option<Vec<i64>> {
+        let m0 = self.rcg.modulus_finite();
+        if !ideal_norm(a).abs().gcd(&Integer::from(m0)).is_one() {
+            return None;
+        }
+        let (b, eta) = self.reduce_ideal(a)?;
+        let g = self.rcg.num_factor_base();
+        let mut gv = vec![0i64; self.rcg.num_generators()];
+        // [a] = [(η)] − [𝔟]; 𝔟 factor-base-smooth ⇒ −v_{𝔭_j}(𝔟) in factor-base
+        // columns, residue+sign R(η) in the R columns.
+        let mut remaining = ideal_norm(&b).abs();
+        for j in 0..g {
+            let v = self.rcg.factor_base_valuation(&self.ord, &b, j) as i64;
+            if v > 0 {
+                gv[j] -= v;
+                let np = ideal_norm(&self.rcg.factor_base()[j]).abs();
+                for _ in 0..v {
+                    if (remaining.clone() % np.clone()).is_zero() {
+                        remaining = remaining.clone() / np.clone();
+                    }
+                }
+            }
+        }
+        if !remaining.is_one() {
+            return None; // 𝔟 not factor-base-smooth ⇒ fall back to the slow path
+        }
+        let pv = self.rcg.principal_gen_vector(&self.ord, &eta)?;
+        for (k, &c) in pv.iter().enumerate() {
+            gv[k] += c;
+        }
+        Some(gv)
+    }
+
+    /// Reduce the ideal `a` to a small equivalent factor-base-smooth ideal:
+    /// returns `(𝔟, η)` with `𝔟 = (η)·a⁻¹` integral and `η ∈ a` near-minimal-norm
+    /// and **coprime to `m₀`** (so `(η)` and `𝔟` are both coprime to `m₀`). `η`
+    /// is the first short element of `a` with `gcd(N(η), m₀) = 1`.
+    fn reduce_ideal(&self, a: &Ideal) -> Option<(Ideal, Vec<Integer>)> {
+        let m0 = Integer::from(self.rcg.modulus_finite());
+        let ainv = ideal_inverse(&self.ord, a);
+        for eta in short_ideal_elements(&self.f, &self.ord, a) {
+            if !element_norm(&self.ord, &eta).abs().gcd(&m0).is_one() {
+                continue; // need η coprime to m₀ for a well-defined R(η)
+            }
+            let eta_ideal = ideal_from_generators(&self.ord, &[eta.clone()]);
+            let b = ideal_mul(&self.ord, &eta_ideal, &ainv);
+            if b.denom.is_one() {
+                return Some((b, eta));
+            }
+        }
+        None
+    }
+
+    /// Original bounded factor-base-multiply discrete log (kept as a fallback).
+    fn artin_gen_vector_slow(&self, a: &Ideal) -> Option<Vec<i64>> {
         let m0 = self.rcg.modulus_finite();
         // coprimality: N(a) must be coprime to m₀.
         let na = ideal_norm(a).abs();
@@ -496,7 +566,7 @@ mod tests {
     // (abext builds from the ray-class structure; the Conductor/disc gates all pass),
     // so this is deferred. Needs a complete class-group reduction / large-prime
     // principalization before the Artin map is total+correct on arbitrary ideals.
-    #[ignore]
+    // Now total via the Alg 4 ideal-reduction fast path.
     #[test]
     fn artin_total_qi_m5() {
         let f = iz(&[1, 0, 1]); // Q(i)
@@ -513,18 +583,17 @@ mod tests {
         let c1 = am.artin(&pid);
         assert!(c1.is_some(), "(6+i) must now map (no spurious None)");
 
-        // KNOWN MAP-COMPLETENESS LIMITATION (Phase-2 hardening if needed): an ideal
-        // with a prime factor OUTSIDE the Minkowski factor base — e.g. (11+5i),
-        // norm 146 = 2·73, the prime above 73 — is not yet principalized by the
-        // bounded discrete-log reduction, so the map may return None. This does NOT
-        // affect the construction stack: abext builds from the ray-class STRUCTURE
-        // and never maps such high-norm ideals (all construction gates pass). When
-        // the map IS defined for such a principal ideal (gen ≡ 1 mod m), the class is 0.
+        // Previously a KNOWN LIMITATION: an ideal with a prime factor OUTSIDE the
+        // Minkowski factor base — (11+5i), norm 146 = 2·73, the prime above 73 —
+        // returned None. The Alg 4 ideal-reduction fast path reduces it to a small
+        // factor-base-smooth representative, so the map is now TOTAL. Since
+        // 11+5i ≡ 1 mod 5, the principal ideal (11+5i) has ray class 0.
         let g = iz(&[11, 5]); // 11 + 5i ≡ 1 mod 5
         let pid2 = ideal_from_generators(ord, &[g]);
-        if let Some(c2) = am.artin(&pid2) {
-            assert!(c2.is_zero(), "(α), α≡1 mod 5 ⇒ class 0 when defined");
-        }
+        let c2 = am
+            .artin(&pid2)
+            .expect("(11+5i): Alg 4 reduction makes the Artin map total");
+        assert!(c2.is_zero(), "(α), α ≡ 1 mod 5 ⇒ ray class 0");
     }
 
     // ---- Artin map totality: Q(√−5), m=(3) ----
@@ -555,6 +624,23 @@ mod tests {
         let pid = ideal_from_generators(ord, &[g]);
         let cp = am.artin(&pid).expect("principal ≡1 maps");
         assert!(cp.is_zero(), "(α), α≡1 mod 3 ⇒ class 0");
+    }
+
+    // ---- Alg 4: non-principal prime ABOVE the Minkowski bound ----
+    #[test]
+    fn artin_nonprincipal_prime_above_minkowski() {
+        // Q(√−5): class group C₂, Minkowski bound ≈ 5. The prime 𝔭₇ above 7
+        // (norm 7 > 5, so OUTSIDE the factor base) is non-principal
+        // (x²+5y²=7 has no solution). With modulus (1), Cl_m = Cl_K = C₂. The
+        // Alg 4 fast path must map 𝔭₇ (totality on exterior primes) to a class
+        // of order exactly 2.
+        let f = iz(&[5, 0, 1]); // Q(√−5)
+        let am = ArtinMap::new(&f, &Modulus::trivial()).expect("artin map");
+        let (_o, p7v) = prime_ideals(&f, 7);
+        let p7 = &p7v[0].0;
+        let c = am.artin(p7).expect("𝔭₇ (norm 7, outside FB) must map");
+        assert!(!c.is_zero(), "𝔭₇ is non-principal ⇒ class ≠ 0");
+        assert!(c.add(&c).expect("add").is_zero(), "[𝔭₇] has order 2");
     }
 
     // ---- Cyclic cubic of conductor 7: disc prediction = 49 ----
