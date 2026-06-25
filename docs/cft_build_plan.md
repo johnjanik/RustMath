@@ -93,6 +93,30 @@ after the first live over **K ≠ ℚ**. Therefore Phase 2 needs, before the dri
   min disc, m_∞ for signature) → compose → polredabs → verify `--galois-short`. **Milestone: one of the
   |G|=96 targets** (e.g. 24T127 r=4), group + signature confirmed.
 
+## P2a attempt #1 — FAILED validation (NOT merged; preserved on branch `cft-relabext`)
+
+De-risk first succeeded: `gaussian_period_poly(73,24)` → degree-24 C₂₄ field → `--galois-short`
+`unique_t=1, confident` — the construct→verify pipeline works end-to-end at degree 24 (committed as a
+smoke test). Then the relative-abext agent's deliverable **failed**:
+- **relabext (all 3 gates fail):** `hcf_qsqrtm23` panics (relabext.rs:1196), `real_quadratic_rcf_qsqrt3`
+  **hangs** (a non-terminating coefficient/compositum search — ran 91 min before being killed),
+  `kummer_over_qi` panics in `bivariate.rs:79` (the compositum resultant). The relative class-field
+  construction does not work.
+- **artin map fix:** correct in isolation (5/5, `artin_total_qi_m5` un-ignored — the whole-ideal
+  principalization fixes the wrong-class bug) BUT it makes the map **slow** (`is_principal` on growing
+  ideals), which **regresses abext into a hang** (40 s+). Net: not mergeable.
+
+Lesson: relative CFT (ray-class-field over K≠ℚ + the compositum/primitive-element) is the genuinely hard
+piece and needs an **incremental, bounded, per-case** build — NOT one big agent. Re-do path:
+1. **Bounded primitives first:** a hang-proof `compositum`/primitive-element (the `bivariate.rs:79`
+   crash) and a fast principal-ideal test; every search MUST be budgeted (no unbounded loops).
+2. **One relative case at a time, PARI-validated:** start with the **HCF of Q(√−23)** alone (unramified
+   cyclic cubic → S₃ sextic, disc −23³), cross-checked with `gp` `bnrclassfield`/`rnfdisc` and the
+   absolute group via Sage, before any generalization.
+3. Keep the artin map fix but **make it fast** (cache principalizations / bound the search) so abext
+   doesn't regress — or gate the slow path so abext uses only the factor-base-smooth fast path.
+**P2b (tower driver) is BLOCKED** until a relative-abext case is validated.
+
 ## Execution
 
 I launch each phase's agents in worktrees off `integrate-lava-galois`, validate against PARI + tests,
