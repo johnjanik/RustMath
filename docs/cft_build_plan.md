@@ -134,9 +134,19 @@ note), `h_K=[3]`, rel disc `d_{F/K}=1`, `polredabs → x⁶−3x⁵+5x⁴−5x³
    `x³−x−1` over Q(√−23) returns exactly `y⁶+67y⁴−2y³+1588y²+140y+13249` at `s=1` (exact 6-coeff match
    vs PARI `rnfequation`); 5/5 tests green. Square-free test depends on the `univariate.rs` fix
    (committed separately as the post-merge baseline).
-2. **Alg 2 — finite `K(S,n)` Kummer enumeration** (replaces the `real_quadratic_rcf_qsqrt3` hang).
-   `S = primes | n·m₀`; build `K(S,n)` via the exact seq `O_{K,S}*/n ↪ K(S,n) ↠ Cl_{K,S}[n]`; enumerate
-   the 𝔽_ℓ-space, conductor-filter (local + sign at real places), pick chars annihilating `H`.
+2. **Alg 2 — finite `K(S,n)` Kummer enumeration** ✅ core DONE + validated
+   (`rustmath-numberfields/src/kummer.rs`, `n=2`). `k_s_2_space` = the finite `𝔽₂`-generating set
+   (torsion `−1` + fundamental units + `S`-prime generators = the `O_{K,S}^×/squares` part);
+   `kummer_quadratic_candidates` enumerates the bounded `2^{#gens}−1` combinations, computing **exact
+   infinite-place ramification** (real embeddings where `γ<0` — the IGP **signature lever**) and the
+   **tame finite conductor** (`v_𝔭(γ)` odd, `𝔭∤2`). This structurally eliminates the unbounded
+   coefficient search that hung `real_quadratic_rcf_qsqrt3`. **Validated:** narrow HCF of Q(√3) — the
+   finite space contains the torsion `−1`, which is totally negative ⇒ both real places ramified,
+   giving `L=K(√−1)`, relative poly `x²+1` (matches gp `bnrclassfield`); the old prime-only
+   `kummer_generator` misses this unit/torsion generator entirely. 3/3 tests green. **Scope/TODO:** the
+   wild `2`-adic conductor exponent (local Kummer-symbol membership), the `Cl_{K,S}[n]` torsion part of
+   `K(S,n)`, general `n>2`, and the H-annihilator γ-selection are the remaining refinements for the
+   tower driver (P2b).
 3. **§3B — imaginary-quadratic HCF** ✅ Step 1 DONE + validated
    (`rustmath-numberfields/src/hcf.rs`). `reduced_forms(d)` enumerates the `h(d)` reduced
    primitive pos-def forms; `hilbert_class_field_from_hcp(d, H_d)` assembles the **absolute** HCF as

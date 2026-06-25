@@ -35,6 +35,7 @@ pub mod different;
 pub mod disc_score;
 pub mod hcf;
 pub mod ideals;
+pub mod kummer;
 pub mod local_field;
 pub mod panayi;
 pub mod polred;
