@@ -30,11 +30,13 @@ use thiserror::Error;
 
 pub mod classgroup;
 pub mod different;
+pub mod disc_score;
 pub mod ideals;
 pub mod local_field;
 pub mod panayi;
 pub mod polred;
 pub mod ramification;
+pub mod rayclass;
 pub mod round2;
 pub mod s_unit_gens;
 pub mod s_units;

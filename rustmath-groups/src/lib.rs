@@ -8,9 +8,11 @@
 //! - Generic group operations
 //! - Representation theory
 
+pub mod solvtower;
 pub mod transitive24;
 pub mod ksubset_orbits;
 pub mod pgalois;
+pub mod galois_resolvent;
 pub mod permutation_group;
 pub mod matrix_group;
 pub mod abelian_group;
