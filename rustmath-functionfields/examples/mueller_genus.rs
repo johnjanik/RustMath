@@ -12,6 +12,7 @@
 
 use rustmath_functionfields::function_field::ff_poly_from_coeffs;
 use rustmath_functionfields::genus::{branch_radical, genus};
+use rustmath_functionfields::genus_via_branch_cycles;
 use rustmath_functionfields::ratfunc::{QtPoly, RationalFunction};
 use rustmath_integers::Integer;
 use rustmath_rationals::Rational;
@@ -46,16 +47,32 @@ fn main() {
     }
     let f = ff_poly_from_coeffs(x_coeffs);
     println!("loaded F: deg_X = {:?}", f.degree());
-    let rad = branch_radical(&f);
-    println!("branch radical deg_t = {:?}", rad.degree());
 
-    match genus(&f) {
-        Ok(g) => {
-            println!("genus(M23-fixed cover) = {g}");
+    // Layer 6b: genus from branch cycles recovered mod p (fast — no resultant).
+    println!("\n--- Layer 6b: genus via branch cycles recovered mod p ---");
+    let primes = [101_i64, 103, 211, 307, 1009, 2003];
+    let v = genus_via_branch_cycles(&f, &primes);
+    match v.value {
+        Some(g) => {
+            println!("genus = {g}  [{:?}] {}", v.status, v.note);
             if g == 0 {
-                println!("MILESTONE PASS: g=0 — matches the hand-descent conic result.");
+                println!("MILESTONE: g=0 recovered from F mod p — matches the hand-descent conic.");
             }
         }
-        Err(e) => println!("genus deferred: {e:?}  (φ-adic Montes is the remaining A1 build item)"),
+        None => println!(
+            "[{:?}] UNRESOLVED: {}\n(the F_p sweep misses branch points of residue degree > 1 — \
+             the F_{{p^k}} extension sweep is the next build item.)",
+            v.status, v.note
+        ),
+    }
+
+    // Function-field route (Layer 2) as a cross-check — may be slow at degree 24.
+    if std::env::args().any(|a| a == "--ff-genus") {
+        println!("\n--- Layer 2 cross-check (function-field different) ---");
+        println!("branch radical deg_t = {:?}", branch_radical(&f).degree());
+        match genus(&f) {
+            Ok(g) => println!("function-field genus = {g}"),
+            Err(e) => println!("deferred: {e:?}"),
+        }
     }
 }

@@ -112,6 +112,11 @@ fn different_at(f: &FfPoly, place: &Place) -> Result<i64, GenusError> {
     Err(GenusError::NeedsHigherOrder(place.clone()))
 }
 
+/// The different contribution at the place at infinity (first-order).
+pub fn infinity_different(f: &FfPoly) -> i64 {
+    newton_different(f, &Place::Infinite)
+}
+
 /// `(e−1)t` summed over the lower-hull faces of `{(i, v_place(c_i))}`.
 fn newton_different(f: &FfPoly, place: &Place) -> i64 {
     let n = f.degree().unwrap_or(0);

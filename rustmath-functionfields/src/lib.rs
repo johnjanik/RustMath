@@ -53,14 +53,20 @@
 //! - **Trager norm over algebraic base fields** (factoring over `ℚ(t)(α)`); only
 //!   the purely transcendental base `ℚ(t)` is handled.
 
+pub mod branch_cycles;
 pub mod factor;
 pub mod function_field;
 pub mod genus;
 pub mod places;
 pub mod ratfunc;
+pub mod status;
 
+pub use branch_cycles::{
+    cycle_type_at, finite_branch_cycles_mod_p, genus_from_branch_cycles, genus_via_branch_cycles,
+};
 pub use genus::{branch_radical, disc_x, genus, GenusError};
 pub use places::Place;
+pub use status::{MathStatus, Verdict};
 pub use factor::{factor_over_qt, is_irreducible_over_qt};
 pub use function_field::{
     ff_poly_from_coeffs, specialize_poly, FfPoly, FunctionField, QxPoly, Specialization,
