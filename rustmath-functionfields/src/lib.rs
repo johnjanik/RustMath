@@ -55,8 +55,12 @@
 
 pub mod factor;
 pub mod function_field;
+pub mod genus;
+pub mod places;
 pub mod ratfunc;
 
+pub use genus::{branch_radical, disc_x, genus, GenusError};
+pub use places::Place;
 pub use factor::{factor_over_qt, is_irreducible_over_qt};
 pub use function_field::{
     ff_poly_from_coeffs, specialize_poly, FfPoly, FunctionField, QxPoly, Specialization,
