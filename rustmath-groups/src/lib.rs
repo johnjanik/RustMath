@@ -9,6 +9,8 @@
 //! - Representation theory
 
 pub mod transitive24;
+pub mod transitive23;
+pub mod perm_predicates;
 pub mod ksubset_orbits;
 pub mod pgalois;
 pub mod permutation_group;

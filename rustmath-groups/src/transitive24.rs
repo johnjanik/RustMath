@@ -183,9 +183,27 @@ impl Db {
         Ok(Db { groups })
     }
 
-    /// Default path: `rustmath-groups/data/transitive_24.jsonl` relative to the crate.
+    /// Default path for the generator-based DB: `rustmath-groups/data/transitive_24.jsonl`.
+    ///
+    /// That file (the full `⟨gens⟩` per group) is not present in this checkout — only
+    /// the derived cycle-type support `data/transitive24_cycletypes.jsonl` is. Rather
+    /// than parse the wrong-schema file (it has no `gens`), fail gracefully with a
+    /// clear message pointing at [`CycleTypeSupport::load_default`], which is the
+    /// working path for cycle-type narrowing.
     pub fn load_default() -> std::io::Result<Db> {
         let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("data/transitive_24.jsonl");
+        if !path.exists() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!(
+                    "generator-based degree-24 DB not found at {}; this checkout ships only \
+                     the derived cycle-type support. Use \
+                     CycleTypeSupport::load_default() (data/transitive24_cycletypes.jsonl) \
+                     for Frobenius cycle-type narrowing.",
+                    path.display()
+                ),
+            ));
+        }
         Db::load(path)
     }
 }
