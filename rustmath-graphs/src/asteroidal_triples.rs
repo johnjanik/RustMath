@@ -255,23 +255,24 @@ mod tests {
     }
 
     #[test]
-    fn test_cycle_c4_is_not_at_free() {
-        // Cycle: 0-1-2-3-0
-        // {0, 1, 2} should form an asteroidal triple
+    fn test_cycle_c4_is_at_free() {
+        // Cycle C4: 0-1-2-3-0. Its maximum independent set has size 2, so C4
+        // contains no three mutually non-adjacent vertices and is therefore
+        // asteroidal-triple-free.
         let mut g = Graph::new(4);
         g.add_edge(0, 1).unwrap();
         g.add_edge(1, 2).unwrap();
         g.add_edge(2, 3).unwrap();
         g.add_edge(3, 0).unwrap();
-        assert!(!is_asteroidal_triple_free(&g));
+        assert!(is_asteroidal_triple_free(&g));
     }
 
     #[test]
-    fn test_independent_set_of_three_is_not_at_free() {
-        // Three independent vertices with no edges
-        // They form an asteroidal triple
+    fn test_independent_set_of_three_is_at_free() {
+        // Three independent vertices with no edges: no path connects any pair,
+        // so no asteroidal triple can exist -> the graph is AT-free.
         let g = Graph::new(3);
-        assert!(!is_asteroidal_triple_free(&g));
+        assert!(is_asteroidal_triple_free(&g));
     }
 
     #[test]

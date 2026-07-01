@@ -1142,7 +1142,7 @@ pub fn turan_graph(n: usize, r: usize) -> Graph {
 ///
 /// let g = windmill_graph(3, 4); // 4 triangles sharing a vertex
 /// assert_eq!(g.num_vertices(), 9); // 4*(3-1) + 1 = 9
-/// assert_eq!(g.num_edges(), 18); // 4*3*2/2 = 12
+/// assert_eq!(g.num_edges(), 12); // 4 * C(3,2) = 4*3 = 12
 /// ```
 pub fn windmill_graph(k: usize, n: usize) -> Graph {
     if k < 2 || n < 2 {
