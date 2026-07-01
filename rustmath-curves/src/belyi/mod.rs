@@ -26,8 +26,11 @@
 //! a separate agent.
 
 pub mod bad_locus;
+pub mod bridge;
+pub mod descent;
 pub mod encode;
 pub mod monodromy;
 pub mod pinned;
+pub mod pipeline;
 pub mod portal;
 pub mod verify;
