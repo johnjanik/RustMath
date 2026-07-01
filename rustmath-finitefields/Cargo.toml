@@ -11,6 +11,7 @@ rustmath-core = { path = "../rustmath-core" }
 rustmath-integers = { path = "../rustmath-integers" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
 num-traits = { workspace = true }
+once_cell = { workspace = true }
 serde = { workspace = true, optional = true }
 
 [features]

@@ -10,6 +10,12 @@ pub mod extension_field;
 pub mod integer_mod;
 pub mod prime_field;
 
+// --- MAGMA port Wave 1 (chapters 21, 19, 48) ---
+pub mod finite_field; // ch 21: GF(p^n) as a shared Parent (Conway embeddings)
+pub mod galois_ring; // ch 48: Galois rings GR(p^a, d) (finite chain rings)
+pub mod poly_factor; // ch 21: Cantor–Zassenhaus / DDF / EDF / irreducibility
+pub mod residue_ring; // ch 19: canonical Integers(m) = Z/mZ
+
 pub use conway::{available_conway_polynomials, conway_polynomial, has_conway_polynomial};
 pub use extension_field::ExtensionField;
 pub use integer_mod::{
@@ -17,6 +23,15 @@ pub use integer_mod::{
     IntegerMod,
 };
 pub use prime_field::PrimeField;
+
+pub use finite_field::{FiniteField, FiniteFieldElement};
+pub use galois_ring::{GaloisRing, GaloisRingElement};
+pub use poly_factor::{
+    distinct_degree_factorization, equal_degree_factorization, factor as factor_fq,
+    find_irreducible, irreducible_polynomial, is_irreducible, is_irreducible_fp, roots,
+    square_free_factorization, FqPoly,
+};
+pub use residue_ring::{Integers, ResidueClassRingElement};
 
 #[cfg(test)]
 mod tests {
