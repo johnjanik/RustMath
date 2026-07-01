@@ -50,5 +50,30 @@ integration test (`homotopy_exactify.rs`, green); the library builds clean. Fix:
 disambiguate the trait method call (e.g. `Integrable::eval(&f, ...)`). Not on the
 M23 critical path.
 
+## 5. `rustmath-curves`: pre-existing foundation breakage BLOCKS in-tree build (26 errors)
+`cargo build -p rustmath-curves` fails with ~26 committed errors in unrelated
+modules (`cantor`, `divisor`, `hyperelliptic`, `jacobian`, `lfunction`,
+`parameterization`, `plane_curve`, `riemann_roch`, `singularities`, `weierstrass`)
+from a foundation trait-bound migration (`NumericConversion`/`EuclideanDomain`).
+Verified identical (26) with and without our `belyi/` changes — zero attributable
+to `belyi/`. Because the breakage is committed (not stash-able), the whole lib
+can't link, so our `belyi/` code cannot build/test in-tree; it was verified via a
+standalone `#[path]`-include harness (22 tests green). **This is likely resolved by
+the `magma-port/wave0-foundation` migration once it reaches `rustmath-curves`.**
+BLOCKING for running the M23 solve pipeline in-tree — coordinate with the
+magma-port effort. (Our belyi source is committed and correct; it just can't link
+until curves' other modules are migrated.)
+
+## 6. Coordination: shared main working tree vs the magma-port worktrees
+The magma-port instance uses isolated `.claude/worktrees/agent-*` (good). Our
+dessin refactor has been working in the SHARED main tree on branch
+`refactor/dessin-to-rustmath`; mid-session an external checkout switched the main
+tree (refactor → wave0-foundation → main), which broke an agent's imports until
+switched back. Two efforts must not share one working tree with branch switches.
+Resolution options (user decision): put the dessin refactor in its own dedicated
+worktree too, or reserve the main tree for one effort. Our work is committed to
+`refactor/dessin-to-rustmath`, so it survives switches, but active agents can be
+disrupted.
+
 ---
 *(append new orthogonal breakage/dependency items here as they are found)*

@@ -17,6 +17,7 @@ rustmath-complex = { path = "../rustmath-complex" }
 rustmath-finitefields = { path = "../rustmath-finitefields" }
 rustmath-rings = { path = "../rustmath-rings" }
 rustmath-schemes = { path = "../rustmath-schemes" }
+rustmath-groups = { path = "../rustmath-groups" }
 num-bigint = { workspace = true }
 num-rational = { workspace = true }
 num-traits = { workspace = true }

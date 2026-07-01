@@ -62,6 +62,7 @@ pub mod special_divisors;
 pub mod divisor;
 pub mod cantor;
 pub mod jacobian;
+pub mod belyi;
 
 pub use plane_curve::{PlaneCurve, AffineCurve, ProjectiveCurve};
 pub use singularities::{Singularity, SingularityType};
