@@ -16,6 +16,19 @@ use std::fmt::Display;
 use std::hash::Hash;
 use thiserror::Error;
 
+// --- MAGMA rewriting / automatic-structure machinery (chapters 74, 75, 78) ---
+pub mod word_ordering;
+pub mod knuth_bendix;
+pub mod reduction_automaton;
+pub mod rws_group;
+pub mod automatic_group;
+
+pub use automatic_group::{AutomaticGroup, AutomaticGroupElement};
+pub use knuth_bendix::{KbLimits, RewritingSystem, Rule, Word};
+pub use reduction_automaton::{GrowthFunction, ReductionAutomaton};
+pub use rws_group::{RwsGroup, RwsGroupElement};
+pub use word_ordering::WordOrdering;
+
 #[derive(Debug, Error)]
 pub enum AutomataError {
     #[error("Invalid state: {0}")]
