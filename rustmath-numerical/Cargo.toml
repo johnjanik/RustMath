@@ -12,7 +12,16 @@ rustmath-core = { path = "../rustmath-core" }
 rustmath-reals = { path = "../rustmath-reals" }
 rustmath-complex = { path = "../rustmath-complex" }
 rustmath-features = { path = "../rustmath-features" }
+# Wave 2 (parameter-homotopy solve interface): exact foundation + neighbour crates.
+rustmath-integers = { path = "../rustmath-integers" }
+rustmath-rationals = { path = "../rustmath-rationals" }
+rustmath-polynomials = { path = "../rustmath-polynomials" }
+rustmath-numberfields = { path = "../rustmath-numberfields" }
 num-traits = { workspace = true }
+num-bigint = { workspace = true }
+serde = { workspace = true }
+serde_json = "1.0"
+thiserror = { workspace = true }
 lazy_static = "1.4"
 
 # Optional dependencies for BLAS/LAPACK support

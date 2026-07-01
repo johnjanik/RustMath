@@ -41,5 +41,14 @@ real `elimination.rs`. Fix: implement true polynomial coefficient division in th
 reducer. NOT on the M23 critical path — Gröbner is demoted in favor of parameter
 homotopy for the solve; `PolySystem` (the piece Wave 2/3 need) is done and green.
 
+## 4. `rustmath-numerical`: pre-existing `src/lib.rs` test-module breakage
+The crate's own `#[cfg(test)]` block in `src/lib.rs` fails to compile — `f.eval`
+is ambiguous between the `Integrable` and `Optimizable` traits (lines ~216/222).
+Predates our work (confirmed by `git stash`). Consequence: `cargo test -p
+rustmath-numerical --lib` won't build. Our Wave-2 code was verified via a `tests/`
+integration test (`homotopy_exactify.rs`, green); the library builds clean. Fix:
+disambiguate the trait method call (e.g. `Integrable::eval(&f, ...)`). Not on the
+M23 critical path.
+
 ---
 *(append new orthogonal breakage/dependency items here as they are found)*

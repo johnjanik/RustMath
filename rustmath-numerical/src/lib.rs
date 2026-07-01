@@ -172,6 +172,9 @@ pub mod interpolation;
 pub mod fft;
 pub mod linear_programming;
 pub mod backends;
+// Wave 2 (DESSIN_REFACTOR_PLAN.md, Agent U): the parameter-homotopy solve route.
+pub mod homotopy;
+pub mod exactify;
 
 // Re-export commonly used items
 pub use root_finding::{find_root, bisection, newton_raphson, secant};
