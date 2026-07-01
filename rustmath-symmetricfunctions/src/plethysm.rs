@@ -125,6 +125,8 @@ pub fn schur_elementary_plethysm(lambda: &Partition, m: usize) -> SymFun {
 mod tests {
     use super::*;
     use crate::basis::power_sum_symmetric;
+    use rustmath_rationals::Rational;
+    use rustmath_core::Ring;
 
     #[test]
     fn test_power_sum_plethysm_basic() {
