@@ -17,6 +17,12 @@ pub mod complex_interval;
 pub mod complex_interval_field;
 pub mod complex_mpc_ext;
 
+// Wave 0 (MAGMA port): pure-Rust arbitrary-precision complex + balls (additive).
+pub mod bigcomplex;
+pub mod ball;
+// Wave 0 (MAGMA port): wire ComplexMPFR into the new core traits (additive).
+pub mod mpc_impls;
+
 pub use complex::{Complex, ComplexField};
 pub use mpc::{ComplexMPFR, DEFAULT_PRECISION};
 pub use complex_arb::{ComplexBall, ComplexBallField, IntegrationContext};

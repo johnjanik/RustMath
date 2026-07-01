@@ -14,6 +14,11 @@ pub mod real;
 pub mod rounding;
 pub mod transcendental;
 
+// Wave 0 (MAGMA port): pure-Rust arbitrary-precision real (additive).
+pub mod bigfloat;
+// Wave 0 (MAGMA port): wire RealMPFR into the new core traits (additive).
+pub mod mpfr_impls;
+
 pub use interval::Interval;
 pub use mpfr::{RealMPFR, DEFAULT_PRECISION};
 pub use real::{Real, RealField};

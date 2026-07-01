@@ -228,9 +228,9 @@ impl fmt::Display for MPFRtoMPC {
 /// # Examples
 ///
 /// ```
-/// use rustmath_complex::mp_complex_field;
+/// use rustmath_complex::mpcomplex_field;
 ///
-/// let field = mp_complex_field(Some(256));
+/// let field = mpcomplex_field(Some(256));
 /// // Use field for creating high-precision complex numbers
 /// ```
 pub fn mpcomplex_field(precision: Option<u32>) -> MpcomplexFieldClass {
@@ -454,6 +454,9 @@ pub fn split_complex_string(s: &str) -> Result<(String, String), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    // Pre-existing tests reference `Ring::is_zero`/`is_one`; bring the trait
+    // into scope so the crate's test binary compiles (was red on `main`).
+    use rustmath_core::Ring;
 
     #[test]
     fn test_cc_to_mpc() {
@@ -500,7 +503,7 @@ mod tests {
 
     #[test]
     fn test_mp_complex_field() {
-        let field = mp_complex_field(Some(256));
+        let field = mpcomplex_field(Some(256));
         assert_eq!(field.precision(), 256);
 
         let z = field.make_complex(3.0, 4.0);
