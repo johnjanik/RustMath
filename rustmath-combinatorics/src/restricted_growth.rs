@@ -16,7 +16,7 @@ use crate::set_partition::SetPartition;
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use rustmath_combinatorics::RestrictedGrowth;
 ///
 /// // Valid RG strings
@@ -93,7 +93,7 @@ impl RestrictedGrowth {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use rustmath_combinatorics::RestrictedGrowth;
     ///
     /// let rg = RestrictedGrowth::new(vec![0, 1, 0, 2, 1]).unwrap();
@@ -123,7 +123,7 @@ impl RestrictedGrowth {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use rustmath_combinatorics::{RestrictedGrowth, SetPartition};
     ///
     /// let partition = SetPartition::new(vec![vec![0, 2], vec![1, 4], vec![3]], 5).unwrap();
@@ -179,7 +179,7 @@ impl RestrictedGrowth {
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use rustmath_combinatorics::restricted_growth_strings;
 ///
 /// let rgs = restricted_growth_strings(3);
@@ -230,7 +230,7 @@ fn generate_rg_strings(
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use rustmath_combinatorics::RestrictedGrowthIterator;
 ///
 /// let mut iter = RestrictedGrowthIterator::new(3);

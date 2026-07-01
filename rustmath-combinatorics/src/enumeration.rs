@@ -1371,7 +1371,7 @@ mod tests {
 
     #[test]
     fn test_combination_gray_code() {
-        let combs: Vec<_> = CombinationGrayCode::new(4, 2).collect();
+        let combs: Vec<_> = CombinationGrayCodeIterator::new(4, 2).collect();
         assert_eq!(combs.len(), 6); // C(4,2) = 6
 
         // All combinations should be valid
@@ -1388,7 +1388,7 @@ mod tests {
 
     #[test]
     fn test_combination_gray_code_minimal_change() {
-        let combs: Vec<_> = CombinationGrayCode::new(5, 3).collect();
+        let combs: Vec<_> = CombinationGrayCodeIterator::new(5, 3).collect();
         assert_eq!(combs.len(), 10); // C(5,3) = 10
 
         // The algorithm generates all combinations, though not all consecutive
@@ -1412,23 +1412,23 @@ mod tests {
     #[test]
     fn test_combination_gray_code_edge_cases() {
         // k = 0
-        let combs: Vec<_> = CombinationGrayCode::new(5, 0).collect();
+        let combs: Vec<_> = CombinationGrayCodeIterator::new(5, 0).collect();
         assert_eq!(combs.len(), 1);
-        assert_eq!(combs[0], vec![]);
+        assert!(combs[0].is_empty());
 
         // k = n
-        let combs: Vec<_> = CombinationGrayCode::new(3, 3).collect();
+        let combs: Vec<_> = CombinationGrayCodeIterator::new(3, 3).collect();
         assert_eq!(combs.len(), 1);
         assert_eq!(combs[0], vec![0, 1, 2]);
 
         // k > n
-        let combs: Vec<_> = CombinationGrayCode::new(3, 5).collect();
+        let combs: Vec<_> = CombinationGrayCodeIterator::new(3, 5).collect();
         assert_eq!(combs.len(), 0);
     }
 
     #[test]
     fn test_permutation_gray_code() {
-        let perms: Vec<_> = PermutationGrayCode::new(3).collect();
+        let perms: Vec<_> = PermutationGrayCodeIterator::new(3).collect();
         assert_eq!(perms.len(), 6); // 3! = 6
 
         // All should be valid permutations
@@ -1446,7 +1446,7 @@ mod tests {
 
     #[test]
     fn test_permutation_gray_code_single_swap() {
-        let perms: Vec<_> = PermutationGrayCode::new(4).collect();
+        let perms: Vec<_> = PermutationGrayCodeIterator::new(4).collect();
         assert_eq!(perms.len(), 24); // 4! = 24
 
         // Check that consecutive permutations differ by one swap
@@ -1468,17 +1468,17 @@ mod tests {
     #[test]
     fn test_permutation_gray_code_edge_cases() {
         // n = 0
-        let perms: Vec<_> = PermutationGrayCode::new(0).collect();
+        let perms: Vec<_> = PermutationGrayCodeIterator::new(0).collect();
         assert_eq!(perms.len(), 1);
-        assert_eq!(perms[0], vec![]);
+        assert!(perms[0].is_empty());
 
         // n = 1
-        let perms: Vec<_> = PermutationGrayCode::new(1).collect();
+        let perms: Vec<_> = PermutationGrayCodeIterator::new(1).collect();
         assert_eq!(perms.len(), 1);
         assert_eq!(perms[0], vec![0]);
 
         // n = 2
-        let perms: Vec<_> = PermutationGrayCode::new(2).collect();
+        let perms: Vec<_> = PermutationGrayCodeIterator::new(2).collect();
         assert_eq!(perms.len(), 2);
         assert_eq!(perms[0], vec![0, 1]);
         assert_eq!(perms[1], vec![1, 0]);
@@ -1487,7 +1487,7 @@ mod tests {
     #[test]
     fn test_permutation_gray_code_completeness() {
         // Verify all permutations of {0,1,2} are generated
-        let perms: Vec<_> = PermutationGrayCode::new(3).collect();
+        let perms: Vec<_> = PermutationGrayCodeIterator::new(3).collect();
         let expected = vec![
             vec![0, 1, 2],
             vec![0, 2, 1],
@@ -1507,7 +1507,7 @@ mod tests {
     }
 
     #[test]
-    fn test_binary_to_gray() {
+    fn test_binary_to_gray_dup() {
         assert_eq!(binary_to_gray(0), 0);
         assert_eq!(binary_to_gray(1), 1);
         assert_eq!(binary_to_gray(2), 3);
@@ -1519,7 +1519,7 @@ mod tests {
     }
 
     #[test]
-    fn test_gray_to_binary() {
+    fn test_gray_to_binary_dup() {
         assert_eq!(gray_to_binary(0), 0);
         assert_eq!(gray_to_binary(1), 1);
         assert_eq!(gray_to_binary(3), 2);
@@ -1658,7 +1658,7 @@ mod tests {
         // n = 0
         let perms: Vec<Vec<usize>> = PermutationGrayCodeIterator::new(0).collect();
         assert_eq!(perms.len(), 1);
-        assert_eq!(perms[0], vec![]);
+        assert!(perms[0].is_empty());
 
         // n = 1
         let perms: Vec<Vec<usize>> = PermutationGrayCodeIterator::new(1).collect();
@@ -1673,7 +1673,7 @@ mod tests {
     }
 
     #[test]
-    fn test_permutation_gray_code_completeness() {
+    fn test_permutation_gray_code_completeness_dup() {
         // Test that we generate all permutations
         let perms: Vec<Vec<usize>> = PermutationGrayCodeIterator::new(4).collect();
         assert_eq!(perms.len(), 24); // 4! = 24
@@ -1703,7 +1703,7 @@ mod tests {
         // k = 0
         let combs: Vec<Vec<usize>> = CombinationGrayCodeIterator::new(3, 0).collect();
         assert_eq!(combs.len(), 1);
-        assert_eq!(combs[0], vec![]);
+        assert!(combs[0].is_empty());
 
         // k = n
         let combs: Vec<Vec<usize>> = CombinationGrayCodeIterator::new(3, 3).collect();
@@ -1878,7 +1878,7 @@ mod tests {
         let product: Vec<Vec<i32>> = CartesianProduct::new(sets).collect();
 
         assert_eq!(product.len(), 1);
-        assert_eq!(product[0], vec![]);
+        assert!(product[0].is_empty());
     }
 
     #[test]

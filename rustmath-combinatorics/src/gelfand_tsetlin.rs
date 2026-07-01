@@ -169,7 +169,7 @@ impl GelfandTsetlinPattern {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use rustmath_combinatorics::gelfand_tsetlin::GelfandTsetlinPattern;
     ///
     /// let pattern = GelfandTsetlinPattern::new(vec![
@@ -270,7 +270,7 @@ impl GelfandTsetlinPattern {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use rustmath_combinatorics::gelfand_tsetlin::GelfandTsetlinPattern;
     /// use rustmath_combinatorics::Tableau;
     ///

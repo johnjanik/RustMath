@@ -93,6 +93,13 @@ pub mod wreath_product;
 pub mod ncsym;
 pub mod key_polynomial;
 
+// MAGMA port (Wave 1): Chapters 92, 144, 145, 147, 148.
+pub mod ch144_enumerative;
+pub mod plactic_monoid;
+pub mod young_representations;
+pub mod incidence_structure;
+pub mod hadamard;
+
 pub use affine_permutations::{AffinePermutation, CoxeterType};
 pub use baxter_permutations::{baxter_permutations, count_baxter_permutations, is_baxter};
 pub use bijectionist::{
@@ -338,6 +345,24 @@ pub use parking_function::{
 pub use cluster_complex::{
     associahedron, cluster_complex_type_a, AlmostPositiveRoot, Cluster, ClusterCartanType,
     ClusterComplex, GeneralizedAssociahedron,
+};
+
+// MAGMA port (Wave 1) re-exports.
+pub use ch144_enumerative::{
+    bernoulli_polynomial, eval_poly, fibonacci_signed, generalized_fibonacci_number,
+    lucas_signed, number_of_permutations,
+};
+pub use plactic_monoid::{
+    elementary_knuth_moves, is_knuth_equivalent, knuth_class, PlacticElement, PlacticIntegerMonoid,
+};
+pub use young_representations::{
+    hook_length, hook_length_dimension, seminormal_representation, seminormal_transposition,
+    symmetric_character_value,
+};
+pub use incidence_structure::{DesignParameters, IncidenceStructure};
+pub use hadamard::{
+    hadamard_3_design, hadamard_invariant, is_hadamard, is_hadamard_equivalent, paley_type_i,
+    paley_type_ii,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module

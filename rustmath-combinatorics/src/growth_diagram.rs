@@ -434,7 +434,7 @@ mod tests {
         assert_eq!(sequence[2].size(), 2);
 
         // Check that shapes grow
-        assert_eq!(sequence[0].final_shape().parts(), &[]);
+        assert!(sequence[0].final_shape().parts().is_empty());
         assert_eq!(sequence[1].final_shape().parts(), &[1]);
         assert_eq!(sequence[2].final_shape().parts(), &[1, 1]);
     }

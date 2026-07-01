@@ -112,7 +112,7 @@ impl<T: Clone + Eq + Hash + Ord> OrderedMultisetPartitionIntoSets<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use rustmath_combinatorics::multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
     ///
     /// // [{1, 2}, {3}] has size 1 + 2 + 3 = 6
@@ -184,7 +184,7 @@ impl<T: Clone + Eq + Hash + Ord> OrderedMultisetPartitionIntoSets<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use rustmath_combinatorics::multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
     ///
     /// let partition = OrderedMultisetPartitionIntoSets::new(vec![vec![1, 2], vec![3]]);

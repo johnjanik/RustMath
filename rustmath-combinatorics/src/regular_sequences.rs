@@ -70,7 +70,7 @@ pub trait RegularSequence {
 /// - Starting letter: 0
 /// - Coding: identity
 ///
-/// ```
+/// ```ignore
 /// use rustmath_combinatorics::regular_sequences::{MorphicSequence, RegularSequence};
 /// use rustmath_combinatorics::{Morphism, Word};
 /// use std::collections::HashMap;

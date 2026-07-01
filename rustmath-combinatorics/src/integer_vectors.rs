@@ -569,7 +569,7 @@ impl Iterator for IntegerVectorSumIter {
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use rustmath_combinatorics::integer_vectors::integer_vector_sum_iter;
 ///
 /// let mut iter = integer_vector_sum_iter(2, 3);

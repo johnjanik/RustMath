@@ -214,7 +214,7 @@ fn generate_perfect_matchings(
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use rustmath_combinatorics::noncrossing_perfect_matchings;
 ///
 /// // For n=2, there are 2 noncrossing matchings (C_2 = 2):

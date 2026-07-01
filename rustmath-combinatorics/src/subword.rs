@@ -780,7 +780,7 @@ mod tests {
     #[test]
     fn test_subword_positions_empty() {
         let positions = subword_positions(&[], &[1, 2, 3]);
-        assert_eq!(positions, vec![vec![]]);
+        assert!(positions.len() == 1 && positions[0].is_empty());
     }
 
     #[test]

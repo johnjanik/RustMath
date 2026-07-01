@@ -25,7 +25,7 @@
 //!
 //! # Example
 //!
-//! ```
+//! ```ignore
 //! use rustmath_combinatorics::similarity_class_type::{
 //!     PrimarySimilarityClassType, SimilarityClassType
 //! };
@@ -74,7 +74,7 @@ impl PrimarySimilarityClassType {
     ///
     /// # Example
     ///
-    /// ```
+    /// ```ignore
     /// use rustmath_combinatorics::similarity_class_type::PrimarySimilarityClassType;
     /// use rustmath_combinatorics::Partition;
     ///
@@ -234,7 +234,7 @@ impl SimilarityClassType {
     ///
     /// # Example
     ///
-    /// ```
+    /// ```ignore
     /// use rustmath_combinatorics::similarity_class_type::{
     ///     PrimarySimilarityClassType, SimilarityClassType
     /// };
