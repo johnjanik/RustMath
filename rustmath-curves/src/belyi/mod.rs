@@ -34,4 +34,5 @@ pub mod monodromy;
 pub mod pinned;
 pub mod pipeline;
 pub mod portal;
+pub mod solve;
 pub mod verify;

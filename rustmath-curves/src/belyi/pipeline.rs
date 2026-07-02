@@ -27,7 +27,9 @@ use crate::belyi::descent::{
     SigmaCorrespondence,
 };
 use crate::belyi::pinned::{self, pinned_system_2_12_5};
+use crate::belyi::solve::gate_default;
 use crate::belyi::verify::{verify_2_12_5_cover, ExactBelyiCover, VerificationReport};
+use rustmath_numerical::root_finding::RootClass;
 use rustmath_groups::transitive23::Group23;
 use rustmath_integers::Integer;
 use rustmath_numerical::exactify::{exactify, ExactifyOutcome};
@@ -338,6 +340,10 @@ pub fn assemble_2_12_5_homotopy(seed: &HomotopySeed) -> ParameterHomotopyJob {
 #[derive(Debug, Clone)]
 pub struct DecideReport {
     pub name: String,
+    /// Stage 0 — the native true-root gate: is the numerical candidate a genuine
+    /// isolated root of `system`, or a spurious least-squares minimum? The conic
+    /// is withheld unless this is `TrueRoot`.
+    pub root_class: RootClass,
     /// Stage 1 — exactification of the numerical candidate.
     pub exactify: ExactifyOutcome,
     /// Stage 2 — the independent cover verification (hard constructibility gate).
@@ -351,8 +357,14 @@ pub struct DecideReport {
 }
 
 /// Chain the whole decide half, *once the emitted Julia job has produced a
-/// candidate* (`sol`): exactify → cover-verify → bad-locus → bridge → (descent) →
-/// conic → portal-conic.
+/// candidate* (`sol`): true-root gate → exactify → cover-verify → bad-locus →
+/// bridge → (descent) → conic → portal-conic.
+///
+/// * **Stage 0 (true-root gate)** screens `sol` against `system` with the native
+///   detector ([`crate::belyi::solve::gate_default`]): a spurious least-squares
+///   minimum of `‖F‖²` is not a cover, so the conic and portal-conic are withheld
+///   (`Unresolved`) unless the candidate refines as a genuine isolated root. The
+///   classification is recorded in [`DecideReport::root_class`].
 ///
 /// * `system` is the exact solving system the candidate is checked against
 ///   (`rustmath_numerical::exactify`).
@@ -375,6 +387,12 @@ pub fn decide_from_solved_cover<C: ExactBelyiCover>(
     bad_locus: Option<(&GenusZeroBelyiFactorizationQ, &P1PointQ)>,
     descent_cocycle: Option<&Gl2Quad>,
 ) -> DecideReport {
+    // Stage 0: the native true-root gate. A spurious least-squares minimum of
+    // ‖F‖² is not a cover; screen it out before trusting the candidate (the
+    // cover0_lm.npy lesson). The conic is withheld entirely unless this passes.
+    let root_class = gate_default(sol, system);
+    let gate_ok = root_class.is_true_root();
+
     // Stage 1: exactify the numerical candidate against the exact system.
     let outcome = exactify(sol, system, max_deg);
 
@@ -385,8 +403,13 @@ pub fn decide_from_solved_cover<C: ExactBelyiCover>(
     let bad_locus_status = bad_locus.map(|(f, p)| f.classify(p));
     let bad_locus_clear = matches!(bad_locus_status, Some(BadLocusStatus::Clear));
 
-    // Stages 4–5: bridge to a conic (or run descent for an extension-field cover).
-    let conic = if let Some(g) = descent_cocycle {
+    // Stages 4–5: bridge to a conic (or run descent for an extension-field cover)
+    // — but only if the candidate is a genuine root.
+    let conic = if !gate_ok {
+        Verdict::unresolved(&format!(
+            "numerical candidate rejected by true-root detector: {root_class:?}"
+        ))
+    } else if let Some(g) = descent_cocycle {
         descent_conic(g, bad_locus_clear)
     } else {
         match SolvedCover::from_exactify(&outcome) {
@@ -395,21 +418,27 @@ pub fn decide_from_solved_cover<C: ExactBelyiCover>(
         }
     };
 
-    // Stage 6: read into a portal-conic; a Split is only asserted on a full pass.
-    let portal_conic = match (&conic.value, conic.kind) {
-        (Some(report), VerdictKind::Constructed) => {
-            if verification.is_constructible() && bad_locus_clear {
-                PortalConic::from_report(report)
-            } else {
-                PortalConic::Unresolved
+    // Stage 6: read into a portal-conic; a Split is only asserted on a full pass,
+    // and nothing is promoted when the true-root gate rejected the candidate.
+    let portal_conic = if !gate_ok {
+        PortalConic::Unresolved
+    } else {
+        match (&conic.value, conic.kind) {
+            (Some(report), VerdictKind::Constructed) => {
+                if verification.is_constructible() && bad_locus_clear {
+                    PortalConic::from_report(report)
+                } else {
+                    PortalConic::Unresolved
+                }
             }
+            (Some(report), VerdictKind::LocallyEmpty) => PortalConic::from_report(report),
+            _ => PortalConic::Unresolved,
         }
-        (Some(report), VerdictKind::LocallyEmpty) => PortalConic::from_report(report),
-        _ => PortalConic::Unresolved,
     };
 
     DecideReport {
         name: name.to_string(),
+        root_class,
         exactify: outcome,
         verification,
         bad_locus: bad_locus_status,
@@ -793,8 +822,56 @@ mod tests {
             path_status: "candidate".into(),
         };
         let report = decide_from_solved_cover("smoke", &sol, &sys, 2, &DummyCover, None, None);
-        // The cover verifies, but Z_C clearance is not established ⇒ Unresolved.
+        // The candidate x=2 is a genuine root (gate passes)...
+        assert!(report.root_class.is_true_root());
+        // ...the cover verifies, but Z_C clearance is not established ⇒ Unresolved.
         assert!(report.verification.is_constructible());
+        assert_eq!(report.portal_conic, PortalConic::Unresolved);
+    }
+
+    #[test]
+    fn decide_rejects_spurious_numerical_candidate() {
+        // The true-root gate must reject a spurious least-squares minimum before
+        // the conic is ever read — the cover0_lm.npy guardrail. Inconsistent
+        // system {z-1, z-2}; the candidate near z=1.5 is a minimum, not a root.
+        struct DummyCover;
+        impl ExactBelyiCover for DummyCover {
+            fn verify_identity(&self) -> Result<(), String> {
+                Ok(())
+            }
+            fn verify_branch_locus_0_1_infty(&self) -> bool {
+                true
+            }
+            fn verify_ramification_2_12_5(&self) -> bool {
+                true
+            }
+            fn observed_genus(&self) -> Option<i64> {
+                Some(0)
+            }
+            fn verify_monodromy_independent(&self) -> Option<bool> {
+                Some(true)
+            }
+        }
+
+        let sys = PolySystem::from_terms(
+            1,
+            &[
+                vec![(vec![1], 1), (vec![0], -1)],
+                vec![(vec![1], 1), (vec![0], -2)],
+            ],
+        );
+        let sol = NumericalSolution {
+            coordinates_re_im_decimal: vec![rustmath_numerical::homotopy::CoordinateReIm {
+                re: "1.5".into(),
+                im: "0.0".into(),
+            }],
+            residual_norm_decimal: "1.0".into(),
+            path_status: "candidate".into(),
+        };
+        let report = decide_from_solved_cover("spurious", &sol, &sys, 2, &DummyCover, None, None);
+        // Gate catches it: not a true root ⇒ conic + portal-conic withheld.
+        assert!(!report.root_class.is_true_root());
+        assert_eq!(report.conic.kind, VerdictKind::Unresolved);
         assert_eq!(report.portal_conic, PortalConic::Unresolved);
     }
 }
