@@ -98,6 +98,32 @@ fn orbits(p: &Permutation) -> (Vec<usize>, usize) {
     (id, count)
 }
 
+/// Component id per element and the component count for `⟨p, q⟩` acting on
+/// `0..p.len()` (both `p`, `q` are permutations given as image slices).
+fn joint_orbits(p: &[usize], q: &[usize]) -> (Vec<usize>, usize) {
+    let n = p.len();
+    let mut id = vec![usize::MAX; n];
+    let mut count = 0;
+    let mut stack = Vec::new();
+    for start in 0..n {
+        if id[start] != usize::MAX {
+            continue;
+        }
+        id[start] = count;
+        stack.push(start);
+        while let Some(x) = stack.pop() {
+            for &y in &[p[x], q[x]] {
+                if id[y] == usize::MAX {
+                    id[y] = count;
+                    stack.push(y);
+                }
+            }
+        }
+        count += 1;
+    }
+    (id, count)
+}
+
 /// Flag index for `(edge e, side s ∈ {0,1}, end t ∈ {0,1})`.
 #[inline]
 fn flag(e: usize, s: usize, t: usize) -> usize {
@@ -147,39 +173,13 @@ impl FlagTriangulation {
             && (0..n).all(|f| self.nu_end[self.nu_side[f]] == self.nu_side[self.nu_end[f]])
     }
 
-    /// Number of orbits of `⟨p, q⟩` acting on `0..p.len()`.
-    fn joint_orbit_count(p: &[usize], q: &[usize]) -> usize {
-        let n = p.len();
-        let mut seen = vec![false; n];
-        let mut count = 0;
-        let mut stack = Vec::new();
-        for start in 0..n {
-            if seen[start] {
-                continue;
-            }
-            count += 1;
-            seen[start] = true;
-            stack.push(start);
-            while let Some(x) = stack.pop() {
-                for &y in &[p[x], q[x]] {
-                    if !seen[y] {
-                        seen[y] = true;
-                        stack.push(y);
-                    }
-                }
-            }
-        }
-        count
-    }
-
     /// Consistency of the flag orbits with the dessin: edge-midpoints from
     /// `⟨nu_end,nu_side⟩` = `deg`, faces from `⟨nu_end,nu_edge⟩` = `#face`, and
     /// vertices from `⟨nu_side,nu_edge⟩` = `#black + #white`.
     pub fn orbits_match_dessin(&self) -> bool {
-        Self::joint_orbit_count(&self.nu_end, &self.nu_side) == self.degree
-            && Self::joint_orbit_count(&self.nu_end, &self.nu_edge) == self.n_face
-            && Self::joint_orbit_count(&self.nu_side, &self.nu_edge)
-                == self.n_black + self.n_white
+        joint_orbits(&self.nu_end, &self.nu_side).1 == self.degree
+            && joint_orbits(&self.nu_end, &self.nu_edge).1 == self.n_face
+            && joint_orbits(&self.nu_side, &self.nu_edge).1 == self.n_black + self.n_white
     }
 }
 
@@ -198,26 +198,14 @@ pub fn flag_triangulation(
     let s1 = sigma1;
     let s1i = sigma1.inverse();
 
-    let (b_of, n_black) = orbits(sigma0);
-    let (w_of, n_white) = orbits(sigma1);
-    let (f_of, n_face) = orbits(&sigma_inf);
-
-    let base_white = n_black;
-    let base_face = n_black + n_white;
-    let base_mid = n_black + n_white + n_face;
+    let (_b_of, n_black) = orbits(sigma0);
+    let (_w_of, n_white) = orbits(sigma1);
+    let (_f_of, n_face) = orbits(&sigma_inf);
 
     let n = 4 * d;
     let mut nu_end = vec![0usize; n];
     let mut nu_side = vec![0usize; n];
     let mut nu_edge = vec![0usize; n];
-    let mut corners = vec![
-        FlagCorners {
-            vertex: 0,
-            midpoint: 0,
-            face: 0
-        };
-        n
-    ];
 
     for e in 0..d {
         for s in 0..2 {
@@ -241,20 +229,26 @@ pub fn flag_triangulation(
                 } else {
                     flag(rho_i.apply(e), 0, t)
                 };
-                // Corner vertex ids.
-                let vertex = if t == 0 {
-                    b_of[e]
-                } else {
-                    base_white + w_of[e]
-                };
-                corners[f] = FlagCorners {
-                    vertex,
-                    midpoint: base_mid + e,
-                    face: base_face + f_of[e],
-                };
             }
         }
     }
+
+    // Corner vertex ids come from the GEM orbits, so the two sides of an edge get
+    // the two *different* adjacent faces (a side-blind `f_of[e]` would collapse
+    // them, breaking the layout adjacency). Ranges are disjoint:
+    //   vertex ∈ [0, V), midpoint ∈ [V, V+E), face ∈ [V+E, V+E+F).
+    let (vertex_of, v_count) = joint_orbits(&nu_side, &nu_edge); // black ∪ white
+    let (mid_of, m_count) = joint_orbits(&nu_end, &nu_side); // = degree
+    let (face_of, _f_count) = joint_orbits(&nu_end, &nu_edge); // = n_face
+    let base_mid = v_count;
+    let base_face = v_count + m_count;
+    let corners: Vec<FlagCorners> = (0..n)
+        .map(|f| FlagCorners {
+            vertex: vertex_of[f],
+            midpoint: base_mid + mid_of[f],
+            face: base_face + face_of[f],
+        })
+        .collect();
 
     Ok(FlagTriangulation {
         degree: d,
