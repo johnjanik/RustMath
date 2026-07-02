@@ -400,8 +400,12 @@ impl<R: Ring> UnivariatePolynomial<R> {
             return false;
         }
 
+        // Square-free ⟺ gcd(f, f') is a nonzero constant. `gcd` here is not
+        // normalized to monic (see its note), so a coprime pair yields a nonzero
+        // constant ≠ 1; test degree == 0 rather than `is_one()` to avoid a
+        // false negative for every f whose gcd unit is not exactly 1.
         let g = self.gcd(&derivative);
-        g.is_one()
+        g.degree() == Some(0)
     }
 
     /// Construct the Sylvester matrix of two polynomials
