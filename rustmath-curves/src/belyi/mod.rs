@@ -36,6 +36,7 @@ pub mod flag_packing;
 pub mod flags;
 pub mod linear_scale_fit;
 pub mod monodromy;
+pub mod newton;
 pub mod packing;
 pub mod pinned;
 pub mod pipeline;
