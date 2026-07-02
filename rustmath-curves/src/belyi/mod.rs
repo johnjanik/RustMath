@@ -36,5 +36,7 @@ pub mod packing;
 pub mod pinned;
 pub mod pipeline;
 pub mod portal;
+pub mod regularize;
 pub mod solve;
+pub mod triangulation_audit;
 pub mod verify;
