@@ -19,11 +19,16 @@
 //! Hamilton conic `(-1,-1)`, ramified `{2,∞}` — so [`g6_mueller_gate`] must report
 //! it as `LocallyEmpty` (a correct negative: no M23/Q through Müller).
 
+use crate::belyi::audit::{self, GroupKind, GroupVerdict};
 use crate::belyi::bad_locus::{BadLocusStatus, GenusZeroBelyiFactorizationQ, P1PointQ};
 use crate::belyi::bridge::{bridge_and_read, read_explicit_conic, SolvedCover};
-use crate::belyi::descent::{descent_conic, Gl2Quad};
-use crate::belyi::pinned;
+use crate::belyi::descent::{
+    certify_phi_sigma_over_L, descent_conic, g_sigma_from_solved_cover, Gl2Quad, LCover,
+    SigmaCorrespondence,
+};
+use crate::belyi::pinned::{self, pinned_system_2_12_5};
 use crate::belyi::verify::{verify_2_12_5_cover, ExactBelyiCover, VerificationReport};
+use rustmath_groups::transitive23::Group23;
 use rustmath_integers::Integer;
 use rustmath_numerical::exactify::{exactify, ExactifyOutcome};
 use rustmath_numerical::homotopy::{ComplexDecimal, NumericalSolution, ParameterHomotopyJob};
@@ -413,6 +418,209 @@ pub fn decide_from_solved_cover<C: ExactBelyiCover>(
     }
 }
 
+// ---------------------------------------------------------------------------
+// The NON-PROVISIONAL decision — the audit-backed gate.
+// ---------------------------------------------------------------------------
+
+/// The audit-backed, non-provisional verdict for a solved cover.
+#[derive(Debug, Clone)]
+pub enum NonProvisionalVerdict {
+    /// **The payoff.** The cover is over `Q`, its monodromy is confirmed `M24`,
+    /// and a rational `1+23` split yields an irreducible degree-23 residual
+    /// classified as `M23`. `residual23` **is** the M23/`Q` witnessing polynomial.
+    M23QRealized {
+        residual23: Vec<Integer>,
+        group: Group23,
+    },
+    /// The cover is over a quadratic `L = Q(√δ)`; the gluing `φ^σ = φ ∘ g_σ` is
+    /// certified exactly (B3), and the descent conic `(δ, β)` gives the Hasse
+    /// obstruction verdict *through this cover*.
+    ObstructedThroughCover {
+        conic: Verdict<ConicBrauerReport>,
+        portal: PortalConic,
+    },
+    /// Honest refusal: the audit does not force the group (parasitic/degenerate
+    /// solution, unforced M24, reducible residual, uncertified gluing, or missing
+    /// inputs). Never asserts a group without the evidence.
+    Unresolved(String),
+}
+
+/// The full record of a non-provisional decision.
+#[derive(Debug, Clone)]
+pub struct DecideReportNonProvisional {
+    pub name: String,
+    /// Stage 1 — exactification (the field of definition).
+    pub exactify: ExactifyOutcome,
+    /// Stage 2 — the independent M24 monodromy audit (over `Q`; `Unresolved` for
+    /// the `L`-coordinatized branch, where B3 is the certificate instead).
+    pub m24: GroupVerdict,
+    /// The bad-locus (S4) classification, when a point was supplied.
+    pub bad_locus: Option<BadLocusStatus>,
+    /// The decisive verdict.
+    pub verdict: NonProvisionalVerdict,
+    pub notes: Vec<String>,
+}
+
+impl DecideReportNonProvisional {
+    /// True exactly when the M23/`Q` realization is witnessed (the payoff).
+    pub fn is_m23_q_realized(&self) -> bool {
+        matches!(self.verdict, NonProvisionalVerdict::M23QRealized { .. })
+    }
+}
+
+fn portal_from_conic(conic: &Verdict<ConicBrauerReport>) -> PortalConic {
+    match (&conic.value, conic.kind) {
+        (Some(report), VerdictKind::Constructed) | (Some(report), VerdictKind::LocallyEmpty) => {
+            PortalConic::from_report(report)
+        }
+        _ => PortalConic::Unresolved,
+    }
+}
+
+/// The **non-provisional decision gate** for the `[2,12,5]` solve.
+///
+/// Chains, once a candidate `sol` is in hand:
+/// 1. `exactify` against [`pinned_system_2_12_5`] → the field of definition;
+/// 2. run [`audit::audit_m24`]; a verdict is only trustworthy when the monodromy
+///    is **Confirmed(M24)** — a parasitic/degenerate solution fails here;
+/// 3. **over `Q`** (`CertifiedRational`): run [`audit::audit_m23_residual`]; an
+///    irreducible degree-23 residual classified `M23` ⇒
+///    [`NonProvisionalVerdict::M23QRealized`] with the witnessing polynomial —
+///    *the* M23/`Q` realization;
+/// 4. **over `L`** (`AlgebraicCoordinates`, quadratic): recover `g_σ` (B5), certify
+///    `φ^σ = φ ∘ g_σ` exactly (B3), then read the descent conic `(δ, β)` →
+///    [`NonProvisionalVerdict::ObstructedThroughCover`];
+/// 5. anything ambiguous ⇒ honest [`NonProvisionalVerdict::Unresolved`]. The
+///    bad-locus (S4) must be clear before a conic is promoted.
+///
+/// `x0_candidates` are rational source points to try for the `1+23` split (the
+/// true `x₀` are rational roots of the solved numerator). `l_descent` supplies the
+/// `L`-cover and the labelled `σ`-correspondence for the quadratic branch (absent
+/// until the solved `L`-coordinates are available).
+///
+/// NOTE (before publication): follow this native statistical audit with an exact
+/// OSCAR `galois_group` cross-check of the degree-24 fibre and the degree-23
+/// residual.
+#[allow(clippy::too_many_arguments)]
+pub fn decide_nonprovisional(
+    name: &str,
+    sol: &NumericalSolution,
+    max_deg: usize,
+    primes: &[i64],
+    x0_candidates: &[Rational],
+    l_descent: Option<(&LCover, &SigmaCorrespondence)>,
+    bad_locus: Option<(&GenusZeroBelyiFactorizationQ, &P1PointQ)>,
+) -> DecideReportNonProvisional {
+    let system = pinned_system_2_12_5();
+    let outcome = exactify(sol, &system, max_deg);
+
+    let bad_locus_status = bad_locus.map(|(f, p)| f.classify(p));
+    let bad_locus_clear = matches!(bad_locus_status, Some(BadLocusStatus::Clear));
+
+    let mut notes: Vec<String> =
+        vec!["non-provisional: audit-backed (OSCAR galois_group cross-check to follow)".into()];
+
+    let (m24, verdict) = match &outcome {
+        ExactifyOutcome::CertifiedRational(pt) => {
+            // Over Q: the decisive M24 gate, then the M23/Q realization.
+            let m24 = audit::audit_m24(pt, primes);
+            if m24 == GroupVerdict::Confirmed(GroupKind::M24) {
+                let w = audit::audit_m23_residual(pt, x0_candidates, primes);
+                notes.extend(w.notes.iter().cloned());
+                match (w.is_m23_realized(), w.residual, w.group23) {
+                    (true, Some(residual23), Some(group)) => (
+                        m24,
+                        NonProvisionalVerdict::M23QRealized { residual23, group },
+                    ),
+                    _ => (
+                        m24,
+                        NonProvisionalVerdict::Unresolved(
+                            "M24 confirmed but no irreducible degree-23 residual classified M23 \
+                             (try more rational x0 source points / more primes)"
+                                .into(),
+                        ),
+                    ),
+                }
+            } else {
+                (
+                    m24.clone(),
+                    NonProvisionalVerdict::Unresolved(format!(
+                        "audit_m24 = {m24:?} (not Confirmed(M24)): parasitic/degenerate or \
+                         under-sampled — verdict withheld"
+                    )),
+                )
+            }
+        }
+        ExactifyOutcome::AlgebraicCoordinates(_) => {
+            // Over L: the Q-Frobenius M24 audit does not apply to the L-coordinate
+            // tuple; the exact B3 gluing identity is the certificate instead.
+            notes.push(
+                "cover over quadratic L: M24 confirmed via the exact φ^σ=φ∘g_σ gluing (B3), \
+                 not the Q-Frobenius audit"
+                    .into(),
+            );
+            match l_descent {
+                Some((cover, corr)) => match g_sigma_from_solved_cover(corr) {
+                    Ok(g) => {
+                        if certify_phi_sigma_over_L(cover, &g) {
+                            let conic = descent_conic(&g, bad_locus_clear);
+                            let portal = portal_from_conic(&conic);
+                            (
+                                GroupVerdict::Unresolved,
+                                NonProvisionalVerdict::ObstructedThroughCover { conic, portal },
+                            )
+                        } else {
+                            (
+                                GroupVerdict::Unresolved,
+                                NonProvisionalVerdict::Unresolved(
+                                    "B3 FAILED: φ^σ = φ∘g_σ is not an exact identity over L — \
+                                     gluing uncertified"
+                                        .into(),
+                                ),
+                            )
+                        }
+                    }
+                    Err(e) => (
+                        GroupVerdict::Unresolved,
+                        NonProvisionalVerdict::Unresolved(format!(
+                            "B5 g_σ recovery failed: {e:?}"
+                        )),
+                    ),
+                },
+                None => (
+                    GroupVerdict::Unresolved,
+                    NonProvisionalVerdict::Unresolved(
+                        "cover over L but B5/B3 inputs (L-cover + σ-correspondence) not supplied \
+                         — awaiting solved L-coordinates"
+                            .into(),
+                    ),
+                ),
+            }
+        }
+        ExactifyOutcome::RecognitionFailed => (
+            GroupVerdict::Unresolved,
+            NonProvisionalVerdict::Unresolved(
+                "exactification RecognitionFailed (raise max_deg?)".into(),
+            ),
+        ),
+        ExactifyOutcome::SubstitutionFailed => (
+            GroupVerdict::Unresolved,
+            NonProvisionalVerdict::Unresolved(
+                "exactification SubstitutionFailed (spurious homotopy path)".into(),
+            ),
+        ),
+    };
+
+    DecideReportNonProvisional {
+        name: name.to_string(),
+        exactify: outcome,
+        m24,
+        bad_locus: bad_locus_status,
+        verdict,
+        notes,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -521,6 +729,33 @@ mod tests {
 
         let sys = parameter_system_2_12_5();
         assert!(sys.is_exact_solution(&point));
+    }
+
+    #[test]
+    fn decide_nonprovisional_is_honest_on_a_non_solution() {
+        // A rational 25-vector that is NOT a zero of the pinned system exactifies
+        // to SubstitutionFailed ⇒ the non-provisional gate withholds a verdict
+        // (Unresolved), never asserting M24/M23.
+        let coords: Vec<rustmath_numerical::homotopy::CoordinateReIm> = (0..pinned::NUM_UNKNOWNS)
+            .map(|i| rustmath_numerical::homotopy::CoordinateReIm {
+                re: format!("{}.0", (i as i64 % 3) + 1),
+                im: "0.0".into(),
+            })
+            .collect();
+        let sol = NumericalSolution {
+            coordinates_re_im_decimal: coords,
+            residual_norm_decimal: "0.0".into(),
+            path_status: "candidate".into(),
+        };
+        let primes = [7i64, 11, 13, 17, 19, 23];
+        let report =
+            decide_nonprovisional("smoke", &sol, 4, &primes, &[ri(2), ri(-1)], None, None);
+        assert_eq!(report.m24, GroupVerdict::Unresolved);
+        assert!(!report.is_m23_q_realized());
+        assert!(matches!(
+            report.verdict,
+            NonProvisionalVerdict::Unresolved(_)
+        ));
     }
 
     #[test]

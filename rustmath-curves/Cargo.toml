@@ -30,3 +30,8 @@ thiserror = { workspace = true }
 [features]
 default = []
 serde = ["dep:serde", "num-bigint/serde"]
+# Genus >= 2 hyperelliptic/Jacobian arithmetic (divisor, hyperelliptic, cantor,
+# jacobian). Temporarily gated OFF by default while build debt is repaired so the
+# genus-0 Belyi/conic path compiles. See CURVES_BUILD_BLOCKERS_SPEC.md (U0/U1) and
+# rustmath-curves/BUILD_STATUS.md. Do NOT read the default absence as "done".
+genus2 = []

@@ -25,6 +25,7 @@
 //! The descent / decide half (conic bridge, descent, pipeline) is added later by
 //! a separate agent.
 
+pub mod audit;
 pub mod bad_locus;
 pub mod bridge;
 pub mod descent;

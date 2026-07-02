@@ -211,6 +211,212 @@ pub fn descent_conic(g_sigma: &Gl2Quad, bad_locus_clear: bool) -> Verdict<ConicB
     }
 }
 
+// ===========================================================================
+// B5/B3 — the descent from a *solved* cover over a quadratic `L = Q(√δ)`.
+// ===========================================================================
+//
+// When the `[2,12,5]` cover exactifies to `AlgebraicCoordinates` over a quadratic
+// field `L = Q(√δ)`, the descent obstruction is read from the gluing
+// `g_σ ∈ PGL₂(L)` relating `φ` to its Galois conjugate `φ^σ` (σ = the nontrivial
+// automorphism of `L`):
+//
+//   B5 — recover `g_σ` from three labelled ramification-point correspondences of
+//        `φ` vs `φ^σ` (the two order-12 points `{0, ∞}`, one order-5 point, one
+//        order-2 point, in a rational-over-`L` labelling);
+//   B3 — CERTIFY the gluing exactly: `φ^σ = φ ∘ g_σ` as an identity of rational
+//        maps over `L` (all numerator/denominator coefficients agree), not just on
+//        the three fitting points;
+//   then feed `g_σ` into [`descent_conic`] for the exact conic class `(δ, β)`.
+
+/// The three labelled ramification-point correspondences that pin `g_σ`.
+///
+/// `src[i]` is a ramification point of `φ`; `dst[i]` is the corresponding point of
+/// `φ^σ` (the point carrying the same combinatorial label). Three suffice to fix a
+/// Möbius map; [`certify_phi_sigma_over_L`] then checks the *whole* identity.
+#[derive(Debug, Clone)]
+pub struct SigmaCorrespondence {
+    pub field: QuadField,
+    pub src: [P1Quad; 3],
+    pub dst: [P1Quad; 3],
+}
+
+/// **B5** — recover the descent gluing `g_σ ∈ PGL₂(L)` from three labelled
+/// ramification-point correspondences of the solved cover (`φ` vs `φ^σ`).
+///
+/// Certified on those three points by [`mobius_from_three_pairs`]; the exact
+/// whole-map check is [`certify_phi_sigma_over_L`] (B3).
+pub fn g_sigma_from_solved_cover(corr: &SigmaCorrespondence) -> Result<Gl2Quad, MobiusError> {
+    mobius_from_three_pairs(
+        &corr.field,
+        [&corr.src[0], &corr.src[1], &corr.src[2]],
+        [&corr.dst[0], &corr.dst[1], &corr.dst[2]],
+    )
+}
+
+/// The solved Belyi cover with coefficients over `L = Q(√δ)`.
+///
+/// All four factors are stored as **ascending** `L`-coefficient vectors, monic in
+/// the pinned frame: `A = x⁸ + …` (length 9), `B = x⁸ + …` (length 9),
+/// `R = (x−1)(x³+…)` (length 5), `S = x⁴ + …` (length 5), and `λ ∈ L`. The Belyi
+/// map is `φ = A²B / (λR⁵S)`.
+#[derive(Debug, Clone)]
+pub struct LCover {
+    pub field: QuadField,
+    pub a: Vec<QuadElem>,
+    pub b: Vec<QuadElem>,
+    pub r: Vec<QuadElem>,
+    pub s: Vec<QuadElem>,
+    pub lambda: QuadElem,
+}
+
+impl LCover {
+    /// Build an `L`-cover whose coefficients are *rational* (σ-fixed), embedded in
+    /// `Q(√δ)`. Layout of `coeffs` (length ≥ 24): `a₀..a₇, b₀..b₇, r₀..r₂,
+    /// s₀..s₃, λ` (same as the exactified tuple, `c` ignored). This is the
+    /// convenience constructor for exercising the B3 machinery; the general path
+    /// takes genuinely-`L` coefficients from exactification.
+    pub fn from_rational_coeffs(delta: Rational, coeffs: &[Rational]) -> Self {
+        assert!(coeffs.len() >= 24, "need at least the 24 solving coefficients");
+        let field = QuadField::new(delta);
+        let one = field.from_rat(Rational::from_i64(1));
+        let e = |r: &Rational| field.from_rat(r.clone());
+
+        let mut a: Vec<QuadElem> = coeffs[0..8].iter().map(e).collect();
+        a.push(one.clone());
+        let mut b: Vec<QuadElem> = coeffs[8..16].iter().map(e).collect();
+        b.push(one.clone());
+        let mut s: Vec<QuadElem> = coeffs[19..23].iter().map(e).collect();
+        s.push(one.clone());
+        // cubic = x³ + r₂x² + r₁x + r₀ ; R = (x−1)·cubic
+        let cubic = vec![e(&coeffs[16]), e(&coeffs[17]), e(&coeffs[18]), one.clone()];
+        let x_minus_1 = vec![field.from_rat(Rational::from_i64(-1)), one];
+        let r = qpoly_mul(&field, &x_minus_1, &cubic);
+        let lambda = e(&coeffs[23]);
+
+        LCover {
+            field,
+            a,
+            b,
+            r,
+            s,
+            lambda,
+        }
+    }
+
+    /// The numerator `N = A²B` (ascending `L`-coefficients).
+    pub fn numerator(&self) -> Vec<QuadElem> {
+        let a2 = qpoly_mul(&self.field, &self.a, &self.a);
+        qpoly_mul(&self.field, &a2, &self.b)
+    }
+
+    /// The denominator `D = λ·R⁵·S` (ascending `L`-coefficients).
+    pub fn denominator(&self) -> Vec<QuadElem> {
+        let r5 = qpoly_pow(&self.field, &self.r, 5);
+        let r5s = qpoly_mul(&self.field, &r5, &self.s);
+        r5s.iter().map(|c| self.lambda.mul(c)).collect()
+    }
+}
+
+/// **B3** — certify the gluing `φ^σ = φ ∘ g_σ` as an EXACT identity of rational
+/// maps over `L`.
+///
+/// With `N = A²B`, `D = λR⁵S`, homogenization degree `D° = max(deg N, deg D)`, and
+/// `g_σ = [[a,b],[c,d]]`, the composition satisfies
+/// `φ ∘ g_σ = Ñ / D̃` where `p̃(x) = Σ_k p_k (ax+b)^k (cx+d)^{D°−k}`. The identity
+/// `N^σ/D^σ = Ñ/D̃` holds iff the cross-product `N^σ·D̃ − D^σ·Ñ` vanishes
+/// identically — checked here across **all** coefficients over `L`, not just the
+/// three fitting points.
+pub fn certify_phi_sigma_over_L(cover: &LCover, g_sigma: &Gl2Quad) -> bool {
+    let field = &cover.field;
+    let n = cover.numerator();
+    let d = cover.denominator();
+    let hom = qdeg(&n).max(qdeg(&d)).max(0) as usize;
+
+    let n_sigma = qpoly_conj(&n);
+    let d_sigma = qpoly_conj(&d);
+    let n_tilde = mobius_transform(field, &n, g_sigma, hom);
+    let d_tilde = mobius_transform(field, &d, g_sigma, hom);
+
+    let lhs = qpoly_mul(field, &n_sigma, &d_tilde);
+    let rhs = qpoly_mul(field, &d_sigma, &n_tilde);
+    let diff = qpoly_sub(field, &lhs, &rhs);
+    diff.iter().all(|c| c.is_zero())
+}
+
+// --- dense polynomial helpers over L (ascending QuadElem coefficients) ------
+
+fn qpoly_mul(field: &QuadField, a: &[QuadElem], b: &[QuadElem]) -> Vec<QuadElem> {
+    if a.is_empty() || b.is_empty() {
+        return Vec::new();
+    }
+    let mut c = vec![field.zero(); a.len() + b.len() - 1];
+    for (i, ai) in a.iter().enumerate() {
+        for (j, bj) in b.iter().enumerate() {
+            c[i + j] = c[i + j].add(&ai.mul(bj));
+        }
+    }
+    c
+}
+
+fn qpoly_pow(field: &QuadField, a: &[QuadElem], e: u32) -> Vec<QuadElem> {
+    let mut acc = vec![field.one()];
+    for _ in 0..e {
+        acc = qpoly_mul(field, &acc, a);
+    }
+    acc
+}
+
+fn qpoly_conj(a: &[QuadElem]) -> Vec<QuadElem> {
+    a.iter().map(|c| c.conjugate()).collect()
+}
+
+fn qpoly_sub(field: &QuadField, a: &[QuadElem], b: &[QuadElem]) -> Vec<QuadElem> {
+    let n = a.len().max(b.len());
+    (0..n)
+        .map(|i| {
+            let ai = a.get(i).cloned().unwrap_or_else(|| field.zero());
+            let bi = b.get(i).cloned().unwrap_or_else(|| field.zero());
+            ai.sub(&bi)
+        })
+        .collect()
+}
+
+/// Degree (index of the highest nonzero coefficient); `-1` for the zero poly.
+fn qdeg(a: &[QuadElem]) -> i64 {
+    for i in (0..a.len()).rev() {
+        if !a[i].is_zero() {
+            return i as i64;
+        }
+    }
+    -1
+}
+
+/// `p̃(x) = Σ_k p_k · (ax+b)^k · (cx+d)^{hom−k}` — the homogeneous Möbius
+/// substitution of `p` under `g = [[a,b],[c,d]]` at homogenization degree `hom`.
+fn mobius_transform(
+    field: &QuadField,
+    poly: &[QuadElem],
+    g: &Gl2Quad,
+    hom: usize,
+) -> Vec<QuadElem> {
+    let axpb = vec![g.b.clone(), g.a.clone()]; // b + a·x
+    let cxpd = vec![g.d.clone(), g.c.clone()]; // d + c·x
+    let mut acc = vec![field.zero(); hom + 1];
+    for k in 0..=hom {
+        let pk = poly.get(k).cloned().unwrap_or_else(|| field.zero());
+        if pk.is_zero() {
+            continue;
+        }
+        let hi = qpoly_pow(field, &axpb, k as u32);
+        let lo = qpoly_pow(field, &cxpd, (hom - k) as u32);
+        let term = qpoly_mul(field, &hi, &lo); // degree exactly hom
+        for (i, t) in term.iter().enumerate() {
+            acc[i] = acc[i].add(&pk.mul(t));
+        }
+    }
+    acc
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -272,6 +478,96 @@ mod tests {
         assert!(report.ramified_places.contains(&Place::Finite(2)));
         assert!(report.ramified_places.contains(&Place::Real));
         assert_eq!(report.ramified_places.len(), 2);
+    }
+
+    // --- B5: g_sigma from three labelled ramification-point correspondences ---
+    #[test]
+    fn g_sigma_recovered_from_correspondences() {
+        let l = QuadField::new(ri(-1));
+        // A known gluing g = [[1,1],[0,1]] (x -> x+1), applied to three labelled
+        // ramification points {0, ∞, 1}.
+        let g = Gl2Quad {
+            a: l.from_rat(ri(1)),
+            b: l.from_rat(ri(1)),
+            c: l.from_rat(ri(0)),
+            d: l.from_rat(ri(1)),
+        };
+        let src = [pt(&l, 0, 1), pt(&l, 1, 0), pt(&l, 1, 1)];
+        let dst = [g.apply(&src[0]), g.apply(&src[1]), g.apply(&src[2])];
+        let corr = SigmaCorrespondence {
+            field: l.clone(),
+            src: [src[0].clone(), src[1].clone(), src[2].clone()],
+            dst,
+        };
+        let rec = g_sigma_from_solved_cover(&corr).unwrap();
+        let fresh = pt(&l, 5, 2);
+        assert!(super::same_point(&rec.apply(&fresh), &g.apply(&fresh)));
+    }
+
+    // --- B3: certify φ^σ = φ ∘ g_σ as an exact identity over L -----------------
+    #[test]
+    fn certify_identity_holds_for_g_identity_and_fails_otherwise() {
+        // A rational-coefficient cover embedded in L: φ^σ = φ, so the identity
+        // holds exactly for g_σ = I and must FAIL for a non-stabilizing g.
+        let mut coeffs: Vec<Rational> = Vec::new();
+        coeffs.extend([1, -2, 3, 0, -1, 2, 1, -3].iter().map(|&n| ri(n))); // a
+        coeffs.extend([2, 1, -1, 3, 0, -2, 1, 1].iter().map(|&n| ri(n))); // b
+        coeffs.extend([-1, 2, 1].iter().map(|&n| ri(n))); // r
+        coeffs.extend([3, -2, 1, 2].iter().map(|&n| ri(n))); // s
+        coeffs.push(Rational::new(3, 2).unwrap()); // lambda
+        coeffs.push(ri(1)); // c
+
+        let cover = LCover::from_rational_coeffs(ri(-1), &coeffs);
+        let l = cover.field.clone();
+        let id = Gl2Quad {
+            a: l.from_rat(ri(1)),
+            b: l.from_rat(ri(0)),
+            c: l.from_rat(ri(0)),
+            d: l.from_rat(ri(1)),
+        };
+        assert!(
+            certify_phi_sigma_over_L(&cover, &id),
+            "φ^σ = φ ∘ I must certify exactly for a σ-fixed cover"
+        );
+        // A translation g = [[1,1],[0,1]] does not stabilize φ.
+        let g = Gl2Quad {
+            a: l.from_rat(ri(1)),
+            b: l.from_rat(ri(1)),
+            c: l.from_rat(ri(0)),
+            d: l.from_rat(ri(1)),
+        };
+        assert!(
+            !certify_phi_sigma_over_L(&cover, &g),
+            "a non-stabilizing gluing must not certify"
+        );
+    }
+
+    #[test]
+    fn certify_low_degree_composition_matches() {
+        // φ = x² / 1 over Q ⊂ L: φ^σ = x². φ ∘ I = x² certifies; φ ∘ (x+1) ≠ x².
+        let l = QuadField::new(ri(-1));
+        let cover = LCover {
+            field: l.clone(),
+            a: vec![l.from_rat(ri(0)), l.from_rat(ri(1))], // A = x  (so A² = x²)
+            b: vec![l.from_rat(ri(1))],                    // B = 1
+            r: vec![l.from_rat(ri(1))],                    // R = 1
+            s: vec![l.from_rat(ri(1))],                    // S = 1
+            lambda: l.from_rat(ri(1)),                     // λ = 1  (D = 1)
+        };
+        let id = Gl2Quad {
+            a: l.from_rat(ri(1)),
+            b: l.from_rat(ri(0)),
+            c: l.from_rat(ri(0)),
+            d: l.from_rat(ri(1)),
+        };
+        assert!(certify_phi_sigma_over_L(&cover, &id));
+        let g = Gl2Quad {
+            a: l.from_rat(ri(1)),
+            b: l.from_rat(ri(1)),
+            c: l.from_rat(ri(0)),
+            d: l.from_rat(ri(1)),
+        };
+        assert!(!certify_phi_sigma_over_L(&cover, &g));
     }
 
     #[test]

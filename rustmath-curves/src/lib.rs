@@ -53,28 +53,43 @@
 pub mod plane_curve;
 pub mod singularities;
 pub mod genus;
-pub mod hyperelliptic;
 pub mod parameterization;
 pub mod weierstrass;
 pub mod riemann_roch;
 pub mod differentials;
 pub mod special_divisors;
-pub mod divisor;
-pub mod cantor;
-pub mod jacobian;
 pub mod belyi;
+
+// --- Genus >= 2 hyperelliptic/Jacobian stack (temporarily gated) ---------------
+// These four modules do not currently compile (25 lib errors) and `belyi` does
+// NOT depend on any of them, so they are gated behind `genus2` (off by default)
+// to unblock the genus-0 Belyi/conic path. See CURVES_BUILD_BLOCKERS_SPEC.md and
+// BUILD_STATUS.md. Repair order: divisor -> hyperelliptic -> cantor -> jacobian.
+#[cfg(feature = "genus2")]
+pub mod hyperelliptic;
+#[cfg(feature = "genus2")]
+pub mod divisor;
+#[cfg(feature = "genus2")]
+pub mod cantor;
+#[cfg(feature = "genus2")]
+pub mod jacobian;
 
 pub use plane_curve::{PlaneCurve, AffineCurve, ProjectiveCurve};
 pub use singularities::{Singularity, SingularityType};
 pub use genus::compute_genus;
-pub use hyperelliptic::HyperellipticCurve;
 pub use parameterization::{CurveParameterization, RationalParameterization};
 pub use weierstrass::{WeierstrassForm, weierstrass_transform};
 pub use riemann_roch::{RiemannRochSpace, DivisorData, riemann_roch_dimension};
 pub use differentials::{DifferentialForm, HolomorphicDifferentials, CanonicalDivisor};
 pub use special_divisors::{SpecialDivisor, BrillNoetherVariety, brill_noether_number};
+
+#[cfg(feature = "genus2")]
+pub use hyperelliptic::HyperellipticCurve;
+#[cfg(feature = "genus2")]
 pub use divisor::MumfordDivisor;
+#[cfg(feature = "genus2")]
 pub use cantor::CantorAlgorithm;
+#[cfg(feature = "genus2")]
 pub use jacobian::{Jacobian, JacobianElement};
 
 #[cfg(test)]
