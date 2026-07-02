@@ -219,11 +219,11 @@ mod tests {
         let d = MumfordDivisor::from_point(Rational::from(2), Rational::from(3));
 
         // u(X) = X - 2
-        assert_eq!(d.u.degree(), 1);
+        assert_eq!(d.u.degree(), Some(1));
         assert_eq!(d.u.evaluate(&Rational::from(2)), Rational::zero());
 
         // v(X) = 3
-        assert_eq!(d.v.degree(), 0);
+        assert_eq!(d.v.degree(), Some(0));
         assert_eq!(d.v.evaluate(&Rational::from(0)), Rational::from(3));
     }
 
@@ -238,7 +238,7 @@ mod tests {
         );
 
         // u should have roots at 1 and 3
-        assert_eq!(d.u.degree(), 2);
+        assert_eq!(d.u.degree(), Some(2));
         assert_eq!(d.u.evaluate(&Rational::from(1)), Rational::zero());
         assert_eq!(d.u.evaluate(&Rational::from(3)), Rational::zero());
 

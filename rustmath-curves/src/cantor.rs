@@ -311,7 +311,7 @@ mod tests {
             Rational::zero(),
             Rational::zero(),
             Rational::one(),
-            Rational::from(2).sqrt_floor(), // Approximate
+            Rational::one(), // (1, 1) is on y^2 = x^3
         );
 
         // This should reduce to degree 1

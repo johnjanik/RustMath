@@ -13,9 +13,9 @@
   `tests/genus2_jacobian.rs`
   (`cargo test -p rustmath-curves --features genus2 --test genus2_jacobian`):
   builds y²=x⁵−x over ℚ, checks P+0=P and 2·P=double(P) via Cantor.
-- **`--features genus2` (full `cargo test`)**: still **RED** (U2) — test-only code
-  in `riemann_roch`/`singularities`/`weierstrass`/`parameterization`/
-  `special_divisors`/`lfunction`.
+- **Full test suites**: **GREEN** (U2 done). `cargo test -p rustmath-curves`
+  (146 pass) and `cargo test -p rustmath-curves --features genus2` (183 lib +
+  integration, 0 fail) both pass.
 
 ## Milestones (see CURVES_BUILD_BLOCKERS_SPEC.md)
 
@@ -35,9 +35,18 @@
     tested `gcd(f,f').is_one()`, but `gcd` is not normalized to monic, so every
     square-free f with a non-1 unit gcd was a false negative (blocked all curve
     construction). Now tests `gcd.degree() == Some(0)` (nonzero constant).
-- **U2 — full-tests-restore — TODO.** `cargo test -p rustmath-curves --features
-  genus2` green, incl. test-only repairs in `riemann_roch`, `singularities`,
-  `weierstrass`, `parameterization`, `special_divisors`, `lfunction`.
+- **U2 — full-tests-restore — DONE.** Both `cargo test -p rustmath-curves` and
+  `... --features genus2` green. Fixes:
+  - test-code API drift: `MultiPoly::new(2)`→`::zero()` (genus), `Rational::new`
+    now `Result` → `.unwrap()` (parameterization), polynomial `degree()`→`Option`
+    asserts → `Some(_)` (divisor), removed `Rational::sqrt_floor` (cantor, use
+    (1,1) on y²=x³).
+  - **real code bugs surfaced by the tests:**
+    - `ShortWeierstrassForm::j_invariant` divided by Δ instead of 4a³+27b² (gave
+      −108 not 1728); now matches the consistent `LongWeierstrassForm` value.
+    - holomorphic-differential basis printed `x^1/y`; now `x/y` for i=1.
+  - test-logic bug: Brill–Noether `ρ = (2 - g)` underflowed in `usize`; compute
+    in `i64`.
 
 ## Debt (feature-gated under `genus2`)
 
