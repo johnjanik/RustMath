@@ -32,6 +32,7 @@ pub mod descent;
 pub mod encode;
 pub mod flags;
 pub mod monodromy;
+pub mod packing;
 pub mod pinned;
 pub mod pipeline;
 pub mod portal;
