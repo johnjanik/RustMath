@@ -31,6 +31,7 @@ pub mod bridge;
 pub mod descent;
 pub mod encode;
 pub mod factorized_residual;
+pub mod flag_packing;
 pub mod flags;
 pub mod linear_scale_fit;
 pub mod monodromy;
