@@ -30,6 +30,7 @@ pub mod bad_locus;
 pub mod bridge;
 pub mod descent;
 pub mod encode;
+pub mod flags;
 pub mod monodromy;
 pub mod pinned;
 pub mod pipeline;
