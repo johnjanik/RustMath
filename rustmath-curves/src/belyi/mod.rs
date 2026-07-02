@@ -28,6 +28,7 @@
 pub mod audit;
 pub mod bad_locus;
 pub mod bridge;
+pub mod candidate_verify;
 pub mod descent;
 pub mod encode;
 pub mod factorized_residual;
