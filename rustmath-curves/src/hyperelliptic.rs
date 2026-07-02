@@ -11,7 +11,7 @@
 //! When g = 1, this is an elliptic curve.
 //! When g ≥ 2, this is a hyperelliptic curve of genus g.
 
-use rustmath_core::{Ring, Field};
+use rustmath_core::{Ring, Field, EuclideanDomain};
 use rustmath_polynomials::UnivariatePolynomial;
 use rustmath_rationals::Rational;
 use std::fmt;
@@ -27,7 +27,7 @@ pub struct HyperellipticCurve<F: Field> {
     pub genus: usize,
 }
 
-impl<F: Field + Clone + PartialEq + rustmath_core::NumericConversion> HyperellipticCurve<F> {
+impl<F: Field + Clone + PartialEq + EuclideanDomain> HyperellipticCurve<F> {
     /// Create a new hyperelliptic curve y^2 = f(x)
     ///
     /// The genus is computed as:
@@ -58,7 +58,7 @@ impl<F: Field + Clone + PartialEq + rustmath_core::NumericConversion> Hyperellip
 
     /// Get the degree of the defining polynomial
     pub fn degree(&self) -> usize {
-        self.f.degree()
+        self.f.degree().unwrap_or(0)
     }
 
     /// Check if a point (x, y) lies on the curve
@@ -83,11 +83,6 @@ impl<F: Field + Clone + PartialEq + rustmath_core::NumericConversion> Hyperellip
         }
     }
 
-    /// Compute the discriminant of the curve (up to a scalar)
-    pub fn discriminant(&self) -> F {
-        self.f.discriminant()
-    }
-
     /// Check if the curve is singular
     pub fn is_singular(&self) -> bool {
         // The curve is singular if f has repeated roots
@@ -108,6 +103,17 @@ impl<F: Field + Clone + PartialEq + rustmath_core::NumericConversion> Hyperellip
 
         // Note: This may not be square-free, but it's for testing
         HyperellipticCurve { f, genus: g }
+    }
+}
+
+impl<F: Field + Clone + PartialEq + EuclideanDomain + rustmath_core::NumericConversion>
+    HyperellipticCurve<F>
+{
+    /// Compute the discriminant of the curve (up to a scalar)
+    pub fn discriminant(&self) -> F {
+        self.f
+            .discriminant()
+            .expect("discriminant is defined for a constructed hyperelliptic curve (deg >= 3)")
     }
 }
 

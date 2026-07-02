@@ -86,7 +86,7 @@ impl CantorAlgorithm {
 
         let d_squared = d.clone() * d.clone();
         let u1_div_d = {
-            let (q, r) = u1.div_rem(&d);
+            let (q, r) = u1.div_rem(&d).expect("gcd d is nonzero");
             if !r.is_zero() {
                 // d doesn't divide u₁ exactly, use u₁ directly
                 u1.clone()
@@ -95,7 +95,7 @@ impl CantorAlgorithm {
             }
         };
         let u2_div_d = {
-            let (q, r) = u2.div_rem(&d);
+            let (q, r) = u2.div_rem(&d).expect("gcd d is nonzero");
             if !r.is_zero() {
                 u2.clone()
             } else {
@@ -105,7 +105,7 @@ impl CantorAlgorithm {
 
         let u_numerator = u1.clone() * u2.clone();
         let u = {
-            let (q, r) = u_numerator.div_rem(&d_squared);
+            let (q, r) = u_numerator.div_rem(&d_squared).expect("d_squared is nonzero");
             if r.is_zero() {
                 q
             } else {
@@ -125,7 +125,7 @@ impl CantorAlgorithm {
         // We need v ≡ v₁ (mod u₁/d) and v ≡ v₂ (mod u₂/d)
         // For simplicity, use v₁ as the base
         let v = {
-            let (_, rem) = v1.div_rem(&u);
+            let (_, rem) = v1.div_rem(&u).expect("u is monic nonzero");
             rem
         };
 
@@ -170,7 +170,7 @@ impl CantorAlgorithm {
         let numerator = f.clone() - v_squared;
 
         // Compute u' = (f - v²) / u
-        let (u_prime, remainder) = numerator.div_rem(u);
+        let (u_prime, remainder) = numerator.div_rem(u).expect("u is nonzero");
 
         // Check if division was exact (it should be for valid divisors)
         if !remainder.is_zero() {
@@ -188,7 +188,7 @@ impl CantorAlgorithm {
 
         // Compute v' ≡ -v (mod u')
         let neg_v = -v.clone();
-        let (_, v_prime) = neg_v.div_rem(&u_prime);
+        let (_, v_prime) = neg_v.div_rem(&u_prime).expect("u' is monic nonzero");
 
         MumfordDivisor::new(u_prime, v_prime)
     }
