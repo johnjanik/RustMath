@@ -358,6 +358,66 @@ pub fn lm_refine_gauge(
     )
 }
 
+/// Diagnostic: LU pivot spread of the gauge-fixed Jacobian at `seed` — a cheap
+/// conditioning proxy. Returns `(min |pivot|, max |pivot|, ratio)`; a ratio near
+/// machine epsilon signals a (numerically) singular Jacobian.
+pub fn jacobian_pivot_spread(seed: &FactorizedRoots, frozen: &[usize], fd_step: f64) -> (f64, f64, f64) {
+    let x = pack(seed);
+    let free: Vec<usize> = (0..N_UNKNOWNS).filter(|k| !frozen.contains(k)).collect();
+    let n = free.len();
+    let m = 50;
+    let r0 = residual_of(&x);
+    // central-difference Jacobian (m x n)
+    let mut jac = vec![0.0; m * n];
+    for (jc, &idx) in free.iter().enumerate() {
+        let h = fd_step * (1.0 + x[idx].abs());
+        let mut xp = x.clone();
+        let mut xm = x.clone();
+        xp[idx] += h;
+        xm[idx] -= h;
+        let rp = residual_of(&xp);
+        let rm = residual_of(&xm);
+        for i in 0..m {
+            jac[i * n + jc] = (rp[i] - rm[i]) / (2.0 * h);
+        }
+    }
+    let _ = r0;
+    // LU with partial pivoting on the square part (m == n == 50 for the default gauge).
+    let mut a = jac;
+    let mut min_piv = f64::INFINITY;
+    let mut max_piv = 0.0_f64;
+    for col in 0..n {
+        let mut piv = col;
+        let mut best = a[col * n + col].abs();
+        for row in (col + 1)..n {
+            let v = a[row * n + col].abs();
+            if v > best {
+                best = v;
+                piv = row;
+            }
+        }
+        if piv != col {
+            for k in 0..n {
+                a.swap(col * n + k, piv * n + k);
+            }
+        }
+        let d = a[col * n + col];
+        let ad = d.abs();
+        min_piv = min_piv.min(ad);
+        max_piv = max_piv.max(ad);
+        if ad < 1e-300 {
+            return (0.0, max_piv, f64::INFINITY);
+        }
+        for row in (col + 1)..n {
+            let f = a[row * n + col] / d;
+            for k in col..n {
+                a[row * n + k] -= f * a[col * n + k];
+            }
+        }
+    }
+    (min_piv, max_piv, max_piv / min_piv)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
