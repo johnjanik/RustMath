@@ -159,6 +159,13 @@ impl CosetGraph {
     /// Enumerates words in δ_a^{±1}, δ_b^{±1}, keeping for each coset the representative
     /// whose triangle has the smallest max-vertex radius |w_{z_a}(α·v)|.
     pub fn compactify(&mut self, tg: &TriangleGroup) {
+        self.compactify_with(tg, 0.95, 18);
+    }
+
+    /// Minimal-radius (Dirichlet) coset reps via bounded-word BFS, with the pruning
+    /// radius and max word length exposed. Larger groups (e.g. the degree-24 [2,12,5]
+    /// dessin) need a looser `r_prune` (→1) and larger `l_max` to reach every coset.
+    pub fn compactify_with(&mut self, tg: &TriangleGroup, r_prune: f64, l_max: usize) {
         let i_c = num_complex::Complex64::new(0.0, 1.0);
         let wp = |z: num_complex::Complex64| (z - i_c) / (z + i_c);
         let verts = [tg.z_a, tg.z_b, tg.z_c, -tg.z_c.conj()];
@@ -182,22 +189,19 @@ impl CosetGraph {
             (Gen::B, tg.delta_b, &self.sigma1),
             (Gen::BInv, tg.delta_b.inverse(), &s1i),
         ];
-        const R_PRUNE: f64 = 0.95;
-        const L_MAX: usize = 18;
-
         let mut best: Vec<Option<(f64, Mobius, Vec<Gen>)>> = vec![None; self.d];
         best[0] = Some((radius(&Mobius::identity()), Mobius::identity(), Vec::new()));
         let mut visited: std::collections::HashSet<(i64, i64)> = std::collections::HashSet::new();
         visited.insert(fingerprint(&Mobius::identity()));
         let mut frontier: Vec<(Mobius, usize, Vec<Gen>)> = vec![(Mobius::identity(), 0, Vec::new())];
-        for _ in 0..L_MAX {
+        for _ in 0..l_max {
             let mut next = Vec::new();
             for (rep, coset, word) in &frontier {
                 for (glab, gmat, gperm) in gens.iter() {
                     let nrep = rep.mul(gmat);
                     let ncoset = gperm[*coset];
                     let r = radius(&nrep);
-                    if r > R_PRUNE {
+                    if r > r_prune {
                         continue;
                     }
                     if !visited.insert(fingerprint(&nrep)) {
@@ -223,6 +227,76 @@ impl CosetGraph {
             .collect();
         self.rep_words = chosen.iter().map(|(_, _, w)| w.clone()).collect();
         self.reps = chosen.into_iter().map(|(_, m, _)| m).collect();
+    }
+
+    /// Diagnostic (non-mutating, non-panicking): run the Dirichlet-rep BFS with the given
+    /// pruning radius, word cap, and frontier cap, and report `(cosets reached of d, ρ)`
+    /// where ρ is the max over reached cosets of the minimal rep radius. Used to gauge how
+    /// large the fundamental domain (hence the power-series truncation N) is for a passport.
+    pub fn probe_domain(
+        &self,
+        tg: &TriangleGroup,
+        r_prune: f64,
+        l_max: usize,
+        frontier_cap: usize,
+    ) -> (usize, f64) {
+        let i_c = num_complex::Complex64::new(0.0, 1.0);
+        let wp = |z: num_complex::Complex64| (z - i_c) / (z + i_c);
+        let verts = [tg.z_a, tg.z_b, tg.z_c, -tg.z_c.conj()];
+        let radius = |m: &Mobius| -> f64 {
+            verts
+                .iter()
+                .map(|&v| wp(m.apply(v)).norm())
+                .filter(|r| r.is_finite())
+                .fold(0.0, f64::max)
+        };
+        let p0 = num_complex::Complex64::new(0.37, 1.9);
+        let fingerprint = |m: &Mobius| -> (i64, i64) {
+            let z = m.apply(p0);
+            ((z.re * 1e6).round() as i64, (z.im * 1e6).round() as i64)
+        };
+        let s0i = inverse_perm(&self.sigma0);
+        let s1i = inverse_perm(&self.sigma1);
+        let gens: [(Mobius, &[usize]); 4] = [
+            (tg.delta_a, &self.sigma0),
+            (tg.delta_a.inverse(), &s0i),
+            (tg.delta_b, &self.sigma1),
+            (tg.delta_b.inverse(), &s1i),
+        ];
+        let mut best: Vec<Option<f64>> = vec![None; self.d];
+        best[0] = Some(radius(&Mobius::identity()));
+        let mut visited: std::collections::HashSet<(i64, i64)> = std::collections::HashSet::new();
+        visited.insert(fingerprint(&Mobius::identity()));
+        let mut frontier: Vec<(Mobius, usize)> = vec![(Mobius::identity(), 0)];
+        for _ in 0..l_max {
+            let mut next = Vec::new();
+            for (rep, coset) in &frontier {
+                for (gmat, gperm) in gens.iter() {
+                    let nrep = rep.mul(gmat);
+                    let ncoset = gperm[*coset];
+                    let r = radius(&nrep);
+                    if r > r_prune {
+                        continue;
+                    }
+                    if !visited.insert(fingerprint(&nrep)) {
+                        continue;
+                    }
+                    if best[ncoset].map_or(true, |br| r < br) {
+                        best[ncoset] = Some(r);
+                    }
+                    next.push((nrep, ncoset));
+                }
+            }
+            if next.is_empty() {
+                break;
+            }
+            next.sort_by(|a, b| radius(&a.0).partial_cmp(&radius(&b.0)).unwrap());
+            next.truncate(frontier_cap);
+            frontier = next;
+        }
+        let reached = best.iter().filter(|b| b.is_some()).count();
+        let rho = best.iter().filter_map(|b| *b).fold(0.0, f64::max);
+        (reached, rho)
     }
 
     /// KMSV Algorithm 3.14: reduce `z ∈ ℍ` into the Γ fundamental domain `D_Γ`.

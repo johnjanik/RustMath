@@ -292,6 +292,23 @@ mod tests {
         assert!(r7 < 1e-10, "c7 = (7/2)c3³ failed, rel {r7:.2e}");
     }
 
+    // Probe the [2,12,5] domain radius ρ, which sets the power-series truncation N (error
+    // ~ρ^N). Finding: ρ ≈ 0.9906 (vs 0.53 for (5,3,3)) ⇒ N ≈ 3000 for 1e-14 accuracy —
+    // the naive KMSV power-series route does not scale to this d=24 passport with the
+    // z_a-centered Dirichlet domain. See notes in the module header.
+    #[test]
+    #[ignore]
+    fn explore_2_12_5_domain() {
+        let s0: Vec<usize> = vec![0, 14, 10, 9, 4, 5, 23, 17, 18, 3, 2, 11, 22, 13, 1, 15, 16, 7, 8, 19, 21, 20, 12, 6];
+        let s1: Vec<usize> = vec![14, 2, 22, 9, 16, 8, 13, 15, 18, 1, 23, 20, 3, 0, 21, 12, 19, 7, 17, 11, 10, 4, 5, 6];
+        let tg64 = TriangleGroup::new(2, 12, 5);
+        let cg = CosetGraph::build(&tg64, &s0, &s1);
+        for &rp in &[0.95f64, 0.97, 0.98, 0.99, 0.995, 0.999] {
+            let (reached, rho) = cg.probe_domain(&tg64, rp, 40, 20000);
+            println!("r_prune={rp}: reached {reached}/24, ρ={rho:.6}");
+        }
+    }
+
     // Shared (5,3,3) setup: returns (x_paper = Θ·x₀, φ(w), Θ).
     fn setup_5_3_3(prec: u32) -> (Vec<Complex>, Vec<Complex>, Complex) {
         use rug::float::Constant;
