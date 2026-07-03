@@ -42,6 +42,7 @@ pub mod newton_hp;
 pub mod coset_graph;
 pub mod hypergeometric;
 pub mod modular_forms;
+pub mod modular_forms_hp;
 pub mod numerical_monodromy;
 pub mod triangle_group;
 pub mod triangle_group_hp;

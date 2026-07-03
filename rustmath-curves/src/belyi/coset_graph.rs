@@ -58,6 +58,9 @@ pub struct CosetGraph {
     /// The defining permutations π(δ_a) = σ0, π(δ_b) = σ1 (0-indexed).
     pub sigma0: Vec<usize>,
     pub sigma1: Vec<usize>,
+    /// Generator word (in δ_a^{±1}, δ_b^{±1}) for each rep α_i, so a rep can be rebuilt
+    /// as an hp matrix. Populated by [`CosetGraph::compactify`]; empty otherwise.
+    pub rep_words: Vec<Vec<Gen>>,
 }
 
 fn inverse_perm(p: &[usize]) -> Vec<usize> {
@@ -145,6 +148,7 @@ impl CosetGraph {
             side_pairings,
             sigma0: s0,
             sigma1: s1,
+            rep_words: vec![Vec::new(); d],
         }
     }
 
@@ -172,24 +176,24 @@ impl CosetGraph {
         };
         let s0i = inverse_perm(&self.sigma0);
         let s1i = inverse_perm(&self.sigma1);
-        let gens: [(Mobius, &[usize]); 4] = [
-            (tg.delta_a, &self.sigma0),
-            (tg.delta_a.inverse(), &s0i),
-            (tg.delta_b, &self.sigma1),
-            (tg.delta_b.inverse(), &s1i),
+        let gens: [(Gen, Mobius, &[usize]); 4] = [
+            (Gen::A, tg.delta_a, &self.sigma0),
+            (Gen::AInv, tg.delta_a.inverse(), &s0i),
+            (Gen::B, tg.delta_b, &self.sigma1),
+            (Gen::BInv, tg.delta_b.inverse(), &s1i),
         ];
         const R_PRUNE: f64 = 0.95;
         const L_MAX: usize = 18;
 
-        let mut best: Vec<Option<(f64, Mobius)>> = vec![None; self.d];
-        best[0] = Some((radius(&Mobius::identity()), Mobius::identity()));
+        let mut best: Vec<Option<(f64, Mobius, Vec<Gen>)>> = vec![None; self.d];
+        best[0] = Some((radius(&Mobius::identity()), Mobius::identity(), Vec::new()));
         let mut visited: std::collections::HashSet<(i64, i64)> = std::collections::HashSet::new();
         visited.insert(fingerprint(&Mobius::identity()));
-        let mut frontier = vec![(Mobius::identity(), 0usize)];
+        let mut frontier: Vec<(Mobius, usize, Vec<Gen>)> = vec![(Mobius::identity(), 0, Vec::new())];
         for _ in 0..L_MAX {
             let mut next = Vec::new();
-            for (rep, coset) in &frontier {
-                for (gmat, gperm) in gens.iter() {
+            for (rep, coset, word) in &frontier {
+                for (glab, gmat, gperm) in gens.iter() {
                     let nrep = rep.mul(gmat);
                     let ncoset = gperm[*coset];
                     let r = radius(&nrep);
@@ -199,10 +203,12 @@ impl CosetGraph {
                     if !visited.insert(fingerprint(&nrep)) {
                         continue;
                     }
-                    if best[ncoset].as_ref().map_or(true, |(br, _)| r < *br) {
-                        best[ncoset] = Some((r, nrep));
+                    let mut nword = word.clone();
+                    nword.push(*glab);
+                    if best[ncoset].as_ref().map_or(true, |(br, _, _)| r < *br) {
+                        best[ncoset] = Some((r, nrep, nword.clone()));
                     }
-                    next.push((nrep, ncoset));
+                    next.push((nrep, ncoset, nword));
                 }
             }
             if next.is_empty() {
@@ -210,11 +216,13 @@ impl CosetGraph {
             }
             frontier = next;
         }
-        self.reps = best
+        let chosen: Vec<(f64, Mobius, Vec<Gen>)> = best
             .into_iter()
             .enumerate()
-            .map(|(i, o)| o.unwrap_or_else(|| panic!("coset {i} unreached in compactify")).1)
+            .map(|(i, o)| o.unwrap_or_else(|| panic!("coset {i} unreached in compactify")))
             .collect();
+        self.rep_words = chosen.iter().map(|(_, _, w)| w.clone()).collect();
+        self.reps = chosen.into_iter().map(|(_, m, _)| m).collect();
     }
 
     /// KMSV Algorithm 3.14: reduce `z ∈ ℍ` into the Γ fundamental domain `D_Γ`.
@@ -223,6 +231,14 @@ impl CosetGraph {
     /// generator powers, then `γ = α_i · δ`.
     pub fn reduce(&self, tg: &TriangleGroup, z: num_complex::Complex64) -> (Mobius, usize) {
         let (delta, ops) = tg.reduce_to_base(z);
+        let i = self.coset_from_ops(&ops);
+        let gamma = self.reps[i].mul(&delta);
+        (gamma, i)
+    }
+
+    /// Coset index i = 1^{π(δ⁻¹)} for the reduction word `ops` (from
+    /// [`TriangleGroup::reduce_to_base`]), where each op `(is_a, k)` is δ_a^k or δ_b^k.
+    pub fn coset_from_ops(&self, ops: &[(bool, i32)]) -> usize {
         let s0i = inverse_perm(&self.sigma0);
         let s1i = inverse_perm(&self.sigma1);
         let apply_pow = |mut x: usize, fwd: &[usize], inv: &[usize], k: i32| -> usize {
@@ -250,10 +266,7 @@ impl CosetGraph {
             }
             *pk = x;
         }
-        // i = 0^{π(δ⁻¹)} = the k with p[k] = 0.
-        let i = (0..self.d).find(|&k| p[k] == 0).expect("π(δ) is a permutation");
-        let gamma = self.reps[i].mul(&delta);
-        (gamma, i)
+        (0..self.d).find(|&k| p[k] == 0).expect("π(δ) is a permutation")
     }
 
     /// Every side-pairing element must stabilize the base coset 1 (i.e. lie in Γ):
