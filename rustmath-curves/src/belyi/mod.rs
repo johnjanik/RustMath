@@ -39,6 +39,7 @@ pub mod hyperbolic_packing;
 pub mod monodromy;
 pub mod newton;
 pub mod newton_hp;
+pub mod coset_graph;
 pub mod numerical_monodromy;
 pub mod triangle_group;
 pub mod packing;
