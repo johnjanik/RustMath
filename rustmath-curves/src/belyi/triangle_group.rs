@@ -143,6 +143,67 @@ impl TriangleGroup {
 
         TriangleGroup { a, b, c, mu, z_a, z_b, z_c, delta_a, delta_b, delta_c }
     }
+
+    /// Disk coordinate centered at `z_a = i`: `w_{z_a}(z) = (z − i)/(z + i)`. In this
+    /// chart `δ_a` acts by rotation about the origin.
+    pub fn w_za(z: Complex64) -> Complex64 {
+        let i = Complex64::new(0.0, 1.0);
+        (z - i) / (z + i)
+    }
+
+    /// KMSV Algorithm 3.11: reduce `z ∈ ℍ` to the base fundamental domain `D_Δ`.
+    /// Returns `(δ, ops)` with `δ ∈ Δ` (a Möbius) such that `δz ∈ D_Δ`, and the list
+    /// of generator powers applied `(Gen, k)` (for recovering `π(δ)` in the Γ version).
+    /// `Gen`: `true` = δ_a step, `false` = δ_b step.
+    pub fn reduce_to_base(&self, z: Complex64) -> (Mobius, Vec<(bool, i32)>) {
+        let two_pi = 2.0 * std::f64::consts::PI;
+        let (a, b) = (self.a as f64, self.b as f64);
+        // A (3.12): the disk automorphism sending w_{z_a}(z_b) ↦ 0, recentering to z_b.
+        let a_mat = Mobius::new(self.mu + 1.0, 1.0 - self.mu, 1.0 - self.mu, self.mu + 1.0);
+        let mut delta = Mobius::identity();
+        let mut ops: Vec<(bool, i32)> = Vec::new();
+        let arg01 = |w: Complex64| {
+            let mut t = w.arg();
+            if t < 0.0 {
+                t += two_pi;
+            }
+            t
+        };
+        for _ in 0..200 {
+            // Step 2: rotate about z_a so |arg| ≤ π/a.
+            let w = TriangleGroup::w_za(delta.apply(z));
+            let alpha = arg01(w);
+            let i = -((a * alpha / two_pi + 0.5).floor() as i32);
+            if i != 0 {
+                delta = self.delta_a.pow_signed(i).mul(&delta);
+                ops.push((true, i));
+            }
+            // Step 3: recenter to z_b with A, rotate about z_b so |arg| ≤ π/b.
+            let w2 = TriangleGroup::w_za(delta.apply(z));
+            let aw = a_mat.apply(w2);
+            let beta = arg01(-aw);
+            let j = -((b * beta / two_pi + 0.5).floor() as i32);
+            if j != 0 {
+                delta = self.delta_b.pow_signed(j).mul(&delta);
+                ops.push((false, j));
+            }
+            if j == 0 {
+                break;
+            }
+        }
+        (delta, ops)
+    }
+}
+
+impl Mobius {
+    /// `self^n` for signed `n` (negative powers via the inverse).
+    pub fn pow_signed(&self, n: i32) -> Mobius {
+        if n >= 0 {
+            self.pow(n as u32)
+        } else {
+            self.inverse().pow((-n) as u32)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -194,5 +255,42 @@ mod tests {
         let tg = TriangleGroup::new(2, 3, 8);
         check_orders(&tg);
         check_fixed_points(&tg);
+    }
+
+    fn check_reduction(tg: &TriangleGroup) {
+        let pts = [
+            Complex64::new(0.3, 2.5),
+            Complex64::new(-1.2, 0.8),
+            Complex64::new(2.0, 4.0),
+            Complex64::new(-0.5, 0.3),
+        ];
+        for &z in &pts {
+            let (d, _) = tg.reduce_to_base(z);
+            let red = d.apply(z);
+            assert!(red.im > -1e-9, "reduced point left ℍ: {red}");
+            // idempotent: reducing the reduced point is a no-op.
+            let (d2, _) = tg.reduce_to_base(red);
+            assert!((d2.apply(red) - red).norm() < 1e-6, "reduce not idempotent: {red}");
+            // Δ-invariant: δ_a z and δ_b z reduce to the same representative.
+            for g in [tg.delta_a, tg.delta_b, tg.delta_a.inverse(), tg.delta_b.inverse()] {
+                let gz = g.apply(z);
+                let (dg, _) = tg.reduce_to_base(gz);
+                let redg = dg.apply(gz);
+                assert!(
+                    (red - redg).norm() < 1e-6,
+                    "reduce not Δ-invariant: {red} vs {redg}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn reduction_2_12_5() {
+        check_reduction(&TriangleGroup::new(2, 12, 5));
+    }
+
+    #[test]
+    fn reduction_2_3_7() {
+        check_reduction(&TriangleGroup::new(2, 3, 7));
     }
 }

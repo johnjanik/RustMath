@@ -55,6 +55,9 @@ pub struct CosetGraph {
     pub edges: Vec<(usize, Gen, usize)>,
     /// Boundary side pairings (γ ≠ 1). These generate Γ.
     pub side_pairings: Vec<SidePairing>,
+    /// The defining permutations π(δ_a) = σ0, π(δ_b) = σ1 (0-indexed).
+    pub sigma0: Vec<usize>,
+    pub sigma1: Vec<usize>,
 }
 
 fn inverse_perm(p: &[usize]) -> Vec<usize> {
@@ -135,7 +138,53 @@ impl CosetGraph {
             .into_iter()
             .map(|r| r.expect("all cosets reachable (σ transitive)"))
             .collect();
-        CosetGraph { d, reps, edges, side_pairings }
+        CosetGraph {
+            d,
+            reps,
+            edges,
+            side_pairings,
+            sigma0: s0,
+            sigma1: s1,
+        }
+    }
+
+    /// KMSV Algorithm 3.14: reduce `z ∈ ℍ` into the Γ fundamental domain `D_Γ`.
+    /// Returns `(γ, i)` with `γ ∈ Γ` and coset index `i` such that `γz ∈ α_i D_Δ`.
+    /// Uses the Δ-reduction (`δz ∈ D_Δ`) and `i = 1^{π(δ⁻¹)}` recovered from the
+    /// generator powers, then `γ = α_i · δ`.
+    pub fn reduce(&self, tg: &TriangleGroup, z: num_complex::Complex64) -> (Mobius, usize) {
+        let (delta, ops) = tg.reduce_to_base(z);
+        let s0i = inverse_perm(&self.sigma0);
+        let s1i = inverse_perm(&self.sigma1);
+        let apply_pow = |mut x: usize, fwd: &[usize], inv: &[usize], k: i32| -> usize {
+            if k >= 0 {
+                for _ in 0..k {
+                    x = fwd[x];
+                }
+            } else {
+                for _ in 0..(-k) {
+                    x = inv[x];
+                }
+            }
+            x
+        };
+        // p[k] = k^{π(δ)}: δ = o_n···o_1 (o_n = last pushed), so apply π(o_n) first.
+        let mut p = vec![0usize; self.d];
+        for (k, pk) in p.iter_mut().enumerate() {
+            let mut x = k;
+            for &(is_a, pw) in ops.iter().rev() {
+                x = if is_a {
+                    apply_pow(x, &self.sigma0, &s0i, pw)
+                } else {
+                    apply_pow(x, &self.sigma1, &s1i, pw)
+                };
+            }
+            *pk = x;
+        }
+        // i = 0^{π(δ⁻¹)} = the k with p[k] = 0.
+        let i = (0..self.d).find(|&k| p[k] == 0).expect("π(δ) is a permutation");
+        let gamma = self.reps[i].mul(&delta);
+        (gamma, i)
     }
 
     /// Every side-pairing element must stabilize the base coset 1 (i.e. lie in Γ):
@@ -245,6 +294,40 @@ mod tests {
         for i in 0..24 {
             for j in (i + 1)..24 {
                 assert!((imgs[i] - imgs[j]).norm() > 1e-6, "reps {i},{j} coincide");
+            }
+        }
+    }
+
+    #[test]
+    fn gamma_reduction_2_12_5() {
+        use num_complex::Complex64;
+        let tg = TriangleGroup::new(2, 12, 5);
+        let cg = CosetGraph::build(&tg, &SIGMA0, &SIGMA1);
+        let pts = [
+            Complex64::new(0.4, 3.0),
+            Complex64::new(-1.5, 0.6),
+            Complex64::new(1.0, 5.0),
+        ];
+        for &z in &pts {
+            let (g, i) = cg.reduce(&tg, z);
+            let red = g.apply(z);
+            assert!(red.im > -1e-9, "reduced point left ℍ");
+            // γz ∈ α_i D_Δ  ⟺  α_i⁻¹γz = δz ∈ D_Δ (reducing it to base is a no-op).
+            let base_pt = cg.reps[i].inverse().apply(red);
+            let (dd, _) = tg.reduce_to_base(base_pt);
+            assert!(
+                (dd.apply(base_pt) - base_pt).norm() < 1e-6,
+                "γz not in α_i D_Δ"
+            );
+            // Γ-invariance: for side-pairing elements η ∈ Γ, reduce(ηz) is the same point.
+            for sp in cg.side_pairings.iter().take(6) {
+                let hz = sp.gamma.apply(z);
+                let (g2, _) = cg.reduce(&tg, hz);
+                let red2 = g2.apply(hz);
+                assert!(
+                    (red - red2).norm() < 1e-5,
+                    "Γ-reduction not Γ-invariant: {red} vs {red2}"
+                );
             }
         }
     }
