@@ -40,6 +40,7 @@ pub mod monodromy;
 pub mod newton;
 pub mod newton_hp;
 pub mod numerical_monodromy;
+pub mod triangle_group;
 pub mod packing;
 pub mod pinned;
 pub mod pipeline;
