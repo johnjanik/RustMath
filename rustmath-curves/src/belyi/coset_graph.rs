@@ -148,6 +148,75 @@ impl CosetGraph {
         }
     }
 
+    /// Replace the coset representatives with minimal-radius ones (a Dirichlet-style
+    /// transversal), giving a compact fundamental domain `D_Γ = ⋃ α_i D_Δ` with small
+    /// containing radius ρ. Any transversal tiles, so this stays a valid fundamental
+    /// domain; compactness is what the §4 power-series method needs (small ρ ⇒ small N).
+    /// Enumerates words in δ_a^{±1}, δ_b^{±1}, keeping for each coset the representative
+    /// whose triangle has the smallest max-vertex radius |w_{z_a}(α·v)|.
+    pub fn compactify(&mut self, tg: &TriangleGroup) {
+        let i_c = num_complex::Complex64::new(0.0, 1.0);
+        let wp = |z: num_complex::Complex64| (z - i_c) / (z + i_c);
+        let verts = [tg.z_a, tg.z_b, tg.z_c, -tg.z_c.conj()];
+        let radius = |m: &Mobius| -> f64 {
+            verts
+                .iter()
+                .map(|&v| wp(m.apply(v)).norm())
+                .filter(|r| r.is_finite())
+                .fold(0.0, f64::max)
+        };
+        let p0 = num_complex::Complex64::new(0.37, 1.9);
+        let fingerprint = |m: &Mobius| -> (i64, i64) {
+            let z = m.apply(p0);
+            ((z.re * 1e6).round() as i64, (z.im * 1e6).round() as i64)
+        };
+        let s0i = inverse_perm(&self.sigma0);
+        let s1i = inverse_perm(&self.sigma1);
+        let gens: [(Mobius, &[usize]); 4] = [
+            (tg.delta_a, &self.sigma0),
+            (tg.delta_a.inverse(), &s0i),
+            (tg.delta_b, &self.sigma1),
+            (tg.delta_b.inverse(), &s1i),
+        ];
+        const R_PRUNE: f64 = 0.95;
+        const L_MAX: usize = 18;
+
+        let mut best: Vec<Option<(f64, Mobius)>> = vec![None; self.d];
+        best[0] = Some((radius(&Mobius::identity()), Mobius::identity()));
+        let mut visited: std::collections::HashSet<(i64, i64)> = std::collections::HashSet::new();
+        visited.insert(fingerprint(&Mobius::identity()));
+        let mut frontier = vec![(Mobius::identity(), 0usize)];
+        for _ in 0..L_MAX {
+            let mut next = Vec::new();
+            for (rep, coset) in &frontier {
+                for (gmat, gperm) in gens.iter() {
+                    let nrep = rep.mul(gmat);
+                    let ncoset = gperm[*coset];
+                    let r = radius(&nrep);
+                    if r > R_PRUNE {
+                        continue;
+                    }
+                    if !visited.insert(fingerprint(&nrep)) {
+                        continue;
+                    }
+                    if best[ncoset].as_ref().map_or(true, |(br, _)| r < *br) {
+                        best[ncoset] = Some((r, nrep));
+                    }
+                    next.push((nrep, ncoset));
+                }
+            }
+            if next.is_empty() {
+                break;
+            }
+            frontier = next;
+        }
+        self.reps = best
+            .into_iter()
+            .enumerate()
+            .map(|(i, o)| o.unwrap_or_else(|| panic!("coset {i} unreached in compactify")).1)
+            .collect();
+    }
+
     /// KMSV Algorithm 3.14: reduce `z ∈ ℍ` into the Γ fundamental domain `D_Γ`.
     /// Returns `(γ, i)` with `γ ∈ Γ` and coset index `i` such that `γz ∈ α_i D_Δ`.
     /// Uses the Δ-reduction (`δz ∈ D_Δ`) and `i = 1^{π(δ⁻¹)}` recovered from the
