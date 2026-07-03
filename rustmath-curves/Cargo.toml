@@ -11,6 +11,7 @@ rustmath-core = { path = "../rustmath-core" }
 rustmath-integers = { path = "../rustmath-integers" }
 rustmath-rationals = { path = "../rustmath-rationals" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
+rustmath-powerseries = { path = "../rustmath-powerseries" }
 rustmath-symbolic = { path = "../rustmath-symbolic" }
 rustmath-matrix = { path = "../rustmath-matrix" }
 rustmath-complex = { path = "../rustmath-complex" }
