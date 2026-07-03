@@ -418,6 +418,67 @@ pub fn jacobian_pivot_spread(seed: &FactorizedRoots, frozen: &[usize], fd_step: 
     (min_piv, max_piv, max_piv / min_piv)
 }
 
+/// Pairwise-separation summary of the 26 factor roots. For a genuine `[2,12,5]`
+/// map all preimages of `0/1/∞` are distinct, so a vanishing separation (especially
+/// a zero meeting a pole) signals convergence to a degenerate stratum rather than
+/// the true map.
+#[derive(Debug, Clone)]
+pub struct RootSeparation {
+    pub min_all: f64,
+    /// Closest distance between a zero (A∪B) and a pole (R∪S) — a genuine 0/0.
+    pub min_zero_pole: f64,
+    /// Closest distance within a single factor type (e.g. two double-zeros merging).
+    pub min_within_type: f64,
+    pub closest_pair: String,
+}
+
+pub fn min_root_separation(r: &FactorizedRoots) -> RootSeparation {
+    let mut pts: Vec<(char, Complex64)> = Vec::new();
+    for z in &r.roots_a {
+        pts.push(('A', *z));
+    }
+    for z in &r.roots_b {
+        pts.push(('B', *z));
+    }
+    for z in &r.roots_r {
+        pts.push(('R', *z));
+    }
+    for z in &r.roots_s {
+        pts.push(('S', *z));
+    }
+    for z in &r.roots_u {
+        pts.push(('U', *z));
+    }
+    let is_zero = |k: char| k == 'A' || k == 'B';
+    let is_pole = |k: char| k == 'R' || k == 'S';
+
+    let mut min_all = f64::INFINITY;
+    let mut min_zero_pole = f64::INFINITY;
+    let mut min_within_type = f64::INFINITY;
+    let mut closest_pair = String::new();
+    for i in 0..pts.len() {
+        for j in (i + 1)..pts.len() {
+            let d = (pts[i].1 - pts[j].1).norm();
+            if d < min_all {
+                min_all = d;
+                closest_pair = format!("{}{}", pts[i].0, pts[j].0);
+            }
+            if (is_zero(pts[i].0) && is_pole(pts[j].0)) || (is_pole(pts[i].0) && is_zero(pts[j].0)) {
+                min_zero_pole = min_zero_pole.min(d);
+            }
+            if pts[i].0 == pts[j].0 {
+                min_within_type = min_within_type.min(d);
+            }
+        }
+    }
+    RootSeparation {
+        min_all,
+        min_zero_pole,
+        min_within_type,
+        closest_pair,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
