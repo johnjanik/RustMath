@@ -6,8 +6,49 @@
 //! exact hypergeometric series to recover the rational map Φ(x). This module is the
 //! genus-0 assembly; hp complex power-series arithmetic is done in place on Vec<Complex>.
 
+use super::mp_svd::{jacobi_svd, JacobiSvdOptions, MpC, MpMatrix};
 use super::triangle_group_hp::TriangleGroupHp;
 use rug::{Complex, Float};
+
+/// Solve for the rational Belyi map Φ(x) = P(x)/Q(x) (deg ≤ d each) from the power
+/// series x(w) and φ(w), via the linear relation φ(w)·Q(x(w)) − P(x(w)) = 0. The
+/// coefficient-of-w^n equations form a homogeneous system whose 1-D null space (hp SVD)
+/// gives (P, Q) up to scale. Returns (P coeffs p_0..p_d, Q coeffs q_0..q_d).
+pub fn solve_belyi_map(x: &[Complex], phi: &[Complex], d: usize, prec: u32) -> (Vec<Complex>, Vec<Complex>) {
+    let len = x.len();
+    // x^i for i = 0..=d
+    let mut xpow = vec![vec![Complex::with_val(prec, (1.0, 0.0)); len]];
+    for i in 1..=d {
+        xpow.push(series_mul(&xpow[i - 1], x, len, prec));
+    }
+    // φ·x^i
+    let phixi: Vec<Vec<Complex>> = (0..=d).map(|i| series_mul(phi, &xpow[i], len, prec)).collect();
+    let ncols = 2 * (d + 1); // [q_0..q_d, p_0..p_d]
+    let nrows = ncols + 6;
+    let mut data = Vec::with_capacity(nrows * ncols);
+    for n in 0..nrows {
+        for i in 0..=d {
+            data.push(MpC::new(phixi[i][n].real().clone(), phixi[i][n].imag().clone()));
+        }
+        for i in 0..=d {
+            data.push(MpC::new(
+                Float::with_val(prec, -xpow[i][n].real()),
+                Float::with_val(prec, -xpow[i][n].imag()),
+            ));
+        }
+    }
+    let mat = MpMatrix::from_row_major(nrows, ncols, prec, data).expect("system matrix");
+    let opt = JacobiSvdOptions::new(prec, 80, "1e-70", "1e-40");
+    let svd = jacobi_svd(&mat, &opt).expect("svd");
+    let last = ncols - 1; // smallest singular value ⇒ null vector
+    let take = |i: usize| {
+        let z = svd.v.get(i, last);
+        Complex::with_val(prec, (z.re.clone(), z.im.clone()))
+    };
+    let q: Vec<Complex> = (0..=d).map(take).collect();
+    let p: Vec<Complex> = (0..=d).map(|i| take(d + 1 + i)).collect();
+    (p, q)
+}
 
 /// Convert an exact `Rational` to a high-precision `Float` (via decimal strings).
 fn rat_to_float(r: &rustmath_rationals::Rational, prec: u32) -> Float {
@@ -249,6 +290,61 @@ mod tests {
         let r7 = (c7 - 3.5 * c3 * c3 * c3).norm() / c7.norm();
         assert!(r5 < 1e-10, "c5 = (9/4)c3² failed, rel {r5:.2e}");
         assert!(r7 < 1e-10, "c7 = (7/2)c3³ failed, rel {r7:.2e}");
+    }
+
+    // Shared (5,3,3) setup: returns (x_paper = Θ·x₀, φ(w), Θ).
+    fn setup_5_3_3(prec: u32) -> (Vec<Complex>, Vec<Complex>, Complex) {
+        use rug::float::Constant;
+        let tg64 = TriangleGroup::new(5, 3, 3);
+        let tg = TriangleGroupHp::new(5, 3, 3, prec);
+        let s0 = vec![4, 0, 1, 2, 3];
+        let s1 = vec![1, 2, 0, 3, 4];
+        let mut cg = CosetGraph::build(&tg64, &s0, &s1);
+        cg.compactify(&tg64);
+        let forms = recover_forms(&tg64, &tg, &cg, 6, 48, 96, "1e-8", "1e-70", 1.0);
+        let ech = echelonize(forms_to_series(&forms, 6, prec), prec, 1e-25);
+        let x0 = coordinate_x(&ech, 1, 1, prec, 1e-25);
+        let len = x0.len();
+        let kap = kappa(&tg);
+        let alpha = Float::with_val(prec, Float::with_val(prec, 81.0) / 2.0);
+        let root = (alpha.clone().ln() / Float::with_val(prec, 5.0)).exp();
+        let pi = Float::with_val(prec, Constant::Pi);
+        let ang = Float::with_val(prec, Float::with_val(prec, &pi * 2.0) / 5.0);
+        let scale = Float::with_val(prec, Float::with_val(prec, 1.0) / Float::with_val(prec, &root * &kap));
+        let theta = Complex::with_val(
+            prec,
+            (
+                Float::with_val(prec, &scale * ang.clone().cos()),
+                Float::with_val(prec, &scale * ang.clone().sin()),
+            ),
+        );
+        let xp: Vec<Complex> = x0.iter().map(|z| Complex::with_val(prec, z * &theta)).collect();
+        let phi = phi_w(5, 3, 3, &kap, prec, len);
+        (xp, phi, theta)
+    }
+
+    // The SOLVER (not verifier): recover Φ = P/Q from x(w), φ(w) with no knowledge of the
+    // answer, then check it equals the paper's 648x⁵/(324x⁵+405x⁴−120x²+16).
+    #[test]
+    fn solve_map_recovers_paper_5_3_3() {
+        let prec = 256u32;
+        let (xp, phi, _theta) = setup_5_3_3(prec);
+        let (p, q) = solve_belyi_map(&xp, &phi, 5, prec);
+        // normalize by q₅ (leading denom coeff)
+        let q5 = q[5].clone();
+        let norm = |z: &Complex| -> num_complex::Complex64 {
+            let r = Complex::with_val(prec, z / &q5);
+            num_complex::Complex64::new(r.real().to_f64(), r.imag().to_f64())
+        };
+        // expected (÷324): p = [0,0,0,0,0, 648/324=2]; q = [16/324,0,−120/324,0,405/324,1]
+        let exp_p = [0.0, 0.0, 0.0, 0.0, 0.0, 2.0];
+        let exp_q = [16.0 / 324.0, 0.0, -120.0 / 324.0, 0.0, 405.0 / 324.0, 1.0];
+        for i in 0..=5 {
+            let dp = (norm(&p[i]) - num_complex::Complex64::new(exp_p[i], 0.0)).norm();
+            let dq = (norm(&q[i]) - num_complex::Complex64::new(exp_q[i], 0.0)).norm();
+            assert!(dp < 1e-6, "P[{i}] = {} (want {})", norm(&p[i]), exp_p[i]);
+            assert!(dq < 1e-6, "Q[{i}] = {} (want {})", norm(&q[i]), exp_q[i]);
+        }
     }
 
     // §5b end-to-end: with κ (rug Γ) and Θ = (81/2)^{1/5}·e^{2πi/5}/κ, verify the paper's
