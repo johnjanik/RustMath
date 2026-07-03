@@ -367,6 +367,75 @@ fn clone_floats(x: &[Float], prec: u32) -> Vec<Float> {
     x.iter().map(|v| Float::with_val(prec, v)).collect()
 }
 
+/// Sorted LU pivot magnitudes (ascending) of the gauge-fixed Jacobian at arbitrary
+/// precision. Unlike the `f64` version these are free of finite-difference noise, so
+/// a clear gap in the spectrum gives the honest numerical corank; a smooth decay
+/// means ill-conditioning without a definite rank drop. Requires a square system
+/// (`50` free unknowns, i.e. the default 6-real gauge).
+pub fn jacobian_pivots_hp(seed: &FactorizedRoots, frozen: &[usize], prec: u32) -> Vec<f64> {
+    let x = seed_to_floats(seed, prec);
+    let free: Vec<usize> = (0..N_UNKNOWNS).filter(|k| !frozen.contains(k)).collect();
+    let n = free.len();
+    let m = 50;
+    let digits = (prec as f64 * 0.301) as i32;
+    let h = Float::with_val(prec, 10.0).pow(-(digits / 3));
+    let mut a = vec![Float::with_val(prec, 0.0); m * n];
+    for (jc, &idx) in free.iter().enumerate() {
+        let mut xp = clone_floats(&x, prec);
+        let mut xm = clone_floats(&x, prec);
+        xp[idx] += &h;
+        xm[idx] -= &h;
+        let rp = residual_floats(&xp, prec);
+        let rm = residual_floats(&xm, prec);
+        let two_h = Float::with_val(prec, 2.0 * &h);
+        for i in 0..m.min(n) {
+            a[i * n + jc] =
+                Float::with_val(prec, &Float::with_val(prec, &rp[i] - &rm[i]) / &two_h);
+        }
+        for i in m.min(n)..m {
+            // extra rows if m>n: keep for completeness (unused in square LU below)
+            let _ = i;
+        }
+    }
+    let sz = n.min(m);
+    let mut pivots = Vec::with_capacity(sz);
+    let tiny = Float::with_val(prec, 10.0).pow(-((digits as i64) - 5));
+    for col in 0..sz {
+        let mut piv = col;
+        let mut best = a[col * n + col].clone().abs();
+        for row in (col + 1)..sz {
+            let v = a[row * n + col].clone().abs();
+            if v > best {
+                best = v;
+                piv = row;
+            }
+        }
+        if piv != col {
+            for k in 0..n {
+                a.swap(col * n + k, piv * n + k);
+            }
+        }
+        let d = a[col * n + col].clone();
+        pivots.push(d.clone().abs().to_f64());
+        if d.clone().abs() < tiny {
+            // remaining pivots are numerically zero at this precision
+            for _ in (col + 1)..sz {
+                pivots.push(0.0);
+            }
+            break;
+        }
+        for row in (col + 1)..sz {
+            let f = Float::with_val(prec, &a[row * n + col] / &d);
+            for k in col..n {
+                let t = Float::with_val(prec, &f * &a[col * n + k]);
+                a[row * n + k] -= &t;
+            }
+        }
+    }
+    pivots.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    pivots
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
