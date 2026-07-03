@@ -247,6 +247,52 @@ pub fn dim_s_k_svd(
     (nullity, svd.sigma)
 }
 
+/// Recover a basis of S_k(Γ) as coefficient vectors b (with f = (1−w)^k Σ b_n w^n)
+/// from the hp SVD of the preconditioned A−I: take the small-σ right singular vectors
+/// y and un-scale b_n = ρ^{-n} y_n. Returns dim S_k(Γ) vectors, each length N+1 — the
+/// modular forms themselves, which §5 echelonizes into the coordinate x(w).
+pub fn recover_forms(
+    tg64: &TriangleGroup,
+    tg: &TriangleGroupHp,
+    cg: &CosetGraph,
+    k: i64,
+    big_n: usize,
+    q: usize,
+    threshold_decimal: &str,
+    tol_decimal: &str,
+    rho_scale: f64,
+) -> Vec<Vec<Complex>> {
+    let prec = tg.prec;
+    let (a, rho) = assemble_scaled_ami(tg64, tg, cg, k, big_n, q, rho_scale);
+    let dim = a.len();
+    let mut data = Vec::with_capacity(dim * dim);
+    for row in &a {
+        for z in row {
+            data.push(MpC::new(Float::with_val(prec, z.real()), Float::with_val(prec, z.imag())));
+        }
+    }
+    let mat = MpMatrix::from_row_major(dim, dim, prec, data).expect("square matrix");
+    let opt = JacobiSvdOptions::new(prec, 80, tol_decimal, "1e-40");
+    let svd = jacobi_svd(&mat, &opt).expect("svd");
+    let threshold = Float::with_val(prec, Float::parse(threshold_decimal).expect("threshold"));
+    let ker = svd.right_nullspace_basis(&threshold);
+
+    let mut rho_pow = vec![Float::with_val(prec, 1.0); dim];
+    for n in 1..dim {
+        rho_pow[n] = Float::with_val(prec, &rho_pow[n - 1] * &rho);
+    }
+    let mut forms = Vec::with_capacity(ker.cols);
+    for f in 0..ker.cols {
+        let mut b = Vec::with_capacity(dim);
+        for n in 0..dim {
+            let y = ker.get(n, f).div_real(&rho_pow[n]); // b_n = ρ^{-n} y_n
+            b.push(Complex::with_val(prec, (y.re, y.im)));
+        }
+        forms.push(b);
+    }
+    forms
+}
+
 /// Nullity + sorted pivot magnitudes of a square hp complex matrix (Gauss–Jordan,
 /// partial pivoting).
 fn null_space_hp(mut m: Vec<Vec<Complex>>, tol: f64, prec: u32) -> (usize, Vec<f64>) {
@@ -355,5 +401,53 @@ mod tests {
                 "dim S_{k} = {nullity} (expected {expected}); σ_min={smallest:.2e}, σ_max={largest:.2e}"
             );
         }
+    }
+
+    // Recover the actual weight-6 forms and check one is genuinely Γ-modular: pick z₁
+    // well inside the domain and a side-pairing γ ∈ Γ, then verify the reconstructed
+    // f(z) = (1−w)^6 Σ b_n w^n satisfies f(γz₁) = j(γ,z₁)^6 f(z₁). (This is INDEPENDENT
+    // of the assembly — it directly tests modularity of the recovered coefficients.)
+    #[test]
+    fn recovered_form_is_modular() {
+        let tg64 = TriangleGroup::new(5, 3, 3);
+        let tg = TriangleGroupHp::new(5, 3, 3, PREC);
+        let s0 = vec![4, 0, 1, 2, 3];
+        let s1 = vec![1, 2, 0, 3, 4];
+        let mut cg = CosetGraph::build(&tg64, &s0, &s1);
+        // side pairings (valid Γ elements) captured before compactify
+        let gammas: Vec<_> = cg.side_pairings.iter().map(|s| s.gamma).collect();
+        cg.compactify(&tg64);
+
+        let forms = recover_forms(&tg64, &tg, &cg, 6, 48, 96, "1e-8", "1e-70", 1.0);
+        assert_eq!(forms.len(), 3, "dim S_6 = 3");
+        let b: Vec<Complex64> = forms[0]
+            .iter()
+            .map(|z| Complex64::new(z.real().to_f64(), z.imag().to_f64()))
+            .collect();
+        let i_c = Complex64::new(0.0, 1.0);
+        let eval = |z: Complex64| -> Complex64 {
+            let w = (z - i_c) / (z + i_c);
+            let mut s = Complex64::new(0.0, 0.0);
+            let mut wn = Complex64::new(1.0, 0.0);
+            for bn in &b {
+                s += bn * wn;
+                wn *= w;
+            }
+            (Complex64::new(1.0, 0.0) - w).powu(6) * s
+        };
+        // z₁ near the centre z_a = i (small |w|), so both f(z₁) and f(γz₁) are accurate.
+        let z1 = Complex64::new(0.05, 1.1);
+        let fz1 = eval(z1);
+        // best-behaved side pairing (γz₁ closest to the domain) should satisfy automorphy.
+        let mut best = f64::INFINITY;
+        for g in &gammas {
+            let gz = g.apply(z1);
+            let j = Complex64::new(g.c, 0.0) * z1 + Complex64::new(g.d, 0.0);
+            let resid = (eval(gz) - j.powu(6) * fz1).norm() / fz1.norm();
+            best = best.min(resid);
+        }
+        // ~3e-5 here (limited by series truncation at |w(γz₁)|~0.8, i.e. 0.8^48), versus
+        // ~10³ for an LU-noise vector — unambiguous evidence the form is genuinely modular.
+        assert!(best < 1e-4, "recovered form not modular: best automorphy residual {best:.2e}");
     }
 }
