@@ -44,6 +44,7 @@ pub mod hypergeometric;
 pub mod modular_forms;
 pub mod numerical_monodromy;
 pub mod triangle_group;
+pub mod triangle_group_hp;
 pub mod packing;
 pub mod pinned;
 pub mod pipeline;
