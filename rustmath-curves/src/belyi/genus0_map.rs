@@ -6,7 +6,58 @@
 //! exact hypergeometric series to recover the rational map Φ(x). This module is the
 //! genus-0 assembly; hp complex power-series arithmetic is done in place on Vec<Complex>.
 
+use super::triangle_group_hp::TriangleGroupHp;
 use rug::{Complex, Float};
+
+/// Convert an exact `Rational` to a high-precision `Float` (via decimal strings).
+fn rat_to_float(r: &rustmath_rationals::Rational, prec: u32) -> Float {
+    let num = Float::with_val(prec, Float::parse(r.numerator().to_string()).unwrap());
+    let den = Float::with_val(prec, Float::parse(r.denominator().to_string()).unwrap());
+    Float::with_val(prec, &num / &den)
+}
+
+/// κ (eq 4.13): κ = ((μ−1)/(μ+1))·Γ(2−C)Γ(C−A)Γ(C−B)/(Γ(1−A)Γ(1−B)Γ(C)), with
+/// A,B,C the hypergeometric parameters (eq 4.10). Computed in hp via the rug Γ-function.
+pub fn kappa(tg: &TriangleGroupHp) -> Float {
+    let prec = tg.prec;
+    let f = |v: f64| Float::with_val(prec, v);
+    let inv = |x: f64| Float::with_val(prec, f(1.0) / f(x));
+    let (a, b, c) = (tg.a as f64, tg.b as f64, tg.c as f64);
+    let big_a = Float::with_val(prec, f(0.5) * Float::with_val(prec, f(1.0) + inv(a) - inv(b) - inv(c)));
+    let big_b = Float::with_val(prec, f(0.5) * Float::with_val(prec, f(1.0) + inv(a) - inv(b) + inv(c)));
+    let big_c = Float::with_val(prec, f(1.0) + inv(a));
+    let gam = |x: Float| x.gamma();
+    let num = gam(Float::with_val(prec, f(2.0) - &big_c))
+        * gam(Float::with_val(prec, Float::with_val(prec, &big_c - &big_a)))
+        * gam(Float::with_val(prec, &big_c - &big_b));
+    let den = gam(Float::with_val(prec, f(1.0) - &big_a))
+        * gam(Float::with_val(prec, f(1.0) - &big_b))
+        * gam(big_c.clone());
+    let ratio = Float::with_val(
+        prec,
+        Float::with_val(prec, &tg.mu - f(1.0)) / Float::with_val(prec, &tg.mu + f(1.0)),
+    );
+    Float::with_val(prec, &ratio * Float::with_val(prec, num / den))
+}
+
+/// The Δ-uniformizer φ as a power series in w: φ(w) = Σ φ_n (w/κ)^{a·n} (eq 4.16),
+/// with the exact rational coefficients φ_n from the hypergeometric expansion scaled by
+/// κ^{-p}. Real coefficients when κ is real.
+pub fn phi_w(a: i64, b: i64, c: i64, kappa: &Float, prec: u32, len: usize) -> Vec<Complex> {
+    let phi_u = super::hypergeometric::phi_in_u(a, b, c, len);
+    let inv_kappa = Float::with_val(prec, Float::with_val(prec, 1.0) / kappa);
+    let mut kpow = vec![Float::with_val(prec, 1.0); len];
+    for p in 1..len {
+        kpow[p] = Float::with_val(prec, &kpow[p - 1] * &inv_kappa);
+    }
+    let mut out = vec![Complex::with_val(prec, (0.0, 0.0)); len];
+    for p in 0..len {
+        let rf = rat_to_float(phi_u.coeff(p), prec);
+        let coeff = Float::with_val(prec, &rf * &kpow[p]);
+        out[p] = Complex::with_val(prec, (coeff, 0.0));
+    }
+    out
+}
 
 /// First index with |coeff| above `tol` (the w-valuation); `len` if all tiny.
 fn valuation(s: &[Complex], tol: f64) -> usize {
@@ -198,5 +249,80 @@ mod tests {
         let r7 = (c7 - 3.5 * c3 * c3 * c3).norm() / c7.norm();
         assert!(r5 < 1e-10, "c5 = (9/4)c3² failed, rel {r5:.2e}");
         assert!(r7 < 1e-10, "c7 = (7/2)c3³ failed, rel {r7:.2e}");
+    }
+
+    // §5b end-to-end: with κ (rug Γ) and Θ = (81/2)^{1/5}·e^{2πi/5}/κ, verify the paper's
+    // Belyi map Φ(x) = 648x⁵/(324x⁵+405x⁴−120x²+16) satisfies Φ(Θ·x₀(w)) = φ(w), where
+    // φ(w) is the exact hypergeometric Δ-uniformizer. Validates κ, φ(w), and the whole
+    // §5 assembly against ground truth.
+    #[test]
+    fn belyi_map_matches_paper_5_3_3() {
+        use rug::float::Constant;
+        let prec = 256u32;
+        let tg64 = TriangleGroup::new(5, 3, 3);
+        let tg = TriangleGroupHp::new(5, 3, 3, prec);
+        let s0 = vec![4, 0, 1, 2, 3];
+        let s1 = vec![1, 2, 0, 3, 4];
+        let mut cg = CosetGraph::build(&tg64, &s0, &s1);
+        cg.compactify(&tg64);
+        let forms = recover_forms(&tg64, &tg, &cg, 6, 48, 96, "1e-8", "1e-70", 1.0);
+        let ech = echelonize(forms_to_series(&forms, 6, prec), prec, 1e-25);
+        let x0 = coordinate_x(&ech, 1, 1, prec, 1e-25);
+        let len = x0.len();
+
+        let kap = kappa(&tg);
+        assert!((kap.to_f64() - 0.37630).abs() < 1e-4, "κ = {} (expected ≈0.3763)", kap.to_f64());
+
+        // Θ = e^{2πi/5} / ((81/2)^{1/5} · κ)   [fixes 40.5·Θ⁵ = κ⁻⁵ at leading order]
+        let alpha = Float::with_val(prec, Float::with_val(prec, 81.0) / 2.0);
+        let root = (alpha.clone().ln() / Float::with_val(prec, 5.0)).exp();
+        let pi = Float::with_val(prec, Constant::Pi);
+        let ang = Float::with_val(prec, Float::with_val(prec, &pi * 2.0) / 5.0);
+        let scale = Float::with_val(prec, Float::with_val(prec, 1.0) / Float::with_val(prec, &root * &kap));
+        let theta = Complex::with_val(
+            prec,
+            (
+                Float::with_val(prec, &scale * ang.clone().cos()),
+                Float::with_val(prec, &scale * ang.clone().sin()),
+            ),
+        );
+        // sanity: Θ ≈ 0.3917053 + 1.205545 i (eq 5.9)
+        assert!((theta.real().to_f64() - 0.3917053).abs() < 1e-4, "Θ_re = {}", theta.real().to_f64());
+        assert!((theta.imag().to_f64() - 1.205545).abs() < 1e-4, "Θ_im = {}", theta.imag().to_f64());
+
+        // x_paper = Θ · x₀
+        let xp: Vec<Complex> = x0.iter().map(|z| Complex::with_val(prec, z * &theta)).collect();
+        // Φ(xp) = 648 xp⁵ / (324 xp⁵ + 405 xp⁴ − 120 xp² + 16)
+        let x2 = series_mul(&xp, &xp, len, prec);
+        let x4 = series_mul(&x2, &x2, len, prec);
+        let x5 = series_mul(&x4, &xp, len, prec);
+        let cc = |re: f64| Complex::with_val(prec, (re, 0.0));
+        let mut num = vec![Complex::with_val(prec, (0.0, 0.0)); len];
+        let mut den = vec![Complex::with_val(prec, (0.0, 0.0)); len];
+        for j in 0..len {
+            num[j] = Complex::with_val(prec, &x5[j] * cc(648.0));
+            let t324 = Complex::with_val(prec, &x5[j] * cc(324.0));
+            let t405 = Complex::with_val(prec, &x4[j] * cc(405.0));
+            let t120 = Complex::with_val(prec, &x2[j] * cc(-120.0));
+            den[j] = Complex::with_val(prec, Complex::with_val(prec, &t324 + &t405) + &t120);
+        }
+        den[0] = Complex::with_val(prec, &den[0] + cc(16.0));
+        let phi_of_x = series_div(&num, &den, len, prec, 1e-25);
+
+        let phi = phi_w(5, 3, 3, &kap, prec, len);
+        // Compare in the accurate low-order range (higher coeffs degrade as the N=48
+        // form error ~ρ^N is amplified by the series division and 5th powers).
+        let mut worst = 0f64;
+        let mut worst_n = 0;
+        for n in 0..11 {
+            let d = Complex::with_val(prec, &phi_of_x[n] - &phi[n]);
+            let m = (d.real().to_f64().powi(2) + d.imag().to_f64().powi(2)).sqrt();
+            if m > worst {
+                worst = m;
+                worst_n = n;
+            }
+        }
+        // ~2e-8 at N=48 (truncation-limited — tightens with N); decisive vs the exact map.
+        assert!(worst < 1e-7, "Φ(Θ·x₀(w)) ≠ φ(w): worst coeff diff {worst:.2e} at n={worst_n}");
     }
 }
