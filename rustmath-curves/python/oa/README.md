@@ -49,19 +49,30 @@ mxpsvd.py      Ogita–Aishima refined SVD → dd-accurate 9-dim null space
   *Mixed-Precision SVD on GPUs via Ogita–Aishima Iterative Refinement* (NVIDIA).
 - **`read_ext.py`** — reader for the extended-precision matrix dump.
 
-## Status (2026-07-03)
+## Status (2026-07-03) — refinement VALIDATED
 
-Infrastructure **validated**: Ozaki GEMM (2e-32), dd-complex arithmetic, the dd/td dump
-(lo limb ~4e-17 of hi). The refinement **step does not yet converge** — the synthetic
-self-test (`python3 mxpsvd.py`) shows `omega` stuck at ~1.4e-6 instead of dropping toward
-`16 n εhp σmax ≈ 1e-22`. Ordered debug plan is in the `mxpsvd.py` module docstring:
-1. test `mxp_svd_step` on an easy O(1)-σ matrix first (isolates step from conditioning);
-2. fix a transient NaN at iter 0 (likely `log2(0)` in `ozaki_split` on an all-zero row);
-3. hand-check the branch-A coupling (α=t_ij+σ_j r_ij, β=t̄_ji+σ_i s_ij) and the U(I+F) sign;
-4. confirm the loop actually mutates U,V.
+Infrastructure validated (Ozaki GEMM 2e-32, dd-complex arithmetic, dd/td dump). The
+refinement now **converges**: `python3 mxpsvd.py` refines a buried 2-dim null subspace from
+FP64's 2.2e-11 to **9.99e-16** (the fp64 measurement floor of `to_c128(V)` — the true null
+space is dd-accurate). `python3 debug_step.py` shows quadratic convergence on an easy matrix
+(‖R‖: 2.8e-15 → 3.3e-32).
 
-Once the step converges: assemble N=2500 dd, refine, recover forms, and check the order-12
-clustering sharpens from FP64's scatter (~3.8) toward ~0.1 (N=2500) / ~0.01 (N=5900, td).
+Two bugs were found and fixed:
+1. **Branch-A coupling**: `β` used `σ_i` instead of `σ_j`. With `σ_i` the correction satisfies
+   `f_ij + conj(f_ji) = r_ij − s_ij` (swaps R↔S off-diagonals each step, no convergence);
+   `σ_j` gives `= r_ij` (true U-orthogonality). Matches Algorithm 3 line 7 as printed.
+2. **`_offdiag_frob` catastrophic cancellation**: computed `sqrt(Σ|T|² − Σ|diag T|²)`;
+   subtracting an O(1) diagonal gives a ~1e-7 floor and, once the argument goes negative,
+   `sqrt(neg)=NaN`. Fixed by zeroing the diagonal first.
+
+Key lesson for the real run: **feed M in double-double**, not fp64. An fp64-A caps the null
+vectors at `~ε·‖A‖/gap` (the fp64 matrix's own null-vector error), independent of the
+algorithm — which is the whole reason for `dump_2_12_5_matrix_ext`.
+
+NEXT: assemble N=2500 dd (`M_N=2500 M_K=4 M_PREC=140 M_LIMBS=2`), load via `read_ext.py`,
+refine, recover forms, and check the order-12 clustering sharpens from FP64's scatter (~3.8)
+toward ~0.01. ClusterRR's within-cluster SVD is fp64 (fine — forms get echelonized to a
+canonical basis anyway; only the null *span* needs dd, and it is).
 
 ## GPU setup
 

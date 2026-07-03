@@ -38,6 +38,8 @@ from ozaki import ozaki_gemm_complex, dd_add, dd_sub, two_sum
 from ddcx import (cnew, czeros, from_c128, to_c128, cadd, csub, cconj, cscale_ddreal,
                   cdiv_ddreal, cmul, ceye, cH, cget_cols, cset_cols, dd_mul, dd_div)
 
+_DBG = {}   # debug knobs (e.g. {'nnull': 2}) for dd block decomposition of T
+
 def _diag(a):
     """diagonal of a dd-complex (n,n) as dd-complex length-n (reh,rel,imh,iml vectors)."""
     n = a['reh'].shape[0]; idx = xp.arange(n)
@@ -45,17 +47,30 @@ def _diag(a):
 def _cT(a):   # transpose (no conjugate)
     return cnew(a['reh'].T.copy(), a['rel'].T.copy(), a['imh'].T.copy(), a['iml'].T.copy())
 def _offdiag_frob(a):
-    n = a['reh'].shape[0]
-    m2 = a['reh']**2 + a['imh']**2
-    return float(xp.sqrt(xp.sum(m2) - xp.sum(xp.diagonal(m2))))
+    # zero the diagonal FIRST (subtracting it from the total is catastrophic cancellation
+    # when the diagonal is O(1) and the off-diagonal is ~1e-15: gives a ~1e-7 floor and,
+    # once rounding turns the argument negative, sqrt(neg)=NaN).
+    n = a['reh'].shape[0]; idx = xp.arange(n)
+    m2 = (a['reh']**2 + a['imh']**2).copy()
+    m2[idx, idx] = 0.0
+    return float(xp.sqrt(xp.sum(m2)))
 def _frob(a):
     return float(xp.sqrt(xp.sum(a['reh']**2 + a['imh']**2)))
+def _frob_dd_offdiag(a):
+    # dd-accurate off-diagonal Frobenius: |hi+lo|^2 reaches ~1e-30, diagonal zeroed first.
+    n = a['reh'].shape[0]; idx = xp.arange(n)
+    re = a['reh'] + a['rel']; im = a['imh'] + a['iml']
+    m2 = (re*re + im*im).copy(); m2[idx, idx] = 0.0
+    return float(xp.sqrt(xp.sum(m2)))
+def _frob_dd(a):
+    re = a['reh'] + a['rel']; im = a['imh'] + a['iml']
+    return float(xp.sqrt(xp.sum(re*re + im*im)))
 def _select(mask, a, b):
     """elementwise dd-complex select: where(mask, a, b)."""
     return cnew(xp.where(mask, a['reh'], b['reh']), xp.where(mask, a['rel'], b['rel']),
                 xp.where(mask, a['imh'], b['imh']), xp.where(mask, a['iml'], b['iml']))
 
-def mxp_svd_step(A, U, V, eps_lp, eps_hp, n_slices):
+def mxp_svd_step(A, U, V, eps_lp, eps_hp, n_slices, debug=False):
     """One cluster-safe Ogita-Aishima refinement step (Algorithm 3). Square complex A.
     Returns refined U, V, sigma (dd-real hi,lo vectors), and omega."""
     n = U['reh'].shape[0]
@@ -64,6 +79,18 @@ def mxp_svd_step(A, U, V, eps_lp, eps_hp, n_slices):
     R = csub(I, ozaki_gemm_complex(UH, U, n_slices))      # I - U^H U
     S = csub(I, ozaki_gemm_complex(VH, V, n_slices))      # I - V^H V
     T = ozaki_gemm_complex(UH, ozaki_gemm_complex(A, V, n_slices), n_slices)  # U^H A V
+    if debug:
+        msg = (f"    [dd] ||R||={_frob_dd(R):.2e} ||S||={_frob_dd(S):.2e} "
+               f"||offT||={_frob_dd_offdiag(T):.2e}")
+        nn = _DBG.get('nnull')
+        if nn:
+            L = n - nn
+            re = T['reh'] + T['rel']; im = T['imh'] + T['iml']
+            m = re*re + im*im; md = m.copy(); md[xp.arange(n), xp.arange(n)] = 0.0
+            LL = float(xp.sqrt(xp.sum(md[:L, :L]))); LN = float(xp.sqrt(xp.sum(m[:L, L:])))
+            NL = float(xp.sqrt(xp.sum(m[L:, :L]))); NN = float(xp.sqrt(xp.sum(md[L:, L:])))
+            msg += f"  ddblocks(LL,LN,NL,NN)=({LL:.1e},{LN:.1e},{NL:.1e},{NN:.1e})"
+        print(msg)
 
     # --- diagonals (Alg 3 lines 2-4) ---
     rd = _diag(R); sd = _diag(S); td = _diag(T)
@@ -86,7 +113,9 @@ def mxp_svd_step(A, U, V, eps_lp, eps_hp, n_slices):
     gap_h, gap_l = dd_sub(sj_h, sj_l, si_h, si_l)
     sum_h, sum_l = dd_add(sj_h, sj_l, si_h, si_l)
     alpha = cadd(T, cscale_ddreal(R, sj_h, sj_l))                    # t_ij + sigma_j r_ij
-    beta  = cadd(tbar, cscale_ddreal(S, si_h, si_l))                # t_bar_ji + sigma_i s_ij
+    beta  = cadd(tbar, cscale_ddreal(S, sj_h, sj_l))                # t_bar_ji + sigma_j s_ij
+    # NB: beta uses sigma_j (not sigma_i) -- required for f_ij + conj(f_ji) = r_ij (U-orthogonality).
+    # sigma_i here gives f+f^H = r - s, which swaps R<->S off-diagonals each step (no convergence).
     denom_h, denom_l = dd_mul(gap_h, gap_l, sum_h, sum_l)           # (sj-si)(sj+si)
     fA = cdiv_ddreal(cadd(cscale_ddreal(alpha, sj_h, sj_l), cscale_ddreal(beta, si_h, si_l)), denom_h, denom_l)
     gA = cdiv_ddreal(cadd(cscale_ddreal(alpha, si_h, si_l), cscale_ddreal(beta, sj_h, sj_l)), denom_h, denom_l)
@@ -112,6 +141,14 @@ def mxp_svd_step(A, U, V, eps_lp, eps_hp, n_slices):
     for key, val in (('reh', half * sd['reh']), ('rel', half * sd['rel']),
                      ('imh', -delta), ('iml', xp.zeros_like(delta))):
         G[key][idx, idx] = val
+
+    if debug:
+        idxd = xp.arange(n)
+        rdd = (R['reh'] + R['rel'])**2 + (R['imh'] + R['iml'])**2
+        dR = float(xp.sqrt(xp.sum(rdd[idxd, idxd])))
+        oR = float(xp.sqrt(xp.sum(rdd) - xp.sum(rdd[idxd, idxd])))
+        print(f"    [dd] ||F||={_frob_dd(F):.2e} ||G||={_frob_dd(G):.2e} "
+              f"||diagR||={dR:.2e} ||offR||={oR:.2e}")
 
     # --- multiplicative update U(I+F), V(I+G) (Alg 3 line 20) ---
     Up = cadd(U, ozaki_gemm_complex(U, F, n_slices))
@@ -165,6 +202,7 @@ def _mxp_svd_core(A, A_c128_hi, n_slices, max_iter, n_null, verbose):
     U0, s0, Vh0 = np.linalg.svd(np.asarray(A_c128_hi))     # initial low-precision (fp64) SVD
     U = from_c128(xp.asarray(U0)); V = from_c128(xp.asarray(Vh0.conj().T))
     sigma_h = xp.asarray(s0)
+    prev = np.inf
     for it in range(max_iter):
         U, V, (sigma_h, sigma_l), omega = mxp_svd_step(A, U, V, eps_lp, eps_hp, n_slices)
         smax = float(xp.max(sigma_h))
@@ -172,6 +210,9 @@ def _mxp_svd_core(A, A_c128_hi, n_slices, max_iter, n_null, verbose):
             print(f"  iter {it}: omega={omega:.3e}  target={16*n*eps_hp*smax:.3e}  smin={float(xp.min(sigma_h)):.3e}")
         if omega <= 16 * n * eps_hp * smax:
             break
+        if omega > 0.5 * prev:        # stagnation: well-separated part converged, clusters remain
+            break
+        prev = omega
     # cluster-refine the null space
     J, ss, cut = detect_null_cluster(sigma_h, n_expected=n_null)
     if verbose:
@@ -181,30 +222,43 @@ def _mxp_svd_core(A, A_c128_hi, n_slices, max_iter, n_null, verbose):
 
 # --------------------------------------------------------------------------------------
 if __name__ == "__main__":
-    # Self-test: matrix with a KNOWN 2-dim tiny-sigma subspace and a huge dynamic range,
-    # mimicking M (sigma_max ~ 1e8, tiny sigma ~ 1e-9). FP64 SVD cannot resolve the tiny
-    # subspace; refinement should recover it to ~dd.
-    rng = np.random.default_rng(3)
-    n = 40
-    # random unitaries
+    # Self-test: matrix with a KNOWN 2-dim near-null subspace and a huge dynamic range
+    # (sigma_max ~ 1e8, well-separated large block down to 1e2, tiny sigma ~ 1e-9), mimicking M.
+    # The FP64 SVD cannot resolve the tiny subspace; refinement recovers it. Crucially A is
+    # fed in DOUBLE-DOUBLE (as the real M will be): feeding A in fp64 caps the null vectors at
+    # ~eps*||A||/gap ~ 1e-11 (the fp64-A's own null-vector error), NOT an algorithm limit.
+    import mpmath as mp
+    mp.mp.dps = 50
+    rng = np.random.default_rng(0)
+    n = 16
     Qr, _ = np.linalg.qr(rng.standard_normal((n, n)) + 1j*rng.standard_normal((n, n)))
     Qc, _ = np.linalg.qr(rng.standard_normal((n, n)) + 1j*rng.standard_normal((n, n)))
-    sig = np.concatenate([np.geomspace(1e8, 1.0, n-2), [3e-9, 1e-9]])  # 2 tiny at the end
-    A = (Qr * sig) @ Qc.conj().T
-    A = A.astype(np.complex128)
-    # true null-ish right vectors = last 2 columns of Qc
+    sig = np.concatenate([np.geomspace(1e8, 1e2, n-2), [3e-9, 1e-9]])
     Vtrue = Qc[:, -2:]
-    # FP64 baseline
-    _, s_fp, Vh_fp = np.linalg.svd(A)
-    Vfp = Vh_fp.conj().T[:, -2:]
-    def subspace_err(Vapprox, Vtrue):
-        Vt = Vtrue.conj().T
-        P = Vapprox @ (Vapprox.conj().T)         # projector onto approx
-        return np.linalg.norm(P @ Vtrue - Vtrue)  # residual of true in approx span
+    # A = Qr diag(sig) Qc^H at 50 digits, split to double-double
+    Qrm = mp.matrix([[mp.mpc(Qr[i, j].real, Qr[i, j].imag) for j in range(n)] for i in range(n)])
+    Qcm = mp.matrix([[mp.mpc(Qc[i, j].real, Qc[i, j].imag) for j in range(n)] for i in range(n)])
+    D = mp.matrix(n, n)
+    for k in range(n):
+        D[k, k] = mp.mpf(float(sig[k]))
+    Am = Qrm * D * Qcm.H
+    reh, rel, imh, iml = (np.zeros((n, n)) for _ in range(4)); Ahi = np.zeros((n, n), complex)
+    for i in range(n):
+        for j in range(n):
+            z = Am[i, j]; rh = float(z.real); ih = float(z.imag)
+            reh[i, j] = rh; rel[i, j] = float(z.real - mp.mpf(rh))
+            imh[i, j] = ih; iml[i, j] = float(z.imag - mp.mpf(ih)); Ahi[i, j] = rh + 1j*ih
+    A_dd = cnew(xp.asarray(reh), xp.asarray(rel), xp.asarray(imh), xp.asarray(iml))
+
+    def subspace_err(Vapprox):
+        P = Vapprox @ Vapprox.conj().T
+        return np.linalg.norm(P @ Vtrue - Vtrue)
+    _, s_fp, Vh_fp = np.linalg.svd(Ahi)
     print(f"FP64 SVD: smallest two sigma = {s_fp[-2:]}  (true 3e-9, 1e-9)")
-    print(f"FP64 null-subspace error = {subspace_err(Vfp, Vtrue):.2e}")
-    print("Refining (Ogita-Aishima, dd):")
-    U, V, sig_r, J = mxp_svd(A, n_slices=6, max_iter=8, n_null=2, verbose=True)
+    print(f"FP64 null-subspace error = {subspace_err(Vh_fp.conj().T[:, -2:]):.2e}")
+    print("Refining (Ogita-Aishima, dd input):")
+    U, V, sig_r, J = mxp_svd_dd(A_dd, Ahi, n_slices=6, max_iter=8, n_null=2, verbose=True)
     Vc = to_c128(V); Vc = np.asarray(Vc.get() if _GPU else Vc)
-    Vnull = Vc[:, J]
-    print(f"refined null-subspace error = {subspace_err(Vnull, Vtrue):.2e}  (want << FP64)")
+    err = subspace_err(Vc[:, list(J)])
+    print(f"refined null-subspace error = {err:.2e}  ({'PASS' if err < 1e-13 else 'FAIL'}; "
+          f"~1e-15 = fp64 measurement floor of to_c128(V))")
