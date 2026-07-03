@@ -122,7 +122,7 @@ pub fn domain_radius_hp(cg: &CosetGraph, tg: &TriangleGroupHp) -> Float {
 /// is S_k(Γ) (the ρ^{n−r} scaling fixes the −I diagonal and conditions the A part).
 /// Also returns ρ (for un-scaling recovered vectors: b_n = ρ^{-n} y_n). `cg` must be
 /// compactified.
-fn assemble_scaled_ami(
+pub fn assemble_scaled_ami(
     tg64: &TriangleGroup,
     tg: &TriangleGroupHp,
     cg: &CosetGraph,
@@ -353,6 +353,39 @@ mod tests {
         let mut cg = CosetGraph::build(&tg64, &s0, &s1);
         cg.compactify(&tg64);
         (tg64, tg, cg)
+    }
+
+    // Dump the [2,12,5] preconditioned M = ρ^{n−r}(A−I) to a raw-f64 file for an external
+    // FP64 SVD (numpy / cuSOLVER). Env: M_N (=big_n), M_K (=weight), M_OUT (=path).
+    // Format: u32 dim, then dim*dim*2 f64 (row-major, re/im interleaved, little-endian).
+    #[test]
+    #[ignore]
+    fn dump_2_12_5_matrix() {
+        use std::io::Write;
+        let n: usize = std::env::var("M_N").ok().and_then(|s| s.parse().ok()).unwrap_or(600);
+        let k: i64 = std::env::var("M_K").ok().and_then(|s| s.parse().ok()).unwrap_or(4);
+        let out = std::env::var("M_OUT").unwrap_or_else(|_| "/tmp/m_2_12_5.bin".into());
+        let prec: u32 = std::env::var("M_PREC").ok().and_then(|s| s.parse().ok()).unwrap_or(100);
+        let s0: Vec<usize> = vec![0, 14, 10, 9, 4, 5, 23, 17, 18, 3, 2, 11, 22, 13, 1, 15, 16, 7, 8, 19, 21, 20, 12, 6];
+        let s1: Vec<usize> = vec![14, 2, 22, 9, 16, 8, 13, 15, 18, 1, 23, 20, 3, 0, 21, 12, 19, 7, 17, 11, 10, 4, 5, 6];
+        let tg64 = TriangleGroup::new(2, 12, 5);
+        let tg = TriangleGroupHp::new(2, 12, 5, prec);
+        let mut cg = CosetGraph::build(&tg64, &s0, &s1);
+        cg.compactify_with(&tg64, 0.996, 40);
+        let q = 2 * n + 8;
+        let (a, rho) = assemble_scaled_ami(&tg64, &tg, &cg, k, n, q, 1.0);
+        let dim = a.len();
+        eprintln!("[2,12,5] k={k} N={n} dim={dim} ρ={:.6} → {out}", rho.to_f64());
+        let mut buf: Vec<u8> = Vec::with_capacity(4 + dim * dim * 16);
+        buf.extend_from_slice(&(dim as u32).to_le_bytes());
+        for row in &a {
+            for z in row {
+                buf.extend_from_slice(&z.real().to_f64().to_le_bytes());
+                buf.extend_from_slice(&z.imag().to_f64().to_le_bytes());
+            }
+        }
+        let mut f = std::fs::File::create(&out).expect("create");
+        f.write_all(&buf).expect("write");
     }
 
     // The hp coset reps rebuilt from words match the f64 reps (validates word tracking).
