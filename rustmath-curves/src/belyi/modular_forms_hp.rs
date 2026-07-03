@@ -9,6 +9,7 @@
 //! [`CosetGraph::compactify`].
 
 use super::coset_graph::{CosetGraph, Gen};
+use super::mp_svd::{jacobi_svd, JacobiSvdOptions, MpC, MpMatrix};
 use super::triangle_group::TriangleGroup;
 use super::triangle_group_hp::{MobiusHp, TriangleGroupHp};
 use num_complex::Complex64;
@@ -117,26 +118,24 @@ pub fn domain_radius_hp(cg: &CosetGraph, tg: &TriangleGroupHp) -> Float {
     rho_hp
 }
 
-/// Assemble the eigenvector matrix A (eq 4.6) in hp, precondition by ρ^{n−r}, and
-/// return the nullity of A−I (= dim S_k(Γ)) at threshold `tol`, plus the sorted pivot
-/// magnitudes. `cg` must be compactified (rep words populated).
-pub fn nullity_s_k(
+/// Assemble the preconditioned matrix M = ρ^{n−r}·(A−I) (eq 4.6) in hp. Its null space
+/// is S_k(Γ) (the ρ^{n−r} scaling fixes the −I diagonal and conditions the A part).
+/// Also returns ρ (for un-scaling recovered vectors: b_n = ρ^{-n} y_n). `cg` must be
+/// compactified.
+fn assemble_scaled_ami(
     tg64: &TriangleGroup,
     tg: &TriangleGroupHp,
     cg: &CosetGraph,
     k: i64,
     big_n: usize,
     q: usize,
-    tol: f64,
     rho_scale: f64,
-) -> (usize, Vec<f64>) {
+) -> (Vec<Vec<Complex>>, Float) {
     let prec = tg.prec;
     let dim = big_n + 1;
     let ku = k as u32;
     let rho = Float::with_val(prec, domain_radius_hp(cg, tg) * rho_scale);
     let reps = reps_hp(cg, tg);
-    let dai = tg.delta_a.inverse();
-    let dbi = tg.delta_b.inverse();
 
     let pi = Float::with_val(prec, Constant::Pi);
     let two_pi = Float::with_val(prec, 2.0 * &pi);
@@ -197,7 +196,55 @@ pub fn nullity_s_k(
         }
         a[n][n] = Complex::with_val(prec, &a[n][n] - &one);
     }
-    null_space_hp(a, tol, prec)
+    (a, rho)
+}
+
+/// dim S_k(Γ) via Gauss–Jordan pivots (unreliable for small σ — see mp_svd; kept for
+/// the k=2 sanity check where full rank is unambiguous).
+pub fn nullity_s_k(
+    tg64: &TriangleGroup,
+    tg: &TriangleGroupHp,
+    cg: &CosetGraph,
+    k: i64,
+    big_n: usize,
+    q: usize,
+    tol: f64,
+    rho_scale: f64,
+) -> (usize, Vec<f64>) {
+    let (a, _rho) = assemble_scaled_ami(tg64, tg, cg, k, big_n, q, rho_scale);
+    null_space_hp(a, tol, tg.prec)
+}
+
+/// dim S_k(Γ) via the hp complex SVD of the preconditioned A−I: the number of singular
+/// values ≤ `threshold`. Returns (nullity, all singular values descending). This is the
+/// reliable rank test (LU pivots floor at ~10⁻⁴; the true small σ ~10⁻²⁹).
+pub fn dim_s_k_svd(
+    tg64: &TriangleGroup,
+    tg: &TriangleGroupHp,
+    cg: &CosetGraph,
+    k: i64,
+    big_n: usize,
+    q: usize,
+    threshold_decimal: &str,
+    tol_decimal: &str,
+    rho_scale: f64,
+) -> (usize, Vec<Float>) {
+    let prec = tg.prec;
+    let (a, _rho) = assemble_scaled_ami(tg64, tg, cg, k, big_n, q, rho_scale);
+    let dim = a.len();
+    // to row-major MpMatrix
+    let mut data = Vec::with_capacity(dim * dim);
+    for row in &a {
+        for z in row {
+            data.push(MpC::new(Float::with_val(prec, z.real()), Float::with_val(prec, z.imag())));
+        }
+    }
+    let mat = MpMatrix::from_row_major(dim, dim, prec, data).expect("square matrix");
+    let opt = JacobiSvdOptions::new(prec, 80, tol_decimal, "1e-40");
+    let svd = jacobi_svd(&mat, &opt).expect("svd");
+    let threshold = Float::with_val(prec, Float::parse(threshold_decimal).expect("threshold"));
+    let nullity = svd.numerical_nullity_indices(&threshold).len();
+    (nullity, svd.sigma)
 }
 
 /// Nullity + sorted pivot magnitudes of a square hp complex matrix (Gauss–Jordan,
@@ -291,10 +338,22 @@ mod tests {
         assert!(*pivots.last().unwrap() > 1e-1, "all pivots should be O(1) for k=2");
     }
 
-    // NOTE (open item): resolving the EXACT dim S_k(Γ) for k ≥ 4 needs the singular
-    // values of A−I, not Gauss–Jordan pivots. LU pivots are a poor rank proxy for a
-    // near-rank-deficient matrix — they floor at ~10⁻⁴ here while the true small
-    // singular values are ~10⁻²⁹ (the paper, p. 38, uses SVD and finds exactly three
-    // singular values < 8·10⁻²⁹ for k = 6). Next step: an hp SVD / smallest-singular
-    // subspace routine, which also yields the eigenvectors b (the actual forms) for §5.
+    // The payoff: with the hp complex SVD, the EXACT dim S_k(Γ) = 0, 1, 3 for
+    // k = 2, 4, 6 resolves cleanly — the small singular values collapse to ~ρ^N,
+    // far below the O(1) rank ones (LU pivots could not do this).
+    #[test]
+    fn dim_s_k_svd_5_3_3() {
+        let (tg64, tg, cg) = setup_5_3_3();
+        let (n, q) = (48usize, 96usize);
+        // ρ^48 ≈ 5·10⁻¹⁴; threshold 10⁻⁸ separates the null σ from the O(1) rank σ.
+        for (k, expected) in [(2i64, 0usize), (4, 1), (6, 3)] {
+            let (nullity, sigma) = dim_s_k_svd(&tg64, &tg, &cg, k, n, q, "1e-8", "1e-70", 1.0);
+            let smallest = sigma.last().unwrap().to_f64();
+            let largest = sigma.first().unwrap().to_f64();
+            assert_eq!(
+                nullity, expected,
+                "dim S_{k} = {nullity} (expected {expected}); σ_min={smallest:.2e}, σ_max={largest:.2e}"
+            );
+        }
+    }
 }
