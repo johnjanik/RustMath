@@ -24,6 +24,19 @@ pub fn factorized_roots_from_flag_layout(
     tri: &FlagTriangulation,
     layout: &FlagLayout,
 ) -> Result<FactorizedRoots, String> {
+    let positions: Vec<Option<Complex64>> = (0..tri.n_vertices())
+        .map(|u| layout.positions_plane[u].map(|[x, y]| Complex64::new(x, y)))
+        .collect();
+    factorized_roots_from_positions(tri, &positions)
+}
+
+/// The same classification + `(λ, c)` fit as [`factorized_roots_from_flag_layout`],
+/// but reading each triangulation vertex's plane position from an explicit slice
+/// (`positions[u]` for vertex `u`). This is the bridge for the hyperbolic layout.
+pub fn factorized_roots_from_positions(
+    tri: &FlagTriangulation,
+    positions: &[Option<Complex64>],
+) -> Result<FactorizedRoots, String> {
     let complex = PackingComplex::from_flags(tri);
     let v_count = tri.n_black + tri.n_white;
     let face_start = v_count + tri.degree;
@@ -35,25 +48,29 @@ pub fn factorized_roots_from_flag_layout(
     let mut roots_s = Vec::new(); // valence-1 face (monogons)
 
     for u in 0..tri.n_vertices() {
-        let z = match layout.positions_plane[u] {
-            Some([x, y]) => Complex64::new(x, y),
-            None => return Err(format!("orbit {u} was not placed")),
+        let is_vertex = u < v_count;
+        let is_face = u >= face_start;
+        if !is_vertex && !is_face {
+            continue; // midpoint orbit — scaffolding, dropped (may be unplaced)
+        }
+        let z = match positions.get(u).and_then(|p| *p) {
+            Some(z) => z,
+            None => return Err(format!("root orbit {u} was not placed")),
         };
-        if u < v_count {
+        if is_vertex {
             match complex.degree(u) / 2 {
                 2 => roots_a.push(z),
                 1 => roots_b.push(z),
                 12 => roots_u.push(z),
                 v => return Err(format!("unexpected vertex valence {v} at orbit {u}")),
             }
-        } else if u >= face_start {
+        } else {
             match complex.degree(u) / 4 {
                 5 => roots_r.push(z),
                 1 => roots_s.push(z),
                 v => return Err(format!("unexpected face valence {v} at orbit {u}")),
             }
         }
-        // else: midpoint orbit — scaffolding, dropped.
     }
 
     let counts = (

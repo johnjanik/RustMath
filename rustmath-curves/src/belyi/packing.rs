@@ -69,6 +69,11 @@ impl PackingComplex {
         self.incident[v].len()
     }
 
+    /// The flower of `v`: for each incident triangle, the two other corners.
+    pub fn incident_of(&self, v: usize) -> &[(usize, usize)] {
+        &self.incident[v]
+    }
+
     /// Angle sum at `v`: sum over incident triangles of the tangent-circle angle at
     /// `v` (using the current radii).
     pub fn euclidean_angle_sum(&self, radii: &[f64], v: usize) -> f64 {

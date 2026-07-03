@@ -35,6 +35,7 @@ pub mod factorized_residual;
 pub mod flag_packing;
 pub mod flags;
 pub mod linear_scale_fit;
+pub mod hyperbolic_packing;
 pub mod monodromy;
 pub mod newton;
 pub mod newton_hp;
