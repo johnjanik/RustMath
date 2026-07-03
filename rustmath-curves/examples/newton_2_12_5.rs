@@ -121,10 +121,11 @@ fn main() {
         );
     }
     println!(
-        "\n  FINDING: identical slow rate at 77 vs 308 digits, and a near-singular\n  \
-         Jacobian (spread ~1e13-1e14, robust to gauge over-fixing) ⇒ the endgame wall\n  \
-         is a STRUCTURAL degeneracy from the R^5/U^12 ramification, NOT f64 precision.\n  \
-         Arbitrary precision alone does not suffice; the singular root needs DEFLATION\n  \
-         (then the hp engine converges quadratically)."
+        "\n  FINDING: identical slow rate at 77 vs 308 digits ⇒ the endgame wall is a\n  \
+         near-singular Jacobian, NOT f64 precision. The collision diagnostic\n  \
+         (examples/collision_2_12_5) localizes the cause: the packing SEED places two\n  \
+         double-zeros coincident, so the residual is insensitive to separating them —\n  \
+         a near-null Jacobian direction. Fix the seed (a converged packing with\n  \
+         distinct roots) before reaching for deflation."
     );
 }
