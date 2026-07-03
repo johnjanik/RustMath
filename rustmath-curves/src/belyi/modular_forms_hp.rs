@@ -141,48 +141,60 @@ pub fn assemble_scaled_ami(
     let two_pi = Float::with_val(prec, 2.0 * &pi);
     let one = Complex::with_val(prec, (1.0, 0.0));
 
-    let mut a = vec![vec![Complex::with_val(prec, (0.0, 0.0)); dim]; dim];
-
-    for m in 1..=q {
-        // w_m = ρ · exp(2πi m/Q)
-        let theta = Float::with_val(prec, &two_pi * (m as f64)) / (q as f64);
-        let ct = theta.clone().cos();
-        let st = theta.clone().sin();
-        let wm = Complex::with_val(prec, (Float::with_val(prec, &rho * &ct), Float::with_val(prec, &rho * &st)));
-        let zm = wp_inv(&wm, prec);
-        let zm64 = Complex64::new(zm.real().to_f64(), zm.imag().to_f64());
-        // combinatorial reduction word (f64), evaluated in hp
-        let (_, ops) = tg64.reduce_to_base(zm64);
-        let i = cg.coset_from_ops(&ops);
-        let delta = delta_from_ops(&ops, tg);
-        let gamma = reps[i].mul(&delta);
-        let zpm = gamma.apply(&zm);
-        let wpm = wp(&zpm, prec);
-        // j(γ,z) = c z + d
-        let jm = Complex::with_val(prec, &zm * &gamma.c) + Complex::with_val(prec, (&gamma.d, 0.0));
-        let jm_neg_k = cpow_u(&Complex::with_val(prec, &one / &jm), ku, prec);
-        let omw_pm_k = cpow_u(&Complex::with_val(prec, &one - &wpm), ku, prec);
-        let omw_m_k = cpow_u(&Complex::with_val(prec, &one - &wm), ku, prec);
-        let base = Complex::with_val(prec, &jm_neg_k * &omw_pm_k)
-            / Complex::with_val(prec, omw_m_k);
-        // (w'_m)^r and w_m^{-n}
-        let mut wpm_r = vec![Complex::with_val(prec, (1.0, 0.0)); dim];
-        for r in 1..dim {
-            wpm_r[r] = Complex::with_val(prec, &wpm_r[r - 1] * &wpm);
-        }
-        let inv_wm = Complex::with_val(prec, &one / &wm);
-        let mut wm_neg_n = vec![Complex::with_val(prec, (1.0, 0.0)); dim];
-        for n in 1..dim {
-            wm_neg_n[n] = Complex::with_val(prec, &wm_neg_n[n - 1] * &inv_wm);
-        }
-        for n in 0..dim {
-            let cn = Complex::with_val(prec, &base * &wm_neg_n[n]);
-            for r in 0..dim {
-                let term = Complex::with_val(prec, &cn * &wpm_r[r]);
-                a[n][r] = Complex::with_val(prec, &a[n][r] + &term);
+    // Sum over the Q sample points, parallelised (each sample is an independent outer-product
+    // contribution a[n][r] += base · w_m^{-n} · w'_m^r; O(Q·dim²) total). rayon fold/reduce.
+    use rayon::prelude::*;
+    let zero_mat = || vec![vec![Complex::with_val(prec, (0.0, 0.0)); dim]; dim];
+    let mut a = (1..=q)
+        .into_par_iter()
+        .fold(&zero_mat, |mut acc, m| {
+            // w_m = ρ · exp(2πi m/Q)
+            let theta = Float::with_val(prec, &two_pi * (m as f64)) / (q as f64);
+            let ct = theta.clone().cos();
+            let st = theta.clone().sin();
+            let wm = Complex::with_val(prec, (Float::with_val(prec, &rho * &ct), Float::with_val(prec, &rho * &st)));
+            let zm = wp_inv(&wm, prec);
+            let zm64 = Complex64::new(zm.real().to_f64(), zm.imag().to_f64());
+            // combinatorial reduction word (f64), evaluated in hp
+            let (_, ops) = tg64.reduce_to_base(zm64);
+            let i = cg.coset_from_ops(&ops);
+            let delta = delta_from_ops(&ops, tg);
+            let gamma = reps[i].mul(&delta);
+            let zpm = gamma.apply(&zm);
+            let wpm = wp(&zpm, prec);
+            // j(γ,z) = c z + d
+            let jm = Complex::with_val(prec, &zm * &gamma.c) + Complex::with_val(prec, (&gamma.d, 0.0));
+            let jm_neg_k = cpow_u(&Complex::with_val(prec, &one / &jm), ku, prec);
+            let omw_pm_k = cpow_u(&Complex::with_val(prec, &one - &wpm), ku, prec);
+            let omw_m_k = cpow_u(&Complex::with_val(prec, &one - &wm), ku, prec);
+            let base = Complex::with_val(prec, &jm_neg_k * &omw_pm_k) / Complex::with_val(prec, omw_m_k);
+            // (w'_m)^r and w_m^{-n}
+            let mut wpm_r = vec![Complex::with_val(prec, (1.0, 0.0)); dim];
+            for r in 1..dim {
+                wpm_r[r] = Complex::with_val(prec, &wpm_r[r - 1] * &wpm);
             }
-        }
-    }
+            let inv_wm = Complex::with_val(prec, &one / &wm);
+            let mut wm_neg_n = vec![Complex::with_val(prec, (1.0, 0.0)); dim];
+            for n in 1..dim {
+                wm_neg_n[n] = Complex::with_val(prec, &wm_neg_n[n - 1] * &inv_wm);
+            }
+            for n in 0..dim {
+                let cn = Complex::with_val(prec, &base * &wm_neg_n[n]);
+                for r in 0..dim {
+                    let term = Complex::with_val(prec, &cn * &wpm_r[r]);
+                    acc[n][r] = Complex::with_val(prec, &acc[n][r] + &term);
+                }
+            }
+            acc
+        })
+        .reduce(&zero_mat, |mut a1, a2| {
+            for n in 0..dim {
+                for r in 0..dim {
+                    a1[n][r] = Complex::with_val(prec, &a1[n][r] + &a2[n][r]);
+                }
+            }
+            a1
+        });
     // divide by Q, precondition a[n][r] ·= ρ^{n−r}, subtract I
     let mut rho_pow = vec![Float::with_val(prec, 1.0); dim];
     for n in 1..dim {
@@ -382,6 +394,56 @@ mod tests {
             for z in row {
                 buf.extend_from_slice(&z.real().to_f64().to_le_bytes());
                 buf.extend_from_slice(&z.imag().to_f64().to_le_bytes());
+            }
+        }
+        let mut f = std::fs::File::create(&out).expect("create");
+        f.write_all(&buf).expect("write");
+    }
+
+    // Dump the [2,12,5] preconditioned M in EXTENDED precision (double-double / triple-double)
+    // for a GPU Ozaki + Ogita–Aishima refined SVD. Past the FP64 wall (N>~1953) the f64 dump's
+    // own rounding (ρ^{−N}·1e-16) exceeds the truncation floor, so each rug entry is split into
+    // `M_LIMBS` non-overlapping f64 limbs (2=dd ~1e-32, 3=td ~1e-48) via recursive round-to-nearest.
+    // Format: u32 dim, u8 nlimbs, then row-major entries; each entry = re limbs then im limbs,
+    //   nlimbs f64 each (little-endian). File size = 5 + dim*dim*2*nlimbs*8.
+    // Assemble at M_PREC ≥ 106 (dd) / ≥ 159 (td) bits so the limbs carry real information.
+    #[test]
+    #[ignore]
+    fn dump_2_12_5_matrix_ext() {
+        use std::io::Write;
+        let n: usize = std::env::var("M_N").ok().and_then(|s| s.parse().ok()).unwrap_or(600);
+        let k: i64 = std::env::var("M_K").ok().and_then(|s| s.parse().ok()).unwrap_or(4);
+        let out = std::env::var("M_OUT").unwrap_or_else(|_| "/tmp/m_2_12_5_ext.bin".into());
+        let prec: u32 = std::env::var("M_PREC").ok().and_then(|s| s.parse().ok()).unwrap_or(200);
+        let nlimbs: usize = std::env::var("M_LIMBS").ok().and_then(|s| s.parse().ok()).unwrap_or(3);
+        let s0: Vec<usize> = vec![0, 14, 10, 9, 4, 5, 23, 17, 18, 3, 2, 11, 22, 13, 1, 15, 16, 7, 8, 19, 21, 20, 12, 6];
+        let s1: Vec<usize> = vec![14, 2, 22, 9, 16, 8, 13, 15, 18, 1, 23, 20, 3, 0, 21, 12, 19, 7, 17, 11, 10, 4, 5, 6];
+        let tg64 = TriangleGroup::new(2, 12, 5);
+        let tg = TriangleGroupHp::new(2, 12, 5, prec);
+        let mut cg = CosetGraph::build(&tg64, &s0, &s1);
+        cg.compactify_with(&tg64, 0.996, 40);
+        let q = 2 * n + 8;
+        let (a, rho) = assemble_scaled_ami(&tg64, &tg, &cg, k, n, q, 1.0);
+        let dim = a.len();
+        eprintln!("[2,12,5] EXT k={k} N={n} dim={dim} limbs={nlimbs} prec={prec} ρ={:.6} → {out}", rho.to_f64());
+        // recursively split a full-precision Float into `nlimbs` non-overlapping f64 limbs
+        let split = |x: &Float| -> Vec<f64> {
+            let mut limbs = Vec::with_capacity(nlimbs);
+            let mut rem = Float::with_val(prec, x);
+            for _ in 0..nlimbs {
+                let hi = rem.to_f64();
+                limbs.push(hi);
+                rem = Float::with_val(prec, &rem - hi);
+            }
+            limbs
+        };
+        let mut buf: Vec<u8> = Vec::with_capacity(5 + dim * dim * 2 * nlimbs * 8);
+        buf.extend_from_slice(&(dim as u32).to_le_bytes());
+        buf.push(nlimbs as u8);
+        for row in &a {
+            for z in row {
+                for l in split(z.real()) { buf.extend_from_slice(&l.to_le_bytes()); }
+                for l in split(z.imag()) { buf.extend_from_slice(&l.to_le_bytes()); }
             }
         }
         let mut f = std::fs::File::create(&out).expect("create");
