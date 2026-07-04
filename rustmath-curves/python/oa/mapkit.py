@@ -5,9 +5,7 @@ A "basis" here is a (dim, 9) complex array whose columns are candidate right-nul
 Hauptmodul X, solve phi=P(X)/Q(X), and measure the order-12 ramification collapse."""
 import numpy as np, math
 from scipy.special import gamma
-import sys
-sys.path.insert(0, '/tmp/claude-1000/-home-john-inverse-galois-M23/24542307-282e-4596-89f8-915a13a1d65e/scratchpad')
-from phi import phi_in_ukappa
+import sys, os
 
 k = 4; rho = 0.990605; nforms = 9; a, b, c = 2, 12, 5; d = 24; Lu = 80
 A_ = 0.5*(1+1/a-1/b-1/c); B_ = 0.5*(1+1/a-1/b+1/c); C_ = 1+1/a
@@ -15,8 +13,15 @@ Lam = (math.cos(math.pi/a)*math.cos(math.pi/b)+math.cos(math.pi/c))/(math.sin(ma
 mu = Lam+math.sqrt(Lam*Lam-1)
 kappa = ((mu-1)/(mu+1))*gamma(2-C_)*gamma(C_-A_)*gamma(C_-B_)/(gamma(1-A_)*gamma(1-B_)*gamma(C_))
 KAPPA2 = kappa**2
-_phi_uk = phi_in_ukappa(a, b, c, 2*Lu+4)
-phiv = np.array([float(_phi_uk[2*n]) for n in range(Lu)], dtype=complex)
+_PHIV_CACHE = '/home/john/sweep_2_12_5/phiv_2_12_5.npy'   # phi_in_ukappa reversion is ~105s; cache it
+if os.path.exists(_PHIV_CACHE):
+    phiv = np.load(_PHIV_CACHE)[:Lu].astype(complex)
+else:
+    sys.path.insert(0, '/tmp/claude-1000/-home-john-inverse-galois-M23/24542307-282e-4596-89f8-915a13a1d65e/scratchpad')
+    from phi import phi_in_ukappa
+    _phi_uk = phi_in_ukappa(a, b, c, 2*Lu+4)
+    phiv = np.array([float(_phi_uk[2*n]) for n in range(Lu)], dtype=complex)
+    np.save(_PHIV_CACHE, phiv)
 
 ATOL = 5e-5
 def _val(v):
@@ -64,6 +69,22 @@ def reality(Xv):
     band = Xv[1:7]; mag = np.abs(band); i = int(np.argmax(mag))
     if mag[i] == 0: return float('nan'), band[i]
     return float(abs(band[i].imag)/mag[i]), band[i]
+
+def build_Xp(Xv):
+    Xp = [np.zeros(Lu, complex) for _ in range(d+1)]; Xp[0][0] = 1.
+    for i in range(1, d+1): Xp[i] = smul(Xp[i-1], Xv, Lu)
+    return Xp
+
+def fit_generic(Xv, Nfit=58):
+    """Generic degree-24 map fit phi = P(X)/Q(X). Returns (p, q, Xp, sgv) with p,q lowest-first
+    coefficient arrays (deg 24). This is the SEED for the structured fit (its P,Q roots are the
+    approximate 8-doubles / 4-quintuples / 2-twelvefolds)."""
+    Xp = build_Xp(Xv)
+    cols = [smul(phiv, Xp[i], Lu) for i in range(d+1)] + [-Xp[i] for i in range(d+1)]
+    A0 = np.array([[cols[j][n] for j in range(2*(d+1))] for n in range(Nfit)])
+    cn = np.linalg.norm(A0, axis=0); cn[cn == 0] = 1
+    _, sgv, V2 = np.linalg.svd(A0/cn); nv = (V2[-1].conj())/cn
+    return nv[d+1:], nv[:d+1], Xp, sgv        # p (num, deg24), q (den, deg24), Xp, sgv
 
 def order12(Xv, ech, want_svgap=False):
     """order-12 fiber spread (rescaled). Optionally also the map-solve sv-gap."""
