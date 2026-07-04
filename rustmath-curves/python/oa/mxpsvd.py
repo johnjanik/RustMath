@@ -192,16 +192,37 @@ def mxp_svd(A_c128, n_slices=6, max_iter=10, n_null=None, verbose=True):
     A = from_c128(xp.asarray(A_c128))
     return _mxp_svd_core(A, A_c128, n_slices, max_iter, n_null, verbose)
 
-def mxp_svd_dd(A_dd, A_c128_hi, n_slices=6, max_iter=10, n_null=None, verbose=True):
-    """Same, but A given as a dd-complex dict (the extended-precision matrix M)."""
-    return _mxp_svd_core(A_dd, A_c128_hi, n_slices, max_iter, n_null, verbose)
+def mxp_svd_dd(A_dd, A_c128_hi, n_slices=6, max_iter=10, n_null=None, verbose=True, V_seed=None):
+    """Same, but A given as a dd-complex dict (the extended-precision matrix M).
+    V_seed: optional (n,k) fp64 array of approximate right-null vectors (seed continuation) that
+    REPLACE the k smallest-sigma columns of the FP64 initial V — needed past the FP64 wall, where
+    the initial SVD's smallest subspace is roundoff noise with ~zero overlap with the true forms."""
+    return _mxp_svd_core(A_dd, A_c128_hi, n_slices, max_iter, n_null, verbose, V_seed)
 
-def _mxp_svd_core(A, A_c128_hi, n_slices, max_iter, n_null, verbose):
+def _mxp_svd_core(A, A_c128_hi, n_slices, max_iter, n_null, verbose, V_seed=None):
     n = A['reh'].shape[0]
     eps_lp = 2.0**-53; eps_hp = 2.0**-106
-    U0, s0, Vh0 = np.linalg.svd(np.asarray(A_c128_hi))     # initial low-precision (fp64) SVD
-    U = from_c128(xp.asarray(U0)); V = from_c128(xp.asarray(Vh0.conj().T))
-    sigma_h = xp.asarray(s0)
+    U0, s0, Vh0 = xp.linalg.svd(xp.asarray(A_c128_hi))     # initial low-precision SVD (GPU if available)
+    U = from_c128(U0); V = from_c128(Vh0.conj().T)
+    sigma_h = s0
+    if V_seed is not None:
+        # inject the continuation seed into the k smallest-sigma columns of V (fp64 Gram-Schmidt:
+        # project the seed off the retained columns, orthonormalize, splice back — the retained
+        # columns are well above the wall so fp64 is ample; refinement then polishes to dd).
+        k = V_seed.shape[1]
+        s0n = np.asarray(s0.get() if _GPU else s0)
+        Jn = list(np.argsort(s0n)[:k])
+        rest = [i for i in range(n) if i not in Jn]
+        Vc = to_c128(V); Vc = np.asarray(Vc.get() if _GPU else Vc)
+        B = Vc[:, rest]
+        S = np.asarray(V_seed, dtype=complex).copy()
+        for _ in range(2):
+            S = S - B @ (B.conj().T @ S)                  # project out retained subspace (twice)
+        Sq, _ = np.linalg.qr(S)                            # orthonormalize the k seed vectors
+        Vc[:, Jn] = Sq
+        V = from_c128(xp.asarray(Vc))
+        if verbose:
+            print(f"  seeded {k} null columns (indices {Jn[:3]}...); refining from continuation seed")
     prev = np.inf
     for it in range(max_iter):
         U, V, (sigma_h, sigma_l), omega = mxp_svd_step(A, U, V, eps_lp, eps_hp, n_slices)
