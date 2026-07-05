@@ -217,6 +217,189 @@ pub fn assemble_scaled_ami(
     (a, rho)
 }
 
+/// Streamed, constant-memory assembly of the preconditioned M = ρ^{n−r}(A−I),
+/// written directly as the EXT limb dump (u32 dim, u8 nlimbs, row-major dd/td limbs)
+/// with per-row crash checkpointing.
+///
+/// Uses the circle structure of the sample points: w_m = ρ e^{2πim/Q} gives
+/// w_m^{−n} = ρ^{−n} e^{−2πimn/Q}, and the ρ^{n−r} preconditioner cancels the ρ^{−n},
+/// leaving
+///   M[n][r] = (1/Q) Σ_m base_m · e^{−2πimn/Q} · (w′_m/ρ)^r  −  δ_{nr}.
+/// Each row needs only the Q per-sample scalars (base_m, u_m = w′_m/ρ) and the Q-periodic
+/// root-of-unity table E[j] = e^{−2πij/Q} (phase index (m·n) mod Q is exact integer
+/// arithmetic — no error growth across rows). Worker memory is O(Q + dim) rug values,
+/// unlike `assemble_scaled_ami` whose rayon fold clones a dim² accumulator per split
+/// (~1.6 GB each at dim=3001 — the OOM at N=3000).
+///
+/// Completed rows are recorded in `{out}.progress` (params line, then one row index per
+/// line); rerunning with the same params skips them. Returns ρ.
+pub fn dump_scaled_ami_streamed(
+    tg64: &TriangleGroup,
+    tg: &TriangleGroupHp,
+    cg: &CosetGraph,
+    k: i64,
+    big_n: usize,
+    q: usize,
+    rho_scale: f64,
+    ctr: &Complex,
+    nlimbs: usize,
+    out: &str,
+) -> Float {
+    use rayon::prelude::*;
+    use std::io::Write;
+    use std::os::unix::fs::FileExt;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Mutex;
+
+    let prec = tg.prec;
+    let dim = big_n + 1;
+    let ku = k as u32;
+    let rho = Float::with_val(prec, domain_radius_hp_centered(cg, tg, ctr) * rho_scale);
+    let reps = reps_hp(cg, tg);
+    let one = Complex::with_val(prec, (1.0, 0.0));
+    let pi = Float::with_val(prec, Constant::Pi);
+    let two_pi = Float::with_val(prec, 2.0 * &pi);
+    let qf = Float::with_val(prec, q as f64);
+
+    // root-of-unity table E[j] = e^{−2πij/Q}
+    let unit: Vec<Complex> = (0..q)
+        .into_par_iter()
+        .map(|j| {
+            let theta = Float::with_val(prec, &two_pi * (j as f64)) / (q as f64);
+            let (s, c) = theta.sin_cos(Float::new(prec));
+            Complex::with_val(prec, (c, Float::with_val(prec, -s)))
+        })
+        .collect();
+
+    // per-sample scalars: c0_m = base_m/Q and u_m = w′_m/ρ, for m = 1..=Q
+    let samples: Vec<(Complex, Complex)> = (1..=q)
+        .into_par_iter()
+        .map(|m| {
+            let theta = Float::with_val(prec, &two_pi * (m as f64)) / (q as f64);
+            let (s, c) = theta.sin_cos(Float::new(prec));
+            let wm = Complex::with_val(prec, (Float::with_val(prec, &rho * &c), Float::with_val(prec, &rho * &s)));
+            let zm = wp_c_inv(&wm, ctr, prec);
+            let zm64 = Complex64::new(zm.real().to_f64(), zm.imag().to_f64());
+            let (_, ops) = tg64.reduce_to_base(zm64);
+            let i = cg.coset_from_ops(&ops);
+            let delta = delta_from_ops(&ops, tg);
+            let gamma = reps[i].mul(&delta);
+            let zpm = gamma.apply(&zm);
+            let wpm = wp_c(&zpm, ctr, prec);
+            let jm = Complex::with_val(prec, &zm * &gamma.c) + Complex::with_val(prec, (&gamma.d, 0.0));
+            let jm_neg_k = cpow_u(&Complex::with_val(prec, &one / &jm), ku, prec);
+            let omw_pm_k = cpow_u(&Complex::with_val(prec, &one - &wpm), ku, prec);
+            let omw_m_k = cpow_u(&Complex::with_val(prec, &one - &wm), ku, prec);
+            let base = Complex::with_val(prec, &jm_neg_k * &omw_pm_k) / Complex::with_val(prec, omw_m_k);
+            let c0 = Complex::with_val(prec, &base / &qf);
+            let u = Complex::with_val(prec, &wpm / &rho);
+            (c0, u)
+        })
+        .collect();
+
+    // output file: header immediately, rows pwritten at exact offsets as they finish
+    let row_bytes = dim * 2 * nlimbs * 8;
+    let total = 5 + dim * row_bytes;
+    let file = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .open(out)
+        .expect("open output");
+    file.set_len(total as u64).expect("set_len");
+    let mut header = Vec::with_capacity(5);
+    header.extend_from_slice(&(dim as u32).to_le_bytes());
+    header.push(nlimbs as u8);
+    file.write_at(&header, 0).expect("write header");
+
+    // progress sidecar: params line, then one completed row index per line
+    let progress_path = format!("{out}.progress");
+    let params_line = format!("dim={dim} nlimbs={nlimbs} prec={prec} q={q} k={k}");
+    let mut done = vec![false; dim];
+    let mut n_done = 0usize;
+    if let Ok(text) = std::fs::read_to_string(&progress_path) {
+        let mut lines = text.lines();
+        match lines.next() {
+            Some(first) if first == params_line => {
+                for l in lines {
+                    if let Ok(n) = l.trim().parse::<usize>() {
+                        if n < dim && !done[n] {
+                            done[n] = true;
+                            n_done += 1;
+                        }
+                    }
+                }
+                eprintln!("[streamed] resume: {n_done}/{dim} rows already done");
+            }
+            Some(first) => panic!(
+                "progress file {progress_path} is for different params\n  have: {first}\n  want: {params_line}\nremove it (and the output) to start over"
+            ),
+            None => {}
+        }
+    }
+    let mut progress = std::fs::OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(&progress_path)
+        .expect("open progress");
+    if n_done == 0 {
+        writeln!(progress, "{params_line}").expect("write params");
+        progress.flush().expect("flush progress");
+    }
+    let progress = Mutex::new(progress);
+    let counter = AtomicUsize::new(n_done);
+
+    let todo: Vec<usize> = (0..dim).filter(|&n| !done[n]).collect();
+    todo.into_par_iter().for_each(|n| {
+        // c_m = c0_m · e^{−2πimn/Q}; acc[r] = Σ_m c_m u_m^r via a running product
+        let mut v: Vec<Complex> = samples
+            .iter()
+            .enumerate()
+            .map(|(idx, (c0, _))| {
+                let m = idx + 1;
+                Complex::with_val(prec, c0 * &unit[(m * n) % q])
+            })
+            .collect();
+        let mut row: Vec<u8> = Vec::with_capacity(row_bytes);
+        let mut split_into = |x: &Float, buf: &mut Vec<u8>| {
+            let mut rem = Float::with_val(prec, x);
+            for _ in 0..nlimbs {
+                let hi = rem.to_f64();
+                buf.extend_from_slice(&hi.to_le_bytes());
+                rem = Float::with_val(prec, &rem - hi);
+            }
+        };
+        for r in 0..dim {
+            if r > 0 {
+                for (vm, (_, u)) in v.iter_mut().zip(samples.iter()) {
+                    *vm *= u;
+                }
+            }
+            let mut acc = Complex::with_val(prec, (0.0, 0.0));
+            for vm in &v {
+                acc += vm;
+            }
+            if r == n {
+                acc -= &one;
+            }
+            split_into(acc.real(), &mut row);
+            split_into(acc.imag(), &mut row);
+        }
+        file.write_at(&row, (5 + n * row_bytes) as u64).expect("write row");
+        {
+            let mut p = progress.lock().unwrap();
+            writeln!(p, "{n}").expect("write progress");
+            p.flush().expect("flush progress");
+        }
+        let c = counter.fetch_add(1, Ordering::Relaxed) + 1;
+        if c % 100 == 0 || c == dim {
+            eprintln!("[streamed] {c}/{dim} rows");
+        }
+    });
+    file.sync_data().expect("sync");
+    rho
+}
+
 /// dim S_k(Γ) via Gauss–Jordan pivots (unreliable for small σ — see mp_svd; kept for
 /// the k=2 sanity check where full rank is unambiguous).
 pub fn nullity_s_k(
@@ -461,6 +644,101 @@ mod tests {
         }
         let mut f = std::fs::File::create(&out).expect("create");
         f.write_all(&buf).expect("write");
+    }
+
+    // Same dump as `dump_2_12_5_matrix_ext`, via the streamed constant-memory assembly
+    // (row-checkpointed to M_OUT.progress — rerun with identical params to resume).
+    #[test]
+    #[ignore]
+    fn dump_2_12_5_matrix_ext_streamed() {
+        let n: usize = std::env::var("M_N").ok().and_then(|s| s.parse().ok()).unwrap_or(600);
+        let k: i64 = std::env::var("M_K").ok().and_then(|s| s.parse().ok()).unwrap_or(4);
+        let out = std::env::var("M_OUT").unwrap_or_else(|_| "/tmp/m_2_12_5_ext.bin".into());
+        let prec: u32 = std::env::var("M_PREC").ok().and_then(|s| s.parse().ok()).unwrap_or(200);
+        let nlimbs: usize = std::env::var("M_LIMBS").ok().and_then(|s| s.parse().ok()).unwrap_or(3);
+        let mut s0: Vec<usize> = vec![0, 14, 10, 9, 4, 5, 23, 17, 18, 3, 2, 11, 22, 13, 1, 15, 16, 7, 8, 19, 21, 20, 12, 6];
+        let mut s1: Vec<usize> = vec![14, 2, 22, 9, 16, 8, 13, 15, 18, 1, 23, 20, 3, 0, 21, 12, 19, 7, 17, 11, 10, 4, 5, 6];
+        // M_BASE=i: conjugate both permutations by the transposition (0 i), i.e. re-mark coset i
+        // as the basepoint. Stab(0) becomes the CONJUGATE subgroup α_i Γ' α_i^{-1} — the same
+        // curve via z ↦ α_i z — and compactify re-centers the domain around the new base cell.
+        // With i in the second 12-cycle of s1, M_CENTER=b then charts the second order-12 point
+        // at a well-centered radius (the raw M_CENTER=b2 route sits at ρ≈0.9995+, needing N≈14000).
+        if let Some(base) = std::env::var("M_BASE").ok().and_then(|s| s.parse::<usize>().ok()) {
+            if base != 0 {
+                let p = |x: usize| if x == 0 { base } else if x == base { 0 } else { x };
+                let (o0, o1) = (s0.clone(), s1.clone());
+                for x in 0..o0.len() {
+                    s0[p(x)] = p(o0[x]);
+                    s1[p(x)] = p(o1[x]);
+                }
+                eprintln!("[2,12,5] rebased: coset {base} is now the basepoint (conjugated by (0 {base}))");
+            }
+        }
+        let tg64 = TriangleGroup::new(2, 12, 5);
+        let tg = TriangleGroupHp::new(2, 12, 5, prec);
+        let mut cg = CosetGraph::build(&tg64, &s0, &s1);
+        cg.compactify_with(&tg64, 0.996, 40);
+        let q = 2 * n + 8;
+        // M_CENTER: a/b/c = the vertex charts; b2 = the SECOND order-12 preimage (the other
+        // 12-cycle of s1), i.e. rep_i(z_b) for coset i from M_COSET (default 1, which lies in
+        // the cycle (1 2 22 5 8 18 17 7 15 12 3 9)).
+        let center = std::env::var("M_CENTER").unwrap_or_else(|_| "a".into());
+        let ctr = match center.as_str() {
+            "b" => tg.z_b.clone(),
+            "b2" => {
+                let coset: usize = std::env::var("M_COSET").ok().and_then(|s| s.parse().ok()).unwrap_or(1);
+                let ctr = reps_hp(&cg, &tg)[coset].apply(&tg.z_b);
+                eprintln!("[2,12,5] b2 center: coset {coset} rep applied to z_b → {:.45}", ctr);
+                ctr
+            }
+            "c2" => {
+                let coset: usize = std::env::var("M_COSET").ok().and_then(|s| s.parse().ok()).unwrap_or(1);
+                let ctr = reps_hp(&cg, &tg)[coset].apply(&tg.z_c);
+                eprintln!("[2,12,5] c2 center: coset {coset} rep applied to z_c → {:.45}", ctr);
+                ctr
+            }
+            "a2" => {
+                let coset: usize = std::env::var("M_COSET").ok().and_then(|s| s.parse().ok()).unwrap_or(1);
+                let ctr = reps_hp(&cg, &tg)[coset].apply(&tg.z_a);
+                eprintln!("[2,12,5] a2 center: coset {coset} rep applied to z_a → {:.45}", ctr);
+                ctr
+            }
+            "c" => tg.z_c.clone(),
+            _ => tg.z_a.clone(),
+        };
+        eprintln!("[2,12,5] EXT-streamed center={center} k={k} N={n} limbs={nlimbs} prec={prec} → {out}");
+        eprintln!("[2,12,5] ctr_full = {:.45}", ctr);
+        let rho = dump_scaled_ami_streamed(&tg64, &tg, &cg, k, n, q, 1.0, &ctr, nlimbs, &out);
+        eprintln!("[2,12,5] EXT-streamed done: dim={} ρ={:.6} ρ_full={:.45}", n + 1, rho.to_f64(), rho);
+    }
+
+    // Control dump: the KMSV (5,3,3) paper case through the same streamed path.
+    // dim S_6 = 3, so the form map should be the RNC-2 in P^2 — the diagnostic for
+    // whether the (2,12,5) non-RNC deviation is real geometry or a framework artifact.
+    #[test]
+    #[ignore]
+    fn dump_5_3_3_matrix_ext_streamed() {
+        let n: usize = std::env::var("M_N").ok().and_then(|s| s.parse().ok()).unwrap_or(200);
+        let k: i64 = std::env::var("M_K").ok().and_then(|s| s.parse().ok()).unwrap_or(6);
+        let out = std::env::var("M_OUT").unwrap_or_else(|_| "/tmp/m_5_3_3_ext.bin".into());
+        let prec: u32 = std::env::var("M_PREC").ok().and_then(|s| s.parse().ok()).unwrap_or(140);
+        let nlimbs: usize = std::env::var("M_LIMBS").ok().and_then(|s| s.parse().ok()).unwrap_or(2);
+        let s0: Vec<usize> = vec![4, 0, 1, 2, 3];
+        let s1: Vec<usize> = vec![1, 2, 0, 3, 4];
+        let tg64 = TriangleGroup::new(5, 3, 3);
+        let tg = TriangleGroupHp::new(5, 3, 3, prec);
+        let mut cg = CosetGraph::build(&tg64, &s0, &s1);
+        cg.compactify(&tg64);
+        let q = 2 * n + 8;
+        let center = std::env::var("M_CENTER").unwrap_or_else(|_| "a".into());
+        let ctr = match center.as_str() {
+            "b" => tg.z_b.clone(),
+            "c" => tg.z_c.clone(),
+            _ => tg.z_a.clone(),
+        };
+        eprintln!("[5,3,3] EXT-streamed center={center} k={k} N={n} limbs={nlimbs} prec={prec} → {out}");
+        let rho = dump_scaled_ami_streamed(&tg64, &tg, &cg, k, n, q, 1.0, &ctr, nlimbs, &out);
+        eprintln!("[5,3,3] EXT-streamed done: dim={} ρ={:.6} ρ_full={:.45}", n + 1, rho.to_f64(), rho);
     }
 
     // The hp coset reps rebuilt from words match the f64 reps (validates word tracking).
