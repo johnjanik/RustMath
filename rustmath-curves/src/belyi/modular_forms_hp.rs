@@ -22,17 +22,28 @@ fn cmod_f64(z: &Complex) -> f64 {
     (re * re + im * im).sqrt()
 }
 
-fn wp(z: &Complex, prec: u32) -> Complex {
-    let ic = Complex::with_val(prec, (0.0, 1.0));
-    let num = Complex::with_val(prec, z - &ic);
-    let den = Complex::with_val(prec, z + &ic);
+/// conjugate of a complex (negate imaginary part).
+fn cconj(z: &Complex, prec: u32) -> Complex {
+    Complex::with_val(prec, (z.real().clone(), Float::with_val(prec, -z.imag())))
+}
+
+/// Disk chart centered at an arbitrary upper-half-plane point `ctr`:
+///   w = (z − ctr)/(z − conj ctr).
+/// ctr = z_a = i recovers `wp` exactly; ctr = z_b = μi is the order-12 chart, ctr = z_c the
+/// order-5 chart.  dz/dw = (ctr − conj ctr)/(1−w)² for any center, so the weight-k automorphy
+/// factor stays (1−w)^k — only the (constant) 2i·Im(ctr) scale differs, and it cancels in the ratio.
+fn wp_c(z: &Complex, ctr: &Complex, prec: u32) -> Complex {
+    let ctr_bar = cconj(ctr, prec);
+    let num = Complex::with_val(prec, z - ctr);
+    let den = Complex::with_val(prec, z - &ctr_bar);
     Complex::with_val(prec, &num / &den)
 }
 
-fn wp_inv(w: &Complex, prec: u32) -> Complex {
-    let ic = Complex::with_val(prec, (0.0, 1.0));
+/// inverse of `wp_c`:  z = (ctr − w·conj ctr)/(1 − w).
+fn wp_c_inv(w: &Complex, ctr: &Complex, prec: u32) -> Complex {
+    let ctr_bar = cconj(ctr, prec);
     let one = Complex::with_val(prec, (1.0, 0.0));
-    let num = Complex::with_val(prec, &ic * Complex::with_val(prec, &one + w));
+    let num = Complex::with_val(prec, ctr - Complex::with_val(prec, w * &ctr_bar));
     let den = Complex::with_val(prec, &one - w);
     Complex::with_val(prec, &num / &den)
 }
@@ -88,25 +99,19 @@ fn reps_hp(cg: &CosetGraph, tg: &TriangleGroupHp) -> Vec<MobiusHp> {
 
 /// hp radius ρ of a circle (in the w_{z_a} chart) containing the compact domain D_Γ.
 pub fn domain_radius_hp(cg: &CosetGraph, tg: &TriangleGroupHp) -> Float {
+    domain_radius_hp_centered(cg, tg, &tg.z_a)
+}
+
+/// hp radius ρ of a circle (in the w_{ctr} chart) containing the compact domain D_Γ.
+pub fn domain_radius_hp_centered(cg: &CosetGraph, tg: &TriangleGroupHp, ctr: &Complex) -> Float {
     let prec = tg.prec;
     let reps = reps_hp(cg, tg);
     let ncz = Complex::with_val(prec, (Float::with_val(prec, -tg.z_c.real()), tg.z_c.imag().clone()));
     let verts = [tg.z_a.clone(), tg.z_b.clone(), tg.z_c.clone(), ncz];
-    let mut rho = Float::with_val(prec, 0.0);
-    for rep in &reps {
-        for v in &verts {
-            let r = wp(&rep.apply(v), prec);
-            let m = Float::with_val(prec, cmod_f64(&r));
-            if m > rho {
-                rho = m;
-            }
-        }
-    }
-    // recompute the max modulus at full precision for the winning value
     let mut rho_hp = Float::with_val(prec, 0.0);
     for rep in &reps {
         for v in &verts {
-            let r = wp(&rep.apply(v), prec);
+            let r = wp_c(&rep.apply(v), ctr, prec);
             let re = r.real();
             let im = r.imag();
             let m = Float::with_val(prec, Float::with_val(prec, re * re) + Float::with_val(prec, im * im)).sqrt();
@@ -130,11 +135,12 @@ pub fn assemble_scaled_ami(
     big_n: usize,
     q: usize,
     rho_scale: f64,
+    ctr: &Complex,
 ) -> (Vec<Vec<Complex>>, Float) {
     let prec = tg.prec;
     let dim = big_n + 1;
     let ku = k as u32;
-    let rho = Float::with_val(prec, domain_radius_hp(cg, tg) * rho_scale);
+    let rho = Float::with_val(prec, domain_radius_hp_centered(cg, tg, ctr) * rho_scale);
     let reps = reps_hp(cg, tg);
 
     let pi = Float::with_val(prec, Constant::Pi);
@@ -153,7 +159,7 @@ pub fn assemble_scaled_ami(
             let ct = theta.clone().cos();
             let st = theta.clone().sin();
             let wm = Complex::with_val(prec, (Float::with_val(prec, &rho * &ct), Float::with_val(prec, &rho * &st)));
-            let zm = wp_inv(&wm, prec);
+            let zm = wp_c_inv(&wm, ctr, prec);
             let zm64 = Complex64::new(zm.real().to_f64(), zm.imag().to_f64());
             // combinatorial reduction word (f64), evaluated in hp
             let (_, ops) = tg64.reduce_to_base(zm64);
@@ -161,7 +167,7 @@ pub fn assemble_scaled_ami(
             let delta = delta_from_ops(&ops, tg);
             let gamma = reps[i].mul(&delta);
             let zpm = gamma.apply(&zm);
-            let wpm = wp(&zpm, prec);
+            let wpm = wp_c(&zpm, ctr, prec);
             // j(γ,z) = c z + d
             let jm = Complex::with_val(prec, &zm * &gamma.c) + Complex::with_val(prec, (&gamma.d, 0.0));
             let jm_neg_k = cpow_u(&Complex::with_val(prec, &one / &jm), ku, prec);
@@ -223,7 +229,7 @@ pub fn nullity_s_k(
     tol: f64,
     rho_scale: f64,
 ) -> (usize, Vec<f64>) {
-    let (a, _rho) = assemble_scaled_ami(tg64, tg, cg, k, big_n, q, rho_scale);
+    let (a, _rho) = assemble_scaled_ami(tg64, tg, cg, k, big_n, q, rho_scale, &tg.z_a);
     null_space_hp(a, tol, tg.prec)
 }
 
@@ -242,7 +248,7 @@ pub fn dim_s_k_svd(
     rho_scale: f64,
 ) -> (usize, Vec<Float>) {
     let prec = tg.prec;
-    let (a, _rho) = assemble_scaled_ami(tg64, tg, cg, k, big_n, q, rho_scale);
+    let (a, _rho) = assemble_scaled_ami(tg64, tg, cg, k, big_n, q, rho_scale, &tg.z_a);
     let dim = a.len();
     // to row-major MpMatrix
     let mut data = Vec::with_capacity(dim * dim);
@@ -275,7 +281,7 @@ pub fn recover_forms(
     rho_scale: f64,
 ) -> Vec<Vec<Complex>> {
     let prec = tg.prec;
-    let (a, rho) = assemble_scaled_ami(tg64, tg, cg, k, big_n, q, rho_scale);
+    let (a, rho) = assemble_scaled_ami(tg64, tg, cg, k, big_n, q, rho_scale, &tg.z_a);
     let dim = a.len();
     let mut data = Vec::with_capacity(dim * dim);
     for row in &a {
@@ -385,7 +391,7 @@ mod tests {
         let mut cg = CosetGraph::build(&tg64, &s0, &s1);
         cg.compactify_with(&tg64, 0.996, 40);
         let q = 2 * n + 8;
-        let (a, rho) = assemble_scaled_ami(&tg64, &tg, &cg, k, n, q, 1.0);
+        let (a, rho) = assemble_scaled_ami(&tg64, &tg, &cg, k, n, q, 1.0, &tg.z_a);
         let dim = a.len();
         eprintln!("[2,12,5] k={k} N={n} dim={dim} ρ={:.6} → {out}", rho.to_f64());
         let mut buf: Vec<u8> = Vec::with_capacity(4 + dim * dim * 16);
@@ -423,9 +429,16 @@ mod tests {
         let mut cg = CosetGraph::build(&tg64, &s0, &s1);
         cg.compactify_with(&tg64, 0.996, 40);
         let q = 2 * n + 8;
-        let (a, rho) = assemble_scaled_ami(&tg64, &tg, &cg, k, n, q, 1.0);
+        // M_CENTER selects the expansion vertex: a = order-2 (default), b = order-12, c = order-5.
+        let center = std::env::var("M_CENTER").unwrap_or_else(|_| "a".into());
+        let ctr = match center.as_str() {
+            "b" => tg.z_b.clone(),
+            "c" => tg.z_c.clone(),
+            _ => tg.z_a.clone(),
+        };
+        let (a, rho) = assemble_scaled_ami(&tg64, &tg, &cg, k, n, q, 1.0, &ctr);
         let dim = a.len();
-        eprintln!("[2,12,5] EXT k={k} N={n} dim={dim} limbs={nlimbs} prec={prec} ρ={:.6} → {out}", rho.to_f64());
+        eprintln!("[2,12,5] EXT center={center} k={k} N={n} dim={dim} limbs={nlimbs} prec={prec} ρ={:.6} → {out}", rho.to_f64());
         // recursively split a full-precision Float into `nlimbs` non-overlapping f64 limbs
         let split = |x: &Float| -> Vec<f64> {
             let mut limbs = Vec::with_capacity(nlimbs);
