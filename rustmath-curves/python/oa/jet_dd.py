@@ -30,15 +30,24 @@ def load_dd_C(path):
     sh = asx(s)[None, :]; sl = xp.zeros_like(sh)
     return dim, cscale_ddreal(cnew(reh, rel, imh, iml), sh, sl)
 
-def dd_gram(C, n_slices=8):
-    return ozaki_gemm_complex(cH(C), C, n_slices)      # G = C^H C in dd
+def dd_gram(C, n_slices=16):
+    return ozaki_gemm_complex(cH(C), C, n_slices)      # G = C^H C in dd (needs many slices: ~22 orders)
 
-def solve_dd_refine(G, vals, lam, w, n_slices=8, iters=3):
-    """Stage 2: for each valuation solve H[free,free] x = -H[free,v] with dd iterative refinement.
-    H = G + lam W^2 (real diagonal added to the dd Gram).  fp64 factorization, dd residuals."""
+def _two_sum(a, b):                                    # numpy real compensated add
+    s = a + b; bb = s - a
+    return s, (a - (s - bb)) + (b - bb)
+def _cadd_dd_fp(xh, xl, dx):                           # (xh+xl) + dx, complex -> (hi, lo)
+    srh, srl = _two_sum(xh.real, dx.real); sih, sil = _two_sum(xh.imag, dx.imag)
+    return (srh + 1j*sih), ((srl + xl.real) + 1j*(sil + xl.imag))
+
+def solve_dd_refine(G, vals, lam, w, n_slices=16, iters=8, verbose=False):
+    """For each valuation solve H[free,free] x = -H[free,v] to (near) dd accuracy.  H = G + lam W^2.
+    fp64 LU factor (once per valuation), residual r = -H[:,v] - H_ff x computed in dd via the Ozaki
+    GEMM with MANY slices (G spans ~22 orders), solution x accumulated in dd -- so it converges below
+    the fp64 factor's own residual floor.  verbose prints |r| per iteration."""
+    import scipy.linalg as sla
     N = G['reh'].shape[0] - 1
     lamw2 = (lam * w * w)
-    # H as dd (add real diagonal to G's real-hi) and as fp64
     Hdd = {k: G[k].copy() for k in G}
     idx = xp.arange(N + 1)
     Hdd['reh'][idx, idx] = Hdd['reh'][idx, idx] + asx(lamw2)
@@ -46,22 +55,24 @@ def solve_dd_refine(G, vals, lam, w, n_slices=8, iters=3):
     B = np.zeros((N + 1, len(vals)), complex); resid = []; tn = []
     for k, v in enumerate(vals):
         free = np.arange(v + 1, N + 1)
-        Hff = Hhi[np.ix_(free, free)]
-        rhs = -Hhi[free, v]
-        x = np.linalg.solve(Hff, rhs)                  # fp64 seed
-        # dd residual r = -H[free,v] - H[free,free] x, then correct
+        lu, piv = sla.lu_factor(Hhi[np.ix_(free, free)])
+        xh = sla.lu_solve((lu, piv), -Hhi[free, v])    # fp64 seed (hi)
+        xl = np.zeros_like(xh)                          # dd accumulation (lo)
         Hff_dd = {kk: Hdd[kk][np.ix_(asx(free), asx(free))] for kk in Hdd}
         Hfv_dd = cget_cols({kk: Hdd[kk][asx(free)] for kk in Hdd}, xp.asarray([v]))
-        for _ in range(iters):
-            xc = from_c128(asx(x)[:, None])
+        rn = None
+        for it in range(iters):
+            xc = cnew(asx(xh.real)[:, None], asx(xl.real)[:, None],
+                      asx(xh.imag)[:, None], asx(xl.imag)[:, None])
             Hx = ozaki_gemm_complex(Hff_dd, xc, n_slices)          # H_ff @ x in dd
-            r = csub({kk: -Hfv_dd[kk] for kk in Hfv_dd}, Hx)       # -H[:,v] - H_ff x
-            rnp = tonp(to_c128(r))[:, 0]
-            dx = np.linalg.solve(Hff, rnp)
-            x = x + dx
-        b = np.zeros(N + 1, complex); b[v] = 1.0; b[free] = x
+            r = csub({kk: -Hfv_dd[kk] for kk in Hfv_dd}, Hx)       # -H[:,v] - H_ff x  (dd)
+            rnp = tonp(to_c128(r))[:, 0]; rn = np.linalg.norm(rnp)
+            dx = sla.lu_solve((lu, piv), rnp)
+            xh, xl = _cadd_dd_fp(xh, xl, dx)                       # x += dx in dd
+            if verbose: print(f"    v={v:2d} it={it}: |r|={rn:.3e}", flush=True)
+        b = np.zeros(N + 1, complex); b[v] = 1.0; b[free] = xh + xl
         B[:, k] = b
-        resid.append(np.linalg.norm(rnp)); tn.append(np.linalg.norm(w * b))
+        resid.append(rn); tn.append(np.linalg.norm(w * b))
     return B, np.array(resid), np.array(tn)
 
 if __name__ == "__main__":
