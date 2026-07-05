@@ -18,7 +18,7 @@ Thumbs.db
 # Temporary build/analysis files
 *.log
 __pycache__/
-*.py
+
 
 # Jupyter
 .ipynb_checkpoints/
