@@ -102,3 +102,16 @@ if __name__ == "__main__":
     show("phi-1", phi_in_u12(a, b, c, L), True, b)
     print("t=inf (order 5): 1/phi    in u_5    (expect val 5, the 5^4 1^4 ramification)")
     show("1/phi", phi_in_u5(a, b, c, L), False, c)
+
+
+def phi_in_u0(a, b, c, L):
+    """phi = t as a power series in the order-a local uniformizer u_0 at t=0 (val = a).
+    Frobenius solutions at t=0: exponents 0 and 1-C = -1/a; u_0 = t^{1/a} (g1/g2)."""
+    A = Fr(1, 2) * (1 + Fr(1, a) - Fr(1, b) - Fr(1, c))
+    B = Fr(1, 2) * (1 + Fr(1, a) - Fr(1, b) + Fr(1, c))
+    C = 1 + Fr(1, a)
+    ntab = L // a + 4
+    g1 = hyp_series(A, B, C, ntab)                      # exponent 0
+    g2 = hyp_series(A - C + 1, B - C + 1, 2 - C, ntab)  # exponent 1-C
+    R = poly_div(g1, g2, ntab)                          # u_0 = t^{1/a} R(t)
+    return _revert_root(R, a, L)                        # t = phi as series in u_0

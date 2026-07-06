@@ -667,6 +667,15 @@ mod tests {
             assert_eq!(s1.len(), 24);
             eprintln!("[2,12,5] permutations OVERRIDDEN from M_S0/M_S1");
         }
+        // M_ABC: "a,b,c" triangle-group order override (e.g. "3,4,3" for the (3B,4C,3A)
+        // passport). s0 must have order a, s1 order b, (s0 s1)^-1 order c.
+        let (oa, ob, oc): (u32, u32, u32) = if let Ok(t) = std::env::var("M_ABC") {
+            let v: Vec<u32> = t.split(',').map(|x| x.trim().parse().expect("M_ABC")).collect();
+            eprintln!("[tri] group orders OVERRIDDEN: ({}, {}, {})", v[0], v[1], v[2]);
+            (v[0], v[1], v[2])
+        } else {
+            (2, 12, 5)
+        };
         // M_BASE=i: conjugate both permutations by the transposition (0 i), i.e. re-mark coset i
         // as the basepoint. Stab(0) becomes the CONJUGATE subgroup α_i Γ' α_i^{-1} — the same
         // curve via z ↦ α_i z — and compactify re-centers the domain around the new base cell.
@@ -683,8 +692,8 @@ mod tests {
                 eprintln!("[2,12,5] rebased: coset {base} is now the basepoint (conjugated by (0 {base}))");
             }
         }
-        let tg64 = TriangleGroup::new(2, 12, 5);
-        let tg = TriangleGroupHp::new(2, 12, 5, prec);
+        let tg64 = TriangleGroup::new(oa, ob, oc);
+        let tg = TriangleGroupHp::new(oa, ob, oc, prec);
         let mut cg = CosetGraph::build(&tg64, &s0, &s1);
         cg.compactify_with(&tg64, 0.996, 40);
         let q = 2 * n + 8;
