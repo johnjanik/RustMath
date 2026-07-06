@@ -658,6 +658,15 @@ mod tests {
         let nlimbs: usize = std::env::var("M_LIMBS").ok().and_then(|s| s.parse().ok()).unwrap_or(3);
         let mut s0: Vec<usize> = vec![0, 14, 10, 9, 4, 5, 23, 17, 18, 3, 2, 11, 22, 13, 1, 15, 16, 7, 8, 19, 21, 20, 12, 6];
         let mut s1: Vec<usize> = vec![14, 2, 22, 9, 16, 8, 13, 15, 18, 1, 23, 20, 3, 0, 21, 12, 19, 7, 17, 11, 10, 4, 5, 6];
+        // M_S0/M_S1: comma-separated 0-based permutation override — selects a DIFFERENT
+        // passport member (e.g. the achiral (2A,12B,5A) dessin) through the same machinery.
+        if let (Ok(a), Ok(b)) = (std::env::var("M_S0"), std::env::var("M_S1")) {
+            s0 = a.split(',').map(|t| t.trim().parse().expect("M_S0")).collect();
+            s1 = b.split(',').map(|t| t.trim().parse().expect("M_S1")).collect();
+            assert_eq!(s0.len(), 24);
+            assert_eq!(s1.len(), 24);
+            eprintln!("[2,12,5] permutations OVERRIDDEN from M_S0/M_S1");
+        }
         // M_BASE=i: conjugate both permutations by the transposition (0 i), i.e. re-mark coset i
         // as the basepoint. Stab(0) becomes the CONJUGATE subgroup α_i Γ' α_i^{-1} — the same
         // curve via z ↦ α_i z — and compactify re-centers the domain around the new base cell.
