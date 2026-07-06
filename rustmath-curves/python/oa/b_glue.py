@@ -25,7 +25,17 @@ def x_kmsv(npz, w):
     return G[8]/(G[7] + c*G[8])
 
 
-def glue(key, tlo=0.30, thi=0.62, rmax_new=0.50, rmax_a=0.62):
+DEFAULT_RANGE = {           # per-chart overlap windows (both disk constraints satisfied)
+    'b':  (0.30, 0.62),
+    'b2': (0.61, 0.84),     # z_b2 = i/mu is BELOW i: |w_b2|<=0.5 needs Im z <= 0.493
+    'c':  (0.30, 0.62),
+    'c3': (0.30, 0.62),
+}
+
+
+def glue(key, tlo=None, thi=None, rmax_new=0.50, rmax_a=0.62):
+    if tlo is None or thi is None:
+        tlo, thi = DEFAULT_RANGE.get(key, (0.30, 0.62))
     A = np.load(BC.NPZ['a'], allow_pickle=True)
     NEW = np.load(BC.NPZ[key], allow_pickle=True)
     za, zn = BC.CENTER['a'], BC.CENTER[key]

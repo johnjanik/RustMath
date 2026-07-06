@@ -50,11 +50,11 @@ def cr(a, b, c, d):
 
 
 if __name__ == "__main__":
-    CB = taylor('b')       # germ at r1
-    CB2 = taylor('b2')     # germ at r2
+    CB = taylor('b', r0=0.16, nord=16)    # germ at r1 (map pole at |w|~0.42 limits radius)
+    CB2 = taylor('b2', r0=0.16, nord=16)  # germ at r2 (mu-pole at |w|~0.30!)
     CBb = np.conj(CB)
 
-    svals = 0.16*np.exp(1j*2*np.pi*(np.arange(10) + 0.3)/10)
+    svals = 0.11*np.exp(1j*2*np.pi*(np.arange(10) + 0.3)/10)
     QUADS = [(0, 1, 2, 3), (4, 5, 6, 7), (8, 9, 0, 4), (1, 5, 2, 8), (3, 7, 9, 6),
              (0, 5, 9, 2), (1, 6, 8, 3)]
 
@@ -74,7 +74,7 @@ if __name__ == "__main__":
         for sc_ in (0.7, 1.0, 1.4):
             sol = least_squares(resid_t, [sc_*t0.real, sc_*t0.imag], method='lm', max_nfev=3000)
             rn = np.sqrt(2*sol.cost/len(QUADS))
-            if best is None or sol.cost < best.cost:
+            if best is None or sol.cost < best[0]:
                 best = (sol.cost, rn, sol.x, k)
     cost, rn, x, k0 = best
     t = x[0] + 1j*x[1]
