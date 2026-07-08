@@ -400,6 +400,91 @@ pub fn dump_scaled_ami_streamed(
     rho
 }
 
+/// Explicit parameters for one atlas chart assembly (probe or full dump).
+///
+/// This is the env-var surface the `dump_2_12_5_matrix_ext_streamed` harness has
+/// always driven, lifted into a struct so the `belyi-atlas` binary and the test
+/// call the SAME setup + assembly path.  Any matrix produced through
+/// [`run_atlas_dump`] is bit-identical to the trusted streamed harness for the
+/// same resolved parameters.
+pub struct AtlasDumpParams {
+    /// 0-based image list of s0 (order a).
+    pub s0: Vec<usize>,
+    /// 0-based image list of s1 (order b).
+    pub s1: Vec<usize>,
+    /// Triangle-group orders (a, b, c).
+    pub abc: (u32, u32, u32),
+    /// Basepoint coset: rebase by the transposition (0 base); 0 = no rebase.
+    pub base: usize,
+    /// Series length N (dim = N + 1).
+    pub n: usize,
+    /// Weight k.
+    pub k: i64,
+    /// mpfr precision (bits).
+    pub prec: u32,
+    /// Extended double-double limbs.
+    pub nlimbs: usize,
+    /// Compactify BFS prune radius.
+    pub r_prune: f64,
+    /// Compactify word cap.
+    pub l_max: usize,
+    /// Expansion vertex: "a"/"b"/"c" (base vertices) or "a2"/"b2"/"c2" (coset rep
+    /// applied to the vertex, selecting a satellite preimage).
+    pub center: String,
+    /// Coset index for the "*2" satellite centers.
+    pub coset: usize,
+    /// Output matrix path.
+    pub out: String,
+}
+
+/// Result of an atlas assembly: convergence radius, chart center, matrix dim.
+pub struct AtlasDumpResult {
+    pub rho: Float,
+    pub ctr: Complex,
+    pub dim: usize,
+}
+
+/// Set up the triangle group + coset graph exactly as the streamed harness does,
+/// pick the requested chart center, and run [`dump_scaled_ami_streamed`].
+///
+/// The `q = 2 N + 8` over-sampling, the `(0 base)` rebase, and the center
+/// dispatch all match the harness verbatim, so callers get identical numerics.
+pub fn run_atlas_dump(p: &AtlasDumpParams) -> AtlasDumpResult {
+    let mut s0 = p.s0.clone();
+    let mut s1 = p.s1.clone();
+    assert_eq!(s0.len(), s1.len(), "s0, s1 degrees differ");
+    let (oa, ob, oc) = p.abc;
+
+    // Rebase by (0 base): re-mark coset `base` as the basepoint.
+    if p.base != 0 {
+        let base = p.base;
+        let q = |x: usize| if x == 0 { base } else if x == base { 0 } else { x };
+        let (o0, o1) = (s0.clone(), s1.clone());
+        for x in 0..o0.len() {
+            s0[q(x)] = q(o0[x]);
+            s1[q(x)] = q(o1[x]);
+        }
+    }
+
+    let tg64 = TriangleGroup::new(oa, ob, oc);
+    let tg = TriangleGroupHp::new(oa, ob, oc, p.prec);
+    let mut cg = CosetGraph::build(&tg64, &s0, &s1);
+    cg.compactify_with(&tg64, p.r_prune, p.l_max);
+    let q = 2 * p.n + 8;
+
+    let ctr = match p.center.as_str() {
+        "b" => tg.z_b.clone(),
+        "c" => tg.z_c.clone(),
+        "b2" => reps_hp(&cg, &tg)[p.coset].apply(&tg.z_b),
+        "c2" => reps_hp(&cg, &tg)[p.coset].apply(&tg.z_c),
+        "a2" => reps_hp(&cg, &tg)[p.coset].apply(&tg.z_a),
+        _ => tg.z_a.clone(),
+    };
+
+    let rho = dump_scaled_ami_streamed(&tg64, &tg, &cg, p.k, p.n, q, 1.0, &ctr, p.nlimbs, &p.out);
+    AtlasDumpResult { rho, ctr, dim: p.n + 1 }
+}
+
 /// dim S_k(Γ) via Gauss–Jordan pivots (unreliable for small σ — see mp_svd; kept for
 /// the k=2 sanity check where full rank is unambiguous).
 pub fn nullity_s_k(
