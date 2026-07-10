@@ -132,6 +132,7 @@ pub fn disk(center: impl Into<Point2D>, radius: f64, options: Option<PlotOptions
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rustmath_colors::Color;
 
     #[test]
     fn test_disk_creation() {

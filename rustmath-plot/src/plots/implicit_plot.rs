@@ -442,6 +442,7 @@ fn distance(p1: &Point2D, p2: &Point2D) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rustmath_colors::Color;
 
     #[test]
     fn test_implicit_plot_circle() {
