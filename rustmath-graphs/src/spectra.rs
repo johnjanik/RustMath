@@ -2,6 +2,35 @@
 //!
 //! The spectrum of a graph is the set of eigenvalues of its adjacency matrix.
 //! The spectrum encodes many important graph properties.
+//!
+//! **Exact vs. `f64`.** Every eigenvalue-consuming function in this module
+//! (`adjacency_eigenvalues`, `laplacian_eigenvalues`, `spectral_radius`,
+//! `algebraic_connectivity`, `graph_energy`, `is_bipartite_spectral`,
+//! `characteristic_polynomial`) goes through the `f64` QR iteration in
+//! [`eigenvalues`], which is numerically inexact (see `test_graph_energy`
+//! below, whose own comment concedes the QR loop "may not converge well").
+//! `crate::exact_spectra` provides *exact* `Integer`-valued companions —
+//! [`crate::exact_spectra::characteristic_polynomial_integer`],
+//! [`crate::exact_spectra::integer_spectrum`],
+//! [`crate::exact_spectra::spectral_radius_exact`],
+//! [`crate::exact_spectra::algebraic_connectivity_exact`] and
+//! [`crate::exact_spectra::graph_energy_exact`] — computed via the
+//! division-free Berkowitz characteristic polynomial
+//! (`rustmath_matrix::charpoly_berkowitz`) plus exact integer-root search.
+//! Those return `Option` and are only `Some` when the graph (or its
+//! Laplacian) is *integral*, i.e. every eigenvalue happens to be an integer;
+//! extracting exact *irrational* algebraic eigenvalues would need a
+//! `RealField`-valued real-root isolator, which does not exist yet, and full
+//! float-free QR for large non-integral graphs is not a good trade — so the
+//! `f64` functions here remain the general-purpose fallback and are
+//! deliberately left as-is. Prefer the `exact_spectra` functions first and
+//! fall back to these when they return `None` (non-integral) or when the
+//! graph is too large for exact root search to be worthwhile.
+//!
+//! `is_bipartite_spectral` in particular is a numerically fragile stand-in
+//! for the exact combinatorial [`crate::graph::Graph::is_bipartite`] (2-BFS
+//! coloring), which should always be preferred; it is kept here only for
+//! parity with the "check via the spectrum" folklore result.
 
 use crate::graph::Graph;
 use std::f64::consts::PI;

@@ -48,7 +48,7 @@ impl GabowEdgeConnectivity {
     /// g.add_edge(2, 3);
     /// g.add_edge(3, 0);
     ///
-    /// let gabow = GabowEdgeConnectivity::new(g);
+    /// let mut gabow = GabowEdgeConnectivity::new(g);
     /// let ec = gabow.compute();
     /// assert_eq!(ec, 1);
     /// ```
