@@ -154,7 +154,7 @@ impl PeriodicContinuedFraction {
     /// use rustmath_integers::Integer;
     ///
     /// // √2 = [1; (2)]
-    /// let sqrt2 = PeriodicContinuedFraction::from_sqrt(&Integer::from(2));
+    /// let sqrt2 = PeriodicContinuedFraction::from_sqrt(&Integer::from(2)).unwrap();
     /// assert_eq!(sqrt2.initial(), &[Integer::from(1)]);
     /// assert_eq!(sqrt2.repeating(), &[Integer::from(2)]);
     /// ```
@@ -166,55 +166,45 @@ impl PeriodicContinuedFraction {
             return None;
         }
 
-        // Use the standard algorithm to compute the periodic continued fraction
-        // √n = a₀ + (√n - a₀) where a₀ = floor(√n)
-        let a0 = sqrt_n.clone();
+        // Canonical (m, d, a) recurrence for √n with a₀ = floor(√n):
+        //   m₀ = 0, d₀ = 1, a₀ = floor(√n)
+        //   m_{k+1} = d_k·a_k − m_k
+        //   d_{k+1} = (n − m_{k+1}²) / d_k   (always an exact division, d_{k+1} > 0)
+        //   a_{k+1} = floor((a₀ + m_{k+1}) / d_{k+1})
+        //
+        // For √n the expansion is [a₀; (a₁, ..., a_p)] — the non-repeating part
+        // is exactly [a₀] — and by the classical theorem the period ends at the
+        // first k ≥ 1 with a_k = 2·a₀ (equivalently d_k = 1), so the recurrence
+        // is guaranteed to terminate for every non-square n > 0.
+        let a0 = sqrt_n;
+        let two_a0 = a0.clone() + a0.clone();
 
-        let mut coefficients = Vec::new();
         let mut m = Integer::zero();
         let mut d = Integer::one();
         let mut a = a0.clone();
 
-        // Keep track of states to detect the period
-        let mut seen_states = std::collections::HashMap::new();
-
+        let mut repeating = Vec::new();
         loop {
-            // Record this state
-            let state = (m.clone(), d.clone());
-            if let Some(&start_idx) = seen_states.get(&state) {
-                // We've found the period!
-                let period: Vec<Integer> = coefficients[start_idx..].to_vec();
-                let initial = if start_idx == 0 {
-                    vec![a0]
-                } else {
-                    let mut init = vec![a0];
-                    init.extend_from_slice(&coefficients[..start_idx]);
-                    init
-                };
-                return Some(PeriodicContinuedFraction {
-                    initial,
-                    repeating: period,
-                });
-            }
-
-            seen_states.insert(state, coefficients.len());
-
-            // Compute next term
             m = &d * &a - m;
             d = (n.clone() - &m * &m) / d;
 
             if d.is_zero() {
+                // Unreachable for non-square n > 0; guard against division by zero.
                 return None;
             }
 
             a = (&a0 + &m) / d.clone();
-            coefficients.push(a.clone());
+            repeating.push(a.clone());
 
-            // Safety check to prevent infinite loops
-            if coefficients.len() > 1000 {
-                return None;
+            if a == two_a0 {
+                break;
             }
         }
+
+        Some(PeriodicContinuedFraction {
+            initial: vec![a0],
+            repeating,
+        })
     }
 
     /// Get the initial (non-repeating) coefficients
@@ -429,6 +419,57 @@ mod tests {
         assert_eq!(sqrt5.initial(), &[Integer::from(2)]);
         assert_eq!(sqrt5.repeating(), &[Integer::from(4)]);
         assert_eq!(sqrt5.period_length(), 1);
+    }
+
+    #[test]
+    fn test_periodic_continued_fraction_sqrt7() {
+        // √7 = [2; (1, 1, 1, 4)]
+        let sqrt7 = PeriodicContinuedFraction::from_sqrt(&Integer::from(7)).unwrap();
+
+        assert_eq!(sqrt7.initial(), &[Integer::from(2)]);
+        assert_eq!(
+            sqrt7.repeating(),
+            &[
+                Integer::from(1),
+                Integer::from(1),
+                Integer::from(1),
+                Integer::from(4)
+            ]
+        );
+        assert_eq!(sqrt7.period_length(), 4);
+    }
+
+    #[test]
+    fn test_periodic_continued_fraction_longer_periods() {
+        // √19 = [4; (2, 1, 3, 1, 2, 8)]
+        let sqrt19 = PeriodicContinuedFraction::from_sqrt(&Integer::from(19)).unwrap();
+        assert_eq!(sqrt19.initial(), &[Integer::from(4)]);
+        assert_eq!(
+            sqrt19.repeating(),
+            &[2, 1, 3, 1, 2, 8].map(Integer::from)
+        );
+
+        // √46 = [6; (1, 3, 1, 1, 2, 6, 2, 1, 1, 3, 1, 12)]
+        let sqrt46 = PeriodicContinuedFraction::from_sqrt(&Integer::from(46)).unwrap();
+        assert_eq!(sqrt46.initial(), &[Integer::from(6)]);
+        assert_eq!(
+            sqrt46.repeating(),
+            &[1, 3, 1, 1, 2, 6, 2, 1, 1, 3, 1, 12].map(Integer::from)
+        );
+
+        // Invariant: for every non-square n, the period of √n ends with 2·a₀.
+        for n in 2..200 {
+            if let Some(cf) = PeriodicContinuedFraction::from_sqrt(&Integer::from(n)) {
+                let a0 = cf.initial()[0].clone();
+                assert_eq!(cf.initial().len(), 1, "√{} initial part must be [a0]", n);
+                assert_eq!(
+                    cf.repeating().last().unwrap(),
+                    &(a0.clone() + a0),
+                    "√{} period must end with 2·a0",
+                    n
+                );
+            }
+        }
     }
 
     #[test]

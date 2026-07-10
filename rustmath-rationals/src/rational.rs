@@ -1,5 +1,6 @@
 //! Rational numbers (fractions)
 
+use rustmath_core::ordering::{OrderedField, OrderedRing};
 use rustmath_core::{CommutativeRing, EuclideanDomain, Field, IntegralDomain, MathError, NumericConversion, Result, Ring};
 use rustmath_integers::Integer;
 use std::cmp::Ordering;
@@ -439,6 +440,24 @@ impl Field for Rational {
     }
 }
 
+// Ordered-field structure: the order is the standard total order on the
+// rationals (already exposed via `PartialOrd`/`Ord` above), which is
+// translation-invariant under `+` and compatible with `*` on non-negative
+// elements (MAGMA Handbook ch. 25 comparison-aware field requirement).
+impl OrderedRing for Rational {
+    fn sign(&self) -> i32 {
+        // `denominator` is always kept strictly positive by `simplify`, so
+        // the sign of the fraction is exactly the sign of the numerator.
+        self.numerator.signum() as i32
+    }
+
+    fn abs(&self) -> Self {
+        Rational::abs(self)
+    }
+}
+
+impl OrderedField for Rational {}
+
 impl NumericConversion for Rational {
     fn from_i64(n: i64) -> Self {
         Rational::from_integer(n)
@@ -538,5 +557,136 @@ mod tests {
         let r = Rational::new(-7, 3).unwrap();
         assert_eq!(r.floor(), Integer::from(-3));
         assert_eq!(r.ceil(), Integer::from(-2));
+    }
+
+    // -- OrderedField / OrderedRing laws --------------------------------
+    //
+    // Compile-time proof that `Rational` actually satisfies the
+    // `OrderedField` bound (which in turn requires `Field + OrderedRing`,
+    // i.e. `Ring + PartialOrd + Field`).
+    fn _assert_rational_is_ordered_field<F: OrderedField>() {}
+    const _: fn() = || _assert_rational_is_ordered_field::<Rational>();
+
+    fn r(n: i64, d: i64) -> Rational {
+        Rational::new(n, d).unwrap()
+    }
+
+    #[test]
+    fn test_ordered_ring_sign() {
+        assert_eq!(OrderedRing::sign(&r(5, 7)), 1);
+        assert_eq!(OrderedRing::sign(&r(-5, 7)), -1);
+        assert_eq!(OrderedRing::sign(&r(0, 1)), 0);
+        // Sign must be invariant under the sign of numerator/denominator
+        // individually (only the overall sign of the fraction matters).
+        assert_eq!(OrderedRing::sign(&r(-3, -4)), 1);
+        assert_eq!(OrderedRing::sign(&r(3, -4)), -1);
+    }
+
+    #[test]
+    fn test_ordered_ring_abs() {
+        assert_eq!(OrderedRing::abs(&r(-3, 4)), r(3, 4));
+        assert_eq!(OrderedRing::abs(&r(3, 4)), r(3, 4));
+        assert_eq!(OrderedRing::abs(&r(0, 1)), r(0, 1));
+        // The trait method must agree with the pre-existing inherent `abs`.
+        let x = r(-11, 5);
+        assert_eq!(OrderedRing::abs(&x), x.abs());
+    }
+
+    #[test]
+    fn test_ordered_ring_is_positive_negative() {
+        assert!(r(1, 3).is_positive());
+        assert!(!r(1, 3).is_negative());
+        assert!(r(-1, 3).is_negative());
+        assert!(!r(-1, 3).is_positive());
+        assert!(!r(0, 1).is_positive());
+        assert!(!r(0, 1).is_negative());
+    }
+
+    #[test]
+    fn test_ordered_ring_min_max() {
+        let a = r(1, 2);
+        let b = r(2, 3);
+        assert_eq!(a.max_with(&b), b.clone());
+        assert_eq!(a.min_with(&b), a.clone());
+        assert_eq!(a.max_with(&a), a.clone());
+        assert_eq!(a.min_with(&a), a.clone());
+    }
+
+    #[test]
+    fn test_ordered_field_total_order_trichotomy() {
+        let values = [r(-3, 2), r(-1, 1), r(0, 1), r(1, 4), r(2, 3), r(5, 1)];
+        for a in &values {
+            for b in &values {
+                // Exactly one of <, ==, > holds (trichotomy of a total order).
+                let lt = a < b;
+                let eq = a == b;
+                let gt = a > b;
+                assert_eq!(lt as u8 + eq as u8 + gt as u8, 1);
+                // `PartialOrd` agrees with the direct comparison operators.
+                assert_eq!(a.partial_cmp(b), Some(a.cmp(b)));
+            }
+        }
+    }
+
+    #[test]
+    fn test_ordered_field_translation_invariance() {
+        // a <= b  =>  a + c <= b + c, for every c (positive, negative, zero,
+        // integral or fractional).
+        let pairs = [(r(1, 3), r(2, 3)), (r(-5, 2), r(-1, 2)), (r(0, 1), r(0, 1))];
+        let shifts = [r(0, 1), r(1, 1), r(-1, 1), r(7, 4), r(-7, 4)];
+
+        for (a, b) in &pairs {
+            assert!(a <= b);
+            for c in &shifts {
+                assert!(
+                    (a.clone() + c.clone()) <= (b.clone() + c.clone()),
+                    "translation invariance failed for a={a}, b={b}, c={c}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_ordered_field_multiplicative_compatibility() {
+        // Product of two non-negative elements is non-negative.
+        let nonneg = [r(0, 1), r(1, 5), r(3, 2), r(9, 1)];
+        for a in &nonneg {
+            for b in &nonneg {
+                assert!((a.clone() * b.clone()).sign() >= 0);
+            }
+        }
+
+        // Multiplying an inequality by a strictly positive constant
+        // preserves the order: a <= b && c > 0 => a*c <= b*c.
+        let a = r(1, 3);
+        let b = r(5, 6);
+        assert!(a <= b);
+        for c in [r(1, 7), r(2, 1), r(11, 3)] {
+            assert!(c.is_positive());
+            assert!(a.clone() * c.clone() <= b.clone() * c.clone());
+        }
+
+        // Multiplying by a strictly negative constant reverses the order.
+        for c in [r(-1, 7), r(-2, 1), r(-11, 3)] {
+            assert!(c.is_negative());
+            assert!(a.clone() * c.clone() >= b.clone() * c.clone());
+        }
+    }
+
+    #[test]
+    fn test_ordered_field_abs_is_multiplicative_and_triangle_inequality() {
+        let values = [r(-7, 3), r(0, 1), r(4, 5), r(-1, 1), r(11, 2)];
+        for x in &values {
+            for y in &values {
+                // |x*y| = |x|*|y|
+                let lhs = (x.clone() * y.clone()).abs();
+                let rhs = x.abs() * y.abs();
+                assert_eq!(lhs, rhs);
+                // Triangle inequality: |x + y| <= |x| + |y|
+                let sum_abs = (x.clone() + y.clone()).abs();
+                let abs_sum = x.abs() + y.abs();
+                assert!(sum_abs <= abs_sum);
+            }
+        }
     }
 }
