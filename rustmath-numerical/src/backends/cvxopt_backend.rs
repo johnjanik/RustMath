@@ -1,6 +1,6 @@
 //! CVXOPT backend for linear/quadratic programming
 
-use super::generic_backend::{Backend, ConstraintType, Solution, SolutionStatus};
+use super::generic_backend::{Backend, ConstraintType, Solution};
 
 /// CVXOPT backend wrapper
 #[derive(Debug)]
@@ -31,12 +31,9 @@ impl Backend for CVXOPTBackend {
     }
 
     fn solve(&mut self) -> Result<Solution, String> {
-        // Stub - would call CVXOPT library
-        Ok(Solution {
-            variables: vec![0.0; self.num_vars],
-            objective_value: 0.0,
-            status: SolutionStatus::Optimal,
-        })
+        unimplemented!(
+            "LP/MIP/SDP solve not yet implemented (facade); planned as rustmath-optimization"
+        );
     }
 
     fn num_variables(&self) -> usize {

@@ -330,17 +330,21 @@ where
 
     let mut iterations = 0;
 
+    // x1 = a + RESPHI*(b-a) is the RIGHT interior point, x2 = b - RESPHI*(b-a)
+    // is the LEFT interior point, so f1 = f(right) and f2 = f(left).
     while (b - a).abs() > tol && iterations < max_iter {
         if f1 < f2 {
-            // Minimum is in [a, x2]
-            b = x2;
+            // Right point is lower: the minimum lies in [x2, b]; discard [a, x2).
+            // (Previously this branch discarded the wrong side, collapsing the
+            //  interval onto the endpoint and defeating the search entirely.)
+            a = x2;
             x2 = x1;
             f2 = f1;
             x1 = a + RESPHI * (b - a);
             f1 = f(x1);
         } else {
-            // Minimum is in [x1, b]
-            a = x1;
+            // Left point is lower (or equal): the minimum lies in [a, x1].
+            b = x1;
             x1 = x2;
             f1 = f2;
             x2 = b - RESPHI * (b - a);
@@ -792,15 +796,21 @@ mod tests {
     fn test_brent_vs_exact() {
         // Compare Brent's method accuracy with known mathematical constants
 
+        // find_root uses the documented default tol = 1e-10, so it terminates on
+        // |f(b)| < 1e-10; the achievable root accuracy is ~1e-10/|f'(root)|, not
+        // machine precision. 1e-9 is the defensible f64 bound here (and matches the
+        // sibling brent tests). The old 1e-14 assertion was unrealistic for a
+        // 1e-10-tolerance root finder, not a solver defect.
+
         // sqrt(3)
         let f = |x: f64| x * x - 3.0;
         let result = find_root(f, 1.0, 2.0).unwrap();
-        assert!((result.root - 3.0_f64.sqrt()).abs() < 1e-14);
+        assert!((result.root - 3.0_f64.sqrt()).abs() < 1e-9);
 
         // cbrt(7)
         let f = |x: f64| x * x * x - 7.0;
         let result = find_root(f, 1.0, 3.0).unwrap();
-        assert!((result.root - 7.0_f64.cbrt()).abs() < 1e-14);
+        assert!((result.root - 7.0_f64.cbrt()).abs() < 1e-9);
     }
 
     #[test]

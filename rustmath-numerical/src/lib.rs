@@ -176,6 +176,13 @@ pub mod backends;
 pub mod homotopy;
 pub mod exactify;
 
+// SageMath-compatible public module aliases: `sage.numerical.optimize` maps to
+// `rustmath_numerical::optimize`, and Gauss-Legendre quadrature is exposed at the
+// crate root as `rustmath_numerical::gauss_legendre` (matching the documented API
+// used throughout the doctests).
+pub use optimization as optimize;
+pub use integration::gauss_legendre;
+
 // Re-export commonly used items
 pub use root_finding::{find_root, bisection, newton_raphson, secant};
 pub use optimization::{minimize, gradient_descent, nelder_mead};
@@ -205,7 +212,7 @@ mod tests {
     #[test]
     fn test_numerical_scalar_f64() {
         let x = 1.0f64;
-        let epsilon = f64::epsilon();
+        let epsilon = <f64 as NumericalScalar>::epsilon();
 
         assert!(epsilon < 1e-15);
         assert!(x.is_near_zero(2.0));
@@ -216,13 +223,13 @@ mod tests {
     #[test]
     fn test_integrable_closure() {
         let f = |x: f64| x * x;
-        assert_eq!(f.eval(2.0), 4.0);
+        assert_eq!(Integrable::eval(&f, 2.0), 4.0);
     }
 
     #[test]
     fn test_optimizable_closure() {
         let f = |x: f64| x * x + 2.0 * x + 1.0;
-        assert_eq!(f.eval(0.0), 1.0);
+        assert_eq!(Optimizable::eval(&f, 0.0), 1.0);
         assert_eq!(f.gradient(0.0), None); // Closures don't provide gradients by default
         assert!(!f.is_convex()); // Default is false
     }

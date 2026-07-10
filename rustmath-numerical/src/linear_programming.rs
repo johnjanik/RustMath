@@ -13,7 +13,11 @@ pub struct SimplexResult {
 /// Maximize: c^T x
 /// Subject to: Ax <= b, x >= 0
 ///
-/// This is a simplified implementation
+/// # Facade warning
+///
+/// This function is currently a facade: it does not implement the Simplex
+/// method and ignores the constraint vector `b`. Calling it panics loudly
+/// rather than silently returning an incorrect all-zero solution.
 pub fn simplex(
     c: &[f64],
     a: &[Vec<f64>],
@@ -24,17 +28,9 @@ pub fn simplex(
         return None;
     }
 
-    // This is a placeholder implementation
-    // A full simplex algorithm would require tableau operations
-    let n = c.len();
-    let solution = vec![0.0; n];
-    let optimal_value = 0.0;
-
-    Some(SimplexResult {
-        optimal_value,
-        solution,
-        converged: true,
-    })
+    unimplemented!(
+        "LP/MIP/SDP solve not yet implemented (facade); planned as rustmath-optimization"
+    );
 }
 
 #[cfg(test)]
@@ -42,6 +38,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[ignore = "LP facade -> unimplemented; needs real simplex (Phase 4)"]
     fn test_simplex_basic() {
         let c = vec![3.0, 2.0];
         let a = vec![vec![1.0, 1.0], vec![2.0, 1.0]];
