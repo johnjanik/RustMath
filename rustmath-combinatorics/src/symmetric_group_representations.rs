@@ -421,7 +421,14 @@ pub fn all_irreducible_representations(n: usize) -> Vec<IrreducibleRepresentatio
 /// Compute the complete character table for S_n
 ///
 /// Returns a map from (representation, conjugacy_class) to character value
-pub struct CharacterTable {
+///
+/// Named `SymmetricGroupCharacterTable` (not `CharacterTable`) because the
+/// canonical `CharacterTable` home is `rustmath-groups` (currently frozen for
+/// a live competition); that name is reserved there for a future exact
+/// cyclotomic-valued implementation, with Murnaghan-Nakayama (as computed in
+/// this module) as the S_n backend. This is the recorded deferral of PLAN
+/// Phase-1 dedup item 4.
+pub struct SymmetricGroupCharacterTable {
     /// The degree n (for S_n)
     n: usize,
     /// The irreducible representations (rows)
@@ -432,7 +439,7 @@ pub struct CharacterTable {
     values: HashMap<(usize, usize), i64>,
 }
 
-impl CharacterTable {
+impl SymmetricGroupCharacterTable {
     /// Compute the character table for S_n
     pub fn new(n: usize) -> Self {
         let representations = all_irreducible_representations(n);
@@ -447,7 +454,7 @@ impl CharacterTable {
             }
         }
 
-        CharacterTable {
+        SymmetricGroupCharacterTable {
             n,
             representations,
             conjugacy_classes,
@@ -557,7 +564,7 @@ pub fn decompose_character(
     character_values: &HashMap<Partition, i64>,
     n: usize,
 ) -> HashMap<Partition, i64> {
-    let table = CharacterTable::new(n);
+    let table = SymmetricGroupCharacterTable::new(n);
     let mut multiplicities = HashMap::new();
 
     for rep in table.representations() {
@@ -686,7 +693,7 @@ mod tests {
 
     #[test]
     fn test_character_table_s3() {
-        let table = CharacterTable::new(3);
+        let table = SymmetricGroupCharacterTable::new(3);
 
         assert_eq!(table.degree(), 3);
         assert_eq!(table.representations().len(), 3); // 3 partitions of 3
@@ -700,11 +707,11 @@ mod tests {
     #[ignore] // TODO: Fix Murnaghan-Nakayama implementation for full orthogonality
     fn test_character_table_orthogonality() {
         // Test for S_3
-        let table = CharacterTable::new(3);
+        let table = SymmetricGroupCharacterTable::new(3);
         assert!(table.verify_orthogonality());
 
         // Test for S_4
-        let table = CharacterTable::new(4);
+        let table = SymmetricGroupCharacterTable::new(4);
         assert!(table.verify_orthogonality());
     }
 

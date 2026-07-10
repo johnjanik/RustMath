@@ -84,15 +84,17 @@ impl GelfandTsetlinPattern {
             }
         }
 
-        // Check interlacing conditions: a_{i,j} >= a_{i-1,j} >= a_{i,j+1}
+        // Check interlacing conditions. With `rows[0]` the top (longest) row and
+        // `rows[i]` of length n - i, the upper row `rows[i-1]` must interlace the
+        // lower row `rows[i]`:  upper[j] >= lower[j] >= upper[j+1].
         for i in 1..rows.len() {
             for j in 0..rows[i].len() {
-                // a_{i-1,j} >= a_{i,j}
+                // upper[j] >= lower[j]
                 if rows[i - 1][j] < rows[i][j] {
                     return None;
                 }
-                // a_{i-1,j+1} >= a_{i,j}
-                if rows[i - 1][j + 1] < rows[i][j] {
+                // lower[j] >= upper[j+1]
+                if rows[i][j] < rows[i - 1][j + 1] {
                     return None;
                 }
             }
@@ -148,10 +150,10 @@ impl GelfandTsetlinPattern {
             }
         }
 
-        // Check interlacing conditions
+        // Check interlacing conditions: upper[j] >= lower[j] >= upper[j+1].
         for i in 1..self.rows.len() {
             for j in 0..self.rows[i].len() {
-                if self.rows[i - 1][j] < self.rows[i][j] || self.rows[i - 1][j + 1] < self.rows[i][j] {
+                if self.rows[i - 1][j] < self.rows[i][j] || self.rows[i][j] < self.rows[i - 1][j + 1] {
                     return false;
                 }
             }
@@ -173,92 +175,56 @@ impl GelfandTsetlinPattern {
     /// use rustmath_combinatorics::gelfand_tsetlin::GelfandTsetlinPattern;
     ///
     /// let pattern = GelfandTsetlinPattern::new(vec![
-    ///     vec![4, 2, 1, 0],
-    ///     vec![3, 2, 0],
+    ///     vec![3, 2, 1],
     ///     vec![2, 1],
     ///     vec![1],
     /// ]).unwrap();
     ///
-    /// let tableau = pattern.to_tableau();
-    /// assert!(tableau.is_some());
+    /// let tableau = pattern.to_tableau().unwrap();
+    /// let rows: Vec<Vec<usize>> = tableau.rows().to_vec();
+    /// assert_eq!(rows, vec![vec![1, 2, 3], vec![2, 3], vec![3]]);
     /// ```
     pub fn to_tableau(&self) -> Option<Tableau> {
         if self.rows.is_empty() {
             return Tableau::new(vec![]);
         }
 
+        // `rows[0]` is the top (longest) row, and `rows[i]` has length n - i, so the
+        // pattern is only a full triangle when it has exactly n rows.
         let n = self.rows[0].len();
+        if self.rows.len() != n {
+            return None;
+        }
 
-        // Build the tableau row by row using the GT pattern
-        // The idea: for each level of the GT pattern, the differences
-        // between consecutive entries in a row tell us how many cells
-        // contain certain values in the corresponding tableau row
+        // Write lambda^(k) for the k-th row counted from the bottom, i.e.
+        // lambda^(k) = rows[n - k], which has length k. Under the GT <-> SSYT
+        // bijection, row i of the tableau holds exactly
+        //     lambda^(k)_i - lambda^(k-1)_i
+        // entries equal to k. Interlacing makes each such difference non-negative,
+        // and the length of row i telescopes to lambda^(n)_i, the correct shape.
+        let part = |k: usize, i: usize| -> i64 {
+            if k == 0 || i > k {
+                0
+            } else {
+                self.rows[n - k].get(i - 1).copied().unwrap_or(0)
+            }
+        };
 
         let mut tableau_rows: Vec<Vec<usize>> = Vec::new();
-
-        // Process each row of the GT pattern (except the last)
-        for level in 0..self.rows.len() {
-            let current_row = &self.rows[level];
-            let row_length = current_row.len();
-
-            // For the first row (top of GT pattern), we build from scratch
-            if level == 0 {
-                // The top row represents cumulative content
-                // Build initial tableau rows based on the differences
-                for i in 0..row_length {
-                    let start = if i == 0 { 0 } else { current_row[i - 1] };
-                    let end = current_row[i];
-                    let count = (end - start) as usize;
-
-                    if count > 0 {
-                        // Create or extend row i with (count) copies of (level + 1)
-                        while tableau_rows.len() <= i {
-                            tableau_rows.push(Vec::new());
-                        }
-                        for _ in 0..count {
-                            tableau_rows[i].push(1);
-                        }
-                    }
-                }
-            } else {
-                // For subsequent rows, we determine the shape from differences
-                let prev_row = &self.rows[level - 1];
-
-                for i in 0..row_length {
-                    // Count entries in position i
-                    let left_diff = if i == 0 {
-                        prev_row[0] - current_row[0]
-                    } else {
-                        (prev_row[i] - current_row[i]).max(0)
-                    };
-
-                    let right_diff = if i < prev_row.len() - 1 {
-                        (prev_row[i + 1] - current_row[i]).max(0)
-                    } else {
-                        0
-                    };
-
-                    // Add entries with value (level + 1)
-                    let total = left_diff + right_diff;
-
-                    if total > 0 && i < tableau_rows.len() {
-                        for _ in 0..total {
-                            if tableau_rows[i].len() < n {
-                                tableau_rows[i].push((level + 1) as usize);
-                            }
-                        }
-                    }
-                }
+        for i in 1..=n {
+            let mut row: Vec<usize> = Vec::new();
+            for k in 1..=n {
+                // A malformed pattern can make this negative; converting rather than
+                // casting keeps it from wrapping to a near-usize::MAX repeat count.
+                let mult = usize::try_from(part(k, i) - part(k - 1, i)).ok()?;
+                row.extend(std::iter::repeat(k).take(mult));
             }
+            // lambda^(n) is weakly decreasing, so the first empty row ends the shape.
+            if row.is_empty() {
+                break;
+            }
+            tableau_rows.push(row);
         }
-
-        // Clean up and ensure proper ordering
-        for row in &mut tableau_rows {
-            row.sort();
-        }
-
-        // Remove empty rows
-        tableau_rows.retain(|r| !r.is_empty());
 
         Tableau::new(tableau_rows)
     }
@@ -279,88 +245,37 @@ impl GelfandTsetlinPattern {
     ///     vec![2, 3],
     /// ]).unwrap();
     ///
-    /// let pattern = GelfandTsetlinPattern::from_tableau(&tableau);
-    /// assert!(pattern.is_some());
+    /// let pattern = GelfandTsetlinPattern::from_tableau(&tableau).unwrap();
+    /// // `from_tableau` is the exact inverse of `to_tableau`.
+    /// assert_eq!(pattern.to_tableau().unwrap().rows(), tableau.rows());
     /// ```
     pub fn from_tableau(tableau: &Tableau) -> Option<Self> {
         if tableau.size() == 0 {
             return Some(GelfandTsetlinPattern { rows: vec![] });
         }
 
-        // Determine the maximum entry to know how many rows we need
-        let max_entry = tableau.content().into_iter().max()?;
+        // `n` is the largest entry, hence the number of rows in the GT pattern.
+        let n = tableau.content().into_iter().max()?;
 
-        // Build the GT pattern bottom-up
-        // The shape is determined by the tableau shape
-        let shape = tableau.shape();
-        let shape_parts = shape.parts();
-
-        if shape_parts.is_empty() {
-            return Some(GelfandTsetlinPattern { rows: vec![] });
-        }
-
-        let n = max_entry;
-        let mut gt_rows: Vec<Vec<i64>> = Vec::new();
-
-        // Initialize the bottom row based on the tableau
-        // We'll build upward from level 1 to level n
-
-        // Start with the cumulative count for each value
-        let mut cumulative = vec![0i64; n + 1];
-        for row in tableau.rows() {
-            for &entry in row {
-                if entry <= n {
-                    cumulative[entry] += 1;
+        // For the k-th row from the bottom (k = 1..=n) the pattern records
+        // lambda^(k), the shape of the sub-tableau of cells with entry <= k:
+        //     lambda^(k)_i = (# entries <= k in row i of the tableau).
+        // This is exactly the shape whose row-content differences `to_tableau`
+        // reads back, so the two maps are inverse. `Self::new` then validates the
+        // interlacing, returning `None` for any tableau that is not semistandard.
+        let mut gt_rows: Vec<Vec<i64>> = vec![Vec::new(); n];
+        for k in 1..=n {
+            let mut lambda_k = vec![0i64; k];
+            for (i, count) in lambda_k.iter_mut().enumerate() {
+                if let Some(row) = tableau.rows().get(i) {
+                    *count = row.iter().filter(|&&entry| entry <= k).count() as i64;
                 }
             }
+            // lambda^(k) is stored as `rows[n - k]` (length k).
+            gt_rows[n - k] = lambda_k;
         }
 
-        // Make cumulative sums
-        for i in 1..=n {
-            cumulative[i] += cumulative[i - 1];
-        }
-
-        // The top row of GT pattern is the cumulative sums
-        if n > 0 {
-            let top_row: Vec<i64> = cumulative[1..=n].to_vec();
-            gt_rows.push(top_row);
-        }
-
-        // Build subsequent rows by analyzing the tableau structure
-        // Each row i of the GT pattern corresponds to restrictions on entries 1..i
-        for level in 1..n {
-            let current_n = n - level;
-            let mut new_row = Vec::with_capacity(current_n);
-
-            // For each position in this row, compute based on the constraint
-            // that comes from the tableau structure
-            for j in 0..current_n {
-                // This is a simplified version - we need to track cumulative counts
-                // in the tableau up to certain values
-                let val = if j < shape_parts.len() {
-                    // Count entries ≤ (n - level) in first j+1 rows
-                    let mut count = 0i64;
-                    for (r_idx, row) in tableau.rows().iter().enumerate() {
-                        if r_idx <= j {
-                            for &entry in row {
-                                if entry as usize <= n - level {
-                                    count += 1;
-                                }
-                            }
-                        }
-                    }
-                    count
-                } else {
-                    0
-                };
-
-                new_row.push(val);
-            }
-
-            gt_rows.push(new_row);
-        }
-
-        // Validate and return
+        // Validate interlacing (and reject non-semistandard input) and return.
         Self::new(gt_rows)
     }
 
@@ -460,25 +375,16 @@ fn generate_next_row_recursive(
         return;
     }
 
-    // Determine the valid range for new_row[pos]
-    // Interlacing conditions: prev_row[pos] >= new_row[pos] AND prev_row[pos+1] >= new_row[pos]
-    // So: new_row[pos] <= min(prev_row[pos], prev_row[pos+1])
-    let max_from_interlacing = prev_row[pos].min(prev_row[pos + 1]);
-
-    // Also check constraint from the left: new_row[pos-1] >= new_row[pos]
-    let left_constraint = if pos > 0 {
-        new_row[pos - 1]
-    } else {
-        max_from_interlacing
-    };
-
-    let actual_max = max_from_interlacing.min(left_constraint);
-
-    // Minimum value is 0 (or could be negative for general GT patterns)
-    let min_val = 0;
+    // Determine the valid range for new_row[pos].
+    // Interlacing condition: prev_row[pos] >= new_row[pos] >= prev_row[pos + 1].
+    // Because prev_row is weakly decreasing, this also forces new_row itself to be
+    // weakly decreasing (new_row[pos-1] >= prev_row[pos] >= new_row[pos]), so no
+    // extra left constraint is needed.
+    let max_val = prev_row[pos];
+    let min_val = prev_row[pos + 1];
 
     // Try all valid values
-    for val in min_val..=actual_max {
+    for val in min_val..=max_val {
         new_row[pos] = val;
         generate_next_row_recursive(
             prev_row,
@@ -557,10 +463,11 @@ mod tests {
 
     #[test]
     fn test_invalid_interlacing() {
-        // Invalid - violates interlacing: 2 >= 3 is false
+        // Invalid - violates interlacing: for i=1, j=1 we need
+        // lower[1] >= upper[2], i.e. 0 >= 1, which fails.
         let pattern = GelfandTsetlinPattern::new(vec![
             vec![4, 2, 1],
-            vec![3, 1], // 2 >= 3 fails
+            vec![3, 0], // 0 >= upper[2]=1 fails
             vec![1],
         ]);
         assert!(pattern.is_none());
@@ -610,10 +517,12 @@ mod tests {
         // specific values and the interlacing conditions
 
         // Simple case: [1, 0]
-        // Next row must satisfy: min(1, 0) >= x, so x <= 0, and x >= 0, thus x = 0
+        // The next row's single entry x must satisfy 1 >= x >= 0, so x in {0, 1}:
+        // two patterns (matching the two SSYT of shape (1) filled with 1 or 2).
         let patterns1 = GelfandTsetlinPattern::all_with_top_row(vec![1, 0]);
-        assert_eq!(patterns1.len(), 1); // Only pattern: [1,0]/[0]
+        assert_eq!(patterns1.len(), 2);
         assert_eq!(patterns1[0].rows(), &[vec![1, 0], vec![0]]);
+        assert_eq!(patterns1[1].rows(), &[vec![1, 0], vec![1]]);
 
         // [2, 1, 0] - more complex, multiple valid patterns
         let patterns2 = GelfandTsetlinPattern::all_with_top_row(vec![2, 1, 0]);
@@ -669,21 +578,44 @@ mod tests {
 
         assert!(tableau.is_semistandard());
 
-        // Convert to GT pattern
-        let pattern = GelfandTsetlinPattern::from_tableau(&tableau);
+        // `from_tableau` and `to_tableau` are exact inverses.
+        let pattern = GelfandTsetlinPattern::from_tableau(&tableau).unwrap();
+        assert!(pattern.is_valid());
+        let tableau2 = pattern.to_tableau().unwrap();
+        assert_eq!(tableau2.rows(), tableau.rows());
+    }
 
-        // Note: The bijection implementation is simplified and may not work correctly yet
-        // This is a placeholder test that verifies the method doesn't panic
-        if let Some(p) = pattern {
-            // Verify the pattern is valid
-            assert!(p.is_valid());
-
-            // Try to convert back to tableau
-            let _tableau2 = p.to_tableau();
-
-            // Full round-trip bijection requires more sophisticated implementation
-            // TODO: Implement complete GT pattern <-> SSYT bijection
+    #[test]
+    fn test_gt_ssyt_round_trip() {
+        // Valid GT patterns (including patterns the old backwards interlacing
+        // check wrongly rejected) whose SSYT uses every value 1..=n, so
+        // `from_tableau . to_tableau` is the identity on them.
+        let cases = vec![
+            vec![vec![3, 2, 1], vec![2, 1], vec![1]],
+            vec![vec![4, 2, 1, 0], vec![3, 2, 0], vec![2, 1], vec![1]],
+        ];
+        for rows in cases {
+            let p = GelfandTsetlinPattern::new(rows.clone())
+                .unwrap_or_else(|| panic!("should be a valid GT pattern: {:?}", rows));
+            let t = p.to_tableau().expect("valid pattern converts to a tableau");
+            let back = GelfandTsetlinPattern::from_tableau(&t)
+                .expect("tableau converts back to a GT pattern");
+            assert_eq!(back, p, "round trip failed for {:?}", rows);
         }
+    }
+
+    #[test]
+    fn test_previously_rejected_patterns_now_valid() {
+        // Regression: the interlacing check in `new()` was backwards and rejected
+        // these valid Gelfand-Tsetlin patterns.
+        assert!(GelfandTsetlinPattern::new(vec![vec![2, 0], vec![1]]).is_some());
+        assert!(GelfandTsetlinPattern::new(vec![
+            vec![4, 2, 1, 0],
+            vec![3, 2, 0],
+            vec![2, 1],
+            vec![1],
+        ])
+        .is_some());
     }
 
     #[test]
@@ -716,12 +648,13 @@ mod tests {
         ]);
         assert!(bad1.is_none());
 
-        // Test interlacing violation
+        // Test interlacing violation: for i=1, j=0 we need lower[0] >= upper[1],
+        // i.e. 2 >= 3, which fails.
         let bad2 = GelfandTsetlinPattern::new(vec![
             vec![5, 3, 2, 0],
-            vec![4, 2, 1], // Violates: 3 >= 4 is false
-            vec![3, 1],
-            vec![2],
+            vec![2, 2, 1], // lower[0]=2 < upper[1]=3
+            vec![2, 1],
+            vec![1],
         ]);
         assert!(bad2.is_none());
     }

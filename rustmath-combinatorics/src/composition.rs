@@ -716,7 +716,7 @@ mod tests {
         // Compositions of 0 should only be empty composition
         let scs = signed_compositions(0);
         assert_eq!(scs.len(), 1);
-        assert_eq!(scs[0].parts(), &[]);
+        assert!(scs[0].parts().is_empty());
         assert_eq!(scs[0].sum(), 0);
     }
 
@@ -725,7 +725,7 @@ mod tests {
         // k=0 with n=0 should give empty composition
         let scs = signed_compositions_k(0, 0);
         assert_eq!(scs.len(), 1);
-        assert_eq!(scs[0].parts(), &[]);
+        assert!(scs[0].parts().is_empty());
 
         // k=0 with n!=0 should give no compositions
         let scs = signed_compositions_k(5, 0);

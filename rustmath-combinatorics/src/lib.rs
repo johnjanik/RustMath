@@ -93,6 +93,14 @@ pub mod wreath_product;
 pub mod ncsym;
 pub mod key_polynomial;
 
+// MAGMA port (Wave 1): Chapters 92, 144, 145, 147, 148.
+pub mod ch144_enumerative;
+pub mod plactic_monoid;
+pub mod rsk;
+pub mod young_representations;
+pub mod incidence_structure;
+pub mod hadamard;
+
 pub use affine_permutations::{AffinePermutation, CoxeterType};
 pub use baxter_permutations::{baxter_permutations, count_baxter_permutations, is_baxter};
 pub use bijectionist::{
@@ -263,7 +271,8 @@ pub use dendriform_algebra::{
 pub use tamari_lattice::{all_binary_trees, BinaryTree, TamariLattice};
 pub use symmetric_group_representations::{
     all_irreducible_representations, conjugacy_class_size, decompose_character,
-    murnaghan_nakayama, permutation_cycle_type, CharacterTable, IrreducibleRepresentation,
+    murnaghan_nakayama, permutation_cycle_type, IrreducibleRepresentation,
+    SymmetricGroupCharacterTable,
 };
 pub use alternating_sign_matrix::{
     all_asms, asm_count, asm_count_by_inversions, asm_q_enumeration, razumov_stroganov_polynomial,
@@ -338,6 +347,25 @@ pub use parking_function::{
 pub use cluster_complex::{
     associahedron, cluster_complex_type_a, AlmostPositiveRoot, Cluster, ClusterCartanType,
     ClusterComplex, GeneralizedAssociahedron,
+};
+
+// MAGMA port (Wave 1) re-exports.
+pub use ch144_enumerative::{
+    bernoulli_polynomial, eval_poly, fibonacci_signed, generalized_fibonacci_number,
+    lucas_signed, number_of_permutations,
+};
+pub use plactic_monoid::{
+    elementary_knuth_moves, is_knuth_equivalent, knuth_class, PlacticElement, PlacticIntegerMonoid,
+};
+pub use rsk::{inverse_rsk, matrix_to_biword, rsk, rsk_biword};
+pub use young_representations::{
+    hook_length, hook_length_dimension, seminormal_representation, seminormal_transposition,
+    symmetric_character_value,
+};
+pub use incidence_structure::{DesignParameters, IncidenceStructure};
+pub use hadamard::{
+    hadamard_3_design, hadamard_invariant, is_hadamard, is_hadamard_equivalent, paley_type_i,
+    paley_type_ii,
 };
 
 // Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module

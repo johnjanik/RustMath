@@ -32,7 +32,7 @@
 //! use rustmath_combinatorics::Partition;
 //!
 //! // Create a primary type (2, [2, 1])
-//! let partition = Partition::from_vec(vec![2, 1]).unwrap();
+//! let partition = Partition::new(vec![2, 1]);
 //! let primary = PrimarySimilarityClassType::new(2, partition);
 //!
 //! // Get the size (d * |λ|)
@@ -78,7 +78,7 @@ impl PrimarySimilarityClassType {
     /// use rustmath_combinatorics::similarity_class_type::PrimarySimilarityClassType;
     /// use rustmath_combinatorics::Partition;
     ///
-    /// let partition = Partition::from_vec(vec![2, 1]).unwrap();
+    /// let partition = Partition::new(vec![2, 1]);
     /// let primary = PrimarySimilarityClassType::new(2, partition);
     /// assert_eq!(primary.degree(), 2);
     /// ```
@@ -240,8 +240,8 @@ impl SimilarityClassType {
     /// };
     /// use rustmath_combinatorics::Partition;
     ///
-    /// let p1 = Partition::from_vec(vec![2]).unwrap();
-    /// let p2 = Partition::from_vec(vec![1]).unwrap();
+    /// let p1 = Partition::new(vec![2]);
+    /// let p2 = Partition::new(vec![1]);
     /// let primary1 = PrimarySimilarityClassType::new(1, p1);
     /// let primary2 = PrimarySimilarityClassType::new(2, p2);
     ///

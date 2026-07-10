@@ -508,30 +508,31 @@ impl IntegerVectorSumIter {
         }
 
         let current = self.current.as_mut().unwrap();
+        let length = self.length;
 
-        // Find the rightmost non-zero position before the last position
-        let mut i = self.length;
-        while i > 1 && current[i - 2] == 0 {
-            i -= 1;
-        }
-
-        if i == 1 {
-            // We've enumerated all vectors
+        if length <= 1 {
+            // Only one weak composition of `sum` into 0 or 1 parts.
             return false;
         }
 
-        // Decrement position i-2 and redistribute
-        current[i - 2] -= 1;
-        let sum_right: usize = current[i - 1..].iter().sum();
-        let new_val = sum_right + 1;
-
-        // Put everything at position i-1
-        for j in (i - 1)..self.length {
-            current[j] = 0;
+        // Lexicographic successor of a weak composition with fixed total: find
+        // the rightmost position (other than the last) that has any mass to its
+        // right to "pull" from, increment it by one, and push the remaining
+        // suffix mass entirely into the last position (the lex-smallest layout).
+        for i in (0..length - 1).rev() {
+            let suffix_sum: usize = current[i + 1..].iter().sum();
+            if suffix_sum >= 1 {
+                current[i] += 1;
+                for slot in current.iter_mut().take(length).skip(i + 1) {
+                    *slot = 0;
+                }
+                current[length - 1] = suffix_sum - 1;
+                return true;
+            }
         }
-        current[i - 1] = new_val;
 
-        true
+        // All mass is already in the first position: enumeration complete.
+        false
     }
 }
 
@@ -819,22 +820,21 @@ mod tests {
         }
     }
 
-    // TODO: Fix iterator implementation
-    // #[test]
-    // fn test_integer_vector_sum_iter() {
-    //     let vecs: Vec<_> = integer_vector_sum_iter(2, 3).collect();
-    //     assert_eq!(vecs.len(), 4);
-    //
-    //     let vecs_i64: Vec<Vec<i64>> = vecs
-    //         .iter()
-    //         .map(|v| v.to_i64_vec().unwrap())
-    //         .collect();
-    //
-    //     assert!(vecs_i64.contains(&vec![0, 3]));
-    //     assert!(vecs_i64.contains(&vec![1, 2]));
-    //     assert!(vecs_i64.contains(&vec![2, 1]));
-    //     assert!(vecs_i64.contains(&vec![3, 0]));
-    // }
+    #[test]
+    fn test_integer_vector_sum_iter() {
+        let vecs: Vec<_> = integer_vector_sum_iter(2, 3).collect();
+        assert_eq!(vecs.len(), 4);
+
+        let vecs_i64: Vec<Vec<i64>> = vecs
+            .iter()
+            .map(|v| v.to_i64_vec().unwrap())
+            .collect();
+
+        assert!(vecs_i64.contains(&vec![0, 3]));
+        assert!(vecs_i64.contains(&vec![1, 2]));
+        assert!(vecs_i64.contains(&vec![2, 1]));
+        assert!(vecs_i64.contains(&vec![3, 0]));
+    }
 
     #[test]
     fn test_integer_vector_is_nonnegative() {

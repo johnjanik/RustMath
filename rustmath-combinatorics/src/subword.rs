@@ -780,7 +780,7 @@ mod tests {
     #[test]
     fn test_subword_positions_empty() {
         let positions = subword_positions(&[], &[1, 2, 3]);
-        assert_eq!(positions, vec![vec![]]);
+        assert_eq!(positions, vec![Vec::<usize>::new()]);
     }
 
     #[test]
