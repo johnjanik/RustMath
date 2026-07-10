@@ -27,7 +27,7 @@
 //! assert_eq!(frac.denominator(), &Integer::from(4));
 //!
 //! // Check if it's a fraction field element
-//! assert!(is_FractionFieldElement(&frac));
+//! assert!(is_fraction_field_element(&frac));
 //! ```
 
 use rustmath_core::{Ring, IntegralDomain, Field};
@@ -283,7 +283,7 @@ pub type FractionFieldElement1polyField<P> = FractionFieldElement<P>;
 
 /// Type checking: determine if an object is a FractionFieldElement
 ///
-/// This function corresponds to SageMath's `is_FractionFieldElement`.
+/// This function corresponds to SageMath's `is_fraction_field_element`.
 ///
 /// # Arguments
 ///
@@ -301,7 +301,7 @@ pub type FractionFieldElement1polyField<P> = FractionFieldElement<P>;
 /// use rustmath_integers::Integer;
 ///
 /// let frac = FractionFieldElement::new(Integer::from(3), Integer::from(4));
-/// assert!(is_FractionFieldElement(&frac));
+/// assert!(is_fraction_field_element(&frac));
 /// ```
 pub fn is_fraction_field_element<R: IntegralDomain>(x: &FractionFieldElement<R>) -> bool {
     // In Rust, type checking is done at compile time
@@ -562,7 +562,7 @@ mod tests {
     #[test]
     fn test_is_fraction_field_element() {
         let frac = FractionFieldElement::new(Integer::from(1), Integer::from(2));
-        assert!(is_FractionFieldElement(&frac));
+        assert!(is_fraction_field_element(&frac));
     }
 
     #[test]

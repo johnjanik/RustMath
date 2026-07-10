@@ -27,7 +27,7 @@
 //! use rustmath_rationals::Rational;
 //!
 //! // Create a Puiseux series: x^(1/2) + 2*x + 3*x^(3/2)
-//! let coeffs = vec![Rational::new(1,1), Rational::new(2,1), Rational::new(3,1)];
+//! let coeffs = vec![Rational::new(1,1).unwrap(), Rational::new(2,1).unwrap(), Rational::new(3,1).unwrap()];
 //! let series = PuiseuxSeries::new(coeffs, 1, 2, 10);
 //! ```
 
@@ -68,7 +68,7 @@ impl<F: Field> PuiseuxSeries<F> {
     ///
     /// // x^(1/2) + 2*x^(3/2)
     /// let series = PuiseuxSeries::new(
-    ///     vec![Rational::new(1,1), Rational::new(0,1), Rational::new(2,1)],
+    ///     vec![Rational::new(1,1).unwrap(), Rational::new(0,1).unwrap(), Rational::new(2,1).unwrap()],
     ///     1, 2, 10
     /// );
     /// ```
@@ -377,7 +377,7 @@ mod tests {
     #[test]
     fn test_new_puiseux_series() {
         let series = PuiseuxSeries::new(
-            vec![Rational::new(1, 1), Rational::new(2, 1)],
+            vec![Rational::new(1, 1).unwrap(), Rational::new(2, 1).unwrap()],
             1,
             2,
             10,
@@ -391,66 +391,66 @@ mod tests {
     #[test]
     #[should_panic(expected = "Ramification index must be positive")]
     fn test_zero_ramification() {
-        let _ = PuiseuxSeries::new(vec![Rational::new(1, 1)], 0, 0, 10);
+        let _ = PuiseuxSeries::new(vec![Rational::new(1, 1).unwrap()], 0, 0, 10);
     }
 
     #[test]
     fn test_leading_coefficient() {
         let series = PuiseuxSeries::new(
-            vec![Rational::new(3, 1), Rational::new(2, 1)],
+            vec![Rational::new(3, 1).unwrap(), Rational::new(2, 1).unwrap()],
             1,
             2,
             10,
         );
 
-        assert_eq!(series.leading_coefficient(), &Rational::new(3, 1));
+        assert_eq!(series.leading_coefficient(), Rational::new(3, 1).unwrap());
     }
 
     #[test]
     fn test_is_zero() {
-        let zero = PuiseuxSeries::new(vec![Rational::new(0, 1)], 0, 1, 10);
+        let zero = PuiseuxSeries::new(vec![Rational::new(0, 1).unwrap()], 0, 1, 10);
         assert!(zero.is_zero());
 
-        let non_zero = PuiseuxSeries::new(vec![Rational::new(1, 1)], 0, 1, 10);
+        let non_zero = PuiseuxSeries::new(vec![Rational::new(1, 1).unwrap()], 0, 1, 10);
         assert!(!non_zero.is_zero());
     }
 
     #[test]
     fn test_addition() {
-        let s1 = PuiseuxSeries::new(vec![Rational::new(1, 1)], 0, 1, 10);
-        let s2 = PuiseuxSeries::new(vec![Rational::new(2, 1)], 0, 1, 10);
+        let s1 = PuiseuxSeries::new(vec![Rational::new(1, 1).unwrap()], 0, 1, 10);
+        let s2 = PuiseuxSeries::new(vec![Rational::new(2, 1).unwrap()], 0, 1, 10);
 
         let sum = s1 + s2;
-        assert_eq!(sum.leading_coefficient(), &Rational::new(3, 1));
+        assert_eq!(sum.leading_coefficient(), Rational::new(3, 1).unwrap());
     }
 
     #[test]
     fn test_multiplication() {
         // x^(1/2) * x^(1/2) = x
-        let s1 = PuiseuxSeries::new(vec![Rational::new(1, 1)], 1, 2, 10);
-        let s2 = PuiseuxSeries::new(vec![Rational::new(1, 1)], 1, 2, 10);
+        let s1 = PuiseuxSeries::new(vec![Rational::new(1, 1).unwrap()], 1, 2, 10);
+        let s2 = PuiseuxSeries::new(vec![Rational::new(1, 1).unwrap()], 1, 2, 10);
 
         let product = s1 * s2;
         // Result should have valuation 1+1=2, ramification 2, which simplifies to valuation 1, ram 1
-        assert_eq!(product.leading_coefficient(), &Rational::new(1, 1));
+        assert_eq!(product.leading_coefficient(), Rational::new(1, 1).unwrap());
     }
 
     #[test]
     fn test_negation() {
-        let series = PuiseuxSeries::new(vec![Rational::new(5, 1)], 0, 1, 10);
+        let series = PuiseuxSeries::new(vec![Rational::new(5, 1).unwrap()], 0, 1, 10);
         let neg = -series;
 
-        assert_eq!(neg.leading_coefficient(), &Rational::new(-5, 1));
+        assert_eq!(neg.leading_coefficient(), Rational::new(-5, 1).unwrap());
     }
 
     #[test]
     fn test_truncate() {
         let mut series = PuiseuxSeries::new(
             vec![
-                Rational::new(1, 1),
-                Rational::new(2, 1),
-                Rational::new(3, 1),
-                Rational::new(4, 1),
+                Rational::new(1, 1).unwrap(),
+                Rational::new(2, 1).unwrap(),
+                Rational::new(3, 1).unwrap(),
+                Rational::new(4, 1).unwrap(),
             ],
             0,
             1,
@@ -472,7 +472,7 @@ mod tests {
 
     #[test]
     fn test_expand_ramification() {
-        let series = PuiseuxSeries::new(vec![Rational::new(1, 1), Rational::new(2, 1)], 1, 2, 10);
+        let series = PuiseuxSeries::new(vec![Rational::new(1, 1).unwrap(), Rational::new(2, 1).unwrap()], 1, 2, 10);
 
         let expanded = series.expand_ramification(4);
         assert_eq!(expanded.ramification(), 4);
@@ -481,7 +481,7 @@ mod tests {
 
     #[test]
     fn test_leading_exponent() {
-        let series = PuiseuxSeries::new(vec![Rational::new(1, 1)], 3, 2, 10);
+        let series = PuiseuxSeries::new(vec![Rational::new(1, 1).unwrap()], 3, 2, 10);
         assert_eq!(series.leading_exponent(), (3, 2));
     }
 }

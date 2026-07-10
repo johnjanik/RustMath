@@ -290,6 +290,7 @@ pub fn total_degree(exponents: &[usize]) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
 
     #[test]
     fn test_monomials_single_variable() {
@@ -407,7 +408,7 @@ mod tests {
     fn test_monomials_no_variables() {
         let mons = monomials(0, 5);
         assert_eq!(mons.len(), 1);
-        assert_eq!(mons[0], vec![]);
+        assert_eq!(mons[0], Vec::<usize>::new());
     }
 
     #[test]

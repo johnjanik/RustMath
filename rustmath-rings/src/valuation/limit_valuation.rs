@@ -25,11 +25,10 @@ impl<R: Ring> Default for LimitValuation<R> {
 
 impl<R: Ring> DiscretePseudoValuation<R> for LimitValuation<R> {
     fn value(&self, element: &R) -> ValuationValue {
-        if element.is_zero() {
-            ValuationValue::Infinity
-        } else {
-            ValuationValue::Finite(0)
-        }
+        let _ = element;
+        unimplemented!(
+            "rustmath_rings::valuation::limit_valuation::LimitValuation::value: MacLane limit valuation not yet implemented (facade)"
+        )
     }
 }
 

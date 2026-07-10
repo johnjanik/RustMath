@@ -222,14 +222,16 @@ impl<R> FiniteAugmentedValuation<R> {
 
     /// Computes the ramification index E
     pub fn ramification_index(&self) -> usize {
-        // Simplified: would compute actual ramification
-        1
+        unimplemented!(
+            "rustmath_rings::augmented_valuation::FiniteAugmentedValuation::ramification_index: ramification index E of an augmented valuation not yet implemented (facade)"
+        )
     }
 
     /// Computes the residue field degree F
     pub fn residue_degree(&self) -> usize {
-        // Simplified: would compute actual degree
-        1
+        unimplemented!(
+            "rustmath_rings::augmented_valuation::FiniteAugmentedValuation::residue_degree: residue field degree F of an augmented valuation not yet implemented (facade)"
+        )
     }
 }
 
@@ -387,6 +389,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented; needs real algorithm (Phase 4)"]
     fn test_finite_augmented_valuation() {
         let val: FiniteAugmentedValuation<i32> = FiniteAugmentedValuation::new(
             "p-adic".to_string(),

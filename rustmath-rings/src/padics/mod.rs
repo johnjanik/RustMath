@@ -1,26 +1,28 @@
 //! p-adic numbers and extensions
 //!
-//! This module provides p-adic field extensions and related structures,
-//! building on the basic p-adic arithmetic from rustmath-padics.
+//! This is the canonical home of RustMath's p-adic machinery. The
+//! `rustmath-padics` crate is now a thin re-export shim over this module.
 //!
 //! # Module Contents
 //!
+//! - `padic_integer`: p-adic integers zp (basic fixed-modulus model)
+//! - `padic_rational`: p-adic rationals qp
+//! - `capped_relative`: capped-relative-precision elements
 //! - `extension`: p-adic field extensions (unramified, Eisenstein, general)
-//!
-//! # Re-exports
-//!
-//! For convenience, we re-export the basic p-adic types from rustmath-padics:
-//! - `PadicInteger`: p-adic integers zp
-//! - `PadicRational`: p-adic rationals qp
+//! - `factory`: constructors `zp`, `qp`, `zq`, `qq`
+//! - `pow_computer` / `pow_computer_ext`: cached prime-power arithmetic
+
+pub mod padic_integer;
+pub mod padic_rational;
+
+pub use padic_integer::{hensel_lift_root, PadicInteger};
+pub use padic_rational::PadicRational;
 
 pub mod extension;
 
 pub use extension::{
     ExtensionType, GaloisGroup, PadicEmbedding, PadicExtension, PadicExtensionElement,
 };
-
-// Re-export basic p-adic types
-pub use rustmath_padics::{PadicInteger, PadicRational};
 
 // p-adic Power Computers
 //

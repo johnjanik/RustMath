@@ -27,7 +27,7 @@
 //! ## Examples
 //!
 //! ```rust
-//! use rustmath_rings::growth_group::{MonomialGrowthGroup, Variable};
+//! use rustmath_rings::growth_group::{GrowthGroup, MonomialGrowthGroup, Variable};
 //! use num_rational::BigRational;
 //! use num_bigint::BigInt;
 //!
@@ -887,6 +887,7 @@ impl GrowthGroupFactor {
 mod tests {
     use super::*;
     use num_traits::ToPrimitive;
+    use num_bigint::BigInt;
 
     #[test]
     fn test_variable_creation() {

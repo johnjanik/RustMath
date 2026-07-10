@@ -134,6 +134,11 @@ impl<F: Field> FunctionFieldExtension<F> {
         self.degree
     }
 
+    /// Check that the extension is well defined (has positive degree [L:K])
+    pub fn is_well_defined(&self) -> bool {
+        self.degree > 0
+    }
+
     /// Get the base field
     ///
     /// # Returns

@@ -524,6 +524,7 @@ impl AsymptoticRing {
 mod tests {
     use super::*;
     use num_rational::Ratio;
+    use num_bigint::BigInt;
 
     #[test]
     fn test_growth_term_creation() {
@@ -1247,6 +1248,7 @@ pub fn diff_seq(
 #[cfg(test)]
 mod mgf_tests {
     use super::*;
+    use num_bigint::BigInt;
 
     #[test]
     fn test_symbolic_polynomial_creation() {

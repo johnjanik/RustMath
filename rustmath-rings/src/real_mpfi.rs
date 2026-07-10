@@ -1133,7 +1133,7 @@ mod tests {
 
     #[test]
     fn test_rif_alias() {
-        let rif: RIF = RIF_default();
+        let rif: RIF = RealIntervalField::new(53);
         assert_eq!(rif.precision(), 53);
     }
 

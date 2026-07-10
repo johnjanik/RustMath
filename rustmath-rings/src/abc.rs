@@ -210,6 +210,41 @@ pub trait IntegerModRing: CommutativeRing + Clone + Debug {
     fn is_field(&self) -> bool;
 }
 
+// ---------------------------------------------------------------------------
+// Canonical IntegerModRing impl: Z/nZ elements from rustmath-finitefields.
+//
+// Dependency direction: `rustmath-rings` depends on `rustmath-finitefields`
+// (see Cargo.toml), never the reverse, so this impl MUST live here —
+// finitefields cannot name the trait without creating a dependency cycle.
+//
+// Like every trait in this module, `IntegerModRing` is element-typed (its
+// supertrait `CommutativeRing` is the element-level ring trait), so it is
+// implemented by the element type `IntegerMod` — each element carries its
+// parent's modulus — rather than by the parent type
+// `rustmath_finitefields::Zmod` (which is not an element and has the same
+// data available as inherent methods: `modulus()`, `is_field()`).
+// ---------------------------------------------------------------------------
+impl IntegerModRing for rustmath_finitefields::IntegerMod {
+    /// The modulus n as `usize`.
+    ///
+    /// The trait signature predates arbitrary-precision moduli; this panics
+    /// if the modulus does not fit in `usize` rather than fabricating a
+    /// value. The modulus-0 sentinel (`Ring::zero()`/`Ring::one()`, see the
+    /// `IntegerMod` docs) honestly reports 0.
+    fn modulus(&self) -> usize {
+        rustmath_core::NumericConversion::to_usize(rustmath_finitefields::IntegerMod::modulus(
+            self,
+        ))
+        .expect("IntegerModRing::modulus: modulus does not fit in usize")
+    }
+
+    /// True iff the modulus is prime (Z/pZ is a field exactly for prime p;
+    /// the modulus-0 sentinel models Z, which is not a field).
+    fn is_field(&self) -> bool {
+        rustmath_integers::prime::is_prime(rustmath_finitefields::IntegerMod::modulus(self))
+    }
+}
+
 /// Trait for number fields.
 ///
 /// Number fields are finite extensions of the rationals Q.
@@ -328,13 +363,21 @@ mod tests {
     #[derive(Clone, Debug, PartialEq)]
     struct TestRing;
 
+    impl std::fmt::Display for TestRing {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "TestRing")
+        }
+    }
+    impl std::ops::Add for TestRing { type Output = Self; fn add(self, _other: Self) -> Self { TestRing } }
+    impl std::ops::Sub for TestRing { type Output = Self; fn sub(self, _other: Self) -> Self { TestRing } }
+    impl std::ops::Mul for TestRing { type Output = Self; fn mul(self, _other: Self) -> Self { TestRing } }
+    impl std::ops::Neg for TestRing { type Output = Self; fn neg(self) -> Self { TestRing } }
+
     impl Ring for TestRing {
-        fn add(&self, _other: &Self) -> Self { TestRing }
-        fn mul(&self, _other: &Self) -> Self { TestRing }
-        fn neg(&self) -> Self { TestRing }
         fn zero() -> Self { TestRing }
         fn one() -> Self { TestRing }
         fn is_zero(&self) -> bool { false }
+        fn is_one(&self) -> bool { true }
     }
 
     impl CommutativeRing for TestRing {}
@@ -348,8 +391,28 @@ mod tests {
     }
 
     #[test]
+    fn test_integer_mod_ring_canonical_impl() {
+        use rustmath_finitefields::IntegerMod;
+        use rustmath_integers::Integer;
+
+        let x = IntegerMod::new(Integer::from(3), Integer::from(7)).unwrap();
+        assert_eq!(IntegerModRing::modulus(&x), 7);
+        assert!(IntegerModRing::is_field(&x)); // 7 is prime
+
+        let y = IntegerMod::new(Integer::from(3), Integer::from(10)).unwrap();
+        assert_eq!(IntegerModRing::modulus(&y), 10);
+        assert!(!IntegerModRing::is_field(&y)); // 10 is composite
+
+        // The modulus-0 sentinel models Z: modulus 0, not a field.
+        let zero = <IntegerMod as Ring>::zero();
+        assert_eq!(IntegerModRing::modulus(&zero), 0);
+        assert!(!IntegerModRing::is_field(&zero));
+    }
+
+    #[test]
     fn test_finite_field_trait_order_calculation() {
         // Test that order calculation works correctly for finite fields
+        #[derive(PartialEq)]
         struct TestFiniteField {
             p: usize,
             n: usize,
@@ -373,20 +436,29 @@ mod tests {
             }
         }
 
+        impl std::fmt::Display for TestFiniteField {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "GF({}^{})", self.p, self.n)
+            }
+        }
+
+        impl std::ops::Add for TestFiniteField { type Output = Self; fn add(self, _other: Self) -> Self { self } }
+        impl std::ops::Sub for TestFiniteField { type Output = Self; fn sub(self, _other: Self) -> Self { self } }
+        impl std::ops::Mul for TestFiniteField { type Output = Self; fn mul(self, _other: Self) -> Self { self } }
+        impl std::ops::Neg for TestFiniteField { type Output = Self; fn neg(self) -> Self { self } }
+        impl std::ops::Div for TestFiniteField { type Output = Self; fn div(self, _other: Self) -> Self { self } }
+
         impl Ring for TestFiniteField {
-            fn add(&self, _other: &Self) -> Self { self.clone() }
-            fn mul(&self, _other: &Self) -> Self { self.clone() }
-            fn neg(&self) -> Self { self.clone() }
             fn zero() -> Self { TestFiniteField { p: 2, n: 1 } }
             fn one() -> Self { TestFiniteField { p: 2, n: 1 } }
             fn is_zero(&self) -> bool { false }
+            fn is_one(&self) -> bool { true }
         }
 
         impl CommutativeRing for TestFiniteField {}
         impl IntegralDomain for TestFiniteField {}
         impl Field for TestFiniteField {
-            fn inv(&self) -> Self { self.clone() }
-            fn div(&self, _other: &Self) -> Self { self.clone() }
+            fn inverse(&self) -> rustmath_core::Result<Self> { Ok(self.clone()) }
         }
 
         impl FiniteFieldTrait for TestFiniteField {

@@ -16,10 +16,16 @@
 //! ## Examples
 //!
 //! ```rust
-//! use rustmath_rings::quotient_ring::{QuotientRing, QuotientRingElement};
+//! use rustmath_rings::quotient_ring::{Ideal, QuotientRingElement, quotient_ring};
 //!
-//! // Create ℤ/5ℤ (integers modulo 5)
-//! // let Z5 = QuotientRing::new(ZZ, ideal![5]);
+//! // Create ℤ/5ℤ (integers modulo 5) via the ideal (5) ⊆ ℤ
+//! let ideal: Ideal<i32> = Ideal::new(vec![5]);
+//! let z5 = quotient_ring(ideal.clone());
+//! assert_eq!(z5.defining_ideal().generators(), &[5]);
+//!
+//! // A coset [3] = 3 + (5) in ℤ/5ℤ
+//! let elem = QuotientRingElement::new(3, ideal);
+//! assert_eq!(elem.lift(), &3);
 //! ```
 //!
 //! ## Mathematical Background

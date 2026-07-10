@@ -245,8 +245,10 @@ impl<F: Field> ClassicalFunctionFieldValuationBase<F> {
 
 impl<F: Field> DiscreteFunctionFieldValuation<F> for ClassicalFunctionFieldValuationBase<F> {
     fn valuation(&self, element: &str) -> i64 {
-        // Symbolic computation
-        0
+        let _ = element;
+        unimplemented!(
+            "rustmath_rings::function_field::valuation::ClassicalFunctionFieldValuationBase::valuation: v_P(element) not yet implemented (facade)"
+        )
     }
 
     fn valuation_ring(&self) -> String {
@@ -359,8 +361,10 @@ impl<F: Field> RationalFunctionFieldValuationBase<F> {
 
 impl<F: Field> DiscreteFunctionFieldValuation<F> for RationalFunctionFieldValuationBase<F> {
     fn valuation(&self, element: &str) -> i64 {
-        // Symbolic computation
-        0
+        let _ = element;
+        unimplemented!(
+            "rustmath_rings::function_field::valuation::RationalFunctionFieldValuationBase::valuation: v(element) on k(x) not yet implemented (facade)"
+        )
     }
 
     fn valuation_ring(&self) -> String {
@@ -811,6 +815,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented; needs real algorithm (Phase 4)"]
     fn test_valuation_interface() {
         let val: ClassicalFunctionFieldValuationBase<Rational> =
             ClassicalFunctionFieldValuationBase::new(

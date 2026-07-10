@@ -18,10 +18,10 @@
 //! │   ├── NoetherianRing (ascending chain condition)
 //! │   ├── DedekindDomain (fractional ideals invertible)
 //! │   ├── PrincipalIdealDomain (all ideals principal)
-//! │   ├── Field (all nonzero elements invertible)
-//! │   └── CommutativeAlgebra (algebra over base ring)
-//! └── Algebra (non-commutative algebra over base ring)
+//! │   └── Field (all nonzero elements invertible)
 //! ```
+//!
+//! Algebras over a base ring use the canonical `rustmath_core::Algebra` trait.
 //!
 //! ## Examples
 //!
@@ -128,30 +128,9 @@ pub trait PrincipalIdealDomain: DedekindDomain {
     }
 }
 
-/// Trait for algebras over a base ring
-///
-/// An algebra A over a ring R is a ring A together with a ring homomorphism
-/// R → A (the structure map) such that the image of R is in the center of A.
-pub trait Algebra<R: Ring>: Ring {
-    /// Returns the base ring
-    fn base_ring(&self) -> &R;
-
-    /// Returns the structure map (embedding of base ring)
-    fn structure_map(&self) -> Box<dyn Fn(&R) -> Self + 'static> where Self: 'static;
-
-    /// Checks if this is an algebra over the given base ring
-    fn is_algebra_over(&self, base: &R) -> bool;
-}
-
-/// Trait for commutative algebras
-///
-/// A commutative algebra is an algebra where the ring multiplication is commutative.
-pub trait CommutativeAlgebra<R: CommutativeRing>: Algebra<R> + CommutativeRing {
-    /// Checks if this algebra is commutative
-    fn is_commutative_algebra(&self) -> bool {
-        true
-    }
-}
+// NOTE: the `Algebra` / `CommutativeAlgebra` traits that used to live here were
+// unused duplicates; the canonical `Algebra` trait is `rustmath_core::Algebra`
+// (re-exported by `rustmath_algebras`).
 
 /// A generic ring wrapper for demonstration
 ///

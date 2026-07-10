@@ -25,10 +25,9 @@ impl<R: Ring> Default for DevelopingValuation<R> {
 
 impl<R: Ring> DiscretePseudoValuation<R> for DevelopingValuation<R> {
     fn value(&self, element: &R) -> ValuationValue {
-        if element.is_zero() {
-            ValuationValue::Infinity
-        } else {
-            ValuationValue::Finite(0)
-        }
+        let _ = element;
+        unimplemented!(
+            "rustmath_rings::valuation::developing_valuation::DevelopingValuation::value: MacLane developing valuation not yet implemented (facade)"
+        )
     }
 }

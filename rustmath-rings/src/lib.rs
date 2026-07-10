@@ -36,6 +36,7 @@ pub mod asymptotic_misc;
 pub mod big_oh;
 pub mod cfinite_sequence;
 pub mod constructor;
+pub mod dedekind;
 pub mod derivation;
 pub mod derivations_function_field;
 pub mod differential;
@@ -98,7 +99,7 @@ pub use rustmath_rationals::Rational;
 pub use rustmath_reals::Real;
 pub use rustmath_complex::Complex;
 // pub use rustmath_finitefields::{FiniteField, FiniteFieldElement, GaloisField};
-// pub use rustmath_padics::{PAdicNumber, PAdicRing};
+// p-adic types live in `crate::padics` (rustmath-padics is a shim over it)
 
 // Re-export core traits
 pub use rustmath_core::{Ring, CommutativeRing, Field, EuclideanDomain, IntegralDomain};

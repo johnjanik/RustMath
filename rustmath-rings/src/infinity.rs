@@ -12,16 +12,17 @@
 //! ## Examples
 //!
 //! ```
-//! use rustmath_rings::infinity::{Infinity, PLUS_INFINITY, MINUS_INFINITY};
+//! use rustmath_rings::infinity::{PLUS_INFINITY, MINUS_INFINITY, mul_infinity_scalar};
 //!
-//! // Arithmetic with infinities
-//! assert_eq!(PLUS_INFINITY + 5.0, PLUS_INFINITY);
-//! assert_eq!(PLUS_INFINITY * 2.0, PLUS_INFINITY);
+//! // Arithmetic with infinities (mixing with finite floats is not implemented;
+//! // scalar multiplication takes an explicit f64 scalar)
+//! assert_eq!(mul_infinity_scalar(PLUS_INFINITY, 5.0).unwrap(), PLUS_INFINITY);
+//! assert_eq!(mul_infinity_scalar(PLUS_INFINITY, -2.0).unwrap(), MINUS_INFINITY);
 //! assert_eq!(-PLUS_INFINITY, MINUS_INFINITY);
 //!
-//! // Comparisons
-//! assert!(PLUS_INFINITY > 1000.0);
-//! assert!(MINUS_INFINITY < -1000.0);
+//! // Comparisons (between infinities; there is no PartialOrd<f64> for Infinity)
+//! assert!(PLUS_INFINITY > MINUS_INFINITY);
+//! assert!(MINUS_INFINITY < PLUS_INFINITY);
 //! ```
 //!
 //! ## Signed vs Unsigned Infinity

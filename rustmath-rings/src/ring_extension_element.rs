@@ -114,7 +114,7 @@ mod tests {
 
     #[test]
     fn test_extension_element() {
-        let elem: RingExtensionElement<i32, f64> =
+        let elem: RingExtensionElement<i32, i64> =
             RingExtensionElement::new("test".to_string());
         assert_eq!(format!("{}", elem), "test");
     }
@@ -122,14 +122,14 @@ mod tests {
     #[test]
     fn test_basis_element_coordinates() {
         let coords = vec![1, 2, 3];
-        let elem: RingExtensionWithBasisElement<i32, f64> =
+        let elem: RingExtensionWithBasisElement<i32, i64> =
             RingExtensionWithBasisElement::from_coordinates(coords);
         assert_eq!(elem.coordinates(), &[1, 2, 3]);
     }
 
     #[test]
     fn test_fraction_field_element() {
-        let _elem: RingExtensionFractionFieldElement<i32, f64> =
+        let _elem: RingExtensionFractionFieldElement<i32, i64> =
             RingExtensionFractionFieldElement::new("frac".to_string());
     }
 }

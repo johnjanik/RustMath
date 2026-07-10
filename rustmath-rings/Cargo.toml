@@ -13,7 +13,6 @@ rustmath-rationals = { path = "../rustmath-rationals" }
 rustmath-reals = { path = "../rustmath-reals" }
 rustmath-complex = { path = "../rustmath-complex" }
 rustmath-finitefields = { path = "../rustmath-finitefields" }
-rustmath-padics = { path = "../rustmath-padics" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
 rustmath-numberfields = { path = "../rustmath-numberfields" }
 rustmath-matrix = { path = "../rustmath-matrix" }

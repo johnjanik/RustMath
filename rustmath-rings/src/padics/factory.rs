@@ -55,12 +55,12 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! // Create 5-adic integers with capped relative precision
-//! let zp = zp(Integer::from(5), 20, PrecisionModel::CappedRelative)?;
-//! let x = zp.from_int(7)?;
+//! let z5 = zp(Integer::from(5), 20, PrecisionModel::CappedRelative)?;
+//! let x = z5.from_int(7)?;
 //!
 //! // Create 7-adic field with capped absolute precision
-//! let qp = qp(Integer::from(7), 15, PrecisionModel::CappedAbsolute)?;
-//! let y = qp.from_rational_nums(3, 7)?;
+//! let q7 = qp(Integer::from(7), 15, PrecisionModel::CappedAbsolute)?;
+//! let y = q7.from_rational_nums(3, 7)?;
 //!
 //! // Fixed modulus for fastest performance
 //! let zp_fast = zp(Integer::from(3), 10, PrecisionModel::FixedModulus)?;
@@ -70,7 +70,7 @@
 
 use rustmath_core::{MathError, Result, Ring};
 use rustmath_integers::Integer;
-use rustmath_padics::{PadicInteger, PadicRational};
+use super::{PadicInteger, PadicRational};
 use rustmath_polynomials::UnivariatePolynomial;
 use rustmath_rationals::Rational;
 use std::fmt;

@@ -427,6 +427,8 @@ pub fn multivariate_monomial_product(variables: Vec<Variable>) -> MultivariatePr
 mod tests {
     use super::*;
     use crate::growth_group::{MonomialGrowthElement, MonomialGrowthGroup};
+    use num_rational::BigRational;
+    use num_bigint::BigInt;
 
     #[test]
     fn test_element_creation() {

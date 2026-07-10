@@ -235,9 +235,9 @@ mod tests {
         assert_eq!(v1.add(&v2), ValuationValue::Finite(8));
         assert_eq!(v1.add(&inf), ValuationValue::Infinity);
 
-        // Test min
-        assert_eq!(v1.min(&v2), ValuationValue::Finite(3));
-        assert_eq!(v1.min(&inf), ValuationValue::Finite(5));
+        // Test min (disambiguate the inherent method from Ord::min)
+        assert_eq!(ValuationValue::min(&v1, &v2), ValuationValue::Finite(3));
+        assert_eq!(ValuationValue::min(&v1, &inf), ValuationValue::Finite(5));
     }
 
     #[test]

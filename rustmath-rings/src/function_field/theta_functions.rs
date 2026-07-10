@@ -97,7 +97,7 @@ use std::f64::consts::PI;
 ///
 /// // Period matrix for elliptic curve (genus 1)
 /// let tau = Complex::new(0.5, 1.0);
-/// let period = PeriodMatrix::from_elliptic_curve(tau);
+/// let period = PeriodMatrix::from_elliptic_curve(tau.clone());
 /// assert_eq!(period.genus(), 1);
 /// ```
 #[derive(Debug, Clone)]
@@ -182,7 +182,7 @@ impl PeriodMatrix {
 /// ```
 /// use rustmath_rings::function_field::theta_functions::ThetaCharacteristic;
 ///
-/// let char = ThetaCharacteristic::new(vec![0.0, 0.5], vec![0.5, 0.0]);
+/// let char = ThetaCharacteristic::new(vec![0.0, 0.5], vec![0.5, 0.0]).unwrap();
 /// assert_eq!(char.genus(), 2);
 /// ```
 #[derive(Debug, Clone)]
@@ -262,7 +262,7 @@ impl ThetaCharacteristic {
 /// use rustmath_complex::Complex;
 ///
 /// let tau = Complex::new(0.0, 1.0);
-/// let period = PeriodMatrix::from_elliptic_curve(tau);
+/// let period = PeriodMatrix::from_elliptic_curve(tau.clone());
 /// let theta = ThetaFunction::new(period);
 ///
 /// let z = vec![Complex::new(0.0, 0.0)];
@@ -438,7 +438,7 @@ impl ThetaFunction {
 /// use rustmath_complex::Complex;
 ///
 /// let tau = Complex::new(0.0, 1.0);
-/// let period = PeriodMatrix::from_elliptic_curve(tau);
+/// let period = PeriodMatrix::from_elliptic_curve(tau.clone());
 /// let theta_div = ThetaDivisor::new(period);
 /// assert_eq!(theta_div.dimension(), 0);  // g - 1 = 0 for genus 1
 /// ```
@@ -501,7 +501,7 @@ mod tests {
     #[test]
     fn test_period_matrix_elliptic() {
         let tau = Complex::new(0.5, 1.0);
-        let period = PeriodMatrix::from_elliptic_curve(tau);
+        let period = PeriodMatrix::from_elliptic_curve(tau.clone());
 
         assert_eq!(period.genus(), 1);
         assert_eq!(period.get(0, 0), Some(&tau));
@@ -520,7 +520,7 @@ mod tests {
     #[test]
     fn test_theta_function_creation() {
         let tau = Complex::new(0.0, 2.0);
-        let period = PeriodMatrix::from_elliptic_curve(tau);
+        let period = PeriodMatrix::from_elliptic_curve(tau.clone());
         let theta = ThetaFunction::new(period);
 
         assert_eq!(theta.genus(), 1);
@@ -529,7 +529,7 @@ mod tests {
     #[test]
     fn test_theta_evaluation_genus_1() {
         let tau = Complex::new(0.0, 1.0);
-        let period = PeriodMatrix::from_elliptic_curve(tau);
+        let period = PeriodMatrix::from_elliptic_curve(tau.clone());
         let theta = ThetaFunction::new(period);
 
         let z = vec![Complex::zero()];
@@ -542,7 +542,7 @@ mod tests {
     #[test]
     fn test_theta_constant() {
         let tau = Complex::new(0.0, 1.5);
-        let period = PeriodMatrix::from_elliptic_curve(tau);
+        let period = PeriodMatrix::from_elliptic_curve(tau.clone());
         let theta = ThetaFunction::new(period);
 
         let constant = theta.theta_constant(3);
@@ -552,7 +552,7 @@ mod tests {
     #[test]
     fn test_theta_divisor() {
         let tau = Complex::new(0.0, 1.0);
-        let period = PeriodMatrix::from_elliptic_curve(tau);
+        let period = PeriodMatrix::from_elliptic_curve(tau.clone());
         let theta_div = ThetaDivisor::new(period);
 
         assert_eq!(theta_div.genus(), 1);
@@ -562,7 +562,7 @@ mod tests {
     #[test]
     fn test_theta_divisor_self_intersection() {
         let tau = Complex::new(0.0, 1.0);
-        let period = PeriodMatrix::from_elliptic_curve(tau);
+        let period = PeriodMatrix::from_elliptic_curve(tau.clone());
         let theta_div = ThetaDivisor::new(period);
 
         // For genus 1, self-intersection is 1! = 1
@@ -572,7 +572,7 @@ mod tests {
     #[test]
     fn test_theta_with_characteristic() {
         let tau = Complex::new(0.0, 1.0);
-        let period = PeriodMatrix::from_elliptic_curve(tau);
+        let period = PeriodMatrix::from_elliptic_curve(tau.clone());
         let char = ThetaCharacteristic::new(vec![0.5], vec![0.5]).unwrap();
         let theta = ThetaFunction::with_characteristic(period, char).unwrap();
 
@@ -580,13 +580,13 @@ mod tests {
         let value = theta.evaluate(&z, 3);
 
         // Value should be computed (may be zero for some characteristics)
-        assert!(value.is_finite());
+        assert!(value.real().is_finite() && value.imag().is_finite());
     }
 
     #[test]
     fn test_period_matrix_symmetry() {
         let tau = Complex::new(0.5, 1.0);
-        let period = PeriodMatrix::from_elliptic_curve(tau);
+        let period = PeriodMatrix::from_elliptic_curve(tau.clone());
 
         assert!(period.is_symmetric());
     }

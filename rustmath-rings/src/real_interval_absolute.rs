@@ -265,17 +265,9 @@ pub fn shift_floor(x: i128, shift: u32) -> i128 {
     if shift == 0 {
         return x;
     }
-    if x >= 0 {
-        x >> shift
-    } else {
-        // For negative numbers, we need to round towards negative infinity
-        let shifted = x >> shift;
-        if (x & ((1i128 << shift) - 1)) != 0 {
-            shifted - 1
-        } else {
-            shifted
-        }
-    }
+    // Arithmetic right shift on i128 already rounds towards negative infinity,
+    // so it equals floor(x / 2^shift) for both positive and negative x.
+    x >> shift
 }
 
 /// Computes ceil(x / 2^shift)
@@ -285,16 +277,13 @@ pub fn shift_ceil(x: i128, shift: u32) -> i128 {
     if shift == 0 {
         return x;
     }
-    if x >= 0 {
-        // For positive numbers, round towards positive infinity
-        let shifted = x >> shift;
-        if (x & ((1i128 << shift) - 1)) != 0 {
-            shifted + 1
-        } else {
-            shifted
-        }
+    // Arithmetic right shift gives floor(x / 2^shift); ceil is floor plus one
+    // whenever the division is not exact. This is correct for both signs.
+    let shifted = x >> shift;
+    if (x & ((1i128 << shift) - 1)) != 0 {
+        shifted + 1
     } else {
-        x >> shift
+        shifted
     }
 }
 
