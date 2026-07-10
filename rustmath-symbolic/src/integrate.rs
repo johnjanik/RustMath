@@ -23,9 +23,9 @@ impl Expr {
     /// Returns None if integration is not possible with current rules
     pub fn integrate(&self, var: &Symbol) -> Option<Self> {
         match self {
-            // ∫ c dx = c*x for constants
+            // ∫ c dx = c*x for constants (simplified so e.g. ∫1 dx = x, not 1*x)
             Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => {
-                Some(self.clone() * Expr::Symbol(var.clone()))
+                Some((self.clone() * Expr::Symbol(var.clone())).simplify())
             }
 
             // ∫ x dx = x²/2
@@ -106,7 +106,7 @@ impl Expr {
                             // ∫ x^n dx = x^(n+1)/(n+1)
                             let n = (**right).clone();
                             let x = Expr::Symbol(var.clone());
-                            let exponent = n.clone() + Expr::from(1);
+                            let exponent = (n.clone() + Expr::from(1)).simplify();
                             Some(x.pow(exponent.clone()) / exponent)
                         }
                     } else {
@@ -182,7 +182,7 @@ impl Expr {
         let fb = antiderivative.substitute(var, b);
         let fa = antiderivative.substitute(var, a);
 
-        Some(fb - fa)
+        Some((fb - fa).simplify())
     }
 
     /// Check if expression equals 1
@@ -301,7 +301,7 @@ impl Expr {
         // Evaluate the inner integral at the y bounds
         let inner_at_y_max = inner_integral.substitute(y_var, y_max);
         let inner_at_y_min = inner_integral.substitute(y_var, y_min);
-        let inner_result = inner_at_y_max - inner_at_y_min;
+        let inner_result = (inner_at_y_max - inner_at_y_min).simplify();
 
         // Now integrate with respect to x
         let outer_integral = inner_result.integrate(x_var)?;
@@ -310,7 +310,7 @@ impl Expr {
         let result_at_x_max = outer_integral.substitute(x_var, x_max);
         let result_at_x_min = outer_integral.substitute(x_var, x_min);
 
-        Some(result_at_x_max - result_at_x_min)
+        Some((result_at_x_max - result_at_x_min).simplify())
     }
 
     /// Triple integral: ∫∫∫ f(x,y,z) dz dy dx over a rectangular box
@@ -330,15 +330,18 @@ impl Expr {
     ) -> Option<Expr> {
         // Integrate with respect to z
         let integral_z = self.integrate(z_var)?;
-        let result_z = integral_z.substitute(z_var, z_max) - integral_z.substitute(z_var, z_min);
+        let result_z =
+            (integral_z.substitute(z_var, z_max) - integral_z.substitute(z_var, z_min)).simplify();
 
         // Integrate with respect to y
         let integral_y = result_z.integrate(y_var)?;
-        let result_y = integral_y.substitute(y_var, y_max) - integral_y.substitute(y_var, y_min);
+        let result_y =
+            (integral_y.substitute(y_var, y_max) - integral_y.substitute(y_var, y_min)).simplify();
 
         // Integrate with respect to x
         let integral_x = result_y.integrate(x_var)?;
-        let result_x = integral_x.substitute(x_var, x_max) - integral_x.substitute(x_var, x_min);
+        let result_x =
+            (integral_x.substitute(x_var, x_max) - integral_x.substitute(x_var, x_min)).simplify();
 
         Some(result_x)
     }
@@ -362,7 +365,7 @@ impl Expr {
         let dy_dv = y_of_uv.differentiate(v_var);
 
         // Jacobian determinant: (∂x/∂u)(∂y/∂v) - (∂x/∂v)(∂y/∂u)
-        dx_du * dy_dv - dx_dv * dy_du
+        (dx_du * dy_dv - dx_dv * dy_du).simplify()
     }
 }
 

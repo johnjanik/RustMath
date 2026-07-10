@@ -262,7 +262,7 @@ pub mod known_series {
             }
         }
 
-        result
+        result.simplify()
     }
 
     /// sin(x) = x - x³/3! + x⁵/5! - x⁷/7! + ...

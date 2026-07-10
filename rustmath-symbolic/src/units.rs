@@ -206,15 +206,16 @@ pub fn convert(value: &Expr, from_unit: &str, to_unit: &str) -> Result<Expr, Str
     }
 
     // Convert: value_in_from * from_factor / to_factor = value_in_to
-    // For simplicity in this placeholder, we return an error for non-trivial conversions
-    // A full implementation would handle the conversion factor properly
     if (from_factor - to_factor).abs() < 1e-10 {
-        Ok(value.clone())
+        // Same scale (e.g. "m" -> "meter"): the value is unchanged
+        return Ok(value.clone());
+    }
+
+    // Numeric values convert directly; symbolic values pick up the scale factor
+    if let Some(v) = value.eval_float() {
+        Ok(Expr::Real(v * from_factor / to_factor))
     } else {
-        Err(format!(
-            "Unit conversion factor calculation not fully implemented (from {} to {})",
-            from_unit, to_unit
-        ))
+        Ok(value.clone() * Expr::Real(from_factor / to_factor))
     }
 }
 
@@ -396,9 +397,8 @@ mod tests {
     #[test]
     fn test_convert_same_dimension() {
         let result = convert(&Expr::from(1000), "meter", "kilometer");
-        // In the simplified implementation, conversion returns error
-        // A full implementation would perform the conversion
-        let _ = result;
+        // 1000 meters = 1 kilometer
+        assert_eq!(result, Ok(Expr::Real(1.0)));
     }
 
     #[test]
@@ -471,8 +471,9 @@ mod tests {
     #[test]
     fn test_unit_expression_convert() {
         let expr = UnitExpression::new(Expr::from(1000), "meter");
-        let result = expr.convert_to("kilometer");
-        // Conversion may fail in simplified implementation
-        let _ = result;
+        let result = expr.convert_to("kilometer").unwrap();
+        // 1000 meters = 1 kilometer
+        assert_eq!(result.magnitude(), &Expr::Real(1.0));
+        assert_eq!(result.unit(), "kilometer");
     }
 }

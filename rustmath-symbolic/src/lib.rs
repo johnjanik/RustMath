@@ -128,7 +128,9 @@ mod tests {
     #[test]
     fn test_assumptions_positive() {
         // Create a symbol x and assume it's positive
-        let x = Expr::symbol("x");
+        // (unique name: assumptions are global and keyed by name-interned
+        // symbols, so parallel tests must not share symbol names)
+        let x = Expr::symbol("x_lib_assume_pos");
         let x_sym = x.as_symbol().unwrap();
 
         assume(x_sym, Property::Positive);
@@ -144,7 +146,7 @@ mod tests {
 
     #[test]
     fn test_assumptions_integer() {
-        let n = Expr::symbol("n");
+        let n = Expr::symbol("n_lib_assume_int");
         let n_sym = n.as_symbol().unwrap();
 
         assume(n_sym, Property::Integer);
@@ -188,7 +190,7 @@ mod tests {
 
     #[test]
     fn test_multiple_assumptions() {
-        let x = Expr::symbol("x");
+        let x = Expr::symbol("x_lib_assume_multi");
         let x_sym = x.as_symbol().unwrap();
 
         assume(x_sym, Property::Positive);
@@ -203,7 +205,7 @@ mod tests {
 
     #[test]
     fn test_implied_properties() {
-        let p = Expr::symbol("p");
+        let p = Expr::symbol("p_lib_assume_implied");
         let p_sym = p.as_symbol().unwrap();
 
         // Assuming prime implies positive, integer, real
@@ -987,7 +989,8 @@ mod tests {
         println!("\nTesting Milestone 4.4: Assumption-Based Simplification");
 
         // Test sqrt(x^2) with positive assumption
-        let z = Symbol::new("z");
+        // (unique names: the assumptions registry is global and name-keyed)
+        let z = Symbol::new("z_m44_pos");
         assume(&z, Property::Positive);
         let z_expr = Expr::Symbol(z.clone());
         let expr = z_expr.clone().pow(Expr::from(2)).sqrt();
@@ -997,7 +1000,7 @@ mod tests {
         println!("  ✓ sqrt(x^2) = x when x > 0");
 
         // Test sqrt(x^2) with negative assumption
-        let w = Symbol::new("w");
+        let w = Symbol::new("w_m44_neg");
         assume(&w, Property::Negative);
         let w_expr = Expr::Symbol(w.clone());
         let expr = w_expr.clone().pow(Expr::from(2)).sqrt();
@@ -1007,7 +1010,7 @@ mod tests {
         println!("  ✓ sqrt(x^2) = -x when x < 0");
 
         // Test |x| with positive assumption
-        let p = Symbol::new("p");
+        let p = Symbol::new("p_m44_pos");
         assume(&p, Property::Positive);
         let p_expr = Expr::Symbol(p.clone());
         let expr = p_expr.clone().abs();
@@ -1017,7 +1020,7 @@ mod tests {
         println!("  ✓ |x| = x when x > 0");
 
         // Test |x| with negative assumption
-        let q = Symbol::new("q");
+        let q = Symbol::new("q_m44_neg");
         assume(&q, Property::Negative);
         let q_expr = Expr::Symbol(q.clone());
         let expr = q_expr.clone().abs();

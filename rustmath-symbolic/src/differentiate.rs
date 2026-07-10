@@ -345,6 +345,23 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_derivative_across_separate_symbol_instances() {
+        // Regression test: Symbol::new("x") used to mint a fresh id per call,
+        // so d/dx(x) evaluated to 0 whenever the expression's x and the
+        // differentiation variable came from different Symbol::new calls.
+        let x_expr = Expr::Symbol(Symbol::new("x"));
+        let x_var = Symbol::new("x"); // separate call, same name
+        let d = x_expr.differentiate(&x_var);
+        assert_eq!(d, Expr::from(1), "d/dx(x) must be 1 across separate Symbol::new(\"x\") calls");
+
+        // d/dx(x^2) must not collapse to 0 either
+        let x2 = Expr::Symbol(Symbol::new("x")).pow(Expr::from(2));
+        let d2 = x2.differentiate(&Symbol::new("x"));
+        assert_ne!(d2.simplify(), Expr::from(0), "d/dx(x^2) must not be 0");
+        assert!(d2.contains_symbol(&Symbol::new("x")));
+    }
+
+    #[test]
     fn test_constant_derivative() {
         let c = Expr::from(5);
         let x = Symbol::new("x");

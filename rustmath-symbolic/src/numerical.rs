@@ -237,13 +237,17 @@ pub fn gauss_legendre(
         let mid = (left + right) / 2.0;
         let half_width = (right - left) / 2.0;
 
+        // BUG FIX: only the current interval's contribution is scaled by
+        // half_width; the previous code multiplied the entire running sum
+        // by half_width on every interval, corrupting the result.
+        let mut interval_sum = 0.0;
         for j in 0..2 {
             let x = mid + half_width * nodes[j];
-            sum += weights[j] * eval_at(expr, var, x);
+            interval_sum += weights[j] * eval_at(expr, var, x);
             evaluations += 1;
         }
 
-        sum *= half_width;
+        sum += interval_sum * half_width;
     }
 
     IntegrationResult {

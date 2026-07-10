@@ -45,8 +45,8 @@ impl Expr {
     /// let limit = expr.limit(&x, &Expr::from(0), Direction::Both);
     /// ```
     pub fn limit(&self, var: &Symbol, point: &Expr, dir: Direction) -> LimitResult {
-        // First try direct substitution
-        let substituted = self.substitute(var, point);
+        // First try direct substitution (simplified so constants fold to a value)
+        let substituted = self.substitute(var, point).simplify();
 
         // If we get a finite value (no division by zero, etc.), return it
         if substituted.is_finite_value() {
@@ -364,7 +364,7 @@ impl Expr {
 
         while iterations < max_iterations {
             // Try direct substitution
-            let substituted = expr.substitute(var, point);
+            let substituted = expr.substitute(var, point).simplify();
             if substituted.is_finite_value() {
                 return LimitResult::Finite(substituted);
             }
@@ -431,7 +431,7 @@ impl Expr {
 
         // Try to evaluate the series at the point
         // The constant term gives the limit
-        let result = series.substitute(var, point);
+        let result = series.substitute(var, point).simplify();
 
         if result.is_finite_value() {
             LimitResult::Finite(result)
@@ -484,14 +484,14 @@ impl Expr {
     /// For most use cases, prefer using `limit()` directly.
     pub fn limit_enhanced(&self, var: &Symbol, point: &Expr, dir: Direction) -> LimitResult {
         // Strategy 1: Direct substitution
-        let substituted = self.substitute(var, point);
+        let substituted = self.substitute(var, point).simplify();
         if substituted.is_finite_value() {
             return LimitResult::Finite(substituted);
         }
 
         // Strategy 2: Simplify first, then try direct substitution
         let simplified = self.simplify();
-        let sub_simplified = simplified.substitute(var, point);
+        let sub_simplified = simplified.substitute(var, point).simplify();
         if sub_simplified.is_finite_value() {
             return LimitResult::Finite(sub_simplified);
         }
@@ -606,10 +606,16 @@ mod tests {
         let x = Symbol::new("x");
         let expr = Expr::from(1) / Expr::Symbol(x.clone());
         // As x → ∞, 1/x → 0
-        // We can test with a large number
-        let result = expr.substitute(&x, &Expr::from(1000000));
-        // Result should be very small
+        // We can test with a large number (substitute is pure replacement,
+        // so simplify to fold the division into an exact rational)
+        let result = expr.substitute(&x, &Expr::from(1000000)).simplify();
+        // Result should be exactly 1/1000000
         assert!(matches!(result, Expr::Rational(_)));
+        use rustmath_rationals::Rational;
+        assert_eq!(
+            result,
+            Expr::Rational(Rational::new(1, 1000000).unwrap())
+        );
     }
 
     #[test]

@@ -183,8 +183,21 @@ impl RungeKutta {
     {
         let mut result = vec![(self.x, self.y)];
 
-        while self.x < xf {
-            self.step(&f);
+        // BUG FIX: the loop used to run full steps while `self.x < xf`, so
+        // floating-point accumulation (e.g. ten 0.1 steps summing to
+        // 0.9999999999999999 < 1.0) triggered an extra full step past xf.
+        // Clamp the final step so the solution ends at xf.
+        let eps = self.h * 1e-9;
+        while self.x < xf - eps {
+            let remaining = xf - self.x;
+            if remaining < self.h {
+                let saved_h = self.h;
+                self.h = remaining;
+                self.step(&f);
+                self.h = saved_h;
+            } else {
+                self.step(&f);
+            }
             result.push((self.x, self.y));
         }
 
@@ -226,8 +239,21 @@ impl Euler {
     {
         let mut result = vec![(self.x, self.y)];
 
-        while self.x < xf {
-            self.step(&f);
+        // BUG FIX: the loop used to run full steps while `self.x < xf`, so
+        // floating-point accumulation (e.g. ten 0.1 steps summing to
+        // 0.9999999999999999 < 1.0) triggered an extra full step past xf.
+        // Clamp the final step so the solution ends at xf.
+        let eps = self.h * 1e-9;
+        while self.x < xf - eps {
+            let remaining = xf - self.x;
+            if remaining < self.h {
+                let saved_h = self.h;
+                self.h = remaining;
+                self.step(&f);
+                self.h = saved_h;
+            } else {
+                self.step(&f);
+            }
             result.push((self.x, self.y));
         }
 
