@@ -18,9 +18,9 @@
 //! - Zero finding and verification
 
 use crate::dirichlet::DirichletCharacter;
-use num_bigint::BigInt;
-use num_complex::Complex64;
-use num_traits::{ToPrimitive, Zero};
+use rustmath_complex::Complex;
+use rustmath_core::NumericConversion;
+use rustmath_integers::Integer;
 use std::f64::consts::PI;
 
 /// A Dirichlet L-function L(s, χ)
@@ -60,11 +60,11 @@ impl DirichletLFunction {
     ///
     /// # Returns
     /// The value L(s, χ) computed via partial sum
-    pub fn evaluate_series(&self, s: Complex64, max_terms: usize) -> Complex64 {
-        let mut sum = Complex64::zero();
+    pub fn evaluate_series(&self, s: Complex, max_terms: usize) -> Complex {
+        let mut sum = Complex::zero();
 
         for n in 1..=max_terms {
-            let chi_n = self.character.eval(&BigInt::from(n));
+            let chi_n = self.character.eval(&Integer::from(n as u64));
             if chi_n == 0 {
                 continue;
             }
@@ -72,15 +72,15 @@ impl DirichletLFunction {
             // Compute n^(-s) = exp(-s * log(n))
             let n_f = n as f64;
             let log_n = n_f.ln();
-            let n_to_minus_s = Complex64::new(
-                (-s.re * log_n).exp() * (-s.im * log_n).cos(),
-                (-s.re * log_n).exp() * (-s.im * log_n).sin(),
+            let n_to_minus_s = Complex::new(
+                (-s.real() * log_n).exp() * (-s.imag() * log_n).cos(),
+                (-s.real() * log_n).exp() * (-s.imag() * log_n).sin(),
             );
 
             // Convert chi_n (integer power of root of unity) to complex
             let chi_n_complex = self.character_to_complex(chi_n);
 
-            sum += chi_n_complex * n_to_minus_s;
+            sum = sum + chi_n_complex * n_to_minus_s;
         }
 
         sum
@@ -93,12 +93,12 @@ impl DirichletLFunction {
     /// # Arguments
     /// * `s` - The complex argument
     /// * `max_prime` - Consider primes up to this bound
-    pub fn evaluate_euler_product(&self, s: Complex64, max_prime: u64) -> Complex64 {
-        let mut product = Complex64::new(1.0, 0.0);
+    pub fn evaluate_euler_product(&self, s: Complex, max_prime: u64) -> Complex {
+        let mut product = Complex::new(1.0, 0.0);
 
         for p in self.primes_up_to(max_prime) {
-            let euler_factor = self.euler_factor(&BigInt::from(p), s);
-            product *= euler_factor;
+            let euler_factor = self.euler_factor(&Integer::from(p), s.clone());
+            product = product * euler_factor;
         }
 
         product
@@ -107,28 +107,28 @@ impl DirichletLFunction {
     /// Compute the Euler factor at a prime p
     ///
     /// L_p(s, χ) = (1 - χ(p)p^{-s})^{-1}
-    pub fn euler_factor(&self, p: &BigInt, s: Complex64) -> Complex64 {
+    pub fn euler_factor(&self, p: &Integer, s: Complex) -> Complex {
         let chi_p = self.character.eval(p);
 
         if chi_p == 0 {
             // Bad prime (divides the conductor)
-            return Complex64::new(1.0, 0.0);
+            return Complex::new(1.0, 0.0);
         }
 
         let p_f = p.to_f64().unwrap_or(2.0);
 
         // Compute p^(-s)
         let log_p = p_f.ln();
-        let p_to_minus_s = Complex64::new(
-            (-s.re * log_p).exp() * (-s.im * log_p).cos(),
-            (-s.re * log_p).exp() * (-s.im * log_p).sin(),
+        let p_to_minus_s = Complex::new(
+            (-s.real() * log_p).exp() * (-s.imag() * log_p).cos(),
+            (-s.real() * log_p).exp() * (-s.imag() * log_p).sin(),
         );
 
         // Convert chi_p to complex
         let chi_p_complex = self.character_to_complex(chi_p);
 
         // Return (1 - χ(p)p^{-s})^{-1}
-        Complex64::new(1.0, 0.0) / (Complex64::new(1.0, 0.0) - chi_p_complex * p_to_minus_s)
+        Complex::new(1.0, 0.0) / (Complex::new(1.0, 0.0) - chi_p_complex * p_to_minus_s)
     }
 
     /// Compute the functional equation
@@ -137,24 +137,24 @@ impl DirichletLFunction {
     /// where a = 0 if χ(-1) = 1 (even), a = 1 if χ(-1) = -1 (odd)
     ///
     /// The functional equation is: Λ(s, χ) = W(χ) Λ(1-s, χ̄)
-    pub fn completed_l_function(&self, s: Complex64) -> Complex64 {
+    pub fn completed_l_function(&self, s: Complex) -> Complex {
         let N = self.conductor as f64;
         let a = if self.character.is_even() { 0.0 } else { 1.0 };
 
         // N^{s/2}
-        let N_power = Complex64::new(
-            (s.re / 2.0 * N.ln()).exp() * (s.im / 2.0 * N.ln()).cos(),
-            (s.re / 2.0 * N.ln()).exp() * (s.im / 2.0 * N.ln()).sin(),
+        let N_power = Complex::new(
+            (s.real() / 2.0 * N.ln()).exp() * (s.imag() / 2.0 * N.ln()).cos(),
+            (s.real() / 2.0 * N.ln()).exp() * (s.imag() / 2.0 * N.ln()).sin(),
         );
 
         // π^{-s/2}
-        let pi_power = Complex64::new(
-            (-s.re / 2.0 * PI.ln()).exp() * (-s.im / 2.0 * PI.ln()).cos(),
-            (-s.re / 2.0 * PI.ln()).exp() * (-s.im / 2.0 * PI.ln()).sin(),
+        let pi_power = Complex::new(
+            (-s.real() / 2.0 * PI.ln()).exp() * (-s.imag() / 2.0 * PI.ln()).cos(),
+            (-s.real() / 2.0 * PI.ln()).exp() * (-s.imag() / 2.0 * PI.ln()).sin(),
         );
 
         // Γ((s+a)/2)
-        let gamma_arg = (s + Complex64::new(a, 0.0)) / 2.0;
+        let gamma_arg = (s.clone() + Complex::new(a, 0.0)) / Complex::new(2.0, 0.0);
         let gamma_value = self.complex_gamma(gamma_arg);
 
         // L(s, χ)
@@ -164,15 +164,15 @@ impl DirichletLFunction {
     }
 
     /// Compute special values of the L-function
-    pub fn special_value(&self, s: f64) -> Complex64 {
-        self.evaluate_series(Complex64::new(s, 0.0), 2000)
+    pub fn special_value(&self, s: f64) -> Complex {
+        self.evaluate_series(Complex::new(s, 0.0), 2000)
     }
 
     /// Compute L(1, χ) - particularly important for class number formulas
-    pub fn value_at_one(&self) -> Complex64 {
+    pub fn value_at_one(&self) -> Complex {
         if self.character.is_trivial() {
             // L(1, χ₀) diverges (pole)
-            return Complex64::new(f64::INFINITY, 0.0);
+            return Complex::new(f64::INFINITY, 0.0);
         }
 
         self.special_value(1.0)
@@ -182,10 +182,10 @@ impl DirichletLFunction {
     ///
     /// For primitive characters, L(0, χ) = -B_{1,χ}/1
     /// where B_{1,χ} is the generalized Bernoulli number
-    pub fn value_at_zero(&self) -> Complex64 {
+    pub fn value_at_zero(&self) -> Complex {
         if self.character.is_trivial() {
             // L(0, χ₀) = -1/2 (for the trivial character mod 1)
-            return Complex64::new(-0.5, 0.0);
+            return Complex::new(-0.5, 0.0);
         }
 
         // Use functional equation to compute from L(1, χ̄)
@@ -198,37 +198,37 @@ impl DirichletLFunction {
     /// L(s, χ) ≈ Σ_{n≤X} χ(n)/n^s + W(χ) N^{1/2-s} Σ_{n≤Y} χ̄(n)/n^{1-s}
     ///
     /// where X and Y are chosen optimally
-    pub fn approximate_functional_equation(&self, s: Complex64) -> Complex64 {
+    pub fn approximate_functional_equation(&self, s: Complex) -> Complex {
         // Optimal choice: X ≈ Y ≈ √N / (2π)
         let N = self.conductor as f64;
-        let cutoff = (N.sqrt() / (2.0 * PI) * s.norm()).ceil() as usize;
+        let cutoff = (N.sqrt() / (2.0 * PI) * s.abs()).ceil() as usize;
 
         // First sum: direct series
-        let mut sum1 = Complex64::zero();
+        let mut sum1 = Complex::zero();
         for n in 1..=cutoff {
-            let chi_n = self.character.eval(&BigInt::from(n));
+            let chi_n = self.character.eval(&Integer::from(n as u64));
             if chi_n == 0 {
                 continue;
             }
             let n_f = n as f64;
-            let n_to_minus_s = Complex64::from(n_f).powc(-s);
-            sum1 += self.character_to_complex(chi_n) * n_to_minus_s;
+            let n_to_minus_s = Complex::from_real(n_f).pow(&(-s.clone()));
+            sum1 = sum1 + self.character_to_complex(chi_n) * n_to_minus_s;
         }
 
         // Second sum: from functional equation
         let W = self.root_number();
-        let N_power = Complex64::from(N).powc(Complex64::from(0.5) - s);
+        let N_power = Complex::from_real(N).pow(&(Complex::from_real(0.5) - s.clone()));
 
-        let mut sum2 = Complex64::zero();
+        let mut sum2 = Complex::zero();
         for n in 1..=cutoff {
-            let chi_n_bar = self.character.eval(&BigInt::from(n)); // Conjugate
+            let chi_n_bar = self.character.eval(&Integer::from(n as u64)); // Conjugate
             if chi_n_bar == 0 {
                 continue;
             }
             let n_f = n as f64;
-            let one_minus_s = Complex64::new(1.0, 0.0) - s;
-            let n_to_minus_one_plus_s = Complex64::from(n_f).powc(-one_minus_s);
-            sum2 += self.character_to_complex(-chi_n_bar) * n_to_minus_one_plus_s;
+            let one_minus_s = Complex::new(1.0, 0.0) - s.clone();
+            let n_to_minus_one_plus_s = Complex::from_real(n_f).pow(&(-one_minus_s));
+            sum2 = sum2 + self.character_to_complex(-chi_n_bar) * n_to_minus_one_plus_s;
         }
 
         sum1 + W * N_power * sum2
@@ -238,8 +238,8 @@ impl DirichletLFunction {
     ///
     /// # Arguments
     /// * `t` - The imaginary part (evaluates at s = 1/2 + it)
-    pub fn critical_line_value(&self, t: f64) -> Complex64 {
-        let s = Complex64::new(0.5, t);
+    pub fn critical_line_value(&self, t: f64) -> Complex {
+        let s = Complex::new(0.5, t);
         self.approximate_functional_equation(s)
     }
 
@@ -261,7 +261,7 @@ impl DirichletLFunction {
             let value = self.critical_line_value(t);
 
             // Check for sign change in real or imaginary part
-            if prev_value.re * value.re < 0.0 || prev_value.im * value.im < 0.0 {
+            if prev_value.real() * value.real() < 0.0 || prev_value.imag() * value.imag() < 0.0 {
                 // Refine zero location
                 let zero_t = self.refine_zero(t - step, t);
                 zeros.push(zero_t);
@@ -282,14 +282,14 @@ impl DirichletLFunction {
         for _ in 0..20 {
             // 20 iterations should be enough
             let mid = (a + b) / 2.0;
-            let value = self.critical_line_value(mid).norm();
+            let value = self.critical_line_value(mid).abs();
 
             if value < 1e-10 {
                 return mid;
             }
 
-            let value_a = self.critical_line_value(a).norm();
-            let value_b = self.critical_line_value(b).norm();
+            let value_a = self.critical_line_value(a).abs();
+            let value_b = self.critical_line_value(b).abs();
 
             if value_a < value_b {
                 b = mid;
@@ -305,35 +305,35 @@ impl DirichletLFunction {
     ///
     /// W(χ) = τ(χ) / (i^a √N)
     /// where τ(χ) is the Gauss sum and a = 0 or 1 depending on parity
-    pub fn root_number(&self) -> Complex64 {
+    pub fn root_number(&self) -> Complex {
         let gauss_sum = self.gauss_sum();
         let N = self.conductor as f64;
         let a = if self.character.is_even() { 0.0 } else { 1.0 };
 
-        let i_power = Complex64::new(0.0, 1.0).powf(a);
+        let i_power = Complex::new(0.0, 1.0).pow(&Complex::new(a, 0.0));
         let sqrt_N = N.sqrt();
 
-        gauss_sum / (i_power * sqrt_N)
+        gauss_sum / (i_power * Complex::new(sqrt_N, 0.0))
     }
 
     /// Compute the Gauss sum τ(χ)
     ///
     /// τ(χ) = Σ_{a mod N} χ(a) e^{2πia/N}
-    pub fn gauss_sum(&self) -> Complex64 {
+    pub fn gauss_sum(&self) -> Complex {
         let N = self.conductor;
-        let mut sum = Complex64::zero();
+        let mut sum = Complex::zero();
 
         for a in 0..N {
-            let chi_a = self.character.eval(&BigInt::from(a));
+            let chi_a = self.character.eval(&Integer::from(a));
             if chi_a == 0 {
                 continue;
             }
 
             // e^{2πia/N}
             let angle = 2.0 * PI * (a as f64) / (N as f64);
-            let exponential = Complex64::new(angle.cos(), angle.sin());
+            let exponential = Complex::new(angle.cos(), angle.sin());
 
-            sum += self.character_to_complex(chi_a) * exponential;
+            sum = sum + self.character_to_complex(chi_a) * exponential;
         }
 
         sum
@@ -342,21 +342,21 @@ impl DirichletLFunction {
     /// Compute generalized Bernoulli numbers B_{k,χ}
     ///
     /// B_{k,χ} = (N^k / k) Σ_{a=1}^{N-1} χ(a) B_k(a/N)
-    fn generalized_bernoulli_number(&self, k: u32) -> Complex64 {
+    fn generalized_bernoulli_number(&self, k: u32) -> Complex {
         let N = self.conductor;
-        let mut sum = Complex64::zero();
+        let mut sum = Complex::zero();
 
         for a in 1..N {
-            let chi_a = self.character.eval(&BigInt::from(a));
+            let chi_a = self.character.eval(&Integer::from(a));
             if chi_a == 0 {
                 continue;
             }
 
             let bernoulli_poly = self.bernoulli_polynomial(k, (a as f64) / (N as f64));
-            sum += self.character_to_complex(chi_a) * Complex64::new(bernoulli_poly, 0.0);
+            sum = sum + self.character_to_complex(chi_a) * Complex::new(bernoulli_poly, 0.0);
         }
 
-        sum * Complex64::new((N.pow(k as u32) as f64) / (k as f64), 0.0)
+        sum * Complex::new((N.pow(k as u32) as f64) / (k as f64), 0.0)
     }
 
     /// Bernoulli polynomial B_k(x)
@@ -374,46 +374,46 @@ impl DirichletLFunction {
     }
 
     /// Convert character value (integer power of root of unity) to complex number
-    fn character_to_complex(&self, chi_n: i32) -> Complex64 {
+    fn character_to_complex(&self, chi_n: i32) -> Complex {
         if chi_n == 0 {
-            return Complex64::zero();
+            return Complex::zero();
         }
         if chi_n == 1 {
-            return Complex64::new(1.0, 0.0);
+            return Complex::new(1.0, 0.0);
         }
         if chi_n == -1 {
-            return Complex64::new(-1.0, 0.0);
+            return Complex::new(-1.0, 0.0);
         }
 
         // For general case, we need the order of the character
         // chi_n represents the power k where χ(n) = e^{2πik/order}
         let order = self.character.order() as f64;
         let angle = 2.0 * PI * (chi_n as f64) / order;
-        Complex64::new(angle.cos(), angle.sin())
+        Complex::new(angle.cos(), angle.sin())
     }
 
     /// Complex gamma function (Stirling approximation)
-    fn complex_gamma(&self, z: Complex64) -> Complex64 {
+    fn complex_gamma(&self, z: Complex) -> Complex {
         // Use Stirling's approximation for large |z|
         // Γ(z) ≈ √(2π/z) * (z/e)^z
 
-        if z.re <= 0.0 {
+        if z.real() <= 0.0 {
             // Use reflection formula: Γ(z)Γ(1-z) = π/sin(πz)
-            let one_minus_z = Complex64::new(1.0, 0.0) - z;
-            let pi_z = Complex64::new(PI, 0.0) * z;
-            let sin_pi_z = ((Complex64::new(0.0, 1.0) * pi_z).exp()
-                - (Complex64::new(0.0, -1.0) * pi_z).exp())
-                / Complex64::new(0.0, 2.0);
+            let one_minus_z = Complex::new(1.0, 0.0) - z.clone();
+            let pi_z = Complex::new(PI, 0.0) * z;
+            let sin_pi_z = ((Complex::new(0.0, 1.0) * pi_z.clone()).exp()
+                - (Complex::new(0.0, -1.0) * pi_z).exp())
+                / Complex::new(0.0, 2.0);
 
-            return Complex64::new(PI, 0.0) / (sin_pi_z * self.complex_gamma(one_minus_z));
+            return Complex::new(PI, 0.0) / (sin_pi_z * self.complex_gamma(one_minus_z));
         }
 
         // Stirling approximation
         let two_pi = 2.0 * PI;
         let e = std::f64::consts::E;
 
-        let sqrt_term = (two_pi / z).sqrt();
-        let power_term = (z / e).powc(z);
+        let sqrt_term = (Complex::new(two_pi, 0.0) / z.clone()).sqrt();
+        let power_term = (z.clone() / Complex::new(e, 0.0)).pow(&z);
 
         sqrt_term * power_term
     }
@@ -461,75 +461,83 @@ impl DirichletLFunction {
 mod tests {
     use super::*;
     use crate::dirichlet::trivial_character;
-    use num_bigint::BigInt;
 
     #[test]
     fn test_trivial_character_l_function() {
         // L(s, χ₀) for the trivial character is related to the Riemann zeta function
-        let chi = trivial_character(BigInt::from(1));
+        let chi = trivial_character(Integer::from(1));
         let L = DirichletLFunction::new(chi);
 
         // L(2, χ₀) should be close to ζ(2) = π²/6
         let value = L.special_value(2.0);
         let expected = PI * PI / 6.0;
-        assert!((value.re - expected).abs() < 0.01);
+        assert!((value.real() - expected).abs() < 0.01);
     }
 
     #[test]
     fn test_euler_product() {
-        let chi = trivial_character(BigInt::from(1));
+        let chi = trivial_character(Integer::from(1));
         let L = DirichletLFunction::new(chi);
 
-        let s = Complex64::new(2.0, 0.0);
-        let series_value = L.evaluate_series(s, 100);
+        let s = Complex::new(2.0, 0.0);
+        let series_value = L.evaluate_series(s.clone(), 100);
         let product_value = L.evaluate_euler_product(s, 20);
 
         // Should be approximately equal
-        assert!((series_value - product_value).norm() < 0.1);
+        assert!((series_value - product_value).abs() < 0.1);
     }
 
     #[test]
     fn test_critical_line_evaluation() {
-        let chi = trivial_character(BigInt::from(1));
+        let chi = trivial_character(Integer::from(1));
         let L = DirichletLFunction::new(chi);
 
         // Evaluate at s = 1/2 + 14.134725i (known Riemann zeta zero)
         let value = L.critical_line_value(14.134725);
 
         // Should be close to zero for Riemann zeta
-        assert!(value.norm() < 1.0); // Rough check
+        assert!(value.abs() < 1.0); // Rough check
     }
 
     #[test]
     fn test_gauss_sum() {
-        let chi = trivial_character(BigInt::from(5));
+        let chi = trivial_character(Integer::from(5));
         let L = DirichletLFunction::new(chi);
 
         let gauss = L.gauss_sum();
-        // For trivial character, Gauss sum should equal the modulus
-        assert!((gauss.norm() - 5.0).abs() < 0.1);
+        // The Gauss sum of the principal (trivial) character mod N is the
+        // Ramanujan sum c_N(1) = sum_{gcd(a,N)=1} e^{2 pi i a / N} = mu(N).
+        // For N = 5 (prime), mu(5) = -1, so |tau| = 1 (NOT the modulus: the
+        // |tau| = sqrt(N) identity holds only for PRIMITIVE characters, and
+        // the trivial character mod 5 is imprimitive, of conductor 1).
+        assert!((gauss.abs() - 1.0).abs() < 0.1);
     }
 
     #[test]
+    #[ignore = "needs real algorithm: no valid ground truth for zeta(1/2+10i). \
+                evaluate_series is a naive partial sum that DIVERGES for Re(s)<1, \
+                and approximate_functional_equation is a crude ~2-term stub; a \
+                correct test requires the Riemann-Siegel formula or a properly \
+                balanced, smoothed approximate functional equation (Phase 4)."]
     fn test_approximate_functional_equation() {
-        let chi = trivial_character(BigInt::from(1));
+        let chi = trivial_character(Integer::from(1));
         let L = DirichletLFunction::new(chi);
 
-        let s = Complex64::new(0.5, 10.0);
-        let approx_value = L.approximate_functional_equation(s);
+        let s = Complex::new(0.5, 10.0);
+        let approx_value = L.approximate_functional_equation(s.clone());
         let series_value = L.evaluate_series(s, 500);
 
         // Should be reasonably close
-        assert!((approx_value - series_value).norm() / series_value.norm() < 0.5);
+        assert!((approx_value - series_value.clone()).abs() / series_value.abs() < 0.5);
     }
 
     #[test]
     fn test_value_at_zero() {
-        let chi = trivial_character(BigInt::from(1));
+        let chi = trivial_character(Integer::from(1));
         let L = DirichletLFunction::new(chi);
 
         let value = L.value_at_zero();
         // L(0, χ₀) = -1/2
-        assert!((value.re - (-0.5)).abs() < 0.01);
+        assert!((value.real() - (-0.5)).abs() < 0.01);
     }
 }

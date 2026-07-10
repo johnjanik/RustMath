@@ -6,19 +6,18 @@
 //! The Dedekind eta function is η(τ) = q^(1/24) * ∏(1 - q^n) where q = e^(2πiτ).
 //! An eta product is a product of powers of η(d*τ) for various divisors d of the level.
 
-use num_bigint::BigInt;
-use num_rational::BigRational;
-use num_traits::{Zero, One};
-use num_integer::Integer;
+use rustmath_core::Ring;
+use rustmath_integers::Integer;
+use rustmath_rationals::Rational;
 use std::collections::HashMap;
 
 /// An element of the eta group
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EtaGroupElement {
     /// The level N
-    level: BigInt,
+    level: Integer,
     /// Map from divisor d of N to the power r_d in η(d*τ)^{r_d}
-    powers: HashMap<BigInt, i64>,
+    powers: HashMap<Integer, i64>,
 }
 
 impl EtaGroupElement {
@@ -27,27 +26,27 @@ impl EtaGroupElement {
     /// # Arguments
     /// * `level` - The level N
     /// * `powers` - Map from divisors to powers
-    pub fn new(level: BigInt, powers: HashMap<BigInt, i64>) -> Self {
+    pub fn new(level: Integer, powers: HashMap<Integer, i64>) -> Self {
         EtaGroupElement { level, powers }
     }
 
     /// Get the level
-    pub fn level(&self) -> &BigInt {
+    pub fn level(&self) -> &Integer {
         &self.level
     }
 
     /// Get the powers
-    pub fn powers(&self) -> &HashMap<BigInt, i64> {
+    pub fn powers(&self) -> &HashMap<Integer, i64> {
         &self.powers
     }
 
     /// Get the power for a specific divisor
-    pub fn get_power(&self, divisor: &BigInt) -> i64 {
+    pub fn get_power(&self, divisor: &Integer) -> i64 {
         *self.powers.get(divisor).unwrap_or(&0)
     }
 
     /// Set the power for a divisor
-    pub fn set_power(&mut self, divisor: BigInt, power: i64) {
+    pub fn set_power(&mut self, divisor: Integer, power: i64) {
         if power == 0 {
             self.powers.remove(&divisor);
         } else {
@@ -56,16 +55,17 @@ impl EtaGroupElement {
     }
 
     /// Compute the order at infinity (q-expansion order)
-    pub fn order_at_infinity(&self) -> BigRational {
-        let mut order = BigRational::zero();
+    pub fn order_at_infinity(&self) -> Rational {
+        let mut order = Rational::zero();
 
         for (d, &r) in &self.powers {
             // Each η(d*τ) contributes d/24 to the order
-            let contribution = BigRational::new(
-                d.clone() * BigInt::from(r),
-                BigInt::from(24),
-            );
-            order += contribution;
+            let contribution = Rational::new(
+                d.clone() * Integer::from(r),
+                Integer::from(24),
+            )
+            .expect("denominator 24 is nonzero");
+            order = order + contribution;
         }
 
         order
@@ -84,7 +84,7 @@ impl EtaGroupElement {
     pub fn is_valid(&self) -> bool {
         // Check that all divisors actually divide the level
         for d in self.powers.keys() {
-            if !self.level.is_multiple_of(d) {
+            if !(&self.level % d).is_zero() {
                 return false;
             }
         }
@@ -129,9 +129,9 @@ impl EtaGroupElement {
 #[derive(Debug, Clone)]
 pub struct EtaGroup {
     /// The level
-    level: BigInt,
+    level: Integer,
     /// Divisors of the level
-    divisors: Vec<BigInt>,
+    divisors: Vec<Integer>,
 }
 
 impl EtaGroup {
@@ -139,18 +139,18 @@ impl EtaGroup {
     ///
     /// # Arguments
     /// * `level` - The level N
-    pub fn new(level: BigInt) -> Self {
+    pub fn new(level: Integer) -> Self {
         let divisors = compute_divisors(&level);
         EtaGroup { level, divisors }
     }
 
     /// Get the level
-    pub fn level(&self) -> &BigInt {
+    pub fn level(&self) -> &Integer {
         &self.level
     }
 
     /// Get the divisors
-    pub fn divisors(&self) -> &[BigInt] {
+    pub fn divisors(&self) -> &[Integer] {
         &self.divisors
     }
 
@@ -160,13 +160,13 @@ impl EtaGroup {
     }
 
     /// Create an eta product from powers
-    pub fn element(&self, powers: HashMap<BigInt, i64>) -> EtaGroupElement {
+    pub fn element(&self, powers: HashMap<Integer, i64>) -> EtaGroupElement {
         EtaGroupElement::new(self.level.clone(), powers)
     }
 }
 
 /// Create an eta group for level N
-pub fn eta_group_class(N: BigInt) -> EtaGroup {
+pub fn eta_group_class(N: Integer) -> EtaGroup {
     EtaGroup::new(N)
 }
 
@@ -175,29 +175,29 @@ pub fn eta_group_class(N: BigInt) -> EtaGroup {
 /// # Arguments
 /// * `N` - The level
 /// * `powers` - Map from divisors to powers
-pub fn eta_product(N: BigInt, powers: HashMap<BigInt, i64>) -> EtaGroupElement {
+pub fn eta_product(N: Integer, powers: HashMap<Integer, i64>) -> EtaGroupElement {
     EtaGroupElement::new(N, powers)
 }
 
 /// Compute divisors of n
-fn compute_divisors(n: &BigInt) -> Vec<BigInt> {
-    if n <= &BigInt::zero() {
+fn compute_divisors(n: &Integer) -> Vec<Integer> {
+    if n <= &Integer::zero() {
         return vec![];
     }
 
     let mut divisors = Vec::new();
-    let mut i = BigInt::one();
-    let sqrt_n = n.sqrt();
+    let mut i = Integer::one();
+    let sqrt_n = n.sqrt().expect("n > 0 checked above");
 
     while &i <= &sqrt_n {
-        if n.is_multiple_of(&i) {
+        if (n % &i).is_zero() {
             divisors.push(i.clone());
             let other = n / &i;
-            if &i != &other {
+            if i != other {
                 divisors.push(other);
             }
         }
-        i += BigInt::one();
+        i = i + Integer::one();
     }
 
     divisors.sort();
@@ -208,16 +208,16 @@ fn compute_divisors(n: &BigInt) -> Vec<BigInt> {
 #[derive(Debug, Clone)]
 pub struct CuspFamily {
     /// The level
-    level: BigInt,
+    level: Integer,
     /// Width of cusps in this family
-    width: BigInt,
+    width: Integer,
     /// Cusps in this family
-    cusps: Vec<(BigInt, BigInt)>, // (numerator, denominator) pairs
+    cusps: Vec<(Integer, Integer)>, // (numerator, denominator) pairs
 }
 
 impl CuspFamily {
     /// Create a new cusp family
-    pub fn new(level: BigInt, width: BigInt) -> Self {
+    pub fn new(level: Integer, width: Integer) -> Self {
         CuspFamily {
             level,
             width,
@@ -226,22 +226,22 @@ impl CuspFamily {
     }
 
     /// Get the level
-    pub fn level(&self) -> &BigInt {
+    pub fn level(&self) -> &Integer {
         &self.level
     }
 
     /// Get the width
-    pub fn width(&self) -> &BigInt {
+    pub fn width(&self) -> &Integer {
         &self.width
     }
 
     /// Get the cusps
-    pub fn cusps(&self) -> &[(BigInt, BigInt)] {
+    pub fn cusps(&self) -> &[(Integer, Integer)] {
         &self.cusps
     }
 
     /// Add a cusp to the family
-    pub fn add_cusp(&mut self, numerator: BigInt, denominator: BigInt) {
+    pub fn add_cusp(&mut self, numerator: Integer, denominator: Integer) {
         self.cusps.push((numerator, denominator));
     }
 
@@ -257,31 +257,31 @@ impl CuspFamily {
 }
 
 /// Get all cusps for Gamma0(N)
-pub fn all_cusps(N: BigInt) -> Vec<(BigInt, BigInt)> {
+pub fn all_cusps(N: Integer) -> Vec<(Integer, Integer)> {
     // Cusps of Gamma0(N) are represented as a/c where c | N and gcd(a, c) = 1
     let mut cusps = Vec::new();
 
     let divisors = compute_divisors(&N);
     for c in divisors {
         // For each divisor c, find all a with 0 <= a < c and gcd(a, c) = 1
-        let mut a = BigInt::zero();
+        let mut a = Integer::zero();
         while &a < &c {
             if a.gcd(&c).is_one() {
                 cusps.push((a.clone(), c.clone()));
             }
-            a += BigInt::one();
+            a = a + Integer::one();
         }
     }
 
     // Add infinity (represented as 1/0)
-    cusps.push((BigInt::one(), BigInt::zero()));
+    cusps.push((Integer::one(), Integer::zero()));
 
     cusps
 }
 
 /// Number of cusps of a given width for Gamma0(N)
-pub fn num_cusps_of_width(N: &BigInt, width: &BigInt) -> usize {
-    if !N.is_multiple_of(width) {
+pub fn num_cusps_of_width(N: &Integer, width: &Integer) -> usize {
+    if !(N % width).is_zero() {
         return 0;
     }
 
@@ -320,7 +320,7 @@ pub fn qexp_eta(prec: usize) -> Vec<i64> {
 
 /// Find polynomial relations among eta products
 pub fn eta_poly_relations(
-    N: &BigInt,
+    N: &Integer,
     degree: usize,
 ) -> Vec<Vec<i64>> {
     // This would find polynomial relations among eta products
@@ -335,56 +335,60 @@ mod tests {
     #[test]
     fn test_eta_group_element() {
         let mut powers = HashMap::new();
-        powers.insert(BigInt::one(), 24);
+        powers.insert(Integer::one(), 24);
 
-        let eta = EtaGroupElement::new(BigInt::one(), powers);
-        assert_eq!(eta.level(), &BigInt::one());
-        assert_eq!(eta.get_power(&BigInt::one()), 24);
+        let eta = EtaGroupElement::new(Integer::one(), powers);
+        assert_eq!(eta.level(), &Integer::one());
+        assert_eq!(eta.get_power(&Integer::one()), 24);
     }
 
     #[test]
     fn test_eta_group() {
-        let G = EtaGroup::new(BigInt::from(12));
-        assert_eq!(G.level(), &BigInt::from(12));
+        let G = EtaGroup::new(Integer::from(12));
+        assert_eq!(G.level(), &Integer::from(12));
         assert!(!G.divisors().is_empty());
     }
 
     #[test]
     fn test_EtaGroup_class() {
-        let G = EtaGroup_class(BigInt::from(6));
-        assert_eq!(G.level(), &BigInt::from(6));
+        let G = eta_group_class(Integer::from(6));
+        assert_eq!(G.level(), &Integer::from(6));
     }
 
     #[test]
     fn test_compute_divisors() {
-        let divs = compute_divisors(&BigInt::from(12));
-        assert!(divs.contains(&BigInt::one()));
-        assert!(divs.contains(&BigInt::from(12)));
-        assert!(divs.contains(&BigInt::from(2)));
-        assert!(divs.contains(&BigInt::from(3)));
-        assert!(divs.contains(&BigInt::from(4)));
-        assert!(divs.contains(&BigInt::from(6)));
+        let divs = compute_divisors(&Integer::from(12));
+        assert!(divs.contains(&Integer::one()));
+        assert!(divs.contains(&Integer::from(12)));
+        assert!(divs.contains(&Integer::from(2)));
+        assert!(divs.contains(&Integer::from(3)));
+        assert!(divs.contains(&Integer::from(4)));
+        assert!(divs.contains(&Integer::from(6)));
     }
 
     #[test]
     fn test_eta_product() {
+        // eta(tau)^24 = Delta(tau), the weight-12 modular discriminant: a
+        // genuine integral-weight eta product (sum of exponents = 24, even).
+        // The old test used eta^1, which has half-integral weight 1/2
+        // (odd exponent sum) and is correctly rejected by `is_valid`.
         let mut powers = HashMap::new();
-        powers.insert(BigInt::one(), 1);
+        powers.insert(Integer::one(), 24);
 
-        let eta = EtaProduct(BigInt::one(), powers);
+        let eta = eta_product(Integer::one(), powers);
         assert!(eta.is_valid());
     }
 
     #[test]
     fn test_all_cusps() {
-        let cusps = AllCusps(BigInt::from(2));
+        let cusps = all_cusps(Integer::from(2));
         assert!(!cusps.is_empty());
     }
 
     #[test]
     fn test_cusp_family() {
-        let mut family = CuspFamily::new(BigInt::from(12), BigInt::from(4));
-        family.add_cusp(BigInt::one(), BigInt::from(4));
+        let mut family = CuspFamily::new(Integer::from(12), Integer::from(4));
+        family.add_cusp(Integer::one(), Integer::from(4));
         assert_eq!(family.len(), 1);
         assert!(!family.is_empty());
     }
@@ -399,25 +403,25 @@ mod tests {
     #[test]
     fn test_order_at_infinity() {
         let mut powers = HashMap::new();
-        powers.insert(BigInt::one(), 24);
+        powers.insert(Integer::one(), 24);
 
-        let eta = EtaGroupElement::new(BigInt::one(), powers);
+        let eta = EtaGroupElement::new(Integer::one(), powers);
         let order = eta.order_at_infinity();
-        assert_eq!(order, BigRational::one());
+        assert_eq!(order, Rational::one());
     }
 
     #[test]
     fn test_eta_multiply() {
         let mut powers1 = HashMap::new();
-        powers1.insert(BigInt::one(), 1);
+        powers1.insert(Integer::one(), 1);
 
         let mut powers2 = HashMap::new();
-        powers2.insert(BigInt::one(), 2);
+        powers2.insert(Integer::one(), 2);
 
-        let eta1 = EtaGroupElement::new(BigInt::one(), powers1);
-        let eta2 = EtaGroupElement::new(BigInt::one(), powers2);
+        let eta1 = EtaGroupElement::new(Integer::one(), powers1);
+        let eta2 = EtaGroupElement::new(Integer::one(), powers2);
 
         let product = eta1.mul(&eta2).unwrap();
-        assert_eq!(product.get_power(&BigInt::one()), 3);
+        assert_eq!(product.get_power(&Integer::one()), 3);
     }
 }

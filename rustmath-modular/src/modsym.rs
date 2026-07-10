@@ -6,9 +6,9 @@
 
 use crate::arithgroup::ArithmeticSubgroup;
 use crate::cusps::Cusp;
-use num_bigint::BigInt;
-use num_rational::BigRational;
-use num_traits::{Zero, One};
+use rustmath_core::Ring;
+use rustmath_integers::Integer;
+use rustmath_rationals::Rational;
 
 /// A modular symbol {α → β}
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -47,10 +47,10 @@ impl ModularSymbol {
     /// {α → β} maps to {γα → γβ}
     pub fn apply_matrix(
         &self,
-        a: &BigInt,
-        b: &BigInt,
-        c: &BigInt,
-        d: &BigInt,
+        a: &Integer,
+        b: &Integer,
+        c: &Integer,
+        d: &Integer,
     ) -> ModularSymbol {
         ModularSymbol {
             alpha: self.alpha.apply_matrix(a, b, c, d),
@@ -145,7 +145,7 @@ impl ModularSymbolSpace {
 #[derive(Debug, Clone)]
 pub struct ModularSymbolElement {
     /// Coefficients for each basis element
-    coefficients: Vec<BigRational>,
+    coefficients: Vec<Rational>,
     /// Reference to the ambient space
     dimension: usize,
 }
@@ -154,20 +154,20 @@ impl ModularSymbolElement {
     /// Create a new element
     pub fn new(dimension: usize) -> Self {
         ModularSymbolElement {
-            coefficients: vec![BigRational::zero(); dimension],
+            coefficients: vec![Rational::zero(); dimension],
             dimension,
         }
     }
 
     /// Set coefficient
-    pub fn set_coefficient(&mut self, index: usize, value: BigRational) {
+    pub fn set_coefficient(&mut self, index: usize, value: Rational) {
         if index < self.dimension {
             self.coefficients[index] = value;
         }
     }
 
     /// Get coefficient
-    pub fn coefficient(&self, index: usize) -> Option<&BigRational> {
+    pub fn coefficient(&self, index: usize) -> Option<&Rational> {
         self.coefficients.get(index)
     }
 
@@ -185,7 +185,7 @@ impl ModularSymbolElement {
     }
 
     /// Scalar multiplication
-    pub fn scalar_mul(&self, scalar: &BigRational) -> ModularSymbolElement {
+    pub fn scalar_mul(&self, scalar: &Rational) -> ModularSymbolElement {
         let mut result = ModularSymbolElement::new(self.dimension);
         for i in 0..self.dimension {
             result.coefficients[i] = &self.coefficients[i] * scalar;
@@ -199,15 +199,15 @@ impl ModularSymbolElement {
 #[derive(Debug, Clone)]
 pub struct ManinSymbol {
     /// Coefficients of polynomial P(X,Y) of degree k-2
-    polynomial_coeffs: Vec<BigInt>,
+    polynomial_coeffs: Vec<Integer>,
     /// Cusp (c:d)
-    c: BigInt,
-    d: BigInt,
+    c: Integer,
+    d: Integer,
 }
 
 impl ManinSymbol {
     /// Create a new Manin symbol
-    pub fn new(polynomial_coeffs: Vec<BigInt>, c: BigInt, d: BigInt) -> Self {
+    pub fn new(polynomial_coeffs: Vec<Integer>, c: Integer, d: Integer) -> Self {
         ManinSymbol {
             polynomial_coeffs,
             c,
@@ -216,12 +216,12 @@ impl ManinSymbol {
     }
 
     /// Get polynomial coefficients
-    pub fn polynomial_coeffs(&self) -> &[BigInt] {
+    pub fn polynomial_coeffs(&self) -> &[Integer] {
         &self.polynomial_coeffs
     }
 
     /// Get cusp coordinates
-    pub fn cusp_coords(&self) -> (&BigInt, &BigInt) {
+    pub fn cusp_coords(&self) -> (&Integer, &Integer) {
         (&self.c, &self.d)
     }
 }
@@ -271,7 +271,7 @@ pub struct BoundaryMap {
     /// Codomain dimension (number of cusps)
     codomain_dim: usize,
     /// Matrix representation
-    matrix: Vec<Vec<BigInt>>,
+    matrix: Vec<Vec<Integer>>,
 }
 
 impl BoundaryMap {
@@ -280,18 +280,18 @@ impl BoundaryMap {
         BoundaryMap {
             domain_dim,
             codomain_dim,
-            matrix: vec![vec![BigInt::zero(); domain_dim]; codomain_dim],
+            matrix: vec![vec![Integer::zero(); domain_dim]; codomain_dim],
         }
     }
 
     /// Apply the boundary map to an element
-    pub fn apply(&self, element: &ModularSymbolElement) -> Vec<BigRational> {
-        let mut result = vec![BigRational::zero(); self.codomain_dim];
+    pub fn apply(&self, element: &ModularSymbolElement) -> Vec<Rational> {
+        let mut result = vec![Rational::zero(); self.codomain_dim];
         for i in 0..self.codomain_dim {
             for j in 0..self.domain_dim {
                 if let Some(coeff) = element.coefficient(j) {
-                    result[i] += BigRational::new(self.matrix[i][j].clone(), BigInt::one())
-                        * coeff;
+                    result[i] = &result[i]
+                        + &(Rational::from_integer(self.matrix[i][j].clone()) * coeff.clone());
                 }
             }
         }
@@ -311,7 +311,7 @@ mod tests {
         assert!(sym.alpha().is_infinity());
         assert_eq!(
             sym.beta().numerator(),
-            Some(&BigInt::zero())
+            Some(&Integer::zero())
         );
     }
 
@@ -319,7 +319,7 @@ mod tests {
     fn test_modular_symbol_reverse() {
         let sym = ModularSymbol::new(Cusp::infinity(), Cusp::zero());
         let rev = sym.reverse();
-        assert_eq!(rev.alpha().numerator(), Some(&BigInt::zero()));
+        assert_eq!(rev.alpha().numerator(), Some(&Integer::zero()));
         assert!(rev.beta().is_infinity());
     }
 
@@ -338,36 +338,36 @@ mod tests {
     #[test]
     fn test_modular_symbol_element() {
         let mut elem = ModularSymbolElement::new(3);
-        elem.set_coefficient(0, BigRational::one());
-        elem.set_coefficient(1, BigRational::from_integer(BigInt::from(2)));
+        elem.set_coefficient(0, Rational::one());
+        elem.set_coefficient(1, Rational::from_integer(Integer::from(2)));
 
-        assert_eq!(elem.coefficient(0), Some(&BigRational::one()));
+        assert_eq!(elem.coefficient(0), Some(&Rational::one()));
         assert_eq!(
             elem.coefficient(1),
-            Some(&BigRational::from_integer(BigInt::from(2)))
+            Some(&Rational::from_integer(Integer::from(2)))
         );
     }
 
     #[test]
     fn test_modular_symbol_addition() {
         let mut elem1 = ModularSymbolElement::new(2);
-        elem1.set_coefficient(0, BigRational::one());
+        elem1.set_coefficient(0, Rational::one());
 
         let mut elem2 = ModularSymbolElement::new(2);
-        elem2.set_coefficient(0, BigRational::from_integer(BigInt::from(2)));
+        elem2.set_coefficient(0, Rational::from_integer(Integer::from(2)));
 
         let sum = elem1.add(&elem2).unwrap();
         assert_eq!(
             sum.coefficient(0),
-            Some(&BigRational::from_integer(BigInt::from(3)))
+            Some(&Rational::from_integer(Integer::from(3)))
         );
     }
 
     #[test]
     fn test_manin_symbol() {
-        let poly = vec![BigInt::one(), BigInt::from(2)];
-        let sym = ManinSymbol::new(poly, BigInt::one(), BigInt::zero());
+        let poly = vec![Integer::one(), Integer::from(2)];
+        let sym = ManinSymbol::new(poly, Integer::one(), Integer::zero());
         assert_eq!(sym.polynomial_coeffs().len(), 2);
-        assert_eq!(sym.cusp_coords(), (&BigInt::one(), &BigInt::zero()));
+        assert_eq!(sym.cusp_coords(), (&Integer::one(), &Integer::zero()));
     }
 }

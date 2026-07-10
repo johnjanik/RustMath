@@ -66,9 +66,6 @@ pub use lfunction::DirichletLFunction;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use num_bigint::BigInt;
-    use num_rational::BigRational;
-    use num_traits::{Zero, One};
 
     #[test]
     fn test_basic_modular_imports() {

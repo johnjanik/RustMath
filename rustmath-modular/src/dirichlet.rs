@@ -6,18 +6,16 @@
 //! A Dirichlet character modulo N is a group homomorphism from
 //! (Z/NZ)* to the multiplicative group of complex numbers.
 
-use num_bigint::BigInt;
-use num_traits::{One, ToPrimitive, Signed};
-use num_integer::Integer;
+use rustmath_integers::Integer;
 use std::collections::HashMap;
 
 /// A Dirichlet character modulo N
 #[derive(Debug, Clone)]
 pub struct DirichletCharacter {
     /// The modulus
-    modulus: BigInt,
+    modulus: Integer,
     /// Values of the character on generators of (Z/NZ)*
-    values: HashMap<BigInt, i32>,
+    values: HashMap<Integer, i32>,
     /// Order of the character
     order: Option<usize>,
 }
@@ -28,7 +26,7 @@ impl DirichletCharacter {
     /// # Arguments
     /// * `modulus` - The modulus N
     /// * `values` - Character values on generators
-    pub fn new(modulus: BigInt, values: HashMap<BigInt, i32>) -> Self {
+    pub fn new(modulus: Integer, values: HashMap<Integer, i32>) -> Self {
         DirichletCharacter {
             modulus,
             values,
@@ -37,7 +35,7 @@ impl DirichletCharacter {
     }
 
     /// Get the modulus of this character
-    pub fn modulus(&self) -> &BigInt {
+    pub fn modulus(&self) -> &Integer {
         &self.modulus
     }
 
@@ -48,9 +46,10 @@ impl DirichletCharacter {
     ///
     /// # Returns
     /// The value of the character (as root of unity represented by integer power)
-    pub fn eval(&self, n: &BigInt) -> i32 {
-        // Reduce n modulo the modulus
-        let n_mod = n.mod_floor(&self.modulus);
+    pub fn eval(&self, n: &Integer) -> i32 {
+        // Reduce n modulo the modulus (mod_floor semantics for the positive
+        // modulus case: always a non-negative representative)
+        let n_mod = n.modulo(&self.modulus);
 
         // Check if n is coprime to modulus
         if !n_mod.gcd(&self.modulus).is_one() {
@@ -83,16 +82,22 @@ impl DirichletCharacter {
         }
 
         // Find lcm of orders of values
+        fn gcd_usize(a: usize, b: usize) -> usize {
+            if b == 0 { a } else { gcd_usize(b, a % b) }
+        }
+        fn lcm_usize(a: usize, b: usize) -> usize {
+            if a == 0 || b == 0 { 0 } else { a / gcd_usize(a, b) * b }
+        }
         let mut ord = 1;
         for &v in self.values.values() {
-            ord = num_integer::lcm(ord, v.abs() as usize);
+            ord = lcm_usize(ord, v.abs() as usize);
         }
 
         ord
     }
 
     /// Compute the conductor of the character
-    pub fn conductor(&self) -> BigInt {
+    pub fn conductor(&self) -> Integer {
         // Conductor is the smallest modulus for which this character is defined
         // For now, return the modulus (simplified)
         self.modulus.clone()
@@ -106,13 +111,13 @@ impl DirichletCharacter {
     /// Check if the character is even
     pub fn is_even(&self) -> bool {
         // A character is even if χ(-1) = 1
-        self.eval(&(-BigInt::one())) == 1
+        self.eval(&(-Integer::one())) == 1
     }
 
     /// Check if the character is odd
     pub fn is_odd(&self) -> bool {
         // A character is odd if χ(-1) = -1
-        self.eval(&(-BigInt::one())) == -1
+        self.eval(&(-Integer::one())) == -1
     }
 
     /// Gauss sum of the character
@@ -134,7 +139,7 @@ impl DirichletCharacter {
 #[derive(Debug, Clone)]
 pub struct DirichletGroup {
     /// The modulus
-    modulus: BigInt,
+    modulus: Integer,
     /// List of characters in the group
     characters: Vec<DirichletCharacter>,
 }
@@ -144,17 +149,26 @@ impl DirichletGroup {
     ///
     /// # Arguments
     /// * `modulus` - The modulus N
-    pub fn new(modulus: BigInt) -> Self {
+    pub fn new(modulus: Integer) -> Self {
         let mut characters = Vec::new();
 
-        // Add the trivial character
+        // Add the trivial character (always correct: the trivial character
+        // mod N always exists).
         characters.push(DirichletCharacter::new(
             modulus.clone(),
             HashMap::new(),
         ));
 
-        // TODO: Generate all characters
-        // This requires factoring (Z/NZ)* and creating all homomorphisms
+        // Generating the full group of Dirichlet characters mod N requires
+        // factoring (Z/NZ)* and constructing all homomorphisms to C*. That is
+        // not implemented, so be honest about it rather than silently
+        // returning a "group" containing only the trivial character whenever
+        // more characters actually exist (i.e. phi(N) > 1).
+        if euler_phi(&modulus) > Integer::one() {
+            unimplemented!(
+                "DirichletGroup::new: generation of non-trivial Dirichlet characters not yet implemented (facade); only the trivial character (phi(N) = 1) is supported"
+            );
+        }
 
         DirichletGroup {
             modulus,
@@ -163,7 +177,7 @@ impl DirichletGroup {
     }
 
     /// Get the modulus
-    pub fn modulus(&self) -> &BigInt {
+    pub fn modulus(&self) -> &Integer {
         &self.modulus
     }
 
@@ -193,7 +207,7 @@ impl DirichletGroup {
     }
 
     /// Order of the group (Euler phi function)
-    pub fn order(&self) -> BigInt {
+    pub fn order(&self) -> Integer {
         euler_phi(&self.modulus)
     }
 }
@@ -205,7 +219,7 @@ impl DirichletGroup {
 ///
 /// # Returns
 /// The group of Dirichlet characters modulo N
-pub fn dirichlet_group_class(N: BigInt) -> DirichletGroup {
+pub fn dirichlet_group_class(N: Integer) -> DirichletGroup {
     DirichletGroup::new(N)
 }
 
@@ -228,7 +242,7 @@ pub fn is_dirichlet_group(obj: &DirichletGroup) -> bool {
 ///
 /// # Returns
 /// The trivial character modulo N
-pub fn trivial_character(N: BigInt) -> DirichletCharacter {
+pub fn trivial_character(N: Integer) -> DirichletCharacter {
     DirichletCharacter::new(N, HashMap::new())
 }
 
@@ -240,11 +254,15 @@ pub fn trivial_character(N: BigInt) -> DirichletCharacter {
 ///
 /// # Returns
 /// The Kronecker character
-pub fn kronecker_character(d: BigInt) -> DirichletCharacter {
+pub fn kronecker_character(d: Integer) -> DirichletCharacter {
     // The Kronecker character is a Dirichlet character defined by
-    // the Kronecker symbol (d/n)
-    // For now, return a trivial implementation
-    DirichletCharacter::new(d.abs(), HashMap::new())
+    // the Kronecker symbol (d/n). Computing its actual values requires
+    // evaluating the Kronecker symbol, which is not implemented here;
+    // previously this silently returned the trivial character instead.
+    let _ = d;
+    unimplemented!(
+        "kronecker_character not yet implemented (facade): previously returned the trivial character"
+    )
 }
 
 /// Compute the Kronecker character (./d)
@@ -254,7 +272,7 @@ pub fn kronecker_character(d: BigInt) -> DirichletCharacter {
 ///
 /// # Returns
 /// The Kronecker character (upside down)
-pub fn kronecker_character_upside_down(d: BigInt) -> DirichletCharacter {
+pub fn kronecker_character_upside_down(d: Integer) -> DirichletCharacter {
     // Similar to kronecker_character but with arguments flipped
     kronecker_character(d)
 }
@@ -262,7 +280,7 @@ pub fn kronecker_character_upside_down(d: BigInt) -> DirichletCharacter {
 /// Create a principal Dirichlet character modulo N
 ///
 /// This is the character χ that is 1 on all units
-pub fn principal_character(N: BigInt) -> DirichletCharacter {
+pub fn principal_character(N: Integer) -> DirichletCharacter {
     trivial_character(N)
 }
 
@@ -274,36 +292,37 @@ pub fn principal_character(N: BigInt) -> DirichletCharacter {
 /// # Returns
 /// The quadratic character (d/·)
 pub fn quadratic_character(d: i64) -> DirichletCharacter {
-    // The quadratic character is defined by the Kronecker symbol
-    let modulus = BigInt::from(d.abs());
-
-    // For a proper implementation, we'd need to compute the actual values
-    // For now, return a basic character
-    DirichletCharacter::new(modulus, HashMap::new())
+    // The quadratic character is defined by the Kronecker symbol (d/.).
+    // Computing the actual character values is not implemented here;
+    // previously this silently returned the trivial character instead.
+    let _ = d;
+    unimplemented!(
+        "quadratic_character not yet implemented (facade): previously returned the trivial character"
+    )
 }
 
 /// Compute Euler's phi function (totient)
-fn euler_phi(n: &BigInt) -> BigInt {
-    if n <= &BigInt::one() {
-        return BigInt::one();
+fn euler_phi(n: &Integer) -> Integer {
+    if n <= &Integer::one() {
+        return Integer::one();
     }
 
     let mut result = n.clone();
     let mut n_copy = n.clone();
-    let mut p = BigInt::from(2);
+    let mut p = Integer::from(2);
 
     while &p * &p <= n_copy {
-        if n_copy.is_multiple_of(&p) {
-            while n_copy.is_multiple_of(&p) {
-                n_copy /= &p;
+        if (&n_copy % &p).is_zero() {
+            while (&n_copy % &p).is_zero() {
+                n_copy = &n_copy / &p;
             }
-            result = result * (&p - BigInt::one()) / &p;
+            result = result * (&p - &Integer::one()) / p.clone();
         }
-        p += BigInt::one();
+        p = p + Integer::one();
     }
 
-    if n_copy > BigInt::one() {
-        result = result * (&n_copy - BigInt::one()) / &n_copy;
+    if n_copy > Integer::one() {
+        result = result * (&n_copy - &Integer::one()) / n_copy.clone();
     }
 
     result
@@ -315,55 +334,62 @@ mod tests {
 
     #[test]
     fn test_trivial_character() {
-        let chi = trivial_character(BigInt::from(12));
-        assert_eq!(chi.modulus(), &BigInt::from(12));
+        let chi = trivial_character(Integer::from(12));
+        assert_eq!(chi.modulus(), &Integer::from(12));
         assert!(chi.is_trivial());
         assert_eq!(chi.order(), 1);
     }
 
     #[test]
     fn test_TrivialCharacter() {
-        let chi = TrivialCharacter(BigInt::from(12));
+        let chi = trivial_character(Integer::from(12));
         assert!(chi.is_trivial());
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented; needs real algorithm (Phase 4)"]
     fn test_dirichlet_group() {
-        let G = DirichletGroup::new(BigInt::from(5));
-        assert_eq!(G.modulus(), &BigInt::from(5));
+        // modulus 5 has phi(5) = 4 > 1, so non-trivial character generation
+        // is required and is not yet implemented.
+        let G = DirichletGroup::new(Integer::from(5));
+        assert_eq!(G.modulus(), &Integer::from(5));
         assert!(!G.is_empty());
     }
 
     #[test]
     fn test_is_DirichletCharacter() {
-        let chi = trivial_character(BigInt::from(7));
-        assert!(is_DirichletCharacter(&chi));
+        let chi = trivial_character(Integer::from(7));
+        assert!(is_dirichlet_character(&chi));
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented; needs real algorithm (Phase 4)"]
     fn test_is_DirichletGroup() {
-        let G = DirichletGroup::new(BigInt::from(11));
-        assert!(is_DirichletGroup(&G));
+        // modulus 11 has phi(11) = 10 > 1, so non-trivial character
+        // generation is required and is not yet implemented.
+        let G = DirichletGroup::new(Integer::from(11));
+        assert!(is_dirichlet_group(&G));
     }
 
     #[test]
     fn test_character_eval() {
-        let chi = trivial_character(BigInt::from(5));
-        assert_eq!(chi.eval(&BigInt::from(3)), 1);
-        assert_eq!(chi.eval(&BigInt::from(5)), 0); // Not coprime to modulus
+        let chi = trivial_character(Integer::from(5));
+        assert_eq!(chi.eval(&Integer::from(3)), 1);
+        assert_eq!(chi.eval(&Integer::from(5)), 0); // Not coprime to modulus
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented; needs real algorithm (Phase 4)"]
     fn test_kronecker_character() {
-        let chi = kronecker_character(BigInt::from(5));
-        assert_eq!(chi.modulus(), &BigInt::from(5));
+        let chi = kronecker_character(Integer::from(5));
+        assert_eq!(chi.modulus(), &Integer::from(5));
     }
 
     #[test]
     fn test_euler_phi() {
-        assert_eq!(euler_phi(&BigInt::from(1)), BigInt::one());
-        assert_eq!(euler_phi(&BigInt::from(2)), BigInt::one());
-        assert_eq!(euler_phi(&BigInt::from(5)), BigInt::from(4));
-        assert_eq!(euler_phi(&BigInt::from(12)), BigInt::from(4));
+        assert_eq!(euler_phi(&Integer::from(1)), Integer::one());
+        assert_eq!(euler_phi(&Integer::from(2)), Integer::one());
+        assert_eq!(euler_phi(&Integer::from(5)), Integer::from(4));
+        assert_eq!(euler_phi(&Integer::from(12)), Integer::from(4));
     }
 }

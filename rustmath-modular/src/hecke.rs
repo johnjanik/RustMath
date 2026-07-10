@@ -3,11 +3,15 @@
 //! Hecke operators are important endomorphisms of spaces of modular forms
 //! that encode arithmetic information.
 
-use num_bigint::BigInt;
-use num_integer::Integer;
-use num_rational::BigRational;
-use num_traits::{Zero, One, Signed};
+use rustmath_core::Ring;
+use rustmath_integers::Integer;
+use rustmath_rationals::Rational;
 use std::collections::HashMap;
+
+/// Greatest common divisor for u64 arguments.
+fn gcd_u64(a: u64, b: u64) -> u64 {
+    if b == 0 { a } else { gcd_u64(b, a % b) }
+}
 
 /// A Hecke operator T_n
 #[derive(Debug, Clone)]
@@ -17,7 +21,7 @@ pub struct HeckeOperator {
     /// Level of the modular forms space
     level: u64,
     /// Matrix representation (if computed)
-    matrix: Option<Vec<Vec<BigRational>>>,
+    matrix: Option<Vec<Vec<Rational>>>,
 }
 
 impl HeckeOperator {
@@ -45,21 +49,21 @@ impl HeckeOperator {
     /// b_m = sum_{d | gcd(n,m)} d * a(nm/d^2)
     pub fn apply_to_coefficients(
         &self,
-        input_coeffs: &HashMap<u64, BigRational>,
+        input_coeffs: &HashMap<u64, Rational>,
         max_output: u64,
-    ) -> HashMap<u64, BigRational> {
+    ) -> HashMap<u64, Rational> {
         let mut result = HashMap::new();
 
         for m in 0..=max_output {
-            let mut b_m = BigRational::zero();
+            let mut b_m = Rational::zero();
 
             // Sum over divisors of gcd(n, m)
-            let g = Integer::gcd(&self.n, &m);
+            let g = gcd_u64(self.n, m);
             for d in 1..=g {
                 if g % d == 0 {
                     let nm_over_d2 = (self.n * m) / (d * d);
                     if let Some(a_val) = input_coeffs.get(&nm_over_d2) {
-                        b_m += BigRational::from_integer(BigInt::from(d)) * a_val;
+                        b_m = b_m + Rational::from_integer(Integer::from(d)) * a_val.clone();
                     }
                 }
             }
@@ -74,7 +78,7 @@ impl HeckeOperator {
 
     /// Check if this is a good Hecke operator (gcd(n, level) = 1)
     pub fn is_good(&self) -> bool {
-        Integer::gcd(&self.n, &self.level) == 1
+        gcd_u64(self.n, self.level) == 1
     }
 
     /// Check if this is a bad Hecke operator (gcd(n, level) > 1)
@@ -126,15 +130,11 @@ impl HeckeAlgebra {
 
     /// Compute Hecke eigenvalues for a newform
     /// Returns map from n to eigenvalue of T_n
-    pub fn eigenvalues(&self, max_n: u64) -> HashMap<u64, BigRational> {
-        let mut eigenvalues = HashMap::new();
-
-        for n in 1..=max_n {
-            // Placeholder: actual computation requires more sophisticated methods
-            eigenvalues.insert(n, BigRational::zero());
-        }
-
-        eigenvalues
+    pub fn eigenvalues(&self, max_n: u64) -> HashMap<u64, Rational> {
+        let _ = max_n;
+        unimplemented!(
+            "HeckeAlgebra::eigenvalues not yet implemented (facade): previously returned all zeros"
+        )
     }
 }
 
@@ -144,13 +144,13 @@ pub trait HeckeModule {
     fn dimension(&self) -> usize;
 
     /// Apply Hecke operator T_n
-    fn apply_hecke(&self, n: u64, element: &[BigRational]) -> Vec<BigRational>;
+    fn apply_hecke(&self, n: u64, element: &[Rational]) -> Vec<Rational>;
 
     /// Get the level
     fn level(&self) -> u64;
 
     /// Check if a vector is a Hecke eigenform
-    fn is_eigenform(&self, element: &[BigRational], max_n: u64) -> bool {
+    fn is_eigenform(&self, element: &[Rational], max_n: u64) -> bool {
         // Check if T_n(f) = lambda_n * f for small n
         for n in 1..=max_n {
             let t_n_f = self.apply_hecke(n, element);
@@ -163,10 +163,10 @@ pub trait HeckeModule {
             let ratio = &t_n_f[0] / &element[0];
             for i in 0..self.dimension() {
                 let expected = &element[i] * &ratio;
-                if (t_n_f[i].clone() - expected).abs() > BigRational::new(
-                    BigInt::one(),
-                    BigInt::from(1000000),
-                ) {
+                if (t_n_f[i].clone() - expected).abs()
+                    > Rational::new(Integer::one(), Integer::from(1000000))
+                        .expect("nonzero denominator")
+                {
                     return false;
                 }
             }
@@ -183,9 +183,9 @@ pub struct Newform {
     /// Level
     level: u64,
     /// q-expansion coefficients
-    coefficients: HashMap<u64, BigRational>,
+    coefficients: HashMap<u64, Rational>,
     /// Hecke eigenvalues
-    eigenvalues: HashMap<u64, BigRational>,
+    eigenvalues: HashMap<u64, Rational>,
 }
 
 impl Newform {
@@ -210,22 +210,22 @@ impl Newform {
     }
 
     /// Get coefficient a(n)
-    pub fn coefficient(&self, n: u64) -> Option<&BigRational> {
+    pub fn coefficient(&self, n: u64) -> Option<&Rational> {
         self.coefficients.get(&n)
     }
 
     /// Set coefficient
-    pub fn set_coefficient(&mut self, n: u64, value: BigRational) {
+    pub fn set_coefficient(&mut self, n: u64, value: Rational) {
         self.coefficients.insert(n, value);
     }
 
     /// Get eigenvalue of T_n
-    pub fn eigenvalue(&self, n: u64) -> Option<&BigRational> {
+    pub fn eigenvalue(&self, n: u64) -> Option<&Rational> {
         self.eigenvalues.get(&n)
     }
 
     /// Set eigenvalue of T_n
-    pub fn set_eigenvalue(&mut self, n: u64, value: BigRational) {
+    pub fn set_eigenvalue(&mut self, n: u64, value: Rational) {
         self.eigenvalues.insert(n, value);
     }
 
@@ -233,17 +233,17 @@ impl Newform {
     pub fn is_normalized(&self) -> bool {
         self.coefficients
             .get(&1)
-            .map(|c| c == &BigRational::one())
+            .map(|c| c == &Rational::one())
             .unwrap_or(false)
     }
 
     /// Normalize the newform so that a(1) = 1
     pub fn normalize(&mut self) {
         if let Some(a1) = self.coefficients.get(&1).cloned() {
-            if !a1.is_zero() && a1 != BigRational::one() {
-                let inv_a1 = a1.recip();
+            if !a1.is_zero() && a1 != Rational::one() {
+                let inv_a1 = a1.reciprocal().expect("a1 nonzero (checked above)");
                 for (_, coeff) in self.coefficients.iter_mut() {
-                    *coeff = coeff.clone() * &inv_a1;
+                    *coeff = &*coeff * &inv_a1;
                 }
             }
         }
@@ -262,7 +262,7 @@ pub struct DiamondOperator {
 impl DiamondOperator {
     /// Create a new diamond operator <d>
     pub fn new(d: u64, level: u64) -> Option<Self> {
-        if Integer::gcd(&d, &level) == 1 {
+        if gcd_u64(d, level) == 1 {
             Some(DiamondOperator { d, level })
         } else {
             None
@@ -282,12 +282,15 @@ impl DiamondOperator {
     /// Apply to a modular form (modifies q-expansion)
     pub fn apply_to_coefficients(
         &self,
-        input_coeffs: &HashMap<u64, BigRational>,
-    ) -> HashMap<u64, BigRational> {
-        // For Gamma1(N), <d> acts by character twist
-        // In the q-expansion, this typically involves a character evaluation
-        // Placeholder implementation
-        input_coeffs.clone()
+        input_coeffs: &HashMap<u64, Rational>,
+    ) -> HashMap<u64, Rational> {
+        // For Gamma1(N), <d> acts by character twist; the action on q-expansion
+        // coefficients requires evaluating a Dirichlet character, which is not
+        // yet implemented. Previously this was a no-op that just cloned the input.
+        let _ = input_coeffs;
+        unimplemented!(
+            "DiamondOperator::apply_to_coefficients not yet implemented (facade): was a no-op"
+        )
     }
 }
 
@@ -308,7 +311,7 @@ impl AtkinLehnerInvolution {
             return None;
         }
         let quotient = level / q;
-        if Integer::gcd(&q, &quotient) != 1 {
+        if gcd_u64(q, quotient) != 1 {
             return None;
         }
         Some(AtkinLehnerInvolution { q, level })
@@ -328,10 +331,15 @@ impl AtkinLehnerInvolution {
     /// W_Q typically has eigenvalues ±1
     pub fn apply_to_coefficients(
         &self,
-        input_coeffs: &HashMap<u64, BigRational>,
-    ) -> HashMap<u64, BigRational> {
-        // Placeholder: full implementation requires matrix representation
-        input_coeffs.clone()
+        input_coeffs: &HashMap<u64, Rational>,
+    ) -> HashMap<u64, Rational> {
+        // Full implementation requires a matrix representation of W_Q on the
+        // modular symbols / modular forms space. Previously this was a no-op
+        // that just cloned the input.
+        let _ = input_coeffs;
+        unimplemented!(
+            "AtkinLehnerInvolution::apply_to_coefficients not yet implemented (facade): was a no-op"
+        )
     }
 }
 
@@ -373,22 +381,22 @@ mod tests {
     #[test]
     fn test_newform() {
         let mut f = Newform::new(2, 11);
-        f.set_coefficient(1, BigRational::one());
-        assert_eq!(f.coefficient(1), Some(&BigRational::one()));
+        f.set_coefficient(1, Rational::one());
+        assert_eq!(f.coefficient(1), Some(&Rational::one()));
         assert!(f.is_normalized());
     }
 
     #[test]
     fn test_newform_normalization() {
         let mut f = Newform::new(2, 11);
-        f.set_coefficient(1, BigRational::from_integer(BigInt::from(2)));
-        f.set_coefficient(2, BigRational::from_integer(BigInt::from(4)));
+        f.set_coefficient(1, Rational::from_integer(Integer::from(2)));
+        f.set_coefficient(2, Rational::from_integer(Integer::from(4)));
 
         f.normalize();
-        assert_eq!(f.coefficient(1), Some(&BigRational::one()));
+        assert_eq!(f.coefficient(1), Some(&Rational::one()));
         assert_eq!(
             f.coefficient(2),
-            Some(&BigRational::from_integer(BigInt::from(2)))
+            Some(&Rational::from_integer(Integer::from(2)))
         );
     }
 
@@ -411,12 +419,16 @@ mod tests {
         let w = AtkinLehnerInvolution::new(11, 11);
         assert!(w.is_some());
 
-        // W_2 for level 4 (2 || 4)
-        let w2 = AtkinLehnerInvolution::new(2, 4);
+        // W_4 for level 12 (4 || 12: 4 | 12 and gcd(4, 12/4) = gcd(4, 3) = 1)
+        let w2 = AtkinLehnerInvolution::new(4, 12);
         assert!(w2.is_some());
 
-        // Should fail if Q doesn't exactly divide N
+        // Q = 2 does NOT exactly divide N = 4: gcd(2, 4/2) = gcd(2, 2) = 2 != 1
+        let not_exact = AtkinLehnerInvolution::new(2, 4);
+        assert!(not_exact.is_none());
+
+        // Should fail if Q doesn't even divide N
         let bad_w = AtkinLehnerInvolution::new(3, 11);
-        assert!(bad_w.is_some()); // Actually 3 doesn't divide 11, so this should be None
+        assert!(bad_w.is_none()); // 3 doesn't divide 11
     }
 }

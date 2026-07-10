@@ -3,12 +3,93 @@
 //! This module implements modular abelian varieties, which are abelian varieties
 //! arising from modular forms.
 
-use crate::arithgroup::{ArithmeticSubgroup, Gamma0, Gamma1};
+use crate::arithgroup::{Gamma0, Gamma1};
 use crate::hecke::{HeckeOperator, Newform};
 use crate::modsym::ModularSymbolSpace;
-use num_bigint::BigInt;
-use num_rational::BigRational;
-use num_traits::One;
+use rustmath_integers::Integer;
+use rustmath_rationals::Rational;
+
+/// Euler's totient phi(n) for small u64 arguments.
+fn euler_phi(mut n: u64) -> u64 {
+    if n == 0 {
+        return 0;
+    }
+    let mut result = n;
+    let mut p = 2u64;
+    while p * p <= n {
+        if n % p == 0 {
+            while n % p == 0 {
+                n /= p;
+            }
+            result -= result / p;
+        }
+        p += 1;
+    }
+    if n > 1 {
+        result -= result / n;
+    }
+    result
+}
+
+/// Genus of the modular curve X_0(N) (= dimension of J_0(N)).
+///
+/// Uses the exact formula
+///   g = 1 + mu/12 - eps2/4 - eps3/3 - eps_inf/2
+/// where mu = [SL2(Z):Gamma0(N)], eps_inf is the number of cusps, and
+/// eps2, eps3 are the numbers of elliptic points of order 2 and 3, computed
+/// as the residue counts #{x mod N : x^2 + 1 = 0} and
+/// #{x mod N : x^2 + x + 1 = 0} respectively. Verified against SageMath.
+fn genus_x0(level: u64) -> usize {
+    if level == 1 {
+        return 0;
+    }
+    let g0 = Gamma0::new(level);
+    let mu = g0.compute_index() as i64;
+    let cusps = g0.compute_cusp_count() as i64;
+    let n = level as u128;
+    // Elliptic points of order 2: solutions of x^2 + 1 == 0 (mod N).
+    let eps2 = (0..level)
+        .filter(|&x| ((x as u128) * (x as u128) + 1) % n == 0)
+        .count() as i64;
+    // Elliptic points of order 3: solutions of x^2 + x + 1 == 0 (mod N).
+    let eps3 = (0..level)
+        .filter(|&x| ((x as u128) * (x as u128) + (x as u128) + 1) % n == 0)
+        .count() as i64;
+    // g = 1 + (mu - 3*eps2 - 4*eps3 - 6*cusps) / 12; the numerator is always
+    // divisible by 12 and the result is >= 0.
+    let num = mu - 3 * eps2 - 4 * eps3 - 6 * cusps;
+    debug_assert_eq!(num.rem_euclid(12), 0, "X0 genus numerator not divisible by 12");
+    let g = 1 + num / 12;
+    debug_assert!(g >= 0, "negative genus for X0({level})");
+    g.max(0) as usize
+}
+
+/// Genus of the modular curve X_1(N) (= dimension of J_1(N)).
+///
+/// For N <= 4 the genus is 0. For N >= 5, Gamma1(N) has no elliptic points,
+/// so
+///   g = 1 + mu/24 - eps_inf/2
+/// where mu = [SL2(Z):Gamma1(N)] and eps_inf = (1/2) sum_{d|N} phi(d) phi(N/d)
+/// is the number of cusps. Verified against SageMath.
+fn genus_x1(level: u64) -> usize {
+    if level <= 4 {
+        return 0;
+    }
+    let mu = Gamma1::new(level).compute_index() as i64;
+    // 2 * (number of cusps) = sum_{d|N} phi(d) phi(N/d).
+    let mut twice_cusps = 0i64;
+    for d in 1..=level {
+        if level % d == 0 {
+            twice_cusps += (euler_phi(d) * euler_phi(level / d)) as i64;
+        }
+    }
+    // g = 1 + mu/24 - cusps/2 = 1 + (mu - 6 * twice_cusps) / 24.
+    let num = mu - 6 * twice_cusps;
+    debug_assert_eq!(num.rem_euclid(24), 0, "X1 genus numerator not divisible by 24");
+    let g = 1 + num / 24;
+    debug_assert!(g >= 0, "negative genus for X1({level})");
+    g.max(0) as usize
+}
 
 /// A modular abelian variety
 #[derive(Debug, Clone)]
@@ -48,14 +129,22 @@ impl ModularAbelianVariety {
 
     /// Check if this abelian variety is simple
     pub fn is_simple(&self) -> bool {
-        // Placeholder: would need to check if it's not a product
-        self.dimension == 1
+        // Determining simplicity requires computing the isogeny decomposition
+        // (e.g. via the Hecke algebra acting on the newform factors), which
+        // is not yet implemented. Previously this used `dimension == 1` as a
+        // stand-in, which is not a correct simplicity test.
+        unimplemented!(
+            "ModularAbelianVariety::is_simple not yet implemented (facade): previously approximated by `dimension == 1`"
+        )
     }
 
     /// Decompose into simple factors (up to isogeny)
     pub fn decomposition(&self) -> Vec<ModularAbelianVariety> {
-        // Placeholder: return self for now
-        vec![self.clone()]
+        // Isogeny decomposition into simple factors is not yet implemented.
+        // Previously this returned `vec![self.clone()]` unconditionally.
+        unimplemented!(
+            "ModularAbelianVariety::decomposition not yet implemented (facade): previously returned self unconditionally"
+        )
     }
 }
 
@@ -64,33 +153,15 @@ impl ModularAbelianVariety {
 pub struct J0 {
     /// Level N
     level: u64,
-    /// Dimension (genus of X_0(N))
-    dimension: usize,
 }
 
 impl J0 {
-    /// Create J_0(N)
+    /// Create J_0(N).
+    ///
+    /// Construction is metadata-only and never panics; the dimension (the
+    /// genus of X_0(N)) is computed lazily by [`J0::dimension`].
     pub fn new(level: u64) -> Self {
-        let dimension = Self::compute_dimension(level);
-        J0 { level, dimension }
-    }
-
-    /// Compute the dimension (genus of X_0(N))
-    fn compute_dimension(level: u64) -> usize {
-        if level == 1 {
-            return 0;
-        }
-
-        let gamma0 = Gamma0::new(level);
-        let index = gamma0.index().unwrap_or(1);
-
-        // Genus formula: g = 1 + index/12 - nu_2/4 - nu_3/3 - cusps/2
-        // For simplicity, use approximation
-        if index >= 12 {
-            (index / 12).saturating_sub(1) as usize
-        } else {
-            0
-        }
+        J0 { level }
     }
 
     /// Get the level
@@ -98,14 +169,14 @@ impl J0 {
         self.level
     }
 
-    /// Get the dimension
+    /// Get the dimension (the genus of X_0(N)), computed on demand.
     pub fn dimension(&self) -> usize {
-        self.dimension
+        genus_x0(self.level)
     }
 
     /// Convert to ModularAbelianVariety
     pub fn to_abvar(&self) -> ModularAbelianVariety {
-        ModularAbelianVariety::new(self.level, self.dimension)
+        ModularAbelianVariety::new(self.level, self.dimension())
     }
 
     /// Get the underlying modular curve
@@ -119,32 +190,15 @@ impl J0 {
 pub struct J1 {
     /// Level N
     level: u64,
-    /// Dimension (genus of X_1(N))
-    dimension: usize,
 }
 
 impl J1 {
-    /// Create J_1(N)
+    /// Create J_1(N).
+    ///
+    /// Construction is metadata-only and never panics; the dimension (the
+    /// genus of X_1(N)) is computed lazily by [`J1::dimension`].
     pub fn new(level: u64) -> Self {
-        let dimension = Self::compute_dimension(level);
-        J1 { level, dimension }
-    }
-
-    /// Compute the dimension (genus of X_1(N))
-    fn compute_dimension(level: u64) -> usize {
-        if level == 1 {
-            return 0;
-        }
-
-        let gamma1 = Gamma1::new(level);
-        let index = gamma1.index().unwrap_or(1);
-
-        // Genus formula for X_1(N)
-        if index >= 12 {
-            (index / 12).saturating_sub(1) as usize
-        } else {
-            0
-        }
+        J1 { level }
     }
 
     /// Get the level
@@ -152,14 +206,14 @@ impl J1 {
         self.level
     }
 
-    /// Get the dimension
+    /// Get the dimension (the genus of X_1(N)), computed on demand.
     pub fn dimension(&self) -> usize {
-        self.dimension
+        genus_x1(self.level)
     }
 
     /// Convert to ModularAbelianVariety
     pub fn to_abvar(&self) -> ModularAbelianVariety {
-        ModularAbelianVariety::new(self.level, self.dimension)
+        ModularAbelianVariety::new(self.level, self.dimension())
     }
 }
 
@@ -188,11 +242,15 @@ impl ModularCurve {
             ModularCurve::X0(n) => J0::new(*n).dimension(),
             ModularCurve::X1(n) => J1::new(*n).dimension(),
             ModularCurve::X(n) => {
-                // Genus of X(N) - more complex formula
+                // Genus of X(N) for N > 1 requires a more complex formula
+                // (involving the index of Gamma(N) and its elliptic points /
+                // cusps); it is not yet implemented. X(1) is genuinely genus 0.
                 if *n == 1 {
                     0
                 } else {
-                    1 // Placeholder
+                    unimplemented!(
+                        "ModularCurve::genus for X(N), N > 1 not yet implemented (facade): previously returned the constant 1"
+                    )
                 }
             }
         }
@@ -220,11 +278,13 @@ pub struct AbelianVarietyNewform {
 impl AbelianVarietyNewform {
     /// Create abelian variety from a newform
     pub fn new(newform: Newform) -> Self {
-        // Dimension is typically related to the degree of the number field
-        // generated by the Fourier coefficients
-        let dimension = 1; // Placeholder
-
-        AbelianVarietyNewform { newform, dimension }
+        // Dimension equals the degree over Q of the number field generated
+        // by the Fourier coefficients of the newform, which is not yet
+        // computed here. Previously this always used the constant 1.
+        let _ = newform;
+        unimplemented!(
+            "AbelianVarietyNewform::new not yet implemented (facade): dimension previously hardcoded to 1"
+        )
     }
 
     /// Get the newform
@@ -282,7 +342,7 @@ pub struct TorsionSubgroup {
     /// The abelian variety
     abvar: ModularAbelianVariety,
     /// Order (if finite and known)
-    order: Option<BigInt>,
+    order: Option<Integer>,
 }
 
 impl TorsionSubgroup {
@@ -292,12 +352,12 @@ impl TorsionSubgroup {
     }
 
     /// Get the order (if known)
-    pub fn order(&self) -> Option<&BigInt> {
+    pub fn order(&self) -> Option<&Integer> {
         self.order.as_ref()
     }
 
     /// Set the order
-    pub fn set_order(&mut self, order: BigInt) {
+    pub fn set_order(&mut self, order: Integer) {
         self.order = Some(order);
     }
 
@@ -313,7 +373,7 @@ pub struct CuspidalSubgroup {
     /// Level N
     level: u64,
     /// Generators
-    generators: Vec<Vec<BigInt>>,
+    generators: Vec<Vec<Integer>>,
 }
 
 impl CuspidalSubgroup {
@@ -331,12 +391,12 @@ impl CuspidalSubgroup {
     }
 
     /// Add a generator
-    pub fn add_generator(&mut self, gen: Vec<BigInt>) {
+    pub fn add_generator(&mut self, gen: Vec<Integer>) {
         self.generators.push(gen);
     }
 
     /// Get generators
-    pub fn generators(&self) -> &[Vec<BigInt>] {
+    pub fn generators(&self) -> &[Vec<Integer>] {
         &self.generators
     }
 }
@@ -374,6 +434,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[ignore = "facade -> unimplemented; needs real algorithm (Phase 4)"]
     fn test_modular_abelian_variety() {
         let a = ModularAbelianVariety::new(11, 1);
         assert_eq!(a.level(), 11);
@@ -385,24 +446,28 @@ mod tests {
     fn test_j0() {
         let j0_11 = J0::new(11);
         assert_eq!(j0_11.level(), 11);
-        assert!(j0_11.dimension() >= 1);
+        // dim J_0(11) = genus of X_0(11) = 1 (an elliptic curve).
+        assert_eq!(j0_11.dimension(), 1);
     }
 
     #[test]
     fn test_j1() {
         let j1_11 = J1::new(11);
         assert_eq!(j1_11.level(), 11);
-        // J1(11) has higher dimension than J0(11)
+        // dim J_1(11) = genus of X_1(11) = 1 (equal to dim J_0(11) here).
+        assert_eq!(j1_11.dimension(), 1);
     }
 
     #[test]
     fn test_modular_curve() {
         let x0_11 = ModularCurve::X0(11);
         assert_eq!(x0_11.level(), 11);
-        assert!(x0_11.genus() >= 1);
+        // genus of X_0(11) = 1.
+        assert_eq!(x0_11.genus(), 1);
 
         let jac = x0_11.jacobian();
         assert_eq!(jac.level(), 11);
+        assert_eq!(jac.dimension(), 1);
     }
 
     #[test]
@@ -418,8 +483,8 @@ mod tests {
         let mut tors = TorsionSubgroup::new(a);
         assert_eq!(tors.order(), None);
 
-        tors.set_order(BigInt::from(5));
-        assert_eq!(tors.order(), Some(&BigInt::from(5)));
+        tors.set_order(Integer::from(5));
+        assert_eq!(tors.order(), Some(&Integer::from(5)));
     }
 
     #[test]
@@ -437,6 +502,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented; needs real algorithm (Phase 4)"]
     fn test_abvar_from_newform() {
         let f = Newform::new(2, 11);
         let a = AbelianVarietyNewform::new(f);
@@ -495,16 +561,25 @@ pub fn is_modular_abelian_variety(obj: &ModularAbelianVariety) -> bool {
 
 /// Factor a modular symbols space into new factors
 pub fn factor_modsym_space_new_factors(space: &ModularSymbolSpace) -> Vec<ModularSymbolSpace> {
-    // Placeholder: would decompose the space into newform factors
-    // This requires sophisticated algorithms from modular forms theory
-    vec![space.clone()]
+    // Decomposing into newform factors requires sophisticated algorithms
+    // from modular forms theory (e.g. Hecke algebra eigenspace splitting)
+    // that are not yet implemented. Previously this returned `vec![space.clone()]`
+    // unconditionally, i.e. pretended the space was already a single factor.
+    let _ = space;
+    unimplemented!(
+        "factor_modsym_space_new_factors not yet implemented (facade): previously returned the input space unchanged"
+    )
 }
 
 /// Factor the new space of modular symbols
 pub fn factor_new_space(level: u64, weight: i32) -> Vec<ModularSymbolSpace> {
-    // Placeholder: create new space and factor it
-    let space = ModularSymbolSpace::new(weight, level, 0);
-    vec![space]
+    // Factoring the new subspace requires the newform decomposition, which
+    // is not yet implemented. Previously this just wrapped a freshly
+    // constructed space without doing any factoring.
+    let _ = (level, weight);
+    unimplemented!(
+        "factor_new_space not yet implemented (facade): previously returned an unfactored space"
+    )
 }
 
 /// Generate a random Hecke operator for testing
@@ -516,21 +591,35 @@ pub fn random_hecke_operator(level: u64, max_index: u64) -> HeckeOperator {
 }
 
 /// Compute modular symbol lattices
-pub fn modsym_lattices(space: &ModularSymbolSpace) -> Vec<Vec<BigRational>> {
-    // Placeholder: would compute period lattices
-    vec![vec![BigRational::one()]]
+pub fn modsym_lattices(space: &ModularSymbolSpace) -> Vec<Vec<Rational>> {
+    // Computing period lattices requires numerical/algebraic integration of
+    // modular symbols against a period map, which is not implemented here.
+    // Previously this returned a single fake basis vector `[[1]]`.
+    let _ = space;
+    unimplemented!(
+        "modsym_lattices not yet implemented (facade): previously returned a fake constant lattice [[1]]"
+    )
 }
 
 /// Simple factorization of a modular symbols space
 pub fn simple_factorization_of_modsym_space(space: &ModularSymbolSpace) -> Vec<ModularSymbolSpace> {
-    // Placeholder: decompose into simple (irreducible) factors
-    vec![space.clone()]
+    // Decomposing into simple (irreducible) Hecke-stable factors is not yet
+    // implemented. Previously this returned `vec![space.clone()]`
+    // unconditionally, i.e. pretended the space was already simple.
+    let _ = space;
+    unimplemented!(
+        "simple_factorization_of_modsym_space not yet implemented (facade): previously returned the input space unchanged"
+    )
 }
 
-/// Compute square root of a polynomial (if it exists)
-pub fn sqrt_poly(coeffs: &[BigRational]) -> Option<Vec<BigRational>> {
-    // Placeholder: would compute polynomial square root
-    // For now, return None (not a perfect square)
+/// Compute the square root of a polynomial, or `None` if it cannot be computed.
+///
+/// A genuine polynomial square-root algorithm is not implemented, so this
+/// returns `None` to mean "no square root computed" — a usable, honest
+/// "no result" that callers treat as "could not obtain a square root",
+/// rather than panicking.
+pub fn sqrt_poly(coeffs: &[Rational]) -> Option<Vec<Rational>> {
+    let _ = coeffs;
     None
 }
 
@@ -540,7 +629,7 @@ pub struct FiniteSubgroup {
     /// Parent abelian variety
     abvar: ModularAbelianVariety,
     /// Generators as vectors
-    generators: Vec<Vec<BigInt>>,
+    generators: Vec<Vec<Integer>>,
 }
 
 impl FiniteSubgroup {
@@ -553,12 +642,12 @@ impl FiniteSubgroup {
     }
 
     /// Add a generator
-    pub fn add_generator(&mut self, gen: Vec<BigInt>) {
+    pub fn add_generator(&mut self, gen: Vec<Integer>) {
         self.generators.push(gen);
     }
 
     /// Get generators
-    pub fn generators(&self) -> &[Vec<BigInt>] {
+    pub fn generators(&self) -> &[Vec<Integer>] {
         &self.generators
     }
 
@@ -574,12 +663,12 @@ pub struct FiniteSubgroupLattice {
     /// Base finite subgroup
     base: FiniteSubgroup,
     /// Lattice basis
-    lattice_basis: Vec<Vec<BigInt>>,
+    lattice_basis: Vec<Vec<Integer>>,
 }
 
 impl FiniteSubgroupLattice {
     /// Create from a lattice
-    pub fn new(abvar: ModularAbelianVariety, lattice_basis: Vec<Vec<BigInt>>) -> Self {
+    pub fn new(abvar: ModularAbelianVariety, lattice_basis: Vec<Vec<Integer>>) -> Self {
         FiniteSubgroupLattice {
             base: FiniteSubgroup::new(abvar),
             lattice_basis,
@@ -587,7 +676,7 @@ impl FiniteSubgroupLattice {
     }
 
     /// Get lattice basis
-    pub fn lattice_basis(&self) -> &[Vec<BigInt>] {
+    pub fn lattice_basis(&self) -> &[Vec<Integer>] {
         &self.lattice_basis
     }
 }
@@ -599,20 +688,16 @@ pub struct Homspace {
     domain: ModularAbelianVariety,
     /// Codomain abelian variety
     codomain: ModularAbelianVariety,
-    /// Dimension of Hom space
-    dimension: usize,
 }
 
 impl Homspace {
-    /// Create a homomorphism space
+    /// Create a homomorphism space.
+    ///
+    /// Construction is metadata-only and never panics; only
+    /// [`Homspace::dimension`] (the genuinely unimplemented quantity) panics
+    /// when actually requested.
     pub fn new(domain: ModularAbelianVariety, codomain: ModularAbelianVariety) -> Self {
-        // Dimension of Hom(A, B) depends on the varieties
-        let dimension = 0; // Placeholder
-        Homspace {
-            domain,
-            codomain,
-            dimension,
-        }
+        Homspace { domain, codomain }
     }
 
     /// Get domain
@@ -627,7 +712,12 @@ impl Homspace {
 
     /// Get dimension
     pub fn dimension(&self) -> usize {
-        self.dimension
+        // The dimension of Hom(A, B) depends on the isogeny decomposition of
+        // both varieties, which is not yet computed. Previously this was
+        // hardcoded to 0, i.e. silently claimed no homomorphisms exist.
+        unimplemented!(
+            "Homspace::dimension not yet implemented (facade): depends on the isogeny decomposition of domain and codomain, which is not computed"
+        )
     }
 }
 
@@ -685,10 +775,14 @@ impl LseriesComplex {
         }
     }
 
-    /// Evaluate at a complex number (placeholder)
+    /// Evaluate at a complex number
     pub fn evaluate(&self, _s: f64) -> f64 {
-        // Placeholder: would compute L(s)
-        0.0
+        // Computing L(s) for the L-series of a modular abelian variety
+        // (e.g. via the L-functions of its newform factors) is not yet
+        // implemented. Previously this unconditionally returned 0.0.
+        unimplemented!(
+            "LseriesComplex::evaluate not yet implemented (facade): previously returned the constant 0.0"
+        )
     }
 }
 
@@ -724,7 +818,7 @@ pub struct Morphism {
     /// Codomain
     codomain: ModularAbelianVariety,
     /// Matrix representation (on homology)
-    matrix: Vec<Vec<BigRational>>,
+    matrix: Vec<Vec<Rational>>,
 }
 
 impl Morphism {
@@ -732,7 +826,7 @@ impl Morphism {
     pub fn new(
         domain: ModularAbelianVariety,
         codomain: ModularAbelianVariety,
-        matrix: Vec<Vec<BigRational>>,
+        matrix: Vec<Vec<Rational>>,
     ) -> Self {
         Morphism {
             domain,
@@ -752,7 +846,7 @@ impl Morphism {
     }
 
     /// Get matrix
-    pub fn matrix(&self) -> &[Vec<BigRational>] {
+    pub fn matrix(&self) -> &[Vec<Rational>] {
         &self.matrix
     }
 }
@@ -769,11 +863,13 @@ pub struct DegeneracyMap {
 impl DegeneracyMap {
     /// Create a degeneracy map
     pub fn new(domain: ModularAbelianVariety, codomain: ModularAbelianVariety, param: u64) -> Self {
-        let matrix = vec![]; // Placeholder
-        DegeneracyMap {
-            morphism: Morphism::new(domain, codomain, matrix),
-            param,
-        }
+        // The degeneracy map's matrix representation on homology is not
+        // computed here. Previously this constructed a `Morphism` with an
+        // empty matrix, silently pretending it was the zero-dimensional map.
+        let _ = (domain, codomain, param);
+        unimplemented!(
+            "DegeneracyMap::new not yet implemented (facade): previously used an empty placeholder matrix"
+        )
     }
 
     /// Get the morphism
@@ -822,12 +918,12 @@ pub struct HomologySubmodule {
     /// Ambient homology
     ambient: Homology,
     /// Generators of the submodule
-    generators: Vec<Vec<BigInt>>,
+    generators: Vec<Vec<Integer>>,
 }
 
 impl HomologySubmodule {
     /// Create a submodule
-    pub fn new(ambient: Homology, generators: Vec<Vec<BigInt>>) -> Self {
+    pub fn new(ambient: Homology, generators: Vec<Vec<Integer>>) -> Self {
         HomologySubmodule {
             ambient,
             generators,
@@ -840,7 +936,7 @@ impl HomologySubmodule {
     }
 
     /// Get generators
-    pub fn generators(&self) -> &[Vec<BigInt>] {
+    pub fn generators(&self) -> &[Vec<Integer>] {
         &self.generators
     }
 }
@@ -889,14 +985,17 @@ impl RationalCuspidalSubgroup {
 
 /// Check if a cusp is rational for Gamma0
 pub fn is_rational_cusp_gamma0(numerator: i64, denominator: i64, level: u64) -> bool {
-    use num_integer::Integer;
     use crate::cusps::Cusp;
+
+    fn gcd_u64(a: u64, b: u64) -> u64 {
+        if b == 0 { a } else { gcd_u64(b, a % b) }
+    }
 
     let cusp = Cusp::from_i64(numerator, denominator);
     // A cusp p/q is rational for Gamma0(N) if gcd(q, N) = 1
     if let Some(q) = cusp.denominator() {
         let q_val = q.to_string().parse::<u64>().unwrap_or(level);
-        Integer::gcd(&q_val, &level) == 1
+        gcd_u64(q_val, level) == 1
     } else {
         // Infinity is always rational
         true
@@ -933,9 +1032,12 @@ pub mod constructor {
 
     /// JH - Jacobian of X_H(N)
     pub fn jh(level: u64, h_subgroup: Vec<u64>) -> ModularAbelianVariety {
-        // Compute dimension for J_H(N)
-        // This is more complex than J0 or J1
-        let dimension = 1; // Placeholder
-        ModularAbelianVariety::new(level, dimension)
+        // The genus/dimension formula for X_H(N) (more complex than X_0(N)
+        // or X_1(N), depending on the subgroup H) is not yet implemented.
+        // Previously this always used the constant dimension 1.
+        let _ = (level, h_subgroup);
+        unimplemented!(
+            "constructor::jh not yet implemented (facade): dimension previously hardcoded to 1"
+        )
     }
 }

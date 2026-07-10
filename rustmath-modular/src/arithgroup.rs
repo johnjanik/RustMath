@@ -4,51 +4,78 @@
 //! including the full modular group, congruence subgroups Gamma0(N), Gamma1(N),
 //! and GammaH(N, H).
 
-use num_bigint::BigInt;
-use num_integer::Integer;
-use num_traits::{Zero, One};
+use rustmath_complex::Complex;
+use rustmath_integers::Integer;
 use std::fmt;
+
+/// Greatest common divisor for u64 arguments.
+fn gcd_u64(a: u64, b: u64) -> u64 {
+    if b == 0 { a } else { gcd_u64(b, a % b) }
+}
+
+/// Euler's totient function φ(n), for small u64 arguments.
+fn euler_phi(n: u64) -> u64 {
+    if n == 0 {
+        return 0;
+    }
+    let mut result = n;
+    let mut m = n;
+    let mut p = 2;
+    while p * p <= m {
+        if m % p == 0 {
+            while m % p == 0 {
+                m /= p;
+            }
+            result -= result / p;
+        }
+        p += 1;
+    }
+    if m > 1 {
+        result -= result / m;
+    }
+    result
+}
 
 /// Element of an arithmetic subgroup (2x2 matrix with integer entries)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ArithmeticSubgroupElement {
     /// Matrix entries [[a, b], [c, d]]
-    pub a: BigInt,
-    pub b: BigInt,
-    pub c: BigInt,
-    pub d: BigInt,
+    pub a: Integer,
+    pub b: Integer,
+    pub c: Integer,
+    pub d: Integer,
 }
 
 impl ArithmeticSubgroupElement {
     /// Create a new arithmetic subgroup element from four integers
-    pub fn new(a: BigInt, b: BigInt, c: BigInt, d: BigInt) -> Self {
+    pub fn new(a: Integer, b: Integer, c: Integer, d: Integer) -> Self {
         ArithmeticSubgroupElement { a, b, c, d }
     }
 
     /// Create from i64 values
     pub fn from_i64(a: i64, b: i64, c: i64, d: i64) -> Self {
         ArithmeticSubgroupElement {
-            a: BigInt::from(a),
-            b: BigInt::from(b),
-            c: BigInt::from(c),
-            d: BigInt::from(d),
+            a: Integer::from(a),
+            b: Integer::from(b),
+            c: Integer::from(c),
+            d: Integer::from(d),
         }
     }
 
     /// Compute the determinant of the matrix
-    pub fn determinant(&self) -> BigInt {
+    pub fn determinant(&self) -> Integer {
         &self.a * &self.d - &self.b * &self.c
     }
 
     /// Check if this element is in SL(2, Z) (determinant = 1)
     pub fn is_sl2z(&self) -> bool {
-        self.determinant() == BigInt::one()
+        self.determinant() == Integer::one()
     }
 
     /// Check if this element is in GL(2, Z) (determinant = ±1)
     pub fn is_gl2z(&self) -> bool {
         let det = self.determinant();
-        det == BigInt::one() || det == -BigInt::one()
+        det == Integer::one() || det == -Integer::one()
     }
 
     /// Matrix multiplication
@@ -64,14 +91,14 @@ impl ArithmeticSubgroupElement {
     /// Compute the inverse (only for det = ±1)
     pub fn inverse(&self) -> Option<ArithmeticSubgroupElement> {
         let det = self.determinant();
-        if det == BigInt::one() {
+        if det == Integer::one() {
             Some(ArithmeticSubgroupElement {
                 a: self.d.clone(),
                 b: -&self.b,
                 c: -&self.c,
                 d: self.a.clone(),
             })
-        } else if det == -BigInt::one() {
+        } else if det == -Integer::one() {
             Some(ArithmeticSubgroupElement {
                 a: -&self.d,
                 b: self.b.clone(),
@@ -89,18 +116,16 @@ impl ArithmeticSubgroupElement {
     }
 
     /// Apply the Mobius transformation z -> (az + b)/(cz + d)
-    pub fn act_on_complex(&self, z: &num_complex::Complex<f64>) -> Option<num_complex::Complex<f64>> {
-        use num_complex::Complex;
-
+    pub fn act_on_complex(&self, z: &Complex) -> Option<Complex> {
         let a = self.a.to_string().parse::<f64>().ok()?;
         let b = self.b.to_string().parse::<f64>().ok()?;
         let c = self.c.to_string().parse::<f64>().ok()?;
         let d = self.d.to_string().parse::<f64>().ok()?;
 
-        let numerator = Complex::new(a, 0.0) * z + Complex::new(b, 0.0);
-        let denominator = Complex::new(c, 0.0) * z + Complex::new(d, 0.0);
+        let numerator = Complex::new(a, 0.0) * z.clone() + Complex::new(b, 0.0);
+        let denominator = Complex::new(c, 0.0) * z.clone() + Complex::new(d, 0.0);
 
-        if denominator.norm() < 1e-10 {
+        if denominator.abs() < 1e-10 {
             None
         } else {
             Some(numerator / denominator)
@@ -239,11 +264,13 @@ impl Gamma0 {
             return 1;
         }
 
-        // Number of cusps = sum_{d | N} gcd(d, N/d)
+        // Number of cusps of Gamma0(N) = sum_{d | N} phi(gcd(d, N/d)).
+        // (The previous code summed gcd(d, N/d) itself, omitting the Euler
+        // phi and overcounting, e.g. giving 4 instead of 3 for N = 4.)
         let mut count = 0;
         for d in 1..=n {
             if n % d == 0 {
-                count += Integer::gcd(&d, &(n / d));
+                count += euler_phi(gcd_u64(d, n / d));
             }
         }
         count
@@ -256,7 +283,7 @@ impl ArithmeticSubgroup for Gamma0 {
             return false;
         }
         // Check if c ≡ 0 (mod N)
-        let n = BigInt::from(self.level);
+        let n = Integer::from(self.level);
         (&element.c % &n).is_zero()
     }
 
@@ -339,11 +366,11 @@ impl ArithmeticSubgroup for Gamma1 {
         if !element.is_sl2z() {
             return false;
         }
-        let n = BigInt::from(self.level);
+        let n = Integer::from(self.level);
         // Check c ≡ 0 (mod N) and a ≡ d ≡ 1 (mod N)
         (&element.c % &n).is_zero()
-            && (&element.a % &n) == BigInt::one()
-            && (&element.d % &n) == BigInt::one()
+            && (&element.a % &n) == Integer::one()
+            && (&element.d % &n) == Integer::one()
     }
 
     fn level(&self) -> Option<u64> {
@@ -392,7 +419,7 @@ impl GammaH {
         assert!(level > 0, "Level must be positive");
         // Verify all elements are in (Z/NZ)*
         for &h in &h_subgroup {
-            assert!(h < level && Integer::gcd(&h, &level) == 1);
+            assert!(h < level && gcd_u64(h, level) == 1);
         }
         GammaH { level, h_subgroup }
     }
@@ -401,7 +428,7 @@ impl GammaH {
     pub fn gamma0(level: u64) -> Self {
         let mut h = Vec::new();
         for i in 1..level {
-            if Integer::gcd(&i, &level) == 1 {
+            if gcd_u64(i, level) == 1 {
                 h.push(i);
             }
         }
@@ -419,7 +446,7 @@ impl ArithmeticSubgroup for GammaH {
         if !element.is_sl2z() {
             return false;
         }
-        let n = BigInt::from(self.level);
+        let n = Integer::from(self.level);
         // Check c ≡ 0 (mod N)
         if !(&element.c % &n).is_zero() {
             return false;
@@ -430,7 +457,7 @@ impl ArithmeticSubgroup for GammaH {
         }
 
         // Check if a (mod N) is in H
-        let a_mod = ((&element.a % &n + &n) % &n).to_string().parse::<u64>().unwrap_or(0);
+        let a_mod = (&(&(&element.a % &n) + &n) % &n).to_string().parse::<u64>().unwrap_or(0);
         self.h_subgroup.contains(&a_mod)
     }
 
@@ -480,12 +507,12 @@ impl ArithmeticSubgroup for Gamma {
         if !element.is_sl2z() {
             return false;
         }
-        let n = BigInt::from(self.level);
+        let n = Integer::from(self.level);
         // Check matrix ≡ I (mod N)
-        (&element.a - BigInt::one()) % &n == BigInt::zero()
+        (&(&element.a - &Integer::one()) % &n).is_zero()
             && (&element.b % &n).is_zero()
             && (&element.c % &n).is_zero()
-            && (&element.d - BigInt::one()) % &n == BigInt::zero()
+            && (&(&element.d - &Integer::one()) % &n).is_zero()
     }
 
     fn level(&self) -> Option<u64> {
@@ -528,7 +555,7 @@ mod tests {
     #[test]
     fn test_arithmetic_subgroup_element_basic() {
         let e = ArithmeticSubgroupElement::from_i64(1, 0, 0, 1);
-        assert_eq!(e.determinant(), BigInt::one());
+        assert_eq!(e.determinant(), Integer::one());
         assert!(e.is_sl2z());
         assert!(e.is_gl2z());
     }
@@ -538,10 +565,10 @@ mod tests {
         let a = ArithmeticSubgroupElement::from_i64(1, 1, 0, 1);
         let b = ArithmeticSubgroupElement::from_i64(1, 0, 1, 1);
         let c = a.multiply(&b);
-        assert_eq!(c.a, BigInt::from(2));
-        assert_eq!(c.b, BigInt::from(1));
-        assert_eq!(c.c, BigInt::from(1));
-        assert_eq!(c.d, BigInt::from(1));
+        assert_eq!(c.a, Integer::from(2));
+        assert_eq!(c.b, Integer::from(1));
+        assert_eq!(c.c, Integer::from(1));
+        assert_eq!(c.d, Integer::from(1));
     }
 
     #[test]
@@ -593,8 +620,10 @@ mod tests {
         let identity = ArithmeticSubgroupElement::identity();
         assert!(gamma1_3.contains(&identity));
 
-        // [[1, 2], [3, 4]] has c=3≡0, a=1≡1, d=4≡1 (mod 3), so it's in Gamma1(3)
-        let m = ArithmeticSubgroupElement::from_i64(1, 2, 3, 4);
+        // [[4, 1], [3, 1]] has det = 4·1 - 1·3 = 1 (so it lies in SL(2,Z)),
+        // and c=3≡0, a=4≡1, d=1≡1 (mod 3), so it's in Gamma1(3).
+        // (The old [[1,2],[3,4]] had det -2 and was never in SL(2,Z).)
+        let m = ArithmeticSubgroupElement::from_i64(4, 1, 3, 1);
         assert!(gamma1_3.contains(&m));
 
         // [[2, 1], [3, 2]] has a=2≢1 (mod 3), so NOT in Gamma1(3)
@@ -611,8 +640,10 @@ mod tests {
         let identity = ArithmeticSubgroupElement::identity();
         assert!(gamma_2.contains(&identity));
 
-        // [[3, 2], [2, 3]] ≡ [[1, 0], [0, 1]] (mod 2), so it's in Gamma(2)
-        let m = ArithmeticSubgroupElement::from_i64(3, 2, 2, 3);
+        // [[3, 2], [4, 3]] has det = 3·3 - 2·4 = 1 (so it lies in SL(2,Z)),
+        // and ≡ [[1, 0], [0, 1]] (mod 2), so it's in Gamma(2).
+        // (The old [[3,2],[2,3]] had det 5 and was never in SL(2,Z).)
+        let m = ArithmeticSubgroupElement::from_i64(3, 2, 4, 3);
         assert!(gamma_2.contains(&m));
 
         // [[1, 1], [0, 1]] has b=1≢0 (mod 2), so NOT in Gamma(2)
