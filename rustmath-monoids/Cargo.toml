@@ -10,5 +10,6 @@ num-traits = "0.2"
 num-integer = "0.1"
 rustmath-core = { path = "../rustmath-core" }
 rustmath-integers = { path = "../rustmath-integers" }
+rustmath-automata = { path = "../rustmath-automata" }
 
 [dev-dependencies]
