@@ -557,7 +557,7 @@ mod tests {
 
     #[test]
     fn test_index_face_set() {
-        let mut mesh = IndexFaceSet::new();
+        let mut mesh = IndexFaceSet::empty();
 
         let v0 = mesh.add_vertex(Point3D::new(0.0, 0.0, 0.0));
         let v1 = mesh.add_vertex(Point3D::new(1.0, 0.0, 0.0));
@@ -579,7 +579,7 @@ mod tests {
 
     #[test]
     fn test_compute_normals() {
-        let mut mesh = IndexFaceSet::new();
+        let mut mesh = IndexFaceSet::empty();
 
         // Create a simple triangle in the XY plane
         let v0 = mesh.add_vertex(Point3D::new(0.0, 0.0, 0.0));
