@@ -79,28 +79,32 @@ impl RealMPFR {
     }
 
     /// Create a new RealMPFR with specified precision from an integer
+    ///
+    /// The conversion is lossless up to the target precision: the value is
+    /// transferred to MPFR as a full-width `rug::Integer` and then rounded
+    /// once (correctly) to `prec` bits. Integers of any size are handled;
+    /// integers of at most `prec` bits are represented exactly. (A previous
+    /// version guarded the string-parse fallback with a tautological
+    /// `i >= i64::MIN && i <= i64::MAX` on an `i64`, so `Integer::to_i64()`
+    /// panicked for values beyond i64 — the fallback was dead code.)
     pub fn with_val_integer(prec: u32, value: &Integer) -> Self {
-        // Convert Integer to i64 or use string representation for large values
-        let i = value.to_i64();
-        if i >= i64::MIN && i <= i64::MAX {
-            RealMPFR {
-                value: Float::with_val(prec, i),
-            }
-        } else {
-            // For very large integers, convert via string
-            let s = value.to_string();
-            RealMPFR {
-                value: Float::with_val(prec, Float::parse(&s).expect("Failed to parse integer")),
-            }
+        RealMPFR {
+            value: Float::with_val(prec, integer_to_rug(value)),
         }
     }
 
     /// Create a new RealMPFR with specified precision from a rational
+    ///
+    /// Computed as an exact-numerator / exact-denominator MPFR division, so
+    /// the result is the true value of the rational correctly rounded once to
+    /// `prec` bits, for numerators/denominators of any size. (A previous
+    /// version rounded numerator and denominator to `prec` bits *before*
+    /// dividing — a double rounding that is lossy whenever either part
+    /// exceeds `prec` bits, and it panicked beyond i64.)
     pub fn with_val_rational(prec: u32, value: &Rational) -> Self {
-        // Convert rational to real by dividing numerator by denominator
-        let numer = RealMPFR::with_val_integer(prec, value.numerator());
-        let denom = RealMPFR::with_val_integer(prec, value.denominator());
-        numer / denom
+        RealMPFR {
+            value: rational_to_float(prec, value),
+        }
     }
 
     /// Get the precision of this number in bits
@@ -231,9 +235,13 @@ impl RealMPFR {
     }
 
     /// Get pi with the same precision as this number
+    ///
+    /// Correctly rounded to the full precision via MPFR's pi constant. (A
+    /// previous version parsed a 40-digit string, so precisions above ~132
+    /// bits silently received garbage low bits.)
     pub fn pi_with_prec(&self) -> Self {
         RealMPFR {
-            value: Float::with_val(self.precision(), Float::parse("3.141592653589793238462643383279502884197").unwrap()),
+            value: Float::with_val(self.precision(), rug::float::Constant::Pi),
         }
     }
 
@@ -245,9 +253,13 @@ impl RealMPFR {
     }
 
     /// Get pi with specified precision
+    ///
+    /// Correctly rounded to `prec` bits via MPFR's pi constant. (A previous
+    /// version parsed a 40-digit string, so precisions above ~132 bits
+    /// silently received garbage low bits.)
     pub fn pi(prec: u32) -> Self {
         RealMPFR {
-            value: Float::with_val(prec, Float::parse("3.141592653589793238462643383279502884197").unwrap()),
+            value: Float::with_val(prec, rug::float::Constant::Pi),
         }
     }
 
@@ -282,39 +294,124 @@ impl RealMPFR {
         })
     }
 
-    /// Get the floor (greatest integer ≤ self)
+    /// Get the floor (greatest integer ≤ self); exact for any magnitude.
+    ///
+    /// # Panics
+    /// If `self` is not finite (`±∞`/`NaN` have no integer floor).
     pub fn floor(&self) -> Integer {
-        let f = self.value.clone().floor();
-        // Convert to integer via f64 for reasonable-sized values
-        let f64_val = f.to_f64();
-        if f64_val.is_finite() && f64_val.abs() < (i64::MAX as f64) {
-            Integer::from(f64_val as i64)
-        } else {
-            // For very large values, this is an approximation
-            Integer::from(0) // Placeholder for now
-        }
+        integral_float_to_integer(self.value.clone().floor(), "floor")
     }
 
-    /// Get the ceiling (smallest integer ≥ self)
+    /// Get the ceiling (smallest integer ≥ self); exact for any magnitude.
+    ///
+    /// # Panics
+    /// If `self` is not finite.
     pub fn ceil(&self) -> Integer {
-        let c = self.value.clone().ceil();
-        let f64_val = c.to_f64();
-        if f64_val.is_finite() && f64_val.abs() < (i64::MAX as f64) {
-            Integer::from(f64_val as i64)
-        } else {
-            Integer::from(0) // Placeholder for now
+        integral_float_to_integer(self.value.clone().ceil(), "ceil")
+    }
+
+    /// Round to nearest integer (ties away from zero); exact for any magnitude.
+    ///
+    /// # Panics
+    /// If `self` is not finite.
+    pub fn round(&self) -> Integer {
+        integral_float_to_integer(self.value.clone().round(), "round")
+    }
+
+    // ---- Wave 0 contract-delta support (additive) ---------------------------
+
+    /// Borrow the underlying `rug::Float` (lossless escape hatch; `rug` is
+    /// already part of this type's public API via [`RealMPFR::from_float`]).
+    pub fn as_float(&self) -> &Float {
+        &self.value
+    }
+
+    /// Return this value re-rounded to `prec` bits (round-to-nearest-even).
+    pub fn with_precision(&self, prec: u32) -> Self {
+        RealMPFR {
+            value: Float::with_val(prec.max(1), &self.value),
         }
     }
 
-    /// Round to nearest integer
-    pub fn round(&self) -> Integer {
-        let r = self.value.clone().round();
-        let f64_val = r.to_f64();
-        if f64_val.is_finite() && f64_val.abs() < (i64::MAX as f64) {
-            Integer::from(f64_val as i64)
-        } else {
-            Integer::from(0) // Placeholder for now
+    /// Four-quadrant arctangent `atan2(self, x)` (`self` is the ordinate), at
+    /// the larger of the two operands' precisions.
+    pub fn atan2(&self, x: &Self) -> Self {
+        let prec = self.precision().max(x.precision());
+        let y = Float::with_val(prec, &self.value);
+        RealMPFR {
+            value: y.atan2(&x.value),
         }
+    }
+
+    /// Render as a decimal string with `digits` significant digits (MPFR's
+    /// scientific formatting; parseable back via
+    /// [`RealMPFR::from_decimal_str`]).
+    pub fn to_decimal_string(&self, digits: usize) -> String {
+        // rug interprets the format precision as *significant digits*.
+        format!("{:.*e}", digits.max(1), self.value)
+    }
+
+    /// Parse a decimal string, rounding to `prec` bits. MPFR's grammar also
+    /// accepts `inf`/`nan` (this backend has the full special-value model).
+    pub fn from_decimal_str(s: &str, prec: u32) -> Result<Self> {
+        let parsed = Float::parse(s.trim())
+            .map_err(|e| MathError::ParseError(format!("invalid decimal number {s:?}: {e}")))?;
+        Ok(RealMPFR {
+            value: Float::with_val(prec.max(1), parsed),
+        })
+    }
+}
+
+/// Lossless conversion from a rustmath [`Integer`] (num-bigint backed) to a
+/// `rug::Integer`, transferring the little-endian magnitude bytes directly.
+/// Exact for integers of any size — no i64/f64 round-trip.
+fn integer_to_rug(n: &Integer) -> rug::Integer {
+    let (_sign, bytes) = n.as_bigint().to_bytes_le();
+    let mag = rug::Integer::from_digits(&bytes, rug::integer::Order::Lsf);
+    if n.signum() < 0 {
+        -mag
+    } else {
+        mag
+    }
+}
+
+/// Convert a rustmath [`Integer`] to a `rug::Float` exactly: the precision is
+/// chosen as the integer's significant bit count, so no rounding occurs.
+fn integer_to_float_exact(n: &Integer) -> Float {
+    let r = integer_to_rug(n);
+    let bits = r.significant_bits().max(2);
+    Float::with_val(bits, r)
+}
+
+/// Convert a rustmath [`Rational`] to a `rug::Float` with a single correct
+/// rounding to `prec` bits: numerator and denominator are transferred exactly,
+/// and MPFR division rounds the true quotient once to the target precision.
+fn rational_to_float(prec: u32, q: &Rational) -> Float {
+    let num = integer_to_float_exact(q.numerator());
+    let den = integer_to_float_exact(q.denominator());
+    Float::with_val(prec, &num / &den)
+}
+
+/// Exact conversion of an integral, finite `rug::Float` to an [`Integer`]
+/// (via the decimal digits; no `f64` truncation).
+fn integral_float_to_integer(f: Float, what: &str) -> Integer {
+    let z = f.to_integer().unwrap_or_else(|| {
+        panic!("RealMPFR::{what}: value is not finite; no integer part exists")
+    });
+    let s = z.to_string();
+    let (neg, digits) = match s.strip_prefix('-') {
+        Some(d) => (true, d),
+        None => (false, s.as_str()),
+    };
+    let ten = Integer::from(10);
+    let mut acc = Integer::zero();
+    for b in digits.bytes() {
+        acc = acc * ten.clone() + Integer::from((b - b'0') as i64);
+    }
+    if neg {
+        -acc
+    } else {
+        acc
     }
 }
 
@@ -649,6 +746,28 @@ mod tests {
     }
 
     #[test]
+    fn test_pi_correct_beyond_40_digits() {
+        // Independent reference: 320 decimal digits of pi generated with
+        // python3/mpmath (mpmath.mp.dps = 330). 320 digits ~ 1063 bits, so
+        // this checks a 1000-bit pi essentially to the last bit. The old
+        // implementation parsed a 40-digit string, leaving everything
+        // beyond ~132 bits silently wrong.
+        const PI_320: &str = "3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067982148086513282306647093844609550582231725359408128481117450284102701938521105559644622948954930381964428810975665933446128475648233786783165271201909145648566923460348610454326648213393607260249141273724587006606315588";
+        let reference = Float::with_val(1100, Float::parse(PI_320).unwrap());
+
+        let pi_1000 = RealMPFR::pi(1000);
+        let diff = Float::with_val(1100, &pi_1000.value - &reference).abs();
+        // Correct rounding to 1000 bits allows |error| <= 2^-999; add
+        // slack for the reference's own 320-digit truncation.
+        let bound = Float::with_val(64, 1.0) >> 995u32;
+        assert!(diff < bound, "pi(1000) is wrong beyond the reference: diff = {}", diff);
+
+        // pi_with_prec must agree at the same precision.
+        let via_instance = RealMPFR::with_val(1000, 0.0).pi_with_prec();
+        assert_eq!(via_instance.value, pi_1000.value);
+    }
+
+    #[test]
     fn test_from_integer() {
         let n = Integer::from(42);
         let r = RealMPFR::with_val_integer(DEFAULT_PRECISION, &n);
@@ -660,6 +779,45 @@ mod tests {
         let rat = Rational::new(Integer::from(3), Integer::from(4)).unwrap();
         let r = RealMPFR::with_val_rational(DEFAULT_PRECISION, &rat);
         assert!((r.to_f64() - 0.75).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_with_val_integer_300_bit_round_trip_bit_exact() {
+        // 2^300 + 987654321 is a 301-bit integer with nonzero low limbs; it is
+        // exactly representable in 400 bits of mantissa, so the conversion
+        // must round-trip bit-exactly. The old to_i64()-based path panicked
+        // on any value beyond i64.
+        let n = Integer::from(2).pow(300) + Integer::from(987654321);
+        let r = RealMPFR::with_val_integer(400, &n);
+        assert_eq!(r.precision(), 400);
+        // floor == ceil == n  <=>  r is exactly the integer n
+        assert_eq!(r.floor(), n);
+        assert_eq!(r.ceil(), n);
+
+        let m = -n.clone();
+        let rm = RealMPFR::with_val_integer(400, &m);
+        assert_eq!(rm.floor(), m);
+        assert_eq!(rm.ceil(), m);
+    }
+
+    #[test]
+    fn test_with_val_rational_100_digit_numerator_bit_exact() {
+        // Numerator with exactly 100 decimal digits (~333 bits), dyadic
+        // denominator 2^20: the quotient is exactly representable in 400
+        // bits, so scaling back by 2^20 must recover the numerator exactly.
+        // The old path truncated the numerator through Integer::to_i64()
+        // (panic) and double-rounded within range.
+        let num = Integer::from(3) * Integer::from(10).pow(99) + Integer::from(7);
+        assert_eq!(num.to_string().len(), 100);
+        let den = Integer::from(2).pow(20);
+        let rat = Rational::new(num.clone(), den).unwrap();
+        let r = RealMPFR::with_val_rational(400, &rat);
+        assert_eq!(r.precision(), 400);
+        // 2^20 = 1048576 is exact in f64; multiplication by a power of two
+        // is exact in MPFR, so this recovers the numerator bit-exactly.
+        let scaled = r * RealMPFR::with_val(400, 1048576.0);
+        assert_eq!(scaled.floor(), num);
+        assert_eq!(scaled.ceil(), num);
     }
 
     #[test]
