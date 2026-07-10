@@ -27,3 +27,4 @@ __pycache__/
 # LMFDB-derived data (reproducible via rustmath-groups/data/fetch_transitive_24.py)
 rustmath-groups/data/transitive_24.jsonl
 rustmath-groups/data/transitive24_cycletypes.jsonl
+.claude/

@@ -175,7 +175,7 @@ Tests are organized within each crate's `src/lib.rs` or dedicated test modules:
 
 ### Known Issues and Limitations
 
-1. **rustmath-category**: Compilation errors due to Category trait not being dyn-compatible (see root_cause_analysis.md)
+1. **rustmath-category**: Compiles cleanly and all tests pass (the earlier dyn-compatibility compilation errors are resolved). It is wired into core coercion one-directionally via `rustmath_category::core_bridge` (category → core; core has no category dependency). Note `Ring` remains non-dyn-safe by design — object-safe map storage goes through `rustmath_core::morphism`.
 2. **rustmath-interfaces**: Missing Clone implementation on GapInterface (see root_cause_analysis.md)
 3. **No Symbolic Integration**: Only differentiation implemented
 4. **No Expression Parsing**: Cannot parse strings like "x^2 + 3*x + 2"
