@@ -160,47 +160,39 @@ pub fn hill_encrypt(text: &str, key_matrix: &Matrix<Integer>) -> Result<String> 
         padded.push('X');
     }
 
+    let modulus = Integer::from(26);
     let mut result = String::new();
 
     // Process each block
     for chunk in padded.as_bytes().chunks(n) {
-        // Convert letters to numbers (A=0, B=1, etc.)
-        let plain_vec: Vec<i64> = chunk
+        // Convert letters to numbers (A=0, B=1, etc.) as exact Integers
+        let plain_vec: Vec<Integer> = chunk
             .iter()
-            .map(|&b| (b - b'A') as i64)
+            .map(|&b| Integer::from((b - b'A') as i64))
             .collect();
 
-        // Multiply by key matrix (mod 26)
-        // We need to convert Integer to i64 for arithmetic
-        let mut cipher_vec = vec![0i64; n];
+        // Multiply by key matrix (mod 26), staying in exact Integer arithmetic
+        // throughout (never through string round-tripping).
+        let mut cipher_vec: Vec<u8> = Vec::with_capacity(n);
         for i in 0..n {
-            let mut sum = 0i64;
+            let mut sum = Integer::zero();
             for j in 0..n {
-                // For the Hill cipher to work, key matrix entries should be small integers
-                // We'll assume the Integer values fit in i64
                 let key_elem = key_matrix.get(i, j).unwrap();
-                // Since Integer doesn't have to_i64, we'll work with the underlying BigInt
-                // For now, let's just use the % operator which Integer does have
-                let temp = key_elem.clone() * Integer::from(plain_vec[j]);
-                // The result of multiplication might be large, but we take mod 26
-                // We'll convert via string as a workaround
-                let temp_mod = temp % Integer::from(26);
-                // Use signum and abs to get a positive result
-                let temp_val = if temp_mod.signum() >= 0 {
-                    temp_mod
-                } else {
-                    temp_mod + Integer::from(26)
-                };
-                // This is hacky but works for small numbers
-                // Convert to string, parse as i64
-                sum += temp_val.to_string().parse::<i64>().unwrap_or(0);
+                sum = sum + key_elem.clone() * plain_vec[j].clone();
             }
-            cipher_vec[i] = sum % 26;
+            let mut residue = sum % modulus.clone();
+            if residue.signum() < 0 {
+                residue = residue + modulus.clone();
+            }
+            // residue is exactly in [0, 26), so this always fits in i64;
+            // Integer::to_i64 panics (rather than silently truncating) if
+            // it ever didn't, which would indicate a real bug upstream.
+            cipher_vec.push(residue.to_i64() as u8);
         }
 
         // Convert back to letters
         for val in cipher_vec {
-            let letter = ((val % 26) as u8 + b'A') as char;
+            let letter = (val + b'A') as char;
             result.push(letter);
         }
     }
@@ -318,6 +310,64 @@ mod tests {
         // Verify it encrypted to something different
         assert_ne!(encrypted, plaintext);
         assert_eq!(encrypted.len(), 4); // Same length (or padded)
+    }
+
+    #[test]
+    fn test_hill_cipher_known_roundtrip() {
+        // Known Hill cipher example: key = [[3,3],[2,5]], det = 9, which is
+        // invertible mod 26 (gcd(9,26)=1), so this key is usable.
+        let key_matrix: Matrix<Integer> = Matrix::from_vec(
+            2,
+            2,
+            vec![
+                Integer::from(3), Integer::from(3),
+                Integer::from(2), Integer::from(5),
+            ],
+        )
+        .unwrap();
+
+        // Independently verified (by hand and with numpy): HELP -> HIAT.
+        let plaintext = "HELP";
+        let encrypted = hill_encrypt(plaintext, &key_matrix).unwrap();
+        assert_eq!(encrypted, "HIAT");
+
+        // Round-trip via the matrix inverse mod 26: key^{-1} mod 26 =
+        // [[15,17],[20,9]] (verified key * key^{-1} == I mod 26 by hand).
+        // Hill decryption is mathematically encryption with the inverse
+        // key, so this exercises the full encrypt/decrypt round trip even
+        // though `hill_decrypt` itself is not yet implemented.
+        let inverse_key_matrix: Matrix<Integer> = Matrix::from_vec(
+            2,
+            2,
+            vec![
+                Integer::from(15), Integer::from(17),
+                Integer::from(20), Integer::from(9),
+            ],
+        )
+        .unwrap();
+        let decrypted = hill_encrypt(&encrypted, &inverse_key_matrix).unwrap();
+        assert_eq!(decrypted, plaintext);
+    }
+
+    #[test]
+    fn test_hill_cipher_large_matrix_entries() {
+        // Entries deliberately larger than 26 (and one negative) to exercise
+        // the exact Integer arithmetic path instead of relying on values
+        // that happen to already fit trivially in i64/string round-trips.
+        let key_matrix: Matrix<Integer> = Matrix::from_vec(
+            2,
+            2,
+            vec![
+                Integer::from(29), Integer::from(-23),
+                Integer::from(54), Integer::from(31),
+            ],
+        )
+        .unwrap();
+        // 29 mod 26 = 3, -23 mod 26 = 3, 54 mod 26 = 2, 31 mod 26 = 5, so
+        // this key is congruent mod 26 to the [[3,3],[2,5]] key above and
+        // must encrypt identically.
+        let encrypted = hill_encrypt("HELP", &key_matrix).unwrap();
+        assert_eq!(encrypted, "HIAT");
     }
 
     #[test]
