@@ -93,15 +93,12 @@ impl INTEGERtoMPC {
     }
 
     /// Apply the morphism: convert Integer to ComplexMPFR
+    ///
+    /// Lossless up to the target precision. (A previous version called
+    /// `to_i64()` — which panics beyond i64 — behind an always-true range
+    /// guard, and squeezed the value through f64 regardless of `precision`.)
     pub fn apply(&self, n: &Integer) -> ComplexMPFR {
-        let i = n.to_i64();
-        let f64_val = if i >= i64::MIN && i <= i64::MAX {
-            i as f64
-        } else {
-            // For very large integers, parse through string
-            n.to_string().parse::<f64>().unwrap_or(f64::INFINITY)
-        };
-        ComplexMPFR::with_val(self.precision, (f64_val, 0.0))
+        ComplexMPFR::with_val_integers(self.precision, n, &Integer::zero())
     }
 
     /// Get the target precision
@@ -228,9 +225,9 @@ impl fmt::Display for MPFRtoMPC {
 /// # Examples
 ///
 /// ```
-/// use rustmath_complex::mp_complex_field;
+/// use rustmath_complex::mpcomplex_field;
 ///
-/// let field = mp_complex_field(Some(256));
+/// let field = mpcomplex_field(Some(256));
 /// // Use field for creating high-precision complex numbers
 /// ```
 pub fn mpcomplex_field(precision: Option<u32>) -> MpcomplexFieldClass {
@@ -454,6 +451,9 @@ pub fn split_complex_string(s: &str) -> Result<(String, String), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    // Pre-existing tests reference `Ring::is_zero`/`is_one`; bring the trait
+    // into scope so the crate's test binary compiles (was red on `main`).
+    use rustmath_core::Ring;
 
     #[test]
     fn test_cc_to_mpc() {
@@ -475,6 +475,24 @@ mod tests {
         assert_eq!(z.precision(), 128);
         assert_eq!(z.real(), 42.0);
         assert_eq!(z.imag(), 0.0);
+    }
+
+    #[test]
+    fn test_integer_to_mpc_beyond_i64_bit_exact() {
+        // Regression: the old apply() called to_i64() (panics beyond i64)
+        // and rounded through f64. A 101-bit integer at 256-bit precision
+        // must round-trip bit-exactly.
+        let morph = INTEGERtoMPC::new(256);
+        let n = Integer::from(2).pow(100) + Integer::from(3);
+        let z = morph.apply(&n);
+
+        assert_eq!(z.precision(), 256);
+        let expected = rug::Integer::from_str_radix(&n.to_string(), 10).unwrap();
+        assert_eq!(
+            z.real_part().as_float().to_integer().unwrap(),
+            expected
+        );
+        assert!(z.imag_part().as_float().is_zero());
     }
 
     #[test]
@@ -500,7 +518,7 @@ mod tests {
 
     #[test]
     fn test_mp_complex_field() {
-        let field = mp_complex_field(Some(256));
+        let field = mpcomplex_field(Some(256));
         assert_eq!(field.precision(), 256);
 
         let z = field.make_complex(3.0, 4.0);

@@ -870,6 +870,9 @@ mod tests {
     }
 
     #[test]
+    // Un-ignored with Wave 0: rustmath-reals Interval::new now accepts NaN
+    // bounds (indeterminate interval), so NaN-bearing elements construct and
+    // is_nan() is reachable again.
     fn test_is_nan() {
         let z1 = ComplexIntervalFieldElement::point(3.0, 4.0);
         assert!(!z1.is_nan());
