@@ -137,6 +137,24 @@ impl AlgebraicNumber {
 }
 
 impl PartialEq for AlgebraicNumber {
+    /// Exact equality on `AlgebraicNumber` (elements of QQbar, possibly
+    /// complex).
+    ///
+    /// # Caveat: conservative, not the same risk as `AlgebraicReal`
+    ///
+    /// This does *not* use interval refinement and never fabricates a
+    /// positive answer: two rationals compare exactly, and any non-rational
+    /// pair (even if actually equal, e.g. two syntactically different but
+    /// mathematically identical radicals) currently reports `false` (see the
+    /// `TODO` below - full comparison would need minimal polynomials /
+    /// resultants, which this crate does not yet compute). So this is
+    /// conservative in the *opposite* direction from
+    /// [`crate::algebraic_real::AlgebraicReal`]'s `sign`/`cmp`/`eq` (which
+    /// can, in the worst case, report `Equal` for two distinct-but-close
+    /// values after exhausting their interval-refinement budget - see that
+    /// module's doc comments). `AlgebraicNumber::eq` never has that failure
+    /// mode: it is safe to treat `true` here as certified, but `false` may
+    /// be a false negative for non-rational values.
     fn eq(&self, other: &Self) -> bool {
         // Simplify both and compare
         let a = self.simplify();
