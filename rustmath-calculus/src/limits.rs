@@ -3,6 +3,7 @@
 //! This module provides functionality for computing limits of expressions
 //! as a variable approaches a value.
 
+use rustmath_symbolic::simplify::simplify;
 use rustmath_symbolic::{BinaryOp, Expr};
 
 /// Direction for limit computation
@@ -70,11 +71,19 @@ pub fn limit(
 fn try_direct_substitution(expr: &Expr, var: &str, point: &Expr) -> Option<Expr> {
     let substituted = substitute(expr, var, point);
 
-    // Check if the result is well-defined (not 0/0 or ∞/∞)
-    if is_indeterminate(&substituted) {
+    // Fold constants so that e.g. (3 + 5) becomes 8, and so that a form like
+    // ((4 - 4) / (2 - 2)) becomes the literal 0/0 that the zero-division
+    // check below can see. `simplify` never folds a division by zero, so
+    // indeterminate forms survive simplification.
+    let simplified = simplify(&substituted);
+
+    // Direct substitution is invalid whenever it produced a division by
+    // zero anywhere in the expression (0/0, 1/0, ...). The limit may still
+    // exist; later strategies (L'Hôpital, ...) get their chance.
+    if contains_division_by_zero(&simplified) {
         None
     } else {
-        Some(substituted)
+        Some(simplified)
     }
 }
 
@@ -107,14 +116,16 @@ pub fn substitute(expr: &Expr, var: &str, value: &Expr) -> Expr {
     }
 }
 
-/// Check if an expression is an indeterminate form
-fn is_indeterminate(expr: &Expr) -> bool {
-    // Check for 0/0, ∞/∞, 0*∞, ∞-∞, etc.
-    // For now, a simplified check
+/// Check if an expression contains a division whose denominator is
+/// literally zero (after simplification), e.g. `0/0` or `1/0`.
+fn contains_division_by_zero(expr: &Expr) -> bool {
     match expr {
-        Expr::Binary(BinaryOp::Div, num, den) => {
-            is_zero(num) && is_zero(den)
+        Expr::Binary(BinaryOp::Div, _, den) if is_zero(den) => true,
+        Expr::Binary(_, left, right) => {
+            contains_division_by_zero(left) || contains_division_by_zero(right)
         }
+        Expr::Unary(_, inner) => contains_division_by_zero(inner),
+        Expr::Function(_, args) => args.iter().any(|a| contains_division_by_zero(a)),
         _ => false,
     }
 }
@@ -146,8 +157,8 @@ fn try_algebraic_limit(
     match expr {
         Expr::Binary(BinaryOp::Div, num, den) => {
             // Check if we have 0/0 form
-            let num_at_point = substitute(num, var, point);
-            let den_at_point = substitute(den, var, point);
+            let num_at_point = simplify(&substitute(num, var, point));
+            let den_at_point = simplify(&substitute(den, var, point));
 
             if is_zero(&num_at_point) && is_zero(&den_at_point) {
                 // Apply L'Hôpital's rule: lim f/g = lim f'/g'
@@ -155,17 +166,15 @@ fn try_algebraic_limit(
                 let num_prime = differentiate(num, var);
                 let den_prime = differentiate(den, var);
 
-                let num_prime_at_point = substitute(&num_prime, var, point);
-                let den_prime_at_point = substitute(&den_prime, var, point);
+                let num_prime_at_point = simplify(&substitute(&num_prime, var, point));
+                let den_prime_at_point = simplify(&substitute(&den_prime, var, point));
 
                 if !is_zero(&den_prime_at_point) {
-                    return Some(
-                        Expr::Binary(
-                            BinaryOp::Div,
-                            std::sync::Arc::new(num_prime_at_point),
-                            std::sync::Arc::new(den_prime_at_point),
-                        )
-                    );
+                    return Some(simplify(&Expr::Binary(
+                        BinaryOp::Div,
+                        std::sync::Arc::new(num_prime_at_point),
+                        std::sync::Arc::new(den_prime_at_point),
+                    )));
                 }
             }
         }
@@ -248,8 +257,29 @@ mod tests {
         // lim(x→2) x^2 = 4
         let expr = x.clone() * x.clone();
         let result = limit(&expr, "x", &Expr::from(2), LimitDirection::Both);
-        // Result will be (2 * 2), which needs simplification
-        assert!(result.is_some());
+        assert_eq!(result, Some(Expr::from(4)));
+    }
+
+    #[test]
+    fn test_lhopital() {
+        let x = Expr::symbol("x");
+
+        // lim(x→2) (x^2 - 4)/(x - 2) = 4 (0/0 form, L'Hôpital / factoring)
+        let num = x.clone() * x.clone() - Expr::from(4);
+        let den = x.clone() - Expr::from(2);
+        let expr = num / den;
+        let result = limit(&expr, "x", &Expr::from(2), LimitDirection::Both);
+        assert_eq!(result, Some(Expr::from(4)));
+    }
+
+    #[test]
+    fn test_division_by_zero_is_not_a_value() {
+        let x = Expr::symbol("x");
+
+        // lim(x→0) 1/x does not exist (two-sided); we must not return "1/0"
+        let expr = Expr::from(1) / x.clone();
+        let result = limit(&expr, "x", &Expr::from(0), LimitDirection::Both);
+        assert_eq!(result, None);
     }
 
     #[test]

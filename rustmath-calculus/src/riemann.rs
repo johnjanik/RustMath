@@ -16,14 +16,11 @@
 //! let z = Complex::new(0.5, 0.5);
 //! let rgb = complex_to_rgb(&[vec![z]]);
 //!
-//! // Compute analytical ellipse boundary
-//! let t = 0.5;
-//! let n = 2.0;
-//! let result = analytic_boundary(t, n, 1e-10);
+//! // Exact ellipse -> disc boundary correspondence angle theta(t)
+//! let theta = analytic_boundary(0.5, 20, 0.3);
 //! ```
 
 use rustmath_complex::Complex;
-use rustmath_core::Ring;
 use std::f64::consts::PI;
 
 /// RGB color triple (red, green, blue) with values in [0, 1]
@@ -274,69 +271,68 @@ pub fn complex_to_spiderweb(
     web_grid
 }
 
-/// Computes exact boundary correspondence for an ellipse to unit disc
+/// Computes the exact boundary correspondence for an ellipse to the unit disc
 ///
-/// Uses an infinite series expansion (10-20 terms typically sufficient) to
-/// compute the exact conformal mapping from an ellipse to the unit disc.
+/// Provides an exact (as `n -> infinity`) Riemann boundary correspondence for
+/// the ellipse with semi-axes `1 + epsilon` and `1 - epsilon`, whose boundary
+/// is parameterized by `zeta(t) = exp(i t) + epsilon * exp(-i t)`. The
+/// boundary point `zeta(t)` corresponds to the point `exp(i theta)` on the
+/// unit circle, where `theta` is the returned value:
+///
+/// `theta(t) = t + sum_{i=1}^{n} (2 (-1)^i / i) (epsilon^i / (1 + epsilon^(2i))) sin(2 i t)`
+///
+/// This matches SageMath's `sage.calculus.riemann.analytic_boundary` and is
+/// primarily useful for testing the accuracy of numerical Riemann maps.
 ///
 /// # Arguments
 ///
-/// * `t` - Parameter in [0, 2π] along the ellipse boundary
-/// * `n` - Eccentricity parameter (n = (a+b)/(a-b) where a,b are semi-axes)
-/// * `epsilon` - Convergence threshold for series
+/// * `t` - Boundary parameter in [0, 2π]
+/// * `n` - Number of series terms (10 is fairly accurate, 20 very accurate)
+/// * `epsilon` - Skew of the ellipse (0 is circular)
 ///
 /// # Returns
 ///
-/// Complex value on the unit circle corresponding to parameter t
+/// The angle theta such that the boundary point at parameter `t` maps to
+/// `exp(i theta)` on the unit circle
 ///
 /// # Example
 ///
 /// ```
 /// use rustmath_calculus::riemann::analytic_boundary;
 ///
-/// let t = 0.5;
-/// let n = 2.0;
-/// let result = analytic_boundary(t, n, 1e-10);
-/// assert!((result.abs() - 1.0).abs() < 1e-9); // Should be on unit circle
+/// // Series converges rapidly in n:
+/// let t100 = analytic_boundary(0.5, 100, 0.3);
+/// assert!((analytic_boundary(0.5, 10, 0.3) - t100).abs() < 1e-6);
+/// assert!((analytic_boundary(0.5, 20, 0.3) - t100).abs() < 1e-10);
+///
+/// // A circle (epsilon = 0) has the identity correspondence:
+/// assert_eq!(analytic_boundary(1.234, 20, 0.0), 1.234);
 /// ```
-pub fn analytic_boundary(t: f64, n: f64, epsilon: f64) -> Complex {
-    // The boundary mapping uses a series expansion:
-    // φ(e^{it}) = e^{it} * (1 + Σ c_k e^{-ikt})
-    //
-    // For an ellipse with semi-axes a and b, n = (a+b)/(a-b)
-    // The coefficients decay exponentially
-
-    let result = Complex::new(t.cos(), t.sin());
-    let mut correction = Complex::zero();
-
-    // Compute series coefficients
-    let k_val = ((n + 1.0) / (n - 1.0)).ln();
-
-    for k in 1..100 {
-        let coeff = (-(k as f64) * k_val).exp();
-        let term = Complex::new(coeff, 0.0) * Complex::new(-(k as f64 * t).cos(), -(k as f64 * t).sin());
-        let term_abs = term.abs();
-        correction = correction + term;
-
-        // Check convergence
-        if term_abs < epsilon {
-            break;
-        }
+pub fn analytic_boundary(t: f64, n: u32, epsilon: f64) -> f64 {
+    let mut result = t;
+    for i in 1..=n {
+        let i_f = i as f64;
+        let sign = if i % 2 == 0 { 1.0 } else { -1.0 };
+        result += (2.0 * sign / i_f)
+            * (epsilon.powi(i as i32) / (1.0 + epsilon.powi(2 * i as i32)))
+            * (2.0 * i_f * t).sin();
     }
-
-    result * (Complex::one() + correction)
+    result
 }
 
-/// Computes exact interior mapping for an ellipse to unit disc
+/// Computes a nearly exact Riemann map of an interior point of an ellipse
 ///
-/// Uses Cauchy integral formula for exact computation of the conformal mapping
-/// from an elliptical domain to the unit disc.
+/// Evaluates the Cauchy integral of the exact boundary correspondence
+/// ([`analytic_boundary`]) over the ellipse with semi-axes `1 + epsilon` and
+/// `1 - epsilon`, mapping the interior point `z` into the unit disc. This
+/// matches SageMath's `sage.calculus.riemann.analytic_interior` and is
+/// primarily useful for testing the accuracy of numerical Riemann maps.
 ///
 /// # Arguments
 ///
-/// * `z` - Point in the elliptical domain
-/// * `n` - Eccentricity parameter
-/// * `epsilon` - Integration tolerance
+/// * `z` - Interior point of the ellipse to be mapped
+/// * `n` - Number of series terms (10 is fairly accurate, 20 very accurate)
+/// * `epsilon` - Skew of the ellipse (0 is circular)
 ///
 /// # Returns
 ///
@@ -348,70 +344,80 @@ pub fn analytic_boundary(t: f64, n: f64, epsilon: f64) -> Complex {
 /// use rustmath_calculus::riemann::analytic_interior;
 /// use rustmath_complex::Complex;
 ///
-/// let z = Complex::new(0.5, 0.3);
-/// let n = 2.0;
-/// let result = analytic_interior(z, n, 1e-10);
-/// assert!(result.abs() < 1.0); // Should be inside unit disc
+/// let z = Complex::new(0.5, 0.0);
+/// let result = analytic_interior(z, 20, 0.3);
+/// assert!(result.abs() < 1.0); // Interior points map inside the unit disc
+/// // Value verified against adaptive quadrature of the same Cauchy integral
+/// assert!((result.real() - 0.5488809086824906).abs() < 1e-8);
+/// assert!(result.imag().abs() < 1e-8);
 /// ```
-pub fn analytic_interior(z: Complex, n: f64, epsilon: f64) -> Complex {
-    // Use numerical integration of Cauchy formula
-    // φ(z) = 1/(2πi) ∫ φ(ζ)/(ζ-z) dζ
+pub fn analytic_interior(z: Complex, n: u32, epsilon: f64) -> Complex {
+    // Cauchy integral formula over the ellipse boundary zeta(t):
+    //   phi(z) = 1/(2 pi i) * ∮ phi(zeta)/(zeta - z) dzeta
+    //          = 1/(2 pi i) * ∫_0^{2 pi} cauchy_kernel(t) dt
     //
-    // We integrate over the ellipse boundary using the parameterization
-
+    // The integrand is smooth and 2π-periodic, so the uniform trapezoidal
+    // rule converges spectrally.
     let num_points = 1000;
     let dt = 2.0 * PI / num_points as f64;
-    let mut result = Complex::zero();
+    let mut integral = Complex::zero();
 
     for i in 0..num_points {
         let t = i as f64 * dt;
-        let _boundary_pt = analytic_boundary(t, n, epsilon);
-
-        // Compute boundary value of the mapping function
-        // For the ellipse, we use the series expansion
-        let n_complex = Complex::new(n, 0.0);
-        let eps_complex = Complex::new(epsilon, 0.0);
-        let kernel = cauchy_kernel(t, &[z.clone(), n_complex, eps_complex], 0);
-
-        result = result + kernel * Complex::new(dt, 0.0);
+        let kernel = cauchy_kernel(t, epsilon, &z, n);
+        integral = integral + kernel * Complex::new(dt, 0.0);
     }
 
-    result / Complex::new(2.0 * PI, 0.0)
+    // Divide by 2*pi*i
+    integral / Complex::new(0.0, 2.0 * PI)
 }
 
-/// Cauchy kernel for integral formula
+/// Cauchy kernel for the ellipse Riemann-map integral
 ///
-/// Computes the integrand for Cauchy integral formula:
-/// K(t) = φ(e^{it}) / (e^{it} - z)
+/// Computes the integrand used by [`analytic_interior`]:
+///
+/// `K(t) = exp(i theta(t)) * zeta'(t) / (zeta(t) - z)`
+///
+/// where `zeta(t) = exp(i t) + epsilon exp(-i t)` parameterizes the ellipse
+/// boundary and `theta(t) = analytic_boundary(t, n, epsilon)` is the exact
+/// boundary correspondence, so `exp(i theta(t))` is the boundary value of
+/// the Riemann map. This matches SageMath's
+/// `sage.calculus.riemann.cauchy_kernel`.
 ///
 /// # Arguments
 ///
-/// * `t` - Parameter along boundary
-/// * `args` - [z, n, epsilon] where z is interior point, n is eccentricity, epsilon is tolerance
-/// * `output_type` - 0 for complex, 1 for real part, 2 for imaginary part
+/// * `t` - Boundary parameter, meant to be integrated over [0, 2π]
+/// * `epsilon` - Skew of the ellipse (0 is circular)
+/// * `z` - Interior point to be mapped
+/// * `n` - Number of series terms for the boundary correspondence
 ///
 /// # Returns
 ///
-/// Complex kernel value or specified component
-pub fn cauchy_kernel(t: f64, args: &[Complex], output_type: i32) -> Complex {
-    if args.len() < 3 {
-        return Complex::zero();
-    }
+/// Complex kernel value
+///
+/// # Example
+///
+/// Value cross-checked against SageMath's doctest
+/// `cauchy_kernel(.5, (.3, .1+.2*I, 10, 'c'))`:
+///
+/// ```
+/// use rustmath_calculus::riemann::cauchy_kernel;
+/// use rustmath_complex::Complex;
+///
+/// let k = cauchy_kernel(0.5, 0.3, &Complex::new(0.1, 0.2), 10);
+/// assert!((k.real() - (-0.5841364059971198)).abs() < 1e-9);
+/// assert!((k.imag() - 0.5948650858950795).abs() < 1e-9);
+/// ```
+pub fn cauchy_kernel(t: f64, epsilon: f64, z: &Complex, n: u32) -> Complex {
+    let theta = analytic_boundary(t, n, epsilon);
+    // Boundary value of the Riemann map: exp(i theta)
+    let phi = Complex::new(theta.cos(), theta.sin());
+    // zeta(t) = e^{it} + eps e^{-it} = ((1+eps) cos t, (1-eps) sin t)
+    let zeta = Complex::new((1.0 + epsilon) * t.cos(), (1.0 - epsilon) * t.sin());
+    // zeta'(t) = i e^{it} - i eps e^{-it} = (-(1+eps) sin t, (1-eps) cos t)
+    let dzeta = Complex::new(-(1.0 + epsilon) * t.sin(), (1.0 - epsilon) * t.cos());
 
-    let z = args[0].clone();
-    let n_re = args[1].real();
-    let epsilon = args[2].real();
-
-    let boundary_pt = analytic_boundary(t, n_re, epsilon);
-    let zeta = Complex::new(t.cos(), t.sin());
-
-    let kernel = boundary_pt / (zeta - z);
-
-    match output_type {
-        1 => Complex::new(kernel.real(), 0.0),
-        2 => Complex::new(kernel.imag(), 0.0),
-        _ => kernel,
-    }
+    phi * dzeta / (zeta - z.clone())
 }
 
 /// Riemann mapping class for conformal mapping to the unit disc
@@ -666,50 +672,55 @@ mod tests {
 
     #[test]
     fn test_analytic_boundary() {
-        // Test that boundary points lie approximately on unit circle
-        let n = 2.0;
-        let epsilon = 1e-10;
-
+        // For a circle (epsilon = 0) the correspondence is the identity
         for i in 0..10 {
             let t = i as f64 * 2.0 * PI / 10.0;
-            let result = analytic_boundary(t, n, epsilon);
-
-            // Result should be near unit circle (relaxed tolerance)
-            assert!((result.abs() - 1.0).abs() < 0.5);
+            assert_eq!(analytic_boundary(t, 20, 0.0), t);
         }
+
+        // The series converges rapidly in n (values checked against the
+        // SageMath reference implementation / direct series evaluation):
+        // |theta_10 - theta_100| ~ 2.7e-7, |theta_20 - theta_100| ~ 7.9e-13
+        let t100 = analytic_boundary(0.5, 100, 0.3);
+        assert!((analytic_boundary(0.5, 10, 0.3) - t100).abs() < 1e-6);
+        assert!((analytic_boundary(0.5, 20, 0.3) - t100).abs() < 1e-10);
+
+        // Independently computed series value at t = 1.0, eps = 0.3, n = 20
+        assert!((analytic_boundary(1.0, 20, 0.3) - 0.4412728589582451).abs() < 1e-12);
     }
 
     #[test]
     fn test_analytic_interior() {
-        // Test that interior points map to reasonable values
-        let n = 2.0;
-        let epsilon = 1e-10;
+        // The center of the ellipse maps to the origin
+        let center = analytic_interior(Complex::new(0.0, 0.0), 20, 0.3);
+        assert!(center.abs() < 1e-10);
 
-        let test_points = vec![
-            Complex::new(0.0, 0.0),
-            Complex::new(0.3, 0.0),
-            Complex::new(0.0, 0.3),
-            Complex::new(0.2, 0.2),
-        ];
+        // phi(0.5) on the real axis: real, inside the disc; value verified
+        // against adaptive quadrature (scipy.integrate.quad) of the same
+        // Cauchy integral: 0.5488809086824906
+        let phi = analytic_interior(Complex::new(0.5, 0.0), 20, 0.3);
+        assert!(phi.abs() < 1.0);
+        assert!((phi.real() - 0.5488809086824906).abs() < 1e-8);
+        assert!(phi.imag().abs() < 1e-8);
 
-        for z in test_points {
-            let result = analytic_interior(z, n, epsilon);
-            // Result should be finite
-            assert!(result.abs() < 100.0);
-        }
+        // Symmetry: the ellipse and normalization are real-symmetric,
+        // so phi(conj z) = conj(phi(z))
+        let z = Complex::new(0.1, 0.2);
+        let phi_z = analytic_interior(z, 20, 0.3);
+        let phi_zbar = analytic_interior(Complex::new(0.1, -0.2), 20, 0.3);
+        assert!((phi_zbar.real() - phi_z.real()).abs() < 1e-10);
+        assert!((phi_zbar.imag() + phi_z.imag()).abs() < 1e-10);
     }
 
     #[test]
     fn test_cauchy_kernel() {
-        let z = Complex::new(0.5, 0.3);
-        let n = Complex::new(2.0, 0.0);
-        let eps = Complex::new(1e-10, 0.0);
-
-        let kernel = cauchy_kernel(1.0, &[z.clone(), n.clone(), eps.clone()], 0);
-        assert!(kernel.abs() > 0.0);
-
-        let kernel_re = cauchy_kernel(1.0, &[z, n, eps], 1);
-        assert_eq!(kernel_re.imag(), 0.0);
+        // Golden value from SageMath's doctest:
+        // cauchy_kernel(.5, (.3, .1+.2*I, 10, 'c'))
+        //   = -0.584136405997... + 0.5948650858950...j
+        let z = Complex::new(0.1, 0.2);
+        let kernel = cauchy_kernel(0.5, 0.3, &z, 10);
+        assert!((kernel.real() - (-0.5841364059971198)).abs() < 1e-9);
+        assert!((kernel.imag() - 0.5948650858950795).abs() < 1e-9);
     }
 
     #[test]
