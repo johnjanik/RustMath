@@ -5,6 +5,15 @@
 //! for creating and validating elements.
 //!
 //! Corresponds to sage.structure.parent.Parent
+//!
+//! # Layering note (decision record, P2-G)
+//!
+//! [`Parent`] is the substrate for the coercion vocabulary in
+//! [`crate::coercion`] ([`Coercible`](crate::coercion::Coercible) /
+//! [`Pushout`](crate::coercion::Pushout)). The higher-level, graph-driven
+//! coercion system lives in `rustmath-category` (`core_bridge` module), which
+//! depends on this crate — never the reverse. Core stays a pure trait
+//! vocabulary with no category dependency.
 
 use crate::Ring;
 use std::fmt::Debug;
