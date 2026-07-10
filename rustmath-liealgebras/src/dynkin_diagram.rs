@@ -87,8 +87,10 @@ impl DynkinDiagram {
     /// assert_eq!(dd.num_nodes(), 3);
     /// ```
     pub fn new(cartan_type: CartanType) -> Self {
-        let num_nodes = cartan_type.rank;
         let cartan_matrix = CartanMatrix::new(cartan_type);
+        // Use the Cartan matrix dimension so affine diagrams include the extra
+        // affine node (an X_n^(1) diagram has n+1 nodes).
+        let num_nodes = cartan_matrix.rank();
         let edges = Self::compute_edges(&cartan_matrix, num_nodes);
         let adjacency = Self::build_adjacency(&edges, num_nodes);
 

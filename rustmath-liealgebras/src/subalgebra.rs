@@ -33,12 +33,13 @@ use std::marker::PhantomData;
 /// # use rustmath_integers::Integer;
 ///
 /// let L: AbelianLieAlgebra<Integer> = AbelianLieAlgebra::new(3);
-/// let generators = vec![
+/// let generators: Vec<AbelianLieAlgebraElement<Integer>> = vec![
 ///     AbelianLieAlgebraElement::basis_element(0, 3),
 ///     AbelianLieAlgebraElement::basis_element(1, 3),
 /// ];
 ///
-/// let subalgebra = LieSubalgebra::new(3, generators, false);
+/// let subalgebra: LieSubalgebra<Integer, AbelianLieAlgebraElement<Integer>> =
+///     LieSubalgebra::new(3, generators, false);
 /// assert_eq!(subalgebra.num_generators(), 2);
 /// assert!(!subalgebra.is_ideal());
 /// ```

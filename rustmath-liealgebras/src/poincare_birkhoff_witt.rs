@@ -164,12 +164,11 @@ impl PartialOrd for PBWMonomial {
 
 impl Ord for PBWMonomial {
     fn cmp(&self, other: &Self) -> Ordering {
-        // Reverse degree lexicographic order
-        // First compare by degree (higher degree > lower degree)
-        match other.degree().cmp(&self.degree()) {
+        // Degree lexicographic order: higher degree > lower degree.
+        match self.degree().cmp(&other.degree()) {
             Ordering::Equal => {
-                // Then lexicographically by exponents (reverse iteration)
-                other.exponents.cmp(&self.exponents)
+                // Tie-break lexicographically by exponents.
+                self.exponents.cmp(&other.exponents)
             }
             ord => ord,
         }

@@ -3,7 +3,9 @@
 //! A Verma module M_λ is the fundamental object in the representation theory
 //! of Kac-Moody Lie algebras. For a weight λ, it is defined as:
 //!
-//!     M_λ := U(g) ⊗_{U(b)} F_λ
+//! ```text
+//! M_λ := U(g) ⊗_{U(b)} F_λ
+//! ```
 //!
 //! where U(g) is the universal enveloping algebra, b is a Borel subalgebra,
 //! and F_λ is a one-dimensional U(b)-module.

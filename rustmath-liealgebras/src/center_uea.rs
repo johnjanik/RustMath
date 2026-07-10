@@ -4,7 +4,9 @@
 //! that commute with every element of the Lie algebra g. For a Lie algebra g,
 //! the center Z(U(g)) is:
 //!
-//!     Z(U(g)) = {z ∈ U(g) | [z, x] = 0 for all x ∈ g}
+//! ```text
+//! Z(U(g)) = {z ∈ U(g) | [z, x] = 0 for all x ∈ g}
+//! ```
 //!
 //! The center is a commutative graded algebra that plays a fundamental role
 //! in representation theory, as central elements act as scalars in irreducible

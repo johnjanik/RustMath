@@ -40,7 +40,7 @@
 //!
 //! // Create Nil Coxeter algebra for type A_2
 //! let ct = CartanType::new(CartanLetter::A, 2).unwrap();
-//! let nca = NilCoxeterAlgebra::new(ct, Rational::one());
+//! let nca = NilCoxeterAlgebra::new(ct, Rational::from(1i64));
 //!
 //! assert_eq!(nca.rank(), 2); // Two generators u_1, u_2
 //! ```
@@ -473,7 +473,8 @@ mod tests {
 
         let display = format!("{}", nca);
         assert!(display.contains("Nil Coxeter algebra"));
-        assert!(display.contains("A2"));
+        // CartanType Display renders finite type A of rank 2 as "A_2".
+        assert!(display.contains("A_2"));
     }
 
     #[test]

@@ -277,15 +277,15 @@ pub fn cross_product<R>() -> ThreeDimensionalLieAlgebra<R>
 where
     R: Ring + Clone + From<i64>,
 {
-    // R^3 with cross product has structure coefficients: a=1, b=1, c=1, d=0
-    // [e_0, e_1] = e_2
-    // [e_0, e_2] = e_1  (but with negative sign from antisymmetry: [e_2, e_0] = e_1)
-    // [e_1, e_2] = e_0
+    // R^3 with the cross product (so(3)):
+    //   [e_0, e_1] = e_2,  [e_1, e_2] = e_0,  [e_2, e_0] = e_1
+    // In this algebra's convention [e_0, e_2] = b·e_1, so [e_2, e_0] = -b·e_1.
+    // To get [e_2, e_0] = e_1 we need b = -1 (equivalently [e_0, e_2] = -e_1).
     ThreeDimensionalLieAlgebra::new(
-        R::from(1),  // a: [e_0, e_1] = e_2
-        R::from(1),  // b: [e_0, e_2] = e_1
-        R::from(1),  // c: [e_1, e_2] = e_0
-        R::from(0),  // d: no e_2 component in [e_1, e_2]
+        R::from(1),   // a: [e_0, e_1] = e_2
+        R::from(-1),  // b: [e_0, e_2] = -e_1, hence [e_2, e_0] = e_1
+        R::from(1),   // c: [e_1, e_2] = e_0
+        R::from(0),   // d: no e_2 component in [e_1, e_2]
     )
 }
 
