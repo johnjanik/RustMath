@@ -1152,6 +1152,19 @@ impl Ring for Integer {
 impl CommutativeRing for Integer {}
 impl IntegralDomain for Integer {}
 
+// Z with its usual total order: translation-invariant, and products of
+// non-negative integers are non-negative, as `OrderedRing` requires.
+// (Path-qualified per the core naming policy: `ordering` is not root-re-exported.)
+impl rustmath_core::ordering::OrderedRing for Integer {
+    fn sign(&self) -> i32 {
+        self.signum() as i32
+    }
+
+    fn abs(&self) -> Self {
+        Integer::abs(self)
+    }
+}
+
 impl EuclideanDomain for Integer {
     fn norm(&self) -> u64 {
         // For integers, use absolute value as norm
@@ -1615,5 +1628,28 @@ mod tests {
         for qr in &qrs {
             assert!(qr.is_quadratic_residue_prime(&p));
         }
+    }
+
+    #[test]
+    fn test_ordered_ring() {
+        use rustmath_core::ordering::OrderedRing;
+
+        assert_eq!(OrderedRing::sign(&Integer::from(42)), 1);
+        assert_eq!(OrderedRing::sign(&Integer::zero()), 0);
+        assert_eq!(OrderedRing::sign(&Integer::from(-7)), -1);
+
+        assert_eq!(OrderedRing::abs(&Integer::from(-7)), Integer::from(7));
+        assert_eq!(OrderedRing::abs(&Integer::from(7)), Integer::from(7));
+
+        assert!(Integer::from(5).is_positive());
+        assert!(Integer::from(-5).is_negative());
+        assert!(!Integer::zero().is_positive());
+        assert_eq!(Integer::from(3).max_with(&Integer::from(8)), Integer::from(8));
+        assert_eq!(Integer::from(3).min_with(&Integer::from(8)), Integer::from(3));
+
+        // Translation invariance on a sample.
+        let (a, b, c) = (Integer::from(3), Integer::from(8), Integer::from(100));
+        assert!(a < b);
+        assert!(a + c.clone() < b + c);
     }
 }
