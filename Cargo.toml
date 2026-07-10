@@ -69,6 +69,7 @@ members = [
     "rustmath-benchmarks",
     "rustmath-jupyter",
     "rustmath-igp24",
+    "rustmath-galois",
     "rustmath-lava/crates/lava-core",
     "rustmath-lava/crates/lava",
 ]
