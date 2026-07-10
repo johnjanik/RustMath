@@ -10,7 +10,7 @@
 //! - Lucas sequences for primality testing
 //! - Conversions and homomorphisms
 
-use rustmath_core::{EuclideanDomain, MathError, Result, Ring};
+use rustmath_core::{CommutativeRing, EuclideanDomain, MathError, Result, Ring};
 use rustmath_integers::Integer;
 use std::fmt;
 use std::ops::{Add, Mul, Neg, Sub};
@@ -20,6 +20,17 @@ use std::ops::{Add, Mul, Neg, Sub};
 /// Represents an integer modulo n, with efficient operations.
 /// Unlike PrimeField, this works for any modulus n (not just primes),
 /// but division may not always be defined.
+///
+/// # The modulus-0 sentinel (`Ring::zero`/`Ring::one`)
+///
+/// The static [`Ring::zero`]/[`Ring::one`] constructors cannot know a modulus,
+/// so they return elements with `modulus == 0`. Mathematically this is lawful:
+/// Z/0Z ≅ Z, and such an element is the *unreduced integer* awaiting the
+/// canonical map Z → Z/nZ. Arithmetic coerces it on contact: an operation
+/// between a modulus-0 element and a modulus-n element yields a modulus-n
+/// element. Equality remains strict (both value *and* modulus must match), so
+/// compare through arithmetic or reduce first. Use [`Zmod`](crate::Zmod) for a
+/// parent whose `zero()`/`one()` carry the modulus from the start.
 #[derive(Clone, Debug)]
 pub struct IntegerMod {
     value: Integer,
@@ -65,6 +76,31 @@ impl IntegerMod {
         Ok(IntegerMod { value, modulus })
     }
 
+    /// Internal: build an element with the given modulus. Modulus 0 is the
+    /// unreduced-integer sentinel (Z/0Z ≅ Z, see the type docs); any other
+    /// modulus accepted here is > 1 by construction.
+    fn make(value: Integer, modulus: Integer) -> Self {
+        if modulus.is_zero() {
+            IntegerMod { value, modulus }
+        } else {
+            IntegerMod::new(value, modulus)
+                .expect("internal invariant: nonzero moduli are always > 1")
+        }
+    }
+
+    /// Internal: the modulus of the result of a binary operation, coercing the
+    /// modulus-0 sentinel to the other operand's modulus. Panics (like the
+    /// historical `assert_eq!`) on two different nonzero moduli.
+    fn coerced_modulus(&self, other: &Self, op: &str) -> Integer {
+        if self.modulus == other.modulus || other.modulus.is_zero() {
+            self.modulus.clone()
+        } else if self.modulus.is_zero() {
+            other.modulus.clone()
+        } else {
+            panic!("Cannot {op} elements with different moduli");
+        }
+    }
+
     /// Get the value (in range [0, modulus))
     pub fn value(&self) -> &Integer {
         &self.value
@@ -97,6 +133,9 @@ impl IntegerMod {
 
         // Use extended GCD to find multiplicative inverse
         let (gcd, x, _) = self.value.extended_gcd(&self.modulus);
+        // Normalize the gcd sign: it can be negative for the modulus-0
+        // sentinel (negative values never occur with a reduced modulus > 1).
+        let (gcd, x) = if gcd.signum() < 0 { (-gcd, -x) } else { (gcd, x) };
         if !gcd.is_one() {
             return Err(MathError::InvalidArgument(format!(
                 "No inverse exists: gcd({}, {}) = {}",
@@ -127,7 +166,7 @@ impl IntegerMod {
             return inv.pow(&(-exp.clone()));
         }
 
-        let mut result = IntegerMod::new(Integer::one(), self.modulus.clone())?;
+        let mut result = IntegerMod::make(Integer::one(), self.modulus.clone());
         let mut base = self.clone();
         let mut e = exp.clone();
 
@@ -145,7 +184,8 @@ impl IntegerMod {
     /// Check if this element is a unit (has a multiplicative inverse)
     pub fn is_unit(&self) -> bool {
         let (gcd, _, _) = self.value.extended_gcd(&self.modulus);
-        gcd.is_one()
+        // |gcd| = 1; the gcd sign can be negative for the modulus-0 sentinel.
+        gcd.is_one() || (-gcd).is_one()
     }
 
     /// Compute the multiplicative order of this element
@@ -155,6 +195,17 @@ impl IntegerMod {
     pub fn multiplicative_order(&self) -> Option<Integer> {
         if !self.is_unit() {
             return None;
+        }
+
+        if self.modulus.is_zero() {
+            // Modulus-0 sentinel = element of Z: only ±1 have finite order.
+            return if self.value.is_one() {
+                Some(Integer::one())
+            } else if self.value == -Integer::one() {
+                Some(Integer::from(2))
+            } else {
+                None
+            };
         }
 
         let mut power = self.clone();
@@ -174,6 +225,80 @@ impl IntegerMod {
         } else {
             None
         }
+    }
+
+    /// Lift to `Z`: the canonical representative in `[0, modulus)`
+    /// (MAGMA lifts residue classes to the integers).
+    pub fn lift(&self) -> Integer {
+        self.value.clone()
+    }
+
+    /// Whether the element is nilpotent (MAGMA `IsNilpotent`): true iff every
+    /// prime dividing the modulus divides the value. For the modulus-0
+    /// sentinel (an element of `Z`), only `0` is nilpotent.
+    pub fn is_nilpotent(&self) -> bool {
+        if self.value.is_zero() {
+            return true;
+        }
+        if self.modulus.is_zero() {
+            // Z is a domain: no nonzero nilpotents.
+            return false;
+        }
+        for (prime, _) in rustmath_integers::prime::factor(&self.modulus) {
+            let (_, r) = self
+                .value
+                .div_rem(&prime)
+                .expect("prime factor is nonzero");
+            if !r.is_zero() {
+                return false;
+            }
+        }
+        true
+    }
+
+    /// Whether `self^2 == self` (MAGMA `IsIdempotent`).
+    pub fn is_idempotent(&self) -> bool {
+        self.clone() * self.clone() == *self
+    }
+
+    /// Whether the element is a zero divisor: non-zero and not a unit.
+    /// For the modulus-0 sentinel (an element of `Z`, a domain), always false.
+    pub fn is_zero_divisor(&self) -> bool {
+        if self.modulus.is_zero() {
+            return false;
+        }
+        !self.value.is_zero() && !self.is_unit()
+    }
+
+    /// A square root of the element, if one exists (MAGMA `Sqrt`).
+    ///
+    /// Computed via the factorization of the modulus, prime-power square
+    /// roots ([`square_root_mod_prime_power`]), and CRT recombination. For
+    /// the modulus-0 sentinel (an element of `Z`), a root exists iff the
+    /// value is a perfect square.
+    pub fn sqrt(&self) -> Option<Self> {
+        if self.modulus.is_zero() {
+            // Z: perfect squares only.
+            if self.value.signum() < 0 {
+                return None;
+            }
+            let r = self.value.sqrt().ok()?;
+            return if r.clone() * r.clone() == self.value {
+                Some(IntegerMod::make(r, Integer::zero()))
+            } else {
+                None
+            };
+        }
+        let mut cur_mod = Integer::one();
+        let mut cur_val = Integer::zero();
+        for (prime, e) in rustmath_integers::prime::factor(&self.modulus) {
+            let pk = prime.pow(e);
+            let r = square_root_mod_prime_power(&self.value, &prime, e as usize)?;
+            let combined = rustmath_integers::crt_two(&cur_val, &cur_mod, &r, &pk).ok()?;
+            cur_val = combined;
+            cur_mod = cur_mod * pk;
+        }
+        Some(IntegerMod::make(cur_val, self.modulus.clone()))
     }
 }
 
@@ -195,12 +320,8 @@ impl Add for IntegerMod {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
-        assert_eq!(
-            self.modulus, other.modulus,
-            "Cannot add elements with different moduli"
-        );
-        let sum = self.value + other.value;
-        IntegerMod::new(sum, self.modulus).unwrap()
+        let modulus = self.coerced_modulus(&other, "add");
+        IntegerMod::make(self.value + other.value, modulus)
     }
 }
 
@@ -208,12 +329,8 @@ impl Sub for IntegerMod {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
-        assert_eq!(
-            self.modulus, other.modulus,
-            "Cannot subtract elements with different moduli"
-        );
-        let diff = self.value - other.value;
-        IntegerMod::new(diff, self.modulus).unwrap()
+        let modulus = self.coerced_modulus(&other, "subtract");
+        IntegerMod::make(self.value - other.value, modulus)
     }
 }
 
@@ -221,12 +338,8 @@ impl Mul for IntegerMod {
     type Output = Self;
 
     fn mul(self, other: Self) -> Self {
-        assert_eq!(
-            self.modulus, other.modulus,
-            "Cannot multiply elements with different moduli"
-        );
-        let prod = self.value * other.value;
-        IntegerMod::new(prod, self.modulus).unwrap()
+        let modulus = self.coerced_modulus(&other, "multiply");
+        IntegerMod::make(self.value * other.value, modulus)
     }
 }
 
@@ -234,7 +347,13 @@ impl Neg for IntegerMod {
     type Output = Self;
 
     fn neg(self) -> Self {
-        if self.value.is_zero() {
+        if self.modulus.is_zero() {
+            // Modulus-0 sentinel: negate in Z.
+            IntegerMod {
+                value: -self.value,
+                modulus: self.modulus,
+            }
+        } else if self.value.is_zero() {
             self
         } else {
             IntegerMod::new(self.modulus.clone() - self.value, self.modulus).unwrap()
@@ -243,12 +362,24 @@ impl Neg for IntegerMod {
 }
 
 impl Ring for IntegerMod {
+    /// The additive identity, as the modulus-0 sentinel (see the type docs):
+    /// the canonical image of `0 ∈ Z` in any Z/nZ, coerced on first contact
+    /// with a modulus-carrying element. Prefer [`Zmod::zero`](crate::Zmod)
+    /// when the parent is known.
     fn zero() -> Self {
-        panic!("Cannot create IntegerMod::zero() without modulus");
+        IntegerMod {
+            value: Integer::zero(),
+            modulus: Integer::zero(),
+        }
     }
 
+    /// The multiplicative identity, as the modulus-0 sentinel (see
+    /// [`Ring::zero`] above and the type docs).
     fn one() -> Self {
-        panic!("Cannot create IntegerMod::one() without modulus");
+        IntegerMod {
+            value: Integer::one(),
+            modulus: Integer::zero(),
+        }
     }
 
     fn is_zero(&self) -> bool {
@@ -259,6 +390,9 @@ impl Ring for IntegerMod {
         self.value.is_one()
     }
 }
+
+// Multiplication in Z/nZ (and in the modulus-0 sentinel ring Z) commutes.
+impl CommutativeRing for IntegerMod {}
 
 /// Compute square root modulo a prime p
 ///
@@ -737,5 +871,124 @@ mod tests {
     fn test_display() {
         let a = IntegerMod::new(Integer::from(3), Integer::from(7)).unwrap();
         assert_eq!(format!("{}", a), "3 (mod 7)");
+    }
+
+    #[test]
+    fn test_ring_zero_one_lawful() {
+        // Ring::zero()/one() no longer panic: they are modulus-0 sentinels.
+        let zero = <IntegerMod as Ring>::zero();
+        let one = <IntegerMod as Ring>::one();
+        assert!(zero.is_zero());
+        assert!(one.is_one());
+        assert_eq!(zero.modulus(), &Integer::zero());
+
+        // Sentinels coerce on contact: x + 0 == x, x * 1 == x, in Z/7Z.
+        let x = IntegerMod::new(Integer::from(5), Integer::from(7)).unwrap();
+        assert_eq!(x.clone() + zero.clone(), x);
+        assert_eq!(zero.clone() + x.clone(), x);
+        assert_eq!(x.clone() * one.clone(), x);
+        assert_eq!(one.clone() * x.clone(), x);
+        assert_eq!(x.clone() - zero.clone(), x);
+
+        // Sentinel arithmetic among sentinels stays in Z (= Z/0Z).
+        let two = one.clone() + one.clone();
+        assert_eq!(two.value(), &Integer::from(2));
+        assert_eq!(two.modulus(), &Integer::zero());
+        // ... and reduces once it meets a modulus: (1+1) + 6 ≡ 1 (mod 7).
+        let y = IntegerMod::new(Integer::from(6), Integer::from(7)).unwrap();
+        assert_eq!((two + y).value(), &Integer::from(1));
+
+        // x + (-x) is zero in Z/7Z.
+        let sum = x.clone() + (-x.clone());
+        assert!(sum.is_zero());
+        assert_eq!(sum.modulus(), &Integer::from(7));
+    }
+
+    #[test]
+    fn test_sentinel_units_in_z() {
+        // The modulus-0 sentinel models Z: only ±1 are units.
+        let one = <IntegerMod as Ring>::one();
+        let minus_one = -one.clone();
+        assert!(one.is_unit());
+        assert!(minus_one.is_unit());
+        assert_eq!(one.multiplicative_order(), Some(Integer::one()));
+        assert_eq!(minus_one.multiplicative_order(), Some(Integer::from(2)));
+        assert_eq!(minus_one.inverse().unwrap().value(), &Integer::from(-1));
+
+        let two = one.clone() + one.clone();
+        assert!(!two.is_unit());
+        assert_eq!(two.multiplicative_order(), None);
+        assert!(two.inverse().is_err());
+
+        // Powers of a sentinel are computed in Z.
+        let eight = two.pow(&Integer::from(3)).unwrap();
+        assert_eq!(eight.value(), &Integer::from(8));
+        assert_eq!(eight.modulus(), &Integer::zero());
+    }
+
+    #[test]
+    #[should_panic(expected = "different moduli")]
+    fn test_mismatched_nonzero_moduli_still_panic() {
+        let a = IntegerMod::new(Integer::from(1), Integer::from(7)).unwrap();
+        let b = IntegerMod::new(Integer::from(1), Integer::from(11)).unwrap();
+        let _ = a + b;
+    }
+
+    #[test]
+    fn test_nilpotent_idempotent_zero_divisor() {
+        // Z/12Z: 6 is nilpotent (6^2 = 36 = 0 mod 12).
+        let m12 = Integer::from(12);
+        assert!(IntegerMod::new(Integer::from(6), m12.clone())
+            .unwrap()
+            .is_nilpotent());
+        // 4 mod 12: 2 | 4 but 3 does not divide 4 -> not nilpotent.
+        let four = IntegerMod::new(Integer::from(4), m12.clone()).unwrap();
+        assert!(!four.is_nilpotent());
+        // ... but idempotent: 16 = 4 mod 12.
+        assert!(four.is_idempotent());
+        // ... and a zero divisor (nonzero, non-unit).
+        assert!(four.is_zero_divisor());
+        // Z/8Z: 2 nilpotent (2^3 = 8 = 0).
+        assert!(IntegerMod::new(Integer::from(2), Integer::from(8))
+            .unwrap()
+            .is_nilpotent());
+        // Units are not zero divisors.
+        let five = IntegerMod::new(Integer::from(5), m12).unwrap();
+        assert!(!five.is_zero_divisor());
+        assert!(!five.is_nilpotent());
+    }
+
+    #[test]
+    fn test_sentinel_predicates_model_z() {
+        // The modulus-0 sentinel models Z (a domain).
+        let one = <IntegerMod as Ring>::one();
+        let zero = <IntegerMod as Ring>::zero();
+        let two = one.clone() + one.clone();
+        assert!(zero.is_nilpotent());
+        assert!(!two.is_nilpotent());
+        assert!(!two.is_zero_divisor());
+        assert!(zero.is_idempotent());
+        assert!(one.is_idempotent());
+        assert!(!two.is_idempotent());
+        // sqrt in Z: perfect squares only.
+        let four = two.clone() * two.clone();
+        assert_eq!(four.sqrt().unwrap().value(), &Integer::from(2));
+        assert!(two.sqrt().is_none());
+        assert!((-four).sqrt().is_none());
+    }
+
+    #[test]
+    fn test_sqrt_composite_modulus() {
+        // sqrt of 4 mod 15 (= 3 * 5): must square back to 4.
+        let a = IntegerMod::new(Integer::from(4), Integer::from(15)).unwrap();
+        let s = a.sqrt().unwrap();
+        assert_eq!((s.clone() * s).value(), &Integer::from(4));
+        // 2 is a non-residue mod 15 (non-residue mod 3): no root.
+        let b = IntegerMod::new(Integer::from(2), Integer::from(15)).unwrap();
+        assert!(b.sqrt().is_none());
+        // Prime-power modulus: sqrt of 2 mod 49 (3^2 = 9, 2 is a QR mod 7: 4^2 = 16 = 2).
+        let c = IntegerMod::new(Integer::from(2), Integer::from(49)).unwrap();
+        let r = c.sqrt().unwrap();
+        assert_eq!((r.clone() * r).value(), &Integer::from(2));
     }
 }
