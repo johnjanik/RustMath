@@ -50,8 +50,13 @@
 //! use rustmath_schemes::elliptic_curves::rational::EllipticCurveRational;
 //! use num_bigint::BigInt;
 //!
-//! // Create a rank 0 curve (all points are torsion)
-//! let curve = EllipticCurveRational::from_cremona_label("11a1").unwrap();
+//! // Create a rank 0 curve (all points are torsion): y² = x³ - x
+//! // A short Weierstrass model is used because the point-finding routines
+//! // (division polynomials) are implemented for short Weierstrass form.
+//! let curve = EllipticCurveRational::from_short_weierstrass(
+//!     BigInt::from(-1),
+//!     BigInt::from(0),
+//! );
 //!
 //! // Apply Chabauty-Coleman
 //! let chabauty = ChabautyColeman::new(curve, BigInt::from(7));
@@ -1268,7 +1273,7 @@ mod tests {
     }
 
     #[test]
-    fn test_quadratic_chabauty_creation() {
+    fn test_quadratic_chabauty_creation_basic() {
         let curve = EllipticCurveRational::from_short_weierstrass(
             BigInt::from(-1),
             BigInt::from(1),

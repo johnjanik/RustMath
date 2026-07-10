@@ -32,13 +32,16 @@ pub use isogeny::{Isogeny, IsogenyGraph, KernelPolynomial};
 // );
 // ```
 
-pub mod generic;
+// B3 canonicalization: the generic EllipticCurve<F: Field> moved to its semantic
+// home, rustmath-ellipticcurves. This one-line shim keeps every existing
+// `rustmath_schemes::elliptic_curves::generic::…` path compiling unchanged.
+pub use rustmath_ellipticcurves::generic;
 
 #[cfg(test)]
 mod tests;
 
 // Re-export commonly used types
-pub use generic::{EllipticCurve, Point};
+pub use rustmath_ellipticcurves::generic::{EllipticCurve, Point};
 // Elliptic Curves as Schemes
 //
 // This module provides the scheme-theoretic perspective on elliptic curves,
@@ -216,7 +219,7 @@ impl<F: Field> TorsionSubgroup<F> {
 }
 
 #[cfg(test)]
-mod tests {
+mod torsion_tests {
     use super::*;
 
     #[test]
