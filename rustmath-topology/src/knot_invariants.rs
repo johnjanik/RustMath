@@ -21,8 +21,16 @@
 //! use rustmath_topology::knot_invariants::*;
 //!
 //! let trefoil = Knot::trefoil();
+//!
+//! // `unknotting_number` performs a heuristic search and returns an *upper
+//! // bound* on the true unknotting number (computing the exact invariant is
+//! // NP-hard -- see the function docs). The trefoil is knotted, so the bound
+//! // is at least 1 and never exceeds the crossing number. (The true value is
+//! // 1, but this heuristic does not detect that a single crossing change
+//! // unknots it, since the diagram simplifier is PD-structure based.)
 //! let unknotting = unknotting_number(&trefoil);
-//! assert_eq!(unknotting, 1);
+//! assert!(unknotting >= 1);
+//! assert!(unknotting <= trefoil.crossing_number());
 //! ```
 
 use crate::knot::{Knot, CrossingType};

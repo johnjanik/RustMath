@@ -44,12 +44,17 @@ pub fn simplex(n: usize) -> SimplicialComplex {
 pub fn torus() -> SimplicialComplex {
     let mut complex = SimplicialComplex::with_name("Torus");
 
-    // Minimal triangulation of torus: 7 vertices, 14 triangles
+    // Minimal triangulation of the torus: 7 vertices, 21 edges, 14 triangles
+    // (chi = 7 - 21 + 14 = 0), matching the combinatorial structure of the
+    // Csaszar polyhedron / SageMath's `simplicial_complexes.Torus()`.
+    // (The previous facet list here was missing two of the required 21
+    // edges -- vertices 0-6 never got connected by every pair -- which
+    // made the complex fail to close up into a torus and gave chi = 2.)
     let facets = vec![
-        vec![0, 1, 3], vec![0, 1, 4], vec![0, 2, 3], vec![0, 2, 5],
-        vec![0, 4, 5], vec![1, 2, 6], vec![1, 3, 6], vec![1, 4, 6],
-        vec![2, 3, 4], vec![2, 4, 5], vec![2, 5, 6], vec![3, 4, 6],
-        vec![3, 5, 6], vec![4, 5, 6],
+        vec![0, 1, 2], vec![1, 2, 4], vec![1, 3, 4], vec![1, 3, 6],
+        vec![0, 1, 5], vec![1, 5, 6], vec![2, 3, 5], vec![2, 4, 5],
+        vec![2, 3, 6], vec![0, 2, 6], vec![0, 3, 4], vec![0, 3, 5],
+        vec![4, 5, 6], vec![0, 4, 6],
     ];
 
     for facet in facets {
@@ -63,10 +68,18 @@ pub fn torus() -> SimplicialComplex {
 pub fn klein_bottle() -> SimplicialComplex {
     let mut complex = SimplicialComplex::with_name("Klein bottle");
 
-    // Triangulation of Klein bottle
+    // Minimal triangulation of the Klein bottle: 8 vertices, 24 edges,
+    // 16 triangles (chi = 8 - 24 + 16 = 0), as presented in Davide
+    // Cervone's thesis and matching SageMath's
+    // `simplicial_complexes.KleinBottle()`.
+    // (The previous facet list here was actually just an octahedron --
+    // 6 vertices, 12 edges, 8 triangles -- a triangulation of S^2 with
+    // chi = 2, not the Klein bottle at all.)
     let facets = vec![
-        vec![0, 1, 2], vec![0, 1, 3], vec![0, 2, 4], vec![0, 3, 4],
-        vec![1, 2, 5], vec![1, 3, 5], vec![2, 4, 5], vec![3, 4, 5],
+        vec![2, 3, 7], vec![1, 2, 3], vec![1, 3, 5], vec![1, 5, 7],
+        vec![1, 4, 7], vec![2, 4, 6], vec![1, 2, 6], vec![1, 6, 0],
+        vec![1, 4, 0], vec![2, 4, 0], vec![3, 4, 7], vec![3, 4, 6],
+        vec![3, 5, 6], vec![5, 6, 0], vec![2, 5, 0], vec![2, 5, 7],
     ];
 
     for facet in facets {
@@ -138,15 +151,34 @@ pub fn moore_space(n: usize) -> SimplicialComplex {
 pub fn dunce_hat() -> SimplicialComplex {
     let mut complex = SimplicialComplex::with_name("Dunce hat");
 
+    // Minimal triangulation of the dunce hat given by Hachimori: 8
+    // vertices, 24 edges, 17 triangles (chi = 8 - 24 + 17 = 1), matching
+    // SageMath's `simplicial_complexes.DunceHat()` (re-indexed from 1..8
+    // to 0..7). The dunce hat is contractible (chi = 1, like a point)
+    // but famously not collapsible.
+    // (The previous facet list here was 6 vertices with the complete
+    // graph K6 as 1-skeleton and only 8 triangles, giving chi = -1,
+    // which is not even a valid closed-surface Euler characteristic
+    // for an orientable/non-orientable surface consistent with a
+    // contractible space -- it was simply invented data.)
     let facets = vec![
-        vec![0, 1, 2],
-        vec![0, 2, 3],
-        vec![0, 3, 4],
-        vec![0, 4, 5],
-        vec![0, 1, 5],
+        vec![0, 2, 4],
         vec![1, 2, 4],
-        vec![2, 3, 5],
         vec![1, 3, 4],
+        vec![0, 1, 3],
+        vec![0, 2, 3],
+        vec![2, 3, 7],
+        vec![0, 1, 7],
+        vec![0, 6, 7],
+        vec![0, 1, 6],
+        vec![1, 2, 6],
+        vec![2, 5, 6],
+        vec![0, 2, 5],
+        vec![0, 4, 5],
+        vec![3, 4, 5],
+        vec![3, 5, 7],
+        vec![5, 6, 7],
+        vec![1, 2, 7],
     ];
 
     for facet in facets {

@@ -89,8 +89,10 @@ impl GenericCellComplex {
     ///
     /// The f-vector is (f_0, f_1, ..., f_d) where f_i is the number of i-cells.
     pub fn f_vector(&self) -> Vec<usize> {
-        let max_dim = self.dimension.unwrap_or(0);
-        (0..=max_dim).map(|dim| self.n_cells(dim)).collect()
+        match self.dimension {
+            Some(max_dim) => (0..=max_dim).map(|dim| self.n_cells(dim)).collect(),
+            None => Vec::new(),
+        }
     }
 
     /// Get the name of the complex.
@@ -157,7 +159,7 @@ mod tests {
         let complex = GenericCellComplex::new();
         assert_eq!(complex.dimension(), None);
         assert_eq!(complex.euler_characteristic(), Integer::from(0));
-        assert_eq!(complex.f_vector(), vec![]);
+        assert_eq!(complex.f_vector(), Vec::<usize>::new());
     }
 
     #[test]

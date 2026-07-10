@@ -43,21 +43,22 @@
 //! ## Examples
 //!
 //! ```rust
-//! use rustmath_topology::simplicial_complex::{SimplicialComplex, Simplex};
 //! use rustmath_topology::simplicial_complex_examples;
+//! use rustmath_integers::Integer;
 //!
 //! // Create a torus as a simplicial complex
 //! let torus = simplicial_complex_examples::torus();
 //!
-//! // Compute its Euler characteristic
+//! // Compute its Euler characteristic (returns an `Integer`)
 //! let euler_char = torus.euler_characteristic();
-//! assert_eq!(euler_char, 0); // Torus has Euler characteristic 0
+//! assert_eq!(euler_char, Integer::from(0)); // Torus has Euler characteristic 0
 //! ```
 
 pub mod cell_complex;
 pub mod cubical_complex;
 pub mod delta_complex;
 pub mod filtered_simplicial_complex;
+pub mod homology;
 pub mod moment_angle_complex;
 pub mod simplicial_complex;
 pub mod simplicial_complex_examples;
@@ -78,6 +79,7 @@ pub mod link;
 
 // Re-export commonly used types
 pub use cell_complex::GenericCellComplex;
+pub use homology::HomologyGroup;
 pub use simplicial_complex::{SimplicialComplex, Simplex};
 pub use simplicial_set::{SimplicialSet, AbstractSimplex};
 

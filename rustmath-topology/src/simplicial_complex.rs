@@ -232,9 +232,14 @@ impl SimplicialComplex {
     /// Get the f-vector.
     ///
     /// The f-vector is (f_0, f_1, ..., f_d) where f_i is the number of i-simplices.
+    ///
+    /// For the empty complex (no simplices at all), this returns the empty
+    /// vector `[]`, matching the convention used by [`GenericCellComplex::f_vector`].
     pub fn f_vector(&self) -> Vec<usize> {
-        let max_dim = self.max_dimension.unwrap_or(0);
-        (0..=max_dim).map(|dim| self.n_simplices(dim)).collect()
+        match self.max_dimension {
+            Some(max_dim) => (0..=max_dim).map(|dim| self.n_simplices(dim)).collect(),
+            None => Vec::new(),
+        }
     }
 
     /// Get the h-vector.
@@ -351,8 +356,11 @@ mod tests {
         let simplex = Simplex::new(vec![0, 1, 2]);
         let faces = simplex.faces();
 
-        // A 2-simplex has 3 vertices, 3 edges: 7 faces total (excluding itself)
-        assert_eq!(faces.len(), 7);
+        // A 2-simplex has 3 vertices, 3 edges: 6 proper, nonempty faces
+        // (excluding the simplex itself and the empty set, which is not
+        // counted as a "face" by this implementation -- see add_simplex,
+        // which relies on faces() never yielding the empty simplex).
+        assert_eq!(faces.len(), 6);
     }
 
     #[test]
@@ -410,6 +418,18 @@ mod tests {
         complex.add_simplex(Simplex::new(vec![0, 1, 2]));
 
         assert_eq!(complex.f_vector(), vec![3, 3, 1]);
+    }
+
+    #[test]
+    fn test_simplicial_complex_f_vector_empty() {
+        // The f-vector of the empty complex (no simplices at all) is the
+        // empty vector, matching the convention used by
+        // `GenericCellComplex::f_vector` for its empty complex.
+        let complex = SimplicialComplex::new();
+        assert_eq!(complex.dimension(), None);
+        assert_eq!(complex.f_vector(), Vec::<usize>::new());
+        // With an empty f-vector, the h-vector guard for d == 0 kicks in.
+        assert_eq!(complex.h_vector(), vec![1]);
     }
 
     #[test]
