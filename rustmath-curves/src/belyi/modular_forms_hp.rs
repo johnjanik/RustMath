@@ -748,9 +748,9 @@ mod tests {
         if let (Ok(a), Ok(b)) = (std::env::var("M_S0"), std::env::var("M_S1")) {
             s0 = a.split(',').map(|t| t.trim().parse().expect("M_S0")).collect();
             s1 = b.split(',').map(|t| t.trim().parse().expect("M_S1")).collect();
-            assert_eq!(s0.len(), 24);
-            assert_eq!(s1.len(), 24);
-            eprintln!("[2,12,5] permutations OVERRIDDEN from M_S0/M_S1");
+            // degree = permutation length (24 for M24-class dessins, 23 for M23, ...)
+            assert_eq!(s0.len(), s1.len());
+            eprintln!("[tri] permutations OVERRIDDEN from M_S0/M_S1 (degree {})", s0.len());
         }
         // M_ABC: "a,b,c" triangle-group order override (e.g. "3,4,3" for the (3B,4C,3A)
         // passport). s0 must have order a, s1 order b, (s0 s1)^-1 order c.
@@ -780,7 +780,11 @@ mod tests {
         let tg64 = TriangleGroup::new(oa, ob, oc);
         let tg = TriangleGroupHp::new(oa, ob, oc, prec);
         let mut cg = CosetGraph::build(&tg64, &s0, &s1);
-        cg.compactify_with(&tg64, 0.996, 40);
+        // M_RPRUNE / M_LMAX: compactify BFS prune radius and word cap (larger triangle
+        // groups, e.g. (3,4,8) area 7/24, need r_prune > 0.996 to reach every coset).
+        let r_prune: f64 = std::env::var("M_RPRUNE").ok().and_then(|s| s.parse().ok()).unwrap_or(0.996);
+        let l_max: usize = std::env::var("M_LMAX").ok().and_then(|s| s.parse().ok()).unwrap_or(40);
+        cg.compactify_with(&tg64, r_prune, l_max);
         let q = 2 * n + 8;
         // M_CENTER: a/b/c = the vertex charts; b2 = the SECOND order-12 preimage (the other
         // 12-cycle of s1), i.e. rep_i(z_b) for coset i from M_COSET (default 1, which lies in
@@ -813,6 +817,54 @@ mod tests {
         eprintln!("[2,12,5] ctr_full = {:.45}", ctr);
         let rho = dump_scaled_ami_streamed(&tg64, &tg, &cg, k, n, q, 1.0, &ctr, nlimbs, &out);
         eprintln!("[2,12,5] EXT-streamed done: dim={} ρ={:.6} ρ_full={:.45}", n + 1, rho.to_f64(), rho);
+    }
+
+    // Print the hp coset representatives + triangle data for a frame (M_S0/M_S1/M_ABC/
+    // M_BASE/M_RPRUNE/M_LMAX as in the streamed dump). Needed for MULTI-FRAME atlases:
+    // the exact transition between frame B and frame B' is  rep_{B'}[j'] ∘ R_v^t ∘ rep_B[j]^{-1}
+    // (t = sheet branch), so the Python glue layer needs these matrices at full precision.
+    #[test]
+    #[ignore]
+    fn print_reps_348() {
+        let prec: u32 = std::env::var("M_PREC").ok().and_then(|s| s.parse().ok()).unwrap_or(200);
+        let mut s0: Vec<usize> = vec![0, 14, 10, 9, 4, 5, 23, 17, 18, 3, 2, 11, 22, 13, 1, 15, 16, 7, 8, 19, 21, 20, 12, 6];
+        let mut s1: Vec<usize> = vec![14, 2, 22, 9, 16, 8, 13, 15, 18, 1, 23, 20, 3, 0, 21, 12, 19, 7, 17, 11, 10, 4, 5, 6];
+        if let (Ok(a), Ok(b)) = (std::env::var("M_S0"), std::env::var("M_S1")) {
+            s0 = a.split(',').map(|t| t.trim().parse().expect("M_S0")).collect();
+            s1 = b.split(',').map(|t| t.trim().parse().expect("M_S1")).collect();
+        }
+        let (oa, ob, oc): (u32, u32, u32) = if let Ok(t) = std::env::var("M_ABC") {
+            let v: Vec<u32> = t.split(',').map(|x| x.trim().parse().expect("M_ABC")).collect();
+            (v[0], v[1], v[2])
+        } else {
+            (2, 12, 5)
+        };
+        if let Some(base) = std::env::var("M_BASE").ok().and_then(|s| s.parse::<usize>().ok()) {
+            if base != 0 {
+                let p = |x: usize| if x == 0 { base } else if x == base { 0 } else { x };
+                let (o0, o1) = (s0.clone(), s1.clone());
+                for x in 0..o0.len() {
+                    s0[p(x)] = p(o0[x]);
+                    s1[p(x)] = p(o1[x]);
+                }
+            }
+        }
+        let tg64 = TriangleGroup::new(oa, ob, oc);
+        let tg = TriangleGroupHp::new(oa, ob, oc, prec);
+        let mut cg = CosetGraph::build(&tg64, &s0, &s1);
+        let r_prune: f64 = std::env::var("M_RPRUNE").ok().and_then(|s| s.parse().ok()).unwrap_or(0.996);
+        let l_max: usize = std::env::var("M_LMAX").ok().and_then(|s| s.parse().ok()).unwrap_or(40);
+        cg.compactify_with(&tg64, r_prune, l_max);
+        println!("z_a = {:.45}", tg.z_a);
+        println!("z_b = {:.45}", tg.z_b);
+        println!("z_c = {:.45}", tg.z_c);
+        for (nm, m) in [("delta_a", &tg.delta_a), ("delta_b", &tg.delta_b), ("delta_c", &tg.delta_c)] {
+            println!("{nm} = [{:.45}, {:.45}, {:.45}, {:.45}]", m.a, m.b, m.c, m.d);
+        }
+        let reps = reps_hp(&cg, &tg);
+        for (j, m) in reps.iter().enumerate() {
+            println!("rep[{j}] = [{:.45}, {:.45}, {:.45}, {:.45}]", m.a, m.b, m.c, m.d);
+        }
     }
 
     // Control dump: the KMSV (5,3,3) paper case through the same streamed path.
