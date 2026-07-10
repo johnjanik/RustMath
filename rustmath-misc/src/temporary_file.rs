@@ -515,6 +515,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Write;
     use std::sync::{Arc, Barrier};
     use std::thread;
 
