@@ -12,12 +12,9 @@ rustmath-integers = { path = "../rustmath-integers" }
 rustmath-rationals = { path = "../rustmath-rationals" }
 rustmath-complex = { path = "../rustmath-complex" }
 rustmath-finitefields = { path = "../rustmath-finitefields" }
-num-bigint = { workspace = true }
-num-traits = { workspace = true }
-num-rational = { workspace = true }
 rayon = { workspace = true }
 serde = { workspace = true, optional = true }
 
 [features]
 default = []
-serde = ["dep:serde", "num-bigint/serde"]
+serde = ["dep:serde"]

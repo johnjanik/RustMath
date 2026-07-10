@@ -4,48 +4,60 @@
 //! y² + a₁xy + a₃y = x³ + a₂x² + a₄x + a₆
 //!
 //! Also provides short Weierstrass form: y² = x³ + ax + b
+//!
+//! # Canonicalization note (B3)
+//!
+//! This is the over-Q implementation, now backed by
+//! `rustmath_integers::Integer` / `rustmath_rationals::Rational` (Phase-2
+//! num-*-to-core normalization). It still overlaps with
+//! `rustmath_schemes::elliptic_curves::rational::EllipticCurveRational`
+//! (also over Q); merging the two over-Q implementations remains DEFERRED
+//! until that one is normalized as well. The generic-field curve lives at
+//! `rustmath_ellipticcurves::generic::EllipticCurve` and is unaffected.
 
-use num_bigint::BigInt;
-use num_rational::BigRational;
-use num_traits::{Zero, One, Signed, ToPrimitive};
+use rustmath_core::{NumericConversion, Ring};
+use rustmath_integers::Integer;
+use rustmath_rationals::Rational;
 use std::fmt;
 
 /// An elliptic curve in generalized Weierstrass form
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EllipticCurve {
-    pub a1: BigInt,
-    pub a2: BigInt,
-    pub a3: BigInt,
-    pub a4: BigInt,
-    pub a6: BigInt,
-    pub discriminant: BigInt,
-    pub conductor: Option<BigInt>,
+    pub a1: Integer,
+    pub a2: Integer,
+    pub a3: Integer,
+    pub a4: Integer,
+    pub a6: Integer,
+    pub discriminant: Integer,
+    pub conductor: Option<Integer>,
 }
 
 /// A point on an elliptic curve
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Point {
-    pub x: BigRational,
-    pub y: BigRational,
+    pub x: Rational,
+    pub y: Rational,
     pub infinity: bool,
 }
 
 impl EllipticCurve {
     /// Create a new elliptic curve from Weierstrass coefficients
     /// y² + a₁xy + a₃y = x³ + a₂x² + a₄x + a₆
-    pub fn new(a1: BigInt, a2: BigInt, a3: BigInt, a4: BigInt, a6: BigInt) -> Self {
+    pub fn new(a1: Integer, a2: Integer, a3: Integer, a4: Integer, a6: Integer) -> Self {
         // Compute b-invariants
-        let b2 = &a1 * &a1 + BigInt::from(4) * &a2;
-        let b4 = BigInt::from(2) * &a4 + &a1 * &a3;
-        let b6 = &a3 * &a3 + BigInt::from(4) * &a6;
-        let b8 = &a1 * &a1 * &a6 + BigInt::from(4) * &a2 * &a6
-            - &a1 * &a3 * &a4 + &a2 * &a3 * &a3 - &a4 * &a4;
+        let b2 = &a1 * &a1 + Integer::from(4) * a2.clone();
+        let b4 = Integer::from(2) * a4.clone() + &a1 * &a3;
+        let b6 = &a3 * &a3 + Integer::from(4) * a6.clone();
+        let b8 = a1.clone() * a1.clone() * a6.clone() + Integer::from(4) * a2.clone() * a6.clone()
+            - a1.clone() * a3.clone() * a4.clone()
+            + a2.clone() * a3.clone() * a3.clone()
+            - a4.clone() * a4.clone();
 
         // Compute discriminant: Δ = -b₂²b₈ - 8b₄³ - 27b₆² + 9b₂b₄b₆
-        let discriminant = -&b2 * &b2 * &b8
-            - BigInt::from(8) * &b4 * &b4 * &b4
-            - BigInt::from(27) * &b6 * &b6
-            + BigInt::from(9) * &b2 * &b4 * &b6;
+        let discriminant = -(b2.clone() * b2.clone() * b8)
+            - Integer::from(8) * b4.clone() * b4.clone() * b4.clone()
+            - Integer::from(27) * b6.clone() * b6.clone()
+            + Integer::from(9) * b2 * b4 * b6;
 
         Self {
             a1,
@@ -59,8 +71,8 @@ impl EllipticCurve {
     }
 
     /// Create an elliptic curve in short Weierstrass form: y² = x³ + ax + b
-    pub fn from_short_weierstrass(a: BigInt, b: BigInt) -> Self {
-        Self::new(BigInt::zero(), BigInt::zero(), BigInt::zero(), a, b)
+    pub fn from_short_weierstrass(a: Integer, b: Integer) -> Self {
+        Self::new(Integer::zero(), Integer::zero(), Integer::zero(), a, b)
     }
 
     /// Check if the curve is singular (discriminant is zero)
@@ -69,19 +81,22 @@ impl EllipticCurve {
     }
 
     /// Get the j-invariant of the curve
-    pub fn j_invariant(&self) -> Option<BigRational> {
+    pub fn j_invariant(&self) -> Option<Rational> {
         if self.is_singular() {
             return None;
         }
 
-        let b2 = &self.a1 * &self.a1 + BigInt::from(4) * &self.a2;
-        let b4 = BigInt::from(2) * &self.a4 + &self.a1 * &self.a3;
-        let _b6 = &self.a3 * &self.a3 + BigInt::from(4) * &self.a6;
+        let b2 = &self.a1 * &self.a1 + Integer::from(4) * self.a2.clone();
+        let b4 = Integer::from(2) * self.a4.clone() + &self.a1 * &self.a3;
+        let _b6 = &self.a3 * &self.a3 + Integer::from(4) * self.a6.clone();
 
-        let c4 = &b2 * &b2 - BigInt::from(24) * &b4;
+        let c4 = &b2 * &b2 - Integer::from(24) * b4;
         let numerator = c4.pow(3);
 
-        Some(BigRational::new(numerator, self.discriminant.clone()))
+        Some(
+            Rational::new(numerator, self.discriminant.clone())
+                .expect("non-singular curve has nonzero discriminant"),
+        )
     }
 
     /// Add two points on the curve
@@ -110,10 +125,10 @@ impl EllipticCurve {
         let lambda = (&q.y - &p.y) / (&q.x - &p.x);
 
         // x₃ = λ² - x₁ - x₂
-        let x3 = &lambda * &lambda - &p.x - &q.x;
+        let x3 = &lambda * &lambda - p.x.clone() - q.x.clone();
 
         // y₃ = λ(x₁ - x₃) - y₁
-        let y3 = &lambda * (&p.x - &x3) - &p.y;
+        let y3 = lambda * (&p.x - &x3) - p.y.clone();
 
         Point {
             x: x3,
@@ -130,11 +145,11 @@ impl EllipticCurve {
 
         // For short Weierstrass: y² = x³ + ax + b
         // λ = (3x² + a) / (2y)
-        let three = BigRational::from(BigInt::from(3));
-        let two = BigRational::from(BigInt::from(2));
+        let three = Rational::from_i64(3);
+        let two = Rational::from_i64(2);
 
-        let numerator = &three * &p.x * &p.x + BigRational::from(self.a4.clone());
-        let denominator = &two * &p.y;
+        let numerator = three * p.x.clone() * p.x.clone() + Rational::from_integer(self.a4.clone());
+        let denominator = two.clone() * p.y.clone();
 
         if denominator.is_zero() {
             return Point::infinity();
@@ -143,10 +158,10 @@ impl EllipticCurve {
         let lambda = numerator / denominator;
 
         // x₃ = λ² - 2x
-        let x3 = &lambda * &lambda - &two * &p.x;
+        let x3 = &lambda * &lambda - two * p.x.clone();
 
         // y₃ = λ(x - x₃) - y
-        let y3 = &lambda * (&p.x - &x3) - &p.y;
+        let y3 = lambda * (&p.x - &x3) - p.y.clone();
 
         Point {
             x: x3,
@@ -156,12 +171,12 @@ impl EllipticCurve {
     }
 
     /// Scalar multiplication: compute [n]P
-    pub fn scalar_mul(&self, n: &BigInt, p: &Point) -> Point {
+    pub fn scalar_mul(&self, n: &Integer, p: &Point) -> Point {
         if n.is_zero() || p.infinity {
             return Point::infinity();
         }
 
-        if n.is_negative() {
+        if n.signum() < 0 {
             let neg_p = self.negate_point(p);
             return self.scalar_mul(&-n, &neg_p);
         }
@@ -170,13 +185,14 @@ impl EllipticCurve {
         let mut result = Point::infinity();
         let mut base = p.clone();
         let mut k = n.clone();
+        let two = Integer::from(2);
 
         while !k.is_zero() {
-            if &k % BigInt::from(2) == BigInt::one() {
+            if (&k % &two).is_one() {
                 result = self.add_points(&result, &base);
             }
             base = self.double_point(&base);
-            k /= BigInt::from(2);
+            k = k / two.clone();
         }
 
         result
@@ -199,10 +215,10 @@ impl EllipticCurve {
     /// Compute the negation of y-coordinate for a given x
     /// For short Weierstrass, this is simply -y
     /// For general form: -(y + a₁x + a₃)
-    fn negate_y(&self, x: &BigRational, y: &BigRational) -> BigRational {
-        let a1_term = BigRational::from(self.a1.clone()) * x;
-        let a3_term = BigRational::from(self.a3.clone());
-        -(y + &a1_term + &a3_term)
+    fn negate_y(&self, x: &Rational, y: &Rational) -> Rational {
+        let a1_term = Rational::from_integer(self.a1.clone()) * x.clone();
+        let a3_term = Rational::from_integer(self.a3.clone());
+        -(y.clone() + a1_term + a3_term)
     }
 
     /// Check if a point is on the curve
@@ -213,9 +229,9 @@ impl EllipticCurve {
 
         // For short Weierstrass: y² = x³ + ax + b
         let lhs = &p.y * &p.y;
-        let rhs = &p.x * &p.x * &p.x
-            + BigRational::from(self.a4.clone()) * &p.x
-            + BigRational::from(self.a6.clone());
+        let rhs = p.x.clone() * p.x.clone() * p.x.clone()
+            + Rational::from_integer(self.a4.clone()) * p.x.clone()
+            + Rational::from_integer(self.a6.clone());
 
         lhs == rhs
     }
@@ -229,13 +245,13 @@ impl EllipticCurve {
     }
 
     /// Check if a prime is a bad prime (divides the discriminant)
-    pub fn is_bad_prime(&self, p: &BigInt) -> bool {
-        &self.discriminant % p == BigInt::zero()
+    pub fn is_bad_prime(&self, p: &Integer) -> bool {
+        (&self.discriminant % p).is_zero()
     }
 
     /// Compute a_p for a good prime p (p + 1 - #E(F_p))
-    pub fn compute_a_p(&self, p: &BigInt) -> i64 {
-        let p_val = p.to_i64().unwrap_or(2);
+    pub fn compute_a_p(&self, p: &Integer) -> i64 {
+        let p_val = <Integer as NumericConversion>::to_i64(p).unwrap_or(2);
         (p_val + 1 - self.count_points_mod_p(p_val)) as i64
     }
 
@@ -244,8 +260,8 @@ impl EllipticCurve {
     fn count_points_mod_p(&self, p: i64) -> i64 {
         let mut count = 1; // Point at infinity
 
-        let a = self.a4.to_i64().unwrap_or(0);
-        let b = self.a6.to_i64().unwrap_or(0);
+        let a = <Integer as NumericConversion>::to_i64(&self.a4).unwrap_or(0);
+        let b = <Integer as NumericConversion>::to_i64(&self.a6).unwrap_or(0);
 
         for x in 0..p {
             let rhs = (x * x * x + a * x + b).rem_euclid(p);
@@ -264,7 +280,7 @@ impl EllipticCurve {
 
 impl Point {
     /// Create a new affine point
-    pub fn new(x: BigRational, y: BigRational) -> Self {
+    pub fn new(x: Rational, y: Rational) -> Self {
         Self {
             x,
             y,
@@ -275,8 +291,8 @@ impl Point {
     /// Create the point at infinity
     pub fn infinity() -> Self {
         Self {
-            x: BigRational::zero(),
-            y: BigRational::zero(),
+            x: Rational::zero(),
+            y: Rational::zero(),
             infinity: true,
         }
     }
@@ -284,8 +300,8 @@ impl Point {
     /// Create a point from integer coordinates
     pub fn from_integers(x: i64, y: i64) -> Self {
         Self {
-            x: BigRational::from(BigInt::from(x)),
-            y: BigRational::from(BigInt::from(y)),
+            x: Rational::from_i64(x),
+            y: Rational::from_i64(y),
             infinity: false,
         }
     }
@@ -322,8 +338,8 @@ mod tests {
     #[test]
     fn test_curve_creation() {
         let curve = EllipticCurve::from_short_weierstrass(
-            BigInt::from(-1),
-            BigInt::from(1)
+            Integer::from(-1),
+            Integer::from(1)
         );
         assert!(!curve.is_singular());
     }
@@ -331,21 +347,21 @@ mod tests {
     #[test]
     fn test_point_on_curve() {
         let curve = EllipticCurve::from_short_weierstrass(
-            BigInt::from(-1),
-            BigInt::from(0)
+            Integer::from(-1),
+            Integer::from(0)
         );
 
         // Point (0, 0) should be on y² = x³ - x
         let p = Point::new(
-            BigRational::zero(),
-            BigRational::zero()
+            Rational::zero(),
+            Rational::zero()
         );
         assert!(curve.is_on_curve(&p));
 
         // Point (1, 0) should be on y² = x³ - x
         let q = Point::new(
-            BigRational::one(),
-            BigRational::zero()
+            Rational::one(),
+            Rational::zero()
         );
         assert!(curve.is_on_curve(&q));
     }
@@ -353,11 +369,11 @@ mod tests {
     #[test]
     fn test_point_addition() {
         let curve = EllipticCurve::from_short_weierstrass(
-            BigInt::from(-1),
-            BigInt::from(0)
+            Integer::from(-1),
+            Integer::from(0)
         );
 
-        let p = Point::new(BigRational::zero(), BigRational::zero());
+        let p = Point::new(Rational::zero(), Rational::zero());
         let q = Point::infinity();
 
         let r = curve.add_points(&p, &q);
@@ -367,14 +383,14 @@ mod tests {
     #[test]
     fn test_point_doubling() {
         let curve = EllipticCurve::from_short_weierstrass(
-            BigInt::from(2),
-            BigInt::from(3)
+            Integer::from(2),
+            Integer::from(3)
         );
 
         // Point (-1, 0) is on y² = x³ + 2x + 3
         let p = Point::new(
-            BigRational::from(BigInt::from(-1)),
-            BigRational::from(BigInt::from(0))
+            Rational::from_i64(-1),
+            Rational::from_i64(0)
         );
 
         assert!(curve.is_on_curve(&p));
@@ -387,18 +403,18 @@ mod tests {
     fn test_scalar_multiplication() {
         // Use curve y² = x³ - x for simplicity
         let curve = EllipticCurve::from_short_weierstrass(
-            BigInt::from(-1),
-            BigInt::from(0)
+            Integer::from(-1),
+            Integer::from(0)
         );
 
         // Point (0, 0) is on the curve
         let p = Point::new(
-            BigRational::from(BigInt::from(0)),
-            BigRational::from(BigInt::from(0))
+            Rational::from_i64(0),
+            Rational::from_i64(0)
         );
 
         assert!(curve.is_on_curve(&p));
-        let result = curve.scalar_mul(&BigInt::from(2), &p);
+        let result = curve.scalar_mul(&Integer::from(2), &p);
         // [2]P for a point of order 2 is infinity
         assert!(result.infinity || curve.is_on_curve(&result));
     }
@@ -407,8 +423,8 @@ mod tests {
     fn test_j_invariant() {
         // For y² = x³ + x (curve with CM by Gaussian integers)
         let curve = EllipticCurve::from_short_weierstrass(
-            BigInt::from(1),
-            BigInt::from(0)
+            Integer::from(1),
+            Integer::from(0)
         );
 
         let j = curve.j_invariant();

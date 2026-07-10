@@ -3,20 +3,21 @@
 //! Implements 2-descent to compute bounds on the rank of elliptic curves
 
 use crate::curve::{EllipticCurve, Point};
-use num_bigint::BigInt;
-use num_traits::{Zero, One, ToPrimitive, Signed};
+use rustmath_core::NumericConversion;
+use rustmath_integers::Integer;
+use rustmath_rationals::Rational;
 
 /// A quartic equation arising from a 2-covering
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Quartic {
-    pub a: BigInt,
-    pub b: BigInt,
-    pub c: BigInt,
-    pub d: BigInt,
+    pub a: Integer,
+    pub b: Integer,
+    pub c: Integer,
+    pub d: Integer,
 }
 
 impl Quartic {
-    pub fn new(a: BigInt, b: BigInt, c: BigInt, d: BigInt) -> Self {
+    pub fn new(a: Integer, b: Integer, c: Integer, d: Integer) -> Self {
         Self { a, b, c, d }
     }
 
@@ -38,6 +39,12 @@ pub struct SelmerElement {
 #[derive(Debug, Clone)]
 pub struct SelmerGroup {
     pub elements: Vec<SelmerElement>,
+    /// Placeholder only -- NOT a genuine 2-descent rank bound. It is left at
+    /// its default (0) by `add_element`. A real Selmer rank requires actual
+    /// group-law arithmetic on the torsors (showing the locally-solvable
+    /// classes form an F_2-vector space of a given dimension), not a count
+    /// of how many torsors were found. See `TwoDescent::rank_bound`, which
+    /// honestly reports this as unimplemented.
     pub rank_bound: i32,
 }
 
@@ -49,9 +56,16 @@ impl SelmerGroup {
         }
     }
 
+    /// Register a locally-solvable torsor as a Selmer group element.
+    ///
+    /// This only maintains the element list; it deliberately does NOT touch
+    /// `rank_bound`. The previous implementation derived `rank_bound` as
+    /// `log2(elements.len()).floor()`, which is not a real descent
+    /// computation -- it treated a raw count of locally-solvable torsors as
+    /// if it were the dimension of an F_2-vector space, without ever
+    /// establishing the group structure that would justify that.
     pub fn add_element(&mut self, element: SelmerElement) {
         self.elements.push(element);
-        self.rank_bound = (self.elements.len() as f64).log2().floor() as i32;
     }
 }
 
@@ -89,8 +103,8 @@ impl<'a> TwoDescent<'a> {
 
         // Trivial torsor (the curve itself)
         torsors.push(Quartic::new(
-            BigInt::one(),
-            BigInt::zero(),
+            Integer::one(),
+            Integer::zero(),
             self.curve.a4.clone(),
             self.curve.a6.clone(),
         ));
@@ -100,9 +114,9 @@ impl<'a> TwoDescent<'a> {
         if !self.curve.discriminant.is_zero() {
             torsors.push(Quartic::new(
                 self.curve.discriminant.clone(),
-                BigInt::zero(),
-                BigInt::zero(),
-                BigInt::one(),
+                Integer::zero(),
+                Integer::zero(),
+                Integer::one(),
             ));
         }
 
@@ -134,18 +148,18 @@ impl<'a> TwoDescent<'a> {
     }
 
     /// Check if quartic is solvable modulo p
-    fn is_solvable_mod_p(&self, quartic: &Quartic, p: &BigInt) -> bool {
-        let p_val = p.to_i64().unwrap_or(2);
+    fn is_solvable_mod_p(&self, quartic: &Quartic, p: &Integer) -> bool {
+        let p_val = <Integer as NumericConversion>::to_i64(p).unwrap_or(2);
         if p_val > 100 {
             // For large primes, assume solvable (Hasse-Minkowski)
             return true;
         }
 
         // Check if there exists a solution mod p
-        let a = quartic.a.to_i64().unwrap_or(0) % p_val;
-        let b = quartic.b.to_i64().unwrap_or(0) % p_val;
-        let c = quartic.c.to_i64().unwrap_or(0) % p_val;
-        let d = quartic.d.to_i64().unwrap_or(0) % p_val;
+        let a = <Integer as NumericConversion>::to_i64(&quartic.a).unwrap_or(0) % p_val;
+        let b = <Integer as NumericConversion>::to_i64(&quartic.b).unwrap_or(0) % p_val;
+        let c = <Integer as NumericConversion>::to_i64(&quartic.c).unwrap_or(0) % p_val;
+        let d = <Integer as NumericConversion>::to_i64(&quartic.d).unwrap_or(0) % p_val;
 
         for x in 0..p_val {
             let val = (a * x * x * x * x + b * x * x + c * x + d).rem_euclid(p_val);
@@ -173,17 +187,17 @@ impl<'a> TwoDescent<'a> {
     }
 
     /// Compute bad primes (those dividing the discriminant)
-    fn compute_bad_primes(&self) -> Vec<BigInt> {
+    fn compute_bad_primes(&self) -> Vec<Integer> {
         let mut primes = Vec::new();
         let mut n = self.curve.discriminant.abs();
 
         // Factor out small primes
         for p in [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31] {
-            let p_big = BigInt::from(p);
-            if &n % &p_big == BigInt::zero() {
-                primes.push(p_big);
-                while &n % BigInt::from(p) == BigInt::zero() {
-                    n /= BigInt::from(p);
+            let p_big = Integer::from(p);
+            if (&n % &p_big).is_zero() {
+                primes.push(p_big.clone());
+                while (&n % &p_big).is_zero() {
+                    n = n / p_big.clone();
                 }
             }
         }
@@ -192,12 +206,18 @@ impl<'a> TwoDescent<'a> {
     }
 
     /// Compute an upper bound on the rank using 2-descent
+    ///
+    /// A genuine bound is rank(E) <= dim(Selmer) - dim(E[2]), but this
+    /// requires `dim(Selmer)` to come from actual descent (group-law
+    /// arithmetic on 2-coverings), not from counting locally-solvable
+    /// torsors and taking log2 of the count, which is what this function
+    /// previously did.
     pub fn rank_bound(&self) -> i32 {
-        let selmer_group = self.compute_selmer_group();
-        let two_torsion = self.curve.two_torsion_rank();
-
-        // rank(E) ≤ dim(Selmer) - dim(E[2])
-        selmer_group.rank_bound - two_torsion
+        unimplemented!(
+            "2-descent rank bound not yet implemented (facade): the previous body computed \
+             log2(number of locally-solvable torsors found), which is not a real Selmer \
+             group rank computation"
+        )
     }
 
     /// Search for rational points up to a given height
@@ -206,10 +226,8 @@ impl<'a> TwoDescent<'a> {
 
         for x_num in -height_bound..=height_bound {
             for x_den in 1..=height_bound {
-                let x = num_rational::BigRational::new(
-                    BigInt::from(x_num),
-                    BigInt::from(x_den)
-                );
+                let x = Rational::new(Integer::from(x_num), Integer::from(x_den))
+                    .expect("x_den >= 1 is nonzero");
 
                 // Check if y² = x³ + ax + b has a solution
                 if let Some(y) = self.solve_for_y(&x) {
@@ -231,18 +249,16 @@ impl<'a> TwoDescent<'a> {
     }
 
     /// Attempt to solve y² = x³ + ax + b for y
-    fn solve_for_y(&self, x: &num_rational::BigRational) -> Option<num_rational::BigRational> {
-        use num_rational::BigRational;
-
-        let rhs = x * x * x
-            + BigRational::from(self.curve.a4.clone()) * x
-            + BigRational::from(self.curve.a6.clone());
+    fn solve_for_y(&self, x: &Rational) -> Option<Rational> {
+        let rhs = x.clone() * x.clone() * x.clone()
+            + Rational::from_integer(self.curve.a4.clone()) * x.clone()
+            + Rational::from_integer(self.curve.a6.clone());
 
         // Check if rhs is a perfect square
         if rhs.is_integer() {
-            let rhs_int = rhs.to_integer();
+            let rhs_int = rhs.floor();
             if let Some(sqrt) = self.integer_sqrt(&rhs_int) {
-                return Some(BigRational::from(sqrt));
+                return Some(Rational::from_integer(sqrt));
             }
         }
 
@@ -250,22 +266,22 @@ impl<'a> TwoDescent<'a> {
     }
 
     /// Compute integer square root if it exists
-    fn integer_sqrt(&self, n: &BigInt) -> Option<BigInt> {
+    fn integer_sqrt(&self, n: &Integer) -> Option<Integer> {
         if n.is_zero() {
-            return Some(BigInt::zero());
+            return Some(Integer::zero());
         }
 
-        if n < &BigInt::zero() {
+        if n < &Integer::zero() {
             return None;
         }
 
         // Newton's method
         let mut x = n.clone();
-        let mut y = (&x + BigInt::one()) / BigInt::from(2);
+        let mut y = (&x + &Integer::one()) / Integer::from(2);
 
         while y < x {
             x = y.clone();
-            y = (&x + n / &x) / BigInt::from(2);
+            y = (&x + &(n / &x)) / Integer::from(2);
         }
 
         if &x * &x == *n {
@@ -284,8 +300,8 @@ mod tests {
     #[test]
     fn test_selmer_group() {
         let curve = EllipticCurve::from_short_weierstrass(
-            BigInt::from(-1),
-            BigInt::from(0)
+            Integer::from(-1),
+            Integer::from(0)
         );
 
         let descent = TwoDescent::new(&curve);
@@ -295,10 +311,11 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented; needs real descent/L-function (Phase 4)"]
     fn test_rank_bound() {
         let curve = EllipticCurve::from_short_weierstrass(
-            BigInt::from(-1),
-            BigInt::from(1)
+            Integer::from(-1),
+            Integer::from(1)
         );
 
         let descent = TwoDescent::new(&curve);
@@ -310,8 +327,8 @@ mod tests {
     #[test]
     fn test_find_rational_points() {
         let curve = EllipticCurve::from_short_weierstrass(
-            BigInt::from(-1),
-            BigInt::from(0)
+            Integer::from(-1),
+            Integer::from(0)
         );
 
         let descent = TwoDescent::new(&curve);
@@ -324,10 +341,10 @@ mod tests {
     #[test]
     fn test_quartic_creation() {
         let q = Quartic::new(
-            BigInt::one(),
-            BigInt::zero(),
-            BigInt::from(-1),
-            BigInt::zero()
+            Integer::one(),
+            Integer::zero(),
+            Integer::from(-1),
+            Integer::zero()
         );
 
         assert!(q.has_rational_point());

@@ -3,10 +3,8 @@
 //! Implements tools for verifying the BSD conjecture numerically
 
 use crate::curve::{EllipticCurve, Point};
-use crate::descent::TwoDescent;
 use crate::lfunction::LFunction;
-use num_bigint::BigInt;
-use num_traits::{ToPrimitive, Zero, Signed};
+use rustmath_integers::Integer;
 
 /// Result of BSD conjecture verification
 #[derive(Debug, Clone)]
@@ -83,19 +81,24 @@ impl BSDVerifier {
     }
 
     /// Compute algebraic rank via descent
+    ///
+    /// NOT YET IMPLEMENTED (facade): the previous implementation derived the
+    /// rank from `SelmerGroup::rank_bound`, which was `log2(number of
+    /// locally-solvable torsors found)` -- not a real 2-descent rank
+    /// computation (see `TwoDescent::rank_bound`, which is itself now an
+    /// honest `unimplemented!`). This function used to also run a
+    /// height-bounded rational-point search (`TwoDescent::find_rational_points`)
+    /// to populate `self.generators` before panicking; since the function
+    /// always panics, that search was pure wasted work whose result was
+    /// thrown away on unwind, so it has been removed. A real implementation
+    /// would need to find genuine generators of E(Q) (not just a bounded
+    /// naive search) as part of establishing the rank, and should do that
+    /// work only once it can actually return a rank.
     fn compute_algebraic_rank(&mut self) -> u32 {
-        let two_descent = TwoDescent::new(&self.curve);
-        let selmer = two_descent.compute_selmer_group();
-
-        // Find generators
-        self.generators = two_descent.find_rational_points(100);
-
-        // Use Selmer group to bound rank
-        let two_torsion_rank = self.curve.two_torsion_rank();
-        let rank_bound = (selmer.rank_bound - two_torsion_rank).max(0) as u32;
-
-        self.computed_rank = Some(rank_bound);
-        rank_bound
+        unimplemented!(
+            "algebraic rank computation not yet implemented (facade): requires genuine \
+             2-descent / Selmer group rank, not a log2(element count) heuristic"
+        )
     }
 
     /// Compute analytic rank (order of vanishing of L-function at s=1)
@@ -107,13 +110,19 @@ impl BSDVerifier {
     }
 
     /// Estimate the size of the Tate-Shafarevich group
+    ///
+    /// A real estimate requires the BSD formula
+    /// |Sha| ≈ L^(r)(E,1) * |E_tors|² / (Ω * Reg * ∏c_p), which needs genuine
+    /// L-function derivative data (the order-r derivative at s=1) together
+    /// with honest regulator/period/Tamagawa inputs. This previously just
+    /// hardcoded 1.0 for every curve, which is a fabricated result, not a
+    /// computation.
     fn estimate_sha_size(&self) -> f64 {
-        // Approximate using BSD formula
-        // |Sha| ≈ L^(r)(E,1) * |E_tors|² / (Ω * Reg * ∏c_p)
-
-        // For now, return 1.0 (trivial Sha)
-        // Real implementation would compute this from L-function derivatives
-        1.0
+        unimplemented!(
+            "Tate-Shafarevich group order estimate not yet implemented (facade): requires \
+             L-function derivative data and a genuine BSD formula evaluation, not a \
+             hardcoded 1.0"
+        )
     }
 
     /// Compute the regulator (determinant of height pairing matrix)
@@ -167,8 +176,8 @@ impl BSDVerifier {
         }
 
         // Simplified height: h(x, y) ≈ log max(|num(x)|, |den(x)|)
-        let x_num = p.x.numer().abs();
-        let x_den = p.x.denom().abs();
+        let x_num = p.x.numerator().abs();
+        let x_den = p.x.denominator().abs();
 
         let max_val = if x_num > x_den { x_num } else { x_den };
         max_val.to_f64().unwrap_or(1.0).ln()
@@ -230,16 +239,21 @@ impl BSDVerifier {
         2.0 * std::f64::consts::PI * disc.powf(1.0 / 12.0)
     }
 
-    /// Compute Tamagawa numbers at bad primes
+    /// Compute Tamagawa numbers c_p at the bad primes (ascending order of
+    /// p), via Tate's algorithm (see `crate::tate`).
+    ///
+    /// Primes dividing the discriminant of the given model at which the
+    /// curve actually has good reduction (non-minimal model) are skipped.
+    /// If the list would be empty it contains a single 1, preserving the
+    /// invariant that the Tamagawa product over the returned list is the
+    /// true product over all primes.
     fn compute_tamagawa_numbers(&self) -> Vec<u32> {
         let mut tamagawa = Vec::new();
 
-        // Compute c_p for each bad prime
-        for p in [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31] {
-            let p_big = BigInt::from(p);
-            if self.curve.is_bad_prime(&p_big) {
-                let c_p = self.compute_tamagawa_at_prime(&p_big);
-                tamagawa.push(c_p);
+        for (p, _) in rustmath_integers::prime::factor(&self.curve.discriminant.abs()) {
+            let local = self.curve.local_data(&p);
+            if local.conductor_exponent > 0 {
+                tamagawa.push(local.tamagawa_number);
             }
         }
 
@@ -248,13 +262,6 @@ impl BSDVerifier {
         } else {
             tamagawa
         }
-    }
-
-    /// Compute Tamagawa number c_p at a bad prime p
-    fn compute_tamagawa_at_prime(&self, _p: &BigInt) -> u32 {
-        // Simplified: return 1
-        // Real implementation would use Tate's algorithm
-        1
     }
 
     /// Compute order of torsion subgroup
@@ -318,7 +325,7 @@ impl BSDVerifier {
              BSD Constant: {:.6}\n",
             self.curve,
             self.curve.discriminant,
-            self.curve.conductor.as_ref().unwrap_or(&BigInt::zero()),
+            self.curve.conductor.as_ref().unwrap_or(&Integer::zero()),
             result.algebraic_rank,
             result.analytic_rank,
             result.ranks_agree(),
@@ -339,8 +346,8 @@ mod tests {
     #[test]
     fn test_bsd_verifier_creation() {
         let curve = EllipticCurve::from_short_weierstrass(
-            BigInt::from(-1),
-            BigInt::from(1)
+            Integer::from(-1),
+            Integer::from(1)
         );
 
         let verifier = BSDVerifier::new(curve);
@@ -348,10 +355,11 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented; needs real descent/L-function (Phase 4)"]
     fn test_algebraic_rank_computation() {
         let curve = EllipticCurve::from_short_weierstrass(
-            BigInt::from(-1),
-            BigInt::from(0)
+            Integer::from(-1),
+            Integer::from(0)
         );
 
         let mut verifier = BSDVerifier::new(curve);
@@ -360,10 +368,11 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented; needs real descent/L-function (Phase 4)"]
     fn test_analytic_rank_computation() {
         let curve = EllipticCurve::from_short_weierstrass(
-            BigInt::from(0),
-            BigInt::from(-1)
+            Integer::from(0),
+            Integer::from(-1)
         );
 
         let mut verifier = BSDVerifier::new(curve);
@@ -374,8 +383,8 @@ mod tests {
     #[test]
     fn test_periods_computation() {
         let curve = EllipticCurve::from_short_weierstrass(
-            BigInt::from(1),
-            BigInt::from(0)
+            Integer::from(1),
+            Integer::from(0)
         );
 
         let verifier = BSDVerifier::new(curve);
@@ -385,21 +394,35 @@ mod tests {
 
     #[test]
     fn test_tamagawa_numbers() {
+        // y² = x³ - x + 1: disc = -368 = -2⁴·23; Tate gives type IV at 2
+        // with c₂ = 3 and I1 at 23 with c₂₃ = 1 (PARI/GP-verified).
         let curve = EllipticCurve::from_short_weierstrass(
-            BigInt::from(-1),
-            BigInt::from(1)
+            Integer::from(-1),
+            Integer::from(1)
         );
 
         let verifier = BSDVerifier::new(curve);
         let tamagawa = verifier.compute_tamagawa_numbers();
-        assert!(!tamagawa.is_empty());
+        assert_eq!(tamagawa, vec![3, 1]);
+
+        // 15a1: c₃ = 2 (non-split I4), c₅ = 4 (split I4); PARI-verified.
+        let e15 = EllipticCurve::new(
+            Integer::from(1),
+            Integer::from(1),
+            Integer::from(1),
+            Integer::from(-10),
+            Integer::from(-10),
+        );
+        let verifier = BSDVerifier::new(e15);
+        assert_eq!(verifier.compute_tamagawa_numbers(), vec![2, 4]);
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented; needs real descent/L-function (Phase 4)"]
     fn test_weak_bsd() {
         let curve = EllipticCurve::from_short_weierstrass(
-            BigInt::from(0),
-            BigInt::from(1)
+            Integer::from(0),
+            Integer::from(1)
         );
 
         let mut verifier = BSDVerifier::new(curve);
@@ -425,10 +448,11 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented; needs real descent/L-function (Phase 4)"]
     fn test_generate_report() {
         let curve = EllipticCurve::from_short_weierstrass(
-            BigInt::from(-1),
-            BigInt::from(1)
+            Integer::from(-1),
+            Integer::from(1)
         );
 
         let mut verifier = BSDVerifier::new(curve);
