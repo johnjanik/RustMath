@@ -1325,8 +1325,8 @@ mod tests {
     #[test]
     fn test_normalize_basis_at_p() {
         let basis = vec![
-            Quaternion::one(),
-            Quaternion::i(),
+            Quaternion::<Integer>::one(),
+            Quaternion::<Integer>::i(),
         ];
 
         let p = Integer::from(2);

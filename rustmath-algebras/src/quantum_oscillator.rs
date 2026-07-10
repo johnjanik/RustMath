@@ -505,7 +505,7 @@ mod tests {
         let scaled = a_plus.scale(&Rational::from(3));
         assert_eq!(scaled.num_terms(), 1);
 
-        let neg = a_plus.negate();
+        let neg = a_plus.neg_elem();
         assert_eq!(neg.num_terms(), 1);
     }
 

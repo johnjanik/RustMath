@@ -90,8 +90,8 @@ impl Display for HeckeBasisType {
 /// ```
 /// # use rustmath_algebras::iwahori_hecke_algebra::IwahoriHeckeAlgebra;
 /// # use rustmath_integers::Integer;
-/// // Create the Hecke algebra for the symmetric group S_3
-/// let h3: IwahoriHeckeAlgebra<Integer> = IwahoriHeckeAlgebra::new(3);
+/// // Create the Hecke algebra for the symmetric group S_3 (type A_2)
+/// let h3: IwahoriHeckeAlgebra<Integer> = IwahoriHeckeAlgebra::new(2);
 /// assert_eq!(h3.rank(), 2); // 2 simple reflections
 /// ```
 #[derive(Debug, Clone)]
@@ -612,7 +612,7 @@ mod tests {
 
     #[test]
     fn test_index_cmp() {
-        assert_eq!(index_cmp(&[0], &[1]), 0); // Same length, compare lexicographically
+        assert_eq!(index_cmp(&[0], &[1]), -1); // Same length; [0] < [1] lexicographically
         assert_eq!(index_cmp(&[0], &[0, 1]), -1); // First is shorter
         assert_eq!(index_cmp(&[0, 1], &[0]), 1); // First is longer
     }

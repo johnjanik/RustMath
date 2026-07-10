@@ -199,9 +199,11 @@ impl<'a, F: Field + Clone> FiniteDimensionalAlgebraIdeal<'a, F> {
 
         let extended_echelon_form = extended_matrix.row_echelon_form()?;
 
-        // If rank doesn't increase, element is in the ideal
-        let original_rank = self.basis_matrix.rows();
-        let extended_rank = extended_echelon_form.matrix.rows();
+        // If rank doesn't increase, element is in the ideal.
+        // Note: row_echelon_form().matrix keeps every input row (zero rows are not
+        // dropped), so we must compare the actual `rank` fields, not `.rows()`.
+        let original_rank = self.basis_matrix.row_echelon_form()?.rank;
+        let extended_rank = extended_echelon_form.rank;
 
         Ok(extended_rank == original_rank)
     }

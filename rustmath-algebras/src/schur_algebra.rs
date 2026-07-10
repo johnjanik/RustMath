@@ -446,8 +446,8 @@ mod tests {
     fn test_schur_representative_from_index() {
         // Empty tuples
         let (r1, r2) = schur_representative_from_index(vec![], vec![]);
-        assert_eq!(r1, vec![]);
-        assert_eq!(r2, vec![]);
+        assert_eq!(r1, Vec::<usize>::new());
+        assert_eq!(r2, Vec::<usize>::new());
 
         // Single element
         let (r1, r2) = schur_representative_from_index(vec![1], vec![2]);

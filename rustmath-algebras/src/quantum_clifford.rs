@@ -539,7 +539,7 @@ mod tests {
         let scaled = psi1.scale(&Rational::from(3));
         assert_eq!(scaled.num_terms(), 1);
 
-        let neg = psi1.negate();
+        let neg = psi1.neg_elem();
         assert_eq!(neg.num_terms(), 1);
     }
 

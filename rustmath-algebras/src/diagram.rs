@@ -80,6 +80,11 @@ impl PartitionDiagram {
             ));
         }
 
+        // Canonicalize block ordering so that equality is order-independent and
+        // deterministic regardless of the (HashMap-derived) order blocks arrive in.
+        let mut blocks = blocks;
+        blocks.sort();
+
         Ok(PartitionDiagram { order, blocks })
     }
 

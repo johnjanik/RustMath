@@ -437,7 +437,7 @@ mod tests {
         let s1 = SymmetricGroupAlgebraBuilder::q_simple_transposition(n, 1).unwrap();
 
         // Test scalar multiplication with rationals
-        let half = Rational::new(Integer::from(1), Integer::from(2));
+        let half = Rational::new(Integer::from(1), Integer::from(2)).unwrap();
         let scaled = s0.scalar_mul(&half);
 
         // The coefficient should be 1/2

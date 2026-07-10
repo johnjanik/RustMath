@@ -216,9 +216,7 @@ impl<R: Ring, G: GroupElement> Ring for GroupAlgebraElement<R, G> {
 }
 
 impl<R: Ring, G: GroupElement> Algebra<R> for GroupAlgebraElement<R, G> {
-    fn base_ring() -> R {
-        R::zero()
-    }
+    // base_ring/dimension: core defaults (R::zero() placeholder, None)
 
     fn scalar_mul(&self, scalar: &R) -> Self {
         let mut result = Self::new();
