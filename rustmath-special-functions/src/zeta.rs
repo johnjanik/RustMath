@@ -14,6 +14,7 @@ use std::f64::consts::PI;
 /// # Examples
 /// ```
 /// use rustmath_special_functions::zeta::zeta;
+/// use std::f64::consts::PI;
 /// // zeta(2) = pi^2/6
 /// assert!((zeta(2.0) - PI.powi(2)/6.0).abs() < 1e-10);
 /// ```

@@ -118,7 +118,7 @@ fn bessel_y0_series(x: f64) -> f64 {
     const MAX_TERMS: usize = 50;
     for k in 1..MAX_TERMS {
         let _k_f = k as f64;
-        let sign = if k % 2 == 0 { 1.0 } else { -1.0 };
+        let sign = if k % 2 == 0 { -1.0 } else { 1.0 };
         let term = sign * half_x.powi(2 * k as i32) * harmonic(k) / (factorial(k).powi(2));
         sum += term;
     }
@@ -173,5 +173,11 @@ mod tests {
         // Y functions should work for x > 0
         let result = bessel_y(0, 1.0);
         assert!(result.is_finite());
+    }
+
+    #[test]
+    fn test_bessel_y0_known_value() {
+        // Y_0(1) ~= 0.08825696421567697 (reference value, e.g. Abramowitz & Stegun / scipy)
+        assert!((bessel_y(0, 1.0) - 0.08825696421567697).abs() < 1e-10);
     }
 }
