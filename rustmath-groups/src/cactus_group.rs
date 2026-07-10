@@ -270,8 +270,21 @@ impl CactusGroupElement {
 
     /// Normalize the word using cactus group relations
     fn normalize(mut self) -> Self {
+        // The rewriting rules below never lengthen the word (rule 1 shrinks it,
+        // rules 2 and 3 preserve its length), so this loop cannot allocate
+        // unboundedly. `max_iterations` is a defensive CPU backstop that is far
+        // larger than the number of passes any terminating input needs; it is
+        // never reached for the finite words exercised in practice, so it does
+        // not affect the computed normal form.
+        let max_iterations = 1000 * (self.word.len() + 1);
+        let mut iterations = 0;
+
         // Apply relations to simplify the word
         loop {
+            iterations += 1;
+            if iterations > max_iterations {
+                break;
+            }
             let mut changed = false;
 
             // 1. Cancel consecutive identical generators (s_{pq}^2 = 1)
@@ -299,12 +312,18 @@ impl CactusGroupElement {
                 }
             }
 
-            // 3. Apply nested relation
-            // s_{pq}s_{kl} = s_{p+q-l,p+q-k}s_{pq} when [k,l] ⊆ [p,q]
+            // 3. Apply nested relation, orienting containers rightward:
+            //    s_{pq} s_{kl} = s_{p+q-l,p+q-k} s_{pq}  when [k,l] ⊊ [p,q].
+            // The reflected inner generator moves to position i and the
+            // containing generator s_{pq} moves to position i+1. Reflecting
+            // in place (without moving s_{pq}) is WRONG: the reflection is
+            // still nested in [p,q], so the rule would re-fire forever.
             for i in 0..(self.word.len().saturating_sub(1)) {
                 if self.parent.is_nested(&self.word[i], &self.word[i + 1]) {
-                    let reflected = self.word[i + 1].reflect(&self.word[i]);
-                    self.word[i + 1] = reflected;
+                    let outer = self.word[i];
+                    let reflected = self.word[i + 1].reflect(&outer);
+                    self.word[i] = reflected;
+                    self.word[i + 1] = outer;
                     changed = true;
                 }
             }

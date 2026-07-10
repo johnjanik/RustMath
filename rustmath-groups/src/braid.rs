@@ -631,7 +631,8 @@ mod tests {
 
         // Check they give the same permutation
         assert_eq!(left.permutation(), right.permutation());
-        assert_eq!(left.permutation(), vec![2, 0, 1]);
+        // σ_1 σ_2 σ_1 = (0 1)(1 2)(0 1) = (0 2), i.e. the reversal permutation.
+        assert_eq!(left.permutation(), vec![2, 1, 0]);
     }
 
     #[test]
@@ -734,9 +735,13 @@ mod tests {
         let sigma_squared = sigma.pow(2);
         let sigma_cubed = sigma.pow(3);
 
-        // All should have different permutations showing they're distinct
-        assert_ne!(sigma.permutation(), sigma_squared.permutation());
-        assert_ne!(sigma.permutation(), sigma_cubed.permutation());
+        // B_2 is infinite cyclic, so σ, σ², σ³ are distinct braids. Their images
+        // in S_2 are NOT distinct (σ and σ³ both map to the transposition), so
+        // distinctness must be checked on the braids themselves, not on their
+        // induced permutations.
+        assert_ne!(sigma, sigma_squared);
+        assert_ne!(sigma, sigma_cubed);
+        assert_ne!(sigma_squared, sigma_cubed);
     }
 
     #[test]

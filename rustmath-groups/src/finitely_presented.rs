@@ -24,7 +24,7 @@
 //!
 //! // Create group elements
 //! let a = group.generator(0);
-//! let a_squared = a.mul(&a);
+//! let a_squared = a.multiply(&a);
 //! ```
 
 use std::collections::{HashMap, HashSet};
@@ -279,6 +279,17 @@ impl FinitelyPresentedGroupElement {
             group: self.group.clone(),
             word: result_word,
         }
+    }
+
+    /// Alias for [`mul`](Self::mul) with an unambiguous name.
+    ///
+    /// Calling `a.mul(&b)` on an owned element binds to the by-value
+    /// `std::ops::Mul` impl (matched at the by-value receiver step) rather than
+    /// the inherent `mul(&self, &Self)`, which forces a `&`-mismatch on the
+    /// argument. `multiply` takes `&self` and sidesteps that, mirroring the
+    /// identical alias on `FreeGroupElement`.
+    pub fn multiply(&self, other: &Self) -> Self {
+        self.mul(other)
     }
 
     /// Check if this is the identity element (after free reduction)
@@ -593,7 +604,7 @@ mod tests {
         let a_inv = a.inverse();
 
         // a * a^{-1} should reduce to identity
-        let product = a.mul(&a_inv);
+        let product = a.multiply(&a_inv);
         let reduced = product.free_reduce();
         assert!(reduced.is_identity());
     }
@@ -641,10 +652,10 @@ mod tests {
 
         let e = group.identity();
         assert!(e.is_identity());
-        assert_eq!(e.word(), &[]);
+        assert!(e.word().is_empty());
 
         let a = group.generator(0);
-        let ae = a.mul(&e);
+        let ae = a.multiply(&e);
         let reduced = ae.free_reduce();
         assert_eq!(reduced.word(), &[1]);
     }
@@ -711,10 +722,10 @@ mod tests {
         let a = group.generator(0);
         let b = group.generator(1);
 
-        let word = a.mul(&b).mul(&a.inverse());
+        let word = a.multiply(&b).multiply(&a.inverse());
         assert_eq!(word.length(), 3);
 
-        let word2 = a.mul(&a.inverse());
+        let word2 = a.multiply(&a.inverse());
         assert_eq!(word2.length(), 0); // Should reduce to identity
     }
 

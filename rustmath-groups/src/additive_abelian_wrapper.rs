@@ -457,10 +457,43 @@ where
 mod tests {
     use super::*;
 
+    /// Test-only newtype wrapping an integer vector so it can serve as the
+    /// ambient element type `T`. The wrapper requires `Add<Output = T>`,
+    /// `Mul<i64, Output = T>`, `Default`, and `PartialEq`, none of which the
+    /// bare `Vec<i64>` implements, so we supply element-wise arithmetic here.
+    #[derive(Clone, Debug, Default, PartialEq, Eq)]
+    struct IntVec(Vec<i64>);
+
+    fn iv(v: Vec<i64>) -> IntVec {
+        IntVec(v)
+    }
+
+    impl std::ops::Add for IntVec {
+        type Output = IntVec;
+        fn add(self, other: IntVec) -> IntVec {
+            let n = self.0.len().max(other.0.len());
+            let mut out = vec![0i64; n];
+            for (i, x) in self.0.iter().enumerate() {
+                out[i] += x;
+            }
+            for (i, x) in other.0.iter().enumerate() {
+                out[i] += x;
+            }
+            IntVec(out)
+        }
+    }
+
+    impl std::ops::Mul<i64> for IntVec {
+        type Output = IntVec;
+        fn mul(self, scalar: i64) -> IntVec {
+            IntVec(self.0.iter().map(|x| x * scalar).collect())
+        }
+    }
+
     #[test]
     fn test_unwrapping_morphism() {
         // Create a simple wrapped group with integer vector generators
-        let gens = vec![vec![1, 0], vec![0, 1]];
+        let gens = vec![iv(vec![1, 0]), iv(vec![0, 1])];
         let group = AdditiveAbelianGroup::new(2, vec![]).unwrap();
         let wrapped = AdditiveAbelianGroupWrapper::new(
             gens,
@@ -475,7 +508,7 @@ mod tests {
 
     #[test]
     fn test_wrapper_element_creation() {
-        let gens = vec![vec![1, 0], vec![0, 1]];
+        let gens = vec![iv(vec![1, 0]), iv(vec![0, 1])];
         let group = AdditiveAbelianGroup::new(2, vec![]).unwrap();
         let wrapped = AdditiveAbelianGroupWrapper::new(
             gens,
@@ -494,7 +527,7 @@ mod tests {
 
     #[test]
     fn test_wrapper_element_operations() {
-        let gens = vec![vec![1, 0], vec![0, 1]];
+        let gens = vec![iv(vec![1, 0]), iv(vec![0, 1])];
         let group = AdditiveAbelianGroup::new(2, vec![]).unwrap();
         let wrapped = AdditiveAbelianGroupWrapper::new(
             gens,
@@ -524,7 +557,7 @@ mod tests {
 
     #[test]
     fn test_wrapper_identity() {
-        let gens = vec![vec![1, 0], vec![0, 1]];
+        let gens = vec![iv(vec![1, 0]), iv(vec![0, 1])];
         let group = AdditiveAbelianGroup::new(2, vec![]).unwrap();
         let wrapped = AdditiveAbelianGroupWrapper::new(
             gens,
@@ -542,7 +575,7 @@ mod tests {
 
     #[test]
     fn test_wrapped_group_properties() {
-        let gens = vec![vec![2, 0], vec![0, 3]];
+        let gens = vec![iv(vec![2, 0]), iv(vec![0, 3])];
         let group = AdditiveAbelianGroup::new(2, vec![]).unwrap();
         let wrapped = AdditiveAbelianGroupWrapper::new(
             gens.clone(),
@@ -551,15 +584,15 @@ mod tests {
         ).unwrap();
 
         assert_eq!(wrapped.ngens(), 2);
-        assert_eq!(wrapped.generators(), &gens);
-        assert_eq!(wrapped.generator(0), Some(&vec![2, 0]));
-        assert_eq!(wrapped.generator(1), Some(&vec![0, 3]));
+        assert_eq!(wrapped.generators(), &gens[..]);
+        assert_eq!(wrapped.generator(0), Some(&iv(vec![2, 0])));
+        assert_eq!(wrapped.generator(1), Some(&iv(vec![0, 3])));
         assert_eq!(wrapped.generator(2), None);
     }
 
     #[test]
     fn test_torsion_subgroup() {
-        let gens = vec![vec![1], vec![2], vec![3]];
+        let gens = vec![iv(vec![1]), iv(vec![2]), iv(vec![3])];
         let group = AdditiveAbelianGroup::new(1, vec![2, 4]).unwrap();
         let wrapped = AdditiveAbelianGroupWrapper::new(
             gens,
@@ -574,7 +607,7 @@ mod tests {
 
     #[test]
     fn test_basis_from_generators() {
-        let gens = vec![vec![2, 0], vec![0, 3], vec![1, 1]];
+        let gens = vec![iv(vec![2, 0]), iv(vec![0, 3]), iv(vec![1, 1])];
         let result = basis_from_generators(gens, "Z^2".to_string());
         assert!(result.is_ok());
 
@@ -585,7 +618,7 @@ mod tests {
 
     #[test]
     fn test_empty_generators() {
-        let gens: Vec<Vec<i32>> = vec![];
+        let gens: Vec<IntVec> = vec![];
         let result = basis_from_generators(gens, "Z^0".to_string());
         assert!(result.is_ok());
 

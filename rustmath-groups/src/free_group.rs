@@ -16,12 +16,15 @@
 //! let a = f2.generator(0).unwrap();
 //! let b = f2.generator(1).unwrap();
 //!
-//! // Compute ab * a^-1 = b
-//! let ab = a.mul(&b);
+//! // Compute a*b*a^-1. In a FREE group this does NOT reduce to b: a*b*a^-1
+//! // and b are conjugate but distinct elements (only free cancellation of
+//! // adjacent inverse pairs is performed, and none applies here).
+//! let ab = a.multiply(&b);
 //! let a_inv = a.inverse();
-//! let result = ab.mul(&a_inv);
+//! let result = ab.multiply(&a_inv);
 //!
-//! assert_eq!(result, b);
+//! assert_ne!(result, b);
+//! assert_eq!(result.length(), 3);
 //! ```
 
 use std::fmt;
@@ -292,7 +295,7 @@ impl FreeGroupElement {
     /// let x2 = f3.generator(2).unwrap();
     ///
     /// // x0 * x1 * x0^2 * x2 has letters [0, 1, 2]
-    /// let elem = x0.mul(&x1).mul(&x0.pow(2)).mul(&x2);
+    /// let elem = x0.multiply(&x1).multiply(&x0.pow(2)).multiply(&x2);
     /// let letters = elem.letters();
     /// assert_eq!(letters, vec![0, 1, 2]);
     /// ```
@@ -320,7 +323,7 @@ impl FreeGroupElement {
     /// let x1 = f2.generator(1).unwrap();
     ///
     /// // x0^3 * x1 * x0^-1 has exponent sum 2 for generator 0
-    /// let elem = x0.pow(3).mul(&x1).mul(&x0.pow(-1));
+    /// let elem = x0.pow(3).multiply(&x1).multiply(&x0.pow(-1));
     /// assert_eq!(elem.exponent_sum(0), 2);
     /// assert_eq!(elem.exponent_sum(1), 1);
     /// ```
@@ -597,7 +600,7 @@ mod tests {
         let a = f2.generator(0).unwrap();
         let b = f2.generator(1).unwrap();
 
-        let ab = a.mul(&b);
+        let ab = a.multiply(&b);
         assert_eq!(ab.length(), 2);
         assert_eq!(ab.word(), &[(0, 1), (1, 1)]);
     }
@@ -608,7 +611,7 @@ mod tests {
         let a = f2.generator(0).unwrap();
 
         let a_inv = a.inverse();
-        let prod = a.mul(&a_inv);
+        let prod = a.multiply(&a_inv);
         assert!(prod.is_identity());
     }
 
@@ -618,12 +621,15 @@ mod tests {
         let a = f2.generator(0).unwrap();
         let b = f2.generator(1).unwrap();
 
-        // Compute ab * a^-1, should reduce to b
-        let ab = a.mul(&b);
+        // Compute a*b*a^-1. In a FREE group no free cancellation applies here,
+        // so the result is the length-3 word a*b*a^-1, NOT b (they are
+        // conjugate but distinct).
+        let ab = a.multiply(&b);
         let a_inv = a.inverse();
-        let result = ab.mul(&a_inv);
+        let result = ab.multiply(&a_inv);
 
-        assert_eq!(result, b);
+        assert_ne!(result, b);
+        assert_eq!(result.word(), &[(0, 1), (1, 1), (0, -1)]);
     }
 
     #[test]
@@ -658,7 +664,7 @@ mod tests {
         let a = f2.generator(0).unwrap();
         let b = f2.generator(1).unwrap();
 
-        let ab = a.mul(&b);
+        let ab = a.multiply(&b);
         assert_eq!(ab.tietze(), vec![1, 2]); // a is 1, b is 2
 
         let a_inv = a.inverse();
@@ -670,9 +676,11 @@ mod tests {
         let f2 = FreeGroup::new(2, vec!["a".to_string(), "b".to_string()]);
 
         let elem = f2.from_tietze(vec![1, 2, -1]);
-        // This is a * b * a^-1 = b (after reduction)
+        // This is a * b * a^-1. In a FREE group it does NOT reduce to b; it is
+        // the length-3 word a*b*a^-1.
         let b = f2.generator(1).unwrap();
-        assert_eq!(elem, b);
+        assert_ne!(elem, b);
+        assert_eq!(elem.word(), &[(0, 1), (1, 1), (0, -1)]);
     }
 
     #[test]
@@ -691,7 +699,7 @@ mod tests {
         let a = f2.generator(0).unwrap();
         let b = f2.generator(1).unwrap();
 
-        let word = a.pow(3).mul(&b.pow(-2));
+        let word = a.pow(3).multiply(&b.pow(-2));
         assert_eq!(word.total_length(), 5); // |3| + |-2| = 5
         assert_eq!(word.length(), 2); // Two syllables
     }
@@ -727,7 +735,7 @@ mod tests {
         let b = f2.generator(1).unwrap();
         assert_eq!(a.to_string(), "a");
 
-        let ab = a.mul(&b);
+        let ab = a.multiply(&b);
         assert_eq!(ab.to_string(), "a*b");
 
         let a_inv = a.inverse();
@@ -756,7 +764,7 @@ mod tests {
         let x0 = f3.generator(0).unwrap();
         let x1 = f3.generator(1).unwrap();
 
-        let comm = x0.mul(&x1).mul(&x0.inverse()).mul(&x1.inverse());
+        let comm = x0.multiply(&x1).multiply(&x0.inverse()).multiply(&x1.inverse());
         // Should not reduce further
         assert_eq!(comm.length(), 4);
     }
