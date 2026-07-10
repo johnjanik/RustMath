@@ -15,10 +15,18 @@ pub mod kostka;
 pub mod ribbon;
 pub mod operations;
 pub mod plethysm;
+pub mod ratfunc;
+pub mod hall_littlewood;
+pub mod macdonald;
 pub mod ncsf;
 pub mod qsym;
 pub mod fqsym;
 pub mod super_schur;
+pub mod classical_bases;
+pub mod symfun_core_impls;
+pub mod qsym_core_impls;
+pub mod ncsf_core_impls;
+pub mod fqsym_core_impls;
 
 pub use basis::{
     elementary_symmetric, monomial_symmetric, power_sum_symmetric, schur_function,
@@ -32,9 +40,42 @@ pub use ribbon::{
     murnaghan_nakayama, symmetric_group_character, symmetric_group_character_table,
 };
 pub use fqsym::FQSym;
+
+// Classical-basis change-of-basis engine and MAGMA ch 146 intrinsics
+pub use classical_bases::{
+    border_strip_removals, centralizer_size, change_basis, complete_homogeneous,
+    dual_jacobi_trudi, from_powersum, hall_inner_product, jacobi_trudi, mn_character, multiply,
+    omega, partitions_order, plethysm as classical_plethysm, to_powersum, transition_matrix,
+    ClassicalBasis,
+    // Named transition matrices (ch 146.5)
+    elementary_to_homogeneous_matrix, elementary_to_monomial_matrix, elementary_to_powersum_matrix,
+    elementary_to_schur_matrix, homogeneous_to_elementary_matrix, homogeneous_to_monomial_matrix,
+    homogeneous_to_powersum_matrix, homogeneous_to_schur_matrix, monomial_to_elementary_matrix,
+    monomial_to_homogeneous_matrix, monomial_to_powersum_matrix, monomial_to_schur_matrix,
+    powersum_to_elementary_matrix, powersum_to_homogeneous_matrix, powersum_to_monomial_matrix,
+    powersum_to_schur_matrix, schur_to_elementary_matrix, schur_to_homogeneous_matrix,
+    schur_to_monomial_matrix, schur_to_powersum_matrix,
+};
 pub use super_schur::{
     evaluate_super_schur, is_classical_schur, super_dimension, super_schur_function,
     SuperSchurCoefficient,
+};
+
+// Exact rational-function coefficients (Q(t), Q(q,t) towers)
+pub use ratfunc::{Poly, RatFunc};
+
+// Hall-Littlewood P/Q over Q(t) (Macdonald ch III)
+pub use hall_littlewood::{
+    hall_littlewood_p, hall_littlewood_p_to_classical_matrix,
+    hall_littlewood_p_to_monomial_matrix, hall_littlewood_p_to_schur_matrix, hall_littlewood_q,
+    hall_littlewood_q_to_monomial_matrix, hl_b_polynomial, kostka_foulkes_polynomial,
+    phi_polynomial, schur_to_hall_littlewood_p_matrix, TRat,
+};
+
+// Macdonald P over Q(q,t) (Macdonald ch VI)
+pub use macdonald::{
+    macdonald_p, macdonald_p_to_classical_matrix, macdonald_p_to_monomial_matrix,
+    macdonald_p_to_schur_matrix, specialize_q_to_t, specialize_q_zero, QTRat,
 };
 
 // NCSF exports

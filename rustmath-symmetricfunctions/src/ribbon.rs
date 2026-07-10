@@ -216,47 +216,12 @@ pub fn is_ribbon_tableau(outer: &Partition, inner: &Partition, ribbons: &[Vec<(u
 ///
 /// Returns the character value χ^λ(ρ) as an integer (possibly negative).
 pub fn murnaghan_nakayama(lambda: &Partition, rho: &Partition) -> i64 {
-    // Check that lambda and rho partition the same number
-    if lambda.sum() != rho.sum() {
-        return 0;
-    }
-
-    // Base case: empty partitions
-    if lambda.parts().is_empty() && rho.parts().is_empty() {
-        return 1;
-    }
-
-    // If rho is empty but lambda is not, character is 0
-    if rho.parts().is_empty() {
-        return 0;
-    }
-
-    // Recursive case: remove the first part of rho
-    let parts = rho.parts();
-    let k = parts[0]; // Size of border strip to remove
-
-    // Create the remaining cycle type (rho with first part removed)
-    let remaining_rho = if parts.len() > 1 {
-        Partition::new(parts[1..].to_vec())
-    } else {
-        Partition::new(vec![])
-    };
-
-    // Try all ways to remove a border strip of size k from lambda
-    let removals = lambda.remove_border_strip_advanced(k);
-
-    let mut total = 0i64;
-
-    for (inner_partition, height) in removals {
-        // Recursively compute character for the remaining partition and cycle type
-        let sub_character = murnaghan_nakayama(&inner_partition, &remaining_rho);
-
-        // Add contribution with sign based on height
-        let sign = if height % 2 == 0 { 1 } else { -1 };
-        total += sign * sub_character;
-    }
-
-    total
+    // Delegate to the correct abacus/beta-set implementation in `classical_bases`.
+    // The previous body relied on `Partition::remove_border_strip_advanced`, whose
+    // underlying `all_inner_partitions_of_size` (in rustmath-combinatorics) returns
+    // duplicate inner partitions, causing the character values to be over-counted
+    // (e.g. chi^(1^3)(1^3) came out as 3! = 6 instead of 1). See MAGMA ch 146.
+    crate::classical_bases::mn_character(lambda, rho)
 }
 
 /// Compute a full character of S_n for a given partition λ
@@ -498,15 +463,18 @@ mod tests {
             1
         );
 
-        // λ = (1,1,1,1): sign representation
+        // λ = (1,1,1,1): sign representation, chi^sign(rho) = sign of any element of
+        // cycle type rho = (-1)^{n - l(rho)}.
         let lambda_sign = Partition::new(vec![1, 1, 1, 1]);
         assert_eq!(
+            // a 4-cycle is odd: sign = (-1)^3 = -1
             murnaghan_nakayama(&lambda_sign, &Partition::new(vec![4])),
-            1
+            -1
         );
         assert_eq!(
+            // a 3-cycle (with a fixed point) is even: sign = +1
             murnaghan_nakayama(&lambda_sign, &Partition::new(vec![3, 1])),
-            -1
+            1
         );
         assert_eq!(
             murnaghan_nakayama(&lambda_sign, &Partition::new(vec![2, 2])),
