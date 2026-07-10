@@ -42,10 +42,15 @@ impl<R: Ring> ModuleCategory<R> {
     }
 
     /// Check if this category is a subcategory of another
-    pub fn is_subcategory_of(&self, _other: &ModuleCategory<R>) -> bool {
-        // For now, a module category is only a subcategory of itself
-        // This can be extended with more sophisticated logic
-        true
+    ///
+    /// `ModuleCategory<R>` represents "the category of modules over `base_ring`".
+    /// There is currently no modelling of restriction-of-scalars or other
+    /// ring-homomorphism-induced functors between module categories over
+    /// different rings, so the only subcategory relation we can honestly
+    /// assert is reflexivity for the *same* base ring: `Modules(R)` is a
+    /// subcategory of `Modules(R')` iff `R == R'`.
+    pub fn is_subcategory_of(&self, other: &ModuleCategory<R>) -> bool {
+        self.base_ring == other.base_ring
     }
 
     /// Get the super categories of this category
@@ -488,7 +493,8 @@ impl<R: Ring> SubcategoryMethods for FinitelyPresented<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use num_bigint::BigInt;
+    // Use RustMath's own arbitrary-precision integers as the base ring (Z).
+    use rustmath_integers::Integer as BigInt;
 
     #[test]
     fn test_module_category_creation() {
@@ -588,5 +594,26 @@ mod tests {
         let supers = category.super_categories();
         assert!(supers.contains(&"Category of sets".to_string()));
         assert!(supers.contains(&"Category of additive groups".to_string()));
+    }
+
+    #[test]
+    fn test_is_subcategory_of_same_base_ring() {
+        let ring = BigInt::from(9);
+        let cat_a = ModuleCategory::new(ring.clone());
+        let cat_b = ModuleCategory::new(ring);
+        // Modules(R) is a subcategory of Modules(R) for the same R.
+        assert!(cat_a.is_subcategory_of(&cat_b));
+        assert!(cat_b.is_subcategory_of(&cat_a));
+    }
+
+    #[test]
+    fn test_is_subcategory_of_different_base_ring() {
+        // Modules(Z) is NOT (in this model) a subcategory of Modules over a
+        // different ring value; the previous stub ignored `other` entirely
+        // and always returned true, which was dishonest.
+        let cat_z5 = ModuleCategory::new(BigInt::from(5));
+        let cat_z7 = ModuleCategory::new(BigInt::from(7));
+        assert!(!cat_z5.is_subcategory_of(&cat_z7));
+        assert!(!cat_z7.is_subcategory_of(&cat_z5));
     }
 }

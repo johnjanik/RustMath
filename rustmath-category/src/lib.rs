@@ -23,10 +23,24 @@
 //! # Element and Parent Methods
 //! - SageMath-style category methods for elements and parent structures
 //! - Integration with rustmath-core trait hierarchy
+//!
+//! # Relationship to `rustmath_core::coercion` (decision record, P2-G)
+//!
+//! This crate is **wired into** core's coercion layer, in the category → core
+//! direction only, via the [`core_bridge`] module: the runtime coercion graph
+//! ([`CoercionMap`]) drives core's statically-typed
+//! [`Pushout`](rustmath_core::coercion::Pushout) /
+//! [`Coercible`](rustmath_core::coercion::Coercible) resolution
+//! (canonical example: `pushout(Z, Q) = Q`). `rustmath-core` has **no**
+//! dependency on this crate — the bridge is additive and one-directional, and
+//! type erasure goes through core's object-safe `morphism` module rather than
+//! any `dyn Ring` (which would be ill-formed: `Ring` is not dyn-safe). See
+//! [`core_bridge`] for the full decision record.
 
 pub mod axioms;
 pub mod category;
 pub mod coercion;
+pub mod core_bridge;
 pub mod functor;
 pub mod group_category;
 pub mod morphism;
@@ -66,6 +80,9 @@ pub use coercion::{
     Coercion, IdentityCoercion, ComposedCoercion, CoercionMap,
     CoerceInto, CoerceFrom, CoercionPath, CoercionDiscovery,
     coercion_to_morphism,
+};
+pub use core_bridge::{
+    coerce_pair_via_graph, coercion_as_morphism, graph_pushout, register_parent_coercion,
 };
 pub use algebraic_morphisms::{
     RingMorphism, FieldMorphism, ModuleMorphism, AlgebraMorphism, GroupMorphism,
