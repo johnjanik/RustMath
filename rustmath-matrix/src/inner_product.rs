@@ -101,21 +101,28 @@ impl<F: Field> InnerProductSpace<F> {
         Ok(ip.is_zero())
     }
 
-    /* // Commented out: Requires from_f64 for normalization
-    /// Gram-Schmidt orthogonalization process
+    /// Gram–Schmidt orthogonalization with respect to this bilinear form,
+    /// computed **exactly** in the field `F` (over ℚ this is the exact
+    /// rational Gram–Schmidt; no floating point is involved).
     ///
-    /// Given a list of linearly independent vectors, returns an orthogonal
-    /// (or orthonormal) basis for the same subspace.
+    /// Given linearly independent vectors `v₁, …, vₖ`, returns *orthogonal*
+    /// (not orthonormal) vectors `u₁, …, uₖ` spanning the same subspace, with
+    /// `uᵢ = vᵢ − Σ_{j<i} (⟨vᵢ,uⱼ⟩/⟨uⱼ,uⱼ⟩)·uⱼ`.
     ///
-    /// Note: For fields without division (like integers), this may not work.
-    pub fn gram_schmidt(&self, vectors: &[Vec<F>]) -> Result<Vec<Vec<F>>>
-    where
-        F: rustmath_core::NumericConversion,
-    {
-        if vectors.is_empty() {
-            return Ok(Vec::new());
-        }
-
+    /// Orthonormalization is deliberately **not** provided here: it requires
+    /// `sqrt(⟨u,u⟩)`, which generally does not exist in `F` (e.g. over ℚ).
+    ///
+    /// # Requirements and errors
+    ///
+    /// The classic process is well-defined when the form is *anisotropic* on
+    /// the input span (e.g. positive definite, as the Euclidean form over ℚ
+    /// is). Errors:
+    /// * a previously produced `uⱼ` has `⟨uⱼ,uⱼ⟩ = 0` (isotropic vector — the
+    ///   projection is undefined for this form);
+    /// * some `uᵢ` is zero with `⟨·,·⟩` anisotropic, i.e. the input vectors
+    ///   are linearly dependent;
+    /// * a vector has the wrong dimension.
+    pub fn gram_schmidt(&self, vectors: &[Vec<F>]) -> Result<Vec<Vec<F>>> {
         let mut orthogonal_basis: Vec<Vec<F>> = Vec::new();
 
         for v in vectors {
@@ -134,19 +141,23 @@ impl<F: Field> InnerProductSpace<F> {
                 let numerator = self.inner_product(v, prev)?;
                 let denominator = self.inner_product(prev, prev)?;
 
-                if !denominator.is_zero() {
-                    let coefficient = numerator / denominator;
+                if denominator.is_zero() {
+                    return Err(MathError::InvalidArgument(
+                        "Gram-Schmidt undefined: isotropic vector (⟨u,u⟩ = 0) \
+                         encountered; the form is not anisotropic on the input span"
+                            .to_string(),
+                    ));
+                }
+                let coefficient = numerator / denominator;
 
-                    // u = u - coefficient * prev
-                    for i in 0..self.dimension {
-                        u[i] = u[i].clone() - coefficient.clone() * prev[i].clone();
-                    }
+                // u = u - coefficient * prev
+                for i in 0..self.dimension {
+                    u[i] = u[i].clone() - coefficient.clone() * prev[i].clone();
                 }
             }
 
             // Check if u is non-zero (vectors must be linearly independent)
-            let norm_sq = self.norm_squared(&u)?;
-            if norm_sq.is_zero() {
+            if u.iter().all(|x| x.is_zero()) {
                 return Err(MathError::InvalidArgument(
                     "Input vectors are not linearly independent".to_string(),
                 ));
@@ -157,6 +168,8 @@ impl<F: Field> InnerProductSpace<F> {
 
         Ok(orthogonal_basis)
     }
+
+    /* // Commented out: orthonormalization requires sqrt, unavailable in a generic Field
 
     /// Orthonormal basis via Gram-Schmidt
     ///
@@ -272,6 +285,7 @@ impl<F: Field> InnerProductSpace<F> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rustmath_core::Ring;
     use rustmath_rationals::Rational;
 
     #[test]
@@ -307,7 +321,6 @@ mod tests {
         assert!(space.are_orthogonal(&u, &v).unwrap());
     }
 
-    /* // Commented out: gram_schmidt method is commented out
     #[test]
     fn test_gram_schmidt() {
         let space: InnerProductSpace<Rational> = InnerProductSpace::euclidean(2);
@@ -324,7 +337,59 @@ mod tests {
         let ip = space.inner_product(&orthogonal[0], &orthogonal[1]).unwrap();
         assert_eq!(ip, Rational::from_integer(0));
     }
-    */
+
+    #[test]
+    fn test_gram_schmidt_exact_rational_values() {
+        // SymPy: GramSchmidt([(3,1), (2,2)]) == [(3,1), (-2/5, 6/5)] — the
+        // projection coefficient is exactly 8/10 = 4/5, no rounding anywhere.
+        let space: InnerProductSpace<Rational> = InnerProductSpace::euclidean(2);
+        let v1 = vec![Rational::from_integer(3), Rational::from_integer(1)];
+        let v2 = vec![Rational::from_integer(2), Rational::from_integer(2)];
+
+        let ortho = space.gram_schmidt(&[v1.clone(), v2]).unwrap();
+        assert_eq!(ortho[0], v1);
+        assert_eq!(
+            ortho[1],
+            vec![Rational::new(-2, 5).unwrap(), Rational::new(6, 5).unwrap()]
+        );
+    }
+
+    #[test]
+    fn test_gram_schmidt_rejects_dependent_input() {
+        let space: InnerProductSpace<Rational> = InnerProductSpace::euclidean(2);
+        let v1 = vec![Rational::from_integer(1), Rational::from_integer(2)];
+        let v2 = vec![Rational::from_integer(2), Rational::from_integer(4)];
+        assert!(space.gram_schmidt(&[v1, v2]).is_err());
+    }
+
+    #[test]
+    fn test_gram_schmidt_with_custom_form() {
+        // Positive-definite form G = [[2,1],[1,2]]. e1, e2 are not orthogonal
+        // for G (<e1,e2> = 1); Gram-Schmidt fixes that, exactly:
+        //   u2 = e2 - (<e2,u1>/<u1,u1>)·u1 = (0,1) - (1/2)(1,0) = (-1/2, 1).
+        let gram = Matrix::from_vec(
+            2,
+            2,
+            vec![
+                Rational::from_integer(2),
+                Rational::from_integer(1),
+                Rational::from_integer(1),
+                Rational::from_integer(2),
+            ],
+        )
+        .unwrap();
+        let space = InnerProductSpace::from_gram_matrix(gram).unwrap();
+        let e1 = vec![Rational::from_integer(1), Rational::from_integer(0)];
+        let e2 = vec![Rational::from_integer(0), Rational::from_integer(1)];
+
+        let ortho = space.gram_schmidt(&[e1, e2]).unwrap();
+        assert_eq!(
+            ortho[1],
+            vec![Rational::new(-1, 2).unwrap(), Rational::from_integer(1)]
+        );
+        let ip = space.inner_product(&ortho[0], &ortho[1]).unwrap();
+        assert!(ip.is_zero());
+    }
 
     #[test]
     fn test_custom_gram_matrix() {
