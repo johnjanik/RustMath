@@ -113,10 +113,14 @@ impl ReedSolomonCode {
         let remainder = self.poly_mod(&shifted, &self.generator_poly);
 
         // Systematic codeword: [parity bits | message bits]
-        // c(x) = remainder + x^(n-k) * m(x)
+        // c(x) = x^(n-k) * m(x) - remainder(x), so that c(x) ≡ 0 (mod g(x)):
+        // shifted(x) = q(x)*g(x) + remainder(x)  =>  shifted(x) - remainder(x) = q(x)*g(x).
+        // (Adding the raw remainder instead of subtracting it, as a naive reading
+        // of "c(x) = remainder + x^(n-k)*m(x)" suggests, produces a word that is
+        // NOT divisible by g(x) and therefore is not actually a codeword.)
         let mut codeword = vec![0u64; self.n];
         for i in 0..self.parity_symbols {
-            codeword[i] = remainder[i];
+            codeword[i] = (p - remainder[i]) % p;
         }
         for i in 0..self.k {
             codeword[self.parity_symbols + i] = message[i];
