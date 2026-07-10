@@ -4,6 +4,7 @@
 
 use crate::curve::{EllipticCurve, Point};
 use crate::lfunction::LFunction;
+use crate::rank::RankBoundResult;
 use rustmath_integers::Integer;
 
 /// Result of BSD conjecture verification
@@ -80,25 +81,41 @@ impl BSDVerifier {
         }
     }
 
-    /// Compute algebraic rank via descent
+    /// Compute the algebraic rank via genuine 2-descent (see [`crate::rank`]).
     ///
-    /// NOT YET IMPLEMENTED (facade): the previous implementation derived the
-    /// rank from `SelmerGroup::rank_bound`, which was `log2(number of
-    /// locally-solvable torsors found)` -- not a real 2-descent rank
-    /// computation (see `TwoDescent::rank_bound`, which is itself now an
-    /// honest `unimplemented!`). This function used to also run a
-    /// height-bounded rational-point search (`TwoDescent::find_rational_points`)
-    /// to populate `self.generators` before panicking; since the function
-    /// always panics, that search was pure wasted work whose result was
-    /// thrown away on unwind, so it has been removed. A real implementation
-    /// would need to find genuine generators of E(Q) (not just a bounded
-    /// naive search) as part of establishing the rank, and should do that
-    /// work only once it can actually return a rank.
+    /// Returns the exact rank when the certified descent interval collapses
+    /// (`lower == upper`), recording the infinite-order witness points found
+    /// by the descent as `self.generators` (a subset of a generating set —
+    /// saturation is not performed).
+    ///
+    /// # Panics
+    ///
+    /// Honest refusal, never a guess:
+    /// * when the interval stays open (`lower < upper`): everywhere-locally-
+    ///   solvable torsors without rational points, i.e. a possible
+    ///   nontrivial Sha[2] obstruction;
+    /// * when the curve has no rational 2-torsion (2-descent over Q does
+    ///   not apply; number-field descent is out of scope).
     fn compute_algebraic_rank(&mut self) -> u32 {
-        unimplemented!(
-            "algebraic rank computation not yet implemented (facade): requires genuine \
-             2-descent / Selmer group rank, not a log2(element count) heuristic"
-        )
+        match self.curve.rank_bounds() {
+            RankBoundResult::Bounds(b) => {
+                if b.lower == b.upper {
+                    self.generators = b.infinite_order_points(&self.curve);
+                    self.computed_rank = Some(b.lower);
+                    b.lower
+                } else {
+                    panic!(
+                        "algebraic rank undetermined: 2-descent certifies rank ∈ [{}, {}] \
+                         (everywhere-locally-solvable torsors without rational points — \
+                         possible nontrivial Sha[2]); refusing to fabricate an exact rank",
+                        b.lower, b.upper
+                    )
+                }
+            }
+            RankBoundResult::Unresolved { reason } => {
+                panic!("algebraic rank undetermined: {}", reason)
+            }
+        }
     }
 
     /// Compute analytic rank (order of vanishing of L-function at s=1)
@@ -141,10 +158,8 @@ impl BSDVerifier {
 
         for i in 0..rank {
             for j in 0..rank {
-                matrix[i][j] = self.canonical_height_pairing(
-                    &self.generators[i],
-                    &self.generators[j]
-                );
+                matrix[i][j] =
+                    self.canonical_height_pairing(&self.generators[i], &self.generators[j]);
             }
         }
 
@@ -264,11 +279,10 @@ impl BSDVerifier {
         }
     }
 
-    /// Compute order of torsion subgroup
+    /// Order of the torsion subgroup E(Q)_tors (exact, via minimal model +
+    /// reduction bound + Lutz–Nagell; see [`crate::torsion`]).
     fn torsion_order(&self) -> u32 {
-        // Simplified: return 1 (trivial torsion)
-        // Real implementation would find all torsion points
-        1
+        self.curve.torsion_subgroup().order
     }
 
     /// Compute the BSD constant
@@ -345,35 +359,31 @@ mod tests {
 
     #[test]
     fn test_bsd_verifier_creation() {
-        let curve = EllipticCurve::from_short_weierstrass(
-            Integer::from(-1),
-            Integer::from(1)
-        );
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(1));
 
         let verifier = BSDVerifier::new(curve);
         assert!(verifier.computed_rank.is_none());
     }
 
     #[test]
-    #[ignore = "facade -> unimplemented; needs real descent/L-function (Phase 4)"]
     fn test_algebraic_rank_computation() {
-        let curve = EllipticCurve::from_short_weierstrass(
-            Integer::from(-1),
-            Integer::from(0)
-        );
+        // Real now (was an `unimplemented!` facade): y² = x³ − x has rank
+        // exactly 0, certified by 2-descent (interval collapses to [0, 0];
+        // Python-verified).
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(0));
 
         let mut verifier = BSDVerifier::new(curve);
         let rank = verifier.compute_algebraic_rank();
-        assert!(rank < 10); // Reasonable bound
+        assert_eq!(rank, 0);
+        assert_eq!(verifier.computed_rank, Some(0));
+        // rank 0: no infinite-order generators
+        assert!(verifier.generators.is_empty());
     }
 
     #[test]
-    #[ignore = "facade -> unimplemented; needs real descent/L-function (Phase 4)"]
+    #[ignore = "facade -> unimplemented; needs real analytic rank (L-function evaluation at s=1)"]
     fn test_analytic_rank_computation() {
-        let curve = EllipticCurve::from_short_weierstrass(
-            Integer::from(0),
-            Integer::from(-1)
-        );
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(0), Integer::from(-1));
 
         let mut verifier = BSDVerifier::new(curve);
         let rank = verifier.compute_analytic_rank();
@@ -382,10 +392,7 @@ mod tests {
 
     #[test]
     fn test_periods_computation() {
-        let curve = EllipticCurve::from_short_weierstrass(
-            Integer::from(1),
-            Integer::from(0)
-        );
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(1), Integer::from(0));
 
         let verifier = BSDVerifier::new(curve);
         let periods = verifier.compute_periods();
@@ -396,10 +403,7 @@ mod tests {
     fn test_tamagawa_numbers() {
         // y² = x³ - x + 1: disc = -368 = -2⁴·23; Tate gives type IV at 2
         // with c₂ = 3 and I1 at 23 with c₂₃ = 1 (PARI/GP-verified).
-        let curve = EllipticCurve::from_short_weierstrass(
-            Integer::from(-1),
-            Integer::from(1)
-        );
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(1));
 
         let verifier = BSDVerifier::new(curve);
         let tamagawa = verifier.compute_tamagawa_numbers();
@@ -418,12 +422,9 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "facade -> unimplemented; needs real descent/L-function (Phase 4)"]
+    #[ignore = "facade -> unimplemented; algebraic rank is real now (2-descent), but the analytic rank is still an L-function facade"]
     fn test_weak_bsd() {
-        let curve = EllipticCurve::from_short_weierstrass(
-            Integer::from(0),
-            Integer::from(1)
-        );
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(0), Integer::from(1));
 
         let mut verifier = BSDVerifier::new(curve);
         let _ = verifier.check_weak_bsd();
@@ -448,12 +449,9 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "facade -> unimplemented; needs real descent/L-function (Phase 4)"]
+    #[ignore = "facade -> unimplemented; needs real L-function (analytic rank, Sha estimate); also y^2=x^3-x+1 has no rational 2-torsion, so the algebraic rank is an honest refusal"]
     fn test_generate_report() {
-        let curve = EllipticCurve::from_short_weierstrass(
-            Integer::from(-1),
-            Integer::from(1)
-        );
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(1));
 
         let mut verifier = BSDVerifier::new(curve);
         let report = verifier.generate_report();

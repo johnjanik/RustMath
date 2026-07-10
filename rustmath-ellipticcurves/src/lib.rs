@@ -1,10 +1,18 @@
 //! Elliptic Curves for RustMath
 //!
 //! This crate provides comprehensive elliptic curve functionality including:
-//! - Elliptic curve arithmetic and point operations
+//! - Elliptic curve arithmetic and point operations (full generalized
+//!   Weierstrass group law over Q)
 //! - Tate's algorithm: Kodaira types, conductor exponents, Tamagawa numbers,
 //!   p-minimal models and the exact global conductor (see [`tate`])
-//! - Rank computation via descent algorithms
+//! - Global minimal models and Weierstrass isomorphisms (see [`minimal`])
+//! - The exact torsion subgroup E(Q)_tors via reduction bounds and
+//!   Lutz–Nagell, classified per Mazur (see [`torsion`])
+//! - Canonical (Néron–Tate) heights, height pairings and regulators at
+//!   arbitrary precision over `BigFloat` (see [`height`])
+//! - Certified rank bounds via genuine 2-descent — descent via 2-isogeny
+//!   plus full 2-descent when E[2] ⊆ E(Q) — as honest `[lower, upper]`
+//!   intervals, never fabricated integers (see [`rank`])
 //! - L-functions and analytic continuation
 //! - Modular forms and the modularity theorem
 //! - BSD conjecture verification
@@ -31,13 +39,17 @@
 //! let doubled = curve.double_point(&p);
 //! ```
 
+pub mod bsd;
 pub mod curve;
 pub mod descent;
 pub mod generic;
+pub mod height;
 pub mod lfunction;
+pub mod minimal;
 pub mod modular;
-pub mod bsd;
+pub mod rank;
 pub mod tate;
+pub mod torsion;
 
 // Re-export main types
 //
@@ -46,12 +58,15 @@ pub mod tate;
 // canonicalization) is deliberately NOT re-exported at the root: the names would
 // clash with the over-Q `curve::{EllipticCurve, Point}` below. Use the
 // path-qualified `rustmath_ellipticcurves::generic::…` form.
+pub use bsd::{BSDResult, BSDVerifier};
 pub use curve::{EllipticCurve, Point};
-pub use descent::{TwoDescent, SelmerGroup, Quartic};
-pub use lfunction::{LFunction, ComplexNum};
-pub use modular::{ModularForm, ModularCurve, HeckeOperator, Cusp, NewformSpace};
-pub use bsd::{BSDVerifier, BSDResult};
+pub use descent::{SelmerGroup, TwoDescent};
+pub use lfunction::{ComplexNum, LFunction};
+pub use minimal::WeierstrassIsomorphism;
+pub use modular::{Cusp, HeckeOperator, ModularCurve, ModularForm, NewformSpace};
+pub use rank::{RankBoundResult, RankBounds};
 pub use tate::{KodairaSymbol, LocalData, ReductionType};
+pub use torsion::{TorsionStructure, TorsionSubgroup};
 
 use rustmath_integers::Integer;
 
@@ -64,10 +79,7 @@ impl EllipticCurveAnalytics {
     /// Create a new analytics interface for a curve in short Weierstrass form
     /// y² = x³ + ax + b
     pub fn new(a: i64, b: i64) -> Self {
-        let curve = EllipticCurve::from_short_weierstrass(
-            Integer::from(a),
-            Integer::from(b)
-        );
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(a), Integer::from(b));
         Self { curve }
     }
 
@@ -94,7 +106,10 @@ impl EllipticCurveAnalytics {
         // code fabricated a fixed conductor of 11 ("Default for testing")
         // whenever `self.curve.conductor` was `None`; that silently
         // mislabeled every such curve as curve 11a.
-        let conductor = self.curve.conductor.clone()
+        let conductor = self
+            .curve
+            .conductor
+            .clone()
             .unwrap_or_else(|| LFunction::compute_conductor(&self.curve));
         let modular_curve = ModularCurve::new(conductor);
         let modular_form = modular_curve.find_associated_form(&self.curve);
@@ -105,7 +120,7 @@ impl EllipticCurveAnalytics {
 
         AnalysisResult {
             curve: self.curve.clone(),
-            selmer_rank_bound: selmer_group.rank_bound,
+            selmer_rank_bound: selmer_group.rank_upper_bound as i32,
             analytic_rank,
             associated_modular_form: modular_form.is_some(),
             bsd_result,
@@ -121,9 +136,9 @@ impl EllipticCurveAnalytics {
         let analytic_rank = l_function.analytic_rank();
 
         RankAnalysis {
-            selmer_bound: selmer_group.rank_bound,
+            selmer_bound: selmer_group.rank_upper_bound as i32,
             analytic_rank,
-            ranks_agree: selmer_group.rank_bound as u32 == analytic_rank,
+            ranks_agree: selmer_group.rank_upper_bound == analytic_rank,
         }
     }
 
@@ -166,7 +181,8 @@ impl EllipticCurveAnalytics {
              - Periods: {:.6}\n",
             self.curve,
             self.curve.discriminant,
-            self.j_invariant().map_or("undefined".to_string(), |j| format!("{}", j)),
+            self.j_invariant()
+                .map_or("undefined".to_string(), |j| format!("{}", j)),
             self.is_singular(),
             analysis.selmer_rank_bound,
             analysis.analytic_rank,
@@ -209,7 +225,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "facade -> unimplemented; needs real descent/L-function (Phase 4)"]
+    #[ignore = "facade -> unimplemented; the Selmer bound is real now (2-descent), but analytic_rank is still an L-function facade"]
     fn test_rank_analysis() {
         let analytics = EllipticCurveAnalytics::new(-1, 0);
         let rank_analysis = analytics.rank_analysis();
@@ -228,7 +244,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "facade -> unimplemented; needs real descent/L-function (Phase 4)"]
+    #[ignore = "facade -> unimplemented; needs real L-function (analytic rank, Sha estimate) for the BSD leg"]
     fn test_full_analysis() {
         let analytics = EllipticCurveAnalytics::new(2, 3);
         let result = analytics.full_analysis();
@@ -237,7 +253,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "facade -> unimplemented; needs real descent/L-function (Phase 4)"]
+    #[ignore = "facade -> unimplemented; needs real L-function; also y^2=x^3-x+1 has no rational 2-torsion, so the Selmer computation is an honest refusal"]
     fn test_report_generation() {
         let analytics = EllipticCurveAnalytics::new(-1, 1);
         let report = analytics.report();
@@ -308,12 +324,9 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "facade -> unimplemented; needs real descent/L-function (Phase 4)"]
+    #[ignore = "facade -> unimplemented; needs real L-function; also y^2=x^3-x+1 has no rational 2-torsion, so compute_selmer_group is an honest refusal"]
     fn test_integration_with_modules() {
-        let curve = EllipticCurve::from_short_weierstrass(
-            Integer::from(-1),
-            Integer::from(1)
-        );
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(1));
 
         // Test curve module
         let p = Point::from_integers(0, 1);
@@ -322,7 +335,7 @@ mod tests {
         // Test descent module
         let descent = TwoDescent::new(&curve);
         let selmer = descent.compute_selmer_group();
-        assert!(!selmer.elements.is_empty());
+        assert!(!selmer.phi_classes.is_empty());
 
         // Test L-function module
         let l_func = LFunction::new(curve.clone());

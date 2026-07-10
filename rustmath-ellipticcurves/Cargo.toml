@@ -12,6 +12,7 @@ rustmath-integers = { path = "../rustmath-integers" }
 rustmath-rationals = { path = "../rustmath-rationals" }
 rustmath-complex = { path = "../rustmath-complex" }
 rustmath-finitefields = { path = "../rustmath-finitefields" }
+rustmath-reals = { path = "../rustmath-reals" }
 rayon = { workspace = true }
 serde = { workspace = true, optional = true }
 

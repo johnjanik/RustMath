@@ -99,7 +99,12 @@ impl EllipticCurve {
         )
     }
 
-    /// Add two points on the curve
+    /// Add two points on the curve (general Weierstrass form).
+    ///
+    /// For the chord through P ≠ ±Q with slope λ and intercept ν
+    /// (y = λx + ν), the sum is
+    /// x₃ = λ² + a₁λ − a₂ − x₁ − x₂,  y₃ = −(λ + a₁)x₃ − ν − a₃.
+    /// Both inputs are assumed to lie on the curve.
     pub fn add_points(&self, p: &Point, q: &Point) -> Point {
         if p.infinity {
             return q.clone();
@@ -108,27 +113,29 @@ impl EllipticCurve {
             return p.clone();
         }
 
-        // Check if points are negatives of each other
         if p.x == q.x {
+            // Same x-coordinate: either negatives of each other or equal
+            // (two points on the curve with equal x are equal or negatives).
             let neg_y = self.negate_y(&p.x, &p.y);
             if q.y == neg_y {
                 return Point::infinity();
             }
-        }
-
-        if p == q {
             return self.double_point(p);
         }
 
-        // For short Weierstrass form: y² = x³ + ax + b
-        // λ = (y₂ - y₁) / (x₂ - x₁)
+        // λ = (y₂ - y₁) / (x₂ - x₁), ν = y₁ - λx₁
         let lambda = (&q.y - &p.y) / (&q.x - &p.x);
+        let nu = p.y.clone() - lambda.clone() * p.x.clone();
 
-        // x₃ = λ² - x₁ - x₂
-        let x3 = &lambda * &lambda - p.x.clone() - q.x.clone();
+        let a1 = Rational::from_integer(self.a1.clone());
+        let a2 = Rational::from_integer(self.a2.clone());
+        let a3 = Rational::from_integer(self.a3.clone());
 
-        // y₃ = λ(x₁ - x₃) - y₁
-        let y3 = lambda * (&p.x - &x3) - p.y.clone();
+        // x₃ = λ² + a₁λ − a₂ − x₁ − x₂
+        let x3 = &lambda * &lambda + a1.clone() * lambda.clone() - a2 - p.x.clone() - q.x.clone();
+
+        // y₃ = −(λ + a₁)x₃ − ν − a₃
+        let y3 = -((lambda + a1) * x3.clone()) - nu - a3;
 
         Point {
             x: x3,
@@ -137,31 +144,39 @@ impl EllipticCurve {
         }
     }
 
-    /// Double a point on the curve
+    /// Double a point on the curve (general Weierstrass form).
+    ///
+    /// The tangent slope is λ = (3x² + 2a₂x + a₄ − a₁y) / (2y + a₁x + a₃);
+    /// a vanishing denominator means P is 2-torsion and [2]P = O.
     pub fn double_point(&self, p: &Point) -> Point {
         if p.infinity {
             return p.clone();
         }
 
-        // For short Weierstrass: y² = x³ + ax + b
-        // λ = (3x² + a) / (2y)
-        let three = Rational::from_i64(3);
+        let a1 = Rational::from_integer(self.a1.clone());
+        let a2 = Rational::from_integer(self.a2.clone());
+        let a3 = Rational::from_integer(self.a3.clone());
+        let a4 = Rational::from_integer(self.a4.clone());
         let two = Rational::from_i64(2);
+        let three = Rational::from_i64(3);
 
-        let numerator = three * p.x.clone() * p.x.clone() + Rational::from_integer(self.a4.clone());
-        let denominator = two.clone() * p.y.clone();
+        let numerator =
+            three * p.x.clone() * p.x.clone() + two.clone() * a2.clone() * p.x.clone() + a4
+                - a1.clone() * p.y.clone();
+        let denominator = two.clone() * p.y.clone() + a1.clone() * p.x.clone() + a3.clone();
 
         if denominator.is_zero() {
             return Point::infinity();
         }
 
         let lambda = numerator / denominator;
+        let nu = p.y.clone() - lambda.clone() * p.x.clone();
 
-        // x₃ = λ² - 2x
-        let x3 = &lambda * &lambda - two * p.x.clone();
+        // x₃ = λ² + a₁λ − a₂ − 2x
+        let x3 = &lambda * &lambda + a1.clone() * lambda.clone() - a2 - two * p.x.clone();
 
-        // y₃ = λ(x - x₃) - y
-        let y3 = lambda * (&p.x - &x3) - p.y.clone();
+        // y₃ = −(λ + a₁)x₃ − ν − a₃
+        let y3 = -((lambda + a1) * x3.clone()) - nu - a3;
 
         Point {
             x: x3,
@@ -221,27 +236,48 @@ impl EllipticCurve {
         -(y.clone() + a1_term + a3_term)
     }
 
-    /// Check if a point is on the curve
+    /// Check if a point is on the curve (general Weierstrass form):
+    /// y² + a₁xy + a₃y = x³ + a₂x² + a₄x + a₆.
     pub fn is_on_curve(&self, p: &Point) -> bool {
         if p.infinity {
             return true;
         }
 
-        // For short Weierstrass: y² = x³ + ax + b
-        let lhs = &p.y * &p.y;
+        let a1 = Rational::from_integer(self.a1.clone());
+        let a2 = Rational::from_integer(self.a2.clone());
+        let a3 = Rational::from_integer(self.a3.clone());
+        let a4 = Rational::from_integer(self.a4.clone());
+        let a6 = Rational::from_integer(self.a6.clone());
+
+        let lhs = &p.y * &p.y + a1 * p.x.clone() * p.y.clone() + a3 * p.y.clone();
         let rhs = p.x.clone() * p.x.clone() * p.x.clone()
-            + Rational::from_integer(self.a4.clone()) * p.x.clone()
-            + Rational::from_integer(self.a6.clone());
+            + a2 * p.x.clone() * p.x.clone()
+            + a4 * p.x.clone()
+            + a6;
 
         lhs == rhs
     }
 
-    /// Compute the 2-torsion rank (points of order dividing 2)
+    /// The 2-rank of E(Q)[2]: r ∈ {0, 1, 2} with E(Q)[2] ≅ (Z/2)^r.
+    ///
+    /// The x-coordinates of 2-torsion points are the roots of
+    /// 4x³ + b₂x² + 2b₄x + b₆. Under X = 36x + 3b₂ these correspond
+    /// exactly to the rational (hence integral) roots of the monic cubic
+    /// X³ − 27c₄X − 54c₆.
     pub fn two_torsion_rank(&self) -> i32 {
-        // Count roots of x³ + ax + b = 0
-        // This is a simplified implementation
-        // Real implementation would need to factor the polynomial
-        1 // Always have point at infinity
+        let (c4, c6) = self.c_invariants();
+        let a = Integer::from(-27) * c4;
+        let b = Integer::from(-54) * c6;
+        let roots = crate::torsion::integer_cubic_roots(&a, &b);
+        match roots.len() {
+            0 => 0,
+            1 => 1,
+            3 => 2,
+            n => unreachable!(
+                "cubic with {} rational roots (nonsingular curve has distinct roots)",
+                n
+            ),
+        }
     }
 
     /// Check if a prime is a bad prime (divides the discriminant)
@@ -337,41 +373,26 @@ mod tests {
 
     #[test]
     fn test_curve_creation() {
-        let curve = EllipticCurve::from_short_weierstrass(
-            Integer::from(-1),
-            Integer::from(1)
-        );
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(1));
         assert!(!curve.is_singular());
     }
 
     #[test]
     fn test_point_on_curve() {
-        let curve = EllipticCurve::from_short_weierstrass(
-            Integer::from(-1),
-            Integer::from(0)
-        );
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(0));
 
         // Point (0, 0) should be on y² = x³ - x
-        let p = Point::new(
-            Rational::zero(),
-            Rational::zero()
-        );
+        let p = Point::new(Rational::zero(), Rational::zero());
         assert!(curve.is_on_curve(&p));
 
         // Point (1, 0) should be on y² = x³ - x
-        let q = Point::new(
-            Rational::one(),
-            Rational::zero()
-        );
+        let q = Point::new(Rational::one(), Rational::zero());
         assert!(curve.is_on_curve(&q));
     }
 
     #[test]
     fn test_point_addition() {
-        let curve = EllipticCurve::from_short_weierstrass(
-            Integer::from(-1),
-            Integer::from(0)
-        );
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(0));
 
         let p = Point::new(Rational::zero(), Rational::zero());
         let q = Point::infinity();
@@ -382,16 +403,10 @@ mod tests {
 
     #[test]
     fn test_point_doubling() {
-        let curve = EllipticCurve::from_short_weierstrass(
-            Integer::from(2),
-            Integer::from(3)
-        );
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(2), Integer::from(3));
 
         // Point (-1, 0) is on y² = x³ + 2x + 3
-        let p = Point::new(
-            Rational::from_i64(-1),
-            Rational::from_i64(0)
-        );
+        let p = Point::new(Rational::from_i64(-1), Rational::from_i64(0));
 
         assert!(curve.is_on_curve(&p));
         let doubled = curve.double_point(&p);
@@ -402,16 +417,10 @@ mod tests {
     #[test]
     fn test_scalar_multiplication() {
         // Use curve y² = x³ - x for simplicity
-        let curve = EllipticCurve::from_short_weierstrass(
-            Integer::from(-1),
-            Integer::from(0)
-        );
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(0));
 
         // Point (0, 0) is on the curve
-        let p = Point::new(
-            Rational::from_i64(0),
-            Rational::from_i64(0)
-        );
+        let p = Point::new(Rational::from_i64(0), Rational::from_i64(0));
 
         assert!(curve.is_on_curve(&p));
         let result = curve.scalar_mul(&Integer::from(2), &p);
@@ -422,10 +431,7 @@ mod tests {
     #[test]
     fn test_j_invariant() {
         // For y² = x³ + x (curve with CM by Gaussian integers)
-        let curve = EllipticCurve::from_short_weierstrass(
-            Integer::from(1),
-            Integer::from(0)
-        );
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(1), Integer::from(0));
 
         let j = curve.j_invariant();
         assert!(j.is_some());
