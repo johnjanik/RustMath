@@ -110,24 +110,12 @@ impl KahlerManifold {
     ///
     /// ω(X, Y) = g(JX, Y)
     fn compute_kahler_form(
-        metric: &RiemannianMetric,
-        complex_structure: &AlmostComplexStructure,
+        _metric: &RiemannianMetric,
+        _complex_structure: &AlmostComplexStructure,
     ) -> Result<DiffForm> {
-        // TODO: Implement Kähler form computation
-        // For now, create a placeholder 2-form
-        let manifold = complex_structure.manifold().clone();
-        let chart = manifold.default_chart().unwrap();
-        let dim = manifold.dimension();
-
-        // Kähler form is a 2-form
-        let num_components = (dim * (dim - 1)) / 2;
-        let components = vec![Expr::from(0); num_components];
-
-        DiffForm::from_components(
-            manifold.clone(),
-            chart,
-            2, // degree
-            components,
+        unimplemented!(
+            "KahlerManifold::compute_kahler_form not yet implemented (facade): requires \
+             building omega(X, Y) = g(JX, Y) from the metric and complex structure tensors"
         )
     }
 
@@ -166,20 +154,10 @@ impl KahlerManifold {
     /// In Kähler geometry, the Ricci tensor has type (1,1) and defines
     /// a (1,1)-form called the Ricci form
     pub fn ricci_form(&self) -> Result<DiffForm> {
-        // TODO: Implement Ricci form computation
         // The Ricci form is the contraction of the Riemann tensor
-        let manifold = self.complex_structure.manifold().clone();
-        let chart = manifold.default_chart().unwrap();
-        let dim = manifold.dimension();
-
-        let num_components = (dim * (dim - 1)) / 2;
-        let components = vec![Expr::from(0); num_components];
-
-        DiffForm::from_components(
-            manifold.clone(),
-            chart,
-            2,
-            components,
+        unimplemented!(
+            "KahlerManifold::ricci_form not yet implemented (facade): requires contracting the \
+             Riemann curvature tensor of the metric"
         )
     }
 
@@ -198,18 +176,22 @@ impl KahlerManifold {
     /// In local coordinates, the Kähler form can be written as ω = i ∂∂̄K
     /// where K is the Kähler potential
     pub fn kahler_potential(&self) -> Option<Expr> {
-        // TODO: Implement Kähler potential computation
         // This requires solving ω = i ∂∂̄K for K
-        None
+        unimplemented!(
+            "KahlerManifold::kahler_potential not yet implemented (facade): requires solving \
+             omega = i * dd-bar(K) for K"
+        )
     }
 
     /// Check if the manifold admits a Kähler-Einstein metric
     ///
     /// A Kähler-Einstein metric satisfies Ric = λg for some constant λ
     pub fn is_kahler_einstein(&self) -> Result<bool> {
-        // TODO: Implement Kähler-Einstein check
         // Need to verify Ric = λg for some constant λ
-        Ok(false)
+        unimplemented!(
+            "KahlerManifold::is_kahler_einstein not yet implemented (facade): requires \
+             checking Ric = lambda * g for some constant lambda"
+        )
     }
 }
 
@@ -264,11 +246,12 @@ mod tests {
     use crate::differentiable::DifferentiableManifold;
 
     #[test]
+    #[ignore = "facade -> unimplemented (Phase 5)"]
     fn test_kahler_manifold_dimensions() {
         // Create a mock Kähler manifold structure
         let base = Arc::new(DifferentiableManifold::new("M", 2));
         let complex = Arc::new(ComplexManifold::new("ℂ", 1));
-        let metric = RiemannianMetric::euclidean(base.clone(), 2);
+        let metric = RiemannianMetric::euclidean(base.clone());
         let structure = AlmostComplexStructure::standard_2d();
 
         // This may fail validation, but we're testing dimension accessors
@@ -282,16 +265,17 @@ mod tests {
     fn test_hermitian_metric_creation() {
         let complex = Arc::new(ComplexManifold::new("ℂ", 1));
         let base = Arc::new(DifferentiableManifold::new("M", 2));
-        let riem_metric = RiemannianMetric::euclidean(base, 2);
+        let riem_metric = RiemannianMetric::euclidean(base);
 
         let h_metric = HermitianMetric::new(complex, riem_metric);
-        assert!(h_metric.riemannian_metric().dimension() == 2);
+        assert!(h_metric.riemannian_metric().manifold().dimension() == 2);
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented (Phase 5)"]
     fn test_kahler_form_is_2form() {
         let base = Arc::new(DifferentiableManifold::new("M", 2));
-        let metric = RiemannianMetric::euclidean(base.clone(), 2);
+        let metric = RiemannianMetric::euclidean(base.clone());
         let structure = AlmostComplexStructure::standard_2d();
 
         let kahler_form = KahlerManifold::compute_kahler_form(&metric, &structure);

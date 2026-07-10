@@ -413,9 +413,9 @@ mod tests {
         let source_symbols = vec![r.clone(), theta.clone()];
         let jacobian = transition.compute_jacobian(&source_symbols).unwrap();
 
-        // Jacobian should be 2x2
-        assert_eq!(jacobian.rows(), 2);
-        assert_eq!(jacobian.cols(), 2);
+        // Jacobian should be 2x2 (stored as Vec<Vec<Expr>>)
+        assert_eq!(jacobian.len(), 2);
+        assert_eq!(jacobian[0].len(), 2);
 
         // J[0,0] = ∂x/∂r = cos(θ)
         // J[0,1] = ∂x/∂θ = -r*sin(θ)
@@ -436,10 +436,10 @@ mod tests {
         let jacobian = transition.compute_jacobian(&source_symbols).unwrap();
 
         // Identity Jacobian should be [[1, 0], [0, 1]]
-        assert_eq!(jacobian.get(0, 0).unwrap(), &Expr::from(1));
-        assert_eq!(jacobian.get(0, 1).unwrap(), &Expr::from(0));
-        assert_eq!(jacobian.get(1, 0).unwrap(), &Expr::from(0));
-        assert_eq!(jacobian.get(1, 1).unwrap(), &Expr::from(1));
+        assert_eq!(jacobian[0][0], Expr::from(1));
+        assert_eq!(jacobian[0][1], Expr::from(0));
+        assert_eq!(jacobian[1][0], Expr::from(0));
+        assert_eq!(jacobian[1][1], Expr::from(1));
     }
 
     #[test]

@@ -40,9 +40,10 @@ use std::fmt;
 ///
 /// ```
 /// use rustmath_manifolds::{DiffScalarFieldAlgebra, EuclideanSpace};
+/// use rustmath_core::Parent;
 /// use std::sync::Arc;
 ///
-/// let m = Arc::new(EuclideanSpace::new(2));
+/// let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
 /// let algebra = DiffScalarFieldAlgebra::new(m.clone());
 ///
 /// let zero = algebra.zero().unwrap();
@@ -169,9 +170,10 @@ impl DiffScalarFieldAlgebraTrait for DiffScalarFieldAlgebra {
 ///
 /// ```
 /// use rustmath_manifolds::{VectorFieldModule, EuclideanSpace};
+/// use rustmath_core::Parent;
 /// use std::sync::Arc;
 ///
-/// let m = Arc::new(EuclideanSpace::new(3));
+/// let m = Arc::new(EuclideanSpace::new(3).manifold().clone());
 /// let module = VectorFieldModule::new(m.clone());
 ///
 /// let zero_field = module.zero().unwrap();
@@ -291,10 +293,11 @@ impl VectorFieldModuleTrait for VectorFieldModule {
 ///
 /// ```
 /// use rustmath_manifolds::{VectorFieldFreeModule, EuclideanSpace};
+/// use rustmath_manifolds::traits::VectorFieldFreeModuleTrait;
 /// use std::sync::Arc;
 ///
-/// let m = Arc::new(EuclideanSpace::new(3));
-/// let module = VectorFieldFreeModule::new(m.clone());
+/// let m = Arc::new(EuclideanSpace::new(3).manifold().clone());
+/// let module = VectorFieldFreeModule::new(m.clone()).unwrap();
 ///
 /// assert_eq!(module.rank_value(), 3);
 /// ```
@@ -447,7 +450,7 @@ impl ParentWithBasis for VectorFieldFreeModule {
 /// use rustmath_manifolds::{TensorFieldModule, EuclideanSpace};
 /// use std::sync::Arc;
 ///
-/// let m = Arc::new(EuclideanSpace::new(3));
+/// let m = Arc::new(EuclideanSpace::new(3).manifold().clone());
 ///
 /// // Module of (1,1) tensor fields
 /// let module_1_1 = TensorFieldModule::new(m.clone(), 1, 1);
@@ -588,7 +591,7 @@ impl TensorFieldModuleTrait for TensorFieldModule {
 /// use rustmath_manifolds::{DiffFormModule, EuclideanSpace};
 /// use std::sync::Arc;
 ///
-/// let m = Arc::new(EuclideanSpace::new(3));
+/// let m = Arc::new(EuclideanSpace::new(3).manifold().clone());
 ///
 /// // Module of 1-forms
 /// let omega_1 = DiffFormModule::new(m.clone(), 1);
@@ -687,7 +690,7 @@ mod tests {
 
     #[test]
     fn test_scalar_field_algebra_creation() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let algebra = DiffScalarFieldAlgebra::new(m.clone());
 
         assert_eq!(algebra.manifold().dimension(), 2);
@@ -696,7 +699,7 @@ mod tests {
 
     #[test]
     fn test_scalar_field_algebra_zero_one() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let algebra = DiffScalarFieldAlgebra::new(m.clone());
 
         let zero = algebra.zero().unwrap();
@@ -708,7 +711,7 @@ mod tests {
 
     #[test]
     fn test_vector_field_module_creation() {
-        let m = Arc::new(EuclideanSpace::new(3));
+        let m = Arc::new(EuclideanSpace::new(3).manifold().clone());
         let module = VectorFieldModule::new(m.clone());
 
         assert_eq!(module.manifold().dimension(), 3);
@@ -718,7 +721,7 @@ mod tests {
 
     #[test]
     fn test_vector_field_module_zero() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let module = VectorFieldModule::new(m.clone());
 
         let zero = module.zero().unwrap();
@@ -727,7 +730,7 @@ mod tests {
 
     #[test]
     fn test_vector_field_free_module() {
-        let m = Arc::new(EuclideanSpace::new(3));
+        let m = Arc::new(EuclideanSpace::new(3).manifold().clone());
         let module = VectorFieldFreeModule::new(m.clone()).unwrap();
 
         assert_eq!(module.rank_value(), 3);
@@ -737,7 +740,7 @@ mod tests {
 
     #[test]
     fn test_vector_field_free_module_basis() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let module = VectorFieldFreeModule::new(m.clone()).unwrap();
 
         let e0 = module.basis_element(&0).unwrap();
@@ -749,7 +752,7 @@ mod tests {
 
     #[test]
     fn test_tensor_field_module_creation() {
-        let m = Arc::new(EuclideanSpace::new(3));
+        let m = Arc::new(EuclideanSpace::new(3).manifold().clone());
 
         let module_1_0 = TensorFieldModule::new(m.clone(), 1, 0);
         assert_eq!(module_1_0.contravariant_rank(), 1);
@@ -764,7 +767,7 @@ mod tests {
 
     #[test]
     fn test_diff_form_module_creation() {
-        let m = Arc::new(EuclideanSpace::new(3));
+        let m = Arc::new(EuclideanSpace::new(3).manifold().clone());
 
         let omega_0 = DiffFormModule::new(m.clone(), 0);
         assert_eq!(omega_0.degree(), 0);
@@ -781,7 +784,7 @@ mod tests {
 
     #[test]
     fn test_diff_form_module_zero() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let module = DiffFormModule::new(m.clone(), 1);
 
         let zero = module.zero().unwrap();

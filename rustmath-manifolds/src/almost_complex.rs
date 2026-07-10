@@ -24,6 +24,7 @@
 //! ```
 
 use crate::errors::{ManifoldError, Result};
+use crate::chart::Chart;
 use crate::differentiable::DifferentiableManifold;
 use crate::vector_field::VectorField;
 use crate::tensor_field::TensorField;
@@ -108,7 +109,10 @@ impl AlmostComplexStructure {
     /// assert_eq!(j.dimension(), 2);
     /// ```
     pub fn standard_2d() -> Self {
-        let manifold = Arc::new(DifferentiableManifold::new("ℝ²", 2));
+        let mut base = DifferentiableManifold::new("ℝ²", 2);
+        base.add_chart(Chart::standard("standard", 2))
+            .expect("failed to add standard chart");
+        let manifold = Arc::new(base);
 
         // Create the standard complex structure matrix
         // J = [0  -1]
@@ -147,7 +151,10 @@ impl AlmostComplexStructure {
             ));
         }
 
-        let manifold = Arc::new(DifferentiableManifold::new("ℝⁿ", dim));
+        let mut base = DifferentiableManifold::new("ℝⁿ", dim);
+        base.add_chart(Chart::standard("standard", dim))
+            .expect("failed to add standard chart");
+        let manifold = Arc::new(base);
         let chart = manifold.default_chart().unwrap();
 
         let mut components = vec![Expr::from(0); dim * dim];
@@ -198,18 +205,21 @@ impl AlmostComplexStructure {
     /// Apply the almost complex structure to a vector field
     ///
     /// Computes JX for a vector field X
-    pub fn apply(&self, vector_field: &VectorField) -> Result<VectorField> {
+    pub fn apply(&self, _vector_field: &VectorField) -> Result<VectorField> {
         // Contract J^i_j with X^j to get (JX)^i
-        // TODO: Implement tensor-vector contraction
-        Ok(vector_field.clone())
+        unimplemented!(
+            "AlmostComplexStructure::apply not yet implemented (facade): requires contracting \
+             J^i_j with X^j"
+        )
     }
 
     /// Verify that J² = -I
     fn verify_square_minus_identity(&self) -> Result<bool> {
         // Compute J²
-        // TODO: Implement tensor composition
-        // For now, assume it's valid
-        Ok(true)
+        unimplemented!(
+            "AlmostComplexStructure::verify_square_minus_identity not yet implemented \
+             (facade): requires computing the tensor composition J o J and comparing to -I"
+        )
     }
 
     /// Compute the Nijenhuis tensor
@@ -219,18 +229,10 @@ impl AlmostComplexStructure {
     ///
     /// J is integrable (comes from a complex structure) if and only if N = 0
     pub fn nijenhuis_tensor(&self) -> Result<TensorField> {
-        // TODO: Implement Nijenhuis tensor computation
         // This requires computing Lie brackets of vector fields
-        let chart = self.manifold.default_chart().unwrap();
-        let dim = self.dimension();
-        let components = vec![Expr::from(0); dim * dim * dim];
-
-        TensorField::from_components(
-            self.manifold.clone(),
-            1,  // contravariant
-            2,  // covariant
-            chart,
-            components,
+        unimplemented!(
+            "AlmostComplexStructure::nijenhuis_tensor not yet implemented (facade): requires \
+             N(X,Y) = [JX,JY] - J[JX,Y] - J[X,JY] - [X,Y] via Lie brackets"
         )
     }
 
@@ -245,10 +247,12 @@ impl AlmostComplexStructure {
     /// Check if a metric is compatible with this almost complex structure
     ///
     /// A metric g is compatible with J if g(JX, JY) = g(X, Y) for all X, Y
-    pub fn is_compatible_with_metric(&self, metric: &RiemannianMetric) -> bool {
-        // TODO: Implement compatibility check
+    pub fn is_compatible_with_metric(&self, _metric: &RiemannianMetric) -> bool {
         // g(JX, JY) = g(X, Y) for all vector fields X, Y
-        true
+        unimplemented!(
+            "AlmostComplexStructure::is_compatible_with_metric not yet implemented (facade): \
+             requires checking g(JX, JY) = g(X, Y) for all vector fields X, Y"
+        )
     }
 
     /// Get the underlying (1,1)-tensor
@@ -342,6 +346,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented (Phase 5)"]
     fn test_standard_structure_integrable() {
         let j = AlmostComplexStructure::standard_2d();
         // Standard structure should be integrable

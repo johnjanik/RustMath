@@ -61,8 +61,10 @@ impl SpinGroup {
 
     /// The covering map π: Spin(n) → SO(n)
     pub fn covering_map(&self) -> Result<()> {
-        // TODO: Implement covering map representation
-        Ok(())
+        unimplemented!(
+            "SpinGroup::covering_map not yet implemented (facade): requires an explicit \
+             representation of the 2-to-1 map Spin(n) -> SO(n)"
+        )
     }
 
     /// The spinor representation
@@ -185,8 +187,10 @@ impl SpinStructure {
 
     /// Check if two spin structures are equivalent
     pub fn is_equivalent(&self, _other: &SpinStructure) -> bool {
-        // TODO: Check if spin structures differ by automorphism
-        false
+        unimplemented!(
+            "SpinStructure::is_equivalent not yet implemented (facade): requires checking \
+             whether the two spin structures differ by an automorphism"
+        )
     }
 }
 
@@ -315,17 +319,20 @@ impl CliffordMultiplication {
     }
 
     /// Multiply a tangent vector with a spinor: v · ψ
-    pub fn multiply(&self, _vector: &[f64], spinor: &SpinorField) -> Result<SpinorField> {
-        // TODO: Implement Clifford multiplication using gamma matrices
-        Ok(spinor.clone())
+    pub fn multiply(&self, _vector: &[f64], _spinor: &SpinorField) -> Result<SpinorField> {
+        unimplemented!(
+            "CliffordMultiplication::multiply not yet implemented (facade): requires the \
+             gamma-matrix action of a tangent vector on a spinor"
+        )
     }
 
     /// Get the gamma matrices (Clifford algebra generators)
     pub fn gamma_matrices(&self) -> Vec<Vec<Complex>> {
-        // TODO: Construct gamma matrices for Clifford algebra
         // These satisfy {γᵢ, γⱼ} = 2gᵢⱼ
-        let dim = self.spinor_dimension();
-        vec![vec![Complex::new(0.0, 0.0); dim]; self.dimension]
+        unimplemented!(
+            "CliffordMultiplication::gamma_matrices not yet implemented (facade): requires \
+             constructing generators satisfying {{gamma_i, gamma_j}} = 2 g_ij"
+        )
     }
 
     /// Get the spinor representation dimension

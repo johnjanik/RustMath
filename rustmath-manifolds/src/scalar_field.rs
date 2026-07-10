@@ -311,14 +311,14 @@ mod tests {
 
     #[test]
     fn test_scalar_field_creation() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let f = ScalarFieldEnhanced::new(m.clone());
         assert_eq!(f.manifold().dimension(), 2);
     }
 
     #[test]
     fn test_scalar_field_from_expr() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let chart = m.default_chart().unwrap();
 
         let x = Symbol::new("x");
@@ -330,42 +330,44 @@ mod tests {
 
     #[test]
     fn test_scalar_field_addition() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let chart = m.default_chart().unwrap();
 
         let f = ScalarFieldEnhanced::from_expr(m.clone(), chart, Expr::from(1));
         let g = ScalarFieldEnhanced::from_expr(m.clone(), chart, Expr::from(2));
 
         let h = f + g;
-        assert_eq!(h.expr(chart).unwrap(), Expr::from(3));
+        // Field arithmetic builds an unsimplified expression tree (1 + 2);
+        // compare after constant folding.
+        assert_eq!(h.expr(chart).unwrap().simplify(), Expr::from(3));
     }
 
     #[test]
     fn test_scalar_field_multiplication() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let chart = m.default_chart().unwrap();
 
         let f = ScalarFieldEnhanced::from_expr(m.clone(), chart, Expr::from(3));
         let g = ScalarFieldEnhanced::from_expr(m.clone(), chart, Expr::from(4));
 
         let h = f * g;
-        assert_eq!(h.expr(chart).unwrap(), Expr::from(12));
+        assert_eq!(h.expr(chart).unwrap().simplify(), Expr::from(12));
     }
 
     #[test]
     fn test_scalar_field_negation() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let chart = m.default_chart().unwrap();
 
         let f = ScalarFieldEnhanced::from_expr(m.clone(), chart, Expr::from(5));
         let g = -f;
 
-        assert_eq!(g.expr(chart).unwrap(), Expr::from(-5));
+        assert_eq!(g.expr(chart).unwrap().simplify(), Expr::from(-5));
     }
 
     #[test]
     fn test_scalar_field_differential() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let chart = Chart::new("cart", 2, vec!["x", "y"]).unwrap();
 
         let x = Symbol::new("x");

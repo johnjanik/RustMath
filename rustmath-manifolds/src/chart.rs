@@ -38,7 +38,7 @@ impl Chart {
     /// ```
     /// use rustmath_manifolds::Chart;
     ///
-    /// let chart = Chart::new("cartesian", 2, vec!["x", "y"]);
+    /// let chart = Chart::new("cartesian", 2, vec!["x", "y"]).unwrap();
     /// assert_eq!(chart.dimension(), 2);
     /// ```
     pub fn new(

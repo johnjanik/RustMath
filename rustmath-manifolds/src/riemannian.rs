@@ -589,12 +589,102 @@ impl Geodesic {
         &self.initial_velocity
     }
 
-    /// Evaluate the geodesic at parameter t (requires numerical integration)
-    pub fn at(&self, _t: f64) -> Result<Vec<f64>> {
-        // Would solve the geodesic equation numerically
-        // For now, return initial point
-        Ok(self.initial_point.clone())
+    /// Evaluate the geodesic at parameter t
+    ///
+    /// Numerically integrates the geodesic equation
+    ///   d²x^k/dt² + Γ^k_ij (dx^i/dt)(dx^j/dt) = 0
+    /// from the initial conditions using a fixed-step RK4 scheme on the
+    /// first-order system (x, v) with v = dx/dt. The Christoffel symbols
+    /// are evaluated numerically (via symbolic substitution) at each stage.
+    pub fn at(&self, t: f64) -> Result<Vec<f64>> {
+        if t == 0.0 {
+            return Ok(self.initial_point.clone());
+        }
+
+        let n = self.manifold.dimension();
+        let chart = self.manifold.default_chart().ok_or(ManifoldError::NoChart)?;
+        // Clone out of the connection so the closure below doesn't need to
+        // keep re-borrowing `self.connection`.
+        let christoffel = self.connection.christoffel(chart)?.clone();
+
+        let deriv = |x: &[f64], v: &[f64]| -> Result<(Vec<f64>, Vec<f64>)> {
+            let gamma = eval_christoffel_at(&christoffel, chart, x)?;
+            let dx = v.to_vec();
+            let mut dv = vec![0.0; n];
+            for k in 0..n {
+                let mut acc = 0.0;
+                for i in 0..n {
+                    for j in 0..n {
+                        acc += gamma[k][i][j] * v[i] * v[j];
+                    }
+                }
+                dv[k] = -acc;
+            }
+            Ok((dx, dv))
+        };
+
+        const STEPS: usize = 1000;
+        let h = t / STEPS as f64;
+
+        let mut x = self.initial_point.clone();
+        let mut v = self.initial_velocity.clone();
+
+        for _ in 0..STEPS {
+            let (k1x, k1v) = deriv(&x, &v)?;
+
+            let x2: Vec<f64> = (0..n).map(|idx| x[idx] + 0.5 * h * k1x[idx]).collect();
+            let v2: Vec<f64> = (0..n).map(|idx| v[idx] + 0.5 * h * k1v[idx]).collect();
+            let (k2x, k2v) = deriv(&x2, &v2)?;
+
+            let x3: Vec<f64> = (0..n).map(|idx| x[idx] + 0.5 * h * k2x[idx]).collect();
+            let v3: Vec<f64> = (0..n).map(|idx| v[idx] + 0.5 * h * k2v[idx]).collect();
+            let (k3x, k3v) = deriv(&x3, &v3)?;
+
+            let x4: Vec<f64> = (0..n).map(|idx| x[idx] + h * k3x[idx]).collect();
+            let v4: Vec<f64> = (0..n).map(|idx| v[idx] + h * k3v[idx]).collect();
+            let (k4x, k4v) = deriv(&x4, &v4)?;
+
+            for idx in 0..n {
+                x[idx] += h / 6.0 * (k1x[idx] + 2.0 * k2x[idx] + 2.0 * k3x[idx] + k4x[idx]);
+                v[idx] += h / 6.0 * (k1v[idx] + 2.0 * k2v[idx] + 2.0 * k3v[idx] + k4v[idx]);
+            }
+        }
+
+        Ok(x)
     }
+}
+
+/// Numerically evaluate Christoffel symbols Γ^k_ij at a coordinate point.
+///
+/// Substitutes the given numeric coordinates for the chart's coordinate
+/// symbols in each symbolic component and reduces the result to a
+/// floating-point value.
+fn eval_christoffel_at(
+    symbols: &[Vec<Vec<Expr>>],
+    chart: &Chart,
+    coords: &[f64],
+) -> Result<Vec<Vec<Vec<f64>>>> {
+    let coord_symbols = chart.coordinate_symbols();
+    let n = symbols.len();
+    let mut result = vec![vec![vec![0.0; n]; n]; n];
+
+    for k in 0..n {
+        for i in 0..n {
+            for j in 0..n {
+                let mut expr = symbols[k][i][j].clone();
+                for (sym, &val) in coord_symbols.iter().zip(coords.iter()) {
+                    expr = expr.substitute_by_name(sym.name(), &Expr::from(val));
+                }
+                result[k][i][j] = expr.eval_float().ok_or_else(|| {
+                    ManifoldError::ComputationError(
+                        "Failed to numerically evaluate a Christoffel symbol".to_string(),
+                    )
+                })?;
+            }
+        }
+    }
+
+    Ok(result)
 }
 
 impl fmt::Debug for Geodesic {
@@ -623,20 +713,71 @@ impl ParallelTransport {
         Self { connection }
     }
 
-    /// Transport a vector along a curve (simplified version)
+    /// Transport a vector along a curve
+    ///
+    /// Numerically solves the parallel transport equation
+    ///   dV^k/ds + Γ^k_ij(x(s)) (dx^i/ds) V^j = 0
+    /// by a first-order (Euler) step over each segment of the polyline
+    /// `curve_points`, using the connection's Christoffel symbols evaluated
+    /// at the start of each segment.
     ///
     /// # Arguments
     ///
-    /// * `vector` - Initial vector to transport
-    /// * `curve_points` - Points along the curve
+    /// * `vector` - Initial vector to transport (components in the chart
+    ///   used by the connection, at `curve_points[0]`)
+    /// * `curve_points` - Points along the curve, in the same chart
     ///
     /// # Returns
     ///
     /// The transported vector at the end of the curve
-    pub fn transport(&self, vector: Vec<f64>, _curve_points: &[Vec<f64>]) -> Result<Vec<f64>> {
-        // Would solve: ∇_γ'(t) V = 0
-        // For now, return the input vector (valid for flat connections)
-        Ok(vector)
+    pub fn transport(&self, vector: Vec<f64>, curve_points: &[Vec<f64>]) -> Result<Vec<f64>> {
+        if curve_points.len() < 2 {
+            return Ok(vector);
+        }
+
+        let manifold = self.connection.manifold();
+        let n = manifold.dimension();
+        if vector.len() != n {
+            return Err(ManifoldError::DimensionMismatch {
+                expected: n,
+                actual: vector.len(),
+            });
+        }
+
+        let chart = manifold.default_chart().ok_or(ManifoldError::NoChart)?;
+        let christoffel = self.connection.christoffel(chart)?.clone();
+
+        let mut v = vector;
+        for pair in curve_points.windows(2) {
+            let p_a = &pair[0];
+            let p_b = &pair[1];
+            if p_a.len() != n || p_b.len() != n {
+                return Err(ManifoldError::DimensionMismatch {
+                    expected: n,
+                    actual: p_a.len(),
+                });
+            }
+
+            let dx: Vec<f64> = p_a.iter().zip(p_b.iter()).map(|(a, b)| b - a).collect();
+            let gamma = eval_christoffel_at(&christoffel, chart, p_a)?;
+
+            let mut dv = vec![0.0; n];
+            for k in 0..n {
+                let mut acc = 0.0;
+                for i in 0..n {
+                    for j in 0..n {
+                        acc += gamma[k][i][j] * dx[i] * v[j];
+                    }
+                }
+                dv[k] = -acc;
+            }
+
+            for k in 0..n {
+                v[k] += dv[k];
+            }
+        }
+
+        Ok(v)
     }
 }
 
@@ -647,7 +788,7 @@ mod tests {
 
     #[test]
     fn test_euclidean_metric() {
-        let m = Arc::new(EuclideanSpace::new(3));
+        let m = Arc::new(EuclideanSpace::new(3).manifold().clone());
         let metric = RiemannianMetric::euclidean(m.clone());
 
         assert_eq!(metric.manifold().dimension(), 3);
@@ -655,7 +796,7 @@ mod tests {
 
     #[test]
     fn test_affine_connection_trivial() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let conn = AffineConnection::trivial(m.clone());
 
         assert_eq!(conn.manifold().dimension(), 2);
@@ -663,7 +804,7 @@ mod tests {
 
     #[test]
     fn test_levi_civita_from_metric() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let metric = Arc::new(RiemannianMetric::euclidean(m.clone()));
         let levi_civita = LeviCivitaConnection::from_metric(metric).unwrap();
 
@@ -672,7 +813,7 @@ mod tests {
 
     #[test]
     fn test_covariant_derivative() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let conn = Arc::new(AffineConnection::trivial(m.clone()));
         let cov_deriv = CovariantDerivative::new(conn);
 
@@ -682,7 +823,7 @@ mod tests {
 
     #[test]
     fn test_geodesic_creation() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let conn = Arc::new(AffineConnection::trivial(m.clone()));
 
         let geodesic = Geodesic::new(
@@ -698,7 +839,7 @@ mod tests {
 
     #[test]
     fn test_parallel_transport() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let conn = Arc::new(AffineConnection::trivial(m));
         let transport = ParallelTransport::new(conn);
 
@@ -707,5 +848,68 @@ mod tests {
 
         let transported = transport.transport(vector.clone(), &curve).unwrap();
         assert_eq!(transported, vector); // Trivial connection preserves vectors
+    }
+
+    /// Geodesic::at is now real RK4 integration of the geodesic ODE; verify it
+    /// produces a straight line x0 + v0*t for the flat (trivial) connection.
+    #[test]
+    fn test_geodesic_at_trivial_connection_is_straight_line() {
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
+        let conn = Arc::new(AffineConnection::trivial(m.clone()));
+
+        let geodesic = Geodesic::new(m, conn, vec![1.0, -2.0], vec![0.5, 3.0]).unwrap();
+
+        for &t in &[0.0, 1.0, 2.5, -1.0] {
+            let p = geodesic.at(t).unwrap();
+            assert!((p[0] - (1.0 + 0.5 * t)).abs() < 1e-6);
+            assert!((p[1] - (-2.0 + 3.0 * t)).abs() < 1e-6);
+        }
+    }
+
+    /// Geodesic::at with a non-trivial (constant) Christoffel symbol should
+    /// match the closed-form solution of x'' + c(x')^2 = 0.
+    #[test]
+    fn test_geodesic_at_nontrivial_connection_matches_closed_form() {
+        let mut manifold = crate::differentiable::DifferentiableManifold::new("R1", 1);
+        let chart = crate::chart::Chart::standard("standard", 1);
+        manifold.add_chart(chart.clone()).unwrap();
+        let m = Arc::new(manifold);
+
+        let c = 0.3_f64;
+        let mut conn = AffineConnection::new(m.clone());
+        conn.set_christoffel(&chart, vec![vec![vec![Expr::from(c)]]]).unwrap();
+        let conn = Arc::new(conn);
+
+        let x0 = 1.0_f64;
+        let v0 = 0.7_f64;
+        let geodesic = Geodesic::new(m, conn, vec![x0], vec![v0]).unwrap();
+
+        for &t in &[0.0, 0.5, 1.0, 2.0] {
+            let p = geodesic.at(t).unwrap();
+            let expected = x0 + (1.0 / c) * (1.0 + c * v0 * t).ln();
+            assert!((p[0] - expected).abs() < 1e-4);
+        }
+    }
+
+    /// ParallelTransport::transport now genuinely integrates the transport
+    /// equation; on flat space it must still preserve the vector.
+    #[test]
+    fn test_parallel_transport_flat_space_multi_segment() {
+        let m = Arc::new(EuclideanSpace::new(3).manifold().clone());
+        let conn = Arc::new(AffineConnection::trivial(m));
+        let transport = ParallelTransport::new(conn);
+
+        let vector = vec![1.0, 2.0, 3.0];
+        let curve = vec![
+            vec![0.0, 0.0, 0.0],
+            vec![1.0, 0.0, 0.0],
+            vec![1.0, 1.0, 0.0],
+            vec![1.0, 1.0, 1.0],
+        ];
+
+        let transported = transport.transport(vector.clone(), &curve).unwrap();
+        for i in 0..3 {
+            assert!((transported[i] - vector[i]).abs() < 1e-12);
+        }
     }
 }

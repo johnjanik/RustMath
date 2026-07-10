@@ -480,7 +480,7 @@ mod tests {
         let fiber = Arc::new(RealLine::new().into());
 
         let proj = Arc::new(|p: &ManifoldPoint| -> Result<ManifoldPoint> {
-            Ok(ManifoldPoint::from_coords(vec![p.coordinates()[0]]))
+            Ok(ManifoldPoint::from_coordinates(vec![p.coordinates()[0]]))
         });
 
         let bundle = FiberBundle::new(total, base, fiber, proj);
@@ -497,12 +497,12 @@ mod tests {
         let fiber = Arc::new(RealLine::new().into());
 
         let proj = Arc::new(|p: &ManifoldPoint| -> Result<ManifoldPoint> {
-            Ok(ManifoldPoint::from_coords(vec![p.coordinates()[0]]))
+            Ok(ManifoldPoint::from_coordinates(vec![p.coordinates()[0]]))
         });
 
         let bundle = FiberBundle::new(total, base, fiber, proj);
 
-        let point = ManifoldPoint::from_coords(vec![3.0, 5.0]);
+        let point = ManifoldPoint::from_coordinates(vec![3.0, 5.0]);
         let projected = bundle.project(&point).unwrap();
 
         assert_eq!(projected.coordinates()[0], 3.0);
@@ -516,22 +516,22 @@ mod tests {
         let fiber_space = Arc::new(RealLine::new().into());
 
         let proj = Arc::new(|p: &ManifoldPoint| -> Result<ManifoldPoint> {
-            Ok(ManifoldPoint::from_coords(vec![p.coordinates()[0]]))
+            Ok(ManifoldPoint::from_coordinates(vec![p.coordinates()[0]]))
         });
 
         let bundle = FiberBundle::new(total, base, fiber_space, proj);
 
-        let base_point = ManifoldPoint::from_coords(vec![2.0]);
+        let base_point = ManifoldPoint::from_coordinates(vec![2.0]);
         let fiber = bundle.fiber_over(&base_point).unwrap();
 
         assert_eq!(fiber.base_point().coordinates()[0], 2.0);
 
         // Point (2.0, 3.0) should be in the fiber over 2.0
-        let point_in_fiber = ManifoldPoint::from_coords(vec![2.0, 3.0]);
+        let point_in_fiber = ManifoldPoint::from_coordinates(vec![2.0, 3.0]);
         assert!(fiber.contains(&point_in_fiber).unwrap());
 
         // Point (1.0, 3.0) should NOT be in the fiber over 2.0
-        let point_not_in_fiber = ManifoldPoint::from_coords(vec![1.0, 3.0]);
+        let point_not_in_fiber = ManifoldPoint::from_coordinates(vec![1.0, 3.0]);
         assert!(!fiber.contains(&point_not_in_fiber).unwrap());
     }
 }

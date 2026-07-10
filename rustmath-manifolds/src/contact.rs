@@ -27,6 +27,7 @@
 //! ```
 
 use crate::errors::{ManifoldError, Result};
+use crate::chart::Chart;
 use crate::differentiable::DifferentiableManifold;
 use crate::diff_form::DiffForm;
 use crate::vector_field::VectorField;
@@ -102,7 +103,10 @@ impl ContactForm {
     /// This is the canonical contact form
     pub fn standard(n: usize) -> Result<Self> {
         let dim = 2 * n + 1;
-        let manifold = Arc::new(DifferentiableManifold::new("ℝ²ⁿ⁺¹", dim));
+        let mut base = DifferentiableManifold::new("ℝ²ⁿ⁺¹", dim);
+        base.add_chart(Chart::standard("standard", dim))
+            .expect("failed to add standard chart");
+        let manifold = Arc::new(base);
         let chart = manifold.default_chart().unwrap();
 
         // Build α = dz - Σ yᵢ dxᵢ
@@ -177,25 +181,10 @@ impl ContactForm {
     ///
     /// The contact distribution is ker(α) = {v ∈ TM : α(v) = 0}
     pub fn contact_distribution(&self) -> Result<Distribution> {
-        // TODO: Compute basis for ker(α)
-        // For now, create a placeholder
-        let chart = self.manifold.default_chart().unwrap();
-        let dim = self.manifold.dimension();
-
-        let mut frame = Vec::new();
-        for i in 0..(dim - 1) {
-            let mut components = vec![Expr::from(0); dim];
-            components[i] = Expr::from(1);
-
-            let v = VectorField::from_components(
-                self.manifold.clone(),
-                chart,
-                components,
-            )?;
-            frame.push(v);
-        }
-
-        Distribution::new(self.manifold.clone(), frame)
+        unimplemented!(
+            "ContactForm::contact_distribution not yet implemented (facade): requires \
+             computing a basis for ker(alpha), not just the coordinate frame ∂/∂x_i"
+        )
     }
 
     /// Compute the Reeb vector field
@@ -204,17 +193,9 @@ impl ContactForm {
     /// - α(R) = 1
     /// - dα(R, ·) = 0
     pub fn reeb_vector_field(&self) -> Result<VectorField> {
-        // TODO: Solve for Reeb vector field
-        // For now, return a placeholder
-        let chart = self.manifold.default_chart().unwrap();
-        let dim = self.manifold.dimension();
-
-        let components = vec![Expr::from(0); dim];
-
-        VectorField::from_components(
-            self.manifold.clone(),
-            chart,
-            components,
+        unimplemented!(
+            "ContactForm::reeb_vector_field not yet implemented (facade): requires solving \
+             alpha(R) = 1 and d(alpha)(R, .) = 0 for R"
         )
     }
 }
@@ -289,21 +270,18 @@ impl ContactManifold {
     ///
     /// A function H generates a contact Hamiltonian vector field X_H
     pub fn hamiltonian_vector_field(&self, _hamiltonian: &Expr) -> Result<VectorField> {
-        // TODO: Compute contact Hamiltonian vector field
-        let chart = self.base_manifold.default_chart().unwrap();
-        let dim = self.dimension();
-
-        VectorField::from_components(
-            self.base_manifold.clone(),
-            chart,
-            vec![Expr::from(0); dim],
+        unimplemented!(
+            "ContactManifold::hamiltonian_vector_field not yet implemented (facade): requires \
+             deriving X_H from H via the contact form and Reeb field"
         )
     }
 
     /// Compute the contactomorphism group (symmetries preserving contact structure)
     pub fn is_contactomorphism(&self, _diffeomorphism: &VectorField) -> bool {
-        // TODO: Check if diffeomorphism preserves contact form
-        false
+        unimplemented!(
+            "ContactManifold::is_contactomorphism not yet implemented (facade): requires \
+             checking whether the diffeomorphism preserves the contact form up to scale"
+        )
     }
 }
 
@@ -334,8 +312,10 @@ impl ContactHamiltonian {
 
     /// Evolve the system under contact dynamics
     pub fn flow(&self, _time: f64) -> Result<Vec<Expr>> {
-        // TODO: Integrate contact Hamiltonian equations
-        Ok(vec![])
+        unimplemented!(
+            "ContactHamiltonian::flow not yet implemented (facade): requires integrating the \
+             contact Hamiltonian equations"
+        )
     }
 }
 
@@ -364,7 +344,9 @@ mod tests {
 
     #[test]
     fn test_contact_manifold_creation() {
-        let m = Arc::new(DifferentiableManifold::new("M", 3));
+        let mut base = DifferentiableManifold::new("M", 3);
+        base.add_chart(Chart::standard("standard", 3)).unwrap();
+        let m = Arc::new(base);
         let chart = m.default_chart().unwrap();
 
         // Create a 1-form
@@ -387,7 +369,9 @@ mod tests {
 
     #[test]
     fn test_even_dimension_fails() {
-        let m = Arc::new(DifferentiableManifold::new("M", 4)); // Even dimension
+        let mut base = DifferentiableManifold::new("M", 4); // Even dimension
+        base.add_chart(Chart::standard("standard", 4)).unwrap();
+        let m = Arc::new(base);
         let chart = m.default_chart().unwrap();
 
         let components = vec![Expr::from(1), Expr::from(0), Expr::from(0), Expr::from(0)];
@@ -407,6 +391,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented (Phase 5)"]
     fn test_contact_hamiltonian() {
         let cm = Arc::new(ContactManifold::standard(1).unwrap());
         let h = Expr::symbol("H");

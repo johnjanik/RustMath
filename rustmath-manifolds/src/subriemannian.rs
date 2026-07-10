@@ -26,6 +26,7 @@
 //! ```
 
 use crate::errors::{ManifoldError, Result};
+use crate::chart::Chart;
 use crate::differentiable::DifferentiableManifold;
 use crate::vector_field::VectorField;
 use crate::tensor_field::TensorField;
@@ -108,19 +109,11 @@ impl Distribution {
     /// A distribution is involutive if [X, Y] ∈ D for all X, Y ∈ D
     /// (i.e., closed under Lie brackets)
     pub fn is_involutive(&self) -> Result<bool> {
-        // Check if Lie bracket of any two frame vectors is in the distribution
-        let chart = self.manifold.default_chart().ok_or(ManifoldError::NoChart)?;
-        for i in 0..self.frame.len() {
-            for j in i+1..self.frame.len() {
-                let bracket = self.frame[i].lie_bracket(&self.frame[j], chart)?;
-
-                // Check if bracket can be expressed as a linear combination of frame
-                // TODO: Implement proper linear dependence check
-                // For now, assume involutive
-            }
-        }
-
-        Ok(true)
+        unimplemented!(
+            "Distribution::is_involutive not yet implemented (facade): requires checking \
+             whether Lie brackets of frame vectors lie in the span of the frame, not just \
+             assuming so"
+        )
     }
 
     /// Compute the Lie bracket extension (flag of distributions)
@@ -151,13 +144,20 @@ impl Distribution {
                 }
             }
 
-            if !added || new_frame.len() == self.manifold.dimension() {
-                break; // Reached full dimension or no new vectors
+            if !added {
+                break; // No new vectors produced by bracketing
             }
 
+            // Record the enlarged distribution D^(k) in the flag, then stop
+            // once it spans the whole tangent space.
             let next_dist = Distribution::new(self.manifold.clone(), new_frame.clone())?;
             flag.push(next_dist);
+            let reached_full_dim = new_frame.len() >= self.manifold.dimension();
             current_frame = new_frame;
+
+            if reached_full_dim {
+                break; // Reached full dimension (now included in the flag)
+            }
         }
 
         Ok(flag)
@@ -220,7 +220,10 @@ impl SubRiemannianManifold {
     ///
     /// The metric makes {X₁, X₂} orthonormal
     pub fn heisenberg_group() -> Result<Self> {
-        let base = Arc::new(DifferentiableManifold::new("H³", 3));
+        let mut base_m = DifferentiableManifold::new("H³", 3);
+        base_m.add_chart(Chart::standard("standard", 3))
+            .expect("failed to add standard chart");
+        let base = Arc::new(base_m);
         let chart = base.default_chart().unwrap();
 
         // Create frame
@@ -247,11 +250,15 @@ impl SubRiemannianManifold {
         let distribution = Distribution::new(base.clone(), vec![x1, x2])?
             .with_name("Horizontal");
 
-        // Create orthonormal metric
-        // g(X₁, X₁) = g(X₂, X₂) = 1, g(X₁, X₂) = 0
+        // Create orthonormal metric, stored as a full (0,2) tensor on the
+        // 3-dimensional manifold (a (0,2) tensor needs dim^2 = 9 components).
+        // The horizontal block {X₁, X₂} is orthonormal; the missing
+        // (vertical) direction is filled with zeros since the sub-Riemannian
+        // metric is only defined on the distribution.
         let metric_components = vec![
-            Expr::from(1), Expr::from(0),  // g_11, g_12
-            Expr::from(0), Expr::from(1),  // g_21, g_22
+            Expr::from(1), Expr::from(0), Expr::from(0),
+            Expr::from(0), Expr::from(1), Expr::from(0),
+            Expr::from(0), Expr::from(0), Expr::from(0),
         ];
 
         let metric = TensorField::from_components(
@@ -287,10 +294,12 @@ impl SubRiemannianManifold {
     /// Compute the sub-Riemannian distance between two points
     ///
     /// The distance is the infimum of lengths of horizontal curves connecting the points
-    pub fn distance(&self, p: &ManifoldPoint, q: &ManifoldPoint) -> Result<f64> {
-        // TODO: Implement sub-Riemannian distance computation
+    pub fn distance(&self, _p: &ManifoldPoint, _q: &ManifoldPoint) -> Result<f64> {
         // This is generally a hard optimal control problem
-        Ok(0.0)
+        unimplemented!(
+            "SubRiemannianManifold::distance not yet implemented (facade): requires solving \
+             the sub-Riemannian optimal control / length-minimization problem"
+        )
     }
 
     /// Check if the manifold is contact (odd-dimensional, bracket-generating)
@@ -307,9 +316,10 @@ impl SubRiemannianManifold {
     ///
     /// These satisfy the sub-Riemannian geodesic equation from the Hamiltonian formulation
     pub fn geodesic_equations(&self) -> Result<Vec<Expr>> {
-        // TODO: Derive geodesic equations using Pontryagin maximum principle
-        let dim = self.base_manifold.dimension();
-        Ok(vec![Expr::from(0); dim])
+        unimplemented!(
+            "SubRiemannianManifold::geodesic_equations not yet implemented (facade): requires \
+             deriving equations via the Pontryagin maximum principle"
+        )
     }
 
     /// Get the dimension
@@ -329,7 +339,9 @@ mod tests {
 
     #[test]
     fn test_distribution_creation() {
-        let m = Arc::new(DifferentiableManifold::new("M", 3));
+        let mut base = DifferentiableManifold::new("M", 3);
+        base.add_chart(Chart::standard("standard", 3)).unwrap();
+        let m = Arc::new(base);
         let chart = m.default_chart().unwrap();
 
         let v1 = VectorField::from_components(
@@ -376,7 +388,9 @@ mod tests {
 
     #[test]
     fn test_subriemannian_manifold_creation() {
-        let m = Arc::new(DifferentiableManifold::new("M", 3));
+        let mut base = DifferentiableManifold::new("M", 3);
+        base.add_chart(Chart::standard("standard", 3)).unwrap();
+        let m = Arc::new(base);
         let chart = m.default_chart().unwrap();
 
         let v = VectorField::from_components(
@@ -387,7 +401,12 @@ mod tests {
 
         let dist = Distribution::new(m.clone(), vec![v]).unwrap();
 
-        let metric_components = vec![Expr::from(1)]; // 1x1 metric
+        // A (0,2) tensor on a 3-dimensional manifold needs 3^2 = 9 components.
+        let metric_components = vec![
+            Expr::from(1), Expr::from(0), Expr::from(0),
+            Expr::from(0), Expr::from(0), Expr::from(0),
+            Expr::from(0), Expr::from(0), Expr::from(0),
+        ];
         let metric = TensorField::from_components(
             m.clone(),
             0,

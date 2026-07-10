@@ -322,14 +322,14 @@ mod tests {
 
     #[test]
     fn test_diff_form_creation() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let omega = DiffForm::new(m.clone(), 1);
         assert_eq!(omega.degree(), 1);
     }
 
     #[test]
     fn test_coordinate_form() {
-        let m = Arc::new(EuclideanSpace::new(3));
+        let m = Arc::new(EuclideanSpace::new(3).manifold().clone());
         let chart = m.default_chart().unwrap();
 
         let dx = DiffForm::coordinate_form(m.clone(), chart, 0).unwrap();
@@ -338,16 +338,18 @@ mod tests {
 
     #[test]
     fn test_zero_form() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let zero = DiffForm::zero(m, 1);
         assert!(zero.is_zero());
     }
 
     #[test]
     fn test_exterior_derivative_degree() {
-        let m = Arc::new(EuclideanSpace::new(3));
+        let m = Arc::new(EuclideanSpace::new(3).manifold().clone());
         let chart = m.default_chart().unwrap();
-        let omega = DiffForm::new(m.clone(), 1);
+        // A 1-form needs components populated in the chart (n = 3) for the
+        // exterior derivative to be computable.
+        let omega = DiffForm::from_components(m.clone(), chart, 1, vec![Expr::from(0); 3]).unwrap();
 
         let d_omega = omega.exterior_derivative(chart).unwrap();
         assert_eq!(d_omega.degree(), 2);
@@ -355,11 +357,11 @@ mod tests {
 
     #[test]
     fn test_wedge_product_degree() {
-        let m = Arc::new(EuclideanSpace::new(3));
+        let m = Arc::new(EuclideanSpace::new(3).manifold().clone());
         let chart = m.default_chart().unwrap();
 
-        let omega1 = DiffForm::new(m.clone(), 1);
-        let omega2 = DiffForm::new(m.clone(), 1);
+        let omega1 = DiffForm::from_components(m.clone(), chart, 1, vec![Expr::from(0); 3]).unwrap();
+        let omega2 = DiffForm::from_components(m.clone(), chart, 1, vec![Expr::from(0); 3]).unwrap();
 
         let wedge = omega1.wedge(&omega2, chart).unwrap();
         assert_eq!(wedge.degree(), 2);

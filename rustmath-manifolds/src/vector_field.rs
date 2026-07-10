@@ -393,14 +393,14 @@ mod tests {
 
     #[test]
     fn test_vector_field_creation() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let field = VectorField::new(m.clone());
         assert_eq!(field.manifold().dimension(), 2);
     }
 
     #[test]
     fn test_vector_field_from_components() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let chart = m.default_chart().unwrap();
 
         let components = vec![Expr::from(1), Expr::from(0)];
@@ -412,7 +412,7 @@ mod tests {
 
     #[test]
     fn test_coordinate_vector() {
-        let m = Arc::new(EuclideanSpace::new(3));
+        let m = Arc::new(EuclideanSpace::new(3).manifold().clone());
         let chart = m.default_chart().unwrap();
 
         let dx = VectorField::coordinate_vector(m.clone(), chart, 0).unwrap();
@@ -425,7 +425,7 @@ mod tests {
 
     #[test]
     fn test_vector_field_negation() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let chart = m.default_chart().unwrap();
 
         let components = vec![Expr::from(1), Expr::from(2)];
@@ -434,13 +434,14 @@ mod tests {
         let neg_field = -field;
         let neg_comps = neg_field.components(chart).unwrap();
 
-        assert_eq!(neg_comps[0], Expr::from(-1));
-        assert_eq!(neg_comps[1], Expr::from(-2));
+        // Negation builds Unary(Neg, n); compare after constant folding.
+        assert_eq!(neg_comps[0].simplify(), Expr::from(-1));
+        assert_eq!(neg_comps[1].simplify(), Expr::from(-2));
     }
 
     #[test]
     fn test_zero_vector_field() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let zero = VectorField::zero(m);
         assert!(zero.is_zero());
     }
