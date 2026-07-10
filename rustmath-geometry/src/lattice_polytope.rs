@@ -21,7 +21,9 @@
 //! assert_eq!(polytope.dim(), 2);
 //! ```
 
+use rustmath_core::Ring;
 use rustmath_integers::Integer;
+use rustmath_rationals::Rational;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::collections::HashMap;
@@ -101,17 +103,28 @@ impl LatticePolytopeClass {
 
     /// Get the dimension of the polytope
     ///
-    /// This is the dimension of the affine hull of the vertices.
+    /// This is the dimension of the affine hull of the vertices: the rank
+    /// of the matrix of vertex differences `v_i - v_0`, computed exactly
+    /// over `Integer` (no floating point). This is exact even when the
+    /// vertex list contains redundant/non-extreme points, unlike a
+    /// `n_vertices - 1` head-count approximation.
     pub fn dim(&self) -> usize {
-        // For a proper implementation, we would compute the affine dimension
-        // by finding the rank of the matrix of vertex differences
-        // For now, we use a simplified computation
-        if self.n_vertices() == 1 {
-            0
-        } else {
-            // Approximate dimension based on number of vertices
-            (self.n_vertices() - 1).min(self.ambient_dim)
+        if self.n_vertices() <= 1 {
+            return 0;
         }
+
+        let base = &self.vertices[0];
+        let diffs: Vec<Vec<Integer>> = self.vertices[1..]
+            .iter()
+            .map(|v| {
+                v.iter()
+                    .zip(base.iter())
+                    .map(|(a, b)| a.clone() - b.clone())
+                    .collect()
+            })
+            .collect();
+
+        integer_matrix_rank(&diffs, self.ambient_dim)
     }
 
     /// Get the lattice dimension
@@ -237,14 +250,30 @@ impl LatticePolytopeClass {
         self.vertices.iter().any(|v| v.as_slice() == point)
     }
 
-    /// Compute the volume of the polytope
+    /// Compute the (Euclidean) volume of the polytope.
     ///
-    /// Returns the lattice volume (normalized volume).
-    /// Note: This is a placeholder that returns 0.
-    pub fn volume(&self) -> Integer {
-        // For a proper implementation, we would use the lattice point
-        // enumeration theorem or triangulation
-        Integer::from(0)
+    /// Returns the *exact* volume as a `Rational`, computed by an exact
+    /// simplex decomposition (all arithmetic over `Integer`/`Rational`;
+    /// no floating point, no numerical error). This is the plain
+    /// Euclidean convention, not the "normalized" `n! * volume`
+    /// convention: the unit hypercube has volume 1, and the standard
+    /// n-simplex `conv(0, e_1, ..., e_n)` has volume `1/n!`.
+    ///
+    /// The vertex list does not need to be pre-filtered to extreme
+    /// points: redundant (non-extreme) or duplicate points are silently
+    /// ignored by the underlying decomposition, so this returns the
+    /// volume of `conv(self.vertices())`.
+    ///
+    /// If the polytope is not full-dimensional (`dim() < ambient_dim()`)
+    /// it has zero `ambient_dim()`-dimensional Lebesgue measure in its
+    /// ambient space, so this honestly returns `0` — that is the correct
+    /// value for a measure-zero set, not a placeholder.
+    pub fn volume(&self) -> Rational {
+        let n = self.ambient_dim;
+        if n == 0 || self.dim() < n {
+            return Rational::from_integer(0);
+        }
+        volume_full_dimensional(&self.vertices, n)
     }
 
     /// Check if two polytopes are equal
@@ -313,18 +342,518 @@ pub fn lattice_polytope(vertices: Vec<Vec<Integer>>) -> LatticePolytopeClass {
 
 /// Convex hull of a set of points
 ///
-/// Computes the convex hull and returns it as a lattice polytope.
+/// Computes the convex hull and returns it as a lattice polytope: exactly
+/// the extreme points of `points` survive, with duplicates and any point
+/// expressible as a convex combination of the others removed. All
+/// arithmetic is exact (`Integer` coordinates, `Rational` barycentric
+/// coefficients) — see [`hull_vertices`] for the algorithm.
 ///
 /// # Arguments
 ///
 /// * `points` - The points to compute the convex hull of
 ///
-/// Note: This is a simplified implementation that just wraps the points.
-/// A full implementation would compute the actual convex hull.
+/// # Examples
+///
+/// ```
+/// use rustmath_geometry::lattice_polytope::convex_hull;
+/// use rustmath_integers::Integer;
+///
+/// // Unit square corners plus its centroid: the centroid is not a vertex.
+/// let points = vec![
+///     vec![Integer::from(0), Integer::from(0)],
+///     vec![Integer::from(1), Integer::from(0)],
+///     vec![Integer::from(1), Integer::from(1)],
+///     vec![Integer::from(0), Integer::from(1)],
+/// ];
+/// let hull = convex_hull(points);
+/// assert_eq!(hull.n_vertices(), 4);
+/// ```
 pub fn convex_hull(points: Vec<Vec<Integer>>) -> LatticePolytopeClass {
-    // A proper implementation would compute the actual convex hull
-    // removing interior points
-    LatticePolytopeClass::new(points)
+    LatticePolytopeClass::new(hull_vertices(&points))
+}
+
+/// Compute the exact set of extreme points (vertices) of `conv(points)`.
+///
+/// A point `p` is *not* a vertex of `conv(points)` iff it can be written
+/// as a convex combination of the other points. By Carathéodory's theorem
+/// (in `R^d`, any point of `conv(S)` is a convex combination of at most
+/// `d + 1` *affinely independent* points of `S`, and affinely independent
+/// support sets have a unique barycentric-coordinate solution), it
+/// suffices to search subsets of the other points of size up to
+/// `ambient_dim + 1`, solving the resulting square linear system exactly
+/// over `Rational` and checking the coefficients land in `[0, 1]`.
+///
+/// This is exponential in the subset size (bounded by `ambient_dim + 1`,
+/// not by the point count) and is intended for the modest point counts
+/// typical of explicit polytope constructions (cubes, simplices, small
+/// reflexive polytopes), not for large point clouds.
+pub fn hull_vertices(points: &[Vec<Integer>]) -> Vec<Vec<Integer>> {
+    if points.is_empty() {
+        return Vec::new();
+    }
+    let ambient_dim = points[0].len();
+
+    // Deduplicate first: a repeated point is trivially a convex
+    // combination (with coefficient 1) of its other copy.
+    let mut unique: Vec<Vec<Integer>> = Vec::new();
+    for p in points {
+        if !unique.contains(p) {
+            unique.push(p.clone());
+        }
+    }
+    if unique.len() <= 1 {
+        return unique;
+    }
+
+    let mut result = Vec::new();
+    for i in 0..unique.len() {
+        let others: Vec<&Vec<Integer>> = unique
+            .iter()
+            .enumerate()
+            .filter(|(j, _)| *j != i)
+            .map(|(_, v)| v)
+            .collect();
+
+        if !is_convex_combination(&unique[i], &others, ambient_dim) {
+            result.push(unique[i].clone());
+        }
+    }
+    result
+}
+
+/// Compute the rank of an integer matrix (number of linearly independent
+/// rows), via exact fraction-free (Bareiss-style) Gaussian elimination.
+/// Used to compute the affine dimension of a vertex set exactly.
+fn integer_matrix_rank(matrix: &[Vec<Integer>], cols: usize) -> usize {
+    if matrix.is_empty() {
+        return 0;
+    }
+
+    let mut temp = matrix.to_vec();
+    let rows = temp.len();
+    let mut rank = 0;
+    let mut col = 0;
+
+    while rank < rows && col < cols {
+        let mut pivot_row = rank;
+        for r in (rank + 1)..rows {
+            if temp[r][col].abs() > temp[pivot_row][col].abs() {
+                pivot_row = r;
+            }
+        }
+
+        if temp[pivot_row][col].is_zero() {
+            col += 1;
+            continue;
+        }
+
+        temp.swap(rank, pivot_row);
+
+        for r in (rank + 1)..rows {
+            if !temp[r][col].is_zero() {
+                let factor = temp[r][col].clone();
+                let pivot = temp[rank][col].clone();
+                for c in col..cols {
+                    temp[r][c] = temp[r][c].clone() * pivot.clone()
+                        - temp[rank][c].clone() * factor.clone();
+                }
+            }
+        }
+
+        rank += 1;
+        col += 1;
+    }
+
+    rank
+}
+
+/// Whether `p` can be written as a convex combination of points in `others`
+/// (see [`hull_vertices`] for the Carathéodory-theorem argument).
+fn is_convex_combination(p: &[Integer], others: &[&Vec<Integer>], ambient_dim: usize) -> bool {
+    let m = others.len();
+    if m == 0 {
+        return false;
+    }
+    let max_k = (ambient_dim + 1).min(m);
+
+    for k in 1..=max_k {
+        let mut combo: Vec<usize> = (0..k).collect();
+        loop {
+            if combo_is_convex_combination(p, others, ambient_dim, &combo) {
+                return true;
+            }
+            if !next_combination(&mut combo, m) {
+                break;
+            }
+        }
+    }
+    false
+}
+
+/// Advance `combo` (strictly increasing indices into `0..n`) to the next
+/// combination in lexicographic order. Returns `false` when there is none.
+fn next_combination(combo: &mut [usize], n: usize) -> bool {
+    let k = combo.len();
+    if k == 0 {
+        return false;
+    }
+    let mut i = k;
+    loop {
+        if i == 0 {
+            return false;
+        }
+        i -= 1;
+        if combo[i] != i + n - k {
+            combo[i] += 1;
+            for j in (i + 1)..k {
+                combo[j] = combo[j - 1] + 1;
+            }
+            return true;
+        }
+    }
+}
+
+/// Test whether `p = sum_i lambda_i * others[combo[i]]` has an *exact*,
+/// *unique* solution with `sum lambda_i = 1` and every `lambda_i` in
+/// `[0, 1]`. Builds the `(ambient_dim + 1) x (k + 1)` augmented system
+/// (one row per coordinate, plus the affine `sum = 1` row) and solves it
+/// exactly over `Rational`; only accepts subsets that are affinely
+/// independent (full column rank), which is exactly what Carathéodory's
+/// theorem needs.
+fn combo_is_convex_combination(
+    p: &[Integer],
+    others: &[&Vec<Integer>],
+    ambient_dim: usize,
+    combo: &[usize],
+) -> bool {
+    let k = combo.len();
+    let rows = ambient_dim + 1;
+    let mut aug: Vec<Vec<Rational>> = vec![vec![Rational::from_integer(0); k + 1]; rows];
+
+    for coord in 0..ambient_dim {
+        for (col, &idx) in combo.iter().enumerate() {
+            aug[coord][col] = Rational::from_integer(others[idx][coord].clone());
+        }
+        aug[coord][k] = Rational::from_integer(p[coord].clone());
+    }
+    // Affine constraint: coefficients sum to 1.
+    for col in 0..k {
+        aug[ambient_dim][col] = Rational::from_integer(1);
+    }
+    aug[ambient_dim][k] = Rational::from_integer(1);
+
+    match rational_rref(&mut aug, k) {
+        Some(rank) if rank == k => {
+            let zero = Rational::from_integer(0);
+            let one = Rational::from_integer(1);
+            (0..k).all(|i| aug[i][k] >= zero && aug[i][k] <= one)
+        }
+        _ => false,
+    }
+}
+
+/// Reduce the augmented system `[A | b]` (with `cols` unknowns) to reduced
+/// row-echelon form in place via exact rational Gauss-Jordan elimination.
+/// Returns `Some(rank)` of the coefficient part if the system is
+/// consistent, `None` if it is not (a row `0 = nonzero`). When the
+/// returned rank equals `cols`, `aug[i][cols]` for `i in 0..cols` is the
+/// unique solution.
+fn rational_rref(aug: &mut [Vec<Rational>], cols: usize) -> Option<usize> {
+    let rows = aug.len();
+    let mut rank = 0;
+    let mut col = 0;
+
+    while rank < rows && col < cols {
+        let pivot_row = (rank..rows).find(|&r| !aug[r][col].is_zero());
+        let pivot_row = match pivot_row {
+            Some(r) => r,
+            None => {
+                col += 1;
+                continue;
+            }
+        };
+        aug.swap(rank, pivot_row);
+
+        let pivot_val = aug[rank][col].clone();
+        for c in col..=cols {
+            aug[rank][c] = aug[rank][c].clone() / pivot_val.clone();
+        }
+
+        for r in 0..rows {
+            if r != rank && !aug[r][col].is_zero() {
+                let factor = aug[r][col].clone();
+                for c in col..=cols {
+                    let sub = aug[rank][c].clone() * factor.clone();
+                    aug[r][c] = aug[r][c].clone() - sub;
+                }
+            }
+        }
+
+        rank += 1;
+        col += 1;
+    }
+
+    for row in aug.iter().skip(rank) {
+        if !row[cols].is_zero() {
+            return None; // Inconsistent: 0 = nonzero.
+        }
+    }
+
+    Some(rank)
+}
+
+/// Exact determinant of a square `Integer` matrix via cofactor expansion.
+///
+/// `O(n!)`, which is fine for the small dimensions (`n` up to a handful)
+/// typical of explicit lattice polytopes; not intended for large `n`.
+fn integer_determinant(matrix: &[Vec<Integer>]) -> Integer {
+    let n = matrix.len();
+    if n == 0 {
+        return Integer::from(1);
+    }
+    if n == 1 {
+        return matrix[0][0].clone();
+    }
+
+    let mut result = Integer::zero();
+    let mut sign = Integer::from(1);
+    for col in 0..n {
+        let entry = &matrix[0][col];
+        if !entry.is_zero() {
+            let minor: Vec<Vec<Integer>> = matrix[1..]
+                .iter()
+                .map(|row| {
+                    row.iter()
+                        .enumerate()
+                        .filter(|(c, _)| *c != col)
+                        .map(|(_, v)| v.clone())
+                        .collect()
+                })
+                .collect();
+            result = result + &sign * entry * integer_determinant(&minor);
+        }
+        sign = -sign;
+    }
+    result
+}
+
+/// Find `dim + 1` affinely independent points among `points`, returning
+/// their indices. Greedily grows a set of linearly independent
+/// difference-from-`points[0]` vectors (checked exactly via
+/// [`integer_matrix_rank`]) until it reaches `dim`, i.e. until the chosen
+/// indices span the full affine hull. Returns `None` if `points` does not
+/// contain `dim + 1` affinely independent points.
+fn find_affine_basis(points: &[Vec<Integer>], dim: usize) -> Option<Vec<usize>> {
+    if points.is_empty() {
+        return None;
+    }
+    if dim == 0 {
+        return Some(vec![0]);
+    }
+
+    let base = &points[0];
+    let mut chosen = vec![0usize];
+    let mut diffs: Vec<Vec<Integer>> = Vec::new();
+
+    for (i, p) in points.iter().enumerate().skip(1) {
+        if chosen.len() == dim + 1 {
+            break;
+        }
+        let diff: Vec<Integer> = p
+            .iter()
+            .zip(base.iter())
+            .map(|(a, b)| a.clone() - b.clone())
+            .collect();
+        let mut candidate = diffs.clone();
+        candidate.push(diff.clone());
+        if integer_matrix_rank(&candidate, dim) > diffs.len() {
+            diffs = candidate;
+            chosen.push(i);
+        }
+    }
+
+    if chosen.len() == dim + 1 {
+        Some(chosen)
+    } else {
+        None
+    }
+}
+
+/// Signed "cone determinant" of `apex` over `facet` (a list of exactly
+/// `facet.len()` vertex indices spanning a hyperplane): the
+/// `facet.len() x facet.len()` determinant of the facet's edge vectors
+/// (from `points[facet[0]]`) together with the vector from
+/// `apex_scale * points[facet[0]]` to `apex`. Its sign tells which side
+/// of the hyperplane `apex` lies on relative to the facet's stored
+/// vertex order.
+///
+/// `apex_scale` lets the caller pass an *unscaled* stand-in apex (e.g.
+/// `apex_scale * true_apex`) without losing exactness: the edge-vector
+/// rows are always genuine (unscaled) differences, but the apex row
+/// becomes `apex - apex_scale * base` so that when `apex` really is
+/// `apex_scale * true_apex`, this row equals `apex_scale * (true_apex -
+/// base)` exactly — i.e. the whole determinant is `apex_scale` times the
+/// true (unscaled) cone determinant. Pass `apex_scale = 1` for a genuine,
+/// already-unscaled `apex` point.
+fn cone_signed_det(
+    points: &[Vec<Integer>],
+    facet: &[usize],
+    apex: &[Integer],
+    apex_scale: &Integer,
+) -> Integer {
+    let base = &points[facet[0]];
+    let mut matrix: Vec<Vec<Integer>> = facet[1..]
+        .iter()
+        .map(|&idx| {
+            points[idx]
+                .iter()
+                .zip(base.iter())
+                .map(|(a, b)| a.clone() - b.clone())
+                .collect()
+        })
+        .collect();
+    let apex_row: Vec<Integer> = apex
+        .iter()
+        .zip(base.iter())
+        .map(|(a, b)| a.clone() - apex_scale.clone() * b.clone())
+        .collect();
+    matrix.push(apex_row);
+    integer_determinant(&matrix)
+}
+
+/// `k!` as an `Integer`.
+fn factorial_integer(k: usize) -> Integer {
+    let mut result = Integer::from(1);
+    for i in 2..=k {
+        result = result * Integer::from(i as i32);
+    }
+    result
+}
+
+/// Exact volume of `conv(points)`, assumed full-dimensional
+/// (`rank(points) == n == ` the shared length of every point vector).
+///
+/// Uses the incremental "beneath-beyond" convex hull algorithm, fixing a
+/// point `P0` strictly interior to an initial `n`-simplex (which, since
+/// the hull only grows as more points are absorbed, stays interior for
+/// the whole computation) and maintaining the volume as the sum of the
+/// `n`-simplex cones from `P0` to every current boundary facet. Facets
+/// are `n`-vertex simplices; a facet's `n` sub-ridges (`n-1`-vertex
+/// subsets) that occur in exactly one visible facet form the horizon,
+/// which is coned to each newly-absorbed vertex to produce the new
+/// facets. Points that are not extreme (already inside the hull-so-far)
+/// are silently skipped, so redundant/duplicate input vertices are
+/// harmless.
+///
+/// All determinants are computed over `Integer` by using the *unscaled*
+/// sum `S` of the seed simplex's `n + 1` vertices as a stand-in for the
+/// true interior point `P0 = S / (n + 1)`: since the determinant is
+/// linear in the apex row, this scales every cone determinant by the
+/// constant factor `n + 1`, which is divided back out (together with the
+/// usual `n!` simplex-volume normalization) only once, at the very end.
+///
+/// Each facet is stored together with its (arbitrarily-signed, but
+/// fixed at creation time) cone determinant against `S`: rather than
+/// canonicalizing the sign by reordering vertices (which breaks for a
+/// 1-vertex facet — the `n = 1` case has no second vertex to swap), a
+/// new point `q` is beyond a facet exactly when `cone(facet, q)` has the
+/// *opposite* sign from the facet's stored `S`-determinant, and each
+/// facet's unsigned contribution to the running volume is just the
+/// absolute value of that stored determinant.
+fn volume_full_dimensional(points: &[Vec<Integer>], n: usize) -> Rational {
+    let seed = match find_affine_basis(points, n) {
+        Some(s) => s,
+        None => return Rational::from_integer(0), // not actually full-dimensional
+    };
+
+    // S = (n+1) * P0, P0 strictly interior to the seed simplex.
+    let mut s: Vec<Integer> = vec![Integer::zero(); n];
+    for &idx in &seed {
+        for (acc, coord) in s.iter_mut().zip(points[idx].iter()) {
+            *acc = acc.clone() + coord.clone();
+        }
+    }
+    let apex_scale = Integer::from((n + 1) as i32);
+    let one = Integer::from(1);
+    let zero = Integer::zero();
+
+    // facets: (vertex indices, cone determinant against S).
+    let mut facets: Vec<(Vec<usize>, Integer)> = Vec::new();
+    let mut total_raw = Integer::zero();
+
+    for k in 0..seed.len() {
+        let verts: Vec<usize> = seed
+            .iter()
+            .enumerate()
+            .filter(|(j, _)| *j != k)
+            .map(|(_, &v)| v)
+            .collect();
+        let d = cone_signed_det(points, &verts, &s, &apex_scale);
+        total_raw = total_raw + d.abs();
+        facets.push((verts, d));
+    }
+
+    let seed_set: std::collections::HashSet<usize> = seed.iter().copied().collect();
+    for (q, qp) in points.iter().enumerate() {
+        if seed_set.contains(&q) {
+            continue;
+        }
+
+        let mut visible = Vec::new();
+        for (fi, (verts, s_det)) in facets.iter().enumerate() {
+            if s_det.is_zero() {
+                continue; // degenerate facet: never visible, contributes 0 either way
+            }
+            let q_det = cone_signed_det(points, verts, qp, &one);
+            // Beyond the facet iff q is on the opposite (nonzero) side from S.
+            if (q_det * s_det.clone()) < zero {
+                visible.push(fi);
+            }
+        }
+        if visible.is_empty() {
+            continue; // q is not extreme; already inside the hull so far.
+        }
+
+        // Count sub-ridges of the visible facets; those occurring exactly
+        // once are the horizon.
+        let mut ridge_counts: HashMap<Vec<usize>, u32> = HashMap::new();
+        for &fi in &visible {
+            let (verts, _) = &facets[fi];
+            for omit in 0..verts.len() {
+                let mut ridge: Vec<usize> = verts
+                    .iter()
+                    .enumerate()
+                    .filter(|(j, _)| *j != omit)
+                    .map(|(_, &v)| v)
+                    .collect();
+                ridge.sort_unstable();
+                *ridge_counts.entry(ridge).or_insert(0) += 1;
+            }
+        }
+
+        // Remove visible facets (in reverse index order to keep indices valid).
+        let mut visible_sorted = visible.clone();
+        visible_sorted.sort_unstable();
+        for &fi in visible_sorted.iter().rev() {
+            let (_, s_det) = &facets[fi];
+            total_raw = total_raw - s_det.abs();
+            facets.remove(fi);
+        }
+
+        // Add new facets: each horizon ridge coned to the new vertex q.
+        for (ridge, count) in ridge_counts {
+            if count != 1 {
+                continue;
+            }
+            let mut new_verts = ridge;
+            new_verts.push(q);
+            let d = cone_signed_det(points, &new_verts, &s, &apex_scale);
+            total_raw = total_raw + d.abs();
+            facets.push((new_verts, d));
+        }
+    }
+
+    Rational::from_integer(total_raw) / Rational::from_integer(factorial_integer(n + 1))
 }
 
 /// Create a cross-polytope (orthoplex) in dimension n
@@ -1351,5 +1880,353 @@ mod tests {
 
         let display = format!("{}", polytope);
         assert!(display.contains("LatticePolytope"));
+    }
+
+    // ===== Exact convex-hull / vertex-enumeration verification =====
+    //
+    // P2-E3: these tests exercise `convex_hull`/`hull_vertices` against
+    // point sets that are NOT already in convex position (they include
+    // interior points, a face-center, and an edge midpoint), which is the
+    // case the old placeholder ("just wraps the points") got wrong. All
+    // input coordinates and the redundant points are chosen to be exact
+    // lattice points (no non-integer centroids) so the whole computation
+    // stays over `Integer`/`Rational` with zero floating point.
+
+    fn iv(xs: &[i64]) -> Vec<Integer> {
+        xs.iter().map(|&x| Integer::from(x)).collect()
+    }
+
+    /// The 8 corners of a side-2 axis-aligned cube `{0,2}^3`, in a fixed
+    /// (non-canonical) order, used as the "known vertex set" oracle below.
+    fn cube_corners() -> Vec<Vec<Integer>> {
+        let mut corners = Vec::new();
+        for &x in &[0, 2] {
+            for &y in &[0, 2] {
+                for &z in &[0, 2] {
+                    corners.push(iv(&[x, y, z]));
+                }
+            }
+        }
+        corners
+    }
+
+    #[test]
+    fn test_convex_hull_unit_cube_exact_vertices() {
+        // Exactly the 8 corners, already in convex position: the hull must
+        // reproduce them exactly (no spurious removal).
+        let hull = convex_hull(cube_corners());
+        assert_eq!(hull.n_vertices(), 8);
+        for c in cube_corners() {
+            assert!(hull.vertices().contains(&c), "missing corner {:?}", c);
+        }
+    }
+
+    #[test]
+    fn test_convex_hull_cube_with_redundant_points() {
+        // The 8 corners plus: the cube's centroid (1,1,1, strictly
+        // interior), a face center (1,1,0, interior to a facet), and an
+        // edge midpoint (1,0,0, interior to an edge). None of these three
+        // are vertices of the cube; the hull must discard exactly them.
+        let mut points = cube_corners();
+        points.push(iv(&[1, 1, 1])); // centroid - interior
+        points.push(iv(&[1, 1, 0])); // face center - interior to a facet
+        points.push(iv(&[1, 0, 0])); // edge midpoint - interior to an edge
+
+        let hull = convex_hull(points);
+        let hull_vertices = hull.vertices().to_vec();
+
+        assert_eq!(
+            hull_vertices.len(),
+            8,
+            "hull should have exactly the 8 cube corners, got {:?}",
+            hull_vertices
+        );
+        for c in cube_corners() {
+            assert!(hull_vertices.contains(&c), "missing corner {:?}", c);
+        }
+        assert!(!hull_vertices.contains(&iv(&[1, 1, 1])), "centroid leaked into hull");
+        assert!(!hull_vertices.contains(&iv(&[1, 1, 0])), "face center leaked into hull");
+        assert!(!hull_vertices.contains(&iv(&[1, 0, 0])), "edge midpoint leaked into hull");
+
+        // dim() must still see this as full-dimensional (3), independent
+        // of the redundant points present in the vertex list.
+        assert_eq!(hull.dim(), 3);
+        assert_eq!(hull.ambient_dim(), 3);
+    }
+
+    #[test]
+    fn test_convex_hull_cube_duplicate_points_deduped() {
+        let mut points = cube_corners();
+        points.push(iv(&[0, 0, 0])); // duplicate of an existing corner
+        points.push(iv(&[2, 2, 2])); // duplicate of another corner
+
+        let hull = convex_hull(points);
+        assert_eq!(hull.n_vertices(), 8);
+    }
+
+    /// A standard tetrahedron scaled by 4 (so its centroid and edge
+    /// midpoints are exact lattice points): (0,0,0), (4,0,0), (0,4,0),
+    /// (0,0,4).
+    fn simplex_corners() -> Vec<Vec<Integer>> {
+        vec![
+            iv(&[0, 0, 0]),
+            iv(&[4, 0, 0]),
+            iv(&[0, 4, 0]),
+            iv(&[0, 0, 4]),
+        ]
+    }
+
+    #[test]
+    fn test_convex_hull_simplex_exact_vertices() {
+        let hull = convex_hull(simplex_corners());
+        assert_eq!(hull.n_vertices(), 4);
+        for c in simplex_corners() {
+            assert!(hull.vertices().contains(&c));
+        }
+        assert_eq!(hull.dim(), 3);
+    }
+
+    #[test]
+    fn test_convex_hull_simplex_with_redundant_points() {
+        // Add the centroid (1,1,1, strictly interior) and an edge
+        // midpoint (2,0,0, interior to the edge from (0,0,0) to (4,0,0)).
+        // Neither is a vertex of the tetrahedron.
+        let mut points = simplex_corners();
+        points.push(iv(&[1, 1, 1])); // centroid
+        points.push(iv(&[2, 0, 0])); // edge midpoint
+
+        let hull = convex_hull(points);
+        let hull_vertices = hull.vertices().to_vec();
+
+        assert_eq!(
+            hull_vertices.len(),
+            4,
+            "hull should have exactly the 4 simplex corners, got {:?}",
+            hull_vertices
+        );
+        for c in simplex_corners() {
+            assert!(hull_vertices.contains(&c), "missing corner {:?}", c);
+        }
+        assert!(!hull_vertices.contains(&iv(&[1, 1, 1])), "centroid leaked into hull");
+        assert!(!hull_vertices.contains(&iv(&[2, 0, 0])), "edge midpoint leaked into hull");
+    }
+
+    #[test]
+    fn test_dim_exact_affine_rank_not_vertex_count() {
+        // Four *collinear* lattice points (all on the line y=z=0): the
+        // old "approximate" dim() used `(n_vertices - 1).min(ambient_dim)`,
+        // which would have reported dim 2 here (3 vertices beyond the
+        // first, capped at ambient_dim 3, wait -- 4 points => min(3,3)=3).
+        // The true affine dimension of a line is 1, regardless of how many
+        // extra (even redundant) points sit on it.
+        let vertices = vec![
+            iv(&[0, 0, 0]),
+            iv(&[1, 0, 0]),
+            iv(&[2, 0, 0]),
+            iv(&[5, 0, 0]),
+        ];
+        let polytope = LatticePolytopeClass::new(vertices);
+        assert_eq!(polytope.dim(), 1);
+        assert_eq!(polytope.ambient_dim(), 3);
+    }
+
+    #[test]
+    fn test_dim_full_dimensional_cube() {
+        let polytope = LatticePolytopeClass::new(cube_corners());
+        assert_eq!(polytope.dim(), 3);
+    }
+
+    #[test]
+    fn test_convex_hull_2d_square_with_interior_point() {
+        // 2D sanity check alongside the 3D cube/simplex cases above.
+        let points = vec![
+            iv(&[0, 0]),
+            iv(&[2, 0]),
+            iv(&[2, 2]),
+            iv(&[0, 2]),
+            iv(&[1, 1]), // interior centroid
+        ];
+        let hull = convex_hull(points);
+        assert_eq!(hull.n_vertices(), 4);
+        assert!(!hull.vertices().contains(&iv(&[1, 1])));
+    }
+
+    /// The vertices of the standard n-simplex `conv(0, e_1, ..., e_n)`.
+    fn standard_simplex(n: usize) -> Vec<Vec<Integer>> {
+        let mut verts = vec![vec![Integer::from(0); n]]; // origin
+        for i in 0..n {
+            let mut v = vec![Integer::from(0); n];
+            v[i] = Integer::from(1);
+            verts.push(v);
+        }
+        verts
+    }
+
+    #[test]
+    fn test_volume_unit_square_is_one() {
+        // {0,1}^2: Euclidean area 1.
+        let vertices = vec![iv(&[0, 0]), iv(&[1, 0]), iv(&[1, 1]), iv(&[0, 1])];
+        let polytope = LatticePolytopeClass::new(vertices);
+        assert_eq!(polytope.volume(), Rational::from_integer(1));
+    }
+
+    #[test]
+    fn test_volume_unit_cube_is_one() {
+        // {0,1}^3: Euclidean volume 1.
+        let mut corners = Vec::new();
+        for &x in &[0, 1] {
+            for &y in &[0, 1] {
+                for &z in &[0, 1] {
+                    corners.push(iv(&[x, y, z]));
+                }
+            }
+        }
+        let polytope = LatticePolytopeClass::new(corners);
+        assert_eq!(polytope.volume(), Rational::from_integer(1));
+    }
+
+    #[test]
+    fn test_volume_scaled_cube_is_side_cubed() {
+        // {0,2}^3: Euclidean volume 2^3 = 8.
+        let polytope = LatticePolytopeClass::new(cube_corners());
+        assert_eq!(polytope.volume(), Rational::from_integer(8));
+    }
+
+    #[test]
+    fn test_volume_standard_simplex_is_one_over_factorial() {
+        // conv(0, e_1, ..., e_n) has Euclidean volume 1/n!, for n = 1..=5.
+        // (Independently verified: n=1 -> 1, n=2 -> 1/2, n=3 -> 1/6,
+        // n=4 -> 1/24, n=5 -> 1/120.)
+        let factorials = [1i64, 1, 2, 6, 24, 120];
+        for n in 1..=5usize {
+            let polytope = LatticePolytopeClass::new(standard_simplex(n));
+            let expected =
+                Rational::from_integer(1) / Rational::from_integer(factorials[n]);
+            assert_eq!(
+                polytope.volume(),
+                expected,
+                "standard {}-simplex volume mismatch",
+                n
+            );
+        }
+    }
+
+    #[test]
+    fn test_volume_invariant_under_vertex_order() {
+        // Volume should not depend on the order vertices are listed in,
+        // nor on redundant/duplicate points being present.
+        let mut corners = cube_corners();
+        corners.reverse();
+        corners.push(corners[0].clone()); // duplicate
+        corners.push(iv(&[1, 1, 1])); // interior centroid (redundant)
+        let polytope = LatticePolytopeClass::new(corners);
+        assert_eq!(polytope.volume(), Rational::from_integer(8));
+    }
+
+    #[test]
+    fn test_volume_degenerate_polytope_is_zero() {
+        // A flat square embedded in 3D ambient space (z always 0):
+        // not full-dimensional, so its 3D Lebesgue volume is honestly 0.
+        let vertices = vec![
+            iv(&[0, 0, 0]),
+            iv(&[1, 0, 0]),
+            iv(&[1, 1, 0]),
+            iv(&[0, 1, 0]),
+        ];
+        let polytope = LatticePolytopeClass::new(vertices);
+        assert_eq!(polytope.dim(), 2);
+        assert_eq!(polytope.ambient_dim(), 3);
+        assert_eq!(polytope.volume(), Rational::from_integer(0));
+    }
+
+    #[test]
+    fn test_volume_single_point_is_zero() {
+        let polytope = LatticePolytopeClass::new(vec![iv(&[3, 4])]);
+        assert_eq!(polytope.volume(), Rational::from_integer(0));
+    }
+
+    #[test]
+    fn test_volume_cross_polytope() {
+        // The n-dim cross-polytope (conv of +/- standard basis vectors)
+        // has Euclidean volume 2^n / n!. Check n = 2 (a square rotated 45
+        // degrees, diagonal 2: area = 2) and n = 3 (an octahedron with
+        // volume 4/3).
+        let cross2 = cross_polytope(2);
+        assert_eq!(cross2.volume(), Rational::from_integer(2));
+
+        let cross3 = cross_polytope(3);
+        assert_eq!(
+            cross3.volume(),
+            Rational::from_integer(4) / Rational::from_integer(3)
+        );
+    }
+
+    #[test]
+    fn test_volume_hypercube_4d() {
+        // A stress test of the general-n code path beyond the n<=3 cases
+        // above: the unit 4-cube {0,1}^4 has Euclidean volume 1.
+        // (Independently verified with scipy.spatial.ConvexHull.)
+        let mut corners = Vec::new();
+        for &a in &[0, 1] {
+            for &b in &[0, 1] {
+                for &c in &[0, 1] {
+                    for &d in &[0, 1] {
+                        corners.push(iv(&[a, b, c, d]));
+                    }
+                }
+            }
+        }
+        let polytope = LatticePolytopeClass::new(corners);
+        assert_eq!(polytope.dim(), 4);
+        assert_eq!(polytope.volume(), Rational::from_integer(1));
+    }
+
+    #[test]
+    fn test_volume_fuzz_against_independent_python_reference() {
+        // 20 random full-dimensional lattice polytopes (n = 2..=4), each
+        // volume independently computed in Python via an *exact* Fraction
+        // cofactor-triangulation of scipy.spatial.ConvexHull's own facet
+        // list (not scipy's float .volume) -- a different algorithm from
+        // the incremental beneath-beyond one implemented here, so this
+        // cross-checks both against numerical error and against a shared
+        // implementation bug.
+        let cases: Vec<(Vec<Vec<i64>>, i64, i64)> = vec![
+            (vec![vec![-3, 2, -1, -2], vec![2, 2, 1, -3], vec![1, 0, -3, -3], vec![-3, -2, -2, 1], vec![-2, -2, 2, -3]], 179, 12),
+            (vec![vec![-2, 2, 0, -1], vec![0, 1, -1, 3], vec![2, 1, 0, -2], vec![1, -2, 2, 2], vec![3, -3, 3, 3]], 17, 8),
+            (vec![vec![-1, 1, -1], vec![-3, -3, 0], vec![-2, 3, -1], vec![3, -3, 2], vec![-3, -1, 3]], 76, 3),
+            (vec![vec![-1, 1, -2], vec![2, -2, 3], vec![-3, 0, -3], vec![2, 1, 3], vec![-1, -3, 3], vec![1, -1, 3], vec![-2, 3, -3], vec![2, -3, -3]], 61, 1),
+            (vec![vec![-1, 2, 2], vec![-1, -2, 2], vec![-1, -2, -1], vec![0, 2, 3], vec![2, -3, 1], vec![2, -2, 1]], 65, 6),
+            (vec![vec![2, 2, 1, -2], vec![2, -1, 3, 3], vec![-2, 0, 0, -1], vec![-1, -3, -2, 1], vec![3, -3, -2, 3], vec![-3, 3, -1, 0]], 103, 3),
+            (vec![vec![1, -1, 2, 1], vec![2, 0, -2, -1], vec![-2, 2, 0, 0], vec![-2, -2, 1, 0], vec![-3, 3, -3, 3], vec![-2, -2, 2, 1], vec![0, 1, 0, -1]], 391, 24),
+            (vec![vec![0, 1], vec![2, -2], vec![3, 2], vec![-3, 0]], 11, 1),
+            (vec![vec![-1, 3, 2], vec![2, 1, 3], vec![0, -2, 0], vec![-3, 2, 2], vec![1, 3, -3], vec![2, 2, -3], vec![0, 1, -1], vec![-1, -3, -1]], 127, 3),
+            (vec![vec![1, -3, 1], vec![-1, 3, 2], vec![-1, 0, -3], vec![-2, 1, 3], vec![-3, 3, 2], vec![3, -2, 1], vec![-2, -1, 3], vec![1, 1, -2]], 45, 1),
+            (vec![vec![-3, -2], vec![-1, -2], vec![3, 3], vec![1, -3], vec![-3, 2]], 25, 1),
+            (vec![vec![3, 1, 3], vec![-1, 1, 3], vec![0, 1, -2], vec![-2, -2, 2]], 10, 1),
+            (vec![vec![-3, 1, 1, -2], vec![-2, 1, 3, 2], vec![0, 1, 0, -3], vec![2, -2, 2, -1], vec![-2, -2, -3, -1], vec![0, 2, 2, -1], vec![2, 2, -3, -2], vec![1, -2, -3, -3]], 1391, 24),
+            (vec![vec![3, -1], vec![-2, -1], vec![-3, 1]], 5, 1),
+            (vec![vec![-2, -3, -3, 2], vec![-2, 1, -2, 2], vec![2, 2, 2, -3], vec![-3, 0, 2, -1], vec![3, 0, 3, 0], vec![0, -1, 0, 0], vec![1, 1, 0, -2], vec![0, 3, 2, -3]], 123, 4),
+            (vec![vec![1, 0], vec![-2, -1], vec![-2, 0], vec![-2, -2]], 3, 1),
+            (vec![vec![3, -3, 0], vec![1, -3, -3], vec![-3, -3, 3], vec![2, 1, 3], vec![3, 3, 3]], 27, 1),
+            (vec![vec![-3, -2], vec![0, -2], vec![3, 0], vec![0, 0]], 6, 1),
+            (vec![vec![0, -1, 3], vec![0, 2, 2], vec![3, 0, -1], vec![3, 1, 2]], 5, 1),
+            (vec![vec![1, -3, 3, -2], vec![-2, -2, -1, -2], vec![-3, 1, -3, 2], vec![-3, 2, -1, -3], vec![3, 1, -2, -3], vec![-3, 1, 0, 1], vec![3, -2, 0, -3], vec![-3, 1, 2, 1]], 1507, 24),
+        ];
+
+        for (pts, expected_num, expected_den) in cases {
+            let vertices: Vec<Vec<Integer>> = pts
+                .into_iter()
+                .map(|p| p.into_iter().map(Integer::from).collect())
+                .collect();
+            let polytope = LatticePolytopeClass::new(vertices.clone());
+            let expected = Rational::from_integer(expected_num)
+                / Rational::from_integer(expected_den);
+            assert_eq!(
+                polytope.volume(),
+                expected,
+                "volume mismatch for vertices {:?}",
+                vertices
+            );
+        }
     }
 }

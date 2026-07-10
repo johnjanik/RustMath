@@ -69,6 +69,7 @@ impl HyperbolicIsometryUHP {
     ///
     /// ```
     /// use rustmath_geometry::hyperbolic_space::hyperbolic_isometry::HyperbolicIsometryUHP;
+    /// use rustmath_geometry::hyperbolic_space::HyperbolicIsometry;
     ///
     /// let id = HyperbolicIsometryUHP::identity();
     /// assert!(id.is_identity());

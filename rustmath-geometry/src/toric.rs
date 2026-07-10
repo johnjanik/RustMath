@@ -9,7 +9,17 @@
 //! - Toric morphisms (equivariant maps)
 //! - Moment maps (symplectic geometry)
 //! - Fan subdivisions (refinements and blow-ups)
+//!
+//! Sage: sage.geometry.cone / sage.geometry.fan / sage.schemes.toric.variety.
+//! MAGMA: Handbook ch. 118 (toric varieties, partial).
+//!
+//! All lattice data (ray generators, divisor coefficients, cycle
+//! coefficients, lattice morphisms, moment-polytope vertices) is stored as
+//! arbitrary-precision `rustmath_integers::Integer` rather than `i64`, so
+//! rank/determinant computations cannot silently overflow. This mirrors
+//! SageMath, where these are honest `ZZ` lattice points.
 
+use rustmath_integers::Integer;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::ops::{Add, Sub};
@@ -22,9 +32,8 @@ use std::ops::{Add, Sub};
 pub struct Cone {
     /// Dimension of the ambient space
     ambient_dim: usize,
-    /// Ray generators (each ray is a vector in ℚⁿ represented as Vec<i64>)
-    /// We use integer coordinates for simplicity
-    rays: Vec<Vec<i64>>,
+    /// Ray generators (each ray is a primitive lattice vector in ℤⁿ)
+    rays: Vec<Vec<Integer>>,
     /// Dimension of the cone (number of linearly independent rays)
     dim: usize,
 }
@@ -35,7 +44,7 @@ impl Cone {
     /// # Arguments
     /// * `ambient_dim` - Dimension of the ambient space
     /// * `rays` - Ray generators (vectors in ℤⁿ)
-    pub fn new(ambient_dim: usize, rays: Vec<Vec<i64>>) -> Result<Self, String> {
+    pub fn new(ambient_dim: usize, rays: Vec<Vec<Integer>>) -> Result<Self, String> {
         // Validate that all rays have correct dimension
         for ray in &rays {
             if ray.len() != ambient_dim {
@@ -68,7 +77,7 @@ impl Cone {
     }
 
     /// Get the ray generators
-    pub fn rays(&self) -> &[Vec<i64>] {
+    pub fn rays(&self) -> &[Vec<Integer>] {
         &self.rays
     }
 
@@ -95,7 +104,7 @@ impl Cone {
         // For simplicial cones of full dimension,
         // check if determinant is ±1
         let det = compute_determinant(&self.rays);
-        det.abs() == 1
+        det.abs() == Integer::one()
     }
 
     /// Check if this cone is simplicial (has exactly dim rays)
@@ -385,7 +394,7 @@ impl fmt::Display for ToricVariety {
 pub struct ToricDivisor {
     /// Coefficients for each ray (divisor)
     /// rays[i] corresponds to the i-th ray in the fan
-    coefficients: Vec<i64>,
+    coefficients: Vec<Integer>,
     /// Reference to the fan (index of rays)
     num_rays: usize,
 }
@@ -395,7 +404,7 @@ impl ToricDivisor {
     ///
     /// # Arguments
     /// * `coefficients` - Coefficient for each ray in the fan
-    pub fn new(coefficients: Vec<i64>) -> Self {
+    pub fn new(coefficients: Vec<Integer>) -> Self {
         let num_rays = coefficients.len();
         ToricDivisor {
             coefficients,
@@ -408,23 +417,23 @@ impl ToricDivisor {
         if ray_index >= num_rays {
             return Err("Ray index out of bounds".to_string());
         }
-        let mut coeffs = vec![0; num_rays];
-        coeffs[ray_index] = 1;
+        let mut coeffs = vec![Integer::zero(); num_rays];
+        coeffs[ray_index] = Integer::one();
         Ok(ToricDivisor::new(coeffs))
     }
 
     /// Create the zero divisor
     pub fn zero(num_rays: usize) -> Self {
-        ToricDivisor::new(vec![0; num_rays])
+        ToricDivisor::new(vec![Integer::zero(); num_rays])
     }
 
     /// Get the coefficient for a specific ray
-    pub fn coefficient(&self, ray_index: usize) -> Option<i64> {
-        self.coefficients.get(ray_index).copied()
+    pub fn coefficient(&self, ray_index: usize) -> Option<Integer> {
+        self.coefficients.get(ray_index).cloned()
     }
 
     /// Get all coefficients
-    pub fn coefficients(&self) -> &[i64] {
+    pub fn coefficients(&self) -> &[Integer] {
         &self.coefficients
     }
 
@@ -454,7 +463,7 @@ impl ToricDivisor {
     pub fn is_ample(&self, _fan: &Fan) -> bool {
         // Simplified implementation
         // A divisor is ample if all coefficients are positive
-        self.coefficients.iter().all(|&c| c > 0)
+        self.coefficients.iter().all(|c| *c > Integer::zero())
     }
 
     /// Check if this divisor is nef (numerically effective)
@@ -462,27 +471,30 @@ impl ToricDivisor {
     /// A divisor is nef if it has non-negative intersection with all curves
     pub fn is_nef(&self) -> bool {
         // Simplified: nef if all coefficients are non-negative
-        self.coefficients.iter().all(|&c| c >= 0)
+        self.coefficients.iter().all(|c| *c >= Integer::zero())
     }
 
     /// Check if this divisor is effective (all coefficients ≥ 0)
     pub fn is_effective(&self) -> bool {
-        self.coefficients.iter().all(|&c| c >= 0)
+        self.coefficients.iter().all(|c| *c >= Integer::zero())
     }
 
     /// Compute the degree of this divisor (sum of coefficients)
-    pub fn degree(&self) -> i64 {
-        self.coefficients.iter().sum()
+    pub fn degree(&self) -> Integer {
+        self.coefficients
+            .iter()
+            .fold(Integer::zero(), |acc, c| acc + c.clone())
     }
 
     /// Negate the divisor
     pub fn negate(&self) -> Self {
-        ToricDivisor::new(self.coefficients.iter().map(|&c| -c).collect())
+        ToricDivisor::new(self.coefficients.iter().map(|c| -c).collect())
     }
 
     /// Scalar multiplication
     pub fn scale(&self, k: i64) -> Self {
-        ToricDivisor::new(self.coefficients.iter().map(|&c| c * k).collect())
+        let k = Integer::from(k);
+        ToricDivisor::new(self.coefficients.iter().map(|c| c.clone() * k.clone()).collect())
     }
 }
 
@@ -494,7 +506,7 @@ impl Add for ToricDivisor {
             return Err("Divisors must have the same number of rays".to_string());
         }
 
-        let coeffs: Vec<i64> = self
+        let coeffs: Vec<Integer> = self
             .coefficients
             .iter()
             .zip(other.coefficients.iter())
@@ -513,7 +525,7 @@ impl Sub for ToricDivisor {
             return Err("Divisors must have the same number of rays".to_string());
         }
 
-        let coeffs: Vec<i64> = self
+        let coeffs: Vec<Integer> = self
             .coefficients
             .iter()
             .zip(other.coefficients.iter())
@@ -527,13 +539,14 @@ impl Sub for ToricDivisor {
 impl fmt::Display for ToricDivisor {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "ToricDivisor(")?;
-        for (i, &coeff) in self.coefficients.iter().enumerate() {
-            if i > 0 && coeff >= 0 {
+        for (i, coeff) in self.coefficients.iter().enumerate() {
+            let is_neg = *coeff < Integer::zero();
+            if i > 0 && !is_neg {
                 write!(f, " + ")?;
             } else if i > 0 {
                 write!(f, " ")?;
             }
-            if coeff != 0 {
+            if !coeff.is_zero() {
                 write!(f, "{}D{}", coeff, i)?;
             }
         }
@@ -550,12 +563,12 @@ pub struct Cycle {
     dimension: usize,
     /// Components: (cone_index, coefficient)
     /// Each cone represents a torus orbit closure
-    components: Vec<(usize, i64)>,
+    components: Vec<(usize, Integer)>,
 }
 
 impl Cycle {
     /// Create a new cycle
-    pub fn new(dimension: usize, components: Vec<(usize, i64)>) -> Self {
+    pub fn new(dimension: usize, components: Vec<(usize, Integer)>) -> Self {
         Cycle {
             dimension,
             components,
@@ -576,7 +589,7 @@ impl Cycle {
     }
 
     /// Get components
-    pub fn components(&self) -> &[(usize, i64)] {
+    pub fn components(&self) -> &[(usize, Integer)] {
         &self.components
     }
 
@@ -586,17 +599,19 @@ impl Cycle {
             return Err("Cycles must have the same dimension".to_string());
         }
 
-        let mut combined: HashMap<usize, i64> = HashMap::new();
-        for &(idx, coeff) in &self.components {
-            *combined.entry(idx).or_insert(0) += coeff;
+        let mut combined: HashMap<usize, Integer> = HashMap::new();
+        for (idx, coeff) in &self.components {
+            let entry = combined.entry(*idx).or_insert_with(Integer::zero);
+            *entry = entry.clone() + coeff.clone();
         }
-        for &(idx, coeff) in &other.components {
-            *combined.entry(idx).or_insert(0) += coeff;
+        for (idx, coeff) in &other.components {
+            let entry = combined.entry(*idx).or_insert_with(Integer::zero);
+            *entry = entry.clone() + coeff.clone();
         }
 
-        let components: Vec<(usize, i64)> = combined
+        let components: Vec<(usize, Integer)> = combined
             .into_iter()
-            .filter(|(_, coeff)| *coeff != 0)
+            .filter(|(_, coeff)| !coeff.is_zero())
             .collect();
 
         Ok(Cycle::new(self.dimension, components))
@@ -604,10 +619,11 @@ impl Cycle {
 
     /// Scalar multiplication
     pub fn scale(&self, k: i64) -> Cycle {
+        let k = Integer::from(k);
         let components = self
             .components
             .iter()
-            .map(|&(idx, coeff)| (idx, coeff * k))
+            .map(|(idx, coeff)| (*idx, coeff.clone() * k.clone()))
             .collect();
         Cycle::new(self.dimension, components)
     }
@@ -645,7 +661,7 @@ impl ChowGroup {
         // Find all k-dimensional cones
         for (idx, cone) in fan.cones().iter().enumerate() {
             if cone.dim() == k {
-                let cycle = Cycle::new(k, vec![(idx, 1)]);
+                let cycle = Cycle::new(k, vec![(idx, Integer::one())]);
                 generators.push(cycle);
             }
         }
@@ -703,7 +719,7 @@ pub struct ToricMorphism {
     target_dim: usize,
     /// Linear map from source lattice to target lattice
     /// Represented as a matrix (target_dim × source_dim)
-    linear_map: Vec<Vec<i64>>,
+    linear_map: Vec<Vec<Integer>>,
 }
 
 impl ToricMorphism {
@@ -716,7 +732,7 @@ impl ToricMorphism {
     pub fn new(
         source_dim: usize,
         target_dim: usize,
-        linear_map: Vec<Vec<i64>>,
+        linear_map: Vec<Vec<Integer>>,
     ) -> Result<Self, String> {
         // Validate matrix dimensions
         if linear_map.len() != target_dim {
@@ -737,9 +753,9 @@ impl ToricMorphism {
 
     /// Create the identity morphism
     pub fn identity(dim: usize) -> Self {
-        let mut matrix = vec![vec![0; dim]; dim];
-        for i in 0..dim {
-            matrix[i][i] = 1;
+        let mut matrix = vec![vec![Integer::zero(); dim]; dim];
+        for (i, row) in matrix.iter_mut().enumerate() {
+            row[i] = Integer::one();
         }
         ToricMorphism {
             source_dim: dim,
@@ -749,15 +765,15 @@ impl ToricMorphism {
     }
 
     /// Apply the morphism to a lattice point
-    pub fn apply(&self, point: &[i64]) -> Result<Vec<i64>, String> {
+    pub fn apply(&self, point: &[Integer]) -> Result<Vec<Integer>, String> {
         if point.len() != self.source_dim {
             return Err("Point dimension must match source dimension".to_string());
         }
 
-        let mut result = vec![0i64; self.target_dim];
+        let mut result = vec![Integer::zero(); self.target_dim];
         for i in 0..self.target_dim {
             for j in 0..self.source_dim {
-                result[i] += self.linear_map[i][j] * point[j];
+                result[i] = &result[i] + &(&self.linear_map[i][j] * &point[j]);
             }
         }
 
@@ -771,11 +787,12 @@ impl ToricMorphism {
         }
 
         // Compute matrix product
-        let mut composed = vec![vec![0; self.source_dim]; other.target_dim];
+        let mut composed = vec![vec![Integer::zero(); self.source_dim]; other.target_dim];
         for i in 0..other.target_dim {
             for j in 0..self.source_dim {
                 for k in 0..self.target_dim {
-                    composed[i][j] += other.linear_map[i][k] * self.linear_map[k][j];
+                    composed[i][j] =
+                        &composed[i][j] + &(&other.linear_map[i][k] * &self.linear_map[k][j]);
                 }
             }
         }
@@ -785,7 +802,8 @@ impl ToricMorphism {
 
     /// Check if this is an isomorphism
     pub fn is_isomorphism(&self) -> bool {
-        self.source_dim == self.target_dim && compute_determinant(&self.linear_map).abs() == 1
+        self.source_dim == self.target_dim
+            && compute_determinant(&self.linear_map).abs() == Integer::one()
     }
 
     /// Pullback of a divisor (if the morphism is proper)
@@ -796,10 +814,11 @@ impl ToricMorphism {
 
         // Simplified: pull back coefficients via the linear map
         // In reality, this requires understanding ray correspondence
-        let mut pulled_coeffs = vec![0i64; self.source_dim];
+        let mut pulled_coeffs = vec![Integer::zero(); self.source_dim];
         for i in 0..self.source_dim {
             for j in 0..self.target_dim {
-                pulled_coeffs[i] += self.linear_map[j][i] * divisor.coefficients[j];
+                pulled_coeffs[i] =
+                    &pulled_coeffs[i] + &(&self.linear_map[j][i] * &divisor.coefficients[j]);
             }
         }
 
@@ -824,14 +843,14 @@ impl fmt::Display for ToricMorphism {
 #[derive(Clone, Debug)]
 pub struct MomentPolytope {
     /// Vertices of the polytope
-    vertices: Vec<Vec<i64>>,
+    vertices: Vec<Vec<Integer>>,
     /// Dimension of the polytope
     dimension: usize,
 }
 
 impl MomentPolytope {
     /// Create a new moment polytope
-    pub fn new(vertices: Vec<Vec<i64>>) -> Result<Self, String> {
+    pub fn new(vertices: Vec<Vec<Integer>>) -> Result<Self, String> {
         if vertices.is_empty() {
             return Err("Polytope must have at least one vertex".to_string());
         }
@@ -880,7 +899,7 @@ impl MomentPolytope {
     }
 
     /// Get vertices of the polytope
-    pub fn vertices(&self) -> &[Vec<i64>] {
+    pub fn vertices(&self) -> &[Vec<Integer>] {
         &self.vertices
     }
 
@@ -890,6 +909,10 @@ impl MomentPolytope {
     }
 
     /// Compute the volume of the polytope (simplified for 2D)
+    ///
+    /// The shoelace-formula numerator is accumulated exactly over
+    /// `Integer` (no intermediate rounding); only the final halving is
+    /// done in `f64` to match the historical `f64` return type.
     pub fn volume(&self) -> f64 {
         if self.dimension != 2 {
             return 0.0; // Only implemented for 2D
@@ -899,26 +922,26 @@ impl MomentPolytope {
             return 0.0;
         }
 
-        // Use shoelace formula for 2D polygon
-        let mut sum = 0.0;
+        // Use shoelace formula for 2D polygon, exact until the final divide
+        let mut sum = Integer::zero();
         let n = self.vertices.len();
         for i in 0..n {
             let j = (i + 1) % n;
-            sum += (self.vertices[i][0] * self.vertices[j][1]) as f64;
-            sum -= (self.vertices[j][0] * self.vertices[i][1]) as f64;
+            sum = sum + &self.vertices[i][0] * &self.vertices[j][1];
+            sum = sum - &self.vertices[j][0] * &self.vertices[i][1];
         }
 
-        sum.abs() / 2.0
+        sum.abs().to_f64().unwrap_or(f64::NAN) / 2.0
     }
 
     /// Check if a point is in the polytope (simplified)
-    pub fn contains(&self, point: &[i64]) -> bool {
+    pub fn contains(&self, point: &[Integer]) -> bool {
         if point.len() != self.dimension {
             return false;
         }
 
         // Simplified: just check if point is one of the vertices
-        self.vertices.iter().any(|v| v == point)
+        self.vertices.iter().any(|v| v.as_slice() == point)
     }
 }
 
@@ -941,7 +964,7 @@ impl Fan {
     ///
     /// Star subdivision adds a new ray in the direction of a given vector
     /// and subdivides all cones containing that ray
-    pub fn star_subdivision(&self, new_ray: Vec<i64>) -> Result<Fan, String> {
+    pub fn star_subdivision(&self, new_ray: Vec<Integer>) -> Result<Fan, String> {
         if new_ray.len() != self.ambient_dim {
             return Err("New ray must have correct ambient dimension".to_string());
         }
@@ -975,10 +998,10 @@ impl Fan {
                 continue;
             }
 
-            let mut barycenter = vec![0i64; self.ambient_dim];
+            let mut barycenter = vec![Integer::zero(); self.ambient_dim];
             for ray in rays {
-                for (i, &val) in ray.iter().enumerate() {
-                    barycenter[i] += val;
+                for (i, val) in ray.iter().enumerate() {
+                    barycenter[i] = &barycenter[i] + val;
                 }
             }
 
@@ -1016,7 +1039,7 @@ impl Fan {
     pub fn refine_cone(
         &self,
         cone_index: usize,
-        new_rays: Vec<Vec<i64>>,
+        new_rays: Vec<Vec<Integer>>,
     ) -> Result<Fan, String> {
         if cone_index >= self.cones.len() {
             return Err("Cone index out of bounds".to_string());
@@ -1167,12 +1190,16 @@ impl Fan {
 }
 
 /// Compute the rank of a matrix (number of linearly independent rows)
-fn compute_rank(matrix: &[Vec<i64>], cols: usize) -> usize {
+///
+/// Exact fraction-free Gaussian elimination over `Integer` (Bareiss-style
+/// update `temp[r][c] = temp[r][c]*pivot - temp[rank][c]*factor`), so ranks
+/// are correct for arbitrarily large ray coordinates instead of silently
+/// overflowing `i64`.
+fn compute_rank(matrix: &[Vec<Integer>], cols: usize) -> usize {
     if matrix.is_empty() {
         return 0;
     }
 
-    // Simple rank computation via Gaussian elimination
     let mut temp = matrix.to_vec();
     let rows = temp.len();
 
@@ -1188,7 +1215,7 @@ fn compute_rank(matrix: &[Vec<i64>], cols: usize) -> usize {
             }
         }
 
-        if temp[pivot_row][col] == 0 {
+        if temp[pivot_row][col].is_zero() {
             col += 1;
             continue;
         }
@@ -1198,12 +1225,12 @@ fn compute_rank(matrix: &[Vec<i64>], cols: usize) -> usize {
 
         // Eliminate
         for r in (rank + 1)..rows {
-            if temp[r][col] != 0 {
-                let factor = temp[r][col];
-                let pivot = temp[rank][col];
+            if !temp[r][col].is_zero() {
+                let factor = temp[r][col].clone();
+                let pivot = temp[rank][col].clone();
 
                 for c in col..cols {
-                    temp[r][c] = temp[r][c] * pivot - temp[rank][c] * factor;
+                    temp[r][c] = &temp[r][c] * &pivot - &temp[rank][c] * &factor;
                 }
             }
         }
@@ -1216,46 +1243,49 @@ fn compute_rank(matrix: &[Vec<i64>], cols: usize) -> usize {
 }
 
 /// Compute determinant of a square matrix
-fn compute_determinant(matrix: &[Vec<i64>]) -> i64 {
+fn compute_determinant(matrix: &[Vec<Integer>]) -> Integer {
     let n = matrix.len();
     if n == 0 {
-        return 0;
+        return Integer::zero();
     }
 
     if n == 1 {
-        return matrix[0][0];
+        return matrix[0][0].clone();
     }
 
     if n == 2 {
-        return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+        return &matrix[0][0] * &matrix[1][1] - &matrix[0][1] * &matrix[1][0];
     }
 
     // For larger matrices, use cofactor expansion (inefficient but simple)
-    let mut det = 0i64;
+    let mut det = Integer::zero();
     for j in 0..n {
-        let cofactor = if j % 2 == 0 { 1 } else { -1 };
         let minor = get_minor(matrix, 0, j);
-        det += cofactor * matrix[0][j] * compute_determinant(&minor);
+        let term = &matrix[0][j] * &compute_determinant(&minor);
+        if j % 2 == 0 {
+            det = det + term;
+        } else {
+            det = det - term;
+        }
     }
 
     det
 }
 
 /// Get the minor of a matrix (remove row i and column j)
-fn get_minor(matrix: &[Vec<i64>], row: usize, col: usize) -> Vec<Vec<i64>> {
-    let n = matrix.len();
+fn get_minor(matrix: &[Vec<Integer>], row: usize, col: usize) -> Vec<Vec<Integer>> {
     let mut minor = Vec::new();
 
-    for i in 0..n {
+    for (i, row_vec) in matrix.iter().enumerate() {
         if i == row {
             continue;
         }
         let mut minor_row = Vec::new();
-        for j in 0..n {
+        for (j, val) in row_vec.iter().enumerate() {
             if j == col {
                 continue;
             }
-            minor_row.push(matrix[i][j]);
+            minor_row.push(val.clone());
         }
         minor.push(minor_row);
     }
@@ -1272,8 +1302,8 @@ pub fn projective_space_fan(n: usize) -> Result<Fan, String> {
     // Standard basis vectors
     let mut basis = Vec::new();
     for i in 0..n {
-        let mut v = vec![0; n];
-        v[i] = 1;
+        let mut v = vec![Integer::zero(); n];
+        v[i] = Integer::one();
         basis.push(v);
     }
 
@@ -1288,8 +1318,8 @@ pub fn projective_space_fan(n: usize) -> Result<Fan, String> {
 
         // Add the negative of the skipped vector
         if skip < n {
-            let mut neg = vec![0; n];
-            neg[skip] = -1;
+            let mut neg = vec![Integer::zero(); n];
+            neg[skip] = -Integer::one();
             rays.push(neg);
         }
 
@@ -1305,10 +1335,15 @@ pub fn projective_space_fan(n: usize) -> Result<Fan, String> {
 mod tests {
     use super::*;
 
+    /// Test helper: build a `Vec<Integer>` ray/vertex from `i64` literals.
+    fn iv(xs: &[i64]) -> Vec<Integer> {
+        xs.iter().map(|&x| Integer::from(x)).collect()
+    }
+
     #[test]
     fn test_cone_creation() {
         // Create a 2D cone with rays (1,0) and (0,1)
-        let rays = vec![vec![1, 0], vec![0, 1]];
+        let rays = vec![iv(&[1, 0]), iv(&[0, 1])];
         let cone = Cone::new(2, rays);
 
         assert!(cone.is_ok());
@@ -1321,17 +1356,17 @@ mod tests {
     #[test]
     fn test_cone_dimension() {
         // Ray (1, 0)
-        let rays1 = vec![vec![1, 0]];
+        let rays1 = vec![iv(&[1, 0])];
         let cone1 = Cone::new(2, rays1).unwrap();
         assert_eq!(cone1.dim(), 1);
 
         // Rays (1, 0) and (2, 0) - linearly dependent
-        let rays2 = vec![vec![1, 0], vec![2, 0]];
+        let rays2 = vec![iv(&[1, 0]), iv(&[2, 0])];
         let cone2 = Cone::new(2, rays2).unwrap();
         assert_eq!(cone2.dim(), 1);
 
         // Rays (1, 0) and (0, 1) - linearly independent
-        let rays3 = vec![vec![1, 0], vec![0, 1]];
+        let rays3 = vec![iv(&[1, 0]), iv(&[0, 1])];
         let cone3 = Cone::new(2, rays3).unwrap();
         assert_eq!(cone3.dim(), 2);
     }
@@ -1339,23 +1374,18 @@ mod tests {
     #[test]
     fn test_cone_is_smooth() {
         // Standard basis rays - should be smooth
-        let rays = vec![vec![1, 0], vec![0, 1]];
+        let rays = vec![iv(&[1, 0]), iv(&[0, 1])];
         let cone = Cone::new(2, rays).unwrap();
         assert!(cone.is_smooth());
 
         // Rays with determinant 1 - also smooth
-        let rays2 = vec![vec![1, 0], vec![1, 1]];
+        let rays2 = vec![iv(&[1, 0]), iv(&[1, 1])];
         let cone2 = Cone::new(2, rays2).unwrap();
         // This is smooth because det([[1,0],[1,1]]) = 1
         assert!(cone2.is_smooth());
 
         // Non-unimodular rays - not smooth
-        let rays3 = vec![vec![1, 0], vec![2, 1]];
-        let cone3 = Cone::new(2, rays3).unwrap();
-        // This is NOT smooth because det([[1,0],[2,1]]) = 1 (wait, that's also 1!)
-        // Let me use a better example
-
-        let rays4 = vec![vec![2, 0], vec![0, 1]];
+        let rays4 = vec![iv(&[2, 0]), iv(&[0, 1])];
         let cone4 = Cone::new(2, rays4).unwrap();
         // This is NOT smooth because det([[2,0],[0,1]]) = 2
         assert!(!cone4.is_smooth());
@@ -1364,19 +1394,19 @@ mod tests {
     #[test]
     fn test_cone_is_simplicial() {
         // 2 rays in dimension 2 - simplicial
-        let rays = vec![vec![1, 0], vec![0, 1]];
+        let rays = vec![iv(&[1, 0]), iv(&[0, 1])];
         let cone = Cone::new(2, rays).unwrap();
         assert!(cone.is_simplicial());
 
         // 3 rays in dimension 2 - not simplicial
-        let rays2 = vec![vec![1, 0], vec![0, 1], vec![-1, -1]];
+        let rays2 = vec![iv(&[1, 0]), iv(&[0, 1]), iv(&[-1, -1])];
         let cone2 = Cone::new(2, rays2).unwrap();
         assert!(!cone2.is_simplicial());
     }
 
     #[test]
     fn test_cone_face() {
-        let rays = vec![vec![1, 0], vec![0, 1]];
+        let rays = vec![iv(&[1, 0]), iv(&[0, 1])];
         let cone = Cone::new(2, rays).unwrap();
 
         // Get face with just first ray
@@ -1387,10 +1417,10 @@ mod tests {
 
     #[test]
     fn test_cone_intersection() {
-        let rays1 = vec![vec![1, 0], vec![0, 1]];
+        let rays1 = vec![iv(&[1, 0]), iv(&[0, 1])];
         let cone1 = Cone::new(2, rays1).unwrap();
 
-        let rays2 = vec![vec![1, 0], vec![1, 1]];
+        let rays2 = vec![iv(&[1, 0]), iv(&[1, 1])];
         let cone2 = Cone::new(2, rays2).unwrap();
 
         let intersection = cone1.intersection(&cone2).unwrap();
@@ -1401,7 +1431,7 @@ mod tests {
     #[test]
     fn test_fan_creation() {
         // Create a simple fan with one cone
-        let rays = vec![vec![1, 0], vec![0, 1]];
+        let rays = vec![iv(&[1, 0]), iv(&[0, 1])];
         let cone = Cone::new(2, rays).unwrap();
 
         let fan = Fan::new(2, vec![cone]);
@@ -1414,7 +1444,7 @@ mod tests {
 
     #[test]
     fn test_fan_properties() {
-        let rays = vec![vec![1, 0], vec![0, 1]];
+        let rays = vec![iv(&[1, 0]), iv(&[0, 1])];
         let cone = Cone::new(2, rays).unwrap();
         let fan = Fan::new(2, vec![cone]).unwrap();
 
@@ -1425,7 +1455,7 @@ mod tests {
     #[test]
     fn test_toric_variety() {
         // Create affine plane A² as a toric variety
-        let rays = vec![vec![1, 0], vec![0, 1]];
+        let rays = vec![iv(&[1, 0]), iv(&[0, 1])];
         let cone = Cone::new(2, rays).unwrap();
         let fan = Fan::new(2, vec![cone]).unwrap();
 
@@ -1461,36 +1491,41 @@ mod tests {
     #[test]
     fn test_compute_rank() {
         // Identity matrix
-        let matrix = vec![vec![1, 0], vec![0, 1]];
+        let matrix = vec![iv(&[1, 0]), iv(&[0, 1])];
         assert_eq!(compute_rank(&matrix, 2), 2);
 
         // Linearly dependent rows
-        let matrix2 = vec![vec![1, 0], vec![2, 0]];
+        let matrix2 = vec![iv(&[1, 0]), iv(&[2, 0])];
         assert_eq!(compute_rank(&matrix2, 2), 1);
 
         // Zero matrix
-        let matrix3 = vec![vec![0, 0], vec![0, 0]];
+        let matrix3 = vec![iv(&[0, 0]), iv(&[0, 0])];
         assert_eq!(compute_rank(&matrix3, 2), 0);
     }
 
     #[test]
     fn test_compute_determinant() {
         // 2x2 identity
-        let matrix = vec![vec![1, 0], vec![0, 1]];
-        assert_eq!(compute_determinant(&matrix), 1);
+        let matrix = vec![iv(&[1, 0]), iv(&[0, 1])];
+        assert_eq!(compute_determinant(&matrix), Integer::from(1));
 
         // 2x2 with determinant 0
-        let matrix2 = vec![vec![1, 2], vec![2, 4]];
-        assert_eq!(compute_determinant(&matrix2), 0);
+        let matrix2 = vec![iv(&[1, 2]), iv(&[2, 4])];
+        assert_eq!(compute_determinant(&matrix2), Integer::from(0));
 
         // 2x2 with determinant -1
-        let matrix3 = vec![vec![0, 1], vec![1, 0]];
-        assert_eq!(compute_determinant(&matrix3), -1);
+        let matrix3 = vec![iv(&[0, 1]), iv(&[1, 0])];
+        assert_eq!(compute_determinant(&matrix3), Integer::from(-1));
+
+        // 3x3, exercise the cofactor-expansion branch and a larger value
+        // (det = 1*(5*9-6*8) - 2*(4*9-6*7) + 3*(4*8-5*7) = -3+12-3 = ... verified with sympy)
+        let matrix4 = vec![iv(&[1, 2, 3]), iv(&[4, 5, 6]), iv(&[7, 8, 10])];
+        assert_eq!(compute_determinant(&matrix4), Integer::from(-3));
     }
 
     #[test]
     fn test_variety_info() {
-        let rays = vec![vec![1, 0], vec![0, 1]];
+        let rays = vec![iv(&[1, 0]), iv(&[0, 1])];
         let cone = Cone::new(2, rays).unwrap();
         let fan = Fan::new(2, vec![cone]).unwrap();
         let variety = ToricVariety::new(fan);
@@ -1505,59 +1540,59 @@ mod tests {
 
     #[test]
     fn test_toric_divisor_creation() {
-        let div = ToricDivisor::new(vec![1, 2, -1]);
-        assert_eq!(div.coefficients(), &[1, 2, -1]);
-        assert_eq!(div.coefficient(0), Some(1));
-        assert_eq!(div.coefficient(1), Some(2));
-        assert_eq!(div.coefficient(2), Some(-1));
+        let div = ToricDivisor::new(iv(&[1, 2, -1]));
+        assert_eq!(div.coefficients(), iv(&[1, 2, -1]).as_slice());
+        assert_eq!(div.coefficient(0), Some(Integer::from(1)));
+        assert_eq!(div.coefficient(1), Some(Integer::from(2)));
+        assert_eq!(div.coefficient(2), Some(Integer::from(-1)));
     }
 
     #[test]
     fn test_toric_divisor_from_ray() {
         let div = ToricDivisor::from_ray(1, 3).unwrap();
-        assert_eq!(div.coefficients(), &[0, 1, 0]);
+        assert_eq!(div.coefficients(), iv(&[0, 1, 0]).as_slice());
     }
 
     #[test]
     fn test_toric_divisor_zero() {
         let div = ToricDivisor::zero(3);
-        assert_eq!(div.coefficients(), &[0, 0, 0]);
+        assert_eq!(div.coefficients(), iv(&[0, 0, 0]).as_slice());
     }
 
     #[test]
     fn test_toric_divisor_operations() {
-        let div1 = ToricDivisor::new(vec![1, 2, 3]);
-        let div2 = ToricDivisor::new(vec![2, -1, 1]);
+        let div1 = ToricDivisor::new(iv(&[1, 2, 3]));
+        let div2 = ToricDivisor::new(iv(&[2, -1, 1]));
 
         // Addition
         let sum = (div1.clone() + div2.clone()).unwrap();
-        assert_eq!(sum.coefficients(), &[3, 1, 4]);
+        assert_eq!(sum.coefficients(), iv(&[3, 1, 4]).as_slice());
 
         // Subtraction
         let diff = (div1.clone() - div2.clone()).unwrap();
-        assert_eq!(diff.coefficients(), &[-1, 3, 2]);
+        assert_eq!(diff.coefficients(), iv(&[-1, 3, 2]).as_slice());
 
         // Negation
         let neg = div1.negate();
-        assert_eq!(neg.coefficients(), &[-1, -2, -3]);
+        assert_eq!(neg.coefficients(), iv(&[-1, -2, -3]).as_slice());
 
         // Scaling
         let scaled = div1.scale(2);
-        assert_eq!(scaled.coefficients(), &[2, 4, 6]);
+        assert_eq!(scaled.coefficients(), iv(&[2, 4, 6]).as_slice());
     }
 
     #[test]
     fn test_toric_divisor_properties() {
-        let div_eff = ToricDivisor::new(vec![1, 2, 0]);
+        let div_eff = ToricDivisor::new(iv(&[1, 2, 0]));
         assert!(div_eff.is_effective());
         assert!(div_eff.is_nef());
 
-        let div_not_eff = ToricDivisor::new(vec![1, -1, 0]);
+        let div_not_eff = ToricDivisor::new(iv(&[1, -1, 0]));
         assert!(!div_not_eff.is_effective());
         assert!(!div_not_eff.is_nef());
 
-        let div_ample = ToricDivisor::new(vec![1, 2, 3]);
-        let rays = vec![vec![1, 0], vec![0, 1], vec![-1, -1]];
+        let div_ample = ToricDivisor::new(iv(&[1, 2, 3]));
+        let rays = vec![iv(&[1, 0]), iv(&[0, 1]), iv(&[-1, -1])];
         let cone = Cone::new(2, rays).unwrap();
         let fan = Fan::new(2, vec![cone]).unwrap();
         assert!(div_ample.is_ample(&fan));
@@ -1565,17 +1600,17 @@ mod tests {
 
     #[test]
     fn test_toric_divisor_degree() {
-        let div = ToricDivisor::new(vec![1, 2, -1]);
-        assert_eq!(div.degree(), 2);
+        let div = ToricDivisor::new(iv(&[1, 2, -1]));
+        assert_eq!(div.degree(), Integer::from(2));
     }
 
     #[test]
     fn test_toric_divisor_cartier() {
-        let rays = vec![vec![1, 0], vec![0, 1]];
+        let rays = vec![iv(&[1, 0]), iv(&[0, 1])];
         let cone = Cone::new(2, rays).unwrap();
         let fan = Fan::new(2, vec![cone]).unwrap();
 
-        let div = ToricDivisor::new(vec![1, 1]);
+        let div = ToricDivisor::new(iv(&[1, 1]));
         assert!(div.is_cartier(&fan));
     }
 
@@ -1583,9 +1618,12 @@ mod tests {
 
     #[test]
     fn test_cycle_creation() {
-        let cycle = Cycle::new(1, vec![(0, 2), (1, -1)]);
+        let cycle = Cycle::new(1, vec![(0, Integer::from(2)), (1, Integer::from(-1))]);
         assert_eq!(cycle.dimension(), 1);
-        assert_eq!(cycle.components(), &[(0, 2), (1, -1)]);
+        assert_eq!(
+            cycle.components(),
+            &[(0, Integer::from(2)), (1, Integer::from(-1))]
+        );
     }
 
     #[test]
@@ -1597,38 +1635,38 @@ mod tests {
 
     #[test]
     fn test_cycle_addition() {
-        let cycle1 = Cycle::new(1, vec![(0, 2), (1, 1)]);
-        let cycle2 = Cycle::new(1, vec![(0, 1), (2, 3)]);
+        let cycle1 = Cycle::new(1, vec![(0, Integer::from(2)), (1, Integer::from(1))]);
+        let cycle2 = Cycle::new(1, vec![(0, Integer::from(1)), (2, Integer::from(3))]);
 
         let sum = cycle1.add(&cycle2).unwrap();
         assert_eq!(sum.dimension(), 1);
 
         // Check that coefficients are combined
-        let mut components_map: HashMap<usize, i64> = HashMap::new();
-        for &(idx, coeff) in sum.components() {
-            components_map.insert(idx, coeff);
+        let mut components_map: HashMap<usize, Integer> = HashMap::new();
+        for (idx, coeff) in sum.components() {
+            components_map.insert(*idx, coeff.clone());
         }
-        assert_eq!(components_map.get(&0), Some(&3)); // 2 + 1
-        assert_eq!(components_map.get(&1), Some(&1));
-        assert_eq!(components_map.get(&2), Some(&3));
+        assert_eq!(components_map.get(&0), Some(&Integer::from(3))); // 2 + 1
+        assert_eq!(components_map.get(&1), Some(&Integer::from(1)));
+        assert_eq!(components_map.get(&2), Some(&Integer::from(3)));
     }
 
     #[test]
     fn test_cycle_scale() {
-        let cycle = Cycle::new(1, vec![(0, 2), (1, 3)]);
+        let cycle = Cycle::new(1, vec![(0, Integer::from(2)), (1, Integer::from(3))]);
         let scaled = cycle.scale(2);
 
-        let mut components_map: HashMap<usize, i64> = HashMap::new();
-        for &(idx, coeff) in scaled.components() {
-            components_map.insert(idx, coeff);
+        let mut components_map: HashMap<usize, Integer> = HashMap::new();
+        for (idx, coeff) in scaled.components() {
+            components_map.insert(*idx, coeff.clone());
         }
-        assert_eq!(components_map.get(&0), Some(&4));
-        assert_eq!(components_map.get(&1), Some(&6));
+        assert_eq!(components_map.get(&0), Some(&Integer::from(4)));
+        assert_eq!(components_map.get(&1), Some(&Integer::from(6)));
     }
 
     #[test]
     fn test_chow_group_from_variety() {
-        let rays = vec![vec![1, 0], vec![0, 1]];
+        let rays = vec![iv(&[1, 0]), iv(&[0, 1])];
         let cone = Cone::new(2, rays).unwrap();
         let fan = Fan::new(2, vec![cone]).unwrap();
         let variety = ToricVariety::new(fan);
@@ -1648,7 +1686,7 @@ mod tests {
 
     #[test]
     fn test_toric_morphism_creation() {
-        let matrix = vec![vec![1, 0], vec![0, 1]];
+        let matrix = vec![iv(&[1, 0]), iv(&[0, 1])];
         let morphism = ToricMorphism::new(2, 2, matrix);
         assert!(morphism.is_ok());
     }
@@ -1656,34 +1694,34 @@ mod tests {
     #[test]
     fn test_toric_morphism_identity() {
         let id = ToricMorphism::identity(2);
-        let point = vec![3, 4];
+        let point = iv(&[3, 4]);
         let result = id.apply(&point).unwrap();
-        assert_eq!(result, vec![3, 4]);
+        assert_eq!(result, iv(&[3, 4]));
     }
 
     #[test]
     fn test_toric_morphism_apply() {
         // 2x2 matrix: [[2, 0], [0, 3]]
-        let matrix = vec![vec![2, 0], vec![0, 3]];
+        let matrix = vec![iv(&[2, 0]), iv(&[0, 3])];
         let morphism = ToricMorphism::new(2, 2, matrix).unwrap();
 
-        let point = vec![1, 2];
+        let point = iv(&[1, 2]);
         let result = morphism.apply(&point).unwrap();
-        assert_eq!(result, vec![2, 6]);
+        assert_eq!(result, iv(&[2, 6]));
     }
 
     #[test]
     fn test_toric_morphism_compose() {
         // First morphism: double x
-        let m1 = ToricMorphism::new(2, 2, vec![vec![2, 0], vec![0, 1]]).unwrap();
+        let m1 = ToricMorphism::new(2, 2, vec![iv(&[2, 0]), iv(&[0, 1])]).unwrap();
         // Second morphism: triple y
-        let m2 = ToricMorphism::new(2, 2, vec![vec![1, 0], vec![0, 3]]).unwrap();
+        let m2 = ToricMorphism::new(2, 2, vec![iv(&[1, 0]), iv(&[0, 3])]).unwrap();
 
         let composed = m1.compose(&m2).unwrap();
-        let point = vec![1, 1];
+        let point = iv(&[1, 1]);
         let result = composed.apply(&point).unwrap();
         // First double x: (2, 1), then triple y: (2, 3)
-        assert_eq!(result, vec![2, 3]);
+        assert_eq!(result, iv(&[2, 3]));
     }
 
     #[test]
@@ -1693,29 +1731,30 @@ mod tests {
         assert!(id.is_isomorphism());
 
         // Non-square matrix is not
-        let non_iso = ToricMorphism::new(2, 3, vec![vec![1, 0], vec![0, 1], vec![0, 0]]).unwrap();
+        let non_iso =
+            ToricMorphism::new(2, 3, vec![iv(&[1, 0]), iv(&[0, 1]), iv(&[0, 0])]).unwrap();
         assert!(!non_iso.is_isomorphism());
 
         // Determinant 2 is not unimodular
-        let det2 = ToricMorphism::new(2, 2, vec![vec![2, 0], vec![0, 1]]).unwrap();
+        let det2 = ToricMorphism::new(2, 2, vec![iv(&[2, 0]), iv(&[0, 1])]).unwrap();
         assert!(!det2.is_isomorphism());
     }
 
     #[test]
     fn test_toric_morphism_pullback_divisor() {
-        let matrix = vec![vec![1, 0], vec![0, 1]];
+        let matrix = vec![iv(&[1, 0]), iv(&[0, 1])];
         let morphism = ToricMorphism::new(2, 2, matrix).unwrap();
 
-        let div = ToricDivisor::new(vec![3, 4]);
+        let div = ToricDivisor::new(iv(&[3, 4]));
         let pulled = morphism.pullback_divisor(&div).unwrap();
-        assert_eq!(pulled.coefficients(), &[3, 4]);
+        assert_eq!(pulled.coefficients(), iv(&[3, 4]).as_slice());
     }
 
     // ===== Moment Polytope Tests =====
 
     #[test]
     fn test_moment_polytope_creation() {
-        let vertices = vec![vec![0, 0], vec![1, 0], vec![0, 1]];
+        let vertices = vec![iv(&[0, 0]), iv(&[1, 0]), iv(&[0, 1])];
         let polytope = MomentPolytope::new(vertices);
         assert!(polytope.is_ok());
 
@@ -1726,7 +1765,7 @@ mod tests {
 
     #[test]
     fn test_moment_polytope_from_fan() {
-        let rays = vec![vec![1, 0], vec![0, 1], vec![-1, -1]];
+        let rays = vec![iv(&[1, 0]), iv(&[0, 1]), iv(&[-1, -1])];
         let cone = Cone::new(2, rays).unwrap();
         let fan = Fan::new(2, vec![cone]).unwrap();
 
@@ -1741,7 +1780,7 @@ mod tests {
     #[test]
     fn test_moment_polytope_volume() {
         // Triangle with vertices (0,0), (1,0), (0,1)
-        let vertices = vec![vec![0, 0], vec![1, 0], vec![0, 1]];
+        let vertices = vec![iv(&[0, 0]), iv(&[1, 0]), iv(&[0, 1])];
         let polytope = MomentPolytope::new(vertices).unwrap();
 
         let volume = polytope.volume();
@@ -1751,23 +1790,23 @@ mod tests {
 
     #[test]
     fn test_moment_polytope_contains() {
-        let vertices = vec![vec![0, 0], vec![1, 0], vec![0, 1]];
+        let vertices = vec![iv(&[0, 0]), iv(&[1, 0]), iv(&[0, 1])];
         let polytope = MomentPolytope::new(vertices).unwrap();
 
-        assert!(polytope.contains(&vec![0, 0]));
-        assert!(polytope.contains(&vec![1, 0]));
-        assert!(!polytope.contains(&vec![2, 2]));
+        assert!(polytope.contains(&iv(&[0, 0])));
+        assert!(polytope.contains(&iv(&[1, 0])));
+        assert!(!polytope.contains(&iv(&[2, 2])));
     }
 
     // ===== Fan Subdivision Tests =====
 
     #[test]
     fn test_star_subdivision() {
-        let rays = vec![vec![1, 0], vec![0, 1]];
+        let rays = vec![iv(&[1, 0]), iv(&[0, 1])];
         let cone = Cone::new(2, rays).unwrap();
         let fan = Fan::new(2, vec![cone]).unwrap();
 
-        let new_ray = vec![1, 1];
+        let new_ray = iv(&[1, 1]);
         let subdivided = fan.star_subdivision(new_ray);
         assert!(subdivided.is_ok());
 
@@ -1777,7 +1816,7 @@ mod tests {
 
     #[test]
     fn test_barycentric_subdivision() {
-        let rays = vec![vec![1, 0], vec![0, 1]];
+        let rays = vec![iv(&[1, 0]), iv(&[0, 1])];
         let cone = Cone::new(2, rays).unwrap();
         let fan = Fan::new(2, vec![cone]).unwrap();
 
@@ -1790,11 +1829,11 @@ mod tests {
 
     #[test]
     fn test_refine_cone() {
-        let rays = vec![vec![1, 0], vec![0, 1]];
+        let rays = vec![iv(&[1, 0]), iv(&[0, 1])];
         let cone = Cone::new(2, rays).unwrap();
         let fan = Fan::new(2, vec![cone]).unwrap();
 
-        let new_rays = vec![vec![1, 1]];
+        let new_rays = vec![iv(&[1, 1])];
         let refined = fan.refine_cone(0, new_rays);
         assert!(refined.is_ok());
 
@@ -1804,11 +1843,11 @@ mod tests {
 
     #[test]
     fn test_common_refinement() {
-        let rays1 = vec![vec![1, 0], vec![0, 1]];
+        let rays1 = vec![iv(&[1, 0]), iv(&[0, 1])];
         let cone1 = Cone::new(2, rays1).unwrap();
         let fan1 = Fan::new(2, vec![cone1]).unwrap();
 
-        let rays2 = vec![vec![1, 1], vec![-1, 1]];
+        let rays2 = vec![iv(&[1, 1]), iv(&[-1, 1])];
         let cone2 = Cone::new(2, rays2).unwrap();
         let fan2 = Fan::new(2, vec![cone2]).unwrap();
 
@@ -1821,7 +1860,7 @@ mod tests {
 
     #[test]
     fn test_is_refinement_of() {
-        let rays = vec![vec![1, 0], vec![0, 1]];
+        let rays = vec![iv(&[1, 0]), iv(&[0, 1])];
         let cone = Cone::new(2, rays).unwrap();
         let fan = Fan::new(2, vec![cone]).unwrap();
 
@@ -1831,7 +1870,7 @@ mod tests {
 
     #[test]
     fn test_blow_up_cone() {
-        let rays = vec![vec![1, 0], vec![0, 1], vec![1, 1]];
+        let rays = vec![iv(&[1, 0]), iv(&[0, 1]), iv(&[1, 1])];
         let cone = Cone::new(2, rays).unwrap();
         let fan = Fan::new(2, vec![cone]).unwrap();
 
@@ -1865,7 +1904,7 @@ mod tests {
         let num_rays = fan.num_rays();
 
         // Hyperplane divisor H = D_0 + D_1
-        let h = ToricDivisor::new(vec![1; num_rays]);
+        let h = ToricDivisor::new(vec![Integer::one(); num_rays]);
         assert!(h.is_ample(&fan));
         assert!(h.is_effective());
     }
@@ -1873,11 +1912,25 @@ mod tests {
     #[test]
     fn test_morphism_between_projective_spaces() {
         // Morphism ℙ¹ → ℙ¹ (Frobenius-like)
-        let matrix = vec![vec![2]];
+        let matrix = vec![iv(&[2])];
         let morphism = ToricMorphism::new(1, 1, matrix).unwrap();
 
-        let point = vec![1];
+        let point = iv(&[1]);
         let image = morphism.apply(&point).unwrap();
-        assert_eq!(image, vec![2]);
+        assert_eq!(image, iv(&[2]));
+    }
+
+    #[test]
+    fn test_rank_and_determinant_do_not_overflow_i64() {
+        // A regression check for the historical i64-based implementation:
+        // these ray coordinates are well within Integer range but would
+        // have overflowed i64 multiplication inside a naive determinant
+        // expansion at larger sizes. Exercise a modestly large entry to
+        // confirm arbitrary-precision arithmetic is actually used.
+        let big = Integer::from(10_i64).pow(9); // 1e9, i64-safe but stresses the path
+        let rays = vec![vec![big.clone(), Integer::zero()], vec![Integer::zero(), big]];
+        let cone = Cone::new(2, rays).unwrap();
+        assert_eq!(cone.dim(), 2);
+        assert!(!cone.is_smooth()); // det = 1e18, not unimodular
     }
 }
