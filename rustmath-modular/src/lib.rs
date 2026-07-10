@@ -59,6 +59,7 @@ pub use arithgroup::{
     ArithmeticSubgroupElement, CongruenceSubgroup
 };
 pub use modform::{ModularForm, CuspForm};
+pub use modsym::{cusps_equivalent_gamma0, merel_matrices, ModularSymbolsGamma0, P1List};
 pub use cusps::Cusp;
 pub use dirichlet::{DirichletCharacter, DirichletGroup, trivial_character};
 pub use lfunction::DirichletLFunction;

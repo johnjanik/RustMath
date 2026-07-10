@@ -3,6 +3,30 @@
 //! Modular symbols provide a way to compute with modular forms using
 //! homological algebra. They form a link between modular forms and
 //! homology groups.
+//!
+//! Corresponds to `sage.modular.modsym` and the MAGMA handbook chapter
+//! "Modular Symbols".
+//!
+//! Submodules:
+//! - [`p1list`]: the projective line P^1(Z/NZ) with canonical
+//!   normalization (indexes the Manin generators).
+//! - [`gamma0`]: the Manin-symbol presentation of M_2(Gamma0(N)) over Q,
+//!   with quotient basis, boundary map to the cusps, cuspidal subspace,
+//!   and conversion {alpha, beta} -> basis coordinates (Manin trick).
+//! - [`heilbronn`]: Merel's determinant-n matrix families for the Hecke
+//!   action on Manin symbols.
+//! - [`hecke`]: the Hecke operators T_n / U_p on [`ModularSymbolsGamma0`],
+//!   their restriction to the cuspidal subspace, and exact characteristic
+//!   polynomials (Eichler-Shimura).
+
+pub mod gamma0;
+pub mod hecke;
+pub mod heilbronn;
+pub mod p1list;
+
+pub use gamma0::{cusps_equivalent_gamma0, ModularSymbolsGamma0};
+pub use heilbronn::merel_matrices;
+pub use p1list::P1List;
 
 use crate::arithgroup::ArithmeticSubgroup;
 use crate::cusps::Cusp;

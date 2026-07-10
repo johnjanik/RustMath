@@ -128,13 +128,66 @@ impl HeckeAlgebra {
         HeckeOperator::new(n, self.level)
     }
 
-    /// Compute Hecke eigenvalues for a newform
-    /// Returns map from n to eigenvalue of T_n
+    /// Compute Hecke eigenvalues for a newform.
+    /// Returns a map from n to the eigenvalue of T_n, for n = 1..=max_n.
+    ///
+    /// Implemented case: weight 2, trivial character on Gamma0(level), when
+    /// every T_n acts as a scalar on the cuspidal subspace of the modular
+    /// symbols space (equivalently, there is a single system of rational
+    /// Hecke eigenvalues, e.g. any genus-one level).  The eigenvalues are
+    /// computed exactly over Q via Merel's Heilbronn-type matrices acting
+    /// on Manin symbols (see [`crate::modsym::hecke`]); indices with
+    /// gcd(n, level) > 1 use the U_p operators, so the full q-expansion of
+    /// the newform is returned.
+    ///
+    /// Panics (honest `unimplemented!`) for other weights, for levels with
+    /// no cusp forms, and when the cuspidal space carries more than one
+    /// eigensystem (newform decomposition is not yet implemented).
     pub fn eigenvalues(&self, max_n: u64) -> HashMap<u64, Rational> {
-        let _ = max_n;
-        unimplemented!(
-            "HeckeAlgebra::eigenvalues not yet implemented (facade): previously returned all zeros"
-        )
+        if self.weight != 2 {
+            unimplemented!(
+                "HeckeAlgebra::eigenvalues: only weight 2 with trivial character \
+                 is implemented (via modular symbols); weight {} requires the \
+                 polynomial part of Manin symbols",
+                self.weight
+            );
+        }
+        let m = crate::modsym::ModularSymbolsGamma0::new(self.level);
+        let s = m.cuspidal_dimension();
+        if s == 0 {
+            unimplemented!(
+                "HeckeAlgebra::eigenvalues: S_2(Gamma0({})) = 0; there is no \
+                 newform whose eigenvalues could be returned",
+                self.level
+            );
+        }
+        let mut out = HashMap::new();
+        for n in 1..=max_n {
+            let t = m.hecke_matrix_cuspidal(n);
+            let a = t.get(0, 0).expect("cuspidal dimension >= 1").clone();
+            let scalar = (0..s).all(|i| {
+                (0..s).all(|j| {
+                    let e = t.get(i, j).expect("entry in range");
+                    if i == j {
+                        *e == a
+                    } else {
+                        e.is_zero()
+                    }
+                })
+            });
+            if !scalar {
+                unimplemented!(
+                    "HeckeAlgebra::eigenvalues: T_{} is not scalar on the \
+                     cuspidal subspace at level {} (multiple Hecke \
+                     eigensystems); newform decomposition is not yet \
+                     implemented",
+                    n,
+                    self.level
+                );
+            }
+            out.insert(n, a);
+        }
+        out
     }
 }
 
@@ -376,6 +429,77 @@ mod tests {
 
         let t2 = hecke.hecke_operator(2);
         assert_eq!(t2.index(), 2);
+    }
+
+    /// a_n tables verified independently in python: prime indices by direct
+    /// point counting on the curve (nonsingular counts at multiplicative
+    /// primes), composite indices from the classical eta products whose
+    /// prime coefficients were matched against the point counts, and which
+    /// satisfy the weight-2 Hecke recursions.
+    fn check_eigenvalues(level: u64, expected: &[i64]) {
+        let h = HeckeAlgebra::new(level, 2, 2);
+        let ev = h.eigenvalues(expected.len() as u64);
+        assert_eq!(ev.len(), expected.len());
+        for (i, a) in expected.iter().enumerate() {
+            let n = (i + 1) as u64;
+            assert_eq!(
+                ev[&n],
+                Rational::from_integer(Integer::from(*a)),
+                "a_{n} at level {level}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_hecke_algebra_eigenvalues_level_11() {
+        // 11a: y^2 + y = x^3 - x^2 - 10x - 20 (conductor 11 = -Delta support,
+        // c4 = 496 coprime to 11).
+        check_eigenvalues(
+            11,
+            &[1, -2, -1, 2, 1, 2, -2, 0, -2, -2, 1, -2, 4, 4],
+        );
+    }
+
+    #[test]
+    fn test_hecke_algebra_eigenvalues_level_14() {
+        // 14a: y^2 + xy + y = x^3 + 4x - 6 (Delta = -2^6 7^3, c4 = -215).
+        check_eigenvalues(
+            14,
+            &[1, -1, -2, 1, 0, 2, 1, -1, 1, 0, 0, -2, -4, -1],
+        );
+    }
+
+    #[test]
+    fn test_hecke_algebra_eigenvalues_level_15() {
+        // 15a: y^2 + xy + y = x^3 + x^2 - 10x - 10 (Delta = 3^4 5^4, c4 = 481).
+        check_eigenvalues(
+            15,
+            &[1, -1, -1, -1, 1, 1, 0, 3, 1, -1, -4, 1, -2, 0],
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "not scalar")]
+    fn test_hecke_algebra_eigenvalues_level_37_honestly_unimplemented() {
+        // Level 37 has two distinct eigensystems (a_2 = -2 and 0), so T_2 is
+        // not scalar on the cuspidal space and the newform decomposition is
+        // honestly refused.
+        let h = HeckeAlgebra::new(37, 2, 4);
+        let _ = h.eigenvalues(2);
+    }
+
+    #[test]
+    #[should_panic(expected = "no newform")]
+    fn test_hecke_algebra_eigenvalues_genus_zero_honestly_unimplemented() {
+        let h = HeckeAlgebra::new(3, 2, 0);
+        let _ = h.eigenvalues(2);
+    }
+
+    #[test]
+    #[should_panic(expected = "weight 2")]
+    fn test_hecke_algebra_eigenvalues_higher_weight_honestly_unimplemented() {
+        let h = HeckeAlgebra::new(1, 12, 1);
+        let _ = h.eigenvalues(2);
     }
 
     #[test]

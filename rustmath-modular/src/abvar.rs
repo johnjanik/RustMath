@@ -127,15 +127,26 @@ impl ModularAbelianVariety {
         self.conductor
     }
 
-    /// Check if this abelian variety is simple
+    /// Check if this abelian variety is simple.
+    ///
+    /// Implemented cases (rigorous): dimension 0 (the zero variety, not
+    /// simple by convention, like a unit not being prime) and dimension 1
+    /// (an abelian variety of dimension 1 is an elliptic curve and has no
+    /// nonzero proper abelian subvarieties, since such a subvariety would
+    /// need dimension strictly between 0 and 1).  For dimension >= 2 the
+    /// answer genuinely depends on the isogeny decomposition (Hecke charpoly
+    /// factorization on the newform factors), which is not yet implemented;
+    /// note the old facade's `dimension == 1` stand-in was wrong precisely
+    /// there (higher-dimensional simple factors exist).
     pub fn is_simple(&self) -> bool {
-        // Determining simplicity requires computing the isogeny decomposition
-        // (e.g. via the Hecke algebra acting on the newform factors), which
-        // is not yet implemented. Previously this used `dimension == 1` as a
-        // stand-in, which is not a correct simplicity test.
-        unimplemented!(
-            "ModularAbelianVariety::is_simple not yet implemented (facade): previously approximated by `dimension == 1`"
-        )
+        match self.dimension {
+            0 => false,
+            1 => true,
+            _ => unimplemented!(
+                "ModularAbelianVariety::is_simple for dimension >= 2 requires \
+                 the isogeny decomposition, which is not yet implemented"
+            ),
+        }
     }
 
     /// Decompose into simple factors (up to isogeny)
@@ -276,14 +287,39 @@ pub struct AbelianVarietyNewform {
 }
 
 impl AbelianVarietyNewform {
-    /// Create abelian variety from a newform
+    /// Create abelian variety from a newform.
+    ///
+    /// The dimension of A_f equals the degree over Q of the field generated
+    /// by the Fourier coefficients of f.  Implemented case (rigorous):
+    /// weight 2 at a level N with genus(X_0(N)) = 1 while every proper
+    /// divisor M | N has genus(X_0(M)) = 0.  Then dim S_2(Gamma0(N)) = 1
+    /// and the old subspace is zero, so f is the unique newform, its
+    /// eigenvalues are rational (the 1-dimensional space is Hecke-stable),
+    /// and A_f is an elliptic curve: dimension 1.  This covers e.g.
+    /// N = 11, 14, 15, 17, 19, 20, 21, 24, 27, 32, 36, 49.
+    ///
+    /// The general case needs the newform decomposition of the cuspidal
+    /// modular symbols space (Hecke charpoly factorization over Q), which
+    /// is not yet implemented.
     pub fn new(newform: Newform) -> Self {
-        // Dimension equals the degree over Q of the number field generated
-        // by the Fourier coefficients of the newform, which is not yet
-        // computed here. Previously this always used the constant 1.
-        let _ = newform;
+        if newform.weight() == 2 {
+            let n = newform.level();
+            if n >= 1 && genus_x0(n) == 1 {
+                let old_part_zero =
+                    (1..n).filter(|m| n % m == 0).all(|m| genus_x0(m) == 0);
+                if old_part_zero {
+                    return AbelianVarietyNewform {
+                        newform,
+                        dimension: 1,
+                    };
+                }
+            }
+        }
         unimplemented!(
-            "AbelianVarietyNewform::new not yet implemented (facade): dimension previously hardcoded to 1"
+            "AbelianVarietyNewform::new: the coefficient-field degree is only \
+             computed for weight 2 at levels where S_2(Gamma0(N)) is \
+             1-dimensional and entirely new; general newform decomposition is \
+             not yet implemented"
         )
     }
 
@@ -434,11 +470,12 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore = "facade -> unimplemented; needs real algorithm (Phase 4)"]
     fn test_modular_abelian_variety() {
         let a = ModularAbelianVariety::new(11, 1);
         assert_eq!(a.level(), 11);
         assert_eq!(a.dimension(), 1);
+        // dimension 1 => simple (an elliptic curve has no nonzero proper
+        // abelian subvarieties); realized in stage 2, previously a facade.
         assert!(a.is_simple());
     }
 
@@ -502,12 +539,31 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "facade -> unimplemented; needs real algorithm (Phase 4)"]
     fn test_abvar_from_newform() {
+        // Weight 2, level 11: genus(X_0(11)) = 1 and every proper divisor
+        // has genus 0, so the unique newform is rational and A_f is an
+        // elliptic curve.  Realized in stage 2, previously a facade.
         let f = Newform::new(2, 11);
         let a = AbelianVarietyNewform::new(f);
         assert_eq!(a.level(), 11);
         assert_eq!(a.dimension(), 1);
+    }
+
+    #[test]
+    fn test_abvar_from_newform_more_genus_one_levels() {
+        for n in [14u64, 15, 17, 19, 20, 21, 24, 27, 32, 36, 49] {
+            let a = AbelianVarietyNewform::new(Newform::new(2, n));
+            assert_eq!(a.level(), n);
+            assert_eq!(a.dimension(), 1, "A_f dimension at level {n}");
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "not yet implemented")]
+    fn test_abvar_from_newform_level_with_old_part_unimplemented() {
+        // N = 22: genus(X_0(22)) = 2 with a nonzero old part from level 11;
+        // the coefficient-field computation is honestly refused.
+        let _ = AbelianVarietyNewform::new(Newform::new(2, 22));
     }
 }
 
