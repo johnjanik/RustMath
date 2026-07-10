@@ -6,13 +6,17 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 
+# Thin re-export shim over rustmath_rings::padics (the canonical home of the
+# p-adic machinery). Kept so existing dependents build unchanged.
+
 [dependencies]
-rustmath-core = { path = "../rustmath-core" }
+rustmath-rings = { path = "../rustmath-rings" }
+
+[dev-dependencies]
 rustmath-integers = { path = "../rustmath-integers" }
-rustmath-rationals = { path = "../rustmath-rationals" }
-num-traits = { workspace = true }
-serde = { workspace = true, optional = true }
 
 [features]
 default = []
-serde = ["dep:serde"]
+# Historical no-op: the former optional serde support was never used by any
+# dependent; the flag is kept so `--features serde` does not break.
+serde = []
