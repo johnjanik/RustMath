@@ -60,7 +60,7 @@ impl<R: Ring> FGPModule<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use num_bigint::BigInt;
+    use rustmath_integers::Integer as BigInt;
 
     #[test]
     fn test_free_module() {

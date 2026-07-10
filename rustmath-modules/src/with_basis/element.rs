@@ -325,7 +325,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use num_bigint::BigInt;
+    use rustmath_integers::Integer as BigInt;
 
     #[test]
     fn test_zero_element() {
@@ -470,7 +470,7 @@ mod tests {
             (1, BigInt::from(3)),
         ]);
 
-        let doubled = elem.map_coefficients(|c| c * BigInt::from(2));
+        let doubled = elem.map_coefficients(|c| c.clone() * BigInt::from(2));
         assert_eq!(doubled.coefficient(&0), BigInt::from(4));
         assert_eq!(doubled.coefficient(&1), BigInt::from(6));
     }

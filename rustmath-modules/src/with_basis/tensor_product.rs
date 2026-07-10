@@ -290,7 +290,7 @@ where
 mod tests {
     use super::*;
     use crate::with_basis::parent::FreeModuleWithBasis;
-    use num_bigint::BigInt;
+    use rustmath_integers::Integer as BigInt;
 
     #[test]
     fn test_tensor_index() {
@@ -302,8 +302,8 @@ mod tests {
     #[test]
     fn test_tensor_product_creation() {
         let base_ring = BigInt::from(0);
-        let m1 = FreeModuleWithBasis::standard(base_ring.clone(), 2);
-        let m2 = FreeModuleWithBasis::standard(base_ring, 3);
+        let m1 = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 2);
+        let m2 = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         let tensor = TensorProduct::new(m1, m2);
 
@@ -314,8 +314,8 @@ mod tests {
     #[test]
     fn test_basis_indices() {
         let base_ring = BigInt::from(0);
-        let m1 = FreeModuleWithBasis::standard(base_ring.clone(), 2);
-        let m2 = FreeModuleWithBasis::standard(base_ring, 2);
+        let m1 = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 2);
+        let m2 = FreeModuleWithBasis::<usize, _>::standard(base_ring, 2);
 
         let tensor = TensorProduct::new(m1, m2);
         let indices = tensor.basis_indices();
@@ -332,8 +332,8 @@ mod tests {
     #[test]
     fn test_tensor_of_basis_elements() {
         let base_ring = BigInt::from(0);
-        let m1 = FreeModuleWithBasis::standard(base_ring.clone(), 2);
-        let m2 = FreeModuleWithBasis::standard(base_ring, 2);
+        let m1 = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 2);
+        let m2 = FreeModuleWithBasis::<usize, _>::standard(base_ring, 2);
 
         let tensor = TensorProduct::new(m1.clone(), m2.clone());
 
@@ -351,8 +351,8 @@ mod tests {
     #[test]
     fn test_tensor_bilinearity() {
         let base_ring = BigInt::from(0);
-        let m1 = FreeModuleWithBasis::standard(base_ring.clone(), 2);
-        let m2 = FreeModuleWithBasis::standard(base_ring, 2);
+        let m1 = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 2);
+        let m2 = FreeModuleWithBasis::<usize, _>::standard(base_ring, 2);
 
         let tensor = TensorProduct::new(m1.clone(), m2.clone());
 
@@ -379,8 +379,8 @@ mod tests {
     #[test]
     fn test_pure_tensor() {
         let base_ring = BigInt::from(0);
-        let m1 = FreeModuleWithBasis::standard(base_ring.clone(), 2);
-        let m2 = FreeModuleWithBasis::standard(base_ring, 3);
+        let m1 = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 2);
+        let m2 = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         let tensor = TensorProduct::new(m1, m2);
 
@@ -393,8 +393,8 @@ mod tests {
     #[test]
     fn test_swap() {
         let base_ring = BigInt::from(0);
-        let m1 = FreeModuleWithBasis::standard(base_ring.clone(), 2);
-        let m2 = FreeModuleWithBasis::standard(base_ring, 2);
+        let m1 = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 2);
+        let m2 = FreeModuleWithBasis::<usize, _>::standard(base_ring, 2);
 
         let tensor = TensorProduct::new(m1, m2);
 
@@ -414,8 +414,8 @@ mod tests {
     #[test]
     fn test_tensor_module_operations() {
         let base_ring = BigInt::from(0);
-        let m1 = FreeModuleWithBasis::standard(base_ring.clone(), 2);
-        let m2 = FreeModuleWithBasis::standard(base_ring, 2);
+        let m1 = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 2);
+        let m2 = FreeModuleWithBasis::<usize, _>::standard(base_ring, 2);
 
         let tensor = TensorProduct::new(m1, m2);
 

@@ -212,12 +212,12 @@ where
 mod tests {
     use super::*;
     use crate::with_basis::parent::FreeModuleWithBasis;
-    use num_bigint::BigInt;
+    use rustmath_integers::Integer as BigInt;
 
     #[test]
     fn test_dual_module_creation() {
         let base_ring = BigInt::from(0);
-        let module = FreeModuleWithBasis::standard(base_ring, 3);
+        let module = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         let dual = DualModule::new(module);
 
@@ -227,7 +227,7 @@ mod tests {
     #[test]
     fn test_dual_basis() {
         let base_ring = BigInt::from(0);
-        let module = FreeModuleWithBasis::standard(base_ring, 3);
+        let module = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         let dual = DualModule::new(module);
 
@@ -239,7 +239,7 @@ mod tests {
     #[test]
     fn test_canonical_pairing() {
         let base_ring = BigInt::from(0);
-        let module = FreeModuleWithBasis::standard(base_ring, 3);
+        let module = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         // Primal element: 3*e_0 + 5*e_1 + 2*e_2
         let primal = ModuleWithBasisElement::from_terms(vec![
@@ -264,7 +264,7 @@ mod tests {
     #[test]
     fn test_dual_basis_pairing() {
         let base_ring = BigInt::from(0);
-        let module = FreeModuleWithBasis::standard(base_ring, 3);
+        let module = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
         let dual = DualModule::new(module.clone());
 
         // Test that e_i*(e_j) = δ_ij
@@ -295,7 +295,7 @@ mod tests {
     #[test]
     fn test_dual_module_operations() {
         let base_ring = BigInt::from(0);
-        let module = FreeModuleWithBasis::standard(base_ring, 3);
+        let module = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
         let dual = DualModule::new(module);
 
         let alpha = ModuleWithBasisElement::from_terms(vec![

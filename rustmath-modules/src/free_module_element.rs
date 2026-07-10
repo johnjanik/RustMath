@@ -78,7 +78,7 @@ impl<R: Ring> FreeModuleElement<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use num_bigint::BigInt;
+    use rustmath_integers::Integer as BigInt;
     use num_traits::{Zero, One};
 
     #[test]

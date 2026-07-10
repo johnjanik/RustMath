@@ -294,12 +294,12 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use num_bigint::BigInt;
+    use rustmath_integers::Integer as BigInt;
 
     #[test]
     fn test_free_module_creation() {
         let base_ring = BigInt::from(0); // Using BigInt as ring
-        let module = FreeModuleWithBasis::standard(base_ring, 3);
+        let module = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         assert_eq!(module.dimension(), Some(3));
         assert_eq!(module.module_rank(), Some(3));
@@ -308,7 +308,7 @@ mod tests {
     #[test]
     fn test_basis_elements() {
         let base_ring = BigInt::from(0);
-        let module = FreeModuleWithBasis::standard(base_ring, 3);
+        let module = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         let basis = module.basis_elements();
         assert_eq!(basis.len(), 3);
@@ -327,7 +327,7 @@ mod tests {
     #[test]
     fn test_module_operations() {
         let base_ring = BigInt::from(0);
-        let module = FreeModuleWithBasis::standard(base_ring, 3);
+        let module = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         let e0 = module.basis_element(&0).unwrap();
         let e1 = module.basis_element(&1).unwrap();
@@ -349,7 +349,7 @@ mod tests {
     #[test]
     fn test_linear_combination() {
         let base_ring = BigInt::from(0);
-        let module = FreeModuleWithBasis::standard(base_ring, 3);
+        let module = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         let e0 = module.basis_element(&0).unwrap();
         let e1 = module.basis_element(&1).unwrap();
@@ -367,7 +367,7 @@ mod tests {
     #[test]
     fn test_zero_element() {
         let base_ring = BigInt::from(0);
-        let module = FreeModuleWithBasis::standard(base_ring, 3);
+        let module = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         let zero = module.module_zero();
         assert!(module.is_module_zero(&zero));
@@ -377,7 +377,7 @@ mod tests {
     #[test]
     fn test_monomial() {
         let base_ring = BigInt::from(0);
-        let module = FreeModuleWithBasis::standard(base_ring, 3);
+        let module = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         let m1 = module.monomial(&1).unwrap();
         assert_eq!(m1.coefficient(&1), BigInt::from(1));
@@ -387,7 +387,7 @@ mod tests {
     #[test]
     fn test_gens() {
         let base_ring = BigInt::from(0);
-        let module = FreeModuleWithBasis::standard(base_ring, 4);
+        let module = FreeModuleWithBasis::<usize, _>::standard(base_ring, 4);
 
         let gens = module.gens();
         assert_eq!(gens.len(), 4);
