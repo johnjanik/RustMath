@@ -107,7 +107,7 @@ pub fn test_loop_2() -> Result<()> {
 
     let elapsed = start.elapsed();
     println!("test_loop_2 completed in {:?}", elapsed);
-    println!("Average time per operation: {:?}", elapsed / iterations);
+    println!("Average time per operation: {:?}", elapsed / iterations as u32);
 
     Ok(())
 }
@@ -156,7 +156,7 @@ pub fn test_loop_3() -> Result<()> {
 
     let elapsed = start.elapsed();
     println!("test_loop_3 completed in {:?}", elapsed);
-    println!("Average time per operation: {:?}", elapsed / iterations);
+    println!("Average time per operation: {:?}", elapsed / iterations as u32);
 
     Ok(())
 }
@@ -204,7 +204,7 @@ pub fn test_loop_4() -> Result<()> {
 
     let elapsed = start.elapsed();
     println!("test_loop_4 completed in {:?}", elapsed);
-    println!("Average time per operation: {:?}", elapsed / iterations);
+    println!("Average time per operation: {:?}", elapsed / iterations as u32);
 
     Ok(())
 }
