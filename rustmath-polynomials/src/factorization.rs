@@ -2,8 +2,95 @@
 
 use crate::polynomial::Polynomial;
 use crate::univariate::UnivariatePolynomial;
+use crate::zassenhaus;
 use rustmath_core::{EuclideanDomain, MathError, Result, Ring};
 use std::fmt::Debug;
+
+/// Scale every coefficient by `s`.
+fn scalar_mul_poly<R: Ring + Clone>(p: &UnivariatePolynomial<R>, s: &R) -> UnivariatePolynomial<R> {
+    UnivariatePolynomial::new(p.coefficients().iter().map(|c| c.clone() * s.clone()).collect())
+}
+
+/// Multiply `p` by `x^k`.
+fn shift_poly<R: Ring + Clone>(p: &UnivariatePolynomial<R>, k: usize) -> UnivariatePolynomial<R> {
+    if p.is_zero() {
+        return p.clone();
+    }
+    let mut v = vec![R::zero(); k];
+    v.extend(p.coefficients().iter().cloned());
+    UnivariatePolynomial::new(v)
+}
+
+/// Pseudo-remainder of `a` by `b` using only ring operations (never divides by the
+/// leading coefficient), so it is valid over ℤ[x] where the Euclidean remainder
+/// sequence diverges. Mirrors [`crate::zx::pseudo_rem`] for the generic type.
+fn poly_pseudo_rem<R>(
+    a: &UnivariatePolynomial<R>,
+    b: &UnivariatePolynomial<R>,
+) -> UnivariatePolynomial<R>
+where
+    R: Ring + Clone + Debug,
+{
+    let db = match b.degree() {
+        Some(d) => d,
+        None => return a.clone(),
+    };
+    let lcb = b.coeff(db).clone();
+    let mut r = a.clone();
+    let mut e = match r.degree() {
+        Some(da) if da >= db => (da - db + 1) as u32,
+        _ => 0,
+    };
+    while let Some(dr) = r.degree() {
+        if dr < db {
+            break;
+        }
+        let lcr = r.coeff(dr).clone();
+        let shifted = shift_poly(&scalar_mul_poly(b, &lcr), dr - db);
+        r = scalar_mul_poly(&r, &lcb) - shifted;
+        e -= 1;
+    }
+    for _ in 0..e {
+        r = scalar_mul_poly(&r, &lcb);
+    }
+    r
+}
+
+/// GCD over a polynomial ring with non-field coefficients, via the **primitive
+/// pseudo-remainder sequence** (re-primitivizing each step to curb growth). Returns
+/// a primitive GCD; the constant `1` when the inputs are coprime. Correct over ℤ[x],
+/// where `UnivariatePolynomial::gcd`'s Euclidean loop fails to terminate.
+fn poly_gcd_prem<R>(
+    a: &UnivariatePolynomial<R>,
+    b: &UnivariatePolynomial<R>,
+) -> UnivariatePolynomial<R>
+where
+    R: Ring + EuclideanDomain + Clone + Debug,
+{
+    if a.is_zero() {
+        return primitive_part(b);
+    }
+    if b.is_zero() {
+        return primitive_part(a);
+    }
+    let mut a = primitive_part(a);
+    let mut b = primitive_part(b);
+    if a.degree() < b.degree() {
+        std::mem::swap(&mut a, &mut b);
+    }
+    loop {
+        let r = poly_pseudo_rem(&a, &b);
+        if r.is_zero() {
+            break;
+        }
+        if r.degree() == Some(0) {
+            return UnivariatePolynomial::new(vec![R::one()]);
+        }
+        a = b;
+        b = primitive_part(&r);
+    }
+    primitive_part(&b)
+}
 
 /// Compute the content of a polynomial (GCD of all coefficients)
 ///
@@ -93,8 +180,8 @@ where
         ));
     }
 
-    // Compute gcd(f, f')
-    let g = f.gcd(&f_prime);
+    // Compute gcd(f, f') via pseudo-division (Euclidean gcd diverges over ℤ[x])
+    let g = poly_gcd_prem(&f, &f_prime);
 
     // If gcd is 1, f is already square-free
     if g.degree() == Some(0) || g.is_constant() {
@@ -110,7 +197,7 @@ where
     let mut g_remaining = g;
 
     while !g_remaining.is_constant() {
-        let g_next = current.gcd(&g_remaining);
+        let g_next = poly_gcd_prem(&current, &g_remaining);
 
         if g_next.degree() == Some(0) || g_next.is_constant() {
             // current is a square-free factor with this multiplicity
@@ -161,7 +248,7 @@ where
         return Ok(false);
     }
 
-    let g = poly.gcd(&derivative);
+    let g = poly_gcd_prem(poly, &derivative);
     Ok(g.degree() == Some(0) || g.is_constant())
 }
 
@@ -259,6 +346,10 @@ where
 /// - q divides a_n (leading coefficient)
 ///
 /// Returns a list of rational roots found (as Integers when they're integers)
+///
+/// Retained as a cheap linear-root pre-filter and exercised by unit tests; the
+/// main factorization path is now [`factor_over_integers`] (Zassenhaus).
+#[allow(dead_code)]
 fn find_rational_roots(
     poly: &UnivariatePolynomial<rustmath_integers::Integer>,
 ) -> Vec<rustmath_integers::Integer> {
@@ -317,6 +408,7 @@ fn find_rational_roots(
 /// Factor out known linear factors from a polynomial
 ///
 /// Given a polynomial and a list of roots, divide out the corresponding linear factors
+#[allow(dead_code)]
 fn factor_out_roots(
     poly: &UnivariatePolynomial<rustmath_integers::Integer>,
     roots: &[rustmath_integers::Integer],
@@ -376,60 +468,57 @@ fn factor_out_roots(
 pub fn factor_over_integers(
     poly: &UnivariatePolynomial<rustmath_integers::Integer>,
 ) -> Result<Vec<(UnivariatePolynomial<rustmath_integers::Integer>, u32)>> {
-
+    use rustmath_integers::Integer;
 
     if poly.is_zero() {
         return Ok(vec![]);
     }
-
     if poly.is_constant() {
         return Ok(vec![(poly.clone(), 1)]);
     }
 
-    let mut all_factors = Vec::new();
+    // Delegate to the Zassenhaus factorizer (Vec<Integer>, little-endian).
+    let coeffs: Vec<Integer> = poly.coefficients().to_vec();
+    let (content_int, factors) = zassenhaus::factor(&coeffs).map_err(|_| {
+        MathError::NotSupported(
+            "Zassenhaus recombination exceeded the subset bound (pathological factor count)"
+                .to_string(),
+        )
+    })?;
 
-    // Step 1: Extract content
-    let cont = content(poly);
-    if !cont.is_one() && !cont.is_zero() {
-        let constant_poly = UnivariatePolynomial::new(vec![cont]);
-        all_factors.push((constant_poly, 1));
+    let mut all_factors: Vec<(UnivariatePolynomial<Integer>, u32)> = Vec::new();
+
+    // Emit the integer content as a constant factor unless it is 1.
+    if !content_int.is_one() {
+        all_factors.push((UnivariatePolynomial::new(vec![content_int]), 1));
     }
 
-    let primitive = primitive_part(poly);
-
-    // Step 2: Square-free factorization
-    let square_free_factors = square_free_factorization(&primitive)?;
-
-    // Step 3: For each square-free factor, try to find rational roots
-    for (sf_poly, multiplicity) in square_free_factors {
-        if sf_poly.is_constant() {
-            continue;
-        }
-
-        // Find rational roots
-        let roots = find_rational_roots(&sf_poly);
-
-        // Factor out the roots
-        let (linear_factors, remaining) = factor_out_roots(&sf_poly, &roots)?;
-
-        // Add linear factors with their multiplicities
-        for (linear, linear_mult) in linear_factors {
-            all_factors.push((linear, linear_mult * multiplicity));
-        }
-
-        // Add remaining polynomial if it's not constant
-        if !remaining.is_constant() && !remaining.is_zero() {
-            // The remaining polynomial is irreducible over Q (or we can't factor it)
-            all_factors.push((remaining, multiplicity));
-        }
+    for (g, mult) in factors {
+        all_factors.push((UnivariatePolynomial::new(g), mult));
     }
 
     if all_factors.is_empty() {
-        // No factorization found, return the original
-        Ok(vec![(poly.clone(), 1)])
-    } else {
-        Ok(all_factors)
+        all_factors.push((poly.clone(), 1));
     }
+    Ok(all_factors)
+}
+
+/// Test irreducibility of a polynomial over ℚ (equivalently, over ℤ for a
+/// primitive polynomial) via complete Zassenhaus factorization. A constant is not
+/// irreducible. This is the reliable integer-specific complement to the generic,
+/// conservative [`is_irreducible`].
+pub fn is_irreducible_over_integers(
+    poly: &UnivariatePolynomial<rustmath_integers::Integer>,
+) -> Result<bool> {
+    if poly.is_zero() || poly.is_constant() {
+        return Ok(false);
+    }
+    let coeffs: Vec<rustmath_integers::Integer> = poly.coefficients().to_vec();
+    let (_, factors) = zassenhaus::factor(&coeffs).map_err(|_| {
+        MathError::NotSupported("Zassenhaus recombination exceeded the subset bound".to_string())
+    })?;
+    // Irreducible iff exactly one non-constant factor, with multiplicity one.
+    Ok(factors.len() == 1 && factors[0].1 == 1)
 }
 
 /// Berlekamp's factorization algorithm for polynomials over finite fields
@@ -1238,18 +1327,14 @@ mod tests {
         ]);
         assert!(is_square_free(&p1).unwrap());
 
-        // TODO: The following test exposes a limitation in the current GCD algorithm
-        // for polynomials over integers. The Euclidean algorithm requires exact division,
-        // but for integer polynomials, we need pseudo-division or subresultant GCD.
-        // Uncomment when proper integer polynomial GCD is implemented.
-
-        // (x - 1)² = x² - 2x + 1 is not square-free
-        // let p2 = UnivariatePolynomial::new(vec![
-        //     Integer::from(1),
-        //     Integer::from(-2),
-        //     Integer::from(1),
-        // ]);
-        // assert!(!is_square_free(&p2).unwrap());
+        // (x - 1)² = x² - 2x + 1 is not square-free. This previously hung in the
+        // Euclidean ℤ[x] GCD; now handled by the pseudo-division GCD.
+        let p2 = UnivariatePolynomial::new(vec![
+            Integer::from(1),
+            Integer::from(-2),
+            Integer::from(1),
+        ]);
+        assert!(!is_square_free(&p2).unwrap());
     }
 
     #[test]
@@ -1263,7 +1348,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Requires proper integer polynomial GCD with pseudo-division"]
     fn test_square_free_factorization_repeated() {
         // x² = x * x (x with multiplicity 2)
         // TODO: This test exposes the same GCD limitation as test_is_square_free.

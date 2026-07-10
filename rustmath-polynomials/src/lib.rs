@@ -3,26 +3,35 @@
 //! This crate provides polynomial arithmetic over various coefficient rings.
 
 pub mod algebraic_geometry;
+pub mod bivariate;
+pub mod disc;
 pub mod factorization;
 pub mod fp_factor;
 pub mod groebner;
 pub mod ideal;
 pub mod ideal_monoid;
 pub mod laurent;
+pub mod mestre;
 pub mod multivariate;
+pub mod newton;
+pub mod padic_factor;
 pub mod polynomial;
+pub mod real_roots;
+pub mod resolvent;
 pub mod quotient;
 pub mod roots;
 pub mod univariate;
+pub mod zassenhaus;
 pub mod zp_hensel;
+pub mod zx;
 
 pub use algebraic_geometry::{
     constant_morphism, identity_morphism, AffineSpace, AffineVariety, Morphism, ProjectiveSpace,
     ProjectiveVariety,
 };
 pub use factorization::{
-    content, factor_over_integers, is_irreducible, is_square_free, primitive_part,
-    square_free_factorization,
+    content, factor_over_integers, is_irreducible, is_irreducible_over_integers, is_square_free,
+    primitive_part, square_free_factorization,
 };
 pub use groebner::{
     groebner_basis, groebner_basis_info, ideal_membership, is_well_ordering,

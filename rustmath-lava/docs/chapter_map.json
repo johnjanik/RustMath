@@ -1,0 +1,956 @@
+{
+ "1": {
+  "title": "STATEMENTS AND EXPRESSIONS",
+  "start": 136,
+  "end": 165,
+  "pages": 30
+ },
+ "2": {
+  "title": "FUNCTIONS, PROCEDURES",
+  "start": 166,
+  "end": 195,
+  "pages": 30
+ },
+ "3": {
+  "title": "INPUT AND OUTPUT",
+  "start": 196,
+  "end": 225,
+  "pages": 30
+ },
+ "4": {
+  "title": "ENVIRONMENT AND OPTIONS",
+  "start": 226,
+  "end": 247,
+  "pages": 22
+ },
+ "5": {
+  "title": "MAGMA SEMANTICS",
+  "start": 248,
+  "end": 267,
+  "pages": 20
+ },
+ "6": {
+  "title": "THE MAGMA PROFILER",
+  "start": 268,
+  "end": 277,
+  "pages": 10
+ },
+ "7": {
+  "title": "DEBUGGING MAGMA CODE",
+  "start": 278,
+  "end": 285,
+  "pages": 8
+ },
+ "8": {
+  "title": "INTRODUCTION TO AGGREGATES",
+  "start": 286,
+  "end": 295,
+  "pages": 10
+ },
+ "9": {
+  "title": "SETS",
+  "start": 296,
+  "end": 323,
+  "pages": 28
+ },
+ "10": {
+  "title": "SEQUENCES",
+  "start": 324,
+  "end": 345,
+  "pages": 22
+ },
+ "11": {
+  "title": "TUPLES AND CARTESIAN PRODUCTS",
+  "start": 346,
+  "end": 353,
+  "pages": 8
+ },
+ "12": {
+  "title": "LISTS",
+  "start": 354,
+  "end": 359,
+  "pages": 6
+ },
+ "13": {
+  "title": "ASSOCIATIVE ARRAYS",
+  "start": 360,
+  "end": 365,
+  "pages": 6
+ },
+ "14": {
+  "title": "COPRODUCTS",
+  "start": 366,
+  "end": 371,
+  "pages": 6
+ },
+ "15": {
+  "title": "RECORDS",
+  "start": 372,
+  "end": 377,
+  "pages": 6
+ },
+ "16": {
+  "title": "MAPPINGS",
+  "start": 378,
+  "end": 389,
+  "pages": 12
+ },
+ "17": {
+  "title": "INTRODUCTION TO RINGS",
+  "start": 390,
+  "end": 409,
+  "pages": 20
+ },
+ "18": {
+  "title": "RING OF INTEGERS",
+  "start": 410,
+  "end": 461,
+  "pages": 52
+ },
+ "19": {
+  "title": "INTEGER RESIDUE CLASS RINGS",
+  "start": 462,
+  "end": 481,
+  "pages": 20
+ },
+ "20": {
+  "title": "RATIONAL FIELD",
+  "start": 482,
+  "end": 493,
+  "pages": 12
+ },
+ "21": {
+  "title": "FINITE FIELDS",
+  "start": 494,
+  "end": 521,
+  "pages": 28
+ },
+ "22": {
+  "title": "NEARFIELDS",
+  "start": 522,
+  "end": 539,
+  "pages": 18
+ },
+ "23": {
+  "title": "UNIVARIATE POLYNOMIAL RINGS",
+  "start": 540,
+  "end": 573,
+  "pages": 34
+ },
+ "24": {
+  "title": "MULTIVARIATE POLYNOMIAL RINGS",
+  "start": 574,
+  "end": 601,
+  "pages": 28
+ },
+ "25": {
+  "title": "REAL AND COMPLEX FIELDS",
+  "start": 602,
+  "end": 649,
+  "pages": 48
+ },
+ "26": {
+  "title": "MATRICES",
+  "start": 650,
+  "end": 689,
+  "pages": 40
+ },
+ "27": {
+  "title": "SPARSE MATRICES",
+  "start": 690,
+  "end": 715,
+  "pages": 26
+ },
+ "28": {
+  "title": "VECTOR SPACES",
+  "start": 716,
+  "end": 739,
+  "pages": 24
+ },
+ "29": {
+  "title": "POLAR SPACES",
+  "start": 740,
+  "end": 771,
+  "pages": 32
+ },
+ "30": {
+  "title": "LATTICES",
+  "start": 772,
+  "end": 849,
+  "pages": 78
+ },
+ "31": {
+  "title": "LATTICES WITH GROUP ACTION",
+  "start": 850,
+  "end": 875,
+  "pages": 26
+ },
+ "32": {
+  "title": "QUADRATIC FORMS",
+  "start": 876,
+  "end": 883,
+  "pages": 8
+ },
+ "33": {
+  "title": "BINARY QUADRATIC FORMS",
+  "start": 884,
+  "end": 899,
+  "pages": 16
+ },
+ "34": {
+  "title": "NUMBER FIELDS",
+  "start": 900,
+  "end": 965,
+  "pages": 66
+ },
+ "35": {
+  "title": "QUADRATIC FIELDS",
+  "start": 966,
+  "end": 979,
+  "pages": 14
+ },
+ "36": {
+  "title": "CYCLOTOMIC FIELDS",
+  "start": 980,
+  "end": 987,
+  "pages": 8
+ },
+ "37": {
+  "title": "ORDERS AND ALGEBRAIC FIELDS",
+  "start": 988,
+  "end": 1093,
+  "pages": 106
+ },
+ "38": {
+  "title": "GALOIS THEORY OF NUMBER FIELDS",
+  "start": 1094,
+  "end": 1129,
+  "pages": 36
+ },
+ "39": {
+  "title": "CLASS FIELD THEORY",
+  "start": 1130,
+  "end": 1167,
+  "pages": 38
+ },
+ "40": {
+  "title": "ALGEBRAICALLY CLOSED FIELDS",
+  "start": 1168,
+  "end": 1189,
+  "pages": 22
+ },
+ "41": {
+  "title": "RATIONAL FUNCTION FIELDS",
+  "start": 1190,
+  "end": 1211,
+  "pages": 22
+ },
+ "42": {
+  "title": "ALGEBRAIC FUNCTION FIELDS",
+  "start": 1212,
+  "end": 1321,
+  "pages": 110
+ },
+ "43": {
+  "title": "CLASS FIELD THEORY FOR",
+  "start": 1322,
+  "end": 1347,
+  "pages": 26
+ },
+ "44": {
+  "title": "ARTIN REPRESENTATIONS",
+  "start": 1348,
+  "end": 1359,
+  "pages": 12
+ },
+ "45": {
+  "title": "VALUATION RINGS",
+  "start": 1360,
+  "end": 1365,
+  "pages": 6
+ },
+ "46": {
+  "title": "NEWTON POLYGONS",
+  "start": 1366,
+  "end": 1393,
+  "pages": 28
+ },
+ "47": {
+  "title": "p-ADIC RINGS AND THEIR EXTENSIONS",
+  "start": 1394,
+  "end": 1443,
+  "pages": 50
+ },
+ "48": {
+  "title": "GALOIS RINGS",
+  "start": 1444,
+  "end": 1451,
+  "pages": 8
+ },
+ "49": {
+  "title": "POWER, LAURENT AND PUISEUX SERIES",
+  "start": 1452,
+  "end": 1479,
+  "pages": 28
+ },
+ "50": {
+  "title": "LAZY POWER SERIES RINGS",
+  "start": 1480,
+  "end": 1495,
+  "pages": 16
+ },
+ "51": {
+  "title": "GENERAL LOCAL FIELDS",
+  "start": 1496,
+  "end": 1507,
+  "pages": 12
+ },
+ "52": {
+  "title": "ALGEBRAIC POWER SERIES RINGS",
+  "start": 1508,
+  "end": 1523,
+  "pages": 16
+ },
+ "53": {
+  "title": "INTRODUCTION TO MODULES",
+  "start": 1524,
+  "end": 1527,
+  "pages": 4
+ },
+ "54": {
+  "title": "FREE MODULES",
+  "start": 1528,
+  "end": 1551,
+  "pages": 24
+ },
+ "55": {
+  "title": "MODULES OVER DEDEKIND DOMAINS",
+  "start": 1552,
+  "end": 1573,
+  "pages": 22
+ },
+ "56": {
+  "title": "CHAIN COMPLEXES",
+  "start": 1574,
+  "end": 1591,
+  "pages": 18
+ },
+ "57": {
+  "title": "GROUPS",
+  "start": 1592,
+  "end": 1647,
+  "pages": 56
+ },
+ "58": {
+  "title": "PERMUTATION GROUPS",
+  "start": 1648,
+  "end": 1769,
+  "pages": 122
+ },
+ "59": {
+  "title": "MATRIX GROUPS OVER GENERAL RINGS",
+  "start": 1770,
+  "end": 1841,
+  "pages": 72
+ },
+ "60": {
+  "title": "MATRIX GROUPS OVER FINITE FIELDS",
+  "start": 1842,
+  "end": 1891,
+  "pages": 50
+ },
+ "61": {
+  "title": "MATRIX GROUPS OVER INFINITE FIELDS",
+  "start": 1892,
+  "end": 1911,
+  "pages": 20
+ },
+ "62": {
+  "title": "MATRIX GROUPS OVER Q AND Z",
+  "start": 1912,
+  "end": 1921,
+  "pages": 10
+ },
+ "63": {
+  "title": "FINITE SOLUBLE GROUPS",
+  "start": 1922,
+  "end": 2001,
+  "pages": 80
+ },
+ "64": {
+  "title": "BLACK-BOX GROUPS",
+  "start": 2002,
+  "end": 2007,
+  "pages": 6
+ },
+ "65": {
+  "title": "ALMOST SIMPLE GROUPS",
+  "start": 2008,
+  "end": 2067,
+  "pages": 60
+ },
+ "66": {
+  "title": "DATABASES OF GROUPS",
+  "start": 2068,
+  "end": 2125,
+  "pages": 58
+ },
+ "67": {
+  "title": "AUTOMORPHISM GROUPS",
+  "start": 2126,
+  "end": 2143,
+  "pages": 18
+ },
+ "68": {
+  "title": "COHOMOLOGY AND EXTENSIONS",
+  "start": 2144,
+  "end": 2173,
+  "pages": 30
+ },
+ "69": {
+  "title": "ABELIAN GROUPS",
+  "start": 2174,
+  "end": 2209,
+  "pages": 36
+ },
+ "70": {
+  "title": "FINITELY PRESENTED GROUPS",
+  "start": 2210,
+  "end": 2335,
+  "pages": 126
+ },
+ "71": {
+  "title": "FINITELY PRESENTED GROUPS:",
+  "start": 2336,
+  "end": 2381,
+  "pages": 46
+ },
+ "72": {
+  "title": "POLYCYCLIC GROUPS",
+  "start": 2382,
+  "end": 2421,
+  "pages": 40
+ },
+ "73": {
+  "title": "BRAID GROUPS",
+  "start": 2422,
+  "end": 2471,
+  "pages": 50
+ },
+ "74": {
+  "title": "GROUPS DEFINED BY",
+  "start": 2472,
+  "end": 2489,
+  "pages": 18
+ },
+ "75": {
+  "title": "AUTOMATIC GROUPS",
+  "start": 2490,
+  "end": 2509,
+  "pages": 20
+ },
+ "76": {
+  "title": "GROUPS OF",
+  "start": 2510,
+  "end": 2519,
+  "pages": 10
+ },
+ "77": {
+  "title": "FINITELY PRESENTED SEMIGROUPS",
+  "start": 2520,
+  "end": 2531,
+  "pages": 12
+ },
+ "78": {
+  "title": "MONOIDS GIVEN BY",
+  "start": 2532,
+  "end": 2551,
+  "pages": 20
+ },
+ "79": {
+  "title": "ALGEBRAS",
+  "start": 2552,
+  "end": 2563,
+  "pages": 12
+ },
+ "80": {
+  "title": "STRUCTURE CONSTANT ALGEBRAS",
+  "start": 2564,
+  "end": 2573,
+  "pages": 10
+ },
+ "81": {
+  "title": "ASSOCIATIVE ALGEBRAS",
+  "start": 2574,
+  "end": 2599,
+  "pages": 26
+ },
+ "82": {
+  "title": "FINITELY PRESENTED ALGEBRAS",
+  "start": 2600,
+  "end": 2637,
+  "pages": 38
+ },
+ "83": {
+  "title": "MATRIX ALGEBRAS",
+  "start": 2638,
+  "end": 2677,
+  "pages": 40
+ },
+ "84": {
+  "title": "GROUP ALGEBRAS",
+  "start": 2678,
+  "end": 2691,
+  "pages": 14
+ },
+ "85": {
+  "title": "BASIC ALGEBRAS",
+  "start": 2692,
+  "end": 2751,
+  "pages": 60
+ },
+ "86": {
+  "title": "QUATERNION ALGEBRAS",
+  "start": 2752,
+  "end": 2795,
+  "pages": 44
+ },
+ "87": {
+  "title": "ALGEBRAS WITH INVOLUTION",
+  "start": 2796,
+  "end": 2811,
+  "pages": 16
+ },
+ "88": {
+  "title": "CLIFFORD ALGEBRAS",
+  "start": 2812,
+  "end": 2817,
+  "pages": 6
+ },
+ "89": {
+  "title": "MODULES OVER AN ALGEBRA",
+  "start": 2818,
+  "end": 2853,
+  "pages": 36
+ },
+ "90": {
+  "title": "K[G]-MODULES",
+  "start": 2854,
+  "end": 2889,
+  "pages": 36
+ },
+ "91": {
+  "title": "CHARACTERS OF FINITE GROUPS",
+  "start": 2890,
+  "end": 2911,
+  "pages": 22
+ },
+ "92": {
+  "title": "REPRESENTATIONS",
+  "start": 2912,
+  "end": 2919,
+  "pages": 8
+ },
+ "93": {
+  "title": "MOD P GALOIS REPRESENTATIONS",
+  "start": 2920,
+  "end": 2929,
+  "pages": 10
+ },
+ "94": {
+  "title": "INTRODUCTION TO LIE THEORY",
+  "start": 2930,
+  "end": 2935,
+  "pages": 6
+ },
+ "95": {
+  "title": "COXETER SYSTEMS",
+  "start": 2936,
+  "end": 2959,
+  "pages": 24
+ },
+ "96": {
+  "title": "ROOT SYSTEMS",
+  "start": 2960,
+  "end": 2981,
+  "pages": 22
+ },
+ "97": {
+  "title": "ROOT DATA",
+  "start": 2982,
+  "end": 3033,
+  "pages": 52
+ },
+ "98": {
+  "title": "COXETER GROUPS",
+  "start": 3034,
+  "end": 3073,
+  "pages": 40
+ },
+ "99": {
+  "title": "REFLECTION GROUPS",
+  "start": 3074,
+  "end": 3105,
+  "pages": 32
+ },
+ "100": {
+  "title": "LIE ALGEBRAS",
+  "start": 3106,
+  "end": 3193,
+  "pages": 88
+ },
+ "101": {
+  "title": "KAC-MOODY LIE ALGEBRAS",
+  "start": 3194,
+  "end": 3203,
+  "pages": 10
+ },
+ "102": {
+  "title": "QUANTUM GROUPS",
+  "start": 3204,
+  "end": 3229,
+  "pages": 26
+ },
+ "103": {
+  "title": "GROUPS OF LIE TYPE",
+  "start": 3230,
+  "end": 3269,
+  "pages": 40
+ },
+ "104": {
+  "title": "REPRESENTATIONS OF LIE GROUPS",
+  "start": 3270,
+  "end": 3311,
+  "pages": 42
+ },
+ "105": {
+  "title": "GR\u00a8OBNER BASES",
+  "start": 3312,
+  "end": 3355,
+  "pages": 44
+ },
+ "106": {
+  "title": "POLYNOMIAL RING IDEAL OPERATIONS",
+  "start": 3356,
+  "end": 3403,
+  "pages": 48
+ },
+ "107": {
+  "title": "LOCAL POLYNOMIAL RINGS",
+  "start": 3404,
+  "end": 3417,
+  "pages": 14
+ },
+ "108": {
+  "title": "AFFINE ALGEBRAS",
+  "start": 3418,
+  "end": 3433,
+  "pages": 16
+ },
+ "109": {
+  "title": "MODULES OVER MULTIVARIATE RINGS",
+  "start": 3434,
+  "end": 3485,
+  "pages": 52
+ },
+ "110": {
+  "title": "INVARIANT THEORY",
+  "start": 3486,
+  "end": 3531,
+  "pages": 46
+ },
+ "111": {
+  "title": "DIFFERENTIAL RINGS",
+  "start": 3532,
+  "end": 3601,
+  "pages": 70
+ },
+ "112": {
+  "title": "SCHEMES",
+  "start": 3602,
+  "end": 3733,
+  "pages": 132
+ },
+ "113": {
+  "title": "COHERENT SHEAVES",
+  "start": 3734,
+  "end": 3765,
+  "pages": 32
+ },
+ "114": {
+  "title": "ALGEBRAIC CURVES",
+  "start": 3766,
+  "end": 3873,
+  "pages": 108
+ },
+ "115": {
+  "title": "RESOLUTION GRAPHS",
+  "start": 3874,
+  "end": 3889,
+  "pages": 16
+ },
+ "116": {
+  "title": "ALGEBRAIC SURFACES",
+  "start": 3890,
+  "end": 3957,
+  "pages": 68
+ },
+ "117": {
+  "title": "HILBERT SERIES OF",
+  "start": 3958,
+  "end": 3991,
+  "pages": 34
+ },
+ "118": {
+  "title": "TORIC VARIETIES",
+  "start": 3992,
+  "end": 4043,
+  "pages": 52
+ },
+ "119": {
+  "title": "RATIONAL CURVES AND CONICS",
+  "start": 4044,
+  "end": 4067,
+  "pages": 24
+ },
+ "120": {
+  "title": "ELLIPTIC CURVES",
+  "start": 4068,
+  "end": 4109,
+  "pages": 42
+ },
+ "121": {
+  "title": "ELLIPTIC CURVES OVER",
+  "start": 4110,
+  "end": 4133,
+  "pages": 24
+ },
+ "122": {
+  "title": "ELLIPTIC CURVES OVER Q AND",
+  "start": 4134,
+  "end": 4215,
+  "pages": 82
+ },
+ "123": {
+  "title": "ELLIPTIC CURVES OVER",
+  "start": 4216,
+  "end": 4233,
+  "pages": 18
+ },
+ "124": {
+  "title": "MODELS OF GENUS ONE CURVES",
+  "start": 4234,
+  "end": 4251,
+  "pages": 18
+ },
+ "125": {
+  "title": "HYPERELLIPTIC CURVES",
+  "start": 4252,
+  "end": 4355,
+  "pages": 104
+ },
+ "126": {
+  "title": "HYPERGEOMETRIC MOTIVES",
+  "start": 4356,
+  "end": 4375,
+  "pages": 20
+ },
+ "127": {
+  "title": "L-FUNCTIONS",
+  "start": 4376,
+  "end": 4423,
+  "pages": 48
+ },
+ "128": {
+  "title": "MODULAR CURVES",
+  "start": 4424,
+  "end": 4443,
+  "pages": 20
+ },
+ "129": {
+  "title": "SMALL MODULAR CURVES",
+  "start": 4444,
+  "end": 4467,
+  "pages": 24
+ },
+ "130": {
+  "title": "CONGRUENCE SUBGROUPS OF PSL2(R)",
+  "start": 4468,
+  "end": 4493,
+  "pages": 26
+ },
+ "131": {
+  "title": "ARITHMETIC FUCHSIAN GROUPS AND",
+  "start": 4494,
+  "end": 4517,
+  "pages": 24
+ },
+ "132": {
+  "title": "MODULAR FORMS",
+  "start": 4518,
+  "end": 4559,
+  "pages": 42
+ },
+ "133": {
+  "title": "MODULAR SYMBOLS",
+  "start": 4560,
+  "end": 4615,
+  "pages": 56
+ },
+ "134": {
+  "title": "BRANDT MODULES",
+  "start": 4616,
+  "end": 4629,
+  "pages": 14
+ },
+ "135": {
+  "title": "SUPERSINGULAR DIVISORS",
+  "start": 4630,
+  "end": 4645,
+  "pages": 16
+ },
+ "136": {
+  "title": "MODULAR ABELIAN VARIETIES",
+  "start": 4646,
+  "end": 4783,
+  "pages": 138
+ },
+ "137": {
+  "title": "HILBERT MODULAR FORMS",
+  "start": 4784,
+  "end": 4801,
+  "pages": 18
+ },
+ "138": {
+  "title": "MODULAR FORMS OVER",
+  "start": 4802,
+  "end": 4809,
+  "pages": 8
+ },
+ "139": {
+  "title": "ADMISSIBLE REPRESENTATIONS",
+  "start": 4810,
+  "end": 4823,
+  "pages": 14
+ },
+ "140": {
+  "title": "SIMPLICIAL HOMOLOGY",
+  "start": 4824,
+  "end": 4845,
+  "pages": 22
+ },
+ "141": {
+  "title": "FINITE PLANES",
+  "start": 4846,
+  "end": 4881,
+  "pages": 36
+ },
+ "142": {
+  "title": "INCIDENCE GEOMETRY",
+  "start": 4882,
+  "end": 4903,
+  "pages": 22
+ },
+ "143": {
+  "title": "CONVEX POLYTOPES AND POLYHEDRA",
+  "start": 4904,
+  "end": 4937,
+  "pages": 34
+ },
+ "144": {
+  "title": "ENUMERATIVE COMBINATORICS",
+  "start": 4938,
+  "end": 4943,
+  "pages": 6
+ },
+ "145": {
+  "title": "PARTITIONS, WORDS",
+  "start": 4944,
+  "end": 4977,
+  "pages": 34
+ },
+ "146": {
+  "title": "SYMMETRIC FUNCTIONS",
+  "start": 4978,
+  "end": 5003,
+  "pages": 26
+ },
+ "147": {
+  "title": "INCIDENCE STRUCTURES",
+  "start": 5004,
+  "end": 5039,
+  "pages": 36
+ },
+ "148": {
+  "title": "HADAMARD MATRICES",
+  "start": 5040,
+  "end": 5049,
+  "pages": 10
+ },
+ "149": {
+  "title": "GRAPHS",
+  "start": 5050,
+  "end": 5131,
+  "pages": 82
+ },
+ "150": {
+  "title": "MULTIGRAPHS",
+  "start": 5132,
+  "end": 5179,
+  "pages": 48
+ },
+ "151": {
+  "title": "NETWORKS",
+  "start": 5180,
+  "end": 5201,
+  "pages": 22
+ },
+ "152": {
+  "title": "LINEAR CODES OVER FINITE FIELDS",
+  "start": 5202,
+  "end": 5277,
+  "pages": 76
+ },
+ "153": {
+  "title": "ALGEBRAIC-GEOMETRIC CODES",
+  "start": 5278,
+  "end": 5287,
+  "pages": 10
+ },
+ "154": {
+  "title": "LOW DENSITY PARITY CHECK CODES",
+  "start": 5288,
+  "end": 5299,
+  "pages": 12
+ },
+ "155": {
+  "title": "LINEAR CODES OVER FINITE RINGS",
+  "start": 5300,
+  "end": 5339,
+  "pages": 40
+ },
+ "156": {
+  "title": "ADDITIVE CODES",
+  "start": 5340,
+  "end": 5365,
+  "pages": 26
+ },
+ "157": {
+  "title": "QUANTUM CODES",
+  "start": 5366,
+  "end": 5405,
+  "pages": 40
+ },
+ "158": {
+  "title": "PSEUDO-RANDOM BIT SEQUENCES",
+  "start": 5406,
+  "end": 5415,
+  "pages": 10
+ },
+ "159": {
+  "title": "LINEAR PROGRAMMING",
+  "start": 5416,
+  "end": 5487,
+  "pages": 72
+ }
+}
