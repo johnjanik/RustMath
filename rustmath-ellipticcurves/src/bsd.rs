@@ -3,15 +3,20 @@
 //! Implements tools for verifying the BSD conjecture numerically
 
 use crate::curve::{EllipticCurve, Point};
-use crate::lfunction::LFunction;
+use crate::lfunction::{AnalyticRank, LFunction};
 use crate::rank::RankBoundResult;
 use rustmath_integers::Integer;
+
+/// Decimal digits used for the numeric analytic-rank layer in BSD checks.
+const BSD_ANALYTIC_DIGITS: usize = 26;
 
 /// Result of BSD conjecture verification
 #[derive(Debug, Clone)]
 pub struct BSDResult {
     pub algebraic_rank: u32,
-    pub analytic_rank: u32,
+    /// The analytic rank in the honest lattice (certified 0/1, at-least-2,
+    /// or unresolved with reason) — never a bare fabricated integer.
+    pub analytic_rank: AnalyticRank,
     pub sha_estimate: f64,
     pub regulator: f64,
     pub periods: f64,
@@ -21,9 +26,11 @@ pub struct BSDResult {
 }
 
 impl BSDResult {
-    /// Check if the ranks agree (weak BSD)
+    /// Check if the ranks agree (weak BSD): true only when the analytic
+    /// rank is CERTIFIED and equals the algebraic rank. An unresolved
+    /// analytic rank never "agrees".
     pub fn ranks_agree(&self) -> bool {
-        self.algebraic_rank == self.analytic_rank
+        self.analytic_rank.certified_value() == Some(self.algebraic_rank)
     }
 
     /// Estimate the order of Sha (Tate-Shafarevich group)
@@ -41,7 +48,7 @@ impl BSDResult {
 pub struct BSDVerifier {
     curve: EllipticCurve,
     computed_rank: Option<u32>,
-    analytic_rank: Option<u32>,
+    analytic_rank: Option<AnalyticRank>,
     regulator: Option<f64>,
     generators: Vec<Point>,
 }
@@ -118,11 +125,15 @@ impl BSDVerifier {
         }
     }
 
-    /// Compute analytic rank (order of vanishing of L-function at s=1)
-    fn compute_analytic_rank(&mut self) -> u32 {
+    /// Compute the analytic rank in the honest lattice (see
+    /// [`crate::lfunction::AnalyticRank`]): certified 0 via a nonzero
+    /// L(1), certified 1 via the exact ε = −1 zero plus a certified
+    /// nonzero L'(1), or an honest unresolved outcome — never a bare
+    /// fabricated integer.
+    fn compute_analytic_rank(&mut self) -> AnalyticRank {
         let l_function = LFunction::new(self.curve.clone());
-        let rank = l_function.analytic_rank();
-        self.analytic_rank = Some(rank);
+        let rank = l_function.analytic_rank(BSD_ANALYTIC_DIGITS);
+        self.analytic_rank = Some(rank.clone());
         rank
     }
 
@@ -290,7 +301,11 @@ impl BSDVerifier {
         let l_func = LFunction::new(self.curve.clone());
         let l_value = l_func.special_value(1.0).norm();
 
-        let rank = self.analytic_rank.unwrap_or(0);
+        let rank = self
+            .analytic_rank
+            .as_ref()
+            .and_then(|r| r.certified_value())
+            .unwrap_or(0);
         if rank > 0 {
             // Would need to compute L^(r)(E, 1)
             return 1.0;
@@ -311,11 +326,19 @@ impl BSDVerifier {
         }
     }
 
-    /// Check if the weak BSD conjecture holds
-    pub fn check_weak_bsd(&mut self) -> bool {
+    /// Check if the weak BSD conjecture holds: `Ok(true/false)` when the
+    /// analytic rank is certified (comparing it to the descent-certified
+    /// algebraic rank), `Err` with the honest reason when it is not.
+    pub fn check_weak_bsd(&mut self) -> Result<bool, String> {
         let alg_rank = self.compute_algebraic_rank();
         let an_rank = self.compute_analytic_rank();
-        alg_rank == an_rank
+        match an_rank.certified_value() {
+            Some(v) => Ok(v == alg_rank),
+            None => Err(format!(
+                "weak BSD undecidable here: analytic rank is {}",
+                an_rank
+            )),
+        }
     }
 
     /// Generate a BSD report
@@ -380,14 +403,28 @@ mod tests {
         assert!(verifier.generators.is_empty());
     }
 
+    /// REAL now (was an ignored facade): the analytic rank comes from the
+    /// honest lattice. y² = x³ − 1 (N = 144, additive at 2 and 3) is an
+    /// honest Unresolved — the wild root number blocks both series — while
+    /// 11a1 is a certified analytic rank 0 via its nonzero L(1).
     #[test]
-    #[ignore = "facade -> unimplemented; needs real analytic rank (L-function evaluation at s=1)"]
     fn test_analytic_rank_computation() {
         let curve = EllipticCurve::from_short_weierstrass(Integer::from(0), Integer::from(-1));
-
         let mut verifier = BSDVerifier::new(curve);
         let rank = verifier.compute_analytic_rank();
-        assert!(rank < 10); // Reasonable bound
+        assert!(matches!(rank, AnalyticRank::Unresolved { .. }));
+        assert_eq!(rank.certified_value(), None);
+
+        let e11 = EllipticCurve::new(
+            Integer::from(0),
+            Integer::from(-1),
+            Integer::from(1),
+            Integer::from(-10),
+            Integer::from(-20),
+        );
+        let mut verifier = BSDVerifier::new(e11);
+        let rank = verifier.compute_analytic_rank();
+        assert_eq!(rank.certified_value(), Some(0));
     }
 
     #[test]
@@ -421,21 +458,43 @@ mod tests {
         assert_eq!(verifier.compute_tamagawa_numbers(), vec![2, 4]);
     }
 
+    /// REAL now (was an ignored facade): weak BSD verifies END TO END on
+    /// 15a1 — algebraic rank 0 by certified 2-descent, analytic rank 0 by
+    /// certified nonzero L(1) — and is an honest Err for y² = x³ + 1
+    /// (N = 36, wild additive reduction blocks the root number).
     #[test]
-    #[ignore = "facade -> unimplemented; algebraic rank is real now (2-descent), but the analytic rank is still an L-function facade"]
     fn test_weak_bsd() {
-        let curve = EllipticCurve::from_short_weierstrass(Integer::from(0), Integer::from(1));
+        let e15 = EllipticCurve::new(
+            Integer::from(1),
+            Integer::from(1),
+            Integer::from(1),
+            Integer::from(-10),
+            Integer::from(-10),
+        );
+        let mut verifier = BSDVerifier::new(e15);
+        assert_eq!(verifier.check_weak_bsd(), Ok(true));
 
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(0), Integer::from(1));
         let mut verifier = BSDVerifier::new(curve);
-        let _ = verifier.check_weak_bsd();
-        // Just check it runs without panicking
+        let r = verifier.check_weak_bsd();
+        assert!(r.is_err(), "wild additive curve: weak BSD undecidable here");
+        assert!(r.unwrap_err().contains("unresolved"));
     }
 
     #[test]
     fn test_bsd_result() {
+        let e65 = EllipticCurve::new(
+            Integer::from(1),
+            Integer::from(0),
+            Integer::from(0),
+            Integer::from(-1),
+            Integer::from(0),
+        );
+        let analytic = LFunction::new(e65).analytic_rank(20);
+        assert_eq!(analytic.certified_value(), Some(1), "65a1 analytic rank 1");
         let result = BSDResult {
             algebraic_rank: 1,
-            analytic_rank: 1,
+            analytic_rank: analytic,
             sha_estimate: 1.0,
             regulator: 1.0,
             periods: 2.5,
@@ -446,10 +505,25 @@ mod tests {
 
         assert!(result.ranks_agree());
         assert_eq!(result.sha_order(), 1.0);
+
+        // an unresolved analytic rank never "agrees"
+        let result2 = BSDResult {
+            algebraic_rank: 0,
+            analytic_rank: AnalyticRank::Unresolved {
+                reason: "test".to_string(),
+            },
+            sha_estimate: 1.0,
+            regulator: 1.0,
+            periods: 2.5,
+            tamagawa_numbers: vec![1],
+            torsion_order: 1,
+            bsd_constant: 1.0,
+        };
+        assert!(!result2.ranks_agree());
     }
 
     #[test]
-    #[ignore = "facade -> unimplemented; needs real L-function (analytic rank, Sha estimate); also y^2=x^3-x+1 has no rational 2-torsion, so the algebraic rank is an honest refusal"]
+    #[ignore = "facade -> unimplemented: estimate_sha_size (BSD Sha leg) is still a facade; also y^2=x^3-x+1 has no rational 2-torsion, so the algebraic rank is an honest refusal (the analytic rank itself is real now)"]
     fn test_generate_report() {
         let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(1));
 

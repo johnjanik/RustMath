@@ -285,32 +285,161 @@ impl EllipticCurve {
         (&self.discriminant % p).is_zero()
     }
 
-    /// Compute a_p for a good prime p (p + 1 - #E(F_p))
+    /// The trace of Frobenius a_p at ANY prime p, computed exactly on the
+    /// general Weierstrass model with `Integer` arithmetic throughout.
+    ///
+    /// * **Good reduction** (including primes dividing the discriminant of
+    ///   the *given* model at which the curve nevertheless has good
+    ///   reduction — Tate's algorithm supplies the p-minimal model first):
+    ///   a_p = p + 1 − #E(F_p).
+    /// * **Bad reduction**: a_p = p − #E_ns(F_p) where E_ns is the smooth
+    ///   locus of the reduced minimal model. The three cases (Silverman AEC
+    ///   App. C §16 / Silverman ATAEC IV.9):
+    ///   - additive: E_ns(F_p) ≅ (F_p, +), so #E_ns = p and **a_p = 0**;
+    ///   - split multiplicative: E_ns(F_p) ≅ F_p^*, #E_ns = p − 1, **a_p = +1**;
+    ///   - non-split multiplicative: E_ns(F_p) is the norm-one torus of
+    ///     F_{p²}/F_p, #E_ns = p + 1, **a_p = −1**.
+    ///
+    ///   Split vs non-split is decided exactly by Tate's algorithm (step 3):
+    ///   after translating the node to the origin the tangent-cone quadratic
+    ///   is T² + a₁T − a₂; the reduction is split iff its two roots (the two
+    ///   tangent directions at the node) lie in F_p — for odd p iff its
+    ///   discriminant b₂ is a nonzero square mod p, and for p = 2 (where a₁
+    ///   is odd here) iff a₂ ≡ 0 mod 2. See [`crate::tate`], whose
+    ///   split/non-split branch is PARI `ellap`-validated in its tests.
+    ///
+    /// # Point counting (good p)
+    ///
+    /// For odd p, complete the square: (2y + a₁x + a₃)² = 4x³ + b₂x² +
+    /// 2b₄x + b₆ =: g(x), a bijection on y-fibres since 2 is invertible; the
+    /// number of points over x is 1 + χ(g(x)) with χ the quadratic character
+    /// of F_p (χ(0) = 0), so #E(F_p) = p + 1 + Σ_x χ(g(x)). χ is evaluated
+    /// by Euler's criterion g^((p−1)/2) mod p, exactly. For p = 2 the four
+    /// affine candidates are enumerated directly.
+    ///
+    /// Cost: O(p) modular exponentiations (naive counting, not Schoof) —
+    /// fine for the small primes used in L-series work here.
+    ///
+    /// # Panics
+    ///
+    /// Panics if p is not prime, if the curve is singular, or if the Hasse
+    /// bound a_p² ≤ 4p fails at a good prime (an internal bug detector,
+    /// never an answer).
     pub fn compute_a_p(&self, p: &Integer) -> i64 {
-        let p_val = <Integer as NumericConversion>::to_i64(p).unwrap_or(2);
-        (p_val + 1 - self.count_points_mod_p(p_val)) as i64
+        assert!(
+            rustmath_integers::prime::is_prime(p),
+            "compute_a_p: p = {} is not prime",
+            p
+        );
+        assert!(!self.is_singular(), "compute_a_p: curve is singular");
+        if self.is_bad_prime(p) {
+            let ld = self.local_data(p);
+            return match ld.reduction {
+                crate::tate::ReductionType::Good => {
+                    // The given model is non-minimal at p; count on the
+                    // p-minimal model, whose reduction is honest.
+                    assert!(
+                        !ld.minimal_model.is_bad_prime(p),
+                        "p-minimal model still bad at a good prime: bug"
+                    );
+                    ld.minimal_model.trace_of_frobenius_good(p)
+                }
+                crate::tate::ReductionType::SplitMultiplicative => 1,
+                crate::tate::ReductionType::NonsplitMultiplicative => -1,
+                crate::tate::ReductionType::Additive => 0,
+            };
+        }
+        self.trace_of_frobenius_good(p)
     }
 
-    /// Count points on the curve modulo p (naive method)
-    /// Real implementation would use Schoof's algorithm
-    fn count_points_mod_p(&self, p: i64) -> i64 {
-        let mut count = 1; // Point at infinity
+    /// a_p = p + 1 − #E(F_p) for a prime of good reduction of THIS model.
+    fn trace_of_frobenius_good(&self, p: &Integer) -> i64 {
+        let p_i = <Integer as NumericConversion>::to_i64(p)
+            .expect("compute_a_p: p too large for naive point counting");
+        let count = self.count_points_mod_p(p);
+        let a_p = p_i + 1 - count;
+        // Hasse bound |a_p| <= 2 sqrt(p): a bug detector on the count.
+        assert!(
+            (a_p as i128) * (a_p as i128) <= 4 * (p_i as i128),
+            "Hasse bound violated at p = {}: a_p = {} (bug in point counting)",
+            p,
+            a_p
+        );
+        a_p
+    }
 
-        let a = <Integer as NumericConversion>::to_i64(&self.a4).unwrap_or(0);
-        let b = <Integer as NumericConversion>::to_i64(&self.a6).unwrap_or(0);
-
-        for x in 0..p {
-            let rhs = (x * x * x + a * x + b).rem_euclid(p);
-
-            // Check if rhs is a quadratic residue
-            for y in 0..p {
-                if (y * y).rem_euclid(p) == rhs {
-                    count += 1;
+    /// #E(F_p) for a prime of good reduction of this model, exactly:
+    /// p + 1 + Σ_x χ(4x³ + b₂x² + 2b₄x + b₆) for odd p (see
+    /// [`Self::compute_a_p`] for the derivation); direct enumeration for
+    /// p = 2. O(p) modular exponentiations.
+    fn count_points_mod_p(&self, p: &Integer) -> i64 {
+        let two = Integer::from(2);
+        if *p == two {
+            // Enumerate the 4 affine candidates over F_2.
+            let mut count = 1i64; // point at infinity
+            let red = |v: &Integer| -> i64 {
+                if (v % &two).is_zero() {
+                    0
+                } else {
+                    1
+                }
+            };
+            let (a1, a2, a3, a4, a6) = (
+                red(&self.a1),
+                red(&self.a2),
+                red(&self.a3),
+                red(&self.a4),
+                red(&self.a6),
+            );
+            for x in 0..2i64 {
+                for y in 0..2i64 {
+                    let lhs = y * y + a1 * x * y + a3 * y;
+                    let rhs = x * x * x + a2 * x * x + a4 * x + a6;
+                    if (lhs - rhs).rem_euclid(2) == 0 {
+                        count += 1;
+                    }
                 }
             }
+            return count;
         }
 
-        count
+        // Odd p: quadratic-character sum over g(x) = 4x^3 + b2 x^2 + 2 b4 x + b6.
+        let b2 = (&self.a1 * &self.a1 + Integer::from(4) * self.a2.clone()).modulo(p);
+        let b4 = (Integer::from(2) * self.a4.clone() + &self.a1 * &self.a3).modulo(p);
+        let b6 = (&self.a3 * &self.a3 + Integer::from(4) * self.a6.clone()).modulo(p);
+        let four = Integer::from(4);
+        let two_b4 = (two.clone() * b4).modulo(p);
+        let euler_exp = (p.clone() - Integer::one()) / two;
+        let p_minus_1 = p.clone() - Integer::one();
+
+        let p_i = <Integer as NumericConversion>::to_i64(p)
+            .expect("count_points_mod_p: p too large for naive point counting");
+        let mut chi_sum = 0i64;
+        let mut x = Integer::zero();
+        for _ in 0..p_i {
+            // Horner, reduced mod p at each step.
+            let g = ((((&four * &x).modulo(p) + b2.clone()) * x.clone()).modulo(p)
+                + two_b4.clone())
+            .modulo(p)
+                * x.clone();
+            let g = (g.modulo(p) + b6.clone()).modulo(p);
+            if !g.is_zero() {
+                let r = g
+                    .mod_pow(&euler_exp, p)
+                    .expect("mod_pow with prime modulus");
+                if r.is_one() {
+                    chi_sum += 1;
+                } else {
+                    assert!(
+                        r == p_minus_1,
+                        "Euler criterion returned a value other than ±1: bug"
+                    );
+                    chi_sum -= 1;
+                }
+            }
+            x = x + Integer::one();
+        }
+        p_i + 1 + chi_sum
     }
 }
 
@@ -436,5 +565,129 @@ mod tests {
         let j = curve.j_invariant();
         assert!(j.is_some());
         // j-invariant should be 1728 for this curve
+    }
+
+    /// a_p gates for general Weierstrass models, INCLUDING bad primes.
+    /// Every expected value below was derived independently in Python by
+    /// direct point counting on the reduced curve (smooth points only at
+    /// bad primes: a_p = p − #E_ns(F_p)) before this test was written; the
+    /// same tables are cross-checked a third way (modular eigensystems via
+    /// Eichler–Shimura) in tests/modular_crosscheck.rs.
+    #[test]
+    fn test_a_p_tables_point_counted() {
+        let primes: [i64; 12] = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37];
+        // (label, [a1,a2,a3,a4,a6], [a_p for the primes above])
+        let table: [(&str, [i64; 5], [i64; 12]); 7] = [
+            (
+                "11a1",
+                [0, -1, 1, -10, -20],
+                [-2, -1, 1, -2, 1, 4, -2, 0, -1, 0, 7, 3],
+            ),
+            (
+                "14a1",
+                [1, 0, 1, 4, -6],
+                [-1, -2, 0, 1, 0, -4, 6, 2, 0, -6, -4, 2],
+            ),
+            (
+                "15a1",
+                [1, 1, 1, -10, -10],
+                [-1, -1, 1, 0, -4, -2, 2, 4, 0, -2, 0, -10],
+            ),
+            (
+                "37a1",
+                [0, 0, 1, -1, 0],
+                [-2, -3, -2, -1, -5, -2, 0, 0, 2, 6, -4, -1],
+            ),
+            (
+                "37b1",
+                [0, 1, 1, -23, -50],
+                [0, 1, 0, -1, 3, -4, 6, 2, 6, -6, -4, 1],
+            ),
+            (
+                "49a1",
+                [1, -1, 0, -2, -1],
+                [1, 0, 0, 0, 4, 0, 0, 0, 8, 2, 0, -6],
+            ),
+            (
+                "389a1",
+                [0, 1, 1, -2, 0],
+                [-2, -2, -3, -5, -4, -3, -6, 5, -4, -6, 4, -8],
+            ),
+        ];
+        for (label, a, expected) in &table {
+            let e = EllipticCurve::new(
+                Integer::from(a[0]),
+                Integer::from(a[1]),
+                Integer::from(a[2]),
+                Integer::from(a[3]),
+                Integer::from(a[4]),
+            );
+            for (p, want) in primes.iter().zip(expected.iter()) {
+                assert_eq!(
+                    e.compute_a_p(&Integer::from(*p)),
+                    *want,
+                    "a_{} of {}",
+                    p,
+                    label
+                );
+            }
+        }
+    }
+
+    /// a_p at bad primes follows the reduction type: 11a1 is split
+    /// multiplicative at 11 (a_11 = +1), 37a1 non-split at 37 (a_37 = −1),
+    /// 49a1 additive at 7 (a_7 = 0). All PARI `ellap`-consistent and
+    /// re-derived by smooth-point counting in Python.
+    #[test]
+    fn test_a_p_bad_prime_conventions() {
+        let e11 = EllipticCurve::new(
+            Integer::from(0),
+            Integer::from(-1),
+            Integer::from(1),
+            Integer::from(-10),
+            Integer::from(-20),
+        );
+        assert_eq!(e11.compute_a_p(&Integer::from(11)), 1);
+        let e37 = EllipticCurve::new(
+            Integer::from(0),
+            Integer::from(0),
+            Integer::from(1),
+            Integer::from(-1),
+            Integer::from(0),
+        );
+        assert_eq!(e37.compute_a_p(&Integer::from(37)), -1);
+        let e49 = EllipticCurve::new(
+            Integer::from(1),
+            Integer::from(-1),
+            Integer::from(0),
+            Integer::from(-2),
+            Integer::from(-1),
+        );
+        assert_eq!(e49.compute_a_p(&Integer::from(7)), 0);
+    }
+
+    /// A model non-minimal at p with good reduction after minimalization
+    /// must yield the good-reduction a_p, not a bad-prime value: 11a1
+    /// scaled by u = 2 ([0,-4,8,-160,-1280]) has a_2 = a_2(11a1) = −2.
+    #[test]
+    fn test_a_p_nonminimal_model_good_reduction() {
+        let e = EllipticCurve::new(
+            Integer::from(0),
+            Integer::from(-4),
+            Integer::from(8),
+            Integer::from(-160),
+            Integer::from(-1280),
+        );
+        assert_eq!(e.compute_a_p(&Integer::from(2)), -2);
+        // and the untouched primes agree with 11a1 as well
+        assert_eq!(e.compute_a_p(&Integer::from(3)), -1);
+        assert_eq!(e.compute_a_p(&Integer::from(11)), 1);
+    }
+
+    #[test]
+    #[should_panic(expected = "not prime")]
+    fn test_a_p_rejects_composite() {
+        let e = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(1));
+        let _ = e.compute_a_p(&Integer::from(6));
     }
 }

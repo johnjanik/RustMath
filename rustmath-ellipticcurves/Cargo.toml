@@ -16,6 +16,13 @@ rustmath-reals = { path = "../rustmath-reals" }
 rayon = { workspace = true }
 serde = { workspace = true, optional = true }
 
+[dev-dependencies]
+# Dev-only: cross-checks a_p (Eichler-Shimura), root numbers (Fricke) and
+# exact L(1)-vanishing (Manin-Birch winding) against the modular-symbols
+# machinery. Dev-deps do not propagate, so the lib dependency graph stays
+# clean (and rustmath-modular does not depend on this crate, so no cycle).
+rustmath-modular = { path = "../rustmath-modular" }
+
 [features]
 default = []
 serde = ["dep:serde"]
