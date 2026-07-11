@@ -9,7 +9,11 @@
 //! > [`crate::valuation::maclane::InductiveValuation`] (see
 //! > `augment(phi, QVal::Infinity)`, produced by `mac_lane_approximants`
 //! > when a key divides the target exactly). True limits requiring
-//! > infinitely many augmentations remain unimplemented.
+//! > infinitely many augmentations are represented by their finite
+//! > approximants: `crate::padics::om_factorization::om_factorization`
+//! > refines every leaf to any requested congruence precision (the OM view
+//! > of the limit valuation attached to each irreducible p-adic factor),
+//! > so this generic facade stays superseded rather than wired.
 
 use super::valuation::{DiscretePseudoValuation, ValuationValue};
 use rustmath_core::Ring;

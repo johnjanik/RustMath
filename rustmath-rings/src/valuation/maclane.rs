@@ -26,36 +26,40 @@
 //!   formula is not multiplicative for non-keys (there is a should-fail test
 //!   demonstrating exactly that).
 //! - [`InductiveValuation::is_key`] (p-adic base): the standard effective
-//!   criterion. At the Gauss level: monic, p-integral, irreducible reduction
-//!   mod p. At augmentation level one: degree divisible by `e*d`, one-sided
-//!   Newton polygon of slope `-lambda` (`w(phi) = deg(phi)/d * lambda`), and
-//!   irreducible residual polynomial not divisible by `y` (plus the
-//!   same-degree equivalent-key cases).
+//!   criterion at EVERY augmentation level. At the Gauss level: monic,
+//!   p-integral, irreducible reduction mod p. At level `k >= 1`: degree
+//!   divisible by `tau_k * d_k`, one-sided Newton polygon of slope
+//!   `-lambda_k` (`w(phi) = deg(phi)/d_k * lambda_k`), and irreducible
+//!   residual polynomial over the residue-field tower `kappa_k`, not
+//!   divisible by `y` (plus the same-degree equivalent-key cases).
+//! - Residue machinery through the whole tower
+//!   `kappa_0 = GF(p) ⊂ kappa_j = kappa_{j-1}[y_{j-1}]/(psi_j)` (see
+//!   [`crate::valuation::residue_tower`]): a recursive reduction map with
+//!   the coherent `Q_j^t` normalization of the GMN residual polynomials,
+//!   certified residual factorization over `GF(p^d)` for any `d`, and
+//!   key-polynomial lifting from residual factors by GF(p)-linear algebra
+//!   over the standard degree-bounded monomials — every lift is re-checked
+//!   (value, residual associate to the chosen factor) before use, so a
+//!   lifting bug is an `Err`, never a wrong key.
 //! - [`mac_lane_approximants`]: the MacLane tree for monic squarefree
-//!   p-integral `f` over `Q`, iterating `mac_lane_step` until
-//!   `sum E(w)*F(w) = deg f` over the leaves. Each leaf approximates exactly
-//!   one irreducible factor of `f` over `Q_p`, with `E` and `F` its
-//!   ramification index and residue degree.
+//!   p-integral `f` over `Q`, iterating `mac_lane_step` (now real at every
+//!   level) until `sum E(w)*F(w) = deg f` over the leaves. Each leaf
+//!   approximates exactly one irreducible factor of `f` over `Q_p`, with
+//!   `E` and `F` its ramification index and residue degree. The packaged
+//!   factorization with congruence-certified approximations is
+//!   [`crate::padics::om_factorization`].
 //!
-//! ## Honest limitations (this chunk)
+//! ## Honest limitations
 //!
-//! - Key checks / `mac_lane_step` need residue-field computations. These are
-//!   implemented for the p-adic base at the Gauss level and at augmentation
-//!   level one (residue fields `GF(p)` and `GF(p)[z]/(phibar)`); residual
-//!   polynomial *factorization* over `GF(p^d)` with `d > 1` and residue
-//!   towers at level >= 2 are honest `Err(NotSupported)`, never a guess.
-//!   Same-degree (collapsing) augmentations recurse to the truncated
-//!   valuation, so chains like `[v0, v(x+2)=2] -> [v0, v(x+6)=3]` stay in
-//!   scope at any depth reachable by degree-preserving refinement.
-//! - Key checks for *shifted* Gauss valuations (`lambda0 != 0`) are not
-//!   implemented; positive shifts are available as the honest augmentation
-//!   `[v0, v(x) = lambda]` instead.
+//! - Key checks / steps for *shifted* Gauss valuations (`lambda0 != 0`) are
+//!   not implemented; positive shifts are available as the honest
+//!   augmentation `[v0, v(x) = lambda]` instead.
 //! - Value computation ([`InductiveValuation::value`]) is fully generic in
 //!   the chain length and base valuation.
 //!
 //! Every expected value in the tests was verified independently (sympy /
-//! first-principles 2-adic computations) before being asserted; see the
-//! stage-2 report.
+//! PARI-gp `idealprimedec` + `factorpadic` / first-principles p-adic
+//! computations) before being asserted; see the stage reports.
 //!
 //! ## Example: extensions of the 2-adic valuation to Q[x]/(x^2+1)
 //!
@@ -84,6 +88,7 @@
 
 use crate::function_field::typed::element::RationalFunction;
 use crate::function_field::typed::place::Place;
+use crate::valuation::residue_tower::{ResidueTower, TowerElt};
 use rustmath_core::{EuclideanDomain, Field, MathError, Result, Ring};
 use rustmath_integers::{prime::is_prime, Integer};
 use rustmath_polynomials::{fp_factor, UnivariatePolynomial};
@@ -593,6 +598,82 @@ impl<K: Field + EuclideanDomain, V: BaseValuation<K>> fmt::Display for Inductive
 // Key polynomials, augmentation and MacLane steps over (Q, v_p)
 // ---------------------------------------------------------------------------
 
+/// Cached residue machinery for a finite prefix of a p-adic inductive
+/// chain: the residue-field tower `psi_1, ..., psi_k`, the relative
+/// ramification indices `tau_j = [Gamma_j : Gamma_{j-1}]`, the coherent
+/// normalizers `Q_j` (standard elements of value `tau_j * lambda_j`), and
+/// the value-group generators `gens[j]` of `Gamma_j`.
+struct ResidueData {
+    tower: ResidueTower,
+    taus: Vec<usize>,
+    qs: Vec<UnivariatePolynomial<Rational>>,
+    gens: Vec<Rational>,
+}
+
+/// `p^c` as an exact rational (`c` may be negative).
+fn p_power(p: i64, c: i64) -> Rational {
+    let pk = Integer::from(p).pow(c.unsigned_abs() as u32);
+    if c >= 0 {
+        Rational::new(pk, Integer::one()).expect("nonzero")
+    } else {
+        Rational::new(Integer::one(), pk).expect("nonzero")
+    }
+}
+
+/// Solve `sum_j n_j * cols[j] = rhs` over `GF(p)` by Gaussian elimination;
+/// `None` if inconsistent.
+fn solve_mod_p(cols: &[Vec<i64>], rhs: &[i64], p: i64) -> Option<Vec<i64>> {
+    let nrows = rhs.len();
+    let ncols = cols.len();
+    let mut mat: Vec<Vec<i64>> = (0..nrows)
+        .map(|r| {
+            let mut row: Vec<i64> = cols
+                .iter()
+                .map(|c| c.get(r).copied().unwrap_or(0).rem_euclid(p))
+                .collect();
+            row.push(rhs[r].rem_euclid(p));
+            row
+        })
+        .collect();
+    let mut pivots: Vec<(usize, usize)> = Vec::new();
+    let mut rank_row = 0usize;
+    for col in 0..ncols {
+        if rank_row >= nrows {
+            break;
+        }
+        let Some(piv) = (rank_row..nrows).find(|&r| mat[r][col] != 0) else {
+            continue;
+        };
+        mat.swap(rank_row, piv);
+        let inv = fp_factor::mod_inv(mat[rank_row][col], p)?;
+        for j in col..=ncols {
+            mat[rank_row][j] =
+                (mat[rank_row][j] as i128 * inv as i128).rem_euclid(p as i128) as i64;
+        }
+        for r in 0..nrows {
+            if r != rank_row && mat[r][col] != 0 {
+                let f = mat[r][col];
+                for j in col..=ncols {
+                    mat[r][j] = (mat[r][j] as i128 - f as i128 * mat[rank_row][j] as i128)
+                        .rem_euclid(p as i128) as i64;
+                }
+            }
+        }
+        pivots.push((rank_row, col));
+        rank_row += 1;
+    }
+    for row in mat.iter().take(nrows).skip(rank_row) {
+        if row[ncols] != 0 {
+            return None;
+        }
+    }
+    let mut sol = vec![0i64; ncols];
+    for (r, c) in pivots {
+        sol[c] = mat[r][ncols];
+    }
+    Some(sol)
+}
+
 /// Result of a key-polynomial check.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum KeyCheck {
@@ -661,61 +742,221 @@ impl InductiveValuation<Rational, PAdicBaseValuation> {
         Ok(fp_factor::trim(&out))
     }
 
-    /// `g / p^u` (exact rational scaling).
-    fn scale_by_p_power(&self, g: &UnivariatePolynomial<Rational>, u: i64) -> UnivariatePolynomial<Rational> {
-        if u == 0 {
-            return g.clone();
-        }
-        let pk = Integer::from(self.p()).pow(u.unsigned_abs() as u32);
-        let factor = if u > 0 {
-            Rational::new(Integer::one(), pk).expect("p^u nonzero")
-        } else {
-            Rational::new(pk, Integer::one()).expect("1 nonzero")
-        };
-        g.scalar_mul(&factor)
-    }
+    // -----------------------------------------------------------------
+    // General residue machinery (any augmentation level): the residue
+    // field tower kappa_0 = GF(p) ⊂ kappa_j = kappa_{j-1}[y_{j-1}]/(psi_j),
+    // the recursive reduction map, residual polynomials with the coherent
+    // Q_j^t normalization, and key-polynomial lifting by GF(p)-linear
+    // algebra over the standard degree-< deg(phi_j) monomials.
+    // -----------------------------------------------------------------
 
-    /// The Gauss-level value of `g` as an exact integer (requires
-    /// `lambda0 = 0`, so Gauss values lie in `Z`).
-    fn gauss_value_int(&self, g: &UnivariatePolynomial<Rational>) -> Result<Option<i64>> {
-        match self.value_at_level(g, 0) {
-            QVal::Infinity => Ok(None),
-            QVal::Finite(r) => {
-                if !r.is_integer() {
-                    return Err(MathError::NumericalError(
-                        "maclane: non-integral Gauss value".to_string(),
-                    ));
-                }
-                Ok(Some(int_to_i64(r.numerator())?))
-            }
-        }
-    }
-
-    /// Residual polynomial data of `g` with respect to a level-one chain
-    /// `[v_0, v(phi) = h/e]` (GMN order-one normalization, up to the global
-    /// unit `p^{-u_{i0}}` which does not change the factor structure):
-    ///
-    /// `R(y) = sum_j res(f_{i0+j*e} / p^{u_{i0+j*e}}) y^j` over
-    /// `k_1 = GF(p)[z]/(phibar)`, where `f = sum f_i phi^i`, `u_i = v_0(f_i)`,
-    /// the support is the critical line `u_i + i*lambda = w(g)`, and `i0` is
-    /// its least index. Returns `(R as k1-coefficient vectors, i0, e, h)`.
-    fn residual_polynomial_level1(
-        &self,
-        g: &UnivariatePolynomial<Rational>,
-    ) -> Result<(Vec<Vec<i64>>, usize, usize, i64)> {
-        if self.augmentations.len() != 1 {
-            return Err(MathError::NotSupported(
-                "maclane: residual polynomials only implemented at augmentation level one"
-                    .to_string(),
-            ));
-        }
+    /// Build the [`ResidueData`] (tower `psi_1..psi_k`, relative
+    /// ramifications `tau_j`, normalizers `Q_j`, value-group generators)
+    /// for this chain. Requires `lambda0 = 0` and all finite lambdas up to
+    /// `levels` (callers reject final valuations first).
+    fn residue_data(&self, levels: usize) -> Result<ResidueData> {
         if !self.lambda0.is_zero() {
             return Err(MathError::NotSupported(
-                "maclane: residual polynomials over shifted Gauss valuations not implemented"
+                "maclane: residue computations over shifted Gauss valuations not implemented"
                     .to_string(),
             ));
         }
-        let aug = &self.augmentations[0];
+        let mut data = ResidueData {
+            tower: ResidueTower::new(self.p())?,
+            taus: Vec::new(),
+            qs: Vec::new(),
+            gens: vec![rat_i64(1)],
+        };
+        for j in 1..=levels {
+            let aug = &self.augmentations[j - 1];
+            let lambda = aug.lambda.finite().ok_or_else(|| {
+                MathError::InvalidArgument(
+                    "maclane: residue data of an infinite augmentation".to_string(),
+                )
+            })?;
+            let gen_prev = data.gens[j - 1].clone();
+            let gen_new = rat_gcd(&gen_prev, lambda);
+            let ratio = gen_prev.clone() / gen_new.clone();
+            if !ratio.is_integer() {
+                return Err(MathError::NumericalError(
+                    "maclane: internal error: non-integral value-group index".to_string(),
+                ));
+            }
+            let tau = int_to_i64(ratio.numerator())? as usize;
+            let q_j = self.element_with_valuation(
+                j - 1,
+                &(rat_i64(tau as i64) * lambda.clone()),
+                &data,
+            )?;
+            let psi_j = if j == 1 {
+                self.reduce_poly_mod_p(&aug.phi)?
+                    .into_iter()
+                    .map(TowerElt::Base)
+                    .collect::<Vec<_>>()
+            } else {
+                // the residual polynomial of phi_j w.r.t. the level-(j-1)
+                // prefix, which must start at i0 = 0 (phi_j is a key there)
+                let (r, i0) = self.residual_polynomial_general(j - 1, &aug.phi, &data)?;
+                if i0 != 0 {
+                    return Err(MathError::NumericalError(
+                        "maclane: internal error: key residual polynomial divisible by y"
+                            .to_string(),
+                    ));
+                }
+                data.tower.poly_monic(&r)?
+            };
+            data.tower.push_level(psi_j)?; // re-certifies irreducibility
+            data.taus.push(tau);
+            data.qs.push(q_j);
+            data.gens.push(gen_new);
+        }
+        Ok(data)
+    }
+
+    /// An element of `Q[x]` in standard form `p^c * prod phi_i^{a_i}`
+    /// (`0 <= a_i < tau_i`, `c` any integer) with `w_level`-value exactly
+    /// `t`. `Err` if `t` is not in the value group of the level.
+    fn element_with_valuation(
+        &self,
+        level: usize,
+        t: &Rational,
+        data: &ResidueData,
+    ) -> Result<UnivariatePolynomial<Rational>> {
+        let mut rem = t.clone();
+        let mut result = UnivariatePolynomial::one();
+        for i in (1..=level).rev() {
+            let lambda_i = self.augmentations[i - 1]
+                .lambda
+                .finite()
+                .expect("residue data exists only for finite chains")
+                .clone();
+            let gen_prev = &data.gens[i - 1];
+            let mut found = false;
+            for a in 0..data.taus[i - 1] {
+                let cand = rem.clone() - rat_i64(a as i64) * lambda_i.clone();
+                if (cand.clone() / gen_prev.clone()).is_integer() {
+                    for _ in 0..a {
+                        result = result * self.augmentations[i - 1].phi.clone();
+                    }
+                    rem = cand;
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                return Err(MathError::InvalidArgument(format!(
+                    "maclane: {} is not in the value group at level {}",
+                    t, level
+                )));
+            }
+        }
+        if !rem.is_integer() {
+            return Err(MathError::InvalidArgument(format!(
+                "maclane: {} is not in the value group at level {}",
+                t, level
+            )));
+        }
+        let c = int_to_i64(rem.numerator())?;
+        Ok(result.scalar_mul(&p_power(self.p(), c)))
+    }
+
+    /// The reduction of `g` (with `w_level(g) = 0`) into the residue ring
+    /// `kappa_level[y_level]`, computed recursively through the tower:
+    /// `red_0` is coefficient-wise reduction mod p, and
+    /// `red_j(g) = sum_t [red_{j-1}(g_{t*tau_j} Q_j^t) mod psi_j] y_j^t`
+    /// over the phi_j-adic expansion of `g`.
+    fn reduce_general(
+        &self,
+        level: usize,
+        g: &UnivariatePolynomial<Rational>,
+        data: &ResidueData,
+    ) -> Result<Vec<TowerElt>> {
+        if self.value_at_level(g, level) != QVal::from_int(0) {
+            return Err(MathError::NumericalError(
+                "maclane: internal error: reduce of an element of nonzero value".to_string(),
+            ));
+        }
+        if level == 0 {
+            return Ok(self
+                .reduce_poly_mod_p(g)?
+                .into_iter()
+                .map(TowerElt::Base)
+                .collect());
+        }
+        let aug = &self.augmentations[level - 1];
+        let lambda = aug.lambda.finite().expect("finite chain").clone();
+        let tau = data.taus[level - 1];
+        let exp = phi_adic_expansion(g, &aug.phi)?;
+        let sub_tower = data.tower.truncate(level - 1);
+        let psi = data.tower.modulus_at(level);
+        let mut out: Vec<TowerElt> = Vec::new();
+        let mut q_pow = UnivariatePolynomial::<Rational>::one();
+        let mut next_t = 0usize;
+        for (i, gi) in exp.iter().enumerate() {
+            if gi.is_zero() {
+                continue;
+            }
+            let u = match self.value_at_level(gi, level - 1) {
+                QVal::Finite(u) => u,
+                QVal::Infinity => unreachable!("nonzero coefficient"),
+            };
+            if !(u + rat_i64(i as i64) * lambda.clone()).is_zero() {
+                continue; // above the critical line: reduces to 0
+            }
+            if i % tau != 0 {
+                return Err(MathError::NumericalError(
+                    "maclane: internal error: critical index of a value-0 element not divisible by tau"
+                        .to_string(),
+                ));
+            }
+            let t = i / tau;
+            while next_t < t {
+                q_pow = q_pow * data.qs[level - 1].clone();
+                next_t += 1;
+            }
+            let c = gi.clone() * q_pow.clone();
+            let r = self.reduce_general(level - 1, &c, data)?;
+            let rem = sub_tower.poly_divmod(&r, psi)?.1;
+            while out.len() <= t {
+                out.push(data.tower.e_zero(level));
+            }
+            out[t] = data.tower.make_ext(level, rem)?;
+        }
+        if out.is_empty() {
+            return Err(MathError::NumericalError(
+                "maclane: internal error: reduce of a value-0 element is zero".to_string(),
+            ));
+        }
+        Ok(out)
+    }
+
+    /// The residual polynomial of nonzero `g` with respect to the level-
+    /// `level` prefix of this chain (GMN normalization, coherent with
+    /// [`Self::reduce_general`], up to one global unit):
+    ///
+    /// `R(y) = sum_t [red_{level-1}(g_{i0 + t*tau} Q^t N_0) mod psi] y^t`
+    ///
+    /// over `kappa_level`, where the support is the critical line
+    /// `u_i + i*lambda = w(g)` of the phi-adic expansion, `i0` is its least
+    /// index and `N_0` is a standard element with value `-u_{i0}`. Returns
+    /// `(R, i0)`; `R(0) != 0` by construction of `i0`.
+    fn residual_polynomial_general(
+        &self,
+        level: usize,
+        g: &UnivariatePolynomial<Rational>,
+        data: &ResidueData,
+    ) -> Result<(Vec<TowerElt>, usize)> {
+        if level == 0 || level > self.augmentations.len() {
+            return Err(MathError::InvalidArgument(
+                "maclane: residual polynomial level out of range".to_string(),
+            ));
+        }
+        if g.is_zero() {
+            return Err(MathError::InvalidArgument(
+                "maclane: residual polynomial of zero".to_string(),
+            ));
+        }
+        let aug = &self.augmentations[level - 1];
         let lambda = match &aug.lambda {
             QVal::Finite(l) => l.clone(),
             QVal::Infinity => {
@@ -724,24 +965,19 @@ impl InductiveValuation<Rational, PAdicBaseValuation> {
                 ))
             }
         };
-        if g.is_zero() {
-            return Err(MathError::InvalidArgument(
-                "maclane: residual polynomial of zero".to_string(),
-            ));
-        }
-        let h = int_to_i64(lambda.numerator())?;
-        let e = int_to_i64(lambda.denominator())? as usize;
+        let tau = data.taus[level - 1];
         let exp = phi_adic_expansion(g, &aug.phi)?;
-        // Gauss values of the expansion coefficients (deg < deg phi).
-        let mut us: Vec<Option<i64>> = Vec::with_capacity(exp.len());
+        let mut us: Vec<Option<Rational>> = Vec::with_capacity(exp.len());
         for c in &exp {
-            us.push(self.gauss_value_int(c)?);
+            us.push(match self.value_at_level(c, level - 1) {
+                QVal::Finite(u) => Some(u),
+                QVal::Infinity => None,
+            });
         }
-        // w(g) = min(u_i + i*lambda)
         let mut mu: Option<Rational> = None;
         for (i, u) in us.iter().enumerate() {
             if let Some(u) = u {
-                let val = rat_i64(*u) + rat_i64(i as i64) * lambda.clone();
+                let val = u.clone() + rat_i64(i as i64) * lambda.clone();
                 if mu.as_ref().map(|m| &val < m).unwrap_or(true) {
                     mu = Some(val);
                 }
@@ -750,52 +986,242 @@ impl InductiveValuation<Rational, PAdicBaseValuation> {
         let mu = mu.ok_or_else(|| {
             MathError::InvalidArgument("maclane: residual polynomial of zero".to_string())
         })?;
-        let on_line = |i: usize, u: &Option<i64>| -> bool {
-            match u {
+        let on_line = |i: usize| -> bool {
+            match &us[i] {
                 None => false,
-                Some(u) => rat_i64(*u) + rat_i64(i as i64) * lambda.clone() == mu,
+                Some(u) => u.clone() + rat_i64(i as i64) * lambda.clone() == mu,
             }
         };
-        let i0 = (0..us.len())
-            .find(|&i| on_line(i, &us[i]))
-            .expect("mu is attained");
-        let imax = (0..us.len())
-            .rev()
-            .find(|&i| on_line(i, &us[i]))
-            .expect("mu is attained");
-        // All critical indices are congruent mod e (gcd(h, e) = 1).
+        let i0 = (0..us.len()).find(|&i| on_line(i)).expect("mu attained");
+        let imax = (0..us.len()).rev().find(|&i| on_line(i)).expect("mu attained");
         for i in i0..=imax {
-            if on_line(i, &us[i]) && (i - i0) % e != 0 {
+            if on_line(i) && (i - i0) % tau != 0 {
                 return Err(MathError::NumericalError(
-                    "maclane: internal error: critical index not congruent mod e".to_string(),
+                    "maclane: internal error: critical index not congruent mod tau".to_string(),
                 ));
             }
         }
-        let m = (imax - i0) / e;
-        let mut r: Vec<Vec<i64>> = Vec::with_capacity(m + 1);
-        for j in 0..=m {
-            let i = i0 + j * e;
-            if on_line(i, &us[i]) {
-                let scaled = self.scale_by_p_power(&exp[i], us[i].expect("on-line is finite"));
-                r.push(self.reduce_poly_mod_p(&scaled)?);
+        let u_i0 = us[i0].clone().expect("on line");
+        let n0 = self.element_with_valuation(level - 1, &(-u_i0), data)?;
+        let m = (imax - i0) / tau;
+        let sub_tower = data.tower.truncate(level - 1);
+        let psi = data.tower.modulus_at(level);
+        let mut r: Vec<TowerElt> = Vec::with_capacity(m + 1);
+        let mut q_pow = UnivariatePolynomial::<Rational>::one();
+        for t in 0..=m {
+            let i = i0 + t * tau;
+            if on_line(i) {
+                let c = exp[i].clone() * q_pow.clone() * n0.clone();
+                let red = self.reduce_general(level - 1, &c, data)?;
+                let rem = sub_tower.poly_divmod(&red, psi)?.1;
+                r.push(data.tower.make_ext(level, rem)?);
             } else {
-                r.push(vec![0]);
+                r.push(data.tower.e_zero(level));
+            }
+            if t < m {
+                q_pow = q_pow * data.qs[level - 1].clone();
             }
         }
-        Ok((r, i0, e, h))
+        Ok((r, i0))
+    }
+
+    /// Lift a monic irreducible residual factor `psi` over `kappa_level`
+    /// (with `psi(0) != 0`) to a key polynomial of the level-`level` chain
+    /// with residual polynomial an associate of `psi`:
+    ///
+    /// `phi_new = phi^{m*tau} + sum_{t<m} c_t phi^{t*tau}`, `deg c_t < deg phi`,
+    ///
+    /// where each `c_t` is a GF(p)-combination of standard monomials
+    /// `p^c x^{a_0} prod phi_i^{a_i}` of value `(m-t)*tau*lambda`, solved by
+    /// linear algebra so that `red(c_t Q^t N_0) = gamma * psi_t`
+    /// (`gamma = red(Q^m N_0)`). The result is CERTIFIED: its value and its
+    /// residual polynomial (up to the unit `gamma`) are recomputed and
+    /// checked, so a lifting bug is an `Err`, never a wrong key.
+    fn lift_residual_to_key(
+        &self,
+        level: usize,
+        psi: &[TowerElt],
+        data: &ResidueData,
+    ) -> Result<UnivariatePolynomial<Rational>> {
+        let tower = &data.tower;
+        let aug = &self.augmentations[level - 1];
+        let lambda = aug.lambda.finite().expect("finite chain").clone();
+        let tau = data.taus[level - 1];
+        let m = tower.poly_degree(psi);
+        if m < 1 {
+            return Err(MathError::InvalidArgument(
+                "maclane: lift of a constant residual factor".to_string(),
+            ));
+        }
+        let m = m as usize;
+        if psi[m] != tower.e_one(level) {
+            return Err(MathError::NumericalError(
+                "maclane: internal error: residual factor is not monic".to_string(),
+            ));
+        }
+        if tower.poly_degree(&[psi[0].clone()]) < 0 {
+            return Err(MathError::NumericalError(
+                "maclane: internal error: residual factor divisible by y".to_string(),
+            ));
+        }
+        let p = self.p();
+        // gamma = red(Q^m N_0), N_0 of value -m*tau*lambda
+        let full_value = rat_i64((m * tau) as i64) * lambda.clone();
+        let n0 = self.element_with_valuation(level - 1, &(-full_value.clone()), data)?;
+        let mut q_m = UnivariatePolynomial::<Rational>::one();
+        for _ in 0..m {
+            q_m = q_m * data.qs[level - 1].clone();
+        }
+        let sub_tower = tower.truncate(level - 1);
+        let psi_mod = tower.modulus_at(level);
+        let reduce_mod = |c: &UnivariatePolynomial<Rational>| -> Result<TowerElt> {
+            let red = self.reduce_general(level - 1, c, data)?;
+            let rem = sub_tower.poly_divmod(&red, psi_mod)?.1;
+            tower.make_ext(level, rem)
+        };
+        let gamma = reduce_mod(&(q_m * n0.clone()))?;
+        if tower.e_is_zero(&gamma) {
+            return Err(MathError::NumericalError(
+                "maclane: internal error: gamma = 0 in key lift".to_string(),
+            ));
+        }
+        // standard monomials x^{a_0} prod phi_i^{a_i} of degree < deg(phi_level)
+        let monomials = self.standard_monomials(level, data)?;
+        // assemble phi_new = phi^{m tau} + sum c_t phi^{t tau}
+        let mut phi_pow_tau = UnivariatePolynomial::<Rational>::one();
+        for _ in 0..tau {
+            phi_pow_tau = phi_pow_tau * aug.phi.clone();
+        }
+        let mut phi_new = UnivariatePolynomial::<Rational>::one();
+        for _ in 0..m {
+            phi_new = phi_new * phi_pow_tau.clone();
+        }
+        let mut q_pow = UnivariatePolynomial::<Rational>::one();
+        let mut phi_tau_pow = UnivariatePolynomial::<Rational>::one();
+        for (t, psi_t) in psi.iter().enumerate().take(m) {
+            if !tower.e_is_zero(psi_t) {
+                let target = tower.e_mul(level, &gamma, psi_t);
+                let v_t = rat_i64(((m - t) * tau) as i64) * lambda.clone();
+                // columns: red(M * p^{c_M} * Q^t * N_0) for each monomial M,
+                // where p^{c_M} normalizes M to value v_t
+                let mut scaled_mons: Vec<(Rational, UnivariatePolynomial<Rational>)> = Vec::new();
+                for mono in &monomials {
+                    let val = match self.value_at_level(mono, level - 1) {
+                        QVal::Finite(v) => v,
+                        QVal::Infinity => continue,
+                    };
+                    let shift = v_t.clone() - val.clone();
+                    if !shift.is_integer() {
+                        continue;
+                    }
+                    let scaled = mono.scalar_mul(&p_power(p, int_to_i64(shift.numerator())?));
+                    scaled_mons.push((shift, scaled));
+                }
+                // prefer nonnegative p-shifts as pivots (integral lifts)
+                scaled_mons.sort_by(|a, b| b.0.cmp(&a.0));
+                let mut cols: Vec<Vec<i64>> = Vec::new();
+                let mut mons: Vec<UnivariatePolynomial<Rational>> = Vec::new();
+                for (_, scaled) in &scaled_mons {
+                    let red = reduce_mod(&(scaled.clone() * q_pow.clone() * n0.clone()))?;
+                    cols.push(tower.flatten(&red));
+                    mons.push(scaled.clone());
+                }
+                let rhs = tower.flatten(&target);
+                let sol = solve_mod_p(&cols, &rhs, p).ok_or_else(|| {
+                    MathError::NumericalError(
+                        "maclane: internal error: monomial reductions do not span kappa"
+                            .to_string(),
+                    )
+                })?;
+                let mut c_t = UnivariatePolynomial::<Rational>::zero();
+                for (n_m, mono) in sol.iter().zip(mons.iter()) {
+                    if *n_m != 0 {
+                        c_t = c_t + mono.scalar_mul(&rat_i64(*n_m));
+                    }
+                }
+                phi_new = phi_new + c_t * phi_tau_pow.clone();
+            }
+            q_pow = q_pow * data.qs[level - 1].clone();
+            phi_tau_pow = phi_tau_pow * phi_pow_tau.clone();
+        }
+        // CERTIFY the lift
+        let expected_deg = m * tau * aug.phi.degree().expect("key degree");
+        if phi_new.degree() != Some(expected_deg) || !phi_new.is_monic() {
+            return Err(MathError::NumericalError(
+                "maclane: internal error: lifted key has wrong degree/leading coefficient"
+                    .to_string(),
+            ));
+        }
+        let expected_val = rat_i64((m * tau) as i64) * lambda.clone();
+        if self.value_at_level(&phi_new, level) != QVal::Finite(expected_val) {
+            return Err(MathError::NumericalError(
+                "maclane: internal error: lifted key has wrong value".to_string(),
+            ));
+        }
+        let (r_new, i0) = self.residual_polynomial_general(level, &phi_new, data)?;
+        if i0 != 0 || tower.poly_degree(&r_new) != m as i64 {
+            return Err(MathError::NumericalError(
+                "maclane: internal error: lifted key residual has wrong shape".to_string(),
+            ));
+        }
+        let lead = r_new[m].clone();
+        for (t, psi_t) in psi.iter().enumerate() {
+            let expect = tower.e_mul(level, &lead, psi_t);
+            if r_new[t] != expect {
+                return Err(MathError::NumericalError(
+                    "maclane: internal error: lifted key residual is not an associate of the factor"
+                        .to_string(),
+                ));
+            }
+        }
+        Ok(phi_new)
+    }
+
+    /// The standard monomials `x^{a_0} prod_{i=1}^{level-1} phi_i^{a_i}`
+    /// with `a_0 < deg psi_1` and `a_i < tau_i * deg psi_{i+1}`; all have
+    /// degree < deg(phi_level) and their normalized reductions span
+    /// `kappa_level` (certified downstream by the linear solves).
+    fn standard_monomials(
+        &self,
+        level: usize,
+        data: &ResidueData,
+    ) -> Result<Vec<UnivariatePolynomial<Rational>>> {
+        let mut ranges: Vec<usize> = vec![data.tower.modulus_degree(1)];
+        for i in 1..level {
+            ranges.push(data.taus[i - 1] * data.tower.modulus_degree(i + 1));
+        }
+        let mut out: Vec<UnivariatePolynomial<Rational>> =
+            vec![UnivariatePolynomial::one()];
+        for (i, &range) in ranges.iter().enumerate() {
+            let base = if i == 0 {
+                UnivariatePolynomial::new(vec![rat_i64(0), rat_i64(1)])
+            } else {
+                self.augmentations[i - 1].phi.clone()
+            };
+            let mut next = Vec::with_capacity(out.len() * range);
+            for m in &out {
+                let mut pow = UnivariatePolynomial::<Rational>::one();
+                for _ in 0..range {
+                    next.push(m.clone() * pow.clone());
+                    pow = pow * base.clone();
+                }
+            }
+            out = next;
+        }
+        Ok(out)
     }
 
     /// Is `phi` a key polynomial for this valuation? Implements the standard
     /// effective criterion (monic + equivalence-irreducible + v-minimal):
     ///
     /// - Gauss level: p-integral with irreducible reduction mod p.
-    /// - Level one: `deg phi` a multiple of `e*d`, one-sided Newton polygon
-    ///   (`w(phi) = (deg phi / d) * lambda`), residual polynomial irreducible
-    ///   and not divisible by `y`; plus the same-degree equivalent-key cases.
+    /// - Level `k >= 1`: `deg phi` a multiple of `tau_k * d_k`, one-sided
+    ///   Newton polygon (`w(phi) = (deg phi / d_k) * lambda_k`), residual
+    ///   polynomial irreducible over the residue tower `kappa_k` and not
+    ///   divisible by `y`; plus the same-degree equivalent-key cases.
     ///
-    /// `Err(NotSupported)` where the required residue computation is out of
-    /// scope (shifted Gauss; level >= 2 with growing degree; residual
-    /// factorization over `GF(p^d)`, `d > 1`).
+    /// `Err(NotSupported)` only for shifted Gauss valuations
+    /// (`lambda0 != 0`).
     pub fn is_key(&self, phi: &UnivariatePolynomial<Rational>) -> Result<KeyCheck> {
         if !self.lambda0.is_zero() {
             return Err(MathError::NotSupported(
@@ -836,15 +1262,15 @@ impl InductiveValuation<Rational, PAdicBaseValuation> {
                     ))
                 }
             }
-            1 => {
-                let aug = &self.augmentations[0];
+            level => {
+                let aug = &self.augmentations[level - 1];
                 let d = aug.phi.degree().expect("key has degree >= 1");
                 let lambda = aug
                     .lambda
                     .finite()
                     .expect("non-final valuation has finite lambda")
                     .clone();
-                let e = int_to_i64(lambda.denominator())? as usize;
+                let tau = self.tau_at(level)?;
                 if n % d != 0 {
                     return Ok(KeyCheck::NotKey(format!(
                         "deg phi = {} is not a multiple of the key degree {}",
@@ -852,9 +1278,9 @@ impl InductiveValuation<Rational, PAdicBaseValuation> {
                     )));
                 }
                 let ell = n / d;
-                if ell % e != 0 {
+                if ell % tau != 0 {
                     if n == d {
-                        // e >= 2, same degree: keys are exactly phi_old + r
+                        // tau >= 2, same degree: keys are exactly phi_old + r
                         // with w(r) > lambda (equivalent keys).
                         let diff = phi.clone() - aug.phi.clone();
                         return if self.value(&diff) > QVal::Finite(lambda) {
@@ -869,11 +1295,11 @@ impl InductiveValuation<Rational, PAdicBaseValuation> {
                         };
                     }
                     return Ok(KeyCheck::NotKey(format!(
-                        "deg phi / d = {} is not a multiple of e = {}",
-                        ell, e
+                        "deg phi / d = {} is not a multiple of tau = {}",
+                        ell, tau
                     )));
                 }
-                let m = ell / e;
+                let m = ell / tau;
                 // v-minimality: the phi_old-Newton polygon of phi must be
                 // one-sided of slope -lambda ending at (ell, 0), i.e.
                 // w(phi) = ell * lambda.
@@ -883,36 +1309,20 @@ impl InductiveValuation<Rational, PAdicBaseValuation> {
                         "phi is not v-minimal (w(phi) < deg(phi)/d * lambda)".to_string(),
                     ));
                 }
-                let (r, i0, _e, _h) = self.residual_polynomial_level1(phi)?;
+                let data = self.residue_data(level)?;
+                let (r, i0) = self.residual_polynomial_general(level, phi, &data)?;
                 if i0 == 0 {
                     // residual polynomial R of degree m with R(0) != 0
-                    debug_assert_eq!(r.len(), m + 1);
-                    if d == 1 {
-                        let flat: Vec<i64> =
-                            r.iter().map(|c| c.first().copied().unwrap_or(0)).collect();
-                        let flat = fp_factor::trim(&flat);
-                        if fp_factor::degree(&flat) as usize == m
-                            && is_irreducible_fp(&flat, self.p())?
-                        {
-                            Ok(KeyCheck::Key { residual_degree: m })
-                        } else {
-                            Ok(KeyCheck::NotKey(
-                                "residual polynomial is not irreducible".to_string(),
-                            ))
-                        }
-                    } else if m == 1 {
-                        // degree-1 residual polynomials are irreducible over
-                        // any field
-                        Ok(KeyCheck::Key { residual_degree: 1 })
+                    if data.tower.poly_degree(&r) == m as i64 && data.tower.is_irreducible(&r)? {
+                        Ok(KeyCheck::Key { residual_degree: m })
                     } else {
-                        Err(MathError::NotSupported(
-                            "maclane: factoring residual polynomials over GF(p^d), d > 1, not implemented"
-                                .to_string(),
+                        Ok(KeyCheck::NotKey(
+                            "residual polynomial is not irreducible".to_string(),
                         ))
                     }
                 } else if n == d {
-                    // ell = 1, e = 1, support {1}: R = y, phi = key + r with
-                    // w(r) > lambda: an equivalent key.
+                    // ell = 1, tau = 1, support {1}: R = y, phi = key + r
+                    // with w(r) > lambda: an equivalent key.
                     Ok(KeyCheck::Key {
                         residual_degree: aug.residual_degree,
                     })
@@ -923,11 +1333,45 @@ impl InductiveValuation<Rational, PAdicBaseValuation> {
                     ))
                 }
             }
-            _ => Err(MathError::NotSupported(
-                "maclane: key checks at augmentation level >= 2 (residue field towers) not implemented"
-                    .to_string(),
-            )),
         }
+    }
+
+    /// Does `self` dominate `other` pointwise (`self(g) >= other(g)` for
+    /// all `g`)? Decided by the standard criterion for inductive
+    /// valuations over the same (unshifted) base: domination holds iff
+    /// `self(phi) >= lambda` for every augmentation `(phi, lambda)` of
+    /// `other`.
+    pub fn dominates(&self, other: &Self) -> bool {
+        if self.base != other.base || self.lambda0 != other.lambda0 {
+            return false;
+        }
+        other
+            .augmentations
+            .iter()
+            .all(|aug| self.value(&aug.phi) >= aug.lambda)
+    }
+
+    /// `tau_level = [Gamma_level : Gamma_{level-1}]`, the relative
+    /// ramification of the last augmentation of the level-`level` prefix.
+    fn tau_at(&self, level: usize) -> Result<usize> {
+        let mut gen = rat_i64(1);
+        for j in 1..level {
+            if let QVal::Finite(l) = &self.augmentations[j - 1].lambda {
+                gen = rat_gcd(&gen, l);
+            }
+        }
+        let lambda = self.augmentations[level - 1].lambda.finite().ok_or_else(|| {
+            MathError::InvalidArgument(
+                "maclane: tau of an infinite augmentation".to_string(),
+            )
+        })?;
+        let ratio = gen.clone() / rat_gcd(&gen, lambda);
+        if !ratio.is_integer() {
+            return Err(MathError::NumericalError(
+                "maclane: internal error: non-integral value-group index".to_string(),
+            ));
+        }
+        Ok(int_to_i64(ratio.numerator())? as usize)
     }
 
     /// The MacLane augmentation `[self, v(phi) = lambda]`.
@@ -1048,56 +1492,16 @@ impl InductiveValuation<Rational, PAdicBaseValuation> {
         Ok(kids)
     }
 
-    /// Lift a monic residual polynomial `psi` over `k_1 = GF(p)[z]/(phibar)`
-    /// (coefficients as `GF(p)[z]`-vectors of degree < d) to a key polynomial
-    /// of this level-one valuation with residual polynomial `psi`:
-    /// `phi_new = sum_j B_j p^{(m-j)h} phi^{j e}`.
-    fn lift_residual_factor(
-        &self,
-        psi: &[Vec<i64>],
-        e: usize,
-        h: i64,
-    ) -> Result<UnivariatePolynomial<Rational>> {
-        let aug = &self.augmentations[0];
-        let m = psi.len() - 1;
-        if psi[m] != vec![1] {
-            return Err(MathError::NumericalError(
-                "maclane: internal error: residual factor is not monic".to_string(),
-            ));
-        }
-        // phi^e
-        let mut phi_e = UnivariatePolynomial::one();
-        for _ in 0..e {
-            phi_e = phi_e * aug.phi.clone();
-        }
-        let mut result = UnivariatePolynomial::zero();
-        let mut phi_e_pow = UnivariatePolynomial::one(); // phi^{j*e}
-        for (j, b) in psi.iter().enumerate() {
-            if !fp_factor::is_zero(b) {
-                let lift = UnivariatePolynomial::new(
-                    b.iter().map(|&c| rat_i64(c)).collect::<Vec<_>>(),
-                );
-                let exponent = ((m - j) as i64) * h;
-                let pk = Integer::from(self.p()).pow(exponent as u32);
-                let scale = Rational::new(pk, Integer::one()).expect("nonzero");
-                result = result + (lift * phi_e_pow.clone()).scalar_mul(&scale);
-            }
-            if j < m {
-                phi_e_pow = phi_e_pow * phi_e.clone();
-            }
-        }
-        Ok(result)
-    }
-
     /// One step of the MacLane algorithm toward the monic squarefree
     /// p-integral target `f`: returns the valuations replacing `self` in the
     /// leaf set (each strictly closer to the extensions of `v_p` determined
     /// by the irreducible factors of `f` over `Q_p`).
     ///
-    /// Implemented at the Gauss level and at augmentation level one (with
-    /// same-degree refinements collapsing, so degree-preserving chains can
-    /// be iterated indefinitely); an honest `Err(NotSupported)` where the
-    /// residue tower is out of scope.
+    /// Implemented at EVERY augmentation level (residue-field towers,
+    /// certified residual factorization over `GF(p^d)`, verified key
+    /// lifts; same-degree refinements collapse, so degree-preserving
+    /// chains can be iterated indefinitely). `Err(NotSupported)` only for
+    /// shifted Gauss valuations.
     pub fn mac_lane_step(&self, f: &UnivariatePolynomial<Rational>) -> Result<Vec<Self>> {
         if self.is_final() {
             return Err(MathError::InvalidArgument(
@@ -1127,49 +1531,30 @@ impl InductiveValuation<Rational, PAdicBaseValuation> {
                 }
                 Ok(kids)
             }
-            1 => {
-                let phi_last = self.augmentations[0].phi.clone();
-                let d = phi_last.degree().expect("key has degree >= 1");
+            level => {
+                let phi_last = self.augmentations[level - 1].phi.clone();
                 // (a) roots closer to the current key: steeper polygon sides
                 // (and an exact-division infinite leaf); same-degree
                 // augmentations collapse inside augment().
                 let mut kids = self.children_for_key(f, &phi_last)?;
-                // (b) residual factors away from y: new or refined keys.
-                let (r, _i0, e, h) = self.residual_polynomial_level1(f)?;
-                if r.len() >= 2 {
-                    let psis: Vec<Vec<Vec<i64>>> = if d == 1 {
-                        let flat: Vec<i64> =
-                            r.iter().map(|c| c.first().copied().unwrap_or(0)).collect();
-                        let flat = fp_factor::trim(&flat);
-                        factor_fp_certified(&flat, self.p())?
-                            .into_iter()
-                            .map(|(psi, _mult)| psi.into_iter().map(|c| vec![c]).collect())
-                            .collect()
-                    } else if r.len() == 2 {
-                        // degree-1 residual polynomial: monicize over k_1
-                        vec![monicize_k1(&r, &self.reduce_poly_mod_p(&phi_last)?, self.p())?]
-                    } else {
-                        return Err(MathError::NotSupported(
-                            "maclane: factoring residual polynomials over GF(p^d), d > 1, not implemented"
-                                .to_string(),
-                        ));
-                    };
-                    for psi in &psis {
-                        let phi_new = self.lift_residual_factor(psi, e, h)?;
+                // (b) residual factors away from y: new or refined keys,
+                // lifted from the certified factorization of the residual
+                // polynomial of f over the residue tower kappa_level.
+                let data = self.residue_data(level)?;
+                let (r, _i0) = self.residual_polynomial_general(level, f, &data)?;
+                if data.tower.poly_degree(&r) >= 1 {
+                    for (psi, _mult) in data.tower.factor_certified(&r)? {
+                        let phi_new = self.lift_residual_to_key(level, &psi, &data)?;
                         kids.extend(self.children_for_key(f, &phi_new)?);
                     }
                 }
                 if kids.is_empty() {
                     return Err(MathError::NumericalError(
-                        "maclane: internal error: level-one step made no progress".to_string(),
+                        "maclane: internal error: step made no progress".to_string(),
                     ));
                 }
                 Ok(kids)
             }
-            _ => Err(MathError::NotSupported(
-                "maclane: mac_lane_step at augmentation level >= 2 (residue field towers) not implemented"
-                    .to_string(),
-            )),
         }
     }
 }
@@ -1354,27 +1739,6 @@ fn factor_fp_certified(f: &[i64], p: i64) -> Result<Vec<(Vec<i64>, usize)>> {
         ));
     }
     Ok(merged)
-}
-
-/// Monicize a degree-one polynomial over `k_1 = GF(p)[z]/(phibar)`.
-fn monicize_k1(r: &[Vec<i64>], phibar: &[i64], p: i64) -> Result<Vec<Vec<i64>>> {
-    debug_assert_eq!(r.len(), 2);
-    let lc = &r[1];
-    // invert lc modulo (phibar, p)
-    let (g, s, _t) = fp_factor::extended_gcd(lc, phibar, p);
-    if fp_factor::degree(&g) != 0 {
-        return Err(MathError::NumericalError(
-            "maclane: internal error: residual leading coefficient not invertible".to_string(),
-        ));
-    }
-    let g0_inv = fp_factor::mod_inv(g[0], p).ok_or_else(|| {
-        MathError::NumericalError("maclane: internal error: gcd unit not invertible".to_string())
-    })?;
-    let inv = fp_factor::mul(&s, &[g0_inv], p);
-    let (_q, inv) = fp_factor::div_mod(&inv, phibar, p);
-    let c0 = fp_factor::mul(&r[0], &inv, p);
-    let (_q, c0) = fp_factor::div_mod(&c0, phibar, p);
-    Ok(vec![c0, vec![1]])
 }
 
 /// Sides of the lower convex hull of `points` (x strictly increasing).
@@ -2165,6 +2529,227 @@ mod tests {
         assert!(mac_lane_approximants(&qpoly(&[1, 0, 1]), 4).is_err());
         // constant
         assert!(mac_lane_approximants(&qpoly(&[5]), 2).is_err());
+    }
+
+    // -- Stage-2 gates: level >= 2 trees and GF(p^d) residual factoring.
+    // Every (e, f) expectation below was derived independently BEFORE being
+    // asserted (scratchpad/verify_om_gates.py: PARI/gp idealprimedec +
+    // factorpadic + scripted Newton-polygon hand derivations; 55/55 checks).
+
+    #[test]
+    fn test_approximants_level2_x4_plus_4x2_plus_12() {
+        // x^4 + 4x^2 + 12 over Q_2: irreducible, e = 4, f = 1, and the tree
+        // NEEDS a second augmentation. Hand-derived chain (verified in
+        // verify_om_gates.py):
+        //   polygon slope -1/2, residual (y+1)^2 -> lift key x^2+2 (level 2)
+        //   residual (Y+1)^2 again -> same-degree refinement x^2+2x+2
+        //   polygon w.r.t. x^2+2x+2: one side of slope -7/4 -> leaf
+        //   [Gauss, v(x) = 1/2, v(x^2+2x+2) = 7/4], E = 4, F = 1.
+        let f = qpoly(&[12, 0, 4, 0, 1]);
+        let leaves = mac_lane_approximants(&f, 2).unwrap();
+        assert_eq!(leaves.len(), 1);
+        let w = &leaves[0];
+        assert_eq!(w.ramification_index(), 4);
+        assert_eq!(w.residue_degree(), 1);
+        assert_eq!(w.level(), 2, "the tree must reach augmentation level 2");
+        assert_eq!(w.augmentations()[0].phi(), &qpoly(&[0, 1]));
+        assert_eq!(w.augmentations()[0].lambda(), &QVal::from_frac(1, 2));
+        assert_eq!(w.augmentations()[1].phi(), &qpoly(&[2, 2, 1]));
+        assert_eq!(w.augmentations()[1].lambda(), &QVal::from_frac(7, 4));
+    }
+
+    #[test]
+    fn test_approximants_gf4_residual_irreducible() {
+        // x^4 + 2x^3 + 5x^2 + 8x + 3 = phi^2 + 2 phi + 4x (phi = x^2+x+1)
+        // over Q_2: residual polynomial y^2 + y + w over GF(4) with
+        // Tr(w) = 1: irreducible => single unramified quartic factor,
+        // e = 1, f = 4 (gp idealprimedec-confirmed). Exercises residual
+        // factoring over GF(4) and a degree-4 key lift to level 2.
+        let f = qpoly(&[3, 8, 5, 2, 1]);
+        let leaves = mac_lane_approximants(&f, 2).unwrap();
+        assert_eq!(leaves.len(), 1);
+        let w = &leaves[0];
+        assert_eq!(w.ramification_index(), 1);
+        assert_eq!(w.residue_degree(), 4);
+        assert_eq!(w.level(), 2);
+        assert_eq!(w.augmentations()[0].phi(), &qpoly(&[1, 1, 1]));
+        assert_eq!(
+            w.augmentations()[1].phi().degree(),
+            Some(4),
+            "level-2 key must have full degree 4"
+        );
+    }
+
+    #[test]
+    fn test_approximants_gf4_residual_split() {
+        // x^4 + 2x^3 + 5x^2 + 4x + 7 = phi^2 + 2 phi + 4 (phi = x^2+x+1)
+        // over Q_2: residual y^2 + y + 1 = (y+w)(y+w^2) over GF(4):
+        // TWO unramified quadratic factors, e = 1, f = 2 each
+        // (gp-confirmed). Exercises GF(4) root finding + same-degree lifts.
+        let f = qpoly(&[7, 4, 5, 2, 1]);
+        let leaves = mac_lane_approximants(&f, 2).unwrap();
+        assert_eq!(leaves.len(), 2);
+        for w in &leaves {
+            assert_eq!(w.ramification_index(), 1);
+            assert_eq!(w.residue_degree(), 2);
+            assert_eq!(w.last_key().unwrap().degree(), Some(2));
+        }
+        // the two leaves carry distinct keys
+        assert_ne!(
+            leaves[0].last_key().unwrap(),
+            leaves[1].last_key().unwrap()
+        );
+    }
+
+    #[test]
+    fn test_approximants_x4_plus_1() {
+        // x^4 + 1 over Q_2: Q_2(zeta_8) is totally ramified of degree 4:
+        // irreducible, e = 4, f = 1; (x+1)-polygon is Eisenstein-like with
+        // slope -1/4 (gp-confirmed). Leaf [Gauss, v(x+1) = 1/4].
+        let leaves = mac_lane_approximants(&qpoly(&[1, 0, 0, 0, 1]), 2).unwrap();
+        assert_eq!(leaves.len(), 1);
+        let w = &leaves[0];
+        assert_eq!(w.ramification_index(), 4);
+        assert_eq!(w.residue_degree(), 1);
+        assert_eq!(w.augmentations()[0].phi(), &qpoly(&[1, 1]));
+        assert_eq!(w.augmentations()[0].lambda(), &QVal::from_frac(1, 4));
+    }
+
+    #[test]
+    fn test_approximants_x6_plus_2x3_plus_4() {
+        // x^6 + 2x^3 + 4 over Q_2: single slope -1/3 with residual
+        // y^2 + y + 1 irreducible over GF(2): irreducible, e = 3, f = 2
+        // (gp-confirmed).
+        let leaves = mac_lane_approximants(&qpoly(&[4, 0, 0, 2, 0, 0, 1]), 2).unwrap();
+        assert_eq!(leaves.len(), 1);
+        let w = &leaves[0];
+        assert_eq!(w.ramification_index(), 3);
+        assert_eq!(w.residue_degree(), 2);
+    }
+
+    #[test]
+    fn test_approximants_x3_minus_x_minus_1_q23() {
+        // x^3 - x - 1 over Q_23 (disc = -23): one linear factor and one
+        // ramified quadratic: (e,f) = (1,1) and (2,1) (gp-confirmed).
+        let leaves = mac_lane_approximants(&qpoly(&[-1, -1, 0, 1]), 23).unwrap();
+        assert_eq!(leaves.len(), 2);
+        let mut efs: Vec<(u64, u64)> = leaves
+            .iter()
+            .map(|w| (w.ramification_index(), w.residue_degree()))
+            .collect();
+        efs.sort();
+        assert_eq!(efs, vec![(1, 1), (2, 1)]);
+    }
+
+    #[test]
+    fn test_approximants_mixed_slopes_q3() {
+        // (x^2 - 3)(x^3 - 3) = x^5 - 3x^3 - 3x^2 + 9 over Q_3: mixed slopes
+        // 1/2 and 1/3: two factors with e = 2 and e = 3, f = 1
+        // (gp-confirmed).
+        let leaves = mac_lane_approximants(&qpoly(&[9, 0, -3, -3, 0, 1]), 3).unwrap();
+        assert_eq!(leaves.len(), 2);
+        let mut efs: Vec<(u64, u64)> = leaves
+            .iter()
+            .map(|w| (w.ramification_index(), w.residue_degree()))
+            .collect();
+        efs.sort();
+        assert_eq!(efs, vec![(2, 1), (3, 1)]);
+    }
+
+    #[test]
+    fn test_approximants_product_two_unramified_quadratics() {
+        // (x^2+x+1)(x^2+x+3) over Q_2: both factors reduce to the SAME
+        // irreducible x^2+x+1 mod 2, so the tree must refine an equivalent
+        // key of degree 2 before separating: two leaves, e = 1, f = 2 each
+        // (gp-confirmed).
+        let leaves = mac_lane_approximants(&qpoly(&[3, 4, 5, 2, 1]), 2).unwrap();
+        assert_eq!(leaves.len(), 2);
+        for w in &leaves {
+            assert_eq!(w.ramification_index(), 1);
+            assert_eq!(w.residue_degree(), 2);
+        }
+    }
+
+    #[test]
+    fn test_leaves_union_coprime_product() {
+        // Consistency law: the approximants of f*g (f, g coprime monic
+        // squarefree) are the union of those of f and of g, compared by the
+        // (E, F, level, last key degree) signature.
+        let f = qpoly(&[12, 0, 4, 0, 1]); // x^4+4x^2+12 (level-2 tree)
+        let g = qpoly(&[1, 1, 1]); // x^2+x+1 (unramified quadratic)
+        let fg = f.clone() * g.clone();
+        let sig = |w: &PAdicInductiveValuation| {
+            (
+                w.ramification_index(),
+                w.residue_degree(),
+                w.last_key().unwrap().degree().unwrap(),
+            )
+        };
+        let mut union: Vec<_> = mac_lane_approximants(&f, 2)
+            .unwrap()
+            .iter()
+            .map(sig)
+            .chain(mac_lane_approximants(&g, 2).unwrap().iter().map(sig))
+            .collect();
+        let mut product: Vec<_> = mac_lane_approximants(&fg, 2)
+            .unwrap()
+            .iter()
+            .map(sig)
+            .collect();
+        union.sort();
+        product.sort();
+        assert_eq!(union, product);
+    }
+
+    #[test]
+    fn test_level2_residual_multiplicativity_battery() {
+        // THE graded law behind the OM tree: for the level-2 valuation
+        // w = [Gauss(v_2), v(x) = 1/2, v(x^2+2) = 3/2],
+        // R(fg) is an associate of R(f) * R(g) * y^s. A coherence bug in the
+        // Q^t-normalization of the residual coefficients would break this.
+        let w = w2();
+        let data = w.residue_data(2).unwrap();
+        let tower = &data.tower;
+        let mut rng = Lcg(0x5EED_0009);
+        let mut checked = 0;
+        for _ in 0..40 {
+            let f = rng.poly(3);
+            let g = rng.poly(3);
+            if f.is_zero() || g.is_zero() {
+                continue;
+            }
+            let (rf, i0f) = w.residual_polynomial_general(2, &f, &data).unwrap();
+            let (rg, i0g) = w.residual_polynomial_general(2, &g, &data).unwrap();
+            let (rfg, i0fg) = w
+                .residual_polynomial_general(2, &(f.clone() * g.clone()), &data)
+                .unwrap();
+            // y-shifts multiply: i0(fg) = i0(f) + i0(g)
+            assert_eq!(i0fg, i0f + i0g, "i0 additivity for f={}, g={}", f, g);
+            let prod = tower.poly_mul(&rf, &rg);
+            // associate check: rfg = c * prod for a nonzero constant c
+            assert_eq!(
+                tower.poly_degree(&rfg),
+                tower.poly_degree(&prod),
+                "degree of R(fg) for f={}, g={}",
+                f,
+                g
+            );
+            let d = tower.poly_degree(&rfg) as usize;
+            let c = tower
+                .e_mul(2, &rfg[d], &tower.e_inv(2, &prod[d]).unwrap());
+            for t in 0..=d {
+                assert_eq!(
+                    rfg[t],
+                    tower.e_mul(2, &c, &prod[t]),
+                    "R(fg) !~ R(f)R(g) at coeff {} for f={}, g={}",
+                    t,
+                    f,
+                    g
+                );
+            }
+            checked += 1;
+        }
+        assert!(checked >= 30, "battery too small: {}", checked);
     }
 
     #[test]

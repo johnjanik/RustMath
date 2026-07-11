@@ -58,11 +58,108 @@
 
 use rustmath_core::{CommutativeRing, MathError, Result, Ring};
 use rustmath_integers::Integer;
+use rustmath_rationals::Rational;
+use super::unramified::{unramified_modulus, UnramifiedExtension};
 use super::{PadicInteger, PadicRational};
 use rustmath_polynomials::UnivariatePolynomial;
 use std::fmt;
 use std::ops::{Add, Mul, Neg, Sub};
 use std::sync::Arc;
+
+/// Structural sameness of extensions (prime, degree, defining polynomial,
+/// precision, type — the display-only generator name is ignored).
+///
+/// `Arc::ptr_eq` alone is wrong here: e.g. [`PadicExtension::generator`]
+/// clones the extension into a fresh `Arc`, and elements built from it must
+/// still interoperate. This fixed the two formerly-ignored tests below.
+fn same_extension(a: &Arc<PadicExtension>, b: &Arc<PadicExtension>) -> bool {
+    Arc::ptr_eq(a, b)
+        || (a.prime == b.prime
+            && a.degree == b.degree
+            && a.defining_polynomial == b.defining_polynomial
+            && a.precision == b.precision
+            && a.extension_type == b.extension_type)
+}
+
+/// Exact rational value of the canonical representative of a `PadicRational`:
+/// `unit * p^valuation`.
+fn padic_rational_to_rational(x: &PadicRational) -> Rational {
+    let unit = x.unit().value().clone();
+    let p = x.prime().clone();
+    let v = x.valuation();
+    if v >= 0 {
+        Rational::new(unit * p.pow(v as u32), Integer::one())
+            .expect("denominator 1 is nonzero")
+    } else {
+        Rational::new(unit, p.pow((-v) as u32)).expect("p^k is nonzero")
+    }
+}
+
+/// Multiply two coefficient vectors and reduce modulo the defining polynomial
+/// `def` (little-endian, length n+1, leading coefficient nonzero), exactly
+/// over `Q`.
+fn rational_polymul_mod(a: &[Rational], b: &[Rational], def: &[Rational]) -> Vec<Rational> {
+    let n = def.len() - 1;
+    let zero = Rational::from(0);
+    if a.is_empty() || b.is_empty() {
+        return vec![zero; n];
+    }
+    let mut res = vec![zero.clone(); a.len() + b.len() - 1];
+    for (i, ai) in a.iter().enumerate() {
+        if ai.is_zero() {
+            continue;
+        }
+        for (j, bj) in b.iter().enumerate() {
+            if bj.is_zero() {
+                continue;
+            }
+            res[i + j] = res[i + j].clone() + ai.clone() * bj.clone();
+        }
+    }
+    for k in (n..res.len()).rev() {
+        if res[k].is_zero() {
+            continue;
+        }
+        let factor = std::mem::replace(&mut res[k], zero.clone()) / def[n].clone();
+        for i in 0..n {
+            if def[i].is_zero() {
+                continue;
+            }
+            res[k - n + i] = res[k - n + i].clone() - factor.clone() * def[i].clone();
+        }
+    }
+    res.truncate(n);
+    res.resize(n, zero);
+    res
+}
+
+/// Exact determinant over `Q` by Gaussian elimination (product of pivots,
+/// sign-tracked row swaps).
+fn rational_det(mut m: Vec<Vec<Rational>>) -> Rational {
+    let n = m.len();
+    let mut det = Rational::from(1);
+    for k in 0..n {
+        let Some(piv) = (k..n).find(|&i| !m[i][k].is_zero()) else {
+            return Rational::from(0);
+        };
+        if piv != k {
+            m.swap(k, piv);
+            det = -det;
+        }
+        let pivot = m[k][k].clone();
+        det = det * pivot.clone();
+        for i in k + 1..n {
+            if m[i][k].is_zero() {
+                continue;
+            }
+            let factor = m[i][k].clone() / pivot.clone();
+            for j in k..n {
+                m[i][j] = m[i][j].clone() - factor.clone() * m[k][j].clone();
+            }
+        }
+    }
+    det
+}
 
 /// Type of p-adic extension
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -183,23 +280,15 @@ impl PadicExtension {
     ///
     /// # Note
     ///
-    /// This creates an extension using a polynomial that reduces to an
-    /// irreducible polynomial over F_p. The actual polynomial would need
-    /// to be computed based on Conway polynomials or another canonical choice.
+    /// The defining polynomial is the certified irreducible-mod-p lift from
+    /// [`unramified_modulus`]: the Conway polynomial when the verified table
+    /// of `rustmath-finitefields` covers `(p, degree)`, otherwise the first
+    /// monic irreducible found by enumeration — in both cases re-certified
+    /// irreducible mod p at construction. (The previous placeholder
+    /// `x^degree - (1+p)` was mathematically wrong: e.g. `x^2 - 6` factors as
+    /// `(x-1)(x+1)` mod 5, so the "extension" was not a field.)
     pub fn unramified(prime: Integer, degree: usize, precision: usize) -> Result<Self> {
-        // For unramified extensions, we need a polynomial that is:
-        // 1. Monic
-        // 2. Irreducible over qp
-        // 3. Reduces to an irreducible polynomial over F_p
-        //
-        // For now, we use x^degree - (1 + p) as a placeholder
-        // In a full implementation, this would use Conway polynomials
-        let mut coeffs = vec![Integer::zero(); degree + 1];
-        coeffs[0] = -(Integer::one() + prime.clone()); // constant term: -(1+p)
-        coeffs[degree] = Integer::one(); // leading coefficient
-
-        let poly = UnivariatePolynomial::new(coeffs);
-
+        let poly = unramified_modulus(&prime, degree)?;
         Self::new(prime, poly, precision, ExtensionType::Unramified)
     }
 
@@ -457,160 +546,82 @@ impl PadicExtensionElement {
         &self.coefficients
     }
 
-    /// Get mutable coefficients
-    fn coefficients_mut(&mut self) -> &mut Vec<PadicRational> {
-        &mut self.coefficients
+    /// The n×n multiplication-by-α matrix over `Q` in the basis
+    /// `1, π, ..., π^{n-1}` (column j = coefficients of `α · π^j`), computed
+    /// exactly from the canonical rational representatives of the
+    /// coefficients, with exact reduction modulo the defining polynomial.
+    fn multiplication_matrix_rational(&self) -> Vec<Vec<Rational>> {
+        let n = self.extension.degree();
+        let def: Vec<Rational> = self
+            .extension
+            .defining_polynomial()
+            .coefficients()
+            .iter()
+            .map(|c| Rational::new(c.clone(), Integer::one()).expect("denominator 1"))
+            .collect();
+        let a: Vec<Rational> = self
+            .coefficients
+            .iter()
+            .map(padic_rational_to_rational)
+            .collect();
+        let mut cols = Vec::with_capacity(n);
+        for j in 0..n {
+            let mut basis = vec![Rational::from(0); n];
+            basis[j] = Rational::from(1);
+            cols.push(rational_polymul_mod(&a, &basis, &def));
+        }
+        (0..n)
+            .map(|i| (0..n).map(|j| cols[j][i].clone()).collect())
+            .collect()
     }
 
     /// Compute the norm N_{K/qp}(α)
     ///
-    /// The norm is the product of all Galois conjugates, or equivalently
-    /// the determinant of the multiplication-by-α map.
-    ///
-    /// For α = a_0 + a_1·π + ... + a_{n-1}·π^{n-1}, we compute:
-    /// N(α) = (-1)^n · f(0) / leading_coeff where f is the char poly of α
+    /// The norm is the product of all Galois conjugates, or equivalently the
+    /// determinant of the multiplication-by-α map — computed here as the
+    /// exact rational determinant of the multiplication matrix (any degree,
+    /// any extension type), then read back into `qp` at the extension's
+    /// precision. This replaced the old degree>2 `unimplemented!` facade;
+    /// values are pinned by sympy-verified tests (e.g. `N(3+2√5) = -11` over
+    /// `Q_5(√5)`, `N(π) = 2` over `Q_2(2^{1/3})`, `N(g) = -3` for the degree-3
+    /// unramified extension of `Q_5`).
     pub fn norm(&self) -> Result<PadicRational> {
-        if self.extension.degree() > 2 {
-            unimplemented!(
-                "rustmath_rings::padics::extension::PadicExtensionElement::norm: norm N_{{K/Qp}}(α) for degree>2 extensions not yet implemented (facade: characteristic polynomial is a placeholder, not det(xI - M))"
-            );
-        }
-        // The norm can be computed as the constant term of the
-        // characteristic polynomial, up to sign
-        let char_poly = self.characteristic_polynomial()?;
-        let coeffs = char_poly.coefficients();
-
-        if coeffs.is_empty() {
+        let det = rational_det(self.multiplication_matrix_rational());
+        if det.is_zero() {
             return Ok(PadicRational::from_padic_integer(
-                PadicInteger::zero(self.extension.prime().clone(), self.extension.precision()).unwrap()
+                PadicInteger::zero(self.extension.prime().clone(), self.extension.precision())?,
             ));
         }
-
-        // For a degree n extension, norm is (-1)^n times the constant term
-        // divided by the leading coefficient
-        let constant = coeffs[0].clone();
-        let n = self.extension.degree();
-
-        if n % 2 == 0 {
-            Ok(constant)
-        } else {
-            Ok(-constant)
-        }
+        PadicRational::from_rational(
+            det,
+            self.extension.prime().clone(),
+            self.extension.precision(),
+        )
     }
 
     /// Compute the trace Tr_{K/qp}(α)
     ///
-    /// The trace is the sum of all Galois conjugates, or equivalently
-    /// the trace of the multiplication-by-α map.
+    /// The trace is the sum of all Galois conjugates, or equivalently the
+    /// trace of the multiplication-by-α map (exact rational diagonal sum of
+    /// the multiplication matrix; any degree, any extension type).
     pub fn trace(&self) -> Result<PadicRational> {
-        if self.extension.degree() > 2 {
-            unimplemented!(
-                "rustmath_rings::padics::extension::PadicExtensionElement::trace: trace Tr_{{K/Qp}}(α) for degree>2 extensions not yet implemented (facade: characteristic polynomial is a placeholder, not det(xI - M))"
-            );
+        let m = self.multiplication_matrix_rational();
+        let mut t = Rational::from(0);
+        for (i, row) in m.iter().enumerate() {
+            t = t + row[i].clone();
         }
-        // The trace can be computed as the negative of the coefficient
-        // of x^{n-1} in the characteristic polynomial
-        let char_poly = self.characteristic_polynomial()?;
-        let coeffs = char_poly.coefficients();
-        let n = self.extension.degree();
-
-        if coeffs.len() <= n - 1 {
+        if t.is_zero() {
             return Ok(PadicRational::from_padic_integer(
-                PadicInteger::zero(self.extension.prime().clone(), self.extension.precision()).unwrap()
+                PadicInteger::zero(self.extension.prime().clone(), self.extension.precision())?,
             ));
         }
-
-        // Trace is -a_{n-1} where char poly is x^n + a_{n-1}x^{n-1} + ...
-        Ok(-coeffs[n - 1].clone())
+        PadicRational::from_rational(
+            t,
+            self.extension.prime().clone(),
+            self.extension.precision(),
+        )
     }
 
-    /// Compute the characteristic polynomial of this element
-    ///
-    /// This is the minimal polynomial of the multiplication-by-α map
-    /// viewed as a qp-linear transformation on the n-dimensional vector space K.
-    fn characteristic_polynomial(&self) -> Result<UnivariatePolynomial<PadicRational>> {
-        // Build the multiplication matrix M where M[i][j] = coefficient of π^i
-        // in α · π^j
-        let n = self.extension.degree();
-        let mut matrix = vec![vec![
-            PadicRational::from_padic_integer(
-                PadicInteger::zero(self.extension.prime().clone(), self.extension.precision()).unwrap()
-            ); n]; n];
-
-        // For each basis element π^j, compute α · π^j and extract coefficients
-        for j in 0..n {
-            let mut basis_elem_coeffs = vec![
-                PadicRational::from_padic_integer(
-                    PadicInteger::zero(self.extension.prime().clone(), self.extension.precision()).unwrap()
-                );
-                n
-            ];
-            basis_elem_coeffs[j] = PadicRational::from_padic_integer(
-                PadicInteger::one(self.extension.prime().clone(), self.extension.precision()).unwrap()
-            );
-
-            let basis_elem = PadicExtensionElement::new(self.extension.clone(), basis_elem_coeffs);
-            let product = self.clone() * basis_elem;
-
-            for i in 0..n {
-                matrix[i][j] = product.coefficients[i].clone();
-            }
-        }
-
-        // Compute characteristic polynomial det(xI - M)
-        // For now, return a simple placeholder (would need matrix operations)
-        // In a full implementation, this would use the Faddeev-LeVerrier algorithm
-        // or compute det(xI - M) directly
-
-        // Simplified version: just use the minimal polynomial for elements of the form a + bπ
-        if n == 2 && self.coefficients[1].unit().is_zero() {
-            // For constant elements, char poly is (x - a)^n
-            let mut coeffs = vec![
-                PadicRational::from_padic_integer(
-                    PadicInteger::zero(self.extension.prime().clone(), self.extension.precision()).unwrap()
-                );
-                n + 1
-            ];
-            coeffs[0] = self.coefficients[0].clone();
-            coeffs[n] = PadicRational::from_padic_integer(
-                PadicInteger::one(self.extension.prime().clone(), self.extension.precision()).unwrap()
-            );
-            return Ok(UnivariatePolynomial::new(coeffs));
-        }
-
-        // General case: return defining polynomial as approximation
-        // (This is not correct in general but serves as placeholder)
-        let def_poly = self.extension.defining_polynomial();
-        let coeffs: Vec<PadicRational> = def_poly
-            .coefficients()
-            .iter()
-            .map(|c| {
-                PadicRational::from_padic_integer(
-                    PadicInteger::from_integer(
-                        c.clone(),
-                        self.extension.prime().clone(),
-                        self.extension.precision(),
-                    ).unwrap()
-                )
-            })
-            .collect();
-
-        Ok(UnivariatePolynomial::new(coeffs))
-    }
-
-    /// Reduce modulo the defining polynomial
-    ///
-    /// This ensures the element is in canonical form with degree < extension degree
-    fn reduce(&mut self) {
-        // In a full implementation, this would perform polynomial division
-        // For now, we just ensure the length matches the extension degree
-        self.coefficients.truncate(self.extension.degree());
-        while self.coefficients.len() < self.extension.degree() {
-            self.coefficients.push(PadicRational::from_padic_integer(
-                PadicInteger::zero(self.extension.prime().clone(), self.extension.precision()).unwrap()
-            ));
-        }
-    }
 }
 
 impl fmt::Display for PadicExtensionElement {
@@ -647,7 +658,7 @@ impl fmt::Display for PadicExtensionElement {
 
 impl PartialEq for PadicExtensionElement {
     fn eq(&self, other: &Self) -> bool {
-        Arc::ptr_eq(&self.extension, &other.extension)
+        same_extension(&self.extension, &other.extension)
             && self.coefficients.iter().zip(other.coefficients.iter()).all(|(a, b)| a == b)
     }
 }
@@ -657,7 +668,7 @@ impl Add for PadicExtensionElement {
 
     fn add(self, other: Self) -> Self {
         assert!(
-            Arc::ptr_eq(&self.extension, &other.extension),
+            same_extension(&self.extension, &other.extension),
             "Elements must be from the same extension"
         );
 
@@ -677,7 +688,7 @@ impl Sub for PadicExtensionElement {
 
     fn sub(self, other: Self) -> Self {
         assert!(
-            Arc::ptr_eq(&self.extension, &other.extension),
+            same_extension(&self.extension, &other.extension),
             "Elements must be from the same extension"
         );
 
@@ -697,7 +708,7 @@ impl Mul for PadicExtensionElement {
 
     fn mul(self, other: Self) -> Self {
         assert!(
-            Arc::ptr_eq(&self.extension, &other.extension),
+            same_extension(&self.extension, &other.extension),
             "Elements must be from the same extension"
         );
 
@@ -896,8 +907,9 @@ impl PadicEmbedding {
     ///
     /// Maps an element from the source extension to the target extension
     pub fn apply(&self, element: &PadicExtensionElement) -> Result<PadicExtensionElement> {
-        // Verify element is from source extension
-        if !Arc::ptr_eq(&element.extension, &self.source) {
+        // Verify element is from source extension (structurally: fresh Arcs
+        // of the same extension interoperate)
+        if !same_extension(&element.extension, &self.source) {
             return Err(MathError::InvalidArgument(
                 "Element must be from source extension".to_string(),
             ));
@@ -937,7 +949,7 @@ impl PadicEmbedding {
     /// If we have K → L and L → M, compute K → M
     pub fn compose(&self, other: &PadicEmbedding) -> Result<Self> {
         if let (Some(self_target), other_source) = (&self.target, &other.source) {
-            if !Arc::ptr_eq(self_target, other_source) {
+            if !same_extension(self_target, other_source) {
                 return Err(MathError::InvalidArgument(
                     "Cannot compose: target of first != source of second".to_string(),
                 ));
@@ -967,7 +979,7 @@ impl PadicEmbedding {
     pub fn is_galois_automorphism(&self) -> bool {
         if let Some(target) = &self.target {
             // Check if source and target are the same and extension is Galois
-            Arc::ptr_eq(&self.source, target) && self.source.is_galois()
+            same_extension(&self.source, target) && self.source.is_galois()
         } else {
             false
         }
@@ -1017,6 +1029,17 @@ impl GaloisGroup {
     /// # Returns
     ///
     /// Galois group or error if extension is not Galois
+    /// For an unramified extension of degree f the group is cyclic of order
+    /// f, generated by the **real** Frobenius: the automorphism sending the
+    /// generator to the Hensel-lifted root of the defining polynomial
+    /// congruent to `x^p` mod p (computed and certified by
+    /// [`UnramifiedExtension`]). This replaced the old facade whose
+    /// non-identity automorphisms were placeholder identities (wrong already
+    /// at degree 2) and which panicked `unimplemented!` at degree > 2.
+    ///
+    /// Requires the defining polynomial to be monic and irreducible mod p
+    /// (true for extensions built by [`PadicExtension::unramified`]); returns
+    /// an honest error otherwise.
     pub fn new(extension: Arc<PadicExtension>) -> Result<Self> {
         if !extension.is_galois() {
             return Err(MathError::InvalidArgument(
@@ -1024,17 +1047,31 @@ impl GaloisGroup {
             ));
         }
 
-        if extension.degree() > 2 {
-            unimplemented!(
-                "rustmath_rings::padics::extension::GaloisGroup::new: Galois group for degree>2 extensions not yet implemented (facade: non-identity automorphisms are placeholder identities, not Frobenius x -> x^p)"
-            );
-        }
-
-        // For unramified extensions, generate the cyclic group
+        // is_galois() is only true for unramified extensions; build the real
+        // Frobenius from the certified unramified machinery.
         let f = extension.residue_degree();
+        let unram = UnramifiedExtension::with_modulus(
+            extension.prime().clone(),
+            extension.defining_polynomial(),
+            extension.precision() as u32,
+        )?;
+
+        let to_padic = |coeffs: &[Integer]| -> Result<Vec<PadicRational>> {
+            coeffs
+                .iter()
+                .map(|c| {
+                    Ok(PadicRational::from_padic_integer(PadicInteger::from_integer(
+                        c.clone(),
+                        extension.prime().clone(),
+                        extension.precision(),
+                    )?))
+                })
+                .collect()
+        };
+
         let mut automorphisms = Vec::with_capacity(f);
 
-        // Identity automorphism
+        // Identity automorphism: generator maps to itself
         let identity_image = {
             let mut coeffs = vec![
                 PadicRational::from_padic_integer(
@@ -1049,21 +1086,21 @@ impl GaloisGroup {
             }
             coeffs
         };
-
-        let identity = PadicEmbedding::new(
+        automorphisms.push(PadicEmbedding::new(
             extension.clone(),
             extension.clone(),
             identity_image,
-        )?;
+        )?);
 
-        automorphisms.push(identity.clone());
-
-        // Generate other automorphisms by composing Frobenius
+        // sigma^k for k = 1..f-1: generator |-> frobenius^k(generator)
+        let mut cur = unram.generator().frobenius();
         for _ in 1..f {
-            let prev = automorphisms.last().unwrap();
-            // In practice, we'd compute Frobenius^k
-            // For now, just use identity as placeholder
-            automorphisms.push(identity.clone());
+            automorphisms.push(PadicEmbedding::new(
+                extension.clone(),
+                extension.clone(),
+                to_padic(cur.coefficients())?,
+            )?);
+            cur = cur.frobenius();
         }
 
         Ok(GaloisGroup {
@@ -1279,18 +1316,118 @@ mod tests {
             ],
         );
 
-        // This is a simplified test - the actual norm/trace computation
-        // is non-trivial and would require proper implementation
-        let _norm = elem.norm();
-        let _trace = elem.trace();
+        // sympy-verified: N(3 + 2√5) = 9 - 20 = -11, Tr(3 + 2√5) = 6
+        let norm = elem.norm().unwrap();
+        let trace = elem.trace().unwrap();
+        let expect_norm = PadicRational::from_rational(
+            Rational::from(-11),
+            p.clone(),
+            precision,
+        )
+        .unwrap();
+        let expect_trace = PadicRational::from_rational(
+            Rational::from(6),
+            p.clone(),
+            precision,
+        )
+        .unwrap();
+        assert_eq!(norm, expect_norm);
+        assert_eq!(trace, expect_trace);
+    }
 
-        // Just verify they don't panic
-        assert!(_norm.is_ok());
-        assert!(_trace.is_ok());
+    /// Degree-3 Eisenstein norm/trace through the old API — this used to be
+    /// an `unimplemented!` facade. sympy-verified: over Q_2 with x^3 - 2,
+    /// N(pi) = 2, Tr(pi) = 0, N(4 + 2pi + pi^2) = 36, Tr(4 + 2pi + pi^2) = 12.
+    #[test]
+    fn test_norm_and_trace_degree3_eisenstein() {
+        let p = Integer::from(2);
+        let precision = 16;
+        let poly = UnivariatePolynomial::new(vec![
+            Integer::from(-2),
+            Integer::from(0),
+            Integer::from(0),
+            Integer::from(1),
+        ]);
+        let ext = Arc::new(PadicExtension::eisenstein(p.clone(), poly, precision).unwrap());
+
+        let pi = ext.generator();
+        assert_eq!(
+            pi.norm().unwrap(),
+            PadicRational::from_rational(Rational::from(2), p.clone(), precision).unwrap()
+        );
+        assert!(pi.trace().unwrap().unit().is_zero());
+
+        let elem = PadicExtensionElement::new(
+            ext.clone(),
+            vec![
+                PadicRational::from_padic_integer(
+                    PadicInteger::from_integer(Integer::from(4), p.clone(), precision).unwrap(),
+                ),
+                PadicRational::from_padic_integer(
+                    PadicInteger::from_integer(Integer::from(2), p.clone(), precision).unwrap(),
+                ),
+                PadicRational::from_padic_integer(
+                    PadicInteger::from_integer(Integer::from(1), p.clone(), precision).unwrap(),
+                ),
+            ],
+        );
+        assert_eq!(
+            elem.norm().unwrap(),
+            PadicRational::from_rational(Rational::from(36), p.clone(), precision).unwrap()
+        );
+        assert_eq!(
+            elem.trace().unwrap(),
+            PadicRational::from_rational(Rational::from(12), p.clone(), precision).unwrap()
+        );
+    }
+
+    /// Degree-3 unramified norm/trace through the old API (Conway(5,3) =
+    /// x^3 + 3x + 3; sympy-verified N(g) = -3, Tr(g) = 0, N(2+3g+g^2) = 11).
+    #[test]
+    fn test_norm_and_trace_degree3_unramified() {
+        let p = Integer::from(5);
+        let precision = 12;
+        let ext = Arc::new(PadicExtension::unramified(p.clone(), 3, precision).unwrap());
+        // the defining polynomial must be the certified Conway lift
+        assert_eq!(
+            ext.defining_polynomial().coefficients(),
+            &[
+                Integer::from(3),
+                Integer::from(3),
+                Integer::from(0),
+                Integer::from(1)
+            ]
+        );
+
+        let g = ext.generator();
+        assert_eq!(
+            g.norm().unwrap(),
+            PadicRational::from_rational(Rational::from(-3), p.clone(), precision).unwrap()
+        );
+        assert!(g.trace().unwrap().unit().is_zero());
+
+        let elem = PadicExtensionElement::new(
+            ext.clone(),
+            vec![
+                PadicRational::from_padic_integer(
+                    PadicInteger::from_integer(Integer::from(2), p.clone(), precision).unwrap(),
+                ),
+                PadicRational::from_padic_integer(
+                    PadicInteger::from_integer(Integer::from(3), p.clone(), precision).unwrap(),
+                ),
+                PadicRational::from_padic_integer(
+                    PadicInteger::from_integer(Integer::from(1), p.clone(), precision).unwrap(),
+                ),
+            ],
+        );
+        assert_eq!(
+            elem.norm().unwrap(),
+            PadicRational::from_rational(Rational::from(11), p.clone(), precision).unwrap()
+        );
+        assert!(elem.trace().unwrap().unit().is_zero());
     }
 
     #[test]
-    #[ignore = "pre-existing: generator() allocates a fresh Arc so embedding.apply Errs; needs shared-Arc fix"]
     fn test_embedding_into_algebraic_closure() {
         let p = Integer::from(5);
         let precision = 10;
@@ -1333,6 +1470,55 @@ mod tests {
 
         // Should have Frobenius automorphism
         assert!(galois_group.frobenius().is_some());
+
+        // The Frobenius must be REAL: it moves the generator (the old facade
+        // used the identity here), and applying it twice is the identity.
+        let g = ext.generator();
+        let frob = galois_group.frobenius().unwrap();
+        let sg = frob.apply(&g).unwrap();
+        assert_ne!(sg, g, "Frobenius must move the generator");
+        let ssg = frob.apply(&sg).unwrap();
+        assert_eq!(ssg, g, "sigma^2 = id for f = 2");
+    }
+
+    /// Degree-3 Galois group — this used to be an `unimplemented!` facade.
+    /// The three automorphisms are id, sigma, sigma^2 with sigma real
+    /// Frobenius; the product of the conjugate orbit of g is N(g) = -3
+    /// (sympy-verified for Conway(5,3) = x^3 + 3x + 3).
+    #[test]
+    fn test_galois_group_degree3_real_frobenius() {
+        let p = Integer::from(5);
+        let precision = 12;
+        let ext = Arc::new(PadicExtension::unramified(p.clone(), 3, precision).unwrap());
+        let galois_group = GaloisGroup::new(ext.clone()).unwrap();
+        assert_eq!(galois_group.order(), 3);
+
+        let g = ext.generator();
+        let frob = galois_group.frobenius().unwrap();
+        let sg = frob.apply(&g).unwrap();
+        let ssg = frob.apply(&sg).unwrap();
+        let sssg = frob.apply(&ssg).unwrap();
+        assert_ne!(sg, g);
+        assert_ne!(ssg, g);
+        assert_ne!(ssg, sg);
+        assert_eq!(sssg, g, "sigma^3 = id for f = 3");
+
+        // N(g) = g * sigma(g) * sigma^2(g) must equal norm() = -3 and land
+        // in the base field (non-constant coefficients zero)
+        let orbit_prod = g.clone() * sg * ssg;
+        assert!(orbit_prod.coefficients()[1].unit().is_zero());
+        assert!(orbit_prod.coefficients()[2].unit().is_zero());
+        let expect =
+            PadicRational::from_rational(Rational::from(-3), p.clone(), precision).unwrap();
+        assert_eq!(orbit_prod.coefficients()[0].unit(), expect.unit());
+        assert_eq!(g.norm().unwrap(), expect);
+
+        // the third automorphism is sigma^2: its generator image agrees with
+        // applying sigma twice
+        let sigma2 = &galois_group.automorphisms()[2];
+        let via_embedding = sigma2.apply(&g).unwrap();
+        let ssg2 = frob.apply(&frob.apply(&g).unwrap()).unwrap();
+        assert_eq!(via_embedding, ssg2);
     }
 
     #[test]
@@ -1426,7 +1612,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "pre-existing: extension element arithmetic asserts same-extension but generator() allocates a fresh Arc; needs shared-Arc fix"]
     fn test_extension_element_zero_and_one() {
         let p = Integer::from(5);
         let precision = 10;

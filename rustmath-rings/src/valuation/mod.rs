@@ -14,6 +14,7 @@ pub mod inductive_valuation;
 pub mod limit_valuation;
 pub mod maclane;
 pub mod mapped_valuation;
+pub mod residue_tower;
 pub mod valuation_space;
 pub mod value_group;
 
@@ -21,6 +22,7 @@ pub use maclane::{
     mac_lane_approximants, phi_adic_expansion, Augmentation, BaseValuation, KeyCheck,
     PAdicBaseValuation, PAdicInductiveValuation, PlaceBaseValuation, QVal,
 };
+pub use residue_tower::{ResidueTower, TowerElt};
 pub use valuation::{DiscretePseudoValuation, DiscreteValuation, InfiniteDiscretePseudoValuation};
 pub use trivial_valuation::TrivialDiscreteValuation;
 pub use value_group::{DiscreteValueGroup, DiscreteValueSemigroup};
