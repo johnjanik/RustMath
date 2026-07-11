@@ -16,14 +16,25 @@
 //! - Exact traces of Frobenius a_p at every prime (point counts at good
 //!   primes, Tate reduction types at bad primes; see
 //!   [`curve::EllipticCurve::compute_a_p`])
-//! - Local and global root numbers from Tate local data, with honest
-//!   refusal at wild additive primes 2, 3 (see [`rootnumber`])
+//! - Local and global root numbers, COMPLETE at every prime: Tate local
+//!   data (Rohrlich) at p ≥ 5 and the Kraus/Halberstadt case tables at the
+//!   wild additive primes 2 and 3 ([`rootnumber`], with the tables — PARI-
+//!   validated on 51k models with full row coverage — in the crate-private
+//!   `rizzo` module)
+//! - The real period Ω_E of the minimal model via AGM over `BigFloat`,
+//!   with exact rational root isolation of the two-torsion cubic and a
+//!   derived error bound (see [`period`])
 //! - Certified numeric L(E,1) and L'(E,1) over `BigFloat` with rigorous
 //!   tail bounds, and the honest analytic-rank lattice
 //!   ([`lfunction::AnalyticRank`]: certified 0/1, at-least-2, or
 //!   unresolved with reason — never a bare fabricated integer)
-//! - Modular forms scaffolding and BSD verification (the Sha leg is still
-//!   an honest facade)
+//! - The BSD assembly ([`bsdratio`]): the rank-0 ratio L(E,1)/Ω_E with
+//!   certified rational recognition, and the analytic order of Ш for
+//!   analytic rank 0 and 1 — every conditional step labeled "assuming
+//!   BSD", every numeric step carrying an explicit certified bound
+//! - Modular forms scaffolding and a BSD verifier wired to the real
+//!   components ([`bsd`]: real Ω, real heights regulator, real L-values,
+//!   real Ш_an with the conditional labeling)
 //!
 //! # Examples
 //!
@@ -48,6 +59,7 @@
 //! ```
 
 pub mod bsd;
+pub mod bsdratio;
 pub mod curve;
 pub mod descent;
 pub mod generic;
@@ -55,7 +67,9 @@ pub mod height;
 pub mod lfunction;
 pub mod minimal;
 pub mod modular;
+pub mod period;
 pub mod rank;
+mod rizzo;
 pub mod rootnumber;
 pub mod tate;
 pub mod torsion;
@@ -68,6 +82,7 @@ pub mod torsion;
 // clash with the over-Q `curve::{EllipticCurve, Point}` below. Use the
 // path-qualified `rustmath_ellipticcurves::generic::…` form.
 pub use bsd::{BSDResult, BSDVerifier};
+pub use bsdratio::{AnalyticShaAssumingBSD, BSDRatio};
 pub use curve::{EllipticCurve, Point};
 pub use descent::{SelmerGroup, TwoDescent};
 pub use lfunction::{
@@ -152,8 +167,7 @@ impl EllipticCurveAnalytics {
 
         // "agree" only when the analytic rank is CERTIFIED and matches;
         // an unresolved analytic rank never agrees by fiat.
-        let ranks_agree =
-            analytic_rank.certified_value() == Some(selmer_group.rank_upper_bound);
+        let ranks_agree = analytic_rank.certified_value() == Some(selmer_group.rank_upper_bound);
         RankAnalysis {
             selmer_bound: selmer_group.rank_upper_bound as i32,
             analytic_rank,
@@ -196,8 +210,9 @@ impl EllipticCurveAnalytics {
              - Algebraic rank: {}\n\
              - Analytic rank: {}\n\
              - Ranks agree: {}\n\
-             - Regulator: {:.6}\n\
-             - Periods: {:.6}\n",
+             - Regulator (descent witnesses): {}\n\
+             - Real period Omega: {}\n\
+             - Analytic |Sha| (assuming BSD): {}\n",
             self.curve,
             self.curve.discriminant,
             self.j_invariant()
@@ -209,8 +224,12 @@ impl EllipticCurveAnalytics {
             analysis.bsd_result.algebraic_rank,
             analysis.bsd_result.analytic_rank,
             analysis.bsd_result.ranks_agree(),
-            analysis.bsd_result.regulator,
-            analysis.bsd_result.periods
+            analysis.bsd_result.regulator.to_decimal_string(16),
+            analysis.bsd_result.real_period.to_decimal_string(16),
+            analysis
+                .bsd_result
+                .sha_order()
+                .map_or("no assembly applies".to_string(), |s| s.to_string()),
         )
     }
 }
@@ -248,22 +267,20 @@ mod tests {
         assert!(!analytics.is_singular());
     }
 
-    /// REAL now (was an ignored facade): the Selmer bound is a certified
-    /// 2-descent result and the analytic rank is the honest lattice.
-    /// y² = x³ − x has N = 32 (wild additive reduction at 2), so its
-    /// analytic rank is honestly Unresolved — and therefore never
-    /// "agrees" by fiat.
+    /// The Selmer bound is a certified 2-descent result and the analytic
+    /// rank is the honest lattice. y² = x³ − x (N = 32, additive at 2)
+    /// MOVED from an honest Unresolved to a CERTIFIED analytic rank 0 once
+    /// the Kraus/Halberstadt tables decided w₂ (L(1) = 0.65551438857… ≠ 0,
+    /// independently gated in the lfunction tests) — so the ranks now
+    /// genuinely agree, not by fiat.
     #[test]
     fn test_rank_analysis() {
         let analytics = EllipticCurveAnalytics::new(-1, 0);
         let rank_analysis = analytics.rank_analysis();
 
         assert_eq!(rank_analysis.selmer_bound, 0);
-        assert!(matches!(
-            rank_analysis.analytic_rank,
-            AnalyticRank::Unresolved { .. }
-        ));
-        assert!(!rank_analysis.ranks_agree);
+        assert_eq!(rank_analysis.analytic_rank.certified_value(), Some(0));
+        assert!(rank_analysis.ranks_agree);
     }
 
     /// The certified end-to-end rank story on a curve where every leg
@@ -296,19 +313,28 @@ mod tests {
         assert!(!points.is_empty());
     }
 
+    /// UN-IGNORED (the Sha facade is gone): full_analysis is real end to
+    /// end. Re-pointed from y² = x³ + 2x + 3 to y² = x³ − x, where every
+    /// leg is certified: 2-descent rank 0, analytic rank 0 (via the
+    /// Kraus/Halberstadt w₂), real Ω, and Ш_an = 1 assuming BSD.
     #[test]
-    #[ignore = "facade -> unimplemented: BSDVerifier::estimate_sha_size (the Sha leg of verify_conjecture) is still a facade; the analytic rank itself is real now"]
     fn test_full_analysis() {
-        let analytics = EllipticCurveAnalytics::new(2, 3);
+        let analytics = EllipticCurveAnalytics::new(-1, 0);
         let result = analytics.full_analysis();
 
-        assert!(result.selmer_rank_bound >= 0);
+        assert_eq!(result.selmer_rank_bound, 0);
+        assert_eq!(result.analytic_rank.certified_value(), Some(0));
+        assert_eq!(result.bsd_result.algebraic_rank, 0);
+        assert!(result.bsd_result.ranks_agree());
+        assert_eq!(result.bsd_result.sha_order(), Some(1));
     }
 
+    /// UN-IGNORED (the Sha facade is gone): report generation runs the
+    /// real pipeline. Re-pointed from y² = x³ − x + 1 (2-descent still an
+    /// honest refusal there — no rational 2-torsion) to y² = x³ − x.
     #[test]
-    #[ignore = "facade -> unimplemented: estimate_sha_size is still a facade; also y^2=x^3-x+1 has no rational 2-torsion, so the Selmer computation is an honest refusal (the analytic rank itself is real now)"]
     fn test_report_generation() {
-        let analytics = EllipticCurveAnalytics::new(-1, 1);
+        let analytics = EllipticCurveAnalytics::new(-1, 0);
         let report = analytics.report();
 
         assert!(report.contains("Elliptic Curve Analysis"));
@@ -376,16 +402,19 @@ mod tests {
         assert!(j.is_some());
     }
 
+    /// UN-IGNORED: re-pointed from y² = x³ − x + 1 (no rational 2-torsion,
+    /// so its 2-descent remains an honest refusal) to y² = x³ − x, where
+    /// every module leg is real — including weak BSD, now Ok(true) via the
+    /// Kraus/Halberstadt root number.
     #[test]
-    #[ignore = "y^2=x^3-x+1 has no rational 2-torsion, so compute_selmer_group is an honest refusal (2-descent over Q does not apply); the L-function legs of this test are real now"]
     fn test_integration_with_modules() {
-        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(1));
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(0));
 
-        // Test curve module
-        let _p = Point::from_integers(0, 1);
-        // Note: (0,1) might not be on y² = x³ - x + 1, but we can test the interface
+        // Test curve module: (0, 0) is a 2-torsion point of y² = x³ − x
+        let p = Point::from_integers(0, 0);
+        assert!(curve.is_on_curve(&p));
 
-        // Test descent module
+        // Test descent module (full rational 2-torsion here)
         let descent = TwoDescent::new(&curve);
         let selmer = descent.compute_selmer_group();
         assert!(!selmer.phi_classes.is_empty());
@@ -401,8 +430,8 @@ mod tests {
         form.set_coefficient(1, 1);
         assert_eq!(form.coefficient(1), 1);
 
-        // Test BSD
+        // Test BSD: certified end to end (ranks 0/0)
         let mut verifier = BSDVerifier::new(curve);
-        let _ = verifier.check_weak_bsd();
+        assert_eq!(verifier.check_weak_bsd(), Ok(true));
     }
 }

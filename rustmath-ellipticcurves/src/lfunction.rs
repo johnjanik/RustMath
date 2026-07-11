@@ -109,8 +109,7 @@ pub fn l_series_coefficients(curve: &EllipticCurve, nmax: usize) -> Vec<Integer>
         let ap = Integer::from(curve.compute_a_p(&p_int));
         // "bad" for the recurrence = positive conductor exponent (NOT just
         // p | disc of the given, possibly non-minimal, model).
-        let bad = curve.is_bad_prime(&p_int)
-            && curve.local_data(&p_int).conductor_exponent > 0;
+        let bad = curve.is_bad_prime(&p_int) && curve.local_data(&p_int).conductor_exponent > 0;
         a[p as usize] = ap.clone();
         let mut pk = (p * p) as usize;
         while pk <= nmax {
@@ -336,8 +335,9 @@ fn e1_with_gamma(x: &BigFloat, prec: u64, gamma: &BigFloat) -> Result<BigFloat, 
 
 /// The L-series of an elliptic curve over Q, with exact conductor (Tate)
 /// and exact functional-equation sign (the global root number from Tate
-/// local data). Construction fails honestly when the root number is
-/// unresolved (additive reduction at 2 or 3; see [`crate::rootnumber`]).
+/// local data at p ≥ 5 and the Kraus/Halberstadt tables at the wild
+/// additive primes 2, 3; see [`crate::rootnumber`]). Construction now
+/// succeeds for every nonsingular curve.
 pub struct CurveLSeries {
     curve: EllipticCurve,
     conductor: Integer,
@@ -346,10 +346,10 @@ pub struct CurveLSeries {
 
 impl CurveLSeries {
     /// Attach to a curve: computes the exact conductor (Tate) and the
-    /// exact global root number. `Err` = the root number is unresolved
-    /// (additive reduction at 2 or 3) — an honest refusal, since both the
-    /// ε = +1 series for L(1) and the exact ε = −1 vanishing need the
-    /// sign.
+    /// exact global root number (complete at every prime, including the
+    /// wild additive primes 2, 3 via the Kraus/Halberstadt tables). The
+    /// `Err` arm now fires only for singular input; the `Result` is kept
+    /// for API stability.
     pub fn new(curve: &EllipticCurve) -> Result<Self, String> {
         if curve.is_singular() {
             return Err("CurveLSeries: curve is singular".to_string());
@@ -405,8 +405,8 @@ impl CurveLSeries {
     /// 10^{−(digits+3)} (computed in f64, then the bound re-evaluated
     /// rigorously in BigFloat for the returned envelope).
     fn truncation_point(&self, digits: usize) -> usize {
-        let n = <Integer as NumericConversion>::to_f64(&self.conductor)
-            .expect("conductor fits in f64");
+        let n =
+            <Integer as NumericConversion>::to_f64(&self.conductor).expect("conductor fits in f64");
         let c = 2.0 * PI / n.sqrt();
         let target = (digits as f64 + 3.0) * std::f64::consts::LN_10;
         let m_plus_1 = (target + 4.0f64.ln() - (1.0 - (-c).exp()).ln()) / c;
@@ -508,8 +508,8 @@ impl CurveLSeries {
             );
         }
         let m = self.truncation_point(digits);
-        let nf = <Integer as NumericConversion>::to_f64(&self.conductor)
-            .expect("conductor fits in f64");
+        let nf =
+            <Integer as NumericConversion>::to_f64(&self.conductor).expect("conductor fits in f64");
         let cf64 = 2.0 * PI / nf.sqrt();
         if cf64 * ((m + 1) as f64) < 1.0 {
             return Err("internal: c(M+1) < 1, E_1 tail bound inapplicable".to_string());
@@ -810,8 +810,8 @@ impl LFunction {
         let p_f = p.to_f64().unwrap_or(2.0);
 
         // L_p(s) = 1 / (1 - a_p p^{-s} + p^{1-2s})
-        let p_to_s = p_f.powf(s.re)
-            * ComplexNum::new((s.im * p_f.ln()).cos(), (s.im * p_f.ln()).sin());
+        let p_to_s =
+            p_f.powf(s.re) * ComplexNum::new((s.im * p_f.ln()).cos(), (s.im * p_f.ln()).sin());
 
         let p_to_1_minus_2s = p_f.powf(1.0 - 2.0 * s.re)
             * ComplexNum::new(
@@ -832,8 +832,8 @@ impl LFunction {
     fn bad_euler_factor(&self, p: &Integer, s: ComplexNum) -> ComplexNum {
         let a_p = self.curve.compute_a_p(p);
         let p_f = p.to_f64().unwrap_or(2.0);
-        let p_to_minus_s = p_f.powf(-s.re)
-            * ComplexNum::new((-s.im * p_f.ln()).cos(), (-s.im * p_f.ln()).sin());
+        let p_to_minus_s =
+            p_f.powf(-s.re) * ComplexNum::new((-s.im * p_f.ln()).cos(), (-s.im * p_f.ln()).sin());
         ComplexNum::real(1.0)
             / (ComplexNum::real(1.0) + ComplexNum::real(-(a_p as f64)) * p_to_minus_s)
     }
@@ -914,9 +914,9 @@ impl LFunction {
     /// * ε = −1 (so L(1) = 0 EXACTLY) and L'(1) certified nonzero →
     ///   [`AnalyticRank::OneCertifiedModuloRounding`];
     /// * anything else → [`AnalyticRank::Unresolved`] with the reason
-    ///   (root number unresolved at wild additive primes; or a value too
-    ///   small to certify nonzero at this precision — numerics can NEVER
-    ///   certify a zero).
+    ///   (a value too small to certify nonzero at this precision —
+    ///   numerics can NEVER certify a zero; the root number itself is now
+    ///   complete at every prime).
     ///
     /// `digits` controls the working precision of the numeric layer.
     pub fn analytic_rank(&self, digits: usize) -> AnalyticRank {
@@ -1137,8 +1137,7 @@ mod tests {
 
     #[test]
     fn test_l_function_creation() {
-        let curve =
-            EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(1));
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(1));
 
         let l_func = LFunction::new(curve);
         // y² = x³ - x + 1 has conductor 92 = 2²·23 (Tate: type IV with
@@ -1149,8 +1148,7 @@ mod tests {
 
     #[test]
     fn test_euler_factor() {
-        let curve =
-            EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(1));
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(1));
 
         let l_func = LFunction::new(curve);
         let p = Integer::from(5);
@@ -1162,8 +1160,7 @@ mod tests {
 
     #[test]
     fn test_l_series_evaluation() {
-        let curve =
-            EllipticCurve::from_short_weierstrass(Integer::from(0), Integer::from(-1));
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(0), Integer::from(-1));
 
         let l_func = LFunction::new(curve);
         let s = ComplexNum::real(2.0);
@@ -1285,7 +1282,11 @@ mod tests {
         assert!(lv.rounding_note.contains("EXACTLY"));
         let dv = ls.l1_derivative(26).unwrap();
         assert!(
-            close_to(&dv.value, "0.305999773834052301820483683321676474452638", 20),
+            close_to(
+                &dv.value,
+                "0.305999773834052301820483683321676474452638",
+                20
+            ),
             "L'(37a,1) to 20 digits; got {}",
             dv.value.to_decimal_string(30)
         );
@@ -1325,7 +1326,8 @@ mod tests {
     /// THE ANALYTIC-RANK GATES (task 4): 11a/14a/15a/37b (and 49a) →
     /// ZeroCertified; 37a (and 65a) → OneCertifiedModuloRounding; 389a
     /// (true analytic rank 2) → honestly Unresolved from numerics alone;
-    /// wild-additive curves → Unresolved with the root-number reason.
+    /// and the former wild-additive Unresolved (y² = x³ − x) is now
+    /// ZeroCertified via the Kraus/Halberstadt root number.
     #[test]
     fn test_analytic_rank_gates() {
         for (label, a) in [
@@ -1367,14 +1369,82 @@ mod tests {
         );
         assert_eq!(r.certified_value(), None);
         if let AnalyticRank::Unresolved { reason } = &r {
-            assert!(reason.contains("NOT certified nonzero"), "reason: {}", reason);
+            assert!(
+                reason.contains("NOT certified nonzero"),
+                "reason: {}",
+                reason
+            );
         }
-        // y² = x³ − x (N = 32, additive at 2): root number unresolved.
+        // y² = x³ − x (N = 32, additive at 2): MOVED from Unresolved to
+        // decided by the Kraus/Halberstadt tables — w₂ = −1, ε = +1, and
+        // L(1) = 0.65551438857… ≠ 0 (PARI + independent mpmath series,
+        // gated to 25 digits in test_l1_wild_additive_movers): certified
+        // analytic rank 0.
         let lf = LFunction::new(curve(0, 0, 0, -1, 0));
-        let r = lf.analytic_rank(16);
-        assert!(matches!(r, AnalyticRank::Unresolved { .. }));
-        if let AnalyticRank::Unresolved { reason } = &r {
-            assert!(reason.contains("Kraus/Halberstadt"), "reason: {}", reason);
+        let r = lf.analytic_rank(20);
+        assert!(
+            matches!(r, AnalyticRank::ZeroCertified { l1: Some(_), .. }),
+            "y²=x³−x: expected ZeroCertified now, got {}",
+            r
+        );
+        assert_eq!(r.certified_value(), Some(0));
+    }
+
+    /// THE WILD-ADDITIVE MOVERS: curves whose analytic rank was an honest
+    /// Unresolved (root number blocked at 2 or 3) and is now CERTIFIED,
+    /// with L(E,1) matching the independently derived truths (PARI ellL1
+    /// AND a from-scratch mpmath series from point-counted a_n, agreeing
+    /// to 40+ digits BEFORE this test) to 25 digits, inside the certified
+    /// envelope.
+    #[test]
+    fn test_l1_wild_additive_movers() {
+        let gates: [(&str, [i64; 5], &str); 5] = [
+            (
+                "x3-x(N=32)",
+                [0, 0, 0, -1, 0],
+                "0.655514388573029952616209897472779853420689",
+            ),
+            (
+                "x3+1(N=36)",
+                [0, 0, 0, 0, 1],
+                "0.701091052662727130587509539525147067731511",
+            ),
+            (
+                "27a1",
+                [0, 0, 1, 0, -7],
+                "0.588879583428483319104563166549479567523956",
+            ),
+            (
+                "x3-1(N=144)",
+                [0, 0, 0, 0, -1],
+                "1.214325323943790805909970844890465624277517",
+            ),
+            (
+                "20a(N=20)",
+                [0, 1, 0, -1, 0],
+                "0.470729190326518966580631591507238020566902",
+            ),
+        ];
+        for (label, a, truth) in &gates {
+            let e = curve(a[0], a[1], a[2], a[3], a[4]);
+            let ls = CurveLSeries::new(&e)
+                .unwrap_or_else(|err| panic!("{}: CurveLSeries {}", label, err));
+            assert_eq!(ls.root_number(), 1, "epsilon({}) = +1", label);
+            let lv = ls.l1(30);
+            assert!(
+                close_to(&lv.value, truth, 25),
+                "L({},1) to 25 digits; got {}",
+                label,
+                lv.value.to_decimal_string(35)
+            );
+            assert!(lv.certified_nonzero(), "L({},1) certified nonzero", label);
+            let t = BigFloat::from_decimal_str(truth, RealField::precision(&lv.value).max(256))
+                .unwrap();
+            assert!(
+                OrderedRing::abs(&(lv.value.clone() - t)) < lv.error_budget(),
+                "L({},1): truth inside the certified envelope",
+                label
+            );
         }
     }
 
@@ -1430,8 +1500,8 @@ mod tests {
     fn test_descent_analytic_consistency() {
         // (label, model, descent-certified rank if the interval collapses)
         let cases: [(&str, [i64; 5], Option<u32>); 6] = [
-            ("y2=x3-x", [0, 0, 0, -1, 0], Some(0)),   // N=32, wild at 2
-            ("y2=x3+1", [0, 0, 0, 0, 1], Some(0)),    // N=36, wild at 2,3
+            ("y2=x3-x", [0, 0, 0, -1, 0], Some(0)), // N=32, wild at 2
+            ("y2=x3+1", [0, 0, 0, 0, 1], Some(0)),  // N=36, wild at 2,3
             ("14a1", [1, 0, 1, 4, -6], Some(0)),
             ("15a1", [1, 1, 1, -10, -10], Some(0)),
             ("49a1", [1, -1, 0, -2, -1], Some(0)),
@@ -1476,29 +1546,30 @@ mod tests {
         ));
     }
 
-    /// Re-pointed facade test (was #[ignore]): the analytic rank of
-    /// y² = x³ − x is now an HONEST Unresolved (wild additive reduction at
-    /// 2 blocks the root number), not an unimplemented!() panic and not a
-    /// fabricated integer.
+    /// Twice re-pointed facade test: y² = x³ − x went from an
+    /// unimplemented!() facade, to an honest Unresolved (wild root number
+    /// blocked), to a CERTIFIED analytic rank 0 now that the
+    /// Kraus/Halberstadt tables decide w₂ (L(1) = 0.65551438857… ≠ 0,
+    /// independently gated in test_l1_wild_additive_movers).
     #[test]
     fn test_analytic_rank() {
-        let curve =
-            EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(0));
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(0));
 
         let l_func = LFunction::new(curve);
-        let rank = l_func.analytic_rank(16);
-        assert!(matches!(rank, AnalyticRank::Unresolved { .. }));
-        assert_eq!(rank.certified_value(), None);
+        let rank = l_func.analytic_rank(20);
+        assert!(matches!(rank, AnalyticRank::ZeroCertified { .. }));
+        assert_eq!(rank.certified_value(), Some(0));
     }
 
     #[test]
     fn test_root_number_wired() {
-        // 11a1: +1; 37a1: -1; y²=x³-x: honest Err.
+        // 11a1: +1; 37a1: -1; y²=x³-x: +1 now that the wild additive
+        // tables are in (w₂ = −1 · w_∞ = −1; PARI-verified).
         let lf = LFunction::new(curve(0, -1, 1, -10, -20));
         assert_eq!(lf.root_number(), Ok(1));
         let lf = LFunction::new(curve(0, 0, 1, -1, 0));
         assert_eq!(lf.root_number(), Ok(-1));
         let lf = LFunction::new(curve(0, 0, 0, -1, 0));
-        assert!(lf.root_number().is_err());
+        assert_eq!(lf.root_number(), Ok(1));
     }
 }

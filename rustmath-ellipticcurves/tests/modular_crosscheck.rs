@@ -8,26 +8,34 @@
 //!    the modular side (Eichler–Shimura). The same tables were derived a
 //!    third way (Python point counting) before either test existed.
 //! 2. **Root numbers**: the product of local root numbers from Tate data
-//!    (Rohrlich formulas) vs ε = −w_N from the exact rational Fricke
-//!    matrix W_N of the modular-symbols space (chunk-5 signs). Completely
-//!    different derivations — this closes the loop demanded by stage 2.
+//!    (Rohrlich formulas at p ≥ 5, Kraus/Halberstadt tables at additive
+//!    2 and 3) vs ε = −w_N from the exact rational Fricke matrix W_N of
+//!    the modular-symbols space (chunk-5 signs). Completely different
+//!    derivations — this closes the loop demanded by stage 2, including
+//!    the wild-additive battery of `test_wild_root_numbers_vs_fricke_epsilon`.
 //! 3. **Exact L(1)-vanishing**: the Manin–Birch winding projection
 //!    (certified-exact) vs the curve-side honest lattice, including
 //!    feeding the exact certificate into
 //!    `LFunction::analytic_rank_with_exact_l1`.
+//! 4. **L-values**: the certified curve-side L(E,1) / L'(E,1) entering
+//!    the BSD ratio vs the modular-side newform L-values (independent
+//!    coefficient pipeline), within the two certified budgets.
 //!
 //! Every curve model below was independently verified (Python: global
 //! minimality, conductor from reduction data, point-counted a_p) before
-//! being asserted here; the summand matching is by a_2, and the full
-//! p ≤ 40 eigenvalue match then re-verifies the model/label pairing.
+//! being asserted here; the summand matching is by a_2 (or by a full a_p
+//! vector at additive levels), and the full p ≤ 40 eigenvalue match then
+//! re-verifies the model/label pairing.
 
+use rustmath_core::analytic::RealField;
+use rustmath_core::ordering::OrderedRing;
 use rustmath_ellipticcurves::{AnalyticRank, EllipticCurve, LFunction};
 use rustmath_integers::Integer;
 use rustmath_modular::{
-    HeckeEigenvalue, HeckeSummand, ModularSymbolsGamma0, RationalNewformLSeries,
-    SummandHeckeAction,
+    HeckeEigenvalue, HeckeSummand, ModularSymbolsGamma0, RationalNewformLSeries, SummandHeckeAction,
 };
 use rustmath_rationals::Rational;
+use rustmath_reals::BigFloat;
 
 fn curve(a: [i64; 5]) -> EllipticCurve {
     EllipticCurve::new(
@@ -130,6 +138,165 @@ fn test_root_number_vs_fricke_epsilon() {
             label
         );
     }
+}
+
+/// Find the 2-dimensional rational-newform summand matching a full a_p
+/// vector (needed at additive levels, where a_2 or a_3 is 0 and no longer
+/// separates summands on its own).
+fn find_summand_by_aps<'a>(
+    m: &ModularSymbolsGamma0,
+    summands: &'a [HeckeSummand],
+    aps: &[(u64, i64)],
+) -> &'a HeckeSummand {
+    let hits: Vec<&HeckeSummand> = summands
+        .iter()
+        .filter(|w| {
+            w.dimension() == 2
+                && aps
+                    .iter()
+                    .all(|(p, ap)| eigenvalue(m, w, *p) == Rational::from_i64(*ap))
+        })
+        .collect();
+    assert_eq!(
+        hits.len(),
+        1,
+        "summand with a_p vector {:?} not unique",
+        aps
+    );
+    hits[0]
+}
+
+/// KRAUS/HALBERSTADT LOOP CLOSURE (the stage-2 wild-root-number gate):
+/// for curves with ADDITIVE reduction at 2 or 3, the global root number
+/// assembled from Tate data + the Rizzo tables must equal ε = −w_N from
+/// the exact rational Fricke matrix of the attached newform — a derivation
+/// sharing NO code with the tables (modular symbols over exact rationals).
+/// The newform summand is matched by the full a_p vector (p ≤ 13) and its
+/// existence/uniqueness is asserted; conductors are re-derived by Tate.
+/// Battery: 10 curves, additive at 2, at 3, and at both, spanning Kodaira
+/// types II/III/IV/I₀*/I₁*/I₂*/III*/IV* at the wild primes and both global
+/// signs (models and expected conductors from the PARI-derived battery,
+/// but nothing modular-side is taken from PARI here).
+#[test]
+fn test_wild_root_numbers_vs_fricke_epsilon() {
+    // (model, N, additive at)
+    let wild: [([i64; 5], u64, &str); 10] = [
+        ([0, 1, 0, -1, 0], 20, "2(IV)"),
+        ([0, -1, 0, 1, 0], 24, "2(III)"),
+        ([0, 0, 1, 0, 0], 27, "3(II)"),
+        ([0, 0, 0, -1, 0], 32, "2(III)"),
+        ([0, 0, 0, 0, 1], 36, "2(IV)+3(III)"),
+        ([1, -1, 0, 0, -5], 45, "3(I1*)"),
+        ([0, 1, 0, 1, 0], 48, "2(II)"),
+        ([1, -1, 1, 1, -1], 54, "3(II)"),
+        ([0, 0, 0, 1, 2], 56, "2(I1*)"),
+        ([1, -1, 0, 9, 0], 63, "3(I2*)"),
+    ];
+    for (a, level, kinds) in &wild {
+        let e = curve(*a);
+        assert_eq!(
+            e.compute_conductor(),
+            Integer::from(*level as i64),
+            "{:?}: conductor",
+            a
+        );
+        let curve_w = e
+            .root_number()
+            .unwrap_or_else(|err| panic!("{:?}: root number should be decided now: {}", a, err));
+        let m = ModularSymbolsGamma0::new(*level);
+        let dec = m.cuspidal_hecke_decomposition().unwrap();
+        let aps: Vec<(u64, i64)> = [2u64, 3, 5, 7, 11, 13]
+            .iter()
+            .map(|p| (*p, e.compute_a_p(&Integer::from(*p as i64))))
+            .collect();
+        let w = find_summand_by_aps(&m, dec.summands(), &aps);
+        let ls = RationalNewformLSeries::new(&m, w).unwrap();
+        assert_eq!(
+            curve_w,
+            ls.root_number(),
+            "N = {} ({}): Tate+Rizzo global root number vs Fricke epsilon",
+            level,
+            kinds
+        );
+    }
+}
+
+/// BSD-RATIO DEV-DEP TIE-IN: the L(E,1) entering the certified rank-0
+/// ratio equals the MODULAR-side L(f,1) of the attached newform (computed
+/// from Hecke eigenvalues of modular symbols — an independent coefficient
+/// pipeline), within the two certified budgets; and dividing the modular
+/// value by the curve-side Ω reproduces the same recognized rational.
+/// Same check at rank 1 for L'(37a,1).
+#[test]
+#[allow(clippy::type_complexity)] // flat gate table, clearest as-is
+fn test_bsd_ratio_curve_vs_modular_lvalues() {
+    // (label, model, level, a_2, expected ratio (num, den))
+    let cases: [(&str, [i64; 5], u64, i64, (i64, i64)); 3] = [
+        ("11a1", [0, -1, 1, -10, -20], 11, -2, (1, 5)),
+        ("15a1", [1, 1, 1, -10, -10], 15, -1, (1, 8)),
+        ("37b1", [0, 1, 1, -23, -50], 37, 0, (1, 3)),
+    ];
+    for (label, a, level, a2, (num, den)) in &cases {
+        let e = curve(*a);
+        let ratio = e.bsd_ratio_rank0(26).unwrap();
+        assert_eq!(
+            ratio.recognized,
+            Rational::new(*num, *den).unwrap(),
+            "{}: recognized ratio",
+            label
+        );
+        let m = ModularSymbolsGamma0::new(*level);
+        let dec = m.cuspidal_hecke_decomposition().unwrap();
+        let w = find_summand(&m, dec.summands(), *a2);
+        let ls = RationalNewformLSeries::new(&m, w).unwrap();
+        let lv_mod = ls.l1(26).unwrap();
+        // the two certified L(1) values agree within the sum of budgets
+        let wp = RealField::precision(&ratio.l1.value).max(256);
+        let diff = OrderedRing::abs(
+            &(ratio.l1.value.clone().with_precision(wp) - lv_mod.value.clone().with_precision(wp)),
+        );
+        let budget =
+            ratio.l1.error_budget().with_precision(wp) + lv_mod.error_budget().with_precision(wp);
+        assert!(
+            diff < budget,
+            "{}: curve-side L(1) vs modular-side L(1): diff {} exceeds combined budget {}",
+            label,
+            diff.to_decimal_string(6),
+            budget.to_decimal_string(6)
+        );
+        // modular L(1) / curve Omega lands on the same recognized rational
+        let q_mod = lv_mod.value.with_precision(wp) / ratio.omega.clone().with_precision(wp);
+        let rec = BigFloat::from_rational(&ratio.recognized, wp);
+        let d2 = OrderedRing::abs(&(q_mod - rec));
+        let tol = BigFloat::from_decimal_str("0.00000000000000000001", wp).unwrap();
+        assert!(
+            d2 < tol,
+            "{}: modular L(1)/Omega vs recognized rational (diff {})",
+            label,
+            d2.to_decimal_string(6)
+        );
+    }
+    // rank 1: L'(37a, 1) from both pipelines
+    let e = curve([0, 0, 1, -1, 0]);
+    let ls_curve = rustmath_ellipticcurves::lfunction::CurveLSeries::new(&e).unwrap();
+    let dv_curve = ls_curve.l1_derivative(24).unwrap();
+    let m = ModularSymbolsGamma0::new(37);
+    let dec = m.cuspidal_hecke_decomposition().unwrap();
+    let w = find_summand(&m, dec.summands(), -2);
+    let ls_mod = RationalNewformLSeries::new(&m, w).unwrap();
+    let dv_mod = ls_mod.l1_derivative(24).unwrap();
+    let wp = RealField::precision(&dv_curve.value).max(256);
+    let diff = OrderedRing::abs(
+        &(dv_curve.value.clone().with_precision(wp) - dv_mod.value.clone().with_precision(wp)),
+    );
+    let budget =
+        dv_curve.error_budget().with_precision(wp) + dv_mod.error_budget().with_precision(wp);
+    assert!(
+        diff < budget,
+        "L'(37a,1): curve vs modular pipelines differ by {} (budget {})",
+        diff.to_decimal_string(6),
+        budget.to_decimal_string(6)
+    );
 }
 
 /// MANIN–BIRCH GATE: the exact winding vanishing (certified-exact zeros)

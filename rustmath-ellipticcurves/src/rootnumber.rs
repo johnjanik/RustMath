@@ -47,12 +47,17 @@
 //!   **II, II*, I_m* (m ≥ 0) → (−1/p);  III, III* → (−2/p);
 //!   IV, IV* → (−3/p)**.
 //!
-//! * **Additive reduction at p = 2 or 3**: genuinely hard (wild
-//!   ramification; the complete answers are the case tables of Kraus
-//!   (p = 3) and Halberstadt (p = 2), Comptes Rendus 326 (1998), keyed on
-//!   (v(c4), v(c6), v(Δ)) plus congruence side conditions). NOT implemented
-//!   here: [`local_root_number`] returns an honest `Err`, never a guess,
-//!   and [`global_root_number`] propagates it.
+//! * **Additive reduction at p = 2 or 3** (wild ramification): the
+//!   complete case tables of Kraus (p = 3) and Halberstadt (p = 2),
+//!   Comptes Rendus 326 (1998), in Rizzo's explicit tabulation, keyed on
+//!   (v(c4), v(c6), v(Δ)) plus congruence side conditions — implemented in
+//!   the crate-private `rizzo` module (see there for the transcription provenance, the
+//!   applied published corrections, and the 51,212-curve PARI validation
+//!   with full row coverage). Every additive call cross-checks the fired
+//!   row's (Kodaira type, conductor exponent) against this crate's own
+//!   Tate data — a live transcription-error detector. The `Err` arm of
+//!   [`local_root_number`] is therefore no longer produced for any
+//!   nonsingular curve; the `Result` signature is kept for API stability.
 //!
 //! ## Independent validation (performed BEFORE these tests were written)
 //!
@@ -66,7 +71,11 @@
 //! wrong one). All instances matched the local product. The
 //! multiplicative-prime rule is additionally cross-checked against the
 //! chunk-5 Fricke eigenvalues of the corresponding newforms (Eichler–
-//! Shimura) in `tests/modular_crosscheck.rs`.
+//! Shimura) in `tests/modular_crosscheck.rs` — and so are the wild
+//! p ∈ {2, 3} additive factors, on a battery of additive-conductor levels
+//! (20, 24, 27, 32, 36, …), closing the loop the stage-2 spec demands:
+//! w(E) from Tate + Rizzo tables ≡ −w_N from the exact rational Fricke
+//! matrix of the attached newform.
 
 use crate::curve::EllipticCurve;
 use crate::tate::{KodairaSymbol, ReductionType};
@@ -92,15 +101,20 @@ fn legendre_of(a: i64, p: &Integer) -> i8 {
     s
 }
 
-/// The local root number w_p(E) at the prime p, from Tate local data.
+/// The local root number w_p(E) at the prime p, from Tate local data
+/// (p ≥ 5 additive: Rohrlich; p ∈ {2, 3} additive: the Kraus/Halberstadt
+/// tables via the crate-private `rizzo` module).
 ///
-/// Returns `Err` (an honest refusal, never a guess) exactly when E has
-/// additive reduction at p ∈ {2, 3}: those wild cases need the
-/// Kraus/Halberstadt tables (see the module docs).
+/// The `Err` arm is no longer produced for any nonsingular curve (the
+/// wild tables are implemented); the `Result` signature is kept for API
+/// stability.
 ///
 /// # Panics
 ///
-/// Panics if p is not prime or the curve is singular.
+/// Panics if p is not prime or the curve is singular — and, as a live
+/// wrongness detector, if the Rizzo-table row fired at a wild additive
+/// prime disagrees with Tate's algorithm about the Kodaira type or the
+/// conductor exponent (a transcription bug, never an answer).
 pub fn local_root_number(curve: &EllipticCurve, p: &Integer) -> Result<i8, String> {
     assert!(is_prime(p), "local_root_number: p = {} is not prime", p);
     let ld = curve.local_data(p);
@@ -110,13 +124,26 @@ pub fn local_root_number(curve: &EllipticCurve, p: &Integer) -> Result<i8, Strin
         ReductionType::NonsplitMultiplicative => Ok(1),
         ReductionType::Additive => {
             if *p == Integer::from(2) || *p == Integer::from(3) {
-                return Err(format!(
-                    "local root number at p = {} unresolved: additive (Kodaira {}) \
-                     reduction in residue characteristic {} is wildly ramified and \
-                     needs the Kraus/Halberstadt case tables, which are not \
-                     implemented; refusing to guess",
-                    p, ld.kodaira, p
-                ));
+                let (c4, c6) = curve.c_invariants();
+                let r = if *p == Integer::from(2) {
+                    crate::rizzo::rizzo_w2(&c4, &c6, &curve.discriminant)
+                } else {
+                    crate::rizzo::rizzo_w3(&c4, &c6, &curve.discriminant)
+                };
+                // Live transcription-error detector: the fired row's
+                // Kodaira type and conductor exponent must agree with
+                // Tate's algorithm (independent derivations).
+                assert_eq!(
+                    r.kodaira, ld.kodaira,
+                    "rizzo row {} at p = {}: Kodaira {} vs Tate {} (transcription bug)",
+                    r.row, p, r.kodaira, ld.kodaira
+                );
+                assert_eq!(
+                    r.conductor_exponent, ld.conductor_exponent,
+                    "rizzo row {} at p = {}: f = {} vs Tate {} (transcription bug)",
+                    r.row, p, r.conductor_exponent, ld.conductor_exponent
+                );
+                return Ok(r.sign);
             }
             let a = match ld.kodaira {
                 KodairaSymbol::II | KodairaSymbol::IIStar | KodairaSymbol::InStar(_) => -1i64,
@@ -209,12 +236,7 @@ mod tests {
         ];
         for (label, a, eps) in &cases {
             let e = curve(a[0], a[1], a[2], a[3], a[4]);
-            assert_eq!(
-                e.root_number(),
-                Ok(*eps),
-                "global root number of {}",
-                label
-            );
+            assert_eq!(e.root_number(), Ok(*eps), "global root number of {}", label);
         }
     }
 
@@ -274,28 +296,73 @@ mod tests {
         assert_eq!(e.compute_conductor(), Integer::from(539));
         let ld7 = e.local_data(&Integer::from(7));
         assert_eq!(ld7.kodaira.to_string(), "I0*");
-        assert_eq!(e.local_root_number(&Integer::from(7)), Ok(-1), "(-1/7) = -1");
+        assert_eq!(
+            e.local_root_number(&Integer::from(7)),
+            Ok(-1),
+            "(-1/7) = -1"
+        );
         assert_eq!(e.root_number(), Ok(-1));
     }
 
-    /// Honest refusals: additive reduction at 2 or 3 yields Err with a
-    /// documented reason, and the error propagates through the global
-    /// product.
+    /// The former honest refusals at wild additive primes are now DECIDED
+    /// by the Kraus/Halberstadt tables (see the crate-private `rizzo` module): every local
+    /// and global sign below was derived from PARI `ellrootno` BEFORE this
+    /// test (and the same signs are validated against modular Fricke
+    /// eigenvalues in tests/modular_crosscheck.rs).
     #[test]
-    fn test_root_number_refuses_wild_additive() {
-        // y^2 = x^3 - x: additive (III) at 2, N = 32.
+    fn test_root_number_wild_additive_decided() {
+        // y² = x³ − x: N = 32, Kodaira III at 2, w₂ = −1, w = +1.
         let e = curve(0, 0, 0, -1, 0);
-        let r = e.root_number();
-        assert!(r.is_err(), "additive at 2 must be unresolved");
-        assert!(r.unwrap_err().contains("Kraus/Halberstadt"));
-        // y^2 = x^3 + 1: additive at both 2 and 3, N = 36.
+        assert_eq!(e.local_root_number(&Integer::from(2)), Ok(-1));
+        assert_eq!(e.root_number(), Ok(1));
+        // y² = x³ + 1: N = 36, additive at BOTH 2 (IV, w₂ = −1) and
+        // 3 (III, w₃ = +1); w = (−1)·(−1)·(+1) = +1.
         let e = curve(0, 0, 0, 0, 1);
-        assert!(e.root_number().is_err());
-        // y^2 = x^3 - 7 (27a1 model): additive (IV*) at 3.
+        assert_eq!(e.local_root_number(&Integer::from(2)), Ok(-1));
+        assert_eq!(e.local_root_number(&Integer::from(3)), Ok(1));
+        assert_eq!(e.root_number(), Ok(1));
+        // 27a1 (y² + y = x³ − 7): N = 27, IV* at 3, w₃ = −1, w = +1.
         let e = curve(0, 0, 1, 0, -7);
-        assert!(e.root_number().is_err());
-        // but the local factor at a GOOD prime of the same curves is fine
+        assert_eq!(e.local_root_number(&Integer::from(3)), Ok(-1));
+        assert_eq!(e.root_number(), Ok(1));
+        // the local factor at a GOOD prime of the same curve stays +1
         assert_eq!(e.local_root_number(&Integer::from(5)), Ok(1));
+    }
+
+    /// GLOBAL wild battery: additive-at-2/3 conductors spanning 20..126,
+    /// both global signs, and models additive at 2, at 3, and at both.
+    /// Every expected sign is a PARI `ellrootno` output derived before
+    /// this test was written.
+    #[test]
+    fn test_global_root_number_wild_battery() {
+        let cases: [([i64; 5], i64, i8); 16] = [
+            ([0, 1, 0, -1, 0], 20, 1),
+            ([0, -1, 0, -4, 4], 24, 1),
+            ([0, 0, 1, 0, 0], 27, 1),
+            ([0, 0, 0, 4, 0], 32, 1),
+            ([0, 0, 0, 0, -1], 144, 1),
+            ([0, 0, 0, -7, -6], 40, 1),
+            ([0, 1, 0, 3, -1], 44, 1),
+            ([1, -1, 0, 0, -5], 45, 1),
+            ([0, 1, 0, 1, 0], 48, 1),
+            ([1, -1, 1, 1, -1], 54, 1),
+            ([0, 0, 0, 1, 2], 56, 1),
+            ([1, -1, 0, 9, 0], 63, 1),
+            ([0, 0, 0, 6, -7], 72, 1),
+            ([0, 0, 0, -4, 4], 88, -1),
+            ([1, -1, 1, -2, 0], 99, -1),
+            ([0, 1, 0, 0, 4], 112, -1),
+        ];
+        for (a, n, w) in &cases {
+            let e = curve(a[0], a[1], a[2], a[3], a[4]);
+            assert_eq!(
+                e.compute_conductor(),
+                Integer::from(*n),
+                "conductor of {:?}",
+                a
+            );
+            assert_eq!(e.root_number(), Ok(*w), "w of {:?} (N = {})", a, n);
+        }
     }
 
     /// Local factors match the derivation at multiplicative primes:
