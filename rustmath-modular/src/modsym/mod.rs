@@ -18,14 +18,31 @@
 //! - [`hecke`]: the Hecke operators T_n / U_p on [`ModularSymbolsGamma0`],
 //!   their restriction to the cuspidal subspace, and exact characteristic
 //!   polynomials (Eichler-Shimura).
+//! - [`decomposition`]: the Hecke-eigenspace (newform-style) decomposition
+//!   of the cuspidal subspace into Q-irreducible Hecke-stable summands,
+//!   with honest algebraic eigenvalues (irreducible polynomials) for
+//!   coefficient fields of degree > 1.
+//! - [`involutions`]: the star involution (+/- eigenspace split, signed
+//!   decompositions) and the Atkin-Lehner involutions W_Q for Q || N,
+//!   including their per-summand signs.
+//! - [`degeneracy`]: the degeneracy maps between levels M | N (lowering
+//!   and raising/transfer) and the old/new splitting of the cuspidal
+//!   subspace.
 
+pub mod decomposition;
+pub mod degeneracy;
 pub mod gamma0;
 pub mod hecke;
 pub mod heilbronn;
+pub mod involutions;
 pub mod p1list;
 
+pub use decomposition::{
+    CuspidalHeckeDecomposition, HeckeEigenvalue, HeckeSummand, SummandHeckeAction,
+};
 pub use gamma0::{cusps_equivalent_gamma0, ModularSymbolsGamma0};
 pub use heilbronn::merel_matrices;
+pub use involutions::{InvolutionAction, SummandInvolutions};
 pub use p1list::P1List;
 
 use crate::arithgroup::ArithmeticSubgroup;

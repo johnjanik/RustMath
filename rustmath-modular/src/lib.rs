@@ -58,8 +58,13 @@ pub use arithgroup::{
     ArithmeticSubgroup, SL2Z, Gamma0, Gamma1, GammaH,
     ArithmeticSubgroupElement, CongruenceSubgroup
 };
+pub use hecke::{HeckeAlgebra, HeckeEigenvalueSystem, HeckeModule};
 pub use modform::{ModularForm, CuspForm};
-pub use modsym::{cusps_equivalent_gamma0, merel_matrices, ModularSymbolsGamma0, P1List};
+pub use modsym::{
+    cusps_equivalent_gamma0, merel_matrices, CuspidalHeckeDecomposition, HeckeEigenvalue,
+    HeckeSummand, InvolutionAction, ModularSymbolsGamma0, P1List, SummandHeckeAction,
+    SummandInvolutions,
+};
 pub use cusps::Cusp;
 pub use dirichlet::{DirichletCharacter, DirichletGroup, trivial_character};
 pub use lfunction::DirichletLFunction;
