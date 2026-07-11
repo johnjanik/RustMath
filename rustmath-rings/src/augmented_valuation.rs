@@ -2,6 +2,13 @@
 //!
 //! Implementation of augmented valuations on polynomial rings.
 //!
+//! > **Superseded**: this module is a string-typed facade (`phi` is a
+//! > `String`, values are `f64`). The REAL augmented-valuation machinery —
+//! > typed key polynomials with verified key checks, exact rational values,
+//! > phi-adic expansions, `E`/`F` bookkeeping and MacLane approximants —
+//! > lives in [`crate::valuation::maclane`]
+//! > (`InductiveValuation::augment`, `mac_lane_approximants`). Prefer that.
+//!
 //! ## Overview
 //!
 //! An augmented valuation extends a discrete valuation v on a polynomial ring K[x]
@@ -221,16 +228,26 @@ impl<R> FiniteAugmentedValuation<R> {
     }
 
     /// Computes the ramification index E
+    ///
+    /// This string-typed facade cannot compute E; use
+    /// [`crate::valuation::maclane::InductiveValuation::ramification_index`]
+    /// on a real (typed) augmented valuation instead.
     pub fn ramification_index(&self) -> usize {
         unimplemented!(
-            "rustmath_rings::augmented_valuation::FiniteAugmentedValuation::ramification_index: ramification index E of an augmented valuation not yet implemented (facade)"
+            "rustmath_rings::augmented_valuation::FiniteAugmentedValuation::ramification_index: \
+             string-typed facade; use valuation::maclane::InductiveValuation::ramification_index"
         )
     }
 
     /// Computes the residue field degree F
+    ///
+    /// This string-typed facade cannot compute F; use
+    /// [`crate::valuation::maclane::InductiveValuation::residue_degree`]
+    /// on a real (typed) augmented valuation instead.
     pub fn residue_degree(&self) -> usize {
         unimplemented!(
-            "rustmath_rings::augmented_valuation::FiniteAugmentedValuation::residue_degree: residue field degree F of an augmented valuation not yet implemented (facade)"
+            "rustmath_rings::augmented_valuation::FiniteAugmentedValuation::residue_degree: \
+             string-typed facade; use valuation::maclane::InductiveValuation::residue_degree"
         )
     }
 }
@@ -389,16 +406,29 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "facade -> unimplemented; needs real algorithm (Phase 4)"]
     fn test_finite_augmented_valuation() {
-        let val: FiniteAugmentedValuation<i32> = FiniteAugmentedValuation::new(
-            "p-adic".to_string(),
-            "x - p".to_string(),
-            2.0
-        ).unwrap();
+        // Formerly #[ignore]d against the string facade (whose E was
+        // unimplemented). The same mathematical assertions now run against
+        // the real MacLane machinery: for w = [Gauss(v_2), v(x - 2) = 2],
+        // the value group is Z + 2Z = Z so E = 1, the key is linear so
+        // F = 1, and mu = w(x - 2) = 2.
+        use crate::valuation::maclane::{InductiveValuation, PAdicBaseValuation, QVal};
+        use rustmath_polynomials::UnivariatePolynomial;
+        use rustmath_rationals::Rational;
 
-        assert_eq!(val.mu_value(), 2.0);
+        let gauss = InductiveValuation::gauss(PAdicBaseValuation::new(2).unwrap());
+        let phi = UnivariatePolynomial::new(vec![Rational::from_i64(-2), Rational::from_i64(1)]);
+        let val = gauss.augment(phi.clone(), QVal::from_int(2)).unwrap();
+
+        assert_eq!(val.value(&phi), QVal::from_int(2)); // mu = 2
         assert_eq!(val.ramification_index(), 1);
+        assert_eq!(val.residue_degree(), 1);
+
+        // The string facade still constructs (deprecated data holder), but
+        // its E/F remain honest unimplemented!().
+        let facade: FiniteAugmentedValuation<i32> =
+            FiniteAugmentedValuation::new("p-adic".to_string(), "x - 2".to_string(), 2.0).unwrap();
+        assert_eq!(facade.mu_value(), 2.0);
     }
 
     #[test]

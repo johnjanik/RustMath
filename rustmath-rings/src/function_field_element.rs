@@ -27,6 +27,16 @@
 //! let elem = FunctionFieldElement::new(/* numerator */, /* denominator */);
 //! assert!(is_function_field_element(&elem));
 //! ```
+//!
+//! # DEPRECATED
+//!
+//! `FunctionFieldElement` here stores a *string* and its arithmetic merely
+//! concatenates text. Use
+//! [`crate::function_field::typed::RationalFunction`], which is a real
+//! element of K(x) (normalized numerator/denominator polynomials with full
+//! `Field` arithmetic).
+
+#![allow(deprecated)]
 
 use rustmath_core::{Ring, Field};
 use std::fmt;
@@ -45,6 +55,9 @@ use std::marker::PhantomData;
 ///
 /// This is currently implemented as a wrapper around polynomial-based rational
 /// functions. More sophisticated implementations would handle algebraic extensions.
+#[deprecated(
+    note = "string-typed facade whose arithmetic concatenates text; use crate::function_field::typed::RationalFunction"
+)]
 #[derive(Clone, Debug)]
 pub struct FunctionFieldElement<F: Field> {
     /// Representation as a rational function (stored as string for now)
@@ -306,6 +319,9 @@ pub fn make_function_field_element<F: Field, P>(
 /// Function field over a base field
 ///
 /// Represents a function field structure (the field of fractions of a polynomial ring).
+#[deprecated(
+    note = "string-typed facade; use crate::function_field::typed::RationalFunctionField"
+)]
 #[derive(Clone, Debug)]
 pub struct FunctionField<F: Field> {
     /// The base field

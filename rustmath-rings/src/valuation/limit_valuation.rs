@@ -1,6 +1,15 @@
 //! # Limit Valuation
 //!
 //! Limit of a sequence of valuations
+//!
+//! > **Superseded**: this type is an empty facade (`value` is
+//! > `unimplemented!`). The concrete representation of a MacLane limit that
+//! > is reached in finitely many steps is the infinite augmentation
+//! > `[v, v(phi) = +Infinity]` of
+//! > [`crate::valuation::maclane::InductiveValuation`] (see
+//! > `augment(phi, QVal::Infinity)`, produced by `mac_lane_approximants`
+//! > when a key divides the target exactly). True limits requiring
+//! > infinitely many augmentations remain unimplemented.
 
 use super::valuation::{DiscretePseudoValuation, ValuationValue};
 use rustmath_core::Ring;

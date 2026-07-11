@@ -33,6 +33,13 @@
 //! let den = vec![Integer::from(2), Integer::from(1)]; // T + 2
 //! let elem = field.element(num, den);
 //! ```
+//!
+//! # Superseded
+//!
+//! The typed layer [`crate::function_field::typed`] provides GF(p)(x) with
+//! full canonical normalization (gcd 1, monic denominator), places,
+//! valuations, residue fields and divisors: use
+//! `RationalFunctionField<GFp<P>>` there for new code.
 
 use rustmath_core::{Ring, Field};
 use rustmath_integers::Integer;

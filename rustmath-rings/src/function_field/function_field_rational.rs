@@ -44,6 +44,17 @@
 //!
 //! - SageMath: `sage.rings.function_field.function_field_rational`
 //! - Rosen, M. (2002). "Number Theory in Function Fields"
+//!
+//! # DEPRECATED
+//!
+//! These types are string-typed facades that do not compute. Use the typed
+//! layer in [`crate::function_field::typed`] instead:
+//! [`crate::function_field::typed::RationalFunctionField`] (real K(x)
+//! arithmetic), [`crate::function_field::typed::Place`] (valuations,
+//! residue fields) and [`crate::function_field::typed::Divisor`]
+//! (principal divisors, genus-0 Riemann-Roch spaces).
+
+#![allow(deprecated)]
 
 use rustmath_core::Field;
 use std::marker::PhantomData;
@@ -67,6 +78,9 @@ use std::marker::PhantomData;
 /// assert_eq!(qx.variable(), "x");
 /// assert_eq!(qx.genus(), 0);
 /// ```
+#[deprecated(
+    note = "string-typed facade; use crate::function_field::typed::RationalFunctionField for real K(x) arithmetic"
+)]
 #[derive(Debug, Clone)]
 pub struct RationalFunctionField<F: Field> {
     /// Name of the constant field
@@ -162,6 +176,9 @@ impl<F: Field> RationalFunctionField<F> {
 /// assert_eq!(qx.characteristic(), 0);
 /// assert!(qx.is_separable());
 /// ```
+#[deprecated(
+    note = "string-typed facade; use crate::function_field::typed::RationalFunctionField<Rational>"
+)]
 #[derive(Debug, Clone)]
 pub struct RationalFunctionFieldCharZero<F: Field> {
     /// Underlying rational function field
@@ -230,6 +247,9 @@ impl<F: Field> RationalFunctionField_char_zero<F> {
 /// assert_eq!(f2x.constant_field_size(), 2);
 /// assert_eq!(f2x.genus(), 0);
 /// ```
+#[deprecated(
+    note = "string-typed facade; use crate::function_field::typed::RationalFunctionField<GFp<P>>"
+)]
 #[derive(Debug, Clone)]
 pub struct RationalFunctionFieldGlobal<F: Field> {
     /// Underlying rational function field

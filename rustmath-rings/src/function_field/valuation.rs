@@ -40,6 +40,15 @@
 //! - `ClassicalFunctionFieldValuation_base`: Classical valuations on function fields
 //! - `RationalFunctionFieldValuation_base`: Valuations on rational function fields
 //! - `FunctionFieldValuation_base`: General valuation interface
+//!
+//! # Superseded for K(x)
+//!
+//! The types below take *string* elements, so their `valuation()` methods are
+//! honest `unimplemented!()`. For the rational function field K(x) the real,
+//! computing valuations live in the typed layer:
+//! [`crate::function_field::typed::Place`] gives v_P (exact factor
+//! multiplicity), uniformizers, valuation-ring membership and residue fields
+//! for both finite and infinite places.
 
 use rustmath_core::Field;
 use std::marker::PhantomData;
@@ -815,18 +824,27 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "facade -> unimplemented; needs real algorithm (Phase 4)"]
     fn test_valuation_interface() {
-        let val: ClassicalFunctionFieldValuationBase<Rational> =
-            ClassicalFunctionFieldValuationBase::new(
-                "Q(x)".to_string(),
-                "P".to_string(),
-                1,
-            );
+        // Formerly #[ignore]d against the string facade. The same
+        // mathematical content now runs for real against the typed layer:
+        // membership of x in the valuation ring O_P of a degree-1 place P,
+        // the residue field kappa(P) = K, and a uniformizer with v_P = 1.
+        use crate::function_field::typed::{Place as TypedPlace, RationalFunction};
+        use rustmath_core::Ring;
 
-        // Test the trait methods
-        assert!(val.is_in_valuation_ring("x"));
-        assert_eq!(val.valuation_ring(), "O_{P}");
-        assert_eq!(val.residue_field(), "κ(P)");
+        let p = TypedPlace::finite_linear(Rational::from_i64(1)); // P = (x - 1)
+        let x = RationalFunction::<Rational>::gen();
+
+        // v_P(x) = 0 >= 0: x lies in the valuation ring O_P.
+        assert!(p.is_in_valuation_ring(&x));
+        assert_eq!(p.valuation(&x), Some(0));
+
+        // kappa(P) has degree 1 over Q, and the residue of x is x(1) = 1.
+        assert_eq!(p.residue_field_degree(), 1);
+        let r = p.residue(&x).unwrap();
+        assert!(r.representative().is_one());
+
+        // The uniformizer x - 1 has valuation exactly 1.
+        assert_eq!(p.valuation(&p.uniformizer()), Some(1));
     }
 }

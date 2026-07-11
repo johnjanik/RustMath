@@ -99,6 +99,8 @@
 //! - Rosen, M. (2002). "Number Theory in Function Fields"
 //! - Lorenzini, D. (1996). "An Invitation to Arithmetic Geometry"
 
+pub mod typed;
+
 pub mod drinfeld_modules;
 pub mod extensions;
 pub mod ideal;
@@ -142,6 +144,15 @@ pub use place::{FunctionFieldPlace, PlaceSet};
 pub use place_polymod::FunctionFieldPlace_polymod;
 
 pub use place_rational::FunctionFieldPlace_rational;
+
+// The typed, computing K(x) layer (supersedes the string facades below for
+// the rational function field case). `RationalFunctionField` at this level
+// now refers to the typed field; the deprecated string facade remains at
+// `function_field_rational::RationalFunctionField`.
+pub use typed::{
+    Divisor as TypedDivisor, FactorableConstantField, GFp, Place as TypedPlace, RationalFunction,
+    RationalFunctionField, ResidueClass,
+};
 
 pub use valuation::{
     DiscreteFunctionFieldValuation,
@@ -214,9 +225,13 @@ pub use function_field_polymod::{
     FunctionField_global, FunctionField_global_integral,
 };
 
+// NOTE: `RationalFunctionField` is deliberately NOT re-exported from the
+// string facade any more; the name now points at `typed::RationalFunctionField`
+// above. The deprecated string type stays reachable at
+// `function_field_rational::RationalFunctionField`.
+#[allow(deprecated)]
 pub use function_field_rational::{
-    RationalFunctionField, RationalFunctionField_char_zero,
-    RationalFunctionField_global, is_function_field,
+    is_function_field, RationalFunctionField_char_zero, RationalFunctionField_global,
 };
 
 pub use hermite_form_polynomial::{

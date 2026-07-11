@@ -39,6 +39,16 @@
 //! // Create a divisor from multiple places
 //! let div = divisor(vec![("P", 2), ("Q", -1)]);
 //! ```
+//!
+//! # Superseded for K(x)
+//!
+//! Places here are bare strings, so `dimension()`, `basis()` and
+//! `principal_divisor()` cannot compute and are honest `unimplemented!()`.
+//! For the rational function field K(x) use the typed layer instead:
+//! [`crate::function_field::typed::Divisor`] provides real principal
+//! divisors (with the exact deg div(f) = 0 gate) and exact genus-0
+//! Riemann-Roch spaces; [`crate::function_field::typed::Place`] provides
+//! real valuations and residue fields.
 
 use rustmath_core::{Ring, Field};
 use std::collections::HashMap;
@@ -656,16 +666,21 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "facade -> unimplemented; needs real algorithm (Phase 4)"]
     fn test_dimension() {
-        let div = prime_divisor::<Rational>("P".to_string(), 2);
-        let dim = div.dimension();
+        // Formerly #[ignore]d against the string facade. The same
+        // mathematical assertions now run for real against the typed layer:
+        // on P^1 (genus 0), dim L(2P) = deg + 1 = 3 for a degree-1 place P,
+        // and dim L(-P) = 0 (verified independently in sympy).
+        use crate::function_field::typed::{Divisor as TypedDivisor, Place as TypedPlace};
 
-        // Placeholder returns degree + 1
-        assert_eq!(dim, 3);
+        let p = TypedPlace::finite_linear(Rational::zero()); // the place (x)
+        let div = TypedDivisor::from_places(vec![(p.clone(), 2)]);
+        assert_eq!(div.riemann_roch_dimension(), 3);
+        assert_eq!(div.riemann_roch_basis().len(), 3);
 
-        let neg = prime_divisor::<Rational>("P".to_string(), -1);
-        assert_eq!(neg.dimension(), 0);
+        let neg = TypedDivisor::from_places(vec![(p, -1)]);
+        assert_eq!(neg.riemann_roch_dimension(), 0);
+        assert!(neg.riemann_roch_basis().is_empty());
     }
 
     #[test]
