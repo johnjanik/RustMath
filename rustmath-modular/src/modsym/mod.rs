@@ -28,6 +28,12 @@
 //! - [`degeneracy`]: the degeneracy maps between levels M | N (lowering
 //!   and raising/transfer) and the old/new splitting of the cuspidal
 //!   subspace.
+//! - [`winding`]: the winding element {0, oo}, Hecke-equivariant
+//!   projections onto summands, and the EXACT L(f, 1) = 0 criterion
+//!   (Manin--Birch) -- the certified-zero source for L-values.
+//! - [`lseries`]: numeric L(f, 1) and L'(f, 1) for rational newforms over
+//!   BigFloat, with rigorous tails and a documented rounding allowance --
+//!   the certified-NONZERO source.
 
 pub mod decomposition;
 pub mod degeneracy;
@@ -35,7 +41,9 @@ pub mod gamma0;
 pub mod hecke;
 pub mod heilbronn;
 pub mod involutions;
+pub mod lseries;
 pub mod p1list;
+pub mod winding;
 
 pub use decomposition::{
     CuspidalHeckeDecomposition, HeckeEigenvalue, HeckeSummand, SummandHeckeAction,
@@ -43,6 +51,7 @@ pub use decomposition::{
 pub use gamma0::{cusps_equivalent_gamma0, ModularSymbolsGamma0};
 pub use heilbronn::merel_matrices;
 pub use involutions::{InvolutionAction, SummandInvolutions};
+pub use lseries::{euler_gamma, exp_integral_e1, LValue, RationalNewformLSeries};
 pub use p1list::P1List;
 
 use crate::arithgroup::ArithmeticSubgroup;

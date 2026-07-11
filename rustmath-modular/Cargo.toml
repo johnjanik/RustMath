@@ -13,5 +13,6 @@ rustmath-rationals = { path = "../rustmath-rationals" }
 rustmath-matrix = { path = "../rustmath-matrix" }
 rustmath-complex = { path = "../rustmath-complex" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
+rustmath-reals = { path = "../rustmath-reals" }
 rand = { workspace = true }
 thiserror = { workspace = true }

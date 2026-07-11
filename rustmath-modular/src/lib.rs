@@ -61,8 +61,9 @@ pub use arithgroup::{
 pub use hecke::{HeckeAlgebra, HeckeEigenvalueSystem, HeckeModule};
 pub use modform::{ModularForm, CuspForm};
 pub use modsym::{
-    cusps_equivalent_gamma0, merel_matrices, CuspidalHeckeDecomposition, HeckeEigenvalue,
-    HeckeSummand, InvolutionAction, ModularSymbolsGamma0, P1List, SummandHeckeAction,
+    cusps_equivalent_gamma0, euler_gamma, exp_integral_e1, merel_matrices,
+    CuspidalHeckeDecomposition, HeckeEigenvalue, HeckeSummand, InvolutionAction, LValue,
+    ModularSymbolsGamma0, P1List, RationalNewformLSeries, SummandHeckeAction,
     SummandInvolutions,
 };
 pub use cusps::Cusp;

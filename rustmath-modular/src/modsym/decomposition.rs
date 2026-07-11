@@ -328,7 +328,7 @@ pub(crate) fn restrict_to_column_span(
 }
 
 /// f(T) for a square matrix T, by Horner's rule.
-fn eval_poly_at_matrix(
+pub(crate) fn eval_poly_at_matrix(
     f: &UnivariatePolynomial<Rational>,
     t: &Matrix<Rational>,
 ) -> Matrix<Rational> {
