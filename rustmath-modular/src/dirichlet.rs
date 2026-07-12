@@ -39,31 +39,43 @@ impl DirichletCharacter {
         &self.modulus
     }
 
-    /// Evaluate the character at a given integer
+    /// Evaluate the character at a given integer.
     ///
-    /// # Arguments
-    /// * `n` - The integer to evaluate at
+    /// Correct, and exact, for the TRIVIAL character: chi_0(n) = 1 when
+    /// gcd(n, N) = 1 and 0 otherwise.
     ///
-    /// # Returns
-    /// The value of the character (as root of unity represented by integer power)
+    /// PANICS for any non-trivial character.  `values` stores the character only
+    /// on GENERATORS of (Z/NZ)*, so evaluating at an arbitrary n requires writing
+    /// n as a word in those generators -- a discrete logarithm in (Z/NZ)*, via the
+    /// CRT decomposition into the cyclic factors of the (Z/p^e Z)*.  That is not
+    /// implemented.  What the code used to do instead was
+    /// `values.get(&n).unwrap_or(&1)`: it returned the stored value if n happened
+    /// to be one of the generators, and silently returned 1 -- the trivial value
+    /// -- for every other n.  That is wrong for essentially every argument, which
+    /// is why this now refuses.
     pub fn eval(&self, n: &Integer) -> i32 {
         // Reduce n modulo the modulus (mod_floor semantics for the positive
         // modulus case: always a non-negative representative)
         let n_mod = n.modulo(&self.modulus);
 
-        // Check if n is coprime to modulus
+        // chi(n) = 0 for n not coprime to N, for every character.
         if !n_mod.gcd(&self.modulus).is_one() {
             return 0;
         }
 
-        // For trivial character
-        if self.values.is_empty() {
+        if self.is_trivial() {
             return 1;
         }
 
-        // Compute character value
-        // This is simplified; proper implementation would decompose n
-        *self.values.get(&n_mod).unwrap_or(&1)
+        unimplemented!(
+            "DirichletCharacter::eval at {n_mod} mod {}: not implemented for a non-trivial \
+             character. The character is stored only by its values on generators of \
+             (Z/NZ)*, so evaluating it at an arbitrary n needs a discrete logarithm in \
+             (Z/NZ)* (CRT down to the cyclic (Z/p^e Z)*, then a dlog in each), which is \
+             not implemented. Previously this returned the stored value when n happened \
+             to BE a generator, and silently returned 1 for every other n.",
+            self.modulus
+        )
     }
 
     /// Check if this is the trivial character
@@ -96,14 +108,36 @@ impl DirichletCharacter {
         ord
     }
 
-    /// Compute the conductor of the character
+    /// The conductor: the smallest modulus f | N such that this character is
+    /// induced from a character mod f.
+    ///
+    /// Correct, and exact, for the TRIVIAL character: chi_0 mod N is induced from
+    /// the (unique) character mod 1, so its conductor is 1 -- for EVERY N. Note
+    /// this is not N: the old code returned the modulus, so it reported
+    /// conductor 12 for the trivial character mod 12, and hence declared it
+    /// primitive (`is_primitive` compares the two).  The trivial character is
+    /// primitive only at N = 1.
+    ///
+    /// PANICS for any non-trivial character: finding the conductor means testing,
+    /// for each f | N, whether chi factors through (Z/NZ)* -> (Z/fZ)*, which needs
+    /// [`Self::eval`] at arbitrary arguments -- and that is not implemented.
     pub fn conductor(&self) -> Integer {
-        // Conductor is the smallest modulus for which this character is defined
-        // For now, return the modulus (simplified)
-        self.modulus.clone()
+        if self.is_trivial() {
+            return Integer::one();
+        }
+        unimplemented!(
+            "DirichletCharacter::conductor mod {}: not implemented for a non-trivial \
+             character. It requires testing, for each f | N, whether chi is induced from \
+             a character mod f, which needs evaluation at arbitrary arguments (see \
+             `eval`). Previously returned the modulus itself, which also made \
+             `is_primitive` report true for every character.",
+            self.modulus
+        )
     }
 
-    /// Check if the character is primitive
+    /// Check if the character is primitive (conductor equal to the modulus).
+    ///
+    /// PANICS for a non-trivial character; see [`Self::conductor`].
     pub fn is_primitive(&self) -> bool {
         self.conductor() == self.modulus
     }
@@ -120,18 +154,28 @@ impl DirichletCharacter {
         self.eval(&(-Integer::one())) == -1
     }
 
-    /// Gauss sum of the character
+    /// The magnitude |G(chi)| of the Gauss sum
+    /// `G(chi) = sum_{a mod N} chi(a) e^{2 pi i a / N}`.
     ///
-    /// G(χ) = Σ_{a mod N} χ(a) * e^(2πia/N)
+    /// Correct, and exact, for the TRIVIAL character: G(chi_0 mod N) is
+    /// Ramanujan's sum c_N(1) = mu(N), so |G(chi_0)| = |mu(N)|.  (In particular
+    /// it is 0 whenever N is not squarefree -- the old code returned a flat 1.0
+    /// there.)
     ///
-    /// For primitive characters, |G(χ)| = √N
+    /// PANICS for any non-trivial character; see the message for why.
     pub fn gauss_sum_magnitude(&self) -> f64 {
-        if self.is_primitive() {
-            (self.modulus.to_f64().unwrap_or(1.0)).sqrt()
-        } else {
-            // For imprimitive characters, more complex
-            1.0
+        if self.is_trivial() {
+            return mobius(&self.modulus).abs() as f64;
         }
+        unimplemented!(
+            "DirichletCharacter::gauss_sum_magnitude mod {}: not implemented for a \
+             non-trivial character. For a PRIMITIVE chi the magnitude is sqrt(N), but \
+             deciding primitivity needs the conductor (see `conductor`); for an \
+             IMPRIMITIVE chi of conductor f it is |mu(N/f)| sqrt(f), which needs f as \
+             well. Previously returned sqrt(N) on the strength of an `is_primitive` that \
+             was true for every character, and a flat 1.0 otherwise.",
+            self.modulus
+        )
     }
 }
 
@@ -301,6 +345,31 @@ pub fn quadratic_character(d: i64) -> DirichletCharacter {
     )
 }
 
+/// The Mobius function mu(n) for n >= 1: 0 if n is not squarefree, else
+/// (-1)^(number of prime factors).
+fn mobius(n: &Integer) -> i32 {
+    if n <= &Integer::zero() {
+        return 0;
+    }
+    let mut m = n.clone();
+    let mut p = Integer::from(2);
+    let mut primes = 0u32;
+    while &p * &p <= m {
+        if (&m % &p).is_zero() {
+            m = &m / &p;
+            if (&m % &p).is_zero() {
+                return 0; // p^2 | n
+            }
+            primes += 1;
+        }
+        p = p + Integer::one();
+    }
+    if m > Integer::one() {
+        primes += 1;
+    }
+    if primes.is_multiple_of(2) { 1 } else { -1 }
+}
+
 /// Compute Euler's phi function (totient)
 fn euler_phi(n: &Integer) -> Integer {
     if n <= &Integer::one() {
@@ -332,6 +401,15 @@ fn euler_phi(n: &Integer) -> Integer {
 mod tests {
     use super::*;
 
+    /// A non-trivial character, stored the way `DirichletCharacter::new` invites:
+    /// by its value on a generator of (Z/5Z)* (2 is a generator; chi(2) = -1
+    /// gives the quadratic character mod 5).
+    fn nontrivial_mod5() -> DirichletCharacter {
+        let mut values = HashMap::new();
+        values.insert(Integer::from(2), -1);
+        DirichletCharacter::new(Integer::from(5), values)
+    }
+
     #[test]
     fn test_trivial_character() {
         let chi = trivial_character(Integer::from(12));
@@ -346,14 +424,27 @@ mod tests {
         assert!(chi.is_trivial());
     }
 
+    /// The conductor of the TRIVIAL character is 1, for every modulus -- it is
+    /// induced from the character mod 1.  The old code returned the modulus, so
+    /// it called the trivial character mod 12 primitive.  It is primitive only at
+    /// N = 1.
     #[test]
-    #[ignore = "facade -> unimplemented; needs real algorithm (Phase 4)"]
-    fn test_dirichlet_group() {
-        // modulus 5 has phi(5) = 4 > 1, so non-trivial character generation
-        // is required and is not yet implemented.
-        let G = DirichletGroup::new(Integer::from(5));
-        assert_eq!(G.modulus(), &Integer::from(5));
-        assert!(!G.is_empty());
+    fn test_trivial_character_conductor_is_one_not_the_modulus() {
+        for n in [1u64, 2, 5, 12, 30] {
+            let chi = trivial_character(Integer::from(n));
+            assert_eq!(chi.conductor(), Integer::one(), "conductor of chi_0 mod {n}");
+            assert_eq!(chi.is_primitive(), n == 1, "primitivity of chi_0 mod {n}");
+        }
+    }
+
+    /// |G(chi_0 mod N)| = |mu(N)| (Ramanujan's sum c_N(1) = mu(N)).  In
+    /// particular it is 0 for non-squarefree N, where the old code returned 1.0.
+    #[test]
+    fn test_trivial_character_gauss_sum_magnitude_is_mobius() {
+        for (n, g) in [(1u64, 1.0), (2, 1.0), (5, 1.0), (6, 1.0), (12, 0.0), (30, 1.0), (4, 0.0)] {
+            let chi = trivial_character(Integer::from(n));
+            assert_eq!(chi.gauss_sum_magnitude(), g, "|G(chi_0 mod {n})|");
+        }
     }
 
     #[test]
@@ -362,27 +453,73 @@ mod tests {
         assert!(is_dirichlet_character(&chi));
     }
 
-    #[test]
-    #[ignore = "facade -> unimplemented; needs real algorithm (Phase 4)"]
-    fn test_is_DirichletGroup() {
-        // modulus 11 has phi(11) = 10 > 1, so non-trivial character
-        // generation is required and is not yet implemented.
-        let G = DirichletGroup::new(Integer::from(11));
-        assert!(is_dirichlet_group(&G));
-    }
-
+    /// chi(n) = 0 for gcd(n, N) > 1 and 1 otherwise: the trivial character is the
+    /// one case `eval` genuinely computes.
     #[test]
     fn test_character_eval() {
         let chi = trivial_character(Integer::from(5));
         assert_eq!(chi.eval(&Integer::from(3)), 1);
         assert_eq!(chi.eval(&Integer::from(5)), 0); // Not coprime to modulus
+        assert_eq!(chi.eval(&Integer::from(-1)), 1);
+        assert!(chi.is_even());
+    }
+
+    /// The facades now REFUSE instead of returning a wrong value.  These three
+    /// used to be `#[ignore]`d because they pinned facades; the refusal itself is
+    /// testable, so they are ignored no longer.
+    #[test]
+    #[should_panic(expected = "DirichletGroup::new")]
+    fn test_dirichlet_group_is_refused_not_faked() {
+        // phi(5) = 4 > 1, so there are non-trivial characters mod 5 and a
+        // "group" containing only the trivial one would be a lie.
+        let _ = DirichletGroup::new(Integer::from(5));
     }
 
     #[test]
-    #[ignore = "facade -> unimplemented; needs real algorithm (Phase 4)"]
-    fn test_kronecker_character() {
-        let chi = kronecker_character(Integer::from(5));
-        assert_eq!(chi.modulus(), &Integer::from(5));
+    #[should_panic(expected = "DirichletGroup::new")]
+    fn test_is_DirichletGroup_is_refused_not_faked() {
+        let _ = is_dirichlet_group(&DirichletGroup::new(Integer::from(11)));
+    }
+
+    #[test]
+    #[should_panic(expected = "kronecker_character")]
+    fn test_kronecker_character_is_refused_not_faked() {
+        let _ = kronecker_character(Integer::from(5));
+    }
+
+    #[test]
+    #[should_panic(expected = "quadratic_character")]
+    fn test_quadratic_character_is_refused_not_faked() {
+        let _ = quadratic_character(5);
+    }
+
+    /// Evaluating a NON-trivial character is refused.  The old code returned the
+    /// stored value at a generator and silently returned 1 -- the trivial value --
+    /// at every other argument: here chi(2) = -1 is stored, but chi(3) would have
+    /// come back as 1 when the true quadratic character mod 5 has chi(3) = -1.
+    #[test]
+    #[should_panic(expected = "DirichletCharacter::eval")]
+    fn test_nontrivial_eval_is_refused_not_faked() {
+        let _ = nontrivial_mod5().eval(&Integer::from(3));
+    }
+
+    /// ... but chi(n) = 0 for gcd(n, N) > 1 holds for EVERY character, so that
+    /// branch still answers.
+    #[test]
+    fn test_nontrivial_eval_still_knows_the_noncoprime_zero() {
+        assert_eq!(nontrivial_mod5().eval(&Integer::from(10)), 0);
+    }
+
+    #[test]
+    #[should_panic(expected = "DirichletCharacter::conductor")]
+    fn test_nontrivial_conductor_is_refused_not_faked() {
+        let _ = nontrivial_mod5().conductor();
+    }
+
+    #[test]
+    #[should_panic(expected = "DirichletCharacter::gauss_sum_magnitude")]
+    fn test_nontrivial_gauss_sum_is_refused_not_faked() {
+        let _ = nontrivial_mod5().gauss_sum_magnitude();
     }
 
     #[test]
@@ -391,5 +528,15 @@ mod tests {
         assert_eq!(euler_phi(&Integer::from(2)), Integer::one());
         assert_eq!(euler_phi(&Integer::from(5)), Integer::from(4));
         assert_eq!(euler_phi(&Integer::from(12)), Integer::from(4));
+    }
+
+    #[test]
+    fn test_mobius() {
+        for (n, m) in [
+            (1i64, 1i32), (2, -1), (3, -1), (4, 0), (5, -1), (6, 1), (7, -1),
+            (8, 0), (9, 0), (10, 1), (12, 0), (30, -1), (31, -1),
+        ] {
+            assert_eq!(mobius(&Integer::from(n)), m, "mu({n})");
+        }
     }
 }

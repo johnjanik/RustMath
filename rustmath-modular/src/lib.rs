@@ -64,7 +64,7 @@ pub use modsym::{
     cusps_equivalent_gamma0, euler_gamma, exp_integral_e1, merel_matrices,
     CuspidalHeckeDecomposition, HeckeEigenvalue, HeckeSummand, InvolutionAction, LValue,
     ModularSymbolsGamma0, P1List, RationalNewformLSeries, SummandHeckeAction,
-    SummandInvolutions,
+    SummandInvolutions, SummandProvenance, UlPiece, UlRefinement,
 };
 pub use cusps::Cusp;
 pub use dirichlet::{DirichletCharacter, DirichletGroup, trivial_character};

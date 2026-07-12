@@ -102,6 +102,33 @@ pub struct HeckeSummand {
 }
 
 impl HeckeSummand {
+    /// Build a summand from its two coordinate presentations (used by the
+    /// U_l refinement of [`super::degeneracy`], which carves finer
+    /// Hecke-stable pieces out of an existing summand).
+    ///
+    /// The two presentations describe the SAME list of vectors, so they must have
+    /// the same length; [`Self::dimension`] reads that length off
+    /// `cuspidal_coords` while [`Self::ambient_basis`] hands out the other, and a
+    /// mismatch would make the summand silently self-inconsistent.  The check is
+    /// a real `assert_eq!` rather than a `debug_assert_eq!` on purpose: a
+    /// debug-only gate is compiled out of release builds, i.e. it is no gate at
+    /// all exactly where a malformed summand would do its damage.
+    pub(crate) fn new(ambient_basis: Vec<Vec<Rational>>, cuspidal_coords: Vec<Vec<Rational>>) -> Self {
+        assert_eq!(
+            ambient_basis.len(),
+            cuspidal_coords.len(),
+            "HeckeSummand: the ambient basis ({} vectors) and the cuspidal coordinates \
+             ({} vectors) are two presentations of the same list of vectors and must \
+             agree in length",
+            ambient_basis.len(),
+            cuspidal_coords.len()
+        );
+        Self {
+            ambient_basis,
+            cuspidal_coords,
+        }
+    }
+
     /// Dimension of the summand (inside sign-0 modular symbols, so twice
     /// the multiplicity-weighted degree of the eigensystem).
     pub fn dimension(&self) -> usize {
@@ -161,7 +188,7 @@ impl CuspidalHeckeDecomposition {
 }
 
 /// Deterministic primality test by trial division (inputs are small).
-fn is_prime_u64(n: u64) -> bool {
+pub(crate) fn is_prime_u64(n: u64) -> bool {
     if n < 2 {
         return false;
     }
@@ -344,7 +371,7 @@ pub(crate) fn eval_poly_at_matrix(
 }
 
 /// M^e by repeated multiplication (exponents here are tiny).
-fn mat_pow(m: &Matrix<Rational>, e: u32) -> Matrix<Rational> {
+pub(crate) fn mat_pow(m: &Matrix<Rational>, e: u32) -> Matrix<Rational> {
     let mut acc: Matrix<Rational> = Matrix::identity(m.rows());
     for _ in 0..e {
         acc = (acc * m.clone()).expect("square matrices of equal size");

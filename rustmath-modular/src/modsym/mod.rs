@@ -48,13 +48,13 @@ pub mod winding;
 pub use decomposition::{
     CuspidalHeckeDecomposition, HeckeEigenvalue, HeckeSummand, SummandHeckeAction,
 };
+pub use degeneracy::{SummandProvenance, UlPiece, UlRefinement};
 pub use gamma0::{cusps_equivalent_gamma0, ModularSymbolsGamma0};
 pub use heilbronn::merel_matrices;
 pub use involutions::{InvolutionAction, SummandInvolutions};
 pub use lseries::{euler_gamma, exp_integral_e1, LValue, RationalNewformLSeries};
 pub use p1list::P1List;
 
-use crate::arithgroup::ArithmeticSubgroup;
 use crate::cusps::Cusp;
 use rustmath_core::Ring;
 use rustmath_integers::Integer;
@@ -168,26 +168,73 @@ impl ModularSymbolSpace {
         self.dimension += 1;
     }
 
-    /// Compute dimension using formula
-    /// For weight 2 and sign 0: dim M_2(Gamma0(N)) = genus + num_elliptic_points
+    /// The dimension of the space of modular symbols for Gamma0(N) of this
+    /// weight and sign.
+    ///
+    /// PANICS for any weight other than 2; see
+    /// [`Self::try_compute_dimension_gamma0`], which says why in full.  (This
+    /// used to return an "approximate genus" `index/12 - 1` for weight 2 and a
+    /// flat 0 for every other weight.)
     pub fn compute_dimension_gamma0(&self) -> usize {
+        self.try_compute_dimension_gamma0()
+            .expect("compute_dimension_gamma0")
+    }
+
+    /// The dimension of the space of modular symbols for Gamma0(N) of this
+    /// weight and sign, or an honest error.
+    ///
+    /// # Weight 2
+    ///
+    /// For sign 0 the dimension is `2g + c - 1`, with `g` the genus of X_0(N)
+    /// and `c` its number of cusps -- both taken EXACTLY from
+    /// [`crate::dims::gamma0_invariants`] (2g from the cuspidal part, via
+    /// Eichler-Shimura, and c - 1 from the boundary).  The tests check this
+    /// against [`ModularSymbolsGamma0::dimension`], which computes the same
+    /// number independently by reducing the Manin symbols, and against PARI/GP's
+    /// `msdim(msinit(N, 2))`.
+    ///
+    /// For sign +/-1 there is NO such closed formula: the star involution's
+    /// eigenspaces split the boundary part unevenly, and the naive guess
+    /// `dim^+ = g + c - 1`, `dim^- = g` is simply false (PARI: at N = 9 the split
+    /// of the 3-dimensional space is 2/1, not 3/0; likewise at N = 16, 18, 25,
+    /// 27).  So the +/- dimensions are DELEGATED to
+    /// [`ModularSymbolsGamma0::star_eigenspace_ambient`], which computes the
+    /// eigenspace as an actual kernel.
+    ///
+    /// # Every other weight
+    ///
+    /// Refused.  This crate's modular symbols engine
+    /// ([`ModularSymbolsGamma0`], and the Manin-symbol presentation behind it)
+    /// is weight 2 only, and no dimension formula for weight != 2 is gated
+    /// anywhere in the crate; returning a number here would be inventing one.
+    pub fn try_compute_dimension_gamma0(&self) -> Result<usize, String> {
+        if self.level == 0 {
+            return Err("Gamma0(0) is not a group: the level must be >= 1".to_string());
+        }
         if self.weight != 2 {
-            return 0; // Simplified; would need more complex formula
+            return Err(format!(
+                "modular symbols of weight {} for Gamma0({}) are not implemented: the \
+                 Manin-symbol engine of this crate (ModularSymbolsGamma0) is weight 2 \
+                 only, and no weight != 2 dimension formula is certified anywhere in \
+                 the crate. Refusing rather than returning a number nothing computed.",
+                self.weight, self.level
+            ));
         }
 
-        // Use genus formula for X_0(N)
-        let gamma0 = crate::arithgroup::Gamma0::new(self.level);
-        let index = gamma0.index().unwrap_or(1);
-
-        // Genus formula: g = 1 + index/12 - nu_2/4 - nu_3/3 - cusps/2
-        // For simplicity, approximate
-        let approx_genus = if index >= 12 {
-            (index / 12).saturating_sub(1)
-        } else {
-            0
-        };
-
-        approx_genus as usize
+        match self.sign {
+            0 => {
+                let inv = crate::dims::gamma0_invariants(self.level)?;
+                // 2g (cuspidal, by Eichler-Shimura) + (c - 1) (boundary).
+                let d = 2 * inv.genus + inv.cusps - 1;
+                usize::try_from(d).map_err(|_| {
+                    format!("dim of modular symbols for Gamma0({}) = {d} overflows usize", self.level)
+                })
+            }
+            s => {
+                let space = ModularSymbolsGamma0::new(self.level);
+                Ok(space.star_eigenspace_ambient(s)?.len())
+            }
+        }
     }
 }
 
@@ -383,6 +430,79 @@ mod tests {
         let sym = ModularSymbol::new(Cusp::infinity(), Cusp::zero());
         space.add_basis_element(sym);
         assert_eq!(space.dimension(), 1);
+    }
+
+    /// GATE: the weight-2 sign-0 dimension `2g + c - 1`, taken from the exact
+    /// Gamma0 invariants, agrees with [`ModularSymbolsGamma0::dimension`], which
+    /// gets the same number by an entirely different route (reducing the Manin
+    /// symbols modulo the 2- and 3-term relations).  Baked constants are from
+    /// PARI/GP `msdim(msinit(N, 2))`.
+    #[test]
+    fn test_compute_dimension_gamma0_matches_the_manin_symbol_computation() {
+        for n in 1..=40u64 {
+            let space = ModularSymbolSpace::new(2, n, 0);
+            assert_eq!(
+                space.compute_dimension_gamma0(),
+                ModularSymbolsGamma0::new(n).dimension(),
+                "2g + c - 1 vs the Manin-symbol dimension at N = {n}"
+            );
+        }
+        // PARI/GP: msdim(msinit(N, 2)) for N = 1..15
+        let pari = [0usize, 1, 1, 2, 1, 3, 1, 3, 3, 3, 3, 5, 1, 5, 5];
+        for (i, &d) in pari.iter().enumerate() {
+            let n = (i + 1) as u64;
+            assert_eq!(
+                ModularSymbolSpace::new(2, n, 0).compute_dimension_gamma0(),
+                d,
+                "msdim(msinit({n}, 2))"
+            );
+        }
+        // the old facade returned (index/12 - 1), e.g. 0 at N = 11 where the
+        // true dimension is 3
+        assert_eq!(ModularSymbolSpace::new(2, 11, 0).compute_dimension_gamma0(), 3);
+    }
+
+    /// GATE: the +/- star eigenspaces are computed, not guessed.  Their
+    /// dimensions sum to the sign-0 dimension, and at N = 9 they are 2 and 1 --
+    /// NOT the g + c - 1 = 3 and g = 0 that a naive closed formula would give.
+    /// (PARI: msdim(msinit(9, 2, 1)) = 2, msdim(msinit(9, 2, -1)) = 1.)
+    #[test]
+    fn test_star_eigenspace_dimensions_have_no_closed_formula() {
+        for n in [9u64, 11, 15, 16, 18, 25, 27] {
+            let d0 = ModularSymbolSpace::new(2, n, 0).compute_dimension_gamma0();
+            let dp = ModularSymbolSpace::new(2, n, 1).compute_dimension_gamma0();
+            let dm = ModularSymbolSpace::new(2, n, -1).compute_dimension_gamma0();
+            assert_eq!(dp + dm, d0, "dim^+ + dim^- = dim at N = {n}");
+
+            let inv = crate::dims::gamma0_invariants(n).unwrap();
+            let (g, c) = (inv.genus as usize, inv.cusps as usize);
+            if n == 9 {
+                // the split is 2/1 while the naive formula predicts 3/0
+                assert_eq!((dp, dm), (2, 1));
+                assert_eq!((g + c - 1, g), (3, 0));
+                assert_ne!((dp, dm), (g + c - 1, g));
+            }
+        }
+    }
+
+    /// Honest refusal for weights the crate has no engine for, rather than a
+    /// flat 0.
+    #[test]
+    fn test_nonweight2_modular_symbols_are_refused() {
+        for k in [1i32, 3, 4, 6, 12] {
+            let space = ModularSymbolSpace::new(k, 11, 0);
+            assert!(
+                space.try_compute_dimension_gamma0().is_err(),
+                "weight {k} must be refused, not answered with 0"
+            );
+        }
+        assert!(ModularSymbolSpace::new(2, 11, 0).try_compute_dimension_gamma0().is_ok());
+    }
+
+    #[test]
+    #[should_panic(expected = "compute_dimension_gamma0")]
+    fn test_weight4_panics_rather_than_returning_zero() {
+        let _ = ModularSymbolSpace::new(4, 11, 0).compute_dimension_gamma0();
     }
 
     #[test]

@@ -6,6 +6,7 @@
 use crate::arithgroup::{Gamma0, Gamma1};
 use crate::hecke::{HeckeOperator, Newform};
 use crate::modsym::ModularSymbolSpace;
+use rustmath_core::Ring;
 use rustmath_integers::Integer;
 use rustmath_rationals::Rational;
 
@@ -469,6 +470,79 @@ impl EndomorphismRing {
 mod tests {
     use super::*;
 
+    fn rat(n: i64, d: i64) -> Rational {
+        Rational::new(Integer::from(n), Integer::from(d)).unwrap()
+    }
+
+    fn poly(cs: &[(i64, i64)]) -> Vec<Rational> {
+        cs.iter().map(|&(n, d)| rat(n, d)).collect()
+    }
+
+    /// `sqrt_poly` is a real algorithm now: `Some(q)` iff `q^2 = p` exactly, and
+    /// `None` iff `p` is not a square in Q[x].  It used to return `None` for
+    /// EVERY input, so a caller could not tell "not attempted" from "no square
+    /// root exists".
+    #[test]
+    fn test_sqrt_poly_is_exact_and_complete() {
+        // (x + 1)^2 = x^2 + 2x + 1   (ascending coefficients)
+        assert_eq!(
+            sqrt_poly(&poly(&[(1, 1), (2, 1), (1, 1)])),
+            Some(poly(&[(1, 1), (1, 1)]))
+        );
+
+        // (2x^2 - 3x + 1/2)^2 = 1/4 - 3x + 11 x^2 - 12 x^3 + 4 x^4
+        // (x^2: 2*(2)*(1/2) + (-3)^2 = 11;  x: 2*(-3)*(1/2) = -3;  x^3: 2*(2)(-3) = -12)
+        let q = poly(&[(1, 2), (-3, 1), (2, 1)]);
+        let mut p = vec![Rational::zero(); 5];
+        for (i, qi) in q.iter().enumerate() {
+            for (j, qj) in q.iter().enumerate() {
+                p[i + j] = p[i + j].clone() + qi.clone() * qj.clone();
+            }
+        }
+        assert_eq!(p, poly(&[(1, 4), (-3, 1), (11, 1), (-12, 1), (4, 1)]));
+        assert_eq!(sqrt_poly(&p), Some(q));
+
+        // sqrt(0) = 0, sqrt(4) = 2, sqrt(9/25) = 3/5
+        assert_eq!(sqrt_poly(&[]), Some(vec![]));
+        assert_eq!(sqrt_poly(&poly(&[(0, 1), (0, 1)])), Some(vec![]));
+        assert_eq!(sqrt_poly(&poly(&[(4, 1)])), Some(poly(&[(2, 1)])));
+        assert_eq!(sqrt_poly(&poly(&[(9, 25)])), Some(poly(&[(3, 5)])));
+
+        // NOT squares -- each `None` is a theorem:
+        // odd degree
+        assert_eq!(sqrt_poly(&poly(&[(1, 1), (1, 1), (1, 1), (1, 1)])), None);
+        // negative leading coefficient
+        assert_eq!(sqrt_poly(&poly(&[(-1, 1), (2, 1), (-1, 1)])), None);
+        // leading coefficient 2 is not a square in Q
+        assert_eq!(sqrt_poly(&poly(&[(1, 1), (0, 1), (2, 1)])), None);
+        // x^2 + 2x + 2 is squarefree of even degree: not a square
+        assert_eq!(sqrt_poly(&poly(&[(2, 1), (2, 1), (1, 1)])), None);
+        // right top half, wrong bottom half: (x+1)^2 = x^2+2x+1, perturb a_0.
+        // This is the case the top-down matching alone would NOT catch, and is
+        // why the candidate is squared and compared.
+        assert_eq!(sqrt_poly(&poly(&[(7, 1), (2, 1), (1, 1)])), None);
+        // x^4 + 1 (even degree, square leading coeff, still not a square)
+        assert_eq!(
+            sqrt_poly(&poly(&[(1, 1), (0, 1), (0, 1), (0, 1), (1, 1)])),
+            None
+        );
+
+        // round trip: q^2 always has square root +/-q, and we return the one
+        // with positive leading coefficient
+        for c in [-5i64, -1, 1, 3, 7] {
+            let q = poly(&[(c, 3), (1, 1), (-2, 1)]); // -2x^2 + x + c/3
+            let mut sq = vec![Rational::zero(); 5];
+            for (i, qi) in q.iter().enumerate() {
+                for (j, qj) in q.iter().enumerate() {
+                    sq[i + j] = sq[i + j].clone() + qi.clone() * qj.clone();
+                }
+            }
+            let root = sqrt_poly(&sq).expect("a square has a square root");
+            let neg: Vec<Rational> = q.iter().map(|c| Rational::zero() - c.clone()).collect();
+            assert_eq!(root, neg, "the +leading-coefficient root of q^2");
+        }
+    }
+
     #[test]
     fn test_modular_abelian_variety() {
         let a = ModularAbelianVariety::new(11, 1);
@@ -668,15 +742,76 @@ pub fn simple_factorization_of_modsym_space(space: &ModularSymbolSpace) -> Vec<M
     )
 }
 
-/// Compute the square root of a polynomial, or `None` if it cannot be computed.
+/// The exact square root of a polynomial over `Q`, if it has one.
 ///
-/// A genuine polynomial square-root algorithm is not implemented, so this
-/// returns `None` to mean "no square root computed" — a usable, honest
-/// "no result" that callers treat as "could not obtain a square root",
-/// rather than panicking.
+/// `coeffs` are the coefficients in ASCENDING order (`coeffs[i]` multiplies
+/// `x^i`), and so is the result: `sqrt_poly(p)` returns `Some(q)` with
+/// `q * q == p` exactly, and `None` iff `p` is NOT a square in `Q[x]`.
+///
+/// `None` is now a THEOREM, not a shrug: it used to be returned for every input,
+/// which a caller could not distinguish from "there is no square root".  The two
+/// roots `+q` and `-q` are both valid; the one with positive leading coefficient
+/// is returned (and `sqrt_poly(0) = 0`).
+///
+/// The algorithm is coefficient matching, which is exact and complete over a
+/// field of characteristic 0: `deg p` must be even, say `2m`, the leading
+/// coefficient `p_{2m}` must be a square in `Q` (numerator and denominator both
+/// perfect squares, and positive), and then the remaining `q_i` are forced --
+/// reading `p_{m+i} = sum_{j} q_j q_{m+i-j}` downward gives
+/// `q_i = (p_{m+i} - sum_{j=i+1}^{m-1} q_j q_{m+i-j}) / (2 q_m)`.  The top half of
+/// the coefficients determines `q` completely; the bottom half is then a
+/// CONSTRAINT, so the candidate is squared and compared before it is returned.
 pub fn sqrt_poly(coeffs: &[Rational]) -> Option<Vec<Rational>> {
-    let _ = coeffs;
-    None
+    // strip leading zeros
+    let mut p: Vec<Rational> = coeffs.to_vec();
+    while p.last().map(|c| c.is_zero()).unwrap_or(false) {
+        p.pop();
+    }
+    if p.is_empty() {
+        return Some(Vec::new()); // sqrt(0) = 0
+    }
+
+    let deg = p.len() - 1;
+    if !deg.is_multiple_of(2) {
+        return None; // deg(q^2) = 2 deg(q) is even
+    }
+    let m = deg / 2;
+
+    // q_m = sqrt(p_{2m}) must exist in Q
+    let lead = &p[deg];
+    if lead.numerator().signum() < 0 {
+        return None;
+    }
+    let (ln, ld) = (lead.numerator().clone(), lead.denominator().clone());
+    if !ln.is_perfect_square() || !ld.is_perfect_square() {
+        return None;
+    }
+    let q_m = Rational::new(
+        ln.sqrt().expect("nonneg, perfect square"),
+        ld.sqrt().expect("positive, perfect square"),
+    )
+    .expect("denominator of a rational is nonzero");
+
+    // Solve downward: p_{m+i} = 2 q_m q_i + sum_{j=i+1}^{m-1} q_j q_{m+i-j}
+    let mut q = vec![Rational::zero(); m + 1];
+    q[m] = q_m.clone();
+    let two_q_m = q_m.clone() + q_m;
+    for i in (0..m).rev() {
+        let mut acc = p[m + i].clone();
+        for j in (i + 1)..m {
+            acc = acc - q[j].clone() * q[m + i - j].clone();
+        }
+        q[i] = acc / two_q_m.clone();
+    }
+
+    // The lower half of p is a constraint, not data: verify q^2 == p exactly.
+    let mut square = vec![Rational::zero(); deg + 1];
+    for (i, qi) in q.iter().enumerate() {
+        for (j, qj) in q.iter().enumerate() {
+            square[i + j] = square[i + j].clone() + qi.clone() * qj.clone();
+        }
+    }
+    if square == p { Some(q) } else { None }
 }
 
 /// Finite subgroup of an abelian variety

@@ -409,22 +409,32 @@ mod tests {
     use crate::abvar::J0;
     use crate::arithgroup::Gamma0;
 
-    /// Genus of X0(N) for N = 1..=50, recomputed independently in python via
-    /// g = 1 + mu/12 - nu2/4 - nu3/3 - cusps/2 (mu = index, nu2/nu3 counts of
-    /// solutions of x^2+1=0 / x^2+x+1=0 mod N).  Spot values agree with the
-    /// literature: g(11)=1, g(22)=2, g(23)=2, g(37)=2, g(50)=2.
-    const GENUS_X0: [usize; 50] = [
+    /// Genus of X0(N) for N = 1..=100, derived TWICE and diffed before being
+    /// pasted here (zero mismatches on all 100 entries):
+    ///   (a) python, from the classical invariants:
+    ///       g = 1 + mu/12 - nu2/4 - nu3/3 - cusps/2, with mu = N prod(1+1/p),
+    ///       nu2/nu3 the brute-force counts of the solutions of x^2 + 1 = 0
+    ///       and x^2 + x + 1 = 0 mod N, cusps = sum_{d|N} phi(gcd(d, N/d));
+    ///   (b) PARI/GP, `mfdim(mfinit([N,2],1))` = dim S_2(Gamma0(N)) = g, an
+    ///       entirely different code path (`?mfinit`: space 1 = cuspidal).
+    /// Spot values agree with the literature: g(11)=1, g(22)=2, g(23)=2,
+    /// g(37)=2, g(50)=2, g(66)=9, g(100)=7.
+    const GENUS_X0: [usize; 100] = [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 2, 2,
         1, 0, 2, 1, 2, 2, 3, 2, 1, 3, 3, 3, 1, 2, 4, 3, 3, 3, 5, 3, 4, 3, 5,
-        4, 3, 1, 2,
+        4, 3, 1, 2, 5, 5, 4, 4, 5, 5, 5, 6, 5, 7, 4, 7, 5, 3, 5, 9, 5, 7, 7,
+        9, 6, 5, 5, 8, 5, 8, 7, 11, 6, 7, 4, 9, 7, 11, 7, 10, 9, 9, 7, 11, 7,
+        10, 9, 11, 9, 9, 7, 7, 9, 7,
     ];
 
-    /// #cusps of Gamma0(N) for N = 1..=50, recomputed independently in
-    /// python via sum_{d|N} phi(gcd(d, N/d)).
-    const CUSPS_X0: [usize; 50] = [
+    /// #cusps of Gamma0(N) for N = 1..=100, from sum_{d|N} phi(gcd(d, N/d)),
+    /// derived in both python and PARI/GP and diffed (zero mismatches).
+    const CUSPS_X0: [usize; 100] = [
         1, 2, 2, 3, 2, 4, 2, 4, 4, 4, 2, 6, 2, 4, 4, 6, 2, 8, 2, 6, 4, 4, 2,
         8, 6, 4, 6, 6, 2, 8, 2, 8, 4, 4, 4, 12, 2, 4, 4, 8, 2, 8, 2, 6, 8, 4,
-        2, 12, 8, 12,
+        2, 12, 8, 12, 4, 6, 2, 12, 4, 8, 4, 4, 2, 12, 2, 4, 8, 12, 4, 8, 2, 6,
+        4, 8, 2, 16, 2, 4, 12, 6, 4, 8, 2, 12, 12, 4, 2, 12, 4, 4, 4, 8, 2,
+        16, 4, 6, 4, 4, 4, 16, 2, 16, 8, 18,
     ];
 
     fn check_stage1_gates(n: u64) {
@@ -504,6 +514,20 @@ mod tests {
     #[test]
     fn test_stage1_gates_levels_31_to_50() {
         for n in 31..=50 {
+            check_stage1_gates(n);
+        }
+    }
+
+    #[test]
+    fn test_stage1_gates_levels_51_to_75() {
+        for n in 51..=75 {
+            check_stage1_gates(n);
+        }
+    }
+
+    #[test]
+    fn test_stage1_gates_levels_76_to_100() {
+        for n in 76..=100 {
             check_stage1_gates(n);
         }
     }

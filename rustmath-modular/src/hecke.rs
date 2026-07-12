@@ -46,14 +46,30 @@ impl HeckeOperator {
         self.level
     }
 
-    /// Apply T_n to q-expansion coefficients
-    /// (T_n f)(q) = sum_{m>=0} b_m q^m where
-    /// b_m = sum_{d | gcd(n,m)} d * a(nm/d^2)
+    /// Apply `T_n` to the q-expansion coefficients of a form of WEIGHT `k`:
+    ///
+    /// ```text
+    ///     (T_n f)(q) = sum_{m >= 0} b_m q^m,
+    ///     b_m = sum_{d | gcd(n, m)} d^{k-1} a(nm/d^2).
+    /// ```
+    ///
+    /// The weight must be passed in: `HeckeOperator` carries only `(n, level)`, and
+    /// `T_n` genuinely DEPENDS on the weight through `d^{k-1}`.  This used to use
+    /// `d^1` unconditionally -- i.e. it silently computed the weight-2 operator for
+    /// a form of any weight (for `Delta`, weight 12, it would have returned
+    /// `d` where the true multiplier is `d^11`).
+    ///
+    /// Requires `k >= 1`.
     pub fn apply_to_coefficients(
         &self,
         input_coeffs: &HashMap<u64, Rational>,
         max_output: u64,
+        weight: i32,
     ) -> HashMap<u64, Rational> {
+        assert!(
+            weight >= 1,
+            "HeckeOperator::apply_to_coefficients: the multiplier d^(k-1) needs k >= 1, got k = {weight}"
+        );
         let mut result = HashMap::new();
 
         for m in 0..=max_output {
@@ -65,7 +81,11 @@ impl HeckeOperator {
                 if g.is_multiple_of(d) {
                     let nm_over_d2 = (self.n * m) / (d * d);
                     if let Some(a_val) = input_coeffs.get(&nm_over_d2) {
-                        b_m = b_m + Rational::from_integer(Integer::from(d)) * a_val.clone();
+                        let mut multiplier = Integer::one();
+                        for _ in 0..(weight - 1) {
+                            multiplier = multiplier * Integer::from(d);
+                        }
+                        b_m = b_m + Rational::from_integer(multiplier) * a_val.clone();
                     }
                 }
             }
@@ -443,6 +463,51 @@ mod tests {
         assert_eq!(t2.index(), 2);
         assert_eq!(t2.level(), 1);
         assert!(t2.is_good());
+    }
+
+    /// GATE: T_n on q-expansion coefficients, in the WEIGHT that the operator is
+    /// actually applied in.  Delta = sum tau(n) q^n is the weight-12 Hecke
+    /// eigenform with T_n Delta = tau(n) Delta, so applying T_2 to its
+    /// coefficients must reproduce tau(2) * tau(m).
+    ///
+    /// The decisive coefficient is m = 2:
+    ///   b_2 = a(4) + 2^11 a(1) = -1472 + 2048 = 576 = tau(2)^2.
+    /// With the old, weight-blind `d^1` multiplier this would be
+    /// -1472 + 2 = -1470, so this test pins exactly the bug that was there.
+    /// tau values from PARI: `vector(10, n, ramanujantau(n))`.
+    #[test]
+    fn test_hecke_operator_on_delta_is_weight_12() {
+        let tau: [i64; 11] = [
+            0, 1, -24, 252, -1472, 4830, -6048, -16744, 84480, -113643, -115920,
+        ];
+        let mut delta: HashMap<u64, Rational> = HashMap::new();
+        for (n, &t) in tau.iter().enumerate().skip(1) {
+            delta.insert(n as u64, Rational::from_integer(Integer::from(t)));
+        }
+
+        let t2 = HeckeOperator::new(2, 1);
+        let out = t2.apply_to_coefficients(&delta, 5, 12);
+
+        // (T_2 Delta)(m) = tau(2) tau(m), as far as the input coefficients reach
+        for m in 1..=5u64 {
+            let want = Rational::from_integer(Integer::from(tau[2] * tau[m as usize]));
+            let got = out.get(&m).cloned().unwrap_or_else(Rational::zero);
+            assert_eq!(got, want, "(T_2 Delta)(q^{m}) = tau(2) tau({m})");
+        }
+        assert_eq!(
+            out.get(&2).cloned().unwrap(),
+            Rational::from_integer(Integer::from(576)),
+            "b_2 = a(4) + 2^11 a(1) = 576; the old weight-blind code gave -1470"
+        );
+
+        // T_3 likewise: b_1 = a(3) = tau(3), b_3 = a(9) + 3^11 a(1) = tau(3)^2
+        let t3 = HeckeOperator::new(3, 1);
+        let out3 = t3.apply_to_coefficients(&delta, 3, 12);
+        assert_eq!(
+            out3.get(&3).cloned().unwrap(),
+            Rational::from_integer(Integer::from(tau[3] * tau[3])),
+            "(T_3 Delta)(q^3) = tau(3)^2"
+        );
     }
 
     #[test]
