@@ -195,7 +195,7 @@ impl EllipticCurve {
 }
 
 /// Determinant by Gaussian elimination with partial pivoting.
-fn det_bigfloat(mut a: Vec<Vec<BigFloat>>, wp: u64) -> BigFloat {
+pub(crate) fn det_bigfloat(mut a: Vec<Vec<BigFloat>>, wp: u64) -> BigFloat {
     let n = a.len();
     let mut det = BigFloat::one_prec(wp);
     for k in 0..n {

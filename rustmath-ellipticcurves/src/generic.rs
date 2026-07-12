@@ -81,7 +81,11 @@
 //! parameters (the modulus). Use the full `new()` constructor instead, or
 //! use fields like `Rational` that have proper zero/one implementations.
 //!
-//! ```ignore
+//! (Fenced as `text`, not `ignore`: this is a sketch of the *intended* API,
+//! it does not compile today, and an `ignore` doctest is a permanently
+//! reported "ignored" test that is never run anyway.)
+//!
+//! ```text
 //! use rustmath_ellipticcurves::generic::{EllipticCurve, Point};
 //! use rustmath_finitefields::PrimeField;
 //! use rustmath_integers::Integer;

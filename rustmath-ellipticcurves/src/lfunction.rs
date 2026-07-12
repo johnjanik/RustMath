@@ -3,7 +3,10 @@
 //! Two layers live here:
 //!
 //! 1. **The certified analytic layer** ([`CurveLSeries`], [`LValue`],
-//!    [`AnalyticRank`]): numeric L(E,1) and L'(E,1) over [`BigFloat`] with
+//!    [`AnalyticRank`]): the numeric Taylor coefficients L^{(r)}(E,1)/r! of
+//!    every order r ([`CurveLSeries::l_derivative`]; r = 0 and r = 1 are the
+//!    older [`CurveLSeries::l1`] / [`CurveLSeries::l1_derivative`]) over
+//!    [`BigFloat`] with
 //!    rigorous tail bounds and a documented rounding allowance, plus the
 //!    honest analytic-rank lattice. All coefficients are EXACT (integer
 //!    a_n from point counts / Tate reduction types, multiplicativity), the
@@ -15,9 +18,19 @@
 //!    * the only certified zeros are exact statements: ε = −1 forces
 //!      L(E,1) = 0 via the functional equation, and externally supplied
 //!      Manin–Birch winding certificates (see
-//!      [`LFunction::analytic_rank_with_exact_l1`]);
-//!    * uncertified cases are reported as [`AnalyticRank::Unresolved`] or
-//!      [`AnalyticRank::AtLeastTwoUnresolved`] — NEVER a bare integer.
+//!      [`LFunction::analytic_rank_with_exact_l1`] and
+//!      [`LFunction::analytic_rank_with_exact_vanishing`]);
+//!    * uncertified cases are reported as [`AnalyticRank::Unresolved`],
+//!      [`AnalyticRank::AtLeastTwoUnresolved`] or
+//!      [`AnalyticRank::AtLeastNUnresolved`] — NEVER a bare integer.
+//!
+//!    A parity warning, because it is easy to get backwards: ε = +1 makes
+//!    the COMPLETED Λ(1+u) an even function of u, so the Λ-coefficients of
+//!    odd index vanish exactly — but L = c^{1+u}Λ(1+u)/Γ(1+u) is NOT even,
+//!    and its odd derivatives at s = 1 are generally nonzero (e.g.
+//!    ε(11a) = +1 yet L'(11a,1) = 0.30870853…, PARI-confirmed). What parity
+//!    gives is that the ORDER OF VANISHING is even (ε = +1) or odd (ε = −1).
+//!    That is the exact fact the rank lattice runs on.
 //!
 //!    The analytic continuation and functional equation
 //!    Λ(s) = ε·Λ(2−s), Λ(s) = N^{s/2}(2π)^{−s}Γ(s)L(E,s), rest on the
@@ -192,7 +205,7 @@ impl LValue {
 // ---------------------------------------------------------------------------
 
 /// 2^k as an Integer (k small).
-fn pow2_integer(k: u64) -> Integer {
+pub(crate) fn pow2_integer(k: u64) -> Integer {
     let mut out = Integer::one();
     let two = Integer::from(2);
     for _ in 0..k {
@@ -202,7 +215,7 @@ fn pow2_integer(k: u64) -> Integer {
 }
 
 /// The rational 2^-k as a BigFloat at the given precision.
-fn pow2_neg(k: u64, prec: u64) -> BigFloat {
+pub(crate) fn pow2_neg(k: u64, prec: u64) -> BigFloat {
     let r = Rational::new(Integer::one(), pow2_integer(k)).expect("power of two is nonzero");
     BigFloat::from_rational(&r, prec)
 }
@@ -210,7 +223,7 @@ fn pow2_neg(k: u64, prec: u64) -> BigFloat {
 /// Bernoulli numbers B_0..B_m as exact rationals, via the defining
 /// recurrence sum_{k=0}^{n} C(n+1, k) B_k = 0 (B_0 = 1 seed; B_1 = -1/2
 /// convention, irrelevant here since only even indices are consumed).
-fn bernoulli_numbers(m: usize) -> Vec<Rational> {
+pub(crate) fn bernoulli_numbers(m: usize) -> Vec<Rational> {
     let mut b: Vec<Rational> = Vec::with_capacity(m + 1);
     b.push(Rational::one());
     let mut row = vec![Integer::one(), Integer::from(2), Integer::one()];
@@ -237,7 +250,7 @@ fn bernoulli_numbers(m: usize) -> Vec<Rational> {
 /// The Euler-Mascheroni constant at `prec` bits, absolute error
 /// < 2^-(prec+8) (exact-rational Euler-Maclaurin core + one ln; stage-1
 /// derivation, mpmath-gated there to 60 digits and re-gated below).
-fn euler_gamma(prec: u64) -> BigFloat {
+pub(crate) fn euler_gamma(prec: u64) -> BigFloat {
     let n = ((prec as f64 + 24.0) * 0.14) as u64 + 4;
     let threshold =
         Rational::new(Integer::one(), pow2_integer(prec + 24)).expect("power of two is nonzero");
@@ -275,7 +288,7 @@ fn euler_gamma(prec: u64) -> BigFloat {
 }
 
 /// Working precision for the E_1 alternating series at argument x.
-fn e1_working_precision(xf: f64, prec: u64) -> u64 {
+pub(crate) fn e1_working_precision(xf: f64, prec: u64) -> u64 {
     prec + 48 + (std::f64::consts::LOG2_E * xf.max(0.0)).ceil() as u64
 }
 
@@ -554,6 +567,212 @@ impl CurveLSeries {
             ),
         })
     }
+
+    /// The r-th **Taylor coefficient** of L(E,s) at s = 1, i.e.
+    /// L^{(r)}(E,1) / r!  (this is the normalisation the BSD formula wants;
+    /// multiply by r! for the bare derivative). Unconditional: valid for
+    /// every r ≥ 0 whatever the order of vanishing is.
+    ///
+    /// # The formula
+    ///
+    /// With c = 2π/√N, Λ(s) = N^{s/2}(2π)^{−s}Γ(s)L(E,s) = c^{−s}Γ(s)L(E,s)
+    /// and Λ(s) = ε·Λ(2−s) (modularity: Wiles/BCDT, Carayol). Writing
+    /// g(t) = Σ a_n e^{−cnt}, the substitution y = t/√N in
+    /// Λ(s) = N^{s/2}∫_0^∞ f(iy) y^{s−1} dy gives Λ(s) = ∫_0^∞ g(t) t^{s−1} dt,
+    /// and the Fricke relation g(1/t) = ε t² g(t) folds this to the entire
+    ///
+    /// ```text
+    /// Lambda(1+u) = int_1^inf g(t) (t^u + eps t^-u) dt
+    ///             = sum_{m>=0} u^m (1 + eps(-1)^m) sum_n a_n I_m(cn)/m!,
+    /// I_m(x) = int_1^inf e^{-xt} (log t)^m dt.
+    /// ```
+    ///
+    /// So Λ_m := [u^m]Λ(1+u) vanishes EXACTLY whenever m has the wrong
+    /// parity for ε (this is the functional equation, an exact statement).
+    /// Setting G_m(x) = x·I_m(x)/m! (see [`crate::ltaylor::g_kernels`];
+    /// G_0(x) = e^{−x}, G_1(x) = E_1(x)) and S_m = Σ_n (a_n/n) G_m(cn),
+    /// Λ_m = (1 + ε(−1)^m)·S_m/c. Since L(1+u) = c^{1+u}Λ(1+u)/Γ(1+u) and
+    /// c^{1+u}/Γ(1+u) = c·exp(P(u)) with
+    ///
+    /// ```text
+    /// P(u) = (ln c + gamma) u + sum_{k>=2} (-1)^(k+1) zeta(k) u^k / k
+    /// ```
+    ///
+    /// (the Taylor series of −log Γ(1+u), plus u·ln c — note the sign against
+    /// the +log Γ series inside [`crate::ltaylor::g_kernels`]), the factor c
+    /// cancels and, with B_j := [u^j] exp(P(u)),
+    ///
+    /// ```text
+    /// L^(r)(E,1)/r!  =  2 * sum_{m <= r, m == p (mod 2)}  B_(r-m) * S_m,
+    /// p = 0 if eps = +1, p = 1 if eps = -1.
+    /// ```
+    ///
+    /// Sanity: r = 0, ε = +1 gives 2·S_0 = 2Σ(a_n/n)e^{−cn} — exactly
+    /// [`Self::l1`]; r = 1, ε = −1 gives 2·S_1 = 2Σ(a_n/n)E_1(cn) — exactly
+    /// [`Self::l1_derivative`]. Both agreements are asserted in the tests.
+    ///
+    /// # Parity: what is and is not exactly zero
+    ///
+    /// The parity sum is EMPTY exactly when r = 0 and ε = −1, so that (and
+    /// only that) case returns an exact zero `LValue` (tail and rounding
+    /// allowance exactly 0). It is **not** true that ε = +1 forces every odd
+    /// derivative of L to vanish: only the *completed* Λ is even in u, and
+    /// L = c^{1+u}Λ/Γ(1+u) is not. For instance ε(11a) = +1 while
+    /// L'(11a,1) = 2·B_1·S_0 = (ln c + γ)·L(11a,1) = 0.30870853…, which PARI
+    /// confirms. What the functional equation *does* give is that the ORDER
+    /// of vanishing has the parity of ε — that is what the analytic-rank
+    /// lattice uses, and it is exact.
+    ///
+    /// # Tail bound (rigorous)
+    ///
+    /// log t ≤ t − 1 gives I_m(x) ≤ e^{−x} m!/x^{m+1}, hence
+    /// 0 ≤ G_m(x) ≤ e^{−x}/x^m ≤ e^{−x} for x ≥ 1. With |a_n| ≤ d(n)√n
+    /// (Deligne) and d(n) ≤ 2√n, |a_n/n| ≤ 2, so truncating every S_m at
+    /// n ≤ M (with c(M+1) ≥ 1, enforced) omits at most
+    /// 2·Σ_{n>M} e^{−cn} = 2e^{−c(M+1)}/(1−e^{−c}) from each S_m, and the
+    /// omitted part of the answer is at most
+    ///
+    /// ```text
+    /// 2 * [ sum_{m <= r, m == p (2)} |B_(r-m)| ] * 2 e^(-c(M+1)) / (1 - e^-c),
+    /// ```
+    ///
+    /// which is what `tail_bound` reports (with the same factor-2 headroom as
+    /// [`Self::l1`], to absorb the bound's own rounding). For r = 0 this is
+    /// bit-for-bit the `l1` bound.
+    ///
+    /// `Err` only for the honest reasons: c(M+1) < 1 (bound inapplicable) or
+    /// a kernel that failed to converge.
+    pub fn l_derivative(&self, r: u32, digits: usize) -> Result<LValue, String> {
+        let wp = (digits as f64 * LOG2_10).ceil() as u64 + 64;
+        let parity: u32 = if self.epsilon == 1 { 0 } else { 1 };
+
+        if r < parity {
+            // r = 0 with epsilon = -1: the parity sum is empty.
+            return Ok(LValue {
+                value: BigFloat::zero_prec(wp),
+                tail_bound: BigFloat::zero_prec(wp),
+                rounding_allowance: BigFloat::zero_prec(wp),
+                rounding_note: "L(E,1) = 0 EXACTLY: epsilon = -1 in the functional \
+                    equation Lambda(s) = epsilon Lambda(2-s), with epsilon the \
+                    global root number computed exactly from Tate local data \
+                    (crate::rootnumber; no numerics involved). Analytic \
+                    continuation via modularity (Wiles/BCDT)."
+                    .to_string(),
+            });
+        }
+
+        let nf =
+            <Integer as NumericConversion>::to_f64(&self.conductor).expect("conductor fits in f64");
+        let cf64 = 2.0 * PI / nf.sqrt();
+
+        // B_0..B_r from P(u) = (ln c + gamma) u + sum_{k>=2} (-1)^k zeta(k) u^k / k.
+        let cwp = wp + 64;
+        let (gamma_b, zetas_b) = crate::ltaylor::taylor_constants(r, cwp);
+        let c_b = self.decay_constant(cwp);
+        let mut p = vec![BigFloat::zero_prec(cwp); r as usize + 1];
+        if r >= 1 {
+            p[1] = RealField::ln(&c_b) + gamma_b.clone();
+        }
+        for (k, pk) in p.iter_mut().enumerate().skip(2) {
+            // -log Gamma(1+u) = gamma u + sum_{k>=2} (-1)^(k+1) zeta(k) u^k / k
+            // (note the sign flip against g_kernels' Q, which expands +log Gamma).
+            let z = zetas_b[k].clone() / BigFloat::from_integer(&Integer::from(k as i64), cwp);
+            *pk = if k % 2 == 0 { -z } else { z };
+        }
+        let b = crate::ltaylor::exp_series_coeffs(&p, cwp);
+
+        // sum of |B_{r-m}| over the parity class: the tail multiplier.
+        let ms: Vec<usize> = (parity..=r).step_by(2).map(|m| m as usize).collect();
+        let mut bsum = BigFloat::zero_prec(cwp);
+        for &m in &ms {
+            bsum = bsum + OrderedRing::abs(&b[r as usize - m]);
+        }
+        let bsum_f64 = bsum.to_f64().max(1.0);
+
+        let m_terms = self.truncation_point_scaled(digits, bsum_f64);
+        if cf64 * ((m_terms + 1) as f64) < 1.0 {
+            return Err(
+                "internal: c(M+1) < 1, the G_m(x) <= e^-x tail bound is inapplicable".to_string(),
+            );
+        }
+
+        // gamma / zeta at the precision the largest kernel argument needs.
+        let xmax = cf64 * (m_terms as f64 + 2.0);
+        let gwp = crate::ltaylor::g_working_precision(xmax, wp);
+        let (gamma, zetas) = crate::ltaylor::taylor_constants(r, gwp);
+
+        let a = self.coefficients(m_terms);
+        let c = self.decay_constant(wp);
+        let mut sums = vec![BigFloat::zero_prec(wp); r as usize + 1];
+        let mut abs_sums = vec![BigFloat::zero_prec(wp); r as usize + 1];
+        for (n, an) in a.iter().enumerate().skip(1) {
+            if an.is_zero() {
+                continue;
+            }
+            let n_bf = BigFloat::from_integer(&Integer::from(n as i64), wp);
+            let coeff = BigFloat::from_integer(an, wp) / n_bf.clone();
+            let g = crate::ltaylor::g_kernels(&(c.clone() * n_bf), r, wp, &gamma, &zetas)?;
+            for &m in &ms {
+                let term = coeff.clone() * g[m].clone();
+                abs_sums[m] = abs_sums[m].clone() + OrderedRing::abs(&term);
+                sums[m] = sums[m].clone() + term;
+            }
+        }
+
+        let two = BigFloat::from_integer(&Integer::from(2), wp);
+        let mut value = BigFloat::zero_prec(wp);
+        let mut weighted_abs = BigFloat::zero_prec(wp);
+        for &m in &ms {
+            let bj = b[r as usize - m].with_precision(wp);
+            value = value + bj.clone() * sums[m].clone();
+            weighted_abs = weighted_abs + OrderedRing::abs(&bj) * abs_sums[m].clone();
+        }
+        let value = two.clone() * value;
+
+        let tail = self.tail_bound(m_terms, wp) * bsum.with_precision(wp);
+        let ops = BigFloat::from_integer(
+            &Integer::from(16 * (m_terms as i64 + 4) * (r as i64 + 2)),
+            wp,
+        );
+        let allowance = two * (weighted_abs + BigFloat::one_prec(wp)) * ops * pow2_neg(wp - 8, wp);
+
+        Ok(LValue {
+            value,
+            tail_bound: tail,
+            rounding_allowance: allowance,
+            rounding_note: format!(
+                "L^({r})(E,1)/{r}! = 2 sum_(m <= {r}, m = {parity} mod 2) B_({r}-m) \
+                 sum_(n=1..{m_terms}) (a_n/n) G_m(2 pi n / sqrt({n})), with \
+                 epsilon = {eps} (exact global root number, Tate local data), \
+                 exact integer a_n, G_m(x) = (x/m!) int_1^inf e^(-xt)(log t)^m dt \
+                 (G_0 = e^-x, G_1 = E_1), and B_j = [u^j] exp((ln c + gamma) u + \
+                 sum_(k>=2) (-1)^(k+1) zeta(k) u^k / k) = [u^j] c^u / Gamma(1+u). \
+                 BigFloat arithmetic at {wp} bits (each G_m carries its own \
+                 cancellation budget). tail_bound = (sum_m |B_(r-m)|) * \
+                 2 * [4 e^(-c(M+1))/(1-e^(-c))] from 0 <= G_m(x) <= e^-x for \
+                 x >= 1 (log t <= t-1) and |a_n|/n <= 2 (Deligne + d(n) <= \
+                 2 sqrt(n)); rounding_allowance covers <= 16(M+4)({r}+2) \
+                 operations of relative error 2^-({wp}-8) on the \
+                 B-weighted term-magnitude sum (engineering bound, 64 guard \
+                 bits past the requested {digits} digits).",
+                n = self.conductor,
+                eps = self.epsilon,
+            ),
+        })
+    }
+
+    /// Truncation point M for a series whose tail is inflated by `factor`:
+    /// smallest M with factor·4e^{−c(M+1)}/(1−e^{−c}) < 10^{−(digits+3)}
+    /// (computed in f64; the bound itself is re-evaluated rigorously in
+    /// BigFloat for the returned envelope, so this only affects quality).
+    fn truncation_point_scaled(&self, digits: usize, factor: f64) -> usize {
+        let n =
+            <Integer as NumericConversion>::to_f64(&self.conductor).expect("conductor fits in f64");
+        let c = 2.0 * PI / n.sqrt();
+        let target = (digits as f64 + 3.0) * std::f64::consts::LN_10;
+        let m_plus_1 = (target + (4.0 * factor).ln() - (1.0 - (-c).exp()).ln()) / c;
+        (m_plus_1.ceil() as usize).max(10) + 2
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -591,6 +810,24 @@ pub enum AnalyticRank {
         l1_derivative: LValue,
         evidence: String,
     },
+    /// ord_{s=1} L(E,s) = `rank` ≥ 2, certified modulo the documented
+    /// rounding model: every Taylor coefficient below `rank` is known to
+    /// vanish EXACTLY (ε-parity from the functional equation, plus exact
+    /// external certificates for the same-parity ones — see
+    /// [`LFunction::analytic_rank_with_exact_vanishing`]), and
+    /// L^{(rank)}(1)/rank! is certified nonzero inside its rigorous-tail +
+    /// documented-rounding envelope.
+    ///
+    /// The showpiece: 389a1 has ε = +1 (so the order is even) and
+    /// L(389a,1) = 0 exactly by the Manin–Birch winding element, hence
+    /// ord ≥ 2; and L''(389a,1)/2! = 0.7593165… is certified nonzero. So
+    /// ord = 2 exactly — PROVED, not conjectural.
+    RankCertifiedModuloRounding {
+        rank: u32,
+        /// L^{(rank)}(1)/rank!, the certified-nonzero leading coefficient.
+        leading_coefficient: LValue,
+        evidence: String,
+    },
     /// ord_{s=1} L(E,s) ≥ 2 is certified (an exact L(1) = 0 certificate
     /// combined with even parity), but the exact order is NOT resolved.
     AtLeastTwoUnresolved {
@@ -600,17 +837,30 @@ pub enum AnalyticRank {
         known_vanishing: u32,
         evidence: String,
     },
+    /// ord_{s=1} L(E,s) ≥ `known_vanishing` ≥ 3 is certified (exact
+    /// vanishing certificates combined with the exact ε-parity), but the
+    /// exact order is NOT resolved: the candidate leading coefficient was
+    /// not certified nonzero, and numerics can never certify it zero.
+    /// (`AtLeastTwoUnresolved` is the `known_vanishing == 2` case, kept
+    /// separate for API stability.)
+    AtLeastNUnresolved {
+        parity: RankParity,
+        known_vanishing: u32,
+        evidence: String,
+    },
     /// Nothing certified either way; the reason records what is known.
     Unresolved { reason: String },
 }
 
 impl AnalyticRank {
-    /// The certified analytic rank, when there is one (0 or 1); `None`
-    /// for the unresolved variants.
+    /// The certified analytic rank, when there is one; `None` for the
+    /// unresolved variants. With the general Taylor machinery this is no
+    /// longer capped at 1.
     pub fn certified_value(&self) -> Option<u32> {
         match self {
             AnalyticRank::ZeroCertified { .. } => Some(0),
             AnalyticRank::OneCertifiedModuloRounding { .. } => Some(1),
+            AnalyticRank::RankCertifiedModuloRounding { rank, .. } => Some(*rank),
             _ => None,
         }
     }
@@ -624,7 +874,18 @@ impl fmt::Display for AnalyticRank {
                 f,
                 "1 (certified modulo documented rounding: L(1) = 0 exactly, L'(1) != 0)"
             ),
+            AnalyticRank::RankCertifiedModuloRounding { rank, .. } => write!(
+                f,
+                "{} (certified modulo documented rounding: L^(k)(1) = 0 exactly for \
+                 k < {}, L^({})(1) != 0)",
+                rank, rank, rank
+            ),
             AnalyticRank::AtLeastTwoUnresolved {
+                parity,
+                known_vanishing,
+                ..
+            }
+            | AnalyticRank::AtLeastNUnresolved {
                 parity,
                 known_vanishing,
                 ..
@@ -951,10 +1212,8 @@ impl LFunction {
         digits: usize,
         exact_l1_is_zero: Option<bool>,
     ) -> AnalyticRank {
-        let eps = global_root_number(&self.curve);
-
         if let Some(false) = exact_l1_is_zero {
-            if eps == Ok(-1) {
+            if global_root_number(&self.curve) == Ok(-1) {
                 panic!(
                     "contradictory exact certificates: external L(1) != 0 vs epsilon = -1 \
                      (which forces L(1) = 0); bug in an exact pipeline"
@@ -967,8 +1226,76 @@ impl LFunction {
                     .to_string(),
             };
         }
+        match exact_l1_is_zero {
+            Some(true) => self.analytic_rank_with_exact_vanishing(
+                digits,
+                1,
+                "external exact certificate: L(E,1) = 0 (e.g. a vanishing Manin-Birch \
+                 winding projection of the attached newform)",
+            ),
+            _ => self.analytic_rank_with_exact_vanishing(digits, 0, ""),
+        }
+    }
 
-        let eps = match eps {
+    /// The analytic rank, given EXACT (non-numeric) knowledge that
+    /// L^{(k)}(E,1) = 0 for every k < `exact_vanishing_below`.
+    ///
+    /// # The decision procedure
+    ///
+    /// Λ(s) = c^{−s}Γ(s)L(E,s) has the same order of vanishing at s = 1 as L
+    /// (Γ(1) = 1 ≠ 0), and Λ(1+u) = ε·Λ(1−u), so the Taylor coefficients Λ_m
+    /// vanish EXACTLY for every m of the wrong parity for ε. Because
+    /// L(1+u) = c·exp(P(u))·Λ(1+u) with a unit leading factor,
+    /// "L^{(k)}(1) = 0 for all k < v" is equivalent to "Λ_m = 0 for all
+    /// m < v". Hence:
+    ///
+    /// * the candidate order is r = the least integer ≥ v whose parity
+    ///   matches ε (even for ε = +1, odd for ε = −1), and ord ≥ r is then an
+    ///   EXACT statement;
+    /// * if L^{(r)}(1)/r! ([`CurveLSeries::l_derivative`]) is certified
+    ///   nonzero, then ord = r exactly — [`AnalyticRank::ZeroCertified`]
+    ///   (r = 0), [`AnalyticRank::OneCertifiedModuloRounding`] (r = 1), or
+    ///   [`AnalyticRank::RankCertifiedModuloRounding`] (r ≥ 2);
+    /// * otherwise nothing more is decided (numerics can never certify a
+    ///   zero): `AtLeastTwoUnresolved` / `AtLeastNUnresolved` when r ≥ 2 is
+    ///   itself certified, plain `Unresolved` when r ≤ 1.
+    ///
+    /// # The provenance requirement (read this)
+    ///
+    /// `exact_vanishing_below` must be backed by an EXACT algebraic
+    /// certificate, never by "the numeric value looked small". The only such
+    /// source wired into this workspace is the Manin–Birch winding element
+    /// (`rustmath-modular::ModularSymbolsGamma0::l1_vanishes`, exact rational
+    /// linear algebra), and it only certifies L(E,1) = 0 — i.e. v = 1.
+    ///
+    /// **There is no exact certificate for L'(E,1) = 0 anywhere in this
+    /// workspace.** So for a rank-3 curve such as 5077a1 (ε = −1, hence
+    /// L(1) = 0 by parity) the candidate order from v = 0 is r = 1; L'(1) is
+    /// truly zero and therefore cannot be certified nonzero; and the honest
+    /// answer is `Unresolved`. This machinery CANNOT certify analytic rank 3
+    /// for 5077a1 and does not pretend to. Rank 2 (389a1) is reachable
+    /// precisely because the one coefficient below it that parity does not
+    /// kill — L(1) itself — IS exactly certifiable.
+    ///
+    /// `provenance` is copied into the evidence string.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `provenance` is empty while `exact_vanishing_below ≥ 1`: an
+    /// unattributed exact certificate is exactly what this crate refuses to
+    /// launder.
+    pub fn analytic_rank_with_exact_vanishing(
+        &self,
+        digits: usize,
+        exact_vanishing_below: u32,
+        provenance: &str,
+    ) -> AnalyticRank {
+        assert!(
+            exact_vanishing_below == 0 || !provenance.is_empty(),
+            "analytic_rank_with_exact_vanishing: an exact vanishing claim needs a stated \
+             provenance (an EXACT algebraic certificate, never a small numeric value)"
+        );
+        let eps = match global_root_number(&self.curve) {
             Ok(e) => e,
             Err(reason) => {
                 return AnalyticRank::Unresolved {
@@ -980,86 +1307,114 @@ impl LFunction {
                 }
             }
         };
-
-        if exact_l1_is_zero == Some(true) && eps == 1 {
-            return AnalyticRank::AtLeastTwoUnresolved {
-                parity: RankParity::Even,
-                known_vanishing: 2,
-                evidence: "L(E,1) = 0 EXACTLY (external certificate) and epsilon = +1 \
-                    (order of vanishing even), so ord >= 2; nothing beyond 2 is \
-                    certified"
-                    .to_string(),
-            };
-        }
+        let parity = if eps == 1 {
+            RankParity::Even
+        } else {
+            RankParity::Odd
+        };
+        let p: u32 = if eps == 1 { 0 } else { 1 };
+        let r = if exact_vanishing_below <= p {
+            p
+        } else if (exact_vanishing_below - p) % 2 == 0 {
+            exact_vanishing_below
+        } else {
+            exact_vanishing_below + 1
+        };
 
         let ls = match CurveLSeries::new(&self.curve) {
             Ok(ls) => ls,
             Err(reason) => return AnalyticRank::Unresolved { reason },
         };
+        let lv = match ls.l_derivative(r, digits) {
+            Ok(lv) => lv,
+            Err(reason) => return AnalyticRank::Unresolved { reason },
+        };
 
-        if eps == 1 {
-            // exact_l1_is_zero is None here (Some(true) handled above,
-            // Some(false) short-circuited).
-            let lv = ls.l1(digits);
-            if lv.certified_nonzero() {
-                let evidence = format!(
-                    "epsilon = +1; |L(1)| = {} exceeds its certified error budget {} \
-                     ({} requested digits)",
-                    lv.value.to_decimal_string(12),
-                    lv.error_budget().to_decimal_string(6),
-                    digits
-                );
-                AnalyticRank::ZeroCertified {
+        let vanishing_evidence = || -> String {
+            let mut s = format!(
+                "L^(k)(E,1) = 0 EXACTLY for every k < {r}: the order of vanishing has the \
+                 parity of epsilon = {eps} (functional equation Lambda(1+u) = epsilon \
+                 Lambda(1-u), epsilon exact from Tate local data)"
+            );
+            if exact_vanishing_below >= 1 {
+                s.push_str(&format!(
+                    ", and the same-parity coefficients below {r} vanish by [{provenance}]"
+                ));
+            }
+            s
+        };
+
+        if lv.certified_nonzero() {
+            let evidence = format!(
+                "{}; |L^({r})(1)/{r}!| = {} exceeds its certified error budget {} \
+                 ({digits} requested digits)",
+                vanishing_evidence(),
+                lv.value.to_decimal_string(12),
+                lv.error_budget().to_decimal_string(6),
+            );
+            return match r {
+                0 => AnalyticRank::ZeroCertified {
                     l1: Some(lv),
                     evidence,
-                }
-            } else {
-                AnalyticRank::Unresolved {
-                    reason: format!(
-                        "epsilon = +1 and L(1) = {} is NOT certified nonzero at {} digits \
-                         (budget {}); numerics can never certify a zero, so the order is \
-                         0 (tiny value) or >= 2 (even parity) — unresolved",
-                        lv.value.to_decimal_string(12),
-                        digits,
-                        lv.error_budget().to_decimal_string(6)
-                    ),
-                }
-            }
-        } else {
-            // eps == -1: L(1) = 0 exactly; the derivative decides.
-            match ls.l1_derivative(digits) {
-                Ok(dv) => {
-                    if dv.certified_nonzero() {
-                        let evidence = format!(
-                            "L(1) = 0 EXACTLY (epsilon = -1 from Tate local data{}); \
-                             |L'(1)| = {} exceeds its certified error budget {} \
-                             ({} requested digits)",
-                            if exact_l1_is_zero == Some(true) {
-                                ", corroborated by the external exact certificate"
-                            } else {
-                                ""
-                            },
-                            dv.value.to_decimal_string(12),
-                            dv.error_budget().to_decimal_string(6),
-                            digits
-                        );
-                        AnalyticRank::OneCertifiedModuloRounding {
-                            l1_derivative: dv,
-                            evidence,
-                        }
-                    } else {
-                        AnalyticRank::Unresolved {
-                            reason: format!(
-                                "L(1) = 0 exactly (epsilon = -1) but L'(1) = {} is NOT \
-                                 certified nonzero at {} digits; order is odd and >= 1, \
-                                 could be 1 or >= 3 — unresolved",
-                                dv.value.to_decimal_string(12),
-                                digits
-                            ),
-                        }
+                },
+                1 => AnalyticRank::OneCertifiedModuloRounding {
+                    l1_derivative: lv,
+                    evidence,
+                },
+                _ => AnalyticRank::RankCertifiedModuloRounding {
+                    rank: r,
+                    leading_coefficient: lv,
+                    evidence,
+                },
+            };
+        }
+
+        match r {
+            0 => AnalyticRank::Unresolved {
+                reason: format!(
+                    "epsilon = +1 and L(1) = {} is NOT certified nonzero at {} digits \
+                     (budget {}); numerics can never certify a zero, so the order is \
+                     0 (tiny value) or >= 2 (even parity) — unresolved",
+                    lv.value.to_decimal_string(12),
+                    digits,
+                    lv.error_budget().to_decimal_string(6)
+                ),
+            },
+            1 => AnalyticRank::Unresolved {
+                reason: format!(
+                    "L(1) = 0 exactly (epsilon = -1) but L'(1) = {} is NOT \
+                     certified nonzero at {} digits (budget {}); order is odd and >= 1, \
+                     could be 1 or >= 3 — unresolved (no exact certificate for \
+                     L'(1) = 0 exists in this workspace, so a rank >= 3 curve such as \
+                     5077a1 CANNOT be resolved here)",
+                    lv.value.to_decimal_string(12),
+                    digits,
+                    lv.error_budget().to_decimal_string(6)
+                ),
+            },
+            _ => {
+                let evidence = format!(
+                    "{}; but L^({r})(1)/{r}! = {} is NOT certified nonzero at {digits} \
+                     digits (budget {}); numerics can never certify a zero, so the order \
+                     is {r} (tiny leading coefficient) or >= {r2} — unresolved",
+                    vanishing_evidence(),
+                    lv.value.to_decimal_string(12),
+                    lv.error_budget().to_decimal_string(6),
+                    r2 = r + 2,
+                );
+                if r == 2 {
+                    AnalyticRank::AtLeastTwoUnresolved {
+                        parity,
+                        known_vanishing: 2,
+                        evidence,
+                    }
+                } else {
+                    AnalyticRank::AtLeastNUnresolved {
+                        parity,
+                        known_vanishing: r,
+                        evidence,
                     }
                 }
-                Err(reason) => AnalyticRank::Unresolved { reason },
             }
         }
     }
@@ -1461,12 +1816,76 @@ mod tests {
         let lf = LFunction::new(curve(0, 0, 1, -1, 0));
         let r = lf.analytic_rank_with_exact_l1(22, Some(true));
         assert!(matches!(r, AnalyticRank::OneCertifiedModuloRounding { .. }));
-        // 389a1 + exact "L(1) = 0" (Cremona-table fact for the rank-2
-        // curve, supplied here as the documented external certificate —
-        // this test exercises the DECISION lattice, whose job is to
-        // combine it with the exact even parity): >= 2, unresolved beyond.
+        // 389a1 + exact "L(1) = 0": STRENGTHENED. This used to be the best
+        // the lattice could do (>= 2, unresolved beyond), because there was
+        // no L''(1). There is now: the exact zero plus even parity gives
+        // ord >= 2, and L''(1)/2! = 0.7593165... is certified nonzero, so
+        // the order is EXACTLY 2. (The full proof, with the winding
+        // certificate actually computed rather than asserted, is
+        // test_389a_analytic_rank_two_certified.)
         let lf = LFunction::new(curve(0, 1, 1, -2, 0));
         let r = lf.analytic_rank_with_exact_l1(16, Some(true));
+        match &r {
+            AnalyticRank::RankCertifiedModuloRounding { rank, .. } => assert_eq!(*rank, 2),
+            other => panic!("389a1 with exact zero: expected certified rank 2, got {other}"),
+        }
+        assert_eq!(r.certified_value(), Some(2));
+    }
+
+    /// THE RANK-4 REFUSAL — 234446a1 = [1,-1,0,-79,289] is the smallest
+    /// conductor of analytic rank 4 (ε = +1). It exercises the
+    /// `AtLeastTwoUnresolved` arm honestly: given the exact L(1) = 0
+    /// certificate, even parity forces ord ≥ 2, but L''(1)/2! is a TRUE zero,
+    /// so nothing beyond 2 is decided — and the machinery must say exactly
+    /// that rather than invent a 2 or a 4.
+    ///
+    /// It is also a PARI gate at r = 4: L''''(1)/4! = 8.943847395900889…
+    ///
+    /// PROVENANCE NOTE, read it: the L(234446a,1) = 0 certificate is a
+    /// Cremona/LMFDB table fact supplied BY THIS TEST to drive the decision
+    /// lattice. It is NOT computed in-crate — the winding element at level
+    /// 234446 is far out of reach — and the code never fabricates it: without
+    /// the certificate, `analytic_rank` on this curve is honestly
+    /// `Unresolved`, which is also asserted below.
+    #[test]
+    fn test_rank_four_curve_honest_refusal() {
+        let e = curve(1, -1, 0, -79, 289);
+        let ls = CurveLSeries::new(&e).unwrap();
+        assert_eq!(ls.conductor(), &Integer::from(234446));
+        assert_eq!(ls.root_number(), 1, "epsilon(234446a) = +1");
+
+        // r = 4 against PARI (lfun(...,1,4)/4!, realprecision 30).
+        let lv4 = ls.l_derivative(4, 6).unwrap();
+        assert!(
+            close_to(&lv4.value, "8.94384739590088904641759168347", 4),
+            "L''''(234446a,1)/4!; got {}",
+            lv4.value.to_decimal_string(14)
+        );
+        assert!(lv4.certified_nonzero());
+
+        // r = 2 is a TRUE zero: never certified nonzero.
+        let lv2 = ls.l_derivative(2, 6).unwrap();
+        assert!(
+            !lv2.certified_nonzero(),
+            "L''(234446a,1)/2! is a true zero; it must not be 'certified nonzero'"
+        );
+
+        let lf = LFunction::new(e);
+        // Without an exact certificate: honestly Unresolved (L(1) is a true
+        // zero and numerics can never certify a zero).
+        assert!(matches!(
+            lf.analytic_rank(6),
+            AnalyticRank::Unresolved { .. }
+        ));
+
+        // With the (externally supplied, clearly labelled) exact certificate:
+        // ord >= 2 certified, exact order NOT resolved.
+        let r = lf.analytic_rank_with_exact_vanishing(
+            6,
+            1,
+            "L(234446a1, 1) = 0: Cremona/LMFDB table fact, supplied by this test to \
+             drive the decision lattice; NOT computed in-crate",
+        );
         match &r {
             AnalyticRank::AtLeastTwoUnresolved {
                 parity,
@@ -1476,7 +1895,7 @@ mod tests {
                 assert_eq!(*parity, RankParity::Even);
                 assert_eq!(*known_vanishing, 2);
             }
-            other => panic!("389a1 with exact zero: expected AtLeastTwoUnresolved, got {other}"),
+            other => panic!("234446a1: expected AtLeastTwoUnresolved, got {other}"),
         }
         assert_eq!(r.certified_value(), None);
     }
@@ -1559,6 +1978,403 @@ mod tests {
         let rank = l_func.analytic_rank(20);
         assert!(matches!(rank, AnalyticRank::ZeroCertified { .. }));
         assert_eq!(rank.certified_value(), Some(0));
+    }
+
+    /// The general Taylor machinery must REPRODUCE the two PARI-validated
+    /// special cases it generalises — they are independent derivations
+    /// (l1: the plain e^{-x} kernel; l1_derivative: the E_1 kernel; both
+    /// with no Gamma-factor correction at all) and the general one goes
+    /// through the B_j = [u^j] c^u/Gamma(1+u) expansion and the G_m family.
+    /// Agreement to the full requested precision is a strong cross-check of
+    /// both.
+    #[test]
+    fn test_l_derivative_reproduces_l1_and_l1_derivative() {
+        for (label, a) in [
+            ("11a1", [0i64, -1, 1, -10, -20]),
+            ("14a1", [1, 0, 1, 4, -6]),
+            ("15a1", [1, 1, 1, -10, -10]),
+            ("37a1", [0, 0, 1, -1, 0]),
+            ("65a1", [1, 0, 0, -1, 0]),
+        ] {
+            let e = curve(a[0], a[1], a[2], a[3], a[4]);
+            let ls = CurveLSeries::new(&e).unwrap();
+            let old = ls.l1(24);
+            let new = ls.l_derivative(0, 24).unwrap();
+            let budget = old.error_budget() + new.error_budget();
+            assert!(
+                OrderedRing::abs(&(old.value.clone() - new.value.clone())) <= budget,
+                "{}: l1 = {} vs l_derivative(0) = {}",
+                label,
+                old.value.to_decimal_string(30),
+                new.value.to_decimal_string(30)
+            );
+            if ls.root_number() == -1 {
+                let old = ls.l1_derivative(24).unwrap();
+                let new = ls.l_derivative(1, 24).unwrap();
+                let budget = old.error_budget() + new.error_budget();
+                assert!(
+                    OrderedRing::abs(&(old.value.clone() - new.value.clone())) <= budget,
+                    "{}: l1_derivative = {} vs l_derivative(1) = {}",
+                    label,
+                    old.value.to_decimal_string(30),
+                    new.value.to_decimal_string(30)
+                );
+            }
+        }
+    }
+
+    /// THE PARI CROSS-CHECK TABLE for L^(r)(E,1)/r!, r = 0..3, over curves of
+    /// analytic rank 0, 1, 2 and 3. Every expected value was produced by
+    /// PARI/GP (`lfun(lfuncreate(ellinit(m)), 1, r)/r!`, realprecision 45)
+    /// BEFORE this test was written; none was read out of the code under
+    /// test. Truths are also required to lie inside the certified envelope.
+    ///
+    /// Note what this table shows about parity: 11a/14a/15a have ε = +1 and
+    /// nonzero ODD derivatives (L'(11a,1) = 0.3087085…). Only the order of
+    /// vanishing is parity-constrained, not the individual coefficients.
+    #[test]
+    fn test_l_derivative_pari_table() {
+        // (label, model, digits, [L^(r)(1)/r! for r = 0..3], each None when
+        // it is a true zero PARI reports as ~1e-61)
+        let table: [(&str, [i64; 5], usize, [Option<&str>; 4]); 8] = [
+            (
+                "11a1",
+                [0, -1, 1, -10, -20],
+                25,
+                [
+                    Some("0.253841860855910684337758923350909461043898448"),
+                    Some("0.308708533963172285620043118807185401969897135"),
+                    Some("0.0113280542179201936918730233038576078627378839"),
+                    Some("-0.0367068776204353155007383441280255754574937739"),
+                ],
+            ),
+            (
+                "14a1",
+                [1, 0, 1, 4, -6],
+                25,
+                [
+                    Some("0.330223659344480539028261946122834877540452341"),
+                    Some("0.361781175087022732524319291172809243498589902"),
+                    Some("-0.0250570050130642908232144428961488992859162723"),
+                    Some("-0.0398795775038863436206425633312843506560127165"),
+                ],
+            ),
+            (
+                "15a1",
+                [1, 1, 1, -10, -10],
+                25,
+                [
+                    Some("0.350150760583150505795045209202429651153491832"),
+                    Some("0.371533637940696127893913187766225954453710322"),
+                    Some("-0.0372265714473849082388727875661810327310985936"),
+                    Some("-0.0386317102806347212091353094131204337653256611"),
+                ],
+            ),
+            (
+                "37a1",
+                [0, 0, 1, -1, 0],
+                25,
+                [
+                    None,
+                    Some("0.305999773834052301820483683321676474452637775"),
+                    Some("0.186547797268161964173817368779507591454082445"),
+                    Some("-0.136791463097187666302582216428158570769194708"),
+                ],
+            ),
+            (
+                "43a1",
+                [0, 1, 1, 0, 0],
+                25,
+                [
+                    None,
+                    Some("0.343523974618478230618071163921737442803975861"),
+                    Some("0.183611047592843076217012896804098371078584327"),
+                    Some("-0.162711973044460744670877003552142554207633283"),
+                ],
+            ),
+            (
+                "53a1",
+                [1, -1, 1, 0, 0],
+                25,
+                [
+                    None,
+                    Some("0.435863824177857162053863132073440756333621248"),
+                    Some("0.187398245341680458068415226645847178619386032"),
+                    Some("-0.221676918786663789132217152904784937784434811"),
+                ],
+            ),
+            (
+                // rank 2: L(1) and L'(1) are TRUE zeros, so no expectation is
+                // asserted for them beyond "inside the envelope"; r = 2, 3 are
+                // pinned to PARI.
+                "389a1",
+                [0, 1, 1, -2, 0],
+                20,
+                [
+                    None,
+                    None,
+                    Some("0.759316500288426770230192607894722019078097516"),
+                    Some("-0.430302337583361999290351775060044236190415547"),
+                ],
+            ),
+            (
+                "433a1",
+                [1, 0, 0, 0, 1],
+                18,
+                [
+                    None,
+                    None,
+                    Some("0.947020780865814533489726400980751253204348358"),
+                    Some("-0.587414387532858546773380277086852900757089980"),
+                ],
+            ),
+        ];
+        for (label, m, digits, expect) in &table {
+            let e = curve(m[0], m[1], m[2], m[3], m[4]);
+            let ls = CurveLSeries::new(&e).unwrap();
+            for (r, want) in expect.iter().enumerate() {
+                let lv = ls.l_derivative(r as u32, *digits).unwrap();
+                match want {
+                    Some(truth) => {
+                        let prec = RealField::precision(&lv.value).max(320);
+                        let t = BigFloat::from_decimal_str(truth, prec).unwrap();
+                        assert!(
+                            OrderedRing::abs(&(lv.value.clone() - t)) < lv.error_budget(),
+                            "{} r={}: PARI {} outside the certified envelope of {} \
+                             (budget {})",
+                            label,
+                            r,
+                            truth,
+                            lv.value.to_decimal_string(30),
+                            lv.error_budget().to_decimal_string(6)
+                        );
+                        assert!(
+                            close_to(&lv.value, truth, digits - 4),
+                            "{} r={}: want {}, got {}",
+                            label,
+                            r,
+                            truth,
+                            lv.value.to_decimal_string(digits + 6)
+                        );
+                        assert!(
+                            lv.certified_nonzero(),
+                            "{} r={}: should be certified nonzero",
+                            label,
+                            r
+                        );
+                    }
+                    None => {
+                        // a TRUE zero: numerics must not certify it nonzero,
+                        // and the value must sit inside its own error budget.
+                        assert!(
+                            !lv.certified_nonzero(),
+                            "{} r={}: a true zero was 'certified nonzero' — bug",
+                            label,
+                            r
+                        );
+                        assert!(
+                            OrderedRing::abs(&lv.value) < lv.error_budget()
+                                || Ring::is_zero(&lv.value),
+                            "{} r={}: |{}| should be within the budget {}",
+                            label,
+                            r,
+                            lv.value.to_decimal_string(30),
+                            lv.error_budget().to_decimal_string(6)
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    /// 5077a1 (analytic rank 3): L'''(1)/3! = 1.7318499001193006898 (PARI)
+    /// is reproduced by the general formula — but see
+    /// `test_5077a_rank_three_is_NOT_certifiable` for why that value alone
+    /// does NOT certify the rank.
+    #[test]
+    fn test_l_derivative_5077a_rank3() {
+        let e = curve(0, 0, 1, -7, 6);
+        let ls = CurveLSeries::new(&e).unwrap();
+        assert_eq!(ls.conductor(), &Integer::from(5077));
+        assert_eq!(ls.root_number(), -1);
+        let lv = ls.l_derivative(3, 12).unwrap();
+        assert!(
+            close_to(
+                &lv.value,
+                "1.73184990011930068979197508506015284495439273",
+                8
+            ),
+            "L'''(5077a,1)/3! to 8 digits; got {}",
+            lv.value.to_decimal_string(20)
+        );
+        assert!(lv.certified_nonzero());
+        let truth = BigFloat::from_decimal_str(
+            "1.73184990011930068979197508506015284495439273",
+            RealField::precision(&lv.value).max(320),
+        )
+        .unwrap();
+        assert!(
+            OrderedRing::abs(&(lv.value.clone() - truth)) < lv.error_budget(),
+            "PARI truth inside the certified envelope"
+        );
+        // L'(1) is a TRUE zero here; numerics must refuse to certify it.
+        let d1 = ls.l_derivative(1, 12).unwrap();
+        assert!(!d1.certified_nonzero());
+    }
+
+    /// THE SHOWPIECE — 389a1 has analytic rank EXACTLY 2, fully proved:
+    ///
+    /// * ε(389a) = +1, exactly, from Tate local data (`crate::rootnumber`),
+    ///   so ord_{s=1} L is EVEN (functional equation, modularity);
+    /// * L(389a,1) = 0 EXACTLY, by the Manin–Birch winding element: the
+    ///   winding projection π_f(e) of the attached weight-2 newform vanishes,
+    ///   which is exact rational linear algebra in the modular-symbol space
+    ///   (`rustmath_modular::…::l1_vanishes`), NOT a small numeric value.
+    ///   Hence ord ≥ 1, hence ord ≥ 2 by parity;
+    /// * L''(389a,1)/2! = 0.759316500288… is certified NONZERO (|value|
+    ///   exceeds tail bound + rounding allowance), so ord ≤ 2.
+    ///
+    /// ⇒ ord = 2. Nothing here assumes BSD or any other conjecture (beyond
+    /// modularity, which is a theorem).
+    #[test]
+    fn test_389a_analytic_rank_two_certified() {
+        use rustmath_modular::modsym::decomposition::{HeckeEigenvalue, SummandHeckeAction};
+        use rustmath_modular::modsym::ModularSymbolsGamma0;
+        use rustmath_rationals::Rational;
+
+        let e = curve(0, 1, 1, -2, 0);
+        let ls = CurveLSeries::new(&e).unwrap();
+        assert_eq!(ls.conductor(), &Integer::from(389));
+        assert_eq!(ls.root_number(), 1, "epsilon(389a) = +1");
+
+        // The EXACT external certificate: the winding element kills the 389a
+        // newform's Hecke summand <=> L(389a,1) = 0. The summand is pinned by
+        // its Hecke eigenvalues, which must equal the curve's own exact a_p
+        // (Eichler-Shimura) -- a_2 = -2, a_3 = -2, a_5 = -3 for 389a.
+        let ms = ModularSymbolsGamma0::new(389);
+        let dec = ms
+            .cuspidal_hecke_decomposition()
+            .expect("cuspidal Hecke decomposition at level 389");
+        let want = |p: i64| Rational::from_integer(Integer::from(e.compute_a_p(&Integer::from(p))));
+        let mut vanishes = None;
+        for w in dec.summands() {
+            let matches = [2i64, 3, 5].iter().all(|&p| {
+                matches!(
+                    ms.hecke_action_on_summand(w, p as u64),
+                    Ok(SummandHeckeAction::Eigenvalue(HeckeEigenvalue::Rational(ref a)))
+                        if *a == want(p)
+                )
+            });
+            if matches {
+                assert!(vanishes.is_none(), "389a's summand must be unique");
+                vanishes = Some(ms.l1_vanishes(w).expect("winding projection"));
+            }
+        }
+        let vanishes = vanishes.expect("the 389a newform must appear in the decomposition");
+        assert!(
+            vanishes,
+            "Manin-Birch: the winding projection of the 389a newform must vanish"
+        );
+
+        // Now the lattice, fed the EXACT certificate.
+        let lf = LFunction::new(e.clone());
+        let r = lf.analytic_rank_with_exact_vanishing(
+            20,
+            1,
+            "Manin-Birch winding element: pi_f(e) = 0 in the level-389 modular \
+             symbol space (exact rational linear algebra, rustmath-modular)",
+        );
+        match &r {
+            AnalyticRank::RankCertifiedModuloRounding {
+                rank,
+                leading_coefficient,
+                ..
+            } => {
+                assert_eq!(*rank, 2);
+                assert!(leading_coefficient.certified_nonzero());
+                assert!(
+                    close_to(
+                        &leading_coefficient.value,
+                        "0.759316500288426770230192607894722019078097516",
+                        16
+                    ),
+                    "L''(389a,1)/2! ; got {}",
+                    leading_coefficient.value.to_decimal_string(26)
+                );
+            }
+            other => panic!("389a1: expected certified rank 2, got {other}"),
+        }
+        assert_eq!(r.certified_value(), Some(2));
+        // and the same certificate reached through the older seam
+        assert_eq!(
+            lf.analytic_rank_with_exact_l1(20, Some(true))
+                .certified_value(),
+            Some(2)
+        );
+        // WITHOUT the exact certificate nothing is certified: numerics alone
+        // can never establish L(389a,1) = 0.
+        assert_eq!(lf.analytic_rank(20).certified_value(), None);
+    }
+
+    /// THE HONEST NON-RESULT — 5077a1 has analytic rank 3, and this machinery
+    /// CANNOT certify that, because the chain of exact zeros breaks:
+    /// ε = −1 gives L(1) = 0 for free (odd order), but the next coefficient
+    /// that must vanish, L'(1), is of the RIGHT parity — parity says nothing
+    /// about it — and there is no exact certificate for L'(E,1) = 0 anywhere
+    /// in this workspace (the winding element only certifies L(1)). Numerics
+    /// can never certify the zero. So the answer is `Unresolved`, and it
+    /// stays `Unresolved` no matter how many digits are requested.
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_5077a_rank_three_is_NOT_certifiable() {
+        let lf = LFunction::new(curve(0, 0, 1, -7, 6));
+        for digits in [12, 20] {
+            let r = lf.analytic_rank(digits);
+            assert!(
+                matches!(r, AnalyticRank::Unresolved { .. }),
+                "5077a1 at {} digits: expected Unresolved, got {}",
+                digits,
+                r
+            );
+            assert_eq!(r.certified_value(), None);
+            if let AnalyticRank::Unresolved { reason } = &r {
+                assert!(
+                    reason.contains("CANNOT be resolved here"),
+                    "reason: {}",
+                    reason
+                );
+            }
+        }
+    }
+
+    /// The AtLeastN arm: fed an exact "L(1) = L'(1) = L''(1) = 0" claim, a
+    /// curve of true analytic rank 3 with ε = −1 lands on the certified
+    /// lower bound 3 and, if the leading coefficient is certified nonzero,
+    /// on rank 3. (The certificate is supplied here to exercise the DECISION
+    /// lattice; the crate has no exact source for it, which is exactly what
+    /// `test_5077a_rank_three_is_NOT_certifiable` records.)
+    #[test]
+    fn test_rank_three_lattice_given_an_exact_certificate() {
+        let lf = LFunction::new(curve(0, 0, 1, -7, 6));
+        let r = lf.analytic_rank_with_exact_vanishing(
+            12,
+            3,
+            "HYPOTHETICAL certificate, supplied by this test only to exercise the \
+             decision lattice; no such exact source exists in the workspace",
+        );
+        match &r {
+            AnalyticRank::RankCertifiedModuloRounding { rank, .. } => assert_eq!(*rank, 3),
+            other => panic!("expected certified rank 3 from the lattice, got {other}"),
+        }
+        assert_eq!(r.certified_value(), Some(3));
+    }
+
+    /// An unattributed exact-vanishing claim is refused.
+    #[test]
+    #[should_panic(expected = "needs a stated provenance")]
+    fn test_exact_vanishing_needs_provenance() {
+        let lf = LFunction::new(curve(0, 1, 1, -2, 0));
+        let _ = lf.analytic_rank_with_exact_vanishing(12, 1, "");
     }
 
     #[test]

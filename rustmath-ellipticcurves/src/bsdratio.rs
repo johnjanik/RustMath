@@ -53,6 +53,22 @@
 //! positive perfect-square integer (Cassels: |Ш| is a square when finite,
 //! given that the pairing is alternating and Ш finite under BSD).
 //!
+//! Rank r ≥ 2 ([`EllipticCurve::analytic_sha_rank_r`], the general case —
+//! the rank-1 formula above is its r = 1 instance):
+//!
+//! ```text
+//! Ш_an = ( L^(r)(E,1)/r! ) · |T|² / (Ω_E · Reg · ∏_p c_p),
+//! ```
+//!
+//! with Reg the r × r Néron–Tate Gram determinant, taken from
+//! [`EllipticCurve::regulator_checked`] so that the generators' independence
+//! is a CERTIFIED interval statement (|det| > its own error bound) and not a
+//! float compared against zero. Independence gives rank E(Q) ≥ r
+//! unconditionally, and a certified-nonzero L^(r)(1)/r! gives ord ≤ r; BSD
+//! (rank = ord) then forces rank = ord = r. What remains assumed, always, is
+//! BSD itself and that the generators have index 1 in E(Q)/tors — p-saturation
+//! ([`crate::mordellweil`]) bounds but never eliminates that gap.
+//!
 //! ## Error accounting (documented model)
 //!
 //! Numeric legs carry: L-values — rigorous tail + documented rounding
@@ -70,6 +86,7 @@
 
 use crate::curve::{EllipticCurve, Point};
 use crate::lfunction::{CurveLSeries, LValue};
+use crate::mordellweil::MordellWeilSubgroup;
 use rustmath_core::ordering::OrderedRing;
 use rustmath_integers::prime::factor;
 use rustmath_integers::Integer;
@@ -123,7 +140,10 @@ pub struct AnalyticShaAssumingBSD {
     /// Its integer square root (Cassels: the order is a perfect square;
     /// asserted during assembly).
     pub sqrt_order: u32,
-    /// Which assembly produced it (0 or 1 = the analytic rank used).
+    /// The rank r the assembly used — 0 (rational recognition of L(1)/Ω), 1,
+    /// or any r ≥ 2 via [`EllipticCurve::analytic_sha_rank_r`]. Under BSD
+    /// (and with certified-independent generators) this is also the algebraic
+    /// rank and the order of vanishing; see the provenance.
     pub rank: u32,
     /// CERTIFIED closeness of the numeric assembly to `order` (exact
     /// rational arithmetic in the rank-0 path after recognition, so there
@@ -468,6 +488,238 @@ impl EllipticCurve {
             provenance,
         })
     }
+
+    /// The analytic order of Ш at **arbitrary rank r = `generators.len()`**,
+    /// ASSUMING BSD and ASSUMING the generators generate E(Q)/tors:
+    ///
+    /// ```text
+    /// Ш_an  =  ( L^(r)(E,1)/r! ) · |T|²  /  ( Ω_E · Reg · ∏_p c_p ).
+    /// ```
+    ///
+    /// The legs: `l_derivative(r, digits)` ([`crate::ltaylor`], rigorous tail
+    /// bound), `real_period` (AGM on the minimal model, all real components),
+    /// [`EllipticCurve::regulator_checked`] (Gram determinant WITH an error
+    /// bound — dependent generators are refused, never silently accepted),
+    /// the exact torsion order and the exact Tamagawa product.
+    ///
+    /// # What r = the analytic rank rests on
+    ///
+    /// * The r generators are certified independent, so **rank E(Q) ≥ r**
+    ///   unconditionally.
+    /// * L^(r)(E,1)/r! is certified nonzero, so **ord_{s=1} L ≤ r**
+    ///   unconditionally (given modularity, a theorem).
+    /// * ASSUMING BSD (rank = ord) these force rank = ord = r. That is the
+    ///   *only* place the rank enters; the function does not need — and never
+    ///   claims — an independent certificate that L^(k)(1) = 0 for k < r.
+    ///   (For 389a1 such a certificate does exist and is exercised in the
+    ///   showpiece test; nothing here depends on it.)
+    ///
+    /// The root number is checked against the parity of r first (ε = (−1)^r),
+    /// which is exact and rules out an r of the wrong parity outright.
+    ///
+    /// # Honest errors, never guesses
+    ///
+    /// ε of the wrong parity; L^(r)(1)/r! not certified nonzero; a generator
+    /// off the curve or torsion; generators not certified independent; the
+    /// certified interval around the assembly containing no unique positive
+    /// integer; that integer not a perfect square.
+    ///
+    /// **Cassels' square check is a genuine (though not decisive) guard on
+    /// unsaturated input**: if the supplied points generate only an index-m
+    /// subgroup of E(Q)/tors then Reg is m² too large and the assembly comes
+    /// out as Ш_an/m², which is generally not a positive square integer and is
+    /// then refused. It can pass silently only when m² divides Ш_an and the
+    /// quotient is still square — so a pass is evidence, not a proof, of
+    /// saturation. Use [`crate::mordellweil::MordellWeilSubgroup::saturate`]
+    /// and [`Self::analytic_sha_from_mordell_weil`] to record what was
+    /// actually proved.
+    pub fn analytic_sha_rank_r(
+        &self,
+        generators: &[Point],
+        digits: usize,
+    ) -> Result<AnalyticShaAssumingBSD, String> {
+        let r = generators.len();
+        if r == 0 {
+            return self.analytic_sha_rank0(digits);
+        }
+        let ls = CurveLSeries::new(self)?;
+        let eps_expected: i8 = if r.is_multiple_of(2) { 1 } else { -1 };
+        if ls.root_number() != eps_expected {
+            return Err(format!(
+                "analytic_sha_rank_r: the exact root number is epsilon = {}, so the order of \
+                 vanishing is {} — it cannot equal r = {}. Refusing (the generators, the \
+                 curve, or r is wrong).",
+                ls.root_number(),
+                if ls.root_number() == 1 { "even" } else { "odd" },
+                r
+            ));
+        }
+        for g in generators {
+            if !self.is_on_curve(g) {
+                return Err(format!(
+                    "analytic_sha_rank_r: the supplied point ({}, {}) is not on the curve",
+                    g.x, g.y
+                ));
+            }
+            if self.point_order(g).is_some() {
+                return Err(
+                    "analytic_sha_rank_r: a supplied generator is torsion — it contributes \
+                     nothing to the regulator (which would then be singular)"
+                        .to_string(),
+                );
+            }
+        }
+
+        let lv = ls.l_derivative(r as u32, digits)?;
+        if !lv.certified_nonzero() {
+            return Err(format!(
+                "analytic_sha_rank_r: L^({})(E,1)/{}! = {} is NOT certified nonzero at {} \
+                 digits (budget {}) — the analytic rank may exceed {}, and numerics can never \
+                 certify a zero. Refusing.",
+                r,
+                r,
+                lv.value.to_decimal_string(12),
+                digits,
+                lv.error_budget().to_decimal_string(6),
+                r
+            ));
+        }
+
+        let wp = (digits as f64 * LOG2_10).ceil() as u64 + 64;
+        let reg = self.regulator_checked(generators, wp)?;
+        let omega = self.real_period(wp);
+        let t = self.torsion_subgroup().order;
+        let cp = tamagawa_product(self);
+
+        let t2_bf = BigFloat::from_integer(&Integer::from((t as i64) * (t as i64)), wp);
+        let cp_bf = BigFloat::from_integer(&Integer::from(cp as i64), wp);
+        let reg_w = reg.value.clone().with_precision(wp);
+        let omega_w = omega.clone().with_precision(wp);
+        let denom = omega_w * reg_w.clone() * cp_bf;
+        let s = lv.value.clone().with_precision(wp) * t2_bf / denom;
+
+        // Relative-error combination (module docs): L^(r) contributes
+        // e_L/|L^(r)|, Omega contributes 2^{-wp}, Reg contributes
+        // err_Reg/|Reg| (both certified intervals); a x2 headroom absorbs the
+        // second-order terms and the roundings of the combination itself.
+        let e_l = lv.error_budget().with_precision(wp);
+        let abs_v = OrderedRing::abs(&lv.value).with_precision(wp);
+        let two = BigFloat::from_integer(&Integer::from(2), wp);
+        let rel = e_l / abs_v
+            + pow2_neg(wp - 1, wp)
+            + reg.error_bound.clone().with_precision(wp) / OrderedRing::abs(&reg_w);
+        let bound = two * OrderedRing::abs(&s) * rel;
+
+        let k = s.round_int();
+        let k_bf = BigFloat::from_integer(&k, wp);
+        let diff = OrderedRing::abs(&(s.clone() - k_bf));
+        if !certified_less(&diff, &bound) {
+            return Err(format!(
+                "analytic_sha_rank_r: the rank-{} assembly = {} differs from the nearest \
+                 integer {} by {}, EXCEEDING the certified bound {} — refusing (raise digits, \
+                 or the generators do not generate E(Q)/tors, or BSD fails here)",
+                r,
+                s.to_decimal_string(20),
+                k,
+                diff.to_decimal_string(6),
+                bound.to_decimal_string(6)
+            ));
+        }
+        if !certified_less(
+            &bound,
+            &BigFloat::from_rational(&Rational::new(1, 2).unwrap(), wp),
+        ) {
+            return Err(format!(
+                "analytic_sha_rank_r: certified bound {} >= 1/2 cannot pin an integer \
+                 (raise digits)",
+                bound.to_decimal_string(6)
+            ));
+        }
+        if k.signum() <= 0 {
+            return Err(format!(
+                "analytic_sha_rank_r: Sha_an = {} is not positive (bug or wrong inputs)",
+                k
+            ));
+        }
+        let root = k.sqrt().expect("nonnegative");
+        if &root * &root != k {
+            return Err(format!(
+                "analytic_sha_rank_r: Sha_an = {} is NOT a perfect square (Cassels: |Sha| is \
+                 a square when finite). Either the supplied points generate only an index-m \
+                 subgroup of E(Q)/tors — which inflates Reg by m² and deflates this assembly \
+                 to Sha_an/m² — or BSD fails here. Refusing.",
+                k
+            ));
+        }
+
+        let provenance = format!(
+            "rank-{} assembly, ASSUMING BSD *and* ASSUMING the {} supplied points generate \
+             E(Q)/tors (index 1 — NOT proved here; this crate computes no height-difference \
+             bound and no index bound). Sha_an = L^({})(E,1)/{}! · |T|² / (Omega · Reg · \
+             prod c_p). Legs: L^({})(E,1)/{}! = {} certified nonzero ({} digits, tail + \
+             rounding budget {}; exact root number epsilon = {} has the right parity); \
+             Omega = {} (AGM, global minimal model, all real components); Reg = {} \
+             (Neron-Tate Gram determinant, CERTIFIED nonsingular: |det| > error bound {}, so \
+             the points are independent and rank E(Q) >= {} unconditionally); |T| = {} \
+             (exact); prod c_p = {} (Tate). Under BSD, rank = ord <= {} (L^({}) != 0) and \
+             rank >= {} (independence), hence rank = ord = {}. Cassels' square check passed \
+             (a guard against unsaturated input, not a proof of saturation).",
+            r,
+            r,
+            r,
+            r,
+            r,
+            r,
+            lv.value.to_decimal_string(20),
+            digits,
+            lv.error_budget().to_decimal_string(6),
+            ls.root_number(),
+            omega.to_decimal_string(20),
+            reg.value.to_decimal_string(20),
+            reg.error_bound.to_decimal_string(6),
+            r,
+            t,
+            cp,
+            r,
+            r,
+            r,
+            r,
+        );
+        Ok(AnalyticShaAssumingBSD {
+            order: k.to_i64() as u32,
+            sqrt_order: root.to_i64() as u32,
+            rank: r as u32,
+            certification_bound: bound,
+            provenance,
+        })
+    }
+
+    /// [`Self::analytic_sha_rank_r`] driven by a [`MordellWeilSubgroup`], so
+    /// that whatever saturation was actually proved lands in the provenance.
+    ///
+    /// This still ASSUMES BSD and still ASSUMES index 1: `saturated_up_to =
+    /// Some(B)` proves only p-saturation for p ≤ B, never a basis.
+    pub fn analytic_sha_from_mordell_weil(
+        &self,
+        mw: &MordellWeilSubgroup,
+        digits: usize,
+    ) -> Result<AnalyticShaAssumingBSD, String> {
+        let mut sha = self.analytic_sha_rank_r(&mw.generators, digits)?;
+        sha.provenance = format!(
+            "{} GENERATORS: {} SATURATION: {}",
+            sha.provenance,
+            mw.provenance,
+            match mw.saturated_up_to {
+                Some(b) => format!(
+                    "p-saturated for every prime p <= {} (proved, via division polynomials). \
+                     Primes above {} are UNTESTED, so index 1 remains an ASSUMPTION.",
+                    b, b
+                ),
+                None => "NONE proved — index 1 is a bare assumption.".to_string(),
+            }
+        );
+        Ok(sha)
+    }
 }
 
 #[cfg(test)]
@@ -713,6 +965,367 @@ mod tests {
             d < tol,
             "L/Omega of 11a1 to 28 digits, got {}",
             r.ratio.to_decimal_string(32)
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // Rank >= 2
+    // -----------------------------------------------------------------------
+
+    fn close_to(a: &BigFloat, decimal: &str, k: usize) -> bool {
+        let prec = RealField::precision(a).max(256);
+        let b = BigFloat::from_decimal_str(decimal, prec).unwrap();
+        let tol_str = format!("0.{}1", "0".repeat(k - 1));
+        let tol = BigFloat::from_decimal_str(&tol_str, prec).unwrap();
+        OrderedRing::abs(&(a.clone() - b)) < tol
+    }
+
+    /// The rank-r entry point reproduces the rank-1 one where they overlap:
+    /// 37a1 with its generator, through `analytic_sha_rank_r(&[P], ·)`, must
+    /// give the same Ш_an = 1 as the (unchanged) `analytic_sha_rank1`.
+    #[test]
+    fn test_rank_r_agrees_with_rank1_on_37a() {
+        let e = curve([0, 0, 1, -1, 0]);
+        let gen = Point::from_integers(0, 0);
+        let a = e.analytic_sha_rank1(&gen, 26).unwrap();
+        let b = e.analytic_sha_rank_r(&[gen], 26).unwrap();
+        assert_eq!((a.order, a.rank), (1, 1));
+        assert_eq!((b.order, b.rank), (1, 1));
+        assert!(b.provenance.contains("ASSUMING BSD"));
+        // r = 0 delegates to the rank-0 assembly
+        let e11 = curve([0, -1, 1, -10, -20]);
+        let z = e11.analytic_sha_rank_r(&[], 26).unwrap();
+        assert_eq!((z.order, z.rank), (1, 0));
+    }
+
+    /// *** THE RANK-2 SHOWPIECE — 389a1 ***
+    ///
+    /// Generators FOUND by naive search (not seeded), certified independent,
+    /// p-saturated for p ≤ 5, then run through the rank-2 BSD assembly:
+    ///
+    /// ```text
+    /// L''(389a,1)/2! · |T|² / (Omega · Reg · prod c_p)  ==  1
+    /// ```
+    ///
+    /// Every constant PARI-derived BEFORE the assertions (realprecision 40):
+    ///   ellglobalred → N = 389, prod c_p = 1 ; elltors → |T| = 1
+    ///   2·E.omega[1] = 4.98042512171011015064271558388460492  (Delta > 0 ⇒
+    ///     TWO real components; the crate's `real_period` integrates over all
+    ///     of E(R), which is the Omega that BSD wants)
+    ///   matdet(ellheightmatrix) = 0.152460177943143751624324757049455823
+    ///   lfun(E,1,2)/2!          = 0.759316500288426770230192607894722019
+    ///   and PARI's own BSD quotient of these is 1.000000000000000000000000000000000000000.
+    ///
+    /// This one test exercises: naive point search, canonical heights, the
+    /// certified regulator, division polynomials + p-saturation, exact Tate
+    /// local data (c_p), the exact torsion, the exact root number, the AGM
+    /// period and the order-2 Taylor coefficient of L.
+    #[test]
+    fn test_389a_rank_two_bsd_showpiece() {
+        use crate::descent::TwoDescent;
+        use crate::mordellweil::MordellWeilSubgroup;
+
+        let e = curve([0, 1, 1, -2, 0]);
+        assert_eq!(e.compute_conductor(), Integer::from(389));
+        assert_eq!(tamagawa_product(&e), 1, "389a: prod c_p");
+        assert_eq!(e.torsion_subgroup().order, 1, "389a: |T|");
+        assert_eq!(crate::global_root_number(&e), Ok(1), "389a: epsilon = +1");
+
+        // 1. FIND the generators (no seeding).
+        let mut affine: Vec<Point> = TwoDescent::new(&e)
+            .find_rational_points(4)
+            .into_iter()
+            .filter(|p| !p.infinity)
+            .collect();
+        affine.sort_by(|a, b| {
+            EllipticCurve::naive_height(a, 64)
+                .partial_cmp(&EllipticCurve::naive_height(b, 64))
+                .unwrap()
+        });
+        let mut gens: Vec<Point> = Vec::new();
+        for p in affine {
+            let mut trial = gens.clone();
+            trial.push(p.clone());
+            if e.regulator_checked(&trial, 96).is_ok() {
+                gens.push(p);
+            }
+            if gens.len() == 2 {
+                break;
+            }
+        }
+        assert_eq!(gens.len(), 2, "the search must find 2 independent points");
+
+        // 2. SATURATE for every prime p <= 5 (the run is asserted below).
+        let mut mw = MordellWeilSubgroup::new(
+            &e,
+            &gens,
+            160,
+            "found by naive x = m/n search over |m|,n <= 4 (descent::find_rational_points)",
+        )
+        .unwrap();
+        let rep = mw.saturate(&e, 5, 160).expect("389a saturation");
+        assert_eq!(rep.primes_tested, vec![2, 3, 5]);
+        assert_eq!(rep.classes_tested, 13, "the saturation actually ran");
+        assert!(
+            rep.steps.is_empty(),
+            "the found pair is already 2,3,5-saturated"
+        );
+        assert_eq!(mw.saturated_up_to, Some(5));
+
+        let reg = mw.regulator(&e, 160).unwrap();
+        assert!(
+            close_to(&reg.value, "0.152460177943143751624324757049455823", 20),
+            "Reg(389a) = {}",
+            reg.value.to_decimal_string(28)
+        );
+        assert!(
+            close_to(
+                &e.real_period(256),
+                "4.98042512171011015064271558388460492",
+                20
+            ),
+            "Omega(389a) = {}",
+            e.real_period(256).to_decimal_string(28)
+        );
+
+        // 3. The analytic rank is CERTIFIED EXACTLY 2 (exact + certified, no
+        //    conjecture): epsilon = +1 is exact, so ord is EVEN; L(389a,1) = 0
+        //    is EXACT via the Manin-Birch winding element in rustmath-modular
+        //    (rational linear algebra, not a small number), so ord >= 1 and
+        //    hence ord >= 2 by parity; and L''(1)/2! is certified nonzero, so
+        //    ord <= 2.  ==> ord = 2, assuming only modularity (a theorem).
+        {
+            use crate::lfunction::{AnalyticRank, LFunction};
+            use rustmath_modular::modsym::decomposition::{HeckeEigenvalue, SummandHeckeAction};
+            use rustmath_modular::modsym::ModularSymbolsGamma0;
+
+            let ms = ModularSymbolsGamma0::new(389);
+            let dec = ms.cuspidal_hecke_decomposition().unwrap();
+            let want =
+                |p: i64| Rational::from_integer(Integer::from(e.compute_a_p(&Integer::from(p))));
+            let mut vanishes = None;
+            for w in dec.summands() {
+                let hit = [2i64, 3, 5].iter().all(|&p| {
+                    matches!(
+                        ms.hecke_action_on_summand(w, p as u64),
+                        Ok(SummandHeckeAction::Eigenvalue(HeckeEigenvalue::Rational(ref a)))
+                            if *a == want(p)
+                    )
+                });
+                if hit {
+                    assert!(vanishes.is_none(), "389a's summand must be unique");
+                    vanishes = Some(ms.l1_vanishes(w).expect("winding projection"));
+                }
+            }
+            assert!(
+                vanishes.expect("the 389a newform appears in the decomposition"),
+                "Manin-Birch: the winding projection of the 389a newform must vanish"
+            );
+            let lf = LFunction::new(e.clone());
+            let ar = lf.analytic_rank_with_exact_vanishing(
+                22,
+                1,
+                "Manin-Birch winding element: pi_f(e) = 0 in the level-389 modular symbol \
+                 space (exact rational linear algebra, rustmath-modular)",
+            );
+            assert!(matches!(
+                ar,
+                AnalyticRank::RankCertifiedModuloRounding { rank: 2, .. }
+            ));
+            assert_eq!(ar.certified_value(), Some(2));
+            // and WITHOUT the exact certificate nothing is certified
+            assert_eq!(lf.analytic_rank(22).certified_value(), None);
+        }
+
+        // 4. THE BSD RATIO. L''(1)/2! · |T|² / (Omega · Reg · prod c_p) = 1.
+        let sha = e
+            .analytic_sha_from_mordell_weil(&mw, 26)
+            .expect("389a rank-2 assembly");
+        assert_eq!(sha.order, 1, "Sha_an(389a) = 1");
+        assert_eq!(sha.sqrt_order, 1);
+        assert_eq!(sha.rank, 2);
+        let tiny = BigFloat::from_decimal_str("0.000000000000001", 256).unwrap();
+        assert!(
+            sha.certification_bound < tiny,
+            "certification bound must be < 1e-15 at 26 digits, got {}",
+            sha.certification_bound.to_decimal_string(8)
+        );
+        assert!(sha.provenance.contains("ASSUMING BSD"));
+        assert!(sha.provenance.contains("generate E(Q)/tors"));
+        assert!(sha
+            .provenance
+            .contains("p-saturated for every prime p <= 5"));
+        assert!(sha.provenance.contains("index 1 remains an ASSUMPTION"));
+        // the leading coefficient itself, against PARI's lfun(E,1,2)/2!
+        let l2 = CurveLSeries::new(&e).unwrap().l_derivative(2, 26).unwrap();
+        assert!(l2.certified_nonzero());
+        assert!(
+            close_to(&l2.value, "0.759316500288426770230192607894722019078", 20),
+            "L''(389a,1)/2! = {}",
+            l2.value.to_decimal_string(28)
+        );
+    }
+
+    /// *** RANK 3 — 5077a1, and an HONEST label on it ***
+    ///
+    /// The BSD assembly at r = 3 gives Ш_an = 1. But the analytic rank of
+    /// 5077a1 is **not certifiable** by anything in this workspace: ε = −1
+    /// hands us L(1) = 0 for free, and the next coefficient that must vanish,
+    /// L'(1), has the RIGHT parity — parity says nothing about it, the winding
+    /// element certifies only L(1), and numerics can never certify a zero.
+    /// So this Ш_an is conditional on rank = ord = 3, which here follows from
+    /// BSD + the certified independence of the three generators (rank ≥ 3) +
+    /// L'''(1)/3! ≠ 0 (ord ≤ 3) — exactly what the provenance says, and no
+    /// more. `test_5077a_rank_three_is_NOT_certifiable` in `lfunction` records
+    /// the unconditional non-result.
+    ///
+    /// The generators are SEEDED (a naive search to the height needed here is
+    /// far too slow for a unit test) and then VERIFIED: on the curve, of
+    /// infinite order, certified independent, and p-saturated for p ≤ 5 (51
+    /// projective classes decided exactly). Note the *dependent* triple
+    /// (−1,3), (0,2), (2,0) — (−1,3)+(0,2)+(2,0) = O — which `regulator_checked`
+    /// catches (see the mordellweil tests). The true basis (PARI
+    /// `ellgenerators`) is (1,0), (2,0), (0,2).
+    ///
+    /// PARI (realprecision 40), all derived BEFORE the assertions:
+    ///   N = 5077, prod c_p = 1, |T| = 1
+    ///   2·E.omega[1] = 4.15168798308693304988417568350728630
+    ///   matdet(ellheightmatrix) = 0.417143558758383969817119544618093397
+    ///   lfun(E,1,3)/3! = 1.73184990011930068979197508506015284
+    ///   PARI's own BSD quotient of these = 1.000000000000000000000000000000000000000
+    #[test]
+    fn test_5077a_rank_three_bsd_conditional() {
+        use crate::mordellweil::MordellWeilSubgroup;
+
+        let e = curve([0, 0, 1, -7, 6]);
+        assert_eq!(e.compute_conductor(), Integer::from(5077));
+        assert_eq!(tamagawa_product(&e), 1);
+        assert_eq!(e.torsion_subgroup().order, 1);
+        assert_eq!(crate::global_root_number(&e), Ok(-1), "5077a: epsilon = -1");
+
+        let gens = [
+            Point::from_integers(1, 0),
+            Point::from_integers(2, 0),
+            Point::from_integers(0, 2),
+        ];
+        for g in &gens {
+            assert!(
+                e.is_on_curve(g),
+                "seeded point {:?} must be on the curve",
+                g
+            );
+            assert!(
+                e.point_order(g).is_none(),
+                "seeded point must be non-torsion"
+            );
+        }
+
+        let mut mw = MordellWeilSubgroup::new(
+            &e,
+            &gens,
+            160,
+            "SEEDED from PARI ellgenerators (a naive search to this height is too slow for a \
+             unit test); each point re-verified here: on the curve, infinite order, and the \
+             triple CERTIFIED independent",
+        )
+        .expect("(1,0), (2,0), (0,2) are independent");
+        let rep = mw.saturate(&e, 5, 160).expect("5077a saturation");
+        assert_eq!(rep.primes_tested, vec![2, 3, 5]);
+        assert_eq!(
+            rep.classes_tested, 51,
+            "(2³−1)/1 + (3³−1)/2 + (5³−1)/4 = 7 + 13 + 31 projective classes"
+        );
+        assert!(
+            rep.steps.is_empty(),
+            "the seeded triple is already 2,3,5-saturated"
+        );
+        let reg = mw.regulator(&e, 160).unwrap();
+        assert!(
+            close_to(&reg.value, "0.417143558758383969817119544618093397", 20),
+            "Reg(5077a) = {}",
+            reg.value.to_decimal_string(28)
+        );
+        assert!(
+            close_to(
+                &e.real_period(256),
+                "4.15168798308693304988417568350728630",
+                20
+            ),
+            "Omega(5077a) = {}",
+            e.real_period(256).to_decimal_string(28)
+        );
+
+        let sha = e
+            .analytic_sha_from_mordell_weil(&mw, 26)
+            .expect("5077a rank-3 assembly");
+        assert_eq!(sha.order, 1, "Sha_an(5077a) = 1 (CONDITIONAL on rank 3)");
+        assert_eq!(sha.rank, 3);
+        let tiny = BigFloat::from_decimal_str("0.000000000000001", 256).unwrap();
+        assert!(
+            sha.certification_bound < tiny,
+            "bound {}",
+            sha.certification_bound.to_decimal_string(8)
+        );
+        assert!(sha.provenance.contains("ASSUMING BSD"));
+        assert!(sha.provenance.contains("NOT proved here"));
+        assert!(sha
+            .provenance
+            .contains("p-saturated for every prime p <= 5"));
+        assert!(sha.provenance.contains("index 1 remains an ASSUMPTION"));
+        // The rank is NOT certified: the L-machinery refuses 5077a outright.
+        assert_eq!(
+            crate::lfunction::LFunction::new(e)
+                .analytic_rank(20)
+                .certified_value(),
+            None,
+            "5077a's analytic rank must stay UNRESOLVED — this Sha_an is conditional on rank 3"
+        );
+    }
+
+    /// Rank-r honest refusals: wrong parity, dependent generators, and an
+    /// index-m (unsaturated) input caught by Cassels' square condition.
+    #[test]
+    fn test_analytic_sha_rank_r_refusals() {
+        // 389a with THREE points (epsilon = +1 has even parity, so r = 3 is
+        // impossible) — refused on parity alone, before any numerics.
+        let e389 = curve([0, 1, 1, -2, 0]);
+        let r = e389.analytic_sha_rank_r(
+            &[
+                Point::from_integers(0, 0),
+                Point::from_integers(-1, 1),
+                Point::from_integers(1, 0),
+            ],
+            20,
+        );
+        assert!(r.is_err() && r.unwrap_err().contains("epsilon"));
+
+        // 5077a fed the DEPENDENT triple: refused by regulator_checked.
+        let e5077 = curve([0, 0, 1, -7, 6]);
+        let r = e5077.analytic_sha_rank_r(
+            &[
+                Point::from_integers(-1, 3),
+                Point::from_integers(0, 2),
+                Point::from_integers(2, 0),
+            ],
+            20,
+        );
+        assert!(
+            r.is_err() && r.clone().unwrap_err().contains("NOT certified nonzero"),
+            "dependent triple must be refused: {:?}",
+            r.map(|s| s.order)
+        );
+
+        // 389a fed {2·P1, P2}: an index-2 subgroup. Reg is 4x too big, so the
+        // assembly lands on 1/4 — not a positive square integer, so Cassels
+        // refuses it. This is the guard, and it is honest about being only a
+        // guard (a pass would not prove saturation).
+        let p1 = Point::from_integers(0, 0);
+        let p2 = Point::from_integers(-1, 1);
+        let r = e389.analytic_sha_rank_r(&[e389.double_point(&p1), p2], 26);
+        assert!(
+            r.is_err(),
+            "an index-2 subgroup deflates Sha_an to 1/4 and must be refused, got {:?}",
+            r.map(|s| s.order)
         );
     }
 }

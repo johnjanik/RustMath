@@ -24,14 +24,36 @@
 //! - The real period Ω_E of the minimal model via AGM over `BigFloat`,
 //!   with exact rational root isolation of the two-torsion cubic and a
 //!   derived error bound (see [`period`])
-//! - Certified numeric L(E,1) and L'(E,1) over `BigFloat` with rigorous
-//!   tail bounds, and the honest analytic-rank lattice
-//!   ([`lfunction::AnalyticRank`]: certified 0/1, at-least-2, or
-//!   unresolved with reason — never a bare fabricated integer)
+//! - Certified numeric Taylor coefficients L^(r)(E,1)/r! of EVERY order
+//!   over `BigFloat` with rigorous tail bounds
+//!   ([`lfunction::CurveLSeries::l_derivative`]; the kernels live in
+//!   [`ltaylor`]), and the honest analytic-rank lattice
+//!   ([`lfunction::AnalyticRank`]: a certified rank r — 389a1 has analytic
+//!   rank exactly 2, the nonvanishing of L''(1)/2! resting on the crate's
+//!   `rounding_allowance` error model rather than machine interval
+//!   arithmetic — or at-least-N, or unresolved with reason; never a bare
+//!   fabricated integer)
+//! - Division polynomials ψ_n, φ_n, ω_n on the general Weierstrass model and
+//!   the exact fibre of multiplication-by-n
+//!   ([`division`]; [`EllipticCurve::divide_point`] solves the degree-n²
+//!   equation φ_n(X) = x(P)·ψ_n(X)² with a rigorous, factorization-free
+//!   rational-root search, then RE-MULTIPLIES every candidate — a
+//!   self-certifying gate that lives in the release path)
+//! - Certified independence of points and p-saturation of a Mordell–Weil
+//!   *subgroup* ([`mordellweil`]): [`EllipticCurve::regulator_checked`]
+//!   decides nonsingularity of the height-pairing Gram matrix with an
+//!   explicit error bound (never `== 0` on a float), and
+//!   [`MordellWeilSubgroup::saturate`] proves p-saturation for every prime
+//!   p ≤ B by deciding each class's p-divisibility exactly. **This is never
+//!   a proved Mordell–Weil basis** — no height-difference bound and no index
+//!   bound exists in this crate, and the types say so
 //! - The BSD assembly ([`bsdratio`]): the rank-0 ratio L(E,1)/Ω_E with
-//!   certified rational recognition, and the analytic order of Ш for
-//!   analytic rank 0 and 1 — every conditional step labeled "assuming
-//!   BSD", every numeric step carrying an explicit certified bound
+//!   certified rational recognition, and the analytic order of Ш at
+//!   ARBITRARY rank ([`EllipticCurve::analytic_sha_rank_r`]; 389a1 at rank 2
+//!   and 5077a1 at rank 3 both assemble to Ш_an = 1) — every conditional
+//!   step labeled "assuming BSD", every numeric step carrying an explicit
+//!   certified bound, and Cassels' perfect-square condition asserted as a
+//!   (non-decisive) guard against unsaturated generators
 //! - Modular forms scaffolding and a BSD verifier wired to the real
 //!   components ([`bsd`]: real Ω, real heights regulator, real L-values,
 //!   real Ш_an with the conditional labeling)
@@ -62,11 +84,14 @@ pub mod bsd;
 pub mod bsdratio;
 pub mod curve;
 pub mod descent;
+pub mod division;
 pub mod generic;
 pub mod height;
 pub mod lfunction;
+pub mod ltaylor;
 pub mod minimal;
 pub mod modular;
+pub mod mordellweil;
 pub mod period;
 pub mod rank;
 mod rizzo;
@@ -85,11 +110,13 @@ pub use bsd::{BSDResult, BSDVerifier};
 pub use bsdratio::{AnalyticShaAssumingBSD, BSDRatio};
 pub use curve::{EllipticCurve, Point};
 pub use descent::{SelmerGroup, TwoDescent};
+pub use division::{rational_roots_of_integer_poly, CurvePoly, DivisionPolynomials};
 pub use lfunction::{
     l_series_coefficients, AnalyticRank, ComplexNum, CurveLSeries, LFunction, LValue, RankParity,
 };
 pub use minimal::WeierstrassIsomorphism;
 pub use modular::{Cusp, HeckeOperator, ModularCurve, ModularForm, NewformSpace};
+pub use mordellweil::{CertifiedRegulator, MordellWeilSubgroup, SaturationReport, SaturationStep};
 pub use rank::{RankBoundResult, RankBounds};
 pub use rootnumber::{global_root_number, local_root_number};
 pub use tate::{KodairaSymbol, LocalData, ReductionType};
