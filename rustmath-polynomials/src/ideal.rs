@@ -13,10 +13,69 @@
 //! - Ideal arithmetic (sum, product, intersection, quotient)
 //! - Membership testing using Gröbner bases
 //! - Radical and primality checking (basic)
+//!
+//! # Two Gröbner engines, two caches
+//!
+//! An [`Ideal`] can be asked for a Gröbner basis by two different engines, and they do not
+//! compute the same object:
+//!
+//! - [`Ideal::get_groebner_basis`] runs the `R: Ring` Buchberger
+//!   ([`crate::groebner::groebner_basis`]). It cannot divide coefficients, so its output
+//!   is **not reduced** and — for non-monic input over a non-field — not even certified to
+//!   be a Gröbner basis. It exists because [`Ideal::reduce`] must work over `Z`.
+//! - [`Ideal::reduced_basis`] runs the `R: Field` Buchberger
+//!   ([`crate::groebner::reduced_groebner_basis_field`]) and returns the **canonical**
+//!   reduced Gröbner basis.
+//!
+//! These are cached in **separate fields**. They used to share one cache, so whichever
+//! engine ran first won it: for `I = (x, x²)` over `Q`, a fresh `reduced_basis()` returned
+//! `[x]`, but calling `reduce()` first made `reduced_basis()` return `[x, x²]` — a
+//! non-reduced answer from a method whose documented contract is that its output is
+//! canonical. `contains`, `is_radical` and `radical` all route through `reduced_basis`, so
+//! they could be answered against a basis that was not a reduced Gröbner basis.
+//! `ideal_cache_split_reduced_basis_stays_reduced` is the regression test.
+//!
+//! # Accepted API changes (do not "fix" these back)
+//!
+//! ## Six methods were narrowed from `R: EuclideanDomain` to `R: Field`
+//!
+//! [`Ideal::contains`], [`Ideal::intersection`], [`Ideal::quotient_ideal`],
+//! [`Ideal::radical`], [`Ideal::is_radical`], [`Ideal::is_prime`] (and
+//! [`Ideal::dimension`]) now require `R: Field`. That removes them for `Ideal<Integer>`.
+//!
+//! This is deliberate. Buchberger's algorithm needs to divide by leading coefficients; the
+//! correct theory over `Z` is *strong* Gröbner bases, which this crate does not implement.
+//! The old `EuclideanDomain` versions did not implement it either — they were facades that
+//! returned a plausible-looking wrong answer:
+//!
+//! - `Ideal<Integer>::intersection` returned `self.product(other)`. But `I·J ⊆ I∩J` is
+//!   strict in general: for `I = J = (x)` the intersection is `(x)` and the product is
+//!   `(x²)`.
+//! - `Ideal<Integer>::radical` returned `self.clone()`, i.e. it claimed every ideal is
+//!   radical. `√(x²) = (x) ≠ (x²)`.
+//! - `Ideal<Integer>::quotient_ideal` returned `self.clone()`. `(x²,xy) : (x) = (x,y)`,
+//!   which is strictly bigger.
+//!
+//! Deleting a lying API is not a regression. Nothing in the workspace outside this crate's
+//! own tests consumed those methods over a non-field. If you need them over `Z`, the
+//! honest path is to implement strong Gröbner bases, not to widen the bound back.
+//!
+//! ## `MonomialOrdering` gained an `Elimination { block }` variant
+//!
+//! Additive: a block order with the elimination property, required by
+//! [`crate::elimination`]. Any `match` on `MonomialOrdering` that was exhaustive before
+//! must now handle it.
 
-use crate::groebner::{groebner_basis, MonomialOrdering};
+use crate::elimination::{
+    eliminate_with_budget, ideal_intersection_with_budget, ideal_quotient_with_budget,
+    krull_dimension, univariate_squarefree_part,
+};
+use crate::groebner::{
+    comparison_fn, groebner_basis, normal_form, reduced_groebner_basis_field, GroebnerBudget,
+    MonomialOrdering,
+};
 use crate::multivariate::MultivariatePolynomial;
-use rustmath_core::{Ring, Field};
+use rustmath_core::{EuclideanDomain, Field, Ring};
 use std::fmt;
 
 /// An ideal in a multivariate polynomial ring
@@ -27,8 +86,15 @@ use std::fmt;
 pub struct Ideal<R: Ring> {
     /// Generators of the ideal
     generators: Vec<MultivariatePolynomial<R>>,
-    /// Cached Gröbner basis (computed on demand)
-    groebner_basis: Option<Vec<MultivariatePolynomial<R>>>,
+    /// Cache for the `R: Ring` Buchberger engine ([`Ideal::get_groebner_basis`]).
+    ///
+    /// **Not reduced**, and not canonical. Kept apart from `field_reduced_basis` on
+    /// purpose: the two engines compute different objects, and sharing one cache let
+    /// whichever ran first answer for the other. See the module documentation.
+    ring_basis: Option<Vec<MultivariatePolynomial<R>>>,
+    /// Cache for the `R: Field` engine ([`Ideal::reduced_basis`]): the canonical reduced
+    /// Gröbner basis.
+    field_reduced_basis: Option<Vec<MultivariatePolynomial<R>>>,
     /// Monomial ordering used for Gröbner basis
     ordering: MonomialOrdering,
 }
@@ -50,7 +116,8 @@ impl<R: Ring> Ideal<R> {
     pub fn new(generators: Vec<MultivariatePolynomial<R>>, ordering: MonomialOrdering) -> Self {
         Ideal {
             generators: generators.into_iter().filter(|p| !p.is_zero()).collect(),
-            groebner_basis: None,
+            ring_basis: None,
+            field_reduced_basis: None,
             ordering,
         }
     }
@@ -119,94 +186,143 @@ impl<R: Ring> Ideal<R> {
         })
     }
 
-    /// Compute or retrieve the Gröbner basis for this ideal
+    /// Compute or retrieve the `R: Ring` Gröbner basis for this ideal (cached).
+    ///
+    /// # ⚠ This is NOT the reduced basis
+    ///
+    /// This runs [`crate::groebner::groebner_basis`], the engine that has no coefficient
+    /// division. Its output is not reduced, not canonical, and — for non-monic generators
+    /// over a non-field — not certified to be a Gröbner basis at all. It is what
+    /// [`Ideal::reduce`] uses, because `QuotientRing` needs to reduce over `Z`.
+    ///
+    /// For anything that must be canonical (equality of ideals, membership, radical) use
+    /// [`Ideal::reduced_basis`], which requires `R: Field` and returns the reduced Gröbner
+    /// basis. The two results are cached **separately**; neither can be served from the
+    /// other's cache.
+    ///
+    /// # Panics
+    ///
+    /// Inherits the panic contract of [`crate::groebner::groebner_basis`]: it panics with
+    /// a precise message if the default Gröbner budget trips (which can happen for
+    /// non-monic generators over a non-field). It does not hang.
     pub fn get_groebner_basis(&mut self) -> Vec<MultivariatePolynomial<R>>
     where
         R: rustmath_core::EuclideanDomain + Clone,
     {
-        if self.groebner_basis.is_none() {
+        if self.ring_basis.is_none() {
             let gb = groebner_basis(self.generators.clone(), self.ordering);
-            self.groebner_basis = Some(gb);
+            self.ring_basis = Some(gb);
         }
-        self.groebner_basis.as_ref().unwrap().clone()
+        self.ring_basis.as_ref().unwrap().clone()
     }
 
-    /// Check if a polynomial is in this ideal (membership test)
+    /// Exact membership test over a field: `p ∈ I` iff `p` has normal form 0.
     ///
-    /// Uses Gröbner basis: p ∈ I iff p reduces to 0 modulo I
-    pub fn contains(&mut self, p: &MultivariatePolynomial<R>) -> bool
+    /// Uses the field Gröbner engine, so this is exact — not the degree-comparison
+    /// stub that used to live here.
+    pub fn contains(&mut self, p: &MultivariatePolynomial<R>) -> Result<bool, String>
     where
-        R: rustmath_core::EuclideanDomain + Clone,
+        R: Field,
+    {
+        self.contains_with_budget(p, &GroebnerBudget::default())
+    }
+
+    /// [`Ideal::contains`] with an explicit budget.
+    pub fn contains_with_budget(
+        &mut self,
+        p: &MultivariatePolynomial<R>,
+        budget: &GroebnerBudget,
+    ) -> Result<bool, String>
+    where
+        R: Field,
     {
         if self.is_zero() {
-            return p.is_zero();
+            return Ok(p.is_zero());
         }
-        if self.is_unit() {
-            return true;
-        }
-
-        let gb = self.get_groebner_basis();
-        let reduced = Self::reduce_by_basis_static(p, &gb);
-        reduced.is_zero()
+        let gb = self.reduced_basis(budget)?;
+        Ok(normal_form(p, &gb, self.ordering)?.is_zero())
     }
 
-    /// Reduce a polynomial modulo this ideal
+    /// Reduce a polynomial modulo this ideal.
     ///
-    /// Returns the unique remainder when p is divided by the Gröbner basis
+    /// # Honesty note
+    ///
+    /// The bound here is `EuclideanDomain`, not `Field`, because `QuotientRing` builds
+    /// quotients over rings such as `Z` (and `i32`). Over a **field** this is the true
+    /// normal form: the leading coefficient of a reducer is always invertible, so every
+    /// reducible leading term is cancelled exactly, and the remainder is canonical.
+    ///
+    /// Over a non-field Euclidean domain a leading term is only reduced when the
+    /// reducer's leading coefficient *divides* it exactly; the result is then a valid
+    /// remainder (`p − result ∈ I`) but is canonical only when the basis is a *strong*
+    /// Gröbner basis, which this crate does not compute. Use [`Ideal::contains`] (field
+    /// only) when you need an exact membership decision.
     pub fn reduce(&mut self, p: &MultivariatePolynomial<R>) -> MultivariatePolynomial<R>
     where
-        R: rustmath_core::EuclideanDomain + Clone,
+        R: EuclideanDomain + Clone,
     {
         if self.is_zero() {
             return p.clone();
         }
-        if self.is_unit() {
-            return MultivariatePolynomial::zero();
-        }
 
         let gb = self.get_groebner_basis();
-        Self::reduce_by_basis_static(p, &gb)
+        Self::reduce_by_basis_static(p, &gb, self.ordering)
     }
 
-    /// Helper function to reduce a polynomial by a set of polynomials
+    /// Reduce `p` by `basis` over a Euclidean domain.
+    ///
+    /// Terminates: every iteration either cancels the leading term (strictly lowering the
+    /// leading monomial in a well-order) or retires it to the remainder. The previous
+    /// version of this function never modified its accumulator and therefore looped
+    /// forever whenever `deg(p) >= deg(g)` for some `g`.
     fn reduce_by_basis_static(
         p: &MultivariatePolynomial<R>,
         basis: &[MultivariatePolynomial<R>],
+        ordering: MonomialOrdering,
     ) -> MultivariatePolynomial<R>
     where
-        R: rustmath_core::EuclideanDomain + Clone,
+        R: EuclideanDomain + Clone,
     {
-        let remainder = p.clone();
+        let cmp = comparison_fn(ordering);
 
-        // Repeatedly try to reduce the leading term
-        // This is a simplified version; full implementation would use
-        // proper multivariate division algorithm
-        loop {
-            if remainder.is_zero() {
+        let reducers: Vec<(&MultivariatePolynomial<R>, crate::multivariate::Monomial, R)> = basis
+            .iter()
+            .filter_map(|g| g.leading_term(cmp).map(|(lm, lc)| (g, lm, lc)))
+            .collect();
+
+        let mut work = p.clone();
+        let mut remainder = MultivariatePolynomial::zero();
+
+        while !work.is_zero() {
+            let Some((w_lm, w_lc)) = work.leading_term(cmp) else {
                 break;
-            }
+            };
 
-            let mut reduced = false;
-            for g in basis {
-                if g.is_zero() {
+            let mut step = None;
+            for (g, g_lm, g_lc) in &reducers {
+                if w_lm.div(g_lm).is_none() {
                     continue;
                 }
-
-                // Try to divide leading term of remainder by leading term of g
-                // This is a simplified version
-                let rem_deg = remainder.degree().unwrap_or(0);
-                let g_deg = g.degree().unwrap_or(0);
-
-                if rem_deg >= g_deg {
-                    // Simplified reduction: just mark as reduced
-                    // Full implementation needs proper multivariate division
-                    reduced = true;
-                    break;
+                // Only reduce when the leading coefficient divides exactly.
+                let Ok((quot, rem)) = w_lc.div_rem(g_lc) else {
+                    continue;
+                };
+                if !rem.is_zero() {
+                    continue;
                 }
+                let q_mono = w_lm.div(g_lm).expect("divisibility just checked");
+                step = Some((*g, q_mono, quot));
+                break;
             }
 
-            if !reduced {
-                break;
+            match step {
+                Some((g, q_mono, factor)) => {
+                    work = work - g.monomial_mul(&q_mono, &factor);
+                }
+                None => {
+                    remainder.add_term(w_lm.clone(), w_lc.clone());
+                    work.add_term(w_lm, -w_lc);
+                }
             }
         }
 
@@ -242,119 +358,258 @@ impl<R: Ring> Ideal<R> {
         Ideal::new(gens, self.ordering)
     }
 
-    /// Compute the intersection of two ideals: I ∩ J
+    /// The reduced Gröbner basis of this ideal (cached), over a field.
     ///
-    /// Uses the elimination method with a new variable t:
-    /// I ∩ J = (tI + (1-t)J) ∩ k[x₁,...,xₙ]
+    /// This is the canonical generating set: two ideals are equal iff these agree.
     ///
-    /// This is a placeholder; full implementation requires elimination theory
-    pub fn intersection(&self, other: &Ideal<R>) -> Ideal<R>
+    /// Cached in its own field, disjoint from the `R: Ring` cache used by
+    /// [`Ideal::get_groebner_basis`]. Calling [`Ideal::reduce`] first (which populates the
+    /// ring cache) therefore cannot make this method hand back a non-reduced basis — which
+    /// is exactly what the old shared cache did.
+    pub fn reduced_basis(
+        &mut self,
+        budget: &GroebnerBudget,
+    ) -> Result<Vec<MultivariatePolynomial<R>>, String>
     where
-        R: Clone,
+        R: Field,
     {
-        // Simplified version: if one is zero, return zero
-        // if one is unit, return the other
+        if self.field_reduced_basis.is_none() {
+            let gb = reduced_groebner_basis_field(self.generators.clone(), self.ordering, budget)?;
+            self.field_reduced_basis = Some(gb);
+        }
+        Ok(self.field_reduced_basis.as_ref().unwrap().clone())
+    }
+
+    /// The ambient number of variables implied by the generators (largest index + 1).
+    pub fn ambient_variables(&self) -> usize {
+        self.generators
+            .iter()
+            .filter_map(|p| p.max_variable())
+            .max()
+            .map(|m| m + 1)
+            .unwrap_or(0)
+    }
+
+    /// The intersection of two ideals: `I ∩ J`.
+    ///
+    /// Computed by elimination: `I ∩ J = ( t·I + (1−t)·J ) ∩ k[x]` for a fresh variable
+    /// `t`. This used to return `self.product(other)`, which is wrong — `I·J ⊆ I∩J` with
+    /// equality only in special cases. For `I = J = (x)` the intersection is `(x)` while
+    /// the product is `(x²)`.
+    pub fn intersection(&self, other: &Ideal<R>) -> Result<Ideal<R>, String>
+    where
+        R: Field,
+    {
+        self.intersection_with_budget(other, &GroebnerBudget::default())
+    }
+
+    /// [`Ideal::intersection`] with an explicit budget.
+    pub fn intersection_with_budget(
+        &self,
+        other: &Ideal<R>,
+        budget: &GroebnerBudget,
+    ) -> Result<Ideal<R>, String>
+    where
+        R: Field,
+    {
         if self.is_zero() || other.is_zero() {
-            return Ideal::zero(self.ordering);
+            return Ok(Ideal::zero(self.ordering));
+        }
+
+        let gens = ideal_intersection_with_budget(
+            self.generators.clone(),
+            other.generators.clone(),
+            budget,
+        )?;
+        Ok(Ideal::new(gens, self.ordering))
+    }
+
+    /// The ideal quotient (colon ideal) `I : J = { f : f·J ⊆ I }`.
+    ///
+    /// Computed as `⋂_k (I : g_k)` with `I : g = (1/g)·(I ∩ (g))`. This used to return
+    /// `self.clone()`.
+    pub fn quotient_ideal(&self, other: &Ideal<R>) -> Result<Ideal<R>, String>
+    where
+        R: Field,
+    {
+        self.quotient_ideal_with_budget(other, &GroebnerBudget::default())
+    }
+
+    /// [`Ideal::quotient_ideal`] with an explicit budget.
+    pub fn quotient_ideal_with_budget(
+        &self,
+        other: &Ideal<R>,
+        budget: &GroebnerBudget,
+    ) -> Result<Ideal<R>, String>
+    where
+        R: Field,
+    {
+        let gens =
+            ideal_quotient_with_budget(self.generators.clone(), other.generators.clone(), budget)?;
+        Ok(Ideal::new(gens, self.ordering))
+    }
+
+    /// Is this ideal prime?
+    ///
+    /// # Honest refusal
+    ///
+    /// Deciding primality in general needs primary decomposition
+    /// (Gianni–Trager–Zacharias), which this crate does not implement. Rather than
+    /// return `false` for every ideal — which is the claim "no ideal is prime", a lie —
+    /// this decides only the two cases that are decidable without it and returns `Err`
+    /// otherwise, naming what is missing.
+    pub fn is_prime(&mut self) -> Result<bool, String>
+    where
+        R: Field,
+    {
+        if self.is_zero() {
+            // k[x_1..x_n] is an integral domain, so (0) is prime.
+            return Ok(true);
         }
         if self.is_unit() {
-            return other.clone();
+            // The unit ideal is prime by no convention: primes are proper by definition.
+            return Ok(false);
         }
-        if other.is_unit() {
-            return self.clone();
-        }
-
-        // Full implementation would use elimination theory
-        // For now, return a conservative estimate (product)
-        self.product(other)
+        Err(
+            "Ideal::is_prime: deciding primality of a proper non-zero ideal requires primary \
+             decomposition (Gianni–Trager–Zacharias), which is not implemented"
+                .to_string(),
+        )
     }
 
-    /// Compute the ideal quotient: (I : J) = {f : fJ ⊆ I}
+    /// Is this ideal radical, i.e. is `I = √I`?
     ///
-    /// This is the set of all polynomials f such that fg ∈ I for all g ∈ J
-    pub fn quotient_ideal(&self, other: &Ideal<R>) -> Ideal<R>
+    /// Decided by computing the radical and testing `√I ⊆ I` (the reverse inclusion is
+    /// automatic). Returns `Err` whenever [`Ideal::radical`] cannot be computed.
+    pub fn is_radical(&mut self) -> Result<bool, String>
     where
-        R: rustmath_core::EuclideanDomain + Clone,
+        R: Field,
     {
-        if other.is_zero() {
-            // (I : {0}) = entire ring
-            return Ideal::unit(self.ordering);
-        }
-        if self.is_zero() {
-            // ({0} : J) = {0}
-            return Ideal::zero(self.ordering);
-        }
-
-        // For a principal generator g in J, (I : (g)) consists of
-        // polynomials f such that fg ∈ I
-        // Full implementation requires more sophisticated algorithms
-
-        // Simplified: return the original ideal
-        self.clone()
-    }
-
-    /// Check if this ideal is prime
-    ///
-    /// An ideal I is prime if ab ∈ I implies a ∈ I or b ∈ I
-    /// This is a difficult problem in general; placeholder returns false
-    pub fn is_prime(&mut self) -> bool
-    where
-        R: rustmath_core::EuclideanDomain + Clone,
-    {
-        // Simplified version
-        if self.is_zero() {
-            return false; // Zero ideal is prime only in integral domains
-        }
-        if self.is_unit() {
-            return false; // Unit ideal is never prime
-        }
-
-        // Full implementation requires sophisticated algorithms
-        // from computational algebraic geometry
-        false
-    }
-
-    /// Check if this ideal is radical
-    ///
-    /// An ideal I is radical if a^n ∈ I implies a ∈ I
-    pub fn is_radical(&mut self) -> bool
-    where
-        R: rustmath_core::EuclideanDomain + Clone,
-    {
-        // Simplified version
         if self.is_zero() || self.is_unit() {
-            return true;
+            return Ok(true);
         }
 
-        // Full implementation requires checking if I = √I
-        // (the radical of I)
-        false
+        let rad = self.radical()?;
+        for g in rad.generators() {
+            if !self.contains(g)? {
+                return Ok(false);
+            }
+        }
+        Ok(true)
     }
 
-    /// Compute the radical of this ideal: √I = {f : f^n ∈ I for some n}
+    /// The radical `√I = { f : f^n ∈ I for some n }`.
     ///
-    /// This requires sophisticated algorithms; placeholder returns self
-    pub fn radical(&self) -> Ideal<R>
+    /// # What is actually implemented
+    ///
+    /// The signature was changed from `radical(&self) -> Ideal<R>` (which returned
+    /// `self.clone()` — a facade) to a `Result`, because the honest answer for a general
+    /// ideal is "not implemented". Returning a `Result` rather than making the old
+    /// signature panic keeps the failure visible in the type and lets callers handle it.
+    ///
+    /// Two cases are computed for real:
+    ///
+    /// - **Principal, one variable**: `√(f) = (squarefree part of f)`, obtained as
+    ///   `f / gcd(f, f′)`.
+    /// - **Zero-dimensional**: by Seidenberg's lemma, for a zero-dimensional ideal over a
+    ///   perfect field, `√I = I + (sqfree(f_1), …, sqfree(f_n))` where `f_i` generates the
+    ///   elimination ideal `I ∩ k[x_i]`. Each `f_i` comes from a real elimination.
+    ///
+    /// Everything else — a positive-dimensional, non-principal ideal — returns `Err`,
+    /// naming primary decomposition as the missing piece. It does **not** return `self`.
+    pub fn radical(&mut self) -> Result<Ideal<R>, String>
     where
-        R: rustmath_core::EuclideanDomain + Clone,
+        R: Field,
     {
-        // Full implementation requires algorithms from computational
-        // algebraic geometry (e.g., using primary decomposition)
-        self.clone()
+        self.radical_with_budget(&GroebnerBudget::default())
     }
 
-    /// Get the dimension of the variety defined by this ideal
-    ///
-    /// This is a placeholder that returns None; full implementation
-    /// requires computing Krull dimension
-    pub fn dimension(&self) -> Option<usize> {
+    /// [`Ideal::radical`] with an explicit budget.
+    pub fn radical_with_budget(&mut self, budget: &GroebnerBudget) -> Result<Ideal<R>, String>
+    where
+        R: Field,
+    {
         if self.is_zero() {
-            None // Dimension of entire space
-        } else if self.is_unit() {
-            Some(0) // Empty variety
-        } else {
-            None // Would require Gröbner basis computation
+            // √(0) = (0) in a reduced ring, and k[x] is a domain.
+            return Ok(Ideal::zero(self.ordering));
         }
+        if self.is_unit() {
+            return Ok(Ideal::unit(self.ordering));
+        }
+
+        // Principal ideal in a single variable: the squarefree part.
+        if self.generators.len() == 1 && self.generators[0].variables().len() <= 1 {
+            let sf = univariate_squarefree_part(&self.generators[0])?;
+            return Ok(Ideal::principal(sf, self.ordering));
+        }
+
+        let num_vars = self.ambient_variables();
+        let dim = krull_dimension(self.generators.clone(), num_vars, budget)?;
+
+        if dim != 0 {
+            return Err(format!(
+                "Ideal::radical: the ideal has dimension {}; the radical of a \
+                 positive-dimensional non-principal ideal needs primary decomposition \
+                 (Gianni–Trager–Zacharias), which is not implemented. Only the principal \
+                 univariate case and the zero-dimensional case are available.",
+                dim
+            ));
+        }
+
+        // Zero-dimensional: Seidenberg. For each variable, the elimination ideal
+        // I ∩ k[x_i] is a non-zero principal ideal; add its squarefree generator.
+        let mut gens = self.generators.clone();
+        for v in 0..num_vars {
+            let others: Vec<usize> = (0..num_vars).filter(|w| *w != v).collect();
+            let elim = eliminate_with_budget(self.generators.clone(), &others, budget)?;
+
+            let univariate: Vec<_> = elim.into_iter().filter(|p| !p.is_zero()).collect();
+            if univariate.is_empty() {
+                return Err(format!(
+                    "Ideal::radical: ideal reported dimension 0 but the elimination ideal \
+                     in x{} is zero — internal inconsistency",
+                    v
+                ));
+            }
+
+            for f in &univariate {
+                gens.push(univariate_squarefree_part(f)?);
+            }
+        }
+
+        let reduced = reduced_groebner_basis_field(gens, self.ordering, budget)?;
+        Ok(Ideal::new(reduced, self.ordering))
+    }
+
+    /// The Krull dimension of `k[x_0,…,x_{n-1}]/I`, with `n` inferred from the generators.
+    ///
+    /// See [`Ideal::dimension_in`] for the convention and the algorithm; use that when the
+    /// ambient space is bigger than the variables the generators happen to mention.
+    pub fn dimension(&mut self) -> Result<isize, String>
+    where
+        R: Field,
+    {
+        let n = self.ambient_variables();
+        self.dimension_in(n)
+    }
+
+    /// The Krull dimension of `k[x_0,…,x_{num_vars-1}]/I`.
+    ///
+    /// The maximum size of a subset `U` of the variables such that no leading monomial of
+    /// a Gröbner basis of `I` has all of its variables inside `U` (a maximal independent
+    /// set). Conventions: the zero ideal in `n` variables has dimension `n`, a point has
+    /// dimension `0`, and the unit ideal (the empty variety) has dimension `-1`.
+    ///
+    /// This replaces a `dimension()` that returned `None` unconditionally.
+    pub fn dimension_in(&mut self, num_vars: usize) -> Result<isize, String>
+    where
+        R: Field,
+    {
+        krull_dimension(
+            self.generators.clone(),
+            num_vars,
+            &GroebnerBudget::default(),
+        )
     }
 }
 
@@ -380,16 +635,28 @@ pub fn cyclic_ideal<R: Ring>(n: usize, ordering: MonomialOrdering) -> Ideal<R> {
         return Ideal::zero(ordering);
     }
 
-    // For now, create a placeholder with n generators
-    // Full implementation would construct the actual cyclic polynomials
-    let mut generators = Vec::new();
+    let x = |i: usize| MultivariatePolynomial::<R>::variable(i % n);
+    let mut generators = Vec::with_capacity(n);
 
-    // Placeholder: just create n zero polynomials
-    // Real implementation would construct:
-    // sum of k-th powers for k=1..n-1, and product - 1
-    for _ in 0..n {
-        generators.push(MultivariatePolynomial::zero());
+    // c_d = Σ_i  x_i · x_{i+1} · … · x_{i+d-1}   (indices mod n),  d = 1 … n-1
+    for d in 1..n {
+        let mut sum = MultivariatePolynomial::zero();
+        for i in 0..n {
+            let mut prod = MultivariatePolynomial::constant(R::one());
+            for k in 0..d {
+                prod = prod * x(i + k);
+            }
+            sum = sum + prod;
+        }
+        generators.push(sum);
     }
+
+    // c_n = x_0 · x_1 · … · x_{n-1} − 1
+    let mut prod = MultivariatePolynomial::constant(R::one());
+    for i in 0..n {
+        prod = prod * x(i);
+    }
+    generators.push(prod - MultivariatePolynomial::constant(R::one()));
 
     Ideal::new(generators, ordering)
 }
@@ -415,11 +682,39 @@ pub fn katsura_ideal<R: Ring>(n: usize, ordering: MonomialOrdering) -> Ideal<R> 
         return Ideal::zero(ordering);
     }
 
-    // Placeholder: create n+1 generators
-    let mut generators = Vec::new();
-    for _ in 0..=n {
-        generators.push(MultivariatePolynomial::zero());
+    let ni = n as isize;
+    // u_i is indexed by |i|, and is zero for |i| > n.
+    let u = |i: isize| -> Option<MultivariatePolynomial<R>> {
+        let a = i.unsigned_abs();
+        if a <= n {
+            Some(MultivariatePolynomial::variable(a))
+        } else {
+            None
+        }
+    };
+    let two = R::one() + R::one();
+
+    let mut generators = Vec::with_capacity(n + 1);
+
+    // For m = 0 … n-1:   Σ_{i=-n}^{n} u_i · u_{m-i}  −  u_m
+    for m in 0..ni {
+        let mut sum = MultivariatePolynomial::zero();
+        for i in -ni..=ni {
+            let (Some(a), Some(b)) = (u(i), u(m - i)) else {
+                continue;
+            };
+            sum = sum + a * b;
+        }
+        let um = u(m).expect("m < n");
+        generators.push(sum - um);
     }
+
+    // The linear relation:  Σ_{i=-n}^{n} u_i − 1  =  u_0 + 2(u_1 + … + u_n) − 1
+    let mut lin = MultivariatePolynomial::<R>::variable(0);
+    for i in 1..=n {
+        lin = lin + MultivariatePolynomial::<R>::variable(i).scalar_mul(&two);
+    }
+    generators.push(lin - MultivariatePolynomial::constant(R::one()));
 
     Ideal::new(generators, ordering)
 }
@@ -478,6 +773,22 @@ impl<R: Ring> fmt::Display for Ideal<R> {
 mod tests {
     use super::*;
     use rustmath_integers::Integer;
+    use rustmath_rationals::Rational;
+
+    /// The variable x_v over Q.
+    fn rx(v: usize) -> MultivariatePolynomial<Rational> {
+        MultivariatePolynomial::variable(v)
+    }
+
+    /// The constant 1 over Q.
+    fn rone() -> MultivariatePolynomial<Rational> {
+        MultivariatePolynomial::constant(Rational::from_integer(Integer::from(1)))
+    }
+
+    /// The variable x_v over Z.
+    fn ix(v: usize) -> MultivariatePolynomial<Integer> {
+        MultivariatePolynomial::variable(v)
+    }
 
     #[test]
     fn test_create_zero_ideal() {
@@ -558,20 +869,76 @@ mod tests {
 
     #[test]
     fn test_ideal_intersection() {
-        let ideal1: Ideal<Integer> = Ideal::zero(MonomialOrdering::Lex);
-        let ideal2: Ideal<Integer> = Ideal::unit(MonomialOrdering::Lex);
+        let ideal1: Ideal<Rational> = Ideal::zero(MonomialOrdering::Grevlex);
+        let ideal2: Ideal<Rational> = Ideal::unit(MonomialOrdering::Grevlex);
 
-        let intersection = ideal1.intersection(&ideal2);
+        let intersection = ideal1.intersection(&ideal2).unwrap();
         assert!(intersection.is_zero());
+    }
+
+    /// The test that proves `intersection` is no longer `product`.
+    ///
+    /// I = J = (x). Then I ∩ J = (x) but I · J = (x²). The old facade returned the
+    /// product, so it could not tell these apart.
+    #[test]
+    fn test_intersection_is_not_the_product() {
+        let i: Ideal<Rational> = Ideal::principal(rx(0), MonomialOrdering::Grevlex);
+        let j: Ideal<Rational> = Ideal::principal(rx(0), MonomialOrdering::Grevlex);
+
+        let mut inter = i.intersection(&j).unwrap();
+        let mut prod = i.product(&j);
+
+        // x ∈ I ∩ J
+        assert!(
+            inter.contains(&rx(0)).unwrap(),
+            "x must lie in (x) ∩ (x)"
+        );
+        // but x ∉ I · J = (x²)
+        assert!(
+            !prod.contains(&rx(0)).unwrap(),
+            "x must NOT lie in (x)·(x) = (x²) — if it does, the product is broken"
+        );
+
+        // x² lies in both, so only the x-membership distinguishes them.
+        let x_sq = rx(0) * rx(0);
+        assert!(inter.contains(&x_sq).unwrap());
+        assert!(prod.contains(&x_sq).unwrap());
     }
 
     #[test]
     fn test_ideal_quotient() {
-        let ideal1: Ideal<Integer> = Ideal::unit(MonomialOrdering::Lex);
-        let ideal2: Ideal<Integer> = Ideal::zero(MonomialOrdering::Lex);
+        let ideal1: Ideal<Rational> = Ideal::unit(MonomialOrdering::Grevlex);
+        let ideal2: Ideal<Rational> = Ideal::zero(MonomialOrdering::Grevlex);
 
-        let quotient = ideal1.quotient_ideal(&ideal2);
+        let quotient = ideal1.quotient_ideal(&ideal2).unwrap();
         assert!(quotient.is_unit());
+    }
+
+    /// (x², xy) : (x) = (x, y) — verified independently with sympy.
+    /// The old facade returned `self`, i.e. (x², xy), which does not contain y.
+    #[test]
+    fn test_quotient_ideal_is_not_self() {
+        let i: Ideal<Rational> = Ideal::new(
+            vec![rx(0) * rx(0), rx(0) * rx(1)],
+            MonomialOrdering::Grevlex,
+        );
+        let j: Ideal<Rational> = Ideal::principal(rx(0), MonomialOrdering::Grevlex);
+
+        let mut quot = i.quotient_ideal(&j).unwrap();
+
+        // y ∈ (x², xy) : (x), because y·x = xy ∈ I.
+        assert!(
+            quot.contains(&rx(1)).unwrap(),
+            "y must lie in (x²,xy):(x) — the old facade returned self, which excludes y"
+        );
+        assert!(quot.contains(&rx(0)).unwrap(), "x must lie in the quotient");
+
+        // And the quotient is strictly bigger than I: y ∉ I.
+        let mut i2: Ideal<Rational> = Ideal::new(
+            vec![rx(0) * rx(0), rx(0) * rx(1)],
+            MonomialOrdering::Grevlex,
+        );
+        assert!(!i2.contains(&rx(1)).unwrap(), "y should not lie in (x²,xy)");
     }
 
     #[test]
@@ -585,13 +952,36 @@ mod tests {
         assert_eq!(display_unit, "⟨1⟩");
     }
 
+    /// Cyclic-3 is `x0+x1+x2`, `x0x1+x0x2+x1x2`, `x0x1x2-1` (checked against sympy).
+    /// The old placeholder returned three *zero* polynomials, which `Ideal::new` then
+    /// filtered away — so the ideal was empty and the doctest asserting 3 generators
+    /// had been failing (invisibly, behind an earlier hang).
     #[test]
     fn test_cyclic_ideal() {
         let ideal = cyclic_ideal::<Integer>(3, MonomialOrdering::Lex);
-        // Note: placeholder implementation creates zero polynomials
-        // which are filtered out, so num_generators is 0
-        // Full implementation would create actual cyclic polynomials
-        assert!(ideal.is_zero()); // Placeholder creates all zeros
+        assert_eq!(ideal.num_generators(), 3);
+        assert!(!ideal.is_zero());
+
+        let gens = ideal.generators();
+
+        // c_1 = x0 + x1 + x2 : three linear terms.
+        assert_eq!(gens[0].num_terms(), 3);
+        assert_eq!(gens[0].degree(), Some(1));
+
+        // c_2 = x0x1 + x0x2 + x1x2 : three quadratic terms.
+        assert_eq!(gens[1].num_terms(), 3);
+        assert_eq!(gens[1].degree(), Some(2));
+
+        // c_3 = x0x1x2 - 1 : the cubic and the constant.
+        assert_eq!(gens[2].num_terms(), 2);
+        assert_eq!(gens[2].degree(), Some(3));
+
+        // Every generator of cyclic-3 vanishes at the point (1, ω, ω²) only over C, but
+        // over any ring the *sum* c_1 vanishes at (1, -1, 0) and c_2 does not — a cheap
+        // check that these are not all the same polynomial.
+        let pt = [Integer::from(1), Integer::from(-1), Integer::from(0)];
+        assert!(gens[0].evaluate(&pt).is_zero(), "c_1(1,-1,0) = 0");
+        assert!(!gens[2].evaluate(&pt).is_zero(), "c_3(1,-1,0) = -1 != 0");
     }
 
     #[test]
@@ -600,13 +990,44 @@ mod tests {
         assert!(ideal.is_zero());
     }
 
+    /// Katsura-3, in u0..u3 (checked against sympy / the standard benchmark):
+    ///   u0² - u0 + 2u1² + 2u2² + 2u3²
+    ///   2u0u1 + 2u1u2 - u1 + 2u2u3
+    ///   2u0u2 + u1² + 2u1u3 - u2
+    ///   u0 + 2u1 + 2u2 + 2u3 - 1
     #[test]
     fn test_katsura_ideal() {
         let ideal = katsura_ideal::<Integer>(3, MonomialOrdering::Lex);
-        // Note: placeholder implementation creates zero polynomials
-        // which are filtered out
-        // Full implementation would create actual Katsura polynomials
-        assert!(ideal.is_zero()); // Placeholder creates all zeros
+        assert_eq!(ideal.num_generators(), 4);
+        assert!(!ideal.is_zero());
+
+        let gens = ideal.generators();
+
+        // The three quadratic relations.
+        for g in gens.iter().take(3) {
+            assert_eq!(g.degree(), Some(2));
+        }
+        // The linear relation u0 + 2u1 + 2u2 + 2u3 - 1.
+        assert_eq!(gens[3].degree(), Some(1));
+        assert_eq!(gens[3].num_terms(), 5);
+
+        // Katsura's defining solution: all the u_i sum to 1 with u_0 = 1, rest 0.
+        // Then the linear relation vanishes and so does every quadratic one:
+        //   u0² - u0 = 0, and every cross term contains a zero factor.
+        let pt = [
+            Integer::from(1),
+            Integer::from(0),
+            Integer::from(0),
+            Integer::from(0),
+        ];
+        for (i, g) in gens.iter().enumerate() {
+            assert!(
+                g.evaluate(&pt).is_zero(),
+                "katsura-3 generator {} should vanish at (1,0,0,0), got {}",
+                i,
+                g.evaluate(&pt)
+            );
+        }
     }
 
     #[test]
@@ -630,36 +1051,119 @@ mod tests {
 
     #[test]
     fn test_ideal_dimension() {
-        let ideal: Ideal<Integer> = Ideal::zero(MonomialOrdering::Lex);
-        assert_eq!(ideal.dimension(), None);
+        // The zero ideal in no variables is the field itself: dimension 0.
+        let mut ideal: Ideal<Rational> = Ideal::zero(MonomialOrdering::Grevlex);
+        assert_eq!(ideal.dimension().unwrap(), 0);
 
-        let ideal_unit: Ideal<Integer> = Ideal::unit(MonomialOrdering::Lex);
-        assert_eq!(ideal_unit.dimension(), Some(0));
+        // The unit ideal is the empty variety: dimension -1.
+        let mut ideal_unit: Ideal<Rational> = Ideal::unit(MonomialOrdering::Grevlex);
+        assert_eq!(ideal_unit.dimension().unwrap(), -1);
+
+        // dim k[x,y]/(x) = 1 — needs the ambient count, since (x) only mentions x.
+        let mut line: Ideal<Rational> = Ideal::principal(rx(0), MonomialOrdering::Grevlex);
+        assert_eq!(line.dimension_in(2).unwrap(), 1);
+
+        // A point in the plane has dimension 0.
+        let mut point: Ideal<Rational> =
+            Ideal::new(vec![rx(0), rx(1)], MonomialOrdering::Grevlex);
+        assert_eq!(point.dimension_in(2).unwrap(), 0);
+
+        // The zero ideal in 3 variables: the whole ring, dimension 3.
+        let mut whole: Ideal<Rational> = Ideal::zero(MonomialOrdering::Grevlex);
+        assert_eq!(whole.dimension_in(3).unwrap(), 3);
     }
 
     #[test]
     fn test_ideal_is_prime() {
-        let mut ideal: Ideal<Integer> = Ideal::zero(MonomialOrdering::Lex);
-        assert!(!ideal.is_prime());
+        // (0) is prime: k[x] is an integral domain. The old code said `false` here.
+        let mut ideal: Ideal<Rational> = Ideal::zero(MonomialOrdering::Grevlex);
+        assert!(ideal.is_prime().unwrap());
 
-        let mut ideal_unit: Ideal<Integer> = Ideal::unit(MonomialOrdering::Lex);
-        assert!(!ideal_unit.is_prime());
+        // The unit ideal is not prime (primes are proper).
+        let mut ideal_unit: Ideal<Rational> = Ideal::unit(MonomialOrdering::Grevlex);
+        assert!(!ideal_unit.is_prime().unwrap());
+
+        // Anything else is an honest refusal, not a fabricated `false`.
+        let mut proper: Ideal<Rational> =
+            Ideal::new(vec![rx(0) * rx(1)], MonomialOrdering::Grevlex);
+        let err = proper.is_prime().unwrap_err();
+        assert!(
+            err.contains("primary decomposition"),
+            "unexpected error: {}",
+            err
+        );
     }
 
     #[test]
     fn test_ideal_is_radical() {
-        let mut ideal: Ideal<Integer> = Ideal::zero(MonomialOrdering::Lex);
-        assert!(ideal.is_radical());
+        let mut ideal: Ideal<Rational> = Ideal::zero(MonomialOrdering::Grevlex);
+        assert!(ideal.is_radical().unwrap());
 
-        let mut ideal_unit: Ideal<Integer> = Ideal::unit(MonomialOrdering::Lex);
-        assert!(ideal_unit.is_radical());
+        let mut ideal_unit: Ideal<Rational> = Ideal::unit(MonomialOrdering::Grevlex);
+        assert!(ideal_unit.is_radical().unwrap());
+
+        // (x²) is not radical: x ∉ (x²) but x² ∈ (x²).
+        let mut sq: Ideal<Rational> =
+            Ideal::principal(rx(0) * rx(0), MonomialOrdering::Grevlex);
+        assert!(!sq.is_radical().unwrap());
+
+        // (x) is radical.
+        let mut lin: Ideal<Rational> = Ideal::principal(rx(0), MonomialOrdering::Grevlex);
+        assert!(lin.is_radical().unwrap());
     }
 
+    /// The old `radical` returned `self.clone()`. These check it returns the real thing.
     #[test]
     fn test_ideal_radical() {
-        let ideal: Ideal<Integer> = Ideal::zero(MonomialOrdering::Lex);
-        let rad = ideal.radical();
+        let mut ideal: Ideal<Rational> = Ideal::zero(MonomialOrdering::Grevlex);
+        let rad = ideal.radical().unwrap();
         assert!(rad.is_zero());
+
+        // √(x²) = (x). The facade would have returned (x²), which does not contain x.
+        let mut sq: Ideal<Rational> =
+            Ideal::principal(rx(0) * rx(0), MonomialOrdering::Grevlex);
+        let mut rad = sq.radical().unwrap();
+        assert!(
+            rad.contains(&rx(0)).unwrap(),
+            "√(x²) must contain x — a facade returning self would not"
+        );
+        assert!(!sq.contains(&rx(0)).unwrap(), "x is not in (x²) itself");
+
+        // √((x-1)²(x+1)) = (x²-1), from f/gcd(f,f'). sympy: sqfree(x³-x²-x+1) = x²-1.
+        let f = rx(0) * rx(0) * rx(0) - rx(0) * rx(0) - rx(0) + rone();
+        let mut cube: Ideal<Rational> = Ideal::principal(f, MonomialOrdering::Grevlex);
+        let mut rad = cube.radical().unwrap();
+        let x2m1 = rx(0) * rx(0) - rone();
+        assert!(rad.contains(&x2m1).unwrap());
+        // and it is exactly (x²-1): x-1 alone is not in it
+        let xm1 = rx(0) - rone();
+        assert!(!rad.contains(&xm1).unwrap());
+
+        // Zero-dimensional multivariate radical (Seidenberg): √(x², y²) = (x, y).
+        let mut zd: Ideal<Rational> = Ideal::new(
+            vec![rx(0) * rx(0), rx(1) * rx(1)],
+            MonomialOrdering::Grevlex,
+        );
+        let mut rad = zd.radical().unwrap();
+        assert!(rad.contains(&rx(0)).unwrap(), "√(x²,y²) must contain x");
+        assert!(rad.contains(&rx(1)).unwrap(), "√(x²,y²) must contain y");
+        assert!(!zd.contains(&rx(0)).unwrap(), "x ∉ (x²,y²)");
+    }
+
+    /// A positive-dimensional non-principal ideal must be an honest refusal.
+    #[test]
+    fn test_radical_refuses_what_it_cannot_do() {
+        // (x*y, x*z) has dimension 2 in k[x,y,z]; its radical needs primary decomposition.
+        let mut i: Ideal<Rational> = Ideal::new(
+            vec![rx(0) * rx(1), rx(0) * rx(2)],
+            MonomialOrdering::Grevlex,
+        );
+        let err = i.radical().unwrap_err();
+        assert!(
+            err.contains("primary decomposition"),
+            "expected an honest refusal, got: {}",
+            err
+        );
     }
 
     #[test]
@@ -677,9 +1181,26 @@ mod tests {
 
     #[test]
     fn test_ideal_contains_zero() {
-        let mut ideal: Ideal<Integer> = Ideal::unit(MonomialOrdering::Lex);
+        let mut ideal: Ideal<Rational> = Ideal::unit(MonomialOrdering::Grevlex);
         let zero = MultivariatePolynomial::zero();
-        assert!(ideal.contains(&zero));
+        assert!(ideal.contains(&zero).unwrap());
+    }
+
+    /// `contains` used to be `p.is_zero()` in disguise: `reduce_by_basis_static` never
+    /// touched its accumulator, so the "remainder" was always `p` itself.
+    #[test]
+    fn test_contains_is_a_real_membership_test() {
+        // I = (x² - 1). Then x² - 1 ∈ I and x⁴ - 1 = (x²+1)(x²-1) ∈ I, but x ∉ I.
+        let mut i: Ideal<Rational> =
+            Ideal::principal(rx(0) * rx(0) - rone(), MonomialOrdering::Grevlex);
+
+        let x2m1 = rx(0) * rx(0) - rone();
+        let x4m1 = rx(0) * rx(0) * rx(0) * rx(0) - rone();
+
+        assert!(i.contains(&x2m1).unwrap(), "the generator must be a member");
+        assert!(i.contains(&x4m1).unwrap(), "x⁴-1 = (x²+1)(x²-1) is a member");
+        assert!(!i.contains(&rx(0)).unwrap(), "x is not in (x²-1)");
+        assert!(!i.contains(&rone()).unwrap(), "1 is not in (x²-1)");
     }
 
     #[test]
@@ -688,5 +1209,80 @@ mod tests {
         let p = MultivariatePolynomial::constant(Integer::from(5));
         let reduced = ideal.reduce(&p);
         assert!(!reduced.is_zero());
+    }
+
+    /// BLOCKER: the two Gröbner engines used to share **one** cache field, so whichever
+    /// ran first won it.
+    ///
+    /// `I = (x, x²)` over `Q`. The reduced Gröbner basis is `[x]` — `x²` is redundant. But
+    /// `reduce()` runs the `R: Ring` engine, which caches the *non-reduced* basis
+    /// `[x, x²]`; `reduced_basis()` then found the cache populated and handed that back,
+    /// violating its own contract ("the canonical generating set: two ideals are equal iff
+    /// these agree"). `contains` / `is_radical` / `radical` all route through
+    /// `reduced_basis`, so they could be answered against a non-reduced basis.
+    ///
+    /// Revert the cache split and this test fails: the second `reduced_basis()` returns
+    /// `["x0", "x0^2"]` instead of `["x0"]`.
+    #[test]
+    fn ideal_cache_split_reduced_basis_stays_reduced() {
+        let budget = GroebnerBudget::default();
+        let gens = vec![rx(0), rx(0) * rx(0)]; // (x, x²)
+
+        // A fresh ideal: the reduced basis is [x].
+        let mut fresh: Ideal<Rational> = Ideal::new(gens.clone(), MonomialOrdering::Grevlex);
+        let expected = fresh.reduced_basis(&budget).unwrap();
+        assert_eq!(
+            expected.iter().map(|p| p.to_string()).collect::<Vec<_>>(),
+            vec!["x0".to_string()],
+            "the reduced Gröbner basis of (x, x²) is (x)"
+        );
+
+        // The same ideal, but the R: Ring engine runs first and fills *its* cache.
+        let mut polluted: Ideal<Rational> = Ideal::new(gens, MonomialOrdering::Grevlex);
+        let ring_basis = polluted.reduce(&(rx(0) * rx(0) * rx(0)));
+        assert!(ring_basis.is_zero(), "x³ ∈ (x)");
+
+        let after = polluted.reduced_basis(&budget).unwrap();
+        assert_eq!(
+            after.iter().map(|p| p.to_string()).collect::<Vec<_>>(),
+            vec!["x0".to_string()],
+            "reduced_basis() must still return the REDUCED basis [x] after reduce() has \
+             populated the R: Ring cache — got a non-reduced basis, so the caches are \
+             shared again"
+        );
+        assert_eq!(after, expected, "the cache must not change the answer");
+
+        // The non-reduced engine really does return the redundant generator — this is what
+        // used to leak into `reduced_basis`.
+        let raw = polluted.get_groebner_basis();
+        assert!(
+            raw.len() > after.len(),
+            "the R: Ring basis of (x, x²) is expected to keep the redundant x²; if it no \
+             longer does, this test has stopped proving anything"
+        );
+    }
+
+    /// `Ideal::reduce` used to loop forever whenever `deg(p) >= deg(g)` for some basis
+    /// element `g` — this is the regression test for that hang, and it checks the
+    /// reduction is actually performed.
+    #[test]
+    fn test_reduce_terminates_and_reduces() {
+        // Z[x]/(x² - 1): x² reduces to 1.
+        let mut i: Ideal<Integer> = Ideal::principal(
+            ix(0) * ix(0) - MultivariatePolynomial::constant(Integer::from(1)),
+            MonomialOrdering::Lex,
+        );
+
+        let x_sq = ix(0) * ix(0);
+        let reduced = i.reduce(&x_sq);
+        assert_eq!(
+            reduced,
+            MultivariatePolynomial::constant(Integer::from(1)),
+            "x² should reduce to 1 modulo (x²-1)"
+        );
+
+        // x³ reduces to x.
+        let x_cubed = ix(0) * ix(0) * ix(0);
+        assert_eq!(i.reduce(&x_cubed), ix(0), "x³ should reduce to x modulo (x²-1)");
     }
 }

@@ -250,6 +250,23 @@ impl<R: Ring> UnivariatePolynomial<R> {
 
         while !b.is_zero() {
             let (_, r) = a.div_rem(&b).unwrap();
+
+            // `quo_rem` gives up (returning the dividend untouched) as soon as the
+            // divisor's leading coefficient does not divide exactly in R — which is
+            // unavoidable, because R[x] over a non-field is not a Euclidean domain.
+            // The plain Euclidean loop then never reduces the degree and cycles forever
+            // (e.g. gcd(-x³+4x²-5x+2, -3x²+8x-5) over Z spun until the harness killed
+            // it). Fall back to the pseudo-remainder, which cancels the leading term by
+            // construction and therefore strictly lowers the degree, so the loop
+            // terminates. The result is then the gcd up to a factor in R (the usual
+            // pseudo-remainder-sequence caveat); every input on which the ordinary
+            // division already made progress takes the original path unchanged.
+            let no_progress = match (r.degree(), b.degree()) {
+                (Some(dr), Some(db)) => dr >= db,
+                _ => false,
+            };
+            let r = if no_progress { a.pseudo_rem(&b) } else { r };
+
             a = b;
             b = r;
         }
@@ -259,6 +276,39 @@ impl<R: Ring> UnivariatePolynomial<R> {
         // This is left as a future enhancement.
 
         a
+    }
+
+    /// The pseudo-remainder of `self` by `divisor`.
+    ///
+    /// Repeatedly scales the running remainder by the divisor's leading coefficient
+    /// before subtracting, so the leading term always cancels exactly and the degree
+    /// strictly decreases — no exact divisibility in `R` is needed. This is what makes a
+    /// gcd over a non-field coefficient ring terminate.
+    fn pseudo_rem(&self, divisor: &Self) -> Self
+    where
+        R: EuclideanDomain,
+    {
+        let Some(divisor_degree) = divisor.degree() else {
+            panic!("Pseudo-division by zero polynomial");
+        };
+        let divisor_leading = divisor.coeffs.last().unwrap().clone();
+
+        let mut remainder = self.clone();
+        while let Some(rem_degree) = remainder.degree() {
+            if rem_degree < divisor_degree {
+                break;
+            }
+
+            let rem_leading = remainder.coeffs.last().unwrap().clone();
+            let mut mono_coeffs = vec![R::zero(); rem_degree - divisor_degree];
+            mono_coeffs.push(rem_leading);
+            let mono = UnivariatePolynomial::new(mono_coeffs);
+
+            // lc(divisor)·remainder − lead(remainder)·x^(dr−db)·divisor
+            remainder = remainder.scalar_mul(&divisor_leading) - mono * divisor.clone();
+        }
+
+        remainder
     }
 
     /// Compute polynomial LCM (least common multiple)
@@ -569,29 +619,41 @@ impl<R: Ring> UnivariatePolynomial<R> {
         (quotient, remainder)
     }
 
-    /// Compute squarefree decomposition
+    /// Compute squarefree decomposition (Musser's algorithm)
     ///
     /// Returns a vector of (factor, multiplicity) pairs where each factor is squarefree
     /// and the original polynomial is the product of factor^multiplicity
     ///
+    /// # Coefficient ring
+    ///
+    /// This requires a **field**. The algorithm divides by `gcd(f, f')` and by successive
+    /// gcds, and those divisions have to be exact; over a ring such as `Z` they are not
+    /// (`quo_rem` simply gives up when the leading coefficient does not divide), and the
+    /// recursion then never makes progress. This used to be bounded on `EuclideanDomain`
+    /// and, when instantiated at `Z`, looped forever — the doctest below was the example
+    /// that hung.
+    ///
+    /// For `Z[x]`, use [`crate::zx::squarefree_decomposition`], which does the
+    /// primitive-part bookkeeping that the integer case actually needs.
+    ///
     /// # Examples
     /// ```
     /// use rustmath_polynomials::UnivariatePolynomial;
+    /// use rustmath_rationals::Rational;
     /// use rustmath_integers::Integer;
     ///
-    /// // p(x) = (x-1)^2 * (x-2)
-    /// let p = UnivariatePolynomial::new(vec![
-    ///     Integer::from(2),
-    ///     Integer::from(-5),
-    ///     Integer::from(4),
-    ///     Integer::from(-1)
-    /// ]);
+    /// let c = |n: i64| Rational::from_integer(Integer::from(n));
+    ///
+    /// // p(x) = -(x-1)^2 * (x-2) = -x^3 + 4x^2 - 5x + 2
+    /// let p = UnivariatePolynomial::new(vec![c(2), c(-5), c(4), c(-1)]);
     ///
     /// let decomp = p.squarefree_decomposition();
+    /// // (x-1) appears with multiplicity 2, (x-2) with multiplicity 1.
+    /// assert_eq!(decomp.len(), 2);
     /// ```
     pub fn squarefree_decomposition(&self) -> Vec<(Self, usize)>
     where
-        R: EuclideanDomain,
+        R: EuclideanDomain + rustmath_core::Field,
     {
         if self.is_zero() {
             return vec![];
@@ -615,7 +677,11 @@ impl<R: Ring> UnivariatePolynomial<R> {
         // Compute squarefree part
         let (mut s, _) = f.quo_rem(&g);
 
-        while !s.is_one() {
+        // Yun's recursion stops once the squarefree part is constant. Testing only
+        // `!s.is_one()` looped forever whenever `s` degenerated to a constant that is not
+        // literally 1 — over Z the gcd is only defined up to a unit, so `s` can settle on
+        // -1 (or on the content) and never move again.
+        while !s.is_one() && s.degree().unwrap_or(0) > 0 {
             let h = s.gcd(&g);
             let (factor, _) = s.quo_rem(&h);
 

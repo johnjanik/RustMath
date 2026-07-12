@@ -38,6 +38,7 @@ fn cmp_for(ordering: MonomialOrdering) -> impl Fn(&Monomial, &Monomial) -> Order
         MonomialOrdering::Lex => a.cmp_lex(b),
         MonomialOrdering::Grlex => a.cmp_grlex(b),
         MonomialOrdering::Grevlex => a.cmp_grevlex(b),
+        MonomialOrdering::Elimination { block } => a.cmp_elimination(b, block),
     }
 }
 

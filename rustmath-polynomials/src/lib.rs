@@ -5,6 +5,7 @@
 pub mod algebraic_geometry;
 pub mod bivariate;
 pub mod disc;
+pub mod elimination;
 pub mod factorization;
 pub mod fp_factor;
 pub mod groebner;
@@ -35,9 +36,16 @@ pub use factorization::{
     content, factor_over_integers, is_irreducible, is_irreducible_over_integers, is_square_free,
     primitive_part, square_free_factorization,
 };
+pub use elimination::{
+    eliminate, eliminate_with_budget, exact_divide, fresh_variable, ideal_intersection,
+    ideal_intersection_with_budget, ideal_quotient, ideal_quotient_with_budget, krull_dimension,
+    saturate, saturate_with_budget, univariate_squarefree_part,
+};
 pub use groebner::{
-    groebner_basis, groebner_basis_info, ideal_membership, is_well_ordering,
-    ordering_description, reduce, reduced_groebner_basis, s_polynomial, MonomialOrdering,
+    comparison_fn, groebner_basis, groebner_basis_field, groebner_basis_info, ideal_membership,
+    ideal_membership_field, is_well_ordering, normal_form, ordering_description, reduce,
+    reduced_groebner_basis, reduced_groebner_basis_field, s_polynomial, s_polynomial_field,
+    try_groebner_basis, GroebnerBudget, MonomialOrdering,
 };
 pub use ideal::{cyclic_ideal, is_ideal, katsura_ideal, FieldIdeal, Ideal};
 pub use ideal_monoid::{is_ideal_monoid, IdealMonoid};
