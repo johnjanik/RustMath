@@ -13,6 +13,7 @@ rustmath-typesetting = { path = "../rustmath-typesetting" }
 num-rational = { workspace = true }
 num-bigint = { workspace = true }
 num-traits = { workspace = true }
+rug = { version = "1.24", default-features = false, features = ["float", "integer"] }
 serde = { workspace = true, optional = true }
 
 [features]

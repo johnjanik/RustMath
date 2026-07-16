@@ -1,8 +1,177 @@
 //! Continued fractions representation and operations
 
 use crate::Rational;
+use rug::Float;
 use rustmath_core::EuclideanDomain;
 use rustmath_integers::Integer;
+
+/// Recognize the best rational approximation of a real number `x` whose
+/// denominator does not exceed `max_denom`, using the continued-fraction
+/// expansion computed directly from the real value.
+///
+/// This is a *from-real* recognizer, distinct from [`Rational::from_f64`]
+/// (an f64-only linear search over denominators up to a fixed 10^6, with an
+/// f64-epsilon early exit — neither arbitrary-precision nor caller-bounded)
+/// and from the modulus-driven rational reconstruction used in number-field
+/// recognition.
+///
+/// # Algorithm
+///
+/// The partial quotients `a_k = floor(x_k)` are generated in `rug::Float`
+/// arithmetic (`x_{k+1} = 1 / (x_k - a_k)`), and the convergents `p_k/q_k` are
+/// built with the standard recurrence. Generation stops as soon as a convergent
+/// would have `q_k > max_denom` (or the remainder underflows the working
+/// precision, or a precision-derived iteration bound is hit — so an irrational
+/// input never loops forever). The returned value is the genuinely closest
+/// rational with denominator `<= max_denom`: it is either the last convergent
+/// `p_{m-1}/q_{m-1}` or the largest feasible *semiconvergent*
+/// `(p_{m-2} + t·p_{m-1}) / (q_{m-2} + t·q_{m-1})`, whichever lies nearer `x`
+/// (the classical "half rule", with an exact-tie fallback that compares the two
+/// candidate distances directly).
+///
+/// `max_denom` is treated as `max(max_denom, 1)` (a denominator must be
+/// positive). Panics if `x` is not finite (NaN/inf have no rational value).
+///
+/// # Examples
+///
+/// ```
+/// use rug::Float;
+/// use rustmath_integers::Integer;
+/// use rustmath_rationals::continued_fraction::from_real;
+///
+/// let pi = Float::with_val(256, rug::float::Constant::Pi);
+/// let approx = from_real(&pi, &Integer::from(200));
+/// assert_eq!(approx.numerator(), &Integer::from(355));
+/// assert_eq!(approx.denominator(), &Integer::from(113));
+/// ```
+pub fn from_real(x: &Float, max_denom: &Integer) -> Rational {
+    assert!(
+        x.is_finite(),
+        "from_real: x must be finite (NaN/inf have no rational value)"
+    );
+
+    let prec = x.prec();
+    let one = Integer::one();
+    // A denominator must be positive; clamp a non-positive bound to 1
+    // (best rational with denominator <= 1 is the nearest integer).
+    let max_eff = if *max_denom < one {
+        one.clone()
+    } else {
+        max_denom.clone()
+    };
+
+    // Convergent recurrence state: P_{n-1} = (h1, k1), P_{n-2} = (h2, k2),
+    // seeded with P_{-1} = 1/0 and P_{-2} = 0/1.
+    let mut h2 = Integer::zero();
+    let mut k2 = Integer::one();
+    let mut h1 = Integer::one();
+    let mut k1 = Integer::zero();
+
+    let mut r = Float::with_val(prec, x);
+    let one_f = Float::with_val(prec, 1);
+    // A value known to `prec` bits has at most ~prec meaningful partial
+    // quotients; this hard cap guarantees termination on an irrational input.
+    let max_iters = prec as usize + 64;
+
+    // The partial quotient a_m that first overflows max_denom, if any.
+    let mut overflow_a: Option<Integer> = None;
+
+    for _ in 0..max_iters {
+        let floor_f = r.clone().floor();
+        let a = float_floor_to_integer(&floor_f);
+
+        let h = a.clone() * h1.clone() + h2.clone();
+        let k = a.clone() * k1.clone() + k2.clone();
+        if k > max_eff {
+            overflow_a = Some(a);
+            break;
+        }
+
+        // Accept the convergent P_n = (h, k).
+        h2 = h1;
+        k2 = k1;
+        h1 = h;
+        k1 = k;
+
+        let frac = Float::with_val(prec, &r - &floor_f);
+        if frac.is_zero() {
+            // x is captured exactly (to the working precision); P_n is exact.
+            return Rational::new(h1, k1).unwrap();
+        }
+        r = Float::with_val(prec, &one_f / &frac);
+    }
+
+    let a_m = match overflow_a {
+        // Ran out of precision without ever exceeding max_denom: the best
+        // approximation visible at this precision is the last convergent.
+        None => return Rational::new(h1, k1).unwrap(),
+        Some(a) => a,
+    };
+
+    // Best-approximation refinement. The last accepted convergent is
+    // P_{m-1} = (h1, k1); the one before is P_{m-2} = (h2, k2). The closest
+    // rational with denominator <= max_denom on the far side of x is the
+    // semiconvergent with the largest feasible multiplier
+    //   t = floor((max_denom - q_{m-2}) / q_{m-1}),   0 <= t < a_m,
+    // and the overall best is the closer of that semiconvergent and P_{m-1}.
+    let t = (max_eff.clone() - k2.clone()) / k1.clone();
+    let hs = h2.clone() + t.clone() * h1.clone();
+    let ks = k2.clone() + t.clone() * k1.clone();
+
+    let two_t = t.clone() + t.clone();
+    let choose_semi = if two_t > a_m {
+        true
+    } else if two_t < a_m {
+        false
+    } else {
+        // Exact half-way tie: decide by the genuine distances to x.
+        distance_to(x, &hs, &ks, prec) < distance_to(x, &h1, &k1, prec)
+    };
+
+    if choose_semi {
+        Rational::new(hs, ks).unwrap()
+    } else {
+        Rational::new(h1, k1).unwrap()
+    }
+}
+
+/// Convenience wrapper of [`from_real`] for `f64` inputs.
+///
+/// The double is loaded losslessly into a 53-bit `rug::Float` (its exact IEEE
+/// value) before the best-approximation search runs. Panics on NaN/inf.
+pub fn from_f64(x: f64, max_denom: &Integer) -> Rational {
+    from_real(&Float::with_val(53, x), max_denom)
+}
+
+/// Convert an already-integral `rug::Float` (e.g. the output of `.floor()`) to
+/// an [`Integer`] exactly, via its decimal digits (no `f64` truncation).
+fn float_floor_to_integer(f: &Float) -> Integer {
+    let z = f
+        .to_integer()
+        .expect("from_real: floor of a finite value is an integer");
+    rug_integer_to_integer(&z)
+}
+
+/// Exact `rug::Integer` -> [`Integer`] via the decimal representation.
+fn rug_integer_to_integer(z: &rug::Integer) -> Integer {
+    let big = num_bigint::BigInt::parse_bytes(z.to_string().as_bytes(), 10)
+        .expect("from_real: rug integer parses as decimal");
+    Integer::from(big)
+}
+
+/// Exact [`Integer`] -> `rug::Integer` via the decimal representation.
+fn integer_to_rug(n: &Integer) -> rug::Integer {
+    rug::Integer::from_str_radix(&n.to_string(), 10)
+        .expect("from_real: integer parses as decimal")
+}
+
+/// `|x - num/den|` evaluated at `prec` bits.
+fn distance_to(x: &Float, num: &Integer, den: &Integer, prec: u32) -> Float {
+    let nf = Float::with_val(prec, integer_to_rug(num));
+    let df = Float::with_val(prec, integer_to_rug(den));
+    let approx = Float::with_val(prec, &nf / &df);
+    Float::with_val(prec, x - &approx).abs()
+}
 
 /// A continued fraction representation
 ///
@@ -507,6 +676,125 @@ mod tests {
 
         let result = PeriodicContinuedFraction::from_sqrt(&Integer::from(16));
         assert!(result.is_none());
+    }
+
+    // ----- from_real: float -> best-rational via continued fractions -----
+    //
+    // Every expected value below was derived independently with Python's
+    // `fractions.Fraction(mpmath.mpf(v)).limit_denominator(N)` (the canonical
+    // best-rational-approximation-with-bounded-denominator oracle), NOT read
+    // out of the code under test.
+
+    fn q(num: i64, den: i64) -> Rational {
+        Rational::new(num, den).unwrap()
+    }
+
+    /// A 512-bit rug::Float of pi.
+    fn pi512() -> Float {
+        Float::with_val(512, rug::float::Constant::Pi)
+    }
+
+    /// Render the exact rational num/den to a 512-bit rug::Float.
+    fn rational_512(num: i64, den: i64) -> Float {
+        let n = Float::with_val(512, num);
+        let d = Float::with_val(512, den);
+        Float::with_val(512, &n / &d)
+    }
+
+    #[test]
+    fn test_from_real_pi_denom_200_is_355_113() {
+        // Best rational approx to pi with denom <= 200 is the convergent 355/113.
+        assert_eq!(from_real(&pi512(), &Integer::from(200)), q(355, 113));
+    }
+
+    #[test]
+    fn test_from_real_exact_rational_roundtrip() {
+        // 123456/98765 rendered to 512 bits, recovered exactly with denom <= 100000.
+        let x = rational_512(123456, 98765);
+        assert_eq!(from_real(&x, &Integer::from(100000)), q(123456, 98765));
+    }
+
+    #[test]
+    fn test_from_real_bound_too_small_returns_best_coarse() {
+        // With denom <= 100 the best approximant to pi is the SEMICONVERGENT
+        // 311/99 (err ~1.8e-4), strictly better than the convergent 22/7
+        // (err ~1.3e-3). This proves the semiconvergent refinement is active
+        // and that a too-small bound returns the best coarse value, not 355/113.
+        let best = from_real(&pi512(), &Integer::from(100));
+        assert_eq!(best, q(311, 99));
+        assert_ne!(best, q(22, 7));
+        assert_ne!(best, q(355, 113));
+    }
+
+    #[test]
+    fn test_from_real_more_oracle_values() {
+        // sqrt(2), denom <= 100  -> 140/99
+        let sqrt2 = Float::with_val(512, 2).sqrt();
+        assert_eq!(from_real(&sqrt2, &Integer::from(100)), q(140, 99));
+
+        // e, denom <= 50 -> 106/39 ; denom <= 100 -> 193/71
+        let e = Float::with_val(512, 1).exp();
+        assert_eq!(from_real(&e, &Integer::from(50)), q(106, 39));
+        assert_eq!(from_real(&e, &Integer::from(100)), q(193, 71));
+
+        // pi, large bound reaches the deep convergent 245850922/78256779
+        assert_eq!(
+            from_real(&pi512(), &Integer::from(99999999)),
+            Rational::new(Integer::from(245850922i64), Integer::from(78256779i64)).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_from_real_negative() {
+        // -pi, denom <= 113 -> -355/113
+        let neg_pi = Float::with_val(512, -1) * pi512();
+        assert_eq!(from_real(&neg_pi, &Integer::from(113)), q(-355, 113));
+    }
+
+    #[test]
+    fn test_from_real_integer_and_zero() {
+        // Exact integers and zero come back exactly with denominator 1.
+        assert_eq!(from_real(&Float::with_val(64, 5), &Integer::from(1000)), q(5, 1));
+        assert_eq!(from_real(&Float::with_val(64, 0), &Integer::from(1000)), q(0, 1));
+        assert_eq!(from_real(&Float::with_val(64, -7), &Integer::from(2)), q(-7, 1));
+    }
+
+    #[test]
+    fn test_from_real_denom_bound_clamped() {
+        // denom <= 1 must yield the nearest integer (pi -> 3/1); a zero bound
+        // is clamped to 1 rather than dividing by zero.
+        assert_eq!(from_real(&pi512(), &Integer::from(1)), q(3, 1));
+        assert_eq!(from_real(&pi512(), &Integer::from(0)), q(3, 1));
+    }
+
+    #[test]
+    fn test_from_f64_wrapper() {
+        // The exact IEEE value of 0.1 best-approximates to 1/10 within denom <= 1000.
+        assert_eq!(from_f64(0.1, &Integer::from(1000)), q(1, 10));
+        // 1/3 rendered as f64, denom <= 2 -> 1/2.
+        assert_eq!(from_f64(1.0 / 3.0, &Integer::from(2)), q(1, 2));
+    }
+
+    #[test]
+    fn test_from_real_best_beats_naive_grid() {
+        // Independently re-derive the answer by brute force: among ALL den
+        // 1..=N, the closest p/q. This must match from_real for pi, N = 250.
+        let x = pi512();
+        let n = 250u64;
+        let mut best: Option<Rational> = None;
+        let mut best_err = Float::with_val(512, 10);
+        for den in 1..=n {
+            let df = Float::with_val(512, den);
+            let num = Float::with_val(512, &x * &df).round();
+            let approx = Float::with_val(512, &num / &df);
+            let err = Float::with_val(512, &x - &approx).abs();
+            if err < best_err {
+                best_err = err;
+                let num_i = float_floor_to_integer(&num);
+                best = Some(Rational::new(num_i, Integer::from(den as i64)).unwrap());
+            }
+        }
+        assert_eq!(from_real(&x, &Integer::from(n as i64)), best.unwrap());
     }
 
     #[test]
