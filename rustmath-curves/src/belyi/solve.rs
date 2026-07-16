@@ -17,11 +17,181 @@
 //! as [`crate::belyi::pinned::pinned_system_2_12_5`]) yields a square `2n×2n` real
 //! system, exactly what the detector expects.
 
+use super::mp_svd::JacobiSvdOptions;
 use rustmath_numerical::homotopy::{CoordinateReIm, NumericalSolution};
 use rustmath_numerical::root_finding::{
     classify_candidate, levenberg_marquardt, NewtonConfig, NewtonSystemResult, RootClass,
 };
 use rustmath_polynomials::poly_system::PolySystem;
+
+// ---------------------------------------------------------------------------
+// SolveParams: the N-vs-precision binding for the hp solve spine (item A7)
+// ---------------------------------------------------------------------------
+
+/// Decimal digits representable at `prec_bits` of mpfr precision:
+/// `D = floor(prec_bits · log10 2)`. prec = 256 → D = 77.
+pub fn decimal_capacity(prec_bits: u32) -> usize {
+    (prec_bits as f64 * std::f64::consts::LOG10_2).floor() as usize
+}
+
+/// Jacobi off-diagonal convergence tolerance derived from `prec_bits`:
+/// `1e-(D−7)` — 7 guard digits above the representation floor (sweeps past that
+/// only churn rounding noise). prec = 256 → `"1e-70"`, the trusted (5,3,3) literal.
+pub fn jacobi_tol_decimal(prec_bits: u32) -> String {
+    format!("1e-{}", decimal_capacity(prec_bits).saturating_sub(7))
+}
+
+/// σ-cluster tolerance derived from `prec_bits`: `1e-(ceil(D/2)+1)` — singular
+/// values agreeing to half the working precision (plus one guard decade) are a
+/// cluster, whose individual vectors are not canonical (use the subspace).
+/// prec = 256 → `"1e-40"`, the trusted (5,3,3) literal.
+pub fn cluster_tol_decimal(prec_bits: u32) -> String {
+    format!("1e-{}", decimal_capacity(prec_bits).div_ceil(2) + 1)
+}
+
+/// Why a [`SolveParams`] request was rejected. Every variant states the exact
+/// inequality that failed — an under-precisioned run would otherwise return
+/// coefficients dominated by amplified rounding noise while *looking* converged.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ParamError {
+    /// `digits < 4`: the derived threshold `1e-(ceil(digits/2)+1)` no longer
+    /// separates the kernel σ (~`1e-digits`) from the O(1) rank σ.
+    DigitsTooSmall { digits: usize, min: usize },
+    /// `decimal_capacity(prec_bits) < 2·digits + ceil(log10(N+1)) + 8`.
+    InsufficientPrecision {
+        prec_bits: u32,
+        needed_bits: u32,
+        digits: usize,
+        big_n: usize,
+    },
+    /// `ρ^N > 10^-digits`: the series truncation floor sits above the requested
+    /// accuracy (`achievable_digits = N·log10(1/ρ) < digits`).
+    TruncationTooCoarse {
+        big_n: usize,
+        rho: f64,
+        achievable_digits: f64,
+        requested_digits: usize,
+    },
+}
+
+/// Coupled parameters for the §4/§5 hp solve chain, binding the series
+/// truncation `N`, the working precision, and the SVD tolerances so they are
+/// mutually consistent instead of free-floating literals.
+///
+/// Derivation (generalizing the trusted (5,3,3) test literals
+/// `prec = 256`, `N = 48`, `"1e-8"`, `"1e-70"`, `"1e-40"`):
+///
+/// * `D = floor(prec · log10 2)` decimal digits of working precision (256 → 77).
+/// * `tol_decimal = 1e-(D−7)`: Jacobi sweep convergence, 7 guard digits above
+///   the rounding floor (77 → `1e-70`).
+/// * `cluster_decimal = 1e-(ceil(D/2)+1)`: σ clustered at half working
+///   precision (77 → `1e-40`).
+/// * `threshold_decimal = 1e-(ceil(digits/2)+1)`: the kernel/rank separator.
+///   The kernel σ sit at the truncation floor ~`10^-digits`, the rank σ are
+///   O(1); the geometric mean pushed one decade toward the floor separates them
+///   (digits = 13 → `1e-8`; for (5,3,3), ρ^48 ≈ 5·10⁻¹⁴, i.e. digits = 13).
+/// * Accepted only if `D ≥ 2·digits + ceil(log10(N+1)) + 8`: the un-scaling
+///   `b_n = ρ^{-n} y_n` in `recover_forms` amplifies representation noise
+///   `10^-D` by up to `ρ^{-N} ≈ 10^digits`, so trusting the result at the
+///   truncation floor `10^-digits` needs `D ≥ 2·digits`, plus `ceil(log10(N+1))`
+///   for length-(N+1) accumulations and 8 guard digits.
+///
+/// `digits` is the requested decimal accuracy: the caller must also choose `N`
+/// large enough that `ρ^N ≤ 10^-digits`. ρ is only known once the coset graph is
+/// compactified, so that binding is checked separately by [`Self::check_rho`].
+#[derive(Debug, Clone, PartialEq)]
+pub struct SolveParams {
+    /// mpfr working precision in bits.
+    pub prec_bits: u32,
+    /// Series truncation N (matrix dim = N + 1).
+    pub big_n: usize,
+    /// Requested decimal accuracy (the truncation floor `10^-digits`).
+    pub digits: usize,
+    /// Kernel/rank σ separation threshold (derived, see type docs).
+    pub threshold_decimal: String,
+    /// Jacobi off-diagonal convergence tolerance (derived).
+    pub tol_decimal: String,
+    /// σ-cluster tolerance (derived).
+    pub cluster_decimal: String,
+    /// Jacobi sweep cap (the (5,3,3)-tested default: 80).
+    pub max_sweeps: usize,
+    /// Extra rows over columns in the `solve_belyi_map` system
+    /// (`nrows = ncols + extra_rows`; the (5,3,3)-tested default: 6).
+    pub extra_rows: usize,
+}
+
+impl SolveParams {
+    /// Jacobi sweep cap used by every trusted (5,3,3) run.
+    pub const DEFAULT_MAX_SWEEPS: usize = 80;
+    /// Row surplus used by every trusted (5,3,3) run of `solve_belyi_map`.
+    pub const DEFAULT_EXTRA_ROWS: usize = 6;
+
+    /// Bind (`prec_bits`, `N`, `digits`) as documented on the type, rejecting an
+    /// under-precisioned or under-separated request with the exact failed bound.
+    pub fn new(prec_bits: u32, n: usize, digits: usize) -> Result<SolveParams, ParamError> {
+        const MIN_DIGITS: usize = 4;
+        if digits < MIN_DIGITS {
+            return Err(ParamError::DigitsTooSmall { digits, min: MIN_DIGITS });
+        }
+        let cap = decimal_capacity(prec_bits);
+        let acc_digits = ((n + 1) as f64).log10().ceil() as usize;
+        let needed_cap = 2 * digits + acc_digits + 8;
+        if cap < needed_cap {
+            let needed_bits = (needed_cap as f64 / std::f64::consts::LOG10_2).ceil() as u32;
+            return Err(ParamError::InsufficientPrecision {
+                prec_bits,
+                needed_bits,
+                digits,
+                big_n: n,
+            });
+        }
+        Ok(SolveParams {
+            prec_bits,
+            big_n: n,
+            digits,
+            threshold_decimal: format!("1e-{}", digits.div_ceil(2) + 1),
+            tol_decimal: jacobi_tol_decimal(prec_bits),
+            cluster_decimal: cluster_tol_decimal(prec_bits),
+            max_sweeps: Self::DEFAULT_MAX_SWEEPS,
+            extra_rows: Self::DEFAULT_EXTRA_ROWS,
+        })
+    }
+
+    /// The N-vs-ρ half of the binding: `ρ^N ≤ 10^-digits`, i.e.
+    /// `N·log10(1/ρ) ≥ digits`. Call once the compactified domain radius ρ is
+    /// known; a failure means the truncation floor is above the requested
+    /// accuracy and the run must not proceed.
+    pub fn check_rho(&self, rho: f64) -> Result<(), ParamError> {
+        if !(rho > 0.0 && rho < 1.0) {
+            return Err(ParamError::TruncationTooCoarse {
+                big_n: self.big_n,
+                rho,
+                achievable_digits: 0.0,
+                requested_digits: self.digits,
+            });
+        }
+        let achievable = self.big_n as f64 * (1.0 / rho).log10();
+        if achievable < self.digits as f64 {
+            return Err(ParamError::TruncationTooCoarse {
+                big_n: self.big_n,
+                rho,
+                achievable_digits: achievable,
+                requested_digits: self.digits,
+            });
+        }
+        Ok(())
+    }
+
+    /// The [`JacobiSvdOptions`] this binding prescribes.
+    pub fn svd_options(&self) -> JacobiSvdOptions {
+        JacobiSvdOptions::new(
+            self.prec_bits,
+            self.max_sweeps,
+            &self.tol_decimal,
+            &self.cluster_decimal,
+        )
+    }
+}
 
 /// Complex number as `(re, im)` in `f64`.
 type Cf = (f64, f64);
@@ -201,5 +371,62 @@ mod tests {
         let refined = refine_candidate(&sol_from(&[(0.2, 0.7)]), &sys, &cfg);
         let sol2 = real_to_numerical_solution(&refined.x, refined.residual_norm);
         assert!(gate_default(&sol2, &sys).is_true_root());
+    }
+
+    // The binding reproduces the trusted (5,3,3) literals: prec = 256, N = 48
+    // (ρ ≈ 0.5289, ρ^48 ≈ 5e-14 ⇒ digits = 13) must derive exactly the
+    // threshold/tol/cluster strings the hand-tuned tests have always used.
+    #[test]
+    fn solve_params_reproduce_5_3_3_literals() {
+        let sp = SolveParams::new(256, 48, 13).expect("(5,3,3) config must be accepted");
+        assert_eq!(sp.threshold_decimal, "1e-8");
+        assert_eq!(sp.tol_decimal, "1e-70");
+        assert_eq!(sp.cluster_decimal, "1e-40");
+        assert_eq!(sp.max_sweeps, 80);
+        assert_eq!(sp.extra_rows, 6);
+        // measured (5,3,3) z_a-chart radius: 48·log10(1/0.528936) ≈ 13.28 ≥ 13.
+        sp.check_rho(0.528936).expect("N = 48 covers 13 digits at ρ ≈ 0.5289");
+        // one digit more is NOT covered by N = 48 at that ρ (13.28 < 14):
+        let sp14 = SolveParams::new(256, 48, 14).expect("precision itself is sufficient");
+        assert!(matches!(
+            sp14.check_rho(0.528936),
+            Err(ParamError::TruncationTooCoarse { .. })
+        ));
+        // ρ ≥ 1 (non-contracting chart) can never satisfy the binding.
+        assert!(sp.check_rho(1.0).is_err());
+    }
+
+    // Under-precisioned requests err with the exact failed bound: digits = 13,
+    // N = 48 needs D ≥ 2·13 + ceil(log10 49) + 8 = 36 decimal digits ⇒ 120 bits.
+    #[test]
+    fn solve_params_reject_under_precision() {
+        match SolveParams::new(100, 48, 13) {
+            Err(ParamError::InsufficientPrecision { prec_bits, needed_bits, .. }) => {
+                assert_eq!(prec_bits, 100);
+                assert_eq!(needed_bits, 120);
+            }
+            other => panic!("expected InsufficientPrecision, got {other:?}"),
+        }
+        // exactly at the bound is accepted
+        assert!(SolveParams::new(120, 48, 13).is_ok());
+        // digits below the separability floor are rejected outright
+        assert!(matches!(
+            SolveParams::new(256, 48, 3),
+            Err(ParamError::DigitsTooSmall { .. })
+        ));
+    }
+
+    // The [2,12,5] production binding: prec = 400 bits, N = 3000, digits = 12 is
+    // consistent (D = 120 ≥ 36) and the measured z_a-chart ρ ≈ 0.9906 gives
+    // 3000·log10(1/0.9906) ≈ 12.3 ≥ 12, while N = 2500 would NOT reach 12 digits.
+    #[test]
+    fn solve_params_bind_2_12_5_production() {
+        let sp = SolveParams::new(400, 3000, 12).expect("production binding");
+        sp.check_rho(0.9906).expect("N = 3000 covers 12 digits at ρ ≈ 0.9906");
+        let sp_short = SolveParams::new(400, 2500, 12).unwrap();
+        assert!(matches!(
+            sp_short.check_rho(0.9906),
+            Err(ParamError::TruncationTooCoarse { .. })
+        ));
     }
 }

@@ -444,12 +444,12 @@ pub struct AtlasDumpResult {
     pub dim: usize,
 }
 
-/// Set up the triangle group + coset graph exactly as the streamed harness does,
-/// pick the requested chart center, and run [`dump_scaled_ami_streamed`].
-///
-/// The `q = 2 N + 8` over-sampling, the `(0 base)` rebase, and the center
-/// dispatch all match the harness verbatim, so callers get identical numerics.
-pub fn run_atlas_dump(p: &AtlasDumpParams) -> AtlasDumpResult {
+/// Build the triangle group, compactified coset graph, and chart center for `p`
+/// exactly as the streamed harness does (the `(0 base)` rebase, `compactify_with`,
+/// and the center dispatch, verbatim). Extracted from [`run_atlas_dump`] so the
+/// solve driver ([`super::genus0_map::run_and_persist_belyi`]) shares the setup;
+/// `p.n`, `p.nlimbs`, `p.out` are not consumed here.
+pub fn atlas_setup(p: &AtlasDumpParams) -> (TriangleGroup, TriangleGroupHp, CosetGraph, Complex) {
     let mut s0 = p.s0.clone();
     let mut s1 = p.s1.clone();
     assert_eq!(s0.len(), s1.len(), "s0, s1 degrees differ");
@@ -470,7 +470,6 @@ pub fn run_atlas_dump(p: &AtlasDumpParams) -> AtlasDumpResult {
     let tg = TriangleGroupHp::new(oa, ob, oc, p.prec);
     let mut cg = CosetGraph::build(&tg64, &s0, &s1);
     cg.compactify_with(&tg64, p.r_prune, p.l_max);
-    let q = 2 * p.n + 8;
 
     let ctr = match p.center.as_str() {
         "b" => tg.z_b.clone(),
@@ -480,7 +479,17 @@ pub fn run_atlas_dump(p: &AtlasDumpParams) -> AtlasDumpResult {
         "a2" => reps_hp(&cg, &tg)[p.coset].apply(&tg.z_a),
         _ => tg.z_a.clone(),
     };
+    (tg64, tg, cg, ctr)
+}
 
+/// Set up the triangle group + coset graph exactly as the streamed harness does,
+/// pick the requested chart center, and run [`dump_scaled_ami_streamed`].
+///
+/// The `q = 2 N + 8` over-sampling, the `(0 base)` rebase, and the center
+/// dispatch all match the harness verbatim, so callers get identical numerics.
+pub fn run_atlas_dump(p: &AtlasDumpParams) -> AtlasDumpResult {
+    let (tg64, tg, cg, ctr) = atlas_setup(p);
+    let q = 2 * p.n + 8;
     let rho = dump_scaled_ami_streamed(&tg64, &tg, &cg, p.k, p.n, q, 1.0, &ctr, p.nlimbs, &p.out);
     AtlasDumpResult { rho, ctr, dim: p.n + 1 }
 }
@@ -515,8 +524,26 @@ pub fn dim_s_k_svd(
     tol_decimal: &str,
     rho_scale: f64,
 ) -> (usize, Vec<Float>) {
+    dim_s_k_svd_centered(tg64, tg, cg, k, big_n, q, threshold_decimal, tol_decimal, rho_scale, &tg.z_a)
+}
+
+/// [`dim_s_k_svd`] in the disk chart centered at an arbitrary `ctr` (dim S_k is
+/// chart-independent; ρ — and hence the N needed for a given accuracy — is not).
+#[allow(clippy::too_many_arguments)]
+pub fn dim_s_k_svd_centered(
+    tg64: &TriangleGroup,
+    tg: &TriangleGroupHp,
+    cg: &CosetGraph,
+    k: i64,
+    big_n: usize,
+    q: usize,
+    threshold_decimal: &str,
+    tol_decimal: &str,
+    rho_scale: f64,
+    ctr: &Complex,
+) -> (usize, Vec<Float>) {
     let prec = tg.prec;
-    let (a, _rho) = assemble_scaled_ami(tg64, tg, cg, k, big_n, q, rho_scale, &tg.z_a);
+    let (a, _rho) = assemble_scaled_ami(tg64, tg, cg, k, big_n, q, rho_scale, ctr);
     let dim = a.len();
     // to row-major MpMatrix
     let mut data = Vec::with_capacity(dim * dim);
@@ -548,8 +575,28 @@ pub fn recover_forms(
     tol_decimal: &str,
     rho_scale: f64,
 ) -> Vec<Vec<Complex>> {
+    recover_forms_centered(tg64, tg, cg, k, big_n, q, threshold_decimal, tol_decimal, rho_scale, &tg.z_a)
+}
+
+/// [`recover_forms`] in the disk chart centered at an arbitrary `ctr` (e.g. `tg.z_b`
+/// for the order-b vertex chart). The kernel DIMENSION is chart-independent; the
+/// coefficient vectors are expansions in the `ctr` chart's w and differ between charts.
+/// `assemble_scaled_ami` already accepts `ctr`; this threads it the rest of the way.
+#[allow(clippy::too_many_arguments)]
+pub fn recover_forms_centered(
+    tg64: &TriangleGroup,
+    tg: &TriangleGroupHp,
+    cg: &CosetGraph,
+    k: i64,
+    big_n: usize,
+    q: usize,
+    threshold_decimal: &str,
+    tol_decimal: &str,
+    rho_scale: f64,
+    ctr: &Complex,
+) -> Vec<Vec<Complex>> {
     let prec = tg.prec;
-    let (a, rho) = assemble_scaled_ami(tg64, tg, cg, k, big_n, q, rho_scale, &tg.z_a);
+    let (a, rho) = assemble_scaled_ami(tg64, tg, cg, k, big_n, q, rho_scale, ctr);
     let dim = a.len();
     let mut data = Vec::with_capacity(dim * dim);
     for row in &a {
@@ -942,6 +989,51 @@ mod tests {
                 "dim S_{k} = {nullity} (expected {expected}); σ_min={smallest:.2e}, σ_max={largest:.2e}"
             );
         }
+    }
+
+    // recover_forms_centered at ctr = z_a is the SAME code path recover_forms now
+    // delegates to; the two calls must agree. The comparison is numeric rather than
+    // bitwise only because the rayon fold/reduce in assemble_scaled_ami reassociates
+    // hp additions between runs (~1e-75 matrix noise, ~1e-60 after the ρ^{-n}
+    // un-scaling) — 1e-30 relative is dozens of decades above that, and dozens below
+    // any mathematically meaningful difference.
+    #[test]
+    fn recover_forms_centered_z_a_matches_uncentered() {
+        let (tg64, tg, cg) = setup_5_3_3();
+        let f1 = recover_forms(&tg64, &tg, &cg, 6, 48, 96, "1e-8", "1e-70", 1.0);
+        let f2 = recover_forms_centered(&tg64, &tg, &cg, 6, 48, 96, "1e-8", "1e-70", 1.0, &tg.z_a);
+        assert_eq!(f1.len(), 3);
+        assert_eq!(f1.len(), f2.len());
+        let mut worst = 0f64;
+        for (a, b) in f1.iter().zip(f2.iter()) {
+            assert_eq!(a.len(), b.len());
+            for (x, y) in a.iter().zip(b.iter()) {
+                let d = Complex::with_val(PREC, x - y);
+                let scale = 1.0 + cmod_f64(x);
+                worst = worst.max(cmod_f64(&d) / scale);
+            }
+        }
+        assert!(worst < 1e-30, "z_a-centered recover_forms diverged from recover_forms: {worst:.2e}");
+    }
+
+    // dim S_k is chart-independent — the honest cross-chart invariant (coefficients
+    // are chart expansions and DO differ). The z_b chart has measured ρ_b ≈ 0.826608
+    // (vs ρ_a ≈ 0.528936), so N = 96 gives 96·log10(1/ρ_b) ≈ 7.9 decimal digits;
+    // SolveParams(256, 96, 7) derives threshold 1e-5, which the kernel σ ~1e-8 clear
+    // by three decades.
+    #[test]
+    fn dim_s_k_chart_independent_5_3_3() {
+        use crate::belyi::solve::SolveParams;
+        let (tg64, tg, cg) = setup_5_3_3();
+        let sp = SolveParams::new(PREC, 96, 7).expect("z_b chart binding");
+        let rho_b = domain_radius_hp_centered(&cg, &tg, &tg.z_b).to_f64();
+        sp.check_rho(rho_b).expect("N = 96 must cover 7 digits at the measured ρ_b");
+        let (dim_b, sigma) = dim_s_k_svd_centered(
+            &tg64, &tg, &cg, 6, sp.big_n, 2 * sp.big_n,
+            &sp.threshold_decimal, &sp.tol_decimal, 1.0, &tg.z_b,
+        );
+        let smallest = sigma.last().unwrap().to_f64();
+        assert_eq!(dim_b, 3, "dim S_6 in the z_b chart (z_a chart gives 3); σ_min={smallest:.2e}");
     }
 
     // Recover the actual weight-6 forms and check one is genuinely Γ-modular: pick z₁
