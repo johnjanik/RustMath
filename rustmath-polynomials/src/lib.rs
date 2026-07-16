@@ -15,6 +15,7 @@ pub mod laurent;
 pub mod mestre;
 pub mod multivariate;
 pub mod newton;
+pub mod pade;
 pub mod padic_factor;
 pub mod poly_system;
 pub mod polynomial;
