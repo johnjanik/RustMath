@@ -2898,6 +2898,69 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 - **(not applicable — this crate contains no mathematics)** — Listed only for completeness: rustmath-lava is MAGMA-language tooling vendored into the workspace, not a math crate. It should not be scored against Sage/MAGMA algorithm coverage.
 ---
 
+## IGP24 Campaign Build — the M23/Q Inverse Galois endpoint
+
+> [!info] What this is
+> A focused build of the algorithms the M23-over-Q(u) campaign needs, per `RUSTMATH_BUILD_HANDOFF.md`.
+> **Endpoint:** an exact Belyi map `φ = P/Q ∈ Q(x)`, degree 24, with M24 monodromy over P¹_Q, whose
+> deleted-sheet resolvent `R(X,u) = (P(X)Q(u) − P(u)Q(X))/(X−u)` realizes **Gal = M23 regularly over Q(u)**.
+> The DECIDE/CERTIFY half (`decide_nonprovisional → audit_m24 → audit_m23_residual → is_m23_q_realized`,
+> in `rustmath-curves/src/belyi/`) is **already built** — these items feed exact `coeffs:&[Rational]` into it.
+
+Two build states beyond the normal legend: **exists-unwired** (code present, needs a call site) and
+**partial** (a narrower version exists). `build` = author in RustMath; `delegate` = hand the proof to Sage/OSCAR.
+
+### Route A — recognition-to-Q connector + persist harness (fastest arrow to a candidate M23/Q witness)
+
+| Item | Symbol | Home crate | Prio | State→ | Status |
+|---|---|---|:--:|---|:--:|
+| A1 | `recognize_complex_algebraic_hp` | numberfields | P0 | build (missing) | 🟢 `db0b0e9` |
+| A2 | `snap_hp_solution` + `Gauge2_12_5` | curves/belyi | P0 | build (missing; `Gauge2_12_5` confirmed absent) | 🏗️ |
+| A3 | `run_and_persist_belyi` | curves/belyi | P0 | build (missing) | 🏗️ |
+| A4 | `recover_forms_centered` (thread `z_b` chart) | curves/belyi | P1 | build (partial: hard-codes `z_a`) | 🏗️ |
+| A6 | `solve_belyi_map` + residual + gauge | curves/belyi | P1 | build (partial: `sigma` discarded) | 🏗️ |
+| A7 | `SolveParams::new` (N↔prec binding) | curves/belyi | P1 | build (missing; `SolveParams` confirmed absent) | 🏗️ |
+| A8 | `read_ext_matrix` + `recover_forms_from_matrix` | curves/belyi | P2 | build (missing; only needed if N~24000 OOMs) | 📋 |
+
+### Route B — the regular Q(u) statement (proof-grade endpoint)
+
+| Item | Symbol | Home crate | Prio | State→ | Status |
+|---|---|---|:--:|---|:--:|
+| B1 | `deleted_sheet_resolvent` (Q(u)[X], deg 23) | curves/belyi | P1 | build (missing; needs a Q(u)[X] type) | 🏗️ |
+| B2 | `certify_regular_gal_m23_over_qu` | curves/belyi | P2 | delegate proof to Sage/OSCAR; bookkeeping in-crate | 📋 |
+
+### Route B — p-adic surface-lift stack + closure
+
+| Item | Symbol | Home crate | Prio | State→ | Status |
+|---|---|---|:--:|---|:--:|
+| C1 | `newton_lift_bivariate` (Z_p[[u,v]]) | rings *(not polynomials — arch. constraint)* | P1 | build (partial: pieces exist, no driver) | 🟢 `d143e42` |
+| C2 | `hermite_pade` | polynomials | P1 | build (missing) | 🟢 `9a409cd` |
+| C3 | `crt_rational_reconstruct` | integers *(self-contained — no cycle)* | P1 | build (exists-unwired, thin) | 🟢 `7e0e4c6` |
+| C4 | F_p / Q_p univariate factorization | curves (wiring) | P2 | wire (exists-unwired) | 📋 |
+| C5 | Newton polygon / Montes-Ore over Q_2 | curves (wiring) | P2 | wire (exists-unwired) | 📋 |
+| C6 | Framed-ideal rank-75 gate over F_p | curves (wiring) | P1 | wire (exists-unwired) | 📋 |
+| C7 | Conic isotropy via Hilbert symbols | curves (re-point) | P2 | wire (exists-unwired) | 📋 |
+
+### Recognition helpers (used across routes)
+
+| Item | Symbol | Home crate | Prio | State→ | Status |
+|---|---|---|:--:|---|:--:|
+| D1 | `integer_relation` / PSLQ | matrix | P2 | build (partial: only placeholders exist) | 🟢 `4626526` |
+| D2 | `ContinuedFraction::from_real` | rationals | P2 | build (partial: no `from_real`) | 🟢 `1ba5a98` |
+
+**Minimal critical path to a candidate `is_m23_q_realized()==true`:** A7 → A4 → A6 → A3 (persist P,Q + residual),
+then A1 → A2 (snap floats to `CertifiedRational`), which drops into the already-built DECIDE half. B1+B2 upgrade
+that candidate from statistical-single-fibre to a **proven regular M23/Q(u)** certificate.
+
+**Status key:** 📋 backlog · 🏗️ in progress (Wave 1 running) · 👁️ in review · 🟢 done+verified · 🛑 blocked.
+
+**Two phantom-symbol corrections found during recon** (the handoff warned prior sessions cite non-existent code):
+`Gauge2_12_5` (A2) and `SolveParams` (A7) do not exist and are genuine build targets; C1's stated home
+(`PolySystem::newton_lift_bivariate` in polynomials) is architecturally impossible (`MPowerSeries`/`PadicRational`
+live in rings) — it becomes a free function in `rustmath-rings`.
+
+---
+
 ## Milestones / Roadmap
 
 | Milestone | Target | Modules in scope | Status |
@@ -2909,6 +2972,8 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 | M4 Exact convex geometry | — | GEOMETRY, TOPOLOGY | ⏳ |
 | M5 Facade eradication | — | all (276 🛑 + 67 🔴) | 🛑 |
 | M6 Sage/MAGMA interop surface | — | INTERFACES, JUPYTER | ⏳ |
+| M7 IGP24 M23/Q candidate witness | — | CURVES, NUMBERFIELDS + Wave-1 primitives | 🏗️ |
+| M8 IGP24 regular M23/Q(u) certificate | — | CURVES (B1+B2, Sage-assisted) | 📋 |
 
 > [!note] M5 is the one that decides whether this project is real
 > 27% of the catalogued surface returns fabricated values. Until that number is near zero, no result
@@ -2966,6 +3031,8 @@ the failure mode here is *plausible wrongness*, which ordinary review does not c
 
 | Date | Author | Change |
 |---|---|---|
+| 2026-07-12 | @claude | **Wave 1 landed, all 6 CONFIRMED**: A1 `db0b0e9`, D1 `4626526`, D2 `1ba5a98`, C3 `7e0e4c6`, C2 `9a409cd`, C1 `d143e42`. Notable: D1 needed a new exact-integer LLL (the f64-GSO one returns garbage at W=2^300); D2's doc mischaracterized `from_f64` and was corrected. Wave 2 (curves spine A7/A4/A6/A3 + A2 + B1) launched. |
+| 2026-07-12 | @claude | Started IGP24 campaign build (`RUSTMATH_BUILD_HANDOFF.md`). Wave 1 (6 primitives: A1,C1,C2,C3,D1,D2) launched in parallel. Recon corrected two phantom symbols (`Gauge2_12_5`, `SolveParams`) and one impossible home crate (C1). |
 | 2026-07-12 | @claude | Created tracker. Full ground-truth inventory of 1,282 algorithms across 65 crates, read from source. |
 | 2026-07-12 | @claude | Chunk 10 (`2d780a2`): elimination/saturation/ideal-quotient; blow-ups resolving node/cusp/tacnode; fixed 3 hangs — `polynomials` was **not green at HEAD**. |
 | 2026-07-12 | @claude | Chunk 9 (`4f8e716`): modular old/new block structure + 14-facade purge. |
