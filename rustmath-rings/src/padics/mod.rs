@@ -21,6 +21,13 @@ pub mod padic_rational;
 pub use padic_integer::{hensel_lift_root, PadicInteger};
 pub use padic_rational::PadicRational;
 
+// Coupled multivariate Newton/Hensel lift of a mod-p seed to a bivariate
+// power series over Z_p (free function; both PolySystem and
+// MPowerSeries<PadicRational> are visible here).
+pub mod newton_lift;
+
+pub use newton_lift::newton_lift_bivariate;
+
 pub mod extension;
 
 pub use extension::{
