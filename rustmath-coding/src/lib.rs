@@ -5,23 +5,35 @@
 //!
 //! ## Features
 //!
-//! - **Linear Codes**: Generator and parity check matrices
+//! - **Linear Codes**: Generator and parity check matrices (`u64` GF(p) and
+//!   fully generic over any `Field`, including extension fields GF(p^n))
 //! - **Encoding/Decoding**: Message encoding and syndrome decoding
+//! - **Weight enumerators & MacWilliams identity**: exhaustive enumeration
+//!   under an honest budget, with the exact-integer MacWilliams transform
 //! - **Hamming Codes**: Perfect single-error-correcting codes
-//! - **Reed-Solomon Codes**: BCH codes for burst error correction
+//! - **Reed-Solomon Codes**: MDS codes with a real algebraic decoder
+//!   (Berlekamp-Massey + Chien search + Forney's formula)
 //! - **BCH Codes**: Binary BCH codes for error correction
 //! - **Golay Codes**: Binary and ternary perfect codes
 
 pub mod linear_code;
+pub mod generic_code;
 pub mod hamming;
 pub mod reed_solomon;
+pub mod reed_solomon_generic;
 pub mod bch;
 pub mod golay;
 pub mod syndrome;
 
 pub use linear_code::LinearCode;
+pub use generic_code::{
+    finite_field_elements, macwilliams_transform, prime_field_elements, GenericLinearCode,
+};
 pub use hamming::HammingCode;
 pub use reed_solomon::ReedSolomonCode;
+pub use reed_solomon_generic::{
+    find_primitive_element, find_primitive_root_gfp, GenericReedSolomonCode,
+};
 pub use bch::BCHCode;
 pub use golay::{BinaryGolayCode, TernaryGolayCode};
 

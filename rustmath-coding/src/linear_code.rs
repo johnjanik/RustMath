@@ -128,6 +128,11 @@ impl LinearCode {
         self.length - self.dimension
     }
 
+    /// Get the field characteristic p (the code lives over GF(p))
+    pub fn field_characteristic(&self) -> u64 {
+        self.field_char
+    }
+
     /// Get the generator matrix
     pub fn generator_matrix(&self) -> &Vec<Vec<u64>> {
         &self.generator_matrix
@@ -181,13 +186,19 @@ impl LinearCode {
             return Ok(self.extract_message(received));
         }
 
-        // Attempt error correction using syndrome table
+        // Attempt error correction: weight-1 patterns only (see
+        // `find_error_pattern` for the honest limitation).
         match self.find_error_pattern(&syndrome) {
             Some(error) => {
                 let corrected = self.subtract_vectors(received, &error);
                 Ok(self.extract_message(&corrected))
             }
-            None => Err("Unable to correct errors".to_string()),
+            None => Err(
+                "Unable to correct errors: no single-symbol error pattern matches the \
+                 syndrome (this decoder only corrects weight-1 errors; use \
+                 syndrome::StandardArrayDecoder for a full coset-leader table)"
+                    .to_string(),
+            ),
         }
     }
 
@@ -459,22 +470,26 @@ impl LinearCode {
         Some(((old_s % m_i) + m_i) as u64 % m)
     }
 
-    // Helper: Find error pattern from syndrome using syndrome table
+    // Helper: Find the error pattern matching a syndrome, searching ONLY
+    // weight-1 patterns (a single erroneous symbol, any of the p - 1 nonzero
+    // values, over any GF(p) — not just GF(2)).
+    //
+    // Honest limitation: heavier error patterns are NOT searched, so this
+    // returns `None` for any syndrome outside the weight-1 coset leaders and
+    // `decode` then fails with an explicit error instead of a wrong answer.
+    // `syndrome::StandardArrayDecoder` builds the full coset-leader table
+    // when multi-error correction is needed.
     fn find_error_pattern(&self, syndrome: &[u64]) -> Option<Vec<u64>> {
         let p = self.field_char;
 
-        // Build syndrome table for correctable errors
-        // For simplicity, only single-bit errors for binary codes
-        if p != 2 {
-            return None;
-        }
-
         for i in 0..self.length {
-            let mut error = vec![0u64; self.length];
-            error[i] = 1;
-            let s = self.compute_syndrome(&error);
-            if s == *syndrome {
-                return Some(error);
+            for val in 1..p {
+                let mut error = vec![0u64; self.length];
+                error[i] = val;
+                let s = self.compute_syndrome(&error);
+                if s == *syndrome {
+                    return Some(error);
+                }
             }
         }
 
@@ -566,5 +581,35 @@ mod tests {
 
         let code = LinearCode::from_generator_matrix(g, 2);
         assert_eq!(code.rate(), 0.6);
+    }
+
+    /// Single-symbol error correction now works over GF(p), p > 2 (it used
+    /// to silently fail for every non-binary code). Values verified by hand:
+    /// msg [2,3] * G = [2,3,0,2] over GF(5); +1 at position 2 gives
+    /// syndrome (1,0), matched uniquely by the weight-1 pattern e_2 = 1.
+    #[test]
+    fn test_single_error_correction_gf5() {
+        let g = vec![vec![1, 0, 1, 2], vec![0, 1, 1, 1]];
+        let code = LinearCode::from_generator_matrix(g, 5);
+        let message = vec![2, 3];
+        let codeword = code.encode(&message).unwrap();
+        assert_eq!(codeword, vec![2, 3, 0, 2]);
+
+        let mut received = codeword.clone();
+        received[2] = (received[2] + 1) % 5;
+        assert_eq!(code.decode(&received).unwrap(), message);
+    }
+
+    /// Honest failure beyond weight 1: the error (0,0,1,3) has syndrome
+    /// (1,3), which is not proportional to any column of H (verified by
+    /// enumerating all 16 weight-1 syndromes by hand), so decode must
+    /// return Err — never a silent wrong answer.
+    #[test]
+    fn test_weight_two_error_fails_honestly_gf5() {
+        let g = vec![vec![1, 0, 1, 2], vec![0, 1, 1, 1]];
+        let code = LinearCode::from_generator_matrix(g, 5);
+        let received = vec![2, 3, 1, 0]; // [2,3,0,2] + (0,0,1,3)
+        let err = code.decode(&received).unwrap_err();
+        assert!(err.contains("weight-1"), "unexpected error text: {err}");
     }
 }

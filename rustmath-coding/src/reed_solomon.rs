@@ -1,69 +1,107 @@
-//! Reed-Solomon codes over finite fields
+//! Reed-Solomon codes over prime fields GF(p) (u64 convenience API)
 //!
-//! Reed-Solomon codes are a family of error-correcting codes that work over
-//! extension fields GF(q). They can correct up to t errors where the minimum
-//! distance is d = n - k + 1 = 2t + 1.
+//! [`ReedSolomonCode`] is a thin `u64` wrapper around
+//! [`GenericReedSolomonCode`](crate::reed_solomon_generic::GenericReedSolomonCode)
+//! instantiated at [`PrimeField`]. The code is the cyclic MDS code of length
+//! `n | p - 1` with roots `alpha^1..alpha^{n-k}`, where `alpha = g^{(p-1)/n}`
+//! for the smallest primitive root `g` of `GF(p)` (found honestly: the order
+//! checks factor `p - 1`; nothing is hardcoded).
 //!
-//! RS codes are widely used in QR codes, CDs, DVDs, and satellite communications.
+//! * **Encoding** is systematic in the cyclic-code view: the codeword is the
+//!   coefficient vector `[parity | message]` of `c(x) = x^{n-k} m(x) -
+//!   (x^{n-k} m(x) mod g(x))`, `g(x) = prod_{j=1}^{n-k} (x - alpha^j)`.
+//! * **Decoding** is Berlekamp-Massey + Chien search + Forney's formula,
+//!   correcting up to `t = floor((n-k)/2)` symbol errors, with a
+//!   post-correction syndrome re-check so beyond-capacity patterns fail
+//!   honestly whenever they are detectable. (This replaced an earlier
+//!   decoder that brute-forced 1- and 2-error patterns while claiming to be
+//!   Peterson-Gorenstein-Zierler, over evaluation points `1..n` that made
+//!   `d = n - k + 1` false in general.)
+//!
+//! The minimum distance really is `n - k + 1`: the `n - k` consecutive
+//! powers of an order-`n` element give the BCH bound `d >= n - k + 1`, and
+//! Singleton gives the reverse inequality.
 
+use crate::reed_solomon_generic::{find_primitive_root_gfp, GenericReedSolomonCode};
+use rustmath_core::NumericConversion;
+use rustmath_finitefields::PrimeField;
+use rustmath_integers::Integer;
 use std::fmt;
 
-/// A Reed-Solomon code over GF(q)
+/// A Reed-Solomon `[n, k, n-k+1]` code over GF(p), `n | p - 1`.
 #[derive(Clone, Debug)]
 pub struct ReedSolomonCode {
-    /// Code length n (must be ≤ q - 1)
+    /// Code length n (must divide p - 1)
     n: usize,
-    /// Code dimension k (number of message symbols)
+    /// Code dimension k
     k: usize,
-    /// Number of parity symbols (n - k = 2t)
-    parity_symbols: usize,
     /// Field characteristic (prime p)
     field_char: u64,
-    /// Evaluation points (primitive elements)
-    eval_points: Vec<u64>,
-    /// Generator polynomial g(x)
-    generator_poly: Vec<u64>,
+    /// alpha = g^{(p-1)/n} for the smallest primitive root g of GF(p)
+    alpha: u64,
+    /// The generic engine doing the real work
+    engine: GenericReedSolomonCode<PrimeField>,
 }
 
 impl ReedSolomonCode {
-    /// Create a new Reed-Solomon code
+    /// Create a new Reed-Solomon code over GF(p).
     ///
     /// # Arguments
-    /// * `n` - Code length (must be ≤ p - 1 where p is the field size)
-    /// * `k` - Message length (dimension)
-    /// * `field` - Finite field GF(p)
+    /// * `n` - Code length; must satisfy `n | p - 1` so that GF(p) contains
+    ///   an element of multiplicative order exactly `n`
+    /// * `k` - Message length (dimension), `1 <= k < n`
+    /// * `field_char` - The prime p
     ///
-    /// The code can correct up to t = ⌊(n-k)/2⌋ errors
+    /// The code corrects up to `t = floor((n-k)/2)` symbol errors.
+    ///
+    /// # Panics
+    /// Panics if `field_char` is not prime, `k` is not in `1..n`, or
+    /// `n` does not divide `p - 1` (each with a precise message).
     ///
     /// # Examples
     /// ```
     /// use rustmath_coding::ReedSolomonCode;
-    /// use rustmath_finitefields::prime_field::PrimeField;
     ///
-    /// // GF(7)
+    /// // [6, 4, 3] RS code over GF(7) (6 divides 7 - 1); corrects 1 error.
     /// let rs = ReedSolomonCode::new(6, 4, 7);
-    /// // [6, 4, 3] RS code that can correct 1 error
+    /// assert_eq!(rs.minimum_distance(), 3);
     /// ```
     pub fn new(n: usize, k: usize, field_char: u64) -> Self {
         assert!(n > k, "Code length must be greater than dimension");
-        assert!(n <= field_char as usize - 1, "Code length too large for field");
+        assert!(k >= 1, "Dimension must be at least 1");
+        assert!(
+            field_char >= 3 && (field_char as usize - 1).is_multiple_of(n),
+            "Code length {n} must divide p - 1 = {} (GF({field_char}) has no element of order {n})",
+            field_char.saturating_sub(1),
+        );
 
-        let parity_symbols = n - k;
-
-        // Build evaluation points (use 1, 2, ..., n)
-        let eval_points: Vec<u64> = (1..=n as u64).collect();
-
-        // Build generator polynomial g(x) = (x - α^0)(x - α^1)...(x - α^(n-k-1))
-        // For simplicity, use (x - 1)(x - 2)...(x - (n-k))
-        let generator_poly = Self::build_generator_polynomial(parity_symbols, field_char);
+        let g = find_primitive_root_gfp(field_char)
+            .unwrap_or_else(|e| panic!("primitive root search failed: {e}"));
+        let exponent = (field_char - 1) / n as u64;
+        let alpha_u64 = {
+            // g^((p-1)/n) mod p with u128 intermediates
+            let (mut result, mut base, mut e) =
+                (1u128, g as u128 % field_char as u128, exponent);
+            while e > 0 {
+                if e & 1 == 1 {
+                    result = result * base % field_char as u128;
+                }
+                base = base * base % field_char as u128;
+                e >>= 1;
+            }
+            result as u64
+        };
+        let alpha = PrimeField::new(Integer::from(alpha_u64), Integer::from(field_char))
+            .expect("alpha construction cannot fail for p >= 3");
+        let engine = GenericReedSolomonCode::new(n, k, alpha)
+            .unwrap_or_else(|e| panic!("Reed-Solomon construction failed: {e}"));
 
         ReedSolomonCode {
             n,
             k,
-            parity_symbols,
             field_char,
-            eval_points,
-            generator_poly,
+            alpha: alpha_u64,
+            engine,
         }
     }
 
@@ -77,264 +115,72 @@ impl ReedSolomonCode {
         self.k
     }
 
-    /// Get the minimum distance d = n - k + 1
+    /// Get the minimum distance d = n - k + 1 (MDS; see the module docs)
     pub fn minimum_distance(&self) -> usize {
         self.n - self.k + 1
     }
 
     /// Get the error correction capability t = ⌊(n-k)/2⌋
     pub fn error_correction_capability(&self) -> usize {
-        self.parity_symbols / 2
+        (self.n - self.k) / 2
     }
 
-    /// Encode a message using systematic encoding
-    ///
-    /// The message m(x) is encoded as c(x) = m(x) + r(x)
-    /// where r(x) is the remainder of x^(n-k) * m(x) divided by g(x)
+    /// The element `alpha` of order exactly `n` defining the code.
+    pub fn alpha(&self) -> u64 {
+        self.alpha
+    }
+
+    /// The generator polynomial `g(x) = prod_{j=1}^{n-k} (x - alpha^j)`,
+    /// little-endian coefficients in `[0, p)`.
+    pub fn generator_polynomial(&self) -> Vec<u64> {
+        self.engine
+            .generator_polynomial()
+            .iter()
+            .map(|c| c.value().to_u64().expect("coefficient fits in u64"))
+            .collect()
+    }
+
+    /// Encode a message systematically: the codeword is `[parity | message]`
+    /// with `c(x)` divisible by the generator polynomial.
     pub fn encode(&self, message: &[u64]) -> Result<Vec<u64>, String> {
-        if message.len() != self.k {
-            return Err(format!(
-                "Message length {} does not match code dimension {}",
-                message.len(),
-                self.k
-            ));
-        }
-
-        let p = self.field_char;
-
-        // Create message polynomial m(x)
-        let message_poly = message.to_vec();
-
-        // Shift by n-k positions: x^(n-k) * m(x)
-        let mut shifted = vec![0u64; self.parity_symbols];
-        shifted.extend_from_slice(&message_poly);
-
-        // Divide by generator polynomial to get remainder
-        let remainder = self.poly_mod(&shifted, &self.generator_poly);
-
-        // Systematic codeword: [parity bits | message bits]
-        // c(x) = x^(n-k) * m(x) - remainder(x), so that c(x) ≡ 0 (mod g(x)):
-        // shifted(x) = q(x)*g(x) + remainder(x)  =>  shifted(x) - remainder(x) = q(x)*g(x).
-        // (Adding the raw remainder instead of subtracting it, as a naive reading
-        // of "c(x) = remainder + x^(n-k)*m(x)" suggests, produces a word that is
-        // NOT divisible by g(x) and therefore is not actually a codeword.)
-        let mut codeword = vec![0u64; self.n];
-        for i in 0..self.parity_symbols {
-            codeword[i] = (p - remainder[i]) % p;
-        }
-        for i in 0..self.k {
-            codeword[self.parity_symbols + i] = message[i];
-        }
-
-        Ok(codeword)
+        let msg = self.to_field(message, self.k, "message")?;
+        let codeword = self.engine.encode_systematic(&msg)?;
+        Ok(Self::to_u64s(&codeword))
     }
 
-    /// Decode a received word using syndrome decoding
-    ///
-    /// Uses the Peterson-Gorenstein-Zierler algorithm for error location
+    /// Decode a received word: Berlekamp-Massey + Chien + Forney via the
+    /// generic engine (see the module docs), returning the message symbols.
+    /// Fails honestly (`Err`) on every detectable beyond-capacity pattern.
     pub fn decode(&self, received: &[u64]) -> Result<Vec<u64>, String> {
-        if received.len() != self.n {
+        let word = self.to_field(received, self.n, "received word")?;
+        let (message, _nerrors) = self
+            .engine
+            .decode_systematic(&word)
+            .map_err(|e| format!("Decoding failed: {e}"))?;
+        Ok(Self::to_u64s(&message))
+    }
+
+    fn to_field(&self, values: &[u64], expect_len: usize, what: &str) -> Result<Vec<PrimeField>, String> {
+        if values.len() != expect_len {
             return Err(format!(
-                "Received word length {} does not match code length {}",
-                received.len(),
-                self.n
+                "{what} length {} does not match expected length {}",
+                values.len(),
+                expect_len
             ));
         }
-
-        let p = self.field_char;
-
-        // Compute syndromes
-        let syndromes = self.compute_syndromes(received);
-
-        // Check if all syndromes are zero (no errors)
-        if syndromes.iter().all(|&s| s == 0) {
-            return Ok(self.extract_message(received));
-        }
-
-        // Find error locations and values using syndrome decoding
-        match self.find_errors(&syndromes) {
-            Ok(errors) => {
-                let mut corrected = received.to_vec();
-                for (pos, val) in errors {
-                    corrected[pos] = (corrected[pos] + p - val) % p;
-                }
-                Ok(self.extract_message(&corrected))
-            }
-            Err(e) => Err(format!("Decoding failed: {}", e)),
-        }
+        values
+            .iter()
+            .map(|&v| {
+                PrimeField::new(Integer::from(v), Integer::from(self.field_char))
+                    .map_err(|e| format!("bad symbol {v}: {e:?}"))
+            })
+            .collect()
     }
 
-    /// Compute syndromes S_i = r(α^i) for i = 1, 2, ..., 2t
-    fn compute_syndromes(&self, received: &[u64]) -> Vec<u64> {
-        let p = self.field_char;
-        let mut syndromes = Vec::with_capacity(self.parity_symbols);
-
-        for i in 1..=self.parity_symbols {
-            // Evaluate polynomial at α^i (using i as evaluation point)
-            let eval_point = i as u64;
-            let syndrome = self.poly_eval(received, eval_point);
-            syndromes.push(syndrome);
-        }
-
-        syndromes
-    }
-
-    /// Find error locations and values from syndromes
-    fn find_errors(&self, syndromes: &[u64]) -> Result<Vec<(usize, u64)>, String> {
-        // For small number of errors, use brute force
-        // In practice, would use Berlekamp-Massey algorithm
-
-        let p = self.field_char;
-        let t = self.error_correction_capability();
-
-        // Try all possible single error patterns
-        for pos in 0..self.n {
-            for val in 1..p {
-                if self.check_error_pattern(&[(pos, val)], syndromes) {
-                    return Ok(vec![(pos, val)]);
-                }
-            }
-        }
-
-        // Try all possible double error patterns
-        if t >= 2 {
-            for pos1 in 0..self.n {
-                for val1 in 1..p {
-                    for pos2 in (pos1 + 1)..self.n {
-                        for val2 in 1..p {
-                            if self.check_error_pattern(&[(pos1, val1), (pos2, val2)], syndromes) {
-                                return Ok(vec![(pos1, val1), (pos2, val2)]);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        Err("Too many errors to correct".to_string())
-    }
-
-    /// Check if an error pattern produces the given syndromes
-    fn check_error_pattern(&self, errors: &[(usize, u64)], syndromes: &[u64]) -> bool {
-        let p = self.field_char;
-
-        for (i, &expected_syndrome) in syndromes.iter().enumerate() {
-            let eval_point = (i + 1) as u64;
-            let mut computed_syndrome = 0u64;
-
-            for &(pos, val) in errors {
-                // Compute val * eval_point^pos
-                let mut power = 1u64;
-                for _ in 0..pos {
-                    power = (power * eval_point) % p;
-                }
-                computed_syndrome = (computed_syndrome + val * power) % p;
-            }
-
-            if computed_syndrome != expected_syndrome {
-                return false;
-            }
-        }
-
-        true
-    }
-
-    /// Extract message from systematic codeword
-    fn extract_message(&self, codeword: &[u64]) -> Vec<u64> {
-        codeword[self.parity_symbols..].to_vec()
-    }
-
-    /// Build generator polynomial g(x) = ∏(x - α^i) for i = 0 to n-k-1
-    fn build_generator_polynomial(degree: usize, field_char: u64) -> Vec<u64> {
-        let p = field_char;
-        let mut g = vec![1u64]; // Start with g(x) = 1
-
-        for i in 1..=degree {
-            // Multiply g(x) by (x - i)
-            let mut new_g = vec![0u64; g.len() + 1];
-
-            // g(x) * x
-            for (j, &coeff) in g.iter().enumerate() {
-                new_g[j + 1] = (new_g[j + 1] + coeff) % p;
-            }
-
-            // g(x) * (-i) = g(x) * (p - i)
-            for (j, &coeff) in g.iter().enumerate() {
-                new_g[j] = (new_g[j] + coeff * (p - i as u64)) % p;
-            }
-
-            g = new_g;
-        }
-
-        g
-    }
-
-    /// Polynomial modulo operation
-    fn poly_mod(&self, dividend: &[u64], divisor: &[u64]) -> Vec<u64> {
-        let p = self.field_char;
-        let mut rem = dividend.to_vec();
-
-        let divisor_len = divisor.len();
-        let dividend_len = dividend.len();
-
-        if dividend_len < divisor_len {
-            return rem;
-        }
-
-        for i in (0..=(dividend_len - divisor_len)).rev() {
-            let coeff = rem[i + divisor_len - 1];
-            if coeff == 0 {
-                continue;
-            }
-
-            // Find inverse of leading coefficient of divisor
-            let divisor_lead = divisor[divisor_len - 1];
-            let inv = self.mod_inverse(divisor_lead, p).unwrap();
-
-            let factor = (coeff * inv) % p;
-
-            for j in 0..divisor_len {
-                rem[i + j] = (rem[i + j] + p - (factor * divisor[j]) % p) % p;
-            }
-        }
-
-        // Return only the remainder part
-        rem[..divisor_len - 1].to_vec()
-    }
-
-    /// Evaluate polynomial at a point
-    fn poly_eval(&self, poly: &[u64], x: u64) -> u64 {
-        let p = self.field_char;
-        let mut result = 0u64;
-        let mut x_power = 1u64;
-
-        for &coeff in poly {
-            result = (result + coeff * x_power) % p;
-            x_power = (x_power * x) % p;
-        }
-
-        result
-    }
-
-    /// Modular multiplicative inverse
-    fn mod_inverse(&self, a: u64, m: u64) -> Option<u64> {
-        let (mut t, mut new_t) = (0i64, 1i64);
-        let (mut r, mut new_r) = (m as i64, a as i64);
-
-        while new_r != 0 {
-            let quotient = r / new_r;
-            (t, new_t) = (new_t, t - quotient * new_t);
-            (r, new_r) = (new_r, r - quotient * new_r);
-        }
-
-        if r > 1 {
-            return None;
-        }
-        if t < 0 {
-            t += m as i64;
-        }
-
-        Some(t as u64)
+    fn to_u64s(word: &[PrimeField]) -> Vec<u64> {
+        word.iter()
+            .map(|x| x.value().to_u64().expect("symbol fits in u64"))
+            .collect()
     }
 }
 
@@ -363,15 +209,19 @@ mod tests {
         assert_eq!(rs.dimension(), 4);
         assert_eq!(rs.minimum_distance(), 3);
         assert_eq!(rs.error_correction_capability(), 1);
+        // Python-pinned: smallest primitive root of 7 is 3, and n = p - 1
+        // makes alpha = g.
+        assert_eq!(rs.alpha(), 3);
     }
 
     #[test]
     fn test_reed_solomon_encode() {
-        // GF(7)
+        // GF(7); Python-pinned systematic codeword for g = 6 + 2x + x^2.
         let rs = ReedSolomonCode::new(6, 4, 7);
         let message = vec![1, 2, 3, 4];
         let codeword = rs.encode(&message).unwrap();
         assert_eq!(codeword.len(), 6);
+        assert_eq!(codeword, vec![1, 3, 1, 2, 3, 4]);
     }
 
     #[test]
@@ -398,11 +248,43 @@ mod tests {
         assert_eq!(decoded, message);
     }
 
+    /// Generator polynomial over GF(7): alpha = 3, so
+    /// g(x) = (x - 3)(x - 3^2) = (x - 3)(x - 2) = 6 + 2x + x^2 (mod 7),
+    /// derived independently in Python.
     #[test]
     fn test_generator_polynomial() {
-        // GF(7)
-        let gen = ReedSolomonCode::build_generator_polynomial(2, 7);
-        // g(x) = (x - 1)(x - 2) = x^2 - 3x + 2 = x^2 + 4x + 2 (mod 7)
-        assert_eq!(gen.len(), 3);
+        let rs = ReedSolomonCode::new(6, 4, 7);
+        assert_eq!(rs.generator_polynomial(), vec![6, 2, 1]);
+    }
+
+    /// RS(16, 10) over GF(17) through the u64 API: 3 errors corrected
+    /// exactly, 4 errors rejected honestly (the same patterns are pinned by
+    /// the Python reference pipeline in reed_solomon_generic).
+    #[test]
+    fn test_reed_solomon_16_10_gf17() {
+        let rs = ReedSolomonCode::new(16, 10, 17);
+        assert_eq!(rs.error_correction_capability(), 3);
+        let message: Vec<u64> = (1..=10).collect();
+        let codeword = rs.encode(&message).unwrap();
+
+        let mut received = codeword.clone();
+        for (pos, val) in [(2usize, 5u64), (7, 9), (11, 1)] {
+            received[pos] = (received[pos] + val) % 17;
+        }
+        assert_eq!(rs.decode(&received).unwrap(), message);
+
+        let mut received4 = codeword.clone();
+        for (pos, val) in [(2usize, 5u64), (7, 9), (11, 1), (14, 3)] {
+            received4[pos] = (received4[pos] + val) % 17;
+        }
+        assert!(rs.decode(&received4).is_err(), "4 > t errors must not decode silently");
+    }
+
+    /// n that does not divide p - 1 is rejected up front (GF(7) has no
+    /// element of order 5).
+    #[test]
+    #[should_panic(expected = "must divide")]
+    fn test_invalid_length_rejected() {
+        ReedSolomonCode::new(5, 3, 7);
     }
 }
