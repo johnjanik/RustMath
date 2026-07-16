@@ -13,7 +13,10 @@ pub mod prime;
 pub mod quadratic_sieve;
 pub mod sage_wrapper;
 
-pub use crt::{chinese_remainder_theorem, crt_two};
+pub use crt::{
+    chinese_remainder_theorem, crt_rational_reconstruct, crt_two, rational_reconstruct,
+    rational_reconstruct_bound,
+};
 pub use ecm::{ecm_factor, ecm_factor_complete};
 pub use fast_arith::{prime_range, ArithInt, ArithLLong};
 pub use integer::Integer;
