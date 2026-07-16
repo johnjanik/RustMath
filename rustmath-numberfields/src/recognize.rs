@@ -314,6 +314,136 @@ fn bigint_to_f64(x: &BigInt) -> f64 {
     x.to_string().parse::<f64>().unwrap_or(f64::NAN)
 }
 
+// ---------------------------------------------------------------------------
+// High-precision (rug::Float) complex algebraic recognizer
+// ---------------------------------------------------------------------------
+
+/// `rug::Integer` → `num_bigint::BigInt` (via the exact decimal string; these
+/// are one-shot recognitions, not a hot loop).
+fn rug_int_to_bigint(z: &rug::Integer) -> BigInt {
+    z.to_string().parse::<BigInt>().expect("rug Integer decimal parses")
+}
+
+/// `num_bigint::BigInt` → exact `rug::Float` at `prec` bits (via decimal string).
+fn bigint_to_rug_float(c: &BigInt, prec: u32) -> rug::Float {
+    let z = rug::Integer::from_str_radix(&c.to_string(), 10).expect("BigInt decimal parses");
+    rug::Float::with_val(prec, &z)
+}
+
+/// High-precision analogue of [`recognize_complex_algebraic`]: the identical LLL
+/// integer-relation search on `(1, z, …, z^d)`, but ingesting arbitrary-precision
+/// `rug::Float` real/imaginary parts and computing every power `z^i` in HP —
+/// never truncating to `f64`. Returns the minimal polynomial (integer coeffs,
+/// ascending, primitive, positive leading) verified in HP to annihilate `z`, or
+/// `None` if no genuinely short relation exists within the degree bound.
+///
+/// Unlike the `f64` route (whose fixed `W = 1e10` caps recoverable coefficient
+/// height at `W^{1/(d+2)} ≈ 46` for `d = 4`), the penalty weight here scales with
+/// precision: `W = 2^floor(prec_bits · FRAC)` with `FRAC = 0.6`.
+///
+/// Why `0.6`: to separate the *true* relation (whose penalty column is only the
+/// ½-ulp integer-rounding residue `~ Σ|c_i|/2`, i.e. on the height scale `H`,
+/// because `W·|Σ c_i z^i| = 2^{0.6·prec}·2^{-prec+O(1)} = 2^{-0.4·prec} ≪ 1`)
+/// from any *spurious* relation (which must pay a penalty `≳ W^{1/(d+1)}`), the
+/// weight must be large enough that the acceptance floor `W^{1/(d+2)} =
+/// 2^{0.6·prec/(d+2)}` exceeds any realistic height, yet small enough that the
+/// scaled residual stays below `1`. `frac ∈ [0.5, 0.7]` all satisfy both; `0.6`
+/// centers the trade-off and leaves `~0.4·prec` bits of head-room for the HP
+/// residual gate at `2^{-0.8·prec}` (achievable since each `z^i` carries
+/// `prec_bits` bits, so `|Σ c_i z^i|` bottoms out near `2^{-prec}`).
+pub fn recognize_complex_algebraic_hp(
+    re: &rug::Float,
+    im: &rug::Float,
+    prec_bits: u32,
+    max_deg: usize,
+) -> Option<Vec<BigInt>> {
+    use rug::float::Round;
+    use rug::{Float, Integer};
+
+    if prec_bits < 8 || max_deg == 0 {
+        return None;
+    }
+
+    // W = 2^wexp, an exact power of two.
+    let wexp: u32 = ((prec_bits as f64) * 0.6).floor() as u32;
+    let w_int: Integer = Integer::from(1) << wexp;
+    // Product precision: enough to hold the integer part of W·z^i (≈ wexp bits)
+    // plus prec_bits of fractional accuracy, so rounding to the nearest integer
+    // is faithful.
+    let wp: u32 = prec_bits + wexp + 16;
+    let w_float = Float::with_val(wp, &w_int);
+
+    // HP residual acceptance bound: |Σ c_i z^i| < 2^{-0.8·prec_bits}. Compared
+    // squared to avoid a sqrt: resid² < 2^{-1.6·prec_bits}.
+    let resid_exp: u32 = ((prec_bits as f64) * 0.8).floor() as u32;
+    let bound_den: Integer = Integer::from(1) << (2 * resid_exp);
+    let bound2 = Float::with_val(prec_bits, 1) / Float::with_val(2 * resid_exp + 2, &bound_den);
+
+    for d in 1..=max_deg {
+        // Powers z^i carried as (re, im) Float pairs, all at prec_bits.
+        // z^i = z^{i-1}·z ; (a+bi)(re+im·i) = (a·re − b·im) + (a·im + b·re)·i
+        let mut pr: Vec<Float> = Vec::with_capacity(d + 1);
+        let mut pi: Vec<Float> = Vec::with_capacity(d + 1);
+        pr.push(Float::with_val(prec_bits, 1));
+        pi.push(Float::with_val(prec_bits, 0));
+        for i in 1..=d {
+            let a = &pr[i - 1];
+            let b = &pi[i - 1];
+            let nr = Float::with_val(prec_bits, a * re) - Float::with_val(prec_bits, b * im);
+            let ni = Float::with_val(prec_bits, a * im) + Float::with_val(prec_bits, b * re);
+            pr.push(nr);
+            pi.push(ni);
+        }
+
+        // Lattice rows: e_i ++ [round(W·Re z^i), round(W·Im z^i)].
+        let dim = d + 3;
+        let mut basis: Vec<Vec<BigInt>> = Vec::with_capacity(d + 1);
+        for i in 0..=d {
+            let mut row = vec![BigInt::zero(); dim];
+            row[i] = BigInt::from(1);
+            let sr = Float::with_val(wp, &w_float * &pr[i]);
+            let si = Float::with_val(wp, &w_float * &pi[i]);
+            row[d + 1] = rug_int_to_bigint(&sr.to_integer_round(Round::Nearest)?.0);
+            row[d + 2] = rug_int_to_bigint(&si.to_integer_round(Round::Nearest)?.0);
+            basis.push(row);
+        }
+
+        let reduced = lll_reduce(basis);
+
+        // Genuine relation: coefficients ≤ W^{1/(d+2)} = floor((2^wexp)^{1/(d+2)}).
+        let coeff_bound = BigInt::from(2).pow(wexp).nth_root((d as u32) + 2);
+        let mut best: Option<(BigInt, Vec<BigInt>)> = None;
+        for v in &reduced {
+            let coeffs = &v[0..=d];
+            if coeffs.iter().all(|c| c.is_zero()) {
+                continue;
+            }
+            if coeffs.iter().any(|c| c.abs() > coeff_bound) {
+                continue;
+            }
+            // Residual |Σ c_i z^i| verified in HP arithmetic.
+            let mut er = Float::with_val(prec_bits, 0);
+            let mut ei = Float::with_val(prec_bits, 0);
+            for (i, c) in coeffs.iter().enumerate() {
+                let cf = bigint_to_rug_float(c, prec_bits);
+                er += Float::with_val(prec_bits, &cf * &pr[i]);
+                ei += Float::with_val(prec_bits, &cf * &pi[i]);
+            }
+            let resid2 = Float::with_val(prec_bits, &er * &er) + Float::with_val(prec_bits, &ei * &ei);
+            if resid2 < bound2 {
+                let cnorm2: BigInt = coeffs.iter().map(|c| c * c).sum();
+                if best.as_ref().map(|(b, _)| &cnorm2 < b).unwrap_or(true) {
+                    best = Some((cnorm2, coeffs.to_vec()));
+                }
+            }
+        }
+        if let Some((_, c)) = best {
+            return Some(normalize_poly(&c));
+        }
+    }
+    None
+}
+
 /// Make primitive (content 1) and force a positive leading coefficient.
 fn normalize_poly(coeffs: &[BigInt]) -> Vec<BigInt> {
     let mut g = BigInt::zero();
@@ -451,5 +581,83 @@ mod tests {
         // i is a root of x^2 + 1
         let p = recognize_complex_algebraic(0.0, 1.0, 4).unwrap();
         assert_eq!(p, iv(&[1, 0, 1]));
+    }
+
+    // --- high-precision (rug::Float) complex algebraic recognition ---
+    //
+    // Oracle: the irreducible quartic  x^4 - 3x^3 + 1000000x^2 - 7x + 500000
+    // (height 1e6), one complex root z ≈ 2.75e-6 - 0.70710695796i computed in
+    // mpmath at 220 decimal digits, |p(z)| there ≈ 5.8e-216. The (re, im)
+    // decimal strings below are that root to 170 significant digits (> 512 bits).
+    // Ascending primitive minpoly: [500000, -7, 1000000, -3, 1].
+
+    const Q4_RE: &str = "0.0000027500023750363750724695832213186932200485078396289406597418941003714852989093892143400447457337702240700325576957531002453391864652344340588916338452575138581802281855524";
+    const Q4_IM: &str = "-0.70710695796388363047596972716231546307955287477076945830204133661959833849986102308537200699381945319621505998216738913869748026937548558275334087721642369874561214002376";
+
+    fn f512(s: &str) -> rug::Float {
+        rug::Float::with_val(512, rug::Float::parse(s).expect("parse 512-bit float"))
+    }
+
+    /// Independent HP recomputation of |Σ c_i z^i| (squared), used to certify the
+    /// accepted residual — derived from the coefficients, not from the recognizer.
+    fn hp_resid2(coeffs: &[BigInt], re: &rug::Float, im: &rug::Float, prec: u32) -> rug::Float {
+        use rug::Float;
+        let mut zr = Float::with_val(prec, 1);
+        let mut zi = Float::with_val(prec, 0);
+        let mut sr = Float::with_val(prec, 0);
+        let mut si = Float::with_val(prec, 0);
+        for c in coeffs {
+            let cf = bigint_to_rug_float(c, prec);
+            sr += Float::with_val(prec, &cf * &zr);
+            si += Float::with_val(prec, &cf * &zi);
+            let nzr = Float::with_val(prec, &zr * re) - Float::with_val(prec, &zi * im);
+            let nzi = Float::with_val(prec, &zr * im) + Float::with_val(prec, &zi * re);
+            zr = nzr;
+            zi = nzi;
+        }
+        Float::with_val(prec, &sr * &sr) + Float::with_val(prec, &si * &si)
+    }
+
+    #[test]
+    fn hp_recognizes_height_1e6_quartic_where_f64_fails() {
+        let re = f512(Q4_RE);
+        let im = f512(Q4_IM);
+        let expected = iv(&[500000, -7, 1000000, -3, 1]);
+
+        // The HP recognizer recovers the byte-identical minimal polynomial.
+        let got = recognize_complex_algebraic_hp(&re, &im, 512, 4)
+            .expect("HP recognizer must find the height-1e6 quartic");
+        assert_eq!(got, expected);
+
+        // The f64 route CANNOT: its W = 1e10 caps recoverable height at
+        // 1e10^(1/6) ≈ 46, far below the true coefficients (~1e6). It must not
+        // return the correct minpoly (it returns None or a spurious relation).
+        let f64_ans = recognize_complex_algebraic(re.to_f64(), im.to_f64(), 4);
+        assert_ne!(
+            f64_ans,
+            Some(expected.clone()),
+            "f64 route unexpectedly recovered a height-1e6 minpoly"
+        );
+
+        // Certify the accepted residual is genuinely tiny (independently of the
+        // recognizer): |p(z)|^2 in 512-bit HP must be below (2^-400)^2 = 2^-800.
+        let resid2 = hp_resid2(&got, &re, &im, 512);
+        let tiny2 = rug::Float::with_val(512, 1)
+            / rug::Float::with_val(802, &(rug::Integer::from(1) << 800));
+        assert!(
+            resid2 < tiny2,
+            "accepted residual not tiny: resid^2 = {:?}",
+            resid2
+        );
+    }
+
+    #[test]
+    fn hp_rejects_transcendental_input() {
+        // ln(2) + i·π to 512 bits is not algebraic of degree ≤ 4.
+        const LN2: &str = "0.69314718055994530941723212145817656807550013436025525412068000949339362196969471560586332699641868754200148102057068573368552023575813055703267075163507596193072757082837";
+        const PI: &str = "3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679821480865132823066470938446095505822317253594081284811174502841027019";
+        let re = f512(LN2);
+        let im = f512(PI);
+        assert_eq!(recognize_complex_algebraic_hp(&re, &im, 512, 4), None);
     }
 }
