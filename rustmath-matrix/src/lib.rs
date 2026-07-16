@@ -12,6 +12,7 @@ pub mod eigenvalues;
 pub mod eigenvalues_approx;
 pub mod inner_product;
 pub mod integer_forms;
+pub mod integer_relation;
 pub mod lattice;
 pub mod linear_solve;
 pub mod enumerate;
@@ -44,6 +45,7 @@ pub use decomposition::{
 pub use eigenvalues::{EigenDecomposition, Eigenvector, JordanForm};
 pub use inner_product::InnerProductSpace;
 pub use integer_forms::{HermiteNormalForm, SmithNormalForm};
+pub use integer_relation::integer_relation;
 pub use lattice::{
     gram_schmidt_exact, gram_schmidt_real, lll_is_reduced_exact, lll_reduce_real,
     lll_reduce_rf, Lattice, LATTICE_PRECISION,
