@@ -1,27 +1,88 @@
 //! Symbolic integration
 //!
-//! This module implements symbolic integration for common functions.
-//! While full Risch algorithm is complex, we implement a table-based
-//! approach with pattern matching for common integrals.
+//! Integration runs in three tiers (see [`Expr::integrate`] for the exact
+//! contract):
+//!
+//! 1. **Decided — rational functions** ([`crate::risch`]): any integrand
+//!    that normalizes to a univariate rational function over ℚ is integrated
+//!    completely and exactly (Hermite reduction + Rothstein–Trager), with
+//!    the defining identities re-verified by exact algebra before returning.
+//! 2. **Decided — exact gated patterns** ([`crate::integrate_exact`]):
+//!    `c·u′/u ↦ c·log u`, `p(x)·exp(ax+b)`, and `p(x)·sin/cos(ax+b)`
+//!    (`p ∈ ℚ[x]`, `a, b ∈ ℚ`), each certified by differentiating the
+//!    candidate back and deciding `F′ − f ≡ 0` with exact algebra.
+//! 3. **Heuristic — the legacy table** (this module): pattern matching for
+//!    common integrals (trig/hyperbolic tables, sqrt forms, integration by
+//!    parts, shallow partial fractions). These results are *not* verified;
+//!    the tier is kept for coverage beyond the decided classes.
+//!
+//! `None` means honest refusal: no tier could produce (tiers 1–2: certify)
+//! an antiderivative. Non-elementary integrands such as `exp(x)/x`,
+//! `1/log(x)`, `exp(x²)`, `sin(x)/x` are refused, never approximated.
 
 use crate::expression::{BinaryOp, Expr, UnaryOp};
 use crate::symbol::Symbol;
 
 impl Expr {
-    /// Integrate the expression with respect to a symbol
+    /// Integrate the expression with respect to a symbol.
     ///
-    /// Implements standard integration rules:
-    /// - ∫ c dx = c*x for constants
-    /// - ∫ x^n dx = x^(n+1)/(n+1) for n ≠ -1
-    /// - ∫ 1/x dx = log(|x|)
-    /// - ∫ (f + g) dx = ∫f dx + ∫g dx
-    /// - ∫ sin(x) dx = -cos(x)
-    /// - ∫ cos(x) dx = sin(x)
-    /// - ∫ exp(x) dx = exp(x)
-    /// - ∫ 1/(1+x²) dx = arctan(x)
+    /// # What is decided, what is heuristic, what is refused
     ///
-    /// Returns None if integration is not possible with current rules
+    /// - **Decided (complete, exact, self-verifying):** univariate rational
+    ///   functions over ℚ — every such integrand succeeds, routed through
+    ///   [`crate::risch::integrate_rational_risch`]. When some logarithm
+    ///   coefficients are irrational algebraic numbers the result contains
+    ///   the symbolic `Function("root_sum", [f(τ), τ·log v(x,τ)])` object
+    ///   (see the `crate::risch` module docs); [`Expr::differentiate`]
+    ///   applies the exact rule `d/dx root_sum(f, g) = root_sum(f, ∂g/∂x)`
+    ///   to it, and such results are additionally certified by the Risch
+    ///   module's internal exact gates. The tier runs under the default
+    ///   [`crate::risch::RischBudget`]: on inputs whose exact answer is too
+    ///   expensive (e.g. very high multiplicities, or log terms needing a
+    ///   high-degree algebraic number field) it steps aside with a labeled
+    ///   `BudgetExceeded` and the remaining tiers are tried exactly as if
+    ///   this tier had declined — the ultimate `None` is then the honest
+    ///   "not integrated". Callers who want the exact answer at a higher
+    ///   price can invoke
+    ///   [`crate::risch::integrate_rational_risch_with_budget`] directly.
+    /// - **Decided (exact, differentiate-back-gated):** `c·u′/u ↦ c·log u`
+    ///   with `c ∈ ℚ`; `p(x)·exp(ax+b)`; `p(x)·sin(ax+b)`; `p(x)·cos(ax+b)`
+    ///   with `p ∈ ℚ[x]`, `a, b ∈ ℚ`, `a ≠ 0` — see
+    ///   [`crate::integrate_exact::integrate_exact_patterns`].
+    /// - **Heuristic (unverified):** the legacy table below — linearity,
+    ///   power rule (including non-integer exponents), elementary function
+    ///   table (`sin`, `cos`, `exp`, `log`, `tan`, `sinh`, `cosh`),
+    ///   `1/sqrt(a²±x²)` forms, LIATE integration by parts, and shallow
+    ///   partial-fraction patterns. Results in this tier are plausible
+    ///   forms, not certified ones.
+    /// - **Refused (`None`):** everything else, including non-elementary
+    ///   integrands (`exp(x)/x`, `1/log(x)`, `exp(x²)`, `sin(x)/x`, ...).
+    ///   `None` is correct behavior, never a bug workaround.
     pub fn integrate(&self, var: &Symbol) -> Option<Self> {
+        // Tier 1: the rational front door. Complete for its class within the
+        // default budget, so a rational integrand only falls through to the
+        // heuristics on an explicit resource refusal (BudgetExceeded) — in
+        // which case the remaining tiers run exactly as if tier 1 declined,
+        // and a final None is the honest "not integrated" of the Option
+        // contract (never a hang, never a fabricated answer).
+        match crate::risch::integrate_rational_risch(self, var) {
+            crate::risch::RischResult::Elementary(f)
+            | crate::risch::RischResult::WithRootSum(f) => return Some(f),
+            crate::risch::RischResult::NotRational
+            | crate::risch::RischResult::BudgetExceeded { .. } => {}
+        }
+        // Tier 2: exact, differentiate-back-gated patterns.
+        if let Some(f) = crate::integrate_exact::integrate_exact_patterns(self, var) {
+            return Some(f);
+        }
+        // Tier 3: the legacy heuristic table.
+        self.integrate_table(var)
+    }
+
+    /// The legacy heuristic integration table (tier 3 of [`Expr::integrate`]).
+    /// Pattern-matched plausible forms, kept unchanged for coverage beyond
+    /// the decided classes; results are not verified.
+    fn integrate_table(&self, var: &Symbol) -> Option<Self> {
         match self {
             // ∫ c dx = c*x for constants (simplified so e.g. ∫1 dx = x, not 1*x)
             Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) => {
@@ -929,6 +990,25 @@ pub mod advanced {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rustmath_polynomials::UnivariatePolynomial;
+    use rustmath_rationals::Rational;
+
+    /// The differentiation gate for rational integrands: F' − f must
+    /// normalize to exactly zero through the exact rational normalizer.
+    /// Strictly stronger than asserting any particular literal form of F
+    /// (two antiderivatives may legitimately differ in form or by a
+    /// constant), and exact — no floating point, no simplify().
+    fn assert_exact_antiderivative(input: &Expr, result: &Expr, var: &Symbol) {
+        let diff = result.differentiate(var) - input.clone();
+        let (n, d) = crate::risch::as_rational_function(&diff, var)
+            .expect("gate: F' - f must normalize as a rational function");
+        assert!(
+            n.is_zero() && d == UnivariatePolynomial::<Rational>::one(),
+            "gate failed: F' - f = {} / {}, expected 0",
+            n,
+            d
+        );
+    }
 
     #[test]
     fn test_integrate_constant() {
@@ -944,30 +1024,31 @@ mod tests {
         let x = Symbol::new("x");
         let expr = Expr::Symbol(x.clone());
         let result = expr.integrate(&x).unwrap();
-        // ∫ x dx = x²/2
-        let expected = Expr::Symbol(x.clone()).pow(Expr::from(2)) / Expr::from(2);
-        assert_eq!(result, expected);
+        // ∫ x dx = x²/2. The Risch tier emits (1/2)·x² rather than the old
+        // table's x²/2 — the same antiderivative in a different literal
+        // form, so assert through the differentiation gate instead.
+        assert_exact_antiderivative(&expr, &result, &x);
     }
 
     #[test]
     fn test_integrate_power() {
         let x = Symbol::new("x");
-        // ∫ x² dx = x³/3
+        // ∫ x² dx = x³/3. Risch emits (1/3)·x³ (same antiderivative,
+        // different literal form) — assert via the differentiation gate.
         let expr = Expr::Symbol(x.clone()).pow(Expr::from(2));
         let result = expr.integrate(&x).unwrap();
-        let expected = Expr::Symbol(x.clone()).pow(Expr::from(3)) / Expr::from(3);
-        assert_eq!(result, expected);
+        assert_exact_antiderivative(&expr, &result, &x);
     }
 
     #[test]
     fn test_integrate_sum() {
         let x = Symbol::new("x");
-        // ∫ (x + 1) dx = x²/2 + x
+        // ∫ (x + 1) dx = x²/2 + x. Risch emits x + (1/2)·x² (same
+        // antiderivative, different term order and coefficient form) —
+        // assert via the differentiation gate.
         let expr = Expr::Symbol(x.clone()) + Expr::from(1);
         let result = expr.integrate(&x).unwrap();
-        let expected = Expr::Symbol(x.clone()).pow(Expr::from(2)) / Expr::from(2)
-            + Expr::Symbol(x.clone());
-        assert_eq!(result, expected);
+        assert_exact_antiderivative(&expr, &result, &x);
     }
 
     #[test]
@@ -1013,11 +1094,127 @@ mod tests {
     #[test]
     fn test_integrate_constant_multiple() {
         let x = Symbol::new("x");
-        // ∫ 3x dx = 3x²/2
+        // ∫ 3x dx = 3x²/2. Risch emits (3/2)·x² (same antiderivative,
+        // different literal form) — assert via the differentiation gate.
         let expr = Expr::from(3) * Expr::Symbol(x.clone());
         let result = expr.integrate(&x).unwrap();
-        let expected = Expr::from(3) * (Expr::Symbol(x.clone()).pow(Expr::from(2)) / Expr::from(2));
-        assert_eq!(result, expected);
+        assert_exact_antiderivative(&expr, &result, &x);
+    }
+
+    // ---- routing: the rational front door must be the decision procedure ----
+
+    #[test]
+    fn test_rational_front_door_is_risch() {
+        let x = Symbol::new("x");
+        let xe = Expr::Symbol(x.clone());
+        // ∫ 1/(x²+1): decided exactly; gate the returned antiderivative.
+        let expr = Expr::from(1) / (xe.clone().pow(Expr::from(2)) + Expr::from(1));
+        let result = expr.integrate(&x).unwrap();
+        assert_exact_antiderivative(&expr, &result, &x);
+        // ∫ (x⁵+3x−2)/(x³−x): far beyond the legacy table, decided exactly.
+        let num = xe.clone().pow(Expr::from(5)) + Expr::from(3) * xe.clone() - Expr::from(2);
+        let den = xe.clone().pow(Expr::from(3)) - xe.clone();
+        let expr = num / den;
+        let result = expr.integrate(&x).unwrap();
+        assert_exact_antiderivative(&expr, &result, &x);
+    }
+
+    #[test]
+    fn test_rational_front_door_root_sum() {
+        let x = Symbol::new("x");
+        let xe = Expr::Symbol(x.clone());
+        // ∫ 1/(x²−2): the residues ±√2/4 are irrational, so the exact
+        // answer carries a root_sum object, certified by the Risch module's
+        // internal trace gate (differentiate() knows the pass-through rule
+        // d/dx root_sum(f, g) = root_sum(f, ∂g/∂x), but as_rational_function
+        // cannot normalize a root_sum, so the rational gate does not apply).
+        let expr = Expr::from(1) / (xe.clone().pow(Expr::from(2)) - Expr::from(2));
+        let result = expr.integrate(&x).unwrap();
+        fn contains_root_sum(e: &Expr) -> bool {
+            match e {
+                Expr::Function(name, args) => {
+                    name == "root_sum" || args.iter().any(|a| contains_root_sum(a))
+                }
+                Expr::Unary(_, inner) => contains_root_sum(inner),
+                Expr::Binary(_, l, r) => contains_root_sum(l) || contains_root_sum(r),
+                _ => false,
+            }
+        }
+        assert!(contains_root_sum(&result));
+    }
+
+    // ---- routing: a tier-1 budget trip falls through, never hangs ----
+
+    // The four audited blocker inputs: pre-budget, Expr::integrate was
+    // effectively non-terminating on each (measured kills at 150 s, 240 s /
+    // 550 s, 63 s, 300 s in debug). The Risch tier now refuses them with a
+    // labeled BudgetExceeded, the front door falls through to tiers 2–3
+    // exactly as if tier 1 declined, and the honest outcome under the
+    // pre-existing Option contract is None — reached in milliseconds
+    // (time-asserted generously for slow CI).
+    #[test]
+    fn test_budget_trip_falls_through_to_honest_none() {
+        let x = Symbol::new("x");
+        let xe = Expr::Symbol(x.clone());
+        let blockers: Vec<Expr> = vec![
+            Expr::from(1) / (xe.clone().pow(Expr::from(15)) + xe.clone() + Expr::from(1)),
+            Expr::from(1) / (xe.clone().pow(Expr::from(40)) + xe.clone() + Expr::from(1)),
+            Expr::from(1)
+                / ((xe.clone() - Expr::from(1)).pow(Expr::from(30))
+                    * (xe.clone() + Expr::from(2))),
+            (xe.clone().pow(Expr::from(3)) + Expr::from(1))
+                / ((xe.clone().pow(Expr::from(2)) + Expr::from(1)).pow(Expr::from(10))
+                    * (xe.clone() - Expr::from(2)).pow(Expr::from(20))),
+        ];
+        for e in blockers {
+            let t0 = std::time::Instant::now();
+            // Tier 1 refuses on budget (verified stage-by-stage in the risch
+            // tests); tiers 2–3 have no pattern for these, so the honest
+            // front-door answer is None — not a hang, not a wrong form.
+            assert_eq!(e.integrate(&x), None, "expected honest None for {}", e);
+            println!("blocker {} -> None in {:?}", e, t0.elapsed());
+            assert!(
+                t0.elapsed() < std::time::Duration::from_secs(30),
+                "front door must return promptly for {}, took {:?}",
+                e,
+                t0.elapsed()
+            );
+        }
+    }
+
+    // ---- routing: the exact gated patterns run before the legacy table ----
+
+    #[test]
+    fn test_exact_patterns_reachable_through_integrate() {
+        let x = Symbol::new("x");
+        let xe = Expr::Symbol(x.clone());
+        // ∫ x·sin(x): decided by the p(x)·sin(ax+b) recurrence (the old
+        // table's by-parts heuristic could not complete it).
+        let expr = xe.clone() * xe.clone().sin();
+        assert!(expr.integrate(&x).is_some());
+        // ∫ cos(x)/sin(x): the u'/u pattern.
+        let expr = xe.clone().cos() / xe.clone().sin();
+        assert_eq!(expr.integrate(&x).unwrap(), xe.clone().sin().log());
+        // ∫ exp(2x): the old table only knew exp(x).
+        let expr = (Expr::from(2) * xe.clone()).exp();
+        assert!(expr.integrate(&x).is_some());
+    }
+
+    // ---- the honest frontier: None is correct behavior ----
+
+    #[test]
+    fn test_refuses_nonelementary_integrands() {
+        let x = Symbol::new("x");
+        let xe = Expr::Symbol(x.clone());
+        let refusals: Vec<Expr> = vec![
+            xe.clone().exp() / xe.clone(),        // Ei(x)
+            Expr::from(1) / xe.clone().log(),     // li(x)
+            xe.clone().pow(Expr::from(2)).exp(),  // erfi
+            xe.clone().sin() / xe.clone(),        // Si(x)
+        ];
+        for e in refusals {
+            assert_eq!(e.integrate(&x), None, "must refuse {}", e);
+        }
     }
 
     #[test]

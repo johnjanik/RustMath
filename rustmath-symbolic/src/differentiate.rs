@@ -2,6 +2,7 @@
 
 use crate::expression::{BinaryOp, Expr, UnaryOp};
 use crate::symbol::Symbol;
+use std::sync::Arc;
 
 impl Expr {
     /// Differentiate the expression with respect to a symbol
@@ -17,6 +18,9 @@ impl Expr {
     /// - d/dx(cos(f)) = -sin(f)*f' (chain rule)
     /// - d/dx(exp(f)) = exp(f)*f' (chain rule)
     /// - d/dx(log(f)) = f'/f (chain rule)
+    /// - d/dx(root_sum(f, g)) = root_sum(f, ∂g/∂x): the sum ranges over the
+    ///   roots of `f` in its bound variable τ, which do not involve x, so
+    ///   differentiation passes through the summand (see `crate::risch`)
     pub fn differentiate(&self, var: &Symbol) -> Self {
         match self {
             // Constant rule: d/dx(c) = 0
@@ -198,6 +202,27 @@ impl Expr {
                     // ζ'(s) = -Σ(n=1 to ∞) ln(n)/n^s (for Re(s) > 1)
                     // For symbolic purposes, leave as is
                     UnaryOp::Zeta => Expr::from(0), // TODO: Implement symbolic zeta derivative
+                }
+            }
+
+            // root_sum(f, g) = Σ_{c : f(c) = 0} g|_{τ=c} — the exact symbolic
+            // object emitted by the rational Risch integrator (`crate::risch`).
+            // `f` is a polynomial in the bound variable τ alone, so the roots
+            // the sum ranges over do not involve any other variable:
+            // differentiation with respect to such a variable passes through
+            // the (finite) sum termwise,
+            //     d/dx root_sum(f, g) = root_sum(f, ∂g/∂x).
+            // If `var` occurs in `f`, then `var` *is* the bound variable τ;
+            // the sum binds it, the value Σ g(x, c) has no free τ, and the
+            // derivative is exactly 0.
+            Expr::Function(name, args) if name == "root_sum" && args.len() == 2 => {
+                if args[0].contains_symbol(var) {
+                    Expr::from(0)
+                } else {
+                    Expr::Function(
+                        "root_sum".to_string(),
+                        vec![args[0].clone(), Arc::new(args[1].differentiate(var))],
+                    )
                 }
             }
 
