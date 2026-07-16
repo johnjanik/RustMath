@@ -27,6 +27,7 @@ pub mod pseudolines;
 pub mod ribbon_graph;
 pub mod riemannian_manifolds;
 pub mod plane_curve_ops;
+pub mod double_description;
 
 pub use point::{Point2D, Point3D};
 pub use line::{Line2D, LineSegment2D};
@@ -68,3 +69,4 @@ pub use polyhedral_complex::{
     PolyhedralComplex, Polyhedron as ComplexPolyhedron,
     cells_list_to_cells_dict, exploded_plot, ExplodedPlotData
 };
+pub use double_description::{DdBudget, HPolyhedron, VPolyhedron, h_to_v, v_to_h};

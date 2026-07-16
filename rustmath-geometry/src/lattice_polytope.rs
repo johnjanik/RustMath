@@ -21,12 +21,69 @@
 //! assert_eq!(polytope.dim(), 2);
 //! ```
 
+use crate::double_description::{v_to_h, DdBudget, HPolyhedron, VPolyhedron};
 use rustmath_core::Ring;
 use rustmath_integers::Integer;
 use rustmath_rationals::Rational;
 use std::fmt;
 use std::hash::{Hash, Hasher};
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
+
+/// Default cap on the number of bounding-box candidates enumerated by
+/// [`LatticePolytopeClass::points`]. Exceeding it in the convenience
+/// wrapper panics; use [`LatticePolytopeClass::try_points`] for an
+/// explicit budget and an honest `Err`.
+const DEFAULT_MAX_POINT_CANDIDATES: usize = 1_000_000;
+
+/// Default cap on the number of distinct faces enumerated by
+/// [`LatticePolytopeClass::faces`]. Exceeding it in the convenience
+/// wrapper panics; use [`LatticePolytopeClass::try_faces`] for an
+/// explicit budget and an honest `Err`.
+const DEFAULT_MAX_FACES: usize = 100_000;
+
+/// Exact dot product of a rational row with a rational point.
+fn rat_dot(a: &[Rational], x: &[Rational]) -> Rational {
+    debug_assert_eq!(a.len(), x.len());
+    let mut s = Rational::from_integer(0);
+    for (p, q) in a.iter().zip(x.iter()) {
+        s = s + p * q;
+    }
+    s
+}
+
+/// Convert a canonical (integral) `Rational` to `Integer`, panicking on a
+/// non-integral value — only used on rows produced by
+/// `HPolyhedron::canonicalize`, whose primitive form is integral.
+fn rat_to_int(x: &Rational) -> Integer {
+    assert!(
+        x.is_integer(),
+        "canonical H-representation row entry is not integral: {x:?}"
+    );
+    x.numerator().clone()
+}
+
+fn int_vec_to_rat(v: &[Integer]) -> Vec<Rational> {
+    v.iter().map(|x| Rational::from_integer(x.clone())).collect()
+}
+
+/// Exact affine dimension of a point set: the rank of the matrix of
+/// difference vectors `p_i - p_0`, computed over `Integer` (Bareiss).
+fn affine_dim_of(points: &[Vec<Integer>], ambient_dim: usize) -> usize {
+    if points.len() <= 1 {
+        return 0;
+    }
+    let base = &points[0];
+    let diffs: Vec<Vec<Integer>> = points[1..]
+        .iter()
+        .map(|v| {
+            v.iter()
+                .zip(base.iter())
+                .map(|(a, b)| a.clone() - b.clone())
+                .collect()
+        })
+        .collect();
+    integer_matrix_rank(&diffs, ambient_dim)
+}
 
 /// A lattice polytope
 ///
@@ -109,22 +166,7 @@ impl LatticePolytopeClass {
     /// vertex list contains redundant/non-extreme points, unlike a
     /// `n_vertices - 1` head-count approximation.
     pub fn dim(&self) -> usize {
-        if self.n_vertices() <= 1 {
-            return 0;
-        }
-
-        let base = &self.vertices[0];
-        let diffs: Vec<Vec<Integer>> = self.vertices[1..]
-            .iter()
-            .map(|v| {
-                v.iter()
-                    .zip(base.iter())
-                    .map(|(a, b)| a.clone() - b.clone())
-                    .collect()
-            })
-            .collect();
-
-        integer_matrix_rank(&diffs, self.ambient_dim)
+        affine_dim_of(&self.vertices, self.ambient_dim)
     }
 
     /// Get the lattice dimension
@@ -134,62 +176,290 @@ impl LatticePolytopeClass {
         self.ambient_dim
     }
 
-    /// Check if the polytope is reflexive
+    /// Exact H-representation of `conv(vertices)`: irredundant facet
+    /// inequalities plus affine-hull equations, computed by the exact
+    /// double description method ([`v_to_h`]) over `Rational`.
     ///
-    /// A polytope is reflexive if both it and its polar dual are lattice polytopes.
-    /// This is a simplified check.
-    pub fn is_reflexive(&self) -> bool {
-        // For a proper implementation, we would:
-        // 1. Compute the polar dual
-        // 2. Check if all vertices of the dual are lattice points
-        // For now, return false as a conservative estimate
-        false
+    /// Returns an honest `Err` if the double description ray budget is
+    /// exceeded (never a truncated result).
+    pub fn h_representation(&self, budget: &DdBudget) -> Result<HPolyhedron, String> {
+        let verts: Vec<Vec<Rational>> =
+            self.vertices.iter().map(|v| int_vec_to_rat(v)).collect();
+        let vp = VPolyhedron::from_vertices(self.ambient_dim, verts)?;
+        v_to_h(&vp, budget)
     }
 
-    /// Get all lattice points within the polytope
+    /// Facet inequalities of a **full-dimensional** lattice polytope, as
+    /// pairs `(n, c)` meaning `n·x + c >= 0` (Sage's inner-normal
+    /// convention): `P = {x : n_i·x + c_i >= 0 for all i}`, one pair per
+    /// facet, with the facet itself being `{x in P : n_i·x + c_i = 0}`.
     ///
-    /// Returns all integer points that lie inside or on the boundary of the polytope.
+    /// Each `n` is a *primitive* integer inner normal and each `c` an
+    /// integer: the canonical H-representation row `(a | b)` is primitive
+    /// as a whole, and since the facet contains a lattice vertex `v` with
+    /// `a·v = b`, `gcd(a)` divides `b`, so `gcd(a) = 1`. Consequently `c`
+    /// is the *lattice distance* of the facet from the origin, and the
+    /// polytope is reflexive exactly when every `c = 1`.
     ///
-    /// Note: This is a placeholder that returns only vertices.
-    /// A full implementation would enumerate all interior lattice points.
+    /// # Errors
+    ///
+    /// * If the polytope is **not full-dimensional** (`dim() <
+    ///   ambient_dim()`): the affine-hull equations are not facet normals,
+    ///   and silently returning the facets of the polytope *within* its
+    ///   affine hull would be ambiguous (they are only unique modulo the
+    ///   equations). Use [`Self::h_representation`], which returns the
+    ///   unambiguous `{equations, inequalities}` pair, for that case.
+    /// * If the double description budget is exceeded.
+    pub fn facet_inequalities_with_budget(
+        &self,
+        budget: &DdBudget,
+    ) -> Result<Vec<(Vec<Integer>, Integer)>, String> {
+        let h = self.h_representation(budget)?;
+        if !h.equations.is_empty() {
+            return Err(format!(
+                "facet inequalities are only defined for full-dimensional polytopes: \
+                 this polytope has dimension {} in ambient dimension {}; \
+                 use h_representation() for the affine-hull equations",
+                self.dim(),
+                self.ambient_dim
+            ));
+        }
+        Ok(h.inequalities
+            .iter()
+            .map(|(a, b)| {
+                // a·x <= b  <=>  (-a)·x + b >= 0: inner normal -a, constant b.
+                let n: Vec<Integer> = a.iter().map(|x| -rat_to_int(x)).collect();
+                (n, rat_to_int(b))
+            })
+            .collect())
+    }
+
+    /// [`Self::facet_inequalities_with_budget`] with the default budget.
+    pub fn facet_inequalities(&self) -> Result<Vec<(Vec<Integer>, Integer)>, String> {
+        self.facet_inequalities_with_budget(&DdBudget::default())
+    }
+
+    /// Check if the polytope is reflexive: full-dimensional, with the
+    /// origin as an interior point, and every facet at lattice distance 1
+    /// (equivalently, every facet constant is 1 in primitive inner-normal
+    /// form — which already forces the origin to be interior, since `0`
+    /// then satisfies every facet inequality strictly).
+    ///
+    /// Equivalently (and cross-checked by [`Self::polar`], which uses the
+    /// divisibility route): reflexive iff the polar dual is itself a
+    /// lattice polytope.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the internal double description budget is exceeded
+    /// (never fabricates an answer); use
+    /// [`Self::facet_inequalities_with_budget`] to control the budget.
+    pub fn is_reflexive(&self) -> bool {
+        if self.dim() != self.ambient_dim {
+            // A lower-dimensional polytope is never reflexive in its
+            // ambient lattice (its polar is unbounded).
+            return false;
+        }
+        let fi = self
+            .facet_inequalities()
+            .expect("is_reflexive: double description budget exceeded");
+        fi.iter().all(|(_, c)| c.is_one())
+    }
+
+    /// Get all lattice points within the polytope (inside or on the
+    /// boundary), in lexicographically increasing order, with the default
+    /// enumeration budget ([`Self::try_points`] with
+    /// `DEFAULT_MAX_POINT_CANDIDATES`).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the bounding box exceeds the default candidate budget or
+    /// the double description budget is exceeded (never fabricates a
+    /// partial list); use [`Self::try_points`] for an honest `Err`.
     pub fn points(&self) -> Vec<Vec<Integer>> {
-        // For a simple implementation, return the vertices
-        // A complete implementation would compute all interior lattice points
-        self.vertices.clone()
+        self.try_points(&DdBudget::default(), DEFAULT_MAX_POINT_CANDIDATES)
+            .expect("points: enumeration budget exceeded; use try_points")
+    }
+
+    /// All lattice points of the polytope, in lexicographically increasing
+    /// order: every integer point of the vertex bounding box that
+    /// satisfies the exact H-representation (all facet inequalities *and*
+    /// affine-hull equations).
+    ///
+    /// Complexity: the H-representation is one double description run,
+    /// and the filter visits every integer point of the bounding box —
+    /// `prod_i (max_i - min_i + 1)` candidates, exponential in the
+    /// dimension. That is fine for the small explicit polytopes this type
+    /// is for; `max_candidates` bounds it and an honest `Err` is returned
+    /// when the bound (or the double description `budget`) is exceeded.
+    pub fn try_points(
+        &self,
+        budget: &DdBudget,
+        max_candidates: usize,
+    ) -> Result<Vec<Vec<Integer>>, String> {
+        let h = self.h_representation(budget)?;
+        let d = self.ambient_dim;
+        let mut lo = self.vertices[0].clone();
+        let mut hi = self.vertices[0].clone();
+        for v in &self.vertices {
+            for i in 0..d {
+                if v[i] < lo[i] {
+                    lo[i] = v[i].clone();
+                }
+                if v[i] > hi[i] {
+                    hi[i] = v[i].clone();
+                }
+            }
+        }
+        let mut n_candidates = Integer::from(1);
+        for i in 0..d {
+            n_candidates = n_candidates * (hi[i].clone() - lo[i].clone() + Integer::from(1));
+        }
+        let cap = Integer::from(max_candidates.min(i64::MAX as usize) as i64);
+        if n_candidates > cap {
+            return Err(format!(
+                "lattice point enumeration budget exceeded: the bounding box has {} \
+                 candidate points, budget is {}",
+                n_candidates, max_candidates
+            ));
+        }
+        let mut out = Vec::new();
+        let mut cur = lo.clone();
+        'outer: loop {
+            if h.contains(&int_vec_to_rat(&cur)) {
+                out.push(cur.clone());
+            }
+            // Advance the odometer, last coordinate fastest, so the
+            // output comes out in lexicographic order.
+            let mut i = d;
+            loop {
+                if i == 0 {
+                    break 'outer;
+                }
+                i -= 1;
+                if cur[i] < hi[i] {
+                    cur[i] = cur[i].clone() + Integer::from(1);
+                    cur[(i + 1)..d].clone_from_slice(&lo[(i + 1)..d]);
+                    continue 'outer;
+                }
+            }
+        }
+        Ok(out)
     }
 
     /// Get the number of lattice points
+    ///
+    /// # Panics
+    ///
+    /// Same budget panics as [`Self::points`]; use [`Self::try_points`]
+    /// for an honest `Err`.
     pub fn n_points(&self) -> usize {
         self.points().len()
     }
 
-    /// Compute facet normals
+    /// Compute facet normals: the primitive integer **inner** normals of
+    /// a full-dimensional polytope, one per facet (the first components
+    /// of [`Self::facet_inequalities`], which also carries each facet's
+    /// constant).
     ///
-    /// Returns the normal vectors to each facet of the polytope.
+    /// # Errors
     ///
-    /// Note: This is a placeholder implementation.
-    pub fn facet_normals(&self) -> Vec<Vec<Integer>> {
-        // For a proper implementation, we would compute the convex hull
-        // and extract the facet normals
-        vec![]
+    /// Same as [`Self::facet_inequalities`]: not full-dimensional, or
+    /// budget exceeded.
+    pub fn facet_normals(&self) -> Result<Vec<Vec<Integer>>, String> {
+        Ok(self
+            .facet_inequalities()?
+            .into_iter()
+            .map(|(n, _)| n)
+            .collect())
     }
 
-    /// Get the polar dual
+    /// Get the polar dual as a **lattice** polytope.
     ///
-    /// For a reflexive polytope, returns the polar dual.
-    /// Returns None if not reflexive or if computation is not implemented.
+    /// The polar dual of `P` is `P° = {y : y·x >= -1 for all x in P}`,
+    /// a polytope with (generally rational) vertices `n_i / c_i` for the
+    /// facet inequalities `n_i·x + c_i >= 0` of `P`, defined whenever `P`
+    /// is full-dimensional with the origin interior. This method returns
+    /// `Some` exactly when `P°` is itself a lattice polytope — i.e. every
+    /// `c_i` divides its normal `n_i`, which (since `n_i` is primitive)
+    /// means every `c_i = 1`: **exactly the reflexive case**, and the two
+    /// routes are asserted to agree in the tests. Use
+    /// [`Self::polar_rational`] for the general rational polar.
+    ///
+    /// Returns `None` if the polytope is not full-dimensional, the origin
+    /// is not an interior point, or the polar has a non-lattice vertex.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the internal double description budget is exceeded
+    /// (never fabricates); use [`Self::facet_inequalities_with_budget`]
+    /// to control the budget.
     pub fn polar(&self) -> Option<Self> {
-        // The polar dual of a polytope with vertices v_i is:
-        // { x : <x, v_i> >= -1 for all i }
-        // This requires solving a dual polytope problem
-        None
+        if self.dim() != self.ambient_dim {
+            return None;
+        }
+        let fi = self
+            .facet_inequalities()
+            .expect("polar: double description budget exceeded");
+        let mut verts = Vec::with_capacity(fi.len());
+        for (n, c) in fi {
+            if c.signum() <= 0 {
+                return None; // the origin is not strictly interior
+            }
+            let mut v = Vec::with_capacity(n.len());
+            for ni in n {
+                if !(ni.clone() % c.clone()).is_zero() {
+                    return None; // polar vertex n/c is not a lattice point
+                }
+                v.push(ni / c.clone());
+            }
+            verts.push(v);
+        }
+        Some(Self::new(verts))
     }
 
-    /// Get faces of a specific dimension
+    /// The polar dual `P° = {y : y·x >= -1 for all x in P}` as its exact
+    /// rational vertex list `n_i / c_i` (one vertex per facet of `P`).
+    ///
+    /// # Errors
+    ///
+    /// * If `P` is not full-dimensional or the origin is not strictly
+    ///   interior (some facet constant `c_i <= 0`): the polar is then
+    ///   unbounded and has no vertex-list representation.
+    /// * If the double description budget is exceeded.
+    pub fn polar_rational(&self) -> Result<Vec<Vec<Rational>>, String> {
+        let fi = self.facet_inequalities()?;
+        if !fi.iter().all(|(_, c)| c.signum() > 0) {
+            return Err(
+                "the origin is not an interior point, so the polar dual is unbounded \
+                 and has no vertex representation"
+                    .to_string(),
+            );
+        }
+        Ok(fi
+            .into_iter()
+            .map(|(n, c)| {
+                n.into_iter()
+                    .map(|ni| {
+                        Rational::new(ni, c.clone()).expect("facet constant is nonzero")
+                    })
+                    .collect()
+            })
+            .collect())
+    }
+
+    /// Get faces of a specific dimension, computed from the real
+    /// vertex-facet incidence (see [`Self::try_faces`]).
     ///
     /// # Arguments
     ///
     /// * `dimension` - The dimension of faces to return
+    ///
+    /// # Panics
+    ///
+    /// Panics if the internal double description or face-count budget is
+    /// exceeded (never fabricates); use [`Self::try_faces`] for an honest
+    /// `Err`.
     ///
     /// # Examples
     ///
@@ -204,20 +474,96 @@ impl LatticePolytopeClass {
     /// ];
     /// let polytope = LatticePolytopeClass::new(vertices);
     ///
-    /// // Dimension 0 faces are vertices
-    /// let vertex_faces = polytope.faces(0);
+    /// // Dimension 0 faces are vertices, dimension 1 faces are edges
+    /// assert_eq!(polytope.faces(0).len(), 3);
+    /// assert_eq!(polytope.faces(1).len(), 3);
     /// ```
     pub fn faces(&self, dimension: usize) -> Vec<Self> {
-        if dimension == 0 {
-            // 0-dimensional faces are vertices
-            self.vertices
-                .iter()
-                .map(|v| Self::new(vec![v.clone()]))
-                .collect()
-        } else {
-            // For higher dimensions, we would need to compute the face lattice
-            vec![]
+        self.try_faces(dimension, &DdBudget::default(), DEFAULT_MAX_FACES)
+            .expect("faces: enumeration budget exceeded; use try_faces")
+    }
+
+    /// The faces of dimension exactly `dimension`, via the face lattice.
+    ///
+    /// Every proper face of a polytope is an intersection of facets, and
+    /// the vertex set of `∩_{i in I} F_i` is `∩_{i in I} V(F_i)` (with
+    /// `V(F) = ` the input points lying on `F`), so the proper faces are
+    /// exactly the distinct nonempty sets obtainable from the facet
+    /// incidence sets by intersection. This computes the facet incidence
+    /// sets from the exact H-representation (which also makes it correct
+    /// for lower-dimensional polytopes: the canonical inequalities cut
+    /// out the facets within the affine hull), closes them under
+    /// intersection, and keeps the faces whose affine dimension is
+    /// `dimension`. Distinct faces have distinct vertex sets, so no
+    /// deduplication beyond set identity is needed.
+    ///
+    /// Conventions: `faces(dim())` is `[self]` (the improper face);
+    /// `faces(d)` for `d > dim()` is empty; the empty face is not
+    /// reported. If the input vertex list contains redundant (non-extreme)
+    /// points, each face is returned with *all* input points lying on it
+    /// (its convex hull is still exactly the face).
+    ///
+    /// `max_faces` bounds the total number of distinct faces discovered;
+    /// exceeding it (or the double description `budget`) returns an
+    /// honest `Err`.
+    pub fn try_faces(
+        &self,
+        dimension: usize,
+        budget: &DdBudget,
+        max_faces: usize,
+    ) -> Result<Vec<Self>, String> {
+        let own_dim = self.dim();
+        if dimension > own_dim {
+            return Ok(Vec::new());
         }
+        if dimension == own_dim {
+            return Ok(vec![self.clone()]);
+        }
+        let h = self.h_representation(budget)?;
+        let rat_verts: Vec<Vec<Rational>> =
+            self.vertices.iter().map(|v| int_vec_to_rat(v)).collect();
+        let facet_sets: Vec<BTreeSet<usize>> = h
+            .inequalities
+            .iter()
+            .map(|(a, b)| {
+                (0..rat_verts.len())
+                    .filter(|&i| rat_dot(a, &rat_verts[i]) == *b)
+                    .collect()
+            })
+            .collect();
+
+        // Close {all vertices} under intersection with the facet sets.
+        let full: BTreeSet<usize> = (0..rat_verts.len()).collect();
+        let mut seen: Vec<BTreeSet<usize>> = vec![full.clone()];
+        let mut work: Vec<BTreeSet<usize>> = vec![full];
+        while let Some(s) = work.pop() {
+            for fs in &facet_sets {
+                let t: BTreeSet<usize> = s.intersection(fs).copied().collect();
+                if !t.is_empty() && !seen.contains(&t) {
+                    if seen.len() >= max_faces {
+                        return Err(format!(
+                            "face enumeration budget exceeded: more than {} distinct faces",
+                            max_faces
+                        ));
+                    }
+                    seen.push(t.clone());
+                    work.push(t);
+                }
+            }
+        }
+
+        // seen[0] is the improper face (the polytope itself); the rest
+        // are the proper faces. Classify by exact affine dimension.
+        let mut out: Vec<Vec<Vec<Integer>>> = Vec::new();
+        for s in seen.iter().skip(1) {
+            let pts: Vec<Vec<Integer>> =
+                s.iter().map(|&i| self.vertices[i].clone()).collect();
+            if affine_dim_of(&pts, self.ambient_dim) == dimension {
+                out.push(pts);
+            }
+        }
+        out.sort();
+        Ok(out.into_iter().map(Self::new).collect())
     }
 
     /// Get facets (codimension-1 faces)
@@ -234,20 +580,39 @@ impl LatticePolytopeClass {
         self.faces(1)
     }
 
-    /// Check if this polytope contains a point
+    /// Check if this polytope contains a lattice point: exact membership
+    /// in `conv(vertices)`, tested against the H-representation (all
+    /// facet inequalities *and* affine-hull equations).
     ///
     /// # Arguments
     ///
     /// * `point` - The point to check
+    ///
+    /// # Panics
+    ///
+    /// Panics if the internal double description budget is exceeded
+    /// (never fabricates); use [`Self::h_representation`] plus
+    /// [`HPolyhedron::contains`] to control the budget.
     pub fn contains(&self, point: &[Integer]) -> bool {
         if point.len() != self.ambient_dim {
             return false;
         }
+        self.contains_rational(&int_vec_to_rat(point))
+    }
 
-        // For a proper implementation, we would check if the point
-        // satisfies all facet inequalities
-        // For now, check if the point is one of the vertices
-        self.vertices.iter().any(|v| v.as_slice() == point)
+    /// Exact membership test for a rational point (see [`Self::contains`]).
+    ///
+    /// # Panics
+    ///
+    /// Same as [`Self::contains`].
+    pub fn contains_rational(&self, point: &[Rational]) -> bool {
+        if point.len() != self.ambient_dim {
+            return false;
+        }
+        let h = self
+            .h_representation(&DdBudget::default())
+            .expect("contains: double description budget exceeded");
+        h.contains(point)
     }
 
     /// Compute the (Euclidean) volume of the polytope.
@@ -1232,8 +1597,10 @@ pub fn all_polars(polytopes: &[LatticePolytopeClass]) -> Vec<Option<LatticePolyt
 ///
 /// # Returns
 ///
-/// Vector of vectors, where each inner vector contains the facet normals
-/// for the corresponding polytope
+/// Vector of vectors, where each inner vector contains the primitive
+/// inner facet normals for the corresponding polytope; `Err` if any
+/// polytope is not full-dimensional or a budget is exceeded (see
+/// [`LatticePolytopeClass::facet_normals`]).
 ///
 /// # Examples
 ///
@@ -1241,10 +1608,13 @@ pub fn all_polars(polytopes: &[LatticePolytopeClass]) -> Vec<Option<LatticePolyt
 /// use rustmath_geometry::lattice_polytope::{all_facet_equations, cross_polytope};
 ///
 /// let polytopes = vec![cross_polytope(2)];
-/// let facets = all_facet_equations(&polytopes);
+/// let facets = all_facet_equations(&polytopes).unwrap();
 /// assert_eq!(facets.len(), 1);
+/// assert_eq!(facets[0].len(), 4); // the diamond has 4 facets
 /// ```
-pub fn all_facet_equations(polytopes: &[LatticePolytopeClass]) -> Vec<Vec<Vec<Integer>>> {
+pub fn all_facet_equations(
+    polytopes: &[LatticePolytopeClass],
+) -> Result<Vec<Vec<Vec<Integer>>>, String> {
     polytopes.iter().map(|p| p.facet_normals()).collect()
 }
 
@@ -1776,6 +2146,8 @@ mod tests {
 
     #[test]
     fn test_contains() {
+        // Segment from (0,0) to (1,0): a lower-dimensional polytope, so
+        // membership must respect the affine-hull equation y = 0 too.
         let vertices = vec![
             vec![Integer::from(0), Integer::from(0)],
             vec![Integer::from(1), Integer::from(0)],
@@ -1784,10 +2156,20 @@ mod tests {
 
         assert!(polytope.contains(&[Integer::from(0), Integer::from(0)]));
         assert!(polytope.contains(&[Integer::from(1), Integer::from(0)]));
+        assert!(!polytope.contains(&[Integer::from(2), Integer::from(0)]));
+        assert!(!polytope.contains(&[Integer::from(-1), Integer::from(0)]));
+        assert!(!polytope.contains(&[Integer::from(0), Integer::from(1)]));
+        // Wrong arity is simply not contained.
+        assert!(!polytope.contains(&[Integer::from(0)]));
+        // A rational point in the relative interior is contained.
+        let half = Rational::new(1, 2).unwrap();
+        assert!(polytope.contains_rational(&[half, Rational::from_integer(0)]));
     }
 
     #[test]
     fn test_points() {
+        // Segment from (0,0) to (1,0): exactly its two endpoints are
+        // lattice points (exact content, in lexicographic order).
         let vertices = vec![
             vec![Integer::from(0), Integer::from(0)],
             vec![Integer::from(1), Integer::from(0)],
@@ -1795,7 +2177,14 @@ mod tests {
         let polytope = LatticePolytopeClass::new(vertices);
 
         let points = polytope.points();
-        assert_eq!(points.len(), 2);
+        assert_eq!(
+            points,
+            vec![
+                vec![Integer::from(0), Integer::from(0)],
+                vec![Integer::from(1), Integer::from(0)],
+            ]
+        );
+        assert_eq!(polytope.n_points(), 2);
     }
 
     #[test]
@@ -2228,5 +2617,592 @@ mod tests {
                 vertices
             );
         }
+    }
+
+    // ===== Stage 2: real facets / polar / reflexivity / points / faces =====
+    //
+    // Every literal expected value below (facet lists, polar vertices,
+    // lattice-point lists, f-vectors, containment verdicts) was derived
+    // INDEPENDENTLY in exact python int/Fraction arithmetic before being
+    // asserted here (scratchpad lp_derive.py): facets by brute-force
+    // hyperplane enumeration over vertex subsets, f-vectors by
+    // definition-based enumeration over all 2^#facets facet subsets
+    // (cross-checked against the classical values), lattice points by
+    // box + facet filtering, polars by n/c with a polar(polar) == P check.
+
+    fn lp(vs: &[&[i64]]) -> LatticePolytopeClass {
+        LatticePolytopeClass::new(vs.iter().map(|v| iv(v)).collect())
+    }
+
+    fn fi_lit(data: &[(&[i64], i64)]) -> Vec<(Vec<Integer>, Integer)> {
+        data.iter().map(|(n, c)| (iv(n), Integer::from(*c))).collect()
+    }
+
+    fn pts_lit(data: &[&[i64]]) -> Vec<Vec<Integer>> {
+        data.iter().map(|p| iv(p)).collect()
+    }
+
+    fn fi_sorted(p: &LatticePolytopeClass) -> Vec<(Vec<Integer>, Integer)> {
+        let mut fi = p.facet_inequalities().unwrap();
+        fi.sort();
+        fi
+    }
+
+    fn sorted_verts(p: &LatticePolytopeClass) -> Vec<Vec<Integer>> {
+        let mut v = p.vertices().to_vec();
+        v.sort();
+        v
+    }
+
+    fn square_pm1() -> LatticePolytopeClass {
+        lp(&[&[-1, -1], &[-1, 1], &[1, -1], &[1, 1]])
+    }
+
+    fn cube_pm1() -> LatticePolytopeClass {
+        let mut corners = Vec::new();
+        for &x in &[-1i64, 1] {
+            for &y in &[-1i64, 1] {
+                for &z in &[-1i64, 1] {
+                    corners.push(iv(&[x, y, z]));
+                }
+            }
+        }
+        LatticePolytopeClass::new(corners)
+    }
+
+    fn tri_t() -> LatticePolytopeClass {
+        lp(&[&[1, 0], &[0, 1], &[-1, -1]])
+    }
+
+    fn tri_db() -> LatticePolytopeClass {
+        lp(&[&[-1, -1], &[2, -1], &[-1, 2]])
+    }
+
+    fn hexagon() -> LatticePolytopeClass {
+        lp(&[&[1, 0], &[-1, 0], &[0, 1], &[0, -1], &[1, 1], &[-1, -1]])
+    }
+
+    fn simplex3() -> LatticePolytopeClass {
+        lp(&[&[0, 0, 0], &[1, 0, 0], &[0, 1, 0], &[0, 0, 1]])
+    }
+
+    /// Triangle conv(e1, e2, e3): 2-dimensional in ambient R^3.
+    fn tri3_lower_dim() -> LatticePolytopeClass {
+        lp(&[&[1, 0, 0], &[0, 1, 0], &[0, 0, 1]])
+    }
+
+    fn dilated_simplex(k: i64, d: usize) -> LatticePolytopeClass {
+        let mut vs = vec![vec![Integer::from(0); d]];
+        for i in 0..d {
+            let mut v = vec![Integer::from(0); d];
+            v[i] = Integer::from(k);
+            vs.push(v);
+        }
+        LatticePolytopeClass::new(vs)
+    }
+
+    /// The 24-cell: all permutations of (±1, ±1, 0, 0) in R^4.
+    fn cell24() -> LatticePolytopeClass {
+        let mut vs = Vec::new();
+        for i in 0..4 {
+            for j in (i + 1)..4 {
+                for &si in &[1i64, -1] {
+                    for &sj in &[1i64, -1] {
+                        let mut v = vec![0i64; 4];
+                        v[i] = si;
+                        v[j] = sj;
+                        vs.push(iv(&v));
+                    }
+                }
+            }
+        }
+        assert_eq!(vs.len(), 24);
+        LatticePolytopeClass::new(vs)
+    }
+
+    #[test]
+    fn test_facet_inequalities_cube_exact() {
+        assert_eq!(
+            fi_sorted(&cube_pm1()),
+            fi_lit(&[
+                (&[-1, 0, 0], 1),
+                (&[0, -1, 0], 1),
+                (&[0, 0, -1], 1),
+                (&[0, 0, 1], 1),
+                (&[0, 1, 0], 1),
+                (&[1, 0, 0], 1),
+            ])
+        );
+    }
+
+    #[test]
+    fn test_facet_inequalities_2d_exact() {
+        // [0,1]^2: constants (1,1,0,0) -- the origin sits ON two facets.
+        assert_eq!(
+            fi_sorted(&lp(&[&[0, 0], &[1, 0], &[0, 1], &[1, 1]])),
+            fi_lit(&[(&[-1, 0], 1), (&[0, -1], 1), (&[0, 1], 0), (&[1, 0], 0)])
+        );
+        // [-2,2]^2: all facets at lattice distance 2.
+        assert_eq!(
+            fi_sorted(&lp(&[&[-2, -2], &[-2, 2], &[2, -2], &[2, 2]])),
+            fi_lit(&[(&[-1, 0], 2), (&[0, -1], 2), (&[0, 1], 2), (&[1, 0], 2)])
+        );
+        assert_eq!(
+            fi_sorted(&tri_t()),
+            fi_lit(&[(&[-1, -1], 1), (&[-1, 2], 1), (&[2, -1], 1)])
+        );
+        assert_eq!(
+            fi_sorted(&tri_db()),
+            fi_lit(&[(&[-1, -1], 1), (&[0, 1], 1), (&[1, 0], 1)])
+        );
+        assert_eq!(
+            fi_sorted(&hexagon()),
+            fi_lit(&[
+                (&[-1, 0], 1),
+                (&[-1, 1], 1),
+                (&[0, -1], 1),
+                (&[0, 1], 1),
+                (&[1, -1], 1),
+                (&[1, 0], 1),
+            ])
+        );
+
+        // Semantic gate: every inequality is valid at every vertex, and
+        // for a 2-polytope with extreme-only vertex lists each facet is
+        // tight at exactly 2 vertices.
+        for p in [square_pm1(), tri_t(), tri_db(), hexagon()] {
+            for (n, c) in p.facet_inequalities().unwrap() {
+                let mut tight = 0;
+                for v in p.vertices() {
+                    let mut val = c.clone();
+                    for (ni, vi) in n.iter().zip(v.iter()) {
+                        val = val + ni.clone() * vi.clone();
+                    }
+                    assert!(val.signum() >= 0, "facet inequality violated at a vertex");
+                    if val.is_zero() {
+                        tight += 1;
+                    }
+                }
+                assert_eq!(tight, 2, "2d facet must be tight at exactly 2 vertices");
+            }
+        }
+    }
+
+    #[test]
+    fn test_facet_normals_octahedron_exact() {
+        let mut normals = cross_polytope(3).facet_normals().unwrap();
+        normals.sort();
+        let mut expected = Vec::new();
+        for &x in &[-1i64, 1] {
+            for &y in &[-1i64, 1] {
+                for &z in &[-1i64, 1] {
+                    expected.push(iv(&[x, y, z]));
+                }
+            }
+        }
+        assert_eq!(normals, expected);
+        // ... and all constants are 1 (regular octahedron is reflexive).
+        assert!(cross_polytope(3)
+            .facet_inequalities()
+            .unwrap()
+            .iter()
+            .all(|(_, c)| c.is_one()));
+    }
+
+    #[test]
+    fn test_facet_inequalities_lower_dim_is_err() {
+        // Equations are not facet normals: a lower-dimensional polytope
+        // gets an honest Err, not an empty (or ambient-lifted) list.
+        let tri = tri3_lower_dim();
+        assert!(tri.facet_inequalities().unwrap_err().contains("full-dimensional"));
+        assert!(tri.facet_normals().is_err());
+        let segment = lp(&[&[0, 0], &[2, 2]]);
+        assert!(segment.facet_inequalities().is_err());
+        // The unambiguous H-representation is available instead.
+        let h = tri.h_representation(&DdBudget::default()).unwrap();
+        assert_eq!(h.equations.len(), 1);
+        assert_eq!(h.inequalities.len(), 3);
+    }
+
+    #[test]
+    fn test_is_reflexive_classics() {
+        // Reflexive (python-verified: every facet constant is 1).
+        assert!(square_pm1().is_reflexive());
+        assert!(tri_t().is_reflexive());
+        assert!(tri_db().is_reflexive());
+        assert!(hexagon().is_reflexive());
+        assert!(cross_polytope(2).is_reflexive());
+        assert!(cube_pm1().is_reflexive());
+        assert!(cross_polytope(3).is_reflexive());
+        // Not reflexive: 0 not interior ([0,1]^2 has constants 0).
+        assert!(!lp(&[&[0, 0], &[1, 0], &[0, 1], &[1, 1]]).is_reflexive());
+        // Not reflexive: facets at lattice distance 2.
+        assert!(!lp(&[&[-2, -2], &[-2, 2], &[2, -2], &[2, 2]]).is_reflexive());
+        // Not reflexive: 0 on the boundary of the standard simplex.
+        assert!(!simplex3().is_reflexive());
+        // Not reflexive in Z^4: the 24-cell conv{+-e_i +- e_j} has eight
+        // facets at lattice distance 2 (its dual has half-integral
+        // vertices); it is only reflexive with respect to D4.
+        assert!(!cell24().is_reflexive());
+        // Lower-dimensional polytopes are never reflexive.
+        assert!(!lp(&[&[0, 0], &[1, 0]]).is_reflexive());
+        assert!(!tri3_lower_dim().is_reflexive());
+    }
+
+    #[test]
+    fn test_reflexive_db_entries_really_reflexive() {
+        let db = reflexive_polytopes(2);
+        assert_eq!(db.len(), 3);
+        for p in &db {
+            assert!(p.is_reflexive(), "database polytope not reflexive: {:?}", p);
+        }
+    }
+
+    #[test]
+    fn test_polar_exact_content() {
+        // polar([-1,1]^2) = diamond, polar(cube) = octahedron,
+        // polar(tri_T) = tri_db and vice versa, polar(hexagon) = the
+        // reversed hexagon. All python-derived.
+        assert_eq!(
+            sorted_verts(&square_pm1().polar().unwrap()),
+            pts_lit(&[&[-1, 0], &[0, -1], &[0, 1], &[1, 0]])
+        );
+        assert_eq!(
+            sorted_verts(&cube_pm1().polar().unwrap()),
+            pts_lit(&[
+                &[-1, 0, 0],
+                &[0, -1, 0],
+                &[0, 0, -1],
+                &[0, 0, 1],
+                &[0, 1, 0],
+                &[1, 0, 0],
+            ])
+        );
+        assert_eq!(
+            sorted_verts(&tri_t().polar().unwrap()),
+            pts_lit(&[&[-1, -1], &[-1, 2], &[2, -1]])
+        );
+        assert_eq!(
+            sorted_verts(&tri_db().polar().unwrap()),
+            pts_lit(&[&[-1, -1], &[0, 1], &[1, 0]])
+        );
+        assert_eq!(
+            sorted_verts(&hexagon().polar().unwrap()),
+            pts_lit(&[&[-1, 0], &[-1, 1], &[0, -1], &[0, 1], &[1, -1], &[1, 0]])
+        );
+    }
+
+    #[test]
+    fn test_polar_reflexive_agreement_and_involution() {
+        // Self-certifying: is_reflexive (all facet constants 1) and
+        // polar (all n_i/c_i integral) are two different routes to the
+        // same property and must agree; where reflexive, the polar's
+        // vertices are the facet normals, the polar is reflexive, the
+        // rational polar agrees, and polar(polar(P)) == P.
+        let reflexive = vec![
+            square_pm1(),
+            tri_t(),
+            tri_db(),
+            hexagon(),
+            cross_polytope(2),
+            cube_pm1(),
+            cross_polytope(3),
+        ];
+        for p in &reflexive {
+            assert_eq!(p.is_reflexive(), p.polar().is_some());
+            let q = p.polar().unwrap();
+            let mut normals = p.facet_normals().unwrap();
+            normals.sort();
+            assert_eq!(sorted_verts(&q), normals, "polar vertices != facet normals");
+            let mut pr = p.polar_rational().unwrap();
+            pr.sort();
+            let as_rat: Vec<Vec<Rational>> =
+                sorted_verts(&q).iter().map(|v| int_vec_to_rat(v)).collect();
+            assert_eq!(pr, as_rat, "rational polar disagrees with lattice polar");
+            assert!(q.is_reflexive(), "polar of reflexive must be reflexive");
+            let qq = q.polar().unwrap();
+            assert_eq!(sorted_verts(&qq), sorted_verts(p), "polar(polar(P)) != P");
+        }
+        // Non-reflexive: both routes must again agree (both negative).
+        let nonreflexive = vec![
+            lp(&[&[0, 0], &[1, 0], &[0, 1], &[1, 1]]),
+            lp(&[&[-2, -2], &[-2, 2], &[2, -2], &[2, 2]]),
+            simplex3(),
+            cell24(),
+            lp(&[&[0, 0], &[1, 0]]),
+            tri3_lower_dim(),
+        ];
+        for p in &nonreflexive {
+            assert!(!p.is_reflexive());
+            assert!(p.polar().is_none(), "non-reflexive polar must be None");
+        }
+    }
+
+    #[test]
+    fn test_polar_rational_general_case() {
+        // [-2,2]^2: the polar is the rational diamond with vertices
+        // (+-1/2, 0), (0, +-1/2) -- not a lattice polytope, so polar()
+        // is None but polar_rational() carries the honest answer.
+        let p = lp(&[&[-2, -2], &[-2, 2], &[2, -2], &[2, 2]]);
+        assert!(p.polar().is_none());
+        let mut pr = p.polar_rational().unwrap();
+        pr.sort();
+        let half = Rational::new(1, 2).unwrap();
+        let zero = Rational::from_integer(0);
+        assert_eq!(
+            pr,
+            vec![
+                vec![-half.clone(), zero.clone()],
+                vec![zero.clone(), -half.clone()],
+                vec![zero.clone(), half.clone()],
+                vec![half.clone(), zero.clone()],
+            ]
+        );
+        // 0 on the boundary => the polar is unbounded: honest Err.
+        assert!(lp(&[&[0, 0], &[1, 0], &[0, 1], &[1, 1]])
+            .polar_rational()
+            .is_err());
+        assert!(simplex3().polar_rational().is_err());
+        // Lower-dimensional: Err from the facet computation.
+        assert!(tri3_lower_dim().polar_rational().is_err());
+    }
+
+    #[test]
+    fn test_points_dilated_simplex_binomials() {
+        // |k*Delta_d ∩ Z^d| = C(k+d, d), python-verified per case.
+        for (k, d, expected) in [
+            (1i64, 2usize, 3usize),
+            (2, 2, 6),
+            (5, 2, 21),
+            (3, 3, 20),
+            (2, 4, 15),
+            (1, 4, 5),
+        ] {
+            assert_eq!(
+                dilated_simplex(k, d).points().len(),
+                expected,
+                "point count of {k}*Delta_{d}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_points_exact_content() {
+        // Exact python-derived lattice point lists, in lexicographic
+        // order (which points() guarantees).
+        assert_eq!(
+            dilated_simplex(2, 2).points(),
+            pts_lit(&[&[0, 0], &[0, 1], &[0, 2], &[1, 0], &[1, 1], &[2, 0]])
+        );
+        assert_eq!(
+            cross_polytope(2).points(),
+            pts_lit(&[&[-1, 0], &[0, -1], &[0, 0], &[0, 1], &[1, 0]])
+        );
+        assert_eq!(
+            hexagon().points(),
+            pts_lit(&[
+                &[-1, -1],
+                &[-1, 0],
+                &[0, -1],
+                &[0, 0],
+                &[0, 1],
+                &[1, 0],
+                &[1, 1],
+            ])
+        );
+        assert_eq!(
+            tri_t().points(),
+            pts_lit(&[&[-1, -1], &[0, 0], &[0, 1], &[1, 0]])
+        );
+        assert_eq!(
+            tri_db().points(),
+            pts_lit(&[
+                &[-1, -1],
+                &[-1, 0],
+                &[-1, 1],
+                &[-1, 2],
+                &[0, -1],
+                &[0, 0],
+                &[0, 1],
+                &[1, -1],
+                &[1, 0],
+                &[2, -1],
+            ])
+        );
+        assert_eq!(square_pm1().points().len(), 9);
+        assert_eq!(cube_pm1().points().len(), 27);
+        assert_eq!(hexagon().n_points(), 7);
+    }
+
+    #[test]
+    fn test_points_lower_dimensional() {
+        // conv(e1,e2,e3) in R^3: exactly the three unit vectors (the
+        // affine-hull equation x+y+z=1 filters the rest of the box).
+        assert_eq!(
+            tri3_lower_dim().points(),
+            pts_lit(&[&[0, 0, 1], &[0, 1, 0], &[1, 0, 0]])
+        );
+    }
+
+    fn f_vector(p: &LatticePolytopeClass) -> Vec<usize> {
+        (0..p.dim()).map(|d| p.faces(d).len()).collect()
+    }
+
+    /// Euler characteristic gate: sum_d (-1)^d f_d = 1 - (-1)^dim over
+    /// the proper faces, plus the improper-face conventions.
+    fn assert_euler(p: &LatticePolytopeClass) {
+        let dim = p.dim();
+        let fv = f_vector(p);
+        let mut sum: i64 = 0;
+        for (d, f) in fv.iter().enumerate() {
+            sum += if d % 2 == 0 { *f as i64 } else { -(*f as i64) };
+        }
+        let expected = 1 - if dim % 2 == 0 { 1i64 } else { -1i64 };
+        assert_eq!(sum, expected, "Euler characteristic failed: f = {fv:?}");
+        assert_eq!(p.faces(dim).len(), 1, "faces(dim) is the polytope itself");
+        assert!(p.faces(dim + 1).is_empty());
+    }
+
+    #[test]
+    fn test_faces_f_vectors_and_euler() {
+        // Classical f-vectors, python-cross-checked.
+        let cases: Vec<(LatticePolytopeClass, Vec<usize>)> = vec![
+            (cube_pm1(), vec![8, 12, 6]),
+            (cross_polytope(3), vec![6, 12, 8]),
+            (dilated_simplex(1, 4), vec![5, 10, 10, 5]),
+            (hexagon(), vec![6, 6]),
+            (square_pm1(), vec![4, 4]),
+            (tri_db(), vec![3, 3]),
+            (simplex3(), vec![4, 6, 4]),
+            (cross_polytope(2), vec![4, 4]),
+        ];
+        for (p, expected) in &cases {
+            assert_eq!(&f_vector(p), expected, "f-vector of {p}");
+            assert_euler(p);
+        }
+
+        // Structure: cube facets are quadrilaterals, edges are segments;
+        // facets()/edges() route through the same real face lattice.
+        let cube = cube_pm1();
+        let facets = cube.facets();
+        assert_eq!(facets.len(), 6);
+        for f in &facets {
+            assert_eq!(f.n_vertices(), 4);
+            assert_eq!(f.dim(), 2);
+        }
+        let edges = cube.edges();
+        assert_eq!(edges.len(), 12);
+        for e in &edges {
+            assert_eq!(e.n_vertices(), 2);
+            assert_eq!(e.dim(), 1);
+        }
+        // Each vertex-face is one of the cube's corners.
+        for v in cube.faces(0) {
+            assert_eq!(v.n_vertices(), 1);
+            assert!(cube.vertices().contains(&v.vertices()[0]));
+        }
+    }
+
+    #[test]
+    fn test_faces_24cell_f_vector() {
+        // The 24-cell's classical f-vector (24, 96, 96, 24); Euler 0.
+        let p = cell24();
+        assert_eq!(f_vector(&p), vec![24, 96, 96, 24]);
+        assert_euler(&p);
+    }
+
+    #[test]
+    fn test_faces_lower_dimensional_triangle() {
+        // Faces of a 2-polytope embedded in R^3 come from the canonical
+        // inequalities within the affine hull.
+        let tri = tri3_lower_dim();
+        assert_eq!(f_vector(&tri), vec![3, 3]);
+        assert_euler(&tri);
+        for e in tri.faces(1) {
+            assert_eq!(e.n_vertices(), 2);
+        }
+        // A segment: two vertex-faces, itself as the improper face.
+        let seg = lp(&[&[0, 0], &[3, 3]]);
+        assert_eq!(f_vector(&seg), vec![2]);
+        assert_euler(&seg);
+        // A single point: its unique face is itself.
+        let pt = lp(&[&[5, 7]]);
+        assert_eq!(pt.faces(0).len(), 1);
+        assert!(pt.faces(1).is_empty());
+    }
+
+    #[test]
+    fn test_contains_cube_samples() {
+        // Verdicts python-derived (facet evaluation in Fractions).
+        let c = cube_pm1();
+        assert!(c.contains(&iv(&[0, 0, 0])));
+        assert!(c.contains(&iv(&[1, 0, 0])));
+        assert!(c.contains(&iv(&[1, 1, 1])));
+        assert!(c.contains(&iv(&[-1, -1, -1])));
+        assert!(!c.contains(&iv(&[2, 0, 0])));
+        assert!(!c.contains(&iv(&[1, 1, 2])));
+        assert!(!c.contains(&iv(&[0, 0]))); // wrong arity
+
+        let q = |n: i64, d: i64| Rational::new(n, d).unwrap();
+        assert!(c.contains_rational(&[q(1, 2), q(1, 2), q(1, 2)]));
+        assert!(c.contains_rational(&[q(1, 1), q(1, 2), q(0, 1)]));
+        assert!(!c.contains_rational(&[q(3, 2), q(0, 1), q(0, 1)]));
+        assert!(!c.contains_rational(&[q(-1, 1), q(-1, 1), q(-101, 100)]));
+    }
+
+    #[test]
+    fn test_contains_lower_dim_triangle_samples() {
+        let tri = tri3_lower_dim();
+        assert!(tri.contains(&iv(&[1, 0, 0])));
+        assert!(!tri.contains(&iv(&[0, 0, 0]))); // fails x+y+z = 1
+        assert!(!tri.contains(&iv(&[1, 1, -1]))); // on the plane, outside
+        let q = |n: i64, d: i64| Rational::new(n, d).unwrap();
+        assert!(tri.contains_rational(&[q(1, 3), q(1, 3), q(1, 3)]));
+        assert!(tri.contains_rational(&[q(1, 2), q(1, 2), q(0, 1)]));
+    }
+
+    #[test]
+    fn test_contains_cross_validated_against_convex_combination() {
+        // Two independent exact membership routes must agree everywhere:
+        // contains() goes through the double-description facets, while
+        // is_convex_combination() solves Caratheodory subsets directly.
+        for p in [cross_polytope(2), tri_db()] {
+            let refs: Vec<&Vec<Integer>> = p.vertices().iter().collect();
+            for x in -2..=3 {
+                for y in -2..=3 {
+                    let pt = iv(&[x, y]);
+                    assert_eq!(
+                        p.contains(&pt),
+                        is_convex_combination(&pt, &refs, 2),
+                        "membership routes disagree at ({x}, {y}) for {p}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_budget_trips_honestly() {
+        let c = cube_pm1();
+        // Double description budget, through every entry point.
+        assert!(c.h_representation(&DdBudget::new(2)).is_err());
+        assert!(c.facet_inequalities_with_budget(&DdBudget::new(2)).is_err());
+        assert!(c.try_faces(1, &DdBudget::new(2), 100_000).is_err());
+        assert!(c.try_points(&DdBudget::new(2), 1_000_000).is_err());
+        // Face-count budget: the cube has 27 nonempty faces.
+        let err = c.try_faces(1, &DdBudget::default(), 5).unwrap_err();
+        assert!(err.contains("budget"), "unexpected message: {err}");
+        // Candidate budget: the cube's bounding box has 27 candidates.
+        let err = c.try_points(&DdBudget::default(), 3).unwrap_err();
+        assert!(err.contains("budget"), "unexpected message: {err}");
+        // The same calls succeed under the default budgets.
+        assert_eq!(
+            c.try_faces(1, &DdBudget::default(), 100_000).unwrap().len(),
+            12
+        );
+        assert_eq!(
+            c.try_points(&DdBudget::default(), 1_000_000).unwrap().len(),
+            27
+        );
     }
 }
