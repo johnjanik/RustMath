@@ -8,6 +8,33 @@ use std::ops::{Add, Div, Mul, Neg, Sub};
 /// Element of a prime finite field GF(p)
 ///
 /// Represents integers modulo a prime p
+///
+/// # The modulus-0 sentinel (`Ring::zero`/`Ring::one`)
+///
+/// The static [`Ring::zero`]/[`Ring::one`] constructors cannot know a modulus,
+/// so — following the same convention as [`crate::IntegerMod`] — they return
+/// elements with `modulus == 0`. Mathematically this is lawful: Z/0Z ≅ Z, and
+/// such an element is the *unreduced integer* awaiting the canonical map
+/// Z → GF(p). The precise algebra of sentinel elements:
+///
+/// * **binary ops** (`+`, `-`, `*`, `/`): a modulus-0 operand is coerced on
+///   contact — the result carries the other operand's modulus, with the
+///   sentinel's value reduced mod p (so `PrimeField::zero() + x == x` and
+///   `PrimeField::zero() * x` is the zero of `x`'s field). Two modulus-0
+///   operands combine in Z (still modulus 0). Two *different nonzero* moduli
+///   panic, as before.
+/// * **`Neg`**: negates in Z for the sentinel.
+/// * **`inverse`/`Div`**: in Z only `±1` are invertible; anything else is an
+///   error (never a wrong value).
+/// * **`==`** coerces exactly like the arithmetic: a modulus-0 operand is
+///   bound into the other operand's modulus before comparing, so
+///   `PrimeField::zero() == PrimeField::new(0, p)?` and, in general,
+///   `unbound(v) == bound(w mod p)` iff `v ≡ w (mod p)`. Two unbound
+///   elements compare in Z; two bound elements are equal iff value *and*
+///   modulus match (cross-modulus stays `false`, as before).
+/// * operations that *need* a modulus and cannot get one
+///   ([`Self::legendre_symbol`], [`Self::discrete_log`], ...) return an error
+///   or panic with a precise message rather than fabricate an answer.
 #[derive(Clone, Debug)]
 pub struct PrimeField {
     value: Integer,
@@ -36,6 +63,31 @@ impl PrimeField {
         Ok(PrimeField { value, modulus })
     }
 
+    /// Internal: build an element with the given modulus. Modulus 0 is the
+    /// unreduced-integer sentinel (Z/0Z ≅ Z, see the type docs); any other
+    /// modulus accepted here is > 1 by construction.
+    fn make(value: Integer, modulus: Integer) -> Self {
+        if modulus.is_zero() {
+            PrimeField { value, modulus }
+        } else {
+            PrimeField::new(value, modulus)
+                .expect("internal invariant: nonzero moduli are always > 1")
+        }
+    }
+
+    /// Internal: the modulus of the result of a binary operation, coercing the
+    /// modulus-0 sentinel to the other operand's modulus. Panics (like the
+    /// historical `assert_eq!`) on two different nonzero moduli.
+    fn coerced_modulus(&self, other: &Self, op: &str) -> Integer {
+        if self.modulus == other.modulus || other.modulus.is_zero() {
+            self.modulus.clone()
+        } else if self.modulus.is_zero() {
+            other.modulus.clone()
+        } else {
+            panic!("Cannot {op} elements with different moduli");
+        }
+    }
+
     /// Get the value
     pub fn value(&self) -> &Integer {
         &self.value
@@ -52,6 +104,17 @@ impl PrimeField {
     pub fn multiplicative_order(&self) -> Option<Integer> {
         if self.value.is_zero() {
             return None;
+        }
+
+        if self.modulus.is_zero() {
+            // Modulus-0 sentinel = element of Z: only ±1 have finite order.
+            return if self.value.is_one() {
+                Some(Integer::one())
+            } else if self.value == -Integer::one() {
+                Some(Integer::from(2))
+            } else {
+                None
+            };
         }
 
         let mut power = self.clone();
@@ -85,16 +148,35 @@ impl PrimeField {
 
     /// Compute the Legendre symbol (a/p)
     ///
-    /// Returns 0 if a ≡ 0 (mod p), 1 if a is a quadratic residue, -1 otherwise
+    /// Returns 0 if a ≡ 0 (mod p), 1 if a is a quadratic residue, -1 otherwise.
+    /// Errors for the modulus-0 sentinel (the symbol needs a concrete prime).
     pub fn legendre_symbol(&self) -> Result<Integer> {
+        if self.modulus.is_zero() {
+            return Err(MathError::InvalidArgument(
+                "Legendre symbol needs a concrete modulus; this is an unbound (modulus-0) element"
+                    .to_string(),
+            ));
+        }
         let symbol = self.value.legendre_symbol(&self.modulus)?;
         Ok(Integer::from(symbol as i32))
     }
 
-    /// Check if this element is a quadratic residue (perfect square in the field)
+    /// Check if this element is a quadratic residue (perfect square in the field).
+    /// For the modulus-0 sentinel (an element of Z) this means: a perfect square.
     pub fn is_quadratic_residue(&self) -> bool {
         if self.value.is_zero() {
             return true;
+        }
+
+        if self.modulus.is_zero() {
+            // Z: perfect squares only.
+            if self.value.signum() < 0 {
+                return false;
+            }
+            return match self.value.sqrt() {
+                Ok(r) => r.clone() * r == self.value,
+                Err(_) => false,
+            };
         }
 
         let leg = self.legendre_symbol().unwrap_or(Integer::zero());
@@ -122,6 +204,12 @@ impl PrimeField {
     /// 3. Giant steps: Compute h * g^(-im) for i = 0, 1, 2, ... until match found
     pub fn discrete_log(base: &PrimeField, target: &PrimeField) -> Result<Integer> {
         assert_eq!(base.modulus, target.modulus, "Moduli must match");
+        if base.modulus.is_zero() {
+            return Err(MathError::InvalidArgument(
+                "discrete_log needs a concrete modulus; these are unbound (modulus-0) elements"
+                    .to_string(),
+            ));
+        }
 
         // Handle special cases
         if base.value.is_zero() || base.value.is_one() {
@@ -204,8 +292,36 @@ impl fmt::Display for PrimeField {
 }
 
 impl PartialEq for PrimeField {
+    /// Coercing (binding) equality, matching the arithmetic's coercion rules
+    /// (see the type docs):
+    ///
+    /// * **bound vs bound**: equal iff same value *and* same modulus
+    ///   (unchanged); different moduli are simply unequal — never a panic.
+    /// * **unbound (modulus-0 sentinel) vs bound**: the unbound value is
+    ///   bound into the other operand's modulus first, so
+    ///   `unbound(v) == bound(w mod p)` iff `v ≡ w (mod p)`; in particular
+    ///   `PrimeField::zero() == PrimeField::new(0, p)?`. Symmetric.
+    /// * **unbound vs unbound**: equality in Z.
+    ///
+    /// Transitivity caveat (the `PartialEq` law): `unbound(0)` equals the
+    /// bound zero of *every* modulus while those bound zeros differ pairwise
+    /// (`unbound(0) == bound(0 mod 7)`, `unbound(0) == bound(0 mod 5)`, but
+    /// `bound(0 mod 7) != bound(0 mod 5)`). Transitivity can fail only in
+    /// that cross-modulus corner — a zone whose *arithmetic* already panics.
     fn eq(&self, other: &Self) -> bool {
-        self.value == other.value && self.modulus == other.modulus
+        match (self.modulus.is_zero(), other.modulus.is_zero()) {
+            // Both bound: strict, exactly as before.
+            (false, false) => self.modulus == other.modulus && self.value == other.value,
+            // Both unbound: compare in Z (= Z/0Z).
+            (true, true) => self.value == other.value,
+            // One unbound: bind it into the other's modulus, compare there.
+            (true, false) => {
+                PrimeField::make(self.value.clone(), other.modulus.clone()).value == other.value
+            }
+            (false, true) => {
+                PrimeField::make(other.value.clone(), self.modulus.clone()).value == self.value
+            }
+        }
     }
 }
 
@@ -213,10 +329,8 @@ impl Add for PrimeField {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
-        assert_eq!(self.modulus, other.modulus, "Moduli must match");
-
-        let sum = self.value + other.value;
-        PrimeField::new(sum, self.modulus).unwrap()
+        let modulus = self.coerced_modulus(&other, "add");
+        PrimeField::make(self.value + other.value, modulus)
     }
 }
 
@@ -224,10 +338,8 @@ impl Sub for PrimeField {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
-        assert_eq!(self.modulus, other.modulus, "Moduli must match");
-
-        let diff = self.value - other.value;
-        PrimeField::new(diff, self.modulus).unwrap()
+        let modulus = self.coerced_modulus(&other, "subtract");
+        PrimeField::make(self.value - other.value, modulus)
     }
 }
 
@@ -235,10 +347,8 @@ impl Mul for PrimeField {
     type Output = Self;
 
     fn mul(self, other: Self) -> Self {
-        assert_eq!(self.modulus, other.modulus, "Moduli must match");
-
-        let prod = self.value * other.value;
-        PrimeField::new(prod, self.modulus).unwrap()
+        let modulus = self.coerced_modulus(&other, "multiply");
+        PrimeField::make(self.value * other.value, modulus)
     }
 }
 
@@ -246,10 +356,12 @@ impl Div for PrimeField {
     type Output = Self;
 
     fn div(self, other: Self) -> Self {
-        assert_eq!(self.modulus, other.modulus, "Moduli must match");
-
+        let modulus = self.coerced_modulus(&other, "divide");
+        // Coerce the divisor first so its inverse is taken in the right ring
+        // (in Z only ±1 are invertible; in GF(p) everything nonzero is).
+        let other = PrimeField::make(other.value, modulus.clone());
         let inv = other.inverse().unwrap();
-        self * inv
+        PrimeField::make(self.value, modulus) * inv
     }
 }
 
@@ -257,20 +369,37 @@ impl Neg for PrimeField {
     type Output = Self;
 
     fn neg(self) -> Self {
-        let neg_val = self.modulus.clone() - self.value;
-        PrimeField::new(neg_val, self.modulus).unwrap()
+        if self.modulus.is_zero() {
+            // Modulus-0 sentinel: negate in Z.
+            PrimeField {
+                value: -self.value,
+                modulus: self.modulus,
+            }
+        } else {
+            let neg_val = self.modulus.clone() - self.value;
+            PrimeField::new(neg_val, self.modulus).unwrap()
+        }
     }
 }
 
 impl Ring for PrimeField {
+    /// The additive identity, as the modulus-0 sentinel (see the type docs):
+    /// the canonical image of `0 ∈ Z` in any GF(p), coerced on first contact
+    /// with a modulus-carrying element.
     fn zero() -> Self {
-        // Can't create without modulus, this is a limitation
-        // In practice, elements should be created with new()
-        panic!("Cannot create PrimeField::zero() without modulus");
+        PrimeField {
+            value: Integer::zero(),
+            modulus: Integer::zero(),
+        }
     }
 
+    /// The multiplicative identity, as the modulus-0 sentinel (see
+    /// [`Ring::zero`] above and the type docs).
     fn one() -> Self {
-        panic!("Cannot create PrimeField::one() without modulus");
+        PrimeField {
+            value: Integer::one(),
+            modulus: Integer::zero(),
+        }
     }
 
     fn is_zero(&self) -> bool {
@@ -294,8 +423,14 @@ impl Field for PrimeField {
 
         // Use extended GCD to find multiplicative inverse
         let (gcd, x, _) = self.value.extended_gcd(&self.modulus);
+        // Normalize the gcd sign: it can be negative for the modulus-0
+        // sentinel (negative values never occur with a reduced modulus > 1).
+        let (gcd, x) = if gcd.signum() < 0 { (-gcd, -x) } else { (gcd, x) };
         if !gcd.is_one() {
-            return Err(MathError::InvalidArgument("No inverse exists".to_string()));
+            return Err(MathError::InvalidArgument(format!(
+                "No inverse exists: gcd({}, {}) = {}",
+                self.value, self.modulus, gcd
+            )));
         }
 
         // x is the inverse, but may be negative - normalize to [0, modulus)
@@ -409,6 +544,110 @@ mod tests {
         }
 
         assert_eq!(verification.value(), target.value());
+    }
+
+    // ---- modulus-0 sentinel (Ring::zero()/one()) gates -------------------
+
+    /// The generic-code gate that used to be impossible: seed a fold with
+    /// `F::zero()` over any Ring, instantiate at PrimeField.
+    fn generic_sum<F: Ring>(v: &[F]) -> F {
+        v.iter().fold(F::zero(), |acc, x| acc + x.clone())
+    }
+
+    fn generic_dot<F: Ring>(a: &[F], b: &[F]) -> F {
+        a.iter()
+            .zip(b.iter())
+            .fold(F::zero(), |acc, (x, y)| acc + x.clone() * y.clone())
+    }
+
+    fn gf7(v: i64) -> PrimeField {
+        PrimeField::new(Integer::from(v), Integer::from(7)).unwrap()
+    }
+
+    #[test]
+    fn test_generic_sum_and_dot_over_gf7() {
+        // sum(3, 5, 6) = 14 = 0 (mod 7)
+        let v = vec![gf7(3), gf7(5), gf7(6)];
+        let s = generic_sum(&v);
+        assert!(s.is_zero());
+        assert_eq!(s.modulus(), &Integer::from(7)); // bound on first contact
+        // dot([1,2,3],[4,5,6]) = 4 + 10 + 18 = 32 = 4 (mod 7)
+        let a = vec![gf7(1), gf7(2), gf7(3)];
+        let b = vec![gf7(4), gf7(5), gf7(6)];
+        assert_eq!(generic_dot(&a, &b), gf7(4));
+        // empty sum: stays the unbound sentinel, but is honestly zero
+        let empty: Vec<PrimeField> = vec![];
+        assert!(generic_sum(&empty).is_zero());
+    }
+
+    #[test]
+    fn test_sentinel_algebra() {
+        // unbound zero + bound x = x
+        assert_eq!(PrimeField::zero() + gf7(3), gf7(3));
+        assert_eq!(gf7(3) + PrimeField::zero(), gf7(3));
+        // unbound zero * bound x = bound zero of x's field
+        let z = PrimeField::zero() * gf7(3);
+        assert!(z.is_zero());
+        assert_eq!(z.modulus(), &Integer::from(7));
+        // unbound one * x = x
+        assert_eq!(PrimeField::one() * gf7(5), gf7(5));
+        // sentinel values reduce on contact: (1+1+1+1+1+1+1+1) bound = 1 mod 7
+        let mut eight = PrimeField::zero();
+        for _ in 0..8 {
+            eight = eight + PrimeField::one();
+        }
+        assert_eq!(eight.value(), &Integer::from(8)); // still in Z
+        assert_eq!(eight * gf7(1), gf7(1)); // 8 = 1 (mod 7)
+        // Neg in Z; -1 is its own inverse in Z
+        let minus_one = -PrimeField::one();
+        assert_eq!(minus_one.value(), &Integer::from(-1));
+        assert_eq!(minus_one.inverse().unwrap().value(), &Integer::from(-1));
+        // unbound 2 is not invertible in Z (error, never a wrong value)
+        let two = PrimeField::one() + PrimeField::one();
+        assert!(two.inverse().is_err());
+        // ... but bound into GF(7) it is: 2 * 4 = 8 = 1
+        assert_eq!(gf7(1) / (gf7(1) * two), gf7(4));
+        // == binds on compare, like the arithmetic: the sentinel zero equals
+        // every bound zero (and agrees with is_zero).
+        assert_eq!(PrimeField::zero(), gf7(0));
+        assert_eq!(gf7(0), PrimeField::zero());
+        assert_ne!(PrimeField::zero(), gf7(3));
+        assert!(PrimeField::zero().is_zero());
+        assert!(PrimeField::one().is_one());
+        // modulus-dependent queries refuse the sentinel honestly
+        assert!(PrimeField::one().legendre_symbol().is_err());
+        assert_eq!((PrimeField::one() + PrimeField::one()).multiplicative_order(), None);
+        assert_eq!(PrimeField::one().multiplicative_order(), Some(Integer::one()));
+    }
+
+    /// Tracker gate B-01: Matrix<PrimeField> now works with generic Field
+    /// code (rank via Gaussian elimination seeds with F::zero()/F::one()).
+    #[test]
+    fn test_matrix_rank_over_gf7() {
+        use rustmath_matrix::Matrix;
+        let m = Matrix::from_vec(
+            3,
+            3,
+            vec![
+                gf7(1), gf7(2), gf7(3),
+                gf7(2), gf7(4), gf7(6), // 2 * row 1
+                gf7(1), gf7(0), gf7(1),
+            ],
+        )
+        .unwrap();
+        assert_eq!(m.rank().unwrap(), 2);
+        // diag(1, 1, 7): rank 3 over Q but 7 = 0 in GF(7) => rank 2.
+        let d = Matrix::from_vec(
+            3,
+            3,
+            vec![
+                gf7(1), gf7(0), gf7(0),
+                gf7(0), gf7(1), gf7(0),
+                gf7(0), gf7(0), gf7(7),
+            ],
+        )
+        .unwrap();
+        assert_eq!(d.rank().unwrap(), 2);
     }
 
     #[test]

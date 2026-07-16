@@ -1,26 +1,27 @@
-//! Degree 5: the Frobenius cycle-type sieve over the complete table of the
-//! five transitive groups of degree 5, sharpened by an exact ordered-pair
-//! resolvent. Decisions happen **only** when the exhibited elements and exact
-//! invariants force uniqueness; the one genuinely resolvent-blind pair
-//! ({F20, S5}, both 2-transitive with identical ordered-pair signature) is
-//! returned as an honest `Unresolved`.
+//! Degree 5 — **complete**: the Frobenius cycle-type sieve over the table of
+//! the five transitive groups of degree 5, sharpened by an exact ordered-pair
+//! resolvent, with the last blind spot (F20 vs S5, both 2-transitive) closed
+//! by the Cayley–Dummit sextic resolvent ([`crate::cayley`]). Decisions
+//! happen **only** when exhibited elements and exact invariants force
+//! uniqueness.
 //!
 //! References:
 //! - MAGMA Handbook, Chapter 38 (Galois Groups): the degree-5 `GaloisGroup`
 //!   decision (Stauduhar with the 5T1–5T5 lattice).
 //! - SageMath: `sage.rings.number_field.galois_group`.
+//! - D. S. Dummit, *Solving solvable quintics*, Math. Comp. 57 (1991).
 //!
 //! **Transitive groups of degree 5** (Butler–McKay numbering; cycle types and
 //! ordered-pair orbit signatures re-verified for this port with sympy's
 //! `PermutationGroup` orbit computations):
 //!
-//! | group | order | cycle types                                        | orbits on ordered pairs |
-//! |-------|-------|----------------------------------------------------|-------------------------|
-//! | 5T1 C5  | 5   | 1⁵, 5                                              | [5,5,5,5]               |
-//! | 5T2 D5  | 10  | 1⁵, 2²1, 5                                         | [10,10]                 |
-//! | 5T3 F20 | 20  | 1⁵, 2²1, 41, 5                                     | [20]                    |
-//! | 5T4 A5  | 60  | 1⁵, 2²1, 31², 5                                    | [20]                    |
-//! | 5T5 S5  | 120 | 1⁵, 21³, 2²1, 31², 32, 41, 5                       | [20]                    |
+//! | group | order | cycle types                                        | orbits on ordered pairs | solvable |
+//! |-------|-------|----------------------------------------------------|-------------------------|----------|
+//! | 5T1 C5  | 5   | 1⁵, 5                                              | [5,5,5,5]               | yes      |
+//! | 5T2 D5  | 10  | 1⁵, 2²1, 5                                         | [10,10]                 | yes      |
+//! | 5T3 F20 | 20  | 1⁵, 2²1, 41, 5                                     | [20]                    | yes      |
+//! | 5T4 A5  | 60  | 1⁵, 2²1, 31², 5                                    | [20]                    | no       |
+//! | 5T5 S5  | 120 | 1⁵, 21³, 2²1, 31², 32, 41, 5                       | [20]                    | no       |
 //!
 //! The **ordered-pair resolvent** used here is
 //! `R_s(t) = ∏_{i≠j} (t − (α_j − s·α_i))` (default `s = 1`, the difference
@@ -29,7 +30,26 @@
 //! irreducible-factor degrees over `ℚ` equals the orbit-length multiset of
 //! `Gal(f)` acting on ordered pairs of distinct roots — which separates
 //! C5 ([5,5,5,5]) from D5 ([10,10]) from the 2-transitive groups ([20]).
+//!
+//! # Why the decision is complete (subgroup-lattice argument)
+//!
+//! Up to conjugacy the transitive subgroups of `S5` form the two chains
+//! `C5 ⊂ D5 ⊂ F20` (the solvable groups — precisely the subgroups of the
+//! Sylow-5 normalizer `F20`) and `A5 ⊂ S5` (the non-solvable ones), joined by
+//! `D5 ⊂ A5`. Two exact dichotomies therefore classify:
+//!
+//! - **parity**: `disc(f)` a square ⟺ `Gal ⊆ A5` ⟺ `Gal ∈ {C5, D5, A5}`
+//!   (`C5`, `D5` consist of 5-cycles and 2²1-elements, all even; `F20`
+//!   contains 4-cycles and `S5` transpositions, both odd);
+//! - **solvability**: the Cayley sextic resolvent has a rational root (once
+//!   squarefree) ⟺ `Gal` lies in a conjugate of `F20` ⟺ `Gal ∈ {C5, D5, F20}`.
+//!
+//! Crossing them: square+solvable ⇒ {C5, D5} (split exactly by the
+//! ordered-pair signature [5,5,5,5] vs [10,10]); square+non-solvable ⇒ A5;
+//! nonsquare+solvable ⇒ F20 (C5, D5 are even, so impossible);
+//! nonsquare+non-solvable ⇒ S5. Every degree-5 input is decided.
 
+use crate::cayley;
 use crate::sieve::{frobenius_cycle_types, DEFAULT_MAX_GOOD_PRIMES};
 use crate::types::{Candidates, Evidence, GaloisGroupResult, GroupId};
 use rustmath_core::{MathError, Result};
@@ -41,6 +61,8 @@ struct QuinticCandidate {
     id: GroupId,
     /// `G ⊆ A₅`?
     even: bool,
+    /// `G` contained in a conjugate of `F20` (⟺ solvable)?
+    solvable: bool,
     /// Complete set of cycle types occurring in the group (descending parts).
     cycle_types: &'static [&'static [usize]],
     /// Orbit lengths on ordered pairs of distinct points, sorted ascending.
@@ -65,30 +87,35 @@ fn quintic_table() -> Vec<QuinticCandidate> {
         QuinticCandidate {
             id: GroupId::new(5, 5, "C5", Some(1)),
             even: true,
+            solvable: true,
             cycle_types: T1,
             pair_signature: &[5, 5, 5, 5],
         },
         QuinticCandidate {
             id: GroupId::new(5, 10, "D5", Some(2)),
             even: true,
+            solvable: true,
             cycle_types: T2,
             pair_signature: &[10, 10],
         },
         QuinticCandidate {
             id: GroupId::new(5, 20, "F20", Some(3)),
             even: false,
+            solvable: true,
             cycle_types: T3,
             pair_signature: &[20],
         },
         QuinticCandidate {
             id: GroupId::new(5, 60, "A5", Some(4)),
             even: true,
+            solvable: false,
             cycle_types: T4,
             pair_signature: &[20],
         },
         QuinticCandidate {
             id: GroupId::new(5, 120, "S5", Some(5)),
             even: false,
+            solvable: false,
             cycle_types: T5,
             pair_signature: &[20],
         },
@@ -347,32 +374,96 @@ pub fn classify_quintic(f: &[Integer], mut ev: Evidence) -> Result<GaloisGroupRe
                         .to_string(),
                 )),
                 _ => {
-                    // Only {F20, S5} can survive here (both 2-transitive, both odd).
-                    Ok(GaloisGroupResult::Unresolved {
-                        candidates: Candidates::Among(
-                            alive.iter().map(|c| c.id.clone()).collect(),
-                        ),
-                        ruled_out,
-                        evidence: ev,
-                        blocked_on: "F20 vs S5 is invisible to parity, to the cycle-type \
-                                     sieve (unless an S5-only type is found), and to the \
-                                     ordered-pair resolvent (both are 2-transitive); exact \
-                                     separation needs the sextic (Cayley) resolvent for the \
-                                     maximal subgroup F20 < S5, or Stauduhar descent — see \
-                                     crate::stauduhar"
-                            .to_string(),
-                    })
+                    // Only {F20, S5} can survive here (both 2-transitive, both
+                    // odd; A5 was removed by parity). Solvability decides.
+                    decide_by_solvability(f, alive, ruled_out, ev)
                 }
             }
         }
         Err(e) => {
             ev.notes
                 .push(format!("ordered-pair resolvent unavailable: {e}"));
+            // The Cayley solvability test is independent of the ordered-pair
+            // resolvent and may still decide (or narrow) the survivors.
+            decide_by_solvability(f, alive, ruled_out, ev)
+        }
+    }
+}
+
+/// Apply the exact solvability dichotomy (`Gal ⊆ F20`-conjugate ⟺ the Cayley
+/// sextic resolvent has a rational root — see [`crate::cayley`]) to the
+/// surviving candidates. Decides whenever one candidate remains; the only
+/// possible multi-survivor is {C5, D5} (square disc + solvable), which is
+/// separated by the ordered-pair resolvent — reaching here with it failed is
+/// reported as an honest `Unresolved`.
+fn decide_by_solvability(
+    f: &[Integer],
+    mut alive: Vec<&QuinticCandidate>,
+    mut ruled_out: Vec<(GroupId, String)>,
+    mut ev: Evidence,
+) -> Result<GaloisGroupResult> {
+    match cayley::f20_membership(f, &mut ev) {
+        Ok(out) => {
+            ev.resolvent_signatures.push((
+                format!(
+                    "Cayley–Dummit sextic resolvent (F20-coset invariant θ) of {}",
+                    out.description
+                ),
+                out.factor_degrees.clone(),
+            ));
+            ev.notes.push(format!(
+                "Cayley sextic resolvent is squarefree with {} rational root ⟹ Gal is {} \
+                 in a conjugate of F20 ({} by radicals)",
+                if out.solvable { "a" } else { "no" },
+                if out.solvable { "contained" } else { "not contained" },
+                if out.solvable { "solvable" } else { "not solvable" },
+            ));
+            alive.retain(|cand| {
+                let ok = cand.solvable == out.solvable;
+                if !ok {
+                    ruled_out.push((
+                        cand.id.clone(),
+                        format!(
+                            "the Cayley sextic resolvent proves Gal is {}solvable, but {} is \
+                             {}solvable",
+                            if out.solvable { "" } else { "not " },
+                            cand.id.name,
+                            if cand.solvable { "" } else { "not " },
+                        ),
+                    ));
+                }
+                ok
+            });
+            match alive.len() {
+                1 => {
+                    ev.notes.push(format!(
+                        "solvability dichotomy leaves exactly one candidate: {}",
+                        alive[0].id.name
+                    ));
+                    Ok(GaloisGroupResult::Decided { group: alive[0].id.clone(), evidence: ev })
+                }
+                0 => Err(MathError::InvalidOperation(
+                    "internal contradiction: solvability verdict matches no surviving \
+                     candidate"
+                        .to_string(),
+                )),
+                _ => Ok(GaloisGroupResult::Unresolved {
+                    candidates: Candidates::Among(alive.iter().map(|c| c.id.clone()).collect()),
+                    ruled_out,
+                    evidence: ev,
+                    blocked_on: "C5 vs D5 needs the ordered-pair resolvent, which failed on \
+                                 this input (no squarefree R_s for s ≤ 8)"
+                        .to_string(),
+                }),
+            }
+        }
+        Err(e) => {
+            ev.notes.push(format!("Cayley sextic resolvent unavailable: {e}"));
             Ok(GaloisGroupResult::Unresolved {
                 candidates: Candidates::Among(alive.iter().map(|c| c.id.clone()).collect()),
                 ruled_out,
                 evidence: ev,
-                blocked_on: format!("ordered-pair resolvent failed ({e})"),
+                blocked_on: format!("Cayley sextic resolvent failed ({e})"),
             })
         }
     }

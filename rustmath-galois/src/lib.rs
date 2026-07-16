@@ -10,11 +10,11 @@
 //! - **Degrees 2–4**: complete exact decision by classical resolvents
 //!   (discriminant square test; resolvent cubic factorization pattern with the
 //!   Kappe–Warren C4/D4 disambiguation). See [`lowdegree`].
-//! - **Degree 5**: Frobenius cycle-type sieve over the complete 5T1–5T5 table,
-//!   sharpened by an exact ordered-pair resolvent; decides C5/D5/F20-ruled
-//!   cases/A5/S5 whenever the exhibited elements and exact invariants force
-//!   uniqueness, and returns the F20-vs-S5 blind spot as `Unresolved`. See
-//!   [`quintic`].
+//! - **Degree 5**: complete exact decision. Frobenius cycle-type sieve over
+//!   the 5T1–5T5 table, sharpened by an exact ordered-pair resolvent, with
+//!   the F20-vs-S5 blind spot closed by the Cayley–Dummit sextic resolvent
+//!   (rational root ⟺ solvable ⟺ `Gal ⊆ F20` up to conjugacy). All five
+//!   groups C5/D5/F20/A5/S5 are decided. See [`quintic`] and [`cayley`].
 //! - **General degree n**: the sieve infrastructure (cycle types via Dedekind
 //!   reduction, parity/discriminant filtering) plus Jordan-criterion
 //!   certificates that decide `A_n`/`S_n` by exhibiting elements; everything
@@ -46,6 +46,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod cayley;
 pub mod lowdegree;
 pub mod quintic;
 pub mod reducible;
@@ -331,33 +332,87 @@ mod tests {
     }
 
     #[test]
-    fn quintic_f20_is_honestly_unresolved() {
-        // x⁵ − 2 has Gal = F20 (sympy-verified), but parity, the sieve and the
-        // ordered-pair resolvent cannot separate F20 from S5. The honest answer
-        // is Unresolved with exactly {F20, S5} remaining — a bounded search
-        // that finds no S5-only cycle type must NOT decide F20.
+    fn quintic_f20_decided_by_cayley_resolvent() {
+        // x⁵ − 2 has Gal = F20 (gp polgalois: [20, -1, 1, "F(5) = 5:4"]).
+        // Parity rules out C5/D5/A5; the ordered-pair resolvent cannot see
+        // F20 vs S5 (both 2-transitive, signature [20]); the Cayley–Dummit
+        // sextic resolvent (squarefree, rational root 0 — gp-verified)
+        // certifies solvability and decides F20.
         let r = galois_group(&iz(&[-2, 0, 0, 0, 0, 1])).unwrap();
-        assert!(!r.is_decided());
-        let mut names = r.candidate_names().unwrap();
-        names.sort_unstable();
-        assert_eq!(names, vec!["F20", "S5"]);
+        assert_eq!(r.decided_name(), Some("F20"));
+        let ev = r.evidence();
+        assert_eq!(ev.disc_is_square, Some(false));
+        // The exact ordered-pair signature [20] was computed and recorded…
+        assert!(ev.resolvent_signatures.iter().any(|(_, sig)| sig == &vec![20]));
+        // …and the Cayley sextic factored as [1, 5]: Gal fixes one F20-coset.
+        assert!(ev
+            .resolvent_signatures
+            .iter()
+            .any(|(desc, sig)| desc.contains("Cayley") && sig == &vec![1, 5]));
         match &r {
-            GaloisGroupResult::Unresolved { ruled_out, blocked_on, evidence, .. } => {
-                // C5, D5, A5 are ruled out by parity (disc not a square).
-                for g in ["C5", "D5", "A5"] {
-                    assert!(
-                        ruled_out.iter().any(|(id, _)| id.name == g),
-                        "{g} should be ruled out"
-                    );
-                }
-                assert!(blocked_on.contains("Cayley") || blocked_on.contains("Stauduhar"));
-                // The exact ordered-pair signature [20] was computed and recorded.
-                assert!(evidence
-                    .resolvent_signatures
-                    .iter()
-                    .any(|(_, sig)| sig == &vec![20]));
+            GaloisGroupResult::Decided { group, .. } => {
+                assert_eq!(group.order, Some(20));
+                assert_eq!(group.t_number, Some(3));
             }
-            GaloisGroupResult::Decided { .. } => unreachable!(),
+            GaloisGroupResult::Unresolved { .. } => unreachable!(),
+        }
+    }
+
+    /// The full gp `polgalois` battery: 16 structured gates covering all five
+    /// groups and 20 random irreducible quintics compared blindly. Every
+    /// verdict below was computed with PARI/GP 2.17.3 `polgalois`
+    /// (setrand(20260716) for the random block; coefficients uniform in
+    /// [−10, 10]; only irreducible draws kept).
+    #[test]
+    fn quintic_battery_matches_gp_polgalois() {
+        let cases: [(&[i64], &str); 36] = [
+            // structured gates (gp-verified individually)
+            (&[-2, 0, 0, 0, 0, 1], "F20"),
+            (&[-1, -1, 0, 0, 0, 1], "S5"),
+            (&[16, 20, 0, 0, 0, 1], "A5"),
+            (&[1, 3, -3, -4, 1, 1], "C5"),
+            (&[12, -5, 0, 0, 0, 1], "D5"),
+            (&[12, 15, 0, 0, 0, 1], "F20"),
+            (&[-12, -5, 0, 0, 0, 1], "D5"),
+            (&[-30, 0, 0, 0, 0, 1], "F20"),
+            (&[-29, 0, 0, 0, 0, 1], "F20"),
+            (&[-28, 0, 0, 0, 0, 1], "F20"),
+            (&[-27, 0, 0, 0, 0, 1], "F20"),
+            (&[-16, 20, 0, 0, 0, 1], "A5"),
+            // C5: polsubcyclo(p, 5) for p = 31, 41, 61, 71
+            (&[5, 1, -21, -12, 1, 1], "C5"),
+            (&[-9, 21, 5, -16, 1, 1], "C5"),
+            (&[-13, 41, -17, -24, 1, 1], "C5"),
+            (&[1, 25, 37, -28, 1, 1], "C5"),
+            // 20 random irreducible quintics, verdicts taken blindly from gp
+            (&[-8, -2, -3, 2, 1, 1], "S5"),
+            (&[10, -10, -9, -6, -1, 1], "S5"),
+            (&[4, 1, 1, -5, 0, 1], "S5"),
+            (&[9, -4, -1, 6, 5, 1], "S5"),
+            (&[3, 8, 7, 0, 1, 1], "S5"),
+            (&[3, 10, 7, -7, -5, 1], "S5"),
+            (&[-9, 10, -7, -5, 6, 1], "S5"),
+            (&[-2, -2, 4, 8, -5, 1], "S5"),
+            (&[4, 9, -10, -9, -9, 1], "S5"),
+            (&[-3, -9, 3, -7, -4, 1], "S5"),
+            (&[3, -3, 9, 4, 3, 1], "S5"),
+            (&[8, 1, -4, 1, -9, 1], "S5"),
+            (&[-7, 8, 2, 1, -3, 1], "S5"),
+            (&[-9, -4, -5, 8, 10, 1], "S5"),
+            (&[5, -2, -7, 4, -10, 1], "S5"),
+            (&[8, 7, 4, -6, -4, 1], "S5"),
+            (&[3, -6, 6, -3, -7, 1], "S5"),
+            (&[-2, 8, 10, -6, 10, 1], "S5"),
+            (&[5, -6, 4, 8, 5, 1], "S5"),
+            (&[4, 7, 3, -3, 10, 1], "S5"),
+        ];
+        for (coeffs, want) in cases {
+            let r = galois_group(&iz(coeffs)).unwrap();
+            assert_eq!(
+                r.decided_name(),
+                Some(want),
+                "polgalois disagreement on {coeffs:?}"
+            );
         }
     }
 
@@ -447,9 +502,11 @@ mod tests {
 
     #[test]
     fn t_numbers_for_the_5t_table() {
-        let cases: [(&[i64], u32); 3] = [
+        let cases: [(&[i64], u32); 5] = [
             (&[1, 3, -3, -4, 1, 1], 1),  // C5 = 5T1
             (&[12, -5, 0, 0, 0, 1], 2),  // D5 = 5T2
+            (&[-2, 0, 0, 0, 0, 1], 3),   // F20 = 5T3
+            (&[16, 20, 0, 0, 0, 1], 4),  // A5 = 5T4
             (&[-1, -1, 0, 0, 0, 1], 5),  // S5 = 5T5
         ];
         for (coeffs, t) in cases {

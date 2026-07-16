@@ -288,7 +288,7 @@ impl FiniteField {
     pub fn zero(&self) -> FiniteFieldElement {
         FiniteFieldElement {
             coeffs: vec![Integer::zero(); self.data.n],
-            field: self.clone(),
+            field: Some(self.clone()),
         }
     }
 
@@ -298,7 +298,7 @@ impl FiniteField {
         c[0] = Integer::one();
         FiniteFieldElement {
             coeffs: c,
-            field: self.clone(),
+            field: Some(self.clone()),
         }
     }
 
@@ -310,7 +310,7 @@ impl FiniteField {
         }
         FiniteFieldElement {
             coeffs: c,
-            field: self.clone(),
+            field: Some(self.clone()),
         }
     }
 
@@ -320,7 +320,7 @@ impl FiniteField {
         let reduced = reduce_mod_irr(coeffs, &self.data.modulus, &self.data.p);
         FiniteFieldElement {
             coeffs: reduced,
-            field: self.clone(),
+            field: Some(self.clone()),
         }
     }
 
@@ -363,7 +363,7 @@ impl Parent for FiniteField {
     type Element = FiniteFieldElement;
 
     fn contains(&self, element: &Self::Element) -> bool {
-        element.field.data == self.data
+        element.field.as_ref().is_some_and(|f| f.data == self.data)
     }
     fn zero(&self) -> Option<Self::Element> {
         Some(FiniteField::zero(self))
@@ -387,43 +387,127 @@ impl Parent for FiniteField {
 ///
 /// The parent field is carried by (cheap, `Arc`-backed) value, so arithmetic
 /// checks that operands live in the same field.
+///
+/// # Unbound elements (`Ring::zero`/`Ring::one`)
+///
+/// The static [`Ring::zero`]/[`Ring::one`] constructors cannot know a parent
+/// field, so — the `GF(p^n)` analogue of [`crate::IntegerMod`]'s modulus-0
+/// sentinel — they return *unbound* elements: a single integer constant
+/// `c ∈ Z` awaiting the canonical map `Z → GF(p^n)`, `c ↦ c·1`. The precise
+/// algebra:
+///
+/// * **binary ops** (`+`, `-`, `*`, `/`): an unbound operand is bound on
+///   contact into the other operand's field (via [`FiniteField::from_int`]),
+///   so `F::zero() + x == x` and `F::zero() * x` is the zero of `x`'s field.
+///   Two unbound operands combine in Z (result stays unbound). Two elements
+///   of *different* fields panic, as before.
+/// * **`Neg`**: negates in Z for unbound elements.
+/// * **`inverse`/`Div`**: in Z only `±1` are invertible; anything else is an
+///   error (never a wrong value).
+/// * **`==`** coerces exactly like the arithmetic: an unbound operand is
+///   bound into the other operand's field before comparing, so
+///   `F::zero() == f.zero()` and, in general, `unbound(c) == x` iff the
+///   canonical image of `c` in `x`'s field equals `x`. Two unbound elements
+///   compare in Z (equal iff their constants are); two bound elements are
+///   equal iff same field *and* same coefficients (cross-field stays
+///   `false`, as before).
+/// * operations that *need* the parent field ([`Self::field`],
+///   [`Self::frobenius`], [`Self::norm`], [`Self::trace`], ...) panic on an
+///   unbound element with a precise message rather than fabricate an answer.
 #[derive(Clone)]
 pub struct FiniteFieldElement {
+    /// Little-endian coefficients; for an unbound element, a single integer.
     coeffs: Vec<Integer>,
-    field: FiniteField,
+    /// The parent field; `None` is the unbound sentinel (see type docs).
+    field: Option<FiniteField>,
 }
 
 impl FiniteFieldElement {
-    /// The parent field.
+    /// The parent field. Panics for an unbound element (see the type docs):
+    /// there is no parent until it touches a bound element.
     pub fn field(&self) -> &FiniteField {
-        &self.field
+        self.require_field("field()")
     }
 
-    /// Little-endian coefficient sequence over `F_p` (length `n`) — MAGMA `Eltseq`.
+    /// Whether the element is bound to a parent field (false only for the
+    /// unbound `Ring::zero()`/`Ring::one()` sentinel, see the type docs).
+    pub fn is_bound(&self) -> bool {
+        self.field.is_some()
+    }
+
+    /// Little-endian coefficient sequence over `F_p` (length `n`) — MAGMA
+    /// `Eltseq`. For an unbound element (see type docs) this is the single
+    /// unreduced integer constant.
     pub fn eltseq(&self) -> &[Integer] {
         &self.coeffs
     }
 
+    fn require_field(&self, op: &str) -> &FiniteField {
+        self.field.as_ref().unwrap_or_else(|| {
+            panic!(
+                "FiniteFieldElement::{op} needs a parent field, but this element is unbound \
+                 (it came from Ring::zero()/Ring::one()); bind it by combining it with a bound \
+                 element, or construct it via FiniteField::zero()/one()/element()"
+            )
+        })
+    }
+
+    /// The integer constant of an unbound element (see type docs).
+    /// Must only be called when `self.field.is_none()`.
+    fn unbound_value(&self) -> &Integer {
+        debug_assert!(self.field.is_none() && self.coeffs.len() == 1);
+        &self.coeffs[0]
+    }
+
+    /// Bind an unbound element into `field` via the canonical map Z → GF(p^n).
+    fn bind_into(&self, field: &FiniteField) -> Self {
+        field.from_int(self.unbound_value().clone())
+    }
+
+    /// Coerce a pair of operands for a binary op: if exactly one is unbound,
+    /// bind it into the other's field; if both are bound they must agree.
+    /// Returns `None` when both are unbound (the op then proceeds in Z).
+    fn coerce_pair(self, other: Self) -> std::result::Result<(Self, Self), (Self, Self)> {
+        match (&self.field, &other.field) {
+            (Some(a), Some(b)) => {
+                assert!(
+                    a.data == b.data,
+                    "operands live in different finite fields"
+                );
+                Ok((self, other))
+            }
+            (Some(f), None) => {
+                let bound = other.bind_into(f);
+                Ok((self, bound))
+            }
+            (None, Some(f)) => {
+                let bound = self.bind_into(f);
+                Ok((bound, other))
+            }
+            (None, None) => Err((self, other)),
+        }
+    }
+
     fn p(&self) -> &Integer {
-        &self.field.data.p
+        &self.require_field("p()").data.p
     }
     fn modulus(&self) -> &[Integer] {
-        &self.field.data.modulus
+        &self.require_field("modulus()").data.modulus
     }
     fn n(&self) -> usize {
-        self.field.data.n
+        self.require_field("n()").data.n
     }
 
     fn assert_same(&self, other: &Self) {
         assert!(
-            self.field.data == other.field.data,
+            self.require_field("arithmetic").data == other.require_field("arithmetic").data,
             "operands live in different finite fields"
         );
     }
 
     /// `self^e` for a non-negative integer exponent (square-and-multiply).
     pub fn pow_int(&self, e: &Integer) -> FiniteFieldElement {
-        let mut result = self.field.one();
+        let mut result = self.require_field("pow_int").one();
         let mut base = self.clone();
         let mut exp = e.clone();
         let two = Integer::from(2);
@@ -454,7 +538,7 @@ impl FiniteFieldElement {
     /// Absolute trace `Tr_{GF(p^n)/GF(p)}(a) = a + a^p + ... + a^{p^{n-1}}`,
     /// returned as its representative in `F_p`.
     pub fn trace(&self) -> Integer {
-        let mut sum = self.field.zero();
+        let mut sum = self.require_field("trace").zero();
         let mut cur = self.clone();
         for _ in 0..self.n() {
             sum = sum + cur.clone();
@@ -468,7 +552,7 @@ impl FiniteFieldElement {
         if self.is_zero() {
             return Integer::zero();
         }
-        let q = self.field.order();
+        let q = self.require_field("norm").order();
         let exp = (q - Integer::one()) / (self.p().clone() - Integer::one());
         self.pow_int(&exp).coeffs[0].clone()
     }
@@ -489,14 +573,15 @@ impl FiniteFieldElement {
         }
         // Multiply linear factors (x - r) with coefficients in the field; the
         // product lands in F_p (constant polynomials).
-        let mut poly = vec![self.field.one()]; // start with 1
+        let field = self.require_field("minimal_polynomial").clone();
+        let mut poly = vec![field.one()]; // start with 1
         for r in &conjugates {
             let root = FiniteFieldElement {
                 coeffs: r.clone(),
                 field: self.field.clone(),
             };
             // multiply poly by (x - root)
-            let mut next = vec![self.field.zero(); poly.len() + 1];
+            let mut next = vec![field.zero(); poly.len() + 1];
             for (i, coef) in poly.iter().enumerate() {
                 next[i + 1] = next[i + 1].clone() + coef.clone(); // * x
                 next[i] = next[i].clone() - coef.clone() * root.clone(); // * (-root)
@@ -514,7 +599,7 @@ impl FiniteFieldElement {
         if self.is_zero() {
             return None;
         }
-        let group_order = self.field.order() - Integer::one();
+        let group_order = self.require_field("multiplicative_order").order() - Integer::one();
         // Start from the full group order and strip prime factors.
         let mut order = group_order.clone();
         for (prime, mult) in factor(&group_order) {
@@ -533,7 +618,7 @@ impl FiniteFieldElement {
     /// Whether the element generates `GF(p^n)^*` (a primitive element).
     pub fn is_primitive(&self) -> bool {
         match self.multiplicative_order() {
-            Some(o) => o == self.field.order() - Integer::one(),
+            Some(o) => o == self.require_field("is_primitive").order() - Integer::one(),
             None => false,
         }
     }
@@ -555,14 +640,14 @@ impl FiniteFieldElement {
         if target.is_one() {
             return Ok(Integer::zero());
         }
-        let group_order = base.field.order() - Integer::one();
+        let group_order = base.require_field("discrete_log").order() - Integer::one();
         let m = group_order.sqrt()? + Integer::one();
         let m_usize = m.to_usize().ok_or_else(|| {
             MathError::NumericalError("group too large for baby-step/giant-step".into())
         })?;
 
         let mut baby: HashMap<Vec<Integer>, usize> = HashMap::new();
-        let mut power = base.field.one();
+        let mut power = base.require_field("discrete_log").one();
         for j in 0..m_usize {
             baby.entry(power.coeffs.clone()).or_insert(j);
             power = power * base.clone();
@@ -613,26 +698,65 @@ impl fmt::Display for FiniteFieldElement {
 }
 
 impl PartialEq for FiniteFieldElement {
+    /// Coercing (binding) equality, matching the arithmetic's coercion rules
+    /// (see the type docs):
+    ///
+    /// * **bound vs bound**: equal iff same field *and* same coefficients
+    ///   (unchanged); different fields are simply unequal — never a panic.
+    /// * **unbound sentinel vs bound**: the unbound constant is bound into
+    ///   the other operand's field first (canonical map `Z → GF(p^n)`), so
+    ///   `F::zero() == f.zero()` and `unbound(8) == GF(7)'s 1`. Symmetric.
+    /// * **unbound vs unbound**: equality of the integer constants in Z.
+    ///
+    /// Transitivity caveat (the `PartialEq` law): `unbound(0)` equals the
+    /// bound zero of *every* field while those bound zeros differ pairwise.
+    /// Transitivity can fail only in that cross-field corner — a zone whose
+    /// *arithmetic* already panics.
     fn eq(&self, other: &Self) -> bool {
-        self.field.data == other.field.data && self.coeffs == other.coeffs
+        match (&self.field, &other.field) {
+            // Both bound: strict, exactly as before.
+            (Some(_), Some(_)) => self.field == other.field && self.coeffs == other.coeffs,
+            // Both unbound: compare the integer constants in Z.
+            (None, None) => self.coeffs == other.coeffs,
+            // One unbound: bind it into the other's field, compare there.
+            (None, Some(f)) => self.bind_into(f).coeffs == other.coeffs,
+            (Some(f), None) => other.bind_into(f).coeffs == self.coeffs,
+        }
     }
 }
+
+/// `Eq` marker with a documented caveat: equality is reflexive and symmetric,
+/// but transitivity can fail in exactly one corner — the unbound sentinel
+/// equals the bound zero (resp. one) of every field while bound elements of
+/// different fields stay unequal (`unbound(0) == GF(7)'s 0`,
+/// `unbound(0) == GF(5)'s 0`, `GF(7)'s 0 != GF(5)'s 0`). That corner's
+/// arithmetic already panics, and `FiniteFieldElement` implements no `Hash`,
+/// so no map/set invariant can be broken by it.
 impl Eq for FiniteFieldElement {}
 
 impl Add for FiniteFieldElement {
     type Output = Self;
     fn add(self, other: Self) -> Self {
-        self.assert_same(&other);
-        let p = self.p().clone();
-        let coeffs = self
+        let (a, b) = match self.coerce_pair(other) {
+            Ok(pair) => pair,
+            // Both unbound: add in Z (see the type docs).
+            Err((a, b)) => {
+                return FiniteFieldElement {
+                    coeffs: vec![a.unbound_value().clone() + b.unbound_value().clone()],
+                    field: None,
+                }
+            }
+        };
+        let p = a.p().clone();
+        let coeffs = a
             .coeffs
             .iter()
-            .zip(other.coeffs.iter())
-            .map(|(a, b)| redp(a.clone() + b.clone(), &p))
+            .zip(b.coeffs.iter())
+            .map(|(x, y)| redp(x.clone() + y.clone(), &p))
             .collect();
         FiniteFieldElement {
             coeffs,
-            field: self.field,
+            field: a.field,
         }
     }
 }
@@ -640,17 +764,26 @@ impl Add for FiniteFieldElement {
 impl Sub for FiniteFieldElement {
     type Output = Self;
     fn sub(self, other: Self) -> Self {
-        self.assert_same(&other);
-        let p = self.p().clone();
-        let coeffs = self
+        let (a, b) = match self.coerce_pair(other) {
+            Ok(pair) => pair,
+            // Both unbound: subtract in Z (see the type docs).
+            Err((a, b)) => {
+                return FiniteFieldElement {
+                    coeffs: vec![a.unbound_value().clone() - b.unbound_value().clone()],
+                    field: None,
+                }
+            }
+        };
+        let p = a.p().clone();
+        let coeffs = a
             .coeffs
             .iter()
-            .zip(other.coeffs.iter())
-            .map(|(a, b)| redp(a.clone() - b.clone(), &p))
+            .zip(b.coeffs.iter())
+            .map(|(x, y)| redp(x.clone() - y.clone(), &p))
             .collect();
         FiniteFieldElement {
             coeffs,
-            field: self.field,
+            field: a.field,
         }
     }
 }
@@ -658,11 +791,20 @@ impl Sub for FiniteFieldElement {
 impl Mul for FiniteFieldElement {
     type Output = Self;
     fn mul(self, other: Self) -> Self {
-        self.assert_same(&other);
-        let coeffs = poly_mul_mod(&self.coeffs, &other.coeffs, self.modulus(), self.p());
+        let (a, b) = match self.coerce_pair(other) {
+            Ok(pair) => pair,
+            // Both unbound: multiply in Z (see the type docs).
+            Err((a, b)) => {
+                return FiniteFieldElement {
+                    coeffs: vec![a.unbound_value().clone() * b.unbound_value().clone()],
+                    field: None,
+                }
+            }
+        };
+        let coeffs = poly_mul_mod(&a.coeffs, &b.coeffs, a.modulus(), a.p());
         FiniteFieldElement {
             coeffs,
-            field: self.field,
+            field: a.field,
         }
     }
 }
@@ -670,6 +812,13 @@ impl Mul for FiniteFieldElement {
 impl Neg for FiniteFieldElement {
     type Output = Self;
     fn neg(self) -> Self {
+        if self.field.is_none() {
+            // Unbound: negate in Z (see the type docs).
+            return FiniteFieldElement {
+                coeffs: vec![-self.unbound_value().clone()],
+                field: None,
+            };
+        }
         let p = self.p().clone();
         let coeffs = self
             .coeffs
@@ -686,18 +835,34 @@ impl Neg for FiniteFieldElement {
 impl Div for FiniteFieldElement {
     type Output = Self;
     fn div(self, other: Self) -> Self {
-        self.assert_same(&other);
-        let inv = other.inverse().expect("division by non-invertible element");
-        self * inv
+        let (a, b) = match self.coerce_pair(other) {
+            Ok(pair) => pair,
+            // Both unbound: only ±1 divides in Z; inverse() decides honestly.
+            Err((a, b)) => (a, b),
+        };
+        let inv = b.inverse().expect("division by non-invertible element");
+        a * inv
     }
 }
 
 impl Ring for FiniteFieldElement {
+    /// The additive identity, as an *unbound* element (see the type docs):
+    /// the canonical image of `0 ∈ Z` in any `GF(p^n)`, bound on first
+    /// contact with a bound element. Prefer [`FiniteField::zero`] when the
+    /// parent is known.
     fn zero() -> Self {
-        panic!("FiniteFieldElement::zero() needs a parent field; use FiniteField::zero()");
+        FiniteFieldElement {
+            coeffs: vec![Integer::zero()],
+            field: None,
+        }
     }
+    /// The multiplicative identity, as an *unbound* element (see
+    /// [`Ring::zero`] above and the type docs).
     fn one() -> Self {
-        panic!("FiniteFieldElement::one() needs a parent field; use FiniteField::one()");
+        FiniteFieldElement {
+            coeffs: vec![Integer::one()],
+            field: None,
+        }
     }
     fn is_zero(&self) -> bool {
         self.coeffs.iter().all(|c| c.is_zero())
@@ -714,8 +879,20 @@ impl Field for FiniteFieldElement {
         if self.is_zero() {
             return Err(MathError::DivisionByZero);
         }
+        if self.field.is_none() {
+            // Unbound = integer in Z: only ±1 are invertible (self-inverse).
+            let v = self.unbound_value();
+            return if v.is_one() || (-v.clone()).is_one() {
+                Ok(self.clone())
+            } else {
+                Err(MathError::InvalidArgument(format!(
+                    "cannot invert the unbound integer {v}: only ±1 are invertible in Z; \
+                     bind the element to a field first"
+                )))
+            };
+        }
         // Fermat: a^{p^n - 2} = a^{-1} (a in GF(p^n)^*, order p^n - 1).
-        let exp = self.field.order() - Integer::from(2);
+        let exp = self.require_field("inverse").order() - Integer::from(2);
         Ok(self.pow_int(&exp))
     }
 }
@@ -723,6 +900,56 @@ impl Field for FiniteFieldElement {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Generic-code gate: fold seeded with `F::zero()` over any Ring,
+    /// instantiated at FiniteFieldElement (used to panic instantly).
+    fn generic_sum<F: Ring>(v: &[F]) -> F {
+        v.iter().fold(F::zero(), |acc, x| acc + x.clone())
+    }
+
+    #[test]
+    fn unbound_sentinel_algebra() {
+        let f = FiniteField::new(Integer::from(2), 2).unwrap(); // GF(4)
+        let a = f.generator();
+        // unbound zero + bound = bound (unchanged)
+        assert_eq!(FiniteFieldElement::zero() + a.clone(), a);
+        // unbound one * bound = bound (unchanged)
+        assert_eq!(FiniteFieldElement::one() * a.clone(), a);
+        // unbound zero * bound = the bound zero
+        let z = FiniteFieldElement::zero() * a.clone();
+        assert!(z.is_zero());
+        assert!(z.is_bound());
+        assert_eq!(z, f.zero());
+        // unbound arithmetic happens in Z, binds on contact: 3 * 1 = 1 in GF(4)
+        let three = FiniteFieldElement::one() + FiniteFieldElement::one() + FiniteFieldElement::one();
+        assert!(!three.is_bound());
+        assert_eq!(three.eltseq(), &[Integer::from(3)]);
+        assert_eq!(three * f.one(), f.one()); // 3 mod 2 = 1
+        // generic sum over GF(4): a + a + 1 = 1 (char 2)
+        let s = generic_sum(&[a.clone(), a.clone(), f.one()]);
+        assert_eq!(s, f.one());
+        // empty generic sum: unbound but honestly zero
+        assert!(generic_sum::<FiniteFieldElement>(&[]).is_zero());
+        // inverse: unbound ±1 are self-inverse; unbound 2 refuses
+        assert!(FiniteFieldElement::one().inverse().unwrap().is_one());
+        let two = FiniteFieldElement::one() + FiniteFieldElement::one();
+        assert!(two.inverse().is_err());
+        // == binds on compare, like the arithmetic: the unbound zero equals
+        // every bound zero (and agrees with is_zero).
+        assert_eq!(FiniteFieldElement::zero(), f.zero());
+        assert_eq!(f.zero(), FiniteFieldElement::zero());
+        assert_ne!(FiniteFieldElement::zero(), f.one());
+        // Neg in Z for unbound
+        let m1 = -FiniteFieldElement::one();
+        assert_eq!(m1.eltseq(), &[-Integer::one()]);
+        assert!(m1.clone().inverse().unwrap() == m1);
+    }
+
+    #[test]
+    #[should_panic(expected = "unbound")]
+    fn unbound_field_accessor_panics_precisely() {
+        let _ = FiniteFieldElement::zero().field().order();
+    }
 
     #[test]
     fn gf4_construction_and_reduction() {

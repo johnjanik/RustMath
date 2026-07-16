@@ -125,6 +125,10 @@ impl ExtensionField {
 
 impl fmt::Display for ExtensionField {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if !self.elem.is_bound() {
+            // Unbound sentinel (Ring::zero()/one()): no parameters to show.
+            return write!(f, "{} (unbound)", self.poly);
+        }
         write!(
             f,
             "{} in GF({}^{})",
@@ -136,9 +140,21 @@ impl fmt::Display for ExtensionField {
 }
 
 impl PartialEq for ExtensionField {
+    /// Delegates to the canonical [`FiniteFieldElement`] equality, and so
+    /// inherits its *coercing* semantics (see that impl's docs):
+    ///
+    /// * **bound vs bound**: same parent (characteristic + modulus) and same
+    ///   reduced coefficients; different parents are simply unequal.
+    /// * **unbound sentinel (`Ring::zero()`/`one()`) vs bound**: the unbound
+    ///   constant is bound into the other operand's field before comparing,
+    ///   so `ExtensionField::zero() == (bound zero)`.
+    /// * **unbound vs unbound**: equality of the integer constants in Z.
+    ///
+    /// The transitivity caveat is the same as [`FiniteFieldElement`]'s: the
+    /// unbound zero equals the bound zero of every field while bound zeros
+    /// of different fields stay unequal — confined to the cross-field corner
+    /// whose arithmetic already panics.
     fn eq(&self, other: &Self) -> bool {
-        // Field-aware equality: same parent (characteristic + modulus) and
-        // same reduced coefficients.
         self.elem == other.elem
     }
 }
@@ -184,12 +200,22 @@ impl Div for ExtensionField {
 }
 
 impl Ring for ExtensionField {
+    /// The additive identity, as an *unbound* element: this wrapper delegates
+    /// to the canonical [`FiniteFieldElement`], whose `Ring::zero()` is the
+    /// unbound integer-constant sentinel bound on first contact with a bound
+    /// element (see the `FiniteFieldElement` type docs for the precise
+    /// algebra). Accessors that need the parameters
+    /// ([`Self::characteristic`], [`Self::degree`], [`Self::field`],
+    /// [`Self::poly`] shape) panic on a still-unbound element with a precise
+    /// message.
     fn zero() -> Self {
-        panic!("Cannot create ExtensionField::zero() without parameters");
+        ExtensionField::from_elem(FiniteFieldElement::zero())
     }
 
+    /// The multiplicative identity, as an *unbound* element (see
+    /// [`Ring::zero`] above).
     fn one() -> Self {
-        panic!("Cannot create ExtensionField::one() without parameters");
+        ExtensionField::from_elem(FiniteFieldElement::one())
     }
 
     fn is_zero(&self) -> bool {
@@ -233,6 +259,33 @@ mod tests {
         let elem = ExtensionField::new(poly, p, irreducible).unwrap();
 
         assert_eq!(elem.degree(), 2);
+    }
+
+    #[test]
+    fn ring_zero_one_are_unbound_sentinels() {
+        // These two calls used to panic unconditionally.
+        let z = <ExtensionField as Ring>::zero();
+        let o = <ExtensionField as Ring>::one();
+        assert!(z.is_zero());
+        assert!(o.is_one());
+        // They bind on contact with a bound element (delegating to the
+        // canonical FiniteFieldElement sentinel semantics).
+        let irr = UnivariatePolynomial::new(vec![
+            Integer::from(1),
+            Integer::from(1),
+            Integer::from(1),
+        ]);
+        let alpha = ExtensionField::new(
+            UnivariatePolynomial::new(vec![Integer::from(0), Integer::from(1)]),
+            Integer::from(2),
+            irr,
+        )
+        .unwrap();
+        assert_eq!(z + alpha.clone(), alpha);
+        assert_eq!(o * alpha.clone(), alpha);
+        let z2 = <ExtensionField as Ring>::zero() * alpha.clone();
+        assert!(z2.is_zero());
+        assert_eq!(z2.degree(), 2); // bound into GF(2^2)
     }
 
     #[test]

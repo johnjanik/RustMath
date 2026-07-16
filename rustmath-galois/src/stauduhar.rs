@@ -18,18 +18,20 @@
 //! approximations of the roots for every coset representative and checking
 //! whether the value is a rational integer (with a proven error bound); descend
 //! while any test succeeds. Termination identifies `Gal(f)` exactly — this is
-//! what upgrades every `Unresolved` of this crate (e.g. the F20-vs-S5 pair at
-//! degree 5, everything at degree ≥ 6 that is not `A_n`/`S_n`) to `Decided`.
+//! what upgrades every `Unresolved` of this crate (everything at degree ≥ 6
+//! that is not `A_n`/`S_n`; degree 5 is now complete via the Cayley–Dummit
+//! sextic resolvent in [`crate::cayley`] — the F20-vs-S5 special case of this
+//! very descent) to `Decided`.
 //!
 //! # The exact seam, piece by piece
 //!
 //! 1. **Transitive-subgroup lattice with cosets.** For each degree `n`: the
 //!    maximal-subgroup chains of transitive groups plus coset representatives.
-//!    `rustmath-groups` (READ-ONLY / frozen for this sprint) already carries
-//!    committed transitive-group tables at selected degrees
-//!    (`transitive23`/`transitive24` modules) but not the
-//!    maximal-subgroup/coset machinery; a BSGS (base and strong generating
-//!    set) implementation there is the natural provider. Required API shape:
+//!    `rustmath-groups` now carries a deterministic Schreier–Sims BSGS
+//!    (`rustmath_groups::bsgs::StabilizerChain`: order, membership, strong
+//!    generators) alongside the committed transitive-group tables at selected
+//!    degrees (`transitive23`/`transitive24`), but not yet the
+//!    maximal-subgroup/coset machinery. Required API shape:
 //!    `maximal_transitive_subgroups(n, t) -> Vec<(t', Vec<CosetRep>)>`.
 //! 2. **Relative resolvent / invariant evaluation.** For each pair `H < G` a
 //!    primitive `H`-invariant `I ∈ ℤ[x₁,…,x_n]` with its `G`-orbit; generic
@@ -57,9 +59,10 @@ pub fn stauduhar_descent(f: &[Integer]) -> Result<GaloisGroupResult> {
     let n = f.len().saturating_sub(1);
     Err(MathError::NotImplemented(format!(
         "Stauduhar descent (degree {n}): blocked on (1) maximal-transitive-subgroup lattice + \
-         coset representatives + BSGS in the frozen rustmath-groups crate, (2) generic \
-         H-invariant construction, (3) certified root labelling on top of \
-         rustmath_complex::aberth_roots; see rustmath-galois/src/stauduhar.rs for the seam"
+         coset representatives (rustmath-groups now has BSGS — rustmath_groups::bsgs — but \
+         not the lattice/coset machinery), (2) generic H-invariant construction, (3) \
+         certified root labelling on top of rustmath_complex::aberth_roots; see \
+         rustmath-galois/src/stauduhar.rs for the seam"
     )))
 }
 

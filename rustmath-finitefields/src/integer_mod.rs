@@ -28,9 +28,11 @@ use std::ops::{Add, Mul, Neg, Sub};
 /// Z/0Z ≅ Z, and such an element is the *unreduced integer* awaiting the
 /// canonical map Z → Z/nZ. Arithmetic coerces it on contact: an operation
 /// between a modulus-0 element and a modulus-n element yields a modulus-n
-/// element. Equality remains strict (both value *and* modulus must match), so
-/// compare through arithmetic or reduce first. Use [`Zmod`](crate::Zmod) for a
-/// parent whose `zero()`/`one()` carry the modulus from the start.
+/// element. Equality coerces the same way: a modulus-0 operand is bound into
+/// the other operand's modulus before comparing, so
+/// `IntegerMod::zero() == IntegerMod::new(0, n)?`; two bound elements are
+/// equal iff value *and* modulus match (unchanged). Use [`Zmod`](crate::Zmod)
+/// for a parent whose `zero()`/`one()` carry the modulus from the start.
 #[derive(Clone, Debug)]
 pub struct IntegerMod {
     value: Integer,
@@ -309,11 +311,46 @@ impl fmt::Display for IntegerMod {
 }
 
 impl PartialEq for IntegerMod {
+    /// Coercing (binding) equality, matching the arithmetic's coercion rules
+    /// (see the type docs):
+    ///
+    /// * **bound vs bound**: equal iff same value *and* same modulus
+    ///   (unchanged); different moduli are simply unequal — never a panic.
+    /// * **unbound (modulus-0 sentinel) vs bound**: the unbound value is
+    ///   bound into the other operand's modulus first, so
+    ///   `unbound(v) == bound(w mod n)` iff `v ≡ w (mod n)`; in particular
+    ///   `IntegerMod::zero() == IntegerMod::new(0, n)?`. Symmetric.
+    /// * **unbound vs unbound**: equality in Z.
+    ///
+    /// Transitivity caveat (the `PartialEq` law): `unbound(0)` equals the
+    /// bound zero of *every* modulus while those bound zeros differ pairwise
+    /// (`unbound(0) == bound(0 mod 7)`, `unbound(0) == bound(0 mod 5)`, but
+    /// `bound(0 mod 7) != bound(0 mod 5)`). Transitivity can fail only in
+    /// that cross-modulus corner — a zone whose *arithmetic* already panics.
     fn eq(&self, other: &Self) -> bool {
-        self.value == other.value && self.modulus == other.modulus
+        match (self.modulus.is_zero(), other.modulus.is_zero()) {
+            // Both bound: strict, exactly as before.
+            (false, false) => self.modulus == other.modulus && self.value == other.value,
+            // Both unbound: compare in Z (= Z/0Z).
+            (true, true) => self.value == other.value,
+            // One unbound: bind it into the other's modulus, compare there.
+            (true, false) => {
+                IntegerMod::make(self.value.clone(), other.modulus.clone()).value == other.value
+            }
+            (false, true) => {
+                IntegerMod::make(other.value.clone(), self.modulus.clone()).value == self.value
+            }
+        }
     }
 }
 
+/// `Eq` marker with a documented caveat: equality is reflexive and symmetric,
+/// but transitivity can fail in exactly one corner — the modulus-0 sentinel
+/// equals the bound zero of every modulus while bound zeros of different
+/// moduli stay unequal (`unbound(0) == bound(0 mod 7)`,
+/// `unbound(0) == bound(0 mod 5)`, `bound(0 mod 7) != bound(0 mod 5)`).
+/// That corner's arithmetic already panics, and `IntegerMod` implements no
+/// `Hash`, so no map/set invariant can be broken by it.
 impl Eq for IntegerMod {}
 
 impl Add for IntegerMod {

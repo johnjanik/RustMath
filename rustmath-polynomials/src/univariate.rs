@@ -338,11 +338,28 @@ impl<R: Ring> UnivariatePolynomial<R> {
 
     /// Compute the discriminant of a polynomial
     ///
-    /// Currently supports degrees 2 and 3.
-    /// Returns None for unsupported degrees or zero polynomial.
+    /// Degrees 2 and 3 use the classical closed forms; degree >= 4 uses the
+    /// resultant formula
+    /// `disc(f) = (-1)^(n(n-1)/2) * Res(f, f') / lc(f)`,
+    /// where `Res` is computed by the fraction-free Bareiss engine of
+    /// [`Self::resultant`]. The division by the leading coefficient is exact
+    /// over any integral domain (the resultant of `f` and `f'` is `lc(f)`
+    /// times the discriminant, a polynomial identity in the coefficients);
+    /// if the coefficient ring's `div_rem` reports a nonzero remainder —
+    /// which is mathematically impossible over an integral domain and would
+    /// indicate a broken `EuclideanDomain` impl — `None` is returned rather
+    /// than a wrong value.
+    ///
+    /// Returns None for the zero polynomial.
+    ///
+    /// For `R = Integer` a multi-modular CRT engine also exists
+    /// ([`crate::disc::discriminant`] on coefficient slices); it is the
+    /// preferred entry point in hot integer-only paths. Delegating to it from
+    /// here per-type is not possible without specialization, so this generic
+    /// path uses Bareiss, which is exact and fast for moderate degrees.
     pub fn discriminant(&self) -> Option<R>
     where
-        R: rustmath_core::NumericConversion,
+        R: rustmath_core::NumericConversion + EuclideanDomain,
     {
         match self.degree()? {
             0 | 1 => Some(R::one()),
@@ -374,7 +391,22 @@ impl<R: Ring> UnivariatePolynomial<R> {
 
                 Some(term1 - term2 + term3 - term4 - term5)
             }
-            _ => None,
+            n => {
+                // disc(f) = (-1)^(n(n-1)/2) * Res(f, f') / lc(f)
+                let fp = self.derivative();
+                let res = self.resultant(&fp);
+                let lc = self.leading_coeff()?.clone();
+                let (q, r) = res.div_rem(&lc).ok()?;
+                if !r.is_zero() {
+                    // Impossible over an integral domain; refuse to guess.
+                    return None;
+                }
+                if (n * (n - 1) / 2) % 2 == 1 {
+                    Some(-q)
+                } else {
+                    Some(q)
+                }
+            }
         }
     }
 
@@ -492,70 +524,89 @@ impl<R: Ring> UnivariatePolynomial<R> {
     ///
     /// The resultant is the determinant of the Sylvester matrix.
     /// It is zero if and only if the polynomials have a common root (over an algebraically closed field).
+    /// Two nonzero constants have resultant 1 (the empty Sylvester determinant).
     ///
-    /// # Limitations
+    /// # Algorithm and coefficient-ring requirements
     ///
-    /// This naive implementation computes the determinant using expansion by minors,
-    /// which is O(n!) and only practical for small polynomials (degree < 10).
-    /// For larger polynomials, more efficient algorithms should be used.
+    /// The Sylvester determinant is computed by fraction-free Bareiss
+    /// elimination, which is O(n^3) ring operations with intermediate entries
+    /// bounded by minors of the input (no coefficient explosion). This
+    /// replaced a cofactor expansion that was O(n!) and unusable beyond
+    /// degree ~10.
+    ///
+    /// Bareiss requires `R` to be an **integral domain with exact division**:
+    /// every division it performs is by a previous pivot and is exact by the
+    /// Sylvester-identity invariant (each intermediate entry is itself a minor
+    /// of the original matrix). The `EuclideanDomain` bound (which extends
+    /// `IntegralDomain` in this workspace) supplies the `div_rem` used for
+    /// those exact divisions; exactness is asserted, so a non-domain `R`
+    /// smuggled in through a lawless impl panics rather than returning a
+    /// wrong value.
     pub fn resultant(&self, other: &Self) -> R
     where
-        R: rustmath_core::NumericConversion,
+        R: EuclideanDomain,
     {
         if self.is_zero() || other.is_zero() {
             return R::zero();
         }
 
         let matrix = self.sylvester_matrix(other);
-        Self::determinant_helper(&matrix)
+        Self::bareiss_determinant(matrix)
     }
 
-    /// Helper function to compute determinant recursively
-    fn determinant_helper(matrix: &[Vec<R>]) -> R
+    /// Determinant by fraction-free Bareiss elimination (see [`Self::resultant`]
+    /// for the exact-division argument). The empty matrix has determinant 1.
+    fn bareiss_determinant(mut m: Vec<Vec<R>>) -> R
     where
-        R: rustmath_core::NumericConversion,
+        R: EuclideanDomain,
     {
-        let n = matrix.len();
-
+        let n = m.len();
         if n == 0 {
-            return R::zero();
+            return R::one();
         }
 
-        if n == 1 {
-            return matrix[0][0].clone();
-        }
+        let mut sign_flips = 0usize;
+        // prev = pivot of the previous step; 1 initially. Never zero at use:
+        // it is m[k-1][k-1] after a successful (nonzero) pivot selection.
+        let mut prev = R::one();
 
-        if n == 2 {
-            return matrix[0][0].clone() * matrix[1][1].clone()
-                - matrix[0][1].clone() * matrix[1][0].clone();
-        }
-
-        // Expansion by first row
-        let mut det = R::zero();
-        let mut sign = R::one();
-
-        for j in 0..n {
-            if !matrix[0][j].is_zero() {
-                // Create minor by removing first row and j-th column
-                let mut minor = Vec::with_capacity(n - 1);
-                for i in 1..n {
-                    let mut row = Vec::with_capacity(n - 1);
-                    for k in 0..n {
-                        if k != j {
-                            row.push(matrix[i][k].clone());
-                        }
+        for k in 0..n - 1 {
+            // Pivot: find a row at or below k with a nonzero entry in column k.
+            if m[k][k].is_zero() {
+                match (k + 1..n).find(|&i| !m[i][k].is_zero()) {
+                    Some(swap) => {
+                        m.swap(k, swap);
+                        sign_flips += 1;
                     }
-                    minor.push(row);
+                    // Whole column zero => singular matrix => determinant 0.
+                    None => return R::zero(),
                 }
-
-                let cofactor = sign.clone() * matrix[0][j].clone() * Self::determinant_helper(&minor);
-                det = det + cofactor;
             }
 
-            sign = R::zero() - sign; // Flip sign
+            for i in k + 1..n {
+                for j in k + 1..n {
+                    let num = m[i][j].clone() * m[k][k].clone()
+                        - m[i][k].clone() * m[k][j].clone();
+                    let (q, r) = num
+                        .div_rem(&prev)
+                        .expect("Bareiss: division by a nonzero previous pivot");
+                    assert!(
+                        r.is_zero(),
+                        "Bareiss: pivot division was not exact; coefficient ring is not an integral domain"
+                    );
+                    m[i][j] = q;
+                }
+                m[i][k] = R::zero();
+            }
+            prev = m[k][k].clone();
         }
 
-        det
+        let det = m[n - 1][n - 1].clone();
+        if sign_flips % 2 == 1 {
+            -det
+        } else {
+            det
+        }
     }
 
     /// Compute both quotient and remainder of polynomial division
@@ -1148,6 +1199,227 @@ mod tests {
             Integer::from(3),
         ]);
         assert_eq!(p.discriminant(), Some(Integer::from(1)));
+
+        // Cubic (old closed-form path, must be unchanged): gp poldisc
+        // x^3 - 2 -> -108; x^3 - x -> 4.
+        let p = UnivariatePolynomial::new(vec![
+            Integer::from(-2),
+            Integer::from(0),
+            Integer::from(0),
+            Integer::from(1),
+        ]);
+        assert_eq!(p.discriminant(), Some(Integer::from(-108)));
+        let p = UnivariatePolynomial::new(vec![
+            Integer::from(0),
+            Integer::from(-1),
+            Integer::from(0),
+            Integer::from(1),
+        ]);
+        assert_eq!(p.discriminant(), Some(Integer::from(4)));
+    }
+
+    /// Parse a (possibly signed) decimal string into an `Integer`, so tests can
+    /// pin gp-derived expected values that exceed `i64`.
+    fn int(s: &str) -> Integer {
+        let (neg, digits) = match s.strip_prefix('-') {
+            Some(rest) => (true, rest),
+            None => (false, s),
+        };
+        let ten = Integer::from(10);
+        let mut acc = Integer::zero();
+        for ch in digits.chars() {
+            assert!(ch.is_ascii_digit());
+            acc = acc * ten.clone() + Integer::from((ch as u8 - b'0') as i64);
+        }
+        if neg {
+            -acc
+        } else {
+            acc
+        }
+    }
+
+    fn poly(coeffs: &[i64]) -> UnivariatePolynomial<Integer> {
+        UnivariatePolynomial::new(coeffs.iter().map(|&c| Integer::from(c)).collect())
+    }
+
+    #[test]
+    fn test_discriminant_deg4_to_8_matches_pari() {
+        // All expected values derived with PARI/GP poldisc.
+        // deg 4
+        assert_eq!(poly(&[1, 1, 0, 0, 1]).discriminant(), Some(int("229"))); // x^4+x+1
+        assert_eq!(
+            poly(&[5, -1, 0, 3, 2]).discriminant(), // 2x^4+3x^3-x+5 (non-monic)
+            Some(int("258385"))
+        );
+        assert_eq!(
+            poly(&[9, 0, -10, 0, 1]).discriminant(), // x^4-10x^2+9
+            Some(int("589824"))
+        );
+        // deg 5
+        assert_eq!(poly(&[-1, -1, 0, 0, 0, 1]).discriminant(), Some(int("2869"))); // x^5-x-1
+        assert_eq!(
+            poly(&[-4, 1, -7, 0, 2, 3]).discriminant(), // 3x^5+2x^4-7x^2+x-4
+            Some(int("298866725"))
+        );
+        // deg 6
+        assert_eq!(
+            poly(&[1, 0, 0, 1, 0, 0, 1]).discriminant(), // x^6+x^3+1
+            Some(int("-19683"))
+        );
+        assert_eq!(
+            poly(&[987654321, 0, 123456789, 0, 0, -3, 1]).discriminant(),
+            Some(int(
+                "-3580946598583719546632278617502018645264577739978967981613067"
+            ))
+        );
+        // deg 7
+        assert_eq!(
+            poly(&[3, -7, 0, 0, 0, 0, 0, 1]).discriminant(), // x^7-7x+3
+            Some(int("37822859361"))
+        );
+        // deg 8, big coefficients
+        assert_eq!(
+            poly(&[11111111111111, -98765432109876, 0, 0, 123456789012345, 0, 0, 0, 1])
+                .discriminant(),
+            Some(int(
+                "-282642315708058613219874509111064468379472805900988881933849002243064648402426721161068285050627655984412535164755330665535204869133425952458497292480904691712"
+            ))
+        );
+        assert_eq!(
+            poly(&[1, -2, 0, 3, 0, 0, -4, 0, 5]).discriminant(), // 5x^8-4x^6+3x^3-2x+1
+            Some(int("49510436665"))
+        );
+    }
+
+    #[test]
+    fn test_discriminant_zero_for_repeated_root() {
+        // (x-1)^2 (x+2) (x^2+3), degree 5 — repeated root => disc = 0 (gp poldisc).
+        let f = poly(&[-1, 1]);
+        let g = f.clone() * f * poly(&[2, 1]) * poly(&[3, 0, 1]);
+        assert_eq!(g.degree(), Some(5));
+        assert_eq!(g.discriminant(), Some(Integer::zero()));
+    }
+
+    #[test]
+    fn test_resultant_battery_matches_pari() {
+        // gp polresultant gates.
+        assert_eq!(
+            poly(&[-2, 0, 0, 1]).resultant(&poly(&[1, 1, 1])),
+            int("1")
+        ); // Res(x^3-2, x^2+x+1)
+        assert_eq!(
+            poly(&[-3, 1, 0, 0, 2]).resultant(&poly(&[7, -5, 3])),
+            int("11015")
+        ); // Res(2x^4+x-3, 3x^2-5x+7)
+        assert_eq!(
+            poly(&[-1, 0, 1, 0, 0, 1]).resultant(&poly(&[-1, -1, 0, 1])),
+            int("-5")
+        ); // Res(x^5+x^2-1, x^3-x-1)
+        // shared factor (x-3) => 0
+        let f = poly(&[-3, 1]) * poly(&[2, 0, 1]);
+        let g = poly(&[-3, 1]) * poly(&[1, 1]);
+        assert_eq!(f.resultant(&g), Integer::zero());
+        // two nonzero constants: empty Sylvester matrix, resultant 1
+        assert_eq!(poly(&[2]).resultant(&poly(&[3])), Integer::one());
+        // constant vs poly: Res(c, g) = c^deg(g)
+        assert_eq!(poly(&[2]).resultant(&poly(&[1, 0, 0, 1])), Integer::from(8));
+    }
+
+    #[test]
+    fn test_resultant_self_certifying_identities() {
+        // res(f,g) = (-1)^(deg f * deg g) res(g,f); res(f, g*h) = res(f,g) res(f,h).
+        let f = poly(&[3, -1, 4, 1]); // deg 3
+        let g = poly(&[-5, 9, 2]); // deg 2
+        let h = poly(&[6, -5, 3, 5, 1]); // deg 4
+        let sign = |a: &UnivariatePolynomial<Integer>, b: &UnivariatePolynomial<Integer>| {
+            if (a.degree().unwrap() * b.degree().unwrap()) % 2 == 1 {
+                -Integer::one()
+            } else {
+                Integer::one()
+            }
+        };
+        assert_eq!(f.resultant(&g), sign(&f, &g) * g.resultant(&f));
+        assert_eq!(f.resultant(&h), sign(&f, &h) * h.resultant(&f));
+        assert_eq!(g.resultant(&h), sign(&g, &h) * h.resultant(&g));
+        assert_eq!(
+            f.resultant(&(g.clone() * h.clone())),
+            f.resultant(&g) * f.resultant(&h)
+        );
+        assert_eq!(
+            h.resultant(&(f.clone() * g.clone())),
+            h.resultant(&f) * h.resultant(&g)
+        );
+    }
+
+    #[test]
+    fn test_resultant_consistent_with_discriminant() {
+        // disc(f) * lc(f) = (-1)^(n(n-1)/2) * res(f, f').
+        // h = 2x^4+3x^3-x+5: gp says res(h, h') = 516770, disc = 258385, lc = 2, n = 4.
+        let h = poly(&[5, -1, 0, 3, 2]);
+        let res = h.resultant(&h.derivative());
+        assert_eq!(res, int("516770"));
+        assert_eq!(
+            h.discriminant().unwrap() * Integer::from(2),
+            res // (-1)^(4*3/2) = +1
+        );
+    }
+
+    #[test]
+    fn test_resultant_deg15_x_deg12_20_digit_coeffs() {
+        // The old cofactor engine was O(n!) — a 27x27 Sylvester determinant was
+        // unreachable. Bareiss is O(n^3). Coefficients and expected value pinned
+        // from PARI/GP:
+        //   f = sum(i=0,15, (12345678901234567890 + i*1111111111111111111*(-1)^i) x^i)
+        //   g = sum(i=0,12, (98765432109876543210 - i*2222222222222222222*(-1)^i) x^i)
+        let base_f = int("12345678901234567890");
+        let step_f = int("1111111111111111111");
+        let f = UnivariatePolynomial::new(
+            (0..=15i64)
+                .map(|i| {
+                    let delta = Integer::from(i) * step_f.clone();
+                    if i % 2 == 0 {
+                        base_f.clone() + delta
+                    } else {
+                        base_f.clone() - delta
+                    }
+                })
+                .collect(),
+        );
+        let base_g = int("98765432109876543210");
+        let step_g = int("2222222222222222222");
+        let g = UnivariatePolynomial::new(
+            (0..=12i64)
+                .map(|i| {
+                    let delta = Integer::from(i) * step_g.clone();
+                    if i % 2 == 0 {
+                        base_g.clone() - delta
+                    } else {
+                        base_g.clone() + delta
+                    }
+                })
+                .collect(),
+        );
+        assert_eq!(f.degree(), Some(15));
+        assert_eq!(g.degree(), Some(12));
+
+        let start = std::time::Instant::now();
+        let res = f.resultant(&g);
+        let elapsed = start.elapsed();
+
+        let expected = int(
+            "349520787347914443056336940748715934940543594517360759162590508700077253233713533103725935023184792921984050679795684957300963039250162670301230187978113776850370014680374077115674687399683442342110830500385433756692941073454493326417631914715778670112408892491978757359559642240028526274375587289629580615175017571034642024643610299441311431311131843521814413533314648160044752685512744797908669014071336175556090111426512208380504891794684259795911653154697219538565317496181212123829753828266965056138844838445860835051268881285120",
+        );
+        assert_eq!(res, expected);
+        // deg 15 * deg 12 is even => res(g,f) has the same sign.
+        assert_eq!(g.resultant(&f), expected);
+        // The old engine would not finish in the lifetime of the universe;
+        // Bareiss must be fast. Keep the bound loose for slow debug builds but
+        // catastrophic-failure-proof.
+        assert!(
+            elapsed.as_secs() < 30,
+            "resultant took {elapsed:?}; the O(n!) engine is back?"
+        );
+        println!("deg15 x deg12 resultant took {elapsed:?}");
     }
 
     #[test]
