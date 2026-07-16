@@ -400,6 +400,109 @@ pub fn dump_scaled_ami_streamed(
     rho
 }
 
+/// Read an EXT limb dump back into an [`MpMatrix`] — the read side of
+/// [`dump_scaled_ami_streamed`] (the `dump_*_matrix_ext` harnesses write the
+/// identical format from `assemble_scaled_ami` output).
+///
+/// Derived on-disk format (all little-endian; total size = 5 + dim²·2·nlimbs·8):
+///   bytes 0..4   u32 dim      — the matrix is dim × dim
+///   byte  4      u8  nlimbs   — f64 limbs per real scalar (2 = dd, 3 = td)
+///   bytes 5..    dim² entries, ROW-MAJOR; each entry is the nlimbs Re limbs
+///                then the nlimbs Im limbs, one f64 (8 bytes, little-endian) each
+/// No ρ, precision, chart center, or assembly parameters are stored in the dump;
+/// they live with the caller (and in the writer's `.progress` sidecar).
+///
+/// Limb semantics (the writer's `split_into`): each full-precision Float x is
+/// split by recursive round-to-nearest, limb_i = RN_f64(x − Σ_{j<i} limb_j), the
+/// remainder computed exactly at the source precision. The limbs are therefore
+/// non-overlapping and the dump encodes exactly the value Σ_i limb_i (whatever
+/// remained below limb_{nlimbs−1} was discarded at write time; the split is
+/// lossless iff source precision ≤ 53·nlimbs and no remainder is f64-subnormal).
+///
+/// The reader reconstructs Σ_i limb_i EXACTLY: the returned precision is
+/// max(53·nlimbs, widest msb→lsb limb bit-span of any scalar + 2) — limbs may
+/// leave gaps (e.g. 1 + 2⁻¹⁰⁰ in dd), so the span scan is what guarantees every
+/// partial sum is representable. Re-splitting a returned entry with the writer's
+/// algorithm reproduces its file bytes, so read→write round-trips bit-identically.
+/// Two streaming passes (span scan, then build): transient memory is O(nlimbs).
+pub fn read_ext_matrix(path: &str) -> std::io::Result<MpMatrix> {
+    use std::io::{BufReader, Error, ErrorKind, Read, Seek, SeekFrom};
+
+    let bad = |msg: String| Error::new(ErrorKind::InvalidData, msg);
+    let mut f = BufReader::new(std::fs::File::open(path)?);
+    let mut hdr = [0u8; 5];
+    f.read_exact(&mut hdr)?;
+    let dim = u32::from_le_bytes([hdr[0], hdr[1], hdr[2], hdr[3]]) as usize;
+    let nlimbs = hdr[4] as usize;
+    if dim == 0 || nlimbs == 0 {
+        return Err(bad(format!("EXT dump {path}: header dim={dim}, nlimbs={nlimbs} — both must be nonzero")));
+    }
+    let expected = 5 + (dim as u128) * (dim as u128) * 2 * (nlimbs as u128) * 8;
+    let actual = f.get_ref().metadata()?.len() as u128;
+    if actual != expected {
+        return Err(bad(format!(
+            "EXT dump {path}: {actual} bytes, expected {expected} for dim={dim}, nlimbs={nlimbs}"
+        )));
+    }
+
+    // msb/lsb binary exponents of a finite nonzero f64 (leading set bit at 2^msb,
+    // trailing set bit at 2^lsb).
+    let exp_range = |x: f64| -> (i64, i64) {
+        let bits = x.to_bits();
+        let biased = ((bits >> 52) & 0x7ff) as i64;
+        let frac = bits & ((1u64 << 52) - 1);
+        if biased == 0 {
+            // subnormal: value = frac · 2^-1074 (frac ≠ 0 since x ≠ 0)
+            (63 - frac.leading_zeros() as i64 - 1074, frac.trailing_zeros() as i64 - 1074)
+        } else {
+            let mant = frac | (1u64 << 52);
+            (biased - 1023, biased - 1075 + mant.trailing_zeros() as i64)
+        }
+    };
+
+    // pass 1: the widest per-scalar limb bit-span fixes the uniform precision at
+    // which every limb sum (in any order) is exact.
+    let mut buf = vec![0u8; nlimbs * 8];
+    let mut max_span: i64 = 0;
+    for s in 0..dim * dim * 2 {
+        f.read_exact(&mut buf)?;
+        let (mut msb, mut lsb) = (i64::MIN, i64::MAX);
+        for l in 0..nlimbs {
+            let x = f64::from_le_bytes(buf[l * 8..l * 8 + 8].try_into().unwrap());
+            if !x.is_finite() {
+                return Err(bad(format!("EXT dump {path}: non-finite limb {x} in scalar {s}")));
+            }
+            if x != 0.0 {
+                let (m, low) = exp_range(x);
+                msb = msb.max(m);
+                lsb = lsb.min(low);
+            }
+        }
+        if msb > i64::MIN {
+            max_span = max_span.max(msb - lsb + 1);
+        }
+    }
+    let prec = (53 * nlimbs as i64).max(max_span + 2) as u32;
+
+    // pass 2: materialize; each += is exact at this precision.
+    f.seek(SeekFrom::Start(5))?;
+    let read_scalar = |f: &mut BufReader<std::fs::File>, buf: &mut [u8]| -> std::io::Result<Float> {
+        f.read_exact(buf)?;
+        let mut v = Float::with_val(prec, 0);
+        for l in 0..nlimbs {
+            v += f64::from_le_bytes(buf[l * 8..l * 8 + 8].try_into().unwrap());
+        }
+        Ok(v)
+    };
+    let mut data = Vec::with_capacity(dim * dim);
+    for _ in 0..dim * dim {
+        let re = read_scalar(&mut f, &mut buf)?;
+        let im = read_scalar(&mut f, &mut buf)?;
+        data.push(MpC::new(re, im));
+    }
+    MpMatrix::from_row_major(dim, dim, prec, data).map_err(|e| bad(format!("EXT dump {path}: {e:?}")))
+}
+
 /// Explicit parameters for one atlas chart assembly (probe or full dump).
 ///
 /// This is the env-var surface the `dump_2_12_5_matrix_ext_streamed` harness has
@@ -605,14 +708,31 @@ pub fn recover_forms_centered(
         }
     }
     let mat = MpMatrix::from_row_major(dim, dim, prec, data).expect("square matrix");
+    recover_forms_from_matrix(&mat, &rho, threshold_decimal, tol_decimal)
+}
+
+/// The SVD-and-extract tail of [`recover_forms_centered`], shared by the in-memory
+/// path and the from-disk path ([`read_ext_matrix`]): hp Jacobi SVD of the
+/// preconditioned M = ρ^{n−r}(A−I), right-kernel basis at `threshold_decimal`,
+/// then un-scale b_n = ρ^{-n} y_n. All precision comes from `m.prec`; `rho` must
+/// be the ρ returned by the assembly that produced `m` (the EXT dump does NOT
+/// store it — recompute via [`domain_radius_hp_centered`] with the dump's params).
+pub fn recover_forms_from_matrix(
+    m: &MpMatrix,
+    rho: &Float,
+    threshold_decimal: &str,
+    tol_decimal: &str,
+) -> Vec<Vec<Complex>> {
+    let prec = m.prec;
+    let dim = m.cols;
     let opt = JacobiSvdOptions::new(prec, 80, tol_decimal, "1e-40");
-    let svd = jacobi_svd(&mat, &opt).expect("svd");
+    let svd = jacobi_svd(m, &opt).expect("svd");
     let threshold = Float::with_val(prec, Float::parse(threshold_decimal).expect("threshold"));
     let ker = svd.right_nullspace_basis(&threshold);
 
     let mut rho_pow = vec![Float::with_val(prec, 1.0); dim];
     for n in 1..dim {
-        rho_pow[n] = Float::with_val(prec, &rho_pow[n - 1] * &rho);
+        rho_pow[n] = Float::with_val(prec, &rho_pow[n - 1] * rho);
     }
     let mut forms = Vec::with_capacity(ker.cols);
     for f in 0..ker.cols {
@@ -686,6 +806,227 @@ mod tests {
         let mut cg = CosetGraph::build(&tg64, &s0, &s1);
         cg.compactify(&tg64);
         (tg64, tg, cg)
+    }
+
+    // Absolute path under the target dir (target/debug/deps), unique per process.
+    fn tmp_path(name: &str) -> String {
+        let mut p = std::env::current_exe().expect("current_exe");
+        p.pop(); // strip the test binary name → .../target/debug/deps
+        p.push(format!("{name}.{}.bin", std::process::id()));
+        p.to_str().expect("utf8 path").to_string()
+    }
+
+    // The writer's limb split (verbatim from dump_scaled_ami_streamed's split_into),
+    // for byte-level round-trip checks.
+    fn split_scalar(x: &Float, nlimbs: usize, prec: u32, buf: &mut Vec<u8>) {
+        let mut rem = Float::with_val(prec, x);
+        for _ in 0..nlimbs {
+            let hi = rem.to_f64();
+            buf.extend_from_slice(&hi.to_le_bytes());
+            rem = Float::with_val(prec, &rem - hi);
+        }
+    }
+
+    // EXT round trip on the (5,3,3) config. prec = 106 = 2·53 makes the dd limb split
+    // LOSSLESS (limb0 = RN53(x) leaves a remainder spanning ≤ 53 bits, exactly
+    // representable in limb1, remainder 0), so read_ext_matrix must invert the dump
+    // exactly, with no tolerance anywhere in (a) or (b).
+    #[test]
+    fn ext_dump_round_trip_5_3_3() {
+        let prec: u32 = 106;
+        let nlimbs = 2usize;
+        let (k, n, q) = (6i64, 16usize, 40usize);
+        let tg64 = TriangleGroup::new(5, 3, 3);
+        let tg = TriangleGroupHp::new(5, 3, 3, prec);
+        let s0 = vec![4, 0, 1, 2, 3];
+        let s1 = vec![1, 2, 0, 3, 4];
+        let mut cg = CosetGraph::build(&tg64, &s0, &s1);
+        cg.compactify(&tg64);
+        let dim = n + 1;
+
+        // (a) the streamed writer's own dump: read back and re-split every entry —
+        // the bytes must reproduce the file exactly (bit-identical limbs).
+        let out = tmp_path("ext_rt_streamed_5_3_3");
+        let _ = std::fs::remove_file(&out);
+        let _ = std::fs::remove_file(format!("{out}.progress"));
+        let rho_stream = dump_scaled_ami_streamed(&tg64, &tg, &cg, k, n, q, 1.0, &tg.z_a, nlimbs, &out);
+        let m_stream = read_ext_matrix(&out).expect("read streamed dump");
+        assert_eq!((m_stream.rows, m_stream.cols), (dim, dim));
+        assert!(m_stream.prec >= 106, "reader precision must carry all limb bits");
+        let disk = std::fs::read(&out).expect("raw dump bytes");
+        let mut rebuilt: Vec<u8> = Vec::with_capacity(disk.len());
+        rebuilt.extend_from_slice(&(dim as u32).to_le_bytes());
+        rebuilt.push(nlimbs as u8);
+        for e in &m_stream.data {
+            split_scalar(&e.re, nlimbs, m_stream.prec, &mut rebuilt);
+            split_scalar(&e.im, nlimbs, m_stream.prec, &mut rebuilt);
+        }
+        assert!(disk == rebuilt, "re-serialized limbs differ from the streamed dump");
+        std::fs::remove_file(&out).expect("cleanup dump");
+        std::fs::remove_file(format!("{out}.progress")).expect("cleanup progress");
+
+        // (b) assemble_scaled_ami's matrix through the same serialization (the format
+        // the dump_*_matrix_ext harnesses write inline): every reconstructed entry must
+        // equal the assembled entry EXACTLY (rug Floats compare exactly).
+        let (a, rho) = assemble_scaled_ami(&tg64, &tg, &cg, k, n, q, 1.0, &tg.z_a);
+        // both paths compute ρ by the same sequential code — bit-identical
+        assert_eq!(rho, rho_stream, "ρ differs between streamed and in-memory assembly");
+        let out2 = tmp_path("ext_rt_assembled_5_3_3");
+        let mut buf: Vec<u8> = Vec::with_capacity(5 + dim * dim * 2 * nlimbs * 8);
+        buf.extend_from_slice(&(dim as u32).to_le_bytes());
+        buf.push(nlimbs as u8);
+        for row in &a {
+            for z in row {
+                split_scalar(z.real(), nlimbs, prec, &mut buf);
+                split_scalar(z.imag(), nlimbs, prec, &mut buf);
+            }
+        }
+        std::fs::write(&out2, &buf).expect("write assembled dump");
+        let m2 = read_ext_matrix(&out2).expect("read assembled dump");
+        std::fs::remove_file(&out2).expect("cleanup assembled dump");
+        assert_eq!((m2.rows, m2.cols), (dim, dim));
+        for (i, row) in a.iter().enumerate() {
+            for (j, z) in row.iter().enumerate() {
+                let e = m2.get(i, j);
+                assert!(
+                    e.re == *z.real() && e.im == *z.imag(),
+                    "entry ({i},{j}) not bit-identical after round trip: ({:?}, {:?}) vs {z:?}",
+                    e.re, e.im
+                );
+            }
+        }
+
+        // (c) the streamed assembly is a different summation order than
+        // assemble_scaled_ami (root-of-unity table + running products vs direct powers,
+        // rayon reassociation), so the two matrices agree only to working precision
+        // (2^-106 ≈ 2.5e-32, amplified by the O(Q·dim) accumulations).
+        let mut worst = 0f64;
+        for (i, row) in a.iter().enumerate() {
+            for (j, z) in row.iter().enumerate() {
+                let e = m_stream.get(i, j);
+                let d = Complex::with_val(
+                    prec,
+                    (Float::with_val(prec, &e.re - z.real()), Float::with_val(prec, &e.im - z.imag())),
+                );
+                worst = worst.max(cmod_f64(&d) / (1.0 + cmod_f64(z)));
+            }
+        }
+        // measured 1.3e-31 (2^-106 ≈ 2.5e-32); 1e-27 is 4 decades of margin
+        eprintln!("[ext_rt] streamed vs in-memory assembly: worst normalized diff {worst:.2e}");
+        assert!(worst < 1e-27, "streamed and in-memory assemblies diverged: {worst:.2e}");
+    }
+
+    // The dump→read matrix must be SVD-equivalent to the in-memory assembly, and
+    // recover_forms_from_matrix (the shared tail) on it must reproduce
+    // recover_forms_centered. The streamed and in-memory assemblies differ at
+    // ~2^-PREC (different summation order), so spectra/kernels/forms match to
+    // working tolerance, not bitwise. PREC = 256 with a lossless 5·53 = 265 ≥ 256-bit
+    // limb split, so the dump itself adds NO error — every diff below is assembly
+    // noise. Two of the three kernel σ are near-degenerate, so individual kernel
+    // vectors are ill-conditioned (rotation ≈ noise/cluster-gap; the mp_svd header's
+    // "use the subspace" caveat): the canonical invariant is the SUBSPACE, checked
+    // tightly; the per-vector form check is asserted at measured + 3.5 decades.
+    #[test]
+    fn ext_dump_svd_and_forms_match_in_memory_5_3_3() {
+        let prec: u32 = PREC;
+        let nlimbs = 5usize;
+        let (k, n, q) = (6i64, 48usize, 96usize);
+        let tg64 = TriangleGroup::new(5, 3, 3);
+        let tg = TriangleGroupHp::new(5, 3, 3, prec);
+        let s0 = vec![4, 0, 1, 2, 3];
+        let s1 = vec![1, 2, 0, 3, 4];
+        let mut cg = CosetGraph::build(&tg64, &s0, &s1);
+        cg.compactify(&tg64);
+        let dim = n + 1;
+
+        let out = tmp_path("ext_svd_5_3_3");
+        let _ = std::fs::remove_file(&out);
+        let _ = std::fs::remove_file(format!("{out}.progress"));
+        let rho = dump_scaled_ami_streamed(&tg64, &tg, &cg, k, n, q, 1.0, &tg.z_a, nlimbs, &out);
+        let m_disk = read_ext_matrix(&out).expect("read dump");
+        std::fs::remove_file(&out).expect("cleanup dump");
+        std::fs::remove_file(format!("{out}.progress")).expect("cleanup progress");
+
+        let (a, rho_mem) = assemble_scaled_ami(&tg64, &tg, &cg, k, n, q, 1.0, &tg.z_a);
+        assert_eq!(rho, rho_mem);
+        let mut data = Vec::with_capacity(dim * dim);
+        for row in &a {
+            for z in row {
+                data.push(MpC::new(Float::with_val(prec, z.real()), Float::with_val(prec, z.imag())));
+            }
+        }
+        let m_mem = MpMatrix::from_row_major(dim, dim, prec, data).expect("square matrix");
+
+        // (2) SVD equivalence: same nullity (dim S_6 = 3, the KMSV value established by
+        // dim_s_k_svd_5_3_3), matching σ spectrum, matching kernel SUBSPACE.
+        // ρ^48 ≈ 5e-14 ≫ the ~1e-75 matrix noise, so threshold 1e-8 splits cleanly.
+        let opt = JacobiSvdOptions::new(prec, 80, "1e-70", "1e-40");
+        let svd_d = jacobi_svd(&m_disk, &opt).expect("svd of dump");
+        let svd_m = jacobi_svd(&m_mem, &opt).expect("svd in memory");
+        let thr = Float::with_val(prec, Float::parse("1e-8").expect("thr"));
+        assert_eq!(svd_d.numerical_nullity_indices(&thr).len(), 3, "dim S_6 from the dump");
+        assert_eq!(svd_m.numerical_nullity_indices(&thr).len(), 3, "dim S_6 in memory");
+        let mut worst_sigma = 0f64;
+        for (sd, sm) in svd_d.sigma.iter().zip(svd_m.sigma.iter()) {
+            let dv = Float::with_val(prec, sd - sm).abs().to_f64().abs();
+            let scale = sd.to_f64().max(sm.to_f64());
+            worst_sigma = worst_sigma.max(dv / scale);
+        }
+        // measured 5.9e-65 (Weyl: |Δσ| ≤ ‖ΔM‖ ~1e-75, relative to the smallest σ ~1e-11)
+        eprintln!("[ext_svd] worst relative σ diff {worst_sigma:.2e}");
+        assert!(worst_sigma < 1e-55, "singular spectra diverged: {worst_sigma:.2e}");
+        // kernel subspace: each dump-kernel vector equals its projection onto the
+        // in-memory kernel (V columns are orthonormal, so P = K K*).
+        let kd = svd_d.right_nullspace_basis(&thr);
+        let km = svd_m.right_nullspace_basis(&thr);
+        assert_eq!((kd.cols, km.cols), (3, 3));
+        let mut worst_proj = 0f64;
+        for j in 0..kd.cols {
+            let mut c = Vec::with_capacity(km.cols);
+            for t in 0..km.cols {
+                let mut acc = MpC::zero(prec);
+                for i in 0..dim {
+                    acc = acc.add(&km.get(i, t).conj_mul(kd.get(i, j)));
+                }
+                c.push(acc);
+            }
+            let mut resid2 = Float::with_val(prec, 0);
+            for i in 0..dim {
+                let mut p = MpC::zero(prec);
+                for (t, ct) in c.iter().enumerate() {
+                    p = p.add(&km.get(i, t).mul(ct));
+                }
+                resid2 += kd.get(i, j).sub(&p).abs2();
+            }
+            worst_proj = worst_proj.max(resid2.to_f64().sqrt());
+        }
+        // measured 1.1e-75 — the subspace is stable at full working precision even
+        // though individual vectors inside the near-degenerate cluster are not
+        eprintln!("[ext_svd] worst kernel projection residual {worst_proj:.2e}");
+        assert!(worst_proj < 1e-60, "kernels span different subspaces: {worst_proj:.2e}");
+
+        // (3) the shared tail on the round-tripped matrix reproduces
+        // recover_forms_centered (which re-assembles in memory and delegates to the
+        // same tail) — per-coefficient, normalized as in the existing test above.
+        let f_disk = recover_forms_from_matrix(&m_disk, &rho, "1e-8", "1e-70");
+        let f_mem = recover_forms_centered(&tg64, &tg, &cg, k, n, q, "1e-8", "1e-70", 1.0, &tg.z_a);
+        assert_eq!(f_disk.len(), 3, "dim S_6 forms from the dump");
+        assert_eq!(f_disk.len(), f_mem.len());
+        let mut worst_form = 0f64;
+        for (fa, fb) in f_disk.iter().zip(f_mem.iter()) {
+            assert_eq!(fa.len(), fb.len());
+            for (x, y) in fa.iter().zip(fb.iter()) {
+                let d = Complex::with_val(prec, x - y);
+                worst_form = worst_form.max(cmod_f64(&d) / (1.0 + cmod_f64(x)));
+            }
+        }
+        // measured 2.8e-10: the ~1e-76 assembly noise amplified by 1/cluster-gap
+        // inside the near-degenerate kernel pair, then by ρ^{-n} in the un-scaling —
+        // an ill-conditioned per-vector comparison (the subspace check above is the
+        // canonical one). 1e-6 is 3.5 decades of margin for run-to-run rayon
+        // reassociation, and far below the O(1) diff a wrong vector would produce.
+        eprintln!("[ext_svd] worst normalized form-coefficient diff {worst_form:.2e}");
+        assert!(worst_form < 1e-6, "forms from dump diverged from in-memory forms: {worst_form:.2e}");
     }
 
     // Dump the [2,12,5] preconditioned M = ρ^{n−r}(A−I) to a raw-f64 file for an external

@@ -59,6 +59,7 @@ pub mod riemann_roch;
 pub mod differentials;
 pub mod special_divisors;
 pub mod belyi;
+pub mod igp_closure;
 
 // --- Genus >= 2 hyperelliptic/Jacobian stack (temporarily gated) ---------------
 // These four modules do not currently compile (25 lib errors) and `belyi` does
