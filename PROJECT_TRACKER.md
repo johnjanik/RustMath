@@ -2915,19 +2915,19 @@ Two build states beyond the normal legend: **exists-unwired** (code present, nee
 | Item | Symbol | Home crate | Prio | State→ | Status |
 |---|---|---|:--:|---|:--:|
 | A1 | `recognize_complex_algebraic_hp` | numberfields | P0 | build (missing) | 🟢 `db0b0e9` |
-| A2 | `snap_hp_solution` + `Gauge2_12_5` | curves/belyi | P0 | build (missing; `Gauge2_12_5` confirmed absent) | 🏗️ |
-| A3 | `run_and_persist_belyi` | curves/belyi | P0 | build (missing) | 🏗️ |
-| A4 | `recover_forms_centered` (thread `z_b` chart) | curves/belyi | P1 | build (partial: hard-codes `z_a`) | 🏗️ |
-| A6 | `solve_belyi_map` + residual + gauge | curves/belyi | P1 | build (partial: `sigma` discarded) | 🏗️ |
-| A7 | `SolveParams::new` (N↔prec binding) | curves/belyi | P1 | build (missing; `SolveParams` confirmed absent) | 🏗️ |
-| A8 | `read_ext_matrix` + `recover_forms_from_matrix` | curves/belyi | P2 | build (missing; only needed if N~24000 OOMs) | 📋 |
+| A2 | `snap_hp_solution` + `Gauge2_12_5` | curves/belyi | P0 | build (missing; `Gauge2_12_5` confirmed absent) | 🟢 `37ffcaa` |
+| A3 | `run_and_persist_belyi` | curves/belyi | P0 | build (missing) | 🟢 `37ffcaa` |
+| A4 | `recover_forms_centered` (thread `z_b` chart) | curves/belyi | P1 | build (partial: hard-codes `z_a`) | 🟢 `37ffcaa` |
+| A6 | `solve_belyi_map` + residual + gauge | curves/belyi | P1 | build (partial: `sigma` discarded) | 🟢 `37ffcaa` |
+| A7 | `SolveParams::new` (N↔prec binding) | curves/belyi | P1 | build (missing; `SolveParams` confirmed absent) | 🟢 `37ffcaa` |
+| A8 | `read_ext_matrix` + `recover_forms_from_matrix` | curves/belyi | P2 | build (missing; only needed if N~24000 OOMs) | 🏗️ |
 
 ### Route B — the regular Q(u) statement (proof-grade endpoint)
 
 | Item | Symbol | Home crate | Prio | State→ | Status |
 |---|---|---|:--:|---|:--:|
-| B1 | `deleted_sheet_resolvent` (Q(u)[X], deg 23) | curves/belyi | P1 | build (missing; needs a Q(u)[X] type) | 🏗️ |
-| B2 | `certify_regular_gal_m23_over_qu` | curves/belyi | P2 | delegate proof to Sage/OSCAR; bookkeeping in-crate | 📋 |
+| B1 | `deleted_sheet_resolvent` (Q(u)[X], deg 23) | curves/belyi | P1 | build — *simplified: R is bivariate over Q, no Q(u) type needed* | 🟢 `37ffcaa` |
+| B2 | `certify_regular_gal_m23_over_qu` | curves/belyi | P2 | delegate proof to Sage/OSCAR; bookkeeping in-crate | 🏗️ |
 
 ### Route B — p-adic surface-lift stack + closure
 
@@ -2936,10 +2936,10 @@ Two build states beyond the normal legend: **exists-unwired** (code present, nee
 | C1 | `newton_lift_bivariate` (Z_p[[u,v]]) | rings *(not polynomials — arch. constraint)* | P1 | build (partial: pieces exist, no driver) | 🟢 `d143e42` |
 | C2 | `hermite_pade` | polynomials | P1 | build (missing) | 🟢 `9a409cd` |
 | C3 | `crt_rational_reconstruct` | integers *(self-contained — no cycle)* | P1 | build (exists-unwired, thin) | 🟢 `7e0e4c6` |
-| C4 | F_p / Q_p univariate factorization | curves (wiring) | P2 | wire (exists-unwired) | 📋 |
-| C5 | Newton polygon / Montes-Ore over Q_2 | curves (wiring) | P2 | wire (exists-unwired) | 📋 |
-| C6 | Framed-ideal rank-75 gate over F_p | curves (wiring) | P1 | wire (exists-unwired) | 📋 |
-| C7 | Conic isotropy via Hilbert symbols | curves (re-point) | P2 | wire (exists-unwired) | 📋 |
+| C4 | F_p / Q_p univariate factorization | curves (wiring) | P2 | wire (exists-unwired) | 🏗️ |
+| C5 | Newton polygon / Montes-Ore over Q_2 | curves (wiring) | P2 | wire (exists-unwired) | 🏗️ |
+| C6 | Framed-ideal rank-75 gate over F_p | curves (wiring) | P1 | wire (exists-unwired) | 🏗️ |
+| C7 | Conic isotropy via Hilbert symbols | curves (re-point) | P2 | wire (exists-unwired) | 🏗️ |
 
 ### Recognition helpers (used across routes)
 
@@ -3031,6 +3031,7 @@ the failure mode here is *plausible wrongness*, which ordinary review does not c
 
 | Date | Author | Change |
 |---|---|---|
+| 2026-07-12 | @claude | **Wave 2 landed (`37ffcaa`), both verifiers CONFIRMED**: the whole Route-A critical path (A7,A4,A6,A3,A2,B1) is now built — 246/0/6 in curves. The minimal path to a candidate witness needs only the campaign session to RUN `[2,12,5]` and feed the floats through `snap_hp_solution` → `decide_nonprovisional`. Verifier-found `normalize_pq` scale-invariance defect fixed (joint-max relative bar). Wave 3 (A8,B2,C4–C7) launched. |
 | 2026-07-12 | @claude | **Wave 1 landed, all 6 CONFIRMED**: A1 `db0b0e9`, D1 `4626526`, D2 `1ba5a98`, C3 `7e0e4c6`, C2 `9a409cd`, C1 `d143e42`. Notable: D1 needed a new exact-integer LLL (the f64-GSO one returns garbage at W=2^300); D2's doc mischaracterized `from_f64` and was corrected. Wave 2 (curves spine A7/A4/A6/A3 + A2 + B1) launched. |
 | 2026-07-12 | @claude | Started IGP24 campaign build (`RUSTMATH_BUILD_HANDOFF.md`). Wave 1 (6 primitives: A1,C1,C2,C3,D1,D2) launched in parallel. Recon corrected two phantom symbols (`Gauge2_12_5`, `SolveParams`) and one impossible home crate (C1). |
 | 2026-07-12 | @claude | Created tracker. Full ground-truth inventory of 1,282 algorithms across 65 crates, read from source. |
