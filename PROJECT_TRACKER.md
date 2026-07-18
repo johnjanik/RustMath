@@ -2952,6 +2952,30 @@ Two build states beyond the normal legend: **exists-unwired** (code present, nee
 then A1 → A2 (snap floats to `CertifiedRational`), which drops into the already-built DECIDE half. B1+B2 upgrade
 that candidate from statistical-single-fibre to a **proven regular M23/Q(u)** certificate.
 
+### Handoff 2 — the SVD wall (`RUSTMATH_BUILD_HANDOFF_2.md`, 2026-07-18)
+
+Grounded in *measured* production attempts: the hp Jacobi at dim-3001/400-bit extrapolates to ≥16 days
+single-core / ~84 GB (the hot loop had **zero rayon** — verified); exact φ at len-1501 was killed after
+13h47m still in the preamble while the campaign's certified hp φ takes 31.5 s. The reframing: the
+pipeline needs the **kernel + a gap certificate**, not the full SVD.
+
+| Item | What | Prio | Status |
+|---|---|:--:|:--:|
+| E1a | Mixed-precision kernel refinement: coarse (f64 / double-double EFT / optional cupy-GPU, checked-never-trusted) → hp inverse iteration → **a-posteriori ‖Mv‖ certificate** + gap certificate; streamed EXT matvec | P0 | 🟢 `769d183` |
+| E1b | Tournament-parallel one-sided Jacobi (bitwise-deterministic at 1/2/8 threads, independently verified) | P0 | 🟢 `769d183` |
+| E2 | Per-sweep instrumentation + checkpoint/restart (resume bitwise-identical; corrupted checkpoint → honest Err) | P1 | 🟢 `769d183` |
+| E3 | hp φ upstreamed (diff-verified port of the campaign's certified `phi_hp.rs`); G1-mirror gate at two lengths; len-1501 ≈ 30 s vs the exact path's 13h47m kill | P1 | 🟢 `769d183` |
+| E4 | m/e valuation pre-probe in the production entry (minutes, not hours; necessary-not-sufficient, documented) | P2 | 🟢 `769d183` |
+
+**Post-audit fix worth remembering:** the numerics verifier caught that the gap-certificate shift search
+could return a *vacuous* (sound but empty) certificate exactly in the production regime. Fixed with a
+seed-independent double-double locator ladder (~30 decades) + at most two hp Cholesky attempts + a caller
+seed override — the audited failure shape now certifies 25.8 decades of separation.
+
+**What remains is the CAMPAIGN's to measure** (labeled extrapolations, not measurements): dim-3001/400-bit
+`refine_kernel_streamed` on the real `[2,12,5]` EXT dump (extrapolated: minutes vs the measured ≥16-day
+full Jacobi); the gap-certificate wall time at production scale (~10–25 min, peak ~3.2 GB).
+
 **Status key:** 📋 backlog · 🏗️ in progress · 👁️ in review · 🟢 done+verified · 🛑 blocked.
 
 > [!success] All 17 handoff items landed (2026-07-12): Wave 1 `db0b0e9…d143e42`, Wave 2 `37ffcaa`, Wave 3 `c09b80d`.
@@ -3038,6 +3062,7 @@ the failure mode here is *plausible wrongness*, which ordinary review does not c
 
 | Date | Author | Change |
 |---|---|---|
+| 2026-07-18 | @claude | **Handoff 2 landed (`769d183`), both verifiers CONFIRMED — the SVD wall is down**: certified mixed-precision kernel refinement (E1a: GPU/dd/f64 coarse checked-never-trusted, a-posteriori hp residual + Cholesky/Weyl gap certificates, streamed EXT matvec, dim-1500 refine in 4.6 s vs the ≥16-day full-Jacobi wall), tournament-parallel bitwise-deterministic Jacobi + checkpoint/restart (E1b+E2), the campaign's certified hp φ upstreamed (E3, len-1501 ≈30 s vs 13h47m), m/e pre-probe (E4). Post-audit: vacuous-gap-certificate fix (dd locator ladder), σ_k-upper rounding count, cupy header validated before allocation. curves 297/0/9. |
 | 2026-07-16 | @claude | **Chunk 12b landed (`edb9100`) — the resumed queue (11, 12, 13) is COMPLETE**: generic `LinearCode<F: Field>` with the two-way MacWilliams gate over extension fields; real Reed–Solomon (primitive-element evaluation, BM+Chien+Forney, syndrome re-check) replacing the "PGZ" doc lie AND a false `d = n−k+1` claim; the BCH generator table was partly wrong (the (4,1) entry doesn't divide x¹⁵−1) and is now derived from minimal polynomials with an in-Rust BCH-bound certificate. Post-audit: bounded-distance-decoding docs corrected (a perfect code cannot detect >t errors), MacWilliams wrong-q footgun closed. coding 67/0/0. |
 | 2026-07-16 | @claude | **Chunk 11 landed (`8a9a5ed`)**: rational-function Risch as a decision procedure (Hermite + Rothstein–Trager, exact differentiate-back through the new normalizer; RootSum terms carried exactly, never dropped). Audit cycle: math CONFIRMED, code REFUTED a termination cliff (1/(x¹⁵+x+1) hung 150s vs 40ms now) — fixed via RischBudget with the refusal *labeled* `BudgetExceeded`, never mislabeled `NotRational`. `root_sum` now differentiates through the summand instead of silently to 0. symbolic 650/0/3. |
 | 2026-07-16 | @claude | **Chunk 13 landed (`5ff8749`)**: the four frozen-crate bugs fixed (fp_factor p-th-root extraction; discriminant deg≥4; Bareiss resultant — deg-15×12 in 36ms vs ~10²⁸ ops; zero()/one() sentinel with **coercing Eq** after the audit refuted strict Eq for turning `berlekamp_massey_verify` into a silent liar). Native Schreier–Sims (\|M23\|/\|M24\| gates). Degree-5 Galois complete via Cayley sextic resolvent, 36/36 vs polgalois. Bonus finding: `weierstrass::is_smooth()` was silently wrong pre-fix. B-01 CLOSED. Blockers table: B-01 → resolved. |
