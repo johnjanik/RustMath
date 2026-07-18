@@ -8,7 +8,7 @@
 
 use super::modular_forms_hp::{atlas_setup, domain_radius_hp_centered, recover_forms_centered, AtlasDumpParams};
 use super::mp_svd::{jacobi_svd, JacobiSvdOptions, MpC, MpMatrix};
-use super::solve::SolveParams;
+use super::solve::{ParamError, SolveParams};
 use super::triangle_group_hp::TriangleGroupHp;
 use rug::{Complex, Float};
 
@@ -231,6 +231,42 @@ pub fn phi_w(a: i64, b: i64, c: i64, kappa: &Float, prec: u32, len: usize) -> Ve
         let rf = rat_to_float(phi_u.coeff(p), prec);
         let coeff = Float::with_val(prec, &rf * &kpow[p]);
         out[p] = Complex::with_val(prec, (coeff, 0.0));
+    }
+    out
+}
+
+/// The Δ-uniformizer φ(w) via the hp-float preamble (E3) — a drop-in
+/// replacement for [`phi_w`] with the same indexing (out[p] is the u^p
+/// coefficient of φ_in_u times κ^{-p}, real; only p ≡ 0 mod a nonzero).
+///
+/// Differences from [`phi_w`], ported faithfully from the campaign's certified
+/// driver `phi_hp.rs`:
+/// * φ_in_u is computed by [`super::hypergeometric::phi_in_u_hp`] (hp floats,
+///   half-length Newton reversion, per-step residual certificates, hard
+///   a-posteriori output gate — panics if the gate fails);
+/// * κ is computed internally via [`kappa`] at the INTERNAL guard precision
+///   (not the output precision), and each coefficient is scaled by κ^{-p} at
+///   internal precision, then rounded ONCE to `prec_out`.
+///
+/// Driver-side measurements (this box): 31.5 s at len = 1501 / prec_out = 256,
+/// 496 s at len = 3001 / prec_out = 400, vs 68 min for the exact path at
+/// len = 201 and > 13 h 47 m (killed unfinished) at len = 1501.
+pub fn phi_w_hp(a: i64, b: i64, c: i64, prec_out: u32, len: usize) -> Vec<Complex> {
+    let hp = super::hypergeometric::phi_in_u_hp(a, b, c, prec_out, len);
+    let prec = hp.prec_internal;
+    let au = a as usize;
+    let tg = TriangleGroupHp::new(a as u32, b as u32, c as u32, prec);
+    let kap = kappa(&tg);
+    let inv_kappa = Float::with_val(prec, Float::with_val(prec, 1) / &kap);
+    let mut kpow = Float::with_val(prec, 1);
+    let mut out = vec![Complex::with_val(prec_out, (0.0, 0.0)); len];
+    for (p, slot) in out.iter_mut().enumerate() {
+        if p % au == 0 {
+            let coeff = Float::with_val(prec, &hp.t_internal[p / au] * &kpow);
+            let coeff_out = Float::with_val(prec_out, &coeff);
+            *slot = Complex::with_val(prec_out, (coeff_out, 0.0));
+        }
+        kpow *= &inv_kappa;
     }
     out
 }
@@ -729,6 +765,137 @@ pub fn read_belyi_result(path: &str) -> std::io::Result<BelyiPersist> {
     parse().map_err(|e| io_data(format!("{path}: {e}")))
 }
 
+// ---------------------------------------------------------------------------
+// E4: the small-N m/e echelon-valuation pre-probe
+// ---------------------------------------------------------------------------
+
+/// Parameters for the small-N echelon-valuation pre-probe (E4).
+///
+/// WHY: the echelon-valuation check that refuses a wrong (m, e) guess sits
+/// inside [`run_and_persist_belyi`] AFTER forms recovery — at production scale
+/// ([2,12,5]: N = 3000 / 400-bit) a wrong guess costs a multi-DAY run before
+/// the refusal fires. The pre-probe runs the SAME chart (same permutations,
+/// rebase, compactify knobs, center) at a small N and low precision, reads the
+/// echelon valuation structure there, and refuses a wrong (m, e) up front.
+///
+/// The probe is self-gating: its (prec, n, digits) must satisfy the full
+/// [`SolveParams`] binding, and its N-vs-ρ half is checked against the chart's
+/// MEASURED ρ before recovery — an inconsistent probe config is refused, never
+/// silently degraded.
+#[derive(Debug, Clone)]
+pub struct EchelonPreProbe {
+    /// Probe truncation N (dim = n + 1). Must satisfy n·log10(1/ρ) ≥ digits.
+    pub n: usize,
+    /// Probe mpfr precision (bits).
+    pub prec: u32,
+    /// Probe accuracy target; derives the kernel/rank threshold via
+    /// [`SolveParams`] (min 4).
+    pub digits: usize,
+    /// w-valuation tolerance for the probe's echelonize/valuation reads.
+    pub echelon_tol: f64,
+}
+
+impl EchelonPreProbe {
+    /// Validate (prec, n, digits) through the [`SolveParams`] binding.
+    pub fn new(prec: u32, n: usize, digits: usize, echelon_tol: f64) -> Result<EchelonPreProbe, ParamError> {
+        SolveParams::new(prec, n, digits)?;
+        Ok(EchelonPreProbe { n, prec, digits, echelon_tol })
+    }
+
+    /// The default [2,12,5] probe: n = 1000, 128 bits, 4 digits, echelon tol
+    /// 1e-6. At the measured z_a-chart ρ ≈ 0.9906, 1000·log10(1/ρ) ≈ 4.1 ≥ 4
+    /// — the SMALLEST probe N whose binding is consistent at the minimum
+    /// digits, i.e. the cheapest self-certifying probe this chart admits.
+    ///
+    /// COST (extrapolation, not measured): the dominant cost is the dim-1001
+    /// single-core Jacobi SVD at 2 limbs. Scaling the campaign's measured
+    /// dim-1501/256-bit recovery (> 24 h, killed) by (1001/1501)³ ≈ 0.30 in
+    /// dimension and (2/4)² = 0.25 in limb cost extrapolates to a few hours on
+    /// the CURRENT single-core SVD — roughly two orders of magnitude less work
+    /// than the N = 3000 / 400-bit production chain (≥ 16 days extrapolated),
+    /// and it shrinks directly with the campaign's SVD parallelization (E1/E2).
+    /// Only (5,3,3)-scale probe timings are measured (seconds; see tests).
+    pub fn default_2_12_5() -> EchelonPreProbe {
+        EchelonPreProbe::new(128, 1000, 4, 1e-6).expect("(128, 1000, 4) satisfies the binding")
+    }
+}
+
+/// Run the E4 pre-probe: recover forms on `atlas`'s chart at the probe's small
+/// (n, prec), echelonize, and return the sorted w-valuation structure.
+///
+/// The atlas GEOMETRY (permutations, abc, rebase, compactify knobs, center,
+/// weight k) is taken from `atlas`; only `n` and `prec` are replaced by the
+/// probe's. Thresholds are the [`SolveParams`]-derived ones for the probe
+/// binding; the N-vs-ρ half is enforced against the measured probe-chart ρ.
+pub fn probe_echelon_valuations(atlas: &AtlasDumpParams, probe: &EchelonPreProbe) -> std::io::Result<Vec<usize>> {
+    let sp = SolveParams::new(probe.prec, probe.n, probe.digits)
+        .map_err(|e| io_invalid(format!("pre-probe binding rejected: {e:?}")))?;
+    let pa = AtlasDumpParams {
+        s0: atlas.s0.clone(),
+        s1: atlas.s1.clone(),
+        abc: atlas.abc,
+        base: atlas.base,
+        n: probe.n,
+        k: atlas.k,
+        prec: probe.prec,
+        nlimbs: atlas.nlimbs,
+        r_prune: atlas.r_prune,
+        l_max: atlas.l_max,
+        center: atlas.center.clone(),
+        coset: atlas.coset,
+        out: String::new(),
+    };
+    let (tg64, tg, cg, ctr) = atlas_setup(&pa);
+    let rho = domain_radius_hp_centered(&cg, &tg, &ctr);
+    sp.check_rho(rho.to_f64()).map_err(|e| {
+        io_invalid(format!("pre-probe N-vs-ρ binding failed at measured ρ = {:.6}: {e:?}", rho.to_f64()))
+    })?;
+    let q_samples = 2 * probe.n + 8;
+    let forms = recover_forms_centered(
+        &tg64, &tg, &cg, pa.k, probe.n, q_samples, &sp.threshold_decimal, &sp.tol_decimal, 1.0, &ctr,
+    );
+    if forms.is_empty() {
+        return Err(io_data(format!("pre-probe found dim S_{} = 0 on this chart", pa.k)));
+    }
+    let series = forms_to_series(&forms, pa.k, probe.prec);
+    let ech = echelonize(series, probe.prec, probe.echelon_tol);
+    let mut vals: Vec<usize> = ech.iter().map(|s| valuation(s, probe.echelon_tol)).collect();
+    vals.sort_unstable();
+    Ok(vals)
+}
+
+/// Refuse a wrong (m, e) guess in probe time instead of production time: check
+/// that the small-N echelon valuation structure contains both m and m+e.
+///
+/// HONEST CAVEAT — what this check is and is not:
+/// * It is a NECESSARY-condition filter, not a sufficient one: passing the
+///   probe does not prove (m, e) correct at production N — the full
+///   echelon-valuation check inside [`run_and_persist_belyi`] still runs and
+///   remains the authority.
+/// * The valuation structure is read NUMERICALLY at the probe's accuracy. At
+///   (5,3,3) it is already exact at the smallest self-consistent probe
+///   (N = 16, digits = 4: valuations {0,1,2}, identical to the production
+///   N = 48 structure — measured in `preprobe_5_3_3_stabilization_and_gate`).
+///   In principle a leading coefficient lying below the probe's resolution
+///   but above the production tolerance could shift a probe-read valuation
+///   and cause a FALSE REJECTION; if the probe refuses an (m, e) you have
+///   independent reason to trust, re-run the probe at larger n/digits before
+///   concluding.
+pub fn preprobe_m_e(atlas: &AtlasDumpParams, probe: &EchelonPreProbe, m: usize, e: usize) -> std::io::Result<()> {
+    let vals = probe_echelon_valuations(atlas, probe)?;
+    if !vals.contains(&m) || !vals.contains(&(m + e)) {
+        return Err(io_data(format!(
+            "pre-probe REFUSAL: small-N (n = {}) echelon valuations {vals:?} do not contain m = {m} and m+e = {} — \
+             a production run with this (m, e) would only fail after forms recovery (multi-hour/day at [2,12,5] scale); \
+             read the correct m/e off the probe valuations {vals:?} (m = smallest, e = gap), or re-probe at larger n \
+             if you have independent reason to trust this guess",
+            probe.n,
+            m + e
+        )));
+    }
+    Ok(())
+}
+
 /// The [2,12,5] production spec: the M24-passport degree-24 dessin
 /// (the campaign permutations), z_a chart, weight k = 4 (the campaign harness
 /// default), N = 3000 / prec = 400 bits / 12 digits — the A7-consistent binding
@@ -767,9 +934,36 @@ pub fn belyi_2_12_5_spec(m: usize, e: usize, echelon_tol: f64) -> BelyiSolveSpec
     }
 }
 
+/// Which φ(w) preamble a production run uses (E3).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PhiMode {
+    /// The hp-float path ([`phi_w_hp`]): certified per-step + a-posteriori
+    /// residual gates, minutes-scale at production N. THE production default —
+    /// the exact path at N = 3000 was measured unfinished after > 13 h 47 m at
+    /// len = 1501 already.
+    Hp,
+    /// The exact-rational path ([`phi_w`]): exact arithmetic, kept for
+    /// small-N cross-validation ONLY (superquadratic bit-cost: 68 min at
+    /// len = 201).
+    Exact,
+}
+
 /// PRODUCTION entry point for the [2,12,5] degree-24 solve: builds the spec via
-/// [`belyi_2_12_5_spec`], computes κ and the exact Δ-uniformizer φ(w) for
-/// (2,12,5) at 400 bits, and runs [`run_and_persist_belyi`].
+/// [`belyi_2_12_5_spec`], runs the E4 m/e pre-probe, computes the Δ-uniformizer
+/// φ(w) for (2,12,5) at 400 bits via the E3 hp path, and runs
+/// [`run_and_persist_belyi`]. Equivalent to [`run_belyi_2_12_5_with`] with
+/// [`PhiMode::Hp`] and [`EchelonPreProbe::default_2_12_5`].
+///
+/// COST OF A WRONG (m, e) — read before launching: the echelon-valuation
+/// refusal inside [`run_and_persist_belyi`] fires only AFTER forms recovery,
+/// which at N = 3000 / 400-bit extrapolates to ≥ 16 days single-core on the
+/// current SVD. The E4 pre-probe runs first and refuses a wrong (m, e) at
+/// probe scale instead (extrapolated hours at the [2,12,5] default probe,
+/// measured seconds at (5,3,3) scale) — do NOT bypass it with
+/// [`run_belyi_2_12_5_with`]`(…, None)` unless the probe itself has already
+/// accepted this (m, e) in this configuration. The pre-probe is
+/// necessary-not-sufficient (see [`preprobe_m_e`]): the full check downstream
+/// remains the authority.
 ///
 /// This is the CAMPAIGN session's job: at N = 3000 the in-memory assembly is the
 /// known OOM risk (see `dump_scaled_ami_streamed`'s notes) and the run takes
@@ -778,10 +972,34 @@ pub fn belyi_2_12_5_spec(m: usize, e: usize, echelon_tol: f64) -> BelyiSolveSpec
 /// `belyi_2_12_5_result.json` only for the real run (the Julia parameter-homotopy
 /// route in `pipeline.rs` targets that same name with a DIFFERENT format).
 pub fn run_belyi_2_12_5(m: usize, e: usize, echelon_tol: f64, out: &str) -> std::io::Result<()> {
+    run_belyi_2_12_5_with(m, e, echelon_tol, out, PhiMode::Hp, Some(&EchelonPreProbe::default_2_12_5()))
+}
+
+/// [`run_belyi_2_12_5`] with the φ preamble and the E4 pre-probe made explicit.
+/// `preprobe: None` skips the m/e pre-probe (see the cost warning on
+/// [`run_belyi_2_12_5`]); [`PhiMode::Exact`] selects the exact-rational φ for
+/// small-N cross-validation runs only.
+pub fn run_belyi_2_12_5_with(
+    m: usize,
+    e: usize,
+    echelon_tol: f64,
+    out: &str,
+    phi_mode: PhiMode,
+    preprobe: Option<&EchelonPreProbe>,
+) -> std::io::Result<()> {
     let spec = belyi_2_12_5_spec(m, e, echelon_tol);
-    let tg = TriangleGroupHp::new(2, 12, 5, spec.params.prec_bits);
-    let kap = kappa(&tg);
-    let phi = phi_w(2, 12, 5, &kap, spec.params.prec_bits, spec.atlas.n + 1);
+    // E4: refuse a wrong (m, e) at probe scale BEFORE any heavy work.
+    if let Some(probe) = preprobe {
+        preprobe_m_e(&spec.atlas, probe, m, e)?;
+    }
+    let phi = match phi_mode {
+        PhiMode::Hp => phi_w_hp(2, 12, 5, spec.params.prec_bits, spec.atlas.n + 1),
+        PhiMode::Exact => {
+            let tg = TriangleGroupHp::new(2, 12, 5, spec.params.prec_bits);
+            let kap = kappa(&tg);
+            phi_w(2, 12, 5, &kap, spec.params.prec_bits, spec.atlas.n + 1)
+        }
+    };
     run_and_persist_belyi(&spec, &phi, out)
 }
 
@@ -1087,6 +1305,112 @@ mod tests {
         for i in 0..24 {
             assert_eq!(spec.atlas.s0[spec.atlas.s0[i]], i, "s0 must square to the identity");
         }
+    }
+
+    // E3: the κ-scaling wrapper — phi_w_hp must agree with the trusted exact
+    // phi_w coefficient-by-coefficient at (5,3,3), where the exact path is
+    // cheap. Gate: ≤ 1e-40 relative on the support, zero pattern exact
+    // (mirrors the u-level G1 gate in hypergeometric.rs, but through the κ
+    // scaling and the internal-precision-then-round-once path).
+    #[test]
+    fn phi_w_hp_matches_exact_phi_w_5_3_3() {
+        let prec = 256u32;
+        let len = 49usize;
+        let tg = TriangleGroupHp::new(5, 3, 3, prec);
+        let kap = kappa(&tg);
+        let exact = phi_w(5, 3, 3, &kap, prec, len);
+        let hp = phi_w_hp(5, 3, 3, prec, len);
+        assert_eq!(hp.len(), len);
+        let cmp_prec = 2 * prec;
+        let mut worst = Float::with_val(cmp_prec, 0);
+        let mut worst_p = 0usize;
+        for p in 0..len {
+            assert!(hp[p].imag().is_zero() && exact[p].imag().is_zero(), "imag part at {p}");
+            if p % 5 != 0 || p == 0 {
+                assert!(hp[p].real().is_zero(), "hp φ_w coeff {p} should be exactly zero");
+                assert!(exact[p].real().is_zero(), "exact φ_w coeff {p} should be exactly zero");
+                continue;
+            }
+            let ex = Float::with_val(cmp_prec, exact[p].real());
+            let diff = Float::with_val(cmp_prec, hp[p].real() - &ex).abs();
+            let rel = Float::with_val(cmp_prec, diff / ex.clone().abs());
+            if rel > worst {
+                worst = rel;
+                worst_p = p;
+            }
+        }
+        let wlog = if worst.is_zero() { f64::NEG_INFINITY } else { worst.clone().log10().to_f64() };
+        eprintln!("[phi-w-hp] (5,3,3) len={len}: worst rel diff vs exact 1e{wlog:.1} at p={worst_p}");
+        let gate = Float::with_val(cmp_prec, Float::parse("1e-40").unwrap());
+        assert!(worst < gate, "phi_w_hp vs phi_w worst rel diff 1e{wlog:.1} at p={worst_p} (gate 1e-40)");
+    }
+
+    // E4: the m/e pre-probe on (5,3,3) — measure where the small-N valuation
+    // structure stabilizes, then check the gate accepts the correct (m, e) =
+    // (1, 1) and REFUSES wrong guesses, in probe time (measured and printed).
+    #[test]
+    fn preprobe_5_3_3_stabilization_and_gate() {
+        let atlas = AtlasDumpParams {
+            s0: vec![4, 0, 1, 2, 3],
+            s1: vec![1, 2, 0, 3, 4],
+            abc: (5, 3, 3),
+            base: 0,
+            n: 48, // production-scale n; the probe substitutes its own
+            k: 6,
+            prec: 256,
+            nlimbs: 2,
+            r_prune: 0.95,
+            l_max: 18,
+            center: "a".into(),
+            coset: 0,
+            out: String::new(),
+        };
+        // Stabilization sweep: at (5,3,3) the measured chart ρ ≈ 0.5289 gives
+        // n·log10(1/ρ) ≈ 0.2766·n, so digits = 4 requires n ≥ 15; n = 12 must
+        // be REFUSED by the probe's own N-vs-ρ binding, not silently degraded.
+        let refused = EchelonPreProbe::new(128, 12, 4, 1e-6).expect("binding (prec, n, digits) itself is fine");
+        let err = probe_echelon_valuations(&atlas, &refused).expect_err("n = 12 cannot certify 4 digits at ρ ≈ 0.53");
+        assert!(err.to_string().contains("N-vs-ρ"), "unexpected refusal: {err}");
+        // From the smallest self-consistent probe upward the structure must
+        // already equal the production N = 48 structure {0, 1, 2} (measured:
+        // stable from n = 16 on).
+        for n in [16usize, 20, 24, 32] {
+            let probe = EchelonPreProbe::new(128, n, 4, 1e-6).expect("probe binding");
+            let t0 = std::time::Instant::now();
+            let vals = probe_echelon_valuations(&atlas, &probe).expect("probe run");
+            eprintln!("[preprobe] (5,3,3) n={n}: valuations {vals:?} in {:.2}s", t0.elapsed().as_secs_f64());
+            assert_eq!(vals, vec![0, 1, 2], "valuation structure at probe n = {n}");
+        }
+        // The gate: correct (m, e) = (1, 1) accepted; wrong guesses refused
+        // with the valuation list in the error. Timed — this is the measured
+        // "(5,3,3)-scale refusal cost" (seconds; the production-scale cost is
+        // an extrapolation documented on EchelonPreProbe::default_2_12_5).
+        let probe = EchelonPreProbe::new(128, 16, 4, 1e-6).expect("probe binding");
+        let t0 = std::time::Instant::now();
+        preprobe_m_e(&atlas, &probe, 1, 1).expect("correct (m, e) = (1, 1) must pass");
+        let t_accept = t0.elapsed().as_secs_f64();
+        let t1 = std::time::Instant::now();
+        let err = preprobe_m_e(&atlas, &probe, 2, 2).expect_err("(m, e) = (2, 2) needs valuation 4 — absent");
+        let t_reject = t1.elapsed().as_secs_f64();
+        assert!(err.to_string().contains("pre-probe REFUSAL"), "wrong error: {err}");
+        assert!(err.to_string().contains("[0, 1, 2]"), "refusal must carry the valuation list: {err}");
+        let err2 = preprobe_m_e(&atlas, &probe, 3, 1).expect_err("(m, e) = (3, 1): valuation 3 absent");
+        assert!(err2.to_string().contains("pre-probe REFUSAL"));
+        eprintln!("[preprobe] (5,3,3) gate timing: accept {t_accept:.2}s, reject {t_reject:.2}s");
+    }
+
+    // E4 + E3 wiring: the [2,12,5] default probe satisfies its own binding at
+    // the measured production-chart ρ, and the production spec still binds.
+    #[test]
+    fn preprobe_default_2_12_5_binding_is_consistent() {
+        let probe = EchelonPreProbe::default_2_12_5();
+        assert_eq!((probe.prec, probe.n, probe.digits), (128, 1000, 4));
+        let sp = SolveParams::new(probe.prec, probe.n, probe.digits).expect("probe binding");
+        // measured z_a-chart ρ ≈ 0.9906: 1000·log10(1/0.9906) ≈ 4.09 ≥ 4 …
+        sp.check_rho(0.9906).expect("probe n = 1000 certifies 4 digits at ρ ≈ 0.9906");
+        // … and n = 900 would NOT (3.68 < 4): 1000 is near-minimal, not padded.
+        let sp900 = SolveParams::new(probe.prec, 900, probe.digits).expect("binding");
+        assert!(matches!(sp900.check_rho(0.9906), Err(ParamError::TruncationTooCoarse { .. })));
     }
 
     // normalize_pq refuses to fabricate a canonical form when Q has no coefficient

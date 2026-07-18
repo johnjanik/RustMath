@@ -503,6 +503,144 @@ pub fn read_ext_matrix(path: &str) -> std::io::Result<MpMatrix> {
     MpMatrix::from_row_major(dim, dim, prec, data).map_err(|e| bad(format!("EXT dump {path}: {e:?}")))
 }
 
+/// Streamed row-access handle over an EXT limb dump — the O(row)-memory read
+/// side of [`dump_scaled_ami_streamed`] for consumers (kernel refinement) that
+/// only ever need `M·v`, never the materialized `dim × dim` [`MpMatrix`].
+///
+/// Same on-disk format as [`read_ext_matrix`] (u32 dim, u8 nlimbs, row-major
+/// re-limbs then im-limbs per entry, all little-endian); the FORMAT and the
+/// writer are untouched — this is a new reader only.
+///
+/// Determinism policy: [`Self::matvec`] parallelizes over ROWS. Each output
+/// entry is produced by exactly one thread as a fixed left-to-right sequential
+/// fold `acc += m[i][j]·v[j]` of correctly-rounded MPFR operations, so the
+/// result is bitwise identical across runs and thread counts, and bitwise
+/// identical to the same fold over the [`read_ext_matrix`]-materialized matrix
+/// at the same precision (rayon never reassociates a per-row reduction here).
+pub struct ExtStream {
+    file: std::fs::File,
+    /// Matrix dimension (dim × dim).
+    pub dim: usize,
+    /// f64 limbs per real scalar (2 = dd, 3 = td, …).
+    pub nlimbs: usize,
+}
+
+impl ExtStream {
+    /// Open a dump, validating the header and the exact file size.
+    pub fn open(path: &str) -> std::io::Result<ExtStream> {
+        use std::io::{Error, ErrorKind, Read};
+        let bad = |msg: String| Error::new(ErrorKind::InvalidData, msg);
+        let mut file = std::fs::File::open(path)?;
+        let mut hdr = [0u8; 5];
+        file.read_exact(&mut hdr)?;
+        let dim = u32::from_le_bytes([hdr[0], hdr[1], hdr[2], hdr[3]]) as usize;
+        let nlimbs = hdr[4] as usize;
+        if dim == 0 || nlimbs == 0 {
+            return Err(bad(format!("EXT dump {path}: header dim={dim}, nlimbs={nlimbs} — both must be nonzero")));
+        }
+        let expected = 5 + (dim as u128) * (dim as u128) * 2 * (nlimbs as u128) * 8;
+        let actual = file.metadata()?.len() as u128;
+        if actual != expected {
+            return Err(bad(format!(
+                "EXT dump {path}: {actual} bytes, expected {expected} for dim={dim}, nlimbs={nlimbs}"
+            )));
+        }
+        Ok(ExtStream { file, dim, nlimbs })
+    }
+
+    /// The precision at which every limb sum reconstructs EXACTLY — the same
+    /// rule as [`read_ext_matrix`] pass 1: `max(53·nlimbs, widest msb→lsb limb
+    /// bit-span of any scalar + 2)`. One streaming pass over the file.
+    pub fn exact_prec(&self) -> std::io::Result<u32> {
+        use std::io::{Error, ErrorKind};
+        use std::os::unix::fs::FileExt;
+        let bad = |msg: String| Error::new(ErrorKind::InvalidData, msg);
+        // msb/lsb binary exponents of a finite nonzero f64 (as in read_ext_matrix).
+        let exp_range = |x: f64| -> (i64, i64) {
+            let bits = x.to_bits();
+            let biased = ((bits >> 52) & 0x7ff) as i64;
+            let frac = bits & ((1u64 << 52) - 1);
+            if biased == 0 {
+                (63 - frac.leading_zeros() as i64 - 1074, frac.trailing_zeros() as i64 - 1074)
+            } else {
+                let mant = frac | (1u64 << 52);
+                (biased - 1023, biased - 1075 + mant.trailing_zeros() as i64)
+            }
+        };
+        let row_bytes = self.dim * 2 * self.nlimbs * 8;
+        let mut buf = vec![0u8; row_bytes];
+        let mut max_span: i64 = 0;
+        for r in 0..self.dim {
+            self.file.read_exact_at(&mut buf, (5 + r * row_bytes) as u64)?;
+            for s in 0..self.dim * 2 {
+                let (mut msb, mut lsb) = (i64::MIN, i64::MAX);
+                for l in 0..self.nlimbs {
+                    let off = (s * self.nlimbs + l) * 8;
+                    let x = f64::from_le_bytes(buf[off..off + 8].try_into().unwrap());
+                    if !x.is_finite() {
+                        return Err(bad(format!("EXT dump: non-finite limb {x} in row {r} scalar {s}")));
+                    }
+                    if x != 0.0 {
+                        let (m, low) = exp_range(x);
+                        msb = msb.max(m);
+                        lsb = lsb.min(low);
+                    }
+                }
+                if msb > i64::MIN {
+                    max_span = max_span.max(msb - lsb + 1);
+                }
+            }
+        }
+        Ok((53 * self.nlimbs as i64).max(max_span + 2) as u32)
+    }
+
+    /// Row `i` reconstructed at precision `prec`: each scalar is the limb sum
+    /// accumulated hi→lo with correctly-rounded `+=` at `prec` — identical, op
+    /// for op, to [`read_ext_matrix`] pass 2, so at `prec ≥` [`Self::exact_prec`]
+    /// the entries are bit-identical to the materialized matrix.
+    pub fn row(&self, i: usize, prec: u32) -> std::io::Result<Vec<MpC>> {
+        use std::os::unix::fs::FileExt;
+        assert!(i < self.dim, "row {i} out of range (dim {})", self.dim);
+        let row_bytes = self.dim * 2 * self.nlimbs * 8;
+        let mut buf = vec![0u8; row_bytes];
+        self.file.read_exact_at(&mut buf, (5 + i * row_bytes) as u64)?;
+        let scalar = |s: usize| -> Float {
+            let mut v = Float::with_val(prec, 0);
+            for l in 0..self.nlimbs {
+                let off = (s * self.nlimbs + l) * 8;
+                v += f64::from_le_bytes(buf[off..off + 8].try_into().unwrap());
+            }
+            v
+        };
+        let mut out = Vec::with_capacity(self.dim);
+        for j in 0..self.dim {
+            out.push(MpC::new(scalar(2 * j), scalar(2 * j + 1)));
+        }
+        Ok(out)
+    }
+
+    /// Streamed threaded matvec `M·v` at precision `prec`, O(row) transient
+    /// memory per rayon worker: rows are read with `pread` at exact offsets and
+    /// never materialized together. Each output entry is a single-thread
+    /// sequential fold (see the type docs for the bitwise-determinism policy).
+    pub fn matvec(&self, v: &[MpC], prec: u32) -> std::io::Result<Vec<MpC>> {
+        use rayon::prelude::*;
+        assert_eq!(v.len(), self.dim, "matvec length mismatch");
+        let results: Vec<std::io::Result<MpC>> = (0..self.dim)
+            .into_par_iter()
+            .map(|i| {
+                let row = self.row(i, prec)?;
+                let mut acc = MpC::zero(prec);
+                for j in 0..self.dim {
+                    acc = acc.add(&row[j].mul(&v[j]));
+                }
+                Ok(acc)
+            })
+            .collect();
+        results.into_iter().collect()
+    }
+}
+
 /// Explicit parameters for one atlas chart assembly (probe or full dump).
 ///
 /// This is the env-var surface the `dump_2_12_5_matrix_ext_streamed` harness has

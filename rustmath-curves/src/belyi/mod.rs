@@ -44,6 +44,7 @@ pub mod newton;
 pub mod newton_hp;
 pub mod coset_graph;
 pub mod hypergeometric;
+pub mod kernel_refine;
 pub mod modular_forms;
 pub mod modular_forms_hp;
 pub mod mp_svd;
