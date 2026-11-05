@@ -11,8 +11,6 @@ repository.workspace = true
 
 [dependencies]
 rustmath-rings = { path = "../rustmath-rings" }
-
-[dev-dependencies]
 rustmath-integers = { path = "../rustmath-integers" }
 
 [features]

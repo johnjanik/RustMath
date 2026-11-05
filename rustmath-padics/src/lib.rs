@@ -9,6 +9,11 @@
 //! - qp: p-adic field (field of fractions of zp)
 //! - zp: p-adic integers (ring)
 
+// Montes/Ore p-adic factorization and Newton polygons over Z
+// (merged from integrate-lava-galois; consumed by rustmath-functionfields).
+pub mod montes;
+pub mod newton_polygon;
+
 pub use rustmath_rings::padics::padic_integer;
 pub use rustmath_rings::padics::padic_rational;
 

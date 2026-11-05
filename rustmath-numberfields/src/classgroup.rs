@@ -180,11 +180,21 @@ fn embed_ideal(ord: &OrderData, ideal: &Ideal, reals: &[C], cplx: &[C], scale: f
 /// Is the integral ideal `𝔞` principal? Returns a generator `α` (integral-basis
 /// coords) if so. Searches short elements of the `T₂` lattice for `|N(α)| = N(𝔞)`.
 pub fn is_principal(f: &[Integer], ord: &OrderData, ideal: &Ideal) -> Option<Vec<Integer>> {
-    let n = ord.n;
     let target = ideal_norm(ideal).abs();
     if target.is_zero() {
         return None;
     }
+    short_ideal_elements(f, ord, ideal)
+        .into_iter()
+        .find(|a| element_norm(ord, a).abs() == target)
+}
+
+/// Short nonzero elements of the integral ideal `𝔞` (integral-basis coords): the
+/// LLL-reduced `T₂`-lattice basis vectors followed by small integer combinations
+/// of the first few, **sorted by ascending absolute norm**. The first entry is a
+/// near-minimal-norm element — the basis of ideal *reduction* (`𝔟 = (η)𝔞⁻¹`).
+pub fn short_ideal_elements(f: &[Integer], ord: &OrderData, ideal: &Ideal) -> Vec<Vec<Integer>> {
+    let n = ord.n;
     let rts = roots(f);
     let (reals, cplx) = embeddings(&rts);
     let lattice = embed_ideal(ord, ideal, &reals, &cplx, 1e6);
@@ -202,21 +212,11 @@ pub fn is_principal(f: &[Integer], ord: &OrderData, ideal: &Ideal) -> Option<Vec
         }
         a
     };
-    let check = |coeffs: &[Integer]| -> Option<Vec<Integer>> {
-        let a = elt(coeffs);
-        if a.iter().all(|x| x.is_zero()) {
-            return None;
-        }
-        if element_norm(ord, &a).abs() == target {
-            Some(a)
-        } else {
-            None
-        }
-    };
-    // individual reduced vectors
+    let mut out: Vec<Vec<Integer>> = Vec::new();
     for row in &u {
-        if let Some(a) = check(row) {
-            return Some(a);
+        let a = elt(row);
+        if a.iter().any(|x| !x.is_zero()) {
+            out.push(a);
         }
     }
     // small combinations of the first few reduced vectors
@@ -232,8 +232,9 @@ pub fn is_principal(f: &[Integer], ord: &OrderData, ideal: &Ideal) -> Option<Vec
                 }
             }
         }
-        if let Some(a) = check(&coeffs) {
-            return Some(a);
+        let a = elt(&coeffs);
+        if a.iter().any(|x| !x.is_zero()) {
+            out.push(a);
         }
         // odometer
         let mut p = 0;
@@ -254,7 +255,9 @@ pub fn is_principal(f: &[Integer], ord: &OrderData, ideal: &Ideal) -> Option<Vec
             break;
         }
     }
-    None
+    out.sort_by(|a, b| element_norm(ord, a).abs().cmp(&element_norm(ord, b).abs()));
+    out.dedup();
+    out
 }
 
 // --------------------------------------------------------------------------- //

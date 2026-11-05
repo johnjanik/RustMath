@@ -30,6 +30,13 @@ impl Integer {
         Integer::new(BigInt::one())
     }
 
+    /// Parse an integer from its base-10 string representation (exact, bignum).
+    /// Returns `None` if the string is not a valid decimal integer.
+    pub fn from_decimal_str(s: &str) -> Option<Self> {
+        use std::str::FromStr;
+        BigInt::from_str(s).ok().map(Integer::new)
+    }
+
     /// Get the absolute value
     pub fn abs(&self) -> Self {
         Integer::new(self.value.abs())

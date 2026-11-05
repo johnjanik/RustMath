@@ -27,6 +27,25 @@
 //!   `rustmath_complex::aberth_roots` (certified root labelling) — in
 //!   [`stauduhar`], which refuses honestly until those land.
 //!
+//!
+//! ## Generic Stauduhar descent (merged from `integrate-lava-galois`)
+//!
+//! A second, numeric/p-adic identification stack lives alongside the exact
+//! low-degree engine above:
+//!
+//! - [`perm`], [`subgroups`]: arbitrary-degree permutations, closure, cosets,
+//!   maximal subgroups for small `|G|`.
+//! - [`resolvent_eval`], [`relative_invariant`]: relative resolvents `R_{G,H}`
+//!   at labeled roots and separable relative invariants.
+//! - [`galois_ctx`]: p-adic root embedding with explicit Frobenius labeling.
+//! - [`short_coset`]: Frobenius short-coset primitives.
+//! - [`labels`]: small-degree `nTt` tables and identifier.
+//! - [`descent`]: the small-degree Stauduhar driver, re-exported as
+//!   [`stauduhar_galois_group`] (the crate-level [`galois_group`] stays the
+//!   exact engine with the honesty contract).
+//! - [`deg24`], [`descent24`]: degree-24 narrowing over the transitive atlas
+//!   (`rustmath_groups::transitive24`), used by `rustmath-igp24 --galois-short`.
+//!
 //! ## Honesty contract
 //!
 //! [`GaloisGroupResult`] separates `Decided` (with a complete certificate
@@ -54,7 +73,25 @@ pub mod sieve;
 pub mod stauduhar;
 pub mod types;
 
+// Generic Stauduhar descent stack (from integrate-lava-galois).
+pub mod deg24;
+pub mod descent;
+pub mod descent24;
+pub mod galois_ctx;
+pub mod labels;
+pub mod perm;
+pub mod relative_invariant;
+pub mod resolvent_eval;
+pub mod short_coset;
+pub mod subgroups;
+
 pub use types::{Candidates, CycleType, Evidence, GaloisGroupResult, GroupId};
+pub use descent::{
+    galois_group as stauduhar_galois_group, Config as DescentConfig, GaloisResult as DescentResult,
+};
+pub use galois_ctx::{build_ctx, galois_ctx, GaloisCtx, PadicElt};
+pub use labels::{identify, NamedGroup};
+pub use short_coset::{conjugation_perm, descent_impossible, short_coset_count, short_cosets};
 
 use rustmath_core::{MathError, Result};
 use rustmath_integers::Integer;

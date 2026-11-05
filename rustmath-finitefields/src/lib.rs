@@ -14,9 +14,12 @@
 //!   [`ExtensionField`] is a migration target (see the module docs of
 //!   [`finite_field`] and [`extension_field`]).
 
+pub mod cantor_zassenhaus;
 pub mod conway;
 pub mod extension_field;
+pub mod ff_poly;
 pub mod integer_mod;
+pub mod irreducible;
 pub mod prime_field;
 pub mod zmod;
 
@@ -29,12 +32,19 @@ pub mod poly_factor; // ch 21: Cantor–Zassenhaus / DDF / EDF / irreducibility
 // --- MAGMA port Wave 2 (chapter 21 depth) ---
 pub mod embedding; // ch 21: norm-compatible embeddings GF(p^m) -> GF(p^n), m | n
 
+// Lava-galois GF(p^n) stack (cantor_zassenhaus / ff_poly / irreducible): its
+// `FiniteFieldElement`, `find_irreducible`, `is_irreducible`, `random_irreducible`
+// collide with the canonical Wave-1 exports below, so reach those via their module
+// paths (e.g. `ff_poly::FiniteFieldElement`, `irreducible::is_irreducible`).
+pub use cantor_zassenhaus::{factor, factor_squarefree};
 pub use conway::{available_conway_polynomials, conway_polynomial, has_conway_polynomial};
 pub use extension_field::ExtensionField;
+pub use ff_poly::{FFPoly, Gfpn};
 pub use integer_mod::{
     is_integer_mod, lucas, lucas_q1, square_root_mod_prime, square_root_mod_prime_power,
     IntegerMod,
 };
+pub use irreducible::generate_gfpn_modulus;
 pub use prime_field::PrimeField;
 pub use zmod::{Integers, Zmod};
 
