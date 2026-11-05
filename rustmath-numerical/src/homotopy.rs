@@ -9,7 +9,7 @@
 //! *target* parameter point `p*`. The solver tracks `p0 → p*`, and a
 //! `monodromy_solve(F, [z0], p0)` variant enlarges the generic fibre before
 //! tracking. This is the committed solve route (generic total-degree homotopy
-//! and global Gröbner are retired — see `DESSIN_REFACTOR_PLAN.md`).
+//! and global Gröbner are retired — see `docs/workstreams/belyi/DESSIN_REFACTOR_PLAN.md`).
 //!
 //! The design keeps the reference module's discipline: numerical output is an
 //! **untrusted suggestion**. This module only *emits* a job, *runs* the solver,

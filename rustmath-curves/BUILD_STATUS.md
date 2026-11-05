@@ -17,7 +17,7 @@
   (146 pass) and `cargo test -p rustmath-curves --features genus2` (183 lib +
   integration, 0 fail) both pass.
 
-## Milestones (see CURVES_BUILD_BLOCKERS_SPEC.md)
+## Milestones (see docs/workstreams/belyi/CURVES_BUILD_BLOCKERS_SPEC.md)
 
 - **U0 — belyi-unblock — DONE.** `genus2` feature added (off by default);
   `divisor`, `hyperelliptic`, `cantor`, `jacobian` gated in `lib.rs` (modules +

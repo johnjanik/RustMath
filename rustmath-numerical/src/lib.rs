@@ -172,7 +172,7 @@ pub mod interpolation;
 pub mod fft;
 pub mod linear_programming;
 pub mod backends;
-// Wave 2 (DESSIN_REFACTOR_PLAN.md, Agent U): the parameter-homotopy solve route.
+// Wave 2 (docs/workstreams/belyi/DESSIN_REFACTOR_PLAN.md, Agent U): the parameter-homotopy solve route.
 pub mod homotopy;
 pub mod exactify;
 

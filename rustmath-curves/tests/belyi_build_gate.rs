@@ -1,6 +1,6 @@
 //! Milestone U0 gate: proves the genus-0 Belyi/conic path in `rustmath-curves`
 //! compiles and runs **without** the `genus2` feature (i.e. independent of the
-//! feature-gated hyperelliptic/Jacobian stack). See CURVES_BUILD_BLOCKERS_SPEC.md
+//! feature-gated hyperelliptic/Jacobian stack). See docs/workstreams/belyi/CURVES_BUILD_BLOCKERS_SPEC.md
 //! and BUILD_STATUS.md.
 //!
 //! Run: `cargo test -p rustmath-curves --test belyi_build_gate`  (no --features).

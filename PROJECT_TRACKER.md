@@ -2901,7 +2901,7 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 ## IGP24 Campaign Build — the M23/Q Inverse Galois endpoint
 
 > [!info] What this is
-> A focused build of the algorithms the M23-over-Q(u) campaign needs, per `RUSTMATH_BUILD_HANDOFF.md`.
+> A focused build of the algorithms the M23-over-Q(u) campaign needs, per `docs/workstreams/belyi/RUSTMATH_BUILD_HANDOFF.md`.
 > **Endpoint:** an exact Belyi map `φ = P/Q ∈ Q(x)`, degree 24, with M24 monodromy over P¹_Q, whose
 > deleted-sheet resolvent `R(X,u) = (P(X)Q(u) − P(u)Q(X))/(X−u)` realizes **Gal = M23 regularly over Q(u)**.
 > The DECIDE/CERTIFY half (`decide_nonprovisional → audit_m24 → audit_m23_residual → is_m23_q_realized`,
@@ -2952,7 +2952,7 @@ Two build states beyond the normal legend: **exists-unwired** (code present, nee
 then A1 → A2 (snap floats to `CertifiedRational`), which drops into the already-built DECIDE half. B1+B2 upgrade
 that candidate from statistical-single-fibre to a **proven regular M23/Q(u)** certificate.
 
-### Handoff 2 — the SVD wall (`RUSTMATH_BUILD_HANDOFF_2.md`, 2026-07-18)
+### Handoff 2 — the SVD wall (`docs/workstreams/belyi/RUSTMATH_BUILD_HANDOFF_2.md`, 2026-07-18)
 
 Grounded in *measured* production attempts: the hp Jacobi at dim-3001/400-bit extrapolates to ≥16 days
 single-core / ~84 GB (the hot loop had **zero rayon** — verified); exact φ at len-1501 was killed after
@@ -3070,7 +3070,7 @@ the failure mode here is *plausible wrongness*, which ordinary review does not c
 | 2026-07-12 | @claude | **Wave 3 landed (`c09b80d`) — ALL 17 HANDOFF ITEMS COMPLETE**, both verifiers CONFIRMED: A8 EXT reader (byte-exact round trip, writer untouched), B2 regular-M23/Q(u) verdict bookkeeping (OSCAR found installed; real `galois_group` cross-checks over ℚ(u) ran; post-audit fingerprint binding added so a certificate cannot attach to a different resolvent), C4–C7 closure wiring in `igp_closure` outside belyi/ (zero solve_runner impact). curves 270/0/6. |
 | 2026-07-12 | @claude | **Wave 2 landed (`37ffcaa`), both verifiers CONFIRMED**: the whole Route-A critical path (A7,A4,A6,A3,A2,B1) is now built — 246/0/6 in curves. The minimal path to a candidate witness needs only the campaign session to RUN `[2,12,5]` and feed the floats through `snap_hp_solution` → `decide_nonprovisional`. Verifier-found `normalize_pq` scale-invariance defect fixed (joint-max relative bar). Wave 3 (A8,B2,C4–C7) launched. |
 | 2026-07-12 | @claude | **Wave 1 landed, all 6 CONFIRMED**: A1 `db0b0e9`, D1 `4626526`, D2 `1ba5a98`, C3 `7e0e4c6`, C2 `9a409cd`, C1 `d143e42`. Notable: D1 needed a new exact-integer LLL (the f64-GSO one returns garbage at W=2^300); D2's doc mischaracterized `from_f64` and was corrected. Wave 2 (curves spine A7/A4/A6/A3 + A2 + B1) launched. |
-| 2026-07-12 | @claude | Started IGP24 campaign build (`RUSTMATH_BUILD_HANDOFF.md`). Wave 1 (6 primitives: A1,C1,C2,C3,D1,D2) launched in parallel. Recon corrected two phantom symbols (`Gauge2_12_5`, `SolveParams`) and one impossible home crate (C1). |
+| 2026-07-12 | @claude | Started IGP24 campaign build (`docs/workstreams/belyi/RUSTMATH_BUILD_HANDOFF.md`). Wave 1 (6 primitives: A1,C1,C2,C3,D1,D2) launched in parallel. Recon corrected two phantom symbols (`Gauge2_12_5`, `SolveParams`) and one impossible home crate (C1). |
 | 2026-07-12 | @claude | Created tracker. Full ground-truth inventory of 1,282 algorithms across 65 crates, read from source. |
 | 2026-07-12 | @claude | Chunk 10 (`2d780a2`): elimination/saturation/ideal-quotient; blow-ups resolving node/cusp/tacnode; fixed 3 hangs — `polynomials` was **not green at HEAD**. |
 | 2026-07-12 | @claude | Chunk 9 (`4f8e716`): modular old/new block structure + 14-facade purge. |

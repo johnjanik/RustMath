@@ -64,7 +64,7 @@ pub mod igp_closure;
 // --- Genus >= 2 hyperelliptic/Jacobian stack (temporarily gated) ---------------
 // These four modules do not currently compile (25 lib errors) and `belyi` does
 // NOT depend on any of them, so they are gated behind `genus2` (off by default)
-// to unblock the genus-0 Belyi/conic path. See CURVES_BUILD_BLOCKERS_SPEC.md and
+// to unblock the genus-0 Belyi/conic path. See docs/workstreams/belyi/CURVES_BUILD_BLOCKERS_SPEC.md and
 // BUILD_STATUS.md. Repair order: divisor -> hyperelliptic -> cantor -> jacobian.
 #[cfg(feature = "genus2")]
 pub mod hyperelliptic;
