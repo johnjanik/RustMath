@@ -352,6 +352,8 @@ def write_status(chapters, records, coverage):
             by_ch[r["chapter"]]["_home"] += 1
         if r["inventory_status"] in ("facade", "broken"):
             by_ch[r["chapter"]]["_bad"] += 1
+        if r["verified_note"] or r["status"] not in ("candidate", "missing"):
+            by_ch[r["chapter"]]["_reviewed"] += 1
     tot = Counter()
     for ch, c in by_ch.items():
         if ch > LANGUAGE_MAX_CHAPTER:
@@ -374,16 +376,20 @@ def write_status(chapters, records, coverage):
         "",
         "Chapters 1-16 (the Magma language and runtime) are listed below but excluded from the totals.",
         "",
-        "| Rows | verified | done | partial | stub | facade/broken | candidate | missing |",
-        "|--:|--:|--:|--:|--:|--:|--:|--:|",
-        f"| {tot['_total']} | {tot['verified']} | {tot['done']} | {tot['partial']} | {tot['stub']} | "
+        "| Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |",
+        "|--:|--:|--:|--:|--:|--:|--:|--:|--:|",
+        f"| {tot['_total']} | {tot['_reviewed']} | {tot['verified']} | {tot['done']} | {tot['partial']} | {tot['stub']} | "
         f"{tot['facade'] + tot['broken']} | {tot['candidate']} ({pct(tot['candidate'], tot['_total'])}) | "
         f"{tot['missing']} ({pct(tot['missing'], tot['_total'])}) |",
         "",
         "## By chapter",
         "",
-        "| Ch | Title | Part | Rows | verified | candidate (home crate) | missing | Survey coverage | Home crate |",
-        "|--:|---|---|--:|--:|--:|--:|---|---|",
+        "`Reviewed` = rows with a status from `status_overrides.csv`. Unreviewed chapters show only",
+        "automatic `candidate`/`missing` counts.",
+        "",
+        "| Ch | Title | Part | Rows | Reviewed | verified | done | partial | stub/facade/broken | n/a | "
+        "candidate | missing | Survey coverage | Home crate |",
+        "|--:|---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|---|---|",
     ]
     for chap in chapters:
         ch = chap["chapter"]
@@ -391,8 +397,9 @@ def write_status(chapters, records, coverage):
         part = chap["part"].split("—")[0].strip()
         cov = coverage.get(ch, {})
         lines.append(
-            f"| {ch} | {chap['title']} | {part} | {c['_total']} | {c['verified']} | "
-            f"{c['candidate']} ({c['_home']}) | {c['missing']} | {cov.get('coverage', '')} | "
+            f"| {ch} | {chap['title']} | {part} | {c['_total']} | {c['_reviewed']} | {c['verified']} | "
+            f"{c['done']} | {c['partial']} | {c['stub'] + c['facade'] + c['broken']} | {c['n/a']} | "
+            f"{c['candidate']} | {c['missing']} | {cov.get('coverage', '')} | "
             f"{cov.get('home', '').replace('|', '/')} |")
     (OUT / "STATUS.md").write_text("\n".join(lines) + "\n")
 

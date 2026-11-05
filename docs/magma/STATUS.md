@@ -11,170 +11,173 @@ Only `verified` (tested against reference values) counts as ported.
 
 Chapters 1-16 (the Magma language and runtime) are listed below but excluded from the totals.
 
-| Rows | verified | done | partial | stub | facade/broken | candidate | missing |
-|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 0 | 0 | 0 | 0 | 0 | 5906 (44%) | 7435 (56%) |
+| Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 13341 | 231 | 0 | 15 | 45 | 1 | 0 | 5785 (43%) | 7494 (56%) |
 
 ## By chapter
 
-| Ch | Title | Part | Rows | verified | candidate (home crate) | missing | Survey coverage | Home crate |
-|--:|---|---|--:|--:|--:|--:|---|---|
-| 1 | Statements and Expressions | I | 85 | 0 | 27 (0) | 58 |  |  |
-| 2 | Functions, Procedures and Packages | I | 46 | 0 | 14 (0) | 32 |  |  |
-| 3 | Input and Output | I | 106 | 0 | 16 (0) | 90 |  |  |
-| 4 | Environment and Options | I | 76 | 0 | 4 (0) | 72 |  |  |
-| 5 | Magma Semantics | I | 0 | 0 | 0 (0) | 0 |  |  |
-| 6 | The Magma Profiler | I | 8 | 0 | 0 (0) | 8 |  |  |
-| 7 | Debugging Magma Code | I | 7 | 0 | 5 (0) | 2 |  |  |
-| 8 | Introduction to Aggregates | II | 2 | 0 | 0 (0) | 2 |  |  |
-| 9 | Sets | II | 100 | 0 | 41 (0) | 59 |  |  |
-| 10 | Sequences | II | 71 | 0 | 28 (0) | 43 |  |  |
-| 11 | Tuples and Cartesian Products | II | 25 | 0 | 13 (0) | 12 |  |  |
-| 12 | Lists | II | 18 | 0 | 6 (0) | 12 |  |  |
-| 13 | Associative Arrays | II | 8 | 0 | 5 (0) | 3 |  |  |
-| 14 | Coproducts | II | 11 | 0 | 3 (0) | 8 |  |  |
-| 15 | Records | II | 10 | 0 | 7 (0) | 3 |  |  |
-| 16 | Mappings | II | 34 | 0 | 17 (0) | 17 |  |  |
-| 17 | Introduction to Rings | III | 87 | 0 | 67 (45) | 20 | substantial | `rustmath-rings` |
-| 18 | Ring of Integers | III | 188 | 0 | 103 (42) | 85 | substantial | `rustmath-integers` |
-| 19 | Integer Residue Class Rings | III | 108 | 0 | 78 (38) | 30 | partial | `rustmath-finitefields` |
-| 20 | Rational Field | III | 63 | 0 | 53 (16) | 10 | substantial | `rustmath-rationals` |
-| 21 | Finite Fields | III | 118 | 0 | 74 (38) | 44 | partial | `rustmath-finitefields` |
-| 22 | Nearfields | III | 42 | 0 | 26 (0) | 16 | none | `(none - new crate rustmath-nearfields proposed)` |
-| 23 | Univariate Polynomial Rings | III | 129 | 0 | 84 (30) | 45 | substantial | `rustmath-polynomials` |
-| 24 | Multivariate Polynomial Rings | III | 98 | 0 | 67 (38) | 31 | substantial | `rustmath-polynomials` |
-| 25 | Real and Complex Fields | III | 176 | 0 | 100 (32) | 76 | partial | `rustmath-reals, rustmath-complex` |
-| 26 | Matrices | IV | 149 | 0 | 73 (41) | 76 | substantial | `rustmath-matrix` |
-| 27 | Sparse Matrices | IV | 83 | 0 | 39 (19) | 44 | partial | `rustmath-matrix` |
-| 28 | Vector Spaces | IV | 87 | 0 | 59 (24) | 28 | partial | `rustmath-matrix` |
-| 29 | Polar Spaces | IV | 74 | 0 | 3 (1) | 71 | stub | `rustmath-quadraticforms (proposed rustmath-lattices/polar module)` |
-| 30 | Lattices | V | 193 | 0 | 70 (38) | 123 | partial | `rustmath-matrix (proposed rustmath-lattices)` |
-| 31 | Lattices With Group Action | V | 60 | 0 | 19 (5) | 41 | none | `rustmath-matrix + rustmath-groups (proposed rustmath-lattices)` |
-| 32 | Quadratic Forms | V | 12 | 0 | 3 (0) | 9 | substantial | `rustmath-quadraticforms` |
-| 33 | Binary Quadratic Forms | V | 52 | 0 | 35 (5) | 17 | partial | `rustmath-quadraticforms` |
-| 34 | Number Fields | VI | 220 | 0 | 123 (30) | 97 | substantial | `rustmath-numberfields` |
-| 35 | Quadratic Fields | VI | 33 | 0 | 21 (10) | 12 | substantial | `rustmath-numberfields` |
-| 36 | Cyclotomic Fields | VI | 18 | 0 | 12 (8) | 6 | partial | `rustmath-rings` |
-| 37 | Orders and Algebraic Fields | VI | 356 | 0 | 209 (49) | 147 | substantial | `rustmath-numberfields` |
-| 38 | Galois Theory of Number Fields | VI | 69 | 0 | 23 (1) | 46 | partial | `rustmath-numberfields` |
-| 39 | Class Field Theory | VI | 68 | 0 | 32 (12) | 36 | partial | `rustmath-numberfields` |
-| 40 | Algebraically Closed Fields | VI | 52 | 0 | 41 (33) | 11 | stub | `rustmath-rings` |
-| 41 | Rational Function Fields | VI | 43 | 0 | 32 (29) | 11 | partial | `rustmath-rings` |
-| 42 | Algebraic Function Fields | VI | 402 | 0 | 216 (153) | 186 | partial | `rustmath-rings` |
-| 43 | Class Field Theory For Global Function Fields | VI | 86 | 0 | 44 (28) | 42 | stub | `rustmath-rings` |
-| 44 | Artin Representations | VI | 25 | 0 | 22 (2) | 3 | none | `rustmath-numberfields` |
-| 45 | Valuation Rings | VII | 26 | 0 | 22 (17) | 4 | stub | `rustmath-rings` |
-| 46 | Newton Polygons | VII | 54 | 0 | 20 (6) | 34 | partial | `rustmath-polynomials` |
-| 47 | p-adic Rings and their Extensions | VII | 164 | 0 | 95 (76) | 69 | partial | `rustmath-rings::padics (+ rustmath-padics, rustmath-polynomials)` |
-| 48 | Galois Rings | VII | 58 | 0 | 41 (33) | 17 | none | `(none - proposed galois_ring module in rustmath-finitefields or rustmath-rings)` |
-| 49 | Power, Laurent and Puiseux Series | VII | 102 | 0 | 75 (35) | 27 | partial | `rustmath-powerseries` |
-| 50 | Lazy Power Series Rings | VII | 44 | 0 | 26 (12) | 18 | stub | `rustmath-powerseries` |
-| 51 | General Local Fields | VII | 58 | 0 | 34 (27) | 24 | stub | `rustmath-rings::padics` |
-| 52 | Algebraic Power Series Rings | VII | 20 | 0 | 7 (2) | 13 | none | `rustmath-powerseries` |
-| 53 | Introduction to Modules | VIII | 0 | 0 | 0 (0) | 0 | partial | `rustmath-modules` |
-| 54 | Free Modules | VIII | 82 | 0 | 48 (17) | 34 | substantial | `rustmath-modules` |
-| 55 | Modules over Dedekind Domains | VIII | 59 | 0 | 37 (16) | 22 | stub | `rustmath-modules` |
-| 56 | Chain Complexes | VIII | 63 | 0 | 24 (3) | 39 | partial | `rustmath-homology` |
-| 57 | Groups | IX | 184 | 0 | 92 (54) | 92 | partial | `rustmath-groups` |
-| 58 | Permutation Groups | IX | 384 | 0 | 127 (79) | 257 | substantial | `rustmath-groups` |
-| 59 | Matrix Groups over General Rings | IX | 220 | 0 | 93 (57) | 127 | stub | `rustmath-groups` |
-| 60 | Matrix Groups over Finite Fields | IX | 102 | 0 | 4 (3) | 98 | none | `rustmath-groups` |
-| 61 | Matrix Groups over Infinite Fields | IX | 18 | 0 | 4 (4) | 14 | none | `rustmath-groups` |
-| 62 | Matrix Groups over Q and Z | IX | 20 | 0 | 0 (0) | 20 | none | `rustmath-groups` |
-| 63 | Finite Soluble Groups | IX | 215 | 0 | 83 (48) | 132 | none | `rustmath-groups` |
-| 64 | Black-box Groups | IX | 18 | 0 | 13 (8) | 5 | none | `rustmath-groups` |
-| 65 | Almost Simple Groups | IX | 116 | 0 | 10 (0) | 106 | stub | `rustmath-groups` |
-| 66 | Databases of Groups | IX | 177 | 0 | 31 (22) | 146 | stub | `rustmath-groups` |
-| 67 | Automorphism Groups | IX | 34 | 0 | 16 (9) | 18 | stub | `rustmath-groups` |
-| 68 | Cohomology and Extensions | IX | 56 | 0 | 10 (0) | 46 | none | `rustmath-groupcohomology (new)` |
-| 69 | Abelian Groups | X | 124 | 0 | 77 (36) | 47 | substantial | `rustmath-groups` |
-| 70 | Finitely Presented Groups | X | 202 | 0 | 90 (46) | 112 | partial | `rustmath-groups` |
-| 71 | Finitely Presented Groups: Advanced | X | 83 | 0 | 23 (2) | 60 | none | `rustmath-groups` |
-| 72 | Polycyclic Groups | X | 125 | 0 | 68 (50) | 57 | none | `rustmath-groups` |
-| 73 | Braid Groups | X | 102 | 0 | 49 (20) | 53 | partial | `rustmath-groups` |
-| 74 | Groups Defined by Rewrite Systems | X | 36 | 0 | 27 (12) | 9 | stub | `rustmath-groups` |
-| 75 | Automatic Groups | X | 41 | 0 | 26 (12) | 15 | stub | `rustmath-automata` |
-| 76 | Groups of Straight-line Programs | X | 24 | 0 | 16 (10) | 8 | none | `rustmath-groups` |
-| 77 | Finitely Presented Semigroups | X | 47 | 0 | 40 (28) | 7 | partial | `rustmath-monoids` |
-| 78 | Monoids Given by Rewrite Systems | X | 29 | 0 | 22 (13) | 7 | stub | `rustmath-monoids` |
-| 79 | Algebras | XI | 66 | 0 | 43 (31) | 23 | partial | `rustmath-algebras` |
-| 80 | Structure Constant Algebras | XI | 22 | 0 | 17 (11) | 5 | substantial | `rustmath-algebras` |
-| 81 | Associative Algebras | XI | 125 | 0 | 75 (40) | 50 | partial | `rustmath-algebras` |
-| 82 | Finitely Presented Algebras | XI | 91 | 0 | 69 (45) | 22 | partial | `rustmath-algebras` |
-| 83 | Matrix Algebras | XI | 147 | 0 | 84 (30) | 63 | partial | `rustmath-matrix` |
-| 84 | Group Algebras | XI | 50 | 0 | 31 (20) | 19 | partial | `rustmath-algebras` |
-| 85 | Basic Algebras | XI | 171 | 0 | 36 (15) | 135 | none | `rustmath-algebras` |
-| 86 | Quaternion Algebras | XI | 114 | 0 | 68 (5) | 46 | partial | `rustmath-quadraticforms` |
-| 87 | Algebras With Involution | XI | 19 | 0 | 0 (0) | 19 | none | `rustmath-algebras` |
-| 88 | Clifford Algebras | XI | 6 | 0 | 2 (1) | 4 | substantial | `rustmath-algebras` |
-| 89 | Modules over An Algebra | XII | 114 | 0 | 54 (28) | 60 | stub | `rustmath-algebras` |
-| 90 | K[G]-Modules and Group Representations | XII | 73 | 0 | 10 (3) | 63 | partial | `rustmath-groups` |
-| 91 | Characters of Finite Groups | XII | 79 | 0 | 36 (10) | 43 | partial | `rustmath-groups` |
-| 92 | Representations of Symmetric Groups | XII | 11 | 0 | 1 (1) | 10 | substantial | `rustmath-combinatorics` |
-| 93 | Mod P Galois Representations | XII | 20 | 0 | 10 (2) | 10 | none | `rustmath-modular` |
-| 94 | Introduction to Lie Theory | XIII | 0 | 0 | 0 (0) | 0 | none | `rustmath-liealgebras` |
-| 95 | Coxeter Systems | XIII | 58 | 0 | 9 (5) | 49 | stub | `rustmath-liealgebras` |
-| 96 | Root Systems | XIII | 96 | 0 | 20 (6) | 76 | stub | `rustmath-liealgebras` |
-| 97 | Root Data | XIII | 197 | 0 | 32 (10) | 165 | none | `rustmath-liealgebras` |
-| 98 | Coxeter Groups | XIII | 140 | 0 | 30 (13) | 110 | stub | `rustmath-liealgebras` |
-| 99 | Reflection Groups | XIII | 91 | 0 | 13 (7) | 78 | none | `rustmath-liealgebras` |
-| 100 | Lie Algebras | XIII | 192 | 0 | 68 (41) | 124 | substantial | `rustmath-liealgebras` |
-| 101 | Kac-moody Lie Algebras | XIII | 22 | 0 | 9 (2) | 13 | partial | `rustmath-liealgebras` |
-| 102 | Quantum Groups | XIII | 51 | 0 | 16 (2) | 35 | stub | `rustmath-quantumgroups` |
-| 103 | Groups of Lie Type | XIII | 145 | 0 | 51 (0) | 94 | none | `rustmath-groupsoflietype (new)` |
-| 104 | Representations of Lie Groups and Algebras | XIII | 103 | 0 | 33 (3) | 70 | partial | `rustmath-liealgebras` |
-| 105 | Gröbner Bases | XIV | 54 | 0 | 25 (13) | 29 | substantial | `rustmath-polynomials` |
-| 106 | Polynomial Ring Ideal Operations | XIV | 77 | 0 | 37 (10) | 40 | substantial | `rustmath-polynomials` |
-| 107 | Local Polynomial Rings | XIV | 35 | 0 | 24 (7) | 11 | stub | `rustmath-polynomials` |
-| 108 | Affine Algebras | XIV | 36 | 0 | 21 (7) | 15 | partial | `rustmath-polynomials` |
-| 109 | Modules over Multivariate Rings | XIV | 115 | 0 | 58 (15) | 57 | stub | `rustmath-polynomials` |
-| 110 | Invariant Theory | XIV | 66 | 0 | 21 (0) | 45 | none | `rustmath-polynomials` |
-| 111 | Differential Rings | XIV | 158 | 0 | 60 (19) | 98 | none | `rustmath-polynomials` |
-| 112 | Schemes | XV | 337 | 0 | 152 (78) | 185 | partial | `rustmath-schemes + rustmath-affineschemes` |
-| 113 | Coherent Sheaves | XV | 40 | 0 | 18 (9) | 22 | stub | `rustmath-schemes (line_bundle.rs / proj.rs) — needs new rustmath-sheaves crate` |
-| 114 | Algebraic Curves | XV | 314 | 0 | 159 (51) | 155 | substantial | `rustmath-curves` |
-| 115 | Resolution Graphs and Splice Diagrams | XV | 58 | 0 | 18 (8) | 40 | none | `rustmath-geometry (new module) building on rustmath-graphs` |
-| 116 | Algebraic Surfaces | XV | 78 | 0 | 7 (1) | 71 | none | `rustmath-schemes` |
-| 117 | Hilbert Series of Polarised Varieties | XV | 121 | 0 | 31 (14) | 90 | stub | `rustmath-schemes` |
-| 118 | Toric Varieties | XV | 193 | 0 | 61 (26) | 132 | partial | `rustmath-geometry` |
-| 119 | Rational Curves and Conics | XVI | 33 | 0 | 15 (7) | 18 | partial | `rustmath-quadraticforms (+ rustmath-curves for parametrization)` |
-| 120 | Elliptic Curves | XVI | 136 | 0 | 64 (12) | 72 | partial | `rustmath-ellipticcurves` |
-| 121 | Elliptic Curves over Finite Fields | XVI | 34 | 0 | 16 (2) | 18 | stub | `rustmath-ellipticcurves` |
-| 122 | Elliptic Curves over Q and Number Fields | XVI | 165 | 0 | 33 (22) | 132 | partial | `rustmath-ellipticcurves` |
-| 123 | Elliptic Curves over Function Fields | XVI | 47 | 0 | 14 (7) | 33 | none | `rustmath-ellipticcurves` |
-| 124 | Models of Genus One Curves | XVI | 51 | 0 | 15 (0) | 36 | none | `(new) rustmath-genusone` |
-| 125 | Hyperelliptic Curves | XVI | 218 | 0 | 103 (0) | 115 | stub | `(new) rustmath-hyperelliptic` |
-| 126 | Hypergeometric Motives | XVI | 34 | 0 | 8 (0) | 26 | none | `(new) rustmath-hgm` |
-| 127 | L-functions | XVI | 39 | 0 | 11 (7) | 28 | stub | `rustmath-ellipticcurves` |
-| 128 | Modular Curves | XVII | 33 | 0 | 10 (5) | 23 | stub | `rustmath-modular` |
-| 129 | Small Modular Curves | XVII | 27 | 0 | 3 (0) | 24 | none | `rustmath-modular` |
-| 130 | Congruence Subgroups of PSL₂(R) | XVII | 72 | 0 | 41 (14) | 31 | partial | `rustmath-modular` |
-| 131 | Arithmetic Fuchsian Groups and Shimura Curves | XVII | 56 | 0 | 21 (3) | 35 | stub | `rustmath-modular` |
-| 132 | Modular Forms | XVII | 87 | 0 | 33 (17) | 54 | partial | `rustmath-modular` |
-| 133 | Modular Symbols | XVII | 96 | 0 | 15 (8) | 81 | partial | `rustmath-modular` |
-| 134 | Brandt Modules | XVII | 56 | 0 | 28 (10) | 28 | stub | `rustmath-modular` |
-| 135 | Supersingular Divisors on Modular Curves | XVII | 35 | 0 | 12 (7) | 23 | stub | `rustmath-modular` |
-| 136 | Modular Abelian Varieties | XVII | 285 | 0 | 135 (34) | 150 | partial | `rustmath-modular` |
-| 137 | Hilbert Modular Forms | XVII | 27 | 0 | 10 (6) | 17 | none | `rustmath-modular` |
-| 138 | Modular Forms over Imaginary Quadratic Fields | XVII | 9 | 0 | 5 (3) | 4 | none | `rustmath-modular` |
-| 139 | Admissible Representations of GL₂(Q_p) | XVII | 11 | 0 | 2 (1) | 9 | stub | `rustmath-modular` |
-| 140 | Simplicial Homology | XVIII | 37 | 0 | 20 (2) | 17 | partial | `rustmath-homology` |
-| 141 | Finite Planes | XIX | 119 | 0 | 52 (10) | 67 | none | `rustmath-geometry` |
-| 142 | Incidence Geometry | XIX | 45 | 0 | 16 (3) | 29 | none | `rustmath-geometry` |
-| 143 | Convex Polytopes and Polyhedra | XIX | 127 | 0 | 54 (23) | 73 | partial | `rustmath-geometry` |
-| 144 | Enumerative Combinatorics | XX | 22 | 0 | 15 (13) | 7 | substantial | `rustmath-combinatorics` |
-| 145 | Partitions, Words and Young Tableaux | XX | 107 | 0 | 43 (27) | 64 | substantial | `rustmath-combinatorics` |
-| 146 | Symmetric Functions | XX | 60 | 0 | 24 (4) | 36 | substantial | `rustmath-symmetricfunctions` |
-| 147 | Incidence Structures and Designs | XX | 116 | 0 | 60 (34) | 56 | partial | `rustmath-combinatorics` |
-| 148 | Hadamard Matrices | XX | 23 | 0 | 7 (5) | 16 | stub | `rustmath-combinatorics` |
-| 149 | Graphs | XX | 268 | 0 | 136 (78) | 132 | substantial | `rustmath-graphs` |
-| 150 | Multigraphs | XX | 178 | 0 | 91 (43) | 87 | stub | `rustmath-graphs` |
-| 151 | Networks | XX | 16 | 0 | 13 (8) | 3 | none | `rustmath-graphs` |
-| 152 | Linear Codes over Finite Fields | XXI | 237 | 0 | 68 (12) | 169 | stub | `rustmath-coding` |
-| 153 | Algebraic-geometric Codes | XXI | 14 | 0 | 2 (0) | 12 | none | `rustmath-coding` |
-| 154 | Low Density Parity Check Codes | XXI | 20 | 0 | 0 (0) | 20 | none | `rustmath-coding` |
-| 155 | Linear Codes over Finite Rings | XXI | 128 | 0 | 43 (6) | 85 | none | `rustmath-coding` |
-| 156 | Additive Codes | XXI | 102 | 0 | 53 (7) | 49 | none | `rustmath-coding` |
-| 157 | Quantum Codes | XXI | 70 | 0 | 11 (1) | 59 | none | `rustmath-coding` |
-| 158 | Pseudo-random Bit Sequences | XXII | 15 | 0 | 15 (15) | 0 | none | `rustmath-crypto` |
-| 159 | Linear Programming | XXIII | 23 | 0 | 2 (0) | 21 | stub | `rustmath-numerical` |
+`Reviewed` = rows with a status from `status_overrides.csv`. Unreviewed chapters show only
+automatic `candidate`/`missing` counts.
+
+| Ch | Title | Part | Rows | Reviewed | verified | done | partial | stub/facade/broken | n/a | candidate | missing | Survey coverage | Home crate |
+|--:|---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|---|---|
+| 1 | Statements and Expressions | I | 85 | 0 | 0 | 0 | 0 | 0 | 0 | 27 | 58 |  |  |
+| 2 | Functions, Procedures and Packages | I | 46 | 0 | 0 | 0 | 0 | 0 | 0 | 14 | 32 |  |  |
+| 3 | Input and Output | I | 106 | 0 | 0 | 0 | 0 | 0 | 0 | 16 | 90 |  |  |
+| 4 | Environment and Options | I | 76 | 0 | 0 | 0 | 0 | 0 | 0 | 4 | 72 |  |  |
+| 5 | Magma Semantics | I | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |  |  |
+| 6 | The Magma Profiler | I | 8 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 8 |  |  |
+| 7 | Debugging Magma Code | I | 7 | 0 | 0 | 0 | 0 | 0 | 0 | 5 | 2 |  |  |
+| 8 | Introduction to Aggregates | II | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 2 |  |  |
+| 9 | Sets | II | 100 | 0 | 0 | 0 | 0 | 0 | 0 | 41 | 59 |  |  |
+| 10 | Sequences | II | 71 | 0 | 0 | 0 | 0 | 0 | 0 | 28 | 43 |  |  |
+| 11 | Tuples and Cartesian Products | II | 25 | 0 | 0 | 0 | 0 | 0 | 0 | 13 | 12 |  |  |
+| 12 | Lists | II | 18 | 0 | 0 | 0 | 0 | 0 | 0 | 6 | 12 |  |  |
+| 13 | Associative Arrays | II | 8 | 0 | 0 | 0 | 0 | 0 | 0 | 5 | 3 |  |  |
+| 14 | Coproducts | II | 11 | 0 | 0 | 0 | 0 | 0 | 0 | 3 | 8 |  |  |
+| 15 | Records | II | 10 | 0 | 0 | 0 | 0 | 0 | 0 | 7 | 3 |  |  |
+| 16 | Mappings | II | 34 | 0 | 0 | 0 | 0 | 0 | 0 | 17 | 17 |  |  |
+| 17 | Introduction to Rings | III | 87 | 0 | 0 | 0 | 0 | 0 | 0 | 67 | 20 | substantial | `rustmath-rings` |
+| 18 | Ring of Integers | III | 188 | 0 | 0 | 0 | 0 | 0 | 0 | 103 | 85 | substantial | `rustmath-integers` |
+| 19 | Integer Residue Class Rings | III | 108 | 108 | 0 | 12 | 23 | 1 | 1 | 0 | 71 | partial | `rustmath-finitefields` |
+| 20 | Rational Field | III | 63 | 0 | 0 | 0 | 0 | 0 | 0 | 53 | 10 | substantial | `rustmath-rationals` |
+| 21 | Finite Fields | III | 118 | 0 | 0 | 0 | 0 | 0 | 0 | 74 | 44 | partial | `rustmath-finitefields` |
+| 22 | Nearfields | III | 42 | 0 | 0 | 0 | 0 | 0 | 0 | 26 | 16 | none | `(none - new crate rustmath-nearfields proposed)` |
+| 23 | Univariate Polynomial Rings | III | 129 | 0 | 0 | 0 | 0 | 0 | 0 | 84 | 45 | substantial | `rustmath-polynomials` |
+| 24 | Multivariate Polynomial Rings | III | 98 | 0 | 0 | 0 | 0 | 0 | 0 | 67 | 31 | substantial | `rustmath-polynomials` |
+| 25 | Real and Complex Fields | III | 176 | 0 | 0 | 0 | 0 | 0 | 0 | 100 | 76 | partial | `rustmath-reals, rustmath-complex` |
+| 26 | Matrices | IV | 149 | 0 | 0 | 0 | 0 | 0 | 0 | 73 | 76 | substantial | `rustmath-matrix` |
+| 27 | Sparse Matrices | IV | 83 | 0 | 0 | 0 | 0 | 0 | 0 | 39 | 44 | partial | `rustmath-matrix` |
+| 28 | Vector Spaces | IV | 87 | 0 | 0 | 0 | 0 | 0 | 0 | 59 | 28 | partial | `rustmath-matrix` |
+| 29 | Polar Spaces | IV | 74 | 0 | 0 | 0 | 0 | 0 | 0 | 3 | 71 | stub | `rustmath-quadraticforms (proposed rustmath-lattices/polar module)` |
+| 30 | Lattices | V | 193 | 0 | 0 | 0 | 0 | 0 | 0 | 70 | 123 | partial | `rustmath-matrix (proposed rustmath-lattices)` |
+| 31 | Lattices With Group Action | V | 60 | 0 | 0 | 0 | 0 | 0 | 0 | 19 | 41 | none | `rustmath-matrix + rustmath-groups (proposed rustmath-lattices)` |
+| 32 | Quadratic Forms | V | 12 | 0 | 0 | 0 | 0 | 0 | 0 | 3 | 9 | substantial | `rustmath-quadraticforms` |
+| 33 | Binary Quadratic Forms | V | 52 | 0 | 0 | 0 | 0 | 0 | 0 | 35 | 17 | partial | `rustmath-quadraticforms` |
+| 34 | Number Fields | VI | 220 | 0 | 0 | 0 | 0 | 0 | 0 | 123 | 97 | substantial | `rustmath-numberfields` |
+| 35 | Quadratic Fields | VI | 33 | 0 | 0 | 0 | 0 | 0 | 0 | 21 | 12 | substantial | `rustmath-numberfields` |
+| 36 | Cyclotomic Fields | VI | 18 | 0 | 0 | 0 | 0 | 0 | 0 | 12 | 6 | partial | `rustmath-rings` |
+| 37 | Orders and Algebraic Fields | VI | 356 | 0 | 0 | 0 | 0 | 0 | 0 | 209 | 147 | substantial | `rustmath-numberfields` |
+| 38 | Galois Theory of Number Fields | VI | 69 | 69 | 0 | 0 | 15 | 0 | 0 | 0 | 54 | partial | `rustmath-numberfields` |
+| 39 | Class Field Theory | VI | 68 | 0 | 0 | 0 | 0 | 0 | 0 | 32 | 36 | partial | `rustmath-numberfields` |
+| 40 | Algebraically Closed Fields | VI | 52 | 0 | 0 | 0 | 0 | 0 | 0 | 41 | 11 | stub | `rustmath-rings` |
+| 41 | Rational Function Fields | VI | 43 | 0 | 0 | 0 | 0 | 0 | 0 | 32 | 11 | partial | `rustmath-rings` |
+| 42 | Algebraic Function Fields | VI | 402 | 0 | 0 | 0 | 0 | 0 | 0 | 216 | 186 | partial | `rustmath-rings` |
+| 43 | Class Field Theory For Global Function Fields | VI | 86 | 0 | 0 | 0 | 0 | 0 | 0 | 44 | 42 | stub | `rustmath-rings` |
+| 44 | Artin Representations | VI | 25 | 0 | 0 | 0 | 0 | 0 | 0 | 22 | 3 | none | `rustmath-numberfields` |
+| 45 | Valuation Rings | VII | 26 | 0 | 0 | 0 | 0 | 0 | 0 | 22 | 4 | stub | `rustmath-rings` |
+| 46 | Newton Polygons | VII | 54 | 54 | 0 | 3 | 7 | 0 | 0 | 0 | 44 | partial | `rustmath-polynomials` |
+| 47 | p-adic Rings and their Extensions | VII | 164 | 0 | 0 | 0 | 0 | 0 | 0 | 95 | 69 | partial | `rustmath-rings::padics (+ rustmath-padics, rustmath-polynomials)` |
+| 48 | Galois Rings | VII | 58 | 0 | 0 | 0 | 0 | 0 | 0 | 41 | 17 | none | `(none - proposed galois_ring module in rustmath-finitefields or rustmath-rings)` |
+| 49 | Power, Laurent and Puiseux Series | VII | 102 | 0 | 0 | 0 | 0 | 0 | 0 | 75 | 27 | partial | `rustmath-powerseries` |
+| 50 | Lazy Power Series Rings | VII | 44 | 0 | 0 | 0 | 0 | 0 | 0 | 26 | 18 | stub | `rustmath-powerseries` |
+| 51 | General Local Fields | VII | 58 | 0 | 0 | 0 | 0 | 0 | 0 | 34 | 24 | stub | `rustmath-rings::padics` |
+| 52 | Algebraic Power Series Rings | VII | 20 | 0 | 0 | 0 | 0 | 0 | 0 | 7 | 13 | none | `rustmath-powerseries` |
+| 53 | Introduction to Modules | VIII | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | partial | `rustmath-modules` |
+| 54 | Free Modules | VIII | 82 | 0 | 0 | 0 | 0 | 0 | 0 | 48 | 34 | substantial | `rustmath-modules` |
+| 55 | Modules over Dedekind Domains | VIII | 59 | 0 | 0 | 0 | 0 | 0 | 0 | 37 | 22 | stub | `rustmath-modules` |
+| 56 | Chain Complexes | VIII | 63 | 0 | 0 | 0 | 0 | 0 | 0 | 24 | 39 | partial | `rustmath-homology` |
+| 57 | Groups | IX | 184 | 0 | 0 | 0 | 0 | 0 | 0 | 92 | 92 | partial | `rustmath-groups` |
+| 58 | Permutation Groups | IX | 384 | 0 | 0 | 0 | 0 | 0 | 0 | 127 | 257 | substantial | `rustmath-groups` |
+| 59 | Matrix Groups over General Rings | IX | 220 | 0 | 0 | 0 | 0 | 0 | 0 | 93 | 127 | stub | `rustmath-groups` |
+| 60 | Matrix Groups over Finite Fields | IX | 102 | 0 | 0 | 0 | 0 | 0 | 0 | 4 | 98 | none | `rustmath-groups` |
+| 61 | Matrix Groups over Infinite Fields | IX | 18 | 0 | 0 | 0 | 0 | 0 | 0 | 4 | 14 | none | `rustmath-groups` |
+| 62 | Matrix Groups over Q and Z | IX | 20 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 20 | none | `rustmath-groups` |
+| 63 | Finite Soluble Groups | IX | 215 | 0 | 0 | 0 | 0 | 0 | 0 | 83 | 132 | none | `rustmath-groups` |
+| 64 | Black-box Groups | IX | 18 | 0 | 0 | 0 | 0 | 0 | 0 | 13 | 5 | none | `rustmath-groups` |
+| 65 | Almost Simple Groups | IX | 116 | 0 | 0 | 0 | 0 | 0 | 0 | 10 | 106 | stub | `rustmath-groups` |
+| 66 | Databases of Groups | IX | 177 | 0 | 0 | 0 | 0 | 0 | 0 | 31 | 146 | stub | `rustmath-groups` |
+| 67 | Automorphism Groups | IX | 34 | 0 | 0 | 0 | 0 | 0 | 0 | 16 | 18 | stub | `rustmath-groups` |
+| 68 | Cohomology and Extensions | IX | 56 | 0 | 0 | 0 | 0 | 0 | 0 | 10 | 46 | none | `rustmath-groupcohomology (new)` |
+| 69 | Abelian Groups | X | 124 | 0 | 0 | 0 | 0 | 0 | 0 | 77 | 47 | substantial | `rustmath-groups` |
+| 70 | Finitely Presented Groups | X | 202 | 0 | 0 | 0 | 0 | 0 | 0 | 90 | 112 | partial | `rustmath-groups` |
+| 71 | Finitely Presented Groups: Advanced | X | 83 | 0 | 0 | 0 | 0 | 0 | 0 | 23 | 60 | none | `rustmath-groups` |
+| 72 | Polycyclic Groups | X | 125 | 0 | 0 | 0 | 0 | 0 | 0 | 68 | 57 | none | `rustmath-groups` |
+| 73 | Braid Groups | X | 102 | 0 | 0 | 0 | 0 | 0 | 0 | 49 | 53 | partial | `rustmath-groups` |
+| 74 | Groups Defined by Rewrite Systems | X | 36 | 0 | 0 | 0 | 0 | 0 | 0 | 27 | 9 | stub | `rustmath-groups` |
+| 75 | Automatic Groups | X | 41 | 0 | 0 | 0 | 0 | 0 | 0 | 26 | 15 | stub | `rustmath-automata` |
+| 76 | Groups of Straight-line Programs | X | 24 | 0 | 0 | 0 | 0 | 0 | 0 | 16 | 8 | none | `rustmath-groups` |
+| 77 | Finitely Presented Semigroups | X | 47 | 0 | 0 | 0 | 0 | 0 | 0 | 40 | 7 | partial | `rustmath-monoids` |
+| 78 | Monoids Given by Rewrite Systems | X | 29 | 0 | 0 | 0 | 0 | 0 | 0 | 22 | 7 | stub | `rustmath-monoids` |
+| 79 | Algebras | XI | 66 | 0 | 0 | 0 | 0 | 0 | 0 | 43 | 23 | partial | `rustmath-algebras` |
+| 80 | Structure Constant Algebras | XI | 22 | 0 | 0 | 0 | 0 | 0 | 0 | 17 | 5 | substantial | `rustmath-algebras` |
+| 81 | Associative Algebras | XI | 125 | 0 | 0 | 0 | 0 | 0 | 0 | 75 | 50 | partial | `rustmath-algebras` |
+| 82 | Finitely Presented Algebras | XI | 91 | 0 | 0 | 0 | 0 | 0 | 0 | 69 | 22 | partial | `rustmath-algebras` |
+| 83 | Matrix Algebras | XI | 147 | 0 | 0 | 0 | 0 | 0 | 0 | 84 | 63 | partial | `rustmath-matrix` |
+| 84 | Group Algebras | XI | 50 | 0 | 0 | 0 | 0 | 0 | 0 | 31 | 19 | partial | `rustmath-algebras` |
+| 85 | Basic Algebras | XI | 171 | 0 | 0 | 0 | 0 | 0 | 0 | 36 | 135 | none | `rustmath-algebras` |
+| 86 | Quaternion Algebras | XI | 114 | 0 | 0 | 0 | 0 | 0 | 0 | 68 | 46 | partial | `rustmath-quadraticforms` |
+| 87 | Algebras With Involution | XI | 19 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 19 | none | `rustmath-algebras` |
+| 88 | Clifford Algebras | XI | 6 | 0 | 0 | 0 | 0 | 0 | 0 | 2 | 4 | substantial | `rustmath-algebras` |
+| 89 | Modules over An Algebra | XII | 114 | 0 | 0 | 0 | 0 | 0 | 0 | 54 | 60 | stub | `rustmath-algebras` |
+| 90 | K[G]-Modules and Group Representations | XII | 73 | 0 | 0 | 0 | 0 | 0 | 0 | 10 | 63 | partial | `rustmath-groups` |
+| 91 | Characters of Finite Groups | XII | 79 | 0 | 0 | 0 | 0 | 0 | 0 | 36 | 43 | partial | `rustmath-groups` |
+| 92 | Representations of Symmetric Groups | XII | 11 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 10 | substantial | `rustmath-combinatorics` |
+| 93 | Mod P Galois Representations | XII | 20 | 0 | 0 | 0 | 0 | 0 | 0 | 10 | 10 | none | `rustmath-modular` |
+| 94 | Introduction to Lie Theory | XIII | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | none | `rustmath-liealgebras` |
+| 95 | Coxeter Systems | XIII | 58 | 0 | 0 | 0 | 0 | 0 | 0 | 9 | 49 | stub | `rustmath-liealgebras` |
+| 96 | Root Systems | XIII | 96 | 0 | 0 | 0 | 0 | 0 | 0 | 20 | 76 | stub | `rustmath-liealgebras` |
+| 97 | Root Data | XIII | 197 | 0 | 0 | 0 | 0 | 0 | 0 | 32 | 165 | none | `rustmath-liealgebras` |
+| 98 | Coxeter Groups | XIII | 140 | 0 | 0 | 0 | 0 | 0 | 0 | 30 | 110 | stub | `rustmath-liealgebras` |
+| 99 | Reflection Groups | XIII | 91 | 0 | 0 | 0 | 0 | 0 | 0 | 13 | 78 | none | `rustmath-liealgebras` |
+| 100 | Lie Algebras | XIII | 192 | 0 | 0 | 0 | 0 | 0 | 0 | 68 | 124 | substantial | `rustmath-liealgebras` |
+| 101 | Kac-moody Lie Algebras | XIII | 22 | 0 | 0 | 0 | 0 | 0 | 0 | 9 | 13 | partial | `rustmath-liealgebras` |
+| 102 | Quantum Groups | XIII | 51 | 0 | 0 | 0 | 0 | 0 | 0 | 16 | 35 | stub | `rustmath-quantumgroups` |
+| 103 | Groups of Lie Type | XIII | 145 | 0 | 0 | 0 | 0 | 0 | 0 | 51 | 94 | none | `rustmath-groupsoflietype (new)` |
+| 104 | Representations of Lie Groups and Algebras | XIII | 103 | 0 | 0 | 0 | 0 | 0 | 0 | 33 | 70 | partial | `rustmath-liealgebras` |
+| 105 | Gröbner Bases | XIV | 54 | 0 | 0 | 0 | 0 | 0 | 0 | 25 | 29 | substantial | `rustmath-polynomials` |
+| 106 | Polynomial Ring Ideal Operations | XIV | 77 | 0 | 0 | 0 | 0 | 0 | 0 | 37 | 40 | substantial | `rustmath-polynomials` |
+| 107 | Local Polynomial Rings | XIV | 35 | 0 | 0 | 0 | 0 | 0 | 0 | 24 | 11 | stub | `rustmath-polynomials` |
+| 108 | Affine Algebras | XIV | 36 | 0 | 0 | 0 | 0 | 0 | 0 | 21 | 15 | partial | `rustmath-polynomials` |
+| 109 | Modules over Multivariate Rings | XIV | 115 | 0 | 0 | 0 | 0 | 0 | 0 | 58 | 57 | stub | `rustmath-polynomials` |
+| 110 | Invariant Theory | XIV | 66 | 0 | 0 | 0 | 0 | 0 | 0 | 21 | 45 | none | `rustmath-polynomials` |
+| 111 | Differential Rings | XIV | 158 | 0 | 0 | 0 | 0 | 0 | 0 | 60 | 98 | none | `rustmath-polynomials` |
+| 112 | Schemes | XV | 337 | 0 | 0 | 0 | 0 | 0 | 0 | 152 | 185 | partial | `rustmath-schemes + rustmath-affineschemes` |
+| 113 | Coherent Sheaves | XV | 40 | 0 | 0 | 0 | 0 | 0 | 0 | 18 | 22 | stub | `rustmath-schemes (line_bundle.rs / proj.rs) — needs new rustmath-sheaves crate` |
+| 114 | Algebraic Curves | XV | 314 | 0 | 0 | 0 | 0 | 0 | 0 | 159 | 155 | substantial | `rustmath-curves` |
+| 115 | Resolution Graphs and Splice Diagrams | XV | 58 | 0 | 0 | 0 | 0 | 0 | 0 | 18 | 40 | none | `rustmath-geometry (new module) building on rustmath-graphs` |
+| 116 | Algebraic Surfaces | XV | 78 | 0 | 0 | 0 | 0 | 0 | 0 | 7 | 71 | none | `rustmath-schemes` |
+| 117 | Hilbert Series of Polarised Varieties | XV | 121 | 0 | 0 | 0 | 0 | 0 | 0 | 31 | 90 | stub | `rustmath-schemes` |
+| 118 | Toric Varieties | XV | 193 | 0 | 0 | 0 | 0 | 0 | 0 | 61 | 132 | partial | `rustmath-geometry` |
+| 119 | Rational Curves and Conics | XVI | 33 | 0 | 0 | 0 | 0 | 0 | 0 | 15 | 18 | partial | `rustmath-quadraticforms (+ rustmath-curves for parametrization)` |
+| 120 | Elliptic Curves | XVI | 136 | 0 | 0 | 0 | 0 | 0 | 0 | 64 | 72 | partial | `rustmath-ellipticcurves` |
+| 121 | Elliptic Curves over Finite Fields | XVI | 34 | 0 | 0 | 0 | 0 | 0 | 0 | 16 | 18 | stub | `rustmath-ellipticcurves` |
+| 122 | Elliptic Curves over Q and Number Fields | XVI | 165 | 0 | 0 | 0 | 0 | 0 | 0 | 33 | 132 | partial | `rustmath-ellipticcurves` |
+| 123 | Elliptic Curves over Function Fields | XVI | 47 | 0 | 0 | 0 | 0 | 0 | 0 | 14 | 33 | none | `rustmath-ellipticcurves` |
+| 124 | Models of Genus One Curves | XVI | 51 | 0 | 0 | 0 | 0 | 0 | 0 | 15 | 36 | none | `(new) rustmath-genusone` |
+| 125 | Hyperelliptic Curves | XVI | 218 | 0 | 0 | 0 | 0 | 0 | 0 | 103 | 115 | stub | `(new) rustmath-hyperelliptic` |
+| 126 | Hypergeometric Motives | XVI | 34 | 0 | 0 | 0 | 0 | 0 | 0 | 8 | 26 | none | `(new) rustmath-hgm` |
+| 127 | L-functions | XVI | 39 | 0 | 0 | 0 | 0 | 0 | 0 | 11 | 28 | stub | `rustmath-ellipticcurves` |
+| 128 | Modular Curves | XVII | 33 | 0 | 0 | 0 | 0 | 0 | 0 | 10 | 23 | stub | `rustmath-modular` |
+| 129 | Small Modular Curves | XVII | 27 | 0 | 0 | 0 | 0 | 0 | 0 | 3 | 24 | none | `rustmath-modular` |
+| 130 | Congruence Subgroups of PSL₂(R) | XVII | 72 | 0 | 0 | 0 | 0 | 0 | 0 | 41 | 31 | partial | `rustmath-modular` |
+| 131 | Arithmetic Fuchsian Groups and Shimura Curves | XVII | 56 | 0 | 0 | 0 | 0 | 0 | 0 | 21 | 35 | stub | `rustmath-modular` |
+| 132 | Modular Forms | XVII | 87 | 0 | 0 | 0 | 0 | 0 | 0 | 33 | 54 | partial | `rustmath-modular` |
+| 133 | Modular Symbols | XVII | 96 | 0 | 0 | 0 | 0 | 0 | 0 | 15 | 81 | partial | `rustmath-modular` |
+| 134 | Brandt Modules | XVII | 56 | 0 | 0 | 0 | 0 | 0 | 0 | 28 | 28 | stub | `rustmath-modular` |
+| 135 | Supersingular Divisors on Modular Curves | XVII | 35 | 0 | 0 | 0 | 0 | 0 | 0 | 12 | 23 | stub | `rustmath-modular` |
+| 136 | Modular Abelian Varieties | XVII | 285 | 0 | 0 | 0 | 0 | 0 | 0 | 135 | 150 | partial | `rustmath-modular` |
+| 137 | Hilbert Modular Forms | XVII | 27 | 0 | 0 | 0 | 0 | 0 | 0 | 10 | 17 | none | `rustmath-modular` |
+| 138 | Modular Forms over Imaginary Quadratic Fields | XVII | 9 | 0 | 0 | 0 | 0 | 0 | 0 | 5 | 4 | none | `rustmath-modular` |
+| 139 | Admissible Representations of GL₂(Q_p) | XVII | 11 | 0 | 0 | 0 | 0 | 0 | 0 | 2 | 9 | stub | `rustmath-modular` |
+| 140 | Simplicial Homology | XVIII | 37 | 0 | 0 | 0 | 0 | 0 | 0 | 20 | 17 | partial | `rustmath-homology` |
+| 141 | Finite Planes | XIX | 119 | 0 | 0 | 0 | 0 | 0 | 0 | 52 | 67 | none | `rustmath-geometry` |
+| 142 | Incidence Geometry | XIX | 45 | 0 | 0 | 0 | 0 | 0 | 0 | 16 | 29 | none | `rustmath-geometry` |
+| 143 | Convex Polytopes and Polyhedra | XIX | 127 | 0 | 0 | 0 | 0 | 0 | 0 | 54 | 73 | partial | `rustmath-geometry` |
+| 144 | Enumerative Combinatorics | XX | 22 | 0 | 0 | 0 | 0 | 0 | 0 | 15 | 7 | substantial | `rustmath-combinatorics` |
+| 145 | Partitions, Words and Young Tableaux | XX | 107 | 0 | 0 | 0 | 0 | 0 | 0 | 43 | 64 | substantial | `rustmath-combinatorics` |
+| 146 | Symmetric Functions | XX | 60 | 0 | 0 | 0 | 0 | 0 | 0 | 24 | 36 | substantial | `rustmath-symmetricfunctions` |
+| 147 | Incidence Structures and Designs | XX | 116 | 0 | 0 | 0 | 0 | 0 | 0 | 60 | 56 | partial | `rustmath-combinatorics` |
+| 148 | Hadamard Matrices | XX | 23 | 0 | 0 | 0 | 0 | 0 | 0 | 7 | 16 | stub | `rustmath-combinatorics` |
+| 149 | Graphs | XX | 268 | 0 | 0 | 0 | 0 | 0 | 0 | 136 | 132 | substantial | `rustmath-graphs` |
+| 150 | Multigraphs | XX | 178 | 0 | 0 | 0 | 0 | 0 | 0 | 91 | 87 | stub | `rustmath-graphs` |
+| 151 | Networks | XX | 16 | 0 | 0 | 0 | 0 | 0 | 0 | 13 | 3 | none | `rustmath-graphs` |
+| 152 | Linear Codes over Finite Fields | XXI | 237 | 0 | 0 | 0 | 0 | 0 | 0 | 68 | 169 | stub | `rustmath-coding` |
+| 153 | Algebraic-geometric Codes | XXI | 14 | 0 | 0 | 0 | 0 | 0 | 0 | 2 | 12 | none | `rustmath-coding` |
+| 154 | Low Density Parity Check Codes | XXI | 20 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 20 | none | `rustmath-coding` |
+| 155 | Linear Codes over Finite Rings | XXI | 128 | 0 | 0 | 0 | 0 | 0 | 0 | 43 | 85 | none | `rustmath-coding` |
+| 156 | Additive Codes | XXI | 102 | 0 | 0 | 0 | 0 | 0 | 0 | 53 | 49 | none | `rustmath-coding` |
+| 157 | Quantum Codes | XXI | 70 | 0 | 0 | 0 | 0 | 0 | 0 | 11 | 59 | none | `rustmath-coding` |
+| 158 | Pseudo-random Bit Sequences | XXII | 15 | 0 | 0 | 0 | 0 | 0 | 0 | 15 | 0 | none | `rustmath-crypto` |
+| 159 | Linear Programming | XXIII | 23 | 0 | 0 | 0 | 0 | 0 | 0 | 2 | 21 | stub | `rustmath-numerical` |

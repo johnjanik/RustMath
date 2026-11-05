@@ -1,0 +1,1497 @@
+{
+"a black box algorithm for recognising finite symmetric and alternating groups i|2003": {
+"doi": "10.1090/s0002-9947-03-03040-x",
+"score": 0.951,
+"title": "A black-box group algorithm for recognizing finite symmetric and alternating groups, I"
+},
+"a catalogue of lattices|2001": {
+"doi": "10.1007/3-540-30731-1_9",
+"score": 0.516,
+"title": "Lattices"
+},
+"a characterization of null systems in projective space|1936": {
+"doi": "10.1090/s0002-9904-1936-06281-6",
+"score": 1.0,
+"title": "A characterization of null systems in projective space"
+},
+"a class of non desarguesian projective planes|1957": {
+"doi": "10.4153/cjm-1957-045-0",
+"score": 1.0,
+"title": "A Class of Non-Desarguesian Projective Planes"
+},
+"a computer program for the calculation of a covering group of a finite group|1985": {
+"doi": "10.1016/0022-4049(85)90046-5",
+"score": 1.0,
+"title": "A computer program for the calculation of a covering group of a finite group"
+},
+"a course in computational algebraic number theory|1993": {
+"doi": "10.1007/978-3-662-02945-9",
+"score": 1.0,
+"title": "A Course in Computational Algebraic Number Theory"
+},
+"a course of modern analysis|1915": {
+"doi": "10.1017/cbo9780511608759",
+"score": 0.85,
+"title": "A Course of Modern Analysis"
+},
+"a data structure for a uniform approach to computations with finite groups in|2006": {
+"doi": "10.1145/1145768.1145811",
+"score": 0.98,
+"title": "A data structure for a uniform approach to computations with finite groups"
+},
+"a modification of the lll reduction algorithm|1987": {
+"doi": "10.1016/s0747-7171(87)80061-5",
+"score": 1.0,
+"title": "A modification of the LLL reduction algorithm"
+},
+"a new algorithm for the computation of canonical forms of matrices over fields|1997": {
+"doi": "10.1006/jsco.1996.0142",
+"score": 1.0,
+"title": "A New Algorithm for the Computation of Canonical Forms of Matrices over Fields"
+},
+"a new polynomial factorization algorithm and its implementation|1995": {
+"doi": "10.1006/jsco.1995.1055",
+"score": 1.0,
+"title": "A New Polynomial Factorization Algorithm and its Implementation"
+},
+"a new scheme for computing with algebraically closed fields|": {
+"doi": "10.1007/3-540-45455-1_38",
+"score": 1.0,
+"title": "A New Scheme for Computing with Algebraically Closed Fields"
+},
+"a non constructive recognition algorithm for the special linear and other classical groups in|1997": {
+"doi": "10.1090/dimacs/028/05",
+"score": 0.984,
+"title": "A non-constructive recognition algorithm for the special linear and other classical groups"
+},
+"a normal form for definite quadratic forms over fq t|2012": {
+"doi": "10.1090/s0025-5718-2011-02570-6",
+"score": 0.929,
+"title": "A normal form for definite quadratic forms over $\\mathbb{F}_{q}[t]$"
+},
+"a practical model for computation with matrix groups|2011": {
+"doi": "10.1016/j.jsc.2014.08.006",
+"score": 0.85,
+"title": "A practical model for computation with matrix groups"
+},
+"a procedure for determining algebraic integers of given norm in|1983": {
+"doi": "10.1007/3-540-12868-9_103",
+"score": 0.976,
+"title": "A procedure for determining algebraic integers of given norm"
+},
+"a recognition algorithm for classical groups over finite fields|1998": {
+"doi": "10.1112/s0024611598000422",
+"score": 1.0,
+"title": "A Recognition Algorithm For Classical Groups Over Finite Fields"
+},
+"a recognition algorithm for classical groups|1992": {
+"doi": "10.1112/plms/s3-65.3.555",
+"score": 0.839,
+"title": "A Recognition Algorithm for Special Linear Groups"
+},
+"a recognition algorithm for non generic classical groups over finite fields|1999": {
+"doi": "10.1017/s1446788700001191",
+"score": 1.0,
+"title": "A recognition algorithm for non-generic classical groups over finite fields"
+},
+"a reduction algorithm for large base primitive permutation groups|2006": {
+"doi": "10.1112/s1461157000001236",
+"score": 1.0,
+"title": "A Reduction Algorithm for Large-Base Primitive Permutation Groups"
+},
+"a rigorous subexponential algorithm for computation of class groups|1989": {
+"doi": "10.1090/s0894-0347-1989-1002631-0",
+"score": 1.0,
+"title": "A rigorous subexponential algorithm for computation of class groups"
+},
+"a space efficient algorithm for group structure computation|1998": {
+"doi": "10.1090/s0025-5718-98-00968-5",
+"score": 1.0,
+"title": "A space efficient algorithm for group structure computation"
+},
+"a uniform approach for the fast computation of matrix type pade approximants|1994": {
+"doi": "10.1137/s0895479892230031",
+"score": 1.0,
+"title": "A Uniform Approach for the Fast Computation of Matrix-Type Pad\u00e9 Approximants"
+},
+"abh math sem univ hamburg|1935": {
+"doi": "10.1515/9783110811957.97",
+"score": 0.123,
+"title": "Endliche Fastk\u00f6rper und Zassenhausgruppen"
+},
+"about a new method for computing in algebraic number fields in b f caviness editor|1985": {
+"doi": "10.1007/3-540-15984-3_279",
+"score": 0.837,
+"title": "About a new method for computing in algebraic number fields"
+},
+"advanced topics in computational number theory|2000": {
+"doi": "10.1007/978-1-4419-8489-0",
+"score": 0.978,
+"title": "Advanced Topics in Computional Number Theory"
+},
+"advances in elliptic curve cryptography|2005": {
+"doi": "10.1017/cbo9780511546570",
+"score": 1.0,
+"title": "Advances in Elliptic Curve Cryptography"
+},
+"algebraic curves|1978": {
+"doi": "10.1007/978-1-4612-6323-4",
+"score": 1.0,
+"title": "Algebraic Curves"
+},
+"algebraic factoring and rational function integration|1976": {
+"doi": "10.1145/800205.806338",
+"score": 1.0,
+"title": "Algebraic factoring and rational function integration"
+},
+"algebraic function fields and codes|1993": {
+"doi": "10.1007/978-3-540-76878-4",
+"score": 0.85,
+"title": "Algebraic Function Fields and Codes"
+},
+"algorithmic algebraic number theory|1989": {
+"doi": "10.1017/cbo9780511661952",
+"score": 1.0,
+"title": "Algorithmic Algebraic Number Theory"
+},
+"algorithms for computer algebra|1992": {
+"doi": "10.1007/b102438",
+"score": 1.0,
+"title": "Algorithms for Computer Algebra"
+},
+"algorithms for computing with nilpotent matrix groups over infinite domains|2008": {
+"doi": "10.1016/j.jsc.2007.08.001",
+"score": 1.0,
+"title": "Algorithms for computing with nilpotent matrix groups over infinite domains"
+},
+"algorithms for function fields|2002": {
+"doi": "10.1080/10586458.2002.10504684",
+"score": 1.0,
+"title": "Algorithms for Function Fields"
+},
+"algorithms for matrix groups in|2011": {
+"doi": "10.1017/cbo9780511842474.002",
+"score": 0.949,
+"title": "Algorithms for matrix groups"
+},
+"algorithms for the solution of systems of linear diophantine equations|1982": {
+"doi": "10.1137/0211057",
+"score": 1.0,
+"title": "Algorithms for the Solution of Systems of Linear Diophantine Equations"
+},
+"algorithms for the tits alternative and related problems|2011": {
+"doi": "10.1016/j.jalgebra.2011.06.036",
+"score": 1.0,
+"title": "Algorithms for the Tits alternative and related problems"
+},
+"an algorithm for computing genera of ternary and quaternary quadratic forms in stephen m watt editor|1991": {
+"doi": "10.1145/120694.120712",
+"score": 0.857,
+"title": "An algorithm for computing genera of ternary and quaternary quadratic forms"
+},
+"an algorithm for computing isomorphisms of algebraic function fields|": {
+"doi": "10.1007/978-3-540-24847-7_19",
+"score": 1.0,
+"title": "An Algorithm for Computing Isomorphisms of Algebraic Function Fields"
+},
+"an algorithm for finding an algebraic number whose norm is a given rational number|1980": {
+"doi": "10.1515/crll.1980.316.1",
+"score": 1.0,
+"title": "An algorithm for finding an algebraic number whose norm is a given rational number."
+},
+"an algorithm for finding the blocks of a permutation group|1975": {
+"doi": "10.2307/2005304",
+"score": 1.0,
+"title": "An Algorithm for Finding the Blocks of a Permutation Group"
+},
+"an algorithm to compute generalized pade hermite forms|1994": {
+"doi": "10.1145/244768.244790",
+"score": 0.28,
+"title": "Algorithm 766: experiments with a weakly stable algorithm for computing Pad\u00e9-Hermite and simultaneous Pad\u00e9 approximants"
+},
+"an improved algorithm for computing logarithms over gf p and its cryptographic significance|1978": {
+"doi": "10.1109/tit.1978.1055817",
+"score": 0.952,
+"title": "An improved algorithm for computing logarithms overGF(p)and its cryptographic significance (Corresp.)"
+},
+"an improved method of finding the centralizer of an involution|2000": {
+"doi": "10.1007/s000130050437",
+"score": 0.906,
+"title": "An improved method for generating the centralizer of an involution"
+},
+"an improved monte carlo factorization algorithm|1980": {
+"doi": "10.1007/bf01933190",
+"score": 1.0,
+"title": "An improved Monte Carlo factorization algorithm"
+},
+"an improved multivariate polynomial factoring algorithm|1978": {
+"doi": "10.2307/2006346",
+"score": 1.0,
+"title": "An Improved Multivariate Polynomial Factoring Algorithm"
+},
+"an inductive schema for computing conjugacy classes in permutation groups|1994": {
+"doi": "10.1090/s0025-5718-1994-1208219-2",
+"score": 1.0,
+"title": "An inductive schema for computing conjugacy classes in permutation groups"
+},
+"an lll algorithm with quadratic complexity|2009": {
+"doi": "10.1137/070705702",
+"score": 1.0,
+"title": "An LLL Algorithm with Quadratic Complexity"
+},
+"another np complete partition problem and the complexity of computing short vectors in a lattice|1981": {
+"doi": "10.1109/ccc.2002.1004339",
+"score": 0.376,
+"title": "Sampling short lattice vectors and the closest lattice vector problem"
+},
+"ants ii|1996": {
+"doi": "10.1378/chest.110.4.1128-a",
+"score": 0.286,
+"title": "Tuberculosis Patients-To the Editor"
+},
+"ants iv|2000": {
+"doi": "10.1163/156916700745900",
+"score": 0.182,
+"title": "FROM THE EDITOR"
+},
+"ants vii|2006": {
+"doi": "10.1016/b978-0-323-03265-0.50003-8",
+"score": 0.32,
+"title": "Associate Editors"
+},
+"ants vi|2004": {
+"doi": "10.1016/b978-012198157-0/50000-3",
+"score": 0.348,
+"title": "About the Editor"
+},
+"ants v|2002": {
+"doi": "10.1007/3-540-45455-1",
+"score": 0.194,
+"title": "Algorithmic Number Theory"
+},
+"approximating rings of integers in number fields|1994": {
+"doi": "10.5802/jtnb.113",
+"score": 0.99,
+"title": "Approximatting rings of integers in number fields"
+},
+"arbitrary precision error analysis for computing s with the cohen olivier algorithm complete description of the real case and preliminary report on the general case|2006": {
+"doi": "10.1023/a:1009924521389",
+"score": 0.167,
+"title": "A Real Polynomial Decision Algorithm Using Arbitrary-Precision Floating Point Arithmetic"
+},
+"arithmetic algebraic geometry|1991": {
+"doi": "10.1007/978-1-4612-0457-2",
+"score": 1.0,
+"title": "Arithmetic Algebraic Geometry"
+},
+"attacking the chor rivest cryptosystem by improved lattice reduction in|1995": {
+"doi": "10.1007/3-540-49264-x_1",
+"score": 0.978,
+"title": "Attacking the Chor-Rivest Cryptosystem by Improved Lattice Reduction"
+},
+"atti del convegno di geometria combinatoria e sue applicazioni univ perugia perugia 1970|1971": {
+"doi": "10.5840/hyle199625",
+"score": 0.32,
+"title": "G. Marino (Hrsg.): Atti del V Convegno Nazionale di Storia e Fondamenti della Chimica, Perugia, 27-30 Ottobre 1993, Roma"
+},
+"automorphism group computation and isomorphism testing in finite groups|2003": {
+"doi": "10.1016/s0747-7171(02)00133-5",
+"score": 1.0,
+"title": "Automorphism group computation and isomorphism testing in finite groups"
+},
+"calculating characters of p groups|1990": {
+"doi": "10.1016/s0747-7171(08)80072-7",
+"score": 1.0,
+"title": "Calculating characters of p-groups"
+},
+"calculating the order of an invertible matrix in larry finkelstein and william m kantor editors|1997": {
+"doi": "10.1090/dimacs/028/04",
+"score": 0.643,
+"title": "Calculating the order of an invertible matrix"
+},
+"calculating the order of an invertible matrix|1997": {
+"doi": "10.1090/dimacs/028/04",
+"score": 1.0,
+"title": "Calculating the order of an invertible matrix"
+},
+"calculs de nombres de classes et de regulateurs de corps quadratiques en temps sous exponentiel|1993": {
+"doi": "10.1007/978-1-4757-4271-8_3",
+"score": 1.0,
+"title": "Calculs de nombres de classes et de r\u00e9gulateurs de corps quadratiques en temps sous-exponentiel"
+},
+"closest point search in lattices|2002": {
+"doi": "10.1109/tit.2002.800499",
+"score": 1.0,
+"title": "Closest point search in lattices"
+},
+"complexity of lattice problems a cryptographic perspective|2002": {
+"doi": "10.1007/978-1-4615-0897-7",
+"score": 0.682,
+"title": "Complexity of Lattice Problems"
+},
+"computation of discrete logarithms in f 2 607|2001": {
+"doi": "10.1007/3-540-45682-1_7",
+"score": 0.928,
+"title": "Computation of Discrete Logarithms in $$ \\mathbb{F}_{2^{607} } $$"
+},
+"computation of discrete logarithms in prime fields|1991": {
+"doi": "10.1007/bf00123958",
+"score": 1.0,
+"title": "Computation of discrete logarithms in prime fields"
+},
+"computational algebraic number theory|1993": {
+"doi": "10.1007/978-3-0348-8589-8",
+"score": 1.0,
+"title": "Computational Algebraic Number Theory"
+},
+"computational galois theory i invariants and computations over q|2012": {
+"doi": "10.1112/s1461157013000302",
+"score": 0.517,
+"title": "Computation of Galois groups of rational polynomials"
+},
+"computational methods in the study of permutation groups in j leech editor|1970": {
+"doi": "10.1016/b978-0-08-012975-4.50020-5",
+"score": 0.61,
+"title": "Computational methods in the study of permutation groups\u2020\u2020This research was supported in part by the National Science Foundation."
+},
+"computing 2 cocycles for central extensions and relative difference sets|2000": {
+"doi": "10.1080/00927870008826937",
+"score": 0.986,
+"title": "Computing 2-cocyeles for central extensions and relative difference sets"
+},
+"computing all power integral bases of cubic fields|1989": {
+"doi": "10.1090/s0025-5718-1989-0979943-x",
+"score": 1.0,
+"title": "Computing all power integral bases of cubic fields"
+},
+"computing automorphisms of abelian number fields|1999": {
+"doi": "10.1090/s0025-5718-99-01084-4",
+"score": 1.0,
+"title": "Computing automorphisms of abelian number fields"
+},
+"computing character degrees in p groups|1986": {
+"doi": "10.1016/s0747-7171(86)80012-8",
+"score": 1.0,
+"title": "Computing character degrees in p-groups"
+},
+"computing chief series composition series and socles in large permutation groups|1997": {
+"doi": "10.1006/jsco.1997.0127",
+"score": 1.0,
+"title": "Computing Chief Series, Composition Series and Socles in Large Permutation Groups"
+},
+"computing chief series of a large permutation group|": {
+"doi": "10.1016/j.jalgebra.2006.02.027",
+"score": 0.777,
+"title": "Computing the soluble radical of a permutation group"
+},
+"computing class fields via the artin map|2000": {
+"doi": "10.1090/s0025-5718-00-01255-2",
+"score": 1.0,
+"title": "Computing class fields via the Artin map"
+},
+"computing decompositions for modules with respect to a normal subgroup|1996": {
+"doi": "10.1006/jabr.1996.0286",
+"score": 0.823,
+"title": "Computing Matrix Group Decompositions with Respect to a Normal Subgroup"
+},
+"computing double cosets in soluble groups|1996": {
+"doi": "10.1006/jsco.1999.1005",
+"score": 0.85,
+"title": "Computing Double Cosets in Soluble Groups"
+},
+"computing frobenius maps and factoring polynomials|1992": {
+"doi": "10.1007/bf01272074",
+"score": 1.0,
+"title": "Computing Frobenius maps and factoring polynomials"
+},
+"computing galois groups of polynomials especially over function fields of prime characteristic|": {
+"doi": "10.1016/j.jsc.2014.09.043",
+"score": 1.0,
+"title": "Computing Galois groups of polynomials (especially over function fields of prime characteristic)"
+},
+"computing galois groups over the rationals|1985": {
+"doi": "10.1016/0022-314x(85)90022-8",
+"score": 1.0,
+"title": "Computing Galois groups over the rationals"
+},
+"computing in nilpotent matrix groups|2006": {
+"doi": "10.1112/s1461157000001212",
+"score": 1.0,
+"title": "Computing in Nilpotent Matrix Groups"
+},
+"computing intersections and normalizers in soluble groups|1990": {
+"doi": "10.1016/s0747-7171(08)80079-x",
+"score": 0.991,
+"title": "Computing intersections and normalizersin soluble groups"
+},
+"computing maximal subgroups of finite groups|2004": {
+"doi": "10.1016/j.jsc.2003.08.002",
+"score": 1.0,
+"title": "Computing maximal subgroups of finite groups"
+},
+"computing modular and projective character degrees of soluble groups|1990": {
+"doi": "10.1016/s0747-7171(08)80073-9",
+"score": 1.0,
+"title": "Computing modular and projective character degrees of soluble groups"
+},
+"computing ray class groups conductors and discriminants|": {
+"doi": "10.1090/s0025-5718-98-00912-0",
+"score": 1.0,
+"title": "Computing ray class groups, conductors and discriminants"
+},
+"computing residue class rings and picard groups of orders|2005": {
+"doi": "10.1016/j.jalgebra.2005.04.013",
+"score": 1.0,
+"title": "Computing residue class rings and Picard groups of orders"
+},
+"computing subgroups invariant under a set of automorphisms|1999": {
+"doi": "10.1006/jsco.1998.0260",
+"score": 1.0,
+"title": "Computing Subgroups Invariant Under a Set of Automorphisms"
+},
+"computing subgroups of low index in a finite group 2003|2003": {
+"doi": "10.1016/j.jsc.2005.02.002",
+"score": 0.881,
+"title": "Computing subgroups of bounded index in a finite group"
+},
+"computing sylow subgroups in permutation groups|1997": {
+"doi": "10.1006/jsco.1997.0128",
+"score": 1.0,
+"title": "Computing Sylow Subgroups in Permutation Groups"
+},
+"computing the character table of a finite group|2006": {
+"doi": "10.1016/j.jsc.2006.04.002",
+"score": 1.0,
+"title": "Computing the character table of a finite group"
+},
+"computing the order of a solvable permutation group|1990": {
+"doi": "10.1016/s0747-7171(08)80083-1",
+"score": 0.99,
+"title": "Computing the order of a solvablepermutation group"
+},
+"computing the solvable radical of a permutation group|2006": {
+"doi": "10.1016/j.jalgebra.2006.02.027",
+"score": 0.971,
+"title": "Computing the soluble radical of a permutation group"
+},
+"computing the subgroup lattice of a permutation group|2001": {
+"doi": "10.1006/jsco.2000.1012",
+"score": 0.909,
+"title": "Computing the Subgroups of a Permutation Group"
+},
+"computing with algebraically closed fields|2010": {
+"doi": "10.1016/j.jsc.2009.09.005",
+"score": 1.0,
+"title": "Computing with algebraically closed fields"
+},
+"computing with group homomorphisms|1991": {
+"doi": "10.1016/s0747-7171(08)80102-2",
+"score": 1.0,
+"title": "Computing with group homomorphisms"
+},
+"computing with matrix groups over infinite fields|2009": {
+"doi": "10.1017/cbo9780511842467.017",
+"score": 1.0,
+"title": "Computing with matrix groups over infinite fields"
+},
+"computing with permutation and matrix groups i normal closure commutator subgroups series|1982": {
+"doi": "10.1090/s0025-5718-1982-0669658-3",
+"score": 0.977,
+"title": "Computing in permutation and matrix groups. I. Normal closure, commutator subgroups, series"
+},
+"conjugacy of subgroups of the general linear group|2004": {
+"doi": "10.1080/10586458.2004.10504529",
+"score": 1.0,
+"title": "Conjugacy of Subgroups of the General Linear Group"
+},
+"conquering inseparability primary decomposition and multivariate factorization over algebraic function fields of positive characteristic|2005": {
+"doi": "10.1016/j.jsc.2005.03.002",
+"score": 1.0,
+"title": "Conquering inseparability: Primary decomposition and multivariate factorization over algebraic function fields of positive characteristic"
+},
+"constructing a short defining set of relations for a finite group|2000": {
+"doi": "10.1006/jabr.2000.8436",
+"score": 1.0,
+"title": "Constructing a Short Defining Set of Relations for a Finite Group"
+},
+"constructing automorphism groups of p groups|2002": {
+"doi": "10.1081/agb-120003468",
+"score": 0.957,
+"title": "CONSTRUCTING AUTOMORPHISM GROUPS OF <i>p</i>-GROUPS"
+},
+"constructing class fields over local fields|2006": {
+"doi": "10.5802/jtnb.563",
+"score": 1.0,
+"title": "Constructing class fields over local fields"
+},
+"constructing transitive permutation groups|2005": {
+"doi": "10.1016/j.jsc.2004.08.002",
+"score": 1.0,
+"title": "Constructing transitive permutation groups"
+},
+"construction of finite groups|1999": {
+"doi": "10.1006/jsco.1998.0258",
+"score": 1.0,
+"title": "Construction of Finite Groups"
+},
+"constructive and destructive facets of weil descent on elliptic curves|2000": {
+"doi": "10.1007/s00145-001-0011-x",
+"score": 1.0,
+"title": "Constructive and destructive facets of Weil descent on elliptic curves"
+},
+"constructive recognition for psl 2 q|2006": {
+"doi": "10.1090/s0002-9947-05-03756-6",
+"score": 0.93,
+"title": "Constructive recognition of PSL(2,k)"
+},
+"constructive recognition of classical groups in even characteristic|2013": {
+"doi": "10.1016/j.jalgebra.2013.04.031",
+"score": 1.0,
+"title": "Constructive recognition of classical groups in even characteristic"
+},
+"constructive recognition of classical groups in odd characteristic|2009": {
+"doi": "10.1016/j.jalgebra.2009.04.028",
+"score": 1.0,
+"title": "Constructive recognition of classical groups in odd characteristic"
+},
+"constructive recognition of normalisers of small extraspecial matrix groups|2005": {
+"doi": "10.1142/s021819670500230x",
+"score": 0.98,
+"title": "CONSTRUCTIVE RECOGNITION OF NORMALIZERS OF SMALL EXTRA-SPECIAL MATRIX GROUPS"
+},
+"constructive recognition of sl3 q|2007": {
+"doi": "10.1016/j.jalgebra.2013.04.031",
+"score": 0.45,
+"title": "Constructive recognition of classical groups in even characteristic"
+},
+"constructive recognition of the ree groups preprint 2006|2006": {
+"doi": "10.1016/j.jalgebra.2006.02.024",
+"score": 0.638,
+"title": "Fast constructive recognition of black box orthogonal groups"
+},
+"constructive sylow theorems for the classical groups to appear in|": {
+"doi": "10.1016/j.jalgebra.2007.03.013",
+"score": 0.889,
+"title": "Constructive Sylow Theorems for the classical groups"
+},
+"corrigenda low dimensional representations of quasi simple groups|2002": {
+"doi": "10.1112/s1461157000000711",
+"score": 1.0,
+"title": "Corrigenda: Low-dimensional Representations of Quasi-simple Groups"
+},
+"crystallographic algorithms and tables|1998": {
+"doi": "10.1107/s010876739701547x",
+"score": 1.0,
+"title": "Crystallographic Algorithms and Tables"
+},
+"deciding finiteness of matrix groups in positive characteristic|2009": {
+"doi": "10.1016/j.jalgebra.2009.08.020",
+"score": 1.0,
+"title": "Deciding finiteness of matrix groups in positive characteristic"
+},
+"definite quadratic forms over f q x|2003": {
+"doi": "10.1016/s0021-8693(03)00114-5",
+"score": 0.986,
+"title": "Definite quadratic forms over Fq[x]"
+},
+"definitions of a group and a field by independent postulates|1905": {
+"doi": "10.1090/s0002-9947-1905-1500706-2",
+"score": 1.0,
+"title": "Definitions of a group and a field by independent postulates"
+},
+"determination of groups of prime power order|1977": {
+"doi": "10.1007/bfb0087814",
+"score": 1.0,
+"title": "Determination of groups of prime-power order"
+},
+"diehard a battery of tests of randomness|1995": {
+"doi": "10.18637/jss.v007.i03",
+"score": 0.411,
+"title": "Some Difficult-to-Pass Tests of Randomness"
+},
+"dimino s algorithm|1991": {
+"doi": "10.4324/9781003538424-13",
+"score": 0.237,
+"title": "Other Stories"
+},
+"direct methods for sparse matrices|1984": {
+"doi": "10.1093/acprof:oso/9780198508380.001.0001",
+"score": 0.85,
+"title": "Direct Methods for Sparse Matrices"
+},
+"discrete logarithms in gf p|1986": {
+"doi": "10.1007/bf01840433",
+"score": 0.981,
+"title": "Discrete logarithms inGF(p)"
+},
+"dual cones and the voronoi algorithm|2001": {
+"doi": "10.1080/10586458.2001.10504679",
+"score": 1.0,
+"title": "Dual Cones and the Voronoi Algorithm"
+},
+"eddie h lo|1998": {
+"doi": "10.1093/gmo/9781561592630.article.j033000",
+"score": 0.35,
+"title": "Beal, Eddie"
+},
+"effective computation with group homomorphisms|1985": {
+"doi": "10.1016/s0747-7171(85)80011-0",
+"score": 1.0,
+"title": "Effective computation with group homomorphisms"
+},
+"efficient computation of maximal orders of artinschreier extensions|2013": {
+"doi": "10.1016/j.jsc.2012.11.001",
+"score": 0.97,
+"title": "Efficient computation of maximal orders in Artin\u2013Schreier extensions"
+},
+"efficient computation of maximal orders of radical including kummer extensions|2012": {
+"doi": "10.1016/j.jsc.2011.12.053",
+"score": 0.974,
+"title": "Efficient computation of maximal orders in radical (including Kummer) extensions"
+},
+"efficient multivariate factorization over finite fields|1997": {
+"doi": "10.1007/3-540-63163-1_2",
+"score": 1.0,
+"title": "Efficient multivariate factorization over finite fields"
+},
+"elements de mathematique algebre chapitre 9|1959": {
+"doi": "10.2307/3611000",
+"score": 0.376,
+"title": "\u00c9l\u00e9ments de Math\u00e9matique XXI. By N Bourbaki. Livre VI. Int\u00e9gration. Chapitre 5. Int\u00e9gration des Mesures. Actualit\u00e9s scientifiques et industrielles 1244, (Hermann, Paris)"
+},
+"elliptic curves and primality proving|1993": {
+"doi": "10.1090/s0025-5718-1993-1199989-x",
+"score": 1.0,
+"title": "Elliptic curves and primality proving"
+},
+"elliptic curves|1987": {
+"doi": "10.1007/978-1-4757-5119-2_13",
+"score": 0.638,
+"title": "Endomorphisms of Elliptic Curves"
+},
+"elliptic functions|1985": {
+"doi": "10.1007/978-3-642-52244-4",
+"score": 1.0,
+"title": "Elliptic Functions"
+},
+"endliche inzidenzgruppen|1964": {
+"doi": "10.1007/bf02993220",
+"score": 1.0,
+"title": "Endliche Inzidenzgruppen"
+},
+"enumerating p groups|1999": {
+"doi": "10.1017/s1446788700001166",
+"score": 0.909,
+"title": "Enumerating <i>p</i>-Groups"
+},
+"explicit descent for jacobians of cyclic covers of the projective line|1997": {
+"doi": "10.1515/crll.1997.488.141",
+"score": 0.993,
+"title": "Explicit descent for Jacobians of cyclic coevers of the projective line."
+},
+"factoring into coprimes in essentially linear time|2005": {
+"doi": "10.1016/j.jalgor.2004.04.009",
+"score": 1.0,
+"title": "Factoring into coprimes in essentially linear time"
+},
+"factoring polynomials and 0 1 vectors|2001": {
+"doi": "10.1007/3-540-44670-2_5",
+"score": 0.986,
+"title": "Factoring Polynomials and 0\u20141 Vectors"
+},
+"factoring polynomials and the knapsack problem|2002": {
+"doi": "10.1016/s0022-314x(01)92763-5",
+"score": 1.0,
+"title": "Factoring Polynomials and the Knapsack Problem"
+},
+"factoring polynomials over local fields|2001": {
+"doi": "10.1006/jsco.2001.0493",
+"score": 1.0,
+"title": "Factoring Polynomials Over Local Fields"
+},
+"factoring polynomials with rational coefficients|1982": {
+"doi": "10.1007/bf01457454",
+"score": 1.0,
+"title": "Factoring polynomials with rational coefficients"
+},
+"factorizations of an 1 13 a 100|1992": {
+"doi": "10.1090/s0025-5718-1991-1094940-3",
+"score": 0.242,
+"title": "Improved techniques for lower bounds for odd perfect numbers"
+},
+"fast constructive recognition of a black box group isomorphic to s n or a n using goldbach s conjecture|2000": {
+"doi": "10.1006/jsco.1999.0295",
+"score": 0.965,
+"title": "Fast Constructive Recognition of a Black Box Group Isomorphic toSnorAnusing Goldbach\u2019s Conjecture"
+},
+"fast deterministic computation of determinants of dense matrices|1999": {
+"doi": "10.1145/309831.309934",
+"score": 1.0,
+"title": "Fast deterministic computation of determinants of dense matrices"
+},
+"fast evaluation of logarithms in fields of characteristic two|1984": {
+"doi": "10.1109/tit.1984.1056941",
+"score": 1.0,
+"title": "Fast evaluation of logarithms in fields of characteristic two"
+},
+"finding a small root of a univariate modular equation|1996": {
+"doi": "10.1007/3-540-68339-9_14",
+"score": 1.0,
+"title": "Finding a Small Root of a Univariate Modular Equation"
+},
+"finding blocks of imprimitivity in small base groups in nearly linear time in|1994": {
+"doi": "10.1145/190347.190400",
+"score": 0.98,
+"title": "Finding blocks of imprimitivity in small-base groups in nearly linear time"
+},
+"finding composition factors of permutation groups of degree n 106|1991": {
+"doi": "10.1016/s0747-7171(08)80101-0",
+"score": 0.992,
+"title": "Finding composition factors of permutation groups of degree n\u2264106"
+},
+"finding integral linear dependencies of algebraic numbers and algebraic lie algebras|2007": {
+"doi": "10.1112/s1461157000001406",
+"score": 1.0,
+"title": "Finding Integral Linear Dependencies of Algebraic Numbers and Algebraic Lie Algebras"
+},
+"finding the characteristic of a group of lie type|2007": {
+"doi": "10.1112/jlms/jdm028",
+"score": 1.0,
+"title": "Finding the characteristic of a group of Lie type"
+},
+"finite geometries|1968": {
+"doi": "10.1007/978-3-642-62012-6",
+"score": 1.0,
+"title": "Finite Geometries"
+},
+"finite quaternionic matrix groups|1998": {
+"doi": "10.1090/s1088-4165-98-00011-9",
+"score": 1.0,
+"title": "Finite quaternionic matrix groups"
+},
+"finite rational matrix groups|1995": {
+"doi": "10.1090/memo/0556",
+"score": 1.0,
+"title": "Finite rational matrix groups"
+},
+"finite subgroups of gl n q for 25 n 31|1996": {
+"doi": "10.1080/00927879608825704",
+"score": 0.905,
+"title": "Finite subgroups of GL<sub>n</sub>(Q) for 25 \u2264 n \u2264 31"
+},
+"finite unimodular groups of prime degree and circulants|1985": {
+"doi": "10.1016/0021-8693(85)90086-9",
+"score": 1.0,
+"title": "Finite unimodular groups of prime degree and circulants"
+},
+"floating point lll theoretical and practical aspects|2009": {
+"doi": "10.1007/978-3-642-02295-1_5",
+"score": 1.0,
+"title": "Floating-Point LLL: Theoretical and Practical Aspects"
+},
+"formal desingularization of surfaces the jung method revisited|2007": {
+"doi": "10.1016/j.jsc.2008.07.001",
+"score": 1.0,
+"title": "Formal desingularization of surfaces: The Jung method revisited"
+},
+"fundamental algorithms for permutation groups|1991": {
+"doi": "10.1007/3-540-54955-2",
+"score": 1.0,
+"title": "Fundamental Algorithms for Permutation Groups"
+},
+"gcdheu heuristic polynomial gcd algorithm based on integer gcd computation|1989": {
+"doi": "10.1016/s0747-7171(89)80004-5",
+"score": 1.0,
+"title": "GCDHEU: Heuristic polynomial GCD algorithm based on integer GCD computation"
+},
+"generalized hughes planes|1971": {
+"doi": "10.4153/cjm-1971-051-4",
+"score": 1.0,
+"title": "Generalized Hughes Planes"
+},
+"generating random elements of a finite group|1995": {
+"doi": "10.1080/00927879508825509",
+"score": 1.0,
+"title": "Generating random elements of a finite group"
+},
+"generating subfields|2011": {
+"doi": "10.1145/1993886.1993937",
+"score": 1.0,
+"title": "Generating subfields"
+},
+"groups and nilpotent lie rings whose order is the sixth power of a prime|2004": {
+"doi": "10.1016/j.jalgebra.2003.11.012",
+"score": 1.0,
+"title": "Groups and nilpotent Lie rings whose order is the sixth power of a prime"
+},
+"handbook of elliptic and hyperelliptic curve cryptography|2005": {
+"doi": "10.1201/9781420034981",
+"score": 1.0,
+"title": "Handbook of Elliptic and Hyperelliptic Curve Cryptography"
+},
+"handbook of incidence geometry|1995": {
+"doi": "10.1016/b978-044488355-1/50005-0",
+"score": 0.794,
+"title": "Foundations of Incidence Geometry"
+},
+"identifying conjugacy classes in galois groups|2010": {
+"doi": "10.2140/ant.2013.7.1325",
+"score": 0.538,
+"title": "Identifying Frobenius elements in Galois groups"
+},
+"implementing a recognition algorithm for classical groups in|1997": {
+"doi": "10.1090/dimacs/028/16",
+"score": 0.974,
+"title": "Implementing a recognition algorithm for classical groups"
+},
+"improved algorithms for integer programming and related lattice problems in|1983": {
+"doi": "10.1145/800061.808749",
+"score": 0.98,
+"title": "Improved algorithms for integer programming and related lattice problems"
+},
+"improved analysis of kannan s shortest lattice vector algorithm extended abstract in|2007": {
+"doi": "10.1007/978-3-540-74143-5_10",
+"score": 0.849,
+"title": "Improved Analysis of Kannan\u2019s Shortest Lattice Vector Algorithm"
+},
+"introduction to elliptic curves and modular forms|1984": {
+"doi": "10.1007/978-1-4684-0255-1",
+"score": 1.0,
+"title": "Introduction to Elliptic Curves and Modular Forms"
+},
+"irreducibility testing of finite nilpotent linear groups|2010": {
+"doi": "10.1016/j.jalgebra.2010.04.031",
+"score": 1.0,
+"title": "Irreducibility testing of finite nilpotent linear groups"
+},
+"irreducible finite integral matrix groups of degree 8 and 10|1994": {
+"doi": "10.2307/2153579",
+"score": 1.0,
+"title": "Irreducible Finite Integral Matrix Groups of Degree 8 and 10"
+},
+"isomorphism testing for p groups|1994": {
+"doi": "10.1006/jsco.1994.1007",
+"score": 1.0,
+"title": "Isomorphism testing for p-groups"
+},
+"kant v4|1997": {
+"doi": "10.1006/jsco.1996.0126",
+"score": 1.0,
+"title": "KANT V4"
+},
+"kennzeichnung elliptischer gruppenraume|1963": {
+"doi": "10.1007/bf02992868",
+"score": 1.0,
+"title": "Kennzeichnung elliptischer Gruppenr\u00e4ume"
+},
+"klassenzahlen indefiniter quadratischer formen|1957": {
+"doi": "10.1007/bf01898782",
+"score": 0.978,
+"title": "Klassenzahlen definiter quadratischer Formen"
+},
+"lattice basis reduction improved practical algorithms and solving subset sum problems|1994": {
+"doi": "10.1007/bf01581144",
+"score": 1.0,
+"title": "Lattice basis reduction: Improved practical algorithms and solving subset sum problems"
+},
+"lattices of compatibly embedded finite fields|1997": {
+"doi": "10.1006/jsco.1997.0138",
+"score": 1.0,
+"title": "Lattices of Compatibly Embedded Finite Fields"
+},
+"lectures on projective planes|1969": {
+"doi": "10.1007/978-3-642-67412-9_6",
+"score": 0.399,
+"title": "Flag Transitive Planes"
+},
+"linear groups of small degree over finite fields|2005": {
+"doi": "10.1142/s0218196705002426",
+"score": 1.0,
+"title": "LINEAR GROUPS OF SMALL DEGREE OVER FINITE FIELDS"
+},
+"low dimensional representations of quasi simple groups|2001": {
+"doi": "10.1112/s1461157000000796",
+"score": 1.0,
+"title": "Low-Dimensional Representations of Quasi-Simple Groups"
+},
+"m j jacobson jr|1999": {
+"doi": "10.2514/6.1997-1040",
+"score": 0.222,
+"title": "Space Station on-orbit thermostructural analysis"
+},
+"marshall hall jr|1959": {
+"doi": "10.1038/1831364a0",
+"score": 0.478,
+"title": "Sir Guy Marshall, K.C.M.G., F.R.S."
+},
+"massively parallel computation of discrete logarithms|1992": {
+"doi": "10.1007/3-540-48071-4_22",
+"score": 1.0,
+"title": "Massively Parallel Computation of Discrete Logarithms"
+},
+"matrix generators for exceptional groups of lie type|2001": {
+"doi": "10.1006/jsco.2000.0431",
+"score": 1.0,
+"title": "Matrix Generators for Exceptional Groups of Lie Type"
+},
+"matrix generators for the orthogonal groups|1998": {
+"doi": "10.1006/jsco.1997.0180",
+"score": 1.0,
+"title": "Matrix Generators for the Orthogonal Groups"
+},
+"modern computer algebra|1999": {
+"doi": "10.1017/cbo9781139856065",
+"score": 0.85,
+"title": "Modern Computer Algebra"
+},
+"mpfr a lgpl library for multiple precision floating point computations with exact rounding|": {
+"doi": "10.32614/cran.package.rmpfr",
+"score": 0.595,
+"title": "Rmpfr: Interface R to MPFR - Multiple Precision Floating-Point Reliable"
+},
+"nfs with four large primes an explosive experiment in don coppersmith editor|1995": {
+"doi": "10.1007/3-540-44750-4_30",
+"score": 0.794,
+"title": "NFS with Four Large Primes: An Explosive Experiment"
+},
+"ntl number theory c library|": {
+"doi": "10.1017/cbo9780511814549",
+"score": 0.524,
+"title": "A Computational Introduction to Number Theory and Algebra"
+},
+"number field sieve to compute class groups|": {
+"doi": "10.1007/springerreference_384",
+"score": 0.6,
+"title": "Number Field Sieve"
+},
+"on an algorithm for finding a base and a strong generating set for a group given by generating permutations|1980": {
+"doi": "10.1090/s0025-5718-1980-0572868-5",
+"score": 1.0,
+"title": "On an algorithm for finding a base and a strong generating set for a group given by generating permutations"
+},
+"on computing subfields a detailed description of the algorithm|1998": {
+"doi": "10.5802/jtnb.227",
+"score": 1.0,
+"title": "On computing subfields. A detailed description of the algorithm"
+},
+"on computing subfields|1997": {
+"doi": "10.1006/jsco.1996.0140",
+"score": 1.0,
+"title": "On Computing Subfields"
+},
+"on deciding finiteness of matrix groups|2009": {
+"doi": "10.1016/j.jsc.2009.02.001",
+"score": 1.0,
+"title": "On deciding finiteness of matrix groups"
+},
+"on finite algebras|1905": {
+"doi": "10.11606/t.45.2004.tde-20210729-135155",
+"score": 0.333,
+"title": "O trabalho de Leonard Eugene Dickson em \u00e1lgebras com divis\u00e3o"
+},
+"on maximal finite irreducible subgroups of gl n z parts i and ii|1977": {
+"doi": "10.2307/2006436",
+"score": 0.763,
+"title": "On Maximal Finite Irreducible Subgroups of GL(n, Z ): I. The Five and Seven Dimensional Cases"
+},
+"on maximal finite irreducible subgroups of gl n z parts iiiv|1980": {
+"doi": "10.2307/2006233",
+"score": 0.763,
+"title": "On Maximal Finite Irreducible Subgroups of GL(n, Z ): III. The Nine Dimensional Case"
+},
+"on reconstruction of algebraic numbers|": {
+"doi": "10.1007/10722028_16",
+"score": 1.0,
+"title": "On Reconstruction of Algebraic Numbers"
+},
+"on solving relative norm equations in algebraic number fields|1997": {
+"doi": "10.1090/s0025-5718-97-00761-8",
+"score": 1.0,
+"title": "On solving relative norm equations in algebraic number fields"
+},
+"on some computational problems in finite abelian groups|1997": {
+"doi": "10.1090/s0025-5718-97-00880-6",
+"score": 1.0,
+"title": "On some computational problems in finite abelian groups"
+},
+"on some simple groups defined by chevalley|1957": {
+"doi": "10.1090/s0002-9947-1957-0086812-4",
+"score": 0.977,
+"title": "On some simple groups defined by C. Chevalley"
+},
+"on strong pseudoprimes to several bases|1993": {
+"doi": "10.1090/s0025-5718-1993-1192971-8",
+"score": 1.0,
+"title": "On strong pseudoprimes to several bases"
+},
+"on the computation of conjugacy classes in permutation groups in|1997": {
+"doi": "10.1145/258726.258855",
+"score": 0.976,
+"title": "On the computation of conjugacy classes in permutation groups"
+},
+"on the computation of elementary divisors of integer matrices|2002": {
+"doi": "10.1006/jsco.2000.0430",
+"score": 1.0,
+"title": "On the Computation of Elementary Divisors of Integer Matrices"
+},
+"on the computation of normal subgroups in permutation groups to appear|": {
+"doi": "10.1145/258726.258855",
+"score": 0.733,
+"title": "On the computation of conjugacy classes in permutation groups"
+},
+"on the computation of quadratic 2 class groups|1996": {
+"doi": "10.1090/s0025-5718-96-00725-9",
+"score": 0.615,
+"title": "Density computations for real quadratic units"
+},
+"on the computation of the multiplicative group of residue class rings|1997": {
+"doi": "10.1090/s0025-5718-03-01474-1",
+"score": 0.739,
+"title": "Computing the multiplicative group of residue class rings"
+},
+"on the groups of cubefree order|2005": {
+"doi": "10.1016/j.jalgebra.2004.12.001",
+"score": 0.984,
+"title": "On the groups of cube-free order"
+},
+"on the largest conjugacy class size in a finite group|2000": {
+"doi": "10.1007/s00605-013-0511-4",
+"score": 0.739,
+"title": "On the largest conjugacy class length of a finite group"
+},
+"on the maximal subgroups of the finite classical groups|1984": {
+"doi": "10.1007/bf01388470",
+"score": 1.0,
+"title": "On the maximal subgroups of the finite classical groups"
+},
+"on the resolution of index form equations in quartic number fields|1993": {
+"doi": "10.1006/jsco.1993.1064",
+"score": 1.0,
+"title": "On the resolution of index form equations in quartic number fields"
+},
+"on the singular values of weber modular functions|1997": {
+"doi": "10.1090/s0025-5718-97-00854-5",
+"score": 1.0,
+"title": "On the singular values of Weber modular functions"
+},
+"on transitive permutation groups|1998": {
+"doi": "10.1112/s1461157000000115",
+"score": 1.0,
+"title": "On Transitive Permutation Groups"
+},
+"pairs of generators for matrix groups i|1987": {
+"doi": "10.1017/cbo9780511600647.028",
+"score": 0.656,
+"title": "Generators of p-groups"
+},
+"partitions refinements and permutation group computation|1997": {
+"doi": "10.1090/dimacs/028/10",
+"score": 1.0,
+"title": "Partitions, refinements, and permutation group computation"
+},
+"perfect groups|1989": {
+"doi": "10.2307/2938688",
+"score": 1.0,
+"title": "Perfect Groups."
+},
+"permutation group algorithms|2003": {
+"doi": "10.1017/cbo9780511546549",
+"score": 1.0,
+"title": "Permutation Group Algorithms"
+},
+"permutation groups and polynomial time computation in|1993": {
+"doi": "10.1090/dimacs/011/11",
+"score": 0.971,
+"title": "Permutation groups and polynomial-time computation"
+},
+"polylogarithms and associated functions|1981": {
+"doi": "10.1016/0001-8708(86)90055-1",
+"score": 0.85,
+"title": "Polylogarithms and associated functions"
+},
+"polylogarithms dedekind zeta functions and the algebraic k theory of fields|": {
+"doi": "10.1007/978-1-4612-0457-2_19",
+"score": 1.0,
+"title": "Polylogarithms, Dedekind Zeta Functions, and the Algebraic K-Theory of Fields"
+},
+"polynomial algorithms for computing the smith and hermite normal forms of an integer matrix|1979": {
+"doi": "10.1137/0208040",
+"score": 1.0,
+"title": "Polynomial Algorithms for Computing the Smith and Hermite Normal Forms of an Integer Matrix"
+},
+"practical graph isomorphism|1981": {
+"doi": "10.1016/j.jsc.2013.09.003",
+"score": 0.797,
+"title": "Practical graph isomorphism, II"
+},
+"primitive prime divisor elements in finite classical groups in|1999": {
+"doi": "10.1017/cbo9780511666148.024",
+"score": 0.975,
+"title": "Primitive prime divisor elements in finite classical groups"
+},
+"primitivity testing of finite nilpotent linear groups|2011": {
+"doi": "10.1112/s1461157010000227",
+"score": 1.0,
+"title": "Primitivity testing of finite nilpotent linear groups"
+},
+"random lattices threshold phenomena and efficient reduction algorithms|2002": {
+"doi": "10.1016/s0304-3975(01)00251-1",
+"score": 1.0,
+"title": "Random lattices, threshold phenomena and efficient reduction algorithms"
+},
+"rational puiseux expansions|1989": {
+"doi": "10.2140/pjm.1999.188.369",
+"score": 0.57,
+"title": "On the complexity of rational Puiseux expansions"
+},
+"recognising tensor induced matrix groups|2002": {
+"doi": "10.1016/s0021-8693(02)00041-8",
+"score": 1.0,
+"title": "Recognising tensor-induced matrix groups"
+},
+"recognising tensor products of matrix groups|1997": {
+"doi": "10.1142/s0218196797000241",
+"score": 1.0,
+"title": "Recognising Tensor Products of Matrix Groups"
+},
+"recognising the suzuki groups in their natural representations|2006": {
+"doi": "10.1016/j.jalgebra.2006.02.010",
+"score": 1.0,
+"title": "Recognising the Suzuki groups in their natural representations"
+},
+"recognition of finite matrix groups over infinite fields|2012": {
+"doi": "10.1016/j.jsc.2012.04.002",
+"score": 0.936,
+"title": "Recognizing finite matrix groups over infinite fields"
+},
+"recognition of small dimensional representations of general linear groups|2008": {
+"doi": "10.1017/s144678870800092x",
+"score": 1.0,
+"title": "RECOGNITION OF SMALL DIMENSIONAL REPRESENTATIONS OF GENERAL LINEAR GROUPS"
+},
+"recognizing badly presented z modules|1993": {
+"doi": "10.1016/0024-3795(93)90241-f",
+"score": 1.0,
+"title": "Recognizing badly presented Z-modules"
+},
+"recognizing doubly transitive groups|1991": {
+"doi": "10.1016/s0747-7171(08)80098-3",
+"score": 0.85,
+"title": "Fast recognition of doubly transitive groups"
+},
+"reduction of group constructions to point stabilizers in|1989": {
+"doi": "10.1145/74540.74581",
+"score": 0.972,
+"title": "Reduction of group constructions to point stabilizers"
+},
+"rigorous and efficient short lattice vectors enumeration in|2008": {
+"doi": "10.1007/978-3-540-89255-7_24",
+"score": 0.974,
+"title": "Rigorous and Efficient Short Lattice Vectors Enumeration"
+},
+"schnelle berechnung von kettenbruchentwicklungen|1971": {
+"doi": "10.1007/bf00289520",
+"score": 1.0,
+"title": "Schnelle Berechnung von Kettenbruchentwicklungen"
+},
+"selecting base points for the schreier sims algorithm for matrix groups|1995": {
+"doi": "10.1006/jsco.1995.1033",
+"score": 1.0,
+"title": "Selecting Base Points for the Schreier-Sims Algorithm for Matrix Groups"
+},
+"seress black box recognition of finite simple groups of lie type by statistics of element orders|2002": {
+"doi": "10.1515/jgth.2002.010",
+"score": 0.962,
+"title": "Black-box recognition of finite simple groups of Lie type by statistics of element orders"
+},
+"series expansions of algebraic functions|1995": {
+"doi": "10.1007/978-94-017-1108-1_19",
+"score": 1.0,
+"title": "Series Expansions of Algebraic Functions"
+},
+"short presentations for classical groups|": {
+"doi": "10.1016/j.jalgebra.2019.07.024",
+"score": 0.701,
+"title": "Presentations on standard generators for classical groups"
+},
+"simple groups of lie type|1972": {
+"doi": "10.1017/cbo9781139172882.006",
+"score": 0.85,
+"title": "Simple groups of Lie type"
+},
+"simultaneous representation of integers by a pair of ternary quadratic forms with an application to index form equations in quartic number fields|1996": {
+"doi": "10.1006/jnth.1996.0035",
+"score": 0.997,
+"title": "Simultaneous Representation of Integers by a Pair of Ternary Quadratic Forms\u2014With an Application to Index Form Equations in Quartic Number Fields"
+},
+"small degree representations of finite chevalley groups in defining characteristic|2001": {
+"doi": "10.1112/s1461157000000838",
+"score": 1.0,
+"title": "Small Degree Representations of Finite Chevalley Groups in Defining Characteristic"
+},
+"solving exponential diophantine equations using lattice basis reduction algorithms|1987": {
+"doi": "10.1016/0022-314x(87)90088-6",
+"score": 1.0,
+"title": "Solving exponential diophantine equations using lattice Basis Reduction Algorithms"
+},
+"solving large sparse linear systems over finite fields|1991": {
+"doi": "10.1007/3-540-38424-3_8",
+"score": 1.0,
+"title": "Solving Large Sparse Linear Systems Over Finite Fields"
+},
+"solving norm equations in relative number fields using s units|2002": {
+"doi": "10.1090/s0025-5718-02-01309-1",
+"score": 1.0,
+"title": "Solving norm equations in relative number fields using \ud835\udc46-units"
+},
+"solving quadratic equations using reduced unimodular quadratic forms|2005": {
+"doi": "10.1090/s0025-5718-05-01729-1",
+"score": 1.0,
+"title": "Solving quadratic equations using reduced unimodular quadratic forms"
+},
+"solving thue equations of high degree|1996": {
+"doi": "10.1006/jnth.1996.0129",
+"score": 1.0,
+"title": "Solving Thue Equations of High Degree"
+},
+"some algorithms for computing with finite permutation groups in c m campbell and e f robertson editors|1986": {
+"doi": "10.1017/cbo9780511600647.006",
+"score": 0.741,
+"title": "Some algorithms for computing with finite permutation groups"
+},
+"some remarks on the computation of complements and normalizers in soluble groups|1990": {
+"doi": "10.1007/978-94-011-3424-8_3",
+"score": 1.0,
+"title": "Some remarks on the computation of complements and normalizers in soluble groups"
+},
+"some remarks on the computation of conjugacy classes of soluble groups|1989": {
+"doi": "10.1017/s0004972700004378",
+"score": 1.0,
+"title": "Some remarks on the computation of conjugacy classes of soluble groups"
+},
+"sphere packings lattices and groups|1998": {
+"doi": "10.1007/978-1-4757-6568-7_1",
+"score": 0.6,
+"title": "Sphere Packings and Kissing Numbers"
+},
+"structural computation in finite permutation groups|1992": {
+"doi": "10.1016/j.jsc.2018.09.001",
+"score": 0.453,
+"title": "The use of permutation representations in structural computations in large finite matrix groups"
+},
+"su una generalizzazione dei piani di hughes|1960": {
+"doi": "10.1007/bf00181494",
+"score": 0.517,
+"title": "Disegni unitari nei piani di Hughes"
+},
+"subgroup chains in matrix groups preprint 2005|2005": {
+"doi": "10.1090/stml/029/03",
+"score": 0.488,
+"title": "All matrix groups are real matrix groups"
+},
+"subquadratic time factoring of polynomials over finite fields|1995": {
+"doi": "10.1145/225058.225166",
+"score": 1.0,
+"title": "Subquadratic-time factoring of polynomials over finite fields"
+},
+"sylow p subgroups of the classical groups over finite fields with characteristic prime to p|1955": {
+"doi": "10.2307/2033424",
+"score": 1.0,
+"title": "Sylow p-Subgroups of the Classical Groups Over Finite Fields with Characteristic Prime to p"
+},
+"tensor decomposition of the suzuki groups submitted 2005|2005": {
+"doi": "10.1016/j.jalgebra.2006.02.010",
+"score": 0.475,
+"title": "Recognising the Suzuki groups in their natural representations"
+},
+"tensor products are projective geometries|1997": {
+"doi": "10.1006/jabr.1996.6881",
+"score": 1.0,
+"title": "Tensor Products are Projective Geometries"
+},
+"testing matrix groups for primitivity|1996": {
+"doi": "10.1006/jabr.1996.0285",
+"score": 1.0,
+"title": "Testing Matrix Groups for Primitivity"
+},
+"the affine primitive permutation groups of degree less than 1000|2003": {
+"doi": "10.1016/s0747-7171(03)00031-2",
+"score": 1.0,
+"title": "The affine primitive permutation groups of degree less than 1000"
+},
+"the art of computer programming|1997": {
+"doi": "10.1145/2491533.2491544",
+"score": 0.711,
+"title": "Review of the art of computer programming"
+},
+"the calculation of the schur multiplier of a permutation group in|1984": {
+"doi": "10.1016/0024-3795(84)90112-5",
+"score": 0.61,
+"title": "On the Schur multiplier norm of matrices"
+},
+"the catalogue of lattices|2001": {
+"doi": "10.1007/3-540-30731-1_9",
+"score": 0.485,
+"title": "Lattices"
+},
+"the computational matrix group project in|2001": {
+"doi": "10.1515/9783110872743.229",
+"score": 0.962,
+"title": "The computational matrix group project"
+},
+"the conjugate dimension of algebraic numbers|": {
+"doi": "10.4064/aa107-1-4",
+"score": 0.632,
+"title": "Additive relations with conjugate algebraic numbers"
+},
+"the cusp forms of weight 3 on 2 2 4 8|1993": {
+"doi": "10.1090/s0025-5718-1993-1181333-5",
+"score": 1.0,
+"title": "The cusp forms of weight 3 on \u0393\u2082(2,4,8)"
+},
+"the design and analysis of computer algorithms|1974": {
+"doi": "10.1002/zamm.19790590233",
+"score": 0.322,
+"title": "Aho, A. V. / Hopcroft, J. E. / Ullman, J. D., The Design and Analysis of Computer Algorithms. London\u2010Amsterdam\u2010Don Mills\u2010Sydney. Addison\u2010Wesley Publ. Comp. 1974 X, 470 S., $ 24,\u2013"
+},
+"the determination of galois groups|2000": {
+"doi": "10.4064/aa211207-16-5",
+"score": 0.482,
+"title": "The asymptotics of nilpotent Galois groups"
+},
+"the eez gcd algorithm|1980": {
+"doi": "10.1145/1089220.1089228",
+"score": 1.0,
+"title": "The EEZ-GCD algorithm"
+},
+"the ez gcd algorithm|1973": {
+"doi": "10.1145/800192.805698",
+"score": 1.0,
+"title": "The EZ GCD algorithm"
+},
+"the fundamental theorem of algebra in terms of computational complexity|1982": {
+"doi": "10.1007/978-1-4612-0701-6_9",
+"score": 0.533,
+"title": "Fundamental Theorem of Algebra: Complexity Aspects"
+},
+"the geometry of the classical groups|1992": {
+"doi": "10.1017/cbo9780511565793.016",
+"score": 0.741,
+"title": "The geometry of bending quasi-Fuchsian groups"
+},
+"the groups of order 256|1991": {
+"doi": "10.1016/0021-8693(91)90261-6",
+"score": 1.0,
+"title": "The groups of order 256"
+},
+"the groups of order at most 1000 except 512 and 768|1999": {
+"doi": "10.1006/jsco.1998.0259",
+"score": 1.0,
+"title": "The Groups of Order at Most 1000 Except 512 and 768"
+},
+"the groups of order at most 2000|2001": {
+"doi": "10.1090/s1079-6762-01-00087-7",
+"score": 1.0,
+"title": "The groups of order at most 2000"
+},
+"the groups of order qnp|2001": {
+"doi": "10.1081/agb-100002131",
+"score": 0.786,
+"title": "THE GROUPS OF ORDER q<sup>n</sup>\u00b7 p"
+},
+"the groups with order p7 for odd prime p|2005": {
+"doi": "10.1093/oso/9780198537861.003.0007",
+"score": 0.381,
+"title": "Groups of prime exponent"
+},
+"the mechanical computation of first and second cohomology groups|1985": {
+"doi": "10.1016/s0747-7171(85)80020-1",
+"score": 1.0,
+"title": "The mechanical computation of first and second cohomology groups"
+},
+"the monster a random number generator with period 10 2857 times as long as the previously touted longest period one|2000": {
+"doi": "10.1109/superc.1990.130085",
+"score": 0.348,
+"title": "A vectorized long-period shift-register random number generator"
+},
+"the p group generation algorithm|1990": {
+"doi": "10.1016/s0747-7171(08)80082-x",
+"score": 1.0,
+"title": "The p-group generation algorithm"
+},
+"the primitive permutation groups of degree less than 2500|2005": {
+"doi": "10.1016/j.jalgebra.2005.04.017",
+"score": 1.0,
+"title": "The primitive permutation groups of degree less than 2500"
+},
+"the primitive permutation groups of degree less than 4096|2011": {
+"doi": "10.1080/00927872.2010.515521",
+"score": 1.0,
+"title": "The Primitive Permutation Groups of Degree Less Than 4096"
+},
+"the primitive soluble permutation groups of degree less than 256|1992": {
+"doi": "10.1007/bfb0090195",
+"score": 1.0,
+"title": "The Primitive Soluble Permutation Groups of Degree less than 256"
+},
+"the schreier algorithm for matrix groups|1976": {
+"doi": "10.1006/jsco.1995.1033",
+"score": 0.571,
+"title": "Selecting Base Points for the Schreier-Sims Algorithm for Matrix Groups"
+},
+"the shortest vector problem in l2 is np hard for randomized reductions extended abstract in|1998": {
+"doi": "10.1145/276698.276705",
+"score": 0.898,
+"title": "The shortest vector problem in\n                    <i>\n                      L\n                      <sub>2</sub>\n                    </i>\n                    is\n                    <i>NP</i>\n                    -hard for randomized reductions (extended abstract)"
+},
+"the subgroup structure of the finite classical groups|1990": {
+"doi": "10.1017/cbo9780511629235",
+"score": 1.0,
+"title": "The Subgroup Structure of the Finite Classical Groups"
+},
+"the sylow 2 subgroups of the finite classical groups|1964": {
+"doi": "10.1016/0021-8693(64)90030-4",
+"score": 1.0,
+"title": "The sylow 2-subgroups of the finite classical groups"
+},
+"the transitive permutation groups of degree 32|2008": {
+"doi": "10.1080/10586458.2008.10129046",
+"score": 1.0,
+"title": "The Transitive Permutation Groups of Degree 32"
+},
+"the virtual haken conjecture experiments and examples|2003": {
+"doi": "10.2140/gt.2003.7.399",
+"score": 1.0,
+"title": "The virtual Haken conjecture: Experiments and examples"
+},
+"towards effective algorithms for linear groups in|2006": {
+"doi": "10.1515/9783110199741.163",
+"score": 0.968,
+"title": "Towards effective algorithms for linear\n      groups"
+},
+"uber das losen von einheiten und indexformgleichungen in algebraischen zahlkorpern on the solution of units and index form equations in algebraic number fields|2000": {
+"doi": "10.1006/jnth.1999.2414",
+"score": 0.68,
+"title": "\u00dcber das L\u00f6sen von Einheiten- und Indexformgleichungen in algebraischen Zahlk\u00f6rpern"
+},
+"variants of product replacement|2002": {
+"doi": "10.1090/conm/298/05116",
+"score": 1.0,
+"title": "Variants of product replacement"
+},
+"verwendung von untergruppenleitern zur bestimmung von doppelnebenklassen|1990": {
+"doi": "10.1135/cccc19570396",
+"score": 0.273,
+"title": "Verwendung von Fluoreszenzindikatoren zur Bestimmung von kleinen Mengen oberfl\u00e4chenaktiver Stoffe I. Bestimmung von organischen Sulfaten und Sulfonaten"
+},
+"writing projective representations over subfields|2005": {
+"doi": "10.1016/j.jalgebra.2005.03.037",
+"score": 1.0,
+"title": "Writing projective representations over subfields"
+},
+"writing representations over minimal fields|1997": {
+"doi": "10.1080/00927879708825947",
+"score": 1.0,
+"title": "Writing representations over minimal fields"
+}
+}

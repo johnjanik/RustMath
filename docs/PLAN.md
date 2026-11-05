@@ -2,6 +2,21 @@
 
 _The single phased plan. Grounded in [`SURVEY.md`](./SURVEY.md) (code-current, 2026-07-09). Supersedes and reconciles `MASTER_PORT_PLAN.md` (MAGMA/foundation-first waves), `SAGEMATH_RUST_ROADMAP.md` (Sage/PyO3 phases), `MVP_ANALYSIS_REPORT.md`, `SYMPY_ALTERNATIVE_ROADMAP.md`, and the status sprawl — all now in [`archive/`](./archive/)._
 
+## 2026-11-05 update: MAGMA first
+
+- **Direction:** the project is now a MAGMA port first. The MAGMA handbook (digests in
+  `rustmath-lava/docs/`) is the specification; SageMath stays as a secondary reference for API
+  shape and cross-check values. The "two contracts" framing below still holds, with MAGMA as the
+  primary one. IGP24 is finished, so construction-engine work (inverse_galois_mvp.md Builds A–D)
+  is no longer driven by competition priorities.
+- **Branches consolidated:** belyi + integrate-lava-galois + main merged into one line
+  (`docs/BRANCHES.md`). The Phase 1 item "land `magma-port/wave0-foundation`" is done (belyi re-landed it).
+- **Tracking:** coverage is now measured per intrinsic in `docs/magma/` (13,341 math-scope rows).
+  A row counts as ported only when `status_overrides.csv` marks it `done`/`verified` with evidence;
+  name matches (`candidate`) are leads only (pilot: 17–42% of them were real).
+- **Reading list:** `docs/magma/reading_list_core.md` lists the papers cited by the core chapters
+  (17–52, 57–68), to be collected locally before the Phase 3/4 algorithm work.
+
 ## Framing
 
 RustMath is **one backend** that must satisfy **two front-ends**: SageMath (Python API shape, `sage.*` module semantics) and MAGMA (intrinsic names, handbook chapter semantics). Every crate therefore carries **two contracts** — a Sage module mapping and a MAGMA chapter mapping (both in the SURVEY matrix). The plan is **foundation-first**: fix the shared trait/numeric core and eliminate silent facades before fanning out to breadth.
