@@ -35,9 +35,9 @@ use std::collections::HashMap;
 /// use rustmath_matrix::Matrix;
 ///
 /// // Create an element from a matrix
-/// let mut mat = Matrix::zeros(3, 3);
-/// mat.set(0, 1, 1);
-/// mat.set(1, 2, 2);
+/// let mut mat: Matrix<i64> = Matrix::zeros(3, 3);
+/// let _ = mat.set(0, 1, 1);
+/// let _ = mat.set(1, 2, 2);
 /// let elem = ClassicalLieAlgebraElement::from_matrix(mat);
 ///
 /// // Get monomial coefficients as E_{i,j} basis elements
@@ -75,9 +75,9 @@ impl<R: Ring + Clone> ClassicalLieAlgebraElement<R> {
     /// use rustmath_liealgebras::ClassicalLieAlgebraElement;
     /// use rustmath_matrix::Matrix;
     ///
-    /// let mut mat = Matrix::zeros(2, 2);
-    /// mat.set(0, 1, 3);  // 3*E_{0,1}
-    /// mat.set(1, 0, 1);  // 1*E_{1,0}
+    /// let mut mat: Matrix<i64> = Matrix::zeros(2, 2);
+    /// let _ = mat.set(0, 1, 3);  // 3*E_{0,1}
+    /// let _ = mat.set(1, 0, 1);  // 1*E_{1,0}
     /// let elem = ClassicalLieAlgebraElement::from_matrix(mat);
     ///
     /// let coeffs = elem.monomial_coefficients();
@@ -378,7 +378,13 @@ impl<R: Ring + Clone> SpecialOrthogonalLieAlgebra<R> {
 
         let cartan_type = if n % 2 == 1 {
             // Odd: type B_{(n-1)/2}
-            CartanType::new(CartanLetter::B, (n - 1) / 2)
+            let m = (n - 1) / 2;
+            if m == 1 {
+                // so(3) ≅ sl(2): exceptional isomorphism B_1 = A_1
+                CartanType::new(CartanLetter::A, 1)
+            } else {
+                CartanType::new(CartanLetter::B, m)
+            }
         } else {
             // Even: type D_{n/2}
             CartanType::new(CartanLetter::D, n / 2)
@@ -468,8 +474,13 @@ impl<R: Ring + Clone> SymplecticLieAlgebra<R> {
             return Err("sp(2k) requires k >= 1".to_string());
         }
 
-        let cartan_type = CartanType::new(CartanLetter::C, k)
-            .ok_or_else(|| "Invalid Cartan type for sp(2k)".to_string())?;
+        let cartan_type = if k == 1 {
+            // sp(2) ≅ sl(2): exceptional isomorphism C_1 = A_1
+            CartanType::new(CartanLetter::A, 1)
+        } else {
+            CartanType::new(CartanLetter::C, k)
+        }
+        .ok_or_else(|| "Invalid Cartan type for sp(2k)".to_string())?;
 
         Ok(SymplecticLieAlgebra {
             k,

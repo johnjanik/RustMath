@@ -297,17 +297,17 @@ mod tests {
         let coeffs = vec![Integer::from(1), Integer::from(2), Integer::from(3)];
         let series = PowerSeriesPari::new(coeffs, 10);
 
-        assert_eq!(series.coeff(0), &Integer::from(1));
-        assert_eq!(series.coeff(1), &Integer::from(2));
-        assert_eq!(series.coeff(2), &Integer::from(3));
+        assert_eq!(series.coeff(0), Integer::from(1));
+        assert_eq!(series.coeff(1), Integer::from(2));
+        assert_eq!(series.coeff(2), Integer::from(3));
         assert_eq!(series.precision(), 10);
     }
 
     #[test]
     fn test_from_constant() {
         let series = PowerSeriesPari::from_constant(Integer::from(5), 10);
-        assert_eq!(series.coeff(0), &Integer::from(5));
-        assert_eq!(series.coeff(1), &Integer::from(0));
+        assert_eq!(series.coeff(0), Integer::from(5));
+        assert_eq!(series.coeff(1), Integer::from(0));
     }
 
     #[test]
@@ -322,9 +322,9 @@ mod tests {
         );
 
         let sum = s1 + s2;
-        assert_eq!(sum.coeff(0), &Integer::from(5));
-        assert_eq!(sum.coeff(1), &Integer::from(7));
-        assert_eq!(sum.coeff(2), &Integer::from(9));
+        assert_eq!(sum.coeff(0), Integer::from(5));
+        assert_eq!(sum.coeff(1), Integer::from(7));
+        assert_eq!(sum.coeff(2), Integer::from(9));
     }
 
     #[test]
@@ -339,9 +339,9 @@ mod tests {
         );
 
         let diff = s1 - s2;
-        assert_eq!(diff.coeff(0), &Integer::from(9));
-        assert_eq!(diff.coeff(1), &Integer::from(18));
-        assert_eq!(diff.coeff(2), &Integer::from(27));
+        assert_eq!(diff.coeff(0), Integer::from(9));
+        assert_eq!(diff.coeff(1), Integer::from(18));
+        assert_eq!(diff.coeff(2), Integer::from(27));
     }
 
     #[test]
@@ -351,9 +351,9 @@ mod tests {
 
         let product = s1 * s2;
         // (1 + x) * (1 + x) = 1 + 2x + x²
-        assert_eq!(product.coeff(0), &Integer::from(1));
-        assert_eq!(product.coeff(1), &Integer::from(2));
-        assert_eq!(product.coeff(2), &Integer::from(1));
+        assert_eq!(product.coeff(0), Integer::from(1));
+        assert_eq!(product.coeff(1), Integer::from(2));
+        assert_eq!(product.coeff(2), Integer::from(1));
     }
 
     #[test]
@@ -364,9 +364,9 @@ mod tests {
         );
 
         let neg = -series;
-        assert_eq!(neg.coeff(0), &Integer::from(-1));
-        assert_eq!(neg.coeff(1), &Integer::from(2));
-        assert_eq!(neg.coeff(2), &Integer::from(-3));
+        assert_eq!(neg.coeff(0), Integer::from(-1));
+        assert_eq!(neg.coeff(1), Integer::from(2));
+        assert_eq!(neg.coeff(2), Integer::from(-3));
     }
 
     #[test]
@@ -378,11 +378,11 @@ mod tests {
 
         // Shift by +2 (multiply by x²)
         let shifted = series.shift(2);
-        assert_eq!(shifted.coeff(0), &Integer::from(0));
-        assert_eq!(shifted.coeff(1), &Integer::from(0));
-        assert_eq!(shifted.coeff(2), &Integer::from(1));
-        assert_eq!(shifted.coeff(3), &Integer::from(2));
-        assert_eq!(shifted.coeff(4), &Integer::from(3));
+        assert_eq!(shifted.coeff(0), Integer::from(0));
+        assert_eq!(shifted.coeff(1), Integer::from(0));
+        assert_eq!(shifted.coeff(2), Integer::from(1));
+        assert_eq!(shifted.coeff(3), Integer::from(2));
+        assert_eq!(shifted.coeff(4), Integer::from(3));
     }
 
     #[test]
@@ -395,8 +395,8 @@ mod tests {
 
         // Derivative: 2 + 6x
         let deriv = series.derivative();
-        assert_eq!(deriv.coeff(0), &Integer::from(2));
-        assert_eq!(deriv.coeff(1), &Integer::from(6));
+        assert_eq!(deriv.coeff(0), Integer::from(2));
+        assert_eq!(deriv.coeff(1), Integer::from(6));
     }
 
     #[test]
@@ -432,8 +432,8 @@ mod tests {
         series.truncate(3);
         assert_eq!(series.precision(), 3);
         assert_eq!(series.coefficients.len(), 3);
-        assert_eq!(series.coeff(0), &Integer::from(1));
-        assert_eq!(series.coeff(2), &Integer::from(3));
+        assert_eq!(series.coeff(0), Integer::from(1));
+        assert_eq!(series.coeff(2), Integer::from(3));
     }
 
     #[test]

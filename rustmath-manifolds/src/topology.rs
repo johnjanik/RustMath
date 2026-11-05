@@ -86,17 +86,17 @@ impl DeRhamCohomology {
 
     /// Check if a form is exact (ω = dη for some η)
     ///
-    /// This is computationally difficult in general. We use a simplified check.
+    /// This is computationally difficult in general (requires solving PDEs /
+    /// projecting onto harmonic forms via an inner product).
     pub fn is_exact(&self, form: &DiffForm) -> bool {
-        // A form is exact if it's orthogonal to all harmonic forms
-        // This is a simplified heuristic
         if form.degree() == 0 {
-            return false; // 0-forms are never exact (except the zero form)
+            return false; // 0-forms are never exact (no (-1)-forms to be d of)
         }
 
-        // In practice, this requires solving PDEs
-        // For now, we return false as a placeholder
-        false
+        unimplemented!(
+            "DeRhamCohomology::is_exact not yet implemented (facade): requires solving \
+             omega = d(eta) or projecting onto harmonic representatives via a metric inner product"
+        )
     }
 
     /// Compute the cohomology class of a closed form
@@ -109,10 +109,12 @@ impl DeRhamCohomology {
             ));
         }
 
-        // Project onto harmonic forms
-        // This requires an inner product, which we get from a metric
-        // For now, return zero coefficients as a placeholder
-        Ok(vec![0.0; self.harmonic_forms.len()])
+        // Projecting onto the harmonic basis requires an inner product from a
+        // metric (Hodge theory); not yet implemented.
+        unimplemented!(
+            "DeRhamCohomology::cohomology_class not yet implemented (facade): requires \
+             projecting the closed form onto harmonic representatives via a metric inner product"
+        )
     }
 }
 
@@ -346,9 +348,7 @@ impl ChernClass {
     ///
     /// The i-th Chern class can be computed from the curvature 2-form Ω
     /// using the Chern-Weil theory: c_i = (i/2π)^i tr(Ω^i) / i!
-    pub fn from_curvature(&mut self, curvature: &DiffForm, chart: &Chart) -> Result<()> {
-        // This is a placeholder - full implementation requires matrix-valued forms
-        // For now, we just store a reference
+    pub fn from_curvature(&mut self, curvature: &DiffForm, _chart: &Chart) -> Result<()> {
         if curvature.degree() != 2 {
             return Err(ManifoldError::InvalidDegree {
                 expected: 2,
@@ -356,11 +356,14 @@ impl ChernClass {
             });
         }
 
-        // The total Chern class is c(E) = det(I + iΩ/2π)
-        // For the i-th Chern class, we need the i-th elementary symmetric polynomial
-        // This is a simplified placeholder
-        self.form = Some(curvature.clone());
-        Ok(())
+        // The total Chern class is c(E) = det(I + iΩ/2π); the i-th Chern
+        // class is the i-th elementary symmetric polynomial thereof. This
+        // requires matrix-valued (Lie-algebra-valued) curvature forms and
+        // symbolic trace/determinant machinery not yet implemented.
+        unimplemented!(
+            "ChernClass::from_curvature not yet implemented (facade): requires Chern-Weil \
+             computation c_i = (i/2\u{3c0})^i tr(\u{3a9}^i) / i! on matrix-valued curvature"
+        )
     }
 
     /// First Chern class c_1(E) of a line bundle
@@ -439,7 +442,6 @@ impl PontryaginClass {
     /// The i-th Pontryagin class is related to Chern classes:
     /// p_i(E) = (-1)^i c_{2i}(E ⊗ ℂ)
     pub fn from_curvature(&mut self, curvature: &DiffForm) -> Result<()> {
-        // Placeholder implementation
         if curvature.degree() != 2 {
             return Err(ManifoldError::InvalidDegree {
                 expected: 2,
@@ -447,8 +449,12 @@ impl PontryaginClass {
             });
         }
 
-        self.form = Some(curvature.clone());
-        Ok(())
+        // Requires complexifying the bundle and computing the corresponding
+        // Chern class via Chern-Weil theory; not yet implemented.
+        unimplemented!(
+            "PontryaginClass::from_curvature not yet implemented (facade): requires p_i(E) = \
+             (-1)^i c_{{2i}}(E \u{2297} \u{2102}) via Chern-Weil theory"
+        )
     }
 
     /// First Pontryagin class p_1(E)
@@ -523,9 +529,12 @@ impl EulerClass {
             });
         }
 
-        // Placeholder - full implementation requires Pfaffian computation
-        self.form = Some(curvature.clone());
-        Ok(())
+        // Requires a symbolic Pfaffian of the (matrix-valued) curvature; not
+        // yet implemented.
+        unimplemented!(
+            "EulerClass::from_curvature not yet implemented (facade): requires e(E) = \
+             Pf(\u{3a9}/2\u{3c0}) via Pfaffian computation"
+        )
     }
 
     /// Compute Euler class of the tangent bundle TM
@@ -533,20 +542,18 @@ impl EulerClass {
     /// For the tangent bundle, the integral of the Euler class gives
     /// the Euler characteristic: χ(M) = ∫_M e(TM)
     pub fn of_tangent_bundle(
-        manifold: Arc<DifferentiableManifold>,
-        metric: &RiemannianMetric,
-        chart: &Chart,
+        _manifold: Arc<DifferentiableManifold>,
+        _metric: &RiemannianMetric,
+        _chart: &Chart,
     ) -> Result<Self> {
-        // Get the curvature of the Levi-Civita connection
-        // This is a placeholder - we need the curvature 2-form
-        let n = manifold.dimension();
-
-        let euler = Self::new(manifold.clone(), n);
-
-        // In practice, we'd compute this from the Riemann tensor
-        // For now, this is a placeholder
-
-        Ok(euler)
+        // Requires computing the curvature 2-form of the Levi-Civita
+        // connection from the metric and taking its Pfaffian; not yet
+        // implemented (the Levi-Civita Christoffel symbols themselves are
+        // not yet derived from the metric either).
+        unimplemented!(
+            "EulerClass::of_tangent_bundle not yet implemented (facade): requires the \
+             curvature of the Levi-Civita connection and its Pfaffian"
+        )
     }
 
     /// Verify the Gauss-Bonnet theorem for a 2-dimensional surface
@@ -672,7 +679,7 @@ mod tests {
 
     #[test]
     fn test_de_rham_cohomology_creation() {
-        let real_line = Arc::new(RealLine::new());
+        let real_line = Arc::new(RealLine::new().manifold().clone());
         let h0 = DeRhamCohomology::new(real_line.clone(), 0);
         let h1 = DeRhamCohomology::new(real_line.clone(), 1);
 
@@ -682,7 +689,7 @@ mod tests {
 
     #[test]
     fn test_betti_number_creation() {
-        let euclidean_2d = Arc::new(EuclideanSpace::new(2));
+        let euclidean_2d = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let mut b0 = BettiNumber::new(euclidean_2d.clone(), 0);
 
         b0.set_value(1);
@@ -691,7 +698,7 @@ mod tests {
 
     #[test]
     fn test_euler_characteristic_from_betti() {
-        let sphere = Arc::new(Sphere2::new());
+        let sphere = Arc::new(Sphere2::new().manifold().clone());
         let betti = vec![1, 0, 1]; // S^2 has b_0=1, b_1=0, b_2=1
 
         let mut ec = EulerCharacteristic::from_betti_numbers(sphere, betti);
@@ -703,7 +710,7 @@ mod tests {
 
     #[test]
     fn test_chern_class_degree() {
-        let euclidean_4d = Arc::new(EuclideanSpace::new(4));
+        let euclidean_4d = Arc::new(EuclideanSpace::new(4).manifold().clone());
 
         let c1 = ChernClass::new(euclidean_4d.clone(), 2 /* rank */, 1 /* degree */);
         let c2 = ChernClass::new(euclidean_4d.clone(), 2, 2);
@@ -714,7 +721,7 @@ mod tests {
 
     #[test]
     fn test_pontryagin_class_creation() {
-        let euclidean_4d = Arc::new(EuclideanSpace::new(4));
+        let euclidean_4d = Arc::new(EuclideanSpace::new(4).manifold().clone());
 
         let p1 = PontryaginClass::new(euclidean_4d.clone(), 2 /* rank */, 1 /* degree */);
         assert_eq!(p1.degree(), 1);
@@ -722,7 +729,7 @@ mod tests {
 
     #[test]
     fn test_euler_class_creation() {
-        let euclidean_3d = Arc::new(EuclideanSpace::new(3));
+        let euclidean_3d = Arc::new(EuclideanSpace::new(3).manifold().clone());
 
         let euler = EulerClass::new(euclidean_3d.clone(), 3 /* rank */);
         assert!(euler.form().is_none());

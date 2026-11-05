@@ -7,12 +7,17 @@ authors.workspace = true
 repository.workspace = true
 
 [dependencies]
+rustmath-groups = { path = "../rustmath-groups" }
 rustmath-core = { path = "../rustmath-core" }
 rustmath-integers = { path = "../rustmath-integers" }
 rustmath-rationals = { path = "../rustmath-rationals" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
 rustmath-matrix = { path = "../rustmath-matrix" }
+rustmath-complex = { path = "../rustmath-complex" }
+rustmath-reals = { path = "../rustmath-reals" }
 num-bigint = { workspace = true }
 num-rational = { workspace = true }
+num-integer = { workspace = true }
 num-traits = { workspace = true }
 thiserror = { workspace = true }
+rug = { version = "1.24", default-features = false, features = ["float", "integer"] }

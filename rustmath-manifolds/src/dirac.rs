@@ -27,10 +27,11 @@
 //!
 //! ```
 //! use rustmath_manifolds::{DiracOperator, SpinStructure};
+//! use std::sync::Arc;
 //!
 //! // Create Dirac operator on ℝⁿ
-//! let spin = SpinStructure::euclidean(3);
-//! let dirac = DiracOperator::from_spin_structure(&spin);
+//! let spin = Arc::new(SpinStructure::euclidean(3));
+//! let dirac = DiracOperator::from_spin_structure(spin);
 //! ```
 
 use crate::errors::{ManifoldError, Result};
@@ -78,10 +79,11 @@ impl DiracOperator {
     /// Apply the Dirac operator to a spinor field
     ///
     /// D(ψ) = Σᵢ eᵢ · ∇_{eᵢ} ψ
-    pub fn apply(&self, spinor: &SpinorField) -> Result<SpinorField> {
-        // TODO: Implement full Dirac operator application
-        // For now, return zero (placeholder)
-        Ok(SpinorField::new(self.spinor_bundle.clone()))
+    pub fn apply(&self, _spinor: &SpinorField) -> Result<SpinorField> {
+        unimplemented!(
+            "DiracOperator::apply not yet implemented (facade): requires Clifford \
+             multiplication of an orthonormal frame with the spinor covariant derivative"
+        )
     }
 
     /// Compute the square of the Dirac operator D²
@@ -97,8 +99,10 @@ impl DiracOperator {
     ///
     /// Returns eigenvalues (for compact manifolds)
     pub fn spectrum(&self) -> Result<Vec<f64>> {
-        // TODO: Compute spectrum using spectral theory
-        Ok(vec![])
+        unimplemented!(
+            "DiracOperator::spectrum not yet implemented (facade): requires spectral theory \
+             for the (compact) Dirac operator"
+        )
     }
 
     /// Compute the index of the Dirac operator
@@ -107,18 +111,22 @@ impl DiracOperator {
     ///
     /// For compact manifolds, this is given by the Atiyah-Singer index theorem
     pub fn index(&self) -> Result<i64> {
-        // TODO: Implement index computation
         // On even-dimensional manifolds, use Atiyah-Singer:
         // ind(D) = ∫_M Â(M) where Â is the A-hat genus
-        Ok(0)
+        unimplemented!(
+            "DiracOperator::index not yet implemented (facade): requires the Atiyah-Singer \
+             index theorem (integral of the A-hat genus)"
+        )
     }
 
     /// Compute harmonic spinors (kernel of D)
     ///
     /// D(ψ) = 0
     pub fn harmonic_spinors(&self) -> Result<Vec<SpinorField>> {
-        // TODO: Solve D(ψ) = 0
-        Ok(vec![])
+        unimplemented!(
+            "DiracOperator::harmonic_spinors not yet implemented (facade): requires solving \
+             D(psi) = 0"
+        )
     }
 
     /// Get the spin structure
@@ -150,18 +158,22 @@ impl SpinorConnection {
     /// Compute the covariant derivative of a spinor field
     ///
     /// ∇_X ψ for vector field X and spinor field ψ
-    pub fn covariant_derivative(&self, spinor: &SpinorField) -> Result<SpinorField> {
-        // TODO: Implement spinor covariant derivative
+    pub fn covariant_derivative(&self, _spinor: &SpinorField) -> Result<SpinorField> {
         // Uses spin connection ω (lift of Levi-Civita connection)
-        Ok(spinor.clone())
+        unimplemented!(
+            "SpinorConnection::covariant_derivative not yet implemented (facade): requires \
+             lifting the Levi-Civita connection to the spin connection"
+        )
     }
 
     /// Get the spin connection 1-form
     ///
     /// ω takes values in spin(n) = so(n) (Lie algebra)
     pub fn connection_form(&self) -> Result<()> {
-        // TODO: Compute connection 1-form
-        Ok(())
+        unimplemented!(
+            "SpinorConnection::connection_form not yet implemented (facade): requires \
+             computing the so(n)-valued spin connection 1-form"
+        )
     }
 }
 
@@ -190,8 +202,10 @@ impl DiracSquared {
     /// - ∇*∇ is the connection Laplacian
     /// - R is the scalar curvature
     pub fn lichnerowicz_formula(&self) -> Result<()> {
-        // TODO: Implement Lichnerowicz formula
-        Ok(())
+        unimplemented!(
+            "DiracSquared::lichnerowicz_formula not yet implemented (facade): requires \
+             computing D^2 = grad*grad + (1/4)R"
+        )
     }
 }
 
@@ -219,15 +233,19 @@ impl TwistedDiracOperator {
 
     /// Apply the twisted Dirac operator
     pub fn apply(&self, _twisted_spinor: &[Complex]) -> Result<Vec<Complex>> {
-        // TODO: Implement twisted Dirac operator
-        Ok(vec![Complex::new(0.0, 0.0); self.twist_dimension])
+        unimplemented!(
+            "TwistedDiracOperator::apply not yet implemented (facade): requires the base \
+             Dirac operator coupled to the auxiliary bundle connection"
+        )
     }
 
     /// Compute the index using Atiyah-Singer for twisted case
     pub fn index(&self) -> Result<i64> {
-        // TODO: Implement index for twisted Dirac
         // ind(D_E) = ∫_M Â(M) · ch(E)
-        Ok(0)
+        unimplemented!(
+            "TwistedDiracOperator::index not yet implemented (facade): requires the \
+             Atiyah-Singer index theorem with the twisting bundle's Chern character"
+        )
     }
 }
 
@@ -243,18 +261,22 @@ impl AtiyahSingerIndexTheorem {
     ///
     /// where Â is the A-hat genus (a polynomial in Pontryagin classes)
     pub fn compute_index(_dirac: &DiracOperator) -> Result<i64> {
-        // TODO: Implement Atiyah-Singer index computation
         // Requires:
         // 1. Compute Pontryagin classes of TM
         // 2. Compute A-hat genus
         // 3. Integrate over M
-        Ok(0)
+        unimplemented!(
+            "AtiyahSingerIndexTheorem::compute_index not yet implemented (facade): requires \
+             integrating the A-hat genus (built from Pontryagin classes) over M"
+        )
     }
 
     /// Compute the A-hat genus
     pub fn a_hat_genus(_manifold: &DifferentiableManifold) -> Result<f64> {
-        // TODO: Compute A-hat genus from Pontryagin classes
-        Ok(1.0)
+        unimplemented!(
+            "AtiyahSingerIndexTheorem::a_hat_genus not yet implemented (facade): requires \
+             computing the A-hat genus from Pontryagin classes"
+        )
     }
 }
 
@@ -272,23 +294,29 @@ impl DiracHeatKernel {
 
     /// Compute the heat kernel e^{-tD²}
     pub fn kernel(&self, _t: f64) -> Result<()> {
-        // TODO: Compute heat kernel using path integral or spectral expansion
-        Ok(())
+        unimplemented!(
+            "DiracHeatKernel::kernel not yet implemented (facade): requires computing the \
+             heat kernel via path integral or spectral expansion"
+        )
     }
 
     /// Compute the heat trace Tr(e^{-tD²})
     ///
     /// Has asymptotic expansion: Tr(e^{-tD²}) ~ Σ aₙ t^{(n-dim)/2} as t → 0⁺
     pub fn trace(&self, _t: f64) -> Result<f64> {
-        // TODO: Compute heat trace
-        Ok(0.0)
+        unimplemented!(
+            "DiracHeatKernel::trace not yet implemented (facade): requires computing \
+             Tr(e^{{-tD^2}})"
+        )
     }
 
     /// Extract geometric invariants from heat kernel asymptotics
     pub fn geometric_invariants(&self) -> Result<Vec<f64>> {
-        // TODO: Compute heat kernel coefficients a₀, a₁, a₂, ...
         // These encode geometric information (volume, curvature, etc.)
-        Ok(vec![])
+        unimplemented!(
+            "DiracHeatKernel::geometric_invariants not yet implemented (facade): requires \
+             the heat kernel asymptotic coefficients a_0, a_1, a_2, ..."
+        )
     }
 }
 
@@ -300,10 +328,11 @@ mod tests {
     fn test_dirac_operator_creation() {
         let spin = Arc::new(SpinStructure::euclidean(3));
         let dirac = DiracOperator::from_spin_structure(spin);
-        assert_eq!(dirac.spin_structure().dimension, 3);
+        assert_eq!(dirac.spin_structure().manifold().dimension(), 3);
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented (Phase 5)"]
     fn test_dirac_operator_application() {
         let spin = Arc::new(SpinStructure::euclidean(2));
         let dirac = DiracOperator::from_spin_structure(spin.clone());
@@ -321,13 +350,14 @@ mod tests {
         let dirac = DiracOperator::from_spin_structure(spin);
 
         let d_squared = dirac.square();
-        assert_eq!(d_squared.dirac.spin_structure().dimension, 2);
+        assert_eq!(d_squared.dirac.spin_structure().manifold().dimension(), 2);
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented (Phase 5)"]
     fn test_spinor_connection() {
         let spin = SpinStructure::euclidean(3);
-        let levi_civita = LeviCivitaConnection::from_metric(spin.metric().clone());
+        let levi_civita = LeviCivitaConnection::from_metric(Arc::new(spin.metric().clone())).unwrap();
         let spinor_conn = SpinorConnection::from_levi_civita(levi_civita);
 
         let bundle = Arc::new(spin.spinor_bundle());
@@ -347,6 +377,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented (Phase 5)"]
     fn test_heat_kernel_creation() {
         let spin = Arc::new(SpinStructure::euclidean(2));
         let dirac = Arc::new(DiracOperator::from_spin_structure(spin));
@@ -356,6 +387,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented (Phase 5)"]
     fn test_index_computation() {
         let spin = Arc::new(SpinStructure::euclidean(2));
         let dirac = DiracOperator::from_spin_structure(spin);

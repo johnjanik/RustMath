@@ -960,7 +960,7 @@ mod tests {
 
         assert_eq!(word.length(), 0);
         assert_eq!(word.heights(), vec![0]);
-        assert_eq!(word.area_sequence(), vec![]);
+        assert!(word.area_sequence().is_empty());
         assert_eq!(word.total_area(), 0);
     }
 
@@ -990,7 +990,7 @@ mod tests {
         // XXYY has no valleys (pattern is XY, then Y)
         let word = DyckWord::new(vec![true, true, false, false]).unwrap();
         let valleys = word.valleys();
-        assert_eq!(valleys, vec![]);
+        assert!(valleys.is_empty());
         assert_eq!(word.valley_count(), 0);
 
         // XYXY has one valley at position 1
@@ -1078,7 +1078,7 @@ mod tests {
         // XXYY: no intermediate returns
         let word2 = DyckWord::new(vec![true, true, false, false]).unwrap();
         let returns2 = word2.returns();
-        assert_eq!(returns2, vec![]);
+        assert!(returns2.is_empty());
         assert_eq!(word2.return_count(), 0);
 
         // XYXYXY: returns at positions 2, 4
@@ -1112,7 +1112,7 @@ mod tests {
         assert_eq!(word.peak_heights(), vec![2]);
 
         // No valleys
-        assert_eq!(word.valleys(), vec![]);
+        assert!(word.valleys().is_empty());
         assert_eq!(word.valley_count(), 0);
     }
 

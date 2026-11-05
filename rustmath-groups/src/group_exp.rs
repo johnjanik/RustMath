@@ -15,7 +15,7 @@
 //! use rustmath_groups::additive_abelian_group::AdditiveAbelianGroup;
 //!
 //! // Create an additive group (e.g., Z_5)
-//! let additive = AdditiveAbelianGroup::new(vec![5]);
+//! let additive = AdditiveAbelianGroup::new(0, vec![5]).unwrap();
 //!
 //! // Create the exponential group
 //! let exp_group = GroupExp::new(additive.clone());
@@ -55,7 +55,7 @@ impl GroupExp {
     /// use rustmath_groups::group_exp::GroupExp;
     /// use rustmath_groups::additive_abelian_group::AdditiveAbelianGroup;
     ///
-    /// let additive = AdditiveAbelianGroup::new(vec![3]);
+    /// let additive = AdditiveAbelianGroup::new(0, vec![3]).unwrap();
     /// let exp = GroupExp::new(additive);
     /// ```
     pub fn new(base_group: AdditiveAbelianGroup) -> Self {
@@ -273,14 +273,14 @@ mod tests {
 
     #[test]
     fn test_group_exp_creation() {
-        let additive = AdditiveAbelianGroup::new(vec![5]);
+        let additive = AdditiveAbelianGroup::new(0, vec![5]).unwrap();
         let exp = GroupExp::new(additive.clone());
         assert_eq!(exp.base_group(), &additive);
     }
 
     #[test]
     fn test_identity_element() {
-        let additive = AdditiveAbelianGroup::new(vec![5]);
+        let additive = AdditiveAbelianGroup::new(0, vec![5]).unwrap();
         let exp = GroupExp::new(additive);
         let one = exp.one();
         assert!(one.is_identity());
@@ -288,7 +288,7 @@ mod tests {
 
     #[test]
     fn test_element_creation() {
-        let additive = AdditiveAbelianGroup::new(vec![5]);
+        let additive = AdditiveAbelianGroup::new(0, vec![5]).unwrap();
         let exp = GroupExp::new(additive.clone());
         let elem = exp.element(additive.element(vec![2]));
         assert!(!elem.is_identity());
@@ -296,7 +296,7 @@ mod tests {
 
     #[test]
     fn test_multiplication() {
-        let additive = AdditiveAbelianGroup::new(vec![5]);
+        let additive = AdditiveAbelianGroup::new(0, vec![5]).unwrap();
         let exp = GroupExp::new(additive.clone());
 
         // e^2 * e^3 = e^5 = e^0 (mod 5)
@@ -310,7 +310,7 @@ mod tests {
 
     #[test]
     fn test_inverse() {
-        let additive = AdditiveAbelianGroup::new(vec![5]);
+        let additive = AdditiveAbelianGroup::new(0, vec![5]).unwrap();
         let exp = GroupExp::new(additive.clone());
 
         let e2 = exp.element(additive.element(vec![2]));
@@ -323,7 +323,7 @@ mod tests {
 
     #[test]
     fn test_power() {
-        let additive = AdditiveAbelianGroup::new(vec![7]);
+        let additive = AdditiveAbelianGroup::new(0, vec![7]).unwrap();
         let exp = GroupExp::new(additive.clone());
 
         let e2 = exp.element(additive.element(vec![2]));
@@ -335,7 +335,8 @@ mod tests {
 
     #[test]
     fn test_generators() {
-        let additive = AdditiveAbelianGroup::new(vec![3, 5]);
+        // Z/3Z ⊕ Z/6Z (invariant factors must satisfy 3 | 6): a rank-2 group.
+        let additive = AdditiveAbelianGroup::new(0, vec![3, 6]).unwrap();
         let exp = GroupExp::new(additive);
         let gens = exp.generators();
         assert_eq!(gens.len(), 2);
@@ -343,7 +344,7 @@ mod tests {
 
     #[test]
     fn test_product() {
-        let additive = AdditiveAbelianGroup::new(vec![10]);
+        let additive = AdditiveAbelianGroup::new(0, vec![10]).unwrap();
         let exp = GroupExp::new(additive.clone());
 
         let e2 = exp.element(additive.element(vec![2]));
@@ -358,7 +359,7 @@ mod tests {
     #[test]
     fn test_commutator() {
         // For abelian groups, commutators are always identity
-        let additive = AdditiveAbelianGroup::new(vec![5]);
+        let additive = AdditiveAbelianGroup::new(0, vec![5]).unwrap();
         let exp = GroupExp::new(additive.clone());
 
         let e2 = exp.element(additive.element(vec![2]));
@@ -370,7 +371,7 @@ mod tests {
 
     #[test]
     fn test_associativity() {
-        let additive = AdditiveAbelianGroup::new(vec![11]);
+        let additive = AdditiveAbelianGroup::new(0, vec![11]).unwrap();
         let exp = GroupExp::new(additive.clone());
 
         let e2 = exp.element(additive.element(vec![2]));
@@ -386,7 +387,7 @@ mod tests {
     #[test]
     fn test_commutativity() {
         // Elements should commute since base group is abelian
-        let additive = AdditiveAbelianGroup::new(vec![7]);
+        let additive = AdditiveAbelianGroup::new(0, vec![7]).unwrap();
         let exp = GroupExp::new(additive.clone());
 
         let e2 = exp.element(additive.element(vec![2]));
@@ -397,7 +398,7 @@ mod tests {
 
     #[test]
     fn test_display() {
-        let additive = AdditiveAbelianGroup::new(vec![5]);
+        let additive = AdditiveAbelianGroup::new(0, vec![5]).unwrap();
         let exp = GroupExp::new(additive.clone());
         let e2 = exp.element(additive.element(vec![2]));
 
@@ -407,16 +408,15 @@ mod tests {
 
     #[test]
     fn test_multiple_generators() {
-        let additive = AdditiveAbelianGroup::new(vec![2, 3]);
+        // Z/2Z ⊕ Z/4Z (invariant factors must satisfy 2 | 4): a rank-2 group.
+        let additive = AdditiveAbelianGroup::new(0, vec![2, 4]).unwrap();
         let exp = GroupExp::new(additive.clone());
 
-        // Create element e^(1, 1)
-        let e11 = exp.element(additive.element(vec![1, 1]));
         // Create element e^(1, 2)
-        let e12 = exp.element(additive.element(vec![1, 2]));
+        let a = exp.element(additive.element(vec![1, 2]));
 
-        // e^(1,1) * e^(1,2) = e^(2,3) = e^(0,0)
-        let result = e11.multiply(&e12);
+        // e^(1,2) * e^(1,2) = e^(2,4) = e^(0,0)
+        let result = a.multiply(&a);
         assert!(result.is_identity());
     }
 }

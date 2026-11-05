@@ -761,11 +761,13 @@ mod tests {
     #[test]
     fn test_trivial_group() {
         let g: IndexedFreeGroup<i32> = IndexedFreeGroup::new(vec![]);
-        assert_eq!(g.order(), Some(1));
+        // `order` is provided by both `Group` and the indexed-group trait;
+        // disambiguate to the `Group` impl.
+        assert_eq!(Group::order(&g), Some(1));
         assert_eq!(g.rank(), Some(0));
 
         let ag: IndexedFreeAbelianGroup<i32> = IndexedFreeAbelianGroup::new(vec![]);
-        assert_eq!(ag.order(), Some(1));
+        assert_eq!(Group::order(&ag), Some(1));
         assert_eq!(ag.rank(), Some(0));
     }
 }

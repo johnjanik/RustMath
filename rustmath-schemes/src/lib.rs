@@ -209,6 +209,10 @@ pub mod affine;
 pub mod projective;
 pub mod elliptic_curves;
 
+// Birational geometry: blow-ups and the smoothness decision procedure
+pub mod blowup;
+pub mod singularity;
+
 // Projective-specific modules (organized under projective)
 pub mod graded_ring;
 pub mod line_bundle;
@@ -228,6 +232,13 @@ pub use generic::{
 pub use affine::{
     AffineScheme, AffineSpace, AffinePoint, AffineSchemeMorphism,
     ClosedSubscheme, DistinguishedOpen
+};
+
+// Re-export blow-up and smoothness machinery
+pub use blowup::{divide_out_variable, IdealBlowupChart, OriginChart};
+pub use singularity::{
+    hypersurface_singular_locus, is_smooth_hypersurface, is_unit_ideal, jacobian,
+    singular_subscheme,
 };
 
 // Re-export projective scheme types

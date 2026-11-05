@@ -9,13 +9,12 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 impl Expr {
-    /// Substitute a symbol with an expression (by symbol identity)
+    /// Substitute a symbol with an expression
     ///
     /// Replaces all occurrences of the given symbol with the provided expression.
-    /// Note: This compares symbols by both name AND id. Use `substitute_by_name`
-    /// if you want to match symbols by name only.
+    /// Symbols are interned by name (same name = same symbol), so this is
+    /// equivalent to `substitute_by_name(sym.name(), replacement)`.
     pub fn substitute(&self, sym: &Symbol, replacement: &Expr) -> Expr {
-        // Use substitute_by_name for more reliable behavior
         self.substitute_by_name(sym.name(), replacement)
     }
 
@@ -558,6 +557,32 @@ mod tests {
 
         // Should be 2 + 3 = 5
         assert_eq!(result.eval_rational(), Some(Rational::new(5, 1).unwrap()));
+    }
+
+    #[test]
+    fn test_symbol_identity_consistency_across_instances() {
+        // Regression test: Symbol::new used to mint a fresh id per call, so
+        // separately created same-named symbols disagreed under ==, in
+        // HashMap lookups, and in contains_symbol. They must all agree now.
+        let expr = Expr::Symbol(Symbol::new("x")) + Expr::from(1);
+
+        // Expr equality across separately created symbols
+        assert_eq!(Expr::symbol("x"), Expr::symbol("x"));
+
+        // contains_symbol across separately created symbols
+        assert!(expr.contains_symbol(&Symbol::new("x")));
+        assert!(!expr.contains_symbol(&Symbol::new("y")));
+
+        // substitute_many (HashMap<Symbol, Expr> keyed) across instances
+        let mut subs = HashMap::new();
+        subs.insert(Symbol::new("x"), Expr::from(41));
+        let result = expr.substitute_many(&subs);
+        assert_eq!(result.eval_rational(), Some(Rational::new(42, 1).unwrap()));
+
+        // simplify agreement: (x + 0) simplifies to an Expr equal to a
+        // separately created x
+        let x_plus_zero = Expr::Symbol(Symbol::new("x")) + Expr::from(0);
+        assert_eq!(x_plus_zero.simplify(), Expr::symbol("x"));
     }
 
     #[test]

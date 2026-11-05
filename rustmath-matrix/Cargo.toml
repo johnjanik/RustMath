@@ -8,12 +8,16 @@ repository.workspace = true
 
 [dependencies]
 rustmath-core = { path = "../rustmath-core" }
+rustmath-complex = { path = "../rustmath-complex" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
 rustmath-integers = { path = "../rustmath-integers" }
 rustmath-rationals = { path = "../rustmath-rationals" }
+rustmath-reals = { path = "../rustmath-reals" }
 rustmath-typesetting = { path = "../rustmath-typesetting" }
 ndarray = { workspace = true }
+num-bigint = { workspace = true }
 num-traits = { workspace = true }
+rug = { version = "1.24", default-features = false, features = ["float", "integer"] }
 rayon = { workspace = true }
 rand = { workspace = true }
 serde = { workspace = true, optional = true }

@@ -1,6 +1,6 @@
 # Rust
 target/
-Cargo.lock
+# Cargo.lock is committed: the workspace ships binaries (igp24, lava, jupyter kernel).
 **/*.rs.bk
 *.pdb
 
@@ -18,7 +18,7 @@ Thumbs.db
 # Temporary build/analysis files
 *.log
 __pycache__/
-*.py
+
 
 # Jupyter
 .ipynb_checkpoints/
@@ -27,3 +27,4 @@ __pycache__/
 # LMFDB-derived data (reproducible via rustmath-groups/data/fetch_transitive_24.py)
 rustmath-groups/data/transitive_24.jsonl
 rustmath-groups/data/transitive24_cycletypes.jsonl
+.claude/

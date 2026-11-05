@@ -26,10 +26,26 @@ impl MultipleZeta {
         self.indices.len()
     }
 
-    /// Compute numerical value (approximate)
+    /// The numerical value of the multiple zeta value.
+    ///
+    /// NOT IMPLEMENTED.  A multiple zeta value
+    /// `zeta(s_1, ..., s_k) = sum_{n_1 > ... > n_k >= 1} prod n_i^{-s_i}`
+    /// converges far too slowly to sum directly; an actual implementation needs
+    /// an accelerated evaluation (an iterated-integral / Euler-Maclaurin scheme,
+    /// or the standard telescoping of the nested sums) together with a rigorous
+    /// error bound to honour the requested precision.  Nothing here computes
+    /// either.
+    ///
+    /// This used to return 0.0 for every index tuple, which is not merely
+    /// imprecise -- no MZV is zero.
     pub fn numerical_value(&self, precision: usize) -> f64 {
-        // Placeholder - would need actual MZV computation
-        0.0
+        unimplemented!(
+            "MultipleZeta::numerical_value(precision = {precision}) for {:?}: not \
+             implemented. The nested sum converges far too slowly to evaluate directly, \
+             and no accelerated scheme with a rigorous error bound is implemented here. \
+             Previously returned 0.0 for every index tuple -- and no MZV is zero.",
+            self.indices
+        )
     }
 
     /// Check if this is a Riemann zeta value ζ(n)
@@ -47,5 +63,15 @@ mod tests {
         let zeta = MultipleZeta::new(vec![2, 3]);
         assert_eq!(zeta.weight(), 5);
         assert_eq!(zeta.depth(), 2);
+        assert!(!zeta.is_riemann_zeta());
+        assert!(MultipleZeta::new(vec![3]).is_riemann_zeta());
+    }
+
+    /// The value is refused, not faked.  zeta(2) = pi^2/6 is not 0, and the
+    /// placeholder returned 0.0 for every index tuple.
+    #[test]
+    #[should_panic(expected = "MultipleZeta::numerical_value")]
+    fn test_numerical_value_is_refused_not_faked() {
+        let _ = MultipleZeta::new(vec![2]).numerical_value(53);
     }
 }

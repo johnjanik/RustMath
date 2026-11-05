@@ -41,7 +41,7 @@ mod tracker_08_09_tests {
 
     #[test]
     fn test_lie_derivative_scalar() {
-        let manifold = Arc::new(EuclideanSpace::new(2));
+        let manifold = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let chart = manifold.default_chart().unwrap();
 
         // Create vector field X = ∂/∂x
@@ -53,7 +53,7 @@ mod tracker_08_09_tests {
 
         // Create scalar field f = x
         let mut f = ScalarField::new(manifold.clone());
-        f.set_expr(chart, Expr::Symbol("x".to_string())).unwrap();
+        f.set_expr(chart, Expr::symbol("x")).unwrap();
 
         // Compute L_X f
         let lie_x = LieDerivative::new(Arc::new(x_field));
@@ -66,7 +66,7 @@ mod tracker_08_09_tests {
 
     #[test]
     fn test_lie_derivative_vector() {
-        let manifold = Arc::new(EuclideanSpace::new(2));
+        let manifold = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let chart = manifold.default_chart().unwrap();
 
         // Coordinate vector fields should have zero Lie bracket
@@ -91,8 +91,8 @@ mod tracker_08_09_tests {
 
     #[test]
     fn test_pullback_covariant_tensor() {
-        let source = Arc::new(EuclideanSpace::new(2));
-        let target = Arc::new(EuclideanSpace::new(2));
+        let source = Arc::new(EuclideanSpace::new(2).manifold().clone());
+        let target = Arc::new(EuclideanSpace::new(2).manifold().clone());
 
         let map = Arc::new(SmoothMap::new(source.clone(), target.clone(), "f"));
         let pullback = PullBack::new(map.clone());
@@ -104,8 +104,8 @@ mod tracker_08_09_tests {
 
     #[test]
     fn test_pushforward_contravariant_tensor() {
-        let source = Arc::new(EuclideanSpace::new(2));
-        let target = Arc::new(EuclideanSpace::new(2));
+        let source = Arc::new(EuclideanSpace::new(2).manifold().clone());
+        let target = Arc::new(EuclideanSpace::new(2).manifold().clone());
 
         let map = Arc::new(SmoothMap::new(source.clone(), target.clone(), "f"));
         let pushforward = PushForward::new(map.clone());
@@ -122,7 +122,7 @@ mod tracker_08_09_tests {
         let chart = Chart::new("x", 1, vec!["x"]).unwrap();
 
         // Integrate x^2 from 0 to 1, which should give 1/3
-        let x = Expr::Symbol("x".to_string());
+        let x = Expr::symbol("x");
         let x_squared = x.clone() * x.clone();
 
         // We can't call private functions directly, but we can test integration on manifolds
@@ -131,7 +131,7 @@ mod tracker_08_09_tests {
 
     #[test]
     fn test_oriented_manifold_flip() {
-        let manifold = Arc::new(EuclideanSpace::new(2));
+        let manifold = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let mut oriented = OrientedManifold::new(manifold);
 
         assert_eq!(oriented.orientation(), Orientation::Positive);
@@ -184,7 +184,7 @@ mod tracker_08_09_tests {
 
     #[test]
     fn test_lie_derivative_one_form() {
-        let manifold = Arc::new(EuclideanSpace::new(2));
+        let manifold = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let chart = manifold.default_chart().unwrap();
 
         // Create vector field X = ∂/∂x

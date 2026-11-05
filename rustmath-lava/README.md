@@ -1,6 +1,5 @@
 # lava
 *Warning: this is under development and far from complete. Feel free to report bugs here!*
-A community-maintained multi-tool for the [Magma computer algebra system](https://magma.maths.usyd.edu.au/), written in Rust.
 
 ## Features
 

@@ -279,7 +279,9 @@ mod tests {
         let a = ImaginaryElement::new(3);
         let b = ImaginaryElement::new(4);
 
-        let sum = a.add(&b);
+        // Call the inherent `add(&self, &Self)`; method-call syntax would bind
+        // to the by-value `std::ops::Add` impl instead.
+        let sum = ImaginaryElement::add(&a, &b);
         assert_eq!(*sum.imaginary_part(), 7);
 
         // Test with trait
@@ -294,7 +296,7 @@ mod tests {
         let a = ImaginaryElement::new(10);
         let b = ImaginaryElement::new(3);
 
-        let diff = a.sub(&b);
+        let diff = ImaginaryElement::sub(&a, &b);
         assert_eq!(*diff.imaginary_part(), 7);
 
         // Test with trait

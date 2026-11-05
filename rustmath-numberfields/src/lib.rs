@@ -28,14 +28,25 @@ use rustmath_rationals::Rational;
 use std::fmt;
 use thiserror::Error;
 
+pub mod abext;
+pub mod artin;
 pub mod classgroup;
 pub mod different;
+pub mod disc_score;
+pub mod hcf;
 pub mod ideals;
+pub mod kummer;
 pub mod local_field;
+pub mod nf_elem;
 pub mod panayi;
 pub mod polred;
+pub mod quadratic;
+pub mod recognize;
 pub mod ramification;
+pub mod rayclass;
+pub mod rnfeq;
 pub mod round2;
+pub mod s_unit_gens;
 pub mod s_units;
 pub mod units;
 #[derive(Debug, Error)]

@@ -203,7 +203,6 @@ pub fn xder(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rustmath_symbolic::{Expression, SymbolType};
 
     #[test]
     fn test_simplification_chain_creation() {
@@ -214,22 +213,22 @@ mod tests {
     #[test]
     fn test_simplification_chain_add() {
         let mut chain = SimplificationChain::new();
-        chain.add(simplify);
+        chain.add(basic_simplify);
         assert_eq!(chain.operations.len(), 1);
     }
 
     #[test]
     fn test_simplify_chain_real() {
-        let x = Expression::Symbol("x".to_string(), SymbolType::Real);
+        let x = Expr::symbol("x");
         let result = simplify_chain_real(x.clone());
-        assert!(matches!(result, Expression::Symbol(_, _)));
+        assert!(matches!(result, Expr::Symbol(_)));
     }
 
     #[test]
     fn test_simplify_chain_generic() {
-        let x = Expression::Symbol("x".to_string(), SymbolType::Real);
+        let x = Expr::symbol("x");
         let result = simplify_chain_generic(x.clone());
-        assert!(matches!(result, Expression::Symbol(_, _)));
+        assert!(matches!(result, Expr::Symbol(_)));
     }
 
     #[test]
@@ -238,13 +237,10 @@ mod tests {
         let mut form = HashMap::new();
 
         // f = x^2 + y (represented as 0-form with empty index)
-        let x = Expression::Symbol("x".to_string(), SymbolType::Real);
-        let y = Expression::Symbol("y".to_string(), SymbolType::Real);
-        let x_squared = Expression::Multiply(
-            Box::new(x.clone()),
-            Box::new(x.clone()),
-        );
-        let f = Expression::Add(Box::new(x_squared), Box::new(y));
+        let x = Expr::symbol("x");
+        let y = Expr::symbol("y");
+        let x_squared = x.clone() * x.clone();
+        let f = x_squared + y;
 
         form.insert(vec![], f);
 
@@ -271,7 +267,7 @@ mod tests {
     #[test]
     fn test_xder_alias() {
         let mut form = HashMap::new();
-        let x = Expression::Symbol("x".to_string(), SymbolType::Real);
+        let x = Expr::symbol("x");
         form.insert(vec![], x);
 
         let variables = vec!["x".to_string()];

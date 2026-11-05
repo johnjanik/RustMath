@@ -25,11 +25,10 @@ impl<R: Ring> Default for MappedValuationBase<R> {
 
 impl<R: Ring> DiscretePseudoValuation<R> for MappedValuationBase<R> {
     fn value(&self, element: &R) -> ValuationValue {
-        if element.is_zero() {
-            ValuationValue::Infinity
-        } else {
-            ValuationValue::Finite(0)
-        }
+        let _ = element;
+        unimplemented!(
+            "rustmath_rings::valuation::mapped_valuation::MappedValuationBase::value: mapped valuation (composition with a ring homomorphism) not yet implemented (facade)"
+        )
     }
 }
 

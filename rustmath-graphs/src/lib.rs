@@ -38,6 +38,16 @@ pub mod cayley;
 pub mod spectra;
 pub mod ramsey;
 
+// MAGMA Handbook port — Wave 1 (chapters 149, 150, 151).
+// Exact algebraic OUTPUT objects (Matrix<Integer>, polynomials, Integer flows)
+// added *beside* the existing f64/Vec<i64> encodings; see each module header.
+pub mod magma_matrices; // ch149 §149.16: adjacency/incidence/distance/Laplacian over Z
+pub mod exact_spectra; // ch149 §149.10: characteristic polynomial over Z + integer spectrum
+pub mod graph_polynomials; // ch149 §149.19: chromatic/matching/Tutte as rustmath-polynomials
+pub mod magma_automorphisms; // ch149 §149.22: automorphism group (perm-list; groups wiring deferred)
+pub mod multigraph_algorithms; // ch150: handshake/loops/Euler tours/multigraph traversal
+pub mod network; // ch151: capacitated networks, max-flow/min-cut/min-cost-flow over Integer
+
 pub use graph::Graph;
 pub use generators::*;
 pub use weighted_graph::WeightedGraph;

@@ -375,13 +375,14 @@ where
 mod tests {
     use super::*;
     use crate::with_basis::parent::FreeModuleWithBasis;
-    use num_bigint::BigInt;
+    use rustmath_core::ParentWithBasis;
+    use rustmath_integers::Integer as BigInt;
 
     #[test]
     fn test_zero_morphism() {
         let base_ring = BigInt::from(0);
-        let source = FreeModuleWithBasis::standard(base_ring.clone(), 3);
-        let target = FreeModuleWithBasis::standard(base_ring, 2);
+        let source = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 3);
+        let target = FreeModuleWithBasis::<usize, _>::standard(base_ring, 2);
 
         let zero = ModuleWithBasisMorphism::zero(source.clone(), target);
         assert!(zero.is_zero());
@@ -394,8 +395,8 @@ mod tests {
     #[test]
     fn test_morphism_application() {
         let base_ring = BigInt::from(0);
-        let source = FreeModuleWithBasis::standard(base_ring.clone(), 2);
-        let target = FreeModuleWithBasis::standard(base_ring, 3);
+        let source = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 2);
+        let target = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         // Define morphism: e_0 ↦ 2*f_0 + f_1, e_1 ↦ f_2
         let mut basis_action = BTreeMap::new();
@@ -430,7 +431,7 @@ mod tests {
     #[test]
     fn test_identity_morphism() {
         let base_ring = BigInt::from(0);
-        let module = FreeModuleWithBasis::standard(base_ring, 3);
+        let module = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         let id = ModuleWithBasisMorphism::identity(module.clone());
         assert!(id.is_identity());
@@ -443,7 +444,7 @@ mod tests {
     #[test]
     fn test_morphism_composition() {
         let base_ring = BigInt::from(0);
-        let module = FreeModuleWithBasis::standard(base_ring, 3);
+        let module = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         // f: e_i ↦ e_{i+1 mod 3} (cyclic permutation)
         let mut f_action = BTreeMap::new();
@@ -467,7 +468,7 @@ mod tests {
     #[test]
     fn test_morphism_power() {
         let base_ring = BigInt::from(0);
-        let module = FreeModuleWithBasis::standard(base_ring, 3);
+        let module = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         // f: e_i ↦ e_{i+1 mod 3}
         let mut f_action = BTreeMap::new();
@@ -487,7 +488,7 @@ mod tests {
     #[test]
     fn test_trace() {
         let base_ring = BigInt::from(0);
-        let module = FreeModuleWithBasis::standard(base_ring, 3);
+        let module = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         // Morphism with e_0 ↦ 2*e_0, e_1 ↦ 3*e_1, e_2 ↦ -e_2
         let mut action = BTreeMap::new();
@@ -504,8 +505,8 @@ mod tests {
     #[test]
     fn test_matrix_representation() {
         let base_ring = BigInt::from(0);
-        let source = FreeModuleWithBasis::standard(base_ring.clone(), 2);
-        let target = FreeModuleWithBasis::standard(base_ring, 3);
+        let source = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 2);
+        let target = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         // e_0 ↦ 2*f_0 + f_1, e_1 ↦ 3*f_2
         let mut basis_action = BTreeMap::new();
@@ -539,8 +540,8 @@ mod tests {
     #[test]
     fn test_image() {
         let base_ring = BigInt::from(0);
-        let source = FreeModuleWithBasis::standard(base_ring.clone(), 2);
-        let target = FreeModuleWithBasis::standard(base_ring, 3);
+        let source = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 2);
+        let target = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         let mut basis_action = BTreeMap::new();
         basis_action.insert(0, ModuleWithBasisElement::from_basis_element(0, BigInt::from(1)));

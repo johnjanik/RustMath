@@ -802,8 +802,8 @@ mod tests {
 
     #[test]
     fn test_smooth_map_creation() {
-        let r1 = Arc::new(RealLine::new());
-        let r2 = Arc::new(RealLine::new());
+        let r1 = Arc::new(RealLine::new().manifold().clone());
+        let r2 = Arc::new(RealLine::new().manifold().clone());
 
         let map = SmoothMap::new(r1.clone(), r2.clone(), "f");
         assert_eq!(map.source().dimension(), 1);
@@ -812,13 +812,13 @@ mod tests {
 
     #[test]
     fn test_smooth_map_coordinate_expression() {
-        let r1 = Arc::new(RealLine::new());
-        let r2 = Arc::new(RealLine::new());
+        let r1 = Arc::new(RealLine::new().manifold().clone());
+        let r2 = Arc::new(RealLine::new().manifold().clone());
 
         let mut map = SmoothMap::new(r1.clone(), r2.clone(), "square");
 
         // f(x) = x^2
-        let x = Expr::Symbol("x".to_string());
+        let x = Expr::symbol("x");
         let x_squared = x.clone() * x.clone();
 
         map.set_coordinate_expression("standard", "standard", vec![x_squared])
@@ -830,8 +830,8 @@ mod tests {
 
     #[test]
     fn test_immersion_dimension_check() {
-        let r1 = Arc::new(RealLine::new());
-        let r3 = Arc::new(EuclideanSpace::new(3));
+        let r1 = Arc::new(RealLine::new().manifold().clone());
+        let r3 = Arc::new(EuclideanSpace::new(3).manifold().clone());
 
         let map = SmoothMap::new(r1.clone(), r3.clone(), "curve");
         let immersion = Immersion::new(map);
@@ -842,8 +842,8 @@ mod tests {
 
     #[test]
     fn test_immersion_invalid_dimension() {
-        let r2 = Arc::new(EuclideanSpace::new(2));
-        let r1 = Arc::new(RealLine::new());
+        let r2 = Arc::new(EuclideanSpace::new(2).manifold().clone());
+        let r1 = Arc::new(RealLine::new().manifold().clone());
 
         let map = SmoothMap::new(r2.clone(), r1.clone(), "projection");
         let immersion = Immersion::new(map);
@@ -854,8 +854,8 @@ mod tests {
 
     #[test]
     fn test_submersion_dimension_check() {
-        let r2 = Arc::new(EuclideanSpace::new(2));
-        let r1 = Arc::new(RealLine::new());
+        let r2 = Arc::new(EuclideanSpace::new(2).manifold().clone());
+        let r1 = Arc::new(RealLine::new().manifold().clone());
 
         let map = SmoothMap::new(r2.clone(), r1.clone(), "projection");
         let submersion = Submersion::new(map);
@@ -871,8 +871,8 @@ mod tests {
 
     #[test]
     fn test_diffeomorphism_dimension_check() {
-        let r1 = Arc::new(RealLine::new());
-        let r2 = Arc::new(EuclideanSpace::new(2));
+        let r1 = Arc::new(RealLine::new().manifold().clone());
+        let r2 = Arc::new(EuclideanSpace::new(2).manifold().clone());
 
         let map = SmoothMap::new(r1.clone(), r2.clone(), "invalid");
         let diff = Diffeomorphism::new(map);
@@ -883,8 +883,8 @@ mod tests {
 
     #[test]
     fn test_diffeomorphism_valid() {
-        let r1 = Arc::new(RealLine::new());
-        let r1_copy = Arc::new(RealLine::new());
+        let r1 = Arc::new(RealLine::new().manifold().clone());
+        let r1_copy = Arc::new(RealLine::new().manifold().clone());
 
         let map = SmoothMap::new(r1.clone(), r1_copy.clone(), "identity");
         let diff = Diffeomorphism::new(map);
@@ -895,8 +895,8 @@ mod tests {
 
     #[test]
     fn test_pushforward_creation() {
-        let r1 = Arc::new(RealLine::new());
-        let r2 = Arc::new(EuclideanSpace::new(2));
+        let r1 = Arc::new(RealLine::new().manifold().clone());
+        let r2 = Arc::new(EuclideanSpace::new(2).manifold().clone());
 
         let map = Arc::new(SmoothMap::new(r1.clone(), r2.clone(), "inclusion"));
         let pushforward = PushForward::new(map);
@@ -906,8 +906,8 @@ mod tests {
 
     #[test]
     fn test_pullback_creation() {
-        let r2 = Arc::new(EuclideanSpace::new(2));
-        let r1 = Arc::new(RealLine::new());
+        let r2 = Arc::new(EuclideanSpace::new(2).manifold().clone());
+        let r1 = Arc::new(RealLine::new().manifold().clone());
 
         let map = Arc::new(SmoothMap::new(r2.clone(), r1.clone(), "projection"));
         let pullback = PullBack::new(map);

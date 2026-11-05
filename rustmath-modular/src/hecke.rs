@@ -3,11 +3,17 @@
 //! Hecke operators are important endomorphisms of spaces of modular forms
 //! that encode arithmetic information.
 
-use num_bigint::BigInt;
-use num_integer::Integer;
-use num_rational::BigRational;
-use num_traits::{Zero, One, Signed};
-use std::collections::HashMap;
+use crate::modsym::{HeckeEigenvalue, SummandHeckeAction};
+use rustmath_core::Ring;
+use rustmath_integers::Integer;
+use rustmath_polynomials::UnivariatePolynomial;
+use rustmath_rationals::Rational;
+use std::collections::{BTreeMap, HashMap};
+
+/// Greatest common divisor for u64 arguments.
+fn gcd_u64(a: u64, b: u64) -> u64 {
+    if b == 0 { a } else { gcd_u64(b, a % b) }
+}
 
 /// A Hecke operator T_n
 #[derive(Debug, Clone)]
@@ -17,7 +23,7 @@ pub struct HeckeOperator {
     /// Level of the modular forms space
     level: u64,
     /// Matrix representation (if computed)
-    matrix: Option<Vec<Vec<BigRational>>>,
+    matrix: Option<Vec<Vec<Rational>>>,
 }
 
 impl HeckeOperator {
@@ -40,26 +46,46 @@ impl HeckeOperator {
         self.level
     }
 
-    /// Apply T_n to q-expansion coefficients
-    /// (T_n f)(q) = sum_{m>=0} b_m q^m where
-    /// b_m = sum_{d | gcd(n,m)} d * a(nm/d^2)
+    /// Apply `T_n` to the q-expansion coefficients of a form of WEIGHT `k`:
+    ///
+    /// ```text
+    ///     (T_n f)(q) = sum_{m >= 0} b_m q^m,
+    ///     b_m = sum_{d | gcd(n, m)} d^{k-1} a(nm/d^2).
+    /// ```
+    ///
+    /// The weight must be passed in: `HeckeOperator` carries only `(n, level)`, and
+    /// `T_n` genuinely DEPENDS on the weight through `d^{k-1}`.  This used to use
+    /// `d^1` unconditionally -- i.e. it silently computed the weight-2 operator for
+    /// a form of any weight (for `Delta`, weight 12, it would have returned
+    /// `d` where the true multiplier is `d^11`).
+    ///
+    /// Requires `k >= 1`.
     pub fn apply_to_coefficients(
         &self,
-        input_coeffs: &HashMap<u64, BigRational>,
+        input_coeffs: &HashMap<u64, Rational>,
         max_output: u64,
-    ) -> HashMap<u64, BigRational> {
+        weight: i32,
+    ) -> HashMap<u64, Rational> {
+        assert!(
+            weight >= 1,
+            "HeckeOperator::apply_to_coefficients: the multiplier d^(k-1) needs k >= 1, got k = {weight}"
+        );
         let mut result = HashMap::new();
 
         for m in 0..=max_output {
-            let mut b_m = BigRational::zero();
+            let mut b_m = Rational::zero();
 
             // Sum over divisors of gcd(n, m)
-            let g = Integer::gcd(&self.n, &m);
+            let g = gcd_u64(self.n, m);
             for d in 1..=g {
-                if g % d == 0 {
+                if g.is_multiple_of(d) {
                     let nm_over_d2 = (self.n * m) / (d * d);
                     if let Some(a_val) = input_coeffs.get(&nm_over_d2) {
-                        b_m += BigRational::from_integer(BigInt::from(d)) * a_val;
+                        let mut multiplier = Integer::one();
+                        for _ in 0..(weight - 1) {
+                            multiplier = multiplier * Integer::from(d);
+                        }
+                        b_m = b_m + Rational::from_integer(multiplier) * a_val.clone();
                     }
                 }
             }
@@ -74,7 +100,7 @@ impl HeckeOperator {
 
     /// Check if this is a good Hecke operator (gcd(n, level) = 1)
     pub fn is_good(&self) -> bool {
-        Integer::gcd(&self.n, &self.level) == 1
+        gcd_u64(self.n, self.level) == 1
     }
 
     /// Check if this is a bad Hecke operator (gcd(n, level) > 1)
@@ -124,18 +150,93 @@ impl HeckeAlgebra {
         HeckeOperator::new(n, self.level)
     }
 
-    /// Compute Hecke eigenvalues for a newform
-    /// Returns map from n to eigenvalue of T_n
-    pub fn eigenvalues(&self, max_n: u64) -> HashMap<u64, BigRational> {
-        let mut eigenvalues = HashMap::new();
-
-        for n in 1..=max_n {
-            // Placeholder: actual computation requires more sophisticated methods
-            eigenvalues.insert(n, BigRational::zero());
+    /// Compute the systems of Hecke eigenvalues on the cuspidal subspace of
+    /// M_2(Gamma0(level)), one [`HeckeEigenvalueSystem`] per Q-irreducible
+    /// Hecke-stable summand of the modular-symbols cuspidal space (see
+    /// [`crate::modsym::decomposition`]), each with the eigenvalues of T_n
+    /// for n = 1..=max_n.
+    ///
+    /// Implemented case: weight 2, trivial character on Gamma0(level).  The
+    /// eigenvalues are computed exactly over Q via Merel's Heilbronn-type
+    /// matrices acting on Manin symbols; indices with gcd(n, level) > 1 use
+    /// the U_p operators.  Eigenvalues generating a coefficient field of
+    /// degree > 1 are returned honestly as their monic irreducible
+    /// polynomial ([`HeckeEigenvalue::Algebraic`]), never coerced to Q.
+    /// For a level with no cusp forms the returned list is empty.
+    ///
+    /// On a summand assembled from several degeneracy images of a lower
+    /// level newform (an old block), an operator U_n with gcd(n, level) > 1
+    /// can act with several distinct irreducible factors; those indices are
+    /// reported in [`HeckeEigenvalueSystem::mixed`] instead of
+    /// `eigenvalues`.  The degeneracy maps of
+    /// [`crate::modsym::degeneracy`] exhibit the block structure behind
+    /// such factors explicitly (see the tests there for N = 22 and 44); the
+    /// summand is still reported whole because away from the level it is a
+    /// single indivisible eigensystem.  Star and Atkin-Lehner data per
+    /// summand are available through
+    /// [`crate::modsym::ModularSymbolsGamma0::summand_involutions`] and the
+    /// signed decompositions
+    /// [`crate::modsym::ModularSymbolsGamma0::cuspidal_star_hecke_decomposition`].
+    ///
+    /// Panics (honest `unimplemented!`) for weights other than 2: that
+    /// requires the polynomial part of Manin symbols.
+    pub fn eigenvalues(&self, max_n: u64) -> Vec<HeckeEigenvalueSystem> {
+        if self.weight != 2 {
+            unimplemented!(
+                "HeckeAlgebra::eigenvalues: only weight 2 with trivial character \
+                 is implemented (via modular symbols); weight {} requires the \
+                 polynomial part of Manin symbols",
+                self.weight
+            );
         }
-
-        eigenvalues
+        let m = crate::modsym::ModularSymbolsGamma0::new(self.level);
+        let dec = m
+            .cuspidal_hecke_decomposition()
+            .expect("cuspidal Hecke decomposition failed an internal certificate");
+        dec.summands()
+            .iter()
+            .map(|w| {
+                let mut eigenvalues = BTreeMap::new();
+                let mut mixed = BTreeMap::new();
+                for n in 1..=max_n {
+                    match m
+                        .hecke_action_on_summand(w, n)
+                        .expect("Hecke action on summand failed an internal certificate")
+                    {
+                        SummandHeckeAction::Eigenvalue(e) => {
+                            eigenvalues.insert(n, e);
+                        }
+                        SummandHeckeAction::Mixed(fs) => {
+                            mixed.insert(n, fs);
+                        }
+                    }
+                }
+                HeckeEigenvalueSystem {
+                    dimension: w.dimension(),
+                    eigenvalues,
+                    mixed,
+                }
+            })
+            .collect()
     }
+}
+
+/// One system of Hecke eigenvalues: the eigenvalue data of a Q-irreducible
+/// Hecke-stable summand of the cuspidal modular-symbols space, as returned
+/// by [`HeckeAlgebra::eigenvalues`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HeckeEigenvalueSystem {
+    /// Dimension of the summand inside sign-0 modular symbols (2 for a
+    /// rational newform: the +/- pair; 2d for a coefficient field of degree
+    /// d; a further factor for old blocks of several degeneracy images).
+    pub dimension: usize,
+    /// n -> eigenvalue of T_n, for every n where the summand carries a
+    /// single eigensystem (always the case for gcd(n, level) = 1).
+    pub eigenvalues: BTreeMap<u64, HeckeEigenvalue>,
+    /// n -> the distinct irreducible charpoly factors (with multiplicity)
+    /// for indices where U_n mixes the degeneracy images of an old block;
+    /// splitting these needs degeneracy maps (honestly deferred).
+    pub mixed: BTreeMap<u64, Vec<(UnivariatePolynomial<Rational>, u32)>>,
 }
 
 /// A Hecke module (vector space with Hecke operator action)
@@ -144,13 +245,13 @@ pub trait HeckeModule {
     fn dimension(&self) -> usize;
 
     /// Apply Hecke operator T_n
-    fn apply_hecke(&self, n: u64, element: &[BigRational]) -> Vec<BigRational>;
+    fn apply_hecke(&self, n: u64, element: &[Rational]) -> Vec<Rational>;
 
     /// Get the level
     fn level(&self) -> u64;
 
     /// Check if a vector is a Hecke eigenform
-    fn is_eigenform(&self, element: &[BigRational], max_n: u64) -> bool {
+    fn is_eigenform(&self, element: &[Rational], max_n: u64) -> bool {
         // Check if T_n(f) = lambda_n * f for small n
         for n in 1..=max_n {
             let t_n_f = self.apply_hecke(n, element);
@@ -163,10 +264,10 @@ pub trait HeckeModule {
             let ratio = &t_n_f[0] / &element[0];
             for i in 0..self.dimension() {
                 let expected = &element[i] * &ratio;
-                if (t_n_f[i].clone() - expected).abs() > BigRational::new(
-                    BigInt::one(),
-                    BigInt::from(1000000),
-                ) {
+                if (t_n_f[i].clone() - expected).abs()
+                    > Rational::new(Integer::one(), Integer::from(1000000))
+                        .expect("nonzero denominator")
+                {
                     return false;
                 }
             }
@@ -183,9 +284,9 @@ pub struct Newform {
     /// Level
     level: u64,
     /// q-expansion coefficients
-    coefficients: HashMap<u64, BigRational>,
+    coefficients: HashMap<u64, Rational>,
     /// Hecke eigenvalues
-    eigenvalues: HashMap<u64, BigRational>,
+    eigenvalues: HashMap<u64, Rational>,
 }
 
 impl Newform {
@@ -210,22 +311,22 @@ impl Newform {
     }
 
     /// Get coefficient a(n)
-    pub fn coefficient(&self, n: u64) -> Option<&BigRational> {
+    pub fn coefficient(&self, n: u64) -> Option<&Rational> {
         self.coefficients.get(&n)
     }
 
     /// Set coefficient
-    pub fn set_coefficient(&mut self, n: u64, value: BigRational) {
+    pub fn set_coefficient(&mut self, n: u64, value: Rational) {
         self.coefficients.insert(n, value);
     }
 
     /// Get eigenvalue of T_n
-    pub fn eigenvalue(&self, n: u64) -> Option<&BigRational> {
+    pub fn eigenvalue(&self, n: u64) -> Option<&Rational> {
         self.eigenvalues.get(&n)
     }
 
     /// Set eigenvalue of T_n
-    pub fn set_eigenvalue(&mut self, n: u64, value: BigRational) {
+    pub fn set_eigenvalue(&mut self, n: u64, value: Rational) {
         self.eigenvalues.insert(n, value);
     }
 
@@ -233,17 +334,17 @@ impl Newform {
     pub fn is_normalized(&self) -> bool {
         self.coefficients
             .get(&1)
-            .map(|c| c == &BigRational::one())
+            .map(|c| c == &Rational::one())
             .unwrap_or(false)
     }
 
     /// Normalize the newform so that a(1) = 1
     pub fn normalize(&mut self) {
         if let Some(a1) = self.coefficients.get(&1).cloned() {
-            if !a1.is_zero() && a1 != BigRational::one() {
-                let inv_a1 = a1.recip();
+            if !a1.is_zero() && a1 != Rational::one() {
+                let inv_a1 = a1.reciprocal().expect("a1 nonzero (checked above)");
                 for (_, coeff) in self.coefficients.iter_mut() {
-                    *coeff = coeff.clone() * &inv_a1;
+                    *coeff = &*coeff * &inv_a1;
                 }
             }
         }
@@ -262,7 +363,7 @@ pub struct DiamondOperator {
 impl DiamondOperator {
     /// Create a new diamond operator <d>
     pub fn new(d: u64, level: u64) -> Option<Self> {
-        if Integer::gcd(&d, &level) == 1 {
+        if gcd_u64(d, level) == 1 {
             Some(DiamondOperator { d, level })
         } else {
             None
@@ -282,12 +383,15 @@ impl DiamondOperator {
     /// Apply to a modular form (modifies q-expansion)
     pub fn apply_to_coefficients(
         &self,
-        input_coeffs: &HashMap<u64, BigRational>,
-    ) -> HashMap<u64, BigRational> {
-        // For Gamma1(N), <d> acts by character twist
-        // In the q-expansion, this typically involves a character evaluation
-        // Placeholder implementation
-        input_coeffs.clone()
+        input_coeffs: &HashMap<u64, Rational>,
+    ) -> HashMap<u64, Rational> {
+        // For Gamma1(N), <d> acts by character twist; the action on q-expansion
+        // coefficients requires evaluating a Dirichlet character, which is not
+        // yet implemented. Previously this was a no-op that just cloned the input.
+        let _ = input_coeffs;
+        unimplemented!(
+            "DiamondOperator::apply_to_coefficients not yet implemented (facade): was a no-op"
+        )
     }
 }
 
@@ -304,11 +408,11 @@ impl AtkinLehnerInvolution {
     /// Create a new Atkin-Lehner involution W_Q
     pub fn new(q: u64, level: u64) -> Option<Self> {
         // Check that Q || N (Q divides N and gcd(Q, N/Q) = 1)
-        if level % q != 0 {
+        if !level.is_multiple_of(q) {
             return None;
         }
         let quotient = level / q;
-        if Integer::gcd(&q, &quotient) != 1 {
+        if gcd_u64(q, quotient) != 1 {
             return None;
         }
         Some(AtkinLehnerInvolution { q, level })
@@ -326,12 +430,26 @@ impl AtkinLehnerInvolution {
 
     /// Apply to modular form coefficients
     /// W_Q typically has eigenvalues ±1
+    ///
+    /// NOTE: the real Atkin-Lehner involution IS implemented on modular
+    /// symbols: see [`crate::modsym::ModularSymbolsGamma0::atkin_lehner_matrix`],
+    /// [`atkin_lehner_matrix_cuspidal`](crate::modsym::ModularSymbolsGamma0::atkin_lehner_matrix_cuspidal)
+    /// and the per-summand signs via
+    /// [`summand_involutions`](crate::modsym::ModularSymbolsGamma0::summand_involutions).
+    /// This COEFFICIENT-side facade stays unimplemented because a bare map
+    /// n -> a_n does not determine the eigenform structure needed to act on
+    /// a q-expansion (W_Q is not a coefficient-wise operator on old/new
+    /// mixtures).
     pub fn apply_to_coefficients(
         &self,
-        input_coeffs: &HashMap<u64, BigRational>,
-    ) -> HashMap<u64, BigRational> {
-        // Placeholder: full implementation requires matrix representation
-        input_coeffs.clone()
+        input_coeffs: &HashMap<u64, Rational>,
+    ) -> HashMap<u64, Rational> {
+        let _ = input_coeffs;
+        unimplemented!(
+            "AtkinLehnerInvolution::apply_to_coefficients: a coefficient map alone does not \
+             determine the W_Q action; use ModularSymbolsGamma0::atkin_lehner_matrix / \
+             summand_involutions on modular symbols instead"
+        )
     }
 }
 
@@ -345,6 +463,51 @@ mod tests {
         assert_eq!(t2.index(), 2);
         assert_eq!(t2.level(), 1);
         assert!(t2.is_good());
+    }
+
+    /// GATE: T_n on q-expansion coefficients, in the WEIGHT that the operator is
+    /// actually applied in.  Delta = sum tau(n) q^n is the weight-12 Hecke
+    /// eigenform with T_n Delta = tau(n) Delta, so applying T_2 to its
+    /// coefficients must reproduce tau(2) * tau(m).
+    ///
+    /// The decisive coefficient is m = 2:
+    ///   b_2 = a(4) + 2^11 a(1) = -1472 + 2048 = 576 = tau(2)^2.
+    /// With the old, weight-blind `d^1` multiplier this would be
+    /// -1472 + 2 = -1470, so this test pins exactly the bug that was there.
+    /// tau values from PARI: `vector(10, n, ramanujantau(n))`.
+    #[test]
+    fn test_hecke_operator_on_delta_is_weight_12() {
+        let tau: [i64; 11] = [
+            0, 1, -24, 252, -1472, 4830, -6048, -16744, 84480, -113643, -115920,
+        ];
+        let mut delta: HashMap<u64, Rational> = HashMap::new();
+        for (n, &t) in tau.iter().enumerate().skip(1) {
+            delta.insert(n as u64, Rational::from_integer(Integer::from(t)));
+        }
+
+        let t2 = HeckeOperator::new(2, 1);
+        let out = t2.apply_to_coefficients(&delta, 5, 12);
+
+        // (T_2 Delta)(m) = tau(2) tau(m), as far as the input coefficients reach
+        for m in 1..=5u64 {
+            let want = Rational::from_integer(Integer::from(tau[2] * tau[m as usize]));
+            let got = out.get(&m).cloned().unwrap_or_else(Rational::zero);
+            assert_eq!(got, want, "(T_2 Delta)(q^{m}) = tau(2) tau({m})");
+        }
+        assert_eq!(
+            out.get(&2).cloned().unwrap(),
+            Rational::from_integer(Integer::from(576)),
+            "b_2 = a(4) + 2^11 a(1) = 576; the old weight-blind code gave -1470"
+        );
+
+        // T_3 likewise: b_1 = a(3) = tau(3), b_3 = a(9) + 3^11 a(1) = tau(3)^2
+        let t3 = HeckeOperator::new(3, 1);
+        let out3 = t3.apply_to_coefficients(&delta, 3, 12);
+        assert_eq!(
+            out3.get(&3).cloned().unwrap(),
+            Rational::from_integer(Integer::from(tau[3] * tau[3])),
+            "(T_3 Delta)(q^3) = tau(3)^2"
+        );
     }
 
     #[test]
@@ -370,25 +533,180 @@ mod tests {
         assert_eq!(t2.index(), 2);
     }
 
+    /// a_n tables verified independently in python: prime indices by direct
+    /// point counting on the curve (nonsingular counts at multiplicative
+    /// primes), composite indices from the classical eta products whose
+    /// prime coefficients were matched against the point counts, and which
+    /// satisfy the weight-2 Hecke recursions.
+    fn check_eigenvalues(level: u64, expected: &[i64]) {
+        let h = HeckeAlgebra::new(level, 2, 2);
+        let systems = h.eigenvalues(expected.len() as u64);
+        assert_eq!(systems.len(), 1, "single eigensystem at level {level}");
+        let sys = &systems[0];
+        assert_eq!(sys.dimension, 2, "rational newform: +/- pair");
+        assert!(sys.mixed.is_empty(), "no mixed U_n action at level {level}");
+        assert_eq!(sys.eigenvalues.len(), expected.len());
+        for (i, a) in expected.iter().enumerate() {
+            let n = (i + 1) as u64;
+            assert_eq!(
+                sys.eigenvalues[&n],
+                HeckeEigenvalue::Rational(Rational::from_integer(Integer::from(*a))),
+                "a_{n} at level {level}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_hecke_algebra_eigenvalues_level_11() {
+        // 11a: y^2 + y = x^3 - x^2 - 10x - 20 (conductor 11 = -Delta support,
+        // c4 = 496 coprime to 11).
+        check_eigenvalues(
+            11,
+            &[1, -2, -1, 2, 1, 2, -2, 0, -2, -2, 1, -2, 4, 4],
+        );
+    }
+
+    #[test]
+    fn test_hecke_algebra_eigenvalues_level_14() {
+        // 14a: y^2 + xy + y = x^3 + 4x - 6 (Delta = -2^6 7^3, c4 = -215).
+        check_eigenvalues(
+            14,
+            &[1, -1, -2, 1, 0, 2, 1, -1, 1, 0, 0, -2, -4, -1],
+        );
+    }
+
+    #[test]
+    fn test_hecke_algebra_eigenvalues_level_15() {
+        // 15a: y^2 + xy + y = x^3 + x^2 - 10x - 10 (Delta = 3^4 5^4, c4 = 481).
+        check_eigenvalues(
+            15,
+            &[1, -1, -1, -1, 1, 1, 0, 3, 1, -1, -4, 1, -2, 0],
+        );
+    }
+
+    #[test]
+    fn test_hecke_algebra_eigenvalues_level_37_two_systems() {
+        // Level 37 (genus 2) carries TWO rational eigensystems, now wired
+        // through the cuspidal Hecke decomposition.  All prime eigenvalues
+        // were derived independently by direct point counting (conductors
+        // confirmed via Delta/c4: 37a: y^2 + y = x^3 - x, Delta = 37;
+        // 37b: y^2 + y = x^3 + x^2 - 23x - 50, Delta = 37^3):
+        //   37a: a_2, ..., a_7 = -2, -3, -2, -1;
+        //   37b: a_2, ..., a_7 =  0,  1,  0, -1;
+        // composite indices from the verified weight-2 recursions
+        // (T_4 = T_2^2 - 2, T_6 = T_2 T_3, T_8 = T_2 T_4 - 2 T_2,
+        //  T_9 = T_3^2 - 3, T_10 = T_2 T_5).
+        let h = HeckeAlgebra::new(37, 2, 4);
+        let systems = h.eigenvalues(10);
+        assert_eq!(systems.len(), 2, "two rational newforms at level 37");
+        let expect_a: Vec<i64> = vec![1, -2, -3, 2, -2, 6, -1, 0, 6, 4];
+        let expect_b: Vec<i64> = vec![1, 0, 1, -2, 0, 0, -1, 0, -2, 0];
+        let mut got: Vec<Vec<i64>> = systems
+            .iter()
+            .map(|sys| {
+                assert_eq!(sys.dimension, 2, "rational newform: +/- pair");
+                assert!(sys.mixed.is_empty(), "37 is prime: no old blocks");
+                (1..=10u64)
+                    .map(|n| match &sys.eigenvalues[&n] {
+                        HeckeEigenvalue::Rational(a) => {
+                            assert!(a.denominator().is_one());
+                            a.numerator().to_i64()
+                        }
+                        other => panic!("rational eigensystem expected, got {other:?}"),
+                    })
+                    .collect()
+            })
+            .collect();
+        got.sort();
+        let mut expected = vec![expect_a, expect_b];
+        expected.sort();
+        assert_eq!(got, expected, "the 37a and 37b eigensystems");
+    }
+
+    #[test]
+    fn test_hecke_algebra_eigenvalues_level_22_old_block() {
+        // Level 22 = 2 * 11 (genus 2): the cuspidal space is entirely the
+        // old block of 11a (two degeneracy images sharing one eigensystem
+        // away from {2, 11}), so there is a SINGLE 4-dimensional system.
+        // Good-index values are the point-counted 11a numbers; at the bad
+        // indices the degeneracy-matrix theory gives, per sign copy,
+        // U_2 = [[a_2, 1], [-2, 0]] on (f(q), f(q^2)) with a_2 = -2, so the
+        // n = 2 eigenvalue is honestly the irreducible x^2 + 2x + 2, and
+        // U_11 = a_11 = 1 scalar (point-counted: 11 - #E_ns(F_11) = 1).
+        // Powers/products follow: U_4 = U_2^2 has minimal polynomial
+        // x^2 + 4 (r^2 = -2r - 2 => y = r^2 satisfies y^2 + 4 = 0),
+        // T_6 = U_2 T_3 with T_3 = -1 gives x^2 - 2x + 2,
+        // U_8 = U_2^3 gives x^2 - 4x + 8, T_10 = U_2 T_5 with T_5 = 1
+        // gives x^2 + 2x + 2 again, T_9 = T_3^2 - 3 = -2.
+        let h = HeckeAlgebra::new(22, 2, 4);
+        let systems = h.eigenvalues(11);
+        assert_eq!(systems.len(), 1, "one shared old eigensystem at level 22");
+        let sys = &systems[0];
+        assert_eq!(sys.dimension, 4, "two degeneracy images x the +/- pair");
+        assert!(
+            sys.mixed.is_empty(),
+            "with only two images every U_n power stays a single irreducible"
+        );
+        let rational = |a: i64| HeckeEigenvalue::Rational(Rational::from_integer(Integer::from(a)));
+        let algebraic = |c: [i64; 3]| {
+            HeckeEigenvalue::Algebraic(UnivariatePolynomial::new(
+                c.iter()
+                    .map(|&k| Rational::from_integer(Integer::from(k)))
+                    .collect(),
+            ))
+        };
+        let expected: Vec<(u64, HeckeEigenvalue)> = vec![
+            (1, rational(1)),
+            (2, algebraic([2, 2, 1])),
+            (3, rational(-1)),
+            (4, algebraic([4, 0, 1])),
+            (5, rational(1)),
+            (6, algebraic([2, -2, 1])),
+            (7, rational(-2)),
+            (8, algebraic([8, -4, 1])),
+            (9, rational(-2)),
+            (10, algebraic([2, 2, 1])),
+            (11, rational(1)),
+        ];
+        for (n, e) in expected {
+            assert_eq!(sys.eigenvalues[&n], e, "eigenvalue of T_{n} at level 22");
+        }
+    }
+
+    #[test]
+    fn test_hecke_algebra_eigenvalues_genus_zero_is_empty() {
+        // S_2(Gamma0(3)) = 0: there is no eigensystem, and the decomposition
+        // now says so honestly with an empty list.
+        let h = HeckeAlgebra::new(3, 2, 0);
+        assert!(h.eigenvalues(5).is_empty());
+    }
+
+    #[test]
+    #[should_panic(expected = "weight 2")]
+    fn test_hecke_algebra_eigenvalues_higher_weight_honestly_unimplemented() {
+        let h = HeckeAlgebra::new(1, 12, 1);
+        let _ = h.eigenvalues(2);
+    }
+
     #[test]
     fn test_newform() {
         let mut f = Newform::new(2, 11);
-        f.set_coefficient(1, BigRational::one());
-        assert_eq!(f.coefficient(1), Some(&BigRational::one()));
+        f.set_coefficient(1, Rational::one());
+        assert_eq!(f.coefficient(1), Some(&Rational::one()));
         assert!(f.is_normalized());
     }
 
     #[test]
     fn test_newform_normalization() {
         let mut f = Newform::new(2, 11);
-        f.set_coefficient(1, BigRational::from_integer(BigInt::from(2)));
-        f.set_coefficient(2, BigRational::from_integer(BigInt::from(4)));
+        f.set_coefficient(1, Rational::from_integer(Integer::from(2)));
+        f.set_coefficient(2, Rational::from_integer(Integer::from(4)));
 
         f.normalize();
-        assert_eq!(f.coefficient(1), Some(&BigRational::one()));
+        assert_eq!(f.coefficient(1), Some(&Rational::one()));
         assert_eq!(
             f.coefficient(2),
-            Some(&BigRational::from_integer(BigInt::from(2)))
+            Some(&Rational::from_integer(Integer::from(2)))
         );
     }
 
@@ -411,12 +729,16 @@ mod tests {
         let w = AtkinLehnerInvolution::new(11, 11);
         assert!(w.is_some());
 
-        // W_2 for level 4 (2 || 4)
-        let w2 = AtkinLehnerInvolution::new(2, 4);
+        // W_4 for level 12 (4 || 12: 4 | 12 and gcd(4, 12/4) = gcd(4, 3) = 1)
+        let w2 = AtkinLehnerInvolution::new(4, 12);
         assert!(w2.is_some());
 
-        // Should fail if Q doesn't exactly divide N
+        // Q = 2 does NOT exactly divide N = 4: gcd(2, 4/2) = gcd(2, 2) = 2 != 1
+        let not_exact = AtkinLehnerInvolution::new(2, 4);
+        assert!(not_exact.is_none());
+
+        // Should fail if Q doesn't even divide N
         let bad_w = AtkinLehnerInvolution::new(3, 11);
-        assert!(bad_w.is_some()); // Actually 3 doesn't divide 11, so this should be None
+        assert!(bad_w.is_none()); // 3 doesn't divide 11
     }
 }

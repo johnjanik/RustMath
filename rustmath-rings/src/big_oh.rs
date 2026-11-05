@@ -15,7 +15,7 @@
 //! ## Examples
 //!
 //! ```rust
-//! use rustmath_rings::big_oh::{BigO, BigOTerm};
+//! use rustmath_rings::big_oh::BigO;
 //!
 //! // Power series truncation
 //! let truncation = BigO::PowerSeries {
@@ -310,7 +310,7 @@ mod tests {
 
     #[test]
     fn test_o_function_power_series() {
-        let o = O("x^5").unwrap();
+        let o = o("x^5").unwrap();
         assert_eq!(o.variable(), Some("x"));
         assert_eq!(o.precision(), Some(5));
         assert_eq!(format!("{}", o), "O(x^5)");
@@ -318,21 +318,21 @@ mod tests {
 
     #[test]
     fn test_o_function_padic() {
-        let o = O("7^6").unwrap();
+        let o = o("7^6").unwrap();
         assert_eq!(o.precision(), Some(6));
         assert_eq!(format!("{}", o), "O(7^6)");
     }
 
     #[test]
     fn test_o_function_puiseux() {
-        let o = O("y^1/3").unwrap();
+        let o = o("y^1/3").unwrap();
         assert_eq!(o.variable(), Some("y"));
         assert_eq!(format!("{}", o), "O(y^(1/3))");
     }
 
     #[test]
     fn test_o_function_simple_var() {
-        let o = O("x").unwrap();
+        let o = o("x").unwrap();
         assert_eq!(o.variable(), Some("x"));
         assert_eq!(o.precision(), Some(1));
         assert_eq!(format!("{}", o), "O(x)");

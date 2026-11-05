@@ -29,9 +29,11 @@
 //!
 //! ```rust
 //! use rustmath_rings::tate_algebra::TateAlgebra;
+//! use rustmath_rationals::Rational;
 //!
-//! // Create Tate algebra Q_p⟨x, y⟩
-//! let algebra = TateAlgebra::new(vec!["x".to_string(), "y".to_string()]);
+//! // Create a Tate algebra K⟨x, y⟩ (here K is instantiated to `Rational`;
+//! // a genuine p-adic base field is not yet available)
+//! let algebra = TateAlgebra::<Rational>::new(vec!["x".to_string(), "y".to_string()]);
 //! ```
 
 use rustmath_core::{Field, Ring};
@@ -357,7 +359,7 @@ mod tests {
     #[test]
     fn test_constant() {
         let algebra = TateAlgebra::<Rational>::new(vec!["x".to_string()]);
-        let c = algebra.constant(Rational::new(5, 1));
+        let c = algebra.constant(Rational::new(5, 1).unwrap());
 
         assert_eq!(c.terms().len(), 1);
         assert!(!c.is_zero());
@@ -376,8 +378,8 @@ mod tests {
     #[test]
     fn test_element_addition() {
         let algebra = TateAlgebra::<Rational>::new(vec!["x".to_string()]);
-        let c1 = algebra.constant(Rational::new(3, 1));
-        let c2 = algebra.constant(Rational::new(2, 1));
+        let c1 = algebra.constant(Rational::new(3, 1).unwrap());
+        let c2 = algebra.constant(Rational::new(2, 1).unwrap());
 
         let sum = c1.add(&c2);
         // Sum should have constant term 5
@@ -388,7 +390,7 @@ mod tests {
     fn test_element_multiplication() {
         let algebra = TateAlgebra::<Rational>::new(vec!["x".to_string()]);
         let x = algebra.variable(0);
-        let c = algebra.constant(Rational::new(2, 1));
+        let c = algebra.constant(Rational::new(2, 1).unwrap());
 
         let product = x.mul(&c);
         assert_eq!(product.terms().len(), 1);
@@ -397,7 +399,7 @@ mod tests {
     #[test]
     fn test_element_negation() {
         let algebra = TateAlgebra::<Rational>::new(vec!["x".to_string()]);
-        let c = algebra.constant(Rational::new(5, 1));
+        let c = algebra.constant(Rational::new(5, 1).unwrap());
         let neg = c.neg();
 
         assert_eq!(neg.terms().len(), 1);
@@ -415,7 +417,7 @@ mod tests {
         assert!(zero.is_zero());
 
         let algebra = TateAlgebra::<Rational>::new(vec!["x".to_string()]);
-        let c = algebra.constant(Rational::new(5, 1));
+        let c = algebra.constant(Rational::new(5, 1).unwrap());
         assert!(!c.is_zero());
     }
 }

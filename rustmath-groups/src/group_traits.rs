@@ -242,6 +242,37 @@ mod tests {
             assert_eq!(self.modulus, other.modulus);
             ModN::new(self.value + other.value, self.modulus)
         }
+
+        // The no-argument `identity()` cannot know this element's modulus, so it
+        // returns the modulus-1 zero. The identity-based default methods below
+        // would therefore compare against / accumulate from the wrong modulus
+        // (and `op` asserts moduli match), so ModN provides modulus-aware
+        // overrides. `value` is already reduced mod `modulus` by `new`.
+        fn is_identity(&self) -> bool {
+            self.value == 0
+        }
+
+        fn pow(&self, n: i64) -> Self {
+            // Additive group: g^n is n·value (mod modulus).
+            ModN::new(self.value * n, self.modulus)
+        }
+
+        fn order(&self) -> Option<usize> {
+            // Additive order of value in Z/modulus divides modulus, so this
+            // loop is bounded by `modulus` iterations.
+            let mut current = self.clone();
+            let mut ord = 1usize;
+            loop {
+                if current.value == 0 {
+                    return Some(ord);
+                }
+                if ord as i64 >= self.modulus {
+                    return None;
+                }
+                current = current.op(self);
+                ord += 1;
+            }
+        }
     }
 
     #[test]

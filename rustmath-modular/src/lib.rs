@@ -58,7 +58,14 @@ pub use arithgroup::{
     ArithmeticSubgroup, SL2Z, Gamma0, Gamma1, GammaH,
     ArithmeticSubgroupElement, CongruenceSubgroup
 };
+pub use hecke::{HeckeAlgebra, HeckeEigenvalueSystem, HeckeModule};
 pub use modform::{ModularForm, CuspForm};
+pub use modsym::{
+    cusps_equivalent_gamma0, euler_gamma, exp_integral_e1, merel_matrices,
+    CuspidalHeckeDecomposition, HeckeEigenvalue, HeckeSummand, InvolutionAction, LValue,
+    ModularSymbolsGamma0, P1List, RationalNewformLSeries, SummandHeckeAction,
+    SummandInvolutions, SummandProvenance, UlPiece, UlRefinement,
+};
 pub use cusps::Cusp;
 pub use dirichlet::{DirichletCharacter, DirichletGroup, trivial_character};
 pub use lfunction::DirichletLFunction;
@@ -66,9 +73,6 @@ pub use lfunction::DirichletLFunction;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use num_bigint::BigInt;
-    use num_rational::BigRational;
-    use num_traits::{Zero, One};
 
     #[test]
     fn test_basic_modular_imports() {

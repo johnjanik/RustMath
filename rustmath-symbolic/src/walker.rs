@@ -124,7 +124,7 @@ pub trait ExprMutator {
 /// # Examples
 ///
 /// ```
-/// use rustmath_symbolic::{Expr, walker::SymbolCollector};
+/// use rustmath_symbolic::{Expr, walker::{ExprVisitor, SymbolCollector}};
 ///
 /// let x = Expr::symbol("x");
 /// let y = Expr::symbol("y");
@@ -212,7 +212,7 @@ impl ExprVisitor for SymbolCollector {
 /// # Examples
 ///
 /// ```
-/// use rustmath_symbolic::{Expr, Symbol, walker::Substituter};
+/// use rustmath_symbolic::{Expr, Symbol, walker::{ExprMutator, Substituter}};
 ///
 /// let x = Symbol::new("x");
 /// let y = Symbol::new("y");

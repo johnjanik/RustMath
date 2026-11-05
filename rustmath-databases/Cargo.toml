@@ -11,8 +11,20 @@ rustmath-core = { path = "../rustmath-core" }
 rustmath-integers = { path = "../rustmath-integers" }
 serde = { workspace = true }
 serde_json = "1.0"
-reqwest = { version = "0.11", features = ["blocking", "json"] }
-urlencoding = "2.1"
+# HTTP client for online lookups (OEIS/LMFDB). Optional: pulled in only by the
+# "online" feature so that default (offline) builds never need it, and even
+# when enabled it uses rustls (pure Rust) instead of native-tls/openssl-sys,
+# so no system OpenSSL installation is ever required.
+reqwest = { version = "0.11", default-features = false, features = ["blocking", "json", "rustls-tls"], optional = true }
+urlencoding = { version = "2.1", optional = true }
 thiserror = { workspace = true }
+
+[features]
+default = []
+# Enables real network access to OEIS/LMFDB over HTTPS (via reqwest+rustls).
+# Off by default so `cargo build -p rustmath-databases` never requires a
+# network stack or system OpenSSL; without it, the HTTP-backed lookup/search
+# methods return a NetworkError explaining the feature is disabled.
+online = ["dep:reqwest", "dep:urlencoding"]
 
 [dev-dependencies]

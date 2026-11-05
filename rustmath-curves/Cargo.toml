@@ -11,18 +11,31 @@ rustmath-core = { path = "../rustmath-core" }
 rustmath-integers = { path = "../rustmath-integers" }
 rustmath-rationals = { path = "../rustmath-rationals" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
+rustmath-powerseries = { path = "../rustmath-powerseries" }
 rustmath-symbolic = { path = "../rustmath-symbolic" }
 rustmath-matrix = { path = "../rustmath-matrix" }
 rustmath-complex = { path = "../rustmath-complex" }
 rustmath-finitefields = { path = "../rustmath-finitefields" }
 rustmath-rings = { path = "../rustmath-rings" }
 rustmath-schemes = { path = "../rustmath-schemes" }
+rustmath-groups = { path = "../rustmath-groups" }
+rustmath-quadraticforms = { path = "../rustmath-quadraticforms" }
+rustmath-numberfields = { path = "../rustmath-numberfields" }
+rustmath-numerical = { path = "../rustmath-numerical" }
 num-bigint = { workspace = true }
 num-rational = { workspace = true }
 num-traits = { workspace = true }
+num-complex = "0.4"
+rug = { version = "1.24", default-features = false, features = ["float", "integer", "complex", "std"] }
+rayon = { workspace = true }
 serde = { workspace = true, optional = true }
 thiserror = { workspace = true }
 
 [features]
 default = []
 serde = ["dep:serde", "num-bigint/serde"]
+# Genus >= 2 hyperelliptic/Jacobian arithmetic (divisor, hyperelliptic, cantor,
+# jacobian). Temporarily gated OFF by default while build debt is repaired so the
+# genus-0 Belyi/conic path compiles. See docs/workstreams/belyi/CURVES_BUILD_BLOCKERS_SPEC.md (U0/U1) and
+# rustmath-curves/BUILD_STATUS.md. Do NOT read the default absence as "done".
+genus2 = []

@@ -1,0 +1,62 @@
+//! Belyi maps and dessins d'enfants — the construction layer for covers of `P¹`.
+//!
+//! This submodule folds the proven `dessin_engine` Belyi/cover machinery into
+//! `rustmath-curves` (semantic home: covers of curves), retyped onto RustMath
+//! foundation types (`rustmath_integers::Integer`, `rustmath_rationals::Rational`)
+//! and this crate's `rustmath_polynomials` system types
+//! ([`PolySystem`](rustmath_polynomials::poly_system::PolySystem),
+//! [`MultivariatePolynomial`](rustmath_polynomials::multivariate::MultivariatePolynomial)).
+//!
+//! Source of the port: `/home/john/inverse_galois/M23/dessin_engine`. This is the
+//! **construct + verify** half:
+//!
+//! * [`monodromy`] — [`Permutation`](monodromy::Permutation),
+//!   [`BelyiTriple`](monodromy::BelyiTriple), and the Riemann–Hurwitz genus
+//!   [`genus_from_branch_cycles`](monodromy::genus_from_branch_cycles).
+//! * [`encode`] — the homogeneous ansatz data model and the direct encoder
+//!   producing a `PolySystem`.
+//! * [`portal`] — a general genus-0 ansatz from cycle types.
+//! * [`pinned`] — the λ-pinned degree-24 `[2,12,5]` system `A²B − λR⁵S = c·x¹²`
+//!   plus the parameter-homotopy contract (`ψ`, `p*`) — newly authored from the
+//!   math spec.
+//! * [`bad_locus`] — the conservative `Z_C` predicate.
+//! * [`verify`] — the exact cover verifier and its hard constructibility gate.
+//!
+//! The descent / decide half (conic bridge, descent, pipeline) is added later by
+//! a separate agent.
+
+pub mod audit;
+pub mod bad_locus;
+pub mod bridge;
+pub mod candidate_verify;
+pub mod deleted_sheet;
+pub mod descent;
+pub mod encode;
+pub mod exactify_hp;
+pub mod factorized_residual;
+pub mod flag_packing;
+pub mod flags;
+pub mod genus0_map;
+pub mod linear_scale_fit;
+pub mod hyperbolic_packing;
+pub mod monodromy;
+pub mod newton;
+pub mod newton_hp;
+pub mod coset_graph;
+pub mod hypergeometric;
+pub mod kernel_refine;
+pub mod modular_forms;
+pub mod modular_forms_hp;
+pub mod mp_svd;
+pub mod numerical_monodromy;
+pub mod triangle_group;
+pub mod triangle_group_hp;
+pub mod packing;
+pub mod pinned;
+pub mod pipeline;
+pub mod portal;
+pub mod regular_certify;
+pub mod regularize;
+pub mod solve;
+pub mod triangulation_audit;
+pub mod verify;

@@ -1,199 +1,79 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code sessions in this repository.
 
-## Project Overview
+## What this project is
 
-RustMath is a Rust rewrite of SageMath's core mathematical functionality (~35% complete). The project provides exact arithmetic, symbolic computation, and comprehensive mathematical structures without any unsafe code.
+RustMath is a pure-Rust, zero-`unsafe` port of the **MAGMA** computational algebra system. The
+specification is the *MAGMA Handbook of Functions*, digested per chapter in
+`rustmath-lava/docs/Chapter_NN_*.md` (intrinsics, signatures, algorithms, bibliography keys).
+SageMath is a secondary reference (API shape, cross-check values). The 2025 SageMath-only framing is
+archived in `docs/archive/root-legacy/`.
 
-## Build and Development Commands
+Implement from the **published algorithms** cited in each chapter digest. Use the handbook as the
+interface spec only; do not copy MAGMA package (`.m`) source.
+
+## Start of every session
+
+1. Read `docs/README.md` (status index) and `docs/PLAN.md` (phases).
+2. For MAGMA coverage, use `docs/magma/` (per-intrinsic tracker). For what the code actually does,
+   use `PROJECT_TRACKER.md` (algorithm inventory with `file:line`, facade/broken flags).
+3. Cloud containers are ephemeral: commit and push before ending. Update the tracker rows you touched.
+
+## Commands
 
 ```bash
-# Build all crates
-cargo build
-
-# Run all tests
-cargo test
-
-# Run tests for a specific crate
-cargo test -p rustmath-integers
-cargo test -p rustmath-matrix
-
-# Run a specific test
-cargo test --package rustmath-symbolic --lib -- tests::test_differentiation
-
-# Build with optimizations
-cargo build --release
-
-# Check compilation without building
-cargo check
-
-# Run clippy linter
-cargo clippy
-
-# Format code
+cargo check --workspace                 # whole workspace (first build compiles GMP via rug: minutes)
+cargo test -p rustmath-numberfields     # one crate
+cargo test -p rustmath-galois --test descent
+cargo clippy -p <crate>
 cargo fmt
-
-# Build documentation
-cargo doc --open
-
-# Clean build artifacts
-cargo clean
+python3 tools/magma_tracker/build.py    # regenerate docs/magma/ from the chapter digests
 ```
 
-## High-Level Architecture
+## Rules for code changes
 
-### Core Design Pattern: Trait-Based Generics
-The codebase uses Rust traits to define algebraic structures that work over ANY mathematical type:
+- **Honesty over coverage.** A *facade* (an API returning a plausible fabricated value) is a defect.
+  Missing functionality returns `Err`/`unimplemented!()`. Certifying routines distinguish
+  `Decided` from `Unresolved`; a bounded search that finds nothing never decides.
+- Consume `rustmath-core` traits and existing numeric crates; no new private `num-*` wrappers.
+- Cite the MAGMA chapter (and paper) in each new file's header. Port handbook examples as tests,
+  with reference values from LMFDB, PARI/GP or Sage.
+- One crate per PR where possible; keep that crate build-green and test-green.
 
-```rust
-// Matrix works over any Ring (integers, rationals, polynomials, finite fields, etc.)
-pub struct Matrix<R: Ring> { ... }
+## Architecture (bottom-up)
 
-// Operations generic over algebraic structures
-impl<R: EuclideanDomain> Matrix<R> {
-    pub fn det(&self) -> R { ... }
-}
+```
+L0  Exact kernel       core, integers, rationals, finitefields (GF(p^n), Z/mZ, Galois rings)
+L1  Polys/linalg       polynomials (factorization, resultants), matrix (LLL/HNF/SNF), powerseries
+L2  Fields             numberfields (round2, ideals, class/unit/S-unit groups, CFT), padics +
+                       rings::padics (OM/Montes, extensions), functionfields
+L3  Groups             groups (perm groups, Schreier-Sims, degree-24 transitive atlas)
+L4  Galois             galois (exact low-degree engine + Stauduhar descent, deg-24 narrowing)
+L5+ Geometry, modular  curves (incl. Belyi/dessins), ellipticcurves, modular, schemes
+L7  Front-end          rustmath-lava (Magma-language tooling), rustmath-igp24 (CLI)
 ```
 
-### Module Structure (60+ workspace members)
-- **rustmath-core**: Fundamental traits (Ring, Field, EuclideanDomain)
-- **rustmath-features**: Feature detection and optional dependency management
-- **rustmath-interfaces**: External system interfaces (GAP, PARI, etc.) (NEW)
-- **rustmath-integers**: Integer operations, factorization (Pollard's Rho), primality (Miller-Rabin)
-- **rustmath-rationals**: Exact rational arithmetic
-- **rustmath-matrix**: Generic matrix operations, LU/PLU decomposition, Gaussian elimination
-- **rustmath-symbolic**: Expression trees, differentiation, assumptions, simplification
-- **rustmath-polynomials**: Univariate/multivariate polynomials with factorization
-- **rustmath-finitefields**: GF(p) and GF(p^n) with Conway polynomials
-- **rustmath-padics**: p-adic numbers
-- **rustmath-reals**: Real numbers (currently f64-based)
-- **rustmath-complex**: Complex arithmetic
-- **rustmath-combinatorics**: Permutations, partitions, Young tableaux
-- **rustmath-graphs**: Graph algorithms (BFS/DFS, coloring, connectivity)
-- **rustmath-geometry**: Points, lines, polytopes
-- **rustmath-quadraticforms**: Quadratic forms for number theory
-- **rustmath-powerseries**: Formal power series with Newton-Raphson inversion
-- **rustmath-modulararithmetic**: Modular arithmetic as Ring composition
-- **rustmath-sparsematrix**: Sparse matrix representations (CSR/CSC)
+Non-obvious points:
 
-### Key Architectural Decisions
+- `rustmath-padics` is a re-export shim over `rustmath_rings::padics`, plus its own `montes` /
+  `newton_polygon` modules.
+- `rustmath-finitefields` carries two GF(p^n) stacks (`finite_field`/`poly_factor` canonical at the
+  crate root; `ff_poly`/`cantor_zassenhaus`/`irreducible` used by `rustmath-galois` via module paths).
+- `rustmath-galois::galois_group` is the exact engine; `stauduhar_galois_group` and `descent24` are
+  the numeric/p-adic descent stack.
+- `Ring` is not dyn-safe by design; object-safe maps go through `rustmath_core::morphism`.
+- The degree-24 atlas data (`rustmath-groups/data/*.jsonl`) is gitignored; regenerate with
+  `rustmath-groups/data/fetch_transitive_24.py`.
 
-1. **Zero Unsafe Code**: All operations use safe Rust, preventing memory corruption
-2. **Exact Arithmetic**: No floating-point errors; exact rational and symbolic computation
-3. **Expression Evaluation Pipeline**: Symbolic expressions evaluate via: parse → build tree → substitute → simplify → compute
-4. **Assumption Propagation**: Symbolic system tracks assumptions (e.g., x > 0) for intelligent simplification
-5. **No Circular Dependencies**: Clean DAG structure between crates
-6. **Feature Detection System**: Runtime and compile-time detection of optional features with automatic fallbacks
+## Important files
 
-### Feature Detection System (rustmath-features)
-
-The `rustmath-features` crate provides infrastructure for optional dependency management:
-
-**Capabilities:**
-- Compile-time feature detection using Cargo feature flags
-- Runtime feature queries to check which features are enabled
-- Automatic fallbacks when optional dependencies are unavailable
-- Performance optimization by selecting the best available implementation
-- CPU capability detection (SIMD, core count)
-
-**Available Features:**
-- `gmp`, `mpfr`, `flint`, `pari` - External library bindings (future)
-- `parallel` - Parallel algorithms using rayon
-- `simd` - SIMD optimizations
-- `native` - Native CPU optimizations
-- `databases` - Database integrations (OEIS, LMFDB, Cremona)
-- `plotting` - Plotting and visualization
-- `experimental` - Experimental features
-
-**Usage Example:**
-```rust
-use rustmath_features::{with_fallback, Feature};
-
-// Automatically use optimized version if available
-let result = with_fallback!(
-    Feature::Gmp => gmp_factorial(10),
-    pure_rust_factorial(10)
-);
-```
-
-### External System Interfaces (rustmath-interfaces)
-
-The `rustmath-interfaces` crate provides bridges to external computational systems:
-
-**GAP Interface (Groups, Algorithms, Programming):**
-- Process management: Spawn and manage GAP processes
-- Command translation: Convert Rust operations to GAP syntax
-- Result parsing: Parse GAP output back to Rust structures
-- Group operations: Use GAP for advanced group computations
-- Permutation algorithms: Leverage GAP's Schreier-Sims and other algorithms
-
-**Key Features:**
-- Thread-safe process management with `Arc<Mutex<>>`
-- Comprehensive error handling (process, parsing, runtime errors)
-- High-level API for permutation groups
-- Support for transitive groups, stabilizers, orbits, conjugacy classes
-- Base and strong generating set computation
-
-**Usage Example:**
-```rust
-use rustmath_interfaces::gap::GapInterface;
-use rustmath_interfaces::gap_permutation::GapPermutationGroup;
-
-// Execute GAP commands
-let gap = GapInterface::new()?;
-let order = gap.group_order("SymmetricGroup(5)")?;
-
-// High-level permutation group interface
-let s5 = GapPermutationGroup::symmetric(5)?;
-let orbit = s5.orbit(1)?;
-let (base, sgs) = s5.base_and_strong_generators()?;
-```
-
-**Planned Interfaces:**
-- PARI/GP: Number theory computations
-- Singular: Algebraic geometry
-- FLINT: Fast integer arithmetic
-- GMP/MPFR: Arbitrary precision
-
-### Non-Obvious Implementation Details
-
-1. **Matrix Determinant**: Uses PLU decomposition with pivoting for numerical stability
-2. **Symbolic Differentiation**: Recursive tree traversal with chain rule application
-3. **Finite Field Construction**: Conway polynomials ensure compatible embeddings between fields
-4. **Power Series Inversion**: Newton-Raphson iteration for efficient computation
-5. **Modular Arithmetic**: Implemented as type composition `ModularInteger<R: Ring>`
-6. **Quadratic Forms**: Specialized for number theory applications (not just linear algebra)
-
-### Testing Strategy
-
-Tests are organized within each crate's `src/lib.rs` or dedicated test modules:
-- Unit tests: `#[cfg(test)] mod tests { ... }`
-- Integration tests possible but not yet implemented
-- ~60 test modules across all crates
-- Focus on mathematical correctness over performance
-
-### Known Issues and Limitations
-
-1. **rustmath-category**: Compilation errors due to Category trait not being dyn-compatible (see root_cause_analysis.md)
-2. **rustmath-interfaces**: Missing Clone implementation on GapInterface (see root_cause_analysis.md)
-3. **No Symbolic Integration**: Only differentiation implemented
-4. **No Expression Parsing**: Cannot parse strings like "x^2 + 3*x + 2"
-5. **Real Numbers**: Currently f64-based; arbitrary precision planned
-6. **Gröbner Bases**: Partially implemented for multivariate polynomial ideals
-7. **Jupyter 3D Plot Rotation**: `parametric_plot3d` (curves) and `implicit_plot3d` do not support click-and-drag rotation in Jupyter notebooks, while other 3D plots (`plot3d`, `spherical_plot3d`, parametric surfaces) work correctly. The issue is related to how Jupyter handles inline JavaScript in SVG content. Functions are in `rustmath-jupyter/src/repl.rs`: `generate_3d_curve_svg` and `generate_implicit_surface_svg`.
-
-### Development Workflow
-
-1. Most development happens in feature branches
-2. Test changes with `cargo test -p <crate-name>` before full test suite
-3. The project follows standard Rust conventions (snake_case, module organization)
-4. Documentation uses inline `///` comments for public APIs
-5. THINGS_TO_DO.md tracks implementation progress by SageMath section
-
-### Important Files
-
-- **THINGS_TO_DO.md**: Detailed progress tracking (which SageMath sections are complete)
-- **README.md**: Project overview and goals
-- **Cargo.toml**: Workspace configuration with 60+ workspace members
-- Each crate's **src/lib.rs**: Entry point with public API exports
+| File | Purpose |
+|---|---|
+| `docs/README.md` | Status index, start here |
+| `docs/PLAN.md` | Phased plan |
+| `docs/magma/` | MAGMA intrinsic tracker (generated) and status summary |
+| `PROJECT_TRACKER.md` | Algorithm inventory (ground truth for what the code does) |
+| `docs/BRANCHES.md` | Branch audit and merge record |
+| `docs/workstreams/belyi/` | Belyi/dessin/curves workstream specs and handoffs |
+| `rustmath-lava/docs/` | MAGMA handbook chapter digests (the spec) |

@@ -202,6 +202,8 @@ impl<F: Field> HolomorphicDifferentials<F> {
         for i in 0..self.genus {
             let numerator = if i == 0 {
                 "1/y".to_string()
+            } else if i == 1 {
+                "x/y".to_string()
             } else {
                 format!("x^{}/y", i)
             };

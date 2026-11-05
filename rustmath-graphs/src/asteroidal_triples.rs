@@ -255,23 +255,47 @@ mod tests {
     }
 
     #[test]
-    fn test_cycle_c4_is_not_at_free() {
+    fn test_cycle_c4_is_at_free() {
         // Cycle: 0-1-2-3-0
-        // {0, 1, 2} should form an asteroidal triple
+        // C4's independence number is 2 (it's bipartite with two 2-vertex parts),
+        // so it contains no independent triple at all, and is therefore
+        // trivially AT-free.
         let mut g = Graph::new(4);
         g.add_edge(0, 1).unwrap();
         g.add_edge(1, 2).unwrap();
         g.add_edge(2, 3).unwrap();
         g.add_edge(3, 0).unwrap();
+        assert!(is_asteroidal_triple_free(&g));
+    }
+
+    #[test]
+    fn test_cycle_c6_is_not_at_free() {
+        // Cycle: 0-1-2-3-4-5-0
+        // {0, 2, 4} is an independent set, and each pair is connected by a
+        // path along the cycle that avoids the closed neighborhood of the
+        // third vertex (e.g. 0-1-2 avoids N[4] = {3,4,5}), so this is a
+        // genuine asteroidal triple. C_n for n >= 6 is a classic example of
+        // a non-AT-free graph.
+        let mut g = Graph::new(6);
+        g.add_edge(0, 1).unwrap();
+        g.add_edge(1, 2).unwrap();
+        g.add_edge(2, 3).unwrap();
+        g.add_edge(3, 4).unwrap();
+        g.add_edge(4, 5).unwrap();
+        g.add_edge(5, 0).unwrap();
         assert!(!is_asteroidal_triple_free(&g));
     }
 
     #[test]
-    fn test_independent_set_of_three_is_not_at_free() {
-        // Three independent vertices with no edges
-        // They form an asteroidal triple
+    fn test_independent_set_of_three_is_at_free() {
+        // Three independent vertices with no edges at all.
+        // An asteroidal triple requires, for each pair, an actual path
+        // between them (avoiding the third vertex's closed neighborhood).
+        // With no edges in the graph, no such path exists between any pair,
+        // so this can never be an asteroidal triple: the empty graph is
+        // (trivially) an interval graph, hence AT-free.
         let g = Graph::new(3);
-        assert!(!is_asteroidal_triple_free(&g));
+        assert!(is_asteroidal_triple_free(&g));
     }
 
     #[test]

@@ -277,9 +277,7 @@ impl<R: Ring> Ring for FreeAlgebraElement<R> {
 }
 
 impl<R: Ring> Algebra<R> for FreeAlgebraElement<R> {
-    fn base_ring() -> R {
-        R::zero() // Placeholder - should return type info
-    }
+    // base_ring/dimension: core defaults (R::zero() placeholder, None)
 
     fn scalar_mul(&self, scalar: &R) -> Self {
         let mut result = Self::new(self.num_generators);

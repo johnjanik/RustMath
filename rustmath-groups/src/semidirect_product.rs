@@ -361,8 +361,10 @@ mod tests {
         let a = 7i32;
         let b = 3i32;
 
-        assert_eq!(a.mul(&b), 10);
-        assert_eq!(b.mul(&a), 10);
+        // `Mul` here is this module's convenience trait taking `rhs` by value;
+        // `i32` is `Copy`, so pass the operands directly.
+        assert_eq!(a.mul(b), 10);
+        assert_eq!(b.mul(a), 10);
     }
 
     #[test]

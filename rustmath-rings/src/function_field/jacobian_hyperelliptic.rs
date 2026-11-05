@@ -90,6 +90,7 @@ use rustmath_polynomials::univariate::UnivariatePolynomial;
 ///
 /// ```
 /// use rustmath_rings::function_field::jacobian_hyperelliptic::HyperellipticCurve;
+/// use rustmath_rings::Ring;
 /// use rustmath_rationals::Rational;
 /// use rustmath_polynomials::univariate::UnivariatePolynomial;
 ///
@@ -281,6 +282,7 @@ impl<F: Field> MumfordDivisor<F> {
 /// use rustmath_rings::function_field::jacobian_hyperelliptic::{
 ///     HyperellipticCurve, HyperellipticJacobian
 /// };
+/// use rustmath_rings::Ring;
 /// use rustmath_rationals::Rational;
 /// use rustmath_polynomials::univariate::UnivariatePolynomial;
 ///

@@ -445,8 +445,8 @@ impl Subset {
 ///
 /// let subsets = all_subsets(3);
 /// assert_eq!(subsets.len(), 8);
-/// assert_eq!(subsets[0].elements(), &[]); // Empty set
-/// assert_eq!(subsets[7].elements(), &[0, 1, 2]); // Full set
+/// assert!(subsets[0].elements().is_empty()); // Empty set
+/// assert_eq!(subsets[7].elements(), &[0usize, 1, 2]); // Full set
 /// ```
 pub fn all_subsets(n: usize) -> Vec<Subset> {
     if n > 20 {
@@ -616,8 +616,8 @@ impl ExactSizeIterator for SubsetIterator {}
 /// use rustmath_combinatorics::subset_iterator;
 ///
 /// let mut iter = subset_iterator(3);
-/// assert_eq!(iter.next().unwrap().elements(), &[]); // Empty set
-/// assert_eq!(iter.next().unwrap().elements(), &[0]); // {0}
+/// assert!(iter.next().unwrap().elements().is_empty()); // Empty set
+/// assert_eq!(iter.next().unwrap().elements(), &[0usize]); // {0}
 /// ```
 pub fn subset_iterator(n: usize) -> SubsetIterator {
     SubsetIterator::new(n)
@@ -938,7 +938,7 @@ mod tests {
         let subsets = all_subsets(3);
         assert_eq!(subsets.len(), 8);
 
-        assert_eq!(subsets[0].elements(), &[]); // Empty
+        assert!(subsets[0].elements().is_empty()); // Empty
         assert_eq!(subsets[1].elements(), &[0]);
         assert_eq!(subsets[2].elements(), &[1]);
         assert_eq!(subsets[3].elements(), &[0, 1]);
@@ -980,7 +980,7 @@ mod tests {
     fn test_subset_iterator() {
         let mut iter = subset_iterator(3);
 
-        assert_eq!(iter.next().unwrap().elements(), &[]);
+        assert!(iter.next().unwrap().elements().is_empty());
         assert_eq!(iter.next().unwrap().elements(), &[0]);
         assert_eq!(iter.next().unwrap().elements(), &[1]);
         assert_eq!(iter.next().unwrap().elements(), &[0, 1]);
@@ -1005,7 +1005,7 @@ mod tests {
     fn test_empty_and_full() {
         let empty = Subset::empty(5);
         assert_eq!(empty.size(), 0);
-        assert_eq!(empty.elements(), &[]);
+        assert!(empty.elements().is_empty());
 
         let full = Subset::full(5);
         assert_eq!(full.size(), 5);
@@ -1026,7 +1026,7 @@ mod tests {
         // k = 0
         let zero_subsets = k_subsets(5, 0);
         assert_eq!(zero_subsets.len(), 1);
-        assert_eq!(zero_subsets[0].elements(), &[]);
+        assert!(zero_subsets[0].elements().is_empty());
 
         // k = n
         let full_subsets = k_subsets(3, 3);

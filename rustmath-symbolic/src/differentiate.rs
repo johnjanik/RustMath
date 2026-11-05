@@ -2,6 +2,7 @@
 
 use crate::expression::{BinaryOp, Expr, UnaryOp};
 use crate::symbol::Symbol;
+use std::sync::Arc;
 
 impl Expr {
     /// Differentiate the expression with respect to a symbol
@@ -17,6 +18,9 @@ impl Expr {
     /// - d/dx(cos(f)) = -sin(f)*f' (chain rule)
     /// - d/dx(exp(f)) = exp(f)*f' (chain rule)
     /// - d/dx(log(f)) = f'/f (chain rule)
+    /// - d/dx(root_sum(f, g)) = root_sum(f, ∂g/∂x): the sum ranges over the
+    ///   roots of `f` in its bound variable τ, which do not involve x, so
+    ///   differentiation passes through the summand (see `crate::risch`)
     pub fn differentiate(&self, var: &Symbol) -> Self {
         match self {
             // Constant rule: d/dx(c) = 0
@@ -201,6 +205,27 @@ impl Expr {
                 }
             }
 
+            // root_sum(f, g) = Σ_{c : f(c) = 0} g|_{τ=c} — the exact symbolic
+            // object emitted by the rational Risch integrator (`crate::risch`).
+            // `f` is a polynomial in the bound variable τ alone, so the roots
+            // the sum ranges over do not involve any other variable:
+            // differentiation with respect to such a variable passes through
+            // the (finite) sum termwise,
+            //     d/dx root_sum(f, g) = root_sum(f, ∂g/∂x).
+            // If `var` occurs in `f`, then `var` *is* the bound variable τ;
+            // the sum binds it, the value Σ g(x, c) has no free τ, and the
+            // derivative is exactly 0.
+            Expr::Function(name, args) if name == "root_sum" && args.len() == 2 => {
+                if args[0].contains_symbol(var) {
+                    Expr::from(0)
+                } else {
+                    Expr::Function(
+                        "root_sum".to_string(),
+                        vec![args[0].clone(), Arc::new(args[1].differentiate(var))],
+                    )
+                }
+            }
+
             // Function calls - use chain rule on all arguments
             Expr::Function(_, _) => {
                 // For general functions, we can't differentiate without knowing the function
@@ -343,6 +368,23 @@ impl Expr {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_derivative_across_separate_symbol_instances() {
+        // Regression test: Symbol::new("x") used to mint a fresh id per call,
+        // so d/dx(x) evaluated to 0 whenever the expression's x and the
+        // differentiation variable came from different Symbol::new calls.
+        let x_expr = Expr::Symbol(Symbol::new("x"));
+        let x_var = Symbol::new("x"); // separate call, same name
+        let d = x_expr.differentiate(&x_var);
+        assert_eq!(d, Expr::from(1), "d/dx(x) must be 1 across separate Symbol::new(\"x\") calls");
+
+        // d/dx(x^2) must not collapse to 0 either
+        let x2 = Expr::Symbol(Symbol::new("x")).pow(Expr::from(2));
+        let d2 = x2.differentiate(&Symbol::new("x"));
+        assert_ne!(d2.simplify(), Expr::from(0), "d/dx(x^2) must not be 0");
+        assert!(d2.contains_symbol(&Symbol::new("x")));
+    }
 
     #[test]
     fn test_constant_derivative() {

@@ -239,7 +239,7 @@ where
 mod tests {
     use super::*;
     use crate::with_basis::parent::FreeModuleWithBasis;
-    use num_bigint::BigInt;
+    use rustmath_integers::Integer as BigInt;
 
     #[test]
     fn test_product_index() {
@@ -252,8 +252,8 @@ mod tests {
     #[test]
     fn test_cartesian_product_creation() {
         let base_ring = BigInt::from(0);
-        let m1 = FreeModuleWithBasis::standard(base_ring.clone(), 2);
-        let m2 = FreeModuleWithBasis::standard(base_ring, 3);
+        let m1 = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 2);
+        let m2 = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         let product = CartesianProduct::new(m1, m2);
 
@@ -263,8 +263,8 @@ mod tests {
     #[test]
     fn test_basis_indices() {
         let base_ring = BigInt::from(0);
-        let m1 = FreeModuleWithBasis::standard(base_ring.clone(), 2);
-        let m2 = FreeModuleWithBasis::standard(base_ring, 3);
+        let m1 = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 2);
+        let m2 = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         let product = CartesianProduct::new(m1, m2);
         let indices = product.basis_indices();
@@ -284,8 +284,8 @@ mod tests {
     #[test]
     fn test_product_element() {
         let base_ring = BigInt::from(0);
-        let m1 = FreeModuleWithBasis::standard(base_ring.clone(), 2);
-        let m2 = FreeModuleWithBasis::standard(base_ring, 3);
+        let m1 = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 2);
+        let m2 = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         let product = CartesianProduct::new(m1, m2);
 
@@ -302,8 +302,8 @@ mod tests {
     #[test]
     fn test_projection() {
         let base_ring = BigInt::from(0);
-        let m1 = FreeModuleWithBasis::standard(base_ring.clone(), 2);
-        let m2 = FreeModuleWithBasis::standard(base_ring, 3);
+        let m1 = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 2);
+        let m2 = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         let product = CartesianProduct::new(m1, m2);
 

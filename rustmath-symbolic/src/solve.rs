@@ -379,6 +379,39 @@ fn solve_quartic_symbolic(expr: &Expr, var: &Symbol) -> Solution {
 /// - Inverse trig equations
 fn solve_trig_equation_internal(expr: &Expr, var: &Symbol) -> Option<Solution> {
     match expr {
+        // Pattern: trig(arg) = 0 (bare trig function equated to zero)
+        Expr::Unary(UnaryOp::Sin, arg) if arg_contains_var(arg, var) => {
+            return Some(solve_sin_equation_internal(arg, &Expr::from(0), var));
+        }
+        Expr::Unary(UnaryOp::Cos, arg) if arg_contains_var(arg, var) => {
+            return Some(solve_cos_equation_internal(arg, &Expr::from(0), var));
+        }
+        Expr::Unary(UnaryOp::Tan, arg) if arg_contains_var(arg, var) => {
+            return Some(solve_tan_equation_internal(arg, &Expr::from(0), var));
+        }
+
+        // Pattern: trig(arg) + c = 0  =>  trig(arg) = -c
+        Expr::Binary(BinaryOp::Add, left, right) if !expr_contains_var(right, var) => {
+            let neg_c = Expr::Unary(UnaryOp::Neg, right.clone()).simplify();
+            match left.as_ref() {
+                Expr::Unary(UnaryOp::Sin, arg) if arg_contains_var(arg, var) => {
+                    return Some(solve_sin_equation_internal(arg, &neg_c, var));
+                }
+                Expr::Unary(UnaryOp::Cos, arg) if arg_contains_var(arg, var) => {
+                    return Some(solve_cos_equation_internal(arg, &neg_c, var));
+                }
+                Expr::Unary(UnaryOp::Tan, arg) if arg_contains_var(arg, var) => {
+                    return Some(solve_tan_equation_internal(arg, &neg_c, var));
+                }
+                _ => {
+                    // Fall through to the linear-combination pattern below
+                    if let Some(sol) = solve_linear_combination_trig(expr, var) {
+                        return Some(sol);
+                    }
+                }
+            }
+        }
+
         // Pattern: trig(arg) - c = 0
         Expr::Binary(BinaryOp::Sub, left, right) => {
             match left.as_ref() {

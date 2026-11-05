@@ -1,6 +1,11 @@
 //! # Inductive Valuation
 //!
 //! Valuations defined inductively via MacLane's algorithm
+//!
+//! > **Superseded**: the aliases here wrap the empty `DevelopingValuation`
+//! > facade. The real inductive valuations (Gauss + verified augmentations,
+//! > phi-adic min formula, E/F bookkeeping, MacLane approximants) are in
+//! > [`crate::valuation::maclane`].
 
 use super::valuation::{DiscretePseudoValuation, DiscreteValuation, ValuationValue};
 use super::developing_valuation::DevelopingValuation;

@@ -947,7 +947,7 @@ mod tests {
     fn test_rectangular_box_points_empty() {
         let points = rectangular_box_points(&[]);
         assert_eq!(points.len(), 1);
-        assert_eq!(points[0], vec![]);
+        assert_eq!(points[0], Vec::<i64>::new());
     }
 
     #[test]

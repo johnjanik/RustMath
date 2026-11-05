@@ -750,7 +750,7 @@ mod tests {
         let min_poly = three.minimal_polynomial();
 
         // For rational 3, minimal polynomial should be x - 3
-        assert_eq!(min_poly.degree(), 1);
+        assert_eq!(min_poly.degree(), Some(1));
     }
 
     #[test]
@@ -759,7 +759,7 @@ mod tests {
         let min_poly = i.minimal_polynomial();
 
         // For i, minimal polynomial is x^2 + 1
-        assert_eq!(min_poly.degree(), 2);
+        assert_eq!(min_poly.degree(), Some(2));
     }
 
     #[test]

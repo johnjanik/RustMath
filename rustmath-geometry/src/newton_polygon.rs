@@ -11,10 +11,12 @@
 //! use rustmath_geometry::newton_polygon::NewtonPolygon;
 //!
 //! // Create a Newton polygon from vertices
-//! let vertices = vec![(0, 3), (1, 1), (3, 0), (5, 2)];
+//! let vertices = vec![(0, 3), (1, 1), (2, 0), (3, 1), (4, 0)];
 //! let polygon = NewtonPolygon::from_vertices(vertices);
 //!
-//! assert_eq!(polygon.num_vertices(), 3); // Only lower convex hull vertices
+//! // (3, 1) lies above the segment from (2, 0) to (4, 0) and is dropped;
+//! // the other four points remain on the lower convex hull.
+//! assert_eq!(polygon.num_vertices(), 4);
 //! ```
 
 use std::fmt;
@@ -239,9 +241,13 @@ fn lower_convex_hull(points: &[(i64, i64)]) -> Vec<(i64, i64)> {
 
     let mut hull: Vec<(i64, i64)> = Vec::new();
 
-    // Build lower hull
+    // Build lower hull (Andrew's monotone chain, points pre-sorted by x).
+    // Walking left to right along the *lower* boundary of a convex region,
+    // consecutive edges must turn left (counterclockwise, cross > 0); a
+    // point that would produce a right turn or a collinear triple lies
+    // above the hull (or is redundant) and must be popped.
     for &point in points {
-        while hull.len() >= 2 && cross_product_sign(hull[hull.len() - 2], hull[hull.len() - 1], point) >= 0 {
+        while hull.len() >= 2 && cross_product_sign(hull[hull.len() - 2], hull[hull.len() - 1], point) <= 0 {
             hull.pop();
         }
         hull.push(point);
@@ -253,7 +259,8 @@ fn lower_convex_hull(points: &[(i64, i64)]) -> Vec<(i64, i64)> {
 /// Compute the cross product to determine turn direction
 ///
 /// Returns positive for left turn, negative for right turn, zero for collinear.
-/// For the lower hull, we want right turns (negative cross product).
+/// For the lower hull, we keep left turns (positive cross product) and pop
+/// on right turns or collinear triples (cross <= 0).
 fn cross_product_sign(o: (i64, i64), a: (i64, i64), b: (i64, i64)) -> i64 {
     (a.0 - o.0) * (b.1 - o.1) - (a.1 - o.1) * (b.0 - o.0)
 }
@@ -321,24 +328,27 @@ mod tests {
 
     #[test]
     fn test_evaluate() {
-        let vertices = vec![(0, 0), (2, 2), (4, 0)];
+        // A genuine "valley" shape: (2, -2) lies below the segment from
+        // (0,0) to (4,0), so it is a real vertex of the lower convex hull
+        // (unlike a "peak", which would be dropped).
+        let vertices = vec![(0, 0), (2, -2), (4, 0)];
         let polygon = NewtonPolygon::from_vertices(vertices);
 
         // At x=2, should be at the vertex
-        assert_eq!(polygon.evaluate(2), Some(2.0));
+        assert_eq!(polygon.evaluate(2), Some(-2.0));
 
-        // At x=1, should interpolate between (0,0) and (2,2)
-        assert_eq!(polygon.evaluate(1), Some(1.0));
+        // At x=1, should interpolate between (0,0) and (2,-2)
+        assert_eq!(polygon.evaluate(1), Some(-1.0));
     }
 
     #[test]
     fn test_reverse() {
-        let vertices = vec![(0, 0), (1, 1), (2, 0)];
+        let vertices = vec![(0, 0), (1, -1), (2, 0)];
         let polygon = NewtonPolygon::from_vertices(vertices);
 
         let reversed = polygon.reverse();
         assert_eq!(reversed.vertices()[0], (0, 0));
-        assert_eq!(reversed.vertices()[1], (1, 1));
+        assert_eq!(reversed.vertices()[1], (1, -1));
         assert_eq!(reversed.vertices()[2], (2, 0));
     }
 
@@ -372,7 +382,8 @@ mod tests {
 
     #[test]
     fn test_parent_newton_polygon() {
-        let polygon = ParentNewtonPolygon::from_vertices(vec![(0, 0), (1, 1), (2, 0)]);
+        // (1, -1) is a genuine valley vertex, below the (0,0)-(2,0) segment.
+        let polygon = ParentNewtonPolygon::from_vertices(vec![(0, 0), (1, -1), (2, 0)]);
         assert_eq!(polygon.num_vertices(), 3);
 
         let polygon2 = ParentNewtonPolygon::from_slopes(vec![(-1, 1), (1, 1)], (0, 2));

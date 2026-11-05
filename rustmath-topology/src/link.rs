@@ -295,7 +295,10 @@ mod tests {
     #[test]
     fn test_torus_knot() {
         let trefoil = torus_knot(2, 3);
-        assert_eq!(trefoil.crossing_number(), 2);
+        // The (2,3)-torus knot is the trefoil (3_1), whose minimal
+        // crossing number is 3 (min(p*(q-1), q*(p-1)) = min(4, 3) = 3),
+        // matching the 3-crossing PD code used by `Knot::trefoil()`.
+        assert_eq!(trefoil.crossing_number(), 3);
 
         let unknot = torus_knot(1, 1);
         assert_eq!(unknot.crossing_number(), 0);

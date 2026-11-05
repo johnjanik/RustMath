@@ -12,6 +12,9 @@
 //! - Key derivation: PBKDF2, Argon2
 //! - Digital signatures: EdDSA (Ed25519)
 //! - Hash functions (SHA-256, SHA-3, BLAKE2)
+//! - Pseudo-random bit sequences (MAGMA Chapter 158): LFSRs, Berlekamp–Massey,
+//!   the shrinking generator, correlation/decimation, and the RSA and
+//!   Blum–Blum–Shub number-theoretic bit generators
 //! - Cryptographic utilities (constant-time ops, padding, HMAC, etc.)
 //!
 //! # Example
@@ -54,6 +57,12 @@ pub mod kdf;
 pub mod eddsa;
 pub mod utils;
 
+// MAGMA Chapter 158 — Pseudo-random Bit Sequences
+pub mod lfsr;
+pub mod bit_sequences;
+pub mod prng_number;
+pub mod poly_bridge;
+
 // Re-export commonly used types
 pub use classical::{caesar_encrypt, caesar_decrypt, vigenere_encrypt, vigenere_decrypt};
 pub use rsa::{KeyPair as RSAKeyPair, PublicKey as RSAPublicKey, PrivateKey as RSAPrivateKey};
@@ -64,10 +73,26 @@ pub use des::DES;
 pub use simplified_des::SimplifiedDES;
 pub use mini_aes::MiniAES;
 pub use present::Present;
-pub use elliptic_curve::{EllipticCurve, EllipticCurvePoint, ECCCurve, ECCPoint, ECDSAKeypair, create_test_ecdsa_keypair};
+// B3 canonicalization: the over-Q EllipticCurve/EllipticCurvePoint duplicate was
+// deleted (zero dependents); use rustmath-ellipticcurves for number-theoretic curves.
+pub use elliptic_curve::{ECCCurve, ECCPoint, ECDSAKeypair, create_test_ecdsa_keypair};
 pub use hash::{SHA256, SHA3_256, BLAKE2b, hex_digest};
 pub use stream_cipher::{RC4, ChaCha20};
 pub use authenticated::GCM;
 pub use kdf::{PBKDF2, Argon2};
 pub use eddsa::{Ed25519, Ed25519Keypair, Ed25519Signature};
 pub use utils::{constant_time_eq, xor_bytes, pkcs7_pad, pkcs7_unpad, bytes_to_hex, hex_to_bytes, hmac_sha256};
+
+// MAGMA Chapter 158 — Pseudo-random Bit Sequences
+pub use lfsr::{
+    berlekamp_massey, characteristic_polynomial, connection_polynomial, lfsr_sequence, lfsr_step,
+    sequence_period,
+};
+pub use bit_sequences::{
+    auto_correlation, cross_correlation, decimation, decimation_truncated, lfsr_sequence_f2,
+    lfsr_step_f2, shrinking_generator,
+};
+pub use prng_number::{
+    bbs_modulus, blum_blum_shub, blum_blum_shub_explicit, random_sequence_rsa,
+    random_sequence_rsa_explicit, rsa_modulus, rsa_modulus_with_exponent, SplitMix64,
+};

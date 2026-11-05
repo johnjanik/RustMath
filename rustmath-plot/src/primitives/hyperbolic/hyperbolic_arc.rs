@@ -279,8 +279,10 @@ mod tests {
             Some(HyperbolicModel::KleinDisk),
             None,
         );
-        let samples = arc.sample(10);
-        assert_eq!(samples.len(), 10);
+        // Use 11 points so that index 5 lands exactly on t = 0.5 (the midpoint),
+        // since sample() spaces points at t = i / (num_points - 1).
+        let samples = arc.sample(11);
+        assert_eq!(samples.len(), 11);
         // In Klein model, geodesics are straight lines
         assert!((samples[5].x - 0.25).abs() < 1e-10);
         assert!((samples[5].y - 0.25).abs() < 1e-10);

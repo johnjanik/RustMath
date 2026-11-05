@@ -262,6 +262,30 @@ impl<R: Ring + Clone> BlobAlgebra<R> {
                     continue;
                 }
 
+                // Commutation of distant generators, put into canonical (increasing)
+                // order. Generators commute when their supports are non-adjacent:
+                //   e_i·e_j = e_j·e_i    for |i - j| >= 2
+                //   u_1·e_j = e_j·u_1    for j >= 2   (u_1 occupies strand 1)
+                // (u_1·e_1 is the absorption relation above, not a commutation.)
+                if i + 1 < word.len() {
+                    let a = word[i];
+                    let b = word[i + 1];
+                    let commute = if a > 0 && b > 0 {
+                        (a - b).abs() >= 2
+                    } else if a == 0 && b > 0 {
+                        b >= 2
+                    } else if a > 0 && b == 0 {
+                        a >= 2
+                    } else {
+                        false
+                    };
+                    if commute && a > b {
+                        word.swap(i, i + 1);
+                        changed = true;
+                        continue;
+                    }
+                }
+
                 i += 1;
             }
         }

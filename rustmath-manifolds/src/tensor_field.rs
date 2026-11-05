@@ -365,7 +365,7 @@ mod tests {
 
     #[test]
     fn test_tensor_field_creation() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let tensor = TensorField::new(m.clone(), 1, 1);
 
         assert_eq!(tensor.contravariant_rank(), 1);
@@ -376,7 +376,7 @@ mod tests {
 
     #[test]
     fn test_tensor_field_from_components() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let chart = m.default_chart().unwrap();
 
         // (1,1)-tensor has 4 components
@@ -398,7 +398,7 @@ mod tests {
 
     #[test]
     fn test_tensor_component_access() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let chart = m.default_chart().unwrap();
 
         let components = vec![

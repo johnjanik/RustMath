@@ -22,13 +22,14 @@
 //! ## Examples
 //!
 //! ```rust
-//! use rustmath_rings::universal_cyclotomic_field::{UniversalCyclotomicField, E};
+//! use rustmath_rings::universal_cyclotomic_field::{UniversalCyclotomicField, e};
 //!
 //! // Create the universal cyclotomic field
-//! let UCF = UniversalCyclotomicField::new();
+//! let ucf = UniversalCyclotomicField::new();
 //!
 //! // Create a primitive 5th root of unity: ζ₅
-//! // let z5 = E(5, 1);
+//! let z5 = e(5, None).unwrap();
+//! assert_eq!(z5.conductor(), 5);
 //! ```
 //!
 //! ## Applications
@@ -376,16 +377,16 @@ mod tests {
 
     #[test]
     fn test_e_function() {
-        let z7 = E(7, None).unwrap();
+        let z7 = e(7, None).unwrap();
         assert_eq!(z7.conductor(), 7);
 
-        let z7_3 = E(7, Some(3)).unwrap();
+        let z7_3 = e(7, Some(3)).unwrap();
         assert_eq!(z7_3.conductor(), 7);
     }
 
     #[test]
     fn test_conjugate() {
-        let z4 = E(4, None).unwrap(); // i
+        let z4 = e(4, None).unwrap(); // i
         let conj = z4.conjugate();
         // ζ₄^1 conjugate is ζ₄^3 = -i
         assert_eq!(conj.conductor(), 4);

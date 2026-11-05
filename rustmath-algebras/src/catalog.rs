@@ -40,7 +40,7 @@
 //!
 //! // Create a free algebra on 2 generators
 //! let algebra = catalog::FreeAlgebra::<Integer>::new(2);
-//! assert_eq!(algebra.num_generators(), 2);
+//! assert_eq!(algebra.rank(), 2);
 //! ```
 
 // Re-export all major algebra types for convenient access

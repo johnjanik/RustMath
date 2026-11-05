@@ -356,9 +356,9 @@ mod tests {
         let coeffs = vec![Integer::from(1), Integer::from(2), Integer::from(3)];
         let series = PowerSeriesPoly::new(coeffs, 10);
 
-        assert_eq!(series.coeff(0), &Integer::from(1));
-        assert_eq!(series.coeff(1), &Integer::from(2));
-        assert_eq!(series.coeff(2), &Integer::from(3));
+        assert_eq!(series.coeff(0), Integer::from(1));
+        assert_eq!(series.coeff(1), Integer::from(2));
+        assert_eq!(series.coeff(2), Integer::from(3));
         assert_eq!(series.precision(), 10);
     }
 
@@ -391,9 +391,9 @@ mod tests {
         );
 
         let sum = s1 + s2;
-        assert_eq!(sum.coeff(0), &Integer::from(5));
-        assert_eq!(sum.coeff(1), &Integer::from(7));
-        assert_eq!(sum.coeff(2), &Integer::from(9));
+        assert_eq!(sum.coeff(0), Integer::from(5));
+        assert_eq!(sum.coeff(1), Integer::from(7));
+        assert_eq!(sum.coeff(2), Integer::from(9));
     }
 
     #[test]
@@ -403,9 +403,9 @@ mod tests {
         let s2 = PowerSeriesPoly::new(vec![Integer::from(1), Integer::from(1)], 10);
 
         let product = s1 * s2;
-        assert_eq!(product.coeff(0), &Integer::from(1));
-        assert_eq!(product.coeff(1), &Integer::from(2));
-        assert_eq!(product.coeff(2), &Integer::from(1));
+        assert_eq!(product.coeff(0), Integer::from(1));
+        assert_eq!(product.coeff(1), Integer::from(2));
+        assert_eq!(product.coeff(2), Integer::from(1));
     }
 
     #[test]
@@ -414,9 +414,9 @@ mod tests {
             PowerSeriesPoly::new(vec![Integer::from(1), Integer::from(-2), Integer::from(3)], 10);
 
         let neg = -series;
-        assert_eq!(neg.coeff(0), &Integer::from(-1));
-        assert_eq!(neg.coeff(1), &Integer::from(2));
-        assert_eq!(neg.coeff(2), &Integer::from(-3));
+        assert_eq!(neg.coeff(0), Integer::from(-1));
+        assert_eq!(neg.coeff(1), Integer::from(2));
+        assert_eq!(neg.coeff(2), Integer::from(-3));
     }
 
     #[test]
@@ -427,10 +427,10 @@ mod tests {
         );
 
         let shifted = series.shift(2);
-        assert_eq!(shifted.coeff(0), &Integer::from(0));
-        assert_eq!(shifted.coeff(1), &Integer::from(0));
-        assert_eq!(shifted.coeff(2), &Integer::from(1));
-        assert_eq!(shifted.coeff(3), &Integer::from(2));
+        assert_eq!(shifted.coeff(0), Integer::from(0));
+        assert_eq!(shifted.coeff(1), Integer::from(0));
+        assert_eq!(shifted.coeff(2), Integer::from(1));
+        assert_eq!(shifted.coeff(3), Integer::from(2));
     }
 
     #[test]
@@ -442,8 +442,8 @@ mod tests {
         );
 
         let deriv = series.derivative();
-        assert_eq!(deriv.coeff(0), &Integer::from(2));
-        assert_eq!(deriv.coeff(1), &Integer::from(6));
+        assert_eq!(deriv.coeff(0), Integer::from(2));
+        assert_eq!(deriv.coeff(1), Integer::from(6));
     }
 
     #[test]
@@ -469,7 +469,7 @@ mod tests {
             vec![Integer::from(1), Integer::from(2), Integer::from(3)],
             10,
         );
-        assert_eq!(series.coeff(0), &Integer::from(1));
+        assert_eq!(series.coeff(0), Integer::from(1));
         assert_eq!(series.precision(), 10);
     }
 
@@ -498,9 +498,9 @@ mod tests {
 
         // f(g(x)) = 1 + (x + x^2) = 1 + x + x^2
         let composed = f.compose(&g);
-        assert_eq!(composed.coeff(0), &Integer::from(1));
-        assert_eq!(composed.coeff(1), &Integer::from(1));
-        assert_eq!(composed.coeff(2), &Integer::from(1));
+        assert_eq!(composed.coeff(0), Integer::from(1));
+        assert_eq!(composed.coeff(1), Integer::from(1));
+        assert_eq!(composed.coeff(2), Integer::from(1));
     }
 
     #[test]

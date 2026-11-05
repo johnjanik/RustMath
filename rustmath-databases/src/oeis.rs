@@ -106,6 +106,7 @@ pub struct OEISSequence {
 }
 
 /// Internal structure for OEIS JSON API response
+#[cfg(feature = "online")]
 #[derive(Debug, Deserialize)]
 struct OEISResponse {
     #[serde(default)]
@@ -116,6 +117,7 @@ struct OEISResponse {
 }
 
 /// Internal structure for individual OEIS result
+#[cfg(feature = "online")]
 #[derive(Debug, Deserialize)]
 struct OEISResult {
     number: i32,
@@ -141,6 +143,7 @@ struct OEISResult {
     example: Vec<String>,
 }
 
+#[cfg(feature = "online")]
 impl OEISResult {
     /// Convert to OEISSequence
     fn to_sequence(self) -> OEISSequence {
@@ -177,6 +180,7 @@ impl OEISResult {
 }
 
 /// Parse OEIS data string into vector of integers
+#[allow(dead_code)] // used by the online-feature JSON parser and by tests
 fn parse_data_string(data: &str) -> Vec<i64> {
     data.split(',')
         .filter_map(|s| s.trim().parse::<i64>().ok())
@@ -197,7 +201,9 @@ fn parse_data_string(data: &str) -> Vec<i64> {
 /// let fibonacci = client.lookup("A000045").unwrap();
 /// ```
 pub struct OEISClient {
+    #[allow(dead_code)]
     base_url: String,
+    #[cfg(feature = "online")]
     client: reqwest::blocking::Client,
 }
 
@@ -208,6 +214,7 @@ impl OEISClient {
     pub fn new() -> Self {
         OEISClient {
             base_url: "https://oeis.org".to_string(),
+            #[cfg(feature = "online")]
             client: reqwest::blocking::Client::new(),
         }
     }
@@ -218,6 +225,7 @@ impl OEISClient {
     pub fn with_base_url(base_url: String) -> Self {
         OEISClient {
             base_url,
+            #[cfg(feature = "online")]
             client: reqwest::blocking::Client::new(),
         }
     }
@@ -242,6 +250,7 @@ impl OEISClient {
     /// let fibonacci = client.lookup("A000045")?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
+    #[cfg(feature = "online")]
     pub fn lookup(&self, number: &str) -> Result<Option<OEISSequence>> {
         // Normalize the A-number
         let a_number = normalize_a_number(number)?;
@@ -263,6 +272,18 @@ impl OEISClient {
             .map_err(|e| OEISError::ParseError(e.to_string()))?;
 
         Ok(oeis_response.results.into_iter().next().map(|r| r.to_sequence()))
+    }
+
+    /// Look up a sequence by its A-number
+    ///
+    /// Network access is disabled because the crate was built without the
+    /// `online` feature. Rebuild with `--features online` to enable this.
+    #[cfg(not(feature = "online"))]
+    pub fn lookup(&self, _number: &str) -> Result<Option<OEISSequence>> {
+        Err(OEISError::NetworkError(
+            "OEIS network access requires the 'online' feature (build with --features online)"
+                .to_string(),
+        ))
     }
 
     /// Search for sequences matching a list of terms
@@ -314,6 +335,7 @@ impl OEISClient {
     /// let results = client.search("fibonacci")?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
+    #[cfg(feature = "online")]
     pub fn search(&self, query: &str) -> Result<Vec<OEISSequence>> {
         let url = format!("{}/search?q={}&fmt=json", self.base_url,
                          urlencoding::encode(query));
@@ -332,6 +354,18 @@ impl OEISClient {
             .map_err(|e| OEISError::ParseError(e.to_string()))?;
 
         Ok(oeis_response.results.into_iter().map(|r| r.to_sequence()).collect())
+    }
+
+    /// Search for sequences matching a text query
+    ///
+    /// Network access is disabled because the crate was built without the
+    /// `online` feature. Rebuild with `--features online` to enable this.
+    #[cfg(not(feature = "online"))]
+    pub fn search(&self, _query: &str) -> Result<Vec<OEISSequence>> {
+        Err(OEISError::NetworkError(
+            "OEIS network access requires the 'online' feature (build with --features online)"
+                .to_string(),
+        ))
     }
 
     /// Get the first n terms of a sequence
@@ -593,6 +627,7 @@ impl OEISSequence {
 /// - "A000045" (returns as-is)
 /// - "000045" (adds A prefix)
 /// - "45" (adds A prefix and pads to 6 digits)
+#[allow(dead_code)] // used by the online-feature lookup path and by tests
 fn normalize_a_number(number: &str) -> Result<String> {
     let number = number.trim();
 

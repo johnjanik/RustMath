@@ -105,6 +105,7 @@ struct Flags {
     fielddisc: bool,
     galois: bool,
     galois_fast: bool,
+    galois_short: bool,
 }
 
 /// Full local analysis of one polynomial -> a single JSON object (no newline).
@@ -213,11 +214,34 @@ fn analyze(coeffs: &[Integer], primes: &[i64], fl: &Flags) -> String {
         "null".to_string()
     };
 
+    // Native short-coset Stauduhar descent (replaces the external OSCAR oracle):
+    // reports the minimal-order accepted candidate (= Gal(f)) and a rigorous
+    // confidence certificate. See rustmath-galois::descent24.
+    let galois_short_json = if fl.galois_short && irreducible && n == 24 {
+        let opts = rustmath_galois::descent24::Options::default();
+        match rustmath_galois::descent24::narrow_degree24_short(coeffs, &opts) {
+            Ok(out) => {
+                let uniq = out.unique_t.map(|t| t.to_string()).unwrap_or_else(|| "null".to_string());
+                let mina = out.min_accepted_t.map(|t| t.to_string()).unwrap_or_else(|| "null".to_string());
+                format!(
+                    "{{\"prime\":{},\"sigma_cycle_type\":{:?},\"candidate_class_size\":{},\
+\"narrowed_size\":{},\"min_accepted_t\":{},\"confident\":{},\"unique_t\":{}}}",
+                    out.prime, out.sigma_cycle_type, out.candidate_class.len(),
+                    out.narrowed.len(), mina, out.min_accepted_confident, uniq
+                )
+            }
+            Err(_) => "null".to_string(),
+        }
+    } else {
+        "null".to_string()
+    };
+
     format!(
         "{{\"degree\":{n},\"irreducible\":{irreducible},\"discriminant\":{disc},\
 \"disc_is_square\":{disc_sq},\"factors\":[{}],\"cycle_types\":{{{}}},\
 \"ramification\":{{{}}},\"polred\":{polred_json},\"polredabs\":{polredabs_json},\
-\"field_discriminant\":{fielddisc_json},\"galois\":{galois_json}}}",
+\"field_discriminant\":{fielddisc_json},\"galois\":{galois_json},\
+\"galois_short\":{galois_short_json}}}",
         factors_json.join(","),
         cyc_json.join(","),
         ram_json.join(",")
@@ -233,6 +257,7 @@ fn main() {
         fielddisc: argv.iter().any(|a| a == "--fielddisc"),
         galois: argv.iter().any(|a| a == "--galois"),
         galois_fast: argv.iter().any(|a| a == "--galois-fast"),
+        galois_short: argv.iter().any(|a| a == "--galois-short"),
     };
     // Positional (non-flag) args after the program name:
     //   single: [coeffs, primes?]   batch: [primes?]

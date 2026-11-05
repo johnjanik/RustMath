@@ -3,7 +3,9 @@
 use crate::assumptions::{has_property, Property};
 use crate::expression::{BinaryOp, Expr, UnaryOp};
 use crate::pattern::RuleDatabase;
+use rustmath_core::Ring;
 use rustmath_integers::Integer;
+use rustmath_rationals::Rational;
 use std::sync::Arc;
 
 impl Expr {
@@ -444,6 +446,27 @@ fn is_sin_squared_same_arg(expr: &Expr, cos_squared_expr: &Expr) -> bool {
     is_cos_squared_same_arg(cos_squared_expr, expr)
 }
 
+/// Extract an exact rational constant from an expression, if it is one.
+fn as_rational_const(e: &Expr) -> Option<Rational> {
+    match e {
+        Expr::Integer(n) => Rational::new(n.clone(), Integer::one()).ok(),
+        Expr::Rational(r) => Some(r.clone()),
+        _ => None,
+    }
+}
+
+/// Convert an exact rational back to canonical Expr form (Integer when integral).
+fn rational_to_expr(r: Rational) -> Expr {
+    if r.denominator().is_one() {
+        Expr::Integer(r.numerator().clone())
+    } else {
+        Expr::Rational(r)
+    }
+}
+
+/// Maximum |exponent| that constant folding will expand (guards memory/time).
+const MAX_FOLD_EXPONENT: i64 = 4096;
+
 fn simplify_binary(op: BinaryOp, left: Expr, right: Expr) -> Expr {
     match op {
         BinaryOp::Add => {
@@ -459,9 +482,9 @@ fn simplify_binary(op: BinaryOp, left: Expr, right: Expr) -> Expr {
                 }
             }
 
-            // Constant folding
-            if let (Expr::Integer(a), Expr::Integer(b)) = (&left, &right) {
-                return Expr::Integer(a.clone() + b.clone());
+            // Constant folding (exact rational arithmetic)
+            if let (Some(a), Some(b)) = (as_rational_const(&left), as_rational_const(&right)) {
+                return rational_to_expr(a + b);
             }
 
             Expr::Binary(BinaryOp::Add, Arc::new(left), Arc::new(right))
@@ -475,9 +498,9 @@ fn simplify_binary(op: BinaryOp, left: Expr, right: Expr) -> Expr {
                 }
             }
 
-            // Constant folding
-            if let (Expr::Integer(a), Expr::Integer(b)) = (&left, &right) {
-                return Expr::Integer(a.clone() - b.clone());
+            // Constant folding (exact rational arithmetic)
+            if let (Some(a), Some(b)) = (as_rational_const(&left), as_rational_const(&right)) {
+                return rational_to_expr(a - b);
             }
 
             Expr::Binary(BinaryOp::Sub, Arc::new(left), Arc::new(right))
@@ -502,9 +525,9 @@ fn simplify_binary(op: BinaryOp, left: Expr, right: Expr) -> Expr {
                 }
             }
 
-            // Constant folding
-            if let (Expr::Integer(a), Expr::Integer(b)) = (&left, &right) {
-                return Expr::Integer(a.clone() * b.clone());
+            // Constant folding (exact rational arithmetic)
+            if let (Some(a), Some(b)) = (as_rational_const(&left), as_rational_const(&right)) {
+                return rational_to_expr(a * b);
             }
 
             Expr::Binary(BinaryOp::Mul, Arc::new(left), Arc::new(right))
@@ -518,10 +541,35 @@ fn simplify_binary(op: BinaryOp, left: Expr, right: Expr) -> Expr {
                 }
             }
 
-            // Constant folding
-            if let (Expr::Integer(a), Expr::Integer(b)) = (&left, &right) {
+            // Constant folding (exact rational arithmetic).
+            // NOTE: this used to use truncating Integer division (1/2 -> 0);
+            // it now produces an exact Rational (1/2 -> 1/2).
+            if let (Some(a), Some(b)) = (as_rational_const(&left), as_rational_const(&right)) {
                 if !b.is_zero() {
-                    return Expr::Integer(a.clone() / b.clone());
+                    return rational_to_expr(a / b);
+                }
+            }
+
+            // (c * rest) / d = (c/d) * rest for constants c, d (cancels
+            // common numeric factors, e.g. (2*x^2)/2 -> x^2)
+            if let Some(d) = as_rational_const(&right) {
+                if !d.is_zero() {
+                    if let Expr::Binary(BinaryOp::Mul, a, b) = &left {
+                        if let Some(c) = as_rational_const(a) {
+                            return simplify_binary(
+                                BinaryOp::Mul,
+                                rational_to_expr(c / d),
+                                (**b).clone(),
+                            );
+                        }
+                        if let Some(c) = as_rational_const(b) {
+                            return simplify_binary(
+                                BinaryOp::Mul,
+                                (**a).clone(),
+                                rational_to_expr(c / d),
+                            );
+                        }
+                    }
                 }
             }
 
@@ -536,6 +584,26 @@ fn simplify_binary(op: BinaryOp, left: Expr, right: Expr) -> Expr {
                 }
                 if n.is_one() {
                     return left;
+                }
+            }
+
+            // Constant folding: c^n for rational c and integer n
+            // (bounded exponent so simplify can never blow up memory)
+            if let Expr::Integer(n) = &right {
+                if *n >= Integer::from(-MAX_FOLD_EXPONENT) && *n <= Integer::from(MAX_FOLD_EXPONENT)
+                {
+                    if let Some(base) = as_rational_const(&left) {
+                        let e = n.to_i64();
+                        if e > 0 {
+                            return rational_to_expr(base.pow(e as u32));
+                        }
+                        // negative exponent: c^(-k) = 1 / c^k (only for c != 0)
+                        if e < 0 && !base.is_zero() {
+                            let one = Rational::new(Integer::one(), Integer::one())
+                                .expect("1/1 is a valid rational");
+                            return rational_to_expr(one / base.pow((-e) as u32));
+                        }
+                    }
                 }
             }
 
@@ -561,11 +629,35 @@ fn simplify_unary(op: UnaryOp, inner: Expr) -> Expr {
             if let Expr::Integer(n) = &inner {
                 return Expr::Integer(-n.clone());
             }
+            if let Expr::Rational(r) = &inner {
+                return Expr::Rational(-r.clone());
+            }
 
             Expr::Unary(UnaryOp::Neg, Arc::new(inner))
         }
 
+        // Exact special values: f(0) and f(1) where the result is exact
+        UnaryOp::Exp if inner.is_zero() => Expr::Integer(Integer::one()),
+        UnaryOp::Log if is_one_const(&inner) => Expr::Integer(Integer::zero()),
+        UnaryOp::Sin | UnaryOp::Tan | UnaryOp::Sinh | UnaryOp::Tanh if inner.is_zero() => {
+            Expr::Integer(Integer::zero())
+        }
+        UnaryOp::Cos | UnaryOp::Cosh if inner.is_zero() => Expr::Integer(Integer::one()),
+        UnaryOp::Arcsin | UnaryOp::Arctan if inner.is_zero() => Expr::Integer(Integer::zero()),
+        UnaryOp::Arccos if is_one_const(&inner) => Expr::Integer(Integer::zero()),
+        UnaryOp::Sqrt if inner.is_zero() => Expr::Integer(Integer::zero()),
+        UnaryOp::Sqrt if is_one_const(&inner) => Expr::Integer(Integer::one()),
+
         _ => Expr::Unary(op, Arc::new(inner)),
+    }
+}
+
+/// Check if an expression is the exact constant 1
+fn is_one_const(e: &Expr) -> bool {
+    match e {
+        Expr::Integer(n) => n.is_one(),
+        Expr::Rational(r) => r.numerator().is_one() && r.denominator().is_one(),
+        _ => false,
     }
 }
 

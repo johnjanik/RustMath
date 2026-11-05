@@ -176,24 +176,30 @@ impl<F: Field + Clone> ShortWeierstrassForm<F> {
 
     /// Compute the j-invariant: j = 1728 * 4a³ / Δ
     pub fn j_invariant(&self) -> F {
-        let delta = self.discriminant();
-
-        if delta == F::zero() {
-            panic!("Cannot compute j-invariant for singular curve");
-        }
-
+        // j = 1728 · 4a³ / (4a³ + 27b²).  The denominator is 4a³+27b², NOT the
+        // discriminant Δ = -16(4a³+27b²) (dividing by Δ is off by the -16 factor;
+        // cf. the consistent LongWeierstrassForm value j = c4³/Δ).
         let a_cubed = self.a.clone() * self.a.clone() * self.a.clone();
+        let b_squared = self.b.clone() * self.b.clone();
 
-        // Compute 1728 = 12^3 = (4*3)^3
         let two = F::one() + F::one();
         let three = two.clone() + F::one();
         let four = two.clone() + two.clone();
-        let twelve = three.clone() * four.clone();
+        let nine = three.clone() * three.clone();
+        let twentyseven = nine * three.clone();
+
+        let four_a_cubed = four.clone() * a_cubed;
+        let denom = four_a_cubed.clone() + twentyseven * b_squared;
+
+        if denom == F::zero() {
+            panic!("Cannot compute j-invariant for singular curve");
+        }
+
+        // 1728 = 12³ = (3·4)³
+        let twelve = three * four;
         let onethousandseventwentyeight = twelve.clone() * twelve.clone() * twelve;
 
-        let numerator = onethousandseventwentyeight * four * a_cubed;
-
-        numerator / delta
+        (onethousandseventwentyeight * four_a_cubed) / denom
     }
 
     /// Convert to long Weierstrass form

@@ -1,7 +1,13 @@
 //! RustMath Symbolic - Symbolic computation engine
 //!
 //! This crate provides symbolic expression manipulation, simplification,
-//! and evaluation.
+//! evaluation, differentiation, and integration. Integration is a complete,
+//! exact decision procedure for univariate rational functions over ℚ
+//! ([`risch`]), plus exact differentiate-back-gated patterns for
+//! `c·u′/u`, `p(x)·exp(ax+b)`, and `p(x)·sin/cos(ax+b)`
+//! ([`integrate_exact`]), plus a legacy heuristic table ([`integrate`]);
+//! see [`Expr::integrate`] for the precise decided/heuristic/refused
+//! contract.
 
 pub mod assumptions;
 pub mod differentiate;
@@ -15,6 +21,7 @@ pub mod functions;
 pub mod inequalities;
 pub mod integral;
 pub mod integrate;
+pub mod integrate_exact;
 pub mod integrate_external;
 pub mod limits;
 pub mod maxima_wrapper;
@@ -28,6 +35,7 @@ pub mod polynomial;
 pub mod radical;
 pub mod random_tests;
 pub mod registry;
+pub mod risch;
 pub mod series;
 pub mod simplify;
 pub mod solve;
@@ -65,6 +73,7 @@ pub use integral::{
     definite_integral, integral, integrate, integrate_multi, DefiniteIntegral,
     IndefiniteIntegral,
 };
+pub use integrate_exact::integrate_exact_patterns;
 pub use integrate_external::{
     fricas_integrator, libgiac_integrator, maxima_integrator, mma_free_integrator,
     sympy_integrator, ExternalIntegrator, FricasIntegrator, IntegratorChain,
@@ -78,6 +87,10 @@ pub use maxima_wrapper::{
 pub use numerical::IntegrationResult;
 pub use parser::{parse, ParseError};
 pub use pde::PDEType;
+pub use risch::{
+    as_rational_function, integrate_rational_risch, integrate_rational_risch_with_budget,
+    RischBudget, RischResult,
+};
 pub use random_tests::{
     assert_strict_weak_order, choose_from_prob_list, normalize_prob_list, random_expr,
     random_integer_vector, test_symbolic_expression_order, OperationType, ProbList,
@@ -128,7 +141,9 @@ mod tests {
     #[test]
     fn test_assumptions_positive() {
         // Create a symbol x and assume it's positive
-        let x = Expr::symbol("x");
+        // (unique name: assumptions are global and keyed by name-interned
+        // symbols, so parallel tests must not share symbol names)
+        let x = Expr::symbol("x_lib_assume_pos");
         let x_sym = x.as_symbol().unwrap();
 
         assume(x_sym, Property::Positive);
@@ -144,7 +159,7 @@ mod tests {
 
     #[test]
     fn test_assumptions_integer() {
-        let n = Expr::symbol("n");
+        let n = Expr::symbol("n_lib_assume_int");
         let n_sym = n.as_symbol().unwrap();
 
         assume(n_sym, Property::Integer);
@@ -188,7 +203,7 @@ mod tests {
 
     #[test]
     fn test_multiple_assumptions() {
-        let x = Expr::symbol("x");
+        let x = Expr::symbol("x_lib_assume_multi");
         let x_sym = x.as_symbol().unwrap();
 
         assume(x_sym, Property::Positive);
@@ -203,7 +218,7 @@ mod tests {
 
     #[test]
     fn test_implied_properties() {
-        let p = Expr::symbol("p");
+        let p = Expr::symbol("p_lib_assume_implied");
         let p_sym = p.as_symbol().unwrap();
 
         // Assuming prime implies positive, integer, real
@@ -223,11 +238,16 @@ mod tests {
         use crate::symbol::Symbol;
 
         let x = Symbol::new("x");
-        // ∫ x dx = x²/2
+        // ∫ x dx = x²/2. The Risch tier emits (1/2)·x² rather than the old
+        // table's x²/2 — the same antiderivative in a different literal
+        // form, so assert through the exact differentiation gate: F' − x
+        // must normalize to exactly 0 as a rational function.
         let expr = Expr::Symbol(x.clone());
         let result = expr.integrate(&x).unwrap();
-        let expected = Expr::Symbol(x.clone()).pow(Expr::from(2)) / Expr::from(2);
-        assert_eq!(result, expected);
+        let diff = result.differentiate(&x) - expr;
+        let (n, _) = crate::risch::as_rational_function(&diff, &x)
+            .expect("F' - x must normalize as a rational function");
+        assert!(n.is_zero(), "d/dx of the integral of x must be exactly x");
     }
 
     #[test]
@@ -445,7 +465,7 @@ mod tests {
         assert!(!asymptotic.is_constant(), "Asymptotic expansion");
 
         println!("✓ Phase 2: Core Calculus features complete!");
-        println!("  ✓ Symbolic Integration (table-based, trig, rational, partial fractions)");
+        println!("  ✓ Symbolic Integration (rational decision procedure, exact gated patterns, heuristic table)");
         println!("  ✓ Limits (L'Hôpital's rule, one-sided, two-sided)");
         println!("  ✓ Series Expansion (Taylor, Maclaurin, Laurent, Fourier, Asymptotic)");
     }
@@ -987,7 +1007,8 @@ mod tests {
         println!("\nTesting Milestone 4.4: Assumption-Based Simplification");
 
         // Test sqrt(x^2) with positive assumption
-        let z = Symbol::new("z");
+        // (unique names: the assumptions registry is global and name-keyed)
+        let z = Symbol::new("z_m44_pos");
         assume(&z, Property::Positive);
         let z_expr = Expr::Symbol(z.clone());
         let expr = z_expr.clone().pow(Expr::from(2)).sqrt();
@@ -997,7 +1018,7 @@ mod tests {
         println!("  ✓ sqrt(x^2) = x when x > 0");
 
         // Test sqrt(x^2) with negative assumption
-        let w = Symbol::new("w");
+        let w = Symbol::new("w_m44_neg");
         assume(&w, Property::Negative);
         let w_expr = Expr::Symbol(w.clone());
         let expr = w_expr.clone().pow(Expr::from(2)).sqrt();
@@ -1007,7 +1028,7 @@ mod tests {
         println!("  ✓ sqrt(x^2) = -x when x < 0");
 
         // Test |x| with positive assumption
-        let p = Symbol::new("p");
+        let p = Symbol::new("p_m44_pos");
         assume(&p, Property::Positive);
         let p_expr = Expr::Symbol(p.clone());
         let expr = p_expr.clone().abs();
@@ -1017,7 +1038,7 @@ mod tests {
         println!("  ✓ |x| = x when x > 0");
 
         // Test |x| with negative assumption
-        let q = Symbol::new("q");
+        let q = Symbol::new("q_m44_neg");
         assume(&q, Property::Negative);
         let q_expr = Expr::Symbol(q.clone());
         let expr = q_expr.clone().abs();

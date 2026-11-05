@@ -7,6 +7,7 @@
 //!
 //! ```
 //! use rustmath_geometry::hyperbolic_space::hyperbolic_point::HyperbolicPointUHP;
+//! use rustmath_geometry::hyperbolic_space::HyperbolicPoint;
 //!
 //! // Create a point in the upper half plane
 //! let point = HyperbolicPointUHP::new(1.0, 2.0);
@@ -51,6 +52,7 @@ impl HyperbolicPointUHP {
     ///
     /// ```
     /// use rustmath_geometry::hyperbolic_space::hyperbolic_point::HyperbolicPointUHP;
+    /// use rustmath_geometry::hyperbolic_space::HyperbolicPoint;
     ///
     /// let p = HyperbolicPointUHP::new(1.0, 2.0);
     /// assert!(p.is_valid());

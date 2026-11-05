@@ -1,16 +1,16 @@
 //! Cusps for modular curves over number fields
 
-use num_rational::BigRational;
+use rustmath_rationals::Rational;
 
 /// A cusp of a modular curve over a number field
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CuspNF {
     /// Numerator and denominator in the number field
-    data: (Vec<BigRational>, Vec<BigRational>),
+    data: (Vec<Rational>, Vec<Rational>),
 }
 
 impl CuspNF {
-    pub fn new(numerator: Vec<BigRational>, denominator: Vec<BigRational>) -> Self {
+    pub fn new(numerator: Vec<Rational>, denominator: Vec<Rational>) -> Self {
         Self {
             data: (numerator, denominator),
         }
@@ -18,15 +18,15 @@ impl CuspNF {
 
     pub fn infinity() -> Self {
         Self {
-            data: (vec![BigRational::from_integer(1.into())], vec![BigRational::from_integer(0.into())]),
+            data: (vec![Rational::from_i64(1)], vec![Rational::from_i64(0)]),
         }
     }
 
-    pub fn numerator(&self) -> &[BigRational] {
+    pub fn numerator(&self) -> &[Rational] {
         &self.data.0
     }
 
-    pub fn denominator(&self) -> &[BigRational] {
+    pub fn denominator(&self) -> &[Rational] {
         &self.data.1
     }
 }

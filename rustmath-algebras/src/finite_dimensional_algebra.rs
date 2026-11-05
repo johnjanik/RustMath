@@ -243,9 +243,7 @@ impl<R: Ring> Ring for FiniteDimensionalAlgebraElement<R> {
 }
 
 impl<R: Ring> Algebra<R> for FiniteDimensionalAlgebraElement<R> {
-    fn base_ring() -> R {
-        R::zero()
-    }
+    // base_ring: default (R::zero() placeholder, as before)
 
     fn scalar_mul(&self, scalar: &R) -> Self {
         let coords = self
@@ -259,8 +257,8 @@ impl<R: Ring> Algebra<R> for FiniteDimensionalAlgebraElement<R> {
         }
     }
 
-    fn dimension() -> Option<usize> {
-        None // Would need to be stored in the algebra structure
+    fn dimension(&self) -> Option<usize> {
+        Some(self.coords.len())
     }
 }
 

@@ -46,13 +46,12 @@
 //! ```
 //! use rustmath_schemes::elliptic_curves::isogeny::*;
 //! use rustmath_ellipticcurves::{EllipticCurve, Point};
-//! use num_bigint::BigInt;
-//! use num_rational::BigRational;
+//! use rustmath_integers::Integer;
 //!
 //! // Create curve E: y² = x³ - x
 //! let curve = EllipticCurve::from_short_weierstrass(
-//!     BigInt::from(-1),
-//!     BigInt::from(0)
+//!     Integer::from(-1),
+//!     Integer::from(0)
 //! );
 //!
 //! // Create a 2-torsion point (0, 0) as kernel
@@ -70,9 +69,6 @@
 //! let image = isogeny.evaluate(&p);
 //! ```
 
-use num_bigint::BigInt;
-use num_rational::BigRational;
-use num_traits::{One, ToPrimitive, Zero};
 use rustmath_core::Ring;
 use rustmath_ellipticcurves::{EllipticCurve, Point};
 use rustmath_integers::Integer;
@@ -95,9 +91,9 @@ pub struct Isogeny {
     /// Kernel points (excluding point at infinity)
     kernel: Vec<Point>,
     /// Vélu's v coefficient
-    v: BigRational,
+    v: Rational,
     /// Vélu's w coefficient
-    w: BigRational,
+    w: Rational,
 }
 
 /// Result of kernel polynomial computation
@@ -159,19 +155,19 @@ impl Isogeny {
 
         // Compute codomain curve using Vélu's formulas
         // E': y² = x³ + a'x + b' where a' = a - 5v, b' = b - 7w
-        let a = BigRational::from(curve.a4.clone());
-        let b = BigRational::from(curve.a6.clone());
+        let a = Rational::from_integer(curve.a4.clone());
+        let b = Rational::from_integer(curve.a6.clone());
 
-        let five = BigRational::from(BigInt::from(5));
-        let seven = BigRational::from(BigInt::from(7));
+        let five = Rational::from_i64(5);
+        let seven = Rational::from_i64(7);
 
         let a_prime = a - &five * &v;
         let b_prime = b - &seven * &w;
 
-        // Convert back to BigInt (for integer coefficients)
+        // Convert back to Integer (for integer coefficients)
         // In general, coefficients might be rational, but for our use case we assume integer curves
-        let a_prime_int = a_prime.numer().clone();
-        let b_prime_int = b_prime.numer().clone();
+        let a_prime_int = a_prime.numerator().clone();
+        let b_prime_int = b_prime.numerator().clone();
 
         let codomain = EllipticCurve::from_short_weierstrass(a_prime_int, b_prime_int);
 
@@ -194,17 +190,17 @@ impl Isogeny {
         let (v, w) = Self::compute_velu_coefficients(&kernel_points);
 
         // Compute codomain
-        let a = BigRational::from(curve.a4.clone());
-        let b = BigRational::from(curve.a6.clone());
+        let a = Rational::from_integer(curve.a4.clone());
+        let b = Rational::from_integer(curve.a6.clone());
 
-        let five = BigRational::from(BigInt::from(5));
-        let seven = BigRational::from(BigInt::from(7));
+        let five = Rational::from_i64(5);
+        let seven = Rational::from_i64(7);
 
         let a_prime = a - &five * &v;
         let b_prime = b - &seven * &w;
 
-        let a_prime_int = a_prime.numer().clone();
-        let b_prime_int = b_prime.numer().clone();
+        let a_prime_int = a_prime.numerator().clone();
+        let b_prime_int = b_prime.numerator().clone();
 
         let codomain = EllipticCurve::from_short_weierstrass(a_prime_int, b_prime_int);
 
@@ -230,7 +226,7 @@ impl Isogeny {
         while !current.infinity {
             kernel.push(current.clone());
             i += 1;
-            current = curve.scalar_mul(&BigInt::from(i), generator);
+            current = curve.scalar_mul(&Integer::from(i), generator);
 
             // Safety check to avoid infinite loops
             if i > 10000 {
@@ -248,9 +244,9 @@ impl Isogeny {
     ///
     /// # Complexity
     /// O(ℓ) where ℓ is the kernel size
-    fn compute_velu_coefficients(kernel: &[Point]) -> (BigRational, BigRational) {
-        let mut v = BigRational::zero();
-        let mut w = BigRational::zero();
+    fn compute_velu_coefficients(kernel: &[Point]) -> (Rational, Rational) {
+        let mut v = Rational::zero();
+        let mut w = Rational::zero();
 
         for point in kernel {
             if point.infinity {
@@ -258,10 +254,10 @@ impl Isogeny {
             }
 
             // v += 1
-            v = &v + BigRational::one();
+            v = &v + &Rational::one();
 
             // w += xQ + 2*yQ
-            let two = BigRational::from(BigInt::from(2));
+            let two = Rational::from_i64(2);
             w = &w + &point.x + &two * &point.y;
         }
 
@@ -286,8 +282,8 @@ impl Isogeny {
             }
         }
 
-        let mut x_sum = BigRational::zero();
-        let mut y_sum = BigRational::zero();
+        let mut x_sum = Rational::zero();
+        let mut y_sum = Rational::zero();
 
         // Vélu's formulas for φ(x, y)
         for q in &self.kernel {
@@ -304,15 +300,15 @@ impl Isogeny {
 
             // Contribution to x-coordinate
             let gx = &q.y / &dx;
-            x_sum = x_sum + &gx * &gx - &q.x;
+            x_sum = x_sum + &gx * &gx - q.x.clone();
 
             // Contribution to y-coordinate (simplified)
-            let gy_term = &gx * &gx * &gx;
+            let gy_term = &(&gx * &gx) * &gx;
             y_sum = y_sum - gy_term;
         }
 
-        let x_result = &p.x + x_sum;
-        let y_result = &p.y + y_sum;
+        let x_result = p.x.clone() + x_sum;
+        let y_result = p.y.clone() + y_sum;
 
         Point::new(x_result, y_result)
     }
@@ -364,10 +360,7 @@ impl Isogeny {
                 x_coords.insert(x_str.clone());
 
                 // Multiply by (X - x)
-                // Convert BigRational to Rational
-                let num = Integer::new(point.x.numer().clone());
-                let denom = Integer::new(point.x.denom().clone());
-                let x_rat = Rational::new(num, denom).unwrap();
+                let x_rat = point.x.clone();
                 let factor = UnivariatePolynomial::new(vec![-x_rat.clone(), Rational::one()]);
                 poly = poly * factor;
             }
@@ -414,8 +407,8 @@ impl Isogeny {
             codomain: other.codomain.clone(),
             degree: composed_degree,
             kernel: Vec::new(),
-            v: BigRational::zero(),
-            w: BigRational::zero(),
+            v: Rational::zero(),
+            w: Rational::zero(),
         })
     }
 
@@ -425,7 +418,7 @@ impl Isogeny {
     /// In characteristic 0 or when the characteristic doesn't divide the degree,
     /// all isogenies are separable.
     pub fn is_separable(&self) -> bool {
-        // In characteristic 0 (which we assume for BigInt/BigRational),
+        // In characteristic 0 (which we assume for Integer/Rational),
         // all isogenies are separable
         true
     }
@@ -585,7 +578,7 @@ impl IsogenyGraph {
 /// Compute a string representation of the j-invariant for use as a hash key
 fn j_invariant_string(curve: &EllipticCurve) -> String {
     match curve.j_invariant() {
-        Some(j) => format!("{}/{}", j.numer(), j.denom()),
+        Some(j) => format!("{}/{}", j.numerator(), j.denominator()),
         None => "undefined".to_string(),
     }
 }
@@ -607,11 +600,8 @@ impl KernelPolynomial {
     }
 
     /// Evaluate the polynomial at a point
-    pub fn evaluate(&self, x: &BigRational) -> Rational {
-        let num = Integer::new(x.numer().clone());
-        let denom = Integer::new(x.denom().clone());
-        let x_rat = Rational::new(num, denom).unwrap();
-        self.polynomial.eval(&x_rat)
+    pub fn evaluate(&self, x: &Rational) -> Rational {
+        self.polynomial.eval(x)
     }
 }
 
@@ -629,7 +619,7 @@ mod tests {
     fn test_isogeny_creation_from_2_torsion() {
         // Create curve E: y² = x³ - x
         // This curve has three 2-torsion points: O, (0,0), (1,0), (-1,0)
-        let curve = EllipticCurve::from_short_weierstrass(BigInt::from(-1), BigInt::from(0));
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(0));
 
         // (0, 0) is a 2-torsion point
         let kernel_point = Point::from_integers(0, 0);
@@ -644,7 +634,7 @@ mod tests {
 
     #[test]
     fn test_isogeny_from_kernel_subgroup() {
-        let curve = EllipticCurve::from_short_weierstrass(BigInt::from(-1), BigInt::from(0));
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(0));
 
         let kernel = vec![Point::from_integers(0, 0)];
 
@@ -656,7 +646,7 @@ mod tests {
 
     #[test]
     fn test_kernel_polynomial_computation() {
-        let curve = EllipticCurve::from_short_weierstrass(BigInt::from(-1), BigInt::from(0));
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(0));
 
         let kernel_point = Point::from_integers(0, 0);
         let isogeny = Isogeny::from_kernel_point(&curve, &kernel_point);
@@ -667,14 +657,14 @@ mod tests {
         assert_eq!(kernel_poly.degree(), Some(1));
 
         // Polynomial should be (x - 0) = x
-        let zero = BigRational::zero();
+        let zero = Rational::zero();
         let result = kernel_poly.evaluate(&zero);
         assert_eq!(result, Rational::zero());
     }
 
     #[test]
     fn test_isogeny_evaluation() {
-        let curve = EllipticCurve::from_short_weierstrass(BigInt::from(-1), BigInt::from(0));
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(0));
 
         let kernel_point = Point::from_integers(0, 0);
         let isogeny = Isogeny::from_kernel_point(&curve, &kernel_point);
@@ -697,7 +687,7 @@ mod tests {
 
     #[test]
     fn test_isogeny_degree_computation() {
-        let curve = EllipticCurve::from_short_weierstrass(BigInt::from(2), BigInt::from(3));
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(2), Integer::from(3));
 
         // Create a trivial kernel (just for testing structure)
         let kernel = vec![];
@@ -709,7 +699,7 @@ mod tests {
 
     #[test]
     fn test_velu_coefficients() {
-        let curve = EllipticCurve::from_short_weierstrass(BigInt::from(-1), BigInt::from(0));
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(0));
 
         let kernel_point = Point::from_integers(0, 0);
         let kernel = vec![kernel_point];
@@ -717,15 +707,15 @@ mod tests {
         let (v, w) = Isogeny::compute_velu_coefficients(&kernel);
 
         // v should be 1 (one kernel point)
-        assert_eq!(v, BigRational::one());
+        assert_eq!(v, Rational::one());
 
         // w = x + 2y = 0 + 2*0 = 0
-        assert_eq!(w, BigRational::zero());
+        assert_eq!(w, Rational::zero());
     }
 
     #[test]
     fn test_isogeny_properties() {
-        let curve = EllipticCurve::from_short_weierstrass(BigInt::from(-1), BigInt::from(0));
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(0));
 
         let kernel_point = Point::from_integers(0, 0);
         let isogeny = Isogeny::from_kernel_point(&curve, &kernel_point);
@@ -747,7 +737,7 @@ mod tests {
 
     #[test]
     fn test_isogeny_graph_small() {
-        let curve = EllipticCurve::from_short_weierstrass(BigInt::from(-1), BigInt::from(0));
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(0));
 
         // Build a graph of depth 1
         let graph = IsogenyGraph::build_from_curve(&curve, 1, 2);
@@ -764,7 +754,7 @@ mod tests {
     fn test_2_isogeny_on_curve_37a() {
         // A famous curve: 37a1 (Cremona label)
         // In short Weierstrass form approximation: y² = x³ - x
-        let curve = EllipticCurve::from_short_weierstrass(BigInt::from(-1), BigInt::from(0));
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(0));
 
         assert!(!curve.is_singular());
 
@@ -799,7 +789,7 @@ mod tests {
         // E: y² = x³ + 1 has a 3-torsion point at (0, 1)
         // Actually (0,1) might not have order 3, but we can test the framework
 
-        let curve = EllipticCurve::from_short_weierstrass(BigInt::from(0), BigInt::from(1));
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(0), Integer::from(1));
 
         // Point (0, 1) is on the curve
         let p = Point::from_integers(0, 1);
@@ -821,7 +811,7 @@ mod tests {
 
     #[test]
     fn test_kernel_polynomial_degree() {
-        let curve = EllipticCurve::from_short_weierstrass(BigInt::from(-1), BigInt::from(0));
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(0));
 
         // Create a 2-isogeny
         let kernel = vec![Point::from_integers(0, 0)];
@@ -836,7 +826,7 @@ mod tests {
 
     #[test]
     fn test_isogeny_composition_interface() {
-        let curve = EllipticCurve::from_short_weierstrass(BigInt::from(-1), BigInt::from(0));
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(0));
 
         let kernel1 = vec![Point::from_integers(0, 0)];
         let iso1 = Isogeny::from_kernel_subgroup(&curve, kernel1);
@@ -853,7 +843,7 @@ mod tests {
 
     #[test]
     fn test_dual_isogeny_interface() {
-        let curve = EllipticCurve::from_short_weierstrass(BigInt::from(-1), BigInt::from(0));
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(0));
 
         let kernel = vec![Point::from_integers(0, 0)];
         let isogeny = Isogeny::from_kernel_subgroup(&curve, kernel);
@@ -865,7 +855,7 @@ mod tests {
 
     #[test]
     fn test_display_formatting() {
-        let curve = EllipticCurve::from_short_weierstrass(BigInt::from(-1), BigInt::from(0));
+        let curve = EllipticCurve::from_short_weierstrass(Integer::from(-1), Integer::from(0));
 
         let kernel = vec![Point::from_integers(0, 0)];
         let isogeny = Isogeny::from_kernel_subgroup(&curve, kernel);

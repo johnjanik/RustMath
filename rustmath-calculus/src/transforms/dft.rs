@@ -264,6 +264,11 @@ pub fn power_spectrum(input: &[Complex]) -> Vec<f64> {
 
 /// Computes frequency values corresponding to DFT output.
 ///
+/// Follows the standard `fftfreq` convention (as in NumPy/SciPy): for even
+/// `n` the bins are `[0, 1, ..., n/2 - 1, -n/2, ..., -1] * sample_rate / n`
+/// (the Nyquist bin is reported as negative), and for odd `n` they are
+/// `[0, 1, ..., (n-1)/2, -(n-1)/2, ..., -1] * sample_rate / n`.
+///
 /// # Arguments
 ///
 /// * `n` - Length of the DFT
@@ -277,7 +282,7 @@ pub fn dft_frequencies(n: usize, sample_rate: f64) -> Vec<f64> {
     let freq_spacing = sample_rate / (n as f64);
 
     for k in 0..n {
-        let freq = if k <= n / 2 {
+        let freq = if k < (n + 1) / 2 {
             k as f64 * freq_spacing
         } else {
             ((k as i64) - (n as i64)) as f64 * freq_spacing

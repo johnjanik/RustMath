@@ -528,8 +528,11 @@ mod tests {
 
         // Degree 3 quadrature should exactly integrate up to degree 5
         let p5 = |x: f64| x.powi(5) + 2.0 * x.powi(4) - x.powi(3) + x.powi(2) - x + 1.0;
-        // ∫_0^1 p5(x) dx = 1/6 + 2/5 - 1/4 + 1/3 - 1/2 + 1 = 37/30
-        let expected = 37.0 / 30.0;
+        // ∫_0^1 p5(x) dx = 1/6 + 2/5 - 1/4 + 1/3 - 1/2 + 1 = 69/60 = 23/20.
+        // (The previous expected value of 37/30 = 74/60 was an arithmetic error in
+        //  the test data; the quadrature returns the correct 23/20 to ~1e-16, so the
+        //  1e-12 tolerance is realistic for a "should be exact" degree-5 integrand.)
+        let expected = 23.0 / 20.0;
         let result = integrate_n(p5, 0.0, 1.0, 53, 3);
         assert!((result - expected).abs() < 1e-12);
     }

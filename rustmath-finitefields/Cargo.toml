@@ -13,6 +13,9 @@ rustmath-polynomials = { path = "../rustmath-polynomials" }
 num-traits = { workspace = true }
 serde = { workspace = true, optional = true }
 
+[dev-dependencies]
+rustmath-matrix = { path = "../rustmath-matrix" }
+
 [features]
 default = []
 serde = ["dep:serde"]

@@ -175,6 +175,11 @@ impl<F: Field> FunctionFieldOrder<F> {
         }
     }
 
+    /// Check if this is a maximal order (general orders are not maximal)
+    pub fn is_maximal(&self) -> bool {
+        self.inner.is_maximal()
+    }
+
     /// Get the function field
     pub fn function_field(&self) -> &str {
         self.inner.function_field()

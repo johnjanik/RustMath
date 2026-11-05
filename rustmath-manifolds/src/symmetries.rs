@@ -227,6 +227,11 @@ impl ConformallKillingVectorField {
         self.conformal_factor.as_ref()
     }
 
+    /// Whether the conformal Killing equation has been verified
+    pub fn is_verified(&self) -> bool {
+        self.verified
+    }
+
     /// Verify the conformal Killing equation: ℒ_X g = λg
     ///
     /// If the conformal factor is not known, this computes it.
@@ -476,7 +481,7 @@ mod tests {
 
     #[test]
     fn test_isometry_group_creation() {
-        let manifold = Arc::new(EuclideanSpace::new(3));
+        let manifold = Arc::new(EuclideanSpace::new(3).manifold().clone());
         let metric = Arc::new(RiemannianMetric::euclidean(manifold.clone()));
         let group = IsometryGroup::new(manifold.clone(), metric);
 
@@ -486,7 +491,7 @@ mod tests {
 
     #[test]
     fn test_isometry_group_max_dimension() {
-        let manifold = Arc::new(EuclideanSpace::new(2));
+        let manifold = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let metric = Arc::new(RiemannianMetric::euclidean(manifold.clone()));
         let group = IsometryGroup::new(manifold, metric);
 
@@ -511,7 +516,7 @@ mod tests {
 
     #[test]
     fn test_killing_field_creation() {
-        let manifold = Arc::new(EuclideanSpace::new(2));
+        let manifold = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let metric = Arc::new(RiemannianMetric::euclidean(manifold.clone()));
 
         let chart = manifold.default_chart().unwrap();
@@ -530,7 +535,7 @@ mod tests {
 
     #[test]
     fn test_conformal_killing_field_creation() {
-        let manifold = Arc::new(EuclideanSpace::new(2));
+        let manifold = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let metric = Arc::new(RiemannianMetric::euclidean(manifold.clone()));
 
         let chart = manifold.default_chart().unwrap();

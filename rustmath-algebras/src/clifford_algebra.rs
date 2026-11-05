@@ -450,7 +450,7 @@ impl<R: Ring> CliffordAlgebraElement<R> {
         let mut result = Self::new(self.dimension, self.quadratic_form.clone());
         for (basis, coeff) in &self.terms {
             let k = basis.grade();
-            let sign = if (k * (k - 1) / 2) % 2 == 0 { R::one() } else { -R::one() };
+            let sign = if (k * k.saturating_sub(1) / 2) % 2 == 0 { R::one() } else { -R::one() };
             result.add_term(coeff.clone() * sign, basis.clone());
         }
         result

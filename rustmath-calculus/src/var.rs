@@ -13,7 +13,8 @@
 //! let x = var("x");
 //!
 //! // Create multiple variables
-//! let (a, b, c) = vars(&["a", "b", "c"]);
+//! let abc = vars(&["a", "b", "c"]);
+//! assert_eq!(abc.len(), 3);
 //!
 //! // Use in expressions
 //! let expr = x.clone() * Expr::from(2) + Expr::from(1);
@@ -79,15 +80,18 @@ pub fn var(name: &str) -> Expr {
 ///
 /// # Returns
 ///
-/// Tuple of symbolic expressions (up to 12 variables supported)
+/// Vector of symbolic expressions, one per name
 ///
 /// # Examples
 ///
 /// ```
 /// use rustmath_calculus::var::vars;
 ///
-/// let (x, y, z) = vars(&["x", "y", "z"]);
-/// let (a, b) = vars(&["a", "b"]);
+/// let xyz = vars(&["x", "y", "z"]);
+/// assert_eq!(xyz.len(), 3);
+///
+/// let ab = vars(&["a", "b"]);
+/// assert_eq!(ab.len(), 2);
 /// ```
 pub fn vars<const N: usize>(names: &[&str; N]) -> Vec<Expr> {
     names.iter().map(|&name| var(name)).collect()
@@ -117,7 +121,7 @@ pub fn vars<const N: usize>(names: &[&str; N]) -> Vec<Expr> {
 /// let x = var("x");
 ///
 /// // Create f(x) - an unevaluated function call
-/// let expr = Expr::FunctionCall(Box::new(f), vec![x]);
+/// let expr = Expr::function("f", vec![x]);
 /// ```
 ///
 /// # Note

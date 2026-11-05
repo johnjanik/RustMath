@@ -1,17 +1,32 @@
 //! p-adic numbers and extensions
 //!
-//! This module provides p-adic field extensions and related structures,
-//! building on the basic p-adic arithmetic from rustmath-padics.
+//! This is the canonical home of RustMath's p-adic machinery. The
+//! `rustmath-padics` crate is now a thin re-export shim over this module.
 //!
 //! # Module Contents
 //!
+//! - `padic_integer`: p-adic integers zp (basic fixed-modulus model)
+//! - `padic_rational`: p-adic rationals qp
+//! - `capped_relative`: capped-relative-precision elements
 //! - `extension`: p-adic field extensions (unramified, Eisenstein, general)
-//!
-//! # Re-exports
-//!
-//! For convenience, we re-export the basic p-adic types from rustmath-padics:
-//! - `PadicInteger`: p-adic integers zp
-//! - `PadicRational`: p-adic rationals qp
+//! - `newton_polygon`: Newton polygons over a discrete valuation
+//! - `unramified`: real unramified-extension arithmetic (Frobenius, N, Tr)
+//! - `eisenstein`: real Eisenstein-extension arithmetic (v_L, N, Tr)
+//! - `factory`: constructors `zp`, `qp`, `zq`, `qq`
+//! - `pow_computer` / `pow_computer_ext`: cached prime-power arithmetic
+
+pub mod padic_integer;
+pub mod padic_rational;
+
+pub use padic_integer::{hensel_lift_root, PadicInteger};
+pub use padic_rational::PadicRational;
+
+// Coupled multivariate Newton/Hensel lift of a mod-p seed to a bivariate
+// power series over Z_p (free function; both PolySystem and
+// MPowerSeries<PadicRational> are visible here).
+pub mod newton_lift;
+
+pub use newton_lift::newton_lift_bivariate;
 
 pub mod extension;
 
@@ -19,8 +34,41 @@ pub use extension::{
     ExtensionType, GaloisGroup, PadicEmbedding, PadicExtension, PadicExtensionElement,
 };
 
-// Re-export basic p-adic types
-pub use rustmath_padics::{PadicInteger, PadicRational};
+// Low-level Z/p^N and GF(p) polynomial arithmetic shared by the extension
+// machinery (crate-private).
+pub(crate) mod poly_arith;
+
+// Newton polygons over a discrete valuation (lower convex hull; a segment of
+// slope s and horizontal length l certifies l roots of valuation -s).
+
+pub mod newton_polygon;
+
+pub use newton_polygon::{NewtonPolygon, NewtonSlope};
+
+// Real p-adic extension arithmetic: unramified (Frobenius, norm, trace) and
+// Eisenstein (uniformizer valuation, norm, trace), both self-certifying.
+//
+// DEFERRED (honestly, not facaded): composite towers (unramified over
+// Eisenstein / general e,f > 1 extensions as element rings), and field-level
+// (negative-valuation) elements in `unramified`/`eisenstein` — the integral
+// rings Z_q and Z_p[pi] are implemented; norms/traces/Frobenius on them are
+// real and cross-certified.
+
+pub mod eisenstein;
+pub mod unramified;
+
+pub use eisenstein::{EisensteinElement, EisensteinExtension};
+pub use unramified::{unramified_modulus, UnramifiedElement, UnramifiedExtension};
+
+// OM (Okutsu-Montes / MacLane) factorization over Q_p: monic squarefree
+// p-integral polynomials factored by the MacLane tree (valuation::maclane,
+// now real at EVERY augmentation level with residue-field towers), with
+// DECIDED factor count / (e, f) data and congruence-certified
+// approximations. See the module docs for the honest certificate statement.
+
+pub mod om_factorization;
+
+pub use om_factorization::{om_factorization, OmFactor, OmFactorization};
 
 // p-adic Power Computers
 //

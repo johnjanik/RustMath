@@ -145,8 +145,9 @@ impl DiscreteWaveletTransform {
 
         let mut signal = approx.to_vec();
 
-        // Reconstruct from coarsest to finest (reverse order)
-        for detail in details.iter().rev() {
+        // `wavedec` returns details ordered coarsest to finest, and the
+        // running approximation is coarsest, so reconstruct in given order.
+        for detail in details.iter() {
             signal = self.reconstruct(&signal, detail);
         }
 
@@ -298,30 +299,30 @@ fn normalize_filter(filter: &[f64]) -> Vec<f64> {
 }
 
 /// Constructs reconstruction filters from decomposition filters.
+///
+/// The analysis step (`convolve_downsample`) correlates with the filter,
+/// while the synthesis step (`upsample_convolve`) convolves with it. For
+/// orthogonal wavelets (all families provided here) the synthesis filters
+/// are the time-reverses of the analysis filters, and that time reversal is
+/// exactly absorbed by the correlate/convolve asymmetry — so the
+/// reconstruction filters equal the decomposition filters. Together they
+/// give perfect reconstruction on periodically extended signals.
 fn reconstruction_filters(dec_lo: &[f64], dec_hi: &[f64]) -> (Vec<f64>, Vec<f64>) {
-    // Reconstruction filters are time-reversed and alternating-sign versions
-    let rec_lo: Vec<f64> = dec_lo.iter().rev().copied().collect();
-
-    let rec_hi: Vec<f64> = dec_hi
-        .iter()
-        .rev()
-        .enumerate()
-        .map(|(i, &x)| if i % 2 == 0 { x } else { -x })
-        .collect();
-
-    (rec_lo, rec_hi)
+    (dec_lo.to_vec(), dec_hi.to_vec())
 }
 
 // Convolution and sampling operations
 
-/// Convolves signal with filter and downsamples by 2.
+/// Correlates signal with filter (periodic extension) and downsamples by 2.
+///
+/// Computes the standard periodized analysis step
+/// `out[k] = sum_j filter[j] * signal[(2k + j) mod n]`.
 fn convolve_downsample(signal: &[f64], filter: &[f64]) -> Vec<f64> {
     if signal.is_empty() || filter.is_empty() {
         return Vec::new();
     }
 
     let n = signal.len();
-    let m = filter.len();
     let out_len = (n + 1) / 2;
 
     let mut result = Vec::with_capacity(out_len);
@@ -329,13 +330,7 @@ fn convolve_downsample(signal: &[f64], filter: &[f64]) -> Vec<f64> {
     for i in (0..n).step_by(2) {
         let mut sum = 0.0;
         for (j, &f) in filter.iter().enumerate() {
-            let idx = if i + j < m - 1 {
-                // Wrap around (periodic extension)
-                (n + i + j - m + 1) % n
-            } else {
-                (i + j - m + 1) % n
-            };
-            sum += signal[idx] * f;
+            sum += signal[(i + j) % n] * f;
         }
         result.push(sum);
     }
@@ -361,20 +356,21 @@ fn upsample_convolve(signal: &[f64], filter: &[f64]) -> Vec<f64> {
     convolve(&upsampled, filter)
 }
 
-/// Simple convolution.
+/// Simple circular convolution: `out[i] = sum_j filter[j] * signal[(i - j) mod n]`.
 fn convolve(signal: &[f64], filter: &[f64]) -> Vec<f64> {
     if signal.is_empty() || filter.is_empty() {
         return Vec::new();
     }
 
     let n = signal.len();
-    let m = filter.len();
     let mut result = vec![0.0; n];
 
     for i in 0..n {
         let mut sum = 0.0;
         for (j, &f) in filter.iter().enumerate() {
-            let idx = (i + n - j) % n;
+            // (i - j) mod n, kept in unsigned arithmetic; j may exceed n
+            // when the filter is longer than the signal, so reduce it first.
+            let idx = (i + n - (j % n)) % n;
             sum += signal[idx] * f;
         }
         result[i] = sum;
@@ -473,6 +469,28 @@ mod tests {
 
         assert_eq!(details.len(), 1);
         assert_eq!(approx.len(), 2);
+    }
+
+    #[test]
+    fn test_dwt_reconstruction_db4() {
+        // Perfect reconstruction must also hold for the longer db4 filters
+        let signal = vec![1.0, -2.0, 3.5, 4.0, 0.0, 6.0, -7.25, 8.0];
+        let dwt = DiscreteWaveletTransform::new(WaveletFamily::Daubechies(4));
+
+        let (approx, detail) = dwt.decompose(&signal);
+        let reconstructed = dwt.reconstruct(&approx, &detail);
+
+        assert_eq!(reconstructed.len(), signal.len());
+        for (orig, recon) in signal.iter().zip(reconstructed.iter()) {
+            assert!((orig - recon).abs() < 1e-6);
+        }
+
+        // ... and for multi-level decomposition
+        let (approx, details) = dwt.wavedec(&signal, 2);
+        let reconstructed = dwt.waverec(&approx, &details);
+        for (orig, recon) in signal.iter().zip(reconstructed.iter()) {
+            assert!((orig - recon).abs() < 1e-6);
+        }
     }
 
     #[test]

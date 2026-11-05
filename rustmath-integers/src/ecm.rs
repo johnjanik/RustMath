@@ -422,7 +422,7 @@ fn try_one_curve(n: &Integer, b1: u64, b2: u64, seed: u64) -> Option<Integer> {
 /// use rustmath_integers::Integer;
 /// use rustmath_integers::ecm::ecm_factor;
 ///
-/// let n = Integer::from(15770708441); // 135979 * 115979
+/// let n = Integer::from(15770708441i64); // 135979 * 115979
 /// if let Some(factor) = ecm_factor(&n, 10000, 100000, 20) {
 ///     println!("Found factor: {}", factor);
 /// }

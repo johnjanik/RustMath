@@ -192,7 +192,7 @@ mod tests {
         use crate::singularities::{Singularity, SingularityType};
 
         // Cubic with one node: g = 1 - 1 = 0
-        let poly = MultiPoly::<Rational>::new(2);
+        let poly = MultiPoly::<Rational>::zero();
         let node = Singularity::new(
             vec![Rational::zero(), Rational::zero()],
             SingularityType::Node,

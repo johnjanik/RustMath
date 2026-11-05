@@ -395,16 +395,16 @@ mod tests {
     fn test_lie_group_creation() {
         // Create ℝ as an additive Lie group
         let manifold = Arc::new(RealLine::new().into());
-        let identity = ManifoldPoint::from_coords(vec![0.0]);
+        let identity = ManifoldPoint::from_coordinates(vec![0.0]);
 
         let mult = Arc::new(|g: &ManifoldPoint, h: &ManifoldPoint| -> Result<ManifoldPoint> {
-            Ok(ManifoldPoint::from_coords(vec![
+            Ok(ManifoldPoint::from_coordinates(vec![
                 g.coordinates()[0] + h.coordinates()[0]
             ]))
         });
 
         let inv = Arc::new(|g: &ManifoldPoint| -> Result<ManifoldPoint> {
-            Ok(ManifoldPoint::from_coords(vec![-g.coordinates()[0]]))
+            Ok(ManifoldPoint::from_coordinates(vec![-g.coordinates()[0]]))
         });
 
         let group = LieGroup::new(manifold, identity, mult, inv);
@@ -417,22 +417,22 @@ mod tests {
     fn test_group_operations() {
         // Test ℝ under addition
         let manifold = Arc::new(RealLine::new().into());
-        let identity = ManifoldPoint::from_coords(vec![0.0]);
+        let identity = ManifoldPoint::from_coordinates(vec![0.0]);
 
         let mult = Arc::new(|g: &ManifoldPoint, h: &ManifoldPoint| -> Result<ManifoldPoint> {
-            Ok(ManifoldPoint::from_coords(vec![
+            Ok(ManifoldPoint::from_coordinates(vec![
                 g.coordinates()[0] + h.coordinates()[0]
             ]))
         });
 
         let inv = Arc::new(|g: &ManifoldPoint| -> Result<ManifoldPoint> {
-            Ok(ManifoldPoint::from_coords(vec![-g.coordinates()[0]]))
+            Ok(ManifoldPoint::from_coordinates(vec![-g.coordinates()[0]]))
         });
 
         let group = LieGroup::new(manifold, identity, mult, inv);
 
-        let g = ManifoldPoint::from_coords(vec![2.0]);
-        let h = ManifoldPoint::from_coords(vec![3.0]);
+        let g = ManifoldPoint::from_coordinates(vec![2.0]);
+        let h = ManifoldPoint::from_coordinates(vec![3.0]);
 
         // Test multiplication
         let gh = group.multiply(&g, &h).unwrap();
@@ -450,39 +450,39 @@ mod tests {
     #[test]
     fn test_is_identity() {
         let manifold = Arc::new(RealLine::new().into());
-        let identity = ManifoldPoint::from_coords(vec![0.0]);
+        let identity = ManifoldPoint::from_coordinates(vec![0.0]);
 
         let mult = Arc::new(|g: &ManifoldPoint, h: &ManifoldPoint| -> Result<ManifoldPoint> {
-            Ok(ManifoldPoint::from_coords(vec![
+            Ok(ManifoldPoint::from_coordinates(vec![
                 g.coordinates()[0] + h.coordinates()[0]
             ]))
         });
 
         let inv = Arc::new(|g: &ManifoldPoint| -> Result<ManifoldPoint> {
-            Ok(ManifoldPoint::from_coords(vec![-g.coordinates()[0]]))
+            Ok(ManifoldPoint::from_coordinates(vec![-g.coordinates()[0]]))
         });
 
         let group = LieGroup::new(manifold, identity, mult, inv);
 
         assert!(group.is_identity(&group.identity, 1e-10).unwrap());
 
-        let g = ManifoldPoint::from_coords(vec![2.0]);
+        let g = ManifoldPoint::from_coordinates(vec![2.0]);
         assert!(!group.is_identity(&g, 1e-10).unwrap());
     }
 
     #[test]
     fn test_maurer_cartan_form() {
         let manifold = Arc::new(RealLine::new().into());
-        let identity = ManifoldPoint::from_coords(vec![0.0]);
+        let identity = ManifoldPoint::from_coordinates(vec![0.0]);
 
         let mult = Arc::new(|g: &ManifoldPoint, h: &ManifoldPoint| -> Result<ManifoldPoint> {
-            Ok(ManifoldPoint::from_coords(vec![
+            Ok(ManifoldPoint::from_coordinates(vec![
                 g.coordinates()[0] + h.coordinates()[0]
             ]))
         });
 
         let inv = Arc::new(|g: &ManifoldPoint| -> Result<ManifoldPoint> {
-            Ok(ManifoldPoint::from_coords(vec![-g.coordinates()[0]]))
+            Ok(ManifoldPoint::from_coordinates(vec![-g.coordinates()[0]]))
         });
 
         let group = Arc::new(LieGroup::new(manifold, identity, mult, inv));

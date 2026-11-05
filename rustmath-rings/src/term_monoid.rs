@@ -647,6 +647,7 @@ impl Default for TermMonoidFactory {
 mod tests {
     use super::*;
     use crate::growth_group::{MonomialGrowthElement, Variable};
+    use num_bigint::BigInt;
 
     fn create_growth(var: &Variable, exp: i64) -> MonomialGrowthElement {
         MonomialGrowthElement::new(var.clone(), BigRational::from_integer(BigInt::from(exp)))

@@ -762,19 +762,19 @@ mod tests {
         let a = field.element(Integer::from(3));
 
         // 3^0 = 1
-        let pow0 = a.pow(&Integer::from(0));
+        let pow0 = a.pow(&Integer::from(0)).unwrap();
         assert_eq!(pow0.value(), &Integer::from(1));
 
         // 3^1 = 3
-        let pow1 = a.pow(&Integer::from(1));
+        let pow1 = a.pow(&Integer::from(1)).unwrap();
         assert_eq!(pow1.value(), &Integer::from(3));
 
         // 3^2 = 9 ≡ 2 (mod 7)
-        let pow2 = a.pow(&Integer::from(2));
+        let pow2 = a.pow(&Integer::from(2)).unwrap();
         assert_eq!(pow2.value(), &Integer::from(2));
 
         // 3^6 = 729 ≡ 1 (mod 7) (by Fermat's little theorem)
-        let pow6 = a.pow(&Integer::from(6));
+        let pow6 = a.pow(&Integer::from(6)).unwrap();
         assert_eq!(pow6.value(), &Integer::from(1));
     }
 

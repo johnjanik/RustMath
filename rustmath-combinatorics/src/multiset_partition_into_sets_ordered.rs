@@ -69,7 +69,7 @@ impl<T: Clone + Eq + Hash + Ord> OrderedMultisetPartitionIntoSets<T> {
     /// ```
     /// use rustmath_combinatorics::multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
     ///
-    /// let partition = OrderedMultisetPartitionIntoSets::new(vec![vec![1, 2], vec![3]]);
+    /// let partition = OrderedMultisetPartitionIntoSets::new(vec![vec![1usize, 2], vec![3]]);
     /// assert_eq!(partition.num_blocks(), 2);
     /// ```
     pub fn num_blocks(&self) -> usize {
@@ -83,7 +83,7 @@ impl<T: Clone + Eq + Hash + Ord> OrderedMultisetPartitionIntoSets<T> {
     /// ```
     /// use rustmath_combinatorics::multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
     ///
-    /// let partition = OrderedMultisetPartitionIntoSets::new(vec![vec![1, 2], vec![3]]);
+    /// let partition = OrderedMultisetPartitionIntoSets::new(vec![vec![1usize, 2], vec![3]]);
     /// let blocks = partition.blocks();
     /// assert_eq!(blocks.len(), 2);
     /// ```
@@ -116,7 +116,7 @@ impl<T: Clone + Eq + Hash + Ord> OrderedMultisetPartitionIntoSets<T> {
     /// use rustmath_combinatorics::multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
     ///
     /// // [{1, 2}, {3}] has size 1 + 2 + 3 = 6
-    /// let partition = OrderedMultisetPartitionIntoSets::new(vec![vec![1, 2], vec![3]]);
+    /// let partition = OrderedMultisetPartitionIntoSets::new(vec![vec![1usize, 2], vec![3]]);
     /// assert_eq!(partition.size(), 6);
     /// ```
     pub fn size(&self) -> usize
@@ -187,7 +187,7 @@ impl<T: Clone + Eq + Hash + Ord> OrderedMultisetPartitionIntoSets<T> {
     /// ```
     /// use rustmath_combinatorics::multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
     ///
-    /// let partition = OrderedMultisetPartitionIntoSets::new(vec![vec![1, 2], vec![3]]);
+    /// let partition = OrderedMultisetPartitionIntoSets::new(vec![vec![1usize, 2], vec![3]]);
     /// assert_eq!(partition.shape_from_size(), vec![3, 3]);
     /// ```
     pub fn shape_from_size(&self) -> Vec<usize>
@@ -348,7 +348,7 @@ impl<T: Clone + Eq + Hash + Ord> OrderedMultisetPartitionIntoSets<T> {
     /// ```
     /// use rustmath_combinatorics::multiset_partition_into_sets_ordered::OrderedMultisetPartitionIntoSets;
     ///
-    /// let partition = OrderedMultisetPartitionIntoSets::new(vec![vec![1, 2], vec![3]]);
+    /// let partition = OrderedMultisetPartitionIntoSets::new(vec![vec![1usize, 2], vec![3]]);
     /// let major = partition.major_index();
     /// ```
     pub fn major_index(&self) -> usize {

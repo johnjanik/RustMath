@@ -30,7 +30,7 @@
 //!
 //! // Tensor product creates higher rank tensors
 //! let v_squared = v.tensor_product(&v);
-//! assert_eq!(v_squared.rank(), 2);
+//! assert_eq!(v_squared.max_rank(), Some(2));
 //! ```
 
 use rustmath_core::{Ring, Field};
@@ -156,11 +156,11 @@ impl<R: Ring> TensorElement<R> {
             return;
         }
 
-        let entry = self.terms.entry(monomial).or_insert_with(R::zero);
+        let entry = self.terms.entry(monomial.clone()).or_insert_with(R::zero);
         *entry = entry.clone() + coefficient;
 
         if entry.is_zero() {
-            self.terms.remove(&TensorMonomial::unit());
+            self.terms.remove(&monomial);
         }
     }
 

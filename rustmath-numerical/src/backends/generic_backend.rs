@@ -86,12 +86,9 @@ impl Backend for GenericBackend {
     }
 
     fn solve(&mut self) -> Result<Solution, String> {
-        // Stub implementation - would use actual solver
-        Ok(Solution {
-            variables: vec![0.0; self.num_vars],
-            objective_value: 0.0,
-            status: SolutionStatus::Optimal,
-        })
+        unimplemented!(
+            "LP/MIP/SDP solve not yet implemented (facade); planned as rustmath-optimization"
+        );
     }
 
     fn num_variables(&self) -> usize {

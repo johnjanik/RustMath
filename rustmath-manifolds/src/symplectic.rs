@@ -223,7 +223,11 @@ impl SymplecticForm {
         let chart = self.manifold.default_chart()
             .ok_or(ManifoldError::NoChart)?;
         let d_omega = self.form.exterior_derivative(chart)?;
-        Ok(d_omega.is_zero())
+        // The exterior-derivative routine leaves unsimplified constant sums
+        // (e.g. `0 + 0 + 0`), which a purely structural is_zero() would treat
+        // as non-zero. Simplify each component before the zero test.
+        let comps = d_omega.tensor().components(chart)?;
+        Ok(comps.iter().all(|c| c.simplify().is_zero()))
     }
 
     /// Check if the form is non-degenerate
@@ -487,7 +491,7 @@ mod tests {
 
     #[test]
     fn test_symplectic_form_creation() {
-        let manifold = Arc::new(EuclideanSpace::new(4).into());
+        let manifold: Arc<DifferentiableManifold> = Arc::new(EuclideanSpace::new(4).into());
         let form = SymplecticForm::standard_form(manifold.clone(), 2).unwrap();
 
         assert!(form.is_closed().unwrap());
@@ -529,6 +533,6 @@ mod tests {
         let x_h = HamiltonianVectorField::from_hamiltonian(symp, h).unwrap();
 
         // X_H should have 2 components
-        assert_eq!(x_h.as_vector_field().dimension(), 2);
+        assert_eq!(x_h.as_vector_field().manifold().dimension(), 2);
     }
 }

@@ -34,6 +34,45 @@ pub trait Category: fmt::Debug {
     fn super_categories(&self) -> Vec<Box<dyn Category>> {
         Vec::new()
     }
+
+    /// Check whether this category is a subcategory of `other`.
+    ///
+    /// A category is a subcategory of itself and of every category in its
+    /// (transitive) chain of super categories. Categories are compared by
+    /// name, which uniquely identifies each category in the hierarchy.
+    ///
+    /// Traverses the (possibly malformed) super-category graph with a
+    /// visited-names guard, so a cyclic `super_categories()` chain (e.g. A's
+    /// supercategory is B and B's supercategory is A) terminates with `false`
+    /// instead of recursing forever.
+    fn is_subcategory_of(&self, other: &dyn Category) -> bool {
+        // Free function operating purely on `&dyn Category` so it never
+        // needs to unsize `Self` (which may be `?Sized` in this default
+        // trait method); recursion only ever passes along `&dyn Category`
+        // references already produced by `super_categories()`.
+        fn search(cat: &dyn Category, other: &dyn Category, visited: &mut Vec<String>) -> bool {
+            if cat.name() == other.name() {
+                return true;
+            }
+            if visited.iter().any(|seen| seen == cat.name()) {
+                // Already visited this node on the current path: it's part
+                // of a cycle that never reached `other`, so stop here.
+                return false;
+            }
+            visited.push(cat.name().to_string());
+            cat.super_categories()
+                .iter()
+                .any(|super_cat| search(super_cat.as_ref(), other, visited))
+        }
+
+        if self.name() == other.name() {
+            return true;
+        }
+        let mut visited = vec![self.name().to_string()];
+        self.super_categories()
+            .iter()
+            .any(|super_cat| search(super_cat.as_ref(), other, &mut visited))
+    }
 }
 
 /// Marker trait for categories that support finite structures
@@ -124,5 +163,69 @@ mod tests {
 
         assert_eq!(cat1.name(), cat2.name());
         assert_ne!(cat1.name(), cat3.name());
+    }
+
+    // Categories whose `super_categories()` chain forms a cycle, used to
+    // exercise the cycle guard in the default `is_subcategory_of` impl.
+    #[derive(Clone, Debug)]
+    struct CycleA;
+    #[derive(Clone, Debug)]
+    struct CycleB;
+
+    impl Category for CycleA {
+        fn name(&self) -> &str {
+            "CycleA"
+        }
+        fn super_categories(&self) -> Vec<Box<dyn Category>> {
+            vec![Box::new(CycleB)]
+        }
+    }
+
+    impl Category for CycleB {
+        fn name(&self) -> &str {
+            "CycleB"
+        }
+        fn super_categories(&self) -> Vec<Box<dyn Category>> {
+            // Points back at CycleA, forming a 2-cycle.
+            vec![Box::new(CycleA)]
+        }
+    }
+
+    #[derive(Clone, Debug)]
+    struct SelfCycle;
+    impl Category for SelfCycle {
+        fn name(&self) -> &str {
+            "SelfCycle"
+        }
+        fn super_categories(&self) -> Vec<Box<dyn Category>> {
+            // Points at a fresh copy of itself, forming a 1-cycle.
+            vec![Box::new(SelfCycle)]
+        }
+    }
+
+    #[test]
+    fn test_is_subcategory_of_cyclic_chain_terminates_false() {
+        let a = CycleA;
+        let unrelated = TestCategory::new("Unrelated");
+        // Must terminate (not infinite-loop / stack overflow) and report
+        // false, since the cycle never reaches `unrelated`.
+        assert!(!a.is_subcategory_of(&unrelated));
+    }
+
+    #[test]
+    fn test_is_subcategory_of_cyclic_chain_still_finds_self() {
+        let a = CycleA;
+        // Reflexivity must still hold even though the chain is cyclic.
+        assert!(a.is_subcategory_of(&a));
+        // And it can still find the other side of the cycle.
+        assert!(a.is_subcategory_of(&CycleB));
+    }
+
+    #[test]
+    fn test_is_subcategory_of_self_referential_cycle_terminates_false() {
+        let s = SelfCycle;
+        let unrelated = TestCategory::new("Unrelated");
+        assert!(!s.is_subcategory_of(&unrelated));
+        assert!(s.is_subcategory_of(&s));
     }
 }

@@ -22,9 +22,12 @@
 //! ```
 //! use rustmath_symbolic::specialfunctions::other::*;
 //! use rustmath_symbolic::Expr;
+//! use rustmath_rationals::Rational;
 //!
 //! assert_eq!(abs_symbolic(&Expr::from(-5)), Expr::from(5));
-//! assert_eq!(ceil(&Expr::from(3)), Expr::from(4)); // assuming rational 3.x
+//! let seven_halves = Expr::Rational(Rational::new(7, 2).unwrap());
+//! assert_eq!(ceil(&seven_halves), Expr::from(4));
+//! assert_eq!(floor(&seven_halves), Expr::from(3));
 //! assert_eq!(floor(&Expr::from(3)), Expr::from(3));
 //! assert_eq!(factorial(&Expr::from(5)), Expr::from(120));
 //! ```

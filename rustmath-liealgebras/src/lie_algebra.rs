@@ -172,6 +172,11 @@ impl<R: Ring + Clone, E: LieAlgebraElement<R> + Debug> FinitelyGeneratedLieAlgeb
     pub fn num_generators(&self) -> usize {
         self.generators.len()
     }
+
+    /// Dimension of the Lie algebra (None if infinite-dimensional)
+    pub fn dimension(&self) -> Option<usize> {
+        self.dimension
+    }
 }
 
 impl<R: Ring + Clone, E: LieAlgebraElement<R> + Debug> Display for FinitelyGeneratedLieAlgebra<R, E> {

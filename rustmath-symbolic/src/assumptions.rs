@@ -159,9 +159,13 @@ mod tests {
     use super::*;
     use crate::Symbol;
 
+    // NOTE: each test below uses a unique symbol name. The assumptions
+    // registry is global and symbols are interned by name, so parallel
+    // tests sharing a name would race through assume/forget.
+
     #[test]
     fn test_assume_positive() {
-        let x = Symbol::new("x");
+        let x = Symbol::new("x_assump_pos");
 
         assume(&x, Property::Positive);
 
@@ -174,8 +178,24 @@ mod tests {
     }
 
     #[test]
+    fn test_assumptions_shared_across_symbol_instances() {
+        // Regression test: assumptions are keyed by symbol id, and ids used
+        // to be minted fresh per Symbol::new call, so an assumption made on
+        // one Symbol::new("x") was invisible through another Symbol::new("x").
+        let first = Symbol::new("x_assump_shared");
+        assume(&first, Property::Positive);
+
+        let second = Symbol::new("x_assump_shared"); // separate call, same name
+        assert!(has_property(&second, Property::Positive));
+        assert!(has_property(&second, Property::Real)); // Implied
+
+        forget(&second); // forgetting through the other instance works too
+        assert!(!has_property(&first, Property::Positive));
+    }
+
+    #[test]
     fn test_assume_integer() {
-        let n = Symbol::new("n");
+        let n = Symbol::new("n_assump_int");
 
         assume(&n, Property::Integer);
 
@@ -189,7 +209,7 @@ mod tests {
 
     #[test]
     fn test_assume_prime() {
-        let p = Symbol::new("p");
+        let p = Symbol::new("p_assump_prime");
 
         assume(&p, Property::Prime);
 
@@ -203,7 +223,7 @@ mod tests {
 
     #[test]
     fn test_multiple_assumptions() {
-        let x = Symbol::new("x");
+        let x = Symbol::new("x_assump_multi");
 
         assume(&x, Property::Positive);
         assume(&x, Property::Integer);
@@ -217,7 +237,7 @@ mod tests {
 
     #[test]
     fn test_forget() {
-        let x = Symbol::new("x");
+        let x = Symbol::new("x_assump_forget");
 
         assume(&x, Property::Positive);
         assert!(has_property(&x, Property::Positive));
@@ -228,7 +248,7 @@ mod tests {
 
     #[test]
     fn test_get_assumptions() {
-        let x = Symbol::new("x");
+        let x = Symbol::new("x_assump_get");
 
         assume(&x, Property::Positive);
 

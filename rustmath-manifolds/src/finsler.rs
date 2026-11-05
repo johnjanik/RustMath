@@ -24,6 +24,7 @@
 //! ```
 
 use crate::errors::{ManifoldError, Result};
+use crate::chart::Chart;
 use crate::differentiable::DifferentiableManifold;
 use crate::tangent_space::TangentVector;
 use crate::point::ManifoldPoint;
@@ -121,18 +122,21 @@ impl FinslerFunction {
     }
 
     /// Evaluate the Finsler function at a point with a tangent vector
-    pub fn eval(&self, point: &ManifoldPoint, tangent_vector: &TangentVector) -> Result<f64> {
-        // TODO: Substitute point coordinates and tangent vector components
-        // into the expression and evaluate
-        Ok(0.0)
+    pub fn eval(&self, _point: &ManifoldPoint, _tangent_vector: &TangentVector) -> Result<f64> {
+        unimplemented!(
+            "FinslerFunction::eval not yet implemented (facade): requires substituting point \
+             coordinates and tangent vector components into the expression and evaluating"
+        )
     }
 
     /// Check if the function is positively homogeneous of degree 1
     ///
     /// F(x, λv) = λF(x, v) for all λ > 0
     pub fn is_positively_homogeneous(&self) -> bool {
-        // TODO: Verify homogeneity property symbolically
-        true
+        unimplemented!(
+            "FinslerFunction::is_positively_homogeneous not yet implemented (facade): requires \
+             symbolically verifying F(x, lambda*v) = lambda*F(x, v)"
+        )
     }
 
     /// Compute the fundamental tensor g_ij = (1/2) ∂²F²/∂v^i∂v^j
@@ -254,8 +258,10 @@ impl FinslerManifold {
     /// A Finsler manifold is Riemannian if F(x, v) = √(g_ij(x) v^i v^j)
     /// (i.e., F doesn't depend on direction except through the metric)
     pub fn is_riemannian(&self) -> bool {
-        // TODO: Check if fundamental tensor is independent of v
-        false
+        unimplemented!(
+            "FinslerManifold::is_riemannian not yet implemented (facade): requires checking \
+             whether the fundamental tensor g_ij is independent of the direction v"
+        )
     }
 
     /// Compute geodesics in the Finsler metric
@@ -263,9 +269,10 @@ impl FinslerManifold {
     /// Geodesics satisfy the Finsler geodesic equation, which generalizes
     /// the Riemannian geodesic equation
     pub fn geodesic_equation(&self) -> Result<Vec<Expr>> {
-        // TODO: Derive geodesic equations from F
-        let dim = self.dimension();
-        Ok(vec![Expr::from(0); dim])
+        unimplemented!(
+            "FinslerManifold::geodesic_equation not yet implemented (facade): requires \
+             deriving the Finsler geodesic equations from F"
+        )
     }
 }
 
@@ -350,6 +357,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented (Phase 5)"]
     fn test_finsler_function_homogeneity() {
         let m = Arc::new(DifferentiableManifold::new("ℝ²", 2));
         let f = FinslerFunction::euclidean(m);
@@ -358,7 +366,9 @@ mod tests {
 
     #[test]
     fn test_fundamental_tensor_dimension() {
-        let m = Arc::new(DifferentiableManifold::new("ℝ²", 2));
+        let mut base = DifferentiableManifold::new("ℝ²", 2);
+        base.add_chart(Chart::standard("standard", 2)).unwrap();
+        let m = Arc::new(base);
         let f = FinslerFunction::euclidean(m);
         let g = f.fundamental_tensor().unwrap();
         assert_eq!(g.covariant_rank(), 2);
@@ -368,7 +378,9 @@ mod tests {
     #[test]
     fn test_cartan_tensor_riemannian_case() {
         // For Euclidean metric, Cartan tensor should vanish
-        let m = Arc::new(DifferentiableManifold::new("ℝ²", 2));
+        let mut base = DifferentiableManifold::new("ℝ²", 2);
+        base.add_chart(Chart::standard("standard", 2)).unwrap();
+        let m = Arc::new(base);
         let f = FinslerFunction::euclidean(m);
         let c = CartanTensor::from_finsler_function(&f).unwrap();
 

@@ -27,7 +27,7 @@
 //! ## Example
 //!
 //! ```
-//! use rustmath_combinatorics::{Word, lyndon_factorization};
+//! use rustmath_combinatorics::words::Word;
 //!
 //! let w = Word::new(vec!['a', 'b', 'a', 'a', 'b', 'b']);
 //! let factors = w.lyndon_factorization();
@@ -251,7 +251,7 @@ impl<T: Clone + Eq> Word<T> {
     /// # Examples
     ///
     /// ```
-    /// use rustmath_combinatorics::Word;
+    /// use rustmath_combinatorics::words::Word;
     ///
     /// let w1 = Word::new(vec!['a', 'b']);
     /// let w2 = Word::new(vec!['c']);
@@ -337,7 +337,7 @@ impl<T: Clone + Eq + PartialOrd> Word<T> {
     /// # Example
     ///
     /// ```
-    /// use rustmath_combinatorics::Word;
+    /// use rustmath_combinatorics::words::Word;
     ///
     /// let w = Word::new(vec![0, 1, 0, 0, 1, 1]);
     /// let factors = w.lyndon_factorization();
@@ -389,7 +389,7 @@ impl<T: Clone + Eq + PartialOrd> Word<T> {
     /// # Example
     ///
     /// ```
-    /// use rustmath_combinatorics::Word;
+    /// use rustmath_combinatorics::words::Word;
     ///
     /// let w = Word::new(vec![0, 1, 0, 1, 0, 0, 1]);
     /// let standard = w.standard_lyndon_factorization();
@@ -505,9 +505,22 @@ pub fn lyndon_words_up_to<T: Clone + Eq + Ord>(alphabet: &[T], n: usize) -> Vec<
 
     let k = alphabet.len();
     let mut result = Vec::new();
-    let mut w = vec![0_usize; n + 1];
 
-    lyndon_gen(&mut w, n, k, 1, 1, &mut result);
+    // The FKM recursion (`lyndon_gen`), run with parameter `len`, emits every
+    // Lyndon word whose length *divides* `len`. To obtain all Lyndon words of
+    // length 1..=n we run it once per target length and keep only the words of
+    // exactly that length (the aperiodic, full-period ones), avoiding both the
+    // gaps (e.g. length 3 when n = 4) and the divisor-length duplicates.
+    for len in 1..=n {
+        let mut w = vec![0_usize; len + 1];
+        let mut per_len: Vec<Vec<usize>> = Vec::new();
+        lyndon_gen(&mut w, len, k, 1, 1, &mut per_len);
+        for indices in per_len {
+            if indices.len() == len {
+                result.push(indices);
+            }
+        }
+    }
 
     result
         .into_iter()
@@ -1376,10 +1389,12 @@ mod tests {
 
     #[test]
     fn test_from_cfl_factorization() {
+        // The unique Chen-Fox-Lyndon factorization of 010011 is [01, 0011]
+        // (a non-increasing sequence of Lyndon words). [01, 001, 1] is NOT a
+        // valid CFL because it is not non-increasing (001 < 1).
         let factors = vec![
             Word::new(vec![0, 1]),
-            Word::new(vec![0, 0, 1]),
-            Word::new(vec![1]),
+            Word::new(vec![0, 0, 1, 1]),
         ];
 
         let w = from_cfl_factorization(&factors);

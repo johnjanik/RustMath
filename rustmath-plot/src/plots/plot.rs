@@ -115,6 +115,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rustmath_colors::Color;
 
     #[test]
     fn test_plot_linear() {

@@ -159,9 +159,11 @@ impl ComplexChart {
     /// ∂u/∂x = ∂v/∂y and ∂u/∂y = -∂v/∂x
     /// where w = u + iv is the transition function in terms of z = x + iy
     pub fn is_holomorphic_transition(&self, _target: &ComplexChart) -> bool {
-        // TODO: Implement Cauchy-Riemann equation checking
         // This requires symbolic differentiation of transition functions
-        true // Assume holomorphic for now
+        unimplemented!(
+            "ComplexChart::is_holomorphic_transition not yet implemented (facade): requires \
+             checking the Cauchy-Riemann equations for the transition function"
+        )
     }
 }
 
@@ -326,13 +328,15 @@ impl HolomorphicFunction {
     }
 
     /// Evaluate the function at a point
-    pub fn eval_at(&self, point: &ManifoldPoint) -> Result<Complex> {
+    pub fn eval_at(&self, _point: &ManifoldPoint) -> Result<Complex> {
         // Find a chart containing this point and evaluate
         for chart in self.manifold.charts() {
-            if let Some(expr) = self.chart_expressions.get(chart.name()) {
-                // TODO: Evaluate complex expression
-                // For now, return a placeholder
-                return Ok(Complex::new(0.0, 0.0));
+            if self.chart_expressions.get(chart.name()).is_some() {
+                unimplemented!(
+                    "HolomorphicFunction::eval_at not yet implemented (facade): requires \
+                     substituting the point's coordinates into the complex expression and \
+                     evaluating"
+                )
             }
         }
         Err(ManifoldError::NoExpressionInChart)
@@ -340,15 +344,19 @@ impl HolomorphicFunction {
 
     /// Check if the function is holomorphic (satisfies Cauchy-Riemann equations)
     pub fn is_holomorphic(&self) -> bool {
-        // TODO: Check Cauchy-Riemann equations for all chart expressions
         // ∂u/∂x = ∂v/∂y and ∂u/∂y = -∂v/∂x
-        true // Assume holomorphic for now
+        unimplemented!(
+            "HolomorphicFunction::is_holomorphic not yet implemented (facade): requires \
+             checking the Cauchy-Riemann equations for all chart expressions"
+        )
     }
 
     /// Compute the complex derivative
-    pub fn derivative(&self, chart: &ComplexChart) -> Option<HolomorphicFunction> {
-        // TODO: Implement complex differentiation
-        None
+    pub fn derivative(&self, _chart: &ComplexChart) -> Option<HolomorphicFunction> {
+        unimplemented!(
+            "HolomorphicFunction::derivative not yet implemented (facade): requires complex \
+             differentiation of the chart expression"
+        )
     }
 }
 

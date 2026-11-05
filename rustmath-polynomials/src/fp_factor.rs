@@ -236,9 +236,42 @@ pub fn derivative_of(f: &[i64], p: i64) -> Vec<i64> {
     trim(&out)
 }
 
-/// Squarefree part of `f` — the radical, `f / gcd(f, f')`. The
-/// characteristic-`p` edge case (where `f' = 0` because all coefficients are
-/// `p`-th powers) returns the input unchanged.
+/// The `p`-th root of a polynomial whose formal derivative vanishes over
+/// `F_p`: `f' = 0` in characteristic `p` forces every exponent with a nonzero
+/// coefficient to be a multiple of `p`, so `f(x) = g(x^p)` — and over the
+/// *prime* field the coefficient `p`-th root is the identity (Fermat:
+/// `c^p = c`, so `c` is its own `p`-th root). Hence `g[i] = f[p*i]`.
+///
+/// Panics if some coefficient sits at an exponent not divisible by `p`
+/// (i.e. `f' != 0`), which would make the result meaningless.
+fn pth_root(f: &[i64], p: i64) -> Vec<i64> {
+    let f_t = trim(f);
+    let pu = p as usize;
+    let mut g = Vec::with_capacity(f_t.len() / pu + 1);
+    for (i, &c) in f_t.iter().enumerate() {
+        if i % pu == 0 {
+            g.push(c);
+        } else {
+            assert!(
+                c == 0,
+                "fp_factor::pth_root: input is not a polynomial in x^{p}"
+            );
+        }
+    }
+    trim(&g)
+}
+
+/// Radical of `f` over `F_p`: the product of the *distinct* monic irreducible
+/// factors of `f`, each exactly once (monic; constants map to `1`-like monic
+/// constants). This is what distinct-degree factorization needs as input.
+///
+/// Characteristic-`p` subtleties handled correctly (both were bugs before):
+/// * `f' = 0` means `f(x) = g(x^p)`; over the prime field `g`'s coefficients
+///   are `f`'s directly ([`pth_root`]), and `rad(f) = rad(g)` — recurse.
+/// * Even when `f' != 0`, factors whose multiplicity is divisible by `p`
+///   survive inside `gcd(f, f')` at *full* multiplicity, so `f / gcd(f, f')`
+///   alone misses them (e.g. `(x+1)^3 (x+2)` over `F_3` lost `x+1`). The
+///   `p`-power part is split off and recursed on.
 pub fn squarefree_factor(f: &[i64], p: i64) -> Vec<i64> {
     let f_m = make_monic(f, p);
     if degree(&f_m) <= 0 {
@@ -246,13 +279,33 @@ pub fn squarefree_factor(f: &[i64], p: i64) -> Vec<i64> {
     }
     let derivative = derivative_of(&f_m, p);
     if is_zero(&derivative) {
-        return f_m;
+        // f = g(x^p): same distinct irreducible factors as g.
+        return squarefree_factor(&pth_root(&f_m, p), p);
     }
     let g = gcd(&f_m, &derivative, p);
     if degree(&g) == 0 {
         return f_m;
     }
-    make_monic(&div_mod(&f_m, &g, p).0, p)
+    // With f = prod f_i^{e_i}: gcd(f, f') = prod_{p ∤ e_i} f_i^{e_i - 1}
+    //                                     * prod_{p | e_i} f_i^{e_i},
+    // so w := f / gcd(f, f') = prod_{p ∤ e_i} f_i (each once).
+    let w = make_monic(&div_mod(&f_m, &g, p).0, p);
+    // Strip every factor shared with w out of g; what remains is
+    // c = prod_{p | e_i} f_i^{e_i}, a perfect p-th power with c' = 0.
+    let mut c = g;
+    loop {
+        let y = gcd(&c, &w, p);
+        if degree(&y) <= 0 {
+            break;
+        }
+        c = make_monic(&div_mod(&c, &y, p).0, p);
+    }
+    if degree(&c) <= 0 {
+        return w;
+    }
+    // rad(f) = w * rad(c); the two parts share no irreducible factors
+    // (multiplicities not divisible by p vs. divisible by p).
+    mul(&w, &squarefree_factor(&c, p), p)
 }
 
 /// Distinct-degree factorization of a squarefree polynomial. Returns pairs
@@ -368,10 +421,12 @@ pub fn equal_degree_factor(f: &[i64], d: i64, p: i64) -> Vec<Vec<i64>> {
     vec![f_m]
 }
 
-/// Full irreducible factorization of `f` in `F_p[x]`. Squarefree
-/// factorization is performed first so repeated factors are coalesced
+/// Full irreducible factorization of `f` in `F_p[x]`. The radical
+/// ([`squarefree_factor`]) is computed first so repeated factors are coalesced
 /// (multiplicities are *not* tracked — every returned factor is distinct and
-/// monic).
+/// monic; use [`factor_with_multiplicity`] to recover exponents). Correct on
+/// inseparable inputs (`x^2 + 1` over `F_2`, `x^5 - 2` over `F_5`, ...) since
+/// the radical handles the characteristic-`p` cases.
 pub fn factor(f: &[i64], p: i64) -> Vec<Vec<i64>> {
     let f_m = make_monic(f, p);
     if degree(&f_m) <= 0 {
@@ -385,6 +440,34 @@ pub fn factor(f: &[i64], p: i64) -> Vec<Vec<i64>> {
         }
     }
     out
+}
+
+/// Irreducible factorization of `f` in `F_p[x]` *with multiplicities*:
+/// returns `(g_i, e_i)` pairs with each `g_i` monic irreducible and distinct,
+/// such that `prod g_i^{e_i}` equals `f` made monic. Multiplicities are found
+/// by repeated exact division of `f` by each distinct factor from [`factor`].
+pub fn factor_with_multiplicity(f: &[i64], p: i64) -> Vec<(Vec<i64>, u32)> {
+    let f_m = make_monic(f, p);
+    if degree(&f_m) <= 0 {
+        return Vec::new();
+    }
+    factor(&f_m, p)
+        .into_iter()
+        .map(|g| {
+            let mut mult = 0u32;
+            let mut rem = f_m.clone();
+            loop {
+                let (q, r) = div_mod(&rem, &g, p);
+                if !is_zero(&r) {
+                    break;
+                }
+                mult += 1;
+                rem = q;
+            }
+            debug_assert!(mult >= 1, "factor() returned a non-divisor");
+            (g, mult)
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -508,6 +591,103 @@ mod tests {
         // x^2 + x + 1 is irreducible over F_2.
         let irr = vec![1, 1, 1];
         assert_eq!(factor(&irr, p), vec![vec![1, 1, 1]]);
+    }
+
+    // Multiply factor^mult pairs mod p (monic) — for the self-certifying
+    // "product of returned factors equals the input" gate.
+    fn product_with_mult(factors: &[(Vec<i64>, u32)], p: i64) -> Vec<i64> {
+        let mut acc = vec![1i64];
+        for (f, m) in factors {
+            for _ in 0..*m {
+                acc = mul(&acc, f, p);
+            }
+        }
+        make_monic(&acc, p)
+    }
+
+    // Assert factor_with_multiplicity(f) == expected (sorted), plus the
+    // self-certifying product check, plus factor() giving the distinct parts.
+    fn check_factorization(f: &[i64], p: i64, expected: &[(&[i64], u32)]) {
+        let mut fac = factor_with_multiplicity(f, p);
+        fac.sort();
+        let mut exp: Vec<(Vec<i64>, u32)> =
+            expected.iter().map(|(g, m)| (g.to_vec(), *m)).collect();
+        exp.sort();
+        assert_eq!(fac, exp, "factorization of {f:?} mod {p}");
+        // Self-certifying: multiply everything back together.
+        assert_eq!(product_with_mult(&fac, p), make_monic(f, p));
+        // factor() returns exactly the distinct factors.
+        let mut distinct = factor(f, p);
+        distinct.sort();
+        let mut exp_distinct: Vec<Vec<i64>> = exp.iter().map(|(g, _)| g.clone()).collect();
+        exp_distinct.sort();
+        assert_eq!(distinct, exp_distinct);
+    }
+
+    #[test]
+    fn test_factor_inseparable_gf2() {
+        // gp: factormod(x^2+1, 2) = (x+1)^2 — the old code returned x^2+1 whole.
+        check_factorization(&[1, 0, 1], 2, &[(&[1, 1], 2)]);
+        // gp: factormod(x^4+x^2+1, 2) = (x^2+x+1)^2.
+        check_factorization(&[1, 0, 1, 0, 1], 2, &[(&[1, 1, 1], 2)]);
+    }
+
+    #[test]
+    fn test_factor_inseparable_gf5() {
+        // gp: factormod(x^5-2, 5) = (x+3)^5. (x-c)^5 = x^5 - c^5 = x^5 - c over
+        // F_5 by Fermat, so c = 2, i.e. the factor is x - 2 = x + 3.
+        check_factorization(&[3, 0, 0, 0, 0, 1], 5, &[(&[3, 1], 5)]);
+    }
+
+    #[test]
+    fn test_factor_inseparable_gf3() {
+        // gp: factormod(x^6+1, 3) = (x^2+1)^3 (x^2+1 irreducible over F_3).
+        check_factorization(&[1, 0, 0, 0, 0, 0, 1], 3, &[(&[1, 0, 1], 3)]);
+    }
+
+    #[test]
+    fn test_factor_p_divides_multiplicity_but_derivative_nonzero() {
+        // f = (x+1)^3 (x+2) over F_3 = x^4 + 2x^3 + x + 2 (gp-expanded); f' != 0
+        // but gcd(f, f') = (x+1)^3 swallows (x+1) entirely, so the old radical
+        // f/gcd(f,f') = x+2 silently LOST the factor x+1.
+        check_factorization(&[2, 1, 0, 2, 1], 3, &[(&[1, 1], 3), (&[2, 1], 1)]);
+        // gp: factormod of x^8+2x^7+x^6+x^5+2x^4+x^3+2x^2+x+2 over F_3
+        //   = (x+1)^2 (x^2+x+2)^3 — mixed p|e and p∤e multiplicities.
+        check_factorization(
+            &[2, 1, 2, 1, 2, 1, 1, 2, 1],
+            3,
+            &[(&[1, 1], 2), (&[2, 1, 1], 3)],
+        );
+    }
+
+    #[test]
+    fn test_factor_separable_regression_gp_derived() {
+        // Old behavior must be preserved exactly on separable inputs.
+        // gp: factormod(x^8+x^4+x^2+x+1, 7)
+        //   = (x^4+x^3+x^2+x+1)(x^4+6x^3+1).
+        check_factorization(
+            &[1, 1, 1, 0, 1, 0, 0, 0, 1],
+            7,
+            &[(&[1, 1, 1, 1, 1], 1), (&[1, 0, 0, 6, 1], 1)],
+        );
+        // gp: factormod(x^5+4x+1, 11) = (x+6)(x^2+2x+10)(x^2+3x+9).
+        check_factorization(
+            &[1, 4, 0, 0, 0, 1],
+            11,
+            &[(&[6, 1], 1), (&[10, 2, 1], 1), (&[9, 3, 1], 1)],
+        );
+    }
+
+    #[test]
+    fn test_squarefree_factor_is_the_radical() {
+        // rad((x+1)^3 (x+2)) = (x+1)(x+2) = x^2 + 2 mod 3... derive:
+        // (x+1)(x+2) = x^2 + 3x + 2 = x^2 + 2 over F_3.
+        let f = [2, 1, 0, 2, 1]; // (x+1)^3 (x+2) over F_3
+        assert_eq!(squarefree_factor(&f, 3), vec![2, 0, 1]);
+        // rad(x^6+1) over F_3 = x^2+1.
+        assert_eq!(squarefree_factor(&[1, 0, 0, 0, 0, 0, 1], 3), vec![1, 0, 1]);
+        // Separable input: radical is the input itself (monic).
+        assert_eq!(squarefree_factor(&[1, 1, 1], 5), vec![1, 1, 1]);
     }
 
     #[test]

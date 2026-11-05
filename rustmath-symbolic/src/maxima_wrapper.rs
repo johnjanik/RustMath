@@ -431,7 +431,9 @@ impl MaximaFunctionElementWrapper {
 /// let x = Symbol::new("x");
 /// let expr = Expr::Symbol(x).pow(Expr::from(2));
 /// let maxima_str = expr_to_maxima(&expr);
-/// assert_eq!(maxima_str, "x^2");
+/// // Binary operations are fully parenthesized to guarantee correct
+/// // precedence in the generated Maxima code.
+/// assert_eq!(maxima_str, "(x^2)");
 /// ```
 pub fn expr_to_maxima(expr: &Expr) -> String {
     match expr {

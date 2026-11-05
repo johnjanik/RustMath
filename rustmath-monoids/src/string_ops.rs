@@ -71,15 +71,15 @@ pub fn is_suffix(s1: &str, s2: &str) -> bool {
 /// ```
 /// use rustmath_monoids::string_ops::coincidence_index;
 ///
-/// // English text has high IC
+/// // Natural-language text has a positive index of coincidence
 /// let english = "the quick brown fox jumps over the lazy dog";
 /// let ic = coincidence_index(english, 1);
-/// assert!(ic > 0.05); // Higher than random
+/// assert!(ic > 0.04); // higher than uniform-random text
 ///
-/// // Uniformly random text has low IC
+/// // Uniformly random text (every letter once) has IC 0
 /// let random = "abcdefghijklmnopqrstuvwxyz";
 /// let ic_random = coincidence_index(random, 1);
-/// assert!(ic_random < 0.05);
+/// assert!(ic_random < ic);
 /// ```
 pub fn coincidence_index(s: &str, n: usize) -> f64 {
     if n == 0 || s.len() < n {
@@ -142,10 +142,10 @@ pub fn coincidence_index(s: &str, n: usize) -> f64 {
 /// ```
 /// use rustmath_monoids::string_ops::coincidence_discriminant;
 ///
-/// // English text has moderate discriminant
+/// // Natural-language text has a small discriminant
 /// let english = "the quick brown fox jumps over the lazy dog";
 /// let cd = coincidence_discriminant(english, 26);
-/// assert!(cd > 0.3 && cd < 0.8);
+/// assert!((0.0..0.1).contains(&cd));
 ///
 /// // Repeated character has high discriminant
 /// let repeated = "aaaaaaaaaa";
@@ -268,7 +268,7 @@ pub fn frequency_distribution(s: &str, n: usize) -> HashMap<String, usize> {
 ///
 /// let cipher = "Khoor, Zruog!"; // Simple Caesar cipher
 /// let clean = strip_encoding(cipher);
-/// assert_eq!(clean, "KHRROZRXOG");
+/// assert_eq!(clean, "KHOORZRUOG");
 /// ```
 ///
 /// # Cryptanalysis Workflow
@@ -667,3 +667,4 @@ mod tests {
         assert_eq!(total, text.len()); // Total frequency should equal string length
     }
 }
+

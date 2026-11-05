@@ -2,25 +2,16 @@
 //!
 //! Defines the fundamental traits used across all algebra implementations.
 
-use rustmath_core::{Ring, MathError, Result};
-use std::fmt::{Debug, Display};
+use rustmath_core::{Ring, Result};
+use std::fmt::Debug;
 
-/// An algebra over a ring R
+/// The canonical `Algebra` trait now lives in `rustmath-core`; this re-export
+/// keeps the historical paths `rustmath_algebras::Algebra` and
+/// `rustmath_algebras::traits::Algebra` working.
 ///
-/// An algebra is a ring that is also a module over a base ring R,
-/// with compatibility between the ring structure and the module structure.
-pub trait Algebra<R: Ring>: Ring {
-    /// The base ring over which this algebra is defined
-    fn base_ring() -> R;
-
-    /// Scalar multiplication by an element of the base ring
-    fn scalar_mul(&self, scalar: &R) -> Self;
-
-    /// The dimension of the algebra (if finite dimensional)
-    fn dimension() -> Option<usize> {
-        None
-    }
-}
+/// Note the methods are instance methods: `base_ring(&self)` (defaulted to
+/// `R::zero()`), `scalar_mul(&self, &R)`, and `dimension(&self)`.
+pub use rustmath_core::Algebra;
 
 /// An algebra with a basis (finite dimensional)
 pub trait AlgebraWithBasis<R: Ring>: Algebra<R> {

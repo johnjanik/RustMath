@@ -623,7 +623,7 @@ mod tests {
 
         // Test empty sequence
         let seq = ShiftingSequence::empty();
-        assert_eq!(seq.components(), &[]);
+        assert!(seq.components().is_empty());
         assert!(seq.is_empty());
     }
 

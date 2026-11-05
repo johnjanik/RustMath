@@ -310,13 +310,13 @@ where
 mod tests {
     use super::*;
     use crate::with_basis::parent::FreeModuleWithBasis;
-    use num_bigint::BigInt;
+    use rustmath_integers::Integer as BigInt;
 
     #[test]
     fn test_homspace_creation() {
         let base_ring = BigInt::from(0);
-        let m = FreeModuleWithBasis::standard(base_ring.clone(), 2);
-        let n = FreeModuleWithBasis::standard(base_ring, 3);
+        let m = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 2);
+        let n = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         let hom = HomSpace::new(m, n);
 
@@ -327,8 +327,8 @@ mod tests {
     #[test]
     fn test_hom_basis_indices() {
         let base_ring = BigInt::from(0);
-        let m = FreeModuleWithBasis::standard(base_ring.clone(), 2);
-        let n = FreeModuleWithBasis::standard(base_ring, 2);
+        let m = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 2);
+        let n = FreeModuleWithBasis::<usize, _>::standard(base_ring, 2);
 
         let hom = HomSpace::new(m, n);
         let indices = hom.basis_indices();
@@ -345,8 +345,8 @@ mod tests {
     #[test]
     fn test_morphism_to_element_conversion() {
         let base_ring = BigInt::from(0);
-        let source = FreeModuleWithBasis::standard(base_ring.clone(), 2);
-        let target = FreeModuleWithBasis::standard(base_ring, 2);
+        let source = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 2);
+        let target = FreeModuleWithBasis::<usize, _>::standard(base_ring, 2);
 
         let hom = HomSpace::new(source.clone(), target.clone());
 
@@ -378,8 +378,8 @@ mod tests {
     #[test]
     fn test_zero_morphism() {
         let base_ring = BigInt::from(0);
-        let m = FreeModuleWithBasis::standard(base_ring.clone(), 2);
-        let n = FreeModuleWithBasis::standard(base_ring, 3);
+        let m = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 2);
+        let n = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         let hom = HomSpace::new(m.clone(), n);
 
@@ -394,8 +394,8 @@ mod tests {
     #[test]
     fn test_basis_morphism() {
         let base_ring = BigInt::from(0);
-        let m = FreeModuleWithBasis::standard(base_ring.clone(), 2);
-        let n = FreeModuleWithBasis::standard(base_ring, 3);
+        let m = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 2);
+        let n = FreeModuleWithBasis::<usize, _>::standard(base_ring, 3);
 
         let hom = HomSpace::new(m.clone(), n.clone());
 
@@ -416,8 +416,8 @@ mod tests {
     #[test]
     fn test_hom_module_operations() {
         let base_ring = BigInt::from(0);
-        let m = FreeModuleWithBasis::standard(base_ring.clone(), 2);
-        let n = FreeModuleWithBasis::standard(base_ring, 2);
+        let m = FreeModuleWithBasis::<usize, _>::standard(base_ring.clone(), 2);
+        let n = FreeModuleWithBasis::<usize, _>::standard(base_ring, 2);
 
         let hom = HomSpace::new(m, n);
 

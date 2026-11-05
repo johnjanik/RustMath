@@ -19,8 +19,12 @@ impl Interval {
     ///
     /// Panics if lower > upper
     pub fn new(lower: Real, upper: Real) -> Self {
+        // A NaN bound denotes an indeterminate interval (see `is_nan`); only
+        // enforce ordering when both bounds are actual numbers. (Pre-existing
+        // `test_is_nan` relied on this but the guard panicked on NaN.)
+        let (lo, up) = (lower.to_f64(), upper.to_f64());
         assert!(
-            lower.to_f64() <= upper.to_f64(),
+            lo.is_nan() || up.is_nan() || lo <= up,
             "Invalid interval: lower bound must be <= upper bound"
         );
         Interval { lower, upper }

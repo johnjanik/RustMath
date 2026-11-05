@@ -3,7 +3,7 @@
 //! This module provides symbolic sum computation for expressions.
 //! The sum ∑(v=a to b) f(v) represents the sum of f(v) over the range [a, b].
 
-use rustmath_core::NumericConversion;
+use rustmath_symbolic::simplify::simplify;
 use rustmath_symbolic::{BinaryOp, Expr};
 
 /// Algorithm for computing symbolic sums.
@@ -77,14 +77,15 @@ pub fn symbolic_sum(
             return Err("Sum range too large for direct evaluation".to_string());
         }
 
-        // Compute the sum directly
+        // Compute the sum directly, then fold constants so purely numeric
+        // sums evaluate to a single number (e.g. 1+2+3+4+5 -> 15).
         let mut result = Expr::from(0);
         for i in a_val..=b_val {
             let value = substitute_value(expression, v, i);
             result = result + value;
         }
 
-        return Ok(result);
+        return Ok(simplify(&result));
     }
 
     // For symbolic bounds, try pattern matching
@@ -124,6 +125,9 @@ pub fn formal_sum(expression: &Expr, v: &str, a: &Expr, b: &Expr) -> Expr {
 }
 
 /// Expands a sum into explicit addition for small finite ranges.
+///
+/// Constant subterms are folded, so a purely numeric sum evaluates to a
+/// single number while symbolic terms stay as an explicit sum.
 pub fn expand_sum(expression: &Expr, v: &str, a: i64, b: i64) -> Expr {
     if a > b {
         return Expr::from(0);
@@ -135,7 +139,7 @@ pub fn expand_sum(expression: &Expr, v: &str, a: i64, b: i64) -> Expr {
         result = result + term;
     }
 
-    result
+    simplify(&result)
 }
 
 // Helper functions

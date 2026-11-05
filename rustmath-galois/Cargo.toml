@@ -1,0 +1,21 @@
+[package]
+name = "rustmath-galois"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Galois groups of univariate polynomials over Q: exact low-degree resolvent classification, the Frobenius cycle-type sieve, and generic/degree-24 Stauduhar descent (MAGMA ch. 38 subset)"
+
+[dependencies]
+rustmath-core = { path = "../rustmath-core" }
+rustmath-integers = { path = "../rustmath-integers" }
+rustmath-rationals = { path = "../rustmath-rationals" }
+rustmath-polynomials = { path = "../rustmath-polynomials" }
+rustmath-groups = { path = "../rustmath-groups" }
+rustmath-numberfields = { path = "../rustmath-numberfields" }
+rustmath-finitefields = { path = "../rustmath-finitefields" }
+num-traits = { workspace = true }
+
+[features]
+default = []

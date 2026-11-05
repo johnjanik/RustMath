@@ -38,11 +38,15 @@ use std::marker::PhantomData;
 /// let L2: AbelianLieAlgebra<Integer> = AbelianLieAlgebra::new(3);
 ///
 /// // Define where generators map
-/// let mut images = HashMap::new();
+/// let mut images: HashMap<usize, AbelianLieAlgebraElement<Integer>> = HashMap::new();
 /// images.insert(0, AbelianLieAlgebraElement::basis_element(0, 3));
 /// images.insert(1, AbelianLieAlgebraElement::basis_element(1, 3));
 ///
-/// let morphism = LieAlgebraHomomorphism::new(2, 3, images);
+/// let morphism: LieAlgebraHomomorphism<
+///     Integer,
+///     AbelianLieAlgebraElement<Integer>,
+///     AbelianLieAlgebraElement<Integer>,
+/// > = LieAlgebraHomomorphism::new(2, 3, images);
 /// ```
 pub struct LieAlgebraHomomorphism<R: Ring, Domain, Codomain> {
     /// Dimension of the domain algebra

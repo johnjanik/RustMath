@@ -4,19 +4,19 @@
 //! between elliptic curves and modular forms via the modularity theorem
 
 use crate::curve::EllipticCurve;
-use num_bigint::BigInt;
-use num_traits::{Zero, One, ToPrimitive};
+use rustmath_core::NumericConversion;
+use rustmath_integers::Integer;
 use std::collections::HashMap;
 
 /// A cusp of a modular curve
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Cusp {
-    pub numerator: BigInt,
-    pub denominator: BigInt,
+    pub numerator: Integer,
+    pub denominator: Integer,
 }
 
 impl Cusp {
-    pub fn new(num: BigInt, den: BigInt) -> Self {
+    pub fn new(num: Integer, den: Integer) -> Self {
         Self {
             numerator: num,
             denominator: den,
@@ -25,15 +25,15 @@ impl Cusp {
 
     pub fn zero() -> Self {
         Self {
-            numerator: BigInt::zero(),
-            denominator: BigInt::one(),
+            numerator: Integer::zero(),
+            denominator: Integer::one(),
         }
     }
 
     pub fn infinity() -> Self {
         Self {
-            numerator: BigInt::one(),
-            denominator: BigInt::zero(),
+            numerator: Integer::one(),
+            denominator: Integer::zero(),
         }
     }
 }
@@ -41,14 +41,14 @@ impl Cusp {
 /// A modular form of level N and weight k
 #[derive(Debug, Clone)]
 pub struct ModularForm {
-    pub level: BigInt,
+    pub level: Integer,
     pub weight: u32,
     pub coefficients: HashMap<usize, i64>,
 }
 
 impl ModularForm {
     /// Create a new modular form
-    pub fn new(level: BigInt, weight: u32) -> Self {
+    pub fn new(level: Integer, weight: u32) -> Self {
         Self {
             level,
             weight,
@@ -151,7 +151,7 @@ impl ModularForm {
                 continue;
             }
 
-            let p_big = BigInt::from(p);
+            let p_big = Integer::from(p as u64);
             if curve.is_bad_prime(&p_big) {
                 continue;
             }
@@ -205,14 +205,14 @@ impl HeckeOperator {
 /// Modular curve X_0(N)
 #[derive(Debug, Clone)]
 pub struct ModularCurve {
-    pub level: BigInt,
+    pub level: Integer,
     pub genus: u32,
     pub cusps: Vec<Cusp>,
 }
 
 impl ModularCurve {
     /// Create a new modular curve of level N
-    pub fn new(level: BigInt) -> Self {
+    pub fn new(level: Integer) -> Self {
         let genus = Self::compute_genus(&level);
         let cusps = Self::compute_cusps(&level);
 
@@ -225,7 +225,7 @@ impl ModularCurve {
 
     /// Compute the genus of X_0(N)
     /// genus = 1 + (N/12) * ∏(1 - 1/p²) - (1/4)*e_2 - (1/3)*e_3 - (1/2)*ε_∞
-    fn compute_genus(level: &BigInt) -> u32 {
+    fn compute_genus(level: &Integer) -> u32 {
         let n = level.to_u64().unwrap_or(1);
 
         if n <= 1 {
@@ -244,14 +244,14 @@ impl ModularCurve {
     }
 
     /// Compute cusps of Γ_0(N)
-    fn compute_cusps(level: &BigInt) -> Vec<Cusp> {
+    fn compute_cusps(level: &Integer) -> Vec<Cusp> {
         let mut cusps = vec![Cusp::zero(), Cusp::infinity()];
 
         // Add cusps corresponding to divisors
         let n = level.to_u64().unwrap_or(1);
         for d in 2..n {
             if n % d == 0 {
-                cusps.push(Cusp::new(BigInt::from(d), BigInt::from(n / d)));
+                cusps.push(Cusp::new(Integer::from(d), Integer::from(n / d)));
             }
         }
 
@@ -297,14 +297,14 @@ impl ModularCurve {
 /// Newform space (space of primitive cusp forms)
 #[derive(Debug, Clone)]
 pub struct NewformSpace {
-    pub level: BigInt,
+    pub level: Integer,
     pub weight: u32,
     pub dimension: u32,
     pub newforms: Vec<ModularForm>,
 }
 
 impl NewformSpace {
-    pub fn new(level: BigInt, weight: u32) -> Self {
+    pub fn new(level: Integer, weight: u32) -> Self {
         let curve = ModularCurve::new(level.clone());
         let dimension = curve.dimension_cusp_forms(weight);
 
@@ -340,24 +340,24 @@ mod tests {
     #[test]
     fn test_cusp_creation() {
         let cusp = Cusp::zero();
-        assert_eq!(cusp.numerator, BigInt::zero());
-        assert_eq!(cusp.denominator, BigInt::one());
+        assert_eq!(cusp.numerator, Integer::zero());
+        assert_eq!(cusp.denominator, Integer::one());
 
         let inf = Cusp::infinity();
-        assert_eq!(inf.numerator, BigInt::one());
-        assert_eq!(inf.denominator, BigInt::zero());
+        assert_eq!(inf.numerator, Integer::one());
+        assert_eq!(inf.denominator, Integer::zero());
     }
 
     #[test]
     fn test_modular_form_creation() {
-        let form = ModularForm::new(BigInt::from(11), 2);
-        assert_eq!(form.level, BigInt::from(11));
+        let form = ModularForm::new(Integer::from(11), 2);
+        assert_eq!(form.level, Integer::from(11));
         assert_eq!(form.weight, 2);
     }
 
     #[test]
     fn test_modular_form_coefficients() {
-        let mut form = ModularForm::new(BigInt::from(11), 2);
+        let mut form = ModularForm::new(Integer::from(11), 2);
         form.set_coefficient(1, 1);
         form.set_coefficient(2, -2);
 
@@ -368,7 +368,7 @@ mod tests {
 
     #[test]
     fn test_q_expansion() {
-        let mut form = ModularForm::new(BigInt::from(11), 2);
+        let mut form = ModularForm::new(Integer::from(11), 2);
         form.set_coefficient(1, 1);
         form.set_coefficient(2, -2);
         form.set_coefficient(3, -1);
@@ -380,14 +380,14 @@ mod tests {
 
     #[test]
     fn test_modular_curve() {
-        let curve = ModularCurve::new(BigInt::from(11));
+        let curve = ModularCurve::new(Integer::from(11));
         assert_eq!(curve.genus, 1);
         assert!(!curve.cusps.is_empty());
     }
 
     #[test]
     fn test_hecke_operator() {
-        let mut form = ModularForm::new(BigInt::from(11), 2);
+        let mut form = ModularForm::new(Integer::from(11), 2);
         form.set_coefficient(1, 1);
 
         let hecke = HeckeOperator::new(2);
@@ -398,19 +398,19 @@ mod tests {
 
     #[test]
     fn test_newform_space() {
-        let space = NewformSpace::new(BigInt::from(11), 2);
+        let space = NewformSpace::new(Integer::from(11), 2);
         assert_eq!(space.weight, 2);
-        assert_eq!(space.level, BigInt::from(11));
+        assert_eq!(space.level, Integer::from(11));
     }
 
     #[test]
     fn test_modularity_verification() {
-        let curve_level = BigInt::from(11);
+        let curve_level = Integer::from(11);
         let modular_curve = ModularCurve::new(curve_level);
 
         let ec = EllipticCurve::from_short_weierstrass(
-            BigInt::from(-1),
-            BigInt::from(-1)
+            Integer::from(-1),
+            Integer::from(-1)
         );
 
         // This should find a form (or return None if not modular)

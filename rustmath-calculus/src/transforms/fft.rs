@@ -301,14 +301,21 @@ impl FourierTransformReal {
         );
 
         for k in 1..self.size / 2 {
-            let fk = input[k];
+            // Invert the forward unpacking. With X = spectrum, X' = X[N/2-k]:
+            //   F_even[k]       = (X[k] + conj(X'))/2
+            //   w^k * F_odd[k]  = (X[k] - conj(X'))/2,  w = e^{-2*pi*i/N}
+            // and the packed half-size spectrum is Z[k] = F_even[k] + i*F_odd[k].
+            let xk = input[k];
+            let xc = input[self.size / 2 - k].conj();
+
+            let f_even = (xk + xc) * Complex::new(0.5, 0.0);
+
+            // Undo the forward twiddle with its conjugate e^{+2*pi*i*k/N}
             let angle = 2.0 * PI * (k as f64) / (self.size as f64);
-            let w = Complex::new(angle.cos(), angle.sin());
+            let w_inv = Complex::new(angle.cos(), angle.sin());
+            let f_odd = w_inv * (xk - xc) * Complex::new(0.5, 0.0);
 
-            let f_even = fk;
-            let f_odd = input[self.size / 2 - k].conj();
-
-            packed[k] = f_even + w * f_odd;
+            packed[k] = f_even + Complex::new(0.0, 1.0) * f_odd;
         }
 
         // Inverse FFT

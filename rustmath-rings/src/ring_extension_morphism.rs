@@ -197,29 +197,29 @@ mod tests {
 
     #[test]
     fn test_extension_homomorphism() {
-        let _hom: RingExtensionHomomorphism<i32, i64, i32, f64> =
+        let _hom: RingExtensionHomomorphism<i32, i64, i32, i64> =
             RingExtensionHomomorphism::new("test hom".to_string());
     }
 
     #[test]
     fn test_backend_isomorphism() {
-        let _iso: RingExtensionBackendIsomorphism<i32, f64> =
+        let _iso: RingExtensionBackendIsomorphism<i32, i64> =
             RingExtensionBackendIsomorphism::new();
     }
 
     #[test]
     fn test_reverse_isomorphism() {
-        let _iso: RingExtensionBackendReverseIsomorphism<i32, f64> =
+        let _iso: RingExtensionBackendReverseIsomorphism<i32, i64> =
             RingExtensionBackendReverseIsomorphism::new();
     }
 
     #[test]
     fn test_free_module_to_ring_map() {
-        let _map: MapFreeModuleToRelativeRing<i32, f64> = MapFreeModuleToRelativeRing::new();
+        let _map: MapFreeModuleToRelativeRing<i32, i64> = MapFreeModuleToRelativeRing::new();
     }
 
     #[test]
     fn test_ring_to_free_module_map() {
-        let _map: MapRelativeRingToFreeModule<i32, f64> = MapRelativeRingToFreeModule::new();
+        let _map: MapRelativeRingToFreeModule<i32, i64> = MapRelativeRingToFreeModule::new();
     }
 }

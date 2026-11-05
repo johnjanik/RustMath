@@ -9,7 +9,11 @@ use rustmath_interfaces::gap::GapInterface;
 use rustmath_interfaces::gap_parser::*;
 use rustmath_interfaces::gap_permutation::GapPermutationGroup;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+// NOTE: `use ...gap_parser::*` glob-imports the crate's `Result<T>` alias
+// (= std::result::Result<T, ParseError>), which shadows the standard `Result`.
+// Spell out the std path here so the return type keeps two type arguments and
+// `?` on any error type (GapError, ParseError, ...) converts into the boxed error.
+fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     println!("RustMath GAP Interface Demo\n");
 
     // Check if GAP is available

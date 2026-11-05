@@ -70,6 +70,11 @@
 //! ```
 
 pub mod methods;
+pub mod nonlinear_system;
 
 // Re-export commonly used functions
 pub use methods::{find_root, bisection, newton_raphson, secant, RootResult};
+pub use nonlinear_system::{
+    classify_candidate, levenberg_marquardt, newton_system, NewtonConfig, NewtonSystemResult,
+    RootClass,
+};

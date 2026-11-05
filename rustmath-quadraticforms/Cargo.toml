@@ -16,5 +16,6 @@ rustmath-rationals = { path = "../rustmath-rationals" }
 rustmath-matrix = { path = "../rustmath-matrix" }
 itertools = "0.12"
 rayon.workspace = true
+thiserror.workspace = true
 
 [dev-dependencies]

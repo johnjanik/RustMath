@@ -428,7 +428,7 @@ mod tests {
         assert_eq!(y1, Rational::one());
 
         // At t = 1/2: should be (1/2, 1/2)
-        let half = Rational::new(1, 2);
+        let half = Rational::new(1, 2).unwrap();
         let (xh, yh) = line.evaluate(&half);
         assert_eq!(xh, half);
         assert_eq!(yh, half);

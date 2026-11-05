@@ -560,7 +560,7 @@ mod tests {
 
     #[test]
     fn test_representation_by_morphism_creation() {
-        let mut matrices = HashMap::new();
+        let mut matrices: HashMap<usize, Matrix<Integer>> = HashMap::new();
 
         // Identity matrix for first basis element
         let id = Matrix::identity(2);
@@ -578,11 +578,17 @@ mod tests {
         let mut matrices = HashMap::new();
 
         // Simple 2x2 matrix
-        let mat_data = vec![
-            vec![Integer::from(1), Integer::from(0)],
-            vec![Integer::from(0), Integer::from(2)],
-        ];
-        let mat = Matrix::from_rows(&mat_data);
+        let mat = Matrix::from_vec(
+            2,
+            2,
+            vec![
+                Integer::from(1),
+                Integer::from(0),
+                Integer::from(0),
+                Integer::from(2),
+            ],
+        )
+        .unwrap();
         matrices.insert(0, mat);
 
         let rep = RepresentationByMorphism::new(2, 1, matrices).unwrap();
@@ -597,7 +603,7 @@ mod tests {
 
     #[test]
     fn test_faithful_nilpotent_pbw() {
-        let mut matrices = HashMap::new();
+        let mut matrices: HashMap<usize, Matrix<Integer>> = HashMap::new();
         matrices.insert(0, Matrix::identity(2));
 
         let rep = FaithfulRepresentationNilpotentPBW::new(1, 2, matrices, false);
@@ -609,7 +615,7 @@ mod tests {
 
     #[test]
     fn test_faithful_pos_char() {
-        let mut matrices = HashMap::new();
+        let mut matrices: HashMap<usize, Matrix<Integer>> = HashMap::new();
         matrices.insert(0, Matrix::identity(2));
 
         let rep = FaithfulRepresentationPBWPosChar::new(1, 2, matrices, 5);

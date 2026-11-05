@@ -1,6 +1,11 @@
 //! # Developing Valuation
 //!
 //! Intermediate valuations in the MacLane algorithm
+//!
+//! > **Superseded**: this type is an empty facade (`value` is
+//! > `unimplemented!`). The real intermediate valuations of the MacLane
+//! > algorithm are [`crate::valuation::maclane::InductiveValuation`]
+//! > (Gauss + verified augmentations, exact rational values).
 
 use super::valuation::{DiscretePseudoValuation, ValuationValue};
 use rustmath_core::Ring;
@@ -25,10 +30,9 @@ impl<R: Ring> Default for DevelopingValuation<R> {
 
 impl<R: Ring> DiscretePseudoValuation<R> for DevelopingValuation<R> {
     fn value(&self, element: &R) -> ValuationValue {
-        if element.is_zero() {
-            ValuationValue::Infinity
-        } else {
-            ValuationValue::Finite(0)
-        }
+        let _ = element;
+        unimplemented!(
+            "rustmath_rings::valuation::developing_valuation::DevelopingValuation::value: MacLane developing valuation not yet implemented (facade)"
+        )
     }
 }

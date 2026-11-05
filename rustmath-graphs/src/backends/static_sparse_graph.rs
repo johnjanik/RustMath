@@ -13,6 +13,15 @@ use std::collections::{HashMap, HashSet, VecDeque};
 /// The spectral radius is the largest eigenvalue (in absolute value) of the adjacency matrix.
 /// This implementation uses the power iteration method for approximation.
 ///
+/// This is the `f64` power-iteration path deliberately kept for this backend:
+/// `SparseGraph` (CSR-style) is the representation used for large graphs, and
+/// power iteration is `O(iterations * |E|)`, versus exact root search which
+/// needs an `O(n^3)`-ish charpoly plus a search over `[-Δ, Δ]` integer
+/// candidates. For small graphs where an exact answer over `Z` is wanted,
+/// convert to `crate::graph::Graph` and use
+/// `crate::exact_spectra::spectral_radius_exact`, which returns the exact
+/// `Integer` spectral radius when the graph is integral (`None` otherwise).
+///
 /// Corresponds to sage.graphs.base.static_sparse_graph.spectral_radius
 pub fn spectral_radius(graph: &SparseGraph, iterations: usize) -> f64 {
     let n = graph.num_vertices();

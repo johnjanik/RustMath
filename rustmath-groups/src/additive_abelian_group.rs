@@ -344,6 +344,24 @@ impl AdditiveAbelianGroup {
         AdditiveAbelianGroupElement::new(vec![0; self.rank()], self.clone()).unwrap()
     }
 
+    /// Create an element of this group from a coordinate vector
+    ///
+    /// The coordinates are reduced modulo the invariant factors. Panics if the
+    /// number of coordinates does not match the group's rank.
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_groups::additive_abelian_group::additive_abelian_group;
+    ///
+    /// let g = additive_abelian_group(vec![5]).unwrap();
+    /// let e = g.element(vec![7]); // reduced to 2 mod 5
+    /// assert_eq!(e.coordinates(), &[2]);
+    /// ```
+    pub fn element(&self, coordinates: Vec<i64>) -> AdditiveAbelianGroupElement {
+        AdditiveAbelianGroupElement::new(coordinates, self.clone())
+            .expect("coordinate vector length must match the group rank")
+    }
+
     /// Create a generator
     pub fn gen(&self, i: usize) -> Result<AdditiveAbelianGroupElement, String> {
         if i >= self.rank() {

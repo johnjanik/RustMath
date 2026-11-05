@@ -25,8 +25,18 @@
 //!
 //! // Create a rational function element
 //! let elem = FunctionFieldElement::new(/* numerator */, /* denominator */);
-//! assert!(is_FunctionFieldElement(&elem));
+//! assert!(is_function_field_element(&elem));
 //! ```
+//!
+//! # DEPRECATED
+//!
+//! `FunctionFieldElement` here stores a *string* and its arithmetic merely
+//! concatenates text. Use
+//! [`crate::function_field::typed::RationalFunction`], which is a real
+//! element of K(x) (normalized numerator/denominator polynomials with full
+//! `Field` arithmetic).
+
+#![allow(deprecated)]
 
 use rustmath_core::{Ring, Field};
 use std::fmt;
@@ -45,6 +55,9 @@ use std::marker::PhantomData;
 ///
 /// This is currently implemented as a wrapper around polynomial-based rational
 /// functions. More sophisticated implementations would handle algebraic extensions.
+#[deprecated(
+    note = "string-typed facade whose arithmetic concatenates text; use crate::function_field::typed::RationalFunction"
+)]
 #[derive(Clone, Debug)]
 pub struct FunctionFieldElement<F: Field> {
     /// Representation as a rational function (stored as string for now)
@@ -249,7 +262,7 @@ impl<F: Field> std::ops::Neg for FunctionFieldElement<F> {
 
 /// Type checking: determine if an object is a FunctionFieldElement
 ///
-/// This function corresponds to SageMath's `is_FunctionFieldElement`.
+/// This function corresponds to SageMath's `is_function_field_element`.
 ///
 /// # Arguments
 ///
@@ -267,7 +280,7 @@ impl<F: Field> std::ops::Neg for FunctionFieldElement<F> {
 /// use rustmath_rationals::Rational;
 ///
 /// let elem = FunctionFieldElement::<Rational>::one();
-/// assert!(is_FunctionFieldElement(&elem));
+/// assert!(is_function_field_element(&elem));
 /// ```
 pub fn is_function_field_element<F: Field>(x: &FunctionFieldElement<F>) -> bool {
     // In Rust, type checking is done at compile time
@@ -276,7 +289,7 @@ pub fn is_function_field_element<F: Field>(x: &FunctionFieldElement<F>) -> bool 
 
 /// Create a function field element
 ///
-/// This function corresponds to SageMath's `make_FunctionFieldElement`.
+/// This function corresponds to SageMath's `make_function_field_element`.
 /// It's a convenience constructor for creating function field elements.
 ///
 /// # Arguments
@@ -294,7 +307,7 @@ pub fn is_function_field_element<F: Field>(x: &FunctionFieldElement<F>) -> bool 
 /// use rustmath_rings::function_field_element::*;
 /// use rustmath_rationals::Rational;
 ///
-/// let elem = make_FunctionFieldElement::<Rational, _>((), "x^2 + 1".to_string());
+/// let elem = make_function_field_element::<Rational, _>((), "x^2 + 1".to_string());
 /// ```
 pub fn make_function_field_element<F: Field, P>(
     _parent: P,
@@ -306,6 +319,9 @@ pub fn make_function_field_element<F: Field, P>(
 /// Function field over a base field
 ///
 /// Represents a function field structure (the field of fractions of a polynomial ring).
+#[deprecated(
+    note = "string-typed facade; use crate::function_field::typed::RationalFunctionField"
+)]
 #[derive(Clone, Debug)]
 pub struct FunctionField<F: Field> {
     /// The base field
@@ -378,12 +394,12 @@ mod tests {
     #[test]
     fn test_is_function_field_element() {
         let elem = FunctionFieldElement::<Rational>::one();
-        assert!(is_FunctionFieldElement(&elem));
+        assert!(is_function_field_element(&elem));
     }
 
     #[test]
     fn test_make_function_field_element() {
-        let elem = make_FunctionFieldElement::<Rational, _>((), "x + 1".to_string());
+        let elem = make_function_field_element::<Rational, _>((), "x + 1".to_string());
         assert_eq!(elem.representation(), "x + 1");
     }
 

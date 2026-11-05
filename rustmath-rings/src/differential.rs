@@ -120,8 +120,10 @@ impl<F: Field> FunctionFieldDifferential<F> {
     ///
     /// * `place` - The place (as string identifier)
     pub fn valuation(&self, place: &str) -> i64 {
-        // Placeholder: would compute actual valuation
-        0
+        let _ = place;
+        unimplemented!(
+            "rustmath_rings::differential::FunctionFieldDifferential::valuation: order v_P(ω) of a differential at a place not yet implemented (facade)"
+        )
     }
 
     /// Compute the residue at a place
@@ -142,8 +144,9 @@ impl<F: Field> FunctionFieldDifferential<F> {
     /// A differential ω is exact if ω = df for some f.
     /// Exact differentials have residue 0 at all places.
     pub fn is_exact(&self) -> bool {
-        // Placeholder: would check exactness
-        false
+        unimplemented!(
+            "rustmath_rings::differential::FunctionFieldDifferential::is_exact: exactness test (ω = df) not yet implemented (facade)"
+        )
     }
 
     /// Check if this is logarithmic
@@ -151,8 +154,9 @@ impl<F: Field> FunctionFieldDifferential<F> {
     /// A differential is logarithmic if it has the form df/f.
     /// Logarithmic differentials are stable under the Cartier operator.
     pub fn is_logarithmic(&self) -> bool {
-        // Placeholder: would check if ω = df/f
-        false
+        unimplemented!(
+            "rustmath_rings::differential::FunctionFieldDifferential::is_logarithmic: logarithmic test (ω = df/f) not yet implemented (facade)"
+        )
     }
 
     /// Apply the Cartier operator (for characteristic p > 0)
@@ -163,8 +167,9 @@ impl<F: Field> FunctionFieldDifferential<F> {
     /// - C(logarithmic differentials) are stable
     /// - C is p-linear
     pub fn cartier(&self) -> Self {
-        // Placeholder: Cartier operator computation
-        FunctionFieldDifferential::zero(self.variable.clone())
+        unimplemented!(
+            "rustmath_rings::differential::FunctionFieldDifferential::cartier: Cartier operator C(ω) not yet implemented (facade)"
+        )
     }
 
     /// Multiply by a function field element (scalar multiplication)
@@ -600,6 +605,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented; needs real algorithm (Phase 4)"]
     fn test_valuation() {
         let omega = FunctionFieldDifferential::<Rational>::new("x^2".to_string(), "x".to_string());
         let val = omega.valuation("P");
@@ -618,6 +624,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "facade -> unimplemented; needs real algorithm (Phase 4)"]
     fn test_cartier_operator() {
         let omega = FunctionFieldDifferential::<Rational>::new("x".to_string(), "x".to_string());
         let cartier = omega.cartier();

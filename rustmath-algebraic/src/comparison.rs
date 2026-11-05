@@ -14,6 +14,15 @@ use std::cmp::Ordering;
 ///
 /// # Returns
 /// true if a and b represent the same algebraic number
+///
+/// # Caveat
+/// See [`AlgebraicNumber`]'s `PartialEq` impl: this is conservative for
+/// non-rational values (may return `false` for two values that are actually
+/// equal), which is the opposite risk profile from
+/// [`AlgebraicReal`]'s `sign`/`cmp`/`eq` (which can, in the worst case,
+/// return `true` for two distinct-but-close values). `true` here can be
+/// trusted; `false` cannot be taken as a certified proof of inequality for
+/// non-rational values.
 pub fn algebraic_eq(a: &AlgebraicNumber, b: &AlgebraicNumber) -> bool {
     a == b
 }
@@ -26,21 +35,47 @@ pub fn algebraic_eq(a: &AlgebraicNumber, b: &AlgebraicNumber) -> bool {
 ///
 /// # Returns
 /// Ordering::Less if a < b, Ordering::Equal if a = b, Ordering::Greater if a > b
+///
+/// # Caveat
+/// Thin wrapper around [`AlgebraicReal::cmp`], which is a **best-effort**
+/// decision procedure, not a certified one: for a genuinely-undecidable-equal
+/// pair of *distinct* values whose difference cannot be separated from zero
+/// within its iteration budget, it reports `Ordering::Equal`. See
+/// `AlgebraicReal::sign`/`Ord::cmp` for the full caveat.
 pub fn algebraic_compare(a: &AlgebraicReal, b: &AlgebraicReal) -> Ordering {
     a.cmp(b)
 }
 
 /// Check if an algebraic real is positive
+///
+/// # Caveat
+/// See [`AlgebraicReal::sign`]: for values indistinguishable from zero
+/// within the refinement iteration budget, this is a best-effort `false`,
+/// not a certified proof of non-positivity.
 pub fn is_positive(a: &AlgebraicReal) -> bool {
     a.sign() > 0
 }
 
 /// Check if an algebraic real is negative
+///
+/// # Caveat
+/// See [`AlgebraicReal::sign`]: for values indistinguishable from zero
+/// within the refinement iteration budget, this is a best-effort `false`,
+/// not a certified proof of non-negativity.
 pub fn is_negative(a: &AlgebraicReal) -> bool {
     a.sign() < 0
 }
 
 /// Check if an algebraic real is zero
+///
+/// # Caveat
+/// Unlike `sign()`, this delegates to `AlgebraicReal::is_zero`, which only
+/// recognizes zero when the value simplifies to the exact rational `0` (it
+/// does *not* run interval refinement). It is therefore conservative in the
+/// opposite direction from the `sign()`/`cmp()` best-effort-zero caveat: it
+/// can return `false` for a composite expression that `sign()` would
+/// (correctly, or via the best-effort fallback) report as zero. It never
+/// returns `true` for a nonzero value.
 pub fn is_zero(a: &AlgebraicReal) -> bool {
     a.is_zero()
 }

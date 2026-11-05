@@ -4,6 +4,7 @@
 
 use crate::differentiation::differentiate;
 use crate::limits::substitute;
+use rustmath_symbolic::simplify::simplify;
 use rustmath_symbolic::Expr;
 
 /// Compute the Taylor series expansion of an expression
@@ -62,7 +63,8 @@ pub fn taylor(expr: &Expr, var: &str, point: &Expr, order: usize) -> Expr {
         }
     }
 
-    result
+    // Fold constants and drop vanishing terms (0 * x^k, 42 + 0, ...)
+    simplify(&result)
 }
 
 /// Compute the Maclaurin series expansion (Taylor series around 0)
@@ -189,7 +191,9 @@ pub fn series_coefficients(
             deriv_at_point / Expr::from(factorial)
         };
 
-        coefficients.push(coeff);
+        // Fold constants so numeric coefficients come out canonical
+        // (e.g. (1 / 1) -> 1, (0 / 2) -> 0).
+        coefficients.push(simplify(&coeff));
 
         // Compute next derivative and factorial
         if n < order {

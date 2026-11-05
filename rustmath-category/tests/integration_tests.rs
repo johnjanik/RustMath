@@ -92,7 +92,7 @@ fn test_ring_morphism_composition() {
 #[test]
 fn test_coercion_path_discovery() {
     // Create a coercion map with standard coercions
-    let map = standard::create_standard_coercions();
+    let map = rustmath_category::coercion::standard::create_standard_coercions();
 
     // Verify basic coercions exist
     assert!(map.has_coercion::<i32, i64>());
@@ -205,15 +205,15 @@ fn test_morphism_path_composition() {
 #[test]
 fn test_standard_ring_morphisms() {
     // Test identity ring morphism
-    let id_morph = standard::identity_ring_morphism(42);
+    let id_morph = rustmath_category::algebraic_morphisms::standard::identity_ring_morphism(42);
     assert_eq!(id_morph.apply(&42), 42);
 
     // Test zero morphism
-    let zero_morph = standard::zero_ring_morphism(1, 2, 0);
+    let zero_morph = rustmath_category::algebraic_morphisms::standard::zero_ring_morphism(1, 2, 0);
     assert_eq!(zero_morph.apply(&100), 0);
 
     // Test inclusion morphism
-    let incl = standard::inclusion_morphism(0, 0);
+    let incl = rustmath_category::algebraic_morphisms::standard::inclusion_morphism(0, 0);
     assert_eq!(incl.apply(&42), 42);
 }
 
@@ -224,7 +224,7 @@ fn test_ring_constructions() {
     assert_eq!(qr.base_ring(), &0);
 
     // Test product ring construction
-    let pr = constructions::ProductRing::new(0i32, 0.0f64);
+    let pr = constructions::ProductRing::new(0i32, 0i64);
     assert_eq!(pr.first_ring(), &0);
 
     // Test matrix ring construction

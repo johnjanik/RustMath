@@ -471,9 +471,10 @@ mod tests {
 
     #[test]
     fn test_product_ring_construction() {
-        let pr = constructions::ProductRing::new(0i32, 0.0f64);
-        assert_eq!(pr.first_ring(), &0);
-        assert_eq!(pr.second_ring(), &0.0);
+        // Product of two distinct ring types R = i32, S = i64 (f64 is not a Ring).
+        let pr = constructions::ProductRing::new(0i32, 0i64);
+        assert_eq!(pr.first_ring(), &0i32);
+        assert_eq!(pr.second_ring(), &0i64);
     }
 
     #[test]

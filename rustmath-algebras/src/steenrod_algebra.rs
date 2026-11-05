@@ -27,8 +27,7 @@
 //! # Examples
 //!
 //! ```
-//! use rustmath_algebras::steenrod_algebra::{SteenrodAlgebra, SteenrodElement, SteenrodSquare};
-//! use rustmath_finitefields::FiniteField;
+//! use rustmath_algebras::steenrod_algebra::SteenrodAlgebra;
 //!
 //! // Create mod 2 Steenrod algebra
 //! let steenrod = SteenrodAlgebra::mod_two();
@@ -38,7 +37,7 @@
 //! let sq2 = steenrod.sq(2);
 //!
 //! // Compose operations (multiplication in the algebra)
-//! let composed = sq1.multiply(&sq2);
+//! let composed = sq1.naive_multiply(&sq2);
 //! ```
 
 use rustmath_core::Ring;

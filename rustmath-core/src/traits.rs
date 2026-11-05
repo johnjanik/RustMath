@@ -192,8 +192,36 @@ pub trait VectorSpace<F: Field>: Module<F> {
     fn dimension() -> Option<usize>;
 }
 
-/// An algebra over a field (vector space with multiplication)
-pub trait Algebra<F: Field>: VectorSpace<F> + Ring {}
+/// An algebra over a base ring `R`.
+///
+/// An algebra is a ring `A` equipped with a compatible `R`-module structure
+/// (scalar multiplication by elements of the base ring), such that
+/// `(r · a) * b = r · (a * b) = a * (r · b)`.
+///
+/// This is the canonical `Algebra` trait for the whole workspace
+/// (`rustmath-algebras` re-exports it; the former duplicates in
+/// `rustmath-algebras::traits` and `rustmath-rings::ring` are gone).
+///
+/// In RustMath's element-typed trait system the base ring is identified by
+/// the type parameter `R`; `base_ring` returns a canonical representative
+/// element of it (by default `R::zero()`).
+pub trait Algebra<R: Ring>: Ring {
+    /// A canonical representative element of the base ring.
+    ///
+    /// Defaults to `R::zero()`; parent-aware implementations that carry a
+    /// runtime base ring should override this.
+    fn base_ring(&self) -> R {
+        R::zero()
+    }
+
+    /// Scalar multiplication by an element of the base ring
+    fn scalar_mul(&self, scalar: &R) -> Self;
+
+    /// The dimension of the algebra as an `R`-module, if finite and known
+    fn dimension(&self) -> Option<usize> {
+        None
+    }
+}
 
 /// Trait for types that can be converted to/from standard Rust numeric types
 pub trait NumericConversion {

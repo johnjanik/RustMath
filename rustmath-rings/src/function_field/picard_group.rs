@@ -633,8 +633,8 @@ mod tests {
 
     #[test]
     fn test_divisor_class_addition() {
-        let class1 = DivisorClass::new(Divisor::from_point("P".to_string(), 1));
-        let class2 = DivisorClass::new(Divisor::from_point("Q".to_string(), 1));
+        let class1 = DivisorClass::new(Divisor::<Rational>::from_point("P".to_string(), 1));
+        let class2 = DivisorClass::new(Divisor::<Rational>::from_point("Q".to_string(), 1));
         let sum = class1.add(&class2);
 
         assert_eq!(sum.degree(), 2);

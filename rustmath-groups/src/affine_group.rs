@@ -401,7 +401,8 @@ mod tests {
     fn test_identity() {
         let id: AffineGroupElement<Integer> = AffineGroupElement::identity(3);
         assert_eq!(id.dimension(), 3);
-        assert_eq!(id.vector(), &[Integer::from(0); 3]);
+        // `Integer` is not `Copy`, so build the zero vector with `vec!`.
+        assert_eq!(id.vector(), vec![Integer::from(0); 3].as_slice());
     }
 
     #[test]
@@ -421,7 +422,7 @@ mod tests {
         assert!(linear.is_ok());
         let linear = linear.unwrap();
         assert_eq!(linear.dimension(), 2);
-        assert_eq!(linear.vector(), &[Integer::from(0); 2]);
+        assert_eq!(linear.vector(), vec![Integer::from(0); 2].as_slice());
     }
 
     #[test]

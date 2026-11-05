@@ -69,6 +69,12 @@ pub mod local_densities;
 pub mod genus_theory;
 pub mod advanced;
 
+// Genus-0 conic / Brauer-class reader (ported from dessin_engine).
+pub mod hilbert;
+pub mod ternary;
+pub mod conic;
+pub mod quaternion;
+
 pub use quadratic_form::QuadraticForm;
 pub use theta_series::{ThetaSeries, ThetaModularProperties};
 pub use local_densities::LocalDensities;

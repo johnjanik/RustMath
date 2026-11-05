@@ -663,7 +663,7 @@ mod tests {
 
         let subsets = all_k_subsets(3, 0);
         assert_eq!(subsets.len(), 1); // C(3,0) = 1
-        assert_eq!(subsets[0], vec![]);
+        assert!(subsets[0].is_empty());
     }
 
     #[test]

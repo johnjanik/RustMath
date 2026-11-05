@@ -47,8 +47,11 @@ impl CartanMatrix {
     /// assert_eq!(cm.rank(), 3);
     /// ```
     pub fn new(cartan_type: CartanType) -> Self {
-        let rank = cartan_type.rank;
         let matrix = Self::construct_matrix(&cartan_type);
+        // The rank is the dimension of the Cartan matrix. For finite types this
+        // equals the finite rank; for affine types the matrix is (n+1)×(n+1),
+        // reflecting the extra affine node.
+        let rank = matrix.len();
 
         CartanMatrix {
             cartan_type,
@@ -294,7 +297,7 @@ impl CartanMatrix {
         let mut matrix = Self::cartan_matrix_c(n);
 
         // Add affine node
-        matrix.push(vec![Integer::zero(); n]);
+        matrix.push(vec![Integer::zero(); size]);
         for row in &mut matrix[0..n] {
             row.push(Integer::zero());
         }
@@ -312,7 +315,7 @@ impl CartanMatrix {
         let mut matrix = Self::cartan_matrix_d(n);
 
         // Add affine node
-        matrix.push(vec![Integer::zero(); n]);
+        matrix.push(vec![Integer::zero(); size]);
         for row in &mut matrix[0..n] {
             row.push(Integer::zero());
         }
@@ -330,7 +333,7 @@ impl CartanMatrix {
         let mut matrix = Self::cartan_matrix_e(n);
 
         // Add affine node
-        matrix.push(vec![Integer::zero(); n]);
+        matrix.push(vec![Integer::zero(); size]);
         for row in &mut matrix[0..n] {
             row.push(Integer::zero());
         }

@@ -637,6 +637,10 @@ mod tests {
         }
     }
 
+    // Opt SimpleElement into the category-aware element methods (powers,
+    // commutes_with, centralizer_in, ...). All are provided as trait defaults.
+    impl GroupElementMethods for SimpleElement {}
+
     #[derive(Clone, Debug)]
     struct SimpleGroup;
 

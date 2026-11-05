@@ -79,31 +79,48 @@ impl ComplexMPFR {
         }
     }
 
-    /// Create a new ComplexMPFR with specified precision from RealMPFR values
+    /// Create a new ComplexMPFR from RealMPFR values, at the larger of the
+    /// two parts' precisions (lossless).
     pub fn with_val_reals(real: RealMPFR, imag: RealMPFR) -> Self {
         let prec = real.precision().max(imag.precision());
-        // Extract the underlying rug::Float values
-        let real_f64 = real.to_f64();
-        let imag_f64 = imag.to_f64();
+        // Use the underlying rug::Float values directly. (A previous version
+        // round-tripped through f64, silently truncating both parts to 53
+        // bits — precision-loss bug.)
         ComplexMPFR {
-            value: RugComplex::with_val(prec, (real_f64, imag_f64)),
+            value: RugComplex::with_val(prec, (real.as_float().clone(), imag.as_float().clone())),
         }
     }
 
     /// Create a new ComplexMPFR with specified precision from integers
+    ///
+    /// The conversion is lossless up to the target precision: each part is
+    /// transferred to MPFR as a full-width `rug::Integer` and then rounded
+    /// once (correctly) to `prec` bits. Integers of any size are handled;
+    /// integers of at most `prec` bits are represented exactly. (A previous
+    /// version round-tripped through `to_i64() as f64`, which panicked
+    /// beyond i64 and silently rounded beyond 2^53 — lossy-integer bug.)
     pub fn with_val_integers(prec: u32, real: &Integer, imag: &Integer) -> Self {
-        let real_f64 = real.to_i64() as f64;
-        let imag_f64 = imag.to_i64() as f64;
+        let real_f = rug::Float::with_val(prec, integer_to_rug(real));
+        let imag_f = rug::Float::with_val(prec, integer_to_rug(imag));
         ComplexMPFR {
-            value: RugComplex::with_val(prec, (real_f64, imag_f64)),
+            value: RugComplex::with_val(prec, (real_f, imag_f)),
         }
     }
 
     /// Create a new ComplexMPFR with specified precision from rationals
+    ///
+    /// Each part is computed as an exact-numerator / exact-denominator MPFR
+    /// division, so the result is the true value of the rational correctly
+    /// rounded once to `prec` bits, for numerators/denominators of any size.
+    /// (A previous version routed through `RealMPFR::with_val_rational`,
+    /// which truncates >i64 parts and double-rounds — lossy-integer bug.)
     pub fn with_val_rationals(prec: u32, real: &Rational, imag: &Rational) -> Self {
-        let real_mpfr = RealMPFR::with_val_rational(prec, real);
-        let imag_mpfr = RealMPFR::with_val_rational(prec, imag);
-        Self::with_val_reals(real_mpfr, imag_mpfr)
+        ComplexMPFR {
+            value: RugComplex::with_val(
+                prec,
+                (rational_to_float(prec, real), rational_to_float(prec, imag)),
+            ),
+        }
     }
 
     /// Get the precision of this number in bits
@@ -367,6 +384,36 @@ impl ComplexMPFR {
     }
 }
 
+/// Lossless conversion from a rustmath [`Integer`] (num-bigint backed) to a
+/// `rug::Integer`, transferring the little-endian magnitude bytes directly.
+/// Exact for integers of any size — no i64/f64 round-trip.
+fn integer_to_rug(n: &Integer) -> rug::Integer {
+    let (_sign, bytes) = n.as_bigint().to_bytes_le();
+    let mag = rug::Integer::from_digits(&bytes, rug::integer::Order::Lsf);
+    if n.signum() < 0 {
+        -mag
+    } else {
+        mag
+    }
+}
+
+/// Convert a rustmath [`Integer`] to a `rug::Float` exactly: the precision is
+/// chosen as the integer's significant bit count, so no rounding occurs.
+fn integer_to_float_exact(n: &Integer) -> rug::Float {
+    let r = integer_to_rug(n);
+    let bits = r.significant_bits().max(2);
+    rug::Float::with_val(bits, r)
+}
+
+/// Convert a rustmath [`Rational`] to a `rug::Float` with a single correct
+/// rounding to `prec` bits: numerator and denominator are transferred exactly,
+/// and MPFR division rounds the true quotient once to the target precision.
+fn rational_to_float(prec: u32, q: &Rational) -> rug::Float {
+    let num = integer_to_float_exact(q.numerator());
+    let den = integer_to_float_exact(q.denominator());
+    rug::Float::with_val(prec, &num / &den)
+}
+
 impl fmt::Display for ComplexMPFR {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let r = self.real();
@@ -580,12 +627,15 @@ impl NumericConversion for ComplexMPFR {
         if *self.value.imag() != 0 {
             return None;
         }
-        let real_f64 = self.value.real().to_f64();
-        if real_f64.is_finite() && real_f64 >= i64::MIN as f64 && real_f64 <= i64::MAX as f64 {
-            Some(real_f64 as i64)
-        } else {
-            None
-        }
+        // Exact extraction via rug::Integer, truncating toward zero like the
+        // old `as i64` cast did for fractions. (A previous version rounded
+        // through f64, which is lossy for exact integers in (2^53, 2^63) and
+        // saturated 2^63 to i64::MAX instead of returning None.)
+        let (i, _) = self
+            .value
+            .real()
+            .to_integer_round(rug::float::Round::Zero)?;
+        i.to_i64()
     }
 
     fn to_u64(&self) -> Option<u64> {
@@ -593,25 +643,20 @@ impl NumericConversion for ComplexMPFR {
         if *self.value.imag() != 0 {
             return None;
         }
-        let real_f64 = self.value.real().to_f64();
-        if real_f64.is_finite() && real_f64 >= 0.0 && real_f64 <= u64::MAX as f64 {
-            Some(real_f64 as u64)
-        } else {
-            None
+        let re = self.value.real();
+        // Preserve the old contract: any negative real (even one that would
+        // truncate to 0) converts to None.
+        if *re < 0 {
+            return None;
         }
+        // Exact extraction (see to_i64): no f64 round-trip.
+        let (i, _) = re.to_integer_round(rug::float::Round::Zero)?;
+        i.to_u64()
     }
 
     fn to_usize(&self) -> Option<usize> {
-        // Only convert if imaginary part is zero
-        if *self.value.imag() != 0 {
-            return None;
-        }
-        let real_f64 = self.value.real().to_f64();
-        if real_f64.is_finite() && real_f64 >= 0.0 && real_f64 <= usize::MAX as f64 {
-            Some(real_f64 as usize)
-        } else {
-            None
-        }
+        // Same exact path as to_u64, narrowed to the platform width.
+        self.to_u64().and_then(|n| usize::try_from(n).ok())
     }
 
     fn to_f64(&self) -> Option<f64> {
@@ -830,6 +875,76 @@ mod tests {
     }
 
     #[test]
+    fn test_numeric_conversion_exact_above_2p53() {
+        // Regression (F1): to_i64/to_u64/to_usize used to round through f64,
+        // corrupting exact integers in (2^53, 2^63).
+        let zero = Integer::from(0);
+
+        // 2^62 + 1 is not f64-representable (nearest f64 is 2^62).
+        let n: i64 = (1i64 << 62) + 1;
+        let z = ComplexMPFR::with_val_integers(128, &Integer::from(n), &zero);
+        assert_eq!(NumericConversion::to_i64(&z), Some(n));
+
+        // i64::MAX - 1: the old f64 path rounded to 2^63 and saturated to
+        // i64::MAX — off by one.
+        let m = i64::MAX - 1;
+        let z = ComplexMPFR::with_val_integers(128, &Integer::from(m), &zero);
+        assert_eq!(NumericConversion::to_i64(&z), Some(m));
+
+        // 2^63 itself is out of i64 range and must be None (the old path
+        // accepted it because `2^63 <= i64::MAX as f64` compares equal, then
+        // saturated the cast).
+        let p63 = Integer::from(2).pow(63);
+        let z = ComplexMPFR::with_val_integers(128, &p63, &zero);
+        assert_eq!(NumericConversion::to_i64(&z), None);
+        // ... but it is a perfectly good u64/usize (on 64-bit targets).
+        let u: u64 = 1u64 << 63;
+        assert_eq!(NumericConversion::to_u64(&z), Some(u));
+        assert_eq!(NumericConversion::to_usize(&z), usize::try_from(u).ok());
+
+        // u64 near the top, odd (not f64-representable): 2^63 + 3.
+        let u: u64 = (1u64 << 63) + 3;
+        let z = ComplexMPFR::with_val_integers(128, &Integer::from(u), &zero);
+        assert_eq!(NumericConversion::to_u64(&z), Some(u));
+        assert_eq!(NumericConversion::to_usize(&z), usize::try_from(u).ok());
+
+        // 2^64 is out of u64 range.
+        let p64 = Integer::from(2).pow(64);
+        let z = ComplexMPFR::with_val_integers(128, &p64, &zero);
+        assert_eq!(NumericConversion::to_u64(&z), None);
+        assert_eq!(NumericConversion::to_usize(&z), None);
+
+        // Negative counterpart is exact too.
+        let n: i64 = -((1i64 << 61) + 5);
+        let z = ComplexMPFR::with_val_integers(128, &Integer::from(n), &zero);
+        assert_eq!(NumericConversion::to_i64(&z), Some(n));
+        assert_eq!(NumericConversion::to_u64(&z), None);
+    }
+
+    #[test]
+    fn test_numeric_conversion_truncation_contract_preserved() {
+        // Fractions still truncate toward zero (old `as i64` semantics) ...
+        let z = ComplexMPFR::with_val(64, (3.75, 0.0));
+        assert_eq!(NumericConversion::to_i64(&z), Some(3));
+        assert_eq!(NumericConversion::to_u64(&z), Some(3));
+        let z = ComplexMPFR::with_val(64, (-3.75, 0.0));
+        assert_eq!(NumericConversion::to_i64(&z), Some(-3));
+        // ... and negatives (even ones truncating to 0) stay None for u64.
+        assert_eq!(NumericConversion::to_u64(&z), None);
+        let z = ComplexMPFR::with_val(64, (-0.5, 0.0));
+        assert_eq!(NumericConversion::to_u64(&z), None);
+        assert_eq!(NumericConversion::to_usize(&z), None);
+        // Non-real and non-finite inputs stay None.
+        let z = ComplexMPFR::with_val(64, (1.0, 2.0));
+        assert_eq!(NumericConversion::to_i64(&z), None);
+        let z = ComplexMPFR::with_val(64, (f64::INFINITY, 0.0));
+        assert_eq!(NumericConversion::to_i64(&z), None);
+        assert_eq!(NumericConversion::to_u64(&z), None);
+        let z = ComplexMPFR::with_val(64, (f64::NAN, 0.0));
+        assert_eq!(NumericConversion::to_i64(&z), None);
+    }
+
+    #[test]
     fn test_inverse_trig() {
         let z = ComplexMPFR::from((0.5, 0.0));
         let asin_z = z.asin();
@@ -849,5 +964,99 @@ mod tests {
         // sinh(asinh(z)) = z
         assert!((sinh_asinh_z.real() - 2.0).abs() < 1e-10);
         assert!(sinh_asinh_z.imag().abs() < 1e-10);
+    }
+
+    /// Independent conversion path for cross-checking `integer_to_rug`:
+    /// decimal-string transfer instead of magnitude-byte transfer.
+    fn rug_int_via_string(n: &Integer) -> rug::Integer {
+        rug::Integer::from_str_radix(&n.to_string(), 10).unwrap()
+    }
+
+    #[test]
+    fn test_with_val_integers_beyond_i64_bit_exact() {
+        // 2^100 + 3 (101 bits) and -(2^90 + 7): both far beyond i64/f64-exact
+        // range. The old to_i64()-based path panicked on these.
+        let a = Integer::from(2).pow(100) + Integer::from(3);
+        let b = -(Integer::from(2).pow(90) + Integer::from(7));
+
+        let z = ComplexMPFR::with_val_integers(256, &a, &b);
+        assert_eq!(z.precision(), 256);
+
+        // Both parts must be exactly the source integers (101/91 bits fit in
+        // a 256-bit mantissa with no rounding). Round-trip via an independent
+        // decimal-string conversion and demand bit-exact integer equality.
+        assert!(z.value.real().is_integer());
+        assert!(z.value.imag().is_integer());
+        assert_eq!(
+            z.value.real().to_integer().unwrap(),
+            rug_int_via_string(&a)
+        );
+        assert_eq!(
+            z.value.imag().to_integer().unwrap(),
+            rug_int_via_string(&b)
+        );
+    }
+
+    #[test]
+    fn test_with_val_integers_200_bit_round_trip() {
+        // A 201-bit integer at 256-bit precision: exact round trip required.
+        let a = Integer::from(2).pow(200) + Integer::from(987654321i64);
+        let z = ComplexMPFR::with_val_integers(256, &a, &Integer::zero());
+        assert_eq!(
+            z.value.real().to_integer().unwrap(),
+            rug_int_via_string(&a)
+        );
+        assert!(z.value.imag().is_zero());
+    }
+
+    #[test]
+    fn test_with_val_integers_small_values_unchanged() {
+        // Sanity: small values keep working as before.
+        let z = ComplexMPFR::with_val_integers(64, &Integer::from(42), &Integer::from(-17));
+        assert_eq!(z.value.real().to_integer().unwrap(), 42);
+        assert_eq!(z.value.imag().to_integer().unwrap(), -17);
+    }
+
+    #[test]
+    fn test_with_val_rationals_dyadic_beyond_i64_bit_exact() {
+        // (2^100 + 1) / 2^12 is exactly representable in a 200-bit mantissa
+        // (101 significant bits). Demand a bit-exact round trip: multiplying
+        // back by 2^12 must recover the >64-bit numerator exactly.
+        let num = Integer::from(2).pow(100) + Integer::from(1);
+        let re = Rational::new(num.clone(), Integer::from(2).pow(12)).unwrap();
+        let im = Rational::new(Integer::zero(), Integer::one()).unwrap();
+
+        let z = ComplexMPFR::with_val_rationals(200, &re, &im);
+        assert_eq!(z.precision(), 200);
+
+        let recovered = (z.value.real().clone() << 12u32).to_integer().unwrap();
+        assert_eq!(recovered, rug_int_via_string(&num));
+        assert!(z.value.imag().is_zero());
+    }
+
+    #[test]
+    fn test_with_val_rationals_non_dyadic_correctly_rounded() {
+        // Non-dyadic rationals with >64-bit numerators and denominators:
+        // result must equal the true quotient correctly rounded to 256 bits.
+        // Expected values are computed through an independent conversion path
+        // (decimal strings -> rug::Integer -> exact Floats -> one division).
+        let re_num = Integer::from(2).pow(100) + Integer::from(1);
+        let re_den = Integer::from(3);
+        let im_num = -(Integer::from(2).pow(80) + Integer::from(9));
+        let im_den = Integer::from(2).pow(70) + Integer::from(1);
+
+        let re = Rational::new(re_num.clone(), re_den.clone()).unwrap();
+        let im = Rational::new(im_num.clone(), im_den.clone()).unwrap();
+        let z = ComplexMPFR::with_val_rationals(256, &re, &im);
+
+        let expect = |n: &Integer, d: &Integer| -> rug::Float {
+            let n = rug::Float::with_val(512, rug_int_via_string(n));
+            let d = rug::Float::with_val(512, rug_int_via_string(d));
+            rug::Float::with_val(256, &n / &d)
+        };
+        // Bit-exact equality with the correctly rounded true value.
+        assert_eq!(*z.value.real(), expect(&re_num, &re_den));
+        assert_eq!(*z.value.imag(), expect(&im_num, &im_den));
+        assert!(z.value.imag().is_sign_negative());
     }
 }

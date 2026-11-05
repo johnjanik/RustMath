@@ -29,7 +29,7 @@
 //! let shuffle = ShuffleAlgebra::new(vec!["x", "y"]);
 //!
 //! // Compute shuffle product
-//! let result = shuffle.shuffle_product(&vec!["x"], &vec!["y"]);
+//! let result = shuffle.shuffle_product(&vec!["x".to_string()], &vec!["y".to_string()]);
 //! // Result: ["x", "y"] and ["y", "x"]
 //! ```
 
@@ -353,7 +353,7 @@ impl ShuffleAlgebra {
     /// ```
     /// use rustmath_algebras::shuffle_algebra::ShuffleAlgebra;
     ///
-    /// let shuffle = ShuffleAlgebra::new(vec!["x".to_string(), "y".to_string()]);
+    /// let shuffle = ShuffleAlgebra::new(vec!["x", "y"]);
     /// assert_eq!(shuffle.rank(), 2);
     /// ```
     pub fn new(alphabet: Vec<&str>) -> Self {

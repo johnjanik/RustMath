@@ -407,7 +407,7 @@ mod tests {
 
     #[test]
     fn test_tangent_vector_creation() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let point = ManifoldPoint::from_coordinates(vec![1.0, 2.0]);
         let v = TangentVector::new(point, vec![1.0, 0.0], m).unwrap();
 
@@ -416,7 +416,7 @@ mod tests {
 
     #[test]
     fn test_tangent_vector_addition() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let point = ManifoldPoint::from_coordinates(vec![0.0, 0.0]);
 
         let v1 = TangentVector::new(point.clone(), vec![1.0, 2.0], m.clone()).unwrap();
@@ -428,7 +428,7 @@ mod tests {
 
     #[test]
     fn test_tangent_vector_scalar_multiplication() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let point = ManifoldPoint::from_coordinates(vec![0.0, 0.0]);
 
         let v = TangentVector::new(point, vec![1.0, 2.0], m).unwrap();
@@ -439,12 +439,12 @@ mod tests {
 
     #[test]
     fn test_tangent_space_coordinate_basis() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let point = ManifoldPoint::from_coordinates(vec![0.0, 0.0]);
-        let chart = m.default_chart().unwrap();
+        let chart = m.default_chart().unwrap().clone();
 
         let ts = TangentSpace::new(point, m);
-        let basis = ts.coordinate_basis(chart);
+        let basis = ts.coordinate_basis(&chart);
 
         assert_eq!(basis.len(), 2);
         assert_eq!(basis[0].components(), &[1.0, 0.0]);
@@ -453,7 +453,7 @@ mod tests {
 
     #[test]
     fn test_covector_application() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let point = ManifoldPoint::from_coordinates(vec![0.0, 0.0]);
 
         let v = TangentVector::new(point.clone(), vec![1.0, 2.0], m.clone()).unwrap();
@@ -465,7 +465,7 @@ mod tests {
 
     #[test]
     fn test_cotangent_space_coordinate_basis() {
-        let m = Arc::new(EuclideanSpace::new(2));
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let point = ManifoldPoint::from_coordinates(vec![0.0, 0.0]);
 
         let cts = CotangentSpace::new(point, m);

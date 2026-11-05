@@ -361,7 +361,10 @@ impl BoundedHeightSearch {
         );
         if self.curve.is_on_curve(&origin) {
             points.push(origin.clone());
-            seen.insert((BigInt::zero(), BigInt::zero()));
+            // BigRational::zero() normalizes to 0/1, so the de-duplication key
+            // for the origin must use denominator 1 (matching the loop below),
+            // otherwise (0, 0) would be enumerated and pushed a second time.
+            seen.insert((BigInt::zero(), BigInt::one()));
         }
 
         // Enumerate x-coordinates as fractions a/b with |a|, |b| ≤ bound

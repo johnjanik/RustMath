@@ -490,7 +490,7 @@ mod tests {
     fn test_element_negate() {
         let e: ACEOnsagerElement<Integer> =
             ACEOnsagerElement::from_generator(Generator::G(1));
-        let neg = e.negate();
+        let neg = e.neg_elem();
         assert_eq!(neg.num_terms(), 1);
     }
 

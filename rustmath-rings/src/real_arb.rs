@@ -35,7 +35,7 @@
 //! use rustmath_rationals::Rational;
 //!
 //! let field = RealBallField::new(53); // 53-bit precision
-//! let ball = field.create_ball(Rational::new(355, 113), Rational::new(1, 1000));
+//! let ball = field.create_ball(Rational::new(355, 113).unwrap(), Rational::new(1, 1000).unwrap());
 //! ```
 
 use rustmath_core::Ring;
@@ -131,8 +131,8 @@ impl RealBall {
     /// use rustmath_rationals::Rational;
     ///
     /// let ball = RealBall::new(
-    ///     Rational::new(1, 2),
-    ///     Rational::new(1, 100),
+    ///     Rational::new(1, 2).unwrap(),
+    ///     Rational::new(1, 100).unwrap(),
     ///     53
     /// );
     /// ```
@@ -322,17 +322,17 @@ mod tests {
 
     #[test]
     fn test_new_real_ball() {
-        let ball = RealBall::new(Rational::new(1, 2), Rational::new(1, 10), 53);
+        let ball = RealBall::new(Rational::new(1, 2).unwrap(), Rational::new(1, 10).unwrap(), 53);
 
-        assert_eq!(ball.midpoint(), &Rational::new(1, 2));
-        assert_eq!(ball.radius(), &Rational::new(1, 10));
+        assert_eq!(ball.midpoint(), &Rational::new(1, 2).unwrap());
+        assert_eq!(ball.radius(), &Rational::new(1, 10).unwrap());
         assert_eq!(ball.precision(), 53);
     }
 
     #[test]
     #[should_panic(expected = "Radius must be non-negative")]
     fn test_negative_radius() {
-        let _ = RealBall::new(Rational::zero(), Rational::new(-1, 2), 53);
+        let _ = RealBall::new(Rational::zero(), Rational::new(-1, 2).unwrap(), 53);
     }
 
     #[test]
@@ -357,28 +357,28 @@ mod tests {
         let exact = RealBall::new(Rational::from(1), Rational::zero(), 53);
         assert!(exact.is_exact());
 
-        let inexact = RealBall::new(Rational::from(1), Rational::new(1, 100), 53);
+        let inexact = RealBall::new(Rational::from(1), Rational::new(1, 100).unwrap(), 53);
         assert!(!inexact.is_exact());
     }
 
     #[test]
     fn test_addition() {
-        let b1 = RealBall::new(Rational::from(1), Rational::new(1, 10), 53);
-        let b2 = RealBall::new(Rational::from(2), Rational::new(1, 10), 53);
+        let b1 = RealBall::new(Rational::from(1), Rational::new(1, 10).unwrap(), 53);
+        let b2 = RealBall::new(Rational::from(2), Rational::new(1, 10).unwrap(), 53);
 
         let sum = b1.add(&b2);
         assert_eq!(sum.midpoint(), &Rational::from(3));
-        assert_eq!(sum.radius(), &Rational::new(1, 5));
+        assert_eq!(sum.radius(), &Rational::new(1, 5).unwrap());
     }
 
     #[test]
     fn test_subtraction() {
-        let b1 = RealBall::new(Rational::from(5), Rational::new(1, 10), 53);
-        let b2 = RealBall::new(Rational::from(2), Rational::new(1, 10), 53);
+        let b1 = RealBall::new(Rational::from(5), Rational::new(1, 10).unwrap(), 53);
+        let b2 = RealBall::new(Rational::from(2), Rational::new(1, 10).unwrap(), 53);
 
         let diff = b1.sub(&b2);
         assert_eq!(diff.midpoint(), &Rational::from(3));
-        assert_eq!(diff.radius(), &Rational::new(1, 5));
+        assert_eq!(diff.radius(), &Rational::new(1, 5).unwrap());
     }
 
     #[test]
@@ -431,8 +431,8 @@ mod tests {
 
     #[test]
     fn test_create_real_ball() {
-        let ball = create_real_ball(Rational::new(1, 2), Rational::new(1, 100), 53);
-        assert_eq!(ball.midpoint(), &Rational::new(1, 2));
+        let ball = create_real_ball(Rational::new(1, 2).unwrap(), Rational::new(1, 100).unwrap(), 53);
+        assert_eq!(ball.midpoint(), &Rational::new(1, 2).unwrap());
         assert_eq!(ball.precision(), 53);
     }
 

@@ -41,6 +41,59 @@ impl LinearCode {
         }
     }
 
+    /// Create a linear code from an already-matched generator/parity-check pair.
+    ///
+    /// Unlike [`from_generator_matrix`](Self::from_generator_matrix), this does not
+    /// recompute `H` from `G`: it trusts the caller-supplied parity check matrix as-is.
+    /// This matters for constructions (e.g. Hamming codes) whose decoder relies on a
+    /// *specific* column structure of `H` (such as columns being the binary
+    /// representations of 1-indexed positions) that a generic Gaussian-elimination
+    /// derivation of `H` from `G` is not guaranteed to preserve, even though both
+    /// matrices would be equally valid parity checks for the code.
+    ///
+    /// In debug builds this verifies `G * H^T = 0` and panics if the pair is
+    /// inconsistent, since a caller-supplied mismatch would otherwise silently corrupt
+    /// every syndrome computed against this code.
+    pub fn from_generator_and_parity_check(
+        generator: Vec<Vec<u64>>,
+        parity_check: Vec<Vec<u64>>,
+        field_char: u64,
+    ) -> Self {
+        let dimension = generator.len();
+        let length = if dimension > 0 { generator[0].len() } else { 0 };
+
+        debug_assert!(
+            Self::is_orthogonal(&generator, &parity_check, field_char),
+            "generator and parity check matrix do not satisfy G * H^T = 0"
+        );
+
+        LinearCode {
+            generator_matrix: generator,
+            parity_check_matrix: parity_check,
+            length,
+            dimension,
+            minimum_distance: None,
+            field_char,
+        }
+    }
+
+    // Verify that G * H^T = 0 (mod field_char)
+    fn is_orthogonal(generator: &[Vec<u64>], parity_check: &[Vec<u64>], field_char: u64) -> bool {
+        let p = field_char;
+        for row in generator {
+            for check_row in parity_check {
+                let mut sum = 0u64;
+                for (&a, &b) in row.iter().zip(check_row.iter()) {
+                    sum = (sum + a * b) % p;
+                }
+                if sum != 0 {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+
     /// Create a linear code from a parity check matrix
     pub fn from_parity_check_matrix(parity_check: Vec<Vec<u64>>, field_char: u64) -> Self {
         let r = parity_check.len();
@@ -73,6 +126,11 @@ impl LinearCode {
     /// Get the number of parity bits (n - k)
     pub fn redundancy(&self) -> usize {
         self.length - self.dimension
+    }
+
+    /// Get the field characteristic p (the code lives over GF(p))
+    pub fn field_characteristic(&self) -> u64 {
+        self.field_char
     }
 
     /// Get the generator matrix
@@ -128,13 +186,19 @@ impl LinearCode {
             return Ok(self.extract_message(received));
         }
 
-        // Attempt error correction using syndrome table
+        // Attempt error correction: weight-1 patterns only (see
+        // `find_error_pattern` for the honest limitation).
         match self.find_error_pattern(&syndrome) {
             Some(error) => {
                 let corrected = self.subtract_vectors(received, &error);
                 Ok(self.extract_message(&corrected))
             }
-            None => Err("Unable to correct errors".to_string()),
+            None => Err(
+                "Unable to correct errors: no single-symbol error pattern matches the \
+                 syndrome (this decoder only corrects weight-1 errors; use \
+                 syndrome::StandardArrayDecoder for a full coset-leader table)"
+                    .to_string(),
+            ),
         }
     }
 
@@ -203,7 +267,18 @@ impl LinearCode {
         self.dimension as f64 / self.length as f64
     }
 
-    // Helper: Compute parity check matrix from generator matrix
+    // Helper: Compute parity check matrix from generator matrix via Gaussian
+    // elimination over GF(field_char).
+    //
+    // General approach (works for any full-row-rank G, not just G already in
+    // literal `[I_k | P]` form with identity in the leading columns): row-reduce
+    // G to RREF, tracking which columns become pivots. The pivot columns carry an
+    // implicit k×k identity (possibly interleaved with non-pivot columns, as
+    // happens for e.g. Hamming generator matrices). For each non-pivot ("free")
+    // column, add a row to H with a 1 in that free column and, in each pivot
+    // column, the negated RREF entry from that free column's row. This is the
+    // standard [I_k|P] -> [-P^T|I_r] construction generalized to a column
+    // permutation instead of requiring the identity block to be contiguous.
     fn compute_parity_check_matrix(generator: &[Vec<u64>], field_char: u64) -> Vec<Vec<u64>> {
         let k = generator.len();
         if k == 0 {
@@ -211,60 +286,210 @@ impl LinearCode {
         }
         let n = generator[0].len();
         let r = n - k;
+        let p = field_char;
 
-        // For systematic codes in the form G = [I_k | P],
-        // we have H = [-P^T | I_r]
-        // This is a simplified version assuming systematic form
-
-        let mut h = vec![vec![0u64; n]; r];
-
-        // Try to find systematic form or use Gaussian elimination
-        // For now, create identity in the last r positions
-        for i in 0..r {
-            h[i][k + i] = 1;
+        if r == 0 {
+            return vec![];
         }
 
-        // This is a placeholder - full implementation would use Gaussian elimination
+        let mut m: Vec<Vec<u64>> = generator
+            .iter()
+            .map(|row| row.iter().map(|&x| x % p).collect())
+            .collect();
+
+        let mut pivot_cols: Vec<usize> = Vec::with_capacity(k);
+        let mut current_row = 0usize;
+
+        for col in 0..n {
+            if current_row >= k {
+                break;
+            }
+
+            let sel = (current_row..k).find(|&row| m[row][col] != 0);
+            let sel_row = match sel {
+                Some(row) => row,
+                None => continue,
+            };
+            m.swap(current_row, sel_row);
+
+            let inv = Self::mod_inverse(m[current_row][col], p)
+                .expect("generator matrix entries must be invertible mod field_char (is field_char prime?)");
+            for c in 0..n {
+                m[current_row][c] = (m[current_row][c] * inv) % p;
+            }
+
+            for row in 0..k {
+                if row == current_row {
+                    continue;
+                }
+                let factor = m[row][col];
+                if factor == 0 {
+                    continue;
+                }
+                for c in 0..n {
+                    m[row][c] = (m[row][c] + p - (factor * m[current_row][c]) % p) % p;
+                }
+            }
+
+            pivot_cols.push(col);
+            current_row += 1;
+        }
+
+        assert_eq!(
+            pivot_cols.len(),
+            k,
+            "generator matrix does not have full row rank {}",
+            k
+        );
+
+        let pivot_set: std::collections::HashSet<usize> = pivot_cols.iter().copied().collect();
+        let free_cols: Vec<usize> = (0..n).filter(|c| !pivot_set.contains(c)).collect();
+        debug_assert_eq!(free_cols.len(), r);
+
+        let mut h = vec![vec![0u64; n]; r];
+        for (t, &fc) in free_cols.iter().enumerate() {
+            h[t][fc] = 1 % p;
+            for (i, &pc) in pivot_cols.iter().enumerate() {
+                let val = m[i][fc];
+                if val != 0 {
+                    h[t][pc] = (p - val) % p;
+                }
+            }
+        }
+
         h
     }
 
-    // Helper: Compute generator matrix from parity check matrix
+    // Helper: Compute generator matrix from parity check matrix. Mirror of
+    // `compute_parity_check_matrix`: row-reduce H, take the free columns as the
+    // identity block of G and fill the pivot columns with the negated RREF
+    // entries, i.e. the [−P^T | I_r] -> [I_k | P] inverse construction.
     fn compute_generator_from_parity(
         parity: &[Vec<u64>],
         dimension: usize,
-        _field_char: u64,
+        field_char: u64,
     ) -> Vec<Vec<u64>> {
-        let n = if !parity.is_empty() {
-            parity[0].len()
-        } else {
-            0
-        };
+        let r = parity.len();
+        if r == 0 {
+            return vec![];
+        }
+        let n = parity[0].len();
+        let k = dimension;
+        let p = field_char;
 
-        // Simplified: create identity matrix for first k positions
-        let mut g = vec![vec![0u64; n]; dimension];
-        for i in 0..dimension {
-            g[i][i] = 1;
+        if k == 0 {
+            return vec![];
+        }
+
+        let mut m: Vec<Vec<u64>> = parity
+            .iter()
+            .map(|row| row.iter().map(|&x| x % p).collect())
+            .collect();
+
+        let mut pivot_cols: Vec<usize> = Vec::with_capacity(r);
+        let mut current_row = 0usize;
+
+        for col in 0..n {
+            if current_row >= r {
+                break;
+            }
+
+            let sel = (current_row..r).find(|&row| m[row][col] != 0);
+            let sel_row = match sel {
+                Some(row) => row,
+                None => continue,
+            };
+            m.swap(current_row, sel_row);
+
+            let inv = Self::mod_inverse(m[current_row][col], p)
+                .expect("parity check matrix entries must be invertible mod field_char (is field_char prime?)");
+            for c in 0..n {
+                m[current_row][c] = (m[current_row][c] * inv) % p;
+            }
+
+            for row in 0..r {
+                if row == current_row {
+                    continue;
+                }
+                let factor = m[row][col];
+                if factor == 0 {
+                    continue;
+                }
+                for c in 0..n {
+                    m[row][c] = (m[row][c] + p - (factor * m[current_row][c]) % p) % p;
+                }
+            }
+
+            pivot_cols.push(col);
+            current_row += 1;
+        }
+
+        assert_eq!(
+            pivot_cols.len(),
+            r,
+            "parity check matrix does not have full row rank {}",
+            r
+        );
+
+        let pivot_set: std::collections::HashSet<usize> = pivot_cols.iter().copied().collect();
+        let free_cols: Vec<usize> = (0..n).filter(|c| !pivot_set.contains(c)).collect();
+        debug_assert_eq!(free_cols.len(), k);
+
+        let mut g = vec![vec![0u64; n]; k];
+        for (t, &fc) in free_cols.iter().enumerate() {
+            g[t][fc] = 1 % p;
+            for (i, &pc) in pivot_cols.iter().enumerate() {
+                let val = m[i][fc];
+                if val != 0 {
+                    g[t][pc] = (p - val) % p;
+                }
+            }
         }
 
         g
     }
 
-    // Helper: Find error pattern from syndrome using syndrome table
-    fn find_error_pattern(&self, syndrome: &[u64]) -> Option<Vec<u64>> {
-        let p = self.field_char;
+    // Extended-Euclid based modular inverse of `a` mod `m` (m assumed prime, as
+    // is required everywhere else in this module's GF(p) arithmetic).
+    fn mod_inverse(a: u64, m: u64) -> Option<u64> {
+        let a = (a % m) as i64;
+        let m_i = m as i64;
+        let (mut old_r, mut r) = (a, m_i);
+        let (mut old_s, mut s) = (1i64, 0i64);
 
-        // Build syndrome table for correctable errors
-        // For simplicity, only single-bit errors for binary codes
-        if p != 2 {
+        while r != 0 {
+            let q = old_r / r;
+            (old_r, r) = (r, old_r - q * r);
+            (old_s, s) = (s, old_s - q * s);
+        }
+
+        if old_r != 1 {
             return None;
         }
 
+        Some(((old_s % m_i) + m_i) as u64 % m)
+    }
+
+    // Helper: Find the error pattern matching a syndrome, searching ONLY
+    // weight-1 patterns (a single erroneous symbol, any of the p - 1 nonzero
+    // values, over any GF(p) — not just GF(2)).
+    //
+    // Honest limitation: heavier error patterns are NOT searched, so this
+    // returns `None` for any syndrome outside the weight-1 coset leaders and
+    // `decode` then fails with an explicit error instead of a wrong answer.
+    // `syndrome::StandardArrayDecoder` builds the full coset-leader table
+    // when multi-error correction is needed.
+    fn find_error_pattern(&self, syndrome: &[u64]) -> Option<Vec<u64>> {
+        let p = self.field_char;
+
         for i in 0..self.length {
-            let mut error = vec![0u64; self.length];
-            error[i] = 1;
-            let s = self.compute_syndrome(&error);
-            if s == *syndrome {
-                return Some(error);
+            for val in 1..p {
+                let mut error = vec![0u64; self.length];
+                error[i] = val;
+                let s = self.compute_syndrome(&error);
+                if s == *syndrome {
+                    return Some(error);
+                }
             }
         }
 
@@ -356,5 +581,35 @@ mod tests {
 
         let code = LinearCode::from_generator_matrix(g, 2);
         assert_eq!(code.rate(), 0.6);
+    }
+
+    /// Single-symbol error correction now works over GF(p), p > 2 (it used
+    /// to silently fail for every non-binary code). Values verified by hand:
+    /// msg [2,3] * G = [2,3,0,2] over GF(5); +1 at position 2 gives
+    /// syndrome (1,0), matched uniquely by the weight-1 pattern e_2 = 1.
+    #[test]
+    fn test_single_error_correction_gf5() {
+        let g = vec![vec![1, 0, 1, 2], vec![0, 1, 1, 1]];
+        let code = LinearCode::from_generator_matrix(g, 5);
+        let message = vec![2, 3];
+        let codeword = code.encode(&message).unwrap();
+        assert_eq!(codeword, vec![2, 3, 0, 2]);
+
+        let mut received = codeword.clone();
+        received[2] = (received[2] + 1) % 5;
+        assert_eq!(code.decode(&received).unwrap(), message);
+    }
+
+    /// Honest failure beyond weight 1: the error (0,0,1,3) has syndrome
+    /// (1,3), which is not proportional to any column of H (verified by
+    /// enumerating all 16 weight-1 syndromes by hand), so decode must
+    /// return Err — never a silent wrong answer.
+    #[test]
+    fn test_weight_two_error_fails_honestly_gf5() {
+        let g = vec![vec![1, 0, 1, 2], vec![0, 1, 1, 1]];
+        let code = LinearCode::from_generator_matrix(g, 5);
+        let received = vec![2, 3, 1, 0]; // [2,3,0,2] + (0,0,1,3)
+        let err = code.decode(&received).unwrap_err();
+        assert!(err.contains("weight-1"), "unexpected error text: {err}");
     }
 }

@@ -891,7 +891,7 @@ mod tests {
 
     #[test]
     fn test_oriented_manifold_creation() {
-        let real_line = Arc::new(RealLine::new());
+        let real_line = Arc::new(RealLine::new().manifold().clone());
         let oriented = OrientedManifold::new(real_line.clone());
 
         assert_eq!(oriented.dimension(), 1);
@@ -901,7 +901,7 @@ mod tests {
 
     #[test]
     fn test_oriented_manifold_flip() {
-        let real_line = Arc::new(RealLine::new());
+        let real_line = Arc::new(RealLine::new().manifold().clone());
         let mut oriented = OrientedManifold::new(real_line.clone());
 
         oriented.flip_orientation();
@@ -955,7 +955,7 @@ mod tests {
     #[test]
     fn test_expression_evaluation() {
         // Test evaluating: 2*x + 3 at x = 5 should give 13
-        let x = Expr::Symbol("x".to_string());
+        let x = Expr::symbol("x");
         let expr = Expr::from(2) * x + Expr::from(3);
 
         let mut substitutions = std::collections::HashMap::new();
@@ -970,7 +970,7 @@ mod tests {
     #[test]
     fn test_volume_form_dimension_check() {
         // Create a 2D manifold
-        let euclidean_2d = Arc::new(EuclideanSpace::new(2));
+        let euclidean_2d = Arc::new(EuclideanSpace::new(2).manifold().clone());
 
         // Try to create a volume form from a 1-form (should fail)
         let form_1d = DiffForm::new(euclidean_2d.clone(), 1);
@@ -981,7 +981,7 @@ mod tests {
 
     #[test]
     fn test_integration_dimension_check() {
-        let real_line = Arc::new(RealLine::new());
+        let real_line = Arc::new(RealLine::new().manifold().clone());
         let oriented = OrientedManifold::new(real_line.clone());
 
         // Try to integrate a 2-form on a 1D manifold (should fail)
@@ -995,7 +995,7 @@ mod tests {
     fn test_adaptive_simpson() {
         let chart = Chart::new("x", 1, vec!["x"]).unwrap();
         // Integrate x^2 from 0 to 1, should give 1/3
-        let expr = Expr::Symbol("x".to_string()) * Expr::Symbol("x".to_string());
+        let expr = Expr::symbol("x") * Expr::symbol("x");
 
         let result = adaptive_simpson(&expr, &chart, 0.0, 1.0, 1e-6, 10).unwrap();
 
@@ -1007,7 +1007,7 @@ mod tests {
     fn test_gauss_legendre() {
         let chart = Chart::new("x", 1, vec!["x"]).unwrap();
         // Integrate x from 0 to 1, should give 1/2
-        let expr = Expr::Symbol("x".to_string());
+        let expr = Expr::symbol("x");
 
         let result = gauss_legendre_1d(&expr, &chart, 0.0, 1.0).unwrap();
 

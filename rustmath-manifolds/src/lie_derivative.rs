@@ -40,7 +40,7 @@ impl LieDerivative {
     /// use rustmath_manifolds::{LieDerivative, VectorField, EuclideanSpace};
     /// use std::sync::Arc;
     ///
-    /// let manifold = Arc::new(EuclideanSpace::new(2));
+    /// let manifold = Arc::new(EuclideanSpace::new(2).manifold().clone());
     /// let x = VectorField::new(manifold.clone());
     /// let lie_x = LieDerivative::new(Arc::new(x));
     /// ```
@@ -293,7 +293,7 @@ mod tests {
 
     #[test]
     fn test_lie_derivative_creation() {
-        let manifold = Arc::new(EuclideanSpace::new(2));
+        let manifold = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let x = VectorField::new(manifold.clone());
         let lie_x = LieDerivative::new(Arc::new(x));
 
@@ -302,7 +302,7 @@ mod tests {
 
     #[test]
     fn test_lie_derivative_of_scalar() {
-        let manifold = Arc::new(EuclideanSpace::new(2));
+        let manifold = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let chart = manifold.default_chart().unwrap();
 
         // Create a vector field X = ∂/∂x
@@ -314,7 +314,7 @@ mod tests {
 
         // Create a scalar field f = x
         let mut f = ScalarField::new(manifold.clone());
-        f.set_expr(chart, Expr::Symbol("x".to_string())).unwrap();
+        f.set_expr(chart, Expr::symbol("x")).unwrap();
 
         // Compute L_X f
         let lie_x = LieDerivative::new(Arc::new(x_field));
@@ -322,12 +322,12 @@ mod tests {
 
         // L_X f should be 1 (since ∂x/∂x = 1)
         let result_expr = result.expr(chart).unwrap();
-        assert_eq!(result_expr, Expr::from(1));
+        assert_eq!(result_expr.simplify(), Expr::from(1));
     }
 
     #[test]
     fn test_lie_derivative_of_vector() {
-        let manifold = Arc::new(EuclideanSpace::new(2));
+        let manifold = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let chart = manifold.default_chart().unwrap();
 
         // Create vector fields X = ∂/∂x and Y = ∂/∂y
@@ -347,13 +347,16 @@ mod tests {
         let lie_x = LieDerivative::new(Arc::new(x_field));
         let result = lie_x.apply_to_vector(&y_field, chart).unwrap();
 
-        // Result should be zero
-        assert!(result.is_zero());
+        // Result should be zero. The bracket of constant fields yields
+        // unsimplified expressions like (1*0 - 0*0), so compare after
+        // constant folding rather than structurally.
+        let comps = result.components(chart).unwrap();
+        assert!(comps.iter().all(|c| c.simplify().is_zero()));
     }
 
     #[test]
     fn test_lie_derivative_of_one_form() {
-        let manifold = Arc::new(EuclideanSpace::new(2));
+        let manifold = Arc::new(EuclideanSpace::new(2).manifold().clone());
         let chart = manifold.default_chart().unwrap();
 
         // Create vector field X = ∂/∂x
@@ -377,7 +380,10 @@ mod tests {
         let lie_x = LieDerivative::new(Arc::new(x_field));
         let result = lie_x.apply_to_form(&omega, chart).unwrap();
 
-        // For constant 1-forms, Lie derivative should be zero
-        assert!(result.tensor().is_zero());
+        // For constant 1-forms, the Lie derivative is zero; the components are
+        // built as unsimplified constant expressions, so simplify before the
+        // zero test.
+        let comps = result.tensor().components(chart).unwrap();
+        assert!(comps.iter().all(|c| c.simplify().is_zero()));
     }
 }

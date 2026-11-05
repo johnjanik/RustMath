@@ -39,6 +39,16 @@
 //! // Create a divisor from multiple places
 //! let div = divisor(vec![("P", 2), ("Q", -1)]);
 //! ```
+//!
+//! # Superseded for K(x)
+//!
+//! Places here are bare strings, so `dimension()`, `basis()` and
+//! `principal_divisor()` cannot compute and are honest `unimplemented!()`.
+//! For the rational function field K(x) use the typed layer instead:
+//! [`crate::function_field::typed::Divisor`] provides real principal
+//! divisors (with the exact deg div(f) = 0 gate) and exact genus-0
+//! Riemann-Roch spaces; [`crate::function_field::typed::Place`] provides
+//! real valuations and residue fields.
 
 use rustmath_core::{Ring, Field};
 use std::collections::HashMap;
@@ -170,12 +180,9 @@ impl<F: Field> FunctionFieldDivisor<F> {
     ///
     /// Placeholder: would use Riemann-Roch theorem or Hess' algorithm
     pub fn dimension(&self) -> usize {
-        // Placeholder: simple bound from Riemann-Roch
-        if self.degree() < 0 {
-            0
-        } else {
-            (self.degree() + 1) as usize
-        }
+        unimplemented!(
+            "rustmath_rings::divisor::FunctionFieldDivisor::dimension: Riemann-Roch space dimension dim L(D) not yet implemented (facade)"
+        )
     }
 
     /// Compute a basis for the Riemann-Roch space L(D)
@@ -183,30 +190,34 @@ impl<F: Field> FunctionFieldDivisor<F> {
     /// Uses Hess' algorithm in SageMath.
     /// Placeholder implementation.
     pub fn basis(&self) -> Vec<String> {
-        // Placeholder: would compute actual basis
-        vec!["1".to_string()]
+        unimplemented!(
+            "rustmath_rings::divisor::FunctionFieldDivisor::basis: Riemann-Roch space basis of L(D) not yet implemented (facade)"
+        )
     }
 
     /// Compute the dimension of the differential space Ω(D)
     ///
     /// Ω(D) = {ω differential : (ω) ≥ D}
     pub fn differential_space_dimension(&self) -> usize {
-        // Placeholder: uses duality in Riemann-Roch
-        0
+        unimplemented!(
+            "rustmath_rings::divisor::FunctionFieldDivisor::differential_space_dimension: dimension of differential space Ω(D) not yet implemented (facade)"
+        )
     }
 
     /// Compute a basis for the differential space Ω(D)
     pub fn differential_basis(&self) -> Vec<String> {
-        // Placeholder
-        vec![]
+        unimplemented!(
+            "rustmath_rings::divisor::FunctionFieldDivisor::differential_basis: basis of differential space Ω(D) not yet implemented (facade)"
+        )
     }
 
     /// Check if a function field element is in L(D)
     ///
     /// Returns true if f ∈ L(D), i.e., (f) + D ≥ 0
     pub fn contains(&self, _element: &str) -> bool {
-        // Placeholder: would check valuations
-        false
+        unimplemented!(
+            "rustmath_rings::divisor::FunctionFieldDivisor::contains: membership test for the Riemann-Roch space L(D) not yet implemented (facade)"
+        )
     }
 
     /// Compute the principal divisor of a function
@@ -217,8 +228,10 @@ impl<F: Field> FunctionFieldDivisor<F> {
     ///
     /// * `function` - A function field element
     pub fn principal_divisor(function: String) -> Self {
-        // Placeholder: would compute valuations at all places
-        FunctionFieldDivisor::zero()
+        let _ = function;
+        unimplemented!(
+            "rustmath_rings::divisor::FunctionFieldDivisor::principal_divisor: principal divisor (f) = Σ v_P(f)·P not yet implemented (facade)"
+        )
     }
 
     /// Get the list of (place, multiplicity) pairs
@@ -393,16 +406,18 @@ impl<F: Field> DivisorGroup<F> {
     /// The canonical divisor is the divisor of any non-zero differential.
     /// All differentials have the same divisor (up to equivalence).
     pub fn canonical_divisor(&self) -> FunctionFieldDivisor<F> {
-        // Placeholder: would compute actual canonical divisor
-        FunctionFieldDivisor::zero()
+        unimplemented!(
+            "rustmath_rings::divisor::DivisorGroup::canonical_divisor: canonical divisor K_C not yet implemented (facade)"
+        )
     }
 
     /// Get the genus of the function field
     ///
     /// The genus g satisfies deg(K_C) = 2g - 2.
     pub fn genus(&self) -> usize {
-        // Placeholder: would compute actual genus
-        0
+        unimplemented!(
+            "rustmath_rings::divisor::DivisorGroup::genus: genus of the function field not yet implemented (facade)"
+        )
     }
 }
 
@@ -652,14 +667,20 @@ mod tests {
 
     #[test]
     fn test_dimension() {
-        let div = prime_divisor::<Rational>("P".to_string(), 2);
-        let dim = div.dimension();
+        // Formerly #[ignore]d against the string facade. The same
+        // mathematical assertions now run for real against the typed layer:
+        // on P^1 (genus 0), dim L(2P) = deg + 1 = 3 for a degree-1 place P,
+        // and dim L(-P) = 0 (verified independently in sympy).
+        use crate::function_field::typed::{Divisor as TypedDivisor, Place as TypedPlace};
 
-        // Placeholder returns degree + 1
-        assert_eq!(dim, 3);
+        let p = TypedPlace::finite_linear(Rational::zero()); // the place (x)
+        let div = TypedDivisor::from_places(vec![(p.clone(), 2)]);
+        assert_eq!(div.riemann_roch_dimension(), 3);
+        assert_eq!(div.riemann_roch_basis().len(), 3);
 
-        let neg = prime_divisor::<Rational>("P".to_string(), -1);
-        assert_eq!(neg.dimension(), 0);
+        let neg = TypedDivisor::from_places(vec![(p, -1)]);
+        assert_eq!(neg.riemann_roch_dimension(), 0);
+        assert!(neg.riemann_roch_basis().is_empty());
     }
 
     #[test]

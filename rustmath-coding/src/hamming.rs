@@ -48,7 +48,11 @@ impl HammingCode {
         // Build generator matrix G from H
         let g = Self::build_generator_matrix(r, k, n, &h);
 
-        let code = LinearCode::from_generator_matrix(g, 2);
+        // Keep H and G paired exactly as constructed: `decode`'s
+        // `syndrome_to_position` relies on H's specific column structure
+        // (column j = binary representation of position j+1), which a generic
+        // re-derivation of H from G is not guaranteed to preserve.
+        let code = LinearCode::from_generator_and_parity_check(g, h, 2);
 
         HammingCode { r, code }
     }
@@ -341,6 +345,36 @@ mod tests {
 
         let decoded = ham.decode(&codeword).unwrap();
         assert_eq!(decoded, message);
+    }
+
+    #[test]
+    fn test_hamming_exhaustive_single_error_correction() {
+        // Ground truth (verified independently in python3): a [7,4,3] Hamming
+        // code corrects every single-bit error on every codeword, since the
+        // code's 2^3-1=7 nonzero syndromes biject onto the 7 single-error
+        // positions.
+        let ham = HammingCode::new(3);
+        let n = ham.length();
+        for m0 in 0..2u64 {
+            for m1 in 0..2u64 {
+                for m2 in 0..2u64 {
+                    for m3 in 0..2u64 {
+                        let message = vec![m0, m1, m2, m3];
+                        let codeword = ham.encode(&message).unwrap();
+                        for pos in 0..n {
+                            let mut received = codeword.clone();
+                            received[pos] ^= 1;
+                            let decoded = ham.decode(&received).unwrap();
+                            assert_eq!(
+                                decoded, message,
+                                "failed to correct single error at position {} for message {:?}",
+                                pos, message
+                            );
+                        }
+                    }
+                }
+            }
+        }
     }
 
     #[test]

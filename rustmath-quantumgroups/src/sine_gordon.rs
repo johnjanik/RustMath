@@ -121,9 +121,10 @@ impl SineGordonYSystem {
     /// ```
     /// use rustmath_quantumgroups::sine_gordon::SineGordonYSystem;
     /// use rustmath_rationals::Rational;
+    /// use rustmath_integers::Integer;
     ///
     /// // Create a rank 3 sine-Gordon Y-system (A_2 type)
-    /// let beta_sq = Rational::new(1.into(), 2.into());
+    /// let beta_sq = Rational::new(Integer::from(1), Integer::from(2)).unwrap();
     /// let system = SineGordonYSystem::new(3, beta_sq);
     /// ```
     pub fn new(rank: usize, beta_squared: Rational) -> Self {
@@ -457,7 +458,7 @@ mod tests {
 
     #[test]
     fn test_system_creation() {
-        let beta_sq = Rational::new(Integer::from(1), Integer::from(2));
+        let beta_sq = Rational::new(Integer::from(1), Integer::from(2)).unwrap();
         let system = SineGordonYSystem::new(3, beta_sq.clone());
 
         assert_eq!(system.rank, 3);
@@ -521,8 +522,8 @@ mod tests {
         assert_eq!(data.len(), 2 * 5);
 
         // All values should be initialized to 1
-        for &value in data.values() {
-            assert_eq!(value, Rational::one());
+        for value in data.values() {
+            assert_eq!(*value, Rational::one());
         }
 
         // Check specific entries exist
@@ -553,7 +554,7 @@ mod tests {
             }
         }
 
-        let tolerance = Rational::new(Integer::from(10), Integer::from(1));
+        let tolerance = Rational::new(Integer::from(10), Integer::from(1)).unwrap();
         // This won't be satisfied exactly, but the function should run
         system.verify_equations(&y_values, &tolerance);
     }
@@ -590,7 +591,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(system.rank, 4);
-        assert_eq!(system.beta_squared, Rational::new(Integer::from(1), Integer::from(3)));
+        assert_eq!(system.beta_squared, Rational::new(Integer::from(1), Integer::from(3)).unwrap());
     }
 
     #[test]

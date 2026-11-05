@@ -77,8 +77,8 @@ pub trait RegularSequence {
 ///
 /// // Create Thue-Morse morphism: 0 → 01, 1 → 10
 /// let mut mapping = HashMap::new();
-/// mapping.insert(0, Word::from_vec(vec![0, 1]));
-/// mapping.insert(1, Word::from_vec(vec![1, 0]));
+/// mapping.insert(0, Word::new(vec![0, 1]));
+/// mapping.insert(1, Word::new(vec![1, 0]));
 /// let morphism = Morphism::new(mapping);
 ///
 /// // Create coding: 0 → 0, 1 → 1

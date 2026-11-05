@@ -150,9 +150,15 @@ mod tests {
     use super::*;
     use crate::examples::{RealLine, EuclideanSpace};
 
+    // Bundle constructions are generic over `M: TopologicalManifoldTrait`,
+    // which is implemented for `DifferentiableManifold`. The example types
+    // (`RealLine`, `EuclideanSpace`) expose their underlying
+    // `DifferentiableManifold` via `.manifold()`, so bundles are built over
+    // that.
+
     #[test]
     fn test_vector_bundle_creation() {
-        let base = RealLine::new();
+        let base = RealLine::new().manifold().clone();
         let bundle = TopologicalVectorBundle::<_, Vec<f64>>::new(
             base,
             2,
@@ -169,7 +175,7 @@ mod tests {
 
     #[test]
     fn test_tangent_bundle() {
-        let manifold = EuclideanSpace::new(3);
+        let manifold = EuclideanSpace::new(3).manifold().clone();
         let tangent = TangentBundle::new(manifold);
 
         assert_eq!(tangent.bundle().rank(), 3);
@@ -179,7 +185,7 @@ mod tests {
 
     #[test]
     fn test_cotangent_bundle() {
-        let manifold = EuclideanSpace::new(2);
+        let manifold = EuclideanSpace::new(2).manifold().clone();
         let cotangent = CotangentBundle::new(manifold);
 
         assert_eq!(cotangent.bundle().rank(), 2);
@@ -189,7 +195,7 @@ mod tests {
 
     #[test]
     fn test_bundle_names() {
-        let manifold = RealLine::new();
+        let manifold = RealLine::new().manifold().clone();
         let tangent = TangentBundle::new(manifold.clone());
         let cotangent = CotangentBundle::new(manifold);
 

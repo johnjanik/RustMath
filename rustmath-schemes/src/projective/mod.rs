@@ -170,7 +170,7 @@ mod tests {
         let p2: ProjectiveSpace<i32> = ProjectiveSpace::new(2);
         assert!(p2.is_projective());
         assert!(!p2.is_affine());
-        assert_eq!(p2.dimension(), Some(2));
+        assert_eq!(Scheme::dimension(&p2), Some(2));
         assert!(p2.is_irreducible());
         assert!(p2.is_reduced());
     }

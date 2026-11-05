@@ -701,7 +701,7 @@ mod tests {
 
     #[test]
     fn test_invariant_theory_factory() {
-        let bq = INVARIANT_THEORY.binary_quartic(vec![
+        let bq = InvariantTheoryFactory::binary_quartic(vec![
             Integer::from(1),
             Integer::from(2),
             Integer::from(3),
@@ -710,7 +710,7 @@ mod tests {
         ]);
         assert_eq!(bq.degree(), 4);
 
-        let qf = INVARIANT_THEORY.quadratic_form(
+        let qf = InvariantTheoryFactory::quadratic_form(
             vec![Integer::from(1), Integer::from(2), Integer::from(3)],
             2,
         );

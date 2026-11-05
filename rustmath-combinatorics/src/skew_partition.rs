@@ -543,6 +543,40 @@ impl SkewTableau {
         true
     }
 
+    /// All removable inner corners of the skew shape.
+    ///
+    /// These are the cells `(row, col)` of the inner partition whose removal leaves a
+    /// valid partition, i.e. `col == inner[row] - 1` and `inner[row] > inner[row+1]`.
+    /// They are exactly the legal starting cells for a forward jeu de taquin slide;
+    /// rectification may pick them in any order (the result is independent of the
+    /// order — Schützenberger's theorem, tested exhaustively in this crate).
+    pub fn inner_corners(&self) -> Vec<(usize, usize)> {
+        let inner_parts = self.shape.inner().parts();
+        let mut corners = Vec::new();
+        for (row, &len) in inner_parts.iter().enumerate() {
+            if len == 0 {
+                continue;
+            }
+            let below = inner_parts.get(row + 1).copied().unwrap_or(0);
+            if len > below {
+                corners.push((row, len - 1));
+            }
+        }
+        corners
+    }
+
+    /// The row reading word: rows read left to right, taken bottom to top.
+    ///
+    /// By the First Fundamental Theorem of jeu de taquin, the rectification of a
+    /// skew tableau equals the Schensted insertion tableau `P(reading_word)`.
+    pub fn reading_word(&self) -> Vec<usize> {
+        self.entries
+            .iter()
+            .rev()
+            .flat_map(|row| row.iter().filter_map(|&x| x))
+            .collect()
+    }
+
     /// Perform a single jeu de taquin forward slide from a specified position
     ///
     /// Schützenberger's jeu de taquin: slide an empty cell towards the outer corner
@@ -583,14 +617,20 @@ impl SkewTableau {
                 None
             };
 
-            // Decide which direction to slide based on values
+            // Decide which direction to slide based on values.
+            //
+            // Correctness of the choice (Schützenberger / Fulton, Young Tableaux §1.2):
+            // with the hole at (r,c), right neighbour b and down neighbour a, a
+            // horizontal move puts b directly above a and needs b < a (strict
+            // columns), while a vertical move puts a directly left of b and needs
+            // a <= b (weak rows). Hence: slide right iff b < a, and on a TIE
+            // (a == b) the down cell must move up.
             let slide_direction = match (right_val, down_val) {
                 (Some(r), Some(d)) => {
-                    // Both exist: choose the smaller value to maintain tableau property
-                    if r <= d {
+                    if r < d {
                         Some((0, 1)) // right
                     } else {
-                        Some((1, 0)) // down
+                        Some((1, 0)) // down (also on tie: keeps columns strict)
                     }
                 }
                 (Some(_), None) => Some((0, 1)), // only right
@@ -851,13 +891,17 @@ impl SkewTableau {
                 None
             };
 
-            // Decide which direction to slide (choose larger to maintain tableau property in reverse)
+            // Decide which direction to slide (mirror of the forward rule): with the
+            // hole at (r,c), left neighbour l and up neighbour u, moving l right
+            // puts it directly below u and needs l > u (strict columns), while
+            // moving u down puts it directly right of l and needs l <= u (weak
+            // rows). Hence: slide left iff l > u, and on a TIE the up cell moves.
             let slide_direction = match (left_val, up_val) {
                 (Some(l), Some(u)) => {
-                    if l >= u {
+                    if l > u {
                         Some((0, -1)) // left
                     } else {
-                        Some((-1, 0)) // up
+                        Some((-1, 0)) // up (also on tie: keeps columns strict)
                     }
                 }
                 (Some(_), None) => Some((0, -1)), // only left
@@ -1548,6 +1592,295 @@ mod tests {
         assert!(straightened.is_some());
         let t = straightened.unwrap();
         assert_eq!(t.size(), 4);
+    }
+
+    // ---- jeu de taquin: tie-breaking, well-definedness, First Fundamental Theorem ----
+
+    /// Build a SkewTableau from outer/inner part lists and a full entry grid.
+    fn make_skew(outer: &[usize], inner: &[usize], grid: Vec<Vec<Option<usize>>>) -> SkewTableau {
+        let shape = SkewPartition::new(
+            Partition::new(outer.to_vec()),
+            Partition::new(inner.to_vec()),
+        )
+        .expect("valid skew shape");
+        SkewTableau::new(shape, grid).expect("valid skew tableau")
+    }
+
+    #[test]
+    fn test_jdt_slide_tie_breaks_downward() {
+        // Shape (2,1)/(1) filled with two equal letters:
+        //   . 1
+        //   1
+        // Sliding from the inner corner (0,0) meets right == down == 1. The DOWN
+        // cell must move up (moving the right cell would stack 1 over 1 and break
+        // column strictness). Result: the single row [1, 1].
+        let t = make_skew(&[2, 1], &[1], vec![vec![None, Some(1)], vec![Some(1)]]);
+        assert!(t.is_semistandard());
+        let (slid, path) = t.jeu_de_taquin_slide(0, 0).unwrap();
+        assert!(slid.is_semistandard(), "tie must slide the down cell up");
+        assert_eq!(path, vec![(0, 0), (1, 0)]);
+        assert_eq!(slid.shape().inner().sum(), 0);
+        assert_eq!(slid.get(0, 0), Some(1));
+        assert_eq!(slid.get(0, 1), Some(1));
+        assert_eq!(t.rectify().unwrap().rows(), &[vec![1, 1]]);
+    }
+
+    #[test]
+    fn test_inverse_jdt_slide_tie_breaks_upward() {
+        // Straight tableau
+        //   1 2
+        //   2 3
+        // Inverse slide from the outer corner (1,1): after emptying it, left ==
+        // up == 2; the UP cell must move down (moving the left cell would put 2
+        // under 2 in column 1). Result is the skew tableau (2,2)/(1):
+        //   . 1
+        //   2 2
+        let t = make_skew(
+            &[2, 2],
+            &[],
+            vec![vec![Some(1), Some(2)], vec![Some(2), Some(3)]],
+        );
+        let (slid, path) = t.inverse_jdt_slide(1, 1).unwrap();
+        assert!(slid.is_semistandard(), "tie must slide the up cell down");
+        assert_eq!(path, vec![(1, 1), (0, 1), (0, 0)]);
+        assert_eq!(slid.get(0, 1), Some(1));
+        assert_eq!(slid.get(1, 0), Some(2));
+        assert_eq!(slid.get(1, 1), Some(2));
+    }
+
+    /// All skew cells of outer/inner in row-major order.
+    fn skew_cells(outer: &[usize], inner: &[usize]) -> Vec<(usize, usize)> {
+        let mut cells = Vec::new();
+        for (r, &olen) in outer.iter().enumerate() {
+            let ilen = inner.get(r).copied().unwrap_or(0);
+            for c in ilen..olen {
+                cells.push((r, c));
+            }
+        }
+        cells
+    }
+
+    /// All partitions weakly contained in `outer`.
+    fn sub_partitions_of(outer: &[usize]) -> Vec<Vec<usize>> {
+        fn rec(outer: &[usize], row: usize, prev: usize, cur: &mut Vec<usize>, out: &mut Vec<Vec<usize>>) {
+            if row == outer.len() {
+                let mut p = cur.clone();
+                while p.last() == Some(&0) {
+                    p.pop();
+                }
+                out.push(p);
+                return;
+            }
+            for v in 0..=outer[row].min(prev) {
+                cur.push(v);
+                rec(outer, row + 1, v, cur, out);
+                cur.pop();
+            }
+        }
+        let mut out = Vec::new();
+        rec(outer, 0, usize::MAX, &mut Vec::new(), &mut out);
+        out
+    }
+
+    /// All semistandard fillings of the skew shape with entries in 1..=maxval.
+    fn ssyt_skew_fillings(outer: &[usize], inner: &[usize], maxval: usize) -> Vec<Vec<Vec<Option<usize>>>> {
+        fn rec(
+            cells: &[(usize, usize)],
+            idx: usize,
+            maxval: usize,
+            grid: &mut Vec<Vec<Option<usize>>>,
+            out: &mut Vec<Vec<Vec<Option<usize>>>>,
+        ) {
+            if idx == cells.len() {
+                out.push(grid.clone());
+                return;
+            }
+            let (r, c) = cells[idx];
+            let mut lo = 1;
+            if c > 0 {
+                if let Some(v) = grid[r][c - 1] {
+                    lo = lo.max(v); // weakly increasing rows
+                }
+            }
+            if r > 0 {
+                if let Some(v) = grid[r - 1][c] {
+                    lo = lo.max(v + 1); // strictly increasing columns
+                }
+            }
+            for v in lo..=maxval {
+                grid[r][c] = Some(v);
+                rec(cells, idx + 1, maxval, grid, out);
+            }
+            grid[r][c] = None;
+        }
+        let cells = skew_cells(outer, inner);
+        let mut grid: Vec<Vec<Option<usize>>> = outer.iter().map(|&l| vec![None; l]).collect();
+        let mut out = Vec::new();
+        rec(&cells, 0, maxval, &mut grid, &mut out);
+        out
+    }
+
+    /// All standard fillings (entries 1..n, strictly increasing rows and columns).
+    fn standard_skew_fillings(outer: &[usize], inner: &[usize]) -> Vec<Vec<Vec<Option<usize>>>> {
+        fn rec(
+            cells: &[(usize, usize)],
+            next: usize,
+            n: usize,
+            grid: &mut Vec<Vec<Option<usize>>>,
+            out: &mut Vec<Vec<Vec<Option<usize>>>>,
+        ) {
+            if next > n {
+                out.push(grid.clone());
+                return;
+            }
+            for &(r, c) in cells {
+                if grid[r][c].is_some() {
+                    continue;
+                }
+                // Values are placed in increasing order, so (r,c) may receive
+                // `next` iff its left/up neighbours inside the skew shape (i.e.
+                // among `cells`) are already filled.
+                let left_ok = c == 0 || !cells.contains(&(r, c - 1)) || grid[r][c - 1].is_some();
+                let up_ok = r == 0 || !cells.contains(&(r - 1, c)) || grid[r - 1][c].is_some();
+                if left_ok && up_ok {
+                    grid[r][c] = Some(next);
+                    rec(cells, next + 1, n, grid, out);
+                    grid[r][c] = None;
+                }
+            }
+        }
+        let cells = skew_cells(outer, inner);
+        let mut grid: Vec<Vec<Option<usize>>> = outer.iter().map(|&l| vec![None; l]).collect();
+        let mut out = Vec::new();
+        let n = cells.len();
+        rec(&cells, 1, n, &mut grid, &mut out);
+        out
+    }
+
+    /// Rectify along EVERY possible slide order, collecting the distinct results.
+    fn all_rectifications(t: &SkewTableau, out: &mut HashSet<Vec<Vec<usize>>>) {
+        assert!(
+            t.is_semistandard(),
+            "intermediate jdt tableau lost semistandardness:\n{}",
+            t.to_string()
+        );
+        let corners = t.inner_corners();
+        if corners.is_empty() {
+            out.insert(t.rectify().expect("empty inner rectifies").rows().to_vec());
+            return;
+        }
+        for (r, c) in corners {
+            let (slid, _) = t
+                .jeu_de_taquin_slide(r, c)
+                .expect("slide from a removable inner corner succeeds");
+            all_rectifications(&slid, out);
+        }
+    }
+
+    /// Schensted insertion tableau of a word.
+    fn p_of_word(word: &[usize]) -> Vec<Vec<usize>> {
+        let mut p = Tableau::new(vec![]).unwrap();
+        for &v in word {
+            p = crate::tableaux::rs_insert(&p, v);
+        }
+        p.rows().to_vec()
+    }
+
+    /// Exhaustive rectification check over one family of fillings; returns the
+    /// number of skew tableaux checked.
+    fn check_rectification_family<F>(fillings_of: F) -> usize
+    where
+        F: Fn(&[usize], &[usize]) -> Vec<Vec<Vec<Option<usize>>>>,
+    {
+        let mut checked = 0usize;
+        for n in 1..=9usize {
+            for outer_p in crate::partitions::partitions(n) {
+                let outer = outer_p.parts().to_vec();
+                if outer.len() > 3 || outer[0] > 3 {
+                    continue; // outer inside the 3x3 box
+                }
+                for inner in sub_partitions_of(&outer) {
+                    if inner.iter().sum::<usize>() == n {
+                        continue; // empty skew shape
+                    }
+                    for grid in fillings_of(&outer, &inner) {
+                        let t = make_skew(&outer, &inner, grid);
+                        // (a) rectification is independent of the slide order;
+                        let mut rects = HashSet::new();
+                        all_rectifications(&t, &mut rects);
+                        assert_eq!(
+                            rects.len(),
+                            1,
+                            "rectification depends on slide order for\n{}",
+                            t.to_string()
+                        );
+                        let rect = rects.into_iter().next().unwrap();
+                        // (b) it agrees with the built-in rectify();
+                        assert_eq!(t.rectify().unwrap().rows(), &rect[..]);
+                        // (c) First Fundamental Theorem of jeu de taquin:
+                        //     rect(T) = P(reading word of T).
+                        assert_eq!(
+                            rect,
+                            p_of_word(&t.reading_word()),
+                            "rect != P(reading word) for\n{}",
+                            t.to_string()
+                        );
+                        checked += 1;
+                    }
+                }
+            }
+        }
+        checked
+    }
+
+    #[test]
+    fn test_rectification_well_defined_exhaustive_semistandard() {
+        // Every semistandard filling (entries <= 3) of every skew shape with outer
+        // inside the 3x3 box: all slide orders give the same rectification, equal
+        // to the Schensted P-tableau of the reading word.
+        // (Count verified independently by brute force in python3.)
+        let checked = check_rectification_family(|o, i| ssyt_skew_fillings(o, i, 3));
+        assert_eq!(checked, 1248);
+    }
+
+    #[test]
+    fn test_rectification_well_defined_exhaustive_standard() {
+        // Same, over every STANDARD filling of the same shapes.
+        // (Count verified independently by brute force in python3.)
+        let checked = check_rectification_family(standard_skew_fillings);
+        assert_eq!(checked, 764);
+    }
+
+    #[test]
+    fn test_inner_corners_enumeration() {
+        // Shape (4,3,1)/(2,1): inner corners are (0,1) and (1,0).
+        let outer = Partition::new(vec![4, 3, 1]);
+        let inner = Partition::new(vec![2, 1]);
+        let skew = SkewPartition::new(outer, inner).unwrap();
+        let entries = vec![
+            vec![None, None, Some(1), Some(2)],
+            vec![None, Some(3), Some(4)],
+            vec![Some(5)],
+        ];
+        let t = SkewTableau::new(skew, entries).unwrap();
+        assert_eq!(t.inner_corners(), vec![(0, 1), (1, 0)]);
+        // A straight shape has no inner corners.
+        let straight = make_skew(&[2, 1], &[], vec![vec![Some(1), Some(2)], vec![Some(3)]]);
+        assert!(straight.inner_corners().is_empty());
+    }
+
+    #[test]
+    fn test_skew_reading_word() {
+        // Shape (3,2)/(1):
+        //   . 1 3
+        //   2 4
+        // Row reading word (bottom to top): 2 4 1 3.
+        let t = make_skew(
+            &[3, 2],
+            &[1],
+            vec![vec![None, Some(1), Some(3)], vec![Some(2), Some(4)]],
+        );
+        assert_eq!(t.reading_word(), vec![2, 4, 1, 3]);
     }
 
     #[test]

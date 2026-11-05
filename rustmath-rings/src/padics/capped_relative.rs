@@ -335,7 +335,7 @@ impl CappedRelativePadicElement {
     ///     Integer::from(5),
     ///     10
     /// ).unwrap();
-    /// assert_eq!(omega.unit() % Integer::from(5), Integer::from(2)); // Reduces to 2 mod 5
+    /// assert_eq!(omega.unit() % &Integer::from(5), Integer::from(2)); // Reduces to 2 mod 5
     /// ```
     pub fn teichmuller_lift(residue: Integer, prime: Integer, rel_precision: u32) -> Result<Self> {
         if prime <= Integer::one() || !prime.is_prime() {
@@ -911,7 +911,7 @@ mod tests {
         ).unwrap();
 
         // Should reduce to 2 mod 5
-        assert_eq!(omega.unit() % Integer::from(5), Integer::from(2));
+        assert_eq!(omega.unit() % &Integer::from(5), Integer::from(2));
 
         // Should have valuation 0
         assert_eq!(omega.valuation(), 0);
@@ -919,7 +919,7 @@ mod tests {
         // omega^4 should be 1 (since 2^4 = 16 ≡ 1 mod 5 for the (p-1)=4 root)
         let omega4 = omega.clone() * omega.clone() * omega.clone() * omega.clone();
         // The result should be 1 mod 5 (though not exactly 1 in higher precision)
-        assert_eq!(omega4.unit() % Integer::from(5), Integer::from(1));
+        assert_eq!(omega4.unit() % &Integer::from(5), Integer::from(1));
     }
 
     #[test]

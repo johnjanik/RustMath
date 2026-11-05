@@ -472,8 +472,8 @@ mod tests {
     #[test]
     fn test_specific_srg_constructors() {
         // These return None in our simplified implementation
-        assert!(SRG_100_44_18_20().is_none());
-        assert!(SRG_120_63_30_36().is_none());
+        assert!(srg_100_44_18_20().is_none());
+        assert!(srg_120_63_30_36().is_none());
     }
 
     #[test]

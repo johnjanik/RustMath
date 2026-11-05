@@ -8,6 +8,15 @@
 //! - Cremona database integration
 //! - BSD conjecture verification helpers
 //!
+//! # Canonicalization note (B3)
+//!
+//! This over-Q implementation overlaps with the num-* backed
+//! `rustmath_ellipticcurves::curve::EllipticCurve`. Merging the two over-Q
+//! implementations is DEFERRED to the Phase 2 num-*-to-core normalization —
+//! do not attempt the merge before that migration. The canonical
+//! generic-field curve is `rustmath_ellipticcurves::generic::EllipticCurve`
+//! (re-exported here as `crate::elliptic_curves::generic`).
+//!
 //! # Mathematical Background
 //!
 //! An elliptic curve over Q is given by a generalized Weierstrass equation:
@@ -49,7 +58,7 @@
 //! use num_bigint::BigInt;
 //!
 //! // Create the curve 11a1: y² + y = x³ - x²
-//! let curve = EllipticCurveRational::from_ainvariants(
+//! let mut curve = EllipticCurveRational::from_ainvariants(
 //!     BigInt::from(0),
 //!     BigInt::from(-1),
 //!     BigInt::from(1),

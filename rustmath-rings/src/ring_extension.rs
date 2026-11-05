@@ -359,7 +359,7 @@ mod tests {
 
     #[test]
     fn test_extension_with_backend_visible() {
-        let ext: RingExtensionGeneric<i32, f64> =
+        let ext: RingExtensionGeneric<i32, i64> =
             RingExtensionGeneric::with_backend_visible("Extension".to_string());
         assert!(ext.is_backend_visible());
     }
@@ -375,7 +375,7 @@ mod tests {
     #[test]
     fn test_extension_with_basis() {
         let basis = vec!["1".to_string(), "sqrt2".to_string()];
-        let ext: RingExtensionWithBasis<i32, f64> =
+        let ext: RingExtensionWithBasis<i32, i64> =
             RingExtensionWithBasis::new("Q(sqrt2)/Q".to_string(), basis);
         assert_eq!(ext.dimension(), 2);
         assert!(ext.is_finite());
@@ -384,7 +384,7 @@ mod tests {
 
     #[test]
     fn test_extension_with_gen() {
-        let ext: RingExtensionWithGen<i32, f64> =
+        let ext: RingExtensionWithGen<i32, i64> =
             RingExtensionWithGen::new("Q(sqrt2)".to_string(), "sqrt2".to_string(), 2);
         assert_eq!(ext.generator(), "sqrt2");
         assert_eq!(ext.degree(), 2);
@@ -392,7 +392,7 @@ mod tests {
 
     #[test]
     fn test_fraction_field_extension() {
-        let ext: RingExtensionFractionField<i32, f64> =
+        let ext: RingExtensionFractionField<i32, i64> =
             RingExtensionFractionField::new("Frac(R)".to_string(), true);
         assert!(ext.is_base_extended());
     }

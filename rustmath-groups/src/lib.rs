@@ -8,9 +8,14 @@
 //! - Generic group operations
 //! - Representation theory
 
+pub mod solvtower;
 pub mod transitive24;
+pub mod transitive23;
+pub mod perm_predicates;
+pub mod bsgs;
 pub mod ksubset_orbits;
 pub mod pgalois;
+pub mod galois_resolvent;
 pub mod permutation_group;
 pub mod matrix_group;
 pub mod abelian_group;
@@ -48,6 +53,7 @@ pub mod nilpotent_lie_group;
 pub mod raag;
 pub mod groups_catalog;
 
+pub use bsgs::StabilizerChain;
 pub use permutation_group::{PermutationGroup, SymmetricGroup, AlternatingGroup};
 pub use matrix_group::{MatrixGroup, GLn, SLn};
 pub use abelian_group::AbelianGroup;
