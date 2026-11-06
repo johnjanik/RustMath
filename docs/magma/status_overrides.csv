@@ -4391,3 +4391,86 @@ ch017.comp,missing,,no generic completion; only p-adic Zp/Qp types [review 2026-
 ch017.Completion,missing,,no generic completion; only p-adic Zp/Qp types [review 2026-11-06; checked]
 ch017.ext,partial,rustmath-polynomials/src/univariate.rs:10,UnivariatePolynomial<R> is R[x] at type level; no ext<R|> constructor function [review 2026-11-06; checked]
 ch017.ext.2,partial,rustmath-polynomials/src/multivariate.rs:288,"MultivariatePolynomial<R> is R[x1..xn] at type level; no ext<R,n|> constructor function [review 2026-11-06; checked]"
+ch027.SparseMatrix,partial,rustmath-matrix/src/sparse_forms.rs:49; rustmath-matrix/src/sparse.rs:36,"from_triples is tuple form only (tested structure_weight_support_density); no flat integer-sequence form; R: Ord bound and no GF(q) type is Ord, so H27E1 over GF(23), GF(2^4) not buildable [review 2026-11-06; adjudicated]"
+ch027.SparseMatrix.2,partial,rustmath-matrix/src/sparse_forms.rs:39,"SparseMatrixED::zero(rows,cols); ring is type param; no dedicated test [review 2026-11-06; checked]"
+ch027.SparseMatrix.3,partial,rustmath-matrix/src/sparse_forms.rs:39,"zero(m,n) exists but no default-Z convention; ring chosen by type parameter; no dedicated test [review 2026-11-06; checked]"
+ch027.SparseMatrix.4,partial,rustmath-matrix/src/sparse_forms.rs:39,"zero(0,0) gives empty matrix, no dynamic-construction API or default ring; untested [review 2026-11-06; checked]"
+ch027.IdentitySparseMatrix,partial,rustmath-matrix/src/sparse.rs:136,SparseMatrix::identity(n) only over fields (not Z); test sparse.rs::test_sparse_identity [review 2026-11-06; checked]
+ch027.ScalarSparseMatrix,missing,,[review 2026-11-06; checked]
+ch027.ScalarSparseMatrix.2,missing,,[review 2026-11-06; checked]
+ch027.DiagonalSparseMatrix,missing,,"only diagonal() extraction at sparse.rs:383, no constructor [review 2026-11-06; checked]"
+ch027.DiagonalSparseMatrix.2,missing,,[review 2026-11-06; checked]
+ch027.DiagonalSparseMatrix.3,missing,,[review 2026-11-06; checked]
+ch027.SparseMatrixStructure,missing,,[review 2026-11-06; checked]
+ch027.BaseRing,missing,,"ring is a type parameter, no runtime accessor on sparse matrices [review 2026-11-06; checked]"
+ch027.NumberOfRows,done,rustmath-matrix/src/sparse.rs:81,rows() on SparseMatrix (also sparse_forms.rs:96); test sparse.rs::test_sparse_identity [review 2026-11-06; checked]
+ch027.NumberOfColumns,done,rustmath-matrix/src/sparse.rs:86,cols() on SparseMatrix (also sparse_forms.rs:101); test sparse.rs::test_sparse_identity [review 2026-11-06; checked]
+ch027.ElementToSequence,partial,rustmath-matrix/src/sparse.rs:448,"iter_nonzero yields (i,j,value) triples (also sparse_forms.rs:165); returns iterator not sequence; untested [review 2026-11-06; checked]"
+ch027.NumberOfNonZeroEntries,done,rustmath-matrix/src/sparse.rs:158,nnz() (also sparse_forms.rs:106); test sparse.rs::test_sparse_identity [review 2026-11-06; checked]
+ch027.Density,done,rustmath-matrix/src/sparse_forms.rs:147,"density = nnz/(rows*cols), 0 if empty; test sparse_forms.rs::structure_weight_support_density; only on SparseMatrixED [review 2026-11-06; checked]"
+ch027.Support,partial,rustmath-matrix/src/sparse_forms.rs:139,"row_support(i) tested in structure_weight_support_density, but only on SparseMatrixED (R: Ord, i.e. Z/Q; no GF(q) type is Ord); SparseMatrix<F: Field> has no support accessor [review 2026-11-06; adjudicated]"
+ch027.Support.2,partial,rustmath-matrix/src/sparse.rs:448,"no Support(A) pair list; iter_nonzero gives (i,j,v) triples from which pairs derive [review 2026-11-06; checked]"
+ch027.RowWeight,partial,rustmath-matrix/src/sparse_forms.rs:129,"row_weight(i) tested in structure_weight_support_density, only on SparseMatrixED (R: Ord, so Z/Q); SparseMatrix<F: Field> has none, so no row weight over finite fields [review 2026-11-06; adjudicated]"
+ch027.RowWeights,missing,,[review 2026-11-06; checked]
+ch027.ColumnWeight,missing,,[review 2026-11-06; checked]
+ch027.ColumnWeights,missing,,[review 2026-11-06; checked]
+ch027.A,partial,rustmath-matrix/src/sparse.rs:397,"get_row(i) returns dense row Vec (SparseMatrix only, fields); untested [review 2026-11-06; checked]"
+ch027.A.2,done,rustmath-matrix/src/sparse.rs:172,"get(i,j) returns Result<F>; test sparse.rs::test_from_dense; also SparseMatrixED::get:111 [review 2026-11-06; checked]"
+ch027.A.3,partial,rustmath-matrix/src/sparse_forms.rs:116,"SparseMatrixED::set(i,j,v) in-bounds, zero removes entry; untested; none for SparseMatrix [review 2026-11-06; checked]"
+ch027.SetEntry,partial,rustmath-matrix/src/sparse_forms.rs:116,"SparseMatrixED::set handles in-range (i,j) (zero removes the entry) but returns Err beyond the shape; automatic row/column extension, the defining feature, is missing; untested; Z/Q only [review 2026-11-06; adjudicated]"
+ch027.Submatrix,partial,rustmath-matrix/src/sparse.rs:457,"submatrix(r0,r1,c0,c1) half-open ranges on SparseMatrix (fields) not (i,j,p,q); untested [review 2026-11-06; checked]"
+ch027.SubmatrixRange,partial,rustmath-matrix/src/sparse.rs:457,"submatrix(row_start,row_end,col_start,col_end) half-open range, SparseMatrix only; untested [review 2026-11-06; checked]"
+ch027.Submatrix.2,missing,,"no extraction by index sequences I,J on sparse matrices [review 2026-11-06; checked]"
+ch027.InsertBlock,missing,,[review 2026-11-06; checked]
+ch027.RowSubmatrix,partial,rustmath-matrix/src/sparse.rs:457,"submatrix(i, i+k, 0, ncols) (0-based, half-open) gives rows i..i+k-1, same mapping accepted for SubmatrixRange; k=0 rejected; SparseMatrix<F: Field> only; untested [review 2026-11-06; adjudicated]"
+ch027.RowSubmatrix.2,partial,rustmath-matrix/src/sparse.rs:457,"submatrix(0, i, 0, ncols) gives the first i rows; i=0 rejected; SparseMatrix<F: Field> only; untested [review 2026-11-06; adjudicated]"
+ch027.RowSubmatrixRange,partial,rustmath-matrix/src/sparse.rs:457,"submatrix(i, j+1, 0, ncols) gives rows i..j inclusive, same mapping as the SubmatrixRange row; SparseMatrix<F: Field> only; untested [review 2026-11-06; adjudicated]"
+ch027.ColumnSubmatrix,partial,rustmath-matrix/src/sparse.rs:457,"submatrix(0, nrows, i, i+k) gives columns i..i+k-1 (CSR column filter is correct); k=0 rejected; SparseMatrix<F: Field> only; untested [review 2026-11-06; adjudicated]"
+ch027.ColumnSubmatrix.2,partial,rustmath-matrix/src/sparse.rs:457,"submatrix(0, nrows, 0, i) gives the first i columns; i=0 rejected; SparseMatrix<F: Field> only; untested [review 2026-11-06; adjudicated]"
+ch027.ColumnSubmatrixRange,partial,rustmath-matrix/src/sparse.rs:457,"submatrix(0, nrows, i, j+1) gives columns i..j inclusive, same mapping as the SubmatrixRange row; SparseMatrix<F: Field> only; untested [review 2026-11-06; adjudicated]"
+ch027.SwapRows,missing,,sparse matrices have no row/column operations (dense Matrix only) [review 2026-11-06; checked]
+ch027.SwapColumns,missing,,sparse matrices have no row/column operations (dense Matrix only) [review 2026-11-06; checked]
+ch027.ReverseRows,missing,,sparse matrices have no row/column operations (dense Matrix only) [review 2026-11-06; checked]
+ch027.ReverseColumns,missing,,sparse matrices have no row/column operations (dense Matrix only) [review 2026-11-06; checked]
+ch027.AddRow,missing,,sparse matrices have no row/column operations (dense Matrix only) [review 2026-11-06; checked]
+ch027.AddColumn,missing,,sparse matrices have no row/column operations (dense Matrix only) [review 2026-11-06; checked]
+ch027.MultiplyRow,missing,,sparse matrices have no row/column operations (dense Matrix only) [review 2026-11-06; checked]
+ch027.MultiplyColumn,missing,,sparse matrices have no row/column operations (dense Matrix only) [review 2026-11-06; checked]
+ch027.RemoveRow,missing,,sparse matrices have no row/column operations (dense Matrix only) [review 2026-11-06; checked]
+ch027.RemoveColumn,missing,,sparse matrices have no row/column operations (dense Matrix only) [review 2026-11-06; checked]
+ch027.RemoveRowColumn,missing,,sparse matrices have no row/column operations (dense Matrix only) [review 2026-11-06; checked]
+ch027.RemoveZeroRows,missing,,sparse matrices have no row/column operations (dense Matrix only) [review 2026-11-06; checked]
+ch027.HorizontalJoin,missing,,no join for sparse matrices [review 2026-11-06; checked]
+ch027.VerticalJoin,missing,,no join for sparse matrices [review 2026-11-06; checked]
+ch027.DiagonalJoin,missing,,no join for sparse matrices [review 2026-11-06; checked]
+ch027.Matrix,done,rustmath-matrix/src/sparse_forms.rs:156,SparseMatrixED::to_dense -> Matrix; test sparse_forms.rs::dense_bridge_roundtrip (SparseMatrix::to_dense:195 gives Vec) [review 2026-11-06; checked]
+ch027.SparseMatrix.5,done,rustmath-matrix/src/sparse_forms.rs:90,SparseMatrixED::from_matrix (also from_dense:71); test sparse_forms.rs::dense_bridge_roundtrip [review 2026-11-06; checked]
+ch027.ChangeRing,missing,,no ring coercion for sparse matrices [review 2026-11-06; checked]
+ch027.A.4,partial,rustmath-matrix/src/sparse_forms.rs:30,"derived PartialEq on SparseMatrixED (zeros never stored, so correct) is exercised by dense_bridge_roundtrip assert_eq!(sp, sp2); SparseMatrix<F: Field> has no PartialEq, so not over finite fields [review 2026-11-06; adjudicated]"
+ch027.IsZero,missing,,no predicate on sparse matrices (existing ones are on dense Matrix) [review 2026-11-06; checked]
+ch027.IsOne,missing,,no predicate on sparse matrices (existing ones are on dense Matrix) [review 2026-11-06; checked]
+ch027.IsMinusOne,missing,,no predicate on sparse matrices (existing ones are on dense Matrix) [review 2026-11-06; checked]
+ch027.IsScalar,missing,,no predicate on sparse matrices (existing ones are on dense Matrix) [review 2026-11-06; checked]
+ch027.IsDiagonal,missing,,no predicate on sparse matrices (existing ones are on dense Matrix) [review 2026-11-06; checked]
+ch027.IsSymmetric,missing,,no predicate on sparse matrices (existing ones are on dense Matrix) [review 2026-11-06; checked]
+ch027.IsUpperTriangular,missing,,no predicate on sparse matrices (existing ones are on dense Matrix) [review 2026-11-06; checked]
+ch027.IsLowerTriangular,missing,,no predicate on sparse matrices (existing ones are on dense Matrix) [review 2026-11-06; checked]
+ch027.A.5,partial,rustmath-matrix/src/sparse.rs:283,"SparseMatrix::add via dense round trip (O(mn)), fields only; untested [review 2026-11-06; checked]"
+ch027.A.6,missing,,no subtraction on sparse matrices [review 2026-11-06; checked]
+ch027.A.7,partial,rustmath-matrix/src/sparse.rs:323,SparseMatrix::matmul true sparse product over fields; untested [review 2026-11-06; checked]
+ch027.x,partial,rustmath-matrix/src/sparse.rs:303,"scalar_mul (right/left same, commutative); fields only; untested [review 2026-11-06; checked]"
+ch027.A.8,partial,rustmath-matrix/src/sparse.rs:303,"no Neg impl, but scalar_mul(&-1) computes exactly -A (pattern kept, correct over a field); same function as the x*A row; SparseMatrix<F: Field> only; untested [review 2026-11-06; adjudicated]"
+ch027.A.9,missing,,no sparse inverse [review 2026-11-06; checked]
+ch027.A.10,missing,,no sparse power [review 2026-11-06; checked]
+ch027.Transpose,partial,rustmath-matrix/src/sparse.rs:239,"SparseMatrix::transpose tested (sparse.rs::test_transpose) but needs F: Field; SparseMatrixED, the only sparse type over Z (Magma default), has none; same limit as IdentitySparseMatrix [review 2026-11-06; adjudicated]"
+ch027.v,partial,rustmath-matrix/src/sparse.rs:212,"matvec computes A*x column vector only; no v*A, no dense-matrix V*A; test sparse.rs::test_matvec [review 2026-11-06; checked]"
+ch027.MultiplyByTranspose,partial,rustmath-matrix/src/sparse.rs:212,"matvec(v) with len(v)=ncols returns A*v = v*Transpose(A) without forming A^T; tested sparse.rs::test_matvec ([17,39]); no dense-matrix V form; F: Field only [review 2026-11-06; adjudicated]"
+ch027.Nullspace,missing,,no sparse nullspace/rowspace (dense Matrix routines exist) [review 2026-11-06; checked]
+ch027.NullspaceMatrix,missing,,no sparse nullspace/rowspace (dense Matrix routines exist) [review 2026-11-06; checked]
+ch027.NullspaceOfTranspose,missing,,no sparse nullspace/rowspace (dense Matrix routines exist) [review 2026-11-06; checked]
+ch027.Rowspace,missing,,no sparse nullspace/rowspace (dense Matrix routines exist) [review 2026-11-06; checked]
+ch027.Rank,partial,rustmath-matrix/src/sparse_forms.rs:202; rustmath-matrix/src/sparse_forms.rs:195,"rank (F: Field+Ord, i.e. Q) and rank_via_smith (Z) densify; no rank over GF(q) (not Ord; SparseMatrix<F> has no rank); Markowitz is speed only. Tests rank_over_field_rational, elementary_divisors_over_Z [review 2026-11-06; adjudicated]"
+ch027.Determinant,missing,,no sparse determinant [review 2026-11-06; checked]
+ch027.ElementaryDivisors,partial,rustmath-matrix/src/sparse_forms.rs:184; rustmath-matrix/src/integer_forms.rs:274,"dense SNF, no sign normalization: traced [[2,4],[6,8]] gives [2,-4] (Magma [2,4]); over Q returns pivots not ones; test checks len/divisibility only; R: Ord (Z/Q) [review 2026-11-06; adjudicated]"
+ch027.SetVerbose,partial,rustmath-misc/src/verbose.rs:8,"global set_verbose(level) only; no SparseMatrix flag and no sparse code reads it; sparse rank/SNF exist, so partial as ch018.SetVerbose.2 and ch037.SetVerbose, not n/a [review 2026-11-06; adjudicated]"
+ch027.ModularSolution,missing,,[review 2026-11-06; checked]
