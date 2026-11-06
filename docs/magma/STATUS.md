@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 3205 | 7 | 172 | 755 | 13 | 127 | 4395 (33%) | 7858 (59%) |
+| 13341 | 3369 | 9 | 190 | 811 | 13 | 128 | 4300 (32%) | 7875 (59%) |
 
 ## By chapter
 
@@ -68,7 +68,7 @@ automatic `candidate`/`missing` counts.
 | 44 | Artin Representations | VI | 25 | 0 | 0 | 0 | 0 | 0 | 0 | 22 | 3 | none | `rustmath-numberfields` |
 | 45 | Valuation Rings | VII | 26 | 0 | 0 | 0 | 0 | 0 | 0 | 22 | 4 | stub | `rustmath-rings` |
 | 46 | Newton Polygons | VII | 54 | 54 | 0 | 3 | 7 | 0 | 0 | 0 | 44 | partial | `rustmath-polynomials` |
-| 47 | p-adic Rings and their Extensions | VII | 164 | 0 | 0 | 0 | 0 | 0 | 0 | 95 | 69 | partial | `rustmath-rings::padics (+ rustmath-padics, rustmath-polynomials)` |
+| 47 | p-adic Rings and their Extensions | VII | 164 | 164 | 2 | 18 | 56 | 1 | 1 | 0 | 86 | partial | `rustmath-rings::padics (+ rustmath-padics, rustmath-polynomials)` |
 | 48 | Galois Rings | VII | 58 | 0 | 0 | 0 | 0 | 0 | 0 | 41 | 17 | none | `(none - proposed galois_ring module in rustmath-finitefields or rustmath-rings)` |
 | 49 | Power, Laurent and Puiseux Series | VII | 102 | 0 | 0 | 0 | 0 | 0 | 0 | 75 | 27 | partial | `rustmath-powerseries` |
 | 50 | Lazy Power Series Rings | VII | 44 | 0 | 0 | 0 | 0 | 0 | 0 | 26 | 18 | stub | `rustmath-powerseries` |

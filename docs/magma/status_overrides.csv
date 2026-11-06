@@ -3204,3 +3204,167 @@ ch026.ProjectiveOrder,partial,rustmath-matrix/src/charpoly_exact.rs:354,"project
 ch026.FactoredProjectiveOrder,missing,,not implemented [review 2026-11-06; checked]
 ch026.FrobeniusImage,missing,,no matrix Frobenius map; candidate is unrelated unramified frobenius_image getter [review 2026-11-06; checked]
 ch026.NumericalEigenvectors,missing,,eigenvector routines in eigenvalues.rs are commented out; eigenvalues_approx gives eigenvalues only [review 2026-11-06; checked]
+ch047.pAdicRing,partial,rustmath-rings/src/padics/factory.rs:528,"zp(p,k): bounded Z_p ring; primality not checked, model flag only tags; test factory.rs::test_zp_creation [review 2026-11-06; checked]"
+ch047.pAdicField,partial,rustmath-rings/src/padics/factory.rs:555,"qp(p,k): bounded Q_p; primality not checked; test factory.rs::test_qp_creation [review 2026-11-06; checked]"
+ch047.pAdicRing.2,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.pAdicField.2,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.pAdicQuotientRing,partial,rustmath-rings/src/padics/factory.rs:528,zp with PrecisionModel::FixedModulus approximates Z_p/p^k; no separate quotient ring type; test_fixed_modulus [review 2026-11-06; checked]
+ch047.quo,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.UnramifiedExtension,partial,rustmath-rings/src/padics/unramified.rs:146,"UnramifiedExtension::new(p,n,prec) over Z_p only (Conway/enumerated modulus); not over general L; tests in unramified.rs [review 2026-11-06; checked]"
+ch047.UnramifiedQuotientRing,partial,rustmath-rings/src/padics/unramified.rs:146,Z_q/p^N via p and degree; residue field K cannot be passed in; no finite-field argument [review 2026-11-06; checked]
+ch047.UnramifiedExtension.2,partial,rustmath-rings/src/padics/unramified.rs:154,"with_modulus(p,f,prec): monic f certified irreducible mod p; over Z_p only; test_placeholder_polynomial_rejected [review 2026-11-06; checked]"
+ch047.IsInertial,partial,rustmath-rings/src/padics/unramified.rs:154,"irreducible-mod-p certification only inside with_modulus (private helper), not a public predicate; Z_p base only [review 2026-11-06; checked]"
+ch047.HasGNB,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.CyclotomicUnramifiedExtension,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.TotallyRamifiedExtension,partial,rustmath-rings/src/padics/eisenstein.rs:77,EisensteinExtension::new verifies monic Eisenstein over Z_p only; test_eisenstein_verification [review 2026-11-06; checked]
+ch047.IsEisenstein,partial,rustmath-numberfields/src/local_field.rs:433; rustmath-rings/src/padics/extension.rs:327,"public is_eisenstein(g,p) over Z, monic only (Magma: unit lead coeff, any local base); test local_field.rs::eisenstein_recognition. extension.rs:327 is private (verifier right on path) [review 2026-11-06; adjudicated]"
+ch047.ext,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.IntegerRing,partial,rustmath-rings/src/padics/factory.rs:295,PadicField::integer_ring for Q_p and PadicFieldExtension::integer_ring only; no general local fields; test_integer_ring_from_field [review 2026-11-06; checked]
+ch047.RingOfIntegers,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.FieldOfFractions,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.SplittingField,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.AbsoluteTotallyRamifiedExtension,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.Composite,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.L,partial,rustmath-rings/src/padics/factory.rs:159,precision() getter only; no setter and no unbounded precision model [review 2026-11-06; checked]
+ch047.Prime,done,rustmath-rings/src/padics/factory.rs:154,PadicIntegerRing/PadicField/extension prime(); test factory.rs::test_zp_creation asserts it [review 2026-11-06; checked]
+ch047.InertiaDegree,partial,rustmath-rings/src/padics/extension.rs:370,"PadicExtension::residue_degree absolute over Q_p only, no towers; test_ramification_index_and_residue_degree [review 2026-11-06; checked]"
+ch047.InertiaDegree.2,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.AbsoluteInertiaDegree,partial,rustmath-rings/src/padics/extension.rs:370; rustmath-rings/src/padics/om_factorization.rs:120,"residue_degree() echoes the caller's ExtensionType tag; new() is unchecked (test_general_extension_type asserts f=2 for x^4+1/Q_5, truly e=1). Real f only via om_factorization ramification_data [review 2026-11-06; adjudicated]"
+ch047.RamificationDegree,partial,rustmath-rings/src/padics/extension.rs:365,"PadicExtension::ramification_index absolute over Q_p only, no towers; test_ramification_index_and_residue_degree [review 2026-11-06; checked]"
+ch047.RamificationDegree.2,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.AbsoluteRamificationDegree,partial,rustmath-rings/src/padics/extension.rs:365; rustmath-rings/src/padics/om_factorization.rs:120,"ramification_index() echoes the unchecked tag from new() (test_general_extension_type asserts e=2 for x^4+1/Q_5, truly 1); right only via unramified()/eisenstein(); OM computes real e [review 2026-11-06; adjudicated]"
+ch047.AbsoluteDegree,done,rustmath-rings/src/padics/extension.rs:360,PadicExtension::degree(); test extension.rs::test_ramification_index_and_residue_degree [review 2026-11-06; checked]
+ch047.Degree,partial,rustmath-rings/src/padics/extension.rs:360,"degree over Q_p only (also unramified.rs:237, factory.rs:389); no tower relative degree [review 2026-11-06; checked]"
+ch047.Degree.2,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.DefiningPolynomial,partial,rustmath-rings/src/padics/extension.rs:380,integer-coefficient defining poly of extensions; no x-1 for Z_p itself; no precision-aware coeffs [review 2026-11-06; checked]
+ch047.DefiningMap,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.HasDefiningMap,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.PrimeRing,partial,rustmath-rings/src/padics/factory.rs:394,base_ring()/base_field() on factory extension types only; no PrimeRing(L) for general L [review 2026-11-06; checked]
+ch047.BaseRing,partial,rustmath-rings/src/padics/factory.rs:394,base_ring()/base_field() on PadicIntegerExtension/PadicFieldExtension only; no towers [review 2026-11-06; checked]
+ch047.ResidueClassField,partial,rustmath-rings/src/padics/padic_integer.rs:96; rustmath-numberfields/src/local_field.rs:381,"residue map only per element: PadicInteger::residue (Z_p to F_p, test rustmath-padics lib.rs::tests::basic_padic), UnramifiedElement::residue (Z_q to F_q coords); no field+map returned [review 2026-11-06; adjudicated]"
+ch047.ResidueSystem,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.UniformizingElement,partial,rustmath-rings/src/padics/eisenstein.rs:167,EisensteinExtension::uniformizer only; none for Z_p or unramified; test_pi_powers_and_p [review 2026-11-06; checked]
+ch047.L.2,partial,rustmath-rings/src/padics/unramified.rs:281,generator() on Unramified/Eisenstein/PadicExtension elements; no generic L . 1 [review 2026-11-06; checked]
+ch047.Precision,partial,rustmath-rings/src/padics/factory.rs:159,"precision() getter; no infinity for unbounded, no abs/rel distinction by type [review 2026-11-06; checked]"
+ch047.HasPRoot,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.HasRootOfUnity,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.Discriminant,partial,rustmath-numberfields/src/local_field.rs:454; rustmath-polynomials/src/disc.rs:201; rustmath-numberfields/src/local_field.rs:93,"no padics method; v_p(disc) of Eisenstein Q_p[x]/(g) (test eisenstein_different_matches_pari_gp), LocalFactor::disc_exp; element only via disc.rs on defining_polynomial(), base Q_p [review 2026-11-06; adjudicated]"
+ch047.Discriminant.2,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.AdditiveGroup,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.AssignNames,partial,rustmath-rings/src/padics/extension.rs:437,PadicExtension::set_generator_name only; test_generator_name [review 2026-11-06; checked]
+ch047.Characteristic,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.L.3,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.Name,partial,rustmath-rings/src/padics/unramified.rs:281; rustmath-rings/src/padics/extension.rs:419,"Name(L,1) = generator() on UnramifiedExtension/PadicExtension (same as L.1 row, test unramified.rs::test_frobenius_order_f); no Name(L,k) erroring for k != 1 [review 2026-11-06; adjudicated]"
+ch047.ChangePrecision,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.L.4,partial,rustmath-rings/src/padics/unramified.rs:62,structural PartialEq on Unramified/Eisenstein extensions; not identity; factory rings lack PartialEq [review 2026-11-06; checked]
+ch047.L.5,partial,rustmath-rings/src/padics/unramified.rs:62,!= via structural PartialEq on extension types only [review 2026-11-06; checked]
+ch047.IsRamified,partial,rustmath-numberfields/src/local_field.rs:114; rustmath-rings/src/padics/om_factorization.rs:120,local_decomposition gives Ramification (Unramified/Tame/Wild) of each completion from computed e; OM gives e; no predicate on local ring; test local_field.rs::tame_quadratic_x2_minus_5_at_5 [review 2026-11-06; adjudicated]
+ch047.IsUnramified,partial,rustmath-rings/src/padics/extension.rs:390; rustmath-numberfields/src/local_field.rs:114,"e==1 on stored tag; new(..,Unramified) accepts any poly unchecked (x^2-5 would say unramified); correct via unramified()/eisenstein(); local_decomposition classifies completions [review 2026-11-06; adjudicated]"
+ch047.IsTotallyRamified,partial,rustmath-rings/src/padics/extension.rs:395,"f==1 on stored tag; new() takes ExtensionType/General e,f unchecked, so correct only for unramified()/eisenstein() builds; test_ramification_index_and_residue_degree [review 2026-11-06; adjudicated]"
+ch047.IsTamelyRamified,partial,rustmath-numberfields/src/local_field.rs:114; rustmath-numberfields/src/local_field.rs:815,"Ramification::Tame (e>1, p not dividing e) from computed e of number-field completions; no local-ring predicate; None if Montes unresolved; test local_field.rs::tame_quadratic_x2_minus_5_at_5 [review 2026-11-06; adjudicated]"
+ch047.IsWildlyRamified,partial,rustmath-numberfields/src/local_field.rs:114; rustmath-numberfields/src/local_field.rs:815,Ramification::Wild (p divides e) from computed e of number-field completions; no predicate on a local ring object; test local_field.rs::wild_quadratic_x2_plus_1_at_2 [review 2026-11-06; adjudicated]
+ch047.Zero,done,rustmath-rings/src/padics/factory.rs:179,zero() on PadicIntegerRing/PadicField; test factory.rs::test_zero_and_one [review 2026-11-06; checked]
+ch047.One,done,rustmath-rings/src/padics/factory.rs:184,one() on PadicIntegerRing/PadicField; test factory.rs::test_zero_and_one [review 2026-11-06; checked]
+ch047.Random,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.Representative,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.elt,partial,rustmath-rings/src/padics/factory.rs:169,"from_int/from_integer/from_rational only; no coercion from residue field, extension elements or series; max precision default only [review 2026-11-06; checked]"
+ch047.elt.2,partial,rustmath-rings/src/padics/padic_integer.rs:30,"PadicInteger::from_integer(value,p,precision) takes explicit precision; integers only [review 2026-11-06; checked]"
+ch047.elt.3,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.BigO,missing,,"no p-adic implementation found in rustmath-rings/padics, rustmath-padics or elsewhere [review 2026-11-06; checked]"
+ch047.UniformizingElement.2,partial,rustmath-rings/src/padics/eisenstein.rs:167,EisensteinExtension::uniformizer only; none for Z_p or unramified; test_pi_powers_and_p [review 2026-11-06; checked]
+ch047.ElementToSequence,partial,rustmath-rings/src/padics/extension.rs:545,"coefficients() on extension elements over Z_p/Q_p (also unramified.rs:402, eisenstein.rs:256); no tower/base-ring forms [review 2026-11-06; checked]"
+ch047.Coefficient,partial,rustmath-rings/src/padics/extension.rs:545,"coefficients()[i] slice access on extension elements; no dedicated Coefficient(x,i) [review 2026-11-06; checked]"
+ch047.x,done,rustmath-rings/src/padics/capped_relative.rs:691,"Neg for CappedRelativePadicElement; test capped_relative.rs::test_negation. Z_p/Q_p only, not extensions [review 2026-11-06; checked]"
+ch047.x.2,done,rustmath-rings/src/padics/capped_relative.rs:531,"Add with precision tracking; capped_relative.rs::test_addition_same_valuation, test_addition_different_valuations. Q_p only [review 2026-11-06; checked]"
+ch047.x.3,done,rustmath-rings/src/padics/capped_relative.rs:619,Sub; capped_relative.rs::test_subtraction_with_cancellation. Q_p only [review 2026-11-06; checked]
+ch047.x.4,done,rustmath-rings/src/padics/capped_relative.rs:627,Mul; capped_relative.rs::test_multiplication. Q_p only [review 2026-11-06; checked]
+ch047.x.5,partial,rustmath-finitefields/src/galois_ring.rs:505; rustmath-numberfields/src/local_field.rs:277; rustmath-numberfields/src/local_field.rs:569; rustmath-numberfields/src/local_field.rs:751,"Verifier right: pow(k>=0) on fixed-precision GaloisRingElement and local_field Unramified/Eisenstein/Tower elements (test local_field.rs::eisenstein_element_arithmetic_and_valuation); no k<0, no Q_p pow [review 2026-11-06; adjudicated]"
+ch047.x.6,partial,rustmath-rings/src/padics/capped_relative.rs:655,"Div gives field quotient (negative valuation allowed), no error when v(x)<v(y); panics on zero; test_division [review 2026-11-06; checked]"
+ch047.x.7,n/a,,"Mutating assignment x div:= y is Magma syntax sugar, no library meaning [review 2026-11-06; checked]"
+ch047.x.8,done,rustmath-rings/src/padics/capped_relative.rs:655,"Div to Q_p-type element with valuation shift; test_division, test_division_with_valuations. Q_p only [review 2026-11-06; checked]"
+ch047.IsExactlyDivisible,missing,,No exact-divisibility test returning quotient for p-adic elements [review 2026-11-06; checked]
+ch047.x.9,done,rustmath-rings/src/padics/unramified.rs:388; rustmath-finitefields/src/galois_ring.rs:683; rustmath-rings/src/padics/capped_relative.rs:511,Verifier right: fixed-precision UnramifiedElement and GaloisRingElement eq compare canonical coeffs exactly; unramified.rs::test_frobenius_order_f asserts eq/ne. Capped-relative eq is min-precision [review 2026-11-06; adjudicated]
+ch047.x.10,done,rustmath-rings/src/padics/unramified.rs:388; rustmath-finitefields/src/galois_ring.rs:683; rustmath-rings/src/padics/capped_relative.rs:511,"Verifier right: ne negates the exact fixed-precision PartialEq of UnramifiedElement/GaloisRingElement; unramified.rs::test_frobenius_order_f asserts s1 != g, s2 != s1 [review 2026-11-06; adjudicated]"
+ch047.x.11,missing,,No membership test of element in local ring/field [review 2026-11-06; checked]
+ch047.x.12,missing,,No membership test of element in local ring/field [review 2026-11-06; checked]
+ch047.IsZero,done,rustmath-rings/src/padics/capped_relative.rs:465,is_zero_precision (unit==0); capped_relative.rs::test_zero_handling. Q_p only [review 2026-11-06; checked]
+ch047.IsOne,done,rustmath-rings/src/padics/capped_relative.rs:470,is_one_precision; capped_relative.rs::test_inverse. Q_p only [review 2026-11-06; checked]
+ch047.IsMinusOne,missing,,No p-adic is-minus-one test [review 2026-11-06; checked]
+ch047.IsUnit,partial,rustmath-finitefields/src/galois_ring.rs:385; rustmath-finitefields/src/galois_ring.rs:780,"Verifier right: GaloisRingElement::is_unit is v(x)==0 on GR(p^a,d), the unramified quotient ring (test galois_ring.rs::valuation_and_units); none on capped-relative, PadicInteger or extension elements [review 2026-11-06; adjudicated]"
+ch047.IsIntegral,missing,,No is_integral on p-adic elements; candidate is a function-field fn [review 2026-11-06; checked]
+ch047.Parent,partial,rustmath-rings/src/padics/unramified.rs:397; rustmath-rings/src/padics/extension.rs:540; rustmath-rings/src/padics/eisenstein.rs:251; rustmath-finitefields/src/galois_ring.rs:343,"Verifier right: extension()/ring() return the parent of UnramifiedElement, PadicExtensionElement, EisensteinElement, GaloisRingElement; Z_p/Q_p element types have none [review 2026-11-06; adjudicated]"
+ch047.Precision.2,partial,rustmath-rings/src/padics/capped_relative.rs:263,rel_precision and abs_precision exist for Q_p elements; no ring-vs-field distinction or unit-part semantics [review 2026-11-06; checked]
+ch047.AbsolutePrecision,done,rustmath-rings/src/padics/capped_relative.rs:270,abs_precision = valuation + rel precision; asserted in capped_relative.rs::test_construction. Q_p only [review 2026-11-06; checked]
+ch047.RelativePrecision,done,rustmath-rings/src/padics/capped_relative.rs:263,rel_precision; asserted in capped_relative.rs::test_precision_reduction. Q_p only [review 2026-11-06; checked]
+ch047.ChangePrecision.2,partial,rustmath-rings/src/padics/capped_relative.rs:402,"reduce_precision / lift_to_precision (line 386, lift adds no info); tests test_precision_reduction, test_precision_lift. No polynomial version, no in-place form [review 2026-11-06; checked]"
+ch047.Expand,missing,,No expand to max parent precision; candidate is symbolic expand [review 2026-11-06; checked]
+ch047.Valuation,done,rustmath-rings/src/padics/capped_relative.rs:250,valuation (i64::MAX for zero); capped_relative.rs::test_construction_with_valuation. Also padic_integer.rs:87. Q_p only [review 2026-11-06; checked]
+ch047.Log,missing,,No p-adic logarithm [review 2026-11-06; checked]
+ch047.Exp,missing,,No p-adic exponential [review 2026-11-06; checked]
+ch047.Norm,verified,rustmath-rings/src/padics/extension.rs:588,"PadicExtensionElement::norm over Q_p (det of mult matrix); extension.rs::test_norm_and_trace_degree3_eisenstein, sympy-verified values; also unramified.rs:545 [review 2026-11-06; checked]"
+ch047.Norm.2,missing,,Only absolute norm to Q_p; no relative norm over a subring R [review 2026-11-06; checked]
+ch047.Trace,verified,rustmath-rings/src/padics/extension.rs:607,"PadicExtensionElement::trace over Q_p; extension.rs::test_norm_and_trace_degree3_eisenstein, sympy-verified values; also unramified.rs:559 [review 2026-11-06; checked]"
+ch047.Trace.2,missing,,Only absolute trace to Q_p; no relative trace over a subring R [review 2026-11-06; checked]
+ch047.MinimalPolynomial,missing,,No minimal polynomial for p-adic extension elements (multiplication matrix is private) [review 2026-11-06; checked]
+ch047.MinimalPolynomial.2,missing,,No relative minimal polynomial [review 2026-11-06; checked]
+ch047.CharacteristicPolynomial,missing,,No characteristic polynomial for p-adic extension elements [review 2026-11-06; checked]
+ch047.CharacteristicPolynomial.2,missing,,No relative characteristic polynomial [review 2026-11-06; checked]
+ch047.GaloisImage,done,rustmath-finitefields/src/galois_ring.rs:495; rustmath-rings/src/padics/unramified.rs:530; rustmath-rings/src/padics/unramified.rs:426,"Verifier right: frobenius_power(i) applies phi^i (i mod d) on GR(p^a,d); galois_ring.rs::frobenius_deeper_rings asserts phi^2 != id, phi^3 = id; UnramifiedElement::conjugates gives every sigma^i [review 2026-11-06; adjudicated]"
+ch047.TeichmuellerLift,done,rustmath-finitefields/src/galois_ring.rs:202; rustmath-finitefields/src/galois_ring.rs:429; rustmath-rings/src/padics/capped_relative.rs:340,"Verifier right: GaloisRing::teichmuller_lift(u) on GR(p^a,d), the fixed-precision quotient ring, iterates x^(p^d) to its fixed point; galois_ring.rs::teichmuller_representatives. capped_relative copy broken [review 2026-11-06; adjudicated]"
+ch047.SquareRoot,broken,rustmath-finitefields/src/integer_mod.rs:557; rustmath-finitefields/src/integer_mod.rs:281,"Not partial: only route is the Z/p^k Hensel lift, which needs 2x invertible mod p and returns None (no root) for squares 9 mod 16, 17 mod 32, 9 mod 27; same code adjudicated broken as ch018.Modsqrt [review 2026-11-06; adjudicated]"
+ch047.IsSquare,partial,rustmath-numberfields/src/panayi.rs:326; rustmath-groups/src/pgalois.rs:202; rustmath-finitefields/src/integer_mod.rs:281,"Verifier right: is_padic_square(d,p) decides squareness in Q_p for integers d (test panayi.rs::padic_square_classes) but returns no root, no p-adic element input; IntegerMod::sqrt is broken at p=2 [review 2026-11-06; adjudicated]"
+ch047.InverseSquareRoot,missing,,No p-adic root extraction of elements (candidate path is an unrelated fn) [review 2026-11-06; checked]
+ch047.InverseSquareRoot.2,missing,,No p-adic root extraction of elements (candidate path is an unrelated fn) [review 2026-11-06; checked]
+ch047.Root,missing,,No p-adic root extraction of elements (candidate path is an unrelated fn) [review 2026-11-06; checked]
+ch047.IsPower,missing,,No p-adic root extraction of elements (candidate path is an unrelated fn) [review 2026-11-06; checked]
+ch047.InverseRoot,missing,,No p-adic root extraction of elements (candidate path is an unrelated fn) [review 2026-11-06; checked]
+ch047.InverseRoot.2,missing,,No p-adic root extraction of elements (candidate path is an unrelated fn) [review 2026-11-06; checked]
+ch047.GreatestCommonDivisor,missing,,No gcd for polynomials over p-adic rings with precision tracking [review 2026-11-06; checked]
+ch047.f,missing,,No div for polynomials over p-adic rings [review 2026-11-06; checked]
+ch047.f.2,missing,,No mod for polynomials over p-adic rings [review 2026-11-06; checked]
+ch047.LeastCommonMultiple,missing,,No lcm for p-adic polynomials [review 2026-11-06; checked]
+ch047.Coefficient.2,missing,,No polynomial type over p-adic ring/field [review 2026-11-06; checked]
+ch047.LeadingCoefficient,missing,,No polynomial type over p-adic ring/field [review 2026-11-06; checked]
+ch047.Derivative,missing,,No polynomial type over p-adic ring/field [review 2026-11-06; checked]
+ch047.Evaluate,missing,,No evaluation of polynomials at p-adic elements [review 2026-11-06; checked]
+ch047.ShiftValuation,missing,,No ShiftValuation for p-adic polynomials [review 2026-11-06; checked]
+ch047.NewtonPolygon,partial,rustmath-rings/src/padics/newton_polygon.rs:122,"NewtonPolygon::of_rational/integer_polynomial at prime p, tests test_x2_minus_2_over_q2 etc; Q/Z coefficients only, not over extensions; also rustmath-polynomials/src/newton.rs:73 [review 2026-11-06; checked]"
+ch047.ValuationsOfRoots,partial,rustmath-rings/src/padics/newton_polygon.rs:183,"root_valuations -> (valuation,count) pairs; test_x2_minus_2_over_q2; Q_p coefficients only, zero roots reported separately [review 2026-11-06; checked]"
+ch047.HenselLift,partial,rustmath-rings/src/padics/padic_integer.rs:215; rustmath-polynomials/src/root_label.rs:616,"hensel_lift_root is a single Newton step on supplied f(r),f(r)' (no poly, no target k); padic_roots lifts simple roots mod p to p^n (tests); no general (f,x,k) [review 2026-11-06; checked]"
+ch047.Roots,partial,rustmath-numberfields/src/panayi.rs:112; rustmath-numberfields/src/panayi.rs:205; rustmath-polynomials/src/root_label.rs:616,Verifier right on path: Panayi roots_in_zp finds all Z_p roots of f in Z[x] incl. repeated residues (PARI-checked roots_in_qp_counts_match_pari_gp); roots_in_eisenstein; no multiplicities [review 2026-11-06; adjudicated]
+ch047.HasRoot,partial,rustmath-numberfields/src/panayi.rs:112; rustmath-numberfields/src/panayi.rs:154,"Verifier right: roots_in_zp/count_roots_qp (Panayi) decide and return Z_p roots of f in Z[x] (PARI-checked roots_in_qp_counts_match_pari_gp); misses non-integral Q_p roots, no p-adic coefficients [review 2026-11-06; adjudicated]"
+ch047.HenselLift.2,partial,rustmath-polynomials/src/zp_hensel.rs:192,"hensel_lift_all lifts pairwise coprime mod-p factors of f in Z[x] to p^N; test_hensel_lift_all_three_factors; Z_p only, i64 prime [review 2026-11-06; checked]"
+ch047.IsIrreducible,partial,rustmath-rings/src/padics/om_factorization.rs:127,OmFactorization::is_irreducible decided via Montes OM for f over Q_p; test at om_factorization.rs (is_irreducible asserts); no unramified/ramified extension coefficient rings [review 2026-11-06; checked]
+ch047.SquareFreeFactorization,missing,,No squarefree factorization over p-adic rings [review 2026-11-06; checked]
+ch047.Factorization,partial,rustmath-rings/src/padics/om_factorization.rs:244,"om_factorization over Q_p: factor count, (e,f), approximations with congruence certificate, not full precision-k factors; polynomials padic_factor.rs gives (e,f) data only [review 2026-11-06; checked]"
+ch047.SuggestedPrecision,missing,,No Hensel-liftability precision bound; congruence_precision is a different quantity [review 2026-11-06; checked]
+ch047.IsIsomorphic,missing,,No isomorphism test for extensions defined by two polynomials over Q_p [review 2026-11-06; checked]
+ch047.Distance,missing,,No Eisenstein polynomial distance [review 2026-11-06; checked]
+ch047.Automorphisms,partial,rustmath-rings/src/padics/extension.rs:1043; rustmath-numberfields/src/panayi.rs:205,"Status stands, verifier note kept: GaloisGroup::new gives Frobenius-power maps for unramified L (test_galois_group_degree3_real_frobenius); Eisenstein sigma(pi) images via roots_in_eisenstein, not maps [review 2026-11-06; adjudicated]"
+ch047.Automorphisms.2,missing,,No relative automorphisms over subfield k [review 2026-11-06; checked]
+ch047.AutomorphismGroup,partial,rustmath-rings/src/padics/extension.rs:1043,"Verifier right: GaloisGroup::new computes Aut(L/Q_p) for unramified L with order(), frobenius(), automorphisms() (test_galois_group_degree3_real_frobenius); no permutation group or map; Err for other L [review 2026-11-06; adjudicated]"
+ch047.AutomorphismGroup.2,missing,,No relative automorphism group [review 2026-11-06; checked]
+ch047.IsNormal,partial,rustmath-numberfields/src/panayi.rs:292; rustmath-rings/src/padics/extension.rs:403,"Verifier right: is_eisenstein_galois decides Eisenstein K by Panayi root count (eisenstein_galois_decision: Q_2(zeta_8), Q_3(zeta_9)); unramified true; extension.rs:403 hard-coded false is a facade [review 2026-11-06; adjudicated]"
+ch047.IsNormal.2,missing,,No relative normality test [review 2026-11-06; checked]
+ch047.IsAbelian,missing,,No abelian test for p-adic automorphism group; candidate is number-field fn [review 2026-11-06; checked]
+ch047.Continuations,missing,,No continuation of automorphisms [review 2026-11-06; checked]
+ch047.IsIsomorphic.2,missing,,No isomorphism test for p-adic rings/fields [review 2026-11-06; checked]
+ch047.Completion,missing,,Not implemented: Completion at prime ideal [review 2026-11-06; checked]
+ch047.LocalRing,missing,,Not implemented: LocalRing of a prime [review 2026-11-06; checked]
+ch047.PrincipalUnitGroupGenerators,missing,,Not implemented: principal unit generators [review 2026-11-06; checked]
+ch047.PrincipalUnitGroup,missing,,Not implemented: principal unit group [review 2026-11-06; checked]
+ch047.UnitGroup,missing,,Not implemented: unit group of p-adic ring [review 2026-11-06; checked]
+ch047.UnitGroup.2,missing,,Not implemented: unit group of p-adic field [review 2026-11-06; checked]
+ch047.UnitGroupGenerators,missing,,Not implemented: unit group generators [review 2026-11-06; checked]
+ch047.UnitGroupGenerators.2,missing,,Not implemented: field multiplicative group generators [review 2026-11-06; checked]
+ch047.pSelmerGroup,missing,,Not implemented: p-Selmer group of local field [review 2026-11-06; checked]
+ch047.NormGroup,missing,,Not implemented: norm group [review 2026-11-06; checked]
+ch047.NormEquation,missing,,Not implemented: norm equation [review 2026-11-06; checked]
+ch047.NormEquation.2,missing,,Not implemented: norm equation on unit groups [review 2026-11-06; checked]
+ch047.Norm.3,missing,,Not implemented: norm map on unit groups [review 2026-11-06; checked]
+ch047.NormKernel,missing,,Not implemented: norm kernel [review 2026-11-06; checked]
+ch047.ClassField,missing,,Not implemented: local class field [review 2026-11-06; checked]
+ch047.NormGroupDiscriminant,missing,,Not implemented: norm group discriminant [review 2026-11-06; checked]
+ch047.AllExtensions,missing,,Not implemented: enumeration of extensions [review 2026-11-06; checked]
+ch047.NumberOfExtensions,missing,,Not implemented: count of extensions [review 2026-11-06; checked]
+ch047.OreConditions,missing,,Not implemented: Ore conditions [review 2026-11-06; checked]
