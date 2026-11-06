@@ -1839,3 +1839,179 @@ ch058.SplitAllByValues,missing,,no implementation in workspace [review 2026-11-0
 ch058.SplitCellsByValues,missing,,no implementation in workspace [review 2026-11-06]
 ch058.Pop,missing,,no implementation in workspace [review 2026-11-06]
 ch058.Advance,missing,,integer_vectors hit unrelated; no ordered partition stack [review 2026-11-06; checked]
+ch025.hom,broken,rustmath-complex/src/complex_mpc_ext.rs:148; rustmath-complex/src/complex_mpc_ext.rs:197,"MPCtoMPC/MPFRtoMPC coercion maps exist but apply() goes via f64 (z.real(), r.to_f64()): 256-bit input coerced to 512 bits keeps 53 bits (INTEGERtoMPC had this fixed). No real->real/poly targets [review 2026-11-06; adjudicated]"
+ch025.SetDefaultRealField,missing,,No settable default real field; DEFAULT_PRECISION is a fixed constant (53 bits). [review 2026-11-06; checked]
+ch025.GetDefaultRealField,missing,,No default-real-field accessor; no global default field state. [review 2026-11-06; checked]
+ch025.AssignNames,missing,,No way to rename sqrt(-1) in a complex field. [review 2026-11-06; checked]
+ch025.Name,done,rustmath-complex/src/complex_mpc_ext.rs:301,"MpcomplexFieldClass::i() returns sqrt(-1) at field precision, all Name(C,1) returns (k=1 only); test complex_mpc_ext.rs::test_mp_complex_field_class asserts i=0+1i. Renaming is the AssignNames row [review 2026-11-06; adjudicated]"
+ch025.GetGMPVersion,missing,,No GMP version query. [review 2026-11-06; checked]
+ch025.GetMPFRVersion,missing,,No MPFR version query. [review 2026-11-06; checked]
+ch025.GetMPCVersion,missing,,No MPC version query. [review 2026-11-06; checked]
+ch025.RealField,partial,rustmath-reals/src/bigfloat.rs:1095,"BigFloatField::new(bits) is a genuine arbitrary-precision field; precision in bits only, no Bits:=false decimal digits. real.rs:62 RealField is f64-backed and ignores precision. [review 2026-11-06; checked]"
+ch025.RealField.2,partial,rustmath-reals/src/real.rs:67,"RealField::default() is a fixed 53-bit f64-backed default field, same as ComplexField() partial; not 30 digits, not settable (SetDefaultRealField missing), untested [review 2026-11-06; adjudicated]"
+ch025.ComplexField,partial,rustmath-complex/src/complex_mpc_ext.rs:259,"MpcomplexFieldClass::new(bits) over MPC; bits only, no decimal-digit precision/Bits option. complex.rs ComplexField is f64-backed. [review 2026-11-06; checked]"
+ch025.ComplexField.2,partial,rustmath-complex/src/complex_mpc_ext.rs:264,MpcomplexFieldClass::default() is fixed 53 bits; no settable default. [review 2026-11-06; checked]
+ch025.ComplexField.3,missing,,No constructor from a real field; one would call MpcomplexFieldClass::new(r.precision()) by hand. [review 2026-11-06; checked]
+ch025.d,partial,rustmath-reals/src/mpfr.rs:356,"RealMPFR::from_decimal_str(s,prec) parses decimal text at given precision; no d.eEfpg literal syntax or default-field selection. [review 2026-11-06; checked]"
+ch025.elt,missing,,No constructor m*2^n in a real field. [review 2026-11-06; checked]
+ch025.elt.2,partial,rustmath-complex/src/mpc.rs:84,"ComplexMPFR::with_val_reals(re,im) builds x+yi; precision comes from components and is not coerced into a given field (field.from_reals at complex_mpc_ext.rs:286 ignores field precision). [review 2026-11-06; checked]"
+ch025.R,partial,rustmath-reals/src/mpfr.rs:90; rustmath-reals/src/mpfr.rs:104,"with_val_integer/with_val_rational coerce Z,Q into given precision (tests test_from_integer, test_from_rational); no quadratic/cyclotomic element coercion. [review 2026-11-06; checked]"
+ch025.C,partial,rustmath-complex/src/mpc.rs:102; rustmath-complex/src/mpc.rs:117,"with_val_integers/with_val_rationals coerce Z,Q at given precision (tests in mpc.rs); no quadratic/cyclotomic coercion. [review 2026-11-06; checked]"
+ch025.One,done,rustmath-complex/src/complex_mpc_ext.rs:296,MpcomplexFieldClass::one(); test complex_mpc_ext.rs::test_mp_complex_field_class. Reals: BigFloatField::one (bigfloat.rs:1109). Identity alias not present. [review 2026-11-06; checked]
+ch025.Zero,done,rustmath-complex/src/complex_mpc_ext.rs:291,MpcomplexFieldClass::zero(); test complex_mpc_ext.rs::test_mp_complex_field_class. Reals: BigFloatField::zero (bigfloat.rs:1105). [review 2026-11-06; checked]
+ch025.Category,missing,,No runtime category object for real/complex fields. [review 2026-11-06; checked]
+ch025.Parent,missing,,Elements carry no parent field object (BigFloatField implements Parent but elements do not link back). [review 2026-11-06; checked]
+ch025.PrimeField,missing,,No PrimeField for real/complex fields (would be Q); finitefields hit is unrelated. [review 2026-11-06; checked]
+ch025.Characteristic,partial,rustmath-complex/src/complex_mpc_ext.rs:316,"MpcomplexFieldClass::characteristic() returns 0, asserted in test_field_properties; complex MPC field only, no real-field counterpart. [review 2026-11-06; checked]"
+ch025.IsCommutative,partial,rustmath-reals/src/mpfr.rs:590,"Compile-time marker CommutativeRing for RealMPFR (and ComplexMPFR, mpc.rs:604); no runtime IsCommutative/IsUnitary predicate. [review 2026-11-06; checked]"
+ch025.IsFinite,partial,rustmath-reals/src/mpfr_impls.rs:40,IsOrdered only as OrderedField marker trait for RealMPFR; no runtime IsFinite(R)/IsOrdered(R). mpc.rs:382 is_finite tests an element for NaN/inf. [review 2026-11-06; checked]
+ch025.IsField,partial,rustmath-reals/src/mpfr.rs:592,Field marker trait for RealMPFR/ComplexMPFR; no runtime predicate; IsEuclideanDomain not provided. [review 2026-11-06; checked]
+ch025.IsPID,missing,,No PID/UFD marker or predicate for real/complex fields (ring_category hit is for other rings). [review 2026-11-06; checked]
+ch025.IsDivisionRing,missing,,No IsDivisionRing/IsEuclideanRing predicate or marker for these fields. [review 2026-11-06; checked]
+ch025.IsPrincipalIdealRing,partial,rustmath-reals/src/mpfr_impls.rs:18,"IsDomain only as IntegralDomain marker trait; no IsPrincipalIdealRing, no runtime predicate. [review 2026-11-06; checked]"
+ch025.R.2,partial,rustmath-complex/src/complex_mpc_ext.rs:332,MpcomplexFieldClass PartialEq compares precision; BigFloatField derives PartialEq (bigfloat.rs:1088). No generic R eq S across real/complex. [review 2026-11-06; checked]
+ch025.Precision,partial,rustmath-complex/src/complex_mpc_ext.rs:271,"Returns precision in bits (MPC field; BigFloatField::precision bigfloat.rs:1101), not Magma decimal digits. [review 2026-11-06; checked]"
+ch025.BitPrecision,done,rustmath-complex/src/complex_mpc_ext.rs:271,MpcomplexFieldClass::precision() is the binary precision; test complex_mpc_ext.rs::test_mp_complex_field asserts 256. Reals: BigFloatField::precision. [review 2026-11-06; checked]
+ch025.Parent.2,missing,,Elements have no Parent/Category accessor. [review 2026-11-06; checked]
+ch025.IsZero,partial,rustmath-reals/src/mpfr.rs:581,"Ring::is_zero/is_one exact comparison (test_ring_traits), not up to precision; no IsMinusOne. [review 2026-11-06; checked]"
+ch025.IsUnit,broken,rustmath-category/src/ring_category.rs:161; rustmath-rings/src/category_methods.rs:58,"Blanket impl<R: Ring> RingElementMethods reaches RealMPFR/ComplexMPFR; is_unit/is_unit_element = (x==1 or x==-1), so 2.0 is a non-unit; blanket impl cannot be overridden. No IsZeroDivisor [review 2026-11-06; adjudicated]"
+ch025.IsIdempotent,partial,rustmath-category/src/ring_category.rs:179; rustmath-category/src/ring_category.rs:170,"Blanket RingElementMethods is_idempotent (x*x==x) and is_nilpotent (is_zero) reach RealMPFR/ComplexMPFR; correct for fields but exact, not within precision; tests use i32 only [review 2026-11-06; adjudicated]"
+ch025.IsIrreducible,missing,,No IsIrreducible/IsPrime for real/complex elements (finitefields hit is polynomial irreducibility). [review 2026-11-06; checked]
+ch025.a,partial,rustmath-reals/src/mpfr.rs:562,"PartialEq for RealMPFR/ComplexMPFR is exact equality, not up to precision. [review 2026-11-06; checked]"
+ch025.a.2,partial,rustmath-reals/src/bigfloat.rs:1136,"BigFloatField Parent::contains is the membership test; true for any BigFloat (precision not checked), asserted in bigfloat.rs::test_parent_field; BigFloat-typed only, nothing for complex fields [review 2026-11-06; adjudicated]"
+ch025.a.3,done,rustmath-reals/src/mpfr_impls.rs:20,"PartialOrd for RealMPFR (exact sign of difference); test mpfr_impls.rs::test_realmpfr_ordering. Complex has no ordering, as in Magma. [review 2026-11-06; checked]"
+ch025.Maximum,partial,rustmath-core/src/ordering.rs:40; rustmath-core/src/ordering.rs:49,"OrderedRing::max_with/min_with defaults give binary max/min for RealMPFR and BigFloat (both impl OrderedRing); tested only on i32 (ordering.rs) and Integer, never on a real type [review 2026-11-06; adjudicated]"
+ch025.Maximum.2,missing,,No Maximum/Minimum over a sequence of reals. [review 2026-11-06; checked]
+ch025.IsIntegral,missing,,No IsIntegral(c) test on real/complex elements. [review 2026-11-06; checked]
+ch025.IsReal,missing,,No IsReal(c) for complex elements (imag part must be inspected by hand). [review 2026-11-06; checked]
+ch025.r-r,partial,rustmath-reals/src/mpfr.rs:542,Neg impl for RealMPFR/ComplexMPFR (mpc.rs:556) but no direct test; no unary plus. [review 2026-11-06; checked]
+ch025.r,partial,rustmath-reals/src/mpfr.rs:454,"Add/Sub/Mul/Div and pow/powi on MPFR/MPC (tests test_arithmetic, test_pow); result precision is max of operands, not min as in Magma. [review 2026-11-06; checked]"
+ch025.r.2,missing,,No AddAssign/SubAssign/MulAssign/DivAssign impls for RealMPFR/ComplexMPFR. [review 2026-11-06; checked]
+ch025.MantissaExponent,partial,rustmath-reals/src/bigfloat.rs:568,"BigFloat::mantissa_exponent gives exact (odd integer mantissa, 2-exponent); not normalised 1<=m<10; test test_with_precision_and_mantissa_exponent. BigFloat only. [review 2026-11-06; checked]"
+ch025.ComplexToPolar,partial,rustmath-complex/src/mpc.rs:153; rustmath-complex/src/mpc.rs:182,abs() and arg() give modulus and argument separately (test_abs_arg); no combined ComplexToPolar returning both. [review 2026-11-06; checked]
+ch025.PolarToComplex,missing,,No polar-to-complex constructor (m*e^(ia)). [review 2026-11-06; checked]
+ch025.Argument,done,rustmath-complex/src/mpc.rs:182,"ComplexMPFR::arg via atan2 in (-pi,pi]; test mpc.rs::test_abs_arg (arg(i)=pi/2). Also BigComplex ComplexField::arg. [review 2026-11-06; checked]"
+ch025.Modulus,done,rustmath-complex/src/mpc.rs:153,ComplexMPFR::abs; test mpc.rs::test_abs_arg (|3+4i|=5). [review 2026-11-06; checked]
+ch025.Real,done,rustmath-complex/src/mpc.rs:143,ComplexMPFR::real_part keeps full precision; test mpc_impls.rs::test_with_val_reals_lossless. [review 2026-11-06; checked]
+ch025.Imaginary,done,rustmath-complex/src/mpc.rs:148,ComplexMPFR::imag_part; test mpc_impls.rs::test_complexmpfr_contract_delta checks .im() of (3+4i)^2=24. [review 2026-11-06; checked]
+ch025.Round,partial,rustmath-reals/src/mpfr.rs:317,"RealMPFR::round ties away from zero, exact (test_floor_ceil_round); no complex/Gaussian-integer rounding. [review 2026-11-06; checked]"
+ch025.Truncate,partial,rustmath-complex/src/mpc.rs:625; rustmath-reals/src/mpfr.rs:617,"Only NumericConversion::to_i64: ComplexMPFR exact toward zero (mpc.rs::test_numeric_conversion_truncation_contract_preserved, -3.75->-3); RealMPFR via f64 (1-2^-60 at 128 bits gives 1); i64 only [review 2026-11-06; adjudicated]"
+ch025.Ceiling,done,rustmath-reals/src/mpfr.rs:309,RealMPFR::ceil exact Integer; test mpfr.rs::test_floor_ceil_round. [review 2026-11-06; checked]
+ch025.Floor,done,rustmath-reals/src/mpfr.rs:301,RealMPFR::floor exact Integer; test mpfr.rs::test_floor_ceil_round. [review 2026-11-06; checked]
+ch025.Precision.2,partial,rustmath-complex/src/mpc.rs:127,"ComplexMPFR::precision (and RealMPFR::precision mpfr.rs:111) returns bits, not decimal digits. [review 2026-11-06; checked]"
+ch025.BitPrecision.2,done,rustmath-complex/src/mpc.rs:127,ComplexMPFR::precision() in bits; test mpc.rs::test_basic_creation / complex_mpc_ext.rs::test_mp_complex_field. Reals: mpfr.rs::test_high_precision_creation. [review 2026-11-06; checked]
+ch025.Precision.3,missing,,No precision-of-a-sequence function. [review 2026-11-06; checked]
+ch025.ChangePrecision,partial,rustmath-reals/src/mpfr.rs:330,"RealMPFR::with_precision and ComplexField::with_precision (mpc_impls.rs:63) re-round to n bits (tests test_realmpfr_contract_delta, test_complexmpfr_contract_delta); bits not decimal digits. [review 2026-11-06; checked]"
+ch025.Catalan,missing,,No Catalan constant G; combinatorics catalan(n) is the Catalan number sequence. [review 2026-11-06; checked]
+ch025.EulerGamma,verified,rustmath-modular/src/modsym/lseries.rs:205,"euler_gamma(prec bits) via Euler-Maclaurin; test lseries.rs::test_euler_gamma_matches_mpmath (65 digits vs mpmath). Takes bits, not a field; lives in modsym. [review 2026-11-06; checked]"
+ch025.Pi,verified,rustmath-reals/src/mpfr.rs:260,"RealMPFR::pi(prec) via MPFR constant; test mpfr.rs::test_pi_correct_beyond_40_digits (320 digits vs mpmath). Takes bits, not a field. [review 2026-11-06; checked]"
+ch025.AbsoluteValue,done,rustmath-complex/src/mpc.rs:153; rustmath-reals/src/mpfr.rs:121; rustmath-reals/src/bigfloat.rs:858,test_realmpfr_ordering never calls abs. ComplexMPFR::abs: mpc.rs::test_abs_arg (|3+4i|=5); BigFloat: bigfloat.rs::test_ordering_and_sign (|1/3-1/2|=1/6); RealMPFR::abs via test_realmpfr_contract_delta [review 2026-11-06; adjudicated]
+ch025.Sign,done,rustmath-reals/src/mpfr.rs:289,RealMPFR::signum returns -1/0/1 (OrderedRing::sign); test mpfr_impls.rs::test_realmpfr_ordering asserts sign(a-b)=-1. [review 2026-11-06; checked]
+ch025.ComplexConjugate,done,rustmath-complex/src/mpc.rs:192,ComplexMPFR::conj/conjugate; test mpc.rs::test_conjugate. [review 2026-11-06; checked]
+ch025.Norm,partial,rustmath-complex/src/mpc.rs:167,"ComplexMPFR::norm = x^2+y^2 (mpc.rs::test_norm, 3+4i gives 25); handbook Norm(c) also covers real c, and RealMPFR/BigFloat have no Norm [review 2026-11-06; adjudicated]"
+ch025.Root,missing,,No n-th real root function (Newton or otherwise); only generic pow with fractional exponent. [review 2026-11-06; checked]
+ch025.SquareRoot,done,rustmath-complex/src/mpc.rs:260; rustmath-reals/src/mpfr.rs:142,"ComplexMPFR::sqrt and RealMPFR::sqrt via MPC/MPFR; tests mpc.rs::test_sqrt, mpfr.rs::test_sqrt. [review 2026-11-06; checked]"
+ch025.Distance,missing,,No minimum-distance-to-sequence function for real/complex numbers. [review 2026-11-06; checked]
+ch025.Diameter,missing,,"No Diameter(L) of a sequence; complex_interval diameter() is the width of an interval, a different notion. [review 2026-11-06; checked]"
+ch025.Roots,partial,rustmath-complex/src/roots.rs:378,"aberth_roots: numeric roots of coefficient slice with cluster-size multiplicity heuristic; test test_known_factorization_quartic. Not Schonhage, no Al option, not a polynomial-ring Roots. [review 2026-11-06; checked]"
+ch025.RootsNonExact,partial,rustmath-complex/src/roots.rs:378,"aberth_roots returns all n approximate roots with certified error bounds, matching the idea; no polynomial-ring signature or error spec p-a(z-v1)... [review 2026-11-06; checked]"
+ch025.HenselLift,missing,,"No real/complex Newton refinement of one root of f; polynomials hensel_lift is the p-adic/Z version, unrelated. [review 2026-11-06; checked]"
+ch025.ContinuedFraction,partial,rustmath-rationals/src/continued_fraction.rs:196,ContinuedFraction::from_rational (tested) only for rational input; no expansion of an arbitrary real number. [review 2026-11-06; checked]
+ch025.BestApproximation,done,rustmath-rationals/src/continued_fraction.rs:47,"from_real(x,max_denom) best rational with bounded denominator incl. semiconvergents; test continued_fraction.rs::test_from_real_pi_denom_200_is_355_113. Takes rug Float. [review 2026-11-06; checked]"
+ch025.Convergents,partial,rustmath-rationals/src/continued_fraction.rs:251,"all_convergents/convergent return rationals (test_all_convergents); no 2x2 matrix [[p_n,p_n-1],[q_n,q_n-1]] output. [review 2026-11-06; checked]"
+ch025.LinearRelation,partial,rustmath-matrix/src/integer_relation.rs:273,"integer_relation via exact-integer LLL for real vectors (test recovers_planted_relation); no complex input, no Al/Dimension options. [review 2026-11-06; checked]"
+ch025.AllLinearRelations,missing,,No lattice of all small linear relations; integer_relation returns a single relation. [review 2026-11-06; checked]
+ch025.PowerRelation,partial,rustmath-numberfields/src/recognize.rs:354; rustmath-numberfields/src/recognize.rs:259,"recognize_complex_algebraic_hp: LLL on (1,z,..,z^d), d<=k, returns short integer poly with z as root; test hp_recognizes_height_1e6_quartic_where_f64_fails (mpmath). None if no short relation; no Al [review 2026-11-06; adjudicated]"
+ch025.Exp,partial,rustmath-powerseries/src/transcendental.rs:74,"Series exp exists (generic field, exact) but needs zero constant term; tested only via adv_verify_tmp.rs::adv_exp_log_one_plus_x over Q [review 2026-11-06; checked]"
+ch025.Exp.2,done,rustmath-complex/src/mpc.rs:221; rustmath-reals/src/mpfr.rs:149,"ComplexMPFR/RealMPFR exp at arbitrary precision; tests mpc.rs::test_exp_ln, mpfr.rs::test_exp_ln [review 2026-11-06; checked]"
+ch025.Log,partial,rustmath-powerseries/src/transcendental.rs:104,Series log only for constant term 1; tested via adv_verify_tmp.rs::adv_exp_log_one_plus_x over Q [review 2026-11-06; checked]
+ch025.Log.2,done,rustmath-complex/src/mpc.rs:230; rustmath-reals/src/mpfr.rs:156,"Principal ln for ComplexMPFR/RealMPFR; tests mpc.rs::test_exp_ln, mpfr.rs::test_exp_ln [review 2026-11-06; checked]"
+ch025.Log.3,partial,rustmath-reals/src/transcendental.rs:92,"Log base b of r only via f64 Real::log (53-bit), no arbitrary precision real version [review 2026-11-06; checked]"
+ch025.Dilog,missing,,[review 2026-11-06; checked]
+ch025.Polylog,missing,,[review 2026-11-06; checked]
+ch025.Polylog.2,missing,,[review 2026-11-06; checked]
+ch025.PolylogD,missing,,[review 2026-11-06; checked]
+ch025.Sin,partial,rustmath-complex/src/mpc.rs:267; rustmath-reals/src/mpfr.rs:175; rustmath-powerseries/src/transcendental.rs:196,"Numbers (MPFR/MPC) and series (zero const term) exist; tests only check sin(0), sin(pi/2): mpc.rs::test_trig, mpfr.rs::test_trig_functions [review 2026-11-06; checked]"
+ch025.Cos,partial,rustmath-complex/src/mpc.rs:274; rustmath-reals/src/mpfr.rs:182; rustmath-powerseries/src/transcendental.rs:201,"Numbers (MPFR/MPC) and series (zero const term) exist; tests only check cos(0): mpc.rs::test_trig, mpfr.rs::test_trig_functions [review 2026-11-06; checked]"
+ch025.Sincos,partial,rustmath-powerseries/src/transcendental.rs:164,Only series sin_cos (zero const term); no combined number version; no dedicated test [review 2026-11-06; checked]
+ch025.Tan,partial,rustmath-complex/src/mpc.rs:281; rustmath-reals/src/mpfr.rs:189,Numbers only (ComplexMPFR/RealMPFR); no power series Tan [review 2026-11-06; checked]
+ch025.Cot,partial,rustmath-functions/src/trigonometric.rs:97,Only symbolic Expr node and f64 cot_f64; no arbitrary precision or series [review 2026-11-06; checked]
+ch025.Sec,partial,rustmath-functions/src/trigonometric.rs:67,Only symbolic Expr node and f64 sec_f64; no arbitrary precision or series [review 2026-11-06; checked]
+ch025.Cosec,partial,rustmath-functions/src/trigonometric.rs:82,csc only as symbolic Expr and f64 csc_f64; no arbitrary precision or series [review 2026-11-06; checked]
+ch025.Arcsin,partial,rustmath-complex/src/mpc.rs:288; rustmath-reals/src/mpfr.rs:196,Numbers only; no power series; test mpc.rs::test_inverse_trig checks sin(asin z)=z only [review 2026-11-06; checked]
+ch025.Arccos,partial,rustmath-complex/src/mpc.rs:295; rustmath-reals/src/mpfr.rs:203,Numbers only (MPFR/MPC); no power series; no direct test found [review 2026-11-06; checked]
+ch025.Arctan,partial,rustmath-complex/src/mpc.rs:302; rustmath-reals/src/mpfr.rs:210,Numbers only (MPFR/MPC); no power series [review 2026-11-06; checked]
+ch025.Arctan.2,partial,rustmath-reals/src/mpfr.rs:338,RealMPFR::atan2 wraps MPFR atan2; no direct test in mpfr.rs found [review 2026-11-06; checked]
+ch025.Arccot,missing,,[review 2026-11-06; checked]
+ch025.Arcsec,missing,,[review 2026-11-06; checked]
+ch025.Arccosec,missing,,[review 2026-11-06; checked]
+ch025.Sinh,partial,rustmath-complex/src/mpc.rs:309; rustmath-reals/src/mpfr.rs:217,Numbers only; no power series; test mpc.rs::test_hyperbolic_functions [review 2026-11-06; checked]
+ch025.Cosh,partial,rustmath-complex/src/mpc.rs:316; rustmath-reals/src/mpfr.rs:224,Numbers only; no power series; test mpc.rs::test_hyperbolic_functions [review 2026-11-06; checked]
+ch025.Tanh,partial,rustmath-complex/src/mpc.rs:323; rustmath-reals/src/mpfr.rs:231,Numbers only; no power series; test mpc.rs::test_hyperbolic_functions [review 2026-11-06; checked]
+ch025.Coth,partial,rustmath-functions/src/hyperbolic.rs:83,Only symbolic Expr node and f64 coth_f64; no arbitrary precision [review 2026-11-06; checked]
+ch025.Sech,partial,rustmath-functions/src/hyperbolic.rs:53,Only symbolic Expr node and f64 sech_f64; no arbitrary precision [review 2026-11-06; checked]
+ch025.Cosech,partial,rustmath-functions/src/hyperbolic.rs:68,csch only as symbolic Expr and f64 csch_f64; no arbitrary precision [review 2026-11-06; checked]
+ch025.Argsinh,partial,rustmath-complex/src/mpc.rs:330,ComplexMPFR::asinh only; no series; test mpc.rs::test_inverse_hyperbolic [review 2026-11-06; checked]
+ch025.Argcosh,partial,rustmath-complex/src/mpc.rs:337,ComplexMPFR::acosh only; no series; no direct test [review 2026-11-06; checked]
+ch025.Argtanh,partial,rustmath-complex/src/mpc.rs:344,ComplexMPFR::atanh only; no series; no direct test [review 2026-11-06; checked]
+ch025.Argsech,missing,,[review 2026-11-06; checked]
+ch025.Argcosech,missing,,[review 2026-11-06; checked]
+ch025.Argcoth,missing,,[review 2026-11-06; checked]
+ch025.Eisenstein,partial,rustmath-modular/src/modform.rs:441,EisensteinSeries gives q-expansion coefficients over Q (even k>=4); no composition with a series z; test modform.rs::test_eisenstein_series [review 2026-11-06; checked]
+ch025.Eisenstein.2,missing,,[review 2026-11-06; checked]
+ch025.Eisenstein.3,missing,,[review 2026-11-06; checked]
+ch025.Eisenstein.4,missing,,[review 2026-11-06; checked]
+ch025.WeierstrassSeries,missing,,[review 2026-11-06; checked]
+ch025.WeierstrassSeries.2,missing,,[review 2026-11-06; checked]
+ch025.WeierstrassSeries.3,missing,,[review 2026-11-06; checked]
+ch025.WeierstrassSeries.4,missing,,[review 2026-11-06; checked]
+ch025.JacobiTheta,missing,,[review 2026-11-06; checked]
+ch025.JacobiTheta.2,missing,,[review 2026-11-06; checked]
+ch025.JacobiThetaNullK,missing,,[review 2026-11-06; checked]
+ch025.DedekindEta,partial,rustmath-modular/src/etaproducts.rs:633,"Verifier right: qexp_eta(prec) gives correct i64 coefficients of prod(1-q^n) (eta at z=q, q^(1/24) dropped as handbook); no substitution of a series z; test_qexp_eta checks only length and c0 [review 2026-11-06; adjudicated]"
+ch025.DedekindEta.2,missing,,[review 2026-11-06; checked]
+ch025.jInvariant,partial,rustmath-modular/src/modform.rs:562,JInvariant::q_expansion gives integer coefficients of j in q; no substitution of a given series; test modform.rs::test_j_times_delta_is_e4_cubed [review 2026-11-06; checked]
+ch025.jInvariant.2,partial,rustmath-numberfields/src/hcf.rs:220,"Private helper j_invariant(q) via q-series for hilbert_class_polynomial; not public, takes q not tau [review 2026-11-06; checked]"
+ch025.jInvariant.3,missing,,[review 2026-11-06; checked]
+ch025.jInvariant.4,missing,,[review 2026-11-06; checked]
+ch025.Delta,partial,rustmath-modular/src/modform.rs:511,ModularDiscriminant::q_expansion gives tau(n) coefficients; no substitution of a given series; test modform.rs::test_modular_discriminant [review 2026-11-06; checked]
+ch025.Delta.2,missing,,[review 2026-11-06; checked]
+ch025.Delta.3,missing,,[review 2026-11-06; checked]
+ch025.WeberF,missing,,[review 2026-11-06; checked]
+ch025.WeberF2,missing,,[review 2026-11-06; checked]
+ch025.WeberF1,missing,,[review 2026-11-06; checked]
+ch025.Theta,partial,rustmath-rings/src/function_field/theta_functions.rs:312,"ThetaFunction::evaluate: f64 Complex, truncated lattice sum, no error bound; tests assert only nonzero/finite, no reference values [review 2026-11-06; checked]"
+ch025.Theta.2,missing,,[review 2026-11-06; checked]
+ch025.Gamma,missing,,[review 2026-11-06; checked]
+ch025.Gamma.2,partial,rustmath-special-functions/src/gamma.rs:20,"Real f64 Lanczos only (53-bit), no complex or arbitrary precision; test gamma.rs::test_gamma_small_integers [review 2026-11-06; checked]"
+ch025.Gamma.3,missing,,[review 2026-11-06; checked]
+ch025.GammaD,missing,,[review 2026-11-06; checked]
+ch025.LogGamma,missing,,[review 2026-11-06; checked]
+ch025.LogGamma.2,partial,rustmath-special-functions/src/gamma.rs:40,Real f64 ln_gamma only; test gamma.rs::test_ln_gamma (ln Gamma(10) reference); no complex [review 2026-11-06; checked]
+ch025.LogDerivative,partial,rustmath-special-functions/src/gamma.rs:59,digamma on real f64 only; test gamma.rs::test_digamma_at_one (psi(1) = -gamma); no complex [review 2026-11-06; checked]
+ch025.BesselFunction,broken,rustmath-special-functions/src/bessel.rs:19,"Verifier right: for |x|>=10 only the leading asymptotic term is kept; replicated J_5(10)=0.0526 (true -0.2341), J_10(12)=-0.050 (true 0.3005); x<=-10 gives NaN. Series path |x|<10 ok [review 2026-11-06; adjudicated]"
+ch025.BesselFunctionSecondKind,broken,rustmath-special-functions/src/bessel.rs:83,"Verifier right: n>=1, x<2 numerator J_n cos(n pi)-J_-n is identically 0, so bessel_y(1,1.0)=0 (true -0.7812); x>=2 leading asymptotic term only; only Y_0(1) tested [review 2026-11-06; adjudicated]"
+ch025.JBessel,stub,rustmath-symbolic/src/expression.rs:241; rustmath-symbolic/src/substitute.rs:452,"Verifier right: Expr::bessel_j(n+1/2,x) evaluates via bessel_j_approx, which returns NaN for any non-integer order; special-functions bessel_j takes i32 order only [review 2026-11-06; adjudicated]"
+ch025.KBessel,stub,rustmath-symbolic/src/expression.rs:262; rustmath-symbolic/src/substitute.rs:522,"Verifier right: Expr::bessel_k node exists but eval_float calls bessel_k_approx, which always returns NaN (comment: full implementation is complex); no KBessel2; same treatment as HypergeometricU [review 2026-11-06; adjudicated]"
+ch025.HypergeometricSeries,partial,rustmath-curves/src/belyi/hypergeometric.rs:43; rustmath-symbolic/src/specialfunctions/hypergeometric.rs:73,"Verifier right: pub hyp_series(A,B,C,prec) is the truncated 2F1 series in t over Q, rational params only, no evaluation at real/complex z; used by phi_5_3_3_matches_paper; symbolic version unevaluated [review 2026-11-06; adjudicated]"
+ch025.HypergeometricU,stub,rustmath-symbolic/src/specialfunctions/hypergeometric.rs:169,Builds an unevaluated symbolic Function node only; no numerical evaluation [review 2026-11-06; checked]
+ch025.ArithmeticGeometricMean,missing,,[review 2026-11-06; checked]
+ch025.ArithmeticGeometricMean.2,partial,rustmath-ellipticcurves/src/period.rs:496,"Private agm over BigFloat, positive reals only, panics otherwise; no complex or series; test period.rs::agm_gauss_constant vs mpmath [review 2026-11-06; checked]"
+ch025.BernoulliNumber,verified,rustmath-numbertheory/src/bernoulli.rs:150; rustmath-rationals/src/special_numbers.rs:35,Verifier right: exact Rational B_n (B_1=-1/2); bernoulli.rs::test_bernoulli_large_index asserts B_60 (OEIS A027641/A027642) and B_70; values rechecked with Python fractions [review 2026-11-06; adjudicated]
+ch025.BernoulliApproximation,missing,,[review 2026-11-06; checked]
+ch025.DawsonIntegral,missing,,[review 2026-11-06; checked]
+ch025.ErrorFunction,broken,rustmath-special-functions/src/error.rs:18,"Verifier right: on [2,5] erf=1-erfc with CF prefactor 1/x instead of x; replicated erf(2)=0.998852 (true 0.995322). Tests only erf(1) and odd symmetry. Other erfs are private A&S 1e-7 approximations [review 2026-11-06; adjudicated]"
+ch025.ComplementaryErrorFunction,broken,rustmath-special-functions/src/error.rs:47; rustmath-special-functions/src/error.rs:87,"Verifier right: erfc_continued_fraction low by factor x^2 (prefactor bug); replicated erfc(2)=1.148e-3 (true 4.678e-3), erfc(3)=2.44e-6 (true 2.21e-5); 0 for x>5; complement test is tautological [review 2026-11-06; adjudicated]"
+ch025.ExponentialIntegral,missing,,[review 2026-11-06; checked]
+ch025.ExponentialIntegralE1,partial,rustmath-modular/src/modsym/lseries.rs:260; rustmath-ellipticcurves/src/lfunction.rs:301,"Verifier right: pub exp_integral_e1 BigFloat E1 at any precision for x>0, Err for x<=0 (no principal value); lseries.rs::test_exp_integral_e1_matches_mpmath checks E1(1), E1(1/2), E1(10) [review 2026-11-06; adjudicated]"
+ch025.LogIntegral,missing,,[review 2026-11-06; checked]
+ch025.ZetaFunction,broken,rustmath-special-functions/src/zeta.rs:21,"Verifier right: 10000-term Dirichlet sum, no tail: zeta(1.5)=2.5924 (true 2.6124); zeta(0)=0*inf=NaN; s=2,4 hard-coded; f64 real only. ellipticcurves zeta_integer covers integer s>=2 only [review 2026-11-06; adjudicated]"
+ch025.ZetaFunction.2,partial,rustmath-ellipticcurves/src/ltaylor.rs:55; rustmath-special-functions/src/zeta.rs:21,"Decided by zeta_integer(k,prec): pub(crate) Euler-Maclaurin BigFloat zeta(k), k>=2 only (asserts), ltaylor.rs::test_zeta_integer vs mpmath. Public f64 zeta(n) is broken: n=0 NaN, zeta(3) err 5e-9 [review 2026-11-06; adjudicated]"
+ch025.InfiniteSum,missing,,[review 2026-11-06; checked]
+ch025.PositiveSum,missing,,[review 2026-11-06; checked]
+ch025.AlternatingSum,missing,,[review 2026-11-06; checked]
+ch025.Interpolation,partial,rustmath-numerical/src/interpolation.rs:4,f64 Lagrange interpolation at x only; not over general fields; test in interpolation.rs [review 2026-11-06; checked]
+ch025.RombergQuadrature,partial,rustmath-numerical/src/integration/quadrature.rs:50,"f64 closure Romberg, step count only, no Precision/K parameters; test quadrature.rs::test_romberg [review 2026-11-06; checked]"
+ch025.SimpsonQuadrature,partial,rustmath-numerical/src/integration/quadrature.rs:12,f64 closure Simpson; not arbitrary precision; test quadrature.rs::test_simpson [review 2026-11-06; checked]
+ch025.TrapezoidalQuadrature,partial,rustmath-numerical/src/integration/quadrature.rs:34,f64 closure trapezoid; not arbitrary precision; test quadrature.rs::test_trapezoid [review 2026-11-06; checked]
+ch025.NumericalDerivative,missing,,[review 2026-11-06; checked]

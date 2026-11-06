@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 1840 | 2 | 95 | 384 | 7 | 29 | 5153 (39%) | 7665 (57%) |
+| 13341 | 2016 | 5 | 114 | 459 | 10 | 36 | 5053 (38%) | 7658 (57%) |
 
 ## By chapter
 
@@ -46,7 +46,7 @@ automatic `candidate`/`missing` counts.
 | 22 | Nearfields | III | 42 | 0 | 0 | 0 | 0 | 0 | 0 | 26 | 16 | none | `(none - new crate rustmath-nearfields proposed)` |
 | 23 | Univariate Polynomial Rings | III | 129 | 0 | 0 | 0 | 0 | 0 | 0 | 84 | 45 | substantial | `rustmath-polynomials` |
 | 24 | Multivariate Polynomial Rings | III | 98 | 0 | 0 | 0 | 0 | 0 | 0 | 67 | 31 | substantial | `rustmath-polynomials` |
-| 25 | Real and Complex Fields | III | 176 | 0 | 0 | 0 | 0 | 0 | 0 | 100 | 76 | partial | `rustmath-reals, rustmath-complex` |
+| 25 | Real and Complex Fields | III | 176 | 176 | 3 | 19 | 75 | 10 | 0 | 0 | 69 | partial | `rustmath-reals, rustmath-complex` |
 | 26 | Matrices | IV | 149 | 0 | 0 | 0 | 0 | 0 | 0 | 73 | 76 | substantial | `rustmath-matrix` |
 | 27 | Sparse Matrices | IV | 83 | 0 | 0 | 0 | 0 | 0 | 0 | 39 | 44 | partial | `rustmath-matrix` |
 | 28 | Vector Spaces | IV | 87 | 0 | 0 | 0 | 0 | 0 | 0 | 59 | 28 | partial | `rustmath-matrix` |
