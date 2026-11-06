@@ -71,6 +71,16 @@ use crate::lie_conformal_algebra::GeneratorIndex;
 ///
 /// The structure is: HashMap<(i, j, k), Vec<R>>
 /// where Vec<R> represents the polynomial c_0 + c_1*λ + c_2*λ² + ...
+///
+/// # λ convention
+///
+/// Entry `m` of the polynomial is the ordinary coefficient of `λ^m`. This is
+/// not the convention of [`LambdaBracket::lambda_bracket`], which returns
+/// j-th products `a_(j) b = j! · [λ^j]` (so `[a_λ b] = Σ_j λ^j / j! · a_(j) b`).
+/// To get the j-th product from this table, multiply entry `j` by `j!`. For
+/// example `[L_λ L] ∋ (λ³/12)C` is stored here as `1/12` at index 3 of the
+/// entry for `C`, while the j-th product is `L_(3) L ∋ 3!/12 · C = C/2`
+/// (Sage: `{0: TL, 1: 2*L, 3: 1/2*C}`).
 pub type LCAStructureCoefficients<R> = HashMap<(usize, usize, usize), Vec<R>>;
 
 /// Lie conformal algebra defined by structure coefficients
@@ -235,7 +245,9 @@ impl<R: Ring + Clone + From<i64>> LieConformalAlgebraWithStructureCoefficients<R
     ///
     /// # Returns
     ///
-    /// HashMap mapping k to the polynomial coefficient of g_k
+    /// HashMap mapping k to the polynomial coefficient of g_k, in ordinary
+    /// powers of λ (the stored table entries, see [`LCAStructureCoefficients`];
+    /// not the j-th products of [`LambdaBracket::lambda_bracket`])
     pub fn bracket_on_basis(&self, i: usize, j: usize) -> HashMap<usize, Vec<R>>
     where
         R: PartialEq,

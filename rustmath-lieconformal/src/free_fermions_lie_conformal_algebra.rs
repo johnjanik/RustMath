@@ -398,9 +398,12 @@ mod tests {
         let bracket01 = lca.lambda_bracket(&psi0, &psi1);
         assert!(bracket01.is_empty() || bracket01.values().all(|v| v.is_zero()));
 
-        // [ψ1_λ ψ1] = 3K
+        // [ψ1_λ ψ1] = (ψ1, ψ1)K = 3K, so the only product is
+        // ψ1_(0) ψ1 = 0! · 3K = 3K.
         let bracket11 = lca.lambda_bracket(&psi1, &psi1);
         assert!(bracket11.contains_key(&0)); // λ^0 term exists
+        assert_eq!(bracket11.len(), 1);
+        assert_eq!(bracket11[&0].terms(), k.scalar_mul(&3).terms());
     }
 
     #[test]

@@ -40,9 +40,17 @@ pub trait LieConformalAlgebra<R: Ring> {
 /// product is zero are omitted, so an empty map means `[a_λ b] = 0`.
 pub trait LambdaBracket<R: Ring, E: Clone> {
     fn lambda_bracket(&self, a: &E, b: &E) -> HashMap<usize, E>;
-    fn n_product(&self, a: &E, b: &E, n: usize) -> E {
-        self.lambda_bracket(a, b).get(&n).cloned()
-            .unwrap_or_else(|| panic!("No term for power {}", n))
+
+    /// The n-th product `a_(n) b`, read off [`Self::lambda_bracket`].
+    ///
+    /// A missing key is a zero product, so the default returns
+    /// `E::default()`, which must be the zero element (it is for
+    /// [`LieConformalAlgebraElement`]).
+    fn n_product(&self, a: &E, b: &E, n: usize) -> E
+    where
+        E: Default,
+    {
+        self.lambda_bracket(a, b).remove(&n).unwrap_or_default()
     }
 }
 
@@ -242,5 +250,33 @@ mod tests {
         assert_eq!(central_sesquilinear::<i64>(&[1], &[0, 1], 1), vec![0, 0, 2]);
         // (∂a)_(3)(∂b) = -3 a_(2)(∂b) = -6K, from the two identities above.
         assert_eq!(central_sesquilinear::<i64>(&[0, 1], &[0, 1], 1), vec![0, 0, 0, -6]);
+    }
+
+    type Elt = LieConformalAlgebraElement<i64, GeneratorIndex>;
+
+    /// One free boson α (index 0) and K (index 1) with `[α_λ α] = λK`. Only
+    /// `lambda_bracket` is implemented, so `n_product` is the trait default.
+    struct OneBoson;
+
+    impl LambdaBracket<i64, Elt> for OneBoson {
+        fn lambda_bracket(&self, a: &Elt, b: &Elt) -> HashMap<usize, Elt> {
+            central_valued_bracket(a, b, 2, 1, |i, j| (i == 0 && j == 0).then_some((1, 1)))
+        }
+    }
+
+    #[test]
+    fn default_n_product_is_zero_for_missing_products() {
+        let alg = OneBoson;
+        let alpha = Elt::from_basis(GeneratorIndex::finite(0));
+        let k = Elt::from_basis(GeneratorIndex::finite(1));
+        assert!(Elt::default().is_zero());
+        // [α_λ α] = λK: α_(1) α = 1!·K = K, every other product is zero.
+        assert_eq!(alg.n_product(&alpha, &alpha, 1).terms(), k.terms());
+        assert!(alg.n_product(&alpha, &alpha, 0).is_zero());
+        assert!(alg.n_product(&alpha, &alpha, 2).is_zero());
+        // [K_λ α] = 0, so all of its products are zero.
+        assert!(alg.lambda_bracket(&k, &alpha).is_empty());
+        assert!(alg.n_product(&k, &alpha, 0).is_zero());
+        assert!(alg.n_product(&k, &alpha, 1).is_zero());
     }
 }

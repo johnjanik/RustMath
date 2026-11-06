@@ -103,6 +103,16 @@ impl Display for BasisElement {
 ///
 /// The structure is: HashMap<(i, j), HashMap<k, Vec<R>>>
 /// where the Vec<R> represents the polynomial in λ
+///
+/// # λ convention
+///
+/// Entry `n` of the polynomial is the ordinary coefficient `c_{ij}^{k,n}` of
+/// `λ^n`. This is not the convention of [`LambdaBracket::lambda_bracket`],
+/// which returns j-th products `a_(j) b = j! · [λ^j]` (so
+/// `[a_λ b] = Σ_j λ^j / j! · a_(j) b`). To get the j-th product from this
+/// table, multiply entry `j` by `j!`. For example the free boson bracket
+/// `[α_λ α] = λK` is stored as `vec![0, 1]` and `α_(1) α = 1! · K`, while
+/// `[L_λ L] ∋ (λ³/12)C` is stored as `1/12` at index 3 and `L_(3) L ∋ C/2`.
 pub type StructureCoefficients<R> = HashMap<(usize, usize), HashMap<usize, Vec<R>>>;
 
 /// Trait for Lie conformal algebras with an explicit basis
@@ -127,7 +137,8 @@ pub trait LieConformalAlgebraWithBasis<R: Ring>: LieConformalAlgebra<R> {
 
     /// Compute λ-bracket on basis elements
     ///
-    /// Returns [b_i_λ b_j] as a polynomial in λ with coefficients in the algebra
+    /// Returns [b_i_λ b_j] as a polynomial in λ with coefficients in the algebra,
+    /// in ordinary powers of λ (see [`StructureCoefficients`]; not j-th products)
     fn lambda_bracket_on_basis(
         &self,
         i: usize,
@@ -272,5 +283,66 @@ mod tests {
         assert_eq!(lca.rank(), 2);
         assert!(lca.basis_element(0).is_some());
         assert!(lca.basis_element(2).is_none());
+    }
+
+    use crate::lie_conformal_algebra_element::LieConformalAlgebraElement;
+
+    /// Implementor that keeps the trait defaults of `check_sesquilinearity`
+    /// and `check_jacobi` (no implementor in the crate overrides them).
+    struct DefaultChecks {
+        inner: LCAWithBasis<i64, BasisElement>,
+    }
+
+    impl LieConformalAlgebra<i64> for DefaultChecks {
+        type Element = LieConformalAlgebraElement<i64, GeneratorIndex>;
+        fn base_ring(&self) -> &i64 {
+            self.inner.base_ring()
+        }
+        fn ngens(&self) -> Option<usize> {
+            Some(self.inner.rank())
+        }
+        fn generator(&self, i: usize) -> Option<Self::Element> {
+            (i < self.inner.rank())
+                .then(|| LieConformalAlgebraElement::from_basis(GeneratorIndex::finite(i)))
+        }
+        fn zero(&self) -> Self::Element {
+            LieConformalAlgebraElement::zero()
+        }
+    }
+
+    impl LieConformalAlgebraWithBasis<i64> for DefaultChecks {
+        type Basis = BasisElement;
+        fn basis_element(&self, i: usize) -> Option<BasisElement> {
+            self.inner.basis_element(i).cloned()
+        }
+        fn structure_coefficients(&self) -> &StructureCoefficients<i64> {
+            self.inner.structure_coefficients()
+        }
+    }
+
+    /// Cur(g) for g = <x, y | [x, y] = x>: [x_λ y] = x, [y_λ x] = -x.
+    fn current_algebra() -> DefaultChecks {
+        let basis = vec![
+            BasisElement::generator(GeneratorIndex::finite(0)),
+            BasisElement::generator(GeneratorIndex::finite(1)),
+        ];
+        let mut structure: StructureCoefficients<i64> = HashMap::new();
+        structure.insert((0, 1), HashMap::from([(0, vec![1])]));
+        structure.insert((1, 0), HashMap::from([(0, vec![-1])]));
+        DefaultChecks { inner: LCAWithBasis::new(1, basis, structure) }
+    }
+
+    #[test]
+    #[should_panic(expected = "check_sesquilinearity: not implemented for this algebra")]
+    fn test_default_check_sesquilinearity_is_unimplemented() {
+        // The old default returned `true` without checking anything.
+        let _ = current_algebra().check_sesquilinearity();
+    }
+
+    #[test]
+    #[should_panic(expected = "check_jacobi: not implemented for this algebra")]
+    fn test_default_check_jacobi_is_unimplemented() {
+        // The old default returned `true` without checking anything.
+        let _ = current_algebra().check_jacobi();
     }
 }

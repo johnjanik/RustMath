@@ -212,6 +212,15 @@ impl<R: Ring + Clone, B: Clone + Eq + Hash> LieConformalAlgebraElement<R, B> {
     }
 }
 
+/// The default element is the zero element (no terms), as
+/// [`LieConformalAlgebraElement::zero`]. [`crate::LambdaBracket::n_product`]
+/// relies on this for products that `lambda_bracket` leaves out.
+impl<R: Ring + Clone, B: Clone + Eq + Hash> Default for LieConformalAlgebraElement<R, B> {
+    fn default() -> Self {
+        Self::zero()
+    }
+}
+
 /// Element of a Lie conformal algebra with generators
 ///
 /// This element type is used for algebras with a designated set of generators.

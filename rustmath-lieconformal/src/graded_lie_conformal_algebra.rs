@@ -294,4 +294,27 @@ mod tests {
         let lca = GradedLCA::new(1i64, names, degrees, Some(vec![0, 0]));
         assert!(!lca.is_super());
     }
+
+    // No implementor overrides `is_grading_consistent` or
+    // `homogeneous_component`, so these pin the honest default panics.
+
+    #[test]
+    #[should_panic(expected = "is_grading_consistent: grading check is not implemented")]
+    fn test_default_is_grading_consistent_is_unimplemented() {
+        // The old default returned `true` without checking anything.
+        use crate::free_bosons_lie_conformal_algebra::FreeBosonsLieConformalAlgebra;
+        let lca: FreeBosonsLieConformalAlgebra<i64> =
+            FreeBosonsLieConformalAlgebra::new(1, 1, None, None);
+        let _ = lca.is_grading_consistent();
+    }
+
+    #[test]
+    #[should_panic(expected = "homogeneous_component: not implemented for this algebra")]
+    fn test_default_homogeneous_component_is_unimplemented() {
+        // The old default returned an empty Vec, claiming the weight-2
+        // component of Virasoro (which contains L) is zero.
+        use crate::virasoro_lie_conformal_algebra::VirasoroLieConformalAlgebra;
+        let vir: VirasoroLieConformalAlgebra<i64> = VirasoroLieConformalAlgebra::new(1);
+        let _ = vir.homogeneous_component(Degree::int(2));
+    }
 }
