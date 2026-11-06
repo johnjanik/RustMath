@@ -2653,3 +2653,405 @@ ch024.Sign,missing,,no sign of multivariate polynomial [review 2026-11-06; check
 ch024.AbsoluteValue,missing,,root_label.rs:230 is unrelated to polynomial coefficients [review 2026-11-06; checked]
 ch024.MaxNorm,missing,,not implemented [review 2026-11-06; checked]
 ch024.SumNorm,missing,,not implemented [review 2026-11-06; checked]
+ch042.ext,partial,rustmath-functionfields/src/function_field.rs:63,"FunctionField::new builds Q(t)[x]/(F), Check via is_irreducible_over_qt (factor.rs:509); test function_field.rs::degree_of_field. Only K=Q(t), no F_q or algebraic base, no Global [review 2026-11-06; adjudicated]"
+ch042.FunctionField,partial,rustmath-functionfields/src/function_field.rs:63; rustmath-rings/src/function_field/function_field_polymod.rs:109,"Real ctor: irreducibility-checked Q(t)[x]/(F); tests function_field.rs::degree_of_field, lib.rs::end_to_end_build_factor_specialize. Only K=Q(t). Polymod :109 is a string shell, not a stub [review 2026-11-06; adjudicated]"
+ch042.FunctionField.2,partial,rustmath-functionfields/src/function_field.rs:63,"f in Q[t][x] passed as Q(t)[x] poly gives Frac(Q[t,x]/f), test degree_of_field. k=Q only, no k[x,y] input type, no choice of variable, field is an ext of Q(t) not of k [review 2026-11-06; adjudicated]"
+ch042.FunctionField.3,missing,,"No non-simple extension from a sequence of polynomials anywhere; polymod :109 takes one string poly and never errs, so not a stub; rustmath-functionfields is simple ext only [review 2026-11-06; adjudicated]"
+ch042.FunctionField.4,missing,,No infinite-degree function field construction [review 2026-11-06; checked]
+ch042.HermitianFunctionField,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.sub,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.AssignNames,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.FunctionField.5,partial,rustmath-rings/src/function_field/typed/element.rs:250; rustmath-functionfields/src/ratfunc.rs:30,typed RationalFunctionField::<K>::new() builds K(x) for K=Rational or GFp<P> with real arithmetic; test element.rs::test_parent_field_constructors. No Global/Type params [review 2026-11-06; adjudicated]
+ch042.EquationOrderFinite,missing,,"order.rs:89 with_basis only stores caller basis strings; nothing builds k[x,d*alpha] from the defining poly; no Err/unimplemented, so not a stub [review 2026-11-06; adjudicated]"
+ch042.MaximalOrderFinite,facade,rustmath-rings/src/function_field/order.rs:278,FunctionFieldMaximalOrder::new gives empty basis strings; no Round 2/Montes maximal order (tracker flags facade) [review 2026-11-06; checked]
+ch042.EquationOrderInfinite,missing,,order.rs:233 FunctionFieldOrderInfinite::new is a string container with empty basis (rank 0); no o_inf[alpha] built anywhere; not an Err/unimplemented stub [review 2026-11-06; adjudicated]
+ch042.MaximalOrderInfinite,facade,rustmath-rings/src/function_field/order.rs:348,"FunctionFieldMaximalOrderInfinite::new; basis strings only, no computation [review 2026-11-06; checked]"
+ch042.IntegralClosure,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.EquationOrder,missing,,order.rs:89 with_basis stores caller strings; no equation order of an order computed anywhere (number_field/order.rs is number fields); not a stub [review 2026-11-06; adjudicated]
+ch042.MaximalOrder,facade,rustmath-rings/src/function_field/order.rs:278,"FunctionFieldMaximalOrder::new, integral_basis returns stored strings, nothing computed [review 2026-11-06; checked]"
+ch042.SetOrderMaximal,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.ext.2,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.Order,missing,,"residue_field.rs match is unrelated; no suborder construction Order(O,T,d) [review 2026-11-06; checked]"
+ch042.Order.2,missing,,"residue_field.rs match is unrelated; no suborder construction Order(O,T,d) [review 2026-11-06; checked]"
+ch042.Order.3,missing,,"residue_field.rs match is unrelated; no suborder construction Order(O,T,d) [review 2026-11-06; checked]"
+ch042.Simplify,missing,,algebraic_number simplify is unrelated; no order simplification [review 2026-11-06; checked]
+ch042.O1,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.O1.2,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.AsExtensionOf,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.MultiplicatorRing,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.pMaximalOrder,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.pRadical,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.Category,missing,,No category for function fields/orders [review 2026-11-06; checked]
+ch042.Parent,missing,,No Parent for function field elements [review 2026-11-06; checked]
+ch042.PrimeRing,missing,,Finite field PrimeField is unrelated; no function field prime ring [review 2026-11-06; checked]
+ch042.ConstantField,partial,rustmath-rings/src/function_field_module.rs:255,"Returns stored constant-field string; not computed, no exact constant field [review 2026-11-06; checked]"
+ch042.ExactConstantField,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.BaseRing,partial,rustmath-rings/src/function_field/function_field_polymod.rs:130; rustmath-rings/src/function_field_module.rs:275,"Only polymod base_field() echoes the caller's base-field label (string, no ring). function_field_module.rs:275 is wrong: None for k(x) (should be k), constant field for extensions [review 2026-11-06; adjudicated]"
+ch042.ISABaseField,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.BaseRing.2,missing,,No BaseRing for function field orders (order.rs has no base ring accessor) [review 2026-11-06; checked]
+ch042.BaseRing.3,missing,,No BaseRing for fields of fractions of orders [review 2026-11-06; checked]
+ch042.SubOrder,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.FunctionField.6,missing,,FunctionField(O) from order not implemented [review 2026-11-06; checked]
+ch042.FieldOfFractions,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.Order.4,missing,,"residue_field.rs match is unrelated; no suborder construction Order(O,T,d) [review 2026-11-06; checked]"
+ch042.RationalExtensionRepresentation,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.AbsoluteOrder,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.AbsoluteFunctionField,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.UnderlyingRing,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.UnderlyingRing.2,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.Embed,missing,,fraction_field embed unrelated; no function field embedding [review 2026-11-06; checked]
+ch042.Places,partial,rustmath-rings/src/function_field/typed/place.rs:36; rustmath-functionfields/src/places.rs:17,"Place<K> of K(x): finite monic irreducible + infinite, exact valuations; test place.rs::test_valuations_specific. Only rational function fields, no places of extensions [review 2026-11-06; adjudicated]"
+ch042.DivisorGroup,partial,rustmath-rings/src/function_field/typed/divisor.rs:22,"Divisor group only for rational function field K(x) (genus 0); tests in same file, no general F [review 2026-11-06; checked]"
+ch042.DifferentialSpace,facade,rustmath-rings/src/differential.rs:270,"DifferentialsSpace is String-typed: add/neg/div build format! strings, eq compares text, divisor()/residue() return format! placeholders; no differential computed [review 2026-11-06; adjudicated]"
+ch042.WeilRestriction,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.ConstantFieldExtension,facade,rustmath-rings/src/function_field/extensions.rs:261,"ConstantFieldExtension::new takes two name strings, guesses degree from digits in names (infer_degree :349; Fq->Fq2 gives 1); no function field built [review 2026-11-06; adjudicated]"
+ch042.Reduce,missing,,fraction_field reduce unrelated; no Reduce(O) [review 2026-11-06; checked]
+ch042.Characteristic,missing,,No Characteristic(F)/(O) for function fields (polymod char returns hard-coded 0 in char-zero wrapper only) [review 2026-11-06; checked]
+ch042.IsPerfect,facade,rustmath-rings/src/function_field/function_field_rational.rs:327; rustmath-rings/src/function_field/function_field_polymod.rs:371,"Hard-coded true on string-typed global fields. F_q(x) is never perfect (x has no p-th root), so it is always wrong; reviewer claim that it is right for finite constant fields is false [review 2026-11-06; adjudicated]"
+ch042.Degree,partial,rustmath-functionfields/src/function_field.rs:90; rustmath-rings/src/function_field/function_field_polymod.rs:125,"FunctionField::degree computes deg_x F = [K:Q(t)]; test function_field.rs::degree_of_field. No Degree(F,G), no Degree(O). Polymod :125 only echoes the caller value [review 2026-11-06; adjudicated]"
+ch042.AbsoluteDegree,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.DefiningPolynomial,partial,rustmath-functionfields/src/function_field.rs:85,"FunctionField::defining_polynomial returns monic F in Q(t)[x]; only Q(t) fields, no orders. function_field_module.rs:291 always returns None; polymod polynomial() is a string [review 2026-11-06; adjudicated]"
+ch042.DefiningPolynomials,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.Basis,missing,,differential.rs basis is {dx} of differentials; order.rs basis returns stored strings; no Basis(F) over K(x) [review 2026-11-06; checked]
+ch042.TransformationMatrix,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.CoefficientIdeals,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.BasisMatrix,missing,,finite_dimensional_algebra_ideal match unrelated [review 2026-11-06; checked]
+ch042.PrimitiveElement,facade,rustmath-rings/src/function_field/function_field_polymod.rs:211,"primitive_element() returns the variable name string, no computation [review 2026-11-06; checked]"
+ch042.Discriminant,facade,rustmath-rings/src/function_field/order.rs:132,"discriminant() returns format string ""Discriminant of name"", not a value [review 2026-11-06; checked]"
+ch042.AbsoluteDiscriminant,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.DimensionOfExactConstantField,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.Genus,broken,rustmath-functionfields/src/genus.rs:71; rustmath-rings/src/function_field/function_field_polymod.rs:156,Real RH over Q(t) (test genus.rs::genus_elliptic_x2_minus_t3_plus_1) but gives Ok(-1) for irreducible x^2-2 and x^2-1/(t^2-t); non-regular faces unchecked. Polymod :156 facade [review 2026-11-06; adjudicated]
+ch042.GapNumbers,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.GapNumbers.2,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.SeparatingElement,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.RamificationDivisor,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.WeierstrassPlaces,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.WronskianOrders,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.Different,facade,rustmath-rings/src/function_field/order.rs:199,"different() returns format!(""Different of ..."") string, not an ideal [review 2026-11-06; checked]"
+ch042.Index,missing,,galois perm Index unrelated; no order index [review 2026-11-06; checked]
+ch042.GaloisGroup,missing,,Galois group of function field not implemented; number_field/morphisms.rs galois_group is Q only [review 2026-11-06; checked]
+ch042.GaloisGroup.2,missing,,Function field Galois group not implemented; number_field galois_group covers Q[x] only [review 2026-11-06; checked]
+ch042.Subfields,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.Automorphisms,missing,,"Only number field automorphisms exist (number_field/morphisms.rs), not function fields [review 2026-11-06; checked]"
+ch042.AutomorphismGroup,missing,,"rustmath-graphs magma_automorphisms is graph automorphism, unrelated to function fields [review 2026-11-06; checked]"
+ch042.IsSubfield,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.IsIsomorphicOverQt,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.Isomorphisms,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.IsIsomorphic,missing,,rings/dedekind/pseudo.rs is unrelated (pseudo-matrices); no function field isomorphism test [review 2026-11-06; checked]
+ch042.Automorphisms.2,missing,,"Only number field automorphisms exist (number_field/morphisms.rs), not function fields [review 2026-11-06; checked]"
+ch042.Isomorphisms.2,missing,,"Only number field automorphisms exist (number_field/morphisms.rs), not function fields [review 2026-11-06; checked]"
+ch042.AutomorphismGroup.2,missing,,"rustmath-graphs magma_automorphisms is graph automorphism, unrelated to function fields [review 2026-11-06; checked]"
+ch042.AutomorphismGroup.3,missing,,"rustmath-graphs magma_automorphisms is graph automorphism, unrelated to function fields [review 2026-11-06; checked]"
+ch042.IsMorphism,missing,,category morphism IsMorphism unrelated; no function field morphisms [review 2026-11-06; checked]
+ch042.FieldMorphism,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.IdentityFieldMorphism,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.IsIdentity,missing,,term_monoid match unrelated [review 2026-11-06; checked]
+ch042.Equality,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
+ch042.HasInverse,missing,,manifolds maps match unrelated [review 2026-11-06; checked]
+ch042.Composition,missing,,combinatorics composition unrelated [review 2026-11-06; checked]
+ch042.NumberOfPlacesOfDegreeOverExactConstantField,broken,rustmath-rings/src/function_field/function_field_rational.rs:310,"Rational field only; d>1 returns q^d/d, an approximation not the Moebius count; d=1 omits infinite place; no general F [review 2026-11-06; checked]"
+ch042.NumberOfPlacesOfDegreeOneOverExactConstantField,partial,rustmath-rings/src/function_field/function_field_rational.rs:302,"Rational function field only, q+1; polymod version (function_field_polymod.rs:378) just returns q; no general global field count [review 2026-11-06; checked]"
+ch042.NumberOfPlacesOfDegreeOneOverExactConstantField.2,facade,rustmath-rings/src/function_field/order_polymod.rs:334,"count_points(n) (N1 of degree-n constant extension) returns q^n+1, computes genus then discards it; reviewer cite function_field_rational.rs:310 counts degree-m places, a different quantity [review 2026-11-06; adjudicated]"
+ch042.SerreBound,missing,,No Serre bound function found [review 2026-11-06; checked]
+ch042.IharaBound,missing,,No Ihara bound function found [review 2026-11-06; checked]
+ch042.NumberOfPlacesOfDegreeOneECFBound,missing,,"No Serre/Ihara minimum (SerreBound, IharaBound also missing). hasse_weil_bound (order_polymod.rs:344) is only the Weil deviation 2g*sqrt(q^n) as f64, genus defaults to 0; different quantity [review 2026-11-06; adjudicated]"
+ch042.LPolynomial,facade,rustmath-rings/src/function_field/jacobian_base.rs:523,JacobianGroupFiniteFieldBase::frobenius_polynomial (reversed L-polynomial) returns a format! label; test_frobenius_polynomial only checks the text; no polynomial computed [review 2026-11-06; adjudicated]
+ch042.ZetaFunction,facade,rustmath-rings/src/function_field/function_field_rational.rs:339,"Ignores argument and returns a descriptive string, no zeta series or rational function [review 2026-11-06; checked]"
+ch042.Places.2,facade,rustmath-rings/src/function_field/order_rational.rs:251,"degree_one_places returns hard-coded (x),(x - 1) whatever q; degree 1 only, no infinite place, no degree-m enumeration; typed Place<K> has no enumerator [review 2026-11-06; adjudicated]"
+ch042.HasPlace,missing,,Not implemented [review 2026-11-06; checked]
+ch042.HasRandomPlace,missing,,Not implemented [review 2026-11-06; checked]
+ch042.RandomPlace,missing,,Not implemented [review 2026-11-06; checked]
+ch042.UnitRank,missing,,"numberfields units.rs is for number fields, not function field orders [review 2026-11-06; checked]"
+ch042.UnitGroup,facade,rustmath-rings/src/function_field/order_rational.rs:278; rustmath-rings/src/function_field/valuation_ring.rs:257,"Finite maximal order k[x] unit_group returns the string ""k*"" (no abelian group, no map); valuation_ring.rs:257 is a local O_v* label; nothing for polymod orders [review 2026-11-06; adjudicated]"
+ch042.Regulator,missing,,Elliptic curve regulator is unrelated; none for function field orders [review 2026-11-06; checked]
+ch042.PrincipalIdealMap,missing,,Not implemented [review 2026-11-06; checked]
+ch042.ClassGroup,facade,rustmath-rings/src/function_field/picard_group.rs:356; rustmath-rings/src/function_field/picard_group.rs:298,"PicardGroup::class (391) wraps the divisor unchanged, DivisorClass::is_zero (298) tests representative==0, so no quotient by principal divisors; no group structure or maps [review 2026-11-06; adjudicated]"
+ch042.ClassGroup.2,facade,rustmath-rings/src/function_field/order_polymod.rs:202,"picard_group returns a formatted string label; no group, maps [review 2026-11-06; checked]"
+ch042.ClassGroupExactSequence,missing,,Not implemented [review 2026-11-06; checked]
+ch042.ClassGroupAbelianInvariants,facade,rustmath-rings/src/function_field/jacobian_base.rs:528,JacobianGroupFiniteFieldBase::group_structure (Cl^0 invariants) returns vec![1] ('Would compute actual invariants'); no Z factor; test only checks non-empty [review 2026-11-06; adjudicated]
+ch042.ClassGroupAbelianInvariants.2,missing,,Not implemented for function fields [review 2026-11-06; checked]
+ch042.ClassNumber,facade,rustmath-rings/src/function_field/order.rs:300,"Hard-coded 1 (""Simplified""); other class_number at order_polymod.rs:196,357 same [review 2026-11-06; checked]"
+ch042.ClassNumber.2,facade,rustmath-rings/src/function_field/order_polymod.rs:196,"Hard-coded return of 1, no computation of ideal class group order [review 2026-11-06; checked]"
+ch042.GlobalUnitGroup,missing,,Not implemented [review 2026-11-06; checked]
+ch042.ClassGroupPRank,missing,,Not implemented [review 2026-11-06; checked]
+ch042.HasseWittInvariant,missing,,Not implemented [review 2026-11-06; checked]
+ch042.IndependentUnits,missing,,Not implemented [review 2026-11-06; checked]
+ch042.FundamentalUnits,missing,,numberfields s_unit_gens is number-field only; none for function field orders [review 2026-11-06; checked]
+ch042.IsField,facade,rustmath-rings/src/function_field/order_polymod.rs:207; rustmath-rings/src/function_field/order.rs:317; rustmath-rings/src/function_field/order_rational.rs:167,"Polymod is_pid = class_number()==1 with class_number hard-coded 1, so always true; order.rs:317 same; k[x] is_pid/is_euclidean/is_ufd constants; no is_field/is_domain [review 2026-11-06; adjudicated]"
+ch042.F,missing,,No equality of function fields/orders; jacobian_hyperelliptic.rs:142 is an unrelated getter [review 2026-11-06; checked]
+ch042.O1.3,missing,,No order containment test [review 2026-11-06; checked]
+ch042.IsGlobal,facade,rustmath-rings/src/constructor.rs:213,Placeholder always returns false; order_polymod.rs:301 is_global also exists but not general [review 2026-11-06; checked]
+ch042.IsRationalFunctionField,missing,,function_field_rational is_rational always true on its own type; no general test [review 2026-11-06; checked]
+ch042.IsFiniteOrder,missing,,Not implemented [review 2026-11-06; checked]
+ch042.IsEquationOrder,missing,,Not implemented [review 2026-11-06; checked]
+ch042.IsAbsoluteOrder,missing,,Not implemented [review 2026-11-06; checked]
+ch042.IsMaximal,facade,rustmath-rings/src/function_field/order.rs:137,"Base order always returns false; other variants return a stored flag, no maximality test [review 2026-11-06; checked]"
+ch042.IsTamelyRamified,missing,,Not implemented [review 2026-11-06; checked]
+ch042.IsTotallyRamified,facade,rustmath-rings/src/function_field/order_polymod.rs:502; rustmath-rings/src/function_field/order_polymod.rs:236; rustmath-rings/src/function_field/place_polymod.rs:186,"Infinite order is_totally_ramified_at_infinity uses hard-coded ramification 1 (false for deg>1); finite per-prime variant same; place_polymod.rs:186 compares caller e, not partial [review 2026-11-06; adjudicated]"
+ch042.IsUnramified,facade,rustmath-rings/src/function_field/order_polymod.rs:231; rustmath-rings/src/function_field/place_polymod.rs:173,"Only order-level predicate is per-prime is_unramified_at, hard-coded e=1 so always true; no all-places or infinite variant; place_polymod.rs:173 reads caller-supplied e [review 2026-11-06; adjudicated]"
+ch042.IsWildlyRamified,missing,,modular hypergeometric is_wildly_ramified is unimplemented and unrelated [review 2026-11-06; checked]
+ch042.IsInKummerRepresentation,missing,,Not implemented [review 2026-11-06; checked]
+ch042.IsInArtinSchreierRepresentation,missing,,Not implemented [review 2026-11-06; checked]
+ch042.hom,facade,rustmath-rings/src/function_field/maps.rs:150; rustmath-rings/src/function_field/maps.rs:218,FunctionFieldMorphism_polymod::new stores source/target/generator image as strings and cannot be applied; rational morphism evaluate returns a constant string [review 2026-11-06; adjudicated]
+ch042.hom.2,missing,,No homomorphism constructor from order [review 2026-11-06; checked]
+ch042.IsRingHomomorphism,facade,rustmath-rings/src/function_field/maps.rs:540,FunctionFieldRingMorphism::preserves_multiplication always returns true without checking; test_ring_morphism asserts that constant [review 2026-11-06; adjudicated]
+ch042.hom.3,missing,,Not implemented [review 2026-11-06; checked]
+ch042.F.2,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.F.3,partial,rustmath-rings/src/function_field/typed/element.rs:89,"RationalFunction::gen() is x; only K(x) (typed layer), no algebraic extensions or orders [review 2026-11-06; checked]"
+ch042.Name,partial,rustmath-rings/src/function_field/typed/element.rs:267,"RationalFunctionField::gen() returns x only; no index argument; only K(x) (typed layer), no algebraic extensions or orders [review 2026-11-06; checked]"
+ch042.O,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.F.4,partial,rustmath-rings/src/function_field/typed/element.rs:272,"RationalFunctionField::element/from_polynomial/constant coerce num/den, polynomials, constants; no generic coercion; only K(x) (typed layer), no algebraic extensions or orders [review 2026-11-06; checked]"
+ch042.O.2,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.FF,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.elt,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.elt.2,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.One,partial,rustmath-rings/src/function_field/typed/element.rs:262,"RationalFunctionField::zero/one (and Ring::one); K(x) only, no orders, no Identity/Representative [review 2026-11-06; checked]"
+ch042.Random,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.Parent.2,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.ElementToSequence,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.Eltseq,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.Flat,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.F.5,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.O.3,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.a,partial,rustmath-rings/src/function_field/typed/element.rs:138,"Add/Sub/Mul/Neg/Div on RationalFunction; test element.rs::test_field_axioms_samples_q; only K(x) (typed layer), no algebraic extensions or orders [review 2026-11-06; checked]"
+ch042.Modexp,partial,rustmath-rings/src/function_field/typed/place.rs:344,"ResidueClass::new(a,m).pow(k) is a^k mod m in k[x] (finite order of K(x)); test place.rs::test_residue_field_gf25_is_a_field. No o_inf modulus, no extension orders. Verifier right [review 2026-11-06; adjudicated]"
+ch042.a.2,partial,rustmath-rings/src/function_field/typed/place.rs:269,"ResidueClass::new(a,m) reduces a in k[x] mod any non-constant m, giving k[x]/(m). Only order k[x] of K(x) with I given by generator; no ideal objects, o_inf or extensions. Verifier right [review 2026-11-06; adjudicated]"
+ch042.Modinv,partial,rustmath-rings/src/function_field/typed/place.rs:325,"ResidueClass::inverse: xgcd inverse mod m in k[x], Err if gcd!=1; test place.rs::test_residue_field_gf25_is_a_field. Only k[x] of K(x); no o_inf or order ideals. Verifier right [review 2026-11-06; adjudicated]"
+ch042.a.3,partial,rustmath-rings/src/function_field/typed/element.rs:38,Derived PartialEq on canonical form; test element.rs::test_canonical_form_equality; K(x) only [review 2026-11-06; checked]
+ch042.a.4,partial,rustmath-rings/src/function_field/typed/element.rs:104,Only is_polynomial (membership in K[x]); no general in F/O/FF test [review 2026-11-06; checked]
+ch042.IsDivisibleBy,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.IsZero,partial,rustmath-rings/src/function_field/typed/element.rs:185,Ring::is_zero/is_one on K(x); no IsMinusOne/IsNilpotent/IsIdempotent [review 2026-11-06; checked]
+ch042.IsUnit,facade,rustmath-rings/src/function_field/order_rational.rs:271; rustmath-rings/src/function_field/order_rational.rs:217,order_rational is_unit is a contains-variable string test; is_irreducible returns true unconditionally. No real element predicates in typed layer. Verifier right [review 2026-11-06; adjudicated]
+ch042.IsSeparating,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.IsConstant,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.IsGlobalUnit,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.IsGlobalUnitWithPreimage,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.IsUnitWithPreimage,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.Trace,facade,rustmath-rings/src/function_field_element_polymod.rs:157; rustmath-rings/src/function_field_element_polymod.rs:149; rustmath-rings/src/function_field_element_polymod.rs:165; rustmath-rings/src/function_field_element_polymod.rs:192,"Polymod element trace()/norm() return coefficient a0, minimal_polynomial() returns ""y - (a0)"", matrix() returns [[1]] (Placeholder comments). Verifier right [review 2026-11-06; adjudicated]"
+ch042.Trace.2,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.AbsoluteMinimalPolynomial,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.IntegralSplit,partial,rustmath-rings/src/function_field/typed/element.rs:94; rustmath-rings/src/function_field/typed/element.rs:99,"For K(x), O=k[x]: canonical numerator()/denominator() are the integral split (same fns as Numerator/Denominator); test element.rs::test_normalization_q. No order arg, no o_inf, no extensions [review 2026-11-06; adjudicated]"
+ch042.Numerator,partial,rustmath-rings/src/function_field/typed/element.rs:94,RationalFunction::numerator() wrt K[x]; no order argument; K(x) only [review 2026-11-06; checked]
+ch042.Denominator,partial,rustmath-rings/src/function_field/typed/element.rs:99,RationalFunction::denominator() wrt K[x]; no order argument; K(x) only [review 2026-11-06; checked]
+ch042.Min,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.Evaluate,partial,rustmath-rings/src/function_field/typed/place.rs:188,"Place::residue/residue_at_infinity evaluate at K(x) places; pole gives Err, not infinity; test place.rs::test_residue_degree_one_place_is_evaluation [review 2026-11-06; checked]"
+ch042.Lift,partial,rustmath-rings/src/function_field/typed/place.rs:283,"ResidueClass::representative gives polynomial lift at finite places; no infinite place, K(x) only [review 2026-11-06; checked]"
+ch042.Valuation,partial,rustmath-rings/src/function_field/typed/place.rs:160,"Place::valuation(f) for K(x) places incl. infinity; test place.rs::test_valuations_specific; no order elements, no extensions [review 2026-11-06; checked]"
+ch042.Expand,facade,rustmath-rings/src/function_field/valuation_ring.rs:337; rustmath-rings/src/function_field/order_rational.rs:419,"series_expansion returns template string ""a = a_0 + a_1*t + ...""; laurent_expansion returns vec![""0""] for any input. No series computed anywhere (typed layer has none). Verifier right [review 2026-11-06; adjudicated]"
+ch042.Divisor,partial,rustmath-rings/src/function_field/typed/divisor.rs:115,Divisor::principal(f) for K(x) over Q/GF(p); test divisor.rs::test_principal_divisor_q_specific; no extensions [review 2026-11-06; checked]
+ch042.Zeros,partial,rustmath-rings/src/function_field/typed/divisor.rs:115,No Zeros fn; positive part of Divisor::principal gives zeros (test divisor.rs::test_principal_zeros_and_poles); K(x) only [review 2026-11-06; checked]
+ch042.Zeros.2,partial,rustmath-rings/src/function_field/typed/divisor.rs:115,"No Zeros(F,a); positive part of Divisor::principal gives zeros in K(x); test divisor.rs::test_principal_zeros_and_poles [review 2026-11-06; checked]"
+ch042.Poles,partial,rustmath-rings/src/function_field/typed/divisor.rs:115,No Poles fn; negative part of Divisor::principal gives poles (test divisor.rs::test_principal_zeros_and_poles); K(x) only [review 2026-11-06; checked]
+ch042.Degree.2,partial,rustmath-rings/src/function_field/typed/divisor.rs:115; rustmath-rings/src/function_field/typed/divisor.rs:97,No Degree(a) fn; Divisor::principal(a).effective_parts().0.degree() gives it (same route as Zeros); test divisor.rs::test_principal_zeros_and_poles asserts 3. K(x) only [review 2026-11-06; adjudicated]
+ch042.CommonZeros,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.Module,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.Relations,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.Roots,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.ProductRepresentation,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.ProductRepresentation.2,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.RationalFunction,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.Differentiation,partial,rustmath-rings/src/function_field/typed/element.rs:118,RationalFunction::derivative() is d/dx on K(x); test element.rs::test_derivative; arbitrary separating element and extensions missing [review 2026-11-06; checked]
+ch042.Differentiation.2,facade,rustmath-rings/src/derivations_function_field.rs:244,"HigherDerivation::eval returns format!(""D^n(a)"") string, no n-th derivative computed (and models D^n, not Hasse D^n/n!). Typed layer has only first derivative. Verifier right [review 2026-11-06; adjudicated]"
+ch042.DifferentiationSequence,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.PrimePowerRepresentation,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.Different.2,missing,,"order.rs:199 is FunctionFieldOrder::different (Different(O) of an order, string), not element different f'(a). No element-different fn in workspace. Verifier right [review 2026-11-06; adjudicated]"
+ch042.RationalReconstruction,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.CoefficientHeight,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.CoefficientLength,missing,,No implementation in workspace (extension function fields exist only as string facades) [review 2026-11-06; checked]
+ch042.ideal,missing,,no implementation of ideal creation in an algebraic function field order [review 2026-11-06; checked]
+ch042.ideal.2,missing,,no implementation of ideal creation in an algebraic function field order [review 2026-11-06; checked]
+ch042.ideal.3,missing,,no implementation of ideal creation in an algebraic function field order [review 2026-11-06; checked]
+ch042.x,missing,,no implementation of ideal creation in an algebraic function field order [review 2026-11-06; checked]
+ch042.Ideal,missing,,no implementation of ideal creation in an algebraic function field order [review 2026-11-06; checked]
+ch042.Ideals,missing,,no implementation of ideal creation in an algebraic function field order [review 2026-11-06; checked]
+ch042.O.4,missing,,no implementation of ideal creation in an algebraic function field order [review 2026-11-06; checked]
+ch042.Parent.3,missing,,no ideal parent/category in function fields [review 2026-11-06; checked]
+ch042.I,facade,rustmath-rings/src/function_field/ideal_rational.rs:183,"ideal_rational add/multiply/intersect build strings; gcd_polynomial returns literal ""gcd""; no quotient or power [review 2026-11-06; checked]"
+ch042.c,missing,,no c*I product with elements [review 2026-11-06; checked]
+ch042.IdealQuotient,missing,,no colon ideal for function-field orders [review 2026-11-06; checked]
+ch042.ChineseRemainderTheorem,missing,,no CRT for function-field ideals (integers crt is for Z only) [review 2026-11-06; checked]
+ch042.IsPower,missing,,no ideal root or square root in function fields [review 2026-11-06; checked]
+ch042.Root,missing,,no ideal root or square root in function fields [review 2026-11-06; checked]
+ch042.IsSquare,missing,,no ideal root or square root in function fields [review 2026-11-06; checked]
+ch042.SquareRoot,missing,,no ideal root or square root in function fields [review 2026-11-06; checked]
+ch042.I.2,missing,,no ideal equality/membership for function-field ideals [review 2026-11-06; checked]
+ch042.IsZero.2,facade,rustmath-rings/src/function_field/ideal_rational.rs:135; rustmath-rings/src/function_field/ideal_polymod.rs:123; rustmath-rings/src/function_field/ideal.rs:190,"String label test (gen ""0"" or empty), no arithmetic. ideal_polymod is_zero is true for an empty list and multiply/intersect return empty lists, so every I*J reports zero. Verifier right [review 2026-11-06; adjudicated]"
+ch042.IsOne,facade,rustmath-rings/src/function_field/ideal_rational.rs:130; rustmath-rings/src/function_field/ideal_polymod.rs:118; rustmath-rings/src/function_field/ideal.rs:181,"String label test (gen == ""1""). (x)+(x+1) gets generator ""gcd"" from gcd_polynomial (ideal_rational.rs:355), so the unit ideal reports false; no order arithmetic. Verifier right [review 2026-11-06; adjudicated]"
+ch042.IsIntegral,missing,,no IsIntegral for function-field ideals [review 2026-11-06; checked]
+ch042.IsPrime,facade,rustmath-rings/src/function_field/ideal_rational.rs:125,returns stored is_prime_ideal flag set at construction; no primality test [review 2026-11-06; checked]
+ch042.IsPrincipal,facade,rustmath-rings/src/function_field/ideal_rational.rs:120,returns constant true (k[x] PID); no ideal-in-order principality test for global function fields [review 2026-11-06; checked]
+ch042.IsInert,facade,rustmath-rings/src/function_field/place_rational.rs:307,compares place degree with caller-supplied max_degree; does not test inertness in an extension [review 2026-11-06; checked]
+ch042.IsRamified,facade,rustmath-rings/src/function_field/place_polymod.rs:164,returns stored ramification_index>1 given by constructor; nothing computed [review 2026-11-06; checked]
+ch042.IsSplit,missing,,splits() only tests degree==1; no splitting test [review 2026-11-06; checked]
+ch042.IsTamelyRamified.2,missing,,no tame ramification test [review 2026-11-06; checked]
+ch042.IsTotallyRamified.2,facade,rustmath-rings/src/function_field/place_polymod.rs:186,compares constructor-supplied e with caller-supplied degree; nothing computed [review 2026-11-06; checked]
+ch042.IsTotallySplit,missing,,no total splitting test [review 2026-11-06; checked]
+ch042.IsUnramified.2,facade,rustmath-rings/src/function_field/place_polymod.rs:173,returns stored e==1 given at construction; nothing computed [review 2026-11-06; checked]
+ch042.IsWildlyRamified.2,missing,,no wild ramification test for function fields [review 2026-11-06; checked]
+ch042.I.3,facade,rustmath-rings/src/function_field/ideal_rational.rs:197,"intersect builds string ""lcm(f, g)""; lcm_polynomial is a stub; k[x] string ideals only [review 2026-11-06; checked]"
+ch042.Gcd,facade,rustmath-rings/src/function_field/ideal_rational.rs:183,"add uses gcd_polynomial returning literal ""gcd""; no Lcm; k[x] string ideals only [review 2026-11-06; checked]"
+ch042.Factorization,facade,rustmath-rings/src/function_field/order_rational.rs:211,"Maximal order k[x] factor() returns [(input, 1)] (""Would perform actual factorization"") for any input; no ideal factorization elsewhere (typed factor_poly has no ideal type). Verifier right [review 2026-11-06; adjudicated]"
+ch042.Decomposition,facade,rustmath-rings/src/function_field/order_polymod.rs:190,"decompose_prime returns [(""(p)O_K"",1)] fabricated; no splitting computed [review 2026-11-06; checked]"
+ch042.Decomposition.2,facade,rustmath-rings/src/function_field/order_polymod.rs:491,"decompose_infinite_place returns [""inf""] constant [review 2026-11-06; checked]"
+ch042.DecompositionType,missing,,not implemented for function-field orders [review 2026-11-06; checked]
+ch042.DecompositionType.2,missing,,not implemented for function-field orders [review 2026-11-06; checked]
+ch042.MultiplicatorRing.2,missing,,not implemented for function-field orders [review 2026-11-06; checked]
+ch042.pMaximalOrder.2,missing,,not implemented for function-field orders [review 2026-11-06; checked]
+ch042.pRadical.2,missing,,not implemented for function-field orders [review 2026-11-06; checked]
+ch042.Valuation.2,partial,rustmath-rings/src/function_field/typed/place.rs:160; rustmath-rings/src/function_field/ideal_rational.rs:286,"K(x) elements only: typed Place::valuation is v_P(a) at primes of k[x] and infinity (place.rs::test_valuations_specific); no Valuation(I,P). String ideal_rational.rs:286 is broken [review 2026-11-06; adjudicated]"
+ch042.Order.5,missing,,no Order(I) for function-field ideals [review 2026-11-06; checked]
+ch042.Denominator.2,missing,,no ideal denominator for function-field ideals [review 2026-11-06; checked]
+ch042.Minimum,missing,,no Minimum(I) for function-field ideals [review 2026-11-06; checked]
+ch042.I.4,missing,,no ideal meet with coefficient ring [review 2026-11-06; checked]
+ch042.IntegralSplit.2,missing,,no IntegralSplit for ideals [review 2026-11-06; checked]
+ch042.Norm,facade,rustmath-rings/src/function_field/ideal_polymod.rs:145,"norm returns formatted string ""Norm(name) to base field""; no computation [review 2026-11-06; checked]"
+ch042.TwoElement,missing,,no TwoElement [review 2026-11-06; checked]
+ch042.Generators,facade,rustmath-rings/src/function_field/ideal_polymod.rs:128; rustmath-rings/src/function_field/ideal.rs:140,"Not a stub (no Err/None): returns caller-supplied strings. ideal_polymod new/prime/multiply/intersect store an empty list, so Generators(I*J) is []. Verifier right [review 2026-11-06; adjudicated]"
+ch042.Basis.2,missing,,no Basis(I) for function-field ideals [review 2026-11-06; checked]
+ch042.BasisMatrix.2,missing,,no ideal BasisMatrix [review 2026-11-06; checked]
+ch042.TransformationMatrix.2,missing,,no TransformationMatrix [review 2026-11-06; checked]
+ch042.CoefficientIdeals.2,missing,,no CoefficientIdeals [review 2026-11-06; checked]
+ch042.Different.3,facade,rustmath-rings/src/function_field/order.rs:199,"different() returns string ""Different of <name>""; nothing computed [review 2026-11-06; checked]"
+ch042.Codifferent,missing,,no codifferent for function-field ideals [review 2026-11-06; checked]
+ch042.Divisor.2,missing,,no Divisor(I) from ideal factorization [review 2026-11-06; checked]
+ch042.RamificationIndex,facade,rustmath-rings/src/function_field/ideal_polymod.rs:199,ramification_index returns constant 1 [review 2026-11-06; checked]
+ch042.Degree.3,facade,rustmath-rings/src/function_field/ideal_polymod.rs:190,relative_degree returns constant 1 [review 2026-11-06; checked]
+ch042.ResidueClassField,missing,,no residue class field of a prime ideal in a function field [review 2026-11-06; checked]
+ch042.Place,missing,,no Place(I) from prime ideal (place types are separate string/typed structs) [review 2026-11-06; checked]
+ch042.SafeUniformizer,missing,,no SafeUniformizer [review 2026-11-06; checked]
+ch042.Places.3,missing,,"no Places(F); PlaceSet is a string container, typed Place only for K(x) [review 2026-11-06; checked]"
+ch042.Decomposition.3,facade,rustmath-rings/src/function_field/order_polymod.rs:190; rustmath-rings/src/function_field/order_polymod.rs:491,"Places of F over P = primes of O_F over p: decompose_prime returns [((p)O_K, 1)] (always inert), decompose_infinite_place a constant 1-element list; nothing computed. Verifier right [review 2026-11-06; adjudicated]"
+ch042.DecompositionType.3,missing,,no DecompositionType [review 2026-11-06; checked]
+ch042.Zeros.3,partial,rustmath-rings/src/function_field/typed/divisor.rs:115,K(x) only: effective_parts(Divisor::principal(f)) gives zeros/poles; test_principal_zeros_and_poles; no extensions of k(x) [review 2026-11-06; checked]
+ch042.S,missing,,no Place(I) coercion of prime ideal to place set [review 2026-11-06; checked]
+ch042.Support,partial,rustmath-rings/src/function_field/typed/divisor.rs:69,"K(x) only: support() returns places, coefficients() the multiplicities; test_divisor_group_laws; string divisor.rs:125 is separate [review 2026-11-06; checked]"
+ch042.AssignNames.2,missing,,no AssignNames for places [review 2026-11-06; checked]
+ch042.InfinitePlaces,partial,rustmath-rings/src/function_field/typed/place.rs:72; rustmath-functionfields/src/places.rs:17,"K(x) only: Place::infinite() is the unique infinite place, with exact valuation and uniformizer 1/x (place.rs::test_valuations_specific); nothing for extensions. Verifier right [review 2026-11-06; adjudicated]"
+ch042.HasPlace.2,facade,rustmath-rings/src/function_field/order_rational.rs:251,"degree_one_places() returns the constant list [(x), (x - 1)] whatever q, as for ch042.Places.2; no Places(F, m) for m>1, no HasPlace/RandomPlace. Verifier right [review 2026-11-06; adjudicated]"
+ch042.FunctionField.7,missing,,no FunctionField(S) for place sets [review 2026-11-06; checked]
+ch042.DivisorGroup.2,partial,rustmath-rings/src/function_field/typed/divisor.rs:22,"K(x) only: free abelian group on typed places (add/neg/sub, degree); test_divisor_group_laws; no DivisorGroup(F) object for general F [review 2026-11-06; checked]"
+ch042.WeierstrassPlaces.2,missing,,no Weierstrass places [review 2026-11-06; checked]
+ch042.NumberOfPlacesOfDegreeOneOverExactConstantField.3,facade,rustmath-rings/src/function_field/order_polymod.rs:334; rustmath-rings/src/function_field/function_field_polymod.rs:378,"count_points(n) returns q^n + 1 for any F (computes genus, then ignores it); num_rational_places(1) returns q. Same as ch042...ExactConstantField.2. Verifier right [review 2026-11-06; adjudicated]"
+ch042.NumberOfPlacesOfDegreeOneOverExactConstantFieldBound,missing,,"No Serre/Ihara bound. hasse_weil_bound (order_polymod.rs:344) returns the documented Weil deviation 2g*sqrt(q^n), a different quantity, not N_m. As ch042 ECFBound. Reviewer right [review 2026-11-06; adjudicated]"
+ch042.NumberOfPlacesOfDegreeOverExactConstantField.2,broken,rustmath-rings/src/function_field/function_field_rational.rs:310; rustmath-rings/src/function_field/place.rs:353,"k(x) only: q^d/d, not the Moebius count (q=2, d=2 gives 2, true 1); d=1 gives q, omitting infinity. PlaceSet::count_places_of_degree same formula. Verifier right [review 2026-11-06; adjudicated]"
+ch042.S1,missing,,no equality of place sets [review 2026-11-06; checked]
+ch042.Parent.4,missing,,no parent/category for places [review 2026-11-06; checked]
+ch042.P1,partial,rustmath-rings/src/function_field/typed/divisor.rs:207,"K(x) only: +, -, negation of divisors via Add/Neg/Sub impls; no k*P, div, mod; test_divisor_group_laws [review 2026-11-06; checked]"
+ch042.Quotrem,missing,,no Quotrem on divisors [review 2026-11-06; checked]
+ch042.P1.2,partial,rustmath-rings/src/function_field/typed/place.rs:35; rustmath-functionfields/src/places.rs:16,"K(x) places: Place derives PartialEq at typed/place.rs:35 (line 26 is private PlaceKind); used by Divisor::multiplicity in divisor tests. No place sets, so no in/notin. Path fix [review 2026-11-06; adjudicated]"
+ch042.IsFinite,partial,rustmath-rings/src/function_field/typed/place.rs:125,K(x) only: is_infinite() on typed Place; finiteness is its negation; tested in test_residue_at_infinity [review 2026-11-06; checked]
+ch042.IsWeierstrassPlace,missing,,no Weierstrass place test [review 2026-11-06; checked]
+ch042.FunctionField.8,missing,,no function field of a place (typed Place has no field handle) [review 2026-11-06; checked]
+ch042.Degree.4,partial,rustmath-rings/src/function_field/typed/place.rs:139,K(x) only: degree of typed Place (deg of irreducible polynomial); tested in test_residue_at_quadratic_place [review 2026-11-06; checked]
+ch042.RamificationIndex.2,facade,rustmath-rings/src/function_field/place_polymod.rs:137,returns constructor-supplied ramification_index; nothing computed [review 2026-11-06; checked]
+ch042.InertiaDegree,facade,rustmath-rings/src/function_field/place_polymod.rs:146,relative_degree returns constructor-supplied value (order_polymod.rs:219 inertia_degree is constant 1) [review 2026-11-06; checked]
+ch042.Minimum.2,partial,rustmath-rings/src/function_field/typed/place.rs:130,"K(x) only: Place::polynomial() returns the monic irreducible p of a finite place (its own place below); infinite place gives None, not 1/x; no extensions. Verifier right [review 2026-11-06; adjudicated]"
+ch042.ResidueClassField.2,partial,rustmath-rings/src/function_field/typed/place.rs:262,K(x) only: ResidueClass=K[x]/(p) arithmetic and Place::residue map; test_residue_map_gf5_at_quadratic_place; no general extension fields [review 2026-11-06; checked]
+ch042.Evaluate.2,partial,rustmath-rings/src/function_field/typed/place.rs:188,K(x) only: Place::residue evaluates f at place (Err on pole); tested test_residue_degree_one_place_is_evaluation; no Lift [review 2026-11-06; checked]
+ch042.TwoGenerators,missing,,no TwoGenerators [review 2026-11-06; checked]
+ch042.LocalUniformizer,partial,rustmath-rings/src/function_field/typed/place.rs:148,K(x) only: uniformizer() with valuation 1; test_uniformizer_has_valuation_one; string-typed place.rs:173 is a facade [review 2026-11-06; checked]
+ch042.SafeUniformizer.2,missing,,no SafeUniformizer [review 2026-11-06; checked]
+ch042.Ideal.2,missing,,no Ideal(P) from place [review 2026-11-06; checked]
+ch042.Norm.2,missing,,no Norm(P) divisor; element norm in function_field_element_polymod.rs:149 returns coefficient[0] [review 2026-11-06; checked]
+ch042.Completion,facade,rustmath-rings/src/function_field/maps.rs:387; rustmath-rings/src/function_field/order_rational.rs:419,"FunctionFieldCompletion stores field/place strings, is_complete() always true, rings are format strings; no series ring or map. laurent_expansion returns [""0""]. Verifier right [review 2026-11-06; adjudicated]"
+ch042.DivisorGroup.3,partial,rustmath-rings/src/divisor.rs:355,"DivisorGroup holds a String name, not a function field; element/zero/prime work on string places; genus() is unimplemented [review 2026-11-06; checked]"
+ch042.Divisor.3,partial,rustmath-rings/src/function_field/typed/divisor.rs:34,"Divisor::from_places builds typed place sums. Only K(x) (genus 0), places are typed polynomials; no general function field. [review 2026-11-06; checked]"
+ch042.Div,partial,rustmath-rings/src/function_field/typed/divisor.rs:115,Divisor::principal(f) gives div(f) with certified factoring; tested (test_principal_divisor_q_specific). K(x) only; string version unimplemented [review 2026-11-06; checked]
+ch042.Div.2,missing,,[review 2026-11-06; checked]
+ch042.Divisor.4,missing,,[review 2026-11-06; checked]
+ch042.Identity,partial,rustmath-rings/src/function_field/typed/divisor.rs:28,"Divisor::zero() is the zero divisor, no group object. K(x) only [review 2026-11-06; checked]"
+ch042.CanonicalDivisor,facade,rustmath-curves/src/differentials.rs:252; rustmath-rings/src/divisor.rs:408,curves CanonicalDivisor::new(genus) returns DivisorData of degree 2g-2 with empty support; canonical_divisor_from_form (:370) ignores the form. rings :408 unimplemented!. Verifier right [review 2026-11-06; adjudicated]
+ch042.DifferentDivisor,facade,rustmath-rings/src/function_field/function_field_polymod.rs:216,"FunctionFieldSimple::different (""the different (ramification divisor)"") returns format! ""Different of y/K"" (tracker facade row). functionfields genus.rs different_at is private, degrees only [review 2026-11-06; adjudicated]"
+ch042.AssignNames.3,n/a,,"Printing/naming convention, not meaningful for Rust library [review 2026-11-06; checked]"
+ch042.FunctionField.9,partial,rustmath-rings/src/divisor.rs:375,"Returns the stored String name only, not a function field object [review 2026-11-06; checked]"
+ch042.Places.4,partial,rustmath-rings/src/function_field/typed/place.rs:36; rustmath-functionfields/src/places.rs:17,"K(x) only: typed Place<K> (monic irreducible + infinite) with exact valuations, test place.rs::test_valuations_specific; no place-set object, no extensions. Same as ch042.Places [review 2026-11-06; adjudicated]"
+ch042.NumberOfSmoothDivisors,missing,,[review 2026-11-06; checked]
+ch042.DivisorOfDegreeOne,missing,,[review 2026-11-06; checked]
+ch042.Div1,missing,,Div1 eq Div2 compares divisor groups; typed Divisor PartialEq (divisor.rs:197) compares divisors. String DivisorGroup (divisor.rs:355) derives only Clone/Debug; no group eq. Verifier right [review 2026-11-06; adjudicated]
+ch042.D1,partial,rustmath-rings/src/function_field/typed/divisor.rs:209,"Typed Add/Sub/Neg for divisors; no scalar k*D, div, mod. Only K(x) (genus 0), places are typed polynomials; no general function field. [review 2026-11-06; checked]"
+ch042.Quotrem.2,missing,,[review 2026-11-06; checked]
+ch042.GCD,missing,,[review 2026-11-06; checked]
+ch042.LCM,missing,,[review 2026-11-06; checked]
+ch042.D1.2,partial,rustmath-rings/src/function_field/typed/divisor.rs:198,"Only eq/ne exist; no le/lt/ge/gt divisor ordering. Only K(x) (genus 0), places are typed polynomials; no general function field. [review 2026-11-06; checked]"
+ch042.IsZero.3,partial,rustmath-rings/src/function_field/typed/divisor.rs:78,"is_zero and is_effective only; no IsPositive, IsSpecial, IsPrincipal. Only K(x) (genus 0), places are typed polynomials; no general function field. [review 2026-11-06; checked]"
+ch042.IsCanonical,missing,,[review 2026-11-06; checked]
+ch042.FunctionField.10,missing,,[review 2026-11-06; checked]
+ch042.Degree.5,partial,rustmath-rings/src/function_field/typed/divisor.rs:83,"Divisor::degree sums multiplicity times place degree; tested in test_degree_law_battery_q. Only K(x) (genus 0), places are typed polynomials; no general function field. [review 2026-11-06; checked]"
+ch042.Support.2,partial,rustmath-rings/src/function_field/typed/divisor.rs:69,"Typed Divisor::support. Only K(x) (genus 0), places are typed polynomials; no general function field. [review 2026-11-06; checked]"
+ch042.Numerator.2,partial,rustmath-rings/src/function_field/typed/divisor.rs:97,"effective_parts returns (zero divisor, pole divisor) split. Only K(x) (genus 0), places are typed polynomials; no general function field. [review 2026-11-06; checked]"
+ch042.Denominator.3,partial,rustmath-rings/src/function_field/typed/divisor.rs:97,"effective_parts gives the pole part. Only K(x) (genus 0), places are typed polynomials; no general function field. [review 2026-11-06; checked]"
+ch042.Ideals.2,missing,,[review 2026-11-06; checked]
+ch042.Norm.3,missing,,[review 2026-11-06; checked]
+ch042.FiniteSplit,missing,,[review 2026-11-06; checked]
+ch042.Dimension,partial,rustmath-rings/src/function_field/typed/divisor.rs:187,"riemann_roch_dimension: deg+1 or 0, exact for genus 0 only; test_riemann_roch_battery. General fields missing [review 2026-11-06; checked]"
+ch042.IndexOfSpeciality,broken,rustmath-curves/src/riemann_roch.rs:468,"Uses dimension() which returns only the lower bound deg-g+1 for 0<=deg<2g-1, so wrong for special divisors; genus passed in [review 2026-11-06; checked]"
+ch042.ShortBasis,missing,,[review 2026-11-06; checked]
+ch042.Basis.3,partial,rustmath-rings/src/function_field/typed/divisor.rs:150,riemann_roch_basis gives x^i/g basis of L(D) on K(x); test_riemann_roch_mixed_divisor. No Hess algorithm for general fields [review 2026-11-06; checked]
+ch042.RiemannRochSpace,partial,rustmath-rings/src/function_field/typed/divisor.rs:150,Only a basis of L(D) for K(x); no vector space object or map [review 2026-11-06; checked]
+ch042.Valuation.3,partial,rustmath-rings/src/function_field/typed/divisor.rs:60,"Divisor::multiplicity(place) is the coefficient. Only K(x) (genus 0), places are typed polynomials; no general function field. [review 2026-11-06; checked]"
+ch042.Reduction,facade,rustmath-rings/src/function_field/jacobian_hyperelliptic.rs:417; rustmath-rings/src/function_field/khuri_makdisi.rs:184,"CantorAlgorithm::reduce returns MumfordDivisor::zero() for any input; KhuriMakdisi::reduce returns format! ""reduce(D)"". curves cantor.rs is behind the off-by-default genus2 feature [review 2026-11-06; adjudicated]"
+ch042.GapNumbers.3,missing,,[review 2026-11-06; checked]
+ch042.GapNumbers.4,missing,,[review 2026-11-06; checked]
+ch042.RamificationDivisor.2,missing,,[review 2026-11-06; checked]
+ch042.WeierstrassPlaces.3,missing,,[review 2026-11-06; checked]
+ch042.IsWeierstrassPlace.2,missing,,[review 2026-11-06; checked]
+ch042.WronskianOrders.2,missing,,[review 2026-11-06; checked]
+ch042.ComplementaryDivisor,missing,,[review 2026-11-06; checked]
+ch042.DifferentialBasis,facade,rustmath-curves/src/differentials.rs:341; rustmath-rings/src/divisor.rs:208,"curves DifferentialSpace::basis returns placeholder strings omega_0..omega_(n-1), n from a degree formula (tracker facade row); rings differential_basis :208 unimplemented!. Verifier right [review 2026-11-06; adjudicated]"
+ch042.DifferentialSpace.2,facade,rustmath-curves/src/differentials.rs:319; rustmath-rings/src/divisor.rs:201,"curves DifferentialSpace::new(DivisorData, genus): dim from non-special RR formula (wrong for special D, usize underflow at g=0), basis fabricated strings, no isomorphism; rings :201 unimplemented! [review 2026-11-06; adjudicated]"
+ch042.Parametrization,missing,,[review 2026-11-06; checked]
+ch042.ClassGroupGenerationBound,missing,,[review 2026-11-06; checked]
+ch042.ClassNumberApproximation,missing,,[review 2026-11-06; checked]
+ch042.ClassNumberApproximationBound,missing,,[review 2026-11-06; checked]
+ch042.ClassGroup.3,facade,rustmath-rings/src/function_field/picard_group.rs:356; rustmath-rings/src/function_field/picard_group.rs:298,"PicardGroup::class (:391) wraps the divisor unchanged; DivisorClass::is_zero (:298) tests representative==0, so no quotient by principal divisors, no group or maps. Same as ch042.ClassGroup [review 2026-11-06; adjudicated]"
+ch042.ClassGroupAbelianInvariants.3,facade,rustmath-rings/src/function_field/jacobian_base.rs:528,"JacobianGroupFiniteFieldBase::group_structure (Cl^0 invariants) returns vec![1] (""Would compute actual invariants"") for every curve; no Z factor. Same as ch042.ClassGroupAbelianInvariants [review 2026-11-06; adjudicated]"
+ch042.ClassNumber.3,facade,rustmath-rings/src/function_field/order.rs:300,"class_number returns hard-coded 1 (""Simplified""); not computed [review 2026-11-06; checked]"
+ch042.GlobalUnitGroup.2,missing,,[review 2026-11-06; checked]
+ch042.IsGlobalUnit.2,missing,,[review 2026-11-06; checked]
+ch042.PrincipalDivisorMap,partial,rustmath-rings/src/function_field/typed/divisor.rs:115,"K(x) over Q/GF(p) only: Divisor::principal is f -> div(f), Err on 0; test divisor.rs::test_principal_divisor_q_specific. No Map object, no extensions of k(x). Verifier right [review 2026-11-06; adjudicated]"
+ch042.ClassGroupExactSequence.2,missing,,[review 2026-11-06; checked]
+ch042.SUnitGroup,missing,,[review 2026-11-06; checked]
+ch042.IsSUnit,missing,,[review 2026-11-06; checked]
+ch042.SRegulator,missing,,[review 2026-11-06; checked]
+ch042.SPrincipalDivisorMap,missing,,[review 2026-11-06; checked]
+ch042.IsSPrincipal,missing,,[review 2026-11-06; checked]
+ch042.SClassGroup,missing,,[review 2026-11-06; checked]
+ch042.SClassGroupExactSequence,missing,,[review 2026-11-06; checked]
+ch042.SClassGroupAbelianInvariants,missing,,[review 2026-11-06; checked]
+ch042.SClassNumber,missing,,[review 2026-11-06; checked]
+ch042.ClassGroupPRank.2,missing,,[review 2026-11-06; checked]
+ch042.HasseWittInvariant.2,missing,,[review 2026-11-06; checked]
+ch042.TateLichtenbaumPairing,missing,,[review 2026-11-06; checked]
+ch042.DifferentialSpace.3,facade,rustmath-rings/src/differential.rs:290,"DifferentialsSpace::new takes a name string; string-coefficient elements, add/neg/div are format! concatenation, dimension() hard-coded 1, basis literal dx. Same as ch042.DifferentialSpace [review 2026-11-06; adjudicated]"
+ch042.Differential,partial,rustmath-rings/src/function_field/typed/element.rs:118,"K(x) only: RationalFunction::derivative gives da/dx, i.e. d(a)=a' dx (test element.rs::test_derivative); no differential type. String ctor differential.rs:78 only wraps caller strings [review 2026-11-06; adjudicated]"
+ch042.Identity.2,partial,rustmath-rings/src/differential.rs:87,"FunctionFieldDifferential::zero gives string-coefficient ""0"" differential [review 2026-11-06; checked]"
+ch042.IsCanonical.2,missing,,[review 2026-11-06; checked]
+ch042.FunctionField.11,partial,rustmath-rings/src/differential.rs:301,DifferentialsSpace::function_field returns stored String name only [review 2026-11-06; checked]
+ch042.FunctionField.12,missing,,[review 2026-11-06; checked]
+ch042.SpaceOfDifferentialsFirstKind,facade,rustmath-curves/src/differentials.rs:166,"HolomorphicDifferentials::new(genus) takes only a caller genus: dimension() echoes it, basis() emits x^i/y strings for any curve; no function field, no isomorphism (tracker facade row) [review 2026-11-06; adjudicated]"
+ch042.BasisOfDifferentialsFirstKind,facade,rustmath-curves/src/differentials.rs:187,"HolomorphicDifferentials::basis returns strings 1/y, x/y, ..., x^(g-1)/y for any genus whatever the curve (hyperelliptic template, ""placeholder""); nothing computed. Verifier right [review 2026-11-06; adjudicated]"
+ch042.DifferentialBasis.2,facade,rustmath-curves/src/differentials.rs:341; rustmath-rings/src/divisor.rs:208,Same as ch042.DifferentialBasis: curves DifferentialSpace::basis fabricates omega_i strings; rings differential_basis :208 unimplemented!. Verifier right [review 2026-11-06; adjudicated]
+ch042.DifferentialSpace.4,facade,rustmath-curves/src/differentials.rs:319; rustmath-rings/src/divisor.rs:201,"Same as ch042.DifferentialSpace.2: curves DifferentialSpace dim is a degree formula, basis fabricated omega_i strings, no isomorphism; rings :201 unimplemented!. Verifier right [review 2026-11-06; adjudicated]"
+ch042.D1.3,missing,,No equality of differential spaces: rings DifferentialsSpace (differential.rs:270) and curves DifferentialSpace derive only Clone/Debug; typed Divisor PartialEq is unrelated. Verifier right [review 2026-11-06; adjudicated]
+ch042.r,facade,rustmath-rings/src/differential.rs:194,"Add/Neg/Div/scale build format! strings ""(f) + (g)"", ""-(f)"", ""(f)/(g)"" (Div returns String); no Sub, no x/r, no field arithmetic, never simplified. Verifier right [review 2026-11-06; adjudicated]"
+ch042.x.2,facade,rustmath-rings/src/differential.rs:240,"PartialEq compares coefficient text (""Placeholder: should normalize""), so x*dx + dx ne dx + x*dx; no x in D membership. Verifier right [review 2026-11-06; adjudicated]"
+ch042.IsExact,stub,rustmath-rings/src/differential.rs:146,is_exact is unimplemented!() [review 2026-11-06; checked]
+ch042.IsZero.4,facade,rustmath-rings/src/differential.rs:92,"is_zero is coefficient == ""0"" text compare: -(0 dx) gives ""-(0)"" and w + (-w) gives ""(x) + (-(x))"", both reported nonzero. Verifier right [review 2026-11-06; adjudicated]"
+ch042.Valuation.4,facade,rustmath-curves/src/differentials.rs:104; rustmath-rings/src/differential.rs:122,curves DifferentialForm::order_at returns constant 0 for every form and place (tracker facade row); rings FunctionFieldDifferential::valuation :122 is unimplemented!. Verifier right [review 2026-11-06; adjudicated]
+ch042.Divisor.5,facade,rustmath-rings/src/differential.rs:110,"divisor() returns format!(""div(coeff dvar)"") string, not a divisor [review 2026-11-06; checked]"
+ch042.Residue,facade,rustmath-rings/src/differential.rs:137,"residue() returns format string ""Res_P(...)"", not computed [review 2026-11-06; checked]"
+ch042.Module.2,missing,,[review 2026-11-06; checked]
+ch042.Relations.2,missing,,[review 2026-11-06; checked]
+ch042.Cartier,stub,rustmath-rings/src/differential.rs:169,cartier is unimplemented!() [review 2026-11-06; checked]
+ch042.CartierRepresentation,missing,,[review 2026-11-06; checked]
+ch042.WeilDescent,missing,,[review 2026-11-06; checked]
+ch042.ArtinSchreierExtension,missing,,[review 2026-11-06; checked]
+ch042.WeilDescentDegree,missing,,[review 2026-11-06; checked]
+ch042.WeilDescentGenus,missing,,[review 2026-11-06; checked]
+ch042.MultiplyFrobenius,missing,,[review 2026-11-06; checked]
+ch042.FunctionFieldDatabase,missing,,[review 2026-11-06; checked]
+ch042.sub.2,missing,,[review 2026-11-06; checked]
+ch042.BaseField,missing,,[review 2026-11-06; checked]
+ch042.Degree.6,missing,,[review 2026-11-06; checked]
+ch042.NumberOfFields,missing,,[review 2026-11-06; checked]
+ch042.FunctionFields,missing,,[review 2026-11-06; checked]
