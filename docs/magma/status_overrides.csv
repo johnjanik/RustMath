@@ -1455,3 +1455,387 @@ ch066.PermutationGroup.2,missing,,No database of this kind in workspace; same-na
 ch066.PermRep,missing,,No such database or function in workspace [review 2026-11-06; checked]
 ch066.ManifoldDatabase,missing,,No such database or function in workspace [review 2026-11-06; checked]
 ch066.Manifold,missing,,No database of this kind in workspace; same-named candidate (free-group/other) has unrelated semantics [review 2026-11-06; checked]
+ch058.Sym,done,rustmath-groups/src/permutation_group.rs:54; rustmath-groups/src/permutation_group.rs:208,"Concrete SymmetricGroup::new(n)/symmetric(n) on 0-based points via adjacent transpositions; tests: permutation_group.rs::test_symmetric_group_s4, test_generated_orders_match_formulas [review 2026-11-06; checked]"
+ch058.Sym.2,missing,,Sym(X) on an arbitrary finite set not supported; only degree n on 0..n [review 2026-11-06; checked]
+ch058.StandardGroup,missing,,no relabelling of a perm group to act on {1..n} [review 2026-11-06; checked]
+ch058.elt,partial,rustmath-combinatorics/src/permutations.rs:21; rustmath-groups/src/bsgs.rs:289,"Permutation::from_vec validates images and StabilizerChain::contains tests membership, but no combined elt<G|L> API tied to a group [review 2026-11-06; checked]"
+ch058.G,partial,rustmath-combinatorics/src/permutations.rs:21; rustmath-groups/src/bsgs.rs:289,coerce image list: from_vec + StabilizerChain::contains separately; no PermutationGroup-level membership/coercion [review 2026-11-06; checked]
+ch058.G.2,partial,rustmath-galois/src/perm.rs:44,"from_cycles builds a perm from 0-indexed cycles on a raw Vec; no group membership check, no parser for (..)(..) notation [review 2026-11-06; checked]"
+ch058.G.3,partial,rustmath-galois/src/perm.rs:44,from_cycles from integer cycle lists; no group membership check [review 2026-11-06; checked]
+ch058.G.4,partial,rustmath-galois/src/perm.rs:44,"from_cycles from disjoint cycle lists; no group membership check, not indexed sets [review 2026-11-06; checked]"
+ch058.ElementToSequence,done,rustmath-combinatorics/src/permutations.rs:294,"as_slice is the 0-based image sequence, from_vec (:21) inverts it; exercised via PermutationGroup::order in permutation_group.rs::test_dihedral_orders and test_generated_orders_match_formulas [review 2026-11-06; adjudicated]"
+ch058.Identity,done,rustmath-combinatorics/src/permutations.rs:12,Permutation::identity(n); tested in permutations.rs::test_sign; no group-relative Id(G) [review 2026-11-06; checked]
+ch058.PermutationGroup,missing,,PermutationGroup<X|L> over arbitrary set X not supported [review 2026-11-06; checked]
+ch058.PermutationGroup.2,done,rustmath-groups/src/permutation_group.rs:21,"PermutationGroup::new(degree,gens) validates degrees; test permutation_group.rs::test_permutation_group_creation [review 2026-11-06; checked]"
+ch058.G.5,partial,rustmath-groups/src/permutation_group.rs:164,generators() slice gives G.i (0-based); no negative index inverse or G.0 [review 2026-11-06; checked]
+ch058.Degree,done,rustmath-groups/src/permutation_group.rs:159,PermutationGroup::degree; test permutation_group.rs::test_permutation_group_degree [review 2026-11-06; checked]
+ch058.Generators,done,rustmath-groups/src/permutation_group.rs:164,generators() returns defining generators; test permutation_group.rs::test_group_generators [review 2026-11-06; checked]
+ch058.GeneratorsSequence,done,rustmath-groups/src/permutation_group.rs:164,generators() Vec keeps given order and duplicates; test permutation_group.rs::test_group_generators [review 2026-11-06; checked]
+ch058.NumberOfGenerators,done,rustmath-groups/src/permutation_group.rs:164,generators().len(); asserted in permutation_group.rs::test_s3_generators; no Ngens fn [review 2026-11-06; checked]
+ch058.FewGenerators,missing,,no random short generating set routine [review 2026-11-06; checked]
+ch058.Generic,missing,,no embedding into generic symmetric group [review 2026-11-06; checked]
+ch058.Parent,missing,,permutations carry no parent group [review 2026-11-06; checked]
+ch058.GSet,missing,,no G-set object for perm groups [review 2026-11-06; checked]
+ch058.Order,verified,rustmath-groups/src/bsgs.rs:278; rustmath-groups/src/permutation_group.rs:181,Schreier-Sims order; bsgs.rs::mathieu_m24_order_and_membership asserts |M24|=244823040 (ATLAS); also S_n/A_n tests [review 2026-11-06; checked]
+ch058.FactoredOrder,missing,,no factored order for perm groups [review 2026-11-06; checked]
+ch058.IsAbelian,partial,rustmath-groups/src/libgap_mixin.rs:52,"is_abelian_libgap checks all pairs of elements(); GAP-checked on perm groups in libgap_mixin.rs::test_nonabelian_groups_against_gap; enumeration only, no PermutationGroup impl (as IsCyclic) [review 2026-11-06; adjudicated]"
+ch058.IsCyclic,partial,rustmath-groups/src/libgap_mixin.rs:67,generic element-enumeration test over FiniteGroupTrait; PermutationGroup does not implement it (only test-local types) [review 2026-11-06; checked]
+ch058.IsElementaryAbelian,missing,,not implemented [review 2026-11-06; checked]
+ch058.IsSpecial,missing,,not implemented for p-groups (hit in curves is unrelated) [review 2026-11-06; checked]
+ch058.IsExtraSpecial,missing,,not implemented [review 2026-11-06; checked]
+ch058.IsNilpotent,partial,rustmath-groups/src/libgap_mixin.rs:80,"lower central series by generic O(|G|^2) enumeration over FiniteGroupTrait, not Sims algorithm; PermutationGroup lacks the trait impl [review 2026-11-06; checked]"
+ch058.IsSoluble,partial,rustmath-groups/src/libgap_mixin.rs:108,"derived series by generic O(|G|^2) enumeration over FiniteGroupTrait, not Sims algorithm; PermutationGroup lacks the trait impl [review 2026-11-06; checked]"
+ch058.IsPerfect,partial,rustmath-groups/src/libgap_mixin.rs:148,"G=G' by generic O(|G|^2) enumeration over FiniteGroupTrait, not Sims algorithm; PermutationGroup lacks the trait impl [review 2026-11-06; checked]"
+ch058.IsSimple,partial,rustmath-groups/src/libgap_mixin.rs:133,"normal closures by generic O(|G|^2) enumeration over FiniteGroupTrait, not Sims algorithm; PermutationGroup lacks the trait impl [review 2026-11-06; checked]"
+ch058.IsWreathProduct,missing,,block_systems exist (perm_predicates.rs) but no wreath decomposition [review 2026-11-06; checked]
+ch058.hom,partial,rustmath-groups/src/libgap_morphism.rs:73,GroupMorphismLibgap::new from explicit map on enumerable groups; not wired to PermutationGroup [review 2026-11-06; checked]
+ch058.Domain,partial,rustmath-groups/src/libgap_morphism.rs:238,"generic enumerable groups (GroupLibGAP) only, not PermutationGroup; accessor [review 2026-11-06; checked]"
+ch058.Codomain,partial,rustmath-groups/src/libgap_morphism.rs:243,"generic enumerable groups (GroupLibGAP) only, not PermutationGroup; accessor [review 2026-11-06; checked]"
+ch058.Image,partial,rustmath-groups/src/libgap_morphism.rs:169,"generic enumerable groups (GroupLibGAP) only, not PermutationGroup; returns element Vec not subgroup; test_image [review 2026-11-06; checked]"
+ch058.Kernel,partial,rustmath-groups/src/libgap_morphism.rs:157,"generic enumerable groups (GroupLibGAP) only, not PermutationGroup; returns element Vec not subgroup; test_kernel [review 2026-11-06; checked]"
+ch058.IsHomomorphism,broken,rustmath-groups/src/libgap_morphism.rs:106,validate() returns Ok after 101 pairs in HashMap order and skips products missing from map; a map on a 200-element group wrong at one point passes in ~1/4 of runs; no gen-image API [review 2026-11-06; adjudicated]
+ch058.AbelianGroup,missing,,no abelian perm group constructor [review 2026-11-06; checked]
+ch058.AlternatingGroup,done,rustmath-groups/src/permutation_group.rs:259,"AlternatingGroup::new(n); tests permutation_group.rs::test_alternating_group_a4, test_generated_orders_match_formulas [review 2026-11-06; checked]"
+ch058.CyclicGroup,done,rustmath-groups/src/permutation_group.rs:97,PermutationGroup::cyclic(n); doctest on order() asserts cyclic(7) order 7 [review 2026-11-06; checked]
+ch058.DihedralGroup,done,rustmath-groups/src/permutation_group.rs:141,"PermutationGroup::dihedral(n); tests test_dihedral_orders, test_dihedral_relations (degree for n<3 follows GAP) [review 2026-11-06; checked]"
+ch058.Sym.3,done,rustmath-groups/src/permutation_group.rs:54; rustmath-groups/src/permutation_group.rs:208,"Concrete SymmetricGroup::new(n)/symmetric(n) on 0-based points via adjacent transpositions; tests: permutation_group.rs::test_symmetric_group_s4, test_generated_orders_match_formulas [review 2026-11-06; checked]"
+ch058.ExtraSpecialGroup,missing,,not implemented [review 2026-11-06; checked]
+ch058.YoungSubgroup,missing,,not implemented [review 2026-11-06; checked]
+ch058.DirectProduct,missing,,"semidirect_product.rs direct_product is an abstract group product, not an intransitive perm group [review 2026-11-06; checked]"
+ch058.DirectProduct.2,missing,,no direct product of perm groups [review 2026-11-06; checked]
+ch058.PrimitiveWreathProduct,missing,,no product action wreath [review 2026-11-06; checked]
+ch058.PrimitiveWreathProduct.2,missing,,no iterated product action wreath [review 2026-11-06; checked]
+ch058.WreathProduct,missing,,no imprimitive wreath of perm groups (combinatorics ColoredPermutation is a different object) [review 2026-11-06; checked]
+ch058.WreathProduct.2,missing,,no iterated wreath [review 2026-11-06; checked]
+ch058.WreathProduct.3,missing,,no wreath from block system [review 2026-11-06; checked]
+ch058.WreathProduct.4,missing,,no smallest wreath containing G [review 2026-11-06; checked]
+ch058.G.6,partial,rustmath-groups/src/bsgs.rs:289,"StabilizerChain::contains sifts g (both outcomes in bsgs.rs::mathieu_m24_order_and_membership); no parent objects, so no re-parenting; matches ch058.G (G![images]) partial [review 2026-11-06; adjudicated]"
+ch058.G.7,missing,,no embedding of subgroup H into G [review 2026-11-06; checked]
+ch058.g,done,rustmath-combinatorics/src/permutations.rs:58,Permutation::compose; test permutations.rs::test_compose; no parent-group rules [review 2026-11-06; checked]
+ch058.g.2,partial,rustmath-combinatorics/src/permutation_simd.rs:293,"power_simd binary exponentiation, k: usize so no negative n; test permutation_simd.rs::test_power_simd. group_traits pow (:147) has no non-test perm impl; PermutationElement trait lacks pow [review 2026-11-06; adjudicated]"
+ch058.g.3,missing,,no g*h^-1 operator; only inverse and compose separately [review 2026-11-06; checked]
+ch058.g.4,done,rustmath-groups/src/conjugacy_classes.rs:230,PermutationElement::conjugate_by = x^-1 g x; test conjugacy_classes.rs::test_conjugation [review 2026-11-06; checked]
+ch058.g-h,partial,rustmath-groups/src/solvtower.rs:60,commutator a^-1 b^-1 a b only for fixed degree-24 [u8;24] perms; GroupElement::commutator generic [review 2026-11-06; checked]
+ch058.g1-gr,missing,,no left-normed multi-commutator [review 2026-11-06; checked]
+ch058.CycleStructure,done,rustmath-combinatorics/src/group_action.rs:130,cycle_type returns length->count map incl. fixed points; test group_action.rs::test_cycle_type; HashMap not sorted pairs [review 2026-11-06; checked]
+ch058.Degree.2,missing,,no number-of-moved-points function (cycles() could derive it) [review 2026-11-06; checked]
+ch058.IsEven,done,rustmath-combinatorics/src/permutations.rs:71,even iff Permutation::sign()==1; test permutations.rs::test_sign; no is_even name [review 2026-11-06; checked]
+ch058.Sign,done,rustmath-combinatorics/src/permutations.rs:71,Permutation::sign (inversion count); test permutations.rs::test_sign [review 2026-11-06; checked]
+ch058.Order.2,done,rustmath-combinatorics/src/permutations.rs:122,lcm of cycle lengths; test permutations.rs::test_order [review 2026-11-06; checked]
+ch058.g.5,done,rustmath-combinatorics/src/permutations.rs:12,Permutation derives PartialEq; equality used in permutation_group.rs::test_dihedral_relations; no parent check [review 2026-11-06; checked]
+ch058.g.6,done,rustmath-combinatorics/src/permutations.rs:12,Permutation derives PartialEq (!=); no dedicated test of ne [review 2026-11-06; checked]
+ch058.IsId,done,rustmath-curves/src/belyi/monodromy.rs:101; rustmath-algebras/src/symmetric_group_algebra.rs:173,is_identity on belyi Permutation (both outcomes in monodromy.rs::validate_catches_nonidentity_product) and SymmetricGroupElement (test_symmetric_group_element_identity) [review 2026-11-06; adjudicated]
+ch058.G.8,missing,,no set product of subgroups [review 2026-11-06; checked]
+ch058.ElementSet,partial,rustmath-galois/src/perm.rs:98; rustmath-groups/src/transitive24.rs:96,"group_closure lists elements of <gens>, None past cap; rustmath-galois/tests/perm.rs::coset_reps_count_matches_index; takes H's gens only, no G argument or H<=G check [review 2026-11-06; adjudicated]"
+ch058.NumberingMap,missing,,not implemented [review 2026-11-06; checked]
+ch058.RandomProcess,missing,,no product-replacement process [review 2026-11-06; checked]
+ch058.Random,partial,rustmath-groups/src/libgap_group.rs:299,"GroupLibGAP::random_element, time-hash pick over enumerated elements (<=10000); not for PermutationGroup, not uniform via BSGS [review 2026-11-06; checked]"
+ch058.Random.2,missing,,no random process object [review 2026-11-06; checked]
+ch058.Representative,missing,,"conjugacy_classes.rs representative is class rep, not an element of G [review 2026-11-06; checked]"
+ch058.Class,partial,rustmath-groups/src/conjugacy_classes.rs:91,"ConjugacyClass::compute_elements with explicit conjugator list; no Class(H,x) taking a group [review 2026-11-06; checked]"
+ch058.ConjugacyClasses,partial,rustmath-groups/src/conjugacy_classes.rs:161,"conjugacy_classes(elements) on explicit element list; no <order,length,rep> triples or PermutationGroup; test test_conjugacy_classes_partition [review 2026-11-06; checked]"
+ch058.ClassRepresentative,missing,,not implemented [review 2026-11-06; checked]
+ch058.ClassCentraliser,missing,,not implemented [review 2026-11-06; checked]
+ch058.ClassMap,missing,,not implemented [review 2026-11-06; checked]
+ch058.IsConjugate,partial,rustmath-groups/src/conjugacy_classes.rs:68,"ConjugacyClass::contains(elem, conjugators) boolean only; no conjugating element, no group arg; test_conjugacy_class_contains [review 2026-11-06; checked]"
+ch058.IsConjugate.2,missing,,no subgroup conjugacy test [review 2026-11-06; checked]
+ch058.Exponent,partial,rustmath-groups/src/libgap_mixin.rs:244; rustmath-groups/src/libgap_group.rs:379,"lcm of element orders over elements(); GAP-checked in libgap_mixin.rs::test_nonabelian_groups_against_gap, libgap_group.rs::test_symmetric_group_s3; enumeration only, no PermutationGroup impl [review 2026-11-06; adjudicated]"
+ch058.NumberOfClasses,partial,rustmath-groups/src/conjugacy_classes.rs:187,num_conjugacy_classes(elements) on explicit element list; test_num_conjugacy_classes_s3 [review 2026-11-06; checked]
+ch058.PowerMap,missing,,not implemented [review 2026-11-06; checked]
+ch058.AssertAttribute,n/a,,sets Magma's Classes attribute cache; no attribute store in Rust; the Reps computation belongs to the ConjugacyClasses row; same as ch059.AssertAttribute n/a [review 2026-11-06; adjudicated]
+ch058.sub,partial,rustmath-groups/src/solvtower.rs:69,"subgroup_closure(gens,cap): element-set closure of fixed-degree Perm gens, None above cap; no sub<G|L> syntax, no subgroup/sequence args [review 2026-11-06; checked]"
+ch058.ncl,partial,rustmath-groups/src/solvtower.rs:100,"normal_closure(g_gens,h_gens,cap) via element enumeration, tested (normal_closure_of_3cycle_in_s3_is_a3); fixed DEG, cap-limited, no Butler-Cannon [review 2026-11-06; checked]"
+ch058.g.7,done,rustmath-groups/src/bsgs.rs:289,StabilizerChain::contains by sifting; test bsgs.rs::membership_in_s4_and_a4 [review 2026-11-06; checked]
+ch058.g.8,done,rustmath-groups/src/bsgs.rs:289,negation of StabilizerChain::contains; test bsgs.rs::membership_in_s4_and_a4 [review 2026-11-06; checked]
+ch058.S,partial,rustmath-galois/src/perm.rs:216,"is_subset(S, G_elems) is exactly S subset G but needs G fully enumerated; no BSGS sift path (bsgs.rs:289 is per element only); no direct test, used by maximal_subgroups [review 2026-11-06; adjudicated]"
+ch058.S.2,partial,rustmath-galois/src/perm.rs:216,"negation of is_subset(S, G_elems) on explicit element lists (same fn as S subset G); G must be enumerated, no BSGS path, no direct test [review 2026-11-06; adjudicated]"
+ch058.H,partial,rustmath-galois/src/perm.rs:216,"is_subset on explicit element lists (slice subset check); no subgroup object, needs full enumeration; no direct test found [review 2026-11-06; checked]"
+ch058.H.2,partial,rustmath-galois/src/perm.rs:216,"negation of is_subset on explicit element lists; no subgroup object, needs enumeration [review 2026-11-06; checked]"
+ch058.H.3,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.H.4,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.Index,partial,rustmath-galois/src/perm.rs:222,"index(group,subgroup)=len/len on explicit element lists; no BSGS order path, no divisibility check; no direct test [review 2026-11-06; checked]"
+ch058.FactoredIndex,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.IsCentral,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.IsNormal,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.IsSelfNormalizing,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.IsSubnormal,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.H.5,partial,rustmath-galois/src/perm.rs:203,"conjugate(g,h_elems) = g H g^-1 on element lists (convention differs from H^g); tested rustmath-galois/tests/perm.rs [review 2026-11-06; checked]"
+ch058.H.6,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.IntersectionWithNormalSubgroup,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.CommutatorSubgroup,partial,rustmath-groups/src/libgap_mixin.rs:348,"Only derived subgroup [G,G]; no [H,K] for distinct H,K; test_commutator_subgroup (cyclic only) [review 2026-11-06; checked]"
+ch058.Centralizer,partial,rustmath-category/src/group_category.rs:192,"centralizer_in(g, elems) is a native brute-force C_G(g) over an explicit list; only impl is test SimpleElement, no perm type; untested; no backtrack, no Subgroup param; GAP wrappers not native [review 2026-11-06; adjudicated]"
+ch058.Centralizer.2,missing,,"Only a GAP-shell wrapper (rustmath-interfaces), no native centralizer of a subgroup [review 2026-11-06; checked]"
+ch058.CentralizerOfNormalSubgroup,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.SectionCentraliser,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.Core,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.H.7,partial,rustmath-groups/src/solvtower.rs:100,"normal_closure(g_gens,h_gens,cap) element enumeration, tested (normal_closure_of_3cycle_in_s3_is_a3); fixed DEG, cap-limited [review 2026-11-06; checked]"
+ch058.Normalizer,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.SymmetricNormalizer,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.SylowSubgroup,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.IsMaximal,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.IsProbablyMaximal,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.MaximalSubgroups,partial,rustmath-galois/src/subgroups.rs:64,"Enumerates all subgroups, |G| up to a few hundred; returns all maximals not class reps, no records; tests maximal_subgroups_of_s3/s4 [review 2026-11-06; checked]"
+ch058.SubgroupClasses,partial,rustmath-galois/src/subgroups.rs:27,"all_subgroups lists every subgroup (not conjugacy class reps, no order/length records, no params), small |G| only [review 2026-11-06; checked]"
+ch058.SubgroupsLift,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.LowIndexSubgroups,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.NormalSubgroups,verified,rustmath-groups/src/libgap_mixin.rs:263,normal_subgroups on enumerated groups; libgap_mixin.rs::test_nonabelian_groups_against_gap compares GAP 4 NormalSubgroups sizes (small groups only) [review 2026-11-06; checked]
+ch058.ElementaryAbelianSubgroups,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.CyclicSubgroups,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.AbelianSubgroups,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.NilpotentSubgroups,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.SolvableSubgroups,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.PerfectSubgroups,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.NonsolvableSubgroups,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.SimpleSubgroups,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.quo,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.G.9,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.AbelianQuotient,broken,rustmath-groups/src/finitely_presented.rs:190; rustmath-groups/src/finitely_presented.rs:489,"SNF truncating division, no gcd/column steps (tracker 🔴); hand trace: S3=<a,b|a^3,b^2,(ab)^2> gives [3,2] not [2], <a|a^4,a^6> gives [4] not [2]; FpGroup only, no GrpAb/epi [review 2026-11-06; adjudicated]"
+ch058.ElementaryAbelianQuotient,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.pQuotient,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.NilpotentQuotient,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.SolvableQuotient,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
+ch058.GSetFromIndexed,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.GSet.2,partial,rustmath-combinatorics/src/bijectionist.rs:82; rustmath-combinatorics/src/bijectionist.rs:409; rustmath-combinatorics/src/bijectionist.rs:423,"GroupAction::orbits(Y, gens) with PermutationActionOnSet/OnPairs gives orbits whose union is the smallest derived G-set containing Y; only set/pair actions (OnSequence permutes positions); no G-set object [review 2026-11-06; adjudicated]"
+ch058.GSet.3,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.GSet.4,partial,rustmath-combinatorics/src/bijectionist.rs:39; rustmath-combinatorics/src/bijectionist.rs:82,"GroupAction trait takes a user act(g,x); orbits(Y, group) closes Y under it (the digest algorithm, orbit closure). Returns orbit lists, no G-set object; no test of orbits with a user action [review 2026-11-06; adjudicated]"
+ch058.Action,missing,,Candidate path is a different-semantics function (unrelated type); no permutation G-set version exists [review 2026-11-06; checked]
+ch058.Group,missing,,Candidate path is a different-semantics function (unrelated type); no permutation G-set version exists [review 2026-11-06; checked]
+ch058.Labelling,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.Degree.3,missing,,Candidate path is a different-semantics function (unrelated type); no permutation G-set version exists [review 2026-11-06; checked]
+ch058.Degree.4,partial,rustmath-groups/src/permutation_group.rs:159; rustmath-groups/src/bsgs.rs:309,"PermutationGroup::degree is |natural G-set| (same fn ch058.Degree marks done); no Degree(G,Y) for other G-sets. Test permutation_group.rs::test_permutation_group_degree [review 2026-11-06; adjudicated]"
+ch058.Support,missing,,Candidate path is a different-semantics function (unrelated type); no permutation G-set version exists [review 2026-11-06; checked]
+ch058.Support.2,missing,,Candidate path is a different-semantics function (unrelated type); no permutation G-set version exists [review 2026-11-06; checked]
+ch058.x,partial,rustmath-combinatorics/src/bijectionist.rs:409; rustmath-combinatorics/src/bijectionist.rs:423,"PermutationActionOnSet::act maps a point set under g, OnPairs an unordered pair; OnSequence/OnMultiset permute positions not entries; no G-set type. Test bijectionist.rs::test_permutation_action_on_pairs [review 2026-11-06; adjudicated]"
+ch058.Image.2,partial,rustmath-combinatorics/src/permutations.rs:41; rustmath-combinatorics/src/bijectionist.rs:409,"Permutation::apply(i) is the image of a natural point; GroupAction::act covers derived point sets and pairs; no Image(g,Y,y) over general G-set objects [review 2026-11-06; adjudicated]"
+ch058.Fix,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.Fix.2,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.x.2,partial,rustmath-combinatorics/src/bijectionist.rs:60,"GroupAction::orbit(x, group) closes a derived element (e.g. point set via PermutationActionOnSet) under the given elements; returns Vec, not a G-set. Test bijectionist.rs::test_orbit_computation [review 2026-11-06; adjudicated]"
+ch058.Cycle,missing,,Candidate path is a different-semantics function (unrelated type); no permutation G-set version exists [review 2026-11-06; checked]
+ch058.CycleDecomposition,partial,rustmath-combinatorics/src/permutations.rs:91,"Permutation::cycles omits fixed points (len>1 only), no G-set; not a partition of X. Test permutations.rs::test_cycles [review 2026-11-06; checked]"
+ch058.Orbit,partial,rustmath-groups/src/perm_predicates.rs:41; rustmath-combinatorics/src/bijectionist.rs:60,"perm_predicates::orbit: natural action from generators, sorted Vec; GroupAction::orbit handles user/derived actions; no G-set return. Test perm_predicates::orbits_of_intransitive (via orbits) [review 2026-11-06; adjudicated]"
+ch058.Orbits,partial,rustmath-groups/src/perm_predicates.rs:63; rustmath-combinatorics/src/bijectionist.rs:82; rustmath-groups/src/ksubset_orbits.rs:60,orbits on natural 0..n; GroupAction::orbits for user/derived actions on a given Y; ksubset_orbits gives k-subset orbit lengths only; no G-sets. Test perm_predicates::orbits_of_intransitive [review 2026-11-06; adjudicated]
+ch058.OrbitRepresentatives,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.OrbitClosure,partial,rustmath-combinatorics/src/bijectionist.rs:82; rustmath-groups/src/perm_predicates.rs:41,"GroupAction::orbits(S, group) returns orbits of the elements of S (union = orbit closure) for user/derived actions; natural points only via per-point orbit; no single closed set returned [review 2026-11-06; adjudicated]"
+ch058.IsConjugate.3,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.Stabilizer,partial,rustmath-groups/src/perm_predicates.rs:211,"Point stabilizer generators via Schreier lemma, natural action only; no set/sequence/Y variants, not reduced. Test perm_predicates::stabilizer_of_point_in_s4_is_s3 [review 2026-11-06; checked]"
+ch058.IsPrimitive,partial,rustmath-groups/src/perm_predicates.rs:202,"is_primitive correct on natural 0..n (any nontrivial block holds a nontrivial minimal_block(0,b)); IsPrimitive(G,Y) missing, natural form is row IsPrimitive.2. Test perm_predicates::sn_is_primitive [review 2026-11-06; adjudicated]"
+ch058.IsTransitive,partial,rustmath-groups/src/perm_predicates.rs:80,"is_transitive is a one-orbit test on natural action 0..n only; IsTransitive(G,Y) for a G-set missing (same restriction as Orbit/Orbits partial). Test perm_predicates::c23_is_transitive_and_primitive [review 2026-11-06; adjudicated]"
+ch058.IsTransitive.2,missing,,Only 1-transitivity (is_transitive) exists; no k-transitivity test [review 2026-11-06; checked]
+ch058.IsSharplyTransitive,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.Transitivity,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.IsRegular,missing,,Candidate path is a different-semantics function (unrelated type); no permutation G-set version exists [review 2026-11-06; checked]
+ch058.IsSemiregular,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.IsSemiregular.2,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.IsFrobenius,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.Action.2,missing,,Candidate path is a different-semantics function (unrelated type); no permutation G-set version exists [review 2026-11-06; checked]
+ch058.ActionImage,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.ActionKernel,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.IsFaithful,missing,,Candidate path is a different-semantics function (unrelated type); no permutation G-set version exists [review 2026-11-06; checked]
+ch058.OrbitAction,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.OrbitImage,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.OrbitKernel,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.IsOrbit,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.IsBlock,missing,,Only minimal_block/block_systems helpers in perm_predicates.rs; no such intrinsic [review 2026-11-06; checked]
+ch058.IsPrimitive.2,done,rustmath-groups/src/perm_predicates.rs:202,"Transitive plus no nontrivial block system. Test perm_predicates::c23_is_transitive_and_primitive, sn_is_primitive [review 2026-11-06; checked]"
+ch058.MaximalPartition,missing,,Only minimal_block/block_systems helpers in perm_predicates.rs; no such intrinsic [review 2026-11-06; checked]
+ch058.MinimalPartition,partial,rustmath-groups/src/perm_predicates.rs:127,"minimal_block(gens,n,a,b) is Atkinson [Atk75] finest block containing {a,b} (Block:=S, |S|=2 only); returns block not partition; no SS94 call without Block; tested only via block_systems [review 2026-11-06; adjudicated]"
+ch058.MinimalPartitions,missing,,Only minimal_block/block_systems helpers in perm_predicates.rs; no such intrinsic [review 2026-11-06; checked]
+ch058.AllPartitions,broken,rustmath-groups/src/perm_predicates.rs:182,"block_systems only builds systems from minimal_block(0,b), missing blocks not generated by a pair: regular (C2)^3 (8T3) gives 7 of 14 systems, no size-4 blocks (rechecked by Python port). Only C6 tested [review 2026-11-06; adjudicated]"
+ch058.BlocksAction,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.BlocksImage,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.BlocksKernel,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.CosetAction,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.CosetImage,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.CosetKernel,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.TransitiveQuotient,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.PrimitiveQuotient,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.DegreeReduction,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.JellyfishConstruction,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.JellyfishImage,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.JellyfishImage.2,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.JellyfishPreimage,missing,,"No implementation found in workspace (searched groups, combinatorics, by meaning) [review 2026-11-06; checked]"
+ch058.DerivedSeries,partial,rustmath-groups/src/solvtower.rs:293,"derived series built inside solvable_tower (degree-24 Perm, capped element enumeration); only exposed as refined series if solvable; test s3_tower, s4_tower [review 2026-11-06; checked]"
+ch058.CompositionSeries,missing,,no implementation found [review 2026-11-06; checked]
+ch058.CommutatorSubgroup.2,partial,rustmath-groups/src/libgap_mixin.rs:341; rustmath-groups/src/solvtower.rs:80,"commutator closure over elements(); GAP |G'| in libgap_mixin.rs::test_nonabelian_groups_against_gap via test-local PermGroup only; no non-test impl (as ch058.IsAbelian); solvtower deg-24, capped [review 2026-11-06; adjudicated]"
+ch058.SolubleResidual,partial,rustmath-groups/src/solvtower.rs:293,"no dedicated fn: solvable_tower series.last() is {1} if solvable, else the perfect derived term where the loop stalls; deg-24 perms, capped; s3_tower checks trivial case only [review 2026-11-06; adjudicated]"
+ch058.DerivedLength,missing,,no implementation found [review 2026-11-06; checked]
+ch058.LowerCentralSeries,facade,rustmath-category/src/group_category.rs:103,"default returns Vec::new() (not Option/Err), never overridden; PROJECT_TRACKER flags facade; is_nilpotent (libgap_mixin.rs:80) builds the series but never returns it; as ch059/ch063 adjudicated [review 2026-11-06; adjudicated]"
+ch058.NilpotencyClass,missing,,"nilpotent_lie_group.rs is Lie group dimension/class field, not permutation groups; no implementation [review 2026-11-06; checked]"
+ch058.UpperCentralSeries,missing,,no implementation found [review 2026-11-06; checked]
+ch058.Centre,partial,rustmath-groups/src/group_traits.rs:122,"FiniteGroupTrait::center default, O(|G|^2) over elements(), not Beals; GAP |Z(G)| checked only via test-local PermGroup in test_nonabelian_groups_against_gap; no PermutationGroup impl (as ch058.IsAbelian) [review 2026-11-06; adjudicated]"
+ch058.Hypercentre,missing,,no implementation found [review 2026-11-06; checked]
+ch058.pCore,missing,,no implementation found [review 2026-11-06; checked]
+ch058.pCoreQuotient,missing,,no implementation found [review 2026-11-06; checked]
+ch058.FittingSubgroup,missing,,no implementation found [review 2026-11-06; checked]
+ch058.FrattiniSubgroup,stub,rustmath-category/src/group_category.rs:151,trait default frattini_subgroup returns None; no implementation [review 2026-11-06; checked]
+ch058.JenningsSeries,missing,,no implementation found [review 2026-11-06; checked]
+ch058.pCentralSeries,missing,,no implementation found [review 2026-11-06; checked]
+ch058.SubnormalSeries,missing,,no implementation found [review 2026-11-06; checked]
+ch058.MaximalNormalSubgroup,missing,,no implementation found [review 2026-11-06; checked]
+ch058.MinimalNormalSubgroups,missing,,no implementation found [review 2026-11-06; checked]
+ch058.NormalSubgroups.2,partial,rustmath-groups/src/libgap_mixin.rs:263,"joins of class normal closures over elements(), small groups only; GAP sizes in test_nonabelian_groups_against_gap via test-local PermGroup; mixin has no non-test implementor (as ch058.IsAbelian) [review 2026-11-06; adjudicated]"
+ch058.NormalLattice,missing,,no implementation found [review 2026-11-06; checked]
+ch058.ChiefFactors,broken,rustmath-groups/src/solvtower.rs:374; rustmath-groups/src/solvtower.rs:293,"factor_signature reads p-power layers of derived quotients, not chief factors: C2xC2 gives [(2,2)] (true C2,C2), D8 gives (2,2),(2,1) (true 3x C2); traced by hand; tests only S3/S4; no <f,d,q,m> [review 2026-11-06; adjudicated]"
+ch058.ChiefSeries,broken,rustmath-groups/src/solvtower.rs:293,"solvable_tower returns an EA series labelled chief: C2xC2 gives [G,1], D8 gives D8>Z>1 (not G-irreducible); s3/s4 tests coincide; greedy chief series only inside is_supersolvable, not returned; as ch063 [review 2026-11-06; adjudicated]"
+ch058.CompositionFactors,missing,,no implementation found [review 2026-11-06; checked]
+ch058.Socle,missing,,no implementation found [review 2026-11-06; checked]
+ch058.SocleFactor,missing,,no implementation found [review 2026-11-06; checked]
+ch058.SocleFactors,missing,,no implementation found [review 2026-11-06; checked]
+ch058.SocleSeries,missing,,no implementation found [review 2026-11-06; checked]
+ch058.EARNS,missing,,no implementation found [review 2026-11-06; checked]
+ch058.IsAffine,missing,,auto match is Lie algebra cartan type (wrong); no implementation [review 2026-11-06; checked]
+ch058.AffineAction,missing,,no implementation found [review 2026-11-06; checked]
+ch058.AffineImage,missing,,no implementation found [review 2026-11-06; checked]
+ch058.AffineKernel,missing,,no implementation found [review 2026-11-06; checked]
+ch058.SocleAction,missing,,no implementation found [review 2026-11-06; checked]
+ch058.SocleImage,missing,,no implementation found [review 2026-11-06; checked]
+ch058.SocleKernel,missing,,no implementation found [review 2026-11-06; checked]
+ch058.SocleQuotient,missing,,no implementation found [review 2026-11-06; checked]
+ch058.RefineSection,missing,,no implementation found [review 2026-11-06; checked]
+ch058.Radical,missing,,auto match is ideal radical in affineschemes (wrong); only is_solvable exists [review 2026-11-06; checked]
+ch058.RadicalQuotient,missing,,no implementation found [review 2026-11-06; checked]
+ch058.ElementaryAbelianSeries,partial,rustmath-groups/src/solvtower.rs:293,"series from solvable_tower for solvable groups only (no N argument, no parameters); test s4_tower [review 2026-11-06; checked]"
+ch058.ElementaryAbelianSeriesCanonical,partial,rustmath-groups/src/solvtower.rs:293,"solvable_tower terms are derived terms and preimages of p^k(A/B), so characteristic and isomorphism-invariant; same fn as EA series row; solvable deg-24 perms only, capped; test solvtower.rs::s4_tower [review 2026-11-06; adjudicated]"
+ch058.Complements,missing,,no implementation found [review 2026-11-06; checked]
+ch058.Complements.2,missing,,no implementation found [review 2026-11-06; checked]
+ch058.HasComplement,missing,,no implementation found [review 2026-11-06; checked]
+ch058.Supplements,missing,,no implementation found [review 2026-11-06; checked]
+ch058.Supplements.2,missing,,no implementation found [review 2026-11-06; checked]
+ch058.HasSupplement,missing,,no implementation found [review 2026-11-06; checked]
+ch058.AbelianNormalSubgroup,missing,,no implementation found [review 2026-11-06; checked]
+ch058.AbelianNormalQuotient,missing,,no implementation found [review 2026-11-06; checked]
+ch058.SolubleNormalQuotient,missing,,no implementation found [review 2026-11-06; checked]
+ch058.ElementaryAbelianNormalSubgroup,partial,rustmath-groups/src/solvtower.rs:293,"no dedicated fn: solvable_tower series[len-2] is the last nontrivial EA-series term (V4 in S4, s4_tower); solvable deg-24 perms only, nothing for non-solvable G with nontrivial radical [review 2026-11-06; adjudicated]"
+ch058.pElementaryAbelianNormalSubgroup,missing,,no implementation found [review 2026-11-06; checked]
+ch058.MEANS,missing,,no implementation found [review 2026-11-06; checked]
+ch058.MEANS.2,missing,,no implementation found [review 2026-11-06; checked]
+ch058.H.8,partial,rustmath-galois/src/subgroups.rs:102,"left_coset(g,H)=[compose(g,h)] (apply h then g) is the set Magma calls H*g, as an explicit element list; no coset object or coset ops; unused and untested [review 2026-11-06; adjudicated]"
+ch058.DoubleCoset,missing,,no implementation found [review 2026-11-06; checked]
+ch058.DoubleCosetRepresentatives,missing,,no implementation found [review 2026-11-06; checked]
+ch058.ProcessLadder,missing,,no implementation found [review 2026-11-06; checked]
+ch058.GetRep,missing,,no implementation found [review 2026-11-06; checked]
+ch058.DeleteData,missing,,no implementation found [review 2026-11-06; checked]
+ch058.YoungSubgroupLadder,missing,,no implementation found [review 2026-11-06; checked]
+ch058.StabilizerLadder,missing,,no implementation found [review 2026-11-06; checked]
+ch058.x.3,missing,,auto match is elliptic curve generic (wrong); no coset type [review 2026-11-06; checked]
+ch058.x.4,missing,,auto match is elliptic curve generic (wrong); no coset type [review 2026-11-06; checked]
+ch058.C1,missing,,no implementation found [review 2026-11-06; checked]
+ch058.C1.2,missing,,no implementation found [review 2026-11-06; checked]
+ch058.C,missing,,no implementation found [review 2026-11-06; checked]
+ch058.CosetTable,missing,,no implementation found [review 2026-11-06; checked]
+ch058.CosetTable-G-f,missing,,no implementation found [review 2026-11-06; checked]
+ch058.Transversal,partial,rustmath-galois/src/perm.rs:180,"coset_reps: left coset reps from explicit element lists, lexicographic min reps; no right transversal mapping phi; test tests/perm.rs::coset_reps_count_matches_index [review 2026-11-06; checked]"
+ch058.TransversalProcess,missing,,no implementation found [review 2026-11-06; checked]
+ch058.TransversalProcessRemaining,missing,,no implementation found [review 2026-11-06; checked]
+ch058.TransversalProcessNext,missing,,no implementation found [review 2026-11-06; checked]
+ch058.ShortCosets,partial,rustmath-galois/src/short_coset.rs:50,"short_cosets(group,subgroup,sigma) on explicit element lists (tau^-1 sigma tau in H); different signature, no G/H group objects; test short_cosets_subset_of_all [review 2026-11-06; checked]"
+ch058.FPGroup,missing,,no Todd-Coxeter/presentation from perm group; FinitelyPresentedGroup struct has no such constructor [review 2026-11-06; checked]
+ch058.FPQuotient,missing,,no implementation found [review 2026-11-06; checked]
+ch058.FPGroupStrong,missing,,no implementation found [review 2026-11-06; checked]
+ch058.WordGroup,missing,,no implementation found [review 2026-11-06; checked]
+ch058.InverseWordMap,missing,,no implementation found [review 2026-11-06; checked]
+ch058.ActingWord,missing,,no implementation found [review 2026-11-06; checked]
+ch058.AutomorphismGroup,missing,,auto match is graph automorphisms (wrong); no group automorphism computation [review 2026-11-06; checked]
+ch058.IsIsomorphic,missing,,auto match is graph isomorphism (wrong); no group isomorphism test [review 2026-11-06; checked]
+ch058.pMultiplicator,missing,,no implementation found [review 2026-11-06; checked]
+ch058.pCover,missing,,no implementation found [review 2026-11-06; checked]
+ch058.CohomologicalDimension,missing,,no implementation found [review 2026-11-06; checked]
+ch058.ExtensionProcess,missing,,no implementation found [review 2026-11-06; checked]
+ch058.Extension,missing,,auto match is plot-core type (wrong); no extension/cohomology code [review 2026-11-06; checked]
+ch058.NextExtension-P,missing,,no implementation found [review 2026-11-06; checked]
+ch058.SplitExtension,missing,,no implementation found [review 2026-11-06; checked]
+ch058.CharacterTable,missing,,"nothing computes a table from a group G: CharacterTable::cyclic_group(n) formula, hard-coded symmetric_group_s3(), S_n MN table (ribbon.rs:249, ch092 row) take no group; gap_functions.rs:235 shells to GAP [review 2026-11-06; adjudicated]"
+ch058.PermutationCharacter,missing,,no implementation found [review 2026-11-06; checked]
+ch058.PermutationCharacter.2,missing,,no implementation found [review 2026-11-06; checked]
+ch058.GModule,missing,,no implementation found [review 2026-11-06; checked]
+ch058.GModule.2,missing,,no implementation found [review 2026-11-06; checked]
+ch058.PermutationModule,missing,,no implementation found [review 2026-11-06; checked]
+ch058.PermutationModule.2,missing,,no implementation found [review 2026-11-06; checked]
+ch058.NameSimple,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.IsAlternating,missing,,is_alternating hit is knot theory; no test of G=Alt(X) for perm groups [review 2026-11-06; checked]
+ch058.IsSymmetric,missing,,is_symmetric hit is plane partitions; no test of G=Sym(X) [review 2026-11-06; checked]
+ch058.IsAltsym,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.TwoTransitiveGroupIdentification,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.RecogniseAlternatingOrSymmetric,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.IsEven.2,partial,rustmath-groups/src/pgalois.rs:91,"group_in_alternating(gens) is true iff all generators are even, i.e. G in Alt; [u8;24] Perm only, degree <= 24; both outcomes in tests/pgalois.rs::transitive_group_orbit_signatures_and_parity [review 2026-11-06; adjudicated]"
+ch058.RecogniseSymmetric,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.SymmetricElementToWord,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.RecogniseAlternating,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.AlternatingElementToWord,missing,,no implementation in workspace [review 2026-11-06]
+ch058.GuessAltsymDegree,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.BSGS,done,rustmath-groups/src/bsgs.rs:138,StabilizerChain::new is a verified deterministic Schreier-Sims BSGS for any perm gens; BSGS(G) has no params; test bsgs.rs::base_and_strong_generators_are_consistent; raw-chain API as ch058.g.7 done [review 2026-11-06; adjudicated]
+ch058.SimsSchreier,partial,rustmath-groups/src/bsgs.rs:138,"StabilizerChain::new: deterministic Schreier-Sims on 0-indexed image lists; no SV/Cosets/parameters, no Group object. Tests in bsgs.rs (S4, M24 orders) [review 2026-11-06; checked]"
+ch058.RandomSchreier,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.ToddCoxeterSchreier,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.SolubleSchreier,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.Verify,missing,,cyclic_sieving hit unrelated; no probable-BSGS verification (only deterministic construction) [review 2026-11-06; checked]
+ch058.AssertAttribute.2,missing,,no implementation in workspace [review 2026-11-06]
+ch058.AssertAttribute.3,missing,,no implementation in workspace [review 2026-11-06]
+ch058.AssertAttribute-G-BSGS-S,missing,,no implementation in workspace [review 2026-11-06]
+ch058.Base,done,rustmath-groups/src/bsgs.rs:298,StabilizerChain::base returns the base of the chain new() computes (0-indexed); tests bsgs.rs::base_and_strong_generators_are_consistent (S5 len 4) and trivial_group_and_identity_generators (empty) [review 2026-11-06; adjudicated]
+ch058.BasePoint,missing,,manifolds hit unrelated; base() slice indexing exists but no BasePoint fn [review 2026-11-06; checked]
+ch058.BasicOrbit,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.BasicOrbits,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.BasicOrbitLength,missing,,no implementation in workspace [review 2026-11-06]
+ch058.BasicOrbitLengths,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.BasicStabilizer,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.BasicStabilizerChain,missing,,no implementation in workspace [review 2026-11-06]
+ch058.IsMemberBasicOrbit,missing,,no implementation in workspace [review 2026-11-06]
+ch058.NumberOfStrongGenerators,partial,rustmath-groups/src/bsgs.rs:304,"only via strong_generators().len(); no dedicated fn, no Group object [review 2026-11-06; checked]"
+ch058.NumberOfStrongGenerators.2,missing,,no implementation in workspace [review 2026-11-06]
+ch058.SchreierVectors,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.SchreierVector,missing,,no implementation in workspace [review 2026-11-06]
+ch058.StrongGenerators,done,rustmath-groups/src/bsgs.rs:304,"strong_generators is the union of level gens, a valid SGS (subset fixing b0..b(i-1) generates G^(i)); bsgs.rs::base_and_strong_generators_are_consistent (Stab(b0) order 24), membership_in_s4_and_a4 [review 2026-11-06; adjudicated]"
+ch058.StrongGenerators.2,missing,,strong generators per level not exposed (levels private in StabilizerChain) [review 2026-11-06; checked]
+ch058.BaseImage,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.Permutation,missing,,braid.rs hit unrelated; no base-image to permutation [review 2026-11-06; checked]
+ch058.SVPermutation,missing,,no implementation in workspace [review 2026-11-06]
+ch058.SVWord,missing,,no implementation in workspace [review 2026-11-06]
+ch058.Strip,missing,,sift_from is private (bsgs.rs:197); only contains() exposed; no residue/level result [review 2026-11-06; checked]
+ch058.WordStrip,missing,,sift_from is private (bsgs.rs:197); only contains() exposed; no residue/level result [review 2026-11-06; checked]
+ch058.BaseImageWordStrip,missing,,no implementation in workspace [review 2026-11-06]
+ch058.WordInStrongGenerators,missing,,no implementation in workspace [review 2026-11-06]
+ch058.ChangeBase,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.AddNormalizingGenerator,missing,,no implementation in workspace [review 2026-11-06]
+ch058.ReduceGenerators,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.AffineGeneralLinearGroup,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.AffineSpecialLinearGroup,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.AffineGammaLinearGroup,missing,,no implementation in workspace [review 2026-11-06]
+ch058.AffineSigmaLinearGroup,missing,,no implementation in workspace [review 2026-11-06]
+ch058.ProjectiveGeneralLinearGroup,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.ProjectiveSpecialLinearGroup,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.ProjectiveGammaLinearGroup,missing,,no implementation in workspace [review 2026-11-06]
+ch058.ProjectiveSigmaLinearGroup,missing,,no implementation in workspace [review 2026-11-06]
+ch058.ProjectiveGeneralUnitaryGroup,missing,,no implementation in workspace [review 2026-11-06]
+ch058.ProjectiveSpecialUnitaryGroup,missing,,no implementation in workspace [review 2026-11-06]
+ch058.ProjectiveGammaUnitaryGroup,missing,,no implementation in workspace [review 2026-11-06]
+ch058.ProjectiveSigmaUnitaryGroup,missing,,no implementation in workspace [review 2026-11-06]
+ch058.ProjectiveSymplecticGroup,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.ProjectiveSigmaSymplecticGroup,missing,,no implementation in workspace [review 2026-11-06]
+ch058.ProjectiveGeneralOrthogonalGroup,missing,,no implementation in workspace [review 2026-11-06]
+ch058.ProjectiveGeneralOrthogonalGroupPlus,missing,,no implementation in workspace [review 2026-11-06]
+ch058.ProjectiveGeneralOrthogonalGroupMinus,missing,,no implementation in workspace [review 2026-11-06]
+ch058.ProjectiveSpecialOrthogonalGroup,missing,,no implementation in workspace [review 2026-11-06]
+ch058.ProjectiveSpecialOrthogonalGroupPlus,missing,,no implementation in workspace [review 2026-11-06]
+ch058.ProjectiveSpecialOrthogonalGroupMinus,missing,,no implementation in workspace [review 2026-11-06]
+ch058.ProjectiveOmega,missing,,no implementation in workspace [review 2026-11-06]
+ch058.ProjectiveOmegaPlus,missing,,no implementation in workspace [review 2026-11-06]
+ch058.ProjectiveOmegaMinus,missing,,no implementation in workspace [review 2026-11-06]
+ch058.ProjectiveSuzukiGroup,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.AffineGroup,missing,,"affine_group.rs is a generic ring affine group, not the permutation group V:M for a matrix group [review 2026-11-06; checked]"
+ch058.OrderedPartitionStack,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.OrderedPartitionStackZero,missing,,no implementation in workspace [review 2026-11-06]
+ch058.Degree.5,missing,,raag.rs hit unrelated; no ordered partition stack type [review 2026-11-06; checked]
+ch058.Height,missing,,affineschemes hit unrelated; no ordered partition stack [review 2026-11-06; checked]
+ch058.NumberOfCells,missing,,no implementation in workspace [review 2026-11-06]
+ch058.CellNumber,missing,,no implementation in workspace [review 2026-11-06]
+ch058.CellSize,missing,,no implementation in workspace [review 2026-11-06]
+ch058.Cell,missing,,no implementation in workspace [review 2026-11-06]
+ch058.Random.3,missing,,combinatorics ranking hit unrelated; no ordered partition stack [review 2026-11-06; checked]
+ch058.Representative.2,missing,,conjugacy_classes hit unrelated; no ordered partition stack [review 2026-11-06; checked]
+ch058.ParentCell,missing,,no implementation in workspace [review 2026-11-06]
+ch058.SplitCell,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch058.SplitAllByValues,missing,,no implementation in workspace [review 2026-11-06]
+ch058.SplitCellsByValues,missing,,no implementation in workspace [review 2026-11-06]
+ch058.Pop,missing,,no implementation in workspace [review 2026-11-06]
+ch058.Advance,missing,,integer_vectors hit unrelated; no ordered partition stack [review 2026-11-06; checked]
