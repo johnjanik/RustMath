@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 5100 | 17 | 331 | 1221 | 18 | 177 | 3419 (26%) | 8130 (61%) |
+| 13341 | 5143 | 17 | 340 | 1235 | 18 | 180 | 3387 (25%) | 8134 (61%) |
 
 ## By chapter
 
@@ -62,7 +62,7 @@ automatic `candidate`/`missing` counts.
 | 38 | Galois Theory of Number Fields | VI | 69 | 69 | 0 | 0 | 15 | 0 | 0 | 0 | 54 | partial | `rustmath-numberfields` |
 | 39 | Class Field Theory | VI | 68 | 68 | 0 | 0 | 13 | 11 | 0 | 0 | 44 | partial | `rustmath-numberfields` |
 | 40 | Algebraically Closed Fields | VI | 52 | 52 | 0 | 3 | 5 | 8 | 0 | 0 | 36 | stub | `rustmath-rings` |
-| 41 | Rational Function Fields | VI | 43 | 0 | 0 | 0 | 0 | 0 | 0 | 32 | 11 | partial | `rustmath-rings` |
+| 41 | Rational Function Fields | VI | 43 | 43 | 0 | 9 | 14 | 3 | 2 | 0 | 15 | partial | `rustmath-rings` |
 | 42 | Algebraic Function Fields | VI | 402 | 402 | 0 | 0 | 68 | 80 | 1 | 0 | 253 | partial | `rustmath-rings` |
 | 43 | Class Field Theory For Global Function Fields | VI | 86 | 86 | 0 | 0 | 1 | 1 | 0 | 0 | 84 | stub | `rustmath-rings` |
 | 44 | Artin Representations | VI | 25 | 25 | 0 | 0 | 0 | 0 | 0 | 0 | 25 | none | `rustmath-numberfields` |
