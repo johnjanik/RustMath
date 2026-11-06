@@ -42,7 +42,9 @@ need (currently: nothing is copied; `transitive24_cycletypes.jsonl` is regenerat
 ## Referenced but never committed (lost)
 
 These are named in `docs/inverse_galois_mvp.md` but appear in no commit of the repo. They were only
-on the original Mac, which was archived and wiped (2026-11); treat them as lost unless found in that archive:
+on the original Mac, which was archived and wiped (2026-11). **Confirmed lost 2026-11-06** (not in git
+history, Codeberg, or the NAS archive). Their purpose survives in `docs/inverse_galois_mvp.md` §4–5 and
+`docs/algorithm_notes/`; rebuild from those descriptions if ever needed:
 `frobenius/ghost_classify.sage`, `frobenius/sunit_batch_v2.sage`, `frobenius/fingerprints.jsonl`,
 `frobenius/fingerprint_audit.sage`, `frobenius/build3_support_vector.sage`,
 `frobenius/directed_engine.sage`, `strategy_update_20260623.md`.
