@@ -18,7 +18,7 @@
 //! ```text
 //! [L_λ L] = (∂ + 2λ)L + (λ³/12)C
 //! [L_λ G] = (∂ + 3λ/2)G
-//! [G_λ G] = 2L + (2λ²/3)C
+//! [G_λ G] = 2L + (λ²/3)C
 //! [C_λ ·] = 0  (C is central)
 //! ```
 //!
@@ -49,11 +49,17 @@
 //! # Examples
 //!
 //! ```
+//! use rustmath_lieconformal::{Degree, GradedLieConformalAlgebra, LieConformalAlgebra};
 //! use rustmath_lieconformal::NeveuSchwarzLieConformalAlgebra;
 //!
 //! // Create the Neveu-Schwarz algebra over the integers
+//! // (Sage: lie_conformal_algebras.NeveuSchwarz(QQ) has generators L, G, C)
 //! let ns = NeveuSchwarzLieConformalAlgebra::new(1i64);
 //! assert_eq!(ns.ngens(), Some(3)); // L, G, C
+//! assert_eq!(
+//!     ns.generator_degrees(),
+//!     vec![Degree::int(2), Degree::rational(3, 2), Degree::int(0)]
+//! );
 //! ```
 //!
 //! # References
@@ -106,11 +112,16 @@ impl Display for NeveuSchwarzGenerator {
 /// # Examples
 ///
 /// ```
+/// use rustmath_lieconformal::{Degree, GradedLieConformalAlgebra, LieConformalAlgebra};
 /// use rustmath_lieconformal::NeveuSchwarzLieConformalAlgebra;
 ///
 /// // Create the NS algebra
 /// let ns = NeveuSchwarzLieConformalAlgebra::new(1i64);
 /// assert_eq!(ns.ngens(), Some(3)); // L, G, C
+/// assert_eq!(ns.generator_name(1), Some("G"));
+/// // The superconformal generator G has conformal weight 3/2
+/// assert_eq!(ns.generator_degree(1), Some(Degree::rational(3, 2)));
+/// assert!(ns.generator(3).is_none());
 /// ```
 #[derive(Clone)]
 pub struct NeveuSchwarzLieConformalAlgebra<R: Ring> {
@@ -128,10 +139,13 @@ impl<R: Ring + Clone + From<i64>> NeveuSchwarzLieConformalAlgebra<R> {
     /// # Examples
     ///
     /// ```
-    /// use rustmath_lieconformal::NeveuSchwarzLieConformalAlgebra;
+    /// use rustmath_lieconformal::{LieConformalAlgebra, NeveuSchwarzLieConformalAlgebra};
     ///
-    /// let ns = NeveuSchwarzLieConformalAlgebra::new(1i64);
+    /// let ns = NeveuSchwarzLieConformalAlgebra::new(5i64);
     /// assert_eq!(ns.ngens(), Some(3));
+    /// assert_eq!(*ns.base_ring(), 5);
+    /// assert_eq!(ns.generator_name(0), Some("L"));
+    /// assert_eq!(ns.generator_name(2), Some("C"));
     /// ```
     pub fn new(base_ring: R) -> Self {
         // Generator names: L, G, C
@@ -209,9 +223,9 @@ impl<R: Ring + Clone + From<i64>> LieConformalAlgebra<R> for NeveuSchwarzLieConf
         LieConformalAlgebraElement::zero()
     }
 
+    /// `None`: this is the universal Neveu-Schwarz LCA, which carries the
+    /// central element `C` rather than a number.
     fn central_charge(&self) -> Option<R> {
-        // The central charge can be set; for now return None
-        // In applications, this would be specified
         None
     }
 }
@@ -237,6 +251,9 @@ impl<R> LambdaBracket<R, NeveuSchwarzLCAElement<R>> for NeveuSchwarzLieConformal
 where
     R: Ring + Clone + From<i64> + std::ops::Add<Output = R> + std::ops::Mul<Output = R>,
 {
+    /// # Panics
+    ///
+    /// Always: not implemented (see the comment in the body).
     fn lambda_bracket(
         &self,
         _a: &NeveuSchwarzLCAElement<R>,
@@ -245,12 +262,13 @@ where
         // Full λ-bracket computation would implement:
         // [L_λ L] = (∂ + 2λ)L + (λ³/12)C
         // [L_λ G] = (∂ + 3λ/2)G
-        // [G_λ G] = 2L + (2λ²/3)C
+        // [G_λ G] = 2L + (λ²/3)C   (Sage: G.bracket(G) = {0: 2*L, 2: 2/3*C})
         // [C_λ ·] = 0
-
-        // For now, return empty (treating as if computed correctly)
-        // A full implementation would parse the elements and compute
-        HashMap::new()
+        //
+        // Not implemented: the values need 1/2, 1/3 and 1/12 in R, which the
+        // bounds do not provide, plus the sesquilinear extension. This used
+        // to return an empty map, i.e. the false claim that every bracket is 0.
+        unimplemented!("Neveu-Schwarz λ-bracket is not implemented")
     }
 }
 
@@ -364,9 +382,18 @@ mod tests {
     fn test_neveu_schwarz_parity() {
         let ns: NeveuSchwarzLieConformalAlgebra<i64> = NeveuSchwarzLieConformalAlgebra::new(1);
 
-        // G should be the only odd generator (index 1)
-        // We can test this by checking that the algebra is super
-        // and that it has the expected structure
+        // G is the only odd generator (index 1)
         assert!(ns.graded.is_super());
+        assert_eq!(ns.graded.generator_parity(0), Some(0));
+        assert_eq!(ns.graded.generator_parity(1), Some(1));
+        assert_eq!(ns.graded.generator_parity(2), Some(0));
+    }
+
+    #[test]
+    #[should_panic(expected = "Neveu-Schwarz λ-bracket is not implemented")]
+    fn test_neveu_schwarz_lambda_bracket_is_unimplemented() {
+        let ns: NeveuSchwarzLieConformalAlgebra<i64> = NeveuSchwarzLieConformalAlgebra::new(1);
+        let g = ns.superconformal_generator();
+        let _ = ns.lambda_bracket(&g, &g);
     }
 }

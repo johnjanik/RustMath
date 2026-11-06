@@ -22,18 +22,30 @@
 //! use rustmath_lieconformal::{LieConformalAlgebraWithStructureCoefficients, Degree};
 //! use std::collections::HashMap;
 //!
-//! // Create Virasoro algebra with structure coefficients
-//! // [L_λ L] = (∂ + 2λ)L + (λ³/12)C
+//! // The current Lie conformal algebra Cur(g) of the 2-dimensional non-abelian
+//! // Lie algebra g = <x, y | [x, y] = x>, plus a central K. In Cur(g) the
+//! // λ-bracket of g ⊂ Cur(g) is the Lie bracket (Kac, VAfB §2.7):
+//! //   [x_λ y] = x,   [y_λ x] = -x.
+//! // (A Virasoro example does not fit here: the table holds polynomials in λ
+//! // only, so the ∂L term of [L_λ L] = (∂ + 2λ)L + (λ³/12)C cannot be stored.)
 //! let mut structure = HashMap::new();
+//! structure.insert((0, 1, 0), vec![1i64]);
+//! structure.insert((1, 0, 0), vec![-1i64]);
 //!
 //! let lca = LieConformalAlgebraWithStructureCoefficients::new(
 //!     1i64,
-//!     2, // L and C
+//!     3, // x, y, K
 //!     structure,
-//!     Some(vec!["L".to_string(), "C".to_string()]),
-//!     Some(vec![Degree::int(2), Degree::int(0)]),
-//!     Some(vec![1]), // C is central
+//!     Some(vec!["x".to_string(), "y".to_string(), "K".to_string()]),
+//!     Some(vec![Degree::int(1), Degree::int(1), Degree::int(0)]),
+//!     Some(vec![2]), // K is central
 //! );
+//! assert_eq!(lca.bracket_on_basis(0, 1), HashMap::from([(0, vec![1])]));
+//! assert_eq!(lca.bracket_on_basis(1, 0), HashMap::from([(0, vec![-1])]));
+//! assert!(lca.bracket_on_basis(0, 0).is_empty());
+//! assert!(!lca.is_central(0));
+//! assert!(!lca.is_central(1));
+//! assert!(lca.is_central(2));
 //! ```
 //!
 //! # References
@@ -83,13 +95,15 @@ pub type LCAStructureCoefficients<R> = HashMap<(usize, usize, usize), Vec<R>>;
 /// # Examples
 ///
 /// ```
-/// use rustmath_lieconformal::{LieConformalAlgebraWithStructureCoefficients, Degree};
+/// use rustmath_lieconformal::{Degree, GradedLieConformalAlgebra, LieConformalAlgebra};
+/// use rustmath_lieconformal::LieConformalAlgebraWithStructureCoefficients;
 /// use std::collections::HashMap;
 ///
 /// // Create a simple 2-generator algebra
 /// let mut coeffs = HashMap::new();
-/// // [g_0_λ g_1] = g_0 (example)
+/// // [g_0_λ g_1] = g_0, and by skew-symmetry [g_1_λ g_0] = -g_0
 /// coeffs.insert((0, 1, 0), vec![1i64]); // coefficient of λ^0
+/// coeffs.insert((1, 0, 0), vec![-1i64]);
 ///
 /// let lca = LieConformalAlgebraWithStructureCoefficients::new(
 ///     1i64,
@@ -100,7 +114,11 @@ pub type LCAStructureCoefficients<R> = HashMap<(usize, usize, usize), Vec<R>>;
 ///     None,
 /// );
 ///
-/// assert_eq!(lca.ngens(), 2);
+/// assert_eq!(lca.ngens(), Some(2));
+/// assert_eq!(lca.generator_name(1), Some("b".to_string()));
+/// assert_eq!(lca.generator_degree(0), Some(Degree::int(1)));
+/// assert_eq!(lca.get_coefficient(0, 1, 0), Some(&vec![1]));
+/// assert_eq!(lca.get_coefficient(0, 1, 1), None);
 /// ```
 #[derive(Clone)]
 pub struct LieConformalAlgebraWithStructureCoefficients<R: Ring> {
@@ -239,20 +257,17 @@ impl<R: Ring + Clone + From<i64>> LieConformalAlgebraWithStructureCoefficients<R
 
     /// Check if a generator is central
     ///
-    /// A generator is central if [g_i_λ g] = 0 for all generators g.
+    /// A generator is central if [g_i_λ g] = 0 for all generators g, which by
+    /// skew-symmetry is the same as [g_λ g_i] = 0 for all g. So g_i is central
+    /// exactly when no stored non-zero coefficient has g_i in either input
+    /// slot (it may still occur as a value, like C in the Virasoro bracket).
     pub fn is_central(&self, i: usize) -> bool
     where
         R: PartialEq,
     {
-        // Check if g_i appears in any non-zero bracket
-        for ((gen_i, _gen_j, _gen_k), poly) in &self.structure_coeffs {
-            if *gen_i == i {
-                if !poly.is_empty() && !poly.iter().all(|c| c.is_zero()) {
-                    return false;
-                }
-            }
-        }
-        true
+        !self.structure_coeffs.iter().any(|((gen_i, gen_j, _), poly)| {
+            (*gen_i == i || *gen_j == i) && poly.iter().any(|c| !c.is_zero())
+        })
     }
 
     /// Get generator name
@@ -304,18 +319,22 @@ impl<R> LambdaBracket<R, LieConformalAlgebraElement<R, GeneratorIndex>>
 where
     R: Ring + Clone + From<i64> + std::ops::Add<Output = R> + std::ops::Mul<Output = R> + PartialEq,
 {
+    /// # Panics
+    ///
+    /// Always: not implemented. Extending the stored generator brackets to
+    /// arbitrary elements needs sesquilinearity (with `∂` acting on the
+    /// values, which this table cannot represent) and skew-symmetry for the
+    /// pairs that were not stored. Use [`Self::bracket_on_basis`] for the
+    /// stored data. This used to return an empty map, i.e. the false claim
+    /// that every bracket is 0.
     fn lambda_bracket(
         &self,
         _a: &LieConformalAlgebraElement<R, GeneratorIndex>,
         _b: &LieConformalAlgebraElement<R, GeneratorIndex>,
     ) -> HashMap<usize, LieConformalAlgebraElement<R, GeneratorIndex>> {
-        // Full implementation would:
-        // 1. Decompose a and b into basis elements
-        // 2. Compute bracket for each pair using structure_coeffs
-        // 3. Combine results linearly
-        //
-        // For now, return empty map (placeholder)
-        HashMap::new()
+        unimplemented!(
+            "LieConformalAlgebraWithStructureCoefficients: λ-bracket of general elements is not implemented"
+        )
     }
 }
 
@@ -414,13 +433,13 @@ mod tests {
     #[test]
     fn test_is_central() {
         let mut coeffs: LCAStructureCoefficients<i64> = HashMap::new();
-        // g_0 has non-zero bracket
+        // [g_0_λ g_1] = g_0: neither g_0 nor g_1 is central
         coeffs.insert((0, 1, 0), vec![1]);
-        // g_1 has no brackets (central)
+        // g_2 occurs in no bracket (central)
 
         let lca = LieConformalAlgebraWithStructureCoefficients::new(
             1,
-            2,
+            3,
             coeffs,
             None,
             None,
@@ -428,7 +447,33 @@ mod tests {
         );
 
         assert!(!lca.is_central(0)); // g_0 is not central
-        assert!(lca.is_central(1));  // g_1 is central
+        // g_1 is not central: [g_0_λ g_1] = g_0 != 0, and by skew-symmetry
+        // [g_1_λ g_0] = -[g_0_{-λ-∂} g_1] = -g_0 != 0. (The old expectation
+        // `is_central(1)` only looked at the first slot.)
+        assert!(!lca.is_central(1));
+        assert!(lca.is_central(2)); // g_2 is central
+    }
+
+    #[test]
+    fn test_is_central_ignores_occurrence_as_value() {
+        // Virasoro-like table: [g_0_λ g_0] contains g_1 (like C in [L_λ L]);
+        // g_1 is still central.
+        let mut coeffs: LCAStructureCoefficients<i64> = HashMap::new();
+        coeffs.insert((0, 0, 1), vec![0, 0, 0, 1]);
+        let lca = LieConformalAlgebraWithStructureCoefficients::new(1, 2, coeffs, None, None, None);
+        assert!(!lca.is_central(0));
+        assert!(lca.is_central(1));
+    }
+
+    #[test]
+    #[should_panic(expected = "λ-bracket of general elements is not implemented")]
+    fn test_lambda_bracket_is_unimplemented() {
+        let mut coeffs: LCAStructureCoefficients<i64> = HashMap::new();
+        coeffs.insert((0, 1, 0), vec![1]);
+        let lca = LieConformalAlgebraWithStructureCoefficients::new(1, 2, coeffs, None, None, None);
+        let a = lca.generator(0).unwrap();
+        let b = lca.generator(1).unwrap();
+        let _ = lca.lambda_bracket(&a, &b);
     }
 
     #[test]

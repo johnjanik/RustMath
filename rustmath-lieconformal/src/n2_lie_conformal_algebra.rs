@@ -48,11 +48,24 @@
 //! # Examples
 //!
 //! ```
+//! use rustmath_lieconformal::{Degree, GradedLieConformalAlgebra, LieConformalAlgebra};
 //! use rustmath_lieconformal::N2LieConformalAlgebra;
 //!
 //! // Create the N=2 algebra over the integers
+//! // (Sage: lie_conformal_algebras.N2(QQ) has generators L, J, G1, G2, C)
 //! let n2 = N2LieConformalAlgebra::new(1i64);
 //! assert_eq!(n2.ngens(), Some(5)); // L, J, G1, G2, C
+//! let weights: Vec<Degree> = n2.generator_degrees();
+//! assert_eq!(
+//!     weights,
+//!     vec![
+//!         Degree::int(2),
+//!         Degree::int(1),
+//!         Degree::rational(3, 2),
+//!         Degree::rational(3, 2),
+//!         Degree::int(0),
+//!     ]
+//! );
 //! ```
 //!
 //! # References
@@ -111,11 +124,17 @@ impl Display for N2Generator {
 /// # Examples
 ///
 /// ```
+/// use rustmath_lieconformal::{Degree, GradedLieConformalAlgebra, LieConformalAlgebra};
 /// use rustmath_lieconformal::N2LieConformalAlgebra;
 ///
 /// // Create the N=2 algebra
 /// let n2 = N2LieConformalAlgebra::new(1i64);
 /// assert_eq!(n2.ngens(), Some(5)); // L, J, G1, G2, C
+/// assert_eq!(n2.generator_name(2), Some("G1"));
+/// // The U(1) current J has conformal weight 1, G1 and G2 have weight 3/2
+/// assert_eq!(n2.generator_degree(1), Some(Degree::int(1)));
+/// assert_eq!(n2.generator_degree(3), Some(Degree::rational(3, 2)));
+/// assert!(n2.generator(5).is_none());
 /// ```
 #[derive(Clone)]
 pub struct N2LieConformalAlgebra<R: Ring> {
@@ -133,10 +152,13 @@ impl<R: Ring + Clone + From<i64>> N2LieConformalAlgebra<R> {
     /// # Examples
     ///
     /// ```
-    /// use rustmath_lieconformal::N2LieConformalAlgebra;
+    /// use rustmath_lieconformal::{LieConformalAlgebra, N2LieConformalAlgebra};
     ///
-    /// let n2 = N2LieConformalAlgebra::new(1i64);
+    /// let n2 = N2LieConformalAlgebra::new(7i64);
     /// assert_eq!(n2.ngens(), Some(5));
+    /// assert_eq!(*n2.base_ring(), 7);
+    /// assert_eq!(n2.generator_name(0), Some("L"));
+    /// assert_eq!(n2.generator_name(4), Some("C"));
     /// ```
     pub fn new(base_ring: R) -> Self {
         // Generator names: L, J, G1, G2, C
@@ -232,9 +254,9 @@ impl<R: Ring + Clone + From<i64>> LieConformalAlgebra<R> for N2LieConformalAlgeb
         LieConformalAlgebraElement::zero()
     }
 
+    /// `None`: this is the universal N=2 LCA, which carries the central
+    /// element `C` rather than a number.
     fn central_charge(&self) -> Option<R> {
-        // The central charge can be set; for now return None
-        // In applications, this would be specified
         None
     }
 }
@@ -262,6 +284,9 @@ impl<R> LambdaBracket<R, N2LCAElement<R>> for N2LieConformalAlgebra<R>
 where
     R: Ring + Clone + From<i64> + std::ops::Add<Output = R> + std::ops::Mul<Output = R>,
 {
+    /// # Panics
+    ///
+    /// Always: not implemented (see the comment in the body).
     fn lambda_bracket(
         &self,
         _a: &N2LCAElement<R>,
@@ -277,10 +302,11 @@ where
         // [J_λ G₂] = -G₂
         // [G₁_λ G₂] = L + (1/2)∂J + λJ + (λ²/6)C
         // [C_λ ·] = 0
-
-        // For now, return empty (treating as if computed correctly)
-        // A full implementation would parse the elements and compute
-        HashMap::new()
+        //
+        // Not implemented: the values need 1/2, 1/3 and 1/12 in R, which the
+        // bounds do not provide, plus the sesquilinear extension. This used
+        // to return an empty map, i.e. the false claim that every bracket is 0.
+        unimplemented!("N=2 λ-bracket is not implemented")
     }
 }
 
@@ -398,6 +424,21 @@ mod tests {
         // C (central) should have degree 0
         let c_degree = n2.generator_degree(4).unwrap();
         assert_eq!(c_degree, Degree::int(0));
+    }
+
+    #[test]
+    #[should_panic(expected = "N=2 λ-bracket is not implemented")]
+    fn test_n2_lambda_bracket_is_unimplemented() {
+        let n2: N2LieConformalAlgebra<i64> = N2LieConformalAlgebra::new(1);
+        let _ = n2.lambda_bracket(&n2.g1(), &n2.g2());
+    }
+
+    #[test]
+    fn test_n2_parities() {
+        // G1, G2 odd; L, J, C even
+        let n2: N2LieConformalAlgebra<i64> = N2LieConformalAlgebra::new(1);
+        let parities: Vec<Option<u8>> = (0..5).map(|i| n2.graded.generator_parity(i)).collect();
+        assert_eq!(parities, vec![Some(0), Some(0), Some(1), Some(1), Some(0)]);
     }
 
     #[test]

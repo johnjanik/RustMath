@@ -88,7 +88,9 @@ impl<R: Ring + Clone + From<i64> + std::ops::Neg<Output = R>> AffineLieConformal
     ///
     /// let ct = CartanType::new(CartanLetter::A, 2).unwrap();
     /// let lca = AffineLieConformalAlgebra::new(1i64, ct, None);
-    /// assert!(lca.ngens() > 0);
+    /// // dim sl(3) = 8 generators plus K (Sage: lie_conformal_algebras.Affine(QQ, 'A2').ngens() == 9)
+    /// assert_eq!(lca.ngens(), 9);
+    /// assert_eq!(lca.dual_coxeter_number(), 3);
     /// ```
     pub fn new(
         base_ring: R,
@@ -341,6 +343,14 @@ impl<R: Ring + Clone + From<i64> + std::ops::Neg<Output = R> + std::ops::Add<Out
     LambdaBracket<R, AffineLCAElement<R>> for AffineLieConformalAlgebra<R>
 {
     /// Compute the λ-bracket [a_λ b] = [a,b] + λ (a,b)K
+    ///
+    /// # Panics
+    ///
+    /// When both arguments have a non-central term: the Chevalley-basis
+    /// structure constants and the invariant form are not computed
+    /// (`compute_structure_data` returns empty tables), so the bracket is
+    /// unknown. Before, this returned an empty map, i.e. the false claim that
+    /// the affine algebra is abelian. Brackets with the central `K` are 0.
     fn lambda_bracket(&self, a: &AffineLCAElement<R>, b: &AffineLCAElement<R>)
         -> HashMap<usize, AffineLCAElement<R>>
     {
@@ -350,6 +360,16 @@ impl<R: Ring + Clone + From<i64> + std::ops::Neg<Output = R> + std::ops::Add<Out
         for (basis_a, poly_a) in a.terms() {
             for (basis_b, poly_b) in b.terms() {
                 if let (Some(i), Some(j)) = (basis_a.as_finite(), basis_b.as_finite()) {
+                    let zero_term = poly_a.iter().all(|c| c.is_zero())
+                        || poly_b.iter().all(|c| c.is_zero());
+                    if zero_term || i == self.central_index || j == self.central_index {
+                        continue; // K is central
+                    }
+                    if self.structure_coefficients.is_empty() && self.killing_form.is_empty() {
+                        unimplemented!(
+                            "affine λ-bracket: structure constants of the Chevalley basis are not computed"
+                        );
+                    }
                     // Compute [g_i, g_j]
                     let lie_bracket_term = self.lie_bracket(i, j);
 
@@ -471,6 +491,7 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "structure constants of the Chevalley basis are not computed")]
     fn test_affine_lca_lambda_bracket() {
         let ct = CartanType::new(CartanLetter::A, 1).unwrap();
         let lca: AffineLieConformalAlgebra<i64> = AffineLieConformalAlgebra::new(
@@ -482,11 +503,9 @@ mod tests {
         let a = lca.generator(0).unwrap();
         let b = lca.generator(0).unwrap();
 
-        // Compute [a_λ a]
-        let bracket = lca.lambda_bracket(&a, &b);
-
-        // The bracket should have at most two terms (λ^0 and λ^1)
-        assert!(bracket.len() <= 2);
+        // [a_λ a] = λ(a, a)K is not computable: the structure constants are
+        // missing, so the bracket must refuse rather than return 0.
+        let _ = lca.lambda_bracket(&a, &b);
     }
 
     #[test]

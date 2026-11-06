@@ -150,19 +150,26 @@ pub trait LieConformalAlgebraWithBasis<R: Ring>: LieConformalAlgebra<R> {
     /// Check sesquilinearity relation
     ///
     /// Verifies: [∂a_λ b] = -λ[a_λ b] and [a_λ ∂b] = (∂ + λ)[a_λ b]
+    ///
+    /// # Panics
+    ///
+    /// The default panics: it would need derivatives and λ-brackets of basis
+    /// elements, which no implementor provides yet. (It used to return `true`
+    /// without checking anything.)
     fn check_sesquilinearity(&self) -> bool {
-        // This would require computing derivatives and λ-brackets
-        // Implementation deferred to concrete algebras
-        true
+        unimplemented!("check_sesquilinearity: not implemented for this algebra")
     }
 
     /// Check Jacobi identity
     ///
     /// Verifies: [a_λ [b_μ c]] = [[a_λ b]_{λ+μ} c] + [b_μ [a_λ c]]
+    ///
+    /// # Panics
+    ///
+    /// The default panics: it would need nested λ-brackets, which no
+    /// implementor provides yet. (It used to return `true` without checking.)
     fn check_jacobi(&self) -> bool {
-        // This would require computing nested λ-brackets
-        // Implementation deferred to concrete algebras
-        true
+        unimplemented!("check_jacobi: not implemented for this algebra")
     }
 }
 

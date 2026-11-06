@@ -54,11 +54,19 @@ impl Display for VirasoroGenerator {
 /// # Examples
 ///
 /// ```
-/// use rustmath_lieconformal::VirasoroLieConformalAlgebra;
+/// use rustmath_lieconformal::{GradedLieConformalAlgebra, LieConformalAlgebra};
+/// use rustmath_lieconformal::{Degree, VirasoroLieConformalAlgebra};
 ///
-/// // Create the Virasoro algebra
+/// // Create the Virasoro algebra (Sage: lie_conformal_algebras.Virasoro(QQ))
 /// let vir = VirasoroLieConformalAlgebra::new(1i64);
 /// assert_eq!(vir.ngens(), Some(2)); // L and C
+/// assert_eq!(vir.generators().len(), 2);
+/// assert_eq!(vir.generator_name(0), Some("L"));
+/// assert_eq!(vir.generator_name(1), Some("C"));
+/// // Conformal weights: L.degree() == 2 and C.degree() == 0 in Sage
+/// assert_eq!(vir.generator_degree(0), Some(Degree::int(2)));
+/// assert_eq!(vir.generator_degree(1), Some(Degree::int(0)));
+/// assert!(!vir.is_abelian());
 /// ```
 #[derive(Clone)]
 pub struct VirasoroLieConformalAlgebra<R: Ring> {
@@ -128,9 +136,10 @@ impl<R: Ring + Clone + From<i64>> LieConformalAlgebra<R> for VirasoroLieConforma
         LieConformalAlgebraElement::zero()
     }
 
+    /// `None`: this is the universal Virasoro LCA, which carries the central
+    /// element `C` rather than a number. A central charge `c` exists only in
+    /// a quotient or representation where `C` acts as `c`.
     fn central_charge(&self) -> Option<R> {
-        // The central charge can be set; for now return None
-        // In applications, this would be specified
         None
     }
 }
@@ -154,19 +163,18 @@ impl<R> LambdaBracket<R, VirasoroLCAElement<R>> for VirasoroLieConformalAlgebra<
 where
     R: Ring + Clone + From<i64> + std::ops::Add<Output = R> + std::ops::Mul<Output = R>,
 {
+    /// # Panics
+    ///
+    /// Always: not implemented. The bracket `[L_λ L] = (∂ + 2λ)L + (λ³/12)C`
+    /// (j-th products `{0: ∂L, 1: 2L, 3: C/2}` in Sage) needs `1/2` in `R`,
+    /// which these bounds do not provide, plus the sesquilinear extension.
+    /// This used to return an empty map, i.e. the false claim `[L_λ L] = 0`.
     fn lambda_bracket(
         &self,
-        a: &VirasoroLCAElement<R>,
-        b: &VirasoroLCAElement<R>,
+        _a: &VirasoroLCAElement<R>,
+        _b: &VirasoroLCAElement<R>,
     ) -> HashMap<usize, VirasoroLCAElement<R>> {
-        // This is a simplified implementation
-        // Full implementation would compute:
-        // [L_λ L] = (∂ + 2λ)L + (λ³/12)C
-        // [C_λ anything] = 0
-
-        // For now, return empty (treating as if computed correctly)
-        // A full implementation would parse the elements and compute
-        HashMap::new()
+        unimplemented!("Virasoro λ-bracket is not implemented")
     }
 }
 
@@ -214,6 +222,14 @@ mod tests {
         assert_eq!(vir.generator_name(0), Some("L"));
         assert_eq!(vir.generator_name(1), Some("C"));
         assert_eq!(vir.generator_name(2), None);
+    }
+
+    #[test]
+    #[should_panic(expected = "Virasoro λ-bracket is not implemented")]
+    fn test_virasoro_lambda_bracket_is_unimplemented() {
+        let vir: VirasoroLieConformalAlgebra<i64> = VirasoroLieConformalAlgebra::new(1);
+        let l = vir.conformal_vector();
+        let _ = vir.lambda_bracket(&l, &l);
     }
 
     #[test]
