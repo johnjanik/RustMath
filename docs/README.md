@@ -37,4 +37,5 @@ This directory is the **single source of truth** for RustMath's status and direc
 - [`archive/`](./archive/): superseded status docs. `archive/root-legacy/` holds the 2025 root files
   (SageMath trackers, logs, old README/CLAUDE.md, `THINGS_TO_DO.md`); scripts are in `../tools/legacy/`.
 - [`paper/`](./paper/): `rustmath_paper.tex`.
-- The `*.pdf` files in this directory are SageMath reference manuals (194 MB), kept pending a decision.
+- The 78 SageMath 10.6 reference-manual PDFs (194 MB) were removed on 2026-11-06; they remain in git
+  history before that date and are published at https://doc.sagemath.org/html/en/reference/.
