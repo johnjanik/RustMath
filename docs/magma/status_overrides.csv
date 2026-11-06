@@ -4602,3 +4602,66 @@ ch064.g,partial,rustmath-groups/src/libgap_group.rs:258; rustmath-groups/src/lib
 ch064.PseudoRandom,partial,rustmath-groups/src/libgap_group.rs:299,"GroupLibGAP::random_element: time-hashed pick from enumerated elements, order <=10000; no product replacement; wrapper default None. libgap_group.rs::test_random_element_is_member [review 2026-11-06; adjudicated]"
 ch064.Rep,partial,rustmath-groups/src/libgap_group.rs:337,No Rep fn; GroupLibGAP Group::identity supplies a representative (libgap_group.rs::test_group_identity); same ruling as ch057/ch063.Representative [review 2026-11-06; adjudicated]
 ch064.G.2,missing,,"no black-box group type in workspace; same-named fns are unrelated (semidirect product, algebra, wrapper) [review 2026-11-06; checked]"
+ch020.hom,missing,,no hom<Q->R> constructor; Rational has no ring-hom objects [review 2026-11-06; checked]
+ch020.Rationals,missing,,"no Q structure object; only the element type Rational exists, no Rationals()/RationalField() [review 2026-11-06; checked]"
+ch020.MaximalOrder,missing,,no IntegerRing(Q)/RingOfIntegers(Q) structure constructor [review 2026-11-06; checked]
+ch020.FieldOfFractions,partial,rustmath-rings/src/fraction_field.rs:294; rustmath-rings/src/fraction_field.rs:166,Verifier right: fraction_field::<Integer>() is a real Frac(Z) (fraction_field.rs::test_fraction_field_function) but unreduced and not identified with Rational; no Frac(Q)=Q. Same as ch018 row [review 2026-11-06; adjudicated]
+ch020.Completion,partial,rustmath-rings/src/padics/factory.rs:555; rustmath-rings/src/padics/factory.rs:300,"Verifier right: qp(p,prec,model) builds Q_p, PadicField::from_rational is the injection (factory.rs::test_qp_elements, v(3/5)=-1). No map object, finite precision only, p not checked prime [review 2026-11-06; adjudicated]"
+ch020.a,done,rustmath-rationals/src/rational.rs:19,"Rational::new(a,b) reduces, errors on b=0; rustmath-rationals/src/rational.rs::test_creation_and_simplification [review 2026-11-06; checked]"
+ch020.Q,partial,rustmath-rationals/src/rational.rs:37,Rational::from_integer gives Q!a; no Q![a] sequence-form constructor [review 2026-11-06; checked]
+ch020.Q.2,done,rustmath-rationals/src/rational.rs:19,"Rational::new(a,b) reduced, b=0 is Err; rational.rs::test_creation_and_simplification; no Q![a,b] syntax [review 2026-11-06; checked]"
+ch020.Q.3,partial,rustmath-rationals/src/rational.rs:37; rustmath-numberfields/src/quadratic.rs:101,"from_integer/From<i64> give Q!a; QuadElem::as_rational coerces rational quadratic-field elements (untested); no cyclotomic, general number field or order coercion to Q [review 2026-11-06; adjudicated]"
+ch020.One,done,rustmath-rationals/src/rational.rs:391,Ring::one correct; reviewer's test_is_predicates only calls is_one(). one() is exercised by rustmath-rationals/src/sage_wrapper.rs::test_multiplicative_order (-Rational::one() gives order 2) [review 2026-11-06; adjudicated]
+ch020.Zero,done,rustmath-rationals/src/rational.rs:384,Ring::zero correct; reviewer's test_is_predicates only calls is_zero(). zero() is exercised by rustmath-rationals/src/special_numbers.rs::test_harmonic_small (harmonic(0)==Rational::zero()) [review 2026-11-06; adjudicated]
+ch020.RootOfUnity,missing,,"no RootOfUnity(n,Q) [review 2026-11-06; checked]"
+ch020.Random,missing,,"no random rational generator (Random(Q,m)); only test-local generators elsewhere [review 2026-11-06; checked]"
+ch020.Category,missing,,no Category/Parent/PrimeField for Q [review 2026-11-06; checked]
+ch020.IntegralBasis,missing,,numberfields round2::integral_basis(f) takes a polynomial; no IntegralBasis(Q) entry point [review 2026-11-06; checked]
+ch020.MinimalField,missing,,no MinimalField for cyclotomic elements [review 2026-11-06; checked]
+ch020.MinimalField.2,missing,,no MinimalField for sets [review 2026-11-06; checked]
+ch020.BaseField,missing,,no BaseField(Q) [review 2026-11-06; checked]
+ch020.Basis,missing,,no Basis/AbsoluteBasis(Q) [review 2026-11-06; checked]
+ch020.UnitGroup,missing,,NumberField::unit_group needs a number field object; no UnitGroup(Q) [review 2026-11-06; checked]
+ch020.ClassGroup,missing,,class_group(f) takes a defining polynomial; no ClassGroup(Q) [review 2026-11-06; checked]
+ch020.AutomorphismGroup,missing,,no automorphism group of Q [review 2026-11-06; checked]
+ch020.Algebra,missing,,"no Algebra(Q,Q) with map [review 2026-11-06; checked]"
+ch020.VectorSpace,missing,,"no VectorSpace(Q,Q) with map [review 2026-11-06; checked]"
+ch020.Decomposition,missing,,no decomposition of Q at a prime [review 2026-11-06; checked]
+ch020.Characteristic,missing,,only a generic trait default (ring_category.rs:222) returning 0; no Characteristic(Q) [review 2026-11-06; checked]
+ch020.Conductor,missing,,no Conductor(Q); same-named fns are elliptic-curve conductors [review 2026-11-06; checked]
+ch020.Degree,missing,,no Degree/AbsoluteDegree(Q) for the rational field [review 2026-11-06; checked]
+ch020.Discriminant,missing,,no field discriminant for Q [review 2026-11-06; checked]
+ch020.DefiningPolynomial,missing,,no DefiningPolynomial(Q) [review 2026-11-06; checked]
+ch020.Signature,missing,,no Signature(Q) [review 2026-11-06; checked]
+ch020.IsCommutative,partial,rustmath-rationals/src/rational.rs:407,"only type-level marker impls (CommutativeRing, IntegralDomain, EuclideanDomain, Field, OrderedField; compile-time assert); no runtime IsX(Q) predicates, no IsPID/IsUFD [review 2026-11-06; checked]"
+ch020.Q.4,missing,,no ring equality Q eq R (no structure object) [review 2026-11-06; checked]
+ch020.Parent,missing,,no Parent/Category of a rational element [review 2026-11-06; checked]
+ch020.a-a,done,rustmath-rationals/src/rational.rs:360,Neg for Rational (and &Rational); unary plus trivial; tested via sage_wrapper.rs::test_arithmetic (-1/2) [review 2026-11-06; checked]
+ch020.a.2,partial,rustmath-rationals/src/rational.rs:270,"+,-,*,/ correct (rational.rs::test_arithmetic); a^k only via Ring::pow(u32) (core traits.rs:74), no negative exponents [review 2026-11-06; checked]"
+ch020.a.3,missing,,no AddAssign/SubAssign/MulAssign/DivAssign impls for Rational [review 2026-11-06; checked]
+ch020.Numerator,done,rustmath-rationals/src/rational.rs:50,returns reduced numerator; rational.rs::test_creation_and_simplification [review 2026-11-06; checked]
+ch020.Denominator,done,rustmath-rationals/src/rational.rs:55,positive reduced denominator; rational.rs::test_creation_and_simplification [review 2026-11-06; checked]
+ch020.a.4,done,rustmath-rationals/src/rational.rs:11,derived PartialEq on normalized form; assert_eq in rational.rs::test_arithmetic [review 2026-11-06; checked]
+ch020.a.5,missing,,no membership test a in R [review 2026-11-06; checked]
+ch020.IsIntegral,done,rustmath-rationals/src/rational.rs:194,Rational::is_integer (denominator==1); sage_wrapper.rs::test_is_predicates covers SageRational wrapper [review 2026-11-06; checked]
+ch020.IsZero,partial,rustmath-rationals/src/rational.rs:398; rustmath-category/src/ring_category.rs:170; rustmath-category/src/ring_category.rs:179,is_zero/is_one (sage_wrapper.rs::test_is_predicates); blanket RingElementMethods is_nilpotent (=is_zero) and is_idempotent (x^2==x) reach Rational and are correct for Q; only IsMinusOne absent [review 2026-11-06; adjudicated]
+ch020.IsUnit,broken,rustmath-category/src/ring_category.rs:161; rustmath-rings/src/category_methods.rs:58,"Verifier right: blanket impl<R: Ring> RingElementMethods reaches Rational; is_unit/is_unit_element = (x==1 or x==-1), so 2/3 is a non-unit in Q. No IsZeroDivisor/IsRegular/IsIrreducible/IsPrime (cf. ch025) [review 2026-11-06; adjudicated]"
+ch020.a.6,done,rustmath-rationals/src/rational.rs:205,Ord/PartialOrd by cross-multiplication; rational.rs::test_comparison [review 2026-11-06; checked]
+ch020.Maximum,partial,rustmath-core/src/ordering.rs:40,"OrderedRing::max_with(a,b) for two rationals (rational.rs::test_ordered_ring_min_max); no sequence form [review 2026-11-06; checked]"
+ch020.Minimum,partial,rustmath-core/src/ordering.rs:49,"OrderedRing::min_with(a,b) for two rationals (rational.rs::test_ordered_ring_min_max); no sequence form [review 2026-11-06; checked]"
+ch020.ComplexConjugate,missing,,no complex conjugate for Rational [review 2026-11-06; checked]
+ch020.Conjugate,missing,,no Conjugate(q) for Rational; partitions.rs:55 conjugate is unrelated [review 2026-11-06; checked]
+ch020.Norm,broken,rustmath-rationals/src/rational.rs:142,Rational::norm returns abs(q) but Magma Norm(q)=q; wrong for negative q (e.g. -1/2 gives 1/2) [review 2026-11-06; checked]
+ch020.Trace,missing,,no Trace(q) for Rational; quaternion trace is unrelated [review 2026-11-06; checked]
+ch020.MinimalPolynomial,partial,rustmath-rings/src/qqbar.rs:189; rustmath-algebraic/src/minimal_polynomial.rs:20,No Rational API; only by wrapping q: qqbar gives monic x - r over Q (qqbar.rs::test_minimal_polynomial_rational checks degree only); algebraic gives non-monic q*x - p over Z [review 2026-11-06; adjudicated]
+ch020.AbsoluteValue,done,rustmath-rationals/src/rational.rs:76,Rational::abs; rational.rs::test_ordered_ring_abs [review 2026-11-06; checked]
+ch020.Sign,done,rustmath-rationals/src/rational.rs:448,OrderedRing::sign gives -1/0/1; rational.rs::test_ordered_ring_sign [review 2026-11-06; checked]
+ch020.Height,done,rustmath-rationals/src/sage_wrapper.rs:407,"SageRational::height = max(|num|,den) in lowest terms; sage_wrapper.rs::test_height [review 2026-11-06; checked]"
+ch020.Ceiling,done,rustmath-rationals/src/rational.rs:111,Rational::ceil; rational.rs::test_floor_ceil [review 2026-11-06; checked]
+ch020.Floor,done,rustmath-rationals/src/rational.rs:96,Rational::floor handles negatives; rational.rs::test_floor_ceil [review 2026-11-06; checked]
+ch020.Round,done,rustmath-rationals/src/rational.rs:118,half rounds away from zero as in handbook; sage_wrapper.rs::test_floor_ceil_round covers non-tie cases only [review 2026-11-06; checked]
+ch020.Truncate,missing,,no truncate toward zero for Rational [review 2026-11-06; checked]
+ch020.Qround,partial,rustmath-rationals/src/continued_fraction.rs:47,"from_real/from_f64 give best approx with denominator <= M from a Float, always the optimal one; no Rational input, no ContFrac flag; tested [review 2026-11-06; checked]"
+ch020.RationalReconstruction,partial,rustmath-integers/src/crt.rs:130; rustmath-numberfields/src/recognize.rs:183,"Verifier right: scalar Wang reconstruction from (residue, modulus) works (crt.rs::test_rational_reconstruct_direct_and_round_trip; recognize_rational uses sqrt(m/2)); handbook matrix-over-GF(p) variant absent [review 2026-11-06; adjudicated]"
+ch020.Valuation,partial,rustmath-rationals/src/rational.rs:133,Rational::valuation(p) v_p(num)-v_p(den) as i32 (sage_wrapper.rs::test_valuation); zero gives wrong -1 not infinity; no prime-ideal form [review 2026-11-06; checked]
+ch020.ElementToSequence,missing,,no Eltseq returning [a] for Rational [review 2026-11-06; checked]
