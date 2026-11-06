@@ -61,7 +61,8 @@ pub enum MutationType {
     Finite,
     /// Affine type (infinitely many clusters; tame)
     Affine,
-    /// Neither finite nor affine (wild)
+    /// Neither finite nor affine (infinitely many clusters): an acyclic member of wild
+    /// (indefinite) type, or no acyclic member at all, as for the Markov quiver
     Infinite,
 }
 
@@ -378,14 +379,24 @@ impl ClusterQuiver {
     /// relabelling of vertices, frozen rows mutated along) for the full exchange matrix
     /// of `other`, using at most `max_depth` mutations.
     ///
+    /// The set of vertices frozen with [`ClusterQuiver::freeze_vertex`] is part of the
+    /// data, like the shape: mutation is only defined at non-frozen vertices and never
+    /// changes which vertices are frozen, so every member of the mutation class of `self`
+    /// has `self`'s frozen set. Quivers with different frozen sets are therefore never
+    /// mutation-equivalent. (Searching with `self`'s frozen set alone would make the
+    /// answer depend on the argument order.) The mutation history is not compared.
+    ///
     /// Returns:
     /// - `Some(true)` if `other` was reached (a proof of equivalence);
-    /// - `Some(false)` if the matrices have different shapes, or the whole labelled
-    ///   mutation class of `self` lies within `max_depth` mutations and was enumerated
-    ///   without meeting `other` (a proof of non-equivalence);
+    /// - `Some(false)` if the matrices have different shapes or the frozen sets differ, or
+    ///   the whole labelled mutation class of `self` lies within `max_depth` mutations and
+    ///   was enumerated without meeting `other` (a proof of non-equivalence);
     /// - `None` if the depth bound cut the search off before either happened (undecided).
     pub fn is_mutation_equivalent(&self, other: &ClusterQuiver, max_depth: usize) -> Option<bool> {
         if self.rank != other.rank || self.exchange_matrix.len() != other.exchange_matrix.len() {
+            return Some(false);
+        }
+        if self.frozen_vertices != other.frozen_vertices {
             return Some(false);
         }
 
@@ -431,11 +442,14 @@ impl ClusterQuiver {
 
     /// Determine the mutation type (finite, affine, or infinite) of the cluster algebra
     ///
-    /// Works on the principal part restricted to the non-frozen vertices, one connected
-    /// component at a time (see [`MutationType`] for how components are combined). For a
-    /// connected component, the labelled mutation class is explored breadth-first,
-    /// storing at most `max_class_size` matrices, and a type is returned only when a
-    /// theorem decides it:
+    /// Works on the principal part restricted to the non-frozen vertices (vertices frozen
+    /// with [`ClusterQuiver::freeze_vertex`] are dropped, unlike in
+    /// [`ClusterQuiver::cartan_companion`]), one connected component at a time (see
+    /// [`MutationType`] for how components are combined). For a connected component, the
+    /// labelled mutation class is explored breadth-first, storing at most
+    /// `max(max_class_size, 1)` matrices for that component: the starting matrix is always
+    /// stored and examined, so `max_class_size = 0` behaves like `1`. A type is returned
+    /// only when a theorem decides it:
     ///
     /// - an acyclic member whose Cartan companion is of finite type gives `Finite`
     ///   ([FZ2] Thm 1.4);
@@ -556,8 +570,18 @@ impl ClusterQuiver {
     /// Get the Cartan companion A(B) of the principal part B
     ///
     /// Fomin-Zelevinsky's Cartan counterpart [FZ2, eq. (1.6)]: `a_ii = 2` and
-    /// `a_ij = -|b_ij|` for `i != j`. Frozen (coefficient) rows are ignored. For a
-    /// skew-symmetrizable B this is a symmetrizable generalized Cartan matrix.
+    /// `a_ij = -|b_ij|` for `i != j`. For a skew-symmetrizable B this is a symmetrizable
+    /// generalized Cartan matrix.
+    ///
+    /// B is the whole `rank x rank` block returned by [`ClusterQuiver::principal_part`],
+    /// and the result is indexed by vertex like it:
+    /// - coefficient rows (the rows beyond `rank`, as added by
+    ///   [`ClusterQuiver::add_coefficients`]) are ignored;
+    /// - vertices frozen with [`ClusterQuiver::freeze_vertex`] are kept.
+    ///
+    /// [`ClusterQuiver::mutation_type`] instead classifies the principal part restricted
+    /// to the non-frozen vertices. The companion it uses is the principal submatrix of
+    /// this one on those vertices, since the companion is computed entry by entry.
     ///
     /// The cluster algebra is of finite type iff B is mutation-equivalent to some B' whose
     /// companion A(B') is a Cartan matrix of finite type [FZ2, Thm 1.4]. A(B) of B itself
@@ -928,6 +952,8 @@ fn classify_connected(b: &[Vec<i64>], max_class_size: usize) -> Result<MutationT
     }
     let skew_symmetric = (0..n).all(|i| (0..n).all(|j| b[i][j] == -b[j][i]));
 
+    // The starting matrix is always stored, so a bound of 0 acts as 1.
+    let limit = max_class_size.max(1);
     let mut visited: HashSet<Vec<Vec<i64>>> = HashSet::new();
     let mut queue = VecDeque::new();
     visited.insert(b.to_vec());
@@ -980,7 +1006,7 @@ fn classify_connected(b: &[Vec<i64>], max_class_size: usize) -> Result<MutationT
             if visited.contains(&next) {
                 continue;
             }
-            if visited.len() >= max_class_size {
+            if visited.len() >= limit {
                 truncated = true;
                 continue;
             }
@@ -992,7 +1018,7 @@ fn classify_connected(b: &[Vec<i64>], max_class_size: usize) -> Result<MutationT
     if truncated {
         return Err(format!(
             "Mutation type undecided: the mutation class has more than {} matrices",
-            max_class_size
+            limit
         ));
     }
     // The whole labelled mutation class has been enumerated.
@@ -1415,6 +1441,57 @@ mod tests {
     }
 
     #[test]
+    fn test_mutation_type_class_size_boundary() {
+        // The starting matrix is always stored and examined, even with max_class_size = 0:
+        // an acyclic start of finite or affine type decides without any other matrix.
+        assert_eq!(ClusterQuiver::type_a(2).mutation_type(0), Ok(MutationType::Finite));
+        assert_eq!(
+            quiver(vec![vec![0, 2], vec![-2, 0]]).mutation_type(0),
+            Ok(MutationType::Affine)
+        );
+
+        // Oriented 3-cycle (cyclic start). mu_0 of it is the acyclic A_3 quiver
+        // 1 -> 0 -> 2. Bounds 0 and 1 both store only the start and fail the same way;
+        // bound 2 also stores mu_0, which decides.
+        let cycle = quiver(vec![vec![0, 1, -1], vec![-1, 0, 1], vec![1, -1, 0]]);
+        let undecided =
+            Err("Mutation type undecided: the mutation class has more than 1 matrices".to_string());
+        assert_eq!(cycle.mutation_type(0), undecided);
+        assert_eq!(cycle.mutation_type(1), undecided);
+        assert_eq!(cycle.mutation_type(2), Ok(MutationType::Finite));
+
+        // Markov quiver: labelled class {B, -B} (every mu_k gives -B). It fits into a
+        // bound of 2 but not of 1 (or 0), and only the complete class decides Infinite.
+        let markov = quiver(vec![vec![0, 2, -2], vec![-2, 0, 2], vec![2, -2, 0]]);
+        assert_eq!(markov.mutation_type(0), undecided);
+        assert_eq!(markov.mutation_type(1), undecided);
+        assert_eq!(markov.mutation_type(2), Ok(MutationType::Infinite));
+    }
+
+    #[test]
+    fn test_cartan_companion_keeps_freeze_vertex_vertices() {
+        // Acyclic triangle 0 -> 1 -> 2, 0 -> 2: its companion is the affine A~_2 matrix
+        let mut t = quiver(vec![vec![0, 1, 1], vec![-1, 0, 1], vec![-1, -1, 0]]);
+        let a_tilde_2 = vec![vec![2, -1, -1], vec![-1, 2, -1], vec![-1, -1, 2]];
+        assert_eq!(t.cartan_companion(), a_tilde_2);
+        assert_eq!(t.mutation_type(1000), Ok(MutationType::Affine));
+
+        // freeze_vertex(2) does not change cartan_companion: it stays the 3 x 3 companion
+        // of principal_part(), indexed by vertex, with det 0 ...
+        t.freeze_vertex(2);
+        assert_eq!(t.principal_part().len(), 3);
+        assert_eq!(t.cartan_companion(), a_tilde_2);
+        assert_eq!(determinant(&t.cartan_companion()), Some(0));
+
+        // ... while mutation_type drops vertex 2. The companion it classifies is the
+        // submatrix of cartan_companion on {0, 1}, the A_2 Cartan matrix, so it is Finite.
+        let a2 = vec![vec![2, -1], vec![-1, 2]];
+        assert_eq!(submatrix(&t.cartan_companion(), &[0, 1]), a2);
+        assert_eq!(cartan_companion_of(&submatrix(&t.principal_part(), &[0, 1])), a2);
+        assert_eq!(t.mutation_type(1000), Ok(MutationType::Finite));
+    }
+
+    #[test]
     fn test_is_mutation_equivalent() {
         let a3 = ClusterQuiver::type_a(3);
         let mut target = a3.clone();
@@ -1435,6 +1512,39 @@ mod tests {
 
         // Different shapes are never equivalent
         assert_eq!(a2.is_mutation_equivalent(&a3, 5), Some(false));
+    }
+
+    #[test]
+    fn test_is_mutation_equivalent_frozen_sets() {
+        // mu_1(A_3) is the oriented 3-cycle 0 -> 2 -> 1 -> 0
+        let a3 = ClusterQuiver::type_a(3);
+        let h = a3.mutated(1).unwrap();
+        assert_eq!(h.exchange_matrix(), &vec![vec![0, -1, 1], vec![1, 0, -1], vec![-1, 1, 0]]);
+        assert_eq!(a3.is_mutation_equivalent(&h, 1), Some(true));
+        assert_eq!(h.is_mutation_equivalent(&a3, 1), Some(true));
+
+        // The same matrix with vertex 1 frozen is a different object, in either argument
+        // order. (Searching with self's frozen set alone gave Some(true) for a3 -> h_frozen
+        // but Some(false) for h_frozen -> a3.)
+        let mut h_frozen = h.clone();
+        h_frozen.freeze_vertex(1);
+        assert_eq!(a3.is_mutation_equivalent(&h_frozen, 10), Some(false));
+        assert_eq!(h_frozen.is_mutation_equivalent(&a3, 10), Some(false));
+
+        // Equal frozen sets {1}: mutations at 0 and 2 only. mu_0 and mu_2 commute on A_3,
+        // so the class of a3_frozen is {B, mu_0 B, mu_2 B, mu_2 mu_0 B}.
+        let mut a3_frozen = a3.clone();
+        a3_frozen.freeze_vertex(1);
+        let mut g = a3_frozen.clone();
+        g.mutate_sequence(&MutationSequence::from_vec(vec![0, 2])).unwrap();
+        assert_eq!(g.exchange_matrix(), &vec![vec![0, -1, 0], vec![1, 0, -1], vec![0, 1, 0]]);
+        assert_eq!(a3_frozen.is_mutation_equivalent(&g, 2), Some(true));
+        assert_eq!(g.is_mutation_equivalent(&a3_frozen, 2), Some(true));
+        // The oriented 3-cycle needs a mutation at the frozen vertex 1. The class of
+        // a3_frozen (4 matrices) and that of h_frozen (10 matrices, checked by an
+        // independent script) are enumerated in full, so both answers are proofs.
+        assert_eq!(a3_frozen.is_mutation_equivalent(&h_frozen, 10), Some(false));
+        assert_eq!(h_frozen.is_mutation_equivalent(&a3_frozen, 10), Some(false));
     }
 
     #[test]
