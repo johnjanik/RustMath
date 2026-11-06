@@ -343,12 +343,16 @@ fn assert_prime_modulus(p: i64, caller: &str) {
 ///
 /// # Arguments
 ///
-/// * `p` - Prime modulus (panics if `p` is not prime)
+/// * `p` - Prime modulus
 /// * `n` - Index of Bernoulli number
 ///
 /// # Returns
 ///
 /// `Some(B_n mod p)` (in `0..p`) if B_n is p-integral, `None` otherwise
+///
+/// # Panics
+///
+/// Panics if `p` is not a prime (this includes every `p < 2`).
 ///
 /// # Examples
 ///
@@ -410,11 +414,15 @@ pub fn bernoulli_mod_p_single(p: i64, n: usize) -> Option<i64> {
 ///
 /// # Arguments
 ///
-/// * `p` - Prime modulus (must be >= 5; panics if `p` is not prime)
+/// * `p` - Prime modulus, at least 5
 ///
 /// # Returns
 ///
 /// Vector containing [B_0, B_2, B_4, ..., B_{p-3}] mod p, each in `0..p`
+///
+/// # Panics
+///
+/// Panics if `p < 5` or if `p` is not a prime.
 ///
 /// # Examples
 ///
@@ -460,6 +468,15 @@ pub fn bernoulli_mod_p(p: i64) -> Vec<i64> {
 /// # Returns
 ///
 /// The n-th Bernoulli number
+///
+/// # Panics
+///
+/// Only for even n ≥ 2 (n = 0, n = 1 and odd n return at once):
+///
+/// - if n + 1 ≥ 2^30 (the primes used must exceed n + 1 and lie below 2^31);
+/// - with "ran out of primes" if more primes are needed than lie in (n + 1, 2^31).
+///   This happens when `num_primes` exceeds that count, or when the height bound
+///   alone needs them all (n beyond roughly 1.3·10^8).
 ///
 /// # Examples
 ///
@@ -666,6 +683,11 @@ fn gcd(a: i64, b: i64) -> i64 {
 /// `true` if the checksum passes, `false` otherwise (including when the list does
 /// not have (p-1)/2 entries)
 ///
+/// # Panics
+///
+/// Panics if `p` is not an odd prime. The identity only holds for odd primes, so a
+/// composite modulus (or 2) is rejected instead of being checked.
+///
 /// # Examples
 ///
 /// ```rust
@@ -677,7 +699,12 @@ fn gcd(a: i64, b: i64) -> i64 {
 /// assert!(!verify_bernoulli_mod_p(11, &b));
 /// ```
 pub fn verify_bernoulli_mod_p(p: i64, bernoulli: &[i64]) -> bool {
-    if p < 3 || bernoulli.len() != ((p - 3) / 2 + 1) as usize {
+    assert!(
+        p >= 3 && is_prime(&Integer::from(p)),
+        "verify_bernoulli_mod_p: modulus {} is not an odd prime",
+        p
+    );
+    if bernoulli.len() != ((p - 3) / 2 + 1) as usize {
         return false;
     }
 
@@ -687,7 +714,8 @@ pub fn verify_bernoulli_mod_p(p: i64, bernoulli: &[i64]) -> bool {
     for (k, &b_2k) in bernoulli.iter().enumerate() {
         // 2^{2k} (2k + 1) B_{2k}
         let power_of_2 = mod_pow(2, 2 * k as i64, p) as i128;
-        let term = (power_of_2 * ((2 * k as i128 + 1) % modulus)) % modulus * (b_2k as i128 % modulus);
+        let term =
+            (power_of_2 * ((2 * k as i128 + 1) % modulus)) % modulus * (b_2k as i128 % modulus);
         sum = (sum + term) % modulus;
     }
 
@@ -852,6 +880,19 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "modulus 9 is not prime")]
+    fn test_bernoulli_mod_p_rejects_composite() {
+        bernoulli_mod_p(9);
+    }
+
+    #[test]
+    #[should_panic(expected = "too large for word-size primes")]
+    fn test_bernoulli_multimodular_rejects_huge_index() {
+        // n + 1 = 2^30 + 1 ≥ 2^30: rejected before any work is done.
+        bernoulli_multimodular(1 << 30, 1);
+    }
+
+    #[test]
     fn test_bernoulli_mod_p() {
         let b_mod_7 = bernoulli_mod_p(7);
         assert_eq!(b_mod_7, vec![1, 6, 3]); // B_0, B_2, B_4
@@ -937,6 +978,24 @@ mod tests {
         bad[2] = (bad[2] + 1) % 11;
         assert!(!verify_bernoulli_mod_p(11, &bad));
         assert!(!verify_bernoulli_mod_p(11, &b_mod_11[..4]));
+
+        // Smallest odd prime: the list is [B_0] = [1], and 1 ≡ -2 (mod 3).
+        assert!(verify_bernoulli_mod_p(3, &[1]));
+        assert!(!verify_bernoulli_mod_p(3, &[0]));
+    }
+
+    #[test]
+    #[should_panic(expected = "modulus 9 is not an odd prime")]
+    fn test_verify_bernoulli_mod_p_rejects_composite() {
+        // Σ_k 4^k (2k+1) b_k = 7 ≡ -2 (mod 9), so without the primality check this
+        // list of the right length would pass the checksum for the composite 9.
+        verify_bernoulli_mod_p(9, &[7, 0, 0, 0]);
+    }
+
+    #[test]
+    #[should_panic(expected = "modulus 2 is not an odd prime")]
+    fn test_verify_bernoulli_mod_p_rejects_two() {
+        verify_bernoulli_mod_p(2, &[1]);
     }
 
     #[test]
