@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 5067 | 17 | 328 | 1212 | 18 | 177 | 3440 (26%) | 8121 (61%) |
+| 13341 | 5100 | 17 | 331 | 1221 | 18 | 177 | 3419 (26%) | 8130 (61%) |
 
 ## By chapter
 
@@ -56,7 +56,7 @@ automatic `candidate`/`missing` counts.
 | 32 | Quadratic Forms | V | 12 | 12 | 0 | 1 | 1 | 0 | 0 | 0 | 10 | substantial | `rustmath-quadraticforms` |
 | 33 | Binary Quadratic Forms | V | 52 | 52 | 1 | 3 | 10 | 3 | 0 | 0 | 35 | partial | `rustmath-quadraticforms` |
 | 34 | Number Fields | VI | 220 | 220 | 0 | 14 | 58 | 8 | 1 | 0 | 139 | substantial | `rustmath-numberfields` |
-| 35 | Quadratic Fields | VI | 33 | 0 | 0 | 0 | 0 | 0 | 0 | 21 | 12 | substantial | `rustmath-numberfields` |
+| 35 | Quadratic Fields | VI | 33 | 33 | 0 | 3 | 9 | 0 | 0 | 0 | 21 | substantial | `rustmath-numberfields` |
 | 36 | Cyclotomic Fields | VI | 18 | 0 | 0 | 0 | 0 | 0 | 0 | 12 | 6 | partial | `rustmath-rings` |
 | 37 | Orders and Algebraic Fields | VI | 356 | 356 | 0 | 16 | 95 | 5 | 6 | 0 | 234 | substantial | `rustmath-numberfields` |
 | 38 | Galois Theory of Number Fields | VI | 69 | 69 | 0 | 0 | 15 | 0 | 0 | 0 | 54 | partial | `rustmath-numberfields` |

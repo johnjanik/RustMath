@@ -5066,3 +5066,36 @@ ch061.HasFiniteOrder,partial,rustmath-matrix/src/charpoly_exact.rs:299,"multipli
 ch061.SylowSystem,missing,,nothing for nilpotent matrix groups over finite fields [review 2026-11-06; checked]
 ch061.IsIrreducibleFiniteNilpotent,missing,,"no matrix group over infinite field machinery (congruence homomorphisms, presentations) in workspace [review 2026-11-06; checked]"
 ch061.IsPrimitiveFiniteNilpotent,missing,,"no matrix group over infinite field machinery (congruence homomorphisms, presentations) in workspace [review 2026-11-06; checked]"
+ch035.QuadraticField,partial,rustmath-numberfields/src/quadratic.rs:15,"QuadField::new(delta) holds a rational delta; no squarefree reduction, no non-square check, no caching; tested in quadratic.rs::gaussian_integers_arithmetic [review 2026-11-06; checked]"
+ch035.EquationOrder,partial,rustmath-numberfields/src/round2.rs:209,"Verifier right: rings order.rs is orphan (number_field/mod.rs declares no mod order), never compiled. Only private round2 Order::equation_order (Z[theta]) seeding maximal_order; no public API, as ch037 [review 2026-11-06; adjudicated]"
+ch035.MaximalOrder,done,rustmath-numberfields/src/round2.rs:1086,"maximal_order_data(f) via Round 2 gives O_K for Q[x]/(f) incl. quadratic; takes a polynomial, no field object; exercised by different.rs::different_norm_is_abs_disc [review 2026-11-06; checked]"
+ch035.NumberField,missing,,"Verifier right: rings order.rs:170 Order::number_field is in an uncompiled orphan module (no mod order); round2 OrderData has no field; no compiled NumberField(O) accessor, as ch037.NumberField.3 [review 2026-11-06; adjudicated]"
+ch035.sub,missing,,no suborder of given index/conductor construction for quadratic orders [review 2026-11-06; checked]
+ch035.IsQuadratic,missing,,no IsQuadratic predicate for fields or orders [review 2026-11-06; checked]
+ch035.AssignNames,missing,,no naming of generator or printing convention for quadratic fields/orders [review 2026-11-06; checked]
+ch035.Name,partial,rustmath-numberfields/src/quadratic.rs:46,"QuadField::w() gives sqrt(delta) for the field only; no order variant (f*eps_d / f*sqrt d), index argument absent [review 2026-11-06; checked]"
+ch035.FundamentalUnit,partial,rustmath-numberfields/src/s_unit_gens.rs:242,"fundamental_units(f) by bounded coefficient search (bound 40 for deg 2), may return None; maximal order only; test fundamental_unit_real_quadratic checks unit property only [review 2026-11-06; checked]"
+ch035.Discriminant,done,rustmath-numberfields/src/round2.rs:732,field_discriminant(f) gives field disc d_K via Round 2; test round2.rs::disc_quadratic_squarefree_index1 (-4); lib.rs:332 is only the polynomial disc [review 2026-11-06; checked]
+ch035.Conductor,missing,,no field conductor (cyclotomic level plus ramified real places) for quadratic fields; abext.rs conductor is for ray class data [review 2026-11-06; checked]
+ch035.Conductor.2,partial,rustmath-numberfields/src/different.rs:86,"conductor(f,ord) returns the conductor as an O_K-ideal of Z[theta], not the integer index [O_K:O]; rings order.rs:224 also has conductor; no suborder input [review 2026-11-06; checked]"
+ch035.ClassGroup,partial,rustmath-numberfields/src/classgroup.rs:307,"class_group(f) returns invariant factors only, no map to ideals, no optional params, may return None; quadratic values match gp in tests/clgp.rs::class_group_matches_gp [review 2026-11-06; checked]"
+ch035.ClassNumber,partial,rustmath-numberfields/src/classgroup.rs:307,"no ClassNumber fn; h = product of class_group(f) invariants (tests/clgp.rs); lib.rs:374 class_number is broken (returns 1 for |d|<100, e.g. -23); hcf.rs:88 imaginary only [review 2026-11-06; checked]"
+ch035.PicardGroup,partial,rustmath-numberfields/src/hcf.rs:88; rustmath-numberfields/src/hcf.rs:42,"Verifier right: class_number_imag_quadratic(D) counts primitive reduced forms for any D<0 (by hand D=-12: 1, D=-36: 2) = PicardNumber of imaginary order; no group, map, real orders; tests fundamental D only [review 2026-11-06; adjudicated]"
+ch035.QuadraticClassGroupTwoPart,missing,,no Bosma-Stevenhagen 2-part of quadratic class group [review 2026-11-06; checked]
+ch035.NormEquation,missing,,no norm equation solver (Cornacchia or conic method) for quadratic fields or orders [review 2026-11-06; checked]
+ch035.a,missing,,no mod/remainder in quadratic maximal orders; QuadElem::div is field division only [review 2026-11-06; checked]
+ch035.Gcd,missing,,generic EuclideanDomain::gcd in rustmath-core/src/traits.rs:106 but no Euclidean quadratic order element type implements it [review 2026-11-06; checked]
+ch035.Lcm,missing,,generic EuclideanDomain::lcm in rustmath-core/src/traits.rs:120 but no quadratic order element type implements it [review 2026-11-06; checked]
+ch035.Modexp,missing,,no modular exponentiation in quadratic orders; integer mod_pow only [review 2026-11-06; checked]
+ch035.Factorization,missing,,"no element factorization in Z[i], Z[sqrt-2], etc.; databases/cunningham.rs hit is integer factoring; ideals.rs factor_ideal factors ideals only [review 2026-11-06; checked]"
+ch035.TrialDivision,missing,,no trial division by bounded-norm primes of quadratic orders [review 2026-11-06; checked]
+ch035.ComplexConjugate,partial,rustmath-numberfields/src/quadratic.rs:62,Verifier right: QuadElem::conjugate a+bw -> a-bw is complex conjugation when delta<0; real case (identity) not handled; test inverse_and_conjugate uses Q(sqrt2) only; as ch037.ComplexConjugate [review 2026-11-06; adjudicated]
+ch035.Conjugate,done,rustmath-numberfields/src/quadratic.rs:62,QuadElem::conjugate maps a+bw to a-bw; test quadratic.rs::inverse_and_conjugate [review 2026-11-06; checked]
+ch035.BiquadraticResidueSymbol,missing,,no quartic residue symbol on Gaussian integers [review 2026-11-06; checked]
+ch035.Primary,missing,,no primary associate function for Gaussian integers [review 2026-11-06; checked]
+ch035.Content,missing,,no content of quadratic ideals; no quadratic-form correspondence for ideals [review 2026-11-06; checked]
+ch035.Conjugate.2,missing,,quadratic.rs conjugate acts on elements only; no ideal conjugate for quadratic ideals [review 2026-11-06; checked]
+ch035.Discriminant.2,missing,,no discriminant of the binary form attached to a quadratic ideal [review 2026-11-06; checked]
+ch035.QuadraticForm,missing,,no binary form from quadratic ideal; algebras octonion hit unrelated [review 2026-11-06; checked]
+ch035.Ideal,missing,,no ideal from binary quadratic form; affineschemes spec.rs hit unrelated [review 2026-11-06; checked]
+ch035.Reduction,missing,,no reduction of quadratic ideals; quadraticforms reduced_form handles forms only (positive definite) [review 2026-11-06; checked]
