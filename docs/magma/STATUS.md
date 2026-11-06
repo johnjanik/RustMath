@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 4585 | 17 | 293 | 1100 | 18 | 151 | 3720 (28%) | 8014 (60%) |
+| 13341 | 4603 | 17 | 303 | 1107 | 18 | 151 | 3707 (28%) | 8010 (60%) |
 
 ## By chapter
 
@@ -85,7 +85,7 @@ automatic `candidate`/`missing` counts.
 | 61 | Matrix Groups over Infinite Fields | IX | 18 | 0 | 0 | 0 | 0 | 0 | 0 | 4 | 14 | none | `rustmath-groups` |
 | 62 | Matrix Groups over Q and Z | IX | 20 | 20 | 0 | 0 | 0 | 0 | 0 | 0 | 20 | none | `rustmath-groups` |
 | 63 | Finite Soluble Groups | IX | 215 | 215 | 0 | 0 | 65 | 7 | 0 | 0 | 143 | none | `rustmath-groups` |
-| 64 | Black-box Groups | IX | 18 | 0 | 0 | 0 | 0 | 0 | 0 | 13 | 5 | none | `rustmath-groups` |
+| 64 | Black-box Groups | IX | 18 | 18 | 0 | 10 | 7 | 0 | 0 | 0 | 1 | none | `rustmath-groups` |
 | 65 | Almost Simple Groups | IX | 116 | 116 | 0 | 0 | 4 | 0 | 0 | 0 | 112 | stub | `rustmath-groups` |
 | 66 | Databases of Groups | IX | 177 | 177 | 0 | 0 | 7 | 0 | 0 | 0 | 170 | stub | `rustmath-groups` |
 | 67 | Automorphism Groups | IX | 34 | 0 | 0 | 0 | 0 | 0 | 0 | 16 | 18 | stub | `rustmath-groups` |
