@@ -4069,3 +4069,90 @@ ch060.PCPresentation,missing,,"No matrix group over finite field machinery (Asch
 ch060.Order,missing,,"No matrix group over finite field machinery (Aschbacher, composition tree, LMG, unipotent) exists in the workspace. [review 2026-11-06; checked]"
 ch060.FactoredOrder,missing,,"No matrix group over finite field machinery (Aschbacher, composition tree, LMG, unipotent) exists in the workspace. [review 2026-11-06; checked]"
 ch060.g,missing,,"No matrix group over finite field machinery (Aschbacher, composition tree, LMG, unipotent) exists in the workspace. [review 2026-11-06; checked]"
+ch028.VectorSpace,done,rustmath-matrix/src/vector_space.rs:22,"VectorSpace::new(n) gives F^n with standard basis, field via type param; vector_space.rs::test_vector_creation, test_standard_basis [review 2026-11-06; checked]"
+ch028.KModule,partial,rustmath-matrix/src/vector_space.rs:22,same type as VectorSpace; no reduced-echelon subspace presentation; no module-over-ring variant [review 2026-11-06; checked]
+ch028.KMatrixSpace,partial,rustmath-matrix/src/matrix_algebra.rs:237; rustmath-modules/src/with_basis/homsets.rs:54,"MatrixAlgebra::full(n) is K(n x n) with E_ij basis, dim n^2 (matrix_algebra.rs::full_matrix_algebra_dimension_and_basis); square only, m x n only as abstract HomSpace (E_ij, no matrices) [review 2026-11-06; adjudicated]"
+ch028.Hom,partial,rustmath-modules/src/with_basis/homsets.rs:54,"HomSpace::new(M,N): E_ij basis indexed (i,j), dim mn (homsets.rs::test_homspace_creation, test_basis_morphism); elements formal sums not matrices, compose_right unimplemented!, contains always true [review 2026-11-06; adjudicated]"
+ch028.VectorSpace.2,partial,rustmath-matrix/src/inner_product.rs:39,InnerProductSpace::from_gram_matrix is a separate type; not an embedded K(n) space; test_custom_gram_matrix [review 2026-11-06; checked]
+ch028.elt,partial,rustmath-matrix/src/vector.rs:14,Vector::new(data) builds a vector; no membership check against a (sub)space; no matrix elements [review 2026-11-06; checked]
+ch028.V,partial,rustmath-matrix/src/vector.rs:14,Vector::new / VectorSpace::contains separately; no coercion into V with error check [review 2026-11-06; checked]
+ch028.CharacteristicVector,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch028.V.2,done,rustmath-matrix/src/vector_core_impls.rs:147; rustmath-matrix/src/vector.rs:19,FixedVector Module::zero() is the zero of K^N; vector_core_impls.rs::fixedvector_is_a_module asserts z.is_zero() and u+z==u; runtime form Vector::zeros(n) [review 2026-11-06; adjudicated]
+ch028.Random,missing,,no random vector of a finite-field space [review 2026-11-06; checked]
+ch028.ElementToSequence,done,rustmath-matrix/src/vector.rs:159,"Vector::data() returns the entry sequence (0-based); vector_core_impls.rs::linear_map_apply_kernel_image_rank asserts out.data()==[5,0]; into_data() is the owned form [review 2026-11-06; adjudicated]"
+ch028.u,done,rustmath-matrix/src/vector_core_impls.rs:105,FixedVector Add (total); runtime Vector Add returns Result at vector.rs:169; test fixedvector_is_a_module [review 2026-11-06; checked]
+ch028.u.2,done,rustmath-matrix/src/vector_core_impls.rs:131,FixedVector Neg; vector_core_impls.rs::fixedvector_is_a_module; runtime Vector has no Neg [review 2026-11-06; checked]
+ch028.u.3,done,rustmath-matrix/src/vector_core_impls.rs:118,FixedVector Sub; test fixedvector_is_a_module; runtime Vector Sub at vector.rs:190 untested [review 2026-11-06; checked]
+ch028.x,done,rustmath-matrix/src/vector.rs:63,Vector::scalar_mul; vector.rs::test_scalar_mul; no operator form x*u [review 2026-11-06; checked]
+ch028.u.4,missing,,no division of a vector by a scalar [review 2026-11-06; checked]
+ch028.NumberOfColumns,done,rustmath-matrix/src/vector.rs:26,"Vector::dim() is the length n = Ncols(u), only the name differs; vector.rs::test_vector_creation asserts dim()==3 [review 2026-11-06; adjudicated]"
+ch028.Depth,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch028.InnerProduct,done,rustmath-matrix/src/inner_product.rs:60,"InnerProductSpace::inner_product computes u G v^T; inner_product.rs::test_custom_gram_matrix, test_euclidean_inner_product [review 2026-11-06; checked]"
+ch028.IsZero,done,rustmath-matrix/src/vector_core_impls.rs:153; rustmath-modules/src/with_basis/element.rs:86,"FixedVector Module::is_zero asserted in vector_core_impls.rs::fixedvector_is_a_module; ModuleWithBasisElement::is_zero true/false in element.rs::test_zero_element, test_basis_element [review 2026-11-06; adjudicated]"
+ch028.Norm,done,rustmath-matrix/src/inner_product.rs:92,norm_squared = u G u^T; inner_product.rs::test_norm_squared [review 2026-11-06; checked]
+ch028.Normalise,missing,,"Vector::normalize is commented out and was 2-norm anyway, not first-nonzero scaling [review 2026-11-06; checked]"
+ch028.Rotate,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch028.Rotate.2,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch028.NumberOfRows,n/a,,"Nrows of a tuple vector is the constant 1 (handbook: included for completeness), nothing to compute; review used the invalid word na [review 2026-11-06; adjudicated]"
+ch028.Support,done,rustmath-modules/src/with_basis/element.rs:106; rustmath-matrix/src/sparse_forms.rs:139,"ModuleWithBasisElement::support = indices of nonzero coords (zeros never stored), element.rs::test_support; sparse row_support is tested in sparse_forms.rs::structure_weight_support_density [review 2026-11-06; adjudicated]"
+ch028.TensorProduct,partial,rustmath-modules/src/with_basis/tensor_product.rs:74,"TensorProduct::tensor(x,y) = sum a_i b_j e_i(x)f_j, tensor_product.rs::test_tensor_bilinearity asserts 10,14,15,21; result pair-indexed in a TensorProduct parent, no flat K(mn) Vector [review 2026-11-06; adjudicated]"
+ch028.Trace,missing,,no componentwise field trace of a vector [review 2026-11-06; checked]
+ch028.Weight,done,rustmath-modules/src/with_basis/element.rs:111; rustmath-matrix/src/sparse_forms.rs:129,"ModuleWithBasisElement::num_nonzero = number of nonzero coords, element.rs::test_cleanup_removes_zeros asserts 2; sparse row_weight/weight tested in structure_weight_support_density [review 2026-11-06; adjudicated]"
+ch028.u.5,partial,rustmath-matrix/src/vector.rs:31; rustmath-matrix/src/matrix.rs:260,"Vector::get(i) 0-based, vector.rs::test_vector_creation; the K(m x n) row case exists as Matrix::row(i) (returns Vec, untested), so the review's no matrix-row indexing is wrong [review 2026-11-06; adjudicated]"
+ch028.u.6,done,rustmath-matrix/src/matrix.rs:82,"Matrix::get(i,j) returns the (i,j) entry, 0-based; matrix.rs::test_multiplication asserts get(0,0)==19, get(1,1)==50 [review 2026-11-06; adjudicated]"
+ch028.u.7,partial,rustmath-matrix/src/vector.rs:38,"Vector::set(i,x) 0-based; vectors only; no dedicated test [review 2026-11-06; checked]"
+ch028.u.8,partial,rustmath-matrix/src/matrix.rs:90,"Matrix::set(i,j,x); no dedicated test of the space semantics [review 2026-11-06; checked]"
+ch028.sub,partial,rustmath-matrix/src/vector_space.rs:42,"VectorSpace::from_basis takes a basis (no independence check, no span of arbitrary generators, not a subspace of V) [review 2026-11-06; checked]"
+ch028.Morphism,missing,,no embedding matrix of a subspace in its ambient space [review 2026-11-06; checked]
+ch028.quo,broken,rustmath-matrix/src/vector_space.rs:160,"VectorSpace::quotient uses Matrix::solve (None unless square, bogus Some on singular square): W=<e1,e2> in Q^3 gives dim 3 not 1; W=<e1> in Q^2 keeps e1 (in W). Untested [review 2026-11-06; adjudicated]"
+ch028.V.3,broken,rustmath-matrix/src/vector_space.rs:160,"same VectorSpace::quotient: W=<e1,e2> in Q^3 yields dim 3 (true 1) since Matrix::solve is None for non-square systems; QuotientSpace::project Errs for W=<e1> in Q^2. Untested [review 2026-11-06; adjudicated]"
+ch028.ExtendField,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch028.RestrictField,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch028.VectorSpace.3,missing,,no change of coefficient field of a space [review 2026-11-06; checked]
+ch028.V.4,partial,rustmath-matrix/src/vector_space.rs:74; rustmath-matrix/src/vector_core_impls.rs:87,"as BasisElement: VectorSpace::basis()[i] slice only (0-based, no V.i accessor); FixedVector::basis_vector(i) is e_i of K^N, tested in vector_core_impls.rs::fixedvector_is_a_vector_space [review 2026-11-06; adjudicated]"
+ch028.CoefficientField,missing,,field is a type parameter only [review 2026-11-06; checked]
+ch028.Degree,partial,rustmath-coding/src/generic_code.rs:182; rustmath-geometry/src/hyperplane_arrangement/affine_subspace.rs:87; rustmath-modules/src/submodule.rs:31,no accessor on VectorSpace (basis()[0].len() only); GenericLinearCode::length is n for a code in F^n (test_parity_check_orthogonality_gf7); AffineSubspace::ambient_dimension (test_new) [review 2026-11-06; adjudicated]
+ch028.Degree.2,done,rustmath-matrix/src/vector.rs:26,Degree(u)=n for u in K(n) is Vector::dim() (also FixedVector::len); vector.rs::test_vector_creation asserts dim()==3 [review 2026-11-06; adjudicated]
+ch028.Dimension,done,rustmath-matrix/src/vector_space.rs:69,VectorSpace::dimension; vector_space.rs::test_vector_space_creation [review 2026-11-06; checked]
+ch028.Generators,partial,rustmath-modules/src/with_basis/parent.rs:132; rustmath-modules/src/submodule.rs:35,"ModuleWithBasis::gens() = basis of an ambient free module (parent.rs::test_gens, count only); Submodule::generators untested; VectorSpace has basis() only; no subspace generators, no set [review 2026-11-06; adjudicated]"
+ch028.NumberOfGenerators,partial,rustmath-modules/src/submodule.rs:39; rustmath-modules/src/with_basis/parent.rs:132,"Submodule::rank returns generators.len() (Ngens despite the name), untested; otherwise gens().len() on ModuleWithBasis; no Ngens on VectorSpace [review 2026-11-06; adjudicated]"
+ch028.OverDimension,partial,rustmath-coding/src/generic_code.rs:182; rustmath-geometry/src/hyperplane_arrangement/affine_subspace.rs:87,as Degree(V): GenericLinearCode::length (tested in test_parity_check_orthogonality_gf7) and AffineSubspace::ambient_dimension (test_new) give n; no accessor on VectorSpace [review 2026-11-06; adjudicated]
+ch028.OverDimension.2,done,rustmath-matrix/src/vector.rs:26,OverDimension(u)=n is Vector::dim(); vector.rs::test_vector_creation asserts dim()==3 [review 2026-11-06; adjudicated]
+ch028.Generic,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch028.Parent,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch028.v,partial,rustmath-coding/src/generic_code.rs:248; rustmath-matrix/src/vector_space.rs:147,"VectorSpace::contains is false for every v of a proper subspace (Matrix::solve None unless square); GenericLinearCode::is_codeword (zero syndrome) works, test_parity_check_orthogonality_gf7 [review 2026-11-06; adjudicated]"
+ch028.v.2,partial,rustmath-coding/src/generic_code.rs:248,negation of GenericLinearCode::is_codeword (non-codeword case asserted in test_parity_check_orthogonality_gf7); no dedicated notin; VectorSpace::contains wrong on proper subspaces [review 2026-11-06; adjudicated]
+ch028.U,facade,rustmath-geometry/src/hyperplane_arrangement/affine_subspace.rs:153,"AffineSubspace::is_subset_of ends true // Placeholder and contains(0) is always true, so U subset V is always true for linear subspaces; PROJECT_TRACKER flags facade [review 2026-11-06; adjudicated]"
+ch028.U.2,facade,rustmath-geometry/src/hyperplane_arrangement/affine_subspace.rs:153,"negation of AffineSubspace::is_subset_of, always true for linear subspaces (placeholder), so U notsubset V is always false; PROJECT_TRACKER flags facade [review 2026-11-06; adjudicated]"
+ch028.U.3,missing,,no subspace equality test [review 2026-11-06; checked]
+ch028.U.4,missing,,no subspace inequality test [review 2026-11-06; checked]
+ch028.U.5,missing,,"no sum of subspaces (direct_sum is external sum, different) [review 2026-11-06; checked]"
+ch028.U.6,facade,rustmath-geometry/src/hyperplane_arrangement/affine_subspace.rs:135,"AffineSubspace::intersection returns None (empty, placeholder) for every input, even linear subspaces sharing 0; PROJECT_TRACKER flags facade; no real subspace intersection [review 2026-11-06; adjudicated]"
+ch028.U.7,missing,,no intersection of subspaces [review 2026-11-06; checked]
+ch028.meet-S,missing,,no intersection of subspaces [review 2026-11-06; checked]
+ch028.TensorProduct.2,partial,rustmath-modules/src/with_basis/tensor_product.rs:56,"TensorProduct::new(M,N) of free modules with basis, dim = product (tensor_product.rs::test_tensor_product_creation asserts 6); ambient modules only, not subspaces of K(m), K(n) [review 2026-11-06; adjudicated]"
+ch028.Complement,missing,,complement basis only computed privately inside quotient() [review 2026-11-06; checked]
+ch028.Transversal,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch028.ReduceVector,broken,rustmath-matrix/src/vector_space.rs:263,"QuotientSpace::project solves W and complement systems with Matrix::solve (None unless square): W=<e1> in Q^2, v=(0,1) returns Err (complement wrongly {e1}); untested [review 2026-11-06; adjudicated]"
+ch028.ReduceVector.2,missing,,no in-place reduction procedure [review 2026-11-06; checked]
+ch028.DecomposeVector,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch028.VectorSpaceWithBasis,partial,rustmath-matrix/src/vector_space.rs:42,"from_basis(Vec<Vec<F>>) no independence check, no matrix-row form, rejects empty basis [review 2026-11-06; checked]"
+ch028.KSpaceWithBasis,partial,rustmath-matrix/src/vector_space.rs:42,"from_basis(Vec<Vec<F>>) no independence check, no matrix-row form [review 2026-11-06; checked]"
+ch028.KModuleWithBasis,partial,rustmath-matrix/src/vector_space.rs:42,from_basis only over fields; no independence check [review 2026-11-06; checked]
+ch028.Basis,done,rustmath-matrix/src/vector_space.rs:74,VectorSpace::basis; vector_space.rs::test_standard_basis [review 2026-11-06; checked]
+ch028.BasisElement,partial,rustmath-matrix/src/vector_space.rs:74,"only basis()[i] slice indexing, no BasisElement accessor [review 2026-11-06; checked]"
+ch028.BasisMatrix,partial,rustmath-coding/src/generic_code.rs:197; rustmath-matrix/src/vector_space.rs:74,"GenericLinearCode::generator_matrix returns basis rows of a code subspace (full rank enforced) as Vec<Vec<F>>, used in test_parity_check_orthogonality_gf7; no Matrix result; VectorSpace has basis() [review 2026-11-06; adjudicated]"
+ch028.Coordinates,broken,rustmath-matrix/src/vector_space.rs:82,"solves the n x r basis system with Matrix::solve, which returns None unless square: Err not in the span for every v of a proper subspace; only r=n works (vector_space.rs::test_coordinates) [review 2026-11-06; adjudicated]"
+ch028.Dimension.2,done,rustmath-matrix/src/vector_space.rs:69,VectorSpace::dimension; vector_space.rs::test_vector_space_creation [review 2026-11-06; checked]
+ch028.ExtendBasis,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch028.ExtendBasis.2,missing,,"quotient() builds a complement privately, no public ExtendBasis [review 2026-11-06; checked]"
+ch028.IsIndependent,stub,rustmath-modules/src/with_basis/parent.rs:175,ModuleWithBasisParentMethods::are_linearly_independent is unimplemented!() (should_panic parent.rs::test_linear_independence_is_not_fabricated); otherwise only Matrix::rank [review 2026-11-06; adjudicated]
+ch028.IsIndependent.2,stub,rustmath-modules/src/with_basis/parent.rs:175,same are_linearly_independent: unimplemented!() (should_panic parent.rs::test_linear_independence_is_not_fabricated); no working independence predicate [review 2026-11-06; adjudicated]
+ch028.v.3,done,rustmath-matrix/src/action.rs:148,"VectorMatrixAction::act is the row-vector product v*a (Magma convention); action.rs::test_vector_matrix_action asserts [1,2]*[[3,4],[5,6]]=[13,16]; LinearMap::apply_checked is the column form [review 2026-11-06; adjudicated]"
+ch028.a,done,rustmath-matrix/src/matrix.rs:380,Matrix::mul and Mul operator; matrix.rs::test_multiplication [review 2026-11-06; checked]
+ch028.Domain,partial,rustmath-matrix/src/vector_core_impls.rs:204,"LinearMap::domain_dim gives dimension only, not a subspace [review 2026-11-06; checked]"
+ch028.Codomain,partial,rustmath-matrix/src/vector_core_impls.rs:209,"LinearMap::codomain_dim gives dimension only, not a subspace [review 2026-11-06; checked]"
+ch028.Image,partial,rustmath-matrix/src/linear_solve.rs:244,column-space basis as Vec of vectors (not a subspace object); test linear_solve.rs::test_image [review 2026-11-06; checked]
+ch028.Rank,done,rustmath-matrix/src/linear_solve.rs:129,Matrix::rank; linear_solve.rs::test_rank [review 2026-11-06; checked]
+ch028.Kernel,partial,rustmath-matrix/src/linear_solve.rs:200,"right kernel (A x=0), Magma Kernel is left kernel of row action; basis vectors only; test_kernel [review 2026-11-06; checked]"
+ch028.Cokernel,missing,,no implementation in workspace [review 2026-11-06; checked]
