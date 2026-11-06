@@ -4743,3 +4743,71 @@ ch050.Evaluate,missing,,"No lazy composition; PowerSeries::compose (series.rs:18
 ch050.SquareRoot,missing,,"Only truncated PowerSeries::sqrt (transcendental.rs:135, constant term 1); nothing for lazy series [review 2026-11-06; checked]"
 ch050.IsSquare,missing,,No IsSquare for lazy series [review 2026-11-06; checked]
 ch050.PolynomialCoefficient,missing,,No polynomial-coefficient reinterpretation for lazy series [review 2026-11-06; checked]
+ch039.RayClassGroup,broken,rustmath-numberfields/src/rayclass.rs:679; rustmath-numberfields/src/rayclass.rs:256; rustmath-numberfields/src/rayclass.rs:906,"Verifier right: greedy ResidueRing gens (rayclass.rs:256) can be dependent. Q(i) m0=4: empty factor base, (O/4)^*=Z4xZ2 presented as Z4xZ4, h_m=4, true 2 (units.rs ray_class_number, gp) [review 2026-11-06; adjudicated]"
+ch039.RayClassGroup.2,broken,rustmath-numberfields/src/rayclass.rs:679; rustmath-numberfields/src/rayclass.rs:256,"Same ray_class_group, no divisor input (integer m0 plus real places). Greedy dependent residue gens: Q(i) m0=4 gives 4 (true 2), m0=8 gives 16 (true 8) [review 2026-11-06; adjudicated]"
+ch039.RayResidueRing,partial,rustmath-numberfields/src/units.rs:436,"Verifier right: public residue_unit_group_order(f,m) gives only |(O_K/mO_K)^*| for rational m; no group, map or T signs (rayclass.rs ResidueRing private); used by units.rs::ray_class_number_matches_gp [review 2026-11-06; adjudicated]"
+ch039.RayResidueRing.2,partial,rustmath-numberfields/src/units.rs:436,"Only the order of (O_K/mO_K)^* for D = m*O_K via residue_unit_group_order; no real places in D, no group structure or map [review 2026-11-06; adjudicated]"
+ch039.pSelmerGroup,partial,rustmath-numberfields/src/kummer.rs:46,"k_s_2_space gives K(S,2) generators only (p=2), no map K->G, no general p; no direct test located [review 2026-11-06; checked]"
+ch039.InducedMap,missing,,no induced map between ray class/ideal group maps [review 2026-11-06; checked]
+ch039.InducedAutomorphism,missing,,no induced map or automorphism action on ray class groups [review 2026-11-06; checked]
+ch039.RayClassField,broken,rustmath-numberfields/src/abext.rs:92; rustmath-numberfields/src/artin.rs:390; rustmath-numberfields/src/abext.rs:338,"abelian_extension uses only H.index: conductor from index (artin.rs:390), Q m0=63 any index-3 H gives cond-7 cubic; Kummer gamma is a gen of FB prime^n (Q(i) m=5 n=2: +-2 or +-2i, not 5) [review 2026-11-06; adjudicated]"
+ch039.AbelianExtension,broken,rustmath-numberfields/src/abext.rs:92; rustmath-numberfields/src/artin.rs:457,"Full ray class field (H=0): Q mod 15 gives Abstract with predicted disc 15^3=3375, true 1125 (Q(zeta15)^+, LMFDB 4.4.1125.1); periods only for prime conductor, Kummer gamma wrong [review 2026-11-06; adjudicated]"
+ch039.RayClassField.2,broken,rustmath-numberfields/src/abext.rs:92,"No divisor input (integer m0 plus real places); same abelian_extension: H ignored beyond its index, conductor from index only, Kummer gamma a FB prime generator (wrong for Q(i) m=5 n=2) [review 2026-11-06; adjudicated]"
+ch039.AbelianpExtension,missing,,no p-subfield projection of an abelian extension [review 2026-11-06; checked]
+ch039.AbelianExtension.2,broken,rustmath-numberfields/src/abext.rs:92,"Modulus.real_places carries P, but the same abelian_extension ignores H except its index, takes the conductor from the index (artin.rs:390) and uses a wrong Kummer gamma (abext.rs:338) [review 2026-11-06; adjudicated]"
+ch039.HilbertClassField,partial,rustmath-numberfields/src/hcf.rs:300,hilbert_class_field(d) for imaginary quadratic only (CM class polynomial); tests hcf.rs::hilbert_class_field_m23 and class_poly_m23_matches_polclass (PARI polclass) [review 2026-11-06; checked]
+ch039.MaximalAbelianSubfield,missing,,no extraction of maximal abelian subextension of a number field [review 2026-11-06; checked]
+ch039.AbelianExtension.3,missing,,no conversion of a number field to an abelian extension (no conductor/norm group from a field) [review 2026-11-06; checked]
+ch039.A,missing,,no equality/containment/compositum of abelian extensions (candidate path was unrelated quaternion algebra) [review 2026-11-06; checked]
+ch039.A.2,missing,,no equality/containment/compositum of abelian extensions (candidate path was unrelated quaternion algebra) [review 2026-11-06; checked]
+ch039.A.3,missing,,no equality/containment/compositum of abelian extensions (candidate path was unrelated quaternion algebra) [review 2026-11-06; checked]
+ch039.A.4,missing,,no equality/containment/compositum of abelian extensions (candidate path was unrelated quaternion algebra) [review 2026-11-06; checked]
+ch039.IsAbelian,missing,,no Galois-module structure functions on abelian extensions of non-Galois-base fields [review 2026-11-06; checked]
+ch039.IsNormal,missing,,no Galois-module structure functions on abelian extensions of non-Galois-base fields [review 2026-11-06; checked]
+ch039.IsCentral,missing,,no Galois-module structure functions on abelian extensions of non-Galois-base fields [review 2026-11-06; checked]
+ch039.GenusField,missing,,no Galois-module structure functions on abelian extensions of non-Galois-base fields [review 2026-11-06; checked]
+ch039.H2GA,missing,,no Galois-module structure functions on abelian extensions of non-Galois-base fields [review 2026-11-06; checked]
+ch039.NormalSubfields,missing,,no Galois-module structure functions on abelian extensions of non-Galois-base fields [review 2026-11-06; checked]
+ch039.AbelianSubfield,missing,,no Galois-module structure functions on abelian extensions of non-Galois-base fields [review 2026-11-06; checked]
+ch039.CohomologyModule,missing,,no Galois-module structure functions on abelian extensions of non-Galois-base fields [review 2026-11-06; checked]
+ch039.EquationOrder,broken,rustmath-numberfields/src/abext.rs:92; rustmath-numberfields/src/abext.rs:174; rustmath-numberfields/src/abext.rs:338,"Equations exist (not missing): gaussian_period_poly correct for prime p, but conductor is picked from index only and Kummer x^n-gamma uses FB prime gen (Q(i) m=5 n=2: gamma +-2, should be 5) [review 2026-11-06; adjudicated]"
+ch039.NumberField,broken,rustmath-numberfields/src/abext.rs:92; rustmath-numberfields/src/abext.rs:174,absolute_poly from Gaussian periods at a conductor chosen by index only: Q m0=63 with H of the conductor-9 cubic returns x^3+x^2-2x-1 (cond 7); None for most other inputs [review 2026-11-06; adjudicated]
+ch039.MaximalOrder,missing,,no maximal order of an abelian extension via Kummer structure [review 2026-11-06; checked]
+ch039.Components,missing,,no per-prime-power relative components; single RelativePoly Kummer only [review 2026-11-06; checked]
+ch039.Generators,missing,,no Kummer/number-field generator sequence [review 2026-11-06; checked]
+ch039.Discriminant,broken,rustmath-numberfields/src/artin.rs:457; rustmath-numberfields/src/abext.rs:92,"predicted_disc=|D_K|^n N(f)^(n-1) assumes all nontrivial chars have conductor f, false for cyclic n=4: Q m0=16 H=0 gives 4096 (true 2048, Q(zeta16)^+); Q m0=15 gives 3375 (true 1125) [review 2026-11-06; adjudicated]"
+ch039.AbsoluteDiscriminant,partial,rustmath-numberfields/src/abext.rs:406,"absolute_disc(poly) for an explicit absolute poly only; no AbelianExtension method (predicted_disc is absolute |D_L|, cyclic only) [review 2026-11-06; checked]"
+ch039.Conductor,broken,rustmath-numberfields/src/artin.rs:390,"of_norm_group(f,m,n) never sees H: least d|m0 with n|h_d. Q m0=63 n=3 returns 7 for all four index-3 H (true conductors 7, 9, 63, 63) [review 2026-11-06; adjudicated]"
+ch039.Degree,partial,rustmath-numberfields/src/abext.rs:49,AbelianExtension.degree pub field = index of NormGroup; no Degree method [review 2026-11-06; checked]
+ch039.AbsoluteDegree,missing,,no absolute degree accessor (degree times base degree not exposed) [review 2026-11-06; checked]
+ch039.CoefficientRing,partial,rustmath-numberfields/src/abext.rs:49,AbelianExtension.base pub field holds base defining poly only; no field object accessor [review 2026-11-06; checked]
+ch039.BaseRing,partial,rustmath-numberfields/src/abext.rs:51; rustmath-numberfields/src/round2.rs:1086,AbelianExtension.base pub field holds K's defining poly; maximal order only via maximal_order_data(base); no accessor. Same evidence accepted as partial for CoefficientRing [review 2026-11-06; adjudicated]
+ch039.NormGroup,missing,,AbelianExtension does not store its NormGroup; NormGroup type at artin.rs:285 is only an input to abelian_extension [review 2026-11-06; checked]
+ch039.DecompositionField,missing,,no decomposition field of a prime in an abelian extension [review 2026-11-06; checked]
+ch039.DecompositionGroup,missing,,no decomposition group in abelian extension [review 2026-11-06; checked]
+ch039.DecompositionType,missing,,"no class-field-level function; ideals.rs prime_decomposition(f,p) works on an explicit absolute poly instead [review 2026-11-06; checked]"
+ch039.DecompositionTypeFrequency,missing,,no multiset of decomposition types for abelian extensions [review 2026-11-06; checked]
+ch039.DecompositionTypeFrequency.2,missing,,no frequency of decomposition types over a prime range [review 2026-11-06; checked]
+ch039.ArtinMap,broken,rustmath-numberfields/src/artin.rs:69; rustmath-numberfields/src/artin.rs:108,"Maps ideals to computed Cl_m, not Gal(A/K), and inherits ray_class_group error: Q(i) m0=4, [(2+i)] has order 4, true 2 since (2+i)^2=(-3-4i) with -3-4i = 1 mod 4 [review 2026-11-06; adjudicated]"
+ch039.FrobeniusAutomorphism,missing,,no automorphism objects of A; ArtinMap gives only a Cl_m class [review 2026-11-06; checked]
+ch039.AutomorphismGroup,missing,,no automorphism group of abelian extensions [review 2026-11-06; checked]
+ch039.ProbableAutomorphismGroup,missing,,no group extension reconstruction for Gal(A/Q) [review 2026-11-06; checked]
+ch039.ImproveAutomorphismGroup,missing,,no improvement of probable automorphism group [review 2026-11-06; checked]
+ch039.AbsoluteGaloisGroup,missing,,no Galois group of an abelian extension from class field data [review 2026-11-06; checked]
+ch039.TwoCocycle,missing,,no 2-cocycle computation for abelian extensions [review 2026-11-06; checked]
+ch039.IsLocalNorm,partial,rustmath-quadraticforms/src/hilbert.rs:89,"Only A=Q(sqrt b)/Q: hilbert_symbol(x,b,Place::Finite(p))=1 iff x is a local norm at p (definition of the symbol); no FldAb input, no number-field base, no higher degree [review 2026-11-06; adjudicated]"
+ch039.IsLocalNorm.2,partial,rustmath-quadraticforms/src/hilbert.rs:89,"Only quadratic A=Q(sqrt b)/Q: hilbert_symbol(x,b,Place::Real) decides the local norm at the real place; no FldAb input or number-field base [review 2026-11-06; adjudicated]"
+ch039.IsLocalNorm.3,partial,rustmath-quadraticforms/src/hilbert.rs:89,"Only quadratic A=Q(sqrt b)/Q: Hilbert symbol (x,b)_v at a place v of Q (finite or real); no FldAb input or number-field base [review 2026-11-06; adjudicated]"
+ch039.IsLocalNorm.4,partial,rustmath-quadraticforms/src/quaternion.rs:75; rustmath-quadraticforms/src/hilbert.rs:89,"Only quadratic A=Q(sqrt b)/Q: QuaternionAlgebra::new(b,x).is_split() checks (x,b)_v=1 at all candidate places (inf, 2, p|bx); no FldAb input [review 2026-11-06; adjudicated]"
+ch039.Knot,missing,,no knot (local-global norm obstruction) computation [review 2026-11-06; checked]
+ch039.NormEquation,missing,,no norm equation solver for abelian extensions [review 2026-11-06; checked]
+ch039.IsNorm,partial,rustmath-quadraticforms/src/quaternion.rs:75,"Only quadratic A=Q(sqrt b)/Q: by Hasse norm theorem x is a global norm iff QuaternionAlgebra::new(b,x).is_split(); no preimage, no FldAb or number-field base [review 2026-11-06; adjudicated]"
+ch039.o,missing,,no CyclotomicExtensions attribute on orders [review 2026-11-06; checked]
+ch039.A.5,missing,,no Components attribute (no components record) [review 2026-11-06; checked]
+ch039.A.6,missing,,AbelianExtension keeps no DefiningGroup/NormGroup attribute [review 2026-11-06; checked]
+ch039.A.7,missing,,no cached IsAbelian/IsNormal/IsCentral attributes [review 2026-11-06; checked]
+ch039.A.8,missing,,no cached IsAbelian/IsNormal/IsCentral attributes [review 2026-11-06; checked]
+ch039.A.9,missing,,no cached IsAbelian/IsNormal/IsCentral attributes [review 2026-11-06; checked]
+ch039.GenericGroup,missing,,no generic group from element list with map [review 2026-11-06; checked]
+ch039.AddGenerator,missing,,no generic group generator extension [review 2026-11-06; checked]
+ch039.FindGenerators,missing,,no generic group small generator search [review 2026-11-06; checked]
