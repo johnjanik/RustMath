@@ -31,7 +31,11 @@ Spot-checks: 25000 rows; 24T1 order 24; 24T24680 (M₂₄) order 244823040, prim
 ## `transitive24_cycletypes.jsonl` (25,000 lines)
 Per group: `{"t": …, "types": [[cycle type], …]}` — the **cycle-type support**
 (the set of cycle types occurring in the group), i.e. the Frobenius-blind data.
-Derived from the LMFDB cycle-type distribution. `CycleTypeSupport::blind_class`
+Derived from the LMFDB cycle-type distribution. Regenerate from the IGP24 repo
+(https://codeberg.org/johnjanik/inverse_galois, see `docs/igp24/SOURCES.md`):
+```bash
+python3 build_cycletypes.py /path/to/inverse_galois/frobenius/cycle_types.jsonl
+``` `CycleTypeSupport::blind_class`
 matches a polynomial's observed Frobenius cycle types against these to pin Gal(f)
 to its blind class. Native `group_closure` agrees with this support on every
 group small enough to enumerate (test `native_closure_matches_precomputed_support`).
