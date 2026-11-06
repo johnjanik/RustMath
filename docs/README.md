@@ -28,6 +28,8 @@ This directory is the **single source of truth** for RustMath's status and direc
 - **Project direction:** MAGMA is the primary specification; SageMath is a secondary reference.
 - **Repo root** keeps only `CLAUDE.md`, `README.md`, `Cargo.toml`, `Cargo.lock`, `PROJECT_TRACKER.md`.
 - [`magma/`](./magma/): per-intrinsic MAGMA tracker generated from the handbook chapter digests.
+- [`igp24/SOURCES.md`](./igp24/SOURCES.md): map of the IGP24 repo (Codeberg) to the RustMath code ported from it.
+- [`TEST_BASELINE.md`](./TEST_BASELINE.md): workspace test results (13,586 pass / 60 fail).
 - [`BRANCHES.md`](./BRANCHES.md): audit of all 20 remote branches and the belyi + lava-galois merge.
 - [`workstreams/belyi/`](./workstreams/belyi/): Belyi/dessin/curves specs and build handoffs
   (`DESSIN_REFACTOR_PLAN.md`, `M23_*`, `CURVES_*`, `RUSTMATH_BUILD_HANDOFF*.md`, `BELYI_SESSION_SOW.md`).
@@ -35,4 +37,5 @@ This directory is the **single source of truth** for RustMath's status and direc
 - [`archive/`](./archive/): superseded status docs. `archive/root-legacy/` holds the 2025 root files
   (SageMath trackers, logs, old README/CLAUDE.md, `THINGS_TO_DO.md`); scripts are in `../tools/legacy/`.
 - [`paper/`](./paper/): `rustmath_paper.tex`.
-- The `*.pdf` files in this directory are SageMath reference manuals (194 MB), kept pending a decision.
+- The 78 SageMath 10.6 reference-manual PDFs (194 MB) were removed on 2026-11-06; they remain in git
+  history before that date and are published at https://doc.sagemath.org/html/en/reference/.

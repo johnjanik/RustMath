@@ -37,6 +37,15 @@ No branch has been deleted. Deleting the superseded ones is a separate decision 
 but one belyi's copy is the same or longer (later edits on top). The tips stay reachable as long
 as the branches exist; tag them before deleting if you want a permanent pointer.
 
+## Archiving (2026-11-06)
+
+After PR #569, `belyi/...`, `integrate-lava-galois` and the eight `phase*`/`p*`/`igp24-cli-galois`
+branches are ancestors of `main`; the nine `magma-port/wave*` branches are superseded as shown above.
+`tools/archive_branches.sh` tags each of the 19 tips as `archive/<branch>`, pushes the tags, and
+deletes a branch only when its pushed tag points at the same commit. Cloud sessions can only push
+their own branch, so run it from a local clone. Restore one with
+`git push origin archive/<branch>^{commit}:refs/heads/<branch>`.
+
 ## Merge of `integrate-lava-galois` into belyi: conflict resolutions
 
 Both lines developed in parallel from `f22ac17` and several times solved the same problem
@@ -57,6 +66,9 @@ independently.
 real descent.
 
 ## Not visible from here
+
+**Update 2026-11-06:** the Mac was archived and wiped. The IGP24 repo is on Codeberg
+(`docs/igp24/SOURCES.md`); anything unpushed from the Mac exists only in that archive.
 
 Branches that exist only on the Mac (worktree `/Users/john/Documents/rm-galois`, any unpushed local
 branches) and the off-repo IGP24 material in `/Users/john/Documents/inverse_galois/` are not in
