@@ -1578,7 +1578,7 @@ ch058.MaximalSubgroups,partial,rustmath-galois/src/subgroups.rs:64,"Enumerates a
 ch058.SubgroupClasses,partial,rustmath-galois/src/subgroups.rs:27,"all_subgroups lists every subgroup (not conjugacy class reps, no order/length records, no params), small |G| only [review 2026-11-06; checked]"
 ch058.SubgroupsLift,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
 ch058.LowIndexSubgroups,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
-ch058.NormalSubgroups,verified,rustmath-groups/src/libgap_mixin.rs:263,normal_subgroups on enumerated groups; libgap_mixin.rs::test_nonabelian_groups_against_gap compares GAP 4 NormalSubgroups sizes (small groups only) [review 2026-11-06; checked]
+ch058.NormalSubgroups,partial,rustmath-groups/src/libgap_mixin.rs:263,"normal_subgroups on enumerated groups; libgap_mixin.rs::test_nonabelian_groups_against_gap compares GAP 4 NormalSubgroups sizes, but only test-local types implement GroupMixinLibGAP, so no library group exposes it (as ch058.NormalSubgroups.2, ch057, ch063) [review 2026-11-06; corrected, consistency with sibling rows]"
 ch058.ElementaryAbelianSubgroups,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
 ch058.CyclicSubgroups,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]
 ch058.AbelianSubgroups,missing,,Nothing in workspace implements this. [review 2026-11-06; checked]

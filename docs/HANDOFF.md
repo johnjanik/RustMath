@@ -104,17 +104,17 @@ Priority: `rustmath-groups` first (it underlies Galois work). Rules:
 All 4,930 rows reviewed and committed, one commit per chapter (`826b982` (ch 32 pilot) through
 `f2ef395`), plus a correction pass (`bd98093`). **Read `docs/magma/REVIEW_2026-11-06.md`**: method,
 results and the defect table. In short:
-- 17 verified, 326 done, 1,187 partial, 17 stub, 111 facade, 73 broken, 3,170 missing, 29 n/a.
-  Of the generator's `candidate` rows, 46% are real (partial or better); 19% of its `missing` rows
-  were implemented under other names.
+- 16 verified, 326 done, 1,188 partial, 17 stub, 111 facade, 73 broken, 3,170 missing, 29 n/a.
+  Of the generator's `candidate` rows, 46% are real (partial or better); 17% of its `missing` rows
+  are real implementations under other names.
 - Each chunk had a Sonnet reviewer, an independent verifier (95% of rows checked; it disputed 15%)
   and an adjudicator for disputes (it sided with the verifier in 666 of 699). Provenance is the tag
   at the end of each note. 245 `missing` rows are reviewer-only.
 - A dep-info check found never-compiled source files, among them `rustmath-rings/src/number_field/`
   (`morphisms.rs`, `order.rs`, `s_unit_solver.rs`, `tests.rs`) and the genus-2 curves stack (gated
   off). 16 rows that relied on such code or on vague test citations were corrected.
-- 184 rows are facade or broken; 102 of them are in files `PROJECT_TRACKER.md` does not mention
-  yet. Adding them to the tracker inventory is an open follow-up.
+- 184 rows are facade or broken; about 60 of them are in files `PROJECT_TRACKER.md` does not
+  mention yet. Adding them to the tracker inventory is an open follow-up.
 - The real cost was about 33M subagent tokens, not the 4-5M estimated below: every agent starts
   with about 65k tokens of fixed context, and verification plus adjudication tripled the work.
 
