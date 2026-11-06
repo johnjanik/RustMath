@@ -41,3 +41,13 @@ python3 tools/magma_tracker/build.py
 | `n/a` | override | Not meaningful for a Rust library (e.g. pure language syntax) |
 
 Overrides always win over the generator. Put the evidence (test name, reference source) in `note`.
+
+## Review status
+
+Chapters 17-52 and 57-68 (the core, 5,161 rows) have reviewed statuses: chapters 19, 38 and 46 from
+the 2026-11-05 pilot (`[pilot 2026-11-05]`), the other 45 from the 2026-11-06 review. Method,
+results and the defects found are in [`REVIEW_2026-11-06.md`](./REVIEW_2026-11-06.md). The tag at the
+end of each 2026-11-06 note records its provenance: `checked` (an independent verifier agreed),
+`adjudicated` (the reviewer and the verifier disagreed and a third agent decided from the code),
+`corrected` (changed by the follow-up pass over uncompiled code and test citations), or no tag
+(reviewer only; all such rows are `missing`).

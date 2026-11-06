@@ -1,8 +1,9 @@
-# Session handoff (2026-11-06, updated after the test-fix session)
+# Session handoff (2026-11-06, updated after Tasks 0-2)
 
 Read this first, then `CLAUDE.md` and `docs/README.md`. It records where the project stands and
-what to do next. **Tasks 0 and 1 are done** (see their status notes below). **Task 2 is next and
-needs the user's go-ahead** before fanning out (it costs about 4-5M tokens).
+what to do next. **Tasks 0, 1 and 2 are done** (status notes below). The next step is "After these
+tasks" at the end: choose and start the first build targets, beginning with the L0-L1 defects the
+review found.
 
 ## Where things stand
 
@@ -98,7 +99,26 @@ Priority: `rustmath-groups` first (it underlies Galois work). Rules:
 - `rustmath-misc` tests write `rustmath-misc/output.txt` and a `.tmp_dir_*`; do not commit those.
 - Run `cargo test -p <crate>` per crate; update `docs/TEST_BASELINE.md` at the end.
 
-## Task 2: review the tracker for the 45 remaining core chapters
+## Task 2: review the tracker for the 45 remaining core chapters. DONE 2026-11-06
+
+All 4,930 rows reviewed and committed, one commit per chapter (`826b982` (ch 32 pilot) through
+`f2ef395`), plus a correction pass (`bd98093`). **Read `docs/magma/REVIEW_2026-11-06.md`**: method,
+results and the defect table. In short:
+- 17 verified, 326 done, 1,187 partial, 17 stub, 111 facade, 73 broken, 3,170 missing, 29 n/a.
+  Of the generator's `candidate` rows, 46% are real (partial or better); 19% of its `missing` rows
+  were implemented under other names.
+- Each chunk had a Sonnet reviewer, an independent verifier (95% of rows checked; it disputed 15%)
+  and an adjudicator for disputes (it sided with the verifier in 666 of 699). Provenance is the tag
+  at the end of each note. 245 `missing` rows are reviewer-only.
+- A dep-info check found never-compiled source files, among them `rustmath-rings/src/number_field/`
+  (`morphisms.rs`, `order.rs`, `s_unit_solver.rs`, `tests.rs`) and the genus-2 curves stack (gated
+  off). 16 rows that relied on such code or on vague test citations were corrected.
+- 184 rows are facade or broken; 102 of them are in files `PROJECT_TRACKER.md` does not mention
+  yet. Adding them to the tracker inventory is an open follow-up.
+- The real cost was about 33M subagent tokens, not the 4-5M estimated below: every agent starts
+  with about 65k tokens of fixed context, and verification plus adjudication tripled the work.
+
+The original task text follows.
 
 The automatic statuses (`candidate` = a same-named Rust fn exists, `missing` = none) are unreliable.
 The pilot on ch 19, 38, 46 (231 rows) found only 17-42% of candidates were real, and some `missing`
@@ -119,10 +139,14 @@ confirm with the user before fanning out):
 - Subagents should write files rather than rely on their final message; in the pilot their
   reports did not come back, but the CSVs were complete.
 
-## After these two tasks
+## After these tasks
 
-Use the reviewed tracker to choose the first build targets, bottom-up through the core. Likely
-candidates (`docs/PLAN.md`): complete GF(p^n); general Schreier-Sims (the keystone for groups and
+Use the reviewed tracker to choose the first build targets, bottom-up through the core. First fix
+the L0-L1 defects in the table in `docs/magma/REVIEW_2026-11-06.md` (polynomial `coeff` and
+`div_rem` over Z, Legendre symbol for negative n, `is_unit`, square roots mod p^k, inconsistent
+linear solves, polynomial-matrix SNF), then wire up or delete the dead code it lists, and wire the
+`libgap_mixin` algorithms to `GroupLibGAP`/`PermutationGroup`. Then the candidates from
+`docs/PLAN.md`: complete GF(p^n); general Schreier-Sims (the keystone for groups and
 Galois chapters); and removing the duplicates left by the merge: two GF(p^n) stacks in
 `rustmath-finitefields`, two Montes/OM implementations (`rustmath-padics::montes` vs
 `rustmath-rings::padics`), and the placeholder `rustmath-galois::stauduhar` vs the real descent.
