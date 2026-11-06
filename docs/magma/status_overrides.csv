@@ -3865,3 +3865,105 @@ ch065.Subgroups,missing,,no implementation in workspace [review 2026-11-06; chec
 ch065.GoodBasePoints,missing,,no implementation in workspace [review 2026-11-06; checked]
 ch065.SubgroupsData,missing,,no implementation in workspace [review 2026-11-06; checked]
 ch065.MaximalSubgroupsData,missing,,no implementation in workspace [review 2026-11-06; checked]
+ch049.PowerSeriesRing,partial,rustmath-powerseries/src/precision.rs:117,"SeriesRing::power(Precision) value type; no coefficient ring argument, no Global option; test precision.rs::series_ring_parent [review 2026-11-06; checked]"
+ch049.LaurentSeriesRing,partial,rustmath-powerseries/src/precision.rs:126,"SeriesRing::laurent(Precision); no coefficient ring, no Global; test precision.rs::series_ring_parent [review 2026-11-06; checked]"
+ch049.PuiseuxSeriesRing,partial,rustmath-powerseries/src/precision.rs:135,"SeriesRing::puiseux(Precision); no coefficient ring, no Global; parent is only a tag [review 2026-11-06; checked]"
+ch049.AssertAttribute,missing,,no attribute-setting API for DefaultPrecision; precision is set via Precision enum at construction [review 2026-11-06; checked]
+ch049.HasAttribute,partial,rustmath-powerseries/src/precision.rs:155; rustmath-powerseries/src/precision.rs:175; rustmath-rings/src/puiseux_series_ring.rs:88,"SeriesRing::precision() gives Free(d)/Fixed(n) (free flag + default), default_terms asserted 20 in precision.rs::series_ring_parent; detached tag ring, not consulted by elements [review 2026-11-06; adjudicated]"
+ch049.AssignNames,partial,rustmath-powerseries/src/precision.rs:144,"with_var_name renames the tag ring generator (precision.rs::series_ring_parent) but element Display hard-codes x (series.rs:339, laurent.rs:390), so printing of elements is unaffected [review 2026-11-06; adjudicated]"
+ch049.Name,partial,rustmath-powerseries/src/precision.rs:160; rustmath-powerseries/src/series.rs:86,"var_name returns the string; generator element built via PowerSeries::var_with; no Name(S,i) on a ring [review 2026-11-06; checked]"
+ch049.R,partial,rustmath-powerseries/src/series.rs:56; rustmath-powerseries/src/laurent.rs:83; rustmath-powerseries/src/laurent.rs:356,PowerSeries::var / LaurentSeries::gen build x; LaurentValuation::uniformizer returns x (asserted in laurent.rs::tests::discrete_valuation_adaptor); no ring-level R.1 [review 2026-11-06; adjudicated]
+ch049.elt,partial,rustmath-powerseries/src/laurent.rs:52; rustmath-powerseries/src/puiseux.rs:95,"with_precision(val, coeffs, Precision) builds series from valuation+coefficients; no denominator-and-precision elt<> syntax for power series; tested [review 2026-11-06; checked]"
+ch049.R.2,partial,rustmath-powerseries/src/laurent.rs:97; rustmath-powerseries/src/puiseux.rs:84,from_power_series embeds power into Laurent/Puiseux; no general R!s coercion from scalars or other rings [review 2026-11-06; checked]
+ch049.BigO,partial,rustmath-powerseries/src/laurent.rs:38; rustmath-powerseries/src/series.rs:39,"O(x^n) element exists as LaurentSeries::new(n, vec![]) / PowerSeries::zero(n); takes integer n, no BigO(f) from an element; rings big_oh.rs is a display marker only [review 2026-11-06; adjudicated]"
+ch049.One,done,rustmath-powerseries/src/series_core_impls.rs:36; rustmath-powerseries/src/laurent.rs:76,"Ring::one (1+O(x^20)) asserted in series_core_impls.rs::ring_identities (one.is_one(), f*one==f); LaurentSeries::one(prec); same truncated model as Zero, no exact 1 [review 2026-11-06; adjudicated]"
+ch049.Zero,done,rustmath-powerseries/src/laurent.rs:68,"LaurentSeries::zero(prec); used in laurent.rs::tests::discrete_valuation_adaptor; takes precision, not ring [review 2026-11-06; checked]"
+ch049.Parent,missing,,elements carry no parent ring object; SeriesRing is a detached tag [review 2026-11-06; checked]
+ch049.BaseRing,missing,,SeriesRing does not carry the coefficient ring [review 2026-11-06; checked]
+ch049.IntegerRing,missing,,no ring of integers of a series ring (rings padics factory is for p-adics) [review 2026-11-06; checked]
+ch049.FieldOfFractions,missing,,no FieldOfFractions for series rings; only LaurentSeries::from_power_series embedding [review 2026-11-06; checked]
+ch049.ChangePrecision,partial,rustmath-powerseries/src/precision.rs:166,SeriesRing::change_precision(r) returns fixed-precision ring; no in-place ~R form; test precision.rs::series_ring_parent [review 2026-11-06; checked]
+ch049.ChangeRing,missing,,no coefficient ring change for series rings [review 2026-11-06; checked]
+ch049.ResidueClassField,missing,,not implemented for series rings [review 2026-11-06; checked]
+ch049.Characteristic,missing,,no Characteristic on series rings or series elements [review 2026-11-06; checked]
+ch049.Precision,done,rustmath-powerseries/src/precision.rs:155,SeriesRing::precision; test precision.rs::series_ring_parent [review 2026-11-06; checked]
+ch049.IsCommutative,partial,rustmath-powerseries/src/series_core_impls.rs:53,"only a compile-time CommutativeRing trait impl, no runtime query [review 2026-11-06; checked]"
+ch049.IsFinite,missing,,no IsFinite for series rings [review 2026-11-06; checked]
+ch049.IsField,partial,rustmath-powerseries/src/laurent.rs:318,Field trait impl for Laurent/Puiseux over a field; no runtime IsField query [review 2026-11-06; checked]
+ch049.IsPID,missing,,no IsPID query for series rings [review 2026-11-06; checked]
+ch049.IsDivisionRing,missing,,no query [review 2026-11-06; checked]
+ch049.IsPrincipalIdealRing,partial,rustmath-powerseries/src/series_core_impls.rs:57; rustmath-powerseries/src/laurent.rs:281; rustmath-powerseries/src/puiseux.rs:269,"IsDomain only as compile-time IntegralDomain marker for PowerSeries/Laurent/Puiseux (like IsCommutative row, ch025 precedent); no IsPrincipalIdealRing, no runtime predicate [review 2026-11-06; adjudicated]"
+ch049.R.3,partial,rustmath-powerseries/src/precision.rs:109,SeriesRing derives PartialEq over kind/precision/name; coefficient ring not compared [review 2026-11-06; checked]
+ch049.Parent.2,missing,,series elements have no parent()/Category [review 2026-11-06; checked]
+ch049.b-b,partial,rustmath-powerseries/src/series.rs:486,"Neg impl for PowerSeries, Laurent, Puiseux; unary plus n/a; not directly tested [review 2026-11-06; checked]"
+ch049.a,partial,rustmath-powerseries/src/series.rs:432; rustmath-core/src/traits.rs:74,"Add/Sub/Mul tested (series.rs::arithmetic_propagates_min_precision); a^k via Ring::pow (series_core_impls.rs::pow_via_trait); PowerSeries Mul gives min(p_a,p_b), not max compatible [review 2026-11-06; adjudicated]"
+ch049.a.2,partial,rustmath-powerseries/src/laurent.rs:306,Div for Laurent/Puiseux over a field; PowerSeries has only inverse() (series.rs:277) [review 2026-11-06; checked]
+ch049.a.3,partial,rustmath-powerseries/src/series_core_impls.rs:24,eq is weak equality to min precision; handbook eq is strict (see IsWeaklyEqual/IsIdentical) [review 2026-11-06; checked]
+ch049.a.4,missing,,no membership test a in R [review 2026-11-06; checked]
+ch049.IsZero,partial,rustmath-powerseries/src/laurent.rs:271,Ring::is_zero/is_one (weak zero); no IsMinusOne; is_one used in laurent.rs::tests::inverse_is_field [review 2026-11-06; checked]
+ch049.IsNilpotent,partial,rustmath-category/src/ring_category.rs:170; rustmath-category/src/ring_category.rs:179,"Blanket RingElementMethods reaches PowerSeries/Laurent: is_nilpotent = weak is_zero (right only over domain coefficients), is_idempotent = x*x==x; untested on series (ch025 precedent) [review 2026-11-06; adjudicated]"
+ch049.IsUnit,partial,rustmath-core/src/valuation.rs:34; rustmath-powerseries/src/laurent.rs:347; rustmath-category/src/ring_category.rs:161,"LaurentValuation::is_unit (v==0, tested discrete_valuation_adaptor) is the K[[x]] unit test only: wrong for field R((x)) (x^-1) and non-field R; blanket is_unit is x==+-1; no IsZeroDivisor [review 2026-11-06; adjudicated]"
+ch049.IsIrreducible,missing,,no irreducibility test for series elements [review 2026-11-06; checked]
+ch049.IsWeaklyZero,done,rustmath-powerseries/src/laurent.rs:179,"is_weakly_zero for Laurent (also puiseux.rs:151, lazy.rs:131); exercised by laurent.rs::tests::discrete_valuation_adaptor [review 2026-11-06; checked]"
+ch049.IsWeaklyEqual,done,rustmath-powerseries/src/series_core_impls.rs:24; rustmath-powerseries/src/laurent.rs:190; rustmath-powerseries/src/puiseux.rs:212; rustmath-powerseries/src/lazy.rs:137,"PartialEq on PowerSeries/Laurent/Puiseux is weak equality to min precision, tested series_core_impls.rs::partial_eq_respects_precision; lazy is_weakly_equal tested ring_and_weak_equality [review 2026-11-06; adjudicated]"
+ch049.IsIdentical,missing,,"no strict identity (valuation, precision, coefficients); PartialEq is weak [review 2026-11-06; checked]"
+ch049.AbsolutePrecision,done,rustmath-powerseries/src/laurent.rs:104,val + stored length; laurent.rs::tests::valuation_and_precision (Puiseux: puiseux.rs:129) [review 2026-11-06; checked]
+ch049.RelativePrecision,broken,rustmath-powerseries/src/laurent.rs:109,"Returns stored window length, never skips leading zeros: from_power_series(x+O(x^5)) or (1+x+O(x^5))-(1+O(x^5)) gives 5 not 4; zero(4) gives 4 not 0. Wrong after any cancellation [review 2026-11-06; adjudicated]"
+ch049.ChangePrecision.2,done,rustmath-powerseries/src/laurent.rs:168,Laurent change_precision(abs); test laurent.rs::tests::shift_and_change_precision; PowerSeries::truncate for power series; no in-place form [review 2026-11-06; checked]
+ch049.Coefficients,partial,rustmath-powerseries/src/lazy.rs:113,lazy coefficients(n) returns first n coefficients only; no valuation and exponent denominator triple; none for Laurent/Puiseux [review 2026-11-06; checked]
+ch049.Coefficient,done,rustmath-powerseries/src/laurent.rs:146,coefficient(exp); laurent.rs::tests::valuation_and_precision (Puiseux: puiseux.rs:135) [review 2026-11-06; checked]
+ch049.LeadingCoefficient,done,rustmath-powerseries/src/laurent.rs:155,leading_coefficient; asserted in laurent.rs::tests::valuation_and_precision [review 2026-11-06; checked]
+ch049.LeadingTerm,missing,,no LeadingTerm for series (rustmath-polynomials one is for multivariate polynomials) [review 2026-11-06; checked]
+ch049.Truncate,missing,,"PowerSeries::truncate(p) lowers precision (ChangePrecision analog), not exact truncation after last nonzero term [review 2026-11-06; checked]"
+ch049.ExponentDenominator,done,rustmath-powerseries/src/puiseux.rs:116,"puiseux.rs::tests::fractional_valuation, denominator_reduction [review 2026-11-06; checked]"
+ch049.Degree,done,rustmath-powerseries/src/laurent.rs:135,degree of last nonzero term; asserted in laurent.rs::tests::valuation_and_precision [review 2026-11-06; checked]
+ch049.Valuation,done,rustmath-powerseries/src/laurent.rs:124,"Laurent valuation, Puiseux rational valuation (puiseux.rs:122); tested; no PowerSeries::valuation method [review 2026-11-06; checked]"
+ch049.Derivative,broken,rustmath-powerseries/src/series.rs:246,"Keeps precision p, so x^(p-1) coeff is a fabricated 0 (true p*a_p unknown); transcendental.rs exp ODE test must skip it; PROJECT_TRACKER flags over-claim; PowerSeries only [review 2026-11-06; adjudicated]"
+ch049.Derivative.2,missing,,no n-th derivative API [review 2026-11-06; checked]
+ch049.Integral,partial,rustmath-powerseries/src/transcendental.rs:39,"PowerSeries over field, Err if n+1 not invertible; test transcendental.rs::integral_divides_exactly; no Laurent/Puiseux; lazy variant lazy.rs:199 [review 2026-11-06; checked]"
+ch049.Evaluate,missing,,no evaluation of a series at a value [review 2026-11-06; checked]
+ch049.Laplace,partial,rustmath-powerseries/src/transcendental.rs:53,laplace is in impl<R: Field + NumericConversion> (transcendental.rs:29) though i!*a_i needs no division: no Z or GF(p) coefficients; PowerSeries only; test laplace_scales_by_factorial over Q [review 2026-11-06; adjudicated]
+ch049.SquareRoot,partial,rustmath-powerseries/src/transcendental.rs:135,only constant term 1 (Err otherwise); test transcendental.rs::sqrt_squares_back; PowerSeries only [review 2026-11-06; checked]
+ch049.Composition,partial,rustmath-powerseries/src/series.rs:188,"PowerSeries only, needs g(0)=0 (try_compose returns Err, compose panics); only compose_rejects_nonzero_constant_term and reversion use it [review 2026-11-06; checked]"
+ch049.Reversion,partial,rustmath-powerseries/src/series.rs:206,"PowerSeries Newton reversion, Err on bad input; test series.rs::reversion_of_x_plus_x2_is_signed_catalan; no Laurent/Puiseux [review 2026-11-06; checked]"
+ch049.Convolution,missing,,no Hadamard product of series [review 2026-11-06; checked]
+ch049.Exp,verified,rustmath-powerseries/src/transcendental.rs:74,zero constant term only; transcendental.rs::exp_satisfies_its_ode asserts coefficients checked with sympy [review 2026-11-06; checked]
+ch049.Log,done,rustmath-powerseries/src/transcendental.rs:104,constant term 1 only; test transcendental.rs::log_of_one_plus_x [review 2026-11-06; checked]
+ch049.Sin,done,rustmath-powerseries/src/transcendental.rs:196,"via sin_cos, zero constant term; test transcendental.rs::sin_cos_pythagoras [review 2026-11-06; checked]"
+ch049.Cos,done,rustmath-powerseries/src/transcendental.rs:201,"via sin_cos, zero constant term; test transcendental.rs::sin_cos_pythagoras [review 2026-11-06; checked]"
+ch049.Sincos,done,rustmath-powerseries/src/transcendental.rs:164,sin_cos returns pair; test transcendental.rs::sin_cos_pythagoras [review 2026-11-06; checked]
+ch049.Tan,missing,,no formal power series version (matches elsewhere are numeric/symbolic functions) [review 2026-11-06; checked]
+ch049.Arcsin,missing,,no formal power series version (matches elsewhere are numeric/symbolic functions) [review 2026-11-06; checked]
+ch049.Arccos,missing,,no formal power series version (matches elsewhere are numeric/symbolic functions) [review 2026-11-06; checked]
+ch049.Arctan,missing,,no formal power series version (matches elsewhere are numeric/symbolic functions) [review 2026-11-06; checked]
+ch049.Sinh,missing,,no formal power series version (matches elsewhere are numeric/symbolic functions) [review 2026-11-06; checked]
+ch049.Cosh,missing,,no formal power series version (matches elsewhere are numeric/symbolic functions) [review 2026-11-06; checked]
+ch049.Tanh,missing,,no formal power series version (matches elsewhere are numeric/symbolic functions) [review 2026-11-06; checked]
+ch049.Argsinh,missing,,no formal power series version (matches elsewhere are numeric/symbolic functions) [review 2026-11-06; checked]
+ch049.Argcosh,missing,,no formal power series version (matches elsewhere are numeric/symbolic functions) [review 2026-11-06; checked]
+ch049.Argtanh,missing,,no formal power series version (matches elsewhere are numeric/symbolic functions) [review 2026-11-06; checked]
+ch049.HypergeometricSeries,partial,rustmath-curves/src/belyi/hypergeometric.rs:43,"hyp_series(A,B,C,prec) gives Gauss 2F1 coefficients as PowerSeries over Q only, in z; not exposed as HypergeometricSeries(a,b,c,z) [review 2026-11-06; checked]"
+ch049.HenselLift,missing,,"rustmath-polynomials Hensel lift is for integer polynomials, not polynomials over series rings [review 2026-11-06; checked]"
+ch049.Factorization,missing,,no factorization of polynomials over series rings [review 2026-11-06; checked]
+ch049.UnramifiedExtension,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.TotallyRamifiedExtension,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.ChangePrecision.3,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.FieldOfFractions.2,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.Precision.2,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.CoefficientRing,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.DefiningPolynomial,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.InertiaDegree,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.RamificationIndex,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.ResidueClassField.2,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.UniformizingElement,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.IntegerRing.2,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.E1,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.E,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.AssignNames.2,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.x,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.x.2,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.Valuation.2,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.RelativePrecision.2,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.AbsolutePrecision.2,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.Coefficients.2,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
+ch049.OptimizedRepresentation,missing,,no extensions of series rings (unramified/totally ramified) in workspace [review 2026-11-06; checked]
