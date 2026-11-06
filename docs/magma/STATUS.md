@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 4305 | 11 | 262 | 983 | 16 | 143 | 3902 (29%) | 8002 (60%) |
+| 13341 | 4392 | 11 | 268 | 1035 | 18 | 147 | 3835 (29%) | 7999 (60%) |
 
 ## By chapter
 
@@ -38,7 +38,7 @@ automatic `candidate`/`missing` counts.
 | 14 | Coproducts | II | 11 | 0 | 0 | 0 | 0 | 0 | 0 | 3 | 8 |  |  |
 | 15 | Records | II | 10 | 0 | 0 | 0 | 0 | 0 | 0 | 7 | 3 |  |  |
 | 16 | Mappings | II | 34 | 0 | 0 | 0 | 0 | 0 | 0 | 17 | 17 |  |  |
-| 17 | Introduction to Rings | III | 87 | 0 | 0 | 0 | 0 | 0 | 0 | 67 | 20 | substantial | `rustmath-rings` |
+| 17 | Introduction to Rings | III | 87 | 87 | 0 | 6 | 52 | 6 | 6 | 0 | 17 | substantial | `rustmath-rings` |
 | 18 | Ring of Integers | III | 188 | 188 | 0 | 27 | 69 | 4 | 2 | 0 | 86 | substantial | `rustmath-integers` |
 | 19 | Integer Residue Class Rings | III | 108 | 108 | 0 | 12 | 23 | 1 | 1 | 0 | 71 | partial | `rustmath-finitefields` |
 | 20 | Rational Field | III | 63 | 0 | 0 | 0 | 0 | 0 | 0 | 53 | 10 | substantial | `rustmath-rationals` |

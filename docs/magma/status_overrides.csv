@@ -4304,3 +4304,90 @@ ch062.IsBravaisEquivalent,missing,,"no implementation found; no invariant-form, 
 ch062.IsGLQConjugate,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
 ch062.IsGLZConjugate.2,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
 ch062.CentralizerGLZ,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
+ch017.R,partial,rustmath-finitefields/src/integer_mod.rs:63,IntegerMod::new reduces an Integer into Z/nZ; no general coercion table or cross-ring forced coercion [review 2026-11-06; checked]
+ch017.Parent,missing,,no ring-level Parent(R) power-structure function; core Parent trait is unrelated [review 2026-11-06; checked]
+ch017.Category,missing,,no Category(R)/Type(R) on ring objects [review 2026-11-06; checked]
+ch017.PrimeField,partial,rustmath-finitefields/src/finite_field.rs:267,FiniteField::prime_field only; no char-0 Q case or extension towers of other fields [review 2026-11-06; checked]
+ch017.PrimeRing,partial,rustmath-finitefields/src/finite_field.rs:267,"Verifier right: FiniteField::prime_field returns GF(p) = PrimeRing(GF(p^n)), same fn as the PrimeField row; no Z/nZ, Galois ring (Z/p^aZ) or char-0 Z case; untested [review 2026-11-06; adjudicated]"
+ch017.Centre,broken,rustmath-algebras/src/clifford_algebra.rs:770,"Verifier right: CliffordAlgebra::center_basis hard-codes parity backwards ({1,e12} for Cl_2, {1} for Cl_3; true centres {1}, {1,e123}), asserted by test_center_basis; multiply_basis also gives e12*e1=+e2 [review 2026-11-06; adjudicated]"
+ch017.Characteristic,partial,rustmath-finitefields/src/zmod.rs:73,"per-type methods (Zmod, FiniteField, GaloisRing); test zmod.rs::test_zmod_construction; no generic Characteristic(R) [review 2026-11-06; checked]"
+ch017.R.2,partial,rustmath-finitefields/src/finite_field.rs:232,"per-type order()/cardinality for GF(q), Z/nZ, Galois rings; Parent::cardinality returns Option<usize> [review 2026-11-06; checked]"
+ch017.IsCommutative,missing,,only CommutativeRing marker trait; RingParentMethods::is_commutative defaults false and is implemented only in a test [review 2026-11-06; checked]
+ch017.IsUnitary,missing,,no generic implementation in workspace [review 2026-11-06; checked]
+ch017.IsFinite,broken,rustmath-core/src/parent.rs:57; rustmath-finitefields/src/finite_field.rs:374; rustmath-finitefields/src/galois_ring.rs:321,"Verifier right: is_finite = cardinality().is_some(), FiniteField/GaloisRing cardinality is order().to_usize(), so GF(q) with q >= 2^64 reports infinite; only Zmod overrides (zmod.rs:176) [review 2026-11-06; adjudicated]"
+ch017.IsOrdered,missing,,"only OrderedRing marker trait, no query [review 2026-11-06; checked]"
+ch017.IsField,partial,rustmath-rings/src/abc.rs:243,"Z/nZ only (prime modulus), test abc.rs::test_integer_mod_ring_canonical_impl; quotient_ring.rs:195 is_field always false [review 2026-11-06; checked]"
+ch017.IsDivisionRing,partial,rustmath-quadraticforms/src/quaternion.rs:81,"Verifier right: QuaternionAlgebra::is_division_algebra decides (a,b)_Q via ramified places; test quaternion.rs::hamilton_quaternion_anisotropic_ramified_2_and_infinity; quaternion algebras over Q only [review 2026-11-06; adjudicated]"
+ch017.IsEuclideanDomain,missing,,only EuclideanDomain marker trait [review 2026-11-06; checked]
+ch017.IsEuclideanRing,missing,,only EuclideanDomain marker trait [review 2026-11-06; checked]
+ch017.IsMagmaEuclideanRing,missing,,no generic implementation in workspace [review 2026-11-06; checked]
+ch017.IsPID,facade,rustmath-rings/src/function_field/order.rs:317; rustmath-rings/src/function_field/order_polymod.rs:207,"Verifier right: is_pid = class_number()==1 with class_number hard-coded 1 (Simplified), so every function-field order claims PID (PROJECT_TRACKER facade); only k[x]/DVR constants are true [review 2026-11-06; adjudicated]"
+ch017.IsPIR,missing,,no generic implementation in workspace [review 2026-11-06; checked]
+ch017.IsUFD,missing,,trait default only [review 2026-11-06; checked]
+ch017.IsDomain,facade,rustmath-rings/src/quotient_ring.rs:203,QuotientRingGeneric::is_integral_domain always returns false; no real domain test [review 2026-11-06; checked]
+ch017.HasGCD,missing,,no generic implementation in workspace [review 2026-11-06; checked]
+ch017.R.3,partial,rustmath-finitefields/src/finite_field.rs:262,FiniteField::same_field only; no generic ring equality across categories [review 2026-11-06; checked]
+ch017.R.4,partial,rustmath-finitefields/src/finite_field.rs:262,negation of FiniteField::same_field only [review 2026-11-06; checked]
+ch017.Parent.2,partial,rustmath-finitefields/src/finite_field.rs:428; rustmath-finitefields/src/galois_ring.rs:343; rustmath-polynomials/src/quotient.rs:183,"Verifier right: per-type parent accessors FiniteFieldElement::field, GaloisRingElement::ring, QuotientElement::ring (as ch047 Parent); no generic Parent(r), none for IntegerMod [review 2026-11-06; adjudicated]"
+ch017.Category.2,missing,,no Category(r)/Type(r) for elements [review 2026-11-06; checked]
+ch017.Zero,partial,rustmath-finitefields/src/zmod.rs:88,per-parent zero() on Zmod/FiniteField/GaloisRing and Ring::zero(); no generic Zero(R) [review 2026-11-06; checked]
+ch017.One,partial,rustmath-finitefields/src/zmod.rs:94,per-parent one() on Zmod/FiniteField/GaloisRing and Ring::one(); no generic One(R) [review 2026-11-06; checked]
+ch017.R.5,partial,rustmath-finitefields/src/integer_mod.rs:63,"same as R!x: integer reduction into Z/nZ, from_int on GF(q) and Galois rings; no general coercion [review 2026-11-06; checked]"
+ch017.Random,partial,rustmath-finitefields/src/ff_poly.rs:93,"FiniteFieldElement::random_element with caller-supplied rng closure, for factoring; no Random(R) API; category_methods default returns zero [review 2026-11-06; checked]"
+ch017.Representative,missing,,no generic implementation in workspace [review 2026-11-06; checked]
+ch017.a,n/a,,Rust has no unary plus operator [review 2026-11-06; checked]
+ch017.a.2,done,rustmath-core/src/traits.rs:69,Verifier right: Ring::negate (Neg bound on trait Ring at :45); integer_mod.rs::test_basic_arithmetic asserts -7 = 3 mod 10; the cited test never negates [review 2026-11-06; adjudicated]
+ch017.a.3,partial,rustmath-core/src/traits.rs:45,"Path fixed: trait Ring (Add bound) is at :45; same-type only, no common-overstructure coercion; asserted in integer_mod.rs::test_basic_arithmetic [review 2026-11-06; adjudicated]"
+ch017.a.4,partial,rustmath-core/src/traits.rs:45,"Path fixed: trait Ring (Sub bound) is at :45; same-type only, no common-overstructure coercion; asserted in integer_mod.rs::test_basic_arithmetic [review 2026-11-06; adjudicated]"
+ch017.a.5,partial,rustmath-core/src/traits.rs:45,"Path fixed: trait Ring (Mul bound) is at :45; same-type only, no common-overstructure coercion; asserted in integer_mod.rs::test_basic_arithmetic [review 2026-11-06; adjudicated]"
+ch017.a.6,partial,rustmath-core/src/traits.rs:74,Ring::pow(n: u32) for k>=0; no special-case 0^0 error [review 2026-11-06; checked]
+ch017.a.7,partial,rustmath-finitefields/src/integer_mod.rs:164,"Verifier right: IntegerMod::pow inverts then powers (Err on non-unit), cited :187 is is_unit; no negative-exponent test; FiniteFieldElement::pow_int returns 1 for e<0 [review 2026-11-06; adjudicated]"
+ch017.a.8,partial,rustmath-core/src/traits.rs:162,"Verifier right: Ring has no Div; division is Field::divide (Err on 0) plus per-type inverse (IntegerMod::inverse); no unit quotient in non-fields, no Z->Q promotion [review 2026-11-06; adjudicated]"
+ch017.a.9,n/a,,mutation assignment is just a = a op b in Rust; no separate intrinsic [review 2026-11-06; checked]
+ch017.a.10,n/a,,mutation assignment is just a = a op b in Rust; no separate intrinsic [review 2026-11-06; checked]
+ch017.a.11,n/a,,mutation assignment is just a = a op b in Rust; no separate intrinsic [review 2026-11-06; checked]
+ch017.a.12,n/a,,mutation assignment is just a = a op b in Rust; no separate intrinsic [review 2026-11-06; checked]
+ch017.a.13,n/a,,mutation assignment is just a = a op b in Rust; no separate intrinsic [review 2026-11-06; checked]
+ch017.a.14,done,rustmath-core/src/traits.rs:45,Path fixed: trait Ring (PartialEq bound) is at :45; integer_mod.rs::test_equality asserts 3 eq 10 mod 7 [review 2026-11-06; adjudicated]
+ch017.a.15,done,rustmath-core/src/traits.rs:45,Path fixed: trait Ring (PartialEq bound) is at :45; integer_mod.rs::test_equality asserts ne across moduli [review 2026-11-06; adjudicated]
+ch017.R.6,partial,rustmath-finitefields/src/finite_field.rs:262,FiniteField::same_field only; no generic ring equality [review 2026-11-06; checked]
+ch017.R.7,partial,rustmath-finitefields/src/finite_field.rs:262,negation of FiniteField::same_field only [review 2026-11-06; checked]
+ch017.a.16,partial,rustmath-core/src/parent.rs:37,Parent::contains checks only same Element type; no coercion-based membership [review 2026-11-06; checked]
+ch017.a.17,partial,rustmath-core/src/parent.rs:37,negation of Parent::contains; no coercion-based membership [review 2026-11-06; checked]
+ch017.IsZero,done,rustmath-core/src/traits.rs:63,Ring::is_zero; test integer_mod.rs::test_ring_zero_one_lawful [review 2026-11-06; checked]
+ch017.IsOne,done,rustmath-core/src/traits.rs:66,Ring::is_one; test integer_mod.rs::test_ring_zero_one_lawful [review 2026-11-06; checked]
+ch017.IsMinusOne,missing,,no function; would be a == -one [review 2026-11-06; checked]
+ch017.IsUnit,partial,rustmath-finitefields/src/integer_mod.rs:187,per-type for IntegerMod (test integer_mod.rs::test_is_unit) and GaloisRing; generic default in ring_category.rs:161 only recognises +-1; polynomials quotient is_unit is a placeholder [review 2026-11-06; checked]
+ch017.IsIdempotent,done,rustmath-category/src/ring_category.rs:179,generic x*x==x over any Ring; test ring_category.rs::test_is_idempotent (i32 only) [review 2026-11-06; checked]
+ch017.IsNilpotent,partial,rustmath-finitefields/src/integer_mod.rs:241,correct for IntegerMod and GaloisRing (test integer_mod.rs::test_nilpotent_idempotent_zero_divisor); generic default ring_category.rs:170 only reports zero [review 2026-11-06; checked]
+ch017.IsZeroDivisor,partial,rustmath-finitefields/src/integer_mod.rs:268,IntegerMod and GaloisRing only (test integer_mod.rs::test_nilpotent_idempotent_zero_divisor); no generic version [review 2026-11-06; checked]
+ch017.IsIrreducible,partial,rustmath-polynomials/src/factorization.rs:510; rustmath-finitefields/src/poly_factor.rs:153; rustmath-finitefields/src/poly_factor.rs:706,"Verifier right: cited :274 is a facade (Ok(true) for squarefree x^2-1); real are Zassenhaus over Z (lmfdb_degree24.rs::lmfdb_degree24_all_irreducible, PARI) and Rabin over F_p/F_q; univariate only [review 2026-11-06; adjudicated]"
+ch017.IsPrime,partial,rustmath-integers/src/integer.rs:909,Integer primality only; ideal is_prime ideal.rs:461 is a different notion; no generic prime-element test [review 2026-11-06; checked]
+ch017.a.18,partial,rustmath-integers/src/integer.rs:1165,ordering only via PartialOrd/OrderedRing on Integer/Rational-like types; no ring-generic comparison with coercion [review 2026-11-06; checked]
+ch017.a.19,partial,rustmath-integers/src/integer.rs:1165,ordering only via PartialOrd/OrderedRing on Integer/Rational-like types; no ring-generic comparison with coercion [review 2026-11-06; checked]
+ch017.a.20,partial,rustmath-integers/src/integer.rs:1165,ordering only via PartialOrd/OrderedRing on Integer/Rational-like types; no ring-generic comparison with coercion [review 2026-11-06; checked]
+ch017.a.21,partial,rustmath-integers/src/integer.rs:1165,ordering only via PartialOrd/OrderedRing on Integer/Rational-like types; no ring-generic comparison with coercion [review 2026-11-06; checked]
+ch017.Maximum,partial,rustmath-core/src/ordering.rs:40,"Verifier right: OrderedRing::max_with (Integer, Rational, BigFloat, RealMPFR, i32/i64) asserted in integer.rs::test_ordered_ring; cited :1165 is an impl block; no overstructure search [review 2026-11-06; adjudicated]"
+ch017.Maximum.2,partial,rustmath-integers/src/integer.rs:1165,only std Ord max/min on ordered types (sequences); no ring-level function or overstructure search [review 2026-11-06; checked]
+ch017.Minimum,partial,rustmath-core/src/ordering.rs:49,"Verifier right: OrderedRing::min_with (Integer, Rational, BigFloat, RealMPFR, i32/i64) asserted in integer.rs::test_ordered_ring; cited :1165 is an impl block; no overstructure search [review 2026-11-06; adjudicated]"
+ch017.Minimum.2,partial,rustmath-integers/src/integer.rs:1165,only std Ord max/min on ordered types (sequences); no ring-level function or overstructure search [review 2026-11-06; checked]
+ch017.ideal,partial,rustmath-polynomials/src/ideal.rs:116,Ideal::new for multivariate polynomial rings only (Groebner based); no ideals of general rings; tests ideal.rs::test_principal_ideal [review 2026-11-06; checked]
+ch017.quo,partial,rustmath-polynomials/src/quotient.rs:88,QuotientRing::from_generators for polynomial rings only; test quotient.rs::test_quotient_ring_creation; rings quotient_ring.rs is a shell [review 2026-11-06; checked]
+ch017.R.8,partial,rustmath-polynomials/src/quotient.rs:78,QuotientRing::new(ideal) for polynomial rings; no canonical map R->R/I returned [review 2026-11-06; checked]
+ch017.PowerIdeal,missing,,no generic implementation in workspace [review 2026-11-06; checked]
+ch017.I,partial,rustmath-polynomials/src/ideal.rs:335,polynomial ideals only; test ideal.rs::test_ideal_sum [review 2026-11-06; checked]
+ch017.I.2,partial,rustmath-polynomials/src/ideal.rs:344,polynomial ideals only; test ideal.rs::test_ideal_product [review 2026-11-06; checked]
+ch017.I.3,partial,rustmath-polynomials/src/ideal.rs:399,polynomial ideals only; test ideal.rs::test_ideal_intersection [review 2026-11-06; checked]
+ch017.a.22,partial,rustmath-polynomials/src/ideal.rs:223,Groebner membership for polynomial ideals only; test ideal.rs::test_contains_is_a_real_membership_test [review 2026-11-06; checked]
+ch017.a.23,partial,rustmath-polynomials/src/ideal.rs:223,"negation of Ideal::contains, polynomial ideals only [review 2026-11-06; checked]"
+ch017.I.4,partial,rustmath-numberfields/src/ideals.rs:239,Verifier right: derived PartialEq on canonical-HNF O_K Ideal (make_ideal normalises) is ideal equality; ideals.rs::prime_ideal_norms_and_factorization_qi asserts p1*p2 == (5); polynomial Ideal has no eq [review 2026-11-06; adjudicated]
+ch017.I.5,partial,rustmath-numberfields/src/ideals.rs:239,"Verifier right: ne via the same derived PartialEq on the canonical-HNF O_K Ideal; number-field ideals only, polynomial Ideal has no comparison [review 2026-11-06; adjudicated]"
+ch017.I.6,partial,rustmath-rings/src/dedekind/nfctx.rs:303; rustmath-rings/src/dedekind/zctx.rs:97; rustmath-numberfields/src/ideals.rs:498,"Verifier right: NfDedekind/ZDedekind::ideal_subset (fractional ideals), ideal_contains (integral); nfctx.rs::fractional_ideal_ops_qi asserts O subset (1/2)O; Z and O_K ideals only [review 2026-11-06; adjudicated]"
+ch017.I.7,partial,rustmath-rings/src/dedekind/nfctx.rs:303,"Verifier right: negation of NfDedekind::ideal_subset; nfctx.rs::fractional_ideal_ops_qi asserts (1/2)O not subset O; Z and O_K ideals only, none for polynomial ideals [review 2026-11-06; adjudicated]"
+ch017.ResidueClassField,partial,rustmath-rings/src/residue_field.rs:338,ResidueFieldPrime for Z/pZ only (no primality check); generic ResidueField does not reduce elements; no maximal-ideal input [review 2026-11-06; checked]
+ch017.loc,stub,rustmath-rings/src/localization.rs:91,Localization is a string descriptor (names of ring and set); no ring arithmetic or map R->L [review 2026-11-06; checked]
+ch017.Localization,stub,rustmath-rings/src/localization.rs:111,Localization::at_prime stores strings only; no elements arithmetic or map R->L [review 2026-11-06; checked]
+ch017.comp,missing,,no generic completion; only p-adic Zp/Qp types [review 2026-11-06; checked]
+ch017.Completion,missing,,no generic completion; only p-adic Zp/Qp types [review 2026-11-06; checked]
+ch017.ext,partial,rustmath-polynomials/src/univariate.rs:10,UnivariatePolynomial<R> is R[x] at type level; no ext<R|> constructor function [review 2026-11-06; checked]
+ch017.ext.2,partial,rustmath-polynomials/src/multivariate.rs:288,"MultivariatePolynomial<R> is R[x1..xn] at type level; no ext<R,n|> constructor function [review 2026-11-06; checked]"
