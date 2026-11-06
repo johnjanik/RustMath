@@ -5142,3 +5142,21 @@ ch041.TypeOfSequence,missing,,no type-of-sequence function [review 2026-11-06; c
 ch041.MinimalVectorSequence,missing,,no Beckermann-Labahn/Derksen minimal vector sequence algorithm [review 2026-11-06; checked]
 ch041.PadeHermiteApproximant,partial,rustmath-polynomials/src/pade.rs:121,"hermite_pade is the m=2 case (f=[s,-1], type (den,num)) over Q only; None if q(0)=0; no minimality, no order or minimal vector sequence output, no Power. Test pade.rs::recovers_known_rational [review 2026-11-06; adjudicated]"
 ch041.PadeHermiteApproximant.2,missing,,"rustmath-polynomials/src/pade.rs:121 hermite_pade is single-series Pade, not Pade-Hermite approximant of a sequence to order m [review 2026-11-06; checked]"
+ch036.CyclotomicField,done,rustmath-rings/src/number_field/mod.rs:214,"NumberFieldExt::cyclotomic(n) builds Q[x]/Phi_n; tests number_field/mod.rs::test_cyclotomic_field_degrees, test_cyclotomic_field_discriminants; no generator naming or Sparse [review 2026-11-06; checked]"
+ch036.CyclotomicPolynomial,done,rustmath-rings/src/number_field/mod.rs:237,"Recursive x^n-1 division; private fn (not pub); tests number_field/mod.rs::test_cyclotomic_polynomial_explicit_formulas, test_cyclotomic_polynomial_degrees [review 2026-11-06; checked]"
+ch036.MinimalCyclotomicField,broken,rustmath-rings/src/universal_cyclotomic_field.rs:186,"UCF conductor() claims smallest n with a in Q(zeta_n) but returns lcm of stored orders, no normal form: zeta_8^2 gives 8 not 4, 1+z3+z3^2 gives 3; test_root_of_unity_power asserts 8; returns int not field [review 2026-11-06; adjudicated]"
+ch036.MinimalCyclotomicField.2,missing,,no minimal cyclotomic field for a set of elements [review 2026-11-06; checked]
+ch036.RootOfUnity,partial,rustmath-rings/src/universal_cyclotomic_field.rs:153,"UCF root_of_unity(n) gives a sparse (n,1) term, no Q(zeta_n) field element; test_root_of_unity checks conductor only [review 2026-11-06; checked]"
+ch036.RootOfUnity.2,missing,,"no RootOfUnity(n,K) in a given cyclotomic field; no divisibility check, no embedding into K [review 2026-11-06; checked]"
+ch036.Minimise,missing,,rustmath-automata candidate is unrelated; no coercion to minimal cyclotomic subfield [review 2026-11-06; checked]
+ch036.Minimise.2,missing,,rustmath-automata candidate is unrelated; no set minimisation [review 2026-11-06; checked]
+ch036.Minimise.3,missing,,rustmath-automata candidate is unrelated; no function form [review 2026-11-06; checked]
+ch036.Minimise.4,missing,,rustmath-automata candidate is unrelated; no set function form [review 2026-11-06; checked]
+ch036.Conductor,missing,,"UCF element conductor (lcm of term orders, not minimal e.g. zeta_8^2 gives 8) is not Conductor(K) of a field; no real places [review 2026-11-06; checked]"
+ch036.CyclotomicOrder,missing,,only a trait declaration NumberFieldCyclotomic::cyclotomic_order (abc.rs:282) with no implementor; NumberField does not store m [review 2026-11-06; checked]
+ch036.CyclotomicAutomorphismGroup,missing,,no cyclotomic automorphism group (Z/m)^* with action map [review 2026-11-06; checked]
+ch036.CyclotomicRelativeField,missing,,no relative presentation of K over cyclotomic subfield k [review 2026-11-06; checked]
+ch036.IsReal,broken,rustmath-rings/src/universal_cyclotomic_field.rs:201,checks each term alone is real; zeta_5+zeta_5^4 (2cos) reports false; element not normalised; no test with sums [review 2026-11-06; checked]
+ch036.ComplexConjugate,partial,rustmath-rings/src/universal_cyclotomic_field.rs:212,"UCF conjugate maps zeta_n^k to zeta_n^-k termwise; UCF only, not cyclotomic field elements; test_conjugate asserts conductor only [review 2026-11-06; checked]"
+ch036.Conjugate,missing,,no Galois conjugate zeta->zeta^n with gcd check; only complex conjugation exists [review 2026-11-06; checked]
+ch036.Conjugate.2,missing,,no automorphism zeta_m -> r for general r; only complex conjugation exists [review 2026-11-06; checked]
