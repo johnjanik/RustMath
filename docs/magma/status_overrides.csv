@@ -2555,3 +2555,101 @@ ch057.GModule,missing,,"Representation struct is a data container; no GModule(G,
 ch057.GModule.2,missing,,no module from normal sections A/B [review 2026-11-06; checked]
 ch057.PermutationModule,missing,,no permutation module on cosets [review 2026-11-06; checked]
 ch057.PermutationModule.2,missing,,no natural permutation module [review 2026-11-06; checked]
+ch024.PolynomialRing,missing,,"no multivariate polynomial ring constructor (R, n, order); only bare MultivariatePolynomial<R> type [review 2026-11-06; checked]"
+ch024.PolynomialRing.2,missing,,"no ring constructor; monomial orders exist only as comparator fns (groebner.rs), not attached to a ring [review 2026-11-06; checked]"
+ch024.AssignNames,missing,,"no ring object, so no print names; Monomial Display uses x0, x1 fixed [review 2026-11-06; checked]"
+ch024.Name,partial,rustmath-polynomials/src/multivariate.rs:317,"MultivariatePolynomial::variable(i) gives i-th indeterminate, 0-based, no parent ring argument; test_polynomial_variable [review 2026-11-06; checked]"
+ch024.P,partial,rustmath-polynomials/src/multivariate.rs:317,variable(i) is P.i without a parent ring; 0-based; test_polynomial_variable [review 2026-11-06; checked]
+ch024.R,partial,rustmath-polynomials/src/multivariate.rs:306,only constant(c) from a coefficient; no coercion from sequences/elt< R | s > constructor [review 2026-11-06; checked]
+ch024.MultivariatePolynomial,missing,,no polynomial ring object; MultivariatePolynomial<R> is a bare term map with 0-based variable indices; no such operation [review 2026-11-06; checked]
+ch024.One,partial,rustmath-polynomials/src/multivariate.rs:306,constant(R::one()) only; no ring argument or dedicated One [review 2026-11-06; checked]
+ch024.Zero,partial,rustmath-polynomials/src/multivariate.rs:299,"zero() exists, no ring argument; Representative not provided [review 2026-11-06; checked]"
+ch024.BaseRing,missing,,no polynomial ring object; MultivariatePolynomial<R> is a bare term map with 0-based variable indices; no such operation [review 2026-11-06; checked]
+ch024.Category,missing,,no polynomial ring object; MultivariatePolynomial<R> is a bare term map with 0-based variable indices; no such operation [review 2026-11-06; checked]
+ch024.Parent,missing,,no polynomial ring object; MultivariatePolynomial<R> is a bare term map with 0-based variable indices; no such operation [review 2026-11-06; checked]
+ch024.PrimeRing,missing,,no polynomial ring object; MultivariatePolynomial<R> is a bare term map with 0-based variable indices; no such operation [review 2026-11-06; checked]
+ch024.Rank,missing,,no polynomial ring object; MultivariatePolynomial<R> is a bare term map with 0-based variable indices; no such operation [review 2026-11-06; checked]
+ch024.Characteristic,missing,,no polynomial ring object; MultivariatePolynomial<R> is a bare term map with 0-based variable indices; no such operation [review 2026-11-06; checked]
+ch024.IsCommutative,missing,,no polynomial ring object; MultivariatePolynomial<R> is a bare term map with 0-based variable indices; no such operation [review 2026-11-06; checked]
+ch024.IsFinite,missing,,no polynomial ring object; MultivariatePolynomial<R> is a bare term map with 0-based variable indices; no such operation [review 2026-11-06; checked]
+ch024.IsField,missing,,no polynomial ring object; MultivariatePolynomial<R> is a bare term map with 0-based variable indices; no such operation [review 2026-11-06; checked]
+ch024.IsPID,missing,,no polynomial ring object; MultivariatePolynomial<R> is a bare term map with 0-based variable indices; no such operation [review 2026-11-06; checked]
+ch024.IsDivisionRing,missing,,no polynomial ring object; MultivariatePolynomial<R> is a bare term map with 0-based variable indices; no such operation [review 2026-11-06; checked]
+ch024.IsDomain,missing,,no polynomial ring object; MultivariatePolynomial<R> is a bare term map with 0-based variable indices; no such operation [review 2026-11-06; checked]
+ch024.IsPrincipalIdealRing,missing,,no polynomial ring object; MultivariatePolynomial<R> is a bare term map with 0-based variable indices; no such operation [review 2026-11-06; checked]
+ch024.P.2,missing,,no polynomial ring object; MultivariatePolynomial<R> is a bare term map with 0-based variable indices; no such operation [review 2026-11-06; checked]
+ch024.ChangeRing,missing,,no polynomial ring object; MultivariatePolynomial<R> is a bare term map with 0-based variable indices; no such operation [review 2026-11-06; checked]
+ch024.hom,missing,,no hom with coefficient map f; only variable-substitution in same coefficient ring [review 2026-11-06; checked]
+ch024.hom.2,partial,rustmath-polynomials/src/multivariate.rs:416,substitute(map var->poly) is a ring hom P->P over same coefficient ring; test_substitute_is_a_ring_homomorphism; no target ring S [review 2026-11-06; checked]
+ch024.a-a,partial,rustmath-polynomials/src/multivariate.rs:804,Neg implemented; unary plus not meaningful; no direct test [review 2026-11-06; checked]
+ch024.a,partial,rustmath-polynomials/src/multivariate.rs:760,"Add/Sub/Mul implemented (test_polynomial_addition, test_polynomial_multiplication); no ^, / or div operators [review 2026-11-06; checked]"
+ch024.a.2,missing,,no AddAssign/SubAssign/MulAssign impls on MultivariatePolynomial [review 2026-11-06; checked]
+ch024.a.3,done,rustmath-polynomials/src/multivariate.rs:288,derived PartialEq on normalized term map; test_substitute_is_a_ring_homomorphism asserts equality [review 2026-11-06; checked]
+ch024.a.4,missing,,no polynomial ring object; MultivariatePolynomial<R> is a bare term map with 0-based variable indices; no such operation [review 2026-11-06; checked]
+ch024.IsDivisibleBy,partial,rustmath-polynomials/src/elimination.rs:236,"exact_divide returns Err if not divisible; Field coefficients, grevlex only; test exact_divide_refuses_an_inexact_division; no bool/quotient pair [review 2026-11-06; checked]"
+ch024.IsAlgebraicallyDependent,missing,,not implemented [review 2026-11-06; checked]
+ch024.IsZero,partial,rustmath-polynomials/src/multivariate.rs:356,is_zero exists (used widely in groebner tests); IsOne and IsMinusOne not provided [review 2026-11-06; checked]
+ch024.IsNilpotent,missing,,no multivariate IsNilpotent/IsIdempotent [review 2026-11-06; checked]
+ch024.IsUnit,missing,,"quotient.rs is_unit is for quotient rings, not multivariate polynomials [review 2026-11-06; checked]"
+ch024.IsIrreducible,missing,,factorization.rs is_irreducible is univariate only; no multivariate irreducibility [review 2026-11-06; checked]
+ch024.Coefficients,partial,rustmath-polynomials/src/multivariate.rs:366,"terms()/iter_terms() yield (monomial, coeff) pairs; no Coefficients list in ring order [review 2026-11-06; checked]"
+ch024.Coefficients.2,missing,,no coefficients as polynomials in other variables w.r.t. a chosen variable [review 2026-11-06; checked]
+ch024.Coefficient,missing,,coefficient(&Monomial) is MonomialCoefficient semantics; no coefficient of v^k as polynomial in remaining variables [review 2026-11-06; checked]
+ch024.LeadingCoefficient,partial,rustmath-polynomials/src/multivariate.rs:486,leading_coefficient(cmp) with caller comparator; no ring default lex order; not directly tested [review 2026-11-06; checked]
+ch024.LeadingCoefficient.2,missing,,no leading coefficient w.r.t. a chosen variable [review 2026-11-06; checked]
+ch024.Length,done,rustmath-polynomials/src/multivariate.rs:384,"num_terms() is Length(f), asserted directly in multivariate.rs::test_polynomial_multiplication (4 terms) and ideal.rs::test_cyclic_ideal (3,3,2); verifier right, no reason for partial [review 2026-11-06; adjudicated]"
+ch024.TrailingCoefficient,missing,,not implemented [review 2026-11-06; checked]
+ch024.TrailingCoefficient.2,missing,,not implemented [review 2026-11-06; checked]
+ch024.MonomialCoefficient,done,rustmath-polynomials/src/multivariate.rs:341,coefficient(&Monomial) returns 0 when absent; rustmath-polynomials/src/multivariate.rs::test_polynomial_creation [review 2026-11-06; checked]
+ch024.Monomials,partial,rustmath-polynomials/src/multivariate.rs:366,terms() keys are the monomials; no Monomials(f) list/ordering [review 2026-11-06; checked]
+ch024.CoefficientsAndMonomials,partial,rustmath-polynomials/src/multivariate.rs:457,"iter_terms() yields (monomial, coeff) pairs, BTreeMap order; no ring-order guarantee [review 2026-11-06; checked]"
+ch024.LeadingMonomial,done,rustmath-polynomials/src/multivariate.rs:462,leading_monomial(cmp); exercised by groebner.rs::test_s_polynomial / test_groebner_basis_simple; comparator supplied by caller [review 2026-11-06; checked]
+ch024.Terms,partial,rustmath-polynomials/src/multivariate.rs:366,"terms() iterates (monomial, coeff); not returned as polynomial terms list [review 2026-11-06; checked]"
+ch024.Terms.2,missing,,no terms w.r.t. chosen variable [review 2026-11-06; checked]
+ch024.Term,missing,,"elimination.rs:539 is a test helper, not Term(f,i,k) [review 2026-11-06; checked]"
+ch024.LeadingTerm,done,rustmath-polynomials/src/multivariate.rs:494,"leading_term(cmp) returns (monomial, coeff); groebner.rs::test_s_polynomial, test_groebner_basis_simple [review 2026-11-06; checked]"
+ch024.LeadingTerm.2,missing,,no leading term w.r.t. a chosen variable [review 2026-11-06; checked]
+ch024.TrailingTerm,missing,,not implemented [review 2026-11-06; checked]
+ch024.TrailingTerm.2,missing,,not implemented [review 2026-11-06; checked]
+ch024.Exponents,partial,rustmath-polynomials/src/multivariate.rs:126,"Monomial::exponents gives sparse (var,exp) of one monomial; no Exponents(f) list of exponent vectors [review 2026-11-06; checked]"
+ch024.Monomial,partial,rustmath-polynomials/src/multivariate.rs:27,Monomial::from_exponents(BTreeMap) builds a monomial; no ring or exponent-vector argument; test_monomial_creation [review 2026-11-06; checked]
+ch024.Polynomial,partial,rustmath-polynomials/src/multivariate.rs:324,"add_term builds polynomial term by term; no Polynomial(C, M) constructor [review 2026-11-06; checked]"
+ch024.Degree,partial,rustmath-polynomials/src/multivariate.rs:351,"degree_in(var) returns Option (None for zero, Magma gives -1); no direct test [review 2026-11-06; checked]"
+ch024.TotalDegree,done,rustmath-polynomials/src/multivariate.rs:346; rustmath-polynomials/src/multivariate.rs:755,"degree() = max monomial degree, None for 0 (Magma -1), multivariate.rs::test_polynomial_multiplication; total_degree (0 for zero poly) tested in curves belyi/pinned.rs::system_shape_and_degrees [review 2026-11-06; adjudicated]"
+ch024.LeadingTotalDegree,missing,,not implemented [review 2026-11-06; checked]
+ch024.IsUnivariate,missing,,no check for univariate-ness of a multivariate polynomial [review 2026-11-06; checked]
+ch024.IsUnivariate.2,missing,,not implemented [review 2026-11-06; checked]
+ch024.UnivariatePolynomial,missing,,no conversion to UnivariatePolynomial [review 2026-11-06; checked]
+ch024.Derivative,done,rustmath-polynomials/src/multivariate.rs:718,partial_derivative(var); exercised by poly_system.rs::known_solution_and_mod_jacobian (jacobian_mod) [review 2026-11-06; checked]
+ch024.Derivative.2,partial,rustmath-polynomials/src/multivariate.rs:718,only first partial derivative; k-th derivative not provided [review 2026-11-06; checked]
+ch024.Integral,missing,,no multivariate integration [review 2026-11-06; checked]
+ch024.JacobianMatrix,partial,rustmath-schemes/src/singularity.rs:82; rustmath-polynomials/src/poly_system.rs:153,"singularity::jacobian gives symbolic (dg_i/dx_j) as Vec<Vec<MPoly>>; Field coeffs only, rank n passed, no Matrix; used by singular_subscheme tests. jacobian_mod is numeric mod m only [review 2026-11-06; adjudicated]"
+ch024.Evaluate,done,rustmath-polynomials/src/multivariate.rs:686,"evaluate(&[R]) at full point; rustmath-polynomials/src/ideal.rs::test_cyclic_ideal, test_katsura_ideal [review 2026-11-06; checked]"
+ch024.Evaluate.2,done,rustmath-polynomials/src/multivariate.rs:416,"substitute({i: constant(r)}) evaluates one variable; test_substitute_is_a_ring_homomorphism (f(2,y)=y^2-8) [review 2026-11-06; checked]"
+ch024.Interpolation,missing,,"bivariate.rs interpolate is private univariate Lagrange over Q; no multivariate Interpolation(I,V,i) [review 2026-11-06; checked]"
+ch024.f,partial,rustmath-polynomials/src/elimination.rs:236,"exact_divide (Err if inexact), Field coefficients only; test exact_divide_refuses_an_inexact_division; no div operator or Z coefficients [review 2026-11-06; checked]"
+ch024.Reductum,missing,,not implemented [review 2026-11-06; checked]
+ch024.Reductum.2,missing,,not implemented [review 2026-11-06; checked]
+ch024.SymmetricBilinearForm,partial,rustmath-quadraticforms/src/ternary.rs:60,"TernaryForm::from_coeffs gives Gram [[a,d/2,f/2],[d/2,b,e/2],[f/2,e/2,c]] of a ternary form over Q from 6 coeffs; no polynomial input, no n!=3, no homogenizing; same as ch032.SymmetricMatrix [review 2026-11-06; adjudicated]"
+ch024.DiagonalForm,partial,rustmath-quadraticforms/src/ternary.rs:95,"TernaryForm::diagonalize returns diagonal entries and transform P by congruence, ternary forms over Q only, no polynomial input; ternary.rs::diagonalizes_and_pullback_is_isometry; cf ch030.Diagonalization [review 2026-11-06; adjudicated]"
+ch024.GreatestCommonDivisor,missing,,"multivariate gcd not implemented; only univariate versions exist (univariate.rs, factorization.rs, zassenhaus.rs) [review 2026-11-06; checked]"
+ch024.GCD,missing,,"gcd of a sequence not implemented; only univariate versions exist (univariate.rs, factorization.rs, zassenhaus.rs) [review 2026-11-06; checked]"
+ch024.LeastCommonMultiple,missing,,"multivariate lcm not implemented; only univariate versions exist (univariate.rs, factorization.rs, zassenhaus.rs) [review 2026-11-06; checked]"
+ch024.LCM,missing,,"lcm of a sequence not implemented; only univariate versions exist (univariate.rs, factorization.rs, zassenhaus.rs) [review 2026-11-06; checked]"
+ch024.Normalize,partial,rustmath-polynomials/src/groebner.rs:886,"private make_monic scales a Field-coeff MPoly by 1/LC in caller's order, used by reduced GB (groebner.rs::the_field_engine_solves_the_non_monic_system_exactly); no Z sign or recursive case, not public [review 2026-11-06; adjudicated]"
+ch024.ClearDenominators,missing,,"ClearDenominators not implemented; only univariate versions exist (univariate.rs, factorization.rs, zassenhaus.rs) [review 2026-11-06; checked]"
+ch024.ClearDenominators.2,missing,,"ClearDenominators not implemented; only univariate versions exist (univariate.rs, factorization.rs, zassenhaus.rs) [review 2026-11-06; checked]"
+ch024.Content,missing,,"multivariate content not implemented; only univariate versions exist (univariate.rs, factorization.rs, zassenhaus.rs) [review 2026-11-06; checked]"
+ch024.PrimitivePart,missing,,"multivariate primitive part not implemented; only univariate versions exist (univariate.rs, factorization.rs, zassenhaus.rs) [review 2026-11-06; checked]"
+ch024.ContentAndPrimitivePart,missing,,"Contpp not implemented; only univariate versions exist (univariate.rs, factorization.rs, zassenhaus.rs) [review 2026-11-06; checked]"
+ch024.Factorization,missing,,"multivariate factorization not implemented; only univariate versions exist (univariate.rs, factorization.rs, zassenhaus.rs) [review 2026-11-06; checked]"
+ch024.SquarefreeFactorization,missing,,"multivariate squarefree factorization not implemented; only univariate versions exist (univariate.rs, factorization.rs, zassenhaus.rs) [review 2026-11-06; checked]"
+ch024.SquarefreePart,partial,rustmath-polynomials/src/elimination.rs:412,"public univariate_squarefree_part = f/gcd(f,f') for an MPoly in one variable over a field (char 0), Err for >1 variable, keeps LC(f) (not monic); elimination.rs::univariate_squarefree_part_works [review 2026-11-06; adjudicated]"
+ch024.IsIrreducible.2,missing,,"multivariate irreducibility not implemented; only univariate versions exist (univariate.rs, factorization.rs, zassenhaus.rs) [review 2026-11-06; checked]"
+ch024.SetVerbose,partial,rustmath-misc/src/verbose.rs:8,"global set_verbose(level) only, no PolyFact flag and nothing reads it (no get_verbose caller); factoring code exists, so partial as in ch018.SetVerbose.2 / ch046.SetVerbose, not n/a [review 2026-11-06; adjudicated]"
+ch024.Resultant,partial,rustmath-polynomials/src/bivariate.rs:208,"resultant_in_t only bivariate over Q (X-resultant as poly in t), also disc.rs:149 over Z[x]; test_resultant_in_t_linear_pencil [review 2026-11-06; checked]"
+ch024.Discriminant,partial,rustmath-polynomials/src/bivariate.rs:248,discriminant_in_t only bivariate over Q; test_discriminant_in_t_cubic_vs_gp matches PARI poldisc (-4t^3-27); not general multivariate [review 2026-11-06; checked]
+ch024.Sign,missing,,no sign of multivariate polynomial [review 2026-11-06; checked]
+ch024.AbsoluteValue,missing,,root_label.rs:230 is unrelated to polynomial coefficients [review 2026-11-06; checked]
+ch024.MaxNorm,missing,,not implemented [review 2026-11-06; checked]
+ch024.SumNorm,missing,,not implemented [review 2026-11-06; checked]
