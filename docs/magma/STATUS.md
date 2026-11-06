@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 2016 | 5 | 114 | 459 | 10 | 36 | 5053 (38%) | 7658 (57%) |
+| 13341 | 2372 | 5 | 130 | 554 | 10 | 41 | 4844 (36%) | 7745 (58%) |
 
 ## By chapter
 
@@ -58,7 +58,7 @@ automatic `candidate`/`missing` counts.
 | 34 | Number Fields | VI | 220 | 220 | 0 | 14 | 58 | 8 | 1 | 0 | 139 | substantial | `rustmath-numberfields` |
 | 35 | Quadratic Fields | VI | 33 | 0 | 0 | 0 | 0 | 0 | 0 | 21 | 12 | substantial | `rustmath-numberfields` |
 | 36 | Cyclotomic Fields | VI | 18 | 0 | 0 | 0 | 0 | 0 | 0 | 12 | 6 | partial | `rustmath-rings` |
-| 37 | Orders and Algebraic Fields | VI | 356 | 0 | 0 | 0 | 0 | 0 | 0 | 209 | 147 | substantial | `rustmath-numberfields` |
+| 37 | Orders and Algebraic Fields | VI | 356 | 356 | 0 | 16 | 95 | 5 | 6 | 0 | 234 | substantial | `rustmath-numberfields` |
 | 38 | Galois Theory of Number Fields | VI | 69 | 69 | 0 | 0 | 15 | 0 | 0 | 0 | 54 | partial | `rustmath-numberfields` |
 | 39 | Class Field Theory | VI | 68 | 0 | 0 | 0 | 0 | 0 | 0 | 32 | 36 | partial | `rustmath-numberfields` |
 | 40 | Algebraically Closed Fields | VI | 52 | 0 | 0 | 0 | 0 | 0 | 0 | 41 | 11 | stub | `rustmath-rings` |
