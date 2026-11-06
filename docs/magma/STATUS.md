@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 4812 | 17 | 320 | 1153 | 18 | 167 | 3580 (27%) | 8058 (60%) |
+| 13341 | 4870 | 17 | 325 | 1189 | 18 | 169 | 3546 (27%) | 8049 (60%) |
 
 ## By chapter
 
@@ -72,7 +72,7 @@ automatic `candidate`/`missing` counts.
 | 48 | Galois Rings | VII | 58 | 58 | 5 | 15 | 24 | 1 | 0 | 0 | 13 | none | `(none - proposed galois_ring module in rustmath-finitefields or rustmath-rings)` |
 | 49 | Power, Laurent and Puiseux Series | VII | 102 | 102 | 1 | 16 | 29 | 2 | 0 | 0 | 54 | partial | `rustmath-powerseries` |
 | 50 | Lazy Power Series Rings | VII | 44 | 44 | 0 | 1 | 20 | 3 | 0 | 0 | 20 | stub | `rustmath-powerseries` |
-| 51 | General Local Fields | VII | 58 | 0 | 0 | 0 | 0 | 0 | 0 | 34 | 24 | stub | `rustmath-rings::padics` |
+| 51 | General Local Fields | VII | 58 | 58 | 0 | 5 | 36 | 2 | 0 | 0 | 15 | stub | `rustmath-rings::padics` |
 | 52 | Algebraic Power Series Rings | VII | 20 | 0 | 0 | 0 | 0 | 0 | 0 | 7 | 13 | none | `rustmath-powerseries` |
 | 53 | Introduction to Modules | VIII | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | partial | `rustmath-modules` |
 | 54 | Free Modules | VIII | 82 | 0 | 0 | 0 | 0 | 0 | 0 | 48 | 34 | substantial | `rustmath-modules` |

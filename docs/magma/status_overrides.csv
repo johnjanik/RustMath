@@ -4811,3 +4811,61 @@ ch039.A.9,missing,,no cached IsAbelian/IsNormal/IsCentral attributes [review 202
 ch039.GenericGroup,missing,,no generic group from element list with map [review 2026-11-06; checked]
 ch039.AddGenerator,missing,,no generic group generator extension [review 2026-11-06; checked]
 ch039.FindGenerators,missing,,no generic group small generator search [review 2026-11-06; checked]
+ch051.LocalField,partial,rustmath-rings/src/padics/extension.rs:225,"PadicExtension::new: only over Q_p; irreducibility not checked; General(e,f) is user-asserted. test_general_extension_type [review 2026-11-06; checked]"
+ch051.sub,missing,,no subfield construction for local fields [review 2026-11-06; checked]
+ch051.sub.2,missing,,no subfield construction for local fields [review 2026-11-06; checked]
+ch051.BaseRing,partial,rustmath-rings/src/padics/factory.rs:470,PadicFieldExtension::base_field gives Q_p descriptor only; PadicExtension has no base accessor; no general base field [review 2026-11-06; checked]
+ch051.CoefficientRing,partial,rustmath-rings/src/padics/factory.rs:470,same as BaseRing; Q_p base only [review 2026-11-06; checked]
+ch051.DefiningPolynomial,partial,rustmath-rings/src/padics/extension.rs:380,"returns Z[x] defining poly; only extensions of Q_p, not of a general local field [review 2026-11-06; checked]"
+ch051.Degree,partial,rustmath-rings/src/padics/extension.rs:360,degree over Q_p only; test_ramification_index_and_residue_degree [review 2026-11-06; checked]
+ch051.Degree.2,missing,,no relative degree over an arbitrary coefficient ring R [review 2026-11-06; checked]
+ch051.InertiaDegree,partial,rustmath-rings/src/padics/extension.rs:370,"residue_degree; correct for unramified/Eisenstein; for General(e,f) value is caller-asserted not computed; Q_p base only [review 2026-11-06; checked]"
+ch051.RamificationDegree,partial,rustmath-rings/src/padics/extension.rs:365,"ramification_index; General(e,f) caller-asserted; Q_p base only; test_ramification_index_and_residue_degree [review 2026-11-06; checked]"
+ch051.RamificationIndex,partial,rustmath-rings/src/padics/extension.rs:365,"ramification_index; General(e,f) caller-asserted; Q_p base only; test_ramification_index_and_residue_degree [review 2026-11-06; checked]"
+ch051.Precision,partial,rustmath-rings/src/padics/extension.rs:385,returns stored construction precision; Q_p base only [review 2026-11-06; checked]
+ch051.Prime,partial,rustmath-rings/src/padics/extension.rs:355,returns p; Q_p base only; test_different_primes [review 2026-11-06; checked]
+ch051.QuotientRepresentation,missing,,no accessor for polynomial quotient ring representation [review 2026-11-06; checked]
+ch051.RamifiedRepresentation,missing,,no unramified-then-totally-ramified tower conversion (TowerElement exists in numberfields but no conversion from a field) [review 2026-11-06; checked]
+ch051.AssignNames,done,rustmath-rings/src/padics/extension.rs:437,set_generator_name; test extension.rs::test_generator_name [review 2026-11-06; checked]
+ch051.Name,partial,rustmath-rings/src/padics/extension.rs:419,generator(); returns x in Q_p[x]/(f); degree 1 gives zero (coeff vector has no x slot) [review 2026-11-06; checked]
+ch051.Discriminant,partial,rustmath-numberfields/src/local_field.rs:103,only v_p of number field disc from Z[x] poly; no local field object or discriminant element [review 2026-11-06; checked]
+ch051.ResidueClassField,partial,rustmath-numberfields/src/local_field.rs:59,"ResidueField descriptor (p,f) only; no field and no reduction map [review 2026-11-06; checked]"
+ch051.RelativeField,missing,,no relative-field re-presentation over a subfield map [review 2026-11-06; checked]
+ch051.IsRamified,partial,rustmath-numberfields/src/local_field.rs:815,"Ramification enum from (p,e,f) ints in local_galois_group; no predicate on a field object (e>1 via ramification_index) [review 2026-11-06; checked]"
+ch051.IsTamelyRamified,partial,rustmath-numberfields/src/local_field.rs:815,"Tame class from (p,e) ints in local_galois_group; no predicate on a field object [review 2026-11-06; checked]"
+ch051.IsWildlyRamified,partial,rustmath-numberfields/src/local_field.rs:815,"Wild class from (p,e) ints in local_galois_group; no predicate on a field object [review 2026-11-06; checked]"
+ch051.IsTotallyRamified,partial,rustmath-rings/src/padics/extension.rs:395,is_totally_ramified = (f==1); Q_p base only; test_ramification_index_and_residue_degree [review 2026-11-06; checked]
+ch051.IsUnramified,partial,rustmath-rings/src/padics/extension.rs:390,is_unramified = (e==1); Q_p base only; test_ramification_index_and_residue_degree [review 2026-11-06; checked]
+ch051.IntegralBasis,partial,rustmath-numberfields/src/round2.rs:745; rustmath-numberfields/src/round2.rs:702,"Verifier right: integral_basis(f) runs p_maximal at every p<=1e5 with p^2|disc, so it is a Z_p-basis of O_L for L=Q_p[x]/(f), f monic in Z[x] irreducible over Q_p; no local-field API [review 2026-11-06; adjudicated]"
+ch051.IsIntegral,missing,,PadicExtensionElement has no valuation or integrality test [review 2026-11-06; checked]
+ch051.hom,partial,rustmath-rings/src/padics/extension.rs:846,PadicEmbedding::new/apply: generator image NOT checked to be a root of defining poly; Q_p extensions only [review 2026-11-06; checked]
+ch051.hom.2,missing,,no hom with coefficient field map cfm [review 2026-11-06; checked]
+ch051.FrobeniusAutomorphism,partial,rustmath-rings/src/padics/unramified.rs:426,Frobenius lift on unramified ext only (also GaloisGroup::frobenius extension.rs:1123); test unramified.rs::test_frobenius_is_ring_hom_and_reduces_to_pth_power [review 2026-11-06; checked]
+ch051.AutomorphismGroup,partial,rustmath-rings/src/padics/extension.rs:1043; rustmath-numberfields/src/panayi.rs:205; rustmath-numberfields/src/panayi.rs:292,"GaloisGroup::new real Frobenius, unramified only (test_galois_group_unramified); Eisenstein automorphisms only as roots of g in K (roots_in_eisenstein, is_eisenstein_galois count); no group object or map [review 2026-11-06; adjudicated]"
+ch051.DecompositionGroup,missing,,no decomposition group of a local field [review 2026-11-06; checked]
+ch051.InertiaGroup,partial,rustmath-numberfields/src/panayi.rs:304; rustmath-numberfields/src/ramification.rs:174,"Verifier right (ch038 pilot: partial): galois_filtration gets automorphisms of Galois Eisenstein K/Q_p as roots of g, inertia_order=|G_0|; orders only, no group; test galois_filtration_from_automorphisms [review 2026-11-06; adjudicated]"
+ch051.RamificationGroup,partial,rustmath-numberfields/src/panayi.rs:304; rustmath-numberfields/src/ramification.rs:169,"Verifier right (ch038 pilot: partial): galois_filtration |G_i|=1+#{beta: v(beta-pi)>=i+1} from actual automorphisms, Galois Eisenstein only; orders, not subgroups; test galois_filtration_from_automorphisms [review 2026-11-06; adjudicated]"
+ch051.FixedField,missing,,no fixed field of an automorphism subgroup [review 2026-11-06; checked]
+ch051.L,partial,rustmath-rings/src/padics/extension.rs:528; rustmath-rings/src/padics/extension.rs:489; rustmath-rings/src/padics/unramified.rs:298; rustmath-rings/src/padics/eisenstein.rs:184,"Verifier right: from_base_field coerces a Q_p element into L and new/element build from coefficient sequences (real partial coercion); no L!r for integers, rationals or polynomials [review 2026-11-06; adjudicated]"
+ch051.L.2,partial,rustmath-rings/src/padics/extension.rs:419,generator(); degree 1 yields zero element [review 2026-11-06; checked]
+ch051.InertialElement,missing,,no generator of the inertial subfield [review 2026-11-06; checked]
+ch051.UniformizingElement,partial,rustmath-rings/src/padics/eisenstein.rs:167; rustmath-numberfields/src/local_field.rs:697; rustmath-numberfields/src/local_field.rs:513,Reviewer note wrong: TowerElement::uniformizer covers unramified-then-Eisenstein towers (test local_field.rs::mixed_tower_e2_f2_arithmetic); none for PadicExtension or arbitrary defining polys [review 2026-11-06; adjudicated]
+ch051.a,done,rustmath-rings/src/padics/extension.rs:706,Mul for PadicExtensionElement; test extension.rs::test_extension_element_multiplication; Q_p base [review 2026-11-06; checked]
+ch051.a.2,done,rustmath-rings/src/padics/extension.rs:666,Add; test extension.rs::test_extension_element_arithmetic; Q_p base [review 2026-11-06; checked]
+ch051.a.3,partial,rustmath-rings/src/padics/extension.rs:686,Sub implemented but no direct test; Q_p base [review 2026-11-06; checked]
+ch051.a.4,partial,rustmath-rings/src/padics/extension.rs:785,Neg implemented but no direct test; Q_p base [review 2026-11-06; checked]
+ch051.a.5,partial,rustmath-numberfields/src/local_field.rs:277,"pow(u64) on separate UnramifiedElement/EisensteinElement types, n>=0 only; none on PadicExtensionElement [review 2026-11-06; checked]"
+ch051.a.6,partial,rustmath-rings/src/padics/eisenstein.rs:284,inverse() on Eisenstein and unramified (unramified.rs:442) elements; no Div operator or inverse on PadicExtensionElement [review 2026-11-06; checked]
+ch051.a.7,broken,rustmath-rings/src/padics/extension.rs:659; rustmath-rings/src/padics/padic_rational.rs:114,"Verifier right: eq compares unnormalized (unit,val) pairs; in Q_5(sqrt5) g*g has coeff (5,0) (pinned by test_extension_element_multiplication) but from_rational(5) is (1,1), so equal values compare unequal [review 2026-11-06; adjudicated]"
+ch051.IsOne,broken,rustmath-rings/src/padics/extension.rs:807,"Verifier right: is_one needs coeff0 unit 1 and val 0 on unnormalized reps; in Q_5(sqrt5) (g*g)*from_rational(1/5) has coeff0 (5,-1), which is 1, yet is_one returns false [review 2026-11-06; adjudicated]"
+ch051.IsMinusOne,missing,,no is_minus_one for local field elements [review 2026-11-06; checked]
+ch051.IsWeaklyZero,missing,,no precision-aware weak-zero test [review 2026-11-06; checked]
+ch051.IsZero,done,rustmath-rings/src/padics/extension.rs:803,Ring::is_zero; test extension.rs::test_extension_element_zero_and_one [review 2026-11-06; checked]
+ch051.Valuation,partial,rustmath-rings/src/padics/eisenstein.rs:271; rustmath-rings/src/padics/unramified.rs:415; rustmath-numberfields/src/local_field.rs:768,"Reviewer note wrong: TowerElement::valuation handles general e,f towers (mixed_tower_e2_f2_arithmetic); still none on PadicExtensionElement, and these reps hold integral elements only [review 2026-11-06; adjudicated]"
+ch051.RelativePrecision,missing,,no relative precision for extension elements [review 2026-11-06; checked]
+ch051.Eltseq,done,rustmath-rings/src/padics/extension.rs:545,coefficients() returns coefficients in powers of generator; used in extension.rs::test_embedding_into_algebraic_closure; Q_p base [review 2026-11-06; checked]
+ch051.RepresentationMatrix,partial,rustmath-rings/src/padics/extension.rs:553; rustmath-rings/src/padics/unramified.rs:457; rustmath-rings/src/padics/eisenstein.rs:329,"Verifier right (ch034.RepresentationMatrix precedent): private multiplication_matrix_rational and unramified/eisenstein multiplication_matrix compute it, used by tested norm/trace; not public [review 2026-11-06; adjudicated]"
+ch051.Factorization,partial,rustmath-rings/src/padics/om_factorization.rs:244,"om_factorization over Q_p of Q[x]: factor count and (e,f)+approximants, not factors over a general local field; test_om_x4_plus_1_q2 etc. [review 2026-11-06; checked]"
+ch051.SuggestedPrecision,missing,,no suggested-precision function for polynomial factorization [review 2026-11-06; checked]
+ch051.Roots,partial,rustmath-numberfields/src/panayi.rs:112; rustmath-polynomials/src/root_label.rs:616,"Verifier path better: panayi roots_in_zp deflates repeated residue roots (roots_in_qp_counts_match_pari_gp vs PARI polrootspadic); padic_roots skips them. Only f in Z[x], roots in Z_p, no multiplicities [review 2026-11-06; adjudicated]"
+ch051.Roots.2,partial,rustmath-numberfields/src/panayi.rs:205; rustmath-polynomials/src/root_label.rs:616,"Reviewer note wrong: panayi roots_in_eisenstein finds roots of f in Z[x] in Eisenstein K/Q_p (exercised by eisenstein_galois_decision). R only Q_p or Eisenstein, f over Z, integral roots only [review 2026-11-06; adjudicated]"
