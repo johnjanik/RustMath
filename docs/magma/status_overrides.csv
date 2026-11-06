@@ -5002,3 +5002,29 @@ ch044.A1.2,missing,,"No Artin representation type in workspace; same-named candi
 ch044.A1.3,missing,,"No Artin representation type in workspace; same-named candidate is unrelated. rustmath-numberfields/src/artin.rs is the CFT Artin map, not Artin representations [review 2026-11-06; checked]"
 ch044.A1.4,missing,,"No Artin representation type in workspace; same-named candidate is unrelated. rustmath-numberfields/src/artin.rs is the CFT Artin map, not Artin representations [review 2026-11-06; checked]"
 ch044.A1.5,missing,,"No Artin representation type in workspace; same-named candidate is unrelated. rustmath-numberfields/src/artin.rs is the CFT Artin map, not Artin representations [review 2026-11-06; checked]"
+ch045.ValuationRing,partial,rustmath-rationals/src/rational.rs:133; rustmath-rings/src/valuation/maclane.rs:250,No ValuationRing object for Q; only Rational::valuation(p) and PAdicBaseValuation. function_field/valuation_ring.rs is string-based symbolic facade. [review 2026-11-06; checked]
+ch045.ValuationRing.2,partial,rustmath-rings/src/function_field/typed/place.rs:91,Place::finite(f) (verifies irreducible) gives v_f and is_in_valuation_ring for K(x); no ring object. Test place.rs::test_valuation_ring_membership [review 2026-11-06; checked]
+ch045.ValuationRing.3,partial,rustmath-rings/src/function_field/typed/place.rs:72,Place::infinite() gives degree valuation and membership test for K(x); no ring object. Test place.rs::test_residue_at_infinity [review 2026-11-06; checked]
+ch045.V,partial,rustmath-rings/src/function_field/typed/place.rs:176,"is_in_valuation_ring checks membership only; no coercion into a ring element type, no error on failure [review 2026-11-06; checked]"
+ch045.Category,missing,,No valuation ring category; same-name hits are group category [review 2026-11-06; checked]
+ch045.Parent,missing,,No parent structure for valuation ring elements/rings [review 2026-11-06; checked]
+ch045.PrimeRing,missing,,Not implemented for valuation rings [review 2026-11-06; checked]
+ch045.Center,missing,,Not implemented for valuation rings; group_category hit is unrelated [review 2026-11-06; checked]
+ch045.FieldOfFractions,missing,,No ring object to query; Place does not expose fraction field [review 2026-11-06; checked]
+ch045.Characteristic,missing,,No valuation ring object; residue_field.rs characteristic is for a different type [review 2026-11-06; checked]
+ch045.v-v,missing,,No valuation ring element type [review 2026-11-06; checked]
+ch045.v,missing,,No valuation ring element type; RationalFunction arithmetic is not closed-checked against O_P [review 2026-11-06; checked]
+ch045.v.2,missing,,No valuation ring element type or in-place ops [review 2026-11-06; checked]
+ch045.v.3,missing,,No div for valuation ring elements [review 2026-11-06; checked]
+ch045.v.4,missing,,No valuation ring element type [review 2026-11-06; checked]
+ch045.v.5,partial,rustmath-rings/src/function_field/typed/place.rs:176,"Place::is_in_valuation_ring for K(x) places (v>=0, zero included); no notin or Q case via ring. Test test_valuation_ring_membership [review 2026-11-06; checked]"
+ch045.Parent.2,missing,,No valuation ring element type [review 2026-11-06; checked]
+ch045.Category.2,missing,,No valuation ring element type [review 2026-11-06; checked]
+ch045.IsZero,missing,,No valuation ring element type; predicates not provided [review 2026-11-06; checked]
+ch045.IsNilpotent,missing,,No valuation ring element type [review 2026-11-06; checked]
+ch045.IsUnit,missing,,No valuation ring element predicate (unit iff valuation 0 not exposed) [review 2026-11-06; checked]
+ch045.EuclideanNorm,missing,,Not implemented [review 2026-11-06; checked]
+ch045.Valuation,partial,rustmath-rings/src/function_field/typed/place.rs:160,Place::valuation(f) for K(x) finite/infinite places returns Option<i64> (None for 0); Rational::valuation(p) for Q. Test test_valuations_specific [review 2026-11-06; checked]
+ch045.Quotrem,missing,,No Quotrem for valuation ring elements [review 2026-11-06; checked]
+ch045.GreatestCommonDivisor,missing,,No DVR gcd by min valuation; lazy_series hit is unrelated [review 2026-11-06; checked]
+ch045.ExtendedGreatestCommonDivisor,missing,,No DVR xgcd; lazy_series hit is unrelated [review 2026-11-06; checked]
