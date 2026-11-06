@@ -78,7 +78,7 @@ pub trait TreeVisitor<T> {
 /// # Examples
 ///
 /// ```
-/// use rustmath_trees::{NaryTree, TreeMutator};
+/// use rustmath_trees::{NaryTree, Tree, TreeMutator};
 ///
 /// struct DoubleVisitor;
 ///

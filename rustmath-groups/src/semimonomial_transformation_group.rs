@@ -21,14 +21,26 @@
 //! ```text
 //! (φ, π, α)(ψ, σ, β) = (φ · ψ^(π,α), πσ, α ∘ β)
 //! ```
+//! (see [`crate::semimonomial_transformation::compose`] for the conventions).
 //!
 //! # Examples
 //!
 //! ```
-//! use rustmath_groups::semimonomial_transformation_group::SemimonomialTransformationGroup;
+//! use rustmath_groups::semimonomial_transformation_group::{
+//!     group_order, SemimonomialTransformationGroup,
+//! };
 //!
-//! // Create the group of degree 3 over integers
-//! let group = SemimonomialTransformationGroup::new(3);
+//! // Degree 3 over Z: units ±1, Aut(Z) trivial. This is the signed
+//! // permutation group C_2 wr S_3 of order 2^3 · 3! = 48.
+//! let group: SemimonomialTransformationGroup<i64> = SemimonomialTransformationGroup::new(3, 1);
+//! assert_eq!(group.degree(), 3);
+//! assert_eq!(group.num_automorphisms(), 1);
+//! assert_eq!(group.permutation_generators().len(), 2); // (0 1), (1 2)
+//! assert_eq!(group.identity_element(1).units(), &[1, 1, 1]);
+//! assert_eq!(group_order(3, 2, 1), Some(48));
+//!
+//! // Degree 3 over GF(4): 3 units, Aut(GF(4)) = <Frobenius> of order 2.
+//! assert_eq!(group_order(3, 3, 2), Some(324));
 //! ```
 
 use rustmath_combinatorics::Permutation;

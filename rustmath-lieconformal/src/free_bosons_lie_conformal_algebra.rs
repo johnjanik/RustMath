@@ -24,7 +24,7 @@
 use rustmath_core::Ring;
 use std::collections::HashMap;
 use std::fmt::{self, Display};
-use crate::lie_conformal_algebra::{LieConformalAlgebra, LambdaBracket, GeneratorIndex};
+use crate::lie_conformal_algebra::{central_valued_bracket, LieConformalAlgebra, LambdaBracket, GeneratorIndex};
 use crate::graded_lie_conformal_algebra::{GradedLieConformalAlgebra, Degree, GradedLCA};
 use crate::lie_conformal_algebra_element::LieConformalAlgebraElement;
 
@@ -39,11 +39,30 @@ use crate::lie_conformal_algebra_element::LieConformalAlgebraElement;
 /// # Examples
 ///
 /// ```
-/// use rustmath_lieconformal::FreeBosonsLieConformalAlgebra;
+/// use rustmath_lieconformal::{FreeBosonsLieConformalAlgebra, LambdaBracket, LieConformalAlgebra};
 ///
 /// // Create free bosons algebra with 2 generators and identity Gram matrix
 /// let lca = FreeBosonsLieConformalAlgebra::new(1i64, 2, None, None);
 /// assert_eq!(lca.ngens(), Some(3)); // 2 generators + 1 central element
+///
+/// let a0 = lca.generator(0).unwrap();
+/// let a1 = lca.generator(1).unwrap();
+/// let k = lca.generator(2).unwrap();
+/// // [α0_λ α0] = λ (α0, α0) K = λK: only the 1st product, equal to K
+/// // (Sage: lie_conformal_algebras.FreeBosons(QQ).0.bracket(...) == {1: K})
+/// let br = lca.lambda_bracket(&a0, &a0);
+/// assert_eq!(br.len(), 1);
+/// assert_eq!(br[&1].terms(), k.terms());
+/// // Orthogonal generators commute, and K is central
+/// assert!(lca.lambda_bracket(&a0, &a1).is_empty());
+/// assert!(lca.lambda_bracket(&k, &a0).is_empty());
+///
+/// // With Gram matrix [[2, 1], [1, 2]]: [α0_λ α1] = λK and [(3α0)_λ α0] = 6λK
+/// let lca2 = FreeBosonsLieConformalAlgebra::new(1i64, 2, Some(vec![vec![2, 1], vec![1, 2]]), None);
+/// let (b0, b1, k2) = (lca2.generator(0).unwrap(), lca2.generator(1).unwrap(), lca2.generator(2).unwrap());
+/// assert_eq!(lca2.n_product(&b0, &b1, 1).terms(), k2.terms());
+/// let three_b0 = b0.scalar_mul(&3);
+/// assert_eq!(lca2.n_product(&three_b0, &b0, 1).terms(), k2.scalar_mul(&6).terms());
 /// ```
 #[derive(Clone)]
 pub struct FreeBosonsLieConformalAlgebra<R: Ring> {
@@ -246,43 +265,20 @@ impl<R: Ring + Clone + From<i64> + PartialEq> GradedLieConformalAlgebra<R>
 impl<R: Ring + Clone + From<i64> + PartialEq + std::ops::Add<Output = R> + std::ops::Mul<Output = R>>
     LambdaBracket<R, FreeBosonsLCAElement<R>> for FreeBosonsLieConformalAlgebra<R>
 {
-    /// Compute the λ-bracket [α_i_λ α_j] = λ(α_i, α_j)K
+    /// Compute the λ-bracket, extending `[α_i_λ α_j] = λ(α_i, α_j)K` by
+    /// sesquilinearity (`∂K = 0`). Keys are j-th products.
     fn lambda_bracket(
         &self,
         a: &FreeBosonsLCAElement<R>,
         b: &FreeBosonsLCAElement<R>,
     ) -> HashMap<usize, FreeBosonsLCAElement<R>> {
-        let mut result = HashMap::new();
-
-        // For each pair of basis elements in a and b
-        for (basis_a, _poly_a) in a.terms() {
-            for (basis_b, _poly_b) in b.terms() {
-                if let (Some(i), Some(j)) = (basis_a.as_finite(), basis_b.as_finite()) {
-                    // Skip if either is the central element
-                    if i == self.central_index || j == self.central_index {
-                        continue;
-                    }
-
-                    // Get the pairing (α_i, α_j)
-                    let pairing = self.get_pairing(i, j);
-
-                    if !pairing.is_zero() {
-                        // Add λ (α_i, α_j) K to the λ^1 term
-                        let central_term = LieConformalAlgebraElement::from_basis(
-                            GeneratorIndex::finite(self.central_index)
-                        )
-                        .scalar_mul(&pairing);
-
-                        let existing = result
-                            .entry(1)
-                            .or_insert_with(|| LieConformalAlgebraElement::zero());
-                        *existing = existing.add(&central_term);
-                    }
-                }
+        central_valued_bracket(a, b, self.graded.ngens(), self.central_index, |i, j| {
+            if i == self.central_index || j == self.central_index {
+                None
+            } else {
+                Some((self.get_pairing(i, j), 1))
             }
-        }
-
-        result
+        })
     }
 
     fn n_product(&self, a: &FreeBosonsLCAElement<R>, b: &FreeBosonsLCAElement<R>, n: usize)
@@ -382,14 +378,20 @@ mod tests {
         // [α0_λ α0] = λ(α0, α0)K = 2λK
         let bracket00 = lca.lambda_bracket(&alpha0, &alpha0);
         assert!(bracket00.contains_key(&1)); // λ^1 term exists
+        let k = lca.generator(2).unwrap();
+        assert_eq!(bracket00.len(), 1);
+        assert_eq!(bracket00[&1].terms(), k.scalar_mul(&2).terms());
 
         // [α0_λ α1] = λ(α0, α1)K = 0 (orthogonal in Gram matrix)
         let bracket01 = lca.lambda_bracket(&alpha0, &alpha1);
         assert!(bracket01.is_empty() || bracket01.values().all(|v| v.is_zero()));
 
-        // [α1_λ α1] = λ(α1, α1)K = 3λK
+        // [α1_λ α1] = λ(α1, α1)K = 3λK, so the only product is
+        // α1_(1) α1 = 1! · 3K = 3K.
         let bracket11 = lca.lambda_bracket(&alpha1, &alpha1);
         assert!(bracket11.contains_key(&1)); // λ^1 term exists
+        assert_eq!(bracket11.len(), 1);
+        assert_eq!(bracket11[&1].terms(), k.scalar_mul(&3).terms());
     }
 
     #[test]
@@ -403,6 +405,38 @@ mod tests {
         // [K_λ α0] = 0 (central element)
         let bracket = lca.lambda_bracket(&k, &alpha0);
         assert!(bracket.is_empty() || bracket.values().all(|v| v.is_zero()));
+    }
+
+    #[test]
+    fn test_free_bosons_sesquilinearity() {
+        // Kac (2.7.4): (∂a)_(n) b = -n a_(n-1) b and a_(n)(∂b) = ∂(a_(n) b) + n a_(n-1) b.
+        // With [α_λ α] = λK, ∂K = 0: (∂α)_(2) α = -2K, α_(2) (∂α) = 2K, nothing else.
+        let lca: FreeBosonsLieConformalAlgebra<i64> =
+            FreeBosonsLieConformalAlgebra::new(1, 1, None, None);
+        let alpha = lca.generator(0).unwrap();
+        let k = lca.generator(1).unwrap();
+        let d_alpha = alpha.apply_derivation();
+
+        let left = lca.lambda_bracket(&d_alpha, &alpha);
+        assert_eq!(left.len(), 1);
+        assert_eq!(left[&2].terms(), k.scalar_mul(&-2).terms());
+
+        let right = lca.lambda_bracket(&alpha, &d_alpha);
+        assert_eq!(right.len(), 1);
+        assert_eq!(right[&2].terms(), k.scalar_mul(&2).terms());
+
+        // Skew-symmetry [b_λ a] = -[a_{-λ-∂} b]: with a = ∂α, b = α,
+        // -[∂α_{-λ} α] = -(-(-λ)·(-λ)) K = λ²K, i.e. α_(2)(∂α) = 2K, as above.
+    }
+
+    #[test]
+    #[should_panic(expected = "is not a generator of this algebra")]
+    fn test_free_bosons_rejects_foreign_basis_index() {
+        let lca: FreeBosonsLieConformalAlgebra<i64> =
+            FreeBosonsLieConformalAlgebra::new(1, 1, None, None);
+        let alpha = lca.generator(0).unwrap();
+        let foreign = LieConformalAlgebraElement::from_basis(GeneratorIndex::finite(7));
+        let _ = lca.lambda_bracket(&alpha, &foreign);
     }
 
     #[test]

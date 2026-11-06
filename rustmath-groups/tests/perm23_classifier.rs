@@ -195,12 +195,61 @@ fn finite_groups_have_distinct_type_sets() {
 
 // --------------------------- transitive24 part-3 --------------------------- //
 
+/// `Db::load_default` reads the gitignored generator atlas
+/// `data/transitive_24.jsonl` (built by GAP, see `data/README.md`). When the file
+/// is present, check the real data; when it is absent, it must fail with a clear
+/// error pointing at the cycle-type support instead of mis-parsing that file.
 #[test]
-fn transitive24_db_load_default_fails_gracefully() {
-    // The generator-based DB file is absent in this checkout; load_default must
-    // return a clear error rather than mis-parsing the cycle-type support file.
-    let res = rustmath_groups::transitive24::Db::load_default();
-    assert!(res.is_err());
-    let msg = format!("{}", res.err().unwrap());
-    assert!(msg.contains("CycleTypeSupport::load_default"), "msg was: {msg}");
+fn transitive24_db_load_default_loads_or_fails_gracefully() {
+    use rustmath_groups::transitive24::{cycle_type_set, group_closure, Db};
+    use rustmath_integers::Integer;
+
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("data/transitive_24.jsonl");
+    let started = std::time::Instant::now();
+    let res = Db::load_default();
+    let elapsed = started.elapsed();
+
+    if !path.exists() {
+        assert!(res.is_err());
+        let msg = format!("{}", res.err().unwrap());
+        assert!(msg.contains("CycleTypeSupport::load_default"), "msg was: {msg}");
+        return;
+    }
+
+    let db = res.expect("transitive_24.jsonl is present and must parse");
+    println!("Db::load_default: {} groups in {:?}", db.groups.len(), elapsed);
+    // Reference values: GAP TransGrp (NrTransitiveGroups(24) = 25000, Size,
+    // IsPrimitive, IsomorphismGroups with MathieuGroup(24) / PSL(2,23)), which
+    // uses LMFDB's numbering in degree 24.
+    assert_eq!(db.groups.len(), 25000);
+    let ts: std::collections::BTreeSet<usize> = db.groups.iter().map(|g| g.t).collect();
+    assert_eq!(ts.len(), 25000);
+    assert_eq!((*ts.iter().next().unwrap(), *ts.iter().last().unwrap()), (1, 25000));
+    let group = |t: usize| db.groups.iter().find(|g| g.t == t).unwrap();
+
+    // 24T1 = C24: order 24, imprimitive, contains the odd 24-cycle.
+    let c24 = group(1);
+    assert_eq!(c24.order, Integer::from(24));
+    assert!(!c24.primitive);
+    assert_eq!(c24.parity, -1);
+    assert!(c24.solvable);
+    // The stored generators really generate a group of that order.
+    assert_eq!(group_closure(&c24.gens, 1000).unwrap().len(), 24);
+    assert!(cycle_type_set(&c24.gens, 1000).unwrap().contains(&vec![24]));
+
+    // 24T7817 = PSL(2,23) on the projective line: order 6072, primitive, simple
+    // (so all elements are even and it is not solvable).
+    let psl = group(7817);
+    assert_eq!(psl.order, Integer::from(6072));
+    assert!(psl.primitive);
+    assert_eq!(psl.parity, 1);
+    assert!(!psl.solvable);
+    assert_eq!(group_closure(&psl.gens, 10_000).unwrap().len(), 6072);
+
+    // 24T24680 = M24: order 244823040, primitive, simple.
+    let m24 = group(24680);
+    assert_eq!(m24.order, Integer::from(244_823_040i64));
+    assert!(m24.primitive);
+    assert_eq!(m24.parity, 1);
+    assert!(!m24.solvable);
 }

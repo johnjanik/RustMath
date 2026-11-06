@@ -127,6 +127,17 @@ pub fn domain_radius_hp_centered(cg: &CosetGraph, tg: &TriangleGroupHp, ctr: &Co
 /// is S_k(Γ) (the ρ^{n−r} scaling fixes the −I diagonal and conditions the A part).
 /// Also returns ρ (for un-scaling recovered vectors: b_n = ρ^{-n} y_n). `cg` must be
 /// compactified.
+///
+/// **Bitwise reproducible at any thread count.** The per-sample work runs in parallel
+/// through an order-preserving `map`/`collect`, and each matrix entry is then ONE
+/// sequential sum over the samples in fixed order m = 1..=Q (rows in parallel, never
+/// split inside a row). Every scalar operation is a correctly-rounded MPFR operation
+/// at `prec`, so the matrix is a pure function of the inputs. (The former rayon
+/// `fold`/`reduce` split the m-range adaptively — work stealing decided the split
+/// tree — so the hp sums were reassociated differently on every multi-threaded run:
+/// ~1e-78 matrix noise, which the arbitrary-phase singular vectors downstream then
+/// amplified to ~1e-9 in [`recover_forms`].) Transient memory is the two Q×dim
+/// per-sample tables; for very large N use [`dump_scaled_ami_streamed`].
 pub fn assemble_scaled_ami(
     tg64: &TriangleGroup,
     tg: &TriangleGroupHp,
@@ -147,13 +158,14 @@ pub fn assemble_scaled_ami(
     let two_pi = Float::with_val(prec, 2.0 * &pi);
     let one = Complex::with_val(prec, (1.0, 0.0));
 
-    // Sum over the Q sample points, parallelised (each sample is an independent outer-product
-    // contribution a[n][r] += base · w_m^{-n} · w'_m^r; O(Q·dim²) total). rayon fold/reduce.
+    // Sum over the Q sample points (each sample is an independent outer-product
+    // contribution a[n][r] += base · w_m^{-n} · w'_m^r; O(Q·dim²) total). Phase 1: the
+    // per-sample factors cn_m[n] = base_m · w_m^{-n} and (w'_m)^r, in parallel; `collect`
+    // keeps them in sample order m = 1..=Q.
     use rayon::prelude::*;
-    let zero_mat = || vec![vec![Complex::with_val(prec, (0.0, 0.0)); dim]; dim];
-    let mut a = (1..=q)
+    let per_sample: Vec<(Vec<Complex>, Vec<Complex>)> = (1..=q)
         .into_par_iter()
-        .fold(&zero_mat, |mut acc, m| {
+        .map(|m| {
             // w_m = ρ · exp(2πi m/Q)
             let theta = Float::with_val(prec, &two_pi * (m as f64)) / (q as f64);
             let ct = theta.clone().cos();
@@ -184,23 +196,27 @@ pub fn assemble_scaled_ami(
             for n in 1..dim {
                 wm_neg_n[n] = Complex::with_val(prec, &wm_neg_n[n - 1] * &inv_wm);
             }
-            for n in 0..dim {
-                let cn = Complex::with_val(prec, &base * &wm_neg_n[n]);
-                for r in 0..dim {
-                    let term = Complex::with_val(prec, &cn * &wpm_r[r]);
-                    acc[n][r] = Complex::with_val(prec, &acc[n][r] + &term);
-                }
-            }
-            acc
+            let cn: Vec<Complex> = wm_neg_n.iter().map(|p| Complex::with_val(prec, &base * p)).collect();
+            (cn, wpm_r)
         })
-        .reduce(&zero_mat, |mut a1, a2| {
-            for n in 0..dim {
-                for r in 0..dim {
-                    a1[n][r] = Complex::with_val(prec, &a1[n][r] + &a2[n][r]);
+        .collect();
+    // Phase 2: rows in parallel; entry (n, r) is the sequential sum over m in fixed
+    // order, so no thread schedule can reassociate it.
+    let mut a: Vec<Vec<Complex>> = (0..dim)
+        .into_par_iter()
+        .map(|n| {
+            let mut row = vec![Complex::with_val(prec, (0.0, 0.0)); dim];
+            for (cn, wpm_r) in &per_sample {
+                let c = &cn[n];
+                for (acc, p) in row.iter_mut().zip(wpm_r.iter()) {
+                    let term = Complex::with_val(prec, c * p);
+                    *acc = Complex::with_val(prec, &*acc + &term);
                 }
             }
-            a1
-        });
+            row
+        })
+        .collect();
+    drop(per_sample);
     // divide by Q, precondition a[n][r] ·= ρ^{n−r}, subtract I
     let mut rho_pow = vec![Float::with_val(prec, 1.0); dim];
     for n in 1..dim {
@@ -227,9 +243,19 @@ pub fn assemble_scaled_ami(
 ///   M[n][r] = (1/Q) Σ_m base_m · e^{−2πimn/Q} · (w′_m/ρ)^r  −  δ_{nr}.
 /// Each row needs only the Q per-sample scalars (base_m, u_m = w′_m/ρ) and the Q-periodic
 /// root-of-unity table E[j] = e^{−2πij/Q} (phase index (m·n) mod Q is exact integer
-/// arithmetic — no error growth across rows). Worker memory is O(Q + dim) rug values,
-/// unlike `assemble_scaled_ami` whose rayon fold clones a dim² accumulator per split
-/// (~1.6 GB each at dim=3001 — the OOM at N=3000).
+/// arithmetic — no error growth across rows). Worker memory is O(Q + dim) rug values;
+/// nothing dim²-sized is held in memory.
+///
+/// The in-memory [`assemble_scaled_ami`] instead peaks at its two Q×dim per-sample
+/// tables plus the dim² result: 2·Q·dim + dim² rug Complex values, ≈ 5·dim² at the
+/// harness sampling Q = 2N + 8 (≈ 45 M values at N = 3000, about five times the single
+/// dim² accumulator, ~1.6 GB at dim = 3001, that the former rayon fold cloned per split
+/// and that ran out of memory at N = 3000). Production callers reach it at production
+/// N: [`super::genus0_map::run_and_persist_belyi`] (N = 3000 at 400 bits via
+/// `run_belyi_2_12_5`) calls [`recover_forms_centered`], which assembles in memory and
+/// then copies the result into an [`MpMatrix`] for the SVD; the E4 pre-probe
+/// ([`super::genus0_map::probe_echelon_valuations`], default N = 1000 at 128 bits)
+/// takes the same path at probe scale. Large-N assembly should go through this dump.
 ///
 /// Completed rows are recorded in `{out}.progress` (params line, then one row index per
 /// line); rerunning with the same params skips them. Returns ρ.
@@ -805,6 +831,10 @@ pub fn dim_s_k_svd_centered(
 /// from the hp SVD of the preconditioned A−I: take the small-σ right singular vectors
 /// y and un-scale b_n = ρ^{-n} y_n. Returns dim S_k(Γ) vectors, each length N+1 — the
 /// modular forms themselves, which §5 echelonizes into the coordinate x(w).
+///
+/// The basis is phase-normalised (see [`recover_forms_from_matrix`]): each vector is
+/// multiplied by the unit that makes its pivot coefficient b_j real positive, j the
+/// first index of largest |y_n| = ρ^n·|b_n|.
 pub fn recover_forms(
     tg64: &TriangleGroup,
     tg: &TriangleGroupHp,
@@ -823,6 +853,7 @@ pub fn recover_forms(
 /// for the order-b vertex chart). The kernel DIMENSION is chart-independent; the
 /// coefficient vectors are expansions in the `ctr` chart's w and differ between charts.
 /// `assemble_scaled_ami` already accepts `ctr`; this threads it the rest of the way.
+/// The returned basis is phase-normalised as in [`recover_forms_from_matrix`].
 #[allow(clippy::too_many_arguments)]
 pub fn recover_forms_centered(
     tg64: &TriangleGroup,
@@ -855,6 +886,24 @@ pub fn recover_forms_centered(
 /// then un-scale b_n = ρ^{-n} y_n. All precision comes from `m.prec`; `rho` must
 /// be the ρ returned by the assembly that produced `m` (the EXT dump does NOT
 /// store it — recompute via [`domain_radius_hp_centered`] with the dump's params).
+///
+/// **Phase convention.** A right singular vector of a simple singular value is
+/// unique only up to a unit factor e^{iθ}, and one-sided Jacobi leaves θ to the
+/// rotation history: every rotation multiplies its column p by e = a_pq/|a_pq|,
+/// and late in the iteration the a_pq of the kernel columns are tiny, so their
+/// phases (hence θ) are ill-conditioned — ~1e-78 input noise moved θ by ~1e-9 on
+/// the (5,3,3) k = 6 case although the vectors as LINES agreed to ~1e-66. Each
+/// kernel vector y is therefore rescaled by conj(y_j)/|y_j|, j the first index of
+/// largest |y_j|, making y_j real positive. The span, i.e. S_k(Γ), is unchanged.
+///
+/// This makes each returned form as well-conditioned as its kernel LINE, and no
+/// better. Two limits:
+/// * The pivot choice is discontinuous. If the two largest |y_n| are equal, or
+///   closer than the input noise can move them, a perturbation of `m` can move j
+///   and so change the phase by O(1). Near-ties fail as well as exact ties.
+/// * It needs a simple kernel σ whose gap to its neighbours is large against the
+///   noise. In a genuine kernel cluster the individual vectors are ill-conditioned
+///   whatever their phase, and only the span is stable.
 pub fn recover_forms_from_matrix(
     m: &MpMatrix,
     rho: &Float,
@@ -874,9 +923,29 @@ pub fn recover_forms_from_matrix(
     }
     let mut forms = Vec::with_capacity(ker.cols);
     for f in 0..ker.cols {
+        // canonical phase (see the doc comment): pivot j = first index of max |y_j|
+        let mut j = 0usize;
+        let mut best = ker.get(0, f).abs2();
+        for n in 1..dim {
+            let a2 = ker.get(n, f).abs2();
+            if a2 > best {
+                best = a2;
+                j = n;
+            }
+        }
+        // V's columns are unit vectors, so best > 0; guard anyway (no rescale on 0).
+        let pivot_abs = ker.get(j, f).abs(prec);
+        let phase =
+            if pivot_abs == 0 { MpC::one(prec) } else { ker.get(j, f).conj().div_real(&pivot_abs) };
         let mut b = Vec::with_capacity(dim);
-        for n in 0..dim {
-            let y = ker.get(n, f).div_real(&rho_pow[n]); // b_n = ρ^{-n} y_n
+        for (n, rho_n) in rho_pow.iter().enumerate() {
+            // y_j·conj(y_j)/|y_j| = |y_j| exactly; set it so the pivot is exactly real
+            let y = if n == j {
+                MpC::new(pivot_abs.clone(), Float::with_val(prec, 0))
+            } else {
+                ker.get(n, f).mul(&phase)
+            };
+            let y = y.div_real(rho_n); // b_n = ρ^{-n} y_n
             b.push(Complex::with_val(prec, (y.re, y.im)));
         }
         forms.push(b);
@@ -1034,9 +1103,11 @@ mod tests {
             }
         }
 
-        // (c) the streamed assembly is a different summation order than
-        // assemble_scaled_ami (root-of-unity table + running products vs direct powers,
-        // rayon reassociation), so the two matrices agree only to working precision
+        // (c) both assemblies are deterministic and sum over m in the same order, but the
+        // streamed one computes each term by a different arithmetic route than
+        // assemble_scaled_ami (root-of-unity table E[(m·n) mod Q] times running powers of
+        // w′_m/ρ, 1/Q applied per sample, vs running powers of 1/w_m and w′_m, rescaled
+        // by ρ^{n−r}/Q after the sum), so the two matrices agree only to working precision
         // (2^-106 ≈ 2.5e-32, amplified by the O(Q·dim) accumulations).
         let mut worst = 0f64;
         for (i, row) in a.iter().enumerate() {
@@ -1057,13 +1128,15 @@ mod tests {
     // The dump→read matrix must be SVD-equivalent to the in-memory assembly, and
     // recover_forms_from_matrix (the shared tail) on it must reproduce
     // recover_forms_centered. The streamed and in-memory assemblies differ at
-    // ~2^-PREC (different summation order), so spectra/kernels/forms match to
+    // ~2^-PREC (different per-term arithmetic), so spectra/kernels/forms match to
     // working tolerance, not bitwise. PREC = 256 with a lossless 5·53 = 265 ≥ 256-bit
     // limb split, so the dump itself adds NO error — every diff below is assembly
-    // noise. Two of the three kernel σ are near-degenerate, so individual kernel
-    // vectors are ill-conditioned (rotation ≈ noise/cluster-gap; the mp_svd header's
-    // "use the subspace" caveat): the canonical invariant is the SUBSPACE, checked
-    // tightly; the per-vector form check is asserted at measured + 3.5 decades.
+    // noise. The kernel σ are simple (≈2.5e-12, 4.0e-13, 2.7e-13; no cluster at the
+    // 1e-40 tolerance), so each kernel vector is well-conditioned as a LINE; the raw
+    // Jacobi vectors differ only by an ill-conditioned unit phase, which
+    // recover_forms_from_matrix fixes canonically. The SUBSPACE is checked tightly
+    // here; the per-vector form check keeps its original bound (the tight per-vector
+    // conditioning check is recover_forms_phase_is_well_conditioned).
     #[test]
     fn ext_dump_svd_and_forms_match_in_memory_5_3_3() {
         let prec: u32 = PREC;
@@ -1138,8 +1211,8 @@ mod tests {
             }
             worst_proj = worst_proj.max(resid2.to_f64().sqrt());
         }
-        // measured 1.1e-75 — the subspace is stable at full working precision even
-        // though individual vectors inside the near-degenerate cluster are not
+        // measured 1.1e-75 — the subspace is stable at full working precision (the raw
+        // per-vector V columns are not compared: their Jacobi phase is arbitrary)
         eprintln!("[ext_svd] worst kernel projection residual {worst_proj:.2e}");
         assert!(worst_proj < 1e-60, "kernels span different subspaces: {worst_proj:.2e}");
 
@@ -1158,11 +1231,10 @@ mod tests {
                 worst_form = worst_form.max(cmod_f64(&d) / (1.0 + cmod_f64(x)));
             }
         }
-        // measured 2.8e-10: the ~1e-76 assembly noise amplified by 1/cluster-gap
-        // inside the near-degenerate kernel pair, then by ρ^{-n} in the un-scaling —
-        // an ill-conditioned per-vector comparison (the subspace check above is the
-        // canonical one). 1e-6 is 3.5 decades of margin for run-to-run rayon
-        // reassociation, and far below the O(1) diff a wrong vector would produce.
+        // measured 4.5e-62 with the canonical phase of recover_forms_from_matrix
+        // (2.8e-10 before it: the ~1e-76 assembly noise moved the arbitrary Jacobi phase
+        // of the kernel vectors, then ρ^{-n} amplified it). The pre-existing 1e-6 bound
+        // is kept; it is far below the O(1) diff a wrong vector would produce.
         eprintln!("[ext_svd] worst normalized form-coefficient diff {worst_form:.2e}");
         assert!(worst_form < 1e-6, "forms from dump diverged from in-memory forms: {worst_form:.2e}");
     }
@@ -1471,11 +1543,12 @@ mod tests {
     }
 
     // recover_forms_centered at ctr = z_a is the SAME code path recover_forms now
-    // delegates to; the two calls must agree. The comparison is numeric rather than
-    // bitwise only because the rayon fold/reduce in assemble_scaled_ami reassociates
-    // hp additions between runs (~1e-75 matrix noise, ~1e-60 after the ρ^{-n}
-    // un-scaling) — 1e-30 relative is dozens of decades above that, and dozens below
-    // any mathematically meaningful difference.
+    // delegates to; the two calls must agree. assemble_scaled_ami is bitwise
+    // thread-independent (assemble_scaled_ami_bitwise_thread_independent below), so the
+    // two calls are in fact bit-identical (worst = 0); the 1e-30 relative check is kept
+    // as the delegation check. (Previously the rayon fold/reduce reassociated the hp sums
+    // run to run, ~1e-78 matrix noise, and the unnormalized Jacobi phase of the kernel
+    // vectors amplified that to 3e-10..9e-10 here; both are fixed at the source.)
     #[test]
     fn recover_forms_centered_z_a_matches_uncentered() {
         let (tg64, tg, cg) = setup_5_3_3();
@@ -1492,7 +1565,83 @@ mod tests {
                 worst = worst.max(cmod_f64(&d) / scale);
             }
         }
+        eprintln!("[z_a] recover_forms vs recover_forms_centered(z_a): worst normalized diff {worst:.2e}");
         assert!(worst < 1e-30, "z_a-centered recover_forms diverged from recover_forms: {worst:.2e}");
+    }
+
+    // Regression for the run-to-run nondeterminism of recover_forms: the former rayon
+    // fold/reduce let work stealing pick the split tree of the m-sum, so every
+    // multi-threaded run reassociated the hp additions differently (measured: 550-716
+    // of 2401 entries differing, by up to ~9e-78, between two runs on 4 threads;
+    // identical under RAYON_NUM_THREADS=1). The assembly must be bitwise identical at
+    // every thread count.
+    #[test]
+    fn assemble_scaled_ami_bitwise_thread_independent() {
+        let (tg64, tg, cg) = setup_5_3_3();
+        let run = |threads: usize| {
+            rayon::ThreadPoolBuilder::new()
+                .num_threads(threads)
+                .build()
+                .expect("rayon pool")
+                .install(|| assemble_scaled_ami(&tg64, &tg, &cg, 6, 48, 96, 1.0, &tg.z_a))
+        };
+        let (a1, rho1) = run(1);
+        assert_eq!(a1.len(), 49);
+        for threads in [2usize, 4, 8] {
+            let (at, rhot) = run(threads);
+            assert_eq!(rho1, rhot, "ρ differs between 1 and {threads} threads");
+            for (n, (r1, rt)) in a1.iter().zip(at.iter()).enumerate() {
+                for (r, (x, y)) in r1.iter().zip(rt.iter()).enumerate() {
+                    assert!(x == y, "entry ({n},{r}) differs between 1 and {threads} threads: {x:?} vs {y:?}");
+                }
+            }
+        }
+    }
+
+    // The phase convention of recover_forms_from_matrix. A kernel singular vector is
+    // unique only up to e^{iθ}, and the raw one-sided-Jacobi θ is ill-conditioned:
+    // between two assemblies differing by ~1e-78, the kernel vectors agreed as LINES to
+    // ~1e-66 (|v1 − c·v2|, c = ⟨v2, v1⟩, |c| = 1 − O(1e-76)) but arg c reached 6e-10.
+    // With the largest-modulus entry made real positive, the forms are a
+    // well-conditioned function of the matrix: a deterministic ±(0..3)·2^-255 relative
+    // perturbation of every entry moves them by 4.6e-66 (normalized as above; measured
+    // 8.0e-10 with the convention disabled, which also fails the pivot assert), so 1e-50
+    // leaves 15 decades of margin while a phase slip of the old size fails by 40.
+    #[test]
+    fn recover_forms_phase_is_well_conditioned() {
+        let (tg64, tg, cg) = setup_5_3_3();
+        let prec = tg.prec;
+        let (a, rho) = assemble_scaled_ami(&tg64, &tg, &cg, 6, 48, 96, 1.0, &tg.z_a);
+        let dim = a.len();
+        let eps0 = Float::with_val(prec, Float::i_exp(1, -255));
+        let mut d0 = Vec::with_capacity(dim * dim);
+        let mut d1 = Vec::with_capacity(dim * dim);
+        for (i, row) in a.iter().enumerate() {
+            for (j, z) in row.iter().enumerate() {
+                d0.push(MpC::new(Float::with_val(prec, z.real()), Float::with_val(prec, z.imag())));
+                let eps = Float::with_val(prec, &eps0 * (((i * 31 + j * 17) % 7) as f64 - 3.0));
+                let re = Float::with_val(prec, z.real() * Float::with_val(prec, 1 + eps.clone()));
+                let im = Float::with_val(prec, z.imag() * Float::with_val(prec, 1 - eps));
+                d1.push(MpC::new(re, im));
+            }
+        }
+        let m0 = MpMatrix::from_row_major(dim, dim, prec, d0).expect("square matrix");
+        let m1 = MpMatrix::from_row_major(dim, dim, prec, d1).expect("square matrix");
+        let f0 = recover_forms_from_matrix(&m0, &rho, "1e-8", "1e-70");
+        let f1 = recover_forms_from_matrix(&m1, &rho, "1e-8", "1e-70");
+        assert_eq!(f0.len(), 3, "dim S_6 = 3");
+        assert_eq!(f1.len(), 3, "dim S_6 = 3 after the perturbation");
+        let mut worst = 0f64;
+        for (fa, fb) in f0.iter().zip(f1.iter()) {
+            // the pivot coefficient is exactly real positive (b_j = |y_j|·ρ^{-j})
+            assert!(fa.iter().any(|z| z.imag().is_zero() && z.real().is_sign_positive() && !z.real().is_zero()));
+            for (x, y) in fa.iter().zip(fb.iter()) {
+                let d = Complex::with_val(prec, x - y);
+                worst = worst.max(cmod_f64(&d) / (1.0 + cmod_f64(x)));
+            }
+        }
+        eprintln!("[phase] 2^-255-perturbed matrix: worst normalized form-coefficient diff {worst:.2e}");
+        assert!(worst < 1e-50, "recovered forms are not a well-conditioned function of the matrix: {worst:.2e}");
     }
 
     // dim S_k is chart-independent — the honest cross-chart invariant (coefficients

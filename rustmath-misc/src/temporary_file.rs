@@ -26,18 +26,26 @@
 //!
 //! // Generate a temporary filename (does not create the file)
 //! let temp_path = tmp_filename("rustmath", Some(".txt")).unwrap();
+//! assert!(temp_path.starts_with(std::env::temp_dir()));
+//! assert!(!temp_path.exists());
 //!
 //! // Create a temporary directory (automatically cleaned up on drop)
-//! {
+//! let dir_path = {
 //!     let temp_dir = tmp_dir().unwrap();
-//!     let dir_path = temp_dir.path();
+//!     let dir_path = temp_dir.path().to_owned();
 //!     // Use the directory...
-//! } // Directory automatically deleted here
+//!     assert!(dir_path.is_dir());
+//!     dir_path
+//! }; // Directory automatically deleted here
+//! assert!(!dir_path.exists());
 //!
-//! // Atomically write to a file
-//! atomic_write("output.txt", |f| {
+//! // Atomically write to a file (here inside a temporary directory)
+//! let out_dir = tmp_dir().unwrap();
+//! let output = out_dir.path().join("output.txt");
+//! atomic_write(&output, |f| {
 //!     writeln!(f, "Hello, world!")
 //! }).unwrap();
+//! assert_eq!(std::fs::read_to_string(&output).unwrap(), "Hello, world!\n");
 //! ```
 
 use std::path::{Path, PathBuf};
@@ -173,6 +181,8 @@ impl TemporaryFile {
     /// writeln!(temp_file.file_mut(), "permanent data").unwrap();
     /// let permanent_path = temp_file.persist().unwrap();
     /// // File is NOT deleted, even after temp_file is dropped
+    /// assert_eq!(std::fs::read_to_string(&permanent_path).unwrap(), "permanent data\n");
+    /// std::fs::remove_file(&permanent_path).unwrap(); // the caller now owns the cleanup
     /// ```
     pub fn persist(mut self) -> io::Result<PathBuf> {
         let temp = self.inner.take().unwrap();
@@ -267,8 +277,10 @@ impl TemporaryDir {
     ///
     /// let temp_dir = TemporaryDir::new().unwrap();
     /// fs::write(temp_dir.path().join("data.txt"), "permanent data").unwrap();
-    /// let permanent_path = temp_dir.persist();
+    /// let permanent_path = temp_dir.persist().unwrap();
     /// // Directory is NOT deleted, even after temp_dir is dropped
+    /// assert_eq!(fs::read_to_string(permanent_path.join("data.txt")).unwrap(), "permanent data");
+    /// fs::remove_dir_all(&permanent_path).unwrap(); // the caller now owns the cleanup
     /// ```
     pub fn persist(mut self) -> io::Result<PathBuf> {
         let temp = self.inner.take().unwrap();
@@ -393,14 +405,24 @@ pub fn tmp_dir() -> io::Result<TemporaryDir> {
 /// # Examples
 ///
 /// ```rust
-/// use rustmath_misc::temporary_file::atomic_write;
+/// use rustmath_misc::temporary_file::{atomic_write, tmp_dir};
+/// use std::fs;
 /// use std::io::Write;
 ///
-/// atomic_write("output.txt", |file| {
+/// let dir = tmp_dir().unwrap(); // removed, with its contents, when dropped
+/// let output = dir.path().join("output.txt");
+///
+/// atomic_write(&output, |file| {
 ///     writeln!(file, "Line 1")?;
 ///     writeln!(file, "Line 2")?;
 ///     Ok(())
 /// }).unwrap();
+/// assert_eq!(fs::read_to_string(&output).unwrap(), "Line 1\nLine 2\n");
+///
+/// // A failing writer leaves the existing file untouched.
+/// let failed = atomic_write(&output, |_| Err(std::io::Error::other("abort")));
+/// assert!(failed.is_err());
+/// assert_eq!(fs::read_to_string(&output).unwrap(), "Line 1\nLine 2\n");
 /// ```
 ///
 /// # Error Handling
@@ -429,12 +451,10 @@ where
     // Ensure all data is written to disk
     temp_file.as_file_mut().sync_all()?;
 
-    // Atomically replace the target file
-    // persist() returns (File, PathBuf), we need to move it to the final location
-    let (_, temp_path) = temp_file.keep()?;
-
-    // Use rename for atomic operation
-    fs::rename(temp_path, path)?;
+    // Atomically replace the target file (a same-directory rename). If the rename
+    // fails, the error hands back the temporary file, which is deleted when dropped,
+    // so no `.tmp_*` file is left behind next to the target.
+    temp_file.persist(path).map_err(|e| e.error)?;
 
     Ok(())
 }
@@ -472,14 +492,25 @@ where
 /// # Examples
 ///
 /// ```rust
-/// use rustmath_misc::temporary_file::atomic_dir;
+/// use rustmath_misc::temporary_file::{atomic_dir, tmp_dir};
 /// use std::fs;
 ///
-/// atomic_dir("output_dir", |dir_path| {
+/// let parent = tmp_dir().unwrap(); // removed, with its contents, when dropped
+/// let output_dir = parent.path().join("output_dir");
+///
+/// atomic_dir(&output_dir, |dir_path| {
 ///     fs::write(dir_path.join("file1.txt"), "data1")?;
 ///     fs::write(dir_path.join("file2.txt"), "data2")?;
 ///     Ok(())
 /// }).unwrap();
+/// assert_eq!(fs::read_to_string(output_dir.join("file1.txt")).unwrap(), "data1");
+/// assert_eq!(fs::read_to_string(output_dir.join("file2.txt")).unwrap(), "data2");
+///
+/// // The target now exists and is not empty, so a second rename onto it fails;
+/// // the existing directory is untouched and no temporary directory is left behind.
+/// assert!(atomic_dir(&output_dir, |d| fs::write(d.join("file1.txt"), "other")).is_err());
+/// assert_eq!(fs::read_to_string(output_dir.join("file1.txt")).unwrap(), "data1");
+/// assert_eq!(fs::read_dir(parent.path()).unwrap().count(), 1);
 /// ```
 ///
 /// # Error Handling
@@ -505,9 +536,14 @@ where
     // Populate using the provided closure
     populator(temp_dir.path())?;
 
-    // Atomically rename to the final location
-    let temp_path = temp_dir.keep();
-    fs::rename(temp_path, path)?;
+    // Atomically rename to the final location. On failure (e.g. the target exists
+    // and is not empty) `temp_dir` is dropped here, deleting the temporary
+    // directory and its contents.
+    fs::rename(temp_dir.path(), path)?;
+
+    // The temporary path no longer exists after a successful rename; release it
+    // without letting the drop handler touch that path again.
+    let _ = temp_dir.keep();
 
     Ok(())
 }
@@ -745,6 +781,59 @@ mod tests {
 
         // Target directory should not exist
         assert!(!target.exists());
+    }
+
+    /// Names of the entries directly inside `dir`, sorted.
+    fn entry_names(dir: &Path) -> Vec<String> {
+        let mut names: Vec<String> = fs::read_dir(dir)
+            .unwrap()
+            .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        names.sort();
+        names
+    }
+
+    #[test]
+    fn test_atomic_dir_rename_failure_cleans_up() {
+        let temp_parent = tmp_dir().unwrap();
+        let target = temp_parent.path().join("existing");
+        fs::create_dir(&target).unwrap();
+        fs::write(target.join("keep.txt"), "original").unwrap();
+
+        // Renaming a directory onto a non-empty directory fails.
+        let result = atomic_dir(&target, |dir| fs::write(dir.join("new.txt"), "new"));
+        assert!(result.is_err());
+
+        // Existing directory untouched, and no `.tmp_dir_*` left in the parent.
+        assert_eq!(fs::read_to_string(target.join("keep.txt")).unwrap(), "original");
+        assert!(!target.join("new.txt").exists());
+        assert_eq!(entry_names(temp_parent.path()), vec!["existing".to_string()]);
+    }
+
+    #[test]
+    fn test_atomic_write_rename_failure_cleans_up() {
+        let temp_parent = tmp_dir().unwrap();
+        let target = temp_parent.path().join("a_directory");
+        fs::create_dir(&target).unwrap();
+        fs::write(target.join("inner.txt"), "inner").unwrap();
+
+        // Renaming a file onto a non-empty directory fails.
+        let result = atomic_write(&target, |f| writeln!(f, "data"));
+        assert!(result.is_err());
+
+        // Directory untouched, and no `.tmp_*` file left in the parent.
+        assert!(target.is_dir());
+        assert_eq!(fs::read_to_string(target.join("inner.txt")).unwrap(), "inner");
+        assert_eq!(entry_names(temp_parent.path()), vec!["a_directory".to_string()]);
+    }
+
+    #[test]
+    fn test_atomic_write_error_leaves_no_temp_file() {
+        let temp_parent = tmp_dir().unwrap();
+        let target = temp_parent.path().join("output.txt");
+        let result = atomic_write(&target, |_f| Err(io::Error::other("Simulated error")));
+        assert!(result.is_err());
+        assert!(entry_names(temp_parent.path()).is_empty());
     }
 
     #[test]

@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 /// # Examples
 ///
 /// ```
-/// use rustmath_trees::NaryTree;
+/// use rustmath_trees::{NaryTree, Tree, TreeNode};
 ///
 /// let mut root = NaryTree::new("root");
 /// root.add_child(NaryTree::new("child1"));
@@ -35,7 +35,7 @@ impl<T> NaryTree<T> {
     /// # Examples
     ///
     /// ```
-    /// use rustmath_trees::NaryTree;
+    /// use rustmath_trees::{NaryTree, Tree};
     ///
     /// let node = NaryTree::new(42);
     /// assert_eq!(node.value(), &42);
@@ -53,7 +53,7 @@ impl<T> NaryTree<T> {
     /// # Examples
     ///
     /// ```
-    /// use rustmath_trees::NaryTree;
+    /// use rustmath_trees::{NaryTree, TreeNode};
     ///
     /// let child1 = NaryTree::new(1);
     /// let child2 = NaryTree::new(2);
@@ -70,7 +70,7 @@ impl<T> NaryTree<T> {
     /// # Examples
     ///
     /// ```
-    /// use rustmath_trees::NaryTree;
+    /// use rustmath_trees::{NaryTree, TreeNode};
     ///
     /// let mut root = NaryTree::new(0);
     /// root.add_child(NaryTree::new(1));

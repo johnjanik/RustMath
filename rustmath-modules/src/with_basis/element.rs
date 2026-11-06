@@ -20,14 +20,26 @@ use std::ops::{Add, Neg, Mul};
 /// # Examples
 /// ```
 /// use rustmath_modules::with_basis::element::ModuleWithBasisElement;
-/// use num_bigint::BigInt;
+/// use rustmath_integers::Integer;
 /// use std::collections::BTreeMap;
 ///
-/// // Create element 3*e_0 + 5*e_2
+/// // Create element 3*e_0 + 5*e_2 (an explicit zero coefficient is dropped)
 /// let mut coeffs = BTreeMap::new();
-/// coeffs.insert(0, BigInt::from(3));
-/// coeffs.insert(2, BigInt::from(5));
+/// coeffs.insert(0, Integer::from(3));
+/// coeffs.insert(1, Integer::from(0));
+/// coeffs.insert(2, Integer::from(5));
 /// let elem = ModuleWithBasisElement::new(coeffs);
+///
+/// assert_eq!(elem.support(), vec![0, 2]);
+/// assert_eq!(elem.coefficient(&0), Integer::from(3));
+/// assert_eq!(elem.coefficient(&1), Integer::from(0));
+/// assert_eq!(elem.coefficient(&2), Integer::from(5));
+///
+/// // 2*(3*e_0 + 5*e_2) - (3*e_0 + 5*e_2) = 3*e_0 + 5*e_2
+/// let doubled = elem.scalar_mul(&Integer::from(2));
+/// assert_eq!(doubled.coefficient(&2), Integer::from(10));
+/// assert_eq!(doubled.sub(&elem), elem);
+/// assert!(elem.sub(&elem).is_zero());
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ModuleWithBasisElement<I, R>

@@ -1,7 +1,8 @@
-# Session handoff (2026-11-06)
+# Session handoff (2026-11-06, updated after the test-fix session)
 
 Read this first, then `CLAUDE.md` and `docs/README.md`. It records where the project stands and
-the two tasks for the next session.
+what to do next. **Tasks 0 and 1 are done** (see their status notes below). **Task 2 is next and
+needs the user's go-ahead** before fanning out (it costs about 4-5M tokens).
 
 ## Where things stand
 
@@ -12,10 +13,13 @@ the two tasks for the next session.
 - **Git:** one line of history. `main` contains everything (PRs #569, #570). The 19 old branches
   were deleted; their tips are tags `archive/<branch>` (`docs/BRANCHES.md`). Work on a new branch
   off `main`; cloud sessions can push only their own branch (no tags, no other branches).
-- **Build:** the whole workspace compiles. First build compiles GMP/MPFR for `rug` (minutes).
+- **Build and tests:** the whole workspace compiles, and `cargo test --workspace` is green:
+  13,772 passed, 0 failed, 332 ignored at `e0a9c23` (`docs/TEST_BASELINE.md`). First build
+  compiles GMP/MPFR for `rug` (minutes).
 - **Environment:** the RustMath cloud environment's setup script installs GAP (`gap-core`,
   `gap-libs`, `gap-transgrp`) and builds the gitignored degree-24 atlas files in
-  `rustmath-groups/data/`. **This is its first real run: check it worked** (see Task 0).
+  `rustmath-groups/data/`. Verified on its first real run (2026-11-06): GAP at `/usr/bin/gap`, both
+  atlas files 25,000 rows, `galois_narrowing` 4/4.
 - **Lost for good:** seven IGP24 files never committed anywhere (`docs/igp24/SOURCES.md`).
   Nothing in the port depends on them.
 
@@ -32,7 +36,9 @@ the two tasks for the next session.
 | `PROJECT_TRACKER.md` | Algorithm inventory by `file:line`, with facade/broken flags |
 | `docs/PLAN.md` | Phased plan (see the 2026-11-05 update at the top) |
 
-## Task 0: verify the environment (5 minutes)
+## Task 0: verify the environment (5 minutes). DONE 2026-11-06
+
+Passed as written; the setup script worked. Re-run it at the start of a session if in doubt.
 
 ```bash
 which gap && wc -l rustmath-groups/data/transitive_24.jsonl rustmath-groups/data/transitive24_cycletypes.jsonl
@@ -42,7 +48,34 @@ cargo test -p rustmath-groups --test galois_narrowing     # expect 4 passed
 If GAP or either file is missing: run `apt-get install -y gap-core gap-libs gap-transgrp`, then
 the two commands in `rustmath-groups/data/README.md`, and tell the user the setup script failed.
 
-## Task 1: fix the 57 failing tests
+## Task 1: fix the 57 failing tests. DONE 2026-11-06
+
+All 58 fixed (the 57 below, plus `perm23_classifier::transitive24_db_load_default_fails_gracefully`,
+which assumed the atlas data was absent). There are 13 commits, `eb50f9b`..`e0a9c23`, one or two
+per crate. Each fix was checked by an independent reviewer agent before it was committed. Each of the
+21 library-test failures involved a code bug; three of those tests also had a wrong fixture or
+expected value, corrected with proof (GAP or the definition). Most of the doctest failures were stale
+examples, but giving them real assertions exposed further bugs and facades (Artin relators, the
+Mathieu groups, ghost brackets, multimodular Bernoulli). `docs/TEST_BASELINE.md` has the per-crate
+causes, and the `PROJECT_TRACKER.md` Change Log row (2026-11-06) and inventory rows have the
+details. Things to know:
+- `rustmath-algebras` doctests behind the `full` feature run only in a workspace build (through
+  `rustmath-jupyter`). Test that crate alone with `--features full`.
+- `rustmath-misc` doctests no longer write `output.txt` or leave `.tmp_dir_*` behind.
+- Facades found but **left open** (rows in the tracker): the `GroupElement::order` default (a
+  bounded search that decides "infinite"), the `Group::is_abelian` default `false`, the
+  `Group::exponent` default `None`, `GenericParentWrapper::contains_element` (always true),
+  `FreeModuleWithBasis::cardinality`, lieconformal `degree()` (None for every nonzero element),
+  affine `compute_structure_data` (empty tables, so its bracket panics), the f.p.-group SNF, and the
+  Artin/braid word problem. The Virasoro, N=2, Neveu-Schwarz and structure-coefficient
+  lambda-brackets now panic honestly instead of returning empty maps; they are unimplemented.
+- Behaviour and API changes with no callers outside their crate: `ClusterQuiver::mutation_type`
+  now returns `Result`, `is_mutation_equivalent` returns `Option<bool>`, and `to_quiver` returns
+  `Result`. `recover_forms*` return phase-normalised kernel vectors. `GroupLibGAP::contains` and
+  `elements` panic (`unimplemented!`) when a group cannot be enumerated; use `try_contains`.
+- Commit `3fab92c` lacks the blank line after its subject (cosmetic; history not rewritten).
+
+The original task text follows.
 
 Baseline (`docs/TEST_BASELINE.md`, with atlas data present): 57 failures.
 

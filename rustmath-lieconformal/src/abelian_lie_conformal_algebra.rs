@@ -31,12 +31,21 @@ use crate::lie_conformal_algebra_element::LieConformalAlgebraElement;
 /// # Examples
 ///
 /// ```
-/// use rustmath_lieconformal::AbelianLieConformalAlgebra;
+/// use rustmath_lieconformal::{AbelianLieConformalAlgebra, LambdaBracket, LieConformalAlgebra};
 ///
 /// // Create an abelian LCA with 2 generators
 /// let lca = AbelianLieConformalAlgebra::new(1i64, 2, None, None, None);
-/// assert_eq!(lca.ngens(), Some(2));
+/// // The inherent `ngens` returns `usize`; the trait method returns `Option<usize>`
+/// assert_eq!(lca.ngens(), 2);
+/// assert_eq!(LieConformalAlgebra::ngens(&lca), Some(2));
 /// assert!(lca.is_abelian());
+///
+/// // Abelian means every λ-bracket vanishes: [a_λ b] = 0
+/// let a = lca.generator(0).unwrap();
+/// let b = lca.generator(1).unwrap();
+/// assert!(lca.lambda_bracket(&a, &b).is_empty());
+/// assert!(lca.lambda_bracket(&a, &a).is_empty());
+/// assert!(lca.n_product(&a, &b, 0).is_zero());
 /// ```
 #[derive(Clone)]
 pub struct AbelianLieConformalAlgebra<R: Ring> {
@@ -70,6 +79,8 @@ impl<R: Ring + Clone> AbelianLieConformalAlgebra<R> {
     ///     Some(weights),
     ///     None,
     /// );
+    /// assert_eq!(lca.generator_names(), &["a".to_string(), "b".to_string()]);
+    /// assert_eq!(lca.generator_weights(), &[Degree::int(1), Degree::int(2)]);
     /// ```
     pub fn new(
         base_ring: R,

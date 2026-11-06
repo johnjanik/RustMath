@@ -24,7 +24,7 @@
 use rustmath_core::Ring;
 use std::collections::HashMap;
 use std::fmt::{self, Display};
-use crate::lie_conformal_algebra::{LieConformalAlgebra, LambdaBracket, GeneratorIndex};
+use crate::lie_conformal_algebra::{central_valued_bracket, LieConformalAlgebra, LambdaBracket, GeneratorIndex};
 use crate::graded_lie_conformal_algebra::{GradedLieConformalAlgebra, Degree, GradedLCA};
 use crate::lie_conformal_algebra_element::LieConformalAlgebraElement;
 
@@ -39,11 +39,25 @@ use crate::lie_conformal_algebra_element::LieConformalAlgebraElement;
 /// # Examples
 ///
 /// ```
-/// use rustmath_lieconformal::FreeFermionsLieConformalAlgebra;
+/// use rustmath_lieconformal::{Degree, GradedLieConformalAlgebra};
+/// use rustmath_lieconformal::{FreeFermionsLieConformalAlgebra, LambdaBracket, LieConformalAlgebra};
 ///
 /// // Create free fermions algebra with 2 generators and identity Gram matrix
 /// let lca = FreeFermionsLieConformalAlgebra::new(1i64, 2, None, None);
 /// assert_eq!(lca.ngens(), Some(3)); // 2 generators + 1 central element
+/// // Fermions have conformal weight 1/2, K has weight 0
+/// assert_eq!(lca.generator_degree(0), Some(Degree::rational(1, 2)));
+/// assert_eq!(lca.generator_degree(2), Some(Degree::int(0)));
+///
+/// let psi0 = lca.generator(0).unwrap();
+/// let psi1 = lca.generator(1).unwrap();
+/// let k = lca.generator(2).unwrap();
+/// // [ψ0_λ ψ0] = K: only the 0th product
+/// // (Sage: lie_conformal_algebras.FreeFermions(QQ): psi.bracket(psi) == {0: K})
+/// let br = lca.lambda_bracket(&psi0, &psi0);
+/// assert_eq!(br.len(), 1);
+/// assert_eq!(br[&0].terms(), k.terms());
+/// assert!(lca.lambda_bracket(&psi0, &psi1).is_empty());
 /// ```
 #[derive(Clone)]
 pub struct FreeFermionsLieConformalAlgebra<R: Ring> {
@@ -250,43 +264,20 @@ impl<R: Ring + Clone + From<i64> + PartialEq> GradedLieConformalAlgebra<R>
 impl<R: Ring + Clone + From<i64> + PartialEq + std::ops::Add<Output = R> + std::ops::Mul<Output = R>>
     LambdaBracket<R, FreeFermionsLCAElement<R>> for FreeFermionsLieConformalAlgebra<R>
 {
-    /// Compute the λ-bracket [ψ_i_λ ψ_j] = M_ij K
+    /// Compute the λ-bracket, extending `[ψ_i_λ ψ_j] = M_ij K` by
+    /// sesquilinearity (`∂K = 0`). Keys are j-th products.
     fn lambda_bracket(
         &self,
         a: &FreeFermionsLCAElement<R>,
         b: &FreeFermionsLCAElement<R>,
     ) -> HashMap<usize, FreeFermionsLCAElement<R>> {
-        let mut result = HashMap::new();
-
-        // For each pair of basis elements in a and b
-        for (basis_a, _poly_a) in a.terms() {
-            for (basis_b, _poly_b) in b.terms() {
-                if let (Some(i), Some(j)) = (basis_a.as_finite(), basis_b.as_finite()) {
-                    // Skip if either is the central element
-                    if i == self.central_index || j == self.central_index {
-                        continue;
-                    }
-
-                    // Get the pairing (ψ_i, ψ_j)
-                    let pairing = self.get_pairing(i, j);
-
-                    if !pairing.is_zero() {
-                        // Add M_ij K to the λ^0 term (no λ in the bracket)
-                        let central_term = LieConformalAlgebraElement::from_basis(
-                            GeneratorIndex::finite(self.central_index)
-                        )
-                        .scalar_mul(&pairing);
-
-                        let existing = result
-                            .entry(0)
-                            .or_insert_with(|| LieConformalAlgebraElement::zero());
-                        *existing = existing.add(&central_term);
-                    }
-                }
+        central_valued_bracket(a, b, self.graded.ngens(), self.central_index, |i, j| {
+            if i == self.central_index || j == self.central_index {
+                None
+            } else {
+                Some((self.get_pairing(i, j), 0))
             }
-        }
-
-        result
+        })
     }
 
     fn n_product(&self, a: &FreeFermionsLCAElement<R>, b: &FreeFermionsLCAElement<R>, n: usize)
@@ -399,14 +390,20 @@ mod tests {
         // [ψ0_λ ψ0] = 2K (λ^0 term, not λ^1)
         let bracket00 = lca.lambda_bracket(&psi0, &psi0);
         assert!(bracket00.contains_key(&0)); // λ^0 term exists
+        let k = lca.generator(2).unwrap();
+        assert_eq!(bracket00.len(), 1);
+        assert_eq!(bracket00[&0].terms(), k.scalar_mul(&2).terms());
 
         // [ψ0_λ ψ1] = 0 (orthogonal in Gram matrix)
         let bracket01 = lca.lambda_bracket(&psi0, &psi1);
         assert!(bracket01.is_empty() || bracket01.values().all(|v| v.is_zero()));
 
-        // [ψ1_λ ψ1] = 3K
+        // [ψ1_λ ψ1] = (ψ1, ψ1)K = 3K, so the only product is
+        // ψ1_(0) ψ1 = 0! · 3K = 3K.
         let bracket11 = lca.lambda_bracket(&psi1, &psi1);
         assert!(bracket11.contains_key(&0)); // λ^0 term exists
+        assert_eq!(bracket11.len(), 1);
+        assert_eq!(bracket11[&0].terms(), k.scalar_mul(&3).terms());
     }
 
     #[test]
@@ -420,6 +417,25 @@ mod tests {
         // [K_λ ψ0] = 0 (central element)
         let bracket = lca.lambda_bracket(&k, &psi0);
         assert!(bracket.is_empty() || bracket.values().all(|v| v.is_zero()));
+    }
+
+    #[test]
+    fn test_free_fermions_sesquilinearity() {
+        // [ψ_λ ψ] = K, ∂K = 0. Kac (2.7.4): (∂ψ)_(1) ψ = -ψ_(0) ψ = -K and
+        // ψ_(1) (∂ψ) = ∂(ψ_(1) ψ) + ψ_(0) ψ = K.
+        let lca: FreeFermionsLieConformalAlgebra<i64> =
+            FreeFermionsLieConformalAlgebra::new(1, 1, None, None);
+        let psi = lca.generator(0).unwrap();
+        let k = lca.generator(1).unwrap();
+        let d_psi = psi.apply_derivation();
+
+        let left = lca.lambda_bracket(&d_psi, &psi);
+        assert_eq!(left.len(), 1);
+        assert_eq!(left[&1].terms(), k.scalar_mul(&-1).terms());
+
+        let right = lca.lambda_bracket(&psi, &d_psi);
+        assert_eq!(right.len(), 1);
+        assert_eq!(right[&1].terms(), k.terms());
     }
 
     #[test]

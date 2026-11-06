@@ -20,9 +20,11 @@
 //!
 //! The non-vanishing λ-brackets are:
 //!
-//! [bᵢ_λ cⱼ] = δᵢⱼ K
+//! [bᵢ_λ cⱼ] = δᵢⱼ K,   [cⱼ_λ bᵢ] = δᵢⱼ K
 //!
-//! where δᵢⱼ is the Kronecker delta. All other brackets vanish.
+//! where δᵢⱼ is the Kronecker delta; the second bracket follows from the first
+//! by super skew-symmetry `[b_λ a] = -(-1)^{p(a)p(b)} [a_{-λ-∂} b]` with both
+//! generators odd and `∂K = 0`. All other brackets of generators vanish.
 //!
 //! ## Properties
 //!
@@ -49,7 +51,7 @@
 use rustmath_core::Ring;
 use std::collections::HashMap;
 use std::fmt::{self, Display};
-use crate::lie_conformal_algebra::{LieConformalAlgebra, LambdaBracket, GeneratorIndex};
+use crate::lie_conformal_algebra::{central_valued_bracket, LieConformalAlgebra, LambdaBracket, GeneratorIndex};
 use crate::graded_lie_conformal_algebra::{GradedLieConformalAlgebra, Degree, GradedLCA};
 use crate::lie_conformal_algebra_element::LieConformalAlgebraElement;
 
@@ -65,12 +67,25 @@ use crate::lie_conformal_algebra_element::LieConformalAlgebraElement;
 /// # Examples
 ///
 /// ```
-/// use rustmath_lieconformal::FermionicGhostsLieConformalAlgebra;
+/// use rustmath_lieconformal::{FermionicGhostsLieConformalAlgebra, LambdaBracket, LieConformalAlgebra};
 ///
 /// // Create fermionic ghosts algebra with 1 pair (b₀, c₀) + central K
 /// let lca = FermionicGhostsLieConformalAlgebra::new(1i64, 2, None);
 /// assert_eq!(lca.ngens(), Some(3)); // b₀, c₀, K
 /// assert_eq!(lca.npairs(), 1); // One (b, c) pair
+///
+/// // Sage: R = lie_conformal_algebras.FermionicGhosts(QQ)
+/// //   b.bracket(c) == {0: K},  c.bracket(b) == {0: K}
+/// let b = lca.generator(0).unwrap();
+/// let c = lca.generator(1).unwrap();
+/// let k = lca.generator(2).unwrap();
+/// let bc = lca.lambda_bracket(&b, &c);
+/// assert_eq!(bc.len(), 1);
+/// assert_eq!(bc[&0].terms(), k.terms());
+/// let cb = lca.lambda_bracket(&c, &b);
+/// assert_eq!(cb.len(), 1);
+/// assert_eq!(cb[&0].terms(), k.terms());
+/// assert!(lca.lambda_bracket(&c, &c).is_empty());
 ///
 /// // Create algebra with 2 pairs
 /// let lca2 = FermionicGhostsLieConformalAlgebra::new(1i64, 4, None);
@@ -293,59 +308,25 @@ impl<R: Ring + Clone + From<i64> + PartialEq + std::ops::Add<Output = R> + std::
 {
     /// Compute the λ-bracket [a_λ b]
     ///
-    /// The non-vanishing brackets are:
-    /// - [bᵢ_λ cⱼ] = δᵢⱼ K (returned as the λ⁰ term, i.e., constant K)
-    /// - All other brackets are zero
+    /// On generators the non-vanishing brackets are
+    /// - [bᵢ_λ cᵢ] = K
+    /// - [cᵢ_λ bᵢ] = K (super skew-symmetry with b, c odd, `∂K = 0`)
     ///
-    /// Note: The bracket returns K directly (not λK) as the constant term.
+    /// extended to all elements by sesquilinearity. Keys are j-th products.
     fn lambda_bracket(
         &self,
         a: &FermionicGhostsLCAElement<R>,
         b: &FermionicGhostsLCAElement<R>,
     ) -> HashMap<usize, FermionicGhostsLCAElement<R>> {
-        let mut result = HashMap::new();
-
-        // For each pair of basis elements in a and b
-        for (basis_a, _poly_a) in a.terms() {
-            for (basis_b, _poly_b) in b.terms() {
-                if let (Some(i), Some(j)) = (basis_a.as_finite(), basis_b.as_finite()) {
-                    // Skip if either is the central element (central element brackets to 0)
-                    if i == self.central_index || j == self.central_index {
-                        continue;
-                    }
-
-                    // Check if we have [bᵢ_λ cⱼ] or [cⱼ_λ bᵢ]
-                    let (b_idx, c_idx) = if self.is_b(i) && self.is_c(j) {
-                        // [bᵢ_λ cⱼ]
-                        (i, j - self.npairs) // Convert c index to pair index
-                    } else if self.is_c(i) && self.is_b(j) {
-                        // [cᵢ_λ bⱼ] = -[bⱼ_λ cᵢ] (antisymmetry)
-                        // For Lie conformal algebras, we need to be careful about signs
-                        // In the b-c system: [cᵢ_λ bⱼ] = 0 (not -δᵢⱼ K)
-                        // Only [bᵢ_λ cⱼ] = δᵢⱼ K is non-zero
-                        continue;
-                    } else {
-                        // [bᵢ_λ bⱼ] = 0, [cᵢ_λ cⱼ] = 0
-                        continue;
-                    };
-
-                    // Check if the pair indices match (Kronecker delta)
-                    if b_idx == c_idx {
-                        // [bᵢ_λ cᵢ] = K (constant term, i.e., λ⁰)
-                        let central_term = LieConformalAlgebraElement::from_basis(
-                            GeneratorIndex::finite(self.central_index),
-                        );
-
-                        let existing = result
-                            .entry(0) // Constant term (λ⁰)
-                            .or_insert_with(|| LieConformalAlgebraElement::zero());
-                        *existing = existing.add(&central_term);
-                    }
-                }
+        central_valued_bracket(a, b, self.graded.ngens(), self.central_index, |i, j| {
+            let matched = (self.is_b(i) && self.is_c(j) && j - self.npairs == i)
+                || (self.is_c(i) && self.is_b(j) && i - self.npairs == j);
+            if matched {
+                Some((R::from(1), 0))
+            } else {
+                None
             }
-        }
-
-        result
+        })
     }
 
     fn n_product(
@@ -557,10 +538,27 @@ mod tests {
 
         let c0 = lca.generator(1).unwrap();
         let b0 = lca.generator(0).unwrap();
+        let k = lca.generator(2).unwrap();
 
-        // [c₀_λ b₀] = 0 (order matters in b-c system)
+        // [c₀_λ b₀] = K. Super skew-symmetry with b, c odd gives
+        // [c_λ b] = -(-1)^(1·1) [b_{-λ-∂} c] = [b_{-λ-∂} c] = K (∂K = 0).
+        // (Sage: lie_conformal_algebras.FermionicGhosts(QQ), c.bracket(b) == {0: K}.)
         let bracket = lca.lambda_bracket(&c0, &b0);
-        assert!(bracket.is_empty() || bracket.values().all(|v| v.is_zero()));
+        assert_eq!(bracket.len(), 1);
+        assert_eq!(bracket[&0].terms(), k.terms());
+    }
+
+    #[test]
+    fn test_fermionic_ghosts_sesquilinearity() {
+        // b_(1) (∂c) = ∂(b_(1) c) + b_(0) c = K (Kac (2.7.4)); nothing else.
+        let lca: FermionicGhostsLieConformalAlgebra<i64> =
+            FermionicGhostsLieConformalAlgebra::new(1, 2, None);
+        let b = lca.generator(0).unwrap();
+        let c = lca.generator(1).unwrap();
+        let k = lca.generator(2).unwrap();
+        let bracket = lca.lambda_bracket(&b, &c.apply_derivation());
+        assert_eq!(bracket.len(), 1);
+        assert_eq!(bracket[&1].terms(), k.terms());
     }
 
     #[test]

@@ -44,8 +44,8 @@ use crate::group_traits::{Group, GroupElement};
 
 /// A Coxeter matrix defining the relations of an Artin group
 ///
-/// The matrix stores m_ij values where m_ii = 1 and m_ij = m_ji.
-/// Value 0 represents infinity (no relation).
+/// The matrix stores m_ij values where m_ii = 1, m_ij = m_ji, and
+/// m_ij ∈ {2, 3, 4, ...} ∪ {∞} for i ≠ j. Value 0 represents infinity (no relation).
 #[derive(Debug, Clone)]
 pub struct CoxeterMatrix {
     /// The rank (number of generators)
@@ -61,6 +61,12 @@ impl CoxeterMatrix {
     /// # Arguments
     ///
     /// * `entries` - Square matrix where entries[i][j] = m_ij (use 0 for ∞)
+    ///
+    /// # Panics
+    ///
+    /// If the matrix is empty or not square, a diagonal entry is not 1, the
+    /// matrix is not symmetric, or an off-diagonal entry is 1 (m_ij = 1 for
+    /// i ≠ j would force s_i = s_j; it is not a Coxeter matrix entry).
     pub fn new(entries: Vec<Vec<usize>>) -> Self {
         let rank = entries.len();
         assert!(rank > 0, "Coxeter matrix must have at least one generator");
@@ -81,6 +87,18 @@ impl CoxeterMatrix {
                 assert_eq!(
                     entries[i][j], entries[j][i],
                     "Coxeter matrix must be symmetric"
+                );
+            }
+        }
+
+        // Off-diagonal entries are m_ij >= 2, or 0 for infinity
+        for i in 0..rank {
+            for j in 0..rank {
+                assert!(
+                    i == j || entries[i][j] != 1,
+                    "Off-diagonal Coxeter matrix entries must be >= 2 or 0 (infinity), got m_{}{} = 1",
+                    i,
+                    j
                 );
             }
         }
@@ -196,8 +214,7 @@ impl ArtinGroup {
                     // No relation (infinite order)
                     continue;
                 } else if m_ij == 1 {
-                    // This shouldn't happen for i ≠ j
-                    continue;
+                    unreachable!("CoxeterMatrix rejects the off-diagonal entry m_ij = 1");
                 } else {
                     // Create the alternating product relation
                     // s_i s_j s_i ... (m_ij terms) = s_j s_i s_j ... (m_ij terms)
@@ -224,7 +241,11 @@ impl ArtinGroup {
             }
         }
 
-        let fp_group = FinitelyPresentedGroup::new(generator_names.clone(), relations.iter().map(|r| r.word().iter().flat_map(|(gen, exp)| vec![*gen, *exp]).collect()).collect());
+        // FinitelyPresentedGroup relations are Tietze words (±(i+1) for s_i^{±1}).
+        let fp_group = FinitelyPresentedGroup::new(
+            generator_names.clone(),
+            relations.iter().map(|r| r.tietze()).collect(),
+        );
 
         Self {
             coxeter_matrix,
@@ -441,6 +462,14 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "Off-diagonal Coxeter matrix entries must be >= 2 or 0")]
+    fn test_off_diagonal_one_is_rejected() {
+        // m_01 = 1 is not a Coxeter matrix entry; it must not silently give the
+        // free group (no relation), as m_01 = 0 (infinity) does.
+        CoxeterMatrix::new(vec![vec![1, 1], vec![1, 1]]);
+    }
+
+    #[test]
     fn test_artin_group_creation() {
         let m = CoxeterMatrix::type_a(2);
         let a = ArtinGroup::new(m);
@@ -529,6 +558,55 @@ mod tests {
 
         // They should have the same word representation
         // (in a full implementation with normalization)
+    }
+
+    #[test]
+    fn test_presentation_relations_are_tietze_words() {
+        // A_2 (braid group B_3): the single relation s0 s1 s0 (s1 s0 s1)^{-1}.
+        let a2 = ArtinGroup::new(CoxeterMatrix::type_a(2));
+        assert_eq!(
+            a2.as_finitely_presented_group().relations(),
+            &[vec![1, 2, 1, -2, -1, -2]]
+        );
+
+        // A_3: braid relations for m_01 = m_12 = 3, commutation for m_02 = 2.
+        let a3 = ArtinGroup::new(CoxeterMatrix::type_a(3));
+        assert_eq!(
+            a3.as_finitely_presented_group().relations(),
+            &[vec![1, 2, 1, -2, -1, -2], vec![1, 3, -1, -3], vec![2, 3, 2, -3, -2, -3]]
+        );
+
+        // m_ij = 0 (infinity) imposes no relation: the free group of rank 2.
+        let free = ArtinGroup::new(CoxeterMatrix::new(vec![vec![1, 0], vec![0, 1]]));
+        assert!(free.as_finitely_presented_group().relations().is_empty());
+
+        // B_2: m_01 = 4 gives s0 s1 s0 s1 (s1 s0 s1 s0)^{-1}.
+        let b2 = ArtinGroup::new(CoxeterMatrix::type_b(2));
+        assert_eq!(
+            b2.as_finitely_presented_group().relations(),
+            &[vec![1, 2, 1, 2, -1, -2, -1, -2]]
+        );
+    }
+
+    #[test]
+    fn test_relations_hold_in_coxeter_quotient() {
+        // Every Artin relation of type A_3 holds in S_4 under s_i -> (i i+1):
+        // the defining map onto the Coxeter group is a homomorphism.
+        fn transposition(i: usize) -> Vec<usize> {
+            let mut p: Vec<usize> = (0..4).collect();
+            p.swap(i, i + 1);
+            p
+        }
+        let a3 = ArtinGroup::new(CoxeterMatrix::type_a(3));
+        for rel in a3.as_finitely_presented_group().relations() {
+            let mut acc: Vec<usize> = (0..4).collect();
+            for &letter in rel {
+                // transpositions are involutions, so s_i^{-1} -> (i i+1) too
+                let t = transposition(letter.unsigned_abs() - 1);
+                acc = acc.iter().map(|&x| t[x]).collect();
+            }
+            assert_eq!(acc, (0..4).collect::<Vec<_>>(), "relation {:?}", rel);
+        }
     }
 
     #[test]

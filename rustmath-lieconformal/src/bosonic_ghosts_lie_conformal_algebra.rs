@@ -20,16 +20,17 @@
 //!
 //! The non-vanishing λ-brackets are:
 //!
-//! [βᵢ_λ γⱼ] = δᵢⱼ K
+//! [βᵢ_λ γⱼ] = δᵢⱼ K,   [γⱼ_λ βᵢ] = -δᵢⱼ K
 //!
-//! where δᵢⱼ is the Kronecker delta. All other brackets vanish.
+//! where δᵢⱼ is the Kronecker delta; the second bracket follows from the first
+//! by skew-symmetry `[b_λ a] = -[a_{-λ-∂} b]` because `∂K = 0`. All other
+//! brackets of generators vanish.
 //!
 //! ## Properties
 //!
 //! - All generators are bosonic (even parity)
 //! - The central element K has degree 0
 //! - The algebra is H-graded (conformal weight grading)
-//! - The structure is isomorphic to the Heisenberg-Virasoro-like algebra
 //!
 //! # Applications
 //!
@@ -49,7 +50,7 @@
 use rustmath_core::Ring;
 use std::collections::HashMap;
 use std::fmt::{self, Display};
-use crate::lie_conformal_algebra::{LieConformalAlgebra, LambdaBracket, GeneratorIndex};
+use crate::lie_conformal_algebra::{central_valued_bracket, LieConformalAlgebra, LambdaBracket, GeneratorIndex};
 use crate::graded_lie_conformal_algebra::{GradedLieConformalAlgebra, Degree, GradedLCA};
 use crate::lie_conformal_algebra_element::LieConformalAlgebraElement;
 
@@ -65,12 +66,25 @@ use crate::lie_conformal_algebra_element::LieConformalAlgebraElement;
 /// # Examples
 ///
 /// ```
-/// use rustmath_lieconformal::BosonicGhostsLieConformalAlgebra;
+/// use rustmath_lieconformal::{BosonicGhostsLieConformalAlgebra, LambdaBracket, LieConformalAlgebra};
 ///
 /// // Create bosonic ghosts algebra with 1 pair (β₀, γ₀) + central K
 /// let lca = BosonicGhostsLieConformalAlgebra::new(1i64, 2, None);
 /// assert_eq!(lca.ngens(), Some(3)); // β₀, γ₀, K
 /// assert_eq!(lca.npairs(), 1); // One (β, γ) pair
+///
+/// // Sage: R = lie_conformal_algebras.BosonicGhosts(QQ)
+/// //   beta.bracket(gamma) == {0: K},  gamma.bracket(beta) == {0: -K}
+/// let beta = lca.generator(0).unwrap();
+/// let gamma = lca.generator(1).unwrap();
+/// let k = lca.generator(2).unwrap();
+/// let bg = lca.lambda_bracket(&beta, &gamma);
+/// assert_eq!(bg.len(), 1);
+/// assert_eq!(bg[&0].terms(), k.terms());
+/// let gb = lca.lambda_bracket(&gamma, &beta);
+/// assert_eq!(gb.len(), 1);
+/// assert_eq!(gb[&0].terms(), k.scalar_mul(&-1).terms());
+/// assert!(lca.lambda_bracket(&beta, &beta).is_empty());
 ///
 /// // Create algebra with 2 pairs
 /// let lca2 = BosonicGhostsLieConformalAlgebra::new(1i64, 4, None);
@@ -285,59 +299,25 @@ impl<R: Ring + Clone + From<i64> + PartialEq + std::ops::Add<Output = R> + std::
 {
     /// Compute the λ-bracket [a_λ b]
     ///
-    /// The non-vanishing brackets are:
-    /// - [βᵢ_λ γⱼ] = δᵢⱼ K (returned as the λ⁰ term, i.e., constant K)
-    /// - All other brackets are zero
+    /// On generators the non-vanishing brackets are
+    /// - [βᵢ_λ γᵢ] = K
+    /// - [γᵢ_λ βᵢ] = -K (skew-symmetry, `∂K = 0`)
     ///
-    /// Note: The bracket returns K directly (not λK) as the constant term.
+    /// extended to all elements by sesquilinearity. Keys are j-th products.
     fn lambda_bracket(
         &self,
         a: &BosonicGhostsLCAElement<R>,
         b: &BosonicGhostsLCAElement<R>,
     ) -> HashMap<usize, BosonicGhostsLCAElement<R>> {
-        let mut result = HashMap::new();
-
-        // For each pair of basis elements in a and b
-        for (basis_a, _poly_a) in a.terms() {
-            for (basis_b, _poly_b) in b.terms() {
-                if let (Some(i), Some(j)) = (basis_a.as_finite(), basis_b.as_finite()) {
-                    // Skip if either is the central element (central element brackets to 0)
-                    if i == self.central_index || j == self.central_index {
-                        continue;
-                    }
-
-                    // Check if we have [βᵢ_λ γⱼ] or [γⱼ_λ βᵢ]
-                    let (beta_idx, gamma_idx) = if self.is_beta(i) && self.is_gamma(j) {
-                        // [βᵢ_λ γⱼ]
-                        (i, j - self.npairs) // Convert gamma index to pair index
-                    } else if self.is_gamma(i) && self.is_beta(j) {
-                        // [γᵢ_λ βⱼ] = -[βⱼ_λ γᵢ] (antisymmetry)
-                        // For Lie conformal algebras, we need to be careful about signs
-                        // In the β-γ system: [γᵢ_λ βⱼ] = 0 (not -δᵢⱼ K)
-                        // Only [βᵢ_λ γⱼ] = δᵢⱼ K is non-zero
-                        continue;
-                    } else {
-                        // [βᵢ_λ βⱼ] = 0, [γᵢ_λ γⱼ] = 0
-                        continue;
-                    };
-
-                    // Check if the pair indices match (Kronecker delta)
-                    if beta_idx == gamma_idx {
-                        // [βᵢ_λ γᵢ] = K (constant term, i.e., λ⁰)
-                        let central_term = LieConformalAlgebraElement::from_basis(
-                            GeneratorIndex::finite(self.central_index),
-                        );
-
-                        let existing = result
-                            .entry(0) // Constant term (λ⁰)
-                            .or_insert_with(|| LieConformalAlgebraElement::zero());
-                        *existing = existing.add(&central_term);
-                    }
-                }
+        central_valued_bracket(a, b, self.graded.ngens(), self.central_index, |i, j| {
+            if self.is_beta(i) && self.is_gamma(j) && j - self.npairs == i {
+                Some((R::from(1), 0))
+            } else if self.is_gamma(i) && self.is_beta(j) && i - self.npairs == j {
+                Some((R::from(-1), 0))
+            } else {
+                None
             }
-        }
-
-        result
+        })
     }
 
     fn n_product(
@@ -531,10 +511,40 @@ mod tests {
 
         let gamma0 = lca.generator(1).unwrap();
         let beta0 = lca.generator(0).unwrap();
+        let k = lca.generator(2).unwrap();
 
-        // [γ₀_λ β₀] = 0 (order matters in β-γ system)
+        // [γ₀_λ β₀] = -K. Skew-symmetry for even elements gives
+        // [γ_λ β] = -[β_{-λ-∂} γ] = -K since [β_λ γ] = K has no λ and ∂K = 0.
+        // (Sage: lie_conformal_algebras.BosonicGhosts(QQ), gamma.bracket(beta) == {0: -K}.)
         let bracket = lca.lambda_bracket(&gamma0, &beta0);
-        assert!(bracket.is_empty() || bracket.values().all(|v| v.is_zero()));
+        assert_eq!(bracket.len(), 1);
+        assert_eq!(bracket[&0].terms(), k.scalar_mul(&-1).terms());
+    }
+
+    #[test]
+    fn test_bosonic_ghosts_sesquilinearity() {
+        // (∂β)_(1) γ = -β_(0) γ = -K (Kac (2.7.4)); every other product vanishes.
+        let lca: BosonicGhostsLieConformalAlgebra<i64> =
+            BosonicGhostsLieConformalAlgebra::new(1, 2, None);
+        let beta = lca.generator(0).unwrap();
+        let gamma = lca.generator(1).unwrap();
+        let k = lca.generator(2).unwrap();
+        let bracket = lca.lambda_bracket(&beta.apply_derivation(), &gamma);
+        assert_eq!(bracket.len(), 1);
+        assert_eq!(bracket[&1].terms(), k.scalar_mul(&-1).terms());
+        // Bilinearity: [(2β + γ)_λ (3γ)] = 6K
+        let a = beta.scalar_mul(&2).add(&gamma);
+        let b = gamma.scalar_mul(&3);
+        let bracket = lca.lambda_bracket(&a, &b);
+        assert_eq!(bracket.len(), 1);
+        assert_eq!(bracket[&0].terms(), k.scalar_mul(&6).terms());
+    }
+
+    #[test]
+    fn test_bosonic_ghosts_is_not_super() {
+        let lca: BosonicGhostsLieConformalAlgebra<i64> =
+            BosonicGhostsLieConformalAlgebra::new(1, 2, None);
+        assert!(!lca.graded.is_super());
     }
 
     #[test]

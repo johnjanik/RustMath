@@ -510,60 +510,57 @@ pub fn binary_dihedral_presentation(n: usize) -> FinitelyPresentedGroup {
 
 /// Create a presentation of the cactus group J_n
 ///
-/// The cactus group on n fruits is defined with specific generators and relations
-/// based on the structure of an n-fruit cactus graph. This is a simplified version
-/// that creates a presentation with the appropriate number of generators.
+/// The cactus group on n fruits (Henriques–Kamnitzer, *Crystals and coboundary
+/// categories*, Duke Math. J. 132 (2006)) has generators s_{pq} for
+/// 1 ≤ p < q ≤ n (named `s{p}_{q}`, in the order of
+/// [`crate::cactus_group::CactusGroup::all_generators`]) and relations
+///
+/// - s_{pq}² = 1;
+/// - s_{pq} s_{kl} = s_{kl} s_{pq} if [p, q] ∩ [k, l] = ∅;
+/// - s_{pq} s_{kl} s_{pq}⁻¹ = s_{p+q−l, p+q−k} if [k, l] ⊊ [p, q].
+///
+/// J_1 is trivial (no generators); J_2 = ⟨s_{12} | s_{12}²⟩ ≅ Z/2.
 ///
 /// # Arguments
 ///
 /// * `n` - Number of fruits (must be positive)
-///
-/// # Note
-///
-/// This is a simplified implementation. The full cactus group has a more complex
-/// structure with generators s_{ij} indexed by graph edges.
 pub fn cactus_presentation(n: usize) -> FinitelyPresentedGroup {
     assert!(n >= 1, "Cactus group requires n >= 1");
 
-    let generator_names: Vec<String> = (0..n)
-        .map(|i| format!("s_{}", i))
+    let intervals: Vec<(usize, usize)> = (1..=n)
+        .flat_map(|p| ((p + 1)..=n).map(move |q| (p, q)))
         .collect();
+    // Tietze letter (1-based) of the generator s_{pq}
+    let letter = |iv: (usize, usize)| -> isize {
+        intervals
+            .iter()
+            .position(|&x| x == iv)
+            .expect("interval inside [1, n]") as isize
+            + 1
+    };
+    let generator_names: Vec<String> =
+        intervals.iter().map(|&(p, q)| format!("s{}_{}", p, q)).collect();
 
-    // For a cactus group on n fruits, we have n generators
-    // with involution relations s_i^2 = 1 and braid-type relations
     let mut relations = Vec::new();
 
-    // All generators are involutions
-    for i in 0..n {
-        let rel = FreeGroupElement::generator(i as isize, 2)
-            .tietze()
-            .into_iter()
-            
-            .collect();
-        relations.push(rel);
+    // Involutions
+    for &iv in &intervals {
+        let g = letter(iv);
+        relations.push(vec![g, g]);
     }
 
-    // Add braid-type relations for adjacent generators
-    for i in 0..(n - 1) {
-        let si = FreeGroupElement::generator(i as isize, 1);
-        let si1 = FreeGroupElement::generator((i + 1) as isize, 1);
-        // s_i s_{i+1} s_i = s_{i+1} s_i s_{i+1}
-        // Which is equivalent to: s_i s_{i+1} s_i s_{i+1}^{-1} s_i^{-1} s_{i+1}^{-1} = 1
-        let si_inv = FreeGroupElement::generator(i as isize, -1);
-        let si1_inv = FreeGroupElement::generator((i + 1) as isize, -1);
-
-        let rel_elem = si
-            .multiply(&si1)
-            .multiply(&si)
-            .multiply(&si1_inv)
-            .multiply(&si_inv)
-            .multiply(&si1_inv);
-        let rel = rel_elem
-            .tietze()
-            .into_iter()
-            
-            .collect();
-        relations.push(rel);
+    for (i, &(p, q)) in intervals.iter().enumerate() {
+        for (j, &(k, l)) in intervals.iter().enumerate() {
+            let (gi, gj) = (letter((p, q)), letter((k, l)));
+            if i < j && (q < k || l < p) {
+                // Disjoint intervals commute: s_I s_J s_I^-1 s_J^-1 = 1
+                relations.push(vec![gi, gj, -gi, -gj]);
+            } else if i != j && p <= k && l <= q {
+                // [k, l] strictly inside [p, q]: s_I s_J s_I^-1 = s_{J reflected in I}
+                let reflected = letter((p + q - l, p + q - k));
+                relations.push(vec![gi, gj, -gi, -reflected]);
+            }
+        }
     }
 
     FinitelyPresentedGroup::new(generator_names, relations)
@@ -645,16 +642,19 @@ pub fn symmetric_presentation(n: usize) -> FinitelyPresentedGroup {
 
 /// Create a presentation of the alternating group A_n
 ///
-/// This creates a presentation of the alternating group using specific generators
-/// and relations.
+/// Uses Carmichael's presentation (R. D. Carmichael, *Introduction to the
+/// Theory of Groups of Finite Order*, 1937)
+///
+/// ```text
+/// A_n = ⟨ s_0, …, s_{n−3} | s_i³ = 1, (s_i s_j)² = 1 for i ≠ j ⟩,
+/// ```
+///
+/// realised by the 3-cycles s_i = (0 1 i+2). For n = 3 this is ⟨s_0 | s_0³⟩.
+/// (GAP confirms the presented group has order n!/2 for n = 4, …, 8.)
 ///
 /// # Arguments
 ///
-/// * `n` - The degree of the alternating group
-///
-/// # Note
-///
-/// For n >= 3, this uses 3-cycles as generators.
+/// * `n` - The degree of the alternating group (n ≥ 3)
 pub fn alternating_presentation(n: usize) -> FinitelyPresentedGroup {
     assert!(n >= 3, "Alternating group requires n >= 3");
 
@@ -663,8 +663,6 @@ pub fn alternating_presentation(n: usize) -> FinitelyPresentedGroup {
         return cyclic_presentation(3);
     }
 
-    // For A_4 and larger, use a more complex presentation
-    // This is a simplified version - full implementation would be more involved
     let n_gens = n - 2;
     let generator_names: Vec<String> = (0..n_gens)
         .map(|i| format!("s_{}", i))
@@ -681,22 +679,13 @@ pub fn alternating_presentation(n: usize) -> FinitelyPresentedGroup {
         relations.push(rel);
     }
 
-    // Add some commutator relations
-    // This is a simplified presentation
+    // (s_i s_j)^2 = 1 for i < j (this implies (s_j s_i)^2 = 1 by conjugation)
     for i in 0..n_gens {
-        for j in (i + 2)..n_gens {
+        for j in (i + 1)..n_gens {
             let si = FreeGroupElement::generator(i as isize, 1);
             let sj = FreeGroupElement::generator(j as isize, 1);
-            let si_inv = FreeGroupElement::generator(i as isize, -1);
-            let sj_inv = FreeGroupElement::generator(j as isize, -1);
-
-            let rel_elem = si.multiply(&sj).multiply(&si_inv).multiply(&sj_inv);
-            let rel = rel_elem
-                .tietze()
-                .into_iter()
-                
-                .collect();
-            relations.push(rel);
+            let rel_elem = si.multiply(&sj).multiply(&si).multiply(&sj);
+            relations.push(rel_elem.tietze());
         }
     }
 
@@ -766,6 +755,58 @@ mod tests {
     fn test_cactus_presentation() {
         let j3 = cactus_presentation(3);
         assert_eq!(j3.num_generators(), 3);
+        // generators s1_2, s1_3, s2_3 (letters 1, 2, 3): three involutions and
+        // the two bending relations s13 s12 s13^-1 = s23, s13 s23 s13^-1 = s12.
+        assert_eq!(j3.generator_names(), &["s1_2", "s1_3", "s2_3"]);
+        assert_eq!(
+            j3.relations(),
+            &[
+                vec![1, 1],
+                vec![2, 2],
+                vec![3, 3],
+                vec![2, 1, -2, -3],
+                vec![2, 3, -2, -1],
+            ]
+        );
+
+        // J_1 is trivial, J_2 = Z/2.
+        let j1 = cactus_presentation(1);
+        assert_eq!(j1.num_generators(), 0);
+        assert!(j1.relations().is_empty());
+        let j2 = cactus_presentation(2);
+        assert_eq!(j2.relations(), &[vec![1, 1]]);
+    }
+
+    #[test]
+    fn test_cactus_presentation_maps_onto_symmetric_group() {
+        // s_{pq} -> the permutation reversing the block [p, q] satisfies every
+        // relation of J_n, and these images generate S_n (|S_n| = n!).
+        for n in 2..=6usize {
+            let g = cactus_presentation(n);
+            let images: Vec<Vec<usize>> = (1..=n)
+                .flat_map(|p| ((p + 1)..=n).map(move |q| (p, q)))
+                .map(|(p, q)| {
+                    let mut perm: Vec<usize> = (0..n).collect();
+                    perm[p - 1..q].reverse();
+                    perm
+                })
+                .collect();
+            assert_eq!(images.len(), g.num_generators());
+            for rel in g.relations() {
+                let mut acc: Vec<usize> = (0..n).collect();
+                for &letter in rel {
+                    // block reversals are involutions: s^-1 has the same image
+                    let perm = &images[letter.unsigned_abs() - 1];
+                    acc = acc.iter().map(|&x| perm[x]).collect();
+                }
+                assert_eq!(acc, (0..n).collect::<Vec<_>>(), "J_{} relation {:?}", n, rel);
+            }
+            let factorial: u64 = (1..=n as u64).product();
+            assert_eq!(
+                crate::bsgs::group_order(&images, n).unwrap(),
+                rustmath_integers::Integer::from(factorial)
+            );
+        }
     }
 
     #[test]
@@ -784,6 +825,50 @@ mod tests {
 
         let a4 = alternating_presentation(4);
         assert_eq!(a4.num_generators(), 2);
+        // Carmichael: s_0^3, s_1^3, (s_0 s_1)^2
+        assert_eq!(
+            a4.relations(),
+            &[vec![1, 1, 1], vec![2, 2, 2], vec![1, 2, 1, 2]]
+        );
+    }
+
+    #[test]
+    fn test_alternating_presentation_maps_onto_a_n() {
+        // s_i -> (0 1 i+2) satisfies every relation and the images generate a
+        // group of order n!/2, so the presented group maps onto A_n. (GAP:
+        // the presented group itself has order n!/2 for n = 4..8, so the map
+        // is an isomorphism.)
+        for n in 4..=8usize {
+            let g = alternating_presentation(n);
+            let images: Vec<Vec<usize>> = (0..n - 2)
+                .map(|i| {
+                    let mut p: Vec<usize> = (0..n).collect();
+                    p[0] = 1;
+                    p[1] = i + 2;
+                    p[i + 2] = 0;
+                    p
+                })
+                .collect();
+            let inverse = |p: &Vec<usize>| {
+                let mut q = vec![0; p.len()];
+                for (a, &b) in p.iter().enumerate() {
+                    q[b] = a;
+                }
+                q
+            };
+            for rel in g.relations() {
+                let mut acc: Vec<usize> = (0..n).collect();
+                for &letter in rel {
+                    let p = &images[letter.unsigned_abs() - 1];
+                    let p = if letter > 0 { p.clone() } else { inverse(p) };
+                    acc = acc.iter().map(|&x| p[x]).collect();
+                }
+                assert_eq!(acc, (0..n).collect::<Vec<_>>(), "A_{} relation {:?}", n, rel);
+            }
+            let order = crate::bsgs::group_order(&images, n).unwrap();
+            let half_factorial: u64 = (1..=n as u64).product::<u64>() / 2;
+            assert_eq!(order, rustmath_integers::Integer::from(half_factorial), "A_{}", n);
+        }
     }
 
     #[test]

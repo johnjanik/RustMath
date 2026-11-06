@@ -134,20 +134,33 @@ impl<R: Ring + Clone, B: Clone + Eq + Hash> LieConformalAlgebraElement<R, B> {
     }
 
     /// Apply the derivation operator ∂
+    ///
+    /// The element `Σ_b p_b(∂) ⊗ b` stands for `Σ_b p_b(∂)·b` in the free
+    /// R[∂]-module, so `∂` acts by multiplying each coefficient polynomial by
+    /// `∂` (shifting its coefficients up by one). It is not the formal
+    /// derivative of `p_b`.
+    ///
+    /// This type does not know which generators the parent algebra declares
+    /// `∂`-torsion (e.g. a central `C` with `∂C = 0`); reducing such terms is
+    /// the parent's job.
     pub fn apply_derivation(&self) -> Self
     where
         R: std::ops::Add<Output = R> + std::ops::Mul<Output = R> + From<i64>,
     {
+        self.shift_derivation(1)
+    }
+
+    /// Multiply every coefficient polynomial by `∂^n`.
+    fn shift_derivation(&self, n: usize) -> Self {
         let terms = self
             .terms
             .iter()
+            .filter(|(_, poly)| !is_zero_polynomial(poly))
             .map(|(basis, poly)| {
-                // ∂(p(∂) ⊗ b) = (∂p)(∂) ⊗ b + p(∂) ⊗ ∂b
-                // For now, just differentiate the polynomial
-                let new_poly = differentiate_polynomial(poly);
+                let mut new_poly = vec![R::zero(); n];
+                new_poly.extend(poly.iter().cloned());
                 (basis.clone(), new_poly)
             })
-            .filter(|(_, poly)| !is_zero_polynomial(poly))
             .collect();
 
         LieConformalAlgebraElement { terms }
@@ -196,6 +209,15 @@ impl<R: Ring + Clone, B: Clone + Eq + Hash> LieConformalAlgebraElement<R, B> {
             .filter(|(_, poly)| !is_zero_polynomial(poly))
             .map(|(b, p)| (b.clone(), p.clone()))
             .collect()
+    }
+}
+
+/// The default element is the zero element (no terms), as
+/// [`LieConformalAlgebraElement::zero`]. [`crate::LambdaBracket::n_product`]
+/// relies on this for products that `lambda_bracket` leaves out.
+impl<R: Ring + Clone, B: Clone + Eq + Hash> Default for LieConformalAlgebraElement<R, B> {
+    fn default() -> Self {
+        Self::zero()
     }
 }
 
@@ -276,26 +298,19 @@ impl<R: Ring + Clone, B: Clone + Eq + Hash> LCAWithGeneratorsElement<R, B> {
         self.element.monomial_coefficients()
     }
 
-    /// Apply the T operator (derivative with divided powers)
+    /// Apply the n-th power of the derivation `T = ∂`
     ///
-    /// Applies the n-th derivative operator using "divided powers" notation
-    /// where T^(n) = T^n / n!. This is the standard notation in Lie conformal
-    /// algebra theory.
+    /// Returns `∂^n · self`, matching SageMath's `LCAWithGeneratorsElement.T(n)`
+    /// (e.g. `L.T(3) = 6*T^(3)L` there, since Sage prints in the divided-power
+    /// basis `T^(j) = T^j / j!`). Coefficients here are stored in ordinary
+    /// powers of `∂`, so this shifts each coefficient polynomial up by `n`.
     ///
     /// # Arguments
     ///
     /// * `n` - The power of the derivative to apply
-    ///
-    /// # Mathematical Details
-    ///
-    /// For a monomial p(∂) ⊗ b, we have:
-    /// T^(n)(p(∂) ⊗ b) = (1/n!) * ∂^n(p(∂)) ⊗ b
-    ///
-    /// The divided powers notation ensures proper combinatorial factors
-    /// in the λ-bracket identities.
     pub fn T(&self, n: usize) -> Self
     where
-        R: std::ops::Add<Output = R> + std::ops::Mul<Output = R> + std::ops::Div<Output = R> + From<i64> + PartialEq,
+        R: std::ops::Add<Output = R> + std::ops::Mul<Output = R> + From<i64> + PartialEq,
     {
         if n == 0 {
             return self.clone();
@@ -305,33 +320,8 @@ impl<R: Ring + Clone, B: Clone + Eq + Hash> LCAWithGeneratorsElement<R, B> {
             return Self::zero();
         }
 
-        // Compute n! for divided powers
-        let mut factorial = R::from(1);
-        for i in 1..=n {
-            factorial = factorial * R::from(i as i64);
-        }
-
-        // Apply derivative n times and divide by n!
-        let mut result = self.element.clone();
-        for _ in 0..n {
-            result = result.apply_derivation();
-        }
-
-        // Divide by factorial
-        let terms = result
-            .terms()
-            .iter()
-            .map(|(basis, poly)| {
-                let new_poly: Vec<R> = poly
-                    .iter()
-                    .map(|c| c.clone() / factorial.clone())
-                    .collect();
-                (basis.clone(), new_poly)
-            })
-            .collect();
-
         LCAWithGeneratorsElement {
-            element: LieConformalAlgebraElement::new(terms),
+            element: self.element.shift_derivation(n),
         }
     }
 
@@ -448,10 +438,10 @@ impl<R: Ring + Clone, B: Clone + Eq + Hash> LCAStructureCoefficientsElement<R, B
         self.base.monomial_coefficients()
     }
 
-    /// Apply the T operator
+    /// Apply `∂^n` (see [`LCAWithGeneratorsElement::T`])
     pub fn T(&self, n: usize) -> Self
     where
-        R: std::ops::Add<Output = R> + std::ops::Mul<Output = R> + std::ops::Div<Output = R> + From<i64> + PartialEq,
+        R: std::ops::Add<Output = R> + std::ops::Mul<Output = R> + From<i64> + PartialEq,
     {
         LCAStructureCoefficientsElement {
             base: self.base.T(n),
@@ -478,6 +468,13 @@ impl<R: Ring + Clone, B: Clone + Eq + Hash> LCAStructureCoefficientsElement<R, B
     ///
     /// For basis elements g_i and g_j with structure coefficients s_{ij}^k(λ),
     /// we compute [g_i_λ g_j] using the stored coefficients and extend linearly.
+    ///
+    /// # Panics
+    ///
+    /// Always: not implemented. The `(B, B, usize) -> R` table cannot hold
+    /// brackets with `∂` in their values (e.g. `[L_λ L] = (∂ + 2λ)L + ...`),
+    /// and the sesquilinear and skew-symmetric extension is missing. It used
+    /// to return an empty map, which claims `[self_λ right] = 0`.
     pub fn lambda_bracket(
         &self,
         _right: &Self,
@@ -486,13 +483,10 @@ impl<R: Ring + Clone, B: Clone + Eq + Hash> LCAStructureCoefficientsElement<R, B
     where
         R: std::ops::Add<Output = R> + std::ops::Mul<Output = R> + From<i64> + PartialEq,
     {
-        // Full implementation would:
-        // 1. If both are monomials, look up structure coefficients
-        // 2. Apply linearity to expand general elements
-        // 3. Include factorial weights from divided powers
-        //
-        // For now, return empty map (placeholder)
-        HashMap::new()
+        unimplemented!(
+            "LCAStructureCoefficientsElement::lambda_bracket: λ-bracket from structure \
+             coefficients is not implemented"
+        )
     }
 
     /// Add two elements
@@ -634,6 +628,10 @@ fn is_zero_polynomial<R: Ring + PartialEq>(poly: &[R]) -> bool {
 }
 
 /// Differentiate a polynomial (formal derivative with respect to ∂)
+///
+/// Not the action of ∂ on the module (that is multiplication by ∂, see
+/// [`LieConformalAlgebraElement::apply_derivation`]).
+#[cfg(test)]
 fn differentiate_polynomial<R: Ring + std::ops::Mul<Output = R> + From<i64>>(poly: &[R]) -> Vec<R> {
     if poly.len() <= 1 {
         return vec![R::zero()];
@@ -807,6 +805,39 @@ mod tests {
         let zero: LCAWithGeneratorsElement<i64, usize> = LCAWithGeneratorsElement::zero();
         assert!(zero.is_zero());
         assert!(!zero.is_monomial()); // Zero has no monomials
+    }
+
+    #[test]
+    fn test_apply_derivation_multiplies_by_partial() {
+        // In the free R[∂]-module, ∂·(p(∂) b) = (∂ p(∂)) b.
+        let b: LieConformalAlgebraElement<i64, usize> = LieConformalAlgebraElement::from_basis(0);
+        let db = b.apply_derivation();
+        assert_eq!(db.terms().get(&0), Some(&vec![0, 1])); // ∂b
+        // ∂(2 + 3∂) b = (2∂ + 3∂²) b
+        let e: LieConformalAlgebraElement<i64, usize> =
+            LieConformalAlgebraElement::with_polynomial(0, vec![2, 3]);
+        assert_eq!(e.apply_derivation().terms().get(&0), Some(&vec![0, 2, 3]));
+    }
+
+    #[test]
+    fn test_t_is_nth_derivative() {
+        // Sage: Vir.inject_variables(); L.T(3) == 6*T^(3)L, i.e. ∂^3 L.
+        let l: LCAWithGeneratorsElement<i64, usize> = LCAWithGeneratorsElement::from_basis(0);
+        assert_eq!(l.T(3).terms().get(&0), Some(&vec![0, 0, 0, 1]));
+        assert_eq!(l.T(0).terms().get(&0), Some(&vec![1]));
+        // T(m) T(n) = T(m + n)
+        assert_eq!(l.T(1).T(2).terms(), l.T(3).terms());
+        let s: LCAStructureCoefficientsElement<i64, usize> =
+            LCAStructureCoefficientsElement::from_basis(0);
+        assert_eq!(s.T(2).terms().get(&0), Some(&vec![0, 0, 1]));
+    }
+
+    #[test]
+    #[should_panic(expected = "not implemented")]
+    fn test_structure_coefficients_element_bracket_is_unimplemented() {
+        let a: LCAStructureCoefficientsElement<i64, usize> =
+            LCAStructureCoefficientsElement::from_basis(0);
+        let _ = a.lambda_bracket(&a, &HashMap::new());
     }
 
     #[test]

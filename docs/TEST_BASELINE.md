@@ -1,38 +1,57 @@
-# Test baseline (2026-11-05)
+# Test baseline (2026-11-06)
 
-`cargo test --workspace --no-fail-fast` on the consolidated branch (belyi + integrate-lava-galois +
-main, commit `9c7e23f` and later doc-only commits), rustc 1.97.0, fresh Linux container.
+`cargo test --workspace --no-fail-fast` at commit `e0a9c23`, rustc 1.97.0, 4-core cloud container,
+with the gitignored degree-24 atlas data present (`rustmath-groups/data/`, built by the environment's
+setup script from GAP).
 
-**Result: 13,586 passed, 60 failed, 334 ignored.** Every workspace crate and test target compiles.
+**Result: 13,772 passed, 0 failed, 332 ignored, across 174 test targets.** Every workspace crate and
+test target compiles. The run took 53 minutes, starting from a partly built target dir.
 
-## Failures by target
+## What changed since the 2026-11-05 baseline
 
-| Target | Failed | Cause (first look) |
-|---|--:|---|
-| `rustmath-groups` lib | 18 | `libgap_group`/`libgap_mixin` (pure-Rust GAP name-alikes), `semidirect_product`, `nilpotent_lie_group`, `generic::test_merge_elements` assertion failures |
-| `rustmath-groups` doctests | 8 | `groups_catalog`, `generic`, `semimonomial_transformation*` examples |
-| `rustmath-groups --test galois_narrowing` | 3 | **Environment, now fixed:** the gitignored atlas data was absent. With `build_cycletypes.py` and `build_transitive_24.g` (see `rustmath-groups/data/README.md`) all 4 tests pass, so the baseline is 57 failures once the data is built |
-| `rustmath-lieconformal` doctests | 13 | Doc examples out of date with the API |
-| `rustmath-trees` doctests | 5 | Doc examples |
-| `rustmath-numbertheory` doctests | 4 | Doc examples |
-| `rustmath-quivers` lib | 2 | `cluster_quiver::test_cartan_companion`, `test_type_d_quiver` |
-| `rustmath-modules` doctests | 2 | Doc examples |
-| `rustmath-algebras` doctests | 2 | `associated_graded`, `cellular_basis` examples |
-| `rustmath-curves` lib | 1 | `belyi::modular_forms_hp::recover_forms_centered_z_a_matches_uncentered`: numerical divergence 3.36e-10 (tolerance) |
-| `rustmath-stats`, `rustmath-misc` doctests | 1 each | Doc examples |
+The 2026-11-05 run (below) had 60 failures: 57 with the atlas data present, plus 3 environment
+failures that disappeared once the data was built. Building the data exposed one more: a test that
+asserted the generator atlas was absent. All 58 were fixed in 13 commits (`eb50f9b`..`e0a9c23`).
+Each crate's fix was reviewed by an independent agent before it was committed. The review checked
+for weakened assertions, unproven changes to expected values, and facades.
 
-The crates touched by the lava-galois merge (`rustmath-galois`, `-finitefields`, `-padics`,
-`-numberfields`, `-functionfields`, `-polynomials`, `-reals`, `-complex`, `-integers`, `-igp24`)
-have no failures. Whether the `rustmath-groups` lib failures predate the merge has not been
-checked (the merge only auto-merged `rustmath-groups/src/lib.rs`); `PROJECT_TRACKER.md` records
-the groups test target as "partial test-target repairs (stopped mid-edit at freeze)".
+| Target | Before (pass/fail) | After (pass/fail) | Cause, in short |
+|---|--:|--:|---|
+| `rustmath-groups` lib | 468 / 18 | 548 / 0 | Code bugs, not stale tests. The libgap layer used the context-free `E::identity()`. The semidirect product multiplied `i32` components with `*`. `merge_elements` used the wrong exponents. Nilpotent Lie elements had a dimension-1 identity. About 20 facades are now honest or implemented (`contains` was `true` by default, `is_simple` was true for every group of order > 2, every dim >= 3 nilpotent group got the Heisenberg bracket). Reference values come from GAP. |
+| `rustmath-groups` doctests | 64 / 8 | 78 / 0 | Stale examples, plus real bugs found while writing their assertions: `ArtinGroup::new` stored garbage relators, `misc::AdditiveAbelian` panicked on Z/2+Z/3+Z/5, `power` overflowed one squaring early, and the Mathieu, Alternating and Cactus constructors returned the wrong groups. |
+| `rustmath-groups --test perm23_classifier` | 10 / 1 | 11 / 0 | The test assumed the generator atlas was absent. It now checks the real data when the file exists (25,000 groups; 24T1, PSL(2,23) = 24T7817, M24 = 24T24680, values from GAP) and checks the graceful error when it does not. |
+| `rustmath-quivers` lib | 48 / 2 | 63 / 0 | `cartan_companion` computed BᵀB, not the Fomin-Zelevinsky companion. `type_d` used a non-standard orientation. `type_e` built A_n. `mutation_type` was a facade that returned Finite for almost every input. It is now a theorem-based classifier that returns `Err` when it cannot decide. |
+| `rustmath-lieconformal` doctests | 19 / 13 | 32 / 0 | The examples did not import the trait. Writing real assertions exposed wrong ghost brackets (skew-symmetry) and `∂` implemented as a formal derivative. Several `lambda_bracket` methods returned empty maps; they now panic honestly. |
+| `rustmath-trees` doctests | 29 / 5 | 34 / 0 | Stale examples. |
+| `rustmath-numbertheory` doctests | 6 / 4 | 11 / 0 | Stale examples. `bernoulli_multimodular` was a facade for n > 20 and now implements the real multimodular algorithm. The i64 overflows in `bernoulli_number`/`bernoulli_mod_p` are fixed. `verify_bernoulli_mod_p` had the wrong formula. |
+| `rustmath-modules` doctests | 4 / 2 | 6 / 0 | The examples used `num_bigint::BigInt`, which is not a `Ring`. The `echelon_form`, `span_basis` and `are_linearly_independent` facades are now honest. |
+| `rustmath-algebras` doctests (`full` feature) | 110 / 2 | 112 / 0 | Type annotations were missing. Only a workspace build enables `full` (through `rustmath-jupyter`), so `cargo test -p rustmath-algebras` alone never showed these failures; use `--features full`. |
+| `rustmath-stats` doctests | 5 / 1 | 6 / 0 | No type in the workspace could call `std`. It now works for `Real`, and for `Rational` with an exact root. |
+| `rustmath-misc` doctests | 13 / 1 | 14 / 0 | A tracked, non-empty `output_dir` made `rename` fail. The doctests now write under the system temp dir and no longer modify `output.txt` or leave `.tmp_dir_*` behind. |
+| `rustmath-curves` lib | 296 / 1 | 299 / 0 | The result was not reproducible: a rayon `fold`/`reduce` re-associated the high-precision sums differently on each run, and the free phase of the Jacobi singular vectors amplified that noise from about 1e-78 to about 1e-9. The assembly is now deterministic and the phase is canonical. The 1e-30 assertion is unchanged, and the two runs now agree exactly. |
+
+Ignored: 334 → 332. The `#[ignore]` on `verify_bernoulli_mod_p`'s test was removed because the
+formula is fixed. No `#[ignore]`, `ignore` or `no_run` was added.
+
+Facades and other defects found, fixed or only recorded, are listed per row in
+`PROJECT_TRACKER.md` (Change Log, 2026-11-06).
 
 ## Reproduce
 
 ```bash
 cargo test --workspace --no-fail-fast 2>&1 | tee test_all.log
 grep -E '^test .* FAILED$' test_all.log
+grep -E '^test result:' test_all.log | awk '{p+=$4; f+=$6; i+=$8} END {print p, f, i}'
 ```
 
-The first build compiles GMP/MPFR from source (`rug`), which takes several minutes. The full
-run took about an hour in a 4-core container.
+The first build compiles GMP/MPFR from source (`rug`), which takes several minutes. A cold full run
+takes about an hour in a 4-core container. For one crate, use `cargo test -p <crate>`, but note
+feature unification: `rustmath-algebras` needs `--features full` to match the workspace build.
+
+## Previous baseline (2026-11-05)
+
+At commit `9c7e23f` (belyi + integrate-lava-galois + main): **13,586 passed, 60 failed, 334
+ignored.** Failures: `rustmath-groups` lib 18, doctests 8, `galois_narrowing` 3 (atlas data
+absent); `rustmath-lieconformal` doctests 13; `rustmath-trees` 5; `rustmath-numbertheory` 4;
+`rustmath-quivers` lib 2; `rustmath-modules` 2; `rustmath-algebras` 2; `rustmath-curves` lib 1;
+`rustmath-stats` 1; `rustmath-misc` 1.

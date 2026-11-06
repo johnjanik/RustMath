@@ -111,17 +111,25 @@ pub trait GradedLieConformalAlgebra<R: Ring>: LieConformalAlgebra<R> {
     fn degree(&self, element: &Self::Element) -> Option<Degree>;
 
     /// Check if the grading is consistent
+    ///
+    /// # Panics
+    ///
+    /// The default panics: deciding `[Lᵢ_λ Lⱼ] ⊆ R[λ] ⊗ L_{i+j}` needs the
+    /// λ-brackets, and no implementor overrides this yet. (It used to return
+    /// `true` without checking anything.)
     fn is_grading_consistent(&self) -> bool {
-        // In a properly graded algebra, [Lᵢ_λ Lⱼ] ⊆ R[λ] ⊗ L_{i+j}
-        // This would require computing λ-brackets, which we defer to implementations
-        true
+        unimplemented!("is_grading_consistent: grading check is not implemented for this algebra")
     }
 
     /// Get the homogeneous component of a given degree
-    fn homogeneous_component(&self, degree: Degree) -> Vec<Self::Element> {
-        // Returns all elements of the given degree
-        // Default implementation returns empty; override in concrete implementations
-        vec![]
+    ///
+    /// # Panics
+    ///
+    /// The default panics: no implementor enumerates homogeneous components
+    /// yet. (It used to return an empty vector, which claims the component
+    /// is zero.)
+    fn homogeneous_component(&self, _degree: Degree) -> Vec<Self::Element> {
+        unimplemented!("homogeneous_component: not implemented for this algebra")
     }
 }
 
@@ -196,9 +204,11 @@ impl<R: Ring + Clone> GradedLCA<R> {
         self.parities.as_ref().and_then(|p| p.get(i).copied())
     }
 
-    /// Check if this is a super-algebra
+    /// Check if this is a super-algebra, i.e. some generator is odd
     pub fn is_super(&self) -> bool {
-        self.parities.is_some()
+        self.parities
+            .as_ref()
+            .map_or(false, |p| p.iter().any(|&x| x % 2 == 1))
     }
 
     /// Get all generator names
@@ -274,5 +284,37 @@ mod tests {
         assert!(lca.is_super());
         assert_eq!(lca.generator_parity(0), Some(0));
         assert_eq!(lca.generator_parity(1), Some(1));
+    }
+
+    #[test]
+    fn test_graded_lca_all_even_parities_is_not_super() {
+        // Explicit all-even parities (as the bosonic ghosts pass) are not super.
+        let names = vec!["a".to_string(), "b".to_string()];
+        let degrees = vec![Degree::int(1), Degree::int(0)];
+        let lca = GradedLCA::new(1i64, names, degrees, Some(vec![0, 0]));
+        assert!(!lca.is_super());
+    }
+
+    // No implementor overrides `is_grading_consistent` or
+    // `homogeneous_component`, so these pin the honest default panics.
+
+    #[test]
+    #[should_panic(expected = "is_grading_consistent: grading check is not implemented")]
+    fn test_default_is_grading_consistent_is_unimplemented() {
+        // The old default returned `true` without checking anything.
+        use crate::free_bosons_lie_conformal_algebra::FreeBosonsLieConformalAlgebra;
+        let lca: FreeBosonsLieConformalAlgebra<i64> =
+            FreeBosonsLieConformalAlgebra::new(1, 1, None, None);
+        let _ = lca.is_grading_consistent();
+    }
+
+    #[test]
+    #[should_panic(expected = "homogeneous_component: not implemented for this algebra")]
+    fn test_default_homogeneous_component_is_unimplemented() {
+        // The old default returned an empty Vec, claiming the weight-2
+        // component of Virasoro (which contains L) is zero.
+        use crate::virasoro_lie_conformal_algebra::VirasoroLieConformalAlgebra;
+        let vir: VirasoroLieConformalAlgebra<i64> = VirasoroLieConformalAlgebra::new(1);
+        let _ = vir.homogeneous_component(Degree::int(2));
     }
 }
