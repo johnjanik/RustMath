@@ -4526,3 +4526,61 @@ ch033.WeierstrassSeries,missing,,No Weierstrass q-expansion for a form. [review 
 ch033.HilbertClassPolynomial,verified,rustmath-numberfields/src/hcf.rs:257,"hilbert_class_polynomial(d: i64) via singular moduli; hcf::tests::class_poly_m23_matches_polclass vs PARI polclass(-23), plus -3,-4,-163. [review 2026-11-06; checked]"
 ch033.WeberClassPolynomial,missing,,No Weber class polynomial. [review 2026-11-06; checked]
 ch033.f.6,missing,,No SL2(Z) right action of a matrix on a form. [review 2026-11-06; checked]
+ch048.GaloisRing,partial,rustmath-finitefields/src/galois_ring.rs:77,"only (p,a,d) form via GaloisRing::new; no (q,d) with q=p^a factoring [review 2026-11-06; checked]"
+ch048.GaloisRing.2,verified,rustmath-finitefields/src/galois_ring.rs:77,"Verifier right: new(p,a,d) lifts the GF(p^d) poly (Conway when tabulated); gr_8_2_basic asserts H48E1 values (char 8, #R=64, w^2+w+1=0). No Check param (always 20-round MR) [review 2026-11-06; adjudicated]"
+ch048.GaloisRing.3,partial,rustmath-finitefields/src/galois_ring.rs:105,"with_modulus takes (p,a,D) only; no q=p^a form; tests only indirect via canonical_projection [review 2026-11-06; checked]"
+ch048.GaloisRing.4,done,rustmath-finitefields/src/galois_ring.rs:105,with_modulus checks monic and irreducible mod p; tested via galois_ring.rs::tests::canonical_projection [review 2026-11-06; checked]
+ch048.AssignNames,missing,,no name attribute on GaloisRing [review 2026-11-06; checked]
+ch048.Name,partial,rustmath-finitefields/src/galois_ring.rs:232,"generator() is R.1; gr_8_2_basic asserts H48E1 w^2+w+1=0 (d>=2). d=1 hard-codes 0, wrong for with_modulus D=x+c (R.1=-c); cf. ch021.Name partial. No name string [review 2026-11-06; adjudicated]"
+ch048.R,partial,rustmath-finitefields/src/galois_ring.rs:232,"generator() = class of x, right for d>=2 (gr_8_2_basic asserts H48E1 w^2+w+1=0); d=1 hard-codes 0, wrong when D=x+c, c!=0 (with_modulus); cf. ch021.F.2 partial [review 2026-11-06; adjudicated]"
+ch048.R.2,partial,rustmath-finitefields/src/galois_ring.rs:255,element(Vec<Integer>) and from_int only; no coercion from other rings or base-ring elements [review 2026-11-06; checked]
+ch048.One,done,rustmath-finitefields/src/galois_ring.rs:222,GaloisRing::one(); galois_ring.rs::tests::gr_8_2_basic [review 2026-11-06; checked]
+ch048.Zero,done,rustmath-finitefields/src/galois_ring.rs:214,GaloisRing::zero(); galois_ring.rs::tests::valuation_and_units [review 2026-11-06; checked]
+ch048.Random,missing,,no random element for GaloisRing [review 2026-11-06; checked]
+ch048.ElementToSequence,verified,rustmath-finitefields/src/galois_ring.rs:348,"Verifier right: eltseq() gives [a0..a_{d-1}] over Z/p^a; galois_ring.rs::tests::gr_8_2_basic asserts the H48E1 example Eltseq(R![1,2]) = [1,2] [review 2026-11-06; adjudicated]"
+ch048.Category,missing,,no Magma category object for rings [review 2026-11-06; checked]
+ch048.Parent,missing,,no Parent(R) for a ring [review 2026-11-06; checked]
+ch048.Centre,missing,,no centre function for GaloisRing [review 2026-11-06; checked]
+ch048.PrimeRing,missing,,no prime ring Z/p accessor [review 2026-11-06; checked]
+ch048.PrimeField,missing,,only residue_field (GF(p^d)); no GF(p) accessor on GaloisRing [review 2026-11-06; checked]
+ch048.FieldOfFractions,missing,,not implemented for GaloisRing [review 2026-11-06; checked]
+ch048.Characteristic,verified,rustmath-finitefields/src/galois_ring.rs:146,"Verifier right: characteristic() = p^a; galois_ring.rs::tests::gr_8_2_basic asserts 8 for GR(2^3,2), the H48E1 value; gr_4_2_structure asserts 4 [review 2026-11-06; adjudicated]"
+ch048.R.3,verified,rustmath-finitefields/src/galois_ring.rs:166,Verifier right: cardinality() = p^(ad) as Integer; galois_ring.rs::tests::gr_8_2_basic asserts 64 (H48E1 lists 64 elements); gr_4_2_structure asserts 16 [review 2026-11-06; adjudicated]
+ch048.Degree,done,rustmath-finitefields/src/galois_ring.rs:161,degree(); galois_ring.rs::tests::gr_8_2_basic [review 2026-11-06; checked]
+ch048.ResidueField,done,rustmath-finitefields/src/galois_ring.rs:171,residue_field() returns GF(p^d); galois_ring.rs::tests::residue_field_map [review 2026-11-06; checked]
+ch048.IsCommutative,partial,rustmath-finitefields/src/galois_ring.rs:775,"only CommutativeRing marker impl on element type; no predicate, no test [review 2026-11-06; checked]"
+ch048.IsUnitary,missing,,no predicate [review 2026-11-06; checked]
+ch048.IsFinite,broken,rustmath-core/src/parent.rs:57; rustmath-finitefields/src/galois_ring.rs:321,"Not missing: inherits Parent::is_finite = cardinality().is_some(), cardinality is p^(ad).to_usize(), so false (wrong) when p^(ad) >= 2^64; untested. Same as ch017.IsFinite broken [review 2026-11-06; adjudicated]"
+ch048.IsOrdered,missing,,no predicate [review 2026-11-06; checked]
+ch048.IsField,done,rustmath-finitefields/src/galois_ring.rs:176,is_field() iff a==1; galois_ring.rs::tests::gr_is_not_a_field_for_a_gt_1 [review 2026-11-06; checked]
+ch048.IsEuclideanDomain,partial,rustmath-finitefields/src/galois_ring.rs:176,no dedicated predicate; is_field() gives a==1 answer [review 2026-11-06; checked]
+ch048.IsPID,partial,rustmath-finitefields/src/galois_ring.rs:176,no dedicated predicate; is_field() gives a==1 answer; PrincipalIdealRing marker only [review 2026-11-06; checked]
+ch048.IsUFD,partial,rustmath-finitefields/src/galois_ring.rs:176,no dedicated predicate; is_field() gives a==1 answer [review 2026-11-06; checked]
+ch048.IsDivisionRing,partial,rustmath-finitefields/src/galois_ring.rs:176,no dedicated predicate; is_field() gives a==1 answer [review 2026-11-06; checked]
+ch048.IsEuclideanRing,partial,rustmath-finitefields/src/galois_ring.rs:565,Euclidean quotrem via p-adic valuation exists; no IsEuclideanRing predicate [review 2026-11-06; checked]
+ch048.IsPrincipalIdealRing,partial,rustmath-finitefields/src/galois_ring.rs:785,PrincipalIdealRing marker impl on element type; no predicate or test [review 2026-11-06; checked]
+ch048.IsDomain,partial,rustmath-finitefields/src/galois_ring.rs:176,no dedicated predicate; is_field() doc says field iff domain [review 2026-11-06; checked]
+ch048.R.4,partial,rustmath-finitefields/src/galois_ring.rs:303,"Verifier right: PartialEq compares p,a,d,D data (correct) but no test calls GaloisRing ==; shared_parent checks Arc::ptr_eq only. Untested eq is partial (cf. ch030.L.4) [review 2026-11-06; adjudicated]"
+ch048.R.5,partial,rustmath-finitefields/src/galois_ring.rs:303,"Verifier right: != is the PartialEq negation (correct); no test compares GaloisRing values, shared_parent checks Arc::ptr_eq only (cf. ch030.L.5, ch034.F.4) [review 2026-11-06; adjudicated]"
+ch048.a-a,partial,rustmath-finitefields/src/galois_ring.rs:748,Neg impl for elements; unary plus absent; no direct test [review 2026-11-06; checked]
+ch048.a,partial,rustmath-finitefields/src/galois_ring.rs:690; rustmath-finitefields/src/galois_ring.rs:505,"Verifier right: Add/Sub/Mul tested (gr_8_2_basic, unit_inverse_newton); pow(&Integer) loops only while e>0, so negative k silently returns 1, not the inverse power [review 2026-11-06; adjudicated]"
+ch048.a.2,missing,,no AddAssign/SubAssign/MulAssign impls [review 2026-11-06; checked]
+ch048.a.3,partial,rustmath-finitefields/src/galois_ring.rs:588,Verifier right: div_euclid = quotrem(..).0 (correct) but no test calls it; euclidean_quotrem_gcd_xgcd calls quotrem only (same no-test rule as LCM) [review 2026-11-06; adjudicated]
+ch048.a.4,partial,rustmath-finitefields/src/galois_ring.rs:593,Verifier right: rem_euclid = quotrem(..).1 (correct) but no test calls it; euclidean_quotrem_gcd_xgcd calls quotrem only (same no-test rule as LCM) [review 2026-11-06; adjudicated]
+ch048.Quotrem,done,rustmath-finitefields/src/galois_ring.rs:565,valuation-based quotrem; galois_ring.rs::tests::euclidean_quotrem_gcd_xgcd [review 2026-11-06; checked]
+ch048.GCD,done,rustmath-finitefields/src/galois_ring.rs:599,canonical associate p^min(v); galois_ring.rs::tests::euclidean_quotrem_gcd_xgcd [review 2026-11-06; checked]
+ch048.LCM,partial,rustmath-finitefields/src/galois_ring.rs:614,p^max(v) implemented but no test exercises lcm [review 2026-11-06; checked]
+ch048.XGCD,done,rustmath-finitefields/src/galois_ring.rs:630,g=s a+t b checked in galois_ring.rs::tests::euclidean_quotrem_gcd_xgcd [review 2026-11-06; checked]
+ch048.a.5,done,rustmath-finitefields/src/galois_ring.rs:684,"Element PartialEq (parent data + coeffs); exercised by galois_ring.rs::tests::euclidean_quotrem_gcd_xgcd (assert_eq!(check, g2)), teichmuller_representatives; gr_8_2_basic compares no elements [review 2026-11-06; adjudicated]"
+ch048.a.6,done,rustmath-finitefields/src/galois_ring.rs:684,inequality via PartialEq; used in assertions in galois_ring.rs::tests [review 2026-11-06; checked]
+ch048.a.7,partial,rustmath-finitefields/src/galois_ring.rs:312,Parent::contains compares ring data; no test [review 2026-11-06; checked]
+ch048.a.8,partial,rustmath-finitefields/src/galois_ring.rs:312,negation of Parent::contains; no test [review 2026-11-06; checked]
+ch048.Parent.2,partial,rustmath-finitefields/src/galois_ring.rs:343,ring() accessor returns parent; no direct test [review 2026-11-06; checked]
+ch048.Category.2,missing,,no Magma category object [review 2026-11-06; checked]
+ch048.IsZero,done,rustmath-finitefields/src/galois_ring.rs:767,Ring::is_zero; galois_ring.rs::tests::gr_8_2_basic [review 2026-11-06; checked]
+ch048.IsOne,done,rustmath-finitefields/src/galois_ring.rs:770,Ring::is_one; galois_ring.rs::tests::unit_inverse_newton [review 2026-11-06; checked]
+ch048.IsMinusOne,missing,,no is_minus_one for GaloisRingElement [review 2026-11-06; checked]
+ch048.IsNilpotent,done,rustmath-finitefields/src/galois_ring.rs:392,non-unit test; galois_ring.rs::tests::gr_4_2_structure [review 2026-11-06; checked]
+ch048.IsIdempotent,partial,rustmath-finitefields/src/galois_ring.rs:403,x*x==x implemented; no test calls is_idempotent found [review 2026-11-06; checked]
+ch048.IsUnit,verified,rustmath-finitefields/src/galois_ring.rs:385,"Verifier right: is_unit = v(x)==0; gr_is_not_a_field_for_a_gt_1 asserts the H48E2 remark (3, 9 non-units in GR(3^3,2)); gr_4_2_structure counts 12 units [review 2026-11-06; adjudicated]"
+ch048.IsZeroDivisor,done,rustmath-finitefields/src/galois_ring.rs:398,nonzero non-unit; galois_ring.rs::tests::gr_4_2_structure [review 2026-11-06; checked]
