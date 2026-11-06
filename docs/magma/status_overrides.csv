@@ -242,3 +242,196 @@ ch032.HasseMinkowskiInvariant,missing,,"no implementation; related building bloc
 ch032.WittInvariants,missing,,"no implementation; related building blocks only: hilbert_symbol (hilbert.rs:89), ternary diagonalize [review 2026-11-06; checked]"
 ch032.HasseMinkowskiInvariants,missing,,"no implementation; related building blocks only: hilbert_symbol (hilbert.rs:89), ternary diagonalize [review 2026-11-06; checked]"
 ch032.IsotropicSubspace,missing,,no isotropic subspace search (Simon's algorithm) found; only ternary isotropic vector pullback test in ternary.rs [review 2026-11-06; checked]
+ch030.Lattice,missing,,No inner-product-matrix M variant; Lattice has only the standard Euclidean product on Z^n [review 2026-11-06; checked]
+ch030.Lattice.2,partial,rustmath-matrix/src/lattice.rs:425,"Lattice::from_generators: integer row matrix only, LLL-reduces, drops zero rows; no (n,Q) or R-space forms. Test lattice::short_vectors... shortest_vectors_of_skew_basis [review 2026-11-06; checked]"
+ch030.LatticeWithBasis,missing,,No inner product matrix M support [review 2026-11-06; checked]
+ch030.LatticeWithBasis.2,partial,rustmath-matrix/src/lattice.rs:404,"Lattice::with_basis: Z-entries, Euclidean only, no independence check, no (n,Q)/R-space forms; used in lattice::lattice_parent_and_gram [review 2026-11-06; checked]"
+ch030.LatticeWithGram,partial,rustmath-modules/src/free_quadratic_module.rs:15; rustmath-numbertheory/src/quadratic_forms.rs:56,"FreeQuadraticModule::new(gram): free module, standard basis, Gram F; no CheckPositive, no (n,Q) form, untested. numbertheory QuadraticForm::new(F) checks symmetry, tested [review 2026-11-06; adjudicated]"
+ch030.StandardLattice,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.CoordinateLattice,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.ScaledLattice,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.Lattice.3,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.Lattice.4,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.MinkowskiLattice,partial,rustmath-numberfields/src/polred.rs:102; rustmath-numberfields/src/round2.rs:911,"private t2_lattice: f64 Minkowski images (sqrt2 Re/Im) of power basis, equation order only, scaled and rounded to Z for LLL; polredabs inlines same for O_K; no lattice object or isomorphism [review 2026-11-06; adjudicated]"
+ch030.MinkowskiLattice.2,partial,rustmath-numberfields/src/classgroup.rs:140,"private embed_ideal: f64 Minkowski images of an ideal basis scaled by 1e6 and rounded to Z, used by is_principal; no lattice object, no isomorphism [review 2026-11-06; adjudicated]"
+ch030.MinkowskiSpace,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.Lattice.5,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.L,partial,rustmath-matrix/src/lattice.rs:452; rustmath-matrix/src/lattice.rs:700,"Lattice::basis()[i] (0-based, bare Vec element) is the i-th basis element, as for Basis partial; also generators(); no dedicated accessor, no test asserts basis entries [review 2026-11-06; adjudicated]"
+ch030.L.2,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.CoordinatesToElement,done,rustmath-matrix/src/lattice.rs:489,"Lattice::coordinates_to_vector sum c_i b_i; length checked; exercised indirectly by lattice.rs::short_vectors_of_Z2, no direct test [review 2026-11-06; checked]"
+ch030.L.3,done,rustmath-matrix/src/lattice.rs:682,Parent::zero for Lattice returns zero vector; asserted in lattice.rs::lattice_parent_and_gram [review 2026-11-06; checked]
+ch030.v,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.v.2,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.v.3,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.v.4,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.v.5,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.v.6,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.v.7,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.v.8,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.InnerProduct,partial,rustmath-matrix/src/inner_product.rs:60,InnerProductSpace::inner_product u^T G v over a field for raw slices; no lattice element type; test inner_product.rs::test_euclidean_inner_product [review 2026-11-06; checked]
+ch030.Norm,partial,rustmath-matrix/src/inner_product.rs:92,"InnerProductSpace::norm_squared on raw vectors, not lattice elements; test inner_product.rs::test_norm_squared [review 2026-11-06; checked]"
+ch030.Length,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.Support,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.v.9,partial,rustmath-matrix/src/lattice.rs:670,"Parent::contains(Vec<Integer>) exact membership test, Euclidean Z-lattice; tested in lattice.rs::lattice_parent_and_gram. Not an element-type operator [review 2026-11-06; checked]"
+ch030.v.10,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.v.11,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.IsZero,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.ElementToSequence,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.Coordinates,partial,rustmath-matrix/src/lattice.rs:709,Private Lattice::solve_coordinates (rational solve) used by contains; no public Coordinates(v) returning integer coords [review 2026-11-06; checked]
+ch030.Coordinates.2,partial,rustmath-matrix/src/lattice.rs:709,"private solve_coordinates(&self, v): coords of any degree-n v w.r.t. basis of L (rational, None outside span); exact Coordinates(L,v) shape, same fn as Coordinates partial; not public [review 2026-11-06; adjudicated]"
+ch030.CoordinateVector,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.CoordinateVector.2,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.AmbientSpace,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.CoordinateSpace,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.Category,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.Dimension,done,rustmath-matrix/src/lattice.rs:442,Lattice::rank; asserted in lattice.rs::lattice_parent_and_gram [review 2026-11-06; checked]
+ch030.Degree,done,rustmath-matrix/src/lattice.rs:447,Lattice::ambient_dimension; asserted in lattice.rs::lattice_parent_and_gram [review 2026-11-06; checked]
+ch030.Degree.2,missing,,No lattice element type that knows its parent; elements are bare Vec<Integer> [review 2026-11-06; checked]
+ch030.Content,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.Level,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.Determinant,partial,rustmath-matrix/src/lattice.rs:471,"Lattice::determinant_squared = det(Gram) exact (the MAGMA Determinant); name differs, Euclidean only; tested via lattice_parent_and_gram [review 2026-11-06; checked]"
+ch030.GramMatrix,partial,rustmath-matrix/src/lattice.rs:458,"Lattice::gram_matrix is B B^T with M fixed to I (type cannot carry M), so only the M=I case of F=BMB^tr, as for Determinant; lattice_parent_and_gram asserts identity Gram only [review 2026-11-06; adjudicated]"
+ch030.GramMatrix.2,partial,rustmath-matrix/src/lattice.rs:458,"Only via Lattice::with_basis(X).gram_matrix(); no free fn on a general matrix, no symmetry speedup, integer rows only [review 2026-11-06; checked]"
+ch030.InnerProductMatrix,partial,rustmath-modules/src/free_quadratic_module.rs:25; rustmath-matrix/src/inner_product.rs:280,"Lattice has implicit M=I, no accessor; FreeQuadraticModule::gram_matrix is M for its standard basis (LatticeWithGram analogue); InnerProductSpace::gram_matrix is ambient M; untested [review 2026-11-06; adjudicated]"
+ch030.Basis,partial,rustmath-matrix/src/lattice.rs:452,"Lattice::basis returns &[Vec<Integer>] rows, not lattice elements; lattice_parent_and_gram checks generators [review 2026-11-06; checked]"
+ch030.BasisMatrix,partial,rustmath-matrix/src/lattice.rs:452,"Lattice::basis returns rows as Vec<Vec<Integer>>, not a Matrix; no direct test [review 2026-11-06; checked]"
+ch030.BasisDenominator,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.QuadraticForm,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.L.4,partial,rustmath-matrix/src/lattice.rs:392,"derived PartialEq on Lattice compares basis rows exactly (handbook eq, M always I) but also the precision field set by with_precision; no test compares lattices [review 2026-11-06; adjudicated]"
+ch030.L.5,partial,rustmath-matrix/src/lattice.rs:392,derived PartialEq gives != on Lattice (basis rows plus precision field); no test compares lattices [review 2026-11-06; adjudicated]
+ch030.L.6,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.IsExact,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.IsIntegral,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.IsEven,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.BaseRing,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.CoordinateRing,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.ChangeRing,missing,,Lattice is Z only; matrix ChangeRing candidates unrelated [review 2026-11-06; checked]
+ch030.sub,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.ext,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.T,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.s,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.L.7,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.quo,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.L.8,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.Index,missing,,"matrix.rs:645 is std Index trait impl (element indexing), unrelated to sublattice index [review 2026-11-06; checked]"
+ch030.Dual,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.PartialDual,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.DualBasisLattice,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.DualQuotient,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.EvenSublattice,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.L.9,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.L.10,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.DirectSum,missing,,"vector_space.rs direct_sum is for vector spaces, not lattices with inner products [review 2026-11-06; checked]"
+ch030.OrthogonalDecomposition,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.OrthogonalDecomposition.2,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.TensorProduct,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.ExteriorSquare,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.SymmetricSquare,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.PureLattice,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.IntegralBasisLattice,missing,,No lattice implementation under any name; Lattice type is Z^n Euclidean with basis/gram/LLL/short vectors only [review 2026-11-06; checked]
+ch030.LLL,partial,rustmath-matrix/src/lll.rs:75; rustmath-matrix/src/lattice.rs:376,"LLL on integer rows, fixed delta 3/4, returns (reduced, U); no rank, no options, no MLLL for dependent rows. Tests lll.rs::test_classic_2d, lattice.rs::lll_rf_reduces_and_transforms_exactly [review 2026-11-06; checked]"
+ch030.BasisReduction,partial,rustmath-matrix/src/lll.rs:133,lll_reduced_basis = LLL reduced rows over Z only; same limits as LLL [review 2026-11-06; checked]
+ch030.LLLGram,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.LLLBasisMatrix,partial,rustmath-matrix/src/lattice.rs:477,"Lattice::lll_reduced().basis() gives reduced basis; no dedicated fn, standard inner product only [review 2026-11-06; checked]"
+ch030.LLLGramMatrix,partial,rustmath-matrix/src/lattice.rs:477; rustmath-matrix/src/lattice.rs:458,"Lattice::lll_reduced() gives (L', U) and L'.gram_matrix() gives F'=B'B'^T, same composition as LLLBasisMatrix row; delta 3/4, Euclidean form only, no options [review 2026-11-06; adjudicated]"
+ch030.LLL.2,partial,rustmath-matrix/src/lattice.rs:477,"Lattice::lll_reduced returns (lattice, U) with B'=UB; only Euclidean inner product, no options. Test lattice.rs::lll_rf_reduces_and_transforms_exactly [review 2026-11-06; checked]"
+ch030.BasisReduction.2,partial,rustmath-matrix/src/lattice.rs:477,Same as LLL on a Lattice (Euclidean only) [review 2026-11-06; checked]
+ch030.SetVerbose,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.PairReduce,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.PairReduceGram,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.PairReduce.2,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.Seysen,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.SeysenGram,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.Seysen.2,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.HKZ,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.HKZGram,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.HKZ.2,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.SetVerbose.2,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.GaussReduce,partial,rustmath-quadraticforms/src/quadratic_form.rs:97,"QuadraticForm::reduced_form Gauss-reduces pos-def binary forms (|b|<=a<=c), i.e. GaussReduceGram on 2x2 integral Gram; no transform T, no basis/lattice forms; test_reduced_form uses reduced input only [review 2026-11-06; adjudicated]"
+ch030.ReconstructLatticeBasis,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.Minimum,partial,rustmath-matrix/src/lattice.rs:545,"No Minimum fn; norm of shortest_vectors() gives it for Z^n Euclidean lattices; no Proof/Prune, no attribute caching [review 2026-11-06; checked]"
+ch030.PackingRadius,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.HermiteConstant,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.HermiteNumber,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.CentreDensity,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.Density,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.KissingNumber,partial,rustmath-matrix/src/lattice.rs:545,"2*Lattice::shortest_vectors().len() (one per +- pair) gives it, same footing as Minimum row; no dedicated fn, Euclidean Z^n only, silent 2M node cap, no Proof/Prune [review 2026-11-06; adjudicated]"
+ch030.ShortestVectors,partial,rustmath-matrix/src/lattice.rs:545,"Lattice::shortest_vectors via Fincke-Pohst, one per +-pair; Euclidean only; silent node cap (2M) may truncate. Test lattice.rs::shortest_vectors_of_skew_basis [review 2026-11-06; checked]"
+ch030.ShortestVectorsMatrix,partial,rustmath-matrix/src/lattice.rs:545,"Lattice::shortest_vectors returns the same vectors as (row, norm) pairs; only Matrix return type missing; same limits as ShortestVectors (no Max/Proof/Prune, silent node cap) [review 2026-11-06; adjudicated]"
+ch030.ClosestVectors,partial,rustmath-matrix/src/enumerate.rs:167,"closest_vector returns ONE closest vector (f64 GSO), not all; integer basis only. Test enumerate.rs::closest_vector_cvp [review 2026-11-06; checked]"
+ch030.ClosestVectorsMatrix,partial,rustmath-matrix/src/enumerate.rs:167,"Same code as ClosestVectors row: closest_vector returns ONE closest vector (f64 GSO, integer target), not all, no distance d, no matrix form [review 2026-11-06; adjudicated]"
+ch030.ShortVectors,partial,rustmath-matrix/src/lattice.rs:510; rustmath-matrix/src/enumerate.rs:80,"Fincke-Pohst all vectors of norm<=bound, +-deduped; no lower bound/count args, Euclidean only, silent node cap. Test lattice.rs::short_vectors_of_Z2, enumerate.rs::short_vectors_skewed [review 2026-11-06; checked]"
+ch030.ShortVectorsMatrix,partial,rustmath-matrix/src/lattice.rs:510; rustmath-matrix/src/enumerate.rs:80,"Lattice::short_vectors / enumerate::short_vectors return the vectors as rows; no Matrix wrapper, no lower bound l, no Max/Proof/Prune, Euclidean only, silent node cap [review 2026-11-06; adjudicated]"
+ch030.CloseVectors,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.CloseVectorsMatrix,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.ShortVectorsProcess,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.CloseVectorsProcess,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.NextVector,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.IsEmpty,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.SuccessiveMinima,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.ThetaSeries,partial,rustmath-numbertheory/src/quadratic_forms.rs:373,"Brute-force box count with user bound (no proof of completeness), takes QuadraticForm not Lattice; only doctest. Also binary/unary-only rustmath-quadraticforms/src/theta_series.rs:27 [review 2026-11-06; checked]"
+ch030.ThetaSeriesIntegral,partial,rustmath-numbertheory/src/quadratic_forms.rs:373; rustmath-quadraticforms/src/theta_series.rs:27,"Same code as ThetaSeries row, which works on integer Gram matrices (the integral case); box search with caller bound, no completeness proof; test quadratic_forms.rs::test_theta_series [review 2026-11-06; adjudicated]"
+ch030.SetVerbose.3,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.EnumerationCost,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.EnumerationCostArray,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.ThetaSeriesModularFormSpace,facade,rustmath-quadraticforms/src/theta_series.rs:163,"modular_form_properties returns the space data (weight/level/character) for binary forms but fabricated: level=4|disc| (1 for unary), character=sign of disc, weight by c==0; tracker flags 🛑 [review 2026-11-06; adjudicated]"
+ch030.ThetaSeriesModularForm,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.VoronoiCell,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.VoronoiGraph,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.Holes,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.DeepHoles,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.CoveringRadius,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.VoronoiRelevantVectors,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.Orthogonalize,partial,rustmath-matrix/src/lattice.rs:192; rustmath-matrix/src/inner_product.rs:125,"gram_schmidt_exact: exact rational GSO (b*, mu) of integer rows; inner_product gram_schmidt over a field. Tests lattice.rs::gram_schmidt_exact_matches_sympy [review 2026-11-06; checked]"
+ch030.Diagonalization,partial,rustmath-quadraticforms/src/ternary.rs:95,"Only ternary (3x3) diagonalization returning (diag, T); no general n x n symmetric matrix, no rank [review 2026-11-06; checked]"
+ch030.Orthogonalize.2,partial,rustmath-matrix/src/lattice.rs:192,"Exact GSO available for lattice basis rows; no Lattice-returning wrapper, Euclidean form only [review 2026-11-06; checked]"
+ch030.Orthonormalize,missing,,"cholesky_decomposition (decomposition.rs:370) and its test sit in /* */ blocks (263-442, 829-876), not compiled; inner_product.rs:177 orthonormalize too. Only Cholesky is private Belyi helper returning a norm [review 2026-11-06; adjudicated]"
+ch030.Orthonormalize.2,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.IsPositiveDefinite,partial,rustmath-matrix/src/matrix.rs:587,Sylvester minors with determinant converted to f64 for the sign test; not exact for rationals/integers of large size; square symmetric only [review 2026-11-06; checked]
+ch030.IsPositiveSemiDefinite,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.IsNegativeDefinite,partial,rustmath-quadraticforms/src/quadratic_form.rs:71,"Binary integer quadratic forms only (a<0 and disc<0), not general symmetric matrices/lattices [review 2026-11-06; checked]"
+ch030.IsNegativeSemiDefinite,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.Genus,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.SpinorGenus,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.SpinorGenera,facade,rustmath-quadraticforms/src/genus_theory.rs:219,"Only related fn spinor_genus_count returns constant 1 (""simplified""); no spinor genera sequence computed [review 2026-11-06; checked]"
+ch030.Representative,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.IsSpinorGenus,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.IsGenus,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.Determinant.2,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.LocalGenera,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.Representative.2,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.G1,facade,rustmath-quadraticforms/src/genus_theory.rs:169,is_same_genus on binary forms returns true if disc and signature match; p-adic check skipped. No genus symbols [review 2026-11-06; checked]
+ch030.G,facade,rustmath-quadraticforms/src/genus_theory.rs:161; rustmath-quadraticforms/src/genus_theory.rs:136,#G analogue genus_size returns len of the caller-supplied form list; class_number_estimate = 2*fabricated mass (tracker 🛑); no isometry-class enumeration anywhere [review 2026-11-06; adjudicated]
+ch030.SpinorCharacters,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.SpinorGenerators,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.AutomorphousClasses,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.IsSpinorNorm,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.Prime,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.Representative.3,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.Determinant.3,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.Dimension.2,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.G1.2,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.Neighbour,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.Neighbours,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.NeighbourClosure,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.GenusRepresentatives,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.AdjacencyMatrix,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.L.11,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.L.12,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.LatticeDatabase,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.NumberOfLattices,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.LargestDimension,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.NumberOfLattices.2,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.NumberOfLattices.3,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.LatticeName,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.LatticeName.2,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.LatticeName.3,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.LatticeName.4,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.Lattice.6,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.LatticeData,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.HermitianTranspose,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.ExpandBasis,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.HermitianAutomorphismGroup,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.InvariantForms,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.QuaternionicGModule,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch030.MooreDeterminant,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
