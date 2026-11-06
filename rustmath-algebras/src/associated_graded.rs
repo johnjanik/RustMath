@@ -36,16 +36,40 @@ use std::marker::PhantomData;
 /// use rustmath_modules::CombinatorialFreeModuleElement;
 /// use rustmath_integers::Integer;
 ///
-/// // Define a degree function
-/// let degree_fn = |i: &usize| *i;
+/// // The first Weyl algebra A_1 = Z<x, d> / (d*x - x*d - 1), with basis x^a d^b
+/// // indexed by (a, b) and the Bernstein filtration deg(x^a d^b) = a + b.
+/// let degree_fn = |m: &(usize, usize)| m.0 + m.1;
 ///
-/// // Define a product function for the underlying algebra
-/// let product_fn = |i: &usize, j: &usize| {
-///     CombinatorialFreeModuleElement::from_basis_index(i + j)
+/// // Normal ordering: (x^a d^b)(x^c d^e) = sum_k k! C(b,k) C(c,k) x^(a+c-k) d^(b+e-k)
+/// let product_fn = |l: &(usize, usize), r: &(usize, usize)| {
+///     let binom = |n: usize, k: usize| (0..k).fold(1u64, |acc, i| acc * (n - i) as u64 / (i as u64 + 1));
+///     let fact = |k: usize| (1..=k as u64).product::<u64>();
+///     let ((a, b), (c, e)) = (*l, *r);
+///     CombinatorialFreeModuleElement::<Integer, (usize, usize)>::sum_of_terms(
+///         (0..=b.min(c)).map(|k| {
+///             ((a + c - k, b + e - k), Integer::from(fact(k) * binom(b, k) * binom(c, k)))
+///         }),
+///     )
 /// };
 ///
-/// // Create the associated graded algebra
+/// // In A_1 itself, d * x = x*d + 1 ...
+/// let in_weyl = product_fn(&(0, 1), &(1, 0));
+/// assert_eq!(in_weyl.coefficient(&(1, 1)), Integer::from(1));
+/// assert_eq!(in_weyl.coefficient(&(0, 0)), Integer::from(1));
+///
+/// // ... while in gr(A_1) = Z[x, d] only the top-degree term survives: d * x = x*d.
 /// let gr_algebra = AssociatedGradedAlgebra::new(degree_fn, product_fn);
+/// let dx = gr_algebra.product_on_basis(&(0, 1), &(1, 0));
+/// assert_eq!(dx, CombinatorialFreeModuleElement::from_basis_index((1, 1)));
+/// assert_eq!(dx, gr_algebra.product_on_basis(&(1, 0), &(0, 1)));
+///
+/// // d^2 * x^2 = x^2 d^2 + 4 x d + 2 in A_1, but x^2 d^2 in gr(A_1).
+/// let d2x2 = product_fn(&(0, 2), &(2, 0));
+/// assert_eq!(d2x2.coefficient(&(1, 1)), Integer::from(4));
+/// assert_eq!(d2x2.coefficient(&(0, 0)), Integer::from(2));
+/// let gr_d2x2 = gr_algebra.product_on_basis(&(0, 2), &(2, 0));
+/// assert_eq!(gr_d2x2, CombinatorialFreeModuleElement::from_basis_index((2, 2)));
+/// assert_eq!(gr_algebra.degree_of_element(&gr_d2x2), Some(4));
 /// ```
 pub struct AssociatedGradedAlgebra<R, I, DegreeFunc, ProductFunc>
 where

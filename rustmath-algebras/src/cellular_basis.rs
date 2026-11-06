@@ -81,22 +81,47 @@ where
 /// use rustmath_integers::Integer;
 /// use std::collections::BTreeSet;
 ///
-/// // Define cell poset elements
-/// let poset = vec![0, 1, 2].into_iter().collect();
+/// // The semisimple algebra M_1(Z) x M_2(Z) x M_3(Z) is cellular: the cell poset is
+/// // {0, 1, 2}, T(λ) = {0, ..., λ}, and c^λ_st is the matrix unit E_st in the
+/// // (λ+1) x (λ+1) block. The anti-involution c^λ_st -> c^λ_ts is the transpose.
+/// let poset: BTreeSet<usize> = vec![0, 1, 2].into_iter().collect();
 ///
 /// // Define cell module indices function
 /// let indices_fn = |lambda: &usize| -> BTreeSet<usize> {
 ///     (0..=*lambda).collect()
 /// };
 ///
-/// // Define product function (simplified)
-/// let product_fn = |idx1: &CellularIndex<usize, usize>,
-///                   idx2: &CellularIndex<usize, usize>| {
-///     CombinatorialFreeModuleElement::from_basis_index(idx1.clone())
+/// // Matrix-unit multiplication: E^λ_st * E^μ_uv = δ_λμ δ_tu E^λ_sv
+/// let product_fn = |l: &CellularIndex<usize, usize>, r: &CellularIndex<usize, usize>| {
+///     if l.lambda == r.lambda && l.t == r.s {
+///         CombinatorialFreeModuleElement::<Integer, _>::from_basis_index(
+///             CellularIndex::new(l.lambda, l.s, r.t),
+///         )
+///     } else {
+///         CombinatorialFreeModuleElement::zero()
+///     }
 /// };
 ///
 /// // Create the cellular basis
 /// let cell_basis = CellularBasis::new(poset, indices_fn, product_fn);
+///
+/// // dim = 1^2 + 2^2 + 3^2 = 14
+/// assert_eq!(cell_basis.all_basis_indices().len(), 14);
+///
+/// let a = cell_basis.basis_element(2, 0, 1);
+/// let b = cell_basis.basis_element(2, 1, 2);
+/// let ab = cell_basis.product(&a, &b);
+/// assert_eq!(ab, cell_basis.basis_element(2, 0, 2)); // E_01 E_12 = E_02
+/// assert!(cell_basis.product(&b, &a).is_zero()); // E_12 E_01 = 0
+/// assert!(cell_basis.product(&a, &cell_basis.basis_element(1, 1, 0)).is_zero()); // other block
+/// assert!(cell_basis.is_in_cell_module(&ab, &2));
+///
+/// // The anti-involution reverses products: ι(ab) = ι(b) ι(a)
+/// let iota_ab = cell_basis.anti_involution(&ab);
+/// let iota_b_iota_a =
+///     cell_basis.product(&cell_basis.anti_involution(&b), &cell_basis.anti_involution(&a));
+/// assert_eq!(iota_ab, iota_b_iota_a);
+/// assert_eq!(iota_ab, cell_basis.basis_element(2, 2, 0));
 /// ```
 pub struct CellularBasis<R, L, T, CellModuleIndicesFunc, ProductFunc>
 where

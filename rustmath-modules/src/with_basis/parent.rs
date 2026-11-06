@@ -134,32 +134,52 @@ pub trait ModuleWithBasisParentMethods: ModuleWithBasis {
     }
 
     /// Compute echelon form of a list of elements
-    fn echelon_form(&self, elements: Vec<Self::Element>) -> Vec<Self::Element>
+    ///
+    /// # Panics
+    ///
+    /// Not implemented: `Element` is opaque here (no coefficient access) and the base
+    /// ring need not be a field, so no elimination can be done at this level. This used
+    /// to return its input unchanged, which is not an echelon form.
+    fn echelon_form(&self, _elements: Vec<Self::Element>) -> Vec<Self::Element>
     where
         Self::Element: Clone,
     {
-        // TODO: Implement Gaussian elimination
-        // For now, just return the input
-        elements
+        unimplemented!(
+            "ModuleWithBasisParentMethods::echelon_form: generic Gaussian elimination \
+             over an opaque element type is not implemented"
+        )
     }
 
     /// Compute a basis for the span of given elements
-    fn span_basis(&self, elements: Vec<Self::Element>) -> Vec<Self::Element>
+    ///
+    /// # Panics
+    ///
+    /// Not implemented (needs [`echelon_form`](Self::echelon_form)). This used to return
+    /// its input unchanged, which is not a basis when the input is dependent.
+    fn span_basis(&self, _elements: Vec<Self::Element>) -> Vec<Self::Element>
     where
         Self::Element: Clone,
     {
-        // TODO: Implement proper basis extraction
-        // For now, use echelon form
-        self.echelon_form(elements)
+        unimplemented!(
+            "ModuleWithBasisParentMethods::span_basis: requires echelon_form, which is \
+             not implemented"
+        )
     }
 
     /// Check if elements are linearly independent
-    fn are_linearly_independent(&self, elements: &[Self::Element]) -> bool
+    ///
+    /// # Panics
+    ///
+    /// Not implemented (needs [`span_basis`](Self::span_basis)). This used to return
+    /// `true` for every input.
+    fn are_linearly_independent(&self, _elements: &[Self::Element]) -> bool
     where
         Self::Element: Clone,
     {
-        let basis = self.span_basis(elements.to_vec());
-        basis.len() == elements.len()
+        unimplemented!(
+            "ModuleWithBasisParentMethods::are_linearly_independent: requires span_basis, \
+             which is not implemented"
+        )
     }
 }
 
@@ -404,5 +424,24 @@ mod tests {
         let ex = module.basis_element(&"x".to_string()).unwrap();
         assert_eq!(ex.coefficient(&"x".to_string()), BigInt::from(1));
         assert_eq!(ex.coefficient(&"y".to_string()), BigInt::from(0));
+    }
+
+    /// `are_linearly_independent` used to answer `true` for every input, including
+    /// the dependent set {e_0, 2 e_0}. It must not give that answer any more.
+    #[test]
+    #[should_panic(expected = "not implemented")]
+    fn test_linear_independence_is_not_fabricated() {
+        let module = FreeModuleWithBasis::<usize, _>::standard(BigInt::from(0), 2);
+        let e0 = module.basis_element(&0).unwrap();
+        let two_e0 = e0.scalar_mul(&BigInt::from(2));
+        let _ = module.are_linearly_independent(&[e0, two_e0]);
+    }
+
+    #[test]
+    #[should_panic(expected = "not implemented")]
+    fn test_echelon_form_is_not_fabricated() {
+        let module = FreeModuleWithBasis::<usize, _>::standard(BigInt::from(0), 2);
+        let e0 = module.basis_element(&0).unwrap();
+        let _ = module.echelon_form(vec![e0.clone(), e0]);
     }
 }

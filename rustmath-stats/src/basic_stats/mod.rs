@@ -23,6 +23,8 @@
 //! For a sample (estimating population parameters), use `bias = false`.
 
 use rustmath_core::{Field, MathError, NumericConversion, Result};
+use rustmath_rationals::Rational;
+use rustmath_reals::Real;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::cmp::Ordering;
@@ -261,6 +263,44 @@ impl SquareRoot for f64 {
     }
 }
 
+/// Floating-point square root of a `Real` (double precision).
+///
+/// Returns `None` for negative or NaN input.
+impl SquareRoot for Real {
+    fn sqrt(&self) -> Option<Self> {
+        let v = self.to_f64();
+        if v.is_nan() || v < 0.0 {
+            None
+        } else {
+            Some(Real::sqrt(self))
+        }
+    }
+}
+
+/// Exact square root in Q.
+///
+/// Returns `Some(r)` with `r >= 0` and `r * r == self` when `self` is the square of a
+/// rational number, and `None` otherwise (negative input, or a square root that is
+/// irrational such as `sqrt(2)`). No approximation is ever returned.
+impl SquareRoot for Rational {
+    fn sqrt(&self) -> Option<Self> {
+        // Normalise to lowest terms with a positive denominator; then p/q is a square in Q
+        // if and only if p and q are both perfect squares in Z.
+        let r = Rational::new(self.numerator().clone(), self.denominator().clone()).ok()?;
+        let (p, q) = (r.numerator(), r.denominator());
+        if p.signum() < 0 {
+            return None;
+        }
+        let a = p.sqrt().ok()?;
+        let b = q.sqrt().ok()?;
+        if a.clone() * a.clone() == *p && b.clone() * b.clone() == *q {
+            Rational::new(a, b).ok()
+        } else {
+            None
+        }
+    }
+}
+
 /// Compute the standard deviation of a dataset
 ///
 /// Standard deviation is the square root of the variance.
@@ -276,24 +316,34 @@ impl SquareRoot for f64 {
 /// # Type Constraints
 ///
 /// - Requires `Field`, `NumericConversion`, and `SquareRoot`
-/// - Currently works for f64; Rational would need approximation
+/// - Implemented for `Real` (floating point) and `Rational` (exact). For `Rational`
+///   the result is `Err` unless the variance is the square of a rational number:
+///   an irrational standard deviation is never approximated.
 ///
 /// # Examples
 ///
-/// ```no_run
+/// ```
 /// use rustmath_stats::basic_stats::std;
+/// use rustmath_reals::Real;
+/// use rustmath_rationals::Rational;
 ///
-/// // Note: f64 doesn't implement required traits in this project yet.
-/// // This example is for illustration only.
-/// let data = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+/// // Floating point: data 1..5 has sample variance 5/2 and population variance 2.
+/// let data: Vec<Real> = (1..=5).map(|i| Real::from(i as f64)).collect();
 ///
-/// // Sample standard deviation
+/// // Sample standard deviation sqrt(5/2) = 1.5811388300841898...
 /// let std_sample = std(&data, false).unwrap();
-/// assert!((std_sample - 1.5811).abs() < 0.001);
+/// assert!((std_sample.to_f64() - 1.5811388300841898).abs() < 1e-12);
 ///
-/// // Population standard deviation
+/// // Population standard deviation sqrt(2) = 1.4142135623730951...
 /// let std_pop = std(&data, true).unwrap();
-/// assert!((std_pop - 1.4142).abs() < 0.001);
+/// assert!((std_pop.to_f64() - 1.4142135623730951).abs() < 1e-12);
+///
+/// // Exact: {2, 4, 4, 4, 5, 5, 7, 9} has mean 5 and population variance 32/8 = 4.
+/// let exact: Vec<Rational> = [2, 4, 4, 4, 5, 5, 7, 9].iter().map(|&n| Rational::from(n)).collect();
+/// assert_eq!(std(&exact, true).unwrap(), Rational::from(2));
+///
+/// // Its sample variance 32/7 is not a square in Q, so no exact std exists.
+/// assert!(std(&exact, false).is_err());
 /// ```
 pub fn std<T>(data: &[T], bias: bool) -> Result<T>
 where
@@ -503,8 +553,51 @@ mod tests {
 
     // === Standard Deviation Tests ===
 
+    #[test]
+    fn test_rational_sqrt_exact() {
+        let r = |n: i64, d: i64| Rational::new(n, d).unwrap();
+        assert_eq!(SquareRoot::sqrt(&r(9, 4)), Some(r(3, 2)));
+        assert_eq!(SquareRoot::sqrt(&r(0, 1)), Some(r(0, 1)));
+        assert_eq!(SquareRoot::sqrt(&r(1, 1)), Some(r(1, 1)));
+        assert_eq!(SquareRoot::sqrt(&r(144, 25)), Some(r(12, 5)));
+        // Irrational or negative: no rational square root
+        assert_eq!(SquareRoot::sqrt(&r(2, 1)), None);
+        assert_eq!(SquareRoot::sqrt(&r(4, 3)), None);
+        assert_eq!(SquareRoot::sqrt(&r(-4, 1)), None);
+    }
 
+    #[test]
+    fn test_real_sqrt() {
+        assert_eq!(SquareRoot::sqrt(&Real::from(16.0)).map(|x| x.to_f64()), Some(4.0));
+        assert!(SquareRoot::sqrt(&Real::from(-1.0)).is_none());
+        assert!(SquareRoot::sqrt(&Real::from(f64::NAN)).is_none());
+    }
 
+    #[test]
+    fn test_std_rational_exact() {
+        // {2,4,4,4,5,5,7,9}: mean 5, sum of squared deviations 32, population var 4.
+        let data: Vec<Rational> =
+            [2i64, 4, 4, 4, 5, 5, 7, 9].iter().map(|&n| Rational::from(n)).collect();
+        assert_eq!(std(&data, true).unwrap(), Rational::from(2));
+        // Sample variance 32/7 is not a rational square.
+        assert!(std(&data, false).is_err());
+
+        // {1,2,3}: sample variance 1, so sample std is exactly 1.
+        let data: Vec<Rational> = (1i64..=3).map(Rational::from).collect();
+        assert_eq!(std(&data, false).unwrap(), Rational::from(1));
+    }
+
+    #[test]
+    fn test_std_real() {
+        // {1,...,5}: sample var 5/2, population var 2.
+        let data: Vec<Real> = (1..=5).map(|i| Real::from(i as f64)).collect();
+        let s = std(&data, false).unwrap().to_f64();
+        assert!((s - 2.5f64.sqrt()).abs() < 1e-15);
+        let p = std(&data, true).unwrap().to_f64();
+        assert!((p - 2f64.sqrt()).abs() < 1e-15);
+        // Too few points for a sample std
+        assert!(std(&data[..1], false).is_err());
+    }
 
     // === Moving Average Tests ===
 
