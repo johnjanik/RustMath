@@ -64,7 +64,7 @@ Non-obvious points:
   the numeric/p-adic descent stack.
 - `Ring` is not dyn-safe by design; object-safe maps go through `rustmath_core::morphism`.
 - The degree-24 atlas data (`rustmath-groups/data/*.jsonl`) is gitignored; regenerate with
-  `rustmath-groups/data/fetch_transitive_24.py`.
+  `gap -q build_transitive_24.g` and `build_cycletypes.py` (see `rustmath-groups/data/README.md`).
 
 ## Important files
 

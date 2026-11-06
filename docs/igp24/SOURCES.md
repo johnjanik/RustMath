@@ -14,7 +14,7 @@ need (currently: nothing is copied; `transitive24_cycletypes.jsonl` is regenerat
 | RustMath file | Built from | How |
 |---|---|---|
 | `rustmath-groups/data/transitive24_cycletypes.jsonl` (gitignored) | `frobenius/cycle_types.jsonl` (LMFDB cycle-type distributions, made by `frobenius/compute.sage`) | `python3 rustmath-groups/data/build_cycletypes.py <inverse_galois>/frobenius/cycle_types.jsonl` |
-| `rustmath-groups/data/transitive_24.jsonl` (gitignored) | **Not in the repo.** LMFDB `gps_transitive` generators | `rustmath-groups/data/fetch_transitive_24.py`, which needs PostgreSQL access to `devmirror.lmfdb.xyz:5432` (blocked in cloud sessions; the LMFDB web API is CAPTCHA-gated). Run it on a workstation |
+| `rustmath-groups/data/transitive_24.jsonl` (gitignored) | Not in this repo. GAP's TransGrp library (same numbering as LMFDB) | `gap -q rustmath-groups/data/build_transitive_24.g` (validated against LMFDB order/parity/solvability for all 25,000 groups) |
 
 ## Code ported into RustMath (originals to check ports against)
 
@@ -39,9 +39,10 @@ need (currently: nothing is copied; `transitive24_cycletypes.jsonl` is regenerat
 - `FMFDB_datasets/lmfdb_gps_transitive_{4,6,8,12}.csv`, `lmfdb_gps_transitive_0618_0605.txt`
   (degree-24 group list without generators).
 
-## Referenced but never committed (only on the original workstation)
+## Referenced but never committed (lost)
 
-These are named in `docs/inverse_galois_mvp.md` but appear in no commit of the repo:
+These are named in `docs/inverse_galois_mvp.md` but appear in no commit of the repo. They were only
+on the original Mac, which was archived and wiped (2026-11); treat them as lost unless found in that archive:
 `frobenius/ghost_classify.sage`, `frobenius/sunit_batch_v2.sage`, `frobenius/fingerprints.jsonl`,
 `frobenius/fingerprint_audit.sage`, `frobenius/build3_support_vector.sage`,
 `frobenius/directed_engine.sage`, `strategy_update_20260623.md`.

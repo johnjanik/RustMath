@@ -58,6 +58,9 @@ real descent.
 
 ## Not visible from here
 
+**Update 2026-11-06:** the Mac was archived and wiped. The IGP24 repo is on Codeberg
+(`docs/igp24/SOURCES.md`); anything unpushed from the Mac exists only in that archive.
+
 Branches that exist only on the Mac (worktree `/Users/john/Documents/rm-galois`, any unpushed local
 branches) and the off-repo IGP24 material in `/Users/john/Documents/inverse_galois/` are not in
 this audit. Push them (or attach the folder via Remote Control) to include them.

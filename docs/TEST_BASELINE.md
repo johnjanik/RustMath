@@ -11,7 +11,7 @@ main, commit `9c7e23f` and later doc-only commits), rustc 1.97.0, fresh Linux co
 |---|--:|---|
 | `rustmath-groups` lib | 18 | `libgap_group`/`libgap_mixin` (pure-Rust GAP name-alikes), `semidirect_product`, `nilpotent_lie_group`, `generic::test_merge_elements` assertion failures |
 | `rustmath-groups` doctests | 8 | `groups_catalog`, `generic`, `semimonomial_transformation*` examples |
-| `rustmath-groups --test galois_narrowing` | 3 | **Environment:** gitignored atlas data absent. With `transitive24_cycletypes.jsonl` rebuilt by `build_cycletypes.py` (see `docs/igp24/SOURCES.md`) one passes; the other two need `transitive_24.jsonl` from `fetch_transitive_24.py` (LMFDB PostgreSQL, workstation only) |
+| `rustmath-groups --test galois_narrowing` | 3 | **Environment, now fixed:** the gitignored atlas data was absent. With `build_cycletypes.py` and `build_transitive_24.g` (see `rustmath-groups/data/README.md`) all 4 tests pass, so the baseline is 57 failures once the data is built |
 | `rustmath-lieconformal` doctests | 13 | Doc examples out of date with the API |
 | `rustmath-trees` doctests | 5 | Doc examples |
 | `rustmath-numbertheory` doctests | 4 | Doc examples |
