@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 3056 | 5 | 147 | 715 | 13 | 122 | 4468 (33%) | 7858 (59%) |
+| 13341 | 3205 | 7 | 172 | 755 | 13 | 127 | 4395 (33%) | 7858 (59%) |
 
 ## By chapter
 
@@ -47,7 +47,7 @@ automatic `candidate`/`missing` counts.
 | 23 | Univariate Polynomial Rings | III | 129 | 0 | 0 | 0 | 0 | 0 | 0 | 84 | 45 | substantial | `rustmath-polynomials` |
 | 24 | Multivariate Polynomial Rings | III | 98 | 98 | 0 | 9 | 29 | 0 | 0 | 0 | 60 | substantial | `rustmath-polynomials` |
 | 25 | Real and Complex Fields | III | 176 | 176 | 3 | 19 | 75 | 10 | 0 | 0 | 69 | partial | `rustmath-reals, rustmath-complex` |
-| 26 | Matrices | IV | 149 | 0 | 0 | 0 | 0 | 0 | 0 | 73 | 76 | substantial | `rustmath-matrix` |
+| 26 | Matrices | IV | 149 | 149 | 2 | 25 | 40 | 5 | 1 | 0 | 76 | substantial | `rustmath-matrix` |
 | 27 | Sparse Matrices | IV | 83 | 0 | 0 | 0 | 0 | 0 | 0 | 39 | 44 | partial | `rustmath-matrix` |
 | 28 | Vector Spaces | IV | 87 | 0 | 0 | 0 | 0 | 0 | 0 | 59 | 28 | partial | `rustmath-matrix` |
 | 29 | Polar Spaces | IV | 74 | 0 | 0 | 0 | 0 | 0 | 0 | 3 | 71 | stub | `rustmath-quadraticforms (proposed rustmath-lattices/polar module)` |
