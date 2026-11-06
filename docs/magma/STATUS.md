@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 4978 | 17 | 328 | 1194 | 18 | 177 | 3495 (26%) | 8084 (61%) |
+| 13341 | 5003 | 17 | 328 | 1194 | 18 | 177 | 3473 (26%) | 8106 (61%) |
 
 ## By chapter
 
@@ -65,7 +65,7 @@ automatic `candidate`/`missing` counts.
 | 41 | Rational Function Fields | VI | 43 | 0 | 0 | 0 | 0 | 0 | 0 | 32 | 11 | partial | `rustmath-rings` |
 | 42 | Algebraic Function Fields | VI | 402 | 402 | 0 | 0 | 68 | 80 | 1 | 0 | 253 | partial | `rustmath-rings` |
 | 43 | Class Field Theory For Global Function Fields | VI | 86 | 86 | 0 | 0 | 1 | 1 | 0 | 0 | 84 | stub | `rustmath-rings` |
-| 44 | Artin Representations | VI | 25 | 0 | 0 | 0 | 0 | 0 | 0 | 22 | 3 | none | `rustmath-numberfields` |
+| 44 | Artin Representations | VI | 25 | 25 | 0 | 0 | 0 | 0 | 0 | 0 | 25 | none | `rustmath-numberfields` |
 | 45 | Valuation Rings | VII | 26 | 0 | 0 | 0 | 0 | 0 | 0 | 22 | 4 | stub | `rustmath-rings` |
 | 46 | Newton Polygons | VII | 54 | 54 | 0 | 3 | 7 | 0 | 0 | 0 | 44 | partial | `rustmath-polynomials` |
 | 47 | p-adic Rings and their Extensions | VII | 164 | 164 | 2 | 18 | 56 | 1 | 1 | 0 | 86 | partial | `rustmath-rings::padics (+ rustmath-padics, rustmath-polynomials)` |
