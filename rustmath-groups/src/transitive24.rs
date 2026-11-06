@@ -139,36 +139,55 @@ pub struct Db {
 }
 
 impl Db {
-    /// Load from `data/transitive_24.jsonl` (one JSON object per line).
+    /// Load from `data/transitive_24.jsonl` (one JSON object per line, with keys
+    /// `t`, `order`, `parity`, `prim`, `solv`, `gens`; see `data/README.md`).
+    ///
+    /// A line that is not valid JSON or lacks `t`/`gens` (e.g. the cycle-type
+    /// support file, which has `t`/`types`) is an `InvalidData` error, not a panic.
     pub fn load(path: impl AsRef<Path>) -> std::io::Result<Db> {
-        let text = std::fs::read_to_string(path)?;
+        Db::parse_jsonl(&std::fs::read_to_string(path)?)
+    }
+
+    /// Parse the JSONL text of `transitive_24.jsonl` (see [`load`](Self::load)).
+    fn parse_jsonl(text: &str) -> std::io::Result<Db> {
+        fn bad(line_no: usize, what: &str) -> std::io::Error {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("transitive_24.jsonl line {}: {}", line_no, what),
+            )
+        }
         let mut groups = Vec::new();
-        for line in text.lines() {
+        for (idx, line) in text.lines().enumerate() {
+            let line_no = idx + 1;
             let line = line.trim();
             if line.is_empty() {
                 continue;
             }
             let v: serde_json::Value = serde_json::from_str(line)
                 .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-            let t = v["t"].as_u64().unwrap() as usize;
+            let t = v["t"].as_u64().ok_or_else(|| bad(line_no, "missing integer `t`"))? as usize;
             let order = parse_int(v["order"].as_str().unwrap_or("0"));
             let parity = v["parity"].as_i64().unwrap_or(0);
             let primitive = v["prim"].as_i64().unwrap_or(0) == 1;
             let solvable = v["solv"].as_i64().unwrap_or(0) == 1;
-            let gens: Vec<Perm> = v["gens"]
+            let gens_json = v["gens"]
                 .as_array()
-                .unwrap()
-                .iter()
-                .map(|g| {
-                    let cycles: Vec<Vec<u8>> = g
-                        .as_array()
-                        .unwrap()
-                        .iter()
-                        .map(|c| c.as_array().unwrap().iter().map(|x| x.as_u64().unwrap() as u8).collect())
-                        .collect();
-                    perm_from_cycles(&cycles)
-                })
-                .collect();
+                .ok_or_else(|| bad(line_no, "missing `gens` (is this the cycle-type support file?)"))?;
+            let mut gens: Vec<Perm> = Vec::with_capacity(gens_json.len());
+            for g in gens_json {
+                let mut cycles: Vec<Vec<u8>> = Vec::new();
+                for c in g.as_array().ok_or_else(|| bad(line_no, "generator is not a list of cycles"))? {
+                    let mut cyc = Vec::new();
+                    for x in c.as_array().ok_or_else(|| bad(line_no, "cycle is not a list"))? {
+                        match x.as_u64() {
+                            Some(p) if (1..=DEG as u64).contains(&p) => cyc.push(p as u8),
+                            _ => return Err(bad(line_no, "cycle entry is not a point in 1..=24")),
+                        }
+                    }
+                    cycles.push(cyc);
+                }
+                gens.push(perm_from_cycles(&cycles));
+            }
             groups.push(TransitiveGroup24 {
                 t,
                 order,
@@ -185,21 +204,26 @@ impl Db {
 
     /// Default path for the generator-based DB: `rustmath-groups/data/transitive_24.jsonl`.
     ///
-    /// That file (the full `⟨gens⟩` per group) is not present in this checkout — only
-    /// the derived cycle-type support `data/transitive24_cycletypes.jsonl` is. Rather
-    /// than parse the wrong-schema file (it has no `gens`), fail gracefully with a
-    /// clear message pointing at [`CycleTypeSupport::load_default`], which is the
-    /// working path for cycle-type narrowing.
+    /// That file (the full `⟨gens⟩` of all 25,000 groups) is large and gitignored,
+    /// so a fresh checkout does not have it; regenerate it with GAP
+    /// (`gap -q build_transitive_24.g`, see `data/README.md`). When it is absent
+    /// this returns a `NotFound` error pointing at
+    /// [`CycleTypeSupport::load_default`] (`data/transitive24_cycletypes.jsonl`),
+    /// which is enough for Frobenius cycle-type narrowing.
     pub fn load_default() -> std::io::Result<Db> {
-        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("data/transitive_24.jsonl");
+        Db::load_generator_atlas(&Path::new(env!("CARGO_MANIFEST_DIR")).join("data/transitive_24.jsonl"))
+    }
+
+    /// [`load`](Self::load) with a clear `NotFound` error when `path` is absent.
+    fn load_generator_atlas(path: &Path) -> std::io::Result<Db> {
         if !path.exists() {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
                 format!(
-                    "generator-based degree-24 DB not found at {}; this checkout ships only \
-                     the derived cycle-type support. Use \
-                     CycleTypeSupport::load_default() (data/transitive24_cycletypes.jsonl) \
-                     for Frobenius cycle-type narrowing.",
+                    "generator-based degree-24 DB not found at {} (gitignored; regenerate \
+                     with `gap -q build_transitive_24.g`, see data/README.md). For \
+                     Frobenius cycle-type narrowing alone, use \
+                     CycleTypeSupport::load_default() (data/transitive24_cycletypes.jsonl).",
                     path.display()
                 ),
             ));
@@ -406,5 +430,47 @@ impl CycleTypeSupport {
             .collect();
         out.sort_unstable();
         out
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn missing_generator_atlas_is_a_clear_not_found_error() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("data/definitely_missing_transitive_24.jsonl");
+        assert!(!path.exists());
+        let err = Db::load_generator_atlas(&path).err().expect("missing file must be an error");
+        assert_eq!(err.kind(), std::io::ErrorKind::NotFound);
+        assert!(err.to_string().contains("CycleTypeSupport::load_default"), "{err}");
+    }
+
+    #[test]
+    fn wrong_schema_is_invalid_data_not_a_panic() {
+        // A cycle-type support row: has `t` and `types`, no `gens`.
+        let err = Db::parse_jsonl("{\"t\": 1, \"types\": [[24]]}\n")
+            .err()
+            .expect("wrong schema must be an error");
+        assert_eq!(err.kind(), std::io::ErrorKind::InvalidData);
+        assert!(err.to_string().contains("gens"), "{err}");
+        // A point outside 1..=24 is rejected rather than wrapping in u8 arithmetic.
+        let err = Db::parse_jsonl("{\"t\": 1, \"gens\": [[[1, 25]]]}").err().unwrap();
+        assert_eq!(err.kind(), std::io::ErrorKind::InvalidData);
+    }
+
+    #[test]
+    fn parses_a_generator_row() {
+        // 24T1 in the format of data/transitive_24.jsonl: C24 generated by a 24-cycle.
+        let row = format!(
+            "{{\"label\":\"24T1\",\"t\":1,\"order\":\"24\",\"parity\":-1,\"prim\":0,\"solv\":1,\"gens\":[[{:?}]]}}\n",
+            (1..=24).collect::<Vec<u8>>()
+        );
+        let db = Db::parse_jsonl(&row).expect("valid row");
+        assert_eq!(db.groups.len(), 1);
+        let g = &db.groups[0];
+        assert_eq!((g.t, g.parity, g.primitive, g.solvable), (1, -1, false, true));
+        assert_eq!(g.order, Integer::from(24));
+        assert_eq!(group_closure(&g.gens, 100).unwrap().len(), 24);
     }
 }

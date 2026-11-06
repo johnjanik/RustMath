@@ -12,13 +12,27 @@
 //!
 //! When φ is trivial, this reduces to the direct product G × H.
 //!
+//! The group laws of G and H are those of [`SemidirectProductCompatible`]
+//! (`identity`, `mul`, `inverse`); the integer types `i32`/`i64` implement it as
+//! the **additive** group ℤ. (`std::ops::Mul` is not used: on integers it is
+//! multiplication, which is not a group law.)
+//!
+//! MAGMA: Handbook ch. 57 (Groups), `SemidirectProduct(K, H, f)`
+//! (`rustmath-lava/docs/Chapter_57_Groups.md`); Sage: `GroupSemidirectProduct`.
+//!
 //! # Examples
 //!
 //! ```
 //! use rustmath_groups::semidirect_product::*;
 //!
-//! // Create the dihedral group as a semidirect product
 //! // D_n ≅ Z_n ⋊ Z_2, where Z_2 acts on Z_n by inversion
+//! let d4 = dihedral_group(4);
+//! let r = GroupSemidirectProductElement::new(1, 0); // rotation
+//! let s = GroupSemidirectProductElement::new(0, 1); // reflection
+//! // s r s = r^{-1}: rotation part ≡ -1 ≡ 3 (mod 4), reflection part ≡ 0 (mod 2)
+//! let srs = d4.multiply(&d4.multiply(&s, &r), &s);
+//! assert_eq!(srs.g_component.rem_euclid(4), 3);
+//! assert_eq!(srs.h_component.rem_euclid(2), 0);
 //! ```
 
 use std::fmt;
@@ -127,13 +141,14 @@ where
 
 impl<G, H, F> GroupSemidirectProduct<G, H, F>
 where
-    G: Clone + std::ops::Mul<Output = G>,
-    H: Clone + std::ops::Mul<Output = H>,
+    G: SemidirectProductCompatible,
+    H: SemidirectProductCompatible,
     F: Fn(&H, &G) -> G,
 {
     /// Multiply two elements in the semidirect product
     ///
-    /// (g₁, h₁)(g₂, h₂) = (g₁ φ(h₁)(g₂), h₁h₂)
+    /// (g₁, h₁)(g₂, h₂) = (g₁ φ(h₁)(g₂), h₁h₂), with the products taken in the
+    /// group laws [`SemidirectProductCompatible::mul`] of G and H.
     pub fn multiply(
         &self,
         left: &GroupSemidirectProductElement<G, H>,
@@ -142,11 +157,11 @@ where
         // Compute φ(h₁)(g₂)
         let action_result = (self.action)(&left.h_component, &right.g_component);
 
-        // Compute g₁ * φ(h₁)(g₂)
-        let g_result = left.g_component.clone() * action_result;
+        // Compute g₁ · φ(h₁)(g₂) in G
+        let g_result = SemidirectProductCompatible::mul(&left.g_component, &action_result);
 
-        // Compute h₁ * h₂
-        let h_result = left.h_component.clone() * right.h_component.clone();
+        // Compute h₁ · h₂ in H
+        let h_result = SemidirectProductCompatible::mul(&left.h_component, &right.h_component);
 
         GroupSemidirectProductElement {
             g_component: g_result,
@@ -155,7 +170,10 @@ where
     }
 }
 
-/// Trait for groups that can form semidirect products
+/// Group law of a factor of a semidirect product.
+///
+/// Implementors must satisfy the group axioms: `mul` associative, `identity` a
+/// two-sided unit, `inverse` a two-sided inverse.
 pub trait SemidirectProductCompatible: Sized + Clone {
     /// The identity element
     fn identity() -> Self;
@@ -242,6 +260,11 @@ where
 /// The group Z_2 = {0, 1} acts on Z_n by:
 /// - 0 acts trivially: φ(0)(k) = k
 /// - 1 acts by inversion: φ(1)(k) = -k (mod n)
+///
+/// Both factors use the additive `i32` law, so components are integer
+/// *representatives* of classes mod n and mod 2; they are not reduced, and two
+/// pairs denote the same element of D_n iff their components agree mod n and
+/// mod 2 respectively.
 pub fn dihedral_group(n: usize) -> GroupSemidirectProduct<i32, i32, impl Fn(&i32, &i32) -> i32> {
     GroupSemidirectProduct::new(move |h: &i32, g: &i32| {
         if h % 2 == 0 {
@@ -263,6 +286,7 @@ pub struct Holomorph<G> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rustmath_rationals::Rational;
 
     #[test]
     fn test_direct_product() {
@@ -320,21 +344,112 @@ mod tests {
         assert_eq!(h, 7);
     }
 
+    /// (ℚ, +): the additive group of the rationals.
+    #[derive(Clone, Debug, PartialEq)]
+    struct QAdd(Rational);
+
+    impl SemidirectProductCompatible for QAdd {
+        fn identity() -> Self {
+            QAdd(Rational::from_i64(0))
+        }
+        fn mul(&self, other: &Self) -> Self {
+            QAdd(self.0.clone() + other.0.clone())
+        }
+        fn inverse(&self) -> Self {
+            QAdd(-self.0.clone())
+        }
+    }
+
+    /// (ℚ*, ×): the multiplicative group of nonzero rationals.
+    #[derive(Clone, Debug, PartialEq)]
+    struct QMul(Rational);
+
+    impl SemidirectProductCompatible for QMul {
+        fn identity() -> Self {
+            QMul(Rational::from_i64(1))
+        }
+        fn mul(&self, other: &Self) -> Self {
+            QMul(self.0.clone() * other.0.clone())
+        }
+        fn inverse(&self) -> Self {
+            QMul(self.0.reciprocal().expect("elements of Q* are nonzero"))
+        }
+    }
+
+    fn q(n: i64) -> Rational {
+        Rational::from_i64(n)
+    }
+
     #[test]
     fn test_custom_action() {
-        // Create a semidirect product with custom action
-        // φ(h)(g) = h * g (scalar multiplication)
-        let action = |h: &i32, g: &i32| h * g;
+        // Custom action φ(h)(g) = h * g (scalar multiplication). For this to be a
+        // homomorphism H → Aut(G), G must be additive and H multiplicative:
+        // the affine group Aff(1, Q) = (Q, +) ⋊ (Q*, ×).
+        let action = |h: &QMul, g: &QAdd| QAdd(h.0.clone() * g.0.clone());
         let sp = GroupSemidirectProduct::new(action);
 
-        let e1 = GroupSemidirectProductElement::new(2, 3);
-        let e2 = GroupSemidirectProductElement::new(4, 5);
+        let e1 = GroupSemidirectProductElement::new(QAdd(q(2)), QMul(q(3)));
+        let e2 = GroupSemidirectProductElement::new(QAdd(q(4)), QMul(q(5)));
 
         // (2, 3) * (4, 5) = (2 + 3*4, 3*5) = (2 + 12, 15) = (14, 15)
         let result = sp.multiply(&e1, &e2);
 
-        assert_eq!(result.g_component, 14);
-        assert_eq!(result.h_component, 15);
+        assert_eq!(result.g_component, QAdd(q(14)));
+        assert_eq!(result.h_component, QMul(q(15)));
+
+        // Same law as composing the affine maps x ↦ h x + g: (x ↦ 3x + 2)∘(x ↦ 5x + 4)
+        // = x ↦ 15x + 14. Check on a sample point.
+        let x = q(7);
+        let inner = q(5) * x.clone() + q(4);
+        let outer = q(3) * inner + q(2);
+        assert_eq!(outer, q(15) * x + q(14));
+    }
+
+    #[test]
+    fn test_custom_action_associative() {
+        let action = |h: &QMul, g: &QAdd| QAdd(h.0.clone() * g.0.clone());
+        let sp = GroupSemidirectProduct::new(action);
+        let a = GroupSemidirectProductElement::new(QAdd(q(2)), QMul(q(3)));
+        let b = GroupSemidirectProductElement::new(QAdd(q(-1)), QMul(q(-2)));
+        let c = GroupSemidirectProductElement::new(QAdd(q(5)), QMul(q(7)));
+        assert_eq!(
+            sp.multiply(&sp.multiply(&a, &b), &c),
+            sp.multiply(&a, &sp.multiply(&b, &c))
+        );
+    }
+
+    #[test]
+    fn test_dihedral_group_relations_d5() {
+        // D_5 = <r, s | r^5 = s^2 = 1, s r s = r^{-1}>, order 10.
+        let n = 5;
+        let d5 = dihedral_group(n);
+        let canon = |e: &GroupSemidirectProductElement<i32, i32>| {
+            (e.g_component.rem_euclid(n as i32), e.h_component.rem_euclid(2))
+        };
+        let r = GroupSemidirectProductElement::new(1, 0);
+        let s = GroupSemidirectProductElement::new(0, 1);
+        let mut rk = GroupSemidirectProductElement::new(0, 0);
+        for _ in 0..n {
+            rk = d5.multiply(&rk, &r);
+        }
+        assert_eq!(canon(&rk), (0, 0));
+        let srs = d5.multiply(&d5.multiply(&s, &r), &s);
+        assert_eq!(canon(&srs), ((n as i32) - 1, 0));
+        // Closure of {r, s} has exactly 2n distinct elements.
+        let mut seen = std::collections::BTreeSet::new();
+        let mut frontier = vec![GroupSemidirectProductElement::new(0, 0)];
+        seen.insert((0, 0));
+        while let Some(x) = frontier.pop() {
+            for gen in [&r, &s] {
+                let y = d5.multiply(&x, gen);
+                if seen.insert(canon(&y)) {
+                    frontier.push(y);
+                }
+            }
+        }
+        assert_eq!(seen.len(), 2 * n);
+        // Non-abelian: r s != s r.
+        assert_ne!(canon(&d5.multiply(&r, &s)), canon(&d5.multiply(&s, &r)));
     }
 
     #[test]

@@ -44,8 +44,13 @@ pub fn power<T: Clone>(base: T, exp: usize, mul: fn(T, T) -> T, identity: T) -> 
         if e & 1 == 1 {
             result = mul(result, b.clone());
         }
-        b = mul(b.clone(), b.clone());
         e >>= 1;
+        // Square only while bits remain: a final, unused squaring would compute
+        // base^(2^(k+1)) for a k-bit exponent, which can overflow even when
+        // base^exp itself fits (e.g. 5^10 in i32).
+        if e > 0 {
+            b = mul(b.clone(), b);
+        }
     }
 
     result
@@ -151,7 +156,14 @@ pub fn bsgs<T: Clone + Eq + std::hash::Hash>(
 /// * `partition` - Function to partition elements into 3 classes (returns 0, 1, or 2)
 ///
 /// # Returns
-/// Some(x) if base^x = target, None if not found
+/// `Some(x)` only if `base^x = target` has been verified. `None` means no
+/// verified logarithm was found within `order` iterations; it does **not** prove
+/// that `target ∉ ⟨base⟩` (the walk can fail to produce a usable collision).
+///
+/// The collision solve `x = (a − c)/(d − b) mod order` is only valid when
+/// `target ∈ ⟨base⟩` and the orders of `base` and `target` divide `order`; for
+/// other inputs (e.g. `order = |⟨base⟩|` and `target ∉ ⟨base⟩`) it yields a
+/// spurious exponent, so every candidate is checked before it is returned.
 pub fn discrete_log_rho<T: Clone + Eq>(
     base: T,
     target: T,
@@ -221,9 +233,13 @@ pub fn discrete_log_rho<T: Clone + Eq>(
                 continue;
             }
 
-            // Solve num ≡ x * den (mod order)
+            // Solve num ≡ x * den (mod order), then verify: the congruence is
+            // only meaningful when target ∈ <base>.
             if let Some(inv_den) = mod_inverse(den, order) {
-                return Some((num * inv_den) % order);
+                let candidate = ((num as u128 * inv_den as u128) % order as u128) as usize;
+                if power(base.clone(), candidate, mul, identity.clone()) == target {
+                    return Some(candidate);
+                }
             }
         }
     }
@@ -420,21 +436,49 @@ fn lcm(a: usize, b: usize) -> usize {
     (a * b) / gcd(a, b)
 }
 
-/// Merge two elements to get an element whose order is the LCM of their orders
+/// Split `lcm(m, n)` into coprime factors: returns `(l, m', n')` with
+/// `l = lcm(m, n)`, `m' | m`, `n' | n`, `gcd(m', n') = 1` and `m'·n' = l`.
 ///
-/// Given elements a and b with orders m and n respectively, returns an element
-/// with order lcm(m, n).
+/// Each prime power `p^e ∥ l` goes to `m'` if `p^e | m`, otherwise to `n'`.
+/// Computed with gcds only (no factorization), as in Sage's `arith.xlcm`.
+fn xlcm(m: usize, n: usize) -> (usize, usize, usize) {
+    let l = lcm(m, n);
+    let mut m_part = m;
+    // `g` collects the primes dividing `n` to a strictly higher power than `m`;
+    // strip them from `m`.
+    let mut g = gcd(m_part, n / gcd(m, n));
+    while g != 1 {
+        m_part /= g;
+        g = gcd(m_part, g);
+    }
+    (l, m_part, l / m_part)
+}
+
+/// Merge two commuting elements into one whose order is the LCM of their orders
+///
+/// Given commuting elements `a`, `b` of orders `m`, `n` (e.g. any two elements of
+/// an abelian group), splits `lcm(m, n) = m'·n'` with `m' | m`, `n' | n`,
+/// `gcd(m', n') = 1` and returns `a^(m/m') · b^(n/n')`. The two factors have
+/// coprime orders `m'` and `n'` and commute, so the product has order
+/// `m'·n' = lcm(m, n)`. This is the standard "merge points" step of generic
+/// group-structure algorithms (cf. Sage `sage.groups.generic.merge_points`).
+///
+/// The result is only guaranteed when `a` and `b` commute and `order_a`,
+/// `order_b` are their exact orders; the function does not check either.
 ///
 /// # Arguments
 /// * `a` - First element
-/// * `b` - Second element
-/// * `order_a` - Order of element a
-/// * `order_b` - Order of element b
+/// * `b` - Second element (must commute with `a`)
+/// * `order_a` - Exact order of element a (≥ 1)
+/// * `order_b` - Exact order of element b (≥ 1)
 /// * `mul` - Multiplication operation
 /// * `identity` - The identity element
 ///
 /// # Returns
 /// An element with order lcm(order_a, order_b)
+///
+/// # Panics
+/// If `order_a` or `order_b` is 0.
 pub fn merge_elements<T: Clone + Eq>(
     a: T,
     b: T,
@@ -443,15 +487,14 @@ pub fn merge_elements<T: Clone + Eq>(
     mul: fn(T, T) -> T,
     identity: T,
 ) -> T {
-    let target_order = lcm(order_a, order_b);
+    assert!(
+        order_a >= 1 && order_b >= 1,
+        "merge_elements: element orders must be positive"
+    );
+    let (_l, m_part, n_part) = xlcm(order_a, order_b);
 
-    // Compute a^(order_a / gcd(order_a, order_b))
-    let g = gcd(order_a, order_b);
-    let exp_a = order_a / g;
-    let exp_b = order_b / g;
-
-    let a_part = power(a, exp_a, mul, identity.clone());
-    let b_part = power(b, exp_b, mul, identity.clone());
+    let a_part = power(a, order_a / m_part, mul, identity.clone());
+    let b_part = power(b, order_b / n_part, mul, identity);
 
     mul(a_part, b_part)
 }
@@ -643,6 +686,78 @@ mod tests {
         // Verify the merged element has order 12
         let ord = order(merged, mul, 0, 20);
         assert_eq!(ord, Some(12));
+    }
+
+    #[test]
+    fn test_merge_elements_shared_primes() {
+        // Z/24Z: 6 has order 4, 4 has order 6; lcm = 12. The orders share the
+        // prime 2, so exponents must come from the xlcm split (4, 3), not from
+        // order/gcd.
+        let mul = |a: i32, b: i32| (a + b) % 24;
+        let merged = merge_elements(6, 4, 4, 6, mul, 0);
+        assert_eq!(order(merged, mul, 0, 30), Some(12));
+        // Orders where one divides the other: result has the larger order.
+        let merged = merge_elements(8, 2, 3, 12, mul, 0);
+        assert_eq!(order(merged, mul, 0, 30), Some(12));
+    }
+
+    #[test]
+    fn test_xlcm() {
+        for m in 1..=60usize {
+            for n in 1..=60usize {
+                let (l, mm, nn) = xlcm(m, n);
+                assert_eq!(l, lcm(m, n));
+                assert_eq!(m % mm, 0);
+                assert_eq!(n % nn, 0);
+                assert_eq!(gcd(mm, nn), 1);
+                assert_eq!(mm * nn, l);
+            }
+        }
+    }
+
+    #[test]
+    fn test_power_no_overflow_at_top_bit() {
+        let mul = |a: i32, b: i32| a * b;
+        // 5^10 = 9765625 fits in i32; the old loop squared once more (5^16) and
+        // overflowed.
+        assert_eq!(power(5, 10, mul, 1), 9_765_625);
+        assert_eq!(power(2, 30, mul, 1), 1 << 30);
+    }
+
+    #[test]
+    fn test_discrete_log_rho_results_are_verified() {
+        // Z/12Z additive, base 4 has order 3 but the caller passes the group
+        // order 12. Any returned exponent must actually satisfy base^x = target;
+        // targets outside <4> = {0, 4, 8} must give None.
+        let mul = |a: usize, b: usize| (a + b) % 12;
+        let partition = |x: &usize| x % 3;
+        for target in 0..12usize {
+            match discrete_log_rho(4, target, 12, mul, 0, partition) {
+                Some(x) => assert_eq!(power(4, x, mul, 0), target, "target {target}"),
+                None => {}
+            }
+        }
+        // Z/36Z additive, base 4 generates the subgroup {0, 4, ..., 32} of order 9,
+        // and the docs allow passing that subgroup order. Target 1 is not in <4>;
+        // the unverified collision solve used to return x = 7 (4*7 = 28 != 1).
+        let mul36 = |a: usize, b: usize| (a + b) % 36;
+        let part36 = |x: &usize| x % 3;
+        assert_eq!(discrete_log_rho(4, 1, 9, mul36, 0, part36), None);
+        for target in 0..36usize {
+            match discrete_log_rho(4, target, 9, mul36, 0, part36) {
+                Some(x) => assert_eq!(power(4, x, mul36, 0), target, "target {target}"),
+                // None means "not found"; rho is not complete, so it decides nothing.
+                None => {}
+            }
+        }
+        // Z/11Z additive, prime order: every target is solvable from base 3.
+        let mul11 = |a: usize, b: usize| (a + b) % 11;
+        let part11 = |x: &usize| x % 3;
+        for target in 1..11usize {
+            if let Some(x) = discrete_log_rho(3, target, 11, mul11, 0, part11) {
+                assert_eq!(power(3, x, mul11, 0), target);
+            }
+        }
     }
 
     #[test]
