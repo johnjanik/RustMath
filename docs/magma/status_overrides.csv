@@ -4284,3 +4284,23 @@ ch043.PlaceEnumCopy,missing,,No implementation of this function field class fiel
 ch043.PlaceEnumPosition,missing,,No implementation of this function field class field theory / Witt / twisted polynomial / analytic intrinsic found in workspace [review 2026-11-06]
 ch043.PlaceEnumNext,missing,,No implementation of this function field class field theory / Witt / twisted polynomial / analytic intrinsic found in workspace [review 2026-11-06; checked]
 ch043.PlaceEnumCurrent,missing,,No implementation of this function field class field theory / Witt / twisted polynomial / analytic intrinsic found in workspace [review 2026-11-06]
+ch062.PositiveDefiniteForm,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
+ch062.InvariantForms,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
+ch062.InvariantForms.2,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
+ch062.NumberOfInvariantForms,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
+ch062.EndomorphismRing,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
+ch062.CentreOfEndomorphismRing,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
+ch062.DimensionOfEndomorphismRing,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
+ch062.DimensionOfCentreOfEndomorphismRing,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
+ch062.Endomorphisms,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
+ch062.CentralEndomorphisms,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
+ch062.BravaisGroup,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
+ch062.IntegralGroup,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
+ch062.PerfectForms,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
+ch062.NormalizerGLZ,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
+ch062.ZClasses,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
+ch062.IsGLZConjugate,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
+ch062.IsBravaisEquivalent,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
+ch062.IsGLQConjugate,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
+ch062.IsGLZConjugate.2,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
+ch062.CentralizerGLZ,missing,,"no implementation found; no invariant-form, Bravais, Z-class or GL(n,Z) conjugacy code in workspace [review 2026-11-06; checked]"
