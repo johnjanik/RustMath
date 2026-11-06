@@ -3,6 +3,7 @@
 //! This module defines the fundamental traits for group theory in RustMath.
 //! It provides the trait hierarchy: Group -> AbelianGroup, FiniteGroup, etc.
 
+use std::collections::HashSet;
 use std::fmt;
 use std::hash::Hash;
 
@@ -88,15 +89,43 @@ pub trait FiniteGroupTrait: Group {
     fn finite_order(&self) -> usize;
 
     /// Compute the conjugacy classes
+    ///
+    /// The default computes the orbits of [`elements`](Self::elements) under
+    /// conjugation `x ↦ g⁻¹xg` (O(|G|²) group operations); each class lists
+    /// its first-found element first. Implementors with a better algorithm
+    /// should override it.
     fn conjugacy_classes(&self) -> Vec<Vec<Self::Element>> {
-        Vec::new() // Default implementation
+        let elements = self.elements();
+        let mut seen: HashSet<Self::Element> = HashSet::new();
+        let mut classes = Vec::new();
+        for x in &elements {
+            if !seen.insert(x.clone()) {
+                continue;
+            }
+            let mut class = vec![x.clone()];
+            for g in &elements {
+                let c = x.conjugate_by(g);
+                if seen.insert(c.clone()) {
+                    class.push(c);
+                }
+            }
+            classes.push(class);
+        }
+        classes
     }
 
     /// Get the center of the group
     ///
-    /// The center Z(G) = {z ∈ G | zg = gz for all g ∈ G}
+    /// The center Z(G) = {z ∈ G | zg = gz for all g ∈ G}. The default tests
+    /// every element of [`elements`](Self::elements) against every other
+    /// (O(|G|²) group operations).
     fn center(&self) -> Vec<Self::Element> {
-        Vec::new() // Default implementation
+        let elements = self.elements();
+        elements
+            .iter()
+            .filter(|z| elements.iter().all(|g| z.op(g) == g.op(z)))
+            .cloned()
+            .collect()
     }
 }
 
