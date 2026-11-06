@@ -655,3 +655,218 @@ ch059.IsExtraSpecial,missing,,No IsExtraSpecial implementation [review 2026-11-0
 ch059.FrattiniSubgroup,stub,rustmath-category/src/group_category.rs:151,Trait method default returns None; no implementation for matrix or p-groups [review 2026-11-06; checked]
 ch059.JenningsSeries,missing,,No Jennings series implementation [review 2026-11-06; checked]
 ch059.AbelianInvariants,broken,rustmath-groups/src/finitely_presented.rs:190; rustmath-groups/src/finitely_presented.rs:489,"Only path is f.p. abelian_invariants; its smith_normal_form is truncating row echelon: S3 gives [3,2] not [2], <a|a^4,a^6> gives [4] not [2]. Tracker 🔴; test only asserts nonempty; no matrix-group path [review 2026-11-06; adjudicated]"
+ch063.CyclicGroup,partial,rustmath-groups/src/abelian_group.rs:46,AbelianGroup::cyclic gives abstract Z/n by invariant factors; no pc-presentation. representation.rs:267 is a character table only. [review 2026-11-06; checked]
+ch063.AbelianGroup,partial,rustmath-groups/src/additive_abelian_group.rs:296; rustmath-groups/src/abelian_group.rs:27,"from_cyclic_orders takes any Q (Smith form), GAP-checked in test_from_cyclic_orders; abelian_group.rs:27 rejects non-chain Q like [2,3]. Invariant-factor gens, not a pc-group with prime-order gens. [review 2026-11-06; adjudicated]"
+ch063.DihedralGroup,partial,rustmath-groups/src/semidirect_product.rs:268,"dihedral_group(n) = Z_n semidirect Z_2 on i32 pairs, unreduced reps; tested by test_dihedral_group; not a pc-group. [review 2026-11-06; checked]"
+ch063.ExtraSpecialGroup,missing,,No pc-group (GrpPC) type exists in the workspace. [review 2026-11-06; checked]
+ch063.PolycyclicGroup,missing,,No pc-group (GrpPC) type exists in the workspace. No pc-presentation parser or collector. [review 2026-11-06; checked]
+ch063.quo,missing,,No pc-group (GrpPC) type exists in the workspace. No pc quotient construction. [review 2026-11-06; checked]
+ch063.IsConsistent,missing,,No pc-presentation consistency check exists. [review 2026-11-06; checked]
+ch063.G,partial,rustmath-groups/src/additive_abelian_group.rs:405,"AdditiveAbelianGroup::gen(i) (test_generators) is the i-th invariant-factor gen, a pc-generator only for (Z/p)^d; no negative i or G.0, no pc-group type. [review 2026-11-06; adjudicated]"
+ch063.Generators,partial,rustmath-groups/src/libgap_wrapper.rs:82,"Group::generators returns a generating list; no minimality guarantee for p-groups, no pc-generators. [review 2026-11-06; checked]"
+ch063.NumberOfGenerators,partial,rustmath-groups/src/libgap_wrapper.rs:85,"num_generators = generators().len(); counts supplied generators, not pc-generators. [review 2026-11-06; checked]"
+ch063.PCGenerators,partial,rustmath-groups/src/solvtower.rs:293; rustmath-groups/src/solvtower.rs:119,"solvable_tower gives elementary-abelian layers with a basis (ChiefFactor.quotient_gens) each; concatenated they are a pcgs, but no fn returns it. Degree<=24 perms only; s4_tower checks layers, not gens. [review 2026-11-06; adjudicated]"
+ch063.NumberOfPCGenerators,missing,,No pc-generators in the workspace. [review 2026-11-06; checked]
+ch063.PCPrimes,partial,rustmath-groups/src/solvtower.rs:374,"factor_signature is PCPrimes of the tower pcgs in run-length form: S4 gives [(2,1),(3,1),(2,2)] = [2,3,2,2] (solvtower.rs::s4_tower). Degree<=24 perm groups only. [review 2026-11-06; adjudicated]"
+ch063.Order,partial,rustmath-groups/src/libgap_group.rs:349,"Group::order (trait decl group_traits.rs:37) returns a declared/stored order, not read from a pc-presentation. group_traits.rs:175 is element order, not this. [review 2026-11-06; checked]"
+ch063.FactoredOrder,missing,,No factored order function for groups. [review 2026-11-06; checked]
+ch063.Exponent,partial,rustmath-groups/src/libgap_group.rs:379; rustmath-groups/src/libgap_mixin.rs:244,"lcm of element orders of an enumerated group: GroupLibGAP::exponent (<=10000 elts, GAP value in test_symmetric_group_s3); mixin version has only test-local implementors. No pc-group type. [review 2026-11-06; adjudicated]"
+ch063.IsAbelian,partial,rustmath-groups/src/libgap_mixin.rs:52,"Exact pair check with GAP values in test_nonabelian_groups_against_gap, but GroupMixinLibGAP has only test-local implementors; GroupLibGAP::is_abelian is the constructor flag. No pc-group type. [review 2026-11-06; adjudicated]"
+ch063.IsCyclic,partial,rustmath-groups/src/libgap_mixin.rs:67; rustmath-groups/src/additive_abelian_group.rs:372,"Element of order |G|, GAP values (S3,D8,Q8,A4,S4,A5,C6) in test_nonabelian_groups_against_gap; mixin has only test-local implementors (as ch058). No pc-group type. [review 2026-11-06; adjudicated]"
+ch063.IsElementaryAbelian,missing,,"No elementary-abelian predicate (only is_p_group, is_abelian separately). [review 2026-11-06; checked]"
+ch063.IsNilpotent,partial,rustmath-groups/src/libgap_mixin.rs:80,"Lower central series by enumeration; GAP values (D8,Q8 nilpotent, S3,A4,S4 not) in test_nonabelian_groups_against_gap; GroupMixinLibGAP has only test-local implementors. No pc-group type. [review 2026-11-06; adjudicated]"
+ch063.IsPerfect,partial,rustmath-groups/src/libgap_mixin.rs:148,"G'=G by enumeration; GAP values (A5 perfect, soluble groups not) in test_nonabelian_groups_against_gap; GroupMixinLibGAP has only test-local implementors. No pc-group type. [review 2026-11-06; adjudicated]"
+ch063.IsSimple,partial,rustmath-groups/src/libgap_mixin.rs:133,Normal closures of classes; GAP values in test_nonabelian_groups_against_gap and test_cyclic_groups_against_gap; GroupMixinLibGAP has only test-local implementors. No pc-group type. [review 2026-11-06; adjudicated]
+ch063.IsSoluble,partial,rustmath-groups/src/libgap_mixin.rs:108; rustmath-groups/src/solvtower.rs:293,"Derived series by enumeration, GAP values in test_nonabelian_groups_against_gap (test-local implementors only); solvable_tower flag for degree<=24 perms (s4_tower, a5_not_solvable). No pc-group type. [review 2026-11-06; adjudicated]"
+ch063.IsTrivial,partial,rustmath-groups/src/group_traits.rs:40,"Default order()==Some(1); test_trivial_group uses a test-local type, and GroupLibGAP::order is the declared order taken on trust. No pc-group type. [review 2026-11-06; adjudicated]"
+ch063.IsSpecial,missing,,No special p-group test. Candidate path in rustmath-curves is unrelated. [review 2026-11-06; checked]
+ch063.IsExtraSpecial,missing,,No extra-special test. [review 2026-11-06; checked]
+ch063.hom,partial,rustmath-groups/src/libgap_morphism.rs:73,"GroupMorphismLibgap::new from explicit element map, validate() checks hom property; no pc-generator image lists or arrow syntax. [review 2026-11-06; checked]"
+ch063.IsHomomorphism,broken,rustmath-groups/src/libgap_morphism.rs:106,"validate() stops after 101 (g1,g2) pairs and skips products missing from the map, then returns Ok, so non-homomorphisms on larger groups pass; no generator-image form (as ch058). [review 2026-11-06; adjudicated]"
+ch063.IdentityHomomorphism,partial,rustmath-core/src/morphism.rs:54,"IdentityMorphism<T> is the identity map on a type (test_identity_and_compose, i64); no group domain, kernel or image. GroupHomsetLibgap::natural_map (libgap_morphism.rs:303) returns the trivial map. [review 2026-11-06; adjudicated]"
+ch063.Kernel,partial,rustmath-groups/src/libgap_morphism.rs:157,"kernel() returns a Vec of elements, not a subgroup object; test libgap_morphism.rs::test_kernel. [review 2026-11-06; checked]"
+ch063.Homomorphisms,missing,,"Homset only has cardinality()/an_element; no enumeration of Hom(G,H). [review 2026-11-06; checked]"
+ch063.DirectProduct,partial,rustmath-groups/src/semidirect_product.rs:250,direct_product() is a trivial-action semidirect product on i32/i64 components; no inclusion/projection maps; test_direct_product. [review 2026-11-06; checked]
+ch063.DirectProduct.2,missing,,No direct product of a sequence of groups. [review 2026-11-06; checked]
+ch063.Extension,partial,rustmath-groups/src/semidirect_product.rs:91,"GroupSemidirectProduct::new(action closure) is a split extension on i32/i64 factors; no pc-gens, no action-hom check, no maps. [review 2026-11-06; checked]"
+ch063.Extension.2,missing,,No module-by-group extension. [review 2026-11-06; checked]
+ch063.Extension.3,missing,,No non-split extension with tails. [review 2026-11-06; checked]
+ch063.Extension.4,missing,,No non-split module extension. Candidate in rustmath-plot-core is unrelated. [review 2026-11-06; checked]
+ch063.IsExtension,missing,,No conditional extension test. Candidate path is unrelated. [review 2026-11-06; checked]
+ch063.WreathProduct,partial,rustmath-combinatorics/src/wreath_product.rs:21; rustmath-combinatorics/src/wreath_product.rs:296,"ColoredPermutation is C_r wr S_n with the natural action; that is the regular-action product only for H=C_2 (n=2, test_all_colored_permutations_small: 8). G cyclic only, no group object. [review 2026-11-06; adjudicated]"
+ch063.WreathProduct.2,partial,rustmath-combinatorics/src/wreath_product.rs:21,"ColoredPermutation: C_r wr S_n for f = natural action on n points; compose/inverse (test_compose, test_inverse). Only G cyclic and H=S_n, no group object or general f. [review 2026-11-06; adjudicated]"
+ch063.G.2,partial,rustmath-groups/src/additive_abelian_group.rs:399; rustmath-groups/src/additive_abelian_group.rs:49,AdditiveAbelianGroup::element(Q) = sum Q_i gen_i reduced mod invariants (test_element_modular_reduction); equals G!Q only for (Z/p)^d. No pc-group type. [review 2026-11-06; adjudicated]
+ch063.ElementToSequence,partial,rustmath-groups/src/additive_abelian_group.rs:74,"AdditiveAbelianGroupElement::coordinates: exponent vector wrt invariant-factor gens, the pc Eltseq only for (Z/p)^d; finitefields candidate is unrelated. No pc-group type. [review 2026-11-06; adjudicated]"
+ch063.Identity,partial,rustmath-groups/src/group_traits.rs:22; rustmath-groups/src/additive_abelian_group.rs:382,"Group::identity is a bodyless trait method and the cited test uses a test-local impl; real per-type impls, e.g. AdditiveAbelianGroup::identity (test_identity). No pc-group type. [review 2026-11-06; adjudicated]"
+ch063.g,partial,rustmath-groups/src/group_traits.rs:141,GroupElement::op is a bodyless trait method (cited :139 is blank); test_group_element_op uses test-local ModN. Products exist per type; no pc element or collector. [review 2026-11-06; adjudicated]
+ch063.g.2,partial,rustmath-groups/src/group_traits.rs:147,"Default binary pow (n<0 via inverse) starts from context-free Self::identity(); test_group_element_pow runs ModN's own override, not this default. No pc-group type. [review 2026-11-06; adjudicated]"
+ch063.g.3,partial,rustmath-groups/src/additive_abelian_group.rs:130,"AdditiveAbelianGroupElement::subtract is g*h^-1 in additive notation (test_subtract_method), abelian only; no generic or pc-group g/h. [review 2026-11-06; adjudicated]"
+ch063.g.4,partial,rustmath-groups/src/group_traits.rs:202,"Default conjugate_by = x^-1 g x (handbook convention), tested only on abelian ModN (test_conjugate_by), so the non-abelian case is untested. Generic trait, no pc-group type. [review 2026-11-06; adjudicated]"
+ch063.g1-gn,partial,rustmath-groups/src/solvtower.rs:60; rustmath-groups/src/group_traits.rs:208,"solvtower::commutator is a^-1 b^-1 a b (handbook convention) on degree<=24 perms (inverse_and_commutator); group_traits.rs:208 is g h g^-1 h^-1. Binary only, no left-normed form. [review 2026-11-06; adjudicated]"
+ch063.Order.2,partial,rustmath-groups/src/additive_abelian_group.rs:168; rustmath-groups/src/group_traits.rs:175,"AdditiveAbelianGroupElement::order exact (test_element_order), abelian only. Trait default :175 is a tracker facade (None after 100000 steps) and its test runs ModN's override. [review 2026-11-06; adjudicated]"
+ch063.Parent,partial,rustmath-groups/src/additive_abelian_wrapper.rs:120,"Parent accessor only on additive abelian wrapper elements, not on general group elements. [review 2026-11-06; checked]"
+ch063.g.5,partial,rustmath-groups/src/group_traits.rs:133,"Only the Eq bound: per-type structural equality, right only for normal-form reps (dihedral_group pairs are unreduced i32). No pc normal form or pc-group type. [review 2026-11-06; adjudicated]"
+ch063.g.6,partial,rustmath-groups/src/group_traits.rs:133,"Only the Eq bound (!= via PartialEq): per-type structural equality, right only for normal-form reps. No pc normal form or pc-group type. [review 2026-11-06; adjudicated]"
+ch063.IsIdentity,partial,rustmath-groups/src/group_traits.rs:197; rustmath-groups/src/additive_abelian_group.rs:151,"Default compares with context-free Self::identity(), wrong for runtime-parameterised types; test_group_element_identity runs ModN's override. Abelian is_identity exact (test_identity). [review 2026-11-06; adjudicated]"
+ch063.IsConjugate,partial,rustmath-groups/src/conjugacy_classes.rs:68,"ConjugacyClass::contains tests conjugacy given an explicit conjugator list; returns bool only, no conjugating element. [review 2026-11-06; checked]"
+ch063.NumberingMap,missing,,No bijection G to 1..|G|. [review 2026-11-06; checked]
+ch063.Random,partial,rustmath-groups/src/libgap_group.rs:299; rustmath-groups/src/libgap_mixin.rs:222,Time-hashed index into enumerated elements (<=10000) in GroupLibGAP::random_element; test_random_element_is_member checks membership only. Not exponent-vector sampling. [review 2026-11-06; adjudicated]
+ch063.RandomProcess,missing,,No product-replacement process. [review 2026-11-06; checked]
+ch063.Random.2,missing,,No random process to draw from. Candidate in rustmath-combinatorics is unrelated. [review 2026-11-06; checked]
+ch063.Representative,partial,rustmath-groups/src/group_traits.rs:22; rustmath-groups/src/additive_abelian_group.rs:382,"Handbook Rep(G) of a pc-group is the identity, given per type by identity() (AdditiveAbelianGroup::identity, test_identity); no Rep name, no pc-group type. Same as Identity. [review 2026-11-06; adjudicated]"
+ch063.Class,partial,rustmath-groups/src/conjugacy_classes.rs:91,ConjugacyClass::compute_elements(conjugators) gives conjugates of a rep under an explicit element list; no subgroup H object. [review 2026-11-06; checked]
+ch063.ConjugacyClasses,partial,rustmath-groups/src/group_traits.rs:97,"FiniteGroupTrait::conjugacy_classes returns element lists by orbit, not (order, length, rep) tuples; O(|G|^2). [review 2026-11-06; checked]"
+ch063.ClassMap,missing,,No element to class-number map. [review 2026-11-06; checked]
+ch063.ClassRepresentative,missing,,No class representative lookup for an element. [review 2026-11-06; checked]
+ch063.IsConjugate.2,partial,rustmath-groups/src/conjugacy_classes.rs:68,"ConjugacyClass::contains tests conjugacy given an explicit conjugator list; bool only, no conjugating element. [review 2026-11-06; checked]"
+ch063.NumberOfClasses,partial,rustmath-groups/src/conjugacy_classes.rs:187,num_conjugacy_classes(elements) counts classes of an explicit element slice; no group-object form. Candidate in combinatorics is unrelated. [review 2026-11-06; checked]
+ch063.PowerMap,missing,,No power map on classes. [review 2026-11-06; checked]
+ch063.sub,partial,rustmath-groups/src/solvtower.rs:69,"subgroup_closure(gens,cap) lists elements of <gens> in a perm group only (capped BFS); no pc-group, no subgroup object or generator minimisation [review 2026-11-06; checked]"
+ch063.ncl,partial,rustmath-groups/src/solvtower.rs:100,"normal_closure(g_gens,h_gens,cap) for perms with element enumeration; test solvtower.rs::normal_closure_of_3cycle_in_s3_is_a3; no inclusion map [review 2026-11-06; checked]"
+ch063.g.7,partial,rustmath-groups/src/bsgs.rs:289,"StabilizerChain::contains sifts perm in BSGS (tested in bsgs.rs tests); also Group::contains trait; no pc-group, no common cover [review 2026-11-06; checked]"
+ch063.g.8,partial,rustmath-groups/src/bsgs.rs:289,notin is !contains on BSGS perm groups only; no dedicated op [review 2026-11-06; checked]
+ch063.G.3,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.H,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.K,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.S,partial,rustmath-galois/src/perm.rs:216,"perm::is_subset(sub,whole) is exactly S subset G when G is an explicit perm element list; no generator-based membership, no pc-groups; exercised only indirectly via maximal_subgroups tests [review 2026-11-06; adjudicated]"
+ch063.S.2,partial,rustmath-galois/src/perm.rs:216,"negation of perm::is_subset(S, elements of G) on explicit perm element lists; no dedicated op, no pc-groups; same evidence as the S subset G row [review 2026-11-06; adjudicated]"
+ch063.H.2,partial,rustmath-galois/src/perm.rs:216,"is_subset(sub,whole) compares explicit perm element lists only; not a generator-based subgroup test [review 2026-11-06; checked]"
+ch063.H.3,partial,rustmath-galois/src/perm.rs:216,negation of is_subset on explicit perm element lists only [review 2026-11-06; checked]
+ch063.G.4,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.G.5,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.InclusionMap,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.H.4,partial,rustmath-galois/src/perm.rs:203,"conjugate(g,h_elems) conjugates an element list by g (g h g^-1 convention); perm only; test conjugation_preserves_order in rustmath-galois/tests/perm.rs [review 2026-11-06; checked]"
+ch063.H.5,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.CommutatorSubgroup,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.Centralizer,partial,rustmath-category/src/group_category.rs:192,"GroupElementMethods::centralizer_in(g, elems) is a native brute-force C_G(g) over an explicit element list; only impl is test SimpleElement, untested; gap_functions.rs:245 is a GAP shell wrapper [review 2026-11-06; adjudicated]"
+ch063.Centralizer.2,missing,,"only GapPermutationGroup::centralizer (gap_permutation.rs:399) building a GAP expression, tests #[ignore] Requires GAP; no workspace code computes C_G(H); same as ch058 adjudication [review 2026-11-06; adjudicated]"
+ch063.Core,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.H.6,partial,rustmath-groups/src/solvtower.rs:100,"NormalClosure via perm normal_closure only (capped, element sets); test normal_closure_of_3cycle_in_s3_is_a3 [review 2026-11-06; checked]"
+ch063.Normalizer,missing,,"only GAP shell wrappers (gap_permutation.rs:387, gap_functions.rs:240; tests #[ignore] Requires GAP); no native N_G(H) (tracker: no backtrack search); same as ch058 adjudication [review 2026-11-06; adjudicated]"
+ch063.Index,partial,rustmath-galois/src/perm.rs:222,"index(group,subgroup)=|G|/|H| from explicit perm element lists; test rustmath-galois/tests/perm.rs::coset_reps_count_matches_index asserts S4:A4=2; no check H<=G [review 2026-11-06; checked]"
+ch063.FactoredIndex,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.IsCentral,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.IsConjugate.3,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.IsMaximal,missing,,no subgroup maximality predicate (affineschemes match is ideals); maximal_subgroups lists them instead [review 2026-11-06; checked]
+ch063.IsNormal,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.IsSelfNormalizing,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.IsSubnormal,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.ComplementBasis,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.HallSubgroup,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.pCore,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.SylowBasis,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.SylowSubgroup,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.SystemNormalizer,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.SubgroupClasses,partial,rustmath-galois/src/subgroups.rs:27,all_subgroups enumerates ALL subgroups of a perm element list (not conjugacy class reps); small groups only; tested only via maximal_subgroups tests [review 2026-11-06; checked]
+ch063.AbelianSubgroups,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.CyclicSubgroups,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.ElementaryAbelianSubgroups,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.NilpotentSubgroups,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.MaximalSubgroups,partial,rustmath-galois/src/subgroups.rs:64,"maximal subgroups of perm group from full subgroup lattice (all conjugates, not class reps); test subgroups_and_labels.rs::maximal_subgroups_of_s4; small groups only [review 2026-11-06; checked]"
+ch063.SubgroupLattice,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.BurnsideMatrix,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.DisplayBurnsideMatrix,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.quo.2,missing,,no quotient group construction by normal closure for pc or perm groups [review 2026-11-06; checked]
+ch063.G.6,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.AbelianQuotient,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.AbelianQuotientInvariants,broken,rustmath-groups/src/finitely_presented.rs:190; rustmath-groups/src/finitely_presented.rs:489,"smith_normal_form: truncating row division, no column/gcd ops; <a,b|a^2b^3,a^3b^2> gives [2] not [5], <a|a^4,a^6> gives [4] not [2], no relators gives []; tracker flags broken [review 2026-11-06; adjudicated]"
+ch063.ElementaryAbelianQuotient,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.pQuotient,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.Centre,partial,rustmath-groups/src/group_traits.rs:122,"FiniteGroupTrait::center O(|G|^2) over element list; test libgap_mixin.rs::test_nonabelian_groups_against_gap asserts |Z(G)| vs GAP; element lists only, small groups [review 2026-11-06; checked]"
+ch063.CommutatorSubgroup.2,partial,rustmath-groups/src/libgap_mixin.rs:341,derived_subgroup/commutator_subgroup as element list; test_nonabelian_groups_against_gap asserts |G'| vs GAP; also solvtower.rs:80 for perms; small groups [review 2026-11-06; checked]
+ch063.FittingSubgroup,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.FrattiniSubgroup,stub,rustmath-category/src/group_category.rs:151,GroupParentMethods::frattini_subgroup default returns None; no implementation anywhere [review 2026-11-06; checked]
+ch063.Hypercentre,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.MinimalNormalSubgroups,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.pCore.2,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.Socle,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.AbelianBasis,facade,rustmath-groups/src/additive_abelian_wrapper.rs:379,basis_from_generators claims a p-primary canonical basis but returns its input gens as a free group (its test asserts rank 3 in Z^2); gens() (additive_abelian_group.rs:417) are invariant-factor unit vectors [review 2026-11-06; adjudicated]
+ch063.AbelianInvariants,partial,rustmath-groups/src/abelian_group.rs:134,AbelianGroup type exposes elementary_divisors/invariant_factors (test_elementary_divisors); not computed from an arbitrary abelian pc-group [review 2026-11-06; checked]
+ch063.ChiefSeries,broken,rustmath-groups/src/solvtower.rs:293,"solvable_tower calls its factors chief but only p-power-filters derived quotients: C2xC2 gives one (2,2) layer, D8 gives D8>Z(D8)>1, not G-irreducible; tests cover only S3/S4 where it coincides [review 2026-11-06; adjudicated]"
+ch063.CompositionSeries,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.CompositionFactors,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.CompositionSeries.2,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.DerivedSeries,facade,rustmath-category/src/group_category.rs:96,GroupParentMethods::derived_series default returns Vec::new() (not Option/Err) and nothing implements the trait; PROJECT_TRACKER flags facade (a derived series always starts with G) [review 2026-11-06; adjudicated]
+ch063.DerivedLength,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.ElementaryAbelianSeries,partial,rustmath-groups/src/solvtower.rs:293,"solvable_tower series (derived series refined to elementary-abelian layers); perms only, capped; tests solvtower_check.rs::s4_chief [review 2026-11-06; checked]"
+ch063.ElementaryAbelianSeriesCanonical,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.LowerCentralSeries,facade,rustmath-category/src/group_category.rs:103,"GroupParentMethods::lower_central_series default returns Vec::new() (not Option/Err), never overridden; PROJECT_TRACKER flags facade; libgap_mixin is_nilpotent builds the series but never returns it [review 2026-11-06; adjudicated]"
+ch063.NilpotencyClass,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.pCentralSeries,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.SubnormalSeries,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.UpperCentralSeries,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.Agemo,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.Omega,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.JenningsSeries,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.pClass,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.pRanks,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.NormalSubgroups,partial,rustmath-groups/src/libgap_mixin.rs:263,"normal subgroups as element lists via joins of class closures; test_nonabelian_groups_against_gap asserts normal subgroup sizes vs GAP; small groups, no subgroup objects [review 2026-11-06; checked]"
+ch063.NormalLattice,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.MinimalNormalSubgroup,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.MinimalNormalSubgroup.2,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.Complements,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.NormalComplements,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.NormalComplements.2,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.Transversal,partial,rustmath-galois/src/perm.rs:180,coset_reps gives LEFT coset reps (min element) from perm element lists; no transversal map; test coset_reps_count_matches_index [review 2026-11-06; checked]
+ch063.CosetTable,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.Transversal.2,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.ShortCosets,partial,rustmath-galois/src/short_coset.rs:50,"short_cosets(G,H,sigma) keeps reps tau with tau^-1 sigma tau in H; tests short_coset.rs::short_cosets_subset_of_all, impossible_descent_detected; filters the full coset_reps transversal, so no large index [review 2026-11-06; adjudicated]"
+ch063.CosetAction,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.CosetImage,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.CosetKernel,missing,,no implementation of this intrinsic found in workspace [review 2026-11-06; checked]
+ch063.AutomorphismGroup,missing,,graphs magma_automorphisms.rs:77 is graph automorphisms only; no pc-group automorphism group anywhere [review 2026-11-06; checked]
+ch063.HasAttribute,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch063.HasAttribute.2,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch063.AutomorphismGroupSolubleGroup,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.IsIsomorphicSolubleGroup,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.AutomorphismGroup.2,missing,,same: only graph automorphisms; no p-group lifting algorithm [review 2026-11-06; checked]
+ch063.OrderAutomorphismGroupAbelianPGroup,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.StandardPresentation,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.IsIdenticalPresentation,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch063.IsIsomorphic,missing,,"graphs is_isomorphic is for Graph, not p-groups; no standard presentations [review 2026-11-06; checked]"
+ch063.GeneratepGroups,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.Descendants,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.ClassTwo,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.CharacterDegrees,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.CharacterDegrees.2,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch063.CharacterDegrees.3,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.CharacterDegreesPGroup,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.CharacterTable,missing,,"representation.rs CharacterTable is a data container, not computed; interfaces gap_functions only shells out to GAP string [review 2026-11-06; checked]"
+ch063.CharacterTableConlon,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch063.GModule,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.GModule.2,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.GModule.3,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch063.AbsolutelyIrreducibleRepresentationsSchur,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.IrreducibleRepresentationsSchur,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.ExtGenerators,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.HomGenerators,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch063.ElementSequence,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.RepresentativeCocycles,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch063.CentralExtension,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.CentralExtensions,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch063.CentralExtensionProcess,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch063.NextExtension,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch063.IsEmpty,missing,,"misc_groups.rs:248 is catalog.is_empty, unrelated to central extension process [review 2026-11-06; checked]"
+ch063.PCGroup,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.pQuotient.2,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.SolubleQuotient,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.AbelianGroup.2,missing,,"category axioms abelian_group is an axiom set, unrelated to pc-group conversion [review 2026-11-06; checked]"
+ch063.FPGroup,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.GPCGroup,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch063.ConditionedGroup,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch063.IsConditioned,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch063.LeadingTerm,missing,,polynomial LeadingTerm is unrelated; no pc-group conditioned presentations [review 2026-11-06; checked]
+ch063.LeadingGenerator,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.LeadingExponent,missing,,puiseux/polynomial leading exponent unrelated to pc-group normal form [review 2026-11-06; checked]
+ch063.Depth,missing,,affineschemes dimension depth unrelated to pc-element depth [review 2026-11-06; checked]
+ch063.PCClass,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.SpecialPresentation,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch063.SpecialWeights,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.NilpotentLength,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.NilpotentBoundary,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch063.MinorLength,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch063.MinorBoundary,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch063.LayerLength,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch063.LayerBoundary,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch063.CompactPresentation,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
+ch063.PCGroup.2,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
