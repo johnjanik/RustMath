@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 436 | 0 | 20 | 87 | 1 | 4 | 5716 (43%) | 7512 (56%) |
+| 13341 | 656 | 0 | 27 | 117 | 2 | 8 | 5623 (42%) | 7562 (57%) |
 
 ## By chapter
 
@@ -80,7 +80,7 @@ automatic `candidate`/`missing` counts.
 | 56 | Chain Complexes | VIII | 63 | 0 | 0 | 0 | 0 | 0 | 0 | 24 | 39 | partial | `rustmath-homology` |
 | 57 | Groups | IX | 184 | 0 | 0 | 0 | 0 | 0 | 0 | 93 | 91 | partial | `rustmath-groups` |
 | 58 | Permutation Groups | IX | 384 | 0 | 0 | 0 | 0 | 0 | 0 | 129 | 255 | substantial | `rustmath-groups` |
-| 59 | Matrix Groups over General Rings | IX | 220 | 0 | 0 | 0 | 0 | 0 | 0 | 93 | 127 | stub | `rustmath-groups` |
+| 59 | Matrix Groups over General Rings | IX | 220 | 220 | 0 | 7 | 30 | 5 | 1 | 0 | 177 | stub | `rustmath-groups` |
 | 60 | Matrix Groups over Finite Fields | IX | 102 | 0 | 0 | 0 | 0 | 0 | 0 | 4 | 98 | none | `rustmath-groups` |
 | 61 | Matrix Groups over Infinite Fields | IX | 18 | 0 | 0 | 0 | 0 | 0 | 0 | 4 | 14 | none | `rustmath-groups` |
 | 62 | Matrix Groups over Q and Z | IX | 20 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 20 | none | `rustmath-groups` |

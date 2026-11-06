@@ -435,3 +435,223 @@ ch030.HermitianAutomorphismGroup,missing,,"No implementation found in workspace 
 ch030.InvariantForms,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
 ch030.QuaternionicGModule,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
 ch030.MooreDeterminant,missing,,"No implementation found in workspace (searched lattice, quadraticforms, matrix, numbertheory); name match is unrelated [review 2026-11-06; checked]"
+ch059.GeneralLinearGroup,partial,rustmath-groups/src/matrix_group.rs:31,"GLn::new(n) only, field type is a generic param; no ring R argument, no finite-field GL(n,q) object. Test matrix_group::tests::test_gln_creation [review 2026-11-06; checked]"
+ch059.elt,partial,rustmath-matrix/src/matrix.rs:17; rustmath-groups/src/matrix_group.rs:49,"Matrix::from_vec(n,n,L) builds g row-major; membership only via GLn/SLn::contains as a separate call, no general G or BSGS. Test matrix_group.rs::test_gln_contains_invertible [review 2026-11-06; adjudicated]"
+ch059.G,partial,rustmath-matrix/src/matrix.rs:17; rustmath-groups/src/matrix_group.rs:49,"Matrix::from_vec(n,n,Q) coerces n^2 entries; no parent G, membership only for GL/SL via separate contains. Test matrix_group.rs::test_gln_contains_invertible [review 2026-11-06; adjudicated]"
+ch059.ElementToSequence,done,rustmath-matrix/src/matrix.rs:631,Matrix::data() returns the n^2 entries row-major (Eltseq); test rustmath-matrix/src/sparse_forms.rs::dense_bridge_roundtrip asserts data() equals the row-major vec [review 2026-11-06; adjudicated]
+ch059.Identity,partial,rustmath-groups/src/matrix_group.rs:62; rustmath-groups/src/matrix_group.rs:107; rustmath-matrix/src/matrix.rs:57,GLn/SLn identity() returns Matrix::identity(n); only GL/SL group objects. No test calls it (test_gln_contains_identity builds Matrix::identity); matrix.rs::test_identity [review 2026-11-06; adjudicated]
+ch059.MatrixGroup,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.ChangeRing,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.ChangeRing.2,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.RestrictField,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.ExtendField,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.R,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.G.2,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.M,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.G.3,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.G.4,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.Degree,partial,rustmath-groups/src/matrix_group.rs:39,GLn::dimension returns n; only for GLn/SLn; test_gln_creation [review 2026-11-06; checked]
+ch059.Generators,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.NumberOfGenerators,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.CoefficientRing,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.RSpace,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.VectorSpace,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.GModule,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.Generic,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.Parent,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.hom,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.Domain,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.Codomain,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.Image,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.Kernel,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.IsHomomorphism,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.DirectProduct,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.DirectProduct.2,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.SemiLinearGroup,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.TensorWreathProduct,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.WreathProduct,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.g,partial,rustmath-matrix/src/matrix.rs:380,Matrix::mul is plain matrix product; no parent group or containment rules; test matrix::tests::test_multiplication [review 2026-11-06; checked]
+ch059.g.2,partial,rustmath-matrix/src/matrix.rs:410,Matrix::pow(u32) non-negative only; pow_bigint (charpoly_exact.rs:242) also non-negative; no negative n. test_matrix_pow [review 2026-11-06; checked]
+ch059.g.3,missing,,"no g*h^-1 operation; only Matrix::inverse (linear_solve.rs:309, fields, Option) and Matrix::mul separately; same treatment as g^h here and ch058.g.3 [review 2026-11-06; adjudicated]"
+ch059.g.4,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.g-h,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.g1-gr,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.g.5,partial,rustmath-matrix/src/matrix.rs:8,Matrix derives PartialEq (entrywise equality); no check of common generic parent group [review 2026-11-06; checked]
+ch059.g.6,partial,rustmath-matrix/src/matrix.rs:8,Matrix derives PartialEq so != works; no common generic parent group check [review 2026-11-06; checked]
+ch059.IsIdentity,done,rustmath-matrix/src/charpoly_exact.rs:288,Matrix::is_identity; exercised through charpoly_exact::tests::multiplicative_order_of_rotation (no direct dedicated test) [review 2026-11-06; checked]
+ch059.IsScalar,done,rustmath-matrix/src/charpoly_exact.rs:270,Matrix::is_scalar returns Some(s) for s*I; exercised by charpoly_exact::tests::multiplicative_order_of_rotation (projective order) [review 2026-11-06; checked]
+ch059.Degree.2,done,rustmath-matrix/src/matrix.rs:72,Matrix::rows() is the degree n of the n x n matrix g; test rustmath-matrix/src/matrix.rs::test_matrix_creation asserts rows()==2 [review 2026-11-06; adjudicated]
+ch059.HasFiniteOrder,partial,rustmath-matrix/src/charpoly_exact.rs:299,"Only multiplicative_order_bounded: search up to a bound, None means unresolved; no rigorous finite/infinite decision (no Minkowski bound for Z, no finite-field case) [review 2026-11-06; checked]"
+ch059.Order,partial,rustmath-matrix/src/charpoly_exact.rs:320,"order_dividing needs a known multiple m of the order; bounded search at :299; no CLG97 algorithm, no Proof param. Test charpoly_exact::tests::multiplicative_order_of_rotation [review 2026-11-06; checked]"
+ch059.FactoredOrder,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.ProjectiveOrder,partial,rustmath-matrix/src/charpoly_exact.rs:354,"projective_order_dividing(m) returns (n, scalar) given a known multiple; not self-contained. Test charpoly_exact::tests::multiplicative_order_of_rotation [review 2026-11-06; checked]"
+ch059.FactoredProjectiveOrder,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.CentralOrder,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.Determinant,done,rustmath-matrix/src/matrix.rs:168,"Matrix::determinant, cofactor expansion O(n!). Test matrix::tests::test_determinant_3x3 [review 2026-11-06; checked]"
+ch059.Trace,done,rustmath-matrix/src/matrix.rs:120,Matrix::trace. Test matrix::tests::test_trace [review 2026-11-06; checked]
+ch059.CharacteristicPolynomial,done,rustmath-matrix/src/charpoly_exact.rs:48,charpoly_berkowitz division-free over any commutative ring; matches sympy 4x4 in charpoly_exact::tests::berkowitz_4x4_matches_sympy; no Al/Proof params [review 2026-11-06; checked]
+ch059.MinimalPolynomial,broken,rustmath-matrix/src/companion.rs:190; rustmath-matrix/src/polynomial_matrix.rs:278,"polynomial_ops.rs:88 is inside /* */ (lines 4-213). Only route is RCF last invariant factor; poly SNF ensure_divisibility never rediagonalizes, diag(1,2) gives x-2. Tracker flags broken [review 2026-11-06; adjudicated]"
+ch059.IsFinite,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.Order.2,partial,rustmath-groups/src/matrix_group.rs:115,"gl_order_finite(n,q) and sl_order_finite (:130) give |GL(n,q)|, |SL(n,q)| by formula for given n,q (usize, overflows); no group object order. Test test_gl_order_finite [review 2026-11-06; checked]"
+ch059.FactoredOrder.2,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.g.7,partial,rustmath-groups/src/matrix_group.rs:49,"GLn::contains/SLn::contains (:94) test det !=0 / det=1; only full GL/SL, no subgroup from generators/BSGS. Test test_gln_contains_invertible [review 2026-11-06; checked]"
+ch059.g.8,partial,rustmath-groups/src/matrix_group.rs:49,"Negation of GLn::contains; only full GL/SL, no dedicated notin. Test test_gln_not_contains_singular [review 2026-11-06; checked]"
+ch059.S,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.H,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.S.2,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.H.2,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.H.3,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.H.4,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.NumberingMap,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.RandomProcess,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.Random,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.Random.2,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.IsAbelian,missing,,"is_abelian_libgap (libgap_mixin.rs:52) is generic over FiniteGroupTrait; Matrix lacks Eq/Hash/GroupElement and GLn/SLn implement no Group trait, so no matrix group can use it [review 2026-11-06; adjudicated]"
+ch059.IsCyclic,missing,,"is_cyclic (libgap_mixin.rs:67) is generic over FiniteGroupTrait; Matrix lacks Eq/Hash/GroupElement and GLn/SLn implement no Group trait, so no matrix group can use it [review 2026-11-06; adjudicated]"
+ch059.IsElementaryAbelian,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.IsNilpotent,missing,,"is_nilpotent (libgap_mixin.rs:80) is generic over FiniteGroupTrait; Matrix lacks Eq/Hash/GroupElement and GLn/SLn implement no Group trait, so no matrix group can use it [review 2026-11-06; adjudicated]"
+ch059.IsSoluble,missing,,"is_solvable (libgap_mixin.rs:108) is generic over FiniteGroupTrait; Matrix lacks Eq/Hash/GroupElement and GLn/SLn implement no Group trait, so no matrix group can use it [review 2026-11-06; adjudicated]"
+ch059.IsPerfect,missing,,"is_perfect (libgap_mixin.rs:148) is generic over FiniteGroupTrait; Matrix lacks Eq/Hash/GroupElement and GLn/SLn implement no Group trait, so no matrix group can use it [review 2026-11-06; adjudicated]"
+ch059.IsSimple,missing,,"is_simple (libgap_mixin.rs:133) is generic over FiniteGroupTrait; Matrix lacks Eq/Hash/GroupElement and GLn/SLn implement no Group trait, so no matrix group can use it [review 2026-11-06; adjudicated]"
+ch059.Class,missing,,"ConjugacyClass::compute_elements (conjugacy_classes.rs:91) needs its GroupElement trait (Eq+Hash, context-free identity); Matrix implements none, no matrix group type [review 2026-11-06; adjudicated]"
+ch059.ClassMap,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.ConjugacyClasses,missing,,"conjugacy_classes (conjugacy_classes.rs:161) and FiniteGroupTrait default need Eq+Hash GroupElement items; Matrix has neither, no matrix group type; no MN89 algorithms [review 2026-11-06; adjudicated]"
+ch059.ClassRepresentative,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.ClassCentraliser,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.ClassInvariants,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.ClassRepresentativeFromInvariants,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.IsConjugate,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.IsConjugate.2,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.IsGLConjugate,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.Exponent,missing,,"exponent_libgap (libgap_mixin.rs:244) is generic over FiniteGroupTrait; Matrix lacks Eq/Hash/GroupElement and GLn/SLn implement no Group trait, so no matrix group can use it [review 2026-11-06; adjudicated]"
+ch059.NumberOfClasses,missing,,"num_conjugacy_classes (conjugacy_classes.rs:187) needs Eq+Hash GroupElement items, Matrix has none; similarity_class_type.rs GL_n(q) code is a flagged facade giving types, not a count [review 2026-11-06; adjudicated]"
+ch059.PowerMap,missing,,Nothing implements this for matrix groups; only GLn/SLn membership exists in matrix_group.rs [review 2026-11-06; checked]
+ch059.AssertAttribute,n/a,,Sets an internal attribute cache of a Magma group object; no attribute store model in Rust [review 2026-11-06; checked]
+ch059.sub,missing,,"perm-only closures (solvtower.rs:69 degree-24 Perm, galois perm.rs:98) belong to ch058.sub; Matrix has no Eq/Hash, no matrix-generator closure; unreachable code is missing, as ch059-1 IsAbelian [review 2026-11-06; adjudicated]"
+ch059.ncl,missing,,"solvtower.rs:100 normal_closure takes degree-24 Perm gens only (ch058.ncl); no matrix group can reach it, same rule as ch059-1 IsAbelian/Class (H.7/H.8 partial here used a looser rule) [review 2026-11-06; adjudicated]"
+ch059.Index,partial,rustmath-galois/src/perm.rs:222,"index(group,subgroup)=len ratio of explicit permutation element lists; no matrix groups, no order computation [review 2026-11-06; checked]"
+ch059.FactoredIndex,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.IsCentral,missing,,auto match (algebras askey_wilson) wrong; nothing for subgroups; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.IsMaximal,missing,,auto match (affineschemes prime ideal) wrong; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.IsNormal,missing,,auto match (schemes) wrong; no subgroup normality test in groups; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.IsSubnormal,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.H.5,missing,,"galois perm.rs:203 conjugate(g,H)=gHg^-1 works on Perm element lists only (ch058.H.5); no matrix subgroup type to conjugate; perm-only code not credited for GrpMat (ch059-1 rule) [review 2026-11-06; adjudicated]"
+ch059.H.6,missing,,"auto match semidirect product accessor, wrong; no subgroup intersection; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]"
+ch059.CommutatorSubgroup,missing,,"no [H,K] for subgroups (libgap_mixin only derived subgroup of G); no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]"
+ch059.Centralizer,missing,,"centralizer_in (group_category.rs:192) needs GroupElement (Eq+Hash+Display); Matrix derives only Clone/PartialEq/Debug, sole impl is a test type, untested; gap_functions.rs:245 is a GAP shell wrapper [review 2026-11-06; adjudicated]"
+ch059.Centralizer.2,missing,,"auto match is GAP text interface wrapper, not an implementation; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]"
+ch059.Core,missing,,"auto match is graph core, wrong; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]"
+ch059.H.7,partial,rustmath-groups/src/solvtower.rs:100,normal_closure for permutation generators by BFS enumeration with cap; not matrix groups; test normal_closure_of_3cycle_in_s3_is_a3 [review 2026-11-06; checked]
+ch059.Normalizer,missing,,"auto match is GAP text interface wrapper, not an implementation; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]"
+ch059.SylowSubgroup,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.pCore,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.LowIndexSubgroups,missing,,"auto match is calculus limits, wrong; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]"
+ch059.SubgroupClasses,partial,rustmath-galois/src/subgroups.rs:27,all_subgroups lists every subgroup of an explicit permutation element list (not conjugacy class reps); small groups only [review 2026-11-06; checked]
+ch059.MaximalSubgroups,partial,rustmath-galois/src/subgroups.rs:64,"maximal subgroups of explicit permutation element list, all conjugates returned, not classes; no matrix groups [review 2026-11-06; checked]"
+ch059.SubgroupsLift,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.quo,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.G.5,missing,,"auto match semidirect product constructor, wrong; no quotient groups; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]"
+ch059.AbelianQuotient,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.ElementaryAbelianQuotient,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.pQuotient,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.NilpotentQuotient,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.SolvableQuotient,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.PCGroup,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.u,partial,rustmath-matrix/src/action.rs:148,"VectorMatrixAction::act computes row vector u times matrix g over any Ring; test action.rs::test_vector_matrix_action ([1 2]*[[3,4],[5,6]]=[13,16]); no G/M parents, panics on dim mismatch (as ch059.g) [review 2026-11-06; adjudicated]"
+ch059.y,partial,rustmath-matrix/src/action.rs:148,"only the vector case: y^g = u*g via VectorMatrixAction::act (test action.rs::test_vector_matrix_action); no action on submodules, sets, sequences or tuples of a derived G-set [review 2026-11-06; adjudicated]"
+ch059.y.2,missing,,"no orbit under matrix generators; perm_predicates.rs:41 orbit (points) and integer_vectors.rs:611 orbit_of_vector (coordinate perms) take Permutation gens only, not matrices (ch059-1 rule) [review 2026-11-06; adjudicated]"
+ch059.OrbitBounded,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.Orbits,partial,rustmath-groups/src/perm_predicates.rs:63,orbits of permutation generators on points only; no action on vectors of a module over a ring [review 2026-11-06; checked]
+ch059.LineOrbits,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.OrbitClosure,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.Stabilizer,partial,rustmath-groups/src/perm_predicates.rs:211,point stabilizer for permutation generators only; no vectors/submodules; test stabilizer_of_point_in_s4_is_s3 [review 2026-11-06; checked]
+ch059.OrbitsOfSpaces,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.NumberOfFixedSpaces,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.EstimateOrbit,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.ApproximateStabiliser,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.StabiliserOfSpaces,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.IsUnipotent,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.UnipotentStabiliser,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.OrbitAction,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.OrbitActionBounded,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.OrbitImage,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.OrbitImageBounded,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.OrbitKernel,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.OrbitKernelBounded,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.CosetAction,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.CosetImage,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.CosetKernel,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.GModule.2,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.IsIrreducible,missing,,"representation.rs is_irreducible tests character norm, not module irreducibility of a matrix group [review 2026-11-06; checked]"
+ch059.SubmoduleAction,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.SubmoduleImage,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.QuotientModuleAction,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.QuotientModuleImage,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.IsAbsolutelyIrreducible,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.AbsoluteRepresentation,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.MinimalField,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.Centre,partial,rustmath-groups/src/group_traits.rs:122,default center() by O(|G|^2) enumeration for any finite Group with elements(); no matrix group type; not tested for matrix groups [review 2026-11-06; checked]
+ch059.DerivedLength,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.DerivedSeries,facade,rustmath-category/src/group_category.rs:96,trait default returns Vec::new() for derived series [review 2026-11-06; checked]
+ch059.CommutatorSubgroup.2,partial,rustmath-groups/src/libgap_mixin.rs:341,derived_subgroup via element enumeration for finite groups; test libgap_mixin::test_derived_subgroup; no matrix group type [review 2026-11-06; checked]
+ch059.FittingSubgroup,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.LowerCentralSeries,facade,rustmath-category/src/group_category.rs:103,trait default returns Vec::new() for lower central series [review 2026-11-06; checked]
+ch059.NilpotencyClass,missing,,"only a stored field of nilpotent Lie groups, not computed for matrix groups; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]"
+ch059.H.8,partial,rustmath-groups/src/solvtower.rs:100,normal_closure for permutation generators by BFS enumeration with cap; not matrix groups; test normal_closure_of_3cycle_in_s3_is_a3 [review 2026-11-06; checked]
+ch059.SolubleResidual,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.SubnormalSeries,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.UpperCentralSeries,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.Radical,missing,,"auto match prime ideal radical, wrong; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]"
+ch059.RadicalQuotient,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.ElementaryAbelianSeries,missing,,"solvtower.rs:293 solvable_tower gives an EA series only for solvable degree-24 Perm groups (ch063 credit); no matrix group can reach it, no soluble radical, no LayerSizes (ch059-1 rule) [review 2026-11-06; adjudicated]"
+ch059.ElementaryAbelianSeriesCanonical,missing,,"solvable_tower terms are characteristic (derived terms, preimages of p^k(A/B)) but Perm-only, degree 24, solvable only; no matrix group input or soluble radical (ch059-1 rule) [review 2026-11-06; adjudicated]"
+ch059.CompositionFactors,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.ChiefFactors,missing,,"no matrix group input; solvtower.rs:293 is degree-24 Perm only and its layers are not chief factors anyway: C2xC2 gives one (2,2) (true C2,C2), D8 gives (2,2),(2,1) (true C2 x3) [review 2026-11-06; adjudicated]"
+ch059.ChiefSeries,missing,,"no matrix group input; solvable_tower (solvtower.rs:293, Perm only) returns an EA series, not a chief series: C2xC2 gives [G,1] (chief has 3 terms), D8 3 terms not 4; s3/s4 tests miss it [review 2026-11-06; adjudicated]"
+ch059.CosetTable,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.Transversal,partial,rustmath-galois/src/perm.rs:180,"coset_reps returns left coset reps of explicit permutation lists; no right transversal, no transversal map; matrix groups unsupported [review 2026-11-06; checked]"
+ch059.FPGroup,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.FPGroupStrong,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.WordGroup,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.InverseWordMap,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.AutomorphismGroup,missing,,"auto match is graph automorphisms, wrong; no group automorphism computation; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]"
+ch059.IsIsomorphic,missing,,"auto match is graph isomorphism, wrong; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]"
+ch059.LinearCharacters,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.CharacterTable,missing,,auto match is GAP text wrapper; representation.rs CharacterTable only hardcoded cyclic/S3 constructors [review 2026-11-06; checked]
+ch059.PermutationCharacter,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.GModule.3,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.GModule.4,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.GModule.5,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.GModule.6,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.PermutationModule,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.ChangeOfBasisMatrix,missing,,no implementation found; no matrix group over a ring with generators exists (matrix_group.rs has only GLn/SLn membership tests) [review 2026-11-06; checked]
+ch059.GoodBasePoints,missing,,No Murray-O'Brien base point selection or eigenspace-based base choice anywhere [review 2026-11-06; checked]
+ch059.AssertAttribute.2,missing,,No attribute system on groups to assert a base; StabilizerChain::new always computes its own base [review 2026-11-06; checked]
+ch059.HasAttribute,missing,,No HasAttribute mechanism; StabilizerChain always has a base once built [review 2026-11-06]
+ch059.AssertAttribute.3,missing,,No FirstBasicOrbitBound global setting; no Murray-O'Brien procedure [review 2026-11-06]
+ch059.HasAttribute.2,missing,,No FirstBasicOrbitBound attribute [review 2026-11-06]
+ch059.BSGS,partial,rustmath-groups/src/bsgs.rs:138,"StabilizerChain::new builds deterministic Schreier-Sims BSGS for permutation groups only, not matrix groups; tested in bsgs.rs tests. generic.rs:99 bsgs is baby-step giant-step (unrelated) [review 2026-11-06; checked]"
+ch059.RandomSchreier,missing,,No random Schreier-Sims; bsgs.rs is deterministic only; automata hit is unrelated [review 2026-11-06; checked]
+ch059.ToddCoxeterSchreier,missing,,No Sims-Todd-Coxeter-Schreier; only Schreier-Sims on permutation groups [review 2026-11-06; checked]
+ch059.Verify,missing,,No verify/complete of a probable BSGS (no probabilistic BSGS exists); cyclic_sieving hit unrelated [review 2026-11-06; checked]
+ch059.AssertAttribute.4,missing,,No way to assert group order attribute [review 2026-11-06]
+ch059.AssertAttribute.5,missing,,No IsVerified attribute; no probable BSGS [review 2026-11-06]
+ch059.HasAttribute.3,missing,,No order-known attribute query [review 2026-11-06; checked]
+ch059.HasAttribute.4,missing,,No IsVerified attribute query [review 2026-11-06]
+ch059.Base,partial,rustmath-groups/src/bsgs.rs:298,StabilizerChain::base returns base for permutation groups only (not matrix groups); tested in bsgs.rs tests (empty-chain case) [review 2026-11-06; checked]
+ch059.BasePoint,missing,,"No BasePoint(G,i) accessor; manifolds hit unrelated (base() slice could be indexed but no matrix group) [review 2026-11-06; checked]"
+ch059.BasicOrbit,missing,,Level orbits are private fields of StabilizerChain; no public accessor [review 2026-11-06; checked]
+ch059.BasicOrbitLength,missing,,No public accessor for level orbit length (only order() product) [review 2026-11-06; checked]
+ch059.BasicOrbitLengths,missing,,No public accessor for the list of basic orbit lengths [review 2026-11-06; checked]
+ch059.BasicStabilizer,missing,,No basic stabilizer subgroup extraction from StabilizerChain [review 2026-11-06; checked]
+ch059.BasicStabilizerChain,missing,,No chain of subgroups returned; chain is internal to StabilizerChain [review 2026-11-06; checked]
+ch059.NumberOfStrongGenerators,missing,,No count accessor; strong_generators().len() could be used but no named API and no matrix groups [review 2026-11-06; checked]
+ch059.StrongGenerators,partial,rustmath-groups/src/bsgs.rs:304,"StabilizerChain::strong_generators returns the stored strong set (permutation groups only, no matrix groups); tested in bsgs.rs tests [review 2026-11-06; checked]"
+ch059.PolycyclicGenerators,missing,,No polycyclic generating sequence for matrix groups; solvtower.rs is perm-group derived/chief series only [review 2026-11-06; checked]
+ch059.PCGroup.2,missing,,No conversion of soluble matrix group to GrpPC with isomorphism [review 2026-11-06; checked]
+ch059.pCentralSeries,missing,,No p-central series for soluble matrix groups [review 2026-11-06; checked]
+ch059.IsSpecial,missing,,No IsSpecial for p-groups; riemann_roch.rs hit is a divisor predicate [review 2026-11-06; checked]
+ch059.IsExtraSpecial,missing,,No IsExtraSpecial implementation [review 2026-11-06; checked]
+ch059.FrattiniSubgroup,stub,rustmath-category/src/group_category.rs:151,Trait method default returns None; no implementation for matrix or p-groups [review 2026-11-06; checked]
+ch059.JenningsSeries,missing,,No Jennings series implementation [review 2026-11-06; checked]
+ch059.AbelianInvariants,broken,rustmath-groups/src/finitely_presented.rs:190; rustmath-groups/src/finitely_presented.rs:489,"Only path is f.p. abelian_invariants; its smith_normal_form is truncating row echelon: S3 gives [3,2] not [2], <a|a^4,a^6> gives [4] not [2]. Tracker 🔴; test only asserts nonempty; no matrix-group path [review 2026-11-06; adjudicated]"
