@@ -271,6 +271,45 @@ impl AdditiveAbelianGroup {
         })
     }
 
+    /// The group Z/m₁ ⊕ Z/m₂ ⊕ … ⊕ Z/mₖ for arbitrary cyclic orders mᵢ, put
+    /// into invariant-factor form (as MAGMA `AbelianGroup([m₁, …, mₖ])` and
+    /// Sage `AdditiveAbelianGroup([m₁, …, mₖ])` accept any non-negative list).
+    ///
+    /// An order 0 stands for an infinite cyclic factor Z and contributes to the
+    /// free rank; orders 1 are trivial factors and are dropped. The remaining
+    /// orders are brought to a divisibility chain n₁ | n₂ | … by repeatedly
+    /// replacing a pair (a, b) with (gcd(a, b), lcm(a, b)), which preserves the
+    /// isomorphism class since Z/a ⊕ Z/b ≅ Z/gcd ⊕ Z/lcm (CRT). This is the
+    /// Smith normal form of diag(m₁, …, mₖ).
+    ///
+    /// Returns `Err` if an lcm overflows `usize`.
+    ///
+    /// # Examples
+    /// ```
+    /// use rustmath_groups::additive_abelian_group::AdditiveAbelianGroup;
+    ///
+    /// // Z/4 ⊕ Z/6 ⊕ Z ≅ Z ⊕ Z/2 ⊕ Z/12
+    /// let g = AdditiveAbelianGroup::from_cyclic_orders(&[4, 6, 0]).unwrap();
+    /// assert_eq!(g.free_rank(), 1);
+    /// assert_eq!(g.invariant_factors(), &[2, 12]);
+    /// ```
+    pub fn from_cyclic_orders(orders: &[usize]) -> Result<Self, String> {
+        let free_rank = orders.iter().filter(|&&m| m == 0).count();
+        let mut t: Vec<usize> = orders.iter().copied().filter(|&m| m != 0).collect();
+        for i in 0..t.len() {
+            for j in (i + 1)..t.len() {
+                let g = gcd_usize(t[i], t[j]);
+                let l = (t[i] / g).checked_mul(t[j]).ok_or_else(|| {
+                    format!("lcm({}, {}) overflows usize", t[i], t[j])
+                })?;
+                t[i] = g;
+                t[j] = l;
+            }
+        }
+        t.retain(|&m| m != 1);
+        AdditiveAbelianGroup::new(free_rank, t)
+    }
+
     /// Get the free rank
     pub fn free_rank(&self) -> usize {
         self.free_rank
@@ -684,6 +723,39 @@ mod tests {
         let fixed = AdditiveAbelianGroupFixedGens::new(g.clone(), vec![gen.clone()]).unwrap();
         assert_eq!(fixed.gens().len(), 1);
         assert_eq!(fixed.gens()[0], gen);
+    }
+
+    #[test]
+    fn test_from_cyclic_orders() {
+        // Z/2 + Z/3 + Z/5 = Z/30 (GAP: Size 30, IsCyclic true).
+        let g = AdditiveAbelianGroup::from_cyclic_orders(&[2, 3, 5]).unwrap();
+        assert_eq!(g.free_rank(), 0);
+        assert_eq!(g.invariant_factors(), &[30]);
+        assert_eq!(g.order(), Some(30));
+        assert!(g.is_cyclic());
+
+        // Z/2 + Z/4 + Z/6 + Z/9: GAP AbelianInvariants = [2, 2, 3, 4, 9], so
+        // the invariant factors are [2, 2*3, 4*9] = [2, 6, 36], order 432.
+        let g = AdditiveAbelianGroup::from_cyclic_orders(&[2, 4, 6, 9]).unwrap();
+        assert_eq!(g.invariant_factors(), &[2, 6, 36]);
+        assert_eq!(g.order(), Some(432));
+
+        // Z/4 + Z/6 + Z: GAP AbelianInvariants = [0, 2, 3, 4] -> Z + Z/2 + Z/12.
+        let g = AdditiveAbelianGroup::from_cyclic_orders(&[4, 6, 0]).unwrap();
+        assert_eq!(g.free_rank(), 1);
+        assert_eq!(g.invariant_factors(), &[2, 12]);
+        assert_eq!(g.order(), None);
+
+        // Trivial factors vanish; an already reduced chain is unchanged.
+        let g = AdditiveAbelianGroup::from_cyclic_orders(&[1, 1]).unwrap();
+        assert_eq!(g.order(), Some(1));
+        assert!(g.invariant_factors().is_empty());
+        let g = AdditiveAbelianGroup::from_cyclic_orders(&[2, 4]).unwrap();
+        assert_eq!(g.invariant_factors(), &[2, 4]);
+
+        // lcm overflow is an error, not a wrapped value.
+        let big = usize::MAX / 2 + 1; // 2^63 on 64-bit
+        assert!(AdditiveAbelianGroup::from_cyclic_orders(&[big, 3]).is_err());
     }
 
     #[test]

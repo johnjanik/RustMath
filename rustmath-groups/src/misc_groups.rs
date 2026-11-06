@@ -25,6 +25,8 @@
 
 use std::collections::HashMap;
 
+use rustmath_combinatorics::Permutation;
+
 use crate::finitely_presented::FinitelyPresentedGroup;
 use crate::permutation_group::PermutationGroup;
 use crate::group_traits::Group;
@@ -111,22 +113,61 @@ pub fn dicyclic_group(n: usize) -> FinitelyPresentedGroup {
     make_fp_group(2, relations)
 }
 
-/// The Mathieu group M_11
-///
-/// This is a simple sporadic group of order 7920, the smallest Mathieu group.
-/// Note: This is a stub that would require a more sophisticated implementation.
-pub fn mathieu_11() -> PermutationGroup {
-    // Stub: Return a permutation group on 11 elements
-    // A full implementation would construct the actual Mathieu group
-    PermutationGroup::symmetric(11)
+/// A permutation of `{0, …, degree−1}` given as a product of disjoint cycles.
+fn perm_from_cycles(degree: usize, cycles: &[&[usize]]) -> Permutation {
+    let mut images: Vec<usize> = (0..degree).collect();
+    for cycle in cycles {
+        for (k, &a) in cycle.iter().enumerate() {
+            images[a] = cycle[(k + 1) % cycle.len()];
+        }
+    }
+    Permutation::from_vec(images).expect("disjoint cycles define a permutation")
 }
 
-/// The Mathieu group M_12
+/// The Mathieu group M_11 in its natural action on 11 points.
 ///
-/// This is a simple sporadic group of order 95040.
-/// Note: This is a stub that would require a more sophisticated implementation.
+/// The simple sporadic group of order 7920. Generators are the standard ones
+/// of GAP's `MathieuGroup(11)` (ATLAS of Group Representations), shifted to
+/// 0-based points: `(0 1 2 … 10)` and `(2 6 10 7)(3 9 4 5)`.
+///
+/// ```
+/// use rustmath_groups::misc_groups::mathieu_11;
+/// use rustmath_integers::Integer;
+///
+/// assert_eq!(mathieu_11().order(), Integer::from(7920));
+/// ```
+pub fn mathieu_11() -> PermutationGroup {
+    let n = 11;
+    let long_cycle: Vec<usize> = (0..n).collect();
+    let gens = vec![
+        perm_from_cycles(n, &[&long_cycle]),
+        perm_from_cycles(n, &[&[2, 6, 10, 7], &[3, 9, 4, 5]]),
+    ];
+    PermutationGroup::new(n, gens).expect("M11 generators have degree 11")
+}
+
+/// The Mathieu group M_12 in its natural action on 12 points.
+///
+/// The simple sporadic group of order 95040. Generators are the standard ones
+/// of GAP's `MathieuGroup(12)` (ATLAS of Group Representations), shifted to
+/// 0-based points: `(0 1 2 … 10)`, `(2 6 10 7)(3 9 4 5)` and
+/// `(0 11)(1 10)(2 5)(3 7)(4 8)(6 9)`.
+///
+/// ```
+/// use rustmath_groups::misc_groups::mathieu_12;
+/// use rustmath_integers::Integer;
+///
+/// assert_eq!(mathieu_12().order(), Integer::from(95040));
+/// ```
 pub fn mathieu_12() -> PermutationGroup {
-    PermutationGroup::symmetric(12)
+    let n = 12;
+    let long_cycle: Vec<usize> = (0..11).collect();
+    let gens = vec![
+        perm_from_cycles(n, &[&long_cycle]),
+        perm_from_cycles(n, &[&[2, 6, 10, 7], &[3, 9, 4, 5]]),
+        perm_from_cycles(n, &[&[0, 11], &[1, 10], &[2, 5], &[3, 7], &[4, 8], &[6, 9]]),
+    ];
+    PermutationGroup::new(n, gens).expect("M12 generators have degree 12")
 }
 
 /// The trivial group
@@ -293,11 +334,17 @@ mod tests {
     }
 
     #[test]
-    fn test_mathieu_groups_stub() {
+    fn test_mathieu_groups() {
+        use rustmath_integers::Integer;
+
+        // Orders from GAP: Size(MathieuGroup(11)) = 7920,
+        // Size(MathieuGroup(12)) = 95040.
         let m11 = mathieu_11();
         assert_eq!(m11.degree(), 11);
+        assert_eq!(m11.order(), Integer::from(7920));
 
         let m12 = mathieu_12();
         assert_eq!(m12.degree(), 12);
+        assert_eq!(m12.order(), Integer::from(95040));
     }
 }

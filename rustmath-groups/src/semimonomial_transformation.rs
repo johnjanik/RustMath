@@ -18,18 +18,44 @@
 //! (φ, π, α)(ψ, σ, β) = (φ · ψ^(π,α), πσ, α ∘ β)
 //! ```
 //!
-//! where ψ^(π,α) means applying α to each component then permuting by π.
+//! where ψ^(π,α)_i = α(ψ_{π(i)}) and the permutation product πσ applies π
+//! first: (πσ)(i) = σ(π(i)), as in GAP and Sage. A transformation acts on
+//! vectors from the left by (φ, π, α)·v = (φ_i⁻¹ α(v_{π(i)}))_i.
+//!
+//! Automorphisms are identified by a `usize` id; the caller supplies the maps
+//! (apply α, multiply, invert, compose ids) to the free functions below.
 //!
 //! # Examples
 //!
 //! ```
-//! use rustmath_groups::semimonomial_transformation::SemimonomialTransformation;
+//! use rustmath_groups::semimonomial_transformation::{
+//!     action_on_vector, compose, SemimonomialTransformation,
+//! };
 //! use rustmath_combinatorics::Permutation;
 //!
-//! // Create a simple transformation with integer units
-//! let perm = Permutation::identity(3);
-//! let units = vec![1, -1, 1];
-//! let transform = SemimonomialTransformation::new(units, perm, Box::new(|x| x));
+//! // Over Z the units are ±1 and Aut(Z) is trivial (automorphism id 0).
+//! let id_aut = |x: &i64| *x;
+//! let mul = |a: &i64, b: &i64| a * b;
+//! let inv = |u: &i64| *u; // ±1 is its own inverse
+//!
+//! // g = ([1, -1, 1], (0 1), id): a signed permutation of Z^3
+//! let perm = Permutation::from_vec(vec![1, 0, 2]).unwrap();
+//! let g = SemimonomialTransformation::new(vec![1i64, -1, 1], perm, 0);
+//! assert_eq!(g.degree(), 3);
+//!
+//! // (g·v)_i = φ_i⁻¹ v_{π(i)}
+//! let v = vec![10i64, 20, 30];
+//! let gv = action_on_vector(&g, &v, id_aut, mul, inv);
+//! assert_eq!(gv, vec![20, -10, 30]);
+//!
+//! // g² = ([-1, -1, 1], identity, id), and it acts as g·(g·v)
+//! let g2 = compose(&g, &g, id_aut, mul, |_, _| 0);
+//! assert_eq!(g2.units(), &[-1, -1, 1]);
+//! assert_eq!(g2.permutation(), &Permutation::identity(3));
+//! assert_eq!(
+//!     action_on_vector(&g2, &v, id_aut, mul, inv),
+//!     action_on_vector(&g, &gv, id_aut, mul, inv)
+//! );
 //! ```
 
 use rustmath_combinatorics::Permutation;
@@ -115,23 +141,34 @@ impl<T: Clone> SemimonomialTransformation<T> {
         self.automorphism_id
     }
 
-    /// Compute the inverse (requires inverse computation)
+    /// Compute the inverse
     ///
-    /// For a transformation (φ, π, α), the inverse is:
-    /// (φ', π^(-1), α^(-1))
-    /// where φ'_i = α^(-1)(φ_{π(i)})^(-1)
-    pub fn inverse_with<F>(&self, invert_unit: F, invert_automorphism_id: usize) -> Self
+    /// For a transformation (φ, π, α), the inverse is
+    /// (φ', π⁻¹, α⁻¹) with φ'_j = α⁻¹(φ_{π⁻¹(j)})⁻¹,
+    /// so that g·g⁻¹ = g⁻¹·g = identity under [`compose`].
+    ///
+    /// # Arguments
+    /// * `apply_inverse_automorphism` - The map u ↦ α⁻¹(u) on R
+    /// * `invert_unit` - The map u ↦ u⁻¹ on the units of R
+    /// * `invert_automorphism_id` - ID identifying α⁻¹
+    pub fn inverse_with<A, F>(
+        &self,
+        apply_inverse_automorphism: A,
+        invert_unit: F,
+        invert_automorphism_id: usize,
+    ) -> Self
     where
+        A: Fn(&T) -> T,
         F: Fn(&T) -> T,
     {
         let inv_perm = self.permutation.inverse();
         let n = self.degree();
 
-        // Compute inverse units
+        // φ'_j = α⁻¹(φ_{π⁻¹(j)})⁻¹
         let mut inv_units = Vec::with_capacity(n);
-        for i in 0..n {
-            let pi_i = self.permutation.apply(i).unwrap();
-            let inv_u = invert_unit(&self.units[pi_i]);
+        for j in 0..n {
+            let pi_inv_j = inv_perm.apply(j).unwrap();
+            let inv_u = invert_unit(&apply_inverse_automorphism(&self.units[pi_inv_j]));
             inv_units.push(inv_u);
         }
 
@@ -227,6 +264,10 @@ where
 /// Compose two semimonomial transformations
 ///
 /// (φ, π, α)(ψ, σ, β) = (φ · ψ^(π,α), πσ, α ∘ β)
+///
+/// with ψ^(π,α)_i = α(ψ_{π(i)}) and πσ the product applying π first,
+/// (πσ)(i) = σ(π(i)) (the GAP/Sage convention). With this product the law is
+/// associative and [`action_on_vector`] is a left action: g·(h·v) = (gh)·v.
 pub fn compose<T>(
     first: &SemimonomialTransformation<T>,
     second: &SemimonomialTransformation<T>,
@@ -245,8 +286,9 @@ where
 
     let n = first.degree();
 
-    // Compose permutations
-    let composed_perm = first.permutation.compose(&second.permutation).unwrap();
+    // πσ: i ↦ σ(π(i)). `Permutation::compose(a, b)` is a ∘ b (apply b first),
+    // so this is σ ∘ π.
+    let composed_perm = second.permutation.compose(&first.permutation).unwrap();
 
     // Compute new units: φ · ψ^(π,α)
     let mut new_units = Vec::with_capacity(n);
@@ -323,6 +365,95 @@ mod tests {
 
         assert_eq!(composed.degree(), 3);
         assert_eq!(composed.units(), &[2, 2, 2]);
+    }
+
+    // GF(4) = F_2(w), w^2 = w + 1. A unit w^k is stored as its exponent
+    // k in Z/3; Aut(GF(4)) = {id, Frobenius x -> x^2} acts on exponents as
+    // k -> 2^a k (a = automorphism id, 0 or 1), and composes by a + b mod 2.
+    fn gf4_aut(a: usize) -> impl Fn(&u8) -> u8 {
+        move |k: &u8| if a % 2 == 0 { *k } else { (2 * *k) % 3 }
+    }
+    fn gf4_mul(x: &u8, y: &u8) -> u8 {
+        (x + y) % 3
+    }
+    fn gf4_inv(x: &u8) -> u8 {
+        (3 - x) % 3
+    }
+    fn gf4_compose(
+        g: &SemimonomialTransformation<u8>,
+        h: &SemimonomialTransformation<u8>,
+    ) -> SemimonomialTransformation<u8> {
+        compose(g, h, gf4_aut(g.automorphism_id()), gf4_mul, |a, b| (a + b) % 2)
+    }
+    fn gf4_act(g: &SemimonomialTransformation<u8>, v: &[u8]) -> Vec<u8> {
+        action_on_vector(g, v, gf4_aut(g.automorphism_id()), gf4_mul, gf4_inv)
+    }
+    fn gf4_inverse(g: &SemimonomialTransformation<u8>) -> SemimonomialTransformation<u8> {
+        // Frobenius is an involution, so alpha^{-1} = alpha.
+        g.inverse_with(gf4_aut(g.automorphism_id()), gf4_inv, g.automorphism_id())
+    }
+    fn gf4_samples() -> Vec<SemimonomialTransformation<u8>> {
+        let perms = [vec![1, 2, 0], vec![1, 0, 2], vec![0, 2, 1], vec![2, 0, 1]];
+        let units = [vec![0, 1, 2], vec![2, 2, 1], vec![1, 0, 0], vec![0, 0, 1]];
+        let mut out = Vec::new();
+        for (i, p) in perms.iter().enumerate() {
+            for a in 0..2 {
+                out.push(SemimonomialTransformation::new(
+                    units[(i + a) % units.len()].clone(),
+                    Permutation::from_vec(p.clone()).unwrap(),
+                    a,
+                ));
+            }
+        }
+        out
+    }
+    fn same(a: &SemimonomialTransformation<u8>, b: &SemimonomialTransformation<u8>) -> bool {
+        a.units() == b.units()
+            && a.permutation() == b.permutation()
+            && a.automorphism_id() == b.automorphism_id()
+    }
+
+    #[test]
+    fn test_compose_is_associative_over_gf4() {
+        // The semimonomial group (GF(4)^*)^3 x| (S_3 x Aut GF(4)) is a group:
+        // (gh)k = g(hk) for all sampled g, h, k (including non-commuting
+        // permutations and the Frobenius automorphism).
+        let xs = gf4_samples();
+        for g in &xs {
+            for h in &xs {
+                for k in &xs {
+                    let left = gf4_compose(&gf4_compose(g, h), k);
+                    let right = gf4_compose(g, &gf4_compose(h, k));
+                    assert!(same(&left, &right), "(gh)k != g(hk) for {:?} {:?} {:?}", g, h, k);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_action_on_vector_is_a_left_action_over_gf4() {
+        // g.(h.v) = (gh).v for the documented action and composition.
+        let xs = gf4_samples();
+        let vectors = [vec![0u8, 1, 2], vec![2, 2, 0], vec![1, 0, 1]];
+        for g in &xs {
+            for h in &xs {
+                for v in &vectors {
+                    assert_eq!(gf4_act(g, &gf4_act(h, v)), gf4_act(&gf4_compose(g, h), v));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_inverse_over_gf4() {
+        // g g^{-1} = g^{-1} g = identity, also when alpha is the Frobenius and
+        // pi is a 3-cycle (where pi(i) and pi^{-1}(i) differ).
+        let id = SemimonomialTransformation::identity(3, 0u8); // w^0 = 1
+        for g in &gf4_samples() {
+            let g_inv = gf4_inverse(g);
+            assert!(same(&gf4_compose(g, &g_inv), &id), "g g^-1 != 1 for {:?}", g);
+            assert!(same(&gf4_compose(&g_inv, g), &id), "g^-1 g != 1 for {:?}", g);
+        }
     }
 
     #[test]

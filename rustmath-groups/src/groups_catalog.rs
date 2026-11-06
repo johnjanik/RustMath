@@ -14,22 +14,34 @@
 //!
 //! ```
 //! use rustmath_groups::groups_catalog;
+//! use rustmath_integers::Integer;
+//! use rustmath_rationals::Rational;
 //!
-//! // Access matrix groups
-//! let gl3 = groups_catalog::matrix::GLn(3);
-//! let sl2 = groups_catalog::matrix::SLn(2);
+//! // Matrix groups (generic over the base field)
+//! let gl3 = groups_catalog::matrix::GLn::<Rational>::new(3);
+//! assert_eq!(gl3.dimension(), 3);
+//! let sl2 = groups_catalog::matrix::SLn::<Rational>::new(2);
+//! assert_eq!(sl2.dimension(), 2);
 //!
-//! // Access permutation groups
-//! let s5 = groups_catalog::permutation::symmetric(5);
-//! let a4 = groups_catalog::permutation::alternating(4);
+//! // Permutation groups: orders computed by Schreier-Sims from the generators
+//! let s5 = groups_catalog::permutation::Symmetric(5);
+//! assert_eq!(s5.group().order(), Integer::from(120));
+//! let a4 = groups_catalog::permutation::Alternating(4);
+//! assert_eq!(a4.group().order(), Integer::from(12));
+//! let d4 = groups_catalog::permutation::Dihedral(4);
+//! assert_eq!(d4.order(), Integer::from(8));
 //!
-//! // Access finitely presented groups
-//! let cyclic = groups_catalog::presentation::cyclic(10);
-//! let dihedral = groups_catalog::presentation::dihedral(8);
+//! // Finitely presented groups
+//! let c10 = groups_catalog::presentation::Cyclic(10);
+//! assert_eq!(c10.relations(), &[vec![1; 10]]); // <a | a^10>
+//! let d8 = groups_catalog::presentation::Dihedral(8);
+//! assert_eq!(d8.num_generators(), 2);
 //!
-//! // Access miscellaneous groups
-//! let free = groups_catalog::misc::free_group(3);
-//! let braid = groups_catalog::misc::braid_group(4);
+//! // Miscellaneous groups
+//! let free = groups_catalog::misc::Free(3);
+//! assert_eq!(free.rank(), 3);
+//! let braid = groups_catalog::misc::Braid(4);
+//! assert_eq!(braid.strands(), 4);
 //! ```
 //!
 //! # Implementation Notes
@@ -131,7 +143,7 @@ pub mod permutation {
         PermutationGroup::cyclic(n)
     }
 
-    /// Creates the Klein Four group
+    /// Creates the Klein Four group (as a finitely presented group)
     ///
     /// # Examples
     ///
@@ -144,7 +156,7 @@ pub mod permutation {
         crate::misc_groups::klein_four_group()
     }
 
-    /// Creates a quaternion group as a permutation group
+    /// Creates the quaternion group Q_8 (as a finitely presented group)
     ///
     /// # Examples
     ///
@@ -157,36 +169,48 @@ pub mod permutation {
         crate::misc_groups::quaternion_group()
     }
 
-    /// Creates a dihedral group D_n
+    /// Creates the dihedral group D_n of order 2n as a permutation group
+    ///
+    /// Same convention as GAP `DihedralGroup(IsPermGroup, 2n)` and Sage
+    /// `groups.permutation.Dihedral(n)`; see [`PermutationGroup::dihedral`].
     ///
     /// # Arguments
     ///
     /// * `n` - The dihedral parameter (group has order 2n)
     ///
+    /// # Panics
+    ///
+    /// If `n == 0`.
+    ///
     /// # Examples
     ///
     /// ```
     /// use rustmath_groups::groups_catalog::permutation;
+    /// use rustmath_integers::Integer;
     ///
-    /// let d4 = permutation::Dihedral(4);
+    /// let d4 = permutation::Dihedral(4); // symmetries of the square
+    /// assert_eq!(d4.degree(), 4);
+    /// assert_eq!(d4.order(), Integer::from(8));
     /// ```
-    // TODO: GroupSemidirectProduct needs 3 generic parameters
-    // pub fn Dihedral(n: usize) -> crate::semidirect_product::GroupSemidirectProduct {
-    //     crate::semidirect_product::dihedral_group(n)
-    // }
+    pub fn Dihedral(n: usize) -> PermutationGroup {
+        PermutationGroup::dihedral(n)
+    }
 
-    /// Creates a dicyclic group
+    /// Creates the dicyclic group Dic_n of order 4n (as a finitely presented
+    /// group ⟨a, x | a^(2n), x² a^(−n), x⁻¹ a x a⟩)
     ///
     /// # Arguments
     ///
-    /// * `n` - The dicyclic parameter
+    /// * `n` - The dicyclic parameter (n ≥ 2; the group has order 4n)
     ///
     /// # Examples
     ///
     /// ```
     /// use rustmath_groups::groups_catalog::permutation;
     ///
-    /// let dic3 = permutation::DiCyclic(3);
+    /// let dic3 = permutation::DiCyclic(3); // order 12
+    /// assert_eq!(dic3.num_generators(), 2);
+    /// assert_eq!(dic3.relations()[0], vec![1; 6]); // a^6 = 1
     /// ```
     pub fn DiCyclic(n: usize) -> FinitelyPresentedGroup {
         crate::misc_groups::dicyclic_group(n)
@@ -373,11 +397,18 @@ pub mod affine {
 pub mod lie {
     pub use crate::nilpotent_lie_group::{NilpotentLieGroup, NilpotentLieGroupElement};
 
-    /// Creates a nilpotent Lie group
+    /// Creates a named nilpotent Lie group
     ///
     /// # Arguments
     ///
-    /// * `name` - The name/identifier of the Lie group
+    /// * `name` - `"Heisenberg"` (the 3-dimensional Heisenberg group) or
+    ///   `"Heisenberg<d>"` for odd `d ≥ 3` (the Heisenberg group H_d of
+    ///   dimension d = 2n + 1, see [`NilpotentLieGroup::heisenberg`]).
+    ///
+    /// # Panics
+    ///
+    /// For any other name: no other named nilpotent Lie group is implemented,
+    /// and a different group is never substituted.
     ///
     /// # Examples
     ///
@@ -385,10 +416,25 @@ pub mod lie {
     /// use rustmath_groups::groups_catalog::lie;
     ///
     /// let h3 = lie::Nilpotent("Heisenberg3");
+    /// assert_eq!(h3.dimension(), 3);
+    /// assert_eq!(h3.nilpotency_class(), 2);
+    /// assert_eq!(lie::Nilpotent("Heisenberg5").dimension(), 5);
     /// ```
     pub fn Nilpotent(name: &str) -> NilpotentLieGroup {
-        // Create a default 3-dimensional nilpotent Lie group (Heisenberg)
-        NilpotentLieGroup::new(3, 2)
+        if let Some(rest) = name.strip_prefix("Heisenberg") {
+            if rest.is_empty() {
+                return NilpotentLieGroup::heisenberg(1);
+            }
+            if let Ok(d) = rest.parse::<usize>() {
+                if d >= 3 && d % 2 == 1 {
+                    return NilpotentLieGroup::heisenberg((d - 1) / 2);
+                }
+            }
+        }
+        unimplemented!(
+            "lie::Nilpotent({:?}): only \"Heisenberg\" and \"Heisenberg<d>\" (odd d >= 3) are implemented",
+            name
+        )
     }
 }
 
@@ -406,7 +452,7 @@ pub mod misc {
     pub use crate::cactus_group::{CactusGroup, PureCactusGroup};
     pub use crate::free_group::FreeGroup;
     pub use crate::raag::RightAngledArtinGroup;
-    pub use crate::artin::ArtinGroup;
+    pub use crate::artin::{ArtinGroup, CoxeterMatrix};
     pub use crate::additive_abelian_group::{AdditiveAbelianGroup, additive_abelian_group};
     pub use crate::semimonomial_transformation_group::SemimonomialTransformationGroup;
 
@@ -444,12 +490,11 @@ pub mod misc {
         CactusGroup::new(n)
     }
 
-    /// Creates a pure cactus group
-    ///
-    /// # Arguments
-    ///
-    /// * `n` - The number of strands
-    ///
+    // Creates a pure cactus group
+    //
+    // Arguments:
+    // * `n` - The number of strands
+    //
     // TODO: PureCactusGroup not yet implemented
     // pub fn PureCactus(n: usize) -> PureCactusGroup {
     //     PureCactusGroup::new(n)
@@ -475,9 +520,19 @@ pub mod misc {
 
     /// Creates a right-angled Artin group
     ///
+    /// Generators `g_i` correspond to the vertices of the defining graph, and
+    /// `g_i`, `g_j` commute exactly when `{i, j}` is an edge.
+    ///
     /// # Arguments
     ///
-    /// * `graph` - The defining graph (as adjacency list or similar)
+    /// * `adjacency` - The defining simple graph as an adjacency list:
+    ///   `adjacency[i]` lists the neighbours of vertex `i`. The graph is
+    ///   undirected, so an edge may be listed from either endpoint or both.
+    ///
+    /// # Panics
+    ///
+    /// If a neighbour index is out of range or a vertex lists itself (the
+    /// defining graph has no loops).
     ///
     /// # Examples
     ///
@@ -485,48 +540,89 @@ pub mod misc {
     /// use rustmath_groups::groups_catalog::misc;
     ///
     /// let graph = vec![vec![1], vec![0]]; // Two vertices with edge between them
-    /// let raag = misc::RightAngledArtin(graph);
+    /// let raag = misc::RightAngledArtin(graph); // the free abelian group Z^2
+    /// assert_eq!(raag.ngens(), 2);
+    /// assert!(raag.commute(0, 1));
+    /// let (a, b) = (raag.gen(0), raag.gen(1));
+    /// assert_eq!(a.clone() * b.clone(), b * a);
     /// ```
-    // TODO: RightAngledArtinGroup::from_graph not yet implemented
-    // pub fn RightAngledArtin(graph: Vec<Vec<usize>>) -> RightAngledArtinGroup {
-    //     RightAngledArtinGroup::from_graph(graph)
-    // }
+    pub fn RightAngledArtin(adjacency: Vec<Vec<usize>>) -> RightAngledArtinGroup {
+        let n = adjacency.len();
+        let mut graph = rustmath_graphs::Graph::new(n);
+        for (u, neighbours) in adjacency.iter().enumerate() {
+            for &v in neighbours {
+                assert!(v != u, "RAAG defining graph must not have a loop (vertex {})", u);
+                assert!(v < n, "RAAG adjacency list: neighbour {} of vertex {} is out of range", v, u);
+                graph.add_edge(u, v).expect("both endpoints are in range");
+            }
+        }
+        RightAngledArtinGroup::new(graph)
+    }
 
-    /// Creates an Artin group
+    /// Creates the Artin group of a Coxeter matrix
+    ///
+    /// The group ⟨s_0, …, s_{n−1} | s_i s_j s_i ⋯ = s_j s_i s_j ⋯ (m_ij factors
+    /// each side)⟩, as in Sage `groups.misc.Artin`. (The Coxeter group of the
+    /// same matrix is the quotient by s_i² = 1; it is not constructed here.)
     ///
     /// # Arguments
     ///
-    /// * `coxeter_matrix` - The Coxeter matrix defining the group
+    /// * `coxeter_matrix` - Symmetric matrix with `m_ii = 1` and `m_ij ≥ 2`,
+    ///   or `0` for m_ij = ∞ (no relation)
+    ///
+    /// # Panics
+    ///
+    /// If the matrix is not a valid Coxeter matrix (see [`CoxeterMatrix::new`]).
     ///
     /// # Examples
     ///
     /// ```
     /// use rustmath_groups::groups_catalog::misc;
     ///
-    /// let matrix = vec![vec![1, 3], vec![3, 1]]; // A_2 type
-    /// let artin = misc::CoxeterGroup(matrix);
+    /// let matrix = vec![vec![1, 3], vec![3, 1]]; // A_2 type: the braid group B_3
+    /// let artin = misc::Artin(matrix);
+    /// assert_eq!(artin.rank(), 2);
+    /// // the single relation s0 s1 s0 = s1 s0 s1, as the Tietze word s0 s1 s0 s1^-1 s0^-1 s1^-1
+    /// assert_eq!(
+    ///     artin.as_finitely_presented_group().relations(),
+    ///     &[vec![1, 2, 1, -2, -1, -2]]
+    /// );
     /// ```
-    // TODO: ArtinGroup::from_coxeter_matrix not yet implemented
-    // pub fn CoxeterGroup(coxeter_matrix: Vec<Vec<usize>>) -> ArtinGroup {
-    //     ArtinGroup::from_coxeter_matrix(coxeter_matrix)
-    // }
+    pub fn Artin(coxeter_matrix: Vec<Vec<usize>>) -> ArtinGroup {
+        ArtinGroup::new(CoxeterMatrix::new(coxeter_matrix))
+    }
 
-    /// Creates an additive abelian group
+    /// Creates the additive abelian group Z/m_1 ⊕ … ⊕ Z/m_k
+    ///
+    /// The orders need not form a divisibility chain (as for MAGMA
+    /// `AbelianGroup` and Sage `AdditiveAbelianGroup`): the group is returned
+    /// in invariant-factor form, see
+    /// [`AdditiveAbelianGroup::from_cyclic_orders`]. An order 0 is an infinite
+    /// cyclic factor Z; a negative order m is read as |m| (Z/mZ = Z/(−m)Z).
     ///
     /// # Arguments
     ///
-    /// * `invariants` - The invariant factors
+    /// * `invariants` - The orders m_i of the cyclic factors
+    ///
+    /// # Panics
+    ///
+    /// If an invariant factor (an lcm of the orders) overflows `usize`.
     ///
     /// # Examples
     ///
     /// ```
     /// use rustmath_groups::groups_catalog::misc;
     ///
+    /// // Z/2 + Z/3 + Z/5 is cyclic of order 30
     /// let g = misc::AdditiveAbelian(vec![2, 3, 5]);
+    /// assert_eq!(g.invariant_factors(), &[30]);
+    /// assert_eq!(g.order(), Some(30));
+    /// assert!(g.is_cyclic());
     /// ```
     pub fn AdditiveAbelian(invariants: Vec<i32>) -> AdditiveAbelianGroup {
-        let inv_usize: Vec<usize> = invariants.iter().map(|&x| x.abs() as usize).collect();
-        additive_abelian_group(inv_usize).unwrap()
+        let orders: Vec<usize> = invariants.iter().map(|&x| x.unsigned_abs() as usize).collect();
+        AdditiveAbelianGroup::from_cyclic_orders(&orders)
+            .expect("invariant factor of the additive abelian group overflows usize")
     }
 
     /// Creates a cyclic additive group (integers mod n)
@@ -635,5 +731,72 @@ mod tests {
 
         let z12 = misc::AdditiveCyclic(12);
         assert_eq!(z12.order(), Some(12));
+    }
+
+    #[test]
+    fn test_permutation_dihedral_catalog() {
+        use rustmath_integers::Integer;
+        // GAP: Size(DihedralGroup(IsPermGroup, 2n)) = 2n.
+        for n in 1..=6usize {
+            assert_eq!(permutation::Dihedral(n).order(), Integer::from(2 * n as u64));
+        }
+    }
+
+    #[test]
+    fn test_misc_raag_catalog() {
+        // Path 0 - 1 - 2, the edge 1-2 listed from one endpoint only.
+        let raag = misc::RightAngledArtin(vec![vec![1], vec![0, 2], vec![]]);
+        assert_eq!(raag.ngens(), 3);
+        assert!(raag.commute(0, 1));
+        assert!(raag.commute(2, 1));
+        assert!(!raag.commute(0, 2));
+    }
+
+    #[test]
+    #[should_panic(expected = "must not have a loop")]
+    fn test_misc_raag_rejects_loops() {
+        misc::RightAngledArtin(vec![vec![0]]);
+    }
+
+    #[test]
+    fn test_misc_artin_catalog() {
+        // B_2 Coxeter matrix (m_01 = 4): one relation of length 8.
+        let artin = misc::Artin(vec![vec![1, 4], vec![4, 1]]);
+        assert_eq!(artin.rank(), 2);
+        assert_eq!(
+            artin.as_finitely_presented_group().relations(),
+            &[vec![1, 2, 1, 2, -1, -2, -1, -2]]
+        );
+    }
+
+    #[test]
+    fn test_misc_additive_abelian_catalog() {
+        // Z/2 + Z/4 + Z/6 + Z/9 = Z/2 + Z/6 + Z/36 (GAP AbelianInvariants
+        // [2, 2, 3, 4, 9], Size 432); an order 0 becomes free rank.
+        let g = misc::AdditiveAbelian(vec![2, 4, 6, 9]);
+        assert_eq!(g.invariant_factors(), &[2, 6, 36]);
+        assert_eq!(g.order(), Some(432));
+        let h = misc::AdditiveAbelian(vec![0, -3]);
+        assert_eq!(h.free_rank(), 1);
+        assert_eq!(h.invariant_factors(), &[3]);
+    }
+
+    #[test]
+    fn test_lie_heisenberg_names() {
+        assert_eq!(lie::Nilpotent("Heisenberg").dimension(), 3);
+        assert_eq!(lie::Nilpotent("Heisenberg7").dimension(), 7);
+    }
+
+    #[test]
+    #[should_panic(expected = "only \"Heisenberg\"")]
+    fn test_lie_unknown_name_is_refused() {
+        // An unknown name must not silently return the Heisenberg group.
+        lie::Nilpotent("Engel4");
+    }
+
+    #[test]
+    #[should_panic(expected = "only \"Heisenberg\"")]
+    fn test_lie_even_heisenberg_dimension_is_refused() {
+        lie::Nilpotent("Heisenberg4");
     }
 }

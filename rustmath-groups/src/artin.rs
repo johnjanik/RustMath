@@ -224,7 +224,11 @@ impl ArtinGroup {
             }
         }
 
-        let fp_group = FinitelyPresentedGroup::new(generator_names.clone(), relations.iter().map(|r| r.word().iter().flat_map(|(gen, exp)| vec![*gen, *exp]).collect()).collect());
+        // FinitelyPresentedGroup relations are Tietze words (±(i+1) for s_i^{±1}).
+        let fp_group = FinitelyPresentedGroup::new(
+            generator_names.clone(),
+            relations.iter().map(|r| r.tietze()).collect(),
+        );
 
         Self {
             coxeter_matrix,
@@ -529,6 +533,55 @@ mod tests {
 
         // They should have the same word representation
         // (in a full implementation with normalization)
+    }
+
+    #[test]
+    fn test_presentation_relations_are_tietze_words() {
+        // A_2 (braid group B_3): the single relation s0 s1 s0 (s1 s0 s1)^{-1}.
+        let a2 = ArtinGroup::new(CoxeterMatrix::type_a(2));
+        assert_eq!(
+            a2.as_finitely_presented_group().relations(),
+            &[vec![1, 2, 1, -2, -1, -2]]
+        );
+
+        // A_3: braid relations for m_01 = m_12 = 3, commutation for m_02 = 2.
+        let a3 = ArtinGroup::new(CoxeterMatrix::type_a(3));
+        assert_eq!(
+            a3.as_finitely_presented_group().relations(),
+            &[vec![1, 2, 1, -2, -1, -2], vec![1, 3, -1, -3], vec![2, 3, 2, -3, -2, -3]]
+        );
+
+        // m_ij = 0 (infinity) imposes no relation: the free group of rank 2.
+        let free = ArtinGroup::new(CoxeterMatrix::new(vec![vec![1, 0], vec![0, 1]]));
+        assert!(free.as_finitely_presented_group().relations().is_empty());
+
+        // B_2: m_01 = 4 gives s0 s1 s0 s1 (s1 s0 s1 s0)^{-1}.
+        let b2 = ArtinGroup::new(CoxeterMatrix::type_b(2));
+        assert_eq!(
+            b2.as_finitely_presented_group().relations(),
+            &[vec![1, 2, 1, 2, -1, -2, -1, -2]]
+        );
+    }
+
+    #[test]
+    fn test_relations_hold_in_coxeter_quotient() {
+        // Every Artin relation of type A_3 holds in S_4 under s_i -> (i i+1):
+        // the defining map onto the Coxeter group is a homomorphism.
+        fn transposition(i: usize) -> Vec<usize> {
+            let mut p: Vec<usize> = (0..4).collect();
+            p.swap(i, i + 1);
+            p
+        }
+        let a3 = ArtinGroup::new(CoxeterMatrix::type_a(3));
+        for rel in a3.as_finitely_presented_group().relations() {
+            let mut acc: Vec<usize> = (0..4).collect();
+            for &letter in rel {
+                // transpositions are involutions, so s_i^{-1} -> (i i+1) too
+                let t = transposition(letter.unsigned_abs() - 1);
+                acc = acc.iter().map(|&x| t[x]).collect();
+            }
+            assert_eq!(acc, (0..4).collect::<Vec<_>>(), "relation {:?}", rel);
+        }
     }
 
     #[test]
