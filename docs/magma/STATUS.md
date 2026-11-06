@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 4870 | 17 | 325 | 1189 | 18 | 169 | 3546 (27%) | 8049 (60%) |
+| 13341 | 4926 | 17 | 325 | 1189 | 18 | 169 | 3536 (27%) | 8059 (60%) |
 
 ## By chapter
 
@@ -89,7 +89,7 @@ automatic `candidate`/`missing` counts.
 | 65 | Almost Simple Groups | IX | 116 | 116 | 0 | 0 | 4 | 0 | 0 | 0 | 112 | stub | `rustmath-groups` |
 | 66 | Databases of Groups | IX | 177 | 177 | 0 | 0 | 7 | 0 | 0 | 0 | 170 | stub | `rustmath-groups` |
 | 67 | Automorphism Groups | IX | 34 | 34 | 0 | 0 | 0 | 0 | 0 | 0 | 34 | stub | `rustmath-groups` |
-| 68 | Cohomology and Extensions | IX | 56 | 0 | 0 | 0 | 0 | 0 | 0 | 10 | 46 | none | `rustmath-groupcohomology (new)` |
+| 68 | Cohomology and Extensions | IX | 56 | 56 | 0 | 0 | 0 | 0 | 0 | 0 | 56 | none | `rustmath-groupcohomology (new)` |
 | 69 | Abelian Groups | X | 124 | 0 | 0 | 0 | 0 | 0 | 0 | 77 | 47 | substantial | `rustmath-groups` |
 | 70 | Finitely Presented Groups | X | 202 | 0 | 0 | 0 | 0 | 0 | 0 | 90 | 112 | partial | `rustmath-groups` |
 | 71 | Finitely Presented Groups: Advanced | X | 83 | 0 | 0 | 0 | 0 | 0 | 0 | 23 | 60 | none | `rustmath-groups` |
