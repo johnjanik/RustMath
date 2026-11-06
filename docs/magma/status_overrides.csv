@@ -5028,3 +5028,23 @@ ch045.Valuation,partial,rustmath-rings/src/function_field/typed/place.rs:160,Pla
 ch045.Quotrem,missing,,No Quotrem for valuation ring elements [review 2026-11-06; checked]
 ch045.GreatestCommonDivisor,missing,,No DVR gcd by min valuation; lazy_series hit is unrelated [review 2026-11-06; checked]
 ch045.ExtendedGreatestCommonDivisor,missing,,No DVR xgcd; lazy_series hit is unrelated [review 2026-11-06; checked]
+ch052.PolyToSeries,missing,,"No algebraic power series type (multivariate, exponent lattice) in workspace [review 2026-11-06; checked]"
+ch052.AlgebraicPowerSeries,missing,,"No algebraic power series type (multivariate, exponent lattice) in workspace [review 2026-11-06; checked]"
+ch052.EvaluationPowerSeries,partial,rustmath-powerseries/src/series.rs:154; rustmath-powerseries/src/series.rs:188,"try_compose/compose give s(v) with v(0)=0: univariate, integral exponents, nu=[1] case only; no Puiseux s, no lattice nu. Used in series.rs::reversion tests; same fn as ch049.Composition [review 2026-11-06; adjudicated]"
+ch052.ImplicitFunction,partial,rustmath-powerseries/src/algebraic.rs:108,"Only one variable (BivariatePoly p(x,y) over a field), no k[[x]][z] or subs; Newton lifting. Test algebraic.rs::tests::implicit_catalan (no external ref) [review 2026-11-06; checked]"
+ch052.RationalPuiseux,partial,rustmath-powerseries/src/algebraic.rs:396,"newton_puiseux: bivariate over Q only, Puiseux roots; no multivariate, lattice, Duval, OnlySingular, field extension; unresolved count returned [review 2026-11-06; checked]"
+ch052.Domain,missing,,"No algebraic power series type (multivariate, exponent lattice) in workspace [review 2026-11-06; checked]"
+ch052.ExponentLattice,partial,rustmath-powerseries/src/puiseux.rs:116,exponent_denominator gives e only for univariate Puiseux; no lattice Gamma [review 2026-11-06; checked]
+ch052.DefiningPolynomial,missing,,"No algebraic power series type (multivariate, exponent lattice) in workspace [review 2026-11-06; checked]"
+ch052.Order,partial,rustmath-powerseries/src/puiseux.rs:122,"PuiseuxSeries::valuation: rational valuation of univariate series, not total degree of multivariate expansion; no TestZero [review 2026-11-06; checked]"
+ch052.Expand,partial,rustmath-powerseries/src/puiseux.rs:146; rustmath-powerseries/src/algebraic.rs:396; rustmath-powerseries/src/algebraic.rs:108,"laurent_part gives alpha (series in x^(1/e)) to stored precision; newton_puiseux/implicit_function expand to requested order. Univariate only, no lazy re-expansion, no consistency bool [review 2026-11-06; adjudicated]"
+ch052.AlgComb,missing,,"No algebraic power series type (multivariate, exponent lattice) in workspace [review 2026-11-06; checked]"
+ch052.s,partial,rustmath-powerseries/src/puiseux.rs:219,"Add for PuiseuxSeries: univariate truncated Puiseux series, not multivariate algebraic series [review 2026-11-06; checked]"
+ch052.s.2,partial,rustmath-powerseries/src/puiseux.rs:227,Sub for PuiseuxSeries: univariate truncated Puiseux series only [review 2026-11-06; checked]
+ch052.s.3,partial,rustmath-powerseries/src/puiseux.rs:235,Mul for PuiseuxSeries: univariate truncated Puiseux series only [review 2026-11-06; checked]
+ch052.IsZero,partial,rustmath-powerseries/src/puiseux.rs:151,is_weakly_zero checks known truncated coefficients only; no algebraic (resultant) decision [review 2026-11-06; checked]
+ch052.s.4,partial,rustmath-powerseries/src/puiseux.rs:212,"PartialEq compares truncated univariate expansions, not decided via IsZero of algebraic series [review 2026-11-06; checked]"
+ch052.IsPolynomial,missing,,"No algebraic power series type (multivariate, exponent lattice) in workspace [review 2026-11-06; checked]"
+ch052.ScaleGenerators,missing,,"No algebraic power series type (multivariate, exponent lattice) in workspace [review 2026-11-06; checked]"
+ch052.ChangeRing,missing,,"No algebraic power series type (multivariate, exponent lattice) in workspace [review 2026-11-06; checked]"
+ch052.SimplifyRep,missing,,"No algebraic power series type (multivariate, exponent lattice) in workspace [review 2026-11-06; checked]"
