@@ -4,7 +4,7 @@ key: RM
 status: active
 owner: "@john"
 created: 2026-07-12
-updated: 2026-07-12
+updated: 2026-11-06
 version: 0.2.0
 tags:
   - tracker
@@ -53,21 +53,21 @@ CONVENTIONS  (read before editing; applies to humans and Claude CLI)
 
 ## Scorecard
 
-Generated 2026-07-12 by reading all 67 workspace crates (~600k LOC). **1282 algorithms catalogued.**
+Generated 2026-07-12 by reading all 67 workspace crates (~600k LOC); counts updated 2026-11-06. **1302 algorithms catalogued.**
 
 | Status | Symbol | Count | Share | Meaning |
 |---|:--:|--:|--:|---|
-| Done | 🟢 | 521 | 41% | Implemented and tested against real values |
-| Partial | ⏳ | 353 | 28% | Implemented but narrow, untested, or correctness unclear |
-| Facade | 🛑 | 276 | 22% | **Returns a fabricated value.** Must not be trusted |
-| Broken | 🔴 | 67 | 5% | Provably wrong, hangs, or panics on normal input |
-| Missing | ⬜ | 65 | 5% | Honest `unimplemented!()` / `Err` — a good gap |
-| **Total catalogued** | | **1282** | | |
+| Done | 🟢 | 547 | 42% | Implemented and tested against real values |
+| Partial | ⏳ | 347 | 27% | Implemented but narrow, untested, or correctness unclear |
+| Facade | 🛑 | 271 | 21% | **Returns a fabricated value.** Must not be trusted |
+| Broken | 🔴 | 63 | 5% | Provably wrong, hangs, or panics on normal input |
+| Missing | ⬜ | 74 | 6% | Honest `unimplemented!()` / `Err`: a good gap |
+| **Total catalogued** | | **1302** | | |
 
-A further **405** algorithms that a Sage/MAGMA-equivalent crate should have are **entirely absent** (not even a stub). They are listed per crate under [[#Algorithm Inventory]].
+A further **403** algorithms that a Sage/MAGMA-equivalent crate should have are **entirely absent** (not even a stub). They are listed per crate under [[#Algorithm Inventory]].
 
 **Build health:** all 67 crates and **all workspace test targets compile cleanly** (`cargo build --workspace --tests`, 0 errors).
-Compilation is *not* evidence of correctness — 276 of the compiling functions are facades.
+Compilation is *not* evidence of correctness: 271 of the compiling functions are facades.
 
 ### Where the facades are concentrated
 
@@ -85,14 +85,14 @@ Compilation is *not* evidence of correctness — 276 of the compiling functions 
 | `rustmath-graphs` | 13 | 1 | 👁️ | Core traversal solid; the harder invariants are fabricated |
 | `rustmath-affineschemes` | 12 | 1 | ⬜ | Near-total skeleton; superseded by rustmath-schemes |
 | `rustmath-manifolds` | 9 | 3 | ⚠️ | Cohomology and characteristic classes fabricated |
+| `rustmath-groups` | 6 | 4 | 👁️ | Native Schreier–Sims in `bsgs.rs` since `5ff8749`; `generic.rs::bsgs` is baby-step-giant-step *discrete log*, a false friend |
 | `rustmath-crystals` | 7 | 2 | ⚠️ | Almost nothing verified |
 | `rustmath-symmetricfunctions` | 8 | 0 | 👁️ | Macdonald/LLT largely fabricated |
-| `rustmath-groups` | 5 | 3 | 👁️ | No native Schreier–Sims; `generic.rs::bsgs` is baby-step-giant-step *discrete log*, a false friend |
 | `rustmath-polynomials` | 7 | 0 | 👁️ | Fixed this sprint; residue is the Ring-generic Buchberger engine |
 | `rustmath-algebraic` | 7 | 0 | ⚠️ | Algebraic-number arithmetic mostly fabricated |
 | `rustmath-numberfields` | 6 | 1 | 👁️ | Class group / unit group not genuinely computed |
-| `rustmath-numbertheory` | 2 | 4 | ⚠️ |  |
-| `rustmath-lieconformal` | 5 | 1 | ⬜ |  |
+| `rustmath-numbertheory` | 1 | 0 | ⚠️ |  |
+| `rustmath-lieconformal` | 1 | 0 | ⬜ |  |
 
 ---
 
@@ -158,7 +158,7 @@ Authoritative list. Every card `[MODULE]` key must match a `Key` here. `Key` is 
 | REALS | `rustmath-reals` | FOUNDATION | core, integers, rationals | 👁️ | 10 | 3 | 0 | 1 | 0 |
 | COMPLEX | `rustmath-complex` | FOUNDATION | core, integers, rationals, reals, typesetting | 👁️ | 4 | 4 | 1 | 1 | 1 |
 | CONSTANTS | `rustmath-constants` | FOUNDATION | core, integers, rationals | ⚠️ | 1 | 5 | 0 | 1 | 0 |
-| NUMBERTHEORY | `rustmath-numbertheory` | FOUNDATION | core, integers, rationals | ⚠️ | 1 | 5 | 2 | 4 | 0 |
+| NUMBERTHEORY | `rustmath-numbertheory` | FOUNDATION | core, integers, rationals | ⚠️ | 8 | 3 | 1 | 0 | 0 |
 | SETS | `rustmath-sets` | FOUNDATION | core, integers, rationals | 👁️ | 8 | 3 | 1 | 1 | 1 |
 | LOGIC | `rustmath-logic` | FOUNDATION | core | 👁️ | 4 | 2 | 1 | 0 | 0 |
 | MISC | `rustmath-misc` | FOUNDATION | core | ⬜ | 5 | 0 | 0 | 0 | 1 |
@@ -169,7 +169,7 @@ Authoritative list. Every card `[MODULE]` key must match a `Key` here. `Key` is 
 | ALGEBRAIC | `rustmath-algebraic` | POLY | complex, core, integers, polynomials, rationals | ⚠️ | 3 | 4 | 7 | 0 | 0 |
 | GALOIS | `rustmath-galois` | POLY | core, integers, polynomials, rationals | 🟢 | 7 | 2 | 0 | 0 | 1 |
 | MATRIX | `rustmath-matrix` | LINALG | complex, core, integers, polynomials, rationals, reals, t… | 👁️ | 25 | 12 | 2 | 2 | 2 |
-| MODULES | `rustmath-modules` | LINALG | category, core, finitefields, integers, matrix, polynomia… | ⚠️ | 2 | 2 | 14 | 1 | 1 |
+| MODULES | `rustmath-modules` | LINALG | category, core, finitefields, integers, matrix, polynomia… | ⚠️ | 2 | 2 | 14 | 1 | 2 |
 | CATEGORY | `rustmath-category` | LINALG | core, groups | ⚠️ | 3 | 3 | 4 | 0 | 3 |
 | HOMOLOGY | `rustmath-homology` | LINALG | core, groups, integers, matrix | ⚠️ | 4 | 1 | 2 | 0 | 0 |
 | RINGS | `rustmath-rings` | RINGS | complex, core, finitefields, integers, matrix, numberfiel… | 👁️ | 25 | 31 | 21 | 6 | 9 |
@@ -178,12 +178,12 @@ Authoritative list. Every card `[MODULE]` key must match a `Key` here. `Key` is 
 | CRYSTALS | `rustmath-crystals` | COMBINAT | combinatorics, core, integers, matrix | ⚠️ | 0 | 11 | 7 | 2 | 0 |
 | TREES | `rustmath-trees` | COMBINAT | (none) | 🟢 | 6 | 0 | 0 | 0 | 0 |
 | AUTOMATA | `rustmath-automata` | COMBINAT | core, integers, polynomials, rationals | 🟢 | 11 | 0 | 0 | 0 | 0 |
-| GROUPS | `rustmath-groups` | ALGEBRA | combinatorics, complex, core, graphs, integers, matrix, p… | 👁️ | 19 | 8 | 5 | 3 | 1 |
+| GROUPS | `rustmath-groups` | ALGEBRA | combinatorics, complex, core, graphs, integers, matrix, p… | 👁️ | 29 | 10 | 6 | 4 | 1 |
 | ALGEBRAS | `rustmath-algebras` | ALGEBRA | combinatorics, core, integers, liealgebras, matrix, modul… | ⚠️ | 8 | 6 | 17 | 1 | 1 |
 | LIEALGEBRAS | `rustmath-liealgebras` | ALGEBRA | combinatorics, complex, core, integers, matrix, rationals | ⚠️ | 8 | 7 | 11 | 3 | 1 |
-| LIECONFORMAL | `rustmath-lieconformal` | ALGEBRA | core, liealgebras, polynomials, rationals | ⬜ | 1 | 7 | 5 | 1 | 1 |
+| LIECONFORMAL | `rustmath-lieconformal` | ALGEBRA | core, liealgebras, polynomials, rationals | ⬜ | 7 | 1 | 1 | 0 | 9 |
 | QUANTUMGROUPS | `rustmath-quantumgroups` | ALGEBRA | combinatorics, core, integers, polynomials, rationals, rings | ⚠️ | 3 | 3 | 2 | 0 | 1 |
-| QUIVERS | `rustmath-quivers` | ALGEBRA | core, graphs | 👁️ | 4 | 3 | 1 | 0 | 0 |
+| QUIVERS | `rustmath-quivers` | ALGEBRA | core, graphs | 👁️ | 6 | 3 | 0 | 0 | 0 |
 | MONOIDS | `rustmath-monoids` | ALGEBRA | automata, core, integers | 👁️ | 8 | 1 | 0 | 0 | 2 |
 | NUMBERFIELDS | `rustmath-numberfields` | ARITHGEOM | core, integers, matrix, polynomials, rationals | 👁️ | 16 | 5 | 6 | 1 | 1 |
 | QUADRATICFORMS | `rustmath-quadraticforms` | ARITHGEOM | core, integers, matrix, rationals | ⚠️ | 6 | 1 | 6 | 0 | 0 |
@@ -191,7 +191,7 @@ Authoritative list. Every card `[MODULE]` key must match a `Key` here. `Key` is 
 | MODULAR | `rustmath-modular` | ARITHGEOM | complex, core, integers, matrix, polynomials, rationals, … | 👁️ | 21 | 1 | 0 | 2 | 7 |
 | SCHEMES | `rustmath-schemes` | ARITHGEOM | complex, core, ellipticcurves, finitefields, integers, ma… | 👁️ | 4 | 7 | 12 | 3 | 1 |
 | AFFINESCHEMES | `rustmath-affineschemes` | ARITHGEOM | core, integers, polynomials, rationals, rings | ⬜ | 1 | 2 | 12 | 1 | 4 |
-| CURVES | `rustmath-curves` | ARITHGEOM | complex, core, finitefields, groups, integers, matrix, nu… | 👁️ | 9 | 5 | 4 | 2 | 0 |
+| CURVES | `rustmath-curves` | ARITHGEOM | complex, core, finitefields, groups, integers, matrix, nu… | 👁️ | 10 | 5 | 4 | 2 | 0 |
 | SYMBOLIC | `rustmath-symbolic` | SYMBOLIC | core, integers, polynomials, rationals | 👁️ | 11 | 29 | 10 | 4 | 8 |
 | CALCULUS | `rustmath-calculus` | SYMBOLIC | complex, core, integers, symbolic | ⚠️ | 9 | 7 | 4 | 1 | 6 |
 | FUNCTIONS | `rustmath-functions` | SYMBOLIC | complex, core, integers, rationals, reals, symbolic | ⬜ | 6 | 0 | 0 | 0 | 1 |
@@ -223,7 +223,7 @@ Health: 🟢 solid (mostly done + tested) · 👁️ mixed (real work + real gap
 ## Board
 
 Work items. The per-algorithm detail lives in the [[#Algorithm Inventory]]; these cards are the *units of work*.
-A card exists per crate-scale remediation, not per algorithm — 276 facade cards would be unusable.
+A card exists per crate-scale remediation, not per algorithm; 271 facade cards would be unusable.
 
 ### 📋 Backlog
 Approved work waiting to be prioritized. Ordered by damage: facade count, weighted by how load-bearing the crate is.
@@ -242,12 +242,12 @@ Approved work waiting to be prioritized. Ordered by damage: facade count, weight
 - [ ] 🟦 **[MANIFOLDS]** T-212 de Rham cohomology, characteristic classes — 9 🛑 / 3 🔴  👤 @unassigned  🛑
 - [ ] 🟦 **[CRYSTALS]** T-213 Kashiwara crystal operators — almost nothing is verified — 7 🛑 / 2 🔴  👤 @unassigned  🛑
 - [ ] 🟦 **[SYMMETRICFUNCTIONS]** T-214 Macdonald/LLT polynomials — 8 🛑 / 0 🔴  👤 @unassigned  🛑
-- [ ] 🟥 **[GROUPS]** T-215 Native Schreier–Sims/BSGS (real BSGS exists only behind the GAP bridge) — 5 🛑 / 3 🔴  👤 @unassigned  🛑
+- [ ] 🟥 **[GROUPS]** T-215 Inner products of characters and class functions, SNF abelianization, Artin/braid word problem, trait-default facades (native Schreier–Sims landed in T-112, `5ff8749`) — 6 🛑 / 4 🔴  👤 @unassigned  🛑
 - [ ] 🟦 **[POLYNOMIALS]** T-216 Ring-generic Buchberger engine (the Field engine is sound) — 7 🛑 / 0 🔴  👤 @unassigned  🛑
 - [ ] 🟨 **[ALGEBRAIC]** T-217 Algebraic number arithmetic and minimal polynomials — 7 🛑 / 0 🔴  👤 @unassigned  🛑
 - [ ] 🟥 **[NUMBERFIELDS]** T-218 Class group (Buchmann) and unit group (they are not genuinely computed) — 6 🛑 / 1 🔴  👤 @unassigned  🛑
-- [ ] 🟨 **[NUMBERTHEORY]** T-219 Bernoulli/CRT overflow bugs; continued fractions — 2 🛑 / 4 🔴  👤 @unassigned  🛑
-- [ ] 🟩 **[LIECONFORMAL]** T-220 Lie conformal algebras — 5 🛑 / 1 🔴  👤 @unassigned  🛑
+- [ ] 🟨 **[NUMBERTHEORY]** T-219 Quadratic-form discriminant in dimension ≥ 4; continued fractions (the Bernoulli/CRT overflow bugs were fixed 2026-11-06) — 1 🛑 / 0 🔴  👤 @unassigned  🛑
+- [ ] 🟩 **[LIECONFORMAL]** T-220 Lie conformal algebras — 1 🛑 / 0 🔴  👤 @unassigned  🛑
 - [ ] 🟨 **[QUADRATICFORMS]** T-221 Reduction theory, class numbers, genus theory — 6 🛑 / 0 🔴  👤 @unassigned  🛑
 - [ ] 🟩 **[CURVES]** T-222 OFF-LIMITS (live IGP24 work). Read-only: Belyi maps, dessins d'enfants — 4 🛑 / 2 🔴  👤 @unassigned  🛑
 - [ ] 🟥 **[INTEGERS]** T-223 Quadratic sieve: broken GF(2) nullspace AND it emits known composites as prime — 4 🛑 / 1 🔴  👤 @unassigned  🛑
@@ -271,7 +271,7 @@ Approved work waiting to be prioritized. Ordered by damage: facade count, weight
 - [ ] 🟦 **[CONSTANTS]** T-241 Arbitrary-precision mathematical constants — 0 🛑 / 1 🔴  👤 @unassigned  🛑
 - [ ] 🟩 **[LOGIC]** T-242 Logic and satisfiability — 1 🛑 / 0 🔴  👤 @unassigned  🛑
 - [ ] 🟥 **[FINITEFIELDS]** T-243 PrimeField::zero()/one() PANIC — blocks all generic Field code — 0 🛑 / 1 🔴  👤 @unassigned  🛑
-- [ ] 🟩 **[QUIVERS]** T-244 Quiver representations — 1 🛑 / 0 🔴  👤 @unassigned  🛑
+- [ ] 🟩 **[QUIVERS]** T-244 Quiver representations — 0 🛑 / 0 🔴  👤 @unassigned  🛑
 - [ ]  🟦 **[NUMERICAL]** T-245 Audit and remediate 1 facades / 0 broken — 1 🛑 / 0 🔴  👤 @unassigned  🛑
 - [ ] 🟩 **[DYNAMICS]** T-246 Dynamical systems — 0 🛑 / 1 🔴  👤 @unassigned  🛑
 
@@ -358,7 +358,7 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 
 **Absent entirely** (a Sage/MAGMA equivalent would have these):
 
-- **Generic CRT / lifting over an arbitrary EuclideanDomain** — Every multimodular algorithm in the tree re-implements CRT locally in i64 (see rustmath-numbertheory/src/bernoulli.rs:427), which is exactly where the overflow bugs live.
+- **Generic CRT / lifting over an arbitrary EuclideanDomain**: The only standalone CRT routines are for `Integer` (rustmath-integers/src/crt.rs:17, :93; rustmath-polynomials/src/disc.rs:180 and rustmath-ellipticcurves/src/division.rs recombine inline). crt.rs:17 is the one the multimodular Bernoulli in rustmath-numbertheory uses since 2026-11-06. There is no trait-level CRT for polynomial rings or other Euclidean domains.
 - **Generic Half-GCD / fast extended Euclid** — The default xgcd is the schoolbook loop; polynomial and integer users all inherit O(n^2).
 - **Fraction-field / localisation functor at the trait level** — Sage/MAGMA build Q from Z generically; here Rational is hand-written.
 
@@ -444,7 +444,7 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 | | Algorithm | Location | Notes |
 |:--:|---|---|---|
 | ⏳ | Rational::from_f64 | `rustmath-rationals/src/rational.rs:157` | Brute-force search over EVERY denominator 1..=1_000_000, keeping the best error, stopping at 1e-10. It is an approximation where an exact answer exists (an f64 IS a dyadic rational). Sage's QQ(float) is exact. Also up to 10^6 iterations per call. |
-| 🟢 | Bernoulli numbers over Q by the binomial recurrence (B_1 = -1/2 convention) | `rustmath-rationals/src/special_numbers.rs:35` | Exact Rational arithmetic and exact Integer binomials — this is the CORRECT Bernoulli implementation in the workspace (contrast rustmath-numbertheory::bernoulli, which is i64-based and breaks). |
+| 🟢 | Bernoulli numbers over Q by the binomial recurrence (B_1 = -1/2 convention) | `rustmath-rationals/src/special_numbers.rs:35` | Exact Rational arithmetic and exact Integer binomials. rustmath-numbertheory::bernoulli computes the same numbers with the same B_1 = -1/2 convention (exact `Integer` arithmetic since 2026-11-06) and adds the mod-p and multimodular routines. |
 | 🟢 | Continued fraction of a rational (Euclidean expansion) and reconstruction | `rustmath-rationals/src/continued_fraction.rs:27` |  |
 | 🟢 | Convergents p_k/q_k of a continued fraction | `rustmath-rationals/src/continued_fraction.rs:71` |  |
 | 🟢 | Exact rational arithmetic in lowest terms (gcd reduction on construction) | `rustmath-rationals/src/rational.rs:19` |  |
@@ -456,7 +456,6 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 **Absent entirely** (a Sage/MAGMA equivalent would have these):
 
 - **Exact QQ(f64) conversion (mantissa·2^exp)** — from_f64 approximates instead; any code round-tripping a float through Q silently loses the exact value.
-- **Rational reconstruction from a residue mod m (Wang / half-gcd)** — The single missing primitive that makes every multimodular algorithm in the tree (e.g. bernoulli_multimodular) wrong.
 - **Best rational approximation with bounded denominator (Stern–Brocot / CF truncation)** — Sage's .nearby_rational(max_denominator=…); used for recognizing floating point results.
 - **Continued fraction of an arbitrary real/quadratic irrational (not just sqrt(n))** — Pell equations and unit computation in real quadratic fields need CF of (a+sqrt(d))/b.
 - **Farey sequence / mediant enumeration** — Standard Sage functionality, used by modular symbols.
@@ -555,22 +554,22 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 *Bernoulli numbers (exact, mod p, multimodular) and integral quadratic forms; re-exports the prime functions from rustmath-integers.*
 
 **Depends on:** `rustmath-core`, `rustmath-integers`, `rustmath-rationals`  
-**Tally:** 🟢 1 · ⏳ 5 · 🛑 2 · 🔴 4 · ⬜ 0 · `#[ignore]` × 1
+**Tally:** 🟢 8 · ⏳ 3 · 🛑 1 · 🔴 0 · ⬜ 0
 
 | | Algorithm | Location | Notes |
 |:--:|---|---|---|
-| 🔴 | Bernoulli number mod p (single index) | `rustmath-numbertheory/src/bernoulli.rs:212` | Doc advertises "an efficient algorithm based on computing power sums modulo p, O(p log p)". The body computes the FULL exact rational B_n via the O(n^2) recurrence and then reduces (line 236). Worse, it calls Integer::to_i64() on the numerator (line 245), and Integer::to_i64 PANICS when the value does not fit (integer.rs:41) — B_50's numerator already exceeds i64, so this panics on normal input. Correct only for small n. |
-| 🔴 | Bernoulli numbers by the binomial recurrence with a memo cache | `rustmath-numbertheory/src/bernoulli.rs:86` | The binomial coefficients come from binomial_coefficient(n,k) -> i64 (bernoulli.rs:130). C(n+1,k) overflows i64 for n around 62-66 (C(67,33) ≈ 1.4e19 > i64::MAX), so bernoulli_number(n) panics in debug and returns silently wrong rationals in release for any n beyond ~62. The correct exact implementation lives in rustmath-rationals/src/special_numbers.rs:35 (Integer binomials); this crate should delegate to it. |
-| 🔴 | Multimodular Bernoulli via CRT | `rustmath-numbertheory/src/bernoulli.rs:325` | For n > 20 it computes B_n mod ~5 small primes (each of which internally computes the EXACT B_n anyway — the algorithm is circular), CRTs the residues to get x mod M with M ≈ 10^4-10^5, then returns rational(x, von_Staudt_denominator). No rational reconstruction, no symmetric lift, M far smaller than the true numerator ⇒ the returned rational is simply not B_n. The lone test (test_bernoulli_multimodular) only uses n ∈ {0,2,4,6,8}, all of which take the `if n <= 20 { return bernoulli_number(n) }` shortcut, so the broken branch is never executed. |
-| 🔴 | verify_bernoulli_mod_p (Kummer-style congruence check) | `rustmath-numbertheory/src/bernoulli.rs:508` | Its only test is #[ignore]d with `// TODO: Fix verification formula` (bernoulli.rs:642) — the sole #[ignore] in the cluster, and it is indeed hiding a wrong formula (plus unguarded i64 products). |
 | 🛑 | Discriminant (determinant of the Gram matrix) | `rustmath-numbertheory/src/quadratic_forms.rs:308` | Hard-coded for dimensions 1, 2, 3 (Sarrus); for EVERY dimension >= 4 it returns `Integer::zero()` — `// For larger dimensions, would need full determinant algorithm / For now, return zero as placeholder` (lines 331-335). A zero discriminant is the positive claim "this form is degenerate". Display (line 493) prints it, so any 4-dimensional form prints as disc=0. Separately, the doc says the binary discriminant is b^2−4ac while the code returns det(Gram) = ac − b^2/4-scaled. |
-| 🛑 | Table of B_0..B_{p-3} mod p | `rustmath-numbertheory/src/bernoulli.rs:274` | Line 291: when B_n is not p-integral it pushes `0` into the vector (`result.push(0); // Use 0 for non-integral values`). The returned Vec is documented as "[B_0, B_2, …, B_{p−3}] mod p" with no way for the caller to tell a genuine 0 from a non-integral entry. |
 | ⏳ | Representation search / count of representations by a quadratic form | `rustmath-numbertheory/src/quadratic_forms.rs:195` | Exhaustive (2·bound+1)^n box search. `represents()` returning false is a bounded-search failure reported as a decision — but the bound is caller-supplied and the doc says so, so it is honest-but-weak rather than a facade. |
 | ⏳ | Theta series coefficients of a quadratic form | `rustmath-numbertheory/src/quadratic_forms.rs:373` | Brute-force count_representations per coefficient; exponential in the dimension. |
-| ⏳ | bernoulli_numbers_vec (B_0, B_2, …, B_2n) | `rustmath-numbertheory/src/bernoulli.rs:174` | Doc claims "uses the tangent numbers method which is more efficient than the recurrence" — the body is a plain loop over bernoulli_number(2i). False documentation, inherits the i64 overflow. |
 | ⏳ | p-adic local density alpha_p(n) | `rustmath-numbertheory/src/quadratic_forms.rs:419` | Exhaustively enumerates (Z/p^m Z)^k — matches the definition but is unusable past k=3, m=3. No closed-form Siegel/Conway–Sloane evaluation. |
-| ⏳ | von Staudt–Clausen denominator of B_n | `rustmath-numbertheory/src/bernoulli.rs:405` | Only scans primes p <= 1000, so for n >= 1008 it can omit a prime with (p−1)\|n; the i64 accumulator can also overflow. |
+| 🟢 | Bernoulli number mod p (single index) | `rustmath-numbertheory/src/bernoulli.rs:368` | For p > n + 1 a word-size mod-p power-series recurrence (b_m = -Σ_{k<m} b_k/(m+1-k)!, O(n²)); otherwise exact big-integer reduction of B_n. `None` when p divides the denominator (von Staudt–Clausen, p = 2 included); panics for a composite modulus. Tests against Python `fractions`: the irregular pairs (37,32), (59,44), (67,58), and agreement with reduction of `bernoulli_number(n)` for all p ≤ 61, n ≤ 60. Was: the exact rational then `to_i64`, which panicked from B_50 on. |
+| 🟢 | Bernoulli numbers by the binomial recurrence with a memo cache | `rustmath-numbertheory/src/bernoulli.rs:150` | `binomial_coefficient` (:194) returns an exact `Integer`, so nothing overflows; O(n³) big-integer operations (doc corrected). test_bernoulli_small (B_0..B_12), test_bernoulli_large_index (B_60, B_70 against Python), and the multimodular tests compare it for n ≤ 120 and with B_100 (OEIS A027641/A027642). Was: i64 binomials that overflowed near n = 62. |
+| 🟢 | Multimodular Bernoulli via CRT | `rustmath-numbertheory/src/bernoulli.rs:495` | Harvey's multimodular strategy (Math. Comp. 79, 2010) with the O(n²) mod-p recurrence per prime: exact D_n from von Staudt–Clausen, height bound \|D_n·B_n\| < 4·D_n·n!/6^n, primes in (n+1, 2^31) from the segmented sieve, CRT with a symmetric lift until M > 2·bound; `num_primes` is a minimum. Panics for n + 1 ≥ 2^30. Tests: equals `bernoulli_number(n)` for every n ≤ 120 even with 1 prime requested; B_22, B_30, B_100 (OEIS A027641/A027642). Was: CRT of B_n residues taken from the exact value, with no lift or bound (B_22 came out as 1230165427931/138). |
 | 🟢 | QuadraticForm: construction (symmetry check) and evaluation x^T A x | `rustmath-numbertheory/src/quadratic_forms.rs:56` |  |
+| 🟢 | Table of B_0..B_{p-3} mod p | `rustmath-numbertheory/src/bernoulli.rs:436` | Asserts that p is a prime ≥ 5, so every entry is p-integral; one O(p²) mod-p recurrence. Tests against Python for p = 7, 37, 101, including the irregular pairs (37, 32) and (101, 68) as 0 entries; test_bernoulli_mod_p_rejects_composite. Was: pushed a fabricated 0 for non-integral entries and panicked for p ≥ 41. |
+| 🟢 | bernoulli_numbers_vec (B_0, B_2, …, B_2n) | `rustmath-numbertheory/src/bernoulli.rs:240` | A loop over the memoized `bernoulli_number`; the false 'tangent numbers' doc is gone and the i64 overflow is fixed upstream. test_bernoulli_vec and the doctest check B_0..B_6. |
+| 🟢 | verify_bernoulli_mod_p (BCEM checksum of B_0..B_{p-3} mod p) | `rustmath-numbertheory/src/bernoulli.rs:701` | Checks Σ_{k=0}^{(p-3)/2} 2^{2k}(2k+1)B_{2k} ≡ -2 (mod p) (Buhler–Crandall–Ernvall–Metsänkylä 1993) in i128; false for a list of the wrong length; panics unless p is an odd prime. test_verify_bernoulli_mod_p (p = 3, 7, 11, 13, 37, 101, 103, 211, one corrupted and one truncated list) is no longer #[ignore]d; test_verify_bernoulli_mod_p_rejects_composite and _rejects_two. Was: the wrong formula (2^{2n}, 2n+1). |
+| 🟢 | von Staudt–Clausen denominator of B_n | `rustmath-numbertheory/src/bernoulli.rs:586` | Product of the primes p with (p-1) \| n over all divisors of n, as an `Integer` (private helper). test_bernoulli_denominator: D_12 = 2730, D_1008 = 14493038256293268734790 (includes 1009, exceeds i64), and agreement with `bernoulli_number(n).denominator()` for n ≤ 60. Was: primes ≤ 1000 only, in i64. |
 
 **Absent entirely** (a Sage/MAGMA equivalent would have these):
 
@@ -579,7 +578,7 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 - **Genus symbols and Conway–Sloane / Hasse invariants** — Local-global (Hasse–Minkowski) solubility of a quadratic form cannot be decided at all today.
 - **LLL / Minkowski reduction of an integral quadratic form** — The representation search is a brute-force box scan; reduction is the standard prerequisite (and LLL is needed by half the tree).
 - **Closed-form Siegel local densities and the Siegel–Weil mass formula** — local_density enumerates residues exponentially; the classical closed forms are what makes it usable.
-- **Zagier / Akiyama–Tanigawa or power-sum algorithm for B_n mod p, and Harvey's multimodular Bernoulli** — The current mod-p routine computes the exact rational first — the exact opposite of the point. This is the crate's central promise.
+- **Quasi-linear B_n mod p (Harvey's O(p log p) per-prime step, Zagier / power-sum methods)**: Since 2026-11-06 the mod-p routines run an O(p²) word-size recurrence and `bernoulli_multimodular` uses Harvey's multimodular strategy with that recurrence per prime. The faster per-prime algorithms are still absent.
 - **Dirichlet characters, generalized Bernoulli numbers B_{n,chi}** — Prerequisite for L-values at negative integers, which rustmath-modular and rustmath-ellipticcurves want.
 - **Pell equation solver, Cornacchia, Diophantine toolkit** — Classical number theory expected in a crate named `numbertheory`; the CF machinery to do it already exists in rustmath-rationals.
 
@@ -654,7 +653,7 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 | 🟢 | Keyword search index | `rustmath-misc/src/search.rs:1` |  |
 | 🟢 | Multi-dimensional range / cartesian-product iterators (mrange) | `rustmath-misc/src/mrange.rs:1` |  |
 | 🟢 | Table formatting | `rustmath-misc/src/table.rs:1` |  |
-| 🟢 | Temporary file/dir management with atomic write | `rustmath-misc/src/temporary_file.rs:1` |  |
+| 🟢 | Temporary file/dir management with atomic write | `rustmath-misc/src/temporary_file.rs:1` | `atomic_write` (:432) uses `NamedTempFile::persist` and `atomic_dir` (:520) renames before `keep()`, so a failed rename deletes the temporary file or directory. test_atomic_dir_rename_failure_cleans_up, test_atomic_write_rename_failure_cleans_up, test_atomic_write_error_leaves_no_temp_file; the doctests write under the system temp dir and assert contents. Was: the temporary entry was kept before the rename and leaked on failure (stray .tmp_dir_*). |
 | 🟢 | Verbosity control | `rustmath-misc/src/verbose.rs:1` |  |
 
 **Absent entirely** (a Sage/MAGMA equivalent would have these):
@@ -872,7 +871,7 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 |:--:|---|---|---|
 | ⏳ | General degree: Jordan-criterion certificates (q-cycle with n/2<q<=n-3 => A_n; 2-transitive + 3-cycle/transposition => A_n/S_n) | `rustmath-galois/src/sieve.rs:153` | HONEST by construction: it decides only by EXHIBITED elements plus the exact discriminant parity; everything else returns Unresolved with the full evidence trail. It therefore decides essentially only A_n/S_n for n>=6 — which is the common case, but it is not a general Galois-group algorithm. |
 | ⏳ | Reducible input: multiquadratic (C2^m) and cubic x quadratic compositum (Goursat by hand) | `rustmath-galois/src/reducible.rs:59` | Exact for those two shapes (C6 / S3 / S3xC2 decided by disc3, disc3·d2 square tests). Any other compositum with >=2 nonlinear factors returns Unresolved with blocked_on naming the missing general Goursat/subdirect-product analysis (reducible.rs:152). |
-| ⬜ | Stauduhar descent | `rustmath-galois/src/stauduhar.rs:56` | HONEST STUB, exactly as the lead said: always Err(MathError::NotImplemented) naming the three blockers (transitive-subgroup lattice + coset reps + BSGS in rustmath-groups; generic H-invariant construction; certified root labelling on rustmath_complex::aberth_roots). Tested to refuse (stauduhar.rs:70). |
+| ⬜ | Stauduhar descent | `rustmath-galois/src/stauduhar.rs:58` | HONEST STUB, exactly as the lead said: always Err(MathError::NotImplemented) naming the blockers (maximal-transitive-subgroup lattice with coset representatives; a BSGS now exists in rustmath-groups/src/bsgs.rs; generic H-invariant construction; certified root labelling on rustmath_complex::aberth_roots). Tested to refuse (stauduhar.rs:70). |
 | 🟢 | Degree 2: discriminant square test | `rustmath-galois/src/lowdegree.rs:30` |  |
 | 🟢 | Degree 3: discriminant square test (C3 vs S3) | `rustmath-galois/src/lowdegree.rs:39` |  |
 | 🟢 | Degree 4: resolvent cubic factorization pattern + Kappe–Warren C4/D4 disambiguation | `rustmath-galois/src/lowdegree.rs:96` | Exact: 0 rational roots -> A4/S4 by disc; 3 roots -> V4; 1 root -> C4 vs D4 by whether both x^2-Bx+d and x^2+ax+(b-B) split over Q(sqrt(disc)). Internal contradictions are raised as errors, not papered over. |
@@ -968,7 +967,7 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 *Modules over rings: free modules, submodules, quotients, FG modules over PIDs, graded/Steenrod modules, tensor algebra, modules-with-basis.*
 
 **Depends on:** `rustmath-category`, `rustmath-core`, `rustmath-finitefields`, `rustmath-integers`, `rustmath-matrix`, `rustmath-polynomials`, `rustmath-rationals`  
-**Tally:** 🟢 2 · ⏳ 2 · 🛑 14 · 🔴 1 · ⬜ 1
+**Tally:** 🟢 2 · ⏳ 2 · 🛑 14 · 🔴 1 · ⬜ 2
 
 | | Algorithm | Location | Notes |
 |:--:|---|---|---|
@@ -979,9 +978,9 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 | 🛑 | FreeModuleLinearGroup membership test | `rustmath-modules/src/tensor/free_module_linear_group.rs:28` | "Check if a matrix is in the group (simplified - just checks dimensions)" — any square matrix of the right size, including singular ones, is declared to be in GL(M). |
 | 🛑 | FreeModuleMorphism::image_basis | `rustmath-modules/src/free_module_morphism.rs:142` | Returns ALL columns of the matrix as a 'basis' — no reduction, no independence check. For a rank-1 3x3 map it reports a 3-element basis of the image. |
 | 🛑 | FreeModuleMorphism::kernel_basis | `rustmath-modules/src/free_module_morphism.rs:134` | `// TODO: Implement proper kernel computation using Gaussian elimination` / `// For now, return empty vector` / `Vec::new()`. An empty kernel basis is the positive claim 'this map is injective'. The crate DEPENDS on rustmath-matrix, which has a working kernel(). |
+| 🛑 | FreeModuleWithBasis::cardinality | `rustmath-modules/src/with_basis/parent.rs:239` | Always `None`, which `Parent::cardinality` defines as infinite; wrong for a finite base ring (GF(p)^n has p^n elements) and for rank 0. Needs a base-ring cardinality API that `Ring` lacks. Recorded 2026-11-06, not fixed. |
 | 🛑 | Interior product of an alternating contravariant tensor | `rustmath-modules/src/tensor/alternating_contr_tensor.rs:151` | "Simplified implementation - actual interior product would compute contractions". |
 | 🛑 | ModuleWithBasisMorphism::kernel / rank / is_injective / is_surjective / is_isomorphism | `rustmath-modules/src/with_basis/morphism.rs:160` | kernel() returns `vec![]` ("For now, return empty (indicating trivial kernel)") => is_injective() (:182) is TRUE FOR EVERY MORPHISM. rank() (:175) counts non-zero basis images instead of computing a rank, so a map sending e1,e2 both to f1 reports rank 2 => is_surjective / is_isomorphism are fabricated too. |
-| 🛑 | ModuleWithBasisParentMethods::echelon_form / span_basis / are_linearly_independent | `rustmath-modules/src/with_basis/parent.rs:141` | echelon_form returns its input unchanged ("TODO: Implement Gaussian elimination / For now, just return the input"); span_basis delegates to it; are_linearly_independent (:158) then compares lengths and therefore returns TRUE for ANY list of elements, including [v, v]. |
 | 🛑 | QuotientModule::are_equivalent | `rustmath-modules/src/quotient_module.rs:39` | `// Simplified: would need to check if a-b is in span of generators` / `a == b`. Equality in the quotient is reported as equality in the ambient module, so every nonzero class in M/N is declared distinct from 0. |
 | 🛑 | Submodule::rank | `rustmath-modules/src/submodule.rs:39` | Returns `self.generators.len()` — the number of generators, not the rank of the span. Two identical generators report rank 2. |
 | 🛑 | Tensor contraction (Einstein summation) | `rustmath-modules/src/tensor/tensor_with_indices.rs:141` | `pub fn contract(_t1, _t2) -> TensorType { TensorType::new(0, 0) }` — ignores both arguments and returns a type, not a tensor. FreeModuleTensor::contract_simple (tensor/free_module_tensor.rs:159) likewise returns only the resulting TensorType, never touching the components. |
@@ -989,6 +988,7 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 | 🛑 | Wedge product of alternating forms | `rustmath-modules/src/tensor/free_module_alt_form.rs:171` | `let result = FreeModuleAltForm::new(new_degree, dimension); /* Simplified wedge product computation ... This is a placeholder showing the structure */ result` — returns the ZERO (p+q)-form for any inputs. |
 | ⏳ | FGPModule (finitely generated module over a PID, stored as free_rank + invariant factors) | `rustmath-modules/src/fg_pid/fgp_module.rs:16` | Pure data holder. There is NO constructor from a relation matrix and no Smith-normal-form call anywhere — the caller must already know the invariant factors. is_torsion_free() just asks whether the caller supplied any. |
 | ⏳ | Tensor components with symmetry (CompWithSym / CompFullySym / CompFullyAntiSym, index canonicalisation, permutation parity by bubble-sort swap count) | `rustmath-modules/src/tensor/comp.rs:133` | Symmetric/antisymmetric index canonicalisation is real (comp.rs:142-240, bubble_sort_count_swaps at :321). No contraction, no index raising/lowering. |
+| ⬜ | ModuleWithBasisParentMethods::echelon_form / span_basis / are_linearly_independent | `rustmath-modules/src/with_basis/parent.rs:143` | All three are `unimplemented!` with a `# Panics` doc: the element type is opaque at the trait level and the base ring need not be a field (test_linear_independence_is_not_fabricated on {e0, 2e0}, test_echelon_form_is_not_fabricated). No callers in the workspace. Was: echelon_form returned its input, so are_linearly_independent was true for any list, including [v, v]. |
 | ⬜ | Ore modules, filtered vector spaces, matrix morphisms, vector-space homspaces, diamond cutting, free_module_integer, Steenrod modules, fp_graded morphisms/homspaces | `rustmath-modules/src/ore_module.rs:5` | 21 of the 93 files are literal named stubs: `// Stub implementation for sage.modules.X` + an empty unit struct. Full list: free_module_homspace, misc, free_quadratic_module_integer_symmetric, vector_space_homspace, tensor_operations, complex_double_vector, ore_module_homspace, filtered_vector_space, vector_space_morphism, diamond_cutting, free_module_integer, free_module_pseudohomspace, real_double_vector, finite_submodule_iter, ore_module_morphism, multi_filtered_vector_space, ore_module_element, free_module_pseudomorphism, tutorial_free_modules, ore_module, matrix_morphism. fp_graded/{morphism,homspace,free_*}.rs and fp_graded/steenrod/{module,morphism}.rs are 4-line empty structs. These are HONEST gaps. |
 | 🟢 | CombinatorialFreeModule (sparse HashMap-backed formal linear combinations: monomial, sum_of_terms, map_coefficients, map_support) | `rustmath-modules/src/combinatorial_free_module.rs:34` | The most real file in the crate. Still only element bookkeeping. |
 | 🟢 | Free module over a ring: rank, standard basis, element arithmetic (add/negate/scalar_mul) | `rustmath-modules/src/free_module.rs:16` | Genuinely works, but it is bookkeeping — no algorithm. |
@@ -1002,7 +1002,7 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 - **Discriminant form / Brown invariant / genus symbols for torsion quadratic modules** — brown_invariant is hard-coded to 0. Needed for lattice genus theory (Nikulin, Conway-Sloane).
 - **Diamond cutting (Voronoi cell of a lattice)** — Sage's sage.modules.diamond_cutting; the file exists as an empty stub.
 - **Steenrod algebra action and minimal free resolutions over the Steenrod algebra** — The fp_graded/steenrod subtree is two 4-line empty structs; the module hierarchy claims to support it.
-- **Echelon/Gaussian elimination on a list of module elements (span basis, linear independence)** — Facaded to identity, making are_linearly_independent unconditionally true.
+- **Echelon/Gaussian elimination on a list of module elements (span basis, linear independence)**: An honest `unimplemented!` since 2026-11-06 (it was facaded to the identity); no generic elimination exists at the trait level.
 
 #### `rustmath-category` · ⚠️ weak
 
@@ -1386,10 +1386,10 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 |:--:|---|---|---|
 | 🟢 | AVL tree: insert/delete with LL/LR/RL/RR rotations, height, balance invariant check | `rustmath-trees/src/avl.rs:276` | 19 tests including is_balanced (line 441) after randomized insert/delete. |
 | 🟢 | Binary tree: balance/complete/full/perfect predicates, construction from level-order and full sequences | `rustmath-trees/src/binary.rs:218` | 17 tests; from_complete (line 341), from_full (line 387), perfect (line 443). |
-| 🟢 | N-ary tree with map/find/leaves/level listing | `rustmath-trees/src/nary.rs:44` |  |
+| 🟢 | N-ary tree with map/find/leaves/level listing | `rustmath-trees/src/nary.rs:44` | The doctests on NaryTree, new, with_children and add_child import the `Tree`/`TreeNode` traits and run (they did not compile before 2026-11-06). |
 | 🟢 | Threaded binary tree with O(1)-space inorder iteration | `rustmath-trees/src/threaded.rs:271` |  |
 | 🟢 | Traversals: preorder, inorder, postorder, level-order (BFS) | `rustmath-trees/src/traversal.rs:1` |  |
-| 🟢 | Visitor pattern over trees | `rustmath-trees/src/visitor.rs:1` |  |
+| 🟢 | Visitor pattern over trees | `rustmath-trees/src/visitor.rs:1` | The TreeMutator doctest imports `Tree` and runs. |
 
 **Absent entirely** (a Sage/MAGMA equivalent would have these):
 
@@ -1432,60 +1432,74 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 
 #### `rustmath-groups` · 👁️ mixed
 
-*Group theory: permutation/matrix/abelian/free/finitely-presented/braid/Artin groups, plus a strong Galois-theoretic transitive-group classifier layer (21k LOC, 470 tests, 0 #[ignore], 9 #[should_panic]).*
+*Group theory: permutation/matrix/abelian/free/finitely-presented/braid/Artin groups, plus a strong Galois-theoretic transitive-group classifier layer (24.6k LOC in src, 548 tests in src plus 30 in tests/, 0 #[ignore], 24 #[should_panic]).*
 
 **Depends on:** `rustmath-combinatorics`, `rustmath-complex`, `rustmath-core`, `rustmath-graphs`, `rustmath-integers`, `rustmath-matrix`, `rustmath-polynomials`, `rustmath-rationals`  
-**Tally:** 🟢 19 · ⏳ 8 · 🛑 5 · 🔴 3 · ⬜ 1
+**Tally:** 🟢 29 · ⏳ 10 · 🛑 6 · 🔴 4 · ⬜ 1
 
 | | Algorithm | Location | Notes |
 |:--:|---|---|---|
+| 🔴 | Additive abelian group with a 0 invariant factor (`AdditiveAbelianGroup::new`, `exponent`) | `rustmath-groups/src/additive_abelian_group.rs:254` | The divisibility check is skipped whenever a factor is 0, so `new(0, [0, 2])` is accepted; `exponent` (:353) checks only `free_rank` and returns Some(2) for the infinite group Z + Z/2. Recorded 2026-11-06, not fixed. |
 | 🔴 | Character inner product ⟨χ,χ'⟩ = (1/\|G\|)Σ\|C\|χ(c)χ'(c)* | `rustmath-groups/src/representation.rs:148` | Divides by `count` = number of shared KEYS, and never weights by class size. For the CharacterTable (keyed by class reps) the S3 standard character gives (4+0+1)/3 = 1.667, so `is_irreducible()` returns FALSE for a genuine irreducible. Only tested on 1-dimensional characters. |
 | 🔴 | Smith normal form / abelianization invariants of an f.p. group | `rustmath-groups/src/finitely_presented.rs:488` | `smith_normal_form` is integer row-echelon with TRUNCATING division (`m[i][k]/m[k][k]`), no column operations, no gcd steps. diag(2,3) yields invariants [2,3] instead of [6]; free rank never reported. `abelian_invariants()` is therefore wrong in general. |
-| 🔴 | Word problem in Artin / braid / cubic-braid groups | `rustmath-groups/src/artin.rs:358` | `impl PartialEq for ArtinGroupElement` is raw word equality ('In a full implementation, this would use normal forms'). σ1σ2σ1 ≠ σ2σ1σ2 is reported. Braid and CubicBraid delegate to it (braid.rs:210, cubic_braid.rs:442), so braid equality/is_identity are wrong. No Garside/left-greedy normal form anywhere. |
+| 🔴 | Word problem in Artin / braid / cubic-braid groups | `rustmath-groups/src/artin.rs:379` | `impl PartialEq for ArtinGroupElement` is raw word equality ('In a full implementation, this would use normal forms'), so σ1σ2σ1 ≠ σ2σ1σ2 is reported; `is_identity` (:344) is free reduction. Braid and CubicBraid delegate to it (braid.rs:210, cubic_braid.rs:442), so braid equality/is_identity are wrong. `Group::contains` (:314) compares only the rank. No Garside/left-greedy normal form anywhere. |
+| 🛑 | Abelian test, trait default (`Group::is_abelian`) | `rustmath-groups/src/group_traits.rs:27` | Returns `false` ('assume non-abelian') for every group that does not override it. Recorded 2026-11-06, not fixed. |
 | 🛑 | Class-function inner product | `rustmath-groups/src/class_function.rs:211` | Comment: 'For simplicity, assume all conjugacy classes have size 1'. Sums unweighted over class reps then divides by \|G\|. `norm`, `is_irreducible`, `to_character` all inherit the wrong value. |
-| 🛑 | Group membership test (GAP-shim layer) | `rustmath-groups/src/libgap_group.rs:189` | `GroupLibGAP::contains` — 'For now, return true as a default'. Every element is a member of every group whose elements are not cached. |
-| 🛑 | Mathieu groups M11 / M12 | `rustmath-groups/src/misc_groups.rs:118` | `mathieu_11()` returns `PermutationGroup::symmetric(11)` and `mathieu_12()` returns `symmetric(12)`. Order 39916800 instead of 7920. Publicly exported. CRITICAL. |
-| 🛑 | Nilpotent Lie group multiplication via BCH | `rustmath-groups/src/nilpotent_lie_group.rs:75` | `bracket` returns zero except for a hard-coded 3-dim Heisenberg case ('placeholder that returns zero for abelian case'), and the BCH product is truncated at second order for ALL dimensions. Products in any other nilpotent group are silently the abelian sum. |
-| 🛑 | Supersolvability / polycyclicity / normal-subgroup search | `rustmath-groups/src/libgap_mixin.rs:213` | `is_supersolvable` returns false for every non-abelian group; `has_normal_subgroup_of_size` returns false unconditionally (libgap_mixin.rs:296). Both are positive claims ('no non-abelian group is supersolvable'). |
+| 🛑 | Element order, trait default (`GroupElement::order`) | `rustmath-groups/src/group_traits.rs:175` | Compares against the context-free `Self::identity()`, multiplies up to 100000 times, then returns `None`, which the doc defines as infinite order: a bounded search decides the answer. For element types that store a runtime parameter (a modulus) the static identity is also wrong. Recorded 2026-11-06, not fixed. libgap_group.rs and libgap_mixin.rs no longer call it; `GenericElementWrapper::order` (libgap_wrapper.rs:191) still forwards to the wrapped element's `order`, which is this default unless the element type overrides it. |
+| 🛑 | Exponent, trait default (`Group::exponent`) | `rustmath-groups/src/group_traits.rs:66` | Returns `None` for every group, although the doc says `None` means infinite. Recorded 2026-11-06, not fixed. |
+| 🛑 | Membership and identity in `GenericParentWrapper` | `rustmath-groups/src/libgap_wrapper.rs:249` | `contains_element` returns true for every element ('assume all elements are in the group'); `identity_element` (:238) uses the context-free `E::identity()`, wrong for runtime-parameterised element types. Recorded 2026-11-06, not fixed. |
+| 🛑 | RAAG finiteness and membership | `rustmath-groups/src/raag.rs:187` | `is_finite` is hard-coded false, even with 0 vertices where `order()` is Some(1); `contains` (:199) compares only the number of generators, not the commutation graph. Recorded 2026-11-06, not fixed. |
 | ⏳ | Character tables | `rustmath-groups/src/representation.rs:267` | Only two hard-coded constructors: `cyclic_group(n)` (correct, via roots of unity) and `symmetric_group_s3()` (correct table). There is no algorithm to compute a character table of an arbitrary group (no Burnside/Dixon–Schneider). |
 | ⏳ | Conjugacy classes by brute-force conjugation | `rustmath-groups/src/conjugacy_classes.rs:161` | Requires the caller to hand in a full element list; no class computation from generators. O(\|G\|^2). |
 | ⏳ | Finiteness test for f.p. groups | `rustmath-groups/src/finitely_presented.rs:223` | `is_finite_heuristic` — honestly named; returns true iff every generator appears in a pure power relation. Wrong for e.g. free products of finite groups. |
+| ⏳ | GroupLibGAP: membership, element enumeration, exponent, random element (GAP-shim layer) | `rustmath-groups/src/libgap_group.rs:278` | Enumerates the closure of the generators from a generator-derived identity (g·g⁻¹) when the declared order is at most `ENUMERATION_LIMIT` = 10000, and panics if the closure size differs from the declared order. For a larger declared order, or a group declared infinite, `contains` and `elements` (:465) are `unimplemented!` and `try_contains` (:258) returns None. `exponent` (:379) is the lcm of element orders; `finite_order` (:479) panics for an infinite group. `Group::is_abelian` returns the constructor's flag unchecked (documented). Tests: test_contains_enumerates_without_cache (2Z/10Z inside Z/10Z), test_symmetric_group_s3 (class sizes [1,2,3], centre {1}, exponent 6), the Z = <1> panic/None tests. Brute force only; no Schreier–Sims. Was: `contains` returned true with no cache, `elements` returned [identity]. |
 | ⏳ | Local (p-adic) Galois group at unramified primes via Frobenius cycle type | `rustmath-groups/src/pgalois.rs:1` | Exact and complete for p ∤ disc f; at ramified primes it returns only a sound CANDIDATE SET (honestly documented). No Panayi/relative-resolvent namer here. |
+| ⏳ | Nilpotent Lie group multiplication via BCH | `rustmath-groups/src/nilpotent_lie_group.rs:212` | Elements carry their group's `LieBracket` (:51): `Abelian`, or `Heisenberg{n}` with [X_i, Y_i] = Z. Both are 2-step, so X + Y + ½[X,Y] is exact. `NilpotentLieGroup::new(d, c)` (:378) fixes a bracket only for class ≤ 1 or (d, c) = (3, 2); other products in dimension ≥ 3 are `unimplemented!`, and mixing groups panics. `is_identity`/`order` are exact (torsion-free, so `None` is decided). test_heisenberg_bch_matches_matrix_model checks H_3, H_5, H_7 against the unipotent matrix model to 1e-12. Catalog `lie::Nilpotent` (groups_catalog.rs:423) accepts only 'Heisenberg' and 'Heisenberg<odd d ≥ 3>'. Was: a hard-coded Heisenberg bracket for every dimension ≥ 3. |
 | ⏳ | RAAG (right-angled Artin group) normal form | `rustmath-groups/src/raag.rs:255` | A `normal_form` that groups commuting generators exists; `is_identity` is `word.is_empty()` on that form. Untested against pathological interleavings; no piling/Foata-style canonical form proof. |
 | ⏳ | Rewriting system for f.p. groups | `rustmath-groups/src/finitely_presented.rs:449` | Rules are the raw relators + trivial inverse cancellations; NO Knuth–Bendix completion, so `reduce` is not a normal form (non-confluent, and can loop on length-increasing rules). |
-| ⏳ | Semidirect / direct products, affine & Euclidean groups, semimonomial transformation groups | `rustmath-groups/src/semidirect_product.rs:1` | Element arithmetic works; no order, no membership, no structure theory. groups_catalog.rs:54-555 has ~10 catalog entries commented out with TODO (PureCactusGroup, RAAG::from_graph, ArtinGroup::from_coxeter_matrix, …). |
+| ⏳ | Semidirect / direct products, affine & Euclidean groups, semimonomial transformation groups | `rustmath-groups/src/semidirect_product.rs:152` | `multiply` requires `SemidirectProductCompatible` and uses its law (i32/i64 are the additive group Z). test_dihedral_group_relations_d5 (r^5 = s^2 = 1, srs = r⁻¹, closure of 10 elements); test_custom_action and test_custom_action_associative check Aff(1,Q) = Q ⋊ Q* against affine-map composition. Semimonomial `compose` (semimonomial_transformation.rs:271) uses the left-to-right permutation product and `inverse_with` (:154) applies α⁻¹; both are checked over GF(4) (test_compose_is_associative_over_gf4, test_inverse_over_gf4, test_action_on_vector_applies_the_automorphism_over_gf4). No order, membership or structure theory; `Holomorph` (semidirect_product.rs:282) is an empty struct. Catalog: `misc::RightAngledArtin`, `misc::Artin` and `permutation::Dihedral` are now real; six entries remain commented out with TODO in groups_catalog.rs (GL, SL, Affine, Euclidean, PureCactus, SemimonomialTransformation). |
 | ⏳ | Word problem in finitely presented groups | `rustmath-groups/src/finitely_presented.rs:296` | `is_identity` = free reduction only; a word equal to a relator is reported as ≠ 1. No Todd–Coxeter. |
 | ⬜ | Discrete log in an additive abelian group wrapper | `rustmath-groups/src/additive_abelian_wrapper.rs:288` | HONEST: returns Err("Discrete logarithm computation requires type-specific implementation"). Good pattern. |
+| 🟢 | Abelian group from arbitrary cyclic orders (`AdditiveAbelianGroup::from_cyclic_orders`) | `rustmath-groups/src/additive_abelian_group.rs:296` | Smith form of diag(m_i) by pairwise (gcd, lcm) replacement; 0 goes to the free rank, trivial factors are dropped, Err on lcm overflow. test_from_cyclic_orders against GAP `AbelianInvariants`: [2,3,5] gives [30], [2,4,6,9] gives [2,6,36] (order 432), [4,6,0] gives Z + Z/2 + Z/12. Catalog `misc::AdditiveAbelian` (groups_catalog.rs:624) uses it; it used to panic on [2,3,5]. |
 | 🟢 | Abelian group invariants (invariant factors, elementary divisors, torsion order, exponent) | `rustmath-groups/src/abelian_group.rs:27` | Structural bookkeeping only — the group is *constructed* from its invariants; nothing computes invariants from relations (see the broken SNF above). |
+| 🟢 | Artin group presentation from a Coxeter matrix (`ArtinGroup::new`) | `rustmath-groups/src/artin.rs:202` | Each braid relation is stored as a Tietze word via `FreeGroupElement::tietze()`; `CoxeterMatrix::new` (:70) rejects an off-diagonal m_ij = 1. Catalog `misc::Artin` (groups_catalog.rs:593). Tests: test_presentation_relations_are_tietze_words (exact relations for A_2, A_3, B_2, m = ∞), test_relations_hold_in_coxeter_quotient (the A_3 relations hold in S_4 under s_i -> (i i+1)). GAP: the A_2 relator gives abelian invariants [0] (B_3), and adding s_i^2 gives order 6. Was: flattened (generator, exponent) pairs, not words. |
 | 🟢 | Atkinson minimal-block algorithm (union-find) | `rustmath-groups/src/perm_predicates.rs:127` |  |
-| 🟢 | Baby-step giant-step discrete logarithm | `rustmath-groups/src/generic.rs:94` | NOTE: `generic::bsgs` is discrete log, NOT a base-and-strong-generating-set. False friend confirmed. |
+| 🟢 | Baby-step giant-step discrete logarithm | `rustmath-groups/src/generic.rs:99` | NOTE: `generic::bsgs` is discrete log, NOT a base-and-strong-generating-set. False friend confirmed. |
 | 🟢 | Block systems of imprimitivity | `rustmath-groups/src/perm_predicates.rs:182` |  |
 | 🟢 | Braid → underlying permutation, exponent sum, is_pure | `rustmath-groups/src/braid.rs:247` |  |
 | 🟢 | Character-table column orthogonality check | `rustmath-groups/src/representation.rs:331` | Genuinely weights by class size; passes for S3 and C_n. |
+| 🟢 | Conjugacy classes and centre (`FiniteGroupTrait` defaults) | `rustmath-groups/src/group_traits.rs:97` | Conjugation orbits of `elements()`; `center` (:122) filters `elements()`. Checked through GroupLibGAP (S3: classes [1,2,3], centre {1}) and the GAP tables in libgap_mixin (class counts, sorted class sizes, \|Z(G)\|). Was: both returned `Vec::new()`. |
 | 🟢 | Degree-23 transitive group classifier (Burnside prime-degree dichotomy) | `rustmath-groups/src/transitive23.rs:1` |  |
-| 🟢 | Degree-24 transitive group classifier (cycle-type fingerprints) | `rustmath-groups/src/transitive24.rs:1` |  |
+| 🟢 | Degree-24 transitive group classifier (cycle-type fingerprints) | `rustmath-groups/src/transitive24.rs:1` | `Db::load` (:150) returns `InvalidData` naming the line and field for a malformed or wrong-schema row instead of panicking (missing_or_malformed_fields_are_invalid_data and two more unit tests). tests/perm23_classifier.rs::transitive24_db_load_default_loads_or_fails_gracefully checks, when the gitignored atlas is present, 25000 groups, 24T1, 24T7817 = PSL(2,23) of order 6072 and 24T24680 = M24 against GAP TransGrp. |
+| 🟢 | Dihedral group as a permutation group; `PermutationGroup::order` | `rustmath-groups/src/permutation_group.rs:141` | `dihedral(n)` follows GAP `DihedralGroup(IsPermGroup, 2n)`: <(0 1)> for n = 1, <(0 1),(2 3)> for n = 2, rotation and reflection on n points for n ≥ 3; n = 0 panics. `order` (:181) runs the native Schreier–Sims (`bsgs::group_order`). Tests: test_dihedral_orders (order 2n and the GAP degrees, n = 1..8), test_dihedral_relations, test_generated_orders_match_formulas (S_n and A_n, n ≤ 7). Catalog `permutation::Dihedral` (groups_catalog.rs:195). |
 | 🟢 | Fox free derivative | `rustmath-groups/src/free_group.rs:449` |  |
 | 🟢 | Free-group word reduction (syllable form) | `rustmath-groups/src/free_group.rs:117` |  |
 | 🟢 | GL(n,q) / SL(n,q) order formulas | `rustmath-groups/src/matrix_group.rs:115` |  |
+| 🟢 | Mathieu groups M11 / M12 | `rustmath-groups/src/misc_groups.rs:139` | `mathieu_11()` (:139) and `mathieu_12()` (:162) use the generators of GAP `MathieuGroup(11)` / `MathieuGroup(12)`, shifted to 0-based points. test_mathieu_groups and the doctests check the Schreier–Sims orders 7920 and 95040 (GAP `Size`). Was: S_11 and S_12. |
+| 🟢 | Merge of two commuting elements into one of order lcm (`xlcm`, `merge_elements`) | `rustmath-groups/src/generic.rs:482` | `xlcm` (:444) splits lcm(m, n) = m'·n' with m' \| m, n' \| n and gcd(m', n') = 1, using gcd only (as Sage `arith.xlcm`); `merge_elements` returns a^(m/m')·b^(n/n'), requires commuting elements and panics on order 0. Tests: test_xlcm (all m, n ≤ 60), test_merge_elements (orders 4 and 3 in Z/12 give 12), test_merge_elements_shared_primes (orders 4 and 6 in Z/24 give 12). Was: a^(m/gcd)·b^(n/gcd), of order 1 for m = 4, n = 3. |
+| 🟢 | Named presentations: alternating group A_n (Carmichael), cactus group J_n (Henriques–Kamnitzer) | `rustmath-groups/src/finitely_presented_named.rs:658` | `alternating_presentation` uses x_i^3 = (x_i x_j)^2 = 1; `cactus_presentation` (:527) uses the generators s_pq, 1 ≤ p < q ≤ n. GAP: Size n!/2 for A_4..A_8; J_3 = Z/2 * Z/2 and abelian invariants (Z/2)^(n-1) for n = 3..6. Tests: test_alternating_presentation_maps_onto_a_n (the relations hold for the 3-cycles (0 1 i+2), which generate a group of order n!/2), test_cactus_presentation, test_cactus_presentation_maps_onto_symmetric_group (n ≤ 6). Was: 'simplified' presentations of other groups (the A_5 one had abelian invariants [3,3,3]; J_1 came out as Z/2). |
+| 🟢 | Normal subgroups of an enumerated group; `has_normal_subgroup_of_size` | `rustmath-groups/src/libgap_mixin.rs:263` | `normal_subgroups` closes {1} under joins (product sets NM) with the normal closures of the conjugacy classes, sorted by size; `has_normal_subgroup_of_size` (:332) reads it. Sizes match GAP `NormalSubgroups` for S3, D8, Q8, A4, S4, A5 (test_nonabelian_groups_against_gap) and C1..C7 (test_cyclic_groups_against_gap). Cost about (normal subgroups) × (classes) × \|G\|². Was: `has_normal_subgroup_of_size` always returned false. |
 | 🟢 | Orbit computation (BFS under generators) | `rustmath-groups/src/perm_predicates.rs:41` |  |
 | 🟢 | Orbit lengths on k-subsets (Gosper's hack enumeration) | `rustmath-groups/src/ksubset_orbits.rs:60` | Cross-validated against PARI in tests/ksubset_orbits.rs. |
 | 🟢 | Orbit partition of {0..n-1} | `rustmath-groups/src/perm_predicates.rs:63` |  |
-| 🟢 | Point stabilizer generators via Schreier's lemma | `rustmath-groups/src/perm_predicates.rs:211` | Real Schreier transversal + Schreier generators (the lead that it 'discards the transversal' is STALE — the transversal is used to build the stabilizer gens). It is NOT iterated into a stabilizer chain, so there is still no BSGS/order/membership. |
-| 🟢 | Pollard's rho discrete logarithm | `rustmath-groups/src/generic.rs:155` |  |
+| 🟢 | Point stabilizer generators via Schreier's lemma | `rustmath-groups/src/perm_predicates.rs:211` | Real Schreier transversal + Schreier generators (the lead that it 'discards the transversal' is STALE: the transversal is used to build the stabilizer gens). It is not iterated into a stabilizer chain here; the native chain (order, membership) is `bsgs::StabilizerChain` (bsgs.rs:124, since `5ff8749`). |
+| 🟢 | Pollard's rho discrete logarithm | `rustmath-groups/src/generic.rs:167` | Each collision candidate is checked (base^x = target) before it is returned, otherwise the walk continues; `None` means not found and decides nothing. Products in u128. test_discrete_log_rho_results_are_verified: Z/11 base 3 returns 4t mod 11 for every target t ≠ 0, and Z/36 base 4 target 1 (outside <4>) returns None. Was: the unverified collision solution (x = 7 in that Z/36 case). |
 | 🟢 | Primitivity test | `rustmath-groups/src/perm_predicates.rs:202` |  |
-| 🟢 | Square-and-multiply exponentiation / element order / order from a multiple | `rustmath-groups/src/generic.rs:34` |  |
+| 🟢 | Square-and-multiply exponentiation / element order / order from a multiple | `rustmath-groups/src/generic.rs:34` | `power` squares only while exponent bits remain (test_power_no_overflow_at_top_bit; the extra final squaring overflowed i32 for 5^10). `order_from_multiple` (:296) does not check its precondition elem^multiple = e. |
+| 🟢 | Structural predicates of an enumerated group (GroupMixinLibGAP): abelian, cyclic, nilpotent, solvable, simple, perfect, p-group, exponent, derived subgroup | `rustmath-groups/src/libgap_mixin.rs:52` | Exact checks over `elements()` against the parent identity: lower central and derived series with closure (:80, :108), `is_simple` (:133) via normal closures of classes, `is_perfect` (:148) via the derived subgroup (:341), `is_cyclic` (:67) via an element of order \|G\|, `exponent_libgap` (:244) as the lcm of orders, `is_p_group` (:195) false unless p is prime. GAP-checked for S3, D8, Q8, A4, S4, A5, C6 and C1..C7. Was: size cutoffs returning false, commutator sets in place of subgroups, `is_simple` true for every order > 2, `is_p_group(1)` looping forever. |
+| 🟢 | Supersolvability (chief series) and polycyclicity of an enumerated group | `rustmath-groups/src/libgap_mixin.rs:158` | `is_supersolvable` builds a chief series greedily from `normal_subgroups()` (smallest normal subgroup strictly above the current term) and checks that every factor has prime order; `is_polycyclic` (:186) equals `is_solvable`, which is correct for finite groups. test_nonabelian_groups_against_gap (GAP): S3, D8, Q8 supersolvable; A4, S4, A5 not; A5 not polycyclic. Was: false for every non-abelian group, and `has_normal_subgroup_of_size` always false (now its own row). |
 | 🟢 | Transitivity test | `rustmath-groups/src/perm_predicates.rs:80` |  |
 
 **Absent entirely** (a Sage/MAGMA equivalent would have these):
 
-- **Schreier–Sims / base and strong generating set (BSGS)** — THE foundational permutation-group algorithm. Without it there is no \|G\|, no membership test, no random element, no stabilizer chain, no backtrack search. Everything downstream (order, conjugacy classes from gens, subgroup lattice) is blocked. Confirmed absent: only GAP-interface prose mentions it.
+- **Randomized Schreier–Sims, base change and backtrack search over a BSGS**: The deterministic Schreier–Sims exists since `5ff8749` (`bsgs::StabilizerChain`, bsgs.rs:124: \|G\| and sifting membership; `PermutationGroup::order` uses it). There is no randomized variant, no base change and no backtrack search, so centralizers, normalizers, set stabilizers and conjugacy classes from generators are still unavailable.
 - **Todd–Coxeter coset enumeration** — The word problem and index/order for finitely presented groups; also the FP→permutation bridge. Absent.
 - **Knuth–Bendix completion for groups** — rustmath-monoids already consumes a real KB engine from rustmath-automata; rustmath-groups::RewritingSystem does not, so its reduce() is non-confluent.
 - **Dixon–Schneider / Burnside character-table algorithm** — No way to get the character table of any group beyond the two hard-coded ones.
 - **Garside / left-greedy normal form for braid and Artin groups** — The word problem, conjugacy problem, and Burau/LKB representations all rest on it; without it braid equality is wrong.
-- **Sylow subgroups, composition series, derived series, lower central series, subgroup lattice** — Standard Sage/MAGMA group-structure API; entirely absent.
+- **Sylow subgroups, composition series, subgroup lattice, and series returned as objects or computed from generators**: Standard Sage/MAGMA group-structure API. Since 2026-11-06, for a group whose elements can be listed, the derived, lower central and chief series are computed inside `is_solvable` (libgap_mixin.rs:108), `is_nilpotent` (:80) and `is_supersolvable` (:158), and `normal_subgroups` (:263) lists every normal subgroup. No function returns a series, and nothing works from generators alone.
 - **Reidemeister–Schreier (subgroup presentations)** — Needed for low-index subgroups and covering-space computations.
-- **Real sporadic-group constructions (M11, M12, M22, M23, M24)** — Currently facades returning symmetric groups — worse than absent.
+- **Real sporadic-group constructions (M22, M23, M24)**: M11 and M12 are real since 2026-11-06 (misc_groups.rs:139, :162). M22, M23 and M24 have no public constructor; M23/M24 generators appear only in the bsgs.rs tests.
 - **Group homomorphism/isomorphism testing, automorphism group** — MAGMA/Sage core; nothing present.
 - **Burau and Lawrence–Krammer–Bigelow representations** — cubic_braid.rs:442 explicitly says a full implementation 'would use the Burau representation'; it does not exist.
 
@@ -1498,7 +1512,7 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 
 | | Algorithm | Location | Notes |
 |:--:|---|---|---|
-| 🔴 | Cluster algebra: exchange-matrix mutation | `rustmath-algebras/src/cluster_algebra.rs:172` | Only the b_ik>0 ∧ b_kj>0 branch is applied; the b_ik<0 ∧ b_kj<0 branch (which must SUBTRACT b_ik·b_kj) is silently skipped, leaving b_ij unchanged. For a skew-symmetric B both sign patterns occur, so mutation is wrong from the second step. NOTE the correct version of exactly this formula lives in rustmath-quivers/src/cluster_quiver.rs:316 — the two should be unified. |
+| 🔴 | Cluster algebra: exchange-matrix mutation | `rustmath-algebras/src/cluster_algebra.rs:172` | Only the b_ik>0 ∧ b_kj>0 branch is applied; the b_ik<0 ∧ b_kj<0 branch (which must SUBTRACT b_ik·b_kj) is silently skipped, leaving b_ij unchanged. For a skew-symmetric B both sign patterns occur, so mutation is wrong from the second step. NOTE the correct version of exactly this formula lives in rustmath-quivers/src/cluster_quiver.rs:343; the two should be unified. |
 | 🛑 | Cluster algebra: g-vectors | `rustmath-algebras/src/cluster_algebra.rs:273` | `g_vector(&self, _j)` ignores the index and pushes 0 for every component — returns the zero vector always. |
 | 🛑 | Down-up algebra reduction to PBW basis | `rustmath-algebras/src/down_up_algebra.rs:248` | 'Placeholder: return zero for complex cases' — `product_on_basis` returns ZERO for every product that actually needs the du² = αudu + βu²d + γu relation, i.e. the entire interesting case. |
 | 🛑 | F-matrix solver (pentagon/hexagon equations) | `rustmath-algebras/src/f_matrix.rs:83` | Six placeholder bodies: F-matrices are set to the identity (line 217), `verify_pentagon` and unitarity checks are stubs (lines 253, 259). No Gröbner solve. |
@@ -1518,7 +1532,7 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 | 🛑 | Splitting algebra: unit test / inversion / reduction | `rustmath-algebras/src/splitting_algebra.rs:93` | `is_unit` = 'constant term nonzero'; `inverse` handles only constants; `reduce` (line 271) returns a copy of the input. |
 | ⏳ | Brauer algebra dimension | `rustmath-algebras/src/brauer_algebra.rs:260` | 'Simplified: return an upper bound' — reported as the dimension. (Module is behind the non-default `full` feature.) |
 | ⏳ | Cubic Hecke algebra dimensions | `rustmath-algebras/src/cubic_hecke_algebra.rs:154` | Table with 4 => Some(213) and 5 => Some(2208) commented 'approximate, actual computation needed'. The true dimension of the cubic Hecke algebra on 4 strands is 3^3·4!... the value is asserted, not computed — treat as unverified. |
-| ⏳ | Feature gating of ~15 modules | `rustmath-algebras/src/lib.rs:24` | ARCHITECTURE NOTE: `default = []`, so brauer_algebra, temperley_lieb_algebra, partition_algebra, planar_algebra, hall_algebra, down_up_algebra, cellular_basis, associated_graded, askey_wilson, free_zinbiel_algebra, finite_gca, affine_nil_temperley_lieb, algebra_morphism, cached_algebra, algebra_with_parent are NOT compiled by a plain `cargo test`. Their tests never run. |
+| ⏳ | Feature gating of ~15 modules | `rustmath-algebras/src/lib.rs:24` | ARCHITECTURE NOTE: `default = []`, so brauer_algebra, temperley_lieb_algebra, partition_algebra, planar_algebra, hall_algebra, down_up_algebra, cellular_basis, associated_graded, askey_wilson, free_zinbiel_algebra, finite_gca, affine_nil_temperley_lieb, algebra_morphism, cached_algebra, algebra_with_parent are NOT compiled by `cargo test -p rustmath-algebras`. They compile and run only in a workspace build, where rustmath-jupyter enables `full` (resolver 2 unifies features); use `--features full` to test them alone. |
 | ⏳ | Finite-dimensional algebra from structure constants: associativity test, unit search | `rustmath-algebras/src/finite_dimensional_algebra.rs:385` | is_associative and has_unit are real; but there is NO radical, NO Wedderburn/semisimple decomposition, no idempotent lifting, no primary decomposition. The type is a shell around structure constants. |
 | ⏳ | Octonion algebra (Cayley–Dickson) | `rustmath-algebras/src/octonion_algebra.rs:1` | Product/conjugate/norm present; not cross-checked against Moufang identities in tests. |
 | ⏳ | Symmetric group algebra (Z and q coefficients), Coxeter relation verification | `rustmath-algebras/src/symmetric_group_algebra.rs:269` | Only the group-algebra product plus a Coxeter-relation checker. No Young symmetrizers, no seminormal/Young orthogonal form, no Jucys–Murphy elements, no Specht modules, no RSK-based idempotents. |
@@ -1598,33 +1612,36 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 
 #### `rustmath-lieconformal` · ⬜ skeleton
 
-*Lie conformal algebras (λ-brackets): Virasoro, affine, free bosons/fermions, bosonic/fermionic ghosts, N=2, Neveu-Schwarz, Weyl (18 files, 6.9k LOC, 149 tests, 0 #[ignore], 13 #[should_panic]).*
+*Lie conformal algebras (λ-brackets): Virasoro, affine, free bosons/fermions, bosonic/fermionic ghosts, N=2, Neveu-Schwarz, Weyl (18 files, 7.5k LOC, 173 tests, 0 #[ignore], 24 #[should_panic]).*
 
 **Depends on:** `rustmath-core`, `rustmath-liealgebras`, `rustmath-polynomials`, `rustmath-rationals`  
-**Tally:** 🟢 1 · ⏳ 7 · 🛑 5 · 🔴 1 · ⬜ 1
+**Tally:** 🟢 7 · ⏳ 1 · 🛑 1 · 🔴 0 · ⬜ 9
 
 | | Algorithm | Location | Notes |
 |:--:|---|---|---|
-| 🔴 | n-th products a_(n) b | `rustmath-lieconformal/src/lie_conformal_algebra.rs:37` | Default `n_product` does `lambda_bracket(a,b).get(&n)` and PANICS ('No term for power {n}') when absent. Since Virasoro/N2/NS return an empty map, every n-product on those algebras panics on normal input. |
-| 🛑 | Element-level λ-bracket (bilinear extension from basis brackets) | `rustmath-lieconformal/src/lie_conformal_algebra_element.rs:481` | Takes the structure-coefficient map and returns HashMap::new(). |
-| 🛑 | λ-bracket from structure coefficients (the generic engine) | `rustmath-lieconformal/src/lie_conformal_algebra_with_structure_coefs.rs:307` | `lambda_bracket(_a, _b)` returns HashMap::new(). This is the class every 'LieConformalAlgebraWithStructureCoefficients' is supposed to route through — so user-defined LCAs also silently have zero bracket. |
-| 🛑 | λ-bracket of the N=2 superconformal algebra | `rustmath-lieconformal/src/n2_lie_conformal_algebra.rs:266` | Same shape: returns an empty map ('For now, return empty (treating as if computed correctly)'), arguments prefixed with underscore. |
-| 🛑 | λ-bracket of the Neveu–Schwarz superconformal algebra | `rustmath-lieconformal/src/neveu_schwarz_lie_conformal_algebra.rs:241` | Empty map, same comment. |
-| 🛑 | λ-bracket of the Virasoro Lie conformal algebra ([L_λ L] = (∂+2λ)L + (λ³/12)C) | `rustmath-lieconformal/src/virasoro_lie_conformal_algebra.rs:155` | CRITICAL. The body is `HashMap::new()` with the comment 'For now, return empty (treating as if computed correctly)'. An empty λ-bracket map is the positive claim that ALL n-products vanish — i.e. Virasoro is abelian. The doc-comment above it even prints the correct formula it does not compute. |
-| ⏳ | Conformal weight / grading | `rustmath-lieconformal/src/graded_lie_conformal_algebra.rs:255` | Generator degrees are correct constants (L ↦ 2, C ↦ 0), but `degree(element)` returns None for every element, and graded_lie_conformal_algebra.rs:255 has `let base_ring = 1i64; // Placeholder`. |
-| ⏳ | Derivation ∂ and its iterates | `rustmath-lieconformal/src/lie_conformal_algebra.rs:44` | Trait + polynomial differentiation on the R[∂]-module (lie_conformal_algebra_element.rs:146). |
-| ⏳ | λ-bracket of bosonic ghosts (βγ-system) | `rustmath-lieconformal/src/bosonic_ghosts_lie_conformal_algebra.rs:293` | REAL body: distinguishes β/γ indices, skips the central element. |
-| ⏳ | λ-bracket of fermionic ghosts (bc-system) | `rustmath-lieconformal/src/fermionic_ghosts_lie_conformal_algebra.rs:304` | REAL body. |
-| ⏳ | λ-bracket of free bosons (β-system) | `rustmath-lieconformal/src/free_bosons_lie_conformal_algebra.rs:250` | REAL: builds a result map from the Gram matrix / central term. Not verified against skew-symmetry or Jacobi in tests. |
-| ⏳ | λ-bracket of free fermions | `rustmath-lieconformal/src/free_fermions_lie_conformal_algebra.rs:255` | REAL body (constructs the bracket); no sesquilinearity/Jacobi test. |
-| ⏳ | λ-bracket of the affine (current) Lie conformal algebra | `rustmath-lieconformal/src/affine_lie_conformal_algebra.rs:347` | Iterates over terms and builds a bracket, but affine_lie_conformal_algebra.rs:210 admits 'TODO: Implement actual structure coefficient computation from Chevalley basis' — the structure coefficients it consumes are simplified, and the Chevalley basis it would consume is itself a facade (see rustmath-liealgebras). |
-| ⬜ | Central charge | `rustmath-lieconformal/src/virasoro_lie_conformal_algebra.rs:132` | HONEST: returns None ('The central charge can be set; for now return None'). |
-| 🟢 | λ-bracket of the abelian LCA | `rustmath-lieconformal/src/abelian_lie_conformal_algebra.rs:157` | Correctly empty / all n-products vanish — this is the one place where the empty map is the right answer. |
+| 🛑 | Degree of an element (`degree`) | `rustmath-lieconformal/src/virasoro_lie_conformal_algebra.rs:156` | Every implementor returns `None` for every nonzero element, homogeneous generators included. For zero, abelian:166, affine:330, bosonic:286, fermionic:295, free_bosons:255 and free_fermions:254 return `Some(0)`; Virasoro (the cited line), N=2 (n2:276), NS (ns:243), freely generated (freely_generated:102) and Weyl (weyl:60) return `None` there too, and structure_coefs:324 and finitely_freely_generated_lca:377 delegate to the freely generated one. Recorded 2026-11-06, not fixed. |
+| ⏳ | Derivation ∂ and its iterates | `rustmath-lieconformal/src/lie_conformal_algebra_element.rs:146` | `apply_derivation` multiplies by ∂ in the free R[∂]-module (a shift of the coefficient polynomial); `T(n)` (:311, :442) is ∂^n, as Sage `T(n)` (test_apply_derivation_multiplies_by_partial, test_t_is_nth_derivative). The element type does not know which generators are ∂-torsion, so ∂K is stored as a nonzero element (documented). Was: the formal derivative of the coefficient polynomial, so ∂b = 0 for every generator. |
+| ⬜ | Affine LCA structure constants and invariant form (`compute_structure_data`) | `rustmath-lieconformal/src/affine_lie_conformal_algebra.rs:204` | Not computed: the function returns empty tables ('simplified implementation', TODO for the Chevalley basis). It is private, the tables have no getter, and its one consumer, `lambda_bracket` (:354), reads empty tables as "not computed" and panics with `unimplemented!`, so no fabricated value reaches a caller. The table path also ignores coefficient polynomials. Recorded as a facade by the 2026-11-06 lieconformal unit; rated ⬜ here because nothing fabricated escapes. |
+| ⬜ | Axiom and grading checks (`check_sesquilinearity`, `check_jacobi`, `is_grading_consistent`, `homogeneous_component`) | `rustmath-lieconformal/src/lie_conformal_algebra_with_basis.rs:170` | Trait defaults are `unimplemented!` (with_basis:170, :182; graded_lie_conformal_algebra.rs:120, :131) and no implementor overrides them; should_panic tests pin each one. Was: `true` without checking, and an empty Vec for every homogeneous component. |
+| ⬜ | Central charge | `rustmath-lieconformal/src/virasoro_lie_conformal_algebra.rs:142` | HONEST: returns None. Virasoro, N=2 (n2:259) and NS (ns:228) are the universal algebras, with a central element C rather than a number; the docs now say so. |
+| ⬜ | Element-level λ-bracket (bilinear extension from basis brackets) | `rustmath-lieconformal/src/lie_conformal_algebra_element.rs:478` | `LCAStructureCoefficientsElement::lambda_bracket` is `unimplemented!` (test_structure_coefficients_element_bracket_is_unimplemented). Was: returned HashMap::new(). |
+| ⬜ | λ-bracket from structure coefficients (the generic engine) | `rustmath-lieconformal/src/lie_conformal_algebra_with_structure_coefs.rs:342` | `unimplemented!`: the λ-only table cannot hold ∂ terms and the skew-symmetric completion is missing (test_lambda_bracket_is_unimplemented). `bracket_on_basis` returns the stored entries (ordinary λ^m coefficients, documented); `is_central` (:276) now checks both input slots (test_is_central). Was: returned HashMap::new(), so user-defined LCAs looked abelian. |
+| ⬜ | λ-bracket of the N=2 superconformal algebra | `rustmath-lieconformal/src/n2_lie_conformal_algebra.rs:290` | `unimplemented!` (test_n2_lambda_bracket_is_unimplemented). Was: an empty map ('treating as if computed correctly'). |
+| ⬜ | λ-bracket of the Neveu–Schwarz superconformal algebra | `rustmath-lieconformal/src/neveu_schwarz_lie_conformal_algebra.rs:257` | `unimplemented!` (test_neveu_schwarz_lambda_bracket_is_unimplemented). The doc now gives [G_λ G] = 2L + (λ²/3)C (Sage `{0: 2L, 2: 2/3 C}`; it said 2λ²/3). Was: an empty map. |
+| ⬜ | λ-bracket of the Virasoro Lie conformal algebra ([L_λ L] = (∂+2λ)L + (λ³/12)C) | `rustmath-lieconformal/src/virasoro_lie_conformal_algebra.rs:172` | `unimplemented!`: the bracket needs 1/2 in R and the sesquilinear extension (test_virasoro_lambda_bracket_is_unimplemented). Was: an empty map, i.e. the claim that Virasoro is abelian. |
+| ⬜ | λ-bracket of the affine (current) Lie conformal algebra | `rustmath-lieconformal/src/affine_lie_conformal_algebra.rs:354` | Brackets involving the central K are 0; every other pair hits `unimplemented!` because the Chevalley structure constants and the invariant form are not computed (test_affine_lca_lambda_bracket, should_panic). `ngens` (dim g + 1, 9 for A2) and `dual_coxeter_number` match Sage. Was: an empty map for every pair, so the affine algebra looked abelian. |
+| 🟢 | Generator conformal weights and super-parity | `rustmath-lieconformal/src/graded_lie_conformal_algebra.rs:100` | Generator weights match Sage: Virasoro L = 2, C = 0; N=2 [2, 1, 3/2, 3/2, 0]; NS [2, 3/2, 0] (test_n2_generator_degrees_are_correct, test_neveu_schwarz_generator_degrees_are_correct, the module doctests). `GradedLCA::is_super` (:208) requires an odd generator, so the bosonic ghosts are not super (test_bosonic_ghosts_is_not_super). Element degrees are a separate row. |
+| 🟢 | n-th products a_(n) b | `rustmath-lieconformal/src/lie_conformal_algebra.rs:49` | Default `n_product` (bound `E: Default`) returns the j-th product from `lambda_bracket`, or zero when the key is absent. default_n_product_is_zero_for_missing_products checks α_(1)α = K and the zero products for a free boson [α_λ α] = λK (Kac §2.7). On Virasoro, N=2, NS and structure-coefficient algebras it reaches their `unimplemented!` bracket. Was: panicked 'No term for power n' on every zero product. |
+| 🟢 | λ-bracket of bosonic ghosts (βγ-system) | `rustmath-lieconformal/src/bosonic_ghosts_lie_conformal_algebra.rs:307` | [β_λ γ] = K and [γ_λ β] = -K on generators, extended by sesquilinearity through `central_valued_bracket` (lie_conformal_algebra.rs:115). Matches Sage BosonicGhosts (`gamma.bracket(beta) == {0: -K}`); test_bosonic_ghosts_lambda_bracket_gamma_beta, test_bosonic_ghosts_sesquilinearity. Was: [γ_λ β] = 0 and input coefficients ignored. |
+| 🟢 | λ-bracket of fermionic ghosts (bc-system) | `rustmath-lieconformal/src/fermionic_ghosts_lie_conformal_algebra.rs:316` | [b_λ c] = [c_λ b] = K (super skew-symmetry), extended by sesquilinearity. Matches Sage FermionicGhosts (`c.bracket(b) == {0: K}`); test_fermionic_ghosts_lambda_bracket_c_b, test_fermionic_ghosts_sesquilinearity. Was: [c_λ b] = 0. |
+| 🟢 | λ-bracket of free bosons (β-system) | `rustmath-lieconformal/src/free_bosons_lie_conformal_algebra.rs:270` | [(α_i)_λ α_j] = λ(α_i, α_j)K from the Gram matrix, extended by sesquilinearity (`central_valued_bracket`); keys are j-th products. Sage FreeBosons gives {1: K}; Gram [[2,1],[1,2]] gives α0_(1)α1 = K and (3α0)_(1)α0 = 6K. test_free_bosons_sesquilinearity checks Kac (2.7.4): (∂α)_(2)α = -2K and α_(2)(∂α) = 2K; `central_sesquilinear_derivatives` (lie_conformal_algebra.rs) checks (∂a)_(3)(∂b) = -6K for [a_λ b] = λK on the shared helper. Was: input coefficients and ∂ terms ignored. |
+| 🟢 | λ-bracket of free fermions | `rustmath-lieconformal/src/free_fermions_lie_conformal_algebra.rs:269` | [(ψ_i)_λ ψ_j] = (ψ_i, ψ_j)K, extended by sesquilinearity. Sage FreeFermions gives {0: K}; test_free_fermions_lambda_bracket (ψ1_(0)ψ1 = 3K for Gram entry 3), test_free_fermions_sesquilinearity ((∂ψ)_(1)ψ = -K, ψ_(1)(∂ψ) = K, Kac (2.7.4)). Was: input coefficients and ∂ terms ignored. |
+| 🟢 | λ-bracket of the abelian LCA | `rustmath-lieconformal/src/abelian_lie_conformal_algebra.rs:180` | Correctly empty: all n-products vanish, the one place where the empty map is the right answer. The doctest asserts ngens 2, `is_abelian`, empty brackets and a zero a_(0)b. |
 
 **Absent entirely** (a Sage/MAGMA equivalent would have these):
 
-- **A working λ-bracket for Virasoro/N=2/Neveu–Schwarz and the generic structure-coefficient engine** — These are the crate's headline objects; all four return an empty bracket, which downstream reads as 'abelian'. Nothing in the crate can currently be trusted except the ghost/free-field brackets.
-- **Verification of the LCA axioms (sesquilinearity, skew-symmetry, conformal Jacobi identity)** — No test anywhere checks the three defining axioms — the same gap that let the empty brackets survive.
+- **A working λ-bracket for Virasoro/N=2/Neveu–Schwarz and the generic structure-coefficient engine**: These are the crate's headline objects. Since 2026-11-06 all four panic with `unimplemented!` instead of returning an empty (abelian) bracket; the ghost and free-field brackets are real and tested.
+- **Verification of the LCA axioms (sesquilinearity, skew-symmetry, conformal Jacobi identity)**: Sesquilinearity is tested for the free-field and ghost brackets since 2026-11-06. Skew-symmetry and the Jacobi identity are checked nowhere, and the `check_*` trait defaults are `unimplemented!`.
 - **Universal enveloping vertex algebra / OPE and normally-ordered products** — The whole point of Lie conformal algebras in Sage is to feed vertex-algebra computations; there is no vertex algebra in RustMath at all.
 - **Free Lie conformal algebra on a set of generators** — Sage has it (LieConformalAlgebra with free generators); RustMath has only finitely_freely_generated_lca as a container.
 
@@ -1657,26 +1674,26 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 
 #### `rustmath-quivers` · 👁️ mixed
 
-*Quivers (labelled digraphs), paths, path semigroups, and cluster quivers with mutation (5 files, 2k LOC, 50 tests, 0 #[ignore], 0 #[should_panic]).*
+*Quivers (labelled digraphs), paths, path semigroups, and cluster quivers with mutation (5 files, 2.9k LOC, 63 tests, 0 #[ignore], 0 #[should_panic]).*
 
 **Depends on:** `rustmath-core`, `rustmath-graphs`  
-**Tally:** 🟢 4 · ⏳ 3 · 🛑 1 · 🔴 0 · ⬜ 0
+**Tally:** 🟢 6 · ⏳ 3 · 🛑 0 · 🔴 0 · ⬜ 0
 
 | | Algorithm | Location | Notes |
 |:--:|---|---|---|
-| 🛑 | Mutation type (finite / affine / infinite) | `rustmath-quivers/src/cluster_quiver.rs:420` | The doc says it computes the Cartan companion C = BᵀB and tests positive-(semi)definiteness. The body does NONE of that: it BFS-explores the mutation class and decides by counting visited matrices — 'if visited.len() < 20 { Finite } else { Affine }' and 'if visited.len() > 50 { Infinite } else { Finite }'. Fabricated classification. `cartan_companion()` exists at line 540 and is never used here. |
 | ⏳ | All paths between two vertices | `rustmath-quivers/src/quiver.rs:213` | Documented as 'only works for acyclic quivers' — returns None otherwise (honest guard). |
-| ⏳ | Mutation equivalence of two quivers (BFS over the mutation class) | `rustmath-quivers/src/cluster_quiver.rs:374` | Bounded BFS to `max_depth`; failure to find the target within the bound is returned as `false` (= 'not mutation-equivalent'). The bound is an explicit caller argument, so semi-honest — but the negative answer is not a proof. |
+| ⏳ | Mutation equivalence of two quivers (BFS over the mutation class) | `rustmath-quivers/src/cluster_quiver.rs:395` | Returns `Option<bool>`: Some(true) when the target is found; Some(false) only for different shapes, different frozen sets, or a fully enumerated class; None when `max_depth` cuts the search. The visited set holds exact matrices (no 64-bit hash). Tests: test_is_mutation_equivalent, test_is_mutation_equivalent_frozen_sets (class sizes 4 and 10, checked by an independent Python BFS). Non-equivalence inside an infinite class is never decided. Was: false whenever the bounded search missed the target. |
 | ⏳ | Path algebra / path semigroup (composition, initial-terminal matching) | `rustmath-quivers/src/path_semigroup.rs:1` | Real path composition; path.rs:199 has one 'we'll return None since we need more context' branch. |
 | 🟢 | Acyclicity test / cycle detection (DFS) | `rustmath-quivers/src/quiver.rs:172` |  |
-| 🟢 | Cluster quiver matrix mutation μ_k (Fomin–Zelevinsky) | `rustmath-quivers/src/cluster_quiver.rs:316` | CORRECT — handles both the (b_ik>0, b_kj>0) and (b_ik<0, b_kj<0) branches with the right sign. This is the reference implementation; rustmath-algebras/src/cluster_algebra.rs:172 has a BROKEN copy that drops the negative-negative branch. Deduplicate. |
-| 🟢 | Mutation classes of types A_n, D_n, E_n; frozen vertices; principal part; Cartan companion | `rustmath-quivers/src/cluster_quiver.rs:177` |  |
+| 🟢 | Cluster quiver matrix mutation μ_k (Fomin–Zelevinsky) | `rustmath-quivers/src/cluster_quiver.rs:343` | Handles both the (b_ik>0, b_kj>0) and (b_ik<0, b_kj<0) branches with the right sign (FZ I eq. 4.3); checked i64 arithmetic returns Err on overflow. This is the reference implementation; rustmath-algebras/src/cluster_algebra.rs:172 has a BROKEN copy that drops the negative-negative branch. Deduplicate. |
+| 🟢 | Mutation classes of types A_n, D_n, E_n; frozen vertices; principal part; Cartan companion | `rustmath-quivers/src/cluster_quiver.rs:235` | `type_d` (:255) and `type_e` (:271) build Sage's D_n and E_n graphs with Sage's bipartite orientation (`type_a` stays linear). `cartan_companion` (:591) is the FZ companion (a_ii = 2, a_ij = -\|b_ij\|) of `principal_part()`: coefficient rows are ignored, `freeze_vertex` vertices are kept. Tests: test_standard_quivers_match_sage (D_4 b_matrix from the Sage doc), test_cartan_companion_dynkin_reference (D_4, E_6 against GAP `CartanMatrix`; determinants A_5 = 6, D_5 = 4, E_6/E_7/E_8 = 3/2/1). Was: `type_e` built A_n and the companion was BᵀB. |
+| 🟢 | Mutation type (finite / affine / infinite) | `rustmath-quivers/src/cluster_quiver.rs:473` | Returns `Result<MutationType, String>`. For each connected component of the non-frozen principal part, a BFS over the exact labelled mutation class (at most max(max_class_size, 1) matrices) decides only by theorem: an acyclic member with a finite-type companion gives Finite (FZ II Thm 1.4); a fully enumerated 2-finite class gives Finite (Thm 1.8); an affine acyclic member plus an entry with \|b_ij b_ji\| ≥ 4 gives Affine; for skew-symmetric B the first acyclic member decides (Caldero–Keller) and \|b_ij\| ≥ 3 gives Infinite (Felikson–Shapiro–Tumarkin). Companions are classified by Kac's trichotomy with exact Bareiss minors (`classify_connected` :947). Err when the bound is reached, B is not skew-symmetrizable, or an entry overflows. Tests: A_1..A_6, D_4..D_7, E_6..E_8, B_2, G_2, B_3, Kronecker, D~_4, C~_2, Markov, wild rank 2 and 3 (Sage types, GAP determinants), test_mutation_type_class_size_boundary. Was: a count of visited matrices. |
+| 🟢 | Plain quiver from a skew-symmetric exchange matrix (`to_quiver`) | `rustmath-quivers/src/cluster_quiver.rs:514` | b_ij arrows i -> j for b_ij > 0 (FZ/Sage convention), labelled a_i_j or a_i_j_t; Err when the principal part is not skew-symmetric; `add_edge` errors propagate. test_to_quiver_orientation_and_multiplicity. `ClusterQuiver::new` (:187) now rejects fewer rows than columns. Was: reversed orientation, a wrong plain quiver for skew-symmetrizable B, and colliding labels (a_112) that dropped arrows. |
 | 🟢 | Quiver data structure: edges by label, in/out degree, adjacency | `rustmath-quivers/src/quiver.rs:47` |  |
 
 **Absent entirely** (a Sage/MAGMA equivalent would have these):
 
 - **Quiver representations (dimension vectors, morphisms, indecomposables)** — The crate doc says 'Quiver theory AND representation theory' but there is no representation type at all. Gabriel's theorem, reflection functors and Auslander–Reiten theory are all out of reach.
-- **Positive-definiteness test on the Cartan companion (the honest mutation-type algorithm)** — Would replace the counting heuristic in mutation_type() with a decision that is actually correct.
 - **Quivers with potential and Jacobian algebras** — Standard modern cluster-theory object (Derksen–Weyman–Zelevinsky); absent.
 - **Path algebra with relations / admissible ideals** — path_semigroup exists but there is no path ALGEBRA over a ring and no quotient by relations.
 
@@ -1979,7 +1996,7 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 *Algebraic curves: Belyi maps and dessins d'enfants (the real content), plus a legacy plane-curve / Riemann-Roch layer.*
 
 **Depends on:** `rustmath-complex`, `rustmath-core`, `rustmath-finitefields`, `rustmath-groups`, `rustmath-integers`, `rustmath-matrix`, `rustmath-numberfields`, `rustmath-numerical`, `rustmath-polynomials`, `rustmath-powerseries`, `rustmath-quadraticforms`, `rustmath-rationals`, `rustmath-rings`, `rustmath-schemes`, `rustmath-symbolic`  
-**Tally:** 🟢 9 · ⏳ 5 · 🛑 4 · 🔴 2 · ⬜ 0 · `#[ignore]` × 6
+**Tally:** 🟢 10 · ⏳ 5 · 🛑 4 · 🔴 2 · ⬜ 0 · `#[ignore]` × 6
 
 | | Algorithm | Location | Notes |
 |:--:|---|---|---|
@@ -1989,7 +2006,7 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 | 🛑 | Rational parameterization of a genus-0 curve | `rustmath-curves/src/parameterization.rs:38,266,336` | CurveParameterization::evaluate returns the literal (0.0, 0.0). The finder only recognizes a circle x^2+y^2-r^2 (line 266) and returns None otherwise. |
 | 🛑 | Riemann–Roch basis of L(D) | `rustmath-curves/src/riemann_roch.rs:297,416,458` | Generates formal monomials; the 'linear independence test' (:416) merely checks whether the function is literally already in the basis list; evaluate (:458) returns a symbolic string. The crate's own test at riemann_roch.rs:627 asserts `dim <= 1` with the comment 'Should be 1 but our simplified implementation might give 0'. |
 | 🛑 | find_singularities of a plane curve | `rustmath-curves/src/singularities.rs:104` | Computes a Groebner basis of (f, df/dx, df/dy), correctly detects the empty case, and then RETURNS AN EMPTY VECTOR in every other case ('For now, return an empty vector indicating that solving requires more advanced algebraic methods', line 148). An empty list is the positive claim 'this curve is smooth'. |
-| ⏳ | Modular-forms (KMSV) route to the Belyi map: form basis, evaluation, high-precision variant | `rustmath-curves/src/belyi/modular_forms.rs:33,58,130; modular_forms_hp.rs` | Works, but the 5 #[ignore]d tests in modular_forms_hp.rs (:648,:685,:737,:827,:874) and genus0_map.rs:300 are honest EXPLORATION/DUMP harnesses, not hidden facades — one of them records the finding that rho ~= 0.9906 for the [2,12,5] passport so the naive power-series route needs N ~= 3000 and does not scale. That is a documented negative result. |
+| ⏳ | Modular-forms (KMSV) route to the Belyi map: form basis, evaluation, high-precision variant | `rustmath-curves/src/belyi/modular_forms.rs:33,58,130; modular_forms_hp.rs` | Works, but the 5 #[ignore]d tests in modular_forms_hp.rs (:1246, :1283, :1335, :1425, :1472) and genus0_map.rs:1058 are honest EXPLORATION/DUMP harnesses, not hidden facades. One of them records the finding that rho ~= 0.9906 for the [2,12,5] passport so the naive power-series route needs N ~= 3000 and does not scale. That is a documented negative result. |
 | ⏳ | Plane-curve intersection | `rustmath-curves/src/plane_curve.rs:81` | 'A full implementation would use Groebner bases to solve the system'; to_projective/to_affine are TODO (:86, :333). |
 | ⏳ | Riemann–Roch dimension l(D) | `rustmath-curves/src/riemann_roch.rs:225,242,511` | Exact only in the non-special range d >= 2g-1 (where RR is a formula, not a computation). In the intermediate range it silently substitutes riemann_roch_bound = deg D + 1 (line 242), i.e. an upper bound returned as the dimension. The 'function field' is a String-keyed valuation map (riemann_roch.rs:56,152) — there is no actual function field. |
 | ⏳ | Special divisors, Clifford index, Brill–Noether number rho | `rustmath-curves/src/special_divisors.rs:144,158,176,285,300,313,327` | The FORMULAS (rho = g - (r+1)(g-d+r), Clifford index d - 2(h0-1), gonality) are correct arithmetic on given (g, r, d, h0) inputs. But h0/h1 come from the Riemann-Roch layer above, so nothing can actually be computed FROM A CURVE. clifford_dimension (:365) has both arguments underscored. |
@@ -2002,6 +2019,7 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 | 🟢 | Newton / Gauss–Newton solve of the Belyi system in f64 and in arbitrary precision (rug), with a residual gate and a root classifier | `rustmath-curves/src/belyi/newton.rs; newton_hp.rs; solve.rs:108,122,129; mp_svd.rs (multiprecision SVD)` | gate_numerical_candidate returns a RootClass rather than a bare 'solved'. |
 | 🟢 | Numerical monodromy: fiber tracking along loops, cycle type, composition — in f64 and arbitrary precision | `rustmath-curves/src/belyi/numerical_monodromy.rs:96,152,329,362,411` |  |
 | 🟢 | Permutations, Belyi triples, transitivity/primitivity, Riemann–Hurwitz genus from branch cycles | `rustmath-curves/src/belyi/monodromy.rs:41,54,151,173,192; numerical_monodromy.rs:446,465` |  |
+| 🟢 | Scaled AMI matrix assembly and kernel phase normalisation (high-precision KMSV route) | `rustmath-curves/src/belyi/modular_forms_hp.rs:141` | `assemble_scaled_ami` builds per-sample tables with an order-preserving parallel map, then sums each entry sequentially over m = 1..Q, so the matrix is bitwise identical at any thread count (assemble_scaled_ami_bitwise_thread_independent: 1, 2, 4, 8 threads). `recover_forms_from_matrix` (:907) scales each kernel vector so that its first largest-modulus entry is real positive; a 2^-255 relative perturbation of the matrix moves the forms by 4.6e-66 (recover_forms_phase_is_well_conditioned, which also asserts dim S_6 = 3 for (5,3,3)), and `recover_forms` vs `recover_forms_centered` now differ by 0. Peak memory 2·Q·dim + dim² values; `dump_scaled_ami_streamed` (:262) stays O(Q + dim) per worker. Was: a rayon fold/reduce whose grouping varied per run, giving ~1e-9 differences in the forms. |
 | 🟢 | Triangle groups, coset graphs, hyperbolic/flag packings, Dirichlet domain radius | `rustmath-curves/src/belyi/triangle_group.rs:113,158; coset_graph.rs; packing.rs; hyperbolic_packing.rs; flag_packing.rs; flags.rs` |  |
 
 **Absent entirely** (a Sage/MAGMA equivalent would have these):
@@ -2256,7 +2274,7 @@ Rows are ordered worst-first (🔴 broken → 🛑 facade → ⏳ partial → �
 | ⏳ | Error function (A&S 7.1.26) used by the normal CDF | `rustmath-stats/src/distributions/mod.rs:320` | ~1.5e-7 accuracy; duplicated verbatim in hypothesis.rs:139. |
 | ⏳ | One-sample and two-sample (pooled) t-test statistic | `rustmath-stats/src/hypothesis.rs:21` | The t STATISTIC is computed correctly; the p-value attached to it is fabricated — see next entry. |
 | 🟢 | Binomial distribution: pmf, cdf, mean/variance | `rustmath-stats/src/distributions/mod.rs:105` |  |
-| 🟢 | Descriptive statistics: mean, median, mode, variance, std, covariance, correlation, quantiles, IQR, moving average | `rustmath-stats/src/statistics.rs:8` | Also a generic (Rational-capable) copy in basic_stats/mod.rs:55. |
+| 🟢 | Descriptive statistics: mean, median, mode, variance, std, covariance, correlation, quantiles, IQR, moving average | `rustmath-stats/src/statistics.rs:8` | Also a generic copy over `Field` types in basic_stats/mod.rs:57. Its `std` (:348) now runs for `Real` and `Rational` through `SquareRoot` (:269, :285): the Rational root is exact (SageRational::sqrt after normalising the denominator sign) and `std` returns `DomainError` when the variance is not a rational square. Tests: test_rational_sqrt_exact, test_std_rational_exact (population std of {2,4,4,4,5,5,7,9} is 2; the sample variance 32/7 has no rational root), test_std_real (against f64 sqrt of the known variances, 1e-15); the `std` doctest checks the decimal values sqrt(5/2) and sqrt(2) to 1e-12. Before 2026-11-06 no type satisfied the bounds of the generic `std`. |
 | 🟢 | Exponential distribution: pdf, cdf, inverse-transform sampling | `rustmath-stats/src/distributions/mod.rs:285` |  |
 | 🟢 | Multiple linear regression (normal equations + Gaussian elimination, R²) | `rustmath-stats/src/regression.rs:125` |  |
 | 🟢 | Normal distribution: pdf, cdf (via A&S erf), Box–Muller sampling | `rustmath-stats/src/distributions/mod.rs:56` |  |
@@ -3001,13 +3019,13 @@ live in rings) — it becomes a free function in `rustmath-rings`.
 | M2 Post-freeze unblock | — | FINITEFIELDS, GROUPS, POLYNOMIALS, GALOIS | ⏳ |
 | M3 Symbolic integration | — | SYMBOLIC, CALCULUS | ⏳ |
 | M4 Exact convex geometry | — | GEOMETRY, TOPOLOGY | ⏳ |
-| M5 Facade eradication | — | all (276 🛑 + 67 🔴) | 🛑 |
+| M5 Facade eradication | — | all (271 🛑 + 63 🔴) | 🛑 |
 | M6 Sage/MAGMA interop surface | — | INTERFACES, JUPYTER | ⏳ |
 | M7 IGP24 M23/Q candidate witness | — | CURVES, NUMBERFIELDS + Wave-1 primitives | 👁️ *build done; awaits the campaign's `[2,12,5]` run* |
 | M8 IGP24 regular M23/Q(u) certificate | — | CURVES (B1+B2, OSCAR-assisted) | 👁️ *build done; awaits the real resolvent* |
 
 > [!note] M5 is the one that decides whether this project is real
-> 27% of the catalogued surface returns fabricated values. Until that number is near zero, no result
+> 26% of the catalogued surface returns fabricated values. Until that number is near zero, no result
 > from an un-audited crate can be cited. The three chunks completed on 2026-07-12 are the template:
 > one crate at a time, two implementation stages, two independent adversarial verifiers that derive
 > every expected value from PARI/sympy *before* looking at the code, and a commit only on CONFIRM.
@@ -3019,10 +3037,10 @@ live in rings) — it becomes a free function in `rustmath-rings`.
 | ID | Item | Impact | Since | Status | Mitigation / next step |
 |---|---|---|:--:|:--:|---|
 | B-01 | ~~`PrimeField::zero()/one()` panic~~ **RESOLVED `5ff8749`** (2026-07-16) | was: blocked every generic `F: Field` algorithm | 2026-07-09 | 🟢 | Modulus-0 sentinel with **coercing equality** (the first strict-Eq design was refuted by audit: it made `berlekamp_massey_verify` silently lie). `Matrix<PrimeField>::rank()` and `berlekamp_massey::<PrimeField>` verified working |
-| B-02 | No native Schreier–Sims/BSGS in `groups` | Blocks Stauduhar descent → Galois groups of degree ≥ 6 | 2026-07-10 | 🛑 | T-112. `perm_predicates.rs:211` already builds a Schreier transversal and then *discards* it |
+| B-02 | ~~No native Schreier–Sims/BSGS in `groups`~~ **RESOLVED `5ff8749`** (2026-07-16) | was: blocked Stauduhar descent → Galois groups of degree ≥ 6 | 2026-07-10 | 🟢 | T-112: `bsgs::StabilizerChain` (rustmath-groups/src/bsgs.rs:124) is a deterministic Schreier–Sims with order and sifting membership. Stauduhar descent still returns `NotImplemented` (rustmath-galois/src/stauduhar.rs:58): it also needs the maximal-transitive-subgroup lattice with coset representatives |
 | B-03 | **Interval arithmetic is unsound** (`reals/src/interval.rs:186`) | Advertised as "verified computation" but every endpoint rounds to *nearest* — enclosures do not enclose | 2026-07-12 | 🔴 | Needs directed rounding. Anything relying on it for rigour is invalid |
 | B-04 | Quadratic sieve emits **known composites as prime** (`integers/src/quadratic_sieve.rs:533`) | Wrong factorizations, silently | 2026-07-12 | 🔴 | `// Couldn't factor, assume it's prime` inside a `!is_prime()` guard |
-| B-05 | 276 facades / 67 broken across the tree | Any un-audited result may be fabricated | 2026-07-09 | 🛑 | M5. Chunk pattern, worst crates first (see Backlog order) |
+| B-05 | 271 facades / 63 broken across the tree | Any un-audited result may be fabricated | 2026-07-09 | 🛑 | M5. Chunk pattern, worst crates first (see Backlog order) |
 | B-06 | `rustmath-curves`, `-igp24`, `-lava` are **OFF-LIMITS** | Live IGP24 competition work by another session | 2026-07-10 | ⚠️ | Do not edit. They must keep *building*. Read-only is fine |
 | B-07 | `solve_runner` builds 8 crates **by path** | An API break outside the workspace | 2026-07-10 | ⚠️ | `/home/john/inverse_galois/M23/solve_runner`. Additive-only in CORE, INTEGERS, RATIONALS, POLYNOMIALS, GROUPS, QUADRATICFORMS, NUMBERFIELDS, NUMERICAL. It has **39 pre-existing** build errors — always compare a baseline, never just "does it build" |
 | B-08 | Unbounded allocation is a recurring failure mode | A doctest once allocated **89 GB** and OOM-killed the machine | 2026-07-09 | ⚠️ | Every cargo run goes under `systemd-run --scope -p MemoryMax=6G`. Never raise the cap — exit 137 is a *bug*, not a resource shortage |
@@ -3049,9 +3067,9 @@ the failure mode here is *plausible wrongness*, which ordinary review does not c
 
 ## Board Metrics
 
-- **Algorithms catalogued: 1282** across 65 crates (~600k LOC)
-- 🟢 Done 521 · ⏳ Partial 353 · 🛑 Facade 276 · 🔴 Broken 67 · ⬜ Honest gap 65
-- **Defects (🛑 + 🔴): 343** — this is the number that matters
+- **Algorithms catalogued: 1302** across 65 crates (~600k LOC)
+- 🟢 Done 547 · ⏳ Partial 347 · 🛑 Facade 271 · 🔴 Broken 63 · ⬜ Honest gap 74
+- **Defects (🛑 + 🔴): 334**: this is the number that matters
 - Board: Backlog 46 · Selected 5 · In Progress 0 · Review 0 · QA 0 · Done 12
 - Build health: 67/67 crates compile; **all workspace test targets compile** (0 errors)
 - Test suites verified green this sprint: `ellipticcurves` 188/0/0 · `modular` 221/0/1 · `polynomials` 250/0/0 · `schemes` 238/0/13
@@ -3062,6 +3080,7 @@ the failure mode here is *plausible wrongness*, which ordinary review does not c
 
 | Date | Author | Change |
 |---|---|---|
+| 2026-11-06 | @claude | **Failing-test sweep (`fa3d6ce`..`e0a9c23`, 13 commits)**: 58 failing tests fixed across 10 crates (groups, quivers, lieconformal, trees, numbertheory, modules, algebras, stats, misc, curves); 48 facades made honest or implemented, 16 recorded and still open (journal entries: the tracker rates one of them ⬜ and two ⏳ inside existing rows, and one is a test, not an algorithm). Now real: M11/M12, quiver mutation type (Kac trichotomy on FZ companions), multimodular B_n, normal subgroups and chief series for enumerated groups, free-field and ghost λ-brackets, deterministic AMI assembly. Virasoro/N=2/NS/structure-coefficient brackets are now honest `unimplemented!`. Inventory: 20 rows added, 🟢 +26, ⏳ -6, 🛑 -5, 🔴 -4, ⬜ +9 (1302 catalogued). Stale cross-references corrected: Bernoulli (core and rationals sections), native Schreier–Sims since `5ff8749` (groups text, T-215, B-02 resolved), rational reconstruction present in rustmath-integers/src/crt.rs:130; 'entirely absent' list 405 → 403. |
 | 2026-07-18 | @claude | **Handoff 2 landed (`769d183`), both verifiers CONFIRMED — the SVD wall is down**: certified mixed-precision kernel refinement (E1a: GPU/dd/f64 coarse checked-never-trusted, a-posteriori hp residual + Cholesky/Weyl gap certificates, streamed EXT matvec, dim-1500 refine in 4.6 s vs the ≥16-day full-Jacobi wall), tournament-parallel bitwise-deterministic Jacobi + checkpoint/restart (E1b+E2), the campaign's certified hp φ upstreamed (E3, len-1501 ≈30 s vs 13h47m), m/e pre-probe (E4). Post-audit: vacuous-gap-certificate fix (dd locator ladder), σ_k-upper rounding count, cupy header validated before allocation. curves 297/0/9. |
 | 2026-07-16 | @claude | **Chunk 12b landed (`edb9100`) — the resumed queue (11, 12, 13) is COMPLETE**: generic `LinearCode<F: Field>` with the two-way MacWilliams gate over extension fields; real Reed–Solomon (primitive-element evaluation, BM+Chien+Forney, syndrome re-check) replacing the "PGZ" doc lie AND a false `d = n−k+1` claim; the BCH generator table was partly wrong (the (4,1) entry doesn't divide x¹⁵−1) and is now derived from minimal polynomials with an in-Rust BCH-bound certificate. Post-audit: bounded-distance-decoding docs corrected (a perfect code cannot detect >t errors), MacWilliams wrong-q footgun closed. coding 67/0/0. |
 | 2026-07-16 | @claude | **Chunk 11 landed (`8a9a5ed`)**: rational-function Risch as a decision procedure (Hermite + Rothstein–Trager, exact differentiate-back through the new normalizer; RootSum terms carried exactly, never dropped). Audit cycle: math CONFIRMED, code REFUTED a termination cliff (1/(x¹⁵+x+1) hung 150s vs 40ms now) — fixed via RischBudget with the refusal *labeled* `BudgetExceeded`, never mislabeled `NotRational`. `root_sum` now differentiates through the summand instead of silently to 0. symbolic 650/0/3. |
