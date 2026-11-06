@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 3632 | 9 | 201 | 873 | 14 | 133 | 4194 (31%) | 7902 (59%) |
+| 13341 | 3750 | 10 | 224 | 919 | 14 | 133 | 4120 (31%) | 7900 (59%) |
 
 ## By chapter
 
@@ -42,7 +42,7 @@ automatic `candidate`/`missing` counts.
 | 18 | Ring of Integers | III | 188 | 188 | 0 | 27 | 69 | 4 | 2 | 0 | 86 | substantial | `rustmath-integers` |
 | 19 | Integer Residue Class Rings | III | 108 | 108 | 0 | 12 | 23 | 1 | 1 | 0 | 71 | partial | `rustmath-finitefields` |
 | 20 | Rational Field | III | 63 | 0 | 0 | 0 | 0 | 0 | 0 | 53 | 10 | substantial | `rustmath-rationals` |
-| 21 | Finite Fields | III | 118 | 0 | 0 | 0 | 0 | 0 | 0 | 74 | 44 | partial | `rustmath-finitefields` |
+| 21 | Finite Fields | III | 118 | 118 | 1 | 23 | 46 | 0 | 6 | 0 | 42 | partial | `rustmath-finitefields` |
 | 22 | Nearfields | III | 42 | 0 | 0 | 0 | 0 | 0 | 0 | 26 | 16 | none | `(none - new crate rustmath-nearfields proposed)` |
 | 23 | Univariate Polynomial Rings | III | 129 | 129 | 0 | 11 | 57 | 6 | 0 | 0 | 55 | substantial | `rustmath-polynomials` |
 | 24 | Multivariate Polynomial Rings | III | 98 | 98 | 0 | 9 | 29 | 0 | 0 | 0 | 60 | substantial | `rustmath-polynomials` |
