@@ -2,6 +2,8 @@
 
 This directory is the **single source of truth** for RustMath's status and direction, as of **2026-07-09**. It replaces the 70 overlapping status/plan/TODO/analysis documents that had accumulated at the repo root (now in [`archive/`](./archive/), preserved in git).
 
+> **New session?** Read [`HANDOFF.md`](./HANDOFF.md) first: current state and the next tasks.
+
 ## The two documents that matter
 
 | Doc | What it is |

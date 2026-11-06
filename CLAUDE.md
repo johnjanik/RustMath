@@ -15,7 +15,7 @@ interface spec only; do not copy MAGMA package (`.m`) source.
 
 ## Start of every session
 
-1. Read `docs/README.md` (status index) and `docs/PLAN.md` (phases).
+1. Read `docs/HANDOFF.md` (latest state and next tasks), then `docs/README.md` and `docs/PLAN.md`.
 2. For MAGMA coverage, use `docs/magma/` (per-intrinsic tracker). For what the code actually does,
    use `PROJECT_TRACKER.md` (algorithm inventory with `file:line`, facade/broken flags).
 3. Cloud containers are ephemeral: commit and push before ending. Update the tracker rows you touched.
