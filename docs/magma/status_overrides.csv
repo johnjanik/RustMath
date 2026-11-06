@@ -3502,3 +3502,132 @@ ch031.MaximalSublattices,missing,,no sublattice-lattice object V; same-named can
 ch031.MinimalSuperlattices,missing,,no sublattice-lattice object V; same-named candidate (lll/algebras/rings) is unrelated [review 2026-11-06; checked]
 ch031.Lattice.2,missing,,no sublattice-lattice object V; same-named candidate (lll/algebras/rings) is unrelated [review 2026-11-06; checked]
 ch031.BasisMatrix,missing,,no sublattice-lattice object V; same-named candidate (lll/algebras/rings) is unrelated [review 2026-11-06; checked]
+ch023.PolynomialAlgebra,missing,,no PolynomialRing(R) constructor; cached_algebra::PolynomialRing is an unrelated demo [review 2026-11-06; checked]
+ch023.AssignNames,missing,,no ring object with variable names [review 2026-11-06; checked]
+ch023.Name,partial,rustmath-polynomials/src/univariate.rs:41,"Verifier right: Name(P,1) is the generator, same as P.1 (rated partial): var() builds x. No ring object or variable names; no direct test [review 2026-11-06; adjudicated]"
+ch023.P,partial,rustmath-polynomials/src/univariate.rs:41,"UnivariatePolynomial::var() gives x; no ring object, no direct test [review 2026-11-06; checked]"
+ch023.elt,partial,rustmath-polynomials/src/univariate.rs:17,UnivariatePolynomial::new(coeffs) builds a0+a1x+..; coefficients must already be type R; test_creation [review 2026-11-06; checked]
+ch023.P.2,partial,rustmath-polynomials/src/univariate.rs:36,only constant(c) and new(vec); no coercion from other rings or polynomials [review 2026-11-06; checked]
+ch023.Polynomial,done,rustmath-polynomials/src/univariate.rs:17,new(coeffs) builds polynomial from sequence; univariate.rs::test_creation [review 2026-11-06; checked]
+ch023.Polynomial.2,partial,rustmath-polynomials/src/univariate.rs:17,no coercion into R: elements must already be of type R [review 2026-11-06; checked]
+ch023.Polynomial.3,missing,,no coefficient-coercing conversion between coefficient rings [review 2026-11-06; checked]
+ch023.One,partial,rustmath-polynomials/src/univariate.rs:84,UnivariatePolynomial::one(); no direct test [review 2026-11-06; checked]
+ch023.Zero,partial,rustmath-polynomials/src/univariate.rs:79,UnivariatePolynomial::zero(); no direct test [review 2026-11-06; checked]
+ch023.BaseRing,missing,,no polynomial-ring structure object (only element types) [review 2026-11-06; checked]
+ch023.Category,missing,,no polynomial-ring structure object (only element types) [review 2026-11-06; checked]
+ch023.ChangeRing,missing,,no ring-change map P->Q; no polynomial-ring structure object (only element types) [review 2026-11-06; checked]
+ch023.ChangeRing.2,missing,,no coefficient-map change of ring [review 2026-11-06; checked]
+ch023.Rank,missing,,no polynomial-ring structure object (only element types) [review 2026-11-06; checked]
+ch023.P.3,missing,,no cardinality of polynomial rings [review 2026-11-06; checked]
+ch023.Characteristic,missing,,no polynomial-ring structure object (only element types) [review 2026-11-06; checked]
+ch023.IsCommutative,missing,,no polynomial-ring structure object (only element types) [review 2026-11-06; checked]
+ch023.IsFinite,missing,,no polynomial-ring structure object (only element types) [review 2026-11-06; checked]
+ch023.IsField,missing,,no polynomial-ring structure object (only element types) [review 2026-11-06; checked]
+ch023.IsPID,missing,,no polynomial-ring structure object (only element types) [review 2026-11-06; checked]
+ch023.IsDivisionRing,missing,,no polynomial-ring structure object (only element types) [review 2026-11-06; checked]
+ch023.IsDomain,missing,,no polynomial-ring structure object (only element types) [review 2026-11-06; checked]
+ch023.P.4,missing,,no polynomial-ring structure object (only element types) [review 2026-11-06; checked]
+ch023.hom,partial,rustmath-polynomials/src/univariate.rs:135,"compose(q) substitutes a polynomial into p (S=P, coefficients in R only); test_compose; no general hom<P->S|f,y> [review 2026-11-06; checked]"
+ch023.Parent,missing,,no polynomial-ring structure object (only element types) [review 2026-11-06; checked]
+ch023.a-a,partial,rustmath-polynomials/src/univariate.rs:1024,Neg impl exists; unary plus absent; no direct test [review 2026-11-06; checked]
+ch023.a,partial,rustmath-polynomials/src/univariate.rs:1003,"Add/Sub/Mul tested (test_addition, test_multiplication); Div/Rem need EuclideanDomain, see div_rem; no div by scalar op [review 2026-11-06; checked]"
+ch023.a.2,missing,,no AddAssign/SubAssign/MulAssign on UnivariatePolynomial [review 2026-11-06; checked]
+ch023.a.3,partial,rustmath-polynomials/src/univariate.rs:10,derived PartialEq on canonical coeff vector; no test asserts polynomial equality directly [review 2026-11-06; checked]
+ch023.a.4,missing,,no polynomial-ring structure object (only element types) [review 2026-11-06; checked]
+ch023.IsZero,partial,rustmath-polynomials/src/univariate.rs:107,is_zero and Ring::is_one exist; no IsMinusOne; no direct test [review 2026-11-06; checked]
+ch023.IsNilpotent,missing,,no is_nilpotent/is_idempotent for polynomials [review 2026-11-06; checked]
+ch023.IsUnit,missing,,no is_unit/is_zero_divisor for UnivariatePolynomial (quotient.rs is_unit is a facade for quotient elements) [review 2026-11-06; checked]
+ch023.IsIrreducible,partial,rustmath-polynomials/src/factorization.rs:510,real for Z[x] (Zassenhaus; lmfdb_degree24 test) and F_q[x] (poly_factor.rs:706); generic is_irreducible is a facade; is_monic at univariate.rs:414; no IsPrime [review 2026-11-06; checked]
+ch023.Coefficients,done,rustmath-polynomials/src/univariate.rs:46,coefficients() ascending order; univariate.rs::test_addition asserts it [review 2026-11-06; checked]
+ch023.Coefficient,broken,rustmath-polynomials/src/univariate.rs:60,coeff(i) for i>degree returns the constant term instead of zero [review 2026-11-06; checked]
+ch023.MonomialCoefficient,missing,,not implemented [review 2026-11-06; checked]
+ch023.LeadingCoefficient,partial,rustmath-polynomials/src/univariate.rs:65,leading_coefficient() returns Option (None for zero); no direct test [review 2026-11-06; checked]
+ch023.TrailingCoefficient,missing,,not implemented [review 2026-11-06; checked]
+ch023.ConstantCoefficient,done,rustmath-polynomials/src/univariate.rs:60,no dedicated fn; coeff(0) is the constant term; univariate.rs::test_creation [review 2026-11-06; checked]
+ch023.Terms,missing,,"only LaurentPolynomial::terms (laurent.rs:86) returning (exp,coeff) pairs; none for UnivariatePolynomial [review 2026-11-06; checked]"
+ch023.LeadingTerm,missing,,only multivariate leading term; none for univariate [review 2026-11-06; checked]
+ch023.TrailingTerm,missing,,not implemented [review 2026-11-06; checked]
+ch023.Monomials,missing,,not implemented for univariate polynomials [review 2026-11-06; checked]
+ch023.Support,missing,,not implemented for univariate polynomials [review 2026-11-06; checked]
+ch023.Round,missing,,not implemented [review 2026-11-06; checked]
+ch023.Valuation,partial,rustmath-rings/src/function_field/typed/place.rs:160; rustmath-rings/src/function_field/typed/place.rs:80,"Verifier right: Place::finite_linear(0).valuation(f) is v_x(f) over a field K, None (infinity) for 0; place.rs::test_valuations_specific. Needs RationalFunction wrap; nothing over Z [review 2026-11-06; adjudicated]"
+ch023.Degree,done,rustmath-polynomials/src/univariate.rs:51,degree() returns None for zero polynomial instead of -1; univariate.rs::test_creation [review 2026-11-06; checked]
+ch023.Roots,partial,rustmath-finitefields/src/poly_factor.rs:738; rustmath-polynomials/src/roots.rs:11,"F_q[x] roots (distinct, no multiplicity, unsorted) and rational roots over Z; no Max, R/C; poly_factor.rs::irreducibility_and_roots [review 2026-11-06; checked]"
+ch023.Roots.2,partial,rustmath-polynomials/src/root_label.rs:530; rustmath-polynomials/src/root_label.rs:616,"Verifier right: complex_roots gives all roots in C to prec bits (complex_roots_sqrt2); padic_roots simple roots in Z_p (padic_roots_sqrt2_in_z7). Z[x] only, no multiplicities, no general S [review 2026-11-06; adjudicated]"
+ch023.HasRoot,missing,,no HasRoot predicate [review 2026-11-06; checked]
+ch023.HasRoot.2,missing,,no HasRoot in extension ring [review 2026-11-06; checked]
+ch023.SmallRoots,missing,,no Coppersmith small roots [review 2026-11-06; checked]
+ch023.SetVerbose,missing,,SmallRoots not implemented [review 2026-11-06; checked]
+ch023.Derivative,done,rustmath-polynomials/src/univariate.rs:173,formal derivative; univariate.rs::test_derivative [review 2026-11-06; checked]
+ch023.Derivative.2,missing,,only first derivative; no n-th derivative fn [review 2026-11-06; checked]
+ch023.Integral,partial,rustmath-polynomials/src/univariate.rs:198,integrate() over Field with NumericConversion; no direct test [review 2026-11-06; checked]
+ch023.Evaluate,partial,rustmath-polynomials/src/univariate.rs:97,only r in coefficient ring R; no evaluation in other ring S; univariate.rs::test_eval [review 2026-11-06; checked]
+ch023.Interpolation,partial,rustmath-polynomials/src/bivariate.rs:183,"private Lagrange helper over Q only; not public API, no test [review 2026-11-06; checked]"
+ch023.Quotrem,broken,rustmath-polynomials/src/univariate.rs:1052; rustmath-finitefields/src/poly_factor.rs:405; rustmath-numberfields/src/nf_elem.rs:108,"Verifier right: div_rem loops forever when lc quotient truncates to 0 (x^2 by 2x over Z: subtrahend 0, remainder unchanged). PolyQ/FqPoly div_rem field-only, correct (polyq_div_rem_and_xgcd) [review 2026-11-06; adjudicated]"
+ch023.f,broken,rustmath-polynomials/src/univariate.rs:1034,"Verifier right: Div = div_rem(..).unwrap().0, never returns over Z when lc(g) does not divide (x^2 div 2x, remainder unchanged each pass). Correct over fields; no direct test [review 2026-11-06; adjudicated]"
+ch023.IsDivisibleBy,partial,rustmath-polynomials/src/zx.rs:198,try_divide for Z[x] slices only; zx.rs::test_try_divide_exact_and_not [review 2026-11-06; checked]
+ch023.ExactQuotient,partial,rustmath-polynomials/src/zx.rs:233,"divide_exact for Z[x] slices only, panics if not divisible [review 2026-11-06; checked]"
+ch023.f.2,broken,rustmath-polynomials/src/univariate.rs:1042,"Verifier right: Rem = div_rem(..).unwrap().1, hangs over Z when lc(g) does not divide (x^2 mod 2x). Correct over fields; no direct test [review 2026-11-06; adjudicated]"
+ch023.Valuation.2,partial,rustmath-rings/src/function_field/typed/place.rs:160; rustmath-rings/src/function_field/typed/place.rs:365,Verifier right: Place::finite(g).valuation(f) is the g-multiplicity for irreducible g over a field (test_valuations_specific); pub(crate) poly_divide_out takes any g. Not over Z [review 2026-11-06; adjudicated]
+ch023.Reductum,missing,,not implemented [review 2026-11-06; checked]
+ch023.PseudoRemainder,partial,rustmath-polynomials/src/zx.rs:171,Z[x] slices only; zx.rs::test_pseudo_rem_basic [review 2026-11-06; checked]
+ch023.EuclideanNorm,partial,rustmath-polynomials/src/univariate.rs:51,"Verifier right: digest defines it as the degree function, which degree() computes (None for 0; test_creation). No EuclideanDomain impl for UnivariatePolynomial, so no norm() [review 2026-11-06; adjudicated]"
+ch023.Modexp,partial,rustmath-polynomials/src/fp_factor.rs:172,"F_p[x] only (also FqPoly::pow_mod, poly_factor.rs:465 for F_q); fp_factor.rs::test_pow_mod [review 2026-11-06; checked]"
+ch023.ChineseRemainderTheorem,missing,,"integer CRT only (integers/crt.rs), no polynomial CRT [review 2026-11-06; checked]"
+ch023.ReciprocalPolynomial,missing,,not implemented [review 2026-11-06; checked]
+ch023.PowerPolynomial,partial,rustmath-polynomials/src/tschirnhaus.rs:72,"Verifier right: tschirnhaus_transform(f, x^n) = Res_x(f, Y-x^n) = prod(Y-a_i^n); monic f in Z[x] only (asserts monic). tschirnhaus.rs::square_transform_cubic: x^3-2 to Y^3-4 [review 2026-11-06; adjudicated]"
+ch023.f.3,partial,rustmath-curves/src/belyi/descent.rs:396,"Verifier right: private mobius_transform = sum p_k (ax+b)^k (cx+d)^(hom-k), the homogenized substitution, over quadratic fields only (Belyi descent); no public API or direct test [review 2026-11-06; adjudicated]"
+ch023.GreatestCommonDivisor,partial,rustmath-polynomials/src/zx.rs:239; rustmath-polynomials/src/univariate.rs:244,Z[x] subresultant gcd normalized (zx tests); generic gcd not normalized/monic and weak over Z; FqPoly::gcd monic for F_q [review 2026-11-06; checked]
+ch023.ExtendedGreatestCommonDivisor,partial,rustmath-numberfields/src/nf_elem.rs:133,"Q[x] only, monic g; also fp_factor.rs:140 over F_p; nf_elem.rs::polyq_div_rem_and_xgcd, fp_factor.rs::test_extended_gcd_bezout [review 2026-11-06; checked]"
+ch023.LeastCommonMultiple,broken,rustmath-polynomials/src/univariate.rs:321,"Verifier right: lcm calls gcd, whose first div_rem hangs over Z (lcm(x^2,2x)); pseudo_rem fallback never reached. Over Q not normalized: lcm(2x,x)=2x, Magma x. No test [review 2026-11-06; adjudicated]"
+ch023.Normalize,partial,rustmath-polynomials/src/zx.rs:145,zx::normalize also divides out content (Magma only fixes sign); make_monic (univariate.rs:425) over fields [review 2026-11-06; checked]
+ch023.Content,partial,rustmath-polynomials/src/univariate.rs:447; rustmath-polynomials/src/zx.rs:124; rustmath-polynomials/src/factorization.rs:99,"Verifier right: Euclid gcd with truncated % keeps sign, content(6-9x)=-3 (Magma 3); test_content positive coeffs only. zx::content takes abs, Z slices only, no direct test [review 2026-11-06; adjudicated]"
+ch023.PrimitivePart,partial,rustmath-polynomials/src/factorization.rs:126; rustmath-polynomials/src/zx.rs:135,"Verifier right: divides by signed content, pp(6-9x)=-2+3x (Magma 2-3x); test_primitive_part positive coeffs only. zx::primitive_part correct, Z slices only, no direct test [review 2026-11-06; adjudicated]"
+ch023.ContentAndPrimitivePart,partial,rustmath-polynomials/src/factorization.rs:99,no combined fn; content and primitive_part available separately [review 2026-11-06; checked]
+ch023.Sign,missing,,no sign of leading coefficient for polynomials [review 2026-11-06; checked]
+ch023.AbsoluteValue,missing,,root_label abs is for BigFloat; none for polynomials [review 2026-11-06; checked]
+ch023.MaxNorm,partial,rustmath-numberfields/src/polred.rs:267; rustmath-numberfields/src/round2.rs:904,"Verifier right: private sup_norm(f) = max |coeff| on Z[x] slices (same in round2.rs supnorm), used by polred; not public, no direct test [review 2026-11-06; adjudicated]"
+ch023.SumNorm,missing,,not implemented [review 2026-11-06; checked]
+ch023.DedekindTest,partial,rustmath-numberfields/src/ideals.rs:126,"prime_decomposition sets p_divides_index via Dedekind criterion; no standalone DedekindTest(p,m) bool; ideals.rs::dedekind_detects_index_divisor [review 2026-11-06; checked]"
+ch023.PrimePolynomials,missing,,"only single irreducible search (find_irreducible), no enumeration of all [review 2026-11-06; checked]"
+ch023.RandomPrimePolynomial,partial,rustmath-finitefields/src/poly_factor.rs:231,random monic irreducible over F_p only (seeded); poly_factor.rs::random_irreducible_various_p_n [review 2026-11-06; checked]
+ch023.NumberOfPrimePolynomials,missing,,no counting formula implemented [review 2026-11-06; checked]
+ch023.JacobiSymbol,missing,,"integer jacobi_symbol only, not for F_q[x] [review 2026-11-06; checked]"
+ch023.Factorization,partial,rustmath-polynomials/src/factorization.rs:468; rustmath-finitefields/src/poly_factor.rs:692; rustmath-finitefields/src/cantor_zassenhaus.rs:325; rustmath-functionfields/src/factor.rs:445; rustmath-polynomials/src/padic_factor.rs:125,"Verifier right on note: Z via Zassenhaus (not van Hoeij), GF(q) CZ, Q(t) factor_over_qt (factor.rs::factor_x2_minus_t2), Q_p only (e,f) data. No Q(alpha), affine algebras, Al param [review 2026-11-06; adjudicated]"
+ch023.HasPolynomialFactorization,missing,,no ring-capability predicate in workspace [review 2026-11-06; checked]
+ch023.SetVerbose.2,partial,rustmath-misc/src/verbose.rs:8,"Verifier right: global set_verbose(level) only, no PolyFact flag, nothing reads it; univariate factoring exists, so partial as adjudicated ch024.SetVerbose (same PolyFact flag) [review 2026-11-06; adjudicated]"
+ch023.FactorisationToPolynomial,missing,,no function multiplying a factorization sequence back to a polynomial [review 2026-11-06; checked]
+ch023.SquarefreeFactorization,partial,rustmath-polynomials/src/zx.rs:295; rustmath-finitefields/src/cantor_zassenhaus.rs:81,"Z[x] and GF(q)[x] versions exist, tested (cantor_zassenhaus test_squarefree_factorization); no generic over-any-field entry point [review 2026-11-06; checked]"
+ch023.DistinctDegreeFactorization,partial,rustmath-finitefields/src/poly_factor.rs:585,"tested (distinct_degree_split); GF(q) only; no Degree parameter; returns (poly,d) pairs, monic input [review 2026-11-06; checked]"
+ch023.EqualDegreeFactorization,done,rustmath-finitefields/src/poly_factor.rs:613,"Cantor-Zassenhaus; test equal_degree_cantor_zassenhaus_odd in same file; takes (f,d), g=x^q mod f computed internally [review 2026-11-06; checked]"
+ch023.IsIrreducible.2,partial,rustmath-polynomials/src/factorization.rs:510; rustmath-finitefields/src/poly_factor.rs:706,Z/Q via Zassenhaus and GF(q) via Rabin only; generic is_irreducible (factorization.rs:274) is a facade for deg 2-3 [review 2026-11-06; checked]
+ch023.IsSeparable,partial,rustmath-polynomials/src/univariate.rs:469; rustmath-polynomials/src/tschirnhaus.rs:39,"Not Z only: is_square_free (deg gcd(f,f')=0) over EuclideanDomain fields Q, GFp, Q(t) (rnfeq.rs::hcf_qsqrtm23_absolute_polynomial); still no GF(p^n) or number fields, so partial [review 2026-11-06; adjudicated]"
+ch023.QMatrix,missing,,"Berlekamp Q matrix built inline inside berlekamp_factor_gf, not exposed as a function [review 2026-11-06; checked]"
+ch023.Discriminant,partial,rustmath-polynomials/src/univariate.rs:360; rustmath-polynomials/src/disc.rs:201,"Generic disc needs EuclideanDomain+NumericConversion: Z, Q, Q(t) only; PARI in univariate.rs::test_discriminant_deg4_to_8_matches_pari. No finite fields or number fields, so partial [review 2026-11-06; adjudicated]"
+ch023.Resultant,partial,rustmath-polynomials/src/univariate.rs:545; rustmath-polynomials/src/disc.rs:149,"Generic Bareiss over EuclideanDomain: Z, Q, GFp, Q(t); PARI in univariate.rs::test_resultant_battery_matches_pari. Not GF(p^n) (Field types lack EuclideanDomain) or number fields, so partial [review 2026-11-06; adjudicated]"
+ch023.CompanionMatrix,partial,rustmath-matrix/src/companion.rs:53,"generic ring, monic only, tested (test_companion_matrix_cubic); uses last-column/subdiagonal convention, transpose of digest's last-row form [review 2026-11-06; checked]"
+ch023.HenselLift,partial,rustmath-polynomials/src/factorization.rs:976,"lifts a two-factor product f=g0*h0 mod p^k (test_hensel_lift_simple); multi-factor version zp_hensel.rs:192; not the (f,s,P) sequence signature [review 2026-11-06; checked]"
+ch023.ideal,partial,rustmath-polynomials/src/ideal.rs:116,multivariate Groebner Ideal::new/principal works for 1 variable; no univariate PID ideal normalized to gcd generator [review 2026-11-06; checked]
+ch023.quo,partial,rustmath-polynomials/src/quotient.rs:78,"QuotientRing::new from Groebner ideal, tested; no projection map h returned, no Q<q> naming, univariate via multivariate engine [review 2026-11-06; checked]"
+ch023.I,partial,rustmath-polynomials/src/ideal.rs:335,Ideal::sum concatenates generators (test_ideal_sum); not reduced to gcd single generator [review 2026-11-06; checked]
+ch023.I.2,done,rustmath-polynomials/src/ideal.rs:344,Ideal::product; test ideal.rs test_ideal_product_non_zero [review 2026-11-06; checked]
+ch023.I.3,done,rustmath-polynomials/src/ideal.rs:399,"Ideal::intersection over a field via Groebner; test_ideal_intersection, test_intersection_is_not_the_product [review 2026-11-06; checked]"
+ch023.a.5,done,rustmath-polynomials/src/ideal.rs:223,"Ideal::contains (Groebner membership, field coefficients); test_contains_is_a_real_membership_test [review 2026-11-06; checked]"
+ch023.a.6,done,rustmath-polynomials/src/ideal.rs:223,"Verifier right: notin is !Ideal::contains, exact field membership as for a in I (done); ideal.rs::test_contains_is_a_real_membership_test asserts x notin (x^2-1); as ch058.g.8 [review 2026-11-06; adjudicated]"
+ch023.I.4,missing,,no ideal equality (no PartialEq or same-ideal test) for polynomial Ideal [review 2026-11-06; checked]
+ch023.I.5,missing,,no ideal inequality for polynomial Ideal [review 2026-11-06; checked]
+ch023.I.6,missing,,no ideal containment function I subset J [review 2026-11-06; checked]
+ch023.I.7,missing,,no ideal non-containment function [review 2026-11-06; checked]
+ch023.I.8,partial,rustmath-polynomials/src/ideal.rs:164,"generators() returns slice of generators, not a single gcd generator I.1 [review 2026-11-06; checked]"
+ch023.Modulus,partial,rustmath-polynomials/src/quotient.rs:97,"QuotientRing::ideal() returns the Ideal, not its single generator polynomial [review 2026-11-06; checked]"
+ch023.PreimageRing,missing,,no accessor for the ambient polynomial ring of a quotient [review 2026-11-06; checked]
+ch023.ChebyshevFirst,partial,rustmath-symbolic/src/specialfunctions/orthogonal_polys.rs:70,"symbolic Expr; explicit polynomial only for n<=5, else unevaluated function; no polynomial-ring result; weak tests [review 2026-11-06; checked]"
+ch023.ChebyshevSecond,partial,rustmath-symbolic/src/specialfunctions/orthogonal_polys.rs:129,"Expr only, explicit for n<=3 else unevaluated; Sage U_n convention (degree n) differs from handbook degree n-1 [review 2026-11-06; checked]"
+ch023.LegendrePolynomial,partial,rustmath-symbolic/src/specialfunctions/orthogonal_polys.rs:176,"legendre_p on Expr, explicit only n<=3 else unevaluated; no polynomial ring element [review 2026-11-06; checked]"
+ch023.LaguerrePolynomial,partial,rustmath-symbolic/src/specialfunctions/orthogonal_polys.rs:288,"laguerre explicit only n<=2 on Expr; gen_laguerre (line 330) is only a symbolic placeholder, so no m parameter [review 2026-11-06; checked]"
+ch023.HermitePolynomial,partial,rustmath-symbolic/src/specialfunctions/orthogonal_polys.rs:243,"Expr, explicit only n<=3 else unevaluated; no polynomial-ring result [review 2026-11-06; checked]"
+ch023.GegenbauerPolynomial,stub,rustmath-symbolic/src/specialfunctions/orthogonal_polys.rs:392,"ultraspherical always returns an unevaluated symbolic function, never expands the polynomial [review 2026-11-06; checked]"
+ch023.DicksonFirst,missing,,no Dickson polynomial constructor [review 2026-11-06; checked]
+ch023.DicksonSecond,missing,,no Dickson polynomial constructor [review 2026-11-06; checked]
+ch023.BernoulliPolynomial,done,rustmath-combinatorics/src/ch144_enumerative.rs:107,coefficient vector over Q; test ch144_enumerative.rs::test_bernoulli_polynomial; also rustmath-modular/src/lfunction.rs:72 [review 2026-11-06; checked]
+ch023.SwinnertonDyerPolynomial,missing,,no constructor; zassenhaus.rs test only hardcodes x^4-10x^2+1 [review 2026-11-06; checked]

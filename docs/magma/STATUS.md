@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 3503 | 9 | 190 | 816 | 13 | 128 | 4278 (32%) | 7892 (59%) |
+| 13341 | 3632 | 9 | 201 | 873 | 14 | 133 | 4194 (31%) | 7902 (59%) |
 
 ## By chapter
 
@@ -44,7 +44,7 @@ automatic `candidate`/`missing` counts.
 | 20 | Rational Field | III | 63 | 0 | 0 | 0 | 0 | 0 | 0 | 53 | 10 | substantial | `rustmath-rationals` |
 | 21 | Finite Fields | III | 118 | 0 | 0 | 0 | 0 | 0 | 0 | 74 | 44 | partial | `rustmath-finitefields` |
 | 22 | Nearfields | III | 42 | 0 | 0 | 0 | 0 | 0 | 0 | 26 | 16 | none | `(none - new crate rustmath-nearfields proposed)` |
-| 23 | Univariate Polynomial Rings | III | 129 | 0 | 0 | 0 | 0 | 0 | 0 | 84 | 45 | substantial | `rustmath-polynomials` |
+| 23 | Univariate Polynomial Rings | III | 129 | 129 | 0 | 11 | 57 | 6 | 0 | 0 | 55 | substantial | `rustmath-polynomials` |
 | 24 | Multivariate Polynomial Rings | III | 98 | 98 | 0 | 9 | 29 | 0 | 0 | 0 | 60 | substantial | `rustmath-polynomials` |
 | 25 | Real and Complex Fields | III | 176 | 176 | 3 | 19 | 75 | 10 | 0 | 0 | 69 | partial | `rustmath-reals, rustmath-complex` |
 | 26 | Matrices | IV | 149 | 149 | 2 | 25 | 40 | 5 | 1 | 0 | 76 | substantial | `rustmath-matrix` |
