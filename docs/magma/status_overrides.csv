@@ -4699,3 +4699,47 @@ ch067.HasAttribute,missing,,no GrpAuto (automorphism group of a finite group) ty
 ch067.AssertAttribute,missing,,no GrpAuto (automorphism group of a finite group) type or API in workspace; candidate path is a different concept [review 2026-11-06]
 ch067.Holomorph,missing,,no holomorph; semidirect_product.rs exists but needs a given action and no Aut(G) is computed [review 2026-11-06; checked]
 ch067.Holomorph.2,missing,,"no holomorph; semidirect_product.rs takes an explicit action but no Holomorph(G,A) wrapper over automorphism groups [review 2026-11-06; checked]"
+ch050.LazyPowerSeriesRing,partial,rustmath-powerseries/src/lazy.rs:46; rustmath-powerseries/src/lazy.rs:270; rustmath-rings/src/lazy_series_ring.rs:135,"Ring is the type LazyPowerSeries<C> (Ring impl lazy.rs:270), univariate only, no rank n. rings LazyPowerSeriesRing holds only a name, tied to no element type [review 2026-11-06; adjudicated]"
+ch050.ChangeRing,missing,,No ring-change operation for lazy series rings [review 2026-11-06; checked]
+ch050.R,partial,rustmath-powerseries/src/lazy.rs:93,"gen() gives x for the univariate series only; no ring-indexed R.i, no multivariate [review 2026-11-06; checked]"
+ch050.AssignNames,missing,,Variable name fixed at ring construction; no AssignNames [review 2026-11-06; checked]
+ch050.BaseRing,missing,,Coefficient ring only a type parameter; no accessor on ring object [review 2026-11-06; checked]
+ch050.Rank,missing,,No rank accessor; the ring is univariate only [review 2026-11-06; checked]
+ch050.R1,missing,,No ring equality on lazy series rings [review 2026-11-06; checked]
+ch050.R.2,partial,rustmath-powerseries/src/lazy.rs:88,"constant(c) builds constant series; univariate, no ring-parent coercion check. Used in ring tests via Ring::one [review 2026-11-06; checked]"
+ch050.R.3,missing,,No coercion of a lazy series between rings [review 2026-11-06; checked]
+ch050.R.4,partial,rustmath-powerseries/src/lazy.rs:83,from_coeffs(Vec) univariate only; multivariate spiral order not supported. Tested via lazy::tests::fibonacci_generating_function [review 2026-11-06; checked]
+ch050.LazySeries,partial,rustmath-powerseries/src/lazy.rs:83,from_coeffs takes coefficient list only; no polynomial or rational-function input [review 2026-11-06; checked]
+ch050.elt,partial,rustmath-powerseries/src/lazy.rs:65,from_fn(n -> a_n) univariate only; no multivariate map. Tested: lazy::tests::geometric_series_from_fn [review 2026-11-06; checked]
+ch050.elt.2,partial,rustmath-powerseries/src/lazy.rs:65,"from_fn takes usize exponent, univariate only; no exponent-vector maps. Tested: lazy::tests::geometric_series_from_fn [review 2026-11-06; checked]"
+ch050.s,partial,rustmath-powerseries/src/lazy.rs:154; rustmath-powerseries/src/lazy.rs:235,"add_ref/Add lazy sum, univariate only. No test calls add_ref or + on LazyPowerSeries (sums in mul_ref/try_inverse are on coefficients) [review 2026-11-06; adjudicated]"
+ch050.s.2,partial,rustmath-powerseries/src/lazy.rs:148,"neg_ref/Neg lazy negation, univariate only; no dedicated test [review 2026-11-06; checked]"
+ch050.s.3,partial,rustmath-powerseries/src/lazy.rs:161,"sub_ref/Sub lazy difference, univariate only; no dedicated test [review 2026-11-06; checked]"
+ch050.s.4,partial,rustmath-powerseries/src/lazy.rs:168,"mul_ref/Mul lazy Cauchy product, univariate only. Tested: lazy::tests::lazy_inverse_matches_geometric [review 2026-11-06; checked]"
+ch050.s.5,missing,,No series+coefficient operation; only series+series (constant() then add possible) [review 2026-11-06; checked]
+ch050.c,partial,rustmath-powerseries/src/lazy.rs:181,"scalar_mul(&c) left multiplication, univariate only; no dedicated test [review 2026-11-06; checked]"
+ch050.s.6,missing,,No multiplication by monomial x^n / shift [review 2026-11-06; checked]
+ch050.s.7,partial,rustmath-core/src/traits.rs:74,"Only default Ring::pow(u32) by repeated multiplication; no negative powers, untested for lazy series [review 2026-11-06; checked]"
+ch050.Coefficient,done,rustmath-powerseries/src/lazy.rs:98,coeff(n) memoised univariate coefficient. Tested: lazy::tests::geometric_series_from_fn [review 2026-11-06; checked]
+ch050.Coefficient.2,missing,,No multivariate lazy series [review 2026-11-06; checked]
+ch050.Coefficients,partial,rustmath-powerseries/src/lazy.rs:113,coefficients(n) returns first n coefficients; no lower degree l; univariate only [review 2026-11-06; checked]
+ch050.Valuation,partial,rustmath-powerseries/src/lazy.rs:143,valuation(bound) returns Option; bounded search cannot decide zero series (no Infinity); untested [review 2026-11-06; checked]
+ch050.PrintToPrecision,partial,rustmath-powerseries/src/lazy.rs:295,Display prints a fixed WEAK_TERMS truncation; approximate(n) printable; no n argument; univariate [review 2026-11-06; checked]
+ch050.PrintTermsOfDegree,missing,,No printing of a degree window [review 2026-11-06; checked]
+ch050.LeadingCoefficient,missing,,No leading coefficient function for lazy series (laurent.rs one is for Laurent series) [review 2026-11-06; checked]
+ch050.LeadingTerm,missing,,No leading term function for lazy series [review 2026-11-06; checked]
+ch050.CoefficientsNonSpiral,missing,,No multivariate lazy series [review 2026-11-06; checked]
+ch050.Index,missing,,No multivariate lazy series [review 2026-11-06; checked]
+ch050.s.8,broken,rustmath-powerseries/src/lazy.rs:263,"PartialEq = is_weakly_equal(_, 20), so x^20 == 0 is true (wrong). Handbook eq is object identity (Rc::ptr_eq would do it; not provided) [review 2026-11-06; adjudicated]"
+ch050.IsZero,broken,rustmath-powerseries/src/lazy.rs:278,"Ring::is_zero only checks coeffs 0..19 (WEAK_TERMS=20), so gen().pow(20).is_zero() is true. Bounded search decides zero; handbook IsZero is structural. ring_and_weak_equality tests only easy cases [review 2026-11-06; adjudicated]"
+ch050.IsOne,broken,rustmath-powerseries/src/lazy.rs:281,"Ring::is_one only checks coeffs 0..19, so 1 + x^20 gives true (wrong). Handbook IsOne is structural (created as one). No test calls LazyPowerSeries::is_one [review 2026-11-06; adjudicated]"
+ch050.IsMinusOne,missing,,No IsMinusOne for lazy series [review 2026-11-06; checked]
+ch050.IsUnit,missing,,No unit test; try_inverse (lazy.rs:215) only errors when a0 is zero over fields [review 2026-11-06; checked]
+ch050.IsWeaklyZero,partial,rustmath-powerseries/src/lazy.rs:131,"is_weakly_zero(bound) checks first bound coefficients (degrees < bound, not <= n); no default form; univariate [review 2026-11-06; checked]"
+ch050.IsWeaklyEqual,partial,rustmath-powerseries/src/lazy.rs:137,"is_weakly_equal(other,bound) checks degrees < bound; no default form; univariate. Tested: lazy::tests::ring_and_weak_equality [review 2026-11-06; checked]"
+ch050.Derivative,partial,rustmath-powerseries/src/lazy.rs:188,"Univariate, first derivative only, needs NumericConversion; no variable/order args. Tested: lazy::tests::derivative_and_integral_roundtrip [review 2026-11-06; checked]"
+ch050.Integral,partial,rustmath-powerseries/src/lazy.rs:199,"Univariate over fields only, zero constant; no variable arg. Tested: lazy::tests::derivative_and_integral_roundtrip [review 2026-11-06; checked]"
+ch050.Evaluate,missing,,"No lazy composition; PowerSeries::compose (series.rs:188) is truncated, not lazy [review 2026-11-06; checked]"
+ch050.SquareRoot,missing,,"Only truncated PowerSeries::sqrt (transcendental.rs:135, constant term 1); nothing for lazy series [review 2026-11-06; checked]"
+ch050.IsSquare,missing,,No IsSquare for lazy series [review 2026-11-06; checked]
+ch050.PolynomialCoefficient,missing,,No polynomial-coefficient reinterpretation for lazy series [review 2026-11-06; checked]
