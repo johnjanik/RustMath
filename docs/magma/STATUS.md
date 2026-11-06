@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 4475 | 11 | 275 | 1066 | 18 | 147 | 3796 (28%) | 8000 (60%) |
+| 13341 | 4527 | 12 | 278 | 1076 | 18 | 150 | 3761 (28%) | 8018 (60%) |
 
 ## By chapter
 
@@ -54,7 +54,7 @@ automatic `candidate`/`missing` counts.
 | 30 | Lattices | V | 193 | 193 | 0 | 4 | 41 | 4 | 0 | 0 | 144 | partial | `rustmath-matrix (proposed rustmath-lattices)` |
 | 31 | Lattices With Group Action | V | 60 | 60 | 0 | 0 | 0 | 0 | 0 | 0 | 60 | none | `rustmath-matrix + rustmath-groups (proposed rustmath-lattices)` |
 | 32 | Quadratic Forms | V | 12 | 12 | 0 | 1 | 1 | 0 | 0 | 0 | 10 | substantial | `rustmath-quadraticforms` |
-| 33 | Binary Quadratic Forms | V | 52 | 0 | 0 | 0 | 0 | 0 | 0 | 35 | 17 | partial | `rustmath-quadraticforms` |
+| 33 | Binary Quadratic Forms | V | 52 | 52 | 1 | 3 | 10 | 3 | 0 | 0 | 35 | partial | `rustmath-quadraticforms` |
 | 34 | Number Fields | VI | 220 | 220 | 0 | 14 | 58 | 8 | 1 | 0 | 139 | substantial | `rustmath-numberfields` |
 | 35 | Quadratic Fields | VI | 33 | 0 | 0 | 0 | 0 | 0 | 0 | 21 | 12 | substantial | `rustmath-numberfields` |
 | 36 | Cyclotomic Fields | VI | 18 | 0 | 0 | 0 | 0 | 0 | 0 | 12 | 6 | partial | `rustmath-rings` |

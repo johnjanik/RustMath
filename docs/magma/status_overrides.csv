@@ -4474,3 +4474,55 @@ ch027.Determinant,missing,,no sparse determinant [review 2026-11-06; checked]
 ch027.ElementaryDivisors,partial,rustmath-matrix/src/sparse_forms.rs:184; rustmath-matrix/src/integer_forms.rs:274,"dense SNF, no sign normalization: traced [[2,4],[6,8]] gives [2,-4] (Magma [2,4]); over Q returns pivots not ones; test checks len/divisibility only; R: Ord (Z/Q) [review 2026-11-06; adjudicated]"
 ch027.SetVerbose,partial,rustmath-misc/src/verbose.rs:8,"global set_verbose(level) only; no SparseMatrix flag and no sparse code reads it; sparse rank/SNF exist, so partial as ch018.SetVerbose.2 and ch037.SetVerbose, not n/a [review 2026-11-06; adjudicated]"
 ch027.ModularSolution,missing,,[review 2026-11-06; checked]
+ch033.BinaryQuadraticForms,missing,,"No binary-quadratic-form structure/parent type exists; only a bare QuadraticForm{a,b,c}, no structure of forms of discriminant D. [review 2026-11-06; checked]"
+ch033.Identity,missing,,No principal form constructor and no parent structure. [review 2026-11-06; checked]
+ch033.Q,partial,rustmath-quadraticforms/src/quadratic_form.rs:20,"QuadraticForm::new(a,b,c) builds [a,b,c] and its discriminant; no parent Q, no [a,b] form with c solved from D, no check against D. [review 2026-11-06; checked]"
+ch033.PrimeForm,missing,,No prime form construction. [review 2026-11-06; checked]
+ch033.Discriminant,done,rustmath-quadraticforms/src/quadratic_form.rs:61,Returns b^2-4ac; quadratic_form.rs::tests::test_new_form asserts discriminant -4 for x^2+y^2. [review 2026-11-06; checked]
+ch033.Discriminant.2,missing,,No structure Q whose discriminant could be queried. [review 2026-11-06; checked]
+ch033.IsDiscriminant,missing,,"No such function (D = 0,1 mod 4 test) found. [review 2026-11-06; checked]"
+ch033.FundamentalDiscriminant,partial,rustmath-numberfields/src/round2.rs:732,"Verifier right: field_discriminant(&[-D,0,1]) = disc Q(sqrt D); round2.rs::disc_quadratic_index2 (x^2-12 gives 12, x^2-8 gives 8). Poly input not D, square D unsupported, index primes <=1e5 [review 2026-11-06; adjudicated]"
+ch033.IsFundamental,missing,,No fundamental-discriminant predicate found in the workspace. [review 2026-11-06; checked]
+ch033.Conductor,partial,rustmath-numberfields/src/different.rs:86,"Verifier right: conductor(f,ord) on x^2-D/4 or x^2-x-(D-1)/4 gives ideal fO_K, norm f^2; different.rs::conductor_norm_is_index_squared (x^2+23, D=-92: 4). Ideal not integer f; as ch037 [review 2026-11-06; adjudicated]"
+ch033.Conjugate,missing,,"No form conjugation [a,-b,c]. [review 2026-11-06; checked]"
+ch033.f,missing,,No composition operator/Shanks NUCOMP on forms. [review 2026-11-06; checked]
+ch033.Composition,missing,,No Gauss or Shanks composition of forms. [review 2026-11-06; checked]
+ch033.f.2,missing,,No power of a form; no composition to build on. [review 2026-11-06; checked]
+ch033.Power,missing,,No power of a form. [review 2026-11-06; checked]
+ch033.Reduction,partial,rustmath-quadraticforms/src/quadratic_form.rs:97,reduced_form() only for positive definite forms (indefinite returned unchanged); no transformation matrix; 1000-iteration cap; test only on already reduced forms. [review 2026-11-06; checked]
+ch033.ReductionStep,missing,,No single reduction step exposed; steps are inlined in reduced_form. [review 2026-11-06; checked]
+ch033.ReductionOrbit,missing,,No cycle of reduced indefinite forms. [review 2026-11-06; checked]
+ch033.Order,missing,,No class group element order for forms. [review 2026-11-06; checked]
+ch033.f.3,partial,rustmath-quadraticforms/src/quadratic_form.rs:11,"Coefficients are public fields a,b,c; no 1-based indexing operator. [review 2026-11-06; checked]"
+ch033.Eltseq,partial,rustmath-quadraticforms/src/quadratic_form.rs:11,"Verifier right: coefficients are pub fields a,b,c (asserted in quadratic_form.rs::tests::test_new_form); no fn returning [a,b,c]. Same basis as this chunk's f.3 row and ch034.Eltseq [review 2026-11-06; adjudicated]"
+ch033.f.4,missing,,No membership test of a form in a structure. [review 2026-11-06; checked]
+ch033.f.5,done,rustmath-quadraticforms/src/quadratic_form.rs:10,"Derived PartialEq compares a,b,c; used by assert_eq in quadratic_form.rs::tests::test_reduced_form. [review 2026-11-06; checked]"
+ch033.IsIdentity,missing,,No principal form test. [review 2026-11-06; checked]
+ch033.IsReduced,missing,,No is_reduced predicate; reduced_form has the check inline only. [review 2026-11-06; checked]
+ch033.IsEquivalent,broken,rustmath-quadraticforms/src/quadratic_form.rs:200,"Verifier right: non-pos-definite branch is literal equality returned as decided false; [1,2,-1] vs [1,0,-2] (x->x+y, D=8) and [-1,1,-1] vs [-1,-1,-1] give false. Pos. definite path ok. Untested [review 2026-11-06; adjudicated]"
+ch033.Parent,missing,,No parent structure type. [review 2026-11-06; checked]
+ch033.Category,missing,,No category for forms. [review 2026-11-06; checked]
+ch033.QuadraticOrder,missing,,No order associated with form discriminant. [review 2026-11-06; checked]
+ch033.Ideal,missing,,No ideal from a form. [review 2026-11-06; checked]
+ch033.ReducedForms,done,rustmath-numberfields/src/hcf.rs:42,"reduced_forms(d: i64): primitive reduced forms of negative D as tuples; test hcf::tests::reduced_forms_disc_m23 (also m47, m4_m3). [review 2026-11-06; checked]"
+ch033.ReducedOrbits,missing,,No reduction cycles for positive discriminant. [review 2026-11-06; checked]
+ch033.ClassNumber,partial,rustmath-numberfields/src/hcf.rs:88,"class_number_imag_quadratic(d: i64) counts reduced forms, negative D only; test asserts h(-23)=3, h(-47)=5; no positive D, no Al options. QuadraticForm::class_number_estimate is a facade. [review 2026-11-06; checked]"
+ch033.ClassGroup,partial,rustmath-numberfields/src/classgroup.rs:307; rustmath-numberfields/src/rayclass.rs:679,"Verifier right: as ClassGroupStructure, Cl(O_K) via poly (tests/clgp.rs vs gp); ray_class_group adds dlog on ideals, narrow via real places (real_quadratic_narrow_sqrt3). Fundamental D only, no form map [review 2026-11-06; adjudicated]"
+ch033.ClassGroupStructure,partial,rustmath-numberfields/src/classgroup.rs:307,"class_group(f) gives invariants of Cl(K) for a field poly (matches gp, tests/clgp.rs); not keyed by discriminant or forms, no non-maximal orders, may return None. [review 2026-11-06; checked]"
+ch033.AmbiguousForms,missing,,No enumeration of ambiguous forms. [review 2026-11-06; checked]
+ch033.TwoTorsionSubgroup,missing,,"No class group of forms, so no 2-torsion subgroup. [review 2026-11-06; checked]"
+ch033.FundamentalQuotient,missing,,No class group map to fundamental discriminant. [review 2026-11-06; checked]
+ch033.QuotientMap,missing,,No quotient homomorphism between form class groups. [review 2026-11-06; checked]
+ch033.Q.2,missing,,No coercion of forms of discriminant m^2D into forms of D. [review 2026-11-06; checked]
+ch033.Log,missing,,No discrete logarithm in the form class group. [review 2026-11-06; checked]
+ch033.Log.2,missing,,No timed discrete logarithm in the form class group. [review 2026-11-06; checked]
+ch033.Lattice,missing,,"No lattice with Gram matrix [[a,b/2],[b/2,c]] from a form. [review 2026-11-06; checked]"
+ch033.GramMatrix,missing,,No Gram matrix accessor for QuadraticForm (modules::free_quadratic_module gram_matrix is unrelated). [review 2026-11-06; checked]
+ch033.ThetaSeries,broken,rustmath-quadraticforms/src/theta_series.rs:27,"Verifier right: box |x|,|y|<=ceil(sqrt(N/min(|a|,|c|)))+2 too small even if pos. definite; replicated x^2+xy+y^2 prec 400 r(397)=4 (true 12), [1,100,2501] r(1)=2 (true 4) [review 2026-11-06; adjudicated]"
+ch033.RepresentationNumber,broken,rustmath-quadraticforms/src/theta_series.rs:148,"Verifier right: reads the same undersized box count (x^2+xy+y^2: r(397)=4, true 12; [1,100,2501]: r(1)=2, true 4), silent 0 for n>precision; only x^2+y^2 n<=5 tested [review 2026-11-06; adjudicated]"
+ch033.jInvariant,partial,rustmath-numberfields/src/hcf.rs:220; rustmath-numberfields/src/hcf.rs:257,"Verifier right: private j_invariant(q)=E4^3/Delta evaluated at tau=(-b+sqrt d)/2a per reduced form in hilbert_class_polynomial (class_poly_m23_matches_polclass vs PARI); not public, as ch025.jInvariant.2 [review 2026-11-06; adjudicated]"
+ch033.Eisenstein,missing,,No Eisenstein series value at a form lattice. [review 2026-11-06; checked]
+ch033.WeierstrassSeries,missing,,No Weierstrass q-expansion for a form. [review 2026-11-06; checked]
+ch033.HilbertClassPolynomial,verified,rustmath-numberfields/src/hcf.rs:257,"hilbert_class_polynomial(d: i64) via singular moduli; hcf::tests::class_poly_m23_matches_polclass vs PARI polclass(-23), plus -3,-4,-163. [review 2026-11-06; checked]"
+ch033.WeberClassPolynomial,missing,,No Weber class polynomial. [review 2026-11-06; checked]
+ch033.f.6,missing,,No SL2(Z) right action of a matrix on a form. [review 2026-11-06; checked]
