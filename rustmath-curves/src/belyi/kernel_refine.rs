@@ -2032,8 +2032,15 @@ mod tests {
         }
 
         // kernel SUBSPACE comparison against the hp Jacobi SVD (projection
-        // residual — per-vector comparison is ill-conditioned inside the
-        // near-degenerate kernel cluster, per the A8/mp_svd docs).
+        // residual). The kernel σ here are simple (measured 2.511e-12, 3.986e-13,
+        // 2.659e-13: relative gaps 0.84 and 0.33, no cluster at 1e-40), so each
+        // SVD vector is well-defined as a LINE. Per-vector comparison still fails,
+        // for two reasons. (a) The unit phase of a raw jacobi_svd vector is
+        // arbitrary and ill-conditioned: a ±(0..3)·2^-255 relative perturbation of
+        // the entries of `m` moved it by up to 8e-10 rad while the lines agreed to
+        // 7e-67. (b) refine_kernel returns an orthonormal basis of the kernel
+        // subspace, not the singular vectors: even after the best phase fit, two of
+        // the three refined vectors sit 5.4e-2 from the nearest SVD line.
         let svd = jacobi_svd(&m, &JacobiSvdOptions::new(PREC, 80, "1e-70", "1e-40")).expect("svd");
         let ker = svd.right_nullspace_basis(&threshold);
         assert_eq!(ker.cols, 3, "dim S_6 = 3");

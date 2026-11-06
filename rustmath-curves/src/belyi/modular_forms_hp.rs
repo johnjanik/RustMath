@@ -243,9 +243,19 @@ pub fn assemble_scaled_ami(
 ///   M[n][r] = (1/Q) Σ_m base_m · e^{−2πimn/Q} · (w′_m/ρ)^r  −  δ_{nr}.
 /// Each row needs only the Q per-sample scalars (base_m, u_m = w′_m/ρ) and the Q-periodic
 /// root-of-unity table E[j] = e^{−2πij/Q} (phase index (m·n) mod Q is exact integer
-/// arithmetic — no error growth across rows). Worker memory is O(Q + dim) rug values,
-/// unlike `assemble_scaled_ami` whose rayon fold clones a dim² accumulator per split
-/// (~1.6 GB each at dim=3001 — the OOM at N=3000).
+/// arithmetic — no error growth across rows). Worker memory is O(Q + dim) rug values;
+/// nothing dim²-sized is held in memory.
+///
+/// The in-memory [`assemble_scaled_ami`] instead peaks at its two Q×dim per-sample
+/// tables plus the dim² result: 2·Q·dim + dim² rug Complex values, ≈ 5·dim² at the
+/// harness sampling Q = 2N + 8 (≈ 45 M values at N = 3000, about five times the single
+/// dim² accumulator, ~1.6 GB at dim = 3001, that the former rayon fold cloned per split
+/// and that ran out of memory at N = 3000). Production callers reach it at production
+/// N: [`super::genus0_map::run_and_persist_belyi`] (N = 3000 at 400 bits via
+/// `run_belyi_2_12_5`) calls [`recover_forms_centered`], which assembles in memory and
+/// then copies the result into an [`MpMatrix`] for the SVD; the E4 pre-probe
+/// ([`super::genus0_map::probe_echelon_valuations`], default N = 1000 at 128 bits)
+/// takes the same path at probe scale. Large-N assembly should go through this dump.
 ///
 /// Completed rows are recorded in `{out}.progress` (params line, then one row index per
 /// line); rerunning with the same params skips them. Returns ρ.
@@ -821,6 +831,10 @@ pub fn dim_s_k_svd_centered(
 /// from the hp SVD of the preconditioned A−I: take the small-σ right singular vectors
 /// y and un-scale b_n = ρ^{-n} y_n. Returns dim S_k(Γ) vectors, each length N+1 — the
 /// modular forms themselves, which §5 echelonizes into the coordinate x(w).
+///
+/// The basis is phase-normalised (see [`recover_forms_from_matrix`]): each vector is
+/// multiplied by the unit that makes its pivot coefficient b_j real positive, j the
+/// first index of largest |y_n| = ρ^n·|b_n|.
 pub fn recover_forms(
     tg64: &TriangleGroup,
     tg: &TriangleGroupHp,
@@ -839,6 +853,7 @@ pub fn recover_forms(
 /// for the order-b vertex chart). The kernel DIMENSION is chart-independent; the
 /// coefficient vectors are expansions in the `ctr` chart's w and differ between charts.
 /// `assemble_scaled_ami` already accepts `ctr`; this threads it the rest of the way.
+/// The returned basis is phase-normalised as in [`recover_forms_from_matrix`].
 #[allow(clippy::too_many_arguments)]
 pub fn recover_forms_centered(
     tg64: &TriangleGroup,
@@ -879,10 +894,16 @@ pub fn recover_forms_centered(
 /// phases (hence θ) are ill-conditioned — ~1e-78 input noise moved θ by ~1e-9 on
 /// the (5,3,3) k = 6 case although the vectors as LINES agreed to ~1e-66. Each
 /// kernel vector y is therefore rescaled by conj(y_j)/|y_j|, j the first index of
-/// largest |y_j|, making y_j real positive: the returned forms are then a
-/// well-conditioned function of `m` (up to exact modulus ties, where the choice of
-/// j — and so the phase — is decided by rounding). The span, i.e. S_k(Γ), is
-/// unchanged.
+/// largest |y_j|, making y_j real positive. The span, i.e. S_k(Γ), is unchanged.
+///
+/// This makes each returned form as well-conditioned as its kernel LINE, and no
+/// better. Two limits:
+/// * The pivot choice is discontinuous. If the two largest |y_n| are equal, or
+///   closer than the input noise can move them, a perturbation of `m` can move j
+///   and so change the phase by O(1). Near-ties fail as well as exact ties.
+/// * It needs a simple kernel σ whose gap to its neighbours is large against the
+///   noise. In a genuine kernel cluster the individual vectors are ill-conditioned
+///   whatever their phase, and only the span is stable.
 pub fn recover_forms_from_matrix(
     m: &MpMatrix,
     rho: &Float,
@@ -919,7 +940,11 @@ pub fn recover_forms_from_matrix(
         let mut b = Vec::with_capacity(dim);
         for (n, rho_n) in rho_pow.iter().enumerate() {
             // y_j·conj(y_j)/|y_j| = |y_j| exactly; set it so the pivot is exactly real
-            let y = if n == j { MpC::new(pivot_abs.clone(), Float::with_val(prec, 0)) } else { ker.get(n, f).mul(&phase) };
+            let y = if n == j {
+                MpC::new(pivot_abs.clone(), Float::with_val(prec, 0))
+            } else {
+                ker.get(n, f).mul(&phase)
+            };
             let y = y.div_real(rho_n); // b_n = ρ^{-n} y_n
             b.push(Complex::with_val(prec, (y.re, y.im)));
         }
@@ -1078,9 +1103,11 @@ mod tests {
             }
         }
 
-        // (c) the streamed assembly is a different summation order than
-        // assemble_scaled_ami (root-of-unity table + running products vs direct powers,
-        // rayon reassociation), so the two matrices agree only to working precision
+        // (c) both assemblies are deterministic and sum over m in the same order, but the
+        // streamed one computes each term by a different arithmetic route than
+        // assemble_scaled_ami (root-of-unity table E[(m·n) mod Q] times running powers of
+        // w′_m/ρ, 1/Q applied per sample, vs running powers of 1/w_m and w′_m, rescaled
+        // by ρ^{n−r}/Q after the sum), so the two matrices agree only to working precision
         // (2^-106 ≈ 2.5e-32, amplified by the O(Q·dim) accumulations).
         let mut worst = 0f64;
         for (i, row) in a.iter().enumerate() {
@@ -1101,7 +1128,7 @@ mod tests {
     // The dump→read matrix must be SVD-equivalent to the in-memory assembly, and
     // recover_forms_from_matrix (the shared tail) on it must reproduce
     // recover_forms_centered. The streamed and in-memory assemblies differ at
-    // ~2^-PREC (different summation order), so spectra/kernels/forms match to
+    // ~2^-PREC (different per-term arithmetic), so spectra/kernels/forms match to
     // working tolerance, not bitwise. PREC = 256 with a lossless 5·53 = 265 ≥ 256-bit
     // limb split, so the dump itself adds NO error — every diff below is assembly
     // noise. The kernel σ are simple (≈2.5e-12, 4.0e-13, 2.7e-13; no cluster at the
