@@ -750,13 +750,16 @@ mod tests {
                 None => {}
             }
         }
-        // Z/11Z additive, prime order: every target is solvable from base 3.
+        // Z/11Z additive, prime order: every target t is 3x for the unique
+        // x = 3^{-1} t = 4t mod 11, and rho must find it for every t != 0 (a
+        // line-by-line Python port of this function finds all 10), so None
+        // here is a failure, not "not found".
         let mul11 = |a: usize, b: usize| (a + b) % 11;
         let part11 = |x: &usize| x % 3;
         for target in 1..11usize {
-            if let Some(x) = discrete_log_rho(3, target, 11, mul11, 0, part11) {
-                assert_eq!(power(3, x, mul11, 0), target);
-            }
+            let x = discrete_log_rho(3, target, 11, mul11, 0, part11);
+            assert_eq!(x, Some((4 * target) % 11), "target {target}");
+            assert_eq!(power(3, x.unwrap(), mul11, 0), target);
         }
     }
 

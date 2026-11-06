@@ -44,8 +44,8 @@ use crate::group_traits::{Group, GroupElement};
 
 /// A Coxeter matrix defining the relations of an Artin group
 ///
-/// The matrix stores m_ij values where m_ii = 1 and m_ij = m_ji.
-/// Value 0 represents infinity (no relation).
+/// The matrix stores m_ij values where m_ii = 1, m_ij = m_ji, and
+/// m_ij ∈ {2, 3, 4, ...} ∪ {∞} for i ≠ j. Value 0 represents infinity (no relation).
 #[derive(Debug, Clone)]
 pub struct CoxeterMatrix {
     /// The rank (number of generators)
@@ -61,6 +61,12 @@ impl CoxeterMatrix {
     /// # Arguments
     ///
     /// * `entries` - Square matrix where entries[i][j] = m_ij (use 0 for ∞)
+    ///
+    /// # Panics
+    ///
+    /// If the matrix is empty or not square, a diagonal entry is not 1, the
+    /// matrix is not symmetric, or an off-diagonal entry is 1 (m_ij = 1 for
+    /// i ≠ j would force s_i = s_j; it is not a Coxeter matrix entry).
     pub fn new(entries: Vec<Vec<usize>>) -> Self {
         let rank = entries.len();
         assert!(rank > 0, "Coxeter matrix must have at least one generator");
@@ -81,6 +87,18 @@ impl CoxeterMatrix {
                 assert_eq!(
                     entries[i][j], entries[j][i],
                     "Coxeter matrix must be symmetric"
+                );
+            }
+        }
+
+        // Off-diagonal entries are m_ij >= 2, or 0 for infinity
+        for i in 0..rank {
+            for j in 0..rank {
+                assert!(
+                    i == j || entries[i][j] != 1,
+                    "Off-diagonal Coxeter matrix entries must be >= 2 or 0 (infinity), got m_{}{} = 1",
+                    i,
+                    j
                 );
             }
         }
@@ -196,8 +214,7 @@ impl ArtinGroup {
                     // No relation (infinite order)
                     continue;
                 } else if m_ij == 1 {
-                    // This shouldn't happen for i ≠ j
-                    continue;
+                    unreachable!("CoxeterMatrix rejects the off-diagonal entry m_ij = 1");
                 } else {
                     // Create the alternating product relation
                     // s_i s_j s_i ... (m_ij terms) = s_j s_i s_j ... (m_ij terms)
@@ -442,6 +459,14 @@ mod tests {
     #[should_panic(expected = "Coxeter matrix must be square")]
     fn test_invalid_coxeter_matrix() {
         CoxeterMatrix::new(vec![vec![1, 2], vec![2, 1, 3]]);
+    }
+
+    #[test]
+    #[should_panic(expected = "Off-diagonal Coxeter matrix entries must be >= 2 or 0")]
+    fn test_off_diagonal_one_is_rejected() {
+        // m_01 = 1 is not a Coxeter matrix entry; it must not silently give the
+        // free group (no relation), as m_01 = 0 (infinity) does.
+        CoxeterMatrix::new(vec![vec![1, 1], vec![1, 1]]);
     }
 
     #[test]

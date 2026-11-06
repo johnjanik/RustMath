@@ -398,11 +398,16 @@ mod tests {
         assert_eq!(result.h_component, QMul(q(15)));
 
         // Same law as composing the affine maps x ↦ h x + g: (x ↦ 3x + 2)∘(x ↦ 5x + 4)
-        // = x ↦ 15x + 14. Check on a sample point.
-        let x = q(7);
-        let inner = q(5) * x.clone() + q(4);
-        let outer = q(3) * inner + q(2);
-        assert_eq!(outer, q(15) * x + q(14));
+        // = x ↦ 15x + 14. The map read off the computed `result` must be the
+        // composition of the maps of e1 and e2, at several sample points.
+        let affine = |e: &GroupSemidirectProductElement<QAdd, QMul>, x: &Rational| {
+            e.h_component.0.clone() * x.clone() + e.g_component.0.clone()
+        };
+        for n in [-3i64, 0, 1, 7] {
+            let x = q(n);
+            assert_eq!(affine(&result, &x), affine(&e1, &affine(&e2, &x)), "x = {n}");
+            assert_eq!(affine(&result, &x), q(15) * x + q(14), "x = {n}");
+        }
     }
 
     #[test]

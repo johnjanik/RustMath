@@ -142,8 +142,11 @@ impl Db {
     /// Load from `data/transitive_24.jsonl` (one JSON object per line, with keys
     /// `t`, `order`, `parity`, `prim`, `solv`, `gens`; see `data/README.md`).
     ///
-    /// A line that is not valid JSON or lacks `t`/`gens` (e.g. the cycle-type
-    /// support file, which has `t`/`types`) is an `InvalidData` error, not a panic.
+    /// A line that is not valid JSON, lacks `t`/`gens` (e.g. the cycle-type
+    /// support file, which has `t`/`types`), or has a missing or malformed
+    /// `order` (a positive decimal string), `parity` (`1` or `-1`), `prim` or
+    /// `solv` (`0` or `1`) is an `InvalidData` error naming the line: never a
+    /// panic, and never a default value standing in for absent data.
     pub fn load(path: impl AsRef<Path>) -> std::io::Result<Db> {
         Db::parse_jsonl(&std::fs::read_to_string(path)?)
     }
@@ -164,15 +167,28 @@ impl Db {
                 continue;
             }
             let v: serde_json::Value = serde_json::from_str(line)
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+                .map_err(|e| bad(line_no, &format!("not valid JSON: {}", e)))?;
             let t = v["t"].as_u64().ok_or_else(|| bad(line_no, "missing integer `t`"))? as usize;
-            let order = parse_int(v["order"].as_str().unwrap_or("0"));
-            let parity = v["parity"].as_i64().unwrap_or(0);
-            let primitive = v["prim"].as_i64().unwrap_or(0) == 1;
-            let solvable = v["solv"].as_i64().unwrap_or(0) == 1;
             let gens_json = v["gens"]
                 .as_array()
                 .ok_or_else(|| bad(line_no, "missing `gens` (is this the cycle-type support file?)"))?;
+            let order = v["order"]
+                .as_str()
+                .filter(|s| !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit()))
+                .and_then(Integer::from_decimal_str)
+                .filter(|n| n.signum() == 1)
+                .ok_or_else(|| bad(line_no, "missing or malformed `order` (a positive decimal string)"))?;
+            let parity = match v["parity"].as_i64() {
+                Some(p @ (1 | -1)) => p,
+                _ => return Err(bad(line_no, "missing or malformed `parity` (1 or -1)")),
+            };
+            let flag = |key: &str| match v[key].as_i64() {
+                Some(0) => Ok(false),
+                Some(1) => Ok(true),
+                _ => Err(bad(line_no, &format!("missing or malformed `{}` (0 or 1)", key))),
+            };
+            let primitive = flag("prim")?;
+            let solvable = flag("solv")?;
             let mut gens: Vec<Perm> = Vec::with_capacity(gens_json.len());
             for g in gens_json {
                 let mut cycles: Vec<Vec<u8>> = Vec::new();
@@ -230,18 +246,6 @@ impl Db {
         }
         Db::load(path)
     }
-}
-
-/// Parse a decimal string into an `Integer`.
-fn parse_int(s: &str) -> Integer {
-    let mut acc = Integer::zero();
-    let ten = Integer::from(10);
-    for ch in s.bytes() {
-        if ch.is_ascii_digit() {
-            acc = acc * ten.clone() + Integer::from((ch - b'0') as i64);
-        }
-    }
-    acc
 }
 
 /// Candidate `24Tt` groups consistent with the `observed` Frobenius cycle types.
@@ -454,9 +458,58 @@ mod tests {
             .expect("wrong schema must be an error");
         assert_eq!(err.kind(), std::io::ErrorKind::InvalidData);
         assert!(err.to_string().contains("gens"), "{err}");
-        // A point outside 1..=24 is rejected rather than wrapping in u8 arithmetic.
-        let err = Db::parse_jsonl("{\"t\": 1, \"gens\": [[[1, 25]]]}").err().unwrap();
+        // A point outside 1..=24 is rejected rather than wrapping in u8 arithmetic
+        // (the other fields are valid, so the point is what is rejected).
+        let err = Db::parse_jsonl(
+            "{\"t\": 1, \"order\": \"24\", \"parity\": -1, \"prim\": 0, \"solv\": 1, \"gens\": [[[1, 25]]]}",
+        )
+        .err()
+        .unwrap();
         assert_eq!(err.kind(), std::io::ErrorKind::InvalidData);
+        assert!(err.to_string().contains("1..=24"), "{err}");
+    }
+
+    #[test]
+    fn missing_or_malformed_fields_are_invalid_data() {
+        // A valid 24T1 row (C24 = <24-cycle>), then the same row with one field
+        // removed or malformed on line 2: each is an InvalidData error naming
+        // the line and the field, never a default (order 0, parity 0, false).
+        let cycle: Vec<u8> = (1..=24).collect();
+        let row = |order: &str, parity: &str, prim: &str, solv: &str| {
+            let mut fields = vec!["\"t\":1".to_string()];
+            for (key, val) in [("order", order), ("parity", parity), ("prim", prim), ("solv", solv)] {
+                if !val.is_empty() {
+                    fields.push(format!("\"{}\":{}", key, val));
+                }
+            }
+            fields.push(format!("\"gens\":[[{:?}]]", cycle));
+            format!("{{{}}}", fields.join(","))
+        };
+        let good = row("\"24\"", "-1", "0", "1");
+        assert_eq!(Db::parse_jsonl(&good).expect("valid row").groups.len(), 1);
+        let cases = [
+            (row("", "-1", "0", "1"), "order"),
+            (row("\"0\"", "-1", "0", "1"), "order"),
+            (row("\"24x\"", "-1", "0", "1"), "order"),
+            (row("24", "-1", "0", "1"), "order"),
+            (row("\"24\"", "", "0", "1"), "parity"),
+            (row("\"24\"", "0", "0", "1"), "parity"),
+            (row("\"24\"", "-1", "", "1"), "prim"),
+            (row("\"24\"", "-1", "2", "1"), "prim"),
+            (row("\"24\"", "-1", "0", ""), "solv"),
+            (row("\"24\"", "-1", "0", "\"1\""), "solv"),
+        ];
+        for (bad_row, field) in &cases {
+            let text = format!("{}\n{}\n", good, bad_row);
+            let err = Db::parse_jsonl(&text).err().unwrap_or_else(|| panic!("accepted {bad_row}"));
+            assert_eq!(err.kind(), std::io::ErrorKind::InvalidData, "{bad_row}");
+            let msg = err.to_string();
+            assert!(msg.contains("line 2") && msg.contains(&format!("`{}`", field)), "{bad_row}: {msg}");
+        }
+        // Invalid JSON also names its line.
+        let err = Db::parse_jsonl(&format!("{}\n{{not json\n", good)).err().unwrap();
+        assert_eq!(err.kind(), std::io::ErrorKind::InvalidData);
+        assert!(err.to_string().contains("line 2"), "{err}");
     }
 
     #[test]

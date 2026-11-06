@@ -104,6 +104,28 @@ impl LieBracket {
 /// bracket; multiplying two such bare elements is only defined in dimension ≤ 2,
 /// where every nilpotent Lie algebra is abelian.
 ///
+/// # Equality
+///
+/// The derived `PartialEq` compares the coordinates **and** the attached
+/// bracket, so elements of groups with different known brackets are never
+/// equal. In particular a bare `NilpotentLieGroupElement::new(v)` (no bracket)
+/// is **not** `==` `G.exp(&v)` for a group `G` with a known bracket, although
+/// both have the coordinates `v`; compare [`coordinates`](Self::coordinates)
+/// to compare coordinates only. (Treating "no bracket" as equal to every
+/// bracket would make `==` intransitive.) `Hash` ignores the bracket, which is
+/// consistent with this `==`.
+///
+/// A group whose bracket is undetermined ([`NilpotentLieGroup::new`] with
+/// class ≥ 2 outside dimension 3) attaches no bracket, so its elements compare
+/// like bare elements, by coordinates only: `NilpotentLieGroup::new(4, 2).exp(&v)`
+/// `==` `NilpotentLieGroup::new(4, 3).exp(&v)` (and `== new(v)`), although the
+/// two groups are not isomorphic. `==` therefore does not tell such groups
+/// apart.
+///
+/// Coordinates are compared exactly as stored `f64` values, as are
+/// [`is_identity`](GroupElement::is_identity) and
+/// [`order`](GroupElement::order): see there for round-off.
+///
 /// # Type Parameters
 ///
 /// For simplicity, we use Vec<f64> to represent Lie algebra elements.
@@ -283,6 +305,13 @@ impl GroupElement for NilpotentLieGroupElement {
     }
 
     /// `exp(X)` is the identity iff `X = 0` (exp is a bijection), in any dimension.
+    ///
+    /// The test is exact on the **stored** `f64` coordinates: every coordinate
+    /// must be `0.0` (or `-0.0`). Floating-point round-off is not the identity:
+    /// a product that is the identity in exact arithmetic but leaves a residue
+    /// such as `1e-17` in some coordinate is reported as not the identity. No
+    /// tolerance is applied, because none would be correct for every scale of
+    /// input.
     fn is_identity(&self) -> bool {
         self.coordinates.iter().all(|&x| x == 0.0)
     }
@@ -290,6 +319,11 @@ impl GroupElement for NilpotentLieGroupElement {
     /// A simply connected nilpotent Lie group is torsion-free:
     /// `exp(X)^k = exp(kX) = e` iff `kX = 0` iff `X = 0`. So the order is 1 for
     /// the identity and infinite (`None`) otherwise.
+    ///
+    /// Like [`is_identity`](Self::is_identity), this is decided on the stored
+    /// `f64` coordinates exactly: an element whose coordinates carry round-off
+    /// residue (of an exact-arithmetic identity) has order `None` (infinite),
+    /// which is true of the stored element, not of the intended one.
     fn order(&self) -> Option<usize> {
         if self.is_identity() {
             Some(1)
@@ -740,6 +774,53 @@ mod tests {
         let x = h3.exp(&[1.5, -2.0, 0.25]);
         assert!(x.op(&x.inverse()).is_identity());
         assert!(h3.identity().op(&x) == x);
+    }
+
+    #[test]
+    fn test_identity_is_exact_on_stored_coordinates() {
+        // x y y^{-1} x^{-1} is the identity in exact arithmetic, but in f64 the
+        // BCH sums leave round-off in the coordinates; the documented test is
+        // exact on the stored coordinates, so this element is not the identity.
+        let h3 = NilpotentLieGroup::heisenberg(1);
+        let x = h3.exp(&[0.1, 0.2, 0.3]);
+        let y = h3.exp(&[0.2, 0.7, 0.9]);
+        let r = x.op(&y).op(&y.inverse()).op(&x.inverse());
+        assert!(r.coordinates().iter().all(|c| c.abs() < 1e-15), "{:?}", r.coordinates());
+        assert!(r.coordinates().iter().any(|&c| c != 0.0), "{:?}", r.coordinates());
+        assert!(!r.is_identity());
+        assert_eq!(r.order(), None);
+    }
+
+    #[test]
+    fn test_equality_includes_the_bracket() {
+        // Same coordinates, but `new` attaches no bracket while `exp` attaches
+        // the Heisenberg bracket: the derived `==` tells them apart.
+        let h3 = NilpotentLieGroup::heisenberg(1);
+        let v = [1.0, 2.0, 3.0];
+        let bare = NilpotentLieGroupElement::new(v.to_vec());
+        let in_h3 = h3.exp(&v);
+        assert_eq!(bare.coordinates(), in_h3.coordinates());
+        assert_eq!(bare.bracket(), None);
+        assert_eq!(in_h3.bracket(), Some(LieBracket::Heisenberg { n: 1 }));
+        assert_ne!(bare, in_h3);
+        // Elements of different groups with the same coordinates differ too.
+        assert_ne!(NilpotentLieGroup::abelian(3).exp(&v), in_h3);
+        assert_eq!(h3.exp(&v), in_h3);
+    }
+
+    #[test]
+    fn test_equality_without_known_bracket_is_by_coordinates() {
+        // Dimension 4 with class 2 (h_3 ⊕ R) and class 3 (the filiform n_4) are
+        // non-isomorphic, but `new` determines neither bracket, so it attaches
+        // none: their elements compare by coordinates only, as documented.
+        let g2 = NilpotentLieGroup::new(4, 2);
+        let g3 = NilpotentLieGroup::new(4, 3);
+        assert_eq!(g2.bracket(), None);
+        assert_eq!(g3.bracket(), None);
+        let v = [1.0, 2.0, 3.0, 4.0];
+        assert_eq!(g2.exp(&v), g3.exp(&v));
+        assert_eq!(g2.exp(&v), NilpotentLieGroupElement::new(v.to_vec()));
+        assert_ne!(g2.exp(&v), g3.exp(&[1.0, 2.0, 3.0, 5.0]));
     }
 
     #[test]

@@ -572,7 +572,9 @@ pub mod misc {
     ///
     /// # Panics
     ///
-    /// If the matrix is not a valid Coxeter matrix (see [`CoxeterMatrix::new`]).
+    /// If the matrix is not a valid Coxeter matrix (see [`CoxeterMatrix::new`]):
+    /// empty, not square, not symmetric, a diagonal entry other than 1, or an
+    /// off-diagonal entry m_ij = 1.
     ///
     /// # Examples
     ///
@@ -709,10 +711,11 @@ mod tests {
 
     #[test]
     fn test_lie_catalog() {
-        // `Nilpotent` currently ignores the supplied name and builds a
-        // 3-dimensional Heisenberg group; check that structural fact.
+        // "Heisenberg3" is the 3-dimensional Heisenberg group (2-step nilpotent);
+        // unknown names are refused (test_lie_unknown_name_is_refused).
         let h3 = lie::Nilpotent("Heisenberg3");
         assert_eq!(h3.dimension(), 3);
+        assert_eq!(h3.nilpotency_class(), 2);
     }
 
     #[test]
@@ -767,6 +770,14 @@ mod tests {
             artin.as_finitely_presented_group().relations(),
             &[vec![1, 2, 1, 2, -1, -2, -1, -2]]
         );
+    }
+
+    #[test]
+    #[should_panic(expected = "Off-diagonal Coxeter matrix entries must be >= 2 or 0")]
+    fn test_misc_artin_rejects_off_diagonal_one() {
+        // m_01 = 1 is not a Coxeter matrix entry: refused, not silently read as
+        // "no relation" (the free group of m_01 = 0 = infinity).
+        misc::Artin(vec![vec![1, 1], vec![1, 1]]);
     }
 
     #[test]

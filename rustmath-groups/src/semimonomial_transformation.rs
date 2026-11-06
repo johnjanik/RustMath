@@ -331,20 +331,53 @@ mod tests {
 
     #[test]
     fn test_action_on_vector() {
-        let perm = Permutation::identity(3);
-        let transform = SemimonomialTransformation::new(vec![2, 3, 4], perm, 0);
-        let vector = vec![1, 2, 3];
+        // Over Q: 2, 3, 4 are units and Aut(Q) is trivial (automorphism id 0).
+        // (g.v)_i = phi_i^{-1} v_{pi(i)}, computed by hand below.
+        use rustmath_rationals::Rational;
+        let q = |n: i64, d: i64| Rational::new(n, d).unwrap();
+        let act = |g: &SemimonomialTransformation<Rational>, v: &[Rational]| {
+            action_on_vector(
+                g,
+                v,
+                |x: &Rational| x.clone(), // the only automorphism of Q
+                |a: &Rational, b: &Rational| a.clone() * b.clone(),
+                |u: &Rational| u.reciprocal().expect("units of Q are nonzero"),
+            )
+        };
+        let units = vec![q(2, 1), q(3, 1), q(4, 1)];
+        let vector = vec![q(1, 1), q(2, 1), q(3, 1)];
 
-        let result = action_on_vector(
-            &transform,
-            &vector,
-            |x| *x, // Identity automorphism
-            |a, b| a * b,
-            |x| 1 / x, // Note: integer division won't work properly; this is just for testing
-        );
+        // pi = identity: (1/2 * 1, 1/3 * 2, 1/4 * 3) = (1/2, 2/3, 3/4).
+        let g = SemimonomialTransformation::new(units.clone(), Permutation::identity(3), 0);
+        assert_eq!(act(&g, &vector), vec![q(1, 2), q(2, 3), q(3, 4)]);
 
-        // For proper testing with integers, we'd need a different approach
-        assert_eq!(result.len(), 3);
+        // pi = [2, 0, 1] (pi(0) = 2, pi(1) = 0, pi(2) = 1):
+        // (1/2 * v_2, 1/3 * v_0, 1/4 * v_1) = (3/2, 1/3, 1/2).
+        let perm = Permutation::from_vec(vec![2, 0, 1]).unwrap();
+        let g = SemimonomialTransformation::new(units, perm, 0);
+        assert_eq!(act(&g, &vector), vec![q(3, 2), q(1, 3), q(1, 2)]);
+    }
+
+    #[test]
+    fn test_action_on_vector_applies_the_automorphism_over_gf4() {
+        // Aut(Q) is trivial, so this case exercises alpha: over GF(4) (units
+        // stored as exponents of w, see the gf4_* helpers below) take
+        // phi = (w, w, w^2), pi = [2, 0, 1], v = (1, w, w^2), and
+        // (g.v)_i = phi_i^{-1} alpha(v_{pi(i)}), by hand:
+        //   alpha = Frobenius x -> x^2:
+        //     i=0: w^{-1} (w^2)^2 = w^{-1} w = 1;  i=1: w^{-1} 1^2 = w^2;
+        //     i=2: w^{-2} w^2 = 1                       -> (1, w^2, 1) = [0, 2, 0];
+        //   alpha = id:
+        //     i=0: w^{-1} w^2 = w;  i=1: w^{-1} 1 = w^2;  i=2: w^{-2} w = w^2
+        //                                                -> (w, w^2, w^2) = [1, 2, 2].
+        // (Checked with bit-pair GF(4) arithmetic in a separate script.)
+        let units = vec![1u8, 1, 2];
+        let perm = Permutation::from_vec(vec![2, 0, 1]).unwrap();
+        let v = vec![0u8, 1, 2];
+        let frob = SemimonomialTransformation::new(units.clone(), perm.clone(), 1);
+        assert_eq!(gf4_act(&frob, &v), vec![0, 2, 0]);
+        let plain = SemimonomialTransformation::new(units, perm, 0);
+        assert_eq!(gf4_act(&plain, &v), vec![1, 2, 2]);
     }
 
     #[test]

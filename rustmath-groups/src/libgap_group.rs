@@ -9,9 +9,15 @@
 //! This generic type only knows its generators and a declared order, so every
 //! element-level computation goes through an explicit enumeration of the group
 //! (closure of the generators), which is limited to [`ENUMERATION_LIMIT`]
-//! elements. Beyond that (or for an infinite / unknown order) the methods say
+//! elements. Beyond that (or for a group declared infinite) the methods say
 //! so (`None`, or a panic where the signature cannot express it) instead of
 //! guessing; Schreier–Sims or coset enumeration is not implemented here.
+//!
+//! The declared order is `order: Option<usize>`. `None` always means *declared
+//! infinite, taken on trust* (as by [`GroupLibGAP::new`] and
+//! [`Group::is_finite`]); it never means "unknown". A declared finite order is
+//! checked against the generators whenever the group is enumerated, and a
+//! mismatch panics (see the `# Panics` section of each method).
 //!
 //! # Overview
 //!
@@ -49,7 +55,9 @@ pub struct GroupLibGAP<E: GroupElement + ElementLibGAP> {
     /// Generators of the group
     generators: Vec<E>,
 
-    /// Order of the group (None if infinite)
+    /// Declared order of the group: `Some(n)` is checked against the
+    /// generators when the group is enumerated; `None` means declared
+    /// infinite, taken on trust.
     order: Option<usize>,
 
     /// Whether the group is abelian
@@ -68,8 +76,10 @@ impl<E: GroupElement + ElementLibGAP> GroupLibGAP<E> {
     /// # Arguments
     ///
     /// - `generators`: List of group generators
-    /// - `order`: Order of the group (None for infinite groups)
-    /// - `is_abelian`: Whether the group is abelian
+    /// - `order`: Declared order of the group. `Some(n)` is checked against the
+    ///   generators whenever the group is enumerated (a mismatch panics there);
+    ///   `None` declares the group infinite, which is taken on trust.
+    /// - `is_abelian`: Whether the group is abelian (taken on trust)
     ///
     /// # Example
     ///
@@ -87,6 +97,8 @@ impl<E: GroupElement + ElementLibGAP> GroupLibGAP<E> {
     }
 
     /// Create a new group with a custom description
+    ///
+    /// `order` and `is_abelian` have the same meaning as in [`new`](Self::new).
     pub fn with_description(
         generators: Vec<E>,
         order: Option<usize>,
@@ -166,12 +178,14 @@ impl<E: GroupElement + ElementLibGAP> GroupLibGAP<E> {
     /// positive power, so this is the whole group). The identity comes first,
     /// then breadth-first order.
     ///
-    /// Returns `None` when the order is unknown/infinite or exceeds
-    /// [`ENUMERATION_LIMIT`].
+    /// Returns `None` when the group is declared infinite (`order: None`) or
+    /// its declared order exceeds [`ENUMERATION_LIMIT`].
     ///
     /// # Panics
     ///
-    /// If the generators do not generate a group of the declared order.
+    /// For a declared order `<=` [`ENUMERATION_LIMIT`], if the generators do
+    /// not generate a group of the declared order (a larger declared order is
+    /// not checked: the method returns `None` first).
     fn enumerate(&self) -> Option<Vec<E>> {
         let order = self.order?;
         if order > ENUMERATION_LIMIT {
@@ -193,6 +207,12 @@ impl<E: GroupElement + ElementLibGAP> GroupLibGAP<E> {
 
     /// The cached elements, or a fresh enumeration (`None` when the group
     /// cannot be enumerated, see [`compute_elements`](Self::compute_elements)).
+    ///
+    /// # Panics
+    ///
+    /// Without cached elements and for a declared order `<=`
+    /// [`ENUMERATION_LIMIT`], if the generators do not generate a group of the
+    /// declared order (see [`enumerate`](Self::enumerate)).
     fn element_list(&self) -> Option<Vec<E>> {
         match self.cached_elements {
             Some(ref elements) => Some(elements.clone()),
@@ -203,12 +223,13 @@ impl<E: GroupElement + ElementLibGAP> GroupLibGAP<E> {
     /// Compute (and cache) the elements of the group (for finite groups)
     ///
     /// This enumerates all elements by taking products of generators.
-    /// Returns `None` when the declared order is `None` (infinite or unknown)
-    /// or larger than [`ENUMERATION_LIMIT`].
+    /// Returns `None` when the group is declared infinite (`order: None`) or
+    /// its declared order is larger than [`ENUMERATION_LIMIT`].
     ///
     /// # Panics
     ///
-    /// If the generators do not generate a group of the declared order.
+    /// For a declared order `<=` [`ENUMERATION_LIMIT`], if the generators do
+    /// not generate a group of the declared order.
     pub fn compute_elements(&mut self) -> Option<&[E]> {
         if self.cached_elements.is_none() {
             self.cached_elements = Some(self.enumerate()?);
@@ -224,8 +245,16 @@ impl<E: GroupElement + ElementLibGAP> GroupLibGAP<E> {
     /// Decide whether an element is in the group.
     ///
     /// Uses the cached elements, or enumerates the group. Returns `None`
-    /// (undecided) when the group cannot be enumerated: its order is unknown,
-    /// infinite, or larger than [`ENUMERATION_LIMIT`].
+    /// (undecided) when the group cannot be enumerated: it is declared
+    /// infinite (`order: None`), or its declared order is larger than
+    /// [`ENUMERATION_LIMIT`].
+    ///
+    /// # Panics
+    ///
+    /// Without cached elements and for a declared order `<=`
+    /// [`ENUMERATION_LIMIT`], if the generators do not generate a group of the
+    /// declared order (the declared order is checked when enumerating). A
+    /// larger declared order is not checked: the result is `None`.
     pub fn try_contains(&self, element: &E) -> Option<bool> {
         if let Some(ref elements) = self.cached_elements {
             return Some(elements.contains(element));
@@ -240,9 +269,12 @@ impl<E: GroupElement + ElementLibGAP> GroupLibGAP<E> {
     ///
     /// # Panics
     ///
-    /// When membership cannot be decided (see [`try_contains`](Self::try_contains)):
-    /// that needs Schreier–Sims or coset enumeration, which is not implemented
-    /// for this generic type.
+    /// - When membership cannot be decided (see [`try_contains`](Self::try_contains)):
+    ///   that needs Schreier–Sims or coset enumeration, which is not implemented
+    ///   for this generic type.
+    /// - Without cached elements and for a declared order `<=`
+    ///   [`ENUMERATION_LIMIT`], if the generators do not generate a group of
+    ///   the declared order.
     pub fn contains(&self, element: &E) -> bool {
         self.try_contains(element).unwrap_or_else(|| {
             unimplemented!(
@@ -255,8 +287,15 @@ impl<E: GroupElement + ElementLibGAP> GroupLibGAP<E> {
 
     /// Generate a random element (for finite groups)
     ///
-    /// Returns `None` when the group cannot be enumerated (order unknown,
-    /// infinite, or larger than [`ENUMERATION_LIMIT`]).
+    /// Returns `None` when the group cannot be enumerated (declared infinite,
+    /// `order: None`, or declared order larger than [`ENUMERATION_LIMIT`]).
+    ///
+    /// # Panics
+    ///
+    /// Without cached elements and for a declared order `<=`
+    /// [`ENUMERATION_LIMIT`], if the generators do not generate a group of the
+    /// declared order. A larger declared order is not checked: the result is
+    /// `None`.
     pub fn random_element(&self) -> Option<E> {
         use std::collections::hash_map::RandomState;
         use std::hash::{BuildHasher, Hash, Hasher};
@@ -311,18 +350,32 @@ impl<E: GroupElement + ElementLibGAP> Group for GroupLibGAP<E> {
         self.order
     }
 
+    /// Membership, as [`GroupLibGAP::contains`].
+    ///
+    /// # Panics
+    ///
+    /// As [`GroupLibGAP::contains`]: when membership cannot be decided, or
+    /// (without cached elements, for a declared order `<=`
+    /// [`ENUMERATION_LIMIT`]) when the generators do not generate a group of
+    /// the declared order.
     fn contains(&self, element: &Self::Element) -> bool {
         self.contains(element)
     }
 
     /// The LCM of the element orders.
     ///
-    /// Returns `None` if the group was declared infinite (`order` is `None`).
+    /// Returns `None` if the group was declared infinite (`order: None`, taken
+    /// on trust); `None` here carries [`Group::exponent`]'s meaning "the group
+    /// is infinite", not a computed exponent.
     ///
     /// # Panics
     ///
-    /// For a finite group larger than [`ENUMERATION_LIMIT`]: computing its
-    /// exponent needs a structural algorithm that is not implemented here.
+    /// - For a declared finite order larger than [`ENUMERATION_LIMIT`]:
+    ///   computing its exponent needs a structural algorithm that is not
+    ///   implemented here.
+    /// - Without cached elements and for a declared order `<=`
+    ///   [`ENUMERATION_LIMIT`], if the generators do not generate a group of
+    ///   the declared order.
     fn exponent(&self) -> Option<usize> {
         self.order?;
         let elements = self.element_list().unwrap_or_else(|| {
@@ -353,6 +406,15 @@ impl<E: GroupElement + ElementLibGAP> ParentLibGAP for GroupLibGAP<E> {
         self.generators.clone()
     }
 
+    /// Membership, as [`GroupLibGAP::contains`].
+    ///
+    /// # Panics
+    ///
+    /// As [`GroupLibGAP::contains`]: when membership cannot be decided (the
+    /// group is declared infinite, or its declared order is larger than
+    /// [`ENUMERATION_LIMIT`]), or (without cached elements, for a declared
+    /// order `<=` [`ENUMERATION_LIMIT`]) when the generators do not generate a
+    /// group of the declared order.
     fn contains_element(&self, element: &Self::Element) -> bool {
         self.contains(element)
     }
@@ -361,26 +423,45 @@ impl<E: GroupElement + ElementLibGAP> ParentLibGAP for GroupLibGAP<E> {
         self.order
     }
 
+    /// As [`GroupLibGAP::random_element`].
+    ///
+    /// # Panics
+    ///
+    /// Without cached elements and for a declared order `<=`
+    /// [`ENUMERATION_LIMIT`], if the generators do not generate a group of the
+    /// declared order.
     fn random_element(&self) -> Option<Self::Element> {
         self.random_element()
     }
 
     /// The elements (cached or freshly enumerated); `None` when the group
-    /// cannot be enumerated.
+    /// cannot be enumerated (declared infinite, `order: None`, or declared
+    /// order larger than [`ENUMERATION_LIMIT`]).
+    ///
+    /// # Panics
+    ///
+    /// Without cached elements and for a declared order `<=`
+    /// [`ENUMERATION_LIMIT`], if the generators do not generate a group of the
+    /// declared order. A larger declared order is not checked: the result is
+    /// `None`.
     fn all_elements(&self) -> Option<Vec<Self::Element>> {
         self.element_list()
     }
 }
 
 /// `conjugacy_classes` and `center` use the [`FiniteGroupTrait`] defaults, which
-/// work on [`elements`](FiniteGroupTrait::elements).
+/// work on [`elements`](FiniteGroupTrait::elements). They call `elements()`
+/// first, so they panic exactly when it does (see its `# Panics` section).
 impl<E: GroupElement + ElementLibGAP> FiniteGroupTrait for GroupLibGAP<E> {
     /// All elements (cached, or enumerated on the fly).
     ///
     /// # Panics
     ///
-    /// When the group cannot be enumerated (order unknown, infinite, or larger
-    /// than [`ENUMERATION_LIMIT`]).
+    /// - When the group cannot be enumerated (declared infinite, `order: None`,
+    ///   or declared order larger than [`ENUMERATION_LIMIT`]).
+    /// - Without cached elements and for a declared order `<=`
+    ///   [`ENUMERATION_LIMIT`], if the generators do not generate a group of
+    ///   the declared order.
     fn elements(&self) -> Vec<Self::Element> {
         self.element_list().unwrap_or_else(|| {
             unimplemented!(
@@ -390,9 +471,11 @@ impl<E: GroupElement + ElementLibGAP> FiniteGroupTrait for GroupLibGAP<E> {
         })
     }
 
+    /// The declared finite order (taken on trust; it is not enumerated here).
+    ///
     /// # Panics
     ///
-    /// If the group was not declared finite.
+    /// If the group was declared infinite (`order: None`).
     fn finite_order(&self) -> usize {
         self.order
             .unwrap_or_else(|| panic!("GroupLibGAP::finite_order: the group is not declared finite"))
@@ -616,28 +699,63 @@ mod tests {
         assert!(!h.contains(&ModInt::new(3, 10)));
     }
 
+    // Test element type for a genuinely infinite group: the additive group Z
+    // (the tests below never form sums large enough to overflow i64).
+    #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+    struct Int(i64);
+
+    impl fmt::Display for Int {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(f, "{}", self.0)
+        }
+    }
+
+    impl GroupElement for Int {
+        fn identity() -> Self {
+            Int(0)
+        }
+
+        fn inverse(&self) -> Self {
+            Int(-self.0)
+        }
+
+        fn op(&self, other: &Self) -> Self {
+            Int(self.0 + other.0)
+        }
+    }
+
+    impl ElementLibGAP for Int {}
+
+    /// Z = <1>, correctly declared infinite.
+    fn integers() -> GroupLibGAP<Int> {
+        GroupLibGAP::new(vec![Int(1)], None, true)
+    }
+
     #[test]
     fn test_membership_undecided_for_infinite_group() {
-        // Declared infinite: membership cannot be decided by enumeration.
-        let g = GroupLibGAP::new(vec![ModInt::new(1, 5)], None, true);
-        assert_eq!(g.try_contains(&ModInt::new(2, 5)), None);
+        // Z is infinite: membership, random elements and the element list
+        // cannot be obtained by enumeration, so they are undecided (None).
+        let g = integers();
+        assert!(!g.is_finite());
+        assert_eq!(g.order(), None);
+        assert_eq!(g.identity(), Int(0));
+        assert_eq!(g.try_contains(&Int(2)), None);
         assert_eq!(g.random_element(), None);
         assert_eq!(g.all_elements(), None);
+        // Z has no finite exponent (1 has infinite order): Group::exponent's None.
         assert_eq!(g.exponent(), None);
     }
 
     #[test]
     #[should_panic(expected = "membership")]
     fn test_contains_panics_when_undecidable() {
-        let g = GroupLibGAP::new(vec![ModInt::new(1, 5)], None, true);
-        g.contains(&ModInt::new(2, 5));
+        integers().contains(&Int(2));
     }
 
     #[test]
     #[should_panic(expected = "not declared finite")]
     fn test_finite_order_panics_for_infinite_group() {
-        let g = GroupLibGAP::new(vec![ModInt::new(1, 5)], None, true);
-        g.finite_order();
+        integers().finite_order();
     }
 
     #[test]
@@ -646,6 +764,46 @@ mod tests {
         // 1 generates Z/5Z, which does not have order 4.
         let mut g = GroupLibGAP::cyclic(ModInt::new(1, 5), 4);
         g.compute_elements();
+    }
+
+    #[test]
+    #[should_panic(expected = "declared order")]
+    fn test_declared_order_mismatch_panics_in_try_contains() {
+        // 1 generates Z/5Z, which does not have the declared order 6: the
+        // mismatch is reported, not answered from a wrong element list.
+        let g = GroupLibGAP::cyclic(ModInt::new(1, 5), 6);
+        g.try_contains(&ModInt::new(2, 5));
+    }
+
+    #[test]
+    #[should_panic(expected = "declared order")]
+    fn test_declared_order_mismatch_panics_in_exponent() {
+        let g = GroupLibGAP::cyclic(ModInt::new(1, 5), 4);
+        g.exponent();
+    }
+
+    #[test]
+    #[should_panic(expected = "declared order")]
+    fn test_declared_order_mismatch_panics_in_center() {
+        // The FiniteGroupTrait default calls elements(), which enumerates.
+        GroupLibGAP::cyclic(ModInt::new(1, 5), 4).center();
+    }
+
+    #[test]
+    #[should_panic(expected = "membership")]
+    fn test_contains_element_panics_when_undecidable() {
+        integers().contains_element(&Int(2));
+    }
+
+    #[test]
+    fn test_declared_order_above_limit_is_not_checked() {
+        // The declared order is checked only when the group is enumerated,
+        // i.e. for a declared order <= ENUMERATION_LIMIT. Above it the (false)
+        // declared order of 1 mod 5 is not checked: undecided, no panic.
+        let g = GroupLibGAP::cyclic(ModInt::new(1, 5), ENUMERATION_LIMIT + 1);
+        assert_eq!(g.try_contains(&ModInt::new(2, 5)), None);
+        assert_eq!(g.random_element(), None);
+        assert_eq!(g.all_elements(), None);
     }
 
     #[test]
