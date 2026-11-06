@@ -107,8 +107,8 @@ ch019.x.3,missing,,no implementation of this intrinsic in Z/mZ context [pilot 20
 ch019.x.4,missing,,no implementation of this intrinsic in Z/mZ context [pilot 2026-11-05]
 ch019.x.5,missing,,no implementation of this intrinsic in Z/mZ context [pilot 2026-11-05]
 ch019.Sqrt.2,done,rustmath-finitefields/src/integer_mod.rs:281,same sqrt; test_sqrt_composite_modulus [pilot 2026-11-05]
-ch038.Automorphisms,partial,rustmath-rings/src/number_field/morphisms.rs:439,auto match is graphs crate (wrong); real compute_automorphisms only deg<=2 else NotImplemented; tests test_quadratic_automorphisms [pilot 2026-11-05]
-ch038.AutomorphismGroup,partial,rustmath-rings/src/number_field/morphisms.rs:439,auto match is graphs (wrong); only quadratic fields; no group object [pilot 2026-11-05]
+ch038.Automorphisms,missing,,"cited morphisms.rs is never compiled. No compiled Automorphisms(F); only numberfields QuadElem::conjugate (quadratic.rs:62), an element op for Q(sqrt d), no sequence of maps [review 2026-11-06; corrected, checked]"
+ch038.AutomorphismGroup,missing,,"cited morphisms.rs is never compiled. No compiled Aut(F) group; rustmath-galois galois_group(f) (lib.rs:165) only names Gal(f), no perm group of automorphisms, no maps [review 2026-11-06; corrected, checked]"
 ch038.AutomorphismGroup.2,missing,,auto match is graphs (wrong); no relative automorphism group over subfield F [pilot 2026-11-05]
 ch038.DecompositionGroup,missing,,no implementation found [pilot 2026-11-05]
 ch038.RamificationGroup,partial,rustmath-numberfields/src/ramification.rs:161,RamificationFiltration stores group orders (local Eisenstein only); no group of automorphisms [pilot 2026-11-05]
@@ -145,7 +145,7 @@ ch038.Bound.2,missing,,auto match is unrelated crate fn (wrong) [pilot 2026-11-0
 ch038.GaloisSubgroup,missing,,no implementation found [pilot 2026-11-05]
 ch038.GaloisQuotient,missing,,no implementation found [pilot 2026-11-05]
 ch038.GaloisSubfieldTower,missing,,no implementation found [pilot 2026-11-05]
-ch038.GaloisSplittingField,partial,rustmath-rings/src/number_field/morphisms.rs:527,deg<=2 only else NotImplemented; tests test_splitting_field_quadratic [pilot 2026-11-05]
+ch038.GaloisSplittingField,missing,,"cited morphisms.rs:527 never compiled. No compiled tower/roots/Galois group; numberfields galois_closure (lib.rs:533) gives only a field and is wrong for disc>0 S3 cubics [review 2026-11-06; corrected, checked]"
 ch038.SolveByRadicals,missing,,no implementation found [pilot 2026-11-05]
 ch038.CyclicToRadical,missing,,no implementation found [pilot 2026-11-05]
 ch038.LinearRelations,missing,,no implementation found [pilot 2026-11-05]
@@ -878,7 +878,7 @@ ch018.0xa1a2-ar,missing,,no implementation of this intrinsic for Z in the worksp
 ch018.elt,partial,rustmath-integers/src/integer.rs:35,decimal parse only through from_decimal_str; no elt<Z|..> syntax; no dedicated test found [review 2026-11-06; checked]
 ch018.elt.2,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
 ch018.Z,partial,rustmath-integers/src/integer.rs:966; rustmath-finitefields/src/integer_mod.rs:234,"From<i64/u64/i32/u32/BigInt>; Z/mZ->Z via IntegerMod::lift (value in [0,m)); Rational only via is_integer+numerator; no generic Z!a, no number-field coercion [review 2026-11-06; adjudicated]"
-ch018.One,done,rustmath-integers/src/integer.rs:29,Integer::one(); exercised by ecm.rs tests (f > Integer::one()); no Identity(Z) ring object [review 2026-11-06; checked]
+ch018.One,done,rustmath-integers/src/integer.rs:29,"Integer::one(). integer.rs::test_divisors asserts divisors(1) (returns vec![Integer::one()]) == [1]; also ecm.rs::test_ecm_larger_composite. No Identity(Z) ring object [review 2026-11-06; corrected, checked]"
 ch018.Zero,done,rustmath-integers/src/integer.rs:24,Integer::zero(); asserted in integer.rs::test_ordered_ring (sign(zero)==0); no Representative(Z) [review 2026-11-06; checked]
 ch018.FactorizationToInteger,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
 ch018.IntegerToSequence,partial,rustmath-integers/src/integer.rs:374,"Integer::digits(base): LSB-first digits but base limited to 2..36, drops sign, returns [0] for n=0 (Magma []); test_digits [review 2026-11-06; checked]"
@@ -1063,8 +1063,8 @@ ch034.RationalsAsNumberField,missing,,no dedicated degree-1 constructor or QNF [
 ch034.NumberField.2,missing,,no tower/non-simple construction from sequence of polynomials [review 2026-11-06; checked]
 ch034.ext,missing,,no number-field implementation of this intrinsic in the workspace (same-named fns elsewhere are unrelated types) [review 2026-11-06; checked]
 ch034.RadicalExtension,missing,,no number-field implementation of this intrinsic in the workspace (same-named fns elsewhere are unrelated types) [review 2026-11-06; checked]
-ch034.SplittingField,partial,rustmath-rings/src/number_field/morphisms.rs:527,"splitting_field(poly) only deg<=2 (quadratic Q(sqrt disc), no reducibility check); deg>2 Err; no roots; takes poly not field. Tests in rings number_field/tests.rs [review 2026-11-06; checked]"
-ch034.SplittingField.2,partial,rustmath-rings/src/number_field/morphisms.rs:527,"same splitting_field: only degree<=2, deg>2 returns NotImplemented; no roots returned [review 2026-11-06; checked]"
+ch034.SplittingField,facade,rustmath-numberfields/src/lib.rs:533,"cited morphisms.rs uncompiled. Only route galois_closure(): deg<=2 returns F, any cubic with disc>0 returns F (wrong for x^3-4x-1, S3), else Err; no roots. As ch037.SplittingField [review 2026-11-06; corrected, checked]"
+ch034.SplittingField.2,facade,rustmath-numberfields/src/lib.rs:533,"cited morphisms.rs uncompiled. Only route NumberField::new(f).galois_closure(): returns the cubic itself when disc>0 (S3 case wrong), Err for disc<=0 or deg>3; no roots [review 2026-11-06; corrected, checked]"
 ch034.SplittingField.3,missing,,no splitting field of a sequence of polynomials over a number field [review 2026-11-06; checked]
 ch034.sub,missing,,no number-field implementation of this intrinsic in the workspace (same-named fns elsewhere are unrelated types) [review 2026-11-06; checked]
 ch034.MergeFields,missing,,no number-field implementation of this intrinsic in the workspace (same-named fns elsewhere are unrelated types) [review 2026-11-06; checked]
@@ -1077,7 +1077,7 @@ ch034.F.2,done,rustmath-numberfields/src/nf_elem.rs:170,NumberField::elem(coeffs
 ch034.Random,missing,,no number-field implementation of this intrinsic in the workspace (same-named fns elsewhere are unrelated types) [review 2026-11-06; checked]
 ch034.One,done,rustmath-numberfields/src/lib.rs:246,NumberField::one (also nf_elem.rs:186). lib.rs::tests::test_zero_and_one [review 2026-11-06; checked]
 ch034.Zero,done,rustmath-numberfields/src/lib.rs:241,NumberField::zero (also nf_elem.rs:180). lib.rs::tests::test_zero_and_one [review 2026-11-06; checked]
-ch034.hom,partial,rustmath-rings/src/number_field/morphisms.rs:323; rustmath-rings/src/number_field/morphisms.rs:184,"NumberFieldAutomorphism::new(F,r)+apply (:396) maps F->F with alpha->r; target only F, r not checked to be a root (Embedding::new same). tests.rs::test_nontrivial_automorphism_order [verifier upheld] [review 2026-11-06; adjudicated]"
+ch034.hom,missing,,"NumberFieldAutomorphism/Embedding exist only in uncompiled morphisms.rs. No compiled hom<F->R|r> for number fields (core FnMorphism is a generic closure wrapper). As ch037.hom [review 2026-11-06; corrected, checked]"
 ch034.hom.2,missing,,no number-field implementation of this intrinsic in the workspace (same-named fns elsewhere are unrelated types) [review 2026-11-06; checked]
 ch034.hom.3,missing,,no number-field implementation of this intrinsic in the workspace (same-named fns elsewhere are unrelated types) [review 2026-11-06; checked]
 ch034.hom.4,missing,,no number-field implementation of this intrinsic in the workspace (same-named fns elsewhere are unrelated types) [review 2026-11-06; checked]
@@ -1111,7 +1111,7 @@ ch034.Regulator,partial,rustmath-numberfields/src/units.rs:197,f64 regulator fro
 ch034.RegulatorLowerBound,missing,,no number-field implementation of this intrinsic in the workspace (same-named fns elsewhere are unrelated types) [review 2026-11-06; checked]
 ch034.Signature,done,rustmath-numberfields/src/units.rs:18,"(r1,r2) via real root count. units.rs::signature_and_rank (legacy lib.rs signature is a facade, not used) [review 2026-11-06; checked]"
 ch034.UnitRank,done,rustmath-numberfields/src/units.rs:25,r1+r2-1. units.rs::signature_and_rank [review 2026-11-06; checked]
-ch034.DefiningPolynomial,done,rustmath-numberfields/src/lib.rs:236,minimal_polynomial() of absolute simple field; no non-simple list (no such fields). Exercised by rustmath-rings/src/number_field/s_unit_solver.rs::test_height_computation [citation fixed] [review 2026-11-06; adjudicated]
+ch034.DefiningPolynomial,partial,rustmath-numberfields/src/lib.rs:236; rustmath-numberfields/src/nf_elem.rs:156,"NumberField::minimal_polynomial (and nf_elem modulus) for absolute simple fields; no relative/non-simple list. Cited s_unit_solver.rs test is uncompiled; no test exercises it [review 2026-11-06; corrected, checked]"
 ch034.Zeroes,partial,rustmath-polynomials/src/root_label.rs:530; rustmath-polynomials/src/root_label.rs:895,"complex_roots(f,prec bits): all complex roots of integer poly, Newton-refined; poly not field input, bits not digits, sorted by real part not real-first. root_label.rs::complex_roots_sqrt2 [verifier upheld] [review 2026-11-06; adjudicated]"
 ch034.Basis,partial,rustmath-numberfields/src/lib.rs:355,"power_basis only for absolute simple field; no Basis(F,R). lib.rs::tests::test_power_basis [review 2026-11-06; checked]"
 ch034.IntegralBasis,partial,rustmath-numberfields/src/round2.rs:745,"integral_basis(f) absolute integer poly, elements as (coeffs,denominator); no IntegralBasis(F,R); no direct test (used via field disc tests) [review 2026-11-06; checked]"
@@ -1129,9 +1129,9 @@ ch034.HasComplexConjugate,missing,,no number-field implementation of this intrin
 ch034.ComplexConjugate,missing,,no number-field implementation of this intrinsic in the workspace (same-named fns elsewhere are unrelated types) [review 2026-11-06; checked]
 ch034.IsIsomorphic,missing,,no number-field implementation of this intrinsic in the workspace (same-named fns elsewhere are unrelated types) [review 2026-11-06; checked]
 ch034.IsSubfield,missing,,no number-field implementation of this intrinsic in the workspace (same-named fns elsewhere are unrelated types) [review 2026-11-06; checked]
-ch034.IsNormal,partial,rustmath-rings/src/number_field/morphisms.rs:493; rustmath-rings/src/number_field/morphisms.rs:504,"is_galois_extension (normal=Galois over Q) decides only deg<=2 via compute_automorphisms, Err for deg>=3; is_normal_extension :504 is an Err stub. tests.rs::test_quadratic_is_galois [verifier upheld] [review 2026-11-06; adjudicated]"
-ch034.IsAbelian,partial,rustmath-rings/src/number_field/morphisms.rs:677,GaloisGroup::is_abelian from mult table; only for splitting fields of deg<=2 polys; returns false when table unbuilt; not a field-level IsAbelian [review 2026-11-06; checked]
-ch034.IsCyclic,partial,rustmath-rings/src/number_field/morphisms.rs:693,GaloisGroup::is_cyclic by element order; only deg<=2 splitting fields exist; not IsCyclic(F) [review 2026-11-06; checked]
+ch034.IsNormal,missing,,"is_galois_extension/is_normal_extension exist only in uncompiled morphisms.rs. No compiled IsNormal(F); galois_group(f) gives Gal but no predicate; panayi.rs is local only [review 2026-11-06; corrected, checked]"
+ch034.IsAbelian,missing,,"GaloisGroup::is_abelian exists only in uncompiled morphisms.rs. No compiled IsAbelian(F) for number fields. As ch037.IsAbelian [review 2026-11-06; corrected, checked]"
+ch034.IsCyclic,missing,,"GaloisGroup::is_cyclic exists only in uncompiled morphisms.rs. No compiled IsCyclic(F) for number fields. As ch037.IsCyclic [review 2026-11-06; corrected, checked]"
 ch034.IsAbsoluteField,missing,,no number-field implementation of this intrinsic in the workspace (same-named fns elsewhere are unrelated types) [review 2026-11-06; checked]
 ch034.Parent.2,n/a,,Magma type-system accessors; Rust types carry parent via NfElem.field / NumberFieldElement.min_poly [review 2026-11-06; checked]
 ch034.a,done,rustmath-numberfields/src/nf_elem.rs:252,"NfElem add/sub/mul/pow/inv/div (nf_elem.rs:230-274, absolute fields); test nf_elem.rs::quadratic_field_sqrt2_arithmetic, quartic_field_inverse_roundtrips [review 2026-11-06; checked]"
@@ -1496,7 +1496,7 @@ ch058.Kernel,partial,rustmath-groups/src/libgap_morphism.rs:157,"generic enumera
 ch058.IsHomomorphism,broken,rustmath-groups/src/libgap_morphism.rs:106,validate() returns Ok after 101 pairs in HashMap order and skips products missing from map; a map on a 200-element group wrong at one point passes in ~1/4 of runs; no gen-image API [review 2026-11-06; adjudicated]
 ch058.AbelianGroup,missing,,no abelian perm group constructor [review 2026-11-06; checked]
 ch058.AlternatingGroup,done,rustmath-groups/src/permutation_group.rs:259,"AlternatingGroup::new(n); tests permutation_group.rs::test_alternating_group_a4, test_generated_orders_match_formulas [review 2026-11-06; checked]"
-ch058.CyclicGroup,done,rustmath-groups/src/permutation_group.rs:97,PermutationGroup::cyclic(n); doctest on order() asserts cyclic(7) order 7 [review 2026-11-06; checked]
+ch058.CyclicGroup,done,rustmath-groups/src/permutation_group.rs:97,"PermutationGroup::cyclic(n), generator i->i+1 mod n. Doctests permutation_group.rs::PermutationGroup::order (:179, cyclic(7).order()==7) and ::cyclic (:94, degree 5) [review 2026-11-06; corrected, checked]"
 ch058.DihedralGroup,done,rustmath-groups/src/permutation_group.rs:141,"PermutationGroup::dihedral(n); tests test_dihedral_orders, test_dihedral_relations (degree for n<3 follows GAP) [review 2026-11-06; checked]"
 ch058.Sym.3,done,rustmath-groups/src/permutation_group.rs:54; rustmath-groups/src/permutation_group.rs:208,"Concrete SymmetricGroup::new(n)/symmetric(n) on 0-based points via adjacent transpositions; tests: permutation_group.rs::test_symmetric_group_s4, test_generated_orders_match_formulas [review 2026-11-06; checked]"
 ch058.ExtraSpecialGroup,missing,,not implemented [review 2026-11-06; checked]
@@ -1523,7 +1523,7 @@ ch058.IsEven,done,rustmath-combinatorics/src/permutations.rs:71,even iff Permuta
 ch058.Sign,done,rustmath-combinatorics/src/permutations.rs:71,Permutation::sign (inversion count); test permutations.rs::test_sign [review 2026-11-06; checked]
 ch058.Order.2,done,rustmath-combinatorics/src/permutations.rs:122,lcm of cycle lengths; test permutations.rs::test_order [review 2026-11-06; checked]
 ch058.g.5,done,rustmath-combinatorics/src/permutations.rs:12,Permutation derives PartialEq; equality used in permutation_group.rs::test_dihedral_relations; no parent check [review 2026-11-06; checked]
-ch058.g.6,done,rustmath-combinatorics/src/permutations.rs:12,Permutation derives PartialEq (!=); no dedicated test of ne [review 2026-11-06; checked]
+ch058.g.6,done,rustmath-combinatorics/src/permutations.rs:4,"Permutation derives PartialEq/Eq (:4) giving !=. derangements.rs::test_all_derangements asserts assert_ne! on all pairs of the 9 derangements of 4 [review 2026-11-06; corrected, checked]"
 ch058.IsId,done,rustmath-curves/src/belyi/monodromy.rs:101; rustmath-algebras/src/symmetric_group_algebra.rs:173,is_identity on belyi Permutation (both outcomes in monodromy.rs::validate_catches_nonidentity_product) and SymmetricGroupElement (test_symmetric_group_element_identity) [review 2026-11-06; adjudicated]
 ch058.G.8,missing,,no set product of subgroups [review 2026-11-06; checked]
 ch058.ElementSet,partial,rustmath-galois/src/perm.rs:98; rustmath-groups/src/transitive24.rs:96,"group_closure lists elements of <gens>, None past cap; rustmath-galois/tests/perm.rs::coset_reps_count_matches_index; takes H's gens only, no G argument or H<=G check [review 2026-11-06; adjudicated]"
@@ -3740,7 +3740,7 @@ ch021.IrreducibleSparseGF2Polynomial,missing,,no sparse GF(2) irreducible databa
 ch021.PrimitivePolynomial,partial,rustmath-finitefields/src/conway.rs:139,"Verifier right: conway_polynomial(p,m) is primitive (conway.rs::conway_table_is_conway asserts ord(x)=p^m-1) for tabulated (p,m) over F_p only; no search, no GF(q) base [review 2026-11-06; adjudicated]"
 ch021.AllIrreduciblePolynomials,missing,,no enumeration of all monic irreducibles of degree m [review 2026-11-06; checked]
 ch021.ConwayPolynomial,verified,rustmath-finitefields/src/conway.rs:139,"table from Luebeck data, limited range (p<=31, small n); conway.rs::test_known_luebeck_values, conway_table_is_conway; None outside table [review 2026-11-06; checked]"
-ch021.ExistsConwayPolynomial,done,rustmath-finitefields/src/conway.rs:147,"has_conway_polynomial(p,n) bool, plus conway_polynomial for the value; tested in conway.rs (has_conway_polynomial asserts) [review 2026-11-06; checked]"
+ch021.ExistsConwayPolynomial,done,rustmath-finitefields/src/conway.rs:147; rustmath-finitefields/src/conway.rs:139,"has_conway_polynomial(p,n) bool; conway_polynomial Option gives the value. conway.rs::test_has_conway asserts true/false cases; test_known_luebeck_values checks values [review 2026-11-06; corrected, checked]"
 ch021.Log,partial,rustmath-finitefields/src/finite_field.rs:630; rustmath-coding/src/reed_solomon_generic.rs:474,"Verifier right: discrete_log(find_primitive_element(F), x) composes Log(x), as ch021.PrimitiveElement/Log.2 (partial); BSGS only, element search materializes all q elements, small q [review 2026-11-06; adjudicated]"
 ch021.Log.2,partial,rustmath-finitefields/src/finite_field.rs:630,"baby-step giant-step only, O(sqrt(q)) memory, fails for large fields; no Pohlig-Hellman/index calculus; tests discrete_log_gf8, discrete_log_prime_field [review 2026-11-06; checked]"
 ch021.ZechLog,missing,,no Zech logarithm [review 2026-11-06; checked]
@@ -3917,7 +3917,7 @@ ch049.LeadingTerm,missing,,no LeadingTerm for series (rustmath-polynomials one i
 ch049.Truncate,missing,,"PowerSeries::truncate(p) lowers precision (ChangePrecision analog), not exact truncation after last nonzero term [review 2026-11-06; checked]"
 ch049.ExponentDenominator,done,rustmath-powerseries/src/puiseux.rs:116,"puiseux.rs::tests::fractional_valuation, denominator_reduction [review 2026-11-06; checked]"
 ch049.Degree,done,rustmath-powerseries/src/laurent.rs:135,degree of last nonzero term; asserted in laurent.rs::tests::valuation_and_precision [review 2026-11-06; checked]
-ch049.Valuation,done,rustmath-powerseries/src/laurent.rs:124,"Laurent valuation, Puiseux rational valuation (puiseux.rs:122); tested; no PowerSeries::valuation method [review 2026-11-06; checked]"
+ch049.Valuation,done,rustmath-powerseries/src/laurent.rs:124; rustmath-powerseries/src/puiseux.rs:122,"Laurent i64 valuation, Puiseux rational w/e. Tests laurent.rs::valuation_and_precision (-2) and puiseux.rs::fractional_valuation (1/2). No PowerSeries::valuation method [review 2026-11-06; corrected, checked]"
 ch049.Derivative,broken,rustmath-powerseries/src/series.rs:246,"Keeps precision p, so x^(p-1) coeff is a fabricated 0 (true p*a_p unknown); transcendental.rs exp ODE test must skip it; PROJECT_TRACKER flags over-claim; PowerSeries only [review 2026-11-06; adjudicated]"
 ch049.Derivative.2,missing,,no n-th derivative API [review 2026-11-06; checked]
 ch049.Integral,partial,rustmath-powerseries/src/transcendental.rs:39,"PowerSeries over field, Err if n+1 not invertible; test transcendental.rs::integral_divides_exactly; no Laurent/Puiseux; lazy variant lazy.rs:199 [review 2026-11-06; checked]"
@@ -4572,7 +4572,7 @@ ch048.GCD,done,rustmath-finitefields/src/galois_ring.rs:599,canonical associate 
 ch048.LCM,partial,rustmath-finitefields/src/galois_ring.rs:614,p^max(v) implemented but no test exercises lcm [review 2026-11-06; checked]
 ch048.XGCD,done,rustmath-finitefields/src/galois_ring.rs:630,g=s a+t b checked in galois_ring.rs::tests::euclidean_quotrem_gcd_xgcd [review 2026-11-06; checked]
 ch048.a.5,done,rustmath-finitefields/src/galois_ring.rs:684,"Element PartialEq (parent data + coeffs); exercised by galois_ring.rs::tests::euclidean_quotrem_gcd_xgcd (assert_eq!(check, g2)), teichmuller_representatives; gr_8_2_basic compares no elements [review 2026-11-06; adjudicated]"
-ch048.a.6,done,rustmath-finitefields/src/galois_ring.rs:684,inequality via PartialEq; used in assertions in galois_ring.rs::tests [review 2026-11-06; checked]
+ch048.a.6,done,rustmath-finitefields/src/galois_ring.rs:684,"ne is PartialEq default from eq (:684). galois_ring.rs::frobenius_gr_4_2_fixes_exactly_z4 asserts assert_ne!(w.frobenius(), w); also frobenius_deeper_rings [review 2026-11-06; corrected, checked]"
 ch048.a.7,partial,rustmath-finitefields/src/galois_ring.rs:312,Parent::contains compares ring data; no test [review 2026-11-06; checked]
 ch048.a.8,partial,rustmath-finitefields/src/galois_ring.rs:312,negation of Parent::contains; no test [review 2026-11-06; checked]
 ch048.Parent.2,partial,rustmath-finitefields/src/galois_ring.rs:343,ring() accessor returns parent; no direct test [review 2026-11-06; checked]
