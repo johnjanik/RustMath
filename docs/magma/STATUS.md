@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 231 | 0 | 15 | 45 | 1 | 0 | 5789 (43%) | 7490 (56%) |
+| 13341 | 243 | 0 | 16 | 46 | 1 | 0 | 5786 (43%) | 7491 (56%) |
 
 ## By chapter
 
@@ -53,7 +53,7 @@ automatic `candidate`/`missing` counts.
 | 29 | Polar Spaces | IV | 74 | 0 | 0 | 0 | 0 | 0 | 0 | 3 | 71 | stub | `rustmath-quadraticforms (proposed rustmath-lattices/polar module)` |
 | 30 | Lattices | V | 193 | 0 | 0 | 0 | 0 | 0 | 0 | 70 | 123 | partial | `rustmath-matrix (proposed rustmath-lattices)` |
 | 31 | Lattices With Group Action | V | 60 | 0 | 0 | 0 | 0 | 0 | 0 | 19 | 41 | none | `rustmath-matrix + rustmath-groups (proposed rustmath-lattices)` |
-| 32 | Quadratic Forms | V | 12 | 0 | 0 | 0 | 0 | 0 | 0 | 3 | 9 | substantial | `rustmath-quadraticforms` |
+| 32 | Quadratic Forms | V | 12 | 12 | 0 | 1 | 1 | 0 | 0 | 0 | 10 | substantial | `rustmath-quadraticforms` |
 | 33 | Binary Quadratic Forms | V | 52 | 0 | 0 | 0 | 0 | 0 | 0 | 35 | 17 | partial | `rustmath-quadraticforms` |
 | 34 | Number Fields | VI | 220 | 0 | 0 | 0 | 0 | 0 | 0 | 123 | 97 | substantial | `rustmath-numberfields` |
 | 35 | Quadratic Fields | VI | 33 | 0 | 0 | 0 | 0 | 0 | 0 | 21 | 12 | substantial | `rustmath-numberfields` |

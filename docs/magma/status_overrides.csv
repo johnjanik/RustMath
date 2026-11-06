@@ -230,3 +230,15 @@ ch046.PuiseuxToParametrization,missing,,no implementation found [pilot 2026-11-0
 ch046.Roots,missing,,"auto match is GF(q) poly_factor roots, not Newton-polygon/Puiseux roots [pilot 2026-11-05]"
 ch046.Roots.2,missing,,"auto match is GF(q) poly_factor roots, wrong [pilot 2026-11-05]"
 ch046.HasRoot,missing,,no implementation found [pilot 2026-11-05]
+ch032.SymmetricMatrix,partial,rustmath-quadraticforms/src/ternary.rs:60,"TernaryForm::from_coeffs maps aX^2+bY^2+cZ^2+dXY+eYZ+fXZ to public gram [[a,d/2,f/2],[d/2,b,e/2],[f/2,e/2,c]]: form-to-matrix for 3 vars over Q only; no polynomial input, no n-ary version [review 2026-11-06; adjudicated]"
+ch032.GramMatrix,done,rustmath-matrix/src/lattice.rs:458,Lattice::gram_matrix gives B B^T (standard inner product); test rustmath-matrix/src/lattice.rs::lattice_parent_and_gram (identity case only) [review 2026-11-06; checked]
+ch032.QuadraticForm,missing,,octonion_algebra.rs:288 is an unrelated algebra norm; no lattice-to-quadratic-polynomial function exists [review 2026-11-06; checked]
+ch032.QuadraticForm.2,missing,,octonion_algebra.rs:288 is unrelated; no symmetric-matrix-to-polynomial function exists [review 2026-11-06; checked]
+ch032.pSignature,missing,,"no p-signature; hilbert.rs has Hilbert symbols and ternary.rs diagonalizes only 3x3 forms, no p-signature computed [review 2026-11-06; checked]"
+ch032.Oddity,missing,,"no implementation; related building blocks only: hilbert_symbol (hilbert.rs:89), ternary diagonalize [review 2026-11-06; checked]"
+ch032.pExcess,missing,,"no implementation; related building blocks only: hilbert_symbol (hilbert.rs:89), ternary diagonalize [review 2026-11-06; checked]"
+ch032.WittInvariant,missing,,no Witt/Hasse-Minkowski invariant; hilbert_symbol (hilbert.rs:89) exists but is not assembled over diagonalized forms [review 2026-11-06; checked]
+ch032.HasseMinkowskiInvariant,missing,,"no implementation; related building blocks only: hilbert_symbol (hilbert.rs:89), ternary diagonalize [review 2026-11-06; checked]"
+ch032.WittInvariants,missing,,"no implementation; related building blocks only: hilbert_symbol (hilbert.rs:89), ternary diagonalize [review 2026-11-06; checked]"
+ch032.HasseMinkowskiInvariants,missing,,"no implementation; related building blocks only: hilbert_symbol (hilbert.rs:89), ternary diagonalize [review 2026-11-06; checked]"
+ch032.IsotropicSubspace,missing,,no isotropic subspace search (Simon's algorithm) found; only ternary isotropic vector pullback test in ternary.rs [review 2026-11-06; checked]
