@@ -870,3 +870,191 @@ ch063.LayerLength,missing,,"no pc-group/soluble-group implementation of this int
 ch063.LayerBoundary,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
 ch063.CompactPresentation,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06; checked]"
 ch063.PCGroup.2,missing,,"no pc-group/soluble-group implementation of this intrinsic in workspace (no pc presentations, only perm/solvtower) [review 2026-11-06]"
+ch018.hom,missing,,no Z -> R natural homomorphism constructor; only From<i64> etc. conversions on Integer [review 2026-11-06; checked]
+ch018.IntegerRing,missing,,no IntegerRing() structure object; Integer type implements Ring traits statically (padics factory hit is unrelated) [review 2026-11-06; checked]
+ch018.IntegerRing.2,missing,,no RingOfIntegers(Q) construction; padics factory integer_ring is unrelated [review 2026-11-06; checked]
+ch018.a1a2,partial,rustmath-integers/src/integer.rs:35,Integer::from_decimal_str parses decimal strings via BigInt; no Magma literal syntax and no dedicated test found [review 2026-11-06; checked]
+ch018.0xa1a2-ar,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.elt,partial,rustmath-integers/src/integer.rs:35,decimal parse only through from_decimal_str; no elt<Z|..> syntax; no dedicated test found [review 2026-11-06; checked]
+ch018.elt.2,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.Z,partial,rustmath-integers/src/integer.rs:966; rustmath-finitefields/src/integer_mod.rs:234,"From<i64/u64/i32/u32/BigInt>; Z/mZ->Z via IntegerMod::lift (value in [0,m)); Rational only via is_integer+numerator; no generic Z!a, no number-field coercion [review 2026-11-06; adjudicated]"
+ch018.One,done,rustmath-integers/src/integer.rs:29,Integer::one(); exercised by ecm.rs tests (f > Integer::one()); no Identity(Z) ring object [review 2026-11-06; checked]
+ch018.Zero,done,rustmath-integers/src/integer.rs:24,Integer::zero(); asserted in integer.rs::test_ordered_ring (sign(zero)==0); no Representative(Z) [review 2026-11-06; checked]
+ch018.FactorizationToInteger,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.IntegerToSequence,partial,rustmath-integers/src/integer.rs:374,"Integer::digits(base): LSB-first digits but base limited to 2..36, drops sign, returns [0] for n=0 (Magma []); test_digits [review 2026-11-06; checked]"
+ch018.SequenceToInteger,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.IntegerToString,partial,rustmath-integers/src/integer.rs:997,Display impl gives decimal string incl. minus sign; no dedicated assertion test found [review 2026-11-06; checked]
+ch018.IntegerToString.2,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.Eltseq,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.Denominator,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.Category,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.AdditiveGroup,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.MultiplicativeGroup,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.ClassGroup,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.FieldOfFractions,partial,rustmath-rings/src/fraction_field.rs:166; rustmath-rings/src/fraction_field.rs:294,"FractionField<Integer> is a real Frac(Z): cross-multiplied eq, field ops (fraction_field.rs::test_fraction_field_creation); never reduced, not identified with Rational (Q) [review 2026-11-06; adjudicated]"
+ch018.sub,partial,rustmath-rings/src/dedekind/zctx.rs:30,"ZIdeal::from_int(n) builds nZ with contains/subset/add/mul in ZDedekind (zctx.rs::membership_and_subset); n=0 gives None (no zero ideal), i64 arg only [review 2026-11-06; adjudicated]"
+ch018.Characteristic,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.Signature,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.IsCommutative,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.Z.2,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.n-n,partial,rustmath-integers/src/integer.rs:1120,Neg for Integer and &Integer exists; no unary plus; no test found [review 2026-11-06; checked]
+ch018.m,partial,rustmath-integers/src/integer.rs:1040,"Add/Sub/Mul/pow(u32) work (test_basic_arithmetic, test_pow); `/` is truncating integer division, no rational result [review 2026-11-06; checked]"
+ch018.m.2,n/a,,"Magma assignment-operator syntax (+:= etc.); Integer has no AddAssign impls, Rust writes m = m + n; same convention as pilot ch019.m.2 [review 2026-11-06; adjudicated]"
+ch018.n,partial,rustmath-integers/src/integer.rs:1088,"BigInt truncating Div equals Magma div only if signs agree, n=0 or m|n: -7 div 2 and 7 div -2 give -3 (Magma -4); no floor-div API; test_basic_arithmetic positives only [review 2026-11-06; adjudicated]"
+ch018.n.2,partial,rustmath-integers/src/integer.rs:894,Integer::modulo gives non-negative remainder for positive modulus; % operator truncates; negative modulus convention not Magma; untested [review 2026-11-06; checked]
+ch018.ExactQuotient,partial,rustmath-rings/src/category_methods.rs:113,blanket RingElementMethods::divide_if_possible applies to Integer (EuclideanDomain): exact quotient or Err; test_ring_element_divide_if_possible uses i32 only [review 2026-11-06; adjudicated]
+ch018.n.3,n/a,,"Magma assignment-operator syntax (div:=, mod:=); Rust writes n = n / m; same convention as pilot ch019.m.2 [review 2026-11-06; adjudicated]"
+ch018.ShiftLeft,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.ShiftRight,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.ModByPowerOf2,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.m.3,done,rustmath-integers/src/integer.rs:12,derived PartialEq/Eq on Integer; assert_eq used throughout integer.rs::test_basic_arithmetic [review 2026-11-06; checked]
+ch018.n.4,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.Parent,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.IsEven,partial,rustmath-integers/src/integer.rs:104,correct (also for negatives) but no dedicated test found [review 2026-11-06; checked]
+ch018.IsOdd,partial,rustmath-integers/src/integer.rs:109,correct (also for negatives) but no dedicated test found [review 2026-11-06; checked]
+ch018.IsDivisibleBy,partial,rustmath-rings/src/category_methods.rs:113,"divide_if_possible gives Ok(q) iff d|n (quotient returned), Err otherwise; d=0 is Err not a boolean; no Integer test (category_methods.rs tests i32 only) [review 2026-11-06; adjudicated]"
+ch018.IsSquare,partial,rustmath-integers/src/integer.rs:552,is_perfect_square returns bool only (test_is_perfect_square); root not returned (sqrt separate); negative gives false [review 2026-11-06; checked]
+ch018.IsSquarefree,done,rustmath-integers/src/integer.rs:486,"Integer::is_square_free via factor(); integer.rs::test_is_square_free (0 gives false, |n| used) [review 2026-11-06; checked]"
+ch018.IsPower,partial,rustmath-integers/src/integer.rs:504,"is_perfect_power scans k=2..64 ascending so returns largest base (64 gives (8,2), Magma min base 2, k=6); k<=64; untested [review 2026-11-06; checked]"
+ch018.IsPower.2,partial,rustmath-integers/src/integer.rs:350,"is_power(k) returns bool only, no root b; treats n<=1 as true (Magma needs n>1); test_is_power [review 2026-11-06; checked]"
+ch018.IsPrime,partial,rustmath-integers/src/prime.rs:91,trial division <1000 else Miller-Rabin with fixed first 12 prime bases (deterministic only below ~3e23); no ECPP proof; test_is_prime [review 2026-11-06; checked]
+ch018.IsIntegral,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.IsSinglePrecision,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.IsZero,partial,rustmath-integers/src/integer.rs:114; rustmath-category/src/ring_category.rs:161,"is_zero/is_one, is_prime, plus blanket RingElementMethods is_unit(+-1)/is_nilpotent/is_idempotent apply to Integer (tested on i32); no IsMinusOne/IsZeroDivisor/IsRegular/IsIrreducible [review 2026-11-06; adjudicated]"
+ch018.m.4,done,rustmath-integers/src/integer.rs:12,derived PartialOrd/Ord; integer.rs::test_ordered_ring asserts a<b and max_with/min_with [review 2026-11-06; checked]
+ch018.Maximum,partial,rustmath-core/src/ordering.rs:40,OrderedRing::max_with (two args) asserted in integer.rs::test_ordered_ring; no sequence form [review 2026-11-06; checked]
+ch018.Minimum,partial,rustmath-core/src/ordering.rs:49,OrderedRing::min_with (two args) asserted in integer.rs::test_ordered_ring; no sequence form [review 2026-11-06; checked]
+ch018.ComplexConjugate,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.Norm,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.EuclideanNorm,partial,rustmath-integers/src/integer.rs:1176,"EuclideanDomain::norm returns |n| as u64, saturating at u64::MAX for huge n; untested [review 2026-11-06; checked]"
+ch018.Trace,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.MinimalPolynomial,partial,rustmath-algebraic/src/minimal_polynomial.rs:20,"via AlgebraicNumber::from_i64(n): Rational branch returns x - n over Z (test_minimal_poly_rational 3/2, test_degree_rational 5); no Integer API; fn is facade off rationals [review 2026-11-06; adjudicated]"
+ch018.AbsoluteValue,done,rustmath-integers/src/integer.rs:41,Integer::abs; asserted via OrderedRing::abs in integer.rs::test_ordered_ring [review 2026-11-06; checked]
+ch018.Ilog2,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.Ilog,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.Quotrem,partial,rustmath-integers/src/integer.rs:1182,EuclideanDomain::div_rem uses BigInt truncating division; negative dividend gives r<0 (Magma needs 0<=r<n); no direct test [review 2026-11-06; checked]
+ch018.Valuation,partial,rustmath-integers/src/integer.rs:612,Integer::valuation returns exponent only (no unit u); 0 gives u32::MAX sentinel; accepts non-prime p; no direct test [review 2026-11-06; checked]
+ch018.Iroot,done,rustmath-integers/src/integer.rs:174,Integer::nth_root(n:u32) floor root via Newton; integer.rs::test_nth_root [review 2026-11-06; checked]
+ch018.Sign,done,rustmath-integers/src/integer.rs:1166,OrderedRing::sign for Integer; asserted in integer.rs::test_ordered_ring [review 2026-11-06; checked]
+ch018.Ceiling,partial,rustmath-symbolic/src/specialfunctions/other.rs:103; rustmath-symbolic/src/specialfunctions/other.rs:133,"symbolic ceil/floor return Expr::Integer unchanged (other.rs::test_ceil_integer, test_floor_integer); no Round/Truncate, no Integer method; real code so not n/a [review 2026-11-06; adjudicated]"
+ch018.SquarefreeFactorization,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.Isqrt,done,rustmath-integers/src/integer.rs:147,Integer::sqrt floor sqrt (Err for negative); integer.rs::test_sqrt (prime.rs isqrt is private) [review 2026-11-06; checked]
+ch018.Random,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.Random.2,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.RandomBits,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.RandomPrime,partial,rustmath-integers/src/prime.rs:394,"random_prime(a,b) picks uniformly from enumerated primes in [a,b); not the bit-length 2^n form, no Proof option; test_random_prime [review 2026-11-06; checked]"
+ch018.RandomPrime.2,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.RandomConsecutiveBits,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.GreatestCommonDivisor,partial,rustmath-integers/src/integer.rs:63,"Integer::gcd via Euclid; sign not normalised (gcd(4,-6) gives -2 vs Magma non-negative); test_gcd positives only [review 2026-11-06; checked]"
+ch018.GreatestCommonDivisor.2,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.ExtendedGreatestCommonDivisor,partial,rustmath-integers/src/integer.rs:73,"extended_gcd returns (g,s,t) with s*a+t*b=g; g can be negative for negative inputs; test_extended_gcd [review 2026-11-06; checked]"
+ch018.ExtendedGreatestCommonDivisor.2,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.LeastCommonMultiple,partial,rustmath-integers/src/integer.rs:68,Integer::lcm via gcd; sign can be negative for mixed-sign inputs; test_lcm [review 2026-11-06; checked]
+ch018.LeastCommonMultiple.2,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.CarmichaelLambda,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.FactoredCarmichaelLambda,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.DickmanRho,partial,rustmath-symbolic/src/specialfunctions/transcendental.rs:295,"symbolic: returns 1 for u in [0,1] else an unevaluated Expr::Function; no numerical evaluation of rho(u) [review 2026-11-06; checked]"
+ch018.DivisorSigma,partial,rustmath-integers/src/integer.rs:300,"Integer::sigma(k) correct (integer.rs::test_sigma_function) but DivisorSigma(i,Q) factored-sequence form absent; only trial-division prime::factor [review 2026-11-06; adjudicated]"
+ch018.NumberOfDivisors,partial,rustmath-integers/src/integer.rs:259,Integer::num_divisors correct (integer.rs::test_num_divisors) but NumberOfDivisors(Q) factored-sequence form absent; only trial-division prime::factor [review 2026-11-06; adjudicated]
+ch018.SumOfDivisors,partial,rustmath-integers/src/integer.rs:286,Integer::sum_divisors = sigma(1) (integer.rs::test_sum_divisors) but SumOfDivisors(Q) factored-sequence form absent; only trial-division prime::factor [review 2026-11-06; adjudicated]
+ch018.EulerPhi,partial,rustmath-integers/src/integer.rs:412,Integer::euler_phi correct (integer.rs::test_euler_phi) but EulerPhi(Q) factored-sequence form absent; only trial-division prime::factor [review 2026-11-06; adjudicated]
+ch018.FactoredEulerPhi,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.EulerPhiInverse,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.FactoredEulerPhiInverse,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.LegendreSymbol,broken,rustmath-integers/src/integer.rs:570; rustmath-finitefields/src/prime_field.rs:153,"n % p and mod_pow keep negative residues: (-1/7), (-3/7) return 0 (truth -1, 1); tests n>=0 only. PrimeField::new(n,p).legendre_symbol reduces first (no value test) [review 2026-11-06; adjudicated]"
+ch018.JacobiSymbol,broken,rustmath-integers/src/integer.rs:657,"calls legendre_symbol on a = n % m, negative for n<0: (-1/3) returns 0 (truth -1); integer.rs::test_jacobi_symbol uses n>=0 only; factors m by trial division [review 2026-11-06; adjudicated]"
+ch018.KroneckerSymbol,missing,,no implementation of this intrinsic for Z in the workspace [ch018-1 review] [review 2026-11-06; checked]
+ch018.MoebiusMu,partial,rustmath-integers/src/integer.rs:453,"Integer::moebius correct (integer.rs::test_moebius), Err for 0, but MoebiusMu(Q) factored-sequence form absent; only trial-division prime::factor [review 2026-11-06; adjudicated]"
+ch018.Binomial,done,rustmath-integers/src/sage_wrapper.rs:380,Integer::binomial for non-negative args; negative n or k returns 0 (no generalised binomial). Test sage_wrapper.rs::test_binomial_small [review 2026-11-06; checked]
+ch018.Multinomial,done,rustmath-combinatorics/src/lib.rs:409,"multinomial(n, ks) with u32 args; returns 0 if sum(ks)!=n. Test lib.rs::test_multinomial [review 2026-11-06; checked]"
+ch018.Factorial,done,rustmath-integers/src/sage_wrapper.rs:368,Integer::factorial(u32). Test sage_wrapper.rs::test_factorial_small [review 2026-11-06; checked]
+ch018.IsFactorial,missing,,No is-factorial predicate or inverse factorial anywhere (only factorial(n) itself); the review note about NFS was a copy-paste error [review 2026-11-06; adjudicated]
+ch018.Partitions,done,rustmath-combinatorics/src/partitions.rs:1224,All partitions of n in descending lex order (parts descending). Test partitions.rs::test_partitions_4 [review 2026-11-06; checked]
+ch018.NumberOfPartitions,partial,rustmath-combinatorics/src/partitions.rs:1261,partition_count(n)->usize via DP; usize overflows for n>~400 (p(n) > 2^64). Test partitions.rs::test_partition_count [review 2026-11-06; checked]
+ch018.RestrictedPartitions,partial,rustmath-combinatorics/src/composition.rs:403,"integer_vectors_weighted(Q,n) enumerates multiplicity vectors a with sum a_i*Q_i=n, i.e. these partitions, not as part sequences. Test composition.rs::test_integer_vectors_weighted_large_weights [review 2026-11-06; adjudicated]"
+ch018.RestrictedPartitions.2,missing,,"No exactly-k-parts-from-M generator: partitions_with_exact_parts (partitions.rs:1326) has no part set, integer_vectors_weighted (composition.rs:403) has no part count [review 2026-11-06; adjudicated]"
+ch018.StirlingFirst,done,rustmath-combinatorics/src/lib.rs:506,Unsigned Stirling first kind via recurrence (u32 args). Test lib.rs::test_stirling_first [review 2026-11-06; checked]
+ch018.StirlingSecond,done,rustmath-combinatorics/src/lib.rs:538,Stirling second kind via recurrence (u32 args). Test lib.rs::test_stirling_second [review 2026-11-06; checked]
+ch018.Bell,done,rustmath-combinatorics/src/lib.rs:571; rustmath-combinatorics/src/set_partition.rs:323,"bell_number(u32) as sum of StirlingSecond. Test lib.rs::test_bell_number (gap_functions bell is a GAP shell-out, not this) [review 2026-11-06; checked]"
+ch018.Fibonacci,done,rustmath-combinatorics/src/ch144_enumerative.rs:92; rustmath-combinatorics/src/lib.rs:434,fibonacci_signed(i64) supports negative n. Test ch144_enumerative.rs::test_fibonacci_negative_index [review 2026-11-06; checked]
+ch018.Lucas,done,rustmath-combinatorics/src/ch144_enumerative.rs:97; rustmath-combinatorics/src/lib.rs:457,lucas_signed(i64) supports negative n. Test ch144_enumerative.rs::test_lucas_negative_index [review 2026-11-06; checked]
+ch018.GeneralizedFibonacciNumber,done,rustmath-combinatorics/src/ch144_enumerative.rs:54,"G_n for i64 g0,g1,n incl. negative n. Test ch144_enumerative.rs::test_generalized_fibonacci_custom [review 2026-11-06; checked]"
+ch018.IsPrime.2,partial,rustmath-integers/src/prime.rs:91,"Trial division <1000 else strong test on 12 fixed prime bases (deterministic to ~3e24); no ECPP/proof, no Proof option. Test prime.rs::test_is_prime [review 2026-11-06; checked]"
+ch018.SetVerbose,missing,,"Only a global set_verbose(level) (rustmath-misc/src/verbose.rs:8) that no code reads; no ECPP exists (certificates.rs lists ECPP as future), so there is nothing to control [review 2026-11-06; adjudicated]"
+ch018.PrimalityCertificate,partial,rustmath-constants/src/certificates.rs:72; rustmath-constants/src/certificates.rs:142,"Pratt, not ECPP; generate needs a primitive root <1000 by O(p) order loops, small p only. verify is unsound: any p<100 passes, factors never checked (new(561,2,[]) verifies). Only p<100 asserted in tests [review 2026-11-06; adjudicated]"
+ch018.IsProbablePrime,partial,rustmath-integers/src/prime.rs:32,"Miller-Rabin with fixed bases (rounds only repeats same bases); no random Bases option, no proven range. Untested directly except via is_prime [review 2026-11-06; checked]"
+ch018.IsPrimePower,partial,rustmath-integers/src/prime.rs:211,"bool only, does not return p and k; uses full trial-division factor so slow for large n. Test prime.rs::test_is_prime_power [review 2026-11-06; checked]"
+ch018.NextPrime,partial,rustmath-integers/src/prime.rs:137,"Wrong for n<2 (next_prime(0)=3, next_prime(1)=3 instead of 2); no Proof option. Test prime.rs::test_next_prime [review 2026-11-06; checked]"
+ch018.PreviousPrime,partial,rustmath-integers/src/prime.rs:154,"Correct scan with is_prime, but no Proof option and primality only probable above ~3.3e24 (12 fixed MR bases), same gap as IsPrime.2. Test prime.rs::test_previous_prime [review 2026-11-06; adjudicated]"
+ch018.PrimesUpTo,partial,rustmath-integers/src/prime.rs:277; rustmath-integers/src/fast_arith.rs:364,"prime_range(start,stop) is half-open, per-candidate is_prime (not a sieve) in prime.rs; no PrimesUpTo(B) wrapper. Test prime.rs::test_prime_range [review 2026-11-06; checked]"
+ch018.PrimesInInterval,partial,rustmath-integers/src/prime.rs:277; rustmath-integers/src/fast_arith.rs:364,"prime_range is half-open [b,e) vs inclusive [b,e]; fast_arith version is u64 sieve. Test prime.rs::test_prime_range [review 2026-11-06; checked]"
+ch018.NthPrime,done,rustmath-integers/src/prime.rs:240,"Linear scan with is_prime, usize n, panics for n=0; slow for large n. Test prime.rs::test_nth_prime [review 2026-11-06; checked]"
+ch018.RandomPrime.3,partial,rustmath-integers/src/prime.rs:394,"random_prime(a,b) in [a,b) by enumerating all primes in range (infeasible for 2^n large); no n/Proof form. Test prime.rs::test_random_prime [review 2026-11-06; checked]"
+ch018.RandomPrime.4,missing,,no random prime with congruence class a mod b and attempt limit x [review 2026-11-06; checked]
+ch018.PrimeBasis,partial,rustmath-integers/src/prime.rs:469,"prime_divisors(n) maps trial-division factor() (infeasible for large prime factors); only a doctest calls it and asserts nothing, so its output is untested [review 2026-11-06; adjudicated]"
+ch018.SetVerbose.2,partial,rustmath-misc/src/verbose.rs:8,"Global verbosity integer only; no named ""Factorization"" subsystem and no factoring code reads it [review 2026-11-06; checked]"
+ch018.Factorization,partial,rustmath-integers/src/prime.rs:415; rustmath-integers/src/prime.rs:769,"factor(n) is pure trial division (hangs for large prime factors), no sign output, no parameters; factor_pollard_rho alt. Test prime.rs::test_factor [review 2026-11-06; checked]"
+ch018.StoreFactor,missing,,no stored-hint prime list for factorization [review 2026-11-06; checked]
+ch018.GetStoredFactors,missing,,no stored-hint prime list for factorization [review 2026-11-06; checked]
+ch018.SetVerbose.3,partial,rustmath-misc/src/verbose.rs:8,Global verbosity integer only; no per-algorithm (Cunningham/ECM/MPQS) switches [review 2026-11-06; checked]
+ch018.Cunningham,partial,rustmath-integers/src/factorint.rs:332,"Takes n not (b,k,c); detects b^e-1 for small bases then trial-division factor; no tables or Brent algorithm. Test factorint.rs::test_factor_cunningham_mersenne [review 2026-11-06; checked]"
+ch018.AssertAttribute,missing,,no Cunningham storage limit attribute [review 2026-11-06; checked]
+ch018.TrialDivision,partial,rustmath-integers/src/factorint.rs:162,Single list with unfactored cofactor appended as if prime and -1 for sign; default bound differs. Test factorint.rs::test_trial_division_limit_stops_early [review 2026-11-06; checked]
+ch018.PollardRho,partial,rustmath-integers/src/prime.rs:550,"Floyd rho returns one factor Option; no c,s,k params, no Brent, no factorization output. Test prime.rs::test_pollard_rho_composite [review 2026-11-06; checked]"
+ch018.pMinus1,partial,rustmath-integers/src/prime.rs:631,"Stage 1 only (bound B1, base 2), no B2/x0/k; test removed as unreliable, only doctest [review 2026-11-06; checked]"
+ch018.pPlus1,missing,,no Williams p+1 method [review 2026-11-06; checked]
+ch018.SQUFOF,missing,,no square form factorization [review 2026-11-06; checked]
+ch018.ECM,partial,rustmath-integers/src/ecm.rs:430,"ecm_factor(n,b1,b2,curves) returns Option factor; own curve choice, no Sigma/x0/k, sigma not returned. Test ecm.rs::test_ecm_small_composite [review 2026-11-06; checked]"
+ch018.ECMSteps,missing,,no incremental B1 ECM driver [review 2026-11-06; checked]
+ch018.MPQS,broken,rustmath-integers/src/quadratic_sieve.rs:405; rustmath-integers/src/quadratic_sieve.rs:266,"Single-poly QS; GF(2) step emits non-nullspace sets, y=floor-sqrt of q-product mod n. Port returns None for 10403, 15347; tests pass via primes<=47 (tracker flags it broken) [review 2026-11-06; adjudicated]"
+ch018.ECMOrder,missing,,no ECM curve order from seed [review 2026-11-06; checked]
+ch018.ECMFactoredOrder,missing,,no ECM curve order from seed [review 2026-11-06; checked]
+ch018.PrimeBasis.2,partial,rustmath-integers/src/prime.rs:469,"Same fn as PrimeBasis: prime_divisors(n) over trial-division factor(); doctest only, asserts nothing, output untested [review 2026-11-06; adjudicated]"
+ch018.Divisors,partial,rustmath-integers/src/integer.rs:218,"Integer::divisors(n) ascending via trial-division factor, Err for 0, test integer.rs::test_divisors; the Divisors(f) form in the signature is absent (no factorization-sequence type) [review 2026-11-06; adjudicated]"
+ch018.CoprimeBasis,missing,,no coprime basis computation [review 2026-11-06; checked]
+ch018.PartialFactorization,missing,,no partial factorization of sequences [review 2026-11-06; checked]
+ch018.Facint,missing,,"no factorization-sequence type; factor results are bare Vec<(Integer,u32)> with no product helper [review 2026-11-06; checked]"
+ch018.SeqFact,missing,,no factorization-sequence constructor [review 2026-11-06; checked]
+ch018.Eltseq.2,missing,,no factorization-sequence type (finitefields Eltseq is unrelated) [review 2026-11-06; checked]
+ch018.s,missing,,no arithmetic on factorization sequences [review 2026-11-06; checked]
+ch018.Lcm,missing,,All forms take factorization sequences and no such type exists (Facint/SeqFact/s rows also missing); integer gcd/lcm/divisors are separate ch018 rows [review 2026-11-06; adjudicated]
+ch018.IsOne,missing,,"All forms take factorization sequences and no such type exists; integer is_one/is_even/is_square_free belong to the integer rows, nothing accepts a factorization [review 2026-11-06; adjudicated]"
+ch018.Modexp,done,rustmath-finitefields/src/integer_mod.rs:164; rustmath-integers/src/integer.rs:83,"IntegerMod::new(n,m)?.pow(k) gives [0,m), k<0 via inverse (Err if not a unit; that branch untested). Test integer_mod.rs::test_pow. Integer::mod_pow loops forever for k<0 [review 2026-11-06; adjudicated]"
+ch018.n.5,partial,rustmath-integers/src/integer.rs:894,"Integer::modulo gives result in [0,|m|), not sign of m; no direct test [review 2026-11-06; checked]"
+ch018.Modinv,done,rustmath-finitefields/src/integer_mod.rs:131; rustmath-integers/src/integer.rs:873,"IntegerMod::inverse gives u in [1,m), Err if not coprime. Tests integer_mod.rs::test_inverse, test_inverse_no_exist. Integer::mod_inverse(-1,7) is None (gcd -1) [review 2026-11-06; adjudicated]"
+ch018.Modsqrt,broken,rustmath-finitefields/src/integer_mod.rs:281; rustmath-finitefields/src/integer_mod.rs:557; rustmath-integers/src/integer.rs:744,"Hensel lift needs 2x invertible mod p, so sqrt returns None (no root) for solvable 4 mod 8, 9 mod 16, 17 mod 32, 9 mod 27. Odd unit cases pass test_sqrt_composite_modulus [review 2026-11-06; adjudicated]"
+ch018.Modorder,done,rustmath-finitefields/src/integer_mod.rs:197,IntegerMod::multiplicative_order (linear-time iteration; None instead of 0 for non-units). Test integer_mod.rs::test_multiplicative_order [review 2026-11-06; checked]
+ch018.IsPrimitive,partial,rustmath-finitefields/src/finite_field.rs:619; rustmath-finitefields/src/prime_field.rs:141,"Prime m only: GF(p) is_primitive (test finite_field.rs::multiplicative_order_and_primitive), PrimeField::is_generator compares order to m-1, false for composite m (3 mod 4) [review 2026-11-06; adjudicated]"
+ch018.PrimitiveRoot,partial,rustmath-integers/src/modular.rs:62,"primitive_roots(n) searches candidates <1000 only, linear-time order test; list may be empty though roots exist. Test modular.rs::test_primitive_roots [review 2026-11-06; checked]"
+ch018.Solution,partial,rustmath-finitefields/src/zmod.rs:131,"Zmod::solution returns one x or None; no period k, no -1 convention. Test zmod.rs::test_linear_congruence_solution [review 2026-11-06; checked]"
+ch018.ChineseRemainderTheorem,partial,rustmath-integers/src/crt.rs:17,"Pairwise coprime moduli only (Err otherwise, no LCM/-1 handling). Test crt.rs::test_crt_basic [review 2026-11-06; checked]"
+ch018.Solution.2,missing,,no simultaneous linear congruence solver with non-coprime moduli [review 2026-11-06; checked]
+ch018.NormEquation,partial,rustmath-numbertheory/src/quadratic_forms.rs:195; rustmath-rings/src/sum_of_squares.rs:103,"No dedicated solver: find_representation on diagonal [1,d] brute-forces signed x,y in a user box (exhaustive if bound>=isqrt(m)); two_squares for d=1. Test quadratic_forms.rs::test_find_representation [review 2026-11-06; adjudicated]"
+ch018.Infinity,done,rustmath-rings/src/infinity.rs:75,Infinity::PlusInfinity in rustmath-rings (not in integers crate). Test infinity.rs::test_infinity_sign [review 2026-11-06; checked]
+ch018.MinusInfinity,done,rustmath-rings/src/infinity.rs:75,Infinity::MinusInfinity variant. Test infinity.rs::test_infinity_sign [review 2026-11-06; checked]
+ch018.x,partial,rustmath-rings/src/infinity.rs:341; rustmath-rings/src/infinity.rs:374,"Free fns add/sub/mul between infinities, scalar mul via f64; no mixed finite arithmetic, division or power. Test infinity.rs::test_add_infinities_same_sign [review 2026-11-06; checked]"
+ch018.x.2,partial,rustmath-rings/src/infinity.rs:177,Ordering among infinity values only; not comparison with finite integers. Test infinity.rs::test_infinity_ordering [review 2026-11-06; checked]
+ch018.Maximum.2,partial,rustmath-rings/src/infinity.rs:177,"Ord impl on Infinity gives std max/min among infinities only, the same scope as the comparison row; no type mixes finite values with infinities, no max/min test [review 2026-11-06; adjudicated]"
+ch018.Sign.2,done,rustmath-rings/src/infinity.rs:86,Infinity::sign returns 1/-1 (0 for unsigned). Test infinity.rs::test_infinity_sign [review 2026-11-06; checked]
+ch018.Abs,done,rustmath-rings/src/infinity.rs:140,Infinity::abs gives positive infinity. Test infinity.rs::test_infinity_abs [review 2026-11-06; checked]
+ch018.Round,missing,,no Round/Floor/Ceiling for infinity values [review 2026-11-06; checked]
+ch018.IsFinite,partial,rustmath-rings/src/infinity.rs:232,InfinityRingElement::is_finite only; no direct test [review 2026-11-06; checked]
+ch018.SetVerbose.4,missing,,Only a global set_verbose(level) (rustmath-misc/src/verbose.rs:8) that no code reads; no NFS implementation exists in the workspace for it to control [review 2026-11-06; adjudicated]
+ch018.NumberFieldSieve,missing,,no number field sieve or NFS process machinery in workspace [review 2026-11-06; checked]
+ch018.NFSProcess,missing,,no number field sieve or NFS process machinery in workspace [review 2026-11-06; checked]
+ch018.NumberOfRelationsRequired,missing,,no number field sieve or NFS process machinery in workspace [review 2026-11-06; checked]
+ch018.FindRelations,missing,,no number field sieve or NFS process machinery in workspace [review 2026-11-06; checked]
+ch018.CreateCycleFile,missing,,no number field sieve or NFS process machinery in workspace [review 2026-11-06; checked]
+ch018.CycleCount,missing,,no NFS data-file/process machinery in workspace [review 2026-11-06; checked]
+ch018.CreateCharacterFile,missing,,no number field sieve or NFS process machinery in workspace [review 2026-11-06; checked]
+ch018.FindDependencies,missing,,no number field sieve or NFS process machinery in workspace [review 2026-11-06; checked]
+ch018.Factor,missing,,no NFS stage 4; prime.rs factor is unrelated trial division [review 2026-11-06; checked]
+ch018.RemoveFiles,missing,,no NFS data-file/process machinery in workspace [review 2026-11-06; checked]
+ch018.MergeFiles,missing,,no NFS data-file/process machinery in workspace [review 2026-11-06; checked]
+ch018.FindRelationsInCWIFormat,missing,,no number field sieve or NFS process machinery in workspace [review 2026-11-06; checked]
+ch018.ConvertToCWIFormat,missing,,no number field sieve or NFS process machinery in workspace [review 2026-11-06; checked]
+ch018.BaseMPolynomial,missing,,no NFS polynomial selection tools in workspace [review 2026-11-06; checked]
+ch018.MurphyAlphaApproximation,missing,,no NFS polynomial selection tools in workspace [review 2026-11-06; checked]
+ch018.OptimalSkewness,missing,,no NFS polynomial selection tools in workspace [review 2026-11-06; checked]
+ch018.BestTranslation,missing,,no NFS polynomial selection tools in workspace [review 2026-11-06; checked]
+ch018.PolynomialSieve,missing,,no NFS polynomial selection tools in workspace [review 2026-11-06; checked]
