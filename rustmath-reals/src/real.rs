@@ -340,6 +340,43 @@ impl Ring for Real {
     fn is_one(&self) -> bool {
         (self.value - 1.0).abs() < 1e-10
     }
+
+    // Element predicates (MAGMA Ch. 25 `IsUnit`: nonzero elements are units). `Real` uses
+    // a 1e-10 tolerance in `is_zero`/`==`; these follow the type's own `Field::inverse`,
+    // which rejects exactly the values `is_zero` accepts. NaN and ±Inf decide nothing.
+    // `multiplicative_order_status` keeps the trait default: with tolerance-based `is_one`
+    // and `==`, no `Infinite` claim is made.
+
+    fn unit_status(&self) -> Option<bool> {
+        if !self.value.is_finite() {
+            return None;
+        }
+        Some(!self.is_zero())
+    }
+
+    fn nilpotent_status(&self) -> Option<bool> {
+        if !self.value.is_finite() {
+            return None;
+        }
+        Some(self.is_zero())
+    }
+
+    /// The inverse at working precision (`Field::inverse`, `1.0 / x`).
+    fn unit_inverse(&self) -> Result<Self> {
+        if !self.value.is_finite() {
+            return Err(MathError::DomainError(format!(
+                "{self} is not a real number, so it is neither a unit nor a non-unit"
+            )));
+        }
+        if self.is_zero() {
+            return Err(MathError::NotInvertible);
+        }
+        <Self as Field>::inverse(self)
+    }
+
+    fn static_characteristic() -> Option<u64> {
+        Some(0)
+    }
 }
 
 impl CommutativeRing for Real {}

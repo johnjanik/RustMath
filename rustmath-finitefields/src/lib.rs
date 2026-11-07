@@ -21,6 +21,7 @@ pub mod ff_poly;
 pub mod integer_mod;
 pub mod irreducible;
 pub mod prime_field;
+mod ring_hooks; // shared `Ring` element-predicate hooks (ch 17 §17.5.5, ch 19, ch 21)
 pub mod zmod;
 
 // --- MAGMA port Wave 1 (chapters 21, 19, 48) ---

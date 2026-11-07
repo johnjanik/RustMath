@@ -363,8 +363,28 @@ impl<F: Field> Parent for MatrixAlgebra<F> {
         Some(Matrix::identity(self.n))
     }
 
+    /// `Some(1)` for the zero algebra (dimension 0, i.e. `n = 0`); otherwise `None`: the
+    /// size `q^dim` depends on the base field, which this parent does not carry.
     fn cardinality(&self) -> Option<usize> {
-        None // infinite when F is infinite
+        if MatrixAlgebra::dimension(self) == 0 {
+            Some(1)
+        } else {
+            None
+        }
+    }
+
+    /// MAGMA `IsFinite` (Ch. 17 §17.4.3). A nonzero `F`-space is finite iff `F` is, so this
+    /// is `Some(false)` when the element type fixes characteristic 0 (Q, R, C) and `None`
+    /// otherwise: for `F = PrimeField` or `FiniteFieldElement` the algebra is finite (GAP:
+    /// `Size(FullMatrixAlgebra(GF(2),2))` -> 16), but its size is not known to the parent.
+    fn is_finite(&self) -> Option<bool> {
+        if MatrixAlgebra::dimension(self) == 0 {
+            Some(true)
+        } else if F::static_characteristic() == Some(0) {
+            Some(false)
+        } else {
+            None
+        }
     }
 
     fn name(&self) -> String {

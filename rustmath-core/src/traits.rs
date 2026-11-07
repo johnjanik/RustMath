@@ -86,6 +86,123 @@ pub trait Ring:
             }
         }
     }
+
+    // --- Element predicates (MAGMA Handbook Ch. 17 §17.5.5 `IsUnit`, `IsNilpotent`;
+    // Ch. 19 `Order`; Ch. 17 §17.4.2 `Characteristic`) ---------------------------------
+    //
+    // These are three-valued: `Some(true)` / `Some(false)` (or a decided
+    // `MultiplicativeOrder`) are proofs; `None` / `MultiplicativeOrder::Undecided` mean
+    // that this element type cannot decide. A concrete ring that can decide overrides them
+    // in its own `impl Ring`. The defaults use only the ring axioms, never a search, and
+    // never a static constructor (`Self::one()` panics for parent-carrying types such as
+    // Galois-ring and p-adic elements), so they are total for every implementor.
+
+    /// MAGMA `IsUnit(a)` (Ch. 17 §17.5.5): whether `self` has a two-sided inverse.
+    ///
+    /// Default (ring axioms only): `1` and `-1` are units in every ring; `0` is a non-unit
+    /// (reached only when `0 != 1`, i.e. in a nonzero ring); anything else is `None`.
+    fn unit_status(&self) -> Option<bool> {
+        if self.is_one() || (-self.clone()).is_one() {
+            Some(true)
+        } else if self.is_zero() {
+            Some(false)
+        } else {
+            None
+        }
+    }
+
+    /// MAGMA `IsNilpotent(x)` (Ch. 17 §17.5.5): whether `self^k = 0` for some `k >= 1`.
+    ///
+    /// Default: `0` gives `Some(true)`; a proven unit gives `Some(false)` (if `u^k = 0` then
+    /// `1 = u^-k u^k = 0`, and `0` was handled first); anything else is `None`.
+    fn nilpotent_status(&self) -> Option<bool> {
+        if self.is_zero() {
+            Some(true)
+        } else if self.unit_status() == Some(true) {
+            Some(false)
+        } else {
+            None
+        }
+    }
+
+    /// The inverse of a unit.
+    ///
+    /// `Ok(v)`: `v` is the inverse of `self` (for inexact types such as floating-point
+    /// reals, `v` is the type's own `Field::inverse` at working precision).
+    /// `Err(MathError::NotInvertible)`: `self` is a proven non-unit. Any other `Err` means
+    /// undecided and is never a proof of non-invertibility.
+    ///
+    /// Default: `±1` are self-inverse (returned as `self.clone()`, so a parent-carrying
+    /// element keeps its parent); a proven non-unit gives `NotInvertible`; anything else
+    /// gives `NotImplemented`.
+    fn unit_inverse(&self) -> Result<Self> {
+        if self.is_one() || (-self.clone()).is_one() {
+            Ok(self.clone())
+        } else if self.unit_status() == Some(false) {
+            Err(MathError::NotInvertible)
+        } else {
+            Err(MathError::NotImplemented(
+                "unit_inverse: this ring element type does not compute this inverse".into(),
+            ))
+        }
+    }
+
+    /// MAGMA `Order(a)` of a ring element (Ch. 19: the multiplicative order of a unit, and
+    /// `0` for a non-unit; Ch. 21 for finite fields). See [`MultiplicativeOrder`].
+    ///
+    /// Default (no search: a search that finds nothing never decides):
+    /// * `1` gives `Finite(1)`;
+    /// * `-1` (here `!= 1`) gives `Finite(2)` only when [`Ring::static_characteristic`]
+    ///   is known and is neither 1 nor 2. Otherwise it is `Undecided`: `-1` may be a
+    ///   deferred integer constant (the `IntegerMod`/`FiniteFieldElement` sentinels, or a
+    ///   container of them) that later binds into characteristic 2, where its order is 1;
+    /// * a proven non-unit gives `NotAUnit`;
+    /// * anything else is `Undecided`.
+    fn multiplicative_order_status(&self) -> MultiplicativeOrder {
+        if self.is_one() {
+            MultiplicativeOrder::Finite(1)
+        } else if (-self.clone()).is_one() {
+            match Self::static_characteristic() {
+                Some(c) if c != 1 && c != 2 => MultiplicativeOrder::Finite(2),
+                _ => MultiplicativeOrder::Undecided,
+            }
+        } else if self.unit_status() == Some(false) {
+            MultiplicativeOrder::NotAUnit
+        } else {
+            MultiplicativeOrder::Undecided
+        }
+    }
+
+    /// The characteristic (MAGMA `Characteristic(R)`, Ch. 17 §17.4.2) shared by every ring
+    /// this element type represents, when the type alone determines it: `Some(0)` for the
+    /// Z, Q, R and C types.
+    ///
+    /// `None` (default) when it depends on runtime data (Z/mZ, GF(q), GR(p^a, d): ask the
+    /// parent) or is unknown. A type returns `Some(c)` only if every value it can hold,
+    /// including any deferred constant from `zero()`/`one()`, lies in a ring of
+    /// characteristic `c`. A nonzero ring of characteristic 0 contains a copy of Z, so it is
+    /// infinite.
+    fn static_characteristic() -> Option<u64> {
+        None
+    }
+}
+
+/// The multiplicative order of a ring element, see [`Ring::multiplicative_order_status`]
+/// (MAGMA `Order(a)`, Handbook Ch. 19 and Ch. 21).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum MultiplicativeOrder {
+    /// A unit; the least `n >= 1` with `x^n = 1`.
+    Finite(u64),
+    /// A unit of finite order at least `2^64` (only in rings with more than `2^64`
+    /// elements). The exact value comes from the type's own `Integer`-valued
+    /// `multiplicative_order()`.
+    FiniteExceedsU64,
+    /// A unit with `x^n != 1` for every `n >= 1` (proven).
+    Infinite,
+    /// Not a unit, so the order is undefined (MAGMA `Order` returns 0 in Z/mZ, Ch. 19).
+    NotAUnit,
+    /// This element type cannot decide.
+    Undecided,
 }
 
 /// A commutative ring (multiplication is commutative)
@@ -250,6 +367,22 @@ impl Ring for i32 {
     fn one() -> Self { 1 }
     fn is_zero(&self) -> bool { *self == 0 }
     fn is_one(&self) -> bool { *self == 1 }
+
+    // `i32` models Z, whose unit group is {±1} and which is a domain (MAGMA Ch. 17 §17.5.5,
+    // Ch. 19). No negation here, so `i32::MIN` cannot overflow.
+    fn unit_status(&self) -> Option<bool> { Some(*self == 1 || *self == -1) }
+    fn nilpotent_status(&self) -> Option<bool> { Some(*self == 0) }
+    fn unit_inverse(&self) -> Result<Self> {
+        if *self == 1 || *self == -1 { Ok(*self) } else { Err(MathError::NotInvertible) }
+    }
+    fn multiplicative_order_status(&self) -> MultiplicativeOrder {
+        match *self {
+            1 => MultiplicativeOrder::Finite(1),
+            -1 => MultiplicativeOrder::Finite(2),
+            _ => MultiplicativeOrder::NotAUnit,
+        }
+    }
+    fn static_characteristic() -> Option<u64> { Some(0) }
 }
 
 impl CommutativeRing for i32 {}
@@ -273,6 +406,22 @@ impl Ring for i64 {
     fn one() -> Self { 1 }
     fn is_zero(&self) -> bool { *self == 0 }
     fn is_one(&self) -> bool { *self == 1 }
+
+    // `i64` models Z, whose unit group is {±1} and which is a domain (MAGMA Ch. 17 §17.5.5,
+    // Ch. 19). No negation here, so `i64::MIN` cannot overflow.
+    fn unit_status(&self) -> Option<bool> { Some(*self == 1 || *self == -1) }
+    fn nilpotent_status(&self) -> Option<bool> { Some(*self == 0) }
+    fn unit_inverse(&self) -> Result<Self> {
+        if *self == 1 || *self == -1 { Ok(*self) } else { Err(MathError::NotInvertible) }
+    }
+    fn multiplicative_order_status(&self) -> MultiplicativeOrder {
+        match *self {
+            1 => MultiplicativeOrder::Finite(1),
+            -1 => MultiplicativeOrder::Finite(2),
+            _ => MultiplicativeOrder::NotAUnit,
+        }
+    }
+    fn static_characteristic() -> Option<u64> { Some(0) }
 }
 
 impl CommutativeRing for i64 {}
@@ -361,11 +510,153 @@ impl NumericConversion for i64 {
 
 #[cfg(test)]
 mod tests {
+    use super::{MathError, MultiplicativeOrder, Ring};
+    use std::fmt;
+    use std::ops::{Add, Mul, Neg, Sub};
+
     #[test]
     fn test_pow() {
         assert_eq!(2i32.pow(0), 1);
         assert_eq!(2i32.pow(1), 2);
         assert_eq!(2i32.pow(10), 1024);
         assert_eq!(3i32.pow(4), 81);
+    }
+
+    // i32/i64 model Z: units {±1} (GAP: IsUnit(Integers, 2) = false, IsUnit(Integers, -1) =
+    // true, Order(-1) = 2).
+    #[test]
+    fn test_i32_i64_element_predicates() {
+        assert_eq!(1i32.unit_status(), Some(true));
+        assert_eq!((-1i32).unit_status(), Some(true));
+        assert_eq!(2i32.unit_status(), Some(false));
+        assert_eq!(0i32.unit_status(), Some(false));
+        assert_eq!(0i32.nilpotent_status(), Some(true));
+        assert_eq!(2i32.nilpotent_status(), Some(false));
+        assert_eq!(1i32.multiplicative_order_status(), MultiplicativeOrder::Finite(1));
+        assert_eq!((-1i32).multiplicative_order_status(), MultiplicativeOrder::Finite(2));
+        assert_eq!(2i32.multiplicative_order_status(), MultiplicativeOrder::NotAUnit);
+        assert_eq!(2i32.unit_inverse(), Err(MathError::NotInvertible));
+        assert_eq!((-1i32).unit_inverse(), Ok(-1));
+        assert_eq!(<i32 as Ring>::static_characteristic(), Some(0));
+        // No overflow on i32::MIN (the defaults would negate it).
+        assert_eq!(i32::MIN.unit_status(), Some(false));
+        assert_eq!(i32::MIN.multiplicative_order_status(), MultiplicativeOrder::NotAUnit);
+
+        assert_eq!((-1i64).unit_status(), Some(true));
+        assert_eq!(7i64.unit_status(), Some(false));
+        assert_eq!((-1i64).multiplicative_order_status(), MultiplicativeOrder::Finite(2));
+        assert_eq!(7i64.unit_inverse(), Err(MathError::NotInvertible));
+        assert_eq!(<i64 as Ring>::static_characteristic(), Some(0));
+    }
+
+    /// Test-local `Z/6Z` rings that pin the trait defaults. `$panicky` makes the static
+    /// constructors panic, like `GaloisRingElement` and the p-adic types, to prove the
+    /// defaults never call them.
+    macro_rules! z6_ring {
+        ($name:ident, $panicky:expr, $chr:expr) => {
+            #[derive(Clone, Copy, Debug, PartialEq)]
+            struct $name(u8);
+            impl fmt::Display for $name {
+                fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    write!(f, "{}", self.0)
+                }
+            }
+            impl Add for $name {
+                type Output = Self;
+                fn add(self, o: Self) -> Self {
+                    $name((self.0 + o.0) % 6)
+                }
+            }
+            impl Sub for $name {
+                type Output = Self;
+                fn sub(self, o: Self) -> Self {
+                    $name((self.0 + 6 - o.0) % 6)
+                }
+            }
+            impl Mul for $name {
+                type Output = Self;
+                fn mul(self, o: Self) -> Self {
+                    $name((self.0 * o.0) % 6)
+                }
+            }
+            impl Neg for $name {
+                type Output = Self;
+                fn neg(self) -> Self {
+                    $name((6 - self.0) % 6)
+                }
+            }
+            impl Ring for $name {
+                fn zero() -> Self {
+                    if $panicky {
+                        panic!("static zero() called");
+                    }
+                    $name(0)
+                }
+                fn one() -> Self {
+                    if $panicky {
+                        panic!("static one() called");
+                    }
+                    $name(1)
+                }
+                fn is_zero(&self) -> bool {
+                    self.0 == 0
+                }
+                fn is_one(&self) -> bool {
+                    self.0 == 1
+                }
+                fn static_characteristic() -> Option<u64> {
+                    $chr
+                }
+            }
+        };
+    }
+    z6_ring!(Z6, false, None);
+    z6_ring!(Z6Char, false, Some(6));
+    z6_ring!(Z6Panicky, true, None);
+
+    // Reference (PARI/GP, `echo '...' | gp -q`):
+    //   [x | x <- [0..5], gcd(x,6)==1]      -> [1, 5]
+    //   znorder(Mod(5,6))                   -> 2
+    //   [x | x <- [0..5], Mod(x,6)^6 == 0]  -> [0]
+    // The defaults decide only what the ring axioms prove; 2, 3, 4 stay undecided.
+    #[test]
+    fn test_default_predicates_on_z6() {
+        assert_eq!(Z6(1).unit_status(), Some(true));
+        assert_eq!(Z6(5).unit_status(), Some(true)); // 5 = -1
+        assert_eq!(Z6(0).unit_status(), Some(false));
+        assert_eq!(Z6(0).nilpotent_status(), Some(true));
+        assert_eq!(Z6(5).nilpotent_status(), Some(false));
+        assert_eq!(Z6(1).multiplicative_order_status(), MultiplicativeOrder::Finite(1));
+        assert_eq!(Z6(0).multiplicative_order_status(), MultiplicativeOrder::NotAUnit);
+        assert_eq!(Z6(0).unit_inverse(), Err(MathError::NotInvertible));
+        assert_eq!(Z6(5).unit_inverse(), Ok(Z6(5)));
+        assert_eq!(Z6(1).unit_inverse(), Ok(Z6(1)));
+        for x in [2u8, 3, 4] {
+            assert_eq!(Z6(x).unit_status(), None);
+            assert_eq!(Z6(x).nilpotent_status(), None);
+            assert_eq!(Z6(x).multiplicative_order_status(), MultiplicativeOrder::Undecided);
+            assert!(matches!(Z6(x).unit_inverse(), Err(MathError::NotImplemented(_))));
+        }
+        assert_eq!(<Z6 as Ring>::static_characteristic(), None);
+        // -1 with unknown characteristic: order 1 or 2, so undecided.
+        assert_eq!(Z6(5).multiplicative_order_status(), MultiplicativeOrder::Undecided);
+        // With the characteristic known (6, not 1 or 2) the default proves order 2.
+        assert_eq!(Z6Char(5).multiplicative_order_status(), MultiplicativeOrder::Finite(2));
+        assert_eq!(Z6Char(2).multiplicative_order_status(), MultiplicativeOrder::Undecided);
+    }
+
+    // The defaults must not call `Self::zero()`/`Self::one()` (they panic for
+    // parent-carrying types).
+    #[test]
+    fn test_defaults_never_call_static_constructors() {
+        for x in 0u8..6 {
+            let e = Z6Panicky(x);
+            let _ = e.unit_status();
+            let _ = e.nilpotent_status();
+            let _ = e.unit_inverse();
+            let _ = e.multiplicative_order_status();
+        }
+        assert_eq!(Z6Panicky(5).unit_status(), Some(true));
+        assert_eq!(Z6Panicky(3).nilpotent_status(), None);
     }
 }

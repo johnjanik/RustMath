@@ -599,6 +599,67 @@ impl Ring for ComplexMPFR {
     fn is_one(&self) -> bool {
         *self.value.real() == 1 && *self.value.imag() == 0
     }
+
+    // Element predicates (MAGMA Ch. 25 `IsUnit`: true for the nonzero elements of a complex
+    // field; Ch. 17 §17.5.5 `IsNilpotent`; Ch. 19 `Order`). Values with a NaN or infinite
+    // part are not complex numbers: nothing is decided for them.
+    //
+    // Order: a finite MPC value is a pair of exact dyadic rationals, so it lies in Q(i). The
+    // roots of unity in Q(i) are exactly mu_4 = {±1, ±i}: zeta_n in Q(i) forces
+    // phi(n) = [Q(zeta_n):Q] <= 2, so n is in {1, 2, 3, 4, 6}, and zeta_3, zeta_6 are not in
+    // Q(i) (S. Lang, *Algebra*, Ch. VI §3). Every other nonzero value has infinite order.
+    // GAP: Filtered([1..50], n -> Phi(n) <= 2) -> [ 1, 2, 3, 4, 6 ];
+    //      E(4) in GaussianRationals -> true; E(3) in GaussianRationals -> false.
+
+    fn unit_status(&self) -> Option<bool> {
+        if !self.is_finite() {
+            return None;
+        }
+        Some(!self.is_zero())
+    }
+
+    fn nilpotent_status(&self) -> Option<bool> {
+        if !self.is_finite() {
+            return None;
+        }
+        Some(self.is_zero())
+    }
+
+    /// The inverse at working precision (`Field::inverse`, a rounded reciprocal).
+    fn unit_inverse(&self) -> Result<Self> {
+        if !self.is_finite() {
+            return Err(MathError::DomainError(format!(
+                "{self} is not a complex number, so it is neither a unit nor a non-unit"
+            )));
+        }
+        if self.is_zero() {
+            return Err(MathError::NotInvertible);
+        }
+        <Self as Field>::inverse(self)
+    }
+
+    fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
+        use rustmath_core::MultiplicativeOrder;
+        if !self.is_finite() {
+            return MultiplicativeOrder::Undecided;
+        }
+        let (re, im) = (self.value.real(), self.value.imag());
+        if *re == 0 && *im == 0 {
+            MultiplicativeOrder::NotAUnit
+        } else if *re == 1 && *im == 0 {
+            MultiplicativeOrder::Finite(1)
+        } else if *re == -1 && *im == 0 {
+            MultiplicativeOrder::Finite(2)
+        } else if *re == 0 && (*im == 1 || *im == -1) {
+            MultiplicativeOrder::Finite(4)
+        } else {
+            MultiplicativeOrder::Infinite
+        }
+    }
+
+    fn static_characteristic() -> Option<u64> {
+        Some(0)
+    }
 }
 
 impl CommutativeRing for ComplexMPFR {}

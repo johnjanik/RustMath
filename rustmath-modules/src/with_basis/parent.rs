@@ -236,8 +236,26 @@ where
         Some(ModuleWithBasisElement::zero())
     }
 
+    /// `Some(1)` for the zero module (empty basis); otherwise `None` (no claim, see
+    /// `Parent::cardinality`): the size `#R^rank` depends on the base ring.
     fn cardinality(&self) -> Option<usize> {
-        None // Infinite (unless base ring is finite)
+        if self.basis_indices.is_empty() {
+            Some(1)
+        } else {
+            None
+        }
+    }
+
+    /// MAGMA `IsFinite` (Ch. 17 §17.4.3): a free module of rank >= 1 is finite iff its base
+    /// ring is, so `Some(false)` only when the element type fixes characteristic 0.
+    fn is_finite(&self) -> Option<bool> {
+        if self.basis_indices.is_empty() {
+            Some(true)
+        } else if R::static_characteristic() == Some(0) {
+            Some(false)
+        } else {
+            None
+        }
     }
 }
 
@@ -443,5 +461,16 @@ mod tests {
         let module = FreeModuleWithBasis::<usize, _>::standard(BigInt::from(0), 2);
         let e0 = module.basis_element(&0).unwrap();
         let _ = module.echelon_form(vec![e0.clone(), e0]);
+    }
+
+    // MAGMA Ch. 17 §17.4.3 IsFinite: Z^3 is infinite, Z^0 = {0} is finite.
+    #[test]
+    fn test_free_module_finiteness() {
+        let z3 = FreeModuleWithBasis::<usize, _>::standard(BigInt::from(0), 3);
+        assert_eq!(z3.is_finite(), Some(false));
+        assert_eq!(z3.cardinality(), None);
+        let z0 = FreeModuleWithBasis::<usize, _>::standard(BigInt::from(0), 0);
+        assert_eq!(z0.is_finite(), Some(true));
+        assert_eq!(z0.cardinality(), Some(1));
     }
 }

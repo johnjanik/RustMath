@@ -150,27 +150,30 @@ impl Category for IntegralDomainCategory {
     }
 }
 
-/// Methods for ring elements (ElementMethods)
+/// The multiplicative order of a ring element (re-exported from `rustmath_core`).
+pub use rustmath_core::MultiplicativeOrder;
+
+/// Methods for ring elements (Sage `Rings.ElementMethods`; MAGMA Handbook Ch. 17 §17.5.5
+/// `IsUnit`, `IsNilpotent`, `IsIdempotent`; Ch. 19 `Order`).
 ///
-/// Provides operations that can be performed on ring elements
+/// These are thin views of the three-valued predicates on [`Ring`]
+/// (`unit_status`, `nilpotent_status`, `multiplicative_order_status`). Every concrete ring
+/// decides them in its own `impl Ring` (Q, R, C: every nonzero element is a unit; Z/mZ,
+/// GF(q), Galois rings: exact). `None` or [`MultiplicativeOrder::Undecided`] means that
+/// element type cannot decide; no answer here comes from a bounded search.
+///
+/// Concrete types with an inherent method of the same name (`IntegerMod::is_unit`,
+/// `FiniteFieldElement::multiplicative_order`, ...) resolve to the inherent method at a
+/// concrete call site; generic code (`R: Ring`) reaches these.
 pub trait RingElementMethods: Ring {
-    /// Check if this element is a unit (has multiplicative inverse)
-    ///
-    /// # Returns
-    /// `true` if the element is invertible in the ring
-    fn is_unit(&self) -> bool {
-        // Default: only 1 and -1 are guaranteed units
-        // Subclasses should override for specific rings
-        self.is_one() || (*self == -Self::one())
+    /// Whether this element is a unit: `Some(true)`/`Some(false)` decided, `None` undecided.
+    fn is_unit(&self) -> Option<bool> {
+        self.unit_status()
     }
 
-    /// Check if this element is nilpotent
-    ///
-    /// An element x is nilpotent if x^n = 0 for some positive integer n
-    fn is_nilpotent(&self) -> bool {
-        // Default: only zero is nilpotent in integral domains
-        // Subclasses should override for specific rings
-        self.is_zero()
+    /// Whether `x^n = 0` for some `n >= 1`: `Some(_)` decided, `None` undecided.
+    fn is_nilpotent(&self) -> Option<bool> {
+        self.nilpotent_status()
     }
 
     /// Check if this element is idempotent
@@ -184,27 +187,9 @@ pub trait RingElementMethods: Ring {
         x_squared == *self
     }
 
-    /// Get the multiplicative order of this element
-    ///
-    /// Returns the smallest positive integer n such that x^n = 1,
-    /// or None if no such n exists
-    fn multiplicative_order(&self) -> Option<u32> {
-        if !self.is_unit() {
-            return None;
-        }
-
-        let mut current = self.clone();
-        let one = Self::one();
-
-        for n in 1..=1000 {
-            // Arbitrary limit
-            if current == one {
-                return Some(n);
-            }
-            current = current * self.clone();
-        }
-
-        None // Order is larger than 1000 or infinite
+    /// The multiplicative order (see [`MultiplicativeOrder`]).
+    fn multiplicative_order(&self) -> MultiplicativeOrder {
+        self.multiplicative_order_status()
     }
 }
 
@@ -238,10 +223,8 @@ pub trait RingParentMethods: Parent {
         false // Default: not a field
     }
 
-    /// Check if this ring is finite
-    fn is_finite(&self) -> bool {
-        self.cardinality().is_some()
-    }
+    // `is_finite` is the supertrait's three-valued `Parent::is_finite` (MAGMA Ch. 17
+    // §17.4.3); a duplicate here would claim "infinite" whenever `cardinality` is `None`.
 
     /// Get the axiom set for this ring
     fn axiom_set(&self) -> AxiomSet {
@@ -435,17 +418,17 @@ mod tests {
     // Test RingElementMethods
     #[test]
     fn test_is_unit_for_integers() {
-        assert!(1i32.is_unit());
-        assert!((-1i32).is_unit());
-        assert!(!2i32.is_unit());
-        assert!(!0i32.is_unit());
+        assert_eq!(1i32.is_unit(), Some(true));
+        assert_eq!((-1i32).is_unit(), Some(true));
+        assert_eq!(2i32.is_unit(), Some(false));
+        assert_eq!(0i32.is_unit(), Some(false));
     }
 
     #[test]
     fn test_is_nilpotent() {
-        assert!(0i32.is_nilpotent());
-        assert!(!1i32.is_nilpotent());
-        assert!(!2i32.is_nilpotent());
+        assert_eq!(0i32.is_nilpotent(), Some(true));
+        assert_eq!(1i32.is_nilpotent(), Some(false));
+        assert_eq!(2i32.is_nilpotent(), Some(false));
     }
 
     #[test]
@@ -457,9 +440,28 @@ mod tests {
 
     #[test]
     fn test_multiplicative_order() {
-        assert_eq!(1i32.multiplicative_order(), Some(1));
-        assert_eq!((-1i32).multiplicative_order(), Some(2));
-        assert_eq!(2i32.multiplicative_order(), None); // Not a unit
+        assert_eq!(1i32.multiplicative_order(), MultiplicativeOrder::Finite(1));
+        assert_eq!((-1i32).multiplicative_order(), MultiplicativeOrder::Finite(2));
+        assert_eq!(2i32.multiplicative_order(), MultiplicativeOrder::NotAUnit); // Not a unit
+    }
+
+    // The defect's generic path (MAGMA Ch. 20 `IsUnit`: every nonzero rational is a unit;
+    // GAP: IsUnit(Rationals, 2/3) -> true, IsUnit(Integers, 2) -> false,
+    // Order(2/3) -> infinity).
+    fn generic_is_unit<R: Ring>(x: &R) -> Option<bool> {
+        RingElementMethods::is_unit(x)
+    }
+
+    #[test]
+    fn test_generic_path_rationals_and_integers() {
+        use rustmath_integers::Integer;
+        use rustmath_rationals::Rational;
+        let two_thirds = Rational::new(2, 3).unwrap();
+        assert_eq!(generic_is_unit(&two_thirds), Some(true));
+        assert_eq!(generic_is_unit(&Integer::from(2)), Some(false));
+        assert_eq!(two_thirds.multiplicative_order(), MultiplicativeOrder::Infinite);
+        assert_eq!(two_thirds.is_nilpotent(), Some(false));
+        assert_eq!(Integer::from(-1).multiplicative_order(), MultiplicativeOrder::Finite(2));
     }
 
     // Test constructions

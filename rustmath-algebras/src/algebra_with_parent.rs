@@ -27,9 +27,26 @@ impl<R: Ring> Parent for DownUpAlgebra<R> {
         Some(self.one())
     }
 
+    /// `Some(1)` over the zero ring; otherwise `None` (no claim, see
+    /// [`Parent::cardinality`]; the algebra is then infinite, see `is_finite`).
     fn cardinality(&self) -> Option<usize> {
-        // The down-up algebra is infinite-dimensional
-        None
+        if R::zero() == R::one() {
+            Some(1)
+        } else {
+            None
+        }
+    }
+
+    /// MAGMA `IsFinite` (Ch. 17 §17.4.3). The monomials u^i (du)^j d^k form a basis
+    /// (Benkart and Roby, "Down-up algebras", J. Algebra 209 (1998); the crate's normal
+    /// form `DownUpBasisIndex`), so over a nonzero base ring the u^i, i >= 0, are distinct
+    /// and the algebra is infinite. Over the zero ring it is the zero ring.
+    ///
+    /// `R::zero()`/`R::one()` panic for parent-carrying element types (Galois rings,
+    /// p-adics); `DownUpAlgebra`'s own constructors already call them, so such an algebra
+    /// cannot be built in the first place.
+    fn is_finite(&self) -> Option<bool> {
+        Some(R::zero() == R::one())
     }
 
     fn name(&self) -> String {
@@ -92,13 +109,28 @@ impl<R: Ring> Parent for SimpleAlgebra<R> {
         Some(SimpleElement { coefficients: coeffs })
     }
 
+    /// `Some(1)` for dimension 0; otherwise `None`: the size `#R^dim` depends on the base
+    /// ring, which this parent does not carry.
     fn cardinality(&self) -> Option<usize> {
-        // Infinite if base ring is infinite
-        None
+        if self.dimension == 0 {
+            Some(1)
+        } else {
+            None
+        }
     }
 
-    fn is_finite(&self) -> bool {
-        false
+    /// MAGMA `IsFinite` (Ch. 17 §17.4.3). `R^dim` with `dim >= 1` is finite iff `R` is.
+    /// `Some(false)` when the element type fixes characteristic 0 (a nonzero ring of
+    /// characteristic 0 is infinite); `None` when only the runtime parent of `R` knows
+    /// (for `R = IntegerMod` or `FiniteFieldElement` the algebra is finite, of unknown size).
+    fn is_finite(&self) -> Option<bool> {
+        if self.dimension == 0 {
+            Some(true)
+        } else if R::static_characteristic() == Some(0) {
+            Some(false)
+        } else {
+            None
+        }
     }
 
     fn name(&self) -> String {
@@ -143,7 +175,7 @@ mod tests {
 
         // Test Parent trait methods
         assert_eq!(algebra.name(), "Down-Up Algebra DU(1, 0, 0)");
-        assert!(!algebra.is_finite());
+        assert_eq!(algebra.is_finite(), Some(false));
         assert_eq!(algebra.cardinality(), None);
 
         // Test zero and one (Parent trait returns Option)
@@ -165,7 +197,7 @@ mod tests {
 
         // Test Parent trait
         assert_eq!(algebra.name(), "Simple Algebra of dimension 3");
-        assert!(!algebra.is_finite());
+        assert_eq!(algebra.is_finite(), Some(false));
 
         // Test zero element
         let zero = algebra.zero().unwrap();
@@ -209,5 +241,38 @@ mod tests {
             coefficients: vec![Integer::from(1), Integer::from(2)],
         };
         assert!(!algebra.contains(&bad_elem));
+    }
+
+    // MAGMA Ch. 17 §17.4.3 IsFinite: decided only where the element type proves it.
+    #[test]
+    fn test_simple_algebra_finiteness() {
+        use rustmath_polynomials::UnivariatePolynomial;
+        use rustmath_rationals::Rational;
+
+        // R^0 = {0}.
+        let zero_dim: SimpleAlgebra<Integer> = SimpleAlgebra::new(0);
+        assert_eq!(zero_dim.is_finite(), Some(true));
+        assert_eq!(zero_dim.cardinality(), Some(1));
+
+        // Q^2 is infinite (GAP: IsFinite(Rationals) -> false).
+        let q2: SimpleAlgebra<Rational> = SimpleAlgebra::new(2);
+        assert_eq!(q2.is_finite(), Some(false));
+        assert_eq!(q2.cardinality(), None);
+
+        // The polynomial element type states no characteristic: undecided, not "infinite".
+        let poly2: SimpleAlgebra<UnivariatePolynomial<Integer>> = SimpleAlgebra::new(2);
+        assert_eq!(poly2.is_finite(), None);
+    }
+
+    #[test]
+    fn test_down_up_algebra_over_q_is_infinite() {
+        use rustmath_rationals::Rational;
+        let algebra = DownUpAlgebra::new(
+            Rational::from_integer(1),
+            Rational::from_integer(1),
+            Rational::from_integer(0),
+        );
+        assert_eq!(algebra.is_finite(), Some(false));
+        assert_eq!(algebra.cardinality(), None);
     }
 }

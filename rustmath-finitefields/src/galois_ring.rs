@@ -318,9 +318,16 @@ impl Parent for GaloisRing {
     fn one(&self) -> Option<Self::Element> {
         Some(GaloisRing::one(self))
     }
+    /// `#R = p^(a d)` when it fits in `usize`; `None` otherwise (no claim, see
+    /// [`Parent::cardinality`]). The exact order is the inherent
+    /// [`GaloisRing::cardinality`].
     fn cardinality(&self) -> Option<usize> {
         use rustmath_core::NumericConversion;
         self.cardinality().to_usize()
+    }
+    /// Galois rings are finite (MAGMA Ch. 48 `IsFinite`), also when `p^(a d) > usize::MAX`.
+    fn is_finite(&self) -> Option<bool> {
+        Some(true)
     }
     fn name(&self) -> String {
         format!("{self}")
@@ -769,6 +776,59 @@ impl Ring for GaloisRingElement {
     }
     fn is_one(&self) -> bool {
         self.coeffs[0].is_one() && self.coeffs[1..].iter().all(|c| c.is_zero())
+    }
+
+    // Element predicates on the generic `Ring` path (MAGMA Ch. 48 `IsUnit`: p-adic
+    // valuation zero; `IsNilpotent`: every non-unit of a finite chain ring). They delegate
+    // to the inherent methods. None of them calls the panicking static `zero()`/`one()`.
+
+    fn unit_status(&self) -> Option<bool> {
+        Some(GaloisRingElement::is_unit(self))
+    }
+
+    fn nilpotent_status(&self) -> Option<bool> {
+        Some(GaloisRingElement::is_nilpotent(self))
+    }
+
+    fn unit_inverse(&self) -> Result<Self> {
+        GaloisRingElement::unit_inverse(self)
+    }
+
+    /// The multiplicative order of a unit `x` of `R = GR(p^a, d)` (beyond the handbook:
+    /// MAGMA Ch. 48 lists no `Order`).
+    ///
+    /// Algorithm: let `m` be the order of the residue `x mod p` in `GF(p^d)^*` (exact,
+    /// order-from-factorisation of `p^d - 1`, Ch. 21). Then `ord(x) = m * p^j`, where `p^j`
+    /// is the order of `x^m`, found by repeated `p`-th powering with `j <= a - 1`.
+    ///
+    /// Proof: reduction mod `p` is a ring homomorphism `R -> GF(p^d)` with kernel `pR`, so
+    /// `m | ord(x)` and `ord(x) = m * ord(x^m)`. `x^m` lies in `1 + pR`, and for `y = 1 + p t`
+    /// induction on the binomial expansion gives `y^(p^k) = 1 mod p^(k+1)`, so `1 + pR` is a
+    /// `p`-group of exponent dividing `p^(a-1)`. References: B. R. McDonald, *Finite Rings
+    /// with Identity* (1974), Ch. XVI; Z.-X. Wan, *Lectures on Finite Fields and Galois
+    /// Rings* (2003), Ch. 14 (structure of `GR(p^a, d)^*`).
+    fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
+        use rustmath_core::MultiplicativeOrder;
+        if !GaloisRingElement::is_unit(self) {
+            return MultiplicativeOrder::NotAUnit;
+        }
+        let m = match self.residue().multiplicative_order() {
+            Some(m) => m,
+            None => return MultiplicativeOrder::Undecided, // unreachable: residue of a unit is nonzero
+        };
+        let p = self.p().clone();
+        let mut y = GaloisRingElement::pow(self, &m);
+        let mut order = m;
+        // y = x^(m p^j) for j = 0, 1, ..., a - 1; the proof bounds j by a - 1.
+        for _ in 0..self.ring.data.a {
+            if y.is_one() {
+                return crate::ring_hooks::order_from_integer(&order);
+            }
+            y = GaloisRingElement::pow(&y, &p);
+            order = order * p.clone();
+        }
+        // Unreachable by the proof above; never return an unproven order.
+        MultiplicativeOrder::Undecided
     }
 }
 

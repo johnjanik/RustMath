@@ -35,10 +35,16 @@ use rustmath_core::{Ring, EuclideanDomain, MathError, Result};
 ///
 /// Reference: https://doc.sagemath.org/html/en/reference/categories/sage/categories/rings.html#sage.categories.rings.Rings.ElementMethods
 pub trait RingElementMethods: Ring {
-    /// Check if this element is a unit (has a multiplicative inverse)
+    /// Check if this element is a unit (has a multiplicative inverse); MAGMA `IsUnit`
+    /// (Handbook Ch. 17 §17.5.5).
     ///
     /// An element `a` in a ring `R` is a unit if there exists `b` in `R`
     /// such that `a * b = b * a = 1`.
+    ///
+    /// Three-valued: `Some(true)` / `Some(false)` are decided, `None` means this element
+    /// type cannot decide. It is [`Ring::unit_status`], which every concrete ring decides
+    /// in its own `impl Ring` (every nonzero element of Q, R, C; gcd with the modulus in
+    /// Z/mZ; valuation zero in a Galois ring).
     ///
     /// # Examples
     ///
@@ -46,22 +52,18 @@ pub trait RingElementMethods: Ring {
     /// use rustmath_rings::category_methods::RingElementMethods;
     ///
     /// // In integers, only ±1 are units
-    /// assert!(1i32.is_unit_element());
-    /// assert!((-1i32).is_unit_element());
-    /// assert!(!2i32.is_unit_element());
+    /// assert_eq!(1i32.is_unit_element(), Some(true));
+    /// assert_eq!((-1i32).is_unit_element(), Some(true));
+    /// assert_eq!(2i32.is_unit_element(), Some(false));
     /// ```
-    ///
-    /// # Default Implementation
-    ///
-    /// The default implementation only recognizes 1, -1, and 0 (which is not a unit).
-    /// Most concrete ring types should override this with specialized logic.
-    fn is_unit_element(&self) -> bool {
-        self.is_one() || *self == -Self::one()
+    fn is_unit_element(&self) -> Option<bool> {
+        self.unit_status()
     }
 
     /// Return the multiplicative inverse of this element if it is a unit
     ///
-    /// Returns an error if the element is not a unit.
+    /// It is [`Ring::unit_inverse`]: each concrete ring computes the inverse in its own
+    /// `impl Ring`.
     ///
     /// # Examples
     ///
@@ -76,15 +78,11 @@ pub trait RingElementMethods: Ring {
     ///
     /// # Errors
     ///
-    /// Returns `MathError::NotInvertible` if the element is not a unit.
+    /// `MathError::NotInvertible` means the element is a proven non-unit. Any other error
+    /// (`NotImplemented`, `InvalidArgument`, `DomainError`) means undecided: it is never a
+    /// proof of non-invertibility.
     fn inverse_of_unit(&self) -> Result<Self> {
-        if self.is_one() {
-            Ok(Self::one())
-        } else if *self == -Self::one() {
-            Ok(-Self::one())
-        } else {
-            Err(MathError::NotInvertible)
-        }
+        self.unit_inverse()
     }
 
     /// Divide `self` by `other` if the division is exact (no remainder)
@@ -265,21 +263,33 @@ pub trait RingParentMethods {
         x.clone() * y.clone() - y.clone() * x.clone()
     }
 
-    /// Return the order (cardinality) of this ring
+    /// The order (number of elements) of this ring, when it is known and fits in `usize`.
     ///
-    /// Returns None for infinite rings.
+    /// `None` makes **no claim**: the ring may be infinite, finite with more than
+    /// `usize::MAX` elements, or of uncomputed size. Use [`Self::is_finite`].
     fn order(&self) -> Option<usize> {
         None
     }
 
-    /// Check if this ring is finite
-    fn is_finite(&self) -> bool {
-        self.order().is_some()
+    /// MAGMA `IsFinite` (Handbook Ch. 17 §17.4.3): `Some(true)` known finite, `Some(false)`
+    /// known infinite, `None` undecided.
+    ///
+    /// Default: a known `order()` proves finiteness; an element type of characteristic 0
+    /// ([`Ring::static_characteristic`]) proves infiniteness (a ring of characteristic 0 is
+    /// nonzero and contains a copy of Z); otherwise `None`.
+    fn is_finite(&self) -> Option<bool> {
+        if self.order().is_some() {
+            Some(true)
+        } else if Self::Element::static_characteristic() == Some(0) {
+            Some(false)
+        } else {
+            None
+        }
     }
 
-    /// Check if this ring is infinite
-    fn is_infinite(&self) -> bool {
-        !self.is_finite()
+    /// The negation of [`Self::is_finite`]; `None` when that is undecided.
+    fn is_infinite(&self) -> Option<bool> {
+        self.is_finite().map(|finite| !finite)
     }
 
     /// Return the Krull dimension of this ring
@@ -422,11 +432,54 @@ mod tests {
     #[test]
     fn test_ring_element_is_unit() {
         // In integers, only ±1 are units
-        assert!(1i32.is_unit_element());
-        assert!((-1i32).is_unit_element());
-        assert!(!0i32.is_unit_element());
-        assert!(!2i32.is_unit_element());
-        assert!(!(-2i32).is_unit_element());
+        assert_eq!(1i32.is_unit_element(), Some(true));
+        assert_eq!((-1i32).is_unit_element(), Some(true));
+        assert_eq!(0i32.is_unit_element(), Some(false));
+        assert_eq!(2i32.is_unit_element(), Some(false));
+        assert_eq!((-2i32).is_unit_element(), Some(false));
+    }
+
+    // The defect's generic path for the concrete rings (MAGMA Ch. 20 / Ch. 25 IsUnit: every
+    // nonzero element of Q, R is a unit). GAP: IsUnit(Rationals, 2/3) -> true,
+    // Inverse(2/3) -> 3/2. PARI: lift(Mod(3,8)^-1) -> 3; lift(Mod(2,5)^-1) -> 3.
+    #[test]
+    fn test_ring_element_methods_on_concrete_rings() {
+        use rustmath_finitefields::{FiniteField, IntegerMod};
+        use rustmath_integers::Integer;
+        use rustmath_rationals::Rational;
+        use rustmath_reals::RealMPFR;
+
+        let two_thirds = Rational::new(2, 3).unwrap();
+        assert_eq!(two_thirds.is_unit_element(), Some(true));
+        assert_eq!(two_thirds.inverse_of_unit(), Ok(Rational::new(3, 2).unwrap()));
+        assert_eq!(Rational::new(0, 1).unwrap().inverse_of_unit(), Err(MathError::NotInvertible));
+
+        assert_eq!(RealMPFR::with_val(53, 2.0).is_unit_element(), Some(true));
+
+        let three = IntegerMod::new(Integer::from(3), Integer::from(8)).unwrap();
+        assert_eq!(RingElementMethods::is_unit_element(&three), Some(true));
+        assert_eq!(three.inverse_of_unit(), Ok(three.clone()));
+
+        let gf5 = FiniteField::new(Integer::from(5), 1).unwrap();
+        let two = gf5.from_int(Integer::from(2));
+        assert_eq!(two.inverse_of_unit(), Ok(gf5.from_int(Integer::from(3))));
+    }
+
+    // Defaults on a parent-carrying element type whose static `one()` panics: nonzero,
+    // non-±1 p-adic integers must not panic. 6 in Z_5 is a unit and not nilpotent, but the
+    // p-adic types do not override the hooks (yet), so the honest answer is "undecided".
+    // (`rustmath_category::RingElementMethods::is_nilpotent` is exactly
+    // `Ring::nilpotent_status`.)
+    #[test]
+    fn test_defaults_on_padic_integer_do_not_panic() {
+        use crate::padics::PadicInteger;
+        use rustmath_integers::Integer;
+        let six = PadicInteger::from_integer(Integer::from(6), Integer::from(5), 10).unwrap();
+        let nil = Ring::nilpotent_status(&six);
+        assert_ne!(nil, Some(true));
+        assert_eq!(nil, None);
+        assert_eq!(six.is_unit_element(), None);
+        assert!(!matches!(six.inverse_of_unit(), Err(MathError::NotInvertible)));
     }
 
     #[test]
@@ -488,7 +541,8 @@ mod tests {
         assert!(z.is_integral_domain(true));
         assert!(!z.is_zero_ring());
         assert_eq!(z.characteristic(), 0);
-        assert!(z.is_infinite());
+        assert_eq!(z.is_infinite(), Some(true));
+        assert_eq!(z.is_finite(), Some(false));
     }
 
     #[test]

@@ -426,6 +426,50 @@ impl Ring for IntegerMod {
     fn is_one(&self) -> bool {
         self.value.is_one()
     }
+
+    // Element predicates on the generic `Ring` path (MAGMA Ch. 19 `IsUnit`, `IsNilpotent`,
+    // `Order`). A bound element delegates to the inherent methods (which concrete call
+    // sites resolve to first). The modulus-0 sentinel is an integer constant awaiting the
+    // map Z -> Z/nZ, so only what holds in every Z/nZ is decided (`crate::ring_hooks`).
+
+    fn unit_status(&self) -> Option<bool> {
+        if self.modulus.is_zero() {
+            return crate::ring_hooks::sentinel_unit_status(&self.value);
+        }
+        Some(IntegerMod::is_unit(self))
+    }
+
+    fn nilpotent_status(&self) -> Option<bool> {
+        if self.modulus.is_zero() {
+            return crate::ring_hooks::sentinel_nilpotent_status(&self.value);
+        }
+        Some(IntegerMod::is_nilpotent(self))
+    }
+
+    fn unit_inverse(&self) -> Result<Self> {
+        if self.modulus.is_zero() {
+            return crate::ring_hooks::sentinel_unit_inverse(&self.value, self);
+        }
+        if !IntegerMod::is_unit(self) {
+            return Err(MathError::NotInvertible);
+        }
+        IntegerMod::inverse(self)
+    }
+
+    /// The order of a unit of Z/nZ by the inherent `multiplicative_order`, a complete
+    /// search (the order of a unit is at most phi(n) < n).
+    fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
+        if self.modulus.is_zero() {
+            return crate::ring_hooks::sentinel_order(&self.value);
+        }
+        if !IntegerMod::is_unit(self) {
+            return rustmath_core::MultiplicativeOrder::NotAUnit;
+        }
+        match IntegerMod::multiplicative_order(self) {
+            Some(k) => crate::ring_hooks::order_from_integer(&k),
+            None => rustmath_core::MultiplicativeOrder::Undecided,
+        }
+    }
 }
 
 // Multiplication in Z/nZ (and in the modulus-0 sentinel ring Z) commutes.

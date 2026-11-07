@@ -409,6 +409,51 @@ impl Ring for PrimeField {
     fn is_one(&self) -> bool {
         self.value.is_one()
     }
+
+    // Element predicates on the generic `Ring` path (MAGMA Ch. 21 `IsUnit`, `Order`).
+    // `PrimeField::new` does not check that the modulus is prime, so a bound element is
+    // a unit iff gcd(value, modulus) = 1 (not merely nonzero), and nilpotent iff every
+    // prime factor of the modulus divides it. The modulus-0 sentinel follows the
+    // deferred-constant rules of `crate::ring_hooks`.
+
+    fn unit_status(&self) -> Option<bool> {
+        if self.modulus.is_zero() {
+            return crate::ring_hooks::sentinel_unit_status(&self.value);
+        }
+        Some(self.value.gcd(&self.modulus).is_one())
+    }
+
+    fn nilpotent_status(&self) -> Option<bool> {
+        if self.modulus.is_zero() {
+            return crate::ring_hooks::sentinel_nilpotent_status(&self.value);
+        }
+        Some(crate::ring_hooks::is_nilpotent_mod(&self.value, &self.modulus))
+    }
+
+    fn unit_inverse(&self) -> Result<Self> {
+        if self.modulus.is_zero() {
+            return crate::ring_hooks::sentinel_unit_inverse(&self.value, self);
+        }
+        if self.unit_status() != Some(true) {
+            return Err(MathError::NotInvertible);
+        }
+        <Self as Field>::inverse(self)
+    }
+
+    /// The order of a unit by the inherent `multiplicative_order`, a complete search (the
+    /// order of a unit mod m is at most phi(m) < m).
+    fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
+        if self.modulus.is_zero() {
+            return crate::ring_hooks::sentinel_order(&self.value);
+        }
+        if self.unit_status() != Some(true) {
+            return rustmath_core::MultiplicativeOrder::NotAUnit;
+        }
+        match PrimeField::multiplicative_order(self) {
+            Some(k) => crate::ring_hooks::order_from_integer(&k),
+            None => rustmath_core::MultiplicativeOrder::Undecided,
+        }
+    }
 }
 
 impl CommutativeRing for PrimeField {

@@ -1154,6 +1154,41 @@ impl Ring for Integer {
     fn pow(&self, n: u32) -> Self {
         Integer::new(num_traits::pow(self.value.clone(), n as usize))
     }
+
+    // Element predicates (MAGMA Ch. 17 §17.5.5 `IsUnit`/`IsNilpotent`, Ch. 19 `Order`):
+    // Z is a domain whose unit group is {±1} (GAP: IsUnit(Integers, 2) = false,
+    // Order(-1) = 2).
+
+    fn unit_status(&self) -> Option<bool> {
+        Some(self.value.abs().is_one())
+    }
+
+    fn nilpotent_status(&self) -> Option<bool> {
+        Some(self.value.is_zero())
+    }
+
+    fn unit_inverse(&self) -> Result<Self> {
+        if self.value.abs().is_one() {
+            Ok(self.clone())
+        } else {
+            Err(MathError::NotInvertible)
+        }
+    }
+
+    fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
+        use rustmath_core::MultiplicativeOrder;
+        if self.value.is_one() {
+            MultiplicativeOrder::Finite(1)
+        } else if self.value.abs().is_one() {
+            MultiplicativeOrder::Finite(2)
+        } else {
+            MultiplicativeOrder::NotAUnit
+        }
+    }
+
+    fn static_characteristic() -> Option<u64> {
+        Some(0)
+    }
 }
 
 impl CommutativeRing for Integer {}

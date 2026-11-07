@@ -585,6 +585,58 @@ impl Ring for RealMPFR {
     fn is_one(&self) -> bool {
         self.value == 1
     }
+
+    // Element predicates (MAGMA Ch. 25 `IsUnit`: true for the nonzero elements of a real
+    // field; Ch. 17 §17.5.5 `IsNilpotent`; Ch. 19 `Order`). An MPFR value is an exact
+    // dyadic rational, and the only real roots of unity are ±1 (x^n = 1 forces |x| = 1),
+    // so every other nonzero value has infinite order. NaN and ±Inf are not real numbers:
+    // nothing is decided for them.
+
+    fn unit_status(&self) -> Option<bool> {
+        if !self.value.is_finite() {
+            return None;
+        }
+        Some(!self.is_zero())
+    }
+
+    fn nilpotent_status(&self) -> Option<bool> {
+        if !self.value.is_finite() {
+            return None;
+        }
+        Some(self.is_zero())
+    }
+
+    /// The inverse at working precision (`Field::inverse`, a rounded reciprocal).
+    fn unit_inverse(&self) -> Result<Self> {
+        if !self.value.is_finite() {
+            return Err(MathError::DomainError(format!(
+                "{self} is not a real number, so it is neither a unit nor a non-unit"
+            )));
+        }
+        if self.is_zero() {
+            return Err(MathError::NotInvertible);
+        }
+        <Self as Field>::inverse(self)
+    }
+
+    fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
+        use rustmath_core::MultiplicativeOrder;
+        if !self.value.is_finite() {
+            MultiplicativeOrder::Undecided
+        } else if self.is_zero() {
+            MultiplicativeOrder::NotAUnit
+        } else if self.value == 1 {
+            MultiplicativeOrder::Finite(1)
+        } else if self.value == -1 {
+            MultiplicativeOrder::Finite(2)
+        } else {
+            MultiplicativeOrder::Infinite
+        }
+    }
+
+    fn static_characteristic() -> Option<u64> {
+        Some(0)
+    }
 }
 
 impl CommutativeRing for RealMPFR {}

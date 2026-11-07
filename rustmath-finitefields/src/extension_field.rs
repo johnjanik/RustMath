@@ -225,6 +225,23 @@ impl Ring for ExtensionField {
     fn is_one(&self) -> bool {
         self.elem.is_one()
     }
+
+    // Element predicates: delegate to the canonical `FiniteFieldElement` (MAGMA Ch. 21).
+    fn unit_status(&self) -> Option<bool> {
+        self.elem.unit_status()
+    }
+
+    fn nilpotent_status(&self) -> Option<bool> {
+        self.elem.nilpotent_status()
+    }
+
+    fn unit_inverse(&self) -> Result<Self> {
+        Ok(Self::from_elem(self.elem.unit_inverse()?))
+    }
+
+    fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
+        self.elem.multiplicative_order_status()
+    }
 }
 
 impl CommutativeRing for ExtensionField {

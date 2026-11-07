@@ -559,6 +559,42 @@ impl Ring for Complex {
     fn is_one(&self) -> bool {
         self.real.is_one() && self.imag.is_zero()
     }
+
+    // Element predicates (MAGMA Ch. 25 `IsUnit`: nonzero elements are units). The parts are
+    // tolerance-based `Real`s; these follow the type's own `is_zero` and `Field::inverse`.
+    // A NaN or infinite part decides nothing. `multiplicative_order_status` keeps the
+    // trait default (no `Infinite` claim with tolerance-based equality).
+
+    fn unit_status(&self) -> Option<bool> {
+        if !(self.real.is_finite() && self.imag.is_finite()) {
+            return None;
+        }
+        Some(!self.is_zero())
+    }
+
+    fn nilpotent_status(&self) -> Option<bool> {
+        if !(self.real.is_finite() && self.imag.is_finite()) {
+            return None;
+        }
+        Some(self.is_zero())
+    }
+
+    /// The inverse at working precision (`Field::inverse`).
+    fn unit_inverse(&self) -> Result<Self> {
+        if !(self.real.is_finite() && self.imag.is_finite()) {
+            return Err(MathError::DomainError(format!(
+                "{self} is not a complex number, so it is neither a unit nor a non-unit"
+            )));
+        }
+        if self.is_zero() {
+            return Err(MathError::NotInvertible);
+        }
+        <Self as Field>::inverse(self)
+    }
+
+    fn static_characteristic() -> Option<u64> {
+        Some(0)
+    }
 }
 
 impl CommutativeRing for Complex {}
