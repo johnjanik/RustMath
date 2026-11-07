@@ -2716,7 +2716,7 @@ ch042.Basis,missing,,differential.rs basis is {dx} of differentials; order.rs ba
 ch042.TransformationMatrix,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
 ch042.CoefficientIdeals,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
 ch042.BasisMatrix,missing,,finite_dimensional_algebra_ideal match unrelated [review 2026-11-06; checked]
-ch042.PrimitiveElement,facade,rustmath-rings/src/function_field/function_field_polymod.rs:211,"primitive_element() returns the variable name string, no computation [review 2026-11-06; checked]"
+ch042.PrimitiveElement,partial,rustmath-rings/src/function_field/function_field_polymod.rs:211,"primitive_element() returns the generator name y of K[y]/(f), which is a root of f by construction, so the value is right and needs no computation (function_field_polymod.rs::test_function_field_simple asserts ""y""). It is on the field, not on an order O, and a String, not a typed element. Not a facade [review 2026-11-06; corrected, the generator is a root of f by construction]"
 ch042.Discriminant,facade,rustmath-rings/src/function_field/order.rs:132,"discriminant() returns format string ""Discriminant of name"", not a value [review 2026-11-06; checked]"
 ch042.AbsoluteDiscriminant,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
 ch042.DimensionOfExactConstantField,missing,,No function field implementation found (only string-typed shells and K(x) genus-0 layer) [review 2026-11-06; checked]
@@ -4651,7 +4651,7 @@ ch020.Maximum,partial,rustmath-core/src/ordering.rs:40,"OrderedRing::max_with(a,
 ch020.Minimum,partial,rustmath-core/src/ordering.rs:49,"OrderedRing::min_with(a,b) for two rationals (rational.rs::test_ordered_ring_min_max); no sequence form [review 2026-11-06; checked]"
 ch020.ComplexConjugate,missing,,no complex conjugate for Rational [review 2026-11-06; checked]
 ch020.Conjugate,missing,,no Conjugate(q) for Rational; partitions.rs:55 conjugate is unrelated [review 2026-11-06; checked]
-ch020.Norm,broken,rustmath-rationals/src/rational.rs:142,Rational::norm returns abs(q) but Magma Norm(q)=q; wrong for negative q (e.g. -1/2 gives 1/2) [review 2026-11-06; checked]
+ch020.Norm,missing,,"No Norm(q) = q (the norm from Q to Q). The same-named Rational::norm (rational.rs:142) is documented as the absolute value and returns |q|, so it is a different function, not a broken one; Sage's same-named norm() on QQ returns q itself, so a Sage-shaped caller gets |q| [review 2026-11-06; corrected, semantics differ from the intrinsic]"
 ch020.Trace,missing,,no Trace(q) for Rational; quaternion trace is unrelated [review 2026-11-06; checked]
 ch020.MinimalPolynomial,partial,rustmath-rings/src/qqbar.rs:189; rustmath-algebraic/src/minimal_polynomial.rs:20,No Rational API; only by wrapping q: qqbar gives monic x - r over Q (qqbar.rs::test_minimal_polynomial_rational checks degree only); algebraic gives non-monic q*x - p over Z [review 2026-11-06; adjudicated]
 ch020.AbsoluteValue,done,rustmath-rationals/src/rational.rs:76,Rational::abs; rational.rs::test_ordered_ring_abs [review 2026-11-06; checked]
