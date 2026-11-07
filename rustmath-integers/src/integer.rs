@@ -1400,6 +1400,17 @@ impl EuclideanDomain for Integer {
 
         Ok((Integer::new(q), Integer::new(r)))
     }
+
+    /// The sign: MAGMA `Normalize` over Z (Handbook ch. 23 §23.5.1) takes the associate with
+    /// positive leading coefficient, so the canonical associate of `n` is `|n|` and
+    /// `n = sign(n) · |n|`; `0` gives `1`.
+    fn normalization_unit(&self) -> Option<Self> {
+        Some(if self.signum() < 0 {
+            -Integer::one()
+        } else {
+            Integer::one()
+        })
+    }
 }
 
 impl NumericConversion for Integer {
@@ -1900,5 +1911,20 @@ mod tests {
         let (a, b, c) = (Integer::from(3), Integer::from(8), Integer::from(100));
         assert!(a < b);
         assert!(a + c.clone() < b + c);
+    }
+
+    // MAGMA `Normalize` over Z (Handbook ch. 23 §23.5.1): the canonical associate of n is
+    // |n|, so the normalization unit is the sign. PARI/GP: `sign(-6)` -> -1, `sign(6)` -> 1,
+    // `sign(-10^30)` -> -1; the unit of 0 is 1 (0 is its own canonical associate).
+    #[test]
+    fn test_normalization_unit_is_the_sign() {
+        let unit = |n: i64| Integer::from(n).normalization_unit();
+        assert_eq!(unit(-6), Some(Integer::from(-1)));
+        assert_eq!(unit(6), Some(Integer::from(1)));
+        assert_eq!(unit(0), Some(Integer::from(1)));
+        assert_eq!(unit(-1), Some(Integer::from(-1)));
+        let big = Integer::from(10).pow(30);
+        assert_eq!((-big.clone()).normalization_unit(), Some(Integer::from(-1)));
+        assert_eq!(big.normalization_unit(), Some(Integer::from(1)));
     }
 }

@@ -268,6 +268,28 @@ pub trait EuclideanDomain: IntegralDomain {
 
         (old_r, old_s, old_t)
     }
+
+    /// The unit `u` with `self = u · n`, where `n` is the canonical (normalized) associate
+    /// of `self` (MAGMA `Normalize`, Handbook ch. 23 §23.5.1): `sign(self)` in Z, `self`
+    /// itself in a field (whose canonical associate of a nonzero element is 1). `0` is its
+    /// own canonical associate, so `0` gives `Some(one)`.
+    ///
+    /// `None` means this ring does not single out a canonical associate of this non-unit;
+    /// callers must then leave the element as it is rather than guess.
+    ///
+    /// The default knows only the units (a unit's canonical associate is 1). A unit is
+    /// recognised by an exact division `1 = q · self`, checked by multiplying back, so a
+    /// lawless `div_rem` cannot make the default claim a non-unit is a unit. Rings with
+    /// non-unit elements that have non-trivial associates (Z, ...) override it.
+    fn normalization_unit(&self) -> Option<Self> {
+        if self.is_zero() {
+            return Some(Self::one());
+        }
+        match Self::one().div_rem(self) {
+            Ok((q, r)) if r.is_zero() && (q.clone() * self.clone()).is_one() => Some(self.clone()),
+            _ => None,
+        }
+    }
 }
 
 /// A field is a commutative ring where every non-zero element has a multiplicative inverse
@@ -399,6 +421,11 @@ impl EuclideanDomain for i32 {
         }
         Ok((self / other, self % other))
     }
+
+    /// The sign (MAGMA `Normalize` over Z: the canonical associate is `|self|`).
+    fn normalization_unit(&self) -> Option<Self> {
+        Some(if *self < 0 { -1 } else { 1 })
+    }
 }
 
 impl Ring for i64 {
@@ -437,6 +464,11 @@ impl EuclideanDomain for i64 {
             return Err(MathError::DivisionByZero);
         }
         Ok((self / other, self % other))
+    }
+
+    /// The sign (MAGMA `Normalize` over Z: the canonical associate is `|self|`).
+    fn normalization_unit(&self) -> Option<Self> {
+        Some(if *self < 0 { -1 } else { 1 })
     }
 }
 
@@ -658,5 +690,167 @@ mod tests {
         }
         assert_eq!(Z6Panicky(5).unit_status(), Some(true));
         assert_eq!(Z6Panicky(3).nilpotent_status(), None);
+    }
+
+    // --- EuclideanDomain::normalization_unit (MAGMA `Normalize`, Handbook ch. 23 §23.5.1) ---
+    //
+    // Reference (PARI/GP): `sign(-6)` -> -1, `sign(6)` -> 1, `sign(0)` -> 0 (the canonical
+    // associate of 0 is 0 itself, so its unit is 1); `Mod(3,7)^-1` -> Mod(5, 7).
+
+    use super::{CommutativeRing, EuclideanDomain, IntegralDomain, Result as MathResult};
+
+    #[test]
+    fn test_normalization_unit_i32_i64_is_the_sign() {
+        assert_eq!((-6i32).normalization_unit(), Some(-1));
+        assert_eq!(6i32.normalization_unit(), Some(1));
+        assert_eq!(0i32.normalization_unit(), Some(1));
+        assert_eq!((-1i32).normalization_unit(), Some(-1));
+        assert_eq!(i32::MIN.normalization_unit(), Some(-1));
+        assert_eq!((-6i64).normalization_unit(), Some(-1));
+        assert_eq!(6i64.normalization_unit(), Some(1));
+        assert_eq!(0i64.normalization_unit(), Some(1));
+        assert_eq!((-1i64).normalization_unit(), Some(-1));
+        assert_eq!(i64::MIN.normalization_unit(), Some(-1));
+    }
+
+    /// GF(7) with `div_rem(a, b) = (a·b⁻¹, 0)`, using only the trait default.
+    #[derive(Debug, Clone, Copy, PartialEq)]
+    struct F7(u8);
+    impl fmt::Display for F7 {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(f, "{}", self.0)
+        }
+    }
+    impl Add for F7 {
+        type Output = Self;
+        fn add(self, o: Self) -> Self {
+            F7((self.0 + o.0) % 7)
+        }
+    }
+    impl Sub for F7 {
+        type Output = Self;
+        fn sub(self, o: Self) -> Self {
+            F7((self.0 + 7 - o.0) % 7)
+        }
+    }
+    impl Mul for F7 {
+        type Output = Self;
+        fn mul(self, o: Self) -> Self {
+            F7((self.0 * o.0) % 7)
+        }
+    }
+    impl Neg for F7 {
+        type Output = Self;
+        fn neg(self) -> Self {
+            F7((7 - self.0) % 7)
+        }
+    }
+    impl Ring for F7 {
+        fn zero() -> Self {
+            F7(0)
+        }
+        fn one() -> Self {
+            F7(1)
+        }
+        fn is_zero(&self) -> bool {
+            self.0 == 0
+        }
+        fn is_one(&self) -> bool {
+            self.0 == 1
+        }
+    }
+    impl CommutativeRing for F7 {}
+    impl IntegralDomain for F7 {}
+    impl EuclideanDomain for F7 {
+        fn norm(&self) -> u64 {
+            u64::from(self.0 != 0)
+        }
+        fn div_rem(&self, other: &Self) -> MathResult<(Self, Self)> {
+            if other.is_zero() {
+                return Err(MathError::DivisionByZero);
+            }
+            let inv = (1u8..7).find(|&k| (k * other.0) % 7 == 1).unwrap();
+            Ok((F7((self.0 * inv) % 7), F7(0)))
+        }
+    }
+
+    /// Z through i64 arithmetic but *without* the sign override: only the trait default.
+    #[derive(Debug, Clone, Copy, PartialEq)]
+    struct ZDefault(i64);
+    impl fmt::Display for ZDefault {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(f, "{}", self.0)
+        }
+    }
+    impl Add for ZDefault {
+        type Output = Self;
+        fn add(self, o: Self) -> Self {
+            ZDefault(self.0 + o.0)
+        }
+    }
+    impl Sub for ZDefault {
+        type Output = Self;
+        fn sub(self, o: Self) -> Self {
+            ZDefault(self.0 - o.0)
+        }
+    }
+    impl Mul for ZDefault {
+        type Output = Self;
+        fn mul(self, o: Self) -> Self {
+            ZDefault(self.0 * o.0)
+        }
+    }
+    impl Neg for ZDefault {
+        type Output = Self;
+        fn neg(self) -> Self {
+            ZDefault(-self.0)
+        }
+    }
+    impl Ring for ZDefault {
+        fn zero() -> Self {
+            ZDefault(0)
+        }
+        fn one() -> Self {
+            ZDefault(1)
+        }
+        fn is_zero(&self) -> bool {
+            self.0 == 0
+        }
+        fn is_one(&self) -> bool {
+            self.0 == 1
+        }
+    }
+    impl CommutativeRing for ZDefault {}
+    impl IntegralDomain for ZDefault {}
+    impl EuclideanDomain for ZDefault {
+        fn norm(&self) -> u64 {
+            self.0.unsigned_abs()
+        }
+        fn div_rem(&self, other: &Self) -> MathResult<(Self, Self)> {
+            if other.is_zero() {
+                return Err(MathError::DivisionByZero);
+            }
+            Ok((ZDefault(self.0 / other.0), ZDefault(self.0 % other.0)))
+        }
+    }
+
+    #[test]
+    fn test_normalization_unit_default_on_a_field() {
+        // Every nonzero element of a field is a unit: its canonical associate is 1.
+        assert_eq!(F7(3).normalization_unit(), Some(F7(3)));
+        assert_eq!(F7(6).normalization_unit(), Some(F7(6)));
+        assert_eq!(F7(1).normalization_unit(), Some(F7(1)));
+        assert_eq!(F7(0).normalization_unit(), Some(F7(1)));
+    }
+
+    #[test]
+    fn test_normalization_unit_default_knows_only_units() {
+        // Units of Z are found; a non-unit gets the honest `None` (the default has no
+        // notion of sign), never a guessed unit.
+        assert_eq!(ZDefault(1).normalization_unit(), Some(ZDefault(1)));
+        assert_eq!(ZDefault(-1).normalization_unit(), Some(ZDefault(-1)));
+        assert_eq!(ZDefault(0).normalization_unit(), Some(ZDefault(1)));
+        assert_eq!(ZDefault(2).normalization_unit(), None);
+        assert_eq!(ZDefault(-6).normalization_unit(), None);
     }
 }

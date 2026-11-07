@@ -1,16 +1,46 @@
 //! Univariate polynomials (polynomials in one variable)
+//!
+//! Specification: MAGMA Handbook ch. 23, *Univariate Polynomial Rings* (digest
+//! `rustmath-lava/docs/Chapter_23_Univariate_Polynomial_Rings.md`): §23.4.5 `Coefficient`;
+//! §23.4.10 `Quotrem`, `div`, `mod`, `IsDivisibleBy`, `ExactQuotient`, `PseudoRemainder`;
+//! §23.5 `GCD`, `LCM`, `Normalize`, `Content`, `PrimitivePart`, `ContentAndPrimitivePart`.
+//!
+//! Algorithms (division, pseudo-division and gcd):
+//! - D. E. Knuth, *The Art of Computer Programming*, vol. 2, 3rd ed. (1997), §4.6.1:
+//!   Algorithm D (division), Algorithm R (pseudo-division), Algorithm C (subresultant gcd).
+//! - G. E. Collins, *Subresultants and reduced polynomial remainder sequences*,
+//!   J. ACM 14 (1967) 128-142.
+//! - W. S. Brown and J. F. Traub, *On Euclid's algorithm and the theory of subresultants*,
+//!   J. ACM 18 (1971) 505-514.
+//! - H. Cohen, *A Course in Computational Algebraic Number Theory*, GTM 138 (1993),
+//!   Alg. 3.1.2 (pseudo-division) and Alg. 3.3.1 (sub-resultant GCD).
 
 use crate::polynomial::Polynomial;
 use rustmath_core::{CommutativeRing, EuclideanDomain, IntegralDomain, MathError, Result, Ring};
 use std::fmt;
 use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
+use std::sync::OnceLock;
 
 /// Univariate polynomial over a ring R
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone)]
 pub struct UnivariatePolynomial<R: Ring> {
     /// Coefficients in increasing degree order: [a0, a1, a2, ...] represents a0 + a1*x + a2*x^2 + ...
+    /// Trimmed (no zero leading coefficient) and never empty: the zero polynomial is `[0]`.
     coeffs: Vec<R>,
+    /// The zero of `R`, created on first use and returned by [`Self::coeff`] past the degree
+    /// (MAGMA `Coefficient(p, i)` is 0 there, Handbook ch. 23 §23.4.5). Created lazily
+    /// because `R::zero()` panics for parent-carrying coefficient types. Not part of the
+    /// value: equality ignores it.
+    zero: OnceLock<R>,
 }
+
+impl<R: Ring> PartialEq for UnivariatePolynomial<R> {
+    fn eq(&self, other: &Self) -> bool {
+        self.coeffs == other.coeffs
+    }
+}
+
+impl<R: Ring + Eq> Eq for UnivariatePolynomial<R> {}
 
 impl<R: Ring> UnivariatePolynomial<R> {
     /// Create a new polynomial from coefficients
@@ -24,7 +54,10 @@ impl<R: Ring> UnivariatePolynomial<R> {
             coeffs.push(R::zero());
         }
 
-        UnivariatePolynomial { coeffs }
+        UnivariatePolynomial {
+            coeffs,
+            zero: OnceLock::new(),
+        }
     }
 
     /// Create a polynomial from coefficients (alias for new)
@@ -56,9 +89,13 @@ impl<R: Ring> UnivariatePolynomial<R> {
         }
     }
 
-    /// Get coefficient at given degree
+    /// The coefficient of `x^degree` (MAGMA `Coefficient(p, i)`, Handbook ch. 23 §23.4.5):
+    /// zero when `degree` exceeds the degree of `self`.
     pub fn coeff(&self, degree: usize) -> &R {
-        self.coeffs.get(degree).unwrap_or(&self.coeffs[0])
+        match self.coeffs.get(degree) {
+            Some(c) => c,
+            None => self.zero.get_or_init(R::zero),
+        }
     }
 
     /// Get the leading coefficient (highest degree non-zero coefficient)
@@ -229,113 +266,6 @@ impl<R: Ring> UnivariatePolynomial<R> {
         antiderivative.eval(b) - antiderivative.eval(a)
     }
 
-    /// Compute polynomial GCD (for polynomials over a field or Euclidean domain)
-    ///
-    /// # Limitations
-    ///
-    /// This implementation uses the Euclidean algorithm which requires exact division.
-    /// For polynomials with integer coefficients, this may fail or produce incorrect
-    /// results when the leading coefficient of the divisor doesn't divide the leading
-    /// coefficient of the dividend.
-    ///
-    /// **TODO**: Implement pseudo-division or subresultant-based GCD algorithm for
-    /// polynomials over integers (Z[x]). Until then, GCD over integer polynomials
-    /// works reliably only when coefficients divide cleanly.
-    pub fn gcd(&self, other: &Self) -> Self
-    where
-        R: EuclideanDomain,
-    {
-        let mut a = self.clone();
-        let mut b = other.clone();
-
-        while !b.is_zero() {
-            let (_, r) = a.div_rem(&b).unwrap();
-
-            // `quo_rem` gives up (returning the dividend untouched) as soon as the
-            // divisor's leading coefficient does not divide exactly in R — which is
-            // unavoidable, because R[x] over a non-field is not a Euclidean domain.
-            // The plain Euclidean loop then never reduces the degree and cycles forever
-            // (e.g. gcd(-x³+4x²-5x+2, -3x²+8x-5) over Z spun until the harness killed
-            // it). Fall back to the pseudo-remainder, which cancels the leading term by
-            // construction and therefore strictly lowers the degree, so the loop
-            // terminates. The result is then the gcd up to a factor in R (the usual
-            // pseudo-remainder-sequence caveat); every input on which the ordinary
-            // division already made progress takes the original path unchanged.
-            let no_progress = match (r.degree(), b.degree()) {
-                (Some(dr), Some(db)) => dr >= db,
-                _ => false,
-            };
-            let r = if no_progress { a.pseudo_rem(&b) } else { r };
-
-            a = b;
-            b = r;
-        }
-
-        // Note: Making polynomial monic (leading coefficient = 1) requires
-        // division by the leading coefficient, which needs the Field trait.
-        // This is left as a future enhancement.
-
-        a
-    }
-
-    /// The pseudo-remainder of `self` by `divisor`.
-    ///
-    /// Repeatedly scales the running remainder by the divisor's leading coefficient
-    /// before subtracting, so the leading term always cancels exactly and the degree
-    /// strictly decreases — no exact divisibility in `R` is needed. This is what makes a
-    /// gcd over a non-field coefficient ring terminate.
-    fn pseudo_rem(&self, divisor: &Self) -> Self
-    where
-        R: EuclideanDomain,
-    {
-        let Some(divisor_degree) = divisor.degree() else {
-            panic!("Pseudo-division by zero polynomial");
-        };
-        let divisor_leading = divisor.coeffs.last().unwrap().clone();
-
-        let mut remainder = self.clone();
-        while let Some(rem_degree) = remainder.degree() {
-            if rem_degree < divisor_degree {
-                break;
-            }
-
-            let rem_leading = remainder.coeffs.last().unwrap().clone();
-            let mut mono_coeffs = vec![R::zero(); rem_degree - divisor_degree];
-            mono_coeffs.push(rem_leading);
-            let mono = UnivariatePolynomial::new(mono_coeffs);
-
-            // lc(divisor)·remainder − lead(remainder)·x^(dr−db)·divisor
-            remainder = remainder.scalar_mul(&divisor_leading) - mono * divisor.clone();
-        }
-
-        remainder
-    }
-
-    /// Compute polynomial LCM (least common multiple)
-    ///
-    /// For polynomials f and g: lcm(f, g) = (f * g) / gcd(f, g)
-    ///
-    /// # Limitations
-    ///
-    /// Same limitations as GCD - works best over fields or when coefficients divide cleanly.
-    pub fn lcm(&self, other: &Self) -> Self
-    where
-        R: EuclideanDomain,
-    {
-        if self.is_zero() || other.is_zero() {
-            return UnivariatePolynomial::new(vec![R::zero()]);
-        }
-
-        let g = self.gcd(other);
-        let product = self.clone() * other.clone();
-
-        // lcm = (self * other) / gcd
-        match product.div_rem(&g) {
-            Ok((quotient, _)) => quotient,
-            Err(_) => product, // Fallback if division fails
-        }
-    }
-
     /// Compute the discriminant of a polynomial
     ///
     /// Degrees 2 and 3 use the classical closed forms; degree >= 4 uses the
@@ -441,27 +371,6 @@ impl<R: Ring> UnivariatePolynomial<R> {
         UnivariatePolynomial::new(coeffs)
     }
 
-    /// Get the content of the polynomial (GCD of all coefficients)
-    ///
-    /// Only works for coefficients in a Euclidean domain
-    pub fn content(&self) -> R
-    where
-        R: EuclideanDomain,
-    {
-        if self.coeffs.is_empty() {
-            return R::zero();
-        }
-
-        let mut gcd = self.coeffs[0].clone();
-        for coeff in &self.coeffs[1..] {
-            gcd = EuclideanDomain::gcd(&gcd, coeff);
-            if gcd.is_one() {
-                break;
-            }
-        }
-        gcd
-    }
-
     /// Check if polynomial is square-free (has no repeated factors)
     ///
     /// A polynomial is square-free if it has no repeated factors,
@@ -482,10 +391,9 @@ impl<R: Ring> UnivariatePolynomial<R> {
             return false;
         }
 
-        // Square-free ⟺ gcd(f, f') is a nonzero constant. `gcd` here is not
-        // normalized to monic (see its note), so a coprime pair yields a nonzero
-        // constant ≠ 1; test degree == 0 rather than `is_one()` to avoid a
-        // false negative for every f whose gcd unit is not exactly 1.
+        // Square-free ⟺ gcd(f, f') is a nonzero constant. `gcd` is normalized, but over a
+        // non-field it keeps the content (gcd(4x + 4, 4) = 4 over Z), so test
+        // `degree == 0` rather than `is_one()`.
         let g = self.gcd(&derivative);
         g.degree() == Some(0)
     }
@@ -609,9 +517,11 @@ impl<R: Ring> UnivariatePolynomial<R> {
         }
     }
 
-    /// Compute both quotient and remainder of polynomial division
+    /// Panicking form of [`Self::div_rem`] (MAGMA `Quotrem`, Handbook ch. 23 §23.4.10).
     ///
-    /// Returns (quotient, remainder) such that self = quotient * other + remainder
+    /// Returns `(q, r)` with `self = q * divisor + r` and `deg r` minimal; see
+    /// [`Self::div_rem`] for the convention over a non-field. Panics with
+    /// "Division by zero polynomial" for a zero divisor.
     ///
     /// # Examples
     /// ```
@@ -628,46 +538,18 @@ impl<R: Ring> UnivariatePolynomial<R> {
     ///
     /// let (quo, rem) = p.quo_rem(&q);
     /// // quo = x + 2, rem = 0
+    /// assert_eq!(quo, UnivariatePolynomial::new(vec![Integer::from(2), Integer::from(1)]));
+    /// assert!(rem.is_zero());
     /// ```
     pub fn quo_rem(&self, divisor: &Self) -> (Self, Self)
     where
         R: EuclideanDomain,
     {
-        if divisor.is_zero() {
-            panic!("Division by zero polynomial");
+        match self.div_rem(divisor) {
+            Ok(qr) => qr,
+            Err(MathError::DivisionByZero) => panic!("Division by zero polynomial"),
+            Err(e) => panic!("quo_rem: {e}"),
         }
-
-        let mut remainder = self.clone();
-        let mut quotient = UnivariatePolynomial::new(vec![R::zero()]);
-
-        let divisor_degree = divisor.degree().unwrap();
-        let divisor_leading = divisor.coeffs.last().unwrap();
-
-        while let Some(rem_degree) = remainder.degree() {
-            if rem_degree < divisor_degree {
-                break;
-            }
-
-            let rem_leading = remainder.coeffs.last().unwrap();
-            let coeff_degree = rem_degree - divisor_degree;
-
-            // Compute quotient coefficient
-            let (q, r) = rem_leading.clone().div_rem(divisor_leading).unwrap();
-            if !r.is_zero() {
-                // Not exact division in the coefficient ring
-                break;
-            }
-
-            // Create monomial q * x^(coeff_degree)
-            let mut mono_coeffs = vec![R::zero(); coeff_degree];
-            mono_coeffs.push(q.clone());
-            let mono = UnivariatePolynomial::new(mono_coeffs);
-
-            quotient = quotient.clone() + mono.clone();
-            remainder = remainder.clone() - mono * divisor.clone();
-        }
-
-        (quotient, remainder)
     }
 
     /// Compute squarefree decomposition (Musser's algorithm)
@@ -790,7 +672,7 @@ impl<R: Ring> Polynomial for UnivariatePolynomial<R> {
     }
 
     fn coeff(&self, degree: usize) -> &R {
-        self.coeffs.get(degree).unwrap_or(&self.coeffs[0])
+        UnivariatePolynomial::coeff(self, degree)
     }
 }
 
@@ -1030,79 +912,475 @@ impl<R: Ring> Neg for UnivariatePolynomial<R> {
     }
 }
 
-// Division for polynomials over fields
+/// MAGMA `f div g` (Handbook ch. 23 §23.4.10): the quotient of [`UnivariatePolynomial::div_rem`].
+///
+/// This is division with a minimal-degree remainder, not a claim that `R[x]` is Euclidean
+/// (`Z[x]` is not; no `EuclideanDomain` impl exists for polynomials). Panics where
+/// `div_rem` returns `Err` (a zero divisor, or a lawless coefficient ring).
 impl<R: Ring + EuclideanDomain> Div for UnivariatePolynomial<R> {
     type Output = Self;
 
     fn div(self, other: Self) -> Self {
-        self.div_rem(&other).unwrap().0
+        self.div_rem(&other)
+            .unwrap_or_else(|e| panic!("polynomial div/mod: {e}"))
+            .0
     }
 }
 
+/// MAGMA `f mod g` (Handbook ch. 23 §23.4.10): the remainder of
+/// [`UnivariatePolynomial::div_rem`]. Panics where `div_rem` returns `Err`.
 impl<R: Ring + EuclideanDomain> Rem for UnivariatePolynomial<R> {
     type Output = Self;
 
     fn rem(self, other: Self) -> Self {
-        self.div_rem(&other).unwrap().1
+        self.div_rem(&other)
+            .unwrap_or_else(|e| panic!("polynomial div/mod: {e}"))
+            .1
     }
 }
 
+/// `a / b` in `R` for a division that theory guarantees exact (content removal, the
+/// subresultant recurrence, a unit inverse). Panics, rather than returning a wrong value,
+/// if it is not exact: then `R` is not an integral domain with a lawful `div_rem` (for
+/// example GF(p) with p composite). Same policy as the Bareiss determinant above.
+fn exact_div_elem<R: EuclideanDomain>(a: &R, b: &R) -> R {
+    let (q, r) = a
+        .div_rem(b)
+        .unwrap_or_else(|e| panic!("UnivariatePolynomial: exact coefficient division failed: {e}"));
+    assert!(
+        r.is_zero() && q.clone() * b.clone() == *a,
+        "UnivariatePolynomial: a coefficient division that theory guarantees exact was not \
+         exact; the coefficient ring is not an integral domain with exact division"
+    );
+    q
+}
+
+/// The inverse of a unit `u` of `R`, by exact division (see [`exact_div_elem`]).
+fn inverse_of_unit<R: EuclideanDomain>(u: &R) -> R {
+    exact_div_elem(&R::one(), u)
+}
+
+/// The canonical associate of a coefficient (MAGMA `Normalize` on `R`): `|c|` over Z, `1` for
+/// a nonzero element of a field, `0` for `0`, and `c` itself when `R` names no canonical
+/// associate ([`EuclideanDomain::normalization_unit`] is `None`).
+fn normalize_elem<R: EuclideanDomain>(c: &R) -> R {
+    match c.normalization_unit() {
+        Some(u) if !u.is_one() => exact_div_elem(c, &u),
+        _ => c.clone(),
+    }
+}
+
+/// Remove trailing (high-degree) zeros from a coefficient vector.
+fn trim_top<R: Ring>(v: &mut Vec<R>) {
+    while v.last().is_some_and(|c| c.is_zero()) {
+        v.pop();
+    }
+}
+
+// Division, pseudo-division, gcd, lcm and content (MAGMA Handbook ch. 23 §23.4.10, §23.5).
 impl<R: Ring> UnivariatePolynomial<R> {
-    /// Division with remainder (for polynomials over fields/Euclidean domains)
+    /// Quotient and remainder (MAGMA `Quotrem`, Handbook ch. 23 §23.4.10): `(q, r)` with
+    /// `self = q * divisor + r` exactly and `deg r` minimal over all `q` in `R[x]`.
+    ///
+    /// * `divisor = 0` gives `Err(DivisionByZero)`; `self = 0` gives `(0, 0)`;
+    ///   `deg self < deg divisor` gives `(0, self)`.
+    /// * `lc(divisor)` a unit (every nonzero divisor over a field, `lc = ±1` over Z):
+    ///   classical division (Knuth, TAOCP vol. 2 §4.6.1, Algorithm D), `deg r < deg divisor`,
+    ///   and `(q, r)` is unique.
+    /// * `lc(divisor)` not a unit (for example `2x` in `Z[x]`): leading terms are cancelled
+    ///   while `lc(divisor)` divides the remainder's leading coefficient exactly in `R`, and
+    ///   the division stops at the first one it does not divide. Then `deg r` is minimal
+    ///   (the coefficient of `x^(deg r)` in `self - q'·divisor` is `lc(r) - t·lc(divisor) != 0`
+    ///   for every `q'`), and `r = 0` exactly when `divisor` divides `self` in `R[x]`. Here
+    ///   `deg r >= deg divisor` is possible (`x^2 = 0·(2x) + x^2` over Z), so this is not a
+    ///   Euclidean step; use [`Self::gcd`] or [`Self::pseudo_quo_rem`] for that. The
+    ///   remainder of minimal degree is not unique over a non-field; FLINT's
+    ///   `fmpz_poly_divrem`, which keeps reducing each coefficient modulo `lc(divisor)`, can
+    ///   return a different remainder of the same degree.
+    /// * Never loops: every step lowers `deg r`, so there are at most
+    ///   `deg self - deg divisor + 1` steps. If a step does not cancel the leading term
+    ///   (a coefficient ring whose `div_rem` reports an exact quotient that is not one), the
+    ///   result is `Err(InvalidOperation)`, not a wrong value.
     pub fn div_rem(&self, divisor: &Self) -> Result<(Self, Self)>
     where
         R: EuclideanDomain,
     {
-        if divisor.is_zero() {
+        let (q, r) = self.division(divisor, true)?;
+        Ok((q.unwrap_or_else(Self::zero), r))
+    }
+
+    /// The common core of [`Self::div_rem`] and the gcd. The quotient is returned only when
+    /// `want_quotient` is set (the gcd needs only the remainder).
+    fn division(&self, divisor: &Self, want_quotient: bool) -> Result<(Option<Self>, Self)>
+    where
+        R: EuclideanDomain,
+    {
+        let Some(dg) = divisor.degree() else {
             return Err(MathError::DivisionByZero);
+        };
+        let Some(df) = self.degree() else {
+            return Ok((want_quotient.then(Self::zero), Self::zero()));
+        };
+        if df < dg {
+            return Ok((want_quotient.then(Self::zero), self.clone()));
         }
-
-        if self.is_zero() {
-            return Ok((
-                UnivariatePolynomial::new(vec![R::zero()]),
-                UnivariatePolynomial::new(vec![R::zero()]),
-            ));
-        }
-
-        let dividend_deg = self.degree().unwrap();
-        let divisor_deg = divisor.degree().unwrap();
-
-        if dividend_deg < divisor_deg {
-            return Ok((UnivariatePolynomial::new(vec![R::zero()]), self.clone()));
-        }
-
-        let mut quotient = vec![R::zero(); dividend_deg - divisor_deg + 1];
-        let mut remainder = self.clone();
-
-        let divisor_lc = divisor.leading_coeff().unwrap().clone();
-
-        while !remainder.is_zero() {
-            let remainder_deg = match remainder.degree() {
-                Some(d) => d,
-                None => break,
-            };
-
-            if remainder_deg < divisor_deg {
+        let lg = &divisor.coeffs[dg];
+        let mut q: Vec<R> = if want_quotient {
+            vec![R::zero(); df - dg + 1]
+        } else {
+            Vec::new()
+        };
+        // Working remainder, kept trimmed: empty for 0, otherwise its last entry is nonzero.
+        let mut r: Vec<R> = self.coeffs.clone();
+        while let Some(lr) = r.last() {
+            let dr = r.len() - 1;
+            if dr < dg {
                 break;
             }
-
-            let remainder_lc = remainder.leading_coeff().unwrap().clone();
-            let (coeff_quot, _) = remainder_lc.div_rem(&divisor_lc)?;
-
-            let shift = remainder_deg - divisor_deg;
-            quotient[shift] = coeff_quot.clone();
-
-            let mut subtrahend_coeffs = vec![R::zero(); shift];
-            subtrahend_coeffs.extend(divisor.coeffs.iter().map(|c| c.clone() * coeff_quot.clone()));
-
-            let subtrahend = UnivariatePolynomial::new(subtrahend_coeffs);
-            remainder = remainder - subtrahend;
+            let (c, rho) = lr.div_rem(lg)?;
+            if !rho.is_zero() {
+                // lc(divisor) does not divide lc(r) in R: r has minimal degree.
+                break;
+            }
+            let s = dr - dg;
+            // r <- r - c·x^s·divisor (c on the left, as in the product q·divisor).
+            for (j, gj) in divisor.coeffs.iter().enumerate() {
+                r[s + j] = r[s + j].clone() - c.clone() * gj.clone();
+            }
+            if !r[dr].is_zero() {
+                return Err(MathError::InvalidOperation(
+                    "div_rem: the coefficient ring's div_rem reported an exact quotient of the \
+                     leading coefficients, but subtracting it did not cancel the leading term"
+                        .into(),
+                ));
+            }
+            if want_quotient {
+                // Each shift s is visited once: deg r strictly drops.
+                q[s] = c;
+            }
+            trim_top(&mut r);
         }
+        Ok((want_quotient.then(|| Self::new(q)), Self::new(r)))
+    }
 
-        Ok((
-            UnivariatePolynomial::new(quotient),
-            remainder,
-        ))
+    /// MAGMA `ExactQuotient(f, g)` (Handbook ch. 23 §23.4.10): `Ok(q)` with `self = q * g`.
+    ///
+    /// `Err(DivisionByZero)` for `g = 0`; `Err(NotDivisible)` when `g` does not divide
+    /// `self` in `R[x]` (for example `x^2` by `2x` over Z, whose quotient `x/2` is not
+    /// integral).
+    pub fn exact_quotient(&self, g: &Self) -> Result<Self>
+    where
+        R: EuclideanDomain,
+    {
+        let (q, r) = self.div_rem(g)?;
+        if r.is_zero() {
+            Ok(q)
+        } else {
+            Err(MathError::NotDivisible(
+                "ExactQuotient: the divisor does not divide the dividend in R[x]".into(),
+            ))
+        }
+    }
+
+    /// MAGMA `IsDivisibleBy(f, g)` (Handbook ch. 23 §23.4.10): `Ok(Some(q))` with
+    /// `self = q * g` when `g` divides `self` in `R[x]`, `Ok(None)` when it does not.
+    ///
+    /// `Err(DivisionByZero)` for `g = 0`, as for [`Self::exact_quotient`] (for `self = 0`
+    /// every `q` satisfies `0 = q * 0`, so there is no quotient to return).
+    pub fn is_divisible_by(&self, g: &Self) -> Result<Option<Self>>
+    where
+        R: EuclideanDomain,
+    {
+        let (q, r) = self.div_rem(g)?;
+        Ok(r.is_zero().then_some(q))
+    }
+
+    /// Pseudo-division (MAGMA `PseudoRemainder`, Handbook ch. 23 §23.4.10; Knuth, TAOCP
+    /// vol. 2 §4.6.1, Algorithm R; Cohen, GTM 138, Alg. 3.1.2): `(q, r)` with
+    /// `lc(g)^d · self = q * g + r` and `deg r < deg g`, where
+    /// `d = max(0, deg self - deg g + 1)`. Unique over an integral domain.
+    ///
+    /// The exponent `d` is the full one even when a step cancels more than one degree (so
+    /// `pseudo_quo_rem(3x^4 + x + 7, 2x^2 + 1) = (12x^2 - 6, 8x + 62)`, the PARI value of
+    /// `[(4*f)\g, (4*f)%g]`). `Err(DivisionByZero)` for `g = 0`; `Err(InvalidOperation)` if
+    /// a step does not cancel the leading term (non-commutative or lawless `R`), so it never
+    /// loops.
+    pub fn pseudo_quo_rem(&self, g: &Self) -> Result<(Self, Self)>
+    where
+        R: IntegralDomain,
+    {
+        let (q, r) = self.pseudo_division(g, true)?;
+        Ok((q.unwrap_or_else(Self::zero), r))
+    }
+
+    /// MAGMA `PseudoRemainder(f, g)`: the `r` of [`Self::pseudo_quo_rem`].
+    pub fn pseudo_remainder(&self, g: &Self) -> Result<Self>
+    where
+        R: IntegralDomain,
+    {
+        Ok(self.pseudo_division(g, false)?.1)
+    }
+
+    /// The common core of [`Self::pseudo_quo_rem`] and the subresultant gcd.
+    fn pseudo_division(&self, g: &Self, want_quotient: bool) -> Result<(Option<Self>, Self)>
+    where
+        R: IntegralDomain,
+    {
+        let Some(dg) = g.degree() else {
+            return Err(MathError::DivisionByZero);
+        };
+        let Some(df) = self.degree() else {
+            return Ok((want_quotient.then(Self::zero), Self::zero()));
+        };
+        if df < dg {
+            // d = 0
+            return Ok((want_quotient.then(Self::zero), self.clone()));
+        }
+        let d = df - dg + 1;
+        let c = &g.coeffs[dg];
+        let mut q: Vec<R> = if want_quotient {
+            vec![R::zero(); d]
+        } else {
+            Vec::new()
+        };
+        let mut r: Vec<R> = self.coeffs.clone();
+        let mut steps = 0usize;
+        // Invariant: c^steps · self = q·g + r.
+        while let Some(lr) = r.last().cloned() {
+            let dr = r.len() - 1;
+            if dr < dg {
+                break;
+            }
+            let s = dr - dg;
+            if want_quotient {
+                // q <- c·q + lr·x^s
+                for qi in q.iter_mut() {
+                    *qi = c.clone() * qi.clone();
+                }
+                q[s] = q[s].clone() + lr.clone();
+            }
+            // r <- c·r - lr·x^s·g
+            for ri in r.iter_mut() {
+                *ri = c.clone() * ri.clone();
+            }
+            for (j, gj) in g.coeffs.iter().enumerate() {
+                r[s + j] = r[s + j].clone() - lr.clone() * gj.clone();
+            }
+            if !r[dr].is_zero() {
+                return Err(MathError::InvalidOperation(
+                    "pseudo_quo_rem: c·lc(r) - lc(r)·c did not cancel the leading term; the \
+                     coefficient ring is not commutative or its arithmetic is lawless"
+                        .into(),
+                ));
+            }
+            trim_top(&mut r);
+            steps += 1;
+        }
+        // Scale up to the full exponent d.
+        let missing = d - steps;
+        if missing > 0 {
+            let ce = c.pow(missing as u32);
+            for ri in r.iter_mut() {
+                *ri = ce.clone() * ri.clone();
+            }
+            if want_quotient {
+                for qi in q.iter_mut() {
+                    *qi = ce.clone() * qi.clone();
+                }
+            }
+        }
+        Ok((want_quotient.then(|| Self::new(q)), Self::new(r)))
+    }
+
+    /// MAGMA `Normalize(f)` (Handbook ch. 23 §23.5.1): the canonical associate `u⁻¹·f`,
+    /// `u` the [`EuclideanDomain::normalization_unit`] of the leading coefficient. Over a
+    /// field it is monic; over Z (also `i32`, `i64`) its leading coefficient is positive;
+    /// `0` stays `0`. If `R` names no canonical associate of the leading coefficient
+    /// (`normalization_unit` is `None`; no coefficient ring in this workspace does that),
+    /// `self` is returned unchanged.
+    pub fn normalize(&self) -> Self
+    where
+        R: EuclideanDomain,
+    {
+        let Some(lc) = self.leading_coeff() else {
+            return self.clone();
+        };
+        match lc.normalization_unit() {
+            Some(u) if !u.is_one() => self.scalar_mul(&inverse_of_unit(&u)),
+            _ => self.clone(),
+        }
+    }
+
+    /// The gcd of the coefficients through [`EuclideanDomain::gcd`], up to a unit; `0` for
+    /// the zero polynomial.
+    fn raw_content(&self) -> R
+    where
+        R: EuclideanDomain,
+    {
+        let mut g = self.coeffs[0].clone();
+        for c in &self.coeffs[1..] {
+            if g.is_one() || (-g.clone()).is_one() {
+                break;
+            }
+            g = EuclideanDomain::gcd(&g, c);
+        }
+        g
+    }
+
+    /// Every coefficient divided exactly by the nonzero `c` (see [`exact_div_elem`]).
+    fn exact_scalar_div(&self, c: &R) -> Self
+    where
+        R: EuclideanDomain,
+    {
+        if c.is_one() {
+            return self.clone();
+        }
+        Self::new(self.coeffs.iter().map(|a| exact_div_elem(a, c)).collect())
+    }
+
+    /// MAGMA `Content(p)` (Handbook ch. 23 §23.5.2): the gcd of the coefficients in `R`,
+    /// normalized. Positive over Z (`content(-6 - 9x) = 3`, PARI `content(-6-9*x)`); `0` for
+    /// the zero polynomial; `1` for a nonzero polynomial over a field (every nonzero element
+    /// of a field is a unit, so the ring-theoretic gcd is 1). PARI's `content` over Q is a
+    /// different notion (the Z-module content, `content(2/3*x+4/5) = 2/15`) and is not
+    /// provided here.
+    pub fn content(&self) -> R
+    where
+        R: EuclideanDomain,
+    {
+        normalize_elem(&self.raw_content())
+    }
+
+    /// MAGMA `PrimitivePart(p)` (Handbook ch. 23 §23.5.2): `p` divided by its content (so
+    /// over Z the sign is kept: `primitive_part(-6 - 9x) = -2 - 3x`); `0` for `0`; `p` itself
+    /// over a field.
+    pub fn primitive_part(&self) -> Self
+    where
+        R: EuclideanDomain,
+    {
+        self.content_and_primitive_part().1
+    }
+
+    /// MAGMA `ContentAndPrimitivePart(p)` (Handbook ch. 23 §23.5.2): `(content, p / content)`;
+    /// `(0, 0)` for `0`.
+    pub fn content_and_primitive_part(&self) -> (R, Self)
+    where
+        R: EuclideanDomain,
+    {
+        if self.is_zero() {
+            return (R::zero(), Self::zero());
+        }
+        let c = self.content();
+        let pp = self.exact_scalar_div(&c);
+        (c, pp)
+    }
+
+    /// MAGMA `GCD(f, g)` (Handbook ch. 23 §23.5.1): the normalized greatest common divisor
+    /// in `R[x]` (see [`Self::normalize`]): monic over a field; over Z (`i32`, `i64`) it
+    /// carries the content `gcd(content f, content g)` and has positive leading coefficient
+    /// (`gcd(2x^2 - 2, 4x + 4) = 2x + 2`, PARI `gcd(2*x^2-2, 4*x+4)`). With one input zero
+    /// it is the other one, normalized; `gcd(0, 0) = 0`.
+    ///
+    /// Algorithm: Euclid's algorithm while the division makes progress, which over a field is
+    /// the whole computation (it is a valid gcd step over any ring: `a = q·b + r` gives the
+    /// same common divisors for `(a, b)` and `(b, r)`). At the first division that stops at a
+    /// leading coefficient `lc(b)` does not divide (only over a non-field), the rest is the
+    /// sub-resultant algorithm on the primitive parts with the content split off by Gauss'
+    /// lemma (Collins 1967; Brown and Traub 1971; Knuth §4.6.1 Algorithm C; Cohen GTM 138
+    /// Alg. 3.3.1), the generic algorithm MAGMA uses over "any other ring". MAGMA uses
+    /// GCDHEU and modular algorithms over Z and Q; the result is the same, the speed is not.
+    ///
+    /// Panics only if a division that theory guarantees exact is not exact, which means `R`
+    /// is not an integral domain with a lawful `div_rem` (for example GF(p), p composite).
+    pub fn gcd(&self, other: &Self) -> Self
+    where
+        R: EuclideanDomain,
+    {
+        if self.is_zero() {
+            return other.normalize();
+        }
+        if other.is_zero() {
+            return self.normalize();
+        }
+        let (mut a, mut b) = if self.degree() >= other.degree() {
+            (self.clone(), other.clone())
+        } else {
+            (other.clone(), self.clone())
+        };
+        loop {
+            let (_, r) = a
+                .division(&b, false)
+                .unwrap_or_else(|e| panic!("UnivariatePolynomial::gcd: {e}"));
+            if r.is_zero() {
+                return b.normalize();
+            }
+            if r.degree() < b.degree() {
+                a = std::mem::replace(&mut b, r);
+                continue;
+            }
+            // `division` stopped at a leading coefficient lc(b) does not divide. Since
+            // r = a - q·b, gcd(a, b) = gcd(b, r); both are nonzero.
+            return Self::subresultant_gcd(b, r);
+        }
+    }
+
+    /// The sub-resultant gcd of two nonzero polynomials (Cohen GTM 138 Alg. 3.3.1), with
+    /// content, normalized.
+    fn subresultant_gcd(f: Self, g: Self) -> Self
+    where
+        R: EuclideanDomain,
+    {
+        let cf = f.raw_content();
+        let cg = g.raw_content();
+        let d = EuclideanDomain::gcd(&cf, &cg);
+        let mut a = f.exact_scalar_div(&cf);
+        let mut b = g.exact_scalar_div(&cg);
+        if a.degree() < b.degree() {
+            std::mem::swap(&mut a, &mut b);
+        }
+        let (mut lead, mut h) = (R::one(), R::one());
+        let last = loop {
+            let delta = a.degree().unwrap() - b.degree().unwrap();
+            // Full exponent delta + 1 (the exact divisions below depend on it).
+            let (_, r) = a
+                .pseudo_division(&b, false)
+                .unwrap_or_else(|e| panic!("UnivariatePolynomial::gcd: {e}"));
+            match r.degree() {
+                None => break b,              // gcd of the primitive parts is pp(b)
+                Some(0) => break Self::one(), // the primitive parts are coprime
+                Some(_) => {}
+            }
+            let den = lead.clone() * h.pow(delta as u32);
+            a = b;
+            // Exact by the subresultant theorem.
+            b = r.exact_scalar_div(&den);
+            lead = a.leading_coeff().unwrap().clone();
+            h = match delta {
+                0 => h,
+                1 => lead.clone(),
+                _ => exact_div_elem(&lead.pow(delta as u32), &h.pow(delta as u32 - 1)),
+            };
+        };
+        let pp_last = last.exact_scalar_div(&last.raw_content());
+        pp_last.scalar_mul(&d).normalize()
+    }
+
+    /// MAGMA `LCM(f, g)` (Handbook ch. 23 §23.5.1): `Normalize((f div GCD(f, g)) * g)`, and
+    /// `0` if either input is `0`. Monic over a field (`lcm(2x, x) = x` over Q); positive
+    /// leading coefficient over Z (`lcm(x^2, 2x) = 2x^2`, PARI `lcm(x^2, 2*x)`).
+    pub fn lcm(&self, other: &Self) -> Self
+    where
+        R: EuclideanDomain,
+    {
+        if self.is_zero() || other.is_zero() {
+            return Self::zero();
+        }
+        let g = self.gcd(other);
+        // Exact: g divides self in R[x], and then `div_rem` returns remainder 0.
+        let q = self
+            .exact_quotient(&g)
+            .unwrap_or_else(|e| panic!("UnivariatePolynomial::lcm: {e}"));
+        (q * other.clone()).normalize()
     }
 }
 
@@ -1123,6 +1401,52 @@ mod tests {
         assert_eq!(p.coeff(0), &Integer::from(1));
         assert_eq!(p.coeff(1), &Integer::from(2));
         assert_eq!(p.coeff(2), &Integer::from(3));
+    }
+
+    // MAGMA `Coefficient(p, i)` is 0 for i > deg p (Handbook ch. 23 §23.4.5).
+    // PARI/GP: `polcoef(x+5,3)` -> 0, `polcoef(x^2+1,5)` -> 0, `polcoef(x+5,0)` -> 5.
+    #[test]
+    fn test_coeff_past_degree_is_zero() {
+        let p = UnivariatePolynomial::new(vec![Integer::from(5), Integer::from(1)]);
+        assert_eq!(p.coeff(0), &Integer::from(5));
+        assert_eq!(p.coeff(1), &Integer::from(1));
+        assert_eq!(p.coeff(2), &Integer::from(0));
+        assert_eq!(p.coeff(3), &Integer::from(0));
+        assert_eq!(
+            <UnivariatePolynomial<Integer> as Polynomial>::coeff(&p, 3),
+            &Integer::from(0)
+        );
+        assert_eq!(
+            <UnivariatePolynomial<Integer> as Polynomial>::coeff(&p, 0),
+            &Integer::from(5)
+        );
+
+        let zero = UnivariatePolynomial::<Integer>::zero();
+        assert_eq!(zero.coeff(0), &Integer::from(0));
+        assert_eq!(zero.coeff(7), &Integer::from(0));
+
+        let q =
+            UnivariatePolynomial::new(vec![Integer::from(1), Integer::from(0), Integer::from(1)]);
+        assert_eq!(q.coeff(5), &Integer::from(0));
+        assert_eq!(q.coeff(2), &Integer::from(1));
+    }
+
+    // The lazily created zero is not part of the value.
+    #[test]
+    fn test_equality_ignores_the_zero_sentinel() {
+        let p = UnivariatePolynomial::new(vec![Integer::from(1), Integer::from(2)]);
+        let fresh = p.clone();
+        assert!(p.coeff(9).is_zero()); // initializes the sentinel of p only
+        assert_eq!(p, fresh);
+        assert_eq!(p.clone(), p);
+        assert_eq!(
+            UnivariatePolynomial::new(vec![Integer::from(1), Integer::from(2)]),
+            UnivariatePolynomial::new(vec![Integer::from(1), Integer::from(2), Integer::from(0)])
+        );
+        assert_ne!(
+            p,
+            UnivariatePolynomial::new(vec![Integer::from(1), Integer::from(3)])
+        );
     }
 
     #[test]
