@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 5161 | 16 | 341 | 1232 | 18 | 180 | 3375 (25%) | 8149 (61%) |
+| 13341 | 5161 | 39 | 342 | 1233 | 18 | 158 | 3377 (25%) | 8144 (61%) |
 
 ## By chapter
 
@@ -38,18 +38,18 @@ automatic `candidate`/`missing` counts.
 | 14 | Coproducts | II | 11 | 0 | 0 | 0 | 0 | 0 | 0 | 3 | 8 |  |  |
 | 15 | Records | II | 10 | 0 | 0 | 0 | 0 | 0 | 0 | 7 | 3 |  |  |
 | 16 | Mappings | II | 34 | 0 | 0 | 0 | 0 | 0 | 0 | 17 | 17 |  |  |
-| 17 | Introduction to Rings | III | 87 | 87 | 0 | 6 | 52 | 6 | 6 | 0 | 17 | substantial | `rustmath-rings` |
-| 18 | Ring of Integers | III | 188 | 188 | 0 | 27 | 69 | 4 | 2 | 0 | 86 | substantial | `rustmath-integers` |
-| 19 | Integer Residue Class Rings | III | 108 | 108 | 0 | 12 | 23 | 1 | 1 | 0 | 71 | partial | `rustmath-finitefields` |
-| 20 | Rational Field | III | 63 | 63 | 0 | 16 | 13 | 1 | 0 | 0 | 33 | substantial | `rustmath-rationals` |
-| 21 | Finite Fields | III | 118 | 118 | 1 | 23 | 46 | 0 | 6 | 0 | 42 | partial | `rustmath-finitefields` |
+| 17 | Introduction to Rings | III | 87 | 87 | 1 | 6 | 52 | 5 | 6 | 0 | 17 | substantial | `rustmath-rings` |
+| 18 | Ring of Integers | III | 188 | 188 | 6 | 24 | 69 | 2 | 2 | 0 | 85 | substantial | `rustmath-integers` |
+| 19 | Integer Residue Class Rings | III | 108 | 108 | 3 | 10 | 24 | 1 | 1 | 0 | 69 | partial | `rustmath-finitefields` |
+| 20 | Rational Field | III | 63 | 63 | 1 | 16 | 13 | 0 | 0 | 0 | 33 | substantial | `rustmath-rationals` |
+| 21 | Finite Fields | III | 118 | 118 | 1 | 24 | 45 | 0 | 6 | 0 | 42 | partial | `rustmath-finitefields` |
 | 22 | Nearfields | III | 42 | 42 | 0 | 0 | 0 | 0 | 0 | 0 | 42 | none | `(none - new crate rustmath-nearfields proposed)` |
-| 23 | Univariate Polynomial Rings | III | 129 | 129 | 0 | 11 | 57 | 6 | 0 | 0 | 55 | substantial | `rustmath-polynomials` |
+| 23 | Univariate Polynomial Rings | III | 129 | 129 | 6 | 15 | 52 | 1 | 0 | 0 | 55 | substantial | `rustmath-polynomials` |
 | 24 | Multivariate Polynomial Rings | III | 98 | 98 | 0 | 9 | 29 | 0 | 0 | 0 | 60 | substantial | `rustmath-polynomials` |
-| 25 | Real and Complex Fields | III | 176 | 176 | 3 | 19 | 75 | 10 | 0 | 0 | 69 | partial | `rustmath-reals, rustmath-complex` |
-| 26 | Matrices | IV | 149 | 149 | 2 | 25 | 40 | 5 | 1 | 0 | 76 | substantial | `rustmath-matrix` |
+| 25 | Real and Complex Fields | III | 176 | 176 | 3 | 20 | 75 | 9 | 0 | 0 | 69 | partial | `rustmath-reals, rustmath-complex` |
+| 26 | Matrices | IV | 149 | 149 | 3 | 25 | 44 | 0 | 1 | 0 | 76 | substantial | `rustmath-matrix` |
 | 27 | Sparse Matrices | IV | 83 | 83 | 0 | 7 | 31 | 0 | 0 | 0 | 45 | partial | `rustmath-matrix` |
-| 28 | Vector Spaces | IV | 87 | 87 | 0 | 22 | 28 | 9 | 1 | 0 | 27 | partial | `rustmath-matrix` |
+| 28 | Vector Spaces | IV | 87 | 87 | 4 | 22 | 28 | 5 | 1 | 0 | 27 | partial | `rustmath-matrix` |
 | 29 | Polar Spaces | IV | 74 | 74 | 0 | 0 | 5 | 0 | 0 | 0 | 69 | stub | `rustmath-quadraticforms (proposed rustmath-lattices/polar module)` |
 | 30 | Lattices | V | 193 | 193 | 0 | 4 | 41 | 4 | 0 | 0 | 144 | partial | `rustmath-matrix (proposed rustmath-lattices)` |
 | 31 | Lattices With Group Action | V | 60 | 60 | 0 | 0 | 0 | 0 | 0 | 0 | 60 | none | `rustmath-matrix + rustmath-groups (proposed rustmath-lattices)` |
@@ -68,8 +68,8 @@ automatic `candidate`/`missing` counts.
 | 44 | Artin Representations | VI | 25 | 25 | 0 | 0 | 0 | 0 | 0 | 0 | 25 | none | `rustmath-numberfields` |
 | 45 | Valuation Rings | VII | 26 | 26 | 0 | 0 | 6 | 0 | 0 | 0 | 20 | stub | `rustmath-rings` |
 | 46 | Newton Polygons | VII | 54 | 54 | 0 | 3 | 7 | 0 | 0 | 0 | 44 | partial | `rustmath-polynomials` |
-| 47 | p-adic Rings and their Extensions | VII | 164 | 164 | 2 | 18 | 56 | 1 | 1 | 0 | 86 | partial | `rustmath-rings::padics (+ rustmath-padics, rustmath-polynomials)` |
-| 48 | Galois Rings | VII | 58 | 58 | 5 | 15 | 24 | 1 | 0 | 0 | 13 | none | `(none - proposed galois_ring module in rustmath-finitefields or rustmath-rings)` |
+| 47 | p-adic Rings and their Extensions | VII | 164 | 164 | 2 | 18 | 57 | 0 | 1 | 0 | 86 | partial | `rustmath-rings::padics (+ rustmath-padics, rustmath-polynomials)` |
+| 48 | Galois Rings | VII | 58 | 58 | 6 | 15 | 24 | 0 | 0 | 0 | 13 | none | `(none - proposed galois_ring module in rustmath-finitefields or rustmath-rings)` |
 | 49 | Power, Laurent and Puiseux Series | VII | 102 | 102 | 1 | 16 | 29 | 2 | 0 | 0 | 54 | partial | `rustmath-powerseries` |
 | 50 | Lazy Power Series Rings | VII | 44 | 44 | 0 | 1 | 20 | 3 | 0 | 0 | 20 | stub | `rustmath-powerseries` |
 | 51 | General Local Fields | VII | 58 | 58 | 0 | 5 | 36 | 2 | 0 | 0 | 15 | stub | `rustmath-rings::padics` |
@@ -80,7 +80,7 @@ automatic `candidate`/`missing` counts.
 | 56 | Chain Complexes | VIII | 63 | 0 | 0 | 0 | 0 | 0 | 0 | 24 | 39 | partial | `rustmath-homology` |
 | 57 | Groups | IX | 184 | 184 | 0 | 8 | 64 | 4 | 0 | 0 | 108 | partial | `rustmath-groups` |
 | 58 | Permutation Groups | IX | 384 | 384 | 1 | 27 | 69 | 7 | 1 | 0 | 279 | substantial | `rustmath-groups` |
-| 59 | Matrix Groups over General Rings | IX | 220 | 220 | 0 | 7 | 30 | 5 | 1 | 0 | 177 | stub | `rustmath-groups` |
+| 59 | Matrix Groups over General Rings | IX | 220 | 220 | 0 | 7 | 31 | 4 | 1 | 0 | 177 | stub | `rustmath-groups` |
 | 60 | Matrix Groups over Finite Fields | IX | 102 | 102 | 0 | 0 | 2 | 0 | 0 | 0 | 100 | none | `rustmath-groups` |
 | 61 | Matrix Groups over Infinite Fields | IX | 18 | 18 | 0 | 0 | 1 | 0 | 0 | 0 | 17 | none | `rustmath-groups` |
 | 62 | Matrix Groups over Q and Z | IX | 20 | 20 | 0 | 0 | 0 | 0 | 0 | 0 | 20 | none | `rustmath-groups` |
@@ -141,7 +141,7 @@ automatic `candidate`/`missing` counts.
 | 117 | Hilbert Series of Polarised Varieties | XV | 121 | 0 | 0 | 0 | 0 | 0 | 0 | 31 | 90 | stub | `rustmath-schemes` |
 | 118 | Toric Varieties | XV | 193 | 0 | 0 | 0 | 0 | 0 | 0 | 61 | 132 | partial | `rustmath-geometry` |
 | 119 | Rational Curves and Conics | XVI | 33 | 0 | 0 | 0 | 0 | 0 | 0 | 15 | 18 | partial | `rustmath-quadraticforms (+ rustmath-curves for parametrization)` |
-| 120 | Elliptic Curves | XVI | 136 | 0 | 0 | 0 | 0 | 0 | 0 | 64 | 72 | partial | `rustmath-ellipticcurves` |
+| 120 | Elliptic Curves | XVI | 136 | 0 | 0 | 0 | 0 | 0 | 0 | 65 | 71 | partial | `rustmath-ellipticcurves` |
 | 121 | Elliptic Curves over Finite Fields | XVI | 34 | 0 | 0 | 0 | 0 | 0 | 0 | 16 | 18 | stub | `rustmath-ellipticcurves` |
 | 122 | Elliptic Curves over Q and Number Fields | XVI | 165 | 0 | 0 | 0 | 0 | 0 | 0 | 33 | 132 | partial | `rustmath-ellipticcurves` |
 | 123 | Elliptic Curves over Function Fields | XVI | 47 | 0 | 0 | 0 | 0 | 0 | 0 | 14 | 33 | none | `rustmath-ellipticcurves` |
@@ -153,7 +153,7 @@ automatic `candidate`/`missing` counts.
 | 129 | Small Modular Curves | XVII | 27 | 0 | 0 | 0 | 0 | 0 | 0 | 3 | 24 | none | `rustmath-modular` |
 | 130 | Congruence Subgroups of PSL₂(R) | XVII | 72 | 0 | 0 | 0 | 0 | 0 | 0 | 41 | 31 | partial | `rustmath-modular` |
 | 131 | Arithmetic Fuchsian Groups and Shimura Curves | XVII | 56 | 0 | 0 | 0 | 0 | 0 | 0 | 21 | 35 | stub | `rustmath-modular` |
-| 132 | Modular Forms | XVII | 87 | 0 | 0 | 0 | 0 | 0 | 0 | 33 | 54 | partial | `rustmath-modular` |
+| 132 | Modular Forms | XVII | 87 | 0 | 0 | 0 | 0 | 0 | 0 | 34 | 53 | partial | `rustmath-modular` |
 | 133 | Modular Symbols | XVII | 96 | 0 | 0 | 0 | 0 | 0 | 0 | 15 | 81 | partial | `rustmath-modular` |
 | 134 | Brandt Modules | XVII | 56 | 0 | 0 | 0 | 0 | 0 | 0 | 28 | 28 | stub | `rustmath-modular` |
 | 135 | Supersingular Divisors on Modular Curves | XVII | 35 | 0 | 0 | 0 | 0 | 0 | 0 | 12 | 23 | stub | `rustmath-modular` |

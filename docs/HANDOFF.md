@@ -1,9 +1,9 @@
-# Session handoff (2026-11-06, updated after Tasks 0-2)
+# Session handoff (2026-11-07, updated after Tasks 0-2 and the L0-L1 fixes)
 
 Read this first, then `CLAUDE.md` and `docs/README.md`. It records where the project stands and
-what to do next. **Tasks 0, 1 and 2 are done** (status notes below). The next step is "After these
-tasks" at the end: choose and start the first build targets, beginning with the L0-L1 defects the
-review found.
+what to do next. **Tasks 0, 1 and 2 are done** (status notes below), and so are the L0-L1 defects
+the review found (2026-11-07). The next step is "After these tasks" at the end: the open follow-ups,
+then the dead code, the mixin wiring and the `docs/PLAN.md` build targets.
 
 ## Where things stand
 
@@ -150,16 +150,77 @@ confirm with the user before fanning out):
 
 ## After these tasks
 
-Use the reviewed tracker to choose the first build targets, bottom-up through the core. First fix
-the L0-L1 defects in the table in `docs/magma/REVIEW_2026-11-06.md` (polynomial `coeff` and
-`div_rem` over Z, Legendre symbol for negative n, `is_unit`, square roots mod p^k, inconsistent
-linear solves, polynomial-matrix SNF), then wire up or delete the dead code it lists, and wire the
-`libgap_mixin` algorithms to `GroupLibGAP`/`PermutationGroup`. Then the candidates from
-`docs/PLAN.md`: complete GF(p^n); general Schreier-Sims (the keystone for groups and
-Galois chapters); and removing the duplicates left by the merge: two GF(p^n) stacks in
-`rustmath-finitefields`, two Montes/OM implementations (`rustmath-padics::montes` vs
-`rustmath-rings::padics`), and the placeholder `rustmath-galois::stauduhar` vs the real descent.
-Implement from the cited papers; test against LMFDB, PARI or GAP (GAP is installed).
+**L0-L1 defects: DONE 2026-11-07** on branch `claude/gracious-gates-e6b6l7`, commits `b475298..8e25fe2`.
+Each unit had a design, an independent design review, an implementation, an implementation review
+with reference values re-derived from PARI/GP or GAP, and a commit:
+- `8b29b5a` core/category: `Parent::is_finite` is three-valued (`Option<bool>`); the
+  `RingElementMethods` defaults became overridable `Ring` hooks (`unit_status`, `nilpotent_status`,
+  `unit_inverse`, `multiplicative_order_status`, `static_characteristic`, enum `MultiplicativeOrder`)
+  with exact overrides for Z, Q, R, C, Z/m, GF(q) and Galois rings; `Rational::reciprocal` of a
+  negative is canonical.
+- `0d7c126` integers: `mod_pow` residues in [0, |m|) and negative exponents, Legendre and Jacobi
+  through the new `kronecker_symbol`, `sqrt_mod_prime` for negative input,
+  `is_quadratic_residue_prime -> Result<bool>`, `mod_inverse`, generalised `binomial_mod`.
+- `b4ded72` finitefields: complete square roots mod p^k (p = 2 and p | a), `all_sqrts`, `is_square`,
+  `num_sqrts`.
+- `191030a` polynomials: `coeff` past the degree is 0, `Quotrem` always terminates, `gcd`/`lcm`
+  normalized (Euclid, then sub-resultant PRS), `exact_quotient`, `is_divisible_by`, pseudo-division,
+  `normalize`, `content`, `primitive_part`.
+- `5dfcd8c` matrix: consistent `solve`/`solve_left`, `solve_left_with_kernel`, vector-space
+  coordinates and quotients, `reduce_vector`, the F[x] Smith form with a structural check,
+  `invariant_factors`, `minimal_polynomial`, a certified rational form.
+- Follow-ups: `8cc9f75` (DownUpAlgebra and manifold finiteness, f64 tolerance band, exact Galois-ring
+  orders), `a2416ef` (docs, num-bigint >= 0.4.5), `e1ece67` (gcd over Q through Z[x]), `8e25fe2`
+  (rational-form convention docs, REPL `solve_linear` reports non-uniqueness).
+
+`PROJECT_TRACKER.md` (Change Log 2026-11-07), `docs/magma/status_overrides.csv` (57 rows updated, 37 with a new status)
+and `docs/magma/REVIEW_2026-11-06.md` (defect table marked, counts recomputed) record the result.
+Designs, reports and reviews are in the session scratchpad only (`l01/`), not in the repository.
+
+**Open follow-ups** (each has a tracker row or note unless marked):
+- Berlekamp Q matrix: row i holds x^(i(p+1)) mod f instead of x^(ip)
+  (`rustmath-polynomials/src/factorization.rs:578-602`); its tests are too weak to notice.
+- `zx::subresultant_gcd(p, 0)` returns the primitive part (gcd(4x+4, 0) = x+1, PARI 4x+4).
+- Conventions not checked against MAGMA: `Quotrem` over Z (stops at the first inexact leading step)
+  and `Content` over Q (1 here, the rational content in PARI).
+- Speed over Q: `minimal_polynomial` does not finish in 95 s at n = 12 and the rational form takes 11 s
+  at n = 10 (release); add a transform-free SNF and a Krylov or Hessenberg minimal polynomial, or
+  [Ste97]. No GCDHEU or modular polynomial gcd (speed only).
+- `PrimeField::is_quadratic_residue` is false for 1 in GF(2); `square_root_mod_prime` gives a false
+  `None` for a composite p, and the REPL `sqrt_mod` calls it for composite moduli (card T-249; use
+  `IntegerMod::sqrt`).
+- `SageInteger::binomial` returns 0 for negative n (Sage and PARI: binomial(-1, 2) = 1).
+- `GaloisRingElement::zero()`/`one()` still panic; `rustmath-rings` `RingParentMethods::is_zero_ring`
+  compares the static constructors.
+- Fabricated trait defaults, design split-outs S1 to S3: `RingParentMethods` in `rustmath-rings` and
+  `rustmath-category` (characteristic 0, is_field/is_commutative false, random_element zero,
+  is_injective false); no real implementors, now 🛑 rows.
+- Not a tracker row: stale paths in `docs/magma/status_overrides.csv`. 207 rows that this update
+  did not change (220 citations, chapters 17 to 59, bare `lib.rs:N` paths not counted) cite a line
+  that `b475298..8e25fe2` moved, for example ch018.Isqrt `integer.rs:147` (now :190) and ch026.Nullspace
+  `linear_solve.rs:200` (now :232). No status is affected. Plan a scripted refresh: map each
+  `file:line` through `git diff -U0 b475298 8e25fe2`, check that the new line is the same
+  definition, and agree first on the note tag for a path-only change (the current rule asks for a
+  `fixed <commit>` tag on every changed row).
+- Not tracked as rows: Ring hooks for polynomials, series and p-adics (honest `None` today); O(m)
+  order loops for `IntegerMod`/`PrimeField` and trial-division factoring of q-1 for GF(q) orders
+  (speed only); `SageRational::multiplicative_order` gives `None` for 0 and for infinite order alike;
+  the `factorization::content`/`primitive_part`/`poly_gcd_prem` free functions still use the signed
+  gcd; `is_square_free` over Z ignores the content; `Integer` gcd/lcm/xgcd signs and `nth_root` of
+  negatives; machine-word `pow_mod` panics on a negative exponent; the multi-RHS `IsConsistent`,
+  `PrimaryRationalForm`, `JordanForm`, `IsSimilar`; the rational-form docs say "not MAGMA's T, nor
+  its inverse" even when C is symmetric, and call the block order PARI's; two wording nits in the
+  manifold finiteness rationale.
+
+**Next steps** (unchanged): wire up or delete the dead code listed in
+`docs/magma/REVIEW_2026-11-06.md` (the `rustmath-rings/src/number_field/` orphan files, the gated
+genus-2 curves stack, the commented-out calculus modules), and wire the `libgap_mixin` algorithms to
+`GroupLibGAP`/`PermutationGroup`. Then the candidates from `docs/PLAN.md`: complete GF(p^n); general
+Schreier-Sims (the keystone for groups and Galois chapters); and removing the duplicates left by the
+merge: two GF(p^n) stacks in `rustmath-finitefields`, two Montes/OM implementations
+(`rustmath-padics::montes` vs `rustmath-rings::padics`), and the placeholder
+`rustmath-galois::stauduhar` vs the real descent. Implement from the cited papers; test against
+LMFDB, PARI or GAP (GAP is installed).
 
 ## Working rules learned this session
 
