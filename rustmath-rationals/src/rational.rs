@@ -470,6 +470,18 @@ impl EuclideanDomain for Rational {
         // In a field, division is always exact (no remainder)
         Ok((self.clone() / other.clone(), Rational::zero()))
     }
+
+    /// `Some(self)`: generic code can reach Q-specific exact algorithms, such as the
+    /// Gauss-lemma gcd over Q[x] through Z[x] in `rustmath-polynomials`
+    /// (`UnivariatePolynomial::gcd`).
+    fn as_any(&self) -> Option<&dyn std::any::Any> {
+        Some(self)
+    }
+
+    /// The inverse of [`EuclideanDomain::as_any`]: `Some` exactly for a boxed `Rational`.
+    fn from_any(value: Box<dyn std::any::Any>) -> Option<Self> {
+        value.downcast::<Rational>().ok().map(|q| *q)
+    }
 }
 
 impl Field for Rational {
@@ -559,6 +571,26 @@ impl From<i32> for Rational {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_as_any_round_trip() {
+        // `as_any` is the element itself; `from_any` accepts exactly a boxed `Rational`.
+        let r = Rational::new(-4, 6).unwrap();
+        let view = EuclideanDomain::as_any(&r).expect("Rational offers the view");
+        assert_eq!(view.downcast_ref::<Rational>(), Some(&r));
+        assert_eq!(
+            <Rational as EuclideanDomain>::from_any(Box::new(r.clone())),
+            Some(r)
+        );
+        assert_eq!(
+            <Rational as EuclideanDomain>::from_any(Box::new(Integer::from(3))),
+            None
+        );
+        assert_eq!(
+            <Rational as EuclideanDomain>::from_any(Box::new(3i64)),
+            None
+        );
+    }
 
     #[test]
     fn test_creation_and_simplification() {

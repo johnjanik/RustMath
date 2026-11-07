@@ -14,9 +14,14 @@
 //!   J. ACM 18 (1971) 505-514.
 //! - H. Cohen, *A Course in Computational Algebraic Number Theory*, GTM 138 (1993),
 //!   Alg. 3.1.2 (pseudo-division) and Alg. 3.3.1 (sub-resultant GCD).
+//! - Gcd over Q through Z[x] by Gauss' lemma: Knuth §4.6.1, Lemma G and Algorithm E
+//!   (generalized Euclidean algorithm over a UFD); Cohen GTM 138 §3.2 (primitive parts and
+//!   gcds over a UFD and its fraction field).
 
 use crate::polynomial::Polynomial;
 use rustmath_core::{CommutativeRing, EuclideanDomain, IntegralDomain, MathError, Result, Ring};
+use rustmath_integers::Integer;
+use rustmath_rationals::Rational;
 use std::fmt;
 use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 use std::sync::OnceLock;
@@ -977,6 +982,51 @@ fn trim_top<R: Ring>(v: &mut Vec<R>) {
     }
 }
 
+/// The coefficients as [`Rational`]s when `R` is `Rational`, read through the conversion hook
+/// [`EuclideanDomain::as_any`]; `None` for every other coefficient ring.
+fn as_rationals<R: EuclideanDomain>(coeffs: &[R]) -> Option<Vec<Rational>> {
+    coeffs
+        .iter()
+        .map(|c| c.as_any()?.downcast_ref::<Rational>().cloned())
+        .collect()
+}
+
+/// The primitive integer associate of a nonzero `f` in Q[x]: `pp(L·f)` with `L` the lcm of
+/// the denominators, so its coefficients are coprime integers, and the sign of `f` is kept.
+fn primitive_integer_associate(f: &[Rational]) -> UnivariatePolynomial<Integer> {
+    let l = f
+        .iter()
+        .fold(Integer::one(), |l, c| l.lcm(c.denominator()).abs());
+    UnivariatePolynomial::new(
+        f.iter()
+            .map(|c| c.numerator().clone() * (l.clone() / c.denominator().clone()))
+            .collect(),
+    )
+    .primitive_part()
+}
+
+/// MAGMA `GCD` over Q[x] (Handbook ch. 23 §23.5.1) of nonzero `f` and `g`: monic.
+///
+/// Gauss' lemma: `f` and `g` are associates in Q[x] of their primitive integer associates
+/// `F` and `G` (denominators cleared, content removed), and the gcd in Q[x] is the monic
+/// associate of the gcd of `F` and `G` in Z[x] (Knuth TAOCP vol. 2 §4.6.1, Lemma G and
+/// Algorithm E; Cohen GTM 138 §3.2). That gcd is the Z[x] path of
+/// [`UnivariatePolynomial::gcd`] (Euclid while exact, then the sub-resultant PRS, Cohen
+/// Alg. 3.3.1), whose integer coefficients stay bounded by the subresultants. Euclid over Q
+/// computes the same remainder sequence up to scalars, but every step reduces fractions with
+/// growing numerators and denominators.
+fn monic_gcd_over_q(f: &[Rational], g: &[Rational]) -> Vec<Rational> {
+    let h = primitive_integer_associate(f).gcd(&primitive_integer_associate(g));
+    let lc = h
+        .leading_coefficient()
+        .expect("the gcd of two nonzero polynomials is nonzero")
+        .clone();
+    h.coefficients()
+        .iter()
+        .map(|c| Rational::new(c.clone(), lc.clone()).expect("lc of a nonzero gcd is nonzero"))
+        .collect()
+}
+
 // Division, pseudo-division, gcd, lcm and content (MAGMA Handbook ch. 23 §23.4.10, §23.5).
 impl<R: Ring> UnivariatePolynomial<R> {
     /// Quotient and remainder (MAGMA `Quotrem`, Handbook ch. 23 §23.4.10): `(q, r)` with
@@ -1290,6 +1340,12 @@ impl<R: Ring> UnivariatePolynomial<R> {
     /// Alg. 3.3.1), the generic algorithm MAGMA uses over "any other ring". MAGMA uses
     /// GCDHEU and modular algorithms over Z and Q; the result is the same, the speed is not.
     ///
+    /// Over Q (`R = Rational`, recognised through the conversion hook
+    /// [`EuclideanDomain::as_any`]) Euclid's coefficients blow up, so the gcd is taken in
+    /// Z[x] instead, by Gauss' lemma: denominators cleared, primitive parts, the Z[x] path
+    /// above, then the monic associate (the same value as Euclid over Q). Every other field
+    /// keeps Euclid.
+    ///
     /// Panics only if a division that theory guarantees exact is not exact, which means `R`
     /// is not an integral domain with a lawful `div_rem` (for example GF(p), p composite).
     pub fn gcd(&self, other: &Self) -> Self
@@ -1301,6 +1357,9 @@ impl<R: Ring> UnivariatePolynomial<R> {
         }
         if other.is_zero() {
             return self.normalize();
+        }
+        if let Some(h) = self.gcd_over_q_via_z(other) {
+            return h;
         }
         let (mut a, mut b) = if self.degree() >= other.degree() {
             (self.clone(), other.clone())
@@ -1322,6 +1381,23 @@ impl<R: Ring> UnivariatePolynomial<R> {
             // r = a - q·b, gcd(a, b) = gcd(b, r); both are nonzero.
             return Self::subresultant_gcd(b, r);
         }
+    }
+
+    /// The gcd over Q of two nonzero polynomials through Z[x] ([`monic_gcd_over_q`]) when
+    /// `R` is `Rational`, converted with the hook pair [`EuclideanDomain::as_any`] /
+    /// [`EuclideanDomain::from_any`]. `None` for every other coefficient ring, and if a
+    /// conversion back fails; the caller then runs the generic algorithm.
+    fn gcd_over_q_via_z(&self, other: &Self) -> Option<Self>
+    where
+        R: EuclideanDomain,
+    {
+        let f = as_rationals(&self.coeffs)?;
+        let g = as_rationals(&other.coeffs)?;
+        let h = monic_gcd_over_q(&f, &g)
+            .into_iter()
+            .map(|c| R::from_any(Box::new(c)))
+            .collect::<Option<Vec<R>>>()?;
+        Some(Self::new(h))
     }
 
     /// The sub-resultant gcd of two nonzero polynomials (Cohen GTM 138 Alg. 3.3.1), with

@@ -11,6 +11,7 @@
 //! - Module: Generalization of vector spaces
 
 use crate::error::{MathError, Result};
+use std::any::Any;
 use std::fmt::{Debug, Display};
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
@@ -291,6 +292,28 @@ pub trait EuclideanDomain: IntegralDomain {
             Ok((q, r)) if r.is_zero() && (q.clone() * self.clone()).is_one() => Some(self.clone()),
             _ => None,
         }
+    }
+
+    /// Conversion hook for exact algorithms that generic code over `R: EuclideanDomain` may
+    /// run only for one concrete coefficient type (stable Rust has no specialization). For
+    /// example, `UnivariatePolynomial::gcd` in `rustmath-polynomials` computes a gcd over Q
+    /// through Z[x] by Gauss' lemma when its coefficients are `rustmath_rationals::Rational`.
+    ///
+    /// The default `None` means "no such path": generic code then runs its generic algorithm,
+    /// so a missing override costs speed only. An implementor that overrides it must return
+    /// `Some(self)`, the element itself (so `downcast_ref::<Self>()` succeeds and reads this
+    /// very value), and must override [`EuclideanDomain::from_any`] to accept a `Box<Self>`.
+    /// A consumer uses the pair only for a type-specific algorithm that returns the same value
+    /// as its generic one, and falls back to the generic algorithm when a conversion fails.
+    fn as_any(&self) -> Option<&dyn Any> {
+        None
+    }
+
+    /// The inverse of [`EuclideanDomain::as_any`]: `Some(x)` when `value` holds a `Self`
+    /// (`Box<Self>`), `None` otherwise. The default (no fast path) is always `None`.
+    fn from_any(value: Box<dyn Any>) -> Option<Self> {
+        drop(value);
+        None
     }
 }
 
@@ -854,5 +877,16 @@ mod tests {
         assert_eq!(ZDefault(0).normalization_unit(), Some(ZDefault(1)));
         assert_eq!(ZDefault(2).normalization_unit(), None);
         assert_eq!(ZDefault(-6).normalization_unit(), None);
+    }
+
+    #[test]
+    fn test_as_any_default_offers_no_fast_path() {
+        // The default: no type-erased view, and no conversion back, even from a `Box<Self>`.
+        assert!(F7(3).as_any().is_none());
+        assert!(ZDefault(5).as_any().is_none());
+        assert!(6i64.as_any().is_none());
+        assert!(6i32.as_any().is_none());
+        assert_eq!(<F7 as EuclideanDomain>::from_any(Box::new(F7(3))), None);
+        assert_eq!(<i64 as EuclideanDomain>::from_any(Box::new(6i64)), None);
     }
 }

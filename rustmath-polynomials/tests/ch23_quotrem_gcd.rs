@@ -11,7 +11,9 @@
 //! coefficient, i.e. already MAGMA-normalized, except that `gcd(0, p)` returns `p` as is.
 //!
 //! Inputs marked "formerly hung" looped forever before the fix; they run inside `within`, so
-//! a regression fails fast instead of stalling the test run.
+//! a regression fails fast instead of stalling the test run. The same holds for the gcds over
+//! Q of degree 40 to 50, which plain Euclid over Q (the earlier algorithm) did not finish in
+//! minutes; they go through Z[x] by Gauss' lemma now.
 
 use rustmath_core::{
     CommutativeRing, EuclideanDomain, Field, IntegralDomain, MathError, Result, Ring,
@@ -55,14 +57,24 @@ fn z_to_q(p: &ZPoly) -> QPoly {
     )
 }
 
-/// Run `f` on a thread and fail if it does not finish within `secs` seconds.
+/// Run `f` on a thread and fail if it does not finish within `secs` seconds. A panic inside
+/// `f` (a failed assertion) is re-raised here with its own message, not reported as a timeout.
 fn within<T: Send + 'static>(secs: u64, f: impl FnOnce() -> T + Send + 'static) -> T {
     let (tx, rx) = mpsc::channel();
-    std::thread::spawn(move || {
+    let worker = std::thread::spawn(move || {
         let _ = tx.send(f());
     });
-    rx.recv_timeout(Duration::from_secs(secs))
-        .expect("timed out: the old non-terminating division is back")
+    match rx.recv_timeout(Duration::from_secs(secs)) {
+        Ok(v) => v,
+        // The sender was dropped without sending: `f` panicked.
+        Err(mpsc::RecvTimeoutError::Disconnected) => match worker.join() {
+            Err(payload) => std::panic::resume_unwind(payload),
+            Ok(()) => unreachable!("the worker returned without sending its result"),
+        },
+        Err(mpsc::RecvTimeoutError::Timeout) => {
+            panic!("timed out after {secs} s: a non-terminating or blown-up computation is back")
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------------------
@@ -122,6 +134,8 @@ impl<const P: u64> Neg for Fp<P> {
         Fp((P - self.0) % P)
     }
 }
+// Division in F_p is multiplication by the inverse, which this lint cannot see.
+#[allow(clippy::suspicious_arithmetic_impl)]
 impl<const P: u64> Div for Fp<P> {
     type Output = Self;
     fn div(self, o: Self) -> Self {
@@ -372,38 +386,41 @@ fn div_operator_by_zero_panics() {
     let _ = z(&[1, 2]) / z(&[0]);
 }
 
-/// Invariants of MAGMA `Quotrem` on 300 pseudo-random pairs over Z.
+/// Invariants of MAGMA `Quotrem` on 300 pseudo-random pairs over Z. Most pairs have a
+/// non-unit lc(g), the inexact-step case that formerly hung, so each pair runs inside `within`.
 #[test]
 fn quotrem_over_z_invariants() {
     let mut rng = Lcg(0x5eed_0023);
     for _ in 0..300 {
         let f = rng.zpoly(6, 9);
         let g = rng.nonzero_zpoly(6, 9);
-        let (qq, rr) = f.div_rem(&g).unwrap();
-        assert_eq!(
-            qq.clone() * g.clone() + rr.clone(),
-            f,
-            "f = q·g + r for f = {f}, g = {g}"
-        );
-        let lg = lc(&g);
-        if lg == Integer::from(1) || lg == Integer::from(-1) {
-            assert!(
-                rr.degree() < g.degree(),
-                "unit lc: deg r < deg g for f = {f}, g = {g}"
+        within(10, move || {
+            let (qq, rr) = f.div_rem(&g).unwrap();
+            assert_eq!(
+                qq.clone() * g.clone() + rr.clone(),
+                f,
+                "f = q·g + r for f = {f}, g = {g}"
             );
-        }
-        if let (Some(dr), Some(dg)) = (rr.degree(), g.degree()) {
-            if dr >= dg {
-                // stopped at a leading coefficient lc(g) does not divide
-                let (_, rho) = lc(&rr).div_rem(&lg).unwrap();
-                assert!(!rho.is_zero(), "minimality for f = {f}, g = {g}");
+            let lg = lc(&g);
+            if lg == Integer::from(1) || lg == Integer::from(-1) {
+                assert!(
+                    rr.degree() < g.degree(),
+                    "unit lc: deg r < deg g for f = {f}, g = {g}"
+                );
             }
-        }
-        assert_eq!(rr.is_zero(), f.exact_quotient(&g).is_ok());
-        assert_eq!(
-            (f.clone() * g.clone()).div_rem(&g),
-            Ok((f.clone(), z(&[0])))
-        );
+            if let (Some(dr), Some(dg)) = (rr.degree(), g.degree()) {
+                if dr >= dg {
+                    // stopped at a leading coefficient lc(g) does not divide
+                    let (_, rho) = lc(&rr).div_rem(&lg).unwrap();
+                    assert!(!rho.is_zero(), "minimality for f = {f}, g = {g}");
+                }
+            }
+            assert_eq!(rr.is_zero(), f.exact_quotient(&g).is_ok());
+            assert_eq!(
+                (f.clone() * g.clone()).div_rem(&g),
+                Ok((f.clone(), z(&[0])))
+            );
+        });
     }
 }
 
@@ -679,7 +696,8 @@ fn gcd_lcm_over_i64() {
 
 /// Differential test against the independent slice implementation `zx::subresultant_gcd`
 /// (Cohen Alg. 3.3.1, PARI-tested in `zx.rs`), plus the gcd/lcm identities, on 300
-/// pseudo-random pairs of nonzero polynomials with a common factor.
+/// pseudo-random pairs of nonzero polynomials with a common factor. The gcd over Z hung
+/// before the fix, so each pair runs inside `within`.
 #[test]
 fn gcd_over_z_agrees_with_zx_and_satisfies_identities() {
     let mut rng = Lcg(0x0023_0005_0001);
@@ -687,36 +705,39 @@ fn gcd_over_z_agrees_with_zx_and_satisfies_identities() {
         let common = rng.nonzero_zpoly(3, 6);
         let f = rng.nonzero_zpoly(5, 20) * common.clone();
         let g = rng.nonzero_zpoly(5, 20) * common.clone();
-        let gg = f.gcd(&g);
-        let reference = zx::trim(&zx::subresultant_gcd(f.coefficients(), g.coefficients()));
-        assert_eq!(gg.coefficients(), &reference[..], "gcd({f}, {g}) vs zx");
-        assert_eq!(gg, g.gcd(&f));
-        assert!(lc(&gg) > Integer::from(0));
-        assert_eq!(
-            f.is_divisible_by(&gg).map(|o| o.is_some()),
-            Ok(true),
-            "gcd | f"
-        );
-        assert_eq!(
-            g.is_divisible_by(&gg).map(|o| o.is_some()),
-            Ok(true),
-            "gcd | g"
-        );
-        let l = f.lcm(&g);
-        assert_eq!(
-            l.clone() * gg.clone(),
-            (f.clone() * g.clone()).normalize(),
-            "lcm·gcd = f·g"
-        );
-        // gcd(f·h, g·h) = normalize(gcd(f, g)·h)
+        // Drawn here, in the same order as before, so the 300 cases are unchanged.
         let h = rng.nonzero_zpoly(2, 5);
-        assert_eq!(
-            (f.clone() * h.clone()).gcd(&(g.clone() * h.clone())),
-            (gg.clone() * h).normalize()
-        );
-        // Gauss: over Q the gcd is the monic associate of the Z[x] gcd.
-        let gq = z_to_q(&f).gcd(&z_to_q(&g));
-        assert_eq!(gq, z_to_q(&gg).make_monic(), "gcd over Q for {f}, {g}");
+        within(10, move || {
+            let gg = f.gcd(&g);
+            let reference = zx::trim(&zx::subresultant_gcd(f.coefficients(), g.coefficients()));
+            assert_eq!(gg.coefficients(), &reference[..], "gcd({f}, {g}) vs zx");
+            assert_eq!(gg, g.gcd(&f));
+            assert!(lc(&gg) > Integer::from(0));
+            assert_eq!(
+                f.is_divisible_by(&gg).map(|o| o.is_some()),
+                Ok(true),
+                "gcd | f"
+            );
+            assert_eq!(
+                g.is_divisible_by(&gg).map(|o| o.is_some()),
+                Ok(true),
+                "gcd | g"
+            );
+            let l = f.lcm(&g);
+            assert_eq!(
+                l.clone() * gg.clone(),
+                (f.clone() * g.clone()).normalize(),
+                "lcm·gcd = f·g"
+            );
+            // gcd(f·h, g·h) = normalize(gcd(f, g)·h)
+            assert_eq!(
+                (f.clone() * h.clone()).gcd(&(g.clone() * h.clone())),
+                (gg.clone() * h).normalize()
+            );
+            // Gauss: over Q the gcd is the monic associate of the Z[x] gcd.
+            let gq = z_to_q(&f).gcd(&z_to_q(&g));
+            assert_eq!(gq, z_to_q(&gg).make_monic(), "gcd over Q for {f}, {g}");
+        });
     }
 }
 
@@ -754,6 +775,367 @@ fn gcd_lcm_over_q_are_monic_and_match_pari() {
     let a = t.clone() * t.clone() * qi(&[-1, 1, 5]) * q(&[(1, 7)]);
     let b = t * qi(&[1, 0, 0, 0, 1]) * q(&[(1, 5)]);
     assert_eq!(a.gcd(&b), q(&[(7, 3), (-2, 3), (0, 1), (1, 1)]));
+}
+
+impl Lcg {
+    /// `n/d` with `n` in [-nb, nb], then `d` in [1, db] (gp `rat` below).
+    fn rational(&mut self, nb: i64, db: i64) -> Rational {
+        let n = self.range(-nb, nb);
+        let d = self.range(1, db);
+        rat(n, d)
+    }
+    /// A polynomial over Q of exact degree `deg` (gp `qpol` below): `deg` coefficients from
+    /// [`Lcg::rational`], low degree first, then a leading coefficient `n/d` with `n` in
+    /// [1, nb] and `d` in [1, db].
+    fn qpoly_exact(&mut self, deg: usize, nb: i64, db: i64) -> QPoly {
+        let mut c: Vec<Rational> = (0..deg).map(|_| self.rational(nb, db)).collect();
+        let n = self.range(1, nb);
+        let d = self.range(1, db);
+        c.push(rat(n, d));
+        UnivariatePolynomial::new(c)
+    }
+    /// A polynomial over Q of degree at most `max_deg` (possibly 0 or a constant).
+    fn qpoly(&mut self, max_deg: i64, nb: i64, db: i64) -> QPoly {
+        let d = self.range(0, max_deg) as usize;
+        UnivariatePolynomial::new((0..=d).map(|_| self.rational(nb, db)).collect())
+    }
+}
+
+/// Seconds allowed for one degree >= 40 pair over Q with all its checks (four gcds, an lcm and
+/// two exact quotients). In a debug build the Gauss-lemma path through Z[x] takes about 30 ms
+/// per gcd at degree 42 and about 0.6 s for all five pairs; plain Euclid over Q, the earlier
+/// algorithm, took 327 s for the first pair's gcd (about 6.5 s at degree 25, and more than
+/// 4 minutes at degree 50).
+const Q_GCD_SECS: u64 = 30;
+
+/// MAGMA `GCD` over Q[x] is monic. Pairs `f = a·c^rep`, `g = b·c` of degree 41 to 50 with
+/// random rational coefficients (numerators in [-9, 9], denominators in [1, 9]), generated by
+/// the `Lcg` in Rust and by the same LCG in gp:
+///
+/// ```text
+/// s = 0;
+/// {nxt() = s = (s * 6364136223846793005 + 1442695040888963407) % 2^64; s >> 33;}
+/// {rng(lo, hi) = lo + nxt() % (hi - lo + 1);}
+/// {rat(nb, db) = my(n, d); n = rng(-nb, nb); d = rng(1, db); n / d;}
+/// {qpol(deg, nb, db) = my(c, n, d); c = vector(deg + 1);
+///   for (i = 1, deg, c[i] = rat(nb, db));
+///   n = rng(1, nb); d = rng(1, db); c[deg + 1] = n / d; Pol(Vecrev(c));}
+/// mon(p) = p / pollead(p);
+/// \\ for each case: s = seed; c = qpol(dc,9,9); a = qpol(da,9,9); b = qpol(db,9,9);
+/// \\ f = a*c^rep; g = b*c; G = mon(gcd(f, g)); Vecrev(G)
+/// ```
+///
+/// gp prints `subst(f, x, 1)`, `subst(f, x, -1)` and `pollead(f)` (and the same for g), which
+/// pin the generated inputs, and `Vecrev(mon(gcd(f, g)))`. Cross-checks in gp: in every case
+/// `mon(gcd(f, g)) == mon(c)` (and `gcd(a·c^(rep-1), b) = 1`), and
+/// `mon(lcm(f, g)) == mon(f*g/G)`.
+#[test]
+fn gcd_over_q_degree_40_and_up_matches_pari_within_time_bound() {
+    type Pin = (i64, i64);
+    struct Case {
+        seed: u64,
+        dc: usize,
+        da: usize,
+        db: usize,
+        rep: u32,
+        // (f(1), f(-1), lc f, g(1), g(-1), lc g)
+        pins: [Pin; 6],
+        gcd: Vec<Pin>,
+    }
+    let cases = vec![
+        // deg f = 42, deg g = 41, deg gcd = 6
+        Case {
+            seed: 0x0023_0005_0051_0001,
+            dc: 6,
+            da: 36,
+            db: 35,
+            rep: 1,
+            pins: [
+                (-1143378713, 6350400),
+                (253266893, 1270080),
+                (20, 9),
+                (-175724501, 3175200),
+                (335815001, 3175200),
+                (1, 2),
+            ],
+            gcd: vec![
+                (18, 1),
+                (-27, 28),
+                (-63, 32),
+                (-3, 2),
+                (27, 4),
+                (-9, 5),
+                (1, 1),
+            ],
+        },
+        // deg f = 48, deg g = 45, deg gcd = 8
+        Case {
+            seed: 0x0023_0005_0051_0002,
+            dc: 8,
+            da: 40,
+            db: 37,
+            rep: 1,
+            pins: [
+                (212629, 12960),
+                (140287, 6480),
+                (4, 1),
+                (610111, 6480),
+                (-51947, 1080),
+                (2, 1),
+            ],
+            gcd: vec![
+                (-5, 32),
+                (7, 32),
+                (1, 4),
+                (-5, 36),
+                (-2, 5),
+                (1, 4),
+                (2, 5),
+                (1, 12),
+                (1, 1),
+            ],
+        },
+        // deg f = 50, deg g = 49, deg gcd = 5
+        Case {
+            seed: 0x0023_0005_0051_0003,
+            dc: 5,
+            da: 45,
+            db: 44,
+            rep: 1,
+            pins: [
+                (-41912981, 453600),
+                (-2832581, 453600),
+                (5, 18),
+                (12990823, 75600),
+                (345539, 113400),
+                (40, 81),
+            ],
+            gcd: vec![(-9, 40), (-18, 5), (-9, 2), (-54, 25), (-6, 5), (1, 1)],
+        },
+        // deg f = 45, deg g = 44, deg gcd = 20
+        Case {
+            seed: 0x0023_0005_0051_0004,
+            dc: 20,
+            da: 25,
+            db: 24,
+            rep: 1,
+            pins: [
+                (506411, 7840),
+                (224807, 3528),
+                (7, 10),
+                (-70993, 1960),
+                (-144364, 441),
+                (14, 15),
+            ],
+            gcd: vec![
+                (9, 14),
+                (18, 7),
+                (3, 4),
+                (27, 14),
+                (36, 49),
+                (24, 49),
+                (-3, 2),
+                (6, 49),
+                (-24, 7),
+                (3, 7),
+                (6, 7),
+                (27, 28),
+                (8, 7),
+                (54, 7),
+                (3, 7),
+                (-15, 14),
+                (-9, 14),
+                (0, 1),
+                (18, 7),
+                (-27, 7),
+                (1, 1),
+            ],
+        },
+        // f = a·c^2: deg f = 44, deg g = 47, deg gcd = 7
+        Case {
+            seed: 0x0023_0005_0051_0005,
+            dc: 7,
+            da: 30,
+            db: 40,
+            rep: 2,
+            pins: [
+                (502897, 90720),
+                (-845543, 4480),
+                (25, 36),
+                (-542903, 10080),
+                (-63263, 1120),
+                (10, 21),
+            ],
+            gcd: vec![
+                (-7, 5),
+                (0, 1),
+                (0, 1),
+                (6, 5),
+                (-3, 1),
+                (-6, 5),
+                (-3, 4),
+                (1, 1),
+            ],
+        },
+    ];
+    for case in cases {
+        let mut rng = Lcg(case.seed);
+        let c = rng.qpoly_exact(case.dc, 9, 9);
+        let a = rng.qpoly_exact(case.da, 9, 9);
+        let b = rng.qpoly_exact(case.db, 9, 9);
+        let f = a * c.pow(case.rep);
+        let g = b * c;
+        assert!(f.degree() >= Some(40) || g.degree() >= Some(40));
+        let one = rat(1, 1);
+        let pins = [
+            f.evaluate(&one),
+            f.evaluate(&-one.clone()),
+            f.leading_coefficient().unwrap().clone(),
+            g.evaluate(&one),
+            g.evaluate(&-one.clone()),
+            g.leading_coefficient().unwrap().clone(),
+        ];
+        let expected_pins: Vec<Rational> = case.pins.iter().map(|&(n, d)| rat(n, d)).collect();
+        assert_eq!(
+            pins.to_vec(),
+            expected_pins,
+            "seed {:#x}: generated inputs",
+            case.seed
+        );
+        let expected = q(&case.gcd);
+        let seed = case.seed;
+        within(Q_GCD_SECS, move || {
+            let gg = f.gcd(&g);
+            assert_eq!(gg, expected, "seed {seed:#x}: gcd vs PARI mon(gcd(f, g))");
+            assert_eq!(g.gcd(&f), expected, "seed {seed:#x}: gcd(g, f)");
+            assert!(gg.is_monic());
+            // Cross-checks: gcd | f, gcd | g, and the cofactors are coprime.
+            let cf = f.exact_quotient(&gg).expect("gcd | f");
+            let cg = g.exact_quotient(&gg).expect("gcd | g");
+            assert_eq!(cf.gcd(&cg), qi(&[1]), "seed {seed:#x}: cofactors coprime");
+            // gp: mon(lcm(f, g)) == mon(f*g/G)
+            assert_eq!(
+                f.lcm(&g),
+                (cf * g.clone()).make_monic(),
+                "seed {seed:#x}: lcm"
+            );
+        });
+    }
+}
+
+/// Q through `Rational` arithmetic, but without the [`EuclideanDomain::as_any`] hook, so its
+/// polynomial gcd takes the generic field path (Euclid over Q, then `normalize`), which the
+/// Gauss-lemma path for `Rational` must agree with.
+#[derive(Debug, Clone, PartialEq)]
+struct QGen(Rational);
+impl fmt::Display for QGen {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+impl Add for QGen {
+    type Output = Self;
+    fn add(self, o: Self) -> Self {
+        QGen(self.0 + o.0)
+    }
+}
+impl Sub for QGen {
+    type Output = Self;
+    fn sub(self, o: Self) -> Self {
+        QGen(self.0 - o.0)
+    }
+}
+impl Mul for QGen {
+    type Output = Self;
+    fn mul(self, o: Self) -> Self {
+        QGen(self.0 * o.0)
+    }
+}
+impl Neg for QGen {
+    type Output = Self;
+    fn neg(self) -> Self {
+        QGen(-self.0)
+    }
+}
+impl Ring for QGen {
+    fn zero() -> Self {
+        QGen(Rational::zero())
+    }
+    fn one() -> Self {
+        QGen(Rational::one())
+    }
+    fn is_zero(&self) -> bool {
+        self.0.is_zero()
+    }
+    fn is_one(&self) -> bool {
+        self.0.is_one()
+    }
+}
+impl CommutativeRing for QGen {}
+impl IntegralDomain for QGen {}
+impl EuclideanDomain for QGen {
+    fn norm(&self) -> u64 {
+        u64::from(!self.0.is_zero())
+    }
+    fn div_rem(&self, other: &Self) -> Result<(Self, Self)> {
+        if other.0.is_zero() {
+            return Err(MathError::DivisionByZero);
+        }
+        Ok((
+            QGen(self.0.clone() / other.0.clone()),
+            QGen(Rational::zero()),
+        ))
+    }
+}
+
+fn to_qgen(p: &QPoly) -> UnivariatePolynomial<QGen> {
+    UnivariatePolynomial::new(p.coefficients().iter().cloned().map(QGen).collect())
+}
+
+/// Differential test: on 300 small pseudo-random pairs over Q (zero, constants, common factors,
+/// negative leading coefficients), the Gauss-lemma gcd and lcm for `Rational` coefficients equal
+/// those of the generic field path (`QGen`, the same field without the hook).
+#[test]
+fn gcd_over_q_agrees_with_the_generic_field_path() {
+    let mut rng = Lcg(0x0023_0005_0052_0001);
+    for i in 0..300 {
+        let common = rng.qpoly(3, 6, 6);
+        let mut f = rng.qpoly(5, 9, 9);
+        let mut g = rng.qpoly(5, 9, 9);
+        if i % 3 != 0 {
+            f = f * common.clone();
+            g = g * common.clone();
+        }
+        let (f2, g2) = (f.clone(), g.clone());
+        let (gg, ll) = within(10, move || (f2.gcd(&g2), f2.lcm(&g2)));
+        let (fq, gq) = (to_qgen(&f), to_qgen(&g));
+        assert_eq!(to_qgen(&gg), fq.gcd(&gq), "gcd({f}, {g})");
+        assert_eq!(to_qgen(&ll), fq.lcm(&gq), "lcm({f}, {g})");
+        assert_eq!(gg, g.gcd(&f), "gcd({g}, {f})");
+        if !gg.is_zero() {
+            assert!(gg.is_monic(), "gcd({f}, {g}) is monic");
+        }
+    }
+}
+
+/// Edge cases of the Gauss-lemma gcd over Q. gp: mon(gcd(-3*x^2+3, 6*x-6)) -> x - 1;
+/// mon(gcd(Pol(-2/3), x^2+1)) -> 1; mon(gcd(-1/2*x^3+1/2*x, x^2-x)) -> x^2 - x;
+/// mon(gcd(f, -f)) for f = -2/3*x^2+4/5 -> x^2 - 6/5; mon(gcd(x^4-1/16, 2*x^2-1/2)) -> x^2 - 1/4.
+#[test]
+fn gcd_over_q_edge_cases_match_pari() {
+    assert_eq!(qi(&[3, 0, -3]).gcd(&qi(&[-6, 6])), qi(&[-1, 1]));
+    assert_eq!(q(&[(-2, 3)]).gcd(&qi(&[1, 0, 1])), qi(&[1]));
+    assert_eq!(
+        q(&[(0, 1), (1, 2), (0, 1), (-1, 2)]).gcd(&qi(&[0, -1, 1])),
+        qi(&[0, -1, 1])
+    );
+    let f = q(&[(4, 5), (0, 1), (-2, 3)]);
+    assert_eq!(f.gcd(&-f.clone()), q(&[(-6, 5), (0, 1), (1, 1)]));
+    assert_eq!(f.gcd(&f), q(&[(-6, 5), (0, 1), (1, 1)]));
+    assert_eq!(
+        q(&[(-1, 16), (0, 1), (0, 1), (0, 1), (1, 1)]).gcd(&q(&[(-1, 2), (0, 1), (2, 1)])),
+        q(&[(-1, 4), (0, 1), (1, 1)])
+    );
 }
 
 // Content over a field is the ring-theoretic gcd: 1 for a nonzero polynomial, 0 for 0.
