@@ -42,8 +42,8 @@ pub use conway::{available_conway_polynomials, conway_polynomial, has_conway_pol
 pub use extension_field::ExtensionField;
 pub use ff_poly::{FFPoly, Gfpn};
 pub use integer_mod::{
-    is_integer_mod, lucas, lucas_q1, square_root_mod_prime, square_root_mod_prime_power,
-    IntegerMod,
+    all_square_roots_mod_prime_power, is_integer_mod, lucas, lucas_q1, square_root_mod_prime,
+    square_root_mod_prime_power, IntegerMod,
 };
 pub use irreducible::generate_gfpn_modulus;
 pub use prime_field::PrimeField;
