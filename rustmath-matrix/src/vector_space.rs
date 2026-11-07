@@ -205,7 +205,8 @@ impl<F: Field> VectorSpace<F> {
     /// Given this vector space V and a subspace W, returns the quotient space V/W, of
     /// dimension dim(V) - dim(W). It is represented by a complement of W in V: the basis
     /// vectors of V, taken in order, that are not in the span of W and the earlier chosen ones
-    /// (MAGMA `Complement(V, U)`). The basis of V/W is `{c + W}` for `c` in that complement.
+    /// (an analogue of MAGMA `Complement(V, U)`, ch. 28; the chosen complement may differ from
+    /// MAGMA's). The basis of V/W is `{c + W}` for `c` in that complement.
     ///
     /// * `Err(InvalidArgument)` if W lives in a different ambient space.
     /// * `Err(InvalidArgument("subspace is not contained in this space"))` unless W ⊆ V.
@@ -326,7 +327,8 @@ impl<F: Field> QuotientSpace<F> {
     }
 
     /// The basis vectors of the complement of W in V used as the basis of V/W
-    /// (MAGMA `Complement(V, U)`).
+    /// (an analogue of MAGMA `Complement(V, U)`; the chosen complement may differ from
+    /// MAGMA's).
     pub fn complement_basis(&self) -> &[Vec<F>] {
         &self.complement_basis
     }

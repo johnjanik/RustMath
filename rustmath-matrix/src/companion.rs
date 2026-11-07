@@ -110,11 +110,27 @@ pub struct RationalCanonicalForm<F: Field> {
     pub invariant_factors: Vec<UnivariatePolynomial<F>>,
 
     /// The rational canonical form matrix (block diagonal of companion matrices)
+    ///
+    /// The blocks are column-style companion matrices ([`companion_matrix`]: 1s on the
+    /// subdiagonal, `-a_0, …, -a_{k-1}` in the last column), the convention of PARI/GP
+    /// `matfrobenius`, in increasing divisibility order. MAGMA's `CompanionMatrix` (Handbook
+    /// ch. 23) has the 1s on the superdiagonal and the coefficients in the last row, so the
+    /// form `F` returned by MAGMA's `RationalForm` (ch. 26 §26.12.2) is the transpose of this
+    /// matrix.
     pub canonical_matrix: Matrix<F>,
 
     /// The change of basis matrix T such that T^{-1}·A·T = canonical_matrix (column
     /// convention: the columns of T are the cyclic bases `g, A·g, …, A^{k-1}·g` of the
-    /// blocks). MAGMA's `RationalForm` returns `T^{-1}` here, as `T'` with `T'·A·T'^{-1} = F`.
+    /// blocks).
+    ///
+    /// This is not MAGMA's transformation matrix, nor its inverse. MAGMA's `RationalForm`
+    /// returns `T_M` with `T_M·A·T_M^{-1} = F` (row convention: the rows of `T_M` for a block
+    /// are `w, w·A, …, w·A^{k-1}`), where `F` is the transpose of `canonical_matrix`; `T^{-1}`
+    /// conjugates `A` to `canonical_matrix`, not to `F`. A matrix with MAGMA's defining
+    /// property comes from the change of basis `T₂` of `Aᵀ`: `T₂^{-1}·Aᵀ·T₂ = C` gives
+    /// `T₂ᵀ·A·(T₂ᵀ)^{-1} = Cᵀ = F`. Such transforms are not unique, so `T₂ᵀ` may still differ
+    /// from the matrix MAGMA returns.
+    ///
     /// `Some` when computed by [`rational_canonical_form`]; `None` when the form is built
     /// from the invariant factors alone ([`RationalCanonicalForm::from_invariant_factors`]).
     pub change_of_basis: Option<Matrix<F>>,
@@ -422,7 +438,9 @@ fn mat_vec<F: Field>(a: &Matrix<F>, v: &[F]) -> Result<Vec<F>> {
 /// Returns the invariant factors `f_1 | … | f_r` (as [`invariant_factors`]), the block
 /// diagonal matrix `C` of the companion matrices of the `f_i` ([`companion_matrix`], column
 /// style) in increasing divisibility order, and `change_of_basis = Some(T)` with
-/// `T⁻¹·A·T = C`.
+/// `T⁻¹·A·T = C`. MAGMA's `F` is `Cᵀ` and MAGMA's `T` is not `T⁻¹`; see
+/// [`RationalCanonicalForm::canonical_matrix`] and
+/// [`RationalCanonicalForm::change_of_basis`].
 ///
 /// Construction (Dummit–Foote §12.2): with `P·(xI - A)·Q = S` the Smith form, the module
 /// `F^n` (x acting as A) is `F[x]^n / im(xI - A)` via `e_j ↦ e_j`, and `P` maps it onto
@@ -906,6 +924,32 @@ mod tests {
             rational_canonical_form(&b).unwrap().canonical_matrix,
             rcf.canonical_matrix
         );
+    }
+
+    #[test]
+    fn rcf_magma_row_convention_via_transpose() {
+        // MAGMA's CompanionMatrix (Handbook ch. 23 digest) has 1s on the superdiagonal and
+        // -a_0, …, -a_{k-1} in the last row, so MAGMA's RationalForm F is the transpose of
+        // `canonical_matrix`, and MAGMA's T satisfies T·A·T⁻¹ = F. Such a T comes from the
+        // change of basis T₂ of Aᵀ: T₂⁻¹·Aᵀ·T₂ = C gives T₂ᵀ·A·(T₂ᵀ)⁻¹ = Cᵀ.
+        // A = J2(2) + J1(2) + [3]. gp: matfrobenius(A~) = [0,0,12,0; 1,0,-16,0; 0,1,7,0;
+        // 0,0,0,2] (decreasing block order); in increasing order and transposed this is
+        // f_magma below (superdiagonal 1s, last row 12, -16, 7 for x^3 - 7*x^2 + 16*x - 12).
+        let a = qm(4, &[2, 1, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 3]);
+        let f_magma = qm(4, &[2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 12, -16, 7]);
+        let rcf = rational_canonical_form(&a).unwrap();
+        assert_eq!(rcf.canonical_matrix.transpose(), f_magma);
+        assert_ne!(rcf.canonical_matrix, f_magma);
+        // T⁻¹ conjugates A to C, not to MAGMA's F.
+        let t = rcf.change_of_basis.clone().expect("T is computed");
+        let tinv = t.inverse().unwrap().expect("T invertible");
+        assert_eq!(tinv.mul(&a).unwrap().mul(&t).unwrap(), rcf.canonical_matrix);
+        // T₂ᵀ from the rational form of Aᵀ has MAGMA's defining property.
+        let rcf_t = rational_canonical_form(&a.transpose()).unwrap();
+        assert_eq!(rcf_t.canonical_matrix, rcf.canonical_matrix);
+        let tm = rcf_t.change_of_basis.expect("T₂ is computed").transpose();
+        let tm_inv = tm.inverse().unwrap().expect("T₂ᵀ invertible");
+        assert_eq!(tm.mul(&a).unwrap().mul(&tm_inv).unwrap(), f_magma);
     }
 
     #[test]
