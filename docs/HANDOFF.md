@@ -15,8 +15,12 @@ then the dead code, the mixin wiring and the `docs/PLAN.md` build targets.
   were deleted; their tips are tags `archive/<branch>` (`docs/BRANCHES.md`). Work on a new branch
   off `main`; cloud sessions can push only their own branch (no tags, no other branches).
 - **Build and tests:** the whole workspace compiles, and `cargo test --workspace` is green:
-  13,772 passed, 0 failed, 332 ignored at `e0a9c23` (`docs/TEST_BASELINE.md`). First build
+  13,950 passed, 0 failed, 330 ignored at `8e25fe2` (`docs/TEST_BASELINE.md`). First build
   compiles GMP/MPFR for `rug` (minutes).
+- **Disk:** the session's disk allowance is about 39 GB. With incremental compilation on, `target/`
+  grew past 20 GB and filled it mid-session. This session set `[build] incremental = false` in
+  `~/.cargo/config.toml` (not in the repo; set it again in a new container) and a clean full build
+  plus test then fit comfortably. If space runs out, `rm -rf target` and rebuild.
 - **Environment:** the RustMath cloud environment's setup script installs GAP (`gap-core`,
   `gap-libs`, `gap-transgrp`) and builds the gitignored degree-24 atlas files in
   `rustmath-groups/data/`. Verified on its first real run (2026-11-06): GAP at `/usr/bin/gap`, both
