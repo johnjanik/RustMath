@@ -1,4 +1,15 @@
 //! Linear system solving algorithms
+//!
+//! MAGMA Handbook ch. 26 §26.8 (digest `rustmath-lava/docs/Chapter_26_Matrices.md`):
+//! `IsConsistent(A, w)` and `Solution(A, w)` use the row convention `v·A = w`; here they are
+//! [`Matrix::solve_left`] and [`Matrix::solve_left_with_kernel`]. [`Matrix::solve`] is the
+//! column convention `A·x = b` (Sage `solve_right`).
+//!
+//! Algorithm: Gauss–Jordan elimination on `[A | b]` and the Rouché–Capelli criterion
+//! (K. Hoffman and R. Kunze, *Linear Algebra*, 2nd ed., §1.4, row-reduced echelon matrices and
+//! the solution of `A X = Y`): the system is consistent iff `rank [A|b] = rank A`, i.e. iff the
+//! `b` column is not a pivot column of `RREF [A|b]`. The particular solution returned sets every
+//! free (non-pivot) variable to 0.
 
 use crate::Matrix;
 use rustmath_core::{Field, MathError, Result};
@@ -131,56 +142,59 @@ impl<F: Field> Matrix<F> {
         Ok(ref_form.rank)
     }
 
-    /// Solve the linear system Ax = b
+    /// Solve the linear system `A·x = b` (column convention; Sage `solve_right`).
     ///
-    /// Returns None if the system has no solution or infinitely many solutions.
-    /// For a unique solution, the matrix must be square and non-singular.
+    /// * `Ok(Some(x))` iff the system is consistent. `x` is the particular solution read off
+    ///   `RREF [A|b]` with every free variable set to 0; it is the unique solution when
+    ///   `rank A = cols`. The full solution set is `x + span(self.kernel())`.
+    /// * `Ok(None)` iff the system is inconsistent (`rank [A|b] = rank A + 1`).
+    /// * `Err(InvalidArgument)` if `b.len() != rows`.
+    ///
+    /// Any shape is accepted, including `0×n` (every `x` solves; the zero vector is returned)
+    /// and `m×0` (`Some(vec![])` iff `b = 0`). Zero tests are exact comparisons, so the answer
+    /// is decided exactly over an exact field; no numerical robustness is claimed for
+    /// floating-point `Field` impls.
     pub fn solve(&self, b: &[F]) -> Result<Option<Vec<F>>> {
-        if b.len() != self.rows() {
+        let (m, n) = (self.rows(), self.cols());
+        if b.len() != m {
             return Err(MathError::InvalidArgument(
                 "Vector length must match number of rows".to_string(),
             ));
         }
 
-        // Create augmented matrix [A | b]
-        let mut aug_data = Vec::with_capacity(self.rows() * (self.cols() + 1));
-        for i in 0..self.rows() {
-            for j in 0..self.cols() {
-                aug_data.push(self.data()[i * self.cols() + j].clone());
-            }
-            aug_data.push(b[i].clone());
+        // Create augmented matrix [A | b] (m × (n+1)).
+        let mut aug_data = Vec::with_capacity(m * (n + 1));
+        for (i, bi) in b.iter().enumerate() {
+            aug_data.extend_from_slice(&self.data()[i * n..(i + 1) * n]);
+            aug_data.push(bi.clone());
+        }
+        let augmented = Matrix::from_vec(m, n + 1, aug_data)?;
+        let rref = augmented.reduced_row_echelon_form()?;
+
+        // Pivots are strictly increasing, so the b column (index n) is a pivot column iff it
+        // is the last pivot. That happens iff rank [A|b] > rank A: inconsistent.
+        if rref.pivots.last() == Some(&n) {
+            return Ok(None);
         }
 
-        let augmented = Matrix::from_vec(self.rows(), self.cols() + 1, aug_data)?;
-
-        // Reduce to row echelon form
-        let ref_form = augmented.reduced_row_echelon_form()?;
-
-        // Check for inconsistency (row of form [0 0 ... 0 | non-zero])
-        for i in ref_form.rank..self.rows() {
-            let b_val = ref_form.matrix.data()[i * ref_form.matrix.cols() + self.cols()].clone();
-            if !b_val.is_zero() {
-                return Ok(None); // No solution
-            }
+        // Pivot row r reads x_c + Σ_{free f} R[r][f]·x_f = R[r][n] (pivots are normalised to 1
+        // by `row_echelon_form`). With every free x_f = 0 this gives x_c = R[r][n]. Rows of
+        // index >= rank are zero rows, including their b entry, because the b column is not a
+        // pivot column.
+        let w = n + 1;
+        let mut x = vec![F::zero(); n];
+        for (r, &c) in rref.pivots.iter().enumerate() {
+            x[c] = rref.matrix.data()[r * w + n].clone();
         }
-
-        // For now, only handle unique solution case (square matrix, full rank)
-        if !self.is_square() || ref_form.rank != self.rows() {
-            return Ok(None); // Infinitely many solutions or no solution
-        }
-
-        // Extract solution from last column
-        let mut solution = Vec::with_capacity(self.cols());
-        for i in 0..self.cols() {
-            solution.push(ref_form.matrix.data()[i * ref_form.matrix.cols() + self.cols()].clone());
-        }
-
-        Ok(Some(solution))
+        Ok(Some(x))
     }
 
-    /// Solve the left linear system xA = b (i.e., A^T x = b^T)
+    /// Solve the left linear system `x·A = b` (row convention; equivalently `Aᵀ·xᵀ = bᵀ`).
     ///
-    /// This solves for x where xA = b, which is equivalent to solving A^T x^T = b^T
+    /// MAGMA `IsConsistent(A, w)` (Handbook ch. 26 §26.8) is `A.solve_left(w)?.is_some()`, and
+    /// its second return value is the returned `x`. Semantics as in [`Matrix::solve`]:
+    /// `Ok(None)` iff inconsistent, otherwise a particular solution with the free variables 0.
+    /// `Err(InvalidArgument)` if `b.len() != cols`.
     pub fn solve_left(&self, b: &[F]) -> Result<Option<Vec<F>>> {
         if b.len() != self.cols() {
             return Err(MathError::InvalidArgument(
@@ -191,6 +205,24 @@ impl<F: Field> Matrix<F> {
         // Transpose and solve
         let at = self.transpose();
         at.solve(b)
+    }
+
+    /// MAGMA `Solution(A, w)` and the extra return values of `IsConsistent(A, w)` (Handbook
+    /// ch. 26 §26.8): `Ok(Some((v, N)))` with `v·A = w` (the particular solution of
+    /// [`Matrix::solve_left`]) and `N` a basis of the left nullspace `{u : u·A = 0}`, so that
+    /// the solution set is `v + span(N)`.
+    ///
+    /// `Ok(None)` iff the system is inconsistent (MAGMA raises an error there; this returns the
+    /// documented `None`). `Err(InvalidArgument)` if `b.len() != cols`.
+    #[allow(clippy::type_complexity)]
+    pub fn solve_left_with_kernel(&self, b: &[F]) -> Result<Option<(Vec<F>, Vec<Vec<F>>)>> {
+        match self.solve_left(b)? {
+            None => Ok(None),
+            Some(v) => {
+                let kernel = self.transpose().kernel()?;
+                Ok(Some((v, kernel)))
+            }
+        }
     }
 
     /// Compute the kernel (null space) of the matrix
@@ -629,5 +661,156 @@ mod tests {
             assert_eq!(result[0], b[0]);
             assert_eq!(result[1], b[1]);
         }
+    }
+
+    // Reference values: PARI/GP 2.15.4. `matinverseimage(A, b)` solves A*X = b and returns
+    // `[]~` when there is none; on these inputs its answer is exactly the particular solution
+    // with the free variables 0. `matker(A)` is the right kernel.
+
+    fn q(v: i64) -> Rational {
+        Rational::from_integer(v)
+    }
+
+    fn qv(v: &[i64]) -> Vec<Rational> {
+        v.iter().map(|&x| q(x)).collect()
+    }
+
+    fn qm(rows: usize, cols: usize, v: &[i64]) -> Matrix<Rational> {
+        Matrix::from_vec(rows, cols, qv(v)).unwrap()
+    }
+
+    /// A·x for a column vector x.
+    fn mat_vec(a: &Matrix<Rational>, x: &[Rational]) -> Vec<Rational> {
+        (0..a.rows())
+            .map(|i| {
+                (0..a.cols()).fold(q(0), |acc, j| {
+                    acc + a.get(i, j).unwrap().clone() * x[j].clone()
+                })
+            })
+            .collect()
+    }
+
+    /// x·A for a row vector x.
+    fn vec_mat(x: &[Rational], a: &Matrix<Rational>) -> Vec<Rational> {
+        (0..a.cols())
+            .map(|j| {
+                (0..a.rows()).fold(q(0), |acc, i| {
+                    acc + x[i].clone() * a.get(i, j).unwrap().clone()
+                })
+            })
+            .collect()
+    }
+
+    #[test]
+    fn solve_inconsistent_singular_square() {
+        // The ch026.Solution / ch026.IsConsistent defect: this used to return Some([0, 1]).
+        // gp: matrank([1,1;1,1]) = 1, matrank(concat([1,1;1,1],[1,2]~)) = 2,
+        //     matinverseimage([1,1;1,1],[1,2]~) = []~
+        let a = qm(2, 2, &[1, 1, 1, 1]);
+        assert_eq!(a.solve(&qv(&[1, 2])).unwrap(), None);
+    }
+
+    #[test]
+    fn solve_left_inconsistent() {
+        // gp: matinverseimage([1,1;1,1]~,[1,2]~) = []~
+        let a = qm(2, 2, &[1, 1, 1, 1]);
+        assert_eq!(a.solve_left(&qv(&[1, 2])).unwrap(), None);
+        assert_eq!(a.solve_left_with_kernel(&qv(&[1, 2])).unwrap(), None);
+    }
+
+    #[test]
+    fn solve_consistent_singular() {
+        // gp: matinverseimage([1,1;1,1],[1,1]~) = [1, 0]~, matker([1,1;1,1]) = [-1; 1]
+        let a = qm(2, 2, &[1, 1, 1, 1]);
+        let b = qv(&[1, 1]);
+        let x = a.solve(&b).unwrap().expect("consistent");
+        assert_eq!(x, qv(&[1, 0]));
+        assert_eq!(mat_vec(&a, &x), b);
+    }
+
+    #[test]
+    fn solve_overdetermined() {
+        // gp: matinverseimage([1,2;3,4;5,6],[5,11,17]~) = [1, 2]~;
+        //     matinverseimage([1,2;3,4;5,6],[5,11,18]~) = []~ (matrank of [A|b] = 3)
+        let a = qm(3, 2, &[1, 2, 3, 4, 5, 6]);
+        let b = qv(&[5, 11, 17]);
+        let x = a.solve(&b).unwrap().expect("consistent");
+        assert_eq!(x, qv(&[1, 2]));
+        assert_eq!(mat_vec(&a, &x), b);
+        assert_eq!(a.solve(&qv(&[5, 11, 18])).unwrap(), None);
+    }
+
+    #[test]
+    fn solve_underdetermined() {
+        // gp: matinverseimage([1,2,3;4,5,6],[6,15]~) = [0, 3, 0]~,
+        //     matker([1,2,3;4,5,6]) = [1; -2; 1]
+        let a = qm(2, 3, &[1, 2, 3, 4, 5, 6]);
+        let b = qv(&[6, 15]);
+        let x = a.solve(&b).unwrap().expect("consistent");
+        assert_eq!(x, qv(&[0, 3, 0]));
+        assert_eq!(mat_vec(&a, &x), b);
+        assert_eq!(a.kernel().unwrap(), vec![qv(&[1, -2, 1])]);
+    }
+
+    #[test]
+    fn solve_rank2_3x3() {
+        // gp: matrank([1,2,3;4,5,6;7,8,9]) = 2; matinverseimage(A,[1,0,0]~) = []~
+        //     (matrank of [A|b] = 3); matinverseimage(A,[6,15,24]~) = [0, 3, 0]~
+        let a = qm(3, 3, &[1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        assert_eq!(a.solve(&qv(&[1, 0, 0])).unwrap(), None);
+        let b = qv(&[6, 15, 24]);
+        let x = a.solve(&b).unwrap().expect("consistent");
+        assert_eq!(x, qv(&[0, 3, 0]));
+        assert_eq!(mat_vec(&a, &x), b);
+    }
+
+    #[test]
+    fn solve_left_unique() {
+        // gp: matsolve([1,2;3,4]~,[7,10]~) = [1, 2]~
+        let a = qm(2, 2, &[1, 2, 3, 4]);
+        let b = qv(&[7, 10]);
+        let x = a.solve_left(&b).unwrap().expect("consistent");
+        assert_eq!(x, qv(&[1, 2]));
+        assert_eq!(vec_mat(&x, &a), b);
+    }
+
+    #[test]
+    fn solve_left_with_kernel_basic() {
+        // gp: matinverseimage([1,1;1,1]~,[2,2]~) = [2, 0]~, matker([1,1;1,1]~) = [-1; 1]
+        let a = qm(2, 2, &[1, 1, 1, 1]);
+        let b = qv(&[2, 2]);
+        let (v, n) = a.solve_left_with_kernel(&b).unwrap().expect("consistent");
+        assert_eq!(v, qv(&[2, 0]));
+        assert_eq!(vec_mat(&v, &a), b);
+        assert_eq!(n, vec![qv(&[-1, 1])]);
+        for u in &n {
+            assert_eq!(vec_mat(u, &a), qv(&[0, 0]));
+        }
+    }
+
+    #[test]
+    fn solve_left_with_kernel_3x2() {
+        // gp: matinverseimage([1,2;3,4;5,6]~,[9,12]~) = [0, 3, 0]~,
+        //     matker([1,2;3,4;5,6]~) = [1; -2; 1], [0,3,0]*[1,2;3,4;5,6] = [9, 12]
+        let a = qm(3, 2, &[1, 2, 3, 4, 5, 6]);
+        let b = qv(&[9, 12]);
+        let (v, n) = a.solve_left_with_kernel(&b).unwrap().expect("consistent");
+        assert_eq!(v, qv(&[0, 3, 0]));
+        assert_eq!(vec_mat(&v, &a), b);
+        assert_eq!(n, vec![qv(&[1, -2, 1])]);
+        for u in &n {
+            assert_eq!(vec_mat(u, &a), qv(&[0, 0]));
+        }
+    }
+
+    #[test]
+    fn solve_empty_dims() {
+        // Definitional: a 0×2 system is solved by every x; a 2×0 system only when b = 0.
+        let a = Matrix::<Rational>::from_vec(0, 2, vec![]).unwrap();
+        assert_eq!(a.solve(&[]).unwrap(), Some(qv(&[0, 0])));
+        let b = Matrix::<Rational>::from_vec(2, 0, vec![]).unwrap();
+        assert_eq!(b.solve(&qv(&[0, 0])).unwrap(), Some(vec![]));
+        assert_eq!(b.solve(&qv(&[1, 0])).unwrap(), None);
+        assert!(b.solve(&qv(&[1])).is_err());
     }
 }

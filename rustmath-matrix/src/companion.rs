@@ -5,9 +5,19 @@
 //!
 //! The rational canonical form is a canonical form for matrices under similarity,
 //! consisting of companion matrices for the invariant factors.
+//!
+//! MAGMA Handbook ch. 26 §26.11 (`MinimalPolynomial`; also ch. 59 §59.4.3
+//! `MinimalPolynomial(g)` for a matrix-group element) and §26.12.2 (`InvariantFactors`,
+//! `RationalForm`), digest `rustmath-lava/docs/Chapter_26_Matrices.md`.
+//!
+//! Algorithm: the invariant factors of `A` are the non-constant diagonal entries of the Smith
+//! form of `xI - A` over `F[x]` ([`PolynomialMatrix::smith_normal_form`]); the change of basis
+//! comes from the columns of `P⁻¹` (N. Jacobson, *Basic Algebra I*, 2nd ed., §3.10; D. S.
+//! Dummit and R. M. Foote, *Abstract Algebra*, 3rd ed., §12.2). MAGMA uses Steel's algorithm
+//! [Ste97] instead; no complexity claim is made here.
 
 use crate::Matrix;
-use crate::polynomial_matrix::PolynomialMatrix;
+use crate::polynomial_matrix::{div_rem_field, PolynomialMatrix};
 use rustmath_core::{Field, MathError, Result, Ring};
 use rustmath_polynomials::UnivariatePolynomial;
 
@@ -102,7 +112,11 @@ pub struct RationalCanonicalForm<F: Field> {
     /// The rational canonical form matrix (block diagonal of companion matrices)
     pub canonical_matrix: Matrix<F>,
 
-    /// The change of basis matrix P such that P^{-1} A P = canonical_matrix
+    /// The change of basis matrix T such that T^{-1}·A·T = canonical_matrix (column
+    /// convention: the columns of T are the cyclic bases `g, A·g, …, A^{k-1}·g` of the
+    /// blocks). MAGMA's `RationalForm` returns `T^{-1}` here, as `T'` with `T'·A·T'^{-1} = F`.
+    /// `Some` when computed by [`rational_canonical_form`]; `None` when the form is built
+    /// from the invariant factors alone ([`RationalCanonicalForm::from_invariant_factors`]).
     pub change_of_basis: Option<Matrix<F>>,
 }
 
@@ -112,21 +126,39 @@ impl<F: Field> RationalCanonicalForm<F> {
     /// # Arguments
     ///
     /// * `invariant_factors` - List of monic polynomials, each dividing the next
+    ///
+    /// * `Err(InvalidArgument)` on a zero polynomial, on a polynomial that is not monic
+    ///   (constants included: `2` is rejected), or if the list is not a divisibility chain
+    ///   `f_1 | f_2 | …`.
+    /// * The constant `1` forms no block and is dropped from the stored factors.
+    /// * `change_of_basis` is `None`: it is not computed when built from factors alone.
     pub fn from_invariant_factors(
         invariant_factors: Vec<UnivariatePolynomial<F>>,
     ) -> Result<Self> {
-        // Validate that each factor divides the next
-        for factor in &invariant_factors {
-            // In a proper implementation, we'd check divisibility
-            // For now, just verify they're all monic
-            if let Some(deg) = factor.degree() {
-                if deg > 0 && factor.coeff(deg) != &F::one() {
-                    return Err(MathError::InvalidArgument(
-                        "All invariant factors must be monic".to_string(),
-                    ));
-                }
+        let mut kept: Vec<UnivariatePolynomial<F>> = Vec::with_capacity(invariant_factors.len());
+        for factor in invariant_factors {
+            let Some(deg) = factor.degree() else {
+                return Err(MathError::InvalidArgument(
+                    "invariant factors must be non-zero".to_string(),
+                ));
+            };
+            if !factor.coeff(deg).is_one() {
+                return Err(MathError::InvalidArgument(
+                    "All invariant factors must be monic".to_string(),
+                ));
+            }
+            if deg > 0 {
+                kept.push(factor);
             }
         }
+        for w in kept.windows(2) {
+            if !div_rem_field(&w[1], &w[0])?.1.is_zero() {
+                return Err(MathError::InvalidArgument(
+                    "invariant factors must form a divisibility chain".to_string(),
+                ));
+            }
+        }
+        let invariant_factors = kept;
 
         // Build the block diagonal matrix from companion matrices
         let total_size: usize = invariant_factors
@@ -186,7 +218,8 @@ impl<F: Field> RationalCanonicalForm<F> {
 
     /// Get the minimal polynomial
     ///
-    /// This is the largest invariant factor (the last one in the chain)
+    /// This is the largest invariant factor (the last one in the chain). `None` only for the
+    /// 0×0 form (whose minimal polynomial is the constant 1).
     pub fn minimal_polynomial(&self) -> Option<&UnivariatePolynomial<F>> {
         self.invariant_factors.last()
     }
@@ -300,18 +333,110 @@ fn characteristic_matrix<F: Field>(matrix: &Matrix<F>) -> Result<PolynomialMatri
     PolynomialMatrix::new(n, n, data)
 }
 
-/// Compute the rational canonical form of a matrix
+/// MAGMA `InvariantFactors(A)` (Handbook ch. 26 §26.12.2): the non-constant invariant factors
+/// of `A`, monic, `f_1 | f_2 | … | f_r` (increasing), with product the characteristic
+/// polynomial.
 ///
-/// This implementation computes the Smith normal form of the characteristic matrix
-/// xI - A to extract the invariant factors.
+/// `Err(InvalidArgument)` if `A` is not square; `[]` for the 0×0 matrix. Computed as the
+/// non-constant diagonal entries of the Smith form of `xI - A`, whose output check certifies
+/// them (see [`PolynomialMatrix::smith_normal_form`]).
+pub fn invariant_factors<F: Field>(matrix: &Matrix<F>) -> Result<Vec<UnivariatePolynomial<F>>> {
+    if !matrix.is_square() {
+        return Err(MathError::InvalidArgument(
+            "Invariant factors are only defined for square matrices".to_string(),
+        ));
+    }
+    let n = matrix.rows();
+    let snf = characteristic_matrix(matrix)?.smith_normal_form()?;
+    let mut factors = Vec::new();
+    let mut total_degree = 0usize;
+    for i in 0..n {
+        let d = snf.diagonal.get(i, i);
+        match d.degree() {
+            // det(xI - A) is monic of degree n, so no diagonal entry is zero.
+            None => {
+                return Err(MathError::InvalidOperation(
+                    "internal: zero diagonal entry in the Smith form of xI - A".to_string(),
+                ))
+            }
+            Some(0) => {}
+            Some(k) => {
+                total_degree += k;
+                factors.push(d.clone());
+            }
+        }
+    }
+    if total_degree != n {
+        return Err(MathError::InvalidOperation(
+            "internal: the invariant factors of xI - A do not have total degree n".to_string(),
+        ));
+    }
+    Ok(factors)
+}
+
+/// MAGMA `MinimalPolynomial(A)` (Handbook ch. 26 §26.11; also ch. 59 §59.4.3
+/// `MinimalPolynomial(g)`): the monic polynomial `f` of least degree with `f(A) = 0`, which is
+/// the last invariant factor of `A`.
 ///
-/// # Arguments
+/// `Err(InvalidArgument)` if `A` is not square; the constant 1 for the 0×0 matrix.
+pub fn minimal_polynomial<F: Field>(matrix: &Matrix<F>) -> Result<UnivariatePolynomial<F>> {
+    Ok(invariant_factors(matrix)?
+        .pop()
+        .unwrap_or_else(|| UnivariatePolynomial::new(vec![F::one()])))
+}
+
+/// `p(A)·e_j`, by Horner's rule on vectors: `v ← A·v + c·e_j` for the coefficients `c` of `p`
+/// from the top down.
+fn poly_at_matrix_times_unit<F: Field>(
+    p: &UnivariatePolynomial<F>,
+    a: &Matrix<F>,
+    j: usize,
+) -> Result<Vec<F>> {
+    let n = a.rows();
+    let mut v = vec![F::zero(); n];
+    for c in p.coefficients().iter().rev() {
+        let mut w = mat_vec(a, &v)?;
+        w[j] = w[j].clone() + c.clone();
+        v = w;
+    }
+    Ok(v)
+}
+
+/// `A·v`.
+fn mat_vec<F: Field>(a: &Matrix<F>, v: &[F]) -> Result<Vec<F>> {
+    let n = a.cols();
+    (0..a.rows())
+        .map(|i| {
+            let mut acc = F::zero();
+            for (k, vk) in v.iter().enumerate().take(n) {
+                acc = acc + a.get(i, k)?.clone() * vk.clone();
+            }
+            Ok(acc)
+        })
+        .collect()
+}
+
+/// Compute the rational canonical form of a matrix (MAGMA `RationalForm(A)`, Handbook ch. 26
+/// §26.12.2)
 ///
-/// * `matrix` - The square matrix to decompose
+/// Returns the invariant factors `f_1 | … | f_r` (as [`invariant_factors`]), the block
+/// diagonal matrix `C` of the companion matrices of the `f_i` ([`companion_matrix`], column
+/// style) in increasing divisibility order, and `change_of_basis = Some(T)` with
+/// `T⁻¹·A·T = C`.
 ///
-/// # Returns
+/// Construction (Dummit–Foote §12.2): with `P·(xI - A)·Q = S` the Smith form, the module
+/// `F^n` (x acting as A) is `F[x]^n / im(xI - A)` via `e_j ↦ e_j`, and `P` maps it onto
+/// `⊕ F[x]/(d_i)`; the generator of the i-th summand comes from column i of `P⁻¹`, so
+/// `g_i = Σ_j (P⁻¹)_{j,i}(A)·e_j` has annihilator `d_i`, and `g_i, A·g_i, …, A^{k-1}·g_i`
+/// (`k = deg d_i`) are the columns of `T` for that block.
 ///
-/// The rational canonical form
+/// Certificate: the result is returned only if `T` is square of size n, `A·T == T·C` and `T`
+/// is invertible; then `A` is similar to a block companion matrix whose polynomials form a
+/// divisibility chain, which by uniqueness of the rational canonical form proves both the
+/// factors and `C`. Otherwise `Err(InvalidOperation)`. `Err(InvalidArgument)` if `A` is not
+/// square. The invertibility test uses [`Matrix::inverse`], which divides with `/`; for a
+/// matrix built only from `PrimeField`'s unbound `Ring::zero()`/`one()` sentinels that can
+/// panic (a pre-existing limitation of `inverse`).
 pub fn rational_canonical_form<F: Field>(
     matrix: &Matrix<F>,
 ) -> Result<RationalCanonicalForm<F>> {
@@ -320,22 +445,72 @@ pub fn rational_canonical_form<F: Field>(
             "Rational canonical form is only defined for square matrices".to_string(),
         ));
     }
-
-    // Step 1: Construct the characteristic matrix xI - A
-    let char_matrix = characteristic_matrix(matrix)?;
-
-    // Step 2: Compute Smith normal form to get invariant factors
-    let snf = char_matrix.smith_normal_form()?;
-    let invariant_factors = snf.invariant_factors();
-
-    // Step 3: Build the rational canonical form from invariant factors
-    if invariant_factors.is_empty() {
-        // Fallback: use characteristic polynomial as single invariant factor
-        let char_poly = characteristic_polynomial(matrix)?;
-        RationalCanonicalForm::from_invariant_factors(vec![char_poly])
-    } else {
-        RationalCanonicalForm::from_invariant_factors(invariant_factors)
+    let n = matrix.rows();
+    if n == 0 {
+        return Ok(RationalCanonicalForm {
+            invariant_factors: Vec::new(),
+            canonical_matrix: Matrix::from_vec(0, 0, Vec::new())?,
+            change_of_basis: Some(Matrix::from_vec(0, 0, Vec::new())?),
+        });
     }
+
+    let snf = characteristic_matrix(matrix)?.smith_normal_form()?;
+    let pinv = &snf.left_inverse;
+
+    let mut factors = Vec::new();
+    let mut columns: Vec<Vec<F>> = Vec::with_capacity(n);
+    for i in 0..n {
+        let d = snf.diagonal.get(i, i);
+        let k = match d.degree() {
+            None => {
+                return Err(MathError::InvalidOperation(
+                    "internal: zero diagonal entry in the Smith form of xI - A".to_string(),
+                ))
+            }
+            Some(0) => continue,
+            Some(k) => k,
+        };
+        // g_i = Σ_j (P⁻¹)_{j,i}(A)·e_j
+        let mut g = vec![F::zero(); n];
+        for j in 0..n {
+            let pji = pinv.get(j, i);
+            if pji.is_zero() {
+                continue;
+            }
+            let v = poly_at_matrix_times_unit(pji, matrix, j)?;
+            for (gr, vr) in g.iter_mut().zip(v) {
+                *gr = gr.clone() + vr;
+            }
+        }
+        for _ in 0..k {
+            let next = mat_vec(matrix, &g)?;
+            columns.push(std::mem::replace(&mut g, next));
+        }
+        factors.push(d.clone());
+    }
+
+    let mut rcf = RationalCanonicalForm::from_invariant_factors(factors)?;
+
+    let certificate_failed = || {
+        Err(MathError::InvalidOperation(
+            "internal: rational form certificate failed".to_string(),
+        ))
+    };
+    if columns.len() != n || rcf.canonical_matrix.rows() != n {
+        return certificate_failed();
+    }
+    let mut t_data = Vec::with_capacity(n * n);
+    for r in 0..n {
+        for col in &columns {
+            t_data.push(col[r].clone());
+        }
+    }
+    let t = Matrix::from_vec(n, n, t_data)?;
+    if matrix.mul(&t)? != t.mul(&rcf.canonical_matrix)? || t.inverse()?.is_none() {
+        return certificate_failed();
+    }
+    rcf.change_of_basis = Some(t);
+    Ok(rcf)
 }
 
 #[cfg(test)]
@@ -586,5 +761,203 @@ mod tests {
 
         assert_eq!(rcf.canonical_matrix.rows(), 2);
         assert_eq!(rcf.canonical_matrix.cols(), 2);
+    }
+
+    // Reference values: PARI/GP 2.15.4, per matrix A:
+    //   matsnf(x*matid(n)-A), matfrobenius(A,1) (invariant factors, decreasing order; RustMath
+    //   and MAGMA use increasing order, so the lists are reversed), minpoly(A), charpoly(A),
+    //   matfrobenius(A) (the Frobenius form).
+
+    use crate::charpoly_berkowitz;
+
+    fn px(c: &[i64]) -> UnivariatePolynomial<Rational> {
+        UnivariatePolynomial::new(c.iter().map(|&v| Rational::from_integer(v)).collect())
+    }
+
+    fn qm(n: usize, v: &[i64]) -> Matrix<Rational> {
+        Matrix::from_vec(n, n, v.iter().map(|&x| Rational::from_integer(x)).collect()).unwrap()
+    }
+
+    /// The minimal polynomial by an independent Krylov method: the least k with
+    /// vec(A^k) in span(vec(A^0), …, vec(A^{k-1})), found with `Matrix::solve` on the
+    /// n²×k system (which also exercises the fixed `solve` on tall systems).
+    fn krylov_minpoly(a: &Matrix<Rational>) -> UnivariatePolynomial<Rational> {
+        let n = a.rows();
+        let mut powers = vec![Matrix::<Rational>::identity(n)];
+        loop {
+            let k = powers.len();
+            let next = powers[k - 1].mul(a).unwrap();
+            let mut data = Vec::with_capacity(n * n * k);
+            for idx in 0..n * n {
+                for p in &powers {
+                    data.push(p.data()[idx].clone());
+                }
+            }
+            let cols = Matrix::from_vec(n * n, k, data).unwrap();
+            if let Some(c) = cols.solve(next.data()).unwrap() {
+                let mut coeffs: Vec<Rational> = c
+                    .into_iter()
+                    .map(|ci| Rational::from_integer(0) - ci)
+                    .collect();
+                coeffs.push(Rational::from_integer(1));
+                return UnivariatePolynomial::new(coeffs);
+            }
+            powers.push(next);
+        }
+    }
+
+    /// Asserts invariant_factors, minimal_polynomial, the rational form (factors, block
+    /// companion matrix, certified change of basis), the Krylov minimal polynomial and the
+    /// product of the factors against `charpoly_berkowitz`.
+    fn check_forms(a: &Matrix<Rational>, expected: &[UnivariatePolynomial<Rational>]) {
+        let n = a.rows();
+        let fs = invariant_factors(a).unwrap();
+        assert_eq!(fs, expected);
+        let mp = minimal_polynomial(a).unwrap();
+        assert_eq!(&mp, expected.last().unwrap());
+        assert_eq!(krylov_minpoly(a), mp);
+
+        let rcf = rational_canonical_form(a).unwrap();
+        assert_eq!(rcf.invariant_factors, expected);
+        assert_eq!(rcf.minimal_polynomial(), Some(&mp));
+        let mut c = Matrix::<Rational>::zeros(n, n);
+        let mut off = 0;
+        for f in expected {
+            let b = companion_matrix(f).unwrap();
+            for i in 0..b.rows() {
+                for j in 0..b.cols() {
+                    c.set(off + i, off + j, b.get(i, j).unwrap().clone())
+                        .unwrap();
+                }
+            }
+            off += b.rows();
+        }
+        assert_eq!(off, n);
+        assert_eq!(rcf.canonical_matrix, c);
+        let t = rcf.change_of_basis.clone().expect("T is computed");
+        assert_eq!(a.mul(&t).unwrap(), t.mul(&c).unwrap(), "A·T != T·C");
+        let tinv = t.inverse().unwrap().expect("T invertible");
+        assert_eq!(tinv.mul(a).unwrap().mul(&t).unwrap(), c, "T⁻¹·A·T != C");
+
+        let product = expected.iter().fold(px(&[1]), |acc, f| acc * f.clone());
+        assert_eq!(product, charpoly_berkowitz(a).unwrap());
+    }
+
+    #[test]
+    fn forms_r1_diag23_defect() {
+        // The ch026.InvariantFactors / MinimalPolynomial / RationalForm defect: the factors
+        // were [x-2, x-3] and the minimal polynomial x-3.
+        // gp: matsnf(x*matid(2)-[2,0;0,3]) = [x^2 - 5*x + 6, 1],
+        //     matfrobenius([2,0;0,3],1) = [x^2 - 5*x + 6], minpoly = x^2 - 5*x + 6,
+        //     matfrobenius([2,0;0,3]) = [0, -6; 1, 5]
+        let a = qm(2, &[2, 0, 0, 3]);
+        check_forms(&a, &[px(&[6, -5, 1])]);
+        let rcf = rational_canonical_form(&a).unwrap();
+        assert_eq!(rcf.canonical_matrix, qm(2, &[0, -6, 1, 5]));
+    }
+
+    #[test]
+    fn rcf_minpoly_regression() {
+        // gp: minpoly([2,0;0,3]) = x^2 - 5*x + 6
+        let a = qm(2, &[2, 0, 0, 3]);
+        let rcf = rational_canonical_form(&a).unwrap();
+        assert_eq!(rcf.minimal_polynomial(), Some(&px(&[6, -5, 1])));
+    }
+
+    #[test]
+    fn forms_small_q() {
+        // gp: matfrobenius(matdiagonal([2,2,3]),1) = [x^2 - 5*x + 6, x - 2]
+        check_forms(
+            &qm(3, &[2, 0, 0, 0, 2, 0, 0, 0, 3]),
+            &[px(&[-2, 1]), px(&[6, -5, 1])],
+        );
+        // gp: matfrobenius(matid(2),1) = [x - 1, x - 1]
+        check_forms(&qm(2, &[1, 0, 0, 1]), &[px(&[-1, 1]), px(&[-1, 1])]);
+        // gp: matfrobenius([0,1;0,0],1) = [x^2]
+        check_forms(&qm(2, &[0, 1, 0, 0]), &[px(&[0, 0, 1])]);
+        // gp: matfrobenius([0,0;0,0],1) = [x, x]
+        check_forms(&qm(2, &[0, 0, 0, 0]), &[px(&[0, 1]), px(&[0, 1])]);
+        // gp: matfrobenius([1,2;3,4],1) = [x^2 - 5*x - 2]
+        check_forms(&qm(2, &[1, 2, 3, 4]), &[px(&[-2, -5, 1])]);
+        // gp: matfrobenius([1,2,0;0,1,3;4,0,1],1) = [x^3 - 3*x^2 + 3*x - 25]
+        check_forms(
+            &qm(3, &[1, 2, 0, 0, 1, 3, 4, 0, 1]),
+            &[px(&[-25, 3, -3, 1])],
+        );
+    }
+
+    #[test]
+    fn forms_r7_jordan_blocks() {
+        // A = J2(2) + J1(2) + [3]. gp: matfrobenius(A,1) = [x^3 - 7*x^2 + 16*x - 12, x - 2],
+        //     matfrobenius(A) = [0,0,12,0; 1,0,-16,0; 0,1,7,0; 0,0,0,2]
+        let a = qm(4, &[2, 1, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 3]);
+        let expected = [px(&[-2, 1]), px(&[-12, 16, -7, 1])];
+        check_forms(&a, &expected);
+        let rcf = rational_canonical_form(&a).unwrap();
+        assert_eq!(
+            rcf.canonical_matrix,
+            qm(4, &[2, 0, 0, 0, 0, 0, 0, 12, 0, 1, 0, -16, 0, 0, 1, 7])
+        );
+        // A conjugate of A, U4*A*U4^-1 with U4 = [1,1,0,0;0,1,1,0;0,0,1,1;0,0,0,1]:
+        // gp: same matfrobenius(.,1) and matfrobenius(.)
+        let b = qm(4, &[2, 1, -1, 1, 0, 2, 0, 0, 0, 0, 2, 1, 0, 0, 0, 3]);
+        check_forms(&b, &expected);
+        assert_eq!(
+            rational_canonical_form(&b).unwrap().canonical_matrix,
+            rcf.canonical_matrix
+        );
+    }
+
+    #[test]
+    fn forms_r8_derogatory_irreducible_quadratic() {
+        // A = U5*(C(x^2+1) + C((x^2+1)(x-1)))*U5^-1, U5 = [1,2,0,0,1;0,1,0,0,0;0,1,1,0,0;
+        // 0,0,0,1,1;0,0,0,0,1] (det 1).
+        // gp: matfrobenius(A,1) = [x^3 - x^2 + x - 1, x^2 + 1],
+        //     charpoly(A) = x^5 - x^4 + 2*x^3 - 2*x^2 + x - 1, subst(minpoly(A),x,A) == 0,
+        //     factor(minpoly(A)) = [x - 1, 1; x^2 + 1, 1]
+        let a = qm(
+            5,
+            &[
+                2, -5, 0, 1, -2, 1, -2, 0, 0, -1, 1, -2, 0, 0, 0, 0, -1, 1, 1, -1, 0, 0, 0, 1, 0,
+            ],
+        );
+        check_forms(&a, &[px(&[1, 0, 1]), px(&[-1, 1, -1, 1])]);
+    }
+
+    #[test]
+    fn forms_empty_and_non_square() {
+        // Definitional: the 0×0 matrix has no invariant factors and minimal polynomial 1.
+        let e = Matrix::<Rational>::from_vec(0, 0, vec![]).unwrap();
+        assert!(invariant_factors(&e).unwrap().is_empty());
+        assert_eq!(minimal_polynomial(&e).unwrap(), px(&[1]));
+        let rcf = rational_canonical_form(&e).unwrap();
+        assert!(rcf.invariant_factors.is_empty());
+        assert_eq!(rcf.minimal_polynomial(), None);
+        assert_eq!(rcf.change_of_basis.map(|t| t.rows()), Some(0));
+        // Non-square input is an error.
+        let r = Matrix::from_vec(2, 3, vec![Rational::from_integer(1); 6]).unwrap();
+        assert!(invariant_factors(&r).is_err());
+        assert!(minimal_polynomial(&r).is_err());
+        assert!(rational_canonical_form(&r).is_err());
+    }
+
+    #[test]
+    fn from_invariant_factors_rejects_non_chain() {
+        // x - 2 does not divide x - 3 (gp: (x-3) % (x-2) = -1).
+        assert!(
+            RationalCanonicalForm::from_invariant_factors(vec![px(&[-2, 1]), px(&[-3, 1])])
+                .is_err()
+        );
+        // The zero polynomial and a non-monic constant are rejected.
+        assert!(RationalCanonicalForm::from_invariant_factors(vec![px(&[0])]).is_err());
+        assert!(
+            RationalCanonicalForm::from_invariant_factors(vec![px(&[2]), px(&[-1, 1])]).is_err()
+        );
+        // The constant 1 forms no block and is dropped.
+        let rcf =
+            RationalCanonicalForm::from_invariant_factors(vec![px(&[1]), px(&[-1, 1])]).unwrap();
+        assert_eq!(rcf.invariant_factors, vec![px(&[-1, 1])]);
+        assert_eq!(rcf.canonical_matrix, qm(1, &[1]));
+        assert!(rcf.change_of_basis.is_none());
     }
 }
