@@ -207,10 +207,14 @@ fn exact_div(x: &Integer, d: &Integer) -> Integer {
 /// the odd prime p? The caller must guarantee p is an odd prime and
 /// a != 0 mod p (asserted).
 ///
-/// The input is reduced to a non-negative residue before calling
-/// `Integer::legendre_symbol`, which mishandles negative inputs (its
-/// internal `mod_pow` can return a negative representative that is then
-/// compared against p-1; see the report accompanying this module).
+/// The input is reduced to its least non-negative residue first, and the
+/// reduction is what the nonzero assertion tests. `Integer::legendre_symbol`
+/// is correct for every integer, negative ones included: it is computed as
+/// the Kronecker symbol (H. Cohen, GTM 138, Alg. 1.4.10). So the reduction
+/// is no longer needed for the value of the symbol. It was a workaround for
+/// an earlier `legendre_symbol` whose internal `mod_pow` could return a
+/// negative representative for a negative base; `rustmath-integers` has
+/// since fixed that.
 fn is_nonzero_square_mod(a: &Integer, p: &Integer) -> bool {
     let r = a.modulo(p);
     assert!(

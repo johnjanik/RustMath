@@ -83,7 +83,7 @@ repository = "https://github.com/johnjanik/RustMath"
 
 [workspace.dependencies]
 tree-sitter-magma = { git = "https://github.com/edgarcosta/tree-sitter-magma.git", rev = "75b31f4695261967c7aa87d552d69805dc03c77b" }
-num-bigint = "0.4"
+num-bigint = "0.4.5"  # BigInt::modinv (rustmath-integers) needs >= 0.4.5
 num-rational = "0.4"
 num-traits = "0.2"
 num-integer = "0.1"

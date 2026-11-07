@@ -109,8 +109,9 @@ impl Integer {
     }
 
     /// Modular exponentiation `self^exp mod |modulus|` (MAGMA `Modexp`, Handbook ch. 18
-    /// §18.12.1; binary exponentiation [Knu97] §4.6.3, with `BigInt::modpow` (Montgomery)
-    /// for exponents longer than 32 bits).
+    /// §18.12.1; binary exponentiation [Knu97] §4.6.3). Exponents longer than 32 bits go to
+    /// `BigInt::modpow`, which uses Montgomery multiplication only when `|modulus|` is odd and
+    /// plain square-and-multiply with division otherwise.
     ///
     /// The result is the least non-negative residue, in `[0, |modulus|)`, for every sign of
     /// `self`, `exp` and `modulus` (PARI/GP `lift(Mod(self, modulus)^exp)`):
@@ -913,6 +914,13 @@ impl Integer {
     ///
     /// Errors: p not accepted by [`crate::prime::is_prime`] (`InvalidArgument`); a Lucas digit
     /// k' that does not fit in a `u64` (only possible for p > 2^64) gives `NotSupported`.
+    ///
+    /// Primality, as in MAGMA, is a fast test: `is_prime` (Miller-Rabin to the bases 2..37) is a
+    /// proof only below 318665857834031151167461 (Sorenson-Webster 2017). Above it a strong
+    /// pseudoprime p is accepted, and Lucas' theorem does not hold for a composite modulus: the
+    /// value returned is then not C(n, k) mod p in general (or `Err(NotInvertible)` when a
+    /// digit factorial k'! shares a factor with p). Callers that need a guarantee above that
+    /// bound must certify p first.
     pub fn binomial_mod(&self, k: &Self, p: &Self) -> Result<Self> {
         use crate::prime::is_prime;
 

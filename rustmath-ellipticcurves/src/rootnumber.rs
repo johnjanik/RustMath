@@ -84,8 +84,10 @@ use rustmath_integers::Integer;
 
 /// The Legendre symbol (a/p) for a small nonzero integer a and an odd prime
 /// p ≥ 5 not dividing a, via [`Integer::legendre_symbol`] on the reduced
-/// (non-negative) residue — the reduction first matters, see the note in
-/// [`crate::tate`] about negative inputs.
+/// (non-negative) residue. The reduction is what the p ∤ a assertion tests.
+/// `legendre_symbol` is also correct for a negative a, so the reduction is no
+/// longer needed for the value of the symbol (see the note in [`crate::tate`]
+/// on `is_nonzero_square_mod`).
 fn legendre_of(a: i64, p: &Integer) -> i8 {
     let r = Integer::from(a).modulo(p);
     assert!(

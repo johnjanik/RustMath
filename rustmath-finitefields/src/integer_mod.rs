@@ -848,8 +848,14 @@ fn prime_power_sqrts(a: &Integer, p: &Integer, k: u32) -> PrimePowerSqrts {
     }
 }
 
-/// Every root of y^2 ≡ u (mod p^j) for an odd prime p, p ∤ u and j ≥ 1, ascending. Empty iff
-/// (u/p) = −1 (a unit square mod p lifts uniquely up to sign, Ireland–Rosen Prop. 5.1.1).
+/// Every root of y^2 ≡ u (mod p^j) for an odd prime p, p ∤ u and j ≥ 1, ascending.
+///
+/// Existence: a root exists iff (u/p) = 1 (Ireland–Rosen Prop. 5.1.1), so the result is empty
+/// iff (u/p) = −1. Count: otherwise there are exactly two roots, y and p^j − y. The two roots
+/// ±y_0 mod p are distinct and simple (the derivative 2y_0 is a unit), so each lifts to exactly
+/// one root mod p^j (uniqueness of Hensel lifting, \[vzGG99\] §9.4), and every root mod p^j
+/// reduces to one of them. Equivalently, (Z/p^jZ)^* is cyclic of even order (Ireland–Rosen
+/// ch. 4 §1), so y^2 ≡ 1 has only the solutions ±1.
 ///
 /// A root mod p from Tonelli–Shanks is lifted by p-adic Newton iteration with precision
 /// doubling (\[vzGG99\] ch. 9 §9.4): with prec ← min(2·prec, j) and m = p^prec,
