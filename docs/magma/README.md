@@ -49,5 +49,6 @@ the 2026-11-05 pilot (`[pilot 2026-11-05]`), the other 45 from the 2026-11-06 re
 results and the defects found are in [`REVIEW_2026-11-06.md`](./REVIEW_2026-11-06.md). The tag at the
 end of each 2026-11-06 note records its provenance: `checked` (an independent verifier agreed),
 `adjudicated` (the reviewer and the verifier disagreed and a third agent decided from the code),
-`corrected` (changed by the follow-up pass over uncompiled code and test citations), or no tag
+`corrected` (changed after the main review: the pass over uncompiled code and test citations, the
+2026-11-06 fact-check, and the 2026-11-07 reconciliation with `PROJECT_TRACKER.md`), or no tag
 (reviewer only; all such rows are `missing`).
