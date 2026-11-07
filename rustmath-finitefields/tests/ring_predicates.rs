@@ -421,6 +421,72 @@ fn gr_2_64_order_of_3() {
         r.from_int(int(3)).multiplicative_order_status(),
         MultiplicativeOrder::Finite(1u64 << 62)
     );
+    assert_eq!(r.from_int(int(3)).multiplicative_order(), Some(two_pow(62)));
+}
+
+// Orders of at least 2^64: the hook says `FiniteExceedsU64` and the inherent
+// `GaloisRingElement::multiplicative_order` gives the exact value.
+// PARI: [znorder(Mod(3,2^66)), znorder(Mod(5,2^66)), znorder(Mod(7,2^66)), znorder(Mod(-1,2^66))]
+//   -> [18446744073709551616, 18446744073709551616, 9223372036854775808, 2]
+//   = [2^64, 2^64, 2^63, 2].
+#[test]
+fn gr_2_66_orders_beyond_u64() {
+    let r = GaloisRing::new(int(2), 66, 1).unwrap();
+    let three = r.from_int(int(3));
+    assert_eq!(three.multiplicative_order_status(), MultiplicativeOrder::FiniteExceedsU64);
+    assert_eq!(three.multiplicative_order(), Some(two_pow(64)));
+    let five = r.from_int(int(5));
+    assert_eq!(five.multiplicative_order_status(), MultiplicativeOrder::FiniteExceedsU64);
+    assert_eq!(five.multiplicative_order(), Some(two_pow(64)));
+    // 2^63 still fits in u64.
+    let seven = r.from_int(int(7));
+    assert_eq!(seven.multiplicative_order_status(), MultiplicativeOrder::Finite(1u64 << 63));
+    assert_eq!(seven.multiplicative_order(), Some(two_pow(63)));
+    assert_eq!(r.from_int(int(-1)).multiplicative_order(), Some(int(2)));
+    assert_eq!(r.one().multiplicative_order(), Some(int(1)));
+    // Non-units have no order (MAGMA `Order` returns 0).
+    assert_eq!(r.from_int(int(2)).multiplicative_order(), None);
+    assert_eq!(r.zero().multiplicative_order(), None);
+}
+
+// GR(3^42, 2) = (Z/3^42)[x]/(x^2+2x+2), w the class of x. PARI:
+//   g = Mod(1,3^42)*(x^2+2*x+2); w = Mod(Mod(1,3^42)*x, g); y = 1+3*w; z = w*y;
+//   [y^(3^41)==1, y^(3^40)==1] -> [1, 0], so ord(1+3w) = 3^41 = 36472996377170786403;
+//   [z^(8*3^41)==1, z^(4*3^41)==1, z^(8*3^40)==1] -> [1, 0, 0], so
+//   ord(w(1+3w)) = 8*3^41 = 291783971017366291224.
+#[test]
+fn gr_3_42_2_orders_beyond_u64() {
+    let r = GaloisRing::new(int(3), 42, 2).unwrap();
+    let w = r.generator();
+    assert!((w.clone() * w.clone() + r.from_int(int(2)) * w.clone() + r.from_int(int(2))).is_zero());
+    let three_pow_41 = int(3).pow(41);
+    assert_eq!(three_pow_41, Integer::from_decimal_str("36472996377170786403").unwrap());
+    let y = r.one() + r.from_int(int(3)) * w.clone();
+    assert_eq!(y.multiplicative_order_status(), MultiplicativeOrder::FiniteExceedsU64);
+    assert_eq!(y.multiplicative_order(), Some(three_pow_41.clone()));
+    let z = w * y;
+    assert_eq!(z.multiplicative_order_status(), MultiplicativeOrder::FiniteExceedsU64);
+    let ord_z = int(8) * three_pow_41;
+    assert_eq!(ord_z, Integer::from_decimal_str("291783971017366291224").unwrap());
+    assert_eq!(z.multiplicative_order(), Some(ord_z));
+}
+
+// The inherent order and the `Ring` hook agree on every element of GR(3^3, 2) (orders
+// cross-checked against PARI in `gr_27_2_orders_match_pari_and_brute_force`).
+#[test]
+fn gr_27_2_inherent_order_matches_hook() {
+    let r = GaloisRing::new(int(3), 3, 2).unwrap();
+    for a1 in 0..27 {
+        for a0 in 0..27 {
+            let x = r.element(vec![int(a0), int(a1)]);
+            let expected = match x.multiplicative_order_status() {
+                MultiplicativeOrder::NotAUnit => None,
+                MultiplicativeOrder::Finite(o) => Some(Integer::from(o)),
+                other => panic!("undecided order {other:?} for {x}"),
+            };
+            assert_eq!(x.multiplicative_order(), expected, "{x}");
+        }
+    }
 }
 
 /// GR(8,2) elements seen through a `Ring` impl that overrides none of the hooks and whose

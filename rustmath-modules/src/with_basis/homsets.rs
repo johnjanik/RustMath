@@ -223,6 +223,16 @@ where
     fn zero(&self) -> Option<Self::Element> {
         Some(ModuleWithBasisElement::zero())
     }
+
+    /// MAGMA `IsFinite` (Ch. 17 §17.4.3): Hom(M, N) of free modules of ranks d1, d2 is free
+    /// of rank d1·d2 (the maps e_i ↦ f_j), so `Some(false)` when d1, d2 >= 1 over a
+    /// characteristic-0 element type; otherwise `None`.
+    fn is_finite(&self) -> Option<bool> {
+        use crate::with_basis::parent::{free_module_is_finite, rank_at_least_one};
+        free_module_is_finite::<M::BaseRing>(
+            rank_at_least_one(self.source.dimension()) && rank_at_least_one(self.target.dimension()),
+        )
+    }
 }
 
 impl<M, N> ParentWithBasis for HomSpace<M, N>

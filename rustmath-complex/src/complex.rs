@@ -1,6 +1,7 @@
 //! Complex number implementation
 
-use rustmath_core::{CommutativeRing, Field, MathError, Result, Ring};
+use rustmath_core::{CommutativeRing, Field, MathError, MultiplicativeOrder, Result, Ring};
+use rustmath_reals::real::{ToleranceClass, REAL_TOLERANCE};
 use rustmath_reals::{Real, RealField};
 use std::fmt;
 use std::ops::{Add, Div, Mul, Neg, Sub};
@@ -560,40 +561,96 @@ impl Ring for Complex {
         self.real.is_one() && self.imag.is_zero()
     }
 
-    // Element predicates (MAGMA Ch. 25 `IsUnit`: nonzero elements are units). The parts are
-    // tolerance-based `Real`s; these follow the type's own `is_zero` and `Field::inverse`.
-    // A NaN or infinite part decides nothing. `multiplicative_order_status` keeps the
-    // trait default (no `Infinite` claim with tolerance-based equality).
+    // Element predicates (MAGMA Ch. 25 `IsUnit`: nonzero elements are units; Ch. 17
+    // §17.5.5 `IsNilpotent`; Ch. 19 `Order`). The parts are tolerance-based `Real`s
+    // (`REAL_TOLERANCE`, 1e-10), and `is_zero` is "both parts within the tolerance of 0".
+    // A decided answer is a proof about the stored pair of doubles, so it is given only
+    // where the tolerance plays no role (see `tolerance_class`):
+    // * both parts exactly 0.0: a non-unit, nilpotent;
+    // * some part with |part| >= REAL_TOLERANCE: a nonzero complex number, so a unit;
+    // * nonzero but both parts within the tolerance: undecided (the type's own `is_zero`
+    //   accepts it);
+    // * a NaN or infinite part: not a complex number, undecided.
 
     fn unit_status(&self) -> Option<bool> {
-        if !(self.real.is_finite() && self.imag.is_finite()) {
-            return None;
+        match self.tolerance_class() {
+            ToleranceClass::ExactZero => Some(false),
+            ToleranceClass::Nonzero => Some(true),
+            ToleranceClass::NearZero | ToleranceClass::NotFinite => None,
         }
-        Some(!self.is_zero())
     }
 
     fn nilpotent_status(&self) -> Option<bool> {
-        if !(self.real.is_finite() && self.imag.is_finite()) {
-            return None;
+        match self.tolerance_class() {
+            ToleranceClass::ExactZero => Some(true),
+            ToleranceClass::Nonzero => Some(false),
+            ToleranceClass::NearZero | ToleranceClass::NotFinite => None,
         }
-        Some(self.is_zero())
     }
 
-    /// The inverse at working precision (`Field::inverse`).
+    /// The inverse at working precision (`Field::inverse`) of a nonzero value outside the
+    /// tolerance; `Err(NotInvertible)` only for exactly 0. A nonzero value inside the
+    /// tolerance, or one whose |z|^2 overflows f64 (where `Field::inverse` would return 0),
+    /// gives `Err(NumericalError)`: undecided, not a proof of non-invertibility.
     fn unit_inverse(&self) -> Result<Self> {
-        if !(self.real.is_finite() && self.imag.is_finite()) {
-            return Err(MathError::DomainError(format!(
+        match self.tolerance_class() {
+            ToleranceClass::NotFinite => Err(MathError::DomainError(format!(
                 "{self} is not a complex number, so it is neither a unit nor a non-unit"
-            )));
+            ))),
+            ToleranceClass::ExactZero => Err(MathError::NotInvertible),
+            ToleranceClass::NearZero => Err(MathError::NumericalError(format!(
+                "{self} is nonzero but within the tolerance {REAL_TOLERANCE:e} of 0, which \
+                 the f64 Complex type treats as 0; use ComplexMPFR or BigComplex"
+            ))),
+            ToleranceClass::Nonzero if !self.abs_sq().is_finite() => {
+                Err(MathError::NumericalError(format!(
+                    "|{self}|^2 overflows f64, so its inverse is not representable; use \
+                     ComplexMPFR or BigComplex"
+                )))
+            }
+            ToleranceClass::Nonzero => <Self as Field>::inverse(self),
         }
-        if self.is_zero() {
-            return Err(MathError::NotInvertible);
+    }
+
+    /// MAGMA `Order(a)` (Ch. 19). Exactly 1 has order 1, exactly -1 order 2
+    /// (characteristic 0), exactly 0 is a non-unit. Every other value is `Undecided`: within
+    /// the tolerance of ±1 or 0 the type's `is_one`/`==` cannot separate it from them, and
+    /// elsewhere no `Infinite` claim is made under tolerance-based equality.
+    fn multiplicative_order_status(&self) -> MultiplicativeOrder {
+        let (re, im) = (self.real.to_f64(), self.imag.to_f64());
+        if im != 0.0 {
+            MultiplicativeOrder::Undecided
+        } else if re == 1.0 {
+            MultiplicativeOrder::Finite(1)
+        } else if re == -1.0 {
+            MultiplicativeOrder::Finite(2)
+        } else if re == 0.0 {
+            MultiplicativeOrder::NotAUnit
+        } else {
+            MultiplicativeOrder::Undecided
         }
-        <Self as Field>::inverse(self)
     }
 
     fn static_characteristic() -> Option<u64> {
         Some(0)
+    }
+}
+
+impl Complex {
+    /// The [`ToleranceClass`] of this value as a whole: `NotFinite` if a part is NaN or
+    /// infinite; `ExactZero` if both parts are exactly 0.0; `Nonzero` if some part has
+    /// `|part| >= REAL_TOLERANCE`; otherwise `NearZero` (nonzero, yet `is_zero` holds).
+    pub fn tolerance_class(&self) -> ToleranceClass {
+        let (re, im) = (self.real.tolerance_class(), self.imag.tolerance_class());
+        if re == ToleranceClass::NotFinite || im == ToleranceClass::NotFinite {
+            ToleranceClass::NotFinite
+        } else if re == ToleranceClass::ExactZero && im == ToleranceClass::ExactZero {
+            ToleranceClass::ExactZero
+        } else if re == ToleranceClass::Nonzero || im == ToleranceClass::Nonzero {
+            ToleranceClass::Nonzero
+        } else {
+            ToleranceClass::NearZero
+        }
     }
 }
 

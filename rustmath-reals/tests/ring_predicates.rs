@@ -70,6 +70,53 @@ fn real_f64_predicates() {
     assert!(matches!(nan.unit_inverse(), Err(MathError::DomainError(_))));
 }
 
+// The f64 `Real` has a 1e-10 tolerance in `is_zero`/`is_one`/`==`. A nonzero double inside
+// it is a unit of R (it is a nonzero real number), but the type cannot tell it from 0, so the
+// hooks must not claim "non-unit"/"nilpotent" (review follow-up C1.2). Likewise a double
+// within the tolerance of ±1 but not ±1 is not provably of order 1 or 2 (the real roots of
+// unity are exactly ±1).
+#[test]
+fn real_f64_tolerance_band_is_undecided() {
+    for v in [1e-11, -1e-11, 5e-324, -9.99e-11] {
+        let x = Real::from(v);
+        assert!(x.is_zero(), "{v} is inside the tolerance");
+        assert_eq!(x.unit_status(), None, "{v}");
+        assert_eq!(x.nilpotent_status(), None, "{v}");
+        assert_eq!(x.multiplicative_order_status(), MultiplicativeOrder::Undecided, "{v}");
+        assert!(matches!(x.unit_inverse(), Err(MathError::NumericalError(_))), "{v}");
+    }
+    // Exactly zero (either sign) stays decided.
+    for v in [0.0, -0.0] {
+        let x = Real::from(v);
+        assert_eq!(x.unit_status(), Some(false));
+        assert_eq!(x.nilpotent_status(), Some(true));
+        assert_eq!(x.multiplicative_order_status(), MultiplicativeOrder::NotAUnit);
+        assert_eq!(x.unit_inverse(), Err(MathError::NotInvertible));
+    }
+    // At or beyond the tolerance: a nonzero real, decided.
+    for v in [1e-10, -1e-10, 2.5e-10, -3.0, 1e300] {
+        let x = Real::from(v);
+        assert_eq!(x.unit_status(), Some(true), "{v}");
+        assert_eq!(x.nilpotent_status(), Some(false), "{v}");
+        assert_eq!(x.unit_inverse().unwrap().to_f64(), 1.0 / v, "{v}");
+    }
+    // Near ±1 but not ±1: undecided (the trait default would trust `is_one`).
+    for v in [1.0 + 5e-11, 1.0 - 5e-11, -1.0 + 5e-11, -1.0 - 5e-11] {
+        let x = Real::from(v);
+        assert!(v != 1.0 && v != -1.0);
+        assert_eq!(x.multiplicative_order_status(), MultiplicativeOrder::Undecided, "{v}");
+        assert_eq!(x.unit_status(), Some(true), "{v}");
+    }
+    assert_eq!(Real::from(1.0).multiplicative_order_status(), MultiplicativeOrder::Finite(1));
+    assert_eq!(Real::from(-1.0).multiplicative_order_status(), MultiplicativeOrder::Finite(2));
+    for v in [f64::INFINITY, f64::NEG_INFINITY] {
+        let x = Real::from(v);
+        assert_eq!(x.unit_status(), None);
+        assert_eq!(x.nilpotent_status(), None);
+        assert!(matches!(x.unit_inverse(), Err(MathError::DomainError(_))));
+    }
+}
+
 // MAGMA Ch. 25: IsFinite is false for real fields.
 #[test]
 fn bigfloat_field_is_infinite() {

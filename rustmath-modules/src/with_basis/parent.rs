@@ -186,6 +186,24 @@ pub trait ModuleWithBasisParentMethods: ModuleWithBasis {
 // Blanket implementation of ParentMethods for all ModuleWithBasis
 impl<T: ModuleWithBasis> ModuleWithBasisParentMethods for T {}
 
+/// MAGMA `IsFinite` (Handbook Ch. 17 §17.4.3) of a free module over the element type `R`
+/// whose rank is nonzero exactly when `rank_is_nonzero`: `Some(false)` when the rank is
+/// >= 1 and `R` fixes characteristic 0 (the module then contains `R·e ≅ R ⊇ Z` for a basis
+/// vector `e`); otherwise `None` (no claim: the size depends on the runtime ring, or the
+/// module is the zero module and the element type does not enforce that).
+pub(crate) fn free_module_is_finite<R: Ring>(rank_is_nonzero: bool) -> Option<bool> {
+    if rank_is_nonzero && R::static_characteristic() == Some(0) {
+        Some(false)
+    } else {
+        None
+    }
+}
+
+/// Whether a rank reported by `ParentWithBasis::dimension` is known to be >= 1.
+pub(crate) fn rank_at_least_one(rank: Option<usize>) -> bool {
+    matches!(rank, Some(n) if n >= 1)
+}
+
 /// Concrete implementation of a free module with basis
 #[derive(Clone, Debug)]
 pub struct FreeModuleWithBasis<I, R>
@@ -472,5 +490,42 @@ mod tests {
         let z0 = FreeModuleWithBasis::<usize, _>::standard(BigInt::from(0), 0);
         assert_eq!(z0.is_finite(), Some(true));
         assert_eq!(z0.cardinality(), Some(1));
+    }
+
+    // MAGMA Ch. 17 §17.4.3 IsFinite of the constructions over Z (GAP: IsFinite(Integers)
+    // -> false): (Z^3)*, Z^2 ⊗ Z^3, Z^2 × Z^0, Hom(Z^2, Z^3) are free of rank 3, 6, 2, 6.
+    // Rank 0 and an element type without a static characteristic make no claim.
+    #[test]
+    fn test_constructions_finiteness() {
+        use crate::with_basis::cartesian_product::CartesianProduct;
+        use crate::with_basis::dual::DualModule;
+        use crate::with_basis::homsets::HomSpace;
+        use crate::with_basis::tensor_product::TensorProduct;
+        use rustmath_finitefields::IntegerMod;
+
+        let z = |n: usize| FreeModuleWithBasis::<usize, _>::standard(BigInt::from(0), n);
+        assert_eq!(DualModule::new(z(3)).is_finite(), Some(false));
+        assert_eq!(TensorProduct::new(z(2), z(3)).is_finite(), Some(false));
+        assert_eq!(CartesianProduct::new(z(2), z(0)).is_finite(), Some(false));
+        assert_eq!(CartesianProduct::new(z(0), z(3)).is_finite(), Some(false));
+        assert_eq!(HomSpace::new(z(2), z(3)).is_finite(), Some(false));
+
+        // Zero modules: no claim (the element types do not enforce rank 0).
+        assert_eq!(DualModule::new(z(0)).is_finite(), None);
+        assert_eq!(TensorProduct::new(z(2), z(0)).is_finite(), None);
+        assert_eq!(CartesianProduct::new(z(0), z(0)).is_finite(), None);
+        assert_eq!(HomSpace::new(z(0), z(3)).is_finite(), None);
+
+        // Over Z/7 the element type fixes no characteristic: undecided, not "infinite".
+        let f7 = |n: usize| {
+            FreeModuleWithBasis::<usize, _>::standard(
+                IntegerMod::new(BigInt::from(0), BigInt::from(7)).unwrap(),
+                n,
+            )
+        };
+        assert_eq!(DualModule::new(f7(2)).is_finite(), None);
+        assert_eq!(TensorProduct::new(f7(2), f7(2)).is_finite(), None);
+        assert_eq!(CartesianProduct::new(f7(2), f7(1)).is_finite(), None);
+        assert_eq!(HomSpace::new(f7(2), f7(2)).is_finite(), None);
     }
 }

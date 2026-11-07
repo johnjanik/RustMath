@@ -69,3 +69,48 @@ fn complex_f64_predicates() {
     assert_eq!(Complex::new(0.0, 0.0).unit_inverse(), Err(MathError::NotInvertible));
     assert_eq!(Complex::new(f64::NAN, 0.0).unit_status(), None);
 }
+
+// The f64 `Complex` has tolerance-based `Real` parts (1e-10): a nonzero value with both parts
+// inside the tolerance is a unit of C, but the type's `is_zero` accepts it, so the hooks must
+// not claim "non-unit"/"nilpotent" (review follow-up C1.2); near ±1 the order is undecided.
+#[test]
+fn complex_f64_tolerance_band_is_undecided() {
+    for (re, im) in [(1e-11, 0.0), (0.0, -1e-11), (1e-11, 1e-11), (5e-324, 0.0)] {
+        let z = Complex::new(re, im);
+        assert!(z.is_zero(), "{z}");
+        assert_eq!(z.unit_status(), None, "{z}");
+        assert_eq!(z.nilpotent_status(), None, "{z}");
+        assert_eq!(z.multiplicative_order_status(), MultiplicativeOrder::Undecided, "{z}");
+        assert!(matches!(z.unit_inverse(), Err(MathError::NumericalError(_))), "{z}");
+    }
+    for (re, im) in [(0.0, 0.0), (-0.0, 0.0), (0.0, -0.0)] {
+        let z = Complex::new(re, im);
+        assert_eq!(z.unit_status(), Some(false));
+        assert_eq!(z.nilpotent_status(), Some(true));
+        assert_eq!(z.multiplicative_order_status(), MultiplicativeOrder::NotAUnit);
+        assert_eq!(z.unit_inverse(), Err(MathError::NotInvertible));
+    }
+    // One part at or beyond the tolerance: a nonzero complex number, decided.
+    for (re, im) in [(1e-10, 0.0), (1e-11, -1e-10), (3.0, 4.0)] {
+        let z = Complex::new(re, im);
+        assert_eq!(z.unit_status(), Some(true), "{z}");
+        assert_eq!(z.nilpotent_status(), Some(false), "{z}");
+        let inv = z.unit_inverse().unwrap();
+        assert_eq!(inv, z.reciprocal().unwrap(), "{z}");
+    }
+    // 1/(3+4i) = (3-4i)/25.
+    let inv = Complex::new(3.0, 4.0).unit_inverse().unwrap();
+    assert!((inv.real() - 0.12).abs() < 1e-15 && (inv.imag() + 0.16).abs() < 1e-15);
+    // |z|^2 overflows f64: a unit, but its inverse is not representable here.
+    let big = Complex::new(1e200, 0.0);
+    assert_eq!(big.unit_status(), Some(true));
+    assert!(matches!(big.unit_inverse(), Err(MathError::NumericalError(_))));
+    // Near ±1 but not ±1: undecided (the trait default would trust `is_one`).
+    for (re, im) in [(1.0 + 5e-11, 0.0), (1.0, 5e-11), (-1.0, -5e-11), (-1.0 - 5e-11, 0.0)] {
+        let z = Complex::new(re, im);
+        assert_eq!(z.multiplicative_order_status(), MultiplicativeOrder::Undecided, "{z}");
+    }
+    assert_eq!(Complex::new(1.0, 0.0).multiplicative_order_status(), MultiplicativeOrder::Finite(1));
+    assert_eq!(Complex::new(-1.0, 0.0).multiplicative_order_status(), MultiplicativeOrder::Finite(2));
+    assert_eq!(Complex::new(f64::INFINITY, 0.0).nilpotent_status(), None);
+}

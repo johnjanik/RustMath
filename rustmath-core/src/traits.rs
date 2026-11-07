@@ -194,8 +194,10 @@ pub enum MultiplicativeOrder {
     /// A unit; the least `n >= 1` with `x^n = 1`.
     Finite(u64),
     /// A unit of finite order at least `2^64` (only in rings with more than `2^64`
-    /// elements). The exact value comes from the type's own `Integer`-valued
-    /// `multiplicative_order()`.
+    /// elements). The exact value comes from the type's own `Integer`-valued inherent
+    /// `multiplicative_order()`, which every type of `rustmath-finitefields` that can return
+    /// this variant provides (`IntegerMod`, `PrimeField`, `FiniteFieldElement`,
+    /// `GaloisRingElement`; `ExtensionField` through `as_element()`).
     FiniteExceedsU64,
     /// A unit with `x^n != 1` for every `n >= 1` (proven).
     Infinite,

@@ -794,8 +794,56 @@ impl Ring for GaloisRingElement {
         GaloisRingElement::unit_inverse(self)
     }
 
-    /// The multiplicative order of a unit `x` of `R = GR(p^a, d)` (beyond the handbook:
-    /// MAGMA Ch. 48 lists no `Order`).
+    /// The multiplicative order of a unit (see [`GaloisRingElement::multiplicative_order`],
+    /// which gives the exact `Integer` when it exceeds `u64` and this hook reports
+    /// `FiniteExceedsU64`). Beyond the handbook: MAGMA Ch. 48 lists no `Order`.
+    fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
+        use rustmath_core::MultiplicativeOrder;
+        match self.order_by_residue_lifting() {
+            UnitOrder::NotAUnit => MultiplicativeOrder::NotAUnit,
+            UnitOrder::Finite(order) => crate::ring_hooks::order_from_integer(&order),
+            // Unreachable by the proof on `order_by_residue_lifting`; never guess.
+            UnitOrder::Inconsistent => MultiplicativeOrder::Undecided,
+        }
+    }
+}
+
+/// Outcome of [`GaloisRingElement::order_by_residue_lifting`].
+enum UnitOrder {
+    NotAUnit,
+    Finite(Integer),
+    /// The residue of a unit had no order, or the proven bound `j <= a - 1` failed: an
+    /// internal inconsistency that the proof rules out, never an order.
+    Inconsistent,
+}
+
+impl GaloisRingElement {
+    /// The multiplicative order of this element (MAGMA `Order(x)` as for Z/mZ, Ch. 19, and
+    /// GF(q), Ch. 21; MAGMA Ch. 48 itself lists no `Order` for Galois rings): `Some(n)`
+    /// with `n` the least `n >= 1` such that `x^n = 1`, and `None` for a non-unit (MAGMA
+    /// returns 0 there). Exact for every size; [`Ring::multiplicative_order_status`]
+    /// reports `FiniteExceedsU64` when `n >= 2^64` and the exact value is this one.
+    ///
+    /// Example: in `GR(2^66, 1) = Z/2^66`, `3` has order `2^64` (PARI/GP
+    /// `znorder(Mod(3, 2^66))`).
+    ///
+    /// # Panics
+    ///
+    /// Only on an internal inconsistency that the proof on the algorithm rules out (the
+    /// residue of a unit having no order, or the `p`-power bound `j <= a - 1` failing).
+    pub fn multiplicative_order(&self) -> Option<Integer> {
+        match self.order_by_residue_lifting() {
+            UnitOrder::NotAUnit => None,
+            UnitOrder::Finite(order) => Some(order),
+            UnitOrder::Inconsistent => unreachable!(
+                "GaloisRingElement::multiplicative_order: the order of {self} is not m * p^j \
+                 with j <= a - 1, contradicting the structure of GR(p^a, d)^*"
+            ),
+        }
+    }
+
+    /// The order of `x` in `R = GR(p^a, d)`, shared by [`GaloisRingElement::multiplicative_order`]
+    /// and the `Ring::multiplicative_order_status` hook.
     ///
     /// Algorithm: let `m` be the order of the residue `x mod p` in `GF(p^d)^*` (exact,
     /// order-from-factorisation of `p^d - 1`, Ch. 21). Then `ord(x) = m * p^j`, where `p^j`
@@ -807,14 +855,13 @@ impl Ring for GaloisRingElement {
     /// `p`-group of exponent dividing `p^(a-1)`. References: B. R. McDonald, *Finite Rings
     /// with Identity* (1974), Ch. XVI; Z.-X. Wan, *Lectures on Finite Fields and Galois
     /// Rings* (2003), Ch. 14 (structure of `GR(p^a, d)^*`).
-    fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
-        use rustmath_core::MultiplicativeOrder;
+    fn order_by_residue_lifting(&self) -> UnitOrder {
         if !GaloisRingElement::is_unit(self) {
-            return MultiplicativeOrder::NotAUnit;
+            return UnitOrder::NotAUnit;
         }
         let m = match self.residue().multiplicative_order() {
             Some(m) => m,
-            None => return MultiplicativeOrder::Undecided, // unreachable: residue of a unit is nonzero
+            None => return UnitOrder::Inconsistent, // unreachable: the residue of a unit is nonzero
         };
         let p = self.p().clone();
         let mut y = GaloisRingElement::pow(self, &m);
@@ -822,13 +869,13 @@ impl Ring for GaloisRingElement {
         // y = x^(m p^j) for j = 0, 1, ..., a - 1; the proof bounds j by a - 1.
         for _ in 0..self.ring.data.a {
             if y.is_one() {
-                return crate::ring_hooks::order_from_integer(&order);
+                return UnitOrder::Finite(order);
             }
             y = GaloisRingElement::pow(&y, &p);
             order = order * p.clone();
         }
         // Unreachable by the proof above; never return an unproven order.
-        MultiplicativeOrder::Undecided
+        UnitOrder::Inconsistent
     }
 }
 

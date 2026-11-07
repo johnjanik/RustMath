@@ -30,7 +30,7 @@ impl<R: Ring> Parent for DownUpAlgebra<R> {
     /// `Some(1)` over the zero ring; otherwise `None` (no claim, see
     /// [`Parent::cardinality`]; the algebra is then infinite, see `is_finite`).
     fn cardinality(&self) -> Option<usize> {
-        if R::zero() == R::one() {
+        if self.base_ring_is_zero() {
             Some(1)
         } else {
             None
@@ -42,16 +42,27 @@ impl<R: Ring> Parent for DownUpAlgebra<R> {
     /// form `DownUpBasisIndex`), so over a nonzero base ring the u^i, i >= 0, are distinct
     /// and the algebra is infinite. Over the zero ring it is the zero ring.
     ///
-    /// `R::zero()`/`R::one()` panic for parent-carrying element types (Galois rings,
-    /// p-adics); `DownUpAlgebra`'s own constructors already call them, so such an algebra
-    /// cannot be built in the first place.
+    /// Whether the base ring is the zero ring is read off the stored parameter `alpha`
+    /// (see `base_ring_is_zero`), never from the static `R::zero()`/`R::one()`, which panic
+    /// for parent-carrying element types (Galois rings, p-adics). `DownUpAlgebra::new`
+    /// does not call those constructors, so such an algebra can be built.
     fn is_finite(&self) -> Option<bool> {
-        Some(R::zero() == R::one())
+        Some(self.base_ring_is_zero())
     }
 
     fn name(&self) -> String {
         format!("Down-Up Algebra DU({}, {}, {})",
                 self.alpha(), self.beta(), self.gamma())
+    }
+}
+
+impl<R: Ring> DownUpAlgebra<R> {
+    /// Whether the base ring is the zero ring, decided from the stored parameter `alpha`:
+    /// in the zero ring every element is both 0 and 1, and in a nonzero ring no element is
+    /// (`x = 0` and `x = 1` give `0 = 1`). Uses no static constructor of `R`.
+    fn base_ring_is_zero(&self) -> bool {
+        let alpha = self.alpha();
+        alpha.is_zero() && alpha.is_one()
     }
 }
 
@@ -274,5 +285,82 @@ mod tests {
         );
         assert_eq!(algebra.is_finite(), Some(false));
         assert_eq!(algebra.cardinality(), None);
+    }
+
+    // Review follow-up: `cardinality`/`is_finite` must not call the static `R::zero()` /
+    // `R::one()`, which panic for parent-carrying element types. GR(2^3, 2) is a nonzero ring
+    // (MAGMA Ch. 48: #GR(8, 2) = 8^2 = 64), so DU(a, b, c) over it has the basis
+    // u^i (du)^j d^k (Benkart and Roby, J. Algebra 209 (1998)) and is infinite.
+    #[test]
+    fn test_down_up_algebra_over_galois_ring_does_not_panic() {
+        use rustmath_finitefields::{GaloisRing, GaloisRingElement};
+        let r = GaloisRing::new(Integer::from(2), 3, 2).unwrap();
+        let algebra = DownUpAlgebra::<GaloisRingElement>::new(
+            r.from_int(Integer::from(1)),
+            r.from_int(Integer::from(3)),
+            r.generator(),
+        );
+        assert_eq!(algebra.cardinality(), None);
+        assert_eq!(algebra.is_finite(), Some(false));
+        // A zero parameter does not make the base ring the zero ring.
+        let algebra0 = DownUpAlgebra::<GaloisRingElement>::new(r.zero(), r.zero(), r.zero());
+        assert_eq!(algebra0.cardinality(), None);
+        assert_eq!(algebra0.is_finite(), Some(false));
+    }
+
+    /// The zero ring {0 = 1}, for the zero-ring branch of `DownUpAlgebra`'s finiteness.
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    struct ZeroRing;
+
+    impl std::fmt::Display for ZeroRing {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "0")
+        }
+    }
+    impl std::ops::Add for ZeroRing {
+        type Output = Self;
+        fn add(self, _: Self) -> Self {
+            ZeroRing
+        }
+    }
+    impl std::ops::Sub for ZeroRing {
+        type Output = Self;
+        fn sub(self, _: Self) -> Self {
+            ZeroRing
+        }
+    }
+    impl std::ops::Mul for ZeroRing {
+        type Output = Self;
+        fn mul(self, _: Self) -> Self {
+            ZeroRing
+        }
+    }
+    impl std::ops::Neg for ZeroRing {
+        type Output = Self;
+        fn neg(self) -> Self {
+            ZeroRing
+        }
+    }
+    impl Ring for ZeroRing {
+        fn zero() -> Self {
+            ZeroRing
+        }
+        fn one() -> Self {
+            ZeroRing
+        }
+        fn is_zero(&self) -> bool {
+            true
+        }
+        fn is_one(&self) -> bool {
+            true
+        }
+    }
+
+    // Over the zero ring the down-up algebra is the zero ring: one element.
+    #[test]
+    fn test_down_up_algebra_over_zero_ring_is_finite() {
+        let algebra = DownUpAlgebra::<ZeroRing>::new(ZeroRing, ZeroRing, ZeroRing);
+        assert_eq!(algebra.is_finite(), Some(true));
+        assert_eq!(algebra.cardinality(), Some(1));
     }
 }
