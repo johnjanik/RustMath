@@ -13,6 +13,7 @@ pub mod eigenvalues_approx;
 pub mod inner_product;
 pub mod integer_forms;
 pub mod integer_relation;
+pub(crate) mod krylov;
 pub mod lattice;
 pub mod linear_solve;
 pub mod enumerate;
