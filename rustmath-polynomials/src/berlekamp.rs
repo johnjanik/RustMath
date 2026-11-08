@@ -9,7 +9,7 @@
 //! Representation, as in [`crate::zx`] and [`crate::fp_factor`]: little-endian `Vec<Integer>`
 //! (index = power of x), every coefficient in `[0, p)`, trimmed, `[]` is the zero polynomial.
 //! The prime is an arbitrary-size [`Integer`], so this complements `fp_factor` (i64 arithmetic,
-//! p < 2^31, Cantor-Zassenhaus).
+//! p <= `fp_factor::MAX_P` = 3037000499, Cantor-Zassenhaus).
 //!
 //! Algorithm ([`factor`]):
 //! 1. Square-free decomposition over GF(p) (Yun's gcd recursion with the p-th-root step for

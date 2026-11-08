@@ -15,15 +15,15 @@
 //! *Finite Fields* §21.3.5 (`Roots`).
 //!
 //! Algorithms:
-//! - [CZ81] D. G. Cantor, H. Zassenhaus, *A new algorithm for factoring
+//! - \[CZ81\] D. G. Cantor, H. Zassenhaus, *A new algorithm for factoring
 //!   polynomials over finite fields*, Math. Comp. 36 (1981) 587-592: random
 //!   equal-degree splitting, the trace map in characteristic 2.
-//! - [vzGG] J. von zur Gathen, J. Gerhard, *Modern Computer Algebra*, §14.2
+//! - \[vzGG\] J. von zur Gathen, J. Gerhard, *Modern Computer Algebra*, §14.2
 //!   (distinct-degree factorization) and §14.3: Algorithm 14.8 (equal-degree
 //!   splitting), Theorem 14.9 (a uniform try fails with probability at most
 //!   2^(1-r) <= 1/2 on a product of r >= 2 distinct irreducibles of degree d),
 //!   Algorithm 14.10 (recursive equal-degree factorization).
-//! - [Rab80] M. O. Rabin, *Probabilistic algorithms in finite fields*, SIAM J.
+//! - \[Rab80\] M. O. Rabin, *Probabilistic algorithms in finite fields*, SIAM J.
 //!   Comput. 9 (1980) 273-280: `x^(p^d) - x` is the product of the monic
 //!   irreducibles of degree dividing `d`; the equal-degree contract certificate
 //!   ([`equal_degree_factor`]) is Rabin's criterion generalised to products.
@@ -455,7 +455,7 @@ fn random_monic_polynomial(d: i64, p: i64, rng: &mut SplitMix64) -> Vec<i64> {
 }
 
 /// The trace map `T(a) = a + a^2 + a^4 + ... + a^(2^(d-1)) rem f` over `F_2`
-/// ([CZ81]; vzGG §14.3, even q): on every CRT component `F_2[x]/(f_i)` with
+/// (\[CZ81\]; vzGG §14.3, even q): on every CRT component `F_2[x]/(f_i)` with
 /// `deg f_i = d` it is the absolute trace `F_(2^d) -> F_2`, so
 /// `gcd(T(a), f) = prod_{Tr(a_i) = 0} f_i`. `a` is reduced mod `f` first; for
 /// `deg a < deg f` this equals the legacy inline trace.
@@ -513,7 +513,7 @@ fn check_prime(p: i64) -> Result<(), String> {
 /// of distinct monic irreducibles of degree exactly `d` over `F_p`, with `p` a
 /// prime `<= MAX_P`; otherwise the first violated condition.
 ///
-/// Rabin's criterion ([Rab80], vzGG §14.2) generalised to products:
+/// Rabin's criterion (\[Rab80\], vzGG §14.2) generalised to products:
 /// `x^(p^d) ≡ x (mod f)` iff every irreducible factor of the squarefree `f`
 /// has degree dividing `d`, and `gcd(x^(p^(d/l)) - x, f) = 1` for every prime
 /// `l | d` excludes the proper divisors of `d`. Cost: `d` Frobenius steps, i.e.
@@ -659,14 +659,14 @@ fn contract_or_panic(f: &[i64], d: i64, p: i64) {
 }
 
 /// Equal-degree factorization (MAGMA `EqualDegreeFactorization`, ch. 23
-/// §23.8.1; Cantor–Zassenhaus [CZ81], vzGG Algorithms 14.8/14.10). Splits a
+/// §23.8.1; Cantor–Zassenhaus \[CZ81\], vzGG Algorithms 14.8/14.10). Splits a
 /// squarefree `f` whose irreducible factors all have degree `d` into those
 /// monic factors. For `p = 2` the trace map is used; for odd `p`,
 /// `a^((p^d-1)/2) - 1`.
 ///
 /// The contract is **checked** (unlike MAGMA, whose result is "unpredictable
 /// if conditions are not met"): before any splitting, `f` must pass a
-/// certificate (Rabin's criterion for products, [Rab80]) proving that it is a
+/// certificate (Rabin's criterion for products, \[Rab80\]) proving that it is a
 /// squarefree product of distinct monic irreducibles of degree exactly `d`
 /// over `F_p`. The returned list therefore always consists of irreducible
 /// factors of degree `d` whose product is `f` made monic; the order is the
@@ -754,8 +754,10 @@ pub fn factor(f: &[i64], p: i64) -> Vec<Vec<i64>> {
 /// such that `prod g_i^{e_i}` equals `f` made monic. Multiplicities are found
 /// by repeated exact division of `f` by each distinct factor from [`factor`].
 ///
-/// Precondition and panics: as for [`factor`] (`p` a prime `<= MAX_P`, not
-/// checked up front; a composite `p` is not detected).
+/// # Panics
+///
+/// As for [`factor`]: the precondition is `p` a prime `<= MAX_P`, not checked
+/// up front, and a composite `p` is not detected.
 pub fn factor_with_multiplicity(f: &[i64], p: i64) -> Vec<(Vec<i64>, u32)> {
     let f_m = make_monic(f, p);
     if degree(&f_m) <= 0 {
