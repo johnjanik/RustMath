@@ -46,8 +46,10 @@ use std::fmt;
 //   whose image contains the closed unit ball, extended by 0).
 // * TM, T*M and their tensor and exterior powers exist only for a differentiability class
 //   >= 1 (for a C^k manifold, k >= 1, TM is a C^(k−1) bundle). On a C^0 manifold the modules
-//   built from them are not defined, so no claim is made. The trivial bundle M × R (C^0(M),
-//   T^(0,0), Ω^0) exists for every class, so those three are infinite on every manifold.
+//   built from them are not defined, so no claim is made. The trivial bundle M × R exists for
+//   every class; its module of sections is the scalar algebra (C^∞(M) in this crate's naming;
+//   C^k(M) on a C^k manifold), which is also T^(0,0) and Ω^0, so it is infinite on every
+//   manifold.
 // * If rank E = 0, Γ(E) = {0}; the element types here do not enforce that, so no claim.
 
 /// `Parent::is_finite` of a module of sections of a vector bundle built from TM over
