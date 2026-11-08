@@ -14,6 +14,15 @@
 //! This module provides the Rust equivalent using traits that can be implemented by
 //! various ring types.
 //!
+//! ## Honest defaults (MAGMA Handbook Ch. 17, Ch. 16, Ch. 54)
+//!
+//! The parent predicates of [`RingParentMethods`] are three-valued like MAGMA's generic ring
+//! predicates (Ch. 17 §17.4.3 `IsCommutative`, `IsDomain`, `IsField`, `IsFinite`: "true if
+//! known; false if known not; error if unknown"), with `Characteristic` (§17.4.2),
+//! `PrimeField` (§17.4.1) and `Random` (§17.5.2). The morphism predicates of
+//! [`RingMorphismMethods`] are MAGMA `IsInjective` / `IsSurjective` (Ch. 54 §54.10.7; Ch. 16
+//! §16.3.2 `Kernel`). `None` and `Err` make no claim; a default never fabricates an answer.
+//!
 //! ## Examples
 //!
 //! ```rust
@@ -21,6 +30,7 @@
 //! ```
 
 use rustmath_core::{Ring, EuclideanDomain, MathError, Result};
+use rustmath_integers::Integer;
 
 // ============================================================================
 // ElementMethods - Methods for ring elements
@@ -130,14 +140,63 @@ pub trait RingElementMethods: Ring {
 // ParentMethods - Methods for ring structures
 // ============================================================================
 
-/// Methods for ring structures (parents), corresponding to SageMath's `Rings.ParentMethods`
+/// Whether a ring of characteristic `c` is provably not an integral domain.
 ///
-/// This trait provides operations on rings as algebraic structures including:
-/// - Ring property tests (is_commutative, is_field, is_integral_domain, etc.)
-/// - Characteristic computation
-/// - Ideal construction
-/// - Quotient ring formation
-/// - Localization
+/// `c = 1` is the zero ring (`1 = 0`). For composite `c = ab` with `1 < a, b < c`,
+/// `(a·1)(b·1) = c·1 = 0` while `a·1` and `b·1` are nonzero (both are below the
+/// characteristic). `false` for 0 and for primes. [`Integer::is_prime`] uses trial division
+/// below 1000 and Miller–Rabin with the 12 prime bases 2..37 above; no composite below
+/// ψ12 ≈ 3.19·10^23 > 2^64 passes those bases (J. Sorenson and J. Webster, "Strong
+/// pseudoprimes to twelve prime bases", Math. Comp. 86 (2017)), so on `u64` both verdicts
+/// are proofs.
+fn characteristic_rules_out_domain(c: u64) -> bool {
+    c == 1 || (c >= 4 && !Integer::from(c).is_prime())
+}
+
+/// `Some(c)` when the parent's own data prove `R = Z·1 ≅ Z/cZ`, else `None`.
+///
+/// * A known characteristic `c` equal to a known order: the additive subgroup `Z·1` already
+///   has `c` elements, so it is all of `R`.
+/// * Characteristic unknown and a known prime order `p`: `1 != 0`, and its additive order
+///   divides `p` (Lagrange), so it is `p` and again `Z·1 = R`.
+///
+/// Such a ring is commutative, and it is an integral domain (indeed the prime field `F_c`)
+/// iff `c` is prime.
+fn residue_ring_modulus<P: RingParentMethods + ?Sized>(parent: &P) -> Option<u64> {
+    let n = u64::try_from(parent.order()?).ok()?;
+    if n == 0 {
+        return None;
+    }
+    match parent.characteristic() {
+        Some(c) => (c == n).then_some(c),
+        None => Integer::from(n).is_prime().then_some(n),
+    }
+}
+
+/// Methods for ring structures (parents): SageMath `Rings.ParentMethods`; MAGMA Handbook
+/// Ch. 17 §17.4 (generic ring functions).
+///
+/// # Honest defaults
+///
+/// The predicates are three-valued like MAGMA's (Ch. 17 §17.4.3: "true if known; false if
+/// known not; error if unknown"): `Some(_)` is a proof, `None` makes no claim. A default
+/// derives only what the ring axioms and this parent's own [`Self::characteristic`] and
+/// [`Self::order`] prove. It never guesses or searches, and it never reads the static
+/// `Self::Element::zero()`/`one()`: they panic for some parent-carrying element types (the
+/// p-adic types), and for the sentinel types (`IntegerMod`, `FiniteFieldElement`,
+/// `GaloisRingElement`) they are unbound placeholders that are the same for every parent, so
+/// they say nothing about this parent. A parent that knows more overrides.
+///
+/// The defaults assume the parent is a unital subring of the values of `Self::Element`, with
+/// that type's `0`, `1` and operations. A parent whose elements are representatives with
+/// other arithmetic (for example `Integer` residues standing for Z/nZ) must override
+/// `characteristic`.
+///
+/// Default dependency order (an override may call only methods earlier in it): `order` →
+/// `characteristic` → `is_zero_ring`, `is_finite` → `is_commutative`, `is_integral_domain` →
+/// `is_field` → `is_prime_field`, `is_integrally_closed`, `is_noetherian`. Because
+/// `is_integral_domain` comes before `is_field`, a parent that overrides `is_field` with
+/// `Some(true)` should also override `is_integral_domain` (a field is a domain).
 ///
 /// Reference: https://doc.sagemath.org/html/en/reference/categories/sage/categories/rings.html#sage.categories.rings.Rings.ParentMethods
 pub trait RingParentMethods {
@@ -151,100 +210,122 @@ pub trait RingParentMethods {
         true
     }
 
-    /// Check if this ring is commutative
+    /// MAGMA `IsCommutative(R)` (Ch. 17 §17.4.3): whether `a * b = b * a` for all elements.
     ///
-    /// A ring is commutative if `a * b = b * a` for all elements `a, b`.
-    ///
-    /// # Default Implementation
-    ///
-    /// Returns false by default. Concrete commutative ring types should override.
-    fn is_commutative(&self) -> bool {
-        false
+    /// Default: `Some(true)` for the zero ring and for a parent proven to be `Z/cZ` (a known
+    /// characteristic equal to a known order, or a known prime order); otherwise `None`.
+    fn is_commutative(&self) -> Option<bool> {
+        if self.is_zero_ring() == Some(true) || residue_ring_modulus(self).is_some() {
+            Some(true)
+        } else {
+            None
+        }
     }
 
-    /// Check if this ring is the zero ring
+    /// Whether this is the zero ring (`1 = 0`), decided from the parent (MAGMA Ch. 17
+    /// §17.4.2: characteristic 1, equivalently `#R = 1`).
     ///
-    /// The zero ring is the unique ring where 0 = 1.
-    fn is_zero_ring(&self) -> bool {
-        Self::Element::zero() == Self::Element::one()
+    /// A known [`Self::characteristic`] `c` gives `Some(c == 1)`; otherwise a known
+    /// [`Self::order`] `n` gives `Some(n == 1)`; otherwise `None`. (An implementor whose
+    /// characteristic and order contradict each other has a bug; the characteristic is read
+    /// first.) It never compares the static `Self::Element::zero()` and `one()`: they panic
+    /// for the p-adic element types, and for the sentinel types (`IntegerMod`,
+    /// `FiniteFieldElement`, `GaloisRingElement`) they are parent-independent unbound
+    /// placeholders, so `zero() == one()` says nothing about this parent.
+    fn is_zero_ring(&self) -> Option<bool> {
+        match (self.characteristic(), self.order()) {
+            (Some(c), _) => Some(c == 1),
+            (None, Some(n)) => Some(n == 1),
+            (None, None) => None,
+        }
     }
 
-    /// Check if this ring is a field
+    /// MAGMA `IsField(R)` (Ch. 17 §17.4.3): every nonzero element is invertible.
     ///
-    /// A ring is a field if every nonzero element has a multiplicative inverse.
-    ///
-    /// # Arguments
-    ///
-    /// * `proof` - If true, require a rigorous proof. If false, heuristics may be used.
-    ///
-    /// # Default Implementation
-    ///
-    /// Returns false by default. Concrete field types should override.
-    fn is_field(&self, _proof: bool) -> bool {
-        false
+    /// Default: a proven non-domain is not a field; a finite integral domain is a field
+    /// (`x ↦ ax` is injective for `a != 0`, hence onto); otherwise `None`.
+    fn is_field(&self) -> Option<bool> {
+        match self.is_integral_domain() {
+            Some(false) => Some(false),
+            Some(true) if self.is_finite() == Some(true) => Some(true),
+            _ => None,
+        }
     }
 
-    /// Check if this ring is an integral domain
+    /// MAGMA `IsDomain(R)` (Ch. 17 §17.4.3): commutative, `0 != 1`, no zero divisors.
     ///
-    /// A ring is an integral domain if it is commutative, has no zero divisors,
-    /// and 0 ≠ 1.
-    ///
-    /// # Arguments
-    ///
-    /// * `proof` - If true, require a rigorous proof. If false, heuristics may be used.
-    ///
-    /// # Default Implementation
-    ///
-    /// Returns false by default. Concrete integral domain types should override.
-    fn is_integral_domain(&self, _proof: bool) -> bool {
-        false
+    /// Default:
+    /// * the zero ring is not one;
+    /// * a composite characteristic `c = ab` is not one (`(a·1)(b·1) = 0`, see the module
+    ///   helper `characteristic_rules_out_domain`);
+    /// * a parent proven to be `Z/cZ` (see [`Self::is_commutative`]) is one iff `c` is prime;
+    /// * otherwise `None` (characteristic 0 or a prime does not decide it).
+    fn is_integral_domain(&self) -> Option<bool> {
+        if self.is_zero_ring() == Some(true) {
+            return Some(false);
+        }
+        if let Some(c) = self.characteristic() {
+            if characteristic_rules_out_domain(c) {
+                return Some(false);
+            }
+        }
+        residue_ring_modulus(self).map(|c| Integer::from(c).is_prime())
     }
 
-    /// Check if this ring is integrally closed
+    /// Whether this ring is integrally closed in its field of fractions.
     ///
-    /// A ring R is integrally closed if every element of its fraction field
-    /// that is integral over R is actually in R.
-    ///
-    /// # Default Implementation
-    ///
-    /// Returns false by default. Override for specific ring types.
-    fn is_integrally_closed(&self) -> bool {
-        false
+    /// Default: a field is (it is its own fraction field), so `Some(true)` when
+    /// [`Self::is_field`] is `Some(true)`; otherwise `None`. The notion is defined for
+    /// domains, so no default answers `Some(false)`.
+    fn is_integrally_closed(&self) -> Option<bool> {
+        if self.is_field() == Some(true) {
+            Some(true)
+        } else {
+            None
+        }
     }
 
-    /// Check if this ring is Noetherian
+    /// Whether every ascending chain of ideals stabilises.
     ///
-    /// A ring is Noetherian if it satisfies the ascending chain condition
-    /// on ideals: every ascending chain of ideals eventually stabilizes.
-    ///
-    /// # Default Implementation
-    ///
-    /// Returns false by default. Override for specific ring types.
-    fn is_noetherian(&self) -> bool {
-        false
+    /// Default: a finite ring (finitely many ideals) and a field (ideals `0` and `R`) are
+    /// Noetherian (Atiyah–Macdonald, *Introduction to Commutative Algebra*, Ch. 6);
+    /// otherwise `None`.
+    fn is_noetherian(&self) -> Option<bool> {
+        if self.is_finite() == Some(true) || self.is_field() == Some(true) {
+            Some(true)
+        } else {
+            None
+        }
     }
 
-    /// Check if this ring is a prime field
+    /// MAGMA `IsPrimeField(F)` (Ch. 21 §21.2.1; `PrimeField`, Ch. 17 §17.4.1): a field that
+    /// is Q or F_p.
     ///
-    /// A prime field is either ℚ (characteristic 0) or 𝔽ₚ (characteristic p).
-    ///
-    /// # Default Implementation
-    ///
-    /// Returns false by default. Override for ℚ and 𝔽ₚ.
-    fn is_prime_field(&self) -> bool {
-        false
+    /// Default: a proven non-field is not one; a field of known order `n = p^k` is its prime
+    /// field iff `k = 1` iff `n` is prime; otherwise `None` (a characteristic-0 field may or
+    /// may not be Q).
+    fn is_prime_field(&self) -> Option<bool> {
+        match self.is_field() {
+            Some(false) => Some(false),
+            Some(true) => self
+                .order()
+                .and_then(|n| u64::try_from(n).ok())
+                .map(|n| Integer::from(n).is_prime()),
+            None => None,
+        }
     }
 
-    /// Compute the characteristic of this ring
+    /// MAGMA `Characteristic(R)` (Ch. 17 §17.4.2): the least `m >= 1` with `m·1 = 0`, or 0.
     ///
-    /// The characteristic is the smallest positive integer n such that
-    /// n·1 = 0, or 0 if no such n exists.
+    /// `Some(c)` is exact (`Some(1)`: the zero ring); `None` means unknown or `>= 2^64`. The
+    /// exact `Integer` value of a large finite ring comes from its own parent type
+    /// (`FiniteField::characteristic`, `GaloisRing::characteristic`, `Zmod::characteristic`
+    /// in `rustmath-finitefields`).
     ///
-    /// # Default Implementation
-    ///
-    /// Returns 0 (characteristic zero). Override for finite rings.
-    fn characteristic(&self) -> u64 {
-        0
+    /// Default: [`Ring::static_characteristic`] of the element type (`Some(0)` for the Z, Q,
+    /// R and C types); else `Some(1)` when [`Self::order`] is 1; else `None`.
+    fn characteristic(&self) -> Option<u64> {
+        Self::Element::static_characteristic().or_else(|| (self.order() == Some(1)).then_some(1))
     }
 
     /// Compute the Lie bracket [x, y] = xy - yx
@@ -266,7 +347,9 @@ pub trait RingParentMethods {
     /// The order (number of elements) of this ring, when it is known and fits in `usize`.
     ///
     /// `None` makes **no claim**: the ring may be infinite, finite with more than
-    /// `usize::MAX` elements, or of uncomputed size. Use [`Self::is_finite`].
+    /// `usize::MAX` elements, or of uncomputed size. Use [`Self::is_finite`]. An override
+    /// must not call any other method of this trait (it is first in the default dependency
+    /// order).
     fn order(&self) -> Option<usize> {
         None
     }
@@ -274,16 +357,18 @@ pub trait RingParentMethods {
     /// MAGMA `IsFinite` (Handbook Ch. 17 §17.4.3): `Some(true)` known finite, `Some(false)`
     /// known infinite, `None` undecided.
     ///
-    /// Default: a known `order()` proves finiteness; an element type of characteristic 0
-    /// ([`Ring::static_characteristic`]) proves infiniteness (a ring of characteristic 0 is
-    /// nonzero and contains a copy of Z); otherwise `None`.
+    /// Default: a known `order()` proves finiteness; characteristic 0 proves infiniteness (a
+    /// ring of characteristic 0 is nonzero and contains a copy of Z); characteristic 1 is the
+    /// zero ring, which is finite; otherwise `None` (a positive characteristic does not
+    /// decide it: F_p and F_p[x] share it).
     fn is_finite(&self) -> Option<bool> {
         if self.order().is_some() {
-            Some(true)
-        } else if Self::Element::static_characteristic() == Some(0) {
-            Some(false)
-        } else {
-            None
+            return Some(true);
+        }
+        match self.characteristic() {
+            Some(0) => Some(false),
+            Some(1) => Some(true),
+            _ => None,
         }
     }
 
@@ -298,27 +383,40 @@ pub trait RingParentMethods {
     ///
     /// # Default Implementation
     ///
-    /// Returns None (unknown). Override for specific ring types.
+    /// `None`: unknown. (The zero ring, of dimension −∞ by convention, also gives `None`.)
+    /// Override for specific ring types.
     fn krull_dimension(&self) -> Option<usize> {
         None
     }
 
-    /// Generate a random element of this ring
+    /// A random element of this ring (MAGMA `Random(R)`, Ch. 17 §17.5.2).
     ///
-    /// # Default Implementation
+    /// # Errors
     ///
-    /// Returns zero. Override with better randomization for specific types.
-    fn random_element(&self) -> Self::Element {
-        Self::Element::zero()
+    /// Default: `MathError::NotImplemented`. A parent that can sample overrides this; the
+    /// default never returns a fixed element as if it were random.
+    fn random_element(&self) -> Result<Self::Element> {
+        Err(MathError::NotImplemented(
+            "random_element: this parent does not implement Random (MAGMA Ch. 17 §17.5.2)".into(),
+        ))
     }
 
-    /// Generate a random nonzero element of this ring
+    /// A random nonzero element of this ring.
     ///
-    /// # Default Implementation
+    /// # Errors
     ///
-    /// Returns one. Override with better randomization for specific types.
-    fn random_nonzero_element(&self) -> Self::Element {
-        Self::Element::one()
+    /// Default: `MathError::InvalidArgument` for the zero ring (it has no nonzero element),
+    /// otherwise `MathError::NotImplemented` as for [`Self::random_element`].
+    fn random_nonzero_element(&self) -> Result<Self::Element> {
+        if self.is_zero_ring() == Some(true) {
+            return Err(MathError::InvalidArgument(
+                "random_nonzero_element: the zero ring has no nonzero element".into(),
+            ));
+        }
+        Err(MathError::NotImplemented(
+            "random_nonzero_element: this parent does not implement Random (MAGMA Ch. 17 §17.5.2)"
+                .into(),
+        ))
     }
 }
 
@@ -333,6 +431,9 @@ pub trait RingParentMethods {
 /// - Testing if morphism is nonzero
 /// - Extending to fraction fields
 ///
+/// The predicates are three-valued: `Some(_)` is a proof, `None` makes no claim (MAGMA
+/// `IsInjective`, `IsSurjective`, Ch. 54 §54.10.7; `Kernel`, Ch. 16 §16.3.2).
+///
 /// Reference: https://doc.sagemath.org/html/en/reference/categories/sage/categories/rings.html#sage.categories.rings.Rings.MorphismMethods
 pub trait RingMorphismMethods {
     /// The domain ring type
@@ -344,47 +445,45 @@ pub trait RingMorphismMethods {
     /// Apply the morphism to an element of the domain
     fn apply(&self, x: &Self::Domain) -> Self::Codomain;
 
-    /// Check if this morphism is injective (one-to-one)
+    /// MAGMA `IsInjective` (Ch. 54 §54.10.7; Ch. 16 §16.3.2 `Kernel`): `Some(true)` proven
+    /// injective (kernel 0), `Some(false)` proven not, `None` undecided.
     ///
-    /// A ring homomorphism φ: R → S is injective if φ(a) = φ(b) implies a = b,
-    /// which is equivalent to ker(φ) = {0}.
-    ///
-    /// # Default Implementation
-    ///
-    /// Returns false by default. Override with specific logic for concrete morphisms.
-    fn is_injective(&self) -> bool {
-        false
+    /// Default `None`: this trait sees only the element map, not the kernel.
+    fn is_injective(&self) -> Option<bool> {
+        None
     }
 
-    /// Check if this morphism is the zero morphism
+    /// Whether this morphism is nonzero.
     ///
-    /// The zero morphism sends all elements to zero. This checks if the
-    /// image of the domain's one element is nonzero.
+    /// A ring homomorphism φ is zero iff φ(1) = 0 (φ(x) = φ(x)·φ(1)), so the default
+    /// checks the image of 1; the answer is a proof if `apply` is a ring homomorphism.
     ///
-    /// # Default Implementation
+    /// # Panics
     ///
-    /// Checks if the image of 1 is nonzero.
+    /// Reads the static `Self::Domain::one()`, which panics for the p-adic element types
+    /// (`PadicInteger`, `PadicRational`, `PadicExtensionElement`); morphisms from those must
+    /// override this method. For the sentinel domain types (`IntegerMod`,
+    /// `FiniteFieldElement`, `GaloisRingElement`), `apply` receives the parent-independent
+    /// unbound 1, and the answer is right only if `apply` maps it as the domain's 1.
     fn is_nonzero(&self) -> bool {
         !self.apply(&Self::Domain::one()).is_zero()
     }
 
-    /// Check if this morphism is surjective (onto)
-    ///
-    /// A ring homomorphism φ: R → S is surjective if every element of S
-    /// is the image of some element of R.
-    ///
-    /// # Default Implementation
-    ///
-    /// Returns false by default. Override with specific logic for concrete morphisms.
-    fn is_surjective(&self) -> bool {
-        false
+    /// MAGMA `IsSurjective` (Ch. 54 §54.10.7): `Some(true)` proven onto, `Some(false)` proven
+    /// not, `None` undecided. Default `None`.
+    fn is_surjective(&self) -> Option<bool> {
+        None
     }
 
-    /// Check if this morphism is an isomorphism
-    ///
-    /// A ring homomorphism is an isomorphism if it is both injective and surjective.
-    fn is_isomorphism(&self) -> bool {
-        self.is_injective() && self.is_surjective()
+    /// Whether this morphism is bijective (a bijective ring homomorphism is an isomorphism):
+    /// the Kleene "and" of [`Self::is_injective`] and [`Self::is_surjective`]. `Some(false)`
+    /// if either is `Some(false)`, `Some(true)` if both are `Some(true)`, else `None`.
+    fn is_isomorphism(&self) -> Option<bool> {
+        match (self.is_injective(), self.is_surjective()) {
+            (Some(false), _) | (_, Some(false)) => Some(false),
+            (Some(true), Some(true)) => Some(true),
+            _ => None,
+        }
     }
 }
 
@@ -517,32 +616,38 @@ mod tests {
     #[derive(Debug, Clone)]
     struct IntegerRing;
 
+    // Z: `characteristic` comes from the default (`i32::static_characteristic() = Some(0)`).
     impl RingParentMethods for IntegerRing {
         type Element = i32;
 
-        fn is_commutative(&self) -> bool {
-            true
+        fn is_commutative(&self) -> Option<bool> {
+            Some(true)
         }
 
-        fn is_integral_domain(&self, _proof: bool) -> bool {
-            true
+        fn is_integral_domain(&self) -> Option<bool> {
+            Some(true)
         }
 
-        fn characteristic(&self) -> u64 {
-            0
+        // GAP: IsField(Integers) -> false.
+        fn is_field(&self) -> Option<bool> {
+            Some(false)
         }
     }
 
+    // GAP: [Characteristic, IsField, IsIntegralRing, IsCommutative, IsFinite](Integers)
+    // -> [0, false, true, true, false].
     #[test]
     fn test_ring_parent_properties() {
         let z = IntegerRing;
         assert!(z.is_ring());
-        assert!(z.is_commutative());
-        assert!(z.is_integral_domain(true));
-        assert!(!z.is_zero_ring());
-        assert_eq!(z.characteristic(), 0);
+        assert_eq!(z.is_commutative(), Some(true));
+        assert_eq!(z.is_integral_domain(), Some(true));
+        assert_eq!(z.is_zero_ring(), Some(false));
+        assert_eq!(z.characteristic(), Some(0));
         assert_eq!(z.is_infinite(), Some(true));
         assert_eq!(z.is_finite(), Some(false));
+        assert_eq!(z.is_field(), Some(false));
+        assert_eq!(z.is_prime_field(), Some(false));
     }
 
     #[test]
@@ -555,7 +660,440 @@ mod tests {
         assert_eq!(z.bracket(&1, &1), 0);
     }
 
-    // Example: Simple morphism for testing
+    // ---- Test parents for the honest defaults (MAGMA Ch. 17 §17.4) ----
+
+    use rustmath_core::NumericConversion;
+    use rustmath_finitefields::{
+        FiniteField, FiniteFieldElement, GaloisRing, GaloisRingElement, IntegerMod, Zmod,
+    };
+    use rustmath_rationals::Rational;
+
+    /// A parent that overrides nothing: what every new implementor inherits.
+    struct Bare<E>(std::marker::PhantomData<E>);
+    impl<E: Ring> RingParentMethods for Bare<E> {
+        type Element = E;
+    }
+    fn bare<E: Ring>() -> Bare<E> {
+        Bare(std::marker::PhantomData)
+    }
+
+    /// GR(p^a, d) with its exact characteristic and order; nothing else overridden.
+    struct GrParent(GaloisRing);
+    impl RingParentMethods for GrParent {
+        type Element = GaloisRingElement;
+        fn characteristic(&self) -> Option<u64> {
+            GaloisRing::characteristic(&self.0).to_u64()
+        }
+        fn order(&self) -> Option<usize> {
+            self.0.cardinality().to_usize()
+        }
+        // Galois rings are commutative (MAGMA Ch. 48).
+        fn is_commutative(&self) -> Option<bool> {
+            Some(true)
+        }
+    }
+
+    /// Z/nZ with its exact characteristic and order only.
+    struct ZmodParent(Zmod);
+    impl RingParentMethods for ZmodParent {
+        type Element = IntegerMod;
+        fn characteristic(&self) -> Option<u64> {
+            self.0.characteristic().to_u64()
+        }
+        fn order(&self) -> Option<usize> {
+            self.0.order().to_usize()
+        }
+    }
+    fn zmod(n: u64) -> ZmodParent {
+        ZmodParent(Zmod::new(Integer::from(n)).unwrap())
+    }
+
+    /// GF(q) with its exact characteristic and order, and `is_field = Some(true)` only.
+    struct FqParent(FiniteField);
+    impl RingParentMethods for FqParent {
+        type Element = FiniteFieldElement;
+        fn characteristic(&self) -> Option<u64> {
+            self.0.characteristic().to_u64()
+        }
+        fn order(&self) -> Option<usize> {
+            self.0.order().to_usize()
+        }
+        fn is_field(&self) -> Option<bool> {
+            Some(true)
+        }
+    }
+    fn gf(p: u64, n: usize) -> FqParent {
+        FqParent(FiniteField::new(Integer::from(p), n).unwrap())
+    }
+
+    /// GF(q) known only to be an integral domain (plus characteristic and order).
+    struct FqDomain(FiniteField);
+    impl RingParentMethods for FqDomain {
+        type Element = FiniteFieldElement;
+        fn characteristic(&self) -> Option<u64> {
+            self.0.characteristic().to_u64()
+        }
+        fn order(&self) -> Option<usize> {
+            self.0.order().to_usize()
+        }
+        fn is_integral_domain(&self) -> Option<bool> {
+            Some(true)
+        }
+    }
+
+    /// The zero ring, known from its characteristic only.
+    struct ZeroRing;
+    impl RingParentMethods for ZeroRing {
+        type Element = IntegerMod;
+        fn characteristic(&self) -> Option<u64> {
+            Some(1)
+        }
+    }
+
+    /// The zero ring, known from its order only.
+    struct ZeroRingByOrder;
+    impl RingParentMethods for ZeroRingByOrder {
+        type Element = IntegerMod;
+        fn order(&self) -> Option<usize> {
+            Some(1)
+        }
+    }
+
+    /// Q, known only to be a field.
+    struct QField;
+    impl RingParentMethods for QField {
+        type Element = Rational;
+        fn is_field(&self) -> Option<bool> {
+            Some(true)
+        }
+    }
+
+    // GAP: [Characteristic, IsField, IsPrimeField, IsFinite, IsCommutative](Rationals)
+    // -> [0, true, true, false, true]. The default knows only the characteristic (from the
+    // element type), so it decides char 0, infinite and nonzero, and claims nothing else.
+    // At a46a6a8 the defaults answered `false` for every predicate (a fabricated "not a
+    // field") and `random_element` returned the constant 0.
+    #[test]
+    fn test_parent_defaults_do_not_guess() {
+        let q = bare::<Rational>();
+        assert_eq!(q.characteristic(), Some(0));
+        assert_eq!(q.is_zero_ring(), Some(false));
+        assert_eq!(q.is_finite(), Some(false));
+        assert_eq!(q.is_infinite(), Some(true));
+        assert_eq!(q.is_commutative(), None);
+        assert_eq!(q.is_integral_domain(), None);
+        assert_eq!(q.is_field(), None);
+        assert_eq!(q.is_prime_field(), None);
+        assert_eq!(q.is_noetherian(), None);
+        assert_eq!(q.is_integrally_closed(), None);
+        assert_eq!(q.krull_dimension(), None);
+        assert!(matches!(
+            q.random_element(),
+            Err(MathError::NotImplemented(_))
+        ));
+        assert!(matches!(
+            q.random_nonzero_element(),
+            Err(MathError::NotImplemented(_))
+        ));
+    }
+
+    // Q given as a field: a field is integrally closed (its own fraction field) and
+    // Noetherian (ideals 0 and Q). Prime-field status is not derivable from char 0 (GAP
+    // IsPrimeField(Rationals) -> true, but CF(3) has char 0 too), and `is_integral_domain`
+    // precedes `is_field` in the dependency order, so it stays `None` unless overridden.
+    #[test]
+    fn test_field_parent_derivations() {
+        let q = QField;
+        assert_eq!(q.is_integrally_closed(), Some(true));
+        assert_eq!(q.is_noetherian(), Some(true));
+        assert_eq!(q.is_prime_field(), None);
+        assert_eq!(q.is_integral_domain(), None);
+    }
+
+    // Item (b). `PadicInteger::zero()/one()` panic ("Cannot create PadicInteger::zero()
+    // without parameters"); the defaults must not call them. `GaloisRingElement::zero()`
+    // panicked at a46a6a8 and is an unbound sentinel since 029f7ab; the default must give
+    // `None` either way (neither type has a static characteristic).
+    #[test]
+    fn test_parent_carrying_elements_do_not_panic() {
+        use crate::padics::PadicInteger;
+
+        let zp = bare::<PadicInteger>();
+        assert_eq!(zp.characteristic(), None);
+        assert_eq!(zp.is_zero_ring(), None);
+        assert_eq!(zp.is_field(), None);
+        assert_eq!(zp.is_finite(), None);
+        assert!(matches!(
+            zp.random_element(),
+            Err(MathError::NotImplemented(_))
+        ));
+        assert!(matches!(
+            zp.random_nonzero_element(),
+            Err(MathError::NotImplemented(_))
+        ));
+
+        let gr = bare::<GaloisRingElement>();
+        assert_eq!(gr.characteristic(), None);
+        assert_eq!(gr.is_zero_ring(), None);
+        assert_eq!(gr.is_field(), None);
+        assert_eq!(gr.is_finite(), None);
+        assert!(matches!(
+            gr.random_element(),
+            Err(MathError::NotImplemented(_))
+        ));
+        assert!(matches!(
+            gr.random_nonzero_element(),
+            Err(MathError::NotImplemented(_))
+        ));
+    }
+
+    // Item (b), second half: `IntegerMod::zero()` and `one()` are unbound sentinels, the
+    // same for every parent, so `zero() == one()` (false) said "not the zero ring" even for
+    // a parent of characteristic 1. GAP: ZmodnZ(1): Zero = One -> true;
+    // PARI: Mod(1,1) == Mod(0,1) -> 1.
+    #[test]
+    fn test_is_zero_ring_is_decided_from_the_parent() {
+        assert_eq!(bare::<IntegerMod>().is_zero_ring(), None);
+        assert_eq!(ZeroRing.is_zero_ring(), Some(true));
+        assert_eq!(ZeroRingByOrder.is_zero_ring(), Some(true));
+        assert_eq!(ZeroRingByOrder.characteristic(), Some(1));
+        assert_eq!(zmod(6).is_zero_ring(), Some(false));
+    }
+
+    // GR(2^3, 2) (MAGMA H48E1). PARI: char 8 (8*1 = 0 mod 8, least such), 2^3 = Mod(0, 8)
+    // (2 is nilpotent, so not a domain), order 8^2 = 64.
+    #[test]
+    fn test_galois_ring_parent() {
+        let gr = GrParent(GaloisRing::new(Integer::from(2), 3, 2).unwrap());
+        assert_eq!(gr.characteristic(), Some(8));
+        assert_eq!(gr.order(), Some(64));
+        assert_eq!(gr.is_zero_ring(), Some(false));
+        assert_eq!(gr.is_integral_domain(), Some(false));
+        assert_eq!(gr.is_field(), Some(false));
+        assert_eq!(gr.is_prime_field(), Some(false));
+        assert_eq!(gr.is_finite(), Some(true));
+        assert_eq!(gr.is_noetherian(), Some(true));
+        assert_eq!(gr.is_commutative(), Some(true));
+        assert_eq!(gr.is_integrally_closed(), None);
+    }
+
+    // GAP: [Characteristic, Size, IsField, IsCommutative](ZmodnZ(n)):
+    //   n = 2: [2, 2, true, true]   n = 3: [3, 3, true, true]   n = 4: [4, 4, false, true]
+    //   n = 6: [6, 6, false, true]  n = 7: [7, 7, true, true]   n = 8: [8, 8, false, true].
+    // PARI: Mod(2,6)*Mod(3,6) = Mod(0,6), Mod(2,4)^2 = Mod(0,4), Mod(2,8)*Mod(4,8) = Mod(0,8)
+    // (zero divisors); isprime([2,3,4,6,7,8]) = [1,1,0,0,1,0]. (GAP's IsIntegralRing is
+    // true for ZmodnZ(6) and ZmodnZ(8), a GAP quirk, so it is not used as a reference.)
+    // Characteristic = order, so each parent is Z·1 = Z/nZ: commutative, and a domain (the
+    // prime field F_n) iff n is prime.
+    #[test]
+    fn test_zmod_parents() {
+        let z6 = zmod(6);
+        assert_eq!(
+            (
+                z6.characteristic(),
+                z6.is_zero_ring(),
+                z6.is_commutative(),
+                z6.is_integral_domain(),
+                z6.is_field(),
+                z6.is_prime_field(),
+                z6.is_finite(),
+                z6.is_noetherian()
+            ),
+            (
+                Some(6),
+                Some(false),
+                Some(true),
+                Some(false),
+                Some(false),
+                Some(false),
+                Some(true),
+                Some(true)
+            )
+        );
+        assert_eq!(zmod(4).is_integral_domain(), Some(false));
+        assert_eq!(zmod(8).is_field(), Some(false));
+        for p in [2u64, 3] {
+            assert_eq!(zmod(p).is_integral_domain(), Some(true), "Z/{p}");
+            assert_eq!(zmod(p).is_field(), Some(true), "Z/{p}");
+        }
+        let z7 = zmod(7);
+        assert_eq!(
+            (
+                z7.characteristic(),
+                z7.is_commutative(),
+                z7.is_integral_domain(),
+                z7.is_field(),
+                z7.is_prime_field(),
+                z7.is_integrally_closed()
+            ),
+            (
+                Some(7),
+                Some(true),
+                Some(true),
+                Some(true),
+                Some(true),
+                Some(true)
+            )
+        );
+    }
+
+    // A known prime order alone proves Z/p (1 != 0 has additive order dividing p).
+    // GAP: IsField(ZmodnZ(7)) -> true, IsCommutative(ZmodnZ(7)) -> true.
+    #[test]
+    fn test_prime_order_alone_decides() {
+        struct OrderSeven;
+        impl RingParentMethods for OrderSeven {
+            type Element = IntegerMod;
+            fn order(&self) -> Option<usize> {
+                Some(7)
+            }
+        }
+        assert_eq!(OrderSeven.characteristic(), None);
+        assert_eq!(OrderSeven.is_commutative(), Some(true));
+        assert_eq!(OrderSeven.is_field(), Some(true));
+        assert_eq!(OrderSeven.is_prime_field(), Some(true));
+
+        // A composite order with unknown characteristic decides nothing (Z/4 and F_4 share
+        // order 4; GAP IsField(ZmodnZ(4)) -> false, IsField(GF(4)) -> true).
+        struct OrderFour;
+        impl RingParentMethods for OrderFour {
+            type Element = IntegerMod;
+            fn order(&self) -> Option<usize> {
+                Some(4)
+            }
+        }
+        assert_eq!(OrderFour.is_commutative(), None);
+        assert_eq!(OrderFour.is_integral_domain(), None);
+        assert_eq!(OrderFour.is_field(), None);
+    }
+
+    // A finite integral domain is a field (x -> ax is injective, hence onto).
+    // GAP: [Characteristic, Size, IsField, IsPrimeField](GF(25)) -> [5, 25, true, false].
+    // Z known only as a domain stays undecided as a field (it is infinite).
+    #[test]
+    fn test_finite_domain_is_field() {
+        let f25 = FqDomain(FiniteField::new(Integer::from(5), 2).unwrap());
+        assert_eq!(
+            (
+                f25.is_field(),
+                f25.is_prime_field(),
+                f25.is_integrally_closed(),
+                f25.is_noetherian()
+            ),
+            (Some(true), Some(false), Some(true), Some(true))
+        );
+
+        struct ZDomainOnly;
+        impl RingParentMethods for ZDomainOnly {
+            type Element = i32;
+            fn is_integral_domain(&self) -> Option<bool> {
+                Some(true)
+            }
+        }
+        assert_eq!(ZDomainOnly.is_field(), None);
+    }
+
+    // GAP: [Characteristic, Size, IsField, IsPrimeField](GF(q)):
+    //   q = 25: [5, 25, true, false]   q = 5: [5, 5, true, true]   q = 7: [7, 7, true, true].
+    #[test]
+    fn test_finite_field_parents_prime_field() {
+        let f25 = gf(5, 2);
+        assert_eq!(f25.characteristic(), Some(5));
+        assert_eq!(f25.order(), Some(25));
+        assert_eq!(f25.is_prime_field(), Some(false));
+        assert_eq!(f25.is_integrally_closed(), Some(true));
+        assert_eq!(f25.is_noetherian(), Some(true));
+        assert_eq!(gf(5, 1).is_prime_field(), Some(true));
+        assert_eq!(gf(7, 1).is_prime_field(), Some(true));
+    }
+
+    // GAP: [Size, Characteristic, IsField, IsCommutative, Zero = One](ZmodnZ(1))
+    // -> [1, 1, false, true, true]; PARI: Mod(1,1) == Mod(0,1) -> 1.
+    #[test]
+    fn test_zero_ring_parent() {
+        for (name, values, nonzero) in [
+            (
+                "char 1",
+                (
+                    ZeroRing.is_zero_ring(),
+                    ZeroRing.is_commutative(),
+                    ZeroRing.is_integral_domain(),
+                    ZeroRing.is_field(),
+                    ZeroRing.is_prime_field(),
+                    ZeroRing.is_finite(),
+                    ZeroRing.is_noetherian(),
+                ),
+                ZeroRing.random_nonzero_element(),
+            ),
+            (
+                "order 1",
+                (
+                    ZeroRingByOrder.is_zero_ring(),
+                    ZeroRingByOrder.is_commutative(),
+                    ZeroRingByOrder.is_integral_domain(),
+                    ZeroRingByOrder.is_field(),
+                    ZeroRingByOrder.is_prime_field(),
+                    ZeroRingByOrder.is_finite(),
+                    ZeroRingByOrder.is_noetherian(),
+                ),
+                ZeroRingByOrder.random_nonzero_element(),
+            ),
+        ] {
+            assert_eq!(
+                values,
+                (
+                    Some(true),
+                    Some(true),
+                    Some(false),
+                    Some(false),
+                    Some(false),
+                    Some(true),
+                    Some(true)
+                ),
+                "{name}"
+            );
+            assert!(
+                matches!(nonzero, Err(MathError::InvalidArgument(_))),
+                "{name}"
+            );
+        }
+    }
+
+    // A characteristic that does not fit u64 makes no claim. PARI: isprime(2^64+13) -> 1,
+    // isprime(2^64-59) -> 1, factor(2^64-61) = 3^2 * 5 * 97 * 197 * 325957 * 65812583.
+    #[test]
+    fn test_large_characteristic_makes_no_claim() {
+        let p = Integer::from(2u64).pow(64) + Integer::from(13);
+        let big = FqParent(FiniteField::new(p, 1).unwrap());
+        assert_eq!(big.characteristic(), None);
+        assert_eq!(big.order(), None);
+        assert_eq!(big.is_zero_ring(), None);
+        assert_eq!(big.is_prime_field(), None);
+        assert_eq!(big.is_finite(), None);
+
+        assert!(!characteristic_rules_out_domain(18_446_744_073_709_551_557)); // 2^64 - 59
+        assert!(characteristic_rules_out_domain(18_446_744_073_709_551_555)); // 2^64 - 61
+                                                                              // Boundary values: 0 and primes decide nothing; 1 and composites do.
+                                                                              // PARI: isprime([2,3,4,6,7,8,25,561]) = [1,1,0,0,1,0,0,0] (561 = 3*11*17, Carmichael).
+        for (c, rules_out) in [
+            (0, false),
+            (1, true),
+            (2, false),
+            (3, false),
+            (4, true),
+            (6, true),
+            (7, false),
+            (8, true),
+            (25, true),
+            (561, true),
+        ] {
+            assert_eq!(characteristic_rules_out_domain(c), rules_out, "c = {c}");
+        }
+    }
+
+    // Example: Simple morphism for testing. x -> 2x is additive but not multiplicative
+    // (2·(xy) != (2x)(2y)) and does not send 1 to 1: it tests the trait plumbing, not a
+    // ring homomorphism.
     struct DoubleMap;
 
     impl RingMorphismMethods for DoubleMap {
@@ -566,18 +1104,81 @@ mod tests {
             2 * x
         }
 
-        fn is_injective(&self) -> bool {
-            // Only in characteristic 2 would this be non-injective
-            true
+        fn is_injective(&self) -> Option<bool> {
+            // 2x = 0 forces x = 0 in Z.
+            Some(true)
         }
     }
 
+    // PARI: 1 % 2 == 0 -> 0, so 1 is not in 2Z: the map is not onto, but the trait cannot
+    // see that, so `is_surjective` stays undecided.
     #[test]
     fn test_ring_morphism_basic() {
         let f = DoubleMap;
         assert_eq!(f.apply(&3), 6);
         assert_eq!(f.apply(&0), 0);
         assert!(f.is_nonzero()); // f(1) = 2 ≠ 0
-        assert!(f.is_injective());
+        assert_eq!(f.is_injective(), Some(true));
+        assert_eq!(f.is_surjective(), None);
+        assert_eq!(f.is_isomorphism(), None);
+    }
+
+    /// The identity of Z, with no overrides.
+    struct IdZ;
+    impl RingMorphismMethods for IdZ {
+        type Domain = Integer;
+        type Codomain = Integer;
+        fn apply(&self, x: &Integer) -> Integer {
+            x.clone()
+        }
+    }
+
+    /// Reduction Z -> Z/5Z: onto, with 5 in the kernel.
+    struct ReduceMod5;
+    impl RingMorphismMethods for ReduceMod5 {
+        type Domain = Integer;
+        type Codomain = IntegerMod;
+        fn apply(&self, x: &Integer) -> IntegerMod {
+            IntegerMod::new(x.clone(), Integer::from(5)).unwrap()
+        }
+        fn is_injective(&self) -> Option<bool> {
+            Some(false)
+        }
+        fn is_surjective(&self) -> Option<bool> {
+            Some(true)
+        }
+    }
+
+    // At a46a6a8 the identity of Z reported is_injective = is_surjective = is_isomorphism =
+    // false. PARI: Mod(5,5) == 0 -> 1 (5 is in the kernel of Z -> Z/5).
+    #[test]
+    fn test_ring_morphism_defaults_and_kleene() {
+        assert_eq!(
+            (
+                IdZ.is_injective(),
+                IdZ.is_surjective(),
+                IdZ.is_isomorphism()
+            ),
+            (None, None, None)
+        );
+        assert!(IdZ.is_nonzero());
+        assert!(ReduceMod5.apply(&Integer::from(5)).is_zero());
+        assert_eq!(ReduceMod5.is_isomorphism(), Some(false));
+
+        struct Bijective;
+        impl RingMorphismMethods for Bijective {
+            type Domain = Integer;
+            type Codomain = Integer;
+            fn apply(&self, x: &Integer) -> Integer {
+                x.clone()
+            }
+            fn is_injective(&self) -> Option<bool> {
+                Some(true)
+            }
+            fn is_surjective(&self) -> Option<bool> {
+                Some(true)
+            }
+        }
+        assert_eq!(Bijective.is_isomorphism(), Some(true));
     }
 }

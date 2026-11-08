@@ -86,19 +86,30 @@ where
     /// Get the codomain ring (target)
     fn codomain(&self) -> &S;
 
-    /// Check if this morphism is injective (kernel is trivial)
-    fn is_injective(&self) -> bool {
-        false // Default: unknown
+    /// MAGMA `IsInjective` (Handbook Ch. 54 §54.10.7; Ch. 16 §16.3.2 `Kernel`): `Some(true)`
+    /// proven injective (kernel 0), `Some(false)` proven not, `None` undecided.
+    ///
+    /// Default `None`: this trait sees only the element map, not the kernel.
+    fn is_injective(&self) -> Option<bool> {
+        None
     }
 
-    /// Check if this morphism is surjective (image is full codomain)
-    fn is_surjective(&self) -> bool {
-        false // Default: unknown
+    /// MAGMA `IsSurjective` (Ch. 54 §54.10.7): `Some(true)` proven onto, `Some(false)`
+    /// proven not, `None` undecided. Default `None`.
+    fn is_surjective(&self) -> Option<bool> {
+        None
     }
 
-    /// Check if this morphism is bijective (isomorphism)
-    fn is_isomorphism(&self) -> bool {
-        self.is_injective() && self.is_surjective()
+    /// Whether this morphism is bijective (a bijective ring homomorphism is an
+    /// isomorphism): the Kleene "and" of [`Self::is_injective`] and [`Self::is_surjective`].
+    /// `Some(false)` if either is `Some(false)`, `Some(true)` if both are `Some(true)`, else
+    /// `None`.
+    fn is_isomorphism(&self) -> Option<bool> {
+        match (self.is_injective(), self.is_surjective()) {
+            (Some(false), _) | (_, Some(false)) => Some(false),
+            (Some(true), Some(true)) => Some(true),
+            _ => None,
+        }
     }
 }
 
@@ -490,5 +501,58 @@ mod tests {
     #[test]
     fn test_ring_homomorphism_cover() {
         let _cover: RingHomomorphismCover<i32> = RingHomomorphismCover::new();
+    }
+
+    /// The identity of Z through the `RingMorphism` trait, overriding nothing.
+    struct IdentityZ {
+        z: i64,
+    }
+    impl RingMorphism<i64, i64> for IdentityZ {
+        fn apply(&self, element: &i64) -> Result<i64, MorphismError> {
+            Ok(*element)
+        }
+        fn domain(&self) -> &i64 {
+            &self.z
+        }
+        fn codomain(&self) -> &i64 {
+            &self.z
+        }
+    }
+
+    /// x -> x mod 2 on Z (values in {0, 1}), declared not injective (2 is in the kernel).
+    struct ParityZ {
+        z: i64,
+    }
+    impl RingMorphism<i64, i64> for ParityZ {
+        fn apply(&self, element: &i64) -> Result<i64, MorphismError> {
+            Ok(element.rem_euclid(2))
+        }
+        fn domain(&self) -> &i64 {
+            &self.z
+        }
+        fn codomain(&self) -> &i64 {
+            &self.z
+        }
+        fn is_injective(&self) -> Option<bool> {
+            Some(false)
+        }
+    }
+
+    // MAGMA Ch. 54 §54.10.7 IsInjective / IsSurjective. Before this change the defaults
+    // answered `false` ("Default: unknown"), so the identity of Z claimed it was not an
+    // isomorphism. The defaults now make no claim, and `is_isomorphism` is the Kleene "and".
+    #[test]
+    fn test_ring_morphism_trait_defaults_make_no_claim() {
+        let id = IdentityZ { z: 0 };
+        assert_eq!(id.apply(&7), Ok(7));
+        assert_eq!(
+            (id.is_injective(), id.is_surjective(), id.is_isomorphism()),
+            (None, None, None)
+        );
+
+        let parity = ParityZ { z: 0 };
+        assert_eq!(parity.apply(&2), Ok(0)); // 2 is in the kernel
+        assert_eq!(parity.is_surjective(), None);
+        assert_eq!(parity.is_isomorphism(), Some(false));
     }
 }
