@@ -6,250 +6,103 @@ use crate::zassenhaus;
 use rustmath_core::{EuclideanDomain, MathError, Result, Ring};
 use std::fmt::Debug;
 
-/// Scale every coefficient by `s`.
-fn scalar_mul_poly<R: Ring + Clone>(p: &UnivariatePolynomial<R>, s: &R) -> UnivariatePolynomial<R> {
-    UnivariatePolynomial::new(p.coefficients().iter().map(|c| c.clone() * s.clone()).collect())
-}
-
-/// Multiply `p` by `x^k`.
-fn shift_poly<R: Ring + Clone>(p: &UnivariatePolynomial<R>, k: usize) -> UnivariatePolynomial<R> {
-    if p.is_zero() {
-        return p.clone();
-    }
-    let mut v = vec![R::zero(); k];
-    v.extend(p.coefficients().iter().cloned());
-    UnivariatePolynomial::new(v)
-}
-
-/// Pseudo-remainder of `a` by `b` using only ring operations (never divides by the
-/// leading coefficient), so it is valid over ℤ[x] where the Euclidean remainder
-/// sequence diverges. Mirrors [`crate::zx::pseudo_rem`] for the generic type.
-fn poly_pseudo_rem<R>(
-    a: &UnivariatePolynomial<R>,
-    b: &UnivariatePolynomial<R>,
-) -> UnivariatePolynomial<R>
-where
-    R: Ring + Clone + Debug,
-{
-    let db = match b.degree() {
-        Some(d) => d,
-        None => return a.clone(),
-    };
-    let lcb = b.coeff(db).clone();
-    let mut r = a.clone();
-    let mut e = match r.degree() {
-        Some(da) if da >= db => (da - db + 1) as u32,
-        _ => 0,
-    };
-    while let Some(dr) = r.degree() {
-        if dr < db {
-            break;
-        }
-        let lcr = r.coeff(dr).clone();
-        let shifted = shift_poly(&scalar_mul_poly(b, &lcr), dr - db);
-        r = scalar_mul_poly(&r, &lcb) - shifted;
-        e -= 1;
-    }
-    for _ in 0..e {
-        r = scalar_mul_poly(&r, &lcb);
-    }
-    r
-}
-
-/// GCD over a polynomial ring with non-field coefficients, via the **primitive
-/// pseudo-remainder sequence** (re-primitivizing each step to curb growth). Returns
-/// a primitive GCD; the constant `1` when the inputs are coprime. Correct over ℤ[x],
-/// where `UnivariatePolynomial::gcd`'s Euclidean loop fails to terminate.
-fn poly_gcd_prem<R>(
-    a: &UnivariatePolynomial<R>,
-    b: &UnivariatePolynomial<R>,
-) -> UnivariatePolynomial<R>
-where
-    R: Ring + EuclideanDomain + Clone + Debug,
-{
-    if a.is_zero() {
-        return primitive_part(b);
-    }
-    if b.is_zero() {
-        return primitive_part(a);
-    }
-    let mut a = primitive_part(a);
-    let mut b = primitive_part(b);
-    if a.degree() < b.degree() {
-        std::mem::swap(&mut a, &mut b);
-    }
-    loop {
-        let r = poly_pseudo_rem(&a, &b);
-        if r.is_zero() {
-            break;
-        }
-        if r.degree() == Some(0) {
-            return UnivariatePolynomial::new(vec![R::one()]);
-        }
-        a = b;
-        b = primitive_part(&r);
-    }
-    primitive_part(&b)
-}
-
-/// Compute the content of a polynomial (GCD of all coefficients)
-///
-/// For a polynomial f = aₙxⁿ + ... + a₁x + a₀,
-/// the content is gcd(aₙ, ..., a₁, a₀)
+/// MAGMA `Content(p)` (Handbook ch. 23 §23.5.2): the same value as
+/// [`UnivariatePolynomial::content`], the normalized gcd of the coefficients (positive over Z,
+/// `content(-6 - 9x) = 3`, PARI `content(-6-9*x)`; `1` for a nonzero polynomial over a field;
+/// `0` for `0`).
 pub fn content<R>(poly: &UnivariatePolynomial<R>) -> R
 where
     R: Ring + EuclideanDomain + Clone + Debug,
 {
-    if poly.is_zero() {
-        return R::zero();
-    }
-
-    let coeffs: Vec<R> = poly.coefficients().to_vec();
-    if coeffs.is_empty() {
-        return R::zero();
-    }
-
-    let mut result = coeffs[0].clone();
-    for coeff in coeffs.iter().skip(1) {
-        result = result.gcd(coeff);
-        if result.is_one() {
-            return result;
-        }
-    }
-    result
+    poly.content()
 }
 
-/// Compute the primitive part of a polynomial
-///
-/// The primitive part is the polynomial divided by its content.
-/// For f = content(f) × pp(f), this returns pp(f)
+/// MAGMA `PrimitivePart(p)` (Handbook ch. 23 §23.5.2): [`UnivariatePolynomial::primitive_part`],
+/// `p / content(p)` with the sign of `p` kept over Z (`primitive_part(6 - 9x) = 2 - 3x`, PARI
+/// `(6-9*x)/content(6-9*x)`); `p` itself over a field; `0` for `0`.
 pub fn primitive_part<R>(poly: &UnivariatePolynomial<R>) -> UnivariatePolynomial<R>
 where
     R: Ring + EuclideanDomain + Clone + Debug,
 {
-    let cont = content(poly);
-    if cont.is_zero() {
-        return UnivariatePolynomial::new(vec![R::zero()]);
-    }
-    if cont.is_one() {
-        return poly.clone();
-    }
-
-    let new_coeffs: Vec<R> = poly
-        .coefficients()
-        .iter()
-        .map(|c| {
-            let (q, _) = c.clone().div_rem(&cont).unwrap();
-            q
-        })
-        .collect();
-
-    UnivariatePolynomial::new(new_coeffs)
+    poly.primitive_part()
 }
 
-/// Square-free factorization
+/// MAGMA `SquarefreeFactorization(f)` (Handbook ch. 23 §23.8.1) over Z or a field of
+/// characteristic 0, by Musser's algorithm (D. R. Musser, *Algorithms for polynomial
+/// factorization*, PhD thesis, Univ. of Wisconsin 1971; Knuth, TAOCP vol. 2 §4.6.2).
 ///
-/// Decomposes a polynomial into square-free factors:
-/// f(x) = f₁(x) × f₂(x)² × f₃(x)³ × ...
+/// Returns `(f_i, m_i)` with every `f_i` normalized (positive leading coefficient over Z,
+/// monic over a field), square-free, of positive degree and pairwise coprime, the `m_i`
+/// strictly increasing, and `∏ f_i^m_i = normalize(primitive_part(f))`. The content and the
+/// unit are not returned (whether MAGMA returns the content over Z is unverified).
+/// `Ok(vec![])` for `0` and for constants.
 ///
-/// Returns a vector of (factor, multiplicity) pairs where each factor is square-free
+/// The gcds are [`UnivariatePolynomial::gcd`] (normalized; Euclid while exact, then the
+/// sub-resultant PRS over a non-field, Gauss' lemma over Q).
+///
+/// Positive characteristic: `Err(NotSupported)` when `f' = 0`, and when a multiplicity is
+/// divisible by the characteristic (detected exactly: `gcd(current, rest)` is constant while
+/// `rest` is not, which cannot happen in characteristic 0). Otherwise the result is correct.
+/// Over GF(p) use [`crate::berlekamp::squarefree_decomposition`].
 pub fn square_free_factorization<R>(
     poly: &UnivariatePolynomial<R>,
 ) -> Result<Vec<(UnivariatePolynomial<R>, u32)>>
 where
     R: Ring + EuclideanDomain + Clone + Debug,
 {
-    if poly.is_zero() {
+    let f = poly.primitive_part();
+    if f.degree().unwrap_or(0) == 0 {
         return Ok(vec![]);
     }
-
-    // Remove content first
-    let f = primitive_part(poly);
-
-    // Compute derivative
-    let f_prime = f.derivative();
-
-    // If derivative is zero, we're in characteristic p > 0 or f is constant
-    if f_prime.is_zero() {
-        if f.is_constant() {
-            return Ok(vec![(f, 1)]);
-        }
-        // In characteristic p, would need different algorithm
+    let fp = f.derivative();
+    if fp.is_zero() {
         return Err(MathError::NotSupported(
-            "Square-free factorization in positive characteristic not yet implemented".to_string(),
+            "square_free_factorization: f' = 0 (positive characteristic) is not supported; \
+             over GF(p) use berlekamp::squarefree_decomposition"
+                .to_string(),
         ));
     }
-
-    // Compute gcd(f, f') via pseudo-division (Euclidean gcd diverges over ℤ[x])
-    let g = poly_gcd_prem(&f, &f_prime);
-
-    // If gcd is 1, f is already square-free
-    if g.degree() == Some(0) || g.is_constant() {
-        return Ok(vec![(f, 1)]);
-    }
-
-    // Compute f / gcd(f, f')
-    let (f_reduced, _) = f.div_rem(&g)?;
-
-    let mut factors = Vec::new();
-    let mut multiplicity = 1;
-    let mut current = f_reduced;
-    let mut g_remaining = g;
-
-    while !g_remaining.is_constant() {
-        let g_next = poly_gcd_prem(&current, &g_remaining);
-
-        if g_next.degree() == Some(0) || g_next.is_constant() {
-            // current is a square-free factor with this multiplicity
-            if !current.is_constant() {
-                factors.push((current.clone(), multiplicity));
-            }
-            break;
-        }
-
-        let (factor, _) = current.div_rem(&g_next)?;
-
-        if !factor.is_constant() {
-            factors.push((factor, multiplicity));
-        }
-
-        current = g_next.clone();
-        let (g_remaining_new, _) = g_remaining.div_rem(&g_next)?;
-        g_remaining = g_remaining_new;
-        multiplicity += 1;
-
-        // Safety check to prevent infinite loops
-        if multiplicity > 1000 {
+    // Normalized; primitive because f is (its content is gcd(cont f, cont f') = 1).
+    let g = f.gcd(&fp);
+    // The product of the distinct irreducible factors of f (up to a unit).
+    let mut current = f.exact_quotient(&g)?;
+    let mut rest = g;
+    let mut k: u32 = 1;
+    let mut out = Vec::new();
+    // Invariant (characteristic 0): current = ∏_{e >= k} P, rest = ∏_{e > k} P^(e - k).
+    while rest.degree().unwrap_or(0) > 0 {
+        let next = current.gcd(&rest);
+        if next.degree() == Some(0) {
             return Err(MathError::NotSupported(
-                "Square-free factorization exceeded maximum multiplicity".to_string(),
+                "square_free_factorization: a multiplicity is divisible by the characteristic; \
+                 positive characteristic is not supported (over GF(p) use \
+                 berlekamp::squarefree_decomposition)"
+                    .to_string(),
             ));
         }
+        let factor = current.exact_quotient(&next)?;
+        if factor.degree().unwrap_or(0) > 0 {
+            out.push((factor.normalize(), k));
+        }
+        rest = rest.exact_quotient(&next)?;
+        current = next;
+        // k <= deg f, so no overflow.
+        k += 1;
     }
-
-    // Add the remaining factor if it's not constant
-    if !current.is_constant() {
-        factors.push((current, multiplicity));
+    if current.degree().unwrap_or(0) > 0 {
+        out.push((current.normalize(), k));
     }
-
-    Ok(factors)
+    Ok(out)
 }
 
-/// Check if a polynomial is square-free (has no repeated factors)
+/// Whether no square of a polynomial of positive degree divides `poly`: see
+/// [`UnivariatePolynomial::is_square_free`] (the content is not examined; a nonzero constant
+/// is square-free, `0` is not). Never `Err`.
 pub fn is_square_free<R>(poly: &UnivariatePolynomial<R>) -> Result<bool>
 where
     R: Ring + EuclideanDomain + Clone + Debug,
 {
-    if poly.is_zero() || poly.is_constant() {
-        return Ok(true);
-    }
-
-    let derivative = poly.derivative();
-    if derivative.is_zero() {
-        return Ok(false);
-    }
-
-    let g = poly_gcd_prem(poly, &derivative);
-    Ok(g.degree() == Some(0) || g.is_constant())
+    Ok(poly.is_square_free())
 }
 
 /// Check if a polynomial is irreducible (cannot be factored into non-trivial factors)
@@ -521,202 +374,43 @@ pub fn is_irreducible_over_integers(
     Ok(factors.len() == 1 && factors[0].1 == 1)
 }
 
-/// Berlekamp's factorization algorithm for polynomials over finite fields
+/// Berlekamp factorization over GF(p) (MAGMA `Factorization` over a finite field, Handbook
+/// ch. 23 §23.8.1; see [`crate::berlekamp`] for the algorithm and the references: Berlekamp
+/// 1967, Knuth TAOCP vol. 2 §4.6.2, Cohen GTM 138 §3.4).
 ///
-/// Factors a square-free polynomial over GF(p) into irreducible factors.
-///
-/// # Algorithm
-///
-/// 1. **Berlekamp Matrix Q**: Compute Q where Q[i,j] is the coefficient of x^j
-///    in x^(ip) mod f(x)
-/// 2. **Null Space**: Find a basis for the null space of (Q - I)
-/// 3. **Splitting**: For each basis vector v(x) and each a in GF(p),
-///    compute gcd(f(x), v(x) - a) to find factors
-///
-/// # Parameters
-///
-/// * `poly` - Square-free polynomial over GF(p)
-/// * `p` - Prime modulus (characteristic of the field)
-///
-/// # Returns
-///
-/// Vector of irreducible factors
-///
-/// # References
-///
-/// - Berlekamp, E. R. (1967). "Factoring Polynomials Over Finite Fields"
-/// - Knuth, TAOCP Vol. 2, Section 4.6.2
+/// Returns every monic irreducible factor of `f mod p`, repeated by its multiplicity, in the
+/// order of [`crate::berlekamp::factor`] (by degree, then by coefficients from the top
+/// down); the unit `lc(f) mod p` is dropped (use [`crate::berlekamp::factor`] for it).
+/// Non-square-free input is supported. `Err` for `p` not prime (see
+/// [`crate::berlekamp::factor`] for what "prime" guarantees above 3.19e23) and for
+/// `f ≡ 0 (mod p)`; `Ok(vec![])` for a nonzero constant.
 ///
 /// # Example
 ///
-/// ```ignore
-/// // Factor x^4 + 1 over GF(2)
-/// let poly = UnivariatePolynomial::new(vec![1, 0, 0, 0, 1]); // Over GF(2)
-/// let factors = berlekamp_factor(&poly, 2)?;
-/// // Returns: [(x^2 + x + 1), (x^2 + x + 1)] since x^4 + 1 = (x^2 + x + 1)^2 over GF(2)
+/// ```
+/// use rustmath_integers::Integer;
+/// use rustmath_polynomials::factorization::berlekamp_factor_gf;
+/// use rustmath_polynomials::UnivariatePolynomial;
+///
+/// // x^4 + 1 = (x + 1)^4 over GF(2) (PARI: factormod(x^4+1,2) -> [x + 1, 4]).
+/// let poly = |c: &[i64]| UnivariatePolynomial::new(c.iter().map(|&a| Integer::from(a)).collect());
+/// let f = poly(&[1, 0, 0, 0, 1]);
+/// let x_plus_1 = poly(&[1, 1]);
+/// assert_eq!(berlekamp_factor_gf(&f, &Integer::from(2)).unwrap(), vec![x_plus_1; 4]);
 /// ```
 pub fn berlekamp_factor_gf(
     poly: &UnivariatePolynomial<rustmath_integers::Integer>,
     p: &rustmath_integers::Integer,
 ) -> Result<Vec<UnivariatePolynomial<rustmath_integers::Integer>>> {
-    use rustmath_integers::Integer;
-
-    if poly.is_zero() || poly.is_constant() {
-        return Ok(vec![poly.clone()]);
-    }
-
-    let n = poly.degree().unwrap();
-    if n == 1 {
-        // Linear polynomials are irreducible
-        return Ok(vec![poly.clone()]);
-    }
-
-    // Step 1: Build Berlekamp matrix Q
-    // Q[i,j] = coefficient of x^j in x^(i*p) mod f(x)
-    let mut q_matrix: Vec<Vec<Integer>> = vec![vec![Integer::zero(); n]; n];
-
-    for i in 0..n {
-        // Compute x^(i*p) mod f(x)
-        let exp = Integer::from(i as i64) * p.clone();
-
-        // Start with x^i
-        let mut current = vec![Integer::zero(); n + 1];
-        if i < current.len() {
-            current[i] = Integer::one();
-        }
-        let mut current_poly = UnivariatePolynomial::new(current);
-
-        // Compute x^(i*p) by repeated squaring and reduction
-        let mut power_poly = UnivariatePolynomial::new(vec![Integer::zero(), Integer::one()]); // x
-        let mut exp_remaining = exp.clone();
-
-        // Use binary exponentiation
-        let one = Integer::one();
-        let two = Integer::from(2);
-
-        while exp_remaining > Integer::zero() {
-            if exp_remaining.clone() % two.clone() == one {
-                current_poly = mod_poly_mul(&current_poly, &power_poly, poly, p);
-            }
-            power_poly = mod_poly_mul(&power_poly, &power_poly, poly, p);
-            exp_remaining = exp_remaining / two.clone();
-        }
-
-        // Extract coefficients into Q matrix
-        for j in 0..n {
-            q_matrix[i][j] = current_poly.coeff(j).clone() % p.clone();
+    let (_, factors) = crate::berlekamp::factor(poly.coefficients(), p)?;
+    let mut out = Vec::new();
+    for (g, e) in factors {
+        let g = UnivariatePolynomial::new(g);
+        for _ in 0..e {
+            out.push(g.clone());
         }
     }
-
-    // Step 2: Compute Q - I (subtract identity matrix)
-    for i in 0..n {
-        q_matrix[i][i] = (q_matrix[i][i].clone() - Integer::one()) % p.clone();
-        if q_matrix[i][i].clone() < Integer::zero() {
-            q_matrix[i][i] = q_matrix[i][i].clone() + p.clone();
-        }
-    }
-
-    // Step 3: Find null space of (Q - I) over GF(p)
-    // This gives us a basis for the space of polynomials v where v^p ≡ v (mod f)
-    let null_basis = find_null_space_gf(&q_matrix, p)?;
-
-    if null_basis.is_empty() || null_basis.len() == 1 {
-        // Polynomial is irreducible
-        return Ok(vec![poly.clone()]);
-    }
-
-    // Step 4: Use null space vectors to split the polynomial
-    let mut factors = vec![poly.clone()];
-
-    for basis_vec in null_basis.iter().skip(1) {
-        // Try to split using this basis vector
-        let v = UnivariatePolynomial::new(basis_vec.clone());
-
-        let mut new_factors = Vec::new();
-
-        for factor in &factors {
-            if factor.degree() == Some(1) {
-                // Already linear, can't split further
-                new_factors.push(factor.clone());
-                continue;
-            }
-
-            // Try gcd(factor, v - a) for each a in GF(p)
-            let mut split = false;
-            let p_limit = rustmath_core::NumericConversion::to_i64(p).unwrap_or(100);
-            for a in 0..p_limit {
-                let a_int = Integer::from(a);
-
-                // Compute v - a
-                let v_minus_a = v.clone();
-                let coeff_0 = (v_minus_a.coeff(0).clone() - a_int.clone()) % p.clone();
-                let coeff_0 = if coeff_0 < Integer::zero() {
-                    coeff_0 + p.clone()
-                } else {
-                    coeff_0
-                };
-
-                // Create v - a polynomial
-                let mut coeffs = vec![coeff_0];
-                for i in 1..=v.degree().unwrap_or(0) {
-                    coeffs.push(v.coeff(i).clone() % p.clone());
-                }
-                let v_minus_a = UnivariatePolynomial::new(coeffs);
-
-                // Compute GCD over GF(p)
-                let g = gcd_poly_gf(factor, &v_minus_a, p);
-
-                if !g.is_constant() && g.degree() != factor.degree() {
-                    // Found a non-trivial factor
-                    new_factors.push(g.clone());
-
-                    // Divide out the factor
-                    if let Ok((quot, _)) = div_poly_gf(factor, &g, p) {
-                        new_factors.push(quot);
-                        split = true;
-                        break;
-                    }
-                }
-            }
-
-            if !split {
-                new_factors.push(factor.clone());
-            }
-        }
-
-        factors = new_factors;
-    }
-
-    Ok(factors)
-}
-
-/// Helper: Multiply two polynomials modulo another polynomial and modulo p
-fn mod_poly_mul(
-    a: &UnivariatePolynomial<rustmath_integers::Integer>,
-    b: &UnivariatePolynomial<rustmath_integers::Integer>,
-    modulus: &UnivariatePolynomial<rustmath_integers::Integer>,
-    p: &rustmath_integers::Integer,
-) -> UnivariatePolynomial<rustmath_integers::Integer> {
-    use rustmath_integers::Integer;
-
-    // Multiply a and b
-    let mut result_coeffs = vec![Integer::zero(); a.degree().unwrap_or(0) + b.degree().unwrap_or(0) + 1];
-
-    for i in 0..=a.degree().unwrap_or(0) {
-        for j in 0..=b.degree().unwrap_or(0) {
-            result_coeffs[i + j] = (result_coeffs[i + j].clone() +
-                (a.coeff(i).clone() * b.coeff(j).clone())) % p.clone();
-        }
-    }
-
-    let product = UnivariatePolynomial::new(result_coeffs);
-
-    // Reduce modulo the polynomial and p
-    if let Ok((_, remainder)) = div_poly_gf(&product, modulus, p) {
-        remainder
-    } else {
-        product
-    }
+    Ok(out)
 }
 
 /// Helper: Polynomial division over GF(p)
@@ -777,7 +471,9 @@ fn div_poly_gf(
     Ok((UnivariatePolynomial::new(quotient_coeffs), remainder))
 }
 
-/// Helper: GCD of two polynomials over GF(p)
+/// Helper: GCD of two polynomials over GF(p) (only exercised by its unit test since the
+/// Berlekamp code moved to [`crate::berlekamp`]).
+#[cfg(test)]
 fn gcd_poly_gf(
     a: &UnivariatePolynomial<rustmath_integers::Integer>,
     b: &UnivariatePolynomial<rustmath_integers::Integer>,
@@ -821,112 +517,6 @@ fn mod_inverse(
     };
 
     Ok(result)
-}
-
-/// Helper: Find null space of a matrix over GF(p)
-fn find_null_space_gf(
-    matrix: &[Vec<rustmath_integers::Integer>],
-    p: &rustmath_integers::Integer,
-) -> Result<Vec<Vec<rustmath_integers::Integer>>> {
-    use rustmath_integers::Integer;
-
-    if matrix.is_empty() {
-        return Ok(vec![]);
-    }
-
-    let rows = matrix.len();
-    let cols = matrix[0].len();
-
-    // Augment matrix with identity to track transformations
-    let mut aug = Vec::new();
-    for (i, row) in matrix.iter().enumerate() {
-        let mut aug_row = row.clone();
-        for j in 0..rows {
-            aug_row.push(if i == j { Integer::one() } else { Integer::zero() });
-        }
-        aug.push(aug_row);
-    }
-
-    // Gaussian elimination over GF(p)
-    let mut pivot_col = 0;
-    for pivot_row in 0..rows {
-        if pivot_col >= cols {
-            break;
-        }
-
-        // Find pivot
-        let mut found_pivot = false;
-        for i in pivot_row..rows {
-            if aug[i][pivot_col].clone() % p.clone() != Integer::zero() {
-                // Swap rows
-                aug.swap(pivot_row, i);
-                found_pivot = true;
-                break;
-            }
-        }
-
-        if !found_pivot {
-            pivot_col += 1;
-            continue;
-        }
-
-        // Scale pivot row
-        let pivot = aug[pivot_row][pivot_col].clone();
-        let pivot_inv = mod_inverse(&pivot, p)?;
-        for j in 0..aug[pivot_row].len() {
-            aug[pivot_row][j] = (aug[pivot_row][j].clone() * pivot_inv.clone()) % p.clone();
-        }
-
-        // Eliminate column
-        for i in 0..rows {
-            if i != pivot_row && aug[i][pivot_col].clone() % p.clone() != Integer::zero() {
-                let factor = aug[i][pivot_col].clone();
-                for j in 0..aug[i].len() {
-                    let sub = (aug[pivot_row][j].clone() * factor.clone()) % p.clone();
-                    aug[i][j] = (aug[i][j].clone() - sub) % p.clone();
-                    if aug[i][j] < Integer::zero() {
-                        aug[i][j] = aug[i][j].clone() + p.clone();
-                    }
-                }
-            }
-        }
-
-        pivot_col += 1;
-    }
-
-    // Extract null space basis
-    let mut basis = Vec::new();
-
-    // Always include the identity polynomial (all zeros except first coefficient = 1)
-    let mut id_vec = vec![Integer::one()];
-    for _ in 1..cols {
-        id_vec.push(Integer::zero());
-    }
-    basis.push(id_vec);
-
-    // Find free variables (columns without pivots)
-    for i in 0..rows {
-        let mut is_zero_row = true;
-        for j in 0..cols {
-            if aug[i][j].clone() % p.clone() != Integer::zero() {
-                is_zero_row = false;
-                break;
-            }
-        }
-
-        if is_zero_row {
-            // This corresponds to a basis vector
-            let mut vec = Vec::new();
-            for j in cols..aug[i].len() {
-                vec.push(aug[i][j].clone() % p.clone());
-            }
-            if vec.iter().any(|x| x.clone() % p.clone() != Integer::zero()) {
-                basis.push(vec);
-            }
-        }
-    }
-
-    Ok(basis)
 }
 
 /// Hensel lifting for polynomial factorization
@@ -1349,10 +939,8 @@ mod tests {
 
     #[test]
     fn test_square_free_factorization_repeated() {
-        // x² = x * x (x with multiplicity 2)
-        // TODO: This test exposes the same GCD limitation as test_is_square_free.
-        // The derivative is 2x, and computing gcd(x², 2x) fails with integer coefficients
-        // because the Euclidean algorithm tries to divide x² by 2x, requiring x/2.
+        // x² = x * x (x with multiplicity 2; gp: factor(x^2) -> [x, 2]). gcd(x², 2x) = x over
+        // Z (the normalized gcd keeps no content here: gcd(1, 2) = 1).
 
         let p = UnivariatePolynomial::new(vec![
             Integer::from(0),
@@ -1363,8 +951,8 @@ mod tests {
         let factors = square_free_factorization(&p).unwrap();
 
         // Should have x with multiplicity 2
-        // Note: The algorithm should detect the repeated factor
         assert!(!factors.is_empty());
+        assert_eq!(factors, vec![(zp(&[0, 1]), 2)]);
     }
 
     #[test]
@@ -1464,6 +1052,10 @@ mod tests {
         assert!(factors[0].0.degree() == Some(2) || factors[0].0.degree() == None);
     }
 
+    fn zp(c: &[i64]) -> UnivariatePolynomial<Integer> {
+        UnivariatePolynomial::new(c.iter().map(|&a| Integer::from(a)).collect())
+    }
+
     #[test]
     fn test_berlekamp_linear() {
         // x + 1 over GF(2) should be irreducible
@@ -1473,11 +1065,12 @@ mod tests {
         let factors = berlekamp_factor_gf(&poly, &p).unwrap();
         assert_eq!(factors.len(), 1);
         assert_eq!(factors[0].degree(), Some(1));
+        assert_eq!(factors, vec![zp(&[1, 1])]);
     }
 
     #[test]
     fn test_berlekamp_quadratic_gf2() {
-        // x² + x + 1 over GF(2) is irreducible
+        // x² + x + 1 over GF(2) is irreducible (gp: factormod(x^2+x+1,2) -> [x^2 + x + 1, 1])
         let poly = UnivariatePolynomial::new(vec![
             Integer::from(1),
             Integer::from(1),
@@ -1489,11 +1082,13 @@ mod tests {
 
         // Should be irreducible (single factor)
         assert_eq!(factors.len(), 1);
+        assert_eq!(factors, vec![zp(&[1, 1, 1])]);
     }
 
     #[test]
     fn test_berlekamp_factorizable_gf2() {
-        // x² + 1 over GF(2) = x² + 1 = (x + 1)² since 1 = -1 in GF(2)
+        // x² + 1 over GF(2) = (x + 1)² since 1 = -1 in GF(2)
+        // (gp: factormod(x^2+1,2) -> [x + 1, 2])
         let poly = UnivariatePolynomial::new(vec![
             Integer::from(1),
             Integer::from(0),
@@ -1503,14 +1098,15 @@ mod tests {
 
         let factors = berlekamp_factor_gf(&poly, &p).unwrap();
 
-        // Should factor (may be detected or not depending on square-free assumption)
-        // Over GF(2): x² + 1 = (x+1)²
+        // Non-square-free input is supported: the repeated factor comes with its multiplicity.
         assert!(!factors.is_empty());
+        assert_eq!(factors, vec![zp(&[1, 1]), zp(&[1, 1])]);
     }
 
     #[test]
     fn test_berlekamp_gf3() {
-        // x² + 1 over GF(3) = (x+1)(x+2) since 1² ≡ 1, 2² ≡ 1 (mod 3)
+        // x² + 1 over GF(3) is irreducible: -1 is not a square mod 3
+        // (gp: factormod(x^2+1,3) -> [x^2 + 1, 1]).
         let poly = UnivariatePolynomial::new(vec![
             Integer::from(1),
             Integer::from(0),
@@ -1520,8 +1116,58 @@ mod tests {
 
         let factors = berlekamp_factor_gf(&poly, &p).unwrap();
 
-        // Should split into linear factors
-        assert!(factors.len() >= 1);
+        assert!(!factors.is_empty());
+        assert_eq!(factors, vec![zp(&[1, 0, 1])]);
+    }
+
+    // The old Q matrix held x^(i(p+1)) mod f in row i and reported these irreducible.
+    // gp: factormod(x^2+2,3) -> [x + 1, 1; x + 2, 1];
+    //     factormod(x^4+1,3) -> [x^2 + x + 2, 1; x^2 + 2*x + 2, 1];
+    //     factormod(x^3-1,7) -> [x + 3, 1; x + 5, 1; x + 6, 1];
+    //     factormod(x^5-x,5) -> [x, 1; x + 1, 1; x + 2, 1; x + 3, 1; x + 4, 1]
+    #[test]
+    fn test_berlekamp_q_matrix_regression() {
+        let p3 = Integer::from(3);
+        assert_eq!(
+            berlekamp_factor_gf(&zp(&[2, 0, 1]), &p3).unwrap(),
+            vec![zp(&[1, 1]), zp(&[2, 1])]
+        );
+        assert_eq!(
+            berlekamp_factor_gf(&zp(&[1, 0, 0, 0, 1]), &p3).unwrap(),
+            vec![zp(&[2, 1, 1]), zp(&[2, 2, 1])]
+        );
+        assert_eq!(
+            berlekamp_factor_gf(&zp(&[-1, 0, 0, 1]), &Integer::from(7)).unwrap(),
+            vec![zp(&[3, 1]), zp(&[5, 1]), zp(&[6, 1])]
+        );
+        assert_eq!(
+            berlekamp_factor_gf(&zp(&[0, -1, 0, 0, 0, 1]), &Integer::from(5)).unwrap(),
+            vec![
+                zp(&[0, 1]),
+                zp(&[1, 1]),
+                zp(&[2, 1]),
+                zp(&[3, 1]),
+                zp(&[4, 1])
+            ]
+        );
+        // Zero is an error, a nonzero constant has no factor; p must be prime.
+        assert!(berlekamp_factor_gf(&zp(&[3, 3]), &p3).is_err());
+        assert_eq!(
+            berlekamp_factor_gf(&zp(&[7]), &Integer::from(5)).unwrap(),
+            vec![]
+        );
+        assert!(berlekamp_factor_gf(&zp(&[1, 0, 1]), &Integer::from(4)).is_err());
+    }
+
+    // Free functions agree with the normalized methods (gp: content(-6-9*x) -> 3,
+    // content(6-9*x) -> 3, (6-9*x)/content(6-9*x) -> -3*x + 2).
+    #[test]
+    fn test_free_content_is_normalized() {
+        assert_eq!(content(&zp(&[-6, -9])), Integer::from(3));
+        assert_eq!(content(&zp(&[6, -9])), Integer::from(3));
+        assert_eq!(primitive_part(&zp(&[6, -9])), zp(&[2, -3]));
+        assert_eq!(primitive_part(&zp(&[-6, -9])), zp(&[-2, -3]));
+        assert_eq!(content(&zp(&[0])), Integer::from(0));
     }
 
     #[test]

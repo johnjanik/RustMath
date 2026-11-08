@@ -140,8 +140,9 @@ pub fn primitive_part(p: &[Integer]) -> Vec<Integer> {
     scalar_div_exact(&trim(p), &c)
 }
 
-/// Normalize: primitive part with a positive leading coefficient. The canonical
-/// representative of a polynomial up to a rational scalar (the form a GCD returns).
+/// Normalize: the primitive part with a positive leading coefficient, the canonical
+/// representative of a polynomial up to a rational scalar. Neither MAGMA `Normalize` over Z
+/// (`p` or `-p`) nor a gcd ([`subresultant_gcd`]) removes the content; this does.
 pub fn normalize(p: &[Integer]) -> Vec<Integer> {
     let pp = primitive_part(p);
     if pp.is_empty() {
@@ -151,6 +152,18 @@ pub fn normalize(p: &[Integer]) -> Vec<Integer> {
         neg(&pp)
     } else {
         pp
+    }
+}
+
+/// `p` or `-p`, whichever has a positive leading coefficient (`[]` for 0): MAGMA `Normalize`
+/// over Z (Handbook ch. 23 §23.5.1), which keeps the content. (The MAGMA V2.3 handbook calls
+/// this `AbsoluteValue(p)` for Z[x].)
+fn abs_lc(p: &[Integer]) -> Vec<Integer> {
+    let t = trim(p);
+    if t.last().is_some_and(|c| c.signum() < 0) {
+        neg(&t)
+    } else {
+        t
     }
 }
 
@@ -235,15 +248,18 @@ pub fn divide_exact(a: &[Integer], b: &[Integer]) -> Vec<Integer> {
 }
 
 /// Subresultant GCD over ℤ[x] (Cohen Alg. 3.3.1). Returns the GCD with content
-/// `gcd(cont a, cont b)` and a positive leading coefficient. `gcd(p, 0) = normalize(p)`.
+/// `gcd(cont a, cont b)` and a positive leading coefficient (MAGMA `GCD`, normalized,
+/// Handbook ch. 23 §23.5.1). With one input zero this is the other input up to sign, content
+/// kept: `gcd(4x + 4, 0) = 4x + 4` (PARI `gcd(4*x+4, 0)`), `gcd(-6, 0) = 6`;
+/// `gcd(0, 0) = 0` (`[]`).
 pub fn subresultant_gcd(a: &[Integer], b: &[Integer]) -> Vec<Integer> {
     let mut a = trim(a);
     let mut b = trim(b);
     if is_zero(&a) {
-        return normalize(&b);
+        return abs_lc(&b);
     }
     if is_zero(&b) {
-        return normalize(&a);
+        return abs_lc(&a);
     }
     if degree(&a) < degree(&b) {
         std::mem::swap(&mut a, &mut b);
@@ -357,6 +373,25 @@ mod tests {
         // 2x^2-2 = 2(x-1)(x+1), 3x-3 = 3(x-1) => gcd content gcd(2,3)=1, pp = x-1
         let d = subresultant_gcd(&p(&[-2, 0, 2]), &p(&[-3, 3]));
         assert_eq!(d, p(&[-1, 1]));
+    }
+
+    // gp: gcd(4*x+4, 0) -> 4*x + 4; gcd(0, 4*x+4) -> 4*x + 4; gcd(-4*x-4, 0) -> -4*x - 4;
+    //     gcd(Pol(6), 0) -> 6; gcd(Pol(-6), 0) -> -6; gcd(-6*x^2+9, 0) -> -6*x^2 + 9;
+    //     gcd(0*x, 0*x) -> 0. PARI returns the other input unchanged; the MAGMA-normalized
+    //     value has a positive leading coefficient and keeps the content.
+    #[test]
+    fn test_subresultant_gcd_with_zero_keeps_the_content() {
+        let zero: Vec<Integer> = Vec::new();
+        assert_eq!(subresultant_gcd(&p(&[4, 4]), &zero), p(&[4, 4]));
+        assert_eq!(subresultant_gcd(&zero, &p(&[4, 4])), p(&[4, 4]));
+        assert_eq!(subresultant_gcd(&p(&[-4, -4]), &zero), p(&[4, 4]));
+        assert_eq!(subresultant_gcd(&p(&[6]), &zero), p(&[6]));
+        assert_eq!(subresultant_gcd(&p(&[-6]), &zero), p(&[6]));
+        assert_eq!(subresultant_gcd(&p(&[9, 0, -6]), &zero), p(&[-9, 0, 6]));
+        assert_eq!(subresultant_gcd(&zero, &zero), zero);
+        // Untrimmed zeros are zero too.
+        assert_eq!(subresultant_gcd(&p(&[4, 4, 0]), &p(&[0, 0])), p(&[4, 4]));
+        assert_eq!(abs_lc(&p(&[3, -2, 0])), p(&[-3, 2]));
     }
 
     #[test]
