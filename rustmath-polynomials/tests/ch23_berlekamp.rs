@@ -676,16 +676,27 @@ fn factor_agrees_with_cantor_zassenhaus() {
 }
 
 // Q matrix and kernel dimension of the old counterexamples (gp: Qm as in the unit tests;
-// #matker(Mod(Qm(f,p),p)~ - 1)): x^11+x^7+x^4+x^3+x^2 mod 2 has 3 distinct factors
+// #matker(Mod(Qm(f,p),p)~ - 1) = 3): x^11+x^7+x^4+x^3+x^2 mod 2 has 3 distinct factors
 // (its null space was undercounted by the old elimination, which skipped a row).
 #[test]
 fn q_matrix_is_public_and_matches_pari() {
+    // gp: Qm(x^2+2, 3) -> [1, 0; 0, 1].
     let q = berlekamp::q_matrix(&ints(&[2, 0, 1]), &Integer::from(3)).unwrap();
     assert_eq!(q, vec![ints(&[1, 0]), ints(&[0, 1])]);
-    let (_, f) = berlekamp::factor(
+    // gp: factormod(x^11+x^7+x^4+x^3+x^2, 2)
+    //   -> [x, 2; x^3 + x^2 + 1, 1; x^6 + x^5 + x^4 + x + 1, 1].
+    let (u, f) = berlekamp::factor(
         &ints(&[0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 1]),
         &Integer::from(2),
     )
     .unwrap();
-    assert_eq!(f.len(), 3);
+    assert_eq!(u, Integer::from(1));
+    assert_eq!(
+        f,
+        vec![
+            (ints(&[0, 1]), 2),
+            (ints(&[1, 0, 1, 1]), 1),
+            (ints(&[1, 1, 0, 0, 1, 1, 1]), 1),
+        ]
+    );
 }

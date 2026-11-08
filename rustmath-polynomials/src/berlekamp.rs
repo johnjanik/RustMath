@@ -13,7 +13,8 @@
 //!
 //! Algorithm ([`factor`]):
 //! 1. Square-free decomposition over GF(p) (Yun's gcd recursion with the p-th-root step for
-//!    `f' = 0`; Knuth §4.6.2; Cohen Alg. 3.4.2): `f = lc(f) · ∏ s_i^m_i`.
+//!    `f' = 0`; Knuth §4.6.2; Cohen §3.4, square-free factorization):
+//!    `f = lc(f) · ∏ s_i^m_i`.
 //! 2. For each square-free part s of degree n: the Berlekamp matrix Q (row k = x^(kp) mod s,
 //!    computed from x^p mod s once and then by successive multiplication), and a basis of
 //!    the null space {v : v(Q - I) = 0}, i.e. of the polynomials v with v^p ≡ v (mod s)
@@ -21,9 +22,10 @@
 //!    number of irreducible factors of s (Berlekamp 1967).
 //! 3. Splitting. p < 25: Berlekamp's deterministic split, every w replaced by the nontrivial
 //!    members of {gcd(w, v - t) : t ∈ GF(p)} for each basis vector v (Knuth §4.6.2; Cohen
-//!    Alg. 3.4.10). p >= 25: the probabilistic split of Rabin (1980) on random elements of the
-//!    Berlekamp subalgebra (Knuth §4.6.2, the remarks on large p; the splitting step of
-//!    Cantor and Zassenhaus 1981): v random in the null space, gcd(w, (v mod w)^((p-1)/2) - 1).
+//!    §3.4, Berlekamp's algorithm for small p). p >= 25: the probabilistic split of Rabin
+//!    (1980) on random elements of the Berlekamp subalgebra (Knuth §4.6.2, the remarks on
+//!    large p; the splitting step of Cantor and Zassenhaus 1981): v random in the null
+//!    space, gcd(w, (v mod w)^((p-1)/2) - 1).
 //!    This is not Berlekamp's deterministic 1970 method for large p. Both stop exactly when r
 //!    factors are found, so the count is never guessed.
 //!
@@ -39,7 +41,8 @@
 //! - D. E. Knuth, *The Art of Computer Programming*, vol. 2, 3rd ed. (1997), §4.6.2
 //!   (Berlekamp's procedure, the null-space Algorithm N, square-free factorization, large p).
 //! - H. Cohen, *A Course in Computational Algebraic Number Theory*, GTM 138 (1993), §3.4
-//!   (Alg. 3.4.2 square-free factorization, Alg. 3.4.10 Berlekamp for small p).
+//!   (square-free factorization modulo p; Berlekamp's algorithm). The algorithm numbers
+//!   within §3.4 are not cited because they were not checked against the book.
 
 use rustmath_core::{MathError, Result};
 use rustmath_integers::Integer;
@@ -288,8 +291,8 @@ pub fn factor(f: &[Integer], p: &Integer) -> Result<(Integer, FactorList)> {
 }
 
 /// MAGMA `SquarefreeFactorization(f)` over GF(p) (Handbook ch. 23 §23.8.1; Knuth §4.6.2;
-/// Cohen Alg. 3.4.2): `[(s_1, m_1), ...]` with every `s_i` monic, square-free, of positive
-/// degree, pairwise coprime, the `m_i` distinct and increasing, and
+/// Cohen §3.4, square-free factorization): `[(s_1, m_1), ...]` with every `s_i` monic,
+/// square-free, of positive degree, pairwise coprime, the `m_i` distinct and increasing, and
 /// `f ≡ lc(f) · ∏ s_i^m_i (mod p)`. Multiplicities divisible by p are found through the
 /// p-th root of `f` when `f' = 0` (over GF(p), `g(x^p) = g(x)^p`). Same errors as
 /// [`factor`]; `Ok(vec![])` for a nonzero constant.
@@ -318,6 +321,38 @@ pub fn q_matrix(f: &[Integer], p: &Integer) -> Result<Vec<Vec<Integer>>> {
     }
     let f = monic(&f, p)?;
     q_rows(&f, p)
+}
+
+/// MAGMA `IsIrreducible(f)` over GF(p) (Handbook ch. 23 §23.8.1; the V2.3 handbook allows
+/// R = Z/pZ, p prime): whether `f mod p` is irreducible in `GF(p)[x]`. Decided without
+/// splitting, by Berlekamp's criterion (Berlekamp 1967; Knuth §4.6.2): for a monic
+/// square-free `f` of degree n >= 1, `dim ker(Q - I)` (the polynomials v of degree < n with
+/// v^p ≡ v mod f) is the number of irreducible factors of `f`. So `f` of degree >= 2 is
+/// irreducible iff it is square-free (`f' ≠ 0` and `gcd(f, f') = 1`; `f' = 0` means
+/// `f = g(x^p) = g^p`) and that dimension is 1. Deterministic, no randomness.
+///
+/// * `f` is read modulo p, like [`factor`].
+/// * `f ≡ 0` and nonzero constants: `Ok(false)` (0 and units are not irreducible; PARI
+///   `polisirreducible(Mod(0,5)) = polisirreducible(Mod(2,5)) = 0`). Degree 1: `Ok(true)`.
+/// * `p < 2` or `!p.is_prime()`: `Err(InvalidArgument)`. As for [`factor`], primality is
+///   proven only below 318665857834031151167461; for a composite modulus above that bound
+///   that passes the test the answer is unspecified (`Err` or a value that means nothing,
+///   since Z/pZ is then not a field). Callers that need a guarantee there must certify `p`.
+pub fn is_irreducible(f: &[Integer], p: &Integer) -> Result<bool> {
+    check_prime(p)?;
+    let f = reduce(f, p);
+    if f.len() <= 1 {
+        return Ok(false);
+    }
+    if f.len() == 2 {
+        return Ok(true);
+    }
+    let f = monic(&f, p)?;
+    let fp = derivative(&f, p);
+    if fp.is_empty() || gcd(&f, &fp, p)?.len() > 1 {
+        return Ok(false);
+    }
+    Ok(kernel_basis(&q_rows(&f, p)?, p)?.len() == 1)
 }
 
 /// Rows of Q for a monic `f` of degree n >= 1.
@@ -703,6 +738,40 @@ mod tests {
             Err(MathError::InvalidArgument(_))
         ));
         assert!(q_matrix(&v(&[5]), &int(3)).is_err());
+    }
+
+    // gp: polisirreducible(Mod(1,p)*f) for each (f, p) below; factormod(x^4+1,3) =
+    // (x^2+x+2)(x^2+2x+2) is square-free with no root, so only the kernel dimension (2)
+    // shows it is reducible; x^5+x+3 mod 7 has kernel dimension 1.
+    #[test]
+    fn is_irreducible_matches_pari() {
+        let cases: [(&[i64], i64, bool); 12] = [
+            (&[1, 0, 1], 3, true),
+            (&[1, 0, 1], 5, false),
+            (&[1, 0, 1], 2, false),
+            (&[1, 0, 0, 0, 1], 3, false),
+            (&[3, 1, 0, 0, 0, 1], 7, true),
+            (&[1, 0, 0, 1], 2, false),
+            (&[2, 7, 9, 5, 1], 3, false),
+            (&[2, 0, 0, 0, 0, 0, 0, 0, 0, 1], 3, false),
+            (&[1, 4], 3, true),
+            (&[3], 3, false),
+            (&[7], 3, false),
+            (&[], 3, false),
+        ];
+        for (f, p, want) in cases {
+            assert_eq!(
+                is_irreducible(&v(f), &int(p)).unwrap(),
+                want,
+                "f = {f:?}, p = {p}"
+            );
+        }
+        for p in [0, 1, 4, 9, -7] {
+            assert!(matches!(
+                is_irreducible(&v(&[1, 0, 1]), &int(p)),
+                Err(MathError::InvalidArgument(_))
+            ));
+        }
     }
 
     #[test]

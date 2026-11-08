@@ -105,90 +105,193 @@ where
     Ok(poly.is_square_free())
 }
 
-/// Check if a polynomial is irreducible (cannot be factored into non-trivial factors)
+/// MAGMA `IsIrreducible(f)` (Handbook ch. 23: §23.4.4, the ring-element predicates of
+/// `RngUPolElt`, and §23.8.1, "true iff f is irreducible over R", computed by reduction to
+/// `Factorization`): whether `poly` is an irreducible element of `R[x]`, that is nonzero, not
+/// a unit, and with a unit factor in every factorization `poly = g·h` in `R[x]`. Where the
+/// coefficient ring gives no way to decide, the answer is `Err(NotSupported)`, never a guess.
 ///
-/// # Implementation Notes
+/// **Content.** In `R[x]` the content counts: over Z, `2x + 2 = 2·(x + 1)` is reducible and
+/// the prime constant `2` is irreducible. PARI's `polisirreducible` answers the question over
+/// the fraction field instead (`polisirreducible(2*x+2) = 1`, every constant gives 0); that
+/// convention is [`is_irreducible_over_integers`]. Which of the two MAGMA's `IsIrreducible`
+/// follows over Z is unverified (the handbook text does not say; no MAGMA was available).
+/// Over a field, Q in particular, the two notions coincide and this agrees with PARI.
 ///
-/// This is a basic implementation with several limitations:
-/// - For degree 1 polynomials: Always irreducible
-/// - For degree 2-3: Checks for rational roots using the rational root theorem
-/// - For higher degrees: Uses square-free factorization as a partial check
+/// What is decided, by coefficient ring (recognised at run time through [`std::any::Any`],
+/// hence `R: 'static`; stable Rust has no specialization):
+/// * Every ring: `0` and the proven units are not irreducible (`Ok(false)`).
+/// * Z (`rustmath_integers::Integer`, `i64`, `i32`): a constant `c` is irreducible iff `|c|`
+///   is prime ([`rustmath_integers::Integer::is_prime`], Miller-Rabin to the bases 2..37,
+///   a proof only below 318665857834031151167461 (Sorenson-Webster 2017); a probable prime
+///   above that bound gives `Err`, a composite is always detected). A non-constant polynomial
+///   is reducible if its content is not 1; a primitive one is irreducible iff its Zassenhaus
+///   factorization ([`crate::zassenhaus::factor`]) is a single factor of multiplicity 1
+///   (Gauss' lemma: a primitive polynomial is irreducible in `Z[x]` iff it is irreducible in
+///   `Q[x]`). `Err(NotSupported)` if Zassenhaus' recombination exceeds its subset bound.
+/// * Q (`rustmath_rationals::Rational`): constants `false`, degree 1 `true`, otherwise
+///   Zassenhaus on the primitive integer associate (denominators cleared, content removed).
+/// * Any other `R`: `false` if the content is a proven non-unit (`f = c·(f/c)`); `true` for
+///   a primitive polynomial of degree 1 (a Euclidean domain is a UFD); `false` if `f' ≠ 0` and
+///   `gcd(f, f')` has positive degree (a proper factor over the fraction field, so reducible
+///   by Gauss' lemma, in every characteristic). Everything else is `Err(NotSupported)`: a
+///   nonzero constant that is not a proven unit, a content of unknown unit status, and a
+///   polynomial of degree >= 2 that is square-free or has `f' = 0`. In particular degree 2
+///   and 3 over a field: such a polynomial is irreducible iff it has no root in the field,
+///   and a generic coefficient ring offers no root test.
 ///
-/// A complete irreducibility test would require:
-/// - Factorization algorithms (Berlekamp, Cantor-Zassenhaus for finite fields)
-/// - Hensel lifting for integer polynomials
-/// - Irreducibility criteria (Eisenstein's criterion, etc.)
-///
-/// # Limitations
-///
-/// - May incorrectly report some reducible polynomials as irreducible
-/// - Only reliable for polynomials of degree ≤ 3 over integers
-/// - Does not implement full factorization algorithms
+/// For GF(p), with the coefficients as integers modulo p, use
+/// [`crate::berlekamp::is_irreducible`] (Berlekamp's criterion). Polynomials over GF(q),
+/// q = p^k, are the business of `rustmath-finitefields`.
 pub fn is_irreducible<R>(poly: &UnivariatePolynomial<R>) -> Result<bool>
 where
-    R: Ring + EuclideanDomain + Clone + Debug + rustmath_core::NumericConversion,
+    R: Ring + EuclideanDomain + Clone + Debug + 'static,
 {
-    // Constants and zero are not irreducible
-    if poly.is_zero() || poly.is_constant() {
+    use rustmath_integers::Integer;
+    use rustmath_rationals::Rational;
+    use std::any::Any;
+
+    let any: &dyn Any = poly;
+    if let Some(f) = any.downcast_ref::<UnivariatePolynomial<Integer>>() {
+        return is_irreducible_in_zx(f.coefficients());
+    }
+    if let Some(f) = any.downcast_ref::<UnivariatePolynomial<i64>>() {
+        let c: Vec<Integer> = f.coefficients().iter().map(|&a| Integer::from(a)).collect();
+        return is_irreducible_in_zx(&c);
+    }
+    if let Some(f) = any.downcast_ref::<UnivariatePolynomial<i32>>() {
+        let c: Vec<Integer> = f.coefficients().iter().map(|&a| Integer::from(a)).collect();
+        return is_irreducible_in_zx(&c);
+    }
+    if let Some(f) = any.downcast_ref::<UnivariatePolynomial<Rational>>() {
+        return is_irreducible_in_qx(f);
+    }
+    is_irreducible_generic(poly)
+}
+
+/// Sorenson and Webster (2017): Miller-Rabin to the twelve prime bases 2..37 (what
+/// [`rustmath_integers::Integer::is_prime`] runs) proves primality below this bound.
+const MR_PROOF_BOUND: &str = "318665857834031151167461";
+
+/// Whether the constant `c` is irreducible in `Z[x]`, i.e. `|c|` is prime (see
+/// [`is_irreducible`]).
+fn integer_constant_is_irreducible(c: &rustmath_integers::Integer) -> Result<bool> {
+    use rustmath_integers::Integer;
+    let a = c.abs();
+    if a <= Integer::one() {
         return Ok(false);
     }
-
-    let degree = poly.degree().unwrap();
-
-    // Linear polynomials are always irreducible
-    if degree == 1 {
+    // A `false` is a proof (trial division below 1000, a Miller-Rabin witness above).
+    if !a.is_prime() {
+        return Ok(false);
+    }
+    let bound = Integer::from_decimal_str(MR_PROOF_BOUND).expect("valid decimal literal");
+    if a < bound {
         return Ok(true);
     }
+    Err(MathError::NotSupported(format!(
+        "is_irreducible: the constant {c} is irreducible in Z[x] iff |c| is prime, and \
+         Miller-Rabin to the bases 2..37 proves primality only below {MR_PROOF_BOUND}"
+    )))
+}
 
-    // Check if square-free first (if not square-free, definitely not irreducible)
-    if !is_square_free(poly)? {
+/// [`is_irreducible`] in `Z[x]` (little-endian coefficients, possibly untrimmed).
+fn is_irreducible_in_zx(c: &[rustmath_integers::Integer]) -> Result<bool> {
+    use crate::zx;
+    let f = zx::trim(c);
+    match f.len() {
+        0 => Ok(false),
+        1 => integer_constant_is_irreducible(&f[0]),
+        _ => {
+            if !zx::content(&f).is_one() {
+                // f = cont(f) · pp(f), two non-units.
+                return Ok(false);
+            }
+            if f.len() == 2 {
+                return Ok(true);
+            }
+            single_irreducible_factor(&f)
+        }
+    }
+}
+
+/// [`is_irreducible`] in `Q[x]`.
+fn is_irreducible_in_qx(f: &UnivariatePolynomial<rustmath_rationals::Rational>) -> Result<bool> {
+    match f.degree() {
+        None | Some(0) => Ok(false),
+        Some(1) => Ok(true),
+        Some(_) => {
+            let g = crate::univariate::primitive_integer_associate(f.coefficients());
+            single_irreducible_factor(g.coefficients())
+        }
+    }
+}
+
+/// For `f` in `Z[x]` of degree >= 1: whether `f` is, up to its content, a single irreducible
+/// factor of multiplicity 1 (Zassenhaus), i.e. irreducible over Q.
+fn single_irreducible_factor(f: &[rustmath_integers::Integer]) -> Result<bool> {
+    let (_, factors) = zassenhaus::factor(f).map_err(|_| {
+        MathError::NotSupported(
+            "is_irreducible: Zassenhaus recombination exceeded the subset bound".to_string(),
+        )
+    })?;
+    Ok(factors.len() == 1 && factors[0].1 == 1)
+}
+
+/// Whether `c` is proven to be a unit: [`Ring::unit_status`], or else an exact division
+/// `1 = q·c` checked by multiplying back (as in the default
+/// [`EuclideanDomain::normalization_unit`]), so a lawless `div_rem` cannot fake a unit.
+/// `false` means "not proven", not "not a unit".
+fn is_proven_unit<R: EuclideanDomain>(c: &R) -> bool {
+    match c.unit_status() {
+        Some(b) => b,
+        None => matches!(
+            R::one().div_rem(c),
+            Ok((q, r)) if r.is_zero() && (q.clone() * c.clone()).is_one()
+        ),
+    }
+}
+
+/// [`is_irreducible`] for a coefficient ring with no dedicated algorithm.
+fn is_irreducible_generic<R>(poly: &UnivariatePolynomial<R>) -> Result<bool>
+where
+    R: Ring + EuclideanDomain + Clone + Debug,
+{
+    let undecided = |what: &str| {
+        Err(MathError::NotSupported(format!(
+            "is_irreducible: {what}; this coefficient ring has no irreducibility test (Z, Q, \
+             i64 and i32 are decided here, GF(p) by berlekamp::is_irreducible)"
+        )))
+    };
+    let Some(n) = poly.degree() else {
+        return Ok(false);
+    };
+    if n == 0 {
+        return if is_proven_unit(poly.coeff(0)) {
+            Ok(false)
+        } else {
+            undecided(
+                "a nonzero constant that is not a proven unit is irreducible in R[x] iff it \
+                 is irreducible in R",
+            )
+        };
+    }
+    let content = poly.content();
+    if content.unit_status() == Some(false) {
+        // poly = content · (poly / content), two non-units.
         return Ok(false);
     }
-
-    // For degree 2 and 3, we can check for rational roots
-    // If rational roots exist, the polynomial is reducible
-    if degree <= 3 {
-        // Try to find rational roots by checking divisors of constant/leading coefficient
-        // This is a simplified version of the rational root theorem
-
-        // For a more complete implementation, we would need access to:
-        // 1. Integer factorization of coefficients
-        // 2. Rational root theorem implementation
-        // 3. Proper root-finding algorithms
-
-        // For now, we'll do a basic check: if the polynomial has integer coefficients
-        // and we can find a root by trial, it's reducible
-
-        // This is a placeholder that assumes irreducibility for degree > 1 polynomials
-        // that are square-free. A proper implementation would need more sophisticated
-        // algorithms.
-
-        return Ok(true); // Conservative: assume irreducible if square-free
+    if !is_proven_unit(&content) {
+        return undecided("the unit status of the content is unknown");
     }
-
-    // For higher degrees, we need factorization algorithms
-    // Without implementing full factorization, we can only do partial checks
-
-    // Try square-free factorization - if it produces multiple factors, reducible
-    let sf_factors = square_free_factorization(poly)?;
-
-    // If square-free factorization produces more than one distinct factor, it's reducible
-    if sf_factors.len() > 1 {
+    if n == 1 {
+        return Ok(true);
+    }
+    let d = poly.derivative();
+    if !d.is_zero() && poly.gcd(&d).degree().unwrap_or(0) > 0 {
         return Ok(false);
     }
-
-    // If the only factor has multiplicity > 1, it's reducible (though this shouldn't
-    // happen if we passed the is_square_free check)
-    if !sf_factors.is_empty() && sf_factors[0].1 > 1 {
-        return Ok(false);
-    }
-
-    // Conservative: assume irreducible if we can't determine otherwise
-    // A proper implementation would use:
-    // - Berlekamp's algorithm for polynomials over finite fields
-    // - Zassenhaus algorithm for polynomials over integers
-    // - Various irreducibility criteria
-    Ok(true)
+    undecided("degree >= 2 and square-free (or f' = 0)")
 }
 
 /// Attempt to find rational roots of a polynomial using the Rational Root Theorem
@@ -358,8 +461,9 @@ pub fn factor_over_integers(
 
 /// Test irreducibility of a polynomial over ℚ (equivalently, over ℤ for a
 /// primitive polynomial) via complete Zassenhaus factorization. A constant is not
-/// irreducible. This is the reliable integer-specific complement to the generic,
-/// conservative [`is_irreducible`].
+/// irreducible. The content is ignored (`2x + 2` gives `true`): this is PARI's
+/// `polisirreducible` convention (`polisirreducible(2*x+2) = 1`). For irreducibility as an
+/// element of `ℤ[x]`, where the content counts, use [`is_irreducible`].
 pub fn is_irreducible_over_integers(
     poly: &UnivariatePolynomial<rustmath_integers::Integer>,
 ) -> Result<bool> {
