@@ -1,10 +1,10 @@
-# Session handoff (2026-11-08, updated after Tasks 0-2, the L0-L1 fixes and their follow-ups)
+# Session handoff (2026-11-08, updated after Tasks 0-2, the L0-L1 fixes, their follow-ups and the final follow-up fixes)
 
 Read this first, then `CLAUDE.md` and `docs/README.md`. It records where the project stands and
 what to do next. **Tasks 0, 1 and 2 are done** (status notes below), and so are the L0-L1 defects
-the review found (2026-11-07) and their follow-ups (2026-11-08). The next step is "After these
-tasks" at the end: the open follow-ups, then the dead code, the mixin wiring and the `docs/PLAN.md`
-build targets.
+the review found (2026-11-07), their follow-ups and the final follow-up fixes (both 2026-11-08). The
+next step is "After these tasks" at the end: the open follow-ups, then the dead code, the mixin wiring
+and the `docs/PLAN.md` build targets.
 
 ## Where things stand
 
@@ -217,14 +217,98 @@ refreshed 702d0a5`, the rest inside re-rated rows); the 27 citations it could no
 hand (25 point into files unchanged since their row was written, one was fixed by hand, one sits in a
 re-rated row), so none remains unresolved.
 
-**Open follow-ups** (each has a tracker row or note unless marked):
-- `fp_factor::equal_degree_factor` gives up after 200 random tries and returns the block unsplit (a
-  bounded search that decides; about 2^-200 per block, never observed). Zassenhaus and so
-  `is_irreducible` over Z and Q rely on it; Berlekamp's count r would certify the block (tracker ⏳ row).
+**Final follow-up fixes: DONE 2026-11-08** on the same branch, commits `f0682b7..9c24389`, with the same cycle (a
+design, two design reviews, an implementation and adversarial implementation reviews; reference values from
+PARI/GP 2.15 or GAP):
+- `f0682b7` polynomials: `fp_factor::equal_degree_factor` is Las Vegas (the open follow-up of the previous round:
+  it gave up after 200 tries and returned the block unsplit, and Zassenhaus and `is_irreducible` over Z and Q
+  relied on it). A block that the 200 legacy tries cannot split must pass a Rabin-type certificate and then gets
+  up to 256 uniform vzGG 14.8 tries; the cap panics (probability at most 2^-256). New `pub const MAX_P` =
+  3037000499; the public entry panics on f = 0, on a p that is not a prime <= `MAX_P` and on every contract
+  violation; a nonzero constant gives `[]`.
+- `7ce8117` finitefields: the `ff_poly` Cantor-Zassenhaus stack (`cantor_zassenhaus.rs`) and the canonical
+  `poly_factor` EDF are certified the same way (the canonical one looped forever on an invalid block);
+  `factor_squarefree` checks squarefreeness, the lava `factor`, `factor_squarefree` and EDF check the prime
+  characteristic, `random_element` is exactly uniform (it drew only 0 and 1 for p > 2^64, so a reducible
+  quadratic over GF(2^64 + 37) came back irreducible) and `PrimeField::from_int` is O(1) (it was O(p)).
+- `6adaba2` integers: the QS, ECM and Pollard-rho complete-factorization drivers no longer push a composite as a
+  prime (blocker B-04 closed; `ecm_factor_complete(3127, 1000, 10000, 0)` gave `[(53,1), (59,1), (3127,1)]`); the
+  rho fallback is complete (Brent rho plus trial-division windows) and its output sorted; the dead QS
+  `tonelli_shanks` has no z > 100 cap. 22 PARI `factor` rows in `tests/ch18_factorization_drivers.rs`.
+- `874258b` jupyter: the REPL `binomial` goes to `SageInteger::binomial` for all integers (card T-250 done;
+  `binomial(2^32 + 1, 1)` gave 1), 74 narrowing call sites use the checked `int_arg` / `index_arg` with the limits
+  of `mod repl_limits` (no call the old code computed correctly in under about 10 s or a few hundred MB is
+  refused), `fibonacci` / `lucas` accept n < 0, and `exterior_derivative` / `wedge` check degree and component
+  counts.
+- `da28d6f`, `a119d1e`, `9c24389`: doc fixes from the reviews (citation escapes, the composite-modulus wording,
+  the psi_12 caveat in the QS and ECM driver docs, cost sentences).
+
+`PROJECT_TRACKER.md` (Change Log "Final follow-up fixes"), `docs/magma/status_overrides.csv` (6 rows re-rated, one
+with a new status: ch023.EqualDegreeFactorization from done to verified; 19 rows with path-only refreshes, tagged
+`path refreshed 9c24389`) and `docs/magma/REVIEW_2026-11-06.md` record the result. Designs, reports and reviews
+are in the session scratchpad only (`fu/final/`).
+
+**Open follow-ups** (each has a tracker row or note unless marked; lines at `9c24389`):
 - MAGMA conventions still unverified (the handbook pages answer HTTP 401, no MAGMA binary): `Quotrem`
   over Z, `Content` over Q, the content in `IsIrreducible` over Z (Sage's `(2*x).is_irreducible()` over
   ZZ and QQ would be a cross-check), `Binomial(n, r)` for r < 0, the shape of `QMatrix`.
-- REPL `binomial` truncates n and k to u32 and refuses negative n (new card T-250, tracker 🔴).
+- Factorization preconditions (from the X1 reviews). The three distinct-degree factorizations do not check that
+  their input is squarefree (`rustmath-polynomials/src/fp_factor.rs:343`,
+  `rustmath-finitefields/src/poly_factor.rs:613`, `rustmath-finitefields/src/cantor_zassenhaus.rs:448`; the lava
+  `squarefree_factorization`, `:363`, checks no precondition either); an eager one-gcd assert would close them.
+  `unramified_local_galois_group` (`rustmath-groups/src/pgalois.rs:122`) passes an unchecked p to
+  `fp_factor::factor` (`:135`), so a composite p can give a wrong Frobenius cycle type (x^2 + 1 mod 15 comes back
+  as one factor); `fp_factor::factor` (`fp_factor.rs:735`) documents the precondition but does not check it (a
+  deterministic Miller-Rabin to the bases 2, 3, 5, 7 is exact for p <= `MAX_P`). A `Gfpn` whose defining
+  polynomial is reducible is not detected by the lava entry points (`ff_poly.rs:590`, `Gfpn::new`; a Rabin test
+  there would make it a clean panic). Not tracked as rows.
+- Equal-degree cost (not tracked as rows): `block_contract` keeps all d + 1 Frobenius rungs
+  (`fp_factor.rs:528`; only rungs d and d/l are read), and the public `equal_degree_factor` now runs a
+  certificate per call, which `rustmath-rings/src/valuation/maclane.rs:1687` follows with its own Rabin test.
+  `rustmath-rings/src/function_field/typed/factor.rs:156` can use `fp_factor::MAX_P` instead of the literal.
+  The lava and canonical `random_irreducible` (`irreducible.rs:168`, `poly_factor.rs:256`, `:263`) still draw
+  non-uniformly for p > 2^63 (each candidate is Rabin-tested, so they stay honest); `Gfpn` keeps the
+  O(min(n, p)) default `from_int` (`ff_poly.rs:61`). Later cleanup from the X1 design: drop phase 1 (the legacy
+  tries) and sort `factor`'s output once the downstream crates' tests run with it.
+- Integer factorization. No proving `is_prime` above psi_12 = 318665857834031151167461
+  (`rustmath-integers/src/prime.rs:91`; MAGMA `Proof := true`, BPSW or ECPP), so a factor the drivers return
+  above it may be composite (psi_12 itself comes back unsplit). The QS sieve stage is still broken
+  (`quadratic_sieve.rs:282`, `:340`; tracker 🔴, card T-223), so the QS driver is a rho driver in practice, and
+  two tests pin the sieve's outputs (`quadratic_sieve.rs:778`, `:792`) and must change when it is fixed.
+  `factorint::trial_division_with_primes` (`factorint.rs:401`, push at `:434-436`) reports a leftover cofactor
+  as a prime (new tracker 🛑 row). Not tracked as rows: `factor_pollard_rho` (`prime.rs:808`) has no capped
+  variant that returns the unfactored composites (MAGMA's third return value with `ECMLimit` / `MPQSLimit`); the
+  QS `legendre_symbol` maps an error to "residue" (`quadratic_sieve.rs:45-68`, unreachable for p >= 3); the
+  `ecm.rs:14-15` module doc describes the p - 1 / p + 1 methods, not ECM.
+- REPL split-outs of the X2 design (`fu/final/design/X2-repl-int-args.md` §5 and the implementation report;
+  not tracked as rows except where the jupyter rows say so):
+  - F1: `Expr::taylor` (`rustmath-symbolic/src/series.rs:24`) differentiates without simplifying, so memory grows
+    exponentially with the order (x^2 at order 9 needs more than 3 GB) and a debug build overflows the stack at
+    order 20000 (`TAYLOR_ORDER`, `rustmath-jupyter/src/repl.rs:10534`); no REPL bound prevents it.
+  - F2: repeated `d` and `wedge` build ever larger expression trees (`rustmath-manifolds/src/diff_form.rs:126`,
+    `:173`; d(d(dx_0)) peaks at 574 MB at 10^6 components; the inner loop of `exterior_derivative` is also
+    O(n^(p+2)) for O(n^(p+1)) components), and the REPL clones a value on every assignment and lookup
+    (`repl.rs:649`, `:706`).
+  - N4 / S8: the library computes `n.pow(p + 1)` and `n.pow(p + q)` unchecked (`diff_form.rs:139`,
+    `tensor_field.rs:105`, `:237`, `:280`); only the REPL arms check them.
+  - N5: the plot options `plot_points=` and `contours=` clamp silently and ignore values they cannot parse
+    (`repl.rs:255`, `:5478-6792`).
+  - S1 a faster `SageInteger::binomial` (`rustmath-integers/src/sage_wrapper.rs:423`). S2 u32 overflow inside
+    rustmath-combinatorics (`lib.rs:430` catalan, `:498` rising, `:410` multinomial, `:749` schroder,
+    `partitions.rs:1261`). S3 an Integer-valued p(n) for n > 416 (`partitions.rs:1261`). S4 faster callees
+    (Fibonacci doubling, the Bell triangle, rolling Stirling rows, the derangement and Motzkin recurrences) so
+    that the limits can rise. S5 `Integer::sigma` forms `(multiplicity + 1) * k` unchecked (`integer.rs:398`).
+    S6 `is_prime_miller_rabin` repeats its 12 bases 20 times (`prime.rs:32`) and `nth_prime` / `prime_pi` test
+    every candidate (`prime.rs:240`, `:356`). S7 the panicking inherent `Integer::to_i64` (`integer.rs:88`), the
+    expansion point in `series.rs:34`, the i64-only literal parser (`rustmath-symbolic/src/parser.rs:148-154`).
+    S9 parser defects: `-` is split before `*` (`repl.rs:9580`), and commas inside string literals split
+    arguments (`parse_args` `:4712-4744`, `split_at_depth_zero` `:5057-5075`, the tuple split `:696-707`). S10
+    `falling_factorial` / `rising_factorial` take u32 n only, and `pochhammer` aliases the falling factorial
+    (`repl.rs:2348`). S11 `to_f64` of large rationals gives NaN (`repl.rs:3018`, `:3024`, `:5180-5181`). S12 a
+    growth-based size guard for `matrix_power` and `**` (`repl.rs:1530`, `:9675`). S13 no evaluation timeout
+    or interrupt. S14 `chart(M, names)` never compares the number of names with dim(M) (`repl.rs:4579-4595`).
+    S15 no size limit on the graph constructors (`repl.rs:3167-3200`), `prime_pi` (`:2703`) and `primes`
+    (`:2718`).
 - Rational form and invariant factors: no complexity bound (the fixed start basis has a worst case with
   r = n, and one 2x2 relation matrix over Q took 81 s in debug); [Ste97] or Storjohann would bound it.
   Doc nits from the last review: the rational-form "Fallback" paragraph names only the sentinel trigger,
