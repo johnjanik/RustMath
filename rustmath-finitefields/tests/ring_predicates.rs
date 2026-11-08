@@ -490,8 +490,9 @@ fn gr_27_2_inherent_order_matches_hook() {
 }
 
 /// GR(8,2) elements seen through a `Ring` impl that overrides none of the hooks and whose
-/// static constructors panic (as `GaloisRingElement`'s do): the trait defaults must neither
-/// panic nor decide anything beyond the ring axioms.
+/// static constructors panic (as the p-adic element types' still do; `GaloisRingElement`'s
+/// return unbound constants): the trait defaults must neither panic nor decide anything
+/// beyond the ring axioms.
 #[derive(Clone, Debug, PartialEq)]
 struct GrDefaults(GaloisRingElement);
 

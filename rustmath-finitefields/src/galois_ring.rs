@@ -214,7 +214,7 @@ impl GaloisRing {
     pub fn zero(&self) -> GaloisRingElement {
         GaloisRingElement {
             coeffs: vec![Integer::zero(); self.data.d],
-            ring: self.clone(),
+            ring: Some(self.clone()),
         }
     }
 
@@ -224,7 +224,7 @@ impl GaloisRing {
         c[0] = Integer::one();
         GaloisRingElement {
             coeffs: c,
-            ring: self.clone(),
+            ring: Some(self.clone()),
         }
     }
 
@@ -236,7 +236,7 @@ impl GaloisRing {
         }
         GaloisRingElement {
             coeffs: c,
-            ring: self.clone(),
+            ring: Some(self.clone()),
         }
     }
 
@@ -246,7 +246,7 @@ impl GaloisRing {
         c[0] = red(k, &self.data.pa);
         GaloisRingElement {
             coeffs: c,
-            ring: self.clone(),
+            ring: Some(self.clone()),
         }
     }
 
@@ -256,7 +256,7 @@ impl GaloisRing {
         let reduced = self.reduce(coeffs);
         GaloisRingElement {
             coeffs: reduced,
-            ring: self.clone(),
+            ring: Some(self.clone()),
         }
     }
 
@@ -309,8 +309,11 @@ impl Eq for GaloisRing {}
 
 impl Parent for GaloisRing {
     type Element = GaloisRingElement;
+    /// Whether `element` is an element of this ring. `false` for an unbound element (from
+    /// `Ring::zero()`/`Ring::one()`): it has no parent until it is bound (see
+    /// [`GaloisRingElement`]).
     fn contains(&self, element: &Self::Element) -> bool {
-        element.ring.data == self.data
+        element.ring.as_ref().is_some_and(|r| r.data == self.data)
     }
     fn zero(&self) -> Option<Self::Element> {
         Some(GaloisRing::zero(self))
@@ -339,41 +342,180 @@ impl Parent for GaloisRing {
 // ---------------------------------------------------------------------------
 
 /// An element of a [`GaloisRing`] `GR(p^a, d)`, carrying its shared parent.
+///
+/// # Unbound elements (`Ring::zero`/`Ring::one`)
+///
+/// The static [`Ring::zero`]/[`Ring::one`] constructors cannot know `p`, `a` or `d`, so (as
+/// for [`FiniteFieldElement`] and the modulus-0 sentinel of [`crate::IntegerMod`] and
+/// [`crate::PrimeField`]) they return *unbound* elements: a single integer constant `c ∈ Z`
+/// awaiting the canonical map `Z → GR(p^a, d)`, `c ↦ c·1` (MAGMA Ch. 48 §48.2.3: `R ! a` for
+/// an integer `a` is "identified with `a mod p^a`"). That map is the unique ring homomorphism
+/// from `Z`, so binding is canonical. Use [`GaloisRing::zero`]/[`GaloisRing::one`]/
+/// [`GaloisRing::from_int`] when the parent is known. The precise algebra:
+///
+/// * **`+`, `-`, `*`**: an unbound operand is bound on contact into the other operand's ring
+///   (via [`GaloisRing::from_int`]), so `R::zero() + x == x` and `R::zero() * x` is the zero
+///   of `x`'s ring. Two unbound operands combine in `Z` (the result stays unbound). Two
+///   elements of *different* Galois rings panic, as before.
+/// * **`Neg`**: negates in `Z` for an unbound element.
+/// * **`==`** coerces exactly like the arithmetic: an unbound operand is bound into the other
+///   operand's ring before comparing, so `R::zero() == r.zero()` and `unbound(9) == r.one()`
+///   in `GR(8, d)`. Two unbound elements compare in `Z` (so `unbound(8) != unbound(0)`,
+///   although both bind to `0` in `GR(8, d)`); two bound elements are equal iff same ring and
+///   same coefficients. Transitivity can fail only across rings: `unbound(0)` equals the zero
+///   of every Galois ring while those zeros differ pairwise. There is no `Hash` impl.
+/// * **`is_zero`/`is_one`** look at `c` in `Z`. Generic code that never meets a bound element
+///   computes in `Z`: eight `R::one()`s add up to `unbound(8)`, which is not `is_zero()`,
+///   although `8 = 0` in `GR(8, d)`.
+/// * **the `Ring` hooks** (`unit_status`, `nilpotent_status`, `unit_inverse`,
+///   `multiplicative_order_status`) and the inherent [`is_unit`](Self::is_unit),
+///   [`unit_inverse`](Self::unit_inverse), [`multiplicative_order`](Self::multiplicative_order),
+///   [`is_idempotent`](Self::is_idempotent) decide only what holds in **every** Galois ring
+///   (`crate::ring_hooks`): `±1` are units, `0` is nilpotent and not a unit, `1` has order 1.
+///   Anything else (e.g. whether `2` is a unit, or the order of `-1`, which is `1` in
+///   `GR(2, d)`) is `None`/`Undecided`/an `Err` on the hooks, and a panic on the `bool`- or
+///   `Option`-valued inherent methods, never a guess.
+/// * **binary inherent operations** ([`quotrem`](Self::quotrem), [`gcd`](Self::gcd),
+///   [`lcm`](Self::lcm), [`xgcd`](Self::xgcd), ...): an unbound operand is bound into the
+///   other operand's ring. With both operands unbound, the `Result`-valued ones return
+///   `Err(MathError::InvalidArgument)` and `gcd`/`lcm` panic.
+/// * operations that *need* the parent ([`ring`](Self::ring), [`valuation`](Self::valuation),
+///   [`residue`](Self::residue), [`project`](Self::project),
+///   [`teichmuller`](Self::teichmuller), [`frobenius`](Self::frobenius), the inherent
+///   [`pow`](Self::pow), [`FiniteChainRing`] methods, ...) panic on an unbound element with a
+///   message that says so, rather than fabricate an answer.
+/// * [`eltseq`](Self::eltseq) of an unbound element is the one-element slice `[c]` (the
+///   unreduced integer constant), **not** a length-`d` sequence over `Z/p^a`.
+/// * [`DiscreteValuation::valuation`]`(&r, x)` knows the parent `r`, so it binds an unbound
+///   `x` into `r` first; [`Parent::contains`] is `false` for an unbound element.
 #[derive(Clone)]
 pub struct GaloisRingElement {
-    coeffs: Vec<Integer>, // length d, in [0, p^a)
-    ring: GaloisRing,
+    /// `[a0, ..., a_{d-1}]` in `[0, p^a)` for a bound element; for an unbound element, the
+    /// single integer constant `c`.
+    coeffs: Vec<Integer>,
+    /// The parent ring; `None` is the unbound sentinel of `Ring::zero()`/`Ring::one()` (see
+    /// the type docs).
+    ring: Option<GaloisRing>,
 }
 
 impl GaloisRingElement {
-    /// The parent ring.
+    /// The parent ring. Panics for an unbound element (from `Ring::zero()`/`Ring::one()`, see
+    /// the type docs): it has no parent until it meets a bound element.
     pub fn ring(&self) -> &GaloisRing {
-        &self.ring
+        self.require_ring("ring()")
     }
 
-    /// The coefficient sequence `[a0, ..., a_{d-1}]` over `Z/p^a` (MAGMA `Eltseq`).
+    /// Whether the element is bound to a parent ring (`false` only for the unbound
+    /// `Ring::zero()`/`Ring::one()` sentinel and what is computed from it alone, see the type
+    /// docs).
+    pub fn is_bound(&self) -> bool {
+        self.ring.is_some()
+    }
+
+    /// The coefficient sequence `[a0, ..., a_{d-1}]` over `Z/p^a` (MAGMA `Eltseq`). For an
+    /// unbound element (see the type docs) this is the single unreduced integer constant
+    /// `[c]`, not a length-`d` sequence.
     pub fn eltseq(&self) -> &[Integer] {
         &self.coeffs
     }
 
+    /// An unbound element holding the integer constant `c` (see the type docs).
+    fn unbound(c: Integer) -> Self {
+        GaloisRingElement {
+            coeffs: vec![c],
+            ring: None,
+        }
+    }
+
+    /// The parent ring, or a panic naming `op` for an unbound element.
+    fn require_ring(&self, op: &str) -> &GaloisRing {
+        self.ring.as_ref().unwrap_or_else(|| {
+            panic!(
+                "GaloisRingElement::{op} needs a parent ring, but this element is unbound \
+                 (it came from Ring::zero()/Ring::one()); bind it by combining it with an \
+                 element of a GaloisRing, or construct it with GaloisRing::zero()/one()/from_int()"
+            )
+        })
+    }
+
+    /// The integer constant of an unbound element. Only for `self.ring.is_none()`.
+    fn unbound_value(&self) -> &Integer {
+        debug_assert!(self.ring.is_none() && self.coeffs.len() == 1);
+        &self.coeffs[0]
+    }
+
+    /// Bind an unbound element into `r` by the canonical map `Z → GR(p^a, d)`.
+    fn bind_into(&self, r: &GaloisRing) -> Self {
+        r.from_int(self.unbound_value().clone())
+    }
+
+    /// A question about an unbound constant whose answer differs between Galois rings.
+    fn undecided_unbound(&self, op: &str) -> ! {
+        panic!(
+            "GaloisRingElement::{op}: the answer for the unbound integer constant {} depends on \
+             the Galois ring it binds to; bind it first (combine it with an element of a \
+             GaloisRing)",
+            self.coeffs[0]
+        )
+    }
+
+    /// Coerce the operands of a binary operator: one unbound operand is bound into the other's
+    /// ring; two bound operands must share their ring (else the historical panic). `Err` when
+    /// both are unbound (the operation then runs in `Z`).
+    fn coerce_pair(self, other: Self) -> std::result::Result<(Self, Self), (Self, Self)> {
+        match (&self.ring, &other.ring) {
+            (Some(a), Some(b)) => {
+                assert!(a.data == b.data, "operands live in different Galois rings");
+                Ok((self, other))
+            }
+            (Some(r), None) => {
+                let bound = other.bind_into(r);
+                Ok((self, bound))
+            }
+            (None, Some(r)) => {
+                let bound = self.bind_into(r);
+                Ok((bound, other))
+            }
+            (None, None) => Err((self, other)),
+        }
+    }
+
+    /// [`coerce_pair`](Self::coerce_pair) for the binary inherent methods that borrow their
+    /// operands: `None` when both are unbound.
+    fn bind_pair(&self, other: &Self) -> Option<(Self, Self)> {
+        match (&self.ring, &other.ring) {
+            (Some(a), Some(b)) => {
+                assert!(a.data == b.data, "operands live in different Galois rings");
+                Some((self.clone(), other.clone()))
+            }
+            (Some(r), None) => Some((self.clone(), other.bind_into(r))),
+            (None, Some(r)) => Some((self.bind_into(r), other.clone())),
+            (None, None) => None,
+        }
+    }
+
+    fn data(&self, op: &str) -> &GaloisRingData {
+        &self.require_ring(op).data
+    }
     fn pa(&self) -> &Integer {
-        &self.ring.data.pa
+        &self.data("pa()").pa
     }
     fn p(&self) -> &Integer {
-        &self.ring.data.p
+        &self.data("p()").p
     }
 
     fn assert_same(&self, other: &Self) {
         assert!(
-            self.ring.data == other.ring.data,
+            self.data("arithmetic") == other.data("arithmetic"),
             "operands live in different Galois rings"
         );
     }
 
     /// The `p`-adic valuation `v(x)`: the largest power of `p` dividing every
-    /// coefficient. By convention `v(0) = a` (the nilpotency index).
+    /// coefficient. By convention `v(0) = a` (the nilpotency index). Panics for an unbound
+    /// element (`a` is unknown; see the type docs).
     pub fn valuation(&self) -> u32 {
-        let a = self.ring.data.a;
+        let a = self.data("valuation()").a;
         let p = self.p();
         let mut v = a;
         for c in &self.coeffs {
@@ -389,54 +531,73 @@ impl GaloisRingElement {
     }
 
     /// Whether the element is a unit (MAGMA `IsUnit`): `v(x) == 0`.
+    ///
+    /// For an unbound constant `c`: `true` for `±1`, `false` for `0`, and a panic for any other
+    /// `c` (`2` is a unit in `GR(27, 2)` and nilpotent in `GR(8, 2)`; see the type docs).
     pub fn is_unit(&self) -> bool {
+        if self.ring.is_none() {
+            return crate::ring_hooks::sentinel_unit_status(self.unbound_value())
+                .unwrap_or_else(|| self.undecided_unbound("is_unit()"));
+        }
         self.valuation() == 0
     }
 
     /// Whether the element is nilpotent (MAGMA `IsNilpotent`): equivalently a
     /// non-unit (in a finite chain ring every non-unit lies in the nilpotent
-    /// maximal ideal).
+    /// maximal ideal). Unbound constants as for [`is_unit`](Self::is_unit).
     pub fn is_nilpotent(&self) -> bool {
         !self.is_unit()
     }
 
     /// Whether the element is a zero divisor (MAGMA `IsZeroDivisor`): non-zero
-    /// and not a unit.
+    /// and not a unit. Unbound constants as for [`is_unit`](Self::is_unit).
     pub fn is_zero_divisor(&self) -> bool {
         !self.is_zero() && !self.is_unit()
     }
 
-    /// Whether `x^2 == x` (MAGMA `IsIdempotent`).
+    /// Whether `x^2 == x` (MAGMA `IsIdempotent`). For an unbound constant: `true` for `0` and
+    /// `1`, a panic for any other `c` (`9` is `1` in `GR(8, d)`, idempotent; it is not
+    /// idempotent in `GR(27, d)`).
     pub fn is_idempotent(&self) -> bool {
+        if self.ring.is_none() {
+            let c = self.unbound_value();
+            if c.is_zero() || c.is_one() {
+                return true;
+            }
+            self.undecided_unbound("is_idempotent()");
+        }
         (self.clone() * self.clone()) == *self
     }
 
-    /// Reduce to the residue field `GF(p^d)` (the map `R -> R/(p)`).
+    /// Reduce to the residue field `GF(p^d)` (the map `R -> R/(p)`). Panics for an unbound
+    /// element.
     pub fn residue(&self) -> FiniteFieldElement {
-        let p = self.p();
+        let data = self.data("residue()");
+        let p = &data.p;
         let coeffs: Vec<Integer> = self.coeffs.iter().map(|c| red(c.clone(), p)).collect();
-        self.ring.data.residue.element(coeffs)
+        data.residue.element(coeffs)
     }
 
     /// The canonical projection of this element into `GR(p^b, d)` for
     /// `1 <= b <= a` (coefficients reduced mod `p^b`). This is the canonical
     /// surjective ring homomorphism `GR(p^a, d) -> GR(p^b, d)`; the parent of
-    /// the result is [`GaloisRing::reduce_precision`]`(b)`.
+    /// the result is [`GaloisRing::reduce_precision`]`(b)`. Panics for an unbound element.
     pub fn project(&self, b: u32) -> Result<GaloisRingElement> {
-        let target = self.ring.reduce_precision(b)?;
+        let target = self.require_ring("project()").reduce_precision(b)?;
         Ok(target.element(self.coeffs.clone()))
     }
 
     /// The Teichmüller representative of this element's residue class: the
-    /// unique `t` with `t^{p^d} = t` and `t ≡ self (mod p)`.
+    /// unique `t` with `t^{p^d} = t` and `t ≡ self (mod p)`. Panics for an unbound element.
     ///
     /// Computed as the limit of `x ↦ x^{p^d}`: if `x ≡ t (mod p^k)` then
     /// `x^{p^d} ≡ t^{p^d} = t (mod p^{k+d})`, so the iteration reaches the
     /// fixed point within `ceil((a-1)/d) <= a - 1` steps.
     pub fn teichmuller(&self) -> GaloisRingElement {
-        let q = self.p().pow(self.ring.data.d as u32); // p^d
+        let data = self.data("teichmuller()");
+        let q = data.p.pow(data.d as u32); // p^d
         let mut t = self.clone();
-        for _ in 0..self.ring.data.a {
+        for _ in 0..data.a {
             let next = t.pow(&q);
             if next == t {
                 break;
@@ -449,11 +610,12 @@ impl GaloisRingElement {
 
     /// The Teichmüller digit expansion: the unique `[t_0, ..., t_{a-1}]` with
     /// every `t_i` a Teichmüller representative (`t_i^{p^d} = t_i`) and
-    /// `self = t_0 + t_1 p + ... + t_{a-1} p^{a-1}`.
+    /// `self = t_0 + t_1 p + ... + t_{a-1} p^{a-1}`. Panics for an unbound element.
     pub fn teichmuller_digits(&self) -> Vec<GaloisRingElement> {
-        let a = self.ring.data.a;
-        let p = self.p().clone();
-        let pa = self.pa().clone();
+        let data = self.data("teichmuller_digits()");
+        let a = data.a;
+        let p = data.p.clone();
+        let pa = data.pa.clone();
         let mut digits = Vec::with_capacity(a as usize);
         let mut y = self.clone();
         for _ in 0..a {
@@ -481,15 +643,17 @@ impl GaloisRingElement {
 
     /// The Frobenius automorphism `φ` applied to this element: writing
     /// `self = Σ t_i p^i` in Teichmüller digits, `φ(self) = Σ t_i^p p^i`.
+    /// Panics for an unbound element.
     ///
     /// `φ` is the unique ring automorphism lifting `x ↦ x^p` on the residue
     /// field; it generates `Gal(GR(p^a, d) / Z_{p^a}) ≅ Z/dZ`, and its fixed
     /// subring is exactly the base ring `Z/p^a = GR(p^a, 1)`.
     pub fn frobenius(&self) -> GaloisRingElement {
-        let p = self.p().clone();
-        let p_elt = self.ring.from_int(p.clone());
-        let mut result = self.ring.zero();
-        let mut pk = self.ring.one(); // p^i as a ring element
+        let ring = self.require_ring("frobenius()");
+        let p = ring.data.p.clone();
+        let p_elt = ring.from_int(p.clone());
+        let mut result = ring.zero();
+        let mut pk = ring.one(); // p^i as a ring element
         for t in self.teichmuller_digits() {
             result = result + t.pow(&p) * pk.clone();
             pk = pk * p_elt.clone();
@@ -498,9 +662,9 @@ impl GaloisRingElement {
     }
 
     /// The `k`-th power `φ^k` of the Frobenius automorphism (reduced mod the
-    /// order `d` of the Galois group).
+    /// order `d` of the Galois group). Panics for an unbound element.
     pub fn frobenius_power(&self, k: u32) -> GaloisRingElement {
-        let k = k % (self.ring.data.d as u32);
+        let k = k % (self.data("frobenius_power()").d as u32);
         let mut x = self.clone();
         for _ in 0..k {
             x = x.frobenius();
@@ -508,9 +672,10 @@ impl GaloisRingElement {
         x
     }
 
-    /// `self^exp` for a non-negative integer exponent.
+    /// `self^exp` for a non-negative integer exponent. Panics for an unbound element (use
+    /// [`Ring::pow`], which computes an unbound power in `Z`, for a `u32` exponent).
     pub fn pow(&self, exp: &Integer) -> GaloisRingElement {
-        let mut result = self.ring.one();
+        let mut result = self.require_ring("pow()").one();
         let mut base = self.clone();
         let mut e = exp.clone();
         let two = Integer::from(2);
@@ -545,18 +710,26 @@ impl GaloisRingElement {
         }
     }
 
-    /// The inverse of a **unit** (undefined behaviour / error otherwise),
-    /// computed by lifting the residue-field inverse with Newton iteration.
+    /// The inverse of a **unit** (`Err(NotInvertible)` for a non-unit), computed by lifting
+    /// the residue-field inverse with Newton iteration.
+    ///
+    /// For an unbound constant `c` (see the type docs): `±1` are their own inverses, `0`
+    /// gives `Err(NotInvertible)`, and any other `c` gives `Err(InvalidArgument)` (whether it
+    /// is a unit depends on the ring it binds to).
     pub fn unit_inverse(&self) -> Result<GaloisRingElement> {
+        if self.ring.is_none() {
+            return crate::ring_hooks::sentinel_unit_inverse(self.unbound_value(), self);
+        }
         if !self.is_unit() {
             return Err(MathError::NotInvertible);
         }
-        let a = self.ring.data.a;
+        let ring = self.require_ring("unit_inverse()");
+        let a = ring.data.a;
         // initial approximation: inverse in the residue field, lifted.
         let inv_bar = self.residue().inverse()?;
-        let mut w = self.ring.element(inv_bar.eltseq().to_vec());
+        let mut w = ring.element(inv_bar.eltseq().to_vec());
         // Newton: w <- w * (2 - self*w); p-adic precision doubles each step.
-        let two = self.ring.from_int(Integer::from(2));
+        let two = ring.from_int(Integer::from(2));
         let mut prec = 1u32;
         while prec < a {
             let uw = self.clone() * w.clone();
@@ -567,25 +740,48 @@ impl GaloisRingElement {
         Ok(w)
     }
 
+    /// `Err(InvalidArgument)` for a binary inherent operation on two unbound operands.
+    fn both_unbound(op: &str) -> MathError {
+        MathError::InvalidArgument(format!(
+            "GaloisRingElement::{op}: both operands are unbound integer constants (from \
+             Ring::zero()/Ring::one()); the result depends on the Galois ring they bind to"
+        ))
+    }
+
     /// Euclidean division: return `(q, r)` with `self = q·other + r` and either
-    /// `r = 0` or `v(r) < v(other)` (MAGMA `Quotrem`).
-    pub fn quotrem(&self, other: &GaloisRingElement) -> Result<(GaloisRingElement, GaloisRingElement)> {
+    /// `r = 0` or `v(r) < v(other)` (MAGMA `Quotrem`). One unbound operand is bound into the
+    /// other's ring; two unbound operands give `Err(InvalidArgument)`.
+    pub fn quotrem(
+        &self,
+        other: &GaloisRingElement,
+    ) -> Result<(GaloisRingElement, GaloisRingElement)> {
+        let (a, b) = self
+            .bind_pair(other)
+            .ok_or_else(|| Self::both_unbound("quotrem()"))?;
+        a.quotrem_bound(&b)
+    }
+
+    fn quotrem_bound(
+        &self,
+        other: &GaloisRingElement,
+    ) -> Result<(GaloisRingElement, GaloisRingElement)> {
         self.assert_same(other);
+        let ring = self.require_ring("quotrem()");
         if other.is_zero() {
             return Err(MathError::DivisionByZero);
         }
         if self.is_zero() {
-            return Ok((self.ring.zero(), self.ring.zero()));
+            return Ok((ring.zero(), ring.zero()));
         }
         let va = self.valuation();
         let vb = other.valuation();
         if va < vb {
-            return Ok((self.ring.zero(), self.clone()));
+            return Ok((ring.zero(), self.clone()));
         }
         let ua = self.unit_part(va);
         let ub = other.unit_part(vb);
         let ubinv = ub.unit_inverse()?;
-        let pk = self.ring.from_int(self.p().pow(va - vb));
+        let pk = ring.from_int(self.p().pow(va - vb));
         let q = pk * ua * ubinv;
         let r = self.clone() - q.clone() * other.clone();
         Ok((q, r))
@@ -602,60 +798,72 @@ impl GaloisRingElement {
     }
 
     /// Greatest common divisor: the canonical associate `p^{min(v(a),v(b))}`
-    /// (MAGMA `GCD`).
+    /// (MAGMA `GCD`). One unbound operand is bound into the other's ring; panics if both are
+    /// unbound.
     pub fn gcd(&self, other: &GaloisRingElement) -> GaloisRingElement {
-        self.assert_same(other);
-        let a = self.ring.data.a;
-        let va = if self.is_zero() { a } else { self.valuation() };
-        let vb = if other.is_zero() { a } else { other.valuation() };
+        let (x, y) = self
+            .bind_pair(other)
+            .unwrap_or_else(|| panic!("{}", Self::both_unbound("gcd()")));
+        let ring = x.require_ring("gcd()");
+        let a = ring.data.a;
+        let va = if x.is_zero() { a } else { x.valuation() };
+        let vb = if y.is_zero() { a } else { y.valuation() };
         let m = va.min(vb);
         if m >= a {
-            self.ring.zero()
+            ring.zero()
         } else {
-            self.ring.from_int(self.p().pow(m))
+            ring.from_int(ring.data.p.pow(m))
         }
     }
 
     /// Least common multiple: the canonical associate `p^{max(v(a),v(b))}`
-    /// (MAGMA `LCM`), or `0` if either operand is `0`.
+    /// (MAGMA `LCM`), or `0` if either operand is `0`. One unbound operand is bound into the
+    /// other's ring; panics if both are unbound.
     pub fn lcm(&self, other: &GaloisRingElement) -> GaloisRingElement {
-        self.assert_same(other);
-        if self.is_zero() || other.is_zero() {
-            return self.ring.zero();
+        let (x, y) = self
+            .bind_pair(other)
+            .unwrap_or_else(|| panic!("{}", Self::both_unbound("lcm()")));
+        let ring = x.require_ring("lcm()");
+        if x.is_zero() || y.is_zero() {
+            return ring.zero();
         }
-        let a = self.ring.data.a;
-        let m = self.valuation().max(other.valuation());
+        let a = ring.data.a;
+        let m = x.valuation().max(y.valuation());
         if m >= a {
-            self.ring.zero()
+            ring.zero()
         } else {
-            self.ring.from_int(self.p().pow(m))
+            ring.from_int(ring.data.p.pow(m))
         }
     }
 
     /// Extended GCD: return `(g, s, t)` with `g = s·self + t·other`
-    /// (MAGMA `XGCD`), `g` the canonical associate `p^{min}`.
+    /// (MAGMA `XGCD`), `g` the canonical associate `p^{min}`. One unbound operand is bound
+    /// into the other's ring; two unbound operands give `Err(InvalidArgument)`.
     pub fn xgcd(
         &self,
         other: &GaloisRingElement,
     ) -> Result<(GaloisRingElement, GaloisRingElement, GaloisRingElement)> {
-        self.assert_same(other);
-        let a = self.ring.data.a;
-        let va = if self.is_zero() { a } else { self.valuation() };
-        let vb = if other.is_zero() { a } else { other.valuation() };
+        let (x, y) = self
+            .bind_pair(other)
+            .ok_or_else(|| Self::both_unbound("xgcd()"))?;
+        let ring = x.require_ring("xgcd()");
+        let a = ring.data.a;
+        let va = if x.is_zero() { a } else { x.valuation() };
+        let vb = if y.is_zero() { a } else { y.valuation() };
         if va >= a && vb >= a {
-            return Ok((self.ring.zero(), self.ring.zero(), self.ring.zero()));
+            return Ok((ring.zero(), ring.zero(), ring.zero()));
         }
         if va <= vb {
-            // g = p^va = ua^{-1} * self
-            let ua = self.unit_part(va);
+            // g = p^va = ua^{-1} * x
+            let ua = x.unit_part(va);
             let s = ua.unit_inverse()?;
-            let g = s.clone() * self.clone();
-            Ok((g, s, self.ring.zero()))
+            let g = s.clone() * x.clone();
+            Ok((g, s, ring.zero()))
         } else {
-            let ub = other.unit_part(vb);
+            let ub = y.unit_part(vb);
             let t = ub.unit_inverse()?;
-            let g = t.clone() * other.clone();
-            Ok((g, self.ring.zero(), t))
+            let g = t.clone() * y.clone();
+            Ok((g, ring.zero(), t))
         }
     }
 }
@@ -688,26 +896,50 @@ impl fmt::Display for GaloisRingElement {
 }
 
 impl PartialEq for GaloisRingElement {
+    /// Coercing (binding) equality, matching the arithmetic (see the type docs):
+    ///
+    /// * **bound vs bound**: equal iff same ring and same coefficients (unchanged); different
+    ///   rings are simply unequal, never a panic.
+    /// * **unbound vs bound**: the unbound constant is bound into the other operand's ring
+    ///   first, so `R::zero() == r.zero()` and `unbound(9) == r.one()` in `GR(8, d)`.
+    ///   Symmetric.
+    /// * **unbound vs unbound**: equality of the integer constants in `Z`.
     fn eq(&self, other: &Self) -> bool {
-        self.ring.data == other.ring.data && self.coeffs == other.coeffs
+        match (&self.ring, &other.ring) {
+            (Some(a), Some(b)) => a.data == b.data && self.coeffs == other.coeffs,
+            (None, None) => self.coeffs == other.coeffs,
+            (None, Some(r)) => self.bind_into(r).coeffs == other.coeffs,
+            (Some(r), None) => other.bind_into(r).coeffs == self.coeffs,
+        }
     }
 }
+
+/// `Eq` marker with a documented caveat: equality is reflexive and symmetric, but
+/// transitivity can fail in one corner. The unbound sentinel equals the bound zero (resp. one)
+/// of every Galois ring, while bound elements of different rings stay unequal. That corner's
+/// arithmetic already panics, and `GaloisRingElement` implements no `Hash`.
 impl Eq for GaloisRingElement {}
 
 impl Add for GaloisRingElement {
     type Output = Self;
     fn add(self, other: Self) -> Self {
-        self.assert_same(&other);
-        let pa = self.pa().clone();
-        let coeffs = self
+        let (a, b) = match self.coerce_pair(other) {
+            Ok(pair) => pair,
+            // Both unbound: add in Z (see the type docs).
+            Err((a, b)) => {
+                return Self::unbound(a.unbound_value().clone() + b.unbound_value().clone())
+            }
+        };
+        let pa = a.pa().clone();
+        let coeffs = a
             .coeffs
             .iter()
-            .zip(other.coeffs.iter())
-            .map(|(a, b)| red(a.clone() + b.clone(), &pa))
+            .zip(b.coeffs.iter())
+            .map(|(x, y)| red(x.clone() + y.clone(), &pa))
             .collect();
         GaloisRingElement {
             coeffs,
-            ring: self.ring,
+            ring: a.ring,
         }
     }
 }
@@ -715,17 +947,23 @@ impl Add for GaloisRingElement {
 impl Sub for GaloisRingElement {
     type Output = Self;
     fn sub(self, other: Self) -> Self {
-        self.assert_same(&other);
-        let pa = self.pa().clone();
-        let coeffs = self
+        let (a, b) = match self.coerce_pair(other) {
+            Ok(pair) => pair,
+            // Both unbound: subtract in Z (see the type docs).
+            Err((a, b)) => {
+                return Self::unbound(a.unbound_value().clone() - b.unbound_value().clone())
+            }
+        };
+        let pa = a.pa().clone();
+        let coeffs = a
             .coeffs
             .iter()
-            .zip(other.coeffs.iter())
-            .map(|(a, b)| red(a.clone() - b.clone(), &pa))
+            .zip(b.coeffs.iter())
+            .map(|(x, y)| red(x.clone() - y.clone(), &pa))
             .collect();
         GaloisRingElement {
             coeffs,
-            ring: self.ring,
+            ring: a.ring,
         }
     }
 }
@@ -733,28 +971,39 @@ impl Sub for GaloisRingElement {
 impl Mul for GaloisRingElement {
     type Output = Self;
     fn mul(self, other: Self) -> Self {
-        self.assert_same(&other);
-        let pa = self.pa().clone();
-        let mut prod = vec![Integer::zero(); self.coeffs.len() + other.coeffs.len() - 1];
-        for (i, ai) in self.coeffs.iter().enumerate() {
+        let (a, b) = match self.coerce_pair(other) {
+            Ok(pair) => pair,
+            // Both unbound: multiply in Z (see the type docs).
+            Err((a, b)) => {
+                return Self::unbound(a.unbound_value().clone() * b.unbound_value().clone())
+            }
+        };
+        let pa = a.pa().clone();
+        let mut prod = vec![Integer::zero(); a.coeffs.len() + b.coeffs.len() - 1];
+        for (i, ai) in a.coeffs.iter().enumerate() {
             if ai.is_zero() {
                 continue;
             }
-            for (j, bj) in other.coeffs.iter().enumerate() {
+            for (j, bj) in b.coeffs.iter().enumerate() {
                 prod[i + j] = red(prod[i + j].clone() + ai.clone() * bj.clone(), &pa);
             }
         }
-        let ring = self.ring;
-        GaloisRingElement {
-            coeffs: ring.reduce(prod),
-            ring,
-        }
+        let ring = a.ring;
+        let coeffs = ring
+            .as_ref()
+            .expect("coerce_pair returns bound operands")
+            .reduce(prod);
+        GaloisRingElement { coeffs, ring }
     }
 }
 
 impl Neg for GaloisRingElement {
     type Output = Self;
     fn neg(self) -> Self {
+        if self.ring.is_none() {
+            // Unbound: negate in Z (see the type docs).
+            return Self::unbound(-self.unbound_value().clone());
+        }
         let pa = self.pa().clone();
         let coeffs = self.coeffs.iter().map(|c| red(-c.clone(), &pa)).collect();
         GaloisRingElement {
@@ -765,11 +1014,16 @@ impl Neg for GaloisRingElement {
 }
 
 impl Ring for GaloisRingElement {
+    /// The additive identity, as an *unbound* element (see the type docs): the canonical image
+    /// of `0 ∈ Z` in any `GR(p^a, d)`, bound on first contact with a bound element. Prefer
+    /// [`GaloisRing::zero`] when the parent is known.
     fn zero() -> Self {
-        panic!("GaloisRingElement::zero() needs a parent ring; use GaloisRing::zero()");
+        Self::unbound(Integer::zero())
     }
+    /// The multiplicative identity, as an *unbound* element (see [`Ring::zero`] above and the
+    /// type docs). Prefer [`GaloisRing::one`] when the parent is known.
     fn one() -> Self {
-        panic!("GaloisRingElement::one() needs a parent ring; use GaloisRing::one()");
+        Self::unbound(Integer::one())
     }
     fn is_zero(&self) -> bool {
         self.coeffs.iter().all(|c| c.is_zero())
@@ -779,18 +1033,27 @@ impl Ring for GaloisRingElement {
     }
 
     // Element predicates on the generic `Ring` path (MAGMA Ch. 48 `IsUnit`: p-adic
-    // valuation zero; `IsNilpotent`: every non-unit of a finite chain ring). They delegate
-    // to the inherent methods. None of them calls the panicking static `zero()`/`one()`.
+    // valuation zero; `IsNilpotent`: every non-unit of a finite chain ring). For a bound
+    // element they delegate to the inherent methods. An unbound element is an integer
+    // constant awaiting the map Z -> GR(p^a, d), so only what holds in every Galois ring is
+    // decided (`crate::ring_hooks`). None of them calls the static `zero()`/`one()`.
 
     fn unit_status(&self) -> Option<bool> {
+        if self.ring.is_none() {
+            return crate::ring_hooks::sentinel_unit_status(self.unbound_value());
+        }
         Some(GaloisRingElement::is_unit(self))
     }
 
     fn nilpotent_status(&self) -> Option<bool> {
+        if self.ring.is_none() {
+            return crate::ring_hooks::sentinel_nilpotent_status(self.unbound_value());
+        }
         Some(GaloisRingElement::is_nilpotent(self))
     }
 
     fn unit_inverse(&self) -> Result<Self> {
+        // The inherent method handles unbound constants with the same sentinel table.
         GaloisRingElement::unit_inverse(self)
     }
 
@@ -799,6 +1062,9 @@ impl Ring for GaloisRingElement {
     /// `FiniteExceedsU64`). Beyond the handbook: MAGMA Ch. 48 lists no `Order`.
     fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
         use rustmath_core::MultiplicativeOrder;
+        if self.ring.is_none() {
+            return crate::ring_hooks::sentinel_order(self.unbound_value());
+        }
         match self.order_by_residue_lifting() {
             UnitOrder::NotAUnit => MultiplicativeOrder::NotAUnit,
             UnitOrder::Finite(order) => crate::ring_hooks::order_from_integer(&order),
@@ -827,11 +1093,22 @@ impl GaloisRingElement {
     /// Example: in `GR(2^66, 1) = Z/2^66`, `3` has order `2^64` (PARI/GP
     /// `znorder(Mod(3, 2^66))`).
     ///
+    /// For an unbound constant `c` (see the type docs): `Some(1)` for `1`, `None` for `0`.
+    ///
     /// # Panics
     ///
-    /// Only on an internal inconsistency that the proof on the algorithm rules out (the
-    /// residue of a unit having no order, or the `p`-power bound `j <= a - 1` failing).
+    /// - For an unbound constant other than `0` and `1`: its order depends on the ring it
+    ///   binds to (`-1` has order 1 in `GR(2, d)` and 2 elsewhere).
+    /// - On an internal inconsistency that the proof on the algorithm rules out (the
+    ///   residue of a unit having no order, or the `p`-power bound `j <= a - 1` failing).
     pub fn multiplicative_order(&self) -> Option<Integer> {
+        if self.ring.is_none() {
+            return match crate::ring_hooks::sentinel_order(self.unbound_value()) {
+                rustmath_core::MultiplicativeOrder::Finite(k) => Some(Integer::from(k)),
+                rustmath_core::MultiplicativeOrder::NotAUnit => None,
+                _ => self.undecided_unbound("multiplicative_order()"),
+            };
+        }
         match self.order_by_residue_lifting() {
             UnitOrder::NotAUnit => None,
             UnitOrder::Finite(order) => Some(order),
@@ -855,7 +1132,10 @@ impl GaloisRingElement {
     /// `p`-group of exponent dividing `p^(a-1)`. References: B. R. McDonald, *Finite Rings
     /// with Identity* (1974), Ch. XVI; Z.-X. Wan, *Lectures on Finite Fields and Galois
     /// Rings* (2003), Ch. 14 (structure of `GR(p^a, d)^*`).
+    ///
+    /// Only for bound elements (the callers handle the unbound sentinel first).
     fn order_by_residue_lifting(&self) -> UnitOrder {
+        let a = self.data("multiplicative_order()").a;
         if !GaloisRingElement::is_unit(self) {
             return UnitOrder::NotAUnit;
         }
@@ -867,7 +1147,7 @@ impl GaloisRingElement {
         let mut y = GaloisRingElement::pow(self, &m);
         let mut order = m;
         // y = x^(m p^j) for j = 0, 1, ..., a - 1; the proof bounds j by a - 1.
-        for _ in 0..self.ring.data.a {
+        for _ in 0..a {
             if y.is_one() {
                 return UnitOrder::Finite(order);
             }
@@ -891,9 +1171,11 @@ impl LocalRing for GaloisRingElement {
 
 impl PrincipalIdealRing for GaloisRingElement {}
 
+/// Both methods need the parent ring: they panic for an unbound element (see
+/// [`GaloisRingElement`]).
 impl FiniteChainRing for GaloisRingElement {
     fn nilpotency_index(&self) -> u64 {
-        self.ring.data.a as u64
+        self.data("nilpotency_index()").a as u64
     }
     fn chain_valuation(&self) -> u64 {
         self.valuation() as u64
@@ -902,7 +1184,17 @@ impl FiniteChainRing for GaloisRingElement {
 
 /// The `p`-adic valuation makes `GR(p^a, d)` a Euclidean (chain) ring.
 impl DiscreteValuation<GaloisRingElement> for GaloisRing {
+    /// `v(x)`, with `v(0) = INFINITY`. The parent is known here, so an unbound `x` (from
+    /// `Ring::zero()`/`Ring::one()`) is first bound into this ring: `unbound(4)` has valuation
+    /// 2 and `unbound(8)` is `0` in `GR(8, d)`.
     fn valuation(&self, x: &GaloisRingElement) -> i64 {
+        let bound;
+        let x = if x.is_bound() {
+            x
+        } else {
+            bound = x.bind_into(self);
+            &bound
+        };
         if x.is_zero() {
             return Self::INFINITY;
         }

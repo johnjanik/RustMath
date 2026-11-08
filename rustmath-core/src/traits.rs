@@ -95,8 +95,9 @@ pub trait Ring:
     // `MultiplicativeOrder`) are proofs; `None` / `MultiplicativeOrder::Undecided` mean
     // that this element type cannot decide. A concrete ring that can decide overrides them
     // in its own `impl Ring`. The defaults use only the ring axioms, never a search, and
-    // never a static constructor (`Self::one()` panics for parent-carrying types such as
-    // Galois-ring and p-adic elements), so they are total for every implementor.
+    // never a static constructor (`Self::one()` panics for parent-carrying types such as the
+    // p-adic elements, and is an unbound integer constant for others such as Galois-ring and
+    // finite-field elements), so they are total for every implementor.
 
     /// MAGMA `IsUnit(a)` (Ch. 17 §17.5.5): whether `self` has a two-sided inverse.
     ///
@@ -607,8 +608,8 @@ mod tests {
     }
 
     /// Test-local `Z/6Z` rings that pin the trait defaults. `$panicky` makes the static
-    /// constructors panic, like `GaloisRingElement` and the p-adic types, to prove the
-    /// defaults never call them.
+    /// constructors panic, like the p-adic element types', to prove the defaults never call
+    /// them.
     macro_rules! z6_ring {
         ($name:ident, $panicky:expr, $chr:expr) => {
             #[derive(Clone, Copy, Debug, PartialEq)]

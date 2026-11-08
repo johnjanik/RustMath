@@ -8,12 +8,12 @@
 //!
 //! # Deferred integer constants (the sentinels)
 //!
-//! `IntegerMod`, `PrimeField` (modulus 0) and `FiniteFieldElement` (unbound) all document
-//! their static `Ring::zero()`/`Ring::one()` values, and everything built from them, as an
-//! integer constant `c` awaiting the canonical map `Z -> R` into the ring of whatever bound
-//! operand it meets. Generic code reaches these hooks with exactly such values
-//! (`R::one() + R::one()`), so a hook may only state what holds for the image of `c` in
-//! **every** target ring (all of them nonzero):
+//! `IntegerMod`, `PrimeField` (modulus 0), `FiniteFieldElement` and `GaloisRingElement`
+//! (unbound) all document their static `Ring::zero()`/`Ring::one()` values, and everything
+//! built from them, as an integer constant `c` awaiting the canonical map `Z -> R` into the
+//! ring of whatever bound operand it meets. Generic code reaches these hooks with exactly
+//! such values (`R::one() + R::one()`), so a hook may only state what holds for the image of
+//! `c` in **every** target ring (all of them nonzero):
 //!
 //! | `c` | unit | nilpotent | order | `unit_inverse` |
 //! |---|---|---|---|---|
@@ -73,7 +73,7 @@ pub(crate) fn sentinel_unit_inverse<T: Clone>(c: &Integer, this: &T) -> Result<T
     } else {
         Err(MathError::InvalidArgument(format!(
             "whether the integer constant {c} is invertible depends on the ring it binds to; \
-             bind it to a modulus or field first"
+             bind it to a modulus, field or Galois ring first"
         )))
     }
 }
