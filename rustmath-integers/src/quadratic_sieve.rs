@@ -518,7 +518,9 @@ pub fn quadratic_sieve_factor_with_params(
 ///
 /// A cofactor the sieve could not split is never pushed as a prime. Every returned factor is
 /// prime in the sense of [`is_prime`] (Miller-Rabin to the bases 2..37: a proof below
-/// psi_12 = 318665857834031151167461, Sorenson-Webster 2017).
+/// psi_12 = 318665857834031151167461, Sorenson-Webster 2017). Above psi_12 a returned factor
+/// is only a strong probable prime and may be composite: psi_12 = 399165290221 * 798330580441
+/// itself is returned unsplit as `[(psi_12, 1)]`.
 ///
 /// # Cost
 ///
@@ -767,7 +769,8 @@ mod tests {
 
     /// The sieve's divisor 3127 = 53 · 59 of 165731 = 53^2 · 59 is composite and shares the
     /// prime 53 with the cofactor; it used to be pushed as the "prime" (3127, 1) next to
-    /// (53, 1).
+    /// (53, 1). The first assertion only pins the driver path (the sieve is deterministic and
+    /// known weak); when the sieve is fixed, pick another input that reaches this path.
     #[test]
     fn test_complete_factorization_composite_sieve_divisor() {
         // gp: factor(165731) = [53,2; 59,1]
@@ -780,7 +783,8 @@ mod tests {
     }
 
     /// Blocker B-04: the sieve finds no factor of 3127 = 53 · 59, and the driver used to push
-    /// 3127 itself as a prime.
+    /// 3127 itself as a prime. The first assertion only pins the driver path; when the sieve
+    /// is fixed, pick another input on which it fails.
     #[test]
     fn test_complete_factorization_sieve_failure() {
         // gp: factor(3127) = [53,1; 59,1]; isprime(3127) = 0

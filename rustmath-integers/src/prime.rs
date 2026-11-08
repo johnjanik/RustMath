@@ -758,7 +758,9 @@ fn rand_int() -> i64 {
 /// grows like sqrt(q). Measured in a debug build: (10^9+7)(10^9+9) takes about 0.2 s and
 /// (10^12+39)(10^12+61) about 20 s (10^6 steps); for q with 20 or more digits (10^10 steps
 /// or more) the call does not finish in practical time. The trial-division windows bound the
-/// worst case by about q/2 divisions plus as many rho steps.
+/// worst case of each split by about p/2 trial divisions for its smallest prime factor p, plus
+/// up to about twice as many Brent steps (a round can overshoot its budget by 2x) and 10^6
+/// Floyd steps; the windows restart at 3 for each cofactor that needs the fallback.
 ///
 /// # Examples
 ///

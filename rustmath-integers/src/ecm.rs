@@ -485,6 +485,8 @@ pub fn ecm_factor(n: &Integer, b1: u64, b2: u64, curves: usize) -> Option<Intege
 /// is never pushed as a prime, and the remainder is never pushed in addition to its
 /// factorization. Every returned factor is prime in the sense of [`is_prime`] (Miller-Rabin to
 /// the bases 2..37: a proof below psi_12 = 318665857834031151167461, Sorenson-Webster 2017).
+/// Above psi_12 a returned factor is only a strong probable prime and may be composite:
+/// psi_12 = 399165290221 * 798330580441 itself is returned unsplit as `[(psi_12, 1)]`.
 ///
 /// # Cost
 ///
