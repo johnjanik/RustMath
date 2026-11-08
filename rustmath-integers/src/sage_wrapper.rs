@@ -240,9 +240,13 @@ pub trait SageInteger {
     /// For n >= 0 this counts the k-subsets of an n-set. For n < 0 it is the polynomial
     /// n(n-1)...(n-k+1)/k! evaluated at n, as in Graham-Knuth-Patashnik, *Concrete
     /// Mathematics*, eq. (5.14), and in GMP `mpz_bin_ui` (the arithmetic MAGMA's integers use);
-    /// so C(-1, 2) = 1 and C(-3, 2) = 6 (gp `binomial(-1,2)`, `binomial(-3,2)`). The handbook
-    /// states no range for n and r; for k < 0 this follows PARI/GP and GAP (`binomial(5,-1)` =
-    /// `binomial(-1,-1)` = 0) and [`Integer::binomial_mod`].
+    /// so C(-1, 2) = 1 and C(-3, 2) = 6 (gp `binomial(-1,2)`, `binomial(-3,2)`).
+    ///
+    /// For k < 0, MAGMA's own value is **unconfirmed**. The handbook states no range for n and
+    /// r, and no MAGMA output for a negative r was available to check against. The 0 above
+    /// follows PARI/GP and GAP (`binomial(5,-1)` = `binomial(-1,-1)` = 0) and
+    /// [`Integer::binomial_mod`]. Other systems differ: Mathematica's symmetric convention gives
+    /// `Binomial[-1, -1]` = 1. So MAGMA may differ here too.
     ///
     /// Cost: O(min(k, n'-k)) bignum multiplications and exact divisions, where n' is n after
     /// the upper index is negated.

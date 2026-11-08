@@ -29,7 +29,12 @@
 //! lift(lift(w27 + 2*w27 + 5))                 \\ 3*x + 5
 //! valuation(4, 2)                             \\ 2
 //! Mod(-1,2) == Mod(1,2)                       \\ 1   (-1 = 1 in GR(2, d): order 1, not 2)
+//! Vecrev((x+1)^8 - x^8)                       \\ [1, 8, 28, 56, 70, 56, 28, 8]
+//! lift(lift(((x+1)^8 - x^8)*Mod(Mod(1,8),D8) + w8))   \\ 4*x^6 + 6*x^4 + 4*x^2 + (t + 1)
 //! ```
+//!
+//! (In the last line the ring variable is `t`, i.e. `D8 = Mod(1,8)*(t^2+t+1)` and
+//! `w8 = Mod(Mod(1,8)*t, D8)`, so that `x` can be the polynomial variable.)
 
 use rustmath_core::divisibility::{FiniteChainRing, LocalRing};
 use rustmath_core::valuation::DiscreteValuation;
@@ -183,6 +188,62 @@ fn polynomials_over_galois_ring() {
     assert!(f.coeff(5).is_zero());
 }
 
+/// The container caveat of the type docs: a polynomial built from the static `var()` and
+/// `R::one()` keeps an unbound integer in every coefficient that never meets a bound element,
+/// so its degree and `==` see integers in `Z`; building it from `r.zero()`/`r.one()`, or
+/// binding it afterwards with `scalar_mul(&r.one())`, gives the polynomial over GR(8, 2).
+#[test]
+fn polynomials_from_static_constructors_keep_unbound_coefficients() {
+    type P = UnivariatePolynomial<R>;
+    let r = gr8();
+    let w = r.generator();
+    let x8 = |x: &P| {
+        let mut p = P::constant(R::one());
+        for _ in 0..8 {
+            p = p * x.clone();
+        }
+        p
+    };
+
+    // q = (x + 1)^8 - x^8 + w from the static constructors.
+    let x = P::var();
+    let one = P::constant(R::one());
+    let q = x8(&(x.clone() + one)) - x8(&x) + P::constant(w.clone());
+    // PARI: Vecrev((x+1)^8 - x^8) = [1, 8, 28, 56, 70, 56, 28, 8]; only the constant met w.
+    assert_eq!(q.degree(), Some(7));
+    assert_eq!(q.coeff(0), &(r.one() + w.clone()));
+    assert!(q.coeff(0).is_bound());
+    for (i, c) in [8, 28, 56, 70, 56, 28, 8].into_iter().enumerate() {
+        let coeff = q.coeff(i + 1);
+        assert!(!coeff.is_bound(), "coefficient {} should be unbound", i + 1);
+        assert_eq!(coeff.eltseq(), &[int(c)][..]);
+    }
+
+    // The same polynomial from bound elements. PARI: (1 + w) + 4x^2 + 6x^4 + 4x^6.
+    let y = P::new(vec![r.zero(), r.one()]);
+    let one_b = P::constant(r.one());
+    let qb = x8(&(y.clone() + one_b)) - x8(&y) + P::constant(w.clone());
+    let want = P::new(vec![
+        r.one() + w.clone(),
+        r.zero(),
+        r.from_int(int(4)),
+        r.zero(),
+        r.from_int(int(6)),
+        r.zero(),
+        r.from_int(int(4)),
+    ]);
+    assert_eq!(qb.degree(), Some(6));
+    assert_eq!(qb, want);
+    assert!(qb.coefficients().iter().all(|c| c.is_bound()));
+    // Same element of GR(8, 2)[x], different representations: q != qb.
+    assert_ne!(q, qb);
+
+    // Binding q coefficient by coefficient recovers qb.
+    let q_bound = q.scalar_mul(&r.one());
+    assert_eq!(q_bound.degree(), Some(6));
+    assert_eq!(q_bound, qb);
+}
+
 #[test]
 fn unbound_ring_hooks() {
     use MultiplicativeOrder::{Finite, NotAUnit, Undecided};
@@ -296,6 +357,14 @@ fn unbound_has_no_valuation() {
 #[should_panic(expected = "unbound")]
 fn unbound_two_is_unit_is_undecided() {
     let _ = (R::one() + R::one()).is_unit();
+}
+
+// The `LocalRing` trait method delegates to the inherent `is_unit`, so it panics too (the
+// `Ring::unit_status` hook answers `None` instead; see `unbound_ring_hooks`).
+#[test]
+#[should_panic(expected = "unbound")]
+fn unbound_two_local_ring_is_unit_is_undecided() {
+    let _ = LocalRing::is_unit(&(R::one() + R::one()));
 }
 
 // -1 has order 1 in GR(2, d) and 2 elsewhere.

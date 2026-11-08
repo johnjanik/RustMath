@@ -910,11 +910,12 @@ fn checked_prime_power_args(name: &str, p: &Integer, k: usize) -> u32 {
 /// # Contract: p must be prime
 ///
 /// `p` is checked with [`rustmath_integers::prime::is_prime`], which is a proof for
-/// p < ψ12 = 318665857834031151167461 (Miller–Rabin to the bases 2, …, 37; Sorenson–Webster
-/// 2017) and a probable-prime test above it. For a prime p, `None` proves that there is no root.
+/// p < ψ12 = 318665857834031151167461 (Miller–Rabin to the bases 2, …, 37; Sorenson–Webster 2017)
+/// and a probable-prime test above it. For a prime p, `None` proves that there is no root.
 /// A composite p that passes the test is outside the contract and the result is unspecified: it
 /// can be a false `None`, or a panic from [`square_root_mod_prime`] or from the internal
-/// square-back check (a returned root always squares back). [`IntegerMod::sqrt`] is unaffected: it gets its primes from trial division.
+/// square-back check (a returned root always squares back). [`IntegerMod::sqrt`] is unaffected:
+/// it gets its primes from trial division.
 ///
 /// # Panics
 ///

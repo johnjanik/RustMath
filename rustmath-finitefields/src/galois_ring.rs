@@ -367,6 +367,17 @@ impl Parent for GaloisRing {
 /// * **`is_zero`/`is_one`** look at `c` in `Z`. Generic code that never meets a bound element
 ///   computes in `Z`: eight `R::one()`s add up to `unbound(8)`, which is not `is_zero()`,
 ///   although `8 = 0` in `GR(8, d)`.
+/// * **containers** (polynomials, matrices, ...) bind coefficient by coefficient, so a
+///   container built from `R::one()`/`R::zero()` (for instance with
+///   `UnivariatePolynomial::var()` or `UnivariatePolynomial::constant(R::one())`) keeps an
+///   unbound integer in every coefficient that never met a bound element, and its degree and
+///   zero tests see those integers in `Z`. Over `GR(8, 2)` with generator `w`,
+///   `(x + 1)^8 - x^8 + w` built from `var()` and `R::one()` keeps the coefficients
+///   `[1 + w, 8, 28, 56, 70, 56, 28, 8]` (only the constant term met `w`), so it has degree 7
+///   and differs from the same polynomial built from `r.zero()`/`r.one()`, which is
+///   `(1 + w) + 4x^2 + 6x^4 + 4x^6` of degree 6. Build containers from
+///   [`GaloisRing::zero`]/[`GaloisRing::one`] (bound elements) whenever degrees, zero tests or
+///   equality matter; a polynomial already built can be bound with `scalar_mul(&r.one())`.
 /// * **the `Ring` hooks** (`unit_status`, `nilpotent_status`, `unit_inverse`,
 ///   `multiplicative_order_status`) and the inherent [`is_unit`](Self::is_unit),
 ///   [`unit_inverse`](Self::unit_inverse), [`multiplicative_order`](Self::multiplicative_order),
@@ -1164,6 +1175,11 @@ impl CommutativeRing for GaloisRingElement {}
 // Non-domain markers (NOT Field / IntegralDomain): GR(p^a, d) is a finite chain
 // ring — a local principal ideal ring.
 impl LocalRing for GaloisRingElement {
+    /// The inherent [`GaloisRingElement::is_unit`]. For an unbound constant `c` (from
+    /// `Ring::zero()`/`Ring::one()`, see the type docs) it is `true` for `±1` and `false` for
+    /// `0`, and it **panics** for any other `c`, whose unit status depends on the ring (`2` is a
+    /// unit in `GR(27, 2)` and nilpotent in `GR(8, 2)`). The `Ring::unit_status` hook answers
+    /// `None` (undecided) there instead of panicking.
     fn is_unit(&self) -> bool {
         GaloisRingElement::is_unit(self)
     }

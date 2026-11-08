@@ -18,7 +18,8 @@
 //!   n-th root (also for negative `self` and odd n); [`Integer::is_power`] and
 //!   [`Integer::is_perfect_power`] follow `IsPower(n, k)` / `IsPower(n)` and PARI/GP
 //!   `ispower` for negative inputs. `is_perfect_power` strips prime exponents q <= log2 |n|
-//!   ([Ber98] §1), so it decides every input with no cap on the exponent.
+//!   ([Ber98] §1), so it decides every input with no cap on the exponent; a power-residue
+//!   sieve modulo primes p ≡ 1 (mod q) ([BS93]) skips most exact roots on non-powers.
 //!
 //! References:
 //! - [Coh93] H. Cohen, *A Course in Computational Algebraic Number Theory*, GTM 138,
@@ -27,6 +28,8 @@
 //!   (Euclid's algorithm, extended) and §4.6.3 (binary exponentiation).
 //! - [Ber98] D. J. Bernstein, *Detecting perfect powers in essentially linear time*, Math.
 //!   Comp. 67 (1998) 1253-1283, §1 (n = b^k with b >= 2 forces k <= log2 n).
+//! - [BS93] E. Bach, J. Sorenson, *Sieve algorithms for perfect power testing*, Algorithmica 9
+//!   (1993) 313-328 (a q-th power is 0 or a q-th power residue modulo every prime p ≡ 1 mod q).
 //! - E. Lucas, *Théorie des fonctions numériques simplement périodiques*, Amer. J. Math. 1
 //!   (1878) 184-240, 289-321 (Lucas' theorem); Graham-Knuth-Patashnik, *Concrete
 //!   Mathematics*, eq. (5.14) (negating the upper index).
@@ -573,8 +576,26 @@ impl Integer {
     /// iff `j | m`, and `c >= 2` gives `m <= log2 |self|` ([Ber98] §1). So stripping exact
     /// q-th roots for each prime `q` (ascending, while `q` is below the bit length of what
     /// remains) finds `m` exactly: the search covers every possible exponent and decides
-    /// every input. For `self < 0` only odd primes are stripped. Cost: one exact integer root
-    /// per prime `q <= log2 |self|`.
+    /// every input. For `self < 0` only odd primes are stripped.
+    ///
+    /// Before each exact root, a power-residue sieve ([BS93]) tries up to four primes
+    /// `p ≡ 1 (mod q)`. If `p ∤ base` and `base^((p-1)/q) ≢ 1 (mod p)`, then `base` is not a
+    /// q-th power, because `base = d^q` would give `base^((p-1)/q) = d^(p-1) ≡ 1` (Fermat), and
+    /// the root is skipped. The sieve can only rule an exponent out, never in: every exponent
+    /// in the answer comes from an exact root that was raised back to `base`.
+    ///
+    /// Cost: for each prime `q < log2 |self|`, a few remainders of the remaining base by
+    /// word-sized primes, plus one `BigUint::nth_root` when the sieve does not rule `q` out.
+    /// That happens for the exponents that divide `m`, and for a non-power only when it is a
+    /// q-th power residue modulo all four sieve primes (probability about `q^-4` for a "random"
+    /// input).
+    /// The root is the expensive step. Above the `f64` range and for `q` beyond a few hundred,
+    /// num-bigint 0.4 starts Newton's iteration from `2^(bits/q + 1)`, which can need about
+    /// `min(q ln 2, root)` steps, each a (q-1)-th power and a long division. Without the sieve,
+    /// the non-power `2^20000 + 1` took about 50 s in a debug build because it paid that root
+    /// for every q; with the sieve it takes about 20 ms (`2^100000 + 1`: 0.2 s).
+    /// Genuine powers still pay their roots (`3001^1999`: 0.3 s in a debug build), and inputs
+    /// built to pass the sieve for many q pay one root per such q.
     ///
     /// # Panics
     ///
@@ -597,14 +618,17 @@ impl Integer {
             if negative && q == 2 {
                 continue; // a negative number is only an odd power
             }
-            let q = q as u32; // q < bits(base) <= u32::MAX
+            let q32 = q as u32; // q < bits(base) <= u32::MAX
             loop {
-                let r = base.nth_root(q);
-                if r.pow(q) != base {
+                if !may_be_qth_power(&base, q) {
+                    break; // proof that base is not a q-th power
+                }
+                let r = base.nth_root(q32);
+                if r.pow(q32) != base {
                     break;
                 }
                 base = r;
-                k *= q; // base >= 2 and base^k = |self|, so k < bits(|self|) <= u32::MAX
+                k *= q32; // base >= 2 and base^k = |self|, so k < bits(|self|) <= u32::MAX
             }
         }
         if k == 1 {
@@ -1223,6 +1247,42 @@ impl From<BigInt> for Integer {
     fn from(n: BigInt) -> Self {
         Integer::new(n)
     }
+}
+
+/// Primes `p ≡ 1 (mod q)` that the power-residue sieve of [`Integer::is_perfect_power`] tries
+/// per exponent before it falls back to the exact root.
+const POWER_SIEVE_PRIMES: u32 = 4;
+/// Candidates `p = 1 + j·lcm(2, q)` the sieve examines per exponent while looking for those
+/// primes. With `q < 2^32` every candidate is below `2^43`.
+const POWER_SIEVE_CANDIDATES: u64 = 1000;
+
+/// Power-residue sieve for q-th powers ([BS93]). `false` is a proof that `n` is not a q-th
+/// power: for a prime `p ≡ 1 (mod q)` with `p ∤ n`, `n = d^q` forces `p ∤ d` and
+/// `n^((p-1)/q) = d^(p-1) ≡ 1 (mod p)` (Fermat), so any other residue refutes it. `true` only
+/// says that none of the (at most [`POWER_SIEVE_PRIMES`]) tried primes refuted it; the caller
+/// must still take the exact root. Primes dividing `n` give no information and count as tried.
+fn may_be_qth_power(n: &num_bigint::BigUint, q: u64) -> bool {
+    use crate::fast_arith::{is_prime_u64, pow_mod_u64};
+    use num_traits::ToPrimitive;
+    debug_assert!((2..1 << 32).contains(&q));
+    let step = if q.is_multiple_of(2) { q } else { 2 * q }; // p = 1 + j·step is odd and ≡ 1 (mod q)
+    let mut p = 1u64;
+    let mut tried = 0;
+    for _ in 0..POWER_SIEVE_CANDIDATES {
+        p += step;
+        if !is_prime_u64(p) {
+            continue;
+        }
+        let r = (n % p).to_u64().expect("a residue modulo a u64 fits a u64");
+        if r != 0 && pow_mod_u64(r, (p - 1) / q, p) != 1 {
+            return false;
+        }
+        tried += 1;
+        if tried == POWER_SIEVE_PRIMES {
+            break;
+        }
+    }
+    true
 }
 
 // Display implementation
@@ -2029,5 +2089,29 @@ mod tests {
         let big = Integer::from(10).pow(30);
         assert_eq!((-big.clone()).normalization_unit(), Some(Integer::from(-1)));
         assert_eq!(big.normalization_unit(), Some(Integer::from(1)));
+    }
+
+    #[test]
+    fn power_residue_sieve_never_refutes_a_power() {
+        use num_bigint::BigUint;
+        // Soundness of the [BS93] sieve: d^q is never ruled out, including d divisible by the
+        // sieve primes themselves (q = 2: 3, 5, 7, 11; q = 3: 7, 13, 19, 31; q = 5: 11, 31,
+        // 41, 61), where the residue is 0 and gives no information.
+        let mut ds: Vec<BigUint> = (1u32..=300).map(BigUint::from).collect();
+        ds.push(BigUint::from(3u64 * 5 * 7 * 11 * 13 * 19 * 31 * 41 * 61));
+        ds.push((BigUint::from(1u32) << 61u32) - 1u32);
+        ds.push(BigUint::from(10u32).pow(40) + 7u32);
+        for q in [2u32, 3, 5, 7, 11, 13, 31, 101, 1009] {
+            for d in &ds {
+                assert!(
+                    may_be_qth_power(&d.pow(q), u64::from(q)),
+                    "sieve refuted {d}^{q}"
+                );
+            }
+        }
+        // A refutation is a proof; spot-check that the sieve does refute: 2 is not a square
+        // modulo 3, and 3 is not a cube modulo 7 (3^2 = 2 mod 7).
+        assert!(!may_be_qth_power(&BigUint::from(2u32), 2));
+        assert!(!may_be_qth_power(&BigUint::from(3u32), 3));
     }
 }

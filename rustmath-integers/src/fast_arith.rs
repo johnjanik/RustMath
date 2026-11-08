@@ -46,6 +46,58 @@ fn pow_mod_nonneg_i128(mut base: i128, mut e: u64, m: i128) -> i128 {
     result
 }
 
+/// `base^e mod m` for `m >= 1` on unsigned 64-bit words. Residues are below `2^64`, so every
+/// product is below `2^128` and fits a `u128`.
+pub(crate) fn pow_mod_u64(base: u64, mut e: u64, m: u64) -> u64 {
+    let m = u128::from(m);
+    let mut base = u128::from(base) % m;
+    let mut result = 1 % m;
+    while e > 0 {
+        if e & 1 == 1 {
+            result = result * base % m;
+        }
+        base = base * base % m;
+        e >>= 1;
+    }
+    result as u64
+}
+
+/// Deterministic primality of a 64-bit word: trial division by the primes below 40, then the
+/// strong (Miller-Rabin) test to the twelve prime bases 2..37. No composite below
+/// psi_12 = 318665857834031151167461 > 2^64 is a strong pseudoprime to all twelve bases
+/// (J. Sorenson, J. Webster, *Strong pseudoprimes to twelve prime bases*, Math. Comp. 86
+/// (2017) 985-1003), so the answer is a proof for every `u64`.
+pub(crate) fn is_prime_u64(n: u64) -> bool {
+    const BASES: [u64; 12] = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37];
+    if n < 2 {
+        return false;
+    }
+    for p in BASES {
+        if n.is_multiple_of(p) {
+            return n == p;
+        }
+    }
+    if n < 41 * 41 {
+        return true; // no prime factor below 41 and n < 41^2
+    }
+    let r = (n - 1).trailing_zeros();
+    let d = (n - 1) >> r;
+    'bases: for a in BASES {
+        let mut x = pow_mod_u64(a, d, n);
+        if x == 1 || x == n - 1 {
+            continue;
+        }
+        for _ in 1..r {
+            x = pow_mod_u64(x, 2, n);
+            if x == n - 1 {
+                continue 'bases;
+            }
+        }
+        return false;
+    }
+    true
+}
+
 /// Fast arithmetic operations using i32
 ///
 /// Provides optimized operations when working with 32-bit integers
@@ -646,5 +698,48 @@ mod tests {
     fn test_prime_range_single_prime() {
         let primes = prime_range(17, 18);
         assert_eq!(primes, vec![17]);
+    }
+
+    #[test]
+    fn test_is_prime_u64_matches_sieve() {
+        // Every n < 10^5 against the sieve (gp: #primes([0,100000]) -> 9592).
+        let primes = prime_range(0, 100_000);
+        assert_eq!(primes.len(), 9592);
+        let mut next = primes.iter().peekable();
+        for n in 0..100_000u64 {
+            let sieve = next.peek() == Some(&&n);
+            if sieve {
+                next.next();
+            }
+            assert_eq!(is_prime_u64(n), sieve, "is_prime_u64({n})");
+        }
+    }
+
+    #[test]
+    fn test_is_prime_u64_strong_pseudoprimes_and_word_edges() {
+        // gp: factor(3215031751) -> 151*751*28351 (strong pseudoprime to the bases 2, 3, 5, 7);
+        // factor(3825123056546413051) -> 149491*747451*34233211 (strong pseudoprime to the
+        // bases 2..23). Both have no factor below 41, so they reach the Miller-Rabin stage.
+        assert!(!is_prime_u64(3_215_031_751));
+        assert!(!is_prime_u64(3_825_123_056_546_413_051));
+        // gp: isprime(2^61-1) -> 1, precprime(2^64) -> 18446744073709551557, isprime(2^64-1) -> 0
+        assert!(is_prime_u64((1 << 61) - 1));
+        assert!(is_prime_u64(18_446_744_073_709_551_557));
+        assert!(!is_prime_u64(u64::MAX));
+    }
+
+    #[test]
+    fn test_pow_mod_u64_full_word() {
+        // gp: precprime(2^64) -> 18446744073709551557
+        let p = 18_446_744_073_709_551_557u64;
+        // gp: lift(Mod(2,2^64-59)^(2^64-60)) -> 1; lift(Mod(3,2^64-59)^(10^18))
+        // -> 4014180641660839766; lift(Mod(2^64-2,2^64-1)^(2^64-1)) -> 18446744073709551614
+        assert_eq!(pow_mod_u64(2, p - 1, p), 1);
+        assert_eq!(
+            pow_mod_u64(3, 1_000_000_000_000_000_000, p),
+            4_014_180_641_660_839_766
+        );
+        assert_eq!(pow_mod_u64(u64::MAX - 1, u64::MAX, u64::MAX), u64::MAX - 1);
+        assert_eq!(pow_mod_u64(5, 0, 1), 0);
     }
 }
