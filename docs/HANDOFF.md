@@ -1,9 +1,10 @@
-# Session handoff (2026-11-07, updated after Tasks 0-2 and the L0-L1 fixes)
+# Session handoff (2026-11-08, updated after Tasks 0-2, the L0-L1 fixes and their follow-ups)
 
 Read this first, then `CLAUDE.md` and `docs/README.md`. It records where the project stands and
 what to do next. **Tasks 0, 1 and 2 are done** (status notes below), and so are the L0-L1 defects
-the review found (2026-11-07). The next step is "After these tasks" at the end: the open follow-ups,
-then the dead code, the mixin wiring and the `docs/PLAN.md` build targets.
+the review found (2026-11-07) and their follow-ups (2026-11-08). The next step is "After these
+tasks" at the end: the open follow-ups, then the dead code, the mixin wiring and the `docs/PLAN.md`
+build targets.
 
 ## Where things stand
 
@@ -15,7 +16,7 @@ then the dead code, the mixin wiring and the `docs/PLAN.md` build targets.
   were deleted; their tips are tags `archive/<branch>` (`docs/BRANCHES.md`). Work on a new branch
   off `main`; cloud sessions can push only their own branch (no tags, no other branches).
 - **Build and tests:** the whole workspace compiles, and `cargo test --workspace` is green:
-  13,950 passed, 0 failed, 330 ignored at `8e25fe2` (`docs/TEST_BASELINE.md`). First build
+  14,093 passed, 0 failed, 330 ignored, 189 targets at `702d0a5` (`docs/TEST_BASELINE.md`). First build
   compiles GMP/MPFR for `rug` (minutes).
 - **Disk:** the session's disk allowance is about 39 GB. With incremental compilation on, `target/`
   grew past 20 GB and filled it mid-session. This session set `[build] incremental = false` in
@@ -181,40 +182,71 @@ with reference values re-derived from PARI/GP or GAP, and a commit:
 and `docs/magma/REVIEW_2026-11-06.md` (defect table marked, counts recomputed) record the result.
 Designs, reports and reviews are in the session scratchpad only (`l01/`), not in the repository.
 
+**Follow-ups: DONE 2026-11-08** on the same branch, commits `a46a6a8..702d0a5`, with the same
+design, review, implementation and review cycle (reference values from PARI/GP or GAP):
+- `89b1c4e` polynomials: Berlekamp over GF(p) rewritten as `rustmath_polynomials::berlekamp` (Q rows
+  x^(kp) mod f, an RREF null space, Yun with p-th roots, public `factor`, `squarefree_decomposition`,
+  `q_matrix`; `berlekamp_factor_gf` is a wrapper with multiplicities); `zx::subresultant_gcd(p, 0)` keeps
+  the content; the free `content`/`primitive_part` follow the methods and `poly_gcd_prem` is gone;
+  `is_square_free` is content-blind (PARI `issquarefree`), and the characteristic-p square-free routines
+  refuse what they cannot do; `Quotrem` over Z and `Content` over Q are documented as unverified.
+- `5394aa3` polynomials: the `is_irreducible` facade is replaced (decided over Z and Q, `Err`
+  otherwise; GF(p) by `berlekamp::is_irreducible`).
+- `2a46bd0`, `8903c69` integers and rationals: generalised `SageInteger::binomial` (n < 0), non-negative
+  `Integer` gcd/lcm/xgcd, `nth_root`, `is_power` and `is_perfect_power` of negatives (no exponent cap, a
+  power-residue sieve), machine-word `pow_mod` returning `Result`, `SageRational::multiplicative_order`
+  as `MultiplicativeOrder` and its `nth_root` of negatives.
+- `029f7ab` finitefields and jupyter: squares in GF(2), `square_root_mod_prime` refuses a composite p,
+  REPL `sqrt_mod` through `IntegerMod::sqrt` (card T-249 done), `GaloisRingElement::zero()`/`one()` as
+  unbound sentinels (card T-243 done).
+- `a813c49`, `527981b` rings, category, manifolds: three-valued `RingParentMethods`,
+  `CommutativeRingParentMethods` and `RingMorphism` defaults (`is_zero_ring` from the parent, `random_*`
+  are `Err`); T^(0,0) and Ω^0 are infinite on every manifold; the manifold rationale wording.
+- `06945db`, `702d0a5` matrix: Krylov presentation for invariant factors, minimal polynomial and rational
+  form (n = 20 random dense over Q in about 0.1 s release; n = 12 did not finish in 95 s), a determinant
+  fallback in the rational-form certificate, faster transforms for small r > 1, GF(p) Krylov tests, and
+  rational-form docs that state MAGMA's and PARI's block order and transform conventions correctly.
+- `14a05a2` interfaces: the two tests sharing the object registry are serialised (a flaky failure).
+
+`PROJECT_TRACKER.md` (Change Log 2026-11-08), `docs/magma/status_overrides.csv` (36 rows re-rated, 7 with
+a new status; 226 more with path-only refreshes) and `docs/magma/REVIEW_2026-11-06.md` record the result.
+The stale `file:line` paths in `status_overrides.csv` are refreshed: a script (session scratchpad
+`fu/path_refresh/`) mapped every citation to the same item at `702d0a5` from the revision each row was
+written against (`git blame`), and rewrote 299 citations in 256 rows (226 path-only rows tagged `path
+refreshed 702d0a5`, the rest inside re-rated rows); the 27 citations it could not place were checked by
+hand (25 point into files unchanged since their row was written, one was fixed by hand, one sits in a
+re-rated row), so none remains unresolved.
+
 **Open follow-ups** (each has a tracker row or note unless marked):
-- Berlekamp Q matrix: row i holds x^(i(p+1)) mod f instead of x^(ip)
-  (`rustmath-polynomials/src/factorization.rs:578-602`); its tests are too weak to notice.
-- `zx::subresultant_gcd(p, 0)` returns the primitive part (gcd(4x+4, 0) = x+1, PARI 4x+4).
-- Conventions not checked against MAGMA: `Quotrem` over Z (stops at the first inexact leading step)
-  and `Content` over Q (1 here, the rational content in PARI).
-- Speed over Q: `minimal_polynomial` does not finish in 95 s at n = 12 and the rational form takes 11 s
-  at n = 10 (release); add a transform-free SNF and a Krylov or Hessenberg minimal polynomial, or
-  [Ste97]. No GCDHEU or modular polynomial gcd (speed only).
-- `PrimeField::is_quadratic_residue` is false for 1 in GF(2); `square_root_mod_prime` gives a false
-  `None` for a composite p, and the REPL `sqrt_mod` calls it for composite moduli (card T-249; use
-  `IntegerMod::sqrt`).
-- `SageInteger::binomial` returns 0 for negative n (Sage and PARI: binomial(-1, 2) = 1).
-- `GaloisRingElement::zero()`/`one()` still panic; `rustmath-rings` `RingParentMethods::is_zero_ring`
-  compares the static constructors.
-- Fabricated trait defaults, design split-outs S1 to S3: `RingParentMethods` in `rustmath-rings` and
-  `rustmath-category` (characteristic 0, is_field/is_commutative false, random_element zero,
-  is_injective false); no real implementors, now 🛑 rows.
-- Not a tracker row: stale paths in `docs/magma/status_overrides.csv`. 207 rows that this update
-  did not change (220 citations, chapters 17 to 59, bare `lib.rs:N` paths not counted) cite a line
-  that `b475298..8e25fe2` moved, for example ch018.Isqrt `integer.rs:147` (now :190) and ch026.Nullspace
-  `linear_solve.rs:200` (now :232). No status is affected. Plan a scripted refresh: map each
-  `file:line` through `git diff -U0 b475298 8e25fe2`, check that the new line is the same
-  definition, and agree first on the note tag for a path-only change (the current rule asks for a
-  `fixed <commit>` tag on every changed row).
-- Not tracked as rows: Ring hooks for polynomials, series and p-adics (honest `None` today); O(m)
-  order loops for `IntegerMod`/`PrimeField` and trial-division factoring of q-1 for GF(q) orders
-  (speed only); `SageRational::multiplicative_order` gives `None` for 0 and for infinite order alike;
-  the `factorization::content`/`primitive_part`/`poly_gcd_prem` free functions still use the signed
-  gcd; `is_square_free` over Z ignores the content; `Integer` gcd/lcm/xgcd signs and `nth_root` of
-  negatives; machine-word `pow_mod` panics on a negative exponent; the multi-RHS `IsConsistent`,
-  `PrimaryRationalForm`, `JordanForm`, `IsSimilar`; the rational-form docs say "not MAGMA's T, nor
-  its inverse" even when C is symmetric, and call the block order PARI's; two wording nits in the
-  manifold finiteness rationale.
+- `fp_factor::equal_degree_factor` gives up after 200 random tries and returns the block unsplit (a
+  bounded search that decides; about 2^-200 per block, never observed). Zassenhaus and so
+  `is_irreducible` over Z and Q rely on it; Berlekamp's count r would certify the block (tracker ⏳ row).
+- MAGMA conventions still unverified (the handbook pages answer HTTP 401, no MAGMA binary): `Quotrem`
+  over Z, `Content` over Q, the content in `IsIrreducible` over Z (Sage's `(2*x).is_irreducible()` over
+  ZZ and QQ would be a cross-check), `Binomial(n, r)` for r < 0, the shape of `QMatrix`.
+- REPL `binomial` truncates n and k to u32 and refuses negative n (new card T-250, tracker 🔴).
+- Rational form and invariant factors: no complexity bound (the fixed start basis has a worst case with
+  r = n, and one 2x2 relation matrix over Q took 81 s in debug); [Ste97] or Storjohann would bound it.
+  Doc nits from the last review: the rational-form "Fallback" paragraph names only the sentinel trigger,
+  the `polynomial_matrix` header names only `PrimeField` sentinels.
+- REPL `sqrt_mod` for a composite n factors by trial division (up to three times), so a large prime
+  cofactor never finishes (stated in the help line); a proven factorization would fix it.
+- p-adic `zero()`/`one()` still panic (`PadicInteger`, `PadicRational`, `PadicExtensionElement`), and
+  `RingMorphismMethods::is_nonzero` reads the static `Self::Domain::one()`; no real ring type implements
+  the three-valued `RingParentMethods`; the category trait lacks the composite-characteristic rule.
+- Galois-ring containers built from `R::one()` or `UnivariatePolynomial::var()` keep unbound coefficients
+  (degree 7 instead of 6 in the documented GR(8,2) example); pinned by a test that must change if
+  containers ever coerce.
+- Not tracked as rows: `IsPower(n, k)` returns no root; `is_perfect_power` still costs about bits^2 on huge
+  non-powers (2^1000000+1: 12 s in debug); i32/i64 keep the sign-arbitrary default gcd/lcm/xgcd;
+  `ArithInt`/`ArithLLong` gcd and lcm overflow on MIN, `add_mod`/`mul_mod` assume m > 0; `Integer::sqrt`
+  starts Newton at x = self; a faster balanced gcd (Lehmer, half-gcd); MAGMA `IsSquare`/`Sqrt` returning
+  the root on `PrimeField` and GF(p^n); `square_root_mod_prime` runs `is_prime` twice and
+  `is_prime_miller_rabin` repeats its 12 bases 20 times; `fast_arith::is_prime_u64` duplicates
+  `FastArith64`; Cohen GTM 138 algorithm numbers in `zx.rs` and `univariate.rs` are unchecked; the
+  Zassenhaus error text blames every failure on the subset bound; Ring hooks for polynomials, series and
+  p-adics (honest `None`); O(m) order loops for `IntegerMod`/`PrimeField` and trial-division factoring of
+  q-1 for GF(q) orders; the multi-RHS `IsConsistent`, `PrimaryRationalForm`, `JordanForm`, `IsSimilar`.
 
 **Next steps** (unchanged): wire up or delete the dead code listed in
 `docs/magma/REVIEW_2026-11-06.md` (the `rustmath-rings/src/number_field/` orphan files, the gated
