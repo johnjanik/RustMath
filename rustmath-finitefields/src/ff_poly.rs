@@ -971,8 +971,9 @@ mod tests {
         );
         // m = 2^64 + 13: k = 65, two words, top word masked to its low bit
         let m = big("18446744073709551629");
-        assert_eq!(draw_scripted(&m, &[7, 3]), (big("18446744073709551623"), 2)); // 2^64 + 7
-                                                                                  // first round x = 20 + 2^64 >= m is rejected, second round x = 5 + (2 & 1) 2^64 = 5
+        // 7 + (3 & 1) 2^64 = 2^64 + 7
+        assert_eq!(draw_scripted(&m, &[7, 3]), (big("18446744073709551623"), 2));
+        // first round x = 20 + 2^64 >= m is rejected, second round x = 5 + (2 & 1) 2^64 = 5
         assert_eq!(draw_scripted(&m, &[20, 1, 5, 2]), (Integer::from(5), 4));
     }
 
@@ -985,7 +986,8 @@ mod tests {
     /// CZ3: `PrimeField::random_element` is O(1) per draw (the `from_int`
     /// override) and covers the whole field, also for p > 2^64 (at HEAD the
     /// coefficients were only 0 or 1 there, and a draw at p = 2^31 - 1 cost
-    /// ~2^30 additions). gp: `isprime(2^31-1)`, `nextprime(2^80)` = 2^80 + 13 =
+    /// ~2^30 additions, so on the old code this test takes hours instead of
+    /// failing: run it only after the fix). gp: `isprime(2^31-1)`, `nextprime(2^80)` = 2^80 + 13 =
     /// 1208925819614629174706189, `polisirreducible(Mod(1,2^80+13)*(x^2+x+1))` = 1.
     #[test]
     fn prime_field_random_element_is_fast_and_full_range() {

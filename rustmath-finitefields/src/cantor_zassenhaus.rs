@@ -55,8 +55,13 @@
 //!
 //! Preconditions: the coefficients must lie in a field. [`factor`],
 //! [`factor_squarefree`] and [`equal_degree_factorization`] check that the
-//! characteristic is a prime (a `PrimeField` with a composite modulus or the
-//! modulus-0 sentinel panics before any arithmetic). A [`crate::ff_poly::Gfpn`]
+//! characteristic is a prime with `Integer::is_prime`: a `PrimeField` with
+//! the modulus-0 sentinel or a composite modulus that the test detects panics
+//! before any arithmetic. The test is a proof below
+//! psi12 = 318665857834031151167461; above that it is a strong probable-prime
+//! test to the bases 2..37, so a strong pseudoprime to all of them (psi12
+//! itself, 399165290221 * 798330580441) passes and the results are then
+//! unspecified. A [`crate::ff_poly::Gfpn`]
 //! whose defining polynomial is reducible (not a field) is **not checked**;
 //! the results are then unspecified (the lazy certificate, the cap or the
 //! arithmetic may panic). [`squarefree_factorization`] and
@@ -127,10 +132,12 @@ fn random_poly_below_degree<F: FiniteFieldElement>(
     FFPoly::new(coeffs, sample.clone())
 }
 
-/// `Ok(())` iff the characteristic of `sample`'s field is a prime; otherwise
-/// the reason. Refuses a `PrimeField` with a composite modulus and the
-/// modulus-0 sentinel (characteristic 0). One `Integer::is_prime` call (trial
-/// division below 1000, Miller-Rabin to the bases 2..37 above).
+/// `Ok(())` if `Integer::is_prime` accepts the characteristic of `sample`'s
+/// field; otherwise the reason. Refuses the modulus-0 sentinel
+/// (characteristic 0) and every composite modulus below psi12 =
+/// 318665857834031151167461 (trial division below 1000, then strong
+/// Miller-Rabin to the bases 2..37, a proof below psi12). Above psi12 a strong
+/// pseudoprime to those bases, such as psi12 itself, is not detected.
 fn check_prime_characteristic<F: FiniteFieldElement>(sample: &F) -> Result<(), String> {
     let c = sample.characteristic();
     if c.is_prime() {
@@ -489,7 +496,8 @@ pub fn distinct_degree_factorization<F: FiniteFieldElement>(
 /// A nonzero constant `f` gives the empty product `vec![]`.
 ///
 /// # Panics
-/// In this order: the characteristic is not a prime (before any arithmetic);
+/// In this order: the characteristic is not a prime (before any arithmetic;
+/// detected as described in the module docs, a proof below psi12);
 /// `f = 0`; `d < 1`; `d` does not divide `deg f`; `f` is not squarefree; `f`
 /// has an irreducible factor of degree other than `d` (including a reducible
 /// `f` of degree `d`) — each with the reason. Also (probability at most
@@ -549,7 +557,8 @@ fn factor_squarefree_prime_char<F: FiniteFieldElement>(
 /// equal-degree factorization. A constant `f` (also `f = 0`) gives `vec![]`.
 ///
 /// # Panics
-/// If the characteristic is not a prime (checked first), or if `f` is not
+/// If the characteristic is not a prime (checked first, a proof below psi12;
+/// see the module docs), or if `f` is not
 /// squarefree (`f' = 0` or `deg gcd(f, f') > 0`; without this check such an
 /// input came back with a reducible "factor", e.g. `(x-1)^2` for `(x-1)^3`
 /// over GF(5)). Also (probability at most `2^-256` over a field) when a certified
@@ -573,7 +582,7 @@ pub fn factor_squarefree<F: FiniteFieldElement>(f: &FFPoly<F>) -> Vec<FFPoly<F>>
 ///
 /// # Panics
 /// If the characteristic is not a prime (checked first, before any
-/// arithmetic: a composite `PrimeField` modulus could otherwise make the
+/// arithmetic, a proof below psi12; see the module docs: a composite `PrimeField` modulus could otherwise make the
 /// squarefree split return only constant pieces, i.e. an empty factor list for
 /// a nonconstant `f`). Also (probability at most `2^-256` over a field) when a
 /// certified equal-degree block resists 256 uniform tries.
@@ -1031,7 +1040,8 @@ mod tests {
     fn edf_of_a_constant_is_the_empty_product() {
         assert!(equal_degree_factorization(&poly(&[3], 5), 1).is_empty());
         // valid blocks, including the n == d case after the eager certificate
-        let quad = equal_degree_factorization(&poly(&[2, 0, 1], 5), 2); // x^2 + 2, irreducible
+        // x^2 + 2 is irreducible over GF(5): gp polisirreducible(Mod(1,5)*(x^2+2)) = 1
+        let quad = equal_degree_factorization(&poly(&[2, 0, 1], 5), 2);
         assert_eq!(sorted_vals(&quad), vec![ints(&[2, 0, 1])]);
         let lin = equal_degree_factorization(&poly(&[2, 3, 1], 5).scalar_mul(&pf(3, 5)), 1);
         assert_eq!(sorted_vals(&lin), vec![ints(&[1, 1]), ints(&[2, 1])]);
@@ -1068,7 +1078,9 @@ mod tests {
     ///   B2 v = [1,0,1,0,1,0,1], p = 3           -> [[1,0,1],[2,1,1],[2,2,1]]
     ///   C3 v = [4,3,1,1,2,0,1,4,0,1], p = 5     -> [[1,1,0,1],[1,2,0,1],[4,1,0,1]]
     ///   D2 v = [8,0,14,0,7,0,1], p = 2147483647 -> [[1,0,1],[2,0,1],[4,0,1]]
-    /// (all multiplicities 1).
+    /// (all multiplicities 1). Run it only after the fix: on the old code row D2
+    /// takes hours, because `PrimeField` had no `from_int` override and the O(p)
+    /// default cost about 2^30 additions per random coefficient.
     #[test]
     fn factor_matches_pari_on_equal_degree_rows() {
         let rows: Vec<(i64, Vec<i64>, Vec<Vec<i64>>)> = vec![
