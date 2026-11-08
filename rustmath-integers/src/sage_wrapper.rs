@@ -4,6 +4,11 @@
 //! making it easier to port SageMath code to RustMath. It includes additional
 //! methods and behaviors that match SageMath's `sage.rings.integer.Integer` class.
 //!
+//! The primary specification is MAGMA Handbook ch. 18, "Ring of Integers" (digest
+//! `rustmath-lava/docs/Chapter_18_Ring_of_Integers.md`): `binomial` is MAGMA `Binomial(n, r)`
+//! (§18.8) generalised to negative n by Graham-Knuth-Patashnik, *Concrete Mathematics*,
+//! eq. (5.14), and `nth_root` is `Iroot` (§18.4.8).
+//!
 //! # Overview
 //!
 //! SageMath provides a comprehensive Integer class (`sage.rings.integer.Integer`)
@@ -102,18 +107,18 @@
 //! | Feature | SageMath | RustMath | Notes |
 //! |---------|----------|----------|-------|
 //! | `factorial(n)` | ✓ | ✓ | Both support arbitrary precision |
-//! | `binomial(n, k)` | ✓ | ✓ | Exact computation |
+//! | `binomial(n, k)` | ✓ | ✓ | Exact, generalised to negative n (MAGMA `Binomial`) |
 //! | `is_prime()` | ✓ | ✓ | Uses Miller-Rabin |
 //! | `is_prime_power()` | ✓ | ✓ | Checks if n = p^k |
-//! | `nth_root(k)` | ✓ | ✓ | Returns floor(k-th root) |
+//! | `nth_root(k)` | ✓ | ✓ | Returns floor(k-th root), also for negative self and odd k |
 //! | `factor()` | ✓ | ✓ | Different output format |
 //! | `divisors()` | ✓ | ✓ | Returns sorted list |
 //! | `euler_phi()` | ✓ | ✓ | Euler's totient function |
 //! | `sigma(k)` | ✓ | ✓ | Sum of k-th powers of divisors |
 //! | `mod_pow(e, m)` | ✓ | ✓ | Modular exponentiation |
 //! | `sqrt_mod(p)` | ✓ | ✓ | Tonelli-Shanks algorithm |
-//! | `gcd()` | ✓ | ✓ | Euclidean algorithm |
-//! | `lcm()` | ✓ | ✓ | Via gcd |
+//! | `gcd()` | ✓ | ✓ | Non-negative (MAGMA `Gcd`); Euclid on the magnitudes |
+//! | `lcm()` | ✓ | ✓ | Non-negative (MAGMA `Lcm`), via gcd |
 //! | `valuation(p)` | ✓ | ✓ | p-adic valuation |
 //! | `is_square()` | ✓ | ✓ | Perfect square test |
 //! | `isqrt()` | ✓ | ✓ | Integer square root |
@@ -138,7 +143,7 @@
 
 use crate::prime::{factor, is_prime, is_prime_power};
 use crate::Integer;
-use rustmath_core::{NumericConversion, Result};
+use rustmath_core::Result;
 
 /// Extension trait providing SageMath-compatible methods for Integer
 ///
@@ -222,14 +227,30 @@ pub trait SageInteger {
     /// ```
     fn factorial(n: u32) -> Integer;
 
-    /// Compute the binomial coefficient C(n, k) = n! / (k! * (n-k)!)
+    /// The generalised binomial coefficient C(n, k) (MAGMA `Binomial(n, r)`, Handbook ch. 18
+    /// §18.8; PARI/GP `binomial`, GAP `Binomial`), for every integer n and k:
     ///
-    /// Returns the number of ways to choose k items from n items.
+    /// | input | value |
+    /// |---|---|
+    /// | k < 0 (any n) | 0 |
+    /// | 0 <= n < k | 0 |
+    /// | 0 <= k <= n | n! / (k! (n-k)!) |
+    /// | n < 0, k >= 0 | (-1)^k C(k-n-1, k) (negating the upper index) |
+    ///
+    /// For n >= 0 this counts the k-subsets of an n-set. For n < 0 it is the polynomial
+    /// n(n-1)...(n-k+1)/k! evaluated at n, as in Graham-Knuth-Patashnik, *Concrete
+    /// Mathematics*, eq. (5.14), and in GMP `mpz_bin_ui` (the arithmetic MAGMA's integers use);
+    /// so C(-1, 2) = 1 and C(-3, 2) = 6 (gp `binomial(-1,2)`, `binomial(-3,2)`). The handbook
+    /// states no range for n and r; for k < 0 this follows PARI/GP and GAP (`binomial(5,-1)` =
+    /// `binomial(-1,-1)` = 0) and [`Integer::binomial_mod`].
+    ///
+    /// Cost: O(min(k, n'-k)) bignum multiplications and exact divisions, where n' is n after
+    /// the upper index is negated.
     ///
     /// # Arguments
     ///
-    /// * `n` - The total number of items
-    /// * `k` - The number of items to choose
+    /// * `n` - The upper index (any integer)
+    /// * `k` - The lower index (any integer)
     ///
     /// # Examples
     ///
@@ -255,9 +276,21 @@ pub trait SageInteger {
     ///     Integer::from(1)
     /// );
     ///
-    /// // C(n, k) = 0 when k > n
+    /// // C(n, k) = 0 when 0 <= n < k
     /// assert_eq!(
     ///     Integer::binomial(&Integer::from(5), &Integer::from(10)),
+    ///     Integer::from(0)
+    /// );
+    ///
+    /// // Negative upper index: C(-1, 2) = (-1)(-2)/2 = 1 (gp: binomial(-1,2) -> 1)
+    /// assert_eq!(
+    ///     Integer::binomial(&Integer::from(-1), &Integer::from(2)),
+    ///     Integer::from(1)
+    /// );
+    ///
+    /// // Negative lower index: 0 (gp: binomial(-1,-1) -> 0)
+    /// assert_eq!(
+    ///     Integer::binomial(&Integer::from(-1), &Integer::from(-1)),
     ///     Integer::from(0)
     /// );
     /// ```
@@ -331,8 +364,11 @@ pub trait SageInteger {
 
     /// Get the nth root of this number
     ///
-    /// Returns the largest integer r such that r^n ≤ self.
-    /// This is equivalent to floor(self^(1/n)).
+    /// Returns the largest integer r such that r^n ≤ self, i.e. floor(self^(1/n)) (MAGMA
+    /// `Iroot`, Handbook ch. 18 §18.4.8, for self >= 0). For self < 0 and odd n this is the
+    /// floor of the real root: `nth_root(-9, 3) = -3`, whereas Sage's
+    /// `nth_root(3, truncate_mode=1)` truncates toward zero and gives -2. See
+    /// [`Integer::nth_root`].
     ///
     /// # Errors
     ///
@@ -349,6 +385,9 @@ pub trait SageInteger {
     /// assert_eq!(Integer::from(27).nth_root(3).unwrap(), Integer::from(3));
     /// assert_eq!(Integer::from(100).nth_root(2).unwrap(), Integer::from(10));
     /// assert_eq!(Integer::from(15).nth_root(2).unwrap(), Integer::from(3)); // floor
+    /// assert_eq!(Integer::from(-8).nth_root(3).unwrap(), Integer::from(-2));
+    /// assert_eq!(Integer::from(-9).nth_root(3).unwrap(), Integer::from(-3)); // floor
+    /// assert!(Integer::from(-4).nth_root(2).is_err());
     /// ```
     ///
     /// # SageMath Equivalent
@@ -378,60 +417,36 @@ impl SageInteger for Integer {
     }
 
     fn binomial(n: &Integer, k: &Integer) -> Integer {
-        // Handle edge cases
-        if k > n {
+        if k.signum() < 0 {
             return Integer::zero();
         }
-
-        if k.is_zero() || k == n {
-            return Integer::one();
-        }
-
-        if k.signum() < 0 || n.signum() < 0 {
-            return Integer::zero();
-        }
-
-        // Optimize: C(n, k) = C(n, n-k), use the smaller value
-        let k_optimized = if k > &(n.clone() - k.clone()) {
-            n.clone() - k.clone()
+        // Negating the upper index (Concrete Mathematics (5.14)): C(n, k) = (-1)^k C(k-n-1, k),
+        // and k - n - 1 >= k when n < 0, so the transformed coefficient is an ordinary one.
+        let (n, negate) = if n.signum() < 0 {
+            (k.clone() - n.clone() - Integer::one(), k.is_odd())
         } else {
-            k.clone()
+            (n.clone(), false)
         };
-
-        // For small k, compute directly
-        if let Some(k_small) = k_optimized.to_u64() {
-            if k_small <= 100 {
-                // Compute C(n, k) = n! / (k! * (n-k)!)
-                // More efficient: C(n, k) = n * (n-1) * ... * (n-k+1) / (k * (k-1) * ... * 1)
-                let mut numerator = Integer::one();
-                let mut denominator = Integer::one();
-
-                for i in 0..k_small {
-                    numerator = numerator * (n.clone() - Integer::from(i));
-                    denominator = denominator * Integer::from(i + 1);
-                }
-
-                return numerator / denominator;
-            }
+        if *k > n {
+            return Integer::zero();
         }
-
-        // For larger k, use the formula with factorials
-        // This is less efficient but handles arbitrary precision
-        // C(n, k) = n! / (k! * (n-k)!)
-
-        // For very large n, this is impractical
-        // In a production implementation, we'd use more advanced algorithms
-        // For now, compute using the multiplicative formula
+        // C(n, k) = C(n, n-k): run over the smaller lower index.
+        let n_minus_k = n.clone() - k.clone();
+        let kk = if *k > n_minus_k { n_minus_k } else { k.clone() };
         let mut result = Integer::one();
         let mut i = Integer::zero();
-
-        while &i < &k_optimized {
+        while i < kk {
+            // result = C(n, i), so result * (n - i) = C(n, i + 1) * (i + 1): the division is
+            // exact.
             result = result * (n.clone() - i.clone());
-            result = result / (i.clone() + Integer::one());
             i = i + Integer::one();
+            result = result / i.clone();
         }
-
-        result
+        if negate {
+            -result
+        } else {
+            result
+        }
     }
 
     fn factor(&self) -> Vec<(Integer, u32)> {
@@ -593,6 +608,48 @@ mod tests {
                 assert_eq!(left, right1 + right2, "Pascal's triangle failed for C({}, {})", n, k);
             }
         }
+        // The generalised binomial (C(n, k) = 0 for k < 0, negative n by GKP (5.14)) satisfies
+        // Pascal's rule for every integer n and k.
+        for n in -10..10 {
+            for k in -3..12 {
+                let n_int = Integer::from(n);
+                let k_int = Integer::from(k);
+                let left = Integer::binomial(&n_int, &k_int);
+                let right1 = Integer::binomial(
+                    &(n_int.clone() - Integer::one()),
+                    &(k_int.clone() - Integer::one()),
+                );
+                let right2 = Integer::binomial(&(n_int.clone() - Integer::one()), &k_int);
+                assert_eq!(
+                    left,
+                    right1 + right2,
+                    "Pascal's rule failed for C({n}, {k})"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_binomial_negative_upper_index() {
+        // MAGMA Binomial(n, r), Handbook ch. 18 §18.8, generalised by C(n, k) = (-1)^k C(k-n-1, k).
+        // Reference: PARI/GP 2.15.4, `gp -q`, command in each comment.
+        let b = |n: i64, k: i64| Integer::binomial(&Integer::from(n), &Integer::from(k));
+        assert_eq!(b(-1, 2), Integer::from(1)); // gp: binomial(-1,2) -> 1
+        assert_eq!(b(-1, 1), Integer::from(-1)); // gp: binomial(-1,1) -> -1
+        assert_eq!(b(-1, 0), Integer::from(1)); // gp: binomial(-1,0) -> 1
+        assert_eq!(b(-3, 2), Integer::from(6)); // gp: binomial(-3,2) -> 6
+        assert_eq!(b(-2, 3), Integer::from(-4)); // gp: binomial(-2,3) -> -4
+        assert_eq!(b(-10, 3), Integer::from(-220)); // gp: binomial(-10,3) -> -220
+        assert_eq!(b(-150, 3), Integer::from(-573800)); // gp: binomial(-150,3) -> -573800
+        assert_eq!(b(-7, 30), Integer::from(1947792)); // gp: binomial(-7,30) -> 1947792
+        assert_eq!(b(-2, 1000), Integer::from(1001)); // gp: binomial(-2,1000) -> 1001
+
+        // Negative lower index gives 0 (gp: binomial(-1,-1) -> 0, binomial(-4,-4) -> 0,
+        // binomial(5,-1) -> 0; GAP 4.12.1 Binomial(-1,-1) -> 0).
+        assert_eq!(b(-1, -1), Integer::zero());
+        assert_eq!(b(-4, -4), Integer::zero());
+        assert_eq!(b(5, -1), Integer::zero());
+        assert_eq!(b(0, -1), Integer::zero());
     }
 
     #[test]

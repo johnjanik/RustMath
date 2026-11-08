@@ -2130,33 +2130,48 @@ impl ReplContext {
                 }
             }
 
-            // Square root modulo prime: sqrt_mod(a, p)
+            // Square roots modulo any n >= 1 (MAGMA `Modsqrt(n, m)`, ch. 18 §18.12.1; `IsSquare`,
+            // `Sqrt`, `AllSqrts` in Z/mZ, ch. 19 §19.5.6): sqrt_mod(a, n), sqrt_mod(Mod(a, n)),
+            // sqrt_mod(Mod(a, n), n). See `sqrt_mod_report` for the output.
             "sqrt_mod" => {
                 let args = self.parse_args(args_str)?;
-                if args.len() != 2 {
-                    return Err(EvalError::new("ArgumentError", "sqrt_mod requires 2 arguments (value, prime)"));
-                }
-                match (&args[0], &args[1]) {
-                    (RustMathValue::Integer(a), RustMathValue::Integer(p)) => {
-                        use rustmath_finitefields::square_root_mod_prime;
-                        match square_root_mod_prime(a, p) {
-                            Some(root) => Ok(RustMathValue::Integer(root)),
-                            None => Ok(RustMathValue::String("No square root exists".to_string())),
+                let (a, n) = match args.as_slice() {
+                    [RustMathValue::Integer(a), RustMathValue::Integer(n)] => (a.clone(), n.clone()),
+                    [RustMathValue::IntegerMod(x)] => (x.value().clone(), x.modulus().clone()),
+                    [RustMathValue::IntegerMod(x), RustMathValue::Integer(n)] => {
+                        if n != x.modulus() {
+                            return Err(EvalError::new(
+                                "ValueError",
+                                format!(
+                                    "sqrt_mod: {} is an element of Z/{}Z, but the modulus {} was given",
+                                    x.value(),
+                                    x.modulus(),
+                                    n
+                                ),
+                            ));
                         }
+                        (x.value().clone(), x.modulus().clone())
                     }
-                    (RustMathValue::IntegerMod(a), _) => {
-                        use rustmath_finitefields::square_root_mod_prime;
-                        match square_root_mod_prime(a.value(), a.modulus()) {
-                            Some(root) => {
-                                let elem = IntegerMod::new(root, a.modulus().clone())
-                                    .map_err(|e| EvalError::new("ValueError", format!("{}", e)))?;
-                                Ok(RustMathValue::IntegerMod(elem))
-                            }
-                            None => Ok(RustMathValue::String("No square root exists".to_string())),
-                        }
+                    [_] => {
+                        return Err(EvalError::new(
+                            "TypeError",
+                            "sqrt_mod with one argument needs an element Mod(a, n) of Z/nZ; use sqrt_mod(a, n) for integers",
+                        ))
                     }
-                    _ => Err(EvalError::new("TypeError", "sqrt_mod requires integer arguments")),
-                }
+                    [_, _] => {
+                        return Err(EvalError::new(
+                            "TypeError",
+                            "sqrt_mod requires integer arguments sqrt_mod(a, n), or sqrt_mod(Mod(a, n), n)",
+                        ))
+                    }
+                    _ => {
+                        return Err(EvalError::new(
+                            "ArgumentError",
+                            "sqrt_mod requires 1 or 2 arguments: sqrt_mod(a, n) or sqrt_mod(Mod(a, n))",
+                        ))
+                    }
+                };
+                sqrt_mod_report(&a, &n).map(RustMathValue::String)
             }
 
             // Power in modular arithmetic: pow_mod(base, exp, mod)
@@ -9922,7 +9937,9 @@ Finite Field Functions:
   GF(p)                - Alias for mod (Galois field)
   inverse(a)           - Multiplicative inverse in Z/nZ
   is_unit(a)           - True if a has inverse in Z/nZ
-  sqrt_mod(a, p)       - Square root of a mod p
+  sqrt_mod(a, n)       - Square roots of a mod n: a root, then all roots (at most 16)
+                         or their number; also sqrt_mod(Mod(a, n)). A composite n is
+                         factored by trial division (a large prime cofactor never finishes)
   pow_mod(b, e, m)     - Compute b^e mod m
 
 Combinatorics Functions:
@@ -10296,6 +10313,108 @@ fn expr_to_latex(expr: &Expr) -> String {
             let args_latex: Vec<String> = args.iter().map(|a| expr_to_latex(a)).collect();
             format!("\\text{{{}}}({})", name, args_latex.join(", "))
         }
+    }
+}
+
+/// ψ12 = 318665857834031151167461, the least strong pseudoprime to the bases 2, ..., 37
+/// (Sorenson-Webster 2017): below it `rustmath_integers::prime::is_prime` is a proof.
+const SQRT_MOD_PSI12: &str = "318665857834031151167461";
+
+/// At most this many roots are listed by `sqrt_mod`; above it only their number is printed.
+const SQRT_MOD_LIST_LIMIT: u64 = 16;
+
+/// The text of the REPL command `sqrt_mod(a, n)`: the square roots of a in Z/nZ.
+///
+/// MAGMA: `Modsqrt(n, m)` (Handbook ch. 18 §18.12.1); `IsSquare`, `Sqrt`, `AllSqrts` in Z/mZ
+/// (ch. 19 §19.5.6, worked example H19E4: the 12 roots of 1404 in Z/2340Z).
+///
+/// Output, with b = a mod n:
+/// - `"{r}; square roots of {b} mod {n}: [r_1, ..., r_N]"` when b has N <= 16 roots, listed in
+///   ascending order; r is `IntegerMod::sqrt`'s root (the least root for a prime power, the CRT
+///   of the per-prime-power least roots otherwise, e.g. 7 for 4 mod 15);
+/// - `"{r}; {b} has {N} square roots mod {n} (not listed)"` when N > 16;
+/// - `"no square root: {b} is not a square mod {n}"`, which is always a proof.
+///
+/// Algorithm:
+/// - n <= 0 is an error; n = 1 gives the single root 0 (Z/1Z = {0}).
+/// - Prime n (`is_prime`): if (b/n) = -1 there is no root (the Jacobi symbol proves it for
+///   every odd n); otherwise `Integer::sqrt_mod_prime` gives a root r, squared back, and the
+///   roots are {r, n - r} (H. Cohen, GTM 138, Algorithms 1.4.10 and 1.5.1). This repeats the
+///   k = 1 decision of `IntegerMod::sqrt` without its trial-division factoring of n, which
+///   would take minutes near 1e18 and never finish for 2^127 - 1; a REPL test checks that the
+///   two agree for every n <= 60. For n >= ψ12, `is_prime` is only a probable-prime test, so the
+///   text says so; a Tonelli-Shanks failure proves n composite and is reported as an error.
+/// - Composite n: `IntegerMod::sqrt`, `num_sqrts` and `all_sqrts` (CRT over the prime-power
+///   factors; `None` is a proof). They factor n by trial division, each call again (up to three
+///   times here). A composite n with a large prime cofactor is therefore out of reach: for
+///   n = 2^127 + 1 = 3 · 56713727820156410577229101238628035243 trial division would run to
+///   about 7.5e18, so the command does not finish. A proven factorization (MAGMA's
+///   `Factorization :=` parameter, or rho/ECM with a primality proof) is not implemented.
+fn sqrt_mod_report(a: &Integer, n: &Integer) -> Result<String, EvalError> {
+    if n.signum() <= 0 {
+        return Err(EvalError::new(
+            "ValueError",
+            format!("sqrt_mod: the modulus must be at least 1, got {}", n),
+        ));
+    }
+    if n.is_one() {
+        return Ok("0; square roots of 0 mod 1: [0]".to_string());
+    }
+    let b = a.modulo(n);
+    let join = |roots: &[Integer]| {
+        roots.iter().map(|r| r.to_string()).collect::<Vec<_>>().join(", ")
+    };
+
+    if rustmath_integers::prime::is_prime(n) {
+        let two = Integer::from(2);
+        let roots: Vec<Integer> = if b.is_zero() || *n == two {
+            vec![b.clone()]
+        } else if b.kronecker_symbol(n) == -1 {
+            return Ok(format!("no square root: {} is not a square mod {}", b, n));
+        } else {
+            match b.sqrt_mod_prime(n) {
+                Ok(r) => {
+                    let mut v = vec![r.clone(), n.clone() - r];
+                    v.sort();
+                    v
+                }
+                Err(e) => {
+                    return Err(EvalError::new(
+                        "ValueError",
+                        format!(
+                            "sqrt_mod: n = {} passed the probable-prime test but is composite ({}); \
+                             factor n to decide",
+                            n, e
+                        ),
+                    ))
+                }
+            }
+        };
+        let mut text = format!("{}; square roots of {} mod {}: [{}]", roots[0], b, n, join(&roots));
+        let psi12 = Integer::from_decimal_str(SQRT_MOD_PSI12).expect("decimal literal");
+        if *n >= psi12 {
+            text.push_str(&format!(
+                " (n is only a probable prime: is_prime is not a proof above {}; \
+                 the list is complete if n is prime)",
+                SQRT_MOD_PSI12
+            ));
+        }
+        return Ok(text);
+    }
+
+    // Composite n: IntegerMod handles any modulus (trial-division factoring, see above).
+    let x = IntegerMod::new(b.clone(), n.clone())
+        .map_err(|e| EvalError::new("ValueError", format!("sqrt_mod: {}", e)))?;
+    let r = match x.sqrt() {
+        None => return Ok(format!("no square root: {} is not a square mod {}", b, n)),
+        Some(r) => r.value().clone(),
+    };
+    let count = x.num_sqrts();
+    if count <= Integer::from(SQRT_MOD_LIST_LIMIT) {
+        let roots: Vec<Integer> = x.all_sqrts().iter().map(|y| y.value().clone()).collect();
+        Ok(format!("{}; square roots of {} mod {}: [{}]", r, b, n, join(&roots)))
+    } else {
+        Ok(format!("{}; {} has {} square roots mod {} (not listed)", r, b, count, n))
     }
 }
 
@@ -10900,5 +11019,197 @@ mod tests {
         // A hyperbola has two branches, each should have reasonable segments
         assert!(curve_line_count > 50, "Hyperbola should have many curve segments (got {})", curve_line_count);
         assert!(curve_line_count < 400, "Too many curve segments ({}), possible artifacts", curve_line_count);
+    }
+
+    // ---------------------------------------------------------------------------------
+    // sqrt_mod (card T-249): square roots modulo any n >= 1.
+    //
+    // MAGMA: `Modsqrt(n, m)` (ch. 18 §18.12.1); `IsSquare`, `Sqrt`, `AllSqrts` in Z/mZ
+    // (ch. 19 §19.5.6, worked example H19E4). Reference values: PARI/GP 2.15.4 (`gp -q`):
+    //   brute force  select(x -> Mod(x,m)^2 == Mod(a,m), [0..m-1])        (root lists)
+    //   existence    issquare(Mod(a,m))
+    //   the root     lift(chinese(...)) of the per-prime-power least roots (IntegerMod::sqrt's
+    //                rule), e.g. chinese(Mod(1,3), Mod(2,5)) = Mod(7,15) for 4 mod 15
+    //   primes       issquare(Mod(a,p),&r); vecsort([lift(r), p-lift(r)])
+    //   2^64         the four roots of 17 by Hensel structure, each checked by Mod(r,2^64)^2==17
+    //   psi12        factor(318665857834031151167461) = 399165290221 * 798330580441;
+    //                kronecker(41, psi12) = -1, issquare(Mod(73, psi12)) = 1
+    // ---------------------------------------------------------------------------------
+
+    fn sqrt_mod_text(ctx: &mut ReplContext, cmd: &str) -> String {
+        ctx.eval(cmd)
+            .unwrap_or_else(|e| panic!("{cmd}: {} {}", e.name, e.message))
+            .text
+    }
+
+    fn sqrt_mod_err(ctx: &mut ReplContext, cmd: &str) -> EvalError {
+        match ctx.eval(cmd) {
+            Ok(r) => panic!("{cmd}: expected an error, got {}", r.text),
+            Err(e) => e,
+        }
+    }
+
+    /// A String value prints with quotes.
+    fn quoted(s: &str) -> String {
+        format!("\"{}\"", s)
+    }
+
+    // The old command called the prime-only `square_root_mod_prime` and printed a false
+    // "No square root exists" for every one of these.
+    #[test]
+    fn test_sqrt_mod_composite_moduli() {
+        let mut ctx = ReplContext::new();
+        let cases: &[(&str, &str)] = &[
+            // PARI brute force [2, 7, 8, 13]; CRT root chinese(Mod(1,3), Mod(2,5)) = 7.
+            ("sqrt_mod(4, 15)", "7; square roots of 4 mod 15: [2, 7, 8, 13]"),
+            ("sqrt_mod(Mod(4, 15))", "7; square roots of 4 mod 15: [2, 7, 8, 13]"),
+            ("sqrt_mod(Mod(4, 15), 15)", "7; square roots of 4 mod 15: [2, 7, 8, 13]"),
+            // PARI issquare(Mod(2,15)) = 0.
+            ("sqrt_mod(2, 15)", "no square root: 2 is not a square mod 15"),
+            ("sqrt_mod(0, 15)", "0; square roots of 0 mod 15: [0]"),
+            ("sqrt_mod(4, 9)", "2; square roots of 4 mod 9: [2, 7]"),
+            ("sqrt_mod(19, 15)", "7; square roots of 4 mod 15: [2, 7, 8, 13]"),
+            // MAGMA H19E4: the 12 square roots of 1404 in Z/2340Z (PARI brute force).
+            (
+                "sqrt_mod(1404, 2340)",
+                "1872; square roots of 1404 mod 2340: [78, 312, 468, 702, 858, 1092, 1248, 1482, 1638, 1872, 2028, 2262]",
+            ),
+            // Z/2^64: PARI, four roots of 17, each squares back.
+            (
+                "sqrt_mod(17, 18446744073709551616)",
+                "405959429219100393; square roots of 17 mod 18446744073709551616: [405959429219100393, 8817412607635675415, 9629331466073876201, 18040784644490451223]",
+            ),
+            ("sqrt_mod(1, 1)", "0; square roots of 0 mod 1: [0]"),
+        ];
+        for (cmd, expected) in cases {
+            assert_eq!(sqrt_mod_text(&mut ctx, cmd), quoted(expected), "{cmd}");
+        }
+    }
+
+    #[test]
+    fn test_sqrt_mod_prime_moduli() {
+        let mut ctx = ReplContext::new();
+        let cases: &[(&str, &str)] = &[
+            ("sqrt_mod(4, 7)", "2; square roots of 4 mod 7: [2, 5]"),
+            ("sqrt_mod(Mod(2, 7))", "3; square roots of 2 mod 7: [3, 4]"),
+            ("sqrt_mod(3, 7)", "no square root: 3 is not a square mod 7"),
+            ("sqrt_mod(-1, 5)", "2; square roots of 4 mod 5: [2, 3]"),
+            ("sqrt_mod(-1, 7)", "no square root: 6 is not a square mod 7"),
+            ("sqrt_mod(3, 2)", "1; square roots of 1 mod 2: [1]"),
+            ("sqrt_mod(0, 13)", "0; square roots of 0 mod 13: [0]"),
+            ("sqrt_mod(2, 17)", "6; square roots of 2 mod 17: [6, 11]"),
+        ];
+        for (cmd, expected) in cases {
+            assert_eq!(sqrt_mod_text(&mut ctx, cmd), quoted(expected), "{cmd}");
+        }
+    }
+
+    #[test]
+    fn test_sqrt_mod_many_roots_not_listed() {
+        let mut ctx = ReplContext::new();
+        // 5040 = 2^4 * 3^2 * 5 * 7: 1 has 4 * 2 * 2 * 2 = 32 roots (PARI brute force: 32).
+        assert_eq!(
+            sqrt_mod_text(&mut ctx, "sqrt_mod(1, 5040)"),
+            quoted("1; 1 has 32 square roots mod 5040 (not listed)")
+        );
+        // 0 mod 2^64 has 2^32 roots (the multiples of 2^32).
+        assert_eq!(
+            sqrt_mod_text(&mut ctx, "sqrt_mod(0, 18446744073709551616)"),
+            quoted("0; 0 has 4294967296 square roots mod 18446744073709551616 (not listed)")
+        );
+    }
+
+    // Prime moduli far beyond trial division: PARI issquare(Mod(a,p),&r).
+    #[test]
+    fn test_sqrt_mod_large_primes_fast_path() {
+        let mut ctx = ReplContext::new();
+        let cases: &[(&str, &str)] = &[
+            (
+                "sqrt_mod(2, 2305843009213693951)",
+                "2147483648; square roots of 2 mod 2305843009213693951: [2147483648, 2305843007066210303]",
+            ),
+            (
+                "sqrt_mod(3, 1000000000000000009)",
+                "60248662633209561; square roots of 3 mod 1000000000000000009: [60248662633209561, 939751337366790448]",
+            ),
+            (
+                "sqrt_mod(-1, 1000000000000000009)",
+                "333333333000000003; square roots of 1000000000000000008 mod 1000000000000000009: [333333333000000003, 666666667000000006]",
+            ),
+            (
+                "sqrt_mod(7, 1000000000000000009)",
+                "no square root: 7 is not a square mod 1000000000000000009",
+            ),
+        ];
+        for (cmd, expected) in cases {
+            assert_eq!(sqrt_mod_text(&mut ctx, cmd), quoted(expected), "{cmd}");
+        }
+    }
+
+    #[test]
+    fn test_sqrt_mod_probable_prime_caveat_and_refusal() {
+        let mut ctx = ReplContext::new();
+        // 2^127 - 1 is prime (PARI isprime = 1) but above psi12: the caveat is printed.
+        let t = sqrt_mod_text(&mut ctx, "sqrt_mod(2, 170141183460469231731687303715884105727)");
+        assert!(
+            t.starts_with("\"18446744073709551616; square roots of 2 mod 170141183460469231731687303715884105727: [18446744073709551616, 170141183460469231713240559642174554111]"),
+            "{t}"
+        );
+        assert!(t.contains("probable prime"), "{t}");
+        // psi12 passes is_prime. kronecker(41, psi12) = -1: a proof.
+        assert_eq!(
+            sqrt_mod_text(&mut ctx, "sqrt_mod(41, 318665857834031151167461)"),
+            quoted("no square root: 41 is not a square mod 318665857834031151167461")
+        );
+        // 4 has four roots mod psi12 (PARI), so the two listed ones carry the caveat.
+        let t = sqrt_mod_text(&mut ctx, "sqrt_mod(4, 318665857834031151167461)");
+        assert!(
+            t.starts_with("\"2; square roots of 4 mod 318665857834031151167461: [2, 318665857834031151167459]"),
+            "{t}"
+        );
+        assert!(t.contains("probable prime"), "{t}");
+        // 73 is a square mod psi12 (PARI issquare = 1); Tonelli-Shanks proves psi12 composite.
+        let e = sqrt_mod_err(&mut ctx, "sqrt_mod(73, 318665857834031151167461)");
+        assert_eq!(e.name, "ValueError");
+        assert!(e.message.contains("composite"), "{}", e.message);
+    }
+
+    #[test]
+    fn test_sqrt_mod_argument_checks() {
+        let mut ctx = ReplContext::new();
+        for cmd in ["sqrt_mod(Mod(4, 15), 7)", "sqrt_mod(4, 0)", "sqrt_mod(4, -7)"] {
+            assert_eq!(sqrt_mod_err(&mut ctx, cmd).name, "ValueError", "{cmd}");
+        }
+        for cmd in ["sqrt_mod(4)", "sqrt_mod(1.5, 7)"] {
+            assert_eq!(sqrt_mod_err(&mut ctx, cmd).name, "TypeError", "{cmd}");
+        }
+        for cmd in ["sqrt_mod()", "sqrt_mod(1, 2, 3)"] {
+            assert_eq!(sqrt_mod_err(&mut ctx, cmd).name, "ArgumentError", "{cmd}");
+        }
+    }
+
+    // The prime path repeats the k = 1 decision of IntegerMod::sqrt; for every n in 2..=60 and
+    // a in 0..n the command must agree with IntegerMod: the leading root is `sqrt()`, the
+    // listed roots are `all_sqrts()` (at most 8 here), and "no square root" appears exactly
+    // when `sqrt()` is `None`.
+    #[test]
+    fn test_sqrt_mod_agrees_with_integer_mod() {
+        let mut ctx = ReplContext::new();
+        for n in 2i64..=60 {
+            for a in 0..n {
+                let text = sqrt_mod_text(&mut ctx, &format!("sqrt_mod({a}, {n})"));
+                let x = IntegerMod::new(Integer::from(a), Integer::from(n)).unwrap();
+                let expected = match x.sqrt() {
+                    None => format!("no square root: {a} is not a square mod {n}"),
+                    Some(r) => {
+                        let all: Vec<String> =
+                            x.all_sqrts().iter().map(|y| y.value().to_string()).collect();
+                        format!("{}; square roots of {a} mod {n}: [{}]", r.value(), all.join(", "))
+                    }
+                };
+                assert_eq!(text, quoted(&expected), "sqrt_mod({a}, {n})");
+                assert_eq!(text.contains("no square root"), x.sqrt().is_none(), "sqrt_mod({a}, {n})");
+            }
+        }
     }
 }

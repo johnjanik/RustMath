@@ -3,6 +3,7 @@
 //! This crate provides polynomial arithmetic over various coefficient rings.
 
 pub mod algebraic_geometry;
+pub mod berlekamp;
 pub mod bivariate;
 pub mod disc;
 pub mod elimination;

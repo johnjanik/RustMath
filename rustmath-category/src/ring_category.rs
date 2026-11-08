@@ -196,31 +196,78 @@ pub trait RingElementMethods: Ring {
 /// Blanket implementation for all rings
 impl<R: Ring> RingElementMethods for R {}
 
-/// Methods for ring parent structures (ParentMethods)
+/// Methods for ring parent structures: SageMath `Rings.ParentMethods`; MAGMA Handbook Ch. 17
+/// §17.4.2 `Characteristic` and the §17.4.3 predicates.
 ///
-/// Provides operations on the ring structure itself
+/// Three-valued like MAGMA's predicates ("true if known; false if known not; error if
+/// unknown"): `Some(_)` is a proof, `None` makes no claim (MAGMA raises an error there).
+/// `Parent::Element` need not be a `Ring`, so the defaults cannot read
+/// `Ring::static_characteristic`; they decide only what another method of the same parent
+/// proves: a parent with one element is the zero ring (characteristic 1, commutative, not a
+/// domain); a known characteristic equal to a known cardinality makes the ring `Z·1 ≅ Z/cZ`
+/// (commutative); a non-domain is not a field; a finite domain is a field. A parent that
+/// knows more overrides.
+///
+/// Default dependency order (an override may call only methods earlier in it):
+/// `Parent::cardinality`, `Parent::is_finite` → `characteristic` → `is_commutative`,
+/// `is_integral_domain` → `is_field` (→ the [`CommutativeRingParentMethods`] predicates).
+/// Because `is_integral_domain` comes before `is_field`, a parent that overrides `is_field`
+/// with `Some(true)` should also override `is_integral_domain` (a field is a domain).
 pub trait RingParentMethods: Parent {
-    /// Get the characteristic of this ring
+    /// MAGMA `Characteristic(R)` (Ch. 17 §17.4.2): the least `m >= 1` with `m·1 = 0`, or 0.
     ///
-    /// The characteristic is the smallest positive integer n such that
-    /// n·1 = 0, or 0 if no such n exists.
-    fn characteristic(&self) -> u32 {
-        0 // Default: characteristic 0
+    /// `Some(c)` is exact (`Some(1)`: the zero ring); `None` means unknown or `>= 2^64`.
+    /// Default: `Some(1)` when `Parent::cardinality` is 1 (then `1 = 0`), otherwise `None`.
+    fn characteristic(&self) -> Option<u64> {
+        if self.cardinality() == Some(1) {
+            Some(1)
+        } else {
+            None
+        }
     }
 
-    /// Check if this ring is commutative
-    fn is_commutative(&self) -> bool {
-        false // Default: not necessarily commutative
+    /// MAGMA `IsCommutative(R)` (Ch. 17 §17.4.3).
+    ///
+    /// Default: `Some(true)` for the zero ring (characteristic 1 or one element) and when a
+    /// known characteristic `c` equals a known cardinality (the additive subgroup `Z·1`
+    /// already has `c` elements, so `R = Z·1 ≅ Z/cZ`); otherwise `None`.
+    fn is_commutative(&self) -> Option<bool> {
+        let c = self.characteristic();
+        let zero_ring = c == Some(1) || self.cardinality() == Some(1);
+        let generated_by_one = match (c, self.cardinality()) {
+            (Some(c), Some(n)) => c >= 1 && u64::try_from(n) == Ok(c),
+            _ => false,
+        };
+        if zero_ring || generated_by_one {
+            Some(true)
+        } else {
+            None
+        }
     }
 
-    /// Check if this ring is an integral domain
-    fn is_integral_domain(&self) -> bool {
-        false // Default: not necessarily an integral domain
+    /// MAGMA `IsDomain(R)` (Ch. 17 §17.4.3): commutative, `1 != 0`, no zero divisors.
+    ///
+    /// Default: the zero ring (characteristic 1, or one element) is not one; otherwise `None`.
+    /// (The composite-characteristic rule of `rustmath_rings::category_methods` needs a
+    /// primality test, which this crate does not depend on.)
+    fn is_integral_domain(&self) -> Option<bool> {
+        if self.characteristic() == Some(1) || self.cardinality() == Some(1) {
+            Some(false)
+        } else {
+            None
+        }
     }
 
-    /// Check if this ring is a field
-    fn is_field(&self) -> bool {
-        false // Default: not a field
+    /// MAGMA `IsField(R)` (Ch. 17 §17.4.3).
+    ///
+    /// Default: a proven non-domain is not a field; a finite domain is one (`x ↦ ax` is
+    /// injective for `a != 0`, hence onto); otherwise `None`.
+    fn is_field(&self) -> Option<bool> {
+        match self.is_integral_domain() {
+            Some(false) => Some(false),
+            Some(true) if self.is_finite() == Some(true) => Some(true),
+            _ => None,
+        }
     }
 
     // `is_finite` is the supertrait's three-valued `Parent::is_finite` (MAGMA Ch. 17
@@ -232,21 +279,43 @@ pub trait RingParentMethods: Parent {
     }
 }
 
-/// Subcategory methods for commutative rings
+/// Subcategory methods for commutative rings (MAGMA Ch. 17 §17.4.3 `IsEuclideanDomain`,
+/// `IsPID`, `IsUFD`), three-valued as in [`RingParentMethods`].
+///
+/// The defaults use field ⇒ Euclidean domain ⇒ PID ⇒ UFD, and that a non-domain is none of
+/// them; otherwise `None`.
 pub trait CommutativeRingParentMethods: RingParentMethods {
-    /// Check if this is a principal ideal domain (PID)
-    fn is_pid(&self) -> bool {
-        false // Default: not necessarily a PID
+    /// MAGMA `IsPID(R)`: a Euclidean domain is one; a non-domain is not; otherwise `None`.
+    fn is_pid(&self) -> Option<bool> {
+        if self.is_euclidean() == Some(true) {
+            Some(true)
+        } else if self.is_integral_domain() == Some(false) {
+            Some(false)
+        } else {
+            None
+        }
     }
 
-    /// Check if this is a unique factorization domain (UFD)
-    fn is_ufd(&self) -> bool {
-        false // Default: not necessarily a UFD
+    /// MAGMA `IsUFD(R)`: a PID is one; a non-domain is not; otherwise `None`.
+    fn is_ufd(&self) -> Option<bool> {
+        if self.is_pid() == Some(true) {
+            Some(true)
+        } else if self.is_integral_domain() == Some(false) {
+            Some(false)
+        } else {
+            None
+        }
     }
 
-    /// Check if this is a Euclidean domain
-    fn is_euclidean(&self) -> bool {
-        false // Default: not necessarily Euclidean
+    /// MAGMA `IsEuclideanDomain(R)`: a field is one; a non-domain is not; otherwise `None`.
+    fn is_euclidean(&self) -> Option<bool> {
+        if self.is_field() == Some(true) {
+            Some(true)
+        } else if self.is_integral_domain() == Some(false) {
+            Some(false)
+        } else {
+            None
+        }
     }
 
     /// Get the axiom set for commutative rings
@@ -497,5 +566,150 @@ mod tests {
         let cat1 = RingCategory::new();
         let cat2 = RingCategory::default();
         assert_eq!(cat1.name(), cat2.name());
+    }
+
+    // ---- Honest parent defaults (MAGMA Ch. 17 §17.4.2, §17.4.3) ----
+    // Test parents with `Element = u8` and a `contains` that matches their cardinality.
+
+    /// A parent that overrides nothing: what every new implementor inherits.
+    #[derive(Debug, Clone)]
+    struct CatBare;
+    impl Parent for CatBare {
+        type Element = u8;
+        fn contains(&self, _: &u8) -> bool {
+            true
+        }
+    }
+    impl RingParentMethods for CatBare {}
+    impl CommutativeRingParentMethods for CatBare {}
+
+    /// The zero ring {0}, known from its cardinality only.
+    #[derive(Debug, Clone)]
+    struct CatZero;
+    impl Parent for CatZero {
+        type Element = u8;
+        fn contains(&self, x: &u8) -> bool {
+            *x == 0
+        }
+        fn cardinality(&self) -> Option<usize> {
+            Some(1)
+        }
+    }
+    impl RingParentMethods for CatZero {}
+    impl CommutativeRingParentMethods for CatZero {}
+
+    /// Q, with its predicates overridden.
+    #[derive(Debug, Clone)]
+    struct CatQ;
+    impl Parent for CatQ {
+        type Element = u8;
+        fn contains(&self, _: &u8) -> bool {
+            true
+        }
+    }
+    impl RingParentMethods for CatQ {
+        fn characteristic(&self) -> Option<u64> {
+            Some(0)
+        }
+        fn is_commutative(&self) -> Option<bool> {
+            Some(true)
+        }
+        fn is_integral_domain(&self) -> Option<bool> {
+            Some(true)
+        }
+        fn is_field(&self) -> Option<bool> {
+            Some(true)
+        }
+    }
+    impl CommutativeRingParentMethods for CatQ {}
+
+    /// Z/7 = {0, ..., 6}: cardinality and characteristic 7, known to be a domain.
+    #[derive(Debug, Clone)]
+    struct CatF7;
+    impl Parent for CatF7 {
+        type Element = u8;
+        fn contains(&self, x: &u8) -> bool {
+            *x < 7
+        }
+        fn cardinality(&self) -> Option<usize> {
+            Some(7)
+        }
+    }
+    impl RingParentMethods for CatF7 {
+        fn characteristic(&self) -> Option<u64> {
+            Some(7)
+        }
+        fn is_integral_domain(&self) -> Option<bool> {
+            Some(true)
+        }
+    }
+    impl CommutativeRingParentMethods for CatF7 {}
+
+    // At a46a6a8 a parent with no overrides answered characteristic 0 and `false` for every
+    // predicate; it now makes no claim.
+    #[test]
+    fn test_ring_parent_defaults_make_no_claim() {
+        let r = CatBare;
+        assert_eq!(
+            (
+                r.characteristic(),
+                r.is_commutative(),
+                r.is_integral_domain(),
+                r.is_field(),
+                r.is_pid(),
+                r.is_ufd(),
+                r.is_euclidean()
+            ),
+            (None, None, None, None, None, None, None)
+        );
+    }
+
+    // GAP: [Size, Characteristic, IsField, IsCommutative, Zero = One](ZmodnZ(1))
+    // -> [1, 1, false, true, true]. The zero ring is not a domain, so none of
+    // field / Euclidean domain / PID / UFD.
+    #[test]
+    fn test_zero_ring_parent_category() {
+        let r = CatZero;
+        assert_eq!(r.characteristic(), Some(1));
+        assert_eq!(r.is_commutative(), Some(true));
+        assert_eq!(
+            (
+                r.is_integral_domain(),
+                r.is_field(),
+                r.is_pid(),
+                r.is_ufd(),
+                r.is_euclidean()
+            ),
+            (
+                Some(false),
+                Some(false),
+                Some(false),
+                Some(false),
+                Some(false)
+            )
+        );
+    }
+
+    // GAP: IsEuclideanRing(Rationals) -> true, IsUniqueFactorizationRing(Rationals) -> true
+    // (GAP has no IsPrincipalIdealRing; a Euclidean domain is a PID).
+    #[test]
+    fn test_field_parent_category() {
+        let q = CatQ;
+        assert_eq!(
+            (q.is_euclidean(), q.is_pid(), q.is_ufd()),
+            (Some(true), Some(true), Some(true))
+        );
+    }
+
+    // GAP: [Characteristic, Size, IsField, IsCommutative](ZmodnZ(7)) -> [7, 7, true, true].
+    // A finite domain is a field; characteristic = cardinality gives Z·1 = Z/7, commutative.
+    #[test]
+    fn test_finite_domain_is_field_category() {
+        let f7 = CatF7;
+        assert_eq!(f7.is_commutative(), Some(true));
+        assert_eq!(
+            (f7.is_field(), f7.is_euclidean(), f7.is_pid(), f7.is_ufd()),
+            (Some(true), Some(true), Some(true), Some(true))
+        );
     }
 }

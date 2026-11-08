@@ -20,7 +20,9 @@
 //!
 //! Algorithms (no bounded search anywhere; every "no root" answer is a proof):
 //! - Tonelli–Shanks modulo an odd prime: H. Cohen, *A Course in Computational Algebraic Number
-//!   Theory*, GTM 138, Algorithm 1.5.1 ([`square_root_mod_prime`]).
+//!   Theory*, GTM 138, Algorithm 1.5.1 ([`square_root_mod_prime`], which delegates to
+//!   `rustmath_integers::Integer::sqrt_mod_prime`; a `None` comes only from a Jacobi symbol −1,
+//!   ibid. Algorithm 1.4.10).
 //! - Reduction a ≡ p^v·u (mod p^k), p ∤ u: for 0 < v < k an odd v means no root (v_p(x^2) is
 //!   even); for v = 2e every root is x = p^e·y with y^2 ≡ u (mod p^(k-2e)) (elementary).
 //! - Odd p, unit u: p-adic Newton iteration with precision doubling, J. von zur Gathen and
@@ -606,26 +608,32 @@ impl Ring for IntegerMod {
 // Multiplication in Z/nZ (and in the modulus-0 sentinel ring Z) commutes.
 impl CommutativeRing for IntegerMod {}
 
-/// Compute square root modulo a prime p
+/// A square root of `a` modulo a prime p (MAGMA `Modsqrt(n, m)` for a prime m, Handbook ch. 18
+/// §18.12.1; `SquareRoot` / `Sqrt` in GF(p), ch. 21 §21.4.7 "Order and Roots").
 ///
-/// Given a and prime p, find x such that x^2 ≡ a (mod p).
-/// Uses the Tonelli-Shanks algorithm for efficiency.
-///
-/// # Arguments
-///
-/// * `a` - The value to find the square root of
-/// * `p` - A prime number
-///
-/// # Returns
-///
-/// A square root x such that x^2 ≡ a (mod p), or None if a is not a quadratic residue.
+/// Returns `Some(x)` with 0 <= x < p and x^2 ≡ a (mod p), or `None` if no such x exists. Any
+/// integer `a` is accepted (it is reduced mod p first). Which of the two roots x, p - x is
+/// returned is unspecified; [`square_root_mod_prime_power`]`(a, p, 1)` returns the least one,
+/// and [`IntegerMod::sqrt`] handles any modulus (prime or not).
 ///
 /// # Algorithm
 ///
-/// Uses Tonelli-Shanks algorithm:
-/// 1. Check if a is a quadratic residue using Legendre symbol
-/// 2. Handle special cases (a = 0, p = 2, p ≡ 3 (mod 4))
-/// 3. For general case, use Tonelli-Shanks to find the root
+/// With b = a mod p: if the Jacobi symbol (b/p) is -1 the result is `None`. This proves that b
+/// is not a square modulo p, for every odd p, prime or not (H. Cohen, *A Course in
+/// Computational Algebraic Number Theory*, GTM 138, Algorithm 1.4.10). Otherwise the root comes
+/// from [`Integer::sqrt_mod_prime`]: b^((p+1)/4) for p ≡ 3 (mod 4), Tonelli–Shanks (ibid.
+/// Algorithm 1.5.1) otherwise, and the root is squared back before it is returned. For p = 2
+/// the root is b. So `None` is always a proof, and a returned root always squares back.
+///
+/// # Panics
+///
+/// - if `p` is rejected by [`rustmath_integers::prime::is_prime`], with the message
+///   "square_root_mod_prime: p = 15 is not prime": a composite p, p <= 1, or a negative p. A
+///   composite modulus is refused rather than answered (the old code returned a false `None`
+///   for 4 mod 15); use [`IntegerMod::sqrt`] / [`IntegerMod::all_sqrts`] for it.
+/// - if p passes `is_prime` but the root computation proves p composite. `is_prime`
+///   (Miller–Rabin to the bases 2, …, 37) is a proof only below ψ12 = 318665857834031151167461
+///   (Sorenson–Webster 2017); above it a strong pseudoprime can pass.
 ///
 /// # Example
 ///
@@ -637,81 +645,23 @@ impl CommutativeRing for IntegerMod {}
 /// let sqrt = square_root_mod_prime(&Integer::from(4), &Integer::from(7)).unwrap();
 /// let check = (sqrt.clone() * sqrt.clone()) % Integer::from(7);
 /// assert_eq!(check, Integer::from(4));
+/// // 3 is not a square mod 7: the Jacobi symbol (3/7) is -1.
+/// assert_eq!(square_root_mod_prime(&Integer::from(3), &Integer::from(7)), None);
 /// ```
 pub fn square_root_mod_prime(a: &Integer, p: &Integer) -> Option<Integer> {
-    // Reduce a modulo p
-    let (_, a_reduced) = a.div_rem(p).ok()?;
-    let a = if a_reduced.signum() < 0 {
-        a_reduced + p.clone()
-    } else {
-        a_reduced
-    };
-
-    // Special case: a = 0
-    if a.is_zero() {
-        return Some(Integer::zero());
+    assert_prime("square_root_mod_prime", p);
+    // Reduce first: for p = 2 the Kronecker symbol of an unreduced odd a is (-1)^((a^2-1)/8),
+    // e.g. (3/2) = -1, although 3 ≡ 1 is a square mod 2.
+    let b = a.modulo(p);
+    if b.kronecker_symbol(p) == -1 {
+        // The Jacobi symbol -1 proves that b is not a square modulo p.
+        return None;
     }
-
-    // Special case: p = 2
-    if p == &Integer::from(2) {
-        return Some(a);
-    }
-
-    // Check if a is a quadratic residue using Legendre symbol
-    let legendre = a.legendre_symbol(p).ok()?;
-    if legendre != 1 {
-        return None; // Not a quadratic residue
-    }
-
-    // Special case: p ≡ 3 (mod 4)
-    // In this case, x = a^((p+1)/4) is a square root
-    if p.clone() % Integer::from(4) == Integer::from(3) {
-        let exp = (p.clone() + Integer::one()) / Integer::from(4);
-        let x = a.mod_pow(&exp, p).ok()?;
-        return Some(x);
-    }
-
-    // General case: use Tonelli-Shanks algorithm
-    // Write p - 1 = 2^s * q where q is odd
-    let mut q = p.clone() - Integer::one();
-    let mut s = 0;
-    while q.clone() % Integer::from(2) == Integer::zero() {
-        q = q / Integer::from(2);
-        s += 1;
-    }
-
-    // Find a quadratic non-residue n
-    let mut n = Integer::from(2);
-    while n.legendre_symbol(p).ok()? == 1 {
-        n = n + Integer::one();
-    }
-
-    // Initialize
-    let mut x = a.mod_pow(&((q.clone() + Integer::one()) / Integer::from(2)), p).ok()?;
-    let mut b = a.mod_pow(&q, p).ok()?;
-    let mut g = n.mod_pow(&q, p).ok()?;
-    let mut r = s;
-
-    loop {
-        // Find the least m such that b^(2^m) = 1
-        let mut t = b.clone();
-        let mut m = 0;
-        while m < r && !t.is_one() {
-            t = (t.clone() * t.clone()) % p.clone();
-            m += 1;
-        }
-
-        if m == 0 {
-            return Some(x);
-        }
-
-        // Update values
-        let exp = Integer::from(2).pow((r - m - 1).try_into().ok()?);
-        let gs = g.mod_pow(&exp, p).ok()?;
-        g = (gs.clone() * gs.clone()) % p.clone();
-        x = (x * gs) % p.clone();
-        b = (b * g.clone()) % p.clone();
-        r = m;
+    match b.sqrt_mod_prime(p) {
+        Ok(r) => Some(r),
+        // `is_prime(p)` held and (b/p) != -1, so every error here is a proof that p is
+        // composite (gcd(b, p) > 1, or Tonelli-Shanks / the square-back check failed).
+        Err(e) => panic!("square_root_mod_prime: p = {p} is not prime ({e})"),
     }
 }
 
@@ -922,12 +872,19 @@ fn unit_sqrts_two(u: &Integer, j: u32) -> Vec<Integer> {
     roots
 }
 
-/// Check the prime of the public prime-power functions and convert k (see their `# Panics`).
-fn checked_prime_power_args(name: &str, p: &Integer, k: usize) -> u32 {
+/// Panic with "{name}: p = {p} is not prime" unless `p` passes
+/// [`rustmath_integers::prime::is_prime`]. Shared by the public square-root functions that take
+/// a prime (see their `# Panics`).
+fn assert_prime(name: &str, p: &Integer) {
     assert!(
         rustmath_integers::prime::is_prime(p),
         "{name}: p = {p} is not prime"
     );
+}
+
+/// Check the prime of the public prime-power functions and convert k (see their `# Panics`).
+fn checked_prime_power_args(name: &str, p: &Integer, k: usize) -> u32 {
+    assert_prime(name, p);
     u32::try_from(k).unwrap_or_else(|_| panic!("{name}: k = {k} exceeds u32::MAX"))
 }
 
@@ -956,8 +913,8 @@ fn checked_prime_power_args(name: &str, p: &Integer, k: usize) -> u32 {
 /// p < ψ12 = 318665857834031151167461 (Miller–Rabin to the bases 2, …, 37; Sorenson–Webster
 /// 2017) and a probable-prime test above it. For a prime p, `None` proves that there is no root.
 /// A composite p that passes the test is outside the contract and the result is unspecified: it
-/// can be a false `None`, or a panic from the internal square-back check (a returned root always
-/// squares back). [`IntegerMod::sqrt`] is unaffected: it gets its primes from trial division.
+/// can be a false `None`, or a panic from [`square_root_mod_prime`] or from the internal
+/// square-back check (a returned root always squares back). [`IntegerMod::sqrt`] is unaffected: it gets its primes from trial division.
 ///
 /// # Panics
 ///

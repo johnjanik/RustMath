@@ -755,13 +755,13 @@ fn binomial_mod_fixture() {
 #[test]
 fn fast_arith_pow_mod_values() {
     let (a32, a64) = (ArithInt::new(), ArithLLong::new());
-    assert_eq!(a32.pow_mod(5, 0, 1), 0); // gp: lift(Mod(5,1)^0) -> 0 (was 1)
-    assert_eq!(a64.pow_mod(5, 0, 1), 0);
+    assert_eq!(a32.pow_mod(5, 0, 1), Ok(0)); // gp: lift(Mod(5,1)^0) -> 0 (was 1)
+    assert_eq!(a64.pow_mod(5, 0, 1), Ok(0));
     // Negative bases were already normalised; kept as a guard. gp: lift(Mod(-2,7)^3) -> 6
-    assert_eq!(a32.pow_mod(-2, 3, 7), 6);
-    assert_eq!(a64.pow_mod(-2, 3, 7), 6);
+    assert_eq!(a32.pow_mod(-2, 3, 7), Ok(6));
+    assert_eq!(a64.pow_mod(-2, 3, 7), Ok(6));
     // gp: lift(Mod(-3, 1000000007)^1000000006) -> 1
-    assert_eq!(a64.pow_mod(-3, 1_000_000_006, 1_000_000_007), 1);
+    assert_eq!(a64.pow_mod(-3, 1_000_000_006, 1_000_000_007), Ok(1));
     // gp: (2*(2^63-2)) % (2^63-1) -> 9223372036854775805 (overflowed i64 before)
     assert_eq!(
         a64.add_mod(i64::MAX - 1, i64::MAX - 1, i64::MAX),
@@ -769,27 +769,44 @@ fn fast_arith_pow_mod_values() {
     );
 }
 
+// The negative-exponent and zero-modulus cases panicked (after an earlier fabricated 1). They
+// now follow Integer::mod_pow (MAGMA Modexp, §18.12.1): the inverse power when the base is
+// invertible, typed errors otherwise. More cases are in ch18_signs_roots.rs.
+
 #[test]
-#[should_panic(expected = "negative exponent")]
-fn fast_arith_int_pow_mod_negative_exponent_panics() {
-    // Was a fabricated 1; gp: lift(Mod(3,7)^-1) -> 5 needs an inverse (Integer::mod_pow).
-    ArithInt::new().pow_mod(3, -1, 7);
+fn fast_arith_int_pow_mod_negative_exponent() {
+    // gp: lift(Mod(3,7)^-1) -> 5
+    assert_eq!(ArithInt::new().pow_mod(3, -1, 7), Ok(5));
+    // gp: Mod(6,9)^-1 -> "impossible inverse in Fp_inv"
+    assert_eq!(
+        ArithInt::new().pow_mod(6, -1, 9),
+        Err(MathError::NotInvertible)
+    );
 }
 
 #[test]
-#[should_panic(expected = "negative exponent")]
-fn fast_arith_llong_pow_mod_negative_exponent_panics() {
-    ArithLLong::new().pow_mod(3, -1, 7);
+fn fast_arith_llong_pow_mod_negative_exponent() {
+    // gp: lift(Mod(3,7)^-1) -> 5
+    assert_eq!(ArithLLong::new().pow_mod(3, -1, 7), Ok(5));
+    assert_eq!(
+        ArithLLong::new().pow_mod(6, -1, 9),
+        Err(MathError::NotInvertible)
+    );
 }
 
 #[test]
-#[should_panic(expected = "modulus must be positive")]
-fn fast_arith_int_pow_mod_zero_modulus_panics() {
-    ArithInt::new().pow_mod(2, 3, 0);
+fn fast_arith_int_pow_mod_zero_modulus() {
+    // Same refusal as Integer::mod_pow(.., 0) (T1).
+    assert_eq!(
+        ArithInt::new().pow_mod(2, 3, 0),
+        Err(MathError::DivisionByZero)
+    );
 }
 
 #[test]
-#[should_panic(expected = "modulus must be positive")]
-fn fast_arith_llong_pow_mod_zero_modulus_panics() {
-    ArithLLong::new().pow_mod(2, 3, 0);
+fn fast_arith_llong_pow_mod_zero_modulus() {
+    assert_eq!(
+        ArithLLong::new().pow_mod(2, 3, 0),
+        Err(MathError::DivisionByZero)
+    );
 }

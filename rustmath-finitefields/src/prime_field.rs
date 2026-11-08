@@ -161,8 +161,28 @@ impl PrimeField {
         Ok(Integer::from(symbol as i32))
     }
 
-    /// Check if this element is a quadratic residue (perfect square in the field).
-    /// For the modulus-0 sentinel (an element of Z) this means: a perfect square.
+    /// Whether this element is a square in GF(p) (MAGMA `IsSquare(a)`, Handbook ch. 21 §21.4.4;
+    /// ch. 19 §19.5.6 for Z/pZ).
+    ///
+    /// 0 is a square in every ring. In GF(2) both elements are squares (0 = 0², 1 = 1²; in
+    /// characteristic 2 the Frobenius x ↦ x² is a bijection). For an odd prime p a non-zero a
+    /// is a square iff the Legendre symbol (a/p) is 1 (Euler's criterion; Ireland–Rosen,
+    /// GTM 84, Prop. 5.1.2).
+    ///
+    /// Decided by [`Integer::is_quadratic_residue_prime`]: `false` only on a Jacobi symbol of
+    /// −1 (a proof for every odd modulus), `true` only through a root that was squared back
+    /// (H. Cohen, GTM 138, Algorithms 1.4.10 and 1.5.1).
+    ///
+    /// For the modulus-0 sentinel (an element of Z, see the type docs) this means: a perfect
+    /// square in Z.
+    ///
+    /// # Panics
+    ///
+    /// For a **non-zero** element whose modulus is not prime ([`PrimeField::new`] does not check
+    /// primality), with "PrimeField::is_quadratic_residue: the modulus 15 is not prime (...)".
+    /// This includes a strong pseudoprime modulus (above ψ12 = 318665857834031151167461,
+    /// Sorenson–Webster 2017) for which no root can be verified. The zero element is a square
+    /// for every modulus and never panics.
     pub fn is_quadratic_residue(&self) -> bool {
         if self.value.is_zero() {
             return true;
@@ -179,8 +199,17 @@ impl PrimeField {
             };
         }
 
-        let leg = self.legendre_symbol().unwrap_or(Integer::zero());
-        leg == Integer::one()
+        // `Integer::legendre_symbol` rejects p = 2, and turning that `Err` into "not a square"
+        // made 1 a non-square in GF(2). `is_quadratic_residue_prime` decides p = 2 and returns
+        // an `Err` (never a guess) for a modulus it cannot decide.
+        self.value
+            .is_quadratic_residue_prime(&self.modulus)
+            .unwrap_or_else(|e| {
+                panic!(
+                    "PrimeField::is_quadratic_residue: the modulus {} is not prime ({e})",
+                    self.modulus
+                )
+            })
     }
 
     /// Compute discrete logarithm: given g^x = h, find x

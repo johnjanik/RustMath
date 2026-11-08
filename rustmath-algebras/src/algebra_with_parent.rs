@@ -43,9 +43,11 @@ impl<R: Ring> Parent for DownUpAlgebra<R> {
     /// and the algebra is infinite. Over the zero ring it is the zero ring.
     ///
     /// Whether the base ring is the zero ring is read off the stored parameter `alpha`
-    /// (see `base_ring_is_zero`), never from the static `R::zero()`/`R::one()`, which panic
-    /// for parent-carrying element types (Galois rings, p-adics). `DownUpAlgebra::new`
-    /// does not call those constructors, so such an algebra can be built.
+    /// (see `base_ring_is_zero`), never from the static `R::zero()`/`R::one()`: those panic
+    /// for some parent-carrying element types (the p-adic elements), and for others
+    /// (`GaloisRingElement`, `FiniteFieldElement`) they are unbound integer constants that
+    /// know nothing about the ring. `DownUpAlgebra::new` does not call those constructors,
+    /// so such an algebra can be built.
     fn is_finite(&self) -> Option<bool> {
         Some(self.base_ring_is_zero())
     }
@@ -287,10 +289,11 @@ mod tests {
         assert_eq!(algebra.cardinality(), None);
     }
 
-    // Review follow-up: `cardinality`/`is_finite` must not call the static `R::zero()` /
-    // `R::one()`, which panic for parent-carrying element types. GR(2^3, 2) is a nonzero ring
-    // (MAGMA Ch. 48: #GR(8, 2) = 8^2 = 64), so DU(a, b, c) over it has the basis
-    // u^i (du)^j d^k (Benkart and Roby, J. Algebra 209 (1998)) and is infinite.
+    // GR(2^3, 2) is a nonzero ring (MAGMA Ch. 48: #GR(8, 2) = 8^2 = 64), so DU(a, b, c)
+    // over it has the basis u^i (du)^j d^k (Benkart and Roby, J. Algebra 209 (1998)) and is
+    // infinite. (`GaloisRingElement::zero()`/`one()` no longer panic, they return unbound
+    // constants, so the guard that `cardinality`/`is_finite` never call the static
+    // constructors is `test_down_up_algebra_never_calls_static_constructors` below.)
     #[test]
     fn test_down_up_algebra_over_galois_ring_does_not_panic() {
         use rustmath_finitefields::{GaloisRing, GaloisRingElement};
@@ -306,6 +309,90 @@ mod tests {
         let algebra0 = DownUpAlgebra::<GaloisRingElement>::new(r.zero(), r.zero(), r.zero());
         assert_eq!(algebra0.cardinality(), None);
         assert_eq!(algebra0.is_finite(), Some(false));
+    }
+
+    /// Z/nZ elements that carry their modulus and whose static constructors panic, like the
+    /// p-adic element types: the guard that `DownUpAlgebra`'s `cardinality`/`is_finite` never
+    /// call `R::zero()`/`R::one()`. With n = 1 it is the zero ring (0 = 1).
+    #[derive(Clone, Debug, PartialEq)]
+    struct PanickyZn {
+        v: u64,
+        n: u64,
+    }
+
+    impl PanickyZn {
+        fn new(v: u64, n: u64) -> Self {
+            PanickyZn { v: v % n, n }
+        }
+        fn modulus(&self, other: &Self) -> u64 {
+            assert_eq!(self.n, other.n, "operands live in different rings");
+            self.n
+        }
+    }
+
+    impl std::fmt::Display for PanickyZn {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{} (mod {})", self.v, self.n)
+        }
+    }
+    impl std::ops::Add for PanickyZn {
+        type Output = Self;
+        fn add(self, o: Self) -> Self {
+            let n = self.modulus(&o);
+            PanickyZn::new(self.v + o.v, n)
+        }
+    }
+    impl std::ops::Sub for PanickyZn {
+        type Output = Self;
+        fn sub(self, o: Self) -> Self {
+            let n = self.modulus(&o);
+            PanickyZn::new(self.v + (n - o.v), n)
+        }
+    }
+    impl std::ops::Mul for PanickyZn {
+        type Output = Self;
+        fn mul(self, o: Self) -> Self {
+            let n = self.modulus(&o);
+            PanickyZn::new(self.v * o.v, n)
+        }
+    }
+    impl std::ops::Neg for PanickyZn {
+        type Output = Self;
+        fn neg(self) -> Self {
+            PanickyZn::new(self.n - self.v, self.n)
+        }
+    }
+    impl Ring for PanickyZn {
+        fn zero() -> Self {
+            panic!("PanickyZn::zero() needs a parent ring")
+        }
+        fn one() -> Self {
+            panic!("PanickyZn::one() needs a parent ring")
+        }
+        fn is_zero(&self) -> bool {
+            self.v == 0
+        }
+        fn is_one(&self) -> bool {
+            self.v == 1 % self.n
+        }
+    }
+
+    // Review follow-up (8cc9f75): `cardinality`/`is_finite` must not call the static
+    // `R::zero()`/`R::one()`. Over Z/8Z (a nonzero ring) the algebra is infinite (basis
+    // u^i (du)^j d^k, Benkart and Roby 1998); over Z/1Z (the zero ring) it has one element.
+    #[test]
+    fn test_down_up_algebra_never_calls_static_constructors() {
+        let z8 = |v| PanickyZn::new(v, 8);
+        let algebra = DownUpAlgebra::<PanickyZn>::new(z8(1), z8(3), z8(5));
+        assert_eq!(algebra.cardinality(), None);
+        assert_eq!(algebra.is_finite(), Some(false));
+        let algebra0 = DownUpAlgebra::<PanickyZn>::new(z8(0), z8(0), z8(0));
+        assert_eq!(algebra0.cardinality(), None);
+        assert_eq!(algebra0.is_finite(), Some(false));
+        let z1 = |v| PanickyZn::new(v, 1);
+        let zero_ring = DownUpAlgebra::<PanickyZn>::new(z1(0), z1(0), z1(0));
+        assert_eq!(zero_ring.cardinality(), Some(1));
+        assert_eq!(zero_ring.is_finite(), Some(true));
     }
 
     /// The zero ring {0 = 1}, for the zero-ring branch of `DownUpAlgebra`'s finiteness.

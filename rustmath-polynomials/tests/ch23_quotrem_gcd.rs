@@ -10,6 +10,12 @@
 //! `mon(p) = p/pollead(p)`. Over Z, PARI's gcd/lcm are content-aware with positive leading
 //! coefficient, i.e. already MAGMA-normalized, except that `gcd(0, p)` returns `p` as is.
 //!
+//! Two conventions are RustMath's own and **not verified against MAGMA** (the current handbook
+//! and the online calculator need a login, and no MAGMA was available): which minimal-degree
+//! remainder `Quotrem` returns over Z when the leading coefficient of the divisor is not a
+//! unit, and `Content` over a field (1 for a nonzero polynomial). The tests below pin the
+//! RustMath values; they are not MAGMA reference values.
+//!
 //! Inputs marked "formerly hung" looped forever before the fix; they run inside `within`, so
 //! a regression fails fast instead of stalling the test run. The same holds for the gcds over
 //! Q of degree 40 to 50, which plain Euclid over Q (the earlier algorithm) did not finish in
@@ -264,8 +270,9 @@ fn quotrem_over_q_matches_pari() {
 
 // ---------------------------------------------------------------------------------------
 // §23.4.10 Quotrem over Z: deg r minimal; the division stops at the first leading
-// coefficient that lc(g) does not divide. Where every step is exact the result is the
-// Z-image of PARI's divrem; otherwise the identity f = q·g + r is checked with gp.
+// coefficient that lc(g) does not divide (RustMath convention, MAGMA unverified). Where every
+// step is exact the result is the Z-image of PARI's divrem; otherwise the identity
+// f = q·g + r is checked with gp.
 // ---------------------------------------------------------------------------------------
 
 #[test]
@@ -353,6 +360,25 @@ fn quotrem_over_z_terminates_with_minimal_degree() {
         assert_eq!(qq * g.clone() + rr, f, "{name}: f = q·g + r");
         assert_eq!(f.quo_rem(&g), (eq, er), "{name}: quo_rem");
     }
+}
+
+// Over Z the minimal-degree remainder is not unique. RustMath (convention, MAGMA unverified):
+// div_rem(3x^2+x, 2x) = (0, 3x^2+x). FLINT fmpz_poly_divrem (python-flint 0.9.0,
+// divmod(3*x^2+x, 2*x)): (x, x^2+x). Both satisfy MAGMA's contract "deg r minimal": the x^2
+// coefficient of f - q'·g is 3 - 2t, odd for every integer t, so every remainder has degree 2.
+// Likewise -3x^2 by 2x: RustMath (0, -3x^2), FLINT (-2x, x^2).
+#[test]
+fn quotrem_over_z_minimal_remainder_is_not_unique() {
+    let (f, g) = (z(&[0, 1, 3]), z(&[0, 2]));
+    assert_eq!(f.div_rem(&g).unwrap(), (z(&[0]), z(&[0, 1, 3])));
+    let (qf, rf) = (z(&[0, 1]), z(&[0, 1, 1])); // FLINT
+    assert_eq!(qf * g.clone() + rf.clone(), f);
+    assert_eq!(rf.degree(), f.div_rem(&g).unwrap().1.degree()); // both degree 2 = minimal
+    assert_eq!(
+        z(&[0, 0, -3]).div_rem(&g).unwrap(),
+        (z(&[0]), z(&[0, 0, -3]))
+    );
+    assert_eq!(z(&[0, -2]) * g.clone() + z(&[0, 0, 1]), z(&[0, 0, -3])); // FLINT
 }
 
 #[test]
@@ -739,6 +765,33 @@ fn gcd_over_z_agrees_with_zx_and_satisfies_identities() {
             assert_eq!(gq, z_to_q(&gg).make_monic(), "gcd over Q for {f}, {g}");
         });
     }
+}
+
+/// `gcd(f, 0)` and `gcd(0, f)` keep the content and agree with `zx::subresultant_gcd` on 50
+/// pseudo-random f, zero included (gp: gcd(4*x+4, 0) -> 4*x + 4; the MAGMA-normalized value
+/// has a positive leading coefficient). `UnivariatePolynomial` stores 0 as `[0]` and `zx` as
+/// `[]`, so both sides go through `UnivariatePolynomial::new`.
+#[test]
+fn gcd_with_zero_agrees_with_zx_and_keeps_the_content() {
+    let zero = z(&[0]);
+    let empty: Vec<Integer> = Vec::new();
+    let mut rng = Lcg(0x0023_0005_0002);
+    let mut inputs = vec![z(&[0]), z(&[4, 4]), z(&[-4, -4]), z(&[-6]), z(&[9, 0, -6])];
+    for _ in 0..45 {
+        inputs.push(rng.zpoly(6, 30));
+    }
+    for f in inputs {
+        let a = f.gcd(&zero);
+        let b = zero.gcd(&f);
+        let r1 = ZPoly::new(zx::subresultant_gcd(f.coefficients(), &empty));
+        let r2 = ZPoly::new(zx::subresultant_gcd(&empty, f.coefficients()));
+        assert_eq!(a, r1, "gcd({f}, 0) vs zx");
+        assert_eq!(b, r2, "gcd(0, {f}) vs zx");
+        assert_eq!(a, f.normalize(), "gcd({f}, 0) = Normalize({f})");
+        assert_eq!(a.content(), f.content(), "gcd({f}, 0) keeps the content");
+    }
+    assert_eq!(z(&[4, 4]).gcd(&zero), z(&[4, 4]));
+    assert_eq!(z(&[9, 0, -6]).gcd(&zero), z(&[-9, 0, 6]));
 }
 
 // ---------------------------------------------------------------------------------------
@@ -1138,7 +1191,8 @@ fn gcd_over_q_edge_cases_match_pari() {
     );
 }
 
-// Content over a field is the ring-theoretic gcd: 1 for a nonzero polynomial, 0 for 0.
+// Content over a field is the ring-theoretic gcd: 1 for a nonzero polynomial, 0 for 0
+// (convention, MAGMA unverified; see UnivariatePolynomial::content).
 // (PARI's content(2/3*x+4/5) = 2/15 is the Z-module content, a different notion.)
 #[test]
 fn content_and_normalize_over_q() {
@@ -1236,4 +1290,187 @@ fn squarefree_decomposition_over_q_multiplicities() {
         .collect();
     d.sort_by_key(|(_, m)| *m);
     assert_eq!(d, vec![(qi(&[-2, 1]), 1), (qi(&[-1, 1]), 2)]);
+}
+
+// ---------------------------------------------------------------------------------------
+// Free functions in `factorization` (content, primitive_part, square_free_factorization,
+// is_square_free) and the method `is_square_free`, against PARI. gp -q:
+//   content(-6-9*x) -> 3; content(6-9*x) -> 3; content(0*x) -> 0;
+//   (6-9*x)/content(6-9*x) -> -3*x + 2; content((2*x^2+3)*Mod(1,5)) -> Mod(1, 5)
+// ---------------------------------------------------------------------------------------
+
+#[test]
+fn free_content_and_primitive_part_agree_with_the_methods() {
+    use rustmath_polynomials::factorization;
+    for f in [
+        z(&[-6, -9]),
+        z(&[6, -9]),
+        z(&[0]),
+        z(&[6, 9, 12]),
+        z(&[-4, -2]),
+        z(&[-5]),
+    ] {
+        assert_eq!(factorization::content(&f), f.content(), "content({f})");
+        assert_eq!(
+            factorization::primitive_part(&f),
+            f.primitive_part(),
+            "pp({f})"
+        );
+    }
+    assert_eq!(factorization::content(&z(&[-6, -9])), Integer::from(3));
+    assert_eq!(factorization::content(&z(&[6, -9])), Integer::from(3));
+    assert_eq!(factorization::content(&z(&[0])), Integer::from(0));
+    assert_eq!(factorization::primitive_part(&z(&[6, -9])), z(&[2, -3]));
+    assert_eq!(factorization::primitive_part(&z(&[0])), z(&[0]));
+    // Over a field: content 1, primitive part the polynomial itself (was 2 and x^2 + 4).
+    assert_eq!(
+        factorization::content(&fp::<5>(&[3, 0, 2])),
+        Fp::<5>::new(1)
+    );
+    assert_eq!(
+        factorization::primitive_part(&fp::<5>(&[3, 0, 2])),
+        fp::<5>(&[3, 0, 2])
+    );
+    // Over Q: 1 (convention, MAGMA unverified), was the last coefficient 12.
+    assert_eq!(factorization::content(&qi(&[6, 9, 12])), rat(1, 1));
+}
+
+// gp: issquarefree(4*x+4) -> 1; issquarefree(2*x+2) -> 1; issquarefree(Pol(4)) -> 1;
+//     issquarefree(Pol(5)) -> 1; issquarefree(Pol(0)) -> 0; issquarefree(x^2-2*x+1) -> 0;
+//     issquarefree(x^2+x) -> 1; issquarefree(6*x^2+12*x+6) -> 0;
+//     issquarefree(12*(x^2+1)^3*(x-3)^2*(2*x+1)) -> 0
+//     (Vecrev: [108, 144, 192, 456, -72, 504, -288, 216, -132, 24]);
+//     issquarefree(x^3*Mod(1,3)) -> 0; issquarefree((x^3+2)*Mod(1,3)) -> 0;
+//     issquarefree((x^2+2)*Mod(1,3)) -> 1;
+//     issquarefree((x+2)^2*(x^2+1)*Mod(1,5)) -> 0 (Vecrev lift: [4, 4, 0, 4, 1]).
+// The content is not examined (4x + 4 = 2^2 (x + 1) is square-free in this sense).
+#[test]
+fn is_square_free_matches_pari_method_and_free_function() {
+    use rustmath_polynomials::factorization;
+    let zcases: Vec<(ZPoly, bool)> = vec![
+        (z(&[4, 4]), true),
+        (z(&[2, 2]), true),
+        (z(&[4]), true),
+        (z(&[5]), true),
+        (z(&[0]), false),
+        (z(&[1, -2, 1]), false),
+        (z(&[0, 1, 1]), true),
+        (z(&[6, 12, 6]), false),
+        (
+            z(&[108, 144, 192, 456, -72, 504, -288, 216, -132, 24]),
+            false,
+        ),
+    ];
+    for (f, want) in zcases {
+        assert_eq!(f.is_square_free(), want, "is_square_free({f})");
+        assert_eq!(
+            factorization::is_square_free(&f),
+            Ok(want),
+            "free is_square_free({f})"
+        );
+    }
+    let f3: Vec<(UnivariatePolynomial<Fp<3>>, bool)> = vec![
+        (fp::<3>(&[0, 0, 0, 1]), false),
+        (fp::<3>(&[2, 0, 0, 1]), false),
+        (fp::<3>(&[2, 0, 1]), true),
+    ];
+    for (f, want) in f3 {
+        assert_eq!(f.is_square_free(), want, "is_square_free({f}) over GF(3)");
+        assert_eq!(factorization::is_square_free(&f), Ok(want));
+    }
+    let f5 = fp::<5>(&[4, 4, 0, 4, 1]);
+    assert!(!f5.is_square_free());
+    assert_eq!(factorization::is_square_free(&f5), Ok(false));
+}
+
+// gp: factor(-2*(x-1)^2*(x+2)) -> [x - 1, 2; x + 2, 1]   (Vecrev: [-4, 6, 0, -2])
+//     factor(-x^3+4*x^2-5*x+2) -> [x - 2, 1; x - 1, 2]
+//     factor(12*(x^2+1)^3*(x-3)^2*(2*x+1)) -> [x - 3, 2; 2*x + 1, 1; x^2 + 1, 3]
+//     factormod((x+1)^2*(x+2),3) -> [x + 1, 2; x + 2, 1]          (Vecrev lift: [2, 2, 1, 1])
+//     factormod((x+1)^3*(x+2),3) -> [x + 1, 3; x + 2, 1]          (Vecrev lift: [2, 1, 0, 2, 1])
+//     factormod((x+1)^2*(x+3)^3*(x^2+2),5) -> [x + 1, 2; x + 3, 3; x^2 + 2, 1]
+//                                                   (Vecrev lift: [4, 2, 2, 3, 2, 3, 1, 1])
+//     factormod(x^3,3) -> [x, 3]
+// Factors are normalized (positive leading coefficient over Z, monic over a field), sorted
+// by multiplicity; content and unit are dropped.
+#[test]
+fn free_square_free_factorization_matches_pari() {
+    use rustmath_polynomials::factorization::square_free_factorization;
+    assert_eq!(
+        square_free_factorization(&z(&[-4, 6, 0, -2])).unwrap(),
+        vec![(z(&[2, 1]), 1), (z(&[-1, 1]), 2)]
+    );
+    assert_eq!(
+        square_free_factorization(&qi(&[2, -5, 4, -1])).unwrap(),
+        vec![(qi(&[-2, 1]), 1), (qi(&[-1, 1]), 2)]
+    );
+    let big = z(&[108, 144, 192, 456, -72, 504, -288, 216, -132, 24]);
+    let d = square_free_factorization(&big).unwrap();
+    assert_eq!(
+        d,
+        vec![(z(&[1, 2]), 1), (z(&[-3, 1]), 2), (z(&[1, 0, 1]), 3)]
+    );
+    let prod = d.iter().fold(z(&[1]), |acc, (f, m)| {
+        (0..*m).fold(acc, |a, _| a * f.clone())
+    });
+    assert_eq!(prod, big.primitive_part().normalize());
+    // Characteristic p, multiplicities below p: correct.
+    assert_eq!(
+        square_free_factorization(&fp::<3>(&[2, 2, 1, 1])).unwrap(),
+        vec![(fp::<3>(&[2, 1]), 1), (fp::<3>(&[1, 1]), 2)]
+    );
+    assert_eq!(
+        square_free_factorization(&fp::<5>(&[4, 2, 2, 3, 2, 3, 1, 1])).unwrap(),
+        vec![
+            (fp::<5>(&[2, 0, 1]), 1),
+            (fp::<5>(&[1, 1]), 2),
+            (fp::<5>(&[3, 1]), 3)
+        ]
+    );
+    // A multiplicity divisible by p: an honest Err (was Ok([(x+2, 1), (x+2, 1)])).
+    assert!(matches!(
+        square_free_factorization(&fp::<3>(&[2, 1, 0, 2, 1])),
+        Err(MathError::NotSupported(_))
+    ));
+    assert!(matches!(
+        square_free_factorization(&fp::<3>(&[0, 0, 0, 1])),
+        Err(MathError::NotSupported(_))
+    ));
+    // Constants and 0: no factor of positive degree.
+    assert_eq!(square_free_factorization(&z(&[5])).unwrap(), vec![]);
+    assert_eq!(square_free_factorization(&z(&[0])).unwrap(), vec![]);
+}
+
+// The method squarefree_decomposition (over a field) in characteristic p: correct while no
+// multiplicity is divisible by p, a panic otherwise (formerly wrong values: (x+1)^3 (x+2) over
+// GF(3) gave [(x+2, 1), (x^3+1, 2)], degree 7 for a degree-4 input; x^3 gave [(x^3, 1)]).
+// gp: factormod((x+1)^2*(x+3)^3*(x^2+2),5) -> [x + 1, 2; x + 3, 3; x^2 + 2, 1]
+#[test]
+fn squarefree_decomposition_method_in_characteristic_p() {
+    assert_eq!(
+        fp::<3>(&[2, 2, 1, 1]).squarefree_decomposition(),
+        vec![(fp::<3>(&[2, 1]), 1), (fp::<3>(&[1, 1]), 2)]
+    );
+    assert_eq!(
+        fp::<5>(&[4, 2, 2, 3, 2, 3, 1, 1]).squarefree_decomposition(),
+        vec![
+            (fp::<5>(&[2, 0, 1]), 1),
+            (fp::<5>(&[1, 1]), 2),
+            (fp::<5>(&[3, 1]), 3)
+        ]
+    );
+}
+
+#[test]
+#[should_panic(expected = "a multiplicity is divisible by the characteristic")]
+fn squarefree_decomposition_method_panics_on_multiplicity_p() {
+    // gp: factormod((x+1)^3*(x+2),3) -> [x + 1, 3; x + 2, 1]
+    let _ = fp::<3>(&[2, 1, 0, 2, 1]).squarefree_decomposition();
+}
+
+#[test]
+#[should_panic(expected = "f' = 0 in positive characteristic")]
+fn squarefree_decomposition_method_panics_on_zero_derivative() {
+    // gp: factormod(x^3,3) -> [x, 3]
+    let _ = fp::<3>(&[0, 0, 0, 1]).squarefree_decomposition();
 }

@@ -376,31 +376,29 @@ impl<R: Ring> UnivariatePolynomial<R> {
         UnivariatePolynomial::new(coeffs)
     }
 
-    /// Check if polynomial is square-free (has no repeated factors)
+    /// Whether no square of a polynomial of positive degree divides `self`: the square-free
+    /// notion of MAGMA `SquarefreeFactorization` ("the factors do not contain the square of any
+    /// polynomial of degree greater than 0", Handbook ch. 23 §23.8.1) and of PARI
+    /// `issquarefree`, tested as `deg gcd(self, self') = 0`. (The ch. 23 digest lists no
+    /// polynomial `IsSquarefree`; its nearest intrinsic is `IsSeparable`.)
     ///
-    /// A polynomial is square-free if it has no repeated factors,
-    /// which is equivalent to gcd(f, f') = 1 where f' is the derivative
+    /// * The content is not examined: `4x + 4 = 2^2 (x + 1)` is square-free here (PARI
+    ///   `issquarefree(4*x+4) = 1`). For the UFD notion in `Z[x]` also test `self.content()`.
+    /// * A nonzero constant is square-free, `0` is not (PARI `issquarefree(Pol(5)) = 1`,
+    ///   `issquarefree(Pol(0)) = 0`).
+    /// * Characteristic 0 and finite fields: exactly square-freeness. In characteristic p the
+    ///   test is separability (`gcd(f, f')` constant); over a perfect field (every finite field)
+    ///   the two agree, over an imperfect field such as F_p(t) an irreducible polynomial in
+    ///   `x^p` (`x^p - t`) is reported `false`.
     pub fn is_square_free(&self) -> bool
     where
         R: EuclideanDomain,
     {
-        if self.is_zero() {
-            return false;
-        }
-
-        let derivative = self.derivative();
-
-        // If derivative is zero, polynomial is not square-free
-        // (unless it's a constant, but we handle that above)
-        if derivative.is_zero() {
-            return false;
-        }
-
-        // Square-free ⟺ gcd(f, f') is a nonzero constant. `gcd` is normalized, but over a
-        // non-field it keeps the content (gcd(4x + 4, 4) = 4 over Z), so test
-        // `degree == 0` rather than `is_one()`.
-        let g = self.gcd(&derivative);
-        g.degree() == Some(0)
+        // `gcd` is normalized, but over a non-field it keeps the content (gcd(4x + 4, 4) = 4
+        // over Z), so test `degree == 0` rather than `is_one()`. For a nonzero constant c,
+        // gcd(c, 0) = normalize(c) has degree 0; for f' = 0 and deg f >= 1, gcd(f, 0) =
+        // normalize(f) has positive degree.
+        !self.is_zero() && self.gcd(&self.derivative()).degree() == Some(0)
     }
 
     /// Construct the Sylvester matrix of two polynomials
@@ -574,6 +572,16 @@ impl<R: Ring> UnivariatePolynomial<R> {
     /// For `Z[x]`, use [`crate::zx::squarefree_decomposition`], which does the
     /// primitive-part bookkeeping that the integer case actually needs.
     ///
+    /// # Panics
+    ///
+    /// Positive characteristic is not supported: when `f' = 0` with `deg f >= 1`, or when a
+    /// multiplicity is divisible by the characteristic (detected exactly: `gcd(f, f')` still
+    /// has positive degree after the loop, which cannot happen in characteristic 0), this
+    /// panics (`unimplemented!`) instead of returning a wrong decomposition. Every factor
+    /// returned before that point is correct, so a field of characteristic p whose input has
+    /// no multiplicity divisible by p is handled. Over GF(p) use
+    /// [`crate::berlekamp::squarefree_decomposition`].
+    ///
     /// # Examples
     /// ```
     /// use rustmath_polynomials::UnivariatePolynomial;
@@ -605,7 +613,14 @@ impl<R: Ring> UnivariatePolynomial<R> {
         let fp = self.derivative();
 
         if fp.is_zero() {
-            // Characteristic p case or constant polynomial
+            if f.degree().unwrap_or(0) > 0 {
+                // f = g(x^p): every multiplicity is divisible by p.
+                unimplemented!(
+                    "squarefree_decomposition: f' = 0 in positive characteristic is not \
+                     supported; over GF(p) use berlekamp::squarefree_decomposition"
+                );
+            }
+            // A nonzero constant.
             return vec![(f, 1)];
         }
 
@@ -633,8 +648,15 @@ impl<R: Ring> UnivariatePolynomial<R> {
             i += 1;
         }
 
-        if !g.is_one() {
-            result.push((g, i));
+        // In characteristic 0 the loop leaves g = 1 (monic, every factor divided out). What
+        // remains in characteristic p is the product of the P^e with p | e, which the loop
+        // cannot see (they divide f' too).
+        if g.degree().unwrap_or(0) > 0 {
+            unimplemented!(
+                "squarefree_decomposition: a multiplicity is divisible by the characteristic; \
+                 positive characteristic is not supported (over GF(p) use \
+                 berlekamp::squarefree_decomposition)"
+            );
         }
 
         result
@@ -922,6 +944,10 @@ impl<R: Ring> Neg for UnivariatePolynomial<R> {
 /// This is division with a minimal-degree remainder, not a claim that `R[x]` is Euclidean
 /// (`Z[x]` is not; no `EuclideanDomain` impl exists for polynomials). Panics where
 /// `div_rem` returns `Err` (a zero divisor, or a lawless coefficient ring).
+///
+/// The MAGMA V2.3 handbook asks for a unit leading coefficient in `div` but only a non-zero
+/// divisor in `Quotrem` and `mod`; here `/`, `%` and `div_rem` all follow `Quotrem`
+/// (unverified against MAGMA over a non-field, see [`UnivariatePolynomial::div_rem`]).
 impl<R: Ring + EuclideanDomain> Div for UnivariatePolynomial<R> {
     type Output = Self;
 
@@ -1047,6 +1073,16 @@ impl<R: Ring> UnivariatePolynomial<R> {
     ///   remainder of minimal degree is not unique over a non-field; FLINT's
     ///   `fmpz_poly_divrem`, which keeps reducing each coefficient modulo `lc(divisor)`, can
     ///   return a different remainder of the same degree.
+    /// * MAGMA conformance: MAGMA fixes only that `deg r` is minimal (and `< deg divisor` for
+    ///   a unit leading coefficient; Handbook ch. 23 §23.4.10, and the V2.3 handbook adds
+    ///   "over the integers this will be true in general when the leading coefficient of g
+    ///   divides that of f"). Over a non-field the minimal-degree remainder is not unique, and
+    ///   which one MAGMA returns is **unverified** (the current handbook and the online
+    ///   calculator need a login; no MAGMA was available). The choice made here, stopping at
+    ///   the first leading coefficient that `lc(divisor)` does not divide, is a RustMath
+    ///   convention: `div_rem(3x^2 + x, 2x) = (0, 3x^2 + x)`. FLINT's `fmpz_poly_divrem`
+    ///   floors each leading coefficient instead and returns `(x, x^2 + x)`; both remainders
+    ///   have the minimal degree 2.
     /// * Never loops: every step lowers `deg r`, so there are at most
     ///   `deg self - deg divisor + 1` steps. If a step does not cancel the leading term
     ///   (a coefficient ring whose `div_rem` reports an exact quotient that is not one), the
@@ -1290,10 +1326,15 @@ impl<R: Ring> UnivariatePolynomial<R> {
 
     /// MAGMA `Content(p)` (Handbook ch. 23 §23.5.2): the gcd of the coefficients in `R`,
     /// normalized. Positive over Z (`content(-6 - 9x) = 3`, PARI `content(-6-9*x)`); `0` for
-    /// the zero polynomial; `1` for a nonzero polynomial over a field (every nonzero element
-    /// of a field is a unit, so the ring-theoretic gcd is 1). PARI's `content` over Q is a
-    /// different notion (the Z-module content, `content(2/3*x+4/5) = 2/15`) and is not
-    /// provided here.
+    /// the zero polynomial; `1` for a nonzero polynomial over a field.
+    ///
+    /// Over a field (Q in particular) this is a convention, **not verified against MAGMA**:
+    /// the handbook defines `Content(p)` as "the GCD of the coefficients of p, as an element
+    /// of the coefficient ring" (ch. 23 §23.5.2; V2.3 signature `RngUPolElt -> RngIntElt`,
+    /// written for Z) and does not say what that gcd is in a field. `1` is the
+    /// ring-theoretic reading (every nonzero element of a field is a unit; MAGMA `Normalize`
+    /// over a field is monic). PARI's `content` over Q is the Z-module content
+    /// (`content(2/3*x+4/5) = 2/15`), a different notion that is not provided here.
     pub fn content(&self) -> R
     where
         R: EuclideanDomain,
@@ -1303,7 +1344,7 @@ impl<R: Ring> UnivariatePolynomial<R> {
 
     /// MAGMA `PrimitivePart(p)` (Handbook ch. 23 §23.5.2): `p` divided by its content (so
     /// over Z the sign is kept: `primitive_part(-6 - 9x) = -2 - 3x`); `0` for `0`; `p` itself
-    /// over a field.
+    /// over a field (a convention not verified against MAGMA, see [`Self::content`]).
     pub fn primitive_part(&self) -> Self
     where
         R: EuclideanDomain,
@@ -1312,7 +1353,8 @@ impl<R: Ring> UnivariatePolynomial<R> {
     }
 
     /// MAGMA `ContentAndPrimitivePart(p)` (Handbook ch. 23 §23.5.2): `(content, p / content)`;
-    /// `(0, 0)` for `0`.
+    /// `(0, 0)` for `0`. Over a field `(1, p)`, a convention not verified against MAGMA (see
+    /// [`Self::content`]).
     pub fn content_and_primitive_part(&self) -> (R, Self)
     where
         R: EuclideanDomain,
