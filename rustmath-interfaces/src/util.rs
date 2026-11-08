@@ -333,8 +333,19 @@ pub fn debug_print_objects() {
 mod tests {
     use super::*;
 
+    /// The registry is one process-wide static (`OWNED_OBJECTS`), and cargo runs tests in
+    /// parallel, so every test that clears or fills it holds this lock for its whole body.
+    /// Without it, `test_object_registry` and `test_object_stats` race (one test's
+    /// `clear_object_registry` or `register_object` lands between the other's steps).
+    static REGISTRY_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    fn registry_lock() -> std::sync::MutexGuard<'static, ()> {
+        REGISTRY_TEST_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
     #[test]
     fn test_object_registry() {
+        let _guard = registry_lock();
         clear_object_registry();
 
         register_object("test_var_1".to_string(), Some("Group".to_string()));
@@ -354,6 +365,7 @@ mod tests {
 
     #[test]
     fn test_object_stats() {
+        let _guard = registry_lock();
         clear_object_registry();
 
         register_object("var1".to_string(), None);
