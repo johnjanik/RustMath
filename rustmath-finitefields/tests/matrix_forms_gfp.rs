@@ -622,6 +622,40 @@ fn forms_sentinel_natural_families() {
 }
 
 #[test]
+fn forms_sentinel_rcf_unimodular_t_with_non_unit_echelon_pivot() {
+    // On these two sentinel-only matrices (computed in Z semantics) invariant_factors
+    // answers, and the change of basis T of the rational form has det T = ±1, but the exact
+    // elimination that checks the independence of the columns of T takes the first non-zero
+    // entry of each reduced column as pivot and meets ±2 ("No inverse exists: gcd(±2, 0) =
+    // 2"), so rational_canonical_form returned Err. The certificate now decides with the
+    // division-free determinant in that case (constant term of charpoly_berkowitz(T)
+    // invertible, i.e. ±1 in Z); without that fallback this test fails.
+    // check_forms_sentinel re-checks A·T == T·C, det T = ±1 and the bound GF(2), GF(3),
+    // GF(5), GF(7) factors.
+    // gp: A5 = [1,1,1,1,1; 1,1,0,0,1; 0,1,-1,0,1; 0,0,0,0,1; 1,1,0,1,0];
+    //     matfrobenius(A5,1) = [x^5 - x^4 - 5*x^3 - 4*x^2 + 1] (= charpoly(A5) = minpoly(A5));
+    //     matfrobenius(A5*Mod(1,p),1) == Mod(1,p)*matfrobenius(A5,1) for p = 2, 3, 5, 7
+    check_forms_sentinel(
+        5,
+        &[
+            1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, -1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0,
+        ],
+        &[sp(&[1, 0, -4, -5, -1, 1])],
+    );
+    // gp: A6 = [0,0,1,0,0,1; 0,1,0,0,0,0; 0,-1,-1,0,1,-1; 1,0,0,0,0,-1; 0,0,0,0,0,0;
+    //     0,-1,0,1,1,1]; matfrobenius(A6,1) = [x^6 - x^5] (= charpoly(A6) = minpoly(A6));
+    //     matfrobenius(A6*Mod(1,p),1) == Mod(1,p)*matfrobenius(A6,1) for p = 2, 3, 5, 7
+    check_forms_sentinel(
+        6,
+        &[
+            0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, -1, -1, 0, 1, -1, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0,
+            0, 0, 0, -1, 0, 1, 1, 1,
+        ],
+        &[sp(&[0, 0, 0, 0, 0, -1, 1])],
+    );
+}
+
+#[test]
 fn forms_sparse_bound_gf2_gf3_gf5() {
     // Sparse bound matrices on which ±1 start vectors built from the bare sentinels would give
     // a hidden zero (1 + 1 = 2 in Z) and a spurious Err, or a panic in the certificate.

@@ -17,8 +17,10 @@
 //!   `dim_F F[x]^r / im R = deg det R = n`. So the invariant factors of `A` are the non-constant
 //!   diagonal entries of the Smith form of `R` (presentation theorem: D. S. Dummit and
 //!   R. M. Foote, *Abstract Algebra*, 3rd ed., §12.1–12.2; N. Jacobson, *Basic Algebra I*, 2nd
-//!   ed., §3.8–3.10). `companion.rs` takes that Smith form with
-//!   `PolynomialMatrix::smith_normal_form`.
+//!   ed., §3.8–3.10). `companion.rs` takes that Smith form without transforms for the
+//!   invariant factors, and with `P⁻¹` (up to a unit per column) for the rational form, whose
+//!   generators it computes from the reduction of the columns modulo `im R` and the Krylov
+//!   basis `u_0, …, u_{n-1}` kept in [`KrylovPresentation::basis`].
 //! * Not implemented: A. Storjohann, *An O(n³) algorithm for the Frobenius normal form*, ISSAC
 //!   1998, 101–105 \[Sto98\] (zigzag form).
 //!
@@ -45,8 +47,9 @@
 //! in `companion.rs` then fall back to the classical Smith form of `xI - A`, whose constant
 //! pivots are entries of `A`. Whenever a computation in Z semantics succeeds (either path), every
 //! pivot it inverted is ±1, so every step is unimodular over Z (Krylov basis) and Z[x] (Smith
-//! steps): the result is the one over Z, and its reduction is the result over GF(p) for every
-//! p.
+//! steps), and the change of basis `T` of the rational form has `det T = ±1` (its certificate
+//! falls back to the division-free determinant when its elimination meets a non-unit pivot):
+//! the result is the one over Z, and its reduction is the result over GF(p) for every p.
 
 use crate::polynomial_matrix::PolynomialMatrix;
 use crate::Matrix;
@@ -60,6 +63,10 @@ pub(crate) struct KrylovPresentation<F: Field> {
     /// r×r over `F[x]`, upper triangular, column j = relation j; `R[j][j]` monic of degree
     /// `k_j ≥ 1` with `Σ k_j = n`; `F^n ≅ F[x]^r / im(R)` via `e_j ↦ generators[j]`.
     pub(crate) relations: PolynomialMatrix<F>,
+    /// The Krylov basis `u_0, …, u_{n-1}` of `F^n`, block by block: block j contributes
+    /// `w, A·w, …, A^{k_j-1}·w` (`w = generators[j]`, `k_j = deg R[j][j]`), so
+    /// `u_{off_j+t} = A^t·w` with `off_j = k_0 + … + k_{j-1}`.
+    pub(crate) basis: Vec<Vec<F>>,
 }
 
 /// The constants `(z, one, neg_one)` of the field of the entries `xs`: `z = Σ x·0`, bound to
@@ -347,6 +354,7 @@ pub(crate) fn krylov_presentation<F: Field>(a: &Matrix<F>) -> Result<KrylovPrese
     Ok(KrylovPresentation {
         generators,
         relations: PolynomialMatrix::new(r, r, data)?,
+        basis: us,
     })
 }
 

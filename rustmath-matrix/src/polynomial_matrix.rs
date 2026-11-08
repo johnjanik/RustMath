@@ -16,11 +16,13 @@
 //! 409–432) for canonical forms over fields; this module does not implement it and makes no
 //! complexity claim (coefficient and degree growth over Q are not controlled).
 //!
-//! The crate-internal `smith_form_diagonal` runs the same reduction without the transforms.
+//! The crate-internal `smith_form_diagonal` runs the same reduction without the transforms, and
+//! `smith_form_with_scaled_left_inverse` tracks only `P⁻¹` (up to a unit factor per column).
 //! `companion.rs` applies the reduction to the r×r relation matrix of a Krylov presentation
 //! (`krylov.rs`, usually r = 1), and to the n×n characteristic matrix `xI - A` (whose classical
 //! reduction swells coefficients over Q geometrically in n) only as a fallback when the Krylov
-//! path fails, which happens for matrices of unbound `PrimeField` sentinels computed in Z.
+//! path fails, which happens for matrices of unbound `PrimeField` sentinels computed in Z, or
+//! for a rounding `Field` impl (`Real`) whose Krylov self-check fails.
 
 use rustmath_core::{Field, MathError, Result};
 use rustmath_polynomials::UnivariatePolynomial;
@@ -180,8 +182,8 @@ impl<F: Field> PolynomialMatrix<F> {
     /// least every two passes and a stage takes at most `2·d₀+1` passes. A stage exceeding
     /// `2·d₀+3` passes (only possible for a broken `Field` impl) returns `Err`.
     pub fn smith_normal_form(&self) -> Result<PolynomialSmithNormalForm<F>> {
-        let (diagonal, transforms) = self.smith_reduce(true)?;
-        let Some((left_transform, left_inverse, right_transform)) = transforms else {
+        let (diagonal, [p, pinv, q]) = self.smith_reduce(Track::All)?;
+        let (Some(left_transform), Some(left_inverse), Some(right_transform)) = (p, pinv, q) else {
             return Err(MathError::InvalidOperation(
                 "internal: F[x] Smith reduction lost its transforms".to_string(),
             ));
@@ -199,20 +201,48 @@ impl<F: Field> PolynomialMatrix<F> {
     /// [`Self::smith_normal_form`], with `P`, `P⁻¹` and `Q` neither allocated nor updated.
     /// Unit 1s and trailing zeros are included. Errors as for [`Self::smith_normal_form`].
     pub(crate) fn smith_form_diagonal(&self) -> Result<Vec<UnivariatePolynomial<F>>> {
-        let (s, _) = self.smith_reduce(false)?;
+        let (s, _) = self.smith_reduce(Track::Nothing)?;
         let r = s.rows.min(s.cols);
         Ok((0..r).map(|i| s.get(i, i).clone()).collect())
     }
 
-    /// The Smith reduction behind [`Self::smith_normal_form`] (`track = true`: returns
-    /// `Some((P, P⁻¹, Q))`) and [`Self::smith_form_diagonal`] (`track = false`: `None`). The
-    /// operations on `S` are identical in both modes; the transforms only follow them.
-    #[allow(clippy::type_complexity)]
-    fn smith_reduce(&self, track: bool) -> Result<(Self, Option<(Self, Self, Self)>)> {
+    /// The Smith form `S = P·M·Q` of `self` (the `diagonal` of [`Self::smith_normal_form`]:
+    /// the same reduction, pivot rule and output check) and `X = P⁻¹·D⁻¹`, where `D` is the
+    /// invertible diagonal matrix of the leading coefficients `c_k` by which the reduction makes
+    /// its pivots monic: column k of `X` is column k of `P⁻¹` divided by `c_k`. `P` and `Q` are
+    /// neither allocated nor updated. Errors as for [`Self::smith_normal_form`].
+    ///
+    /// Why `X` and not `P⁻¹`: making the k-th pivot monic is the last operation of stage k,
+    /// and later stages only operate on columns `> k` of `P⁻¹` (swaps with, additions to and
+    /// from, and scalings of columns `≥ k + 1`), so leaving out that one scaling changes
+    /// column k of the result by the unit `c_k⁻¹` and nothing else. `X` is unimodular with
+    /// `X⁻¹·M·Q = D·S`, so for a presentation matrix `M` column k of `X` still maps to a
+    /// generator of the k-th cyclic summand (annihilator `(d_k)`). Over Q, `c_k` can be a
+    /// rational of hundreds of digits (the leading coefficient of a remainder of a Euclidean
+    /// sequence), which `P⁻¹` would carry into the change of basis of the rational form.
+    pub(crate) fn smith_form_with_scaled_left_inverse(&self) -> Result<(Self, Self)> {
+        let (s, [_, x, _]) = self.smith_reduce(Track::ScaledLeftInverse)?;
+        let Some(x) = x else {
+            return Err(MathError::InvalidOperation(
+                "internal: F[x] Smith reduction lost its transforms".to_string(),
+            ));
+        };
+        Ok((s, x))
+    }
+
+    /// The Smith reduction behind [`Self::smith_normal_form`] ([`Track::All`]: returns
+    /// `[Some(P), Some(P⁻¹), Some(Q)]`), [`Self::smith_form_with_scaled_left_inverse`]
+    /// ([`Track::ScaledLeftInverse`]: `[None, Some(P⁻¹·D⁻¹), None]`) and
+    /// [`Self::smith_form_diagonal`] ([`Track::Nothing`]: all `None`). The operations on `S`
+    /// are identical in every mode; the transforms only follow them.
+    fn smith_reduce(&self, track: Track) -> Result<(Self, [Option<Self>; 3])> {
         let (m, n) = (self.rows, self.cols);
         let mut s = self.clone();
-        // (P, P⁻¹, Q) when tracked.
-        let mut tr = track.then(|| (Self::identity(m), Self::identity(m), Self::identity(n)));
+        // P, P⁻¹ and Q, each when tracked.
+        let all = track == Track::All;
+        let mut p = all.then(|| Self::identity(m));
+        let mut pinv = (track != Track::Nothing).then(|| Self::identity(m));
+        let mut q = all.then(|| Self::identity(n));
 
         // P is updated by left multiplication with an elementary E; P⁻¹ by right
         // multiplication with E⁻¹:
@@ -239,14 +269,16 @@ impl<F: Field> PolynomialMatrix<F> {
                 }
                 if pi != k {
                     s.swap_rows(k, pi);
-                    if let Some((p, pinv, _)) = tr.as_mut() {
+                    if let Some(p) = p.as_mut() {
                         p.swap_rows(k, pi);
+                    }
+                    if let Some(pinv) = pinv.as_mut() {
                         pinv.swap_cols(k, pi);
                     }
                 }
                 if pj != k {
                     s.swap_cols(k, pj);
-                    if let Some((_, _, q)) = tr.as_mut() {
+                    if let Some(q) = q.as_mut() {
                         q.swap_cols(k, pj);
                     }
                 }
@@ -262,8 +294,10 @@ impl<F: Field> PolynomialMatrix<F> {
                     }
                     let (quo, rem) = div_rem_field(s.get(i, k), &pivot)?;
                     s.row_sub_mul(i, k, &quo);
-                    if let Some((p, pinv, _)) = tr.as_mut() {
+                    if let Some(p) = p.as_mut() {
                         p.row_sub_mul(i, k, &quo);
+                    }
+                    if let Some(pinv) = pinv.as_mut() {
                         pinv.col_add_mul(k, i, &quo);
                     }
                     dirty |= !rem.is_zero();
@@ -275,7 +309,7 @@ impl<F: Field> PolynomialMatrix<F> {
                     }
                     let (quo, rem) = div_rem_field(s.get(k, j), &pivot)?;
                     s.col_sub_mul(j, k, &quo);
-                    if let Some((_, _, q)) = tr.as_mut() {
+                    if let Some(q) = q.as_mut() {
                         q.col_sub_mul(j, k, &quo);
                     }
                     dirty |= !rem.is_zero();
@@ -298,8 +332,10 @@ impl<F: Field> PolynomialMatrix<F> {
                 }
                 if let Some(i) = bad_row {
                     s.row_add(k, i);
-                    if let Some((p, pinv, _)) = tr.as_mut() {
+                    if let Some(p) = p.as_mut() {
                         p.row_add(k, i);
+                    }
+                    if let Some(pinv) = pinv.as_mut() {
                         pinv.col_sub(i, k);
                     }
                     continue;
@@ -313,9 +349,15 @@ impl<F: Field> PolynomialMatrix<F> {
                 if !c.is_one() {
                     let ci = c.inverse()?;
                     s.scale_row(k, &ci);
-                    if let Some((p, pinv, _)) = tr.as_mut() {
+                    if let Some(p) = p.as_mut() {
                         p.scale_row(k, &ci);
-                        pinv.scale_col(k, &c);
+                    }
+                    // Track::ScaledLeftInverse leaves this scaling out (see
+                    // smith_form_with_scaled_left_inverse).
+                    if all {
+                        if let Some(pinv) = pinv.as_mut() {
+                            pinv.scale_col(k, &c);
+                        }
                     }
                 }
                 break;
@@ -323,7 +365,7 @@ impl<F: Field> PolynomialMatrix<F> {
         }
 
         check_smith_structure(&s)?;
-        Ok((s, tr))
+        Ok((s, [p, pinv, q]))
     }
 
     /// Find the entry with minimal non-zero degree in the submatrix starting at (k, k):
@@ -398,6 +440,18 @@ impl<F: Field> PolynomialMatrix<F> {
             self.set(i, j, v);
         }
     }
+}
+
+/// Which transforms [`PolynomialMatrix::smith_reduce`] tracks.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Track {
+    /// None (the diagonal only).
+    Nothing,
+    /// `P⁻¹·D⁻¹` only (`D` the diagonal of the leading coefficients that make the pivots
+    /// monic; see [`PolynomialMatrix::smith_form_with_scaled_left_inverse`]).
+    ScaledLeftInverse,
+    /// `P`, `P⁻¹` and `Q`.
+    All,
 }
 
 /// The unconditional output check of [`PolynomialMatrix::smith_normal_form`]: `s` is
@@ -782,12 +836,10 @@ mod tests {
         assert_eq!(check_snf(&g7), vec![px(&[1]), px(&[-4, 1, 1])]);
     }
 
-    /// T-a7: the transform-free diagonal equals the diagonal of the full Smith form on every
-    /// matrix of the `snf_*` tests (guards the `smith_reduce(track)` refactor).
-    #[test]
-    fn smith_form_diagonal_matches_full() {
+    /// The matrices of the `snf_*` tests.
+    fn snf_cases() -> Vec<PolynomialMatrix<Rational>> {
         let z = || px(&[0]);
-        let cases = vec![
+        vec![
             pm(2, 2, vec![px(&[-2, 1]), z(), z(), px(&[-3, 1])]),
             pm(
                 2,
@@ -866,11 +918,53 @@ mod tests {
             PolynomialMatrix::<Rational>::zero(0, 0),
             PolynomialMatrix::<Rational>::zero(0, 2),
             PolynomialMatrix::<Rational>::zero(2, 0),
-        ];
-        for m in &cases {
+        ]
+    }
+
+    /// T-a7: the transform-free diagonal equals the diagonal of the full Smith form on every
+    /// matrix of the `snf_*` tests (guards the `smith_reduce(track)` refactor).
+    #[test]
+    fn smith_form_diagonal_matches_full() {
+        for m in &snf_cases() {
             let full = check_snf(m);
             assert_eq!(m.smith_form_diagonal().unwrap(), full);
         }
+    }
+
+    /// `smith_form_with_scaled_left_inverse` returns the full Smith form's `S` and an `X` with
+    /// `P·X` diagonal with invertible constant entries, i.e. `X = P⁻¹·D⁻¹`, `D` invertible
+    /// diagonal (column k of `X` is a unit multiple of column k of `P⁻¹`), on every matrix of
+    /// the `snf_*` tests and on one more with non-monic pivots (where some `c_k ≠ 1`).
+    #[test]
+    fn scaled_left_inverse_is_p_inverse_up_to_column_units() {
+        let mut cases = snf_cases();
+        // Entries with non-unit leading coefficients (as in g7 of snf_g6_g7), so the pivots
+        // are not monic. gp: matsnf([3*x^2+3, 3*x; 6*x, 3*x^2+6*x]) =
+        //     [x^4 + 2*x^3 - x^2 + 2*x, 1]
+        cases.push(pm(
+            2,
+            2,
+            vec![px(&[3, 0, 3]), px(&[0, 3]), px(&[0, 6]), px(&[0, 6, 3])],
+        ));
+        let mut some_scaled = false;
+        for m in &cases {
+            let full = m.smith_normal_form().unwrap();
+            let (s, x) = m.smith_form_with_scaled_left_inverse().unwrap();
+            assert_eq!(s, full.diagonal);
+            let px_ = full.left_transform.mul(&x).unwrap();
+            for i in 0..m.rows() {
+                for j in 0..m.rows() {
+                    let e = px_.get(i, j);
+                    if i == j {
+                        assert_eq!(e.degree(), Some(0), "P·X not a unit at ({i}, {i})");
+                        some_scaled |= e.coeff(0) != &Rational::from_integer(1);
+                    } else {
+                        assert!(e.is_zero(), "P·X not diagonal at ({i}, {j})");
+                    }
+                }
+            }
+        }
+        assert!(some_scaled, "no case with a non-monic pivot");
     }
 
     #[test]
