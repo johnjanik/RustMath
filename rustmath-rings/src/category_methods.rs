@@ -1073,8 +1073,9 @@ mod tests {
 
         assert!(!characteristic_rules_out_domain(18_446_744_073_709_551_557)); // 2^64 - 59
         assert!(characteristic_rules_out_domain(18_446_744_073_709_551_555)); // 2^64 - 61
-                                                                              // Boundary values: 0 and primes decide nothing; 1 and composites do.
-                                                                              // PARI: isprime([2,3,4,6,7,8,25,561]) = [1,1,0,0,1,0,0,0] (561 = 3*11*17, Carmichael).
+
+        // Boundary values: 0 and primes decide nothing; 1 and composites do.
+        // PARI: isprime([2,3,4,6,7,8,25,561]) = [1,1,0,0,1,0,0,0] (561 = 3*11*17, Carmichael).
         for (c, rules_out) in [
             (0, false),
             (1, true),

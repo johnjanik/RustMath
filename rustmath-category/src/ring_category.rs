@@ -664,9 +664,20 @@ mod tests {
         );
     }
 
-    // GAP: [Size, Characteristic, IsField, IsCommutative, Zero = One](ZmodnZ(1))
-    // -> [1, 1, false, true, true]. The zero ring is not a domain, so none of
-    // field / Euclidean domain / PID / UFD.
+    // GAP 4.12.1: [Size, Characteristic, IsField, IsCommutative, Zero = One](ZmodnZ(1))
+    // -> [1, 1, false, true, true], and IsIntegralRing(ZmodnZ(1)) -> false: the zero ring
+    // (1 = 0) is not a domain, which gives `is_integral_domain` = Some(false).
+    // The Euclidean / PID / UFD answers come from the definitions, not from GAP. MAGMA's
+    // `IsEuclideanDomain`, `IsPID` and `IsUFD` (Ch. 17 §17.4.3) are domain predicates, and a
+    // non-domain is none of them. GAP 4.12.1 answers IsEuclideanRing(ZmodnZ(1)) -> true and
+    // IsUniqueFactorizationRing(ZmodnZ(1)) -> true, but those are categories GAP attaches to
+    // every ZmodnZ(n) when it builds the ring (lib/zmodnz.gd, InstallTrueMethod for
+    // IsEuclideanRing); by the same route it answers IsIntegralRing(ZmodnZ(6)) -> true,
+    // although 2 * 3 = 0. GAP's own manual (§56.6-1, §56.4-2) defines both as integral rings.
+    // These answers are therefore GAP artifacts, not reference values, and must not be used
+    // to "correct" this test. The Ch. 17 digest does not discuss the zero ring itself; it
+    // defines `IsDomain` as "integral domain", and the usual convention that a domain has
+    // 1 != 0 is the one `RingParentMethods::is_integral_domain` documents.
     #[test]
     fn test_zero_ring_parent_category() {
         let r = CatZero;

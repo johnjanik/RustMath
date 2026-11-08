@@ -574,13 +574,16 @@ impl<R: Ring> UnivariatePolynomial<R> {
     ///
     /// # Panics
     ///
-    /// Positive characteristic is not supported: when `f' = 0` with `deg f >= 1`, or when a
-    /// multiplicity is divisible by the characteristic (detected exactly: `gcd(f, f')` still
-    /// has positive degree after the loop, which cannot happen in characteristic 0), this
-    /// panics (`unimplemented!`) instead of returning a wrong decomposition. Every factor
-    /// returned before that point is correct, so a field of characteristic p whose input has
-    /// no multiplicity divisible by p is handled. Over GF(p) use
-    /// [`crate::berlekamp::squarefree_decomposition`].
+    /// Positive characteristic is supported only in part. This panics (`unimplemented!`)
+    /// instead of returning a wrong decomposition when `f' = 0` with `deg f >= 1`, or when
+    /// `gcd(f, f')` still has positive degree after the loop (impossible in characteristic
+    /// 0). In characteristic p both happen exactly when `f` has an irreducible factor `P`
+    /// whose multiplicity is divisible by p or with `P' = 0` (an inseparable `P`, which exists
+    /// only over an imperfect field such as F_p(t)); over a perfect field (every finite field)
+    /// that is exactly when some multiplicity is divisible by p.
+    ///
+    /// When it returns, the decomposition is correct. Over GF(p) use
+    /// [`crate::berlekamp::squarefree_decomposition`], which handles every multiplicity.
     ///
     /// # Examples
     /// ```
@@ -1019,7 +1022,7 @@ fn as_rationals<R: EuclideanDomain>(coeffs: &[R]) -> Option<Vec<Rational>> {
 
 /// The primitive integer associate of a nonzero `f` in Q[x]: `pp(L·f)` with `L` the lcm of
 /// the denominators, so its coefficients are coprime integers, and the sign of `f` is kept.
-fn primitive_integer_associate(f: &[Rational]) -> UnivariatePolynomial<Integer> {
+pub(crate) fn primitive_integer_associate(f: &[Rational]) -> UnivariatePolynomial<Integer> {
     let l = f
         .iter()
         .fold(Integer::one(), |l, c| l.lcm(c.denominator()).abs());

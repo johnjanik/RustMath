@@ -376,17 +376,50 @@ fn is_perfect_power_inline() {
     assert_eq!(p(i(-64)), Some((i(-4), 3))); // gp: pp(-64) -> [3, -4]
     assert_eq!(p(i(-4)), None); // gp: pp(-4) -> [0, 0]
     assert_eq!(p(i(-32)), Some((i(-2), 5))); // gp: pp(-32) -> [5, -2]
-                                             // Exponents beyond the old cap of 64 (which reported "not a power").
+
+    // Exponents beyond the old cap of 64 (which reported "not a power").
     assert_eq!(p(i(2).pow(67)), Some((i(2), 67))); // gp: pp(2^67) -> [67, 2]
     assert_eq!(p(-i(2).pow(67)), Some((i(-2), 67))); // gp: pp(-2^67) -> [67, -2]
     assert_eq!(p(i(2).pow(128)), Some((i(2), 128))); // gp: pp(2^128) -> [128, 2]
     assert_eq!(p(i(10).pow(60)), Some((i(10), 60))); // gp: pp(10^60) -> [60, 10]
     assert_eq!(p(-i(10).pow(60)), Some((i(-10000), 15))); // gp: pp(-10^60) -> [15, -10000]
     assert_eq!(p(-i(3).pow(41)), Some((i(-3), 41))); // gp: pp(-3^41) -> [41, -3]
-                                                     // gp: pp(0), pp(1), pp(-1), pp(12) -> [0, 0] (outside MAGMA's domain n > 1 for |n| <= 1)
+
+    // gp: pp(0), pp(1), pp(-1), pp(12) -> [0, 0] (outside MAGMA's domain n > 1 for |n| <= 1)
     for a in [0, 1, -1, 12] {
         assert_eq!(p(i(a)), None, "is_perfect_power({a})");
     }
+}
+
+#[test]
+fn is_perfect_power_sieve_inline() {
+    // The power-residue sieve skips the exact root for exponents it refutes; every answer
+    // below still matches gp. gp: pp(a)=my(r,k=ispower(a,,&r)); [k, if(k,r,0)]
+    let p = |a: Integer| a.is_perfect_power();
+    let two = i(2);
+    // A large non-power: gp pp(2^20000+1) -> [0, 0]. Before the sieve this paid one
+    // BigUint::nth_root per prime q < 20000 (about 50 s in a debug build).
+    assert_eq!(p(two.pow(20000) + i(1)), None);
+    // gp: pp(2^4096+1), pp(10^1000+1), pp(10^1000-1) -> [0, 0]
+    assert_eq!(p(two.pow(4096) + i(1)), None);
+    assert_eq!(p(i(10).pow(1000) + i(1)), None);
+    assert_eq!(p(i(10).pow(1000) - i(1)), None);
+    // Genuine powers pass the sieve and are found by the exact root.
+    assert_eq!(p(i(3).pow(20011)), Some((i(3), 20011))); // gp: pp(3^20011) -> [20011, 3]
+    assert_eq!(p(-i(3).pow(100055)), Some((i(-3), 100055))); // gp: pp(-3^100055) -> [100055, -3]
+    let m61 = two.pow(61) - i(1);
+    // gp: pp((2^61-1)^331) -> [331, 2^61-1]; pp(-(2^61-1)^662) -> [331, -(2^61-1)^2]
+    assert_eq!(p(m61.pow(331)), Some((m61.clone(), 331)));
+    assert_eq!(p(-m61.pow(662)), Some((-m61.pow(2), 331)));
+    // 53599 = 7*13*19*31 is divisible by every sieve prime for q = 3 (7, 13, 19, 31), so the
+    // sieve cannot refute a cube there and the exact root decides.
+    // gp: pp(53599), pp(53599^3), pp(2*53599^3), pp(-53599^5)
+    //     -> [0, 0], [3, 53599], [0, 0], [5, -53599]
+    let c = i(7 * 13 * 19 * 31);
+    assert_eq!(p(c.clone()), None);
+    assert_eq!(p(c.pow(3)), Some((c.clone(), 3)));
+    assert_eq!(p(i(2) * c.pow(3)), None);
+    assert_eq!(p(-c.pow(5)), Some((-c.clone(), 5)));
 }
 
 fn check_perfect_power_rows(csv: &str) -> usize {
