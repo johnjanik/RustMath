@@ -11,12 +11,22 @@
 //!   before they are returned.
 //! - `binomial_mod` reduces the generalised binomial C(n, k) (any n, k) modulo a prime p with
 //!   Lucas' theorem and C(n, k) = (-1)^k C(k-n-1, k).
+//! - §18.6 `Gcd`, `Lcm`, `Xgcd`: [`Integer::gcd`] and [`Integer::lcm`] are non-negative, and
+//!   [`Integer::extended_gcd`] returns `g >= 0` (`g = 0` only for `(0, 0)`), by Euclid's
+//!   algorithm on the magnitudes ([Knu97] §4.5.2).
+//! - §18.4.8 `Iroot` and §18.4.5 `IsPower`: [`Integer::nth_root`] is the floor of the real
+//!   n-th root (also for negative `self` and odd n); [`Integer::is_power`] and
+//!   [`Integer::is_perfect_power`] follow `IsPower(n, k)` / `IsPower(n)` and PARI/GP
+//!   `ispower` for negative inputs. `is_perfect_power` strips prime exponents q <= log2 |n|
+//!   ([Ber98] §1), so it decides every input with no cap on the exponent.
 //!
 //! References:
 //! - [Coh93] H. Cohen, *A Course in Computational Algebraic Number Theory*, GTM 138,
 //!   Springer 1993, Algorithms 1.4.10 and 1.5.1.
-//! - [Knu97] D. E. Knuth, *The Art of Computer Programming* vol. 2, 3rd ed., §4.6.3
-//!   (binary exponentiation).
+//! - [Knu97] D. E. Knuth, *The Art of Computer Programming* vol. 2, 3rd ed., §4.5.2
+//!   (Euclid's algorithm, extended) and §4.6.3 (binary exponentiation).
+//! - [Ber98] D. J. Bernstein, *Detecting perfect powers in essentially linear time*, Math.
+//!   Comp. 67 (1998) 1253-1283, §1 (n = b^k with b >= 2 forces k <= log2 n).
 //! - E. Lucas, *Théorie des fonctions numériques simplement périodiques*, Amer. J. Math. 1
 //!   (1878) 184-240, 289-321 (Lucas' theorem); Graham-Knuth-Patashnik, *Concrete
 //!   Mathematics*, eq. (5.14) (negating the upper index).
@@ -88,17 +98,30 @@ impl Integer {
         }
     }
 
-    /// Compute GCD using Euclidean algorithm
+    /// Greatest common divisor (MAGMA `Gcd(m, n)`, Handbook ch. 18 §18.6): always
+    /// non-negative; `|m|` when `n = 0` (and vice versa); `0` for `(0, 0)`. PARI/GP `gcd`
+    /// gives the same values: `gcd(4, -6) = 2`, `gcd(0, -5) = 5`.
+    ///
+    /// Euclid's algorithm on `|m|` and `|n|` ([Knu97] §4.5.2).
     pub fn gcd(&self, other: &Self) -> Self {
         EuclideanDomain::gcd(self, other)
     }
 
-    /// Compute LCM
+    /// Least common multiple (MAGMA `Lcm(m, n)`, Handbook ch. 18 §18.6): the smallest
+    /// non-negative common multiple, so `lcm(m, n) · gcd(m, n) = |m · n|`; `0` when `m` or `n`
+    /// is `0`. PARI/GP: `lcm(-4, -6) = 12`.
     pub fn lcm(&self, other: &Self) -> Self {
         EuclideanDomain::lcm(self, other)
     }
 
-    /// Extended Euclidean algorithm
+    /// Extended gcd (MAGMA `Xgcd(m, n)`, Handbook ch. 18 §18.6): `(g, x, y)` with
+    /// `g = gcd(m, n) = x·m + y·n` and `g >= 0`; `g = 0` only for `(0, 0)`, which gives
+    /// `(0, 0, 0)`.
+    ///
+    /// The multipliers are those of the extended Euclidean algorithm ([Knu97] §4.5.2) with
+    /// truncated quotients, negated together with `g` when `g` comes out negative. They equal
+    /// PARI/GP `gcdext(m, n)` (which returns `[x, y, g]`): `xgcd(3, -7) = (1, -2, -1)`,
+    /// `xgcd(0, -5) = (5, 0, -1)`.
     pub fn extended_gcd(&self, other: &Self) -> (Self, Self, Self) {
         EuclideanDomain::extended_gcd(self, other)
     }
@@ -211,48 +234,41 @@ impl Integer {
         }
     }
 
-    /// Compute nth root (floor(n-th root))
+    /// The floor of the real n-th root: the largest integer `r` with `r^n <= self`.
     ///
-    /// Returns the largest integer r such that r^n <= self
+    /// For `self >= 0` this is MAGMA `Iroot(a, n)` (Handbook ch. 18 §18.4.8) and PARI/GP
+    /// `sqrtnint(a, n)`. MAGMA and PARI define it only for `a >= 0`; for `self < 0` and odd
+    /// `n` the real root exists and this returns its floor, `-ceil(|self|^(1/n))`:
+    /// `nth_root(-8, 3) = -2`, `nth_root(-9, 3) = -3`. That is not the truncation toward zero
+    /// of GMP `mpz_root` or Sage `nth_root(truncate_mode=1)`, which give `-2` for `-9`.
+    ///
+    /// The root of `|self|` is `num_bigint::BigUint::nth_root` (exact floor root).
+    ///
+    /// # Errors
+    ///
+    /// `InvalidArgument` when `n = 0`, or when `self < 0` and `n` is even.
     pub fn nth_root(&self, n: u32) -> Result<Self> {
         if n == 0 {
-            return Err(MathError::InvalidArgument("Root degree cannot be 0".to_string()));
+            return Err(MathError::InvalidArgument(
+                "Root degree cannot be 0".to_string(),
+            ));
         }
 
-        if self.signum() < 0 && n % 2 == 0 {
+        if self.signum() < 0 && n.is_multiple_of(2) {
             return Err(MathError::InvalidArgument(
                 "Even root of negative number".to_string(),
             ));
         }
 
-        if n == 1 {
-            return Ok(self.clone());
+        let mag = self.value.magnitude();
+        let t = mag.nth_root(n);
+        if !self.value.is_negative() {
+            return Ok(Integer::new(BigInt::from(t)));
         }
-
-        if n == 2 {
-            return self.sqrt();
-        }
-
-        if self.is_zero() || self.is_one() {
-            return Ok(self.clone());
-        }
-
-        // Newton's method for nth root: x_{k+1} = ((n-1)*x_k + a/x_k^(n-1)) / n
-        let mut x = self.clone();
-        let n_int = Integer::from(n);
-        let n_minus_1 = Integer::from(n - 1);
-
-        loop {
-            let x_pow = x.pow(n - 1);
-            let (quotient, _) = self.div_rem(&x_pow)?;
-            let numerator = n_minus_1.clone() * x.clone() + quotient;
-            let (next, _) = numerator.div_rem(&n_int)?;
-
-            if next >= x {
-                return Ok(x);
-            }
-            x = next;
-        }
+        // self < 0 and n odd: floor(self^(1/n)) = -ceil(|self|^(1/n)). t^n <= |self|, so the
+        // check below never builds a number larger than |self|.
+        let r = if &t.pow(n) == mag { t } else { t + 1u32 };
+        Ok(Integer::new(-BigInt::from(r)))
     }
 
     /// Get all positive divisors of this number
@@ -387,27 +403,24 @@ impl Integer {
         Ok(result)
     }
 
-    /// Check if the number is a perfect k-th power
+    /// Whether `self = b^k` for some integer `b` (MAGMA `IsPower(n, k)`, Handbook ch. 18
+    /// §18.4.5; PARI/GP `ispower(n, k)`).
     ///
-    /// Returns true if self = a^k for some integer a and the given k
+    /// MAGMA defines it for `n > 1` and `k > 1`; outside that range this answers the same
+    /// question: every integer is a first power, `0 = 0^k` for `k >= 1`, a negative number is
+    /// a k-th power only for odd `k` (`-8 = (-2)^3`, but `-4` is not a square), and `b^0 = 1`
+    /// for every `b`, so `k = 0` gives `true` only for `1`.
     pub fn is_power(&self, k: u32) -> bool {
         if k == 0 {
+            return self.is_one();
+        }
+        if self.signum() < 0 && k.is_multiple_of(2) {
             return false;
         }
-        if k == 1 {
-            return true;
-        }
-
-        if self.abs() <= Integer::one() {
-            return true;
-        }
-
-        let n = self.abs();
-        if let Ok(root) = n.nth_root(k) {
-            root.pow(k) == n
-        } else {
-            false
-        }
+        // For odd k, (-t)^k = -t^k, so testing |self| decides negative self too. The test
+        // power t^k is at most |self| (t is the floor root).
+        let mag = self.value.magnitude();
+        &mag.nth_root(k).pow(k) == mag
     }
 
     /// Get digits of the number in the given base
@@ -543,24 +556,62 @@ impl Integer {
         factors.iter().all(|(_, exp)| *exp == 1)
     }
 
-    /// Check if the number is a perfect power (n = a^k for some k >= 2)
+    /// Perfect-power decomposition (MAGMA `IsPower(n)`, Handbook ch. 18 §18.4.5; PARI/GP
+    /// `ispower(n, , &b)`).
+    ///
+    /// - `self > 1`: `Some((b, k))` with `self = b^k`, `k >= 2` maximal and so `b >= 2`
+    ///   minimal (MAGMA's "minimal positive b and its associated k"): `64 -> (2, 6)`,
+    ///   `2^67 -> (2, 67)`. `None` when `self` is not a perfect power.
+    /// - `self < -1`: `Some((b, k))` with `b < 0` and `k` the largest **odd** exponent with
+    ///   `self = b^k`, as PARI/GP returns: `-64 -> (-4, 3)`, `-32 -> (-2, 5)`. `None` when
+    ///   there is no odd exponent `k >= 3` (`-4` is not a perfect power).
+    /// - `|self| <= 1`: `None`. This is PARI's convention (`ispower(0)` = `ispower(±1)` = 0)
+    ///   and lies outside MAGMA's domain `n > 1`; it does not claim that 0 and ±1 are not
+    ///   powers (`1 = 1^k`).
+    ///
+    /// Algorithm: write `|self| = c^m` with `c` not a perfect power. `|self|` is a j-th power
+    /// iff `j | m`, and `c >= 2` gives `m <= log2 |self|` ([Ber98] §1). So stripping exact
+    /// q-th roots for each prime `q` (ascending, while `q` is below the bit length of what
+    /// remains) finds `m` exactly: the search covers every possible exponent and decides
+    /// every input. For `self < 0` only odd primes are stripped. Cost: one exact integer root
+    /// per prime `q <= log2 |self|`.
+    ///
+    /// # Panics
+    ///
+    /// Only on inputs of more than `u32::MAX` bits (512 MiB), where the exponent would not
+    /// fit the `u32` result.
     pub fn is_perfect_power(&self) -> Option<(Self, u32)> {
         if self.abs() <= Integer::one() {
             return None;
         }
-
-        let n = self.abs();
-
-        // Try small exponents
-        for k in 2..=64 {
-            if let Ok(root) = n.nth_root(k) {
-                if root.pow(k) == n {
-                    return Some((root, k));
+        let negative = self.value.is_negative();
+        let mut base = self.value.magnitude().clone();
+        let bits = u32::try_from(base.bits())
+            .expect("is_perfect_power: input has more than u32::MAX bits");
+        let mut k: u32 = 1;
+        for q in crate::fast_arith::prime_range(2, u64::from(bits) + 1) {
+            // base = d^q with d >= 2 forces 2^q <= base, i.e. q < bits(base).
+            if q >= base.bits() {
+                break;
+            }
+            if negative && q == 2 {
+                continue; // a negative number is only an odd power
+            }
+            let q = q as u32; // q < bits(base) <= u32::MAX
+            loop {
+                let r = base.nth_root(q);
+                if r.pow(q) != base {
+                    break;
                 }
+                base = r;
+                k *= q; // base >= 2 and base^k = |self|, so k < bits(|self|) <= u32::MAX
             }
         }
-
-        None
+        if k == 1 {
+            return None;
+        }
+        let b = BigInt::from(base);
+        Some((Integer::new(if negative { -b } else { b }), k))
     }
 
     /// Compute the radical of n (product of distinct prime factors)
@@ -1407,6 +1458,50 @@ impl EuclideanDomain for Integer {
         let r = &self.value % &other.value;
 
         Ok((Integer::new(q), Integer::new(r)))
+    }
+
+    /// MAGMA `Gcd(m, n)` (Handbook ch. 18 §18.6): non-negative; `|m|` when `n = 0`; `0` for
+    /// `(0, 0)`. Euclid's algorithm on `|m|`, `|n|` ([Knu97] §4.5.2), so the result is
+    /// non-negative by construction. (The trait default runs Euclid over the truncating
+    /// `div_rem`, whose last remainder is `±gcd`.) A division-based Euclid costs a single
+    /// division when one operand is small, e.g. `gcd(num, 1)` in `Rational::new`; binary gcd
+    /// (Stein) is far slower on such unbalanced inputs.
+    fn gcd(&self, other: &Self) -> Self {
+        let mut a = self.value.magnitude().clone();
+        let mut b = other.value.magnitude().clone();
+        while !b.is_zero() {
+            let r = &a % &b;
+            a = b;
+            b = r;
+        }
+        Integer::new(BigInt::from(a))
+    }
+
+    /// MAGMA `Lcm(m, n)` (Handbook ch. 18 §18.6): `|m| / gcd(m, n) · |n|`, so
+    /// `lcm · gcd = |m · n|`; `0` when `m` or `n` is `0`.
+    fn lcm(&self, other: &Self) -> Self {
+        if self.is_zero() || other.is_zero() {
+            return Integer::zero();
+        }
+        let g = EuclideanDomain::gcd(self, other);
+        Integer::new(BigInt::from(
+            self.value.magnitude() / g.value.magnitude() * other.value.magnitude(),
+        ))
+    }
+
+    /// MAGMA `Xgcd(m, n)` (Handbook ch. 18 §18.6): `(g, x, y)` with `g = x·m + y·n`,
+    /// `g >= 0`, and `g = 0` only for `(0, 0)`, which gives `(0, 0, 0)` as PARI/GP
+    /// `gcdext(0, 0)` and GMP `mpz_gcdext` do.
+    ///
+    /// `num_integer::Integer::extended_gcd` runs the same truncated-quotient extended Euclid
+    /// as the trait default ([Knu97] §4.5.2) and negates `(g, x, y)` when `g < 0`; the
+    /// triples equal PARI/GP `gcdext` (see `tests/ch18_signs_roots.rs`).
+    fn extended_gcd(&self, other: &Self) -> (Self, Self, Self) {
+        if self.is_zero() && other.is_zero() {
+            return (Integer::zero(), Integer::zero(), Integer::zero());
+        }
+        let e = num_integer::Integer::extended_gcd(&self.value, &other.value);
+        (Integer::new(e.gcd), Integer::new(e.x), Integer::new(e.y))
     }
 
     /// The sign: MAGMA `Normalize` over Z (Handbook ch. 23 §23.5.1) takes the associate with

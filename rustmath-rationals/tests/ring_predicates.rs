@@ -6,7 +6,7 @@
 //! `Order(2/3)` -> infinity, `Order(-1)` -> 2; PARI `1/(2/3)` -> 3/2.
 
 use rustmath_core::{MathError, MultiplicativeOrder, Ring};
-use rustmath_rationals::Rational;
+use rustmath_rationals::{Rational, SageRational};
 
 fn q(n: i64, d: i64) -> Rational {
     Rational::new(n, d).unwrap()
@@ -43,4 +43,18 @@ fn reciprocal_of_negative_is_canonical() {
     assert_eq!(q(-2, 3).reciprocal(), Ok(q(-3, 2)));
     assert!((-q(-1, 1).reciprocal().unwrap()).is_one());
     assert_eq!(q(-2, 3).unit_inverse(), Ok(q(-3, 2)));
+}
+
+// `SageRational::multiplicative_order` returns the core enum, so 0 (`NotAUnit`) and elements of
+// infinite order are distinguishable; it must agree with the `Ring` hook.
+#[test]
+fn sage_rational_multiplicative_order_matches_ring_hook() {
+    for (n, d) in [(0, 1), (1, 1), (-1, 1), (2, 3), (-5, 7)] {
+        let x = q(n, d);
+        assert_eq!(
+            SageRational::from(x.clone()).multiplicative_order(),
+            x.multiplicative_order_status(),
+            "{n}/{d}"
+        );
+    }
 }

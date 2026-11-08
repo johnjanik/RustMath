@@ -182,7 +182,8 @@ impl<R: EuclideanDomain> Matrix<R> {
                 // non-dividing case, where the new pivot gcd(pivot, target)
                 // has strictly smaller norm. Using the rotation in the
                 // dividing case does not terminate: `extended_gcd(a, -a)`
-                // returns `(-a, 0, 1)` — same norm, columns rotated — and
+                // is a Bezout rotation with |g| = |a| (`(|a|, 0, -sign(a))`)
+                // — same norm, columns rotated — and
                 // the outer loop 2-cycles forever (observed on the 0/±1
                 // boundary matrices of simplicial homology).
                 let mut changed = false;
@@ -770,7 +771,7 @@ mod tests {
         // Regression: the simplicial boundary matrix d_1 of S^1 (all entries
         // 0/±1). The pre-fix elimination loop 2-cycled forever on this
         // matrix, because with pivot | target the Bezout rotation
-        // (extended_gcd(a, -a) = (-a, 0, 1)) preserves the pivot norm.
+        // (extended_gcd(a, -a), a rotation with |g| = |a|) preserves the pivot norm.
         // SymPy: smith_normal_form([[-1,-1,0],[1,0,-1],[0,1,1]]) = diag(1,1,0).
         let a = zmat(3, 3, &[-1, -1, 0, 1, 0, -1, 0, 1, 1]);
         let mut snf = a.smith_normal_form().unwrap();

@@ -39,7 +39,7 @@
 
 use crate::continued_fraction::ContinuedFraction;
 use crate::Rational;
-use rustmath_core::{Result, Ring};
+use rustmath_core::{MultiplicativeOrder, Result, Ring};
 use rustmath_integers::Integer;
 
 /// SageMath-compatible wrapper for Rational type
@@ -433,7 +433,11 @@ impl SageRational {
 
     /// Compute the nth root (if it exists as a rational)
     ///
-    /// Returns Some(root) if the nth root is rational, None otherwise.
+    /// Returns `Some(r)` with `r^n = self` if there is such a rational `r`, `None` otherwise
+    /// (PARI/GP `ispower(x, n, &r)`; MAGMA `IsPower`, Handbook ch. 18 §18.4.5, on numerator
+    /// and denominator). A negative rational has an n-th root only for odd `n`, and the root
+    /// is negative. For even `n` and positive `self` the positive root is returned. `n = 0`
+    /// gives `None`.
     ///
     /// # Examples
     ///
@@ -444,6 +448,9 @@ impl SageRational {
     /// let root = r.nth_root(3).unwrap();
     /// assert_eq!(root.to_string(), "2/3");
     ///
+    /// let r = SageRational::new(-8, 27).unwrap();  // (-2/3)^3
+    /// assert_eq!(r.nth_root(3).unwrap().to_string(), "-2/3");
+    ///
     /// let r = SageRational::new(2, 1).unwrap();
     /// assert!(r.nth_root(2).is_none());  // √2 is irrational
     /// ```
@@ -451,20 +458,25 @@ impl SageRational {
         if n == 0 {
             return None;
         }
-
-        // Try to compute nth root of numerator and denominator separately
-        let num_root = self.0.numerator().nth_root(n).ok()?;
-        let den_root = self.0.denominator().nth_root(n).ok()?;
-
-        // Verify that these are actually nth roots
-        let num_check = num_root.pow(n);
-        let den_check = den_root.pow(n);
-
-        if &num_check == self.0.numerator() && &den_check == self.0.denominator() {
-            Some(SageRational(Rational::new(num_root, den_root).unwrap()))
-        } else {
-            None
+        let (num, den) = (self.0.numerator(), self.0.denominator());
+        // The sign of the value, not of the stored numerator, so that a denominator stored
+        // with a negative sign cannot flip the answer.
+        let negative = num.signum() * den.signum() < 0;
+        if negative && n.is_multiple_of(2) {
+            return None; // even powers of rationals are >= 0
         }
+
+        // Exact roots of |numerator| and |denominator|. The floor roots t satisfy
+        // t^n <= |x|, so the check never builds a number larger than the input.
+        let exact_root = |x: &Integer| -> Option<Integer> {
+            let t = x.nth_root(n).ok()?;
+            (&t.pow(n) == x).then_some(t)
+        };
+        let num_root = exact_root(&num.abs())?;
+        let den_root = exact_root(&den.abs())?;
+        // For odd n, (-t)^n = -t^n.
+        let num_root = if negative { -num_root } else { num_root };
+        Some(SageRational(Rational::new(num_root, den_root).ok()?))
     }
 
     /// Compute the square root (if it exists as a rational)
@@ -533,27 +545,35 @@ impl SageRational {
         }
     }
 
-    /// Get the multiplicative order
+    /// The multiplicative order (MAGMA `Order(x)`, Handbook ch. 19 and ch. 17 §17.5.5) of a
+    /// rational. The torsion of Q* is {1, -1}, so:
     ///
-    /// Returns Some(1) if self is 1, Some(2) if self is -1, otherwise None
+    /// | `self` | result |
+    /// |---|---|
+    /// | `1` | `Finite(1)` |
+    /// | `-1` | `Finite(2)` |
+    /// | any other nonzero rational | `Infinite` |
+    /// | `0` | `NotAUnit` (no order: 0 is not a unit) |
+    ///
+    /// GAP 4.12.1 agrees: `Order(1)` = 1, `Order(-1)` = 2, `Order(2/3)` = infinity, and
+    /// `Order(0)` is an error. This delegates to the core hook
+    /// [`Ring::multiplicative_order_status`] of [`Rational`]; `Undecided` and
+    /// `FiniteExceedsU64` never occur.
     ///
     /// # Examples
     ///
     /// ```
+    /// use rustmath_core::MultiplicativeOrder;
     /// use rustmath_rationals::sage_wrapper::SageRational;
     ///
-    /// assert_eq!(SageRational::new(1, 1).unwrap().multiplicative_order(), Some(1));
-    /// assert_eq!(SageRational::new(-1, 1).unwrap().multiplicative_order(), Some(2));
-    /// assert_eq!(SageRational::new(2, 1).unwrap().multiplicative_order(), None);
+    /// let order = |n: i64, d: i64| SageRational::new(n, d).unwrap().multiplicative_order();
+    /// assert_eq!(order(1, 1), MultiplicativeOrder::Finite(1));
+    /// assert_eq!(order(-1, 1), MultiplicativeOrder::Finite(2));
+    /// assert_eq!(order(2, 3), MultiplicativeOrder::Infinite);
+    /// assert_eq!(order(0, 1), MultiplicativeOrder::NotAUnit);
     /// ```
-    pub fn multiplicative_order(&self) -> Option<u64> {
-        if self.is_one() {
-            Some(1)
-        } else if self.0.clone() == -Rational::one() {
-            Some(2)
-        } else {
-            None // Infinite order
-        }
+    pub fn multiplicative_order(&self) -> MultiplicativeOrder {
+        self.0.multiplicative_order_status()
     }
 
     /// Convert to f64 (may lose precision)
@@ -727,7 +747,6 @@ impl<'a> std::ops::Neg for &SageRational {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rustmath_core::NumericConversion;
 
     #[test]
     fn test_creation_and_reduction() {
@@ -923,6 +942,32 @@ mod tests {
         let r = SageRational::new(4, 9).unwrap();
         let root = r.nth_root(2).unwrap();
         assert_eq!(root.to_string(), "2/3");
+
+        // Odd roots of negative rationals (PARI/GP 2.15.4):
+        // gp: ispower(-8/27,3,&r) -> 1, r = -2/3
+        let r = SageRational::new(-8, 27).unwrap();
+        assert_eq!(r.nth_root(3), Some(SageRational::new(-2, 3).unwrap()));
+        // gp: ispower(-1/8,3,&r) -> 1, r = -1/2
+        let r = SageRational::new(-1, 8).unwrap();
+        assert_eq!(r.nth_root(3), Some(SageRational::new(-1, 2).unwrap()));
+        // gp: ispower(-32/243,5,&r) -> 1, r = -2/3
+        let r = SageRational::new(-32, 243).unwrap();
+        assert_eq!(r.nth_root(5), Some(SageRational::new(-2, 3).unwrap()));
+        // gp: ispower(-4/9,2) -> 0
+        assert!(SageRational::new(-4, 9).unwrap().nth_root(2).is_none());
+        // gp: ispower(-2/27,3) -> 0
+        assert!(SageRational::new(-2, 27).unwrap().nth_root(3).is_none());
+        // gp: ispower(-8/25,3) -> 0 (the denominator is not a cube)
+        assert!(SageRational::new(-8, 25).unwrap().nth_root(3).is_none());
+        // gp: ispower(0,3,&r) -> 1, r = 0 (ispower(0) without k is 0; with k it is a power)
+        assert_eq!(
+            SageRational::new(0, 1).unwrap().nth_root(3),
+            Some(SageRational::new(0, 1).unwrap())
+        );
+        // A large odd exponent of a non-power returns at once: the check works on |numerator|
+        // (gp: ispower(-5,1000000001) -> 0).
+        let minus_five = SageRational::new(-5, 1).unwrap();
+        assert!(minus_five.nth_root(1_000_000_001).is_none());
     }
 
     #[test]
@@ -955,18 +1000,33 @@ mod tests {
 
     #[test]
     fn test_multiplicative_order() {
+        // GAP 4.12.1: Order(1) -> 1, Order(-1) -> 2, Order(2) -> infinity,
+        // Order(1/2) -> infinity, Order(-2/3) -> infinity; IsUnit(Rationals, 0) -> false and
+        // Order(0) -> "Error, argument must be nonzero".
         assert_eq!(
             SageRational::new(1, 1).unwrap().multiplicative_order(),
-            Some(1)
+            MultiplicativeOrder::Finite(1)
         );
         assert_eq!(
             SageRational::new(-1, 1).unwrap().multiplicative_order(),
-            Some(2)
+            MultiplicativeOrder::Finite(2)
         );
-        assert_eq!(SageRational::new(2, 1).unwrap().multiplicative_order(), None);
+        assert_eq!(
+            SageRational::new(2, 1).unwrap().multiplicative_order(),
+            MultiplicativeOrder::Infinite
+        );
         assert_eq!(
             SageRational::new(1, 2).unwrap().multiplicative_order(),
-            None
+            MultiplicativeOrder::Infinite
+        );
+        assert_eq!(
+            SageRational::new(-2, 3).unwrap().multiplicative_order(),
+            MultiplicativeOrder::Infinite
+        );
+        // 0 is not a unit; before, it returned the same None as an element of infinite order.
+        assert_eq!(
+            SageRational::new(0, 1).unwrap().multiplicative_order(),
+            MultiplicativeOrder::NotAUnit
         );
     }
 
