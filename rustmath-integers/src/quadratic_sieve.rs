@@ -28,7 +28,7 @@
 //! ```
 
 use crate::Integer;
-use crate::prime::is_prime;
+use crate::prime::{factor_pollard_rho, is_prime};
 use std::collections::HashMap;
 
 /// A smooth relation: x² ≡ product of primes (mod n)
@@ -67,16 +67,33 @@ fn legendre_symbol(a: &Integer, p: u64) -> i8 {
     }
 }
 
-/// Find a square root of n modulo p using Tonelli-Shanks algorithm
+/// Find a square root of n modulo a prime p using the Tonelli-Shanks algorithm
+/// (H. Cohen, GTM 138, Algorithm 1.5.1; MAGMA `Modsqrt`, Handbook ch. 18 §18.12.1).
 ///
-/// Returns Some(r) where r² ≡ n (mod p), or None if no root exists
+/// Returns `Some(r)` with 0 <= r < p and r² ≡ n (mod p), and `None` exactly when n is a
+/// quadratic non-residue modulo p (decided by Euler's criterion, which is exact for prime p).
+///
+/// Not used by the sieve yet (it trial-divides every value); the crate's public square root
+/// is [`Integer::sqrt_mod_prime`].
+///
+/// # Panics
+///
+/// If p is not a prime below 2^63. The non-residue search and the main loop rely on p being
+/// prime; for a composite p they could not decide anything, so a composite modulus is
+/// rejected up front instead of being answered with `None` ("no square root").
 #[allow(dead_code)]
 fn tonelli_shanks(n: &Integer, p: u64) -> Option<i64> {
+    assert!(
+        p < (1u64 << 63) && is_prime(&Integer::from(p)),
+        "tonelli_shanks: p = {p} is not a prime below 2^63"
+    );
+    let p_int = Integer::from(p as i64);
+
     if p == 2 {
-        return Some(n.to_i64() % 2);
+        return Some(n.modulo(&p_int).to_i64());
     }
 
-    let n_mod_p = (n.clone() % Integer::from(p as i64)).to_i64();
+    let n_mod_p = n.modulo(&p_int).to_i64();
     if n_mod_p == 0 {
         return Some(0);
     }
@@ -90,7 +107,7 @@ fn tonelli_shanks(n: &Integer, p: u64) -> Option<i64> {
     if p % 4 == 3 {
         let exp = (p + 1) / 4;
         let root = Integer::from(n_mod_p)
-            .mod_pow(&Integer::from(exp as i64), &Integer::from(p as i64))
+            .mod_pow(&Integer::from(exp as i64), &p_int)
             .unwrap_or(Integer::zero());
         return Some(root.to_i64());
     }
@@ -104,56 +121,55 @@ fn tonelli_shanks(n: &Integer, p: u64) -> Option<i64> {
         s += 1;
     }
 
-    // Find a quadratic non-residue z
+    // Find the least quadratic non-residue z. For an odd prime p exactly (p - 1)/2 of
+    // 1, ..., p - 1 are non-residues, so the search ends below p. There is no fixed cap: the
+    // least non-residue exceeds 100 for some primes (it is 107 for p = 23616331489).
     let mut z = 2i64;
     while legendre_symbol(&Integer::from(z), p) != -1 {
         z += 1;
-        if z > 100 {
-            return None; // Safety check
-        }
     }
 
     let mut m = s;
     let mut c = Integer::from(z)
-        .mod_pow(&Integer::from(q as i64), &Integer::from(p as i64))
+        .mod_pow(&Integer::from(q as i64), &p_int)
         .unwrap_or(Integer::one());
     let mut t = Integer::from(n_mod_p)
-        .mod_pow(&Integer::from(q as i64), &Integer::from(p as i64))
+        .mod_pow(&Integer::from(q as i64), &p_int)
         .unwrap_or(Integer::one());
     let mut r = Integer::from(n_mod_p)
-        .mod_pow(&Integer::from(((q + 1) / 2) as i64), &Integer::from(p as i64))
+        .mod_pow(&Integer::from(((q + 1) / 2) as i64), &p_int)
         .unwrap_or(Integer::one());
 
     loop {
-        if t.is_zero() {
-            return Some(0);
-        }
         if t.is_one() {
             return Some(r.to_i64());
         }
 
         // Find the least i such that t^(2^i) = 1
         let mut i = 1u32;
-        let mut t_power = (t.clone() * t.clone()) % Integer::from(p as i64);
+        let mut t_power = (t.clone() * t.clone()) % p_int.clone();
         while !t_power.is_one() && i < m {
-            t_power = (t_power.clone() * t_power.clone()) % Integer::from(p as i64);
+            t_power = (t_power.clone() * t_power.clone()) % p_int.clone();
             i += 1;
         }
 
-        if i >= m {
-            return None;
-        }
+        // For prime p and a residue n, t lies in the subgroup of order 2^(m-1) (Cohen 1.5.1),
+        // so some i < m has t^(2^i) = 1.
+        assert!(
+            i < m,
+            "tonelli_shanks: invariant t^(2^(m-1)) = 1 failed for the prime p = {p}"
+        );
 
         // Update values
         let b = Integer::from(2i64)
-            .mod_pow(&Integer::from((m - i - 1) as i64), &Integer::from(p as i64))
-            .and_then(|exp| c.mod_pow(&exp, &Integer::from(p as i64)))
+            .mod_pow(&Integer::from((m - i - 1) as i64), &p_int)
+            .and_then(|exp| c.mod_pow(&exp, &p_int))
             .unwrap_or(Integer::one());
 
         m = i;
-        c = (b.clone() * b.clone()) % Integer::from(p as i64);
-        t = (t * c.clone()) % Integer::from(p as i64);
-        r = (r * b) % Integer::from(p as i64);
+        c = (b.clone() * b.clone()) % p_int.clone();
+        t = (t * c.clone()) % p_int.clone();
+        r = (r * b) % p_int.clone();
     }
 }
 
@@ -486,7 +502,31 @@ pub fn quadratic_sieve_factor_with_params(
 
 /// Complete factorization using Quadratic Sieve
 ///
-/// Returns the complete prime factorization of n.
+/// Returns the prime factorization of |n| as `(prime, exponent)` pairs with the primes in
+/// ascending order (PARI/GP `factor(n)` without the sign; MAGMA `Factorization(n)` / `MPQS`,
+/// Handbook ch. 18 §18.10). For n = 0, 1 and -1 the list is empty.
+///
+/// # Algorithm
+///
+/// 1. Trial division by the primes up to 47.
+/// 2. While the cofactor m is not accepted by [`is_prime`]: if [`quadratic_sieve_factor`]
+///    returns a proper divisor d of m, d is factored by recursion and each of its primes is
+///    divided out of m with full multiplicity (d need not be prime: the sieve's gcd and the
+///    perfect-power root are just divisors). If the sieve finds nothing, m is factored
+///    completely by [`crate::prime::factor_pollard_rho`] and the loop ends.
+/// 3. A last cofactor passed the loop guard, so it is prime.
+///
+/// A cofactor the sieve could not split is never pushed as a prime. Every returned factor is
+/// prime in the sense of [`is_prime`] (Miller-Rabin to the bases 2..37: a proof below
+/// psi_12 = 318665857834031151167461, Sorenson-Webster 2017).
+///
+/// # Cost
+///
+/// The sieve stage is weak (one polynomial, a factor base of 50 primes, 1000 sieve values, and
+/// the GF(2) dependency step is not a nullspace computation), so beyond small primes and
+/// perfect powers it rarely splits anything; the work is then that of
+/// [`crate::prime::factor_pollard_rho`]: no time limit, about sqrt(q) rho steps for the
+/// second-largest prime factor q of |n|, impractical when q has 20 or more digits.
 ///
 /// # Examples
 ///
@@ -497,6 +537,12 @@ pub fn quadratic_sieve_factor_with_params(
 /// let n = Integer::from(1001); // 7 × 11 × 13
 /// let factors = quadratic_sieve_factor_complete(&n);
 /// assert_eq!(factors.len(), 3);
+///
+/// // 12780049 = 53 · 59 · 61 · 67 (PARI/GP: factor(12780049)); the sieve finds no factor,
+/// // so the cofactor is finished by Pollard rho.
+/// let factors = quadratic_sieve_factor_complete(&Integer::from(12780049));
+/// let primes: Vec<Integer> = [53, 59, 61, 67].into_iter().map(Integer::from).collect();
+/// assert_eq!(factors, primes.into_iter().map(|p| (p, 1)).collect::<Vec<_>>());
 /// ```
 pub fn quadratic_sieve_factor_complete(n: &Integer) -> Vec<(Integer, u32)> {
     if n.is_zero() || n.is_one() {
@@ -522,26 +568,42 @@ pub fn quadratic_sieve_factor_complete(n: &Integer) -> Vec<(Integer, u32)> {
 
     // Use QS for the rest
     while remaining > Integer::one() && !is_prime(&remaining) {
-        if let Some(factor) = quadratic_sieve_factor(&remaining) {
-            let mut count = 0u32;
-            while (&remaining % &factor).is_zero() {
-                remaining = remaining / factor.clone();
-                count += 1;
+        match quadratic_sieve_factor(&remaining) {
+            Some(divisor)
+                if divisor > Integer::one()
+                    && divisor < remaining
+                    && (&remaining % &divisor).is_zero() =>
+            {
+                // The divisor might be composite: factor it by recursion (it is smaller than
+                // `remaining`), then extract every instance of each of its primes, so no
+                // prime comes up twice.
+                for (prime, _) in quadratic_sieve_factor_complete(&divisor) {
+                    let mut count = 0u32;
+                    while (&remaining % &prime).is_zero() {
+                        remaining = remaining / prime.clone();
+                        count += 1;
+                    }
+                    if count > 0 {
+                        factors.push((prime, count));
+                    }
+                }
             }
-            factors.push((factor, count));
-        } else {
-            // Couldn't factor, assume it's prime
-            factors.push((remaining.clone(), 1));
-            remaining = Integer::one(); // Mark as done
-            break;
+            _ => {
+                // The sieve found no factor. `remaining` is composite (loop guard), so it is
+                // not pushed: factor it completely with Pollard rho instead. Its primes are
+                // above 47 and coprime to every prime pushed so far.
+                factors.extend(factor_pollard_rho(&remaining));
+                remaining = Integer::one();
+            }
         }
     }
 
+    // The loop guard accepted `remaining` as prime.
     if remaining > Integer::one() {
         factors.push((remaining, 1));
     }
 
-    factors.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+    factors.sort_by(|a, b| a.0.cmp(&b.0));
     factors
 }
 
@@ -569,6 +631,66 @@ mod tests {
         assert!(root.is_some());
         let r = root.unwrap();
         assert!((r * r) % 7 == 2 || ((7 - r) * (7 - r)) % 7 == 2);
+    }
+
+    /// The least quadratic non-residue of p = 23616331489 is 107, above the old search cap
+    /// of 100, which made the function answer `None` ("no square root") for residues.
+    #[test]
+    fn test_tonelli_shanks_least_non_residue_above_100() {
+        // gp: p = 23616331489; isprime(p) = 1; p % 8 = 1; valuation(p-1, 2) = 5;
+        // z = 2; while(kronecker(z, p) != -1, z++); z = 107
+        let p: u64 = 23616331489;
+        let p_int = Integer::from(p);
+        // gp: r = lift(sqrt(Mod(2, p))); min(r, p - r) = 4184367042
+        // gp: r = lift(sqrt(Mod(1000, p))); min(r, p - r) = 2465952743
+        for (n, root) in [(2i64, 4184367042i64), (1000, 2465952743)] {
+            let r = tonelli_shanks(&Integer::from(n), p).expect("n is a residue mod p");
+            assert!(
+                r == root || r == p as i64 - root,
+                "sqrt({n}) mod {p}: got {r}"
+            );
+            let sq = (Integer::from(r) * Integer::from(r)).modulo(&p_int);
+            assert_eq!(sq, Integer::from(n));
+        }
+        // gp: kronecker(-2, p) = 1, so -2 has a root; r^2 + 2 ≡ 0 (mod p).
+        let r = tonelli_shanks(&Integer::from(-2), p).expect("-2 is a residue mod p");
+        assert!(r >= 0 && (r as u64) < p);
+        assert_eq!(
+            (Integer::from(r) * Integer::from(r) + Integer::from(2)).modulo(&p_int),
+            Integer::zero()
+        );
+        // gp: kronecker(107, p) = -1
+        assert_eq!(tonelli_shanks(&Integer::from(107), p), None);
+    }
+
+    #[test]
+    fn test_tonelli_shanks_small_primes() {
+        // gp: lift(sqrt(Mod(3, 13))) = 4 (the roots are 4 and 9)
+        let r = tonelli_shanks(&Integer::from(3), 13).unwrap();
+        assert!(r == 4 || r == 9, "got {r}");
+        // gp: kronecker(3, 41) = -1; issquare(Mod(5, 41)) = 1
+        assert_eq!(tonelli_shanks(&Integer::from(3), 41), None);
+        let r = tonelli_shanks(&Integer::from(5), 41).unwrap();
+        assert_eq!((r * r) % 41, 5);
+        // Exhaustive: for each odd prime p < 200 and each a, a root exists exactly for the
+        // squares mod p (brute force, independent of the code under test).
+        for p in (3u64..200).filter(|&p| is_prime(&Integer::from(p))) {
+            for a in 0..p as i64 {
+                let is_square = (0..p as i64).any(|x| (x * x) % p as i64 == a);
+                match tonelli_shanks(&Integer::from(a), p) {
+                    Some(r) => assert_eq!((r * r) % p as i64, a, "p = {p}, a = {a}"),
+                    None => assert!(!is_square, "p = {p}: {a} is a square but got None"),
+                }
+            }
+        }
+    }
+
+    /// A composite modulus is a contract violation, not a "no square root".
+    #[test]
+    #[should_panic(expected = "tonelli_shanks: p = 15 is not a prime below 2^63")]
+    fn test_tonelli_shanks_composite_modulus_panics() {
+        // gp: isprime(15) = 0
+        let _ = tonelli_shanks(&Integer::from(4), 15);
     }
 
     #[test]
@@ -641,6 +763,33 @@ mod tests {
             }
         }
         assert_eq!(product, n);
+    }
+
+    /// The sieve's divisor 3127 = 53 · 59 of 165731 = 53^2 · 59 is composite and shares the
+    /// prime 53 with the cofactor; it used to be pushed as the "prime" (3127, 1) next to
+    /// (53, 1).
+    #[test]
+    fn test_complete_factorization_composite_sieve_divisor() {
+        // gp: factor(165731) = [53,2; 59,1]
+        let n = Integer::from(165731);
+        assert_eq!(quadratic_sieve_factor(&n), Some(Integer::from(3127)));
+        assert_eq!(
+            quadratic_sieve_factor_complete(&n),
+            vec![(Integer::from(53), 2), (Integer::from(59), 1)]
+        );
+    }
+
+    /// Blocker B-04: the sieve finds no factor of 3127 = 53 · 59, and the driver used to push
+    /// 3127 itself as a prime.
+    #[test]
+    fn test_complete_factorization_sieve_failure() {
+        // gp: factor(3127) = [53,1; 59,1]; isprime(3127) = 0
+        let n = Integer::from(3127);
+        assert_eq!(quadratic_sieve_factor(&n), None);
+        assert_eq!(
+            quadratic_sieve_factor_complete(&n),
+            vec![(Integer::from(53), 1), (Integer::from(59), 1)]
+        );
     }
 
     #[test]

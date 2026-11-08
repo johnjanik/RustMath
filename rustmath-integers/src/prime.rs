@@ -696,21 +696,44 @@ fn rand_int() -> i64 {
 
 /// Complete integer factorization using Pollard's Rho algorithm
 ///
-/// This function performs complete prime factorization of an integer using
-/// Pollard's Rho algorithm, with fallback to trial division if needed.
-/// It's more efficient than pure trial division for numbers with small factors.
+/// Returns the prime factorization of |n| as `(prime, exponent)` pairs with the primes in
+/// ascending order: PARI/GP `factor(n)` without the sign, MAGMA `Factorization(n)` (Handbook
+/// ch. 18 §18.10, digest `rustmath-lava/docs/Chapter_18_Ring_of_Integers.md`). For n = 0, 1
+/// and -1 the list is empty.
 ///
 /// # Algorithm
 ///
-/// 1. Extract all factors of 2 first (special case for efficiency)
-/// 2. Apply Pollard's Rho to find factors iteratively
-/// 3. Fall back to trial division if Pollard's Rho fails
-/// 4. Continue until the number is completely factored
+/// 1. Divide out the factors of 2.
+/// 2. While the cofactor m is not accepted by [`is_prime`], find a proper divisor d of m (see
+///    below), factor d by recursion and divide each of its primes out of m with full
+///    multiplicity.
+/// 3. The last cofactor passed the loop guard, so it is prime.
+///
+/// A proper divisor of an odd composite m is found by, in order:
+/// - the perfect-power test [`Integer::is_perfect_power`]: m = b^k gives d = b;
+/// - [`pollard_rho`] (Floyd's cycle detection on x^2 + 1, at most 10^6 steps; J. M. Pollard,
+///   *A Monte Carlo method for factorization*, BIT 15 (1975) 331-334);
+/// - if that returns `None`: rounds j = 0, 1, 2, ... of Brent's variant with x^2 + c,
+///   c = j + 2, at most 2^(12+j) steps (R. P. Brent, *An improved Monte Carlo factorization
+///   algorithm*, BIT 20 (1980) 176-184, [Bre80] in the ch. 18 digest; H. Cohen, GTM 138,
+///   §8.5), each round followed by trial division by the next 2^(12+j) odd numbers. Rho is
+///   Monte Carlo and may fail for every c tried; the trial-division windows make the search
+///   complete, since a composite m has a prime factor p <= sqrt(m), which they reach after
+///   about p/2 divisions in all.
+///
+/// A cofactor that the methods have not yet split is never pushed as a prime: the search
+/// goes on until it splits.
+///
+/// Every returned factor is prime in the sense of [`is_prime`]: Miller-Rabin to the twelve
+/// bases 2..37, a proof below psi_12 = 318665857834031151167461 (J. Sorenson, J. Webster,
+/// *Strong pseudoprimes to twelve prime bases*, Math. Comp. 86 (2017) 985-1003), a strong
+/// probable-prime test above it.
 ///
 /// # Comparison with SageMath
 ///
-/// This function is similar to SageMath's `factor()` but uses only Pollard's Rho
-/// (with trial division fallback), whereas SageMath uses PARI which employs:
+/// This function is similar to SageMath's `factor()` but uses only Pollard's Rho (with
+/// Brent's variant and trial division as the fallback), whereas SageMath uses PARI which
+/// employs:
 /// - Shanks SQUFOF
 /// - Pollard's Rho
 /// - Lenstra's ECM (for larger numbers)
@@ -723,15 +746,19 @@ fn rand_int() -> i64 {
 /// # Returns
 ///
 /// A vector of `(prime, exponent)` pairs representing the complete prime
-/// factorization of n, sorted by prime factors in ascending order.
+/// factorization of |n|, sorted by prime factors in ascending order.
 ///
-/// For n = 0 or n = 1, returns an empty vector.
+/// For n = 0, 1 or -1, returns an empty vector.
 ///
-/// # Time Complexity
+/// # Cost
 ///
-/// Expected: O(n^(1/4)) for numbers with small factors
-///
-/// Worst case: O(√n) when falling back to trial division
+/// There is no time or iteration limit: the call returns only with the complete
+/// factorization. Rho needs about sqrt(p) steps to split off a prime p, so the run time is set
+/// by the second-largest prime factor q of |n| (the largest one is the last cofactor) and
+/// grows like sqrt(q). Measured in a debug build: (10^9+7)(10^9+9) takes about 0.2 s and
+/// (10^12+39)(10^12+61) about 20 s (10^6 steps); for q with 20 or more digits (10^10 steps
+/// or more) the call does not finish in practical time. The trial-division windows bound the
+/// worst case by about q/2 divisions plus as many rho steps.
 ///
 /// # Examples
 ///
@@ -761,6 +788,16 @@ fn rand_int() -> i64 {
 /// assert_eq!(factors, vec![(Integer::from(97), 1)]);
 /// ```
 ///
+/// ```
+/// use rustmath_integers::Integer;
+/// use rustmath_integers::prime::factor_pollard_rho;
+///
+/// // 12780049 = 53 · 59 · 61 · 67 (PARI/GP: factor(12780049))
+/// let factors = factor_pollard_rho(&Integer::from(12780049));
+/// let primes: Vec<Integer> = [53, 59, 61, 67].into_iter().map(Integer::from).collect();
+/// assert_eq!(factors, primes.into_iter().map(|p| (p, 1)).collect::<Vec<_>>());
+/// ```
+///
 /// # See Also
 ///
 /// - [`pollard_rho`] - Find a single factor using Pollard's Rho
@@ -784,55 +821,175 @@ pub fn factor_pollard_rho(n: &Integer) -> Vec<(Integer, u32)> {
         factors.push((Integer::from(2), count));
     }
 
-    // Use Pollard's Rho for the rest
+    // `remaining` is odd from here on. `is_prime` is false only with a proof of
+    // compositeness (trial division below 1000, a Miller-Rabin witness above), so every
+    // cofactor handed to `split_odd_composite` is an odd composite.
     while remaining > Integer::one() && !is_prime(&remaining) {
-        if let Some(factor) = pollard_rho(&remaining) {
-            // The factor itself might be composite, so we need to factor it recursively
-            let factor_factors = if is_prime(&factor) {
-                vec![(factor, 1)]
-            } else {
-                factor_pollard_rho(&factor)
-            };
-
-            // Extract all instances of each prime factor from remaining
-            for (prime, _) in factor_factors {
-                let mut count = 0;
-                while (&remaining % &prime).is_zero() {
-                    remaining = remaining / prime.clone();
-                    count += 1;
-                }
-                if count > 0 {
-                    factors.push((prime, count));
-                }
-            }
+        let divisor = split_odd_composite(&remaining);
+        // The divisor might be composite: factor it by recursion (it is smaller than
+        // `remaining`, so the recursion ends).
+        let divisor_factors = if is_prime(&divisor) {
+            vec![(divisor, 1)]
         } else {
-            // Fallback to trial division if Pollard's Rho fails
-            let mut d = Integer::from(3);
-            while d.clone() * d.clone() <= remaining {
-                if (&remaining % &d).is_zero() {
-                    let mut count = 0;
-                    while (&remaining % &d).is_zero() {
-                        remaining = remaining / d.clone();
-                        count += 1;
-                    }
-                    factors.push((d.clone(), count));
-                    break;
-                }
-                d = d + Integer::from(2);
-            }
+            factor_pollard_rho(&divisor)
+        };
 
-            if remaining > Integer::one() {
+        // Each prime of the divisor divides `remaining`; extract all of its instances, so it
+        // cannot come up again later.
+        for (prime, _) in divisor_factors {
+            let mut count = 0;
+            while (&remaining % &prime).is_zero() {
+                remaining = remaining / prime.clone();
+                count += 1;
+            }
+            if count > 0 {
+                factors.push((prime, count));
+            }
+        }
+    }
+
+    // The loop guard accepted `remaining` as prime.
+    if remaining > Integer::one() {
+        factors.push((remaining, 1));
+    }
+
+    factors.sort_by(|a, b| a.0.cmp(&b.0));
+    factors
+}
+
+/// Number of steps of the first Brent round and of the first trial-division window in
+/// [`split_odd_composite`]; both double each round.
+const SPLIT_FIRST_ROUND: u64 = 1 << 12;
+
+/// A proper divisor d of an odd composite m (1 < d < m, d | m).
+///
+/// Perfect-power test, then [`pollard_rho`], then [`split_brent_and_trial_division`]. Always
+/// returns; see [`factor_pollard_rho`] for the cost.
+fn split_odd_composite(m: &Integer) -> Integer {
+    debug_assert!(m.is_odd() && *m > Integer::one() && !is_prime(m));
+    if let Some((base, _)) = m.is_perfect_power() {
+        return base;
+    }
+    if let Some(d) = pollard_rho(m) {
+        return d;
+    }
+    split_brent_and_trial_division(m)
+}
+
+/// The complete fallback of [`split_odd_composite`]: rounds j = 0, 1, 2, ... of Brent's rho
+/// with x^2 + (j + 2) and at most `SPLIT_FIRST_ROUND * 2^j` steps, each followed by trial
+/// division by the next `SPLIT_FIRST_ROUND * 2^j` odd numbers from 3 on.
+///
+/// Termination does not depend on rho: the windows reach the least prime factor p of m after
+/// about p/2 divisions, and p <= sqrt(m) because m is composite.
+///
+/// # Panics
+///
+/// If m is odd and the windows pass sqrt(m) without a divisor, i.e. m is prime or 1. Callers
+/// only pass odd composites, so this is an internal invariant.
+fn split_brent_and_trial_division(m: &Integer) -> Integer {
+    let mut next_trial = Integer::from(3);
+    let mut budget = SPLIT_FIRST_ROUND;
+    let mut c: u64 = 2;
+    loop {
+        if let Some(d) = brent_rho(m, &Integer::from(c), budget) {
+            return d;
+        }
+        if let Some(d) = trial_division_window(m, &mut next_trial, budget) {
+            return d;
+        }
+        c += 1;
+        budget = budget.saturating_mul(2);
+    }
+}
+
+/// One run of Brent's variant of Pollard rho on m with f(x) = x^2 + c mod m, from x_0 = 2,
+/// for at most about `max_steps` evaluations of f ([Bre80]; Cohen GTM 138, §8.5).
+///
+/// The differences |x - y| are multiplied together modulo m and the gcd is taken every 128
+/// steps; when that gcd is m, the last block is replayed one step at a time.
+///
+/// Returns `Some(d)` with 1 < d < m and d | m, or `None` when the run ends with gcd m (the
+/// cycles modulo all prime factors of m were detected together) or the step budget runs out.
+/// A `None` says nothing about m.
+fn brent_rho(m: &Integer, c: &Integer, max_steps: u64) -> Option<Integer> {
+    const BLOCK: u64 = 128;
+    let f = |v: &Integer| -> Integer { (&(v * v) + c).modulo(m) };
+
+    let mut y = Integer::from(2).modulo(m);
+    let mut q = Integer::one();
+    let mut r: u64 = 1;
+    let mut steps: u64 = 0;
+
+    let (x, mut ys, mut g) = loop {
+        let x = y.clone();
+        for _ in 0..r {
+            y = f(&y);
+        }
+        steps += r;
+        let mut ys = y.clone();
+        let mut g = Integer::one();
+        let mut k: u64 = 0;
+        while k < r && g.is_one() {
+            ys = y.clone();
+            let block = BLOCK.min(r - k);
+            for _ in 0..block {
+                y = f(&y);
+                q = (&q * &(&x - &y).abs()).modulo(m);
+            }
+            g = q.gcd(m);
+            k += block;
+            steps += block;
+        }
+        if !g.is_one() {
+            break (x, ys, g);
+        }
+        if steps >= max_steps {
+            return None;
+        }
+        r = r.saturating_mul(2);
+    };
+
+    if g == *m {
+        // Replay the last block: some |x - y_i| in it shares a prime with m, because q was
+        // coprime to m before the block.
+        loop {
+            ys = f(&ys);
+            g = (&x - &ys).abs().gcd(m);
+            if !g.is_one() {
                 break;
             }
         }
     }
 
-    // If remaining > 1, it's a prime factor
-    if remaining > Integer::one() {
-        factors.push((remaining, 1));
+    if g.is_one() || g == *m {
+        None
+    } else {
+        Some(g)
     }
+}
 
-    factors
+/// Trial division of m by the `count` odd numbers from `*next` on; `*next` is advanced past
+/// the numbers tried. Returns the first divisor found.
+///
+/// # Panics
+///
+/// If the window passes sqrt(m) without a divisor: then m has no divisor in
+/// [3, sqrt(m)], so an odd m is prime (or 1), against the precondition of
+/// [`split_brent_and_trial_division`].
+fn trial_division_window(m: &Integer, next: &mut Integer, count: u64) -> Option<Integer> {
+    for _ in 0..count {
+        assert!(
+            &*next * &*next <= *m,
+            "trial_division_window: no divisor of {m} up to its square root, so it is not an \
+             odd composite"
+        );
+        if (m % &*next).is_zero() {
+            return Some(next.clone());
+        }
+        *next = &*next + &Integer::from(2);
+    }
+    None
 }
 
 #[cfg(test)]
@@ -1191,5 +1348,89 @@ mod tests {
         }
 
         assert_eq!(product, n);
+    }
+
+    // ===== X1b: the fallback of factor_pollard_rho (MAGMA ch. 18 §18.10) =====
+
+    fn z(s: &str) -> Integer {
+        Integer::from_decimal_str(s).unwrap()
+    }
+
+    fn is_proper_divisor(d: &Integer, m: &Integer) -> bool {
+        *d > Integer::one() && d < m && (m % d).is_zero()
+    }
+
+    /// Floyd's rho on x^2 + 1 fails on 25 (the cycles modulo 5 and 25 close together), which
+    /// is why `factor_pollard_rho` must not trust a `None` from it.
+    #[test]
+    fn test_pollard_rho_fails_on_25() {
+        assert_eq!(pollard_rho(&Integer::from(25)), None);
+    }
+
+    /// The fallback splits every odd composite, including 25 and inputs without small primes.
+    #[test]
+    fn test_split_brent_and_trial_division() {
+        // gp: factor(15) = [3,1; 5,1]; factor(9) = Mat([3,2]); factor(25) = Mat([5,2]);
+        // factor(3127) = [53,1; 59,1]; factor(12780049) = [53,1; 59,1; 61,1; 67,1];
+        // factor(1000000016000000063) = [1000000007,1; 1000000009,1]
+        for s in ["9", "15", "25", "3127", "12780049", "1000000016000000063"] {
+            let m = z(s);
+            let d = split_brent_and_trial_division(&m);
+            assert!(
+                is_proper_divisor(&d, &m),
+                "{d} is not a proper divisor of {m}"
+            );
+            let d = split_odd_composite(&m);
+            assert!(
+                is_proper_divisor(&d, &m),
+                "{d} is not a proper divisor of {m}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_brent_rho() {
+        // gp: factor(1000000016000000063) = [1000000007,1; 1000000009,1]
+        let m = z("1000000016000000063");
+        let d =
+            brent_rho(&m, &Integer::from(2), 1 << 20).expect("Brent splits m within 2^20 steps");
+        assert!(d == z("1000000007") || d == z("1000000009"), "d = {d}");
+        // A budget too small to reach the cycle modulo either prime gives an honest None.
+        assert_eq!(brent_rho(&m, &Integer::from(2), 1), None);
+    }
+
+    #[test]
+    fn test_trial_division_window() {
+        // gp: factor(3127) = [53,1; 59,1]: the odd numbers 3..51 are not divisors.
+        let m = Integer::from(3127);
+        let mut next = Integer::from(3);
+        assert_eq!(trial_division_window(&m, &mut next, 25), None);
+        assert_eq!(next, Integer::from(53));
+        assert_eq!(
+            trial_division_window(&m, &mut next, 1),
+            Some(Integer::from(53))
+        );
+    }
+
+    /// A prime is not an odd composite: the window reaches its square root and panics
+    /// instead of returning "no divisor".
+    #[test]
+    #[should_panic(expected = "no divisor of 101 up to its square root")]
+    fn test_trial_division_window_rejects_prime() {
+        // gp: isprime(101) = 1
+        let mut next = Integer::from(3);
+        let _ = trial_division_window(&Integer::from(101), &mut next, 100);
+    }
+
+    /// Output is sorted ascending (PARI order), as documented.
+    #[test]
+    fn test_factor_pollard_rho_sorted() {
+        // gp: factor(13710311357) = [101,1; 103,1; 107,1; 109,1; 113,1]
+        let got = factor_pollard_rho(&Integer::from(13710311357i64));
+        let want: Vec<(Integer, u32)> = [101, 103, 107, 109, 113]
+            .into_iter()
+            .map(|p| (Integer::from(p), 1))
+            .collect();
+        assert_eq!(got, want);
     }
 }

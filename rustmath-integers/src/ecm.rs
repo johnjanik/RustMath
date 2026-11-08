@@ -28,7 +28,7 @@
 //! ```
 
 use crate::Integer;
-use crate::prime::{is_prime, factor};
+use crate::prime::{factor_pollard_rho, is_prime};
 use rand::Rng;
 
 /// Point on an elliptic curve in projective coordinates (X:Y:Z)
@@ -466,8 +466,32 @@ pub fn ecm_factor(n: &Integer, b1: u64, b2: u64, curves: usize) -> Option<Intege
 
 /// Complete factorization using ECM
 ///
-/// Returns the complete prime factorization of n using ECM.
-/// Falls back to trial division if ECM doesn't find factors.
+/// Returns the prime factorization of |n| as `(prime, exponent)` pairs with the primes in
+/// ascending order (PARI/GP `factor(n)` without the sign; MAGMA `Factorization(n)` / `ECM`,
+/// Handbook ch. 18 §18.10; H. W. Lenstra, *Factoring integers with elliptic curves*, Ann. of
+/// Math. 126 (1987) 649-673). For n = 0, 1 and -1 the list is empty.
+///
+/// # Algorithm
+///
+/// While the cofactor m is not accepted by [`is_prime`]:
+/// - if [`ecm_factor`]`(m, b1, b2, curves)` returns a divisor d, d is factored by recursion
+///   (with the same bounds) and each of its primes is divided out of m with full
+///   multiplicity. d need not be prime: it is a gcd, which can contain several primes of m.
+/// - if ECM finds nothing with these bounds (always the case for `curves = 0` once no prime up
+///   to 47 divides m), m is factored completely by [`crate::prime::factor_pollard_rho`] and
+///   the loop ends.
+///
+/// A last cofactor passed the loop guard, so it is prime. A cofactor that ECM could not split
+/// is never pushed as a prime, and the remainder is never pushed in addition to its
+/// factorization. Every returned factor is prime in the sense of [`is_prime`] (Miller-Rabin to
+/// the bases 2..37: a proof below psi_12 = 318665857834031151167461, Sorenson-Webster 2017).
+///
+/// # Cost
+///
+/// Each ECM attempt costs `curves` curves with the given bounds. The fallback has no time
+/// limit: about sqrt(q) rho steps for the second-largest prime factor q of the cofactor ECM
+/// left, impractical when q has 20 or more digits (see
+/// [`crate::prime::factor_pollard_rho`]).
 ///
 /// # Examples
 ///
@@ -477,7 +501,13 @@ pub fn ecm_factor(n: &Integer, b1: u64, b2: u64, curves: usize) -> Option<Intege
 ///
 /// let n = Integer::from(60); // 2² × 3 × 5
 /// let factors = ecm_factor_complete(&n, 1000, 10000, 10);
-/// // Returns [(2, 2), (3, 1), (5, 1)]
+/// let expected: Vec<(Integer, u32)> =
+///     vec![(Integer::from(2), 2), (Integer::from(3), 1), (Integer::from(5), 1)];
+/// assert_eq!(factors, expected);
+///
+/// // 3127 = 53 · 59 (PARI/GP: factor(3127)); with zero curves the fallback does the work.
+/// let factors = ecm_factor_complete(&Integer::from(3127), 1000, 10000, 0);
+/// assert_eq!(factors, vec![(Integer::from(53), 1), (Integer::from(59), 1)]);
 /// ```
 pub fn ecm_factor_complete(n: &Integer, b1: u64, b2: u64, curves: usize) -> Vec<(Integer, u32)> {
     if n.is_zero() || n.is_one() {
@@ -489,28 +519,48 @@ pub fn ecm_factor_complete(n: &Integer, b1: u64, b2: u64, curves: usize) -> Vec<
 
     // Try ECM to find factors
     while remaining > Integer::one() && !is_prime(&remaining) {
-        if let Some(factor) = ecm_factor(&remaining, b1, b2, curves) {
-            // Count multiplicity
-            let mut count = 0u32;
-            while (&remaining % &factor).is_zero() {
-                remaining = remaining / factor.clone();
-                count += 1;
+        match ecm_factor(&remaining, b1, b2, curves) {
+            Some(divisor)
+                if divisor > Integer::one()
+                    && divisor < remaining
+                    && (&remaining % &divisor).is_zero() =>
+            {
+                // The divisor might be composite: factor it by recursion (it is smaller than
+                // `remaining`), then extract every instance of each of its primes. A prime
+                // can occur both in the divisor and in the cofactor (e.g. 53 · 3127 with
+                // the divisor 3127 = 53 · 59), and full extraction keeps one entry per prime.
+                let divisor_factors = if is_prime(&divisor) {
+                    vec![(divisor, 1)]
+                } else {
+                    ecm_factor_complete(&divisor, b1, b2, curves)
+                };
+                for (prime, _) in divisor_factors {
+                    let mut count = 0u32;
+                    while (&remaining % &prime).is_zero() {
+                        remaining = remaining / prime.clone();
+                        count += 1;
+                    }
+                    if count > 0 {
+                        factors.push((prime, count));
+                    }
+                }
             }
-            factors.push((factor, count));
-        } else {
-            // Fall back to standard factorization
-            let mut standard_factors = factor(&remaining);
-            factors.append(&mut standard_factors);
-            break;
+            _ => {
+                // ECM found no factor with these bounds. `remaining` is composite (loop
+                // guard): factor it completely with Pollard rho instead, and mark it done so
+                // that it is not pushed a second time below.
+                factors.extend(factor_pollard_rho(&remaining));
+                remaining = Integer::one();
+            }
         }
     }
 
-    // Add the remaining prime if any
+    // The loop guard accepted `remaining` as prime.
     if remaining > Integer::one() {
         factors.push((remaining, 1));
     }
 
-    factors.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+    factors.sort_by(|a, b| a.0.cmp(&b.0));
     factors
 }
 
