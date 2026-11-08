@@ -1448,7 +1448,20 @@ impl ReplContext {
                                 let sol_str: Vec<String> = solution.iter()
                                     .map(|x| format!("{}", x))
                                     .collect();
-                                Ok(RustMathValue::String(format!("[{}]", sol_str.join(", "))))
+                                let sol = format!("[{}]", sol_str.join(", "));
+                                // `solve` returns one particular solution; it is unique iff
+                                // rank A = cols.
+                                let rank = m_rat.rank()
+                                    .map_err(|e| EvalError::new("MatrixError", format!("{:?}", e)))?;
+                                if rank < cols {
+                                    Ok(RustMathValue::String(format!(
+                                        "{} (particular solution, not unique: add any kernel vector; kernel dimension {})",
+                                        sol,
+                                        cols - rank
+                                    )))
+                                } else {
+                                    Ok(RustMathValue::String(sol))
+                                }
                             }
                             Ok(None) => Err(EvalError::new("ValueError", "No solution exists")),
                             Err(e) => Err(EvalError::new("MatrixError", format!("{:?}", e))),

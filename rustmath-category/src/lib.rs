@@ -94,5 +94,5 @@ pub use morphism_composition::{
 pub use ring_category::{
     RingCategory, CommutativeRingCategory, IntegralDomainCategory,
     RingElementMethods, RingParentMethods, CommutativeRingParentMethods,
-    RingWithBasis,
+    RingWithBasis, MultiplicativeOrder,
 };

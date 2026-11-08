@@ -2898,6 +2898,7 @@ dependencies = [
  "once_cell",
  "rustmath-combinatorics",
  "rustmath-core",
+ "rustmath-finitefields",
  "rustmath-integers",
  "rustmath-liealgebras",
  "rustmath-matrix",

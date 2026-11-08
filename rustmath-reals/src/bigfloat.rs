@@ -839,6 +839,46 @@ impl Ring for BigFloat {
     fn is_one(&self) -> bool {
         self.mantissa.is_one() && self.exponent == 0
     }
+
+    // Element predicates (MAGMA Ch. 25 `IsUnit`: nonzero elements are units; Ch. 19
+    // `Order`). A BigFloat is the exact dyadic rational `mantissa * 2^exponent` (no NaN or
+    // infinities), and the only real roots of unity are ±1, so every other nonzero value
+    // has infinite order. `==` compares exact values, so it is used for ±1 rather than the
+    // representation test in `is_one`.
+
+    fn unit_status(&self) -> Option<bool> {
+        Some(!self.is_zero())
+    }
+
+    fn nilpotent_status(&self) -> Option<bool> {
+        Some(self.is_zero())
+    }
+
+    /// The inverse at working precision (`Field::inverse`, a rounded quotient).
+    fn unit_inverse(&self) -> Result<Self> {
+        if self.is_zero() {
+            return Err(MathError::NotInvertible);
+        }
+        <Self as Field>::inverse(self)
+    }
+
+    fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
+        use rustmath_core::MultiplicativeOrder;
+        let one = BigFloat::one_prec(self.precision);
+        if self.is_zero() {
+            MultiplicativeOrder::NotAUnit
+        } else if *self == one {
+            MultiplicativeOrder::Finite(1)
+        } else if *self == -one {
+            MultiplicativeOrder::Finite(2)
+        } else {
+            MultiplicativeOrder::Infinite
+        }
+    }
+
+    fn static_characteristic() -> Option<u64> {
+        Some(0)
+    }
 }
 impl CommutativeRing for BigFloat {}
 impl IntegralDomain for BigFloat {}
@@ -1141,6 +1181,10 @@ impl Parent for BigFloatField {
     }
     fn one(&self) -> Option<BigFloat> {
         Some(BigFloat::one_prec(self.precision))
+    }
+    /// A real field is infinite (MAGMA Ch. 25 `IsFinite`: false for real fields).
+    fn is_finite(&self) -> Option<bool> {
+        Some(false)
     }
     fn name(&self) -> String {
         format!("RealField({})", self.precision)

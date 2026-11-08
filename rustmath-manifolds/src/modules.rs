@@ -25,6 +25,36 @@ use std::collections::HashMap;
 use std::fmt;
 
 // ============================================================================
+// FINITENESS (MAGMA Handbook Ch. 17 §17.4.3 `IsFinite`)
+// ============================================================================
+//
+// Every parent below is a module of sections Γ(E) of a real vector bundle E over M
+// (C^∞(M) = Γ(M × R), 𝔛(M) = Γ(TM), T^(p,q)(M), Ω^p(M) = Γ(Λ^p T*M)), so it is a module
+// over C^∞(M).
+//
+// * M is nonempty: the crate models every manifold as nonempty
+//   (`TopologicalManifold::point` accepts every coordinate vector of length dim M).
+// * C^∞(M) contains the constant functions c ∈ R, pairwise distinct on a nonempty M, so a
+//   copy of R (characteristic 0): it is infinite.
+// * If rank E >= 1, pick p ∈ M and v ≠ 0 in the fibre E_p. The extension lemma for vector
+//   bundles gives a global section s with s(p) = v (J. M. Lee, *Introduction to Smooth
+//   Manifolds*, 2nd ed. (2013), Ch. 8 and Ch. 10, the extension lemmas for vector fields
+//   and for vector bundles; it needs bump functions, so a differentiability class >= 1).
+//   The sections c·s, c ∈ R, are pairwise distinct (evaluate at p): Γ(E) is infinite.
+// * If rank E = 0, Γ(E) = {0}; the element types here do not enforce that, so no claim.
+
+/// `Parent::is_finite` of a module of sections of a vector bundle over `manifold`;
+/// `rank_is_nonzero` states whether the bundle has rank >= 1 (see the proof above).
+fn sections_is_finite(manifold: &DifferentiableManifold, rank_is_nonzero: bool) -> Option<bool> {
+    // A C^0 manifold has no tangent bundle and no bump-function extension lemma.
+    if rank_is_nonzero && manifold.differentiability_class() != Some(0) {
+        Some(false)
+    } else {
+        None
+    }
+}
+
+// ============================================================================
 // SCALAR FIELD ALGEBRA
 // ============================================================================
 
@@ -137,6 +167,13 @@ impl Parent for DiffScalarFieldAlgebra {
 
     fn cardinality(&self) -> Option<usize> {
         None // Infinite (uncountably many smooth functions)
+    }
+
+    /// `Some(false)`: the constant functions give a copy of R in C^∞(M) (M is nonempty;
+    /// see the finiteness notes at the top of this module). Constants are continuous, so
+    /// this holds for every differentiability class.
+    fn is_finite(&self) -> Option<bool> {
+        Some(false)
     }
 
     fn name(&self) -> String {
@@ -263,6 +300,12 @@ impl Parent for VectorFieldModule {
 
     fn cardinality(&self) -> Option<usize> {
         None // Infinite
+    }
+
+    /// `Some(false)` for dim M >= 1 (TM has rank dim M; see the finiteness notes at the top
+    /// of this module); `None` for dim M = 0 or a C^0 manifold.
+    fn is_finite(&self) -> Option<bool> {
+        sections_is_finite(&self.manifold, self.manifold.dimension() >= 1)
     }
 
     fn name(&self) -> String {
@@ -396,6 +439,11 @@ impl Parent for VectorFieldFreeModule {
 
     fn cardinality(&self) -> Option<usize> {
         None
+    }
+
+    /// As for [`VectorFieldModule`]: `Some(false)` for a frame of length dim M >= 1.
+    fn is_finite(&self) -> Option<bool> {
+        self.base_module.is_finite()
     }
 
     fn name(&self) -> String {
@@ -558,6 +606,13 @@ impl Parent for TensorFieldModule {
         None
     }
 
+    /// `Some(false)` when the bundle T^(p,q)M, of rank n^(p+q) with n = dim M, is nonzero,
+    /// i.e. n >= 1 or p + q = 0 (see the finiteness notes at the top of this module).
+    fn is_finite(&self) -> Option<bool> {
+        let rank_is_nonzero = self.manifold.dimension() >= 1 || self.total_rank() == 0;
+        sections_is_finite(&self.manifold, rank_is_nonzero)
+    }
+
     fn name(&self) -> String {
         format!("T^({},{})({})",
             self.contravariant_rank,
@@ -678,6 +733,12 @@ impl Parent for DiffFormModule {
         None
     }
 
+    /// `Some(false)` when Λ^p T*M, of rank C(n, p) with n = dim M, is nonzero, i.e.
+    /// p <= n (see the finiteness notes at the top of this module). For p > n, Ω^p(M) = 0.
+    fn is_finite(&self) -> Option<bool> {
+        sections_is_finite(&self.manifold, self.degree <= self.manifold.dimension())
+    }
+
     fn name(&self) -> String {
         format!("Ω^{}({})", self.degree, self.manifold.name())
     }
@@ -789,5 +850,52 @@ mod tests {
 
         let zero = module.zero().unwrap();
         assert!(module.contains(&zero));
+    }
+
+    // MAGMA Ch. 17 §17.4.3 IsFinite. A module of sections of a bundle of rank >= 1 over a
+    // nonempty manifold contains c·s for c ∈ R, a copy of R (GAP: IsFinite(Rationals) ->
+    // false, and Q ⊂ R); a rank-0 bundle gives the zero module, where no claim is made.
+    #[test]
+    fn test_section_modules_are_infinite() {
+        let m = Arc::new(EuclideanSpace::new(3).manifold().clone());
+        assert_eq!(DiffScalarFieldAlgebra::new(m.clone()).is_finite(), Some(false));
+        assert_eq!(VectorFieldModule::new(m.clone()).is_finite(), Some(false));
+        assert_eq!(VectorFieldFreeModule::new(m.clone()).unwrap().is_finite(), Some(false));
+        for (p, q) in [(0, 0), (1, 0), (0, 1), (1, 1), (2, 1)] {
+            assert_eq!(TensorFieldModule::new(m.clone(), p, q).is_finite(), Some(false));
+        }
+        for p in 0..=3 {
+            assert_eq!(DiffFormModule::new(m.clone(), p).is_finite(), Some(false), "Ω^{p}");
+        }
+        // Ω^4 of a 3-manifold is the zero module (Λ^4 of a rank-3 bundle is 0).
+        assert_eq!(DiffFormModule::new(m.clone(), 4).is_finite(), None);
+        // `cardinality` still makes no claim.
+        assert_eq!(VectorFieldModule::new(m.clone()).cardinality(), None);
+    }
+
+    #[test]
+    fn test_section_modules_over_zero_dimensional_manifold() {
+        // dim 0: TM = 0, so 𝔛(M) = 0 and T^(p,q)(M) = 0 for p + q >= 1; C^∞(M) = Ω^0(M)
+        // still contains the constants.
+        let m = Arc::new(DifferentiableManifold::new("P", 0));
+        assert_eq!(DiffScalarFieldAlgebra::new(m.clone()).is_finite(), Some(false));
+        assert_eq!(VectorFieldModule::new(m.clone()).is_finite(), None);
+        assert_eq!(TensorFieldModule::new(m.clone(), 0, 0).is_finite(), Some(false));
+        assert_eq!(TensorFieldModule::new(m.clone(), 1, 0).is_finite(), None);
+        assert_eq!(TensorFieldModule::new(m.clone(), 0, 2).is_finite(), None);
+        assert_eq!(DiffFormModule::new(m.clone(), 0).is_finite(), Some(false));
+        assert_eq!(DiffFormModule::new(m.clone(), 1).is_finite(), None);
+    }
+
+    #[test]
+    fn test_section_modules_over_c0_manifold() {
+        // A C^0 manifold: the constants still lie in C^0(M); no tangent-bundle claim.
+        let m = Arc::new(DifferentiableManifold::with_class("M", 2, 0));
+        assert_eq!(DiffScalarFieldAlgebra::new(m.clone()).is_finite(), Some(false));
+        assert_eq!(VectorFieldModule::new(m.clone()).is_finite(), None);
+        assert_eq!(DiffFormModule::new(m.clone(), 1).is_finite(), None);
+        // C^1 is enough for the extension lemma.
+        let m1 = Arc::new(DifferentiableManifold::with_class("M", 2, 1));
+        assert_eq!(VectorFieldModule::new(m1.clone()).is_finite(), Some(false));
     }
 }

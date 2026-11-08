@@ -37,7 +37,10 @@ pub use action::{
 pub use args::{SparseEntry, MatrixArgs, matrix_args_init};
 pub use berlekamp_massey::{berlekamp_massey, berlekamp_massey_verify};
 pub use charpoly_exact::charpoly_berkowitz;
-pub use companion::{characteristic_polynomial, companion_matrix, rational_canonical_form, RationalCanonicalForm};
+pub use companion::{
+    characteristic_polynomial, companion_matrix, invariant_factors, minimal_polynomial,
+    rational_canonical_form, RationalCanonicalForm,
+};
 pub use decomposition::{
     CholeskyDecomposition, HessenbergDecomposition, LUDecomposition, PLUDecomposition,
     QRDecomposition, SVDDecomposition,

@@ -101,6 +101,15 @@ where
     fn zero(&self) -> Option<Self::Element> {
         Some(ModuleWithBasisElement::zero())
     }
+
+    /// MAGMA `IsFinite` (Ch. 17 §17.4.3): the dual of a free module of finite rank n is
+    /// free of rank n (dual basis), so `Some(false)` for n >= 1 over a characteristic-0
+    /// element type; otherwise `None`.
+    fn is_finite(&self) -> Option<bool> {
+        crate::with_basis::parent::free_module_is_finite::<M::BaseRing>(
+            crate::with_basis::parent::rank_at_least_one(self.base_module.dimension()),
+        )
+    }
 }
 
 impl<M> ParentWithBasis for DualModule<M>

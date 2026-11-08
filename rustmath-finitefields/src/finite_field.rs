@@ -371,8 +371,14 @@ impl Parent for FiniteField {
     fn one(&self) -> Option<Self::Element> {
         Some(FiniteField::one(self))
     }
+    /// `#F = p^n` when it fits in `usize`; `None` otherwise (no claim, see
+    /// [`Parent::cardinality`]). The exact order is [`FiniteField::order`].
     fn cardinality(&self) -> Option<usize> {
         self.order().to_usize()
+    }
+    /// A finite field is finite (MAGMA Ch. 21 `IsFinite`), also when `p^n > usize::MAX`.
+    fn is_finite(&self) -> Option<bool> {
+        Some(true)
     }
     fn name(&self) -> String {
         format!("{self}")
@@ -869,6 +875,45 @@ impl Ring for FiniteFieldElement {
     }
     fn is_one(&self) -> bool {
         self.coeffs[0].is_one() && self.coeffs[1..].iter().all(|c| c.is_zero())
+    }
+
+    // Element predicates on the generic `Ring` path (MAGMA Ch. 21: "in a field, every
+    // non-zero element is a unit"; `Order` by order-from-factorisation of #F - 1). An
+    // unbound element is an integer constant awaiting the map Z -> GF(p^n), so only what
+    // holds in every finite field is decided (`crate::ring_hooks`).
+
+    fn unit_status(&self) -> Option<bool> {
+        if self.field.is_none() {
+            return crate::ring_hooks::sentinel_unit_status(self.unbound_value());
+        }
+        Some(!self.is_zero())
+    }
+
+    fn nilpotent_status(&self) -> Option<bool> {
+        if self.field.is_none() {
+            return crate::ring_hooks::sentinel_nilpotent_status(self.unbound_value());
+        }
+        Some(self.is_zero())
+    }
+
+    fn unit_inverse(&self) -> Result<Self> {
+        if self.field.is_none() {
+            return crate::ring_hooks::sentinel_unit_inverse(self.unbound_value(), self);
+        }
+        if self.is_zero() {
+            return Err(MathError::NotInvertible);
+        }
+        <Self as Field>::inverse(self)
+    }
+
+    fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
+        if self.field.is_none() {
+            return crate::ring_hooks::sentinel_order(self.unbound_value());
+        }
+        match FiniteFieldElement::multiplicative_order(self) {
+            Some(k) => crate::ring_hooks::order_from_integer(&k),
+            None => rustmath_core::MultiplicativeOrder::NotAUnit, // only 0
+        }
     }
 }
 

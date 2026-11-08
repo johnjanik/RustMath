@@ -664,6 +664,13 @@ impl Lattice {
     }
 }
 
+impl Lattice {
+    /// Whether every basis row is the zero vector.
+    fn basis_is_zero(&self) -> bool {
+        self.basis.iter().all(|row| row.iter().all(|c| c.is_zero()))
+    }
+}
+
 impl Parent for Lattice {
     type Element = Vec<Integer>;
 
@@ -683,8 +690,20 @@ impl Parent for Lattice {
         Some(vec![Integer::zero(); self.ambient])
     }
 
+    /// `Some(1)` when every basis row is zero (the lattice {0}); otherwise `None` (no claim,
+    /// see [`Parent::cardinality`]; the lattice is then infinite, see `is_finite`).
     fn cardinality(&self) -> Option<usize> {
-        None // infinite (for a positive-rank lattice)
+        if self.basis_is_zero() {
+            Some(1)
+        } else {
+            None
+        }
+    }
+
+    /// The Z-span of a nonzero vector is infinite, so a lattice is finite iff all of its
+    /// basis rows are zero (MAGMA `IsFinite`, Ch. 17 §17.4.3).
+    fn is_finite(&self) -> Option<bool> {
+        Some(self.basis_is_zero())
     }
 
     fn name(&self) -> String {

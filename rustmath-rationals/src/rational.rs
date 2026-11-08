@@ -86,10 +86,19 @@ impl Rational {
             return Err(MathError::DivisionByZero);
         }
 
-        Ok(Rational {
-            numerator: self.denominator.clone(),
-            denominator: self.numerator.clone(),
-        })
+        // Keep the canonical form (denominator > 0): the derived `PartialEq`/`Hash` and
+        // `is_one` compare fields, so 1/(-1) must be stored as -1/1.
+        if self.numerator.signum() < 0 {
+            Ok(Rational {
+                numerator: -self.denominator.clone(),
+                denominator: -self.numerator.clone(),
+            })
+        } else {
+            Ok(Rational {
+                numerator: self.denominator.clone(),
+                denominator: self.numerator.clone(),
+            })
+        }
     }
 
     /// Compute the floor (largest integer <= self)
@@ -402,6 +411,43 @@ impl Ring for Rational {
     fn is_one(&self) -> bool {
         self.numerator.is_one() && self.denominator.is_one()
     }
+
+    // Element predicates (MAGMA Ch. 20 `IsUnit`: every nonzero rational is a unit; Ch. 17
+    // §17.5.5 `IsNilpotent`; Ch. 19 `Order`). Q is a field of characteristic 0, and the
+    // torsion of Q^* is {±1}, so every other nonzero rational has infinite order
+    // (GAP: Order(2/3) -> infinity).
+
+    fn unit_status(&self) -> Option<bool> {
+        Some(!self.is_zero())
+    }
+
+    fn nilpotent_status(&self) -> Option<bool> {
+        Some(self.is_zero())
+    }
+
+    fn unit_inverse(&self) -> Result<Self> {
+        if self.is_zero() {
+            return Err(MathError::NotInvertible);
+        }
+        <Self as Field>::inverse(self)
+    }
+
+    fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
+        use rustmath_core::MultiplicativeOrder;
+        if self.is_zero() {
+            MultiplicativeOrder::NotAUnit
+        } else if self.is_one() {
+            MultiplicativeOrder::Finite(1)
+        } else if (-self.clone()).is_one() {
+            MultiplicativeOrder::Finite(2)
+        } else {
+            MultiplicativeOrder::Infinite
+        }
+    }
+
+    fn static_characteristic() -> Option<u64> {
+        Some(0)
+    }
 }
 
 impl CommutativeRing for Rational {}
@@ -423,6 +469,18 @@ impl EuclideanDomain for Rational {
         }
         // In a field, division is always exact (no remainder)
         Ok((self.clone() / other.clone(), Rational::zero()))
+    }
+
+    /// `Some(self)`: generic code can reach Q-specific exact algorithms, such as the
+    /// Gauss-lemma gcd over Q[x] through Z[x] in `rustmath-polynomials`
+    /// (`UnivariatePolynomial::gcd`).
+    fn as_any(&self) -> Option<&dyn std::any::Any> {
+        Some(self)
+    }
+
+    /// The inverse of [`EuclideanDomain::as_any`]: `Some` exactly for a boxed `Rational`.
+    fn from_any(value: Box<dyn std::any::Any>) -> Option<Self> {
+        value.downcast::<Rational>().ok().map(|q| *q)
     }
 }
 
@@ -513,6 +571,26 @@ impl From<i32> for Rational {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_as_any_round_trip() {
+        // `as_any` is the element itself; `from_any` accepts exactly a boxed `Rational`.
+        let r = Rational::new(-4, 6).unwrap();
+        let view = EuclideanDomain::as_any(&r).expect("Rational offers the view");
+        assert_eq!(view.downcast_ref::<Rational>(), Some(&r));
+        assert_eq!(
+            <Rational as EuclideanDomain>::from_any(Box::new(r.clone())),
+            Some(r)
+        );
+        assert_eq!(
+            <Rational as EuclideanDomain>::from_any(Box::new(Integer::from(3))),
+            None
+        );
+        assert_eq!(
+            <Rational as EuclideanDomain>::from_any(Box::new(3i64)),
+            None
+        );
+    }
 
     #[test]
     fn test_creation_and_simplification() {

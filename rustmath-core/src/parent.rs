@@ -46,16 +46,28 @@ pub trait Parent: Debug + Clone {
         None
     }
 
-    /// Get the cardinality of this parent (number of elements)
+    /// The number of elements, when it is known and fits in `usize` (MAGMA `#R`,
+    /// Handbook Ch. 17 §17.4.2).
     ///
-    /// Returns None for infinite structures
+    /// `Some(n)`: exactly `n` elements. `None` makes **no claim**: the parent may be
+    /// infinite, finite with more than `usize::MAX` elements (GF(2^64+13), GR(2^64, 1)), or
+    /// of uncomputed size. Never infer infiniteness from `None`; use [`Parent::is_finite`].
+    /// Large finite parents expose their exact `Integer` order inherently
+    /// (`FiniteField::order`, `GaloisRing::cardinality`, `Zmod::order` in
+    /// `rustmath-finitefields`).
     fn cardinality(&self) -> Option<usize> {
         None
     }
 
-    /// Check if this parent is finite
-    fn is_finite(&self) -> bool {
-        self.cardinality().is_some()
+    /// MAGMA `IsFinite(R)` (Handbook Ch. 17 §17.4.3: "true if R is known finite; false if
+    /// known infinite; error if unknown"): `Some(true)` known finite, `Some(false)` known
+    /// infinite, `None` undecided (where MAGMA raises an error).
+    ///
+    /// The default derives only what [`Parent::cardinality`] proves: `Some(_)` gives
+    /// `Some(true)`, otherwise `None`. It never returns `Some(false)`; an implementor that
+    /// knows it is infinite (or finite beyond `usize`) overrides this.
+    fn is_finite(&self) -> Option<bool> {
+        self.cardinality().map(|_| true)
     }
 
     /// Get a human-readable name for this parent
@@ -151,7 +163,25 @@ mod tests {
         assert!(set.contains(&3));
         assert!(!set.contains(&10));
         assert_eq!(set.cardinality(), Some(5));
-        assert!(set.is_finite());
+        assert_eq!(set.is_finite(), Some(true));
+    }
+
+    // A parent that overrides nothing makes no finiteness claim.
+    #[derive(Debug, Clone)]
+    struct Opaque;
+
+    impl Parent for Opaque {
+        type Element = i32;
+
+        fn contains(&self, _element: &Self::Element) -> bool {
+            true
+        }
+    }
+
+    #[test]
+    fn test_default_is_finite_makes_no_claim() {
+        assert_eq!(Opaque.cardinality(), None);
+        assert_eq!(Opaque.is_finite(), None);
     }
 
     // Example: A parent with basis
@@ -172,7 +202,12 @@ mod tests {
         }
 
         fn cardinality(&self) -> Option<usize> {
-            None // Infinite
+            None // no claim (see `Parent::cardinality`)
+        }
+
+        // R^n over the reals is infinite for n >= 1 and {0} for n = 0.
+        fn is_finite(&self) -> Option<bool> {
+            Some(self.dimension == 0)
         }
     }
 
@@ -203,7 +238,8 @@ mod tests {
         let v3 = VectorSpace { dimension: 3 };
 
         assert_eq!(v3.dimension(), Some(3));
-        assert!(!v3.is_finite());
+        assert_eq!(v3.is_finite(), Some(false));
+        assert_eq!(VectorSpace { dimension: 0 }.is_finite(), Some(true));
 
         let zero = v3.zero().unwrap();
         assert_eq!(zero, vec![0.0, 0.0, 0.0]);

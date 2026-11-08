@@ -1,6 +1,8 @@
 //! Real number implementation with arbitrary precision support
 
-use rustmath_core::{CommutativeRing, Field, MathError, NumericConversion, Result, Ring};
+use rustmath_core::{
+    CommutativeRing, Field, MathError, MultiplicativeOrder, NumericConversion, Result, Ring,
+};
 use rustmath_integers::Integer;
 use rustmath_rationals::Rational;
 use std::fmt;
@@ -314,7 +316,47 @@ impl Neg for Real {
 
 impl PartialEq for Real {
     fn eq(&self, other: &Self) -> bool {
-        (self.value - other.value).abs() < 1e-10
+        (self.value - other.value).abs() < REAL_TOLERANCE
+    }
+}
+
+/// The absolute tolerance of the f64 [`Real`] type: `is_zero` is `|x| < REAL_TOLERANCE`,
+/// `is_one` is `|x - 1| < REAL_TOLERANCE` and `a == b` is `|a - b| < REAL_TOLERANCE`.
+pub const REAL_TOLERANCE: f64 = 1e-10;
+
+/// Where an f64 value sits relative to [`REAL_TOLERANCE`], for the `Ring` element
+/// predicates of [`Real`] and `rustmath_complex::Complex`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ToleranceClass {
+    /// NaN or ±Inf: not a real number.
+    NotFinite,
+    /// Exactly 0.0 (or -0.0).
+    ExactZero,
+    /// `0 < |x| < REAL_TOLERANCE`: nonzero, but `is_zero` accepts it.
+    NearZero,
+    /// `|x| >= REAL_TOLERANCE`, finite.
+    Nonzero,
+}
+
+impl ToleranceClass {
+    /// Classify an f64 value.
+    pub fn of(x: f64) -> Self {
+        if !x.is_finite() {
+            ToleranceClass::NotFinite
+        } else if x == 0.0 {
+            ToleranceClass::ExactZero
+        } else if x.abs() < REAL_TOLERANCE {
+            ToleranceClass::NearZero
+        } else {
+            ToleranceClass::Nonzero
+        }
+    }
+}
+
+impl Real {
+    /// The [`ToleranceClass`] of the stored value.
+    pub fn tolerance_class(&self) -> ToleranceClass {
+        ToleranceClass::of(self.value)
     }
 }
 
@@ -334,11 +376,77 @@ impl Ring for Real {
     }
 
     fn is_zero(&self) -> bool {
-        self.value.abs() < 1e-10
+        self.value.abs() < REAL_TOLERANCE
     }
 
     fn is_one(&self) -> bool {
-        (self.value - 1.0).abs() < 1e-10
+        (self.value - 1.0).abs() < REAL_TOLERANCE
+    }
+
+    // Element predicates (MAGMA Ch. 25 `IsUnit`: nonzero elements are units; Ch. 17
+    // §17.5.5 `IsNilpotent`; Ch. 19 `Order`). `Real` uses a `REAL_TOLERANCE` (1e-10) in
+    // `is_zero`/`is_one`/`==`, so those cannot tell a stored nonzero double inside the
+    // tolerance from 0 (or one near 1 from 1). A decided answer is a proof about the stored
+    // double, so it is given only where the tolerance plays no role:
+    // * exactly 0.0 is a non-unit and nilpotent;
+    // * |x| >= REAL_TOLERANCE is a nonzero real, hence a unit and not nilpotent;
+    // * 0 < |x| < REAL_TOLERANCE is a nonzero real that the type's own `is_zero` and
+    //   `Field::inverse` treat as 0: undecided (`None`, a non-`NotInvertible` error);
+    // * NaN and ±Inf are not real numbers: undecided.
+
+    fn unit_status(&self) -> Option<bool> {
+        match self.tolerance_class() {
+            ToleranceClass::ExactZero => Some(false),
+            ToleranceClass::Nonzero => Some(true),
+            ToleranceClass::NearZero | ToleranceClass::NotFinite => None,
+        }
+    }
+
+    fn nilpotent_status(&self) -> Option<bool> {
+        match self.tolerance_class() {
+            ToleranceClass::ExactZero => Some(true),
+            ToleranceClass::Nonzero => Some(false),
+            ToleranceClass::NearZero | ToleranceClass::NotFinite => None,
+        }
+    }
+
+    /// The inverse at working precision (`Field::inverse`, `1.0 / x`) for
+    /// `|x| >= REAL_TOLERANCE`; `Err(NotInvertible)` only for exactly 0.0. A nonzero `x`
+    /// inside the tolerance is a unit, but `Field::inverse` treats it as 0, so the result is
+    /// `Err(NumericalError)` (undecided, not a proof of non-invertibility).
+    fn unit_inverse(&self) -> Result<Self> {
+        match self.tolerance_class() {
+            ToleranceClass::NotFinite => Err(MathError::DomainError(format!(
+                "{self} is not a real number, so it is neither a unit nor a non-unit"
+            ))),
+            ToleranceClass::ExactZero => Err(MathError::NotInvertible),
+            ToleranceClass::NearZero => Err(MathError::NumericalError(format!(
+                "{self} is nonzero but within the tolerance {REAL_TOLERANCE:e} of 0, which \
+                 the f64 Real type treats as 0; use RealMPFR or BigFloat"
+            ))),
+            ToleranceClass::Nonzero => <Self as Field>::inverse(self),
+        }
+    }
+
+    /// MAGMA `Order(a)` (Ch. 19). The only real roots of unity are ±1. Exactly 1.0 has
+    /// order 1, exactly -1.0 order 2 (characteristic 0), exactly 0.0 is a non-unit. Every
+    /// other value is `Undecided`: within the tolerance of ±1 or 0 the type's `is_one`/`==`
+    /// cannot separate it from them, and elsewhere no `Infinite` claim is made under
+    /// tolerance-based equality.
+    fn multiplicative_order_status(&self) -> MultiplicativeOrder {
+        if self.value == 1.0 {
+            MultiplicativeOrder::Finite(1)
+        } else if self.value == -1.0 {
+            MultiplicativeOrder::Finite(2)
+        } else if self.value == 0.0 {
+            MultiplicativeOrder::NotAUnit
+        } else {
+            MultiplicativeOrder::Undecided
+        }
+    }
+
+    fn static_characteristic() -> Option<u64> {
+        Some(0)
     }
 }
 

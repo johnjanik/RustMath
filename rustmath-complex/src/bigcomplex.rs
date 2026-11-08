@@ -210,6 +210,49 @@ impl Ring for BigComplex {
     fn is_one(&self) -> bool {
         self.re.is_one() && self.im.is_zero()
     }
+
+    // Element predicates (MAGMA Ch. 25 `IsUnit`: nonzero elements are units; Ch. 19
+    // `Order`). Both parts are exact dyadic rationals (`BigFloat`, no NaN or infinities),
+    // so the value lies in Q(i), whose roots of unity are exactly mu_4 = {±1, ±i}
+    // (phi(n) <= 2 forces n in {1, 2, 3, 4, 6}, and zeta_3, zeta_6 are not in Q(i); S. Lang,
+    // *Algebra*, Ch. VI §3). `==` on `BigFloat` compares exact values.
+
+    fn unit_status(&self) -> Option<bool> {
+        Some(!self.is_zero())
+    }
+
+    fn nilpotent_status(&self) -> Option<bool> {
+        Some(self.is_zero())
+    }
+
+    /// The inverse at working precision (`Field::inverse`, rounded quotients).
+    fn unit_inverse(&self) -> Result<Self> {
+        if self.is_zero() {
+            return Err(MathError::NotInvertible);
+        }
+        <Self as Field>::inverse(self)
+    }
+
+    fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
+        use rustmath_core::MultiplicativeOrder;
+        let one = BigFloat::one_prec(DEFAULT_PRECISION);
+        let minus_one = -one.clone();
+        if self.is_zero() {
+            MultiplicativeOrder::NotAUnit
+        } else if self.im.is_zero() && self.re == one {
+            MultiplicativeOrder::Finite(1)
+        } else if self.im.is_zero() && self.re == minus_one {
+            MultiplicativeOrder::Finite(2)
+        } else if self.re.is_zero() && (self.im == one || self.im == minus_one) {
+            MultiplicativeOrder::Finite(4)
+        } else {
+            MultiplicativeOrder::Infinite
+        }
+    }
+
+    fn static_characteristic() -> Option<u64> {
+        Some(0)
+    }
 }
 impl CommutativeRing for BigComplex {}
 impl IntegralDomain for BigComplex {}

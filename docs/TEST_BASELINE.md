@@ -1,4 +1,21 @@
-# Test baseline (2026-11-06)
+# Test baseline (2026-11-07)
+
+`cargo test --workspace --no-fail-fast` at commit `8e25fe2`, rustc 1.97.0, 4-core cloud container,
+atlas data present, from a clean target dir with incremental compilation disabled
+(`~/.cargo/config.toml`, to stay inside the session's disk allowance).
+
+**Result: 13,950 passed, 0 failed, 330 ignored, across 184 test targets.** The run took 37 minutes,
+including the full build.
+
+Compared with the 2026-11-06 baseline below (13,772 / 0 / 332, 174 targets), the difference is the
+L0-L1 defect fixes (commits `8b29b5a`..`8e25fe2`; see `docs/magma/REVIEW_2026-11-06.md`). They added
+10 test targets: `ring_predicates.rs` in five crates (core predicates per type), `ch18_residues.rs`
+(integers, with PARI/GP grids under `tests/data/`), `square_roots.rs` (finitefields),
+`ch23_quotrem_gcd.rs` (polynomials), `parent_finiteness.rs` (matrix) and `matrix_forms_gfp.rs`
+(finitefields, Smith/rational forms over GF(p)). Two doctests that were marked `ignore` now run; no
+`#[ignore]` or `ignore` marker was added. Each fix was reviewed for weakened assertions.
+
+## Previous baseline (2026-11-06)
 
 `cargo test --workspace --no-fail-fast` at commit `e0a9c23`, rustc 1.97.0, 4-core cloud container,
 with the gitignored degree-24 atlas data present (`rustmath-groups/data/`, built by the environment's

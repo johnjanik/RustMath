@@ -173,8 +173,8 @@ impl Parent for Zmod {
         self.modulus.to_usize()
     }
 
-    fn is_finite(&self) -> bool {
-        true
+    fn is_finite(&self) -> Option<bool> {
+        Some(true)
     }
 
     fn name(&self) -> String {
@@ -234,7 +234,7 @@ mod tests {
         let x = z6.element(Integer::from(4)).unwrap();
         assert!(z6.contains(&x));
         assert_eq!(Parent::cardinality(&z6), Some(6));
-        assert!(Parent::is_finite(&z6));
+        assert_eq!(Parent::is_finite(&z6), Some(true));
         assert_eq!(Parent::zero(&z6), Some(z6.zero()));
         assert_eq!(Parent::one(&z6), Some(z6.one()));
 

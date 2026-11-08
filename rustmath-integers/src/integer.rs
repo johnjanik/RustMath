@@ -1,6 +1,35 @@
-//! Arbitrary precision integers
+//! Arbitrary precision integers (MAGMA Handbook ch. 18, "Ring of Integers";
+//! digest `rustmath-lava/docs/Chapter_18_Ring_of_Integers.md`).
+//!
+//! Residue arithmetic follows the handbook's conventions:
+//! - §18.7 `LegendreSymbol`, `JacobiSymbol`, `KroneckerSymbol`: [`Integer::kronecker_symbol`]
+//!   implements [Coh93] Algorithm 1.4.10 (binary Jacobi with quadratic reciprocity, extended to
+//!   all moduli by the rules at 2 and -1); the Legendre and Jacobi symbols are restrictions of it.
+//! - §18.12.1 `Modexp`, `Modinv`, `Modsqrt`: results are least non-negative residues in
+//!   `[0, |m|)` ([`Integer::mod_pow`], [`Integer::mod_inverse`], [`Integer::sqrt_mod_prime`]).
+//!   Square roots modulo a prime use [Coh93] Algorithm 1.5.1 (Tonelli-Shanks) and are verified
+//!   before they are returned.
+//! - `binomial_mod` reduces the generalised binomial C(n, k) (any n, k) modulo a prime p with
+//!   Lucas' theorem and C(n, k) = (-1)^k C(k-n-1, k).
+//!
+//! References:
+//! - [Coh93] H. Cohen, *A Course in Computational Algebraic Number Theory*, GTM 138,
+//!   Springer 1993, Algorithms 1.4.10 and 1.5.1.
+//! - [Knu97] D. E. Knuth, *The Art of Computer Programming* vol. 2, 3rd ed., §4.6.3
+//!   (binary exponentiation).
+//! - E. Lucas, *Théorie des fonctions numériques simplement périodiques*, Amer. J. Math. 1
+//!   (1878) 184-240, 289-321 (Lucas' theorem); Graham-Knuth-Patashnik, *Concrete
+//!   Mathematics*, eq. (5.14) (negating the upper index).
+//! - J. Sorenson, J. Webster, *Strong pseudoprimes to twelve prime bases*, Math. Comp. 86
+//!   (2017) 985-1003: the fixed-base Miller-Rabin test in [`crate::prime::is_prime`] (bases
+//!   2..37) is a proof of primality only below psi_12 = 318665857834031151167461 (about 3.19e23).
+//!
+//! Note on `%`: the `Rem` impls (and `EuclideanDomain::div_rem`) truncate toward zero, so the
+//! remainder has the sign of the dividend. Every residue computation in this file reduces with
+//! `mod_floor` on the absolute modulus instead.
 
 use num_bigint::BigInt;
+use num_integer::Integer as _;
 use num_traits::{One, Signed, Zero};
 use rustmath_core::{
     CommutativeRing, EuclideanDomain, IntegralDomain, MathError, NumericConversion, Result, Ring,
@@ -79,25 +108,39 @@ impl Integer {
         Ring::pow(self, exp)
     }
 
-    /// Modular exponentiation: compute (self^exp) % modulus efficiently
+    /// Modular exponentiation `self^exp mod |modulus|` (MAGMA `Modexp`, Handbook ch. 18
+    /// §18.12.1; binary exponentiation [Knu97] §4.6.3). Exponents longer than 32 bits go to
+    /// `BigInt::modpow`, which uses Montgomery multiplication only when `|modulus|` is odd and
+    /// plain square-and-multiply with division otherwise.
+    ///
+    /// The result is the least non-negative residue, in `[0, |modulus|)`, for every sign of
+    /// `self`, `exp` and `modulus` (PARI/GP `lift(Mod(self, modulus)^exp)`):
+    ///
+    /// | input | result |
+    /// |---|---|
+    /// | `modulus = 0` | `Err(DivisionByZero)` |
+    /// | `\|modulus\| = 1` | `Ok(0)` for every `exp` (Z/1Z = {0}) |
+    /// | `modulus < 0` | computed modulo `\|modulus\|` |
+    /// | `exp >= 0` | `self^exp` reduced; `0^0 = 1` |
+    /// | `exp < 0`, `gcd(self, modulus) = 1` | `(self^-1)^\|exp\|` reduced |
+    /// | `exp < 0`, not invertible | `Err(NotInvertible)` |
     pub fn mod_pow(&self, exp: &Self, modulus: &Self) -> Result<Self> {
         if modulus.is_zero() {
             return Err(MathError::DivisionByZero);
         }
-
-        let mut base = self.value.clone() % &modulus.value;
-        let mut exp = exp.value.clone();
-        let mut result = BigInt::one();
-
-        while !exp.is_zero() {
-            if (&exp % 2) == BigInt::one() {
-                result = (result * &base) % &modulus.value;
-            }
-            base = (&base * &base) % &modulus.value;
-            exp >>= 1;
+        let m = modulus.value.abs();
+        if m.is_one() {
+            return Ok(Integer::zero());
         }
-
-        Ok(Integer::new(result))
+        if exp.value.is_negative() {
+            let inv = self
+                .value
+                .mod_floor(&m)
+                .modinv(&m)
+                .ok_or(MathError::NotInvertible)?;
+            return Ok(Integer::new(mod_pow_nonneg(&inv, &(-&exp.value), &m)));
+        }
+        Ok(Integer::new(mod_pow_nonneg(&self.value, &exp.value, &m)))
     }
 
     /// Check if the number is even
@@ -561,38 +604,56 @@ impl Integer {
         }
     }
 
-    /// Compute the Legendre symbol (a/p) for odd prime p
+    /// Legendre symbol (self/p) for an odd prime p (MAGMA `LegendreSymbol`, Handbook ch. 18
+    /// §18.7), for every integer `self` (negative included).
     ///
     /// Returns:
-    /// - 0 if a ≡ 0 (mod p)
-    /// - 1 if a is a quadratic residue mod p
-    /// - -1 if a is a quadratic non-residue mod p
+    /// - 0 if self ≡ 0 (mod p)
+    /// - 1 if self is a non-zero quadratic residue mod p
+    /// - -1 if self is a quadratic non-residue mod p
+    ///
+    /// Computed as [`Integer::kronecker_symbol`] ([Coh93] Alg. 1.4.10, O(log^2 p)).
+    ///
+    /// Errors:
+    /// - p <= 2 or p not accepted by [`crate::prime::is_prime`]: `InvalidArgument`.
+    /// - The symbol is 0 although p does not divide self: this proves p composite
+    ///   (gcd(self, p) is a proper factor), so `InvalidArgument("... modulus is not prime ...")`
+    ///   is returned instead of a 0 that would claim p | self.
+    ///
+    /// Primality, as in MAGMA, is a fast test: `is_prime` (Miller-Rabin to the bases 2..37) is a
+    /// proof only below 318665857834031151167461 (Sorenson-Webster 2017). Above it a strong
+    /// pseudoprime p is accepted and the value returned is the Jacobi symbol (self/p).
     pub fn legendre_symbol(&self, p: &Self) -> Result<i8> {
         use crate::prime::is_prime;
 
-        if !is_prime(p) || *p == Integer::from(2) {
+        if *p <= Integer::from(2) || !is_prime(p) {
             return Err(MathError::InvalidArgument(
                 "Second argument must be an odd prime".to_string(),
             ));
         }
 
-        let a = self.clone() % p.clone();
-        if a.is_zero() {
-            return Ok(0);
+        let k = self.kronecker_symbol(p);
+        if k == 0 && !self.value.mod_floor(&p.value).is_zero() {
+            return Err(MathError::InvalidArgument(
+                "legendre_symbol: modulus is not prime (gcd(a, p) > 1)".to_string(),
+            ));
         }
+        Ok(k)
+    }
 
-        // Use Euler's criterion: (a/p) ≡ a^((p-1)/2) (mod p)
-        let exponent = (p.clone() - Integer::one()) / Integer::from(2);
-        let result = a.mod_pow(&exponent, p)?;
-
-        if result.is_one() {
-            Ok(1)
-        } else if result == p.clone() - Integer::one() {
-            Ok(-1)
-        } else {
-            // This shouldn't happen for valid inputs
-            Ok(0)
-        }
+    /// Kronecker symbol (self/n) for all integers self and n (MAGMA `KroneckerSymbol`,
+    /// Handbook ch. 18 §18.7). The symbol is defined everywhere, so no error is possible.
+    ///
+    /// - (a/0) = 1 if |a| = 1, else 0.
+    /// - (a/2) = 0 for a even, (-1)^((a^2-1)/8) for a odd.
+    /// - (a/-1) = -1 if a < 0, else 1 (so (0/-1) = 1).
+    /// - Completely multiplicative in n. It equals the Jacobi symbol for odd n > 0 and the
+    ///   Legendre symbol for odd prime n.
+    ///
+    /// Algorithm: [Coh93] Algorithm 1.4.10 (binary Jacobi algorithm with quadratic
+    /// reciprocity), O(log^2 max(|a|, |n|)) bit operations; n is never factored.
+    pub fn kronecker_symbol(&self, n: &Self) -> i8 {
+        kronecker_bigint(&self.value, &n.value)
     }
 
     /// Compute the p-adic valuation: largest k such that p^k divides self
@@ -651,95 +712,95 @@ impl Integer {
         self.bit_length()
     }
 
-    /// Compute the Jacobi symbol (a/n)
+    /// Jacobi symbol (self/n) for odd n > 0 (MAGMA `JacobiSymbol`, Handbook ch. 18 §18.7), for
+    /// every integer `self` (negative included). (self/1) = 1.
     ///
-    /// Generalization of the Legendre symbol to odd positive integers n
+    /// Computed by quadratic reciprocity as [`Integer::kronecker_symbol`] ([Coh93]
+    /// Alg. 1.4.10); n is not factored.
+    ///
+    /// Errors: n <= 0 or n even gives `InvalidArgument` (use [`Integer::kronecker_symbol`] for
+    /// those moduli).
     pub fn jacobi_symbol(&self, n: &Self) -> Result<i8> {
         if n.is_even() || n.signum() <= 0 {
             return Err(MathError::InvalidArgument(
                 "Second argument must be an odd positive integer".to_string(),
             ));
         }
-
-        use crate::prime::factor;
-
-        if n.is_one() {
-            return Ok(1);
-        }
-
-        let a = self.clone() % n.clone();
-        if a.is_zero() {
-            return Ok(0);
-        }
-
-        // Use the property: (a/n) = ∏ (a/p_i)^{e_i} for n = ∏ p_i^{e_i}
-        let factors = factor(n);
-        let mut result = 1i8;
-
-        for (prime, exponent) in factors {
-            let leg = a.legendre_symbol(&prime)?;
-            if leg == 0 {
-                return Ok(0);
-            }
-            // (a/p)^e
-            if exponent % 2 == 1 {
-                result *= leg;
-            }
-        }
-
-        Ok(result)
+        Ok(self.kronecker_symbol(n))
     }
 
-    /// Check if this number is a quadratic residue modulo a prime p
+    /// Decide whether `self` is a square modulo a prime p, i.e. whether some x has
+    /// x^2 ≡ self (mod p). 0 counts as a square, and every integer is a square mod 2.
     ///
-    /// Returns true if there exists an x such that x² ≡ self (mod p).
-    /// For odd primes, this uses the Legendre symbol.
+    /// Every `Ok` is a decision:
+    /// - `Ok(false)` is returned only when the Jacobi symbol (self/p) is -1, which proves that
+    ///   self is a non-square modulo any odd p, prime or not.
+    /// - `Ok(true)` is returned only after [`Integer::sqrt_mod_prime`] produced a verified root.
+    ///
+    /// Errors (`InvalidArgument`):
+    /// - p not accepted by [`crate::prime::is_prime`] ("Modulus must be prime").
+    /// - (self/p) = 0 with p not dividing self, which proves p composite.
+    /// - p is a strong pseudoprime (above 318665857834031151167461, Sorenson-Webster 2017) and
+    ///   the root computation failed (a bounded search ran out or the root check failed).
     ///
     /// # Examples
     ///
-    /// ```ignore
-    /// // 4 is a QR mod 7: 2² = 4
-    /// assert!(Integer::from(4).is_quadratic_residue_prime(&Integer::from(7)));
-    /// // 3 is not a QR mod 7
-    /// assert!(!Integer::from(3).is_quadratic_residue_prime(&Integer::from(7)));
     /// ```
-    pub fn is_quadratic_residue_prime(&self, p: &Self) -> bool {
+    /// use rustmath_integers::Integer;
+    /// // 4 is a QR mod 7: 2² = 4
+    /// assert!(Integer::from(4).is_quadratic_residue_prime(&Integer::from(7)).unwrap());
+    /// // 3 is not a QR mod 7
+    /// assert!(!Integer::from(3).is_quadratic_residue_prime(&Integer::from(7)).unwrap());
+    /// // -1 is not a QR mod 7 (7 = 3 mod 4)
+    /// assert!(!Integer::from(-1).is_quadratic_residue_prime(&Integer::from(7)).unwrap());
+    /// ```
+    pub fn is_quadratic_residue_prime(&self, p: &Self) -> Result<bool> {
         use crate::prime::is_prime;
 
         if !is_prime(p) {
-            return false;
+            return Err(MathError::InvalidArgument(
+                "Modulus must be prime".to_string(),
+            ));
         }
-
-        // Special case for p = 2
-        if *p == Integer::from(2) {
-            return self.is_even() || self.clone() % Integer::from(2) == Integer::zero();
-        }
-
-        // For odd primes, use Legendre symbol
-        match self.legendre_symbol(p) {
-            Ok(1) => true,
-            Ok(0) => true, // 0 is technically a QR (0² = 0)
-            _ => false,
+        match sqrt_mod_prime_checked(&self.value, &p.value)? {
+            Some(_) => Ok(true),
+            None => Ok(false),
         }
     }
 
-    /// Compute a square root modulo a prime using the Tonelli-Shanks algorithm
-    ///
-    /// Given a quadratic residue a modulo prime p, finds r such that r² ≡ a (mod p).
+    /// Square root modulo a prime (MAGMA `Modsqrt`, Handbook ch. 18 §18.12.1): returns r with
+    /// 0 <= r < p and r^2 ≡ self (mod p), for every integer `self` (negative included).
+    /// Which of the two roots is returned is unspecified.
     ///
     /// # Algorithm
     ///
-    /// Tonelli-Shanks algorithm for finding square roots modulo prime p:
-    /// 1. Factor out powers of 2 from p-1: p-1 = Q · 2^S
-    /// 2. Find a quadratic non-residue z
-    /// 3. Iteratively compute the square root
+    /// `a = self mod p` (least non-negative residue). For p = 2 or a = 0 the root is a.
+    /// Otherwise the Kronecker symbol (a/p) is computed ([Coh93] Alg. 1.4.10); for
+    /// p ≡ 3 (mod 4) the root is a^((p+1)/4), and for p ≡ 1 (mod 4) it is found by
+    /// Tonelli-Shanks ([Coh93] Alg. 1.5.1). Every root is checked (r^2 ≡ a) before it is
+    /// returned, so a non-root is never returned, even for a pseudoprime modulus.
+    ///
+    /// # Errors (`InvalidArgument`)
+    ///
+    /// - p not accepted by [`crate::prime::is_prime`]: "Modulus must be prime".
+    /// - (a/p) = -1: "Not a quadratic residue".
+    /// - (a/p) = 0 with a ≠ 0, a bounded Tonelli-Shanks search runs out, or the final check
+    ///   fails: "sqrt_mod_prime: modulus is not prime (...)". Each proves p composite;
+    ///   `is_prime` can accept strong pseudoprimes above 318665857834031151167461
+    ///   (Sorenson-Webster 2017).
     ///
     /// # Examples
     ///
-    /// ```ignore
-    /// // Find sqrt(4) mod 7 = 2 or 5
+    /// ```
+    /// use rustmath_integers::Integer;
+    /// // sqrt(4) mod 7 is 2 or 5
     /// let root = Integer::from(4).sqrt_mod_prime(&Integer::from(7)).unwrap();
     /// assert!(root == Integer::from(2) || root == Integer::from(5));
+    /// // sqrt(-1) mod 5 is 2 or 3
+    /// let root = Integer::from(-1).sqrt_mod_prime(&Integer::from(5)).unwrap();
+    /// assert!(root == Integer::from(2) || root == Integer::from(3));
+    /// // -1 is not a square mod 7
+    /// assert!(Integer::from(-1).sqrt_mod_prime(&Integer::from(7)).is_err());
     /// ```
     pub fn sqrt_mod_prime(&self, p: &Self) -> Result<Self> {
         use crate::prime::is_prime;
@@ -749,87 +810,11 @@ impl Integer {
                 "Modulus must be prime".to_string(),
             ));
         }
-
-        let a = self.clone() % p.clone();
-
-        // Special cases
-        if a.is_zero() {
-            return Ok(Integer::zero());
-        }
-
-        if *p == Integer::from(2) {
-            return Ok(a % Integer::from(2));
-        }
-
-        // Check if a is a quadratic residue
-        if !self.is_quadratic_residue_prime(p) {
-            return Err(MathError::InvalidArgument(
+        match sqrt_mod_prime_checked(&self.value, &p.value)? {
+            Some(r) => Ok(Integer::new(r)),
+            None => Err(MathError::InvalidArgument(
                 "Not a quadratic residue".to_string(),
-            ));
-        }
-
-        // Special case: p ≡ 3 (mod 4)
-        if p.clone() % Integer::from(4) == Integer::from(3) {
-            let exponent = (p.clone() + Integer::one()) / Integer::from(4);
-            return a.mod_pow(&exponent, p);
-        }
-
-        // General case: Tonelli-Shanks algorithm
-        // Factor p-1 = Q · 2^S where Q is odd
-        let mut q = p.clone() - Integer::one();
-        let mut s = 0u32;
-
-        while q.is_even() {
-            q = q / Integer::from(2);
-            s += 1;
-        }
-
-        // Find a quadratic non-residue z
-        let mut z = Integer::from(2);
-        while z.is_quadratic_residue_prime(p) {
-            z = z + Integer::one();
-            if z >= *p {
-                return Err(MathError::InvalidArgument(
-                    "Could not find non-residue".to_string(),
-                ));
-            }
-        }
-
-        // Initialize
-        let mut m = s;
-        let mut c = z.mod_pow(&q, p)?;
-        let mut t = a.mod_pow(&q, p)?;
-        let mut r = a.mod_pow(&((q.clone() + Integer::one()) / Integer::from(2)), p)?;
-
-        loop {
-            if t.is_zero() {
-                return Ok(Integer::zero());
-            }
-            if t.is_one() {
-                return Ok(r);
-            }
-
-            // Find the least i such that t^(2^i) = 1
-            let mut i = 1u32;
-            let mut temp = (t.clone() * t.clone()) % p.clone();
-            while !temp.is_one() && i < m {
-                temp = (temp.clone() * temp.clone()) % p.clone();
-                i += 1;
-            }
-
-            if i >= m {
-                return Err(MathError::InvalidArgument(
-                    "Algorithm failed".to_string(),
-                ));
-            }
-
-            // Update values
-            let two_pow = Integer::from(2).pow((m - i - 1) as u32);
-            let b = c.mod_pow(&two_pow, p)?;
-            m = i;
-            c = (b.clone() * b.clone()) % p.clone();
-            t = (t * c.clone()) % p.clone();
-            r = (r * b) % p.clone();
+            )),
         }
     }
 
@@ -867,30 +852,37 @@ impl Integer {
         result
     }
 
-    /// Compute the modular inverse using the extended Euclidean algorithm
+    /// Modular inverse (MAGMA `Modinv`, Handbook ch. 18 §18.12.1), by the extended Euclidean
+    /// algorithm (`BigInt::modinv`).
     ///
-    /// Returns Some(x) where (self * x) ≡ 1 (mod modulus), or None if no inverse exists
+    /// For m = |modulus| >= 2 returns `Some(u)` with 1 <= u < m and self*u ≡ 1 (mod m), or
+    /// `None` when gcd(self, m) > 1 (no inverse exists). Any sign of `self` and `modulus` is
+    /// accepted (PARI/GP `lift(Mod(self, modulus)^-1)`). For m = 1 the result is `Some(0)`
+    /// (Z/1Z = {0}).
+    ///
+    /// `modulus = 0` is not a valid modulus (MAGMA requires m > 1, and PARI/GP raises an
+    /// error): the result is `None` for every `self`. This `None` does not say that `self` has
+    /// no inverse in Z/0Z = Z (where ±1 are units).
     pub fn mod_inverse(&self, modulus: &Self) -> Option<Self> {
-        let (gcd, x, _) = self.extended_gcd(modulus);
-
-        if !gcd.is_one() {
-            // No inverse exists if gcd(self, modulus) != 1
+        if modulus.is_zero() {
             return None;
         }
-
-        // Ensure the result is positive
-        let result = x % modulus.clone();
-        if result.signum() < 0 {
-            Some(result + modulus.clone())
-        } else {
-            Some(result)
+        let m = modulus.value.abs();
+        if m.is_one() {
+            return Some(Integer::zero());
         }
+        self.value.mod_floor(&m).modinv(&m).map(Integer::new)
     }
 
-    /// Compute modulo operation (always returns non-negative result)
+    /// Least non-negative residue of `self` modulo `|modulus|`, in `[0, |modulus|)`.
     ///
-    /// Unlike the % operator which can return negative values,
-    /// this always returns a value in the range [0, modulus)
+    /// Unlike the `%` operator, which truncates and gives the remainder the sign of `self`,
+    /// this always returns a value in `[0, |modulus|)`. (MAGMA `mod` instead gives the result
+    /// the sign of the modulus; for `modulus > 0` the two agree.)
+    ///
+    /// # Panics
+    ///
+    /// Panics if `modulus` is zero (division by zero).
     pub fn modulo(&self, modulus: &Self) -> Self {
         let result = self.clone() % modulus.clone();
         if result.signum() < 0 {
@@ -911,9 +903,24 @@ impl Integer {
         is_prime(self)
     }
 
-    /// Compute binomial coefficient modulo a prime
+    /// Generalised binomial coefficient C(self, k) reduced modulo a prime p, in `[0, p)`
+    /// (MAGMA `Binomial(n, r)` mod p; PARI/GP `binomial(n, k) % p`).
     ///
-    /// Uses Lucas' theorem for efficiency when p is prime
+    /// - k < 0: C(n, k) = 0.
+    /// - n < 0: C(n, k) = (-1)^k C(k-n-1, k) (Graham-Knuth-Patashnik eq. (5.14)).
+    /// - 0 <= n < k: 0.
+    /// - Otherwise Lucas' theorem on the base-p digits (n_i, k_i): C(n, k) ≡ prod C(n_i, k_i),
+    ///   each factor computed as prod_{i<k'} (n_i - i) / k'! mod p with k' = min(k_i, n_i - k_i).
+    ///
+    /// Errors: p not accepted by [`crate::prime::is_prime`] (`InvalidArgument`); a Lucas digit
+    /// k' that does not fit in a `u64` (only possible for p > 2^64) gives `NotSupported`.
+    ///
+    /// Primality, as in MAGMA, is a fast test: `is_prime` (Miller-Rabin to the bases 2..37) is a
+    /// proof only below 318665857834031151167461 (Sorenson-Webster 2017). Above it a strong
+    /// pseudoprime p is accepted, and Lucas' theorem does not hold for a composite modulus: the
+    /// value returned is then not C(n, k) mod p in general (or `Err(NotInvertible)` when a
+    /// digit factorial k'! shares a factor with p). Callers that need a guarantee above that
+    /// bound must certify p first.
     pub fn binomial_mod(&self, k: &Self, p: &Self) -> Result<Self> {
         use crate::prime::is_prime;
 
@@ -922,44 +929,218 @@ impl Integer {
                 "Modulus must be prime".to_string(),
             ));
         }
+        let p = &p.value;
 
-        if k > self {
+        if k.value.is_negative() {
+            return Ok(Integer::zero());
+        }
+        // C(n, k) = (-1)^k C(k - n - 1, k) moves a negative upper index to k - n - 1 >= k.
+        let (mut n, negate) = if self.value.is_negative() {
+            (&k.value - &self.value - 1u32, k.value.is_odd())
+        } else {
+            (self.value.clone(), false)
+        };
+        if k.value > n {
             return Ok(Integer::zero());
         }
 
-        if k.is_zero() || k == self {
-            return Ok(Integer::one());
-        }
-
-        // Use Lucas' theorem for prime modulus
-        let mut n = self.clone();
-        let mut k = k.clone();
-        let mut result = Integer::one();
-
-        while !n.is_zero() && !k.is_zero() {
-            let n_i = n.clone() % p.clone();
-            let k_i = k.clone() % p.clone();
-
+        let mut k = k.value.clone();
+        let mut result = BigInt::one();
+        while !k.is_zero() {
+            let (n_next, n_i) = n.div_mod_floor(p);
+            let (k_next, k_i) = k.div_mod_floor(p);
             if k_i > n_i {
                 return Ok(Integer::zero());
             }
-
-            // Compute C(n_i, k_i) mod p directly (since n_i, k_i < p)
-            let mut binom = Integer::one();
-            for i in 0..k_i.to_u64().unwrap_or(0) {
-                binom = binom * (n_i.clone() - Integer::from(i));
-                binom = binom / Integer::from(i + 1);
+            // C(n_i, k_i) mod p with 0 <= k_i <= n_i < p, by the product formula.
+            let k_small = std::cmp::min(k_i.clone(), &n_i - &k_i);
+            let k_small = u64::try_from(&k_small).map_err(|_| {
+                MathError::NotSupported(
+                    "binomial_mod: Lucas digit does not fit in a u64".to_string(),
+                )
+            })?;
+            let mut num = BigInt::one();
+            let mut den = BigInt::one();
+            for i in 0..k_small {
+                num = (num * (&n_i - i)).mod_floor(p);
+                den = (den * (i + 1)).mod_floor(p);
             }
-            binom = binom % p.clone();
-
-            result = (result * binom) % p.clone();
-
-            n = n / p.clone();
-            k = k / p.clone();
+            // den is a product of 1..=k_small with k_small < p, hence a unit mod p.
+            let den_inv = den.modinv(p).ok_or(MathError::NotInvertible)?;
+            result = (result * num * den_inv).mod_floor(p);
+            n = n_next;
+            k = k_next;
         }
-
-        Ok(result)
+        if negate {
+            result = (-result).mod_floor(p);
+        }
+        Ok(Integer::new(result))
     }
+}
+
+/// `base^exp mod m` in `[0, m)` for `exp >= 0` and `m >= 2`.
+///
+/// `BigInt::modpow` (Montgomery multiplication for odd m; it reduces like `mod_floor`) has a
+/// fixed set-up cost that dominates for short exponents, such as the squarings in
+/// Miller-Rabin, so exponents of at most 32 bits use right-to-left binary exponentiation
+/// ([Knu97] §4.6.3) with `mod_floor` reductions instead. Both give the same residue.
+fn mod_pow_nonneg(base: &BigInt, exp: &BigInt, m: &BigInt) -> BigInt {
+    debug_assert!(!exp.is_negative() && *m > BigInt::one());
+    if exp.bits() > 32 {
+        return base.modpow(exp, m);
+    }
+    let mut e = u32::try_from(exp).expect("exponent has at most 32 bits");
+    let mut b = base.mod_floor(m);
+    let mut result = BigInt::one();
+    while e > 0 {
+        if e & 1 == 1 {
+            result = (&result * &b).mod_floor(m);
+        }
+        e >>= 1;
+        if e > 0 {
+            b = (&b * &b).mod_floor(m);
+        }
+    }
+    result
+}
+
+/// Kronecker symbol (a/b) on `BigInt`s: [Coh93] Algorithm 1.4.10.
+///
+/// Steps: (a/0); strip the power of 2 from b with the rule (a/2); make b positive with the rule
+/// (a/-1); then the binary Jacobi loop with b odd and positive. The reciprocity step is also
+/// valid on the first pass, where a may be negative and odd:
+/// (a/b) = (-1)^(((a-1)/2)((b-1)/2)) (b/|a|), where a ≡ 3 (mod 4) is tested with `mod_floor`.
+fn kronecker_bigint(a: &BigInt, b: &BigInt) -> i8 {
+    if b.is_zero() {
+        return if a.abs().is_one() { 1 } else { 0 };
+    }
+    if a.is_even() && b.is_even() {
+        return 0;
+    }
+    let mut a = a.clone();
+    let mut b = b.clone();
+    let mut k: i8 = 1;
+    let (three, four, five, eight) = (
+        BigInt::from(3u32),
+        BigInt::from(4u32),
+        BigInt::from(5u32),
+        BigInt::from(8u32),
+    );
+    // (a/2)^v with a odd (a even and b even was handled above).
+    let v = b.trailing_zeros().expect("b is non-zero");
+    if v > 0 {
+        b >>= v; // exact: b has exactly v trailing zero bits
+        if v % 2 == 1 {
+            let a8 = a.mod_floor(&eight);
+            if a8 == three || a8 == five {
+                k = -k;
+            }
+        }
+    }
+    // (a/-1) = -1 iff a < 0.
+    if b.is_negative() {
+        b = -b;
+        if a.is_negative() {
+            k = -k;
+        }
+    }
+    // Invariant: b odd and positive.
+    loop {
+        if a.is_zero() {
+            return if b.is_one() { k } else { 0 };
+        }
+        let v = a.trailing_zeros().expect("a is non-zero");
+        if v > 0 {
+            a >>= v; // exact
+            if v % 2 == 1 {
+                let b8 = b.mod_floor(&eight);
+                if b8 == three || b8 == five {
+                    k = -k;
+                }
+            }
+        }
+        if a.mod_floor(&four) == three && b.mod_floor(&four) == three {
+            k = -k;
+        }
+        let r = a.abs();
+        a = b.mod_floor(&r);
+        b = r;
+    }
+}
+
+/// Square root of `a` modulo `p`, where `p` is odd or 2 and has already passed
+/// [`crate::prime::is_prime`]. Returns `Ok(Some(r))` with 0 <= r < p and r^2 ≡ a (mod p),
+/// `Ok(None)` when (a/p) = -1 (a proven non-square), and `Err` when the computation proves p
+/// composite.
+///
+/// [Coh93] Algorithm 1.5.1 (Tonelli-Shanks) for p ≡ 1 (mod 4), a^((p+1)/4) for p ≡ 3 (mod 4).
+/// Both bounded searches (least non-residue n, least m with b^(2^m) = 1) end in `Err` when they
+/// run out, which can happen only for composite p, never in a decision.
+fn sqrt_mod_prime_checked(a: &BigInt, p: &BigInt) -> Result<Option<BigInt>> {
+    let not_prime = |why: &str| -> Result<Option<BigInt>> {
+        Err(MathError::InvalidArgument(format!(
+            "sqrt_mod_prime: modulus is not prime ({why})"
+        )))
+    };
+    let a = a.mod_floor(p);
+    let two = BigInt::from(2u32);
+    if *p == two || a.is_zero() {
+        return Ok(Some(a));
+    }
+    match kronecker_bigint(&a, p) {
+        -1 => return Ok(None),
+        0 => return not_prime("gcd(a, p) > 1"),
+        _ => {}
+    }
+
+    let x = if p.mod_floor(&BigInt::from(4u32)) == BigInt::from(3u32) {
+        mod_pow_nonneg(&a, &((p + 1u32) >> 2), p)
+    } else {
+        // p - 1 = 2^e q with q odd.
+        let p_minus_1 = p - 1u32;
+        let e = p_minus_1.trailing_zeros().expect("p > 2");
+        let q = &p_minus_1 >> e;
+        // Least n >= 2 with (n/p) = -1; for a prime p it is below p.
+        let mut n = two.clone();
+        while kronecker_bigint(&n, p) != -1 {
+            n += 1u32;
+            if n >= *p {
+                return not_prime("no quadratic non-residue below p");
+            }
+        }
+        let mut y = mod_pow_nonneg(&n, &q, p);
+        let mut r = e;
+        let mut x = mod_pow_nonneg(&a, &((&q - 1u32) >> 1), p);
+        let mut b = (&a * &x * &x).mod_floor(p);
+        x = (&a * &x).mod_floor(p);
+        loop {
+            if b.is_one() {
+                break x;
+            }
+            // Least m with b^(2^m) = 1; for a prime p and a square a it is below r.
+            let mut m = 0u64;
+            let mut t = b.clone();
+            while !t.is_one() {
+                t = (&t * &t).mod_floor(p);
+                m += 1;
+                if m >= r {
+                    return not_prime("Tonelli-Shanks order bound exceeded");
+                }
+            }
+            let mut t = y.clone();
+            for _ in 0..(r - m - 1) {
+                t = (&t * &t).mod_floor(p);
+            }
+            y = (&t * &t).mod_floor(p);
+            r = m;
+            x = (&x * &t).mod_floor(p);
+            b = (&b * &y).mod_floor(p);
+        }
+    };
+    if (&x * &x).mod_floor(p) != a {
+        return not_prime("verification failed");
+    }
+    Ok(Some(x))
 }
 
 // Implement From traits for convenient construction
@@ -1101,6 +1282,9 @@ impl<'b> Div<&'b Integer> for &Integer {
     }
 }
 
+/// Truncated remainder (num-bigint `%`): `a % m` has the sign of `a`, so `-1 % 7 == -1`.
+/// MAGMA `mod` is floored instead (Handbook ch. 18 §18.4.1, §18.12.1). For a least
+/// non-negative residue use [`Integer::modulo`].
 impl Rem for Integer {
     type Output = Self;
 
@@ -1154,6 +1338,41 @@ impl Ring for Integer {
     fn pow(&self, n: u32) -> Self {
         Integer::new(num_traits::pow(self.value.clone(), n as usize))
     }
+
+    // Element predicates (MAGMA Ch. 17 §17.5.5 `IsUnit`/`IsNilpotent`, Ch. 19 `Order`):
+    // Z is a domain whose unit group is {±1} (GAP: IsUnit(Integers, 2) = false,
+    // Order(-1) = 2).
+
+    fn unit_status(&self) -> Option<bool> {
+        Some(self.value.abs().is_one())
+    }
+
+    fn nilpotent_status(&self) -> Option<bool> {
+        Some(self.value.is_zero())
+    }
+
+    fn unit_inverse(&self) -> Result<Self> {
+        if self.value.abs().is_one() {
+            Ok(self.clone())
+        } else {
+            Err(MathError::NotInvertible)
+        }
+    }
+
+    fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
+        use rustmath_core::MultiplicativeOrder;
+        if self.value.is_one() {
+            MultiplicativeOrder::Finite(1)
+        } else if self.value.abs().is_one() {
+            MultiplicativeOrder::Finite(2)
+        } else {
+            MultiplicativeOrder::NotAUnit
+        }
+    }
+
+    fn static_characteristic() -> Option<u64> {
+        Some(0)
+    }
 }
 
 impl CommutativeRing for Integer {}
@@ -1188,6 +1407,17 @@ impl EuclideanDomain for Integer {
         let r = &self.value % &other.value;
 
         Ok((Integer::new(q), Integer::new(r)))
+    }
+
+    /// The sign: MAGMA `Normalize` over Z (Handbook ch. 23 §23.5.1) takes the associate with
+    /// positive leading coefficient, so the canonical associate of `n` is `|n|` and
+    /// `n = sign(n) · |n|`; `0` gives `1`.
+    fn normalization_unit(&self) -> Option<Self> {
+        Some(if self.signum() < 0 {
+            -Integer::one()
+        } else {
+            Integer::one()
+        })
     }
 }
 
@@ -1560,21 +1790,21 @@ mod tests {
         let p = Integer::from(7);
 
         // Quadratic residues mod 7: 0, 1, 2, 4
-        assert!(Integer::from(0).is_quadratic_residue_prime(&p));
-        assert!(Integer::from(1).is_quadratic_residue_prime(&p)); // 1² = 1
-        assert!(Integer::from(2).is_quadratic_residue_prime(&p)); // 3² = 9 ≡ 2
-        assert!(Integer::from(4).is_quadratic_residue_prime(&p)); // 2² = 4
+        assert!(Integer::from(0).is_quadratic_residue_prime(&p).unwrap());
+        assert!(Integer::from(1).is_quadratic_residue_prime(&p).unwrap()); // 1² = 1
+        assert!(Integer::from(2).is_quadratic_residue_prime(&p).unwrap()); // 3² = 9 ≡ 2
+        assert!(Integer::from(4).is_quadratic_residue_prime(&p).unwrap()); // 2² = 4
 
         // Non-residues mod 7: 3, 5, 6
-        assert!(!Integer::from(3).is_quadratic_residue_prime(&p));
-        assert!(!Integer::from(5).is_quadratic_residue_prime(&p));
-        assert!(!Integer::from(6).is_quadratic_residue_prime(&p));
+        assert!(!Integer::from(3).is_quadratic_residue_prime(&p).unwrap());
+        assert!(!Integer::from(5).is_quadratic_residue_prime(&p).unwrap());
+        assert!(!Integer::from(6).is_quadratic_residue_prime(&p).unwrap());
 
         // Test with p = 11
         let p11 = Integer::from(11);
-        assert!(Integer::from(4).is_quadratic_residue_prime(&p11)); // 2² = 4
-        assert!(Integer::from(9).is_quadratic_residue_prime(&p11)); // 3² = 9
-        assert!(!Integer::from(2).is_quadratic_residue_prime(&p11));
+        assert!(Integer::from(4).is_quadratic_residue_prime(&p11).unwrap()); // 2² = 4
+        assert!(Integer::from(9).is_quadratic_residue_prime(&p11).unwrap()); // 3² = 9
+        assert!(!Integer::from(2).is_quadratic_residue_prime(&p11).unwrap());
     }
 
     #[test]
@@ -1633,8 +1863,39 @@ mod tests {
         // Verify they're actually quadratic residues
         let p = Integer::from(11);
         for qr in &qrs {
-            assert!(qr.is_quadratic_residue_prime(&p));
+            assert!(qr.is_quadratic_residue_prime(&p).unwrap());
         }
+    }
+
+    /// Headline regressions for negative inputs (MAGMA ch. 18 §18.7, §18.12.1); the full
+    /// PARI/GP tables are in `tests/ch18_residues.rs`.
+    #[test]
+    fn test_residues_negative_inputs() {
+        let i = Integer::from;
+        // gp: lift(Mod(-2,7)^3) -> 6 (was -1); lift(Mod(5,1)^0) -> 0; lift(Mod(2,7)^-1) -> 4
+        assert_eq!(i(-2).mod_pow(&i(3), &i(7)), Ok(i(6)));
+        assert_eq!(i(5).mod_pow(&i(0), &i(1)), Ok(i(0)));
+        assert_eq!(i(2).mod_pow(&i(-1), &i(7)), Ok(i(4)));
+        // gp: kronecker(-1,7) -> -1, kronecker(-3,7) -> 1 (both were 0)
+        assert_eq!(i(-1).legendre_symbol(&i(7)), Ok(-1));
+        assert_eq!(i(-3).legendre_symbol(&i(7)), Ok(1));
+        // gp: kronecker(-1,3) -> -1 (was 0), kronecker(-2,15) -> -1
+        assert_eq!(i(-1).jacobi_symbol(&i(3)), Ok(-1));
+        assert_eq!(i(-2).jacobi_symbol(&i(15)), Ok(-1));
+        // gp: kronecker(3,2) -> -1, kronecker(0,-1) -> 1
+        assert_eq!(i(3).kronecker_symbol(&i(2)), -1);
+        assert_eq!(i(0).kronecker_symbol(&i(-1)), 1);
+        // gp: issquare(Mod(-1,7)) -> 0 (was Ok(1)); lift(sqrt(Mod(-1,5))) in {2,3} (was Err)
+        assert!(i(-1).sqrt_mod_prime(&i(7)).is_err());
+        let r = i(-1).sqrt_mod_prime(&i(5)).unwrap();
+        assert!(r == i(2) || r == i(3));
+        // gp: issquare(Mod(1,2)) -> 1 (was false)
+        assert_eq!(i(1).is_quadratic_residue_prime(&i(2)), Ok(true));
+        // gp: lift(Mod(-1,7)^-1) -> 6 (was None)
+        assert_eq!(i(-1).mod_inverse(&i(7)), Some(i(6)));
+        // gp: binomial(-1,2) % 3 -> 1 (was 0); binomial(5,-1) % 3 -> 0 (was 1)
+        assert_eq!(i(-1).binomial_mod(&i(2), &i(3)), Ok(i(1)));
+        assert_eq!(i(5).binomial_mod(&i(-1), &i(3)), Ok(i(0)));
     }
 
     #[test]
@@ -1658,5 +1919,20 @@ mod tests {
         let (a, b, c) = (Integer::from(3), Integer::from(8), Integer::from(100));
         assert!(a < b);
         assert!(a + c.clone() < b + c);
+    }
+
+    // MAGMA `Normalize` over Z (Handbook ch. 23 §23.5.1): the canonical associate of n is
+    // |n|, so the normalization unit is the sign. PARI/GP: `sign(-6)` -> -1, `sign(6)` -> 1,
+    // `sign(-10^30)` -> -1; the unit of 0 is 1 (0 is its own canonical associate).
+    #[test]
+    fn test_normalization_unit_is_the_sign() {
+        let unit = |n: i64| Integer::from(n).normalization_unit();
+        assert_eq!(unit(-6), Some(Integer::from(-1)));
+        assert_eq!(unit(6), Some(Integer::from(1)));
+        assert_eq!(unit(0), Some(Integer::from(1)));
+        assert_eq!(unit(-1), Some(Integer::from(-1)));
+        let big = Integer::from(10).pow(30);
+        assert_eq!((-big.clone()).normalization_unit(), Some(Integer::from(-1)));
+        assert_eq!(big.normalization_unit(), Some(Integer::from(1)));
     }
 }

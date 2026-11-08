@@ -137,13 +137,13 @@ fn test_axioms_and_categories_correspondence() {
 #[test]
 fn test_element_methods_on_integers() {
     // Test ring element methods on integers
-    assert!(1i32.is_unit());
+    assert_eq!(1i32.is_unit(), Some(true));
     assert!(0i32.is_idempotent());
-    assert!(0i32.is_nilpotent());
+    assert_eq!(0i32.is_nilpotent(), Some(true));
 
     // Multiplicative order
-    assert_eq!(1i32.multiplicative_order(), Some(1));
-    assert_eq!((-1i32).multiplicative_order(), Some(2));
+    assert_eq!(1i32.multiplicative_order(), MultiplicativeOrder::Finite(1));
+    assert_eq!((-1i32).multiplicative_order(), MultiplicativeOrder::Finite(2));
 }
 
 #[test]
@@ -343,6 +343,6 @@ fn test_full_integration_workflow() {
     assert_eq!(diagram.num_morphisms(), 1);
 
     // 6. Verify element properties
-    assert!(1i32.is_unit());
+    assert_eq!(1i32.is_unit(), Some(true));
     assert!(0i32.is_idempotent());
 }

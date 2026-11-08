@@ -19,7 +19,8 @@ pub trait Polynomial: Sized + Clone {
     /// Evaluate the polynomial at a given point
     fn eval(&self, point: &Self::Coeff) -> Self::Coeff;
 
-    /// Get the coefficient of a specific term
+    /// Get the coefficient of `x^degree`; zero beyond the degree (MAGMA `Coefficient`,
+    /// Handbook ch. 23 §23.4.5).
     fn coeff(&self, degree: usize) -> &Self::Coeff;
 
     /// Get the leading coefficient (coefficient of highest degree term)

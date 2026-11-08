@@ -74,24 +74,32 @@ impl ArithInt {
         }
     }
 
-    /// Fast modular exponentiation: a^b mod m
+    /// Fast modular exponentiation: a^b mod m, in `[0, m)` (MAGMA `Modexp`, Handbook ch. 18
+    /// §18.12.1, restricted to machine words and b >= 0).
+    ///
+    /// # Panics
+    ///
+    /// Panics if `m <= 0` or `b < 0`. A negative exponent needs a modular inverse; use
+    /// [`crate::Integer::mod_pow`], which returns `Err(NotInvertible)` when there is none.
     pub fn pow_mod(&self, a: i32, mut b: i32, m: i32) -> i32 {
-        let mut result = 1i64;
-        let mut base = (a as i64) % (m as i64);
+        assert!(m > 0, "pow_mod: modulus must be positive");
+        assert!(
+            b >= 0,
+            "pow_mod: negative exponent is not supported (use Integer::mod_pow)"
+        );
+        let m64 = m as i64;
+        let mut result = 1i64 % m64;
+        let mut base = (a as i64).rem_euclid(m64);
 
         while b > 0 {
             if b & 1 == 1 {
-                result = (result * base) % (m as i64);
+                result = (result * base) % m64;
             }
-            base = (base * base) % (m as i64);
+            base = (base * base) % m64;
             b >>= 1;
         }
-
-        if result < 0 {
-            (result + m as i64) as i32
-        } else {
-            result as i32
-        }
+        // Every factor is in [0, m), so the result is too.
+        result as i32
     }
 
     /// Fast GCD using Euclidean algorithm
@@ -204,13 +212,15 @@ impl ArithLLong {
             .collect()
     }
 
-    /// Fast modular addition: (a + b) mod m
+    /// Fast modular addition: (a + b) mod m, in `[0, m)` for m > 0. The sum is formed in
+    /// 128 bits, so it cannot overflow (previously `add_mod(i64::MAX - 1, i64::MAX - 1, i64::MAX)`
+    /// overflowed).
     pub fn add_mod(&self, a: i64, b: i64, m: i64) -> i64 {
-        let sum = ((a % m) + (b % m)) % m;
+        let sum = (a as i128 + b as i128) % m as i128;
         if sum < 0 {
-            sum + m
+            (sum + m as i128) as i64
         } else {
-            sum
+            sum as i64
         }
     }
 
@@ -224,24 +234,32 @@ impl ArithLLong {
         }
     }
 
-    /// Fast modular exponentiation: a^b mod m
+    /// Fast modular exponentiation: a^b mod m, in `[0, m)` (MAGMA `Modexp`, Handbook ch. 18
+    /// §18.12.1, restricted to machine words and b >= 0).
+    ///
+    /// # Panics
+    ///
+    /// Panics if `m <= 0` or `b < 0`. A negative exponent needs a modular inverse; use
+    /// [`crate::Integer::mod_pow`], which returns `Err(NotInvertible)` when there is none.
     pub fn pow_mod(&self, a: i64, mut b: i64, m: i64) -> i64 {
-        let mut result = 1i128;
-        let mut base = (a as i128) % (m as i128);
+        assert!(m > 0, "pow_mod: modulus must be positive");
+        assert!(
+            b >= 0,
+            "pow_mod: negative exponent is not supported (use Integer::mod_pow)"
+        );
+        let m128 = m as i128;
+        let mut result = 1i128 % m128;
+        let mut base = (a as i128).rem_euclid(m128);
 
         while b > 0 {
             if b & 1 == 1 {
-                result = (result * base) % (m as i128);
+                result = (result * base) % m128;
             }
-            base = (base * base) % (m as i128);
+            base = (base * base) % m128;
             b >>= 1;
         }
-
-        if result < 0 {
-            (result + m as i128) as i64
-        } else {
-            result as i64
-        }
+        // Every factor is in [0, m), so the result is too.
+        result as i64
     }
 
     /// Fast GCD using Euclidean algorithm
@@ -502,6 +520,18 @@ mod tests {
 
         // Test with larger numbers
         assert_eq!(arith.pow_mod(123456, 789, 1000000007), 182677862);
+    }
+
+    #[test]
+    fn test_pow_mod_unit_modulus_and_add_mod_overflow() {
+        // gp: lift(Mod(5,1)^0) -> 0 (both returned 1)
+        assert_eq!(ArithInt::new().pow_mod(5, 0, 1), 0);
+        assert_eq!(ArithLLong::new().pow_mod(5, 0, 1), 0);
+        // gp: (2*(2^63-2)) % (2^63-1) -> 9223372036854775805 (overflowed)
+        assert_eq!(
+            ArithLLong::new().add_mod(i64::MAX - 1, i64::MAX - 1, i64::MAX),
+            9_223_372_036_854_775_805
+        );
     }
 
     #[test]
