@@ -1,10 +1,11 @@
-# Session handoff (2026-11-08, updated after Tasks 0-2, the L0-L1 fixes, their follow-ups and the final follow-up fixes)
+# Session handoff (2026-11-13, updated after Tasks 0-2, the L0-L1 fixes, their follow-ups, the final follow-up fixes and 4 of 13 units of the open follow-ups)
 
 Read this first, then `CLAUDE.md` and `docs/README.md`. It records where the project stands and
 what to do next. **Tasks 0, 1 and 2 are done** (status notes below), and so are the L0-L1 defects
-the review found (2026-11-07), their follow-ups and the final follow-up fixes (both 2026-11-08). The
-next step is "After these tasks" at the end: the open follow-ups, then the dead code, the mixin wiring
-and the `docs/PLAN.md` build targets.
+the review found (2026-11-07), their follow-ups and the final follow-up fixes (both 2026-11-08). Work on
+the open follow-ups is **paused** after 4 of 13 units (2026-11-13): see "Open follow-ups round" below and
+`docs/workstreams/handoff-followups/README.md`, which has the designs and the steps to resume. After that
+come the dead code, the mixin wiring and the `docs/PLAN.md` build targets.
 
 ## Where things stand
 
@@ -16,7 +17,9 @@ and the `docs/PLAN.md` build targets.
   were deleted; their tips are tags `archive/<branch>` (`docs/BRANCHES.md`). Work on a new branch
   off `main`; cloud sessions can push only their own branch (no tags, no other branches).
 - **Build and tests:** the whole workspace compiles, and `cargo test --workspace` is green:
-  14,173 passed, 0 failed, 330 ignored, 190 targets at `9c24389` (`docs/TEST_BASELINE.md`). First build
+  14,173 passed, 0 failed, 330 ignored, 190 targets at `9c24389` (`docs/TEST_BASELINE.md`). The four
+  commits after it (`80130e7..166ac34`) each passed their design's acceptance commands and
+  `cargo check --workspace --tests`, but no full workspace run has been made since. First build
   compiles GMP/MPFR for `rug` (minutes).
 - **Disk:** the session's disk allowance is about 39 GB. With incremental compilation on, `target/`
   grew past 20 GB and filled it mid-session. This session set `[build] incremental = false` in
@@ -248,7 +251,35 @@ with a new status: ch023.EqualDegreeFactorization from done to verified; 19 rows
 `path refreshed 9c24389`) and `docs/magma/REVIEW_2026-11-06.md` record the result. Designs, reports and reviews
 are in the session scratchpad only (`fu/final/`).
 
-**Open follow-ups** (each has a tracker row or note unless marked; lines at `9c24389`):
+**Open follow-ups round: PAUSED 2026-11-13** on the same branch after 4 of 13 units. The list below was split
+into 13 units by crate; every unit has a design with independent adversarial reviews, and each unit is
+implemented with adversarial code review before its commit. Designs, reviews, reports, the workflow script and
+the resume steps are in `docs/workstreams/handoff-followups/`. Committed and pushed (each approved at its first
+code review):
+- `80130e7` integers (I3): MAGMA/PARI signs for the i32/i64 gcd, lcm and xgcd; `fast_arith` unsigned gcd/lcm and
+  `Result` modular ops; `Integer::sqrt` exact via `BigUint::sqrt`; Lehmer gcd/xgcd (half-gcd not done);
+  `Integer::exact_root` and near-linear `is_power` / `is_perfect_power`; `SageInteger::binomial` by prime
+  splitting, r < 0 cross-checked with gp and GAP; `sigma` overflow checks; `Integer::to_i64` now returns
+  `Option<i64>` (137 call sites in 24 crates migrated); `class_number_quadratic` placeholder removed.
+- `7c4d057` integers (I1): BPSW default test and an Atkin-Morain ECPP prover with checkable certificates
+  (`try_is_prime`, `prove_primality`; Err when a proof is unresolved), so psi_12 is no longer accepted; a
+  segmented sieve behind `prime_range`, `nth_prime` and `prime_pi`; the duplicate `is_prime_u64` removed;
+  callers switched.
+- `0ceaeaa` integers (I2): the quadratic sieve rewritten as SIQS (card T-223); `trial_division_with_primes`
+  classifies its cofactor (the 🛑 row); `factorization_with_limits` returns the unfactored composites (MAGMA's
+  third return value); the old QS `legendre_symbol` is gone with the rewrite, and the ECM module doc is fixed.
+- `166ac34` polynomials (P1): `fp_factor` checks p and square-free input on every entry, sorts its output in PARI
+  order and drops the legacy phase; typed Zassenhaus errors; `pgalois` and `padic_factor` check p; maclane's
+  duplicate Rabin test removed; polynomial Ring hooks; Yun and Cohen citations fixed.
+
+Still to do in this round: F1 (finitefields), R1 (rings, p-adics, category), M1a and M1b (matrix), S1 (symbolic),
+MF1 (manifolds), C1 (combinatorics), J1a and J1b (REPL). The designs for S1, MF1 and C1 still have review
+blockers (summarised in the README). The trackers (`PROJECT_TRACKER.md`, `status_overrides.csv`,
+`REVIEW_2026-11-06.md`) and the list below are **not yet updated** for the four commits; the reports'
+"Handoffs" sections name the rows.
+
+**Open follow-ups** (each has a tracker row or note unless marked; lines at `9c24389`; items fixed by
+`80130e7..166ac34` are still listed until the tracker update):
 - MAGMA conventions still unverified (the handbook pages answer HTTP 401, no MAGMA binary): `Quotrem`
   over Z, `Content` over Q, the content in `IsIrreducible` over Z (Sage's `(2*x).is_irreducible()` over
   ZZ and QQ would be a cross-check), `Binomial(n, r)` for r < 0, the shape of `QMatrix`.
