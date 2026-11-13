@@ -552,7 +552,10 @@ pub(crate) fn eval_interval(
                 }
                 BinaryOp::Pow => match expr.right.as_rational() {
                     Some(exp) if exp.denominator().is_one() => {
-                        let e = exp.numerator().to_i64();
+                        // Kept as a panic beyond i64: None here means "cannot bound at this
+                        // depth, retry deeper", which no depth would change for this input.
+                        let e = i64::try_from(exp.numerator())
+                            .expect("eval_interval: an exponent beyond i64 is not supported");
                         if e >= 0 {
                             interval_pow_nonneg_int(&l_lo, &l_hi, e as u64)
                         } else {

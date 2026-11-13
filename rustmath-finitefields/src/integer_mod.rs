@@ -630,10 +630,12 @@ impl CommutativeRing for IntegerMod {}
 /// - if `p` is rejected by [`rustmath_integers::prime::is_prime`], with the message
 ///   "square_root_mod_prime: p = 15 is not prime": a composite p, p <= 1, or a negative p. A
 ///   composite modulus is refused rather than answered (the old code returned a false `None`
-///   for 4 mod 15); use [`IntegerMod::sqrt`] / [`IntegerMod::all_sqrts`] for it.
-/// - if p passes `is_prime` but the root computation proves p composite. `is_prime`
-///   (Miller–Rabin to the bases 2, …, 37) is a proof only below ψ12 = 318665857834031151167461
-///   (Sorenson–Webster 2017); above it a strong pseudoprime can pass.
+///   for 4 mod 15); use [`IntegerMod::sqrt`] / [`IntegerMod::all_sqrts`] for it. `is_prime` is
+///   a proof for every size (Baillie-PSW and ECPP above 2^64), and it is the only primality
+///   test on this path: the root comes from [`Integer::try_sqrt_mod_prime`], which tests
+///   nothing.
+/// - as `is_prime` itself, when p is a probable prime whose ECPP proof is unresolved (none up
+///   to 2048 bits in the experiments).
 ///
 /// # Example
 ///
@@ -649,18 +651,13 @@ impl CommutativeRing for IntegerMod {}
 /// assert_eq!(square_root_mod_prime(&Integer::from(3), &Integer::from(7)), None);
 /// ```
 pub fn square_root_mod_prime(a: &Integer, p: &Integer) -> Option<Integer> {
-    assert_prime("square_root_mod_prime", p);
-    // Reduce first: for p = 2 the Kronecker symbol of an unreduced odd a is (-1)^((a^2-1)/8),
-    // e.g. (3/2) = -1, although 3 ≡ 1 is a square mod 2.
-    let b = a.modulo(p);
-    if b.kronecker_symbol(p) == -1 {
-        // The Jacobi symbol -1 proves that b is not a square modulo p.
-        return None;
-    }
-    match b.sqrt_mod_prime(p) {
-        Ok(r) => Some(r),
-        // `is_prime(p)` held and (b/p) != -1, so every error here is a proof that p is
-        // composite (gcd(b, p) > 1, or Tonelli-Shanks / the square-back check failed).
+    assert_prime("square_root_mod_prime", p); // the only primality test (a proof)
+    // `try_sqrt_mod_prime` reduces a mod p first (for p = 2 the Kronecker symbol of an
+    // unreduced odd a is (-1)^((a^2-1)/8), e.g. (3/2) = -1, although 3 ≡ 1 is a square mod 2)
+    // and computes one Kronecker symbol: -1 gives `None`, a proof.
+    match a.try_sqrt_mod_prime(p) {
+        Ok(r) => r,
+        // p was proven prime, so an error here would be a proof that it is composite.
         Err(e) => panic!("square_root_mod_prime: p = {p} is not prime ({e})"),
     }
 }
@@ -811,9 +808,16 @@ fn prime_power_sqrts(a: &Integer, p: &Integer, k: u32) -> PrimePowerSqrts {
 /// doubling (\[vzGG99\] ch. 9 §9.4): with prec ← min(2·prec, j) and m = p^prec,
 /// y ← y − (y^2 − u)·(2y)^(-1) mod m. Here 2y is a unit (p odd, p ∤ y), and if y^2 ≡ u mod
 /// p^prec_old then the new y satisfies y^2 ≡ u mod p^(2·prec_old), hence mod m.
+///
+/// The callers reach this only after `checked_prime_power_args` proved p prime, so the root mod
+/// p comes from [`Integer::try_sqrt_mod_prime`] (no second primality test).
 fn unit_sqrts_odd(u: &Integer, p: &Integer, j: u32) -> Vec<Integer> {
-    let Some(mut y) = square_root_mod_prime(u, p) else {
-        return Vec::new();
+    let mut y = match u.try_sqrt_mod_prime(p) {
+        Ok(Some(y)) => y,
+        Ok(None) => return Vec::new(),
+        Err(e) => panic!(
+            "internal error: p = {p} was proven prime but the square root failed ({e})"
+        ),
     };
     let mut prec = 1u32;
     while prec < j {
@@ -873,8 +877,8 @@ fn unit_sqrts_two(u: &Integer, j: u32) -> Vec<Integer> {
 }
 
 /// Panic with "{name}: p = {p} is not prime" unless `p` passes
-/// [`rustmath_integers::prime::is_prime`]. Shared by the public square-root functions that take
-/// a prime (see their `# Panics`).
+/// [`rustmath_integers::prime::is_prime`] (a proof). Shared by the public square-root functions
+/// that take a prime (see their `# Panics`); it is their only primality test.
 fn assert_prime(name: &str, p: &Integer) {
     assert!(
         rustmath_integers::prime::is_prime(p),
@@ -909,13 +913,10 @@ fn checked_prime_power_args(name: &str, p: &Integer, k: usize) -> u32 {
 ///
 /// # Contract: p must be prime
 ///
-/// `p` is checked with [`rustmath_integers::prime::is_prime`], which is a proof for
-/// p < ψ12 = 318665857834031151167461 (Miller–Rabin to the bases 2, …, 37; Sorenson–Webster 2017)
-/// and a probable-prime test above it. For a prime p, `None` proves that there is no root.
-/// A composite p that passes the test is outside the contract and the result is unspecified: it
-/// can be a false `None`, or a panic from [`square_root_mod_prime`] or from the internal
-/// square-back check (a returned root always squares back). [`IntegerMod::sqrt`] is unaffected:
-/// it gets its primes from trial division.
+/// `p` is checked once with [`rustmath_integers::prime::is_prime`], a proof for every size
+/// (Baillie-PSW and ECPP above 2^64; it panics when an ECPP proof is unresolved). So `None`
+/// proves that there is no root, and a returned root always squares back.
+/// [`IntegerMod::sqrt`] is unaffected: it gets its primes from trial division.
 ///
 /// # Panics
 ///
@@ -956,11 +957,10 @@ pub fn square_root_mod_prime_power(a: &Integer, p: &Integer, k: usize) -> Option
 ///
 /// # Contract and panics
 ///
-/// As for [`square_root_mod_prime_power`]: `p` is checked with
-/// [`rustmath_integers::prime::is_prime`] (a proof for p < ψ12 = 318665857834031151167461, a
-/// probable-prime test above it). A composite p that passes is outside the contract and the
-/// result is unspecified (it can be an incomplete list, or a panic). Panics if `p` is rejected
-/// by `is_prime` or if `k > u32::MAX`.
+/// As for [`square_root_mod_prime_power`]: `p` is checked once with
+/// [`rustmath_integers::prime::is_prime`] (a proof for every size), so the list is complete.
+/// Panics if `p` is rejected by `is_prime` (or its ECPP proof is unresolved) or if
+/// `k > u32::MAX`.
 pub fn all_square_roots_mod_prime_power(a: &Integer, p: &Integer, k: usize) -> Vec<Integer> {
     let k = checked_prime_power_args("all_square_roots_mod_prime_power", p, k);
     if k == 0 {

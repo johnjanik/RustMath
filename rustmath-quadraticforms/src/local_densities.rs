@@ -228,7 +228,11 @@ impl LocalDensities {
         let mut count = Integer::zero();
 
         // For small p^k, enumerate all solutions
-        let limit = p_power.to_i64().min(1000);
+        // Kept as a panic beyond i64. The cap of 1000 residues is a pre-existing facade for
+        // p^k > 1000 (it counts only part of the residues; tracker follow-up).
+        let limit = i64::try_from(&p_power)
+            .expect("count_solutions_mod_pk: p^k beyond i64 is not supported")
+            .min(1000);
 
         for x in 0..limit {
             for y in 0..limit {

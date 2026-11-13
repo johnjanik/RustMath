@@ -11,8 +11,23 @@
 //! 3. If during computation the modular inverse fails, gcd reveals a factor
 //! 4. Optionally continuing with stage 2 for larger prime factors
 //!
-//! The algorithm is particularly effective when n has a factor p where p-1 or p+1
-//! is smooth (has only small prime factors).
+//! ECM (H. W. Lenstra, *Factoring integers with elliptic curves*, Ann. of Math. 126 (1987)
+//! 649-673) works in the group E(F_p) of a random curve, for an unknown prime p | n. The order
+//! of that group lies in [p + 1 - 2 sqrt(p), p + 1 + 2 sqrt(p)] (Hasse) and changes with the
+//! curve, so every new curve is a new chance for every p. The expected cost depends on the size
+//! of p, about L_p[1/2, sqrt 2]. Pollard's p - 1 and Williams' p + 1 methods are the analogues
+//! with one fixed group each, so they need p - 1 or p + 1 itself to be smooth.
+//!
+//! What this module tests on one curve with point P: stage 1 computes k P with k the product
+//! of the largest prime powers <= B1, so it finds p when the order of P in E(F_p) divides k
+//! (the order is B1-powersmooth). Stage 2 then computes q (k P) for each of the first 100
+//! primes q in (B1, B2], one at a time, so it also finds p when that order is q times a divisor
+//! of k for one of those q. Primes of (B1, B2] beyond the first 100 are not tried.
+//!
+//! MAGMA: `ECM(n, B1)` (Handbook ch. 18 §18.10.3, digest
+//! `rustmath-lava/docs/Chapter_18_Ring_of_Integers.md`) uses GMP-ECM with Suyama's
+//! parametrisation and a full stage 2; this module uses affine Weierstrass arithmetic, random
+//! curves and the short stage 2 above.
 //!
 //! # Examples
 //!
@@ -28,7 +43,7 @@
 //! ```
 
 use crate::Integer;
-use crate::prime::{is_prime, factor};
+use crate::prime::{factor_pollard_rho, is_prime, is_probable_prime};
 use rand::Rng;
 
 /// Point on an elliptic curve in projective coordinates (X:Y:Z)
@@ -319,8 +334,10 @@ fn try_one_curve(n: &Integer, b1: u64, b2: u64, seed: u64) -> Option<Integer> {
     // Generate random curve parameters
     let sigma = Integer::from(rng.gen_range(6..1000000) as i64 + seed as i64);
 
-    // Montgomery parameterization: use σ to generate curve
-    // This is a standard technique to ensure we have a valid point
+    // Suyama's u = sigma^2 - 5 and v = 4 sigma only seed a random point (u/v, 1) and the
+    // coefficient a below; b is then fitted so that the point lies on y^2 = x^3 + a x + b.
+    // This is not Suyama's curve (no torsion of order 12 is forced); any curve with a known
+    // point is a valid ECM curve.
     let u = (sigma.clone() * sigma.clone() - Integer::from(5)) % n.clone();
     let v = (Integer::from(4) * sigma.clone()) % n.clone();
 
@@ -414,7 +431,7 @@ fn try_one_curve(n: &Integer, b1: u64, b2: u64, seed: u64) -> Option<Integer> {
 ///
 /// # Returns
 ///
-/// A non-trivial factor of n, or None if factorization fails
+/// A non-trivial factor of n, or None if n is a probable prime (BPSW) or no factor was found
 ///
 /// # Examples
 ///
@@ -437,8 +454,8 @@ pub fn ecm_factor(n: &Integer, b1: u64, b2: u64, curves: usize) -> Option<Intege
         return Some(Integer::from(2));
     }
 
-    // Check if n is prime
-    if is_prime(n) {
+    // A probable prime (BPSW, exact below psi_12) has no factor to find.
+    if is_probable_prime(n) {
         return None;
     }
 
@@ -466,8 +483,38 @@ pub fn ecm_factor(n: &Integer, b1: u64, b2: u64, curves: usize) -> Option<Intege
 
 /// Complete factorization using ECM
 ///
-/// Returns the complete prime factorization of n using ECM.
-/// Falls back to trial division if ECM doesn't find factors.
+/// Returns the prime factorization of |n| as `(prime, exponent)` pairs with the primes in
+/// ascending order (PARI/GP `factor(n)` without the sign; MAGMA `Factorization(n)` / `ECM`,
+/// Handbook ch. 18 §18.10; H. W. Lenstra, *Factoring integers with elliptic curves*, Ann. of
+/// Math. 126 (1987) 649-673). For n = 0, 1 and -1 the list is empty.
+///
+/// # Algorithm
+///
+/// While the cofactor m is not accepted by [`is_prime`]:
+/// - if [`ecm_factor`]`(m, b1, b2, curves)` returns a divisor d, d is factored by recursion
+///   (with the same bounds) and each of its primes is divided out of m with full
+///   multiplicity. d need not be prime: it is a gcd, which can contain several primes of m.
+/// - if ECM finds nothing with these bounds (always the case for `curves = 0` once no prime up
+///   to 47 divides m), m is factored completely by [`crate::prime::factor_pollard_rho`] and
+///   the loop ends.
+///
+/// A last cofactor passed the loop guard, so it is prime. A cofactor that ECM could not split
+/// is never pushed as a prime, and the remainder is never pushed in addition to its
+/// factorization.
+/// Every returned factor is proven prime by [`is_prime`] (the strong tests to the bases 2..37
+/// below psi_12 = 318665857834031151167461, Sorenson-Webster 2017; Baillie-PSW and ECPP
+/// above). psi_12 = 399165290221 * 798330580441 is split. [`is_prime`] panics when the ECPP
+/// proof of a factor is unresolved (no unresolved prime up to 2048 bits in the experiments;
+/// about 1 in 16 at 3072 and 4096 bits); such a factor makes the driver panic.
+/// [`crate::factorization::factorization_with_limits`] never panics and reports such a factor
+/// in `probable_primes`.
+///
+/// # Cost
+///
+/// Each ECM attempt costs `curves` curves with the given bounds. The fallback has no time
+/// limit: about sqrt(q) rho steps for the second-largest prime factor q of the cofactor ECM
+/// left, impractical when q has 20 or more digits (see
+/// [`crate::prime::factor_pollard_rho`]).
 ///
 /// # Examples
 ///
@@ -477,7 +524,13 @@ pub fn ecm_factor(n: &Integer, b1: u64, b2: u64, curves: usize) -> Option<Intege
 ///
 /// let n = Integer::from(60); // 2² × 3 × 5
 /// let factors = ecm_factor_complete(&n, 1000, 10000, 10);
-/// // Returns [(2, 2), (3, 1), (5, 1)]
+/// let expected: Vec<(Integer, u32)> =
+///     vec![(Integer::from(2), 2), (Integer::from(3), 1), (Integer::from(5), 1)];
+/// assert_eq!(factors, expected);
+///
+/// // 3127 = 53 · 59 (PARI/GP: factor(3127)); with zero curves the fallback does the work.
+/// let factors = ecm_factor_complete(&Integer::from(3127), 1000, 10000, 0);
+/// assert_eq!(factors, vec![(Integer::from(53), 1), (Integer::from(59), 1)]);
 /// ```
 pub fn ecm_factor_complete(n: &Integer, b1: u64, b2: u64, curves: usize) -> Vec<(Integer, u32)> {
     if n.is_zero() || n.is_one() {
@@ -489,28 +542,48 @@ pub fn ecm_factor_complete(n: &Integer, b1: u64, b2: u64, curves: usize) -> Vec<
 
     // Try ECM to find factors
     while remaining > Integer::one() && !is_prime(&remaining) {
-        if let Some(factor) = ecm_factor(&remaining, b1, b2, curves) {
-            // Count multiplicity
-            let mut count = 0u32;
-            while (&remaining % &factor).is_zero() {
-                remaining = remaining / factor.clone();
-                count += 1;
+        match ecm_factor(&remaining, b1, b2, curves) {
+            Some(divisor)
+                if divisor > Integer::one()
+                    && divisor < remaining
+                    && (&remaining % &divisor).is_zero() =>
+            {
+                // The divisor might be composite: factor it by recursion (it is smaller than
+                // `remaining`), then extract every instance of each of its primes. A prime
+                // can occur both in the divisor and in the cofactor (e.g. 53 · 3127 with
+                // the divisor 3127 = 53 · 59), and full extraction keeps one entry per prime.
+                let divisor_factors = if is_prime(&divisor) {
+                    vec![(divisor, 1)]
+                } else {
+                    ecm_factor_complete(&divisor, b1, b2, curves)
+                };
+                for (prime, _) in divisor_factors {
+                    let mut count = 0u32;
+                    while (&remaining % &prime).is_zero() {
+                        remaining = remaining / prime.clone();
+                        count += 1;
+                    }
+                    if count > 0 {
+                        factors.push((prime, count));
+                    }
+                }
             }
-            factors.push((factor, count));
-        } else {
-            // Fall back to standard factorization
-            let mut standard_factors = factor(&remaining);
-            factors.append(&mut standard_factors);
-            break;
+            _ => {
+                // ECM found no factor with these bounds. `remaining` is composite (loop
+                // guard): factor it completely with Pollard rho instead, and mark it done so
+                // that it is not pushed a second time below.
+                factors.extend(factor_pollard_rho(&remaining));
+                remaining = Integer::one();
+            }
         }
     }
 
-    // Add the remaining prime if any
+    // The loop guard accepted `remaining` as prime.
     if remaining > Integer::one() {
         factors.push((remaining, 1));
     }
 
-    factors.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+    factors.sort_by(|a, b| a.0.cmp(&b.0));
     factors
 }
 

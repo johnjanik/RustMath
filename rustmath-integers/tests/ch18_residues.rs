@@ -619,18 +619,22 @@ fn is_quadratic_residue_prime_values() {
 }
 
 /// psi_12 = 318665857834031151167461 = 399165290221 * 798330580441 is the least strong
-/// pseudoprime to the bases 2..37 (Sorenson-Webster, Math. Comp. 86 (2017) 985-1003), so the
-/// fixed-base Miller-Rabin `is_prime` can accept it. Whatever `is_prime` says, the residue
-/// routines must never return a non-root, a false "Not a quadratic residue" or a false symbol.
+/// pseudoprime to the bases 2..37 (Sorenson-Webster, Math. Comp. 86 (2017) 985-1003). The
+/// residue routines test the modulus with Baillie-PSW (`is_probable_prime`), which rejects
+/// psi_12, so they refuse it up front; they never return a non-root, a false "Not a quadratic
+/// residue" or a false symbol. The Jacobi symbol is defined for any odd n.
 #[test]
 fn residues_modulo_strong_pseudoprime_are_honest() {
     let n = z("318665857834031151167461");
     let f = z("399165290221");
     assert_eq!(f.clone() * z("798330580441"), n);
+    // gp: isprime(318665857834031151167461) -> 0
+    assert!(!n.is_prime());
     // The Jacobi symbol is defined for any odd n: gp kronecker(399165290221, N) -> 0,
     // kronecker(43, N) -> 1, kronecker(4, N) -> 1.
     assert_eq!(f.jacobi_symbol(&n), Ok(0));
     assert_eq!(i(43).jacobi_symbol(&n), Ok(1));
+    assert_eq!(i(4).jacobi_symbol(&n), Ok(1));
 
     // gp: issquare(Mod(399165290221, N)) -> 1, so "Not a quadratic residue" would be false.
     let msg = invalid_argument_message(f.sqrt_mod_prime(&n));
@@ -640,22 +644,20 @@ fn residues_modulo_strong_pseudoprime_are_honest() {
     assert!(f.legendre_symbol(&n).is_err());
 
     // gp: issquare(Mod(43, N)) -> 0 although kronecker(43, N) = 1: no root exists, and
-    // "Not a quadratic residue" cannot be certified from the symbol, so this is an Err that
-    // names the modulus, and is_quadratic_residue_prime does not claim Ok(true).
+    // "Not a quadratic residue" cannot be certified from the symbol.
     let msg = invalid_argument_message(i(43).sqrt_mod_prime(&n));
     assert_ne!(msg, "Not a quadratic residue");
     assert!(i(43).is_quadratic_residue_prime(&n).is_err());
 
-    if n.is_prime() {
-        // Current fixed-base test: N is accepted, so the messages come from the residue code,
-        // and 4 = 2^2 gets a verified root (gp: issquare(Mod(4, N)) -> 1).
-        assert!(invalid_argument_message(f.sqrt_mod_prime(&n)).contains("not prime"));
-        assert!(invalid_argument_message(f.legendre_symbol(&n)).contains("not prime"));
-        assert!(invalid_argument_message(i(43).sqrt_mod_prime(&n)).contains("not prime"));
-        assert_root(&i(4), &n);
-    } else {
-        // A stronger primality test rejects N up front.
-        assert!(i(4).sqrt_mod_prime(&n).is_err());
+    // Refused up front for every argument (the modulus test comes first).
+    for a in [i(4), i(43), f.clone()] {
+        assert_eq!(
+            invalid_argument_message(a.sqrt_mod_prime(&n)),
+            "Modulus must be prime",
+            "sqrt_mod_prime({a}, psi_12)"
+        );
+        assert!(a.is_quadratic_residue_prime(&n).is_err(), "is_qr({a})");
+        assert!(a.legendre_symbol(&n).is_err(), "legendre({a})");
     }
 }
 
@@ -765,7 +767,7 @@ fn fast_arith_pow_mod_values() {
     // gp: (2*(2^63-2)) % (2^63-1) -> 9223372036854775805 (overflowed i64 before)
     assert_eq!(
         a64.add_mod(i64::MAX - 1, i64::MAX - 1, i64::MAX),
-        9_223_372_036_854_775_805
+        Ok(9_223_372_036_854_775_805)
     );
 }
 
@@ -809,4 +811,136 @@ fn fast_arith_llong_pow_mod_zero_modulus() {
         ArithLLong::new().pow_mod(2, 3, 0),
         Err(MathError::DivisionByZero)
     );
+}
+
+// gcd / lcm are MAGMA Gcd / Lcm (§18.6) and return unsigned words, so they are total; add_mod and
+// mul_mod take any non-zero modulus (least non-negative residue modulo |m|, as pow_mod);
+// is_prime is the deterministic is_prime_u64 (primality.rs).
+
+#[test]
+fn fast_arith_gcd_lcm_extremes() {
+    let (a32, a64) = (ArithInt::new(), ArithLLong::new());
+    // gp: [gcd(-2^31,0),gcd(-2^31,-2^31),gcd(-2^31,6),lcm(-2^31,1),lcm(65536,65537),
+    //      lcm(-2^31,-2^31+1)]
+    //     -> [2147483648, 2147483648, 2, 2147483648, 4295032832, 4611686016279904256]
+    assert_eq!(a32.gcd(i32::MIN, 0), 2_147_483_648);
+    assert_eq!(a32.gcd(0, i32::MIN), 2_147_483_648);
+    assert_eq!(a32.gcd(i32::MIN, i32::MIN), 2_147_483_648);
+    assert_eq!(a32.gcd(i32::MIN, 6), 2);
+    assert_eq!(a32.lcm(i32::MIN, 1), 2_147_483_648);
+    assert_eq!(a32.lcm(65_536, 65_537), 4_295_032_832);
+    assert_eq!(a32.lcm(i32::MIN, i32::MIN + 1), 4_611_686_016_279_904_256);
+    // gp: [gcd(-2^63,0),gcd(-2^63,6),lcm(-2^63,1),lcm(2^32,2^32+1)]
+    //     -> [9223372036854775808, 2, 9223372036854775808, 18446744078004518912]
+    assert_eq!(a64.gcd(i64::MIN, 0), 9_223_372_036_854_775_808);
+    assert_eq!(a64.gcd(i64::MIN, 6), 2);
+    assert_eq!(a64.lcm(i64::MIN, 1), 9_223_372_036_854_775_808);
+    assert_eq!(a64.lcm(1 << 32, (1 << 32) + 1), 18_446_744_078_004_518_912);
+    assert_eq!(a64.gcd(0, 0), 0);
+    assert_eq!(a64.lcm(0, -5), 0);
+}
+
+#[test]
+fn fast_arith_add_mul_mod_any_modulus() {
+    let (a32, a64) = (ArithInt::new(), ArithLLong::new());
+    // gp: [(-1+0)%5, (3*4)%5] -> [4, 2] (% is the least non-negative residue for a positive
+    // modulus; the sign of m does not matter, as in lift(Mod(x, m)))
+    assert_eq!(a32.add_mod(-1, 0, -5), Ok(4));
+    assert_eq!(a64.add_mod(-1, 0, -5), Ok(4));
+    assert_eq!(a32.mul_mod(3, 4, -5), Ok(2));
+    assert_eq!(a64.mul_mod(3, 4, -5), Ok(2));
+    // gp: Mod(7, 0) -> error
+    assert_eq!(a32.add_mod(3, 4, 0), Err(MathError::DivisionByZero));
+    assert_eq!(a32.mul_mod(3, 4, 0), Err(MathError::DivisionByZero));
+    assert_eq!(a64.add_mod(3, 4, 0), Err(MathError::DivisionByZero));
+    assert_eq!(a64.mul_mod(3, 4, 0), Err(MathError::DivisionByZero));
+    // gp: (-2^31)^2 % (2^31-1) -> 1; (2*(2^31-1)) % (2^31-1) -> 0
+    assert_eq!(a32.mul_mod(i32::MIN, i32::MIN, i32::MAX), Ok(1));
+    assert_eq!(a32.add_mod(i32::MAX, i32::MAX, i32::MAX), Ok(0));
+    // gp: (-2^63)^2 % (2^63-1) -> 1; (-2^64) % 7 -> 5; 15 % 2^63 -> 15; (-2^63) % 2^63 -> 0
+    assert_eq!(a64.mul_mod(i64::MIN, i64::MIN, i64::MAX), Ok(1));
+    assert_eq!(a64.add_mod(i64::MIN, i64::MIN, 7), Ok(5));
+    assert_eq!(a64.mul_mod(3, 5, i64::MIN), Ok(15));
+    assert_eq!(a64.add_mod(i64::MIN, 0, i64::MIN), Ok(0));
+}
+
+#[test]
+fn fast_arith_add_mul_mod_agree_with_integer() {
+    // Integer::modulo(|m|) of the exact sum and product is the reference (fixture-tested
+    // against gp in T1 of this file).
+    let (a32, a64) = (ArithInt::new(), ArithLLong::new());
+    let reference = |x: Integer, m: i64| {
+        i64::try_from(&x.modulo(&i(m))).expect("a residue below |m| fits in i64")
+    };
+    let mut vals: Vec<i64> = (-20..=20).collect();
+    vals.extend([
+        i64::from(i32::MIN),
+        i64::from(i32::MAX),
+        i64::from(i32::MIN) + 1,
+    ]);
+    let mut mods: Vec<i64> = (-15..=15).filter(|&m| m != 0).collect();
+    mods.extend([i64::from(i32::MIN), i64::from(i32::MAX), 2]);
+    for &a in &vals {
+        for &b in &vals {
+            for &m in &mods {
+                let sum = reference(i(a) + i(b), m);
+                let prod = reference(i(a) * i(b), m);
+                assert_eq!(
+                    a64.add_mod(a, b, m),
+                    Ok(sum),
+                    "ArithLLong add ({a}, {b}, {m})"
+                );
+                assert_eq!(
+                    a64.mul_mod(a, b, m),
+                    Ok(prod),
+                    "ArithLLong mul ({a}, {b}, {m})"
+                );
+                let n = |x: i64| i32::try_from(x).unwrap();
+                assert_eq!(a32.add_mod(n(a), n(b), n(m)), Ok(n(sum)), "ArithInt add");
+                assert_eq!(a32.mul_mod(n(a), n(b), n(m)), Ok(n(prod)), "ArithInt mul");
+            }
+        }
+    }
+    let extremes = [
+        (i64::MIN, i64::MIN, i64::MAX),
+        (i64::MAX, i64::MIN, i64::MIN),
+        (i64::MIN, -1, 3),
+    ];
+    for (a, b, m) in extremes {
+        assert_eq!(a64.add_mod(a, b, m), Ok(reference(i(a) + i(b), m)));
+        assert_eq!(a64.mul_mod(a, b, m), Ok(reference(i(a) * i(b), m)));
+    }
+}
+
+#[test]
+fn fast_arith_int_is_prime_near_i32_max() {
+    let (a32, a64) = (ArithInt::new(), ArithLLong::new());
+    // gp: [isprime(2147483647), isprime(2147483629), isprime(2146654199)] -> [1, 1, 0];
+    // factor(2146654199) -> 46327 * 46337 (46327 = precprime(46336))
+    assert!(a32.is_prime(i32::MAX));
+    assert!(a32.is_prime(2_147_483_629));
+    assert!(!a32.is_prime(2_146_654_199));
+    assert!(!a32.is_prime(i32::MIN));
+    assert!(!a32.is_prime(-7));
+    // gp: factor(2147395601) -> 13 * 165184277; factor(2^63-1) -> 7^2 * 73 * 127 * 337 * 92737
+    // * 649657; isprime(2^63-25) -> 1 (2^63-25 = 9223372036854775783)
+    assert!(!a32.is_prime(2_147_395_601));
+    assert!(!a64.is_prime(i64::MAX));
+    assert!(a64.is_prime(9_223_372_036_854_775_783));
+    // Integer::is_prime is the reference (a proof for every size; below 2^64 it is the same
+    // deterministic word test, primality.rs).
+    for n in (i32::MAX - 20_000)..=i32::MAX {
+        assert_eq!(
+            a32.is_prime(n),
+            i(n.into()).is_prime(),
+            "ArithInt::is_prime({n})"
+        );
+    }
+    for n in (i64::MAX - 2_000)..=i64::MAX {
+        assert_eq!(
+            a64.is_prime(n),
+            i(n).is_prime(),
+            "ArithLLong::is_prime({n})"
+        );
+    }
 }

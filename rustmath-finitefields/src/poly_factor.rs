@@ -12,6 +12,24 @@
 //!     followed by randomized **equal-degree factorization** (EDF), plus
 //!     square-free factorization (handling `char p` p-th powers), a Rabin
 //!     irreducibility test, and root finding.
+//!
+//! Equal-degree factorization also follows ch. 23 §23.8.1
+//! (`EqualDegreeFactorization`; digest
+//! `rustmath-lava/docs/Chapter_23_Univariate_Polynomial_Rings.md`) and:
+//! - [CZ81] D. G. Cantor, H. Zassenhaus, *A new algorithm for factoring
+//!   polynomials over finite fields*, Math. Comp. 36 (1981) 587-592;
+//! - [vzGG] J. von zur Gathen, J. Gerhard, *Modern Computer Algebra*, §14.3,
+//!   Alg. 14.8 (uniform splitting polynomial, step 3, power or trace map),
+//!   Thm. 14.9 (a try fails with probability at most `2^(1-r) <= 1/2` on a
+//!   product of `r >= 2` distinct irreducibles), Alg. 14.10 (recursion);
+//! - [Rab80] M. O. Rabin, *Probabilistic algorithms in finite fields*, SIAM J.
+//!   Comput. 9 (1980) 273-280 (the contract certificate).
+//!
+//! The equal-degree stage never loops forever and never returns an unsplit
+//! block: the public entry certifies its contract eagerly; inside the loop a
+//! block that resists 64 consecutive uniform tries is certified (a violation
+//! panics with the reason) and a certified block that resists 256 more panics
+//! (probability at most `2^-256`).
 
 use std::fmt;
 
@@ -522,14 +540,24 @@ impl Rng {
         z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
         z ^ (z >> 31)
     }
+    /// A uniform element of `field` (see [`random_fq_elt`]).
     fn field_elt(&mut self, field: &FiniteField) -> FiniteFieldElement {
-        let n = field.degree();
-        let p = field.characteristic().clone();
-        let coeffs = (0..n)
-            .map(|_| Integer::from(self.next_u64() as i64).abs() % p.clone())
-            .collect();
-        field.element(coeffs)
+        random_fq_elt(field, &mut || self.next_u64())
     }
+}
+
+/// A uniform element of `GF(q)` = `field`, if the words of `next` are uniform:
+/// every coordinate over `F_p` is drawn with the exact rejection sampler
+/// `crate::ff_poly::uniform_below(p, ..)`. (The earlier draw
+/// `|next_u64() as i64| mod p` reached only `[0, 2^63]` for `p > 2^63`, so the
+/// probability bound of the equal-degree splitting did not apply there.)
+fn random_fq_elt(field: &FiniteField, next: &mut dyn FnMut() -> u64) -> FiniteFieldElement {
+    let p = field.characteristic();
+    let mut coeffs = Vec::with_capacity(field.degree());
+    for _ in 0..field.degree() {
+        coeffs.push(crate::ff_poly::uniform_below(p, next));
+    }
+    field.element(coeffs)
 }
 
 // -- Square-free / distinct-degree / equal-degree factorization ---------------
@@ -608,9 +636,50 @@ pub fn distinct_degree_factorization(f: &FqPoly) -> Vec<(FqPoly, usize)> {
     result
 }
 
-/// Equal-degree factorization (Cantor–Zassenhaus): split a **monic square-free**
-/// `f` whose irreducible factors all have degree `d` into those factors.
+/// Consecutive failed splitting tries on one block after which `edf_rec`
+/// certifies the block with [`fq_edf_contract`] (a valid block fails 64 uniform
+/// tries in a row with probability at most `2^-64`).
+const CERTIFY_AFTER: usize = 64;
+/// Further uniform tries on a certified block before `edf_rec` gives up with a
+/// panic (probability at most `2^-256`).
+const LAS_VEGAS_TRIES: usize = 256;
+
+/// Equal-degree factorization (Cantor–Zassenhaus; MAGMA
+/// `EqualDegreeFactorization`, ch. 23 §23.8.1): split a **square-free** `f`
+/// whose irreducible factors all have degree `d` into those monic factors,
+/// sorted by coefficients. `f` need not be monic.
+///
+/// The contract is checked eagerly ([`fq_edf_contract`], Rabin's criterion
+/// generalised to products, [Rab80]): MAGMA's result is "unpredictable" outside
+/// it, here it panics, so a reducible block is never returned and the loop
+/// cannot spin forever (the earlier unbounded loop never returned on, e.g.,
+/// `x^4 + x^3 + 2` over GF(3) with `d = 2`). A nonzero constant `f` gives
+/// `vec![]`.
+///
+/// # Panics
+/// `f = 0`; `d < 1`; `d` does not divide `deg f`; `f` is not squarefree; `f` has
+/// an irreducible factor of degree other than `d` (including a reducible `f` of
+/// degree `d`) — each with the reason. Also (probability at most `2^-256`) when
+/// a certified block resists 256 uniform tries.
 pub fn equal_degree_factorization(f: &FqPoly, d: usize) -> Vec<FqPoly> {
+    const WHO: &str = "poly_factor::equal_degree_factorization";
+    if f.is_zero() {
+        panic!("{WHO}: f = 0 has no factorization");
+    }
+    if f.degree() == Some(0) {
+        return Vec::new();
+    }
+    let fm = f.make_monic();
+    if let Err(why) = fq_edf_contract(&fm, d) {
+        panic!("{WHO}: {why}");
+    }
+    equal_degree_factorization_unchecked(&fm, d)
+}
+
+/// The equal-degree factorization of a block the caller has checked (or that
+/// comes from the distinct-degree split of a square-free polynomial): seeds the
+/// PRNG from `f` and sorts the output.
+fn equal_degree_factorization_unchecked(f: &FqPoly, d: usize) -> Vec<FqPoly> {
     let field = f.field().clone();
     let mut out = Vec::new();
     // seed the PRNG deterministically from f
@@ -618,9 +687,64 @@ pub fn equal_degree_factorization(f: &FqPoly, d: usize) -> Vec<FqPoly> {
         ^ (f.degree().unwrap_or(0) as u64).wrapping_mul(0x100000001b3)
         ^ field.order().to_u64().unwrap_or(7);
     let mut rng = Rng(seed);
-    edf_rec(f, d, &mut rng, &mut out);
+    edf_rec(f, d, &mut || rng.next_u64(), &mut out);
     out.sort_by(|a, b| a.coeffs_key().cmp(&b.coeffs_key()));
     out
+}
+
+/// Contract certificate of the equal-degree stage ([Rab80]; [vzGG] §14.2):
+/// `Ok(())` iff `f` is a squarefree product of distinct monic irreducibles of
+/// degree exactly `d` over `GF(q)` (`q = field.order()`; the field is a field
+/// by construction, [`FiniteField::new`] / [`FiniteField::with_modulus`]);
+/// otherwise the first violated condition, in this order: `d >= 1`, `f != 0`,
+/// `deg f >= 1`, `d | deg f`, squarefree (`f' != 0`, `gcd(f, f') = 1`),
+/// `x^(q^d) ≡ x (mod f)` (every factor has degree dividing `d`), and
+/// `gcd(x^(q^(d/l)) - x, f) = 1` for every prime `l | d`. Cost: `d` Frobenius
+/// powers mod `f`.
+fn fq_edf_contract(f: &FqPoly, d: usize) -> std::result::Result<(), String> {
+    if d < 1 {
+        return Err(format!("d = {d} must be at least 1"));
+    }
+    let n = match f.degree() {
+        None => return Err("f = 0 has no factorization".to_string()),
+        Some(0) => return Err("f is constant".to_string()),
+        Some(n) => n,
+    };
+    if n % d != 0 {
+        return Err(format!("d = {d} does not divide deg f = {n}"));
+    }
+    let f = f.make_monic();
+    let field = f.field().clone();
+    let df = f.derivative();
+    if df.is_zero() || f.gcd(&df).degree() != Some(0) {
+        return Err("f is not squarefree".to_string());
+    }
+    // Frobenius ladder X_k = x^(q^k) mod f, k = 0..=d (d <= n here).
+    let q = field.order();
+    let x0 = FqPoly::x(field.clone()).rem(&f);
+    let mut ladder = vec![x0.clone()];
+    for k in 1..=d {
+        let next = ladder[k - 1].pow_mod(&q, &f);
+        ladder.push(next);
+    }
+    if ladder[d] != x0 {
+        return Err(format!(
+            "f has an irreducible factor whose degree does not divide {d}"
+        ));
+    }
+    let prime_divisors: Vec<usize> = int_factor(&Integer::from(d as i64))
+        .into_iter()
+        .filter_map(|(pr, _)| pr.to_usize())
+        .collect();
+    for l in prime_divisors {
+        let e = d / l;
+        if f.gcd(&ladder[e].sub(&x0)).degree() != Some(0) {
+            return Err(format!(
+                "f has an irreducible factor of degree dividing {e}"
+            ));
+        }
+    }
+    Ok(())
 }
 
 impl FqPoly {
@@ -631,7 +755,19 @@ impl FqPoly {
     }
 }
 
-fn edf_rec(f: &FqPoly, d: usize, rng: &mut Rng, out: &mut Vec<FqPoly>) {
+/// Recursive equal-degree factorization ([vzGG] Alg. 14.10) of the block `f`,
+/// pushing its factors of degree `d` to `out`; `next` supplies the random words.
+///
+/// Each try ([vzGG] Alg. 14.8) draws a uniform `a` of degree `< deg f` (the
+/// `+x` shift of coefficient 1 is a bijection, so `a` stays uniform), splits on
+/// a proper `gcd(f, a)` (step 3), else on a proper `gcd(T(a), f)` (char 2, `T`
+/// the absolute trace) or `gcd(a^((q^d-1)/2) - 1, f)` (odd char). Every failed
+/// try is counted, a constant or zero `a` included (none of the gcds is proper
+/// for it): at `CERTIFY_AFTER` consecutive failures the block is certified
+/// (panic with the reason on a violation), at `CERTIFY_AFTER + LAS_VEGAS_TRIES`
+/// the loop panics. No path loops forever or pushes an unsplit block of degree
+/// `> d`.
+fn edf_rec(f: &FqPoly, d: usize, next: &mut dyn FnMut() -> u64, out: &mut Vec<FqPoly>) {
     let field = f.field().clone();
     let deg = f.degree().unwrap_or(0);
     if deg == 0 {
@@ -643,21 +779,26 @@ fn edf_rec(f: &FqPoly, d: usize, rng: &mut Rng, out: &mut Vec<FqPoly>) {
     }
     let q = field.order();
     let p = field.characteristic().clone();
+    // odd char exponent (q^d - 1)/2 (unused in char 2)
+    let exp = (q.pow(d as u32) - Integer::one()) / Integer::from(2);
+    let mut failures = 0usize;
     loop {
         // random polynomial of degree < deg
-        let mut coeffs: Vec<FiniteFieldElement> = (0..deg).map(|_| rng.field_elt(&field)).collect();
-        // ensure nonconstant
+        let mut coeffs: Vec<FiniteFieldElement> =
+            (0..deg).map(|_| random_fq_elt(&field, next)).collect();
+        // shift coefficient 1 by one (a bijection, so a stays uniform)
         if coeffs.len() > 1 {
             coeffs[1] = coeffs[1].clone() + field.one();
         }
         let a = FqPoly::new(field.clone(), coeffs);
-        if a.degree().unwrap_or(0) == 0 {
-            continue;
-        }
+        // A constant (or zero) a is not skipped: it is an ordinary failed try
+        // below (gcd(f, c) is 1 or f, c^e - 1 and the trace of c are constants),
+        // so it reaches the failure counter; skipping it would spin forever on
+        // a degree-1 block with d >= 2, where every a is constant.
         let g0 = f.gcd(&a);
         if g0.degree().unwrap_or(0) >= 1 && g0.degree().unwrap() < deg {
-            edf_rec(&g0, d, rng, out);
-            edf_rec(&f.div_rem(&g0).0, d, rng, out);
+            edf_rec(&g0, d, next, out);
+            edf_rec(&f.div_rem(&g0).0, d, next, out);
             return;
         }
         let g = if p == Integer::from(2) {
@@ -672,16 +813,28 @@ fn edf_rec(f: &FqPoly, d: usize, rng: &mut Rng, out: &mut Vec<FqPoly>) {
             f.gcd(&t)
         } else {
             // odd char: b = a^{(q^d - 1)/2} mod f; gcd(b - 1, f)
-            let exp = (q.pow(d as u32) - Integer::one()) / Integer::from(2);
             let b = a.pow_mod(&exp, f);
             let b_minus_1 = b.sub(&FqPoly::one(field.clone()));
             f.gcd(&b_minus_1)
         };
         let gdeg = g.degree().unwrap_or(0);
         if gdeg >= 1 && gdeg < deg {
-            edf_rec(&g, d, rng, out);
-            edf_rec(&f.div_rem(&g).0, d, rng, out);
+            edf_rec(&g, d, next, out);
+            edf_rec(&f.div_rem(&g).0, d, next, out);
             return;
+        }
+        failures += 1;
+        if failures == CERTIFY_AFTER {
+            if let Err(why) = fq_edf_contract(f, d) {
+                panic!("poly_factor: equal-degree block violates its contract ({why})");
+            }
+        }
+        if failures >= CERTIFY_AFTER + LAS_VEGAS_TRIES {
+            panic!(
+                "poly_factor: no split of a certified equal-degree block of degree {deg} \
+                 (d = {d}) in {LAS_VEGAS_TRIES} uniform tries (probability <= \
+                 2^-{LAS_VEGAS_TRIES}); the generator is broken"
+            );
         }
     }
 }
@@ -689,11 +842,16 @@ fn edf_rec(f: &FqPoly, d: usize, rng: &mut Rng, out: &mut Vec<FqPoly>) {
 /// Full factorization of `f` over `GF(q)`: returns `(g_i, e_i)` with distinct
 /// monic irreducible `g_i` and `f = c * prod g_i^{e_i}` (the unit `c` is
 /// discarded). Combines square-free + distinct-degree + equal-degree steps.
+///
+/// # Panics
+/// Only (probability at most `2^-256` per block) when a certified equal-degree
+/// block resists 256 uniform tries; the blocks of the distinct-degree split of
+/// a square-free part always pass the certificate.
 pub fn factor(f: &FqPoly) -> Vec<(FqPoly, usize)> {
     let mut result = Vec::new();
     for (sqfree, mult) in square_free_factorization(f) {
         for (g, d) in distinct_degree_factorization(&sqfree) {
-            for irr in equal_degree_factorization(&g, d) {
+            for irr in equal_degree_factorization_unchecked(&g, d) {
                 result.push((irr.make_monic(), mult));
             }
         }
@@ -946,7 +1104,7 @@ mod tests {
                 (
                     g.coefficients()
                         .iter()
-                        .map(|c| c.eltseq()[0].to_i64())
+                        .map(|c| i64::try_from(&c.eltseq()[0]).unwrap())
                         .collect(),
                     *e,
                 )
@@ -1077,5 +1235,382 @@ mod tests {
         for (g, _) in &fac {
             assert!(is_irreducible(g));
         }
+    }
+
+    // ---- X1 (equal-degree honesty) tests PF1-PF6 and the internal path ----
+    // Reference values: PARI/GP 2.15 (`gp -q`), commands in each comment.
+
+    fn big(s: &str) -> Integer {
+        Integer::from_decimal_str(s).unwrap()
+    }
+
+    /// Little-endian coefficient lists (prime field) of a factor list, sorted.
+    fn sorted_coeffs(fs: &[FqPoly]) -> Vec<Vec<Integer>> {
+        let mut out: Vec<Vec<Integer>> = fs
+            .iter()
+            .map(|g| {
+                g.coefficients()
+                    .iter()
+                    .map(|c| c.eltseq()[0].clone())
+                    .collect()
+            })
+            .collect();
+        out.sort();
+        out
+    }
+
+    fn ints(v: &[i64]) -> Vec<Integer> {
+        v.iter().map(|&c| Integer::from(c)).collect()
+    }
+
+    /// PF1: x^4 + x^3 + 2 is irreducible over GF(3), so it is no product of
+    /// quadratics: the eager certificate refuses it. (Hangs on HEAD: the unbounded
+    /// loop never finds a split; run it only after the fix.)
+    /// gp: polisirreducible(Mod(1,3)*(x^4+x^3+2)) \\ 1
+    #[test]
+    #[should_panic(expected = "does not divide 2")]
+    fn edf_rejects_irreducible_quartic_for_d_2() {
+        let f3 = gf(3, 1);
+        let _ = equal_degree_factorization(&poly(&f3, &[2, 0, 0, 1, 1]), 2);
+    }
+
+    /// PF2: (x-1)(x-4) over GF(p), p = 2^64 + 37 > 2^63 (FiniteField::new accepts
+    /// any prime; the old sampler only reached [0, 2^63] there).
+    /// gp: factormod((x-1)*(x-4), 18446744073709551653)
+    ///     \\ [x + 18446744073709551649, 1; x + 18446744073709551652, 1]
+    #[test]
+    fn factor_over_prime_field_above_2_64() {
+        let p = big("18446744073709551653");
+        let fp = FiniteField::new(p.clone(), 1).unwrap();
+        let f = FqPoly::new(
+            fp.clone(),
+            vec![
+                fp.from_int(Integer::from(4)),
+                fp.from_int(p.clone() - Integer::from(5)),
+                fp.one(),
+            ],
+        );
+        let fac = factor(&f);
+        assert!(fac.iter().all(|(_, e)| *e == 1));
+        let irr: Vec<FqPoly> = fac.into_iter().map(|(g, _)| g).collect();
+        assert_eq!(
+            sorted_coeffs(&irr),
+            vec![
+                vec![big("18446744073709551649"), Integer::one()],
+                vec![big("18446744073709551652"), Integer::one()],
+            ]
+        );
+        // roots 1 and 4
+        let mut r: Vec<Integer> = roots(&f).iter().map(|c| c.eltseq()[0].clone()).collect();
+        r.sort();
+        assert_eq!(r, vec![Integer::one(), Integer::from(4)]);
+    }
+
+    /// The canonical sampler is uniform over GF(p) also for p > 2^63.
+    #[test]
+    fn field_elt_covers_the_whole_prime_field() {
+        let p = big("18446744073709551653"); // 2^64 + 37
+        let two63 = big("9223372036854775808");
+        let fp = FiniteField::new(p.clone(), 1).unwrap();
+        let mut rng = Rng(0x5EED);
+        let draws: Vec<Integer> = (0..32)
+            .map(|_| rng.field_elt(&fp).eltseq()[0].clone())
+            .collect();
+        assert!(draws.iter().all(|v| *v >= Integer::zero() && *v < p));
+        assert!(draws.iter().any(|v| *v > two63));
+    }
+
+    /// `y^e - y` over `field`.
+    fn y_pow_minus_y(field: &FiniteField, e: usize) -> FqPoly {
+        let mut c = vec![field.zero(); e + 1];
+        c[1] = -field.one();
+        c[e] = field.one();
+        FqPoly::new(field.clone(), c)
+    }
+
+    /// PF3: y^(q^2) - y over GF(q) = the q linears and the (q^2 - q)/2 irreducible
+    /// quadratics (counts independent of the modulus; gf(2,2), gf(3,2) use the
+    /// Conway polynomials x^2 + x + 1 and x^2 + 2x + 2).
+    /// gp: F = factorff(y^16 - y, 2, t^2 + t + 1)    \\ 10 factors: 4 linear, 6 quadratic
+    ///     F = factorff(y^81 - y, 3, t^2 + 2*t + 2)  \\ 45 factors: 9 linear, 36 quadratic
+    #[test]
+    fn factor_full_splitting_over_extension_fields() {
+        for (p, e, n1, n2, conway) in [
+            (2i64, 16usize, 4usize, 6usize, [1i64, 1, 1]),
+            (3, 81, 9, 36, [2, 2, 1]),
+        ] {
+            let field = gf(p, 2);
+            assert!(field.is_conway());
+            assert_eq!(field.defining_polynomial(), ints(&conway).as_slice());
+            let f = y_pow_minus_y(&field, e);
+            let fac = factor(&f);
+            assert_eq!(fac.len(), n1 + n2, "p = {p}");
+            assert_eq!(
+                fac.iter().filter(|(g, _)| g.degree() == Some(1)).count(),
+                n1
+            );
+            assert_eq!(
+                fac.iter().filter(|(g, _)| g.degree() == Some(2)).count(),
+                n2
+            );
+            assert!(fac.iter().all(|(_, m)| *m == 1));
+            let mut recon = FqPoly::one(field.clone());
+            for (g, _) in &fac {
+                assert!(is_irreducible(g));
+                recon = recon.mul(g);
+            }
+            assert_eq!(recon, f);
+        }
+    }
+
+    /// PF4: `equal_degree_factorization` on the 16 fp_factor T1 rows over gf(p, 1)
+    /// equals PARI's sorted list (all multiplicities 1).
+    /// gp: le(g) = Vecrev(lift(g)); F = factormod(f, p); vecsort(vector(#F~, i, le(F[i,1])))
+    /// with f, p the rows below (E1: f = (x^49-x)/(x^7-x), p = 7; D1:
+    /// (x-1)(x-2)(x-3)(x-4)(x-5), D4: (x-1)(x-2)(x-3) mod 3037000493 = precprime(3037000499)).
+    #[test]
+    fn edf_matches_pari_on_reference_rows() {
+        let mut e1 = vec![0i64; 43];
+        for k in 0..=7 {
+            e1[6 * k] = 1;
+        }
+        // (p, d, f, PARI's sorted factor list)
+        type Row = (i64, usize, Vec<i64>, Vec<Vec<i64>>);
+        let rows: Vec<Row> = vec![
+            (2, 1, vec![0, 1, 1], vec![vec![0, 1], vec![1, 1]]),
+            (
+                2,
+                3,
+                vec![1, 1, 1, 1, 1, 1, 1],
+                vec![vec![1, 0, 1, 1], vec![1, 1, 0, 1]],
+            ),
+            (
+                2,
+                4,
+                vec![1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
+                vec![
+                    vec![1, 0, 0, 1, 1],
+                    vec![1, 1, 0, 0, 1],
+                    vec![1, 1, 1, 1, 1],
+                ],
+            ),
+            (
+                2,
+                5,
+                vec![1; 31],
+                vec![
+                    vec![1, 0, 0, 1, 0, 1],
+                    vec![1, 0, 1, 0, 0, 1],
+                    vec![1, 0, 1, 1, 1, 1],
+                    vec![1, 1, 0, 1, 1, 1],
+                    vec![1, 1, 1, 0, 1, 1],
+                    vec![1, 1, 1, 1, 0, 1],
+                ],
+            ),
+            (
+                3,
+                1,
+                vec![0, 2, 0, 1],
+                vec![vec![0, 1], vec![1, 1], vec![2, 1]],
+            ),
+            (
+                3,
+                2,
+                vec![1, 0, 1, 0, 1, 0, 1],
+                vec![vec![1, 0, 1], vec![2, 1, 1], vec![2, 2, 1]],
+            ),
+            (
+                3,
+                3,
+                vec![2, 0, 1, 0, 1, 0, 1],
+                vec![vec![1, 2, 0, 1], vec![2, 2, 0, 1]],
+            ),
+            (
+                5,
+                1,
+                vec![0, 4, 0, 0, 0, 1],
+                vec![vec![0, 1], vec![1, 1], vec![2, 1], vec![3, 1], vec![4, 1]],
+            ),
+            (
+                5,
+                2,
+                vec![1, 0, 0, 0, 1],
+                vec![vec![2, 0, 1], vec![3, 0, 1]],
+            ),
+            (
+                5,
+                3,
+                vec![4, 3, 1, 1, 2, 0, 1, 4, 0, 1],
+                vec![vec![1, 1, 0, 1], vec![1, 2, 0, 1], vec![4, 1, 0, 1]],
+            ),
+            (
+                2147483647,
+                1,
+                vec![2147483527, 274, 2147483422, 85, 2147483632, 1],
+                vec![
+                    vec![2147483642, 1],
+                    vec![2147483643, 1],
+                    vec![2147483644, 1],
+                    vec![2147483645, 1],
+                    vec![2147483646, 1],
+                ],
+            ),
+            (
+                2147483647,
+                2,
+                vec![8, 0, 14, 0, 7, 0, 1],
+                vec![vec![1, 0, 1], vec![2, 0, 1], vec![4, 0, 1]],
+            ),
+            (
+                2147483647,
+                3,
+                vec![52, 17, 1, 17, 2, 0, 1],
+                vec![vec![4, 1, 0, 1], vec![13, 1, 0, 1]],
+            ),
+            (
+                7,
+                2,
+                e1,
+                vec![
+                    vec![1, 0, 1],
+                    vec![1, 3, 1],
+                    vec![1, 4, 1],
+                    vec![2, 0, 1],
+                    vec![2, 2, 1],
+                    vec![2, 5, 1],
+                    vec![3, 1, 1],
+                    vec![3, 2, 1],
+                    vec![3, 5, 1],
+                    vec![3, 6, 1],
+                    vec![4, 0, 1],
+                    vec![4, 1, 1],
+                    vec![4, 6, 1],
+                    vec![5, 2, 1],
+                    vec![5, 3, 1],
+                    vec![5, 4, 1],
+                    vec![5, 5, 1],
+                    vec![6, 1, 1],
+                    vec![6, 3, 1],
+                    vec![6, 4, 1],
+                    vec![6, 6, 1],
+                ],
+            ),
+            (
+                3037000493,
+                1,
+                vec![3037000487, 11, 3037000487, 1],
+                vec![
+                    vec![3037000490, 1],
+                    vec![3037000491, 1],
+                    vec![3037000492, 1],
+                ],
+            ),
+            (
+                3037000493,
+                2,
+                vec![6, 0, 5, 0, 1],
+                vec![vec![2, 0, 1], vec![3, 0, 1]],
+            ),
+        ];
+        for (p, d, f, expected) in rows {
+            let field = gf(p, 1);
+            let got = equal_degree_factorization(&poly(&field, &f), d);
+            let expected: Vec<Vec<Integer>> = expected.iter().map(|v| ints(v)).collect();
+            assert_eq!(sorted_coeffs(&got), expected, "p = {p}, d = {d}");
+            // `factor` agrees (one DDF block, multiplicities 1)
+            let fac = factor(&poly(&field, &f));
+            assert!(fac.iter().all(|(_, e)| *e == 1));
+            let irr: Vec<FqPoly> = fac.into_iter().map(|(g, _)| g).collect();
+            assert_eq!(sorted_coeffs(&irr), expected, "factor, p = {p}");
+        }
+    }
+
+    /// PF5 (review R5): the internal loop on the degree-1 block x + 1 with d = 2
+    /// draws only constant a; each is a counted failure, so the lazy certificate
+    /// runs after 64 tries and names the violation. (Hangs on HEAD, and with a
+    /// counter that skips constants; run it only after the fix.)
+    #[test]
+    #[should_panic(expected = "d = 2 does not divide deg f = 1")]
+    fn edf_rec_counts_constant_tries_and_certifies() {
+        let f3 = gf(3, 1);
+        let mut rng = Rng(1);
+        let mut out = Vec::new();
+        edf_rec(&poly(&f3, &[1, 1]), 2, &mut || rng.next_u64(), &mut out);
+    }
+
+    /// PF6: d = 0 is refused eagerly. (Hangs on HEAD: the exponent is 0, only step 3
+    /// splits, and the degree-1 pieces then draw constant a forever; run it only
+    /// after the fix.)
+    #[test]
+    #[should_panic(expected = "d = 0 must be at least 1")]
+    fn edf_rejects_d_zero() {
+        let f5 = gf(5, 1);
+        let _ = equal_degree_factorization(&poly(&f5, &[1, 0, 1]), 0);
+    }
+
+    #[test]
+    #[should_panic(expected = "degree dividing 1")]
+    fn edf_rejects_reducible_block_of_degree_d() {
+        // (x+1)(x+2) over GF(5) with d = 2 (gp: factormod((x+1)*(x+2), 5): two linears)
+        let f5 = gf(5, 1);
+        let _ = equal_degree_factorization(&poly(&f5, &[2, 3, 1]), 2);
+    }
+
+    #[test]
+    #[should_panic(expected = "f is not squarefree")]
+    fn edf_rejects_a_square() {
+        // (x^2+1)^2 over GF(3) (gp: Vecrev(lift(Mod(1,3)*(x^2+1)^2)) = [1,0,2,0,1])
+        let f3 = gf(3, 1);
+        let _ = equal_degree_factorization(&poly(&f3, &[1, 0, 2, 0, 1]), 2);
+    }
+
+    #[test]
+    #[should_panic(expected = "f = 0 has no factorization")]
+    fn edf_rejects_zero_polynomial() {
+        let f5 = gf(5, 1);
+        let _ = equal_degree_factorization(&FqPoly::zero(f5), 1);
+    }
+
+    #[test]
+    fn edf_of_a_constant_is_the_empty_product() {
+        let f5 = gf(5, 1);
+        assert!(equal_degree_factorization(&poly(&f5, &[3]), 1).is_empty());
+        // non-monic input: same monic factors
+        let f = poly(&f5, &[2, 3, 1]).mul(&poly(&f5, &[3]));
+        assert_eq!(
+            sorted_coeffs(&equal_degree_factorization(&f, 1)),
+            vec![ints(&[1, 1]), ints(&[2, 1])]
+        );
+    }
+
+    /// Internal path: a block no try can split (GF(3)[x]/(x^4+x^3+2) is a field)
+    /// is certified after 64 failures and the violation reported. (HEAD's loop
+    /// never ended on such a block; run it only after the fix.)
+    #[test]
+    #[should_panic(
+        expected = "violates its contract (f has an irreducible factor whose degree does not divide 2)"
+    )]
+    fn edf_rec_certifies_a_block_it_cannot_split() {
+        let f3 = gf(3, 1);
+        let mut rng = Rng(7);
+        let mut out = Vec::new();
+        edf_rec(
+            &poly(&f3, &[2, 0, 0, 1, 1]),
+            2,
+            &mut || rng.next_u64(),
+            &mut out,
+        );
+    }
+
+    /// The cap: with a stuck word source every try draws a = x, which never splits
+    /// (x^2 + 4) = (x-1)(x-4) over GF(5) (x^2 = 1 at both roots); the valid block
+    /// passes the certificate and the loop panics after 64 + 256 failures instead
+    /// of looping (as HEAD's unbounded loop would) or returning it.
+    #[test]
+    #[should_panic(expected = "no split of a certified equal-degree block")]
+    fn edf_rec_cap_panics_with_a_stuck_generator() {
+        let f5 = gf(5, 1);
+        let mut out = Vec::new();
+        edf_rec(&poly(&f5, &[4, 0, 1]), 1, &mut || 0u64, &mut out);
     }
 }

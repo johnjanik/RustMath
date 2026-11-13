@@ -12,14 +12,19 @@
 //! - `binomial_mod` reduces the generalised binomial C(n, k) (any n, k) modulo a prime p with
 //!   Lucas' theorem and C(n, k) = (-1)^k C(k-n-1, k).
 //! - §18.6 `Gcd`, `Lcm`, `Xgcd`: [`Integer::gcd`] and [`Integer::lcm`] are non-negative, and
-//!   [`Integer::extended_gcd`] returns `g >= 0` (`g = 0` only for `(0, 0)`), by Euclid's
-//!   algorithm on the magnitudes ([Knu97] §4.5.2).
+//!   [`Integer::extended_gcd`] returns `g >= 0` (`g = 0` only for `(0, 0)`), by Lehmer's
+//!   algorithm on the magnitudes ([Knu97] §4.5.2 Algorithm L; it applies exactly Euclid's
+//!   quotients, so the multipliers are Euclid's).
+//! - §18.4.8 `Isqrt`: [`Integer::sqrt`] is num-bigint's Newton iteration from a floating-point
+//!   start (exact floor).
 //! - §18.4.8 `Iroot` and §18.4.5 `IsPower`: [`Integer::nth_root`] is the floor of the real
 //!   n-th root (also for negative `self` and odd n); [`Integer::is_power`] and
 //!   [`Integer::is_perfect_power`] follow `IsPower(n, k)` / `IsPower(n)` and PARI/GP
-//!   `ispower` for negative inputs. `is_perfect_power` strips prime exponents q <= log2 |n|
-//!   ([Ber98] §1), so it decides every input with no cap on the exponent; a power-residue
-//!   sieve modulo primes p ≡ 1 (mod q) ([BS93]) skips most exact roots on non-powers.
+//!   `ispower` for negative inputs; [`Integer::exact_root`] returns the root of
+//!   `IsPower(n, k)`. `is_perfect_power` strips prime exponents q <= log2 |n| ([Ber98] §1), so
+//!   it decides every input with no cap on the exponent. Odd exact roots are 2-adic roots
+//!   (Newton's iteration, [Ber98]) checked by word fingerprints and one exact power; a
+//!   power-residue sieve modulo primes p ≡ 1 (mod q) ([BS93]) runs first for q < 32.
 //!
 //! References:
 //! - [Coh93] H. Cohen, *A Course in Computational Algebraic Number Theory*, GTM 138,
@@ -33,9 +38,13 @@
 //! - E. Lucas, *Théorie des fonctions numériques simplement périodiques*, Amer. J. Math. 1
 //!   (1878) 184-240, 289-321 (Lucas' theorem); Graham-Knuth-Patashnik, *Concrete
 //!   Mathematics*, eq. (5.14) (negating the upper index).
-//! - J. Sorenson, J. Webster, *Strong pseudoprimes to twelve prime bases*, Math. Comp. 86
-//!   (2017) 985-1003: the fixed-base Miller-Rabin test in [`crate::prime::is_prime`] (bases
-//!   2..37) is a proof of primality only below psi_12 = 318665857834031151167461 (about 3.19e23).
+//! - Primality: [`crate::prime::is_prime`] is a proof for every size (the twelve strong tests
+//!   2..37 below psi_12 = 318665857834031151167461, J. Sorenson, J. Webster, *Strong
+//!   pseudoprimes to twelve prime bases*, Math. Comp. 86 (2017) 985-1003; Baillie-PSW and the
+//!   Atkin-Morain ECPP above it, [`crate::ecpp`]). The residue functions (§18.7 "a fast
+//!   probabilistic primality test is applied") use [`crate::prime::is_probable_prime`]
+//!   (Baillie-PSW, exact below psi_12), because their answers check themselves; `binomial_mod`
+//!   needs a proven prime modulus and uses [`crate::prime::try_is_prime`].
 //!
 //! Note on `%`: the `Rem` impls (and `EuclideanDomain::div_rem`) truncate toward zero, so the
 //! remainder has the sign of the dividend. Every residue computation in this file reduces with
@@ -84,10 +93,13 @@ impl Integer {
         Integer::new(self.value.abs())
     }
 
-    /// Convert to i64, panicking if the value doesn't fit
-    pub fn to_i64(&self) -> i64 {
+    /// The value as an `i64`; `None` when the value is outside i64 (the same contract as
+    /// `NumericConversion::to_i64`, `BigInt::to_i64` and [`Integer::to_f64`]). For a typed
+    /// error use `i64::try_from(&n)` (`Err(NumericalError)`), and the same for the other
+    /// primitive integer types.
+    pub fn to_i64(&self) -> Option<i64> {
         use num_traits::ToPrimitive;
-        self.value.to_i64().expect("Integer value too large for i64")
+        self.value.to_i64()
     }
 
     /// Get the sign: -1 for negative, 0 for zero, 1 for positive
@@ -105,7 +117,7 @@ impl Integer {
     /// non-negative; `|m|` when `n = 0` (and vice versa); `0` for `(0, 0)`. PARI/GP `gcd`
     /// gives the same values: `gcd(4, -6) = 2`, `gcd(0, -5) = 5`.
     ///
-    /// Euclid's algorithm on `|m|` and `|n|` ([Knu97] §4.5.2).
+    /// Lehmer's algorithm on `|m|` and `|n|` ([Knu97] §4.5.2 Algorithm L).
     pub fn gcd(&self, other: &Self) -> Self {
         EuclideanDomain::gcd(self, other)
     }
@@ -124,7 +136,8 @@ impl Integer {
     /// The multipliers are those of the extended Euclidean algorithm ([Knu97] §4.5.2) with
     /// truncated quotients, negated together with `g` when `g` comes out negative. They equal
     /// PARI/GP `gcdext(m, n)` (which returns `[x, y, g]`): `xgcd(3, -7) = (1, -2, -1)`,
-    /// `xgcd(0, -5) = (5, 0, -1)`.
+    /// `xgcd(0, -5) = (5, 0, -1)`. Computed by Lehmer's algorithm (Algorithm L), which
+    /// applies exactly Euclid's quotients.
     pub fn extended_gcd(&self, other: &Self) -> (Self, Self, Self) {
         EuclideanDomain::extended_gcd(self, other)
     }
@@ -210,31 +223,23 @@ impl Integer {
         self.value
     }
 
-    /// Compute integer square root (floor(sqrt(n)))
+    /// MAGMA `Isqrt(n)` (Handbook ch. 18 §18.4.8): `floor(sqrt(self))` for `self >= 0`.
     ///
-    /// Uses Newton's method for large numbers
+    /// num-bigint's `BigUint::sqrt`: Newton's iteration started from a floating-point
+    /// estimate of the root (R. P. Brent, P. Zimmermann, *Modern Computer Arithmetic*,
+    /// Algorithm 1.13 SqrtInt), which returns the exact floor. The old start at `x = self`
+    /// needed about bits/2 full divisions before it neared the root.
+    ///
+    /// # Errors
+    ///
+    /// `InvalidArgument` for `self < 0`.
     pub fn sqrt(&self) -> Result<Self> {
         if self.signum() < 0 {
             return Err(MathError::InvalidArgument(
                 "Square root of negative number".to_string(),
             ));
         }
-
-        if self.is_zero() || self.is_one() {
-            return Ok(self.clone());
-        }
-
-        // Use Newton's method: x_{n+1} = (x_n + a/x_n) / 2
-        let mut x = self.clone();
-        loop {
-            let (quotient, _) = self.div_rem(&x)?;
-            let next = (x.clone() + quotient) / Integer::from(2);
-
-            if next >= x {
-                return Ok(x);
-            }
-            x = next;
-        }
+        Ok(Integer::new(BigInt::from(self.value.magnitude().sqrt())))
     }
 
     /// The floor of the real n-th root: the largest integer `r` with `r^n <= self`.
@@ -338,7 +343,7 @@ impl Integer {
         let mut result = Integer::one();
 
         for (_, multiplicity) in factors {
-            result = result * Integer::from(multiplicity + 1);
+            result = result * Integer::from(u64::from(multiplicity) + 1);
         }
 
         Ok(result)
@@ -359,6 +364,15 @@ impl Integer {
     ///
     /// Formula: If n = p₁^a₁ * p₂^a₂ * ... * pₖ^aₖ, then
     /// σₖ(n) = ∏ [(pᵢ^((aᵢ+1)*k) - 1) / (pᵢ^k - 1)]
+    /// (MAGMA `DivisorSigma(k, n)`, Handbook ch. 18 §18.7, for "small non-negative k").
+    ///
+    /// # Errors
+    ///
+    /// - `InvalidArgument` for `self = 0`.
+    /// - `NumericalError` when an exponent `(a + 1)·k` exceeds `u32::MAX` (the exponent type
+    ///   of [`Integer::pow`]). With `a >= 1` that forces `a·k >= 2^31`, so σₖ(n) would have
+    ///   more than 2^31 bits (256 MiB). Every exponent is checked before any power is formed,
+    ///   so the error costs no more than the factorisation.
     pub fn sigma(&self, k: u32) -> Result<Self> {
         use crate::prime::factor;
 
@@ -382,48 +396,80 @@ impl Integer {
         let factors = factor(&n);
         let mut result = Integer::one();
 
+        // Every exponent (a + 1)·k is checked before any power is formed: a power formed
+        // first can take minutes (3^(2^31)), and then the call would fail anyway.
+        let mut exps: Vec<u32> = Vec::with_capacity(factors.len());
+        for (_, a) in &factors {
+            let e = (u64::from(*a) + 1) * u64::from(k);
+            let e = u32::try_from(e).map_err(|_| {
+                MathError::NumericalError(format!(
+                    "sigma: the exponent (a + 1)·k = {e} of p^((a+1)k) exceeds u32::MAX; \
+                     sigma_k(n) would have more than 2^31 bits"
+                ))
+            })?;
+            exps.push(e);
+        }
+
         // If n = p1^a1 * p2^a2 * ... * pk^ak
         // then σₖ(n) = Π[(p_i^((a_i+1)*k) - 1) / (p_i^k - 1)]
-        for (prime, multiplicity) in factors {
-            if k == 1 {
-                // Optimize for k=1
-                let p_to_a_plus_1 = prime.pow(multiplicity + 1);
-                let numerator = p_to_a_plus_1 - Integer::one();
-                let denominator = prime.clone() - Integer::one();
-                let (quotient, _) = numerator.div_rem(&denominator)?;
-                result = result * quotient;
+        for ((prime, _), e) in factors.iter().zip(exps) {
+            let numerator = prime.pow(e) - Integer::one();
+            // p - 1 for k = 1, else p^k - 1 (k < e, and p^k is formed only after the check).
+            let denominator = if k == 1 {
+                prime.clone() - Integer::one()
             } else {
-                // General case
-                let p_to_k = prime.pow(k);
-                let p_to_a_plus_1_times_k = prime.pow((multiplicity + 1) * k);
-                let numerator = p_to_a_plus_1_times_k - Integer::one();
-                let denominator = p_to_k - Integer::one();
-                let (quotient, _) = numerator.div_rem(&denominator)?;
-                result = result * quotient;
-            }
+                prime.pow(k) - Integer::one()
+            };
+            let (quotient, _) = numerator.div_rem(&denominator)?;
+            result = result * quotient;
         }
 
         Ok(result)
     }
 
     /// Whether `self = b^k` for some integer `b` (MAGMA `IsPower(n, k)`, Handbook ch. 18
-    /// §18.4.5; PARI/GP `ispower(n, k)`).
+    /// §18.4.5; PARI/GP `ispower(n, k)`): `self.exact_root(k).is_some()`.
     ///
     /// MAGMA defines it for `n > 1` and `k > 1`; outside that range this answers the same
     /// question: every integer is a first power, `0 = 0^k` for `k >= 1`, a negative number is
     /// a k-th power only for odd `k` (`-8 = (-2)^3`, but `-4` is not a square), and `b^0 = 1`
     /// for every `b`, so `k = 0` gives `true` only for `1`.
     pub fn is_power(&self, k: u32) -> bool {
+        self.exact_root(k).is_some()
+    }
+
+    /// The integer `b` with `b^k = self`, when `self` is a perfect k-th power: the second
+    /// return value of MAGMA `IsPower(n, k)` (Handbook ch. 18 §18.4.5); PARI/GP
+    /// `ispower(n, k, &b)`.
+    ///
+    /// - `Some(b)` with `b^k = self`. For `self > 0` and even `k`, `b > 0` (as PARI); for
+    ///   `self < 0` (odd `k`) `b < 0`; `0 = 0^k` for `k >= 1`; `k = 1` gives `self`.
+    /// - `None` when no integer `b` has `b^k = self` (`self < 0` with even `k` included).
+    /// - `k = 0`: `Some(1)` for `self = 1` (`1 = 1^0`), `None` otherwise. MAGMA requires
+    ///   `k > 1` and PARI refuses `k <= 0`; these values only extend the definition.
+    ///
+    /// Algorithm (module `perfect_power`): `k = 2^e·k'` with `k'` odd. The k'-th root of
+    /// `|self|` comes from the 2-adic root of its odd part (Newton's iteration doubles the
+    /// precision; [Ber98]), checked by two word-size fingerprints and one exact power; then
+    /// `e` square roots, each after the quadratic-residue sieve ([BS93]). Every `None` is a
+    /// proof. Cost: `O(log k · M(bits/k'))` plus the square roots; for odd `k` at least
+    /// `bits(self)` it is O(1) after the trailing-zero count. (`exact_root(3^100003 + 2, 9999)`
+    /// takes milliseconds; the floor root `BigUint::nth_root` took 11 s in a debug build.)
+    pub fn exact_root(&self, k: u32) -> Option<Self> {
         if k == 0 {
-            return self.is_one();
+            return self.is_one().then(Integer::one);
         }
-        if self.signum() < 0 && k.is_multiple_of(2) {
-            return false;
+        let negative = self.value.is_negative();
+        if negative && k.is_multiple_of(2) {
+            return None;
         }
-        // For odd k, (-t)^k = -t^k, so testing |self| decides negative self too. The test
-        // power t^k is at most |self| (t is the floor root).
         let mag = self.value.magnitude();
-        &mag.nth_root(k).pow(k) == mag
+        if mag.bits() <= 1 {
+            return Some(self.clone()); // 0, 1, -1 (odd k): their own k-th roots
+        }
+        // For odd k, (-t)^k = -t^k, so the root of |self| decides negative self too.
+        let r = BigInt::from(crate::perfect_power::exact_root_biguint(mag, k)?);
+        Some(Integer::new(if negative { -r } else { r }))
     }
 
     /// Get digits of the number in the given base
@@ -453,8 +499,7 @@ impl Integer {
 
         while !n.is_zero() {
             let (quotient, remainder) = n.div_rem(&base_int)?;
-            // Safe to convert to u8 since remainder < base <= 36
-            let digit = remainder.to_i64() as u8;
+            let digit = u8::try_from(&remainder).expect("digits: 0 <= remainder < base <= 36");
             digits.push(digit);
             n = quotient;
         }
@@ -578,30 +623,33 @@ impl Integer {
     /// remains) finds `m` exactly: the search covers every possible exponent and decides
     /// every input. For `self < 0` only odd primes are stripped.
     ///
-    /// Before each exact root, a power-residue sieve ([BS93]) tries up to four primes
-    /// `p ≡ 1 (mod q)`. If `p ∤ base` and `base^((p-1)/q) ≢ 1 (mod p)`, then `base` is not a
-    /// q-th power, because `base = d^q` would give `base^((p-1)/q) = d^(p-1) ≡ 1` (Fermat), and
-    /// the root is skipped. The sieve can only rule an exponent out, never in: every exponent
-    /// in the answer comes from an exact root that was raised back to `base`.
+    /// The root step (module `perfect_power`). For `q < 32` a power-residue sieve ([BS93])
+    /// first tries up to four primes `p ≡ 1 (mod q)`: if `p ∤ base` and
+    /// `base^((p-1)/q) ≢ 1 (mod p)`, then `base` is not a q-th power (`base = d^q` would give
+    /// `d^(p-1) ≡ 1`, Fermat). Then `q = 2` takes `BigUint::sqrt` and checks `s·s = base`.
+    /// An odd `q` takes the unique odd q-th root `r` of the odd part `m` of `base` modulo
+    /// `2^K`, `K = ceil(bits(m)/q)` (2-adic Newton iteration, [Ber98]): `m` is a q-th power iff
+    /// `bits(r) = K` and `r^q = m`, which is checked first modulo two word primes and then
+    /// exactly. The odd part and its residues are computed once per base. Every exponent in
+    /// the answer comes from an exact root raised back to `base`, and every rejection is a
+    /// proof.
     ///
-    /// Cost: for each prime `q < log2 |self|`, a few remainders of the remaining base by
-    /// word-sized primes, plus one `BigUint::nth_root` when the sieve does not rule `q` out.
-    /// That happens for the exponents that divide `m`, and for a non-power only when it is a
-    /// q-th power residue modulo all four sieve primes (probability about `q^-4` for a "random"
-    /// input).
-    /// The root is the expensive step. Above the `f64` range and for `q` beyond a few hundred,
-    /// num-bigint 0.4 starts Newton's iteration from `2^(bits/q + 1)`, which can need about
-    /// `min(q ln 2, root)` steps, each a (q-1)-th power and a long division. Without the sieve,
-    /// the non-power `2^20000 + 1` took about 50 s in a debug build because it paid that root
-    /// for every q; with the sieve it takes about 20 ms (`2^100000 + 1`: 0.2 s).
-    /// Genuine powers still pay their roots (`3001^1999`: 0.3 s in a debug build), and inputs
-    /// built to pass the sieve for many q pay one root per such q.
+    /// Cost: per odd prime `q`, `O(log q · M(bits/q))` for the 2-adic root (u64 arithmetic
+    /// once `K <= 64`, i.e. for every `q > bits/64`) and `O(bits/q)` for the residues, so the
+    /// sum over `q` is a small multiple of `M(bits)`. An input built to agree with a q-th power
+    /// modulo both word primes for many `q` pays one exact power per such `q`. Measured in a
+    /// debug build: `2^1000000 + 1` 0.13 s (the floor-root loop before took about 12 s),
+    /// `3001^1999` 3.5 ms (0.37 s before), `(2^61 - 1)^331` 6 ms (0.13 s before).
     ///
     /// # Panics
     ///
     /// Only on inputs of more than `u32::MAX` bits (512 MiB), where the exponent would not
     /// fit the `u32` result.
     pub fn is_perfect_power(&self) -> Option<(Self, u32)> {
+        use crate::perfect_power::{exact_root_odd, may_be_qth_power, odd_part};
+        /// Below this exponent the residue sieve runs before the root: a few O(bits) passes
+        /// refute almost every non-power, and the root costs more there.
+        const SIEVE_BELOW: u64 = 32;
         if self.abs() <= Integer::one() {
             return None;
         }
@@ -609,6 +657,7 @@ impl Integer {
         let mut base = self.value.magnitude().clone();
         let bits = u32::try_from(base.bits())
             .expect("is_perfect_power: input has more than u32::MAX bits");
+        let mut odd = odd_part(&base);
         let mut k: u32 = 1;
         for q in crate::fast_arith::prime_range(2, u64::from(bits) + 1) {
             // base = d^q with d >= 2 forces 2^q <= base, i.e. q < bits(base).
@@ -618,17 +667,24 @@ impl Integer {
             if negative && q == 2 {
                 continue; // a negative number is only an odd power
             }
-            let q32 = q as u32; // q < bits(base) <= u32::MAX
+            let q32 = u32::try_from(q).expect("q < bits(base) <= u32::MAX");
             loop {
-                if !may_be_qth_power(&base, q) {
+                if q < SIEVE_BELOW && !may_be_qth_power(&base, q) {
                     break; // proof that base is not a q-th power
                 }
-                let r = base.nth_root(q32);
-                if r.pow(q32) != base {
+                let root = if q == 2 {
+                    let s = base.sqrt();
+                    (&s * &s == base).then_some(s)
+                } else {
+                    exact_root_odd(&odd, q)
+                };
+                let Some(r) = root else { break };
+                base = r;
+                odd = odd_part(&base);
+                k *= q32; // base >= 2 and base^k = |self|, so k < bits(|self|) <= u32::MAX
+                if q >= base.bits() {
                     break;
                 }
-                base = r;
-                k *= q32; // base >= 2 and base^k = |self|, so k < bits(|self|) <= u32::MAX
             }
         }
         if k == 1 {
@@ -690,18 +746,20 @@ impl Integer {
     /// Computed as [`Integer::kronecker_symbol`] ([Coh93] Alg. 1.4.10, O(log^2 p)).
     ///
     /// Errors:
-    /// - p <= 2 or p not accepted by [`crate::prime::is_prime`]: `InvalidArgument`.
+    /// - p <= 2 or p not accepted by [`crate::prime::is_probable_prime`]: `InvalidArgument`.
     /// - The symbol is 0 although p does not divide self: this proves p composite
     ///   (gcd(self, p) is a proper factor), so `InvalidArgument("... modulus is not prime ...")`
     ///   is returned instead of a 0 that would claim p | self.
     ///
-    /// Primality, as in MAGMA, is a fast test: `is_prime` (Miller-Rabin to the bases 2..37) is a
-    /// proof only below 318665857834031151167461 (Sorenson-Webster 2017). Above it a strong
-    /// pseudoprime p is accepted and the value returned is the Jacobi symbol (self/p).
+    /// Primality, as in MAGMA ("a fast probabilistic primality test is applied"), is the
+    /// Baillie-PSW probable-prime test: exact below psi_12 = 318665857834031151167461, and no
+    /// BPSW pseudoprime is known above it. For a BPSW pseudoprime p (if one exists) the value
+    /// returned is the Jacobi symbol (self/p), which is not the Legendre symbol of a prime. A -1
+    /// is a proof of non-residuosity for any odd p; a 1 is not.
     pub fn legendre_symbol(&self, p: &Self) -> Result<i8> {
-        use crate::prime::is_prime;
+        use crate::prime::is_probable_prime;
 
-        if *p <= Integer::from(2) || !is_prime(p) {
+        if *p <= Integer::from(2) || !is_probable_prime(p) {
             return Err(MathError::InvalidArgument(
                 "Second argument must be an odd prime".to_string(),
             ));
@@ -813,10 +871,12 @@ impl Integer {
     /// - `Ok(true)` is returned only after [`Integer::sqrt_mod_prime`] produced a verified root.
     ///
     /// Errors (`InvalidArgument`):
-    /// - p not accepted by [`crate::prime::is_prime`] ("Modulus must be prime").
+    /// - p not accepted by [`crate::prime::is_probable_prime`] ("Modulus must be prime";
+    ///   Baillie-PSW, exact below psi_12 = 318665857834031151167461, no BPSW pseudoprime is
+    ///   known).
     /// - (self/p) = 0 with p not dividing self, which proves p composite.
-    /// - p is a strong pseudoprime (above 318665857834031151167461, Sorenson-Webster 2017) and
-    ///   the root computation failed (a bounded search ran out or the root check failed).
+    /// - p is a BPSW pseudoprime and the root computation failed (a bounded search ran out or
+    ///   the root check failed), which proves p composite.
     ///
     /// # Examples
     ///
@@ -830,9 +890,9 @@ impl Integer {
     /// assert!(!Integer::from(-1).is_quadratic_residue_prime(&Integer::from(7)).unwrap());
     /// ```
     pub fn is_quadratic_residue_prime(&self, p: &Self) -> Result<bool> {
-        use crate::prime::is_prime;
+        use crate::prime::is_probable_prime;
 
-        if !is_prime(p) {
+        if !is_probable_prime(p) {
             return Err(MathError::InvalidArgument(
                 "Modulus must be prime".to_string(),
             ));
@@ -857,12 +917,13 @@ impl Integer {
     ///
     /// # Errors (`InvalidArgument`)
     ///
-    /// - p not accepted by [`crate::prime::is_prime`]: "Modulus must be prime".
+    /// - p not accepted by [`crate::prime::is_probable_prime`]: "Modulus must be prime"
+    ///   (Baillie-PSW, exact below psi_12 = 318665857834031151167461, no BPSW pseudoprime is
+    ///   known). A caller that has already proved p prime uses
+    ///   [`Integer::try_sqrt_mod_prime`], which runs no primality test.
     /// - (a/p) = -1: "Not a quadratic residue".
     /// - (a/p) = 0 with a ≠ 0, a bounded Tonelli-Shanks search runs out, or the final check
-    ///   fails: "sqrt_mod_prime: modulus is not prime (...)". Each proves p composite;
-    ///   `is_prime` can accept strong pseudoprimes above 318665857834031151167461
-    ///   (Sorenson-Webster 2017).
+    ///   fails: "sqrt_mod_prime: modulus is not prime (...)". Each proves p composite.
     ///
     /// # Examples
     ///
@@ -878,9 +939,9 @@ impl Integer {
     /// assert!(Integer::from(-1).sqrt_mod_prime(&Integer::from(7)).is_err());
     /// ```
     pub fn sqrt_mod_prime(&self, p: &Self) -> Result<Self> {
-        use crate::prime::is_prime;
+        use crate::prime::is_probable_prime;
 
-        if !is_prime(p) {
+        if !is_probable_prime(p) {
             return Err(MathError::InvalidArgument(
                 "Modulus must be prime".to_string(),
             ));
@@ -891,6 +952,42 @@ impl Integer {
                 "Not a quadratic residue".to_string(),
             )),
         }
+    }
+
+    /// Square root modulo p without testing p for primality, for callers that already proved
+    /// p prime (MAGMA `Modsqrt`, Handbook ch. 18 §18.12.1).
+    ///
+    /// Precondition: p is prime. `Ok(Some(r))`: 0 <= r < p and r^2 ≡ self (mod p), checked
+    /// before it is returned. `Ok(None)`: the Jacobi symbol (self/p) is -1, a proof that self is
+    /// not a square mod p (for any odd p). `Err(InvalidArgument)`: p < 2, p even and > 2, p a
+    /// perfect square (checked first), or the computation proved p composite (gcd(self, p) > 1
+    /// with p not dividing self, the Tonelli-Shanks order bound ran out, or the root did not
+    /// square back). For a composite p that is not a square the call still ends: a quadratic
+    /// non-residue modulo p (Jacobi symbol -1) exists below p, and the search stops at the first
+    /// one; there is no time bound beyond that for composite p. (For a square p every Jacobi
+    /// symbol is 0 or 1, so that search would run to p; hence the square check.)
+    ///
+    /// Algorithm: [Coh93] Algorithm 1.5.1 (Tonelli-Shanks), a^((p+1)/4) for p ≡ 3 (mod 4).
+    pub fn try_sqrt_mod_prime(&self, p: &Self) -> Result<Option<Self>> {
+        let pv = &p.value;
+        let two = BigInt::from(2u32);
+        if *pv < two {
+            return Err(MathError::InvalidArgument(format!(
+                "try_sqrt_mod_prime: p = {p} is below 2"
+            )));
+        }
+        if pv.is_even() && *pv != two {
+            return Err(MathError::InvalidArgument(format!(
+                "try_sqrt_mod_prime: p = {p} is even and not 2"
+            )));
+        }
+        let r = pv.sqrt();
+        if &r * &r == *pv {
+            return Err(MathError::InvalidArgument(format!(
+                "try_sqrt_mod_prime: p = {p} is a perfect square"
+            )));
+        }
+        Ok(sqrt_mod_prime_checked(&self.value, pv)?.map(Integer::new))
     }
 
     /// Get all quadratic residues modulo a prime p
@@ -904,9 +1001,9 @@ impl Integer {
     /// // Returns [0, 1, 2, 4] since 0²=0, 1²=1, 2²=4, 3²=2 (mod 7)
     /// ```
     pub fn quadratic_residues(p: &Self) -> Vec<Self> {
-        use crate::prime::is_prime;
+        use crate::prime::is_probable_prime;
 
-        if !is_prime(p) || *p <= Integer::one() {
+        if !is_probable_prime(p) || *p <= Integer::one() {
             return vec![];
         }
 
@@ -972,7 +1069,10 @@ impl Integer {
         self.mod_pow(exp, modulus)
     }
 
-    /// Check if this number is prime using Miller-Rabin primality test
+    /// MAGMA `IsPrime(n)` (`Proof := true`): [`crate::prime::is_prime`], a proof for every size
+    /// (the deterministic word test below 2^64, the twelve strong tests below psi_12, then
+    /// Baillie-PSW and ECPP). It panics when the ECPP proof of a probable prime is unresolved
+    /// (see [`crate::prime::try_is_prime`] for the rates and the `Result` form).
     pub fn is_prime(&self) -> bool {
         use crate::prime::is_prime;
         is_prime(self)
@@ -987,19 +1087,16 @@ impl Integer {
     /// - Otherwise Lucas' theorem on the base-p digits (n_i, k_i): C(n, k) ≡ prod C(n_i, k_i),
     ///   each factor computed as prod_{i<k'} (n_i - i) / k'! mod p with k' = min(k_i, n_i - k_i).
     ///
-    /// Errors: p not accepted by [`crate::prime::is_prime`] (`InvalidArgument`); a Lucas digit
-    /// k' that does not fit in a `u64` (only possible for p > 2^64) gives `NotSupported`.
+    /// Errors: p proven not prime by [`crate::prime::try_is_prime`] (`InvalidArgument`); p a
+    /// probable prime whose ECPP proof is unresolved (`NotSupported`, from `try_is_prime`); a
+    /// Lucas digit k' that does not fit in a `u64` (only possible for p > 2^64) gives
+    /// `NotSupported`.
     ///
-    /// Primality, as in MAGMA, is a fast test: `is_prime` (Miller-Rabin to the bases 2..37) is a
-    /// proof only below 318665857834031151167461 (Sorenson-Webster 2017). Above it a strong
-    /// pseudoprime p is accepted, and Lucas' theorem does not hold for a composite modulus: the
-    /// value returned is then not C(n, k) mod p in general (or `Err(NotInvertible)` when a
-    /// digit factorial k'! shares a factor with p). Callers that need a guarantee above that
-    /// bound must certify p first.
+    /// Lucas' theorem does not hold for a composite modulus, so a probable prime is not enough:
+    /// p is proven prime first (a proof for every size; above psi_12 one ECPP proof per process
+    /// and prime, then cached).
     pub fn binomial_mod(&self, k: &Self, p: &Self) -> Result<Self> {
-        use crate::prime::is_prime;
-
-        if !is_prime(p) {
+        if !crate::prime::try_is_prime(p)? {
             return Err(MathError::InvalidArgument(
                 "Modulus must be prime".to_string(),
             ));
@@ -1085,7 +1182,7 @@ fn mod_pow_nonneg(base: &BigInt, exp: &BigInt, m: &BigInt) -> BigInt {
 /// (a/-1); then the binary Jacobi loop with b odd and positive. The reciprocity step is also
 /// valid on the first pass, where a may be negative and odd:
 /// (a/b) = (-1)^(((a-1)/2)((b-1)/2)) (b/|a|), where a ≡ 3 (mod 4) is tested with `mod_floor`.
-fn kronecker_bigint(a: &BigInt, b: &BigInt) -> i8 {
+pub(crate) fn kronecker_bigint(a: &BigInt, b: &BigInt) -> i8 {
     if b.is_zero() {
         return if a.abs().is_one() { 1 } else { 0 };
     }
@@ -1143,15 +1240,16 @@ fn kronecker_bigint(a: &BigInt, b: &BigInt) -> i8 {
     }
 }
 
-/// Square root of `a` modulo `p`, where `p` is odd or 2 and has already passed
-/// [`crate::prime::is_prime`]. Returns `Ok(Some(r))` with 0 <= r < p and r^2 ≡ a (mod p),
+/// Square root of `a` modulo `p`, where `p` is 2 or an odd non-square (a probable prime in
+/// every caller: [`crate::prime::is_probable_prime`], a proven prime, or a BPSW probable prime
+/// inside the ECPP prover). Returns `Ok(Some(r))` with 0 <= r < p and r^2 ≡ a (mod p),
 /// `Ok(None)` when (a/p) = -1 (a proven non-square), and `Err` when the computation proves p
 /// composite.
 ///
 /// [Coh93] Algorithm 1.5.1 (Tonelli-Shanks) for p ≡ 1 (mod 4), a^((p+1)/4) for p ≡ 3 (mod 4).
 /// Both bounded searches (least non-residue n, least m with b^(2^m) = 1) end in `Err` when they
 /// run out, which can happen only for composite p, never in a decision.
-fn sqrt_mod_prime_checked(a: &BigInt, p: &BigInt) -> Result<Option<BigInt>> {
+pub(crate) fn sqrt_mod_prime_checked(a: &BigInt, p: &BigInt) -> Result<Option<BigInt>> {
     let not_prime = |why: &str| -> Result<Option<BigInt>> {
         Err(MathError::InvalidArgument(format!(
             "sqrt_mod_prime: modulus is not prime ({why})"
@@ -1249,41 +1347,35 @@ impl From<BigInt> for Integer {
     }
 }
 
-/// Primes `p ≡ 1 (mod q)` that the power-residue sieve of [`Integer::is_perfect_power`] tries
-/// per exponent before it falls back to the exact root.
-const POWER_SIEVE_PRIMES: u32 = 4;
-/// Candidates `p = 1 + j·lcm(2, q)` the sieve examines per exponent while looking for those
-/// primes. With `q < 2^32` every candidate is below `2^43`.
-const POWER_SIEVE_CANDIDATES: u64 = 1000;
+/// Checked conversion to a primitive integer: `Err(NumericalError)` when the value is outside
+/// the target range. The error names the bit length and the sign, never the decimal value
+/// (which can be huge). Delegates to num-bigint's `TryFrom<&BigInt>`.
+macro_rules! impl_try_from_integer {
+    ($($t:ty),*) => {$(
+        impl TryFrom<&Integer> for $t {
+            type Error = MathError;
+            fn try_from(n: &Integer) -> Result<$t> {
+                <$t>::try_from(&n.value).map_err(|_| {
+                    MathError::NumericalError(format!(
+                        "an integer of {} bits{} does not fit in {}",
+                        n.value.bits(),
+                        if n.value.is_negative() { " (negative)" } else { "" },
+                        stringify!($t)
+                    ))
+                })
+            }
+        }
 
-/// Power-residue sieve for q-th powers ([BS93]). `false` is a proof that `n` is not a q-th
-/// power: for a prime `p ≡ 1 (mod q)` with `p ∤ n`, `n = d^q` forces `p ∤ d` and
-/// `n^((p-1)/q) = d^(p-1) ≡ 1 (mod p)` (Fermat), so any other residue refutes it. `true` only
-/// says that none of the (at most [`POWER_SIEVE_PRIMES`]) tried primes refuted it; the caller
-/// must still take the exact root. Primes dividing `n` give no information and count as tried.
-fn may_be_qth_power(n: &num_bigint::BigUint, q: u64) -> bool {
-    use crate::fast_arith::{is_prime_u64, pow_mod_u64};
-    use num_traits::ToPrimitive;
-    debug_assert!((2..1 << 32).contains(&q));
-    let step = if q.is_multiple_of(2) { q } else { 2 * q }; // p = 1 + j·step is odd and ≡ 1 (mod q)
-    let mut p = 1u64;
-    let mut tried = 0;
-    for _ in 0..POWER_SIEVE_CANDIDATES {
-        p += step;
-        if !is_prime_u64(p) {
-            continue;
+        impl TryFrom<Integer> for $t {
+            type Error = MathError;
+            fn try_from(n: Integer) -> Result<$t> {
+                <$t>::try_from(&n)
+            }
         }
-        let r = (n % p).to_u64().expect("a residue modulo a u64 fits a u64");
-        if r != 0 && pow_mod_u64(r, (p - 1) / q, p) != 1 {
-            return false;
-        }
-        tried += 1;
-        if tried == POWER_SIEVE_PRIMES {
-            break;
-        }
-    }
-    true
+    )*};
 }
+
+impl_try_from_integer!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
 
 // Display implementation
 impl fmt::Display for Integer {
@@ -1521,20 +1613,17 @@ impl EuclideanDomain for Integer {
     }
 
     /// MAGMA `Gcd(m, n)` (Handbook ch. 18 §18.6): non-negative; `|m|` when `n = 0`; `0` for
-    /// `(0, 0)`. Euclid's algorithm on `|m|`, `|n|` ([Knu97] §4.5.2), so the result is
-    /// non-negative by construction. (The trait default runs Euclid over the truncating
-    /// `div_rem`, whose last remainder is `±gcd`.) A division-based Euclid costs a single
-    /// division when one operand is small, e.g. `gcd(num, 1)` in `Rational::new`; binary gcd
-    /// (Stein) is far slower on such unbalanced inputs.
+    /// `(0, 0)`. Lehmer's algorithm on `|m|`, `|n|` ([Knu97] §4.5.2 Algorithm L, module
+    /// `lehmer`), so the result is non-negative by construction. (The trait default runs
+    /// Euclid over the truncating `div_rem`, whose last remainder is `±gcd`.) Lehmer keeps
+    /// Euclid's single division when one operand is small, e.g. `gcd(num, 1)` in
+    /// `Rational::new`, where binary gcd (Stein) would be far slower; on balanced operands it
+    /// is about 10x (1,000 bits) to 60x (10^6 bits) faster than Euclid.
     fn gcd(&self, other: &Self) -> Self {
-        let mut a = self.value.magnitude().clone();
-        let mut b = other.value.magnitude().clone();
-        while !b.is_zero() {
-            let r = &a % &b;
-            a = b;
-            b = r;
-        }
-        Integer::new(BigInt::from(a))
+        Integer::new(BigInt::from(crate::lehmer::gcd(
+            self.value.magnitude(),
+            other.value.magnitude(),
+        )))
     }
 
     /// MAGMA `Lcm(m, n)` (Handbook ch. 18 §18.6): `|m| / gcd(m, n) · |n|`, so
@@ -1553,15 +1642,22 @@ impl EuclideanDomain for Integer {
     /// `g >= 0`, and `g = 0` only for `(0, 0)`, which gives `(0, 0, 0)` as PARI/GP
     /// `gcdext(0, 0)` and GMP `mpz_gcdext` do.
     ///
-    /// `num_integer::Integer::extended_gcd` runs the same truncated-quotient extended Euclid
-    /// as the trait default ([Knu97] §4.5.2) and negates `(g, x, y)` when `g < 0`; the
-    /// triples equal PARI/GP `gcdext` (see `tests/ch18_signs_roots.rs`).
+    /// The multipliers are those of the truncated-quotient extended Euclid on the signed
+    /// `(m, n)` ([Knu97] §4.5.2, as `num_integer::Integer::extended_gcd`), with `(g, x, y)`
+    /// negated when `g < 0`. A truncated remainder has the sign of its dividend, so that
+    /// triple is `(gcd, sign(m)·s, sign(n)·t)` with `(s, t)` the Euclid cofactors of the
+    /// magnitudes. Those come from Lehmer's algorithm (module `lehmer`), which applies
+    /// exactly Euclid's quotients. The triples equal PARI/GP `gcdext` (see
+    /// `tests/ch18_signs_roots.rs`).
     fn extended_gcd(&self, other: &Self) -> (Self, Self, Self) {
         if self.is_zero() && other.is_zero() {
             return (Integer::zero(), Integer::zero(), Integer::zero());
         }
-        let e = num_integer::Integer::extended_gcd(&self.value, &other.value);
-        (Integer::new(e.gcd), Integer::new(e.x), Integer::new(e.y))
+        let (g, s, t) =
+            crate::lehmer::xgcd_magnitudes(self.value.magnitude(), other.value.magnitude());
+        let s = if self.value.is_negative() { -s } else { s };
+        let t = if other.value.is_negative() { -t } else { t };
+        (Integer::new(BigInt::from(g)), Integer::new(s), Integer::new(t))
     }
 
     /// The sign: MAGMA `Normalize` over Z (Handbook ch. 23 §23.5.1) takes the associate with
@@ -1672,6 +1768,59 @@ mod tests {
     }
 
     #[test]
+    fn test_to_i64_is_checked() {
+        // gp: 2^63 = 9223372036854775808 > i64::MAX; -2^63-1 < i64::MIN. Both panicked before.
+        let two = Integer::from(2);
+        assert_eq!(Integer::from(i64::MIN).to_i64(), Some(i64::MIN));
+        assert_eq!(Integer::from(i64::MAX).to_i64(), Some(i64::MAX));
+        assert_eq!(two.pow(63).to_i64(), None);
+        assert_eq!((-two.pow(63) - Integer::one()).to_i64(), None);
+        assert_eq!(Integer::from(-7).to_i64(), Some(-7));
+    }
+
+    #[test]
+    fn test_try_from_integer() {
+        // Ranges: i64 is [-2^63, 2^63 - 1] (gp: -2^63 -> -9223372036854775808), u64 is
+        // [0, 2^64 - 1], u128 is [0, 2^128 - 1], i8 is [-128, 127].
+        let two = Integer::from(2);
+        let min64 = -two.pow(63);
+        assert_eq!(i64::try_from(&min64), Ok(i64::MIN));
+        assert_eq!(i64::try_from(min64.clone()), Ok(i64::MIN));
+        assert!(matches!(
+            i64::try_from(&(min64 - Integer::one())),
+            Err(MathError::NumericalError(_))
+        ));
+        assert!(matches!(
+            i64::try_from(&two.pow(63)),
+            Err(MathError::NumericalError(_))
+        ));
+        match u64::try_from(&Integer::from(-1)) {
+            Err(MathError::NumericalError(msg)) => {
+                assert_eq!(msg, "an integer of 1 bits (negative) does not fit in u64");
+            }
+            other => panic!("u64::try_from(-1) = {other:?}"),
+        }
+        match u32::try_from(&two.pow(100)) {
+            Err(MathError::NumericalError(msg)) => {
+                assert_eq!(msg, "an integer of 101 bits does not fit in u32");
+            }
+            other => panic!("u32::try_from(2^100) = {other:?}"),
+        }
+        assert_eq!(u128::try_from(&two.pow(127)), Ok(1u128 << 127));
+        assert!(u128::try_from(&two.pow(128)).is_err());
+        assert_eq!(i128::try_from(&-two.pow(127)), Ok(i128::MIN));
+        assert_eq!(usize::try_from(&Integer::from(usize::MAX as u64)), Ok(usize::MAX));
+        assert!(usize::try_from(&Integer::from(-1)).is_err());
+        assert_eq!(i8::try_from(&Integer::from(-128)), Ok(i8::MIN));
+        assert!(i8::try_from(&Integer::from(128)).is_err());
+        assert_eq!(u8::try_from(&Integer::from(255)), Ok(255u8));
+        assert!(u8::try_from(&Integer::from(256)).is_err());
+        assert_eq!(i16::try_from(&Integer::from(-32768)), Ok(i16::MIN));
+        assert_eq!(isize::try_from(&Integer::from(-5)), Ok(-5isize));
+        assert_eq!(u16::try_from(Integer::from(65535)), Ok(u16::MAX));
+    }
+
+    #[test]
     fn test_sqrt() {
         assert_eq!(Integer::from(0).sqrt().unwrap(), Integer::from(0));
         assert_eq!(Integer::from(1).sqrt().unwrap(), Integer::from(1));
@@ -1767,6 +1916,48 @@ mod tests {
 
         // σ₂(6) = 1² + 2² + 3² + 6² = 1 + 4 + 9 + 36 = 50
         assert_eq!(Integer::from(6).sigma(2).unwrap(), Integer::from(50));
+    }
+
+    /// `try_sqrt_mod_prime` runs no primality test but refuses squares first (review 1 m5: for
+    /// a square p every Jacobi symbol is 0 or 1, so the non-residue search would run to p).
+    /// gp: isprime(1000003) = 1, kronecker(2, 15) = 1, Mod(2, 15)^4 = 1 (15 = 3 mod 4, so the
+    /// candidate root 2^((15+1)/4) = 1 does not square back to 2).
+    #[test]
+    fn try_sqrt_mod_prime_refuses_squares() {
+        let start = std::time::Instant::now();
+        let sq = Integer::from(1_000_003u32).pow(2);
+        assert!(Integer::from(2).try_sqrt_mod_prime(&sq).is_err());
+        let m61 = Integer::from((1u64 << 61) - 1);
+        assert!(Integer::from(3).try_sqrt_mod_prime(&(m61.clone() * m61)).is_err());
+        assert!(start.elapsed().as_secs() < 5, "the square check comes first");
+        assert_eq!(
+            Integer::from(4).try_sqrt_mod_prime(&Integer::from(7)),
+            Ok(Some(Integer::from(2)))
+        );
+        assert_eq!(Integer::from(3).try_sqrt_mod_prime(&Integer::from(7)), Ok(None));
+        assert!(Integer::from(2).try_sqrt_mod_prime(&Integer::from(15)).is_err());
+        assert_eq!(
+            Integer::from(5).try_sqrt_mod_prime(&Integer::from(2)),
+            Ok(Some(Integer::one()))
+        );
+        assert!(Integer::from(5).try_sqrt_mod_prime(&Integer::from(1)).is_err());
+        assert!(Integer::from(5).try_sqrt_mod_prime(&Integer::from(10)).is_err());
+    }
+
+    #[test]
+    fn test_sigma_values_pari() {
+        // gp: sigma(2^10*3^5,3) -> 18285256324908244
+        let n = Integer::from(2).pow(10) * Integer::from(3).pow(5);
+        assert_eq!(n.sigma(3).unwrap(), Integer::from(18_285_256_324_908_244u64));
+        // gp: s=sigma(7^40,5); [s % (2^127-1), #binary(s)]
+        //     -> [108698265444746923986228897305478117662, 562]
+        let s = Integer::from(7).pow(40).sigma(5).unwrap();
+        let m127 = Integer::from(2).pow(127) - Integer::one();
+        assert_eq!(
+            s.modulo(&m127),
+            Integer::from_decimal_str("108698265444746923986228897305478117662").unwrap()
+        );
+        assert_eq!(s.bit_length(), 562);
     }
 
     #[test]
@@ -2089,29 +2280,5 @@ mod tests {
         let big = Integer::from(10).pow(30);
         assert_eq!((-big.clone()).normalization_unit(), Some(Integer::from(-1)));
         assert_eq!(big.normalization_unit(), Some(Integer::from(1)));
-    }
-
-    #[test]
-    fn power_residue_sieve_never_refutes_a_power() {
-        use num_bigint::BigUint;
-        // Soundness of the [BS93] sieve: d^q is never ruled out, including d divisible by the
-        // sieve primes themselves (q = 2: 3, 5, 7, 11; q = 3: 7, 13, 19, 31; q = 5: 11, 31,
-        // 41, 61), where the residue is 0 and gives no information.
-        let mut ds: Vec<BigUint> = (1u32..=300).map(BigUint::from).collect();
-        ds.push(BigUint::from(3u64 * 5 * 7 * 11 * 13 * 19 * 31 * 41 * 61));
-        ds.push((BigUint::from(1u32) << 61u32) - 1u32);
-        ds.push(BigUint::from(10u32).pow(40) + 7u32);
-        for q in [2u32, 3, 5, 7, 11, 13, 31, 101, 1009] {
-            for d in &ds {
-                assert!(
-                    may_be_qth_power(&d.pow(q), u64::from(q)),
-                    "sieve refuted {d}^{q}"
-                );
-            }
-        }
-        // A refutation is a proof; spot-check that the sieve does refute: 2 is not a square
-        // modulo 3, and 3 is not a cube modulo 7 (3^2 = 2 mod 7).
-        assert!(!may_be_qth_power(&BigUint::from(2u32), 2));
-        assert!(!may_be_qth_power(&BigUint::from(3u32), 3));
     }
 }

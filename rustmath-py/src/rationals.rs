@@ -224,9 +224,10 @@ impl PyRational {
         let num = self.inner.numerator();
         let den = self.inner.denominator();
 
-        // Direct conversion
-        let n = num.to_i64();
-        let d = den.to_i64();
+        // Direct conversion. Kept as a panic beyond i64 (float conversion of large rationals is
+        // a separate follow-up).
+        let n = i64::try_from(num).expect("to_float: a numerator beyond i64 is not supported");
+        let d = i64::try_from(den).expect("to_float: a denominator beyond i64 is not supported");
         (n as f64) / (d as f64)
     }
 

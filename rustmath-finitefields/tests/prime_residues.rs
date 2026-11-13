@@ -12,7 +12,8 @@
 //! - `square_root_mod_prime` turned a composite p into a false `None` (4 mod 15, 4 mod 9), and
 //!   a strong pseudoprime p into a false `None` (73 mod ψ12). It now refuses a modulus that
 //!   `is_prime` rejects (documented panic, as `square_root_mod_prime_power` since b4ded72), and
-//!   `None` is always a Jacobi-symbol proof.
+//!   `None` is always a Jacobi-symbol proof. `is_prime` is a proof for every size (Baillie-PSW
+//!   and ECPP above 2^64), so ψ12 is refused up front.
 //!
 //! # Reference values: PARI/GP 2.15.4 (`gp -q`)
 //!
@@ -29,9 +30,7 @@
 //!   vecsort([r,(p-r)%p],,8) }
 //! \\ (P) psi12 = 318665857834031151167461, the least strong pseudoprime to the bases 2..37
 //! \\     (Sorenson-Webster 2017): factor(psi12) = [399165290221, 1; 798330580441, 1];
-//! \\     kronecker(a, psi12) and issquare(Mod(a, psi12)) for a = 2, 4, 41, 43, 73
-//! \\     the four roots of 4: vecsort(concat(vector(2,i,vector(2,j,
-//! \\       lift(chinese(Mod((-1)^i*2,q), Mod((-1)^j*2,r)))))))  with q, r the two factors
+//! \\     isprime(psi12) = 0
 //! ```
 
 use rustmath_core::Ring;
@@ -132,8 +131,8 @@ fn is_quadratic_residue_primes_below_200() {
     assert_eq!((count, sum), (2137, 133894));
 }
 
-// PARI (L). 2^89-1 and 2^127-1 lie above ψ12, where `is_prime` is only a probable-prime test;
-// the answers are still decisions (a Jacobi symbol -1, or a root that squares back).
+// PARI (L). 2^89-1 and 2^127-1 lie above ψ12, where `is_prime` is a Baillie-PSW test and an
+// ECPP proof; the answers are decisions (a Jacobi symbol -1, or a root that squares back).
 #[test]
 fn is_quadratic_residue_large_primes_match_pari() {
     let a_values = [-1i64, 2, 3, 5, 7, 10, 11];
@@ -293,37 +292,62 @@ fn square_root_mod_prime_rejects_non_primes() {
     }
 }
 
-// ψ12 passes `is_prime`. PARI (P): kronecker(2, ψ12) = kronecker(41, ψ12) = -1 and
-// issquare = 0; 4 has the four roots [2, 3193322321766, 318665857830837828845695,
-// 318665857834031151167459]; 43 has kronecker +1 and issquare 0; 73 has kronecker +1 and
-// issquare 1 (the old code gave a false `None` for 73).
+// ψ12 passes the twelve strong tests 2..37 but not `is_prime` (Baillie-PSW rejects it; PARI
+// (P): isprime(ψ12) = 0, factor(ψ12) = [399165290221, 1; 798330580441, 1]). Before the proving
+// `is_prime` this test pinned `is_prime(ψ12) = true`, which PARI shows to be wrong. The square
+// root functions now refuse ψ12 up front with "is not prime", for every a, so they never return
+// a false `None` (the old code gave one for 73).
 #[test]
-fn square_root_mod_prime_pseudoprime_never_false_none() {
+fn square_root_mod_prime_refuses_strong_pseudoprime() {
     let psi = big(PSI12);
-    assert!(rustmath_integers::prime::is_prime(&psi));
-    // Jacobi symbol -1: a proof for every odd modulus.
-    assert_eq!(square_root_mod_prime(&i(2), &psi), None);
-    assert_eq!(square_root_mod_prime(&i(41), &psi), None);
-    // A square with Jacobi +1: a verified root.
-    let r = square_root_mod_prime(&i(4), &psi).expect("4 = 2^2");
-    let pari_roots = [
-        "2",
-        "3193322321766",
-        "318665857830837828845695",
-        "318665857834031151167459",
-    ];
-    assert!(pari_roots.iter().any(|s| big(s) == r), "root {r}");
-    assert!(squares_back(&r, &i(4), &psi));
-    // Tonelli-Shanks proves ψ12 composite: a panic, never a (false) `None`.
-    for a in [73i64, 43] {
+    assert!(!rustmath_integers::prime::is_prime(&psi));
+    assert!(rustmath_integers::prime::is_prime_miller_rabin(&psi, 12));
+    let message = |e: Box<dyn std::any::Any + Send>| -> String {
+        e.downcast_ref::<String>()
+            .cloned()
+            .or_else(|| e.downcast_ref::<&str>().map(|s| s.to_string()))
+            .unwrap_or_default()
+    };
+    for a in [2i64, 4, 41, 43, 73] {
         let res = catch_unwind(|| square_root_mod_prime(&i(a), &psi));
-        assert!(res.is_err(), "square_root_mod_prime({a}, psi12) = {res:?}");
+        let msg = message(res.expect_err("ψ12 is refused"));
+        assert!(
+            msg.contains("is not prime"),
+            "square_root_mod_prime({a}, ψ12): {msg}"
+        );
     }
-    // The prime-power function is outside its contract for ψ12 (result unspecified), but it
-    // no longer gives the false `None` for 73: either a panic or a root that squares back.
-    match catch_unwind(|| square_root_mod_prime_power(&i(73), &psi, 1)) {
-        Err(_) => {}
-        Ok(Some(r)) => assert!(squares_back(&r, &i(73), &psi)),
-        Ok(None) => panic!("square_root_mod_prime_power(73, psi12, 1): false None"),
-    }
+    let res = catch_unwind(|| square_root_mod_prime_power(&i(73), &psi, 1));
+    let msg = message(res.expect_err("ψ12 is refused"));
+    assert!(
+        msg.contains("is not prime"),
+        "square_root_mod_prime_power(73, ψ12, 1): {msg}"
+    );
+}
+
+// ψ12 passed the fixed-base test, so FiniteField::new(ψ12, 1) and GaloisRing::new(ψ12, 2, 1)
+// were `Ok`. The constructors now prove the characteristic prime (PARI: isprime(ψ12) = 0).
+#[test]
+fn finite_field_constructors_refuse_strong_pseudoprime() {
+    use rustmath_core::MathError;
+    use rustmath_finitefields::{FiniteField, GaloisRing};
+    let psi = big(PSI12);
+    assert!(matches!(
+        FiniteField::new(psi.clone(), 1),
+        Err(MathError::InvalidArgument(_))
+    ));
+    assert!(matches!(
+        FiniteField::with_modulus(psi.clone(), vec![i(0), i(1)]),
+        Err(MathError::InvalidArgument(_))
+    ));
+    assert!(matches!(
+        GaloisRing::new(psi.clone(), 2, 1),
+        Err(MathError::InvalidArgument(_))
+    ));
+    assert!(matches!(
+        GaloisRing::with_modulus(psi, 2, vec![i(0), i(1)]),
+        Err(MathError::InvalidArgument(_))
+    ));
+    // A prime above ψ12 is accepted (gp: isprime(2^89-1) = 1).
+    let m89 = Integer::from(2).pow(89) - Integer::one();
+    assert!(FiniteField::new(m89, 1).is_ok());
 }

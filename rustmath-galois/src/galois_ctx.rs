@@ -444,7 +444,7 @@ pub fn build_ctx(f: &[Integer], p: i64, k: u32) -> Option<GaloisCtx> {
         .iter()
         .map(|c| {
             let r = c % &pp;
-            (&(&r + &pp) % &pp).to_i64()
+            i64::try_from(&(&(&r + &pp) % &pp)).expect("a residue mod an i64 p fits in i64")
         })
         .collect();
     let f_fp = fp_factor::trim(&f_fp);
@@ -711,7 +711,7 @@ mod tests {
         let mut res: Vec<i64> = ctx
             .roots()
             .iter()
-            .map(|r| redm(&r.coeffs[0], &Integer::from(5)).to_i64())
+            .map(|r| i64::try_from(&redm(&r.coeffs[0], &Integer::from(5))).unwrap())
             .collect();
         res.sort();
         assert_eq!(res, vec![2, 3]);
@@ -777,7 +777,7 @@ mod tests {
         for r in ctx.roots() {
             if ctx.factor_degrees()[r.factor] == 1 {
                 let n = ctx.is_integer(r, &bound).expect("linear root is an integer");
-                recognized.push(n.to_i64());
+                recognized.push(i64::try_from(&n).unwrap());
             } else {
                 // A root of x^2+1 in GF(7^2) is NOT a rational integer.
                 assert!(

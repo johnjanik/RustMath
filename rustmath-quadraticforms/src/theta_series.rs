@@ -133,7 +133,10 @@ impl ThetaSeries {
         let c_abs = if c_abs > Integer::one() { c_abs } else { Integer::one() };
         let min_coeff = if a_abs < c_abs { a_abs } else { c_abs };
 
-        let min_float = min_coeff.to_i64().max(1) as f64;
+        // Kept as a panic beyond i64 (today's behaviour; a float bound).
+        let min_float = i64::try_from(&min_coeff)
+            .expect("theta_series: a coefficient beyond i64 is not supported")
+            .max(1) as f64;
 
         // Maximum coordinate is approximately sqrt(precision / min_coeff)
         (precision_float / min_float).sqrt().ceil() as i64 + 2

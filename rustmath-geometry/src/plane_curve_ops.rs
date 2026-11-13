@@ -87,7 +87,10 @@ impl PlaneCurve {
                     BinaryOp::Pow => {
                         // For x^n where n is a constant
                         if let Expr::Integer(n) = &**right {
-                            let val = n.to_i64();
+                            // Kept as a panic beyond i64: None means "not a polynomial", and
+                            // the caller turns it into degree 0 (degree().unwrap_or(0)).
+                            let val = i64::try_from(n)
+                                .expect("polynomial_degree: an exponent beyond i64 is not supported");
                             if val >= 0 {
                                 let base_deg = self.polynomial_degree(left)?;
                                 return Some(base_deg * (val as usize));

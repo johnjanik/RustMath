@@ -51,7 +51,8 @@ fn reduce_mod_p(f: &[Integer], p: i64) -> Vec<i64> {
     let v: Vec<i64> = f
         .iter()
         .map(|c| {
-            let r = (c.clone() % pi.clone()).to_i64();
+            let r = i64::try_from(&(c.clone() % pi.clone()))
+                .expect("a residue mod an i64 p fits in i64");
             ((r % p) + p) % p
         })
         .collect();
@@ -100,7 +101,7 @@ fn residual_polynomial(f: &[Integer], p: i64, seg: &Segment, e: usize, h: i64) -
         for _ in 0..exponent {
             q = q / pi.clone();
         }
-        let m = (q % pi.clone()).to_i64();
+        let m = i64::try_from(&(q % pi.clone())).expect("a residue mod an i64 p fits in i64");
         r[j] = ((m % p) + p) % p;
     }
     fp_factor::trim(&r)

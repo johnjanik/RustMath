@@ -21,7 +21,7 @@
 //! let field = NumberField::new(poly);
 //! ```
 
-use rustmath_core::{NumericConversion, Ring};
+use rustmath_core::Ring;
 use rustmath_integers::Integer;
 use rustmath_polynomials::univariate::UnivariatePolynomial;
 use rustmath_rationals::Rational;
@@ -401,37 +401,42 @@ impl NumberField {
         Err(NumberFieldError::NotImplemented)
     }
 
-    /// Helper function to compute class number for quadratic fields
+    /// Class number of the quadratic field `Q(√d)`, `d` the polynomial discriminant (MAGMA
+    /// `ClassNumber`, Handbook ch. 34, and ch. 33 method "ReducedForms" for small discriminants).
+    ///
+    /// - The field is `Q(√d)`, whose discriminant is the fundamental discriminant `d_K` of the
+    ///   squarefree part `s` of `d` (`d_K = s` if `s ≡ 1 mod 4`, else `4s`). Each of the nine
+    ///   values -3, -4, -7, -8, -11, -19, -43, -67, -163 is itself fundamental, so for them
+    ///   `d_K = d` and `h = 1` (Heegner-Baker-Stark).
+    /// - Other `d < 0` with `|d| <= 10^7`: `h(d_K)` is the number of reduced primitive forms
+    ///   of discriminant `d_K` ([`hcf::class_number_imag_quadratic`]; H. Cohen, *A Course in
+    ///   Computational Algebraic Number Theory*, Algorithm 5.3.5). Exact.
+    /// - Everything else (real quadratic fields, which need the regulator, Cohen §5.7; larger
+    ///   `|d|`; a non-integral `d`): `Err(NotImplemented)`.
+    ///
+    /// Before, every `|d| < 100` got class number 1 (a placeholder: `x^2 + 5`, `d = -20`,
+    /// has `h = 2`), and an `|d|` beyond i64 panicked.
     fn class_number_quadratic(&self, disc: &Rational) -> Result<Integer, NumberFieldError> {
-        // For quadratic fields Q(√d), we can use analytic formulas
-        // involving the Dirichlet L-function
-
-        // Convert discriminant to integer (for quadratic fields it should be)
+        /// Bound on `|d|` for the reduced-form count (about `|d_K|/3` steps).
+        const FORM_COUNT_MAX_DISC: i64 = 10_000_000;
         if !disc.denominator().is_one() {
             return Err(NumberFieldError::NotImplemented);
         }
-
         let d = disc.numerator();
 
-        // Known class numbers for imaginary quadratic fields with small discriminant
-        // These are the 9 imaginary quadratic fields with class number 1
+        // The 9 imaginary quadratic fields with class number 1 (each d is fundamental).
         let class_one_discs = [-3, -4, -7, -8, -11, -19, -43, -67, -163];
-        if class_one_discs.contains(&d.to_i64()) {
+        if i64::try_from(d).is_ok_and(|v| class_one_discs.contains(&v)) {
             return Ok(Integer::one());
         }
 
-        // For other discriminants, computing class number requires:
-        // - Computing L(1, χ) where χ is the Kronecker symbol
-        // - Using the class number formula h = (√|d| / 2π) * L(1, χ) for d < 0
-        // - Using the class number formula h = (log ε / √d) * L(1, χ) for d > 0
-
-        // For now, we use a simplified approach for small discriminants
-        if d.abs() < Integer::from_i64(100) {
-            // Use known class numbers for small discriminants
-            // This is a placeholder - in practice would use the analytic formula
-            Ok(Integer::one())
-        } else {
-            Err(NumberFieldError::NotImplemented)
+        match i64::try_from(d) {
+            Ok(v) if v < 0 && v >= -FORM_COUNT_MAX_DISC => {
+                let d_k = fundamental_discriminant(v);
+                let h = hcf::class_number_imag_quadratic(d_k);
+                Ok(Integer::from(u64::try_from(h).expect("a form count fits in u64")))
+            }
+            _ => Err(NumberFieldError::NotImplemented),
         }
     }
 
@@ -582,6 +587,33 @@ impl NumberField {
 impl fmt::Display for NumberField {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Q(α) where α satisfies {}", self.minimal_polynomial)
+    }
+}
+
+/// The fundamental discriminant of `Q(√d)` for `d < 0`, `|d| <= 10^7`: with `s` the squarefree
+/// part of `d` (sign kept), `s` if `s ≡ 1 (mod 4)`, else `4s`. Trial division (`|d|` is small).
+fn fundamental_discriminant(d: i64) -> i64 {
+    debug_assert!(d < 0 && d >= -10_000_000);
+    let mut m = -d;
+    let mut s = 1i64;
+    let mut p = 2i64;
+    while p * p <= m {
+        let mut e = 0;
+        while m % p == 0 {
+            m /= p;
+            e += 1;
+        }
+        if e % 2 == 1 {
+            s *= p;
+        }
+        p += 1;
+    }
+    s *= m; // the leftover is 1 or a prime
+    let s = -s;
+    if s.rem_euclid(4) == 1 {
+        s
+    } else {
+        4 * s
     }
 }
 
@@ -794,6 +826,46 @@ mod tests {
         let field = NumberField::new(poly);
         let class_num = field.class_number().unwrap();
         assert_eq!(class_num, Integer::one());
+    }
+
+    #[test]
+    fn class_number_quadratic_is_honest() {
+        // Q(√d) for the polynomial discriminant d. gp: poldisc(x^2+5) -> -20,
+        // quadclassunit(-20).no -> 2 (the placeholder gave 1 for every |d| < 100);
+        // poldisc(x^2+15) -> -60, coredisc -> -15, quadclassunit(-15).no -> 2;
+        // poldisc(x^2+23) -> -92, quadclassunit(-23).no -> 3; poldisc(x^2+x+1) -> -3,
+        // quadclassunit(-3).no -> 1; quadclassunit(-4).no -> 1; poldisc(x^2+1/2) -> -2,
+        // coredisc(-2) -> -8, quadclassunit(-8).no -> 1; poldisc(x^2+9995) -> -39980,
+        // coredisc -> -9995, quadclassunit(-9995).no -> 40 (the order of discriminant -39980
+        // has quadclassunit(-39980).no -> 120, so the field discriminant matters).
+        let q = |c0: Rational, c1: i64| {
+            NumberField::new(UnivariatePolynomial::new(vec![
+                c0,
+                Rational::from_integer(c1),
+                Rational::from_integer(1),
+            ]))
+            .class_number()
+        };
+        let qi = |c0: i64, c1: i64| q(Rational::from_integer(c0), c1);
+        let h = |r: Result<Integer, NumberFieldError>| r.ok();
+        let not_impl = |r: Result<Integer, NumberFieldError>| {
+            matches!(r, Err(NumberFieldError::NotImplemented))
+        };
+        assert_eq!(h(qi(5, 0)), Some(Integer::from(2)));
+        assert_eq!(h(qi(15, 0)), Some(Integer::from(2)));
+        assert_eq!(h(qi(23, 0)), Some(Integer::from(3)));
+        assert_eq!(h(qi(1, 1)), Some(Integer::from(1)));
+        assert_eq!(h(qi(1, 0)), Some(Integer::from(1)));
+        assert_eq!(h(qi(3, 0)), Some(Integer::from(1)));
+        assert_eq!(h(qi(9995, 0)), Some(Integer::from(40)));
+        assert_eq!(h(q(Rational::new(1, 2).unwrap(), 0)), Some(Integer::from(1)));
+        // Real quadratic fields need the regulator: not implemented (the placeholder gave 1
+        // for x^2 - 2 and x^2 - 10; gp quadclassunit(40).no -> 2).
+        assert!(not_impl(qi(-2, 0)));
+        assert!(not_impl(qi(-10, 0)));
+        // |d| beyond the form-count bound (HEAD panicked here: d does not fit in i64).
+        let big = Rational::from_integer(Integer::from(10).pow(30) + Integer::from(3));
+        assert!(not_impl(q(big, 0)));
     }
 
     #[test]

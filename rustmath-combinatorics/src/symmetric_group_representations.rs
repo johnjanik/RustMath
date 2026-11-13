@@ -595,7 +595,8 @@ pub fn decompose_character(
         if !sum.is_zero() {
             // Convert Integer division result to i64
             let mult_int = sum / total;
-            let multiplicity = mult_int.to_i64();
+            let multiplicity = i64::try_from(&mult_int)
+                .expect("the multiplicity of an irreducible is bounded by the dimension");
             if multiplicity > 0 {
                 multiplicities.insert(rep.partition().clone(), multiplicity);
             }

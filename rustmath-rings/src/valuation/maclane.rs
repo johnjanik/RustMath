@@ -132,7 +132,7 @@ fn int_to_i64(n: &Integer) -> Result<i64> {
             "maclane: integer too large for i64".to_string(),
         ));
     }
-    Ok(n.to_i64())
+    Ok(i64::try_from(n).expect("bit_length <= 62 checked above"))
 }
 
 // ---------------------------------------------------------------------------

@@ -37,7 +37,7 @@ pub fn genus_from_branch_cycles(n: usize, cycles: &[Vec<usize>]) -> i64 {
 // ---- modular evaluation of ℚ(t) coefficients ----
 
 fn imod(z: &Integer, p: i64) -> i64 {
-    let r = (z.clone() % Integer::from(p)).to_i64();
+    let r = i64::try_from(&(z.clone() % Integer::from(p))).expect("a residue mod an i64 p fits in i64");
     ((r % p) + p) % p
 }
 fn mul_mod(a: i64, b: i64, p: i64) -> i64 {

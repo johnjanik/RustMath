@@ -79,21 +79,13 @@ pub fn unramified_modulus(prime: &Integer, degree: usize) -> Result<UnivariatePo
             "unramified_modulus: degree must be >= 1".to_string(),
         ));
     }
-    if !prime.is_prime() {
+    if !rustmath_integers::prime::try_is_prime(prime)? {
         return Err(MathError::InvalidArgument(
             "unramified_modulus: p must be prime".to_string(),
         ));
     }
-    // Conway lookup (p must fit in u32)
-    let p_small: Option<u32> = {
-        let v = prime.to_i64();
-        // to_i64 saturates for huge values; re-verify round-trip
-        if Integer::from(v) == *prime && v > 0 && v <= u32::MAX as i64 {
-            Some(v as u32)
-        } else {
-            None
-        }
-    };
+    // Conway lookup (p must fit in u32; p >= 2 is prime here)
+    let p_small: Option<u32> = u32::try_from(prime).ok();
     if let Some(ps) = p_small {
         if let Some(conway) = rustmath_finitefields::conway_polynomial(ps, degree) {
             let coeffs = conway.coefficients().to_vec();
@@ -156,7 +148,7 @@ impl UnramifiedExtension {
         modulus: &UnivariatePolynomial<Integer>,
         precision: u32,
     ) -> Result<Arc<Self>> {
-        if !prime.is_prime() {
+        if !rustmath_integers::prime::try_is_prime(&prime)? {
             return Err(MathError::InvalidArgument(
                 "UnramifiedExtension: p must be prime".to_string(),
             ));
@@ -208,14 +200,7 @@ impl UnramifiedExtension {
 
     fn tag_conway(self) -> Self {
         // is_conway is informational; recompute from the table when possible
-        let p_small = {
-            let v = self.prime.to_i64();
-            if Integer::from(v) == self.prime && v > 0 && v <= u32::MAX as i64 {
-                Some(v as u32)
-            } else {
-                None
-            }
-        };
+        let p_small = u32::try_from(&self.prime).ok().filter(|&v| v > 0);
         let is_conway = p_small
             .and_then(|ps| rustmath_finitefields::conway_polynomial(ps, self.degree))
             .map(|c| {
@@ -671,6 +656,20 @@ mod tests {
     /// an independent Hensel implementation) BEFORE this Rust existed.
     fn q5_cubed() -> Arc<UnramifiedExtension> {
         UnramifiedExtension::new(Integer::from(5), 3, 12).unwrap()
+    }
+
+    #[test]
+    fn unramified_modulus_above_2_pow_63() {
+        // p = 2^89 - 1 (gp: isprime(2^89-1) -> 1, (2^89-1) % 4 -> 3, so x^2 + 1 is irreducible:
+        // polisirreducible(Mod(1,2^89-1)*(x^2+1)) -> 1; x^2 at counter 0 is reducible). The
+        // prime does not fit in u32, so there is no Conway lookup; the first irreducible in the
+        // enumeration is x^2 + 1. Both calls panicked before (inherent Integer::to_i64).
+        let p = Integer::from(2).pow(89) - Integer::one();
+        let m = unramified_modulus(&p, 2).unwrap();
+        assert_eq!(m.coefficients(), &ints(&[1, 0, 1])[..]);
+        let ext = UnramifiedExtension::with_modulus(p, &m, 3).unwrap();
+        assert_eq!(ext.degree(), 2);
+        assert!(!ext.is_conway());
     }
 
     #[test]

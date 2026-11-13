@@ -66,7 +66,7 @@ pub fn factor_mod_p(f: &[Integer], p: i64) -> Result<Vec<Vec<i64>>, String> {
     let p_int = Integer::from(p);
     let reduced: Vec<i64> = f[..=deg_z]
         .iter()
-        .map(|c| c.modulo(&p_int).to_i64())
+        .map(|c| i64::try_from(&c.modulo(&p_int)).expect("a residue mod an i64 p fits in i64"))
         .collect();
     if reduced[deg_z] == 0 {
         return Err(format!(
@@ -176,7 +176,11 @@ pub fn framed_jacobian_rank_mod_p(
     let jac = system.jacobian_mod(point, &Integer::from(p));
     let rows: Vec<Vec<i64>> = jac
         .iter()
-        .map(|row| row.iter().map(|c| c.to_i64()).collect())
+        .map(|row| {
+            row.iter()
+                .map(|c| i64::try_from(c).expect("jacobian_mod entries are reduced mod an i64 p"))
+                .collect()
+        })
         .collect();
     Ok(rank_mod_p(rows, p))
 }

@@ -752,7 +752,7 @@ fn to_fp(a: &[Integer], p: i64) -> Vec<i64> {
         .iter()
         .map(|c| {
             let r = c % &pm;
-            (&(&r + &pm) % &pm).to_i64()
+            i64::try_from(&(&(&r + &pm) % &pm)).expect("to_fp: a residue mod an i64 p fits in i64")
         })
         .collect();
     trim_fp(&v)
@@ -1029,7 +1029,7 @@ mod tests {
             let val = &(&(v * v) - &Integer::from(2)) % &p_n;
             let val = &(&val + &p_n) % &p_n;
             assert!(val.is_zero(), "root^2 != 2 mod 7^{}", n);
-            let r7 = v.to_i64() % 7;
+            let r7 = i64::try_from(v).unwrap() % 7;
             assert!(r7 == 3 || r7 == 4);
         }
         assert!(roots[0].value < roots[1].value);
@@ -1047,7 +1047,7 @@ mod tests {
         for r in &roots {
             assert!(eval_int_mod(&f, &r.value, &p_n).is_zero(), "f(root) != 0 mod 7^{}", n);
         }
-        let mut res: Vec<i64> = roots.iter().map(|r| r.value.to_i64() % 7).collect();
+        let mut res: Vec<i64> = roots.iter().map(|r| i64::try_from(&r.value).unwrap() % 7).collect();
         res.sort();
         assert_eq!(res, vec![1, 2, 4]);
     }

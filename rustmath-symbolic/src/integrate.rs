@@ -248,12 +248,12 @@ impl Expr {
 
     /// Check if expression equals 1
     fn is_one(&self) -> bool {
-        matches!(self, Expr::Integer(i) if i.to_i64() == 1)
+        matches!(self, Expr::Integer(i) if i.is_one())
     }
 
     /// Check if expression equals -1
     fn is_minus_one(&self) -> bool {
-        matches!(self, Expr::Integer(i) if i.to_i64() == -1)
+        matches!(self, Expr::Integer(i) if *i == rustmath_integers::Integer::from(-1))
     }
 
     /// Integration by parts: ∫ u dv = uv - ∫ v du
@@ -513,7 +513,7 @@ pub mod advanced {
         matches!(expr,
             Expr::Binary(BinaryOp::Pow, x, two)
             if matches!(**x, Expr::Symbol(ref s) if s == var)
-                && matches!(**two, Expr::Integer(ref i) if i.to_i64() == 2)
+                && matches!(**two, Expr::Integer(ref i) if *i == rustmath_integers::Integer::from(2))
         )
     }
 
@@ -669,7 +669,10 @@ pub mod advanced {
         None
     }
 
-    /// Polynomial degree helper
+    /// Polynomial degree helper.
+    ///
+    /// `None`: not recognised as a polynomial in `var`, or the degree does not fit in i64.
+    /// Every caller propagates `None` as "this tier declines".
     pub fn polynomial_degree(expr: &Expr, var: &Symbol) -> Option<i64> {
         match expr {
             Expr::Integer(_) | Expr::Rational(_) => Some(0),
@@ -678,7 +681,7 @@ pub mod advanced {
             Expr::Binary(BinaryOp::Pow, base, exp) => {
                 if matches!(**base, Expr::Symbol(ref s) if s == var) {
                     if let Expr::Integer(n) = &**exp {
-                        Some(n.to_i64())
+                        i64::try_from(n).ok()
                     } else {
                         None
                     }
@@ -694,7 +697,7 @@ pub mod advanced {
             Expr::Binary(BinaryOp::Mul, left, right) => {
                 let deg_left = polynomial_degree(left, var)?;
                 let deg_right = polynomial_degree(right, var)?;
-                Some(deg_left + deg_right)
+                deg_left.checked_add(deg_right)
             }
             _ => None,
         }
@@ -969,7 +972,7 @@ pub mod advanced {
                         if one.is_one() {
                             if let Expr::Binary(BinaryOp::Pow, x, two) = &**x_sq {
                                 if matches!(**x, Expr::Symbol(ref s) if s == var)
-                                    && matches!(**two, Expr::Integer(ref i) if i.to_i64() == 2) {
+                                    && matches!(**two, Expr::Integer(ref i) if *i == rustmath_integers::Integer::from(2)) {
                                     return Some(Expr::Symbol(var.clone()).arctan());
                                 }
                             }
@@ -992,6 +995,26 @@ mod tests {
     use super::*;
     use rustmath_polynomials::UnivariatePolynomial;
     use rustmath_rationals::Rational;
+
+    #[test]
+    fn polynomial_degree_beyond_i64_is_none() {
+        // x^(10^30) panicked (inherent Integer::to_i64), and x^(2^62)·x^(2^62) overflowed the
+        // degree sum. Both now decline (None), as for any non-polynomial.
+        use super::advanced::polynomial_degree;
+        use rustmath_integers::Integer;
+        use std::sync::Arc;
+        let x = Symbol::new("x");
+        let xe = Expr::Symbol(x.clone());
+        let p = |e: Integer| {
+            Expr::Binary(BinaryOp::Pow, Arc::new(xe.clone()), Arc::new(Expr::Integer(e)))
+        };
+        let two62 = Integer::from(2).pow(62);
+        assert_eq!(polynomial_degree(&p(Integer::from(10).pow(30)), &x), None);
+        let sq = Expr::Binary(BinaryOp::Mul, Arc::new(p(two62.clone())), Arc::new(p(two62.clone())));
+        assert_eq!(polynomial_degree(&sq, &x), None);
+        let lin = Expr::Binary(BinaryOp::Mul, Arc::new(p(two62)), Arc::new(xe.clone()));
+        assert_eq!(polynomial_degree(&lin, &x), Some((1i64 << 62) + 1));
+    }
 
     /// The differentiation gate for rational integrands: F' − f must
     /// normalize to exactly zero through the exact rational normalizer.

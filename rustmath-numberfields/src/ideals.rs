@@ -50,7 +50,8 @@ fn reduce_mod_p(f: &[Integer], p: i64) -> Vec<i64> {
     let v: Vec<i64> = f
         .iter()
         .map(|c| {
-            let r = (c.clone() % pi.clone()).to_i64();
+            let r = i64::try_from(&(c.clone() % pi.clone()))
+                .expect("a residue mod an i64 p fits in i64");
             ((r % p) + p) % p
         })
         .collect();
@@ -532,7 +533,11 @@ fn rational_prime_factors(n: &Integer) -> Vec<i64> {
         d += 1;
     }
     if m > Integer::one() {
-        out.push(m.to_i64());
+        // The residue-field arithmetic downstream is i64; a larger prime is not supported.
+        out.push(
+            i64::try_from(&m)
+                .expect("rational_prime_factors: a prime factor beyond i64 is not supported"),
+        );
     }
     out
 }

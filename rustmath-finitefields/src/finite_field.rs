@@ -144,7 +144,7 @@ impl FiniteField {
     ///
     /// `p` must be prime and `n >= 1`.
     pub fn new(p: Integer, n: usize) -> Result<Self> {
-        if !p.is_prime() {
+        if !rustmath_integers::prime::try_is_prime(&p)? {
             return Err(MathError::InvalidArgument(format!(
                 "characteristic {p} is not prime"
             )));
@@ -182,7 +182,7 @@ impl FiniteField {
     /// given little-endian over `Z` (reduced mod `p` on entry). The polynomial's
     /// degree fixes `n`; it must be monic and irreducible over `F_p`.
     pub fn with_modulus(p: Integer, modulus: Vec<Integer>) -> Result<Self> {
-        if !p.is_prime() {
+        if !rustmath_integers::prime::try_is_prime(&p)? {
             return Err(MathError::InvalidArgument(format!(
                 "characteristic {p} is not prime"
             )));

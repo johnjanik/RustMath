@@ -136,7 +136,13 @@ pub fn wild_filtration_from_eisenstein(g: &[Integer], p: i64) -> Option<Ramifica
     if ms.is_empty() || !ms.iter().all(|m| m.is_integer()) {
         return None;
     }
-    let mvals: Vec<i64> = ms.iter().map(|m| m.numerator().to_i64()).collect();
+    let mvals: Vec<i64> = ms
+        .iter()
+        .map(|m| {
+            i64::try_from(m.numerator())
+                .expect("a ramification slope is bounded by the degree times a valuation")
+        })
+        .collect();
     let maxm = *mvals.iter().max().unwrap();
     let mut orders = Vec::new();
     for i in 0..maxm {
@@ -260,7 +266,7 @@ impl RamificationFiltration {
 fn floor_usize(r: &Rational) -> usize {
     // r ≥ 0: truncated division of numerator by denominator is the floor.
     let q = r.numerator().clone() / r.denominator().clone();
-    q.to_i64().max(0) as usize
+    i64::try_from(&q).expect("floor_usize: a bounded ramification break fits in i64").max(0) as usize
 }
 
 /// The filtration of a **tamely** totally ramified extension of degree `e` (`p ∤ e`):
@@ -430,7 +436,7 @@ mod tests {
         // "filtration" [4,4,4,2,2] is the polygon shape (of a C₄), not Gal(D₄).
         let g: Vec<Integer> = [-2, 0, 0, 0, 1].iter().map(|&x| Integer::from(x)).collect();
         let mut ms: Vec<i64> =
-            ramification_polygon(&g, 2).iter().map(|m| m.numerator().to_i64()).collect();
+            ramification_polygon(&g, 2).iter().map(|m| i64::try_from(m.numerator()).unwrap()).collect();
         ms.sort_unstable();
         assert_eq!(ms, vec![3, 3, 5]);
         let shape = wild_filtration_from_eisenstein(&g, 2).unwrap();

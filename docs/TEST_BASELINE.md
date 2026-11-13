@@ -1,4 +1,27 @@
-# Test baseline (2026-11-08)
+# Test baseline (2026-11-08, final fixes)
+
+`cargo test --workspace --no-fail-fast` at commit `9c24389`, rustc 1.97.0, 4-core cloud container,
+atlas data present, incremental compilation disabled.
+
+**Result: 14,173 passed, 0 failed, 330 ignored, across 190 test targets.**
+
+Compared with the earlier 2026-11-08 baseline below (14,093 / 0 / 330, 189 targets), the difference is
+the final follow-up fixes (commits `f0682b7`..`9c24389`; see `docs/HANDOFF.md`). They added 80 tests
+and one test target:
+
+| Target | Before | After | Change |
+|---|--:|--:|---|
+| `rustmath-polynomials` lib | 299 | 314 | `fp_factor` equal-degree factorization (`f0682b7`): PARI `factormod` rows, pinned output orders, panics on contract violations |
+| `rustmath-finitefields` lib | 129 | 164 | Cantor-Zassenhaus certificates, square-free and characteristic checks, the uniform sampler (`7ce8117`) |
+| `rustmath-integers` lib | 163 | 174 | factorization drivers: B-04, the ECM double push, the rho fallback (`6adaba2`) |
+| `rustmath-integers --test ch18_factorization_drivers` | (new) | 6 | the same drivers against PARI `factor` |
+| `rustmath-integers` doctests | 37 | 38 | a new example in the `factor_pollard_rho` docs (`prime.rs`) |
+| `rustmath-jupyter` lib | 51 | 63 | REPL integer arguments and limits, T-250 (`874258b`) |
+
+No `#[ignore]`, `ignore` or `no_run` marker was added or removed, and no existing assertion was
+weakened (each unit was reviewed for that before its commit).
+
+## Previous baseline (2026-11-08)
 
 `cargo test --workspace --no-fail-fast` at commit `702d0a5`, rustc 1.97.0, 4-core cloud container,
 atlas data present, incremental compilation disabled.

@@ -396,8 +396,10 @@ pub fn bernoulli_mod_p_single(p: i64, n: usize) -> Option<i64> {
     // p ≤ n + 1: reduce the exact value.
     let b_n = bernoulli_number(n);
     let modulus = Integer::from(p);
-    let numer = b_n.numerator().modulo(&modulus).to_i64();
-    let denom = b_n.denominator().modulo(&modulus).to_i64();
+    let numer = i64::try_from(&b_n.numerator().modulo(&modulus))
+        .expect("a residue mod an i64 p fits in i64");
+    let denom = i64::try_from(&b_n.denominator().modulo(&modulus))
+        .expect("a residue mod an i64 p fits in i64");
     if gcd(denom, p) != 1 {
         return None; // Not p-integral
     }
@@ -752,7 +754,7 @@ mod tests {
     fn reduce_mod(b: &Rational, p: i64) -> i64 {
         let m = Integer::from(p);
         let den_inv = b.denominator().modulo(&m).mod_inverse(&m).expect("p-integral");
-        (b.numerator().modulo(&m) * den_inv).modulo(&m).to_i64()
+        i64::try_from(&(b.numerator().modulo(&m) * den_inv).modulo(&m)).unwrap()
     }
 
     #[test]

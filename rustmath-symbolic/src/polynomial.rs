@@ -144,7 +144,11 @@ impl Expr {
                 }
                 BinaryOp::Pow => {
                     if let Expr::Integer(exp) = right.as_ref() {
-                        let exp_i64 = exp.to_i64();
+                        // Kept as a panic: None means "not a polynomial" and the fallthrough
+                        // below answers "constant power, degree 0", so a huge exponent must
+                        // reach neither.
+                        let exp_i64 = i64::try_from(exp)
+                            .expect("degree_recursive: an exponent beyond i64 is not supported");
                         if exp_i64 >= 0 {
                             let base_deg = left.degree_recursive(var)?;
                             return Some(base_deg * exp_i64);
@@ -250,7 +254,10 @@ impl Expr {
                 }
                 BinaryOp::Pow => {
                     if let Expr::Integer(exp) = right.as_ref() {
-                        let exp_i64 = exp.to_i64();
+                        // Kept as a panic, as in degree_recursive: the constant fallthrough
+                        // below must not see a huge exponent.
+                        let exp_i64 = i64::try_from(exp)
+                            .expect("coefficient: an exponent beyond i64 is not supported");
                         if exp_i64 >= 0 {
                             // Simple case: if base doesn't contain var (is constant)
                             if left.is_polynomial_recursive(var, false) {

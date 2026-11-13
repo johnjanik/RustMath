@@ -9,7 +9,7 @@
 //! Representation, as in [`crate::zx`] and [`crate::fp_factor`]: little-endian `Vec<Integer>`
 //! (index = power of x), every coefficient in `[0, p)`, trimmed, `[]` is the zero polynomial.
 //! The prime is an arbitrary-size [`Integer`], so this complements `fp_factor` (i64 arithmetic,
-//! p < 2^31, Cantor-Zassenhaus).
+//! p <= `fp_factor::MAX_P` = 3037000499, Cantor-Zassenhaus).
 //!
 //! Algorithm ([`factor`]):
 //! 1. Square-free decomposition over GF(p) (Yun's gcd recursion with the p-th-root step for
@@ -69,9 +69,11 @@ fn internal(what: &str) -> MathError {
     ))
 }
 
-/// `Err(InvalidArgument)` unless `p >= 2` passes [`Integer::is_prime`].
+/// `Err(InvalidArgument)` unless `p >= 2` is proven prime by
+/// [`rustmath_integers::prime::try_is_prime`]; `Err(NotSupported)` when p is a probable prime
+/// whose ECPP proof is unresolved.
 fn check_prime(p: &Integer) -> Result<()> {
-    if *p < Integer::from(2i64) || !p.is_prime() {
+    if *p < Integer::from(2i64) || !rustmath_integers::prime::try_is_prime(p)? {
         return Err(MathError::InvalidArgument(format!(
             "berlekamp: the modulus {p} is not a prime"
         )));
@@ -257,13 +259,10 @@ fn prepare(f: &[Integer], p: &Integer, who: &str) -> Result<Vec<Integer>> {
 ///
 /// * `f` is read modulo p (any integer coefficients; a leading coefficient divisible by p
 ///   drops out).
-/// * `p < 2` or `!p.is_prime()`: `Err(InvalidArgument)`. [`Integer::is_prime`] is
-///   Miller-Rabin to the bases 2..37, a proof of primality only below
-///   318665857834031151167461 (about 3.19e23, Sorenson-Webster 2017). Above that bound `p`
-///   is a probable prime, and for a composite `p` that passes the result is unspecified:
-///   `Err` if a non-invertible leading coefficient or a failed internal check is met,
-///   otherwise a value computed in Z/pZ that is not a factorization over a field. Callers
-///   that need a guarantee there must certify `p` first.
+/// * `p < 2` or p not prime: `Err(InvalidArgument)`. Primality is
+///   [`rustmath_integers::prime::try_is_prime`], a proof for every size (Baillie-PSW and ECPP
+///   above 2^64, cached per process); a probable prime whose ECPP proof is unresolved gives
+///   `Err(NotSupported)`.
 /// * `f ≡ 0 (mod p)`: `Err(InvalidArgument)` (no factorization of 0; PARI returns `[0, 1]`).
 /// * `f ≡ c ≠ 0`: `Ok((c, vec![]))`.
 /// * Otherwise, for prime `p`, the complete factorization. The number of irreducible
@@ -334,10 +333,8 @@ pub fn q_matrix(f: &[Integer], p: &Integer) -> Result<Vec<Vec<Integer>>> {
 /// * `f` is read modulo p, like [`factor`].
 /// * `f ≡ 0` and nonzero constants: `Ok(false)` (0 and units are not irreducible; PARI
 ///   `polisirreducible(Mod(0,5)) = polisirreducible(Mod(2,5)) = 0`). Degree 1: `Ok(true)`.
-/// * `p < 2` or `!p.is_prime()`: `Err(InvalidArgument)`. As for [`factor`], primality is
-///   proven only below 318665857834031151167461; for a composite modulus above that bound
-///   that passes the test the answer is unspecified (`Err` or a value that means nothing,
-///   since Z/pZ is then not a field). Callers that need a guarantee there must certify `p`.
+/// * `p < 2` or p not prime: `Err(InvalidArgument)`; an unresolved primality proof:
+///   `Err(NotSupported)` (as for [`factor`], `try_is_prime` is a proof for every size).
 pub fn is_irreducible(f: &[Integer], p: &Integer) -> Result<bool> {
     check_prime(p)?;
     let f = reduce(f, p);
@@ -465,7 +462,7 @@ fn squarefree_rec(f: Vec<Integer>, mult: u32, p: &Integer, out: &mut FactorList)
         if *p > Integer::from(deg as u64) {
             return Err(internal("f' = 0 with deg f < p"));
         }
-        let pu = p.to_i64() as usize;
+        let pu = usize::try_from(p).expect("berlekamp: p <= deg f (checked above) fits in usize");
         let g: Vec<Integer> = f.iter().step_by(pu).cloned().collect();
         let m = mult.checked_mul(pu as u32).ok_or_else(overflow)?;
         return squarefree_rec(g, m, p, out);
@@ -515,7 +512,7 @@ fn factor_squarefree(s: &[Integer], p: &Integer) -> Result<Vec<Vec<Integer>>> {
 /// every pair of irreducible factors, so this ends with exactly r factors.
 fn split_small(s: &[Integer], basis: &[Vec<Integer>], p: &Integer) -> Result<Vec<Vec<Integer>>> {
     let r = basis.len();
-    let p_small = p.to_i64();
+    let p_small = i64::try_from(p).expect("split_small runs only for p < SMALL_P");
     let mut factors = vec![s.to_vec()];
     for v in basis {
         if factors.len() == r {
@@ -562,7 +559,8 @@ fn split_small(s: &[Integer], basis: &[Vec<Integer>], p: &Integer) -> Result<Vec
 fn split_random(s: &[Integer], basis: &[Vec<Integer>], p: &Integer) -> Result<Vec<Vec<Integer>>> {
     let r = basis.len();
     let n = s.len() - 1;
-    let low32 = p.modulo(&Integer::from(1u64 << 32)).to_i64() as u64;
+    let low32 = u64::try_from(&p.modulo(&Integer::from(1u64 << 32)))
+        .expect("a residue mod 2^32 fits in u64");
     let mut rng = Lcg(0x5EED ^ (n as u64) ^ low32);
     let e = &(p - &Integer::one()) / &Integer::from(2i64);
     let one = [Integer::one()];

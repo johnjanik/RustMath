@@ -91,7 +91,7 @@ fn residual_polynomial(f: &[Integer], p: i64, face: &Face, e: usize, h: i64) -> 
         for _ in 0..exponent {
             q = q / pi.clone();
         }
-        let m = (q % pi.clone()).to_i64();
+        let m = i64::try_from(&(q % pi.clone())).expect("a residue mod an i64 p fits in i64");
         r[j] = ((m % p) + p) % p;
     }
     fp::trim(&r)

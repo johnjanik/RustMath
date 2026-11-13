@@ -121,18 +121,17 @@ fn canonicalize_sqrt(inner: &Expr) -> Expr {
                     return (**base).clone();
                 }
                 // sqrt(a^(2k)) = a^k
-                if n.to_i64() % 2 == 0 {
+                if n.is_even() {
                     let half_exp = Expr::Integer(n.clone() / Integer::from(2));
                     return Expr::Binary(BinaryOp::Pow, base.clone(), Arc::new(half_exp));
                 }
                 // sqrt(a^(2k+1)) = a^k * sqrt(a)
-                let n_i64 = n.to_i64();
-                if n_i64 > 2 {
-                    let k = n_i64 / 2;
+                if *n > Integer::from(2) {
+                    let k = n.clone() / Integer::from(2);
                     let power_part = Expr::Binary(
                         BinaryOp::Pow,
                         base.clone(),
-                        Arc::new(Expr::Integer(Integer::from(k))),
+                        Arc::new(Expr::Integer(k)),
                     );
                     let sqrt_part = Expr::Unary(UnaryOp::Sqrt, base.clone());
                     return Expr::Binary(
@@ -256,7 +255,9 @@ fn canonicalize_power(base: &Expr, exp: &Expr) -> Expr {
             return Expr::Binary(
                 BinaryOp::Pow,
                 Arc::new(num_power),
-                Arc::new(Expr::Rational(Rational::new(1, r.denominator().to_i64()).unwrap())),
+                Arc::new(Expr::Rational(
+                    Rational::new(Integer::one(), r.denominator().clone()).unwrap(),
+                )),
             );
         }
     }

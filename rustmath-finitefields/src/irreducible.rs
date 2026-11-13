@@ -22,7 +22,7 @@ use rustmath_core::{EuclideanDomain, NumericConversion};
 use rustmath_integers::Integer;
 
 /// Distinct prime factors of `n` (small `n`; trial division).
-fn prime_divisors(mut n: usize) -> Vec<usize> {
+pub(crate) fn prime_divisors(mut n: usize) -> Vec<usize> {
     let mut out = Vec::new();
     let mut d = 2;
     while d * d <= n {

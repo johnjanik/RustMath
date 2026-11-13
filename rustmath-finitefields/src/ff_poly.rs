@@ -16,6 +16,13 @@
 //!   modulo a defining irreducible polynomial, inverse via the extended
 //!   Euclidean algorithm). This also supplies the reduction helpers needed for
 //!   GF(p^n) element arithmetic.
+//!
+//! Random elements ([`FiniteFieldElement::random_element`]) are exactly uniform
+//! over GF(q) for every characteristic (rejection sampling on `u64` words), as
+//! the equal-degree splitting of MAGMA Handbook ch. 23 §23.8.1 / ch. 21 needs:
+//! [vzGG] J. von zur Gathen, J. Gerhard, *Modern Computer Algebra*, §14.3,
+//! Alg. 14.8 draws its splitting polynomial uniformly, and the failure bound of
+//! Thm. 14.9 is proved for that distribution.
 
 use crate::prime_field::PrimeField;
 use rustmath_core::{EuclideanDomain, Field, MathError, Result, Ring};
@@ -81,24 +88,21 @@ pub trait FiniteFieldElement: Clone + PartialEq + fmt::Debug {
     }
 
     /// Build a (pseudo-)random element of the **full** field GF(q), drawing
-    /// fresh randomness from `next` (each call returns a `u64`).
+    /// fresh randomness from `next` (each call returns a `u64`): if the words
+    /// of `next` are independent and uniform, the element is **uniform over
+    /// GF(q)**, for every characteristic (no size limit on `p`).
     ///
-    /// This is the primitive Cantor–Zassenhaus equal-degree splitting needs over
-    /// an extension field: the splitting polynomial's coefficients must range
-    /// over all of GF(q) = GF(p^k), not merely the prime subfield GF(p).
+    /// This is the primitive Cantor–Zassenhaus equal-degree splitting needs
+    /// ([vzGG] Alg. 14.8 draws its splitting polynomial uniformly): the
+    /// coefficients must range over all of GF(q) = GF(p^k), not merely the
+    /// prime subfield GF(p), and over all of GF(p), not a part of it.
     ///
-    /// The default implementation (correct for GF(p)) reduces a single random
-    /// draw modulo `p`. Extension fields override this to populate every
-    /// prime-subfield coordinate independently.
+    /// The default implementation (correct for GF(p) only) is
+    /// `from_int(uniform_below(p))` (exact rejection sampling, see the
+    /// crate-private `uniform_below`). Extension fields override this to draw
+    /// every prime-subfield coordinate independently and uniformly.
     fn random_element(&self, next: &mut dyn FnMut() -> u64) -> Self {
-        let p = self.characteristic();
-        // p fits in u64 for the prime fields we factor over; fall back to 2.
-        let p_u = {
-            use rustmath_core::NumericConversion;
-            p.to_usize().unwrap_or(2).max(2) as u64
-        };
-        let v = (next() % p_u) as i64;
-        self.from_int(&Integer::from(v))
+        self.from_int(&uniform_below(&self.characteristic(), next))
     }
 
     /// Raise to an integer power using square-and-multiply.
@@ -119,11 +123,85 @@ pub trait FiniteFieldElement: Clone + PartialEq + fmt::Debug {
     }
 }
 
+/// An exactly uniform integer in `[0, m)`, built from the `u64` words of `next`
+/// (assumed independent and uniform), by rejection sampling.
+///
+/// * `m < 2^64` (one word per round): with `r = 2^64 mod m`, a word `v` is
+///   accepted iff `v <= u64::MAX - r` (the accepted range `[0, 2^64 - r)` has a
+///   length divisible by `m`) and `v mod m` is returned. A word is rejected with
+///   probability `r / 2^64 < m / 2^64`. For `m <= 2^63` an accepted word gives
+///   the same value as the plain `next() % m` draw this replaced; for `m` in
+///   `(2^63, 2^64)` the old draw wrapped through `as i64`, so the streams differ.
+/// * `m >= 2^64`: with `k` the bit length of `m - 1` and `w = ceil(k / 64)`,
+///   one round reads `w` words, forms `x = sum_i next_i * 2^(64 i)` (first word
+///   least significant), reduces it mod `2^k` (masks the top word) and accepts
+///   iff `x < m`; a round succeeds with probability `m / 2^k > 1/2`.
+///
+/// With a SplitMix64 `next` (a bijective output map of a state of period
+/// `2^64`) the one-word case rejects at most `r` consecutive words; in general
+/// the loop ends with probability 1 (expected rounds below 2).
+///
+/// # Panics
+/// If `m < 1` (there is no integer in `[0, m)`).
+pub(crate) fn uniform_below(m: &Integer, next: &mut dyn FnMut() -> u64) -> Integer {
+    use rustmath_core::NumericConversion;
+    assert!(
+        *m >= Integer::one(),
+        "ff_poly::uniform_below: the bound m = {m} must be at least 1"
+    );
+    if let Some(n) = m.to_u64() {
+        // r = 2^64 mod n, computed without 128-bit arithmetic.
+        let r = (u64::MAX % n + 1) % n;
+        loop {
+            let v = next();
+            if v <= u64::MAX - r {
+                return Integer::from(v % n);
+            }
+        }
+    }
+    let k = (m.clone() - Integer::one()).bit_length(); // >= 64 here
+    let w = k.div_ceil(64);
+    let top_bits = k - 64 * (w - 1); // in 1..=64
+    let top_mask = if top_bits == 64 {
+        u64::MAX
+    } else {
+        (1u64 << top_bits) - 1
+    };
+    let word_base = Integer::from(2).pow(64);
+    loop {
+        let mut x = Integer::zero();
+        let mut scale = Integer::one();
+        for i in 0..w {
+            let mut word = next();
+            if i + 1 == w {
+                word &= top_mask; // x mod 2^k
+            }
+            x = x + Integer::from(word) * scale.clone();
+            scale = scale * word_base.clone();
+        }
+        if x < *m {
+            return x;
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // GF(p) via PrimeField
 // ---------------------------------------------------------------------------
 
 impl FiniteFieldElement for PrimeField {
+    /// `n mod p` in O(1) (the trait default adds `1` to itself `n mod p`
+    /// times, which made [`FiniteFieldElement::random_element`] unusable for
+    /// large `p`). Same value as the default; like it, panics for the
+    /// modulus-0 sentinel.
+    fn from_int(&self, n: &Integer) -> Self {
+        PrimeField::new(n.clone(), self.modulus().clone())
+            .expect("ff_poly: PrimeField::from_int needs a modulus > 1")
+    }
+    /// Uniform over GF(p) for every `p`: `from_int(uniform_below(p))`.
+    fn random_element(&self, next: &mut dyn FnMut() -> u64) -> Self {
+        self.from_int(&uniform_below(self.modulus(), next))
+    }
     fn zero(&self) -> Self {
         PrimeField::new(Integer::zero(), self.modulus().clone()).unwrap()
     }
@@ -740,15 +818,14 @@ impl FiniteFieldElement for Gfpn {
     fn degree_over_prime(&self) -> usize {
         self.extension_degree()
     }
+    /// Uniform over GF(p^n): each prime-subfield coordinate is drawn
+    /// independently with `uniform_below(p)`, so the element ranges over all of
+    /// GF(p^n), not just GF(p), for every `p`.
     fn random_element(&self, next: &mut dyn FnMut() -> u64) -> Self {
-        use rustmath_core::NumericConversion;
         let n = self.extension_degree();
-        let p_u = self.p.to_usize().unwrap_or(2).max(2) as u64;
-        // Draw each prime-subfield coordinate independently so the element
-        // ranges over all of GF(p^n), not just GF(p).
         let mut coeffs = vec![Integer::zero(); n];
         for c in coeffs.iter_mut() {
-            *c = Integer::from((next() % p_u) as i64);
+            *c = uniform_below(&self.p, next);
         }
         Gfpn {
             coeffs,
@@ -836,5 +913,115 @@ mod tests {
         let ainv = a.invert().unwrap();
         assert!(a.mul(&ainv).is_one());
         assert_eq!(a.order(), Integer::from(9));
+    }
+
+    /// Run `uniform_below(m, ..)` on a scripted word stream; returns the value
+    /// and the number of words consumed.
+    fn draw_scripted(m: &Integer, words: &[u64]) -> (Integer, usize) {
+        let mut i = 0usize;
+        let v = uniform_below(m, &mut || {
+            let w = words[i];
+            i += 1;
+            w
+        });
+        (v, i)
+    }
+
+    fn big(s: &str) -> Integer {
+        Integer::from_decimal_str(s).unwrap()
+    }
+
+    /// A SplitMix64 word stream (Steele-Lea-Flood 2014), for the sampler tests.
+    fn splitmix(seed: u64) -> impl FnMut() -> u64 {
+        let mut s = seed;
+        move || {
+            s = s.wrapping_add(0x9E37_79B9_7F4A_7C15);
+            let mut z = s;
+            z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+            z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+            z ^ (z >> 31)
+        }
+    }
+
+    /// CZ2: exact rejection sampling on scripted words.
+    /// gp: `2^64 % 10` = 6 (so the six words u64::MAX-5 ..= u64::MAX are rejected for
+    /// m = 10), `(2^64-1-6) % 10` = 9, `#binary(2^64+12)` = 65 (two words, top word
+    /// masked to 1 bit for m = 2^64 + 13).
+    #[test]
+    fn uniform_below_scripted() {
+        let ten = Integer::from(10);
+        assert_eq!(draw_scripted(&ten, &[25]), (Integer::from(5), 1));
+        assert_eq!(draw_scripted(&ten, &[u64::MAX, 25]), (Integer::from(5), 2));
+        // the largest accepted word, and the smallest rejected one
+        assert_eq!(draw_scripted(&ten, &[u64::MAX - 6]), (Integer::from(9), 1));
+        assert_eq!(
+            draw_scripted(&ten, &[u64::MAX - 5, 3]),
+            (Integer::from(3), 2)
+        );
+        // m = 1: every word is accepted, the value is 0
+        assert_eq!(
+            draw_scripted(&Integer::one(), &[u64::MAX]),
+            (Integer::zero(), 1)
+        );
+        // m = 2^64 (k = 64, one unmasked word, nothing rejected)
+        let two64 = big("18446744073709551616");
+        assert_eq!(
+            draw_scripted(&two64, &[u64::MAX]),
+            (Integer::from(u64::MAX), 1)
+        );
+        // m = 2^64 + 13: k = 65, two words, top word masked to its low bit
+        let m = big("18446744073709551629");
+        // 7 + (3 & 1) 2^64 = 2^64 + 7
+        assert_eq!(draw_scripted(&m, &[7, 3]), (big("18446744073709551623"), 2));
+        // first round x = 20 + 2^64 >= m is rejected, second round x = 5 + (2 & 1) 2^64 = 5
+        assert_eq!(draw_scripted(&m, &[20, 1, 5, 2]), (Integer::from(5), 4));
+    }
+
+    #[test]
+    #[should_panic(expected = "must be at least 1")]
+    fn uniform_below_rejects_empty_range() {
+        let _ = draw_scripted(&Integer::zero(), &[1]);
+    }
+
+    /// CZ3: `PrimeField::random_element` is O(1) per draw (the `from_int`
+    /// override) and covers the whole field, also for p > 2^64 (at HEAD the
+    /// coefficients were only 0 or 1 there, and a draw at p = 2^31 - 1 cost
+    /// ~2^30 additions, so on the old code this test takes hours instead of
+    /// failing: run it only after the fix). gp: `isprime(2^31-1)`, `nextprime(2^80)` = 2^80 + 13 =
+    /// 1208925819614629174706189, `polisirreducible(Mod(1,2^80+13)*(x^2+x+1))` = 1.
+    #[test]
+    fn prime_field_random_element_is_fast_and_full_range() {
+        let p31 = Integer::from(2147483647i64);
+        let s31 = PrimeField::new(Integer::zero(), p31.clone()).unwrap();
+        let mut next = splitmix(0x5EED);
+        let draws: Vec<Integer> = (0..64)
+            .map(|_| s31.random_element(&mut next).value().clone())
+            .collect();
+        assert!(draws.iter().all(|v| *v >= Integer::zero() && *v < p31));
+        assert!(draws.iter().any(|v| *v >= Integer::from(1i64 << 30)));
+
+        let p80 = big("1208925819614629174706189"); // 2^80 + 13
+        let two64 = big("18446744073709551616");
+        let s80 = PrimeField::new(Integer::zero(), p80.clone()).unwrap();
+        let draws: Vec<Integer> = (0..16)
+            .map(|_| s80.random_element(&mut next).value().clone())
+            .collect();
+        assert!(draws.iter().all(|v| *v >= Integer::zero() && *v < p80));
+        assert!(draws.iter().any(|v| *v >= two64));
+
+        // GF((2^80+13)^2) = F_p[t]/(t^2+t+1): both coordinates uniform in [0, p)
+        let modu = vec![Integer::one(), Integer::one(), Integer::one()];
+        let g = Gfpn::new(vec![Integer::zero()], p80.clone(), modu);
+        let coords: Vec<Integer> = (0..8)
+            .flat_map(|_| g.random_element(&mut next).coeffs().to_vec())
+            .collect();
+        assert_eq!(coords.len(), 16);
+        assert!(coords.iter().all(|v| *v >= Integer::zero() && *v < p80));
+        assert!(coords.iter().any(|v| *v >= two64));
+
+        // the override keeps the value of the default `from_int` (n mod p, also for n < 0)
+        let s7 = PrimeField::new(Integer::zero(), Integer::from(7)).unwrap();
+        assert_eq!(s7.from_int(&Integer::from(-3)).value(), &Integer::from(4));
+        assert_eq!(s7.from_int(&Integer::from(23)).value(), &Integer::from(2));
     }
 }

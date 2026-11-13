@@ -11,9 +11,20 @@
 //! real-world cryptographic use — the seeding here is a small deterministic PRNG,
 //! chosen so that the `*_seeded` / explicit constructors are fully reproducible
 //! for testing. The randomised `b`-bit constructors seed from the system clock.
+//!
+//! **Primes.** The primes of every modulus are proven (MAGMA `RandomPrime` with
+//! `Proof := true`; ch. 158 digest): a candidate is accepted only when
+//! [`rustmath_integers::prime::try_is_prime`] returns `Ok(true)` (Baillie-PSW and an
+//! ECPP proof above 2^64). A composite costs trial division and one BPSW test; a
+//! candidate whose ECPP proof is unresolved (`Err`) is skipped like a composite, so
+//! the prime is the least proven prime after the random start. That changes the
+//! distribution slightly only when such candidates occur (none up to 2048 bits in
+//! the experiments; about 1 in 16 at 3072 and 4096 bits). Cost per prime: one ECPP
+//! proof, for example about 3 s in a release build for 1024 bits and 76 s for 2048
+//! bits.
 
 use rustmath_core::{MathError, Result};
-use rustmath_integers::prime::is_prime;
+use rustmath_integers::prime::try_is_prime;
 use rustmath_integers::Integer;
 
 /// A tiny, self-contained SplitMix64 PRNG (pure Rust, no external deps).
@@ -64,8 +75,10 @@ fn random_integer_bits(bits: u64, rng: &mut SplitMix64) -> Integer {
     v
 }
 
-/// A (pseudo-)random prime of approximately `bits` bits (MAGMA `RandomPrime`
-/// analogue). Starts from a random `bits`-bit odd candidate and scans upward.
+/// A (pseudo-)random proven prime of approximately `bits` bits (MAGMA `RandomPrime`
+/// analogue, `Proof := true`). Starts from a random `bits`-bit odd candidate and scans
+/// upward; a candidate whose ECPP proof is unresolved is skipped (module documentation,
+/// *Primes*).
 fn random_prime_bits(bits: u64, rng: &mut SplitMix64) -> Integer {
     let two = Integer::from(2);
     loop {
@@ -75,7 +88,7 @@ fn random_prime_bits(bits: u64, rng: &mut SplitMix64) -> Integer {
         }
         // Scan odd candidates; give up after a while and re-seed a fresh start.
         for _ in 0..(4 * bits + 64) {
-            if is_prime(&cand) {
+            if matches!(try_is_prime(&cand), Ok(true)) {
                 return cand;
             }
             cand = cand + two.clone();
@@ -83,8 +96,9 @@ fn random_prime_bits(bits: u64, rng: &mut SplitMix64) -> Integer {
     }
 }
 
-/// A (pseudo-)random prime `≡ 3 (mod 4)` of approximately `bits` bits, as required
-/// by the Blum–Blum–Shub construction.
+/// A (pseudo-)random proven prime `≡ 3 (mod 4)` of approximately `bits` bits, as
+/// required by the Blum–Blum–Shub construction; unresolved candidates are skipped
+/// (module documentation, *Primes*).
 fn random_prime_3mod4_bits(bits: u64, rng: &mut SplitMix64) -> Integer {
     let four = Integer::from(4);
     let three = Integer::from(3);
@@ -94,7 +108,7 @@ fn random_prime_3mod4_bits(bits: u64, rng: &mut SplitMix64) -> Integer {
         let r = &cand0 % &four;
         let mut cand = cand0 - r + three.clone();
         for _ in 0..(4 * bits + 64) {
-            if is_prime(&cand) {
+            if matches!(try_is_prime(&cand), Ok(true)) {
                 return cand;
             }
             cand = cand + four.clone();
@@ -130,7 +144,8 @@ fn reduce_mod(x: &Integer, n: &Integer) -> Integer {
 /// (MAGMA `RSAModulus(b)`): `Gcd(EulerPhi(n), e) = 1`.
 ///
 /// The exponent is `3` when `gcd(φ(n), 3) = 1`, otherwise a random odd `e`
-/// coprime to `φ(n)` is chosen. `b` must be at least 16.
+/// coprime to `φ(n)` is chosen. `b` must be at least 16. Both primes are proven
+/// (module documentation, *Primes*).
 pub fn rsa_modulus(b: u64, rng: &mut SplitMix64) -> Result<(Integer, Integer)> {
     if b < 16 {
         return Err(MathError::InvalidArgument("b must be at least 16".into()));
@@ -168,7 +183,8 @@ pub fn rsa_modulus(b: u64, rng: &mut SplitMix64) -> Result<(Integer, Integer)> {
 /// Build an RSA modulus `n` of about `b` bits such that `Gcd(EulerPhi(n), e) = 1`
 /// for the supplied exponent `e` (MAGMA `RSAModulus(b, e)`).
 ///
-/// `b` must be at least 16 and `e` odd with `1 < e < 2^b`.
+/// `b` must be at least 16 and `e` odd with `1 < e < 2^b`. Both primes are proven
+/// (module documentation, *Primes*).
 pub fn rsa_modulus_with_exponent(b: u64, e: &Integer, rng: &mut SplitMix64) -> Result<Integer> {
     if b < 16 {
         return Err(MathError::InvalidArgument("b must be at least 16".into()));
@@ -219,7 +235,8 @@ pub fn random_sequence_rsa_explicit(
 /// The RSA pseudo-random bit generator, generating a fresh `b`-bit modulus,
 /// exponent and seed from `rng` (MAGMA `RandomSequenceRSA(b, t)`).
 ///
-/// `b` must be at least 16. Reproducible given the same seeded `rng`.
+/// `b` must be at least 16. Reproducible given the same seeded `rng`. The primes of
+/// the modulus are proven (module documentation, *Primes*).
 pub fn random_sequence_rsa(b: u64, t: usize, rng: &mut SplitMix64) -> Result<Vec<u8>> {
     let (n, e) = rsa_modulus(b, rng)?;
     // Seed value modulo n (kept away from the trivial 0/1).
@@ -235,7 +252,7 @@ pub fn random_sequence_rsa(b: u64, t: usize, rng: &mut SplitMix64) -> Result<Vec
 /// Build a Blum–Blum–Shub modulus `n = p·q` of about `b` bits with both primes
 /// `≡ 3 (mod 4)` (MAGMA `BBSModulus(b)` / `BlumBlumShubModulus(b)`).
 ///
-/// `b` must be at least 16.
+/// `b` must be at least 16. Both primes are proven (module documentation, *Primes*).
 pub fn bbs_modulus(b: u64, rng: &mut SplitMix64) -> Result<Integer> {
     if b < 16 {
         return Err(MathError::InvalidArgument("b must be at least 16".into()));
@@ -278,7 +295,8 @@ pub fn blum_blum_shub_explicit(n: &Integer, s: &Integer, t: usize) -> Result<Vec
 /// The Blum–Blum–Shub generator with a fresh `b`-bit modulus and seed
 /// (MAGMA `RandomSequenceBlumBlumShub(b, t)` / `BlumBlumShub(b, t)`).
 ///
-/// `b` must be at least 16. Reproducible given the same seeded `rng`.
+/// `b` must be at least 16. Reproducible given the same seeded `rng`. The primes of
+/// the modulus are proven (module documentation, *Primes*).
 pub fn blum_blum_shub(b: u64, t: usize, rng: &mut SplitMix64) -> Result<Vec<u8>> {
     let n = bbs_modulus(b, rng)?;
     // Pick a seed coprime to n.
@@ -293,6 +311,7 @@ pub fn blum_blum_shub(b: u64, t: usize, rng: &mut SplitMix64) -> Result<Vec<u8>>
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rustmath_integers::prime::is_prime;
 
     #[test]
     fn splitmix_deterministic() {

@@ -334,7 +334,8 @@ mod tests {
     }
 
     fn coeffs(e: &ExtensionField, n: usize) -> Vec<i64> {
-        let mut c: Vec<i64> = e.poly().coefficients().iter().map(|x| x.to_i64()).collect();
+        let mut c: Vec<i64> =
+            e.poly().coefficients().iter().map(|x| i64::try_from(x).unwrap()).collect();
         c.resize(n, 0);
         c
     }

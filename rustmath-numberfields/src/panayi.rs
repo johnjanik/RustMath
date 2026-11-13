@@ -357,7 +357,8 @@ fn irreducible_mod_p(f: &[Integer], p: i64) -> bool {
     let fbar: Vec<i64> = f
         .iter()
         .map(|c| {
-            let r = (c.clone() % Integer::from(p)).to_i64();
+            let r = i64::try_from(&(c.clone() % Integer::from(p)))
+                .expect("a residue mod an i64 p fits in i64");
             ((r % p) + p) % p
         })
         .collect();

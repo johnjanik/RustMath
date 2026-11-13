@@ -180,9 +180,7 @@ impl PrimeField {
     ///
     /// For a **non-zero** element whose modulus is not prime ([`PrimeField::new`] does not check
     /// primality), with "PrimeField::is_quadratic_residue: the modulus 15 is not prime (...)".
-    /// This includes a strong pseudoprime modulus (above ψ12 = 318665857834031151167461,
-    /// Sorenson–Webster 2017) for which no root can be verified. The zero element is a square
-    /// for every modulus and never panics.
+    /// The zero element is a square for every modulus and never panics.
     pub fn is_quadratic_residue(&self) -> bool {
         if self.value.is_zero() {
             return true;

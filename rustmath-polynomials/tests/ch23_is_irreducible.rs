@@ -593,15 +593,23 @@ fn large_constants_and_moduli() {
     // gp: isprime(2^61-1) = 1, below the proven bound.
     assert!(is_irreducible(&cz(big("2305843009213693951"))).unwrap());
     assert!(is_irreducible(&cz(big("-2305843009213693951"))).unwrap());
-    // gp: isprime(2^89-1) = 1, but above 318665857834031151167461 Miller-Rabin to the bases
-    // 2..37 is no proof: undecided, never a guess.
-    assert!(is_irreducible(&cz(big("618970019642690137449562111"))).is_err());
+    // gp: isprime(2^89-1) = 1. Above 318665857834031151167461 the primality test is
+    // Baillie-PSW plus an ECPP proof, so the constant is decided (before the proving
+    // `is_prime` this was an honest `Err`; the proof now decides it).
+    assert_eq!(
+        is_irreducible(&cz(big("618970019642690137449562111"))),
+        Ok(true)
+    );
     // gp: factor(318665857834031151167461) = 399165290221 * 798330580441, a strong
     // pseudoprime to the bases 2..37: it must never be reported irreducible.
     assert!(!matches!(
         is_irreducible(&cz(big("318665857834031151167461"))),
         Ok(true)
     ));
+    assert_eq!(
+        is_irreducible(&cz(big("318665857834031151167461"))),
+        Ok(false)
+    );
     // gp: isprime(2^89+1) = 0 (a composite is always detected).
     assert!(!is_irreducible(&cz(big("618970019642690137449562113"))).unwrap());
     // A large prime content: (2^61-1)·x + 2 is primitive and linear (gp polisirreducible = 1);

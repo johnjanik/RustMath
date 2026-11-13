@@ -184,10 +184,10 @@ pub fn hill_encrypt(text: &str, key_matrix: &Matrix<Integer>) -> Result<String> 
             if residue.signum() < 0 {
                 residue = residue + modulus.clone();
             }
-            // residue is exactly in [0, 26), so this always fits in i64;
-            // Integer::to_i64 panics (rather than silently truncating) if
+            // residue is exactly in [0, 26), so this always fits in u8; the
+            // checked conversion panics (rather than silently truncating) if
             // it ever didn't, which would indicate a real bug upstream.
-            cipher_vec.push(residue.to_i64() as u8);
+            cipher_vec.push(u8::try_from(&residue).expect("a residue in [0, 26) fits in u8"));
         }
 
         // Convert back to letters

@@ -525,9 +525,10 @@ impl NumericConversion for Rational {
         Rational::from_integer(n)
     }
 
+    /// `Some` for an integral value in the i64 range, `None` otherwise (the trait contract).
     fn to_i64(&self) -> Option<i64> {
         if self.is_integer() {
-            Some(self.numerator.to_i64())
+            i64::try_from(&self.numerator).ok()
         } else {
             None
         }
@@ -590,6 +591,20 @@ mod tests {
             <Rational as EuclideanDomain>::from_any(Box::new(3i64)),
             None
         );
+    }
+
+    #[test]
+    fn numeric_conversion_to_i64_is_checked() {
+        // The trait promises None outside i64; the integral rationals 2^70, 2^63 and -2^63-1
+        // panicked before (inherent Integer::to_i64). gp: -2^63 -> -9223372036854775808.
+        let two = Integer::from(2);
+        let to = |n: Integer| NumericConversion::to_i64(&Rational::from_integer(n));
+        assert_eq!(to(two.pow(70)), None);
+        assert_eq!(to(two.pow(63)), None);
+        assert_eq!(to(-two.pow(63) - Integer::one()), None);
+        assert_eq!(to(-two.pow(63)), Some(i64::MIN));
+        assert_eq!(NumericConversion::to_i64(&Rational::new(-6, 3).unwrap()), Some(-2));
+        assert_eq!(NumericConversion::to_i64(&Rational::new(1, 2).unwrap()), None);
     }
 
     #[test]

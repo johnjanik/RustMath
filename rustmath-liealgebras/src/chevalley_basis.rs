@@ -270,10 +270,11 @@ impl<R: Ring + Clone + From<i64>> LieAlgebraChevalleyBasis<R> {
         }
     }
 
-    /// Convert Integer to Ring element
+    /// Convert Integer to Ring element. Structure constants are small; a value beyond i64
+    /// panics (there is no fallback value).
     fn integer_to_ring(i: &Integer) -> R {
-        // Try to convert to i64 first, otherwise use 0 as fallback
-        let val = i.to_i64();
+        let val = i64::try_from(i)
+            .expect("integer_to_ring: a structure constant beyond i64 is not supported");
         R::from(val)
     }
 

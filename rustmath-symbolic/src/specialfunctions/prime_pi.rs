@@ -64,12 +64,11 @@ use crate::expression::Expr;
 pub fn prime_pi(x: &Expr) -> Expr {
     // Try to compute for integer values
     if let Expr::Integer(n) = x {
-        let n_val = n.to_i64();
-        {
-            if n_val < 2 {
-                return Expr::from(0);
-            }
-
+        // π(x) = 0 for every x < 2, however negative.
+        if *n < rustmath_integers::Integer::from(2) {
+            return Expr::from(0);
+        }
+        if let Ok(n_val) = i64::try_from(n) {
             // For reasonable sizes, compute exact count
             if n_val <= 10_000 {
                 let count = count_primes_up_to(n_val as u64);
@@ -139,8 +138,8 @@ fn count_primes_up_to(n: u64) -> usize {
 pub fn legendre_phi(x: &Expr, a: &Expr) -> Expr {
     // Try to compute for small integer values
     if let (Expr::Integer(x_int), Expr::Integer(a_int)) = (x, a) {
-        let (x_val, a_val) = (x_int.to_i64(), a_int.to_i64());
-        {
+        // Large arguments fall through to the unevaluated function.
+        if let (Ok(x_val), Ok(a_val)) = (i64::try_from(x_int), i64::try_from(a_int)) {
             if x_val >= 0 && a_val >= 0 && x_val <= 1000 && a_val <= 20 {
                 let result = compute_legendre_phi(x_val as u64, a_val as usize);
                 return Expr::from(result as i64);
@@ -232,6 +231,23 @@ fn is_prime_simple(n: u64) -> bool {
 mod tests {
     use super::*;
     use crate::symbol::Symbol;
+
+    #[test]
+    fn prime_pi_of_huge_arguments() {
+        // π(x) = 0 for x < 2, however negative (-10^30 panicked before). 10^30 stays unevaluated.
+        use rustmath_integers::Integer;
+        let big = Integer::from(10).pow(30);
+        assert_eq!(prime_pi(&Expr::Integer(-big.clone())), Expr::from(0));
+        let x = Expr::Integer(big);
+        assert_eq!(
+            prime_pi(&x),
+            Expr::Function("prime_pi".to_string(), vec![Arc::new(x.clone())])
+        );
+        assert_eq!(
+            legendre_phi(&x, &Expr::from(3)),
+            Expr::Function("legendre_phi".to_string(), vec![Arc::new(x.clone()), Arc::new(Expr::from(3))])
+        );
+    }
 
     #[test]
     fn test_prime_pi_small() {
