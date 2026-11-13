@@ -8,6 +8,7 @@ pub mod crt;
 pub mod ecm;
 pub mod ecpp;
 pub mod factorint;
+pub mod factorization;
 pub mod fast_arith;
 pub mod integer;
 mod lehmer;
@@ -24,10 +25,13 @@ pub use crt::{
     rational_reconstruct_bound,
 };
 pub use ecm::{ecm_factor, ecm_factor_complete};
+pub use factorization::{factorization_with_limits, FactorizationLimits, LimitedFactorization};
 pub use fast_arith::{prime_range, ArithInt, ArithLLong};
 pub use integer::Integer;
 pub use modular::primitive_roots;
-pub use quadratic_sieve::{quadratic_sieve_factor, quadratic_sieve_factor_complete};
+pub use quadratic_sieve::{
+    quadratic_sieve_factor, quadratic_sieve_factor_complete, QsOutcome, QsParams,
+};
 pub use sage_wrapper::SageInteger;
 
 #[cfg(test)]

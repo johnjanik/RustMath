@@ -957,6 +957,8 @@ fn rand_int() -> i64 {
 ///
 /// When the ECPP proof of a probable-prime factor is unresolved ([`is_prime`] panics; no
 /// unresolved prime up to 2048 bits in the experiments, about 1 in 16 at 3072 and 4096 bits).
+/// [`crate::factorization::factorization_with_limits`] never panics and reports such a factor
+/// in `probable_primes`.
 ///
 /// # Comparison with SageMath
 ///
@@ -988,8 +990,12 @@ fn rand_int() -> i64 {
 /// (10^12+39)(10^12+61) about 20 s (10^6 steps); for q with 20 or more digits (10^10 steps
 /// or more) the call does not finish in practical time. The trial-division windows bound the
 /// worst case of each split by about p/2 trial divisions for its smallest prime factor p, plus
-/// up to about twice as many Brent steps (a round can overshoot its budget by 2x) and 10^6
-/// Floyd steps; the windows restart at 3 for each cofactor that needs the fallback.
+/// about as many Brent steps (each round keeps to its budget) and 10^6 Floyd steps; the windows
+/// restart at 3 for each cofactor that needs the fallback.
+///
+/// For a capped run that stops and reports the composites it could not split (MAGMA's third
+/// return value), see [`factor_pollard_rho_limited`] and
+/// [`crate::factorization::factorization_with_limits`].
 ///
 /// # Examples
 ///
@@ -1088,6 +1094,66 @@ pub fn factor_pollard_rho(n: &Integer) -> Vec<(Integer, u32)> {
     factors
 }
 
+/// MAGMA's default iteration count `k` of `PollardRho(n, c, s, k)` and of `PollardRhoLimit`
+/// (ch. 18 §18.10.1, §18.10.3).
+pub const POLLARD_RHO_DEFAULT_ITERATIONS: u64 = 8191;
+
+/// MAGMA `PollardRho(n, c, s, k : Proof)` (ch. 18 §18.10.3; \[Bre80\]): every composite piece of
+/// |n| gets at most k iterations of Brent's rho with x^2 + c from x_0 = s; when a run ends with
+/// gcd = piece (all cycles closed together), the next run uses c + 1, c + 2, ... from s with the
+/// remaining iterations. Perfect powers and the factor 2 are split off first. No trial
+/// division, no sieve. MAGMA's defaults are c = 1, s = 1, k = 8191
+/// ([`POLLARD_RHO_DEFAULT_ITERATIONS`]) and `proof = true`.
+///
+/// The result is a [`crate::factorization::LimitedFactorization`]: the proven primes, the
+/// probable primes >= psi_12 that were not proven (`proof` false, or an unresolved ECPP proof),
+/// the composites rho did not split within k iterations (MAGMA's third return value), and the
+/// sign. Never panics.
+///
+/// # Cost
+///
+/// At most k rho iterations per composite piece, plus one primality test (and, with `proof`, an
+/// ECPP proof for a factor >= psi_12) per piece. Rho needs about sqrt(p) iterations to split
+/// off a prime p, so the default k reaches factors up to about 10^7.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_integers::prime::factor_pollard_rho_limited;
+/// use rustmath_integers::Integer;
+///
+/// // gp: factor(18446744073709551617) = [274177, 1; 67280421310721, 1]
+/// let n = Integer::from(2).pow(64) + Integer::one();
+/// let one = Integer::one();
+/// let f = factor_pollard_rho_limited(&n, &one, &one, 8191, true);
+/// let want = vec![(Integer::from(274177), 1), (Integer::from(67280421310721u64), 1)];
+/// assert_eq!(f.primes, want);
+/// assert!(f.is_complete());
+///
+/// // gp: factor(20000000000008900000000000837) = [100000000000031,1; 200000000000027,1]:
+/// // both factors need about 10^7 iterations, so 8191 leave n unfactored.
+/// let n = Integer::from_decimal_str("20000000000008900000000000837").unwrap();
+/// let f = factor_pollard_rho_limited(&n, &one, &one, 8191, true);
+/// assert_eq!(f.composites, vec![(n, 1)]);
+/// ```
+pub fn factor_pollard_rho_limited(
+    n: &Integer,
+    c: &Integer,
+    s: &Integer,
+    k: u64,
+    proof: bool,
+) -> crate::factorization::LimitedFactorization {
+    use crate::factorization::{limited_engine, QsPolicy, SplitPlan};
+    let plan = SplitPlan {
+        rho_c: c.clone(),
+        rho_x0: s.clone(),
+        rho_steps: k,
+        qs: QsPolicy::Never,
+        complete: false,
+    };
+    limited_engine(n, 0, &plan, proof)
+}
+
 /// Number of steps of the first Brent round and of the first trial-division window in
 /// [`split_odd_composite`]; both double each round.
 const SPLIT_FIRST_ROUND: u64 = 1 << 12;
@@ -1099,7 +1165,7 @@ const SPLIT_FIRST_ROUND: u64 = 1 << 12;
 /// said so). If m is a BPSW pseudoprime (none is known), `pollard_rho(m)` returns `None` at
 /// once through its [`is_probable_prime`] shortcut, and `split_brent_and_trial_division`
 /// (complete, it always returns a divisor) splits m.
-fn split_odd_composite(m: &Integer) -> Integer {
+pub(crate) fn split_odd_composite(m: &Integer) -> Integer {
     debug_assert!(m.is_odd() && *m > Integer::one());
     if let Some((base, _)) = m.is_perfect_power() {
         return base;
@@ -1126,7 +1192,7 @@ fn split_brent_and_trial_division(m: &Integer) -> Integer {
     let mut budget = SPLIT_FIRST_ROUND;
     let mut c: u64 = 2;
     loop {
-        if let Some(d) = brent_rho(m, &Integer::from(c), budget) {
+        if let Some(d) = brent_rho(m, &Integer::from(c), &Integer::from(2), budget).0 {
             return d;
         }
         if let Some(d) = trial_division_window(m, &mut next_trial, budget) {
@@ -1137,36 +1203,50 @@ fn split_brent_and_trial_division(m: &Integer) -> Integer {
     }
 }
 
-/// One run of Brent's variant of Pollard rho on m with f(x) = x^2 + c mod m, from x_0 = 2,
-/// for at most about `max_steps` evaluations of f ([Bre80]; Cohen GTM 138, §8.5).
+/// One run of Brent's variant of Pollard rho on m with f(x) = x^2 + c mod m from `x0`, for at
+/// most `max_steps` new terms of the sequence ([Bre80]; Cohen GTM 138, §8.5).
 ///
 /// The differences |x - y| are multiplied together modulo m and the gcd is taken every 128
-/// steps; when that gcd is m, the last block is replayed one step at a time.
+/// steps; when that gcd is m, the last block is replayed one step at a time. The budget is
+/// exact: the doubling round advances min(r, budget left) terms and each block
+/// min(128, r - k, budget left), so at most `max_steps` new terms are computed. The replay
+/// recomputes at most 128 terms of the last block; those are counted in the returned steps
+/// too, so the step count can exceed `max_steps` by at most 128.
 ///
-/// Returns `Some(d)` with 1 < d < m and d | m, or `None` when the run ends with gcd m (the
-/// cycles modulo all prime factors of m were detected together) or the step budget runs out.
-/// A `None` says nothing about m.
-fn brent_rho(m: &Integer, c: &Integer, max_steps: u64) -> Option<Integer> {
+/// Returns `(Some(d), steps)` with 1 < d < m and d | m, or `(None, steps)` when the run ends
+/// with gcd m (the cycles modulo all prime factors of m were detected together) or the budget
+/// runs out. A `None` says nothing about m.
+fn brent_rho(m: &Integer, c: &Integer, x0: &Integer, max_steps: u64) -> (Option<Integer>, u64) {
     const BLOCK: u64 = 128;
+    if max_steps == 0 {
+        return (None, 0);
+    }
     let f = |v: &Integer| -> Integer { (&(v * v) + c).modulo(m) };
 
-    let mut y = Integer::from(2).modulo(m);
+    let mut y = x0.modulo(m);
     let mut q = Integer::one();
     let mut r: u64 = 1;
     let mut steps: u64 = 0;
 
     let (x, mut ys, mut g) = loop {
         let x = y.clone();
-        for _ in 0..r {
+        let advance = r.min(max_steps - steps);
+        for _ in 0..advance {
             y = f(&y);
         }
-        steps += r;
+        steps += advance;
+        if steps >= max_steps {
+            return (None, steps);
+        }
         let mut ys = y.clone();
         let mut g = Integer::one();
         let mut k: u64 = 0;
         while k < r && g.is_one() {
             ys = y.clone();
-            let block = BLOCK.min(r - k);
+            let block = BLOCK.min(r - k).min(max_steps - steps);
+            if block == 0 {
+                return (None, steps);
+            }
             for _ in 0..block {
                 y = f(&y);
                 q = (&q * &(&x - &y).abs()).modulo(m);
@@ -1178,9 +1258,6 @@ fn brent_rho(m: &Integer, c: &Integer, max_steps: u64) -> Option<Integer> {
         if !g.is_one() {
             break (x, ys, g);
         }
-        if steps >= max_steps {
-            return None;
-        }
         r = r.saturating_mul(2);
     };
 
@@ -1189,6 +1266,7 @@ fn brent_rho(m: &Integer, c: &Integer, max_steps: u64) -> Option<Integer> {
         // coprime to m before the block.
         loop {
             ys = f(&ys);
+            steps += 1;
             g = (&x - &ys).abs().gcd(m);
             if !g.is_one() {
                 break;
@@ -1197,10 +1275,28 @@ fn brent_rho(m: &Integer, c: &Integer, max_steps: u64) -> Option<Integer> {
     }
 
     if g.is_one() || g == *m {
-        None
+        (None, steps)
     } else {
-        Some(g)
+        (Some(g), steps)
     }
+}
+
+/// Rounds of [`brent_rho`] on m with x^2 + c, x^2 + (c + 1), ... from `x0`, sharing one budget
+/// of `k` steps (MAGMA `PollardRho(n, c, s, k)`, ch. 18 §18.10.3: a run that ends with gcd m
+/// moves on to the next c). Returns a proper divisor of m, or `None` when the budget is spent.
+/// Each round uses at least one step, so the loop ends.
+pub(crate) fn rho_rounds(m: &Integer, c: &Integer, x0: &Integer, k: u64) -> Option<Integer> {
+    let mut used: u64 = 0;
+    let mut c = c.clone();
+    while used < k {
+        let (d, steps) = brent_rho(m, &c, x0, k - used);
+        if d.is_some() {
+            return d;
+        }
+        used = used.saturating_add(steps.max(1));
+        c = &c + &Integer::one();
+    }
+    None
 }
 
 /// Trial division of m by the `count` odd numbers from `*next` on; `*next` is advanced past
@@ -1668,15 +1764,57 @@ mod tests {
         }
     }
 
+    /// The budget of `brent_rho` is exact (HEAD's version could overshoot it by 2x). Step counts
+    /// from an independent Python copy of the budget rule
+    /// (`scratchpad/i2impl/brent.py`, the design's `rho_check.rs` rule).
     #[test]
-    fn test_brent_rho() {
+    fn brent_rho_budget() {
         // gp: factor(1000000016000000063) = [1000000007,1; 1000000009,1]
         let m = z("1000000016000000063");
-        let d =
-            brent_rho(&m, &Integer::from(2), 1 << 20).expect("Brent splits m within 2^20 steps");
+        let (d, steps) = brent_rho(&m, &Integer::from(2), &Integer::from(2), 1 << 20);
+        let d = d.expect("Brent splits m within 2^20 steps");
         assert!(d == z("1000000007") || d == z("1000000009"), "d = {d}");
+        assert_eq!(steps, 31870);
         // A budget too small to reach the cycle modulo either prime gives an honest None.
-        assert_eq!(brent_rho(&m, &Integer::from(2), 1), None);
+        assert_eq!(
+            brent_rho(&m, &Integer::from(2), &Integer::from(2), 1),
+            (None, 1)
+        );
+        // gp: factor(20000000000008900000000000837) = [100000000000031,1; 200000000000027,1]:
+        // about 10^7 steps are needed, so 8191 are used up exactly.
+        let m = z("20000000000008900000000000837");
+        assert_eq!(
+            brent_rho(&m, &Integer::one(), &Integer::one(), 8191),
+            (None, 8191)
+        );
+        assert_eq!(
+            brent_rho(&m, &Integer::one(), &Integer::one(), 0),
+            (None, 0)
+        );
+    }
+
+    /// A single run with c = 1 fails on 15 and 25 (gcd = m); the rounds move on to c = 2.
+    #[test]
+    fn rho_rounds_moves_to_the_next_c() {
+        // gp: factor(15) = [3,1; 5,1]; factor(25) = Mat([5,2])
+        for s in ["15", "25"] {
+            let m = z(s);
+            assert_eq!(
+                brent_rho(&m, &Integer::one(), &Integer::one(), 8191).0,
+                None
+            );
+            let d = rho_rounds(&m, &Integer::one(), &Integer::one(), 8191).expect("split");
+            assert!(
+                is_proper_divisor(&d, &m),
+                "{d} is not a proper divisor of {m}"
+            );
+        }
+        // 8191 steps do not split (10^9+7)(10^9+9) from c = 1, x0 = 1; 2^20 do (50430 steps).
+        let m = z("1000000016000000063");
+        assert_eq!(rho_rounds(&m, &Integer::one(), &Integer::one(), 8191), None);
+        let d = rho_rounds(&m, &Integer::one(), &Integer::one(), 1 << 20).expect("split");
+        assert!(d == z("1000000007") || d == z("1000000009"), "d = {d}");
+        assert_eq!(rho_rounds(&m, &Integer::one(), &Integer::one(), 0), None);
     }
 
     #[test]

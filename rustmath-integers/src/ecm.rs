@@ -11,8 +11,23 @@
 //! 3. If during computation the modular inverse fails, gcd reveals a factor
 //! 4. Optionally continuing with stage 2 for larger prime factors
 //!
-//! The algorithm is particularly effective when n has a factor p where p-1 or p+1
-//! is smooth (has only small prime factors).
+//! ECM (H. W. Lenstra, *Factoring integers with elliptic curves*, Ann. of Math. 126 (1987)
+//! 649-673) works in the group E(F_p) of a random curve, for an unknown prime p | n. The order
+//! of that group lies in [p + 1 - 2 sqrt(p), p + 1 + 2 sqrt(p)] (Hasse) and changes with the
+//! curve, so every new curve is a new chance for every p. The expected cost depends on the size
+//! of p, about L_p[1/2, sqrt 2]. Pollard's p - 1 and Williams' p + 1 methods are the analogues
+//! with one fixed group each, so they need p - 1 or p + 1 itself to be smooth.
+//!
+//! What this module tests on one curve with point P: stage 1 computes k P with k the product
+//! of the largest prime powers <= B1, so it finds p when the order of P in E(F_p) divides k
+//! (the order is B1-powersmooth). Stage 2 then computes q (k P) for each of the first 100
+//! primes q in (B1, B2], one at a time, so it also finds p when that order is q times a divisor
+//! of k for one of those q. Primes of (B1, B2] beyond the first 100 are not tried.
+//!
+//! MAGMA: `ECM(n, B1)` (Handbook ch. 18 §18.10.3, digest
+//! `rustmath-lava/docs/Chapter_18_Ring_of_Integers.md`) uses GMP-ECM with Suyama's
+//! parametrisation and a full stage 2; this module uses affine Weierstrass arithmetic, random
+//! curves and the short stage 2 above.
 //!
 //! # Examples
 //!
@@ -319,8 +334,10 @@ fn try_one_curve(n: &Integer, b1: u64, b2: u64, seed: u64) -> Option<Integer> {
     // Generate random curve parameters
     let sigma = Integer::from(rng.gen_range(6..1000000) as i64 + seed as i64);
 
-    // Montgomery parameterization: use σ to generate curve
-    // This is a standard technique to ensure we have a valid point
+    // Suyama's u = sigma^2 - 5 and v = 4 sigma only seed a random point (u/v, 1) and the
+    // coefficient a below; b is then fitted so that the point lies on y^2 = x^3 + a x + b.
+    // This is not Suyama's curve (no torsion of order 12 is forced); any curve with a known
+    // point is a valid ECM curve.
     let u = (sigma.clone() * sigma.clone() - Integer::from(5)) % n.clone();
     let v = (Integer::from(4) * sigma.clone()) % n.clone();
 
@@ -489,6 +506,8 @@ pub fn ecm_factor(n: &Integer, b1: u64, b2: u64, curves: usize) -> Option<Intege
 /// above). psi_12 = 399165290221 * 798330580441 is split. [`is_prime`] panics when the ECPP
 /// proof of a factor is unresolved (no unresolved prime up to 2048 bits in the experiments;
 /// about 1 in 16 at 3072 and 4096 bits); such a factor makes the driver panic.
+/// [`crate::factorization::factorization_with_limits`] never panics and reports such a factor
+/// in `probable_primes`.
 ///
 /// # Cost
 ///

@@ -13,6 +13,13 @@
 //! - **Aurifeuillian factorization**: Special factorizations of numbers of the form a^n ± 1
 //! - **Cunningham factorization**: Pattern-based factorization for numbers like b^n ± 1
 //!
+//! MAGMA `TrialDivision(n, B)` (Handbook ch. 18 §18.10.3, digest
+//! `rustmath-lava/docs/Chapter_18_Ring_of_Integers.md`) returns the primes found and the
+//! unfactored part. [`trial_division_with_primes`] does this for an explicit list of primes.
+//! [`crate::factorization::factorization_with_limits`] with `trial_division_limit: B`,
+//! `pollard_rho_limit: 0` and `mpqs_limit: Some(0)` is close to `TrialDivision(n, B)`: perfect
+//! powers are split too, and the cofactor is classified (use `proof: false` to skip ECPP).
+//!
 //! For general-purpose factorization including Pollard's Rho algorithm, see
 //! [`prime::factor`](crate::prime::factor) and [`prime::pollard_rho`](crate::prime::pollard_rho).
 //!
@@ -134,8 +141,9 @@
 //! - [`prime::factor_pollard_rho`](crate::prime::factor_pollard_rho) - Complete factorization using Pollard's Rho
 //! - [`prime::pollard_p_minus_1`](crate::prime::pollard_p_minus_1) - Pollard's p-1 algorithm
 
-use crate::Integer;
+use crate::factorization::{classify, Class, LimitedFactorization};
 use crate::prime::factor;
+use crate::Integer;
 use rustmath_core::NumericConversion;
 
 /// Perform trial division factorization up to a given bound
@@ -394,49 +402,83 @@ fn combine_factors(factors: Vec<(Integer, u32)>) -> Vec<(Integer, u32)> {
     result
 }
 
-/// Optimized trial division using a precomputed list of small primes
+/// Trial division of n by the given list (any order, duplicates allowed): MAGMA
+/// `TrialDivision(n, B)` with the primes given explicitly (ch. 18 §18.10.3), which returns the
+/// primes found and the unfactored part.
 ///
-/// This is more efficient than basic trial division for larger numbers
-/// because it only tests prime divisors.
-pub fn trial_division_with_primes(n: &Integer, primes: &[Integer]) -> Vec<(Integer, u32)> {
-    if n.is_zero() || n.is_one() {
-        return Vec::new();
+/// The result is a [`LimitedFactorization`]: the listed primes that divide n with their exact
+/// exponents in `primes`; the cofactor m = |n| / prod p^e, when m > 1, classified without a
+/// proof attempt: in `primes` if m < psi_12 = 318665857834031151167461 and
+/// [`is_probable_prime`](crate::prime::is_probable_prime)`(m)` (exact there), in `composites`
+/// if `!is_probable_prime(m)` (a proof), else in `probable_primes`. The sign of n is `sign`;
+/// 0 gives sign 0 and empty lists.
+///
+/// Every list entry that divides n is checked to be prime (and proven when it is >= psi_12; an
+/// entry whose ECPP proof is unresolved goes to `probable_primes`). Entries that do not divide n
+/// are not tested. Cost: one remainder per entry, one classification per dividing entry, one
+/// Baillie-PSW test for the cofactor.
+///
+/// # Panics
+///
+/// If an entry is < 2, or an entry that divides n is proven composite (it would otherwise be
+/// reported as a prime).
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_integers::{factorint::trial_division_with_primes, Integer};
+///
+/// // gp: factor(1225) = [5,2; 7,2]: 2 and 3 do not divide it, the cofactor is composite.
+/// let f = trial_division_with_primes(&Integer::from(1225), &[Integer::from(2), Integer::from(3)]);
+/// assert!(f.primes.is_empty());
+/// assert_eq!(f.composites, vec![(Integer::from(1225), 1)]);
+/// ```
+pub fn trial_division_with_primes(n: &Integer, primes: &[Integer]) -> LimitedFactorization {
+    let mut out = LimitedFactorization {
+        sign: n.signum(),
+        primes: Vec::new(),
+        probable_primes: Vec::new(),
+        composites: Vec::new(),
+    };
+    let two = Integer::from(2);
+    for p in primes {
+        assert!(
+            *p >= two,
+            "trial_division_with_primes: the list entry {p} is below 2"
+        );
     }
-
-    let mut factors = Vec::new();
+    if n.is_zero() {
+        return out;
+    }
     let mut remaining = n.abs();
-
-    // Handle negative numbers
-    if n < &Integer::zero() {
-        factors.push((Integer::from(-1), 1));
-    }
-
-    for prime in primes {
-        if prime.pow(2) > remaining {
-            break;
+    for p in primes {
+        if !(&remaining % p).is_zero() {
+            continue;
         }
-
         let mut exp = 0u32;
-        while &remaining % prime == Integer::zero() {
+        while (&remaining % p).is_zero() {
             exp += 1;
-            remaining = remaining / prime.clone();
+            remaining = &remaining / p;
         }
-
-        if exp > 0 {
-            factors.push((prime.clone(), exp));
-        }
-
-        if remaining.is_one() {
-            break;
+        match classify(p, true) {
+            Class::Prime => out.primes.push((p.clone(), exp)),
+            Class::ProbablePrime => out.probable_primes.push((p.clone(), exp)),
+            Class::Composite => {
+                panic!("trial_division_with_primes: the list entry {p} is not prime")
+            }
         }
     }
-
-    // If there's a remaining part, it's either prime or composite
     if remaining > Integer::one() {
-        factors.push((remaining, 1));
+        match classify(&remaining, false) {
+            Class::Prime => out.primes.push((remaining, 1)),
+            Class::ProbablePrime => out.probable_primes.push((remaining, 1)),
+            Class::Composite => out.composites.push((remaining, 1)),
+        }
     }
-
-    factors
+    out.primes.sort();
+    out.probable_primes.sort();
+    out.composites.sort();
+    out
 }
 
 #[cfg(test)]
@@ -779,52 +821,110 @@ mod tests {
         assert_eq!(combined.len(), 0);
     }
 
-    #[test]
-    fn test_trial_division_with_primes() {
-        let primes = vec![
-            Integer::from(2),
-            Integer::from(3),
-            Integer::from(5),
-            Integer::from(7),
-        ];
+    fn ints(v: &[i64]) -> Vec<Integer> {
+        v.iter().map(|&p| Integer::from(p)).collect()
+    }
 
-        // Factor 210 = 2 * 3 * 5 * 7
-        let n = Integer::from(210);
-        let factors = trial_division_with_primes(&n, &primes);
+    fn pairs(v: &[(i64, u32)]) -> Vec<(Integer, u32)> {
+        v.iter().map(|&(p, e)| (Integer::from(p), e)).collect()
+    }
 
-        assert_eq!(factors.len(), 4);
-        assert_eq!(factors[0], (Integer::from(2), 1));
-        assert_eq!(factors[1], (Integer::from(3), 1));
-        assert_eq!(factors[2], (Integer::from(5), 1));
-        assert_eq!(factors[3], (Integer::from(7), 1));
+    fn z(s: &str) -> Integer {
+        Integer::from_decimal_str(s).unwrap()
     }
 
     #[test]
-    fn test_trial_division_with_primes_insufficient() {
-        let primes = vec![Integer::from(2), Integer::from(3)];
-
-        // Factor 30 = 2 * 3 * 5 (but 5 is not in primes list)
-        let n = Integer::from(30);
-        let factors = trial_division_with_primes(&n, &primes);
-
-        // Should have 2, 3, and remaining cofactor 5
-        assert_eq!(factors.len(), 3);
-        assert!(factors.iter().any(|(p, _)| p == &Integer::from(2)));
-        assert!(factors.iter().any(|(p, _)| p == &Integer::from(3)));
-        assert!(factors.iter().any(|(p, _)| p == &Integer::from(5)));
+    fn trial_division_with_primes_full() {
+        // gp: factor(210) = [2,1; 3,1; 5,1; 7,1]
+        let f = trial_division_with_primes(&Integer::from(210), &ints(&[2, 3, 5, 7]));
+        assert_eq!(f.primes, pairs(&[(2, 1), (3, 1), (5, 1), (7, 1)]));
+        assert!(f.is_complete());
+        assert_eq!(f.sign, 1);
     }
 
     #[test]
-    fn test_trial_division_with_primes_negative() {
-        let primes = vec![Integer::from(2), Integer::from(3)];
+    fn trial_division_with_primes_prime_cofactor() {
+        // gp: factor(30) = [2,1; 3,1; 5,1]: the cofactor 5 < psi_12 is decided.
+        let f = trial_division_with_primes(&Integer::from(30), &ints(&[2, 3]));
+        assert_eq!(f.primes, pairs(&[(2, 1), (3, 1), (5, 1)]));
+        assert!(f.is_complete());
+        // gp: factor(-12) = [-1,1; 2,2; 3,1]: the sign is a field, not a factor.
+        let f = trial_division_with_primes(&Integer::from(-12), &ints(&[2, 3]));
+        assert_eq!(f.sign, -1);
+        assert_eq!(f.primes, pairs(&[(2, 2), (3, 1)]));
+        assert_eq!(f.value(), Integer::from(-12));
+    }
 
-        // Factor -12 = -1 * 2^2 * 3
-        let n = Integer::from(-12);
-        let factors = trial_division_with_primes(&n, &primes);
+    /// HEAD reported the composite cofactor as a prime: `[(1225, 1)]`, `[(1001, 1)]`.
+    #[test]
+    fn trial_division_with_primes_composite_cofactor() {
+        // gp: factor(1225) = [5,2; 7,2]; factor(1001) = [7,1; 11,1; 13,1]
+        let list = ints(&[2, 3]);
+        let f = trial_division_with_primes(&Integer::from(1225), &list);
+        assert!(f.primes.is_empty() && f.probable_primes.is_empty());
+        assert_eq!(f.composites, pairs(&[(1225, 1)]));
+        let f = trial_division_with_primes(&Integer::from(-1225), &list);
+        assert_eq!(f.sign, -1);
+        assert_eq!(f.composites, pairs(&[(1225, 1)]));
+        assert_eq!(f.value(), Integer::from(-1225));
+        let f = trial_division_with_primes(&Integer::from(1001), &list);
+        assert_eq!(f.composites, pairs(&[(1001, 1)]));
+    }
 
-        assert!(factors[0].0 == Integer::from(-1));
-        assert!(factors.iter().any(|(p, e)| p == &Integer::from(2) && *e == 2));
-        assert!(factors.iter().any(|(p, e)| p == &Integer::from(3) && *e == 1));
+    /// HEAD stopped at the first entry p with p^2 > cofactor, which is wrong for an unsorted
+    /// list: (8, [5, 2]) gave `[(8, 1)]`.
+    #[test]
+    fn trial_division_with_primes_unsorted_list() {
+        // gp: factor(8) = Mat([2,3])
+        let f = trial_division_with_primes(&Integer::from(8), &ints(&[5, 2]));
+        assert_eq!(f.primes, pairs(&[(2, 3)]));
+        assert!(f.is_complete());
+        // Duplicates are harmless.
+        let f = trial_division_with_primes(&Integer::from(8), &ints(&[2, 2]));
+        assert_eq!(f.primes, pairs(&[(2, 3)]));
+    }
+
+    #[test]
+    fn trial_division_with_primes_probable_prime_cofactor() {
+        // gp: isprime(nextprime(10^29)) = 1; 2 * nextprime(10^29) = 200000000000000000000000000638
+        let f = trial_division_with_primes(&z("200000000000000000000000000638"), &ints(&[2]));
+        assert_eq!(f.primes, pairs(&[(2, 1)]));
+        assert_eq!(
+            f.probable_primes,
+            vec![(z("100000000000000000000000000319"), 1)]
+        );
+        assert!(f.composites.is_empty());
+    }
+
+    #[test]
+    fn trial_division_with_primes_large_composite_cofactor() {
+        // gp: 6 * nextprime(10^14) * nextprime(2*10^14) = 120000000000053400000000005022;
+        //     factor(%) = [2,1; 3,1; 100000000000031,1; 200000000000027,1]
+        let f = trial_division_with_primes(&z("120000000000053400000000005022"), &ints(&[2, 3]));
+        assert_eq!(f.primes, pairs(&[(2, 1), (3, 1)]));
+        assert_eq!(f.composites, vec![(z("20000000000008900000000000837"), 1)]);
+    }
+
+    #[test]
+    fn trial_division_with_primes_zero_and_units() {
+        for (n, sign) in [(0i64, 0i8), (1, 1), (-1, -1)] {
+            let f = trial_division_with_primes(&Integer::from(n), &ints(&[2, 3]));
+            assert_eq!(f.sign, sign, "n = {n}");
+            assert!(f.primes.is_empty() && f.is_complete(), "n = {n}");
+            assert_eq!(f.value(), Integer::from(n));
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "trial_division_with_primes: the list entry 4 is not prime")]
+    fn trial_division_with_primes_rejects_composite_entry() {
+        let _ = trial_division_with_primes(&Integer::from(12), &ints(&[4, 3]));
+    }
+
+    #[test]
+    #[should_panic(expected = "trial_division_with_primes: the list entry 1 is below 2")]
+    fn trial_division_with_primes_rejects_one() {
+        let _ = trial_division_with_primes(&Integer::from(12), &ints(&[1, 3]));
     }
 
     // ===== Correctness Verification Tests =====
