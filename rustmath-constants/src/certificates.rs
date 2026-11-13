@@ -8,7 +8,7 @@
 //! - Atkin-Goldwasser-Kilian-Morain (ECPP) certificates (future)
 
 use rustmath_integers::{Integer, primitive_roots};
-use rustmath_integers::prime::{is_prime, factor};
+use rustmath_integers::prime::{factor, try_is_prime};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
@@ -68,11 +68,13 @@ impl PrattCertificate {
         self.subcertificates.insert(factor, Box::new(cert));
     }
 
-    /// Generate a Pratt certificate for a prime number
+    /// Generate a Pratt certificate for a prime number. `None` when p is not prime or its
+    /// primality could not be proven ([`try_is_prime`] is `Err`; p - 1 is factored by trial
+    /// division here, so such sizes are never reached in practice).
     pub fn generate(p: &Integer) -> Option<Self> {
         // Base case: small primes (< 100) are certified by trial division
         if p < &Integer::from(100) {
-            if !is_prime(p) {
+            if !matches!(try_is_prime(p), Ok(true)) {
                 return None;
             }
             // Small primes get a trivial certificate
@@ -85,7 +87,7 @@ impl PrattCertificate {
         }
 
         // Check if p is prime
-        if !is_prime(p) {
+        if !matches!(try_is_prime(p), Ok(true)) {
             return None;
         }
 

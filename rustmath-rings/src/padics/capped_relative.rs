@@ -103,7 +103,7 @@ impl CappedRelativePadicElement {
     /// assert_eq!(x.rel_precision(), 10);
     /// ```
     pub fn new(value: Integer, prime: Integer, rel_precision: u32) -> Result<Self> {
-        if prime <= Integer::one() || !prime.is_prime() {
+        if prime <= Integer::one() || !rustmath_integers::prime::try_is_prime(&prime)? {
             return Err(MathError::InvalidArgument(
                 "Prime must be an actual prime number".to_string(),
             ));
@@ -172,7 +172,7 @@ impl CappedRelativePadicElement {
     /// assert_eq!(x.valuation(), -1); // Valuation is -1 due to 5 in denominator
     /// ```
     pub fn from_rational(rational: Rational, prime: Integer, rel_precision: u32) -> Result<Self> {
-        if prime <= Integer::one() || !prime.is_prime() {
+        if prime <= Integer::one() || !rustmath_integers::prime::try_is_prime(&prime)? {
             return Err(MathError::InvalidArgument(
                 "Prime must be an actual prime number".to_string(),
             ));
@@ -338,7 +338,7 @@ impl CappedRelativePadicElement {
     /// assert_eq!(omega.unit() % &Integer::from(5), Integer::from(2)); // Reduces to 2 mod 5
     /// ```
     pub fn teichmuller_lift(residue: Integer, prime: Integer, rel_precision: u32) -> Result<Self> {
-        if prime <= Integer::one() || !prime.is_prime() {
+        if prime <= Integer::one() || !rustmath_integers::prime::try_is_prime(&prime)? {
             return Err(MathError::InvalidArgument(
                 "Prime must be an actual prime number".to_string(),
             ));

@@ -192,3 +192,35 @@ fn trivial_inputs() {
         );
     }
 }
+
+/// psi_12 = 318665857834031151167461 passes the twelve strong tests 2..37, so the fixed-base
+/// test accepted it and every driver returned it unsplit. With the proving `is_prime`
+/// (Baillie-PSW rejects it) the loop guard splits it. gp: factor(318665857834031151167461) =
+/// [399165290221, 1; 798330580441, 1]. About 5 s per driver in a debug build (Floyd's rho needs
+/// 188311 steps), so the three drivers are three tests.
+fn psi12_factorization() -> (Integer, Vec<(Integer, u32)>) {
+    (
+        z("318665857834031151167461"),
+        vec![(z("399165290221"), 1), (z("798330580441"), 1)],
+    )
+}
+
+#[test]
+fn psi12_is_split_by_factor_pollard_rho() {
+    let (n, want) = psi12_factorization();
+    assert_factorization("factor_pollard_rho", &n, &factor_pollard_rho(&n), &want);
+}
+
+#[test]
+fn psi12_is_split_by_quadratic_sieve_factor_complete() {
+    let (n, want) = psi12_factorization();
+    let got = quadratic_sieve_factor_complete(&n);
+    assert_factorization("quadratic_sieve_factor_complete", &n, &got, &want);
+}
+
+#[test]
+fn psi12_is_split_by_ecm_factor_complete() {
+    let (n, want) = psi12_factorization();
+    let got = ecm_factor_complete(&n, 1000, 10000, 0);
+    assert_factorization("ecm_factor_complete(.., 0)", &n, &got, &want);
+}

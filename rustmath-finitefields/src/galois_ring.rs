@@ -75,7 +75,7 @@ impl GaloisRing {
     /// defining polynomial is the one used for `GF(p^d)` (Conway when tabulated),
     /// lifted to `Z/p^a`.
     pub fn new(p: Integer, a: u32, d: usize) -> Result<Self> {
-        if !p.is_prime() {
+        if !rustmath_integers::prime::try_is_prime(&p)? {
             return Err(MathError::InvalidArgument(format!("{p} is not prime")));
         }
         if a < 1 || d < 1 {
@@ -103,7 +103,7 @@ impl GaloisRing {
     /// over `Z`) that is irreducible mod `p` (MAGMA `GaloisRing(p, a, D)`). `D`'s
     /// degree fixes `d`; coefficients are reduced mod `p^a`.
     pub fn with_modulus(p: Integer, a: u32, modulus: Vec<Integer>) -> Result<Self> {
-        if !p.is_prime() {
+        if !rustmath_integers::prime::try_is_prime(&p)? {
             return Err(MathError::InvalidArgument(format!("{p} is not prime")));
         }
         if a < 1 || modulus.len() < 2 {

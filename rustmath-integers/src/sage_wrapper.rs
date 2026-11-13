@@ -108,7 +108,7 @@
 //! |---------|----------|----------|-------|
 //! | `factorial(n)` | ✓ | ✓ | Both support arbitrary precision |
 //! | `binomial(n, k)` | ✓ | ✓ | Exact, generalised to negative n (MAGMA `Binomial`) |
-//! | `is_prime()` | ✓ | ✓ | Uses Miller-Rabin |
+//! | `is_prime()` | ✓ | ✓ | A proof (BPSW and ECPP above 2^64) |
 //! | `is_prime_power()` | ✓ | ✓ | Checks if n = p^k |
 //! | `nth_root(k)` | ✓ | ✓ | Returns floor(k-th root), also for negative self and odd k |
 //! | `factor()` | ✓ | ✓ | Different output format |
@@ -363,10 +363,9 @@ pub trait SageInteger {
     /// while RustMath returns a vector of tuples.
     fn factor(&self) -> Vec<(Integer, u32)>;
 
-    /// Check if this number is prime
-    ///
-    /// Uses a combination of trial division (for small numbers) and
-    /// Miller-Rabin primality test (for larger numbers).
+    /// Check if this number is prime: [`crate::prime::is_prime`], a proof for every size (the
+    /// deterministic word test below 2^64, the twelve strong tests below psi_12, Baillie-PSW and
+    /// ECPP above; it panics when an ECPP proof is unresolved).
     ///
     /// # Examples
     ///

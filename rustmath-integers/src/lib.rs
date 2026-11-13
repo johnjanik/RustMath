@@ -6,15 +6,18 @@
 mod binomial;
 pub mod crt;
 pub mod ecm;
+pub mod ecpp;
 pub mod factorint;
 pub mod fast_arith;
 pub mod integer;
 mod lehmer;
 pub mod modular;
 mod perfect_power;
+pub mod primality;
 pub mod prime;
 pub mod quadratic_sieve;
 pub mod sage_wrapper;
+pub mod sieve;
 
 pub use crt::{
     chinese_remainder_theorem, crt_rational_reconstruct, crt_two, rational_reconstruct,

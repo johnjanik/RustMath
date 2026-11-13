@@ -409,10 +409,12 @@ pub fn compute_s_unit_group(
 ) -> Result<SUnitGroup, SUnitError> {
     // Validate that all primes are actually prime
     for p in s_primes {
-        if !p.is_prime() {
-            return Err(SUnitError::InvalidSUnit(
-                format!("{} is not prime", p)
-            ));
+        match rustmath_integers::prime::try_is_prime(p) {
+            Ok(true) => {}
+            Ok(false) => {
+                return Err(SUnitError::InvalidSUnit(format!("{} is not prime", p)));
+            }
+            Err(e) => return Err(SUnitError::InvalidSUnit(e.to_string())),
         }
     }
 

@@ -1098,7 +1098,7 @@ fn fast_arith_pow_mod_agrees_with_integer_mod_pow() {
 
 #[test]
 fn fast_arith_llong_is_prime_mersenne_61() {
-    // ArithLLong::is_prime is the deterministic is_prime_u64 (fast_arith.rs).
+    // ArithLLong::is_prime is the deterministic is_prime_u64 (primality.rs).
     // gp: isprime(2^61-1) -> 1; isprime(2^61+1) -> 0
     let a64 = ArithLLong::new();
     assert!(a64.is_prime((1i64 << 61) - 1));

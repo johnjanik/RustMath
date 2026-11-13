@@ -90,7 +90,9 @@ fn bench_modular_exp(iterations: usize) -> f64 {
     elapsed.as_secs_f64() * 1000.0 / iterations as f64
 }
 
-/// Benchmark: Primality test (Miller-Rabin) on large prime
+/// Benchmark: primality proof on a large prime. `is_prime` is a proof (Baillie-PSW, then
+/// ECPP); the first call proves 2^127 - 1, later calls hit the process cache of proven primes,
+/// so the mean is dominated by the first call for small `iterations`.
 fn bench_primality_large_prime(iterations: usize) -> f64 {
     // 2^127 - 1 (Mersenne prime)
     let n = Integer::from(2).pow(127) - Integer::from(1);

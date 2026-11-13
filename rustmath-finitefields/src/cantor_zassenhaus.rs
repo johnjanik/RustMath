@@ -56,12 +56,9 @@
 //! Preconditions: the coefficients must lie in a field. [`factor`],
 //! [`factor_squarefree`] and [`equal_degree_factorization`] check that the
 //! characteristic is a prime with `Integer::is_prime`: a `PrimeField` with
-//! the modulus-0 sentinel or a composite modulus that the test detects panics
-//! before any arithmetic. The test is a proof below
-//! psi12 = 318665857834031151167461; above that it is a strong probable-prime
-//! test to the bases 2..37, so a strong pseudoprime to all of them (psi12
-//! itself, 399165290221 * 798330580441) passes and the results are then
-//! unspecified. A [`crate::ff_poly::Gfpn`]
+//! the modulus-0 sentinel or a composite modulus panics before any
+//! arithmetic. The test is a proof for every size (Baillie-PSW and ECPP above
+//! 2^64; it panics when an ECPP proof is unresolved). A [`crate::ff_poly::Gfpn`]
 //! whose defining polynomial is reducible (not a field) is **not checked**;
 //! the results are then unspecified (the lazy certificate, the cap or the
 //! arithmetic may panic). [`squarefree_factorization`] and
@@ -134,10 +131,8 @@ fn random_poly_below_degree<F: FiniteFieldElement>(
 
 /// `Ok(())` if `Integer::is_prime` accepts the characteristic of `sample`'s
 /// field; otherwise the reason. Refuses the modulus-0 sentinel
-/// (characteristic 0) and every composite modulus below psi12 =
-/// 318665857834031151167461 (trial division below 1000, then strong
-/// Miller-Rabin to the bases 2..37, a proof below psi12). Above psi12 a strong
-/// pseudoprime to those bases, such as psi12 itself, is not detected.
+/// (characteristic 0) and every composite modulus (`is_prime` is a proof for
+/// every size; it panics when an ECPP proof is unresolved).
 fn check_prime_characteristic<F: FiniteFieldElement>(sample: &F) -> Result<(), String> {
     let c = sample.characteristic();
     if c.is_prime() {

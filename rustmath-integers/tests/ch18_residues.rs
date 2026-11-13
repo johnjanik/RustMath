@@ -619,18 +619,22 @@ fn is_quadratic_residue_prime_values() {
 }
 
 /// psi_12 = 318665857834031151167461 = 399165290221 * 798330580441 is the least strong
-/// pseudoprime to the bases 2..37 (Sorenson-Webster, Math. Comp. 86 (2017) 985-1003), so the
-/// fixed-base Miller-Rabin `is_prime` can accept it. Whatever `is_prime` says, the residue
-/// routines must never return a non-root, a false "Not a quadratic residue" or a false symbol.
+/// pseudoprime to the bases 2..37 (Sorenson-Webster, Math. Comp. 86 (2017) 985-1003). The
+/// residue routines test the modulus with Baillie-PSW (`is_probable_prime`), which rejects
+/// psi_12, so they refuse it up front; they never return a non-root, a false "Not a quadratic
+/// residue" or a false symbol. The Jacobi symbol is defined for any odd n.
 #[test]
 fn residues_modulo_strong_pseudoprime_are_honest() {
     let n = z("318665857834031151167461");
     let f = z("399165290221");
     assert_eq!(f.clone() * z("798330580441"), n);
+    // gp: isprime(318665857834031151167461) -> 0
+    assert!(!n.is_prime());
     // The Jacobi symbol is defined for any odd n: gp kronecker(399165290221, N) -> 0,
     // kronecker(43, N) -> 1, kronecker(4, N) -> 1.
     assert_eq!(f.jacobi_symbol(&n), Ok(0));
     assert_eq!(i(43).jacobi_symbol(&n), Ok(1));
+    assert_eq!(i(4).jacobi_symbol(&n), Ok(1));
 
     // gp: issquare(Mod(399165290221, N)) -> 1, so "Not a quadratic residue" would be false.
     let msg = invalid_argument_message(f.sqrt_mod_prime(&n));
@@ -640,22 +644,20 @@ fn residues_modulo_strong_pseudoprime_are_honest() {
     assert!(f.legendre_symbol(&n).is_err());
 
     // gp: issquare(Mod(43, N)) -> 0 although kronecker(43, N) = 1: no root exists, and
-    // "Not a quadratic residue" cannot be certified from the symbol, so this is an Err that
-    // names the modulus, and is_quadratic_residue_prime does not claim Ok(true).
+    // "Not a quadratic residue" cannot be certified from the symbol.
     let msg = invalid_argument_message(i(43).sqrt_mod_prime(&n));
     assert_ne!(msg, "Not a quadratic residue");
     assert!(i(43).is_quadratic_residue_prime(&n).is_err());
 
-    if n.is_prime() {
-        // Current fixed-base test: N is accepted, so the messages come from the residue code,
-        // and 4 = 2^2 gets a verified root (gp: issquare(Mod(4, N)) -> 1).
-        assert!(invalid_argument_message(f.sqrt_mod_prime(&n)).contains("not prime"));
-        assert!(invalid_argument_message(f.legendre_symbol(&n)).contains("not prime"));
-        assert!(invalid_argument_message(i(43).sqrt_mod_prime(&n)).contains("not prime"));
-        assert_root(&i(4), &n);
-    } else {
-        // A stronger primality test rejects N up front.
-        assert!(i(4).sqrt_mod_prime(&n).is_err());
+    // Refused up front for every argument (the modulus test comes first).
+    for a in [i(4), i(43), f.clone()] {
+        assert_eq!(
+            invalid_argument_message(a.sqrt_mod_prime(&n)),
+            "Modulus must be prime",
+            "sqrt_mod_prime({a}, psi_12)"
+        );
+        assert!(a.is_quadratic_residue_prime(&n).is_err(), "is_qr({a})");
+        assert!(a.legendre_symbol(&n).is_err(), "legendre({a})");
     }
 }
 
@@ -813,7 +815,7 @@ fn fast_arith_llong_pow_mod_zero_modulus() {
 
 // gcd / lcm are MAGMA Gcd / Lcm (§18.6) and return unsigned words, so they are total; add_mod and
 // mul_mod take any non-zero modulus (least non-negative residue modulo |m|, as pow_mod);
-// is_prime is the deterministic is_prime_u64.
+// is_prime is the deterministic is_prime_u64 (primality.rs).
 
 #[test]
 fn fast_arith_gcd_lcm_extremes() {
@@ -920,8 +922,13 @@ fn fast_arith_int_is_prime_near_i32_max() {
     assert!(!a32.is_prime(2_146_654_199));
     assert!(!a32.is_prime(i32::MIN));
     assert!(!a32.is_prime(-7));
-    // Integer::is_prime is the reference (fixed-base Miller-Rabin, a proof below
-    // psi_12 > 2^64, Sorenson-Webster 2017).
+    // gp: factor(2147395601) -> 13 * 165184277; factor(2^63-1) -> 7^2 * 73 * 127 * 337 * 92737
+    // * 649657; isprime(2^63-25) -> 1 (2^63-25 = 9223372036854775783)
+    assert!(!a32.is_prime(2_147_395_601));
+    assert!(!a64.is_prime(i64::MAX));
+    assert!(a64.is_prime(9_223_372_036_854_775_783));
+    // Integer::is_prime is the reference (a proof for every size; below 2^64 it is the same
+    // deterministic word test, primality.rs).
     for n in (i32::MAX - 20_000)..=i32::MAX {
         assert_eq!(
             a32.is_prime(n),

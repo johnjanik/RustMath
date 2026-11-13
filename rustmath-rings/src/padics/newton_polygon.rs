@@ -120,7 +120,7 @@ impl NewtonPolygon {
     /// Polygon of `f = sum a_i x^i` over `Q_p` from exact rational
     /// coefficients (little-endian). `a_i = 0` contributes no point.
     pub fn of_rational_polynomial(coeffs: &[Rational], p: &Integer) -> Result<Self> {
-        if p <= &Integer::one() || !p.is_prime() {
+        if p <= &Integer::one() || !rustmath_integers::prime::try_is_prime(p)? {
             return Err(MathError::InvalidArgument(
                 "NewtonPolygon: p must be prime".to_string(),
             ));

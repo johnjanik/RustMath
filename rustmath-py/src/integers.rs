@@ -125,7 +125,9 @@ impl PyInteger {
 
     // ========== Number Theory Operations ==========
 
-    /// Check if the number is prime using Miller-Rabin test
+    /// Check if the number is prime: a proof for every size (Baillie-PSW, then ECPP above
+    /// 2^64). A Rust panic (an unresolved ECPP proof) reaches Python as pyo3's
+    /// `PanicException`.
     fn is_prime(&self) -> bool {
         prime::is_prime(&self.inner)
     }

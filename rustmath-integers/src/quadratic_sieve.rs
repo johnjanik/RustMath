@@ -28,7 +28,7 @@
 //! ```
 
 use crate::Integer;
-use crate::prime::{factor_pollard_rho, is_prime};
+use crate::prime::{factor_pollard_rho, is_prime, is_probable_prime};
 use std::collections::HashMap;
 
 /// A smooth relation: x² ≡ product of primes (mod n)
@@ -414,7 +414,7 @@ fn try_dependency(
 ///
 /// # Returns
 ///
-/// A non-trivial factor of n, or None if factorization fails
+/// A non-trivial factor of n, or None if n is a probable prime (BPSW) or no factor was found
 ///
 /// # Examples
 ///
@@ -442,7 +442,7 @@ pub fn quadratic_sieve_factor(n: &Integer) -> Option<Integer> {
 ///
 /// # Returns
 ///
-/// A non-trivial factor of n, or None if factorization fails
+/// A non-trivial factor of n, or None if n is a probable prime (BPSW) or no factor was found
 pub fn quadratic_sieve_factor_with_params(
     n: &Integer,
     factor_base_size: usize,
@@ -457,7 +457,8 @@ pub fn quadratic_sieve_factor_with_params(
         return Some(Integer::from(2));
     }
 
-    if is_prime(n) {
+    // A probable prime (BPSW, exact below psi_12) has no factor to find.
+    if is_probable_prime(n) {
         return None;
     }
 
@@ -526,11 +527,12 @@ pub fn quadratic_sieve_factor_with_params(
 ///    completely by [`crate::prime::factor_pollard_rho`] and the loop ends.
 /// 3. A last cofactor passed the loop guard, so it is prime.
 ///
-/// A cofactor the sieve could not split is never pushed as a prime. Every returned factor is
-/// prime in the sense of [`is_prime`] (Miller-Rabin to the bases 2..37: a proof below
-/// psi_12 = 318665857834031151167461, Sorenson-Webster 2017). Above psi_12 a returned factor
-/// is only a strong probable prime and may be composite: psi_12 = 399165290221 * 798330580441
-/// itself is returned unsplit as `[(psi_12, 1)]`.
+/// A cofactor the sieve could not split is never pushed as a prime.
+/// Every returned factor is proven prime by [`is_prime`] (the strong tests to the bases 2..37
+/// below psi_12 = 318665857834031151167461, Sorenson-Webster 2017; Baillie-PSW and ECPP
+/// above). psi_12 = 399165290221 * 798330580441 is split. [`is_prime`] panics when the ECPP
+/// proof of a factor is unresolved (no unresolved prime up to 2048 bits in the experiments;
+/// about 1 in 16 at 3072 and 4096 bits); such a factor makes the driver panic.
 ///
 /// # Cost
 ///

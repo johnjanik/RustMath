@@ -23,7 +23,8 @@
 //!   (Newton iteration and p-adic lifting).
 //! - D. E. Knuth, *The Art of Computer Programming* vol. 2, 3rd ed., §4.6.3 (powering).
 
-use crate::fast_arith::{is_prime_u64, pow_mod_u64};
+use crate::fast_arith::pow_mod_u64;
+use crate::primality::is_prime_u64;
 use num_bigint::BigUint;
 use num_traits::{One, ToPrimitive};
 

@@ -79,7 +79,7 @@ impl EisensteinExtension {
         eisenstein_poly: &UnivariatePolynomial<Integer>,
         precision: u32,
     ) -> Result<Arc<Self>> {
-        if !prime.is_prime() {
+        if !rustmath_integers::prime::try_is_prime(&prime)? {
             return Err(MathError::InvalidArgument(
                 "EisensteinExtension: p must be prime".to_string(),
             ));

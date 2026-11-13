@@ -18,8 +18,10 @@
 //! (`Err(DivisionByZero)` for `m = 0`, least non-negative residue modulo `|m|`). `gcd` and
 //! `lcm` are MAGMA `Gcd` / `Lcm` (§18.6): non-negative, returned as unsigned words so that
 //! `gcd(i32::MIN, 0) = 2^31` and every lcm of two words fit. `is_prime` is the deterministic
-//! [`is_prime_u64`] (proven for every `u64`).
+//! [`is_prime_u64`] (proven for every `u64`). The small-prime lists and [`prime_range`] come
+//! from the segmented sieve [`crate::sieve`].
 
+use crate::primality::is_prime_u64;
 use rustmath_core::{MathError, Result};
 
 /// `base^e mod m` for `m >= 2`, `0 <= base < m` and `m <= 2^31`: every product is below
@@ -66,42 +68,6 @@ pub(crate) fn pow_mod_u64(base: u64, mut e: u64, m: u64) -> u64 {
     result as u64
 }
 
-/// Deterministic primality of a 64-bit word: trial division by the primes below 40, then the
-/// strong (Miller-Rabin) test to the twelve prime bases 2..37. No composite below
-/// psi_12 = 318665857834031151167461 > 2^64 is a strong pseudoprime to all twelve bases
-/// (J. Sorenson, J. Webster, *Strong pseudoprimes to twelve prime bases*, Math. Comp. 86
-/// (2017) 985-1003), so the answer is a proof for every `u64`.
-pub(crate) fn is_prime_u64(n: u64) -> bool {
-    const BASES: [u64; 12] = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37];
-    if n < 2 {
-        return false;
-    }
-    for p in BASES {
-        if n.is_multiple_of(p) {
-            return n == p;
-        }
-    }
-    if n < 41 * 41 {
-        return true; // no prime factor below 41 and n < 41^2
-    }
-    let r = (n - 1).trailing_zeros();
-    let d = (n - 1) >> r;
-    'bases: for a in BASES {
-        let mut x = pow_mod_u64(a, d, n);
-        if x == 1 || x == n - 1 {
-            continue;
-        }
-        for _ in 1..r {
-            x = pow_mod_u64(x, 2, n);
-            if x == n - 1 {
-                continue 'bases;
-            }
-        }
-        return false;
-    }
-    true
-}
-
 /// Euclid on magnitudes (Knuth, TAOCP vol. 2, §4.5.2 Algorithm A); `gcd(0, 0) = 0`.
 fn gcd_magnitudes(mut a: u64, mut b: u64) -> u64 {
     while b != 0 {
@@ -129,30 +95,11 @@ impl ArithInt {
         }
     }
 
-    /// Compute small primes up to n using sieve of Eratosthenes
+    /// The primes up to n (segmented sieve, [`crate::sieve::primes_up_to`]).
     fn compute_small_primes(n: usize) -> Vec<i32> {
-        if n < 2 {
-            return Vec::new();
-        }
-
-        let mut is_prime = vec![true; n + 1];
-        is_prime[0] = false;
-        is_prime[1] = false;
-
-        for i in 2..=((n as f64).sqrt() as usize) {
-            if is_prime[i] {
-                let mut j = i * i;
-                while j <= n {
-                    is_prime[j] = false;
-                    j += i;
-                }
-            }
-        }
-
-        is_prime
-            .iter()
-            .enumerate()
-            .filter_map(|(i, &prime)| if prime { Some(i as i32) } else { None })
+        crate::sieve::primes_up_to(n as u64)
+            .into_iter()
+            .map(|p| i32::try_from(p).expect("n <= 1000"))
             .collect()
     }
 
@@ -270,30 +217,11 @@ impl ArithLLong {
         }
     }
 
-    /// Compute small primes up to n using sieve of Eratosthenes
+    /// The primes up to n (segmented sieve, [`crate::sieve::primes_up_to`]).
     fn compute_small_primes(n: usize) -> Vec<i64> {
-        if n < 2 {
-            return Vec::new();
-        }
-
-        let mut is_prime = vec![true; n + 1];
-        is_prime[0] = false;
-        is_prime[1] = false;
-
-        for i in 2..=((n as f64).sqrt() as usize) {
-            if is_prime[i] {
-                let mut j = i * i;
-                while j <= n {
-                    is_prime[j] = false;
-                    j += i;
-                }
-            }
-        }
-
-        is_prime
-            .iter()
-            .enumerate()
-            .filter_map(|(i, &prime)| if prime { Some(i as i64) } else { None })
+        crate::sieve::primes_up_to(n as u64)
+            .into_iter()
+            .map(|p| i64::try_from(p).expect("n <= 10000"))
             .collect()
     }
 
@@ -393,83 +321,17 @@ impl Default for ArithLLong {
     }
 }
 
-/// Generate all primes in a range [start, end) using sieve
-///
-/// This is an optimized function for generating many primes at once.
+/// The primes p with `start <= p < end`, ascending (MAGMA `PrimesInInterval(start, end - 1)`),
+/// by the segmented sieve [`crate::sieve::primes_in_range`]: exact for every `u64` range.
 ///
 /// # Examples
 /// ```
 /// use rustmath_integers::fast_arith::prime_range;
 ///
-/// let primes = prime_range(10, 30);
-/// // Returns [11, 13, 17, 19, 23, 29]
+/// assert_eq!(prime_range(10, 30), vec![11, 13, 17, 19, 23, 29]);
 /// ```
 pub fn prime_range(start: u64, end: u64) -> Vec<u64> {
-    if start >= end || end <= 2 {
-        return Vec::new();
-    }
-
-    let actual_start = start.max(2);
-    let size = (end - actual_start) as usize;
-
-    if size == 0 {
-        return Vec::new();
-    }
-
-    // Sieve of Eratosthenes for the range
-    let mut is_prime = vec![true; size];
-
-    // Mark multiples of 2
-    let first_even = if actual_start % 2 == 0 {
-        0
-    } else {
-        1
-    };
-    for i in (first_even..size).step_by(2) {
-        is_prime[i] = false;
-    }
-
-    // Handle 2 specially if in range
-    let mut primes = Vec::new();
-    if actual_start <= 2 && 2 < end {
-        primes.push(2);
-    }
-
-    // Sieve for odd numbers
-    let sqrt_end = (end as f64).sqrt() as u64 + 1;
-    for p in (3..=sqrt_end).step_by(2) {
-        let first_multiple = if actual_start <= p {
-            p * p
-        } else {
-            let rem = actual_start % p;
-            if rem == 0 {
-                actual_start
-            } else {
-                actual_start + (p - rem)
-            }
-        };
-
-        if first_multiple >= end {
-            continue;
-        }
-
-        let start_idx = (first_multiple - actual_start) as usize;
-        for idx in (start_idx..size).step_by(p as usize) {
-            is_prime[idx] = false;
-        }
-    }
-
-    // Collect primes
-    for (i, &prime) in is_prime.iter().enumerate() {
-        if prime {
-            let n = actual_start + i as u64;
-            if n >= 2 && n != 2 && n % 2 != 0 {
-                primes.push(n);
-            }
-        }
-    }
-
-    primes
+    crate::sieve::primes_in_range(start, end)
 }
 
 #[cfg(test)]
@@ -618,34 +480,6 @@ mod tests {
     fn test_prime_range_single_prime() {
         let primes = prime_range(17, 18);
         assert_eq!(primes, vec![17]);
-    }
-
-    #[test]
-    fn test_is_prime_u64_matches_sieve() {
-        // Every n < 10^5 against the sieve (gp: #primes([0,100000]) -> 9592).
-        let primes = prime_range(0, 100_000);
-        assert_eq!(primes.len(), 9592);
-        let mut next = primes.iter().peekable();
-        for n in 0..100_000u64 {
-            let sieve = next.peek() == Some(&&n);
-            if sieve {
-                next.next();
-            }
-            assert_eq!(is_prime_u64(n), sieve, "is_prime_u64({n})");
-        }
-    }
-
-    #[test]
-    fn test_is_prime_u64_strong_pseudoprimes_and_word_edges() {
-        // gp: factor(3215031751) -> 151*751*28351 (strong pseudoprime to the bases 2, 3, 5, 7);
-        // factor(3825123056546413051) -> 149491*747451*34233211 (strong pseudoprime to the
-        // bases 2..23). Both have no factor below 41, so they reach the Miller-Rabin stage.
-        assert!(!is_prime_u64(3_215_031_751));
-        assert!(!is_prime_u64(3_825_123_056_546_413_051));
-        // gp: isprime(2^61-1) -> 1, precprime(2^64) -> 18446744073709551557, isprime(2^64-1) -> 0
-        assert!(is_prime_u64((1 << 61) - 1));
-        assert!(is_prime_u64(18_446_744_073_709_551_557));
-        assert!(!is_prime_u64(u64::MAX));
     }
 
     #[test]

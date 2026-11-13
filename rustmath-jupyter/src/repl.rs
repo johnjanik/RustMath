@@ -22,7 +22,10 @@ use rustmath_combinatorics::{
     count_derangements,
 };
 use rustmath_integers::{
-    prime::{next_prime, nth_prime, prime_pi, prime_range as primes_between},
+    prime::{
+        is_probable_prime, nth_prime, prime_pi, try_is_prime, try_next_prime,
+        try_prime_range as try_primes_between,
+    },
     crt::chinese_remainder_theorem,
 };
 use rustmath_stats::statistics::{
@@ -911,10 +914,19 @@ impl ReplContext {
                 let arg = self.eval_expr(args_str)?;
                 match arg {
                     RustMathValue::Integer(n) => {
-                        let result = n.is_prime();
+                        let result = checked_is_prime("is_prime", &n)?;
                         Ok(RustMathValue::Bool(result))
                     }
                     _ => Err(EvalError::new("TypeError", "is_prime requires an integer")),
+                }
+            }
+
+            // Probable-prime test (Baillie-PSW; MAGMA IsProbablePrime): exact below psi_12
+            "is_probable_prime" => {
+                let arg = self.eval_expr(args_str)?;
+                match arg {
+                    RustMathValue::Integer(n) => Ok(RustMathValue::Bool(is_probable_prime(&n))),
+                    _ => Err(EvalError::new("TypeError", "is_probable_prime requires an integer")),
                 }
             }
 
@@ -2677,7 +2689,10 @@ impl ReplContext {
                 }
                 match &args[0] {
                     RustMathValue::Integer(n) => {
-                        Ok(RustMathValue::Integer(next_prime(n)))
+                        check_proof_bits("next_prime", n)?;
+                        try_next_prime(n)
+                            .map(RustMathValue::Integer)
+                            .map_err(|e| EvalError::new("ValueError", format!("next_prime: {}", e)))
                     }
                     _ => Err(EvalError::new("TypeError", "next_prime requires an integer argument")),
                 }
@@ -2693,6 +2708,12 @@ impl ReplContext {
                     RustMathValue::Integer(n) => {
                         // The callee's domain (it panics for 0). No REPL limit (S6).
                         let n_usize = int_arg::<usize>("nth_prime", "n", n, 1..=usize::MAX, "")?;
+                        if n_usize as u64 > rustmath_integers::sieve::PRIME_PI_2_64 {
+                            return Err(EvalError::new("ValueError", format!(
+                                "nth_prime: n = {} exceeds pi(2^64) = {}; the n-th prime does not fit \
+                                 a u64 and is not computed",
+                                n, rustmath_integers::sieve::PRIME_PI_2_64)));
+                        }
                         Ok(RustMathValue::Integer(nth_prime(n_usize)))
                     }
                     _ => Err(EvalError::new("TypeError", "nth_prime requires an integer argument")),
@@ -2707,6 +2728,11 @@ impl ReplContext {
                 }
                 match &args[0] {
                     RustMathValue::Integer(n) => {
+                        if *n > Integer::from(u64::MAX) {
+                            return Err(EvalError::new("ValueError", format!(
+                                "prime_pi: x = {} exceeds 2^64; the sieve cannot reach it and \
+                                 sublinear counting is not implemented", n)));
+                        }
                         let count = prime_pi(n);
                         Ok(RustMathValue::Integer(Integer::from(count as u64)))
                     }
@@ -2722,7 +2748,8 @@ impl ReplContext {
                 }
                 match (&args[0], &args[1]) {
                     (RustMathValue::Integer(a), RustMathValue::Integer(b)) => {
-                        let primes = primes_between(a, b);
+                        let primes = try_primes_between(a, b)
+                            .map_err(|e| EvalError::new("ValueError", format!("primes: {}", e)))?;
                         let list: Vec<RustMathValue> = primes.into_iter()
                             .map(RustMathValue::Integer)
                             .collect();
@@ -9984,7 +10011,8 @@ Integer Functions:
   gcd(a, b)          - Greatest common divisor
   xgcd(a, b)         - Extended GCD: returns [gcd, x, y] where gcd = a*x + b*y
   lcm(a, b)          - Least common multiple
-  is_prime(n)        - Test primality
+  is_prime(n)        - Test primality (a proof; refused above 1024 bits unless n is composite)
+  is_probable_prime(n) - Baillie-PSW probable-prime test (exact below 3.19e23)
   factor(n)          - Prime factorization
   abs(n)             - Absolute value
   pow(base, exp)     - Exponentiation
@@ -10912,9 +10940,32 @@ fn check_table(cmd: &str, kind: TableKind, n: u32, k: u32) -> Result<(), EvalErr
     }
 }
 
-/// ψ12 = 318665857834031151167461, the least strong pseudoprime to the bases 2, ..., 37
-/// (Sorenson-Webster 2017): below it `rustmath_integers::prime::is_prime` is a proof.
-const SQRT_MOD_PSI12: &str = "318665857834031151167461";
+/// `is_prime`, `next_prime` and `sqrt_mod` prove primality (ECPP, rustmath-integers `ecpp`) only
+/// up to this many bits: a proof takes about 3.3 s at 1024 bits and 21 s at 1536 bits in a
+/// release build (I1 design §2.3.7, random primes), and the REPL has no time limit. A number
+/// that Baillie-PSW refutes is decided at every size (`false` is a proof).
+const PROOF_BITS: u64 = 1024;
+
+/// Refuses an argument above [`PROOF_BITS`] for a command that must prove a prime.
+fn check_proof_bits(cmd: &str, n: &Integer) -> Result<(), EvalError> {
+    if n.bits() > PROOF_BITS {
+        return Err(EvalError::new("ValueError", format!(
+            "{}: the argument has {} bits; a primality proof (ECPP) above {} bits can take \
+             minutes, so it is not attempted (is_probable_prime gives the Baillie-PSW answer)",
+            cmd, n.bits(), PROOF_BITS)));
+    }
+    Ok(())
+}
+
+/// The REPL's `is_prime`: Baillie-PSW first (a `false` is a proof at every size), then the
+/// proof (`try_is_prime`) up to [`PROOF_BITS`]; an unresolved proof is a ValueError.
+fn checked_is_prime(cmd: &str, n: &Integer) -> Result<bool, EvalError> {
+    if !is_probable_prime(n) {
+        return Ok(false);
+    }
+    check_proof_bits(cmd, n)?;
+    try_is_prime(n).map_err(|e| EvalError::new("ValueError", format!("{}: {}", cmd, e)))
+}
 
 /// At most this many roots are listed by `sqrt_mod`; above it only their number is printed.
 const SQRT_MOD_LIST_LIMIT: u64 = 16;
@@ -10933,14 +10984,17 @@ const SQRT_MOD_LIST_LIMIT: u64 = 16;
 ///
 /// Algorithm:
 /// - n <= 0 is an error; n = 1 gives the single root 0 (Z/1Z = {0}).
-/// - Prime n (`is_prime`): if (b/n) = -1 there is no root (the Jacobi symbol proves it for
-///   every odd n); otherwise `Integer::sqrt_mod_prime` gives a root r, squared back, and the
-///   roots are {r, n - r} (H. Cohen, GTM 138, Algorithms 1.4.10 and 1.5.1). This repeats the
-///   k = 1 decision of `IntegerMod::sqrt` without its trial-division factoring of n, which
-///   would take minutes near 1e18 and never finish for 2^127 - 1; a REPL test checks that the
-///   two agree for every n <= 60. For n >= ψ12, `is_prime` is only a probable-prime test, so the
-///   text says so; a Tonelli-Shanks failure proves n composite and is reported as an error.
-/// - Composite n: `IntegerMod::sqrt`, `num_sqrts` and `all_sqrts` (CRT over the prime-power
+/// - Prime n (`try_is_prime`, a proof, up to [`PROOF_BITS`] bits): if (b/n) = -1 there is no
+///   root (the Jacobi symbol proves it for every odd n); otherwise
+///   `Integer::try_sqrt_mod_prime` gives a root r, squared back, and the roots are {r, n - r}
+///   (H. Cohen, GTM 138, Algorithms 1.4.10 and 1.5.1). This repeats the k = 1 decision of
+///   `IntegerMod::sqrt` without its trial-division factoring of n, which would take minutes
+///   near 1e18 and never finish for 2^127 - 1; a REPL test checks that the two agree for every
+///   n <= 60. A Baillie-PSW probable prime above [`PROOF_BITS`] bits is not proven: the roots
+///   are computed the same way and the text says that the list is complete if n is prime. An
+///   unresolved proof is a ValueError.
+/// - Composite n: for odd n with Jacobi symbol (b/n) = -1 there is no root (a proof, and no
+///   factoring is needed). Otherwise `IntegerMod::sqrt`, `num_sqrts` and `all_sqrts` (CRT over the prime-power
 ///   factors; `None` is a proof). They factor n by trial division, each call again (up to three
 ///   times here). A composite n with a large prime cofactor is therefore out of reach: for
 ///   n = 2^127 + 1 = 3 · 56713727820156410577229101238628035243 trial division would run to
@@ -10961,18 +11015,28 @@ fn sqrt_mod_report(a: &Integer, n: &Integer) -> Result<String, EvalError> {
         roots.iter().map(|r| r.to_string()).collect::<Vec<_>>().join(", ")
     };
 
-    if rustmath_integers::prime::is_prime(n) {
+    let probable = is_probable_prime(n);
+    let proven = probable && n.bits() <= PROOF_BITS;
+    let is_prime = if proven {
+        try_is_prime(n).map_err(|e| EvalError::new("ValueError", format!("sqrt_mod: {}", e)))?
+    } else {
+        probable
+    };
+    if is_prime {
         let two = Integer::from(2);
         let roots: Vec<Integer> = if b.is_zero() || *n == two {
             vec![b.clone()]
         } else if b.kronecker_symbol(n) == -1 {
             return Ok(format!("no square root: {} is not a square mod {}", b, n));
         } else {
-            match b.sqrt_mod_prime(n) {
-                Ok(r) => {
+            match b.try_sqrt_mod_prime(n) {
+                Ok(Some(r)) => {
                     let mut v = vec![r.clone(), n.clone() - r];
                     v.sort();
                     v
+                }
+                Ok(None) => {
+                    return Ok(format!("no square root: {} is not a square mod {}", b, n));
                 }
                 Err(e) => {
                     return Err(EvalError::new(
@@ -10987,18 +11051,21 @@ fn sqrt_mod_report(a: &Integer, n: &Integer) -> Result<String, EvalError> {
             }
         };
         let mut text = format!("{}; square roots of {} mod {}: [{}]", roots[0], b, n, join(&roots));
-        let psi12 = Integer::from_decimal_str(SQRT_MOD_PSI12).expect("decimal literal");
-        if *n >= psi12 {
+        if !proven {
             text.push_str(&format!(
-                " (n is only a probable prime: is_prime is not a proof above {}; \
-                 the list is complete if n is prime)",
-                SQRT_MOD_PSI12
+                " (n is only a probable prime: its primality proof is not attempted above {} \
+                 bits; the list is complete if n is prime)",
+                PROOF_BITS
             ));
         }
         return Ok(text);
     }
 
-    // Composite n: IntegerMod handles any modulus (trial-division factoring, see above).
+    // Composite n. A Jacobi symbol -1 proves that b is not a square mod n (no factoring).
+    if n.is_odd() && b.kronecker_symbol(n) == -1 {
+        return Ok(format!("no square root: {} is not a square mod {}", b, n));
+    }
+    // IntegerMod handles any modulus (trial-division factoring, see above).
     let x = IntegerMod::new(b.clone(), n.clone())
         .map_err(|e| EvalError::new("ValueError", format!("sqrt_mod: {}", e)))?;
     let r = match x.sqrt() {
@@ -11743,31 +11810,54 @@ mod tests {
     }
 
     #[test]
-    fn test_sqrt_mod_probable_prime_caveat_and_refusal() {
+    fn test_sqrt_mod_large_prime_and_strong_pseudoprime() {
         let mut ctx = ReplContext::new();
-        // 2^127 - 1 is prime (PARI isprime = 1) but above psi12: the caveat is printed.
+        // 2^127 - 1 is prime (PARI isprime = 1) and proven now: no caveat.
         let t = sqrt_mod_text(&mut ctx, "sqrt_mod(2, 170141183460469231731687303715884105727)");
-        assert!(
-            t.starts_with("\"18446744073709551616; square roots of 2 mod 170141183460469231731687303715884105727: [18446744073709551616, 170141183460469231713240559642174554111]"),
-            "{t}"
+        assert_eq!(
+            t,
+            quoted("18446744073709551616; square roots of 2 mod 170141183460469231731687303715884105727: [18446744073709551616, 170141183460469231713240559642174554111]")
         );
-        assert!(t.contains("probable prime"), "{t}");
-        // psi12 passes is_prime. kronecker(41, psi12) = -1: a proof.
+        // psi12 is composite (PARI isprime = 0, factor = 399165290221 * 798330580441), and
+        // kronecker(41, psi12) = -1: a proof without factoring.
         assert_eq!(
             sqrt_mod_text(&mut ctx, "sqrt_mod(41, 318665857834031151167461)"),
             quoted("no square root: 41 is not a square mod 318665857834031151167461")
         );
-        // 4 has four roots mod psi12 (PARI), so the two listed ones carry the caveat.
-        let t = sqrt_mod_text(&mut ctx, "sqrt_mod(4, 318665857834031151167461)");
-        assert!(
-            t.starts_with("\"2; square roots of 4 mod 318665857834031151167461: [2, 318665857834031151167459]"),
-            "{t}"
-        );
+        assert_eq!(ctx.eval("is_prime(318665857834031151167461)").unwrap().text, "False");
+        // The old rows sqrt_mod(4, psi12) and sqrt_mod(73, psi12) took the prime path and
+        // listed two of the four roots of 4 with a caveat (PARI: 4 has four roots mod psi12).
+        // On the composite path they need psi12 factored, which IntegerMod does by trial
+        // division (about 2e11 divisions), so they are left out here.
+        //
+        // 2^1279 - 1 is a Mersenne prime (PARI isprime = 1) above the REPL's proof size: the
+        // roots are computed and squared back, the text says the proof was not attempted.
+        let t = sqrt_mod_text(&mut ctx, "sqrt_mod(4, 2^1279 - 1)");
+        assert!(t.starts_with("\"2; square roots of 4 mod "), "{t}");
         assert!(t.contains("probable prime"), "{t}");
-        // 73 is a square mod psi12 (PARI issquare = 1); Tonelli-Shanks proves psi12 composite.
-        let e = sqrt_mod_err(&mut ctx, "sqrt_mod(73, 318665857834031151167461)");
-        assert_eq!(e.name, "ValueError");
-        assert!(e.message.contains("composite"), "{}", e.message);
+    }
+
+    /// The primality commands after the proving `is_prime` (gp: isprime(2^127-1) = 1,
+    /// isprime(318665857834031151167461) = 0, nextprime(2) = 2, isprime(2^1279-1) = 1,
+    /// 17 | 2^1100 + 1 because 1100 = 4 · 275).
+    #[test]
+    fn test_prime_commands_with_proofs() {
+        let mut ctx = ReplContext::new();
+        let text = |ctx: &mut ReplContext, cmd: &str| {
+            ctx.eval(cmd).unwrap_or_else(|e| panic!("{cmd}: {} {}", e.name, e.message)).text
+        };
+        assert_eq!(text(&mut ctx, "is_prime(2^127 - 1)"), "True");
+        assert_eq!(text(&mut ctx, "is_prime(318665857834031151167461)"), "False");
+        assert_eq!(text(&mut ctx, "is_probable_prime(318665857834031151167461)"), "False");
+        assert_eq!(text(&mut ctx, "is_probable_prime(2^1279 - 1)"), "True");
+        assert_eq!(text(&mut ctx, "is_prime(2^1100 + 1)"), "False");
+        assert_eq!(text(&mut ctx, "next_prime(1)"), "2");
+        assert_eq!(text(&mut ctx, "next_prime(0)"), "2");
+        for cmd in ["is_prime(2^1279 - 1)", "next_prime(2^1100)", "prime_pi(2^70)", "nth_prime(10^18)"] {
+            let e = sqrt_mod_err(&mut ctx, cmd);
+            assert_eq!(e.name, "ValueError", "{cmd}: {}", e.message);
+        }
+        assert!(sqrt_mod_err(&mut ctx, "is_prime(2^1279 - 1)").message.contains("is_probable_prime"));
     }
 
     #[test]

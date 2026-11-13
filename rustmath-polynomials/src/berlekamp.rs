@@ -69,9 +69,11 @@ fn internal(what: &str) -> MathError {
     ))
 }
 
-/// `Err(InvalidArgument)` unless `p >= 2` passes [`Integer::is_prime`].
+/// `Err(InvalidArgument)` unless `p >= 2` is proven prime by
+/// [`rustmath_integers::prime::try_is_prime`]; `Err(NotSupported)` when p is a probable prime
+/// whose ECPP proof is unresolved.
 fn check_prime(p: &Integer) -> Result<()> {
-    if *p < Integer::from(2i64) || !p.is_prime() {
+    if *p < Integer::from(2i64) || !rustmath_integers::prime::try_is_prime(p)? {
         return Err(MathError::InvalidArgument(format!(
             "berlekamp: the modulus {p} is not a prime"
         )));
@@ -257,13 +259,10 @@ fn prepare(f: &[Integer], p: &Integer, who: &str) -> Result<Vec<Integer>> {
 ///
 /// * `f` is read modulo p (any integer coefficients; a leading coefficient divisible by p
 ///   drops out).
-/// * `p < 2` or `!p.is_prime()`: `Err(InvalidArgument)`. [`Integer::is_prime`] is
-///   Miller-Rabin to the bases 2..37, a proof of primality only below
-///   318665857834031151167461 (about 3.19e23, Sorenson-Webster 2017). Above that bound `p`
-///   is a probable prime, and for a composite `p` that passes the result is unspecified:
-///   `Err` if a non-invertible leading coefficient or a failed internal check is met,
-///   otherwise a value computed in Z/pZ that is not a factorization over a field. Callers
-///   that need a guarantee there must certify `p` first.
+/// * `p < 2` or p not prime: `Err(InvalidArgument)`. Primality is
+///   [`rustmath_integers::prime::try_is_prime`], a proof for every size (Baillie-PSW and ECPP
+///   above 2^64, cached per process); a probable prime whose ECPP proof is unresolved gives
+///   `Err(NotSupported)`.
 /// * `f ≡ 0 (mod p)`: `Err(InvalidArgument)` (no factorization of 0; PARI returns `[0, 1]`).
 /// * `f ≡ c ≠ 0`: `Ok((c, vec![]))`.
 /// * Otherwise, for prime `p`, the complete factorization. The number of irreducible
@@ -334,10 +333,8 @@ pub fn q_matrix(f: &[Integer], p: &Integer) -> Result<Vec<Vec<Integer>>> {
 /// * `f` is read modulo p, like [`factor`].
 /// * `f ≡ 0` and nonzero constants: `Ok(false)` (0 and units are not irreducible; PARI
 ///   `polisirreducible(Mod(0,5)) = polisirreducible(Mod(2,5)) = 0`). Degree 1: `Ok(true)`.
-/// * `p < 2` or `!p.is_prime()`: `Err(InvalidArgument)`. As for [`factor`], primality is
-///   proven only below 318665857834031151167461; for a composite modulus above that bound
-///   that passes the test the answer is unspecified (`Err` or a value that means nothing,
-///   since Z/pZ is then not a field). Callers that need a guarantee there must certify `p`.
+/// * `p < 2` or p not prime: `Err(InvalidArgument)`; an unresolved primality proof:
+///   `Err(NotSupported)` (as for [`factor`], `try_is_prime` is a proof for every size).
 pub fn is_irreducible(f: &[Integer], p: &Integer) -> Result<bool> {
     check_prime(p)?;
     let f = reduce(f, p);

@@ -38,9 +38,13 @@
 //! - E. Lucas, *Théorie des fonctions numériques simplement périodiques*, Amer. J. Math. 1
 //!   (1878) 184-240, 289-321 (Lucas' theorem); Graham-Knuth-Patashnik, *Concrete
 //!   Mathematics*, eq. (5.14) (negating the upper index).
-//! - J. Sorenson, J. Webster, *Strong pseudoprimes to twelve prime bases*, Math. Comp. 86
-//!   (2017) 985-1003: the fixed-base Miller-Rabin test in [`crate::prime::is_prime`] (bases
-//!   2..37) is a proof of primality only below psi_12 = 318665857834031151167461 (about 3.19e23).
+//! - Primality: [`crate::prime::is_prime`] is a proof for every size (the twelve strong tests
+//!   2..37 below psi_12 = 318665857834031151167461, J. Sorenson, J. Webster, *Strong
+//!   pseudoprimes to twelve prime bases*, Math. Comp. 86 (2017) 985-1003; Baillie-PSW and the
+//!   Atkin-Morain ECPP above it, [`crate::ecpp`]). The residue functions (§18.7 "a fast
+//!   probabilistic primality test is applied") use [`crate::prime::is_probable_prime`]
+//!   (Baillie-PSW, exact below psi_12), because their answers check themselves; `binomial_mod`
+//!   needs a proven prime modulus and uses [`crate::prime::try_is_prime`].
 //!
 //! Note on `%`: the `Rem` impls (and `EuclideanDomain::div_rem`) truncate toward zero, so the
 //! remainder has the sign of the dividend. Every residue computation in this file reduces with
@@ -742,18 +746,20 @@ impl Integer {
     /// Computed as [`Integer::kronecker_symbol`] ([Coh93] Alg. 1.4.10, O(log^2 p)).
     ///
     /// Errors:
-    /// - p <= 2 or p not accepted by [`crate::prime::is_prime`]: `InvalidArgument`.
+    /// - p <= 2 or p not accepted by [`crate::prime::is_probable_prime`]: `InvalidArgument`.
     /// - The symbol is 0 although p does not divide self: this proves p composite
     ///   (gcd(self, p) is a proper factor), so `InvalidArgument("... modulus is not prime ...")`
     ///   is returned instead of a 0 that would claim p | self.
     ///
-    /// Primality, as in MAGMA, is a fast test: `is_prime` (Miller-Rabin to the bases 2..37) is a
-    /// proof only below 318665857834031151167461 (Sorenson-Webster 2017). Above it a strong
-    /// pseudoprime p is accepted and the value returned is the Jacobi symbol (self/p).
+    /// Primality, as in MAGMA ("a fast probabilistic primality test is applied"), is the
+    /// Baillie-PSW probable-prime test: exact below psi_12 = 318665857834031151167461, and no
+    /// BPSW pseudoprime is known above it. For a BPSW pseudoprime p (if one exists) the value
+    /// returned is the Jacobi symbol (self/p), which is not the Legendre symbol of a prime. A -1
+    /// is a proof of non-residuosity for any odd p; a 1 is not.
     pub fn legendre_symbol(&self, p: &Self) -> Result<i8> {
-        use crate::prime::is_prime;
+        use crate::prime::is_probable_prime;
 
-        if *p <= Integer::from(2) || !is_prime(p) {
+        if *p <= Integer::from(2) || !is_probable_prime(p) {
             return Err(MathError::InvalidArgument(
                 "Second argument must be an odd prime".to_string(),
             ));
@@ -865,10 +871,12 @@ impl Integer {
     /// - `Ok(true)` is returned only after [`Integer::sqrt_mod_prime`] produced a verified root.
     ///
     /// Errors (`InvalidArgument`):
-    /// - p not accepted by [`crate::prime::is_prime`] ("Modulus must be prime").
+    /// - p not accepted by [`crate::prime::is_probable_prime`] ("Modulus must be prime";
+    ///   Baillie-PSW, exact below psi_12 = 318665857834031151167461, no BPSW pseudoprime is
+    ///   known).
     /// - (self/p) = 0 with p not dividing self, which proves p composite.
-    /// - p is a strong pseudoprime (above 318665857834031151167461, Sorenson-Webster 2017) and
-    ///   the root computation failed (a bounded search ran out or the root check failed).
+    /// - p is a BPSW pseudoprime and the root computation failed (a bounded search ran out or
+    ///   the root check failed), which proves p composite.
     ///
     /// # Examples
     ///
@@ -882,9 +890,9 @@ impl Integer {
     /// assert!(!Integer::from(-1).is_quadratic_residue_prime(&Integer::from(7)).unwrap());
     /// ```
     pub fn is_quadratic_residue_prime(&self, p: &Self) -> Result<bool> {
-        use crate::prime::is_prime;
+        use crate::prime::is_probable_prime;
 
-        if !is_prime(p) {
+        if !is_probable_prime(p) {
             return Err(MathError::InvalidArgument(
                 "Modulus must be prime".to_string(),
             ));
@@ -909,12 +917,13 @@ impl Integer {
     ///
     /// # Errors (`InvalidArgument`)
     ///
-    /// - p not accepted by [`crate::prime::is_prime`]: "Modulus must be prime".
+    /// - p not accepted by [`crate::prime::is_probable_prime`]: "Modulus must be prime"
+    ///   (Baillie-PSW, exact below psi_12 = 318665857834031151167461, no BPSW pseudoprime is
+    ///   known). A caller that has already proved p prime uses
+    ///   [`Integer::try_sqrt_mod_prime`], which runs no primality test.
     /// - (a/p) = -1: "Not a quadratic residue".
     /// - (a/p) = 0 with a ≠ 0, a bounded Tonelli-Shanks search runs out, or the final check
-    ///   fails: "sqrt_mod_prime: modulus is not prime (...)". Each proves p composite;
-    ///   `is_prime` can accept strong pseudoprimes above 318665857834031151167461
-    ///   (Sorenson-Webster 2017).
+    ///   fails: "sqrt_mod_prime: modulus is not prime (...)". Each proves p composite.
     ///
     /// # Examples
     ///
@@ -930,9 +939,9 @@ impl Integer {
     /// assert!(Integer::from(-1).sqrt_mod_prime(&Integer::from(7)).is_err());
     /// ```
     pub fn sqrt_mod_prime(&self, p: &Self) -> Result<Self> {
-        use crate::prime::is_prime;
+        use crate::prime::is_probable_prime;
 
-        if !is_prime(p) {
+        if !is_probable_prime(p) {
             return Err(MathError::InvalidArgument(
                 "Modulus must be prime".to_string(),
             ));
@@ -943,6 +952,42 @@ impl Integer {
                 "Not a quadratic residue".to_string(),
             )),
         }
+    }
+
+    /// Square root modulo p without testing p for primality, for callers that already proved
+    /// p prime (MAGMA `Modsqrt`, Handbook ch. 18 §18.12.1).
+    ///
+    /// Precondition: p is prime. `Ok(Some(r))`: 0 <= r < p and r^2 ≡ self (mod p), checked
+    /// before it is returned. `Ok(None)`: the Jacobi symbol (self/p) is -1, a proof that self is
+    /// not a square mod p (for any odd p). `Err(InvalidArgument)`: p < 2, p even and > 2, p a
+    /// perfect square (checked first), or the computation proved p composite (gcd(self, p) > 1
+    /// with p not dividing self, the Tonelli-Shanks order bound ran out, or the root did not
+    /// square back). For a composite p that is not a square the call still ends: a quadratic
+    /// non-residue modulo p (Jacobi symbol -1) exists below p, and the search stops at the first
+    /// one; there is no time bound beyond that for composite p. (For a square p every Jacobi
+    /// symbol is 0 or 1, so that search would run to p; hence the square check.)
+    ///
+    /// Algorithm: [Coh93] Algorithm 1.5.1 (Tonelli-Shanks), a^((p+1)/4) for p ≡ 3 (mod 4).
+    pub fn try_sqrt_mod_prime(&self, p: &Self) -> Result<Option<Self>> {
+        let pv = &p.value;
+        let two = BigInt::from(2u32);
+        if *pv < two {
+            return Err(MathError::InvalidArgument(format!(
+                "try_sqrt_mod_prime: p = {p} is below 2"
+            )));
+        }
+        if pv.is_even() && *pv != two {
+            return Err(MathError::InvalidArgument(format!(
+                "try_sqrt_mod_prime: p = {p} is even and not 2"
+            )));
+        }
+        let r = pv.sqrt();
+        if &r * &r == *pv {
+            return Err(MathError::InvalidArgument(format!(
+                "try_sqrt_mod_prime: p = {p} is a perfect square"
+            )));
+        }
+        Ok(sqrt_mod_prime_checked(&self.value, pv)?.map(Integer::new))
     }
 
     /// Get all quadratic residues modulo a prime p
@@ -956,9 +1001,9 @@ impl Integer {
     /// // Returns [0, 1, 2, 4] since 0²=0, 1²=1, 2²=4, 3²=2 (mod 7)
     /// ```
     pub fn quadratic_residues(p: &Self) -> Vec<Self> {
-        use crate::prime::is_prime;
+        use crate::prime::is_probable_prime;
 
-        if !is_prime(p) || *p <= Integer::one() {
+        if !is_probable_prime(p) || *p <= Integer::one() {
             return vec![];
         }
 
@@ -1024,7 +1069,10 @@ impl Integer {
         self.mod_pow(exp, modulus)
     }
 
-    /// Check if this number is prime using Miller-Rabin primality test
+    /// MAGMA `IsPrime(n)` (`Proof := true`): [`crate::prime::is_prime`], a proof for every size
+    /// (the deterministic word test below 2^64, the twelve strong tests below psi_12, then
+    /// Baillie-PSW and ECPP). It panics when the ECPP proof of a probable prime is unresolved
+    /// (see [`crate::prime::try_is_prime`] for the rates and the `Result` form).
     pub fn is_prime(&self) -> bool {
         use crate::prime::is_prime;
         is_prime(self)
@@ -1039,19 +1087,16 @@ impl Integer {
     /// - Otherwise Lucas' theorem on the base-p digits (n_i, k_i): C(n, k) ≡ prod C(n_i, k_i),
     ///   each factor computed as prod_{i<k'} (n_i - i) / k'! mod p with k' = min(k_i, n_i - k_i).
     ///
-    /// Errors: p not accepted by [`crate::prime::is_prime`] (`InvalidArgument`); a Lucas digit
-    /// k' that does not fit in a `u64` (only possible for p > 2^64) gives `NotSupported`.
+    /// Errors: p proven not prime by [`crate::prime::try_is_prime`] (`InvalidArgument`); p a
+    /// probable prime whose ECPP proof is unresolved (`NotSupported`, from `try_is_prime`); a
+    /// Lucas digit k' that does not fit in a `u64` (only possible for p > 2^64) gives
+    /// `NotSupported`.
     ///
-    /// Primality, as in MAGMA, is a fast test: `is_prime` (Miller-Rabin to the bases 2..37) is a
-    /// proof only below 318665857834031151167461 (Sorenson-Webster 2017). Above it a strong
-    /// pseudoprime p is accepted, and Lucas' theorem does not hold for a composite modulus: the
-    /// value returned is then not C(n, k) mod p in general (or `Err(NotInvertible)` when a
-    /// digit factorial k'! shares a factor with p). Callers that need a guarantee above that
-    /// bound must certify p first.
+    /// Lucas' theorem does not hold for a composite modulus, so a probable prime is not enough:
+    /// p is proven prime first (a proof for every size; above psi_12 one ECPP proof per process
+    /// and prime, then cached).
     pub fn binomial_mod(&self, k: &Self, p: &Self) -> Result<Self> {
-        use crate::prime::is_prime;
-
-        if !is_prime(p) {
+        if !crate::prime::try_is_prime(p)? {
             return Err(MathError::InvalidArgument(
                 "Modulus must be prime".to_string(),
             ));
@@ -1137,7 +1182,7 @@ fn mod_pow_nonneg(base: &BigInt, exp: &BigInt, m: &BigInt) -> BigInt {
 /// (a/-1); then the binary Jacobi loop with b odd and positive. The reciprocity step is also
 /// valid on the first pass, where a may be negative and odd:
 /// (a/b) = (-1)^(((a-1)/2)((b-1)/2)) (b/|a|), where a ≡ 3 (mod 4) is tested with `mod_floor`.
-fn kronecker_bigint(a: &BigInt, b: &BigInt) -> i8 {
+pub(crate) fn kronecker_bigint(a: &BigInt, b: &BigInt) -> i8 {
     if b.is_zero() {
         return if a.abs().is_one() { 1 } else { 0 };
     }
@@ -1195,15 +1240,16 @@ fn kronecker_bigint(a: &BigInt, b: &BigInt) -> i8 {
     }
 }
 
-/// Square root of `a` modulo `p`, where `p` is odd or 2 and has already passed
-/// [`crate::prime::is_prime`]. Returns `Ok(Some(r))` with 0 <= r < p and r^2 ≡ a (mod p),
+/// Square root of `a` modulo `p`, where `p` is 2 or an odd non-square (a probable prime in
+/// every caller: [`crate::prime::is_probable_prime`], a proven prime, or a BPSW probable prime
+/// inside the ECPP prover). Returns `Ok(Some(r))` with 0 <= r < p and r^2 ≡ a (mod p),
 /// `Ok(None)` when (a/p) = -1 (a proven non-square), and `Err` when the computation proves p
 /// composite.
 ///
 /// [Coh93] Algorithm 1.5.1 (Tonelli-Shanks) for p ≡ 1 (mod 4), a^((p+1)/4) for p ≡ 3 (mod 4).
 /// Both bounded searches (least non-residue n, least m with b^(2^m) = 1) end in `Err` when they
 /// run out, which can happen only for composite p, never in a decision.
-fn sqrt_mod_prime_checked(a: &BigInt, p: &BigInt) -> Result<Option<BigInt>> {
+pub(crate) fn sqrt_mod_prime_checked(a: &BigInt, p: &BigInt) -> Result<Option<BigInt>> {
     let not_prime = |why: &str| -> Result<Option<BigInt>> {
         Err(MathError::InvalidArgument(format!(
             "sqrt_mod_prime: modulus is not prime ({why})"
@@ -1870,6 +1916,32 @@ mod tests {
 
         // σ₂(6) = 1² + 2² + 3² + 6² = 1 + 4 + 9 + 36 = 50
         assert_eq!(Integer::from(6).sigma(2).unwrap(), Integer::from(50));
+    }
+
+    /// `try_sqrt_mod_prime` runs no primality test but refuses squares first (review 1 m5: for
+    /// a square p every Jacobi symbol is 0 or 1, so the non-residue search would run to p).
+    /// gp: isprime(1000003) = 1, kronecker(2, 15) = 1, Mod(2, 15)^4 = 1 (15 = 3 mod 4, so the
+    /// candidate root 2^((15+1)/4) = 1 does not square back to 2).
+    #[test]
+    fn try_sqrt_mod_prime_refuses_squares() {
+        let start = std::time::Instant::now();
+        let sq = Integer::from(1_000_003u32).pow(2);
+        assert!(Integer::from(2).try_sqrt_mod_prime(&sq).is_err());
+        let m61 = Integer::from((1u64 << 61) - 1);
+        assert!(Integer::from(3).try_sqrt_mod_prime(&(m61.clone() * m61)).is_err());
+        assert!(start.elapsed().as_secs() < 5, "the square check comes first");
+        assert_eq!(
+            Integer::from(4).try_sqrt_mod_prime(&Integer::from(7)),
+            Ok(Some(Integer::from(2)))
+        );
+        assert_eq!(Integer::from(3).try_sqrt_mod_prime(&Integer::from(7)), Ok(None));
+        assert!(Integer::from(2).try_sqrt_mod_prime(&Integer::from(15)).is_err());
+        assert_eq!(
+            Integer::from(5).try_sqrt_mod_prime(&Integer::from(2)),
+            Ok(Some(Integer::one()))
+        );
+        assert!(Integer::from(5).try_sqrt_mod_prime(&Integer::from(1)).is_err());
+        assert!(Integer::from(5).try_sqrt_mod_prime(&Integer::from(10)).is_err());
     }
 
     #[test]

@@ -1,7 +1,30 @@
-//! Prime number algorithms
+//! Prime numbers (MAGMA Handbook ch. 18 §18.9, "Primes and Primality Testing"; digest
+//! `rustmath-lava/docs/Chapter_18_Ring_of_Integers.md`).
+//!
+//! - [`is_prime`] / [`try_is_prime`]: MAGMA `IsPrime(n)` (`Proof := true`), a proof for every
+//!   size: the deterministic word test below 2^64, the twelve strong tests 2..37 below
+//!   psi_12 = 318665857834031151167461 (Sorenson-Webster 2017), then Baillie-PSW and the
+//!   Atkin-Morain ECPP prover ([`crate::ecpp`], [AM93]) with a verified PARI-compatible
+//!   certificate ([`prove_primality`], [`EcppCertificate`]).
+//! - [`is_probable_prime`]: MAGMA `IsProbablePrime(n)` / `IsPrime(n: Proof := false)`
+//!   (Baillie-PSW, exact below psi_12; [`crate::primality`]).
+//! - [`next_prime`], [`previous_prime`], [`prime_range`], [`nth_prime`], [`prime_pi`],
+//!   [`primes_first_n`]: §18.9.2 over the segmented sieve [`crate::sieve`] below 2^64; above
+//!   2^64 the candidates are pre-sieved by small primes and the probable primes are proven.
+//! - The factorization drivers (§18.10) prove every factor they return with [`is_prime`].
 
+use crate::ecpp::ProverParams;
+use crate::primality::{batches_below_1000, bpsw, twelve_base_witness, PSI_12};
 use crate::Integer;
-use rustmath_core::NumericConversion;
+use num_bigint::BigInt;
+use num_traits::ToPrimitive;
+use rustmath_core::{MathError, NumericConversion, Result};
+use std::collections::VecDeque;
+use std::ops::ControlFlow;
+use std::sync::{Mutex, PoisonError};
+
+pub use crate::ecpp::{prove_primality, EcppCertificate, EcppStep, Primality};
+pub use crate::primality::{is_prime_u64, is_probable_prime, NotPrimeWitness};
 
 /// Check if a number is prime using trial division (for small numbers)
 pub fn is_prime_trial_division(n: &Integer) -> bool {
@@ -28,7 +51,17 @@ pub fn is_prime_trial_division(n: &Integer) -> bool {
     true
 }
 
-/// Miller-Rabin primality test
+/// MAGMA `IsProbablePrime(n: Bases := rounds)` with the bases fixed to the first
+/// max(rounds, 1) primes 2, 3, 5, ... (at most the 6542 primes below 2^16), each used once, and
+/// only those below n: n is composite at the first base to which it is not a strong probable
+/// prime (Miller-Rabin, [Jae93] G. Jaeschke, *On strong pseudoprimes to several bases*, Math.
+/// Comp. 61 (1993) 915-926).
+///
+/// `false` is always a proof. With rounds >= 12 the answer is a proof for
+/// n < psi_12 = 318665857834031151167461 (Sorenson-Webster 2017); with fewer bases more strong
+/// pseudoprimes pass (3215031751 = 151 · 751 · 28351 passes the four bases 2, 3, 5, 7). MAGMA
+/// draws random bases; these are fixed, so the result is reproducible. For a probable-prime test
+/// above psi_12 use [`is_probable_prime`] (Baillie-PSW), for a proof [`is_prime`].
 pub fn is_prime_miller_rabin(n: &Integer, rounds: u32) -> bool {
     if *n <= Integer::one() {
         return false;
@@ -39,65 +72,106 @@ pub fn is_prime_miller_rabin(n: &Integer, rounds: u32) -> bool {
     if n.is_even() {
         return false;
     }
-
-    // Write n-1 as d * 2^r
-    let mut d = n.clone() - Integer::one();
-    let mut r = 0u32;
-
-    while d.is_even() {
-        d = d / Integer::from(2);
-        r += 1;
-    }
-
-    // Witness loop
-    let n_minus_one = n.clone() - Integer::one();
-
-    for _ in 0..rounds {
-        // In a real implementation, we'd use random witnesses
-        // For now, use deterministic witnesses
-        let witnesses = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37];
-
-        for &a_val in &witnesses {
-            let a = Integer::from(a_val);
-            if a >= *n {
-                continue;
-            }
-
-            let mut x = a.mod_pow(&d, n).unwrap();
-
-            if x.is_one() || x == n_minus_one {
-                continue;
-            }
-
-            let mut is_composite = true;
-            for _ in 0..r - 1 {
-                x = x.mod_pow(&Integer::from(2), n).unwrap();
-                if x == n_minus_one {
-                    is_composite = false;
-                    break;
-                }
-            }
-
-            if is_composite {
-                return false;
-            }
-        }
-    }
-
-    true
+    let v = n.as_bigint();
+    let count = (rounds.max(1) as usize).min(crate::sieve::small_primes().len());
+    crate::sieve::small_primes()[..count]
+        .iter()
+        .map(|&a| BigInt::from(a))
+        .take_while(|a| a < v)
+        .all(|a| crate::primality::strong_probable_prime(v, &a))
 }
 
-/// Check if a number is prime (combines methods)
-pub fn is_prime(n: &Integer) -> bool {
-    // Use trial division for small numbers
-    if let Some(n_small) = n.to_u64() {
-        if n_small < 1000 {
-            return is_prime_trial_division(n);
-        }
-    }
+/// Primes >= psi_12 whose ECPP certificate `verify` accepted, so that repeated contract checks
+/// on one large prime cost one proof per process. At most 64 entries, oldest dropped first. It
+/// holds only what was proven, so it cannot change an answer.
+static PROVEN_PRIMES: Mutex<VecDeque<Integer>> = Mutex::new(VecDeque::new());
+const PROVEN_PRIMES_CAP: usize = 64;
 
-    // Use Miller-Rabin for larger numbers
-    is_prime_miller_rabin(n, 20)
+fn proven_cache_contains(n: &Integer) -> bool {
+    PROVEN_PRIMES
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .contains(n)
+}
+
+fn proven_cache_insert(n: &Integer) {
+    let mut cache = PROVEN_PRIMES.lock().unwrap_or_else(PoisonError::into_inner);
+    if !cache.contains(n) {
+        if cache.len() >= PROVEN_PRIMES_CAP {
+            cache.pop_front();
+        }
+        cache.push_back(n.clone());
+    }
+}
+
+/// [`try_is_prime`] with explicit ECPP limits (tests reach the `Err` branch with these).
+pub(crate) fn try_is_prime_with(n: &Integer, params: &ProverParams) -> Result<bool> {
+    let v = n.as_bigint();
+    if *v < BigInt::from(2u32) {
+        return Ok(false);
+    }
+    if let Some(w) = v.to_u64() {
+        return Ok(is_prime_u64(w));
+    }
+    if batches_below_1000().least_divisor(v).is_some() {
+        return Ok(false);
+    }
+    if *v < BigInt::from(PSI_12) {
+        return Ok(twelve_base_witness(v).is_none());
+    }
+    if bpsw(v).is_err() {
+        return Ok(false);
+    }
+    if proven_cache_contains(n) {
+        return Ok(true);
+    }
+    match crate::ecpp::prove_primality_with(n, params) {
+        Primality::Prime(_) => {
+            proven_cache_insert(n);
+            Ok(true)
+        }
+        Primality::NotPrime(_) => Ok(false),
+        Primality::Unresolved(why) => Err(MathError::NotSupported(format!(
+            "is_prime: {n} is a BPSW probable prime, but ECPP found no proof ({why}); use \
+             prime::prove_primality or prime::is_probable_prime"
+        ))),
+    }
+}
+
+/// MAGMA `IsPrime(n)` (`Proof := true`, ch. 18 §18.9.1) as a `Result`: `Ok(true)` proven prime,
+/// `Ok(false)` proven not prime, `Err(MathError::NotSupported(..))` when n is a Baillie-PSW
+/// probable prime whose ECPP proof is unresolved.
+///
+/// | n | Method | Answer |
+/// |---|---|---|
+/// | n < 2 | | false |
+/// | n < 2^64 | [`is_prime_u64`] (about 10 µs in debug) | proof |
+/// | 2^64 <= n < psi_12 | trial division below 1000, strong tests to the bases 2..37 | proof (Sorenson-Webster 2017) |
+/// | n >= psi_12 | trial division, BPSW; on a pass the cache of proven primes, then [`prove_primality`] | proof, or `Err` when unresolved |
+///
+/// Cost of a prime above psi_12 (one ECPP proof, then cached for the process; measured with
+/// the design prototype on random primes): release 0.024 s at 128 bits, 0.07 s at 256, 0.41 s
+/// at 512, 3.3 s at 1024, 21 s at 1536, 76 s at 2048, about 16 minutes at 3072 bits; a debug
+/// build is 8 to 15 times slower (0.065 s at 128 bits, 0.36 s at 256, 3.2 s at 512, 38 s at
+/// 1024). A composite above psi_12 costs trial division and one strong test in almost all
+/// cases. Unresolved inputs: no prime up to 2048 bits was unresolved in the experiments (61
+/// proofs and 180 coverage runs); at 3072 and 4096 bits 2 of 32 primes had no top-level
+/// candidate with class number <= 100 and were unresolved. No answer is ever a guess.
+pub fn try_is_prime(n: &Integer) -> Result<bool> {
+    try_is_prime_with(n, &ProverParams::DEFAULT)
+}
+
+/// MAGMA `IsPrime(n)`: a proof of primality or compositeness for every size (see
+/// [`try_is_prime`] for the method, the cost and the rate of unresolved inputs).
+///
+/// # Panics
+///
+/// When [`try_is_prime`] is `Err`: n is a Baillie-PSW probable prime and the ECPP prover found
+/// no certificate (none up to 2048 bits in the experiments; about 1 in 16 at 3072 and 4096
+/// bits). The message names n and the reason. Callers that return `Result` use
+/// [`try_is_prime`]; callers that only need a probable prime use [`is_probable_prime`].
+pub fn is_prime(n: &Integer) -> bool {
+    try_is_prime(n).unwrap_or_else(|e| panic!("{e}"))
 }
 
 /// Check if a number is a pseudoprime (passes Fermat test but may not be prime)
@@ -133,52 +207,167 @@ pub fn is_pseudoprime(n: &Integer, base: Option<u32>) -> bool {
     }
 }
 
-/// Generate the next prime after n
-pub fn next_prime(n: &Integer) -> Integer {
-    let mut candidate = if n.is_even() {
-        n.clone() + Integer::one()
-    } else {
-        n.clone() + Integer::from(2)
-    };
+/// The largest prime below 2^64 (gp: precprime(2^64) = 18446744073709551557).
+const LARGEST_U64_PRIME: u64 = 18_446_744_073_709_551_557;
 
-    while !is_prime(&candidate) {
-        candidate = candidate + Integer::from(2);
+/// The window survivors of a pre-sieve: candidate i is start + 2i (ascending) or start - 2i
+/// (descending), start odd; `false` marks a candidate with a factor among `odd_primes` (all
+/// candidates are larger than these primes).
+fn presieve(start: &BigInt, count: usize, descending: bool, odd_primes: &[u32]) -> Vec<bool> {
+    let mut keep = vec![true; count];
+    for &p in odd_primes {
+        let p64 = u64::from(p);
+        let r = (start % p64).to_u64().expect("a residue modulo a u32 fits a u64");
+        let inv2 = p64.div_ceil(2);
+        let i0 = if descending {
+            r * inv2 % p64
+        } else {
+            (p64 - r) % p64 * inv2 % p64
+        };
+        let mut i = i0 as usize;
+        while i < count {
+            keep[i] = false;
+            i += p as usize;
+        }
     }
-
-    candidate
+    keep
 }
 
-/// Generate the previous prime before n
+/// The odd primes below 2^12 (pre-sieve of `next_prime` / `previous_prime` above 2^64).
+fn odd_primes_below_2_12() -> &'static [u32] {
+    let s = crate::sieve::small_primes();
+    &s[1..s.partition_point(|&p| p < 1 << 12)]
+}
+
+/// MAGMA `NextPrime(n)` (ch. 18 §18.9.2): the least proven prime > n (gp `nextprime(n + 1)`);
+/// 2 for every n < 2. Below the largest prime under 2^64 the candidates are tested with
+/// [`is_prime_u64`]; above, windows of 2^12 odd candidates are pre-sieved by the primes below
+/// 2^12, each survivor gets [`is_probable_prime`], and the first probable prime is proven with
+/// [`try_is_prime`] (`Ok(false)`, a BPSW pseudoprime, moves on).
 ///
-/// Returns None if n <= 2
+/// # Errors
+///
+/// `NotSupported` when the least probable prime > n has no ECPP proof (unresolved): it cannot be
+/// skipped, because the answer must be the least prime.
+pub fn try_next_prime(n: &Integer) -> Result<Integer> {
+    let v = n.as_bigint();
+    if *v < BigInt::from(2u32) {
+        return Ok(Integer::from(2u32));
+    }
+    if let Some(w) = v.to_u64() {
+        if w < LARGEST_U64_PRIME {
+            let mut c = w + 1;
+            if c > 2 && c.is_multiple_of(2) {
+                c += 1;
+            }
+            while !is_prime_u64(c) {
+                c += 2;
+            }
+            return Ok(Integer::from(c));
+        }
+    }
+    const WINDOW: usize = 1 << 12;
+    let mut start: BigInt = v + 1u32;
+    if !start.bit(0) {
+        start += 1u32;
+    }
+    loop {
+        let keep = presieve(&start, WINDOW, false, odd_primes_below_2_12());
+        for (i, &k) in keep.iter().enumerate() {
+            if !k {
+                continue;
+            }
+            let c = Integer::new(&start + 2 * i as u64);
+            if is_probable_prime(&c) && try_is_prime(&c)? {
+                return Ok(c);
+            }
+        }
+        start += 2 * WINDOW as u64;
+    }
+}
+
+/// [`try_next_prime`], panicking on `Err` (an unresolved ECPP proof; none up to 2048 bits in
+/// the experiments).
+pub fn next_prime(n: &Integer) -> Integer {
+    try_next_prime(n).unwrap_or_else(|e| panic!("next_prime: {e}"))
+}
+
+/// MAGMA `PreviousPrime(n)` (ch. 18 §18.9.2): the largest proven prime < n, `Ok(None)` for
+/// n <= 2. The mirror image of [`try_next_prime`]: above 2^64 descending pre-sieved windows,
+/// at 2^64 the word sieve takes over.
+///
+/// # Errors
+///
+/// `NotSupported` when the largest probable prime < n has no ECPP proof.
+pub fn try_previous_prime(n: &Integer) -> Result<Option<Integer>> {
+    let v = n.as_bigint();
+    if *v <= BigInt::from(2u32) {
+        return Ok(None);
+    }
+    let two_64 = BigInt::from(u64::MAX) + 1u32;
+    if *v <= two_64 {
+        let top = (v - 1u32).to_u64().expect("n - 1 < 2^64");
+        let mut c = top;
+        if c > 2 && c.is_multiple_of(2) {
+            c -= 1;
+        }
+        while c > 2 && !is_prime_u64(c) {
+            c -= 2;
+        }
+        return Ok(Some(Integer::from(c)));
+    }
+    const WINDOW: usize = 1 << 12;
+    let mut start: BigInt = v - 1u32;
+    if !start.bit(0) {
+        start -= 1u32;
+    }
+    loop {
+        let keep = presieve(&start, WINDOW, true, odd_primes_below_2_12());
+        for (i, &k) in keep.iter().enumerate() {
+            let c = &start - 2 * i as u64;
+            if c < two_64 {
+                return Ok(Some(Integer::from(LARGEST_U64_PRIME)));
+            }
+            if !k {
+                continue;
+            }
+            let c = Integer::new(c);
+            if is_probable_prime(&c) && try_is_prime(&c)? {
+                return Ok(Some(c));
+            }
+        }
+        start -= 2 * WINDOW as u64;
+    }
+}
+
+/// [`try_previous_prime`], panicking on `Err` (an unresolved ECPP proof: the largest prime below
+/// n cannot be skipped).
 pub fn previous_prime(n: &Integer) -> Option<Integer> {
-    if *n <= Integer::from(2) {
+    try_previous_prime(n).unwrap_or_else(|e| panic!("previous_prime: {e}"))
+}
+
+/// MAGMA `IsPrimePower(n)` with its extra return values (ch. 18 §18.9.1): `Some((p, k))` iff
+/// n = p^k with p prime and k >= 1, the primality of p proven. [`Integer::is_perfect_power`]
+/// writes n = c^m with c not a perfect power (or n itself when n is no perfect power), then
+/// [`is_prime`] proves or refutes c. `None` for n <= 1.
+///
+/// # Panics
+///
+/// As [`is_prime`], when the ECPP proof of c is unresolved.
+pub fn prime_power(n: &Integer) -> Option<(Integer, u32)> {
+    if *n <= Integer::one() {
         return None;
     }
-
-    if *n <= Integer::from(3) {
-        return Some(Integer::from(2));
-    }
-
-    let mut candidate = if n.is_even() {
-        n.clone() - Integer::one()
+    let (c, m) = n.is_perfect_power().unwrap_or_else(|| (n.clone(), 1));
+    if is_prime(&c) {
+        Some((c, m))
     } else {
-        n.clone() - Integer::from(2)
-    };
-
-    while candidate > Integer::from(2) {
-        if is_prime(&candidate) {
-            return Some(candidate);
-        }
-        candidate = candidate - Integer::from(2);
+        None
     }
-
-    Some(Integer::from(2))
 }
 
-/// Check if n is a prime power (n = p^k for some prime p and k ≥ 1)
-///
-/// Returns true if n can be expressed as p^k where p is prime and k ≥ 1.
+/// Check if n is a prime power (n = p^k for some prime p and k ≥ 1): `prime_power(n).is_some()`
+/// (MAGMA `IsPrimePower(n)`, p proven prime).
 ///
 /// # Examples
 ///
@@ -191,23 +380,17 @@ pub fn previous_prime(n: &Integer) -> Option<Integer> {
 /// assert!(!is_prime_power(&Integer::from(12))); // 2^2 * 3
 /// ```
 pub fn is_prime_power(n: &Integer) -> bool {
-    if *n <= Integer::one() {
-        return false;
-    }
-
-    // Check if n is prime (trivial case: n = p^1)
-    if is_prime(n) {
-        return true;
-    }
-
-    // Try to find the smallest prime factor
-    let factors = factor(n);
-
-    // n is a prime power if and only if it has exactly one distinct prime factor
-    factors.len() == 1
+    prime_power(n).is_some()
 }
 
-/// Get the nth prime number (1-indexed: nth_prime(1) = 2)
+/// MAGMA `NthPrime(n)`: the n-th prime (1-indexed: nth_prime(1) = 2), by the segmented sieve
+/// ([`crate::sieve::nth_prime_u64`]; `nth_prime(10^6)` takes about 0.1 s in debug,
+/// `nth_prime(455052511)`, the largest prime below 10^10 that MAGMA promises, about 75 s).
+///
+/// # Panics
+///
+/// For n = 0, and for n > pi(2^64) = 425656284035217743 (OEIS A007053), where the n-th prime
+/// does not fit a `u64` and is not computed.
 ///
 /// # Examples
 ///
@@ -223,29 +406,90 @@ pub fn nth_prime(n: usize) -> Integer {
     if n == 0 {
         panic!("nth_prime: n must be >= 1");
     }
-
-    if n == 1 {
-        return Integer::from(2);
+    match crate::sieve::nth_prime_u64(n as u64) {
+        Some(p) => Integer::from(p),
+        None => panic!(
+            "nth_prime: n = {n} exceeds pi(2^64) = {}; the n-th prime does not fit a u64 and \
+             is not computed",
+            crate::sieve::PRIME_PI_2_64
+        ),
     }
-
-    let mut count = 1; // We've already counted 2
-    let mut candidate = Integer::from(3);
-
-    while count < n {
-        if is_prime(&candidate) {
-            count += 1;
-        }
-        if count < n {
-            candidate = candidate + Integer::from(2);
-        }
-    }
-
-    candidate
 }
 
-/// Generate all primes in the range [start, stop)
+/// Calls `f` on each Baillie-PSW probable prime c with `lo <= c < hi`, ascending, where
+/// lo >= 2^64: windows of 2^16 odd candidates pre-sieved by the odd primes below 2^16, then
+/// [`is_probable_prime`] on the survivors. Stops at the first `Err` of `f`.
+fn for_each_big_probable_prime(
+    lo: &BigInt,
+    hi: &BigInt,
+    mut f: impl FnMut(Integer) -> Result<()>,
+) -> Result<()> {
+    const WINDOW: usize = 1 << 16;
+    let mut start = lo.clone();
+    if !start.bit(0) {
+        start += 1u32;
+    }
+    let odd = &crate::sieve::small_primes()[1..];
+    while start < *hi {
+        let keep = presieve(&start, WINDOW, false, odd);
+        for (i, &k) in keep.iter().enumerate() {
+            let c = &start + 2 * i as u64;
+            if c >= *hi {
+                return Ok(());
+            }
+            if k {
+                let c = Integer::new(c);
+                if is_probable_prime(&c) {
+                    f(c)?;
+                }
+            }
+        }
+        start += 2 * WINDOW as u64;
+    }
+    Ok(())
+}
+
+/// The primes in [start, stop), each proven (MAGMA `PrimesInInterval(start, stop - 1)`). Below
+/// 2^64 the segmented sieve (exact); above 2^64 windows of 2^16 odd candidates pre-sieved by
+/// the primes below 2^16, each survivor [`is_probable_prime`], each probable prime
+/// [`try_is_prime`]: `Ok(true)` listed, `Ok(false)` dropped (a BPSW pseudoprime). So the range
+/// proves only the primes it returns, and a composite costs one BPSW test.
 ///
-/// Uses a simple sieve for small ranges or trial division for large ranges.
+/// # Errors
+///
+/// `NotSupported` when one probable prime of the range has no ECPP proof (the list must be
+/// complete).
+pub fn try_prime_range(start: &Integer, stop: &Integer) -> Result<Vec<Integer>> {
+    let (lo, hi) = (start.as_bigint(), stop.as_bigint());
+    let mut out = Vec::new();
+    if lo >= hi {
+        return Ok(out);
+    }
+    let two_64 = BigInt::from(u64::MAX) + 1u32;
+    let zero = BigInt::from(0u32);
+    let small_lo = lo.max(&zero);
+    let small_hi = hi.min(&two_64);
+    if small_lo < small_hi {
+        let b = small_lo.to_u64().expect("below 2^64");
+        let e = (small_hi - 1u32).to_u64().expect("below 2^64");
+        for p in crate::sieve::primes_in_interval(b, e) {
+            out.push(Integer::from(p));
+        }
+    }
+    if *hi > two_64 {
+        let big_lo = lo.max(&two_64).clone();
+        for_each_big_probable_prime(&big_lo, hi, |c| {
+            if try_is_prime(&c)? {
+                out.push(c);
+            }
+            Ok(())
+        })?;
+    }
+    Ok(out)
+}
+
+/// The primes in [start, stop) ([`try_prime_range`]), panicking on `Err` (an unresolved ECPP
+/// proof).
 ///
 /// # Examples
 ///
@@ -254,39 +498,13 @@ pub fn nth_prime(n: usize) -> Integer {
 /// use rustmath_integers::prime::prime_range;
 ///
 /// let primes = prime_range(&Integer::from(10), &Integer::from(20));
-/// // Returns [11, 13, 17, 19]
+/// assert_eq!(primes, [11, 13, 17, 19].map(Integer::from).to_vec());
 /// ```
 pub fn prime_range(start: &Integer, stop: &Integer) -> Vec<Integer> {
-    if start >= stop {
-        return vec![];
-    }
-
-    let mut primes = Vec::new();
-    let mut candidate = start.clone();
-
-    // Make candidate odd if it's even and > 2
-    if candidate.is_even() && candidate > Integer::from(2) {
-        candidate = candidate + Integer::one();
-    }
-
-    // Special case: include 2 if in range
-    if *start <= Integer::from(2) && *stop > Integer::from(2) {
-        primes.push(Integer::from(2));
-        candidate = Integer::from(3);
-    }
-
-    // Check odd numbers
-    while candidate < *stop {
-        if is_prime(&candidate) {
-            primes.push(candidate.clone());
-        }
-        candidate = candidate + Integer::from(2);
-    }
-
-    primes
+    try_prime_range(start, stop).unwrap_or_else(|e| panic!("prime_range: {e}"))
 }
 
-/// Generate the first n prime numbers
+/// The first n primes (segmented sieve, like [`nth_prime`]).
 ///
 /// # Examples
 ///
@@ -295,36 +513,22 @@ pub fn prime_range(start: &Integer, stop: &Integer) -> Vec<Integer> {
 /// use rustmath_integers::prime::primes_first_n;
 ///
 /// let primes = primes_first_n(5);
-/// // Returns [2, 3, 5, 7, 11]
+/// assert_eq!(primes, [2, 3, 5, 7, 11].map(Integer::from).to_vec());
 /// ```
 pub fn primes_first_n(n: usize) -> Vec<Integer> {
-    if n == 0 {
-        return vec![];
-    }
-
-    let mut primes = Vec::with_capacity(n);
-    primes.push(Integer::from(2));
-
-    if n == 1 {
-        return primes;
-    }
-
-    let mut candidate = Integer::from(3);
-
-    while primes.len() < n {
-        if is_prime(&candidate) {
-            primes.push(candidate.clone());
-        }
-        candidate = candidate + Integer::from(2);
-    }
-
-    primes
+    crate::sieve::first_n_primes(n as u64)
+        .into_iter()
+        .map(Integer::from)
+        .collect()
 }
 
-/// Count the number of primes less than or equal to x (prime counting function π(x))
+/// The prime counting function pi(x) (MAGMA ch. 18 §18.9.2), by the segmented sieve
+/// ([`crate::sieve::prime_count`], linear in x: about 0.75 s for x = 10^8 in a debug build).
 ///
-/// Uses a naive algorithm that counts primes one by one.
-/// For very large x, more efficient algorithms like Meissel-Lehmer would be needed.
+/// # Panics
+///
+/// For x > 2^64 - 1: the sieve cannot reach it and sublinear counting (Lagarias-Miller-Odlyzko)
+/// is not implemented.
 ///
 /// # Examples
 ///
@@ -339,28 +543,77 @@ pub fn prime_pi(x: &Integer) -> usize {
     if *x < Integer::from(2) {
         return 0;
     }
-
-    let mut count = 0;
-    let mut candidate = Integer::from(2);
-
-    while candidate <= *x {
-        if is_prime(&candidate) {
-            count += 1;
-        }
-        if candidate == Integer::from(2) {
-            candidate = Integer::from(3);
-        } else {
-            candidate = candidate + Integer::from(2);
-        }
+    match x.to_u64() {
+        Some(v) => usize::try_from(crate::sieve::prime_count(v)).expect("pi(x) < 2^64"),
+        None => panic!(
+            "prime_pi: x = {x} exceeds 2^64; the sieve cannot reach it and sublinear counting \
+             (Lagarias-Miller-Odlyzko) is not implemented"
+        ),
     }
-
-    count
 }
 
-/// Generate a random prime in the range [a, b)
+/// A random proven prime p with a <= p < b (MAGMA `RandomPrime` with `Proof := true`, in the
+/// interval form). `Ok(None)` when [a, b) has no prime.
 ///
-/// Returns a random prime number p such that a ≤ p < b.
-/// Returns None if no prime exists in the range.
+/// The probable primes of [a, b) are collected (the sieve below 2^64, exact; above, the
+/// pre-sieved windows of [`try_prime_range`] with [`is_probable_prime`] only, no proofs). Then
+/// one is drawn uniformly (`rand::thread_rng`) and proven with [`try_is_prime`]: `Ok(true)`
+/// returns it, `Ok(false)` (a BPSW pseudoprime) or `Err` (unresolved) drops it and another is
+/// drawn. The result is uniform over the primes of [a, b) that the prover proves (all of them
+/// in every experiment up to 2048 bits). The whole range is enumerated, so the cost is linear in
+/// b - a; MAGMA's `RandomPrime(n)` form (a random n-bit prime without enumeration) is not
+/// implemented.
+///
+/// # Errors
+///
+/// `NotSupported` when probable primes exist in [a, b) and none of them could be proven.
+pub fn try_random_prime(a: &Integer, b: &Integer) -> Result<Option<Integer>> {
+    use rand::Rng;
+
+    if a >= b {
+        return Ok(None);
+    }
+    let (lo, hi) = (a.as_bigint(), b.as_bigint());
+    let two_64 = BigInt::from(u64::MAX) + 1u32;
+    let zero = BigInt::from(0u32);
+    let mut pool: Vec<Integer> = Vec::new();
+    let small_lo = lo.max(&zero);
+    let small_hi = hi.min(&two_64);
+    if small_lo < small_hi {
+        let bb = small_lo.to_u64().expect("below 2^64");
+        let e = (small_hi - 1u32).to_u64().expect("below 2^64");
+        pool.extend(crate::sieve::primes_in_interval(bb, e).into_iter().map(Integer::from));
+    }
+    if *hi > two_64 {
+        let big_lo = lo.max(&two_64).clone();
+        for_each_big_probable_prime(&big_lo, hi, |c| {
+            pool.push(c);
+            Ok(())
+        })?;
+    }
+    let total = pool.len();
+    let mut unresolved = 0usize;
+    let mut rng = rand::thread_rng();
+    while !pool.is_empty() {
+        let i = rng.gen_range(0..pool.len());
+        let c = pool.swap_remove(i);
+        match try_is_prime(&c) {
+            Ok(true) => return Ok(Some(c)),
+            Ok(false) => {}
+            Err(_) => unresolved += 1,
+        }
+    }
+    if unresolved > 0 {
+        return Err(MathError::NotSupported(format!(
+            "random_prime: none of the {total} probable primes in [{a}, {b}) could be proven \
+             ({unresolved} unresolved ECPP proofs)"
+        )));
+    }
+    Ok(None)
+}
+
+/// A random prime in [a, b) ([`try_random_prime`]), `None` if there is none; panics on `Err`
+/// (probable primes exist and none could be proven).
 ///
 /// # Examples
 ///
@@ -374,23 +627,7 @@ pub fn prime_pi(x: &Integer) -> usize {
 /// }
 /// ```
 pub fn random_prime(a: &Integer, b: &Integer) -> Option<Integer> {
-    use rand::Rng;
-
-    if a >= b {
-        return None;
-    }
-
-    // First, collect all primes in the range
-    let primes = prime_range(a, b);
-
-    if primes.is_empty() {
-        return None;
-    }
-
-    // Select a random prime from the list
-    let mut rng = rand::thread_rng();
-    let index = rng.gen_range(0..primes.len());
-    Some(primes[index].clone())
+    try_random_prime(a, b).unwrap_or_else(|e| panic!("{e}"))
 }
 
 /// Compute all prime factors of n
@@ -485,7 +722,8 @@ pub fn prime_divisors(n: &Integer) -> Vec<Integer> {
 /// - Uses f(x) = x² + 1 as the iteration function (standard choice)
 /// - Floyd's cycle detection (tortoise and hare algorithm)
 /// - Returns `Some(2)` for even numbers (fast path)
-/// - Returns `None` for primes (after primality check)
+/// - Returns `None` for probable primes ([`is_probable_prime`], Baillie-PSW; exact below
+///   psi_12)
 /// - Returns `None` if algorithm fails after 1,000,000 iterations
 ///
 /// # Parameters
@@ -495,7 +733,7 @@ pub fn prime_divisors(n: &Integer) -> Vec<Integer> {
 /// # Returns
 ///
 /// * `Some(factor)` - A non-trivial factor of n (1 < factor < n)
-/// * `None` - If n is prime, n ≤ 1, or the algorithm fails to find a factor
+/// * `None` - If n is a probable prime (BPSW), n ≤ 1, or no factor was found
 ///
 /// # Time Complexity
 ///
@@ -534,8 +772,9 @@ pub fn pollard_rho(n: &Integer) -> Option<Integer> {
         return None;
     }
 
-    // Check if n is prime first (including 2)
-    if is_prime(n) {
+    // A probable prime (including 2) has no factor to find; a splitting decision needs no
+    // proof (BPSW, exact below psi_12).
+    if is_probable_prime(n) {
         return None;
     }
 
@@ -598,7 +837,9 @@ pub fn pollard_rho(n: &Integer) -> Option<Integer> {
 /// * `n` - The number to factor
 /// * `bound` - The smoothness bound B (typically 100-10000)
 ///
-/// Returns None if n is prime or if the algorithm fails to find a factor
+/// Returns None if n is a probable prime ([`is_probable_prime`], Baillie-PSW) or no factor
+/// was found. Stage 1 raises 2 to the largest power p^e <= bound of every prime p <= bound
+/// (the primes from the segmented sieve [`crate::sieve::for_each_prime`]).
 ///
 /// # Examples
 ///
@@ -615,38 +856,39 @@ pub fn pollard_p_minus_1(n: &Integer, bound: u32) -> Option<Integer> {
         return None;
     }
 
-    if n.is_even() {
-        return Some(Integer::from(2));
+    // A probable prime (including 2) has no factor to find.
+    if is_probable_prime(n) {
+        return None;
     }
 
-    // Check if n is prime first
-    if is_prime(n) {
-        return None;
+    if n.is_even() {
+        return Some(Integer::from(2));
     }
 
     // Start with base 2
     let mut a = Integer::from(2);
 
-    // Compute a = 2^(product of prime powers ≤ bound) mod n
-    // We do this by repeatedly raising a to small primes
-    for p in 2..=bound {
-        if !is_prime(&Integer::from(p as i64)) {
-            continue;
-        }
-
-        // Compute the highest power of p that is ≤ bound
+    // a = 2^(prod p^e) mod n over the primes p <= bound, p^e the largest power <= bound.
+    let mut failed = false;
+    crate::sieve::for_each_prime(2, u64::from(bound) + 1, |p| {
+        let p = u32::try_from(p).expect("p <= bound < 2^32");
         let mut q = p;
         while q <= bound / p {
             q *= p;
         }
-
-        // Raise a to the power q
-        // a = a^q mod n
-        if let Ok(new_a) = a.mod_pow(&Integer::from(q as i64), n) {
-            a = new_a;
-        } else {
-            return None;
+        match a.mod_pow(&Integer::from(q), n) {
+            Ok(new_a) => {
+                a = new_a;
+                ControlFlow::Continue(())
+            }
+            Err(_) => {
+                failed = true;
+                ControlFlow::Break(())
+            }
         }
+    });
+    if failed {
+        return None;
     }
 
     // Compute gcd(a - 1, n)
@@ -706,10 +948,15 @@ fn rand_int() -> i64 {
 /// A cofactor that the methods have not yet split is never pushed as a prime: the search
 /// goes on until it splits.
 ///
-/// Every returned factor is prime in the sense of [`is_prime`]: Miller-Rabin to the twelve
-/// bases 2..37, a proof below psi_12 = 318665857834031151167461 (J. Sorenson, J. Webster,
-/// *Strong pseudoprimes to twelve prime bases*, Math. Comp. 86 (2017) 985-1003), a strong
-/// probable-prime test above it.
+/// Every returned factor is proven prime by [`is_prime`] (the strong tests to the bases 2..37
+/// below psi_12 = 318665857834031151167461, J. Sorenson, J. Webster, *Strong pseudoprimes to
+/// twelve prime bases*, Math. Comp. 86 (2017) 985-1003; Baillie-PSW and ECPP above). psi_12
+/// itself is split: [399165290221, 798330580441].
+///
+/// # Panics
+///
+/// When the ECPP proof of a probable-prime factor is unresolved ([`is_prime`] panics; no
+/// unresolved prime up to 2048 bits in the experiments, about 1 in 16 at 3072 and 4096 bits).
 ///
 /// # Comparison with SageMath
 ///
@@ -805,9 +1052,9 @@ pub fn factor_pollard_rho(n: &Integer) -> Vec<(Integer, u32)> {
         factors.push((Integer::from(2), count));
     }
 
-    // `remaining` is odd from here on. `is_prime` is false only with a proof of
-    // compositeness (trial division below 1000, a Miller-Rabin witness above), so every
-    // cofactor handed to `split_odd_composite` is an odd composite.
+    // `remaining` is odd from here on. `is_prime` is a proof both ways, so every cofactor
+    // handed to `split_odd_composite` is an odd composite, and every factor pushed is a
+    // proven prime.
     while remaining > Integer::one() && !is_prime(&remaining) {
         let divisor = split_odd_composite(&remaining);
         // The divisor might be composite: factor it by recursion (it is smaller than
@@ -848,9 +1095,12 @@ const SPLIT_FIRST_ROUND: u64 = 1 << 12;
 /// A proper divisor d of an odd composite m (1 < d < m, d | m).
 ///
 /// Perfect-power test, then [`pollard_rho`], then [`split_brent_and_trial_division`]. Always
-/// returns; see [`factor_pollard_rho`] for the cost.
+/// returns; see [`factor_pollard_rho`] for the cost. m is composite (the caller's [`is_prime`]
+/// said so). If m is a BPSW pseudoprime (none is known), `pollard_rho(m)` returns `None` at
+/// once through its [`is_probable_prime`] shortcut, and `split_brent_and_trial_division`
+/// (complete, it always returns a divisor) splits m.
 fn split_odd_composite(m: &Integer) -> Integer {
-    debug_assert!(m.is_odd() && *m > Integer::one() && !is_prime(m));
+    debug_assert!(m.is_odd() && *m > Integer::one());
     if let Some((base, _)) = m.is_perfect_power() {
         return base;
     }
@@ -995,6 +1245,52 @@ mod tests {
         assert!(!is_prime(&Integer::from(8)));
         assert!(!is_prime(&Integer::from(9)));
         assert!(!is_prime(&Integer::from(10)));
+
+        // gp: isprime(2147483647) = 1, isprime(2^61-1) = 1, isprime(318665857834031151167461) = 0
+        assert!(is_prime(&Integer::from(2_147_483_647u32)));
+        assert!(is_prime(&Integer::from((1u64 << 61) - 1)));
+        assert!(!is_prime(&z("318665857834031151167461")));
+    }
+
+    /// The `Err` of `try_is_prime` (review 2 n7): with no rows at the top level the ECPP proof
+    /// of 2^127 - 1 is unresolved, `try_is_prime_with` reports it, and the cache of proven
+    /// primes is not filled. gp: isprime(2^127-1) = 1.
+    #[test]
+    fn test_try_is_prime_unresolved_is_err() {
+        let m127 = Integer::from(2).pow(127) - Integer::one();
+        let starved = ProverParams {
+            h_top: 0,
+            ..ProverParams::DEFAULT
+        };
+        // The cache is process-wide and other tests prove 2^127 - 1, so use a prime no other
+        // test proves. gp: nextprime(2^127 + 10^6) - 2^127 = 1000121,
+        // isprime(2^127 + 1000123) = 0.
+        let p = z("170141183460469231731687303715885105849");
+        assert_eq!(p, Integer::from(2).pow(127) + Integer::from(1_000_121));
+        assert!(m127 < p);
+        assert!(is_probable_prime(&p));
+        match try_is_prime_with(&p, &starved) {
+            Err(MathError::NotSupported(msg)) => {
+                assert!(msg.contains("ECPP found no proof"), "{msg}");
+                assert!(msg.contains("no curve found with class number <= 0"), "{msg}");
+            }
+            other => panic!("{other:?}"),
+        }
+        assert!(!proven_cache_contains(&p));
+        // A composite past the probable-prime gate is still decided without the prover.
+        assert_eq!(try_is_prime_with(&z("318665857834031151167461"), &starved), Ok(false));
+        assert_eq!(try_is_prime_with(&(p.clone() + Integer::from(2)), &starved), Ok(false));
+    }
+
+    #[test]
+    #[should_panic(expected = "ECPP found no proof")]
+    fn test_is_prime_panics_when_unresolved() {
+        let starved = ProverParams {
+            h_top: 0,
+            ..ProverParams::DEFAULT
+        };
+        let p = z("170141183460469231731687303715884105757"); // gp: nextprime(2^127)
+        try_is_prime_with(&p, &starved).unwrap_or_else(|e| panic!("{e}"));
     }
 
     #[test]

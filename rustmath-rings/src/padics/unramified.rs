@@ -79,7 +79,7 @@ pub fn unramified_modulus(prime: &Integer, degree: usize) -> Result<UnivariatePo
             "unramified_modulus: degree must be >= 1".to_string(),
         ));
     }
-    if !prime.is_prime() {
+    if !rustmath_integers::prime::try_is_prime(prime)? {
         return Err(MathError::InvalidArgument(
             "unramified_modulus: p must be prime".to_string(),
         ));
@@ -148,7 +148,7 @@ impl UnramifiedExtension {
         modulus: &UnivariatePolynomial<Integer>,
         precision: u32,
     ) -> Result<Arc<Self>> {
-        if !prime.is_prime() {
+        if !rustmath_integers::prime::try_is_prime(&prime)? {
             return Err(MathError::InvalidArgument(
                 "UnramifiedExtension: p must be prime".to_string(),
             ));

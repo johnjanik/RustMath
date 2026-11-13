@@ -122,9 +122,9 @@ where
 /// hence `R: 'static`; stable Rust has no specialization):
 /// * Every ring: `0` and the proven units are not irreducible (`Ok(false)`).
 /// * Z (`rustmath_integers::Integer`, `i64`, `i32`): a constant `c` is irreducible iff `|c|`
-///   is prime ([`rustmath_integers::Integer::is_prime`], Miller-Rabin to the bases 2..37,
-///   a proof only below 318665857834031151167461 (Sorenson-Webster 2017); a probable prime
-///   above that bound gives `Err`, a composite is always detected). A non-constant polynomial
+///   is prime ([`rustmath_integers::prime::try_is_prime`], a proof for every size:
+///   Baillie-PSW and ECPP above 2^64; a probable prime whose ECPP proof is unresolved gives
+///   `Err(NotSupported)`, a composite is always detected). A non-constant polynomial
 ///   is reducible if its content is not 1; a primitive one is irreducible iff its Zassenhaus
 ///   factorization ([`crate::zassenhaus::factor`]) is a single factor of multiplicity 1
 ///   (Gauss' lemma: a primitive polynomial is irreducible in `Z[x]` iff it is irreducible in
@@ -169,30 +169,22 @@ where
     is_irreducible_generic(poly)
 }
 
-/// Sorenson and Webster (2017): Miller-Rabin to the twelve prime bases 2..37 (what
-/// [`rustmath_integers::Integer::is_prime`] runs) proves primality below this bound.
-const MR_PROOF_BOUND: &str = "318665857834031151167461";
-
 /// Whether the constant `c` is irreducible in `Z[x]`, i.e. `|c|` is prime (see
-/// [`is_irreducible`]).
+/// [`is_irreducible`]): [`rustmath_integers::prime::try_is_prime`], a proof both ways
+/// (cached for large primes), `Err(NotSupported)` when the ECPP proof of a probable prime is
+/// unresolved.
 fn integer_constant_is_irreducible(c: &rustmath_integers::Integer) -> Result<bool> {
     use rustmath_integers::Integer;
     let a = c.abs();
     if a <= Integer::one() {
         return Ok(false);
     }
-    // A `false` is a proof (trial division below 1000, a Miller-Rabin witness above).
-    if !a.is_prime() {
-        return Ok(false);
-    }
-    let bound = Integer::from_decimal_str(MR_PROOF_BOUND).expect("valid decimal literal");
-    if a < bound {
-        return Ok(true);
-    }
-    Err(MathError::NotSupported(format!(
-        "is_irreducible: the constant {c} is irreducible in Z[x] iff |c| is prime, and \
-         Miller-Rabin to the bases 2..37 proves primality only below {MR_PROOF_BOUND}"
-    )))
+    rustmath_integers::prime::try_is_prime(&a).map_err(|e| {
+        MathError::NotSupported(format!(
+            "is_irreducible: the constant {c} is irreducible in Z[x] iff |c| is prime, and \
+             its primality is not decided ({e})"
+        ))
+    })
 }
 
 /// [`is_irreducible`] in `Z[x]` (little-endian coefficients, possibly untrimmed).

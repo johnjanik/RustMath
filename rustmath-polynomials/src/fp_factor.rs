@@ -499,8 +499,8 @@ fn split_with(a: &[i64], f: &[i64], d: i64, p: i64, e: &Integer) -> Option<Vec<i
 }
 
 /// `Ok(())` iff `p` is a prime `<= MAX_P`; otherwise the reason.
-/// (`Integer::is_prime` is trial division below 1000 and Miller-Rabin to the
-/// bases 2..37 above, which is a proof far beyond `MAX_P`.)
+/// (`Integer::is_prime` is the deterministic word test below 2^64, a proof for
+/// every p <= `MAX_P`.)
 fn check_prime(p: i64) -> Result<(), String> {
     if (2..=MAX_P).contains(&p) && Integer::from(p).is_prime() {
         Ok(())

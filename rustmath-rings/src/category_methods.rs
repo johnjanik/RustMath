@@ -144,11 +144,10 @@ pub trait RingElementMethods: Ring {
 ///
 /// `c = 1` is the zero ring (`1 = 0`). For composite `c = ab` with `1 < a, b < c`,
 /// `(a·1)(b·1) = c·1 = 0` while `a·1` and `b·1` are nonzero (both are below the
-/// characteristic). `false` for 0 and for primes. [`Integer::is_prime`] uses trial division
-/// below 1000 and Miller–Rabin with the 12 prime bases 2..37 above; no composite below
-/// ψ12 ≈ 3.19·10^23 > 2^64 passes those bases (J. Sorenson and J. Webster, "Strong
-/// pseudoprimes to twelve prime bases", Math. Comp. 86 (2017)), so on `u64` both verdicts
-/// are proofs.
+/// characteristic). `false` for 0 and for primes. [`Integer::is_prime`] is the deterministic
+/// word test on `u64` (strong tests to the 12 prime bases 2..37; no composite below
+/// ψ12 ≈ 3.19·10^23 > 2^64 passes them, J. Sorenson and J. Webster, "Strong pseudoprimes to
+/// twelve prime bases", Math. Comp. 86 (2017)), so both verdicts are proofs.
 fn characteristic_rules_out_domain(c: u64) -> bool {
     c == 1 || (c >= 4 && !Integer::from(c).is_prime())
 }
