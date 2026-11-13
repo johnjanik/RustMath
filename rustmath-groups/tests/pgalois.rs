@@ -72,3 +72,103 @@ fn candidates_exact_at_unramified_and_sound_at_ramified() {
     assert!(!labels4.contains(&"4T4")); // A4 (even) excluded
     assert!(!exact4); // not yet unique from parity alone
 }
+
+// ---------------------------------------------------------------------------------------
+// Prime checks, non-monic and non-primitive inputs (follow-up unit P1). References,
+// PARI/GP 2.15, with deg(F) = vecsort(apply(poldegree, F[,1]~)):
+//   poldisc(2*x^2+x+1) = -7,           deg(factorpadic(2*x^2+x+1, 2, 8)) = [1, 1]
+//   poldisc(2*x^3+x^2+x+1) = -83,      deg(factorpadic(2*x^3+x^2+x+1, 2, 8)) = [1, 2]
+//   poldisc(3*x^4+x^3+2*x+1) = -563,   deg(factorpadic(3*x^4+x^3+2*x+1, 3, 8)) = [1, 3]
+//   poldisc(2*x+1) = 1,                deg(factorpadic(2*x+1, 2, 8)) = [1]
+//   factormod(x^2+1, 7) irreducible,   deg(factorpadic(x^2+1, 7, 8)) = [2]
+//   poldisc(6*x+6) = poldisc(2*x) = poldisc(-2*x+4) = 1, one factorpadic factor of degree 1
+//   poldisc(3*x^2+3) = -36, poldisc(x^2+1) = -4, deg(factorpadic(3*x^2+3, 3, 8)) = [2]
+//   poldisc(x^4+x+1) = 229, deg(factormod(x^4+x+1, 3)) = [1, 3] = deg(factorpadic(3*(x^4+x+1), 3, 8))
+//   poldisc(x^5-x-1) = 2869, deg(factormod(x^5-x-1, 2)) = [2, 3], deg(factormod(x^5-x-1, 3)) = [5]
+// ---------------------------------------------------------------------------------------
+
+#[test]
+#[should_panic(expected = "pgalois::unramified_local_galois_group: p = 15 is not a prime")]
+fn unramified_rejects_composite_p() {
+    unramified_local_galois_group(&iz(&[1, 0, 1]), 15);
+}
+
+#[test]
+#[should_panic(expected = "is not a prime")]
+fn unramified_rejects_p_zero() {
+    unramified_local_galois_group(&iz(&[1, 0, 1]), 0);
+}
+
+#[test]
+#[should_panic(expected = "is not a prime")]
+fn unramified_rejects_p_one() {
+    unramified_local_galois_group(&iz(&[1, 0, 1]), 1);
+}
+
+#[test]
+#[should_panic(expected = "pgalois::local_galois_candidates: p = 15 is not a prime")]
+fn candidates_reject_composite_p() {
+    local_galois_candidates(&iz(&[-1, -1, 0, 0, 0, 1]), 15);
+}
+
+#[test]
+fn unramified_non_monic_adds_root_at_infinity() {
+    let u = |f: &[i64], p: i64| unramified_local_galois_group(&iz(f), p).unwrap();
+    let a = u(&[1, 1, 2], 2);
+    assert_eq!((a.frobenius_cycle_type, a.order, a.transitive), (vec![1, 1], 1, false));
+    let b = u(&[1, 1, 1, 2], 2);
+    assert_eq!((b.frobenius_cycle_type, b.order, b.transitive), (vec![1, 2], 2, false));
+    let c = u(&[1, 2, 0, 1, 3], 3);
+    assert_eq!((c.frobenius_cycle_type, c.order, c.transitive), (vec![1, 3], 3, false));
+    let d = u(&[1, 2], 2);
+    assert_eq!((d.frobenius_cycle_type, d.order, d.transitive), (vec![1], 1, true));
+}
+
+#[test]
+fn unramified_untrimmed_input() {
+    let u = unramified_local_galois_group(&iz(&[1, 0, 1, 0]), 7).unwrap();
+    assert_eq!((u.frobenius_cycle_type, u.order, u.transitive), (vec![2], 2, true));
+}
+
+#[test]
+fn unramified_linear_with_content() {
+    for (f, p) in [(vec![6, 6], 3), (vec![0, 2], 2), (vec![4, -2], 2)] {
+        let u = unramified_local_galois_group(&iz(&f), p).unwrap();
+        assert_eq!(
+            (u.frobenius_cycle_type, u.order, u.transitive),
+            (vec![1], 1, true),
+            "{f:?} at {p}"
+        );
+    }
+}
+
+#[test]
+fn unramified_uses_primitive_part() {
+    let u = unramified_local_galois_group(&iz(&[3, 0, 3]), 3).unwrap();
+    assert_eq!((u.frobenius_cycle_type, u.order, u.transitive), (vec![2], 2, true));
+}
+
+#[test]
+fn candidates_use_primitive_part() {
+    assert_eq!(local_galois_candidates(&iz(&[3, 3, 0, 0, 3]), 3), (vec![], true));
+    assert_eq!(local_galois_candidates(&iz(&[-2, -2, 0, 0, 0, 2]), 2), (vec![], true));
+    assert_eq!(local_galois_candidates(&iz(&[-2, -2, 0, 0, 0, 2]), 3), (vec!["5T1"], true));
+}
+
+#[test]
+fn candidates_constant_makes_no_claim() {
+    assert_eq!(local_galois_candidates(&iz(&[5]), 3), (vec![], false));
+    assert_eq!(local_galois_candidates(&iz(&[]), 3), (vec![], false));
+}
+
+#[test]
+#[should_panic(expected = "f must have degree >= 1")]
+fn unramified_rejects_constant() {
+    unramified_local_galois_group(&iz(&[5]), 3);
+}
+
+#[test]
+#[should_panic(expected = "pgalois::is_padic_square: p = 15 is not a prime")]
+fn is_padic_square_rejects_composite() {
+    is_padic_square(&Integer::from(4), 15);
+}

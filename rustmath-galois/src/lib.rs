@@ -177,9 +177,7 @@ pub fn galois_group(f: &[Integer]) -> Result<GaloisGroupResult> {
     }
     let n = n as usize;
 
-    let (_content, factors) = zassenhaus::factor(&ft).map_err(|_| {
-        MathError::NotSupported("factor recombination limit exceeded".to_string())
-    })?;
+    let (_content, factors) = zassenhaus::factor(&ft).map_err(MathError::from)?;
     let mut ev = Evidence { degree: n, ..Default::default() };
     if factors.iter().any(|(_, m)| *m > 1) {
         ev.notes.push(

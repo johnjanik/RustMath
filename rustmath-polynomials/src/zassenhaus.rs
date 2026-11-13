@@ -11,9 +11,74 @@
 //! This replaces the rational-roots-only `factorization::factor_over_integers` with
 //! a complete factorization, unblocking reliable irreducibility/factor testing for
 //! the IGP24 degree-24 work.
+//!
+//! Output order: the factors are sorted by degree, then by coefficients from the
+//! top down (signed), the order of PARI's `factor` over Z. MAGMA's `Factorization`
+//! fixes no order (handbook ch. 23 §23.8.1: "each factor is normalized").
+//!
+//! Failures are typed ([`ZassenhausError`]): no good prime up to the bound, the
+//! recombination subset cap, or an internal Hensel failure. None of them says
+//! anything about `f`.
 
 use crate::{fp_factor, zp_hensel, zx};
 use rustmath_integers::Integer;
+use std::cmp::Ordering;
+
+/// Why [`factor`] stopped. None of the variants says anything about `f`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ZassenhausError {
+    /// No prime `p <= bound` keeps `f mod p` squarefree of full degree `degree`.
+    /// The bad primes divide `lc(f)·disc(f) != 0`, so with `bound` =
+    /// `fp_factor::MAX_P` this needs a discriminant with more than 10^8 prime
+    /// factors.
+    NoGoodPrime { degree: i64, bound: i64 },
+    /// Recombination tested more than `limit` subsets of the `lifted` modular
+    /// factors (the exponential worst case of Berlekamp-Zassenhaus; van Hoeij's
+    /// knapsack recombination, MAGMA's method, is not implemented).
+    RecombinationLimit { limit: u64, lifted: usize },
+    /// Hensel lifting rejected the factorization mod `p` (an internal error: the
+    /// factors of a squarefree reduction are pairwise coprime).
+    HenselLiftFailed { p: i64, factors: usize },
+}
+
+impl std::fmt::Display for ZassenhausError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ZassenhausError::NoGoodPrime { degree, bound } => write!(
+                f,
+                "Zassenhaus: no prime p <= {bound} keeps f mod p squarefree of degree {degree}"
+            ),
+            ZassenhausError::RecombinationLimit { limit, lifted } => write!(
+                f,
+                "Zassenhaus: recombination tested more than {limit} subsets of {lifted} modular \
+                 factors (Berlekamp-Zassenhaus is exponential in the number of modular factors; \
+                 van Hoeij's lattice recombination is not implemented)"
+            ),
+            ZassenhausError::HenselLiftFailed { p, factors } => write!(
+                f,
+                "Zassenhaus: Hensel lifting of {factors} factors mod {p} failed (internal error)"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for ZassenhausError {}
+
+/// `(content, factors)` of [`factor`]: `f = content · ∏ g^e` over the `(g, e)` in `factors`.
+pub type Factorization = (Integer, Vec<(Vec<Integer>, u32)>);
+
+/// `InvalidOperation` for the internal Hensel failure, `NotSupported` for the
+/// two limits of the method; the message is the [`std::fmt::Display`] text.
+impl From<ZassenhausError> for rustmath_core::MathError {
+    fn from(e: ZassenhausError) -> Self {
+        match e {
+            ZassenhausError::HenselLiftFailed { .. } => {
+                rustmath_core::MathError::InvalidOperation(e.to_string())
+            }
+            _ => rustmath_core::MathError::NotSupported(e.to_string()),
+        }
+    }
+}
 
 /// Cap on how many valid primes to scan before committing to the one with the
 /// fewest mod-`p` factors. More scanning ⇒ better chance of a low-factor prime
@@ -23,7 +88,7 @@ const MAX_PRIME_SCAN: usize = 30;
 /// Hard cap on subsets tested during recombination, a guard against the classic
 /// Zassenhaus exponential blow-up so a pathological input degrades to an error
 /// rather than a hang.
-const MAX_RECOMBINE: u64 = 1 << 22;
+pub const MAX_RECOMBINE: u64 = 1 << 22;
 
 fn is_small_prime(n: i64) -> bool {
     if n < 2 {
@@ -91,15 +156,20 @@ fn mul_mod(a: &[Integer], b: &[Integer], m: &Integer) -> Vec<Integer> {
     reduce_poly(&zx::mul(a, b), m)
 }
 
-/// Choose a factoring prime. Returns `(p, factors_mod_p)` for the scanned prime
-/// giving the fewest mod-`p` factors (a 1-factor prime proves irreducibility).
-/// `None` if no suitable prime was found within the scan budget.
-fn choose_prime(f: &[Integer]) -> Option<(i64, Vec<Vec<i64>>)> {
+/// Choose a factoring prime for the monic squarefree `f`. Returns
+/// `(p, factors_mod_p)` for the scanned prime giving the fewest mod-`p` factors
+/// (a 1-factor prime proves irreducibility). The scan stops after
+/// [`MAX_PRIME_SCAN`] good primes or at `prime_bound` (at most
+/// `fp_factor::MAX_P`). A prime is bad only if it divides `disc(f) != 0`, so
+/// the scan meets at most `omega(disc f) + MAX_PRIME_SCAN` primes before it
+/// stops. `None` if no good prime `<= prime_bound` exists.
+fn choose_prime(f: &[Integer], prime_bound: i64) -> Option<(i64, Vec<Vec<i64>>)> {
+    debug_assert!(prime_bound <= fp_factor::MAX_P);
     let n = zx::degree(f);
     let mut best: Option<(i64, Vec<Vec<i64>>)> = None;
     let mut scanned = 0usize;
     let mut p = 2i64;
-    while scanned < MAX_PRIME_SCAN && p < 100_000 {
+    while scanned < MAX_PRIME_SCAN && p <= prime_bound {
         if !is_small_prime(p) {
             p += 1;
             continue;
@@ -115,7 +185,8 @@ fn choose_prime(f: &[Integer]) -> Option<(i64, Vec<Vec<i64>>)> {
             p += 1;
             continue;
         }
-        let factors = fp_factor::factor(&fp, p);
+        // p is prime (trial division) and <= prime_bound <= MAX_P.
+        let factors = fp_factor::factor_prime(&fp, p);
         scanned += 1;
         if factors.len() == 1 {
             return Some((p, factors)); // irreducible — stop immediately
@@ -130,8 +201,15 @@ fn choose_prime(f: &[Integer]) -> Option<(i64, Vec<Vec<i64>>)> {
 }
 
 /// Recombine Hensel-lifted factors of a monic `f` (mod `pk`) into the true ℤ
-/// factors by subset trial division. Returns the irreducible monic factors.
-fn recombine(f: &[Integer], lifted: Vec<Vec<Integer>>, pk: &Integer) -> Result<Vec<Vec<Integer>>, ()> {
+/// factors by subset trial division. Returns the irreducible monic factors, or
+/// [`ZassenhausError::RecombinationLimit`] after `cap` tested subsets.
+fn recombine(
+    f: &[Integer],
+    lifted: Vec<Vec<Integer>>,
+    pk: &Integer,
+    cap: u64,
+) -> Result<Vec<Vec<Integer>>, ZassenhausError> {
+    let lifted_count = lifted.len();
     let mut pool: Vec<Vec<Integer>> = lifted.iter().map(|g| reduce_poly(g, pk)).collect();
     let mut factors: Vec<Vec<Integer>> = Vec::new();
     let mut remaining = zx::trim(f);
@@ -143,8 +221,11 @@ fn recombine(f: &[Integer], lifted: Vec<Vec<Integer>>, pk: &Integer) -> Result<V
         let mut combo: Vec<usize> = (0..s).collect();
         loop {
             tested += 1;
-            if tested > MAX_RECOMBINE {
-                return Err(());
+            if tested > cap {
+                return Err(ZassenhausError::RecombinationLimit {
+                    limit: cap,
+                    lifted: lifted_count,
+                });
             }
             // product of the chosen lifted factors mod pk
             let mut prod = vec![Integer::one()];
@@ -202,9 +283,25 @@ fn next_combination(combo: &mut [usize], n: usize) -> bool {
     false
 }
 
-/// Factor a monic square-free `f` (degree ≥ 2) into monic irreducibles over ℤ.
-fn factor_monic_squarefree(f: &[Integer]) -> Result<Vec<Vec<Integer>>, ()> {
-    let (p, fp_factors) = choose_prime(f).ok_or(())?;
+/// Factor a monic square-free `f` (degree ≥ 2) into monic irreducibles over ℤ,
+/// with the public limits (primes up to `fp_factor::MAX_P`, [`MAX_RECOMBINE`]
+/// subsets).
+fn factor_monic_squarefree(f: &[Integer]) -> Result<Vec<Vec<Integer>>, ZassenhausError> {
+    factor_monic_squarefree_with(f, fp_factor::MAX_P, MAX_RECOMBINE)
+}
+
+/// [`factor_monic_squarefree`] with an explicit prime bound and recombination
+/// cap (the tests use small values to reach each error).
+fn factor_monic_squarefree_with(
+    f: &[Integer],
+    prime_bound: i64,
+    cap: u64,
+) -> Result<Vec<Vec<Integer>>, ZassenhausError> {
+    let (p, fp_factors) =
+        choose_prime(f, prime_bound).ok_or(ZassenhausError::NoGoodPrime {
+            degree: zx::degree(f),
+            bound: prime_bound,
+        })?;
     if fp_factors.len() == 1 {
         return Ok(vec![zx::trim(f)]);
     }
@@ -217,8 +314,13 @@ fn factor_monic_squarefree(f: &[Integer]) -> Result<Vec<Vec<Integer>>, ()> {
         pk = pk * pi.clone();
         k += 1;
     }
-    let lifted = zp_hensel::hensel_lift_all(f, &fp_factors, p, k).ok_or(())?;
-    recombine(f, lifted, &pk)
+    let lifted = zp_hensel::hensel_lift_all(f, &fp_factors, p, k).ok_or(
+        ZassenhausError::HenselLiftFailed {
+            p,
+            factors: fp_factors.len(),
+        },
+    )?;
+    recombine(f, lifted, &pk, cap)
 }
 
 /// Scale the variable: return `g(c·x)`  (coefficient `i` ↦ `g_i · c^i`).
@@ -235,7 +337,7 @@ fn scale_var(g: &[Integer], c: &Integer) -> Vec<Integer> {
 /// Factor a primitive square-free `f` into primitive irreducibles over ℤ,
 /// handling a non-monic leading coefficient by the monic substitution
 /// `g(x) = lc^{n-1} f(x/lc)`.
-fn factor_primitive_squarefree(f: &[Integer]) -> Result<Vec<Vec<Integer>>, ()> {
+fn factor_primitive_squarefree(f: &[Integer]) -> Result<Vec<Vec<Integer>>, ZassenhausError> {
     let f = zx::normalize(f); // primitive, positive leading coeff
     let n = zx::degree(&f);
     if n <= 1 {
@@ -269,9 +371,18 @@ fn factor_primitive_squarefree(f: &[Integer]) -> Result<Vec<Vec<Integer>>, ()> {
 ///
 /// Returns `(content, factors)` where `content` is the (sign-carrying) integer
 /// content and `factors` are primitive irreducibles with positive leading
-/// coefficient: `f = content · ∏ gᵢ^{eᵢ}`. Returns `Err(())` only if recombination
-/// exceeds [`MAX_RECOMBINE`] (pathological factor count) — never hangs.
-pub fn factor(f: &[Integer]) -> Result<(Integer, Vec<(Vec<Integer>, u32)>), ()> {
+/// coefficient: `f = content · ∏ gᵢ^{eᵢ}`. The factors are sorted by degree, then
+/// by coefficients from the top down (PARI's `factor` order). The zero
+/// polynomial gives `(0, [])`; a constant `c` gives `(c, [])`.
+///
+/// Errors (each a limit of the method, never a statement about `f`):
+/// [`ZassenhausError::RecombinationLimit`] when recombination tests more than
+/// [`MAX_RECOMBINE`] subsets (many modular factors);
+/// [`ZassenhausError::NoGoodPrime`] when no prime `<= fp_factor::MAX_P` keeps a
+/// squarefree part squarefree of full degree (needs a discriminant with more
+/// than 10^8 prime factors); [`ZassenhausError::HenselLiftFailed`], an internal
+/// error. It never hangs: the prime scan and the recombination are bounded.
+pub fn factor(f: &[Integer]) -> Result<Factorization, ZassenhausError> {
     let f = zx::trim(f);
     if f.is_empty() {
         return Ok((Integer::zero(), Vec::new()));
@@ -292,7 +403,16 @@ pub fn factor(f: &[Integer]) -> Result<(Integer, Vec<(Vec<Integer>, u32)>), ()> 
             out.push((irr, mult));
         }
     }
+    out.sort_by(|(a, _), (b, _)| zx_factor_order(a, b));
     Ok((cont, out))
+}
+
+/// Degree, then coefficients from the top down (signed): PARI's `factor` order
+/// over Z.
+fn zx_factor_order(a: &[Integer], b: &[Integer]) -> Ordering {
+    zx::degree(a)
+        .cmp(&zx::degree(b))
+        .then_with(|| a.iter().rev().cmp(b.iter().rev()))
 }
 
 #[cfg(test)]
@@ -381,5 +501,156 @@ mod tests {
         // but splits into 4 linear factors mod every prime (Zassenhaus stress test)
         let sd = p(&[1, 0, -10, 0, 1]);
         assert_eq!(factors_only(&sd), vec![sd]);
+    }
+
+    /// x^2 - P with P the product of the primes below 10^5 (43293 digits):
+    /// every prime below 10^5 divides disc = 4P, so the old scan, which
+    /// stopped at 10^5, returned an error. gp: polisirreducible(x^2 - P) = 1
+    /// (P squarefree and not a square); nextprime(10^5) = 100003 and
+    /// kronecker(P, 100003) = -1, so the scan stops there with an irreducible
+    /// reduction.
+    #[test]
+    fn factor_scans_past_bad_small_primes() {
+        let mut primorial = Integer::one();
+        for q in rustmath_integers::sieve::primes_up_to(99_999) {
+            primorial = primorial * Integer::from(q as i64);
+        }
+        let f = vec![-primorial, Integer::zero(), Integer::one()];
+        let (cont, fs) = factor(&f).expect("x^2 - P factors");
+        assert_eq!(cont, Integer::one());
+        assert_eq!(fs, vec![(f, 1)]);
+    }
+
+    /// x^2 - 210 has disc 840 = 2^3·3·5·7, so no prime <= 10 is good.
+    #[test]
+    fn choose_prime_respects_bound() {
+        let f = p(&[-210, 0, 1]);
+        assert_eq!(
+            factor_monic_squarefree_with(&f, 10, MAX_RECOMBINE),
+            Err(ZassenhausError::NoGoodPrime { degree: 2, bound: 10 })
+        );
+    }
+
+    /// x^4 - 10x^2 + 1 splits mod every prime, so recombination is needed; a
+    /// cap of 0 subsets reports the limit.
+    #[test]
+    fn recombination_limit_is_reported() {
+        let f = p(&[1, 0, -10, 0, 1]);
+        match factor_monic_squarefree_with(&f, fp_factor::MAX_P, 0) {
+            Err(ZassenhausError::RecombinationLimit { limit: 0, lifted }) => {
+                assert!(lifted >= 2, "lifted = {lifted}")
+            }
+            other => panic!("expected RecombinationLimit, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn error_messages() {
+        assert_eq!(
+            ZassenhausError::NoGoodPrime { degree: 2, bound: 10 }.to_string(),
+            "Zassenhaus: no prime p <= 10 keeps f mod p squarefree of degree 2"
+        );
+        assert_eq!(
+            ZassenhausError::RecombinationLimit { limit: 4194304, lifted: 24 }.to_string(),
+            "Zassenhaus: recombination tested more than 4194304 subsets of 24 modular factors \
+             (Berlekamp-Zassenhaus is exponential in the number of modular factors; van Hoeij's \
+             lattice recombination is not implemented)"
+        );
+        assert_eq!(
+            ZassenhausError::HenselLiftFailed { p: 7, factors: 3 }.to_string(),
+            "Zassenhaus: Hensel lifting of 3 factors mod 7 failed (internal error)"
+        );
+    }
+
+    /// The output order is PARI's `factor` order over Z (degree, then the
+    /// coefficients from the top down). gp, for each polynomial f below:
+    ///   gp> F = factor(f); [F[,1]~, F[,2]~]
+    /// with f = x^2-1, (x-1)^2*(x+2), (x^2+1)*(x^2+2)*(x^3+x+1), 6*x^2-6,
+    /// 2*x^2+3*x+1, (x+3)*(x-3)*(x+1)*(x-2)*(x^2-2)*(x^2+2),
+    /// (x^2+x+1)*(x^2-x+1)*(x^2+3)*(x^2-3), (2*x-1)*(3*x+1)*(x-5)*(5*x+4),
+    /// (x^4-10*x^2+1)*(x^2+x-1)*(x^2-x-1), x^6-1, x^12-1, (x-1)^3*(x+1)^2*x.
+    #[test]
+    fn factor_order_matches_pari() {
+        let prod = |fs: &[&[i64]]| {
+            fs.iter()
+                .fold(p(&[1]), |acc, g| zx::mul(&acc, &p(g)))
+        };
+        #[allow(clippy::type_complexity)]
+        let rows: Vec<(Vec<Integer>, i64, Vec<(&[i64], u32)>)> = vec![
+            (p(&[-1, 0, 1]), 1, vec![(&[-1, 1], 1), (&[1, 1], 1)]),
+            (
+                prod(&[&[-1, 1], &[-1, 1], &[2, 1]]),
+                1,
+                vec![(&[-1, 1], 2), (&[2, 1], 1)],
+            ),
+            (
+                prod(&[&[1, 0, 1], &[2, 0, 1], &[1, 1, 0, 1]]),
+                1,
+                vec![(&[1, 0, 1], 1), (&[2, 0, 1], 1), (&[1, 1, 0, 1], 1)],
+            ),
+            (p(&[-6, 0, 6]), 6, vec![(&[-1, 1], 1), (&[1, 1], 1)]),
+            (p(&[1, 3, 2]), 1, vec![(&[1, 1], 1), (&[1, 2], 1)]),
+            (
+                prod(&[&[3, 1], &[-3, 1], &[1, 1], &[-2, 1], &[-2, 0, 1], &[2, 0, 1]]),
+                1,
+                vec![
+                    (&[-3, 1], 1),
+                    (&[-2, 1], 1),
+                    (&[1, 1], 1),
+                    (&[3, 1], 1),
+                    (&[-2, 0, 1], 1),
+                    (&[2, 0, 1], 1),
+                ],
+            ),
+            (
+                prod(&[&[1, 1, 1], &[1, -1, 1], &[3, 0, 1], &[-3, 0, 1]]),
+                1,
+                vec![
+                    (&[1, -1, 1], 1),
+                    (&[-3, 0, 1], 1),
+                    (&[3, 0, 1], 1),
+                    (&[1, 1, 1], 1),
+                ],
+            ),
+            (
+                prod(&[&[-1, 2], &[1, 3], &[-5, 1], &[4, 5]]),
+                1,
+                vec![(&[-5, 1], 1), (&[-1, 2], 1), (&[1, 3], 1), (&[4, 5], 1)],
+            ),
+            (
+                prod(&[&[1, 0, -10, 0, 1], &[-1, 1, 1], &[-1, -1, 1]]),
+                1,
+                vec![(&[-1, -1, 1], 1), (&[-1, 1, 1], 1), (&[1, 0, -10, 0, 1], 1)],
+            ),
+            (
+                p(&[-1, 0, 0, 0, 0, 0, 1]),
+                1,
+                vec![(&[-1, 1], 1), (&[1, 1], 1), (&[1, -1, 1], 1), (&[1, 1, 1], 1)],
+            ),
+            (
+                p(&[-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]),
+                1,
+                vec![
+                    (&[-1, 1], 1),
+                    (&[1, 1], 1),
+                    (&[1, -1, 1], 1),
+                    (&[1, 0, 1], 1),
+                    (&[1, 1, 1], 1),
+                    (&[1, 0, -1, 0, 1], 1),
+                ],
+            ),
+            (
+                prod(&[&[-1, 1], &[-1, 1], &[-1, 1], &[1, 1], &[1, 1], &[0, 1]]),
+                1,
+                vec![(&[-1, 1], 3), (&[0, 1], 1), (&[1, 1], 2)],
+            ),
+        ];
+        for (f, content, expected) in rows {
+            let (cont, got) = factor(&f).unwrap();
+            assert_eq!(cont, Integer::from(content), "content of {f:?}");
+            let want: Vec<(Vec<Integer>, u32)> =
+                expected.into_iter().map(|(g, e)| (p(g), e)).collect();
+            assert_eq!(got, want, "PARI factor order of {f:?}");
+        }
     }
 }

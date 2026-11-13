@@ -1,7 +1,7 @@
 //! Dense polynomial arithmetic over ℤ[x], coefficients `Vec<Integer>` little-endian
 //! (index = power of x). This is the ℤ-layer that sits between `fp_factor`
 //! (F_p[x] over `Vec<i64>`) and `zassenhaus` (factorization over ℤ): it supplies
-//! the operations the rational-roots-only factorizer lacked — a **subresultant
+//! the operations the rational-roots-only factorizer lacked: a **subresultant
 //! pseudo-remainder GCD** (the Euclidean GCD diverges over ℤ[x] because a leading
 //! coefficient need not divide), exact division, and **Yun square-free
 //! decomposition with multiplicities**.
@@ -9,8 +9,17 @@
 //! Ported in the style of `fp_factor`/`zp_hensel`: free functions over slices, no
 //! wrapper type. The zero polynomial is the empty slice; [`degree`] returns `-1`.
 //!
-//! References: Cohen, *A Course in Computational Algebraic Number Theory*,
-//! Alg. 3.1.2 (pseudo-division), 3.3.1 (subresultant GCD), 3.4.2 (square-free).
+//! Specification: MAGMA Handbook ch. 23 *Univariate Polynomial Rings* (§23.4.10
+//! `PseudoRemainder`, §23.5.1 `GCD`, §23.8.1 `SquarefreeFactorization`; digest
+//! `rustmath-lava/docs/Chapter_23_Univariate_Polynomial_Rings.md`).
+//!
+//! References: H. Cohen, *A Course in Computational Algebraic Number Theory*,
+//! GTM 138 (1993), Alg. 3.1.2 (pseudo-division) and Alg. 3.3.1 (sub-resultant
+//! GCD). Square-free decomposition by Yun's algorithm (D. Y. Y. Yun, *On
+//! square-free decomposition algorithms*, SYMSAC 1976, 26-35); Cohen Alg. 3.4.2
+//! is its characteristic-p form (Sage `finite_field_base.pyx` cites it as
+//! "basically the algorithm in \[Yun1976\] with special treatment for powers
+//! divisible by p"), so it is not the algorithm used here over ℤ.
 
 use rustmath_integers::Integer;
 
@@ -303,7 +312,7 @@ pub fn subresultant_gcd(a: &[Integer], b: &[Integer]) -> Vec<Integer> {
     res
 }
 
-/// Square-free decomposition over ℤ via Yun's algorithm. Returns
+/// Square-free decomposition over ℤ via Yun's algorithm (Yun 1976). Returns
 /// `(g_i, i)` with `f = c · ∏ g_i^i`, each `g_i` primitive, square-free, pairwise
 /// coprime, with positive leading coefficient; the content `c` is discarded.
 /// Repeated and constant inputs are handled; the empty vector is returned for a

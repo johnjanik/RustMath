@@ -272,9 +272,10 @@ mod tests {
         assert_eq!(q2.is_finite(), Some(false));
         assert_eq!(q2.cardinality(), None);
 
-        // The polynomial element type states no characteristic: undecided, not "infinite".
+        // The polynomial element type has characteristic 0 from its coefficients, so
+        // Z[x]^2 is infinite (GAP: IsFinite(PolynomialRing(Integers, 1)) -> false).
         let poly2: SimpleAlgebra<UnivariatePolynomial<Integer>> = SimpleAlgebra::new(2);
-        assert_eq!(poly2.is_finite(), None);
+        assert_eq!(poly2.is_finite(), Some(false));
     }
 
     #[test]

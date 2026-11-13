@@ -245,7 +245,7 @@ pub(crate) fn factor_monic_rational_certified(
         .map(|c| &(c.numerator() * &l) / c.denominator())
         .collect();
     let (content, zfactors) = zassenhaus::factor(&fz)
-        .map_err(|_| "Zassenhaus recombination exceeded its factor-count bound".to_string())?;
+        .map_err(|e| e.to_string())?;
     // certificate over Z: content * prod g_i^{e_i} == L * f exactly
     let mut prod = vec![content.clone()];
     for (g, e) in &zfactors {

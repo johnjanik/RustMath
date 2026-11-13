@@ -311,9 +311,7 @@ pub(crate) fn f20_membership(f: &[Integer], ev: &mut Evidence) -> Result<CayleyO
         };
         let g = depress_quintic(&h)?;
         let resolvent = resolvent_sextic(&g[3], &g[2], &g[1], &g[0]);
-        let (_, factors) = zassenhaus::factor(&resolvent).map_err(|_| {
-            MathError::NotSupported("factor recombination limit exceeded".to_string())
-        })?;
+        let (_, factors) = zassenhaus::factor(&resolvent).map_err(MathError::from)?;
         if factors.iter().any(|(_, m)| *m > 1) {
             ev.notes.push(format!(
                 "Cayley sextic resolvent of {desc} is not squarefree (θ-value collision); \

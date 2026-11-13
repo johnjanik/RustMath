@@ -212,10 +212,10 @@ pub fn sweep_resolvent_fibres(
             continue;
         }
         let status = match zassenhaus::factor(&g) {
-            Err(()) => {
+            Err(e) => {
                 examined += 1;
                 FibreStatus::Unusable {
-                    why: "Zassenhaus factorization failed on the fibre polynomial".into(),
+                    why: format!("Zassenhaus factorization failed on the fibre polynomial: {e}"),
                 }
             }
             Ok((_, factors)) => {

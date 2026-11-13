@@ -187,6 +187,19 @@ pub trait Ring:
     fn static_characteristic() -> Option<u64> {
         None
     }
+
+    /// MAGMA `IsCommutative(R)` (Ch. 17 §17.4.3) for every ring this element type
+    /// represents, when the type alone determines it.
+    ///
+    /// `Some(true)` only if every value the type can hold, including any deferred constant
+    /// from `zero()`/`one()`, lies in a commutative ring. `None` (default) when it is unknown
+    /// or depends on runtime data. Containers use it to apply results that hold only over
+    /// commutative rings (for `UnivariatePolynomial`: Atiyah-Macdonald, *Introduction to
+    /// Commutative Algebra*, Ch. 1, Exercise 2). It is a separate hook because a generic
+    /// `impl<R: Ring>` cannot see the marker trait [`CommutativeRing`].
+    fn static_is_commutative() -> Option<bool> {
+        None
+    }
 }
 
 /// The multiplicative order of a ring element, see [`Ring::multiplicative_order_status`]
@@ -431,6 +444,7 @@ impl Ring for i32 {
         }
     }
     fn static_characteristic() -> Option<u64> { Some(0) }
+    fn static_is_commutative() -> Option<bool> { Some(true) }
 }
 
 impl CommutativeRing for i32 {}
@@ -550,6 +564,7 @@ impl Ring for i64 {
         }
     }
     fn static_characteristic() -> Option<u64> { Some(0) }
+    fn static_is_commutative() -> Option<bool> { Some(true) }
 }
 
 impl CommutativeRing for i64 {}
@@ -723,6 +738,9 @@ mod tests {
         assert_eq!((-1i64).multiplicative_order_status(), MultiplicativeOrder::Finite(2));
         assert_eq!(7i64.unit_inverse(), Err(MathError::NotInvertible));
         assert_eq!(<i64 as Ring>::static_characteristic(), Some(0));
+        // Z is commutative (MAGMA IsCommutative(Integers()) = true).
+        assert_eq!(<i32 as Ring>::static_is_commutative(), Some(true));
+        assert_eq!(<i64 as Ring>::static_is_commutative(), Some(true));
     }
 
     /// Test-local `Z/6Z` rings that pin the trait defaults. `$panicky` makes the static

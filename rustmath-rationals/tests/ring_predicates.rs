@@ -32,6 +32,8 @@ fn rational_units_nilpotents_orders() {
     assert_eq!(zero.unit_inverse(), Err(MathError::NotInvertible));
 
     assert_eq!(<Rational as Ring>::static_characteristic(), Some(0));
+    // MAGMA IsCommutative(Integers()) and IsCommutative(Rationals()) are true.
+    assert_eq!(<Rational as Ring>::static_is_commutative(), Some(true));
 }
 
 // `Rational::reciprocal` (hence `Field::inverse`) of a negative rational used to return a

@@ -9,7 +9,8 @@ use std::fmt::Debug;
 /// MAGMA `Content(p)` (Handbook ch. 23 §23.5.2): the same value as
 /// [`UnivariatePolynomial::content`], the normalized gcd of the coefficients (positive over Z,
 /// `content(-6 - 9x) = 3`, PARI `content(-6-9*x)`; `1` for a nonzero polynomial over a field;
-/// `0` for `0`).
+/// `0` for `0`). Over Q the `1` follows the ring reading, as Sage's `content_ideal` does (the
+/// unit ideal); PARI's `content(2/3*x+4/5) = 2/15` is the Z-module content instead.
 pub fn content<R>(poly: &UnivariatePolynomial<R>) -> R
 where
     R: Ring + EuclideanDomain + Clone + Debug,
@@ -115,8 +116,13 @@ where
 /// the prime constant `2` is irreducible. PARI's `polisirreducible` answers the question over
 /// the fraction field instead (`polisirreducible(2*x+2) = 1`, every constant gives 0); that
 /// convention is [`is_irreducible_over_integers`]. Which of the two MAGMA's `IsIrreducible`
-/// follows over Z is unverified (the handbook text does not say; no MAGMA was available).
-/// Over a field, Q in particular, the two notions coincide and this agrees with PARI.
+/// follows over Z is unverified: the V2.19 handbook (§23.8.1) says only "returns true if and
+/// only f is irreducible over R", with no example, and no MAGMA was available. Sage follows
+/// the ring convention used here (`Polynomial.is_irreducible` doctests in
+/// `polynomial_element.pyx`, develop branch: over ZZ `2*x`, `1` and `4` are not irreducible
+/// and `5` is; over QQ `2*x` is), and this function agrees on all five cases
+/// (`tests/ch23_is_irreducible.rs::sage_content_examples`). Over a field, Q in particular, the
+/// two notions coincide and this agrees with PARI.
 ///
 /// What is decided, by coefficient ring (recognised at run time through [`std::any::Any`],
 /// hence `R: 'static`; stable Rust has no specialization):
@@ -128,7 +134,10 @@ where
 ///   is reducible if its content is not 1; a primitive one is irreducible iff its Zassenhaus
 ///   factorization ([`crate::zassenhaus::factor`]) is a single factor of multiplicity 1
 ///   (Gauss' lemma: a primitive polynomial is irreducible in `Z[x]` iff it is irreducible in
-///   `Q[x]`). `Err(NotSupported)` if Zassenhaus' recombination exceeds its subset bound.
+///   `Q[x]`). `Err(NotSupported)` when Zassenhaus stops at one of its limits (the
+///   recombination subset cap, or no good prime up to `fp_factor::MAX_P`), and
+///   `Err(InvalidOperation)` on its internal Hensel failure; the message names the cause
+///   ([`crate::zassenhaus::ZassenhausError`]).
 /// * Q (`rustmath_rationals::Rational`): constants `false`, degree 1 `true`, otherwise
 ///   Zassenhaus on the primitive integer associate (denominators cleared, content removed).
 /// * Any other `R`: `false` if the content is a proven non-unit (`f = c·(f/c)`); `true` for
@@ -222,12 +231,17 @@ fn is_irreducible_in_qx(f: &UnivariatePolynomial<rustmath_rationals::Rational>) 
 /// For `f` in `Z[x]` of degree >= 1: whether `f` is, up to its content, a single irreducible
 /// factor of multiplicity 1 (Zassenhaus), i.e. irreducible over Q.
 fn single_irreducible_factor(f: &[rustmath_integers::Integer]) -> Result<bool> {
-    let (_, factors) = zassenhaus::factor(f).map_err(|_| {
-        MathError::NotSupported(
-            "is_irreducible: Zassenhaus recombination exceeded the subset bound".to_string(),
-        )
-    })?;
+    let (_, factors) = zassenhaus::factor(f).map_err(|e| zassenhaus_error("is_irreducible", e))?;
     Ok(factors.len() == 1 && factors[0].1 == 1)
+}
+
+/// The [`MathError`] of a Zassenhaus failure, with the caller's name as a prefix.
+fn zassenhaus_error(who: &str, e: zassenhaus::ZassenhausError) -> MathError {
+    match MathError::from(e) {
+        MathError::NotSupported(m) => MathError::NotSupported(format!("{who}: {m}")),
+        MathError::InvalidOperation(m) => MathError::InvalidOperation(format!("{who}: {m}")),
+        other => other,
+    }
 }
 
 /// Whether `c` is proven to be a unit: [`Ring::unit_status`], or else an exact division
@@ -394,25 +408,24 @@ fn factor_out_roots(
     Ok((factors, remaining))
 }
 
-/// Factor a polynomial over integers using basic methods
+/// MAGMA `Factorization(f)` over Z (Handbook ch. 23 §23.8.1): the complete factorization of
+/// `f` into irreducibles of `Z[x]`, by [`crate::zassenhaus::factor`] (square-free
+/// decomposition, a good prime, Hensel lifting past the Landau-Mignotte bound, subset
+/// recombination).
 ///
-/// This implementation uses:
-/// 1. Square-free factorization to separate repeated factors
-/// 2. Rational root theorem to find linear factors
-/// 3. Returns remaining polynomial if it cannot be factored further
+/// Returns `(g, e)` pairs with `f = ∏ g^e`: first the integer content as a constant factor
+/// when it is not 1 (it carries the sign of the leading coefficient), then the primitive
+/// irreducible factors with positive leading coefficient, in PARI's `factor` order (degree,
+/// then coefficients from the top down). The zero polynomial gives `[]`; a constant `c`
+/// gives `[(c, 1)]`.
 ///
-/// # Limitations
+/// # Errors
 ///
-/// - Does not implement Zassenhaus or LLL-based algorithms
-/// - Cannot factor polynomials without rational roots
-/// - Works best for polynomials with small coefficients and low degrees
-///
-/// # Algorithm
-///
-/// For a complete factorization over Z[x], one would need:
-/// - Hensel lifting to factor modulo increasing prime powers
-/// - LLL lattice reduction for finding small factors
-/// - Zassenhaus or van Hoeij algorithms
+/// The limits of the method, never a statement about `f`
+/// ([`crate::zassenhaus::ZassenhausError`]): `Err(NotSupported)` when recombination tests
+/// more than `zassenhaus::MAX_RECOMBINE` subsets (van Hoeij's lattice recombination is not
+/// implemented) or no prime up to `fp_factor::MAX_P` is good; `Err(InvalidOperation)` on the
+/// internal Hensel failure. The message names the cause.
 pub fn factor_over_integers(
     poly: &UnivariatePolynomial<rustmath_integers::Integer>,
 ) -> Result<Vec<(UnivariatePolynomial<rustmath_integers::Integer>, u32)>> {
@@ -427,12 +440,8 @@ pub fn factor_over_integers(
 
     // Delegate to the Zassenhaus factorizer (Vec<Integer>, little-endian).
     let coeffs: Vec<Integer> = poly.coefficients().to_vec();
-    let (content_int, factors) = zassenhaus::factor(&coeffs).map_err(|_| {
-        MathError::NotSupported(
-            "Zassenhaus recombination exceeded the subset bound (pathological factor count)"
-                .to_string(),
-        )
-    })?;
+    let (content_int, factors) = zassenhaus::factor(&coeffs)
+        .map_err(|e| zassenhaus_error("factor_over_integers", e))?;
 
     let mut all_factors: Vec<(UnivariatePolynomial<Integer>, u32)> = Vec::new();
 
@@ -463,9 +472,8 @@ pub fn is_irreducible_over_integers(
         return Ok(false);
     }
     let coeffs: Vec<rustmath_integers::Integer> = poly.coefficients().to_vec();
-    let (_, factors) = zassenhaus::factor(&coeffs).map_err(|_| {
-        MathError::NotSupported("Zassenhaus recombination exceeded the subset bound".to_string())
-    })?;
+    let (_, factors) = zassenhaus::factor(&coeffs)
+        .map_err(|e| zassenhaus_error("is_irreducible_over_integers", e))?;
     // Irreducible iff exactly one non-constant factor, with multiplicity one.
     Ok(factors.len() == 1 && factors[0].1 == 1)
 }
@@ -477,9 +485,10 @@ pub fn is_irreducible_over_integers(
 /// Returns every monic irreducible factor of `f mod p`, repeated by its multiplicity, in the
 /// order of [`crate::berlekamp::factor`] (by degree, then by coefficients from the top
 /// down); the unit `lc(f) mod p` is dropped (use [`crate::berlekamp::factor`] for it).
-/// Non-square-free input is supported. `Err` for `p` not prime (see
-/// [`crate::berlekamp::factor`] for what "prime" guarantees above 3.19e23) and for
-/// `f ≡ 0 (mod p)`; `Ok(vec![])` for a nonzero constant.
+/// Non-square-free input is supported. `Err(InvalidArgument)` for `p` not prime (a proof for
+/// every size, see [`crate::berlekamp::factor`]) and for `f ≡ 0 (mod p)`;
+/// `Err(NotSupported)` when the primality proof of `p` is unresolved; `Ok(vec![])` for a
+/// nonzero constant.
 ///
 /// # Example
 ///
@@ -1471,5 +1480,18 @@ mod tests {
         let scaled = poly_scalar_mul_mod(&a, &scalar, &p);
         assert_eq!(*scaled.coeff(0), Integer::from(1)); // (5 * 3) mod 7 = 15 mod 7 = 1
         assert_eq!(*scaled.coeff(1), Integer::from(4)); // (6 * 3) mod 7 = 18 mod 7 = 4
+    }
+
+    /// x^2 - P, P the product of the primes below 10^5: every prime below 10^5 is bad
+    /// (it divides disc = 4P). The Zassenhaus prime scan now continues to the first good
+    /// prime, 100003. gp: polisirreducible(x^2 - P) = 1; kronecker(P, 100003) = -1.
+    #[test]
+    fn is_irreducible_scans_past_bad_small_primes() {
+        let mut primorial = Integer::one();
+        for q in rustmath_integers::sieve::primes_up_to(99_999) {
+            primorial = primorial * Integer::from(q as i64);
+        }
+        let f = UnivariatePolynomial::new(vec![-primorial, Integer::zero(), Integer::one()]);
+        assert_eq!(is_irreducible(&f), Ok(true));
     }
 }

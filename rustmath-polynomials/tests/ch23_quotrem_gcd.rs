@@ -14,7 +14,13 @@
 //! and the online calculator need a login, and no MAGMA was available): which minimal-degree
 //! remainder `Quotrem` returns over Z when the leading coefficient of the divisor is not a
 //! unit, and `Content` over a field (1 for a nonzero polynomial). The tests below pin the
-//! RustMath values; they are not MAGMA reference values.
+//! RustMath values; they are not MAGMA reference values. Evidence gathered so far: the V2.19
+//! handbook (§23.4.10, §23.5.2) has the V2.3 text word for word and gives no example. Sage
+//! over ZZ calls FLINT's `fmpz_poly_divrem` (`polynomial_integer_dense_flint.pyx`, `quo_rem`
+//! doctests in the develop source on GitHub: `(5*x+7).quo_rem(3) == (x + 2, 2*x + 1)`,
+//! `(x^2).quo_rem(2*x - 1) == (0, x^2)`), another remainder of the same minimal degree. Sage's
+//! `content_ideal` over QQ is the unit ideal (`QQ.ideal(2)` is "Principal ideal (1) of
+//! Rational Field"), which agrees with `Content = 1`.
 //!
 //! Inputs marked "formerly hung" looped forever before the fix; they run inside `within`, so
 //! a regression fails fast instead of stalling the test run. The same holds for the gcds over
@@ -379,6 +385,17 @@ fn quotrem_over_z_minimal_remainder_is_not_unique() {
         (z(&[0]), z(&[0, 0, -3]))
     );
     assert_eq!(z(&[0, -2]) * g.clone() + z(&[0, 0, 1]), z(&[0, 0, -3])); // FLINT
+    // Sage/FLINT doctests (polynomial_integer_dense_flint.pyx, quo_rem):
+    // (5*x+7).quo_rem(3) == (x + 2, 2*x + 1) and (x^2).quo_rem(2*x - 1) == (0, x^2).
+    let (f5, three) = (z(&[7, 5]), z(&[3]));
+    assert_eq!(f5.div_rem(&three).unwrap(), (z(&[0]), z(&[7, 5])));
+    let (qs, rs) = (z(&[2, 1]), z(&[1, 2])); // FLINT
+    assert_eq!(qs * three.clone() + rs.clone(), f5);
+    assert_eq!(rs.degree(), Some(1)); // the minimal degree, as ours
+    assert_eq!(
+        z(&[0, 0, 1]).div_rem(&z(&[-1, 2])).unwrap(),
+        (z(&[0]), z(&[0, 0, 1]))
+    );
 }
 
 #[test]

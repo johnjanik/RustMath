@@ -3,7 +3,17 @@
 //! Specification: MAGMA Handbook ch. 23, *Univariate Polynomial Rings* (digest
 //! `rustmath-lava/docs/Chapter_23_Univariate_Polynomial_Rings.md`): §23.4.5 `Coefficient`;
 //! §23.4.10 `Quotrem`, `div`, `mod`, `IsDivisibleBy`, `ExactQuotient`, `PseudoRemainder`;
-//! §23.5 `GCD`, `LCM`, `Normalize`, `Content`, `PrimitivePart`, `ContentAndPrimitivePart`.
+//! §23.5 `GCD`, `LCM`, `Normalize`, `Content`, `PrimitivePart`, `ContentAndPrimitivePart`;
+//! §23.4.4 `IsUnit`, `IsNilpotent` and ch. 17 §17.4.2-17.4.3 `Characteristic`,
+//! `IsCommutative` (the `Ring` hooks, decided from the coefficients).
+//!
+//! Ring hooks (unit, nilpotent, inverse, order): rules valid in every ring (`f ↦ f(0)` is a
+//! ring map; a unit leading coefficient keeps degrees), and over a commutative coefficient
+//! ring Atiyah-Macdonald, *Introduction to Commutative Algebra*, Ch. 1, Exercise 2 (`f` is
+//! a unit iff `a_0` is a unit and `a_1, ..., a_n` are nilpotent; nilpotent iff every
+//! coefficient is). The inverse is the power-series recurrence of `1/f` in `R[[x]]`, which
+//! needs no commutativity, under a work bound; every returned inverse is checked on both
+//! sides.
 //!
 //! Algorithms (division, pseudo-division and gcd):
 //! - D. E. Knuth, *The Art of Computer Programming*, vol. 2, 3rd ed. (1997), §4.6.1:
@@ -15,8 +25,11 @@
 //! - H. Cohen, *A Course in Computational Algebraic Number Theory*, GTM 138 (1993),
 //!   Alg. 3.1.2 (pseudo-division) and Alg. 3.3.1 (sub-resultant GCD).
 //! - Gcd over Q through Z[x] by Gauss' lemma: Knuth §4.6.1, Lemma G and Algorithm E
-//!   (generalized Euclidean algorithm over a UFD); Cohen GTM 138 §3.2 (primitive parts and
-//!   gcds over a UFD and its fraction field).
+//!   (generalized Euclidean algorithm over a UFD); Cohen GTM 138 §3.2.3-3.2.4 (primitive
+//!   parts over a UFD; Euclid's algorithm over a UFD). The section numbers are checked
+//!   against a library catalogue of the book (Bibliotheksverbund Bayern, record
+//!   BV013376443: "3.2.3 Polynomials over Unique Factorization Domains", p. 116, and "3.2.4
+//!   Euclid's Algorithm for Polynomials over a UFD", p. 117).
 
 use crate::polynomial::Polynomial;
 use rustmath_core::{CommutativeRing, EuclideanDomain, IntegralDomain, MathError, Result, Ring};
@@ -853,7 +866,46 @@ where
     }
 }
 
-// Ring implementation for polynomials over rings
+/// Work bound of [`UnivariatePolynomial::unit_inverse`] and of the order search of
+/// [`UnivariatePolynomial::multiplicative_order_status`], in coefficient products. An
+/// inverse of degree `d` of a polynomial of degree `n` is found whenever
+/// `n·(d + n) <= 65536`.
+pub(crate) const UNIT_INVERSE_WORK: u64 = 1 << 16;
+
+/// The coefficients of `a·b` for nonempty `a`, `b`, untrimmed. Each coefficient is seeded by
+/// its first product term, so no `R::zero()` is created (it panics for parent-carrying
+/// coefficient types).
+fn convolve<R: Ring>(a: &[R], b: &[R]) -> Vec<R> {
+    let mut out: Vec<Option<R>> = vec![None; a.len() + b.len() - 1];
+    for (i, x) in a.iter().enumerate() {
+        for (j, y) in b.iter().enumerate() {
+            let t = x.clone() * y.clone();
+            out[i + j] = Some(match out[i + j].take() {
+                None => t,
+                Some(acc) => acc + t,
+            });
+        }
+    }
+    out.into_iter()
+        .map(|c| c.expect("every index i + j is reached"))
+        .collect()
+}
+
+/// Whether the coefficient list (possibly untrimmed) is the constant 1.
+fn coefficients_are_one<R: Ring>(c: &[R]) -> bool {
+    c.first().is_some_and(|c0| c0.is_one()) && c[1..].iter().all(|x| x.is_zero())
+}
+
+/// Drop trailing zeros, keeping at least one coefficient.
+fn trim_coefficients<R: Ring>(mut c: Vec<R>) -> Vec<R> {
+    while c.len() > 1 && c.last().is_some_and(|x| x.is_zero()) {
+        c.pop();
+    }
+    c
+}
+
+// Ring implementation for polynomials over rings. The hooks read only the coefficients and
+// their own hooks; no static constructor of `R` is called (see [`convolve`]).
 impl<R: Ring> Ring for UnivariatePolynomial<R> {
     fn zero() -> Self {
         UnivariatePolynomial::new(vec![R::zero()])
@@ -869,6 +921,198 @@ impl<R: Ring> Ring for UnivariatePolynomial<R> {
 
     fn is_one(&self) -> bool {
         self.coeffs.len() == 1 && self.coeffs[0].is_one()
+    }
+
+    /// MAGMA `IsUnit(f)` (ch. 23 §23.4.4). A constant has the status it has in `R` (`R` is a
+    /// subring and `f ↦ f(0)` a retraction). For degree `n >= 1`, in every ring: `a_0` a
+    /// proven non-unit, or `a_n` a proven unit (then `deg(f·g) = n + deg g >= 1` for every
+    /// `g != 0`), gives `Some(false)`. Over a commutative `R`
+    /// ([`Ring::static_is_commutative`]): a proven non-nilpotent `a_i` (`i >= 1`) gives
+    /// `Some(false)`; a proven unit `a_0` with every `a_i` (`i >= 1`) proven nilpotent gives
+    /// `Some(true)` (Atiyah-Macdonald Ch. 1 Ex. 2). Otherwise `None`.
+    fn unit_status(&self) -> Option<bool> {
+        let c = &self.coeffs;
+        let n = c.len() - 1;
+        if n == 0 {
+            return c[0].unit_status();
+        }
+        if c[0].unit_status() == Some(false) || c[n].unit_status() == Some(true) {
+            return Some(false);
+        }
+        if R::static_is_commutative() == Some(true) {
+            let higher = &c[1..];
+            if higher.iter().any(|a| a.nilpotent_status() == Some(false)) {
+                return Some(false);
+            }
+            if c[0].unit_status() == Some(true)
+                && higher.iter().all(|a| a.nilpotent_status() == Some(true))
+            {
+                return Some(true);
+            }
+        }
+        None
+    }
+
+    /// MAGMA `IsNilpotent(f)` (ch. 23 §23.4.4). A constant as in `R`. For degree `n >= 1`,
+    /// in every ring: `a_0` or `a_n` a proven non-nilpotent gives `Some(false)` (`f^k` has
+    /// constant term `a_0^k` and top coefficient `a_n^k`). Over a commutative `R`: `f` is
+    /// nilpotent iff every coefficient is (Atiyah-Macdonald Ch. 1 Ex. 2). Otherwise `None`.
+    fn nilpotent_status(&self) -> Option<bool> {
+        let c = &self.coeffs;
+        let n = c.len() - 1;
+        if n == 0 {
+            return c[0].nilpotent_status();
+        }
+        if c[0].nilpotent_status() == Some(false) || c[n].nilpotent_status() == Some(false) {
+            return Some(false);
+        }
+        if R::static_is_commutative() == Some(true) {
+            if c.iter().any(|a| a.nilpotent_status() == Some(false)) {
+                return Some(false);
+            }
+            if c.iter().all(|a| a.nilpotent_status() == Some(true)) {
+                return Some(true);
+            }
+        }
+        None
+    }
+
+    /// The inverse of a unit polynomial. A constant: its inverse in `R`. Degree `n >= 1`:
+    /// `Err(NotInvertible)` when [`Self::unit_status`] is `Some(false)` or `a_0` is a proven
+    /// non-unit. Otherwise, with `b = a_0^(-1)`, the power series `h = 1/f` in `R[[x]]`:
+    /// `h_0 = b`, `h_k = -b · Σ_{i=1}^{min(k,n)} a_i h_(k-i)`. This is the unique right inverse
+    /// of `f` in `R[[x]]` and needs no commutativity. The recurrence has order `n`, so after
+    /// `n` consecutive zero coefficients every later one is zero, and if `f` has an inverse
+    /// of degree `d` the run of zeros starts at `d + 1`. The result is checked: `f·h = 1`
+    /// (else `Err(InvalidOperation)`: inconsistent or inexact coefficient arithmetic) and
+    /// `h·f = 1` (else `Err(NotInvertible)`: a right inverse that is not a left inverse, so
+    /// `f` is not a unit; over a coefficient type marked commutative this is
+    /// `Err(InvalidOperation)` instead). So a returned `h` is a two-sided inverse.
+    ///
+    /// The work is bounded by 65536 coefficient products: an inverse of degree `d` is found
+    /// whenever `n·(d + n) <= 65536`. Past the bound the answer is `Err(NotImplemented)`,
+    /// never a guess (`1 + 4x` over Z/12 is not a unit, but over a coefficient type of
+    /// unknown commutativity the recurrence never stops). Any other `Err` of `a_0`'s inverse
+    /// also gives `Err(NotImplemented)`.
+    fn unit_inverse(&self) -> Result<Self> {
+        let c = &self.coeffs;
+        let n = c.len() - 1;
+        if n == 0 {
+            return c[0].unit_inverse().map(|v| Self::new(vec![v]));
+        }
+        if self.unit_status() == Some(false) {
+            return Err(MathError::NotInvertible);
+        }
+        let b = match c[0].unit_inverse() {
+            Ok(b) => b,
+            Err(MathError::NotInvertible) => return Err(MathError::NotInvertible),
+            Err(e) => {
+                return Err(MathError::NotImplemented(format!(
+                    "UnivariatePolynomial::unit_inverse: the constant term has no computed \
+                     inverse ({e})"
+                )))
+            }
+        };
+        // Reaching n zeros costs at least n(n+1)/2 products.
+        let n64 = n as u64;
+        if n64.saturating_mul(n64 + 1) / 2 > UNIT_INVERSE_WORK {
+            return Err(MathError::NotImplemented(format!(
+                "UnivariatePolynomial::unit_inverse: degree {n} is beyond the work bound of \
+                 {UNIT_INVERSE_WORK} coefficient products"
+            )));
+        }
+        let mut h: Vec<R> = vec![b.clone()];
+        let mut zeros = 0usize;
+        let mut work: u64 = 0;
+        let mut k = 1usize;
+        while zeros < n {
+            let m = k.min(n);
+            work += m as u64;
+            if work > UNIT_INVERSE_WORK {
+                // h_0..h_(k-1) are known and the stop rule has not fired, so an inverse of
+                // degree d would need d + n > k - 1.
+                return Err(MathError::NotImplemented(format!(
+                    "UnivariatePolynomial::unit_inverse: no inverse of degree < {} found within \
+                     {UNIT_INVERSE_WORK} coefficient products",
+                    k.saturating_sub(n)
+                )));
+            }
+            let mut sum = c[1].clone() * h[k - 1].clone();
+            for i in 2..=m {
+                sum = sum + c[i].clone() * h[k - i].clone();
+            }
+            let hk = -(b.clone() * sum);
+            if hk.is_zero() {
+                zeros += 1;
+            } else {
+                zeros = 0;
+            }
+            h.push(hk);
+            k += 1;
+        }
+        h.truncate(h.len() - n);
+        if !coefficients_are_one(&convolve(c, &h)) {
+            return Err(MathError::InvalidOperation(
+                "UnivariatePolynomial::unit_inverse: f·h != 1 for the power-series inverse h \
+                 (inexact or inconsistent coefficient arithmetic)"
+                    .to_string(),
+            ));
+        }
+        if !coefficients_are_one(&convolve(&h, c)) {
+            if R::static_is_commutative() == Some(true) {
+                return Err(MathError::InvalidOperation(
+                    "UnivariatePolynomial::unit_inverse: f·h = 1 but h·f != 1 over a \
+                     commutative coefficient type (inconsistent coefficient arithmetic)"
+                        .to_string(),
+                ));
+            }
+            return Err(MathError::NotInvertible);
+        }
+        // h_0 = b is a unit and the trailing zeros are gone, so `new` trims nothing.
+        Ok(Self::new(h))
+    }
+
+    /// MAGMA `Order(f)`. A constant: its order in `R`. Degree >= 1: `NotAUnit` when
+    /// [`Self::unit_status`] is `Some(false)`. For a proven unit, the powers `f, f^2, ...`
+    /// are computed under the work bound of 65536 coefficient products, and the first `k`
+    /// with `f^k = 1` is `Finite(k)` (a proof). Otherwise `Undecided` (a search that finds
+    /// nothing never decides).
+    fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
+        use rustmath_core::MultiplicativeOrder;
+        let c = &self.coeffs;
+        if c.len() == 1 {
+            return c[0].multiplicative_order_status();
+        }
+        match self.unit_status() {
+            Some(false) => MultiplicativeOrder::NotAUnit,
+            Some(true) => {
+                let mut power: Vec<R> = c.clone();
+                let mut work: u64 = 0;
+                let mut k: u64 = 1;
+                loop {
+                    if coefficients_are_one(&power) {
+                        return MultiplicativeOrder::Finite(k);
+                    }
+                    work = work.saturating_add((power.len() * c.len()) as u64);
+                    if work > UNIT_INVERSE_WORK {
+                        return MultiplicativeOrder::Undecided;
+                    }
+                    power = trim_coefficients(convolve(&power, c));
+                    k += 1;
+                }
+            }
+            None => MultiplicativeOrder::Undecided,
+        }
+    }
+
+    /// `Characteristic(R[x]) = Characteristic(R)`: `R` is a subring with the same 1.
+    fn static_characteristic() -> Option<u64> {
+        R::static_characteristic()
+    }
+
+    /// `R[x]` is commutative iff `R` is.
+    fn static_is_commutative() -> Option<bool> {
+        R::static_is_commutative()
     }
 }
 
@@ -1039,7 +1283,7 @@ pub(crate) fn primitive_integer_associate(f: &[Rational]) -> UnivariatePolynomia
 /// Gauss' lemma: `f` and `g` are associates in Q[x] of their primitive integer associates
 /// `F` and `G` (denominators cleared, content removed), and the gcd in Q[x] is the monic
 /// associate of the gcd of `F` and `G` in Z[x] (Knuth TAOCP vol. 2 §4.6.1, Lemma G and
-/// Algorithm E; Cohen GTM 138 §3.2). That gcd is the Z[x] path of
+/// Algorithm E; Cohen GTM 138 §3.2.3-3.2.4). That gcd is the Z[x] path of
 /// [`UnivariatePolynomial::gcd`] (Euclid while exact, then the sub-resultant PRS, Cohen
 /// Alg. 3.3.1), whose integer coefficients stay bounded by the subresultants. Euclid over Q
 /// computes the same remainder sequence up to scalars, but every step reduces fractions with
@@ -1077,15 +1321,19 @@ impl<R: Ring> UnivariatePolynomial<R> {
     ///   `fmpz_poly_divrem`, which keeps reducing each coefficient modulo `lc(divisor)`, can
     ///   return a different remainder of the same degree.
     /// * MAGMA conformance: MAGMA fixes only that `deg r` is minimal (and `< deg divisor` for
-    ///   a unit leading coefficient; Handbook ch. 23 §23.4.10, and the V2.3 handbook adds
-    ///   "over the integers this will be true in general when the leading coefficient of g
-    ///   divides that of f"). Over a non-field the minimal-degree remainder is not unique, and
-    ///   which one MAGMA returns is **unverified** (the current handbook and the online
-    ///   calculator need a login; no MAGMA was available). The choice made here, stopping at
-    ///   the first leading coefficient that `lc(divisor)` does not divide, is a RustMath
-    ///   convention: `div_rem(3x^2 + x, 2x) = (0, 3x^2 + x)`. FLINT's `fmpz_poly_divrem`
-    ///   floors each leading coefficient instead and returns `(x, x^2 + x)`; both remainders
-    ///   have the minimal degree 2.
+    ///   a unit leading coefficient; Handbook ch. 23 §23.4.10). The V2.3 and V2.19 handbooks
+    ///   have the same text, word for word: "Over the integers (R = Z) this will be true in
+    ///   general when the leading coefficient of g divides that of f", with no example. Over
+    ///   a non-field the minimal-degree remainder is not unique, and which one MAGMA returns
+    ///   is **unverified** (the current handbook and the online calculator need a login; no
+    ///   MAGMA was available). The choice made here, stopping at the first leading
+    ///   coefficient that `lc(divisor)` does not divide, is a RustMath convention:
+    ///   `div_rem(3x^2 + x, 2x) = (0, 3x^2 + x)`. FLINT's `fmpz_poly_divrem` floors each
+    ///   leading coefficient instead and returns `(x, x^2 + x)`; both remainders have the
+    ///   minimal degree 2. Sage over ZZ calls FLINT (`polynomial_integer_dense_flint.pyx`,
+    ///   `quo_rem`; doctests in the develop source on GitHub):
+    ///   `(5*x+7).quo_rem(3) == (x + 2, 2*x + 1)` and `(x^2).quo_rem(2*x - 1) == (0, x^2)`.
+    ///   Here they are `(0, 5x + 7)` and `(0, x^2)`, with the same minimal degrees 1 and 2.
     /// * Never loops: every step lowers `deg r`, so there are at most
     ///   `deg self - deg divisor + 1` steps. If a step does not cancel the leading term
     ///   (a coefficient ring whose `div_rem` reports an exact quotient that is not one), the
@@ -1336,7 +1584,10 @@ impl<R: Ring> UnivariatePolynomial<R> {
     /// of the coefficient ring" (ch. 23 §23.5.2; V2.3 signature `RngUPolElt -> RngIntElt`,
     /// written for Z) and does not say what that gcd is in a field. `1` is the
     /// ring-theoretic reading (every nonzero element of a field is a unit; MAGMA `Normalize`
-    /// over a field is monic). PARI's `content` over Q is the Z-module content
+    /// over a field is monic). The V2.19 handbook (§23.5.2) has the same wording. Sage
+    /// agrees: `Polynomial.content_ideal` is the ideal of the coefficients in the base ring,
+    /// and over QQ a nonzero ideal is the unit ideal (`QQ.ideal(2)` is "Principal ideal (1)
+    /// of Rational Field", `fields.py`). PARI's `content` over Q is the Z-module content
     /// (`content(2/3*x+4/5) = 2/15`), a different notion that is not provided here.
     pub fn content(&self) -> R
     where

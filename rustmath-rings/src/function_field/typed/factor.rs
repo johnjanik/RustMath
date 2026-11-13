@@ -152,8 +152,8 @@ impl<const P: u64> FactorableConstantField for GFp<P> {
                 P
             )));
         }
-        // fp_factor works in i64 with products of residues: need (P-1)^2 < i64::MAX.
-        if P > 3_037_000_499 {
+        // fp_factor's i64 arithmetic is exact for p <= fp_factor::MAX_P.
+        if P > rustmath_polynomials::fp_factor::MAX_P as u64 {
             return Err(MathError::NotSupported(format!(
                 "GFp modulus {} too large for the i64-based factorizer",
                 P

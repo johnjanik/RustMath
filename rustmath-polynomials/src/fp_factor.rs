@@ -2,8 +2,8 @@
 //!
 //! Ported from the `FpPoly` engine of the p-adelic calculator. Polynomials are
 //! little-endian `Vec<i64>` arrays with every coefficient reduced to `[0, p)`.
-//! The prime `p` is passed as a parameter rather than stored — the caller is
-//! responsible for using a consistent prime across operations.
+//! The prime `p` is passed as a parameter, not stored. The caller uses one
+//! prime across operations.
 //!
 //! This is the mod-`p` companion of [`crate::zp_hensel`]: factor `f mod p` here,
 //! then Hensel-lift the factors to `Z/p^N Z` there.
@@ -35,13 +35,25 @@
 //! `div_mod`, `make_monic`, `extended_gcd`, `mod_inv`: at most `(p-1)^2`), so
 //! the arithmetic is exact for every prime `p <= MAX_P` ([`MAX_P`] =
 //! 3_037_000_499 = `floor(sqrt(i64::MAX))`; `(p-1)^2 + (p-1) > i64::MAX` from
-//! 3_037_000_501 on). Every function of this module requires `p` to be a
-//! prime `<= MAX_P`. Only [`equal_degree_factor`] checks it (and the
-//! equal-degree stage of [`factor`] checks it on a block that its first phase
-//! cannot split); elsewhere a composite `p` or `p > MAX_P` is **not detected**
-//! and the result is then meaningless (or an arithmetic panic).
+//! 3_037_000_501 on).
+//!
+//! Checked entries. The factorization entries [`factor`],
+//! [`factor_with_multiplicity`], [`squarefree_factor`],
+//! [`distinct_degree_factor`] and [`equal_degree_factor`] check first that `p`
+//! is a prime `<= MAX_P` ([`check_modulus`], a proof for every `p`), then read
+//! the coefficients of `f` modulo `p`. A bad `p` or `f ≡ 0` is a panic that
+//! names the entry and the reason. Their outputs are sorted by
+//! [`factor_order`], the order of PARI's `factormod`.
+//!
+//! Unchecked helpers. The arithmetic helpers (`add`, `sub`, `mul`, `div_mod`,
+//! `gcd`, `extended_gcd`, `pow_mod`, `make_monic`, `mod_inv`, `derivative_of`,
+//! `trim`, `degree`, `is_zero`) run in the inner loops of `zp_hensel`, the
+//! Galois sieve, Mac Lane and the number field ideals, so they check nothing.
+//! They need a prime `p <= MAX_P` and coefficients in `[0, p)`; otherwise the
+//! result is meaningless or an arithmetic panic.
 
 use rustmath_integers::Integer;
+use std::cmp::Ordering;
 
 /// Strip trailing zeros, keeping at least one coefficient. The zero polynomial
 /// is `[0]`. Canonical form for every returned value.
@@ -290,18 +302,91 @@ fn pth_root(f: &[i64], p: i64) -> Vec<i64> {
     trim(&g)
 }
 
+/// `f` with every coefficient reduced into `[0, p)`, trimmed.
+fn reduce(f: &[i64], p: i64) -> Vec<i64> {
+    trim(&f.iter().map(|&c| modp(c, p)).collect::<Vec<i64>>())
+}
+
+/// `f` read modulo `p` and made monic, for the checked entries: panics
+/// `"{who}: f = 0 has no factorization"` when `f ≡ 0 (mod p)`.
+fn monic_nonzero(f: &[i64], p: i64, who: &str) -> Vec<i64> {
+    let f_m = make_monic(&reduce(f, p), p);
+    if is_zero(&f_m) {
+        panic!("{who}: f = 0 has no factorization");
+    }
+    f_m
+}
+
+/// `Ok(())` iff the monic, reduced `f` is squarefree over `F_p`: `f != 0`, and
+/// `deg f <= 0` or (`f' != 0` and `gcd(f, f') = 1`). Over `F_p` this is exact:
+/// `f' = 0` means `f = g(x^p) = g^p`.
+fn squarefree_check(f: &[i64], p: i64) -> Result<(), String> {
+    if is_zero(f) {
+        return Err("f = 0 is not squarefree".to_string());
+    }
+    if degree(f) <= 0 {
+        return Ok(());
+    }
+    let df = derivative_of(f, p);
+    if is_zero(&df) || degree(&gcd(f, &df, p)) != 0 {
+        return Err("f is not squarefree".to_string());
+    }
+    Ok(())
+}
+
+/// The prime divisors of `d >= 1` in increasing order, by trial division
+/// (`prime_divisors(1)` is empty).
+fn prime_divisors(d: i64) -> Vec<i64> {
+    let mut out = Vec::new();
+    let mut rest = d;
+    let mut l = 2;
+    while rest > 1 {
+        if l * l > rest {
+            out.push(rest);
+            break;
+        }
+        if rest % l == 0 {
+            out.push(l);
+            while rest % l == 0 {
+                rest /= l;
+            }
+        }
+        l += 1;
+    }
+    out
+}
+
 /// Radical of `f` over `F_p`: the product of the *distinct* monic irreducible
-/// factors of `f`, each exactly once (monic; constants map to `1`-like monic
-/// constants). This is what distinct-degree factorization needs as input.
+/// factors of `f`, each exactly once (monic; a nonzero constant gives `[1]`).
+/// This is what distinct-degree factorization needs as input. MAGMA
+/// `SquarefreeFactorization` (ch. 23 §23.8.1) returns the full decomposition;
+/// this entry returns only its radical.
 ///
 /// Characteristic-`p` subtleties handled correctly (both were bugs before):
 /// * `f' = 0` means `f(x) = g(x^p)`; over the prime field `g`'s coefficients
-///   are `f`'s directly ([`pth_root`]), and `rad(f) = rad(g)` — recurse.
+///   are `f`'s directly (`pth_root`), and `rad(f) = rad(g)`: recurse.
 /// * Even when `f' != 0`, factors whose multiplicity is divisible by `p`
 ///   survive inside `gcd(f, f')` at *full* multiplicity, so `f / gcd(f, f')`
 ///   alone misses them (e.g. `(x+1)^3 (x+2)` over `F_3` lost `x+1`). The
 ///   `p`-power part is split off and recursed on.
+///
+/// The coefficients of `f` are read modulo `p`.
+///
+/// # Panics
+///
+/// `p` is not a prime `<= MAX_P` (checked first, [`check_modulus`]);
+/// `f ≡ 0 (mod p)`.
 pub fn squarefree_factor(f: &[i64], p: i64) -> Vec<i64> {
+    const WHO: &str = "fp_factor::squarefree_factor";
+    if let Err(why) = check_modulus(p) {
+        panic!("{WHO}: {why}");
+    }
+    radical(&monic_nonzero(f, p, WHO), p)
+}
+
+/// [`squarefree_factor`] without the checks: `p` is a prime `<= MAX_P` and
+/// `f` is reduced.
+fn radical(f: &[i64], p: i64) -> Vec<i64> {
     let f_m = make_monic(f, p);
     if degree(&f_m) <= 0 {
         return f_m;
@@ -309,7 +394,7 @@ pub fn squarefree_factor(f: &[i64], p: i64) -> Vec<i64> {
     let derivative = derivative_of(&f_m, p);
     if is_zero(&derivative) {
         // f = g(x^p): same distinct irreducible factors as g.
-        return squarefree_factor(&pth_root(&f_m, p), p);
+        return radical(&pth_root(&f_m, p), p);
     }
     let g = gcd(&f_m, &derivative, p);
     if degree(&g) == 0 {
@@ -334,14 +419,37 @@ pub fn squarefree_factor(f: &[i64], p: i64) -> Vec<i64> {
     }
     // rad(f) = w * rad(c); the two parts share no irreducible factors
     // (multiplicities not divisible by p vs. divisible by p).
-    mul(&w, &squarefree_factor(&c, p), p)
+    mul(&w, &radical(&c, p), p)
 }
 
-/// Distinct-degree factorization of a squarefree polynomial. Returns pairs
-/// `(d, g_d)` where `g_d` is the product of all irreducible factors of `f` of
-/// degree exactly `d`.
+/// MAGMA `DistinctDegreeFactorization(f)` (ch. 23 §23.8.1; vzGG §14.2). The
+/// coefficients of `f` are read modulo `p`. Returns pairs `(d, g_d)`, `d`
+/// increasing, where `g_d` is the monic product of the irreducible factors of
+/// `f` of degree exactly `d`. A nonzero constant gives `vec![]`.
+///
+/// # Panics
+///
+/// `p` is not a prime `<= MAX_P` (checked first, [`check_modulus`]); `f ≡ 0`;
+/// `f` is not squarefree (MAGMA requires a squarefree input; on a repeated
+/// factor the loop below would attach a wrong degree to a block).
 pub fn distinct_degree_factor(f: &[i64], p: i64) -> Vec<(i64, Vec<i64>)> {
-    let mut f_rem = make_monic(f, p);
+    const WHO: &str = "fp_factor::distinct_degree_factor";
+    if let Err(why) = check_modulus(p) {
+        panic!("{WHO}: {why}");
+    }
+    let f_m = make_monic(&reduce(f, p), p);
+    if let Err(why) = squarefree_check(&f_m, p) {
+        panic!("{WHO}: {why}");
+    }
+    ddf_squarefree(&f_m, p)
+}
+
+/// The distinct-degree loop on a monic, reduced, squarefree `f` over a prime
+/// `p <= MAX_P` (checked by the caller). After step `d` every factor of degree
+/// `<= d` is gone, so the remainder of degree `< 2(d+1)` is irreducible
+/// (vzGG §14.2, \[Rab80\]).
+fn ddf_squarefree(f_m: &[i64], p: i64) -> Vec<(i64, Vec<i64>)> {
+    let mut f_rem = f_m.to_vec();
     let mut result: Vec<(i64, Vec<i64>)> = Vec::new();
     let mut h: Vec<i64> = vec![0, 1]; // x
     let mut d: i64 = 1;
@@ -374,15 +482,16 @@ pub fn distinct_degree_factor(f: &[i64], p: i64) -> Vec<(i64, Vec<i64>)> {
 /// `precprime(3037000499)`).
 pub const MAX_P: i64 = 3_037_000_499;
 
-/// Phase 1 of the equal-degree stage: HEAD's legacy loop (monic samples of
-/// degree `n - 1`), kept bit-identical so that the output order of [`factor`]
-/// does not change whenever it splits.
-const LEGACY_TRIES: usize = 200;
-
-/// Phase 2 of the equal-degree stage: uniform vzGG Algorithm 14.8 tries on a
-/// certified block; each fails with probability <= 1/2, so all of them fail
-/// with probability <= 2^-256.
+/// Uniform vzGG Algorithm 14.8 tries per equal-degree block. On a certified
+/// block each fails with probability <= 1/2 (vzGG Theorem 14.9), so all of
+/// them fail with probability <= 2^-256.
 const LAS_VEGAS_TRIES: usize = 256;
+
+/// The equal-degree recursion runs the contract certificate on a block only
+/// after this many failed tries (lazy certificate). On a valid block 32
+/// consecutive failures have probability <= 2^-32, so the certificate almost
+/// never runs on the path from [`factor`], whose blocks are valid.
+const TRIES_BEFORE_CERTIFICATE: usize = 32;
 
 /// SplitMix64 (Steele, Lea, Flood 2014): the state advances by the odd constant
 /// `0x9E3779B97F4A7C15` mod 2^64 (period exactly 2^64) and the output mixer is
@@ -391,8 +500,7 @@ const LAS_VEGAS_TRIES: usize = 256;
 struct SplitMix64(u64);
 
 impl SplitMix64 {
-    /// The input-derived seed of the equal-degree stage (unchanged from the
-    /// legacy code, so phase 1 draws the same stream).
+    /// The seed of the equal-degree stage, derived from the block, `d` and `p`.
     fn seeded(f_m: &[i64], d: i64, p: i64) -> Self {
         let mut seed: u64 = 0x243F_6A88_85A3_08D3 ^ (d as u64).wrapping_mul(0x100_0193);
         seed ^= (p as u64).wrapping_mul(0x85EB_CA6B);
@@ -410,12 +518,6 @@ impl SplitMix64 {
         z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
         z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
         z ^ (z >> 31)
-    }
-
-    /// `next_u64() % n`: the legacy (slightly biased) draw, used by phase 1
-    /// only, so that phase 1 reproduces the legacy stream.
-    fn below_legacy(&mut self, n: i64) -> i64 {
-        (self.next_u64() % (n as u64)) as i64
     }
 
     /// Exactly uniform in `[0, n)` by rejection: with `r = 2^64 mod n`, accept
@@ -438,27 +540,10 @@ impl SplitMix64 {
     }
 }
 
-/// Monic polynomial of degree `d` with legacy-random lower coefficients
-/// (phase 1 sampler).
-fn random_monic_polynomial(d: i64, p: i64, rng: &mut SplitMix64) -> Vec<i64> {
-    assert!(d >= 0);
-    if d == 0 {
-        return vec![1];
-    }
-    let d = d as usize;
-    let mut coeffs = vec![0i64; d + 1];
-    for c in coeffs.iter_mut().take(d) {
-        *c = rng.below_legacy(p);
-    }
-    coeffs[d] = 1;
-    coeffs
-}
-
 /// The trace map `T(a) = a + a^2 + a^4 + ... + a^(2^(d-1)) rem f` over `F_2`
 /// (\[CZ81\]; vzGG §14.3, even q): on every CRT component `F_2[x]/(f_i)` with
 /// `deg f_i = d` it is the absolute trace `F_(2^d) -> F_2`, so
-/// `gcd(T(a), f) = prod_{Tr(a_i) = 0} f_i`. `a` is reduced mod `f` first; for
-/// `deg a < deg f` this equals the legacy inline trace.
+/// `gcd(T(a), f) = prod_{Tr(a_i) = 0} f_i`. `a` is reduced mod `f` first.
 fn trace_map(a: &[i64], f: &[i64], d: i64, p: i64) -> Vec<i64> {
     let a0 = div_mod(a, f, p).1;
     let mut sum = a0.clone();
@@ -498,15 +583,29 @@ fn split_with(a: &[i64], f: &[i64], d: i64, p: i64, e: &Integer) -> Option<Vec<i
     }
 }
 
-/// `Ok(())` iff `p` is a prime `<= MAX_P`; otherwise the reason.
-/// (`Integer::is_prime` is the deterministic word test below 2^64, a proof for
-/// every p <= `MAX_P`.)
-fn check_prime(p: i64) -> Result<(), String> {
-    if (2..=MAX_P).contains(&p) && Integer::from(p).is_prime() {
+/// `Ok(())` iff `p` is a prime `<= MAX_P` (the module's exact-arithmetic
+/// bound); otherwise `Err("p = {p} is not a prime <= 3037000499")`.
+///
+/// Exact: [`rustmath_integers::prime::is_prime_u64`] is a proof of primality
+/// or compositeness for every `u64` (strong tests to a deterministic base
+/// set), so no composite passes, and every prime `<= MAX_P` does.
+pub fn check_modulus(p: i64) -> Result<(), String> {
+    if (2..=MAX_P).contains(&p) && rustmath_integers::prime::is_prime_u64(p as u64) {
         Ok(())
     } else {
         Err(format!("p = {p} is not a prime <= {MAX_P}"))
     }
+}
+
+/// The order of the factor lists of this module: by degree, then by the
+/// coefficients from the top down. This is the order of PARI's `factormod`
+/// (and of `berlekamp::factor`); MAGMA's `Factorization` fixes no order.
+/// Both arguments are compared after trimming.
+pub fn factor_order(a: &[i64], b: &[i64]) -> Ordering {
+    let (a, b) = (trim(a), trim(b));
+    degree(&a)
+        .cmp(&degree(&b))
+        .then_with(|| a.iter().rev().cmp(b.iter().rev()))
 }
 
 /// `Ok(())` iff `f` (monic, coefficients in `[0, p)`) is a squarefree product
@@ -519,12 +618,17 @@ fn check_prime(p: i64) -> Result<(), String> {
 /// `l | d` excludes the proper divisors of `d`. Cost: `d` Frobenius steps, i.e.
 /// about `d log2(p)` modular squarings.
 fn equal_degree_contract(f: &[i64], d: i64, p: i64) -> Result<(), String> {
-    check_prime(p)?;
+    check_modulus(p)?;
     block_contract(f, d, p)
 }
 
 /// The conditions of [`equal_degree_contract`] after the prime check (the
 /// caller has already established that `p` is a prime `<= MAX_P`).
+///
+/// The Frobenius ladder `X_k = x^(p^k) rem f` runs for `k = 1..=d`, but only
+/// `X_0`, the current rung and the rungs `X_(d/l)` for the primes `l | d` are
+/// kept: memory `(omega(d) + 2)` polynomials of degree `< deg f` instead of
+/// `d + 1`.
 fn block_contract(f: &[i64], d: i64, p: i64) -> Result<(), String> {
     if d < 1 {
         return Err(format!("d = {d} must be at least 1"));
@@ -539,60 +643,55 @@ fn block_contract(f: &[i64], d: i64, p: i64) -> Result<(), String> {
     if n % d != 0 {
         return Err(format!("d = {d} does not divide deg f = {n}"));
     }
-    let df = derivative_of(f, p);
-    if is_zero(&df) || degree(&gcd(f, &df, p)) != 0 {
-        return Err("f is not squarefree".to_string());
-    }
-    // Frobenius ladder X_k = x^(p^k) rem f, k = 0..d.
+    squarefree_check(f, p)?;
+    let primes = prime_divisors(d);
+    // The rungs to keep, increasing (d / l decreases as l increases).
+    let mut wanted: Vec<i64> = primes.iter().map(|&l| d / l).collect();
+    wanted.sort_unstable();
     let p_big = Integer::from(p);
-    let mut ladder: Vec<Vec<i64>> = Vec::with_capacity(d as usize + 1);
-    ladder.push(div_mod(&[0, 1], f, p).1);
-    for k in 1..=d as usize {
-        let next = pow_mod(&ladder[k - 1], &p_big, f, p);
-        ladder.push(next);
+    let x0 = div_mod(&[0, 1], f, p).1;
+    let mut kept: Vec<(i64, Vec<i64>)> = Vec::with_capacity(wanted.len());
+    let mut current = x0.clone();
+    let mut next = 0;
+    for k in 1..=d {
+        current = pow_mod(&current, &p_big, f, p);
+        if next < wanted.len() && wanted[next] == k {
+            kept.push((k, current.clone()));
+            next += 1;
+        }
     }
-    if trim(&ladder[d as usize]) != trim(&ladder[0]) {
+    if trim(&current) != trim(&x0) {
         return Err(format!(
             "f has an irreducible factor whose degree does not divide {d}"
         ));
     }
-    // Prime divisors l of d by trial division.
-    let mut rest = d;
-    let mut l = 2;
-    while rest > 1 {
-        if l * l > rest {
-            l = rest;
+    for &l in &primes {
+        let k = d / l;
+        let xk = &kept
+            .iter()
+            .find(|(j, _)| *j == k)
+            .expect("fp_factor: every rung d/l is kept")
+            .1;
+        let g = gcd(&sub(xk, &x0, p), f, p);
+        if degree(&g) != 0 {
+            return Err(format!(
+                "f has an irreducible factor of degree dividing {k}"
+            ));
         }
-        if rest % l == 0 {
-            while rest % l == 0 {
-                rest /= l;
-            }
-            let k = (d / l) as usize;
-            let g = gcd(&sub(&ladder[k], &ladder[0], p), f, p);
-            if degree(&g) != 0 {
-                return Err(format!(
-                    "f has an irreducible factor of degree dividing {}",
-                    d / l
-                ));
-            }
-        }
-        l += 1;
     }
     Ok(())
 }
 
 /// The equal-degree recursion (vzGG Algorithm 14.10) on the monic block `f`.
 ///
-/// Per block: phase 1 runs at most `legacy_tries` legacy tries (HEAD's loop:
-/// same seed, same draws, same order of the two parts); if none splits, the
-/// block must pass [`equal_degree_contract`] (else panic: the block violates
-/// the contract, which on the path from [`factor`] means `p` is not a prime
-/// `<= MAX_P`), and phase 2 runs at most [`LAS_VEGAS_TRIES`] uniform tries of
-/// vzGG Algorithm 14.8 ([`split_with`]); if those fail too, panic. No path
-/// returns an unsplit block. `n == d` pushes `f` unchecked: the caller
-/// guarantees the contract (public entry: eager certificate; [`factor`]: DDF
-/// blocks of the radical over a prime).
-fn edf_rec(f: &[i64], d: i64, p: i64, legacy_tries: usize, out: &mut Vec<Vec<i64>>) {
+/// Per block: at most [`LAS_VEGAS_TRIES`] uniform tries of vzGG Algorithm 14.8
+/// ([`split_with`]). Before try number [`TRIES_BEFORE_CERTIFICATE`] the block
+/// must pass [`equal_degree_contract`] (else panic: the block violates the
+/// contract). If all tries fail, panic. No path returns an unsplit block.
+/// `n == d` pushes `f` unchecked: the caller guarantees the contract (public
+/// entry: eager certificate; [`factor`]: DDF blocks of the radical over a
+/// checked prime).
+fn edf_rec(f: &[i64], d: i64, p: i64, out: &mut Vec<Vec<i64>>) {
     let n = degree(f);
     if n == d && d >= 1 {
         out.push(f.to_vec());
@@ -609,34 +708,16 @@ fn edf_rec(f: &[i64], d: i64, p: i64, legacy_tries: usize, out: &mut Vec<Vec<i64
     } else {
         (&Integer::from(p).pow(d as u32) - &Integer::one()) / Integer::from(2i64)
     };
-    let proper = |g: &[i64]| {
-        let dg = degree(g);
-        dg > 0 && dg < n
-    };
     let mut found: Option<Vec<i64>> = None;
-    // Phase 1: the legacy loop.
-    for _ in 0..legacy_tries {
-        let h = random_monic_polynomial((n - 1).max(1), p, &mut rng);
-        let t = if p == 2 {
-            trace_map(&h, f, d, p)
-        } else {
-            sub(&pow_mod(&h, &e, f, p), &[1], p)
-        };
-        let g = gcd(&t, f, p);
-        if proper(&g) {
+    for t in 0..LAS_VEGAS_TRIES {
+        if t == TRIES_BEFORE_CERTIFICATE {
+            contract_or_panic(f, d, p);
+        }
+        // Uniform a with deg a < n (vzGG 14.8, step 1).
+        let a = trim(&(0..n).map(|_| rng.below(p)).collect::<Vec<i64>>());
+        if let Some(g) = split_with(&a, f, d, p, &e) {
             found = Some(g);
             break;
-        }
-    }
-    if found.is_none() {
-        // Certificate, then phase 2 (uniform a with deg a < n, vzGG 14.8).
-        contract_or_panic(f, d, p);
-        for _ in 0..LAS_VEGAS_TRIES {
-            let a = trim(&(0..n).map(|_| rng.below(p)).collect::<Vec<i64>>());
-            if let Some(g) = split_with(&a, f, d, p, &e) {
-                found = Some(g);
-                break;
-            }
         }
     }
     let g = found.unwrap_or_else(|| {
@@ -647,8 +728,8 @@ fn edf_rec(f: &[i64], d: i64, p: i64, legacy_tries: usize, out: &mut Vec<Vec<i64
     });
     let g1 = make_monic(&g, p);
     let g2 = make_monic(&div_mod(f, &g1, p).0, p);
-    edf_rec(&g1, d, p, legacy_tries, out);
-    edf_rec(&g2, d, p, legacy_tries, out);
+    edf_rec(&g1, d, p, out);
+    edf_rec(&g2, d, p, out);
 }
 
 /// Panic with the reason if `f` is not a valid equal-degree block.
@@ -662,15 +743,15 @@ fn contract_or_panic(f: &[i64], d: i64, p: i64) {
 /// §23.8.1; Cantor–Zassenhaus \[CZ81\], vzGG Algorithms 14.8/14.10). Splits a
 /// squarefree `f` whose irreducible factors all have degree `d` into those
 /// monic factors. For `p = 2` the trace map is used; for odd `p`,
-/// `a^((p^d-1)/2) - 1`.
+/// `a^((p^d-1)/2) - 1`. The coefficients of `f` are read modulo `p`.
 ///
 /// The contract is **checked** (unlike MAGMA, whose result is "unpredictable
 /// if conditions are not met"): before any splitting, `f` must pass a
 /// certificate (Rabin's criterion for products, \[Rab80\]) proving that it is a
 /// squarefree product of distinct monic irreducibles of degree exactly `d`
 /// over `F_p`. The returned list therefore always consists of irreducible
-/// factors of degree `d` whose product is `f` made monic; the order is the
-/// legacy discovery order (stable across runs).
+/// factors of degree `d` whose product is `f` made monic, sorted by
+/// [`factor_order`] (PARI's `factormod` order).
 ///
 /// A nonzero constant `f` returns `vec![]` (the empty product).
 ///
@@ -687,13 +768,10 @@ fn contract_or_panic(f: &[i64], d: i64, p: i64) {
 ///   returned in that case.
 pub fn equal_degree_factor(f: &[i64], d: i64, p: i64) -> Vec<Vec<i64>> {
     const WHO: &str = "fp_factor::equal_degree_factor";
-    if let Err(why) = check_prime(p) {
+    if let Err(why) = check_modulus(p) {
         panic!("{WHO}: {why}");
     }
-    let f_m = make_monic(f, p);
-    if is_zero(&f_m) {
-        panic!("{WHO}: f = 0 has no factorization");
-    }
+    let f_m = monic_nonzero(f, p, WHO);
     if degree(&f_m) == 0 {
         return Vec::new();
     }
@@ -702,68 +780,84 @@ pub fn equal_degree_factor(f: &[i64], d: i64, p: i64) -> Vec<Vec<i64>> {
         panic!("{WHO}: {why}");
     }
     let mut out = Vec::new();
-    edf_rec(&f_m, d, p, LEGACY_TRIES, &mut out);
+    edf_rec(&f_m, d, p, &mut out);
+    out.sort_by(|a, b| factor_order(a, b));
     out
 }
 
 /// Full irreducible factorization of `f` in `F_p[x]` (MAGMA `Factorization`
-/// over F_p, ch. 23 §23.8.1, without multiplicities). The radical
-/// ([`squarefree_factor`]) is computed first so repeated factors are coalesced
-/// (multiplicities are *not* tracked — every returned factor is distinct and
-/// monic; use [`factor_with_multiplicity`] to recover exponents). Correct on
-/// inseparable inputs (`x^2 + 1` over `F_2`, `x^5 - 2` over `F_5`, ...) since
-/// the radical handles the characteristic-`p` cases. Then distinct-degree
-/// factorization and the equal-degree stage of [`equal_degree_factor`] (two
-/// phases: the legacy tries, then a contract certificate and uniform
-/// Las Vegas tries), so a returned factor is always irreducible: no block is
-/// ever returned unsplit. A constant `f` returns `vec![]`.
+/// over F_p, ch. 23 §23.8.1, without multiplicities). The coefficients of `f`
+/// are read modulo `p`. The radical ([`squarefree_factor`]) is computed first
+/// so repeated factors are coalesced (multiplicities are *not* tracked: every
+/// returned factor is distinct and monic; use [`factor_with_multiplicity`] to
+/// recover exponents). Correct on inseparable inputs (`x^2 + 1` over `F_2`,
+/// `x^5 - 2` over `F_5`, ...) since the radical handles the characteristic-`p`
+/// cases. Then distinct-degree factorization and the equal-degree recursion
+/// (uniform Las Vegas tries, with the contract certificate after 32 failures),
+/// so a returned factor is always irreducible: no block is ever returned
+/// unsplit. A nonzero constant `f` returns `vec![]`.
 ///
-/// Precondition: `p` is a prime `<= MAX_P`. It is **not checked up front**: a
-/// composite `p` is not detected and the result is then meaningless (for
-/// example `factor(&[1, 0, 1], 15)` returns `[[1, 0, 1]]`), or a `div_mod`
-/// panic; `p > MAX_P` overflows the `i64` arithmetic.
+/// The output is sorted by [`factor_order`]: by degree, then by coefficients
+/// from the top down, the order of PARI's `factormod`.
 ///
 /// # Panics
 ///
-/// - an equal-degree block that the legacy tries cannot split fails the
-///   contract certificate (only possible outside the precondition, e.g. a
-///   composite `p`: the message says "violates its contract");
+/// - `p` is not a prime `<= MAX_P` (checked first, [`check_modulus`]);
+/// - `f ≡ 0 (mod p)` (the zero polynomial has no factorization);
 /// - the sampler fails 256 consecutive uniform tries on a certified block
-///   (probability <= 2^-256 per block); no value is returned in that case;
-/// - the arithmetic panics of the module (`div_mod` with a non-invertible
-///   leading coefficient, which needs a composite `p`).
+///   (probability <= 2^-256 per block); no value is returned in that case.
 pub fn factor(f: &[i64], p: i64) -> Vec<Vec<i64>> {
-    let f_m = make_monic(f, p);
-    if degree(&f_m) <= 0 {
+    const WHO: &str = "fp_factor::factor";
+    if let Err(why) = check_modulus(p) {
+        panic!("{WHO}: {why}");
+    }
+    factor_monic(&monic_nonzero(f, p, WHO), p)
+}
+
+/// [`factor`] without the prime check, for callers that have proved `p` a
+/// prime `<= MAX_P` themselves (`zassenhaus::choose_prime`: trial division and
+/// a loop bound). The coefficients are still read modulo `p`.
+///
+/// # Panics
+///
+/// `f ≡ 0 (mod p)`.
+pub(crate) fn factor_prime(f: &[i64], p: i64) -> Vec<Vec<i64>> {
+    factor_monic(&monic_nonzero(f, p, "fp_factor::factor_prime"), p)
+}
+
+/// The factorization of the monic, reduced, nonzero `f_m` over a checked prime.
+fn factor_monic(f_m: &[i64], p: i64) -> Vec<Vec<i64>> {
+    if degree(f_m) <= 0 {
         return Vec::new();
     }
-    let squarefree = squarefree_factor(&f_m, p);
+    let rad = radical(f_m, p);
     let mut out: Vec<Vec<i64>> = Vec::new();
-    for (d, gd) in distinct_degree_factor(&squarefree, p) {
+    for (d, gd) in ddf_squarefree(&rad, p) {
         let mut pieces = Vec::new();
-        edf_rec(&make_monic(&gd, p), d, p, LEGACY_TRIES, &mut pieces);
-        for piece in pieces {
-            out.push(make_monic(&piece, p));
-        }
+        edf_rec(&make_monic(&gd, p), d, p, &mut pieces);
+        out.extend(pieces.into_iter().map(|piece| make_monic(&piece, p)));
     }
+    out.sort_by(|a, b| factor_order(a, b));
     out
 }
 
 /// Irreducible factorization of `f` in `F_p[x]` *with multiplicities*:
 /// returns `(g_i, e_i)` pairs with each `g_i` monic irreducible and distinct,
-/// such that `prod g_i^{e_i}` equals `f` made monic. Multiplicities are found
-/// by repeated exact division of `f` by each distinct factor from [`factor`].
+/// such that `prod g_i^{e_i}` equals `f` (read modulo `p`) made monic, in the
+/// order of [`factor`]. Multiplicities are found by repeated exact division of
+/// `f` by each distinct factor.
 ///
 /// # Panics
 ///
-/// As for [`factor`]: the precondition is `p` a prime `<= MAX_P`, not checked
-/// up front, and a composite `p` is not detected.
+/// As for [`factor`]: `p` is not a prime `<= MAX_P` (checked first);
+/// `f ≡ 0 (mod p)`.
 pub fn factor_with_multiplicity(f: &[i64], p: i64) -> Vec<(Vec<i64>, u32)> {
-    let f_m = make_monic(f, p);
-    if degree(&f_m) <= 0 {
-        return Vec::new();
+    const WHO: &str = "fp_factor::factor_with_multiplicity";
+    if let Err(why) = check_modulus(p) {
+        panic!("{WHO}: {why}");
     }
-    factor(&f_m, p)
+    let f_m = monic_nonzero(f, p, WHO);
+    factor_monic(&f_m, p)
         .into_iter()
         .map(|g| {
             let mut mult = 0u32;
@@ -1005,10 +1099,10 @@ mod tests {
     // ---------------------------------------------------------------------
     // Equal-degree factorization (X1a): reference rows.
     //
-    // Each row is (id, p, d, f, PARI factors sorted). Coefficients are
-    // little-endian. Reference: PARI/GP 2.15, for every row
+    // Each row is (id, p, d, f, PARI factors in PARI's printed order).
+    // Coefficients are little-endian. Reference: PARI/GP 2.15, for every row
     //   gp> le(g) = my(v = Vec(lift(g))); vector(#v, i, v[#v + 1 - i]);
-    //   gp> vecsort(apply(le, factormod(Pol(Vecrev(f)), p)[,1]~), , 0)
+    //   gp> apply(le, factormod(Pol(Vecrev(f)), p)[,1]~)
     // (every multiplicity is 1 and every degree is d). The inputs are
     //   A1 x^2+x, A2 (x^3+x+1)(x^3+x^2+1), A3 (x^16-x)/(x^4-x),
     //   A4 (x^32-x)/(x^2-x) over F_2; B1 x^3-x, B2 (x^9-x)/(x^3-x),
@@ -1033,7 +1127,7 @@ mod tests {
                 2,
                 3,
                 vec![1, 1, 1, 1, 1, 1, 1],
-                vec![vec![1, 0, 1, 1], vec![1, 1, 0, 1]],
+                vec![vec![1, 1, 0, 1], vec![1, 0, 1, 1]],
             ),
             (
                 "A3",
@@ -1041,8 +1135,8 @@ mod tests {
                 4,
                 vec![1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
                 vec![
-                    vec![1, 0, 0, 1, 1],
                     vec![1, 1, 0, 0, 1],
+                    vec![1, 0, 0, 1, 1],
                     vec![1, 1, 1, 1, 1],
                 ],
             ),
@@ -1052,12 +1146,12 @@ mod tests {
                 5,
                 vec![1; 31],
                 vec![
-                    vec![1, 0, 0, 1, 0, 1],
                     vec![1, 0, 1, 0, 0, 1],
-                    vec![1, 0, 1, 1, 1, 1],
-                    vec![1, 1, 0, 1, 1, 1],
-                    vec![1, 1, 1, 0, 1, 1],
+                    vec![1, 0, 0, 1, 0, 1],
                     vec![1, 1, 1, 1, 0, 1],
+                    vec![1, 1, 1, 0, 1, 1],
+                    vec![1, 1, 0, 1, 1, 1],
+                    vec![1, 0, 1, 1, 1, 1],
                 ],
             ),
             (
@@ -1100,7 +1194,7 @@ mod tests {
                 5,
                 3,
                 vec![4, 3, 1, 1, 2, 0, 1, 4, 0, 1],
-                vec![vec![1, 1, 0, 1], vec![1, 2, 0, 1], vec![4, 1, 0, 1]],
+                vec![vec![1, 1, 0, 1], vec![4, 1, 0, 1], vec![1, 2, 0, 1]],
             ),
             (
                 "D1",
@@ -1136,25 +1230,25 @@ mod tests {
                 e1,
                 vec![
                     vec![1, 0, 1],
-                    vec![1, 3, 1],
-                    vec![1, 4, 1],
                     vec![2, 0, 1],
-                    vec![2, 2, 1],
-                    vec![2, 5, 1],
-                    vec![3, 1, 1],
-                    vec![3, 2, 1],
-                    vec![3, 5, 1],
-                    vec![3, 6, 1],
                     vec![4, 0, 1],
+                    vec![3, 1, 1],
                     vec![4, 1, 1],
-                    vec![4, 6, 1],
-                    vec![5, 2, 1],
-                    vec![5, 3, 1],
-                    vec![5, 4, 1],
-                    vec![5, 5, 1],
                     vec![6, 1, 1],
+                    vec![2, 2, 1],
+                    vec![3, 2, 1],
+                    vec![5, 2, 1],
+                    vec![1, 3, 1],
+                    vec![5, 3, 1],
                     vec![6, 3, 1],
+                    vec![1, 4, 1],
+                    vec![5, 4, 1],
                     vec![6, 4, 1],
+                    vec![2, 5, 1],
+                    vec![3, 5, 1],
+                    vec![5, 5, 1],
+                    vec![3, 6, 1],
+                    vec![4, 6, 1],
                     vec![6, 6, 1],
                 ],
             ),
@@ -1179,89 +1273,51 @@ mod tests {
         ]
     }
 
-    /// T2 (pin): the exact, unsorted output order of `factor` and of
-    /// `equal_degree_factor` on the reference rows. Added and seen passing on
-    /// HEAD 702d0a5 before the X1a change; the claim is "unchanged by the
-    /// fix" (phase 1 of the equal-degree stage is HEAD's loop), so the order
-    /// of `factor`, which `zassenhaus::factor` and its downstream users see,
-    /// stays bit-identical whenever phase 1 splits every block.
+    /// T2: the exact, unsorted output order of `factor` and of
+    /// `equal_degree_factor` is PARI's `factormod` order (degree, then
+    /// coefficients from the top down). gp, for every row (inputs at
+    /// `edf_reference_rows`, plus three mixed-degree rows):
+    ///   gp> le(g) = my(v = Vec(lift(g))); vector(#v, i, v[#v + 1 - i]);
+    ///   gp> apply(le, factormod(f, p)[,1]~)
+    /// The extra rows are factormod(x^5+4*x+1, 11),
+    /// factormod(x^8+x^4+x^2+x+1, 7) and factormod((x-1)*(x^2+2)*(x^2+3), 5).
     #[test]
-    fn factor_order_is_unchanged() {
-        let pinned: Vec<(&str, Vec<Vec<i64>>)> = vec![
-            ("A1", vec![vec![1, 1], vec![0, 1]]),
-            ("A2", vec![vec![1, 0, 1, 1], vec![1, 1, 0, 1]]),
-            (
-                "A3",
-                vec![
-                    vec![1, 0, 0, 1, 1],
-                    vec![1, 1, 0, 0, 1],
-                    vec![1, 1, 1, 1, 1],
-                ],
-            ),
-            (
-                "A4",
-                vec![
-                    vec![1, 1, 1, 0, 1, 1],
-                    vec![1, 1, 1, 1, 0, 1],
-                    vec![1, 0, 1, 1, 1, 1],
-                    vec![1, 0, 1, 0, 0, 1],
-                    vec![1, 1, 0, 1, 1, 1],
-                    vec![1, 0, 0, 1, 0, 1],
-                ],
-            ),
-            ("B1", vec![vec![2, 1], vec![1, 1], vec![0, 1]]),
-            ("B2", vec![vec![2, 2, 1], vec![1, 0, 1], vec![2, 1, 1]]),
-            ("B3", vec![vec![2, 2, 0, 1], vec![1, 2, 0, 1]]),
-            (
-                "C1",
-                vec![vec![0, 1], vec![1, 1], vec![2, 1], vec![4, 1], vec![3, 1]],
-            ),
-            ("C2", vec![vec![3, 0, 1], vec![2, 0, 1]]),
-            (
-                "C3",
-                vec![vec![1, 1, 0, 1], vec![1, 2, 0, 1], vec![4, 1, 0, 1]],
-            ),
-            (
-                "D1",
-                vec![
-                    vec![2147483644, 1],
-                    vec![2147483643, 1],
-                    vec![2147483642, 1],
-                    vec![2147483646, 1],
-                    vec![2147483645, 1],
-                ],
-            ),
-            ("D2", vec![vec![4, 0, 1], vec![2, 0, 1], vec![1, 0, 1]]),
-            ("D3", vec![vec![4, 1, 0, 1], vec![13, 1, 0, 1]]),
-            (
-                "D4",
-                vec![
-                    vec![3037000492, 1],
-                    vec![3037000490, 1],
-                    vec![3037000491, 1],
-                ],
-            ),
-            ("D5", vec![vec![2, 0, 1], vec![3, 0, 1]]),
-        ];
+    fn factor_order_is_pari_order() {
         let rows = edf_reference_rows();
-        for (id, expected) in &pinned {
-            let (_, p, d, f, pari) = rows.iter().find(|r| r.0 == *id).unwrap();
+        for (id, p, d, f, pari) in &rows {
+            // The reference lists are written in PARI's printed order.
             let via_factor = factor(f, *p);
             let via_edf = equal_degree_factor(f, *d, *p);
-            assert_eq!(&via_factor, expected, "factor order, row {id}");
-            assert_eq!(&via_edf, expected, "equal_degree_factor order, row {id}");
-            // Same set as PARI.
-            let mut sorted = via_edf.clone();
-            sorted.sort();
-            assert_eq!(&sorted, pari, "row {id} vs PARI factormod");
+            assert_eq!(&via_factor, pari, "factor order, row {id}");
+            assert_eq!(&via_edf, pari, "equal_degree_factor order, row {id}");
+            let mut sorted = pari.clone();
+            sorted.sort_by(|a, b| factor_order(a, b));
+            assert_eq!(&sorted, pari, "row {id}: PARI order is factor_order");
+        }
+        let mixed: Vec<(i64, Vec<i64>, Vec<Vec<i64>>)> = vec![
+            (11, vec![1, 4, 0, 0, 0, 1], vec![vec![6, 1], vec![10, 2, 1], vec![9, 3, 1]]),
+            (
+                7,
+                vec![1, 1, 1, 0, 1, 0, 0, 0, 1],
+                vec![vec![1, 1, 1, 1, 1], vec![1, 0, 0, 6, 1]],
+            ),
+            // (x-1)(x^2+2)(x^2+3) = (x-1)(x^4+1) mod 5.
+            (5, vec![4, 1, 0, 0, 4, 1], vec![vec![4, 1], vec![2, 0, 1], vec![3, 0, 1]]),
+        ];
+        for (p, f, pari) in mixed {
+            assert_eq!(factor(&f, p), pari, "factor order of {f:?} mod {p}");
+            let with_mult: Vec<Vec<i64>> =
+                factor_with_multiplicity(&f, p).into_iter().map(|(g, _)| g).collect();
+            assert_eq!(with_mult, pari, "factor_with_multiplicity order of {f:?} mod {p}");
         }
     }
 
     /// T1: the public entry on every reference row equals PARI `factormod`
-    /// (sorted; gp commands at `edf_reference_rows`).
+    /// as a set (both sides sorted; gp commands at `edf_reference_rows`).
     #[test]
     fn equal_degree_factor_matches_pari() {
-        for (id, p, d, f, pari) in edf_reference_rows() {
+        for (id, p, d, f, mut pari) in edf_reference_rows() {
+            pari.sort();
             let mut got = equal_degree_factor(&f, d, p);
             got.sort();
             assert_eq!(got, pari, "row {id}: equal_degree_factor(f, {d}, {p})");
@@ -1271,17 +1327,17 @@ mod tests {
         }
     }
 
-    /// T3: with no legacy tries, every block goes through the certificate and
-    /// then only the uniform vzGG Algorithm 14.8 tries (phase 2); the result
-    /// still equals PARI `factormod` on every reference row (E1: 21
-    /// quadratics).
+    /// T3: the equal-degree recursion on its own (uniform vzGG Algorithm 14.8
+    /// tries, lazy certificate) equals PARI `factormod` as a set on every
+    /// reference row (E1: 21 quadratics).
     #[test]
-    fn phase_two_alone_matches_pari() {
-        for (id, p, d, f, pari) in edf_reference_rows() {
+    fn edf_rec_matches_pari() {
+        for (id, p, d, f, mut pari) in edf_reference_rows() {
+            pari.sort();
             let mut out = Vec::new();
-            edf_rec(&make_monic(&f, p), d, p, 0, &mut out);
+            edf_rec(&make_monic(&f, p), d, p, &mut out);
             out.sort();
-            assert_eq!(out, pari, "row {id}: phase 2 alone");
+            assert_eq!(out, pari, "row {id}: edf_rec");
         }
     }
 
@@ -1344,9 +1400,10 @@ mod tests {
                 "success probability below 1/2 for {f:?} mod {p}"
             );
         }
-        // Contrast: the legacy monic sampler h = x + c on (x-1)(x-4) mod 5
-        // splits for only 2 of the 5 h (below 1/2), which is why phase 1 alone
-        // carries no probability bound. gp:
+        // Contrast: a monic sampler h = x + c (the old equal-degree stage drew
+        // monic h of degree n - 1) on (x-1)(x-4) mod 5 splits for only 2 of the
+        // 5 h (below 1/2), so it carries no probability bound. This is why the
+        // equal-degree stage draws a uniformly. gp:
         //   F = Mod(1,5)*(x^2+4);
         //   sum(c=0,4, poldegree(gcd(lift(Mod(x+c,F)^2)-1, F)) == 1)  \\ = 2
         let f = vec![4, 0, 1];
@@ -1428,12 +1485,15 @@ mod tests {
     }
 
     /// T6: the internal path reports a bad block instead of looping or
-    /// returning it unsplit (x^4 + x^3 + 2 is irreducible over F_3).
+    /// returning it unsplit (x^4 + x^3 + 2 is irreducible over F_3): no try
+    /// splits it, and after 32 failed tries the certificate panics.
     #[test]
-    #[should_panic(expected = "violates its contract")]
+    #[should_panic(
+        expected = "violates its contract (f has an irreducible factor whose degree does not divide 2)"
+    )]
     fn edf_rec_certificate_panics_on_bad_block() {
         let mut out = Vec::new();
-        edf_rec(&[2, 0, 0, 1, 1], 2, 3, 0, &mut out);
+        edf_rec(&[2, 0, 0, 1, 1], 2, 3, &mut out);
     }
 
     /// The uniform draw is exactly uniform by rejection: 2^64 mod n words are
@@ -1460,5 +1520,222 @@ mod tests {
         let r = pow_mod(&[0, 1], &Integer::from(7i64), &modulus, p);
         // x^2 ≡ -1, so x^7 = x*(x^2)^3 ≡ x*(-1)^3 = -x ≡ 6x.
         assert_eq!(r, vec![0, 6]);
+    }
+
+    // ---------------------------------------------------------------------
+    // Checked entries (follow-up unit P1). References, PARI/GP 2.15:
+    //   gp> Vecrev(lift(Mod(1,5)*(x+1)^2*(x^2+2)*(x^2+3)))  \\ [1,2,1,0,1,2,1]
+    //   gp> factormod(x^5+x^4+x+1, 5)   \\ (x+1)(x^2+2)(x^2+3)
+    //   gp> factormod(x-4, 5)           \\ x+1
+    //   gp> factormod(x^2-3, 5)         \\ x^2+2, irreducible
+    //   gp> factormod(5*x^2+x+1, 5)     \\ x+1
+    //   gp> factormod(5*x+1, 5)         \\ empty: a nonzero constant
+    //   gp> [isprime(2047), isprime(1373653), isprime(25326001)]  \\ [0,0,0]
+    //   gp> [precprime(3037000499), nextprime(3037000500)]
+    //       \\ [3037000493, 3037000507]
+    // 2047 = 23*89 is a strong pseudoprime to base 2, 1373653 = 829*1657 to
+    // the bases 2 and 3, 25326001 = 2251*11251 to 2, 3 and 5, and
+    // 3215031751 = 151*751*28351 to 2, 3, 5 and 7 (gp: a strong test by
+    // hand, `Mod(a, n)^d` with n - 1 = 2^s d).
+    // ---------------------------------------------------------------------
+
+    #[test]
+    #[should_panic(expected = "fp_factor::distinct_degree_factor: f is not squarefree")]
+    fn ddf_rejects_non_squarefree() {
+        distinct_degree_factor(&[1, 2, 1], 5);
+    }
+
+    /// (x+1)^2 (x^2+2)(x^2+3) mod 5: the old loop labelled the block
+    /// x^5+x^4+x+1 = (x+1)(x^2+2)(x^2+3) with degree 2.
+    #[test]
+    #[should_panic(expected = "fp_factor::distinct_degree_factor: f is not squarefree")]
+    fn ddf_rejects_hidden_repeated_factor() {
+        distinct_degree_factor(&[1, 2, 1, 0, 1, 2, 1], 5);
+    }
+
+    /// x^2 over F_2 has derivative 0.
+    #[test]
+    #[should_panic(expected = "fp_factor::distinct_degree_factor: f is not squarefree")]
+    fn ddf_rejects_zero_derivative() {
+        distinct_degree_factor(&[0, 0, 1], 2);
+    }
+
+    #[test]
+    #[should_panic(expected = "fp_factor::distinct_degree_factor: f = 0 is not squarefree")]
+    fn ddf_rejects_zero() {
+        distinct_degree_factor(&[0], 5);
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "fp_factor::distinct_degree_factor: p = 15 is not a prime <= 3037000499"
+    )]
+    fn ddf_rejects_composite_p() {
+        distinct_degree_factor(&[1, 0, 1], 15);
+    }
+
+    #[test]
+    fn ddf_constant_and_squarefree() {
+        assert_eq!(distinct_degree_factor(&[3], 5), Vec::<(i64, Vec<i64>)>::new());
+        // x^5+x^4+x+1 = (x+1)(x^4+1), x^4+1 = (x^2+2)(x^2+3) mod 5.
+        assert_eq!(
+            distinct_degree_factor(&[1, 1, 0, 0, 1, 1], 5),
+            vec![(1, vec![1, 1]), (2, vec![1, 0, 0, 0, 1])]
+        );
+    }
+
+    #[test]
+    fn ddf_reads_coefficients_mod_p() {
+        // x - 4 = x + 1 mod 5.
+        assert_eq!(distinct_degree_factor(&[-4, 1], 5), vec![(1, vec![1, 1])]);
+    }
+
+    #[test]
+    #[should_panic(expected = "fp_factor::factor: p = 15 is not a prime <= 3037000499")]
+    fn factor_rejects_composite_p() {
+        factor(&[1, 0, 1], 15);
+    }
+
+    #[test]
+    #[should_panic(expected = "fp_factor::factor: p = 1 is not a prime <= 3037000499")]
+    fn factor_rejects_p_one() {
+        factor(&[1, 0, 1], 1);
+    }
+
+    #[test]
+    #[should_panic(expected = "fp_factor::factor: p = 3037000507 is not a prime <= 3037000499")]
+    fn factor_rejects_large_prime() {
+        factor(&[1, 1], 3037000507);
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "fp_factor::factor_with_multiplicity: p = 21 is not a prime <= 3037000499"
+    )]
+    fn factor_with_multiplicity_rejects_composite_p() {
+        factor_with_multiplicity(&[1, 0, 1], 21);
+    }
+
+    #[test]
+    #[should_panic(expected = "fp_factor::squarefree_factor: p = 15 is not a prime <= 3037000499")]
+    fn squarefree_factor_rejects_composite_p() {
+        squarefree_factor(&[1, 0, 1], 15);
+    }
+
+    /// 5 + 10x is 0 mod 5: an empty list would read as "f is a unit".
+    #[test]
+    #[should_panic(expected = "fp_factor::factor: f = 0 has no factorization")]
+    fn factor_rejects_zero_mod_p() {
+        factor(&[5, 10], 5);
+    }
+
+    #[test]
+    #[should_panic(expected = "fp_factor::factor_with_multiplicity: f = 0 has no factorization")]
+    fn factor_with_multiplicity_rejects_zero() {
+        factor_with_multiplicity(&[0], 7);
+    }
+
+    #[test]
+    #[should_panic(expected = "fp_factor::squarefree_factor: f = 0 has no factorization")]
+    fn squarefree_factor_rejects_zero_mod_p() {
+        squarefree_factor(&[3, 0, 3], 3);
+    }
+
+    #[test]
+    fn factor_reads_coefficients_mod_p() {
+        // x^2 - 3 = x^2 + 2 mod 5 (irreducible); 6x^2 + 7 = x^2 + 2 mod 5.
+        assert_eq!(factor(&[-3, 0, 1], 5), vec![vec![2, 0, 1]]);
+        assert_eq!(factor(&[7, 0, 6], 5), vec![vec![2, 0, 1]]);
+    }
+
+    #[test]
+    fn factor_reduces_leading_coefficient() {
+        // 5x^2 + x + 1 = x + 1 mod 5; 5x + 1 = 1 mod 5 (a nonzero constant).
+        assert_eq!(factor(&[1, 1, 5], 5), vec![vec![1, 1]]);
+        assert_eq!(factor(&[1, 5], 5), Vec::<Vec<i64>>::new());
+    }
+
+    #[test]
+    fn factor_with_multiplicity_reduces_leading_coefficient() {
+        assert_eq!(factor_with_multiplicity(&[1, 1, 5], 5), vec![(vec![1, 1], 1)]);
+    }
+
+    #[test]
+    #[should_panic(expected = "fp_factor::equal_degree_factor: f = 0 has no factorization")]
+    fn equal_degree_factor_rejects_zero_mod_p() {
+        equal_degree_factor(&[5], 1, 5);
+    }
+
+    #[test]
+    fn check_modulus_boundary() {
+        assert_eq!(check_modulus(2), Ok(()));
+        assert_eq!(check_modulus(3037000493), Ok(()));
+        for p in [0, 1, 4, 15, -7, 2047, 1373653, 25326001, 3037000507, 3215031751] {
+            assert_eq!(
+                check_modulus(p),
+                Err(format!("p = {p} is not a prime <= 3037000499")),
+                "p = {p}"
+            );
+        }
+    }
+
+    // Equal-degree certificate on composite d (sparse Frobenius ladder).
+    // gp: Vecrev(lift(Mod(1,2)*(x^12+x^3+1)*(x^12+x^6+x^4+x+1)));
+    //     factormod(%, 2) lists x^12+x^3+1 first, then x^12+x^6+x^4+x+1;
+    //     polisirreducible(Mod(1,2)*g) = 1 for g = x^12+x^3+1,
+    //     x^12+x^6+x^4+x+1, x^6+x+1, x^4+x+1, x^2+x+1;
+    //     Vecrev(lift(Mod(1,2)*(x^2+x+1)*(x^4+x+1)*(x^6+x+1)))
+    //       = [1,1,0,1,0,0,1,1,0,1,1,1,1];
+    //     factormod(x^6+x^5+x^4+x^3+x^2+x+1, 2) = (x^3+x+1)(x^3+x^2+1).
+
+    #[test]
+    fn certificate_composite_d_accepts() {
+        let f = [1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1];
+        assert_eq!(
+            equal_degree_factor(&f, 12, 2),
+            vec![
+                vec![1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                vec![1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1],
+            ]
+        );
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "fp_factor::equal_degree_factor: f has an irreducible factor of degree dividing 6"
+    )]
+    fn certificate_composite_d_rejects_divisor_degree() {
+        equal_degree_factor(&[1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1], 12, 2);
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "fp_factor::equal_degree_factor: f has an irreducible factor of degree dividing 3"
+    )]
+    fn certificate_d6_two_cubics() {
+        equal_degree_factor(&[1, 1, 1, 1, 1, 1, 1], 6, 2);
+    }
+
+    #[test]
+    fn certificate_d6_irreducible() {
+        assert_eq!(
+            equal_degree_factor(&[1, 1, 0, 0, 0, 0, 1], 6, 2),
+            vec![vec![1, 1, 0, 0, 0, 0, 1]]
+        );
+    }
+
+    #[test]
+    fn prime_divisors_small() {
+        assert_eq!(prime_divisors(1), Vec::<i64>::new());
+        assert_eq!(prime_divisors(12), vec![2, 3]);
+        assert_eq!(prime_divisors(60), vec![2, 3, 5]);
+        assert_eq!(prime_divisors(97), vec![97]);
+    }
+
+    #[test]
+    fn factor_order_compares_degree_then_top_coefficients() {
+        assert_eq!(factor_order(&[1, 1], &[0, 0, 1]), Ordering::Less);
+        assert_eq!(factor_order(&[1, 1, 0, 1], &[1, 0, 1, 1]), Ordering::Less);
+        assert_eq!(factor_order(&[2, 1, 0], &[2, 1]), Ordering::Equal);
     }
 }

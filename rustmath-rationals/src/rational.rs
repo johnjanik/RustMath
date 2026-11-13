@@ -448,6 +448,10 @@ impl Ring for Rational {
     fn static_characteristic() -> Option<u64> {
         Some(0)
     }
+
+    fn static_is_commutative() -> Option<bool> {
+        Some(true)
+    }
 }
 
 impl CommutativeRing for Rational {}

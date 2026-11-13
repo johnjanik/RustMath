@@ -63,7 +63,16 @@ fn reduce_mod_p(f: &[Integer], p: i64) -> Vec<i64> {
 /// of residue degrees of `f` mod `p`. Returns `None` when `p` is ramified or
 /// divides the leading coefficient (i.e. `f` is not separable mod `p`), since the
 /// cycle type is only defined at unramified primes.
+///
+/// # Panics
+///
+/// `p` is not a prime `<= fp_factor::MAX_P` (checked first,
+/// [`fp_factor::check_modulus`]). A composite `p` used to give a meaningless cycle
+/// type (`x^2 + 1` at 15 gave `[2]`).
 pub fn cycle_type(f: &[Integer], p: i64) -> Option<Vec<usize>> {
+    if let Err(why) = fp_factor::check_modulus(p) {
+        panic!("padic_factor::cycle_type: {why}");
+    }
     let n = (f.len() as i64) - 1;
     let fp = reduce_mod_p(f, p);
     if fp_factor::degree(&fp) != n {
@@ -123,7 +132,18 @@ fn is_separable_fp(r: &[i64], p: i64) -> bool {
 ///
 /// Regular segments are fully resolved. A non-regular segment (inseparable
 /// residual polynomial) yields [`PadicError::NonRegularSegment`].
+///
+/// # Panics
+///
+/// `p` is not a prime `<= fp_factor::MAX_P` (checked first,
+/// [`fp_factor::check_modulus`]). This is a panic and not a [`PadicError`]: a bad `p`
+/// is a caller error, and callers read an `Err` as "not resolved at first order"
+/// (`rustmath-numberfields` `ideals.rs` then sets `montes_resolved = false`), which
+/// would hide the misuse.
 pub fn padic_factor(f: &[Integer], p: i64) -> Result<Vec<LocalFactor>, PadicError> {
+    if let Err(why) = fp_factor::check_modulus(p) {
+        panic!("padic_factor::padic_factor: {why}");
+    }
     let polygon = newton_polygon(f, p).ok_or(PadicError::ZeroPolynomial)?;
     let mut out = Vec::new();
     for seg in &polygon.segments {
@@ -158,7 +178,14 @@ pub fn padic_factor(f: &[Integer], p: i64) -> Result<Vec<LocalFactor>, PadicErro
 }
 
 /// Convenience: the sorted multiset of `(e, f)` pairs from [`padic_factor`].
+///
+/// # Panics
+///
+/// `p` is not a prime `<= fp_factor::MAX_P` (as for [`padic_factor`]).
 pub fn ramification_type(f: &[Integer], p: i64) -> Result<Vec<(usize, usize)>, PadicError> {
+    if let Err(why) = fp_factor::check_modulus(p) {
+        panic!("padic_factor::ramification_type: {why}");
+    }
     let mut ef: Vec<(usize, usize)> = padic_factor(f, p)?.iter().map(|lf| (lf.e, lf.f)).collect();
     ef.sort_unstable();
     Ok(ef)
@@ -221,5 +248,25 @@ mod tests {
         // two unramified linear factors (e=1,f=1). (x^2+5, where −5≡1 likewise.)
         let ef = ramification_type(&p(&[2, 0, 1]), 3).unwrap();
         assert_eq!(ef, vec![(1, 1), (1, 1)]);
+    }
+
+    // gp: isprime(15) = 0; factormod(x^2+1, 3) is irreducible and
+    // factormod(x^2+1, 5) splits, so no cycle type "at 15" exists.
+    #[test]
+    #[should_panic(expected = "padic_factor::cycle_type: p = 15 is not a prime <= 3037000499")]
+    fn cycle_type_rejects_composite_p() {
+        cycle_type(&p(&[1, 0, 1]), 15);
+    }
+
+    #[test]
+    #[should_panic(expected = "padic_factor::padic_factor: p = 1 is not a prime <= 3037000499")]
+    fn padic_factor_rejects_p_one() {
+        let _ = padic_factor(&p(&[1, 0, 1]), 1);
+    }
+
+    #[test]
+    #[should_panic(expected = "padic_factor::ramification_type: p = 9 is not a prime <= 3037000499")]
+    fn ramification_type_rejects_composite_p() {
+        let _ = ramification_type(&p(&[1, 0, 1]), 9);
     }
 }

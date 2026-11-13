@@ -662,6 +662,14 @@ fn factor_agrees_with_cantor_zassenhaus() {
                     .into_iter()
                     .map(|(g, e)| (ints(&g), e))
                     .collect();
+            // fp_factor returns PARI's factormod order already (degree, then
+            // coefficients from the top down); the sort below is then the identity.
+            assert!(
+                expected
+                    .windows(2)
+                    .all(|w| order(&w[0].0, &w[1].0) == Ordering::Less),
+                "fp_factor order, p = {p}, case {t}"
+            );
             expected.sort_by(|a, b| order(&a.0, &b.0));
             check(
                 &pi,
@@ -699,4 +707,25 @@ fn q_matrix_is_public_and_matches_pari() {
             (ints(&[1, 1, 0, 0, 1, 1, 1]), 1),
         ]
     );
+}
+
+/// psi_12 = 318665857834031151167461 = 399165290221 · 798330580441 is a strong pseudoprime to
+/// the bases 2, 3, ..., 37 (the first twelve primes), so a Miller-Rabin test on those bases
+/// calls it prime. Berlekamp's prime check is a proof (`try_is_prime`) and refuses it.
+/// gp: isprime(318665857834031151167461) = 0; factor(318665857834031151167461).
+#[test]
+fn berlekamp_rejects_strong_pseudoprime_psi12() {
+    let psi12 = Integer::from_decimal_str("318665857834031151167461").unwrap();
+    let f = ints(&[1, 0, 1]);
+    for (what, err) in [
+        ("factor", berlekamp::factor(&f, &psi12).err()),
+        ("is_irreducible", berlekamp::is_irreducible(&f, &psi12).err()),
+    ] {
+        match err {
+            Some(rustmath_core::MathError::InvalidArgument(m)) => {
+                assert!(m.contains("is not a prime"), "{what}: {m}")
+            }
+            other => panic!("{what}: expected InvalidArgument, got {other:?}"),
+        }
+    }
 }

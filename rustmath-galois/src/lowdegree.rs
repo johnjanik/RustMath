@@ -61,9 +61,7 @@ pub fn classify_cubic(ev: Evidence) -> Result<GaloisGroupResult> {
 /// integer polynomial are integers), via full factorization. Multiplicity-free
 /// under the separability precondition.
 fn monic_integer_roots(f: &[Integer]) -> Result<Vec<Integer>> {
-    let (_, factors) = zassenhaus::factor(f).map_err(|_| {
-        MathError::NotSupported("factor recombination limit exceeded".to_string())
-    })?;
+    let (_, factors) = zassenhaus::factor(f).map_err(MathError::from)?;
     let mut roots = Vec::new();
     for (g, mult) in factors {
         if g.len() == 2 {
