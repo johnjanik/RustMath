@@ -409,7 +409,10 @@ fn invariant_factors(relations: &[Vec<i64>], g: usize) -> Option<Vec<usize>> {
             return None; // free part remains: insufficient relations
         }
         if !d.is_one() {
-            factors.push(d.to_i64() as usize);
+            factors.push(
+                usize::try_from(&d)
+                    .expect("an invariant factor of a class group from i64 relations fits usize"),
+            );
         }
     }
     factors.sort_unstable();

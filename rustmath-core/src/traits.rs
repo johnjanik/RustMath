@@ -436,16 +436,91 @@ impl Ring for i32 {
 impl CommutativeRing for i32 {}
 impl IntegralDomain for i32 {}
 
+/// Euclid on magnitudes (Knuth, TAOCP vol. 2, 3rd ed., §4.5.2 Algorithm A); gcd(0, 0) = 0.
+fn gcd_u64(mut a: u64, mut b: u64) -> u64 {
+    while b != 0 {
+        let r = a % b;
+        a = b;
+        b = r;
+    }
+    a
+}
+
+/// Extended Euclid with truncated quotients in i128: the recurrence of
+/// `num_integer::Integer::extended_gcd` and of `Integer::extended_gcd` (rustmath-integers),
+/// with the triple negated when the last remainder is negative, so `g >= 0`.
+/// `(0, 0)` gives `(0, 0, 0)`. Inputs are i64 values, so no step overflows i128.
+fn xgcd_i128(a: i128, b: i128) -> (i128, i128, i128) {
+    if a == 0 && b == 0 {
+        return (0, 0, 0);
+    }
+    let (mut r0, mut r1, mut s0, mut s1, mut t0, mut t1) = (a, b, 1i128, 0i128, 0i128, 1i128);
+    while r1 != 0 {
+        let q = r0 / r1;
+        (r0, r1) = (r1, r0 - q * r1);
+        (s0, s1) = (s1, s0 - q * s1);
+        (t0, t1) = (t1, t0 - q * t1);
+    }
+    if r0 < 0 {
+        (-r0, -s0, -t0)
+    } else {
+        (r0, s0, t0)
+    }
+}
+
 impl EuclideanDomain for i32 {
+    /// `|self|`; total (`norm(i32::MIN)` = 2^31).
     fn norm(&self) -> u64 {
-        self.abs() as u64
+        u64::from(self.unsigned_abs())
     }
 
+    /// Truncated division. `Err(DivisionByZero)` for 0 and `Err(NumericalError)` for
+    /// `i32::MIN / -1`, whose quotient 2^31 does not fit in i32.
     fn div_rem(&self, other: &Self) -> Result<(Self, Self)> {
         if other.is_zero() {
             return Err(MathError::DivisionByZero);
         }
-        Ok((self / other, self % other))
+        match (self.checked_div(*other), self.checked_rem(*other)) {
+            (Some(q), Some(r)) => Ok((q, r)),
+            _ => Err(MathError::NumericalError("i32::MIN / -1 overflows i32".to_string())),
+        }
+    }
+
+    /// MAGMA `Gcd` (Handbook ch. 18 §18.6): non-negative, Euclid on the magnitudes.
+    ///
+    /// # Panics
+    /// Only when the gcd is 2^31, which does not fit in i32: both inputs in {0, i32::MIN},
+    /// not both 0.
+    fn gcd(&self, other: &Self) -> Self {
+        let g = gcd_u64(u64::from(self.unsigned_abs()), u64::from(other.unsigned_abs()));
+        i32::try_from(g).expect("gcd(i32::MIN, 0) = 2^31 does not fit in i32")
+    }
+
+    /// MAGMA `Lcm` (§18.6): non-negative, `|a| / g · |b|` formed in u64; 0 when an input is 0.
+    ///
+    /// # Panics
+    /// When the lcm exceeds i32::MAX.
+    fn lcm(&self, other: &Self) -> Self {
+        if *self == 0 || *other == 0 {
+            return 0;
+        }
+        let (a, b) = (u64::from(self.unsigned_abs()), u64::from(other.unsigned_abs()));
+        let l = (a / gcd_u64(a, b)) * b;
+        i32::try_from(l).expect("lcm does not fit in i32")
+    }
+
+    /// MAGMA `Xgcd` (§18.6): `(g, x, y)` with `g = x·a + y·b >= 0`; the multipliers of
+    /// `Integer::extended_gcd` (equal to PARI `gcdext`). The cofactors satisfy
+    /// `|x| <= |b| / g` and `|y| <= |a| / g` (Knuth §4.5.2), so only `g` can leave i32.
+    ///
+    /// # Panics
+    /// Only when `g` = 2^31: inputs `(MIN, 0)`, `(0, MIN)`, `(MIN, MIN)`.
+    fn extended_gcd(&self, other: &Self) -> (Self, Self, Self) {
+        let (g, x, y) = xgcd_i128(i128::from(*self), i128::from(*other));
+        let f = |v: i128| {
+            i32::try_from(v).expect("extended_gcd: gcd = 2^31 does not fit in i32")
+        };
+        (f(g), f(x), f(y))
     }
 
     /// The sign (MAGMA `Normalize` over Z: the canonical associate is `|self|`).
@@ -481,15 +556,58 @@ impl CommutativeRing for i64 {}
 impl IntegralDomain for i64 {}
 
 impl EuclideanDomain for i64 {
+    /// `|self|`; total (`norm(i64::MIN)` = 2^63).
     fn norm(&self) -> u64 {
-        self.abs() as u64
+        self.unsigned_abs()
     }
 
+    /// Truncated division. `Err(DivisionByZero)` for 0 and `Err(NumericalError)` for
+    /// `i64::MIN / -1`, whose quotient 2^63 does not fit in i64.
     fn div_rem(&self, other: &Self) -> Result<(Self, Self)> {
         if other.is_zero() {
             return Err(MathError::DivisionByZero);
         }
-        Ok((self / other, self % other))
+        match (self.checked_div(*other), self.checked_rem(*other)) {
+            (Some(q), Some(r)) => Ok((q, r)),
+            _ => Err(MathError::NumericalError("i64::MIN / -1 overflows i64".to_string())),
+        }
+    }
+
+    /// MAGMA `Gcd` (Handbook ch. 18 §18.6): non-negative, Euclid on the magnitudes.
+    ///
+    /// # Panics
+    /// Only when the gcd is 2^63, which does not fit in i64: both inputs in {0, i64::MIN},
+    /// not both 0.
+    fn gcd(&self, other: &Self) -> Self {
+        let g = gcd_u64(self.unsigned_abs(), other.unsigned_abs());
+        i64::try_from(g).expect("gcd(i64::MIN, 0) = 2^63 does not fit in i64")
+    }
+
+    /// MAGMA `Lcm` (§18.6): non-negative, `|a| / g · |b|` formed in u128; 0 when an input is 0.
+    ///
+    /// # Panics
+    /// When the lcm exceeds i64::MAX.
+    fn lcm(&self, other: &Self) -> Self {
+        if *self == 0 || *other == 0 {
+            return 0;
+        }
+        let (a, b) = (self.unsigned_abs(), other.unsigned_abs());
+        let l = u128::from(a / gcd_u64(a, b)) * u128::from(b);
+        i64::try_from(l).expect("lcm does not fit in i64")
+    }
+
+    /// MAGMA `Xgcd` (§18.6): `(g, x, y)` with `g = x·a + y·b >= 0`; the multipliers of
+    /// `Integer::extended_gcd` (equal to PARI `gcdext`). The cofactors satisfy
+    /// `|x| <= |b| / g` and `|y| <= |a| / g` (Knuth §4.5.2), so only `g` can leave i64.
+    ///
+    /// # Panics
+    /// Only when `g` = 2^63: inputs `(MIN, 0)`, `(0, MIN)`, `(MIN, MIN)`.
+    fn extended_gcd(&self, other: &Self) -> (Self, Self, Self) {
+        let (g, x, y) = xgcd_i128(i128::from(*self), i128::from(*other));
+        let f = |v: i128| {
+            i64::try_from(v).expect("extended_gcd: gcd = 2^63 does not fit in i64")
+        };
+        (f(g), f(x), f(y))
     }
 
     /// The sign (MAGMA `Normalize` over Z: the canonical associate is `|self|`).
@@ -889,5 +1007,108 @@ mod tests {
         assert!(6i32.as_any().is_none());
         assert_eq!(<F7 as EuclideanDomain>::from_any(Box::new(F7(3))), None);
         assert_eq!(<i64 as EuclideanDomain>::from_any(Box::new(6i64)), None);
+    }
+
+    // MAGMA Gcd / Lcm / Xgcd on machine words (Handbook ch. 18 §18.6): non-negative gcd and lcm,
+    // g >= 0 in Xgcd. Reference values from PARI/GP 2.15.4:
+    //   gp -q: [gcd(4,-6),gcd(0,-5),gcd(-5,0),gcd(0,0)] -> [2, 5, 5, 0]
+    //          [lcm(-4,6),lcm(-4,-6),lcm(0,-5)] -> [12, 12, 0]
+    //          [gcdext(3,-7),gcdext(4,-6),gcdext(-4,-6),gcdext(0,-5),gcdext(5,-5),gcdext(-5,5)]
+    //            -> [[-2,-1,1],[-1,-1,2],[1,-1,2],[0,-1,5],[0,-1,5],[0,1,5]]
+    // (gcdext(a, b) = [u, v, d] with d = u·a + v·b, so extended_gcd(a, b) = (d, u, v).)
+    fn check_signs<T>()
+    where
+        T: EuclideanDomain + Copy + fmt::Debug + From<i8>,
+    {
+        let t = |v: i8| T::from(v);
+        assert_eq!(t(4).gcd(&t(-6)), t(2));
+        assert_eq!(t(0).gcd(&t(-5)), t(5));
+        assert_eq!(t(-5).gcd(&t(0)), t(5));
+        assert_eq!(t(0).gcd(&t(0)), t(0));
+        assert_eq!(t(-4).lcm(&t(6)), t(12));
+        assert_eq!(t(-4).lcm(&t(-6)), t(12));
+        assert_eq!(t(0).lcm(&t(-5)), t(0));
+        assert_eq!(t(3).extended_gcd(&t(-7)), (t(1), t(-2), t(-1)));
+        assert_eq!(t(4).extended_gcd(&t(-6)), (t(2), t(-1), t(-1)));
+        assert_eq!(t(-4).extended_gcd(&t(-6)), (t(2), t(1), t(-1)));
+        assert_eq!(t(0).extended_gcd(&t(-5)), (t(5), t(0), t(-1)));
+        assert_eq!(t(5).extended_gcd(&t(-5)), (t(5), t(0), t(-1)));
+        assert_eq!(t(-5).extended_gcd(&t(5)), (t(5), t(0), t(1)));
+        assert_eq!(t(0).extended_gcd(&t(0)), (t(0), t(0), t(0)));
+    }
+
+    #[test]
+    fn test_i32_i64_gcd_lcm_xgcd_signs_match_pari() {
+        check_signs::<i32>();
+        check_signs::<i64>();
+    }
+
+    #[test]
+    fn test_i64_euclidean_extremes() {
+        // gp -q: gcd(-2^63,6) -> 2; gcdext(-2^63,3) -> [1, 3074457345618258603, 1];
+        //        gcdext(-2^63,-1) -> [0,-1,1]; gcdext(2^63-1,-2^63) -> [-1,-1,1];
+        //        lcm(-2^61,3) -> 6917529027641081856
+        let m = i64::MIN;
+        assert_eq!(m.gcd(&6), 2);
+        assert_eq!(m.gcd(&-1), 1);
+        assert_eq!(m.extended_gcd(&3), (1, 1, 3_074_457_345_618_258_603));
+        assert_eq!(m.extended_gcd(&-1), (1, 0, -1));
+        assert_eq!(i64::MAX.extended_gcd(&m), (1, -1, -1));
+        assert_eq!((-(1i64 << 61)).lcm(&3), 6_917_529_027_641_081_856);
+        assert_eq!((1i64 << 40).lcm(&(1i64 << 40)), 1i64 << 40);
+        assert_eq!(m.norm(), 1u64 << 63);
+        assert!(matches!(m.div_rem(&-1), Err(MathError::NumericalError(_))));
+        assert_eq!(m.div_rem(&2).unwrap(), (-(1i64 << 62), 0));
+        assert!(matches!(5i64.div_rem(&0), Err(MathError::DivisionByZero)));
+    }
+
+    #[test]
+    fn test_i32_euclidean_extremes() {
+        // gp -q: gcdext(-2^31,3) -> [1, 715827883, 1]; gcdext(2^31-1,-2^31) -> [-1,-1,1];
+        //        lcm(-2^29,3) -> 1610612736
+        let m = i32::MIN;
+        assert_eq!(m.gcd(&6), 2);
+        assert_eq!(m.gcd(&-1), 1);
+        assert_eq!(m.extended_gcd(&3), (1, 1, 715_827_883));
+        assert_eq!(i32::MAX.extended_gcd(&m), (1, -1, -1));
+        assert_eq!(65536i32.lcm(&65536), 65536);
+        assert_eq!((-(1i32 << 29)).lcm(&3), 1_610_612_736);
+        assert_eq!(m.norm(), 1u64 << 31);
+        assert!(matches!(m.div_rem(&-1), Err(MathError::NumericalError(_))));
+    }
+
+    // gp -q: gcd(-2^63,0) -> 9223372036854775808 > i64::MAX
+    #[test]
+    #[should_panic(expected = "does not fit in i64")]
+    fn test_i64_gcd_min_zero_panics() {
+        let _ = i64::MIN.gcd(&0);
+    }
+
+    // gp -q: lcm(-2^62,3) -> 13835058055282163712 > i64::MAX
+    #[test]
+    #[should_panic(expected = "does not fit in i64")]
+    fn test_i64_lcm_overflow_panics() {
+        let _ = (-(1i64 << 62)).lcm(&3);
+    }
+
+    // gp -q: gcdext(-2^63,0)[3] -> 9223372036854775808 > i64::MAX
+    #[test]
+    #[should_panic(expected = "does not fit in i64")]
+    fn test_i64_xgcd_min_zero_panics() {
+        let _ = i64::MIN.extended_gcd(&0);
+    }
+
+    // gp -q: gcd(-2^31,0) -> 2147483648 > i32::MAX
+    #[test]
+    #[should_panic(expected = "does not fit in i32")]
+    fn test_i32_gcd_min_zero_panics() {
+        let _ = i32::MIN.gcd(&0);
+    }
+
+    // gp -q: lcm(-2^30,3) -> 3221225472 > i32::MAX
+    #[test]
+    #[should_panic(expected = "does not fit in i32")]
+    fn test_i32_lcm_overflow_panics() {
+        let _ = (-(1i32 << 30)).lcm(&3);
     }
 }

@@ -640,7 +640,7 @@ mod tests {
                 let expected = sqrt_coeff_mod(i, j, m);
                 let got = z[0]
                     .get_coefficient(&vec![i, j])
-                    .map(|pr| padic_to_int(pr, &m_int, &p_int).unwrap().to_i64())
+                    .map(|pr| i64::try_from(&padic_to_int(pr, &m_int, &p_int).unwrap()).unwrap())
                     .unwrap_or(0);
                 assert_eq!(
                     got, expected,
@@ -767,7 +767,7 @@ mod tests {
         let half = modinv(2, m); // 1/2 mod 17^3
         let get = |s: &MPowerSeries<PadicRational>, i: usize, j: usize| -> i64 {
             s.get_coefficient(&vec![i, j])
-                .map(|pr| padic_to_int(pr, &m_int, &p_int).unwrap().to_i64())
+                .map(|pr| i64::try_from(&padic_to_int(pr, &m_int, &p_int).unwrap()).unwrap())
                 .unwrap_or(0)
         };
         // z = 1 + u/2 + v/2

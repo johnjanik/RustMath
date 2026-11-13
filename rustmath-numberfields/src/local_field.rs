@@ -309,7 +309,13 @@ impl UnramifiedElement {
     fn residue_inverse(&self) -> Self {
         let a: Vec<i64> = self.residue();
         let mbar: Vec<i64> =
-            self.modulus.iter().map(|c| (c.clone() % Integer::from(self.prime)).to_i64()).collect();
+            self.modulus
+                .iter()
+                .map(|c| {
+                    i64::try_from(&(c.clone() % Integer::from(self.prime)))
+                        .expect("a residue mod an i64 p fits in i64")
+                })
+                .collect();
         let (_g, s, _t) = fp_factor::extended_gcd(&a, &mbar, self.prime);
         // s·a ≡ gcd = 1 (mod m̄); reduce s mod m̄ and lift coefficients to ℤ.
         let sred = fp_factor::div_mod(&s, &mbar, self.prime).1;
@@ -383,7 +389,8 @@ impl UnramifiedElement {
         self.coeffs
             .iter()
             .map(|c| {
-                let r = (c.clone() % Integer::from(p)).to_i64();
+                let r = i64::try_from(&(c.clone() % Integer::from(p)))
+                    .expect("a residue mod an i64 p fits in i64");
                 ((r % p) + p) % p
             })
             .collect()
@@ -584,7 +591,8 @@ impl EisensteinElement {
     /// Residue digit in `F_p = O_K/π`: the constant coordinate mod `p`.
     pub fn residue_digit(&self) -> i64 {
         let p = self.prime;
-        let r = (self.coeffs[0].clone() % Integer::from(p)).to_i64();
+        let r = i64::try_from(&(self.coeffs[0].clone() % Integer::from(p)))
+            .expect("a residue mod an i64 p fits in i64");
         ((r % p) + p) % p
     }
 
@@ -952,7 +960,10 @@ mod tests {
         assert_eq!(m, iz(&[1, 1, 1]));
         // F_9 = F_3[x]/(x²+1) (smallest irreducible tail).
         let m3 = unramified_modulus(3, 2).unwrap();
-        assert!(is_irreducible_fp(&m3.iter().map(|c| c.to_i64()).collect::<Vec<_>>(), 3));
+        assert!(is_irreducible_fp(
+            &m3.iter().map(|c| i64::try_from(c).unwrap()).collect::<Vec<_>>(),
+            3
+        ));
     }
 
     #[test]

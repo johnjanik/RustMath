@@ -62,7 +62,8 @@ fn reduce_mod_p(f: &[Integer], p: i64) -> Vec<i64> {
     let mut v: Vec<i64> = f
         .iter()
         .map(|c| {
-            let r = (c.clone() % pi.clone()).to_i64();
+            let r = i64::try_from(&(c.clone() % pi.clone()))
+                .expect("reduce_mod_p: a residue mod an i64 p fits in i64");
             ((r % p) + p) % p
         })
         .collect();
@@ -179,9 +180,11 @@ pub fn resultant(f: &[Integer], g: &[Integer]) -> Integer {
         let rp = resultant_mod_p(&reduce_mod_p(&f, p), &reduce_mod_p(&g, p), p);
         // CRT-combine (acc mod modulus) with (rp mod p)
         let pi = Integer::from(p);
-        let m_mod_p = (modulus.clone() % pi.clone()).to_i64();
+        let m_mod_p = i64::try_from(&(modulus.clone() % pi.clone()))
+            .expect("a residue mod an i64 p fits in i64");
         let inv = mod_inv_i64(((m_mod_p % p) + p) % p, p);
-        let acc_mod_p = (acc.clone() % pi.clone()).to_i64();
+        let acc_mod_p = i64::try_from(&(acc.clone() % pi.clone()))
+            .expect("a residue mod an i64 p fits in i64");
         let mut diff = (rp - acc_mod_p) % p;
         diff = ((diff % p) + p) % p;
         let t = (diff as i128 * inv as i128 % p as i128) as i64;

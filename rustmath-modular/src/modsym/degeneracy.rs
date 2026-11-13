@@ -1651,7 +1651,7 @@ mod tests {
         match m.hecke_action_on_summand(w, n).unwrap() {
             SummandHeckeAction::Eigenvalue(HeckeEigenvalue::Rational(a)) => {
                 assert!(a.denominator().is_one(), "integral eigenvalue");
-                a.numerator().to_i64()
+                i64::try_from(a.numerator()).unwrap()
             }
             other => panic!("expected a rational T_{n} eigenvalue, got {other:?}"),
         }
@@ -2097,7 +2097,7 @@ mod tests {
                     p.factor()
                         .coefficients()
                         .iter()
-                        .map(|c| c.numerator().to_i64())
+                        .map(|c| i64::try_from(c.numerator()).unwrap())
                         .collect(),
                     p.multiplicity(),
                     p.summand().dimension(),

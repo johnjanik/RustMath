@@ -31,7 +31,7 @@ impl Expr {
             let coeff = derivative.substitute(var, point);
 
             // Compute (x - a)^n
-            let x_minus_a = if matches!(point, Expr::Integer(i) if i.to_i64() == 0) {
+            let x_minus_a = if matches!(point, Expr::Integer(i) if i.is_zero()) {
                 Expr::Symbol(var.clone())
             } else {
                 Expr::Symbol(var.clone()) - point.clone()
@@ -203,7 +203,7 @@ impl Expr {
     /// - Can be extended to detect when Laurent series is needed
     pub fn series(&self, var: &Symbol, point: &Expr, order: usize) -> Self {
         // Check if point is zero for Maclaurin optimization
-        let is_zero = matches!(point, Expr::Integer(i) if i.to_i64() == 0);
+        let is_zero = matches!(point, Expr::Integer(i) if i.is_zero());
 
         if is_zero {
             self.maclaurin(var, order)
@@ -230,7 +230,7 @@ impl Expr {
         let series = self.series(var, point, order);
 
         // The remainder term is O((x-a)^(n+1)) for Taylor series
-        let x_minus_a = if matches!(point, Expr::Integer(i) if i.to_i64() == 0) {
+        let x_minus_a = if matches!(point, Expr::Integer(i) if i.is_zero()) {
             Expr::Symbol(var.clone())
         } else {
             Expr::Symbol(var.clone()) - point.clone()
@@ -790,6 +790,24 @@ impl Expr {
 mod tests {
     use super::*;
     use super::known_series;
+
+    #[test]
+    fn taylor_at_a_huge_point() {
+        // The expansion point 10^30 panicked in the zero test (inherent Integer::to_i64).
+        // x^2 is its own Taylor polynomial, so at x = 10^30 + 1 it gives (10^30 + 1)^2.
+        use rustmath_rationals::Rational;
+        let x = Symbol::new("x");
+        let a = Integer::from(10).pow(30);
+        let f = Expr::Symbol(x.clone()).pow(Expr::from(2));
+        let at = Expr::Integer(a.clone() + Integer::from(1));
+        let want = Some(Rational::from_integer((a.clone() + Integer::from(1)).pow(2)));
+        let t = f.taylor(&x, &Expr::Integer(a.clone()), 2);
+        assert_eq!(t.substitute(&x, &at).eval_rational(), want);
+        let s = f.series(&x, &Expr::Integer(a.clone()), 2);
+        assert_eq!(s.substitute(&x, &at).eval_rational(), want);
+        let (s2, _) = f.series_with_big_o(&x, &Expr::Integer(a), 2);
+        assert_eq!(s2.substitute(&x, &at).eval_rational(), want);
+    }
 
     #[test]
     fn test_taylor_polynomial() {

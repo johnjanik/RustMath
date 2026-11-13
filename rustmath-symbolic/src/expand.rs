@@ -46,10 +46,10 @@ impl Expr {
                     BinaryOp::Pow => {
                         // Expand (expr)^n for small integer n
                         if let Expr::Integer(exp) = right.as_ref() {
-                            let exp_i64 = exp.to_i64();
-                            {
-                                if exp_i64 >= 0 && exp_i64 <= 10 {
-                                    return expand_power(&left_exp, exp_i64 as u32);
+                            // A large exponent stays unexpanded.
+                            if let Ok(e) = u32::try_from(exp) {
+                                if e <= 10 {
+                                    return expand_power(&left_exp, e);
                                 }
                             }
                         }

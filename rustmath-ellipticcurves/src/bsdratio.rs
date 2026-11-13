@@ -342,8 +342,18 @@ impl EllipticCurve {
             ratio.tamagawa_product,
         );
         Ok(AnalyticShaAssumingBSD {
-            order: sha_int.to_i64() as u32,
-            sqrt_order: root.to_i64() as u32,
+            order: u32::try_from(&sha_int).map_err(|_| {
+                format!(
+                    "analytic_sha_rank0: Sha_an = {} does not fit the u32 field",
+                    sha_int
+                )
+            })?,
+            sqrt_order: u32::try_from(&root).map_err(|_| {
+                format!(
+                    "analytic_sha_rank0: sqrt(Sha_an) = {} does not fit the u32 field",
+                    root
+                )
+            })?,
             rank: 0,
             certification_bound: bound,
             provenance,
@@ -481,8 +491,18 @@ impl EllipticCurve {
             cp,
         );
         Ok(AnalyticShaAssumingBSD {
-            order: k.to_i64() as u32,
-            sqrt_order: root.to_i64() as u32,
+            order: u32::try_from(&k).map_err(|_| {
+                format!(
+                    "analytic_sha_rank1: Sha_an = {} does not fit the u32 field",
+                    k
+                )
+            })?,
+            sqrt_order: u32::try_from(&root).map_err(|_| {
+                format!(
+                    "analytic_sha_rank1: sqrt(Sha_an) = {} does not fit the u32 field",
+                    root
+                )
+            })?,
             rank: 1,
             certification_bound: bound,
             provenance,
@@ -686,8 +706,18 @@ impl EllipticCurve {
             r,
         );
         Ok(AnalyticShaAssumingBSD {
-            order: k.to_i64() as u32,
-            sqrt_order: root.to_i64() as u32,
+            order: u32::try_from(&k).map_err(|_| {
+                format!(
+                    "analytic_sha_rank_r: Sha_an = {} does not fit the u32 field",
+                    k
+                )
+            })?,
+            sqrt_order: u32::try_from(&root).map_err(|_| {
+                format!(
+                    "analytic_sha_rank_r: sqrt(Sha_an) = {} does not fit the u32 field",
+                    root
+                )
+            })?,
             rank: r as u32,
             certification_bound: bound,
             provenance,

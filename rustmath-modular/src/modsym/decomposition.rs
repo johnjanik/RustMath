@@ -694,7 +694,7 @@ mod tests {
                 let a = rational_eigenvalue(&m, w, p);
                 // charpoly(T_p | summand) = (x - a_p)^2, and Ramanujan a_p^2 <= 4p
                 let cp = m.hecke_charpoly_on_summand(w, p).unwrap();
-                let am = a.numerator().to_i64();
+                let am = i64::try_from(a.numerator()).unwrap();
                 assert!(a.denominator().is_one(), "integral eigenvalue");
                 assert_eq!(cp, linear_power(am, 2), "charpoly(T_{p}) on summand at 37");
                 assert!(am * am <= 4 * p as i64, "Ramanujan bound at p = {p}");
@@ -909,7 +909,7 @@ mod tests {
         for p in [3u64, 5, 7, 13] {
             let a = rational_eigenvalue(&m, w2, p);
             assert!(a.denominator().is_one());
-            let ai = a.numerator().to_i64();
+            let ai = i64::try_from(a.numerator()).unwrap();
             assert!(ai * ai <= 4 * p as i64, "Ramanujan for 44a at p = {p}");
         }
     }
@@ -1003,7 +1003,7 @@ mod tests {
                         1 => {
                             let a = -f.coeff(0).clone();
                             assert!(a.denominator().is_one(), "integral a_q at level {n}");
-                            let ai = a.numerator().to_i64();
+                            let ai = i64::try_from(a.numerator()).unwrap();
                             assert!(
                                 ai * ai <= 4 * q as i64,
                                 "Ramanujan fails at level {n}, T_{q}: a = {ai}"

@@ -242,14 +242,35 @@ pub trait SageInteger {
     /// Mathematics*, eq. (5.14), and in GMP `mpz_bin_ui` (the arithmetic MAGMA's integers use);
     /// so C(-1, 2) = 1 and C(-3, 2) = 6 (gp `binomial(-1,2)`, `binomial(-3,2)`).
     ///
-    /// For k < 0, MAGMA's own value is **unconfirmed**. The handbook states no range for n and
-    /// r, and no MAGMA output for a negative r was available to check against. The 0 above
-    /// follows PARI/GP and GAP (`binomial(5,-1)` = `binomial(-1,-1)` = 0) and
-    /// [`Integer::binomial_mod`]. Other systems differ: Mathematica's symmetric convention gives
-    /// `Binomial[-1, -1]` = 1. So MAGMA may differ here too.
+    /// For k < 0 the value is 0, the coefficient of x^k in (1 + x)^n, which has no negative
+    /// powers. PARI/GP, GAP and Sage agree: gp and GAP give
+    /// `[binomial(5,-1), binomial(-1,-1), binomial(-5,-2), binomial(-2,5), binomial(3,-1),
+    /// binomial(-3,-5), binomial(0,-1)]` = `[0, 0, 0, -6, 0, 0, 0]`, and the Sage
+    /// documentation (`sage.arith.misc.binomial`) says "If m < 0, return 0", with
+    /// `binomial(3, -1)` = 0, `binomial(-5, -2)` = 0 and `binomial(-2, 5)` = -6.
+    /// [`Integer::binomial_mod`] uses the same 0. MAGMA's own value is **unconfirmed**: the
+    /// handbook states no range for n and r, and no MAGMA output for a negative r was available.
+    /// Other systems differ: Mathematica's symmetric convention gives `Binomial[-1, -1]` = 1.
     ///
-    /// Cost: O(min(k, n'-k)) bignum multiplications and exact divisions, where n' is n after
-    /// the upper index is negated.
+    /// Algorithm (module `binomial`): with N = n after negating the upper index and
+    /// K = min(k, N - k), the primes p <= K are divided out of the window N, N-1, ..., N-K+1
+    /// (P. Goetgheluck, Amer. Math. Monthly 94 (1987) 360-365), the remaining factors and the
+    /// prime powers p^(v_p(window) - v_p(K!)) are multiplied with balanced product trees. No
+    /// large division happens. Cost: about K·ln ln K word divisions plus O(M(B) log K) for a
+    /// result of B bits; C(524288, 262144) takes about 16 ms in release (the K-step loop took
+    /// 10.7 s) and C(10^6, 500000) about 0.4 s in a debug build. Memory: the prime sieve up to
+    /// K (K bytes), three words per prime up to K, and about the size of the result.
+    ///
+    /// # Panics
+    ///
+    /// When the result certainly has more than 2^32 bits (512 MiB): K = min(k, N - k) above
+    /// 2^32, or K·max(1, bits(N) - 1 - bits(K)) above 2^32. That product is a proven lower
+    /// bound on log2 C(N, K): each factor (N - i)/(K - i) is at least N/K >= 2, and
+    /// log2(N/K) > bits(N) - 1 - bits(K). So no result of at most 2^32 bits is refused. The
+    /// check runs before any allocation. Admitted results stay below about 4.5·2^32 bits, but
+    /// an admitted call near the cap needs about 10 GB of working memory (the prime sieve and
+    /// the per-prime tables at K near 2^32), so callers with user input should bound K and the
+    /// result size first (the REPL caps results at 2^22 bits).
     ///
     /// # Arguments
     ///
@@ -421,6 +442,10 @@ impl SageInteger for Integer {
     }
 
     fn binomial(n: &Integer, k: &Integer) -> Integer {
+        /// Largest result size computed, in bits (512 MiB): the same order as the u32
+        /// exponent of `Integer::pow` and the 2^31-bit limit of `Integer::sigma`.
+        const BINOMIAL_MAX_BITS: u128 = 1 << 32;
+        const REFUSED: &str = "binomial: C(n, k) has more than 2^32 bits; not computed";
         if k.signum() < 0 {
             return Integer::zero();
         }
@@ -434,18 +459,27 @@ impl SageInteger for Integer {
         if *k > n {
             return Integer::zero();
         }
-        // C(n, k) = C(n, n-k): run over the smaller lower index.
+        // C(n, k) = C(n, n-k): the shorter window.
         let n_minus_k = n.clone() - k.clone();
-        let kk = if *k > n_minus_k { n_minus_k } else { k.clone() };
-        let mut result = Integer::one();
-        let mut i = Integer::zero();
-        while i < kk {
-            // result = C(n, i), so result * (n - i) = C(n, i + 1) * (i + 1): the division is
-            // exact.
-            result = result * (n.clone() - i.clone());
-            i = i + Integer::one();
-            result = result / i.clone();
-        }
+        let kmin = if *k > n_minus_k { n_minus_k } else { k.clone() };
+        let result = if kmin.is_zero() {
+            Integer::one()
+        } else if kmin.is_one() {
+            n
+        } else {
+            // K >= 2 and N >= 2K. Refuse results with more than 2^32 bits before any
+            // allocation (see `# Panics`).
+            let kk = match u64::try_from(&kmin) {
+                Ok(v) if u128::from(v) <= BINOMIAL_MAX_BITS => v,
+                _ => panic!("{REFUSED}"),
+            };
+            let kbits = u64::from(64 - kk.leading_zeros()); // bits(K)
+            let per_factor = n.bit_length().saturating_sub(1 + kbits).max(1); // < log2(N/K)
+            if u128::from(kk) * u128::from(per_factor) > BINOMIAL_MAX_BITS {
+                panic!("{REFUSED}");
+            }
+            Integer::new(crate::binomial::binomial_nonneg(n.as_bigint().magnitude(), kk).into())
+        };
         if negate {
             -result
         } else {

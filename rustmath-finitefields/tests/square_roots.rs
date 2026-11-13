@@ -234,7 +234,7 @@ fn prime_power_exhaustive_fingerprints() {
             total_roots += all.len();
             if let Some(r) = got {
                 n += 1;
-                s += r.to_i64();
+                s += i64::try_from(&r).unwrap();
             }
         }
         assert_eq!((n, s), (n_squares, sum_least), "fingerprint of {p}^{k}");

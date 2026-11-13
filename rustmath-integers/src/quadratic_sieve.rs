@@ -47,7 +47,8 @@ fn legendre_symbol(a: &Integer, p: u64) -> i8 {
         return 1;
     }
 
-    let a_mod_p = (a.clone() % Integer::from(p as i64)).to_i64();
+    let a_mod_p = i64::try_from(&(a.clone() % Integer::from(p as i64)))
+        .expect("legendre_symbol: a residue modulo a factor-base prime p < 2^63 fits in i64");
     if a_mod_p == 0 {
         return 0;
     }
@@ -57,7 +58,8 @@ fn legendre_symbol(a: &Integer, p: u64) -> i8 {
     let result = Integer::from(a_mod_p).mod_pow(&exp, &Integer::from(p as i64))
         .unwrap_or(Integer::one());
 
-    let result_i64 = result.to_i64();
+    let result_i64 = i64::try_from(&result)
+        .expect("legendre_symbol: a mod_pow result in [0, p), p < 2^63, fits in i64");
     if result_i64 == 1 {
         1
     } else if result_i64 as u64 == p - 1 {
@@ -90,10 +92,14 @@ fn tonelli_shanks(n: &Integer, p: u64) -> Option<i64> {
     let p_int = Integer::from(p as i64);
 
     if p == 2 {
-        return Some(n.modulo(&p_int).to_i64());
+        return Some(
+            i64::try_from(&n.modulo(&p_int))
+                .expect("tonelli_shanks: a residue mod p < 2^63 fits in i64"),
+        );
     }
 
-    let n_mod_p = n.modulo(&p_int).to_i64();
+    let n_mod_p = i64::try_from(&n.modulo(&p_int))
+        .expect("tonelli_shanks: a residue mod p < 2^63 fits in i64");
     if n_mod_p == 0 {
         return Some(0);
     }
@@ -109,7 +115,9 @@ fn tonelli_shanks(n: &Integer, p: u64) -> Option<i64> {
         let root = Integer::from(n_mod_p)
             .mod_pow(&Integer::from(exp as i64), &p_int)
             .unwrap_or(Integer::zero());
-        return Some(root.to_i64());
+        return Some(
+            i64::try_from(&root).expect("tonelli_shanks: a residue mod p < 2^63 fits in i64"),
+        );
     }
 
     // General Tonelli-Shanks algorithm
@@ -142,7 +150,9 @@ fn tonelli_shanks(n: &Integer, p: u64) -> Option<i64> {
 
     loop {
         if t.is_one() {
-            return Some(r.to_i64());
+            return Some(
+                i64::try_from(&r).expect("tonelli_shanks: a residue mod p < 2^63 fits in i64"),
+            );
         }
 
         // Find the least i such that t^(2^i) = 1

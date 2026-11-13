@@ -377,7 +377,7 @@ pub(crate) fn as_exact_rational(e: &Expr) -> Option<Rational> {
                     if k.abs() > Integer::from(4096) {
                         return None;
                     }
-                    let ku = k.abs().to_i64() as usize;
+                    let ku = usize::try_from(&k.abs()).expect("|k| <= 4096 checked above");
                     let mut out = Rational::one();
                     for _ in 0..ku {
                         out = out * a.clone();
@@ -481,7 +481,7 @@ pub fn as_rational_function(e: &Expr, var: &Symbol) -> Option<QFrac> {
                     return None;
                 }
                 let (nb, db) = as_rational_function(l, var)?;
-                let ku = k.abs().to_i64() as usize;
+                let ku = usize::try_from(&k.abs()).expect("|k| <= 4096 checked above");
                 if k < Integer::from(0) {
                     if nb.is_zero() {
                         return None; // 0^(negative)

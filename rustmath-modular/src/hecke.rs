@@ -610,7 +610,7 @@ mod tests {
                     .map(|n| match &sys.eigenvalues[&n] {
                         HeckeEigenvalue::Rational(a) => {
                             assert!(a.denominator().is_one());
-                            a.numerator().to_i64()
+                            i64::try_from(a.numerator()).unwrap()
                         }
                         other => panic!("rational eigensystem expected, got {other:?}"),
                     })

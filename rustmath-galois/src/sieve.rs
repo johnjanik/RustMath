@@ -56,7 +56,10 @@ fn is_prime_u64(n: u64) -> bool {
 /// (a "bad"/ramified prime for the sieve).
 fn reduce_squarefree_mod_p(f: &[Integer], p: u64) -> Option<Vec<i64>> {
     let pz = Integer::from(p as i64);
-    let fp: Vec<i64> = f.iter().map(|c| c.modulo(&pz).to_i64()).collect();
+    let fp: Vec<i64> = f
+        .iter()
+        .map(|c| i64::try_from(&c.modulo(&pz)).expect("a residue mod a u64 p < 2^63 fits in i64"))
+        .collect();
     let fp = fp_factor::trim(&fp);
     // f is monic, so the degree is preserved for every p.
     if fp_factor::degree(&fp) != (f.len() - 1) as i64 {

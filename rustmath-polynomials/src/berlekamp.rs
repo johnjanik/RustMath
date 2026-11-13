@@ -465,7 +465,7 @@ fn squarefree_rec(f: Vec<Integer>, mult: u32, p: &Integer, out: &mut FactorList)
         if *p > Integer::from(deg as u64) {
             return Err(internal("f' = 0 with deg f < p"));
         }
-        let pu = p.to_i64() as usize;
+        let pu = usize::try_from(p).expect("berlekamp: p <= deg f (checked above) fits in usize");
         let g: Vec<Integer> = f.iter().step_by(pu).cloned().collect();
         let m = mult.checked_mul(pu as u32).ok_or_else(overflow)?;
         return squarefree_rec(g, m, p, out);
@@ -515,7 +515,7 @@ fn factor_squarefree(s: &[Integer], p: &Integer) -> Result<Vec<Vec<Integer>>> {
 /// every pair of irreducible factors, so this ends with exactly r factors.
 fn split_small(s: &[Integer], basis: &[Vec<Integer>], p: &Integer) -> Result<Vec<Vec<Integer>>> {
     let r = basis.len();
-    let p_small = p.to_i64();
+    let p_small = i64::try_from(p).expect("split_small runs only for p < SMALL_P");
     let mut factors = vec![s.to_vec()];
     for v in basis {
         if factors.len() == r {
@@ -562,7 +562,8 @@ fn split_small(s: &[Integer], basis: &[Vec<Integer>], p: &Integer) -> Result<Vec
 fn split_random(s: &[Integer], basis: &[Vec<Integer>], p: &Integer) -> Result<Vec<Vec<Integer>>> {
     let r = basis.len();
     let n = s.len() - 1;
-    let low32 = p.modulo(&Integer::from(1u64 << 32)).to_i64() as u64;
+    let low32 = u64::try_from(&p.modulo(&Integer::from(1u64 << 32)))
+        .expect("a residue mod 2^32 fits in u64");
     let mut rng = Lcg(0x5EED ^ (n as u64) ^ low32);
     let e = &(p - &Integer::one()) / &Integer::from(2i64);
     let one = [Integer::one()];

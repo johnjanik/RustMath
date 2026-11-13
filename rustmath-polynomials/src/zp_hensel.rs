@@ -123,7 +123,7 @@ fn to_fp(a: &[Integer], p: i64) -> Vec<i64> {
         .iter()
         .map(|c| {
             let r = c % &pm;
-            (&(&r + &pm) % &pm).to_i64()
+            i64::try_from(&(&(&r + &pm) % &pm)).expect("to_fp: a residue mod an i64 p fits in i64")
         })
         .collect();
     fp_factor::trim(&v)
@@ -231,7 +231,7 @@ mod tests {
             .iter()
             .map(|c| {
                 let r = c % &mm;
-                (&(&r + &mm) % &mm).to_i64()
+                i64::try_from(&(&(&r + &mm) % &mm)).unwrap()
             })
             .collect();
         fp_factor::trim(&v)

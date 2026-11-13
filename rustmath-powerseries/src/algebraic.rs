@@ -239,13 +239,11 @@ fn lcm_int(a: &Integer, b: &Integer) -> Integer {
 }
 
 fn i128_of(n: &Integer) -> Option<i128> {
-    // Integer exposes to_i64; fall back through it for our bounded use.
-    let v = n.to_i64();
-    if Integer::from(v) == *n {
-        Some(v as i128)
-    } else {
-        None
-    }
+    // Kept as a panic beyond i64: the callers turn None into an empty root list, a false
+    // "no roots" (tracker follow-up). So a value outside i64 must not become None here.
+    Some(i128::from(
+        i64::try_from(n).expect("i128_of: a coefficient beyond i64 is not supported"),
+    ))
 }
 
 /// Roots in `GF(p)` of a univariate polynomial given by integer coefficients
@@ -652,7 +650,7 @@ mod tests {
     fn prime_field_roots_gfp() {
         // x^2 - 1 over GF(7): roots 1 and 6
         let roots = prime_field_roots(&[-1, 0, 1], 7).unwrap();
-        let vals: Vec<i64> = roots.iter().map(|r| r.value().to_i64()).collect();
+        let vals: Vec<i64> = roots.iter().map(|r| i64::try_from(r.value()).unwrap()).collect();
         assert!(vals.contains(&1));
         assert!(vals.contains(&6));
         assert_eq!(roots.len(), 2);

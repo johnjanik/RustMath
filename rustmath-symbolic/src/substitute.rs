@@ -121,11 +121,10 @@ impl Expr {
                     BinaryOp::Pow => {
                         // Only handle integer powers
                         if let Expr::Integer(exp) = right.as_ref() {
-                            let e = exp.to_i64();
-                            if e >= 0 && e <= u32::MAX as i64 {
-                                Some(l.pow(e as u32))
-                            } else {
-                                None
+                            // 0..=u32::MAX as before; anything else is not evaluated.
+                            match u32::try_from(exp) {
+                                Ok(e) => Some(l.pow(e)),
+                                Err(_) => None,
                             }
                         } else {
                             None
@@ -155,7 +154,8 @@ impl Expr {
     /// This uses f64 approximations for transcendental functions.
     pub fn eval_float(&self) -> Option<f64> {
         match self {
-            Expr::Integer(n) => Some(n.to_i64() as f64),
+            // None (cannot evaluate) above the f64 range: num-bigint gives Some(inf) there.
+            Expr::Integer(n) => n.to_f64().filter(|v| v.is_finite()),
             Expr::Rational(r) => r.to_f64(),
             Expr::Real(x) => Some(*x),
             Expr::Symbol(_) => None,
@@ -529,6 +529,18 @@ fn bessel_k_approx(_order: f64, _x: f64) -> f64 {
 mod tests {
     use super::*;
     use rustmath_integers::Integer;
+
+    #[test]
+    fn eval_float_of_huge_integers() {
+        // An integer outside i64 panicked here (inherent Integer::to_i64). 10^30 is inside the
+        // f64 range; 10^400 is not, so it cannot be evaluated (None, not infinity).
+        let ten = Integer::from(10);
+        assert_eq!(Expr::Integer(ten.pow(30)).eval_float(), Some(1e30));
+        assert_eq!(Expr::Integer(ten.pow(400)).eval_float(), None);
+        assert_eq!(Expr::Integer(-ten.pow(400)).eval_float(), None);
+        let min = -Integer::from(2).pow(63);
+        assert_eq!(Expr::Integer(min).eval_float(), Some(-9_223_372_036_854_775_808.0));
+    }
 
     #[test]
     fn test_substitute() {

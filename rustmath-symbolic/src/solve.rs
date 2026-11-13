@@ -7,7 +7,6 @@ use crate::symbol::Symbol;
 use rustmath_core::Ring;
 use rustmath_integers::Integer;
 use rustmath_polynomials::{solve_cubic, solve_quadratic, solve_quartic, QuadraticRoots};
-use rustmath_rationals::Rational;
 use std::sync::Arc;
 
 /// Solution to an equation
@@ -904,7 +903,7 @@ fn solve_sin_equation(c: &Expr) -> Solution {
 
     // Check if c = 1
     if let Expr::Integer(n) = c {
-        if n.to_i64() == 1 {
+        if n.is_one() {
             // sin(x) = 1 => x = π/2 + 2πn
             // Return principal solution x = π/2
             return Solution::Expr(Expr::Binary(
@@ -912,7 +911,7 @@ fn solve_sin_equation(c: &Expr) -> Solution {
                 Arc::new(Expr::symbol("π")),
                 Arc::new(Expr::from(2)),
             ));
-        } else if n.to_i64() == -1 {
+        } else if *n == Integer::from(-1) {
             // sin(x) = -1 => x = -π/2 + 2πn = 3π/2 + 2πn
             // Return principal solution x = -π/2
             return Solution::Expr(Expr::Binary(
@@ -943,11 +942,11 @@ fn solve_cos_equation(c: &Expr) -> Solution {
 
     // Check if c = 1
     if let Expr::Integer(n) = c {
-        if n.to_i64() == 1 {
+        if n.is_one() {
             // cos(x) = 1 => x = 2πn
             // Return principal solution x = 0
             return Solution::Expr(Expr::from(0));
-        } else if n.to_i64() == -1 {
+        } else if *n == Integer::from(-1) {
             // cos(x) = -1 => x = π + 2πn
             // Return principal solution x = π
             return Solution::Expr(Expr::symbol("π"));
@@ -970,7 +969,7 @@ fn solve_tan_equation(c: &Expr) -> Solution {
 
     // Check if c = 1
     if let Expr::Integer(n) = c {
-        if n.to_i64() == 1 {
+        if n.is_one() {
             // tan(x) = 1 => x = π/4 + nπ
             // Return principal solution x = π/4
             return Solution::Expr(Expr::Binary(
@@ -978,7 +977,7 @@ fn solve_tan_equation(c: &Expr) -> Solution {
                 Arc::new(Expr::symbol("π")),
                 Arc::new(Expr::from(4)),
             ));
-        } else if n.to_i64() == -1 {
+        } else if *n == Integer::from(-1) {
             // tan(x) = -1 => x = -π/4 + nπ
             // Return principal solution x = -π/4
             return Solution::Expr(Expr::Binary(
@@ -1127,25 +1126,20 @@ fn solve_polynomial_inequality(
 
 /// Solve a constant inequality (no variable)
 fn solve_constant_inequality(expr: &Expr, ineq_type: InequalityType) -> InequalitySolution {
-    // Evaluate the constant
-    let value = match expr {
-        Expr::Integer(n) => {
-            let i = n.to_i64();
-            i as f64
-        }
-        Expr::Rational(r) => {
-            let (num, den) = (r.numerator().to_i64(), r.denominator().to_i64());
-            num as f64 / den as f64
-        }
+    // Only the exact sign of the constant matters (the denominator of a Rational is kept
+    // positive), so any size is decided exactly.
+    let sign = match expr {
+        Expr::Integer(n) => n.signum(),
+        Expr::Rational(r) => r.numerator().signum(),
         _ => return InequalitySolution::Unknown,
     };
 
     // Check if the inequality is satisfied
     let satisfied = match ineq_type {
-        InequalityType::LessThan => value < 0.0,
-        InequalityType::LessOrEqual => value <= 0.0,
-        InequalityType::GreaterThan => value > 0.0,
-        InequalityType::GreaterOrEqual => value >= 0.0,
+        InequalityType::LessThan => sign < 0,
+        InequalityType::LessOrEqual => sign <= 0,
+        InequalityType::GreaterThan => sign > 0,
+        InequalityType::GreaterOrEqual => sign >= 0,
     };
 
     if satisfied {
@@ -1187,10 +1181,8 @@ fn solve_linear_inequality(
 
     // Determine the sign of a to figure out the direction
     let a_positive = match &a {
-        Expr::Integer(n) => n.to_i64() > 0,
-        Expr::Rational(r) => {
-            r.numerator().to_i64() > 0
-        }
+        Expr::Integer(n) => n.signum() > 0,
+        Expr::Rational(r) => r.numerator().signum() > 0,
         _ => true, // Assume positive if we can't determine
     };
 
@@ -1263,10 +1255,8 @@ fn solve_quadratic_inequality(
     };
 
     let a_positive = match &a {
-        Expr::Integer(n) => n.to_i64() > 0,
-        Expr::Rational(r) => {
-            r.numerator().to_i64() > 0
-        }
+        Expr::Integer(n) => n.signum() > 0,
+        Expr::Rational(r) => r.numerator().signum() > 0,
         _ => true,
     };
 
@@ -1716,24 +1706,6 @@ fn is_zero(expr: &Expr) -> bool {
     }
 }
 
-/// Convert expression to rational if possible
-fn expr_to_rational(expr: &Expr) -> Option<Rational> {
-    match expr {
-        Expr::Integer(n) => Rational::new(n.to_i64(), 1).ok(),
-        Expr::Rational(r) => Some(r.clone()),
-        Expr::Binary(BinaryOp::Div, num, den) => {
-            let num_i = expr_to_integer(num)?;
-            let den_i = expr_to_integer(den)?;
-            Rational::new(num_i, den_i).ok()
-        }
-        Expr::Unary(UnaryOp::Neg, inner) => {
-            let r = expr_to_rational(inner)?;
-            Some(-r)
-        }
-        _ => None,
-    }
-}
-
 /// Convert expression to Integer (big integer) if possible
 fn expr_to_integer_big(expr: &Expr) -> Option<Integer> {
     match expr {
@@ -1743,18 +1715,42 @@ fn expr_to_integer_big(expr: &Expr) -> Option<Integer> {
     }
 }
 
-/// Convert expression to integer if possible
-fn expr_to_integer(expr: &Expr) -> Option<i64> {
-    match expr {
-        Expr::Integer(n) => Some(n.to_i64()),
-        Expr::Unary(UnaryOp::Neg, inner) => expr_to_integer(inner).map(|x| -x),
-        _ => None,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rustmath_rationals::Rational;
+
+    #[test]
+    fn constant_inequality_with_huge_values() {
+        // Only the exact sign decides; i64 conversion panicked at 10^30, and an f64 ratio
+        // would give NaN for -10^400/(10^400 + 1) (both parts are infinite in f64).
+        let ten30 = Expr::Integer(Integer::from(10).pow(30));
+        let t400 = Integer::from(10).pow(400);
+        let r = Expr::Rational(Rational::new(-t400.clone(), t400 + Integer::one()).unwrap());
+        let direct = |e: &Expr, t: InequalityType| solve_constant_inequality(e, t);
+        assert!(matches!(direct(&ten30, InequalityType::GreaterThan), InequalitySolution::All));
+        assert!(matches!(direct(&ten30, InequalityType::LessThan), InequalitySolution::Empty));
+        assert!(matches!(direct(&r, InequalityType::LessThan), InequalitySolution::All));
+        assert!(matches!(direct(&r, InequalityType::GreaterOrEqual), InequalitySolution::Empty));
+        // Through solve_inequality (the standard form lhs - rhs).
+        let x = Expr::symbol("x");
+        let var_x = &x.symbols()[0];
+        let solve = |l: Expr, t: InequalityType, rr: Expr| {
+            solve_inequality(&Inequality::new(l, t, rr), var_x)
+        };
+        assert!(matches!(
+            solve(Expr::from(0), InequalityType::LessThan, ten30.clone()),
+            InequalitySolution::All
+        ));
+        assert!(matches!(
+            solve(ten30, InequalityType::LessThan, Expr::from(0)),
+            InequalitySolution::Empty
+        ));
+        assert!(matches!(
+            solve(r, InequalityType::LessThan, Expr::from(0)),
+            InequalitySolution::All
+        ));
+    }
 
     #[test]
     fn test_solve_linear() {

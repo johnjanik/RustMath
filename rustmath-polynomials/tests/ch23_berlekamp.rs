@@ -656,7 +656,7 @@ fn factor_agrees_with_cantor_zassenhaus() {
             }
             let unit = Integer::from(1 + rng.below(p - 1));
             let f: Vec<Integer> = f.iter().map(|c| (c * &unit).modulo(&pi)).collect();
-            let fi: Vec<i64> = f.iter().map(|c| c.to_i64()).collect();
+            let fi: Vec<i64> = f.iter().map(|c| i64::try_from(c).unwrap()).collect();
             let mut expected: Vec<(Vec<Integer>, u32)> =
                 fp_factor::factor_with_multiplicity(&fi, p as i64)
                     .into_iter()

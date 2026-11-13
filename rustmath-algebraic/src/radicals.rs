@@ -31,7 +31,10 @@ pub fn nth_root(alpha: &AlgebraicReal, n: u32) -> AlgebraicReal {
         // For now, handle integer case
         // TODO: Handle general rational nth roots
         if r.denominator().is_one() {
-            let num = r.numerator().to_i64();
+            // Kept as a panic beyond i64: the fallback below returns alpha itself as its n-th
+            // root (a facade, tracker follow-up), so a large integer must not reach it.
+            let num = i64::try_from(r.numerator())
+                .expect("nth_root: an integer radicand beyond i64 is not supported");
             return AlgebraicReal::nth_root(num, n);
         }
     }

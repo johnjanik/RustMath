@@ -438,7 +438,7 @@ pub(crate) fn bareiss_det(mat: &[Vec<Integer>]) -> Integer {
 // Radical and idealizer (one enlargement at p)
 // --------------------------------------------------------------------------- //
 fn reduce_mod_p_i64(x: &Integer, p: i64) -> i64 {
-    let r = (x.clone() % Integer::from(p)).to_i64();
+    let r = i64::try_from(&(x.clone() % Integer::from(p))).expect("a residue mod an i64 p fits in i64");
     ((r % p) + p) % p
 }
 

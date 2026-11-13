@@ -103,7 +103,9 @@ fn div_floor(a: &Integer, b: &Integer) -> Integer {
 /// x mod n as an i64 in [0, n), for i64 n >= 1.
 fn mod_n_i64(x: &Integer, n: i64) -> i64 {
     let nn = Integer::from(n);
-    (x % &nn).to_i64().rem_euclid(n)
+    i64::try_from(&(x % &nn))
+        .expect("mod_n_i64: |x % n| < n <= i64::MAX")
+        .rem_euclid(n)
 }
 
 /// The space M_2(Gamma0(N)) of weight-2 modular symbols with trivial

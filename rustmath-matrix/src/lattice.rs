@@ -45,14 +45,16 @@ pub const LATTICE_PRECISION: u64 = 128;
 fn rf_from_integer<F: RealField>(n: &Integer, prec: u64) -> F {
     if n.bit_length() <= 52 {
         // |n| < 2^53: exactly representable in f64.
-        return F::from_f64(n.to_i64() as f64, prec);
+        let small = i64::try_from(n).expect("bit_length <= 52 checked above");
+        return F::from_f64(small as f64, prec);
     }
     let base_int = Integer::from(1i64 << 32);
     let mut m = n.abs();
     let mut limbs: Vec<f64> = Vec::new();
     while !m.is_zero() {
         let (q, r) = m.div_rem(&base_int).expect("2^32 is non-zero");
-        limbs.push(r.to_i64() as f64); // r ∈ [0, 2^32): exact in f64
+        let limb = u32::try_from(&r).expect("a remainder mod 2^32 fits in u32");
+        limbs.push(f64::from(limb)); // r ∈ [0, 2^32): exact in f64
         m = q;
     }
     let base = F::from_f64(4294967296.0, prec);

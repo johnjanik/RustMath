@@ -3,12 +3,15 @@
 //! This crate provides arbitrary precision integer arithmetic with implementations
 //! of number-theoretic algorithms, including advanced factorization methods.
 
+mod binomial;
 pub mod crt;
 pub mod ecm;
 pub mod factorint;
 pub mod fast_arith;
 pub mod integer;
+mod lehmer;
 pub mod modular;
+mod perfect_power;
 pub mod prime;
 pub mod quadratic_sieve;
 pub mod sage_wrapper;

@@ -475,10 +475,13 @@ impl QuadraticForm {
             return;
         }
 
-        // Try all values from 0 to modulus-1
-        let m_i64 = modulus.to_i64();
+        // Try all values from 0 to modulus-1. A modulus beyond i64 is kept as an explicit
+        // panic: joining the `m <= 0` return below would count 0 solutions, a wrong answer
+        // (tracker follow-up: that return is itself a count of 0 for m <= 0).
+        let m_i64 = i64::try_from(modulus)
+            .expect("count_modular_solutions: a modulus beyond i64 is not supported");
         if m_i64 <= 0 {
-            return; // modulus too large or invalid
+            return; // invalid modulus
         }
 
         for val in 0..m_i64 {

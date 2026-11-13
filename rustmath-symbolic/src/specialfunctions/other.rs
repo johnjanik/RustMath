@@ -196,15 +196,17 @@ pub fn frac(x: &Expr) -> Expr {
 /// ```
 pub fn factorial(n: &Expr) -> Expr {
     if let Expr::Integer(i) = n {
-        // Compute factorial for non-negative integers
-        let n_val = i.to_i64();
-        if n_val >= 0 && n_val <= 20 {
-            // Compute directly for small values
-            let mut result = Integer::one();
-            for k in 2..=n_val {
-                result = result * Integer::from(k);
+        // Compute factorial for non-negative integers; a large n falls through to the
+        // unevaluated factorial.
+        if let Ok(n_val) = i64::try_from(i) {
+            if n_val >= 0 && n_val <= 20 {
+                // Compute directly for small values
+                let mut result = Integer::one();
+                for k in 2..=n_val {
+                    result = result * Integer::from(k);
+                }
+                return Expr::Integer(result);
             }
-            return Expr::Integer(result);
         }
     }
 
@@ -237,8 +239,8 @@ pub fn factorial(n: &Expr) -> Expr {
 pub fn binomial(n: &Expr, k: &Expr) -> Expr {
     // Try to compute for integer values
     if let (Expr::Integer(n_int), Expr::Integer(k_int)) = (n, k) {
-        let (n_val, k_val) = (n_int.to_i64(), k_int.to_i64());
-        {
+        // Large arguments fall through to the unevaluated binomial.
+        if let (Ok(n_val), Ok(k_val)) = (i64::try_from(n_int), i64::try_from(k_int)) {
             if n_val >= 0 && k_val >= 0 && k_val <= n_val && n_val <= 30 {
                 // Compute using multiplicative formula: C(n,k) = n*(n-1)*...*(n-k+1) / k!
                 let mut result = Integer::one();

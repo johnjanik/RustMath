@@ -15,11 +15,14 @@
 //!
 //! References: PARI/GP 2.15.4 (`gp -q`; the command is in the comment next to each inline
 //! value) and GAP 4.12.1. The fixtures in `tests/data/` come from
-//! `tests/data/gen_signs_roots.gp` (`setrand(20261108)`; run it in an empty directory, because
-//! `write()` appends).
+//! `tests/data/gen_signs_roots.gp` (`setrand(20261108)`) and, for `isqrt_big.csv`,
+//! `ispower_root.csv`, `xgcd_lehmer.csv` and `binom_big.csv`, from `tests/data/gen_i3.gp`
+//! (`setrand(20261112)`). Run either in an empty directory, because `write()` appends.
 
 use rustmath_core::{EuclideanDomain, MathError};
 use rustmath_integers::{ArithInt, ArithLLong, Integer, SageInteger};
+use std::sync::mpsc;
+use std::time::Duration;
 
 fn z(s: &str) -> Integer {
     Integer::from_decimal_str(s.trim()).unwrap_or_else(|| panic!("bad integer {s:?}"))
@@ -37,6 +40,34 @@ fn rows(csv: &str) -> impl Iterator<Item = Vec<&str>> {
 
 fn binom(n: i64, k: i64) -> Integer {
     Integer::binomial(&i(n), &i(k))
+}
+
+/// 2^127 - 1, the modulus of the residue columns in the second fixture set.
+fn m127() -> Integer {
+    i(2).pow(127) - i(1)
+}
+
+/// Run `f` on a thread and fail if it does not finish within `secs` seconds. A panic inside
+/// `f` (a failed assertion) is re-raised here with its own message, not reported as a timeout.
+/// (A copy of the helper in rustmath-polynomials/tests/ch23_quotrem_gcd.rs.) The cost tests
+/// below use it so that a quadratic algorithm fails instead of passing slowly; each bound is
+/// at least 10 times the measured debug time.
+fn within<T: Send + 'static>(secs: u64, f: impl FnOnce() -> T + Send + 'static) -> T {
+    let (tx, rx) = mpsc::channel();
+    let worker = std::thread::spawn(move || {
+        let _ = tx.send(f());
+    });
+    match rx.recv_timeout(Duration::from_secs(secs)) {
+        Ok(v) => v,
+        // The sender was dropped without sending: `f` panicked.
+        Err(mpsc::RecvTimeoutError::Disconnected) => match worker.join() {
+            Err(payload) => std::panic::resume_unwind(payload),
+            Ok(()) => unreachable!("the worker returned without sending its result"),
+        },
+        Err(mpsc::RecvTimeoutError::Timeout) => {
+            panic!("timed out after {secs} s: a non-terminating or blown-up computation is back")
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -80,6 +111,12 @@ fn binomial_negative_upper_index_inline() {
     // Binomial(-7,4) -> 210, Binomial(5,-1) -> 0.
     assert_eq!(binom(-3, -5), i(0));
     assert_eq!(binom(-7, 4), i(210));
+    // Sage documentation (sage.arith.misc.binomial): "If m < 0, return 0"; binomial(3, -1) = 0,
+    // binomial(-5, -2) = 0, binomial(-2, 5) = -6. gp and GAP agree:
+    // [binomial(3,-1), binomial(-5,-2), binomial(-2,5)] -> [0, 0, -6].
+    assert_eq!(binom(3, -1), i(0));
+    assert_eq!(binom(-5, -2), i(0));
+    assert_eq!(binom(-2, 5), i(-6));
 }
 
 #[test]
@@ -115,6 +152,129 @@ fn binomial_identities() {
             }
         }
     }
+}
+
+/// Checks the rows (n, k, binomial(n, k) % (2^127 - 1), bits of |binomial(n, k)|) of
+/// `binom_big.csv` selected by `keep`; returns the number checked.
+fn check_binom_big_rows(keep: impl Fn(&Integer, &Integer) -> bool) -> usize {
+    let mut count = 0;
+    for r in rows(include_str!("data/binom_big.csv")) {
+        let (n, k) = (z(r[0]), z(r[1]));
+        if !keep(&n, &k) {
+            continue;
+        }
+        let c = Integer::binomial(&n, &k);
+        assert_eq!(c.modulo(&m127()), z(r[2]), "C({n}, {k}) mod 2^127 - 1");
+        assert_eq!(
+            c.bit_length(),
+            r[3].trim().parse::<u64>().unwrap(),
+            "bits of C({n}, {k})"
+        );
+        count += 1;
+    }
+    count
+}
+
+#[test]
+fn binomial_big_fixture() {
+    // 80 gp rows: 40 random n < 10^6 with random k, 10 central ones, 10 with n = 10^30 + 7 + i
+    // (the BigUint window), 6 with n = 2^64 - 59 + i (across the u64 boundary), 8 with n < 0,
+    // (524288, 262144), (524288, 262143), (10^6, 500000), (5, -3), (-5, -3), (100, 101).
+    // About 5 s in a debug build; the K-step loop needs minutes there.
+    let count = within(60, || check_binom_big_rows(|_, _| true));
+    assert_eq!(count, 80);
+}
+
+#[test]
+fn binomial_central_rows_within_10s() {
+    // C(524288, 262144), C(524288, 262143), C(10^6, 500000): 0.7 s together in a debug build.
+    // The K-step loop took 10.7 s in release for the first row alone.
+    let count = within(10, || {
+        check_binom_big_rows(|n, k| {
+            [(524_288, 262_144), (524_288, 262_143), (1_000_000, 500_000)]
+                .iter()
+                .any(|&(a, b)| *n == i(a) && *k == i(b))
+        })
+    });
+    assert_eq!(count, 3);
+}
+
+#[test]
+fn binomial_beyond_2_pow_32_bits_is_refused() {
+    // K = min(k, N - k) and the bound K·max(1, bits(N) - 1 - bits(K)) < log2 C(N, K):
+    // (2^64, 2^40): K = 2^40 > 2^32; (10^30, 10^9): bound 10^9·69; (2^70, 2^68): K = 2^68.
+    // Each is refused before any allocation. The K-step loop did not return on these.
+    within(10, || {
+        let cases = [
+            (i(2).pow(64), i(2).pow(40)),
+            (i(10).pow(30), i(10).pow(9)),
+            (i(2).pow(70), i(2).pow(68)),
+        ];
+        for (n, k) in cases {
+            let res = std::panic::catch_unwind(|| Integer::binomial(&n, &k));
+            let payload = res.expect_err("refused");
+            let msg = payload
+                .downcast_ref::<String>()
+                .cloned()
+                .or_else(|| payload.downcast_ref::<&str>().map(|m| m.to_string()))
+                .unwrap_or_default();
+            assert!(msg.contains("more than 2^32 bits"), "C({n}, {k}): {msg:?}");
+        }
+        // Boundary guard: a small window on a huge n is computed (bound 3·31 = 93).
+        // gp: binomial(2^33,3) -> 105637549982125628646836142080
+        assert_eq!(
+            Integer::binomial(&i(2).pow(33), &i(3)),
+            z("105637549982125628646836142080")
+        );
+    });
+}
+
+/// The K-step loop that `SageInteger::binomial` used before the prime splitting, as an
+/// independent reference: result = C(N, i)·(N - i) / (i + 1), exact at each step.
+fn binomial_by_product_formula(n: i64, k: i64) -> Integer {
+    if k < 0 {
+        return i(0);
+    }
+    let (nn, negate) = if n < 0 {
+        (k - n - 1, k % 2 == 1)
+    } else {
+        (n, false)
+    };
+    if k > nn {
+        return i(0);
+    }
+    let kk = k.min(nn - k);
+    let mut r = i(1);
+    for j in 0..kk {
+        r = r * i(nn - j) / i(j + 1);
+    }
+    if negate {
+        -r
+    } else {
+        r
+    }
+}
+
+#[test]
+fn binomial_agrees_with_the_product_formula() {
+    for n in -40i64..=300 {
+        for k in -3..=n.abs() + 2 {
+            assert_eq!(
+                binom(n, k),
+                binomial_by_product_formula(n, k),
+                "C({n}, {k})"
+            );
+        }
+    }
+}
+
+#[test]
+fn binomial_1000_500() {
+    // gp: binomial(1000,500) % (2^127-1) -> 62526922371930188635637843119963540756
+    assert_eq!(
+        binom(1000, 500).modulo(&m127()),
+        z("62526922371930188635637843119963540756")
+    );
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -240,6 +400,278 @@ fn gcd_with_a_small_operand_is_one_division() {
     let m3 = i(3).pow(63_093);
     assert_eq!(m3.gcd(&i(1_000_000_007)), i(1));
     assert_eq!(m3.gcd(&i(-81)), i(81)); // gp: gcd(3^63093, -81) -> 81
+}
+
+#[test]
+fn xgcd_lehmer_fixture() {
+    // 24 gp rows a, b, d, u, v (gcdext(a, b) = [u, v, d]) of 65 to 3000 bits: Fibonacci pairs
+    // with b negated, b = -a, b = 7a, an unbalanced 70-bit b, a = 0, b = 3·2^(bits+5), common
+    // 200-bit factors. Lehmer's matrix steps must give Euclid's (and PARI's) multipliers.
+    let mut count = 0;
+    for r in rows(include_str!("data/xgcd_lehmer.csv")) {
+        let v: Vec<Integer> = r.iter().map(|s| z(s)).collect();
+        let (a, b, d) = (&v[0], &v[1], &v[2]);
+        let l = if a.is_zero() || b.is_zero() {
+            Integer::zero()
+        } else {
+            (a.clone() * b.clone()).abs() / d.clone()
+        };
+        check_gcd_row(a, b, d, &l, (&v[3], &v[4]));
+        count += 1;
+    }
+    assert_eq!(count, 24);
+}
+
+/// A deterministic pseudo-random Integer of exactly `bits` bits (an LCG; `bits >= 1`).
+fn lcg_integer(bits: u64, st: &mut u64) -> Integer {
+    use num_bigint::BigUint;
+    let words = bits.div_ceil(64);
+    let mut v: Vec<u32> = Vec::new();
+    for _ in 0..words {
+        *st = st
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
+        v.push(*st as u32);
+        v.push((*st >> 32) as u32);
+    }
+    let mut n = BigUint::new(v) >> (words * 64 - bits);
+    n.set_bit(bits - 1, true);
+    Integer::new(n.into())
+}
+
+fn stein_gcd(a: &Integer, b: &Integer) -> Integer {
+    // num-integer's BigUint gcd is Stein's binary algorithm: an implementation independent of
+    // the crate's Lehmer code.
+    let g = num_integer::Integer::gcd(a.as_bigint().magnitude(), b.as_bigint().magnitude());
+    Integer::new(g.into())
+}
+
+#[test]
+fn lehmer_gcd_agrees_with_stein_and_extended_euclid() {
+    // 400 LCG pairs up to 3000 bits: a third with a common factor, some b = a, b = k·a, a = 0,
+    // random signs. gcd against Stein's binary gcd; extended_gcd against num-integer's
+    // truncated-quotient extended Euclid on BigInt (the algorithm before Lehmer, whose
+    // triples equal gp gcdext on the fixtures above).
+    let mut st = 4242u64;
+    let next = |m: u64, st: &mut u64| {
+        *st = st
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
+        (*st >> 17) % m
+    };
+    for idx in 0..400 {
+        let ba = 1 + next(3000, &mut st);
+        let bb = 1 + next(3000, &mut st);
+        let mut a = lcg_integer(ba, &mut st);
+        let mut b = lcg_integer(bb, &mut st);
+        if idx % 3 == 0 {
+            let bc = 1 + next(1000, &mut st);
+            let c = lcg_integer(bc, &mut st);
+            a = a * c.clone();
+            b = b * c;
+        }
+        if idx % 7 == 0 {
+            b = a.clone();
+        }
+        if idx % 11 == 0 {
+            b = a.clone() * i(1 + next(1000, &mut st) as i64);
+        }
+        if idx % 13 == 0 {
+            a = Integer::zero();
+        }
+        if next(2, &mut st) == 1 {
+            a = -a;
+        }
+        if next(2, &mut st) == 1 {
+            b = -b;
+        }
+        assert_eq!(a.gcd(&b), stein_gcd(&a, &b), "gcd case {idx}");
+        let want = if a.is_zero() && b.is_zero() {
+            (Integer::zero(), Integer::zero(), Integer::zero())
+        } else {
+            let e = num_integer::Integer::extended_gcd(a.as_bigint(), b.as_bigint());
+            (Integer::new(e.gcd), Integer::new(e.x), Integer::new(e.y))
+        };
+        assert_eq!(a.extended_gcd(&b), want, "extended_gcd case {idx}");
+    }
+}
+
+#[test]
+fn xgcd_of_large_operands() {
+    // a, b of 30,000 bits with a common 5,000-bit factor: Bezout, g | a, g | b and
+    // gcd(a/g, b/g) = 1 by Stein.
+    let mut st = 99u64;
+    let c = lcg_integer(5_000, &mut st);
+    let a = lcg_integer(25_000, &mut st) * c.clone();
+    let b = -(lcg_integer(24_990, &mut st) * c.clone());
+    let (g, x, y) = a.extended_gcd(&b);
+    assert_eq!(x * a.clone() + y * b.clone(), g);
+    assert!((a.clone() % g.clone()).is_zero() && (b.clone() % g.clone()).is_zero());
+    assert!(stein_gcd(&(a.clone() / g.clone()), &(b.clone() / g.clone())).is_one());
+    assert!((g.clone() % c).is_zero());
+    assert_eq!(g, a.gcd(&b));
+}
+
+#[test]
+fn gcd_and_xgcd_of_100k_bit_operands() {
+    // Speed test. Debug build: Lehmer gcd 0.14 s and xgcd 0.3 s; Euclid took 9.7 s and the
+    // num-integer extended Euclid 11.3 s. Only the two Lehmer calls are under the bound; the
+    // Stein comparison (0.9 s in debug) and the identities run after it.
+    let mut st = 2026u64;
+    let a = lcg_integer(100_000, &mut st);
+    let b = -lcg_integer(99_993, &mut st);
+    let (a2, b2) = (a.clone(), b.clone());
+    let (g, (d, x, y)) = within(5, move || {
+        let g = <Integer as EuclideanDomain>::gcd(&a2, &b2);
+        let e = <Integer as EuclideanDomain>::extended_gcd(&a2, &b2);
+        (g, e)
+    });
+    assert_eq!(g, d);
+    assert!((a.clone() % g.clone()).is_zero() && (b.clone() % g.clone()).is_zero());
+    assert_eq!(x * a.clone() + y * b.clone(), g);
+    assert_eq!(g, stein_gcd(&a, &b));
+}
+
+#[test]
+fn gcd_grid_fixture_through_i32_and_i64() {
+    // The machine-word EuclideanDomain impls of rustmath-core (MAGMA Gcd, Lcm, Xgcd, §18.6)
+    // on the gp grid a, b in -30..30 (columns a, b, gcd, lcm, d, u, v; gcdext = [u, v, d]).
+    let mut count = 0;
+    for r in rows(include_str!("data/gcd_grid.csv")) {
+        let v: Vec<i64> = r.iter().map(|s| s.trim().parse().unwrap()).collect();
+        let (a, b) = (v[0], v[1]);
+        assert_eq!(<i64 as EuclideanDomain>::gcd(&a, &b), v[2], "i64 gcd {r:?}");
+        assert_eq!(<i64 as EuclideanDomain>::lcm(&a, &b), v[3], "i64 lcm {r:?}");
+        assert_eq!(
+            <i64 as EuclideanDomain>::extended_gcd(&a, &b),
+            (v[4], v[5], v[6]),
+            "i64 xgcd {r:?}"
+        );
+        let n = |x: i64| i32::try_from(x).unwrap();
+        let (a32, b32) = (n(a), n(b));
+        assert_eq!(
+            <i32 as EuclideanDomain>::gcd(&a32, &b32),
+            n(v[2]),
+            "i32 gcd {r:?}"
+        );
+        assert_eq!(
+            <i32 as EuclideanDomain>::lcm(&a32, &b32),
+            n(v[3]),
+            "i32 lcm {r:?}"
+        );
+        assert_eq!(
+            <i32 as EuclideanDomain>::extended_gcd(&a32, &b32),
+            (n(v[4]), n(v[5]), n(v[6])),
+            "i32 xgcd {r:?}"
+        );
+        count += 1;
+    }
+    assert_eq!(count, 61 * 61);
+}
+
+#[test]
+fn machine_word_gcd_agrees_with_integer() {
+    // 100,000 LCG pairs (values shifted right by a random amount; every 17th b = i64::MIN,
+    // every 19th b = 0) against Integer gcd / lcm / extended_gcd, whenever the Integer result
+    // fits in i64. Integer is fixture-tested against gp above, and its extended_gcd is checked
+    // here against num-integer's truncated extended Euclid on BigInt as well.
+    let fits = |x: &Integer| i64::try_from(x).ok();
+    let mut st = 5u64;
+    let mut next = || {
+        st = st
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
+        st
+    };
+    let mut checked = 0;
+    for idx in 0..100_000 {
+        let r = next();
+        let a = (r as i64) >> (r % 50);
+        let r = next();
+        let mut b = (r as i64) >> (r % 50);
+        if idx % 17 == 0 {
+            b = i64::MIN;
+        }
+        if idx % 19 == 0 {
+            b = 0;
+        }
+        let (ia, ib) = (i(a), i(b));
+        let g = ia.gcd(&ib);
+        let Some(g64) = fits(&g) else { continue };
+        assert_eq!(<i64 as EuclideanDomain>::gcd(&a, &b), g64, "gcd({a}, {b})");
+        let (d, x, y) = ia.extended_gcd(&ib);
+        if !(a == 0 && b == 0) {
+            let e = num_integer::Integer::extended_gcd(ia.as_bigint(), ib.as_bigint());
+            let ne = (Integer::new(e.gcd), Integer::new(e.x), Integer::new(e.y));
+            assert_eq!(
+                (d.clone(), x.clone(), y.clone()),
+                ne,
+                "num-integer xgcd({a}, {b})"
+            );
+        }
+        let want = (fits(&d).unwrap(), fits(&x).unwrap(), fits(&y).unwrap());
+        assert_eq!(
+            <i64 as EuclideanDomain>::extended_gcd(&a, &b),
+            want,
+            "xgcd({a}, {b})"
+        );
+        if let Some(l) = fits(&ia.lcm(&ib)) {
+            assert_eq!(<i64 as EuclideanDomain>::lcm(&a, &b), l, "lcm({a}, {b})");
+        }
+        if let (Ok(a32), Ok(b32), Ok(g32)) =
+            (i32::try_from(a), i32::try_from(b), i32::try_from(g64))
+        {
+            assert_eq!(
+                <i32 as EuclideanDomain>::gcd(&a32, &b32),
+                g32,
+                "i32 gcd({a}, {b})"
+            );
+            let w32 = (
+                g32,
+                i32::try_from(want.1).unwrap(),
+                i32::try_from(want.2).unwrap(),
+            );
+            assert_eq!(<i32 as EuclideanDomain>::extended_gcd(&a32, &b32), w32);
+        }
+        checked += 1;
+    }
+    assert!(checked > 99_000, "{checked}");
+}
+
+// ---------------------------------------------------------------------------------------------
+// T3a: Isqrt, the floor of the square root (§18.4.8)
+// ---------------------------------------------------------------------------------------------
+
+#[test]
+fn isqrt_big_fixture() {
+    // 90 gp rows a, sqrtint(a) of 65 to 3000 bits; every third row is b^2, b^2 + 1 or b^2 - 1.
+    let mut count = 0;
+    for r in rows(include_str!("data/isqrt_big.csv")) {
+        let (a, want) = (z(r[0]), z(r[1]));
+        let s = a.sqrt().unwrap();
+        assert_eq!(s, want, "sqrt({a})");
+        assert!(s.clone() * s.clone() <= a, "floor property {a}");
+        assert!((s.clone() + i(1)) * (s + i(1)) > a, "floor property {a}");
+        count += 1;
+    }
+    assert_eq!(count, 90);
+}
+
+#[test]
+fn isqrt_of_a_100k_bit_number() {
+    // gp: a=sqrtint(3^63093+12345); [a % (2^127-1), #binary(a)]
+    //     -> [130117212609866437730867252961009611028, 50001]
+    // About 50 ms in a debug build. Newton started at x = self took 193 s in debug (13 s in
+    // release) for this root.
+    within(10, || {
+        let a = i(3).pow(63_093) + i(12_345);
+        let s = a.sqrt().unwrap();
+        assert_eq!(s.bit_length(), 50_001);
+        assert_eq!(
+            s.modulo(&m127()),
+            z("130117212609866437730867252961009611028")
+        );
+    });
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -393,8 +825,8 @@ fn is_perfect_power_inline() {
 
 #[test]
 fn is_perfect_power_sieve_inline() {
-    // The power-residue sieve skips the exact root for exponents it refutes; every answer
-    // below still matches gp. gp: pp(a)=my(r,k=ispower(a,,&r)); [k, if(k,r,0)]
+    // The power-residue sieve (q < 32) and the 2-adic root refute exponents without a floor
+    // root; every answer below still matches gp. gp: pp(a)=my(r,k=ispower(a,,&r)); [k, if(k,r,0)]
     let p = |a: Integer| a.is_perfect_power();
     let two = i(2);
     // A large non-power: gp pp(2^20000+1) -> [0, 0]. Before the sieve this paid one
@@ -412,7 +844,7 @@ fn is_perfect_power_sieve_inline() {
     assert_eq!(p(m61.pow(331)), Some((m61.clone(), 331)));
     assert_eq!(p(-m61.pow(662)), Some((-m61.pow(2), 331)));
     // 53599 = 7*13*19*31 is divisible by every sieve prime for q = 3 (7, 13, 19, 31), so the
-    // sieve cannot refute a cube there and the exact root decides.
+    // sieve cannot refute a cube there and the exact (2-adic) root decides.
     // gp: pp(53599), pp(53599^3), pp(2*53599^3), pp(-53599^5)
     //     -> [0, 0], [3, 53599], [0, 0], [5, -53599]
     let c = i(7 * 13 * 19 * 31);
@@ -450,6 +882,109 @@ fn is_perfect_power_big_fixture() {
         check_perfect_power_rows(include_str!("data/perfect_power_big.csv")),
         120
     );
+}
+
+#[test]
+fn is_perfect_power_huge_inputs() {
+    // gp: [ispower(2^1000000+1), ispower(3^30030), ispower(3^30030+2), ispower(2^100000)]
+    //     -> [0, 30030, 0, 100000] (the root is 3, resp. 2)
+    // About 0.2 s in a debug build for all four. The floor-root loop took about 12 s in debug
+    // (7.5 s in release) for the first input alone.
+    within(5, || {
+        let p = i(2).pow(1_000_000) + i(1);
+        assert_eq!(p.is_perfect_power(), None);
+        let t = i(3).pow(30_030);
+        assert_eq!(t.is_perfect_power(), Some((i(3), 30_030)));
+        assert_eq!((t + i(2)).is_perfect_power(), None);
+        assert_eq!(i(2).pow(100_000).is_perfect_power(), Some((i(2), 100_000)));
+    });
+}
+
+// ---------------------------------------------------------------------------------------------
+// T5b: exact_root, the root of MAGMA IsPower(n, k) (§18.4.5; PARI ispower(n, k, &r))
+// ---------------------------------------------------------------------------------------------
+
+#[test]
+fn exact_root_inline() {
+    // gp: r=0; [ispower(16,4,&r), r] -> [1, 2]; [ispower(-8,3,&r), r] -> [1, -2];
+    //     [ispower(64,6,&r), r] -> [1, 2]; ispower(-64,6) -> 0
+    assert_eq!(i(16).exact_root(4), Some(i(2)));
+    assert_eq!(i(-8).exact_root(3), Some(i(-2)));
+    assert_eq!(i(64).exact_root(6), Some(i(2)));
+    assert_eq!(i(-64).exact_root(6), None);
+    assert_eq!(i(0).exact_root(3), Some(i(0)));
+    assert_eq!(i(1).exact_root(0), Some(i(1)));
+    assert_eq!(i(2).exact_root(0), None);
+    assert_eq!(i(-1).exact_root(2), None);
+    assert_eq!(i(-1).exact_root(3), Some(i(-1)));
+    assert_eq!(i(-7).exact_root(1), Some(i(-7)));
+    // gp: [ispower(3^20011,20011,&r), r] -> [1, 3]; [ispower(-3^100055,100055,&r), r]
+    //     -> [1, -3]; [ispower((2^61-1)^331,331,&r), r] -> [1, 2305843009213693951];
+    //     [ispower(2^(64*7)*5^7,7,&r), r == 2^64*5] -> [1, 1]
+    assert_eq!(i(3).pow(20_011).exact_root(20_011), Some(i(3)));
+    assert_eq!((-i(3).pow(100_055)).exact_root(100_055), Some(i(-3)));
+    let m61 = i(2).pow(61) - i(1);
+    assert_eq!(m61.pow(331).exact_root(331), Some(m61));
+    let b = i(2).pow(64) * i(5);
+    assert_eq!((i(2).pow(64 * 7) * i(5).pow(7)).exact_root(7), Some(b));
+    // gp: n=3^100003+2; [ispower(n,3), ispower(n,101), ispower(n,9999), ispower(n,100003)]
+    //     -> [0, 0, 0, 0]. 41 ms in a debug build for all four; the floor-root test took 11 s
+    //     for k = 9999 alone.
+    let n = i(3).pow(100_003) + i(2);
+    within(10, move || {
+        for k in [3u32, 101, 9999, 100_003] {
+            assert_eq!(n.exact_root(k), None, "k = {k}");
+            assert!(!n.is_power(k), "k = {k}");
+        }
+    });
+}
+
+#[test]
+fn exact_root_fixture() {
+    // 2,486 gp rows a, k, ispower(a, k), r: a in -200..200 with k in 1..6, plus ±b^k
+    // (b < 2^40, k in {2,3,4,5,6,7,9,12,15,30,31,64}), b^k + 2 and 2^(k·j)·b^k.
+    let mut count = 0;
+    for r in rows(include_str!("data/ispower_root.csv")) {
+        let (a, k) = (z(r[0]), r[1].trim().parse::<u32>().unwrap());
+        let want = match r[2].trim() {
+            "1" => Some(z(r[3])),
+            "0" => None,
+            other => panic!("bad flag {other:?}"),
+        };
+        assert_eq!(a.exact_root(k), want, "exact_root({a}, {k})");
+        assert_eq!(a.is_power(k), want.is_some(), "is_power({a}, {k})");
+        if let Some(b) = want {
+            assert_eq!(b.pow(k), a);
+        }
+        count += 1;
+    }
+    assert_eq!(count, 2486);
+}
+
+// ---------------------------------------------------------------------------------------------
+// T5c: DivisorSigma(k, n) exponent range (§18.7)
+// ---------------------------------------------------------------------------------------------
+
+#[test]
+fn sigma_exponent_overflow_is_an_error() {
+    // (a + 1)·k > u32::MAX: the value would have more than 2^31 bits. Every exponent is checked
+    // before any power is formed, so each call returns at once. Before, the u32 product
+    // overflowed (a panic in debug, a wrapped exponent and Ok(0) in release), and 3^(2^31) was
+    // formed first and did not return.
+    within(10, || {
+        let cases = [
+            (2, 1u32 << 31),
+            (8, 1 << 30),
+            (1024, 400_000_000),
+            (3, 1 << 31),
+        ];
+        for (n, k) in cases {
+            assert!(
+                matches!(i(n).sigma(k), Err(MathError::NumericalError(_))),
+                "sigma({n}, {k})"
+            );
+        }
+    });
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -547,7 +1082,7 @@ fn fast_arith_pow_mod_agrees_with_integer_mod_pow() {
             for m in (-15i32..=15).filter(|&m| m != 0) {
                 let want = i(a.into())
                     .mod_pow(&i(b.into()), &i(m.into()))
-                    .map(|r| i32::try_from(r.to_i64()).unwrap());
+                    .map(|r| i32::try_from(&r).unwrap());
                 assert_eq!(a32.pow_mod(a, b, m), want, "ArithInt ({a}, {b}, {m})");
                 assert_eq!(
                     a64.pow_mod(a.into(), b.into(), m.into()),
@@ -562,8 +1097,8 @@ fn fast_arith_pow_mod_agrees_with_integer_mod_pow() {
 }
 
 #[test]
-fn fast_arith_miller_rabin_after_pow_mod_change() {
-    // ArithLLong::is_prime runs Miller-Rabin through the internal pow_mod helper.
+fn fast_arith_llong_is_prime_mersenne_61() {
+    // ArithLLong::is_prime is the deterministic is_prime_u64 (fast_arith.rs).
     // gp: isprime(2^61-1) -> 1; isprime(2^61+1) -> 0
     let a64 = ArithLLong::new();
     assert!(a64.is_prime((1i64 << 61) - 1));

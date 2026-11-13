@@ -466,14 +466,11 @@ impl SageRational {
             return None; // even powers of rationals are >= 0
         }
 
-        // Exact roots of |numerator| and |denominator|. The floor roots t satisfy
-        // t^n <= |x|, so the check never builds a number larger than the input.
-        let exact_root = |x: &Integer| -> Option<Integer> {
-            let t = x.nth_root(n).ok()?;
-            (&t.pow(n) == x).then_some(t)
-        };
-        let num_root = exact_root(&num.abs())?;
-        let den_root = exact_root(&den.abs())?;
+        // Exact roots of |numerator| and |denominator| (MAGMA IsPower(n, k), Handbook ch. 18
+        // §18.4.5): Integer::exact_root, 2-adic roots checked by one exact power, positive
+        // for positive input.
+        let num_root = num.abs().exact_root(n)?;
+        let den_root = den.abs().exact_root(n)?;
         // For odd n, (-t)^n = -t^n.
         let num_root = if negative { -num_root } else { num_root };
         Some(SageRational(Rational::new(num_root, den_root).ok()?))

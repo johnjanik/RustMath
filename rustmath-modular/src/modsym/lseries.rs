@@ -399,7 +399,8 @@ impl<'a> RationalNewformLSeries<'a> {
             }
             // wrongness detectors that also certify the tail-bound
             // hypotheses (|a_n| <= d(n) sqrt(n)) at the consumed primes
-            let ai = ap.numerator().to_i64();
+            let ai = i64::try_from(ap.numerator())
+                .map_err(|_| format!("a_{p} = {ap:?} does not fit in i64"))?;
             if n_level.is_multiple_of(p) {
                 let exact = !(n_level / p).is_multiple_of(p);
                 if exact && ai * ai != 1 {

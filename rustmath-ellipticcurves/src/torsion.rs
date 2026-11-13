@@ -258,7 +258,8 @@ fn is_small_prime(n: u64) -> bool {
 }
 
 fn reduce_mod(n: &Integer, p: u64) -> u64 {
-    n.modulo(&Integer::from(p as i64)).to_i64() as u64
+    u64::try_from(&n.modulo(&Integer::from(p as i64)))
+        .expect("reduce_mod: a residue mod a small prime p fits in u64")
 }
 
 fn pow_mod(mut b: u64, mut e: u64, m: u64) -> u64 {

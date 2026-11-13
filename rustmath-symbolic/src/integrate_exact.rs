@@ -663,7 +663,7 @@ fn theta_normalize<R: ThetaRing>(e: &Expr, var: &Symbol, g: &Expr) -> Option<(R,
                     return None;
                 }
                 let (n, d) = theta_normalize::<R>(l, var, g)?;
-                let ku = k.abs().to_i64() as usize;
+                let ku = usize::try_from(&k.abs()).expect("|k| <= 4096 checked above");
                 let (mut pn, mut pd) = (R::one(), R::one());
                 for _ in 0..ku {
                     pn = pn.mul(&n);

@@ -593,7 +593,7 @@ fn simplify_binary(op: BinaryOp, left: Expr, right: Expr) -> Expr {
                 if *n >= Integer::from(-MAX_FOLD_EXPONENT) && *n <= Integer::from(MAX_FOLD_EXPONENT)
                 {
                     if let Some(base) = as_rational_const(&left) {
-                        let e = n.to_i64();
+                        let e = i64::try_from(n).expect("|n| <= MAX_FOLD_EXPONENT checked above");
                         if e > 0 {
                             return rational_to_expr(base.pow(e as u32));
                         }

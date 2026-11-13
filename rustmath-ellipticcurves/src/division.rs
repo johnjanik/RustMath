@@ -437,7 +437,7 @@ fn sieve_primes(count: usize) -> Vec<u64> {
 
 fn imod(a: &Integer, q: u64) -> u64 {
     let m = Integer::from(q as i64);
-    let r = (a % &m).to_i64();
+    let r = i64::try_from(&(a % &m)).expect("imod: a residue mod a small prime q fits in i64");
     if r < 0 {
         (r + q as i64) as u64
     } else {

@@ -133,7 +133,7 @@ fn div_pow_or_zero(n: &Integer, p: i64, k: u32) -> Integer {
 
 /// The non-negative residue of x mod m, as i64 (m small).
 fn md(x: &Integer, m: i64) -> i64 {
-    x.modulo(&Integer::from(m)).to_i64()
+    i64::try_from(&x.modulo(&Integer::from(m))).expect("md: a residue mod an i64 m fits in i64")
 }
 
 /// The reduced triplet (a, b, c) and the descaled invariants

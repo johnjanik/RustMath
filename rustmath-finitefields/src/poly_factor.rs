@@ -1104,7 +1104,7 @@ mod tests {
                 (
                     g.coefficients()
                         .iter()
-                        .map(|c| c.eltseq()[0].to_i64())
+                        .map(|c| i64::try_from(&c.eltseq()[0]).unwrap())
                         .collect(),
                     *e,
                 )

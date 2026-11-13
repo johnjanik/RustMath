@@ -699,12 +699,14 @@ pub fn hensel_lift(
     // were reduced against the wrong cofactor), which is why its tests were
     // marked `#[ignore]`. We convert to coefficient vectors, delegate, and
     // convert back.
-    let p_i64 = p.to_i64();
-    if p_i64 <= 1 {
-        return Err(MathError::InvalidArgument(
-            "Hensel lifting requires a prime p >= 2 that fits in i64".to_string(),
-        ));
-    }
+    let p_i64 = match i64::try_from(p) {
+        Ok(v) if v > 1 => v,
+        _ => {
+            return Err(MathError::InvalidArgument(
+                "Hensel lifting requires a prime p >= 2 that fits in i64".to_string(),
+            ))
+        }
+    };
 
     // f as Z[x]; g0, h0 reduced to F_p[x] (Vec<i64> in [0, p)).
     let f_coeffs: Vec<Integer> = f.coefficients().to_vec();
@@ -714,7 +716,8 @@ pub fn hensel_lift(
             .iter()
             .map(|c| {
                 let r = c % &pm;
-                (&(&r + &pm) % &pm).to_i64()
+                i64::try_from(&(&(&r + &pm) % &pm))
+                    .expect("hensel_lift: a residue mod p, p < 2^63 checked above")
             })
             .collect()
     };
@@ -1363,6 +1366,25 @@ mod tests {
             let f_coeff = ((f.coeff(i).clone() % p2.clone()) + p2.clone()) % p2.clone();
             assert_eq!(prod_coeff, f_coeff, "Coefficient {} mismatch mod 25", i);
         }
+    }
+
+    #[test]
+    fn test_hensel_lift_prime_beyond_i64_is_refused() {
+        // p = 2^89 - 1 (gp: isprime(2^89-1) -> 1) does not fit the i64 engine. The error
+        // text already promised this; the panicking Integer::to_i64 came first before.
+        // x^2 - 1 = (x - 1)(x + 1) mod p.
+        let p = Integer::from(2).pow(89) - Integer::from(1);
+        let f = UnivariatePolynomial::new(vec![
+            Integer::from(-1),
+            Integer::from(0),
+            Integer::from(1),
+        ]);
+        let g0 = UnivariatePolynomial::new(vec![p.clone() - Integer::from(1), Integer::from(1)]);
+        let h0 = UnivariatePolynomial::new(vec![Integer::from(1), Integer::from(1)]);
+        assert!(matches!(
+            hensel_lift(&f, &g0, &h0, &p, 2),
+            Err(MathError::InvalidArgument(_))
+        ));
     }
 
     #[test]

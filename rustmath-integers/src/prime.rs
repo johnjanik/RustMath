@@ -16,7 +16,7 @@ pub fn is_prime_trial_division(n: &Integer) -> bool {
     }
 
     let mut i = Integer::from(3);
-    let sqrt_n = isqrt(n);
+    let sqrt_n = n.sqrt().expect("n > 3 is non-negative");
 
     while i <= sqrt_n {
         if (n.clone() % i.clone()).is_zero() {
@@ -174,24 +174,6 @@ pub fn previous_prime(n: &Integer) -> Option<Integer> {
     }
 
     Some(Integer::from(2))
-}
-
-/// Integer square root (floor)
-fn isqrt(n: &Integer) -> Integer {
-    if n.is_zero() || n.is_one() {
-        return n.clone();
-    }
-
-    // Newton's method
-    let mut x = n.clone();
-    let mut y = (n.clone() + Integer::one()) / Integer::from(2);
-
-    while y < x {
-        x = y.clone();
-        y = (x.clone() + n.clone() / x.clone()) / Integer::from(2);
-    }
-
-    x
 }
 
 /// Check if n is a prime power (n = p^k for some prime p and k ≥ 1)
