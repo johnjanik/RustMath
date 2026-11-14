@@ -1,4 +1,37 @@
-# Test baseline (2026-11-08, final fixes)
+# Test baseline (2026-11-14, open follow-ups round part 1)
+
+`cargo test --workspace --no-fail-fast` at commit `922024b`, rustc 1.97.0, 4-core cloud container,
+atlas data present, incremental compilation disabled.
+
+**Result: 14,386 passed, 0 failed, 333 ignored, across 194 test targets.**
+
+Compared with the 2026-11-08 baseline below (14,173 / 0 / 330, 190 targets), the difference is the
+first four units of the open follow-ups round (commits `80130e7`..`166ac34`; see
+`docs/workstreams/handoff-followups/`). They added 213 tests and four test targets:
+
+| Target | Before | After | Change |
+|---|--:|--:|---|
+| `rustmath-integers` lib | 174 | 233 | Lehmer gcd, exact roots, binomial, sigma, BPSW, ECPP, sieve, SIQS (`80130e7`, `7c4d057`, `0ceaeaa`) |
+| `rustmath-integers --test ch18_primality` | (new) | 18 (+2 ignored) | PARI certificates, pseudoprimes, tampered certificates |
+| `rustmath-integers --test ch18_quadratic_sieve` | (new) | 12 (+1 ignored) | SIQS against gp `factor`, 20 to 45 digits and named inputs |
+| `rustmath-integers --test ch18_limited_factorization` | (new) | 14 | `factorization_with_limits`, MAGMA's third return value |
+| `rustmath-integers --test ch18_signs_roots` | 21 | 38 | gp fixtures for isqrt, ispower roots, Lehmer xgcd, big binomials |
+| `rustmath-integers --test ch18_residues` | 26 | 30 | residues with the BPSW test |
+| `rustmath-integers --test ch18_factorization_drivers` | 6 | 9 | the drivers split psi_12 |
+| `rustmath-integers` doctests | 38 | 45 | examples for the new APIs |
+| `rustmath-polynomials` lib | 314 | 350 | checked `fp_factor` entries, PARI order, typed Zassenhaus errors (`166ac34`) |
+| `rustmath-polynomials --test ring_predicates` | (new) | 10 | polynomial Ring hooks |
+| `rustmath-groups --test pgalois` | 3 | 15 | prime check, primitive part, root at infinity |
+| `rustmath-core` lib | 41 | 49 | i32/i64 gcd signs, `static_is_commutative` |
+| others | | +13 | finitefields `prime_residues` +1, polynomials `ch23_berlekamp` +1 and `ch23_is_irreducible` +1, rationals +1, rings +1, numberfields +1, symbolic +6, jupyter +1 |
+
+Three `#[ignore]` tests were added, all opt-in runs whose behaviour non-ignored tests also cover:
+`ecpp_1024_release` (a 1024-bit proof timed in release), `print_certificates_for_pari` (prints
+certificates for a one-off `primecertisvalid` check) and `qs_factors_gp_semiprimes_50_to_60_digits`
+(about 30 s in debug, 4 s in release). No ignore marker was removed, and no existing assertion was
+weakened (each unit was reviewed for that before its commit).
+
+## Previous baseline (2026-11-08, final fixes)
 
 `cargo test --workspace --no-fail-fast` at commit `9c24389`, rustc 1.97.0, 4-core cloud container,
 atlas data present, incremental compilation disabled.
