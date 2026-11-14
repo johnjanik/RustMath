@@ -44,6 +44,9 @@ pub fn generate_kernel_json(kernel_path: &PathBuf) -> serde_json::Value {
         ],
         "display_name": "RustMath",
         "language": "rustmath",
+        // Jupyter sends interrupt_request on the control channel instead of SIGINT (S13); the
+        // kernel handles SIGINT the same way, for kernels installed before this field.
+        "interrupt_mode": "message",
         "metadata": {
             "debugger": false
         }
@@ -140,4 +143,18 @@ pub fn print_status() {
     println!();
     println!("To install: rustmath-kernel install");
     println!("To uninstall: rustmath-kernel uninstall");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// S13: Jupyter interrupts the kernel with interrupt_request (the jupyter-client kernel spec
+    /// field `interrupt_mode`, "signal" when absent).
+    #[test]
+    fn kernel_json_interrupt_mode() {
+        let json = generate_kernel_json(&PathBuf::from("/usr/bin/rustmath-kernel"));
+        assert_eq!(json["interrupt_mode"], "message");
+        assert_eq!(json["argv"][0], "/usr/bin/rustmath-kernel");
+    }
 }

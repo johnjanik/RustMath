@@ -3277,6 +3277,7 @@ dependencies = [
  "hex",
  "hmac",
  "num-bigint",
+ "rug",
  "rustmath-algebras",
  "rustmath-combinatorics",
  "rustmath-complex",
