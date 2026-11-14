@@ -8,6 +8,7 @@ pub mod bivariate;
 pub mod disc;
 pub mod elimination;
 pub mod factorization;
+pub mod factorization_field;
 pub mod fp_factor;
 pub mod groebner;
 pub mod ideal;
@@ -40,6 +41,7 @@ pub use factorization::{
     content, factor_over_integers, is_irreducible, is_irreducible_over_integers, is_square_free,
     primitive_part, square_free_factorization,
 };
+pub use factorization_field::FactorizationField;
 pub use elimination::{
     eliminate, eliminate_with_budget, exact_divide, fresh_variable, ideal_intersection,
     ideal_intersection_with_budget, ideal_quotient, ideal_quotient_with_budget, krull_dimension,

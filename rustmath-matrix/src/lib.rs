@@ -23,6 +23,7 @@ pub mod matrix;
 pub mod matrix_algebra;
 pub mod polynomial_matrix;
 pub mod polynomial_ops;
+pub mod primary_forms;
 pub mod sparse;
 pub mod sparse_forms;
 pub mod special;
@@ -47,7 +48,7 @@ pub use decomposition::{
     CholeskyDecomposition, HessenbergDecomposition, LUDecomposition, PLUDecomposition,
     QRDecomposition, SVDDecomposition,
 };
-pub use eigenvalues::{EigenDecomposition, Eigenvector, JordanForm};
+pub use eigenvalues::{EigenDecomposition, Eigenvector};
 pub use inner_product::InnerProductSpace;
 pub use integer_forms::{HermiteNormalForm, SmithNormalForm};
 pub use integer_relation::integer_relation;
@@ -58,6 +59,10 @@ pub use lattice::{
 pub use linear_solve::RowEchelonForm;
 pub use matrix::Matrix;
 pub use matrix_algebra::{MatN, MatrixAlgebra};
+pub use primary_forms::{
+    is_similar, jordan_form, primary_invariant_factors, primary_rational_form, FactorizationField,
+    JordanForm, PrimaryRationalForm,
+};
 pub use sparse::{SparseMatrix, SparseMatrixIterator};
 pub use sparse_forms::SparseMatrixED;
 pub use special::{

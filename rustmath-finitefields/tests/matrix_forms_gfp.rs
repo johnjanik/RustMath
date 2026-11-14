@@ -1,10 +1,13 @@
 //! `rustmath-matrix` linear solving, vector spaces, F[x] Smith form, invariant factors,
-//! minimal polynomial and rational form over prime fields (`PrimeField`).
+//! minimal polynomial, rational form, primary rational form, Jordan form and similarity over
+//! prime fields (`PrimeField`).
 //!
-//! MAGMA Handbook ch. 26 §26.8 (`IsConsistent`, `Solution`), §26.11 (`MinimalPolynomial`),
-//! §26.12.2 (`InvariantFactors`, `RationalForm`), §26.12.3 (`SmithForm`), and ch. 28 §28.3.2,
-//! §28.6, §28.7 (`quo`, `ReduceVector`, `Coordinates`); digests
-//! `rustmath-lava/docs/Chapter_26_Matrices.md` and `Chapter_28_Vector_Spaces.md`.
+//! MAGMA Handbook ch. 26 §26.8 (`IsConsistent`, `Solution`, with a vector, an r×n matrix or a
+//! sequence of vectors), §26.11 (`MinimalPolynomial`), §26.12.2 (`InvariantFactors`,
+//! `RationalForm`, `PrimaryRationalForm`, `JordanForm`, `PrimaryInvariantFactors`,
+//! `IsSimilar`), §26.12.3 (`SmithForm`), and ch. 28 §28.3.2, §28.6, §28.7 (`quo`,
+//! `ReduceVector`, `Coordinates`); digests `rustmath-lava/docs/Chapter_26_Matrices.md` and
+//! `Chapter_28_Vector_Spaces.md`.
 //!
 //! Input entries are bound elements (`PrimeField::new(v, p)`), except in the `forms_sentinel_*`
 //! tests, which build matrices on purpose from the unbound `Ring::zero()`/`Ring::one()`
@@ -16,8 +19,8 @@ use rustmath_integers::Integer;
 use rustmath_matrix::companion::companion_matrix;
 use rustmath_matrix::polynomial_matrix::PolynomialMatrix;
 use rustmath_matrix::{
-    charpoly_berkowitz, invariant_factors, minimal_polynomial, rational_canonical_form, Matrix,
-    VectorSpace,
+    charpoly_berkowitz, invariant_factors, is_similar, jordan_form, minimal_polynomial,
+    primary_invariant_factors, primary_rational_form, rational_canonical_form, Matrix, VectorSpace,
 };
 use rustmath_polynomials::UnivariatePolynomial;
 
@@ -917,4 +920,325 @@ fn golay_code_quotient_gf3() {
     assert_eq!(q.project(&unit(0)).unwrap(), gv(&[1, 0, 0, 0, 0], 3));
     assert_eq!(q.project(&unit(10)).unwrap(), gv(&[0, 1, 2, 1, 1], 3));
     assert_eq!(q.project(&w).unwrap(), gv(&[0, 0, 0, 0, 0], 3));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Multi-RHS IsConsistent / Solution over GF(3) (MAGMA ch. 26 §26.8; H26E8 enumerates all
+// solutions of V·X = W over GF(3), its data is not in the digest)
+// ---------------------------------------------------------------------------------------------
+
+/// x·A for a row vector x.
+fn vec_mat(x: &[PrimeField], a: &Matrix<PrimeField>, p: i64) -> Vec<PrimeField> {
+    (0..a.cols())
+        .map(|j| {
+            (0..a.rows()).fold(gf(0, p), |acc, i| {
+                acc + x[i].clone() * a.get(i, j).unwrap().clone()
+            })
+        })
+        .collect()
+}
+
+#[test]
+fn solve_left_matrix_gf3_all_solutions() {
+    // gp: A = Mod([1,0,1; 0,1,1; 1,1,2; 2,1,0], 3); W = Mod([1,1,2; 2,0,2], 3); matrank(A) = 2;
+    //     lift(matinverseimage(A~, W~)~) = [1,1,0,0; 2,0,0,0];
+    //     lift(matker(A~)) = [2,1; 2,2; 1,0; 0,1] (columns [2,2,1,0] and [1,2,0,1]);
+    //     brute force over all 81 v: 9 solutions for each row of W;
+    //     W2 = Mod([1,1,2; 1,0,0], 3): matinverseimage(A~, W2~) = [;] (row 2 alone: []~).
+    let a = gm(4, 3, &[1, 0, 1, 0, 1, 1, 1, 1, 2, 2, 1, 0], 3);
+    let w = gm(2, 3, &[1, 1, 2, 2, 0, 2], 3);
+    let (v, n) = a
+        .solve_left_matrix_with_kernel(&w)
+        .unwrap()
+        .expect("consistent");
+    assert_eq!(v, gm(2, 4, &[1, 1, 0, 0, 2, 0, 0, 0], 3));
+    assert_eq!(n, vec![gv(&[2, 2, 1, 0], 3), gv(&[1, 2, 0, 1], 3)]);
+    for i in 0..2 {
+        let wi = w.row(i).unwrap();
+        let vi = v.row(i).unwrap();
+        // Brute force: every u in GF(3)^4 with u·A = W[i] is V[i] + c1·N1 + c2·N2.
+        let mut sols = Vec::new();
+        for code in 0..81i64 {
+            let u = gv(
+                &[code % 3, (code / 3) % 3, (code / 9) % 3, (code / 27) % 3],
+                3,
+            );
+            if vec_mat(&u, &a, 3) == wi {
+                sols.push(u);
+            }
+        }
+        assert_eq!(sols.len(), 9);
+        let mut span = Vec::new();
+        for c1 in 0..3 {
+            for c2 in 0..3 {
+                let u: Vec<PrimeField> = (0..4)
+                    .map(|k| {
+                        vi[k].clone() + gf(c1, 3) * n[0][k].clone() + gf(c2, 3) * n[1][k].clone()
+                    })
+                    .collect();
+                span.push(u);
+            }
+        }
+        for u in &sols {
+            assert!(span.contains(u));
+        }
+    }
+    // The sequence form gives the same rows.
+    let seq = a
+        .solve_left_sequence(&[w.row(0).unwrap(), w.row(1).unwrap()])
+        .unwrap()
+        .expect("consistent");
+    assert_eq!(seq, vec![v.row(0).unwrap(), v.row(1).unwrap()]);
+    let w2 = gm(2, 3, &[1, 1, 2, 1, 0, 0], 3);
+    assert_eq!(a.solve_left_matrix(&w2).unwrap(), None);
+    assert_eq!(
+        a.solve_left_sequence_with_kernel(&[w2.row(0).unwrap(), w2.row(1).unwrap()])
+            .unwrap(),
+        None
+    );
+}
+
+// ---------------------------------------------------------------------------------------------
+// Primary rational form, Jordan form, primary invariant factors, IsSimilar (MAGMA ch. 26
+// §26.12.2). Transforms are never pinned, only MAGMA's property T·A·T⁻¹ = F.
+// ---------------------------------------------------------------------------------------------
+
+/// MAGMA's defining property: `t·a == f·t` and t invertible.
+fn assert_magma_transform(a: &Matrix<PrimeField>, f: &Matrix<PrimeField>, t: &Matrix<PrimeField>) {
+    assert_eq!(t.mul(a).unwrap(), f.mul(t).unwrap());
+    assert_eq!(t.rank().unwrap(), a.rows());
+}
+
+/// Every entry bound to a modulus (not an unbound Ring::zero()/one() constant).
+fn all_bound(m: &Matrix<PrimeField>) -> bool {
+    m.data().iter().all(|x| !x.modulus().is_zero())
+}
+
+#[test]
+fn h26e9_magma_handbook_example() {
+    // MAGMA Handbook H26E9 (V2.x H51E8), over GF(5):
+    //   a = [0 2 4 2 0; 2 2 2 3 3; 3 4 4 1 3; 0 0 0 0 1; 0 0 0 1 0];
+    //   PrimaryInvariantFactors(a) =
+    //     [ <x + 1, 1>, <x + 1, 1>, <x + 4, 1>, <x + 4, 1>, <x + 4, 1> ];
+    //   r, t, f := RationalForm(a); r = [1 0 0 0 0; 0 0 1 0 0; 0 1 0 0 0; 0 0 0 0 1; 0 0 0 1 0],
+    //   t = [1 3 0 2 1; 2 1 2 2 0; 3 4 3 4 1; 1 0 0 0 0; 0 2 4 2 0], f = [x + 4, x^2 + 4, x^2 + 4].
+    // gp: a = Mod([0,2,4,2,0; 2,2,2,3,3; 3,4,4,1,3; 0,0,0,0,1; 0,0,0,1,0], 5);
+    //     t*a*t^-1 == r = 1; factor of each matfrobenius(a,1) entry: x+1, x+4 (twice), x+4;
+    //     vector(3,k,matrank((a-l)^k)) = [2,2,2] at l = 1 and [3,3,3] at l = 4 (diagonalizable).
+    // GAP (design pif.g): x - 1 three times, x + 1 twice.
+    let a = gm(
+        5,
+        5,
+        &[
+            0, 2, 4, 2, 0, 2, 2, 2, 3, 3, 3, 4, 4, 1, 3, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0,
+        ],
+        5,
+    );
+    let r = gm(
+        5,
+        5,
+        &[
+            1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0,
+        ],
+        5,
+    );
+    let t = gm(
+        5,
+        5,
+        &[
+            1, 3, 0, 2, 1, 2, 1, 2, 2, 0, 3, 4, 3, 4, 1, 1, 0, 0, 0, 0, 0, 2, 4, 2, 0,
+        ],
+        5,
+    );
+    let pif = vec![
+        (gp(&[1, 1], 5), 1),
+        (gp(&[1, 1], 5), 1),
+        (gp(&[4, 1], 5), 1),
+        (gp(&[4, 1], 5), 1),
+        (gp(&[4, 1], 5), 1),
+    ];
+    assert_eq!(primary_invariant_factors(&a).unwrap(), pif);
+    assert_eq!(
+        invariant_factors(&a).unwrap(),
+        vec![gp(&[4, 1], 5), gp(&[4, 0, 1], 5), gp(&[4, 0, 1], 5)]
+    );
+    let diag = gm(
+        5,
+        5,
+        &[
+            4, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1,
+        ],
+        5,
+    );
+    let jf = jordan_form(&a).unwrap();
+    assert_eq!(jf.primary_invariant_factors, pif);
+    assert_eq!(jf.canonical_matrix, diag);
+    assert_magma_transform(&a, &diag, &jf.transform);
+    assert!(all_bound(&jf.canonical_matrix) && all_bound(&jf.transform));
+    let prf = primary_rational_form(&a).unwrap();
+    assert_eq!(prf.primary_invariant_factors, pif);
+    assert_eq!(prf.canonical_matrix, diag);
+    assert_magma_transform(&a, &diag, &prf.transform);
+    // MAGMA's own RationalForm transform has the same property in our arithmetic.
+    assert_magma_transform(&a, &r, &t);
+    let s = is_similar(&a, &r).unwrap().expect("similar");
+    assert_magma_transform(&a, &r, &s);
+}
+
+#[test]
+fn jordan_form_gf3_mixed_blocks() {
+    // B = J₂(1) ⊕ J₂(1) ⊕ [2] ⊕ [0,1;2,0] over GF(3).
+    // gp: lift(matfrobenius(B,1)) = [x^5 + 2*x^4 + 2*x + 1, x^2 + x + 1];
+    //     lift(factor(x^5+2*x^4+2*x+1)) = [x + 1, 1; x + 2, 2; x^2 + 1, 1],
+    //     lift(factor(x^2+x+1)) = [x + 2, 2] (design more.log); GAP pif.g: (x-1)^2 twice, x+1,
+    //     x^2+1.
+    let b = gm(
+        7,
+        7,
+        &[
+            1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+            0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 2, 0,
+        ],
+        3,
+    );
+    let jf = jordan_form(&b).unwrap();
+    assert_eq!(
+        jf.primary_invariant_factors,
+        vec![
+            (gp(&[1, 1], 3), 1),
+            (gp(&[2, 1], 3), 2),
+            (gp(&[2, 1], 3), 2),
+            (gp(&[1, 0, 1], 3), 1),
+        ]
+    );
+    let j = gm(
+        7,
+        7,
+        &[
+            2, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0,
+            0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 2, 0,
+        ],
+        3,
+    );
+    assert_eq!(jf.canonical_matrix, j);
+    assert_magma_transform(&b, &j, &jf.transform);
+    assert_eq!(
+        primary_invariant_factors(&b).unwrap(),
+        jf.primary_invariant_factors
+    );
+}
+
+#[test]
+fn generalized_jordan_gf3() {
+    // A = U·C((x²+1)²)·U⁻¹ over GF(3). gp (design gf3_gen.log):
+    //     lift(matfrobenius(A,1)) = [x^4 + 2*x^2 + 1], factor = (x^2 + 1)^2;
+    //     T*A*T^-1 == F = 1 and TJ*A*TJ^-1 == J = 1 for the prototype's T, TJ;
+    //     lift(factor(minpoly(J))) = (x^2 + 1)^2.
+    let a = gm(4, 4, &[1, 2, 2, 0, 1, 1, 1, 1, 0, 1, 2, 2, 0, 0, 1, 2], 3);
+    let f = gm(4, 4, &[0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 2, 0, 1, 0], 3);
+    let j = gm(4, 4, &[0, 1, 0, 0, 2, 0, 1, 0, 0, 0, 0, 1, 0, 0, 2, 0], 3);
+    let pif = vec![(gp(&[1, 0, 1], 3), 2)];
+    let prf = primary_rational_form(&a).unwrap();
+    assert_eq!(prf.primary_invariant_factors, pif);
+    assert_eq!(prf.canonical_matrix, f);
+    assert_magma_transform(&a, &f, &prf.transform);
+    let jf = jordan_form(&a).unwrap();
+    assert_eq!(jf.primary_invariant_factors, pif);
+    assert_eq!(jf.canonical_matrix, j);
+    assert_magma_transform(&a, &j, &jf.transform);
+    let s = is_similar(&f, &j).unwrap().expect("similar");
+    assert_magma_transform(&f, &j, &s);
+}
+
+#[test]
+fn jordan_form_large_prime() {
+    // p = 2^64 + 13 (gp: nextprime(2^64), isprime(p) = 1), A = [3,1,-1; 0,3,2; 0,0,5]
+    // (= U·(J₂(3) ⊕ [5])·U⁻¹, U = [1,2,0; 0,1,1; 0,0,1]).
+    // gp (design bigp.log): lift(factormod((x-3)^2*(x-5), p)) = [x + (p-5), 1; x + (p-3), 2],
+    //     lift(matfrobenius(Mod(A,p),1)) is one cyclic factor of degree 3.
+    let p = Integer::from(2).pow(64) + Integer::from(13);
+    let e = |v: i64| PrimeField::new(Integer::from(v), p.clone()).unwrap();
+    let a = Matrix::from_vec(
+        3,
+        3,
+        [3, 1, -1, 0, 3, 2, 0, 0, 5].iter().map(|&v| e(v)).collect(),
+    )
+    .unwrap();
+    let jf = jordan_form(&a).unwrap();
+    let lin = |c: i64| UnivariatePolynomial::new(vec![e(c), e(1)]);
+    assert_eq!(
+        jf.primary_invariant_factors,
+        vec![(lin(-5), 1), (lin(-3), 2)]
+    );
+    let j = Matrix::from_vec(
+        3,
+        3,
+        [5, 0, 0, 0, 3, 1, 0, 0, 3].iter().map(|&v| e(v)).collect(),
+    )
+    .unwrap();
+    assert_eq!(jf.canonical_matrix, j);
+    assert_magma_transform(&a, &j, &jf.transform);
+}
+
+#[test]
+fn primary_forms_reject_unbound_entries() {
+    // The identity built from PrimeField::one()/zero() only: the field (p) is unknown.
+    let id = sm(3, &[1, 0, 0, 0, 1, 0, 0, 0, 1]);
+    assert!(matches!(
+        primary_invariant_factors(&id),
+        Err(rustmath_core::MathError::InvalidArgument(_))
+    ));
+    assert!(matches!(
+        primary_rational_form(&id),
+        Err(rustmath_core::MathError::InvalidArgument(_))
+    ));
+    assert!(matches!(
+        jordan_form(&id),
+        Err(rustmath_core::MathError::InvalidArgument(_))
+    ));
+    assert!(matches!(
+        is_similar(&id, &id),
+        Err(rustmath_core::MathError::InvalidArgument(_))
+    ));
+    // [2u] against [0u] would differ over Z but are equal in GF(2): no answer without p.
+    assert!(matches!(
+        is_similar(&sm(1, &[2]), &sm(1, &[0])),
+        Err(rustmath_core::MathError::InvalidArgument(_))
+    ));
+}
+
+#[test]
+fn primary_forms_bind_mixed_entries() {
+    // [[2u, 1], [0, 2u]] with 2u = Ring::one() + Ring::one() unbound and 1, 0 bound mod 2: the
+    // binding makes it [0,1; 0,0] over GF(2). gp: lift(matfrobenius(Mod([2,1;0,2],2),1)) = [x^2].
+    let a = Matrix::from_vec(2, 2, vec![sent(2), gf(1, 2), gf(0, 2), sent(2)]).unwrap();
+    let jf = jordan_form(&a).unwrap();
+    assert_eq!(jf.primary_invariant_factors, vec![(gp(&[0, 1], 2), 2)]);
+    assert_eq!(jf.canonical_matrix, gm(2, 2, &[0, 1, 0, 0], 2));
+    assert!(all_bound(&jf.canonical_matrix) && all_bound(&jf.transform));
+    assert_eq!(
+        primary_invariant_factors(&a).unwrap(),
+        jf.primary_invariant_factors
+    );
+    let prf = primary_rational_form(&a).unwrap();
+    assert!(all_bound(&prf.canonical_matrix) && all_bound(&prf.transform));
+    // Similar to its bound form.
+    let s = is_similar(&a, &gm(2, 2, &[0, 1, 0, 0], 2))
+        .unwrap()
+        .expect("similar");
+    assert_eq!(s.rank().unwrap(), 2);
+}
+
+#[test]
+fn is_similar_gf5_negative() {
+    // gp: lift(matfrobenius(Mod(matid(2),5),1)) = [x + 4, x + 4],
+    //     lift(matfrobenius(Mod([1,1;0,1],5),1)) = [x^2 + 3*x + 1] (design more.log).
+    let i2 = gm(2, 2, &[1, 0, 0, 1], 5);
+    let j2 = gm(2, 2, &[1, 1, 0, 1], 5);
+    assert_eq!(is_similar(&i2, &j2).unwrap(), None);
+    assert_eq!(is_similar(&j2, &i2).unwrap(), None);
+    let s = is_similar(&j2, &j2.transpose())
+        .unwrap()
+        .expect("similar to its transpose");
+    assert_magma_transform(&j2, &j2.transpose(), &s);
 }

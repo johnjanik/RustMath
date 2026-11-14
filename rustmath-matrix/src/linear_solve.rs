@@ -1,15 +1,35 @@
 //! Linear system solving algorithms
 //!
-//! MAGMA Handbook ch. 26 §26.8 (digest `rustmath-lava/docs/Chapter_26_Matrices.md`):
-//! `IsConsistent(A, w)` and `Solution(A, w)` use the row convention `v·A = w`; here they are
-//! [`Matrix::solve_left`] and [`Matrix::solve_left_with_kernel`]. [`Matrix::solve`] is the
-//! column convention `A·x = b` (Sage `solve_right`).
+//! MAGMA Handbook ch. 26 §26.8 (digest `rustmath-lava/docs/Chapter_26_Matrices.md:222-225`).
+//! MAGMA uses the row convention `V·A = W`. The four forms and their methods here:
 //!
-//! Algorithm: Gauss–Jordan elimination on `[A | b]` and the Rouché–Capelli criterion
-//! (K. Hoffman and R. Kunze, *Linear Algebra*, 2nd ed., §1.4, row-reduced echelon matrices and
-//! the solution of `A X = Y`): the system is consistent iff `rank [A|b] = rank A`, i.e. iff the
-//! `b` column is not a pivot column of `RREF [A|b]`. The particular solution returned sets every
-//! free (non-pivot) variable to 0.
+//! | MAGMA | Here |
+//! |---|---|
+//! | `IsConsistent(A, w)`, w a vector | [`Matrix::solve_left`] (`is_some()`, the solution) |
+//! | `Solution(A, w)`, and the nullspace | [`Matrix::solve_left_with_kernel`] |
+//! | `IsConsistent(A, W)`, W an r×n matrix | [`Matrix::solve_left_matrix`] |
+//! | `Solution(A, W)` | [`Matrix::solve_left_matrix_with_kernel`] |
+//! | `IsConsistent(A, Q)`, Q a sequence of vectors | [`Matrix::solve_left_sequence`] |
+//! | `Solution(A, Q)` | [`Matrix::solve_left_sequence_with_kernel`] |
+//!
+//! MAGMA's `Solution` raises an error for an inconsistent system; here that is the documented
+//! `Ok(None)`. [`Matrix::solve`] and [`Matrix::solve_matrix`] are the column convention
+//! `A·X = B` (Sage `solve_right`). Fields only: MAGMA also allows Euclidean rings such as Z,
+//! which these methods do not cover.
+//!
+//! Algorithm: Gauss–Jordan elimination on `[A | B]` (B with k columns) and the Rouché–Capelli
+//! criterion (K. Hoffman and R. Kunze, *Linear Algebra*, 2nd ed., §1.4, row-reduced echelon
+//! matrices and the solution of `A X = Y`): column j of B is consistent iff
+//! `rank [A|b_j] = rank A`, i.e. iff column `n + j` is not a pivot column of `RREF [A|B]`. The
+//! left block of `RREF [A|B]` is `RREF A` (the pivot choice in a column depends only on that
+//! column), so one elimination decides all k systems: every column is consistent iff no pivot
+//! lies in a B column. The particular solution returned sets every free (non-pivot) variable
+//! to 0.
+//!
+//! Cost: one elimination of an m×(n+k) matrix, `O(m·n·(n+k))` field operations, against
+//! `O(k·m·n²)` for k separate solves. Over Q, dense, n = k = 30, entries in [-5, 5], debug
+//! build: 0.35 s against 1.6 s (the same V). Over Q the entries grow as in any fraction-based
+//! elimination (no Dixon lifting).
 
 use crate::Matrix;
 use rustmath_core::{Field, MathError, Result};
@@ -89,8 +109,7 @@ impl<F: Field> Matrix<F> {
                 for j in col..cols {
                     let pivot_val = result.data()[current_row * cols + j].clone();
                     let current_val = result.data()[row * cols + j].clone();
-                    result.data_mut()[row * cols + j] =
-                        current_val - factor.clone() * pivot_val;
+                    result.data_mut()[row * cols + j] = current_val - factor.clone() * pivot_val;
                 }
             }
 
@@ -123,8 +142,7 @@ impl<F: Field> Matrix<F> {
                 let factor = ref_form.matrix.data()[row * matrix_cols + pivot_col].clone();
                 if !factor.is_zero() {
                     for j in 0..matrix_cols {
-                        let pivot_val =
-                            ref_form.matrix.data()[pivot_row * matrix_cols + j].clone();
+                        let pivot_val = ref_form.matrix.data()[pivot_row * matrix_cols + j].clone();
                         let current_val = ref_form.matrix.data()[row * matrix_cols + j].clone();
                         ref_form.matrix.data_mut()[row * matrix_cols + j] =
                             current_val - factor.clone() * pivot_val;
@@ -155,38 +173,75 @@ impl<F: Field> Matrix<F> {
     /// is decided exactly over an exact field; no numerical robustness is claimed for
     /// floating-point `Field` impls.
     pub fn solve(&self, b: &[F]) -> Result<Option<Vec<F>>> {
-        let (m, n) = (self.rows(), self.cols());
+        let m = self.rows();
         if b.len() != m {
             return Err(MathError::InvalidArgument(
                 "Vector length must match number of rows".to_string(),
             ));
         }
+        let bm = Matrix::from_vec(m, 1, b.to_vec())?;
+        // X is n×1: its data is the solution vector.
+        Ok(self.solve_columns(&bm)?.map(|x| x.data().to_vec()))
+    }
 
-        // Create augmented matrix [A | b] (m × (n+1)).
-        let mut aug_data = Vec::with_capacity(m * (n + 1));
-        for (i, bi) in b.iter().enumerate() {
+    /// The shared body of [`Matrix::solve`] and [`Matrix::solve_matrix`]: `A·X = B` for an m×k
+    /// matrix `B` (`b.rows() == self.rows()` is the caller's check) by one Gauss–Jordan
+    /// elimination of `[A | B]`. `Ok(None)` iff some column of `B` is inconsistent; otherwise
+    /// `X` (n×k) with every free variable 0 (module docs).
+    fn solve_columns(&self, b: &Matrix<F>) -> Result<Option<Matrix<F>>> {
+        let (m, n, k) = (self.rows(), self.cols(), b.cols());
+        // Augmented matrix [A | B] (m × (n+k)).
+        let w = n + k;
+        let mut aug_data = Vec::with_capacity(m * w);
+        for i in 0..m {
             aug_data.extend_from_slice(&self.data()[i * n..(i + 1) * n]);
-            aug_data.push(bi.clone());
+            aug_data.extend_from_slice(&b.data()[i * k..(i + 1) * k]);
         }
-        let augmented = Matrix::from_vec(m, n + 1, aug_data)?;
+        let augmented = Matrix::from_vec(m, w, aug_data)?;
         let rref = augmented.reduced_row_echelon_form()?;
 
-        // Pivots are strictly increasing, so the b column (index n) is a pivot column iff it
-        // is the last pivot. That happens iff rank [A|b] > rank A: inconsistent.
-        if rref.pivots.last() == Some(&n) {
+        // Pivots are strictly increasing, so some B column (index >= n) is a pivot column iff
+        // the last pivot is one. That happens iff rank [A|b_j] > rank A for some j:
+        // inconsistent.
+        if rref.pivots.last().is_some_and(|&c| c >= n) {
             return Ok(None);
         }
 
-        // Pivot row r reads x_c + Σ_{free f} R[r][f]·x_f = R[r][n] (pivots are normalised to 1
-        // by `row_echelon_form`). With every free x_f = 0 this gives x_c = R[r][n]. Rows of
-        // index >= rank are zero rows, including their b entry, because the b column is not a
-        // pivot column.
-        let w = n + 1;
-        let mut x = vec![F::zero(); n];
+        // Pivot row r reads x_c + Σ_{free f} R[r][f]·x_f = R[r][n+j] for column j (pivots are
+        // normalised to 1 by `row_echelon_form`). With every free x_f = 0 this gives
+        // x_c = R[r][n+j]. Rows of index >= rank are zero rows, including their B entries,
+        // because no B column is a pivot column. `F::zero()` for the free variables keeps
+        // `solve` identical to its earlier one-column implementation.
+        let mut x = vec![F::zero(); n * k];
         for (r, &c) in rref.pivots.iter().enumerate() {
-            x[c] = rref.matrix.data()[r * w + n].clone();
+            for j in 0..k {
+                x[c * k + j] = rref.matrix.data()[r * w + n + j].clone();
+            }
         }
-        Ok(Some(x))
+        Ok(Some(Matrix::from_vec(n, k, x)?))
+    }
+
+    /// Solve `A·X = B` for an m×k matrix `B` (column convention; Sage `solve_right` with a
+    /// matrix), by one elimination of `[A | B]` (module docs).
+    ///
+    /// * `Ok(Some(X))`, `X` n×k, iff every column of `B` is consistent. Column j of `X` is what
+    ///   [`Matrix::solve`] returns for column j of `B` (every free variable 0); the full
+    ///   solution set is `X` plus any n×k matrix with columns in `span(self.kernel())`.
+    /// * `Ok(None)` iff some column of `B` is inconsistent.
+    /// * `Err(InvalidArgument)` if `b.rows() != self.rows()`.
+    ///
+    /// Any shape is accepted (k = 0 gives `Some` of an n×0 matrix). Zero tests are exact
+    /// comparisons, so the answer is decided exactly over an exact field; no numerical
+    /// robustness is claimed for floating-point `Field` impls.
+    pub fn solve_matrix(&self, b: &Matrix<F>) -> Result<Option<Matrix<F>>> {
+        if b.rows() != self.rows() {
+            return Err(MathError::InvalidArgument(format!(
+                "solve_matrix: B has {} rows, A has {}",
+                b.rows(),
+                self.rows()
+            )));
+        }
+        self.solve_columns(b)
     }
 
     /// Solve the left linear system `x·A = b` (row convention; equivalently `Aᵀ·xᵀ = bᵀ`).
@@ -194,7 +249,9 @@ impl<F: Field> Matrix<F> {
     /// MAGMA `IsConsistent(A, w)` (Handbook ch. 26 §26.8) is `A.solve_left(w)?.is_some()`, and
     /// its second return value is the returned `x`. Semantics as in [`Matrix::solve`]:
     /// `Ok(None)` iff inconsistent, otherwise a particular solution with the free variables 0.
-    /// `Err(InvalidArgument)` if `b.len() != cols`.
+    /// `Err(InvalidArgument)` if `b.len() != cols`. For many right-hand sides use the matrix
+    /// form [`Matrix::solve_left_matrix`] or the sequence form [`Matrix::solve_left_sequence`]:
+    /// they eliminate once for all of them.
     pub fn solve_left(&self, b: &[F]) -> Result<Option<Vec<F>>> {
         if b.len() != self.cols() {
             return Err(MathError::InvalidArgument(
@@ -225,6 +282,91 @@ impl<F: Field> Matrix<F> {
         }
     }
 
+    /// MAGMA `IsConsistent(A, W)` with an r×n matrix `W` (Handbook ch. 26 §26.8): `V·A = W`,
+    /// by one elimination of `[Aᵀ | Wᵀ]` (module docs).
+    ///
+    /// * `Ok(Some(V))`, `V` r×m, iff every row of `W` is consistent. Row i of `V` is what
+    ///   [`Matrix::solve_left`] returns for row i of `W` (every free variable 0).
+    /// * `Ok(None)` iff some row of `W` is inconsistent.
+    /// * `Err(InvalidArgument)` if `w.cols() != self.cols()`.
+    ///
+    /// Any shape is accepted: r = 0 gives `Some` of a 0×m matrix; m = 0 (A has no rows) gives
+    /// `Some` of an r×0 matrix iff `W = 0`; n = 0 gives the r×m zero matrix.
+    pub fn solve_left_matrix(&self, w: &Matrix<F>) -> Result<Option<Matrix<F>>> {
+        if w.cols() != self.cols() {
+            return Err(MathError::InvalidArgument(format!(
+                "solve_left_matrix: W has {} columns, A has {}",
+                w.cols(),
+                self.cols()
+            )));
+        }
+        // V·A = W iff Aᵀ·Vᵀ = Wᵀ.
+        Ok(self
+            .transpose()
+            .solve_columns(&w.transpose())?
+            .map(|x| x.transpose()))
+    }
+
+    /// MAGMA `Solution(A, W)` and the extra return values of `IsConsistent(A, W)` (Handbook
+    /// ch. 26 §26.8): `Ok(Some((V, N)))` with `V·A = W` (the particular solution of
+    /// [`Matrix::solve_left_matrix`]) and `N` a basis of the left nullspace `{u : u·A = 0}`, so
+    /// that every solution is `V` plus a matrix whose rows lie in `span(N)`.
+    ///
+    /// `Ok(None)` iff some row is inconsistent (MAGMA raises an error there; this returns the
+    /// documented `None`, as [`Matrix::solve_left_with_kernel`] does).
+    /// `Err(InvalidArgument)` if `w.cols() != self.cols()`.
+    #[allow(clippy::type_complexity)]
+    pub fn solve_left_matrix_with_kernel(
+        &self,
+        w: &Matrix<F>,
+    ) -> Result<Option<(Matrix<F>, Vec<Vec<F>>)>> {
+        match self.solve_left_matrix(w)? {
+            None => Ok(None),
+            Some(v) => Ok(Some((v, self.transpose().kernel()?))),
+        }
+    }
+
+    /// MAGMA `IsConsistent(A, Q)` for a sequence `Q` of vectors of length n (Handbook ch. 26
+    /// §26.8): `Ok(Some(V))` with `V[i]·A = Q[i]` for every i, iff all are consistent;
+    /// `Ok(None)` otherwise. `V[i]` is what [`Matrix::solve_left`] returns for `Q[i]`. One
+    /// elimination for the whole sequence ([`Matrix::solve_left_matrix`] on the matrix with
+    /// rows `Q[i]`).
+    ///
+    /// `Q` empty gives `Ok(Some(vec![]))`. `Err(InvalidArgument)` naming the index if some
+    /// `Q[i].len() != self.cols()`.
+    pub fn solve_left_sequence(&self, q: &[Vec<F>]) -> Result<Option<Vec<Vec<F>>>> {
+        let n = self.cols();
+        if let Some(i) = q.iter().position(|qi| qi.len() != n) {
+            return Err(MathError::InvalidArgument(format!(
+                "solve_left_sequence: Q[{i}] has length {}, A has {n} columns",
+                q[i].len()
+            )));
+        }
+        let w = Matrix::from_vec(q.len(), n, q.iter().flatten().cloned().collect())?;
+        Ok(self.solve_left_matrix(&w)?.map(|v| {
+            let m = v.cols();
+            (0..v.rows())
+                .map(|i| v.data()[i * m..(i + 1) * m].to_vec())
+                .collect()
+        }))
+    }
+
+    /// MAGMA `Solution(A, Q)` and the extra return values of `IsConsistent(A, Q)` (Handbook
+    /// ch. 26 §26.8): `Ok(Some((V, N)))` with `V[i]·A = Q[i]` for every i (as
+    /// [`Matrix::solve_left_sequence`]) and `N` a basis of the left nullspace `{u : u·A = 0}`.
+    /// `Ok(None)` iff some `Q[i]` is inconsistent (MAGMA raises an error there). Errors as for
+    /// [`Matrix::solve_left_sequence`].
+    #[allow(clippy::type_complexity)]
+    pub fn solve_left_sequence_with_kernel(
+        &self,
+        q: &[Vec<F>],
+    ) -> Result<Option<(Vec<Vec<F>>, Vec<Vec<F>>)>> {
+        match self.solve_left_sequence(q)? {
+            None => Ok(None),
+            Some(v) => Ok(Some((v, self.transpose().kernel()?))),
+        }
+    }
+
     /// Compute the kernel (null space) of the matrix
     ///
     /// Returns a basis for the kernel as a vector of column vectors.
@@ -234,8 +376,7 @@ impl<F: Field> Matrix<F> {
 
         // Identify free variables (columns without pivots)
         let mut free_vars = Vec::new();
-        let pivot_cols: std::collections::HashSet<usize> =
-            rref.pivots.iter().copied().collect();
+        let pivot_cols: std::collections::HashSet<usize> = rref.pivots.iter().copied().collect();
 
         for col in 0..self.cols() {
             if !pivot_cols.contains(&col) {
@@ -812,5 +953,159 @@ mod tests {
         assert_eq!(b.solve(&qv(&[0, 0])).unwrap(), Some(vec![]));
         assert_eq!(b.solve(&qv(&[1, 0])).unwrap(), None);
         assert!(b.solve(&qv(&[1])).is_err());
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Multi-RHS forms (MAGMA IsConsistent(A, W), IsConsistent(A, Q), Solution(A, W/Q)).
+    // ---------------------------------------------------------------------------------------
+
+    /// The rows of a matrix.
+    fn rows_of(m: &Matrix<Rational>) -> Vec<Vec<Rational>> {
+        (0..m.rows()).map(|i| m.row(i).unwrap()).collect()
+    }
+
+    #[test]
+    fn solve_left_matrix_two_rhs() {
+        // gp: A = [1,2;2,4;0,1]; W = [3,7;1,3]; matinverseimage(A~, W~)~ = [3,0,1; 1,0,1],
+        //     [3,0,1;1,0,1]*A = [3,7; 1,3]
+        let a = qm(3, 2, &[1, 2, 2, 4, 0, 1]);
+        let w = qm(2, 2, &[3, 7, 1, 3]);
+        let v = a.solve_left_matrix(&w).unwrap().expect("consistent");
+        assert_eq!(v, qm(2, 3, &[3, 0, 1, 1, 0, 1]));
+        assert_eq!((v.clone() * a.clone()).unwrap(), w);
+        // Row i is what solve_left returns for row i.
+        for (vi, wi) in rows_of(&v).iter().zip(rows_of(&w)) {
+            assert_eq!(a.solve_left(&wi).unwrap().as_ref(), Some(vi));
+        }
+    }
+
+    #[test]
+    fn solve_left_matrix_with_kernel_two_rhs() {
+        // gp: matker([1,2;2,4;0,1]~) = [-2; 1; 0];
+        //     ([3,0,1;1,0,1] + [-2,1,0;-2,1,0])*A = [3,7; 1,3]
+        let a = qm(3, 2, &[1, 2, 2, 4, 0, 1]);
+        let w = qm(2, 2, &[3, 7, 1, 3]);
+        let (v, n) = a
+            .solve_left_matrix_with_kernel(&w)
+            .unwrap()
+            .expect("consistent");
+        assert_eq!(v, qm(2, 3, &[3, 0, 1, 1, 0, 1]));
+        assert_eq!(n, vec![qv(&[-2, 1, 0])]);
+        for (vi, wi) in rows_of(&v).iter().zip(rows_of(&w)) {
+            let shifted: Vec<Rational> = vi
+                .iter()
+                .zip(&n[0])
+                .map(|(x, y)| x.clone() + y.clone())
+                .collect();
+            assert_eq!(vec_mat(&shifted, &a), wi);
+        }
+    }
+
+    #[test]
+    fn solve_left_matrix_one_bad_row() {
+        // gp: matinverseimage([1,2;2,4]~, [3,6;1,3]~) = [;] (inconsistent);
+        //     matinverseimage([1,2;2,4]~, [3,6]~) = [3, 0]~;
+        //     matinverseimage([1,2;2,4]~, [1,3]~) = []~
+        let a = qm(2, 2, &[1, 2, 2, 4]);
+        let w = qm(2, 2, &[3, 6, 1, 3]);
+        assert_eq!(a.solve_left_matrix(&w).unwrap(), None);
+        assert_eq!(a.solve_left_matrix_with_kernel(&w).unwrap(), None);
+        assert_eq!(a.solve_left(&qv(&[3, 6])).unwrap(), Some(qv(&[3, 0])));
+        assert_eq!(a.solve_left(&qv(&[1, 3])).unwrap(), None);
+    }
+
+    #[test]
+    fn solve_left_matrix_unique() {
+        // gp: A = [2,1,1;1,3,2;1,0,0]; matdet(A) = -1; W = [4,5,3;1,1,1];
+        //     W*A^-1 = [-1,2,4; 1,0,-1] = matinverseimage(A~, W~)~
+        let a = qm(3, 3, &[2, 1, 1, 1, 3, 2, 1, 0, 0]);
+        let w = qm(2, 3, &[4, 5, 3, 1, 1, 1]);
+        let (v, n) = a
+            .solve_left_matrix_with_kernel(&w)
+            .unwrap()
+            .expect("consistent");
+        assert_eq!(v, qm(2, 3, &[-1, 2, 4, 1, 0, -1]));
+        assert!(n.is_empty());
+    }
+
+    #[test]
+    fn solve_matrix_column_convention() {
+        // gp: matinverseimage([1,2,0;2,4,1], [3,1;7,3]) = [3,1; 0,0; 1,1]
+        let a = qm(2, 3, &[1, 2, 0, 2, 4, 1]);
+        let b = qm(2, 2, &[3, 1, 7, 3]);
+        let x = a.solve_matrix(&b).unwrap().expect("consistent");
+        assert_eq!(x, qm(3, 2, &[3, 1, 0, 0, 1, 1]));
+        assert_eq!((a.clone() * x.clone()).unwrap(), b);
+        // Column j is what solve returns for column j of B.
+        assert_eq!(a.solve(&qv(&[3, 7])).unwrap(), Some(qv(&[3, 0, 1])));
+        assert_eq!(a.solve(&qv(&[1, 3])).unwrap(), Some(qv(&[1, 0, 1])));
+        assert!(a.solve_matrix(&qm(3, 1, &[1, 2, 3])).is_err());
+        // gp: matrank([1,1;1,1]) = 1, matinverseimage([1,1;1,1], [1,1;1,2]) = [;]
+        let s = qm(2, 2, &[1, 1, 1, 1]);
+        assert_eq!(s.solve_matrix(&qm(2, 2, &[1, 1, 1, 2])).unwrap(), None);
+    }
+
+    #[test]
+    fn solve_left_sequence_matches_rows() {
+        // Same systems as solve_left_matrix_two_rhs and solve_left_matrix_one_bad_row.
+        let a = qm(3, 2, &[1, 2, 2, 4, 0, 1]);
+        let q_seq = vec![qv(&[3, 7]), qv(&[1, 3])];
+        let v = a.solve_left_sequence(&q_seq).unwrap().expect("consistent");
+        assert_eq!(v, vec![qv(&[3, 0, 1]), qv(&[1, 0, 1])]);
+        let (v2, n) = a
+            .solve_left_sequence_with_kernel(&q_seq)
+            .unwrap()
+            .expect("consistent");
+        assert_eq!(v2, v);
+        assert_eq!(n, vec![qv(&[-2, 1, 0])]);
+        let b = qm(2, 2, &[1, 2, 2, 4]);
+        assert_eq!(
+            b.solve_left_sequence(&[qv(&[3, 6]), qv(&[1, 3])]).unwrap(),
+            None
+        );
+        assert_eq!(
+            b.solve_left_sequence_with_kernel(&[qv(&[3, 6]), qv(&[1, 3])])
+                .unwrap(),
+            None
+        );
+        // Empty sequence; a vector of the wrong length (index 1).
+        assert_eq!(a.solve_left_sequence(&[]).unwrap(), Some(vec![]));
+        match a.solve_left_sequence(&[qv(&[3, 7]), qv(&[1])]) {
+            Err(MathError::InvalidArgument(msg)) => assert!(msg.contains("Q[1]"), "{msg}"),
+            other => panic!("expected InvalidArgument, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn solve_left_matrix_shapes() {
+        // Definitional cases (no reference system needed).
+        // W with 2 columns for a 3-column A.
+        let a3 = qm(2, 3, &[1, 0, 0, 0, 1, 0]);
+        assert!(matches!(
+            a3.solve_left_matrix(&qm(1, 2, &[1, 1])),
+            Err(MathError::InvalidArgument(_))
+        ));
+        // A 3×2, W 0×2: V is 0×3.
+        let a = qm(3, 2, &[1, 2, 2, 4, 0, 1]);
+        let w0 = Matrix::<Rational>::from_vec(0, 2, vec![]).unwrap();
+        let v = a.solve_left_matrix(&w0).unwrap().expect("consistent");
+        assert_eq!((v.rows(), v.cols()), (0, 3));
+        // A 0×2 (m = 0): V is r×0, consistent iff W = 0.
+        let a0 = Matrix::<Rational>::from_vec(0, 2, vec![]).unwrap();
+        let v = a0
+            .solve_left_matrix(&qm(1, 2, &[0, 0]))
+            .unwrap()
+            .expect("consistent");
+        assert_eq!((v.rows(), v.cols()), (1, 0));
+        assert_eq!(a0.solve_left_matrix(&qm(1, 2, &[0, 1])).unwrap(), None);
+        // A 2×0 (n = 0), W 3×0: V is the 3×2 zero matrix, the left nullspace is all of Q^2.
+        let an = Matrix::<Rational>::from_vec(2, 0, vec![]).unwrap();
+        let w3 = Matrix::<Rational>::from_vec(3, 0, vec![]).unwrap();
+        let (v, n) = an
+            .solve_left_matrix_with_kernel(&w3)
+            .unwrap()
+            .expect("consistent");
+        assert_eq!(v, qm(3, 2, &[0, 0, 0, 0, 0, 0]));
+        assert_eq!(n.len(), 2);
     }
 }
