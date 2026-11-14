@@ -18,11 +18,16 @@
 //!
 //! The crate-internal `smith_form_diagonal` runs the same reduction without the transforms, and
 //! `smith_form_with_scaled_left_inverse` tracks only `P⁻¹` (up to a unit factor per column).
-//! `companion.rs` applies the reduction to the r×r relation matrix of a Krylov presentation
-//! (`krylov.rs`, usually r = 1), and to the n×n characteristic matrix `xI - A` (whose classical
-//! reduction swells coefficients over Q geometrically in n) only as a fallback when the Krylov
-//! path fails, which happens for matrices of unbound `PrimeField` sentinels computed in Z, or
-//! for a rounding `Field` impl (`Real`) whose Krylov self-check fails.
+//! `companion.rs` applies the reduction only in its fallbacks: to the r×r relation matrix of a
+//! Krylov presentation (`krylov.rs`), and then to the n×n characteristic matrix `xI - A` (whose
+//! classical reduction swells coefficients over Q geometrically in n). Its main path
+//! (`frobenius.rs`) needs no Smith form. The fallbacks run for matrices built only from the
+//! unbound `Ring::zero()`/`one()` sentinels of `PrimeField` or of the GF(p^n) type
+//! `FiniteFieldElement` (computed in Z), and for a rounding `Field` impl (`Real`) whose checks
+//! fail. No complexity bound is claimed for this reduction: coefficient and degree growth over Q
+//! are not controlled. Measured in debug: one 2×2 relation matrix took 81 to 102 s when it was
+//! found, and 3.2 s on the tree of the peeling change; the 20×20 relation matrix `xI - B` of the
+//! r = n inputs of `krylov.rs` took 31.5 s.
 
 use rustmath_core::{Field, MathError, Result};
 use rustmath_polynomials::UnivariatePolynomial;
@@ -173,9 +178,10 @@ impl<F: Field> PolynomialMatrix<F> {
     /// zeros and the divisibility chain (tested with exact division). A diagonal, monic,
     /// divisibility-chained matrix equivalent to `M` is its Smith form, by uniqueness
     /// (Jacobson §3.7), so a passing check certifies `S`. When the check fails the result is
-    /// `Err(InvalidOperation)`, never a value. For `PrimeField`'s modulus-0 `Ring::zero()` /
-    /// `Ring::one()` sentinels, `is_zero()` can only answer "non-zero" wrongly, never "zero",
-    /// so the check stays truthful there too. Errors from `Field::inverse` propagate.
+    /// `Err(InvalidOperation)`, never a value. For the modulus-0 `Ring::zero()`/`Ring::one()`
+    /// sentinels of `PrimeField` and `FiniteFieldElement`, `is_zero()` can only answer
+    /// "non-zero" wrongly, never "zero", so the check stays truthful there too. Errors from
+    /// `Field::inverse` propagate.
     ///
     /// Termination: each pass either leaves a remainder of smaller degree than the pivot or
     /// repairs divisibility (after which the next pass does), so the pivot degree `d` drops at

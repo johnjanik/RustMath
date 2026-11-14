@@ -454,9 +454,11 @@ fn check_forms_sentinel(n: usize, v: &[i64], expected: &[UnivariatePolynomial<Pr
 
 #[test]
 fn forms_sentinel_permutations_and_jordan() {
-    // Matrices of Ring::zero()/one() sentinels on which the Krylov path's ±1 start vectors
-    // create a non-unit pivot in Z (e.g. 3-cycle: "No inverse exists: gcd(-2, 0) = 2"); all
-    // three functions fall back to the Smith form of xI - A, whose pivots are units here.
+    // Matrices of Ring::zero()/one() sentinels on which the ±1 start vectors of the Krylov
+    // presentation create a non-unit pivot in Z (e.g. 3-cycle: "No inverse exists: gcd(-2, 0)
+    // = 2"). The first two stages (the peeling and the Smith form of the relation matrix) both
+    // need that presentation, so all three functions fall back to the last stage, the Smith
+    // form of xI - A, whose pivots are units here.
     // gp: S3=[0,1,0;0,0,1;1,0,0]; matfrobenius(S3,1) = [x^3 - 1]
     check_forms_sentinel(3, &[0, 1, 0, 0, 0, 1, 1, 0, 0], &[sp(&[-1, 0, 0, 1])]);
     // T3=[0,1,0;1,0,0;0,0,1]; matfrobenius(T3,1) = [x^2 - 1, x - 1]
@@ -586,12 +588,16 @@ fn sentinel_families(n: usize) -> Vec<(String, Vec<i64>)> {
 
 #[test]
 fn forms_sentinel_natural_families() {
-    // The 45 natural sentinel-only matrices n = 2..6 of sentinel_families. Before the Krylov
-    // path, the Smith form of xI - A answered 39 of them; the Krylov path alone answered only
-    // 19 (review B1). With the fallback, 43 answer: those 39 and upperones4, lowerones4,
-    // lowerones5, lowerones6 (Krylov path only). upperones5 and upperones6 need a non-unit
-    // pivot in both paths and stay Err (they did before as well); for them only "Err or a
-    // certified value" is asserted, so a later improvement does not break this test.
+    // The 45 natural sentinel-only matrices n = 2..6 of sentinel_families, through the
+    // three-stage chain: the peeling, then the Smith form of the Krylov relation matrix, then
+    // the Smith form of xI - A. Before the Krylov path, the Smith form of xI - A answered 39 of
+    // them. The first two stages answer the same 19 (those whose Krylov presentation has unit
+    // pivots; rustmath-matrix companion::tests checks the peeled ones against GF(2), GF(3),
+    // GF(5), GF(7) directly), and with the last stage 43 answer: those 39 and upperones4,
+    // lowerones4, lowerones5, lowerones6 (first two stages only). upperones5 and upperones6
+    // need a non-unit pivot in every stage and stay Err (they did before as well); for them
+    // only "Err or a certified value" is asserted, so a later improvement does not break this
+    // test, and 43 is a lower bound.
     // Every value is proved by check_forms_sentinel's certificate in Z (C a block companion
     // matrix of a divisibility chain, A·T == T·C, det T = ±1: A is similar to C over Z, so
     // over Q and mod every p) and cross-checked with the bound GF(2), GF(3), GF(5), GF(7)
@@ -653,6 +659,68 @@ fn forms_sentinel_rcf_unimodular_t_with_non_unit_echelon_pivot() {
         ],
         &[sp(&[0, 0, 0, 0, 0, -1, 1])],
     );
+}
+
+#[test]
+fn forms_sentinel_peeling_answers_where_the_smith_paths_err() {
+    // A 4×4 sentinel-only matrix (computed in Z semantics) with a Krylov presentation of unit
+    // pivots, on which both Smith stages meet the pivot 2 ("No inverse exists: gcd(2, 0) = 2"),
+    // so all three functions returned Err before the peeling. The peeling answers, and
+    // check_forms_sentinel proves the answer in Z and checks it against the bound GF(2), GF(3),
+    // GF(5), GF(7) results.
+    // gp: A4 = [0,0,0,0; -1,1,0,0; 1,0,0,0; 0,-1,1,0]; matfrobenius(A4,1) = [x^4 - x^3]
+    //     (= charpoly(A4) = minpoly(A4)); lift(matfrobenius(A4*Mod(1,p),1)) ==
+    //     [x^4 + (p-1)*x^3] for p = 2, 3, 5, 7 (1 each)
+    check_forms_sentinel(
+        4,
+        &[0, 0, 0, 0, -1, 1, 0, 0, 1, 0, 0, 0, 0, -1, 1, 0],
+        &[sp(&[0, 0, 0, -1, 1])],
+    );
+}
+
+/// The start vectors `w_0, …, w_{n-1}` of the Krylov presentation of rustmath-matrix
+/// (`krylov.rs`, `start_vector`): `w_j[i] = 0` for `i < j`, `w_j[j] = 1`, and `±1` for `i > j`
+/// from a 64-bit LCG (MMIX constants, seed `0x5DEE_CE66D`, sign = top bit), as columns of W.
+fn start_basis_matrix(n: usize, p: i64) -> Matrix<PrimeField> {
+    let mut state: u64 = 0x5DEE_CE66D;
+    let mut w = vec![0i64; n * n];
+    for j in 0..n {
+        w[j * n + j] = 1;
+        for i in (j + 1)..n {
+            state = state
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            w[i * n + j] = if state >> 63 == 0 { 1 } else { -1 };
+        }
+    }
+    gm(n, n, &w, p)
+}
+
+#[test]
+fn forms_fixed_start_basis_worst_case_gf101() {
+    // The worst case of the fixed start basis over a bound GF(101): A = W·B·W⁻¹ with B upper
+    // triangular spins like B on the unit vectors, so the Krylov relation matrix is xI - B
+    // (r = n = 40). The Smith form of that R made rational_canonical_form take 10.4 s in debug
+    // at c79a582; the peeling needs O(n⁴) field operations here (measured: 1.8 s in debug for the whole
+    // test, the certificate checks included).
+    // gp: B = matrix(40,40,i,j, if(i==j, i, if(j>i, ((3*(i-1)+5*(j-1))%7)-3, 0)))*Mod(1,101);
+    //     matfrobenius(B,1) == [Mod(1,101)*prod(i=1,40,x-i)] (1)
+    let (n, p) = (40usize, 101i64);
+    let mut b = vec![0i64; n * n];
+    for i in 0..n {
+        b[i * n + i] = i as i64 + 1;
+        for j in (i + 1)..n {
+            b[i * n + j] = ((3 * i + 5 * j) % 7) as i64 - 3;
+        }
+    }
+    let w = start_basis_matrix(n, p);
+    let winv = w.inverse().unwrap().expect("W is unimodular");
+    let a = w.mul(&gm(n, n, &b, p)).unwrap().mul(&winv).unwrap();
+    let f = (1..=40).fold(gp(&[1], p), |acc, i| acc * gp(&[-i, 1], p));
+    let start = std::time::Instant::now();
+    check_forms(&a, &[f], p);
+    let elapsed = start.elapsed();
+    assert!(elapsed.as_secs() < 30, "took {elapsed:?}");
 }
 
 #[test]

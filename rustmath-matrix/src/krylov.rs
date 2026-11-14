@@ -17,21 +17,26 @@
 //!   `dim_F F[x]^r / im R = deg det R = n`. So the invariant factors of `A` are the non-constant
 //!   diagonal entries of the Smith form of `R` (presentation theorem: D. S. Dummit and
 //!   R. M. Foote, *Abstract Algebra*, 3rd ed., §12.1–12.2; N. Jacobson, *Basic Algebra I*, 2nd
-//!   ed., §3.8–3.10). `companion.rs` takes that Smith form without transforms for the
-//!   invariant factors, and with `P⁻¹` (up to a unit per column) for the rational form, whose
-//!   generators it computes from the reduction of the columns modulo `im R` and the Krylov
-//!   basis `u_0, …, u_{n-1}` kept in [`KrylovPresentation::basis`].
+//!   ed., §3.8–3.10). `companion.rs` uses the presentation in two ways. Its main path
+//!   (`frobenius.rs`) needs no Smith form: it peels maximal vectors off the generators `w_{s_j}`
+//!   (cyclic decomposition), and for r = 1 the presentation already is the answer. Its first
+//!   fallback takes the Smith form of `R`, without transforms for the invariant factors, and
+//!   with `P⁻¹` (up to a unit per column) for the rational form, whose generators it computes
+//!   from the reduction of the columns modulo `im R` and the Krylov basis `u_0, …, u_{n-1}`
+//!   kept in [`KrylovPresentation::basis`].
 //! * Not implemented: A. Storjohann, *An O(n³) algorithm for the Frobenius normal form*, ISSAC
 //!   1998, 101–105 \[Sto98\] (zigzag form).
 //!
 //! Cost: spinning is `O(n³)` field operations (at most n matrix-vector products and n
 //! reductions), coordinates and self-checks `O(r·n²)`. Over Q every reduced-row entry is a
-//! quotient of minors of the Krylov matrix (Cramer), so its size is polynomial in n. **No bound
-//! is claimed for the Smith step on `R`.** Usually `r` is the number of invariant factors (1 for
-//! a random matrix), but the start basis `W` (columns `w_j`) is fixed and unimodular, and
-//! spinning `w_j` under `A` is spinning `e_j` under `B = W⁻¹·A·W`. So every
-//! `A = W·B·W⁻¹` with `B` upper triangular gives `r = n` and `R = xI - B`, and for it the Smith
-//! step is as slow as the classical reduction of the n×n `xI - A`.
+//! quotient of minors of the Krylov matrix (Cramer), so its size is polynomial in n. Usually
+//! `r` is the number of invariant factors (1 for a random matrix), but the start basis `W`
+//! (columns `w_j`) is fixed and unimodular, and spinning `w_j` under `A` is spinning `e_j` under
+//! `B = W⁻¹·A·W`. So every `A = W·B·W⁻¹` with `B` upper triangular gives `r = n` and
+//! `R = xI - B`. For such an `R` the Smith step is as slow as the classical reduction of the
+//! n×n `xI - A`, and no bound is claimed for it; it only runs in the fallback. The peeling of
+//! `frobenius.rs` handles r = n in `O(n⁴)` field operations (its bound is `O((r + 1)·n³)`, see
+//! there).
 //!
 //! Exactness. Every constant the algorithm creates (start-vector entries, the stored pivot
 //! entries, the monic leading coefficients of `R`, the accumulators of [`mat_vec`]) is built in
@@ -44,12 +49,14 @@
 //! invertible. The ±1 start vectors then create pivots (±2, ±3, …) that are not entries of `A`,
 //! for example for every cyclic shift or `J_n(1)` with n ≥ 3, and `Field::inverse` rejects
 //! them: [`krylov_presentation`] returns that `Err`, never a wrong value. The public functions
-//! in `companion.rs` then fall back to the classical Smith form of `xI - A`, whose constant
-//! pivots are entries of `A`. Whenever a computation in Z semantics succeeds (either path), every
-//! pivot it inverted is ±1, so every step is unimodular over Z (Krylov basis) and Z[x] (Smith
+//! in `companion.rs` then fall back (past the peeling and the Smith form of `R`, which both
+//! need this presentation) to the classical Smith form of `xI - A`, whose constant pivots are
+//! entries of `A`. Whenever a computation in Z semantics succeeds (any path), every pivot it
+//! inverted is ±1, so every step is unimodular over Z (Krylov basis, peeling) and Z[x] (Smith
 //! steps), and the change of basis `T` of the rational form has `det T = ±1` (its certificate
 //! falls back to the division-free determinant when its elimination meets a non-unit pivot):
-//! the result is the one over Z, and its reduction is the result over GF(p) for every p.
+//! the result is the one over Z, and its reduction is the result over GF(p) for every p
+//! (`frobenius.rs`, "Exactness", gives the argument for the peeling).
 
 use crate::polynomial_matrix::PolynomialMatrix;
 use crate::Matrix;
@@ -132,6 +139,35 @@ pub(crate) fn mat_vec<F: Field>(a: &Matrix<F>, v: &[F], z: &F) -> Vec<F> {
         .collect()
 }
 
+/// `p(A)·w`, by Horner's rule on vectors: `v ← A·v + c·w` for the coefficients `c` of `p` from
+/// the top down. Every entry starts from `z` (as in [`mat_vec`]), so the result is bound to
+/// `A`'s field. `deg p + 1` matrix-vector products.
+pub(crate) fn poly_mat_vec<F: Field>(
+    p: &UnivariatePolynomial<F>,
+    a: &Matrix<F>,
+    w: &[F],
+    z: &F,
+) -> Vec<F> {
+    let mut v = vec![z.clone(); a.rows()];
+    for c in p.coefficients().iter().rev() {
+        v = mat_vec(a, &v, z);
+        if !c.is_zero() {
+            for (vt, wt) in v.iter_mut().zip(w) {
+                *vt = vt.clone() + c.clone() * wt.clone();
+            }
+        }
+    }
+    v
+}
+
+/// The n start vectors `w_0, …, w_{n-1}` that [`krylov_presentation`] spins, for tests that
+/// build its worst case `W·B·W⁻¹` (`k` from [`field_constants`]).
+#[cfg(test)]
+pub(crate) fn start_basis<F: Field>(n: usize, k: &(F, F, F)) -> Vec<Vec<F>> {
+    let mut seq = SignSeq::new();
+    (0..n).map(|j| start_vector(n, j, k, &mut seq)).collect()
+}
+
 /// An incremental echelon basis of the span of the vectors `u_0, u_1, …` added so far.
 ///
 /// * Row `i` is `u_i` reduced against rows `0..i`, scaled so that `rows[i][piv[i]] = one`
@@ -146,7 +182,11 @@ pub(crate) fn mat_vec<F: Field>(a: &Matrix<F>, v: &[F], z: &F) -> Vec<F> {
 ///   scaling, so [`krylov_presentation`] also caps the number of stored rows at n.)
 /// * `lam[i]` and `alpha[i]` record `u_i = Σ_{s<i} lam[i][s]·rows[s] + alpha[i]·rows[i]`, from
 ///   which [`Echelon::coords`] recovers coordinates in the `u` basis.
-struct Echelon<F: Field> {
+/// * Rows only refer to earlier rows (`lam[i]` has length i, and pushing row i changes no row
+///   `< i`), so [`Echelon::truncate`] to k rows leaves an echelon basis of the span of
+///   `u_0, …, u_{k-1}`, and [`Echelon::reduce_prefix`] against the first m rows decides
+///   membership in the span of `u_0, …, u_{m-1}` while more rows are stored (`frobenius.rs`).
+pub(crate) struct Echelon<F: Field> {
     n: usize,
     z: F,
     one: F,
@@ -157,7 +197,7 @@ struct Echelon<F: Field> {
 }
 
 impl<F: Field> Echelon<F> {
-    fn new(n: usize, z: F, one: F) -> Self {
+    pub(crate) fn new(n: usize, z: F, one: F) -> Self {
         Echelon {
             n,
             z,
@@ -169,11 +209,26 @@ impl<F: Field> Echelon<F> {
         }
     }
 
-    /// `y` reduced against the stored rows, and the multipliers used (one per stored row).
-    fn reduce(&self, y: &[F]) -> (Vec<F>, Vec<F>) {
+    /// The number of stored rows.
+    pub(crate) fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    /// Drops the rows `k..` (nothing if `k >= len`). The remaining rows, pivots and records
+    /// are unchanged and consistent, because row i refers only to rows `< i`.
+    pub(crate) fn truncate(&mut self, k: usize) {
+        self.rows.truncate(k);
+        self.piv.truncate(k);
+        self.lam.truncate(k);
+        self.alpha.truncate(k);
+    }
+
+    /// `y` reduced against the first `m` stored rows (in insertion order), and the multipliers
+    /// used (one per row).
+    fn reduce_upto(&self, y: &[F], m: usize) -> (Vec<F>, Vec<F>) {
         let mut y = y.to_vec();
-        let mut lam = Vec::with_capacity(self.rows.len());
-        for (r, &p) in self.rows.iter().zip(&self.piv) {
+        let mut lam = Vec::with_capacity(m);
+        for (r, &p) in self.rows.iter().zip(&self.piv).take(m) {
             let c = y[p].clone();
             if !c.is_zero() {
                 for t in 0..self.n {
@@ -188,10 +243,22 @@ impl<F: Field> Echelon<F> {
         (y, lam)
     }
 
+    /// `y` reduced against the stored rows, and the multipliers used (one per stored row).
+    pub(crate) fn reduce(&self, y: &[F]) -> (Vec<F>, Vec<F>) {
+        self.reduce_upto(y, self.rows.len())
+    }
+
+    /// `y` reduced against the first `m` stored rows only (all rows if `m >= len`). The first m
+    /// rows are an echelon basis of the span of the first m stored vectors (later rows never
+    /// change them), so over an exact field the result is zero iff `y` lies in that span.
+    pub(crate) fn reduce_prefix(&self, y: &[F], m: usize) -> Vec<F> {
+        self.reduce_upto(y, m).0
+    }
+
     /// Stores the reduced vector `y` (of some `u`) with its multipliers `lam` from
     /// [`Echelon::reduce`]. `Ok(false)` (nothing stored) if `y` is zero; errors from
     /// `Field::inverse` of the pivot propagate.
-    fn push(&mut self, y: Vec<F>, lam: Vec<F>) -> Result<bool> {
+    pub(crate) fn push(&mut self, y: Vec<F>, lam: Vec<F>) -> Result<bool> {
         let Some(p) = y.iter().position(|x| !x.is_zero()) else {
             return Ok(false);
         };
@@ -208,7 +275,7 @@ impl<F: Field> Echelon<F> {
 
     /// The coordinates `c` with `y = Σ_s c_s·u_s`, for a `y` that reduced to zero with
     /// multipliers `lam` (so `y = Σ_i lam_i·rows[i]`), by back substitution from the top row.
-    fn coords(&self, lam: &[F]) -> Result<Vec<F>> {
+    pub(crate) fn coords(&self, lam: &[F]) -> Result<Vec<F>> {
         let m = lam.len();
         let mut beta = lam.to_vec();
         let mut c = vec![self.z.clone(); m];
@@ -531,6 +598,52 @@ mod tests {
             crate::companion::invariant_factors(&a).unwrap(),
             vec![px(&[720, -1764, 1624, -735, 175, -21, 1])]
         );
+    }
+
+    #[test]
+    fn echelon_truncate_and_prefix() {
+        // Four vectors u0..u3 in Q^4, pushed in order; then reduce_prefix decides membership
+        // in span(u0) and span(u0, u1) while all four rows are stored, truncate(2) keeps an
+        // echelon basis of span(u0, u1), and coords still recovers coordinates.
+        let v = |c: &[i64]| {
+            c.iter()
+                .map(|&x| Rational::from_integer(x))
+                .collect::<Vec<_>>()
+        };
+        let us = [
+            v(&[2, 1, 0, 3]),
+            v(&[0, 1, 1, 1]),
+            v(&[1, 0, 2, 0]),
+            v(&[0, 0, 1, 5]),
+        ];
+        let (z, one, _) = field_constants::<Rational>(std::iter::empty());
+        let mut e = Echelon::new(4, z.clone(), one);
+        for u in &us {
+            let (y, lam) = e.reduce(u);
+            assert!(e.push(y, lam).unwrap());
+        }
+        assert_eq!(e.len(), 4);
+        let is_zero = |y: Vec<Rational>| y.iter().all(|x| x.is_zero());
+        // 3·u0 is in span(u0); u0 + 2·u1 = (2, 3, 2, 5) is in span(u0, u1) but not span(u0).
+        let w = v(&[2, 3, 2, 5]);
+        assert!(is_zero(e.reduce_prefix(&v(&[6, 3, 0, 9]), 1)));
+        assert!(!is_zero(e.reduce_prefix(&w, 1)));
+        assert!(is_zero(e.reduce_prefix(&w, 2)));
+        // u2 lies in the full span but not in span(u0, u1).
+        assert!(!is_zero(e.reduce_prefix(&us[2], 2)));
+        assert!(is_zero(e.reduce_prefix(&us[2], 4)));
+        e.truncate(2);
+        assert_eq!(e.len(), 2);
+        let (y, lam) = e.reduce(&w);
+        assert!(is_zero(y));
+        assert_eq!(e.coords(&lam).unwrap(), v(&[1, 2]));
+        assert!(!is_zero(e.reduce(&us[2]).0));
+        // Pushing after a truncation extends the basis again.
+        let (y, lam) = e.reduce(&us[3]);
+        assert!(e.push(y, lam).unwrap());
+        let (y, lam) = e.reduce(&v(&[2, 3, 3, 10]));
+        assert!(is_zero(y));
+        assert_eq!(e.coords(&lam).unwrap(), v(&[1, 2, 1]));
     }
 
     #[test]

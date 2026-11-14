@@ -10,6 +10,7 @@ pub mod companion;
 pub mod decomposition;
 pub mod eigenvalues;
 pub mod eigenvalues_approx;
+pub(crate) mod frobenius;
 pub mod inner_product;
 pub mod integer_forms;
 pub mod integer_relation;
