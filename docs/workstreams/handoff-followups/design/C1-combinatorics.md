@@ -1,7 +1,8 @@
 # Design C1-combinatorics (rustmath-combinatorics)
 
-Unit C1 of the HANDOFF "Open follow-ups" (`docs/HANDOFF.md:296-305` at `9c24389`; HEAD `c79a582`
-has the same code). Items: S2, S3, S4, S10 (library part), and the list of REPL limits for unit
+Unit C1 of the HANDOFF "Open follow-ups" (`docs/HANDOFF.md:296-305` at `9c24389`, `:335-342` at
+HEAD `dc367a2`). Revisions 1 and 2 were written against `c79a582`, revision 3 against `dc367a2`;
+the crate's code is the same at both except one line (Revision 3, last rows). Items: S2, S3, S4, S10 (library part), and the list of REPL limits for unit
 J1b. Spec: MAGMA Handbook ch. 144 §144.2 (digest
 `rustmath-lava/docs/Chapter_144_Enumerative_Combinatorics.md:34-53`), ch. 145 §145.2
 `NumberOfPartitions` (`Chapter_145_Partitions_Words_and_Young_Tableaux.md:55`) and §145.4.9
@@ -31,15 +32,39 @@ Experiments (all under
 | `rev1/fix.rs` | revision 1: prototypes of `checked_pow_usize`, `binomial_usize_checked`, `number_of_standard_tableaux` (Frobenius formula and the two-branch version), the band-sized rolling rows, the digit conversion, the HRR domain probe; `fix check` runs every comparison |
 | `rev1/syt.rs`, `rev1/shadow.rs` | revision 1: `standard_tableaux(p).len()` against `dimension()` for n <= 9; the method resolution of `count` |
 | `rev1/rev1.gp` -> `rev1/rev1.txt`, `rev1/maxf.gp` -> `rev1/maxf.txt` | revision 1: gp reference values of §1.6, and the largest f^lambda for each n in 20..=36 |
-
 | `rev2/rc.sh` | revision 2: release build against the HEAD release rlib (same as `rev1/rc.sh`) |
 | `rev2/strip.py`, `rev2/funcs.py`, `rev2/flag.py`, `rev2/flag2.py`, `rev2/flag3.py`, `rev2/show.py` | revision 2: the widened sweep. `strip.py` writes the 35576 non-test, non-comment lines to `nontest.txt`; `funcs.py` extracts the 2409 non-test function bodies to `funcs.json`; `flag.py` lists the 76 functions that return a machine word and use `*`, `*=`, `<<`, `pow`, `product` or saturating/wrapping arithmetic; `flag2.py` lists the 37 counting or ranking functions that return a machine word and use only `+`; `flag3.py` lists the 142 other functions that return a machine word and add |
 | `rev2/sweep6.rs` -> `rev2/sweep6.txt`; `rev2/misc6.rs`, `shr.rs`, `qmult.rs`, `qm2.rs`, `vpart.rs`, `vpart2.rs`, `repl_num.rs`, `size_inv.rs`, `valrange.rs`, `ck.rs`, `superp.rs`, `dyck.rs`, `mobius.rs`, `tile.rs`, `l1.rs`, `sc.rs`, `wreath.rs` | revision 2: HEAD reproductions of §1.6 items 24-36 and of the new §1.8 entries (run under `ulimit -v 4000000` and `timeout`); outputs in `rev2/sweep6.txt` and `rev2/outputs.txt` |
 | `rev2/fix2.rs` | revision 2: prototypes (checked `Combination` rank/unrank against brute force for n <= 12, `subset_mask_count`, checked lcm, the vector-partition count without the cap against a HEAD copy on 154 vectors, the full mask); `bin_fix2` passes in 0.2 s |
 | `rev2/rev2.gp` -> `rev2/rev2.txt`, `rev2/rev2.gp.extra` -> `rev2/rev2_extra.txt` | revision 2: gp reference values of §1.6 items 24-36 |
+| `rev3/rd.sh` | revision 3: unoptimised build against the debug rlib of rustmath-combinatorics that `cargo test` built at HEAD `dc367a2` |
+| `rev3/head3.rs` -> `rev3/head3.txt` | revision 3: HEAD reproductions of review 3 B1 (`next_binary`, `prev_binary` at n = 64 and 65), m3 (`TupleIterator::size_hint`) and m5 (the empty partition) |
+| `rev3/nb3.rs` -> `rev3/nb3.txt` | revision 3: prototype of `next_binary` / `prev_binary` on the sorted element list, checked against bits ± 1 for every subset of n <= 10 and against HEAD on 1.26 million subsets of n <= 63 |
+| `rev3/syt3.rs` -> `rev3/syt3.txt` | revision 3: the two-branch f^lambda of §1.6 item 14 (with the empty-partition return) against HEAD's `hook_length_dimension` (n <= 30), `dimension` and `standard_tableaux` (n <= 12) |
+| `rev3/dyckloop.rs` -> `dyckloop.txt`; `rev3/binom3.rs` -> `binom3.txt`; `rev3/tl.gp` -> `tl.txt`; `rev3/baseline_head.txt` | revision 3: `partition_to_dyck_path` at HEAD (§1.8); the debug cost of I3's landed binomial on the largest fixture rows; the Temperley-Lieb Catalan loop (review 3 m8); `cargo test -p rustmath-combinatorics` at HEAD |
 
 Conventions: "gp" is PARI/GP 2.15 (`gp -q`), "GAP" is GAP 4.12. All timings are release builds
 (`rustc -O`, the HEAD release rlibs) on this machine unless marked debug. M = 2^127 - 1.
+
+## Revision 3 (after review 3)
+
+Review: `C1-combinatorics.review3.md`. All experiments of this revision are in
+`C1-combinatorics/rev3/`. They build against the debug rlib of HEAD `dc367a2` (`rd.sh`).
+
+| review issue | what changed |
+|---|---|
+| B1 (blocker): item 28 fixed `next_binary` only at n = 64. For n > 64, `next_binary` and its twin `prev_binary` start with `self.to_bitvector()?`, which is None for every subset, so they report "full set" and "empty set" for every subset | Agreed. Reproduced at `dc367a2` (`rev3/head3.txt`): for n = 65, `next_binary` of the empty subset, `prev_binary` of {0}, `next_binary` of {0, ..., 63} and `prev_binary` of {64} all give None. Item 28 now computes both on the sorted element list, with no machine word. `next_binary` drops the leading run 0, 1, ..., i-1 and adds i, the smallest non-element (None when i = n). `prev_binary` removes the smallest element i and adds 0, ..., i-1 (None for the empty set). Both are O(n) and right for every n. The n = 64 full-mask expression of revision 2 is gone. Prototype `rev3/nb3.rs`: equal to bits ± 1 for all 2047 subsets of n <= 10, equal to HEAD on 1.26 million subsets of n = 1..=63 (where HEAD is right), and right on every row of the review. New test `subset_binary_successors_for_any_n` (§6.5); `subset_binary_order_at_the_word_size` keeps its rows and no longer needs 64-bit. §5 and §8.1 step 10 name `prev_binary`. The review's pattern, `?` on a machine-word conversion, is now P11 of §1.6; its one other hit at HEAD, `gelfand_tsetlin.rs:219`, is a guarded validity check (§1.7). |
+| m1: `hook_length_dimension` (`young_representations.rs:52`) already computes f^lambda | `hook_length_dimension` becomes a call of `number_of_standard_tableaux` (§1.6 item 14, last paragraph). Its doc names MAGMA `NumberOfStandardTableaux`. New test `hook_length_dimension_is_number_of_standard_tableaux` (§6.5, n <= 12). `rev3/syt3.rs`: the two-branch function equals HEAD's `hook_length_dimension` on all 28629 partitions of n <= 30, and HEAD's `dimension` and the enumeration on the 272 partitions of n <= 12. §8.1 steps 9 and 12 name both functions. |
+| m2: the digit conversion needs `num-bigint` | Plan step 1 and §2.2 add `num-bigint = { workspace = true }`. `Integer` has no byte constructor, rustmath-integers does not re-export `BigInt`, and the one rug-to-Integer converter in the graph (`rustmath-rationals/src/continued_fraction.rs:156`) is private and goes through a decimal string. |
+| m3: `TupleIterator::size_hint` can report a lower bound above the remaining count | Took the second option: `(0, None)` when n^k does not fit (item 11). 0 is always a valid lower bound, and `size_hint` keeps its cost and never panics. Test (§6.5): (2, 64) gives (0, None) at the start and after two `next()` calls; (2, 63) after two calls gives (2^63 - 2, Some(2^63 - 2)), as at HEAD. HEAD: a debug build panics in `Tuple::rank` ("attempt to multiply with overflow", `tuple.rs:71`), and a release build gives an upper bound below the count. |
+| m4: `count_non_decreasing_parking_functions(1 << 40)` aborts at HEAD | It is now a named test, `non_decreasing_parking_count_refuses_huge_n`. §6.5 (end) and §8.2 give the HEAD check in three steps: build the binary, run it once with `--skip` for the three tests that exhaust memory or time at HEAD, then run each of the three alone under `ulimit -v 4000000` and `timeout 60`. An abort then ends only its own run. |
+| m5: the empty partition | Item 14 returns 1 for the empty partition first. r(r-1)/2 and l_1 need r >= 1, and r - 1 underflows for r = 0. `standard_tableaux_counts` gains the rows: `number_of_standard_tableaux`, `Partition::dimension` and `hook_length_dimension` of the empty partition are 1 (all three are 1 at HEAD, `head3.txt`). |
+| m6: the other direct dependents | §8.2 adds `cargo test -p rustmath-algebras -p rustmath-liealgebras -p rustmath-crystals -p rustmath-topology --no-fail-fast`. rustmath-interfaces also declares the dependency, but none of its files names the crate (grep), so `cargo check --workspace --tests` covers it. §0 lists all nine direct dependents. |
+| m7: doc fixes | Plan step 5 moves "Pochhammer symbol" from `falling_factorial` (`lib.rs:477`) to `rising_factorial`. Plan step 11: each new test file starts with a header that cites its MAGMA chapters (and Johansson 2012 for `ch145_number_of_partitions.rs`). |
+| m8: the wrapping `catalan_number` of rustmath-algebras | Reported in §1.8 next to `gap_parser.rs`, and added to the HANDOFF list of §8.1 step 12. gp (`rev3/tl.gp`): the wrapping loop gives 3793109252770211 for n = 33, and C_33 = 212336130412243110. |
+| Re-check against HEAD `dc367a2` | The crate's sources differ from `c79a582` in one line (`symmetric_group_representations.rs:598`, I3's `i64::try_from`), so every crate line cited here stands. (Item 28 cited the two subset successors one line too early since revision 2; they are at `subset.rs:303-309` and `:314-320`.) The baseline is unchanged: 1485 unit tests pass (7 ignored), 187 doctests (11 ignored); `rev3/baseline_head.txt`. Changed outside the crate, and updated in the body: I3 has landed, so `SageInteger::binomial` is Goetgheluck's algorithm (`rustmath-integers/src/binomial.rs:76`) with the refusal message of §5 (`sage_wrapper.rs:447`); the largest binomial rows of the counting fixture take 0.16 s in a debug build (`rev3/binom3.txt`); the risk "Order with I3" of §8.3 is closed. `Integer::lcm` is at `integer.rs:128`. The `Ring` docs on the static `one()` are at `traits.rs:99-101` and `:205-213`: after F1 and R1 it is an unbound integer constant for the parent-carrying types, and it may still panic for other types, so the `one` argument of §4.2 stays. The PROJECT_TRACKER rows are 11 lines lower (`:1312` is now `:1323`). The C1 items of HANDOFF are at `docs/HANDOFF.md:335-342`. The REPL arms are 12 lines lower and `repl_limits` 28 lines lower (each cited line checked against the `c79a582` text). |
+| Found while re-checking | `cargo clippy -p rustmath-combinatorics` exits 101 at HEAD on five deny-level lints in code that C1 does not change: four `inherent_to_string_shadow_display` (`binary_words.rs:317`, `debruijn.rs:100`, `super_tableaux.rs:297`, `word.rs:252`) and one `while_immutable_condition` (`path_tableaux.rs:446`). §8.2 now states the clippy acceptance as "no lint on a changed line". The last lint is a real defect: `partition_to_dyck_path` never returns for the partition (2), and returns a path with 2 north and 1 east steps for (1, 1) (`rev3/dyckloop.rs`). It is not an integer-width defect, so §1.8 reports it. |
+| Trackers in this round | The implementer does not edit `PROJECT_TRACKER.md`, `docs/` or `docs/magma/` in this round. §8.1 step 12 is now the list that the implementation report hands to the orchestrator, and `python3 tools/magma_tracker/build.py` left the implementer's acceptance (§8.2). |
 
 ## Revision 2 (after review 2)
 
@@ -75,7 +100,7 @@ Review: `C1-combinatorics.review1.md`. All experiments of this revision are in
 
 | item | verdict |
 |---|---|
-| S2 u32 overflow (lib.rs:430 catalan, :498 rising, :410 multinomial, :749 schroder, partitions.rs:1261) | fix all five; also every integer-width defect of the same class that the sweep of the crate with the ten patterns of §1.6 found in a public function (§1.6 items 1-35: 28 public functions in 13 files in revision 1, and 42 more in 20 files in revision 2; among them `Partition::dimension`, which is wrong for most partitions of n >= 21, with a new exact `number_of_standard_tableaux`, and `Permutation::order`, with a new `order_integer`). §1.7 classifies every remaining hit of those patterns under eight stated rules; it does not claim more than that |
+| S2 u32 overflow (lib.rs:430 catalan, :498 rising, :410 multinomial, :749 schroder, partitions.rs:1261) | fix all five; also every integer-width defect of the same class that the sweep of the crate with the patterns P1-P11 of §1.6 (P11 added in revision 3) found in a public function (§1.6 items 1-36: 28 public functions in 13 files in revision 1, 42 more in 20 files in revision 2, and in revision 3 `Subset::prev_binary` (item 28) and `hook_length_dimension` (item 14); among them `Partition::dimension`, which is wrong for most partitions of n >= 21, with a new exact `number_of_standard_tableaux`, and `Permutation::order`, with a new `order_integer`). §1.7 classifies every remaining hit of those patterns under eight stated rules; it does not claim more than that |
 | S3 Integer-valued p(n) | fix: new `number_of_partitions(n: u64) -> Integer` (Euler's recurrence for n <= 1000, certified Hardy-Ramanujan-Rademacher above, documented panic above n = 10^16); p(10^9) in 0.94 s |
 | S4 faster callees | fix: Fibonacci doubling, in-place Bell triangle, rolling Stirling and Eulerian rows in a band-sized buffer, three-term Motzkin recurrence, rolling Schroder, derangements by binary splitting, product-tree factorials, binomial and catalan through `SageInteger::binomial` (I3), multinomial as a product of binomials. 100x to 4000x at the current REPL limits |
 | S10 (library) falling/rising factorial take u32 n only | fix: `falling_factorial_integer` / `rising_factorial_integer` (any Integer x) and `falling_factorial_in` / `rising_factorial_in` (any ring element, Sage semantics); the u32 functions stay as wrappers |
@@ -83,9 +108,9 @@ Review: `C1-combinatorics.review1.md`. All experiments of this revision are in
 
 Nothing is declared out of scope. Not changed, with reasons (§1.7): casts whose value is the size of
 an object already in memory, or that a loop reaches only after 2^32 steps of big-integer work, and
-casts inside modules that PROJECT_TRACKER already flags as broken (`ranking.rs`:1273,
-`hall_polynomial.rs`:1264, `similarity_class_type.rs`:1276, `ncsym.rs`:1270,
-`symmetric_group_representations.rs` `verify_orthogonality`:1257); those casts belong to the
+casts inside modules that PROJECT_TRACKER already flags as broken (`ranking.rs`:1284,
+`hall_polynomial.rs`:1275, `similarity_class_type.rs`:1287, `ncsym.rs`:1281,
+`symmetric_group_representations.rs` `verify_orthogonality`:1268; tracker lines at `dc367a2`); those casts belong to the
 modules' rewrites. Revision 2 names these rules (R1-R8, §1.7) and adds two kinds of
 integer-width defect that are reported, not fixed: the size invariant of partition-like types
 (R5), which no constructor checks, and signed machine-word values whose type is part of an API
@@ -106,7 +131,12 @@ about `Subsets`). Ch. 145 has H145E1 (partitions of n and the classes of Sym(n))
 ## 0. Baseline
 
 `cargo test -p rustmath-combinatorics --no-fail-fast` at HEAD: 1485 unit tests passed, 7 ignored;
-187 doctests passed, 11 ignored. The crate has no `tests/` directory yet.
+187 doctests passed, 11 ignored. The same at `dc367a2` (revision 3, `rev3/baseline_head.txt`). The
+crate has no `tests/` directory yet.
+
+Direct dependents (a `rustmath-combinatorics` line in their Cargo.toml; revision 3): rustmath-algebras,
+-crystals, -groups, -interfaces, -jupyter, -liealgebras, -quantumgroups, -symmetricfunctions and
+-topology. No file of rustmath-interfaces or rustmath-topology names the crate.
 
 Callers of the affected functions (grep of the whole workspace, `--include=*.rs`, excluding
 `target`):
@@ -146,6 +176,9 @@ Callers of the affected functions (grep of the whole workspace, `--include=*.rs`
   `all_subwords`; the Grossman-Larson coproduct (`grossman_larson.rs:433`) calls `admissible_cuts`.
   The Dyck-word statistics of item 36 have no caller outside `dyck_word.rs`. Their values change
   only where HEAD was wrong.
+- Revision 3 (grep at `dc367a2`): `Subset::next_binary` and `prev_binary` have no caller outside
+  `subset.rs` (only its test `:904`). `hook_length_dimension` has no caller outside the crate, and
+  inside it only its test (`young_representations.rs:286`) and the re-export (`lib.rs:362`).
 
 ---
 
@@ -271,6 +304,12 @@ start at the first `#[cfg(test)]` followed by `mod`, and no file has an item aft
 - P10 (revision 2): private helpers by name (`fn .*(binomial|factorial|catalan|choose|pow|power|
   multinomial|count_|num_|number_)`) that return a machine word, and every `fn rank`, `fn unrank`,
   `fn position`.
+- P11 (revision 3, review 3 B1): every `?` on a machine-word conversion or checked operation,
+  `(checked_*(..)|to_usize()|to_u64()|try_from(..)|try_into()|to_bitvector())?`. A None from such a
+  conversion can be returned as a value with another meaning, as in `next_binary`. Review 3 ran
+  the grep over `rev2/nontest.txt` and found three lines: `subset.rs:304`, `:315` (item 28) and
+  `tuple.rs:87` (item 12). A grep of the HEAD sources that also matches `.ok()?` after a
+  conversion finds one more, `gelfand_tsetlin.rs:219` (in §1.7).
 
 Every hit is either an item below or a row of §1.7. Arithmetic that none of these patterns matches
 (for example a plain `a * b` in a function that returns `Integer` or `bool`, outside P9) is not
@@ -373,13 +412,18 @@ values from `gp/siblings.gp` and `rev1/rev1.gp`):
     (0, 2^32) -> 1 (0^0 after the truncation; the iterator yields nothing). `size_hint` then reports
     a wrong exact size. Fix: private `fn checked_total(&self) -> Option<usize>` (1 for k = 0, else
     `checked_pow_usize(n, k)`); `count` returns it or panics with "TupleIterator::count: n^k
-    exceeds usize::MAX" (documented); `size_hint` returns `(usize::MAX, None)` on None and never
-    panics. The doc of `count` says: `it.count()` on a value resolves to `Iterator::count`, which
+    exceeds usize::MAX" (documented); `size_hint` returns `(0, None)` on None and never panics
+    (revision 3, review 3 m3). Revision 2 returned `(usize::MAX, None)`, which breaks the
+    `Iterator::size_hint` contract: for n^k = 2^64, after two `next()` calls only usize::MAX - 1
+    tuples remain, below that lower bound. 0 is a valid lower bound in every state. When n^k fits,
+    `size_hint` keeps HEAD's exact `(remaining, Some(remaining))` with `remaining = n^k -
+    rank(current)`; `rank(current) < n^k <= usize::MAX`, so the checked `rank` of item 12 cannot
+    panic there. The doc of `count` says: `it.count()` on a value resolves to `Iterator::count`, which
     enumerates every tuple; write `TupleIterator::count(&it)` or `(&it).count()` for this closed
     form (`rev1/shadow.rs` shows the resolution on a toy type: by value 3, by reference 1000). The
     existing test `tuple.rs:504` calls `Iterator::count` and stays; the new tests call the inherent
     method explicitly. `TupleIterator` implements `ExactSizeIterator` (`tuple.rs:335`), so with the
-    `(usize::MAX, None)` hint `len()` fails std's `assert_eq!(upper, Some(lower))`. The impl stays
+    `(0, None)` hint `len()` fails std's `assert_eq!(upper, Some(lower))`. The impl stays
     (no caller of `len()` in the workspace; `CartesianProduct` does the same,
     `enumeration.rs:917-929`), and the type's doc says: "`len()` panics when n^k > usize::MAX".
 12. `tuple.rs:63-75 Tuple::rank(&self) -> usize`: `rank += indices[i] * power; power *= n` in usize;
@@ -396,7 +440,7 @@ values from `gp/siblings.gp` and `rev1/rev1.gp`):
     (at most 2^64), a u128 product with `checked_mul`, then `usize::try_from`; panic
     "count_integer_vectors_in_box: the count exceeds usize::MAX". ([i64::MIN + 1], [i64::MAX]) =
     2^64 - 1 = usize::MAX on 64-bit (HEAD gets it right only because it wraps twice).
-14. `partitions.rs:103-126 Partition::dimension(&self) -> usize` (PROJECT_TRACKER.md:1312 rates it
+14. `partitions.rs:103-126 Partition::dimension(&self) -> usize` (PROJECT_TRACKER.md:1323 rates it
     🟢): n! and the hook product in usize. 21! > 2^64, so most partitions of n >= 21 give a wrong
     value (release) or panic (debug). HEAD (`rev1/sweep.rs`): [11, 10] -> 16335 (gp 58786),
     [20, 1] -> 5 (gp 20), [5, 5, 5, 5, 5] -> 317 (gp 701149020), [8, 7, 6, 5, 4, 3, 2, 1] -> 2 (gp
@@ -415,7 +459,10 @@ values from `gp/siblings.gp` and `rev1/rev1.gp`):
     pub fn number_of_standard_tableaux(p: &Partition) -> Integer
     ```
 
-    Algorithm, two branches on r = the number of rows after the conjugation below. f^lambda is
+    The empty partition gives 1 at once (revision 3, review 3 m5): there is one tableau of shape
+    (), and MAGMA, HEAD's `dimension` and HEAD's `hook_length_dimension` give 1. The steps below
+    need r >= 1: r(r-1)/2 and l_1 = lambda_1 + r - 1 underflow in unsigned arithmetic for r = 0.
+    Otherwise, two branches on r = the number of rows after the conjugation below. f^lambda is
     invariant under conjugation, so lambda is first replaced by its conjugate when it has more rows
     than columns (r <= c afterwards).
     - If r(r-1)/2 <= n: Frobenius's formula ([Ful97] §4.3, where the hook length formula of Frame,
@@ -448,8 +495,17 @@ values from `gp/siblings.gp` and `rev1/rev1.gp`):
     `.expect("Partition::dimension: f^lambda exceeds usize::MAX; use number_of_standard_tableaux")`,
     documented. Callers: `symmetric_group_representations.rs:35` (`IrreducibleRepresentation::new`
     now panics for an f^lambda above usize::MAX, n >= 36, instead of caching a wrong dimension; the
-    module is 🔴, PROJECT_TRACKER.md:1255/1257), `specht_module.rs:673` (test, n <= 5) and
+    module is 🔴, PROJECT_TRACKER.md:1266/1268), `specht_module.rs:673` (test, n <= 5) and
     `rustmath-symmetricfunctions/src/classical_bases.rs:806` (test, n <= 6): values unchanged.
+
+    Revision 3 (review 3 m1). `young_representations.rs:52 hook_length_dimension(partition) ->
+    Integer` (re-exported at `lib.rs:362`) already computes f^lambda exactly, as n!/prod(hooks) in
+    `Integer`. It becomes a call of `number_of_standard_tableaux(partition)`, so the crate has one
+    f^lambda. The values are the same (`rev3/syt3.rs`: equal on all 28629 partitions of n <= 30),
+    and thin shapes get cheaper. Its doc names MAGMA `NumberOfStandardTableaux(P)` (ch. 145
+    §145.4.9) and says that it is the same function as `number_of_standard_tableaux`; the module
+    table (`young_representations.rs:13`) names the intrinsic too. Its test (`:286-296`) stays. It
+    has no caller outside the crate (grep).
 15. `group_action.rs:172-188 burnside_lemma(group, num_colors)` and `:339-343
     count_fixed_colorings(perm, num_colors)`: `Integer::from(num_colors as u32)`. HEAD
     burnside(C_1, 2^32 + 1) -> 1 (truth 4294967297); count_fixed_colorings(id_2, 2^32 + 2) -> 4 (gp
@@ -497,7 +553,7 @@ values from `gp/siblings.gp` and `rev1/rev1.gp`):
     `fn sunflower_bound_checked(k, r) -> Option<usize>` (`checked_mul`); `sunflower_bound` panics with
     "sunflower_bound: k!(r-1)^k exceeds usize::MAX" on None (documented); `exceeds_sunflower_bound`
     returns false on None (no family held in memory has more than usize::MAX sets). The r <= 1
-    convention (usize::MAX) is not an overflow and stays. PROJECT_TRACKER.md:1275 flags this module
+    convention (usize::MAX) is not an overflow and stays. PROJECT_TRACKER.md:1286 flags this module
     for `vc_dimension`, not for this bound.
 23. `enumeration.rs:1071-1088`, the private `binomial` of `InfiniteCartesianProduct` (via
     `count_partitions`, `:1058`): `saturating_mul` then `/ (i + 1)` gives wrong finite values. It
@@ -556,13 +612,34 @@ overflow" on most of them.
     set bit has i >= usize::BITS (documented; any number of leading zeros stays allowed: a 100-bit
     word with only bit 63 set gives 2^63, as at HEAD). `from_usize` sets bit i only for
     i < usize::BITS.
-28. `subset.rs:302-308 Subset::next_binary` and `:71-79 Subset::from_bitvector(bits, n)` (also
-    reached through `unrank_binary`, `:156`): `(1 << self.n) - 1` at n = 64 = usize::BITS
-    (`to_bitvector` accepts n <= 64), and `bits >> i` for i >= 64. HEAD: the empty subset of a
-    64-set gives None ("this is the full set"; truth {0}); the full subset of a 64-set gives
-    Some(empty set) (truth None); `from_bitvector(1, 65)` = {0, 64} (truth {0}). n = 63 is right at
-    HEAD. Fix: the full mask is `if n == 0 { 0 } else { usize::MAX >> (usize::BITS as usize - n) }`
-    (n <= usize::BITS there); `from_bitvector` reads bits `0..n.min(usize::BITS as usize)`.
+28. `subset.rs:303-309 Subset::next_binary`, `:314-320 Subset::prev_binary` and `:71-79
+    Subset::from_bitvector(bits, n)` (also reached through `unrank_binary`, `:156`). Both successor
+    functions start with `let bits = self.to_bitvector()?;`, and `to_bitvector` (`:115-125`) returns
+    None for every subset when n > usize::BITS. So for n >= 65, `next_binary` returns None for every
+    subset, which its doc defines as "this is the full set", and `prev_binary` returns None, "this
+    is the empty set". At n = 64, `next_binary` forms the full mask `(1 << self.n) - 1`, which wraps
+    in a release build (a debug build panics). `from_bitvector` shifts `bits >> i` for i >= 64.
+    HEAD (`rev2/sweep6.rs`, `rev3/head3.rs`): at n = 64 the empty subset gives `next_binary` None
+    (truth {0}) and the full subset gives Some(empty set) (truth None); at n = 65 the empty subset
+    gives `next_binary` None (truth {0}), {0} gives `prev_binary` None (truth the empty set),
+    {0, ..., 63} gives `next_binary` None (truth {64}) and {64} gives `prev_binary` None (truth
+    {0, ..., 63}); `from_bitvector(1, 65)` = {0, 64} (truth {0}). n <= 63 is right at HEAD.
+    Fix (revision 3, review 3 B1): both successors work on the sorted element list and use no
+    machine word, so they are right for every n.
+    - `next_binary`: let i be the length of the leading run 0, 1, ..., i-1 of the elements, that is,
+      the smallest index in 0..n that is not an element. If i = n, this is the full set: return
+      None. Otherwise return i followed by the elements after the run. This is binary increment:
+      the trailing ones become zeros and the first zero becomes one.
+    - `prev_binary`: if the subset is empty, return None. Otherwise let i be the smallest element,
+      and return 0, 1, ..., i-1 followed by the other elements. This is binary decrement.
+    Both results are sorted: after the run, the next element is at least i + 1, and every other
+    element is above the smallest one. Both cost O(n). The docs say "O(n); right for every n".
+    The full-mask expression of revision 2 is no longer needed. `from_bitvector` reads bits
+    `0..n.min(usize::BITS as usize)`, and `to_bitvector` keeps its Option. Prototype
+    (`rev3/nb3.rs`): equal to `from_bitvector(bits ± 1, n)` for all 2047 subsets of n <= 10, equal
+    to HEAD on 1.26 million subsets of n = 1..=63 and on their empty and full sets, and right on
+    every row above. Pattern P11 (revision 3) found only these two lines and `tuple.rs:87`
+    (item 12), so no other site of that pattern remains.
 29. `permutations.rs:122-135 Permutation::order`, with the private `lcm` (`:576-581`):
     `(a * b) / gcd(a, b)` in usize, so the product wraps even when the lcm fits. HEAD: cycles of
     the 15 primes up to 47 and one cycle of length 94 (422 points) give 26163907895633379 (gp
@@ -571,7 +648,7 @@ overflow" on most of them.
     above 2^64). Fix: `lcm(a, b) = (a / gcd(a, b)).checked_mul(b)` (exact: no intermediate exceeds the
     lcm), and `order` panics with "Permutation::order: the order exceeds usize::MAX; use
     order_integer" (documented). New `pub fn order_integer(&self) -> Integer`: the same fold with
-    `Integer::lcm` (`rustmath-integers/src/integer.rs:116`), MAGMA `Order(g)` for a permutation
+    `Integer::lcm` (`rustmath-integers/src/integer.rs:128`), MAGMA `Order(g)` for a permutation
     (ch. 58, digest `Chapter_58_Permutation_Groups.md:204`), which returns an integer.
 30. The 2^n mask loops. Each loop `for mask in 0..(1 << n)` lists all subsets of an n-element set.
     Where the literal `1` is untyped and the mask is only used in `mask & (1 << i)` or
@@ -588,7 +665,7 @@ overflow" on most of them.
     | `subword_complex.rs:343` | `subword_complex::SubwordComplex::new` (private `all_subsets` of each facet) | i32 | a facet of 31 or more positions: no faces from it | 2^(facet size) faces |
     | `set_system.rs:263` | `SetSystem::shadow` | i32 | one 31-set: 0 sets; 32-set: 1; 64-set: 1 | 2^31; 2^32; 2^64 |
     | `set_system.rs:296` | `SetSystem::shade` | i32 | the same over the complement of each set | |
-    | `set_system.rs:805` | private `is_shattered` (`vc_dimension`) | i32 | reached only with subsets of at most 20 elements (`vc_dimension` stops at 20, PROJECT_TRACKER.md:1275) | fixed with the others for uniformity |
+    | `set_system.rs:805` | private `is_shattered` (`vc_dimension`) | i32 | reached only with subsets of at most 20 elements (`vc_dimension` stops at 20, PROJECT_TRACKER.md:1286) | fixed with the others for uniformity |
     | `grossman_larson.rs:195` | `RootedTree::admissible_cuts` | i32 | a path of 32 vertices (31 edges): 0 cuts; 33 vertices: 1 | 32; 33 (the empty cut and each single edge; HEAD gives 5 for 5 vertices) |
     | `multiset_partition_into_sets_ordered.rs:386` | `OrderedMultisetPartitionIntoSets::finer` | i32 | one block of 32 elements: 0 | 2^32 - 2 splits |
     | `composition.rs:259`, `:294` | `signed_compositions`, `signed_compositions_k` | i32 | `signed_compositions_k(31, 31)`, `(32, 32)`, `(64, 64)`: 0 each | 1 each ([1; k]) |
@@ -689,7 +766,7 @@ overflow" on most of them.
 
 ### 1.7 Not changed, with reasons
 
-Every remaining non-test hit of the patterns P1-P10 (§1.6) falls under one of these rules.
+Every remaining non-test hit of the patterns P1-P11 (§1.6) falls under one of these rules.
 
 - R1 (memory). The value is the length or size of an object held in memory, an index into one,
   or a count bounded by such a size. A wrong value needs an object of at least 2^31 elements (for
@@ -726,18 +803,18 @@ Revision-1 rows (P1-P3), with the rule each one falls under in brackets where it
 | `ribbon_tableau.rs:250`, `:253` | the spin of a stored ribbon, at most its number of cells |
 | `designs.rs:601` `HadamardMatrix::sylvester(k)` | builds a 2^k x 2^k matrix; from k = 16 on memory runs out long before 2^k can wrap at k = 64 (a debug build panics at k = 64) |
 | `debruijn.rs:103` | a digit of a validated element x < k; a valid sequence over k >= 2^32 symbols has at least 2^32 entries |
-| `expnums.rs:136-654`, `species.rs:119-565` | loop indices n < degree while a Vec of `degree` Integers is filled (2^32 entries are 128 GB). Several of these functions are 🛑 (PROJECT_TRACKER.md:1260, 1261, 1269, 1277) |
-| `fully_packed_loop.rs:516-517`; `asm_count` (`alternating_sign_matrix.rs:220-229`, u32 `3*k+1` and `n+k`) | inside an O(n) loop of factorial products: the first step for n >= 2^31 already multiplies n! (more than 2^36 bits), so no truncated value is ever returned. FPL is 🛑 (:1263) |
+| `expnums.rs:136-654`, `species.rs:119-565` | loop indices n < degree while a Vec of `degree` Integers is filled (2^32 entries are 128 GB). Several of these functions are 🛑 (PROJECT_TRACKER.md:1271, 1272, 1280, 1288) |
+| `fully_packed_loop.rs:516-517`; `asm_count` (`alternating_sign_matrix.rs:220-229`, u32 `3*k+1` and `n+k`) | inside an O(n) loop of factorial products: the first step for n >= 2^31 already multiplies n! (more than 2^36 bits), so no truncated value is ever returned. FPL is 🛑 (:1274) |
 | `plane_partition.rs:400-515` | `j as u32` truncates only after O(n^2) big multiplications with n >= 1.4·10^9. `:371` belongs to `count_plane_partitions_in_box`, which is wrong for small inputs (§1.8) |
 | `q_analogue.rs:169`, `t_sequences.rs:159-505` | DP over an (n+1) x (k+1) table of polynomials; memory runs out first |
-| `symmetric_group_representations.rs:364-382` (`conjugacy_class_size`, 🟢 :1306) | the casts follow an n-step factorial loop (n >= 2^32 never finishes; parts are at most n) |
-| `symmetric_group_representations.rs:526-542` (`verify_orthogonality`, usize n!) | 🔴 (PROJECT_TRACKER.md:1257); stays with the Murnaghan-Nakayama rewrite |
-| `similarity_class_type.rs:154-466` | module 🛑 (:1276). `fq` and `order_of_general_linear_group` truncate only after 2^32 big multiplications. `centralizer_group_cardinality` (`:136-162`) truncates a part size >= 2^32 at once, but its formula is wrong even for small types (§1.8), so its casts go with the module's rewrite |
-| `hall_polynomial.rs:213-405` | module 🛑 (:1264); even the one-row case is wrong (§1.8) |
-| `ranking.rs:158-730` | module 🛑 (:1273) |
-| `ncsym.rs:258` (`matchings`, a usize product) | a placeholder ("return a simple bound"), 🛑 (:1270) |
+| `symmetric_group_representations.rs:364-382` (`conjugacy_class_size`, 🟢 :1317) | the casts follow an n-step factorial loop (n >= 2^32 never finishes; parts are at most n) |
+| `symmetric_group_representations.rs:526-542` (`verify_orthogonality`, usize n!) | 🔴 (PROJECT_TRACKER.md:1268); stays with the Murnaghan-Nakayama rewrite |
+| `similarity_class_type.rs:154-466` | module 🛑 (:1287). `fq` and `order_of_general_linear_group` truncate only after 2^32 big multiplications. `centralizer_group_cardinality` (`:136-162`) truncates a part size >= 2^32 at once, but its formula is wrong even for small types (§1.8), so its casts go with the module's rewrite |
+| `hall_polynomial.rs:213-405` | module 🛑 (:1275); even the one-row case is wrong (§1.8) |
+| `ranking.rs:158-730` | module 🛑 (:1284) |
+| `ncsym.rs:258` (`matchings`, a usize product) | a placeholder ("return a simple bound"), 🛑 (:1281) |
 | `hadamard.rs:270-272` | a u128 work estimate compared with a budget; saturation is conservative there (a saturated cost is refused), so it is correct |
-| `parking_functions.rs:333` (`ParkingFunction::count`, a twin of item 9) | the file is not compiled: lib.rs has no `mod parking_functions` (PROJECT_TRACKER.md:1293 calls it a parallel module). §1.8 asks HANDOFF to delete it or wire it in |
+| `parking_functions.rs:333` (`ParkingFunction::count`, a twin of item 9) | the file is not compiled: lib.rs has no `mod parking_functions` (PROJECT_TRACKER.md:1304 calls it a parallel module). §1.8 asks HANDOFF to delete it or wire it in |
 | `lib.rs:522-613`, `:749-751` | removed by the rewrites of §3.3 and §3.6 |
 | tests: `derangements.rs:323`, `path_tableaux.rs:621`, `plactic_monoid.rs:372`, `q_analogue.rs:410`, `set_partition.rs:564-565`, `six_vertex_model.rs:694-696`, `t_sequences.rs:656-782`, `tamari_lattice.rs:690`, `debruijn.rs:681` | test code with small sizes |
 
@@ -748,7 +825,7 @@ are R1 or R2; `fully_packed_loop.rs`, `asm_count`, `plane_partition.rs`,
 `verify_orthogonality`, `hall_polynomial.rs`, `ranking.rs`, `ncsym.rs` are R4; `hadamard.rs:270-272`
 is R8.
 
-Revision-2 rows (P4-P10). Sites that are items of §1.6 are not repeated.
+Revision-2 rows (P4-P10) and the revision-3 row (P11). Sites that are items of §1.6 are not repeated.
 
 | pattern | sites | rule and reason |
 |---|---|---|
@@ -757,7 +834,7 @@ Revision-2 rows (P4-P10). Sites that are items of §1.6 are not repeated.
 | P4 | `subset.rs:122`, `:457`, `:586` | R7: `to_bitvector` checks n <= usize::BITS (elements are < n), `all_subsets` n <= 20, `SubsetIterator` n <= 30 |
 | P4 | `hadamard.rs:272`, `:282`, `:285` | R8 and R7: a u128 cost with `n.min(63)`; the u32 mask runs only when n!·2^n <= 2·10^7, so n <= 9 |
 | P4 | `tiling.rs:176-227` (u32 `ColumnState` bits), `:246` (`1 << height`) | R1: the transfer matrix has 4^height entries, so memory runs out from height 16. At heights 32 and 64 `num_states * num_states` wraps and the first write panics with an index error at once (`rev2/tile.rs`: "the len is 0 but the index is 201855969"); no value is returned |
-| P4 | `ranking.rs:593`, `:609`, `:626` | R4 (🛑, PROJECT_TRACKER.md:1273) |
+| P4 | `ranking.rs:593`, `:609`, `:626` | R4 (🛑, PROJECT_TRACKER.md:1284) |
 | P4 | `parking_functions.rs:162`, `:244` | the file is not compiled (§1.8) |
 | P5 | `lib.rs:668`, `:686` | R8: `Integer::pow` with a u32 exponent |
 | P5 | every other hit | a revision-1 item (9, 11, 12, 16, 19, 21) or row (`designs.rs:601`, `expnums.rs`, `group_action.rs`, `ribbon_tableau.rs`, `similarity_class_type.rs`, `symmetric_group_representations.rs:377`), `ranking.rs:730` (R4), `parking_functions.rs:333` (not compiled) |
@@ -773,7 +850,7 @@ Revision-2 rows (P4-P10). Sites that are items of §1.6 are not repeated.
 | P8 | `alternating_sign_matrix.rs`, `constellation.rs:207-220`, `designs.rs:572`, `fully_commutative_elements.rs:110`, `gelfand_tsetlin.rs:271`, `parallelogram_polyomino.rs`, `partitions.rs:829-1139` (cell residues), `path_tableaux.rs:335-398`, `set_partition.rs:335`, `:380`, `skew_partition.rs:171-172`, `:914-915`, `tableaux.rs:203-204`, `tiling.rs:200-203`, `triangles_fhm.rs`, `young_representations.rs:120-121`, `sidon_sets.rs:321`, `:365` | R1: positions, contents and counts of stored objects (the greedy B_h run stores up to n values) |
 | P8 | `subword.rs:376`, `:406`, `subword_complex.rs:475`, `cyclic_sieving.rs:207` | R2: faces listed first (after item 30, a face of 60 or more positions needs 2^60 masks first); the cyclic sieving value is compared with a count of listed objects |
 | P8 | `hadamard.rs`, `integer_matrices.rs:179-331`, `young_representations.rs:56`, `:61`, `partition_shifting_algebras.rs:222`, `:474`, `:495`, `ch144_enumerative.rs:109`, `enumeration.rs:143` | R8: widening casts (u32 to i64, u64 to u128, usize to u64), casts after a non-negativity check, `trailing_zeros`, a u32 capacity; `integer_matrices.rs:318`, `:331` saturate a conservative bound |
-| P8 | `knutson_tao.rs:216`, `:299` (`as u8` labels), `symmetric_group_representations.rs:108-588`, `fully_packed_loop.rs`, `ranking.rs`, `similarity_class_type.rs`, `hall_polynomial.rs`, `ncsym.rs`, `expnums.rs`, `species.rs` | R4 (`knutson_tao.rs` is 🛑, PROJECT_TRACKER.md:1268) or revision-1 rows |
+| P8 | `knutson_tao.rs:216`, `:299` (`as u8` labels), `symmetric_group_representations.rs:108-588`, `fully_packed_loop.rs`, `ranking.rs`, `similarity_class_type.rs`, `hall_polynomial.rs`, `ncsym.rs`, `expnums.rs`, `species.rs` | R4 (`knutson_tao.rs` is 🛑, PROJECT_TRACKER.md:1279) or revision-1 rows |
 | P9 | `flag.py`: `alternating_sign_matrix::descending_diagonal_sums`, `dyck_word::peaks`/`valleys`/`returns`/`bounce_path` (indices), `debruijn_sequence`, `debruijn_prefer_one` (`vec![0; k * n]`: a wrapped size gives an index panic, never a value; the sequence has k^n entries), `perfect_matching::to_chord_diagram`, `permutations::descents`/`ascents`, `pipe_dream::num_elbows`, `regular_sequences::detect_periodicity`, `skew_partition::spin`, `subword::dimension`, `subword_complex::dimension`, `superpartitions::frobenius_coordinates`, `word::christoffel_word`/`sturmian_word` (a word of length p + q is built), `young_representations::adjacent_word` | R1 |
 | P9 | `flag.py`: `enumeration` `CartesianProduct::size_hint` | R8: the total is a checked product, and `produced` <= total, so its steps fit |
 | P9 | `flag.py`: `composition::weighted_sum` | R5 |
@@ -796,10 +873,11 @@ Revision-2 rows (P4-P10). Sites that are items of §1.6 are not repeated.
 | P10 | `fully_packed_loop::factorial_big` (`Integer`), `q_analogue::divide_q_factorial_polynomials`, `t_sequences::divide_t_factorial_polynomials` (polynomials) | R8: no machine-word count |
 | P10 | `fn rank` / `fn position`: `affine_permutations::rank`, `enumeration::position`, `fully_commutative_elements::rank`, `pipe_dream::rank`, `subword::rank` (a count of grid cells), `tamari::position_at` | R1; `cluster_complex::rank` R4 |
 | P4-P10 | `parking_functions.rs` | not compiled (§1.8) |
+| P11 (revision 3) | `gelfand_tsetlin.rs:219` (`usize::try_from(part(k, i) - part(k - 1, i)).ok()?` in `GelfandTsetlinPattern::to_tableau`) | R7: here the None is the function's own answer "not a valid pattern" (a negative difference breaks interlacing), and a non-negative i64 fits a 64-bit usize. On a 32-bit target a larger count is a tableau row of 2^32 entries (R1). The i64 difference of extreme entries is R6 |
 
 What remains known after this design is therefore: the R5 size invariant, the R6 signed values,
 and the R4 modules, each recorded in HANDOFF (§8.1 step 12) with its reproduction. Arithmetic that
-none of the patterns P1-P10 matches is not claimed either way. The HANDOFF line says exactly this,
+none of the patterns P1-P11 matches is not claimed either way. The HANDOFF line says exactly this,
 and it does not call the sweep complete.
 
 ### 1.8 Found by the sweep, reported and not fixed here
@@ -814,7 +892,7 @@ entry to HANDOFF as a new open item, each with this reproduction.
   evaluated with a truncating integer division of non-integral partial products. HEAD (2,2,2) ->
   15, (3,3,3) -> 874, (2,3,4) -> 393; gp
   `prod(i=1,a,prod(j=1,b,prod(k=1,c,(i+j+k-1)/(i+j+k-2))))` gives 20, 980, 490.
-  PROJECT_TRACKER.md:1272 flags only the q-series and the generator of this file.
+  PROJECT_TRACKER.md:1283 flags only the q-series and the generator of this file.
 - `group_action.rs:255-305 polya_enumeration`: a cycle of length L contributes w^L instead of L·w
   to the exponent (the keys add in `multiply_polynomials`, `:309-325`). HEAD, C_2 on two points
   with two colours of weight 1: {1: 1, 2: 2}; Polya's theorem, (p_1^2 + p_2)/2 with p_L = 2t^L,
@@ -822,7 +900,7 @@ entry to HANDOFF as a new open item, each with this reproduction.
 - `hall_polynomial.rs:117-133`, the one-part case, returns q^(k·m) for lambda = (k + m),
   mu = (k), nu = (m). HEAD g^(2)_((1),(1)) = x, but a cyclic group of order p^2 has exactly one
   subgroup of order p, so the value is 1 (the function's own definition, `:75-79`, counts such
-  subgroups). PROJECT_TRACKER.md:1264 calls the one-part cases real. In the same spirit, `similarity_class_type::centralizer_group_cardinality`
+  subgroups). PROJECT_TRACKER.md:1275 calls the one-part cases real. In the same spirit, `similarity_class_type::centralizer_group_cardinality`
   gives q^2 - 1 for one 2x2 Jordan block, whose centralizer {aI + bN : a != 0} has q^2 - q
   elements.
 - `parking_functions.rs` is not compiled (no `mod` in lib.rs) and duplicates `parking_function.rs`.
@@ -885,6 +963,22 @@ R6 of §1.7); the rest are not integer-width defects.
 - Outside this crate: `rustmath-interfaces/src/gap_parser.rs:108-118 Permutation::order` folds the
   same `a * b / gcd(a, b)` lcm (`:321-326`) as item 29, so it has the same defect.
 
+Revision 3 adds two more. Neither is an integer-width defect of this crate.
+
+- `path_tableaux.rs:417-450 partition_to_dyck_path`, found through the clippy deny lint
+  `while_immutable_condition` at `:446` (§8.2). When the path it builds has more east steps than
+  north steps, the loop `while total_east > total_north { steps.insert(0, Step::North); }` never
+  changes either count, so the function never returns and the vector grows until memory runs out.
+  HEAD (`rev3/dyckloop.rs`): the partition (2) did not return within 20 s under a 2 GB limit (exit
+  status 124). (1, 1) returns a path with 2 north steps and 1 east step, which is not a Dyck path.
+  (3, 2, 1) gives 3 and 3, and that is all its unit test (`:646`) checks.
+- Outside this crate (review 3 m8): `rustmath-algebras/src/temperley_lieb_algebra.rs:317
+  catalan_number(n: usize) -> usize` computes `result * (2n - i) / (i + 1)` in usize, the same
+  wrapping product as the private helpers that items 10 and 17 delete. `TemperleyLiebAlgebra::new`
+  (`:62`) only stores the order, so `TemperleyLiebAlgebra::new(33, delta).dimension()` reaches it at
+  once. A release build returns 3793109252770211, while C_33 = 212336130412243110 fits a usize (gp,
+  `rev3/tl.gp`: `binomial(66,33)/34`, and the wrapping loop simulated mod 2^64).
+
 ---
 
 ## 2. S3: an Integer-valued p(n)
@@ -895,7 +989,7 @@ R6 of §1.7); the rest are not integer-width defects.
 (grep `fn .*partition` finds no other count). It is usize-valued: wrong or panicking from n = 417
 (§1.1). Its doc says "For large n, more sophisticated methods like Hardy-Ramanujan or Rademacher
 formulas would be needed". MAGMA `NumberOfPartitions(n)` (ch. 145 §145.2, ch. 18 §18.8) returns an
-integer. The REPL bounds n by 416 for this reason (`repl.rs:10554-10556`).
+integer. The REPL bounds n by 416 for this reason (`repl.rs:10582-10584` at `dc367a2`).
 
 ### 2.2 API
 
@@ -935,7 +1029,12 @@ Dependency: add `rug = { version = "1.24", default-features = false, features = 
 "integer"] }` to `rustmath-combinatorics/Cargo.toml`, the same declaration as
 `rustmath-rationals/Cargo.toml:16` (Cargo.lock already has rug 1.30.0; the crate already depends
 on it through rustmath-rationals and rustmath-complex, so the build and the C libraries do not
-change). Why not an existing type: `rustmath_reals::RealMPFR` rounds to nearest only (none of its
+change). Revision 3 (review 3 m2): also add `num-bigint = { workspace = true }`, the declaration of
+`rustmath-rationals/Cargo.toml:14`. Step 6 of §2.4 builds the result with
+`Integer::new(BigInt::from_bytes_le(..))` (`rustmath-integers/src/integer.rs:70`). `Integer` has no
+byte constructor and rustmath-integers does not re-export `BigInt`, so the crate needs the direct
+dependency. num-bigint is already in the graph (through rustmath-integers), and the code uses it
+directly, so this is not a new wrapper. Why not an existing type: `rustmath_reals::RealMPFR` rounds to nearest only (none of its
 operations takes a rounding direction, `rustmath-reals/src/mpfr.rs`; `RoundingMode` in
 `rounding.rs` only rounds an f64 to an integer); `rustmath_rings::real_mpfi` cannot be used
 (rustmath-rings depends on rustmath-combinatorics through rustmath-numberfields and
@@ -1005,7 +1104,7 @@ Algorithm `partitions_hrr(n)` (n >= 2):
    If L == H, return L, converted to `Integer` through its digits: `let mut bytes = vec![0u8;
    z.significant_digits::<u8>()]; z.write_digits(&mut bytes, Order::Lsf);
    Integer::new(BigInt::from_bytes_le(sign, &bytes))` (L > 0 here; the sign is still taken from
-   `cmp0()`). This is the inverse of `rustmath-reals/src/mpfr.rs:368`. rug's `to_digits` would be
+   `cmp0()`; `BigInt` and `Sign` come from the direct num-bigint dependency of §2.2). This is the inverse of `rustmath-reals/src/mpfr.rs:368`. rug's `to_digits` would be
    shorter but exists only with rug's `std` feature, which the declaration of §2.2 leaves off.
    Measured (`bin_fix conv`): 0.06 ms at 117 kbits, 0.17 ms at 370 kbits, 0.50 ms at 1 Mbit and
    1.9 ms at 4 Mbits, against 2.7 ms, 20.7 ms, 117 ms and 1.7 s through a decimal string.
@@ -1295,11 +1394,15 @@ orchestrator.
 
 `binomial(n: u32, k: u32)` (`lib.rs:386`) becomes `<Integer as SageInteger>::binomial(
 &Integer::from(n), &Integer::from(k))`: same values (0 for k > n; the trait function returns 0 for
-0 <= n < k), and after unit I3 it is Goetgheluck's prime-splitting algorithm (I3 design §7). All
+0 <= n < k), and since unit I3 (`80130e7`) it is Goetgheluck's prime-splitting algorithm
+(`rustmath-integers/src/binomial.rs:76`, called from `sage_wrapper.rs:443`). All
 crate callers (`narayana`, `delannoy`, `delannoy_central`, `bernoulli_polynomial`, the lists in §0)
 get it. `catalan` §1.3, `multinomial` §1.4. The measured "new" costs above use I3's prototype
-(`binom_window`, copied into `count.rs`); with HEAD's `SageInteger::binomial` (the K-step loop)
-catalan(10^5) takes 1.48 s (`count time catalan_sageint 100000`), the same as HEAD.
+(`binom_window`, copied into `count.rs`). With the K-step loop of `c79a582`, catalan(10^5) took
+1.48 s (`count time catalan_sageint 100000`), the same as HEAD's catalan then. Revision 3: with the
+landed code, I3 measured C(524288, 262143) at about 16 ms in release (I3 report, Handoffs), and the
+largest fixture rows C(632456, 316228) and C(200000, 100000) take 0.16 s and 0.03 s in a debug
+build (`rev3/binom3.txt`). J1b's protocol re-measures the release costs.
 
 ---
 
@@ -1314,7 +1417,8 @@ falling loop. Sage (secondary reference, sage.arith.misc) defines `falling_facto
 `rising_factorial(x, a)` for "x - element of a ring" and integer a >= 0 as `x(x-1)...(x-a+1)` and
 `x(x+1)...(x+a-1)`; Sage calls the rising one the Pochhammer symbol, as does MAGMA ch. 49
 (`(a)_n = a(a+1)...(a+n-1)`, digest :292). MAGMA ch. 144 has only `NumberOfPermutations(n, k)`
-(non-negative n).
+(non-negative n). The doc of `falling_factorial` (`lib.rs:477`) calls it "(Pochhammer symbol)"; since
+MAGMA and Sage give that name to the rising factorial, plan step 5 moves it (revision 3, review 3 m7).
 
 ### 4.2 API (new file `src/factorials.rs`, re-exported)
 
@@ -1325,9 +1429,10 @@ pub fn falling_factorial_integer(x: &Integer, k: u64) -> Integer
 /// ch. 49 and Sage rising_factorial(x, k).
 pub fn rising_factorial_integer(x: &Integer, k: u64) -> Integer
 /// The same products in any ring. `one` is the identity of the ring x belongs to; it is passed
-/// in because `R::one()` panics or is an unbound constant for parent-carrying element types
-/// (rustmath-core `Ring` docs, traits.rs:94-100). Factor i is x - i·one (x + i·one), built by
-/// repeated subtraction (addition); a zero factor ends the product early.
+/// in because `R::one()` is an unbound integer constant for the parent-carrying element types and
+/// may panic for a type without such a sentinel (rustmath-core `Ring` docs, traits.rs:99-101,
+/// :205-213). Factor i is x - i·one (x + i·one), built by repeated subtraction (addition); a zero
+/// factor ends the product early.
 pub fn falling_factorial_in<R: Ring>(x: &R, k: u64, one: &R) -> R
 pub fn rising_factorial_in<R: Ring>(x: &R, k: u64, one: &R) -> R
 ```
@@ -1386,7 +1491,8 @@ x = -4294967296, 2^64 + 5, -(2^64 + 5), 2^64 - 1, -(2^64), and k = 20000 at x = 
   `TupleIterator::count`, `Tuple::rank`, `Partition::dimension`, `rank_k_subset`, `rank_binary`,
   `universal_cycle_subsets` / `_permutations`, `sunflower_bound`). A validation that accepted an
   impossible object now refuses it (`DeBruijnSequence::new` / `is_valid`, `OrthogonalArray::new`).
-  `TupleIterator::size_hint` returns `(usize::MAX, None)` instead of a wrong exact size.
+  `TupleIterator::size_hint` returns `(0, None)` when n^k > usize::MAX, instead of a wrong exact
+  size (revision 3, review 3 m3; revision 2 had `(usize::MAX, None)`).
   `IrreducibleRepresentation::new` (`symmetric_group_representations.rs:35`) panics for a shape
   with f^lambda > usize::MAX (n >= 36) instead of caching a wrong dimension, and so do its two
   callers (revision 2, review 2 m3): `all_irreducible_representations(n)` (`:414`) and
@@ -1406,8 +1512,9 @@ x = -4294967296, 2^64 + 5, -(2^64 + 5), 2^64 - 1, -(2^64), and k = 20000 at x = 
   value, wrapped, panicked with an overflow message in debug, or (`q_multinomial`,
   `t_multinomial`) did not return. A wrong value becomes the right one where it fits:
   `Combination::rank` / `unrank`, `Permutation::order` when the order fits, `count_superpartitions`
-  (n <= 62 unchanged), `BinaryWord::from_usize` for length > usize::BITS, `Subset::next_binary` at
-  n = 64, `Subset::from_bitvector` / `unrank_binary` for n > 64, `q_multinomial` /
+  (n <= 62 unchanged), `BinaryWord::from_usize` for length > usize::BITS, `Subset::next_binary`
+  for n >= 64 and `Subset::prev_binary` for n >= 65 (revision 3, item 28),
+  `Subset::from_bitvector` / `unrank_binary` for n > 64, `q_multinomial` /
   `t_multinomial` when the u32 sum wraps (now the zero polynomial), the four integer-vector
   functions for values of 2^63 or more, `integer_lists` when a pruning product wraps, the six
   vector-partition functions when a part is needed more than 1000 times, and
@@ -1437,7 +1544,9 @@ x = -4294967296, 2^64 + 5, -(2^64 + 5), 2^64 - 1, -(2^64), and k = 20000 at x = 
   its outputs and refusals are unchanged; its limits and the measured-time comments in
   `repl_limits` become stale (they only over-estimate now). Recalibration is J1b's (§7).
 - `bell_number_optimized` and `bell_numbers_up_to` keep their signatures and values.
-- New dependency `rug` (already in the dependency graph, §2.2).
+- New dependencies `rug` and (revision 3) `num-bigint`, both already in the dependency graph (§2.2).
+- Revision 3: `hook_length_dimension` calls `number_of_standard_tableaux`; its values do not change
+  (§1.6 item 14).
 
 ---
 
@@ -1446,8 +1555,20 @@ x = -4294967296, 2^64 + 5, -(2^64 + 5), 2^64 - 1, -(2^64), and k = 20000 at x = 
 New integration tests (the crate gets a `tests/` directory; fixtures under `tests/data/`, read with
 `include_str!`). Expected values are from gp or GAP; each gp command is the one in
 `gp/gen_counting.gp`, `gp/gen_numbpart.gp`, `gp/siblings.gp`; the CSV files are copied verbatim.
+Revision 3 (review 3 m7): each new test file starts with a header comment. It cites the file's MAGMA
+chapters and papers (named under each file below), and it names the generator of each fixture or
+quotes the gp (or GAP) command next to each value. The two generators are copied next to their CSV
+files as `tests/data/gen_counting.gp` and `tests/data/gen_numbpart.gp`; the header gives the command
+`gp -q tests/data/gen_counting.gp > tests/data/ch144_counting.csv` (and the same for `numbpart.csv`).
 
 ### 6.1 `tests/ch144_counting.rs` (fixture `tests/data/ch144_counting.csv` = `gp/ch144_counting.csv`, 116 rows, 5.3 KB)
+
+Header: MAGMA ch. 144 §144.2 (`Chapter_144_Enumerative_Combinatorics.md:34-53`) and ch. 18 §18.8
+(`Chapter_18_Ring_of_Integers.md:261-275`) for `Factorial`, `NumberOfPermutations`, `Binomial`,
+`Multinomial`, `Fibonacci`, `Lucas`, `GeneralizedFibonacciNumber`, `Catalan`, `StirlingFirst`,
+`StirlingSecond`, `Bell` and `EulerianNumber`; the Pochhammer symbol of ch. 49
+(`Chapter_49_Power_Laurent_and_Puiseux_Series.md:292`). The Motzkin, Schroder and derangement
+numbers are not MAGMA intrinsics (OEIS A001006, A006318, A000166).
 
 Columns `fn,a,b,sign,residue,bits`: `residue = lift(Mod(v, 2^127-1))`, `bits = logint(|v|,2)+1`
 (0 for v = 0). The test computes each row with the crate function, then compares the sign, the
@@ -1487,6 +1608,10 @@ The 64-bit-only rows (`count_k_subsets(4294967298, 2)`, `stars_and_bars(42949672
 
 ### 6.2 `tests/ch145_number_of_partitions.rs` (fixture `tests/data/numbpart.csv` = `gp/numbpart.csv`, 71 rows)
 
+Header: MAGMA ch. 145 §145.2 (`Chapter_145_Partitions_Words_and_Young_Tableaux.md:55`) and ch. 18
+§18.8 `NumberOfPartitions`; Johansson 2012 (LMS J. Comput. Math. 15, arXiv:1205.5991) for the
+Hardy-Ramanujan-Rademacher evaluation; the handbook example H145E1, with GAP values.
+
 | test | content | HEAD |
 |---|---|---|
 | `number_of_partitions_fixture` | rows `n,residue,bits` (gp `numbpart(n)`): n in {0..5, 100, 127, 128, 416, 417, 1000, 1001, 2000, 2001, 3000, 10^4, 10^5, 10^6, 10^7, 10^8}, 40 random n < 10^6 and 10 random n in [10^6, 10^8) (`setrand(20261112)`); 1.5 s unoptimised | does not compile (no `number_of_partitions`) |
@@ -1522,6 +1647,10 @@ The 64-bit-only rows (`count_k_subsets(4294967298, 2)`, `stars_and_bars(42949672
 
 ### 6.5 `tests/machine_word_counts.rs` (revisions 1 and 2: the sweep of §1.6)
 
+Header: MAGMA ch. 144 §144.2 and §144.3 (counts, subset ranks and successors), ch. 145 §145.4.9
+`NumberOfStandardTableaux` (digest :299), ch. 58 `Order(g)` (`Chapter_58_Permutation_Groups.md:204`);
+design C1 §1.6 for the machine-word sweep. The gp command of each value is quoted next to it.
+
 Every value is from gp (`rev1/rev1.gp`, `gp/siblings.gp`) unless stated; "64" marks
 `#[cfg(target_pointer_width = "64")]`. Each should_panic test names the expected message
 ("exceeds usize::MAX" or "exceeds u32::MAX"; revision 2 adds "subsets exceed usize::MAX" and
@@ -1537,17 +1666,18 @@ does not match the expected message.
 | `integer_vectors_in_box_overflow_panics` (64) | should_panic on `([0; 3], [(1<<32) - 1; 3])` (`2^96`) and, in a second test, on `([i64::MIN], [i64::MAX])` (`2^64`) | both return 0 |
 | `six_vertex_partition_function_rejects_huge_n` (64) | should_panic "exceeds u32::MAX" on `six_vertex_partition_function((1 << 32) + 3)`; `six_vertex_partition_function(5) == 429` stays | returns 7 |
 | `parking_function_counts` | `count_parking_functions(16) == 2862423051509815793` (`17^15`); `count_non_decreasing_parking_functions(36) == 11959798385860453492` (64; `binomial(72,36)/37`); `(5) == 42` | passes (16 and 36 still fit at HEAD) |
-| `parking_function_counts_overflow_panic` | should_panic on `count_parking_functions(17)` (`18^16` = 121439531096594251776); separate tests on `count_non_decreasing_parking_functions(37)` (`binomial(74,37)/38` = 45950804324621742364) and, 64, on `(1 << 40)` (must panic at once, through the usize::BITS bound) | 10759066654336942080; 9057316177202639132; the last aborts trying to allocate 2^40 + 1 words for its DP |
-| `tuple_counts_are_checked` (64) | `TupleIterator::count(&TupleIterator::new(2, 63)) == 1 << 63`; `TupleIterator::count(&TupleIterator::new(0, 1 << 32)) == 0`; `TupleIterator::new(2, 64).size_hint() == (usize::MAX, None)`; `Tuple::from_vec(vec![1, 1], 1 << 31).unwrap().rank() == (1 << 31) + 1`; `Tuple::unrank(5, 1 << 40, 3).unwrap().indices() == [0, 0, 5]` | 2^63 passes; (0, 2^32) gives 1; size_hint gives (usize::MAX, Some(usize::MAX)); unrank gives None |
+| `parking_function_counts_overflow_panic`; `non_decreasing_parking_count_overflow_panics`; `non_decreasing_parking_count_refuses_huge_n` (64) | should_panic on `count_parking_functions(17)` (`18^16` = 121439531096594251776); in the second test on `count_non_decreasing_parking_functions(37)` (`binomial(74,37)/38` = 45950804324621742364); in the third on `(1 << 40)` (it must panic at once, through the usize::BITS bound) | 10759066654336942080; 9057316177202639132; the third aborts the process when it allocates 2^40 + 1 words for its DP (revision 3: run it at HEAD only as the end of §6.5 says) |
+| `tuple_counts_are_checked` (64) | `TupleIterator::count(&TupleIterator::new(2, 63)) == 1 << 63`; `TupleIterator::count(&TupleIterator::new(0, 1 << 32)) == 0`; `TupleIterator::new(2, 64).size_hint() == (0, None)`, and again after two `next()` calls, when 2^64 - 2 tuples remain (revision 3); `TupleIterator::new(2, 63)` after two `next()` calls gives `(2^63 - 2, Some(2^63 - 2))`; `Tuple::from_vec(vec![1, 1], 1 << 31).unwrap().rank() == (1 << 31) + 1`; `Tuple::unrank(5, 1 << 40, 3).unwrap().indices() == [0, 0, 5]` | 2^63 passes; (0, 2^32) gives 1; size_hint of (2, 64): release (usize::MAX, Some(usize::MAX)), and after two calls an upper bound of 2^64 - 3, below the count; debug panics in `Tuple::rank` ("attempt to multiply with overflow", `tuple.rs:71`, `rev3/head3.txt`); (2, 63) passes; unrank gives None |
 | `tuple_counts_overflow_panic` (64) | should_panic on `TupleIterator::count(&TupleIterator::new(2, 64))` (`2^64`), and in a second test on `Tuple::from_vec(vec![1, 1, 1], 1 << 40).unwrap().rank()` (`2^80+2^40+1`) | 18446744073709551615; 1099511627777 |
-| `standard_tableaux_counts` | `number_of_standard_tableaux` of [3, 2] = 5 (H145E13), [11, 10] = 58786, [20, 1] = 20, [5, 5, 5, 5, 5] = 701149020, [9,7,6,4,3,3,2,1,1] = 40971642983700000000, [10,9,...,1] = 44261486084874072183645699204710400, [7; 7] = 475073684264389879228560, [10^9] = 1, [1; 30] = 1 (gp `hookdim` of `rev1/rev1.gp`, `rev1/maxf.gp`); for every partition of n <= 9, `number_of_standard_tableaux(p) == standard_tableaux(&p).len()` (an independent enumeration, `tableaux.rs:419`; it agrees with HEAD's `dimension` there, `rev1/syt.rs`); `Partition::dimension` equals it for [11, 10], [20, 1], [5; 5] and (64) [9,7,6,4,3,2,2,1,1] = 7821859115070000000 | does not compile (new function); HEAD `dimension`: 16335, 5, 317 |
+| `standard_tableaux_counts` | `number_of_standard_tableaux` of [3, 2] = 5 (H145E13), [11, 10] = 58786, [20, 1] = 20, [5, 5, 5, 5, 5] = 701149020, [9,7,6,4,3,3,2,1,1] = 40971642983700000000, [10,9,...,1] = 44261486084874072183645699204710400, [7; 7] = 475073684264389879228560, [10^9] = 1, [1; 30] = 1, and (revision 3) the empty partition [] = 1 (gp `hookdim` of `rev1/rev1.gp`, `rev1/maxf.gp`; one tableau of the empty shape); for every partition of n <= 9, `number_of_standard_tableaux(p) == standard_tableaux(&p).len()` (an independent enumeration, `tableaux.rs:419`; it agrees with HEAD's `dimension` there, `rev1/syt.rs`); `Partition::dimension` equals it for [11, 10], [20, 1], [5; 5], [] (= 1, revision 3) and (64) [9,7,6,4,3,2,2,1,1] = 7821859115070000000 | does not compile (new function); HEAD `dimension`: 16335, 5, 317; [] gives 1 |
 | `partition_dimension_overflow_panics` | should_panic on `Partition::new(vec![8,7,6,5,4,3,2,1]).dimension()` (29258366996258488320 > 2^64) | returns 2 |
+| `hook_length_dimension_is_number_of_standard_tableaux` (revision 3) | for every partition p of n <= 12 (272 partitions, the empty one included), `hook_length_dimension(&p) == number_of_standard_tableaux(&p)`; `hook_length_dimension` of [11, 10] is 58786 (gp, as above) | does not compile (new function); HEAD's `hook_length_dimension` has the same values (`rev3/syt3.txt`) |
 | `colorings_keep_the_colour_count` (64) | `burnside_lemma(&PermutationGroup::cyclic(1), (1 << 32) + 1) == 4294967297`; `count_fixed_colorings(&Permutation::identity(2), (1 << 32) + 2) == 18446744090889420804` (`(2^32+2)^2`); `burnside_lemma(&PermutationGroup::cyclic(4), 2) == 6` stays | 1; 4 |
 | `tilings_reject_n_above_u32` (64) | should_panic "exceeds u32::MAX" on `count_tilings(2, (1 << 32) + 1, &Polyomino::dominoes())`; values `count_tilings(2, 10, ..) == 89` (`fibonacci(11)`), `(3, 4) == 11` | returns 1 |
 | `subset_ranks_are_exact` (64) | `Subset::from_elements(vec![1, 2, 3], 5_000_000_001).unwrap().rank_k_subset(3) == Some(12499999997500000000)` (`binomial(5*10^9,2)`); `Subset::unrank_k_subset(12499999997500000000, 5_000_000_001, 3)` has elements [1, 2, 3]; `Subset::from_elements(vec![0], 100).unwrap().rank_binary() == 1`; `from_elements(vec![63], 64).rank_binary() == 1 << 63` | 9223372036854775807; [1, 705032705, 3557549058] after 3.6 s (a debug build loops for minutes); 0 |
 | `subset_ranks_overflow_panic` | should_panic on the rank of {9999997, 9999998, 9999999} in 10^7 (`binomial(10^7,3)-1` > 2^64), and in a second test on `rank_binary` of {64} in 100 | 645920003284035455; 0 |
 | `sequence_validations_check_the_length` | `DeBruijnSequence::new(vec![], 2, 64).is_none()`; (64) `DeBruijnSequence::new(vec![0], 2, 1 << 32).is_none()`; `OrthogonalArray::new(64, 1, 2, vec![]).is_none()`; `DeBruijnSequence::new(debruijn_sequence(2, 3), 2, 3)` is still Some | Some; Some; Some |
-| `universal_cycles_refuse_lengths_above_usize` | should_panic on `universal_cycle_permutations(70, 70)` (70! > 2^64), and in a second test on `universal_cycle_subsets(70, 35)` (C(70, 35) = 112186277816662845432 > 2^64) | Some([0]) at once; runs out of memory |
+| `universal_cycles_refuse_lengths_above_usize`; `universal_cycle_subsets_refuse_lengths_above_usize` | should_panic on `universal_cycle_permutations(70, 70)` (70! > 2^64); in the second test on `universal_cycle_subsets(70, 35)` (C(70, 35) = 112186277816662845432 > 2^64) | Some([0]) at once; runs out of memory |
 | `sunflower_bound_is_checked` | `SetSystem::sunflower_bound(20, 2) == 2432902008176640000` (`20!`); the existing (3, 3) = 48 stays; should_panic in a second test on `sunflower_bound(30, 3)` (`30!*2^30`) | 20! passes; (30, 3) returns 18446744073709551615 |
 
 Revision 2 adds these tests to the same file (items 24-36; gp commands in `rev2/rev2.gp`,
@@ -1560,7 +1690,8 @@ Revision 2 adds these tests to the same file (items 24-36; gp commands in `rev2/
 | `permutation_gray_code_size_hint_is_an_upper_bound` (64) | `PermutationGrayCodeIterator::new(20).size_hint() == (0, Some(2432902008176640000))` (`20!`); `new(21).size_hint() == (0, None)` (`21!` = 51090942171709440000 > 2^64) | (0, Some(14197454024290336768)) for 21 |
 | `superpartition_counts_are_checked` | `count_superpartitions(n) == superpartitions(n).len()` for n <= 12; (64) `count_superpartitions(62) == 15969100102326684686` (`polcoef(prod(i=1,62,1/(1-2*x^i))+O(x^63),62)`); should_panic in a second test (64) on `count_superpartitions(63)` (31938200243029484454) | 62 passes; 63 returns 13491456169319932838 |
 | `binary_words_respect_usize_bits` (64) | a 100-bit word with only bit 63 set has `to_usize() == 1 << 63`; `BinaryWord::from_usize(usize::MAX, 64).to_usize() == usize::MAX`; `BinaryWord::from_usize(1, 65)` has exactly one set bit, bit 0; should_panic in a second test on `to_usize` of a 65-bit word with bits 0 and 64 set | `from_usize(1, 65)` sets bits 0 and 64; `to_usize` gives 2 |
-| `subset_binary_order_at_the_word_size` (64) | `Subset::from_elements(vec![], 64).unwrap().next_binary()` has elements [0]; the full subset of 64 has `next_binary() == None`; `Subset::from_bitvector(1, 65).elements() == [0]`; `Subset::unrank_binary(5, 100).elements() == [0, 2]`; the empty subset of 63 still gives [0] | None; Some(empty set); [0, 64]; [0, 2, 64, 66] |
+| `subset_binary_order_at_the_word_size` | `Subset::from_elements(vec![], 64).unwrap().next_binary()` has elements [0]; the full subset of 64 has `next_binary() == None`; `Subset::from_bitvector(1, 65).elements() == [0]`; `Subset::unrank_binary(5, 100).elements() == [0, 2]`; the empty subset of 63 still gives [0]. Revision 3: no longer 64-bit only, since after item 28 none of these rows depends on the word size | None; Some(empty set); [0, 64]; [0, 2, 64, 66] |
+| `subset_binary_successors_for_any_n` (revision 3, review 3 B1) | n = 65: `next_binary` of the empty subset is {0}; `prev_binary` of {0} is the empty set; `next_binary` of {0, ..., 63} is {64}; `prev_binary` of {64} is {0, ..., 63}; the full subset has `next_binary() == None` and the empty subset `prev_binary() == None`. For every subset of every n <= 10, with bits = `to_bitvector().unwrap()`: `next_binary` is `Subset::from_bitvector(bits + 1, n)` (None for the full set) and `prev_binary` is `Subset::from_bitvector(bits - 1, n)` (None for the empty set) | None for each of the first four (`rev3/head3.txt`); the full and empty rows and the n <= 10 part pass |
 | `permutation_order_is_exact` | a test-local permutation with one cycle of each length in L: L = the primes up to 47 and 94 (422 points) gives `order() == 614889782588491410` (64) and `order_integer() == 614889782588491410` (`lcm(concat(primes(15),[94]))`); L = the primes up to 53 (381 points) gives `order_integer() == 32589158477190044730` (`lcm(primes(16))`); should_panic in a second test (64) on `order()` of the latter | 26163907895633379; 14142414403480493114 |
 | `subset_mask_loops_refuse_word_size_sets` (64) | each call below is run in `std::panic::catch_unwind` and must panic with a message containing "subsets exceed usize::MAX": `all_binary_words(64)`; `all_order_ideals` and `all_antichains` of the chain 0 < 1 < ... < 63; `all_subwords(&[0u8; 64])`; `subword::SubwordComplex::new(vec![0u8; 64], vec![0u8])`; `shadow()` of `SetSystem::from_sets(64, vec![(0..64).collect()])`; `shade()` of `SetSystem::from_sets(64, vec![vec![]])` (the complement of the empty set in the ground set 0..64 has 64 elements); `admissible_cuts` of a path of 65 vertices built with `RootedTree::from_children`; `OrderedMultisetPartitionIntoSets::new(vec![(0..64u32).collect()]).finer()`; `integer_vectors_with_l1_norm_bounded(64, 0)`. Small values stay: the chain of 5 has 6 ideals and 6 antichains, the path of 5 vertices has 5 admissible cuts, `all_binary_words(3).len() == 8` | release: one-element or empty results at once (`rev2/sweep6.rs`: 1, 1, 1, ...); debug: "attempt to shift left with overflow", another message |
 | `signed_compositions_need_no_sign_loop` | `signed_compositions_k(31, 31)` and `(64, 64)` are each the single composition [1; k]; `signed_compositions_k(-3, 2)` is [[-1, -2], [-2, -1]]; `signed_compositions(4).len() == 8` (the 2^3 compositions of 4, all positive) and `signed_compositions(-4)` is the same list negated; the existing tests (`composition.rs:657-740`) stay | (31, 31) and (64, 64) give []; the others pass |
@@ -1572,13 +1703,26 @@ Revision 2 adds these tests to the same file (items 24-36; gp commands in `rev2/
 | `replication_number_is_exact` (64) | `BlockDesign::new(1 << 33, 3, 2, 1 << 32, vec![]).unwrap().replication_number() == Some(18446744071562067968)` (`2^32*(2^33-1)/2`); the Fano plane (the 7 lines of `rev2/repl_num.rs`) gives Some(3) | Some(9223372034707292160); Some(3) |
 | `dyck_area_does_not_wrap` | `DyckWord::new` of N^65536 E^65536 (`true` 65536 times, then `false` 65536 times) has `area() == 2147450880` (`65536*65535/2`); should_panic ("leaves the i32 range") in a second test on the same word of semilength 65537 (`65537*65536/2` = 2147516416 > 2^31 - 1); the existing `dyck_word.rs` tests stay | 2147450880 passes; -2147450880 |
 
-Checking that the new tests fail on HEAD (review 2, m5). `universal_cycle_subsets(70, 35)` runs out
-of memory at HEAD, and `q_multinomial(1, &[u32::MAX, 2])` / `t_multinomial(..)` do not return
-(`rev2/qmult.rs`: 30 s under a 4 GB limit). On the shared machine, build the test binary first
-(`cargo test -p rustmath-combinatorics --test machine_word_counts --no-run`, without a limit,
-because rustc needs more address space), then run only those tests under the limit: `bash -c
-'ulimit -v 4000000; timeout 60 target/debug/deps/machine_word_counts-<hash> universal_cycles
-q_and_t'`. Or skip them in the HEAD check. Every other new test fails on HEAD within a second, in release or debug.
+Checking that the new tests fail on HEAD (review 2 m5, review 3 m4). At HEAD the file does not
+compile, because some tests call new items (`number_of_standard_tableaux`,
+`Permutation::order_integer`). For the HEAD check, comment out those tests or the lines that name the
+new items, and say in the report which ones. Three tests exhaust memory or time at HEAD:
+`universal_cycle_subsets_refuse_lengths_above_usize` runs out of memory,
+`q_and_t_multinomials_check_the_sum` does not return (`rev2/qmult.rs`: 30 s under a 4 GB limit), and
+`non_decreasing_parking_count_refuses_huge_n` aborts the process when it allocates 2^40 + 1 words.
+An abort ends the whole test binary and hides the other results, so the HEAD check has three steps.
+
+1. Build the binary without a limit (rustc needs more address space):
+   `cargo test -p rustmath-combinatorics --test machine_word_counts --no-run`.
+2. Run every other test: `target/debug/deps/machine_word_counts-<hash> --skip
+   universal_cycle_subsets --skip q_and_t --skip refuses_huge_n`.
+3. Run each of the three alone: `for t in universal_cycle_subsets_refuse_lengths_above_usize
+   q_and_t_multinomials_check_the_sum non_decreasing_parking_count_refuses_huge_n; do bash -c
+   "ulimit -v 4000000; timeout 60 target/debug/deps/machine_word_counts-<hash> --exact $t"; done`.
+   Each run must fail: an abort, a timeout and a wrong value all count.
+
+Every other new test fails on HEAD within a second, in release or debug, except
+`subset_ranks_are_exact`, whose HEAD unrank loops for minutes in a debug build (§6.5 row).
 
 ### 6.6 New unit tests in the source files
 
@@ -1617,42 +1761,44 @@ those assertions move to `machine_word.rs` (§6.6). Revision 2: the tests of the
 `subword.rs:615`, `subword_complex.rs`, `set_system.rs`, `grossman_larson.rs:613-627`,
 `multiset_partition_into_sets_ordered.rs:625`, `composition.rs:657-740`, `integer_vectors.rs`,
 `q_analogue.rs`, `t_sequences.rs`, `integer_lists.rs`, `vector_partition.rs`, `designs.rs`). None
-of them uses an input where HEAD was wrong.
+of them uses an input where HEAD was wrong. Revision 3: `subset.rs:904` (`test_next_prev_binary`,
+n = 4) and `young_representations.rs:286-296` (`test_hook_length_dimension`) stay.
 
 ---
 
 ## 7. For unit J1b: REPL limits that depend on these callees
 
-`rustmath-jupyter/src/repl.rs`, `mod repl_limits` (`:10463-10561`) and the arms that use them.
+`rustmath-jupyter/src/repl.rs`, `mod repl_limits` (`:10491-10589`) and the arms that use them. Lines are at
+HEAD `dc367a2` (I1 and I3 moved the arms down by 12 lines and `repl_limits` by 28).
 "Old" is HEAD at the limit (release); "new" is after C1 (and I3 for the binomial rows).
 
 | limit (line) | REPL arm (line) | callee | old cost at the limit | new cost at the old limit | new costs above it |
 |---|---|---|---|---|---|
-| `CATALAN_N = 316_227` (:10492) | catalan (:2207) | `catalan` | 15.8 s | 0.043 s | 10^6: 0.10 s; 4·10^6: 0.86 s; 10^7: 2.8 s (34 MB). The `4n^2 <= BINOMIAL_WORK` link to the binomial model no longer describes the cost |
-| `FIBONACCI_N = 1_300_000` (:10495) | fibonacci/fib (:2224), lucas (:2241) | `fibonacci_signed`, `lucas_signed` | 11.8 s | 0.027 s | 10^7: 0.50 s; 3·10^7: 2.9 s; 5·10^7: 5.4 s (36 MB); 10^8: 14.3 s |
-| `BELL_N = 600` (:10497) | bell (:2256) | `bell_number` | 11.3 s | 0.013 s | 2000: 0.42 s; 3000: 1.40 s; 4000: 3.25 s; 5000: 6.96 s (30 MB) |
-| `TABLE_BYTES = 400_000_000` (:10503) with `table_bytes`/`check_table` | stirling1 (:2276), stirling2 (:2295), eulerian (:2413) | `stirling_first`, `stirling_second`, `eulerian` | (1000, 999): 0.23 / 0.19 / 0.32 s at 262 / 222 / 371 MB | < 1 ms, 2 MB | the memory is now at most (w + 1)(B/8 + 32) bytes, w = min(k, n - k + 1) (Eulerian min(k', n - k')), B the result's bits: 28 MB at (10^4, 5·10^3), 2.7 MB at (10^8, 10^8 - 1) (7.9 s). The binding cost is time, table in §3.3; the table-size model `(n+1)(k+1)` should become a time model, with this memory bound as a second check if J1b wants one |
-| `MOTZKIN_N = 4_500` (:10505) | motzkin (:2453) | `motzkin` | 12.0 s | 0.003 s | 10^5: 1.10 s; 2·10^5: 4.26 s; 3·10^5: 10.0 s (3 MB) |
-| `SCHRODER_N = 50_000` (:10508) | schroder/schroder_large (:2509), schroder_small (:2524) | `schroder_large`, `schroder_small` | 0.62 s, 390 MB | 0.44 s, 2 MB | 10^5: 1.83 s; 2·10^5: 7.2 s; 3·10^5: 16.4 s (3 MB) |
-| `DERANGEMENTS_N = 1_400` (:10510) | derangements/subfactorial (:2556) | `count_derangements` | 12.9 s | < 1 ms | 10^5: 0.08 s; 2·10^5: 0.33 s; 10^6: 3.4 s (18 MB); 2·10^6: 10.7 s |
-| `FACTORIAL_WORK = 2.5e12` (:10517) | multinomial (:2309-2341), falling_factorial/pochhammer (:2355-2366), rising_factorial (:2380-2395) | `multinomial`, `falling_factorial`, `rising_factorial` | falling(2^32-1, 10^5) (work 3.2e11): 2.18 s | 0.14 s | falling(2^32-1, 10^6): 3.3 s; rising: 3.5 s (63 MB); 10^6! 1.6 s; multinomial (10^6, [2]*5·10^5): 1.6 s; (10^6, [1000]*1000): 0.79 s; (10^5, [5·10^4]*2): 0.003 s (HEAD 1.28 s). The k·(k·bits) model now over-estimates by about 15x at k = 10^5; the product-tree cost is about M(B) log k with B = k·bits |
-| `PARTITIONS_N = 416` (:10556) | partitions/partition_count (:2540-2542) | `partition_count` (usize) | small | same | switch to `number_of_partitions(n: u64)` (n <= 10^16, §2.2): 10^6: 8 ms; 10^8: 0.15 s; 10^9: 0.94 s; 3·10^9: 2.0 s; 10^10: 5.4 s; cost about 5e-10·n s from 10^9 |
-| `BINOMIAL_WORK = 4e11` (:10489), `narayana` arm (:2428-2439) | narayana | `narayana` (via `binomial`) | (10^5, 5·10^4): 0.75 s | 0.006 s | (10^6, 5·10^5): 0.094 s |
-| `DELANNOY_SUM_CAP = 20_000` (:10559), `delannoy_work` | delannoy (:2467-2490) | `delannoy`, `delannoy_central` (via `binomial`) | (2000, 2000): 0.43 s | 0.072 s | (10^4, 10^4): 2.0 s |
+| `CATALAN_N = 316_227` (:10520) | catalan (:2219) | `catalan` | 15.8 s | 0.043 s | 10^6: 0.10 s; 4·10^6: 0.86 s; 10^7: 2.8 s (34 MB). The `4n^2 <= BINOMIAL_WORK` link to the binomial model no longer describes the cost |
+| `FIBONACCI_N = 1_300_000` (:10523) | fibonacci/fib (:2236), lucas (:2253) | `fibonacci_signed`, `lucas_signed` | 11.8 s | 0.027 s | 10^7: 0.50 s; 3·10^7: 2.9 s; 5·10^7: 5.4 s (36 MB); 10^8: 14.3 s |
+| `BELL_N = 600` (:10525) | bell (:2268) | `bell_number` | 11.3 s | 0.013 s | 2000: 0.42 s; 3000: 1.40 s; 4000: 3.25 s; 5000: 6.96 s (30 MB) |
+| `TABLE_BYTES = 400_000_000` (:10531) with `table_bytes`/`check_table` | stirling1 (:2288), stirling2 (:2307), eulerian (:2425) | `stirling_first`, `stirling_second`, `eulerian` | (1000, 999): 0.23 / 0.19 / 0.32 s at 262 / 222 / 371 MB | < 1 ms, 2 MB | the memory is now at most (w + 1)(B/8 + 32) bytes, w = min(k, n - k + 1) (Eulerian min(k', n - k')), B the result's bits: 28 MB at (10^4, 5·10^3), 2.7 MB at (10^8, 10^8 - 1) (7.9 s). The binding cost is time, table in §3.3; the table-size model `(n+1)(k+1)` should become a time model, with this memory bound as a second check if J1b wants one |
+| `MOTZKIN_N = 4_500` (:10533) | motzkin (:2465) | `motzkin` | 12.0 s | 0.003 s | 10^5: 1.10 s; 2·10^5: 4.26 s; 3·10^5: 10.0 s (3 MB) |
+| `SCHRODER_N = 50_000` (:10536) | schroder/schroder_large (:2521), schroder_small (:2536) | `schroder_large`, `schroder_small` | 0.62 s, 390 MB | 0.44 s, 2 MB | 10^5: 1.83 s; 2·10^5: 7.2 s; 3·10^5: 16.4 s (3 MB) |
+| `DERANGEMENTS_N = 1_400` (:10538) | derangements/subfactorial (:2568) | `count_derangements` | 12.9 s | < 1 ms | 10^5: 0.08 s; 2·10^5: 0.33 s; 10^6: 3.4 s (18 MB); 2·10^6: 10.7 s |
+| `FACTORIAL_WORK = 2.5e12` (:10545) | multinomial (:2321-2353), falling_factorial/pochhammer (:2367-2378), rising_factorial (:2392-2407) | `multinomial`, `falling_factorial`, `rising_factorial` | falling(2^32-1, 10^5) (work 3.2e11): 2.18 s | 0.14 s | falling(2^32-1, 10^6): 3.3 s; rising: 3.5 s (63 MB); 10^6! 1.6 s; multinomial (10^6, [2]*5·10^5): 1.6 s; (10^6, [1000]*1000): 0.79 s; (10^5, [5·10^4]*2): 0.003 s (HEAD 1.28 s). The k·(k·bits) model now over-estimates by about 15x at k = 10^5; the product-tree cost is about M(B) log k with B = k·bits |
+| `PARTITIONS_N = 416` (:10584) | partitions/partition_count (:2552-2554) | `partition_count` (usize) | small | same | switch to `number_of_partitions(n: u64)` (n <= 10^16, §2.2): 10^6: 8 ms; 10^8: 0.15 s; 10^9: 0.94 s; 3·10^9: 2.0 s; 10^10: 5.4 s; cost about 5e-10·n s from 10^9 |
+| `BINOMIAL_WORK = 4e11` (:10517), `narayana` arm (:2440-2451) | narayana | `narayana` (via `binomial`) | (10^5, 5·10^4): 0.75 s | 0.006 s | (10^6, 5·10^5): 0.094 s |
+| `DELANNOY_SUM_CAP = 20_000` (:10587), `delannoy_work` | delannoy (:2479-2502) | `delannoy`, `delannoy_central` (via `binomial`) | (2000, 2000): 0.43 s | 0.072 s | (10^4, 10^4): 2.0 s |
 
 REPL arm changes that C1 makes possible (not done here):
 
-- `pochhammer` is an alias of `falling_factorial` (`repl.rs:2348`); MAGMA ch. 49 and Sage use the
+- `pochhammer` is an alias of `falling_factorial` (`repl.rs:2360`); MAGMA ch. 49 and Sage use the
   rising factorial for the Pochhammer symbol. J1a moves the name (its §3).
 - `falling_factorial` and `rising_factorial` can take any integer n (`falling_factorial_integer`,
-  `rising_factorial_integer`); the u32 n range (`:2355`) and the rising guard
-  `0..=u32::MAX - k + 1` with "n + k - 1 must fit in 32 bits" (`:2382`) are then not needed.
+  `rising_factorial_integer`); the u32 n range (`:2367`) and the rising guard
+  `0..=u32::MAX - k + 1` with "n + k - 1 must fit in 32 bits" (`:2394`) are then not needed.
   Owner: J1b §5 and plan step 7 (revision 2; J1b's revision took it). C1 records it as open in
   HANDOFF until J1b lands (§8.1 step 12).
 - partitions: call `number_of_partitions(n)` with a u64 n (at most `NUMBER_OF_PARTITIONS_MAX_N`)
   and a time limit; drop the machine-word rationale of `PARTITIONS_N`. Owner: J1b §5 as well
   (`PARTITIONS_N: u64`, provisional 10^10 from §2.7).
-- The `repl_limits` comments that quote HEAD times (`:10479-10561`) and the help line become
+- The `repl_limits` comments that quote HEAD times (`:10507-10589`) and the help line become
   stale; J1b recalibrates them (J1b design, the protocol after its limits table).
 
 ---
@@ -1661,8 +1807,10 @@ REPL arm changes that C1 makes possible (not done here):
 
 ### 8.1 Files, in implementation order
 
-1. `rustmath-combinatorics/Cargo.toml`: add `rug` (§2.2). `Cargo.lock` changes with it (the
-   `rustmath-combinatorics` entry gains `rug`; no new package).
+1. `rustmath-combinatorics/Cargo.toml`: add `rug` and (revision 3, review 3 m2)
+   `num-bigint = { workspace = true }` (§2.2). `Cargo.lock` changes with them (the
+   `rustmath-combinatorics` entry gains `num-bigint` and `rug`; no new package: num-bigint 0.4.8
+   and rug 1.30.0 are already locked).
 2. `src/machine_word.rs` (new, private; `mod machine_word;` in lib.rs). Header: MAGMA ch. 144
    §144.2 and §144.3 (the counts and subset ranks it serves). Contents and unit tests: §1.6, §6.6,
    with `subset_mask_count` (revision 2).
@@ -1686,7 +1834,9 @@ REPL arm changes that C1 makes possible (not done here):
    `rising_factorial` (§4.2 wrappers), `stirling_first`, `stirling_second`, `eulerian` through
    `band_rows` (§3.3), `bell_number` (§3.2), `motzkin` (§3.4), `schroder_large` with
    `schroder_step_factors` (§1.5, §3.6); doc comments name the algorithm and its source; unit
-   tests of §6.6.
+   tests of §6.6. Revision 3 (review 3 m7): the doc of `falling_factorial` (`:477-479`) drops
+   "(Pochhammer symbol)", and the doc of `rising_factorial` (`:492-494`) says that it is the
+   Pochhammer symbol (x)_k of MAGMA ch. 49 and Sage, as `rising_factorial_integer` does (§4.2).
 6. `src/ch144_enumerative.rs`: `fibonacci_pair`, `generalized_fibonacci_number` (§3.1),
    `number_of_permutations` (wrapper); update the module table (`:12-20`).
 7. `src/derangements.rs`: `count_derangements` (§3.5); update its doc (cost, method) and the
@@ -1695,7 +1845,11 @@ REPL arm changes that C1 makes possible (not done here):
 9. `src/partitions.rs`: `partition_count` (doc: "no usize of 64 bits or fewer can hold p(n) for
    n > 1000"), `count_partitions_with_max_parts` (§1.6 items 1-2); fix the doc at `:1257-1260`;
    `number_of_standard_tableaux` and `Partition::dimension` (§1.6 item 14; header line citing
-   MAGMA ch. 145 §145.4.9 and [Ful97] §4.3).
+   MAGMA ch. 145 §145.4.9 and [Ful97] §4.3). Revision 3: `number_of_standard_tableaux` returns 1
+   for the empty partition before anything else (review 3 m5).
+   Then `src/young_representations.rs` (revision 3, review 3 m1): `hook_length_dimension` becomes
+   a call of `number_of_standard_tableaux`; its doc and the module table (`:13`) name MAGMA
+   `NumberOfStandardTableaux` (ch. 145 §145.4.9).
 10. The other files of §1.6, each with a documented `# Panics` where one is added:
     `src/subset.rs` (items 3, 17, 18), `src/path_tableaux.rs:293` (item 4), `src/enumeration.rs`
     (items 5, 6, 23), `src/integer_vectors.rs` (items 7, 13), `src/six_vertex_model.rs` (item 8),
@@ -1705,7 +1859,8 @@ REPL arm changes that C1 makes possible (not done here):
     Revision 2 (items 24-36, same rule for `# Panics` docs, plus a cost line where item 30 says
     so): `src/combinations.rs` (item 24; delete `binomial_usize`), `src/enumeration.rs` (item 25;
     delete the private `factorial`), `src/superpartitions.rs` (item 26), `src/binary_words.rs`
-    (items 27, 30), `src/subset.rs` (item 28), `src/permutations.rs` (item 29, with
+    (items 27, 30), `src/subset.rs` (item 28: `next_binary` and, revision 3, `prev_binary` on the
+    sorted element list; `from_bitvector`), `src/permutations.rs` (item 29, with
     `order_integer`; header line citing MAGMA ch. 58 `Order`), `src/posets.rs`, `src/subword.rs`,
     `src/subword_complex.rs`, `src/set_system.rs`, `src/grossman_larson.rs`,
     `src/multiset_partition_into_sets_ordered.rs`, `src/composition.rs` (item 30; in
@@ -1715,36 +1870,46 @@ REPL arm changes that C1 makes possible (not done here):
     (item 35), `src/dyck_word.rs` (item 36). The `# Panics` docs of `count_k_subsets`, `count_lattice_paths_ne`, `catalan`,
     `multinomial` get I3's binomial line, and those of `all_irreducible_representations` and
     `SymmetricGroupCharacterTable::new` get the n >= 36 line (§5).
-11. `tests/data/ch144_counting.csv`, `tests/data/numbpart.csv` (copy the two gp outputs), then
-    `tests/ch144_counting.rs`, `tests/ch145_number_of_partitions.rs`,
-    `tests/machine_word_counts.rs` (§6).
-12. Trackers. `docs/magma/status_overrides.csv`: `ch018.NumberOfPartitions` (partial -> done,
+11. `tests/data/ch144_counting.csv`, `tests/data/numbpart.csv` (copy the two gp outputs) and,
+    revision 3, their generators `tests/data/gen_counting.gp` and `tests/data/gen_numbpart.gp`
+    (copies of `gp/gen_counting.gp`, `gp/gen_numbpart.gp`). Then `tests/ch144_counting.rs`,
+    `tests/ch145_number_of_partitions.rs`, `tests/machine_word_counts.rs` (§6). Revision 3 (review 3
+    m7): each new test file starts with the header that §6 gives for it (its MAGMA chapters,
+    Johansson 2012 for `ch145_number_of_partitions.rs`, and where its reference values come
+    from).
+12. Trackers and HANDOFF. Revision 3: in this round the implementer does not edit
+    `PROJECT_TRACKER.md`, `docs/` or `docs/magma/`. The implementation report lists the changes
+    below under Handoffs (with the line numbers of the commit), and the orchestrator makes them.
+    `docs/magma/status_overrides.csv`: `ch018.NumberOfPartitions` (partial -> done,
     path `partition_number.rs:<line of number_of_partitions>`, note "Euler (1.2) for n <= 1000,
     certified HRR (Johansson 2012) above, n <= 10^16; tests ..."), add `ch145.NumberOfPartitions`
     (done, same path), `ch145.NumberOfStandardTableaux` (done, path
     `partitions.rs:<line of number_of_standard_tableaux>`, note "Frobenius formula with
-    cancellation or the hook length formula, exact Integer; tests standard_tableaux_counts,
+    cancellation or the hook length formula, exact Integer; `hook_length_dimension` is the same
+    function; tests standard_tableaux_counts, hook_length_dimension_is_number_of_standard_tableaux,
     H145E13"), `ch018.Multinomial` (new note: u128 sum, product of binomials, tests), then
     `python3 tools/magma_tracker/build.py`.
-    `PROJECT_TRACKER.md`: `:1305` (classical counting: name the algorithms and the new tests),
-    `:1312` (hook length formula: was wrong from n = 21, now exact via `number_of_standard_tableaux`),
-    a new row for `number_of_partitions`, the `partitions.rs` rows that cite `partition_count`,
-    `:1264` (hall polynomials: the one-row case is wrong too), `:1272` (plane partitions: the box
-    count is wrong), `:1276` (similarity class types: `centralizer_group_cardinality` is wrong),
-    `:1293` (`parking_functions.rs` is not compiled), and a row or note for `polya_enumeration`.
-    Revision 2: a note on `:1320` (posets: the order-ideal and antichain lists were empty from 31
+    `PROJECT_TRACKER.md` (lines at `dc367a2`): `:1316` (classical counting: name the algorithms
+    and the new tests), `:1323` (hook length formula: was wrong from n = 21, now exact via
+    `number_of_standard_tableaux`; `hook_length_dimension` is the same count), a new row for
+    `number_of_partitions`, the `partitions.rs` rows that cite `partition_count`,
+    `:1275` (hall polynomials: the one-row case is wrong too), `:1283` (plane partitions: the box
+    count is wrong), `:1287` (similarity class types: `centralizer_group_cardinality` is wrong),
+    `:1304` (`parking_functions.rs` is not compiled), and a row or note for `polya_enumeration`.
+    Revision 2: a note on `:1331` (posets: the order-ideal and antichain lists were empty from 31
     elements, now exact up to 63, and `mobius` is i64, R6), rows or notes for vector partitions
     (counts now checked, the 1000-copy cap removed), `integer_lists` (the silent caps of 100, the
     empty `IntegerListIterator`), `signed_compositions` (semantics), `Permutation::order` /
-    `order_integer`, the Dyck-word statistics (i32 sums now checked, item 36), and `:1280` (designs: `BlockDesign::new`
-    checks only v <= 10).
-    `docs/HANDOFF.md:296-305`:
+    `order_integer`, the Dyck-word statistics (i32 sums now checked, item 36), and `:1291` (designs: `BlockDesign::new`
+    checks only v <= 10). Revision 3: a note for `partition_to_dyck_path` (§1.8), and the subset
+    successor note (`next_binary`, `prev_binary` now right for every n).
+    `docs/HANDOFF.md:335-342` (at `dc367a2`):
     - S2, S3, S4 and the library part of S10: done (with the commit).
     - One line for §1.7 (revision 2; it does not claim completeness): "Machine-word sweep of
       rustmath-combinatorics (design C1 §1.6-§1.7): the patterns `as u32`, saturating and
       wrapping arithmetic, `unwrap_or(0)` after a conversion, `<<`, `>>`, `pow`, `product`,
       `sum`, narrowing `as` casts, functions that return a machine word and multiply or count,
-      and helpers named like binomial or factorial were checked. The hits that are not fixed are
+      helpers named like binomial or factorial, and `?` on a machine-word conversion were checked. The hits that are not fixed are
       bounded by memory, by an enumeration or by 2^32 steps of work, guarded, or in modules flagged
       broken (ranking, hall_polynomial, similarity_class_type, ncsym, knutson_tao, cluster_complex,
       the symmetric-group characters). Known to remain: the size invariant of partition-like types
@@ -1771,6 +1936,11 @@ REPL arm changes that C1 makes possible (not done here):
       `ColoredPermutation::order` returns 1000001 when the order exceeds 10^6;
       and, outside the crate, `rustmath-interfaces/src/gap_parser.rs:108` `Permutation::order`
       has the lcm overflow of item 29.
+    - New items from §1.8, revision 3: `partition_to_dyck_path` never returns for the partition
+      (2) and returns a path with 2 north steps and 1 east step for (1, 1); outside the crate,
+      `rustmath-algebras/src/temperley_lieb_algebra.rs:317` `catalan_number` wraps from n = 33
+      (`TemperleyLiebAlgebra::new(33, d).dimension()` = 3793109252770211, truth
+      212336130412243110).
 
 ### 8.2 Acceptance
 
@@ -1778,23 +1948,40 @@ REPL arm changes that C1 makes possible (not done here):
 cargo build -p rustmath-combinatorics
 cargo test -p rustmath-combinatorics --no-fail-fast          # 1485 + new unit, 187 + doc, 3 integration files
 cargo test -p rustmath-combinatorics --release --test ch144_counting --test ch145_number_of_partitions --test machine_word_counts
-cargo clippy -p rustmath-combinatorics                        # no new warnings in the touched files
+cargo clippy -p rustmath-combinatorics                        # exits 101 at HEAD already: see below
 cargo test -p rustmath-jupyter --no-fail-fast                 # REPL callers: values and refusals unchanged
 cargo test -p rustmath-symmetricfunctions -p rustmath-quantumgroups --no-fail-fast   # Partition users
 cargo test -p rustmath-groups --no-fail-fast                  # revision 2: Permutation::order users (tests)
+cargo test -p rustmath-algebras -p rustmath-liealgebras -p rustmath-crystals -p rustmath-topology --no-fail-fast   # revision 3: the other direct dependents
 cargo check --workspace --tests
-python3 tools/magma_tracker/build.py
 ```
 
-When confirming that the new tests fail on HEAD, run `universal_cycles_refuse_lengths_above_usize`
-and `q_and_t_multinomials_check_the_sum` only under a memory limit, as §6.5 says (review 2, m5).
+After the `--release` run, delete `target/release` (disk; the release run is there because a release
+build wraps where a debug build panics, so it checks that the new checks, not debug overflow
+checks, raise the expected messages). rustmath-interfaces is the ninth direct dependent; none of its
+files names the crate, so `cargo check --workspace --tests` covers it (revision 3, review 3 m6).
+
+Clippy (revision 3). `cargo clippy -p rustmath-combinatorics` exits 101 at HEAD `dc367a2`, on five
+deny-level lints in code that C1 does not change: `inherent_to_string_shadow_display` at
+`binary_words.rs:317`, `debruijn.rs:100`, `super_tableaux.rs:297` and `word.rs:252`, and
+`while_immutable_condition` at `path_tableaux.rs:446` (the defect of §1.8). The acceptance is: no
+warning or error on a line that C1 adds or changes (compare the lint locations with `git diff -U0`).
+C1 does not fix the five. Removing an inherent `to_string` can change what its callers print, and the
+last one needs a correct `partition_to_dyck_path`.
+
+When confirming that the new tests fail on HEAD, follow the three steps at the end of §6.5 (review 2
+m5, review 3 m4): `universal_cycle_subsets_refuse_lengths_above_usize`,
+`q_and_t_multinomials_check_the_sum` and `non_decreasing_parking_count_refuses_huge_n` run only
+alone, under a memory limit and a timeout.
+
+The trackers and `python3 tools/magma_tracker/build.py` are the orchestrator's in this round
+(§8.1 step 12).
 
 ### 8.3 Risks
 
-- Order with I3. C1 relies on `SageInteger::binomial` keeping its signature (I3 changes only its
-  body). If I3's fast body is not merged when C1 starts, values are unchanged but the fixture
-  rows catalan(31622..316228) and binomial(200000, 100000) take minutes in a debug build; then
-  drop those rows to n <= 10^4 and say so in the commit.
+- Order with I3. Closed (revision 3): I3 landed in `80130e7` with the signature unchanged, and the
+  fixture rows catalan(316228) and binomial(200000, 100000) need 0.16 s and 0.03 s of binomial work
+  in a debug build (`rev3/binom3.txt`).
 - Rademacher's bound. The proof of exactness depends on (1.8) as quoted by Johansson. The
   checks of §2.6 (every n in 2..=3000 against Euler, 579 gp values) would very likely expose a
   wrong bound; the tests keep the 2..=3000 check and 71 gp rows.
@@ -1816,7 +2003,11 @@ and `q_and_t_multinomials_check_the_sum` only under a memory limit, as §6.5 say
   the helpers themselves use `usize::BITS` and u128, so they are right on any width.
 - Revision 1 test time: below 1 s in a debug build (the slowest is the rank of the last 3-subset of
   10^7, which panics after about 4·10^5 loop steps).
-- Clippy may ask for `u64::from` over `as` in the new code; follow it.
+- Clippy may ask for `u64::from` over `as` in the new code; follow it. The five deny-level lints
+  that make `cargo clippy` exit 101 at HEAD are older than C1 (§8.2).
+- Revision 3, item 28: `next_binary` and `prev_binary` now allocate a new element list of up to n
+  entries, as `from_bitvector` did at HEAD for n <= 64. For n >= 65 they used to return None at
+  once; now they return the right subset in O(n).
 - Revision 2, item 30: for 31 <= n < 64 the mask-loop functions now run their 2^n iterations,
   where HEAD returned an empty or one-element result at once. A caller that relied on the quick
   (wrong) answer would now run for a long time. No such caller exists (§0: the in-crate callers
