@@ -196,6 +196,55 @@ pub trait RingElementMethods: Ring {
 /// Blanket implementation for all rings
 impl<R: Ring> RingElementMethods for R {}
 
+/// Primality of a word, a proof (`rustmath_integers::prime::is_prime_u64`: strong tests to
+/// the twelve prime bases 2..37, deterministic below psi_12 > 2^64, J. Sorenson and
+/// J. Webster, "Strong pseudoprimes to twelve prime bases", Math. Comp. 86 (2017)).
+pub(crate) fn prime_u64(n: u64) -> bool {
+    rustmath_integers::prime::is_prime_u64(n)
+}
+
+/// Whether the word `n` is `q^k` with `q` prime and `k >= 1`: the minimal root of `n`
+/// (`Integer::is_perfect_power` extracts q-th roots for each prime q in increasing order,
+/// so its base is not a perfect power) is prime.
+pub(crate) fn is_prime_power_u64(n: u64) -> bool {
+    use rustmath_integers::Integer;
+    if n < 2 {
+        return false;
+    }
+    let (b, _) = Integer::from(n)
+        .is_perfect_power()
+        .unwrap_or_else(|| (Integer::from(n), 1));
+    u64::try_from(&b).is_ok_and(prime_u64)
+}
+
+/// MAGMA `IsPrime(n : Proof := true)`: `Some(b)` proven, `None` when the ECPP proof of a
+/// probable prime is unresolved (`rustmath_integers::prime::try_is_prime`).
+pub(crate) fn proven_primality(n: &rustmath_integers::Integer) -> Option<bool> {
+    rustmath_integers::prime::try_is_prime(n).ok()
+}
+
+/// Whether a ring of characteristic `c` is provably not an integral domain: `c = 1` is the
+/// zero ring; for composite `c = ab` (1 < a, b < c), `(a·1)(b·1) = c·1 = 0` with `a·1` and
+/// `b·1` nonzero. `false` for 0 and for primes.
+fn characteristic_rules_out_domain(c: u64) -> bool {
+    c == 1 || (c >= 4 && !prime_u64(c))
+}
+
+/// `Some(c)` when the parent's own data prove `R = Z·1 ≅ Z/cZ`: a known characteristic `c`
+/// equal to the cardinality (the additive subgroup `Z·1` already has `c` elements), or a
+/// prime cardinality `p` with unknown characteristic (`1 != 0` has additive order dividing
+/// `p`, Lagrange; the default [`RingParentMethods::characteristic`] already answers `p`).
+fn residue_ring_modulus<P: RingParentMethods>(parent: &P) -> Option<u64> {
+    let n = u64::try_from(parent.cardinality()?).ok()?;
+    if n == 0 {
+        return None;
+    }
+    match parent.characteristic() {
+        Some(c) => (c == n).then_some(c),
+        None => prime_u64(n).then_some(n),
+    }
+}
+
 /// Methods for ring parent structures: SageMath `Rings.ParentMethods`; MAGMA Handbook Ch. 17
 /// §17.4.2 `Characteristic` and the §17.4.3 predicates.
 ///
@@ -203,10 +252,18 @@ impl<R: Ring> RingElementMethods for R {}
 /// unknown"): `Some(_)` is a proof, `None` makes no claim (MAGMA raises an error there).
 /// `Parent::Element` need not be a `Ring`, so the defaults cannot read
 /// `Ring::static_characteristic`; they decide only what another method of the same parent
-/// proves: a parent with one element is the zero ring (characteristic 1, commutative, not a
-/// domain); a known characteristic equal to a known cardinality makes the ring `Z·1 ≅ Z/cZ`
-/// (commutative); a non-domain is not a field; a finite domain is a field. A parent that
-/// knows more overrides.
+/// proves:
+/// * a parent with one element is the zero ring (characteristic 1, commutative, not a
+///   domain);
+/// * a prime cardinality p gives characteristic p (Lagrange);
+/// * a known characteristic equal to the cardinality, or a prime cardinality, makes the
+///   ring `Z·1 ≅ Z/cZ`: commutative, and a domain iff c is prime;
+/// * a composite characteristic rules out a domain;
+/// * a cardinality n >= 2 that is not a prime power rules out a domain (a finite domain is
+///   a field, of prime-power order);
+/// * a non-domain is not a field; a finite domain is a field.
+///
+/// A parent that knows more overrides.
 ///
 /// Default dependency order (an override may call only methods earlier in it):
 /// `Parent::cardinality`, `Parent::is_finite` → `characteristic` → `is_commutative`,
@@ -217,10 +274,13 @@ pub trait RingParentMethods: Parent {
     /// MAGMA `Characteristic(R)` (Ch. 17 §17.4.2): the least `m >= 1` with `m·1 = 0`, or 0.
     ///
     /// `Some(c)` is exact (`Some(1)`: the zero ring); `None` means unknown or `>= 2^64`.
-    /// Default: `Some(1)` when `Parent::cardinality` is 1 (then `1 = 0`), otherwise `None`.
+    /// Default: `Some(1)` when `Parent::cardinality` is 1 (then `1 = 0`); `Some(p)` when it is
+    /// a prime p (the ring has more than one element, so `1 != 0`, and the additive order of
+    /// 1 divides p); otherwise `None`.
     fn characteristic(&self) -> Option<u64> {
-        if self.cardinality() == Some(1) {
-            Some(1)
+        let n = u64::try_from(self.cardinality()?).ok()?;
+        if n == 1 || prime_u64(n) {
+            Some(n)
         } else {
             None
         }
@@ -228,17 +288,12 @@ pub trait RingParentMethods: Parent {
 
     /// MAGMA `IsCommutative(R)` (Ch. 17 §17.4.3).
     ///
-    /// Default: `Some(true)` for the zero ring (characteristic 1 or one element) and when a
-    /// known characteristic `c` equals a known cardinality (the additive subgroup `Z·1`
-    /// already has `c` elements, so `R = Z·1 ≅ Z/cZ`); otherwise `None`.
+    /// Default: `Some(true)` for the zero ring (characteristic 1 or one element) and for a
+    /// parent proven to be `Z/cZ` (a known characteristic equal to the cardinality, or a
+    /// prime cardinality); otherwise `None`.
     fn is_commutative(&self) -> Option<bool> {
-        let c = self.characteristic();
-        let zero_ring = c == Some(1) || self.cardinality() == Some(1);
-        let generated_by_one = match (c, self.cardinality()) {
-            (Some(c), Some(n)) => c >= 1 && u64::try_from(n) == Ok(c),
-            _ => false,
-        };
-        if zero_ring || generated_by_one {
+        let zero_ring = self.characteristic() == Some(1) || self.cardinality() == Some(1);
+        if zero_ring || residue_ring_modulus(self).is_some() {
             Some(true)
         } else {
             None
@@ -247,14 +302,27 @@ pub trait RingParentMethods: Parent {
 
     /// MAGMA `IsDomain(R)` (Ch. 17 §17.4.3): commutative, `1 != 0`, no zero divisors.
     ///
-    /// Default: the zero ring (characteristic 1, or one element) is not one; otherwise `None`.
-    /// (The composite-characteristic rule of `rustmath_rings::category_methods` needs a
-    /// primality test, which this crate does not depend on.)
+    /// Default:
+    /// * the zero ring (characteristic 1, or one element) is not one;
+    /// * a composite characteristic `c = ab` is not one (`(a·1)(b·1) = 0`);
+    /// * a parent proven to be `Z/cZ` (see [`Self::is_commutative`]) is one iff `c` is prime;
+    /// * a cardinality `n >= 2` that is not a prime power is not one;
+    /// * otherwise `None` (characteristic 0 or a prime does not decide it).
     fn is_integral_domain(&self) -> Option<bool> {
         if self.characteristic() == Some(1) || self.cardinality() == Some(1) {
-            Some(false)
-        } else {
-            None
+            return Some(false);
+        }
+        if let Some(c) = self.characteristic() {
+            if characteristic_rules_out_domain(c) {
+                return Some(false);
+            }
+        }
+        if let Some(c) = residue_ring_modulus(self) {
+            return Some(prime_u64(c));
+        }
+        match self.cardinality().and_then(|n| u64::try_from(n).ok()) {
+            Some(n) if n >= 2 && !is_prime_power_u64(n) => Some(false),
+            _ => None,
         }
     }
 
@@ -722,5 +790,97 @@ mod tests {
             (f7.is_field(), f7.is_euclidean(), f7.is_pid(), f7.is_ufd()),
             (Some(true), Some(true), Some(true), Some(true))
         );
+    }
+
+    // ---- The composite-characteristic and cardinality rules (D.2) ----
+
+    /// A parent known only by its cardinality.
+    #[derive(Debug, Clone)]
+    struct ByCard(usize);
+    impl Parent for ByCard {
+        type Element = u8;
+        fn contains(&self, _: &u8) -> bool {
+            true
+        }
+        fn cardinality(&self) -> Option<usize> {
+            Some(self.0)
+        }
+    }
+    impl RingParentMethods for ByCard {}
+    impl CommutativeRingParentMethods for ByCard {}
+
+    /// A parent known only by its characteristic.
+    #[derive(Debug, Clone)]
+    struct ByChar(u64);
+    impl Parent for ByChar {
+        type Element = u8;
+        fn contains(&self, _: &u8) -> bool {
+            true
+        }
+    }
+    impl RingParentMethods for ByChar {
+        fn characteristic(&self) -> Option<u64> {
+            Some(self.0)
+        }
+    }
+    impl CommutativeRingParentMethods for ByChar {}
+
+    /// A parent known by its cardinality and characteristic.
+    #[derive(Debug, Clone)]
+    struct ByBoth(usize, u64);
+    impl Parent for ByBoth {
+        type Element = u8;
+        fn contains(&self, _: &u8) -> bool {
+            true
+        }
+        fn cardinality(&self) -> Option<usize> {
+            Some(self.0)
+        }
+    }
+    impl RingParentMethods for ByBoth {
+        fn characteristic(&self) -> Option<u64> {
+            Some(self.1)
+        }
+    }
+    impl CommutativeRingParentMethods for ByBoth {}
+
+    fn domain_tuple<P: CommutativeRingParentMethods>(r: &P) -> [Option<bool>; 5] {
+        [r.is_integral_domain(), r.is_field(), r.is_pid(), r.is_ufd(), r.is_euclidean()]
+    }
+
+    // PARI: Mod(2,4)^2 -> Mod(0, 4); isprime(561) -> 0 (561 = 3*11*17, a Carmichael
+    // number); isprime(2^64-59) -> 1. At c79a582 every answer here was None.
+    #[test]
+    fn test_composite_characteristic_is_not_a_domain() {
+        assert_eq!(domain_tuple(&ByChar(4)), [Some(false); 5]);
+        assert_eq!(domain_tuple(&ByChar(561)), [Some(false); 5]);
+        assert_eq!(ByChar(18_446_744_073_709_551_557).is_integral_domain(), None);
+        assert_eq!(ByChar(0).is_integral_domain(), None);
+    }
+
+    // GAP: IsField(ZmodnZ(7)) -> true, Characteristic(ZmodnZ(7)) -> 7; IsField(GF(4)) ->
+    // true and IsField(ZmodnZ(4)) -> false (cardinality 4 decides nothing). At c79a582 the
+    // domain was None for Z/6 and every answer was None for cardinality 7.
+    #[test]
+    fn test_residue_ring_by_cardinality() {
+        let z6 = ByBoth(6, 6);
+        assert_eq!(z6.is_commutative(), Some(true));
+        assert_eq!(z6.is_integral_domain(), Some(false));
+        let f7 = ByCard(7);
+        assert_eq!(f7.characteristic(), Some(7));
+        assert_eq!(f7.is_commutative(), Some(true));
+        assert_eq!(domain_tuple(&f7), [Some(true); 5]);
+        assert_eq!(ByCard(4).is_integral_domain(), None);
+        assert_eq!(ByCard(4).characteristic(), None);
+    }
+
+    // GAP: IsPrimePowerInt(6) -> false, IsPrimePowerInt(12) -> false, IsField(ZmodnZ(6)) ->
+    // false; IsPrimePowerInt(49) -> true (GF(49) is a field, Z/49 is not).
+    #[test]
+    fn test_non_prime_power_cardinality_is_not_a_domain() {
+        assert_eq!(domain_tuple(&ByCard(6)), [Some(false); 5]);
+        assert_eq!(domain_tuple(&ByCard(12)), [Some(false); 5]);
+        assert_eq!(ByCard(49).is_integral_domain(), None);
+        assert_eq!(ByCard(6).characteristic(), None);
     }
 }

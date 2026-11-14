@@ -43,10 +43,10 @@ impl<R: Ring> Parent for DownUpAlgebra<R> {
     /// and the algebra is infinite. Over the zero ring it is the zero ring.
     ///
     /// Whether the base ring is the zero ring is read off the stored parameter `alpha`
-    /// (see `base_ring_is_zero`), never from the static `R::zero()`/`R::one()`: those panic
-    /// for some parent-carrying element types (the p-adic elements), and for others
-    /// (`GaloisRingElement`, `FiniteFieldElement`) they are unbound integer constants that
-    /// know nothing about the ring. `DownUpAlgebra::new` does not call those constructors,
+    /// (see `base_ring_is_zero`), never from the static `R::zero()`/`R::one()`: for the
+    /// parent-carrying element types (`GaloisRingElement`, `FiniteFieldElement`, the p-adic
+    /// elements) they are unbound integer constants that know nothing about the ring, and a
+    /// parent-carrying type without such a sentinel may panic there. `DownUpAlgebra::new` does not call those constructors,
     /// so such an algebra can be built.
     fn is_finite(&self) -> Option<bool> {
         Some(self.base_ring_is_zero())
@@ -67,6 +67,33 @@ impl<R: Ring> DownUpAlgebra<R> {
         alpha.is_zero() && alpha.is_one()
     }
 }
+
+/// The ring predicates of DU(α, β, γ) (MAGMA Ch. 17 §17.4.2-3).
+impl<R: Ring> rustmath_category::RingParentMethods for DownUpAlgebra<R> {
+    /// The zero ring over a zero base; else the characteristic of R (R·1 ⊂ DU, and 1 is a
+    /// basis monomial).
+    fn characteristic(&self) -> Option<u64> {
+        if self.base_ring_is_zero() {
+            Some(1)
+        } else {
+            R::static_characteristic()
+        }
+    }
+
+    /// Over a nonzero base du and ud are distinct basis monomials ((du)^1 and u^1 d^1 of the
+    /// normal form u^i (du)^j d^k: Benkart and Roby, "Down-up algebras", J. Algebra 209
+    /// (1998); the crate's `DownUpBasisIndex`), so DU is not commutative.
+    fn is_commutative(&self) -> Option<bool> {
+        Some(self.base_ring_is_zero())
+    }
+
+    /// `IsDomain` requires commutativity (and 1 != 0), so never.
+    fn is_integral_domain(&self) -> Option<bool> {
+        Some(false)
+    }
+}
+
+impl<R: Ring> rustmath_category::CommutativeRingParentMethods for DownUpAlgebra<R> {}
 
 impl<R: Ring> ParentWithGenerators for DownUpAlgebra<R> {
     fn generators(&self) -> Vec<Self::Element> {
@@ -177,6 +204,27 @@ impl<R: Ring> ParentWithBasis for SimpleAlgebra<R> {
 mod tests {
     use super::*;
     use rustmath_integers::Integer;
+
+    // DU(2, -1, -2) over Q is isomorphic to U(sl_2) (Benkart and Roby 1998). GAP:
+    // IsCommutative(UniversalEnvelopingAlgebra(SimpleLieAlgebra("A",1,Rationals))) -> false.
+    // At c79a582 DownUpAlgebra had no ring-predicate impl.
+    #[test]
+    fn down_up_algebra_category() {
+        use rustmath_category::{CommutativeRingParentMethods, RingParentMethods};
+        use rustmath_rationals::Rational;
+        let a = DownUpAlgebra::new(
+            Rational::from_integer(2),
+            Rational::from_integer(-1),
+            Rational::from_integer(-2),
+        );
+        assert_eq!(RingParentMethods::characteristic(&a), Some(0));
+        assert_eq!(a.is_commutative(), Some(false));
+        assert_eq!(a.is_integral_domain(), Some(false));
+        assert_eq!(a.is_field(), Some(false));
+        assert_eq!(a.is_pid(), Some(false));
+        let (d, u) = a.algebra_generators();
+        assert_ne!(d.multiply(&u, &a), u.multiply(&d, &a));
+    }
 
     #[test]
     fn test_down_up_algebra_as_parent() {
@@ -312,9 +360,10 @@ mod tests {
         assert_eq!(algebra0.is_finite(), Some(false));
     }
 
-    /// Z/nZ elements that carry their modulus and whose static constructors panic, like the
-    /// p-adic element types: the guard that `DownUpAlgebra`'s `cardinality`/`is_finite` never
-    /// call `R::zero()`/`R::one()`. With n = 1 it is the zero ring (0 = 1).
+    /// Z/nZ elements that carry their modulus and whose static constructors panic, like a
+    /// parent-carrying type without a sentinel: the guard that `DownUpAlgebra`'s
+    /// `cardinality`/`is_finite` never call `R::zero()`/`R::one()`. With n = 1 it is the
+    /// zero ring (0 = 1).
     #[derive(Clone, Debug, PartialEq)]
     struct PanickyZn {
         v: u64,

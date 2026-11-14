@@ -96,9 +96,9 @@ pub trait Ring:
     // that this element type cannot decide (or, for a hook with a cost cap, did not decide
     // within it). A concrete ring that can decide overrides them
     // in its own `impl Ring`. The defaults use only the ring axioms, never a search, and
-    // never a static constructor (`Self::one()` panics for parent-carrying types such as the
-    // p-adic elements, and is an unbound integer constant for others such as Galois-ring and
-    // finite-field elements), so they are total for every implementor.
+    // never a static constructor (`Self::one()` of a parent-carrying type is an unbound
+    // integer constant: the Galois-ring, finite-field and p-adic element types; it may panic
+    // for a type without such a sentinel), so they are total for every implementor.
 
     /// MAGMA `IsUnit(a)` (Ch. 17 §17.5.5): whether `self` has a two-sided inverse.
     ///
@@ -206,10 +206,11 @@ pub trait Ring:
     //
     // The parent-carrying element types of rustmath-finitefields (`IntegerMod` and
     // `PrimeField` with modulus 0, `FiniteFieldElement`, `GaloisRingElement`,
-    // `ExtensionField`) return from the static `zero()`/`one()` an integer constant c that
-    // awaits the canonical map Z -> R (MAGMA ch. 48 §48.2.3: `R ! a`). Arithmetic binds such
-    // a constant on contact with a bound element. Containers bind their unbound entries to
-    // the parent of a bound sibling with these three hooks.
+    // `ExtensionField`) and of rustmath-rings (the p-adic `PadicInteger`, `PadicRational`,
+    // `PadicExtensionElement`) return from the static `zero()`/`one()` an integer constant c
+    // that awaits the canonical map Z -> R (MAGMA ch. 48 §48.2.3 and ch. 47 §47.7.1:
+    // `R ! a`). Arithmetic binds such a constant on contact with a bound element. Containers
+    // bind their unbound entries to the parent of a bound sibling with these three hooks.
 
     /// Whether values of this type can be unbound constants. Default `false`; containers skip
     /// all binding work for such types (a compile-time constant). A container over `R` sets it
@@ -799,8 +800,8 @@ mod tests {
     }
 
     /// Test-local `Z/6Z` rings that pin the trait defaults. `$panicky` makes the static
-    /// constructors panic, like the p-adic element types', to prove the defaults never call
-    /// them.
+    /// constructors panic, like a parent-carrying type without a sentinel, to prove the
+    /// defaults never call them.
     macro_rules! z6_ring {
         ($name:ident, $panicky:expr, $chr:expr) => {
             #[derive(Clone, Copy, Debug, PartialEq)]
@@ -894,8 +895,8 @@ mod tests {
         assert_eq!(Z6Char(2).multiplicative_order_status(), MultiplicativeOrder::Undecided);
     }
 
-    // The defaults must not call `Self::zero()`/`Self::one()` (they panic for
-    // parent-carrying types).
+    // The defaults must not call `Self::zero()`/`Self::one()` (they may panic for a
+    // parent-carrying type without a sentinel).
     #[test]
     fn test_defaults_never_call_static_constructors() {
         for x in 0u8..6 {

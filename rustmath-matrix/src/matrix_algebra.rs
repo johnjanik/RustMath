@@ -312,6 +312,14 @@ impl<F: Field> MatrixAlgebra<F> {
         self.n
     }
 
+    /// Whether this is the complete algebra `Mₙ(F)` built by [`MatrixAlgebra::full`]: no
+    /// defining generators and the `n²` matrix units as basis. Structural, so it does not
+    /// depend on a dimension computed over an inexact `F`. (`generated(n, [])` is `F·I`,
+    /// of dimension 1, so it is full only for `n <= 1`.)
+    pub fn is_full(&self) -> bool {
+        self.generators.is_empty() && self.basis.len() == self.n * self.n
+    }
+
     /// The `F`-dimension of the algebra (MAGMA `Dimension`).
     pub fn dimension(&self) -> usize {
         self.basis.len()

@@ -30,6 +30,7 @@ use thiserror::Error;
 
 pub mod abext;
 pub mod artin;
+pub mod category;
 pub mod classgroup;
 pub mod different;
 pub mod disc_score;

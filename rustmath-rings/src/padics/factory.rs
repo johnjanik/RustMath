@@ -190,7 +190,16 @@ impl PadicIntegerRing {
     /// For CappedRelative: maintains relative precision
     /// For CappedAbsolute: maintains absolute precision
     /// For FixedModulus: always uses fixed precision
+    ///
+    /// An unbound element (the static `Ring::zero()`/`one()`) is first bound into this
+    /// ring at its default precision (MAGMA `R ! c`, Ch. 47 §47.7.1).
     pub fn adjust_precision(&self, elem: PadicInteger) -> PadicInteger {
+        let elem = if elem.is_bound() {
+            elem
+        } else {
+            self.from_integer(elem.value().clone())
+                .expect("the ring has p > 1 and precision > 0")
+        };
         match self.model {
             PrecisionModel::CappedRelative => {
                 // Relative precision: precision relative to valuation
@@ -725,6 +734,25 @@ mod tests {
         let x = zp.from_int(100).unwrap();
         let adjusted = zp.adjust_precision(x);
         assert_eq!(adjusted.precision(), 8);
+    }
+
+    // The static `Ring::one()` is unbound; `adjust_precision` binds it into the ring (at
+    // c79a582 it panicked: `Ring::one()` had no parameters, and an unbound element has no
+    // valuation or precision).
+    #[test]
+    fn adjust_precision_binds_unbound() {
+        for model in [
+            PrecisionModel::CappedRelative,
+            PrecisionModel::CappedAbsolute,
+            PrecisionModel::FixedModulus,
+        ] {
+            let ring = PadicIntegerRing::new(Integer::from(5), 20, model).unwrap();
+            let one = ring.adjust_precision(<PadicInteger as Ring>::one());
+            assert!(one.is_bound(), "{model}");
+            assert_eq!(one.prime(), &Integer::from(5));
+            assert_eq!(one.precision(), 20);
+            assert!(one.is_one());
+        }
     }
 
     #[test]

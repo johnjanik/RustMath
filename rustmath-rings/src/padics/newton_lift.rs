@@ -346,7 +346,12 @@ fn solve_series_system(
 ///
 /// Requires the coefficient to be p-integral (non-negative valuation); a
 /// negative valuation is an honest error (the coefficient is not in Z_p).
+/// An unbound constant c (the static `Ring::zero()`/`one()`) is an exact
+/// integer of Z_p and gives `c mod m`.
 fn padic_to_int(pr: &PadicRational, m: &Integer, p: &Integer) -> Result<Integer> {
+    if !pr.is_bound() {
+        return Ok(pr.unit().value().modulo(m));
+    }
     let v = pr.valuation();
     if v < 0 {
         return Err(MathError::InvalidArgument(
@@ -551,6 +556,19 @@ pub fn newton_lift_bivariate(
 mod tests {
     use super::*;
     use rustmath_polynomials::poly_system::PolySystem;
+
+    // An unbound constant reaches the boundary conversion as an exact integer (at c79a582
+    // `Ring::one()` panicked, and `valuation()` of an unbound element panics now).
+    // gp: (-3) % 25 -> 22.
+    #[test]
+    fn padic_to_int_of_unbound() {
+        use rustmath_core::Ring;
+        let one = <PadicRational as Ring>::one();
+        let three = one.clone() + one.clone() + one;
+        let (m, p) = (Integer::from(25), Integer::from(5));
+        assert_eq!(padic_to_int(&three, &m, &p), Ok(Integer::from(3)));
+        assert_eq!(padic_to_int(&-three, &m, &p), Ok(Integer::from(22)));
+    }
 
     // --- independent oracle (no reference to the code under test) -----------
 

@@ -9,7 +9,10 @@ repository.workspace = true
 [dependencies]
 rustmath-core = { path = "../rustmath-core" }
 rustmath-groups = { path = "../rustmath-groups" }
+rustmath-integers = { path = "../rustmath-integers" }
+rustmath-finitefields = { path = "../rustmath-finitefields" }
+rustmath-matrix = { path = "../rustmath-matrix" }
+rustmath-reals = { path = "../rustmath-reals" }
 
 [dev-dependencies]
-rustmath-integers = { path = "../rustmath-integers" }
 rustmath-rationals = { path = "../rustmath-rationals" }

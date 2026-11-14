@@ -32,6 +32,7 @@ pub mod abc;
 pub mod algebraic_closure;
 pub mod asymptotic;
 pub mod category_methods;
+pub mod category_parents;
 pub mod asymptotic_misc;
 pub mod big_oh;
 pub mod cfinite_sequence;

@@ -2896,6 +2896,7 @@ dependencies = [
  "num-rational",
  "num-traits",
  "once_cell",
+ "rustmath-category",
  "rustmath-combinatorics",
  "rustmath-core",
  "rustmath-finitefields",
@@ -2951,9 +2952,12 @@ name = "rustmath-category"
 version = "0.1.0"
 dependencies = [
  "rustmath-core",
+ "rustmath-finitefields",
  "rustmath-groups",
  "rustmath-integers",
+ "rustmath-matrix",
  "rustmath-rationals",
+ "rustmath-reals",
 ]
 
 [[package]]
@@ -3332,6 +3336,7 @@ name = "rustmath-manifolds"
 version = "0.1.0"
 dependencies = [
  "num-traits",
+ "rustmath-category",
  "rustmath-complex",
  "rustmath-core",
  "rustmath-integers",
@@ -3432,6 +3437,7 @@ dependencies = [
  "num-rational",
  "num-traits",
  "rug",
+ "rustmath-category",
  "rustmath-complex",
  "rustmath-core",
  "rustmath-groups",

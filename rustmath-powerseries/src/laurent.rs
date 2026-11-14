@@ -19,7 +19,9 @@
 use crate::precision::{Precision, DEFAULT_PRECISION};
 use crate::series::PowerSeries;
 use rustmath_core::valuation::DiscreteValuation;
-use rustmath_core::{CommutativeRing, Field, IntegralDomain, MathError, Result, Ring};
+use rustmath_core::{
+    CommutativeRing, Field, IntegralDomain, MathError, MultiplicativeOrder, Result, Ring,
+};
 use std::fmt;
 use std::marker::PhantomData;
 use std::ops::{Add, Div, Mul, Neg, Sub};
@@ -274,6 +276,103 @@ impl<R: Ring> Ring for LaurentSeries<R> {
     fn is_one(&self) -> bool {
         self.coefficient(0).is_one()
             && (self.val..self.absolute_precision()).all(|e| e == 0 || self.coefficient(e).is_zero())
+    }
+
+    // Ring predicates (MAGMA Ch. 49 §49.4.4). The window `coeffs` is exact; `is_zero` is
+    // weak (`IsWeaklyZero`), a departure from MAGMA's strict `IsZero` for series. The rules
+    // that read a coefficient's `is_zero()` ("the leading coefficient") are proofs when
+    // that test is exact; for a weak coefficient type they hold for the representative only
+    // (over Z_5, O(5^3)·x^-1 + 1 is reported a unit, but its lift 5^3·x^-1 + 1 is not). See
+    // `series_core_impls` for the power-series facts used.
+
+    /// `R::static_characteristic()` (R ⊂ R((x))).
+    fn static_characteristic() -> Option<u64> {
+        R::static_characteristic()
+    }
+
+    fn static_is_commutative() -> Option<bool> {
+        R::static_is_commutative()
+    }
+
+    /// Empty window: `None`. Weakly zero: `Some(false)` (the convention). Leading
+    /// coefficient c a proven unit: `Some(true)` (f = x^w·c·(1 + h), h ∈ xR\[\[x\]\], every
+    /// factor a unit). Otherwise `None`: over a non-domain a non-unit leading coefficient
+    /// can still give a unit (2 + x = x(1 + 2x^-1) is a unit of (Z/4)((x)) since 2x^-1 is
+    /// nilpotent), and over Z the answer would need "Z is a domain", which no hook states.
+    fn unit_status(&self) -> Option<bool> {
+        if self.coeffs.is_empty() {
+            return None;
+        }
+        let Some(v) = self.coeffs.iter().position(|c| !c.is_zero()) else {
+            return Some(false);
+        };
+        (self.coeffs[v].unit_status() == Some(true)).then_some(true)
+    }
+
+    /// A proven unit leading coefficient: x^(-w) times the power-series inverse of the unit
+    /// part, relative precision unchanged (the generic form of `try_inverse`). Weakly zero:
+    /// `Err(NotInvertible)`. Otherwise (and for an empty window) `Err(NotImplemented)`.
+    fn unit_inverse(&self) -> Result<Self> {
+        if self.coeffs.is_empty() {
+            return Err(MathError::NotImplemented(
+                "LaurentSeries::unit_inverse: no known coefficient".into(),
+            ));
+        }
+        let Some(v) = self.coeffs.iter().position(|c| !c.is_zero()) else {
+            return Err(MathError::NotInvertible);
+        };
+        if self.coeffs[v].unit_status() != Some(true) {
+            return Err(MathError::NotImplemented(
+                "LaurentSeries::unit_inverse: the leading coefficient is not a proven unit".into(),
+            ));
+        }
+        let unit_coeffs: Vec<R> = self.coeffs[v..].to_vec();
+        let prec = unit_coeffs.len();
+        let inv = PowerSeries::new(unit_coeffs, prec).unit_inverse()?;
+        Ok(LaurentSeries {
+            val: -(self.val + v as i64),
+            coeffs: (0..inv.precision()).map(|i| inv.coeff(i).clone()).collect(),
+        })
+    }
+
+    /// Empty window: `None`. Weakly zero: `Some(true)`. Leading coefficient non-nilpotent:
+    /// `Some(false)`. Commutative R and any known coefficient non-nilpotent: `Some(false)`
+    /// (x^k f ∈ R\[\[x\]\] for some k). Otherwise `None`.
+    fn nilpotent_status(&self) -> Option<bool> {
+        if self.coeffs.is_empty() {
+            return None;
+        }
+        let Some(v) = self.coeffs.iter().position(|c| !c.is_zero()) else {
+            return Some(true);
+        };
+        if self.coeffs[v].nilpotent_status() == Some(false) {
+            return Some(false);
+        }
+        if R::static_is_commutative() == Some(true)
+            && self.coeffs[v..].iter().any(|c| c.nilpotent_status() == Some(false))
+        {
+            return Some(false);
+        }
+        None
+    }
+
+    /// Empty window: `Undecided`; otherwise the trait's default rules.
+    fn multiplicative_order_status(&self) -> MultiplicativeOrder {
+        if self.coeffs.is_empty() {
+            return MultiplicativeOrder::Undecided;
+        }
+        if self.is_one() {
+            MultiplicativeOrder::Finite(1)
+        } else if (-self.clone()).is_one() {
+            match Self::static_characteristic() {
+                Some(c) if c != 1 && c != 2 => MultiplicativeOrder::Finite(2),
+                _ => MultiplicativeOrder::Undecided,
+            }
+        } else if self.unit_status() == Some(false) {
+            MultiplicativeOrder::NotAUnit
+        } else {
+            MultiplicativeOrder::Undecided
+        }
     }
 }
 

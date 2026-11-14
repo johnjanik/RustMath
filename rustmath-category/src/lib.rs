@@ -49,6 +49,7 @@ pub mod morphism_composition;
 pub mod natural_transformation;
 pub mod module_category;
 pub mod ring_category;
+mod ring_parents;
 
 // Re-export core traits and types
 pub use category::{

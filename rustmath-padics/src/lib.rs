@@ -35,5 +35,13 @@ mod tests {
         assert_eq!(a.value(), &Integer::from(7));
         // residue() is the image in the residue field Z/pZ: 7 mod 5 = 2
         assert_eq!(a.residue(), Integer::from(2));
+
+        // The re-exported type's static one() is an unbound 1 that binds on contact
+        // (MAGMA `R ! 1`): 1 + (7 + O(5^10)) = 8 + O(5^10).
+        use rustmath_rings::Ring;
+        let b = <PadicInteger as Ring>::one() + a;
+        assert!(b.is_bound());
+        assert_eq!(b.value(), &Integer::from(8));
+        assert_eq!(b.precision(), precision);
     }
 }

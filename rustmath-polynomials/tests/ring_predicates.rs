@@ -454,8 +454,8 @@ fn laurent_hooks() {
     assert_eq!(m.unit_status(), Some(false));
 }
 
-/// Z/8 whose static constructors panic, like the parent-carrying coefficient types (p-adic
-/// elements): the polynomial hooks must read only the coefficients.
+/// Z/8 whose static constructors panic, like a parent-carrying coefficient type without a
+/// sentinel: the polynomial hooks must read only the coefficients.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 struct NoStatic(Zm<8, true>);
 
