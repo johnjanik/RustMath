@@ -14,7 +14,10 @@ use rustmath_complex::Complex;
 use rustmath_symbolic::{Symbol, Expr, parse as parse_expr};
 use rustmath_matrix::Matrix;
 use rustmath_polynomials::UnivariatePolynomial;
-use rustmath_finitefields::IntegerMod;
+use rustmath_finitefields::{
+    all_square_roots_mod_prime_power, num_square_roots_mod_prime_power, square_root_mod_prime_power,
+    IntegerMod,
+};
 use rustmath_combinatorics::{
     catalan, fibonacci_signed, lucas_signed, bell_number, stirling_first, stirling_second,
     multinomial, falling_factorial, rising_factorial, eulerian, narayana, motzkin,
@@ -27,6 +30,7 @@ use rustmath_integers::{
         try_prime_range as try_primes_between,
     },
     crt::chinese_remainder_theorem,
+    factorization_with_limits, FactorizationLimits,
 };
 use rustmath_stats::statistics::{
     mean as stats_mean, variance as stats_variance, std_dev as stats_std_dev,
@@ -201,8 +205,6 @@ pub struct Plot3DOptions {
     pub mesh: bool,
     /// Mesh line color
     pub mesh_color: String,
-    /// Number of plot points per axis
-    pub plot_points: usize,
     /// Enable interactive mode with zoom/rotate
     pub interactive: bool,
     /// Background color
@@ -220,7 +222,6 @@ impl Default for Plot3DOptions {
             opacity: 1.0,
             mesh: false,  // SageMath default: no mesh
             mesh_color: "#333333".to_string(),
-            plot_points: 40,
             interactive: true,  // Enable zoom/rotate by default
             background: "#ffffff".to_string(),
             axes: true,
@@ -230,70 +231,94 @@ impl Default for Plot3DOptions {
 }
 
 impl Plot3DOptions {
-    /// Parse options from keyword arguments like "color='red', mesh=True, opacity=0.8"
-    pub fn parse_from_args(args: &[&str]) -> Self {
+    /// Parse options from keyword arguments like "color='red', mesh=True, opacity=0.8".
+    ///
+    /// No command calls this yet (the 3D plots use the defaults and fixed grids). Every
+    /// argument must be `key=value` with a known key: `color`/`rgbcolor` (a color name, or 3 or
+    /// 6 hex digits after `#` or `0x`), `opacity` (a number in [0, 1]), and the booleans `mesh`,
+    /// `interactive`, `axes`, `shading` (`True`/`true`/`1` or `False`/`false`/`0`). Anything
+    /// else is a ValueError naming the key (N5): nothing is clamped, defaulted or ignored. The
+    /// former `plot_points` key is refused, since no generator read it.
+    pub fn parse_from_args(args: &[&str]) -> Result<Self, EvalError> {
         let mut opts = Self::default();
+        let boolean = |key: &str, value: &str| -> Result<bool, EvalError> {
+            match value {
+                "True" | "true" | "1" => Ok(true),
+                "False" | "false" | "0" => Ok(false),
+                _ => Err(EvalError::new("ValueError", format!(
+                    "plot3d option {}: expected True or False, got {}", key, value))),
+            }
+        };
 
         for arg in args {
             let arg = arg.trim();
-            if let Some(eq_pos) = arg.find('=') {
-                let key = arg[..eq_pos].trim().to_lowercase();
-                let value = arg[eq_pos + 1..].trim();
+            let Some(eq_pos) = arg.find('=') else {
+                return Err(EvalError::new("ValueError", format!(
+                    "plot3d option {}: options are given as key=value", arg)));
+            };
+            let key = arg[..eq_pos].trim().to_lowercase();
+            let value = arg[eq_pos + 1..].trim();
 
-                match key.as_str() {
-                    "color" | "rgbcolor" => {
-                        // Remove quotes if present
-                        let color = value.trim_matches(|c| c == '\'' || c == '"');
-                        opts.color = Self::parse_color(color);
-                    }
-                    "opacity" => {
-                        if let Ok(o) = value.parse::<f64>() {
-                            opts.opacity = o.clamp(0.0, 1.0);
-                        }
-                    }
-                    "mesh" => {
-                        opts.mesh = value == "True" || value == "true" || value == "1";
-                    }
-                    "plot_points" => {
-                        if let Ok(n) = value.parse::<usize>() {
-                            opts.plot_points = n.clamp(10, 100);
-                        }
-                    }
-                    "interactive" => {
-                        opts.interactive = value == "True" || value == "true" || value == "1";
-                    }
-                    "axes" => {
-                        opts.axes = value == "True" || value == "true" || value == "1";
-                    }
-                    "shading" => {
-                        opts.shading = value == "True" || value == "true" || value == "1";
-                    }
-                    _ => {}
+            match key.as_str() {
+                "color" | "rgbcolor" => {
+                    // Remove quotes if present
+                    let color = value.trim_matches(|c| c == '\'' || c == '"');
+                    opts.color = Self::parse_color(color).ok_or_else(|| EvalError::new("ValueError", format!(
+                        "plot3d option {}: unknown color {} (a color name, or 3 or 6 hex digits after # or 0x)",
+                        key, color)))?;
+                }
+                "opacity" => {
+                    opts.opacity = match value.parse::<f64>() {
+                        Ok(o) if (0.0..=1.0).contains(&o) => o,
+                        _ => return Err(EvalError::new("ValueError", format!(
+                            "plot3d option opacity: expected a number in [0, 1], got {}", value))),
+                    };
+                }
+                "mesh" => opts.mesh = boolean("mesh", value)?,
+                "interactive" => opts.interactive = boolean("interactive", value)?,
+                "axes" => opts.axes = boolean("axes", value)?,
+                "shading" => opts.shading = boolean("shading", value)?,
+                _ => {
+                    return Err(EvalError::new("ValueError", format!(
+                        "plot3d: unknown option {} (options: color, rgbcolor, opacity, mesh, interactive, axes, shading)",
+                        key)));
                 }
             }
         }
 
-        opts
+        Ok(opts)
     }
 
-    /// Parse color names to hex codes
-    fn parse_color(color: &str) -> String {
-        match color.to_lowercase().as_str() {
-            "blue" => "#6666ff".to_string(),
-            "red" => "#ff6666".to_string(),
-            "green" => "#66ff66".to_string(),
-            "yellow" => "#ffff66".to_string(),
-            "orange" => "#ff9933".to_string(),
-            "purple" => "#9966ff".to_string(),
-            "cyan" => "#66ffff".to_string(),
-            "magenta" => "#ff66ff".to_string(),
-            "white" => "#ffffff".to_string(),
-            "black" => "#333333".to_string(),
-            "gray" | "grey" => "#999999".to_string(),
-            _ if color.starts_with('#') => color.to_string(),
-            _ if color.starts_with("0x") => format!("#{}", &color[2..]),
-            _ => "#6666ff".to_string(), // Default to SageMath blue
-        }
+    /// Parse color names to hex codes; `None` for an unknown name or a hex value that is not 3
+    /// or 6 hex digits (review 3 of J1a, m1: it was the default blue).
+    fn parse_color(color: &str) -> Option<String> {
+        let hex = |digits: &str| -> Option<String> {
+            ((digits.len() == 3 || digits.len() == 6) && digits.chars().all(|c| c.is_ascii_hexdigit()))
+                .then(|| format!("#{}", digits))
+        };
+        let named = match color.to_lowercase().as_str() {
+            "blue" => "#6666ff",
+            "red" => "#ff6666",
+            "green" => "#66ff66",
+            "yellow" => "#ffff66",
+            "orange" => "#ff9933",
+            "purple" => "#9966ff",
+            "cyan" => "#66ffff",
+            "magenta" => "#ff66ff",
+            "white" => "#ffffff",
+            "black" => "#333333",
+            "gray" | "grey" => "#999999",
+            _ => {
+                return if let Some(d) = color.strip_prefix('#') {
+                    hex(d)
+                } else if let Some(d) = color.strip_prefix("0x") {
+                    hex(d)
+                } else {
+                    None
+                };
+            }
+        };
+        Some(named.to_string())
     }
 }
 
@@ -531,6 +556,9 @@ pub struct ReplContext {
     stdout: String,
     /// Captured stderr
     stderr: String,
+    /// Nesting depth of `eval_expr` calls in the command being evaluated (bounded by
+    /// `repl_limits::EVAL_DEPTH`, so deep nesting is an error instead of a stack overflow).
+    eval_depth: usize,
 }
 
 impl ReplContext {
@@ -541,6 +569,7 @@ impl ReplContext {
             last_result: None,
             stdout: String::new(),
             stderr: String::new(),
+            eval_depth: 0,
         }
     }
 
@@ -687,7 +716,24 @@ impl ReplContext {
         Ok(value.to_display())
     }
 
+    /// Evaluates one expression. The nesting of these calls is bounded by
+    /// `repl_limits::EVAL_DEPTH` (review 3 of J1a, m4): grouping parentheses and unary signs
+    /// (S9) made inputs such as `-(-(...(1)...))` evaluable, and each level recurses, so without a
+    /// bound a few thousand levels overflow the stack, which kills the kernel (no `catch_unwind`
+    /// can catch it). Runs of signs and of parentheses are read in one step and do not count.
     fn eval_expr(&mut self, expr: &str) -> Result<RustMathValue, EvalError> {
+        if self.eval_depth >= repl_limits::EVAL_DEPTH {
+            return Err(EvalError::new("SyntaxError", format!(
+                "the expression is nested more than {} levels deep (REPL limit; deeper nesting \
+                 would overflow the stack)", repl_limits::EVAL_DEPTH)));
+        }
+        self.eval_depth += 1;
+        let result = self.eval_expr_nested(expr);
+        self.eval_depth -= 1;
+        result
+    }
+
+    fn eval_expr_nested(&mut self, expr: &str) -> Result<RustMathValue, EvalError> {
         let expr = expr.trim();
 
         // Check for tuple expression (comma-separated values at top level)
@@ -733,6 +779,9 @@ impl ReplContext {
         // Try to parse as float (e.g., 0.7, 3.14, 1.5e-3)
         if expr.contains('.') || expr.contains('e') || expr.contains('E') {
             if let Ok(f) = expr.parse::<f64>() {
+                if !f.is_finite() {
+                    return Err(EvalError::new("ValueError", format!("the float literal {} is outside the range of a double", expr)));
+                }
                 return Ok(RustMathValue::Float(f));
             }
         }
@@ -764,23 +813,17 @@ impl ReplContext {
                 if is_valid_identifier(func_name.trim()) {
                     // Count parentheses to verify the last ')' matches the first '('
                     let args_part = &expr[open_pos..];
-                    let mut depth = 0;
+                    let mut lex = LexState::default();
                     let mut valid = true;
-                    for (i, ch) in args_part.chars().enumerate() {
-                        match ch {
-                            '(' => depth += 1,
-                            ')' => {
-                                depth -= 1;
-                                // If depth goes to 0 before the end, it's not a simple function call
-                                if depth == 0 && i != args_part.len() - 1 {
-                                    valid = false;
-                                    break;
-                                }
-                            }
-                            _ => {}
+                    for (i, ch) in args_part.char_indices() {
+                        lex.top_level(ch);
+                        // The '(' after the name closes before the end: not a single call.
+                        if ch == ')' && lex.quote.is_none() && lex.depth == 0 && i != args_part.len() - 1 {
+                            valid = false;
+                            break;
                         }
                     }
-                    if valid && depth == 0 {
+                    if valid && lex.depth == 0 && lex.quote.is_none() {
                         return self.eval_function_call(expr);
                     }
                 }
@@ -788,9 +831,7 @@ impl ReplContext {
         }
 
         // String literal
-        if (expr.starts_with('"') && expr.ends_with('"'))
-            || (expr.starts_with('\'') && expr.ends_with('\''))
-        {
+        if is_string_literal(expr) {
             return Ok(RustMathValue::String(expr[1..expr.len() - 1].to_string()));
         }
 
@@ -799,6 +840,12 @@ impl ReplContext {
             let inner = &expr[1..expr.len() - 1];
             let elements = self.parse_list_elements(inner)?;
             return Ok(RustMathValue::List(elements));
+        }
+
+        // Grouping parentheses (S9): "(e)" is e when the '(' closes at the last character and no
+        // top-level comma is inside (a tuple such as "(x, 0, 1)" stays a command argument).
+        if let Some(inner) = group_inner(expr) {
+            return self.eval_expr(inner);
         }
 
         // Unknown expression - treat as symbol
@@ -1947,7 +1994,12 @@ impl ReplContext {
             "eval_expr" | "evalf" | "N" => {
                 let e = self.parse_single_symbolic_arg(args_str)?;
                 match try_eval_to_f64(&e) {
-                    Some(val) => Ok(RustMathValue::String(format!("{:.10}", val))),
+                    Some(val) if val.is_finite() => Ok(RustMathValue::String(format!("{:.10}", val))),
+                    // S11 (review 3, m2): a value beyond the double range is refused, as in
+                    // `exact_to_f64`, instead of the text "inf" or "NaN".
+                    Some(val) => Err(EvalError::new("ValueError", format!(
+                        "{}: the value is outside the range of a double (the double computation gives {})",
+                        func_name, val))),
                     None => Err(EvalError::new("EvalError", "Cannot evaluate expression numerically (contains variables)")),
                 }
             }
@@ -2357,7 +2409,7 @@ impl ReplContext {
             }
 
             // Falling factorial: falling_factorial(n, k)
-            "falling_factorial" | "pochhammer" => {
+            "falling_factorial" => {
                 let args = self.parse_args(args_str)?;
                 if args.len() != 2 {
                     return Err(EvalError::new("ArgumentError", "falling_factorial requires 2 arguments (n, k)"));
@@ -2381,17 +2433,20 @@ impl ReplContext {
                 }
             }
 
-            // Rising factorial: rising_factorial(n, k)
-            "rising_factorial" => {
+            // Rising factorial: rising_factorial(n, k). pochhammer(n, k) is the same function: the
+            // Pochhammer symbol (a)_n = a(a+1)...(a+n-1) of MAGMA ch. 49 (`HypergeometricSeries`,
+            // Chapter_49_Power_Laurent_and_Puiseux_Series.md:292), Sage `rising_factorial` and
+            // rustmath-calculus `pochhammer.rs` (S10: it was an alias of falling_factorial).
+            "rising_factorial" | "pochhammer" => {
                 let args = self.parse_args(args_str)?;
                 if args.len() != 2 {
-                    return Err(EvalError::new("ArgumentError", "rising_factorial requires 2 arguments (n, k)"));
+                    return Err(EvalError::new("ArgumentError", format!("{} requires 2 arguments (n, k)", func_name)));
                 }
                 match (&args[0], &args[1]) {
                     (RustMathValue::Integer(n), RustMathValue::Integer(k)) => {
-                        let k_u32 = int_arg::<u32>("rising_factorial", "k", k, 0..=u32::MAX, "")?;
+                        let k_u32 = int_arg::<u32>(func_name, "k", k, 0..=u32::MAX, "")?;
                         // The callee computes n + i for i < k in u32.
-                        let n_u32 = int_arg::<u32>("rising_factorial", "n", n, 0..=u32::MAX - k_u32.saturating_sub(1),
+                        let n_u32 = int_arg::<u32>(func_name, "n", n, 0..=u32::MAX - k_u32.saturating_sub(1),
                             "n + k - 1 must fit in 32 bits")?;
                         if n_u32 == 0 && k_u32 > 0 {
                             // 0·1·…·(k-1) = 0; the callee would still run k iterations.
@@ -2400,13 +2455,13 @@ impl ReplContext {
                         let top = n_u32 + k_u32.saturating_sub(1);
                         let work = product_work(k_u32, top);
                         if work > repl_limits::FACTORIAL_WORK {
-                            return Err(work_error("rising_factorial", &format!(
+                            return Err(work_error(func_name, &format!(
                                 "n^(k) for n = {}, k = {} takes k multiplications on numbers of up to {} bits", n_u32, k_u32,
                                 u64::from(k_u32) * u64::from(u32::BITS - top.leading_zeros())), work, repl_limits::FACTORIAL_WORK));
                         }
                         Ok(RustMathValue::Integer(rising_factorial(n_u32, k_u32)))
                     }
-                    _ => Err(EvalError::new("TypeError", "rising_factorial requires integer arguments")),
+                    _ => Err(EvalError::new("TypeError", format!("{} requires integer arguments", func_name))),
                 }
             }
 
@@ -2728,10 +2783,11 @@ impl ReplContext {
                 }
                 match &args[0] {
                     RustMathValue::Integer(n) => {
-                        if *n > Integer::from(u64::MAX) {
+                        // S15: the sieve is linear in x (about 1.75 s per 10^9 in release).
+                        if *n > Integer::from(repl_limits::PRIME_PI_X) {
                             return Err(EvalError::new("ValueError", format!(
-                                "prime_pi: x = {} exceeds 2^64; the sieve cannot reach it and \
-                                 sublinear counting is not implemented", n)));
+                                "prime_pi: x = {} is above the REPL limit {} (the sieve takes about 10 s there)",
+                                show_int(n), repl_limits::PRIME_PI_X)));
                         }
                         let count = prime_pi(n);
                         Ok(RustMathValue::Integer(Integer::from(count as u64)))
@@ -2748,8 +2804,7 @@ impl ReplContext {
                 }
                 match (&args[0], &args[1]) {
                     (RustMathValue::Integer(a), RustMathValue::Integer(b)) => {
-                        let primes = try_primes_between(a, b)
-                            .map_err(|e| EvalError::new("ValueError", format!("primes: {}", e)))?;
+                        let primes = checked_primes(a, b)?;
                         let list: Vec<RustMathValue> = primes.into_iter()
                             .map(RustMathValue::Integer)
                             .collect();
@@ -3039,18 +3094,12 @@ impl ReplContext {
                     .cloned()
                     .ok_or_else(|| EvalError::new("ValueError",
                         format!("Variable '{}' not found in expression", var_name)))?;
-                let a = match &args[2] {
-                    RustMathValue::Integer(n) => n.to_f64().ok_or_else(|| EvalError::new("ValueError", "invalid lower bound"))?,
-                    RustMathValue::Float(f) => *f,
-                    RustMathValue::Rational(r) => r.numerator().to_f64().unwrap() / r.denominator().to_f64().unwrap(),
-                    _ => return Err(EvalError::new("TypeError", "lower bound must be a number")),
-                };
-                let b = match &args[3] {
-                    RustMathValue::Integer(n) => n.to_f64().ok_or_else(|| EvalError::new("ValueError", "invalid upper bound"))?,
-                    RustMathValue::Float(f) => *f,
-                    RustMathValue::Rational(r) => r.numerator().to_f64().unwrap() / r.denominator().to_f64().unwrap(),
-                    _ => return Err(EvalError::new("TypeError", "upper bound must be a number")),
-                };
+                // The bounds as doubles, each rounded once (S11): a bound outside the double
+                // range is a ValueError, never inf or NaN.
+                let a = exact_to_f64(&args[2], "integrate_num: lower bound")
+                    .unwrap_or_else(|| Err(EvalError::new("TypeError", "lower bound must be a number")))?;
+                let b = exact_to_f64(&args[3], "integrate_num: upper bound")
+                    .unwrap_or_else(|| Err(EvalError::new("TypeError", "upper bound must be a number")))?;
 
                 let f = |x: f64| -> f64 {
                     let val = Expr::Real(x);
@@ -3168,7 +3217,7 @@ impl ReplContext {
                 let var_sym = symbols[0].clone();
 
                 // Parse bounds from bounds_start
-                let bounds: Vec<&str> = bounds_start.split(',').map(|s| s.trim()).collect();
+                let bounds: Vec<&str> = self.split_at_depth_zero(&bounds_start, ',').into_iter().map(|s| s.trim()).collect();
                 if bounds.len() < 2 {
                     return Err(EvalError::new("ArgumentError", "need lower and upper bounds"));
                 }
@@ -3192,12 +3241,17 @@ impl ReplContext {
             // Graph constructor: Graph(n) creates a graph with n vertices
             "Graph" => {
                 let n = self.eval_as_usize(args_str)?;
+                // S15: every constructor is checked against the memory model first.
+                check_graph_size(func_name, n as u128, 0, &[])?;
                 Ok(RustMathValue::Graph(Graph::new(n)))
             }
 
             // Complete graph K_n
             "complete_graph" | "CompleteGraph" | "K" => {
                 let n = self.eval_as_usize(args_str)?;
+                let v = n as u128;
+                let degrees: &[(u128, u128)] = if n == 0 { &[] } else { &[(v, v - 1)] };
+                check_graph_size(func_name, v, v * v.saturating_sub(1) / 2, degrees)?;
                 Ok(RustMathValue::Graph(complete_graph(n)))
             }
 
@@ -3207,18 +3261,25 @@ impl ReplContext {
                 if n < 3 {
                     return Err(EvalError::new("ValueError", "Cycle graph requires at least 3 vertices"));
                 }
+                check_graph_size(func_name, n as u128, n as u128, &[(n as u128, 2)])?;
                 Ok(RustMathValue::Graph(cycle_graph(n)))
             }
 
             // Path graph P_n
             "path_graph" | "PathGraph" | "P" => {
                 let n = self.eval_as_usize(args_str)?;
+                let v = n as u128;
+                let degrees: &[(u128, u128)] = if n < 2 { &[] } else { &[(2, 1), (v - 2, 2)] };
+                check_graph_size(func_name, v, v.saturating_sub(1), degrees)?;
                 Ok(RustMathValue::Graph(path_graph(n)))
             }
 
             // Star graph S_n (one center connected to n outer vertices)
             "star_graph" | "StarGraph" => {
                 let n = self.eval_as_usize(args_str)?;
+                let v = n as u128;
+                let degrees: &[(u128, u128)] = if n == 0 { &[] } else { &[(v, 1), (1, v)] };
+                check_graph_size(func_name, v + 1, v, degrees)?;
                 Ok(RustMathValue::Graph(star_graph(n)))
             }
 
@@ -3228,6 +3289,8 @@ impl ReplContext {
                 if n < 3 {
                     return Err(EvalError::new("ValueError", "Wheel graph requires at least 3 outer vertices"));
                 }
+                let v = n as u128;
+                check_graph_size(func_name, v + 1, 2 * v, &[(v, 3), (1, v)])?;
                 Ok(RustMathValue::Graph(wheel_graph(n)))
             }
 
@@ -4610,12 +4673,9 @@ impl ReplContext {
                 }
                 match (&args[0], &args[1]) {
                     (RustMathValue::Manifold(m), RustMathValue::String(coords)) => {
-                        let coord_names: Vec<String> = coords.split(',')
-                            .map(|s| s.trim().to_string())
-                            .collect();
-                        let dim = coord_names.len();
-                        let chart = Chart::new("user_chart", dim, coord_names)
-                            .map_err(|e| EvalError::new("ValueError", format!("{}", e)))?;
+                        let names = chart_coordinate_names(coords, m.dimension())?;
+                        let chart = Chart::new("user_chart", m.dimension(), names)
+                            .map_err(|e| EvalError::new("ValueError", format!("chart: {}", e)))?;
                         Ok(RustMathValue::ChartVal(chart))
                     }
                     _ => Err(EvalError::new("TypeError", "chart requires (Manifold, string)")),
@@ -4655,6 +4715,7 @@ impl ReplContext {
                                 "coordinate_form: the manifold has dimension {}; a coordinate form stores that many \
                                  components (REPL limit {})", m.dimension(), repl_limits::MANIFOLD_COORDS)));
                         }
+                        check_chart("coordinate_form", chart, m.dimension())?;
                         let i = index_arg("coordinate_form", "index", idx, m.dimension(), "coordinates")?;
                         let form = DiffForm::coordinate_form(m.clone(), &chart, i)
                             .map_err(|e| EvalError::new("ValueError", format!("{}", e)))?;
@@ -4672,6 +4733,7 @@ impl ReplContext {
                 }
                 match (&args[0], &args[1]) {
                     (RustMathValue::DiffFormVal(form), RustMathValue::ChartVal(chart)) => {
+                        check_chart("exterior_derivative", chart, form.manifold().dimension())?;
                         let (n, p) = (form.manifold().dimension(), form.degree());
                         let degree = p.checked_add(1).ok_or_else(|| EvalError::new("ValueError", format!(
                             "exterior_derivative: the degree p + 1 of d(omega) for p = {} does not fit in a machine word", p)))?;
@@ -4707,6 +4769,7 @@ impl ReplContext {
                     3 => {
                         match (&args[0], &args[1], &args[2]) {
                             (RustMathValue::DiffFormVal(f1), RustMathValue::DiffFormVal(f2), RustMathValue::ChartVal(chart)) => {
+                                check_chart("wedge", chart, f1.manifold().dimension())?;
                                 // Forms on different manifolds are an error before p + q is formed.
                                 if Arc::ptr_eq(f1.manifold(), f2.manifold()) {
                                     let (n, p, q) = (f1.manifold().dimension(), f1.degree(), f2.degree());
@@ -4742,20 +4805,12 @@ impl ReplContext {
         }
 
         let mut args = Vec::new();
-        let mut depth = 0;
         let mut current = String::new();
-
+        let mut lex = LexState::default();
         for ch in args_str.chars() {
+            let top = lex.top_level(ch);
             match ch {
-                '(' | '[' | '{' => {
-                    depth += 1;
-                    current.push(ch);
-                }
-                ')' | ']' | '}' => {
-                    depth -= 1;
-                    current.push(ch);
-                }
-                ',' if depth == 0 => {
+                ',' if top => {
                     args.push(self.eval_expr(&current)?);
                     current.clear();
                 }
@@ -4783,38 +4838,23 @@ impl ReplContext {
         let inner = &args_str[1..args_str.len()-1];
 
         let mut result = Vec::new();
-        let mut depth = 0;
         let mut current_row = String::new();
 
+        // Rows are the bracketed parts at depth 0; brackets inside a string literal do not
+        // count (S9, `LexState`). Commas between rows are skipped.
+        let mut lex = LexState::default();
         for ch in inner.chars() {
-            match ch {
-                '[' => {
-                    if depth == 0 {
-                        current_row.clear();
-                    } else {
-                        current_row.push(ch);
-                    }
-                    depth += 1;
-                }
-                ']' => {
-                    depth -= 1;
-                    if depth == 0 {
-                        // Parse this row
-                        let row = self.parse_list_elements(&current_row)?;
-                        result.push(row);
-                        current_row.clear();
-                    } else {
-                        current_row.push(ch);
-                    }
-                }
-                ',' if depth == 0 => {
-                    // Skip commas between rows
-                }
-                _ => {
-                    if depth > 0 {
-                        current_row.push(ch);
-                    }
-                }
+            let outside = lex.quote.is_none();
+            let before = lex.depth;
+            lex.top_level(ch);
+            if outside && ch == '[' && before == 0 {
+                current_row.clear();
+            } else if outside && ch == ']' && before == 1 {
+                let row = self.parse_list_elements(&current_row)?;
+                result.push(row);
+                current_row.clear();
+            } else if before > 0 {
+                current_row.push(ch);
             }
         }
 
@@ -4832,20 +4872,12 @@ impl ReplContext {
         }
 
         let mut result = Vec::new();
-        let mut depth = 0;
         let mut current = String::new();
-
+        let mut lex = LexState::default();
         for ch in s.chars() {
+            let top = lex.top_level(ch);
             match ch {
-                '(' | '[' | '{' => {
-                    depth += 1;
-                    current.push(ch);
-                }
-                ')' | ']' | '}' => {
-                    depth -= 1;
-                    current.push(ch);
-                }
-                ',' if depth == 0 => {
+                ',' if top => {
                     let val = self.eval_expr(current.trim())?;
                     result.push(val);
                     current.clear();
@@ -4877,7 +4909,7 @@ impl ReplContext {
         }
 
         let mut result = Vec::new();
-        for part in inner.split(',') {
+        for part in self.split_at_depth_zero(inner, ',') {
             let val = self.eval_expr(part.trim())?;
             match val {
                 RustMathValue::Integer(n) => result.push(n),
@@ -4895,20 +4927,12 @@ impl ReplContext {
         }
 
         let mut result = Vec::new();
-        let mut depth = 0;
         let mut current = String::new();
-
+        let mut lex = LexState::default();
         for ch in args_str.chars() {
+            let top = lex.top_level(ch);
             match ch {
-                '(' | '[' | '{' => {
-                    depth += 1;
-                    current.push(ch);
-                }
-                ')' | ']' | '}' => {
-                    depth -= 1;
-                    current.push(ch);
-                }
-                ',' if depth == 0 => {
+                ',' if top => {
                     result.push(self.parse_symbolic_arg(current.trim())?);
                     current.clear();
                 }
@@ -5006,20 +5030,12 @@ impl ReplContext {
 
         // Split by comma at depth 0, but keep track of parentheses
         let mut parts: Vec<String> = Vec::new();
-        let mut depth = 0;
         let mut current = String::new();
-
+        let mut lex = LexState::default();
         for ch in args_str.chars() {
+            let top = lex.top_level(ch);
             match ch {
-                '(' | '[' | '{' => {
-                    depth += 1;
-                    current.push(ch);
-                }
-                ')' | ']' | '}' => {
-                    depth -= 1;
-                    current.push(ch);
-                }
-                ',' if depth == 0 => {
+                ',' if top => {
                     parts.push(current.trim().to_string());
                     current.clear();
                 }
@@ -5083,18 +5099,11 @@ impl ReplContext {
     /// Split a string at depth-zero commas
     fn split_at_depth_zero<'a>(&self, s: &'a str, delimiter: char) -> Vec<&'a str> {
         let mut result = Vec::new();
-        let mut depth = 0;
         let mut start = 0;
-
-        for (i, ch) in s.char_indices() {
-            match ch {
-                '(' | '[' | '{' => depth += 1,
-                ')' | ']' | '}' => depth -= 1,
-                c if c == delimiter && depth == 0 => {
-                    result.push(&s[start..i]);
-                    start = i + 1;
-                }
-                _ => {}
+        for (i, ch) in top_level_chars(s) {
+            if ch == delimiter {
+                result.push(&s[start..i]);
+                start = i + ch.len_utf8();
             }
         }
         result.push(&s[start..]);
@@ -5165,119 +5174,192 @@ impl ReplContext {
         Ok(RustMathValue::Plot { description, svg })
     }
 
-    /// Evaluate a string to f64, supporting constants like pi
+    /// A real number written as text: a plot range, a find_root bound, a point coordinate (S9,
+    /// S11; revision 2). The text is evaluated exactly first (`eval_expr`): an Integer or a
+    /// Rational is rounded once to the nearest double (`exact_to_f64`), a Float is taken as it is.
+    /// Only a text whose value is not an exact number (it uses pi, e, tau, a decimal literal or a
+    /// Float variable) goes to `float_arith`, the real field of doubles. The result is a finite
+    /// double or an error.
     fn eval_to_f64(&mut self, s: &str) -> Result<f64, EvalError> {
         let s = s.trim();
-
-        // Check for common constants
-        match s {
-            "pi" | "PI" => return Ok(std::f64::consts::PI),
-            "e" | "E" => return Ok(std::f64::consts::E),
-            "tau" | "TAU" => return Ok(std::f64::consts::TAU),
-            _ => {}
-        }
-
-        // Replace constants with their numeric values for parsing
-        let s_with_constants = s
-            .replace("pi", &format!("{}", std::f64::consts::PI))
-            .replace("PI", &format!("{}", std::f64::consts::PI));
-
-        // Try parsing as float directly
-        if let Ok(val) = s_with_constants.parse::<f64>() {
-            return Ok(val);
-        }
-
-        // Try evaluating as a simple arithmetic expression
-        // Handle expressions like 2*3.14159... by evaluating them
-        if s_with_constants.contains('*') || s_with_constants.contains('/') ||
-           s_with_constants.contains('+') || s_with_constants.contains('-') {
-            // Simple evaluation of arithmetic expressions with constants
-            if let Ok(val) = self.eval_simple_arithmetic(&s_with_constants) {
-                return Ok(val);
+        let exact = self.eval_expr(s);
+        if let Ok(v) = &exact {
+            if let Some(r) = exact_to_f64(v, s) {
+                return r;
             }
         }
-
-        // Try evaluating as full expression
-        let val = self.eval_expr(s)?;
-        match val {
-            RustMathValue::Integer(n) => n.to_f64()
-                .ok_or_else(|| EvalError::new("ValueError", "Integer too large")),
-            RustMathValue::Float(f) => Ok(f),
-            RustMathValue::Rational(r) => {
-                let num = r.numerator().to_f64().unwrap_or(0.0);
-                let den = r.denominator().to_f64().unwrap_or(1.0);
-                Ok(num / den)
-            }
-            _ => Err(EvalError::new("TypeError", "Cannot convert to number")),
+        match self.float_arith(s, 0)? {
+            Some(RealArith::Real(f)) => Ok(f),
+            Some(RealArith::Exact(v)) => exact_to_f64(&v, s)
+                .unwrap_or_else(|| Err(EvalError::new("TypeError", "Cannot convert to number"))),
+            None => match exact {
+                Err(e) => Err(e),
+                Ok(_) => Err(EvalError::new("TypeError", "Cannot convert to number")),
+            },
         }
     }
 
-    /// Evaluate simple arithmetic expression (for range parsing)
-    fn eval_simple_arithmetic(&self, s: &str) -> Result<f64, EvalError> {
+    /// The value of an arithmetic text in the real field of doubles (S9 revision 2), by MAGMA's
+    /// coercion rule (ch. 25 §25.1.2): integers and rationals combine exactly (`apply_binary_op`,
+    /// the REPL's own arithmetic), and an operation with a real operand rounds the exact operand to
+    /// the nearest double and is done in IEEE double arithmetic, the real field of 53 bits. Real
+    /// operands are the constants pi/PI, e/E, tau/TAU (a variable of the same name wins), decimal
+    /// literals and Float variables. So `10^400/10^399 * pi` is 10 pi, while `10^20 + pi - 10^20` is
+    /// 0, as in MAGMA at this precision: cancellation after a real operand is part of the semantics.
+    /// An exact power with a non-integral rational exponent is real (`2^(1/2)`, as in MAGMA).
+    /// Precedence, associativity and unary signs as in `try_eval_binary_op`.
+    /// Ok(None): `s` uses something else (a call, another variable, a string). Err: the value
+    /// overflows or underflows a double (MPFR's exponent range is far wider, so this is a limit of
+    /// the double, not an answer), a division by zero, or an error of the exact arithmetic.
+    /// `depth` is the nesting depth of this call, bounded by `repl_limits::EVAL_DEPTH` as in
+    /// `eval_expr`.
+    fn float_arith(&self, s: &str, depth: usize) -> Result<Option<RealArith>, EvalError> {
+        if depth >= repl_limits::EVAL_DEPTH {
+            return Err(EvalError::new("SyntaxError", format!(
+                "the expression is nested more than {} levels deep (REPL limit; deeper nesting \
+                 would overflow the stack)", repl_limits::EVAL_DEPTH)));
+        }
         let s = s.trim();
-
-        // Try to parse as number first
-        if let Ok(val) = s.parse::<f64>() {
-            return Ok(val);
-        }
-
-        // Handle negative numbers
-        if s.starts_with('-') {
-            if let Ok(val) = self.eval_simple_arithmetic(&s[1..]) {
-                return Ok(-val);
+        let top = top_level_chars(s);
+        // 1. and 2. The + - chain, else the * / chain, folded from the left.
+        for level in [ChainLevel::Sum, ChainLevel::Product] {
+            if let Some((operands, ops)) = binary_chain(s, &top, level) {
+                let Some(mut acc) = self.float_arith(operands[0], depth + 1)? else { return Ok(None) };
+                for (op, operand) in ops.iter().zip(&operands[1..]) {
+                    let Some(r) = self.float_arith(operand, depth + 1)? else { return Ok(None) };
+                    acc = self.real_op(acc, op, r, s)?;
+                }
+                return Ok(Some(acc));
             }
         }
+        // 3. A run of leading signs, read in one step.
+        let mut rest = s;
+        let mut negative = false;
+        while let Some(sign) = rest.chars().next().filter(|c| *c == '-' || *c == '+') {
+            negative ^= sign == '-';
+            rest = rest[1..].trim_start();
+        }
+        if rest.len() < s.len() {
+            if rest.is_empty() {
+                return Ok(None);
+            }
+            let Some(v) = self.float_arith(rest, depth + 1)? else { return Ok(None) };
+            return Ok(Some(match (negative, v) {
+                (false, v) => v,
+                (true, RealArith::Real(f)) => RealArith::Real(-f),
+                (true, RealArith::Exact(x)) => RealArith::Exact(self.negate(&x)?),
+            }));
+        }
+        // 4. ** and ^, the leftmost (right associative).
+        for (i, &(pos, ch)) in top.iter().enumerate() {
+            let len = if ch == '^' {
+                1
+            } else if ch == '*' && top.get(i + 1) == Some(&(pos + 1, '*')) {
+                2
+            } else {
+                continue;
+            };
+            let (l, r) = (s[..pos].trim(), s[pos + len..].trim());
+            if l.is_empty() || r.is_empty() {
+                return Ok(None);
+            }
+            let Some(lv) = self.float_arith(l, depth + 1)? else { return Ok(None) };
+            let Some(rv) = self.float_arith(r, depth + 1)? else { return Ok(None) };
+            return self.real_op(lv, "^", rv, s).map(Some);
+        }
+        // 5. Grouping parentheses.
+        if let Some(inner) = group_inner(s) {
+            return self.float_arith(inner, depth + 1);
+        }
+        // 6. Atoms.
+        if let Some(v) = self.variables.get(s) {
+            return Ok(match v {
+                RustMathValue::Integer(_) | RustMathValue::Rational(_) => Some(RealArith::Exact(v.clone())),
+                RustMathValue::Float(f) if f.is_finite() => Some(RealArith::Real(*f)),
+                _ => None,
+            });
+        }
+        match s {
+            "pi" | "PI" => return Ok(Some(RealArith::Real(std::f64::consts::PI))),
+            "e" | "E" => return Ok(Some(RealArith::Real(std::f64::consts::E))),
+            "tau" | "TAU" => return Ok(Some(RealArith::Real(std::f64::consts::TAU))),
+            _ => {}
+        }
+        if !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit()) {
+            return Ok(BigInt::from_str(s).ok().map(|n| RealArith::Exact(RustMathValue::Integer(Integer::new(n)))));
+        }
+        let decimal = s.starts_with(|c: char| c.is_ascii_digit() || c == '.')
+            && s.chars().all(|c| c.is_ascii_digit() || matches!(c, '.' | 'e' | 'E' | '+' | '-'));
+        if !decimal {
+            return Ok(None);
+        }
+        let Ok(f) = s.parse::<f64>() else { return Ok(None) };
+        let nonzero = s.split(['e', 'E']).next().unwrap_or("").bytes().any(|b| (b'1'..=b'9').contains(&b));
+        if !f.is_finite() {
+            return Err(EvalError::new("ValueError", format!("the float literal {} is outside the range of a double", s)));
+        }
+        if nonzero && (f == 0.0 || f.is_subnormal()) {
+            return Err(EvalError::new("ValueError", format!(
+                "{}: the float literal is below the normal range of a double (underflow)", s)));
+        }
+        Ok(Some(RealArith::Real(f)))
+    }
 
-        // Find rightmost + or - (lowest precedence)
-        let mut depth = 0;
-        for (i, ch) in s.char_indices().rev() {
-            match ch {
-                ')' => depth += 1,
-                '(' => depth -= 1,
-                '+' if depth == 0 && i > 0 => {
-                    let left = self.eval_simple_arithmetic(&s[..i])?;
-                    let right = self.eval_simple_arithmetic(&s[i+1..])?;
-                    return Ok(left + right);
-                }
-                '-' if depth == 0 && i > 0 => {
-                    // Check it's not part of scientific notation
-                    let prev_char = s.chars().nth(i - 1);
-                    if prev_char != Some('e') && prev_char != Some('E') {
-                        let left = self.eval_simple_arithmetic(&s[..i])?;
-                        let right = self.eval_simple_arithmetic(&s[i+1..])?;
-                        return Ok(left - right);
+    /// One operation of `float_arith`: exact when both operands are exact (a power with a
+    /// non-integral rational exponent excepted), else in doubles. `whole` names the text in errors.
+    fn real_op(&self, l: RealArith, op: &str, r: RealArith, whole: &str) -> Result<RealArith, EvalError> {
+        use RustMathValue as V;
+        let pow = op == "^" || op == "**";
+        if let (RealArith::Exact(a), RealArith::Exact(b)) = (&l, &r) {
+            let b_int = match b {
+                V::Rational(q) if q.denominator().is_one() => Some(V::Integer(q.numerator().clone())),
+                V::Rational(_) => None,
+                other => Some(other.clone()),
+            };
+            match (pow, b_int) {
+                (true, None) => {} // 2^(1/2): a real number, below
+                (_, Some(bi)) if pow => return self.apply_binary_op(a, "^", &bi).map(RealArith::Exact),
+                _ => return self.apply_binary_op(a, op, b).map(RealArith::Exact),
+            }
+        }
+        let to_real = |v: RealArith| -> Result<f64, EvalError> {
+            match v {
+                RealArith::Real(f) => Ok(f),
+                RealArith::Exact(x) => {
+                    let f = exact_to_f64(&x, whole).unwrap_or_else(|| Err(EvalError::new("TypeError", "Cannot convert to number")))?;
+                    if !is_exact_zero(&x) && (f == 0.0 || f.is_subnormal()) {
+                        return Err(EvalError::new("ValueError", format!(
+                            "{}: an exact value below the normal range of a double meets a real operand (underflow)", whole)));
                     }
+                    Ok(f)
                 }
-                _ => {}
             }
-        }
-
-        // Find rightmost * or /
-        let mut depth = 0;
-        for (i, ch) in s.char_indices().rev() {
-            match ch {
-                ')' => depth += 1,
-                '(' => depth -= 1,
-                '*' if depth == 0 => {
-                    let left = self.eval_simple_arithmetic(&s[..i])?;
-                    let right = self.eval_simple_arithmetic(&s[i+1..])?;
-                    return Ok(left * right);
+        };
+        let (x, y) = (to_real(l)?, to_real(r)?);
+        let z = match op {
+            "+" => x + y,
+            "-" => x - y,
+            "*" => x * y,
+            "/" => {
+                if y == 0.0 {
+                    return Err(EvalError::new("ZeroDivisionError", "division by zero"));
                 }
-                '/' if depth == 0 => {
-                    let left = self.eval_simple_arithmetic(&s[..i])?;
-                    let right = self.eval_simple_arithmetic(&s[i+1..])?;
-                    return Ok(left / right);
-                }
-                _ => {}
+                x / y
             }
+            _ => x.powf(y),
+        };
+        let shown = if pow { "^" } else { op };
+        if !z.is_finite() {
+            return Err(EvalError::new("ValueError", format!(
+                "{} is not a finite real number in double precision ({:e} {} {:e} gives {})", whole, x, shown, y, z)));
         }
-
-        // Handle parentheses
-        if s.starts_with('(') && s.ends_with(')') {
-            return self.eval_simple_arithmetic(&s[1..s.len()-1]);
+        // + and - of doubles are exact when the result is 0 or subnormal (gradual underflow), so only
+        // products, quotients and powers of nonzero operands can underflow (0 * y and 0^y are exact).
+        if ((op == "*" && y != 0.0) || op == "/" || pow) && x != 0.0 && (z == 0.0 || z.is_subnormal()) {
+            return Err(EvalError::new("ValueError", format!(
+                "{} underflows double precision ({:e} {} {:e} gives {:e})", whole, x, shown, y, z)));
         }
-
-        Err(EvalError::new("ParseError", format!("Cannot parse: {}", s)))
+        Ok(RealArith::Real(z))
     }
 
     /// Generate a nicer SVG for function plots (with grid lines)
@@ -5422,6 +5504,51 @@ impl ReplContext {
         svg
     }
 
+    /// The integer options of a plot command (N5): `parts` are the arguments after the positional
+    /// ones. Each is `name=value` with `name` one of `options` (exact match), and `value`
+    /// evaluates to an integer inside that option's range; `bare` names the option a bare
+    /// integer argument sets (the old positional n_points form). Anything else is an error:
+    /// nothing is clamped, defaulted or ignored. Returns (option, value) pairs; an option given
+    /// twice is an error.
+    fn plot_int_options<S: AsRef<str>>(&mut self, cmd: &str, parts: &[S],
+        options: &[(&str, RangeInclusive<usize>)], bare: Option<&str>)
+        -> Result<HashMap<String, usize>, EvalError>
+    {
+        let mut out: HashMap<String, usize> = HashMap::new();
+        for part in parts {
+            let part = part.as_ref().trim();
+            let (name, value) = match top_level_chars(part).into_iter().find(|&(_, c)| c == '=') {
+                Some((i, _)) => (part[..i].trim(), part[i + 1..].trim()),
+                None => match bare {
+                    Some(b) => (b, part),
+                    None => return Err(EvalError::new("ArgumentError", format!(
+                        "{}: unexpected argument {}; options are given as name=value", cmd, part))),
+                },
+            };
+            let range = match options.iter().find(|(n, _)| *n == name) {
+                Some((_, r)) => r.clone(),
+                None => {
+                    let names: Vec<&str> = options.iter().map(|(n, _)| *n).collect();
+                    return Err(EvalError::new("ValueError", format!(
+                        "{}: unknown option {} (options: {})", cmd, name, names.join(", "))));
+                }
+            };
+            let v = match self.eval_expr(value)? {
+                RustMathValue::Integer(n) => int_arg::<usize>(cmd, name, &n, range, "")?,
+                RustMathValue::Rational(r) if r.denominator().is_one() => {
+                    int_arg::<usize>(cmd, name, r.numerator(), range, "")?
+                }
+                other => return Err(EvalError::new("ValueError", format!(
+                    "{}: {} must be an integer in {}..={}, got {}", cmd, name, range.start(), range.end(),
+                    other.to_display().text))),
+            };
+            if out.insert(name.to_string(), v).is_some() {
+                return Err(EvalError::new("ValueError", format!("{}: option {} is given twice", cmd, name)));
+            }
+        }
+        Ok(out)
+    }
+
     /// Evaluate slope field plot
     /// Syntax: plot_slope_field(f, (x, xmin, xmax), (y, ymin, ymax))
     ///         plot_slope_field(f, (x, xmin, xmax), (y, ymin, ymax), plot_points=25)
@@ -5431,20 +5558,12 @@ impl ReplContext {
 
         // Split by comma at depth 0
         let mut parts: Vec<String> = Vec::new();
-        let mut depth = 0;
         let mut current = String::new();
-
+        let mut lex = LexState::default();
         for ch in args_str.chars() {
+            let top = lex.top_level(ch);
             match ch {
-                '(' | '[' | '{' => {
-                    depth += 1;
-                    current.push(ch);
-                }
-                ')' | ']' | '}' => {
-                    depth -= 1;
-                    current.push(ch);
-                }
-                ',' if depth == 0 => {
+                ',' if top => {
                     parts.push(current.trim().to_string());
                     current.clear();
                 }
@@ -5496,20 +5615,10 @@ impl ReplContext {
         let y_min = self.eval_to_f64(y_parts[1].trim())?;
         let y_max = self.eval_to_f64(y_parts[2].trim())?;
 
-        // Parse optional plot_points
-        let mut n_points = 20; // default
-        for i in 3..parts.len() {
-            let part = parts[i].trim();
-            if part.starts_with("plot_points") {
-                if let Some(eq_pos) = part.find('=') {
-                    if let Ok(n) = part[eq_pos+1..].trim().parse::<usize>() {
-                        n_points = n.min(50).max(5); // clamp between 5 and 50
-                    }
-                }
-            } else if let Ok(n) = part.parse::<usize>() {
-                n_points = n.min(50).max(5);
-            }
-        }
+        // Optional plot_points (N5: checked, not clamped).
+        let opts = self.plot_int_options("plot_slope_field", &parts[3..],
+            &[("plot_points", 2..=repl_limits::SLOPE_FIELD_POINTS)], Some("plot_points"))?;
+        let n_points = opts.get("plot_points").copied().unwrap_or(20);
 
         // Create symbols for x and y
         let x_sym = Symbol::new(x_var_name);
@@ -5744,20 +5853,10 @@ impl ReplContext {
         let t_min = self.eval_to_f64(t_parts[1].trim())?;
         let t_max = self.eval_to_f64(t_parts[2].trim())?;
 
-        // Parse optional plot_points
-        let mut n_points = 200;
-        for i in 2..parts.len() {
-            let part = parts[i].trim();
-            if part.starts_with("plot_points") {
-                if let Some(eq_pos) = part.find('=') {
-                    if let Ok(n) = part[eq_pos+1..].trim().parse::<usize>() {
-                        n_points = n.min(1000).max(10);
-                    }
-                }
-            } else if let Ok(n) = part.parse::<usize>() {
-                n_points = n.min(1000).max(10);
-            }
-        }
+        // Optional plot_points (N5: checked, not clamped).
+        let opts = self.plot_int_options("parametric_plot", &parts[2..],
+            &[("plot_points", 2..=repl_limits::PARAMETRIC_POINTS)], Some("plot_points"))?;
+        let n_points = opts.get("plot_points").copied().unwrap_or(200);
 
         let t_sym = Symbol::new(t_var_name);
         let x_symbols = x_expr.symbols();
@@ -5969,24 +6068,16 @@ impl ReplContext {
         let y_max = self.eval_to_f64(y_parts[2].trim())?;
 
         // Parse optional parameters
-        let mut n_contours = 10;
-        let mut n_grid = 50;
-        for i in 3..parts.len() {
-            let part = parts[i].trim();
-            if part.starts_with("contours") || part.starts_with("n_contours") {
-                if let Some(eq_pos) = part.find('=') {
-                    if let Ok(n) = part[eq_pos+1..].trim().parse::<usize>() {
-                        n_contours = n.min(30).max(3);
-                    }
-                }
-            } else if part.starts_with("plot_points") {
-                if let Some(eq_pos) = part.find('=') {
-                    if let Ok(n) = part[eq_pos+1..].trim().parse::<usize>() {
-                        n_grid = n.min(100).max(20);
-                    }
-                }
-            }
+        let opts = self.plot_int_options("contour_plot", &parts[3..], &[
+            ("contours", 1..=repl_limits::CONTOURS),
+            ("n_contours", 1..=repl_limits::CONTOURS),
+            ("plot_points", 2..=repl_limits::CONTOUR_POINTS),
+        ], None)?;
+        if opts.contains_key("contours") && opts.contains_key("n_contours") {
+            return Err(EvalError::new("ValueError", "contour_plot: give contours or n_contours, not both"));
         }
+        let n_contours = opts.get("contours").or(opts.get("n_contours")).copied().unwrap_or(10);
+        let n_grid = opts.get("plot_points").copied().unwrap_or(50);
 
         let x_sym = Symbol::new(x_var_name);
         let y_sym = Symbol::new(y_var_name);
@@ -6255,18 +6346,10 @@ impl ReplContext {
         let y_min = self.eval_to_f64(y_parts[1].trim())?;
         let y_max = self.eval_to_f64(y_parts[2].trim())?;
 
-        // Parse optional plot_points
-        let mut n_points = 15;
-        for i in 3..parts.len() {
-            let part = parts[i].trim();
-            if part.starts_with("plot_points") {
-                if let Some(eq_pos) = part.find('=') {
-                    if let Ok(n) = part[eq_pos+1..].trim().parse::<usize>() {
-                        n_points = n.min(30).max(5);
-                    }
-                }
-            }
-        }
+        // Optional plot_points (N5: checked, not clamped).
+        let opts = self.plot_int_options("vector_field", &parts[3..],
+            &[("plot_points", 2..=repl_limits::VECTOR_FIELD_POINTS)], None)?;
+        let n_points = opts.get("plot_points").copied().unwrap_or(15);
 
         let x_sym = Symbol::new(x_var_name);
         let y_sym = Symbol::new(y_var_name);
@@ -6486,18 +6569,10 @@ impl ReplContext {
         let y_min = self.eval_to_f64(y_parts[1].trim())?;
         let y_max = self.eval_to_f64(y_parts[2].trim())?;
 
-        // Parse optional plot_points
-        let mut n_grid = 100;
-        for i in 3..parts.len() {
-            let part = parts[i].trim();
-            if part.starts_with("plot_points") {
-                if let Some(eq_pos) = part.find('=') {
-                    if let Ok(n) = part[eq_pos+1..].trim().parse::<usize>() {
-                        n_grid = n.min(200).max(50);
-                    }
-                }
-            }
-        }
+        // Optional plot_points (N5: checked, not clamped).
+        let opts = self.plot_int_options("implicit_plot", &parts[3..],
+            &[("plot_points", 2..=repl_limits::IMPLICIT_POINTS)], None)?;
+        let n_grid = opts.get("plot_points").copied().unwrap_or(100);
 
         let x_sym = Symbol::new(x_var_name);
         let y_sym = Symbol::new(y_var_name);
@@ -6810,18 +6885,10 @@ impl ReplContext {
         let y_min = self.eval_to_f64(y_parts[1].trim())?;
         let y_max = self.eval_to_f64(y_parts[2].trim())?;
 
-        // Parse optional plot_points
-        let mut n_grid = 100;
-        for i in 3..parts.len() {
-            let part = parts[i].trim();
-            if part.starts_with("plot_points") {
-                if let Some(eq_pos) = part.find('=') {
-                    if let Ok(n) = part[eq_pos+1..].trim().parse::<usize>() {
-                        n_grid = n.min(200).max(50);
-                    }
-                }
-            }
-        }
+        // Optional plot_points (N5: checked, not clamped).
+        let opts = self.plot_int_options("region_plot", &parts[3..],
+            &[("plot_points", 2..=repl_limits::IMPLICIT_POINTS)], None)?;
+        let n_grid = opts.get("plot_points").copied().unwrap_or(100);
 
         let x_sym = Symbol::new(x_var_name);
         let y_sym = Symbol::new(y_var_name);
@@ -8894,20 +8961,12 @@ impl ReplContext {
     }
 
     /// Convert a list of RustMathValues to Vec<f64> for statistics functions
+    /// Every number is rounded once to the nearest double (S11, `exact_to_f64`); a value outside
+    /// the double range is a ValueError, so no inf or NaN reaches rustmath-stats.
     fn list_to_floats(&self, values: &[RustMathValue]) -> Result<Vec<f64>, EvalError> {
         values.iter().map(|v| {
-            match v {
-                RustMathValue::Integer(n) => {
-                    n.to_f64().ok_or_else(|| EvalError::new("ValueError", "Integer too large to convert to float"))
-                }
-                RustMathValue::Float(f) => Ok(*f),
-                RustMathValue::Rational(r) => {
-                    let num = r.numerator().to_f64().ok_or_else(|| EvalError::new("ValueError", "Numerator too large"))?;
-                    let den = r.denominator().to_f64().ok_or_else(|| EvalError::new("ValueError", "Denominator too large"))?;
-                    Ok(num / den)
-                }
-                _ => Err(EvalError::new("TypeError", "List must contain only numbers")),
-            }
+            exact_to_f64(v, "list element")
+                .unwrap_or_else(|| Err(EvalError::new("TypeError", "List must contain only numbers")))
         }).collect()
     }
 
@@ -8916,17 +8975,10 @@ impl ReplContext {
         values.iter().map(|v| {
             match v {
                 RustMathValue::Complex(c) => Ok(c.clone()),
-                RustMathValue::Integer(n) => {
-                    let f = n.to_f64().ok_or_else(|| EvalError::new("ValueError", "Integer too large"))?;
-                    Ok(Complex::new(f, 0.0))
-                }
-                RustMathValue::Float(f) => Ok(Complex::new(*f, 0.0)),
-                RustMathValue::Rational(r) => {
-                    let num = r.numerator().to_f64().ok_or_else(|| EvalError::new("ValueError", "Numerator too large"))?;
-                    let den = r.denominator().to_f64().ok_or_else(|| EvalError::new("ValueError", "Denominator too large"))?;
-                    Ok(Complex::new(num / den, 0.0))
-                }
-                _ => Err(EvalError::new("TypeError", "List must contain only numbers or complex values")),
+                // A real number, rounded once (S11).
+                _ => exact_to_f64(v, "list element")
+                    .unwrap_or_else(|| Err(EvalError::new("TypeError", "List must contain only numbers or complex values")))
+                    .map(|f| Complex::new(f, 0.0)),
             }
         }).collect()
     }
@@ -8943,57 +8995,26 @@ impl ReplContext {
     }
 
     /// Convert a RustMathValue to f64
+    /// The number rounded once to the nearest double (S11, `exact_to_f64`); a value outside the
+    /// double range is a ValueError.
     fn value_to_f64(&self, val: &RustMathValue) -> Result<f64, EvalError> {
-        match val {
-            RustMathValue::Integer(n) => {
-                n.to_f64().ok_or_else(|| EvalError::new("ValueError", "integer too large to convert to float"))
-            }
-            RustMathValue::Float(f) => Ok(*f),
-            RustMathValue::Rational(r) => {
-                let num = r.numerator().to_f64().ok_or_else(|| EvalError::new("ValueError", "numerator too large"))?;
-                let den = r.denominator().to_f64().ok_or_else(|| EvalError::new("ValueError", "denominator too large"))?;
-                Ok(num / den)
-            }
-            _ => Err(EvalError::new("TypeError", "expected a number")),
-        }
+        exact_to_f64(val, "argument").unwrap_or_else(|| Err(EvalError::new("TypeError", "expected a number")))
     }
 
     /// Find the position of "==" operator in a string, respecting parentheses
     fn find_equation_operator(&self, s: &str) -> Option<usize> {
-        let chars: Vec<char> = s.chars().collect();
-        let mut depth = 0;
-
-        for i in 0..chars.len().saturating_sub(1) {
-            match chars[i] {
-                '(' | '[' => depth += 1,
-                ')' | ']' => depth -= 1,
-                '=' if depth == 0 && chars.get(i + 1) == Some(&'=') => {
-                    return Some(i);
-                }
-                _ => {}
-            }
-        }
-        None
+        let top = top_level_chars(s);
+        top.windows(2)
+            .find(|w| w[0].1 == '=' && w[1] == (w[0].0 + 1, '='))
+            .map(|w| w[0].0)
     }
 
     /// Split "rhs, a, b" into (rhs, "a, b")
     fn split_rhs_and_bounds(&self, s: &str) -> Result<(String, String), EvalError> {
-        let mut depth = 0;
-        let chars: Vec<char> = s.chars().collect();
-
-        for (i, &ch) in chars.iter().enumerate() {
-            match ch {
-                '(' | '[' => depth += 1,
-                ')' | ']' => depth -= 1,
-                ',' if depth == 0 => {
-                    let rhs = s[..i].to_string();
-                    let bounds = s[i + 1..].to_string();
-                    return Ok((rhs, bounds));
-                }
-                _ => {}
-            }
+        match top_level_chars(s).into_iter().find(|&(_, c)| c == ',') {
+            Some((i, _)) => Ok((s[..i].to_string(), s[i + 1..].to_string())),
+            None => Err(EvalError::new("SyntaxError", "could not parse equation bounds")),
         }
-        Err(EvalError::new("SyntaxError", "could not parse equation bounds"))
     }
 
     /// Convert a list of RustMathValues to Vec<f64>
@@ -9559,135 +9580,85 @@ impl ReplContext {
     }
 
     fn try_eval_binary_op(&mut self, expr: &str) -> Result<Option<RustMathValue>, EvalError> {
-        // Parse operators in order of LOWEST precedence first (outermost splitting)
-        // This ensures proper expression tree construction
+        // Split at the operator of lowest precedence, among the top-level characters only
+        // (outside brackets and string literals, `LexState`):
+        //   1. binary + and -: the rightmost one (left associative);
+        //   2. * and /: the rightmost one that is not part of ** (left associative);
+        //   3. a leading unary - or +, which applies to the rest: -2**2 = -(2**2) as in Python;
+        //   4. ** and ^: the leftmost one (right associative); its right operand may be signed.
+        // A candidate whose left or right operand is empty is skipped; the caller then reports
+        // the text as unparsable.
+        let top = top_level_chars(expr);
 
-        // Helper to find operator position outside of parentheses
-        let find_op_outside_parens = |expr: &str, op: &str| -> Option<usize> {
-            let mut paren_depth = 0;
-            let mut bracket_depth = 0;
-            let chars: Vec<char> = expr.chars().collect();
-            let op_chars: Vec<char> = op.chars().collect();
-
-            // Search from right to left for left-associative operators
-            // When going right-to-left: ')' opens a context, '(' closes it
-            for i in (0..=chars.len().saturating_sub(op_chars.len())).rev() {
-                match chars.get(i) {
-                    Some(')') => paren_depth += 1,  // entering nested context
-                    Some('(') => paren_depth -= 1,  // leaving nested context
-                    Some(']') => bracket_depth += 1,
-                    Some('[') => bracket_depth -= 1,
-                    _ => {}
+        // 1. and 2. A chain of binary + and -, else of * and /: every operator of the level at
+        //    once, folded from the left ((a - b) + c, (a * b) / c), so the number of terms adds no
+        //    recursion.
+        for level in [ChainLevel::Sum, ChainLevel::Product] {
+            if let Some((operands, ops)) = binary_chain(expr, &top, level) {
+                let mut acc = self.eval_expr(operands[0])?;
+                for (op, operand) in ops.iter().zip(&operands[1..]) {
+                    let right_val = self.eval_expr(operand)?;
+                    acc = self.apply_binary_op(&acc, op, &right_val)?;
                 }
-
-                if paren_depth == 0 && bracket_depth == 0 {
-                    let matches = (0..op_chars.len()).all(|j|
-                        chars.get(i + j) == Some(&op_chars[j])
-                    );
-                    if matches {
-                        // For *, also check we're not matching part of **
-                        if op == "*" {
-                            // Make sure the previous char isn't * (which would be **)
-                            if i > 0 && chars.get(i - 1) == Some(&'*') {
-                                continue;
-                            }
-                            // Make sure the next char isn't * (which would be **)
-                            if chars.get(i + 1) == Some(&'*') {
-                                continue;
-                            }
-                        }
-                        return Some(i);
-                    }
-                }
-            }
-            None
-        };
-
-        // 1. Addition/subtraction (LOWEST precedence - split first)
-        for op in &["+", "-"] {
-            if let Some(pos) = find_op_outside_parens(expr, op) {
-                if pos > 0 {
-                    let left = expr[..pos].trim();
-                    let right = expr[pos + 1..].trim();
-                    if !left.is_empty() && !right.is_empty() {
-                        let left_val = self.eval_expr(left)?;
-                        let right_val = self.eval_expr(right)?;
-                        return Ok(Some(self.apply_binary_op(&left_val, op, &right_val)?));
-                    }
-                }
+                return Ok(Some(acc));
             }
         }
 
-        // 2. Multiplication and Division (middle precedence)
-        if let Some(pos) = find_op_outside_parens(expr, "*") {
-            if pos > 0 {
-                let left = expr[..pos].trim();
-                let right = expr[pos + 1..].trim();
-                if !left.is_empty() && !right.is_empty() {
-                    let left_val = self.eval_expr(left)?;
-                    let right_val = self.eval_expr(right)?;
-                    return Ok(Some(self.apply_binary_op(&left_val, "*", &right_val)?));
-                }
-            }
+        // 3. A leading sign. Integer and float literals such as -5 never get here (eval_expr
+        //    reads them first).
+        //    A run of signs is read in one step (--x = x, -+-x = x), so its length adds no
+        //    recursion.
+        let mut rest = expr.trim_start();
+        let mut negative = false;
+        let mut signed = false;
+        while let Some(sign) = rest.chars().next().filter(|c| *c == '-' || *c == '+') {
+            negative ^= sign == '-';
+            signed = true;
+            rest = rest[1..].trim_start();
+        }
+        if signed && !rest.is_empty() {
+            let v = self.eval_expr(rest)?;
+            return Ok(Some(if negative { self.negate(&v)? } else { v }));
         }
 
-        if let Some(pos) = find_op_outside_parens(expr, "/") {
-            if pos > 0 {
-                let left = expr[..pos].trim();
-                let right = expr[pos + 1..].trim();
-                if !left.is_empty() && !right.is_empty() {
-                    let left_val = self.eval_expr(left)?;
-                    let right_val = self.eval_expr(right)?;
-                    return Ok(Some(self.apply_binary_op(&left_val, "/", &right_val)?));
-                }
+        // 4. ** and ^, the leftmost one.
+        for (i, &(pos, ch)) in top.iter().enumerate() {
+            let op = if ch == '*' && top.get(i + 1).map(|&(p, c)| (p, c)) == Some((pos + 1, '*')) {
+                "**"
+            } else if ch == '^' {
+                "^"
+            } else {
+                continue;
+            };
+            let (left, right) = (expr[..pos].trim(), expr[pos + op.len()..].trim());
+            if !left.is_empty() && !right.is_empty() {
+                let left_val = self.eval_expr(left)?;
+                let right_val = self.eval_expr(right)?;
+                return Ok(Some(self.apply_binary_op(&left_val, op, &right_val)?));
             }
-        }
-
-        // 3. Power (HIGHEST precedence - split last, right-to-left associative)
-        // For power, we want leftmost to make it right-associative: 2**3**4 = 2**(3**4)
-        let find_power_op = |expr: &str| -> Option<(usize, &str)> {
-            let mut paren_depth = 0;
-            let mut bracket_depth = 0;
-            let chars: Vec<char> = expr.chars().collect();
-
-            // Search from LEFT for right-associative power operator
-            for i in 0..chars.len() {
-                match chars.get(i) {
-                    Some('(') => paren_depth += 1,
-                    Some(')') => paren_depth -= 1,
-                    Some('[') => bracket_depth += 1,
-                    Some(']') => bracket_depth -= 1,
-                    _ => {}
-                }
-
-                if paren_depth == 0 && bracket_depth == 0 {
-                    // Check for **
-                    if chars.get(i) == Some(&'*') && chars.get(i + 1) == Some(&'*') {
-                        return Some((i, "**"));
-                    }
-                    // Check for ^ (but not inside function calls)
-                    if chars.get(i) == Some(&'^') {
-                        return Some((i, "^"));
-                    }
-                }
-            }
-            None
-        };
-
-        if let Some((pos, op)) = find_power_op(expr) {
-            if pos > 0 {
-                let op_len = op.len();
-                let left = expr[..pos].trim();
-                let right = expr[pos + op_len..].trim();
-                if !left.is_empty() && !right.is_empty() {
-                    let left_val = self.eval_expr(left)?;
-                    let right_val = self.eval_expr(right)?;
-                    return Ok(Some(self.apply_binary_op(&left_val, op, &right_val)?));
-                }
-            }
+            break;
         }
 
         Ok(None)
+    }
+
+    /// Unary minus (S9): -v for numbers, symbols, expressions and the module-like values; a
+    /// TypeError otherwise.
+    fn negate(&self, v: &RustMathValue) -> Result<RustMathValue, EvalError> {
+        use RustMathValue::*;
+        match v {
+            Integer(n) => Ok(Integer(-n.clone())),
+            Rational(r) => Ok(Rational(-r.clone())),
+            Float(f) => Ok(Float(-f)),
+            Complex(c) => Ok(Complex(-c.clone())),
+            IntegerMod(a) => Ok(IntegerMod(-a.clone())),
+            Symbol(s) => Ok(Expr(-rustmath_symbolic::Expr::Symbol(s.clone()))),
+            Expr(e) => Ok(Expr(-e.clone())),
+            Matrix(_) | Polynomial(_) | CliffordElem(_) => {
+                self.apply_binary_op(&Integer(rustmath_integers::Integer::from(-1)), "*", v)
+            }
+            _ => Err(EvalError::new("TypeError", format!("bad operand type for unary -: {}", value_type_name(v)))),
+        }
     }
 
     fn apply_binary_op(&self, left: &RustMathValue, op: &str, right: &RustMathValue) -> Result<RustMathValue, EvalError> {
@@ -9698,9 +9669,48 @@ impl ReplContext {
             (Integer(a), "+", Integer(b)) => Ok(Integer(a.clone() + b.clone())),
             (Integer(a), "-", Integer(b)) => Ok(Integer(a.clone() - b.clone())),
             (Integer(a), "*", Integer(b)) => Ok(Integer(a.clone() * b.clone())),
+            (Integer(a), "**", Integer(b)) | (Integer(a), "^", Integer(b)) if b.signum() < 0 => {
+                // a^(-e) = 1 / a^e in Q.
+                let e = int_arg::<u32>(op, "|exponent|", &(-b.clone()), 0..=repl_limits::OP_POW_EXP, "REPL limit")?;
+                if a.is_zero() {
+                    return Err(EvalError::new("ZeroDivisionError", format!("{}: 0 has no inverse (exponent {})", op, b)));
+                }
+                rustmath_rationals::Rational::new(rustmath_integers::Integer::one(), a.pow(e))
+                    .map(Rational)
+                    .map_err(|e| EvalError::new("MathError", format!("{:?}", e)))
+            }
             (Integer(a), "**", Integer(b)) | (Integer(a), "^", Integer(b)) => {
                 let exp = int_arg::<u32>(op, "exponent", b, 0..=repl_limits::OP_POW_EXP, "REPL limit")?;
                 Ok(Integer(a.pow(exp)))
+            }
+
+            // Integer and Rational together (S9 revision 1). Z is a subring of Q, so a mixed
+            // operation and the quotient of two integers are computed in Q, as in MAGMA (ch. 20),
+            // Sage (QQ) and PARI. A zero divisor is a ZeroDivisionError (Rational's Div panics).
+            (Integer(_) | Rational(_), "/", Integer(_) | Rational(_)) if is_exact_zero(right) => {
+                Err(EvalError::new("ZeroDivisionError", "division by zero"))
+            }
+            (Integer(a), "/", Integer(b)) => rustmath_rationals::Rational::new(a.clone(), b.clone())
+                .map(Rational)
+                .map_err(|e| EvalError::new("ZeroDivisionError", format!("{:?}", e))),
+            (Integer(a), "+" | "-" | "*" | "/", Rational(_)) => {
+                self.apply_binary_op(&Rational(rustmath_rationals::Rational::from_integer(a.clone())), op, right)
+            }
+            (Rational(_), "+" | "-" | "*" | "/", Integer(b)) => {
+                self.apply_binary_op(left, op, &Rational(rustmath_rationals::Rational::from_integer(b.clone())))
+            }
+            (Rational(a), "**" | "^", Integer(b)) => {
+                let negative = b.signum() < 0;
+                let abs = if negative { -b.clone() } else { b.clone() };
+                let e = int_arg::<u32>(op, if negative { "|exponent|" } else { "exponent" }, &abs, 0..=repl_limits::OP_POW_EXP, "REPL limit")?;
+                let (n, d) = (a.numerator().pow(e), a.denominator().pow(e));
+                if negative && n.is_zero() {
+                    return Err(EvalError::new("ZeroDivisionError", format!("{}: 0 has no inverse (exponent {})", op, b)));
+                }
+                let (n, d) = if negative { (d, n) } else { (n, d) };
+                rustmath_rationals::Rational::new(n, d)
+                    .map(Rational)
+                    .map_err(|e| EvalError::new("ZeroDivisionError", format!("{:?}", e)))
             }
 
             // Rational operations
@@ -10070,7 +10080,8 @@ Finite Field Functions:
   is_unit(a)           - True if a has inverse in Z/nZ
   sqrt_mod(a, n)       - Square roots of a mod n: a root, then all roots (at most 16)
                          or their number; also sqrt_mod(Mod(a, n)). A composite n is
-                         factored by trial division (a large prime cofactor never finishes)
+                         factored by trial division, Pollard rho and the quadratic sieve
+                         within REPL limits; an unfactored part is reported, not guessed
   pow_mod(b, e, m)     - Compute b^e mod m
 
 Combinatorics Functions:
@@ -10084,6 +10095,7 @@ Combinatorics Functions:
   multinomial(n, [k1, k2, ...]) - Multinomial coefficient (requires sum(ks) = n)
   falling_factorial(n, k) - (n)_k falling factorial
   rising_factorial(n, k)  - (n)^(k) rising factorial
+  pochhammer(x, n)        - Pochhammer symbol (x)_n = x(x+1)...(x+n-1), the rising factorial (MAGMA ch. 49)
   eulerian(n, k)       - Eulerian number
   narayana(n, k)       - Narayana number
   motzkin(n)           - n-th Motzkin number
@@ -10113,8 +10125,8 @@ Number Theory Functions:
   valuation(n, p)      - p-adic valuation of n
   next_prime(n)        - Smallest prime > n
   nth_prime(n)         - n-th prime number
-  prime_pi(n)          - Count of primes ≤ n
-  primes(a, b)         - List of primes in [a, b]
+  prime_pi(n)          - Count of primes ≤ n (n up to 6·10^9)
+  primes(a, b)         - List of primes in [a, b) (half-open, as Sage prime_range), each proven
   legendre(a, p)       - Legendre symbol (a/p)
   jacobi(a, n)         - Jacobi symbol (a/n)
   crt(rems, mods)      - Chinese Remainder Theorem
@@ -10258,6 +10270,231 @@ impl Default for ReplContext {
     fn default() -> Self {
         Self::new()
     }
+}
+
+/// A value inside `float_arith` (S9 revision 2): an exact number (Integer or Rational), or an
+/// element of the real field of doubles.
+enum RealArith {
+    Exact(RustMathValue),
+    Real(f64),
+}
+
+/// The two left-associative precedence levels of the S9 grammar.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum ChainLevel {
+    Sum,
+    Product,
+}
+
+/// The chain of `s` at one level (S9): every top-level binary `+`/`-` (`is_binary_sign`), or every
+/// top-level `*` that is not part of `**` and every `/`, with the operands between them (trimmed).
+/// None when the level has no operator or an operand is blank ("3 -": the caller then reports the
+/// text as unparsable). `top` is `top_level_chars(s)`.
+fn binary_chain<'a>(s: &'a str, top: &[(usize, char)], level: ChainLevel) -> Option<(Vec<&'a str>, Vec<&'static str>)> {
+    let bytes = s.as_bytes();
+    let mut operands = Vec::new();
+    let mut ops = Vec::new();
+    let mut start = 0;
+    for &(pos, ch) in top {
+        let op = match (level, ch) {
+            (ChainLevel::Sum, '+') if is_binary_sign(s, pos) => "+",
+            (ChainLevel::Sum, '-') if is_binary_sign(s, pos) => "-",
+            (ChainLevel::Product, '/') => "/",
+            (ChainLevel::Product, '*')
+                if !(pos > 0 && bytes[pos - 1] == b'*') && bytes.get(pos + 1) != Some(&b'*') => "*",
+            _ => continue,
+        };
+        operands.push(s[start..pos].trim());
+        ops.push(op);
+        start = pos + 1;
+    }
+    operands.push(s[start..].trim());
+    (!ops.is_empty() && operands.iter().all(|t| !t.is_empty())).then_some((operands, ops))
+}
+
+/// Whether `v` is the Integer or Rational zero (a zero divisor of `/`).
+fn is_exact_zero(v: &RustMathValue) -> bool {
+    match v {
+        RustMathValue::Integer(n) => n.is_zero(),
+        RustMathValue::Rational(r) => r.numerator().is_zero(),
+        _ => false,
+    }
+}
+
+/// The text inside the grouping parentheses around `s` (S9): Some(e) when s = "(..(e)..)" with
+/// j >= 1 pairs that each enclose all of e, e is not blank and has no top-level comma (a tuple such
+/// as "(x, 0, 1)" is not a group; "((x, 0, 1))" gives "(x, 0, 1)"). All j pairs go in one pass over
+/// the depth profile (LexState), so a run of any length costs O(len) and no recursion: the k-th
+/// '(' of the leading run encloses everything up to the trailing run iff the bracket depth stays
+/// >= k between the two runs.
+fn group_inner(s: &str) -> Option<&str> {
+    let s = s.trim();
+    let lead: Vec<usize> = s.char_indices().take_while(|&(_, c)| c == '(' || c.is_whitespace())
+        .filter(|&(_, c)| c == '(').map(|(i, _)| i).collect();
+    let trail: Vec<usize> = s.char_indices().rev().take_while(|&(_, c)| c == ')' || c.is_whitespace())
+        .filter(|&(_, c)| c == ')').map(|(i, _)| i).collect();
+    if lead.is_empty() || trail.is_empty() {
+        return None;
+    }
+    let core_start = lead[lead.len() - 1] + 1;
+    let core_end = trail[trail.len() - 1]; // byte offset of the first ')' of the trailing run
+    if core_start > core_end {
+        return None; // "()" or ")(": nothing inside
+    }
+    let mut lex = LexState::default();
+    let mut min_depth = i32::MAX;
+    for (i, ch) in s.char_indices() {
+        lex.top_level(ch);
+        if i >= core_start && i < core_end {
+            min_depth = min_depth.min(lex.depth);
+        }
+    }
+    if lex.depth != 0 || lex.quote.is_some() {
+        return None; // unbalanced or an open literal
+    }
+    let core_min = if core_start == core_end { lead.len() as i32 } else { min_depth };
+    let mut j = (core_min.max(0) as usize).min(lead.len()).min(trail.len());
+    while j > 0 {
+        let inner = &s[lead[j - 1] + 1..trail[j - 1]];
+        if inner.trim().is_empty() {
+            return None;
+        }
+        if !top_level_chars(inner).iter().any(|&(_, c)| c == ',') {
+            return Some(inner);
+        }
+        j -= 1; // the innermost pair holds a tuple: keep it
+    }
+    None
+}
+
+/// The double nearest to an exact number (S11), `what` naming it in errors. Integer and Rational
+/// round once to nearest (correctly rounded); a value whose magnitude rounds above f64::MAX is a
+/// ValueError "{what}: {v} is outside the range of a double", never inf or NaN. A nonzero value
+/// below the least subnormal (about 4.9e-324) rounds to 0.0, the IEEE result. A Float passes when
+/// finite. Other values: None, so each caller keeps its own TypeError.
+fn exact_to_f64(v: &RustMathValue, what: &str) -> Option<Result<f64, EvalError>> {
+    let (f, shown) = match v {
+        RustMathValue::Integer(n) => (n.to_f64().unwrap_or(f64::NAN), show_int(n)),
+        RustMathValue::Rational(r) => (
+            r.to_f64().unwrap_or(f64::NAN),
+            if r.numerator().bit_length() > 128 || r.denominator().bit_length() > 128 {
+                format!("a rational with a {}-bit numerator", r.numerator().bit_length())
+            } else {
+                r.to_string()
+            },
+        ),
+        RustMathValue::Float(x) => (*x, x.to_string()),
+        _ => return None,
+    };
+    Some(if f.is_finite() {
+        Ok(f)
+    } else {
+        Err(EvalError::new("ValueError", format!("{}: {} is outside the range of a double", what, shown)))
+    })
+}
+
+/// Bracket depth and string-literal state of a left-to-right scan of REPL source text (S9).
+/// A string literal starts with `"` or `'` outside a literal and ends at the next unescaped copy
+/// of the same quote; inside it a backslash escapes the next character, as in
+/// `strip_inline_comment`. Brackets inside a literal do not count.
+#[derive(Clone, Copy, Debug, Default)]
+struct LexState {
+    depth: i32,
+    quote: Option<char>,
+    escaped: bool,
+}
+
+impl LexState {
+    /// Advances over `ch`. True when `ch` lies at bracket depth 0 outside every string literal
+    /// and is neither a bracket nor a quote: the characters at which a splitter may cut.
+    fn top_level(&mut self, ch: char) -> bool {
+        if let Some(q) = self.quote {
+            if self.escaped {
+                self.escaped = false;
+            } else if ch == '\\' {
+                self.escaped = true;
+            } else if ch == q {
+                self.quote = None;
+            }
+            return false;
+        }
+        match ch {
+            '"' | '\'' => {
+                self.quote = Some(ch);
+                false
+            }
+            '(' | '[' | '{' => {
+                self.depth += 1;
+                false
+            }
+            ')' | ']' | '}' => {
+                self.depth -= 1;
+                false
+            }
+            _ => self.depth == 0,
+        }
+    }
+}
+
+/// The byte offset and the character of every top-level character of `s` (`LexState::top_level`).
+fn top_level_chars(s: &str) -> Vec<(usize, char)> {
+    let mut lex = LexState::default();
+    s.char_indices().filter(|&(_, ch)| lex.top_level(ch)).collect()
+}
+
+/// Whether `s` is exactly one string literal: it opens with a quote, and that literal closes at
+/// the last character of `s`.
+fn is_string_literal(s: &str) -> bool {
+    let mut lex = LexState::default();
+    let mut chars = s.char_indices();
+    match chars.next() {
+        Some((_, q)) if q == '"' || q == '\'' => {
+            lex.top_level(q);
+        }
+        _ => return false,
+    }
+    for (i, ch) in chars {
+        lex.top_level(ch);
+        if lex.quote.is_none() {
+            return i + ch.len_utf8() == s.len();
+        }
+    }
+    false
+}
+
+/// Whether the '+' or '-' at byte `pos` of `s` is a binary operator (S9): the previous non-blank
+/// character ends an operand (a name or number, a closing bracket or a closing quote), and the
+/// sign is not the exponent sign of a float literal such as 1e-3 or 2.5E+10. Otherwise it is a
+/// unary sign: at the start, or after an operator, a comma, '=' or an opening bracket.
+fn is_binary_sign(s: &str, pos: usize) -> bool {
+    let before = s[..pos].trim_end();
+    let prev = match before.chars().last() {
+        Some(c) => c,
+        None => return false,
+    };
+    let ends_operand = prev.is_alphanumeric()
+        || matches!(prev, '_' | '.' | ')' | ']' | '}' | '"' | '\'');
+    if !ends_operand {
+        return false;
+    }
+    // An exponent sign follows the 'e' directly, and the 'e' ends a decimal mantissa that is not
+    // the tail of a name (x1e - 3 is a subtraction).
+    if (prev == 'e' || prev == 'E') && before.len() == pos {
+        let mantissa = &before[..before.len() - 1];
+        let start = mantissa
+            .char_indices()
+            .rev()
+            .take_while(|&(_, c)| c.is_ascii_digit() || c == '.')
+            .last()
+            .map_or(mantissa.len(), |(i, _)| i);
+        let run = &mantissa[start..];
+        let after_name = mantissa[..start].chars().last().is_some_and(|c| c.is_alphanumeric() || c == '_');
+        let digit_follows = s[pos + 1..].starts_with(|c: char| c.is_ascii_digit());
+        if run.chars().any(|c| c.is_ascii_digit()) && !after_name && digit_follows {
+            return false;
+        }
+    }
+    true
 }
 
 /// Strip inline comments from a line (everything after # that's not in a string)
@@ -10469,6 +10706,20 @@ fn expr_to_latex(expr: &Expr) -> String {
 //
 // Every user integer reaches a machine type through `int_arg`/`index_arg`, `checked_binomial`
 // or an exact conversion; nothing is wrapped, truncated or allowed to panic.
+//
+// Follow-ups unit J1a (parser, conversions, limits, sqrt_mod):
+// - Arithmetic in Q: ch. 18 §18.4.1 ("Division `/` gives a rational result"), ch. 20 §20.1.2
+//   (coercion between Z and Q), §20.2.2 (a / b in reduced form), §20.4.2 (a ^ k); digests
+//   `Chapter_18_Ring_of_Integers.md:125`, `Chapter_20_Rational_Field.md:44-46, 88, 157`.
+// - Range bounds in the real field of 53 bits (`float_arith`): ch. 25 §25.1.1-§25.1.2, an
+//   operation with a real operand is done in the real field (`Chapter_25_Real_and_Complex_Fields.md:56-58`).
+// - The Pochhammer symbol (a)_n = a(a+1)...(a+n-1): ch. 49 (`HypergeometricSeries`,
+//   `Chapter_49_Power_Laurent_and_Puiseux_Series.md:292`).
+// - sqrt_mod: ch. 18 §18.10.1 (`Factorization` with TrialDivisionLimit, PollardRhoLimit,
+//   MPQSLimit, Proof), §18.12.1 (`Modsqrt`), ch. 19 §19.5.6 (`Sqrt`, `AllSqrts` with a known
+//   factorization). Primes: §18.9.2 (`PrimesInInterval`), with H. L. Montgomery, R. C. Vaughan,
+//   *The large sieve*, Mathematika 20 (1973) 119-134 (the count bound) and J. Sorenson,
+//   J. Webster, Math. Comp. 86 (2017) 985-1003 (the twelve bases below psi_12).
 // ---------------------------------------------------------------------------------------------
 
 /// Resource limits of REPL commands (T-250). The REPL has no timeout or interrupt, and a panic
@@ -10488,6 +10739,15 @@ fn expr_to_latex(expr: &Expr) -> String {
 /// which no limit bounds. The older
 /// limits (the first block) are unchanged and are listed here so that every limit is in one
 /// place.
+///
+/// The limits of unit J1a (the last block) follow the same policy and were measured on the
+/// same container: the nesting depth of `eval_expr` (a stack bound, CPython's 200); the plot
+/// options (the old clamp maxima, now refused above); the graph constructors (a memory model of
+/// the hash tables, within 2 % of the REPL's peak); `prime_pi` (the sieve's linear time);
+/// `primes` (a proven bound on the number of primes for memory, and above 2^64 a time model of
+/// Baillie-PSW per odd candidate and of ECPP per probable prime); and the factorization behind
+/// `sqrt_mod` (MAGMA's TrialDivisionLimit and PollardRhoLimit defaults, the sieve up to 60
+/// digits, trial division to the reach of the old command, ECPP up to 1024 bits).
 mod repl_limits {
     // Existing limits, unchanged.
     pub const FACTORIAL_N: u32 = 10_000;
@@ -10585,6 +10845,357 @@ mod repl_limits {
     /// Above this min(m, n) the work of delannoy(m, n) is certainly above BINOMIAL_WORK
     /// (it is at least min(m, n)^3 / 3), so `delannoy_work` does not sum it.
     pub const DELANNOY_SUM_CAP: u32 = 20_000;
+
+    // Limits added for the parser and the commands of the follow-ups unit J1a.
+    /// Nesting depth of `eval_expr` (and of `float_arith`), as CPython's parser refuses more
+    /// than 200 nested parentheses. Each level is a recursive call, so deeper nesting overflows
+    /// the stack and kills the kernel. Measured on the J1a prototype (review 3, m4): alternating
+    /// nesting such as `-(-(...(1)...))` aborted at 600 to 1000 levels in a debug build and at
+    /// 3000 to 5000 in an optimized one (8 MB thread); it costs two calls per level, so it is
+    /// refused from 100 levels. Runs of signs and of parentheses are read in one step and do
+    /// not count. Nested calls `abs(abs(...))` use far larger frames in a debug build (about
+    /// 240 KB per level), where they can still overflow below this bound.
+    pub const EVAL_DEPTH: usize = 200;
+    /// Plot options (N5): the old clamp maxima, now refused above. They bound the number of SVG
+    /// elements. The lower bounds are those of the drawing code (2 grid points, 1 contour).
+    pub const SLOPE_FIELD_POINTS: usize = 50;
+    pub const PARAMETRIC_POINTS: usize = 1_000;
+    pub const CONTOURS: usize = 30;
+    pub const CONTOUR_POINTS: usize = 100;
+    pub const VECTOR_FIELD_POINTS: usize = 30;
+    pub const IMPLICIT_POINTS: usize = 200; // implicit_plot, region_plot
+    /// Graph constructors (S15): `graph_bytes` of one copy. An assignment holds three copies
+    /// (the value, the variable and `last_result`), about 400 MB at the limit; a bare expression
+    /// holds two, so the smallest refused bare expression needs about 266 MB. Admitted maxima:
+    /// Graph(2770833), path_graph and cycle_graph(1187500), star_graph and
+    /// wheel_graph(1018978), complete_graph(3585) (at 3586 the tables double to 8192 buckets).
+    pub const GRAPH_BYTES: u128 = 133_000_000;
+    /// prime_pi(x): the segmented sieve is linear in x, 1.75 s per 10^9 in release (I1's sieve:
+    /// prime_pi(4·10^9) in 7.0 s), so about 10.5 s here; gp primepi(6*10^9) = 279545368.
+    pub const PRIME_PI_X: u64 = 6_000_000_000;
+    /// primes(a, b): at most this many entries (`count_bound`), a memory bound: a listed prime
+    /// costs about 375 bytes at the peak of an assignment with its display text.
+    pub const PRIMES_COUNT: u64 = 1_000_000;
+    /// Spans above this have count_bound > PRIMES_COUNT (count_bound(8·10^6) = 1006608).
+    pub const PRIMES_SPAN: u64 = 8_000_000;
+    /// primes(a, b) above 2^64: modelled seconds of the two passes (`checked_primes`).
+    pub const PRIMES_SECONDS: f64 = 10.0;
+    /// One strong (Miller-Rabin) test by bit size, release: num-bigint modpow (J1a design §6.3,
+    /// `tcost.rs`).
+    pub const PRIMES_STRONG_TEST_SECONDS: [(u64, f64); 9] = [(64, 8.4e-6), (128, 1.4e-5), (256, 3.4e-5),
+        (512, 1.5e-4), (1024, 7.3e-4), (2048, 4.7e-3), (4096, 4.5e-2), (8192, 2.6e-1), (16384, 2.2)];
+    /// One ECPP proof with its verification (`try_is_prime`), release: means over random primes.
+    pub const PRIMES_PROOF_SECONDS: [(u64, f64); 9] = [(100, 0.008), (128, 0.024), (256, 0.070),
+        (512, 0.41), (768, 1.7), (1024, 3.3), (1536, 20.6), (2048, 75.8), (3072, 957.0)];
+    /// sqrt_mod's factorization (MAGMA `Factorization` parameters, ch. 18 §18.10.1;
+    /// `sqrt_mod_factor`). Phase 1: trial division below this (MAGMA's TrialDivisionLimit).
+    pub const SQRT_MOD_TRIAL: u64 = 10_000;
+    /// Phase 2: Brent rho iterations per composite (MAGMA's PollardRhoLimit).
+    pub const SQRT_MOD_RHO_STEPS: u64 = 8_191;
+    /// Phase 2 only on cofactors this small: its BPSW and rho cost grow as bits^3 and bits^2.
+    /// HEAD needed more than 17 s for one prime n of 4096 bits (J1a review 3).
+    pub const SQRT_MOD_I2_MAX_BITS: u64 = 4_096;
+    /// The quadratic sieve up to this many digits: about 2.4 s in release at 60 digits (I2).
+    pub const SQRT_MOD_QS_DIGITS: u32 = 60;
+    /// Phase 3: modelled nanoseconds of trial division; the prime bound is
+    /// T(bits) = SQRT_MOD_TRIAL_WORK / (55 + bits / 11) in u64 integer arithmetic, the reach of
+    /// the old trial division (every odd candidate, 55 + bits/11 ns each) in 10 s.
+    pub const SQRT_MOD_TRIAL_WORK: u64 = 20_000_000_000;
+    /// ECPP proofs up to this size, the bound of is_prime (I1: 3.3 s mean, 4.3 s max at 1024 bits
+    /// in release).
+    pub const SQRT_MOD_PROOF_BITS: u64 = super::PROOF_BITS;
+}
+
+/// psi_12 = 318665857834031151167461, the least strong pseudoprime to the twelve prime bases
+/// 2, ..., 37 (J. Sorenson, J. Webster, *Strong pseudoprimes to twelve prime bases*, Math. Comp.
+/// 86 (2017) 985-1003). Below it `is_probable_prime` runs those twelve tests, which decide.
+const PSI_12: u128 = 318_665_857_834_031_151_167_461;
+
+/// An upper bound on the number of primes in [x, x + y) for every x >= 0 (S15): 0 for y <= 0,
+/// 1 for y = 1, else min(ceil(y/2) + 1, floor(2y / ln y)). The second term is H. L. Montgomery
+/// and R. C. Vaughan, *The large sieve*, Mathematika 20 (1973) 119-134, Corollary 2:
+/// pi(x + y) - pi(x) < 2y / log y for y > 1. `None` when y > `repl_limits::PRIMES_SPAN`
+/// (8·10^6, an exact Integer comparison): there the bound already exceeds
+/// `repl_limits::PRIMES_COUNT`, since count_bound(8·10^6) = 1006608 and the bound increases
+/// with y. Below it the quotient is computed in f64 on y as u64 (exact, no overflow, no NaN;
+/// its rounding error, about 10^-10, can move the floor only at a quotient that close to an
+/// integer).
+fn count_bound(y: &Integer) -> Option<u64> {
+    if y.signum() <= 0 {
+        return Some(0);
+    }
+    if *y > Integer::from(repl_limits::PRIMES_SPAN) {
+        return None;
+    }
+    let y = y.to_u64().expect("0 < y <= PRIMES_SPAN");
+    if y == 1 {
+        return Some(1);
+    }
+    let yf = y as f64;
+    let mv = (2.0 * yf / yf.ln()).floor() as u64;
+    Some((y.div_ceil(2) + 1).min(mv))
+}
+
+/// `table` is a list of (bits, seconds) measurements, ascending; the value at `bits` by
+/// log-log interpolation (a power law between two points), the first value below the table,
+/// and the last segment's power law extended above it (S15).
+fn table_seconds(table: &[(u64, f64)], bits: u64) -> f64 {
+    let (b0, t0) = table[0];
+    if bits <= b0 {
+        return t0;
+    }
+    let power_law = |(b1, t1): (u64, f64), (b2, t2): (u64, f64)| -> f64 {
+        let e = (t2 / t1).ln() / (b2 as f64 / b1 as f64).ln();
+        t1 * (bits as f64 / b1 as f64).powf(e)
+    };
+    for w in table.windows(2) {
+        if bits <= w[1].0 {
+            return power_law(w[0], w[1]);
+        }
+    }
+    power_law(table[table.len() - 2], table[table.len() - 1])
+}
+
+/// Modelled seconds of `is_probable_prime` on one odd candidate of `bits` bits (S15; release
+/// build): trial division by the primes below 1000 (the 2e-6 term below 1000 bits, inside
+/// T_strong above), one strong test for the 16.3 % of odd numbers that pass it (Mertens'
+/// product over the odd primes below 1000), and for the primes, a fraction of about
+/// 2.885 / bits of the odd candidates, at most 12 more strong tests (34.6 / bits). That is at
+/// most 0.163 + 34.6 / bits strong tests, below the factor 0.25 + 40 / bits used here.
+fn primes_t_test(bits: u64) -> f64 {
+    2e-6 + table_seconds(&repl_limits::PRIMES_STRONG_TEST_SECONDS, bits) * (0.25 + 40.0 / bits as f64)
+}
+
+/// Modelled seconds of one ECPP proof (`try_is_prime`) of a prime of `bits` bits (S15).
+fn primes_t_proof(bits: u64) -> f64 {
+    table_seconds(&repl_limits::PRIMES_PROOF_SECONDS, bits)
+}
+
+/// The REPL command `primes(a, b)`: the primes in [a, b), half-open as Sage `prime_range`
+/// (MAGMA `PrimesInInterval(a, b - 1)`, ch. 18 §18.9.2), each proven (S15).
+///
+/// 1. Memory: the list has at most [`count_bound`]`(b - max(a, 2))` entries, which must be at
+///    most `repl_limits::PRIMES_COUNT`.
+/// 2. Below 2^64: the segmented sieve (rustmath-integers `try_prime_range`, exact).
+/// 3. From 2^64 up, two passes over the odd candidates c of [max(a, 2^64), b), with B = bits of
+///    b - 1. The call is refused before any test when n_odd · t_test(B) exceeds
+///    `repl_limits::PRIMES_SECONDS`. Pass 1 runs `is_probable_prime` (Baillie-PSW, exact below
+///    psi_12) on each c; `false` is a proof of compositeness. After each probable prime at or
+///    above psi_12 (k of them so far), the call is refused as soon as
+///    n_odd · t_test(B) + k · t_proof(B) exceeds the limit. Pass 2 proves each of those with
+///    `try_is_prime` (ECPP): `Ok(false)` drops c (a BPSW pseudoprime), an unresolved proof is a
+///    ValueError. The answer never depends on the time models: a refusal answers nothing.
+fn checked_primes(a: &Integer, b: &Integer) -> Result<Vec<Integer>, EvalError> {
+    let two = Integer::from(2);
+    let lo = if *a > two { a.clone() } else { two.clone() };
+    let span = b.clone() - lo.clone();
+    if span.signum() <= 0 {
+        return Ok(Vec::new());
+    }
+    match count_bound(&span) {
+        None => {
+            return Err(EvalError::new("ValueError", format!(
+                "primes: the span b - max(a, 2) is {}, above {}, so [a, b) may contain more than {} primes \
+                 (Montgomery-Vaughan bound), more than the REPL limit {} (a memory bound)",
+                show_int(&span), repl_limits::PRIMES_SPAN, repl_limits::PRIMES_COUNT, repl_limits::PRIMES_COUNT)));
+        }
+        Some(c) if c > repl_limits::PRIMES_COUNT => {
+            return Err(EvalError::new("ValueError", format!(
+                "primes: [a, b) may contain up to {} primes (Montgomery-Vaughan bound), more than the \
+                 REPL limit {} (a memory bound)",
+                c, repl_limits::PRIMES_COUNT)));
+        }
+        Some(_) => {}
+    }
+    let two_64 = Integer::from(u64::MAX) + Integer::one();
+    let mut out = Vec::new();
+    if lo < two_64 {
+        let hi = if *b < two_64 { b.clone() } else { two_64.clone() };
+        // The sieve part of try_prime_range: exact, no proof can fail.
+        out = try_primes_between(&lo, &hi)
+            .map_err(|e| EvalError::new("ValueError", format!("primes: {}", e)))?;
+    }
+    if *b <= two_64 {
+        return Ok(out);
+    }
+    let big_lo = if lo > two_64 { lo } else { two_64 };
+    let bits = (b.clone() - Integer::one()).bits();
+    // Odd integers in [L, H): floor(H/2) - floor(L/2) (both positive).
+    let n_odd = (b.clone() / two.clone() - big_lo.clone() / two.clone())
+        .to_u64()
+        .expect("at most PRIMES_SPAN candidates");
+    let t_pass1 = n_odd as f64 * primes_t_test(bits);
+    if t_pass1 > repl_limits::PRIMES_SECONDS {
+        return Err(EvalError::new("ValueError", format!(
+            "primes: testing the {} odd candidates of [max(a, 2^64), b), numbers of {} bits, needs about \
+             {:.0} s (REPL limit {} s)",
+            n_odd, bits, t_pass1, repl_limits::PRIMES_SECONDS)));
+    }
+    let psi12 = Integer::from_decimal_str(&PSI_12.to_string()).expect("decimal literal");
+    let t_proof = primes_t_proof(bits);
+    // Pass 1: Baillie-PSW on every odd candidate.
+    let mut probable = Vec::new();
+    let mut k_big = 0u64;
+    let mut c = if big_lo.is_odd() { big_lo } else { big_lo + Integer::one() };
+    while c < *b {
+        if is_probable_prime(&c) {
+            if c >= psi12 {
+                k_big += 1;
+                let t = t_pass1 + k_big as f64 * t_proof;
+                if t > repl_limits::PRIMES_SECONDS {
+                    return Err(EvalError::new("ValueError", format!(
+                        "primes: [a, b) has at least {} BPSW probable primes that need a proof (at or above \
+                         psi_12 = {}); proving them prime needs about {:.1} s or more (REPL limit {} s)",
+                        k_big, PSI_12, t, repl_limits::PRIMES_SECONDS)));
+                }
+            }
+            probable.push(c.clone());
+        }
+        c = c + two.clone();
+    }
+    // Pass 2: an ECPP proof for each probable prime at or above psi_12 (below it the twelve
+    // strong tests of pass 1 decide).
+    for c in probable {
+        if c < psi12 {
+            out.push(c);
+            continue;
+        }
+        match try_is_prime(&c) {
+            Ok(true) => out.push(c),
+            Ok(false) => {}
+            Err(e) => {
+                return Err(EvalError::new("ValueError", format!(
+                    "primes: {} is a BPSW probable prime that could not be proven prime ({})",
+                    show_int(&c), e)));
+            }
+        }
+    }
+    Ok(out)
+}
+
+/// Bytes of a std `HashSet<usize>` table holding d entries (S15). std's `HashSet` is hashbrown:
+/// an empty set allocates nothing; a set of d entries has 4 buckets for d <= 3, 8 for d <= 7,
+/// else the power of two >= 8d/7, with 9 bytes per bucket (the entry and its control byte),
+/// plus the trailing control bytes and the allocator's header (32 bytes together, measured).
+/// std does not promise this layout, so the model is empirical: it matched the real REPL peak
+/// within 2 % (J1a design §6.1, VmHWM of `path_graph(10^6)`, `complete_graph(3000)`,
+/// `Graph(2·10^6)`, `star_graph(10^6)`). `None` when the value does not fit in u128.
+fn hash_set_bytes(d: u128) -> Option<u128> {
+    match d {
+        0 => Some(0),
+        1..=3 => Some(64),
+        4..=7 => Some(96),
+        _ => 8u128
+            .checked_mul(d)?
+            .div_ceil(7)
+            .checked_next_power_of_two()?
+            .checked_mul(9)?
+            .checked_add(32),
+    }
+}
+
+/// The memory of one rustmath-graphs `Graph` with `v` vertices whose degrees come in
+/// (count, degree) groups (S15): 48 bytes per vertex (the set in the adjacency `Vec`) plus each
+/// vertex's table ([`hash_set_bytes`]). `None` when the model overflows u128, which is far
+/// above every limit.
+fn graph_bytes(v: u128, groups: &[(u128, u128)]) -> Option<u128> {
+    let mut b = v.checked_mul(48)?;
+    for &(c, d) in groups {
+        b = b.checked_add(c.checked_mul(hash_set_bytes(d)?)?)?;
+    }
+    Some(b)
+}
+
+/// Refuses a graph constructor whose graph needs more than `repl_limits::GRAPH_BYTES` bytes per
+/// copy by [`graph_bytes`] (S15); `e` is the number of edges, for the message. A model that
+/// overflows u128 is refused too.
+fn check_graph_size(cmd: &str, v: u128, e: u128, groups: &[(u128, u128)]) -> Result<(), EvalError> {
+    let need = match graph_bytes(v, groups) {
+        Some(b) if b <= repl_limits::GRAPH_BYTES => return Ok(()),
+        Some(b) => format!("about {} bytes", b),
+        None => "more than 2^128 bytes".to_string(),
+    };
+    Err(EvalError::new("ValueError", format!(
+        "{}: a graph with {} vertices and {} edges needs {} per copy (REPL limit {}, a memory \
+         bound; an assignment holds three copies)",
+        cmd, v, e, need, repl_limits::GRAPH_BYTES)))
+}
+
+/// The coordinate names of `chart(M, names)` (S14): `names` separated by commas, exactly dim(M) of
+/// them (Sage `Chart`: "the list of coordinates must contain dim elements"), each a valid
+/// identifier, pairwise distinct (each names a coordinate symbol). For dim(M) = 0 the string is
+/// empty.
+fn chart_coordinate_names(names: &str, dim: usize) -> Result<Vec<String>, EvalError> {
+    let list: Vec<String> = if names.trim().is_empty() {
+        Vec::new()
+    } else {
+        names.split(',').map(|s| s.trim().to_string()).collect()
+    };
+    if list.len() != dim {
+        return Err(EvalError::new("ValueError", format!(
+            "chart: the manifold has dimension {}, so the chart needs {} coordinate names, got {}",
+            dim, dim, list.len())));
+    }
+    let mut seen = std::collections::HashSet::new();
+    for name in &list {
+        if !is_valid_identifier(name) {
+            return Err(EvalError::new("ValueError", format!(
+                "chart: coordinate name {:?} is not an identifier", name)));
+        }
+        if !seen.insert(name.as_str()) {
+            return Err(EvalError::new("ValueError", format!(
+                "chart: coordinate name {} appears twice", name)));
+        }
+    }
+    Ok(list)
+}
+
+/// The REPL check that `chart` has one coordinate per dimension of the manifold it is used on
+/// (S14): a chart is made for one dimension, but REPL values can be combined freely.
+fn check_chart(cmd: &str, chart: &Chart, dim: usize) -> Result<(), EvalError> {
+    if chart.dimension() != dim {
+        return Err(EvalError::new("ValueError", format!(
+            "{}: the chart has {} coordinates, but the manifold has dimension {}",
+            cmd, chart.dimension(), dim)));
+    }
+    Ok(())
+}
+
+/// The type name of a REPL value, for error messages.
+fn value_type_name(v: &RustMathValue) -> &'static str {
+    use RustMathValue::*;
+    match v {
+        Integer(_) => "Integer",
+        Rational(_) => "Rational",
+        Complex(_) => "Complex",
+        Float(_) => "Float",
+        Symbol(_) => "Symbol",
+        Expr(_) => "Expr",
+        String(_) => "String",
+        Bool(_) => "Bool",
+        Matrix(_) => "Matrix",
+        Polynomial(_) => "Polynomial",
+        IntegerMod(_) => "IntegerMod",
+        List(_) => "List",
+        Graph(_) => "Graph",
+        Point2D(_) => "Point2D",
+        Point3D(_) => "Point3D",
+        Plot { .. } => "Plot",
+        CliffordAlg(_) => "CliffordAlg",
+        CliffordElem(_) => "CliffordElem",
+        ExteriorAlg(_) => "ExteriorAlg",
+        JordanSymBilinear(_) => "JordanSymBilinear",
+        JordanSymBilinearElem(_) => "JordanSymBilinearElem",
+        SpecialJordan(_) => "SpecialJordan",
+        SpecialJordanElem(_) => "SpecialJordanElem",
+        ExceptionalJordan(_) => "ExceptionalJordan",
+        AlbertElem(_) => "AlbertElem",
+        Manifold(_) => "Manifold",
+        ChartVal(_) => "ChartVal",
+        DiffFormVal(_) => "DiffFormVal",
+        VectorFieldVal(_) => "VectorFieldVal",
+        None => "None",
+    }
 }
 
 /// `v` for an error message: in full up to 128 bits, otherwise its sign and bit length (so a
@@ -10970,37 +11581,253 @@ fn checked_is_prime(cmd: &str, n: &Integer) -> Result<bool, EvalError> {
 /// At most this many roots are listed by `sqrt_mod`; above it only their number is printed.
 const SQRT_MOD_LIST_LIMIT: u64 = 16;
 
-/// The text of the REPL command `sqrt_mod(a, n)`: the square roots of a in Z/nZ.
+/// The limits of `sqrt_mod`'s factorization (see [`sqrt_mod_factor`]). Production code uses
+/// [`SQRT_MOD_LIMITS`]; the unit tests build smaller ones.
+struct SqrtModLimits {
+    /// Phase 1: trial division by the primes below this.
+    trial: u64,
+    /// Phase 2: Pollard rho iterations per composite (I2 `pollard_rho_limit`).
+    rho_steps: u64,
+    /// Phase 2 runs only on cofactors of at most this many bits.
+    i2_max_bits: u64,
+    /// The quadratic sieve on composites of at most this many digits (I2 `mpqs_limit`; < 25:
+    /// none).
+    qs_digits: u32,
+    /// Phase 3: modelled nanoseconds of trial division; the prime bound is
+    /// T(bits) = trial_work / (55 + bits / 11) in u64 integer arithmetic.
+    trial_work: u64,
+    /// Probable primes of at most this many bits get an ECPP proof.
+    proof_bits: u64,
+}
+
+/// The production limits of `sqrt_mod` (constants in `repl_limits`).
+const SQRT_MOD_LIMITS: SqrtModLimits = SqrtModLimits {
+    trial: repl_limits::SQRT_MOD_TRIAL,
+    rho_steps: repl_limits::SQRT_MOD_RHO_STEPS,
+    i2_max_bits: repl_limits::SQRT_MOD_I2_MAX_BITS,
+    qs_digits: repl_limits::SQRT_MOD_QS_DIGITS,
+    trial_work: repl_limits::SQRT_MOD_TRIAL_WORK,
+    proof_bits: repl_limits::SQRT_MOD_PROOF_BITS,
+};
+
+/// One factor q^e of n for `sqrt_mod`; the bases of all pieces are pairwise coprime and the
+/// product of the pieces is |n|.
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum SqrtModPiece {
+    /// p proven prime (trial division, the twelve strong tests below psi_12, or ECPP).
+    Prime { p: Integer, e: u32 },
+    /// q passed Baillie-PSW and was not proven prime (`why`).
+    Probable { q: Integer, e: u32, why: String },
+    /// c proven composite, or not tested, and not split within the limits (`why`).
+    Composite { c: Integer, e: u32, why: String },
+}
+
+/// Phase 3 trial division bound: T(bits) = work / (55 + bits / 11), in u64 integer arithmetic.
+/// 55 + bits/11 ns is the measured release cost of one trial-division step (J1a design §7.1:
+/// 61 ns at 64 bits, 103 ns at 512, 834 ns at 8192).
+fn sqrt_mod_trial_bound(work: u64, bits: u64) -> u64 {
+    work / (55 + bits / 11)
+}
+
+/// The factorization of |n| > 1 behind `sqrt_mod`, within `lim` (MAGMA `Factorization` with
+/// `TrialDivisionLimit`, `PollardRhoLimit`, `MPQSLimit` and `Proof`, ch. 18 §18.10.1).
+///
+/// 1. Trial division by the primes below `lim.trial` (stopping when p^2 exceeds the cofactor).
+/// 2. The cofactor m: prime if the loop stopped at p^2 > m or m < trial^2 (every smaller prime
+///    was tried). Else, if it has at most `lim.i2_max_bits` bits, rustmath-integers
+///    `factorization_with_limits` (Brent rho with `rho_steps` iterations, the quadratic sieve up
+///    to `qs_digits` digits, no proof): its primes are kept, its probable primes go to step 4,
+///    its composites to step 3. A larger m goes to step 3 untested.
+/// 3. Each composite or untested piece c: trial division by the primes from `lim.trial` while
+///    p <= T(bits of the cofactor) ([`sqrt_mod_trial_bound`]; the bound grows as the cofactor
+///    shrinks) and the modelled cost of the steps taken stays within `lim.trial_work` (review 3
+///    of J1a, m5). A cofactor below the square of the last prime tried is prime. A composite of
+///    step 2 with no factor found is not given to I2 again (it already ran rho and the sieve on
+///    it); a proper or untested cofactor of at most `i2_max_bits` bits is classified by
+///    Baillie-PSW and sieved again (no rho).
+/// 4. Each probable prime of at most `lim.proof_bits` bits gets an ECPP proof (`try_is_prime`);
+///    a larger one, or an unresolved proof, stays `Probable`.
+///
+/// Every step keeps the product of the pieces equal to |n| and splits a piece only into
+/// divisors of it, so the bases stay pairwise coprime.
+fn sqrt_mod_factor(n: &Integer, lim: &SqrtModLimits) -> Vec<SqrtModPiece> {
+    use std::ops::ControlFlow;
+    let zero = BigInt::from(0u32);
+    let mut pieces = Vec::new();
+    let mut m = n.abs();
+    debug_assert!(m > Integer::one());
+    // Phase 1.
+    let mut below_sqrt = false;
+    rustmath_integers::sieve::for_each_prime(2, lim.trial, |p| {
+        let pi = Integer::from(p);
+        if pi.clone() * pi.clone() > m {
+            below_sqrt = true;
+            return ControlFlow::Break(());
+        }
+        let mut e = 0u32;
+        while m.as_bigint() % p == zero {
+            m = Integer::new(m.as_bigint() / p);
+            e += 1;
+        }
+        if e > 0 {
+            pieces.push(SqrtModPiece::Prime { p: pi, e });
+        }
+        ControlFlow::Continue(())
+    });
+    if m.is_one() {
+        return pieces;
+    }
+    // Phase 2.
+    let trial_sq = Integer::from(lim.trial) * Integer::from(lim.trial);
+    let mut probable: Vec<(Integer, u32)> = Vec::new();
+    // (c, e, whether I2 already classified c as composite and ran rho and the sieve on it)
+    let mut rest: Vec<(Integer, u32, bool)> = Vec::new();
+    if below_sqrt || m < trial_sq {
+        pieces.push(SqrtModPiece::Prime { p: m, e: 1 });
+    } else if m.bits() <= lim.i2_max_bits {
+        let f = factorization_with_limits(&m, &FactorizationLimits {
+            trial_division_limit: 0,
+            pollard_rho_limit: lim.rho_steps,
+            mpqs_limit: Some(lim.qs_digits),
+            proof: false,
+        });
+        pieces.extend(f.primes.into_iter().map(|(p, e)| SqrtModPiece::Prime { p, e }));
+        probable.extend(f.probable_primes);
+        rest.extend(f.composites.into_iter().map(|(c, e)| (c, e, true)));
+    } else {
+        rest.push((m, 1, false));
+    }
+    // Phase 3.
+    let start = lim.trial.max(2);
+    for (c, e, classified) in rest {
+        let mut cur = c.clone();
+        let mut sqrt_cap = isqrt_cap(&cur);
+        let mut used = 0u64;
+        let mut bound = sqrt_mod_trial_bound(lim.trial_work, cur.bits());
+        let mut proven_prime = false;
+        rustmath_integers::sieve::for_each_prime(start, lim.trial_work / 55 + 1, |p| {
+            if p > sqrt_cap {
+                proven_prime = true;
+                return ControlFlow::Break(());
+            }
+            let step = 55 + cur.bits() / 11;
+            bound = lim.trial_work / step;
+            if p > bound {
+                return ControlFlow::Break(());
+            }
+            used = used.saturating_add(step);
+            if used > lim.trial_work {
+                bound = p - 1;
+                return ControlFlow::Break(());
+            }
+            let mut f = 0u32;
+            while cur.as_bigint() % p == zero {
+                cur = Integer::new(cur.as_bigint() / p);
+                f += 1;
+            }
+            if f > 0 {
+                pieces.push(SqrtModPiece::Prime { p: Integer::from(p), e: e * f });
+                sqrt_cap = isqrt_cap(&cur);
+            }
+            ControlFlow::Continue(())
+        });
+        if cur.is_one() {
+            continue;
+        }
+        if proven_prime {
+            pieces.push(SqrtModPiece::Prime { p: cur, e });
+        } else if cur == c && classified {
+            pieces.push(SqrtModPiece::Composite { c: cur, e, why: format!(
+                "no prime factor up to {}, not split by Pollard rho ({} steps) or the quadratic sieve (up to {} digits)",
+                bound, lim.rho_steps, lim.qs_digits) });
+        } else if cur.bits() <= lim.i2_max_bits {
+            let f = factorization_with_limits(&cur, &FactorizationLimits {
+                trial_division_limit: 0,
+                pollard_rho_limit: 0,
+                mpqs_limit: Some(lim.qs_digits),
+                proof: false,
+            });
+            pieces.extend(f.primes.into_iter().map(|(p, f)| SqrtModPiece::Prime { p, e: e * f }));
+            probable.extend(f.probable_primes.into_iter().map(|(q, f)| (q, e * f)));
+            pieces.extend(f.composites.into_iter().map(|(c, f)| SqrtModPiece::Composite { c, e: e * f, why: format!(
+                "no prime factor up to {}, not split by the quadratic sieve", bound) }));
+        } else {
+            let bits = cur.bits();
+            pieces.push(SqrtModPiece::Composite { c: cur, e, why: format!(
+                "{} bits with no prime factor up to {}; testing it exceeds the REPL limit ({} bits)",
+                bits, bound, lim.i2_max_bits) });
+        }
+    }
+    // Step 4: proofs.
+    for (q, e) in probable {
+        if q.bits() > lim.proof_bits {
+            pieces.push(SqrtModPiece::Probable { q, e, why: format!(
+                "above the REPL proof limit of {} bits", lim.proof_bits) });
+            continue;
+        }
+        match try_is_prime(&q) {
+            Ok(true) => pieces.push(SqrtModPiece::Prime { p: q, e }),
+            Ok(false) => pieces.push(SqrtModPiece::Composite { c: q, e, why: "a BPSW pseudoprime".to_string() }),
+            Err(err) => pieces.push(SqrtModPiece::Probable { q, e, why: format!("ECPP unresolved: {}", err) }),
+        }
+    }
+    pieces
+}
+
+/// floor(sqrt(c)) as a u64, or u64::MAX when c has more than 128 bits (then every u64 prime p
+/// has p^2 < c).
+fn isqrt_cap(c: &Integer) -> u64 {
+    if c.bits() > 128 {
+        return u64::MAX;
+    }
+    c.sqrt().ok().and_then(|r| r.to_u64()).unwrap_or(u64::MAX)
+}
+
+/// The text of the REPL command `sqrt_mod(a, n)`: the square roots of a in Z/nZ, within the
+/// production limits [`SQRT_MOD_LIMITS`].
 ///
 /// MAGMA: `Modsqrt(n, m)` (Handbook ch. 18 §18.12.1); `IsSquare`, `Sqrt`, `AllSqrts` in Z/mZ
-/// (ch. 19 §19.5.6, worked example H19E4: the 12 roots of 1404 in Z/2340Z).
+/// (ch. 19 §19.5.6, with the optional `Factorization` parameter "to speed up computation when m
+/// is large"; worked example H19E4: the 12 roots of 1404 in Z/2340Z).
 ///
 /// Output, with b = a mod n:
 /// - `"{r}; square roots of {b} mod {n}: [r_1, ..., r_N]"` when b has N <= 16 roots, listed in
-///   ascending order; r is `IntegerMod::sqrt`'s root (the least root for a prime power, the CRT
-///   of the per-prime-power least roots otherwise, e.g. 7 for 4 mod 15);
+///   ascending order; r is the CRT of the per-prime-power least roots (the same root as
+///   `IntegerMod::sqrt`, e.g. 7 for 4 mod 15);
 /// - `"{r}; {b} has {N} square roots mod {n} (not listed)"` when N > 16;
 /// - `"no square root: {b} is not a square mod {n}"`, which is always a proof.
 ///
-/// Algorithm:
-/// - n <= 0 is an error; n = 1 gives the single root 0 (Z/1Z = {0}).
-/// - Prime n (`try_is_prime`, a proof, up to [`PROOF_BITS`] bits): if (b/n) = -1 there is no
-///   root (the Jacobi symbol proves it for every odd n); otherwise
-///   `Integer::try_sqrt_mod_prime` gives a root r, squared back, and the roots are {r, n - r}
-///   (H. Cohen, GTM 138, Algorithms 1.4.10 and 1.5.1). This repeats the k = 1 decision of
-///   `IntegerMod::sqrt` without its trial-division factoring of n, which would take minutes
-///   near 1e18 and never finish for 2^127 - 1; a REPL test checks that the two agree for every
-///   n <= 60. A Baillie-PSW probable prime above [`PROOF_BITS`] bits is not proven: the roots
-///   are computed the same way and the text says that the list is complete if n is prime. An
-///   unresolved proof is a ValueError.
-/// - Composite n: for odd n with Jacobi symbol (b/n) = -1 there is no root (a proof, and no
-///   factoring is needed). Otherwise `IntegerMod::sqrt`, `num_sqrts` and `all_sqrts` (CRT over the prime-power
-///   factors; `None` is a proof). They factor n by trial division, each call again (up to three
-///   times here). A composite n with a large prime cofactor is therefore out of reach: for
-///   n = 2^127 + 1 = 3 · 56713727820156410577229101238628035243 trial division would run to
-///   about 7.5e18, so the command does not finish. A proven factorization (MAGMA's
-///   `Factorization :=` parameter, or rho/ECM with a primality proof) is not implemented.
+/// When a factor q of n is a Baillie-PSW probable prime that was not proven prime, the text
+/// ends with a clause saying so: the list is complete if q is prime.
 fn sqrt_mod_report(a: &Integer, n: &Integer) -> Result<String, EvalError> {
+    sqrt_mod_report_with(a, n, &SQRT_MOD_LIMITS)
+}
+
+/// [`sqrt_mod_report`] with explicit limits.
+///
+/// Algorithm (the roots mod n are the CRT combinations of the roots mod the pieces, since the
+/// pieces are pairwise coprime with product n):
+/// 1. n <= 0 is an error; n = 1 gives the single root 0 (Z/1Z = {0}).
+/// 2. If the Jacobi symbol (b/m) of the odd part m of n is -1, there is no root (a proof: the
+///    Jacobi symbol of a square unit is 1), and n is not factored.
+/// 3. n is factored once by [`sqrt_mod_factor`]: trial division, Brent rho and the quadratic
+///    sieve (rustmath-integers I2), ECPP proofs (I1), within `lim`.
+/// 4. A piece with odd base q and (b/q) = -1, or a proven prime power p^e with no root
+///    (`square_root_mod_prime_power`, rustmath-finitefields), proves that there is no root.
+/// 5. Otherwise an unsplit composite piece makes the answer undecided here: a ValueError that
+///    names it (the roots need its factorization).
+/// 6. A probable prime q^e with e >= 2 is a ValueError (Hensel lifting needs q prime); with
+///    e = 1 the roots mod q come from `Integer::try_sqrt_mod_prime` (Tonelli-Shanks, each root
+///    squared back), and a failure there proves q composite.
+/// 7. The count is the product of the per-prime-power counts
+///    (`num_square_roots_mod_prime_power`); r is the CRT of the least roots; at most 16 roots are
+///    listed (`all_square_roots_mod_prime_power` per prime power, combined by CRT).
+///
+/// References: H. Cohen, GTM 138, Algorithms 1.5.1 (Tonelli-Shanks) and §1.6 (Hensel lifting),
+/// §1.3.3 (CRT); R. P. Brent, *An improved Monte Carlo factorization algorithm*, BIT 20 (1980)
+/// 176-184; A. O. L. Atkin, F. Morain, *Elliptic curves and primality proving*, Math. Comp. 61
+/// (1993) 29-68.
+fn sqrt_mod_report_with(a: &Integer, n: &Integer, lim: &SqrtModLimits) -> Result<String, EvalError> {
     if n.signum() <= 0 {
         return Err(EvalError::new(
             "ValueError",
@@ -11011,74 +11838,142 @@ fn sqrt_mod_report(a: &Integer, n: &Integer) -> Result<String, EvalError> {
         return Ok("0; square roots of 0 mod 1: [0]".to_string());
     }
     let b = a.modulo(n);
-    let join = |roots: &[Integer]| {
-        roots.iter().map(|r| r.to_string()).collect::<Vec<_>>().join(", ")
-    };
-
-    let probable = is_probable_prime(n);
-    let proven = probable && n.bits() <= PROOF_BITS;
-    let is_prime = if proven {
-        try_is_prime(n).map_err(|e| EvalError::new("ValueError", format!("sqrt_mod: {}", e)))?
-    } else {
-        probable
-    };
-    if is_prime {
-        let two = Integer::from(2);
-        let roots: Vec<Integer> = if b.is_zero() || *n == two {
-            vec![b.clone()]
-        } else if b.kronecker_symbol(n) == -1 {
-            return Ok(format!("no square root: {} is not a square mod {}", b, n));
-        } else {
-            match b.try_sqrt_mod_prime(n) {
-                Ok(Some(r)) => {
-                    let mut v = vec![r.clone(), n.clone() - r];
-                    v.sort();
-                    v
+    let no_root = || Ok(format!("no square root: {} is not a square mod {}", b, n));
+    let two = Integer::from(2);
+    // 2. The odd part of n.
+    let mut odd = n.clone();
+    while odd.is_even() {
+        odd = odd / two.clone();
+    }
+    if !odd.is_one() && b.kronecker_symbol(&odd) == -1 {
+        return no_root();
+    }
+    // 3. and 4.
+    let pieces = sqrt_mod_factor(n, lim);
+    for piece in &pieces {
+        let q = match piece {
+            SqrtModPiece::Prime { p, .. } => p,
+            SqrtModPiece::Probable { q, .. } => q,
+            SqrtModPiece::Composite { c, .. } => c,
+        };
+        if q.is_odd() && b.modulo(q).kronecker_symbol(q) == -1 {
+            return no_root();
+        }
+    }
+    for piece in &pieces {
+        if let SqrtModPiece::Prime { p, e } = piece {
+            if square_root_mod_prime_power(&b, p, *e as usize).is_none() {
+                return no_root();
+            }
+        }
+    }
+    // 5. The unfactored part is printed in full up to 1024 bits (the user may factor it
+    // elsewhere and supply the roots), above that by its size.
+    let full = |v: &Integer| if v.bits() <= 1024 { v.to_string() } else { show_int(v) };
+    for piece in &pieces {
+        if let SqrtModPiece::Composite { c, why, .. } = piece {
+            return Err(EvalError::new("ValueError", format!(
+                "sqrt_mod: n = {} is not factored completely within the REPL limits: {} ({}); the square \
+                 roots mod n need its factorization",
+                full(n), full(c), why)));
+        }
+    }
+    // 6. and 7.: the roots of each piece (as a list when short, else only its least root and
+    // count).
+    struct Local {
+        modulus: Integer,
+        least: Integer,
+        count: Integer,
+        all: Option<Vec<Integer>>,
+    }
+    let list_limit = Integer::from(SQRT_MOD_LIST_LIMIT);
+    let mut locals = Vec::new();
+    let mut caveats = Vec::new();
+    for piece in &pieces {
+        match piece {
+            SqrtModPiece::Prime { p, e } => {
+                let k = *e as usize;
+                let count = num_square_roots_mod_prime_power(&b, p, k);
+                let least = square_root_mod_prime_power(&b, p, k).expect("checked in step 4");
+                let all = (count <= list_limit).then(|| all_square_roots_mod_prime_power(&b, p, k));
+                locals.push(Local { modulus: p.pow(*e), least, count, all });
+            }
+            SqrtModPiece::Probable { q, e, why } => {
+                let shown = if q == n { "n".to_string() } else { full(q) };
+                if *e >= 2 {
+                    return Err(EvalError::new("ValueError", format!(
+                        "sqrt_mod: n has the factor {}^{}, and {} is a BPSW probable prime that was not \
+                         proven prime ({}); the roots mod {}^{} need a proof",
+                        shown, e, shown, why, shown, e)));
                 }
-                Ok(None) => {
-                    return Ok(format!("no square root: {} is not a square mod {}", b, n));
-                }
-                Err(e) => {
-                    return Err(EvalError::new(
-                        "ValueError",
-                        format!(
-                            "sqrt_mod: n = {} passed the probable-prime test but is composite ({}); \
-                             factor n to decide",
-                            n, e
-                        ),
-                    ))
+                let bq = b.modulo(q);
+                let roots = if bq.is_zero() {
+                    vec![Integer::zero()]
+                } else {
+                    match bq.try_sqrt_mod_prime(q) {
+                        Ok(Some(r)) => {
+                            let s = q.clone() - r.clone();
+                            if r < s { vec![r, s] } else { vec![s, r] }
+                        }
+                        Ok(None) => return no_root(),
+                        Err(_) => {
+                            return Err(EvalError::new("ValueError", format!(
+                                "sqrt_mod: {} passed BPSW but Tonelli-Shanks failed, so it is composite; \
+                                 factor n to decide",
+                                shown)));
+                        }
+                    }
+                };
+                caveats.push(format!(
+                    " (unproven: {} is a BPSW probable prime of {} bits that was not proven prime ({}); \
+                     the list is complete if it is prime)",
+                    shown, q.bits(), why));
+                locals.push(Local {
+                    modulus: q.clone(),
+                    least: roots[0].clone(),
+                    count: Integer::from(roots.len() as u64),
+                    all: Some(roots),
+                });
+            }
+            SqrtModPiece::Composite { .. } => unreachable!("refused in step 5"),
+        }
+    }
+    let crt = |x: &Integer, m: &Integer, y: &Integer, k: &Integer| {
+        rustmath_integers::crt_two(x, m, y, k).expect("the pieces are pairwise coprime")
+    };
+    let mut r = Integer::zero();
+    let mut count = Integer::one();
+    let mut modulus = Integer::one();
+    for l in &locals {
+        r = crt(&r, &modulus, &l.least, &l.modulus);
+        count = count * l.count.clone();
+        modulus = modulus * l.modulus.clone();
+    }
+    let mut text = if count <= list_limit {
+        // Every count is >= 1 here, so each local list has at most 16 entries.
+        let mut cur = vec![Integer::zero()];
+        let mut cur_mod = Integer::one();
+        for l in &locals {
+            let roots = l.all.as_ref().expect("a count <= 16 is listed");
+            let mut next = Vec::with_capacity(cur.len() * roots.len());
+            for x in &cur {
+                for y in roots {
+                    next.push(crt(x, &cur_mod, y, &l.modulus));
                 }
             }
-        };
-        let mut text = format!("{}; square roots of {} mod {}: [{}]", roots[0], b, n, join(&roots));
-        if !proven {
-            text.push_str(&format!(
-                " (n is only a probable prime: its primality proof is not attempted above {} \
-                 bits; the list is complete if n is prime)",
-                PROOF_BITS
-            ));
+            cur = next;
+            cur_mod = cur_mod * l.modulus.clone();
         }
-        return Ok(text);
-    }
-
-    // Composite n. A Jacobi symbol -1 proves that b is not a square mod n (no factoring).
-    if n.is_odd() && b.kronecker_symbol(n) == -1 {
-        return Ok(format!("no square root: {} is not a square mod {}", b, n));
-    }
-    // IntegerMod handles any modulus (trial-division factoring, see above).
-    let x = IntegerMod::new(b.clone(), n.clone())
-        .map_err(|e| EvalError::new("ValueError", format!("sqrt_mod: {}", e)))?;
-    let r = match x.sqrt() {
-        None => return Ok(format!("no square root: {} is not a square mod {}", b, n)),
-        Some(r) => r.value().clone(),
-    };
-    let count = x.num_sqrts();
-    if count <= Integer::from(SQRT_MOD_LIST_LIMIT) {
-        let roots: Vec<Integer> = x.all_sqrts().iter().map(|y| y.value().clone()).collect();
-        Ok(format!("{}; square roots of {} mod {}: [{}]", r, b, n, join(&roots)))
+        cur.sort();
+        let list = cur.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(", ");
+        format!("{}; square roots of {} mod {}: [{}]", r, b, n, list)
     } else {
-        Ok(format!("{}; {} has {} square roots mod {} (not listed)", r, b, count, n))
+        format!("{}; {} has {} square roots mod {} (not listed)", r, b, count, n)
+    };
+    for c in caveats {
+        text.push_str(&c);
     }
+    Ok(text)
 }
 
 #[cfg(test)]
@@ -11717,6 +12612,439 @@ mod tests {
         format!("\"{}\"", s)
     }
 
+    /// The text of `cmd`, or "Name: message" for an error.
+    fn eval_text(ctx: &mut ReplContext, cmd: &str) -> String {
+        match ctx.eval(cmd) {
+            Ok(v) => v.text,
+            Err(e) => format!("{}: {}", e.name, e.message),
+        }
+    }
+
+    #[test]
+    fn test_rational_products_kept() {
+        // Regression (pass on HEAD): gp 1/2*1/3 = 1/6, 2/3*3/4 = 1/2, 1/2+1/3*3/4 = 3/4.
+        let mut ctx = ReplContext::new();
+        for (cmd, want) in [("1/2 * 1/3", "1/6"), ("2/3 * 3/4", "1/2"), ("1/2 + 1/3 * 3/4", "3/4"),
+                            ("r = Rational(1, 3)", "1/3"), ("r * 3 / 2", "1/2"), ("e1 = 1/2", "1/2"),
+                            ("e1 * 2/3", "1/3")] {
+            assert_eq!(eval_text(&mut ctx, cmd), want, "{}", cmd);
+        }
+    }
+
+    #[test]
+    fn test_integer_rational_arithmetic() {
+        // gp: 2^-2*4 = 1, 8/4*2 = 4, 8*2/4 = 4, 2*3/4 = 3/2, (2/3)^-2 = 9/4, (-2/3)^-3 = -27/8,
+        // 10^20/3, 10^400/10^399 = 10; 1/0 and (0/1)^-1: error (gp "impossible inverse").
+        let mut ctx = ReplContext::new();
+        for (cmd, want) in [("2**-2 * 4", "1"), ("8 / 4 * 2", "4"), ("8 * 2 / 4", "4"), ("2 * 3 / 4", "3/2"),
+                            ("a = 8", "8"), ("b = 4", "4"), ("a / b", "2"), ("h = 1/2", "1/2"),
+                            ("h + 1", "3/2"), ("1 - h", "1/2"), ("h ^ 2", "1/4"), ("(1/2)^2", "1/4"),
+                            ("(2/3)^-2", "9/4"), ("(-2/3)^-3", "-27/8"), ("h ** 0", "1"),
+                            ("10^20/3", "100000000000000000000/3"), ("10^400/10^399", "10")] {
+            assert_eq!(eval_text(&mut ctx, cmd), want, "{}", cmd);
+        }
+        for cmd in ["1/0", "a / 0", "z0 = 0/5", "h / z0", "1/2 / 0", "(0/1)^-1"] {
+            let t = eval_text(&mut ctx, cmd);
+            if cmd == "z0 = 0/5" { assert_eq!(t, "0"); continue; }
+            assert!(t.starts_with("ZeroDivisionError"), "{}: {}", cmd, t);
+        }
+    }
+
+    #[test]
+    fn test_range_bounds_float_arith() {
+        let mut ctx = ReplContext::new();
+        ctx.eval("w = var(\"w\")").unwrap();
+        let num = |ctx: &mut ReplContext, cmd: &str| -> f64 {
+            let t = eval_text(ctx, cmd);
+            t.parse::<f64>().unwrap_or_else(|_| panic!("{}: {}", cmd, t))
+        };
+        // gp: -3+2 = -1, -Pi-1 = -4.14.., -1-3 = -4, 2*-1+5 = 3; the roots are 2, -3, -3, 2.
+        assert!((num(&mut ctx, "find_root(w^2 == 4, -3+2, 3)") - 2.0).abs() < 1e-9);
+        assert!((num(&mut ctx, "find_root(w^2 == 9, -pi-1, 0)") + 3.0).abs() < 1e-9);
+        assert!((num(&mut ctx, "find_root(w^2 == 9, -1-3, 0)") + 3.0).abs() < 1e-9);
+        assert!((num(&mut ctx, "find_root(w^2 == 4, 0, 2*-1+5)") - 2.0).abs() < 1e-9);
+        assert!((num(&mut ctx, "find_root(w^2 == 2, -2^2, 0)") + 2f64.sqrt()).abs() < 1e-9);
+        assert!((num(&mut ctx, "find_root(w^2 == 2, 0, 2*e)") - 2f64.sqrt()).abs() < 1e-9);
+        // A name is a whole identifier: pi2 is the variable, not 3.14159...2.
+        ctx.eval("pi2 = 5").unwrap();
+        assert!((num(&mut ctx, "find_root(w^2 == 16, 0, pi2)") - 4.0).abs() < 1e-9);
+        ctx.eval("e = 5").unwrap();
+        assert!((num(&mut ctx, "find_root(w^2 == 16, 0, e)") - 4.0).abs() < 1e-9);
+        assert!((num(&mut ctx, "find_root(w^2 == 4, 0, 10^400/10^399)") - 2.0).abs() < 1e-9);
+        for cmd in ["find_root(w^2 == 4, 0, 1e400)", "find_root(w^2 == 4, 0, 10^400)"] {
+            let t = eval_text(&mut ctx, cmd);
+            assert!(t.starts_with("ValueError"), "{}: {}", cmd, t);
+        }
+        // Revision 2: exact first, so 1/0 and 0/0 are the ZeroDivisionError of the exact arithmetic.
+        for cmd in ["find_root(w^2 == 4, 0, 1/0)", "find_root(w^2 == 4, 0, 0/0)"] {
+            let t = eval_text(&mut ctx, cmd);
+            assert!(t.starts_with("ZeroDivisionError"), "{}: {}", cmd, t);
+        }
+        assert!(eval_text(&mut ctx, "find_root(w^2 == 2, 0, 2pi)").starts_with("SyntaxError"));
+    }
+
+    #[test]
+    fn test_range_bounds_exact_first() {
+        // Revision 2, B1 (a): texts without a real operand are exact, so no cancellation.
+        let mut ctx = ReplContext::new();
+        ctx.eval("w = var(\"w\")").unwrap();
+        // HEAD regression rows: the bound is 1 (exact), and the root 0.5 lies outside [1, 3].
+        for cmd in ["find_root(2*w == 1, 10^20 + 1 - 10^20, 3)", "find_root(2*w == 1, 2^53 + 1 - 2^53, 3)"] {
+            let t = eval_text(&mut ctx, cmd);
+            assert!(t.starts_with("ValueError: No root found"), "{}: {}", cmd, t);
+        }
+        ctx.eval("a = 10^20").unwrap();
+        let t = eval_text(&mut ctx, "find_root(2*w == 1, a + 1 - a, 3)");
+        assert!(t.starts_with("ValueError: No root found"), "{}", t);
+        // B1 (b): absorbed overflow or underflow; the exact value of the bound is 3, the root 2.
+        for cmd in ["find_root(w^2 == 4, 1, 3 * 10^300 / 10^400 * 10^100)",
+                    "find_root(w^2 == 4, 1, 10^-200 * 10^-200 * 10^300 * 10^100 * 3)"] {
+            let t = eval_text(&mut ctx, cmd);
+            let v: f64 = t.parse().unwrap_or_else(|_| panic!("{}: {}", cmd, t));
+            assert!((v - 2.0).abs() < 1e-9, "{}: {}", cmd, t);
+        }
+    }
+
+    #[test]
+    fn test_float_arith_real_field() {
+        // Revision 2: MAGMA's coercion rule with the real field of doubles.
+        let mut ctx = ReplContext::new();
+        let f = |ctx: &mut ReplContext, s: &str| ctx.eval_to_f64(s);
+        // Exact subresults stay exact until a real operand (gp 10^400/10^399*Pi, (10^20+1-10^20)*Pi).
+        assert_eq!(f(&mut ctx, "10^400/10^399 * pi").unwrap(), 10.0 * std::f64::consts::PI);
+        assert_eq!(f(&mut ctx, "(10^20 + 1 - 10^20) * pi").unwrap(), std::f64::consts::PI);
+        assert_eq!(f(&mut ctx, "pi/2").unwrap(), std::f64::consts::FRAC_PI_2);
+        assert_eq!(f(&mut ctx, "-pi").unwrap(), -std::f64::consts::PI);
+        assert_eq!(f(&mut ctx, "pi - pi").unwrap(), 0.0);
+        // A zero operand makes a product exact, not an underflow (HEAD 2.14159..., gp the same).
+        assert_eq!(f(&mut ctx, "pi + 12157665459056928801 * (pi - pi) - pi / (pi)").unwrap(), std::f64::consts::PI - 1.0);
+        // 3^40 is rounded once (gp 3^40*Pi = 38194432490975628713.208...).
+        assert_eq!(f(&mut ctx, "3^40 * pi").unwrap(), 12157665459056928801.0 * std::f64::consts::PI);
+        assert!((f(&mut ctx, "2^(1/2)").unwrap() - 2f64.sqrt()).abs() < 1e-15);
+        // A real operand makes the rest a 53-bit computation, as in MAGMA at this precision.
+        assert_eq!(f(&mut ctx, "10^20 + pi - 10^20").unwrap(), 0.0);
+        // Overflow and underflow after a real operand are errors, never 0 or inf.
+        for s in ["pi * 10^-400 * 10^400", "pi * 1e-200 * 1e-200 * 1e300", "pi^-1000", "1e308 * 10 * pi", "pi * 2^1100"] {
+            let e = f(&mut ctx, s).unwrap_err();
+            assert_eq!(e.name, "ValueError", "{}: {}", s, e.message);
+        }
+        assert_eq!(f(&mut ctx, "pi / (pi - pi)").unwrap_err().name, "ZeroDivisionError");
+        assert_eq!(f(&mut ctx, "pi + 1/0").unwrap_err().name, "ZeroDivisionError");
+        assert_eq!(f(&mut ctx, "(-pi)^(1/2)").unwrap_err().name, "ValueError");
+        // A run of signs before a real operand is one step (no stack growth).
+        let deep = format!("{}pi", "-".repeat(100_001));
+        assert_eq!(f(&mut ctx, &deep).unwrap(), -std::f64::consts::PI);
+        // Float literals and Float variables are real operands (HEAD's doubles).
+        assert_eq!(f(&mut ctx, "0.1 + 0.2").unwrap(), 0.1 + 0.2);
+        ctx.eval("x = 1.5").unwrap();
+        assert_eq!(f(&mut ctx, "x * pi").unwrap(), 1.5 * std::f64::consts::PI);
+    }
+
+    #[test]
+    fn test_negative_exponent_message() {
+        let mut ctx = ReplContext::new();
+        assert_eq!(eval_text(&mut ctx, "2 ** -10001"),
+                   "ValueError: **: |exponent| must be an integer in 0..=10000 (REPL limit), got 10001");
+        assert_eq!(eval_text(&mut ctx, "(1/2) ^ -10001"),
+                   "ValueError: ^: |exponent| must be an integer in 0..=10000 (REPL limit), got 10001");
+        assert_eq!(eval_text(&mut ctx, "2 ** 10001"),
+                   "ValueError: **: exponent must be an integer in 0..=10000 (REPL limit), got 10001");
+    }
+
+    /// S14: a chart has exactly dim(M) distinct identifier names (Sage `Chart.__init__`: "the
+    /// list of coordinates must contain dim elements").
+    #[test]
+    fn test_chart_matches_dimension() {
+        let mut ctx = ReplContext::new();
+        ctx.eval("E3 = EuclideanSpace(3)").unwrap();
+        assert_eq!(eval_text(&mut ctx, "chart(E3, \"x,y,z\")"), "Chart(x, y, z)");
+        assert_eq!(eval_text(&mut ctx, "chart(E3, \"r,θ,φ\")"), "Chart(r, θ, φ)");
+        for (cmd, want) in [
+            ("chart(E3, \"t\")", "chart: the manifold has dimension 3, so the chart needs 3 coordinate names, got 1"),
+            ("chart(E3, \"x,y,z,w\")", "chart: the manifold has dimension 3, so the chart needs 3 coordinate names, got 4"),
+            ("chart(E3, \"x,,z\")", "chart: coordinate name \"\" is not an identifier"),
+            ("chart(E3, \"x,x,y\")", "chart: coordinate name x appears twice"),
+            ("chart(E3, \"x,1y,z\")", "chart: coordinate name \"1y\" is not an identifier"),
+        ] {
+            assert_eq!(eval_text(&mut ctx, cmd), format!("ValueError: {want}"), "{cmd}");
+        }
+        ctx.eval("M0 = Manifold(0, \"P\")").unwrap();
+        assert_eq!(eval_text(&mut ctx, "chart(M0, \"\")"), "Chart()");
+        assert_eq!(
+            eval_text(&mut ctx, "chart(M0, \"t\")"),
+            "ValueError: chart: the manifold has dimension 0, so the chart needs 0 coordinate names, got 1"
+        );
+        assert_eq!(chart_coordinate_names("", 0).unwrap(), Vec::<String>::new());
+        assert!(chart_coordinate_names("", 1).is_err());
+        assert_eq!(chart_coordinate_names(" x , y ", 2).unwrap(), vec!["x".to_string(), "y".to_string()]);
+        ctx.eval("E4 = EuclideanSpace(4)").unwrap();
+        ctx.eval("C3 = chart(E3, \"x,y,z\")").unwrap();
+        assert_eq!(
+            eval_text(&mut ctx, "coordinate_form(E4, C3, 0)"),
+            "ValueError: coordinate_form: the chart has 3 coordinates, but the manifold has dimension 4"
+        );
+    }
+
+    /// N5: plot options are checked, not clamped or ignored. The expected values are counts of
+    /// grid points (n^2 arrows) and the error texts.
+    #[test]
+    fn test_plot_options_checked() {
+        let mut ctx = ReplContext::new();
+        ctx.eval("x = var(\"x\")").unwrap();
+        ctx.eval("y = var(\"y\")").unwrap();
+        let slope = |opt: &str| format!("plot_slope_field(x - y, (x, -2, 2), (y, -2, 2), {opt})");
+        let contour = |opt: &str| format!("contour_plot(x^2 + y^2, (x, -2, 2), (y, -2, 2), {opt})");
+        for (opt, want) in [("plot_points=25", 625), ("25", 625), ("plot_points=3", 9), ("plot_points=50/2", 625)] {
+            assert_eq!(eval_text(&mut ctx, &slope(opt)), format!("Slope field with {want} arrows"), "{opt}");
+        }
+        let range = "ValueError: plot_slope_field: plot_points must be an integer in 2..=50, got";
+        for (opt, got) in [("plot_points=1000", "1000"), ("plot_points=abc", "abc"), ("plot_points=2.5", "2.5"),
+                           ("plot_points=5/2", "5/2")] {
+            assert_eq!(eval_text(&mut ctx, &slope(opt)), format!("{range} {got}"), "{opt}");
+        }
+        assert_eq!(eval_text(&mut ctx, &slope("plot_pionts=25")),
+                   "ValueError: plot_slope_field: unknown option plot_pionts (options: plot_points)");
+        assert_eq!(eval_text(&mut ctx, &slope("plot_points=4, plot_points=5")),
+                   "ValueError: plot_slope_field: option plot_points is given twice");
+        assert_eq!(eval_text(&mut ctx, &contour("contours=5")), "Contour plot with 5 levels");
+        assert!(ctx.eval(&contour("plot_points=2*10")).is_ok());
+        for (opt, want) in [
+            ("contours=100", "ValueError: contour_plot: contours must be an integer in 1..=30, got 100"),
+            ("cmap=\"jet\"", "ValueError: contour_plot: unknown option cmap (options: contours, n_contours, plot_points)"),
+            ("contours=5, n_contours=6", "ValueError: contour_plot: give contours or n_contours, not both"),
+            ("7", "ArgumentError: contour_plot: unexpected argument 7; options are given as name=value"),
+        ] {
+            assert_eq!(eval_text(&mut ctx, &contour(opt)), want, "{opt}");
+        }
+        for (cmd, range) in [
+            ("parametric_plot((x, x^2), (x, 0, 1), plot_points=1001)", "parametric_plot: plot_points must be an integer in 2..=1000, got 1001"),
+            ("vector_field((y, -x), (x, -1, 1), (y, -1, 1), plot_points=31)", "vector_field: plot_points must be an integer in 2..=30, got 31"),
+            ("implicit_plot(x^2 + y^2 - 1, (x, -2, 2), (y, -2, 2), plot_points=201)", "implicit_plot: plot_points must be an integer in 2..=200, got 201"),
+            ("region_plot(x^2 + y^2 - 1, (x, -2, 2), (y, -2, 2), plot_points=201)", "region_plot: plot_points must be an integer in 2..=200, got 201"),
+        ] {
+            assert_eq!(eval_text(&mut ctx, cmd), format!("ValueError: {range}"), "{cmd}");
+        }
+        // The least value the drawing code can use (the old minima silently raised it).
+        assert_eq!(eval_text(&mut ctx, "parametric_plot((x, x^2), (x, 0, 1), plot_points=2)"), "Parametric curve with 2 points");
+        assert_eq!(eval_text(&mut ctx, "vector_field((y, -x), (x, -1, 1), (y, -1, 1), plot_points=2)"), "Vector field with 4 arrows");
+        assert!(ctx.eval("implicit_plot(x^2 + y^2 - 1, (x, -2, 2), (y, -2, 2), plot_points=2)").is_ok());
+        assert!(ctx.eval("region_plot(x^2 + y^2 - 1, (x, -2, 2), (y, -2, 2), plot_points=2)").is_ok());
+        // Plot3DOptions: every key and value is checked (review 3 of J1a, m1: colors too).
+        for args in [&["opacity=1.5"][..], &["plot_points=40"], &["foo=1"], &["mesh=maybe"], &["color='foo'"],
+                     &["color=#12345"], &["color=0xggg"], &["opacity"]] {
+            assert!(Plot3DOptions::parse_from_args(args).is_err(), "{args:?}");
+        }
+        let o = Plot3DOptions::parse_from_args(&["color='red'", "opacity=0.5", "mesh=True"]).unwrap();
+        assert_eq!((o.color.as_str(), o.opacity, o.mesh), ("#ff6666", 0.5, true));
+        let o = Plot3DOptions::parse_from_args(&["rgbcolor=0x0f0", "axes=false"]).unwrap();
+        assert_eq!((o.color.as_str(), o.axes), ("#0f0", false));
+    }
+
+    /// S10: pochhammer is the rising factorial. gp: prod(i=0,3,3+i) = 360,
+    /// prod(i=0,2,5+i) = 210, prod(i=0,4,10+i) = 240240, prod(i=0,3,3-i) = 0.
+    #[test]
+    fn test_pochhammer_is_rising() {
+        let mut ctx = ReplContext::new();
+        for (cmd, want) in [("pochhammer(3, 4)", "360"), ("pochhammer(5, 3)", "210"), ("pochhammer(10, 5)", "240240"),
+                            ("pochhammer(0, 0)", "1"), ("falling_factorial(3, 4)", "0"), ("rising_factorial(3, 4)", "360")] {
+            assert_eq!(eval_text(&mut ctx, cmd), want, "{cmd}");
+        }
+        // Its errors name the command that was called.
+        assert!(eval_text(&mut ctx, "pochhammer(-1, 2)").starts_with("ValueError: pochhammer: n must be"));
+    }
+
+    #[test]
+    fn test_chart_checked_in_form_arms() {
+        let mut ctx = ReplContext::new();
+        ctx.eval("E3 = EuclideanSpace(3)").unwrap();
+        ctx.eval("E4 = EuclideanSpace(4)").unwrap();
+        ctx.eval("C3 = chart(E3, \"x,y,z\")").unwrap();
+        ctx.eval("C4 = chart(E4, \"p,q,r,s\")").unwrap();
+        ctx.eval("a = coordinate_form(E3, C3, 0)").unwrap();
+        assert_eq!(eval_text(&mut ctx, "exterior_derivative(a, C4)"),
+                   "ValueError: exterior_derivative: the chart has 4 coordinates, but the manifold has dimension 3");
+        assert_eq!(eval_text(&mut ctx, "wedge(a, a, C4)"),
+                   "ValueError: wedge: the chart has 4 coordinates, but the manifold has dimension 3");
+        assert!(ctx.eval("exterior_derivative(a, C3)").is_ok());
+        assert!(ctx.eval("wedge(a, a, C3)").is_ok());
+    }
+
+    #[test]
+    fn test_median_large_rational() {
+        // HEAD panics in rustmath-stats (statistics.rs:60, partial_cmp of NaN).
+        let mut ctx = ReplContext::new();
+        ctx.eval("big = 10^400").unwrap();
+        ctx.eval("r2 = Rational(big + 1, big)").unwrap();
+        assert_eq!(eval_text(&mut ctx, "median([r2, 1, 2])").parse::<f64>().unwrap(), 1.0);
+    }
+
+    #[test]
+    fn test_value_type_name_by_variant() {
+        let mut ctx = ReplContext::new();
+        assert_eq!(eval_text(&mut ctx, "-\"a\""), "TypeError: bad operand type for unary -: String");
+        assert_eq!(eval_text(&mut ctx, "-[1, 2]"), "TypeError: bad operand type for unary -: List");
+    }
+
+    #[test]
+    fn test_float_literal_range_and_underflow() {
+        let mut ctx = ReplContext::new();
+        assert!(eval_text(&mut ctx, "1e400").starts_with("ValueError"));
+        assert!(eval_text(&mut ctx, "-1e400").starts_with("ValueError"));
+        assert_eq!(eval_text(&mut ctx, "1e-400"), "0");
+        // Python float(Fraction(1, 10**400)) = 0.0: below the least subnormal.
+        assert_eq!(eval_text(&mut ctx, "mean([Rational(1, 10^400)])").parse::<f64>().unwrap(), 0.0);
+        assert_eq!(eval_text(&mut ctx, "mean([Rational(1, 10^310)])").parse::<f64>().unwrap(), 1e-310);
+    }
+
+    #[test]
+    fn test_sign_and_group_runs() {
+        let mut ctx = ReplContext::new();
+        let deep_signs = format!("{}1", "-".repeat(100_001));
+        assert_eq!(eval_text(&mut ctx, &deep_signs), "-1");
+        let deep_group = format!("{}7{}", "(".repeat(100_000), ")".repeat(100_000));
+        assert_eq!(eval_text(&mut ctx, &deep_group), "7");
+        // Chains are folded in a loop: HEAD's debug build overflowed the stack at 732 terms.
+        let long_sum = format!("1{}", "+1".repeat(100_000));
+        assert_eq!(eval_text(&mut ctx, &long_sum), "100001");
+        let long_product = format!("2{}/2", "*2".repeat(1_000));
+        assert_eq!(eval_text(&mut ctx, &long_product), (rustmath_integers::Integer::from(2).pow(1000)).to_string());
+        let w = "w = var(\"w\")";
+        ctx.eval(w).unwrap();
+        assert_eq!(eval_text(&mut ctx, "w - w + w - w"), "(((w - w) + w) - w)");
+        for (cmd, want) in [("-+-5", "5"), ("((a)+(b))", "(a + b)"), ("(1)+(2)", "3"), ("(\")\")", "\")\""),
+                            ("((1)+(2))*((3))", "9")] {
+            assert_eq!(eval_text(&mut ctx, cmd), want, "{}", cmd);
+        }
+        assert!(eval_text(&mut ctx, "((1, 2))").starts_with("SyntaxError"));
+        assert!(eval_text(&mut ctx, "(())").starts_with("SyntaxError"));
+    }
+
+    /// S9: unary signs, precedence and associativity. References: gp `2*-3` = -6, `-2^2` = -4,
+    /// `2^-1` = 1/2, `-2^-2` = -1/4, `0^-1` (error e_INV), `2^3^2` = 512, `1-2-3` = -4,
+    /// `2-3+4` = 3, `(2+3)*4` = 20, `2*(3-1)^2` = 8, `-(2+3)` = -5; Python `3 - -2` = 5,
+    /// `--5` = 5, `-+-5` = 5.
+    #[test]
+    fn test_parser_signs_and_precedence() {
+        let mut ctx = ReplContext::new();
+        for (cmd, want) in [
+            ("2 * -3", "-6"), ("3 - -2", "5"), ("--5", "5"), ("-2 ** 2", "-4"), ("-2^2", "-4"),
+            ("2 ** -1", "1/2"), ("2 ^ -1", "1/2"), ("-2**-2", "-1/4"), ("2^3^2", "512"),
+            ("2**3**2", "512"), ("1 - 2 - 3", "-4"), ("2 - 3 + 4", "3"), ("(2+3)*4", "20"),
+            ("2*(3-1)^2", "8"), ("-(2+3)", "-5"), ("x = 5", "5"), ("-x", "-5"), ("-x^2", "-25"),
+            ("-x * 2", "-10"), ("-+-5", "5"), ("x1e = 7", "7"), ("x1e-3", "4"),
+        ] {
+            assert_eq!(eval_text(&mut ctx, cmd), want, "{cmd}");
+        }
+        assert!(eval_text(&mut ctx, "0 ** -1").starts_with("ZeroDivisionError"));
+        // Left associativity: ((y + z) - y), not (y + (z - y)).
+        ctx.eval("y = var(\"y\")").unwrap();
+        ctx.eval("z = var(\"z\")").unwrap();
+        assert_eq!(eval_text(&mut ctx, "y + z - y"), "((y + z) - y)");
+        // 1e-3 is one float literal; Float arithmetic is missing (a TypeError, not a SyntaxError).
+        assert_eq!(ctx.eval("2 * 1e-3").unwrap_err().name, "TypeError");
+        assert_eq!(eval_text(&mut ctx, "-\"a\""), "TypeError: bad operand type for unary -: String");
+    }
+
+    /// S9: operators, commas and brackets inside string literals; non-ASCII text.
+    #[test]
+    fn test_parser_string_literals() {
+        let mut ctx = ReplContext::new();
+        for (cmd, want) in [
+            ("\"a-b\"", "\"a-b\""), ("\"a+b\"", "\"a+b\""), ("\"x^2\"", "\"x^2\""),
+            ("s = \"x,y,z\"", "\"x,y,z\""), ("s", "\"x,y,z\""), ("'x,y'", "\"x,y\""),
+            ("[ \"a,b\", \"c\" ]", "[\"a,b\", \"c\"]"), ("print(\"x,y\", 1)", "\"x,y\" 1"),
+            ("\"ab\" * -5", "\"\""), ("\"é\" + \"a\"", "\"éa\""), ("\"é\"*2", "\"éé\""),
+            ("Polynomial([gcd(4, 6), 1])", "x + 2"),
+        ] {
+            assert_eq!(eval_text(&mut ctx, cmd), want, "{cmd}");
+        }
+        // A char index was used as a byte index (the old parser panicked here).
+        assert!(ctx.eval("π*2").is_ok());
+        ctx.eval("x = var(\"x\")").unwrap();
+        let v: f64 = eval_text(&mut ctx, "find_root(x^2 == 2, 0, 2)").parse().unwrap();
+        assert!((v - 2f64.sqrt()).abs() < 1e-9, "{v}");
+    }
+
+    #[test]
+    fn test_lex_state() {
+        let commas: Vec<usize> = top_level_chars("f(\"a,b\", [1, 2]), c")
+            .into_iter()
+            .filter(|&(_, c)| c == ',')
+            .map(|(i, _)| i)
+            .collect();
+        assert_eq!(commas, vec![16]);
+        assert!(!is_string_literal("\"a\" + \"b\""));
+        assert!(is_string_literal("\"a\\\"b\""));
+        assert!(is_string_literal("'x'"));
+        assert!(!is_string_literal("\"x"));
+        assert!(!is_binary_sign("1e-3", 2));
+        assert!(is_binary_sign("x1e-3", 3));
+        assert!(!is_binary_sign("2 * -3", 4));
+        assert!(is_binary_sign("a - b", 2));
+    }
+
+    /// The nesting bound of `eval_expr` and `float_arith` (review 3 of J1a, m4). The body runs
+    /// on a thread with a large stack: debug frames are several times larger than release ones.
+    #[test]
+    fn test_eval_depth_limit() {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                let mut ctx = ReplContext::new();
+                let nest = |k: usize| format!("{}1{}", "-(".repeat(k), ")".repeat(k));
+                // Two calls per level: 99 levels pass, 100 are refused (a SyntaxError, no abort).
+                assert_eq!(eval_text(&mut ctx, &nest(99)), "-1");
+                let e = ctx.eval(&nest(100)).unwrap_err();
+                assert_eq!(e.name, "SyntaxError");
+                assert!(e.message.contains("nested more than 200 levels"), "{}", e.message);
+                let e = ctx.eval(&nest(100_000)).unwrap_err();
+                assert_eq!(e.name, "SyntaxError");
+                // The same bound in the float evaluator of ranges and bounds.
+                assert_eq!(ctx.eval_to_f64(&format!("{}pi{}", "-(".repeat(99), ")".repeat(99))).unwrap(),
+                           -std::f64::consts::PI);
+                assert_eq!(ctx.eval_to_f64(&format!("{}pi{}", "-(".repeat(100), ")".repeat(100)))
+                               .unwrap_err().name, "SyntaxError");
+                // The counter is back at 0 after an error: a shallow command still works.
+                assert_eq!(eval_text(&mut ctx, "-(-(2))"), "2");
+            })
+            .unwrap()
+            .join()
+            .unwrap();
+    }
+
+    /// S11: exact numbers beyond the double range. References: Python's correctly rounded
+    /// `float(Fraction(10**400 + 1, 10**400))` = 1.0, `float(Fraction(1, 10**310))` = 1e-310,
+    /// `float(Fraction(1, 10**400))` = 0.0, `float(2**1100)` OverflowError; gp
+    /// `intnum(x=0, 2, x)` = 2. The old num/den conversion gave NaN, [NaN + 0i], 0, inf.
+    #[test]
+    fn test_large_rational_to_float() {
+        let mut ctx = ReplContext::new();
+        let num = |ctx: &mut ReplContext, cmd: &str| -> f64 {
+            let t = eval_text(ctx, cmd);
+            t.parse::<f64>().unwrap_or_else(|_| panic!("{cmd}: {t}"))
+        };
+        ctx.eval("big = 10^400").unwrap();
+        ctx.eval("r2 = Rational(big + 1, big)").unwrap();
+        assert_eq!(num(&mut ctx, "mean([r2])"), 1.0);
+        assert_eq!(eval_text(&mut ctx, "variance([r2, 1])"), "0");
+        assert_eq!(eval_text(&mut ctx, "fft([r2])"), "[1 + 0i]");
+        assert_eq!(num(&mut ctx, "mean([Rational(1, 10^310)])"), 1e-310);
+        assert_eq!(num(&mut ctx, "mean([Rational(1, 10^400)])"), 0.0);
+        let t = eval_text(&mut ctx, "mean([2^1100])");
+        assert!(t.starts_with("ValueError") && t.contains("is outside the range of a double"), "{t}");
+        ctx.eval("x = var(\"x\")").unwrap();
+        assert!((num(&mut ctx, "find_root(x - 1, x, 0, Rational(2*big + 1, big))") - 1.0).abs() < 1e-9);
+        // The integrate_num bounds (review 3, m3): the bound rounds to 2.0.
+        assert!((num(&mut ctx, "integrate_num(x*1, x, 0, Rational(2*big + 1, big))") - 2.0).abs() < 1e-12);
+        assert_eq!(
+            eval_text(&mut ctx, "integrate_num(x*1, x, 0, 2^1100)"),
+            "ValueError: integrate_num: upper bound: an integer of 1101 bits is outside the range of a double"
+        );
+        // N of a value beyond the double range (review 3, m2); N(r2) is 1 after the library fix.
+        assert!(eval_text(&mut ctx, "N(2^1100)").starts_with("ValueError"));
+        assert_eq!(eval_text(&mut ctx, "N(r2)"), "\"1.0000000000\"");
+    }
+
     // The old command called the prime-only `square_root_mod_prime` and printed a false
     // "No square root exists" for every one of these.
     #[test]
@@ -11809,6 +13137,231 @@ mod tests {
         }
     }
 
+    /// S15: graph constructors are bounded by the memory model. The large boundary cases are
+    /// checked on `graph_bytes` without building the graphs. gp `binomial(5,2)` = 10.
+    #[test]
+    fn test_graph_limits() {
+        let mut ctx = ReplContext::new();
+        assert_eq!(eval_text(&mut ctx, "G = path_graph(100000)"), "Graph with 100000 vertices and 99999 edges");
+        assert_eq!(eval_text(&mut ctx, "complete_graph(5)"), "Graph with 5 vertices and 10 edges");
+        assert_eq!(eval_text(&mut ctx, "path_graph(1)"), "Graph with 1 vertices and 0 edges");
+        assert_eq!(eval_text(&mut ctx, "star_graph(0)"), "Graph with 1 vertices and 0 edges");
+        assert_eq!(graph_bytes(1_187_500, &[(2, 1), (1_187_498, 2)]), Some(133_000_000));
+        assert_eq!(graph_bytes(3585, &[(3585, 3584)]), Some(132_444_240));
+        assert_eq!(graph_bytes(2_770_833, &[]), Some(132_999_984));
+        assert_eq!(graph_bytes(1 << 62, &[(1 << 62, (1 << 62) - 1)]), None);
+        let lim = format!("per copy (REPL limit {}, a memory bound; an assignment holds three copies)", repl_limits::GRAPH_BYTES);
+        for (cmd, need) in [
+            ("path_graph(1187501)", "a graph with 1187501 vertices and 1187500 edges needs about 133000112 bytes"),
+            ("complete_graph(3586)", "a graph with 3586 vertices and 6427905 edges needs about 264675488 bytes"),
+            ("Graph(2770834)", "a graph with 2770834 vertices and 0 edges needs about 133000032 bytes"),
+            ("complete_graph(1000000)", "a graph with 1000000 vertices and 499999500000 edges needs about 18874448000000 bytes"),
+            ("complete_graph(4611686018427387904)", "a graph with 4611686018427387904 vertices and \
+              10633823966279326980924613473029062656 edges needs more than 2^128 bytes"),
+            ("complete_graph(18446744073709551615)", "a graph with 18446744073709551615 vertices and \
+              170141183460469231704017187605319778305 edges needs more than 2^128 bytes"),
+            ("cycle_graph(1187501)", "a graph with 1187501 vertices and 1187501 edges needs about 133000112 bytes"),
+            ("wheel_graph(1018979)", "a graph with 1018980 vertices and 2037958 edges needs about 133000096 bytes"),
+        ] {
+            let name = cmd.split('(').next().unwrap();
+            assert_eq!(eval_text(&mut ctx, cmd), format!("ValueError: {name}: {need} {lim}"), "{cmd}");
+        }
+        // n + 1 overflowed usize in rustmath-graphs (a debug panic); now the model refuses it.
+        assert!(eval_text(&mut ctx, "star_graph(18446744073709551615)").starts_with("ValueError: star_graph: a graph with 18446744073709551616 vertices"));
+    }
+
+    /// The hash table model against the peak memory of the real REPL (VmHWM of `G = ...`,
+    /// release, J1a design §6.1): path_graph(10^6) 334 MB, complete_graph(3000) 331 MB,
+    /// Graph(2·10^6) 287 MB, star_graph(10^6) 389 MB. An assignment holds three copies.
+    #[test]
+    fn test_hash_set_bytes_model() {
+        assert_eq!(hash_set_bytes(0), Some(0));
+        assert_eq!(hash_set_bytes(3), Some(64));
+        assert_eq!(hash_set_bytes(7), Some(96));
+        assert_eq!(hash_set_bytes(8), Some(16 * 9 + 32));
+        assert_eq!(hash_set_bytes(u128::MAX), None);
+        let n = 1_000_000u128;
+        for (model, measured_mb) in [
+            (graph_bytes(n, &[(2, 1), (n - 2, 2)]), 334.0),
+            (graph_bytes(3000, &[(3000, 2999)]), 331.0),
+            (graph_bytes(2 * n, &[]), 287.0),
+            (graph_bytes(n + 1, &[(n, 1), (1, n)]), 389.0),
+        ] {
+            let mb = 3.0 * model.unwrap() as f64 / 1e6;
+            assert!((mb / measured_mb - 1.0).abs() < 0.03, "{mb} MB vs {measured_mb} MB");
+        }
+    }
+
+    /// S15: prime_pi and primes. References (gp): `primepi(10^6)` = 78498, `primes([11,28])`,
+    /// `primes([2^64, 2^64+99])`, `primes([10^30, 10^30+299])`, `nextprime(10^400) - 10^400` = 69,
+    /// `nextprime(2^1000) - 2^1000` = 297; above 2^1024 the first primes are at +643, +1081,
+    /// +2113 (29 below +20000).
+    #[test]
+    fn test_prime_counting_limits() {
+        let mut ctx = ReplContext::new();
+        assert_eq!(eval_text(&mut ctx, "prime_pi(10^6)"), "78498");
+        assert_eq!(eval_text(&mut ctx, "prime_pi(-5)"), "0");
+        assert_eq!(eval_text(&mut ctx, "prime_pi(6000000001)"),
+                   "ValueError: prime_pi: x = 6000000001 is above the REPL limit 6000000000 (the sieve takes about 10 s there)");
+        assert_eq!(eval_text(&mut ctx, "primes(11, 29)"), "[11, 13, 17, 19, 23]");
+        assert_eq!(eval_text(&mut ctx, "primes(-10, 3)"), "[2]");
+        assert_eq!(eval_text(&mut ctx, "primes(5, 3)"), "[]");
+        assert_eq!(eval_text(&mut ctx, "primes(2^64, 2^64 + 100)"),
+                   "[18446744073709551629, 18446744073709551653, 18446744073709551667, 18446744073709551697, 18446744073709551709]");
+        assert_eq!(eval_text(&mut ctx, "primes(10^30, 10^30 + 300)"),
+                   "[1000000000000000000000000000057, 1000000000000000000000000000099, 1000000000000000000000000000211, \
+                    1000000000000000000000000000231, 1000000000000000000000000000271]");
+        // Memory: count_bound(10^8 - 2) = 10857362 > 10^6; 10^400 is far above the span limit.
+        for cmd in ["primes(0, 10^8)", "primes(0, 10^400)"] {
+            let t = eval_text(&mut ctx, cmd);
+            assert!(t.starts_with("ValueError: primes: the span") && t.contains("more than 1000000 primes"), "{cmd}: {t}");
+        }
+        // Above 2^64: answers without primes are cheap (no proof is needed).
+        assert_eq!(eval_text(&mut ctx, "primes(10^400, 10^400 + 10)"), "[]");
+        assert_eq!(eval_text(&mut ctx, "primes(2^1000, 2^1000 + 200)"), "[]");
+        let t = eval_text(&mut ctx, "primes(2^1000, 2^1000 + 10^6)");
+        assert!(t.starts_with("ValueError: primes: testing the 500000 odd candidates"), "{t}");
+        // Refused at the third probable prime of pass 1 (the exact k depends on t_proof).
+        let t = eval_text(&mut ctx, "primes(2^1024, 2^1024 + 20000)");
+        assert!(t.starts_with("ValueError: primes: [a, b) has at least ") && t.contains("BPSW probable primes that need a proof")
+                && t.contains("REPL limit 10 s"), "{t}");
+    }
+
+    /// The time model of `primes` above 2^64 and the Montgomery-Vaughan bound.
+    #[test]
+    fn test_primes_time_model() {
+        let proof = &repl_limits::PRIMES_PROOF_SECONDS;
+        assert_eq!(table_seconds(proof, 512), 0.41);
+        assert_eq!(table_seconds(proof, 50), 0.008);
+        let mid = table_seconds(proof, 1200);
+        assert!(mid > 3.3 && mid < 20.6, "{mid}");
+        assert!(table_seconds(proof, 1300) > mid);
+        assert!(table_seconds(proof, 4096) > 957.0);
+        // HEAD's release cost per odd candidate (J1a design §6.3, `t_head_primes.txt`), by height
+        // 2^h: the old prime_range was at least three times t_test everywhere, so the prior
+        // check refuses nothing that it finished within 30 s.
+        for (h, head_seconds) in [(64u64, 61e-6), (100, 74e-6), (128, 70e-6), (256, 150e-6), (512, 295e-6),
+                                  (1024, 1.31e-3), (2048, 4.75e-3), (4096, 37e-3)] {
+            let t = primes_t_test(h + 1);
+            assert!(3.0 * t <= head_seconds, "2^{h}: 3 * {t} > {head_seconds}");
+        }
+        // gp: cb(y) = min(ceil(y/2)+1, floor(2*y/log(y))); 2*7943969/log(7943969) = 1000000.907.
+        let cb = |y: i64| count_bound(&Integer::from(y));
+        for (y, want) in [(1, 1), (2, 2), (10, 6), (100, 43), (10_000, 2171), (1_000_000, 144_764),
+                          (7_943_969, 1_000_000), (7_943_970, 1_000_001), (8_000_000, 1_006_608), (-3, 0)] {
+            assert_eq!(cb(y), Some(want), "count_bound({y})");
+        }
+        assert_eq!(cb(8_000_001), None);
+        assert_eq!(count_bound(&Integer::from(10).pow(400)), None);
+        // An upper bound: gp primepi(10), primepi(100), primepi(10^4) = 4, 25, 1229.
+        for (y, pi) in [(10, 4), (100, 25), (10_000, 1229)] {
+            assert!(cb(y).unwrap() >= pi);
+        }
+    }
+
+    /// sqrt_mod factors n once (trial division, rho, the quadratic sieve, ECPP); the old trial
+    /// division never finished on the first three rows. References (gp):
+    /// `factor(2^127+1)` = 3 * 56713727820156410577229101238628035243, the roots by `chinese` over
+    /// {1, 2} mod 3 and {2, p - 2} mod p, r = `chinese(Mod(1,3), Mod(2,p))`;
+    /// 1000000000000000005490000000000000001989 = `nextprime(10^19)*nextprime(10^20)`, roots by
+    /// `chinese` over {2, P - 2} and {2, Q - 2}; `kronecker(3, m)` = 1 but `issquare(Mod(3, m))` = 0
+    /// (`kronecker(3, P)` = -1); `factor(318665857834031151167461)` = 399165290221 * 798330580441,
+    /// `issquare(Mod(73, psi12))` = 1, the four roots of 73 and of 4 by `chinese`, r of 73 =
+    /// `chinese(Mod(79487054939, p), Mod(173837379523, q))` (the least roots);
+    /// `kronecker(41, psi12)` = -1; `isprime(2^1279-1)` = 1.
+    #[test]
+    fn test_sqrt_mod_factored() {
+        let mut ctx = ReplContext::new();
+        for (cmd, want) in [
+            ("sqrt_mod(4, 2^127+1)", "113427455640312821154458202477256070488; square roots of 4 mod 170141183460469231731687303715884105729: [2, 56713727820156410577229101238628035241, 113427455640312821154458202477256070488, 170141183460469231731687303715884105727]"),
+            ("sqrt_mod(4, 1000000000000000005490000000000000001989)", "2; square roots of 4 mod 1000000000000000005490000000000000001989: [2, 208067940552016986281146496815286624620, 791932059447983019208853503184713377369, 1000000000000000005490000000000000001987]"),
+            ("sqrt_mod(3, 1000000000000000005490000000000000001989)", "no square root: 3 is not a square mod 1000000000000000005490000000000000001989"),
+            ("sqrt_mod(4, 15)", "7; square roots of 4 mod 15: [2, 7, 8, 13]"),
+            ("sqrt_mod(1404, 2340)", "1872; square roots of 1404 mod 2340: [78, 312, 468, 702, 858, 1092, 1248, 1482, 1638, 1872, 2028, 2262]"),
+            ("sqrt_mod(4, 318665857834031151167461)", "2; square roots of 4 mod 318665857834031151167461: [2, 3193322321766, 318665857830837828845695, 318665857834031151167459]"),
+            ("sqrt_mod(73, 318665857834031151167461)", "75322749390115309241067; square roots of 73 mod 318665857834031151167461: [75322749390115309241067, 116429215029920790230196, 202236642804110360937265, 243343108443915841926394]"),
+            ("sqrt_mod(41, 318665857834031151167461)", "no square root: 41 is not a square mod 318665857834031151167461"),
+        ] {
+            assert_eq!(sqrt_mod_text(&mut ctx, cmd), quoted(want), "{cmd}");
+        }
+        // Above the proof limit the roots of a probable prime are listed with the caveat.
+        let t = sqrt_mod_text(&mut ctx, "sqrt_mod(4, 2^1279-1)");
+        let n = Integer::from(2).pow(1279) - Integer::one();
+        let roots = format!("[2, {}]", n.clone() - Integer::from(2));
+        assert!(t.starts_with(&format!("\"2; square roots of 4 mod {}: {}", n, roots)), "{t}");
+        assert!(t.ends_with(" (unproven: n is a BPSW probable prime of 1279 bits that was not proven prime \
+                             (above the REPL proof limit of 1024 bits); the list is complete if it is prime)\""), "{t}");
+    }
+
+    /// The phases of `sqrt_mod_factor` with small limits. n = 1009 * 1013 * (2^89 - 1) =
+    /// 632659779567127515219534076208987 (gp `factor`; `isprime(2^89-1)` = 1). The eight roots of
+    /// 9 mod n: gp `chinese` over the roots 3 and -3 mod each prime, sorted.
+    #[test]
+    fn test_sqrt_mod_factor_phases() {
+        let n = Integer::from_decimal_str("632659779567127515219534076208987").unwrap();
+        let m89 = Integer::from_decimal_str("618970019642690137449562111").unwrap();
+        let lim = |work: u64| SqrtModLimits {
+            trial: 100,
+            rho_steps: 0,
+            i2_max_bits: 4096,
+            qs_digits: 0,
+            trial_work: work,
+            proof_bits: 1024,
+        };
+        // Phase 1 finds nothing below 100, phase 2 only classifies n (no rho, no sieve), phase 3
+        // runs to T = 128000 / (55 + 109/11) = 2000 and finds 1009 and 1013; the cofactor
+        // 2^89 - 1 goes to I2 again (a probable prime) and step 4 proves it.
+        let mut pieces = sqrt_mod_factor(&n, &lim(2000 * 64));
+        pieces.sort_by(|x, y| format!("{x:?}").cmp(&format!("{y:?}")));
+        let mut want = vec![
+            SqrtModPiece::Prime { p: Integer::from(1009), e: 1 },
+            SqrtModPiece::Prime { p: Integer::from(1013), e: 1 },
+            SqrtModPiece::Prime { p: m89, e: 1 },
+        ];
+        want.sort_by(|x, y| format!("{x:?}").cmp(&format!("{y:?}")));
+        assert_eq!(pieces, want);
+        assert_eq!(
+            sqrt_mod_report_with(&Integer::from(9), &n, &lim(2000 * 64)).unwrap(),
+            "3; square roots of 9 mod 632659779567127515219534076208987: [3, 89309327224184831862184968309860, \
+             95033561965840430253318518712382, 184342889190025262115503487022239, 448316890377102253104030589186748, \
+             537626217601287084966215557496605, 543350452342942683357349107899127, 632659779567127515219534076208984]"
+        );
+        // T = 1010: phase 3 finds 1009 and stops at 1013 > T; the proper cofactor 1013 * (2^89 - 1)
+        // is classified by I2 again (composite).
+        let e = sqrt_mod_report_with(&Integer::from(9), &n, &lim(1010 * 64)).unwrap_err();
+        assert_eq!(e.name, "ValueError");
+        assert!(e.message.starts_with("sqrt_mod: n = 632659779567127515219534076208987 is not factored completely \
+                                       within the REPL limits: 627016629898045109236406418443 (no prime factor up to \
+                                       1010, not split by the quadratic sieve)"), "{}", e.message);
+        // T = 500: no factor of the phase-2 composite, so no second I2 call.
+        let e = sqrt_mod_report_with(&Integer::from(9), &n, &lim(500 * 64)).unwrap_err();
+        assert!(e.message.ends_with(": 632659779567127515219534076208987 (no prime factor up to 500, not split by \
+                                     Pollard rho (0 steps) or the quadratic sieve (up to 0 digits)); the square \
+                                     roots mod n need its factorization"), "{}", e.message);
+        // A Jacobi symbol -1 decides before any factoring (gp kronecker(2, n) = -1).
+        assert_eq!(
+            sqrt_mod_report_with(&Integer::from(2), &n, &lim(2000 * 64)).unwrap(),
+            "no square root: 2 is not a square mod 632659779567127515219534076208987"
+        );
+    }
+
+    /// Release only (phase 3 trial division runs to T = 2.5·10^8): p40 = nextprime(10^39),
+    /// q40 = nextprime(2*10^39) (gp), so n = p40 * q40 =
+    /// 2000000000000000000000000000000000000017000000000000000000000000000000000000033 is above
+    /// the sieve's 60 digits and has no factor below T: refused, naming the cofactor.
+    #[test]
+    #[ignore]
+    fn test_sqrt_mod_refusal_release() {
+        let mut ctx = ReplContext::new();
+        let start = std::time::Instant::now();
+        let e = sqrt_mod_err(&mut ctx, "sqrt_mod(4, 2000000000000000000000000000000000000017000000000000000000000000000000000000033)");
+        assert_eq!(e.name, "ValueError");
+        assert!(e.message.contains("is not factored completely within the REPL limits: \
+                                    2000000000000000000000000000000000000017000000000000000000000000000000000000033 \
+                                    (no prime factor up to"), "{}", e.message);
+        assert!(start.elapsed().as_secs_f64() < 5.0, "{:?}", start.elapsed());
+    }
+
     #[test]
     fn test_sqrt_mod_large_prime_and_strong_pseudoprime() {
         let mut ctx = ReplContext::new();
@@ -11827,8 +13380,8 @@ mod tests {
         assert_eq!(ctx.eval("is_prime(318665857834031151167461)").unwrap().text, "False");
         // The old rows sqrt_mod(4, psi12) and sqrt_mod(73, psi12) took the prime path and
         // listed two of the four roots of 4 with a caveat (PARI: 4 has four roots mod psi12).
-        // On the composite path they need psi12 factored, which IntegerMod does by trial
-        // division (about 2e11 divisions), so they are left out here.
+        // sqrt_mod now factors psi12 (I2's sieve), so test_sqrt_mod_factored has them with all
+        // four roots.
         //
         // 2^1279 - 1 is a Mersenne prime (PARI isprime = 1) above the REPL's proof size: the
         // roots are computed and squared back, the text says the proof was not attempted.
@@ -12297,17 +13850,17 @@ mod tests {
             "(p + 1 and p + q must fit in a machine word)");
         assert_eq!(int_text(&mut ctx, "diff_form(M, 5)"), "DiffForm(degree=5)");
         assert_eq!(int_text(&mut ctx, "diff_form(M, 1001)"), "DiffForm(degree=1001)");
-        // A one-name chart: `chart(E3, "x,y,z")` cannot be written (commas inside a string are
-        // split, S9), and `chart` does not compare the names with dim(M) (S14).
+        // A chart has one coordinate name per dimension (S14); the names are one string literal
+        // with commas (S9).
         ctx.eval("E3 = EuclideanSpace(3)").unwrap();
-        ctx.eval("C = chart(E3, \"t\")").unwrap();
+        ctx.eval("C = chart(E3, \"x,y,z\")").unwrap();
         assert!(ctx.eval("coordinate_form(E3, C, 0)").is_ok());
         value_err(&mut ctx, "coordinate_form(E3, C, 3)", "coordinate_form: index must be an integer in 0..=2 (3 coordinates)");
         value_err(&mut ctx, "coordinate_form(E3, C, -1)", "coordinate_form: index must be an integer in 0..=2 (3 coordinates)");
         let big = repl_limits::MANIFOLD_COORDS + 1;
         ctx.eval(&format!("Mbig = Manifold({}, \"B\")", big)).unwrap();
-        ctx.eval("Cb = chart(Mbig, \"t\")").unwrap();
-        value_err(&mut ctx, "coordinate_form(Mbig, Cb, 0)", &format!("coordinate_form: the manifold has dimension {}", big));
+        // The size check comes before the chart check, so the R^3 chart shows the limit.
+        value_err(&mut ctx, "coordinate_form(Mbig, C, 0)", &format!("coordinate_form: the manifold has dimension {}", big));
         // plot_function's n_points (a float before the cast): 2.5 silently became 2.
         assert!(ctx.eval("plot_function(x^2, x, 0, 1, 3)").is_ok());
         value_err(&mut ctx, "plot_function(x^2, x, 0, 1, 2.5)", "plot_function: n_points must be an integer in 2..=10000");
@@ -12431,6 +13984,11 @@ mod tests {
         }
     }
 
+    /// "x0,x1,...": n distinct coordinate names for `chart` (S14).
+    fn chart_names(n: usize) -> String {
+        (0..n).map(|i| format!("x{i}")).collect::<Vec<_>>().join(",")
+    }
+
     // exterior_derivative and wedge build every component of the result (fix-up B3).
     #[test]
     fn test_form_component_limits() {
@@ -12439,7 +13997,7 @@ mod tests {
         // Manifold(100000) is accepted and coordinate_form stores 10^5 components, but d(w) and
         // w ∧ w would build 10^10 (an allocation failure, which aborts the kernel).
         ctx.eval("M = Manifold(100000, \"M\")").unwrap();
-        ctx.eval("C = chart(M, \"t\")").unwrap();
+        ctx.eval(&format!("C = chart(M, \"{}\")", chart_names(100000))).unwrap();
         ctx.eval("w = coordinate_form(M, C, 0)").unwrap();
         for cmd in ["exterior_derivative(w, C)", "wedge(w, w, C)"] {
             let name = cmd.split('(').next().unwrap();
@@ -12448,7 +14006,7 @@ mod tests {
         }
         // Small forms on R^3 work, also derived ones.
         ctx.eval("E3 = EuclideanSpace(3)").unwrap();
-        ctx.eval("C3 = chart(E3, \"t\")").unwrap();
+        ctx.eval("C3 = chart(E3, \"x,y,z\")").unwrap();
         ctx.eval("a = coordinate_form(E3, C3, 0)").unwrap();
         ctx.eval("b = coordinate_form(E3, C3, 1)").unwrap();
         ctx.eval("da = exterior_derivative(a, C3)").unwrap();
@@ -12465,7 +14023,7 @@ mod tests {
         // Degrees of derived forms (the p >= n and p + q > n branches build no components):
         // g = d(f) has degree usize::MAX/2 + 1, so g ∧ g would overflow p + q.
         ctx.eval("M3 = Manifold(3, \"M3\")").unwrap();
-        ctx.eval("Cm = chart(M3, \"t\")").unwrap();
+        ctx.eval("Cm = chart(M3, \"a,b,c\")").unwrap();
         ctx.eval(&format!("f = diff_form(M3, {})", repl_limits::DIFF_FORM_DEGREE)).unwrap();
         ctx.eval("g = exterior_derivative(f, Cm)").unwrap();
         let half = repl_limits::DIFF_FORM_DEGREE + 1;
@@ -12489,7 +14047,7 @@ mod tests {
             assert_eq!(e.message, "No components defined in this chart", "{cmd}");
         };
         ctx.eval("N = Manifold(2000, \"N\")").unwrap();
-        ctx.eval("CN = chart(N, \"t\")").unwrap();
+        ctx.eval(&format!("CN = chart(N, \"{}\")", chart_names(2000))).unwrap();
         ctx.eval("f = diff_form(N, 1)").unwrap(); // no components
         ctx.eval("w = coordinate_form(N, CN, 0)").unwrap();
         // d and ∧ would have 2000^2 = 4·10^6 components, above FORM_COMPONENTS. (Every REPL
@@ -12503,7 +14061,7 @@ mod tests {
         value_err(&mut ctx, "wedge(w, w, CN)", &lim);
         // Below the limit the callee answers as before.
         ctx.eval("S = Manifold(3, \"S\")").unwrap();
-        ctx.eval("CS = chart(S, \"t\")").unwrap();
+        ctx.eval("CS = chart(S, \"a,b,c\")").unwrap();
         ctx.eval("fs = diff_form(S, 1)").unwrap();
         no_comps(&mut ctx, "exterior_derivative(fs, CS)");
         // The lookup clones the components, so it is skipped for a form of more than

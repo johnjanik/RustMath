@@ -1012,6 +1012,44 @@ pub fn all_square_roots_mod_prime_power(a: &Integer, p: &Integer, k: usize) -> V
     prime_power_sqrts(a, p, k).all()
 }
 
+/// The number of square roots of `a` modulo p^k, in closed form (no roots are listed; MAGMA
+/// ch. 19 §19.5.6 counts the output of `AllSqrts`).
+///
+/// For a ≡ 0 (mod p^k) there are p^⌊k/2⌋ roots; for a ≡ p^(2e)·u, p ∤ u, j = k − 2e,
+/// there are 2·p^e roots for odd p, and 2^e, 2·2^e or 4·2^e roots for p = 2 and j = 1, 2 or
+/// ≥ 3, when u is a square mod p^j; otherwise 0. For k = 0 the count is 1 (Z/1Z = {0}). This is
+/// the per-prime-power factor of [`IntegerMod::num_sqrts`], for a caller that already knows the
+/// factorization of the modulus. It equals the length of
+/// [`all_square_roots_mod_prime_power`]`(a, p, k)` without building that list.
+///
+/// # Contract and panics
+///
+/// As for [`square_root_mod_prime_power`]: `p` is checked once with
+/// [`rustmath_integers::prime::is_prime`] (a proof for every size; a success of
+/// `rustmath_integers::prime::try_is_prime` is cached, so a proven prime costs nothing here).
+/// Panics if `p` is rejected or if `k > u32::MAX`.
+///
+/// # Example
+///
+/// ```
+/// use rustmath_finitefields::num_square_roots_mod_prime_power;
+/// use rustmath_integers::Integer;
+///
+/// // 9 mod 2^4 has the roots 3, 5, 11, 13; 0 mod 2^64 has 2^32 roots.
+/// assert_eq!(num_square_roots_mod_prime_power(&Integer::from(9), &Integer::from(2), 4), Integer::from(4));
+/// assert_eq!(
+///     num_square_roots_mod_prime_power(&Integer::zero(), &Integer::from(2), 64),
+///     Integer::from(2).pow(32)
+/// );
+/// ```
+pub fn num_square_roots_mod_prime_power(a: &Integer, p: &Integer, k: usize) -> Integer {
+    let k = checked_prime_power_args("num_square_roots_mod_prime_power", p, k);
+    if k == 0 {
+        return Integer::one(); // Z/1Z: the residue 0 is the only root
+    }
+    prime_power_sqrts(a, p, k).count()
+}
+
 /// Lucas sequence U_n(P, Q) computation
 ///
 /// Computes the Lucas U sequence: U_0 = 0, U_1 = 1, U_n = P*U_{n-1} - Q*U_{n-2}
@@ -1467,6 +1505,36 @@ mod tests {
             let s = prime_power_sqrts(&a, &p, 3);
             assert_eq!(s.count(), count, "count of roots of {a} mod P^3");
             assert_eq!(s.least(), least, "least root of {a} mod P^3");
+        }
+    }
+
+    /// The closed-form count per prime power. References (gp): `sum(x=0,15,Mod(x,16)^2==9)` = 4,
+    /// `sum(x=0,7,Mod(x,8)^2==2)` = 0, `isprime(1000003)` = 1, `issquare(Mod(13,1000003))` = 1
+    /// (so 13·p^2 mod p^3 has v = 2, e = 1, j = 1 and 2·p roots), `issquare(Mod(2,1000003))` = 0.
+    #[test]
+    fn test_num_square_roots_mod_prime_power() {
+        let i = Integer::from;
+        let two = i(2);
+        assert_eq!(num_square_roots_mod_prime_power(&i(0), &two, 64), two.pow(32));
+        assert_eq!(num_square_roots_mod_prime_power(&i(9), &two, 4), i(4));
+        assert_eq!(num_square_roots_mod_prime_power(&i(2), &two, 3), i(0));
+        let p = i(1000003);
+        let p2 = p.clone() * p.clone();
+        assert_eq!(num_square_roots_mod_prime_power(&(p2.clone() * i(13)), &p, 3), i(2000006));
+        assert_eq!(num_square_roots_mod_prime_power(&(p2 * i(2)), &p, 3), i(0));
+        assert_eq!(num_square_roots_mod_prime_power(&i(5), &i(7), 0), i(1));
+        // The count is the length of the list, for every residue of small prime powers.
+        for q in [2, 3, 5, 7] {
+            for k in 1..=3usize {
+                for a in 0..64 {
+                    let n = all_square_roots_mod_prime_power(&i(a), &i(q), k).len() as u64;
+                    assert_eq!(
+                        num_square_roots_mod_prime_power(&i(a), &i(q), k),
+                        Integer::from(n),
+                        "a = {a}, p = {q}, k = {k}"
+                    );
+                }
+            }
         }
     }
 }

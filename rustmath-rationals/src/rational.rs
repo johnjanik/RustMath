@@ -152,11 +152,21 @@ impl Rational {
         self.abs()
     }
 
-    /// Convert to float (may lose precision)
+    /// The double nearest to this rational (round to nearest, ties to even). It uses
+    /// num-rational's `Ratio<BigInt>::to_f64` (0.4.2): one IEEE division when both parts fit in
+    /// 53 bits, otherwise an exact quotient of 55 or 56 bits with the remainder as sticky bit, so
+    /// the result is correctly rounded also when the numerator or the denominator lies beyond
+    /// the double range. A value whose magnitude rounds above `f64::MAX` gives ±inf, one that
+    /// rounds below the least subnormal gives ±0.0. Never NaN, never `None` (the denominator is
+    /// positive). The old quotient of two separately rounded parts gave NaN for
+    /// (10^400 + 1)/10^400 and 0 for 1/10^310.
     pub fn to_f64(&self) -> Option<f64> {
-        let num = self.numerator.to_f64()?;
-        let den = self.denominator.to_f64()?;
-        Some(num / den)
+        use num_traits::ToPrimitive;
+        num_rational::BigRational::new_raw(
+            self.numerator.as_bigint().clone(),
+            self.denominator.as_bigint().clone(),
+        )
+        .to_f64()
     }
 
     /// Create a rational from an f64
@@ -609,6 +619,39 @@ mod tests {
         assert_eq!(to(-two.pow(63)), Some(i64::MIN));
         assert_eq!(NumericConversion::to_i64(&Rational::new(-6, 3).unwrap()), Some(-2));
         assert_eq!(NumericConversion::to_i64(&Rational::new(1, 2).unwrap()), None);
+    }
+
+    #[test]
+    fn test_to_f64_correctly_rounded() {
+        // Reference: Python's exact true division of integers, which is correctly rounded:
+        //   float(Fraction(10**400 + 1, 10**400))      = 1.0
+        //   float(Fraction(10**400, 10**399))          = 10.0
+        //   float(Fraction(1, 10**310))                = 1e-310 (a subnormal)
+        //   float(Fraction(1, 10**400))                = 0.0
+        //   float(Fraction(-(10**500), 3 * 10**499))   = -3.3333333333333335
+        //   float(Fraction(2**1100, 3))                -> OverflowError, so +inf here
+        // The old num/den quotient gave NaN, inf/inf = NaN, 0, 0, NaN and inf.
+        let ten = Integer::from(10);
+        let r = |n: Integer, d: Integer| Rational::new(n, d).unwrap();
+        let big = ten.pow(400);
+        assert_eq!(r(big.clone() + Integer::one(), big.clone()).to_f64(), Some(1.0));
+        assert_eq!(r(big.clone(), ten.pow(399)).to_f64(), Some(10.0));
+        assert_eq!(r(Integer::one(), ten.pow(310)).to_f64(), Some(1e-310));
+        assert_eq!(r(Integer::one(), big).to_f64(), Some(0.0));
+        assert_eq!(
+            r(-ten.pow(500), Integer::from(3) * ten.pow(499)).to_f64(),
+            Some(-3.3333333333333335)
+        );
+        assert_eq!(
+            r(Integer::from(2).pow(1100), Integer::from(3)).to_f64(),
+            Some(f64::INFINITY)
+        );
+        // Both parts within 2^53: one IEEE division, bit-identical to the old quotient.
+        assert_eq!(Rational::new(1, 3).unwrap().to_f64(), Some(1.0 / 3.0));
+        assert_eq!(
+            NumericConversion::to_f64(&Rational::new(-7, 2).unwrap()),
+            Some(-3.5)
+        );
     }
 
     #[test]
