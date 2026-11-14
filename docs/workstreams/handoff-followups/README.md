@@ -1,4 +1,4 @@
-# HANDOFF open follow-ups: designs and progress (paused 2026-11-13)
+# HANDOFF open follow-ups: designs and progress
 
 This folder holds the work on the request "Fix the open follow-ups in HANDOFF" (the list in
 `docs/HANDOFF.md`, "Open follow-ups", as of `c79a582`). The list was split into 13 units by
@@ -38,11 +38,10 @@ The three open design blockers, in short (details in `design/<unit>.review3.md`)
 - C1: `Subset::next_binary` and `prev_binary` return `None` for every ground set of 65 or more
   elements, because `to_bitvector` does; the design fixes only the n = 64 mask.
 
-Not done yet for the four committed units: the tracker update (`PROJECT_TRACKER.md`,
-`docs/magma/status_overrides.csv`, `REVIEW_2026-11-06.md`, `HANDOFF.md` open list) and a full
-`cargo test --workspace`. Each unit ran its design's acceptance commands (its own crate, the
-downstream crates it can affect, and `cargo check --workspace --tests`) and passed them. The
-"Handoffs" section of each report in `impl/` lists the tracker rows to change.
+For the four committed units the trackers are updated (2026-11-14: `PROJECT_TRACKER.md` Change Log
+"Open follow-ups round, part 1", `docs/magma/status_overrides.csv`, `REVIEW_2026-11-06.md` and the
+`HANDOFF.md` open list, checked by an independent verifier), and a full `cargo test --workspace` at
+`922024b` passed (14,386 passed, 0 failed, 333 ignored, 194 targets; `docs/TEST_BASELINE.md`).
 
 ## Files
 

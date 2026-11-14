@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 5161 | 45 | 341 | 1230 | 18 | 157 | 3419 (26%) | 8101 (61%) |
+| 13341 | 5161 | 59 | 340 | 1222 | 18 | 156 | 3420 (26%) | 8096 (61%) |
 
 ## By chapter
 
@@ -38,13 +38,13 @@ automatic `candidate`/`missing` counts.
 | 14 | Coproducts | II | 11 | 0 | 0 | 0 | 0 | 0 | 0 | 4 | 7 |  |  |
 | 15 | Records | II | 10 | 0 | 0 | 0 | 0 | 0 | 0 | 7 | 3 |  |  |
 | 16 | Mappings | II | 34 | 0 | 0 | 0 | 0 | 0 | 0 | 17 | 17 |  |  |
-| 17 | Introduction to Rings | III | 87 | 87 | 1 | 6 | 52 | 5 | 6 | 0 | 17 | substantial | `rustmath-rings` |
-| 18 | Ring of Integers | III | 188 | 188 | 11 | 24 | 65 | 1 | 2 | 0 | 85 | substantial | `rustmath-integers` |
+| 17 | Introduction to Rings | III | 87 | 87 | 1 | 6 | 53 | 5 | 6 | 0 | 16 | substantial | `rustmath-rings` |
+| 18 | Ring of Integers | III | 188 | 188 | 25 | 23 | 53 | 0 | 2 | 0 | 85 | substantial | `rustmath-integers` |
 | 19 | Integer Residue Class Rings | III | 108 | 108 | 3 | 10 | 24 | 1 | 1 | 0 | 69 | partial | `rustmath-finitefields` |
 | 20 | Rational Field | III | 63 | 63 | 1 | 16 | 13 | 0 | 0 | 0 | 33 | substantial | `rustmath-rationals` |
 | 21 | Finite Fields | III | 118 | 118 | 1 | 24 | 45 | 0 | 6 | 0 | 42 | partial | `rustmath-finitefields` |
 | 22 | Nearfields | III | 42 | 42 | 0 | 0 | 0 | 0 | 0 | 0 | 42 | none | `(none - new crate rustmath-nearfields proposed)` |
-| 23 | Univariate Polynomial Rings | III | 129 | 129 | 7 | 14 | 53 | 1 | 0 | 0 | 54 | substantial | `rustmath-polynomials` |
+| 23 | Univariate Polynomial Rings | III | 129 | 129 | 7 | 14 | 56 | 1 | 0 | 0 | 51 | substantial | `rustmath-polynomials` |
 | 24 | Multivariate Polynomial Rings | III | 98 | 98 | 0 | 9 | 29 | 0 | 0 | 0 | 60 | substantial | `rustmath-polynomials` |
 | 25 | Real and Complex Fields | III | 176 | 176 | 3 | 20 | 75 | 9 | 0 | 0 | 69 | partial | `rustmath-reals, rustmath-complex` |
 | 26 | Matrices | IV | 149 | 149 | 3 | 25 | 44 | 0 | 1 | 0 | 76 | substantial | `rustmath-matrix` |
@@ -157,7 +157,7 @@ automatic `candidate`/`missing` counts.
 | 133 | Modular Symbols | XVII | 96 | 0 | 0 | 0 | 0 | 0 | 0 | 16 | 80 | partial | `rustmath-modular` |
 | 134 | Brandt Modules | XVII | 56 | 0 | 0 | 0 | 0 | 0 | 0 | 31 | 25 | stub | `rustmath-modular` |
 | 135 | Supersingular Divisors on Modular Curves | XVII | 35 | 0 | 0 | 0 | 0 | 0 | 0 | 14 | 21 | stub | `rustmath-modular` |
-| 136 | Modular Abelian Varieties | XVII | 285 | 0 | 0 | 0 | 0 | 0 | 0 | 135 | 150 | partial | `rustmath-modular` |
+| 136 | Modular Abelian Varieties | XVII | 285 | 0 | 0 | 0 | 0 | 0 | 0 | 136 | 149 | partial | `rustmath-modular` |
 | 137 | Hilbert Modular Forms | XVII | 27 | 0 | 0 | 0 | 0 | 0 | 0 | 10 | 17 | none | `rustmath-modular` |
 | 138 | Modular Forms over Imaginary Quadratic Fields | XVII | 9 | 0 | 0 | 0 | 0 | 0 | 0 | 5 | 4 | none | `rustmath-modular` |
 | 139 | Admissible Representations of GL₂(Q_p) | XVII | 11 | 0 | 0 | 0 | 0 | 0 | 0 | 2 | 9 | stub | `rustmath-modular` |
