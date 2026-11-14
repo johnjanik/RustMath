@@ -188,12 +188,14 @@ fn polynomials_over_galois_ring() {
     assert!(f.coeff(5).is_zero());
 }
 
-/// The container caveat of the type docs: a polynomial built from the static `var()` and
-/// `R::one()` keeps an unbound integer in every coefficient that never meets a bound element,
-/// so its degree and `==` see integers in `Z`; building it from `r.zero()`/`r.one()`, or
-/// binding it afterwards with `scalar_mul(&r.one())`, gives the polynomial over GR(8, 2).
+/// The containers of rustmath-polynomials bind unbound constants (`Ring::bind_to_parent_of`):
+/// a polynomial built from the static `var()` and `R::one()` is bound as soon as one
+/// coefficient is, so degrees, zero tests and `==` follow GR(8, 2). (This replaces the test
+/// that pinned the old caveat, degree 7: gp `lift(Mod(1,8)*((x+1)^8-x^8))` =
+/// `4*x^6 + 6*x^4 + 4*x^2 + 1` shows the degree is 6 in GR(8, 2)[x].) A polynomial with only
+/// unbound coefficients stays the image of an element of Z[x].
 #[test]
-fn polynomials_from_static_constructors_keep_unbound_coefficients() {
+fn polynomials_from_static_constructors_bind_on_construction() {
     type P = UnivariatePolynomial<R>;
     let r = gr8();
     let w = r.generator();
@@ -208,16 +210,15 @@ fn polynomials_from_static_constructors_keep_unbound_coefficients() {
     // q = (x + 1)^8 - x^8 + w from the static constructors.
     let x = P::var();
     let one = P::constant(R::one());
-    let q = x8(&(x.clone() + one)) - x8(&x) + P::constant(w.clone());
-    // PARI: Vecrev((x+1)^8 - x^8) = [1, 8, 28, 56, 70, 56, 28, 8]; only the constant met w.
-    assert_eq!(q.degree(), Some(7));
-    assert_eq!(q.coeff(0), &(r.one() + w.clone()));
-    assert!(q.coeff(0).is_bound());
-    for (i, c) in [8, 28, 56, 70, 56, 28, 8].into_iter().enumerate() {
-        let coeff = q.coeff(i + 1);
-        assert!(!coeff.is_bound(), "coefficient {} should be unbound", i + 1);
+    let unbound = x8(&(x.clone() + one)) - x8(&x);
+    // PARI: Vecrev((x+1)^8 - x^8) = [1, 8, 28, 56, 70, 56, 28, 8], all unbound (in Z[x]).
+    assert_eq!(unbound.degree(), Some(7));
+    for (i, c) in [1, 8, 28, 56, 70, 56, 28, 8].into_iter().enumerate() {
+        let coeff = unbound.coeff(i);
+        assert!(!coeff.is_bound(), "coefficient {i} should be unbound");
         assert_eq!(coeff.eltseq(), &[int(c)][..]);
     }
+    let q = unbound + P::constant(w.clone());
 
     // The same polynomial from bound elements. PARI: (1 + w) + 4x^2 + 6x^4 + 4x^6.
     let y = P::new(vec![r.zero(), r.one()]);
@@ -235,13 +236,90 @@ fn polynomials_from_static_constructors_keep_unbound_coefficients() {
     assert_eq!(qb.degree(), Some(6));
     assert_eq!(qb, want);
     assert!(qb.coefficients().iter().all(|c| c.is_bound()));
-    // Same element of GR(8, 2)[x], different representations: q != qb.
-    assert_ne!(q, qb);
 
-    // Binding q coefficient by coefficient recovers qb.
-    let q_bound = q.scalar_mul(&r.one());
-    assert_eq!(q_bound.degree(), Some(6));
-    assert_eq!(q_bound, qb);
+    // q is bound on construction: degree 6, every coefficient bound, equal to qb.
+    assert_eq!(q.degree(), Some(6));
+    assert!(q.coefficients().iter().all(|c| c.is_bound()));
+    assert_eq!(q, qb);
+    assert_eq!(q.coeff(0), &(r.one() + w.clone()));
+    // A coefficient past the degree is the bound zero.
+    assert!(q.coeff(9).is_bound());
+    assert!(q.coeff(9).is_zero());
+    // Binding with scalar_mul still agrees.
+    assert_eq!(q.scalar_mul(&r.one()), qb);
+
+    // Equality coerces across lengths: 1 + 8x is 1 in GR(8, 2)[x] (but not in Z[x]).
+    let eight = (0..8).fold(R::zero(), |acc, _| acc + R::one());
+    let u = P::new(vec![R::one(), eight]);
+    assert_eq!(u.degree(), Some(1));
+    assert_eq!(u, P::constant(r.one()));
+    assert_eq!(P::constant(r.one()), u);
+    assert_ne!(u, P::constant(R::one()));
+}
+
+/// The sparse containers bind in `add_term`, and drop the terms that become zero.
+/// gp: lift(Mod(1,8)*((x+1)^8-x^8)) = 4*x^6 + 6*x^4 + 4*x^2 + 1, so over GR(8, 2)
+/// (x_0 + 1)^8 - x_0^8 + w = (1 + w) + 4x_0^2 + 6x_0^4 + 4x_0^6 (4 terms; the old code kept 8,
+/// degree 7), and with q^-1 for x the Laurent value is (1 + w) + 4q^-2 + 6q^-4 + 4q^-6.
+#[test]
+fn sparse_polynomials_from_static_constructors_bind() {
+    use rustmath_polynomials::{LaurentPolynomial, Monomial, MultivariatePolynomial};
+    type M = MultivariatePolynomial<R>;
+    type L = LaurentPolynomial<R>;
+    let r = gr8();
+    let w = r.generator();
+    let pow_m = |x: &M, k: u32| {
+        let mut p = M::constant(R::one());
+        for _ in 0..k {
+            p = p * x.clone();
+        }
+        p
+    };
+    let x = M::variable(0);
+    let unbound = pow_m(&(x.clone() + M::constant(R::one())), 8) - pow_m(&x, 8);
+    assert_eq!(unbound.num_terms(), 8);
+    for q in [
+        unbound.clone() + M::constant(w.clone()),
+        M::constant(w.clone()) + unbound.clone(),
+    ] {
+        assert_eq!(q.num_terms(), 4);
+        assert_eq!(q.degree(), Some(6));
+        assert!(q.terms().all(|(_, c)| c.is_bound()));
+        let coeff = |k: u32| q.coefficient(&Monomial::variable(0, k));
+        assert_eq!(coeff(0).eltseq(), &ints(&[1, 1])[..]);
+        assert_eq!(coeff(2), r.from_int(int(4)));
+        assert_eq!(coeff(4), r.from_int(int(6)));
+        assert_eq!(coeff(6), r.from_int(int(4)));
+        for k in [1, 3, 5, 7] {
+            assert!(coeff(k).is_zero() && coeff(k).is_bound(), "x_0^{k} is absent");
+        }
+        // Equal to the same value built from r.one().
+        let xb = M::variable(0) * M::constant(r.one());
+        let qb = pow_m(&(xb.clone() + M::constant(r.one())), 8) - pow_m(&xb, 8)
+            + M::constant(w.clone());
+        assert_eq!(qb.num_terms(), 4);
+        assert_eq!(q, qb);
+    }
+
+    let qi = L::monomial(R::one(), -1);
+    let mut lp = L::constant(R::one());
+    let mut li = L::constant(R::one());
+    for _ in 0..8 {
+        lp = lp * (qi.clone() + L::constant(R::one()));
+        li = li * qi.clone();
+    }
+    let l = lp - li + L::constant(w.clone());
+    let terms = l.terms();
+    assert_eq!(terms.len(), 4);
+    assert_eq!(terms[0].0, -6);
+    assert_eq!(terms[0].1, r.from_int(int(4)));
+    assert_eq!(terms[1].0, -4);
+    assert_eq!(terms[1].1, r.from_int(int(6)));
+    assert_eq!(terms[2].0, -2);
+    assert_eq!(terms[2].1, r.from_int(int(4)));
+    assert_eq!(terms[3].0, 0);
+    assert_eq!(terms[3].1, r.one() + w);
+    assert!(terms.iter().all(|(_, c)| c.is_bound()));
 }
 
 #[test]

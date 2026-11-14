@@ -68,6 +68,18 @@ impl ExtensionField {
         Ok(Self::from_elem(field.element(poly.coefficients().to_vec())))
     }
 
+    /// MAGMA `IsSquare(a)` (ch. 21 §21.4.4): forwards to
+    /// [`FiniteFieldElement::is_square`] (panics for an unbound element).
+    pub fn is_square(&self) -> bool {
+        self.elem.is_square()
+    }
+
+    /// MAGMA `Sqrt(a)` (ch. 21 §21.4.7): forwards to [`FiniteFieldElement::sqrt`] (the
+    /// canonical root, or `None` for a non-square; panics for an unbound element).
+    pub fn sqrt(&self) -> Option<Self> {
+        self.elem.sqrt().map(Self::from_elem)
+    }
+
     /// Get the (reduced) polynomial representation
     pub fn poly(&self) -> &UnivariatePolynomial<Integer> {
         &self.poly
@@ -224,6 +236,24 @@ impl Ring for ExtensionField {
 
     fn is_one(&self) -> bool {
         self.elem.is_one()
+    }
+
+    /// Every finite field is commutative, and an unbound element is an integer.
+    fn static_is_commutative() -> Option<bool> {
+        Some(true)
+    }
+
+    // Unbound constants: delegate to the canonical `FiniteFieldElement`.
+    const HAS_UNBOUND_CONSTANTS: bool = true;
+
+    fn is_unbound_constant(&self) -> bool {
+        !self.elem.is_bound()
+    }
+
+    fn bind_to_parent_of(&self, model: &Self) -> Option<Self> {
+        self.elem
+            .bind_to_parent_of(&model.elem)
+            .map(ExtensionField::from_elem)
     }
 
     // Element predicates: delegate to the canonical `FiniteFieldElement` (MAGMA Ch. 21).

@@ -53,18 +53,19 @@
 //! a contract violation of these entries panics instead of reporting a
 //! reducible polynomial as irreducible.
 //!
-//! Preconditions: the coefficients must lie in a field. [`factor`],
-//! [`factor_squarefree`] and [`equal_degree_factorization`] check that the
-//! characteristic is a prime with `Integer::is_prime`: a `PrimeField` with
-//! the modulus-0 sentinel or a composite modulus panics before any
-//! arithmetic. The test is a proof for every size (Baillie-PSW and ECPP above
-//! 2^64; it panics when an ECPP proof is unresolved). A [`crate::ff_poly::Gfpn`]
-//! whose defining polynomial is reducible (not a field) is **not checked**;
-//! the results are then unspecified (the lazy certificate, the cap or the
-//! arithmetic may panic). [`squarefree_factorization`] and
-//! [`distinct_degree_factorization`] check nothing.
+//! Preconditions: the coefficients must lie in a field. Every public entry
+//! ([`factor`], [`factor_squarefree`], [`squarefree_factorization`],
+//! [`distinct_degree_factorization`], [`equal_degree_factorization`]) first
+//! checks that the characteristic is a prime with
+//! `rustmath_integers::prime::try_is_prime`: a `PrimeField` with the modulus-0
+//! sentinel or a composite modulus panics before any arithmetic. The test is a
+//! proof for every size (Baillie-PSW and ECPP above 2^64); an unresolved ECPP
+//! proof also panics, with the reason. A [`crate::ff_poly::Gfpn`] is a field by
+//! construction ([`crate::ff_poly::Gfpn::try_new`] checks its modulus).
+//! [`distinct_degree_factorization`] also checks that its input is squarefree
+//! (MAGMA ch. 23 §23.8.1 defines it only for a squarefree `f`).
 
-use crate::ff_poly::{FFPoly, FiniteFieldElement};
+use crate::ff_poly::{check_prime_characteristic, FFPoly, FiniteFieldElement};
 use crate::irreducible::prime_divisors;
 use rustmath_core::{EuclideanDomain, NumericConversion};
 use rustmath_integers::Integer;
@@ -129,16 +130,15 @@ fn random_poly_below_degree<F: FiniteFieldElement>(
     FFPoly::new(coeffs, sample.clone())
 }
 
-/// `Ok(())` if `Integer::is_prime` accepts the characteristic of `sample`'s
-/// field; otherwise the reason. Refuses the modulus-0 sentinel
-/// (characteristic 0) and every composite modulus (`is_prime` is a proof for
-/// every size; it panics when an ECPP proof is unresolved).
-fn check_prime_characteristic<F: FiniteFieldElement>(sample: &F) -> Result<(), String> {
-    let c = sample.characteristic();
-    if c.is_prime() {
-        Ok(())
+/// `Ok(())` iff the monic, nonconstant `fm` is squarefree: `f' != 0` and
+/// `gcd(f, f') = 1`. Over GF(q) a nonconstant `f` with `f' = 0` is `g(x)^p`, so
+/// this test is exact. Otherwise `Err("f is not squarefree")`.
+fn squarefree_check<F: FiniteFieldElement>(fm: &FFPoly<F>) -> Result<(), &'static str> {
+    let df = fm.derivative();
+    if df.is_zero() || fm.gcd(&df).degree() != Some(0) {
+        Err("f is not squarefree")
     } else {
-        Err(format!("characteristic {c} is not a prime"))
+        Ok(())
     }
 }
 
@@ -171,10 +171,7 @@ fn block_contract<F: FiniteFieldElement>(f: &FFPoly<F>, d: usize) -> Result<(), 
         return Err(format!("d = {d} does not divide deg f = {n}"));
     }
     let f = f.make_monic();
-    let df = f.derivative();
-    if df.is_zero() || f.gcd(&df).degree() != Some(0) {
-        return Err("f is not squarefree".to_string());
-    }
+    squarefree_check(&f)?;
     // Frobenius ladder X_k = x^(q^k) mod f, k = 0..=d (d <= n here).
     let q = f.sample().order();
     let x0 = FFPoly::x(f.sample().clone()).rem(&f).expect("f != 0");
@@ -349,15 +346,34 @@ fn edf_with_source<F: FiniteFieldElement>(
     factors
 }
 
-/// Square-free factorization (Yun-style, generalised to characteristic `p`).
+/// Square-free factorization (MAGMA `SquarefreeFactorization`, ch. 23
+/// §23.8.1; Yun-style, generalised to characteristic `p`).
 ///
 /// Returns a list of `(squarefree factor, multiplicity)` pairs, each factor
 /// monic and of degree ≥ 1, whose product (with multiplicities) equals the
 /// monic part of `f`. Repeated factors are correctly separated, including the
-/// inseparable case where `gcd(f, f') = f` and `f` is a `p`-th power.
+/// inseparable case where `gcd(f, f') = f` and `f` is a `p`-th power. A zero or
+/// constant `f` gives `vec![]` (the convention of
+/// `rustmath_polynomials::factorization::square_free_factorization`).
+///
+/// # Panics
+/// When the characteristic is not a prime (checked first, see the module
+/// docs), with "cantor_zassenhaus::squarefree_factorization: characteristic
+/// {c} is not a prime".
 pub fn squarefree_factorization<F: FiniteFieldElement>(
     f: &FFPoly<F>,
 ) -> Vec<(FFPoly<F>, usize)> {
+    if let Err(why) = check_prime_characteristic(f.sample()) {
+        panic!("cantor_zassenhaus::squarefree_factorization: {why}");
+    }
+    squarefree_prime_char(f)
+}
+
+/// [`squarefree_factorization`] after the characteristic test. For
+/// `p > usize::MAX` the `p_usize = 0` below is never used: a nonconstant `f`
+/// with `f' = 0`, or a factor of multiplicity `>= p`, needs degree `>= p`, which
+/// no `Vec` holds, so `pth_root` is never reached.
+fn squarefree_prime_char<F: FiniteFieldElement>(f: &FFPoly<F>) -> Vec<(FFPoly<F>, usize)> {
     let mut result = Vec::new();
     if f.degree().unwrap_or(0) == 0 {
         return result;
@@ -430,19 +446,46 @@ fn pth_root<F: FiniteFieldElement>(f: &FFPoly<F>, p_usize: usize, sample: &F) ->
     FFPoly::new(out, sample.clone())
 }
 
-/// Distinct-degree factorization of a **square-free, monic** polynomial.
+/// MAGMA `DistinctDegreeFactorization(f)` (ch. 23 §23.8.1) of a squarefree
+/// `f` (it need not be monic).
 ///
-/// Returns a list of `(g_d, d)` pairs where `g_d` is the product of all monic
-/// irreducible factors of `f` of degree exactly `d`. The product of all `g_d`
-/// equals `f`.
+/// Returns a list of `(g_d, d)` pairs, `d` increasing, where `g_d` is the
+/// monic product of all irreducible factors of `f` of degree exactly `d`. The
+/// product of all `g_d` equals the monic part of `f`. A nonzero constant gives
+/// `vec![]`.
 ///
-/// The square-free precondition is **not checked** here: for a non-squarefree
-/// input the blocks need not be products of distinct irreducibles of degree
-/// `d` (the last one is not even tested). [`factor_squarefree`] checks it
-/// before calling this.
+/// # Panics
+/// In this order: the characteristic is not a prime (see the module docs);
+/// `f = 0` ("f = 0 is not squarefree"); `f` is not squarefree ("f is not
+/// squarefree"). Each message starts with
+/// "cantor_zassenhaus::distinct_degree_factorization: ". (Without the check a
+/// repeated factor of degree `d` was reported twice, or landed in a block of a
+/// higher degree.)
 pub fn distinct_degree_factorization<F: FiniteFieldElement>(
     f: &FFPoly<F>,
 ) -> Vec<(FFPoly<F>, usize)> {
+    const WHO: &str = "cantor_zassenhaus::distinct_degree_factorization";
+    if let Err(why) = check_prime_characteristic(f.sample()) {
+        panic!("{WHO}: {why}");
+    }
+    if f.is_zero() {
+        panic!("{WHO}: f = 0 is not squarefree");
+    }
+    if f.degree() == Some(0) {
+        return Vec::new();
+    }
+    let fm = f.make_monic();
+    if let Err(why) = squarefree_check(&fm) {
+        panic!("{WHO}: {why}");
+    }
+    ddf_squarefree(&fm)
+}
+
+/// The distinct-degree loop. Precondition (the caller's duty): `f` is monic,
+/// squarefree and over a field of prime characteristic. With `f` squarefree,
+/// after step `d` every factor of degree `<= d` is removed, so the remaining
+/// factor of degree `< 2(d + 1)` is irreducible ([vzGG] §14.2; [Rab80]).
+fn ddf_squarefree<F: FiniteFieldElement>(f: &FFPoly<F>) -> Vec<(FFPoly<F>, usize)> {
     let mut result = Vec::new();
     let sample = f.sample().clone();
     let q = sample.order();
@@ -492,7 +535,7 @@ pub fn distinct_degree_factorization<F: FiniteFieldElement>(
 ///
 /// # Panics
 /// In this order: the characteristic is not a prime (before any arithmetic;
-/// detected as described in the module docs, a proof below psi12);
+/// see the module docs);
 /// `f = 0`; `d < 1`; `d` does not divide `deg f`; `f` is not squarefree; `f`
 /// has an irreducible factor of degree other than `d` (including a reducible
 /// `f` of degree `d`) — each with the reason. Also (probability at most
@@ -529,16 +572,11 @@ fn factor_squarefree_prime_char<F: FiniteFieldElement>(
         return Ok(out);
     }
     let fm = f.make_monic();
-    // Over GF(q) a nonconstant f with f' = 0 is a p-th power, so this test is
-    // exact: f is squarefree iff f' != 0 and gcd(f, f') = 1.
-    let df = fm.derivative();
-    if df.is_zero() || fm.gcd(&df).degree() != Some(0) {
-        return Err("f is not squarefree");
-    }
+    squarefree_check(&fm)?;
     // With f squarefree over a field, every distinct-degree block is a product
     // of distinct irreducibles of its degree, so the equal-degree loop's
     // preconditions hold (it still certifies lazily).
-    for (g_d, d) in distinct_degree_factorization(&fm) {
+    for (g_d, d) in ddf_squarefree(&fm) {
         if d == 0 {
             continue;
         }
@@ -552,8 +590,8 @@ fn factor_squarefree_prime_char<F: FiniteFieldElement>(
 /// equal-degree factorization. A constant `f` (also `f = 0`) gives `vec![]`.
 ///
 /// # Panics
-/// If the characteristic is not a prime (checked first, a proof below psi12;
-/// see the module docs), or if `f` is not
+/// If the characteristic is not a prime (checked first; see the module
+/// docs), or if `f` is not
 /// squarefree (`f' = 0` or `deg gcd(f, f') > 0`; without this check such an
 /// input came back with a reducible "factor", e.g. `(x-1)^2` for `(x-1)^3`
 /// over GF(5)). Also (probability at most `2^-256` over a field) when a certified
@@ -577,7 +615,7 @@ pub fn factor_squarefree<F: FiniteFieldElement>(f: &FFPoly<F>) -> Vec<FFPoly<F>>
 ///
 /// # Panics
 /// If the characteristic is not a prime (checked first, before any
-/// arithmetic, a proof below psi12; see the module docs: a composite `PrimeField` modulus could otherwise make the
+/// arithmetic; see the module docs: a composite `PrimeField` modulus could otherwise make the
 /// squarefree split return only constant pieces, i.e. an empty factor list for
 /// a nonconstant `f`). Also (probability at most `2^-256` over a field) when a
 /// certified equal-degree block resists 256 uniform tries.
@@ -593,7 +631,8 @@ pub fn factor<F: FiniteFieldElement>(f: &FFPoly<F>) -> (F, Vec<(FFPoly<F>, usize
     let monic = f.make_monic();
 
     let mut factors: Vec<(FFPoly<F>, usize)> = Vec::new();
-    for (sqf, mult) in squarefree_factorization(&monic) {
+    // The characteristic is checked above.
+    for (sqf, mult) in squarefree_prime_char(&monic) {
         let irreducibles = factor_squarefree_prime_char(&sqf).unwrap_or_else(|why| {
             panic!(
                 "cantor_zassenhaus::factor: a part returned by squarefree_factorization \
@@ -1213,5 +1252,100 @@ mod tests {
             edf_contract(&poly(&[1, 0, 1], 15), 1),
             Err("characteristic 15 is not a prime".to_string())
         );
+    }
+
+    /// The panic message of `f`, which must panic.
+    fn panic_message<T>(f: impl FnOnce() -> T + std::panic::UnwindSafe) -> String {
+        let err = match std::panic::catch_unwind(f) {
+            Ok(_) => panic!("expected a panic"),
+            Err(e) => e,
+        };
+        if let Some(s) = err.downcast_ref::<String>() {
+            s.clone()
+        } else if let Some(s) = err.downcast_ref::<&str>() {
+            s.to_string()
+        } else {
+            String::from("<non-string panic>")
+        }
+    }
+
+    /// MAGMA defines DistinctDegreeFactorization only for a squarefree f (ch. 23 §23.8.1).
+    /// HEAD returned [(x+1,1),(x+1,1)] for (x+1)^2 mod 5, [(x^2+1,2),(x^2+1,2)] for
+    /// (x^2+1)^2 mod 3, [(x+1,1),(x^5+x^4+x+1,2)] for (x+1)^2(x^2+2)(x^2+3) mod 5 (gp
+    /// factormod(x^5+x^4+x+1,5) has the linear factor x+1), and [(x,1),(x,1)] for x^2 mod 2.
+    /// gp: Vecrev(lift(Mod(1,5)*(x+1)^2*(x^2+2)*(x^2+3))) = [1,2,1,0,1,2,1],
+    ///     Vecrev(lift(Mod(1,3)*(x^2+1)^2)) = [1,0,2,0,1].
+    #[test]
+    fn ddf_rejects_non_squarefree() {
+        let rows: [(&[i64], i64); 4] = [
+            (&[1, 2, 1], 5),
+            (&[1, 0, 2, 0, 1], 3),
+            (&[1, 2, 1, 0, 1, 2, 1], 5),
+            (&[0, 0, 1], 2),
+        ];
+        for (v, p) in rows {
+            let f = poly(v, p);
+            assert_eq!(
+                panic_message(|| distinct_degree_factorization(&f)),
+                "cantor_zassenhaus::distinct_degree_factorization: f is not squarefree",
+                "{v:?} mod {p}"
+            );
+        }
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "cantor_zassenhaus::distinct_degree_factorization: f = 0 is not squarefree"
+    )]
+    fn ddf_rejects_zero() {
+        let _ = distinct_degree_factorization(&poly(&[0], 5));
+    }
+
+    /// HEAD: [(x^2+1, 2)], "irreducible of degree 2" over Z/15 (gp: x^2+1 is irreducible
+    /// mod 3, factormod(x^2+1,5) = (x+2)(x+3)).
+    #[test]
+    #[should_panic(
+        expected = "cantor_zassenhaus::distinct_degree_factorization: characteristic 15 is not a prime"
+    )]
+    fn ddf_rejects_composite_characteristic() {
+        let _ = distinct_degree_factorization(&poly(&[1, 0, 1], 15));
+    }
+
+    /// HEAD: [(x^2+1, 1)] over Z/15, and a panic deep in a gcd over Z/4.
+    #[test]
+    fn squarefree_factorization_rejects_composite_characteristic() {
+        assert_eq!(
+            panic_message(|| squarefree_factorization(&poly(&[1, 0, 1], 15))),
+            "cantor_zassenhaus::squarefree_factorization: characteristic 15 is not a prime"
+        );
+        assert_eq!(
+            panic_message(|| squarefree_factorization(&poly(&[1, 2, 1], 4))),
+            "cantor_zassenhaus::squarefree_factorization: characteristic 4 is not a prime"
+        );
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "cantor_zassenhaus::squarefree_factorization: characteristic 0 is not a prime"
+    )]
+    fn squarefree_factorization_rejects_the_sentinel() {
+        use rustmath_core::Ring;
+        let z = <PrimeField as Ring>::zero();
+        let o = <PrimeField as Ring>::one();
+        let _ = squarefree_factorization(&FFPoly::new(vec![o.clone(), z.clone(), o], z));
+    }
+
+    /// gp: factormod(x^5+x^4+x+1, 5) = (x+1)(x^2+2)(x^2+3), and
+    /// lift(Mod(1,5)*(x^2+2)*(x^2+3)) = x^4 + 1. A constant has no factor.
+    #[test]
+    fn ddf_squarefree_matches_pari() {
+        let ddf = distinct_degree_factorization(&poly(&[1, 1, 0, 0, 1, 1], 5));
+        let got: Vec<(Vec<Integer>, usize)> = ddf.iter().map(|(g, d)| (vals(g), *d)).collect();
+        assert_eq!(got, vec![(ints(&[1, 1]), 1), (ints(&[1, 0, 0, 0, 1]), 2)]);
+        // not monic: 3(x^5+x^4+x+1) gives the same monic blocks
+        let ddf3 = distinct_degree_factorization(&poly(&[3, 3, 0, 0, 3, 3], 5));
+        let got3: Vec<(Vec<Integer>, usize)> = ddf3.iter().map(|(g, d)| (vals(g), *d)).collect();
+        assert_eq!(got3, got);
+        assert!(distinct_degree_factorization(&poly(&[3], 5)).is_empty());
     }
 }

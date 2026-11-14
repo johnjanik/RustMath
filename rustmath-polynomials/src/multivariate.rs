@@ -284,11 +284,49 @@ impl fmt::Display for Monomial {
 /// A multivariate polynomial over a ring R
 ///
 /// Represented as a map from monomials to coefficients
-#[derive(Clone, Debug, PartialEq)]
+///
+/// # Unbound constants
+///
+/// Some coefficient types (the parent-carrying elements of rustmath-finitefields) return
+/// from the static `R::zero()`/`R::one()` an unbound integer constant (see
+/// [`Ring::is_unbound_constant`]). [`Self::add_term`], through which every operation builds
+/// its result, binds them: an unbound coefficient entering a bound map is bound on entry, a
+/// bound coefficient entering an unbound map binds the whole map once
+/// ([`Ring::bind_to_parent_of`]), and terms that become zero are dropped. Invariant: every
+/// stored coefficient is bound, or none is. So `(x_0 + 1)^8 - x_0^8 + w` over GR(8, 2) built
+/// from [`Self::variable`] has 4 terms. Equality coerces: a bound map and an unbound one are
+/// compared after binding the unbound one. A zero polynomial (the empty map) carries no
+/// parent, so an unbound map that would become zero in some ring is not equal to it: it is
+/// a nonzero element of Z\[x_0, x_1, ...\].
+#[derive(Clone, Debug)]
 pub struct MultivariatePolynomial<R: Ring> {
     /// Map from monomial to coefficient
     /// Only non-zero coefficients are stored
     terms: BTreeMap<Monomial, R>,
+}
+
+impl<R: Ring> PartialEq for MultivariatePolynomial<R> {
+    /// Termwise. Over a coefficient type with unbound constants, when exactly one side has a
+    /// bound coefficient and the other side is nonzero, the other side is bound to it first
+    /// (see the type docs).
+    fn eq(&self, other: &Self) -> bool {
+        if !R::HAS_UNBOUND_CONSTANTS {
+            return self.terms == other.terms;
+        }
+        match (self.bound_model(), other.bound_model()) {
+            (Some(m), None) if !other.terms.is_empty() => {
+                let mut o = other.clone();
+                o.bind_all(m);
+                self.terms == o.terms
+            }
+            (None, Some(m)) if !self.terms.is_empty() => {
+                let mut s = self.clone();
+                s.bind_all(m);
+                s.terms == other.terms
+            }
+            _ => self.terms == other.terms,
+        }
+    }
 }
 
 /// Type alias for convenience
@@ -320,10 +358,49 @@ impl<R: Ring> MultivariatePolynomial<R> {
         MultivariatePolynomial { terms }
     }
 
-    /// Add a term to the polynomial
+    /// The first stored coefficient when it is bound (by the invariant of the type docs it
+    /// decides for all); `None` when it is unbound, when the map is empty, and always for a
+    /// coefficient type without unbound constants.
+    fn bound_model(&self) -> Option<&R> {
+        if !R::HAS_UNBOUND_CONSTANTS {
+            return None;
+        }
+        self.terms.values().next().filter(|c| !c.is_unbound_constant())
+    }
+
+    /// Binds every stored (unbound) coefficient to the parent of `model` and drops the terms
+    /// that become zero.
+    fn bind_all(&mut self, model: &R) {
+        let old = std::mem::take(&mut self.terms);
+        for (m, c) in old {
+            let b = c.bind_to_parent_of(model).unwrap_or(c);
+            if !b.is_zero() {
+                self.terms.insert(m, b);
+            }
+        }
+    }
+
+    /// Add a term to the polynomial. Over a coefficient type with unbound constants this
+    /// binds first (see the type docs).
     pub fn add_term(&mut self, monomial: Monomial, coeff: R) {
         if coeff.is_zero() {
             return;
+        }
+        let mut coeff = coeff;
+        if R::HAS_UNBOUND_CONSTANTS && !self.terms.is_empty() {
+            let coeff_unbound = coeff.is_unbound_constant();
+            match self.bound_model() {
+                Some(model) if coeff_unbound => {
+                    if let Some(b) = coeff.bind_to_parent_of(model) {
+                        coeff = b;
+                    }
+                    if coeff.is_zero() {
+                        return;
+                    }
+                }
+                None if !coeff_unbound => self.bind_all(&coeff),
+                _ => {}
+            }
         }
 
         // Clone monomial for potential removal later
@@ -337,9 +414,19 @@ impl<R: Ring> MultivariatePolynomial<R> {
         }
     }
 
-    /// Get the coefficient of a monomial
+    /// Get the coefficient of a monomial. A missing monomial gives zero, bound to the parent
+    /// of the stored coefficients when they are bound.
     pub fn coefficient(&self, monomial: &Monomial) -> R {
-        self.terms.get(monomial).cloned().unwrap_or_else(|| R::zero())
+        match self.terms.get(monomial) {
+            Some(c) => c.clone(),
+            None => {
+                let z = R::zero();
+                match self.bound_model() {
+                    Some(m) => z.bind_to_parent_of(m).unwrap_or(z),
+                    None => z,
+                }
+            }
+        }
     }
 
     /// Get the total degree of the polynomial

@@ -40,6 +40,20 @@ use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 use std::sync::OnceLock;
 
 /// Univariate polynomial over a ring R
+///
+/// # Unbound constants
+///
+/// Some coefficient types (the parent-carrying elements of rustmath-finitefields) return
+/// from the static `R::zero()`/`R::one()` an unbound integer constant (see
+/// [`Ring::is_unbound_constant`]). [`Self::new`], the only constructor, binds every unbound
+/// coefficient to the parent of a bound coefficient ([`Ring::bind_to_parent_of`]) before it
+/// trims. Invariant: if some coefficient is bound, every coefficient has been through the
+/// binding; for scalar coefficient types no coefficient is then unbound (only zero
+/// containers stay unbound, and they are 0 in every ring). So `(x + 1)^8 - x^8 + w` over
+/// GR(8, 2) built from `var()` and `R::one()` has degree 6. A polynomial with only unbound
+/// coefficients stays the image of an element of Z\[x\] until it meets a bound one.
+/// Equality coerces across lengths: a bound polynomial and an unbound one are compared after
+/// binding the unbound one.
 #[derive(Clone)]
 pub struct UnivariatePolynomial<R: Ring> {
     /// Coefficients in increasing degree order: [a0, a1, a2, ...] represents a0 + a1*x + a2*x^2 + ...
@@ -53,16 +67,63 @@ pub struct UnivariatePolynomial<R: Ring> {
 }
 
 impl<R: Ring> PartialEq for UnivariatePolynomial<R> {
+    /// Coefficientwise. The coefficient `==` of the sentinel types coerces, so equal lengths
+    /// give the same answer as binding first: if binding would shorten the unbound side, its
+    /// top coefficient binds to 0 while the bound side's top coefficient is nonzero, and that
+    /// pair already compares unequal. Different lengths over a type with unbound constants:
+    /// when exactly one side has a bound coefficient, the other side is bound to it (through
+    /// [`Self::new`], which trims) and the coefficients are compared. Otherwise different
+    /// lengths mean different degrees.
     fn eq(&self, other: &Self) -> bool {
-        self.coeffs == other.coeffs
+        if self.coeffs.len() == other.coeffs.len() || !R::HAS_UNBOUND_CONSTANTS {
+            return self.coeffs == other.coeffs;
+        }
+        match (bound_model(&self.coeffs), bound_model(&other.coeffs)) {
+            (Some(m), None) => self.coeffs == bind_coefficients(&other.coeffs, m).coeffs,
+            (None, Some(m)) => bind_coefficients(&self.coeffs, m).coeffs == other.coeffs,
+            _ => false,
+        }
     }
+}
+
+/// The first bound coefficient (`!is_unbound_constant()`), or `None`; always `None` for a
+/// type without unbound constants. It scans instead of reading `coeffs[0]`, because a
+/// coefficient type may have a zero that carries no parent (a zero `LaurentPolynomial` is an
+/// empty map and stays unbound after binding).
+fn bound_model<R: Ring>(coeffs: &[R]) -> Option<&R> {
+    if !R::HAS_UNBOUND_CONSTANTS {
+        return None;
+    }
+    coeffs.iter().find(|c| !c.is_unbound_constant())
+}
+
+/// `coeffs` with every unbound coefficient bound to the parent of `model`, as a polynomial.
+fn bind_coefficients<R: Ring>(coeffs: &[R], model: &R) -> UnivariatePolynomial<R> {
+    UnivariatePolynomial::new(
+        coeffs
+            .iter()
+            .map(|c| c.bind_to_parent_of(model).unwrap_or_else(|| c.clone()))
+            .collect(),
+    )
 }
 
 impl<R: Ring + Eq> Eq for UnivariatePolynomial<R> {}
 
 impl<R: Ring> UnivariatePolynomial<R> {
-    /// Create a new polynomial from coefficients
+    /// Create a new polynomial from coefficients (lowest degree first). When the coefficient
+    /// type has unbound constants and some coefficient is bound, every unbound coefficient is
+    /// first bound to that coefficient's parent (see the type docs), so trimming sees the
+    /// bound values.
     pub fn new(mut coeffs: Vec<R>) -> Self {
+        if R::HAS_UNBOUND_CONSTANTS {
+            if let Some(model) = bound_model(&coeffs).cloned() {
+                for c in coeffs.iter_mut() {
+                    if let Some(b) = c.bind_to_parent_of(&model) {
+                        *c = b;
+                    }
+                }
+            }
+        }
         // Remove leading zeros
         while coeffs.len() > 1 && coeffs.last().is_some_and(|c| c.is_zero()) {
             coeffs.pop();
@@ -108,11 +169,18 @@ impl<R: Ring> UnivariatePolynomial<R> {
     }
 
     /// The coefficient of `x^degree` (MAGMA `Coefficient(p, i)`, Handbook ch. 23 §23.4.5):
-    /// zero when `degree` exceeds the degree of `self`.
+    /// zero when `degree` exceeds the degree of `self`. For a polynomial with a bound
+    /// coefficient that zero is bound to the same parent.
     pub fn coeff(&self, degree: usize) -> &R {
         match self.coeffs.get(degree) {
             Some(c) => c,
-            None => self.zero.get_or_init(R::zero),
+            None => self.zero.get_or_init(|| {
+                let z = R::zero();
+                match bound_model(&self.coeffs) {
+                    Some(m) => z.bind_to_parent_of(m).unwrap_or(z),
+                    None => z,
+                }
+            }),
         }
     }
 
@@ -1113,6 +1181,23 @@ impl<R: Ring> Ring for UnivariatePolynomial<R> {
     /// `R[x]` is commutative iff `R` is.
     fn static_is_commutative() -> Option<bool> {
         R::static_is_commutative()
+    }
+
+    const HAS_UNBOUND_CONSTANTS: bool = R::HAS_UNBOUND_CONSTANTS;
+
+    /// No coefficient is bound: the image of an element of Z\[x\] (the zero polynomial of
+    /// an unbound zero counts).
+    fn is_unbound_constant(&self) -> bool {
+        R::HAS_UNBOUND_CONSTANTS && self.coeffs.iter().all(|c| c.is_unbound_constant())
+    }
+
+    /// When `self` is unbound and `model` has a bound coefficient: `self` with every
+    /// coefficient bound to that coefficient's parent (and trimmed). Otherwise `None`.
+    fn bind_to_parent_of(&self, model: &Self) -> Option<Self> {
+        if !self.is_unbound_constant() {
+            return None;
+        }
+        bound_model(&model.coeffs).map(|m| bind_coefficients(&self.coeffs, m))
     }
 }
 

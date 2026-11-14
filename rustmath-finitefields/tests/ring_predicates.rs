@@ -234,7 +234,7 @@ fn gf1013_order_beyond_1000() {
     assert_eq!(f.from_int(int(3)).multiplicative_order_status(), MultiplicativeOrder::Finite(1012));
 }
 
-// p = 12*2^64 + 1, p - 1 = 2^66 * 3 (so the trial-division factoriser is instant).
+// p = 12*2^64 + 1, p - 1 = 2^66 * 3 (so the capped factorization of the hook is instant).
 // PARI: isprime(p) -> 1; znorder(Mod(2,p)) -> 110680464442257309696 (> 2^64 - 1);
 //       t = lift(Mod(10,p)^(2^64)) -> 128622681397817100675; znorder(Mod(t,p)) -> 12.
 #[test]
@@ -558,4 +558,30 @@ fn trait_defaults_on_galois_ring_do_not_panic() {
     let zero = GrDefaults(r.zero());
     assert_eq!(hooks(&zero), (Some(false), Some(true), MultiplicativeOrder::NotAUnit));
     assert_eq!(zero.unit_inverse(), Err(MathError::NotInvertible));
+}
+
+// The finite-ring element types report `static_is_commutative() = Some(true)`, so the
+// polynomial hooks use the commutative rules (Atiyah-Macdonald, Ch. 1, Exercise 2: f is a
+// unit iff a_0 is a unit and a_1, ..., a_n are nilpotent). Before, they kept the default
+// `None` and 1 + 2t over Z/8 was undecided.
+// PARI: lift(Mod(1,8)*(1+2*t)*(1+6*t+4*t^2)) -> 1; lift(Mod(1,8)*(2+4*t)^3) -> 0.
+#[test]
+fn polynomial_hooks_use_commutativity_of_finite_rings() {
+    assert_eq!(<IntegerMod as Ring>::static_is_commutative(), Some(true));
+    assert_eq!(<PrimeField as Ring>::static_is_commutative(), Some(true));
+    assert_eq!(<FiniteFieldElement as Ring>::static_is_commutative(), Some(true));
+    assert_eq!(<GaloisRingElement as Ring>::static_is_commutative(), Some(true));
+    assert_eq!(<ExtensionField as Ring>::static_is_commutative(), Some(true));
+    type P = UnivariatePolynomial<IntegerMod>;
+    let f = P::new(vec![imod(1, 8), imod(2, 8)]);
+    assert_eq!(f.unit_status(), Some(true));
+    assert_eq!(
+        f.unit_inverse().unwrap(),
+        P::new(vec![imod(1, 8), imod(6, 8), imod(4, 8)])
+    );
+    let g = P::new(vec![imod(2, 8), imod(4, 8)]);
+    assert_eq!(g.nilpotent_status(), Some(true));
+    assert_eq!(g.unit_status(), Some(false));
+    // 1 + 3t: 3 is a unit, not nilpotent, so 1 + 3t is not a unit over Z/8.
+    assert_eq!(P::new(vec![imod(1, 8), imod(3, 8)]).unit_status(), Some(false));
 }

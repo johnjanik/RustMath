@@ -93,7 +93,8 @@ pub trait Ring:
     //
     // These are three-valued: `Some(true)` / `Some(false)` (or a decided
     // `MultiplicativeOrder`) are proofs; `None` / `MultiplicativeOrder::Undecided` mean
-    // that this element type cannot decide. A concrete ring that can decide overrides them
+    // that this element type cannot decide (or, for a hook with a cost cap, did not decide
+    // within it). A concrete ring that can decide overrides them
     // in its own `impl Ring`. The defaults use only the ring axioms, never a search, and
     // never a static constructor (`Self::one()` panics for parent-carrying types such as the
     // p-adic elements, and is an unbound integer constant for others such as Galois-ring and
@@ -200,6 +201,44 @@ pub trait Ring:
     fn static_is_commutative() -> Option<bool> {
         None
     }
+
+    // --- Unbound integer constants (RustMath; MAGMA has none) -----------------------------
+    //
+    // The parent-carrying element types of rustmath-finitefields (`IntegerMod` and
+    // `PrimeField` with modulus 0, `FiniteFieldElement`, `GaloisRingElement`,
+    // `ExtensionField`) return from the static `zero()`/`one()` an integer constant c that
+    // awaits the canonical map Z -> R (MAGMA ch. 48 §48.2.3: `R ! a`). Arithmetic binds such
+    // a constant on contact with a bound element. Containers bind their unbound entries to
+    // the parent of a bound sibling with these three hooks.
+
+    /// Whether values of this type can be unbound constants. Default `false`; containers skip
+    /// all binding work for such types (a compile-time constant). A container over `R` sets it
+    /// to `R::HAS_UNBOUND_CONSTANTS`.
+    const HAS_UNBOUND_CONSTANTS: bool = false;
+
+    /// Whether `self` is an unbound constant: a value without a parent that stands for the
+    /// image of an integer under the canonical map Z -> R (the static `zero()`/`one()` of a
+    /// parent-carrying type, and everything computed from such values alone).
+    ///
+    /// For a container over such a type (a polynomial in R\[x\] or R\[x, x^-1\]) it means that
+    /// no coefficient is bound: the value is the image of an element of Z\[x\] (or
+    /// Z\[x, x^-1\]). A zero container with no stored coefficient counts as unbound, since it
+    /// is 0 in every ring. Default `false`.
+    fn is_unbound_constant(&self) -> bool {
+        false
+    }
+
+    /// The image of `self` under the canonical map into the parent of `model`.
+    ///
+    /// Contract: for a type with `HAS_UNBOUND_CONSTANTS`, this is `Some(..)` exactly when
+    /// `self.is_unbound_constant()` and `!model.is_unbound_constant()`; it is `None`
+    /// otherwise, and always `None` for types without unbound constants (the default). A
+    /// container maps coefficient by coefficient (to the parent of one of `model`'s bound
+    /// coefficients) and drops the coefficients that become zero.
+    fn bind_to_parent_of(&self, model: &Self) -> Option<Self> {
+        let _ = model;
+        None
+    }
 }
 
 /// The multiplicative order of a ring element, see [`Ring::multiplicative_order_status`]
@@ -218,7 +257,11 @@ pub enum MultiplicativeOrder {
     Infinite,
     /// Not a unit, so the order is undefined (MAGMA `Order` returns 0 in Z/mZ, Ch. 19).
     NotAUnit,
-    /// This element type cannot decide.
+    /// Not decided. Either the element type cannot decide, or deciding needs work beyond the
+    /// hook's cost cap (the finite-ring types of rustmath-finitefields: a factorization of the
+    /// group exponent with proven prime factors; their exact inherent `multiplicative_order()`
+    /// decides). A capped `Undecided` can become a decided answer later in the same process,
+    /// when cached work makes it cheap; both answers are honest.
     Undecided,
 }
 
@@ -704,6 +747,18 @@ mod tests {
     use super::{MathError, MultiplicativeOrder, Ring};
     use std::fmt;
     use std::ops::{Add, Mul, Neg, Sub};
+
+    // The unbound-constant hooks (F1 item 7) are inert for every type that keeps the
+    // defaults: no unbound constants, and nothing to bind.
+    #[test]
+    fn default_hooks_are_inert() {
+        const { assert!(!<i32 as Ring>::HAS_UNBOUND_CONSTANTS) };
+        const { assert!(!<i64 as Ring>::HAS_UNBOUND_CONSTANTS) };
+        assert!(!5i32.is_unbound_constant());
+        assert!(!0i64.is_unbound_constant());
+        assert_eq!(5i32.bind_to_parent_of(&3), None);
+        assert_eq!(1i64.bind_to_parent_of(&-1), None);
+    }
 
     #[test]
     fn test_pow() {

@@ -350,3 +350,96 @@ fn eq_transitivity_corner_is_exactly_as_documented() {
     assert_eq!(FiniteFieldElement::zero(), f7.zero());
     assert_ne!(f4.zero(), f7.zero());
 }
+
+/// The containers of rustmath-polynomials bind unbound constants (`Ring::bind_to_parent_of`)
+/// to the parent of a bound coefficient, so degrees, zero tests and equality follow the bound
+/// ring. Built from `var()` and `R::one()` (HEAD kept unbound integers, degrees 2, 7, 1 and
+/// 3 terms). gp: lift(Mod(1,3)*((x+1)^3 - x^3 + 2)) = 0;
+/// lift(Mod(1,8)*((x+1)^8 - x^8 + 1)) = 4*x^6 + 6*x^4 + 4*x^2 + 2;
+/// w=ffgen(Mod(1,2)*(t^2+t+1),'t); (w^0)*((x+1)^2-x^2) + w = t + 1;
+/// lift(Mod(1,3)*((x+y)^3 - x^3 - y^3 + 2*x*y)) = 2*y*x.
+#[test]
+fn containers_bind_unbound_constants() {
+    use rustmath_polynomials::{Monomial, MultivariatePolynomial};
+    fn pow<T: Clone + std::ops::Mul<Output = T>>(x: &T, one: T, k: u32) -> T {
+        (0..k).fold(one, |acc, _| acc * x.clone())
+    }
+
+    // GF(3): (x + 1)^3 - x^3 + 2 = 0.
+    type P3 = UnivariatePolynomial<PrimeField>;
+    let x = P3::var();
+    let one = P3::constant(PrimeField::one());
+    let p3 = pow(&(x.clone() + one.clone()), one.clone(), 3) - pow(&x, one.clone(), 3)
+        + P3::constant(PrimeField::new(Integer::from(2), Integer::from(3)).unwrap());
+    assert!(p3.is_zero());
+    assert_eq!(p3.degree(), None);
+
+    // Z/8: (x + 1)^8 - x^8 + 1 = 2 + 4x^2 + 6x^4 + 4x^6.
+    type P8 = UnivariatePolynomial<IntegerMod>;
+    let x = P8::var();
+    let one = P8::constant(<IntegerMod as Ring>::one());
+    let p8 = pow(&(x.clone() + one.clone()), one.clone(), 8) - pow(&x, one.clone(), 8)
+        + P8::constant(IntegerMod::new(Integer::from(1), Integer::from(8)).unwrap());
+    assert_eq!(p8.degree(), Some(6));
+    let vals: Vec<(Integer, Integer)> = p8
+        .coefficients()
+        .iter()
+        .map(|c| (c.value().clone(), c.modulus().clone()))
+        .collect();
+    let want: Vec<(Integer, Integer)> = [2, 0, 4, 0, 6, 0, 4]
+        .iter()
+        .map(|&v| (Integer::from(v), Integer::from(8)))
+        .collect();
+    assert_eq!(vals, want);
+
+    // GF(4): (x + 1)^2 - x^2 + w = 1 + w, a constant.
+    let f4 = FiniteField::new(Integer::from(2), 2).unwrap();
+    let w = f4.generator();
+    type P4 = UnivariatePolynomial<FiniteFieldElement>;
+    let x = P4::var();
+    let one = P4::constant(FiniteFieldElement::one());
+    let p4 = pow(&(x.clone() + one.clone()), one.clone(), 2) - pow(&x, one.clone(), 2)
+        + P4::constant(w.clone());
+    assert_eq!(p4.degree(), Some(0));
+    assert_eq!(p4, P4::constant(f4.one() + w));
+
+    // Multivariate over GF(3): (x + y)^3 - x^3 - y^3 + 2xy = 2xy (one term).
+    type M3 = MultivariatePolynomial<PrimeField>;
+    let mx = M3::variable(0);
+    let my = M3::variable(1);
+    let mone = M3::constant(PrimeField::one());
+    let two = M3::constant(PrimeField::new(Integer::from(2), Integer::from(3)).unwrap());
+    let m = pow(&(mx.clone() + my.clone()), mone.clone(), 3)
+        - pow(&mx, mone.clone(), 3)
+        - pow(&my, mone, 3)
+        + two * mx * my;
+    assert_eq!(m.num_terms(), 1);
+    let xy = Monomial::variable(0, 1).mul(&Monomial::variable(1, 1));
+    assert_eq!(m.coefficient(&xy), gf3(2));
+}
+
+fn gf3(v: i64) -> PrimeField {
+    PrimeField::new(Integer::from(v), Integer::from(3)).unwrap()
+}
+
+/// Nested containers bind too: in R[x][y] over GF(7), an inner polynomial with only unbound
+/// coefficients is bound to the field of a bound sibling.
+#[test]
+fn nested_polynomials_bind() {
+    type P = UnivariatePolynomial<PrimeField>;
+    type Q = UnivariatePolynomial<P>;
+    // A = (x + 1)^2 = 1 + 2x + x^2, all unbound; B = 3 in GF(7), bound.
+    let x = P::var();
+    let a = (x.clone() + P::constant(PrimeField::one())) * (x + P::constant(PrimeField::one()));
+    assert!(a.coefficients().iter().all(|c| c.modulus().is_zero()));
+    let b = P::constant(gf7(3));
+    let f = Q::new(vec![a, b]);
+    for inner in f.coefficients() {
+        assert!(inner.coefficients().iter().all(|c| c.modulus() == &Integer::from(7)));
+    }
+    assert_eq!(
+        f.coefficients()[0],
+        P::new(vec![gf7(1), gf7(2), gf7(1)])
+    );
+    assert!(!f.is_unbound_constant());
+}

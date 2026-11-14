@@ -45,7 +45,6 @@ use rustmath_core::{
     CommutativeRing, Field, MathError, NumericConversion, Parent, Result, Ring, UniqueCache,
     UniqueRepresentation,
 };
-use rustmath_integers::prime::factor;
 use rustmath_integers::Integer;
 
 use crate::conway::conway_polynomial;
@@ -173,8 +172,8 @@ impl FiniteField {
             };
             return Ok(Self::from_data(FiniteFieldData { p, n, modulus }));
         }
-        // Otherwise search for an irreducible of degree n.
-        let modulus = crate::poly_factor::find_irreducible(&p, n)?;
+        // Otherwise search for an irreducible of degree n (p is proven prime above).
+        let modulus = crate::poly_factor::find_irreducible_unchecked(&p, n)?;
         Ok(Self::from_data(FiniteFieldData { p, n, modulus }))
     }
 
@@ -199,7 +198,8 @@ impl FiniteField {
                 "defining polynomial must be monic".into(),
             ));
         }
-        if n >= 2 && !crate::poly_factor::is_irreducible_fp(&reduced, &p) {
+        // p is proven prime above.
+        if n >= 2 && !crate::poly_factor::is_irreducible_fp_unchecked(&reduced, &p) {
             return Err(MathError::InvalidArgument(
                 "defining polynomial is not irreducible over F_p".into(),
             ));
@@ -417,6 +417,12 @@ impl Parent for FiniteField {
 ///   compare in Z (equal iff their constants are); two bound elements are
 ///   equal iff same field *and* same coefficients (cross-field stays
 ///   `false`, as before).
+/// * **containers**: `UnivariatePolynomial` (on construction), `MultivariatePolynomial` and
+///   `LaurentPolynomial` (in `add_term`) bind every unbound coefficient to the parent of a
+///   bound coefficient ([`Ring::bind_to_parent_of`]) and drop the terms that become zero. A
+///   container with only unbound coefficients stays over Z until it meets a bound element.
+///   The generic containers of rustmath-matrix, rustmath-powerseries and rustmath-rings
+///   still bind entry by entry.
 /// * operations that *need* the parent field ([`Self::field`],
 ///   [`Self::frobenius`], [`Self::norm`], [`Self::trace`], ...) panic on an
 ///   unbound element with a precise message rather than fabricate an answer.
@@ -600,33 +606,233 @@ impl FiniteFieldElement {
             .collect()
     }
 
-    /// The multiplicative order of a non-zero element (divides `p^n - 1`).
-    pub fn multiplicative_order(&self) -> Option<Integer> {
+    /// The order of `self`, factored, through the shared group-order code: `Ok(None)` for 0;
+    /// 1 and -1 (when `p != 2`) need no factoring; otherwise H. Cohen, GTM 138, Alg. 1.4.3
+    /// on `q - 1` factored as `∏_{d | n} Φ_d(p)` with the given effort.
+    pub(crate) fn order_factored(
+        &self,
+        effort: crate::group_order::Effort,
+    ) -> std::result::Result<Option<crate::group_order::Factored>, String> {
         if self.is_zero() {
-            return None;
+            return Ok(None);
         }
-        let group_order = self.require_field("multiplicative_order").order() - Integer::one();
-        // Start from the full group order and strip prime factors.
-        let mut order = group_order.clone();
-        for (prime, mult) in factor(&group_order) {
-            for _ in 0..mult {
-                let candidate = order.clone() / prime.clone();
-                if self.pow_int(&candidate).is_one() {
-                    order = candidate;
-                } else {
-                    break;
-                }
-            }
-        }
-        Some(order)
+        let field = self.require_field("multiplicative_order").clone();
+        let p = field.characteristic().clone();
+        let n = field.degree();
+        let minus_one = p != Integer::from(2) && (self.clone() + field.one()).is_zero();
+        crate::group_order::unit_order(
+            self,
+            minus_one,
+            || crate::group_order::field_group_order(&p, n, effort),
+            |x, e| x.pow_int(e),
+            |x| x.is_one(),
+        )
+        .map(Some)
     }
 
-    /// Whether the element generates `GF(p^n)^*` (a primitive element).
-    pub fn is_primitive(&self) -> bool {
-        match self.multiplicative_order() {
-            Some(o) => o == self.require_field("is_primitive").order() - Integer::one(),
-            None => false,
+    /// MAGMA `Order(a)` (ch. 21 §21.4.7): the multiplicative order of a non-zero element
+    /// (it divides `p^n - 1`); `None` for 0.
+    ///
+    /// Exact: H. Cohen, GTM 138, Alg. 1.4.3 on `q - 1 = ∏_{d | n} Φ_d(p)` (each cyclotomic
+    /// value factored on its own, the algebraic split of the Cunningham tables), with every
+    /// prime proven. 1 and -1 need no factoring.
+    ///
+    /// # Cost
+    /// The factorization of each `Φ_d(p)` with MAGMA's default limits (the sieve without a
+    /// digit limit; cached for the process), then a few exponentiations in `GF(q)` per prime;
+    /// no time bound.
+    ///
+    /// # Panics
+    /// For an unbound element (it needs the parent field), and when a prime factor of
+    /// `q - 1` has no primality proof (an unresolved ECPP proof), with
+    /// "FiniteFieldElement::multiplicative_order: {why}".
+    pub fn multiplicative_order(&self) -> Option<Integer> {
+        match self.order_factored(crate::group_order::Effort::Complete) {
+            Ok(f) => f.map(|f| crate::group_order::product(&f)),
+            Err(why) => panic!("FiniteFieldElement::multiplicative_order: {why}"),
         }
+    }
+
+    /// MAGMA `FactoredOrder(a)` (ch. 21 §21.4.7): the multiplicative order as a
+    /// factorization, ascending primes with exponents. `None` for 0; `Some(vec![])` for 1
+    /// (MAGMA returns the empty sequence; PARI `factor(1)` is `matrix(0,2)`).
+    ///
+    /// # Panics
+    /// As [`FiniteFieldElement::multiplicative_order`], with
+    /// "FiniteFieldElement::factored_multiplicative_order: {why}".
+    pub fn factored_multiplicative_order(&self) -> Option<Vec<(Integer, u32)>> {
+        self.order_factored(crate::group_order::Effort::Complete)
+            .unwrap_or_else(|why| panic!("FiniteFieldElement::factored_multiplicative_order: {why}"))
+    }
+
+    /// MAGMA `IsPrimitive(a)` (ch. 21 §21.4.4): whether the element generates `GF(p^n)^*`.
+    /// True iff `a != 0` and `a^((q-1)/r) != 1` for every prime `r | q - 1` (H. Cohen,
+    /// GTM 138, Alg. 1.4.4); no order is computed. In GF(2), 1 is primitive (`q - 1 = 1`
+    /// has no prime divisor).
+    ///
+    /// # Panics
+    /// For an unbound element, and when a prime factor of `q - 1` has no primality proof
+    /// (an unresolved ECPP proof), with "FiniteFieldElement::is_primitive: {why}".
+    pub fn is_primitive(&self) -> bool {
+        if self.is_zero() {
+            return false;
+        }
+        let field = self.require_field("is_primitive").clone();
+        let h = crate::group_order::field_group_order(
+            field.characteristic(),
+            field.degree(),
+            crate::group_order::Effort::Complete,
+        )
+        .unwrap_or_else(|why| panic!("FiniteFieldElement::is_primitive: {why}"));
+        let q1 = field.order() - Integer::one();
+        h.iter()
+            .all(|(r, _)| !self.pow_int(&(q1.clone() / r.clone())).is_one())
+    }
+
+    /// MAGMA `IsSquare(a)` (ch. 21 §21.4.4): whether `self` is a square in its field. 0 is a
+    /// square; in characteristic 2 every element is (the Frobenius is a bijection); for odd
+    /// `q` Euler's criterion decides: `a != 0` is a square iff `a^((q-1)/2) = 1`
+    /// (`GF(q)^*` is cyclic of even order). The root comes from [`Self::sqrt`].
+    ///
+    /// # Panics
+    /// For an unbound element (it needs the parent field, see the type docs).
+    pub fn is_square(&self) -> bool {
+        let field = self.require_field("is_square");
+        if self.is_zero() || *field.characteristic() == Integer::from(2) {
+            return true;
+        }
+        let q = field.order();
+        self.pow_int(&((q - Integer::one()) / Integer::from(2))).is_one()
+    }
+
+    /// MAGMA `Sqrt(a)` / `SquareRoot(a)` (ch. 21 §21.4.7) and the root of `IsSquare(a)`:
+    /// `Some(r)` with `r^2 = self`, or `None` iff `self` is not a square (Euler's criterion,
+    /// a proof).
+    ///
+    /// The root: 0 for 0; `a^(q/2)` in characteristic 2 (the inverse Frobenius);
+    /// `a^((q+1)/4)` when `q ≡ 3 (mod 4)`; otherwise Tonelli-Shanks in the cyclic group
+    /// `GF(q)^*` of order `q - 1 = 2^e t` (H. Cohen, GTM 138, Alg. 1.5.1, stated for Z/pZ; it
+    /// uses only cyclicity and a non-square). The non-square is found by a scan (`w + c`,
+    /// `c = 0, 1, ...` for the generator `w` when `n >= 2`; `c = 2, 3, ...` when `n = 1`;
+    /// then every element), which ends because `GF(q)^*` has `(q - 1)/2` non-squares; it only
+    /// finds a helper and decides nothing. Of the two roots `r` and `-r`, the one whose
+    /// coefficient vector read as the integer `Σ c_i p^i` is smaller is returned; for `n = 1`
+    /// this is the least root in `[0, p)`, the choice of `IntegerMod::sqrt`. Every root is
+    /// squared back before it is returned.
+    ///
+    /// # Panics
+    /// For an unbound element (it needs the parent field, see the type docs).
+    pub fn sqrt(&self) -> Option<FiniteFieldElement> {
+        let field = self.require_field("sqrt").clone();
+        if self.is_zero() {
+            return Some(field.zero());
+        }
+        let two = Integer::from(2);
+        let q = field.order();
+        if *field.characteristic() == two {
+            let r = self.pow_int(&(q / two));
+            assert!(r.clone() * r.clone() == *self, "FiniteFieldElement::sqrt: internal: r^2 != a");
+            return Some(r);
+        }
+        if !self.is_square() {
+            return None;
+        }
+        // q - 1 = 2^e t, t odd
+        let mut t = q.clone() - Integer::one();
+        let mut e = 0u32;
+        while t.is_even() {
+            t = t / two.clone();
+            e += 1;
+        }
+        let r = if e == 1 {
+            self.pow_int(&((q.clone() + Integer::one()) / Integer::from(4)))
+        } else {
+            // Cohen Alg. 1.5.1.
+            let z = self.non_square();
+            let mut y = z.pow_int(&t);
+            let mut r = e;
+            let mut x = self.pow_int(&((t.clone() - Integer::one()) / two.clone()));
+            let mut b = self.clone() * x.clone() * x.clone();
+            x = self.clone() * x;
+            loop {
+                if b.is_one() {
+                    break x;
+                }
+                let mut m = 1u32;
+                let mut b2 = b.clone() * b.clone();
+                while !b2.is_one() {
+                    b2 = b2.clone() * b2.clone();
+                    m += 1;
+                    // Euler's criterion said a is a square, so m < r.
+                    assert!(m < r, "FiniteFieldElement::sqrt: internal: Tonelli-Shanks bound");
+                }
+                let mut tt = y.clone();
+                for _ in 0..(r - m - 1) {
+                    tt = tt.clone() * tt.clone();
+                }
+                y = tt.clone() * tt.clone();
+                r = m;
+                x = x * tt;
+                b = b * y.clone();
+            }
+        };
+        assert!(r.clone() * r.clone() == *self, "FiniteFieldElement::sqrt: internal: r^2 != a");
+        let neg = -r.clone();
+        Some(if neg.integer_key() < r.integer_key() { neg } else { r })
+    }
+
+    /// A non-square of the (odd-characteristic) field of `self`, by the scan described in
+    /// [`Self::sqrt`].
+    fn non_square(&self) -> FiniteFieldElement {
+        let field = self.require_field("sqrt").clone();
+        let p = field.characteristic().clone();
+        let start = if field.degree() >= 2 {
+            let w = field.generator();
+            let mut c = Integer::zero();
+            while c < p {
+                let z = w.clone() + field.from_int(c.clone());
+                if !z.is_square() {
+                    return z;
+                }
+                c = c + Integer::one();
+            }
+            Integer::one()
+        } else {
+            let mut c = Integer::from(2);
+            while c < p {
+                let z = field.from_int(c.clone());
+                if !z.is_square() {
+                    return z;
+                }
+                c = c + Integer::one();
+            }
+            Integer::one()
+        };
+        // Every element in index order: terminates, (q - 1)/2 elements are non-squares.
+        let mut i = start;
+        loop {
+            let mut coeffs = Vec::with_capacity(field.degree());
+            let mut rest = i.clone();
+            for _ in 0..field.degree() {
+                coeffs.push(rest.clone() % p.clone());
+                rest = rest / p.clone();
+            }
+            let z = field.element(coeffs);
+            if !z.is_zero() && !z.is_square() {
+                return z;
+            }
+            i = i + Integer::one();
+        }
+    }
+
+    /// The coefficient vector read as the integer `Σ c_i p^i` (bound elements only).
+    fn integer_key(&self) -> Integer {
+        let p = self.p().clone();
+        let mut k = Integer::zero();
+        for c in self.coeffs.iter().rev() {
+            k = k * p.clone() + c.clone();
+        }
+        k
     }
 
     /// Discrete logarithm by baby-step / giant-step: return `x` with
@@ -877,6 +1083,26 @@ impl Ring for FiniteFieldElement {
         self.coeffs[0].is_one() && self.coeffs[1..].iter().all(|c| c.is_zero())
     }
 
+    /// Every finite field is commutative, and an unbound element is an integer.
+    fn static_is_commutative() -> Option<bool> {
+        Some(true)
+    }
+
+    // Unbound constants (see `Ring::is_unbound_constant`): an unbound element is one, and it
+    // binds by the canonical map Z -> GF(p^n) into the field of a bound model.
+    const HAS_UNBOUND_CONSTANTS: bool = true;
+
+    fn is_unbound_constant(&self) -> bool {
+        self.field.is_none()
+    }
+
+    fn bind_to_parent_of(&self, model: &Self) -> Option<Self> {
+        match (&self.field, &model.field) {
+            (None, Some(f)) => Some(self.bind_into(f)),
+            _ => None,
+        }
+    }
+
     // Element predicates on the generic `Ring` path (MAGMA Ch. 21: "in a field, every
     // non-zero element is a unit"; `Order` by order-from-factorisation of #F - 1). An
     // unbound element is an integer constant awaiting the map Z -> GF(p^n), so only what
@@ -906,13 +1132,23 @@ impl Ring for FiniteFieldElement {
         <Self as Field>::inverse(self)
     }
 
+    /// The order, as the inherent `multiplicative_order` (Cohen Alg. 1.4.3 on the cyclotomic
+    /// split of `q - 1`), but with a cost cap: each `Φ_d(p)` is factored with trial division
+    /// to 10^4, 8191 rho steps per composite, the sieve only on composites of at most 30
+    /// digits, and ECPP only on probable primes of at most 256 bits. Beyond the cap the
+    /// answer is `Undecided` (1 and -1 need no factoring). An `Undecided` can become decided
+    /// later in the same process, once an exact call has factored the same numbers (the
+    /// factorizations are cached); both answers are honest.
     fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
         if self.field.is_none() {
             return crate::ring_hooks::sentinel_order(self.unbound_value());
         }
-        match FiniteFieldElement::multiplicative_order(self) {
-            Some(k) => crate::ring_hooks::order_from_integer(&k),
-            None => rustmath_core::MultiplicativeOrder::NotAUnit, // only 0
+        match self.order_factored(crate::group_order::Effort::Capped) {
+            Ok(None) => rustmath_core::MultiplicativeOrder::NotAUnit, // only 0
+            Ok(Some(f)) => {
+                crate::ring_hooks::order_from_integer(&crate::group_order::product(&f))
+            }
+            Err(_) => rustmath_core::MultiplicativeOrder::Undecided,
         }
     }
 }

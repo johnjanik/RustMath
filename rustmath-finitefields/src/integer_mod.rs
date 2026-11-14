@@ -56,6 +56,13 @@ use std::ops::{Add, Mul, Neg, Sub};
 /// `IntegerMod::zero() == IntegerMod::new(0, n)?`; two bound elements are
 /// equal iff value *and* modulus match (unchanged). Use [`Zmod`](crate::Zmod)
 /// for a parent whose `zero()`/`one()` carry the modulus from the start.
+///
+/// Containers: `UnivariatePolynomial` (on construction), `MultivariatePolynomial` and
+/// `LaurentPolynomial` (in `add_term`) bind every unbound coefficient to the modulus of a
+/// bound coefficient ([`Ring::bind_to_parent_of`]) and drop the terms that become zero. A
+/// container with only unbound coefficients stays over Z until it meets a bound element.
+/// The generic containers of rustmath-matrix, rustmath-powerseries and rustmath-rings
+/// still bind entry by entry.
 #[derive(Clone, Debug)]
 pub struct IntegerMod {
     value: Integer,
@@ -213,10 +220,27 @@ impl IntegerMod {
         gcd.is_one() || (-gcd).is_one()
     }
 
-    /// Compute the multiplicative order of this element
+    /// MAGMA `Order(a)` (ch. 19 §19.7): the smallest k > 0 such that
+    /// self^k ≡ 1 (mod n), or `None` if the element is not a unit (MAGMA
+    /// returns 0 there).
     ///
-    /// Returns the smallest k > 0 such that self^k ≡ 1 (mod n),
-    /// or None if the element is not a unit.
+    /// Exact: H. Cohen, GTM 138, Alg. 1.4.3 on a factored multiple of the
+    /// order: `n - 1` when `a^(n-1) = 1 (mod n)`, else the Carmichael function
+    /// λ(n). Every prime of that factorization is proven. 1 and -1 need no
+    /// factoring.
+    ///
+    /// For the modulus-0 sentinel (an element of Z): `Some(1)` for 1, `Some(2)`
+    /// for -1, `None` otherwise.
+    ///
+    /// # Cost
+    /// One exponentiation mod n, then the factorization of `n - 1` (Fermat
+    /// path) or of `n` and each `p - 1` (λ path) with MAGMA's default limits
+    /// (the sieve without a digit limit); no time bound. The factorizations are
+    /// cached for the process.
+    ///
+    /// # Panics
+    /// Only when a prime factor of that exponent has no primality proof (an
+    /// unresolved ECPP proof); the message names the number.
     pub fn multiplicative_order(&self) -> Option<Integer> {
         if !self.is_unit() {
             return None;
@@ -233,22 +257,13 @@ impl IntegerMod {
             };
         }
 
-        let mut power = self.clone();
-        let mut k = Integer::one();
-        let one = IntegerMod::new(Integer::one(), self.modulus.clone()).unwrap();
-
-        // Limit iterations to prevent infinite loops
-        let max_order = self.modulus.clone();
-
-        while power != one && k < max_order {
-            power = power * self.clone();
-            k = k + Integer::one();
-        }
-
-        if power == one {
-            Some(k)
-        } else {
-            None
+        match crate::group_order::unit_order_mod(
+            &self.value,
+            &self.modulus,
+            crate::group_order::Effort::Complete,
+        ) {
+            Ok(f) => Some(crate::group_order::product(&f)),
+            Err(why) => panic!("IntegerMod::multiplicative_order: {why}"),
         }
     }
 
@@ -560,6 +575,24 @@ impl Ring for IntegerMod {
         self.value.is_one()
     }
 
+    /// Z/nZ is commutative for every n, and the modulus-0 sentinel is an integer.
+    fn static_is_commutative() -> Option<bool> {
+        Some(true)
+    }
+
+    // Unbound constants (see `Ring::is_unbound_constant`): the modulus-0 sentinel is one,
+    // and it binds by the canonical map Z -> Z/nZ into the modulus of a bound model.
+    const HAS_UNBOUND_CONSTANTS: bool = true;
+
+    fn is_unbound_constant(&self) -> bool {
+        self.modulus.is_zero()
+    }
+
+    fn bind_to_parent_of(&self, model: &Self) -> Option<Self> {
+        (self.modulus.is_zero() && !model.modulus.is_zero())
+            .then(|| IntegerMod::make(self.value.clone(), model.modulus.clone()))
+    }
+
     // Element predicates on the generic `Ring` path (MAGMA Ch. 19 `IsUnit`, `IsNilpotent`,
     // `Order`). A bound element delegates to the inherent methods (which concrete call
     // sites resolve to first). The modulus-0 sentinel is an integer constant awaiting the
@@ -589,8 +622,14 @@ impl Ring for IntegerMod {
         IntegerMod::inverse(self)
     }
 
-    /// The order of a unit of Z/nZ by the inherent `multiplicative_order`, a complete
-    /// search (the order of a unit is at most phi(n) < n).
+    /// The order of a unit of Z/nZ, as the inherent `multiplicative_order`
+    /// (Cohen Alg. 1.4.3), but with a cost cap: the group exponent is factored
+    /// with trial division to 10^4, 8191 rho steps per composite, the sieve only
+    /// on composites of at most 30 digits, and ECPP only on probable primes of
+    /// at most 256 bits. Beyond the cap the answer is `Undecided` (1 and -1 need
+    /// no factoring). An `Undecided` can become decided later in the same
+    /// process, once an exact call has factored the same exponent (the
+    /// factorizations are cached); both answers are honest.
     fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
         if self.modulus.is_zero() {
             return crate::ring_hooks::sentinel_order(&self.value);
@@ -598,9 +637,13 @@ impl Ring for IntegerMod {
         if !IntegerMod::is_unit(self) {
             return rustmath_core::MultiplicativeOrder::NotAUnit;
         }
-        match IntegerMod::multiplicative_order(self) {
-            Some(k) => crate::ring_hooks::order_from_integer(&k),
-            None => rustmath_core::MultiplicativeOrder::Undecided,
+        match crate::group_order::unit_order_mod(
+            &self.value,
+            &self.modulus,
+            crate::group_order::Effort::Capped,
+        ) {
+            Ok(f) => crate::ring_hooks::order_from_integer(&crate::group_order::product(&f)),
+            Err(_) => rustmath_core::MultiplicativeOrder::Undecided,
         }
     }
 }

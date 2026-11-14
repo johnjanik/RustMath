@@ -27,14 +27,76 @@ use std::ops::{Add, Mul, Neg, Sub};
 /// A Laurent polynomial over a ring R
 ///
 /// Represented as a sparse map from exponents (which can be negative) to coefficients
-#[derive(Clone, PartialEq, Eq, Debug)]
+///
+/// # Unbound constants
+///
+/// Some coefficient types (the parent-carrying elements of rustmath-finitefields) return
+/// from the static `R::zero()`/`R::one()` an unbound integer constant (see
+/// [`Ring::is_unbound_constant`]). [`Self::add_term`], through which every operation builds
+/// its result, binds them: an unbound coefficient entering a bound map is bound on entry, a
+/// bound coefficient entering an unbound map binds the whole map once
+/// ([`Ring::bind_to_parent_of`]), and terms that become zero are dropped. Invariant: every
+/// stored coefficient is bound, or none is. So `(q^-1 + 1)^8 - q^-8 + w` over GR(8, 2) has 4
+/// terms. Equality coerces: a bound map and an unbound one are compared after binding the
+/// unbound one. A zero Laurent polynomial (the empty map) carries no parent, so an unbound
+/// map that would become zero in some ring is not equal to it: it is a nonzero element of
+/// Z\[q, q^-1\].
+#[derive(Clone, Debug)]
 pub struct LaurentPolynomial<R: Ring> {
     /// Map from exponent to coefficient
     /// Only non-zero coefficients are stored
     terms: BTreeMap<i32, R>,
 }
 
+impl<R: Ring> PartialEq for LaurentPolynomial<R> {
+    /// Termwise. Over a coefficient type with unbound constants, when exactly one side has a
+    /// bound coefficient and the other side is nonzero, the other side is bound to it first
+    /// (see the type docs).
+    fn eq(&self, other: &Self) -> bool {
+        if !R::HAS_UNBOUND_CONSTANTS {
+            return self.terms == other.terms;
+        }
+        match (self.bound_model(), other.bound_model()) {
+            (Some(m), None) if !other.terms.is_empty() => {
+                let mut o = other.clone();
+                o.bind_all(m);
+                self.terms == o.terms
+            }
+            (None, Some(m)) if !self.terms.is_empty() => {
+                let mut s = self.clone();
+                s.bind_all(m);
+                s.terms == other.terms
+            }
+            _ => self.terms == other.terms,
+        }
+    }
+}
+
+impl<R: Ring + Eq> Eq for LaurentPolynomial<R> {}
+
 impl<R: Ring> LaurentPolynomial<R> {
+    /// The first stored coefficient when it is bound (by the invariant of the type docs it
+    /// decides for all); `None` when it is unbound, when the map is empty, and always for a
+    /// coefficient type without unbound constants.
+    fn bound_model(&self) -> Option<&R> {
+        if !R::HAS_UNBOUND_CONSTANTS {
+            return None;
+        }
+        self.terms.values().next().filter(|c| !c.is_unbound_constant())
+    }
+
+    /// Binds every stored (unbound) coefficient to the parent of `model` and drops the terms
+    /// that become zero.
+    fn bind_all(&mut self, model: &R) {
+        let old = std::mem::take(&mut self.terms);
+        for (e, c) in old {
+            let b = c.bind_to_parent_of(model).unwrap_or(c);
+            if !b.is_zero() {
+                self.terms.insert(e, b);
+            }
+        }
+    }
+
     /// Create a new Laurent polynomial
     pub fn new() -> Self {
         LaurentPolynomial {
@@ -64,10 +126,27 @@ impl<R: Ring> LaurentPolynomial<R> {
     }
 
     /// Add a term to this polynomial. No `R::zero()` is created (it panics for
-    /// parent-carrying coefficient types): a new exponent stores `coeff` itself.
+    /// parent-carrying coefficient types): a new exponent stores `coeff` itself. Over a
+    /// coefficient type with unbound constants this binds first (see the type docs).
     pub fn add_term(&mut self, coeff: R, power: i32) {
         if coeff.is_zero() {
             return;
+        }
+        let mut coeff = coeff;
+        if R::HAS_UNBOUND_CONSTANTS && !self.terms.is_empty() {
+            let coeff_unbound = coeff.is_unbound_constant();
+            match self.bound_model() {
+                Some(model) if coeff_unbound => {
+                    if let Some(b) = coeff.bind_to_parent_of(model) {
+                        coeff = b;
+                    }
+                    if coeff.is_zero() {
+                        return;
+                    }
+                }
+                None if !coeff_unbound => self.bind_all(&coeff),
+                _ => {}
+            }
         }
 
         match self.terms.get_mut(&power) {
@@ -84,9 +163,19 @@ impl<R: Ring> LaurentPolynomial<R> {
         }
     }
 
-    /// Get the coefficient of x^n
+    /// Get the coefficient of x^n. A missing exponent gives zero, bound to the parent of the
+    /// stored coefficients when they are bound.
     pub fn coeff(&self, power: i32) -> R {
-        self.terms.get(&power).cloned().unwrap_or_else(R::zero)
+        match self.terms.get(&power) {
+            Some(c) => c.clone(),
+            None => {
+                let z = R::zero();
+                match self.bound_model() {
+                    Some(m) => z.bind_to_parent_of(m).unwrap_or(z),
+                    None => z,
+                }
+            }
+        }
     }
 
     /// Check if this is the zero polynomial
@@ -489,6 +578,27 @@ impl<R: Ring> Ring for LaurentPolynomial<R> {
 
     fn static_is_commutative() -> Option<bool> {
         R::static_is_commutative()
+    }
+
+    const HAS_UNBOUND_CONSTANTS: bool = R::HAS_UNBOUND_CONSTANTS;
+
+    /// No coefficient is bound: the image of an element of Z\[q, q^-1\] (the empty map, the
+    /// zero, counts).
+    fn is_unbound_constant(&self) -> bool {
+        R::HAS_UNBOUND_CONSTANTS && self.bound_model().is_none()
+    }
+
+    /// When `self` is unbound and `model` has a bound coefficient: `self` with every
+    /// coefficient bound to that coefficient's parent, without the terms that become zero.
+    /// Otherwise `None`.
+    fn bind_to_parent_of(&self, model: &Self) -> Option<Self> {
+        if !self.is_unbound_constant() {
+            return None;
+        }
+        let m = model.bound_model()?;
+        let mut out = self.clone();
+        out.bind_all(m);
+        Some(out)
     }
 }
 
