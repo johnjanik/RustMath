@@ -308,41 +308,35 @@ pub fn non_decreasing_parking_functions_with_area(
 /// Count parking functions of length n
 ///
 /// The number of parking functions of length n is (n+1)^(n-1)
+///
+/// # Panics
+///
+/// If (n+1)^(n-1) exceeds usize::MAX ("count_parking_functions: (n+1)^(n-1) exceeds
+/// usize::MAX"), from n = 17 on 64-bit targets.
 pub fn count_parking_functions(n: usize) -> usize {
     if n == 0 {
         return 1;
     }
-    (n + 1).pow((n - 1) as u32)
+    n.checked_add(1)
+        .and_then(|b| crate::machine_word::checked_pow_usize(b, n - 1))
+        .expect("count_parking_functions: (n+1)^(n-1) exceeds usize::MAX")
 }
 
 /// Count non-decreasing parking functions of length n
 ///
 /// This is the nth Catalan number: C_n = (1/(n+1)) * C(2n, n)
+///
+/// # Panics
+///
+/// If C_n exceeds usize::MAX ("count_non_decreasing_parking_functions: C_n exceeds
+/// usize::MAX"), from n = 37 on 64-bit targets. n >= usize::BITS panics before any work:
+/// C_n > 2^n for n >= 5, so no such Catalan number fits.
 pub fn count_non_decreasing_parking_functions(n: usize) -> usize {
-    catalan_number(n)
-}
-
-/// Compute the nth Catalan number
-fn catalan_number(n: usize) -> usize {
-    if n == 0 || n == 1 {
-        return 1;
+    const MSG: &str = "count_non_decreasing_parking_functions: C_n exceeds usize::MAX";
+    if n >= usize::BITS as usize {
+        panic!("{MSG}");
     }
-
-    // Use the recurrence: C_n = sum_{i=0}^{n-1} C_i * C_{n-1-i}
-    // Or use the formula: C_n = (2n)! / ((n+1)! * n!)
-    // We'll use dynamic programming for efficiency
-
-    let mut catalan = vec![0; n + 1];
-    catalan[0] = 1;
-    catalan[1] = 1;
-
-    for i in 2..=n {
-        for j in 0..i {
-            catalan[i] += catalan[j] * catalan[i - 1 - j];
-        }
-    }
-
-    catalan[n]
+    usize::try_from(&crate::catalan(n as u32)).expect(MSG)
 }
 
 #[cfg(test)]

@@ -181,6 +181,12 @@ impl RootedTree {
     /// Returns a list of (remaining_tree, cut_forest) pairs where:
     /// - remaining_tree is the tree with cut edges removed
     /// - cut_forest is the list of disconnected subtrees
+    ///
+    /// Cost: 2^e subsets of the e edges are tested.
+    ///
+    /// # Panics
+    ///
+    /// If the tree has usize::BITS or more edges: their 2^e subsets cannot be listed.
     pub fn admissible_cuts(&self) -> Vec<(RootedTree, Vec<RootedTree>)> {
         let edges = self.edges();
         if edges.is_empty() {
@@ -192,7 +198,8 @@ impl RootedTree {
 
         // Generate all subsets of edges
         let n = edges.len();
-        for mask in 0..(1 << n) {
+        let count: usize = crate::machine_word::subset_mask_count(n, "RootedTree::admissible_cuts");
+        for mask in 0..count {
             let mut cut = HashSet::new();
             for i in 0..n {
                 if (mask >> i) & 1 == 1 {

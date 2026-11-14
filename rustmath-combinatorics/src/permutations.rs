@@ -1,4 +1,10 @@
 //! Permutations and permutation generation
+//!
+//! [`Permutation::order_integer`] is MAGMA `Order(g)` for a permutation (Handbook ch. 58,
+//! digest `rustmath-lava/docs/Chapter_58_Permutation_Groups.md:204`): the lcm of the cycle
+//! lengths, as an integer. [`Permutation::order`] is its usize form.
+
+use rustmath_integers::Integer;
 
 /// A permutation of n elements
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -119,6 +125,12 @@ impl Permutation {
     /// Compute the multiplicative order of the permutation
     ///
     /// Returns the smallest positive integer k such that p^k = identity
+    ///
+    /// # Panics
+    ///
+    /// If the order exceeds usize::MAX ("Permutation::order: the order exceeds usize::MAX;
+    /// use order_integer"). The lcm is folded as (a / gcd(a, b)) b with a checked product, so
+    /// no intermediate exceeds the order.
     pub fn order(&self) -> usize {
         let cycles = self.cycles();
 
@@ -129,7 +141,19 @@ impl Permutation {
         // Order is the LCM of all cycle lengths
         let mut result = 1;
         for cycle in cycles {
-            result = lcm(result, cycle.len());
+            result = lcm(result, cycle.len()).unwrap_or_else(|| {
+                panic!("Permutation::order: the order exceeds usize::MAX; use order_integer")
+            });
+        }
+        result
+    }
+
+    /// MAGMA `Order(g)` (ch. 58) for this permutation: the lcm of its cycle lengths, the
+    /// smallest positive k with p^k = identity, as an exact integer.
+    pub fn order_integer(&self) -> Integer {
+        let mut result = Integer::from(1u32);
+        for cycle in self.cycles() {
+            result = result.lcm(&Integer::from(cycle.len() as u64));
         }
         result
     }
@@ -572,12 +596,13 @@ fn normalize_sequence(seq: &[usize]) -> Vec<usize> {
     result
 }
 
-/// Compute least common multiple of two numbers
-fn lcm(a: usize, b: usize) -> usize {
+/// Compute least common multiple of two numbers, or None when it exceeds usize::MAX.
+/// (a / gcd(a, b)) b is exact and no intermediate exceeds the lcm.
+fn lcm(a: usize, b: usize) -> Option<usize> {
     if a == 0 || b == 0 {
-        return 0;
+        return Some(0);
     }
-    (a * b) / gcd(a, b)
+    (a / gcd(a, b)).checked_mul(b)
 }
 
 /// Compute greatest common divisor of two numbers
@@ -626,6 +651,22 @@ fn generate_permutations(elements: &mut [usize], start: usize, result: &mut Vec<
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn lcm_is_checked() {
+        assert_eq!(lcm(6, 4), Some(12));
+        assert_eq!(lcm(0, 4), Some(0));
+        #[cfg(target_pointer_width = "64")]
+        {
+            // gp: lcm(2^62, 5) = 5*2^62 = 23058430092136939520 > 2^64 - 1;
+            // lcm(2^62, 3) = 3*2^62 = 13835058055282163712 fits; lcm(2^62, 2) = 2^62.
+            assert_eq!(lcm(1 << 62, 5), None);
+            assert_eq!(lcm(1 << 62, 3), Some(13835058055282163712));
+            assert_eq!(lcm(1 << 62, 2), Some(1 << 62));
+            // HEAD's (a * b) / gcd wrapped here: 2^62 * 4 = 2^64 is 0 mod 2^64.
+            assert_eq!(lcm(1 << 62, 4), Some(1 << 62));
+        }
+    }
 
     #[test]
     fn test_identity() {

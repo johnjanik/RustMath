@@ -2,6 +2,12 @@
 //!
 //! This module provides support for generating fixed-length tuples from a set
 //! of elements, with guaranteed lexicographic ordering.
+//!
+//! Ranks and counts are machine words: one that exceeds usize::MAX is a documented panic
+//! (or `None` in a size hint), never a wrapped or saturated value (design C1 §1.6, items 11
+//! and 12).
+
+use crate::machine_word::checked_pow_usize;
 
 /// A fixed-length tuple from a set of elements
 ///
@@ -60,17 +66,22 @@ impl Tuple {
     /// (0,0,0), (0,0,1), ..., (0,0,n-1), (0,1,0), ..., (n-1,n-1,n-1)
     ///
     /// The rank formula is: sum(indices[i] * n^(k-1-i)) for i in 0..k
+    ///
+    /// Evaluated by Horner's rule from the most significant index with checked operations:
+    /// every partial value is at most the rank, so the check fails only when the rank itself
+    /// does not fit.
+    ///
+    /// # Panics
+    ///
+    /// If the rank exceeds usize::MAX ("Tuple::rank: the rank exceeds usize::MAX").
     pub fn rank(&self) -> usize {
-        let k = self.len();
-        let mut rank = 0;
-        let mut power = 1;
-
-        // Process from right to left (least significant to most significant)
-        for i in (0..k).rev() {
-            rank += self.indices[i] * power;
-            power *= self.n;
+        let mut rank: usize = 0;
+        for &idx in &self.indices {
+            rank = rank
+                .checked_mul(self.n)
+                .and_then(|r| r.checked_add(idx))
+                .unwrap_or_else(|| panic!("Tuple::rank: the rank exceeds usize::MAX"));
         }
-
         rank
     }
 
@@ -83,10 +94,11 @@ impl Tuple {
             return None;
         }
 
-        // Check if rank is valid
-        let total = n.checked_pow(k as u32)?;
-        if rank >= total {
-            return None;
+        // Check if rank is valid. None means n^k > usize::MAX >= rank, so every rank is.
+        if let Some(total) = checked_pow_usize(n, k) {
+            if rank >= total {
+                return None;
+            }
         }
 
         let mut indices = vec![0; k];
@@ -224,6 +236,9 @@ fn generate_tuples(
 /// An iterator over tuples in lexicographic order
 ///
 /// This is more memory-efficient than generating all tuples at once.
+///
+/// It implements `ExactSizeIterator`, but `len()` panics when n^k > usize::MAX: the size
+/// hint is then `(0, None)`, as for [`crate::enumeration::CartesianProduct`].
 pub struct TupleIterator {
     n: usize,
     k: usize,
@@ -248,12 +263,25 @@ impl TupleIterator {
         }
     }
 
-    /// Get the total number of tuples that will be generated
+    /// Get the total number of tuples that will be generated: n^k (1 for k = 0).
+    ///
+    /// `it.count()` on a value resolves to `Iterator::count`, which enumerates every tuple;
+    /// write `TupleIterator::count(&it)` or `(&it).count()` for this closed form.
+    ///
+    /// # Panics
+    ///
+    /// If n^k exceeds usize::MAX ("TupleIterator::count: n^k exceeds usize::MAX").
     pub fn count(&self) -> usize {
+        self.checked_total()
+            .expect("TupleIterator::count: n^k exceeds usize::MAX")
+    }
+
+    /// n^k (1 for k = 0), or None when it exceeds usize::MAX.
+    fn checked_total(&self) -> Option<usize> {
         if self.k == 0 {
-            return 1;
+            return Some(1);
         }
-        self.n.saturating_pow(self.k as u32)
+        checked_pow_usize(self.n, self.k)
     }
 }
 
@@ -316,7 +344,10 @@ impl Iterator for TupleIterator {
             return (0, Some(0));
         }
 
-        let total = self.count();
+        // (0, None) when n^k does not fit: 0 is a valid lower bound in every state.
+        let Some(total) = self.checked_total() else {
+            return (0, None);
+        };
         if let Some(ref current) = self.current {
             let tuple = Tuple {
                 indices: current.clone(),

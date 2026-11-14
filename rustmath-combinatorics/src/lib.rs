@@ -100,6 +100,9 @@ pub mod rsk;
 pub mod young_representations;
 pub mod incidence_structure;
 pub mod hadamard;
+pub mod factorials;
+pub mod partition_number;
+mod machine_word;
 
 pub use affine_permutations::{AffinePermutation, CoxeterType};
 pub use baxter_permutations::{baxter_permutations, count_baxter_permutations, is_baxter};
@@ -115,8 +118,9 @@ pub use fully_commutative_elements::{
     HeapPoset, ReducedWord as FCReducedWord, SimpleCoxeterMatrix,
 };
 pub use partitions::{
-    count_partitions_with_max_parts, partition_count, partitions, partitions_with_distinct_parts,
-    partitions_with_even_parts, partitions_with_exact_parts, partitions_with_max_part,
+    count_partitions_with_max_parts, number_of_standard_tableaux, partition_count, partitions,
+    partitions_with_distinct_parts, partitions_with_even_parts, partitions_with_exact_parts,
+    partitions_with_max_part,
     partitions_with_max_parts, partitions_with_min_part, partitions_with_odd_parts, Partition,
     PartitionTuple,
 };
@@ -363,260 +367,260 @@ pub use young_representations::{
     symmetric_character_value,
 };
 pub use incidence_structure::{DesignParameters, IncidenceStructure};
+pub use factorials::{
+    falling_factorial_in, falling_factorial_integer, rising_factorial_in, rising_factorial_integer,
+};
+pub use partition_number::{number_of_partitions, NUMBER_OF_PARTITIONS_MAX_N};
 pub use hadamard::{
     hadamard_3_design, hadamard_invariant, is_hadamard, is_hadamard_equivalent, paley_type_i,
     paley_type_ii,
 };
 
-// Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module
+// Core combinatorial functions (factorials, Stirling numbers, etc.) defined in this module.
+// MAGMA Handbook ch. 144 §144.2 (digest rustmath-lava/docs/Chapter_144_Enumerative_Combinatorics.md:34-53)
+// and ch. 18 §18.8 (Chapter_18_Ring_of_Integers.md:261-275): Factorial, Binomial, Multinomial,
+// Catalan, Fibonacci, Lucas, StirlingFirst, StirlingSecond, Bell, EulerianNumber. The Motzkin,
+// Schroder and Narayana numbers are not MAGMA intrinsics (OEIS A001006, A006318, A001263).
 
-use rustmath_core::Ring;
-use rustmath_integers::Integer;
+use rustmath_integers::{Integer, SageInteger};
+use std::collections::VecDeque;
 
-/// Compute factorial
+/// MAGMA `Factorial(n)` (ch. 144 §144.2, ch. 18 §18.8): n!.
+///
+/// A balanced product of the factors 2..=n, packed into u64 words first (von zur Gathen and
+/// Gerhard, *Modern Computer Algebra*, §10.1; [`factorials`]).
 pub fn factorial(n: u32) -> Integer {
-    let mut result = Integer::one();
-    for i in 2..=n {
-        result = result * Integer::from(i);
-    }
-    result
+    factorials::product_range_u64(2, u64::from(n))
 }
 
-/// Compute binomial coefficient C(n, k) = n! / (k! * (n-k)!)
+/// MAGMA `Binomial(n, r)` (ch. 144 §144.2, ch. 18 §18.8): C(n, k) = n! / (k! (n-k)!), and 0
+/// for k > n.
+///
+/// Delegates to `SageInteger::binomial` (Goetgheluck's prime-power splitting in
+/// rustmath-integers).
 pub fn binomial(n: u32, k: u32) -> Integer {
-    if k > n {
-        return Integer::zero();
-    }
-    if k == 0 || k == n {
-        return Integer::one();
-    }
-
-    let k = k.min(n - k); // Optimize using symmetry
-    let mut result = Integer::one();
-
-    for i in 0..k {
-        result = result * Integer::from(n - i);
-        result = result / Integer::from(i + 1);
-    }
-
-    result
+    <Integer as SageInteger>::binomial(&Integer::from(n), &Integer::from(k))
 }
 
-/// Compute multinomial coefficient
+/// MAGMA `Multinomial(n, [k_1, ..., k_m])` (ch. 144 §144.2, ch. 18 §18.8):
+/// n! / (k_1! k_2! ... k_m!) when k_1 + ... + k_m = n.
 ///
-/// multinomial(n, [k1, k2, ..., km]) = n! / (k1! * k2! * ... * km!)
-/// where k1 + k2 + ... + km = n
+/// Returns 0 when the parts do not sum to n (the coefficient of a monomial of another
+/// degree). The sum is formed in u128, so it never wraps. The value is computed as the product
+/// of binomials prod_i C(s_i, k_i), s_i = k_(1) + ... + k_(i), with the largest k first, so
+/// each binomial runs over its lower index and the total window is n - max k.
+///
+/// # Panics
+///
+/// Panics (in `SageInteger::binomial`) if a factor has more than about 2^32 bits.
 pub fn multinomial(n: u32, ks: &[u32]) -> Integer {
-    let sum: u32 = ks.iter().sum();
-    if sum != n {
+    let sum: u128 = ks.iter().map(|&k| u128::from(k)).sum();
+    if sum != u128::from(n) {
         return Integer::zero();
     }
-
-    let mut result = factorial(n);
-    for &k in ks {
-        result = result / factorial(k);
-    }
-    result
+    let mut sorted: Vec<u64> = ks.iter().map(|&k| u64::from(k)).collect();
+    sorted.sort_unstable_by(|a, b| b.cmp(a));
+    let mut s = 0u64;
+    let parts: Vec<Integer> = sorted
+        .into_iter()
+        .map(|k| {
+            s += k;
+            <Integer as SageInteger>::binomial(&Integer::from(s), &Integer::from(k))
+        })
+        .collect();
+    factorials::product_tree(parts)
 }
 
-/// Compute the nth Catalan number
+/// MAGMA `Catalan(n)` (ch. 144 §144.2): the n-th Catalan number
+/// C_n = C(2n, n) / (n + 1), which satisfies MAGMA's C_(n+1) = C_n (4n + 2) / (n + 2).
 ///
-/// C_n = (1/(n+1)) * C(2n, n) = (2n)! / ((n+1)! * n!)
+/// 2n and n + 1 are formed in u64, so they cannot overflow for any u32 n.
+///
+/// # Panics
+///
+/// Panics (in `SageInteger::binomial`) if the result has more than about 2^32 bits.
 pub fn catalan(n: u32) -> Integer {
-    if n == 0 {
-        return Integer::one();
-    }
-
-    binomial(2 * n, n) / Integer::from(n + 1)
+    let n = u64::from(n);
+    <Integer as SageInteger>::binomial(&Integer::from(2 * n), &Integer::from(n)) / Integer::from(n + 1)
 }
 
-/// Compute the nth Fibonacci number
+/// MAGMA `Fibonacci(n)` (ch. 144 §144.2) for n >= 0: F_0 = 0, F_1 = 1.
+///
+/// By doubling, F_2k = F_k (2 F_(k+1) - F_k) and F_(2k+1) = F_k^2 + F_(k+1)^2 (Knuth, TAOCP
+/// vol. 1, §1.2.8): O(M(n)) work.
 pub fn fibonacci(n: u32) -> Integer {
-    if n == 0 {
-        return Integer::zero();
-    }
-    if n == 1 {
-        return Integer::one();
-    }
-
-    let mut a = Integer::zero();
-    let mut b = Integer::one();
-
-    for _ in 2..=n {
-        let temp = a.clone() + b.clone();
-        a = b;
-        b = temp;
-    }
-
-    b
+    ch144_enumerative::fibonacci_pair(u64::from(n)).0
 }
 
-/// Compute the nth Lucas number
+/// MAGMA `Lucas(n)` (ch. 144 §144.2) for n >= 0: L_0 = 2, L_1 = 1, L_n = L_(n-1) + L_(n-2).
 ///
-/// L_0 = 2, L_1 = 1, L_n = L_{n-1} + L_{n-2}
+/// L_n = 2 F_(n+1) - F_n, with the Fibonacci pair by doubling.
 pub fn lucas(n: u32) -> Integer {
-    if n == 0 {
-        return Integer::from(2);
-    }
-    if n == 1 {
-        return Integer::one();
-    }
-
-    let mut a = Integer::from(2);
-    let mut b = Integer::one();
-
-    for _ in 2..=n {
-        let temp = a.clone() + b.clone();
-        a = b;
-        b = temp;
-    }
-
-    b
+    let (f, f1) = ch144_enumerative::fibonacci_pair(u64::from(n));
+    f1.clone() + f1 - f
 }
 
-/// Compute the falling factorial (Pochhammer symbol)
+/// The falling factorial (n)_k = n (n-1) (n-2) ... (n-k+1), and 0 when k > n.
 ///
-/// (n)_k = n * (n-1) * (n-2) * ... * (n-k+1)
+/// The u32 form of [`falling_factorial_integer`], which takes any integer n.
 pub fn falling_factorial(n: u32, k: u32) -> Integer {
-    if k > n {
-        return Integer::zero();
-    }
-
-    let mut result = Integer::one();
-    for i in 0..k {
-        result = result * Integer::from(n - i);
-    }
-    result
+    falling_factorial_integer(&Integer::from(n), u64::from(k))
 }
 
-/// Compute the rising factorial
+/// The rising factorial n (n+1) (n+2) ... (n+k-1): the Pochhammer symbol (n)_k of MAGMA ch. 49
+/// (`HypergeometricSeries`) and Sage `rising_factorial`.
 ///
-/// n^(k) = n * (n+1) * (n+2) * ... * (n+k-1)
+/// The u32 form of [`rising_factorial_integer`], which takes any integer n. Nothing is added
+/// in u32, so n + k - 1 may exceed u32::MAX.
 pub fn rising_factorial(n: u32, k: u32) -> Integer {
-    let mut result = Integer::one();
-    for i in 0..k {
-        result = result * Integer::from(n + i);
-    }
-    result
+    rising_factorial_integer(&Integer::from(n), u64::from(k))
 }
 
-/// Compute Stirling number of the first kind s(n, k) (unsigned)
+/// Which row recurrence [`band_rows`] runs.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum RowKind {
+    /// [i j] = (i-1) [i-1 j] + [i-1 j-1]
+    StirlingFirst,
+    /// {i j} = j {i-1 j} + {i-1 j-1}
+    StirlingSecond,
+    /// <i j> = (j+1) <i-1 j> + (i-j) <i-1 j-1>
+    Eulerian,
+}
+
+/// The row recurrence of [`stirling_first`], [`stirling_second`] and [`eulerian`] (Graham,
+/// Knuth, Patashnik, *Concrete Mathematics*, 2nd ed., §6.1, §6.2), kept in a buffer of at most
+/// (band width + 1) entries. Returns the (n, k) entry and the largest buffer length (the
+/// length is for the unit test that pins the memory bound).
 ///
-/// Number of permutations of n elements with exactly k cycles
-pub fn stirling_first(n: u32, k: u32) -> Integer {
-    if n == 0 && k == 0 {
-        return Integer::one();
+/// Needs 1 <= k < n (Stirling) or 1 <= k <= n - 1 - k (Eulerian). (n, k) depends on (i, j)
+/// only if k - (n - i) <= j <= k, so row i needs only j in lo(i)..=hi(i) with
+/// lo(i) = max(1, k + i - n) and hi(i) = min(i, k) (Eulerian: min(i - 1, k)); the recurrence
+/// at j = lo(i) also reads the entry j - 1 of row i - 1. `d[t]` holds the row value at
+/// j = base + t; positions past `d.len()` stand for 0. The entries are updated for descending
+/// j, so every entry read still holds row i - 1. Memory: at most (w + 1) entries with
+/// w = min(k, n - k + 1), each at most the final value; work O(n w) big operations.
+fn band_rows(n: u64, k: u64, kind: RowKind) -> (Integer, usize) {
+    // Stirling starts from row 0 = [1] (j = 0); Eulerian from row 1, A(1, 0) = 1.
+    let first_row = if kind == RowKind::Eulerian { 1 } else { 0 };
+    let mut d: VecDeque<Integer> = VecDeque::new();
+    d.push_back(Integer::one());
+    let mut base = 0u64;
+    let mut max_len = d.len();
+    for i in first_row + 1..=n {
+        let lo = (k + i).saturating_sub(n).max(1);
+        let hi = if kind == RowKind::Eulerian { (i - 1).min(k) } else { i.min(k) };
+        while base + 1 < lo {
+            d.pop_front();
+            base += 1;
+        }
+        while base + (d.len() as u64) <= hi {
+            d.push_back(Integer::zero());
+        }
+        max_len = max_len.max(d.len());
+        let mut j = hi;
+        while j >= lo {
+            let t = (j - base) as usize;
+            let v = match kind {
+                RowKind::StirlingFirst => &(&Integer::from(i - 1) * &d[t]) + &d[t - 1],
+                RowKind::StirlingSecond => &(&Integer::from(j) * &d[t]) + &d[t - 1],
+                RowKind::Eulerian => {
+                    &(&Integer::from(j + 1) * &d[t]) + &(&Integer::from(i - j) * &d[t - 1])
+                }
+            };
+            d[t] = v;
+            j -= 1;
+        }
+        // [i 0] = {i 0} = 0 for i >= 1; the Eulerian A(i, 0) = 1 is never rewritten.
+        if base == 0 && kind != RowKind::Eulerian {
+            d[0] = Integer::zero();
+        }
     }
-    if n == 0 || k == 0 || k > n {
+    (d[(k - base) as usize].clone(), max_len)
+}
+
+/// MAGMA `StirlingFirst(n, k)` (ch. 144 §144.2, ch. 18 §18.8): the unsigned Stirling number of
+/// the first kind [n k], the number of permutations of n elements with exactly k cycles.
+///
+/// The row recurrence [i j] = (i-1) [i-1 j] + [i-1 j-1] over the band of entries that reach
+/// (n, k), in a buffer of at most min(k, n - k + 1) + 1 entries.
+pub fn stirling_first(n: u32, k: u32) -> Integer {
+    if k > n {
         return Integer::zero();
     }
     if k == n {
         return Integer::one();
     }
-
-    // Use recurrence: s(n,k) = (n-1)*s(n-1,k) + s(n-1,k-1)
-    let mut dp = vec![vec![Integer::zero(); (k + 1) as usize]; (n + 1) as usize];
-    dp[0][0] = Integer::one();
-
-    for i in 1..=n as usize {
-        for j in 1..=k.min(i as u32) as usize {
-            if j == i {
-                dp[i][j] = Integer::one();
-            } else if j > 0 {
-                dp[i][j] = Integer::from((i - 1) as u32) * dp[i - 1][j].clone()
-                    + dp[i - 1][j - 1].clone();
-            }
-        }
-    }
-
-    dp[n as usize][k as usize].clone()
-}
-
-/// Compute Stirling number of the second kind S(n, k)
-///
-/// Number of ways to partition n elements into k non-empty subsets
-pub fn stirling_second(n: u32, k: u32) -> Integer {
-    if n == 0 && k == 0 {
-        return Integer::one();
-    }
-    if n == 0 || k == 0 || k > n {
+    if k == 0 {
         return Integer::zero();
     }
-    if k == 1 || k == n {
+    band_rows(u64::from(n), u64::from(k), RowKind::StirlingFirst).0
+}
+
+/// MAGMA `StirlingSecond(n, k)` (ch. 144 §144.2, ch. 18 §18.8): the Stirling number of the
+/// second kind {n k}, the number of ways to partition n elements into k non-empty subsets.
+///
+/// The row recurrence {i j} = j {i-1 j} + {i-1 j-1} over the band of entries that reach
+/// (n, k), in a buffer of at most min(k, n - k + 1) + 1 entries.
+pub fn stirling_second(n: u32, k: u32) -> Integer {
+    if k > n {
+        return Integer::zero();
+    }
+    if k == n {
         return Integer::one();
     }
-
-    // Use recurrence: S(n,k) = k*S(n-1,k) + S(n-1,k-1)
-    let mut dp = vec![vec![Integer::zero(); (k + 1) as usize]; (n + 1) as usize];
-    dp[0][0] = Integer::one();
-
-    for i in 1..=n as usize {
-        for j in 1..=k.min(i as u32) as usize {
-            if j == 1 {
-                dp[i][j] = Integer::one();
-            } else if j == i {
-                dp[i][j] = Integer::one();
-            } else {
-                dp[i][j] = Integer::from(j as u32) * dp[i - 1][j].clone() + dp[i - 1][j - 1].clone();
-            }
-        }
+    if k == 0 {
+        return Integer::zero();
     }
-
-    dp[n as usize][k as usize].clone()
+    band_rows(u64::from(n), u64::from(k), RowKind::StirlingSecond).0
 }
 
-/// Compute Bell number B(n)
+/// MAGMA `Bell(n)` (ch. 144 §144.2, ch. 18 §18.8): the number of partitions of a set of n
+/// elements, B(n) = sum_k StirlingSecond(n, k).
 ///
-/// Number of ways to partition n elements into any number of non-empty subsets
+/// By the Bell triangle (A. C. Aitken, *A problem in combinations*, Math. Notes Edinburgh 28
+/// (1933) xviii-xxiii; OEIS A011971): row i starts with the last entry of row i - 1, and each
+/// next entry is its left neighbour plus the entry above it; B(n) is the first entry of row n.
+/// One vector updated in place: O(n^2) additions of numbers of at most n log2 n bits.
 pub fn bell_number(n: u32) -> Integer {
-    let mut sum = Integer::zero();
-    for k in 0..=n {
-        sum = sum + stirling_second(n, k);
+    let mut row = vec![Integer::one()];
+    for _ in 0..n {
+        bell_triangle_step(&mut row);
     }
-    sum
+    row.swap_remove(0)
 }
 
-/// Compute Eulerian number A(n, k)
+/// One row of the Bell triangle, in place: row i - 1 becomes row i.
+pub(crate) fn bell_triangle_step(row: &mut Vec<Integer>) {
+    let mut cur = row[row.len() - 1].clone();
+    for entry in row.iter_mut() {
+        let next = &cur + &*entry;
+        *entry = std::mem::replace(&mut cur, next);
+    }
+    row.push(cur);
+}
+
+/// MAGMA `EulerianNumber(n, k)` (ch. 144 §144.2): A(n, k), the number of permutations of
+/// {1, 2, ..., n} with exactly k descents (equivalently, k ascents).
 ///
-/// Number of permutations of {1, 2, ..., n} with exactly k descents.
-/// A descent in a permutation is a position i where π(i) > π(i+1).
-///
-/// The Eulerian numbers satisfy the recurrence:
-/// A(n, k) = (k+1)*A(n-1, k) + (n-k)*A(n-1, k-1)
+/// The recurrence A(n, k) = (k+1) A(n-1, k) + (n-k) A(n-1, k-1) (Concrete Mathematics §6.2)
+/// over the band of entries that reach (n, k), after the symmetry A(n, k) = A(n, n-1-k).
 ///
 /// Properties:
 /// - A(n, 0) = 1 (identity permutation has 0 descents)
 /// - A(n, k) = 0 for k >= n
 /// - Sum over k of A(n, k) = n!
 pub fn eulerian(n: u32, k: u32) -> Integer {
-    if n == 0 && k == 0 {
-        return Integer::one();
+    if n == 0 {
+        return if k == 0 { Integer::one() } else { Integer::zero() };
     }
     if k >= n {
         return Integer::zero();
     }
+    let k = k.min(n - 1 - k);
     if k == 0 {
         return Integer::one();
     }
-
-    // Use dynamic programming to compute A(n, k)
-    let mut dp = vec![vec![Integer::zero(); (k + 1) as usize]; (n + 1) as usize];
-    dp[0][0] = Integer::one();
-
-    for i in 1..=n as usize {
-        for j in 0..=k.min((i - 1) as u32) as usize {
-            if j == 0 {
-                dp[i][j] = Integer::one();
-            } else {
-                // A(n, k) = (k+1)*A(n-1, k) + (n-k)*A(n-1, k-1)
-                let term1 = Integer::from((j + 1) as u32) * dp[i - 1][j].clone();
-                let term2 = Integer::from((i as u32) - (j as u32)) * dp[i - 1][j - 1].clone();
-                dp[i][j] = term1 + term2;
-            }
-        }
-    }
-
-    dp[n as usize][k as usize].clone()
+    band_rows(u64::from(n), u64::from(k), RowKind::Eulerian).0
 }
 
 /// Compute Narayana number N(n, k)
@@ -696,29 +700,30 @@ pub fn delannoy(m: u32, n: u32) -> Integer {
 /// where not all points need to be paired. Also the number of lattice paths from
 /// (0, 0) to (n, 0) using steps (1, 1), (1, -1), and (1, 0) that never go below y=0.
 ///
-/// The Motzkin numbers satisfy the recurrence:
-/// M(n) = M(n-1) + Sum_{k=0}^{n-2} M(k) * M(n-2-k)
+/// The Motzkin numbers satisfy the convolution M(n) = M(n-1) + Sum_{k=0}^{n-2} M(k) M(n-2-k).
+/// They are computed by the three-term recurrence (i+2) M_i = (2i+1) M_(i-1) + 3(i-1) M_(i-2),
+/// M_0 = M_1 = 1 (R. Donaghey, L. W. Shapiro, *Motzkin numbers*, J. Combin. Theory Ser. A 23
+/// (1977) 291-301; OEIS A001006): two rolling values, each step two one-word
+/// multiplications, an addition and an exact one-word division.
 ///
 /// First few values: 1, 1, 2, 4, 9, 21, 51, 127, ...
 pub fn motzkin(n: u32) -> Integer {
-    if n == 0 || n == 1 {
-        return Integer::one();
+    let (mut prev, mut cur) = (Integer::one(), Integer::one()); // M_0, M_1
+    if n == 0 {
+        return prev;
     }
-
-    let mut m = vec![Integer::zero(); (n + 1) as usize];
-    m[0] = Integer::one();
-    m[1] = Integer::one();
-
-    for i in 2..=n as usize {
-        // M(i) = M(i-1) + Sum_{k=0}^{i-2} M(k) * M(i-2-k)
-        m[i] = m[i - 1].clone();
-
-        for k in 0..=(i - 2) {
-            m[i] = m[i].clone() + m[k].clone() * m[i - 2 - k].clone();
-        }
+    for i in 2..=u64::from(n) {
+        let next = (&(&Integer::from(2 * i + 1) * &cur) + &(&Integer::from(3 * (i - 1)) * &prev))
+            / Integer::from(i + 2);
+        prev = std::mem::replace(&mut cur, next);
     }
+    cur
+}
 
-    m[n as usize].clone()
+/// (3(2i - 1), i - 2, i + 1): the multipliers of (i+1) S_i = 3(2i-1) S_(i-1) - (i-2) S_(i-2),
+/// i >= 2, in u64 (3(2i - 1) < 2^35 for i <= 2^32).
+fn schroder_step_factors(i: u64) -> (u64, u64, u64) {
+    (3 * (2 * i - 1), i - 2, i + 1)
 }
 
 /// Compute nth large Schröder number S(n)
@@ -728,30 +733,21 @@ pub fn motzkin(n: u32) -> Integer {
 /// to parenthesize a string of n+1 factors.
 ///
 /// The large Schröder numbers satisfy the recurrence:
-/// (n+1)*S(n) = 3*(2n-1)*S(n-1) - (n-2)*S(n-2)
+/// (n+1)*S(n) = 3*(2n-1)*S(n-1) - (n-2)*S(n-2),
+/// run with two rolling values and u64 multipliers (OEIS A006318).
 ///
 /// First few values: 1, 2, 6, 22, 90, 394, 1806, ...
 pub fn schroder_large(n: u32) -> Integer {
+    let (mut prev, mut cur) = (Integer::one(), Integer::from(2u32)); // S_0, S_1
     if n == 0 {
-        return Integer::one();
+        return prev;
     }
-    if n == 1 {
-        return Integer::from(2);
+    for i in 2..=u64::from(n) {
+        let (a, b, c) = schroder_step_factors(i);
+        let next = (&(&Integer::from(a) * &cur) - &(&Integer::from(b) * &prev)) / Integer::from(c);
+        prev = std::mem::replace(&mut cur, next);
     }
-
-    let mut s = vec![Integer::zero(); (n + 1) as usize];
-    s[0] = Integer::one();
-    s[1] = Integer::from(2);
-
-    for i in 2..=n as usize {
-        // (i+1)*S(i) = 3*(2*i-1)*S(i-1) - (i-2)*S(i-2)
-        // S(i) = (3*(2*i-1)*S(i-1) - (i-2)*S(i-2)) / (i+1)
-        let term1 = Integer::from(3 * (2 * i - 1) as u32) * s[i - 1].clone();
-        let term2 = Integer::from((i - 2) as u32) * s[i - 2].clone();
-        s[i] = (term1 - term2) / Integer::from((i + 1) as u32);
-    }
-
-    s[n as usize].clone()
+    cur
 }
 
 /// Compute nth small Schröder number (or Schröder-Hipparchus number) s(n)
@@ -908,6 +904,40 @@ fn can_place_latin(grid: &[Vec<usize>], row: usize, col: usize, symbol: usize, _
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn schroder_step_factors_do_not_wrap() {
+        // HEAD formed 3 * (2i - 1) as u32: 5 at i = 715827884 and 3 at i = 2147483649.
+        assert_eq!(schroder_step_factors(715827884).0, 4294967301);
+        assert_eq!(schroder_step_factors(2147483649).0, 12884901891);
+        assert_eq!(schroder_step_factors(2), (9, 0, 3));
+        assert_eq!(schroder_step_factors(4294967296), (25769803773, 4294967294, 4294967297));
+    }
+
+    #[test]
+    fn band_rows_stay_band_sized() {
+        for (n, k) in [(100_000u64, 99_999u64), (2000, 1990), (500, 250), (500, 1)] {
+            let w = k.min(n - k + 1) as usize;
+            let (_, len1) = band_rows(n, k, RowKind::StirlingFirst);
+            let (_, len2) = band_rows(n, k, RowKind::StirlingSecond);
+            assert!(len1 <= w + 1, "stirling_first({n}, {k}): {len1} > {}", w + 1);
+            assert!(len2 <= w + 1, "stirling_second({n}, {k}): {len2} > {}", w + 1);
+            // Eulerian runs on k' = min(k, n - 1 - k) (the symmetry); k' = 0 needs no rows.
+            let ke = k.min(n - 1 - k);
+            if ke >= 1 {
+                let we = ke.min(n - ke) as usize;
+                let (_, len3) = band_rows(n, ke, RowKind::Eulerian);
+                assert!(len3 <= we + 1, "eulerian({n}, {ke}): {len3} > {}", we + 1);
+            }
+        }
+        // Both are C(n, 2) at k = n - 1: gp binomial(10^5, 2) = 4999950000.
+        assert_eq!(stirling_second(100_000, 99_999), Integer::from(4999950000u64));
+        assert_eq!(stirling_first(100_000, 99_999), Integer::from(4999950000u64));
+        // A(n, n - 2) = A(n, 1) = 2^n - n - 1, which has n bits for n >= 3.
+        let e = eulerian(100_000, 99_998);
+        assert_eq!(e.bit_length(), 100_000);
+        assert_eq!(e, Integer::from(2).pow(100_000) - Integer::from(100_001u32));
+    }
 
     #[test]
     fn test_factorial() {

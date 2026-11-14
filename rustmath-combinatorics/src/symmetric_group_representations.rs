@@ -31,6 +31,11 @@ pub struct IrreducibleRepresentation {
 
 impl IrreducibleRepresentation {
     /// Create a new irreducible representation from a partition
+    ///
+    /// # Panics
+    ///
+    /// If the dimension f^lambda exceeds usize::MAX (message of [`Partition::dimension`]); on
+    /// 64-bit targets the first such shapes have n = 36.
     pub fn new(partition: Partition) -> Self {
         let dimension = partition.dimension();
         IrreducibleRepresentation {
@@ -411,6 +416,11 @@ fn generate_partitions(remaining: usize, max_part: usize, current: Vec<usize>, r
 }
 
 /// Get all irreducible representations of S_n
+///
+/// # Panics
+///
+/// For every n >= 36 on 64-bit targets: some shape of n has a dimension f^lambda above
+/// usize::MAX ([`IrreducibleRepresentation::new`]).
 pub fn all_irreducible_representations(n: usize) -> Vec<IrreducibleRepresentation> {
     all_partitions_of(n)
         .into_iter()
@@ -441,6 +451,10 @@ pub struct SymmetricGroupCharacterTable {
 
 impl SymmetricGroupCharacterTable {
     /// Compute the character table for S_n
+    ///
+    /// # Panics
+    ///
+    /// For every n >= 36 on 64-bit targets, through [`all_irreducible_representations`].
     pub fn new(n: usize) -> Self {
         let representations = all_irreducible_representations(n);
         let conjugacy_classes = all_partitions_of(n);

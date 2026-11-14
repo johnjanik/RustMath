@@ -10,7 +10,7 @@
 //! |------------------------------------------|-------------------------------------------|
 //! | `SymmetricRepresentationSeminormal`      | [`seminormal_representation`]              |
 //! | (adjacent generator `s_i`)               | [`seminormal_transposition`]              |
-//! | hook-length dimension `SymmetricCharacterValue` on `id` | [`hook_length_dimension`]   |
+//! | `NumberOfStandardTableaux(P)` (ch. 145 §145.4.9), the degree `SymmetricCharacterValue` on `id` | [`hook_length_dimension`] (= [`crate::number_of_standard_tableaux`]) |
 //! | `SymmetricCharacterValue`                | [`symmetric_character_value`]             |
 //!
 //! The seminormal construction follows James–Kerber [JK81, §3.3]. For an adjacent
@@ -46,22 +46,14 @@ pub fn hook_length(partition: &Partition, i: usize, j: usize) -> Option<usize> {
 }
 
 /// The dimension of the irreducible `S_n`-module indexed by `λ`, i.e. the number of
-/// standard Young tableaux of shape `λ`, via the hook-length formula `n! / ∏ hooks`.
+/// standard Young tableaux of shape `λ`: MAGMA `NumberOfStandardTableaux(P)` (ch. 145
+/// §145.4.9).
 ///
-/// Computed with arbitrary-precision `Integer` (no `usize` overflow for large `n`).
+/// The same function as [`crate::number_of_standard_tableaux`] (Frobenius's formula with
+/// cancellation for thin shapes, the hook-length formula `n! / ∏ hooks` for fat ones), exact
+/// in `Integer`.
 pub fn hook_length_dimension(partition: &Partition) -> Integer {
-    let n = partition.sum();
-    let mut numerator = Integer::one();
-    for k in 2..=n {
-        numerator = numerator * Integer::from(k as u64);
-    }
-    let mut denominator = Integer::one();
-    for row in partition.hook_lengths() {
-        for h in row {
-            denominator = denominator * Integer::from(h as u64);
-        }
-    }
-    numerator / denominator
+    crate::partitions::number_of_standard_tableaux(partition)
 }
 
 /// Locate the (row, col) of a value in a tableau (0-indexed), if present.

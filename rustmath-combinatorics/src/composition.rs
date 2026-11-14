@@ -241,10 +241,13 @@ impl SignedComposition {
 ///
 /// A signed composition is an ordered way of writing n as a sum of non-zero integers
 /// (which can be positive or negative)
+///
+/// What is returned: for each composition c of |n|, the one sign pattern whose signed sum is
+/// n. Since the parts of c sum to |n|, the signed sum equals n only when every sign is the
+/// sign of n, so all parts are positive for n > 0 and all negative for n < 0. O(k) per
+/// composition (the earlier loop over all 2^k sign patterns kept exactly this one).
 pub fn signed_compositions(n: isize) -> Vec<SignedComposition> {
-    // For signed compositions, we first generate all unsigned compositions of |n|,
-    // then generate all possible sign assignments
-    let abs_n = n.abs() as usize;
+    let abs_n = n.unsigned_abs();
 
     if abs_n == 0 {
         return vec![SignedComposition { parts: vec![] }];
@@ -254,26 +257,26 @@ pub fn signed_compositions(n: isize) -> Vec<SignedComposition> {
     let unsigned_comps = compositions(abs_n);
 
     for comp in unsigned_comps {
-        // Generate all 2^k sign assignments for k parts
-        let k = comp.length();
-        let num_sign_patterns = 1 << k; // 2^k
-
-        for i in 0..num_sign_patterns {
-            let signs: Vec<bool> = (0..k).map(|j| (i >> j) & 1 == 1).collect();
-
-            if let Some(signed_comp) = SignedComposition::from_composition(&comp, signs) {
-                // Only include compositions that sum to n
-                if signed_comp.sum() == n {
-                    result.push(signed_comp);
-                }
-            }
-        }
+        push_uniformly_signed(&comp, n, &mut result);
     }
 
     result
 }
 
-/// Generate all signed compositions of n into exactly k parts
+/// Push the signed composition of c with every sign equal to the sign of n, if its sum is n
+/// (the only one of the 2^k sign patterns that can sum to n when c is a composition of |n|).
+fn push_uniformly_signed(comp: &Composition, n: isize, result: &mut Vec<SignedComposition>) {
+    let signs = vec![n > 0; comp.length()];
+    if let Some(signed_comp) = SignedComposition::from_composition(comp, signs) {
+        // Only include compositions that sum to n
+        if signed_comp.sum() == n {
+            result.push(signed_comp);
+        }
+    }
+}
+
+/// Generate all signed compositions of n into exactly k parts (the same rule as
+/// [`signed_compositions`]: each composition of |n| into k parts, with the sign of n)
 pub fn signed_compositions_k(n: isize, k: usize) -> Vec<SignedComposition> {
     if k == 0 {
         if n == 0 {
@@ -283,26 +286,15 @@ pub fn signed_compositions_k(n: isize, k: usize) -> Vec<SignedComposition> {
         }
     }
 
-    let abs_n = n.abs() as usize;
+    let abs_n = n.unsigned_abs();
     let mut result = Vec::new();
 
-    // Generate all unsigned compositions of abs_n into k parts
+    // Generate all unsigned compositions of abs_n into k parts; of the 2^k sign patterns of
+    // each, only the uniform one with the sign of n can sum to n (see signed_compositions).
     let unsigned_comps = compositions_k(abs_n, k);
 
     for comp in unsigned_comps {
-        // Generate all 2^k sign assignments
-        let num_sign_patterns = 1 << k;
-
-        for i in 0..num_sign_patterns {
-            let signs: Vec<bool> = (0..k).map(|j| (i >> j) & 1 == 1).collect();
-
-            if let Some(signed_comp) = SignedComposition::from_composition(&comp, signs) {
-                // Only include compositions that sum to n
-                if signed_comp.sum() == n {
-                    result.push(signed_comp);
-                }
-            }
-        }
+        push_uniformly_signed(&comp, n, &mut result);
     }
 
     result

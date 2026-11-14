@@ -274,15 +274,21 @@ pub fn build_transfer_matrix(height: usize, pieces: &[Polyomino]) -> Matrix<Inte
 ///
 /// # Returns
 /// Number of distinct tilings
+///
+/// # Panics
+///
+/// If n exceeds u32::MAX ("count_tilings: {n} exceeds u32::MAX"), since `Matrix::pow` takes a
+/// u32 exponent.
 pub fn count_tilings(m: usize, n: usize, pieces: &[Polyomino]) -> Integer {
     if m == 0 || n == 0 {
         return Integer::one();
     }
+    let exponent = crate::machine_word::u32_arg(n, "count_tilings");
 
     let transfer = build_transfer_matrix(m, pieces);
 
     // Compute transfer^n
-    let result = transfer.pow(n as u32).unwrap();
+    let result = transfer.pow(exponent).unwrap();
 
     // Return the (0, 0) entry: tiling from empty to empty
     result.get(0, 0).unwrap().clone()

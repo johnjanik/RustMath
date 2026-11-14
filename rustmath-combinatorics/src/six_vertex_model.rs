@@ -525,13 +525,18 @@ fn determine_vertex_type_from_asm(
 ///
 /// For unweighted case (all weights = 1), this equals the ASM count.
 /// For weighted case, use Boltzmann weights exp(-β*E).
+///
+/// # Panics
+///
+/// If n exceeds u32::MAX ("six_vertex partition_function: {n} exceeds u32::MAX"): the count
+/// A(n) for n >= 2^32 has about 0.38 n^2 > 7·10^18 bits.
 pub fn partition_function(n: usize) -> Integer {
     if n == 0 {
         return Integer::one();
     }
 
     // For DWBC, the partition function equals the ASM count
-    count_dwbc_configurations(n as u32)
+    count_dwbc_configurations(crate::machine_word::u32_arg(n, "six_vertex partition_function"))
 }
 
 /// Compute the weighted partition function with energy parameters

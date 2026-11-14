@@ -6,6 +6,27 @@
 //!
 //! This module also implements ν-Dyck words (nu-Dyck words), which are generalizations
 //! of Dyck words where the path stays above a boundary path ν instead of just the x-axis.
+//!
+//! The statistics (area, bounce, dinv) are counts returned as `i32`. Each height fits, but a
+//! sum grows with the square of the length, so every sum and difference is checked and a
+//! value outside the i32 range is a documented panic (design C1 §1.6, item 36).
+
+/// The sum of `values` in i32, or a panic "{what}: the value leaves the i32 range".
+fn checked_sum_i32(values: impl Iterator<Item = i32>, what: &str) -> i32 {
+    let mut total: i32 = 0;
+    for v in values {
+        total = total
+            .checked_add(v)
+            .unwrap_or_else(|| panic!("{what}: the value leaves the i32 range"));
+    }
+    total
+}
+
+/// a - b in i32, or the same panic as [`checked_sum_i32`].
+fn checked_sub_i32(a: i32, b: i32, what: &str) -> i32 {
+    a.checked_sub(b)
+        .unwrap_or_else(|| panic!("{what}: the value leaves the i32 range"))
+}
 
 /// A Dyck word - a sequence of n X's and n Y's such that no initial segment
 /// has more Y's than X's
@@ -161,13 +182,18 @@ impl DyckWord {
     /// Get the area under the path
     ///
     /// This is the sum of heights at each up step
+    ///
+    /// # Panics
+    ///
+    /// If the area leaves the i32 range ("DyckWord::area: the value leaves the i32 range"),
+    /// from semilength 65537 for the path N^n E^n.
     pub fn area(&self) -> i32 {
-        let mut area = 0;
+        let mut area = 0i32;
         let mut height = 0i32;
 
         for &step in &self.word {
             if step {
-                area += height;
+                area = checked_sum_i32([area, height].into_iter(), "DyckWord::area");
                 height += 1;
             } else {
                 height -= 1;
@@ -180,8 +206,13 @@ impl DyckWord {
     /// Compute the bounce statistic
     ///
     /// The bounce statistic is the sum of valley heights
+    ///
+    /// # Panics
+    ///
+    /// If the sum leaves the i32 range ("DyckWord::bounce_statistic: the value leaves the i32
+    /// range").
     pub fn bounce_statistic(&self) -> i32 {
-        self.valley_heights().iter().sum()
+        checked_sum_i32(self.valley_heights().into_iter(), "DyckWord::bounce_statistic")
     }
 
     /// Return the number of returns to height 0 (not counting the final return)
@@ -442,8 +473,13 @@ impl NuDyckWord {
     }
 
     /// Compute the total area between the path and the boundary ν
+    ///
+    /// # Panics
+    ///
+    /// If the sum leaves the i32 range ("NuDyckWord::total_area: the value leaves the i32
+    /// range").
     pub fn total_area(&self) -> i32 {
-        self.area_sequence().iter().sum()
+        checked_sum_i32(self.area_sequence().into_iter(), "NuDyckWord::total_area")
     }
 
     /// Convert to string representation (U's and D's for up and down)
@@ -490,6 +526,11 @@ impl NuDyckWord {
     /// Compute statistics about the bounce path
     ///
     /// Returns a tuple of (min_height, max_height, total_area, touch_count)
+    ///
+    /// # Panics
+    ///
+    /// If the total area leaves the i32 range ("NuDyckWord::bounce_statistics: the value
+    /// leaves the i32 range").
     pub fn bounce_statistics(&self) -> (i32, i32, i32, usize) {
         let bounce = self.bounce_path();
 
@@ -501,7 +542,7 @@ impl NuDyckWord {
         let max_height = *bounce.iter().max().unwrap_or(&0);
 
         // Total area is the sum of all heights
-        let total_area: i32 = bounce.iter().sum();
+        let total_area = checked_sum_i32(bounce.iter().copied(), "NuDyckWord::bounce_statistics");
 
         // Count touches with boundary ν
         let mut touch_count = 0;
@@ -573,16 +614,23 @@ impl NuDyckWord {
     /// Compute the dinv statistic (diagonal inversion statistic)
     ///
     /// For a ν-Dyck word, this is the number of cells strictly between the path and ν
+    ///
+    /// # Panics
+    ///
+    /// If the count leaves the i32 range ("NuDyckWord::dinv: the value leaves the i32
+    /// range").
     pub fn dinv(&self) -> i32 {
+        const WHAT: &str = "NuDyckWord::dinv";
         let heights = self.heights();
-        let mut count = 0;
+        let mut count = 0i32;
 
         for i in 0..self.path.len() {
             // Count cells strictly between heights[i] and nu[i]
             let h = heights[i];
             let nu_h = self.nu[i];
             if h > nu_h {
-                count += h - nu_h - 1;
+                let cells = checked_sub_i32(checked_sub_i32(h, nu_h, WHAT), 1, WHAT);
+                count = checked_sum_i32([count, cells].into_iter(), WHAT);
             }
         }
 
@@ -592,7 +640,13 @@ impl NuDyckWord {
     /// Compute comprehensive bounce statistics
     ///
     /// Returns a BounceStats struct with detailed information
+    ///
+    /// # Panics
+    ///
+    /// If an area leaves the i32 range ("NuDyckWord::detailed_bounce_statistics: the value
+    /// leaves the i32 range", or the message of [`NuDyckWord::total_area`]).
     pub fn detailed_bounce_statistics(&self) -> BounceStats {
+        const WHAT: &str = "NuDyckWord::detailed_bounce_statistics";
         let bounce = self.bounce_path();
         let heights = self.heights();
 
@@ -601,12 +655,15 @@ impl NuDyckWord {
 
         let bounce_min = *bounce.iter().min().unwrap_or(&0);
         let bounce_max = *bounce.iter().max().unwrap_or(&0);
-        let bounce_area: i32 = bounce.iter().sum();
+        let bounce_area = checked_sum_i32(bounce.iter().copied(), WHAT);
 
         // Compute area between path and bounce
-        let mut area_between = 0;
+        let mut area_between = 0i32;
         for i in 0..heights.len().min(bounce.len()) {
-            area_between += (heights[i] - bounce[i]).abs();
+            let gap = checked_sub_i32(heights[i], bounce[i], WHAT)
+                .checked_abs()
+                .unwrap_or_else(|| panic!("{WHAT}: the value leaves the i32 range"));
+            area_between = checked_sum_i32([area_between, gap].into_iter(), WHAT);
         }
 
         BounceStats {

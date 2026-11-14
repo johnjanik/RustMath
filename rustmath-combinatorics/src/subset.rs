@@ -5,8 +5,14 @@
 //! - Rank/unrank operations using binary representation
 //! - Lexicographic successor/predecessor algorithms
 //! - Multiple representation formats (element list, bit vector)
+//!
+//! MAGMA Handbook ch. 144 §144.3 (subsets, digest
+//! `rustmath-lava/docs/Chapter_144_Enumerative_Combinatorics.md`). Ranks are machine words:
+//! a rank that exceeds usize::MAX is a documented panic, never a wrapped or saturated value
+//! (design C1 §1.6, items 3, 17, 18, 28).
 
-use rustmath_integers::Integer;
+use crate::machine_word::binomial_usize_checked;
+use rustmath_integers::{Integer, SageInteger};
 
 /// A subset of {0, 1, 2, ..., n-1}
 ///
@@ -69,8 +75,9 @@ impl Subset {
     /// assert_eq!(subset.elements(), &[0, 2, 3]);
     /// ```
     pub fn from_bitvector(bits: usize, n: usize) -> Self {
+        // A usize has only usize::BITS bits: elements from usize::BITS on are never set.
         let mut elements = Vec::new();
-        for i in 0..n {
+        for i in 0..n.min(usize::BITS as usize) {
             if (bits >> i) & 1 == 1 {
                 elements.push(i);
             }
@@ -140,8 +147,20 @@ impl Subset {
     /// let subset = Subset::from_elements(vec![0, 2], 4).unwrap();
     /// assert_eq!(subset.rank_binary(), 5); // Binary 0101
     /// ```
+    ///
+    /// # Panics
+    ///
+    /// If an element is at least usize::BITS ("rank_binary: the rank exceeds usize::MAX"):
+    /// the rank 2^e of such an element does not fit. The universe size does not matter.
     pub fn rank_binary(&self) -> usize {
-        self.to_bitvector().unwrap_or(0)
+        let mut bits = 0usize;
+        for &e in &self.elements {
+            if e >= usize::BITS as usize {
+                panic!("rank_binary: the rank exceeds usize::MAX");
+            }
+            bits |= 1usize << e;
+        }
+        bits
     }
 
     /// Create a subset from its binary rank
@@ -161,12 +180,19 @@ impl Subset {
     ///
     /// Uses the combinatorial number system (same as Combination)
     /// Returns None if this is not a valid k-subset
+    ///
+    /// # Panics
+    ///
+    /// If the rank exceeds usize::MAX ("rank_k_subset: the rank exceeds usize::MAX"). Every
+    /// binomial term is a summand of the rank, so a term that does not fit means the rank
+    /// does not fit either.
     pub fn rank_k_subset(&self, k: usize) -> Option<usize> {
         if self.size() != k {
             return None;
         }
 
-        let mut rank = 0;
+        const MSG: &str = "rank_k_subset: the rank exceeds usize::MAX";
+        let mut rank: usize = 0;
 
         for (i, &elem) in self.elements.iter().enumerate() {
             // Count k-subsets that come before this one
@@ -176,7 +202,9 @@ impl Subset {
             for val in start..elem {
                 let choices = self.n - val - 1;
                 if choices >= remaining - 1 {
-                    rank += binomial_usize(choices, remaining - 1);
+                    let term = binomial_usize_checked(choices as u128, (remaining - 1) as u128)
+                        .unwrap_or_else(|| panic!("{MSG}"));
+                    rank = rank.checked_add(term).unwrap_or_else(|| panic!("{MSG}"));
                 }
             }
         }
@@ -210,14 +238,14 @@ impl Subset {
                     continue;
                 }
 
-                let count = binomial_usize(choices, remaining - 1);
-
-                if remaining_rank < count {
-                    elements.push(val);
-                    start = val + 1;
-                    break;
-                } else {
-                    remaining_rank -= count;
+                // None: the count exceeds usize::MAX, so it is larger than any usize rank.
+                match binomial_usize_checked(choices as u128, (remaining - 1) as u128) {
+                    Some(count) if remaining_rank >= count => remaining_rank -= count,
+                    _ => {
+                        elements.push(val);
+                        start = val + 1;
+                        break;
+                    }
                 }
             }
         }
@@ -300,23 +328,44 @@ impl Subset {
     /// Get the next subset in binary order (among all 2^n subsets)
     ///
     /// Returns None if this is the full set
+    ///
+    /// Binary increment on the sorted element list, with no machine word: the leading run
+    /// 0, 1, ..., i-1 of the elements is dropped and i, the smallest non-element, is added (the
+    /// trailing ones become zeros and the first zero becomes one). O(n); right for every n.
     pub fn next_binary(&self) -> Option<Self> {
-        let bits = self.to_bitvector()?;
-        if bits == (1 << self.n) - 1 {
+        let i = self
+            .elements
+            .iter()
+            .enumerate()
+            .take_while(|&(t, &e)| t == e)
+            .count();
+        if i == self.n {
             return None; // This is the full set
         }
-        Some(Self::from_bitvector(bits + 1, self.n))
+        let mut elements = Vec::with_capacity(self.elements.len() - i + 1);
+        elements.push(i);
+        elements.extend_from_slice(&self.elements[i..]);
+        Some(Subset {
+            elements,
+            n: self.n,
+        })
     }
 
     /// Get the previous subset in binary order
     ///
     /// Returns None if this is the empty set
+    ///
+    /// Binary decrement on the sorted element list: the smallest element i is removed and
+    /// 0, 1, ..., i-1 are added. Time and memory are linear in i plus the subset size; right
+    /// for every n.
     pub fn prev_binary(&self) -> Option<Self> {
-        let bits = self.to_bitvector()?;
-        if bits == 0 {
-            return None; // This is the empty set
-        }
-        Some(Self::from_bitvector(bits - 1, self.n))
+        let (&i, rest) = self.elements.split_first()?; // None: the empty set
+        let mut elements: Vec<usize> = (0..i).collect();
+        elements.extend_from_slice(rest);
+        Some(Subset {
+            elements,
+            n: self.n,
+        })
     }
 
     /// Compute the complement of this subset
@@ -623,30 +672,16 @@ pub fn subset_iterator(n: usize) -> SubsetIterator {
     SubsetIterator::new(n)
 }
 
-/// Compute binomial coefficient using usize (for internal use)
-fn binomial_usize(n: usize, k: usize) -> usize {
-    if k > n {
-        return 0;
-    }
-    if k == 0 || k == n {
-        return 1;
-    }
-
-    let k = k.min(n - k);
-    let mut result = 1usize;
-
-    for i in 0..k {
-        result = result.saturating_mul(n - i) / (i + 1);
-    }
-
-    result
-}
-
-/// Count the number of k-subsets of an n-element set
+/// Count the number of k-subsets of an n-element set (MAGMA `Binomial(n, k)`, ch. 144)
 ///
-/// Returns C(n, k) = n! / (k! * (n-k)!)
+/// Returns C(n, k) = n! / (k! * (n-k)!). n and k are widened to u64 (lossless: a usize has
+/// at most 64 bits on every Rust target).
+///
+/// # Panics
+///
+/// Panics (in `SageInteger::binomial`) if the result has more than about 2^32 bits.
 pub fn count_k_subsets(n: usize, k: usize) -> Integer {
-    crate::binomial(n as u32, k as u32)
+    <Integer as SageInteger>::binomial(&Integer::from(n as u64), &Integer::from(k as u64))
 }
 
 /// Generate pairwise disjoint k-subsets

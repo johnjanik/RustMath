@@ -179,7 +179,8 @@ pub fn burnside_lemma(group: &PermutationGroup, num_colors: usize) -> Integer {
 
         // Each cycle can be colored independently
         // Number of fixed colorings is num_colors^(number of cycles)
-        let fixed_count = Integer::from(num_colors as u32).pow(num_cycles as u32);
+        // usize to u64 is lossless; the exponent counts the cycles of a stored permutation.
+        let fixed_count = Integer::from(num_colors as u64).pow(num_cycles as u32);
         sum = sum + fixed_count;
     }
 
@@ -339,7 +340,8 @@ fn multiply_polynomials(
 pub fn count_fixed_colorings(perm: &Permutation, num_colors: usize) -> Integer {
     let cycle_type = PermutationGroup::cycle_type(perm);
     let num_cycles: usize = cycle_type.values().sum();
-    Integer::from(num_colors as u32).pow(num_cycles as u32)
+    // usize to u64 is lossless; the exponent counts the cycles of a stored permutation.
+    Integer::from(num_colors as u64).pow(num_cycles as u32)
 }
 
 /// Enumerate all distinct colorings under a group action

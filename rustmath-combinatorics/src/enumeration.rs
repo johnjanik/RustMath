@@ -3,7 +3,7 @@
 //! This module provides general utilities for enumerating and iterating over
 //! combinatorial structures, including lazy iterators and generating functions.
 
-use rustmath_core::NumericConversion;
+use crate::machine_word::{binomial_usize_checked, falling_factorial_usize_checked};
 use std::collections::VecDeque;
 
 /// A trait for combinatorial objects that can be enumerated
@@ -488,19 +488,9 @@ impl Iterator for PermutationGrayCodeIterator {
             return (0, Some(0));
         }
 
-        // Total permutations is n!
-        // Computing remaining is complex, so we just give total
-        let total = factorial(self.n);
-        (0, Some(total))
-    }
-}
-
-/// Compute factorial n!
-fn factorial(n: usize) -> usize {
-    if n <= 1 {
-        1
-    } else {
-        (2..=n).product()
+        // Total permutations is n! (an upper bound of what remains); None when n! exceeds
+        // usize::MAX (from n = 21 on 64-bit targets).
+        (0, falling_factorial_usize_checked(self.n, self.n))
     }
 }
 
@@ -609,11 +599,9 @@ impl Iterator for CombinationGrayCodeIterator {
             return (0, Some(0));
         }
 
-        // Use binomial coefficient from parent crate
-        let total = crate::binomial(self.n as u32, self.k as u32)
-            .to_usize()
-            .unwrap_or(usize::MAX);
-        (0, Some(total))
+        // C(n, k) bounds what remains; None when it exceeds usize::MAX (no big binomial is
+        // formed).
+        (0, binomial_usize_checked(self.n as u128, self.k as u128))
     }
 }
 
@@ -1063,30 +1051,11 @@ impl<T: Clone> InfiniteCartesianProduct<T> {
             return 1;
         }
 
-        // C(sum + n - 1, n - 1)
-        Self::binomial(sum + n - 1, n - 1)
-    }
-
-    /// Simple binomial coefficient calculation
-    fn binomial(n: usize, k: usize) -> usize {
-        if k > n {
-            return 0;
-        }
-        if k == 0 || k == n {
-            return 1;
-        }
-
-        let k = k.min(n - k);
-        let mut result = 1usize;
-
-        for i in 0..k {
-            result = result
-                .saturating_mul(n - i)
-                .checked_div(i + 1)
-                .unwrap_or(usize::MAX);
-        }
-
-        result
+        // C(sum + n - 1, n - 1), formed in u128. usize::MAX stands for a count above
+        // usize::MAX. `get_indices_for_position` compares `k < ways`, which is then right for
+        // every position k below usize::MAX. The position k = usize::MAX is not reached: it
+        // needs about 2^64 tuples enumerated first (design C1 §1.7, rule R2).
+        binomial_usize_checked(sum as u128 + n as u128 - 1, n as u128 - 1).unwrap_or(usize::MAX)
     }
 }
 
@@ -1178,7 +1147,13 @@ pub fn tuples<T: Clone>(set: &[T], k: usize) -> Vec<Vec<T>> {
 
 /// Count the number of ways to distribute n identical objects into k distinct bins
 ///
-/// This is the "stars and bars" problem: C(n+k-1, k-1)
+/// This is the "stars and bars" problem: C(n+k-1, k-1), formed in u128 and checked (at most
+/// 65 steps, whatever n and k are).
+///
+/// # Panics
+///
+/// If C(n+k-1, k-1) exceeds usize::MAX ("stars_and_bars: C(n+k-1, k-1) exceeds
+/// usize::MAX").
 pub fn stars_and_bars(n: usize, k: usize) -> usize {
     if k == 0 {
         return if n == 0 { 1 } else { 0 };
@@ -1187,9 +1162,8 @@ pub fn stars_and_bars(n: usize, k: usize) -> usize {
         return 1;
     }
 
-    crate::binomial((n + k - 1) as u32, (k - 1) as u32)
-        .to_usize()
-        .unwrap_or(0)
+    binomial_usize_checked(n as u128 + k as u128 - 1, k as u128 - 1)
+        .expect("stars_and_bars: C(n+k-1, k-1) exceeds usize::MAX")
 }
 
 /// Generate all weak compositions of n into k parts (parts can be 0)
@@ -1687,6 +1661,9 @@ mod tests {
 
     #[test]
     fn test_factorial() {
+        // The private usize factorial is gone (C1 item 25); its values are those of the
+        // checked n!/(n-n)! that `PermutationGrayCodeIterator::size_hint` now uses.
+        let factorial = |n: usize| falling_factorial_usize_checked(n, n).unwrap();
         assert_eq!(factorial(0), 1);
         assert_eq!(factorial(1), 1);
         assert_eq!(factorial(2), 2);

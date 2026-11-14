@@ -529,8 +529,9 @@ pub fn t_eulerian(n: u32, k: u32) -> UnivariatePolynomial<Integer> {
 /// let tm = t_multinomial(5, &[2, 2, 1]);
 /// ```
 pub fn t_multinomial(n: u32, ks: &[u32]) -> UnivariatePolynomial<Integer> {
-    let sum: u32 = ks.iter().sum();
-    if sum != n {
+    // The sum is formed in u128, so it never wraps (a slice has fewer than 2^64 entries).
+    let sum: u128 = ks.iter().map(|&k| u128::from(k)).sum();
+    if sum != u128::from(n) {
         return UnivariatePolynomial::new(vec![Integer::zero()]);
     }
 

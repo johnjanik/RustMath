@@ -83,11 +83,16 @@ impl VectorPartition {
 /// let count = fast_vector_partitions(&[2, 1]);
 /// assert!(count > 0);
 /// ```
+///
+/// # Panics
+///
+/// If the count exceeds usize::MAX ("fast_vector_partitions: the count exceeds usize::MAX");
+/// for a vector of one component n this is p(n), from n = 417 on 64-bit targets.
 pub fn fast_vector_partitions(vector: &[usize]) -> usize {
     // Generate all possible parts once
     let all_parts = generate_all_parts(vector);
     let mut memo = HashMap::new();
-    count_partitions_with_parts(vector, &all_parts, 0, &mut memo)
+    count_partitions_with_parts(vector, &all_parts, 0, &mut memo, "fast_vector_partitions")
 }
 
 /// Count vector partitions with a maximum part constraint
@@ -98,11 +103,32 @@ pub fn fast_vector_partitions(vector: &[usize]) -> usize {
 ///
 /// # Returns
 /// The number of distinct vector partitions
+///
+/// # Panics
+///
+/// If `max_part` has a different number of components from `vector`
+/// ("fast_vector_partitions_with_max_part: max_part must have as many components as the
+/// vector"), and if the count exceeds usize::MAX ("fast_vector_partitions_with_max_part: the
+/// count exceeds usize::MAX").
 pub fn fast_vector_partitions_with_max_part(vector: &[usize], max_part: Option<&[usize]>) -> usize {
     let actual_max = max_part.unwrap_or(vector);
+    // The copy loop of `count_partitions_with_parts` ends only because no part is the zero
+    // vector on the components of `vector`. A part with other lengths could break that, so
+    // the lengths are checked before any work.
+    assert_eq!(
+        actual_max.len(),
+        vector.len(),
+        "fast_vector_partitions_with_max_part: max_part must have as many components as the vector"
+    );
     let all_parts = generate_all_parts(actual_max);
     let mut memo = HashMap::new();
-    count_partitions_with_parts(vector, &all_parts, 0, &mut memo)
+    count_partitions_with_parts(
+        vector,
+        &all_parts,
+        0,
+        &mut memo,
+        "fast_vector_partitions_with_max_part",
+    )
 }
 
 /// Count partitions using a fixed list of available parts
@@ -115,6 +141,7 @@ fn count_partitions_with_parts(
     available_parts: &[Vec<usize>],
     part_index: usize,
     memo: &mut HashMap<(Vec<usize>, usize), usize>,
+    what: &str,
 ) -> usize {
     // Base case: zero vector
     if vector.iter().all(|&x| x == 0) {
@@ -133,48 +160,47 @@ fn count_partitions_with_parts(
     }
 
     let current_part = &available_parts[part_index];
-    let mut total = 0;
+    let mut total: usize = 0;
 
-    // Try using current_part 0, 1, 2, ... times
-    let mut k = 0;
+    // Try using current_part 0, 1, 2, ... times. No part is the zero vector
+    // (`generate_all_parts` and `generate_parts_up_to` remove it), and every part has the
+    // length of `vector` (the public callers check it). So the subtraction fails after at most
+    // max_i v_i + 1 copies and the loop ends without a cap.
+    let mut remainder = vector.to_vec();
     loop {
-        // Check if we can subtract k copies of current_part from vector
-        let mut can_subtract = true;
-        let mut remainder = vector.to_vec();
-
-        for _ in 0..k {
-            let mut all_non_negative = true;
-            for (i, &part_val) in current_part.iter().enumerate() {
-                if remainder[i] < part_val {
-                    all_non_negative = false;
-                    break;
-                }
-                remainder[i] -= part_val;
-            }
-
-            if !all_non_negative {
-                can_subtract = false;
-                break;
-            }
-        }
-
-        if !can_subtract {
-            break;
-        }
-
         // Count partitions of remainder using parts from part_index+1 onwards
-        total += count_partitions_with_parts(&remainder, available_parts, part_index + 1, memo);
+        let count = count_partitions_with_parts(&remainder, available_parts, part_index + 1, memo, what);
+        total = checked_count_add(total, count, what);
 
-        k += 1;
-
-        // Safety check to avoid infinite loops
-        if k > 1000 {
+        if !subtract_part(&mut remainder, current_part) {
             break;
         }
     }
 
     memo.insert(key, total);
     total
+}
+
+/// Subtract one copy of `part` from `remainder` when every component allows it (returns
+/// true); otherwise leave `remainder` unchanged and return false.
+fn subtract_part(remainder: &mut [usize], part: &[usize]) -> bool {
+    if remainder.iter().zip(part).any(|(&r, &x)| r < x) {
+        return false;
+    }
+    for (r, &x) in remainder.iter_mut().zip(part) {
+        *r -= x;
+    }
+    true
+}
+
+/// total + count, or a panic "{what}: the count exceeds usize::MAX". The check is exact:
+/// every memo state is reached from the input vector by subtracting copies of earlier parts,
+/// so its count is a summand of the top count along that path, and a partial total is at most
+/// its state's count. So a failed addition means the top count exceeds usize::MAX.
+fn checked_count_add(total: usize, count: usize, what: &str) -> usize {
+    total
+        .checked_add(count)
+        .unwrap_or_else(|| panic!("{what}: the count exceeds usize::MAX"))
 }
 
 /// Generate all non-zero vectors with components in [0, max_vec[i]]
@@ -262,11 +288,23 @@ pub fn vector_partitions(vector: &[usize]) -> Vec<VectorPartition> {
 }
 
 /// Generate vector partitions with a maximum part constraint
+///
+/// # Panics
+///
+/// If `max_part` has a different number of components from `vector`
+/// ("vector_partitions_with_max_part: max_part must have as many components as the vector").
 pub fn vector_partitions_with_max_part(
     vector: &[usize],
     max_part: Option<&[usize]>,
 ) -> Vec<VectorPartition> {
     let actual_max = max_part.unwrap_or(vector);
+    // As in `fast_vector_partitions_with_max_part`: the copy loop ends only when every part has
+    // the length of `vector`.
+    assert_eq!(
+        actual_max.len(),
+        vector.len(),
+        "vector_partitions_with_max_part: max_part must have as many components as the vector"
+    );
     let all_parts = generate_all_parts(actual_max);
     let mut result = Vec::new();
     generate_partitions_with_parts(vector, &all_parts, 0, Vec::new(), &mut result);
@@ -294,48 +332,19 @@ fn generate_partitions_with_parts(
 
     let current_part = &available_parts[part_index];
 
-    // Try using current_part 0, 1, 2, ... times
-    let mut k = 0;
+    // Try using current_part 0, 1, 2, ... times; the loop ends when the next copy no longer
+    // fits (no part is the zero vector, and every part has the length of `vector`, as the
+    // public callers check), without a cap on the number of copies.
+    let mut remainder = vector.to_vec();
+    let mut next_parts = current_parts;
     loop {
-        // Check if we can subtract k copies of current_part
-        let mut can_subtract = true;
-        let mut remainder = vector.to_vec();
-
-        for _ in 0..k {
-            let mut all_non_negative = true;
-            for (i, &part_val) in current_part.iter().enumerate() {
-                if remainder[i] < part_val {
-                    all_non_negative = false;
-                    break;
-                }
-                remainder[i] -= part_val;
-            }
-
-            if !all_non_negative {
-                can_subtract = false;
-                break;
-            }
-        }
-
-        if !can_subtract {
-            break;
-        }
-
-        // Build new parts list with k copies of current_part
-        let mut next_parts = current_parts.clone();
-        for _ in 0..k {
-            next_parts.push(current_part.clone());
-        }
-
         // Recurse with parts from part_index+1 onwards
-        generate_partitions_with_parts(&remainder, available_parts, part_index + 1, next_parts, result);
+        generate_partitions_with_parts(&remainder, available_parts, part_index + 1, next_parts.clone(), result);
 
-        k += 1;
-
-        // Safety check
-        if k > 1000 {
+        if !subtract_part(&mut remainder, current_part) {
             break;
         }
+        next_parts.push(current_part.clone());
     }
 }
 
@@ -347,6 +356,11 @@ fn generate_partitions_with_parts(
 ///
 /// # Returns
 /// The number of vector partitions with at most `max_parts` parts
+///
+/// # Panics
+///
+/// If the count exceeds usize::MAX ("count_vector_partitions_max_parts: the count exceeds
+/// usize::MAX").
 pub fn count_vector_partitions_max_parts(vector: &[usize], max_parts: usize) -> usize {
     if max_parts == 0 {
         return if vector.iter().all(|&x| x == 0) {
@@ -384,36 +398,19 @@ fn count_with_max_parts_helper(
     }
 
     let current_part = &available_parts[part_index];
-    let mut total = 0;
+    let mut total: usize = 0;
+    const WHAT: &str = "count_vector_partitions_max_parts";
 
     // Try using current_part k times where k <= max_parts
+    let mut remainder = vector.to_vec();
     for k in 0..=max_parts {
-        // Check if we can subtract k copies
-        let mut can_subtract = true;
-        let mut remainder = vector.to_vec();
-
-        for _ in 0..k {
-            let mut all_non_negative = true;
-            for (i, &part_val) in current_part.iter().enumerate() {
-                if remainder[i] < part_val {
-                    all_non_negative = false;
-                    break;
-                }
-                remainder[i] -= part_val;
-            }
-
-            if !all_non_negative {
-                can_subtract = false;
-                break;
-            }
-        }
-
-        if !can_subtract {
+        if k > 0 && !subtract_part(&mut remainder, current_part) {
             break;
         }
 
         // Count partitions of remainder with max_parts - k parts remaining
-        total += count_with_max_parts_helper(&remainder, available_parts, part_index + 1, max_parts - k, memo);
+        let count = count_with_max_parts_helper(&remainder, available_parts, part_index + 1, max_parts - k, memo);
+        total = checked_count_add(total, count, WHAT);
     }
 
     memo.insert(key, total);
@@ -428,6 +425,11 @@ fn count_with_max_parts_helper(
 ///
 /// # Returns
 /// The number of vector partitions with exactly `k` parts
+///
+/// # Panics
+///
+/// If the count exceeds usize::MAX ("count_vector_partitions_exact_parts: the count exceeds
+/// usize::MAX").
 pub fn count_vector_partitions_exact_parts(vector: &[usize], k: usize) -> usize {
     if k == 0 {
         return if vector.iter().all(|&x| x == 0) {
@@ -469,36 +471,19 @@ fn count_with_exact_parts_helper(
     }
 
     let current_part = &available_parts[part_index];
-    let mut total = 0;
+    let mut total: usize = 0;
+    const WHAT: &str = "count_vector_partitions_exact_parts";
 
     // Try using current_part k times where k <= exact_parts
+    let mut remainder = vector.to_vec();
     for k in 0..=exact_parts {
-        // Check if we can subtract k copies
-        let mut can_subtract = true;
-        let mut remainder = vector.to_vec();
-
-        for _ in 0..k {
-            let mut all_non_negative = true;
-            for (i, &part_val) in current_part.iter().enumerate() {
-                if remainder[i] < part_val {
-                    all_non_negative = false;
-                    break;
-                }
-                remainder[i] -= part_val;
-            }
-
-            if !all_non_negative {
-                can_subtract = false;
-                break;
-            }
-        }
-
-        if !can_subtract {
+        if k > 0 && !subtract_part(&mut remainder, current_part) {
             break;
         }
 
         // Count partitions of remainder with exactly (exact_parts - k) parts
-        total += count_with_exact_parts_helper(&remainder, available_parts, part_index + 1, exact_parts - k, memo);
+        let count = count_with_exact_parts_helper(&remainder, available_parts, part_index + 1, exact_parts - k, memo);
+        total = checked_count_add(total, count, WHAT);
     }
 
     memo.insert(key, total);

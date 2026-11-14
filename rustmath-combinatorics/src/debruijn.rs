@@ -23,6 +23,7 @@
 //! assert_eq!(seq.len(), 9); // 3^2 = 9
 //! ```
 
+use crate::machine_word::{binomial_usize_checked, checked_pow_usize, falling_factorial_usize_checked};
 use std::collections::HashSet;
 use std::fmt;
 
@@ -52,9 +53,8 @@ impl DeBruijnSequence {
             return None;
         }
 
-        // Validate length
-        let expected_len = k.pow(n as u32);
-        if sequence.len() != expected_len {
+        // Validate length: k^n, checked. None means k^n > usize::MAX >= the length.
+        if checked_pow_usize(k, n) != Some(sequence.len()) {
             return None;
         }
 
@@ -77,8 +77,9 @@ impl DeBruijnSequence {
             }
         }
 
-        // Should have exactly k^n unique substrings
-        seen.len() == self.k.pow(self.n as u32)
+        // Should have exactly k^n unique substrings (checked: a k^n above usize::MAX is never
+        // the count of a sequence held in memory)
+        checked_pow_usize(self.k, self.n) == Some(seen.len())
     }
 
     /// Get the sequence
@@ -283,6 +284,11 @@ pub fn debruijn_prefer_zero(n: usize) -> Vec<usize> {
 /// # Returns
 /// A universal cycle as a vector, or None if no such cycle exists
 ///
+/// # Panics
+///
+/// If C(n, k) exceeds usize::MAX ("universal_cycle_subsets: C(n, k) exceeds usize::MAX"):
+/// such a cycle cannot be stored.
+///
 /// # Example
 /// ```
 /// use rustmath_combinatorics::debruijn::universal_cycle_subsets;
@@ -301,7 +307,8 @@ pub fn universal_cycle_subsets(n: usize, k: usize) -> Option<Vec<usize>> {
     }
 
     // Use a greedy algorithm to construct the universal cycle
-    let num_subsets = binomial_coefficient(n, k);
+    let num_subsets = binomial_usize_checked(n as u128, k as u128)
+        .expect("universal_cycle_subsets: C(n, k) exceeds usize::MAX");
     let mut cycle = Vec::new();
     let mut used_subsets = HashSet::new();
 
@@ -350,13 +357,19 @@ pub fn universal_cycle_subsets(n: usize, k: usize) -> Option<Vec<usize>> {
 ///
 /// # Returns
 /// A universal cycle as a vector, or None if no such cycle exists
+///
+/// # Panics
+///
+/// If n!/(n-k)! exceeds usize::MAX ("universal_cycle_permutations: n!/(n-k)! exceeds
+/// usize::MAX"): such a cycle cannot be stored.
 pub fn universal_cycle_permutations(n: usize, k: usize) -> Option<Vec<usize>> {
     if k > n || k == 0 {
         return None;
     }
 
     // Use a greedy algorithm
-    let num_perms = falling_factorial(n, k);
+    let num_perms = falling_factorial_usize_checked(n, k)
+        .expect("universal_cycle_permutations: n!/(n-k)! exceeds usize::MAX");
     let mut cycle = Vec::new();
     let mut used_perms = HashSet::new();
 
@@ -423,37 +436,6 @@ pub fn debruijn_graph_path(n: usize) -> Vec<Vec<usize>> {
 }
 
 // Helper functions
-
-fn binomial_coefficient(n: usize, k: usize) -> usize {
-    if k > n {
-        return 0;
-    }
-    if k == 0 || k == n {
-        return 1;
-    }
-
-    let k = k.min(n - k);
-    let mut result = 1;
-
-    for i in 0..k {
-        result = result * (n - i) / (i + 1);
-    }
-
-    result
-}
-
-fn falling_factorial(n: usize, k: usize) -> usize {
-    if k > n {
-        return 0;
-    }
-
-    let mut result = 1;
-    for i in 0..k {
-        result *= n - i;
-    }
-
-    result
-}
 
 fn to_subset_key(seq: &[usize], start: usize, k: usize) -> Vec<usize> {
     let mut subset: Vec<usize> = seq[start..start + k].to_vec();
@@ -686,22 +668,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_binomial_coefficient_helper() {
-        assert_eq!(binomial_coefficient(4, 2), 6);
-        assert_eq!(binomial_coefficient(5, 3), 10);
-        assert_eq!(binomial_coefficient(10, 0), 1);
-        assert_eq!(binomial_coefficient(10, 10), 1);
-        assert_eq!(binomial_coefficient(5, 6), 0);
-    }
-
-    #[test]
-    fn test_falling_factorial_helper() {
-        assert_eq!(falling_factorial(5, 3), 60); // 5 * 4 * 3
-        assert_eq!(falling_factorial(10, 2), 90); // 10 * 9
-        assert_eq!(falling_factorial(5, 0), 1);
-        assert_eq!(falling_factorial(5, 6), 0);
-    }
+    // The private binomial_coefficient and falling_factorial helpers are gone (C1 item 20):
+    // their assertions are in machine_word.rs (falling_factorial_usize_checked_values).
 
     #[test]
     fn test_debruijn_edge_cases() {

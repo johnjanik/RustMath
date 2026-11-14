@@ -3,7 +3,12 @@
 //! A set system (also called a hypergraph or set family) is a collection of subsets
 //! of a ground set. This module provides data structures and algorithms for working
 //! with set systems.
+//!
+//! The 2^n subset loops (`shadow`, `shade`, the shattering test of `vc_dimension`) use a
+//! usize mask and refuse sets of usize::BITS or more elements; the sunflower bound is
+//! checked (design C1 §1.6, items 22 and 30).
 
+use crate::machine_word::subset_mask_count;
 use std::collections::{HashMap, HashSet};
 
 /// A set system - a collection of subsets of a ground set {0, 1, ..., n-1}
@@ -254,17 +259,24 @@ impl SetSystem {
     /// Compute the shadow (downward closure)
     ///
     /// Returns a new set system containing all subsets of sets in this system
+    ///
+    /// Cost: 2^|S| iterations for each set S.
+    ///
+    /// # Panics
+    ///
+    /// If a set has usize::BITS or more elements: its 2^n subsets cannot be listed.
     pub fn shadow(&self) -> SetSystem {
         let mut shadow_sets = HashSet::new();
 
         for set in &self.sets {
             // Generate all subsets (including empty set)
             let n = set.len();
-            for mask in 0..(1 << n) {
+            let count: usize = subset_mask_count(n, "SetSystem::shadow");
+            for mask in 0..count {
                 let subset: Vec<usize> = set
                     .iter()
                     .enumerate()
-                    .filter(|(i, _)| mask & (1 << i) != 0)
+                    .filter(|(i, _)| mask & (1usize << i) != 0)
                     .map(|(_, &x)| x)
                     .collect();
 
@@ -279,6 +291,13 @@ impl SetSystem {
     /// Compute the shade (upward closure in the power set up to the ground set)
     ///
     /// Returns all supersets of sets in this system that are subsets of the ground set
+    ///
+    /// Cost: 2^(n - |S|) iterations for each set S.
+    ///
+    /// # Panics
+    ///
+    /// If the complement of a set has usize::BITS or more elements: its 2^n subsets cannot be
+    /// listed.
     pub fn shade(&self) -> SetSystem {
         let mut shade_sets = HashSet::new();
         let ground_set: Vec<usize> = (0..self.n).collect();
@@ -293,10 +312,11 @@ impl SetSystem {
                 .collect();
 
             let n = remaining.len();
-            for mask in 0..(1 << n) {
+            let count: usize = subset_mask_count(n, "SetSystem::shade");
+            for mask in 0..count {
                 let mut superset = set.clone();
                 for (i, &elem) in remaining.iter().enumerate() {
-                    if mask & (1 << i) != 0 {
+                    if mask & (1usize << i) != 0 {
                         superset.push(elem);
                     }
                 }
@@ -684,25 +704,26 @@ impl SetSystem {
     /// // For k=3, r=3: bound is 3! * 2^3 = 6 * 8 = 48
     /// assert_eq!(SetSystem::sunflower_bound(3, 3), 48);
     /// ```
+    ///
+    /// For r <= 1 the bound is usize::MAX by convention (no family exceeds it).
+    ///
+    /// # Panics
+    ///
+    /// If k!(r-1)^k exceeds usize::MAX ("sunflower_bound: k!(r-1)^k exceeds usize::MAX").
     pub fn sunflower_bound(k: usize, r: usize) -> usize {
         if r <= 1 {
             return usize::MAX;
         }
+        Self::sunflower_bound_checked(k, r)
+            .expect("sunflower_bound: k!(r-1)^k exceeds usize::MAX")
+    }
 
-        // Compute k!
-        let mut factorial = 1usize;
-        for i in 1..=k {
-            factorial = factorial.saturating_mul(i);
-        }
-
-        // Compute (r-1)^k
-        let base = r.saturating_sub(1);
-        let mut power = 1usize;
-        for _ in 0..k {
-            power = power.saturating_mul(base);
-        }
-
-        factorial.saturating_mul(power)
+    /// k!(r-1)^k for r >= 2, or None when it exceeds usize::MAX. At most about usize::BITS
+    /// steps: k! at least doubles per factor from 2 on.
+    fn sunflower_bound_checked(k: usize, r: usize) -> Option<usize> {
+        let factorial = crate::machine_word::falling_factorial_usize_checked(k, k)?;
+        let power = crate::machine_word::checked_pow_usize(r - 1, k)?;
+        factorial.checked_mul(power)
     }
 
     /// Check if the system exceeds the sunflower bound
@@ -733,8 +754,14 @@ impl SetSystem {
         }
 
         let k = self.uniformity().unwrap_or(0);
-        let bound = Self::sunflower_bound(k, r);
-        self.num_sets() > bound
+        if r <= 1 {
+            return false; // the bound is usize::MAX by convention
+        }
+        // None: the bound exceeds usize::MAX, and no family held in memory has more sets.
+        match Self::sunflower_bound_checked(k, r) {
+            Some(bound) => self.num_sets() > bound,
+            None => false,
+        }
     }
 
     /// Compute the Vapnik-Chervonenkis (VC) dimension
@@ -802,11 +829,12 @@ impl SetSystem {
         let n = subset.len();
 
         // Check all 2^n subsets of subset
-        for mask in 0..(1 << n) {
+        let count: usize = subset_mask_count(n, "SetSystem::is_shattered");
+        for mask in 0..count {
             let target: HashSet<_> = subset
                 .iter()
                 .enumerate()
-                .filter(|(i, _)| mask & (1 << i) != 0)
+                .filter(|(i, _)| mask & (1usize << i) != 0)
                 .map(|(_, &x)| x)
                 .collect();
 
@@ -830,6 +858,22 @@ impl SetSystem {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn is_shattered_mask_is_a_usize() {
+        // The family {{}} shatters the empty set; {0} with family {{}, {0}} is shattered.
+        assert!(SetSystem::is_shattered(&[], &[vec![]]));
+        assert!(SetSystem::is_shattered(&[0], &[vec![], vec![0]]));
+        assert!(!SetSystem::is_shattered(&[0, 1], &[vec![], vec![0]]));
+    }
+
+    #[test]
+    #[cfg(target_pointer_width = "64")]
+    #[should_panic(expected = "SetSystem::is_shattered: 2^64 subsets exceed usize::MAX")]
+    fn is_shattered_refuses_word_size_subsets() {
+        let subset: Vec<usize> = (0..64).collect();
+        SetSystem::is_shattered(&subset, &[]);
+    }
 
     #[test]
     fn test_set_system_creation() {

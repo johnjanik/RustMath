@@ -2989,6 +2989,8 @@ name = "rustmath-combinatorics"
 version = "0.1.0"
 dependencies = [
  "lazy_static",
+ "num-bigint",
+ "rug",
  "rustmath-complex",
  "rustmath-core",
  "rustmath-integers",

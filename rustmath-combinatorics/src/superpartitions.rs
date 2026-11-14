@@ -441,18 +441,38 @@ pub fn strict_superpartitions(n: usize) -> Vec<SuperPartition> {
 ///
 /// The number of superpartitions is related to the partition function,
 /// but each partition generates 2^k superpartitions (where k is the number of parts).
+/// So the count is the coefficient of x^n in prod_{i>=1} 1/(1 - 2x^i), evaluated by the
+/// partition DP `a[j] += 2 a[j - i]` (one pass per factor): O(n^2) checked word steps.
+///
+/// # Panics
+///
+/// If the count exceeds usize::MAX ("count_superpartitions: the count exceeds usize::MAX"),
+/// from n = 63 on 64-bit targets. The check is exact: the count c(m) increases with m (adding
+/// a part 1 doubles the weight), every intermediate `a[j]` is at most c(j) <= c(n), and every
+/// product `2 a[j - i]` is a summand of a later `a[j]`.
 pub fn count_superpartitions(n: usize) -> usize {
-    // For each partition of n with k parts, we get 2^k superpartitions
-    // (each part can be circled or not)
-    let partitions = crate::partitions::partitions(n);
-    partitions.iter()
-        .map(|p| 1usize << p.length()) // 2^k where k = number of parts
-        .sum()
+    const MSG: &str = "count_superpartitions: the count exceeds usize::MAX";
+    let mut a = vec![0usize; n + 1];
+    a[0] = 1;
+    for i in 1..=n {
+        for j in i..=n {
+            let term = a[j - i].checked_mul(2).unwrap_or_else(|| panic!("{MSG}"));
+            a[j] = a[j].checked_add(term).unwrap_or_else(|| panic!("{MSG}"));
+        }
+    }
+    a[n]
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn count_superpartitions_dp_matches_the_enumeration() {
+        for n in 0..=12 {
+            assert_eq!(count_superpartitions(n), superpartitions(n).len(), "n = {n}");
+        }
+    }
     use crate::partitions::Partition;
 
     #[test]

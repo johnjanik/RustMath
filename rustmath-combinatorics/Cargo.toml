@@ -14,3 +14,8 @@ rustmath-polynomials = { path = "../rustmath-polynomials" }
 rustmath-rationals = { path = "../rustmath-rationals" }
 rustmath-complex = { path = "../rustmath-complex" }
 lazy_static = "1.5"
+# Hardy-Ramanujan-Rademacher enclosures with directed rounding (partition_number.rs); the same
+# declaration as rustmath-rationals, already in the dependency graph.
+rug = { version = "1.24", default-features = false, features = ["float", "integer"] }
+# Integer::new(BigInt) for the rug-to-Integer digit conversion (partition_number.rs).
+num-bigint = { workspace = true }

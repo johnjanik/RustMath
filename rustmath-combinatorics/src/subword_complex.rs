@@ -333,17 +333,22 @@ impl SubwordComplex {
         self.faces.sort_by_key(|f| f.len());
     }
 
-    /// Generate all subsets of a set
+    /// Generate all subsets of a set: 2^n iterations.
+    ///
+    /// # Panics
+    ///
+    /// If the set has usize::BITS or more elements: its 2^n subsets cannot be listed.
     fn all_subsets(set: &BTreeSet<usize>) -> Vec<BTreeSet<usize>> {
         let elements: Vec<usize> = set.iter().copied().collect();
         let n = elements.len();
         let mut subsets = Vec::new();
 
         // Iterate through all 2^n possibilities
-        for mask in 0..(1 << n) {
+        let count: usize = crate::machine_word::subset_mask_count(n, "SubwordComplex::all_subsets");
+        for mask in 0..count {
             let mut subset = BTreeSet::new();
             for (i, &elem) in elements.iter().enumerate() {
-                if mask & (1 << i) != 0 {
+                if mask & (1usize << i) != 0 {
                     subset.insert(elem);
                 }
             }
@@ -506,6 +511,23 @@ impl fmt::Display for SubwordComplex {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn all_subsets_lists_two_to_the_n() {
+        let set: BTreeSet<usize> = [3, 5, 9].into_iter().collect();
+        let subsets = SubwordComplex::all_subsets(&set);
+        assert_eq!(subsets.len(), 8);
+        assert!(subsets.contains(&BTreeSet::new()));
+        assert!(subsets.contains(&set));
+    }
+
+    #[test]
+    #[cfg(target_pointer_width = "64")]
+    #[should_panic(expected = "SubwordComplex::all_subsets: 2^64 subsets exceed usize::MAX")]
+    fn all_subsets_refuses_word_size_sets() {
+        let set: BTreeSet<usize> = (0..64).collect();
+        SubwordComplex::all_subsets(&set);
+    }
 
     #[test]
     fn test_reduced_word_creation() {

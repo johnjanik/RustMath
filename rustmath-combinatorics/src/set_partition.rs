@@ -303,7 +303,8 @@ pub fn set_partition_iterator(n: usize) -> SetPartitionIterator {
 /// Compute Bell number B(n) using the Bell triangle (optimized algorithm)
 ///
 /// The Bell number B(n) is the number of ways to partition n elements into non-empty subsets.
-/// This implementation uses the Bell triangle, which is more efficient than summing Stirling numbers.
+/// This implementation uses the Bell triangle, which is more efficient than summing Stirling numbers
+/// (one row updated in place, O(n^2) additions; it is [`crate::bell_number`]).
 ///
 /// The Bell triangle is constructed as follows:
 /// - Start with B(0) = 1
@@ -321,31 +322,8 @@ pub fn set_partition_iterator(n: usize) -> SetPartitionIterator {
 /// assert_eq!(bell_number_optimized(5), Integer::from(52));
 /// ```
 pub fn bell_number_optimized(n: u32) -> crate::Integer {
-    use crate::Integer;
-    use rustmath_core::Ring;
-
-    if n == 0 {
-        return Integer::one();
-    }
-
-    // We only need to keep the previous row
-    let mut prev_row = vec![Integer::one()];
-
-    for i in 1..=n {
-        let mut current_row = Vec::with_capacity((i + 1) as usize);
-        // First element is the last element of previous row
-        current_row.push(prev_row[prev_row.len() - 1].clone());
-
-        // Each subsequent element is sum of left and above-left
-        for j in 0..prev_row.len() {
-            let sum = current_row[j].clone() + prev_row[j].clone();
-            current_row.push(sum);
-        }
-
-        prev_row = current_row;
-    }
-
-    prev_row[0].clone()
+    // The same in-place Bell triangle as `crate::bell_number`.
+    crate::bell_number(n)
 }
 
 /// Compute all Bell numbers from B(0) to B(n) efficiently
@@ -366,29 +344,15 @@ pub fn bell_number_optimized(n: u32) -> crate::Integer {
 /// ```
 pub fn bell_numbers_up_to(n: u32) -> Vec<crate::Integer> {
     use crate::Integer;
-    use rustmath_core::Ring;
 
-    let mut result = vec![Integer::one()];
-
-    if n == 0 {
-        return result;
+    // One row of the Bell triangle, updated in place; B(i) is its first entry after step i.
+    let mut row = vec![Integer::one()];
+    let mut result = Vec::with_capacity(n as usize + 1);
+    result.push(Integer::one());
+    for _ in 0..n {
+        crate::bell_triangle_step(&mut row);
+        result.push(row[0].clone());
     }
-
-    let mut prev_row = vec![Integer::one()];
-
-    for i in 1..=n {
-        let mut current_row = Vec::with_capacity((i + 1) as usize);
-        current_row.push(prev_row[prev_row.len() - 1].clone());
-
-        for j in 0..prev_row.len() {
-            let sum = current_row[j].clone() + prev_row[j].clone();
-            current_row.push(sum);
-        }
-
-        result.push(current_row[0].clone());
-        prev_row = current_row;
-    }
-
     result
 }
 

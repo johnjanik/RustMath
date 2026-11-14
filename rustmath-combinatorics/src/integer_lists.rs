@@ -290,7 +290,11 @@ pub fn integer_lists(constraints: &IntegerListConstraints) -> Vec<IntegerList> {
         let max_len = max_length.unwrap_or_else(|| {
             // If no max length, use sum as upper bound
             let sum = constraints.get_max_sum().unwrap_or(100);
-            sum + 1
+            // Saturation only keeps sum + 1 from wrapping to 0. The bound sum + 1 itself is one
+            // of the silent caps reported in design C1 §1.8: with min_part 0 it drops the
+            // longer lists, and the loop below runs over every length up to it, even when only
+            // one list exists.
+            sum.saturating_add(1)
         });
 
         for length in min_len..=max_len {
@@ -329,7 +333,11 @@ fn generate_with_length(
     } else {
         // Generate for all valid sums
         let min_s = min_sum;
-        let max_s = max_sum.unwrap_or(length * constraints.max_part.unwrap_or(100));
+        // Saturation only keeps length * max_part from wrapping. The loop below runs over every
+        // sum up to this bound, and the default of 100 is one of the silent caps reported in
+        // design C1 §1.8.
+        let max_s =
+            max_sum.unwrap_or(length.saturating_mul(constraints.max_part.unwrap_or(100)));
 
         for sum in min_s..=max_s {
             generate_recursive(constraints, length, sum, &mut current, result);
@@ -417,8 +425,9 @@ fn propagate_constraints(
     if let Some(prev) = current.last() {
         if let Some(min_slope) = constraints.min_slope {
             // Current element must be at least prev + min_slope
+            // Saturated at usize::MAX: the final check (slopes in i128) rejects that value.
             let min_from_slope = if min_slope >= 0 {
-                prev + min_slope as usize
+                prev.saturating_add(min_slope as usize)
             } else {
                 prev.saturating_sub((-min_slope) as usize)
             };
@@ -428,7 +437,7 @@ fn propagate_constraints(
         if let Some(max_slope) = constraints.max_slope {
             // Current element must be at most prev + max_slope
             let max_from_slope = if max_slope >= 0 {
-                prev + max_slope as usize
+                prev.saturating_add(max_slope as usize)
             } else {
                 prev.saturating_sub((-max_slope) as usize)
             };
@@ -440,8 +449,10 @@ fn propagate_constraints(
     if remaining_positions > 0 {
         // Minimum value: ensure we can still reach target_sum even if all
         // remaining positions use max_val
+        // Saturation is exact: max_remaining is only compared with remaining_sum <=
+        // usize::MAX, so a true value above usize::MAX and usize::MAX take the same branch.
         let max_future = constraints.max_part.unwrap_or(remaining_sum);
-        let max_remaining = max_future * (remaining_positions - 1);
+        let max_remaining = max_future.saturating_mul(remaining_positions - 1);
         if remaining_sum > max_remaining {
             let min_from_sum = remaining_sum - max_remaining;
             min_val = max(min_val, min_from_sum);
@@ -450,7 +461,7 @@ fn propagate_constraints(
         // Maximum value: ensure we can still reach target_sum even if all
         // remaining positions use min_val
         let min_future = constraints.min_part;
-        let min_remaining = min_future * (remaining_positions - 1);
+        let min_remaining = min_future.saturating_mul(remaining_positions - 1); // see above
         let max_from_sum = remaining_sum.saturating_sub(min_remaining);
         max_val = min(max_val, max_from_sum);
     } else {
@@ -521,14 +532,15 @@ fn satisfies_constraints(list: &IntegerList, constraints: &IntegerListConstraint
 
     // Check slope constraints
     for i in 1..n {
-        let slope = parts[i] as isize - parts[i - 1] as isize;
+        // In i128: a usize difference always fits, and an isize slope bound widens exactly.
+        let slope = parts[i] as i128 - parts[i - 1] as i128;
         if let Some(min_slope) = constraints.min_slope {
-            if slope < min_slope {
+            if slope < min_slope as i128 {
                 return false;
             }
         }
         if let Some(max_slope) = constraints.max_slope {
-            if slope > max_slope {
+            if slope > max_slope as i128 {
                 return false;
             }
         }
