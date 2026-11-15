@@ -3079,6 +3079,7 @@ dependencies = [
  "rustmath-schemes",
  "rustmath-symbolic",
  "serde",
+ "serde_json",
  "thiserror 1.0.69",
 ]
 

@@ -1,0 +1,746 @@
+[
+ {
+  "p": 5,
+  "status": "skipped",
+  "reason": "not a Weil polynomial",
+  "counts": [
+   8,
+   36,
+   170,
+   560
+  ]
+ },
+ {
+  "p": 7,
+  "status": "ok",
+  "model": "nodal reduction of the plane model",
+  "counts": [
+   11,
+   69,
+   383,
+   2433
+  ],
+  "P": [
+   1,
+   3,
+   14,
+   46,
+   138,
+   322,
+   686,
+   1029,
+   2401
+  ],
+  "chi_minus23": -1,
+  "P(chi) mod 23": 0,
+  "P(chi p) mod 23": 0,
+  "P mod 2": [
+   [
+    "x+1",
+    2
+   ],
+   [
+    "x^3+x+1",
+    1
+   ],
+   [
+    "x^3+x^2+1",
+    1
+   ]
+  ],
+  "Q candidates": [
+   "x^4+x^3+x^2+1",
+   "x^4+x^2+x+1"
+  ],
+  "golay_split": true
+ },
+ {
+  "p": 11,
+  "status": "ok",
+  "model": "nodal reduction of the plane model",
+  "counts": [
+   15,
+   133,
+   1368,
+   14905
+  ],
+  "P": [
+   1,
+   3,
+   10,
+   33,
+   145,
+   363,
+   1210,
+   3993,
+   14641
+  ],
+  "chi_minus23": -1,
+  "P(chi) mod 23": 0,
+  "P(chi p) mod 23": 0,
+  "P mod 2": [
+   [
+    "x^4+x+1",
+    1
+   ],
+   [
+    "x^4+x^3+1",
+    1
+   ]
+  ],
+  "Q candidates": [
+   "x^4+x^3+1",
+   "x^4+x+1"
+  ],
+  "golay_split": true
+ },
+ {
+  "p": 13,
+  "status": "ok",
+  "model": "non-nodal singularity mod p, counted as unibranch; validated by the Weil test only",
+  "counts": [
+   11,
+   161,
+   2135,
+   29089
+  ],
+  "P": [
+   1,
+   -3,
+   0,
+   -12,
+   188,
+   -156,
+   0,
+   -6591,
+   28561
+  ],
+  "chi_minus23": 1,
+  "P(chi) mod 23": 0,
+  "P(chi p) mod 23": 0,
+  "P mod 2": [
+   [
+    "x+1",
+    2
+   ],
+   [
+    "x^3+x+1",
+    1
+   ],
+   [
+    "x^3+x^2+1",
+    1
+   ]
+  ],
+  "Q candidates": [
+   "x^4+x^3+x^2+1",
+   "x^4+x^2+x+1"
+  ],
+  "golay_split": true
+ },
+ {
+  "p": 17,
+  "status": "ok",
+  "model": "nodal reduction of the plane model",
+  "counts": [
+   21,
+   285,
+   4923,
+   82985
+  ],
+  "P": [
+   1,
+   3,
+   2,
+   0,
+   -130,
+   0,
+   578,
+   14739,
+   83521
+  ],
+  "chi_minus23": -1,
+  "P(chi) mod 23": 0,
+  "P(chi p) mod 23": 0,
+  "P mod 2": [
+   [
+    "x+1",
+    2
+   ],
+   [
+    "x^3+x+1",
+    1
+   ],
+   [
+    "x^3+x^2+1",
+    1
+   ]
+  ],
+  "Q candidates": [
+   "x^4+x^3+x^2+1",
+   "x^4+x^2+x+1"
+  ],
+  "golay_split": true
+ },
+ {
+  "p": 19,
+  "status": "ok",
+  "model": "nodal reduction of the plane model",
+  "counts": [
+   17,
+   405,
+   7265,
+   130913
+  ],
+  "P": [
+   1,
+   -3,
+   26,
+   66,
+   74,
+   1254,
+   9386,
+   -20577,
+   130321
+  ],
+  "chi_minus23": -1,
+  "P(chi) mod 23": 0,
+  "P(chi p) mod 23": 0,
+  "P mod 2": [
+   [
+    "x+1",
+    2
+   ],
+   [
+    "x^3+x+1",
+    1
+   ],
+   [
+    "x^3+x^2+1",
+    1
+   ]
+  ],
+  "Q candidates": [
+   "x^4+x^3+x^2+1",
+   "x^4+x^2+x+1"
+  ],
+  "golay_split": true
+ },
+ {
+  "p": 29,
+  "status": "ok",
+  "model": "nodal reduction of the plane model",
+  "counts": [
+   35,
+   789,
+   24773,
+   708785
+  ],
+  "P": [
+   1,
+   5,
+   -14,
+   16,
+   1060,
+   464,
+   -11774,
+   121945,
+   707281
+  ],
+  "chi_minus23": 1,
+  "P(chi) mod 23": 0,
+  "P(chi p) mod 23": 0,
+  "P mod 2": [
+   [
+    "x+1",
+    2
+   ],
+   [
+    "x^3+x+1",
+    1
+   ],
+   [
+    "x^3+x^2+1",
+    1
+   ]
+  ],
+  "Q candidates": [
+   "x^4+x^3+x^2+1",
+   "x^4+x^2+x+1"
+  ],
+  "golay_split": true
+ },
+ {
+  "p": 31,
+  "status": "ok",
+  "model": "non-nodal singularity mod p, counted as unibranch; validated by the Weil test only",
+  "counts": [
+   33,
+   993,
+   29640,
+   926713
+  ],
+  "P": [
+   1,
+   1,
+   16,
+   -35,
+   875,
+   -1085,
+   15376,
+   29791,
+   923521
+  ],
+  "chi_minus23": 1,
+  "P(chi) mod 23": 0,
+  "P(chi p) mod 23": 0,
+  "P mod 2": [
+   [
+    "x^4+x+1",
+    1
+   ],
+   [
+    "x^4+x^3+1",
+    1
+   ]
+  ],
+  "Q candidates": [
+   "x^4+x^3+1",
+   "x^4+x+1"
+  ],
+  "golay_split": true
+ },
+ {
+  "p": 37,
+  "status": "ok",
+  "model": "nodal reduction of the plane model",
+  "counts": [
+   43,
+   1433,
+   50881,
+   1881609
+  ],
+  "P": [
+   1,
+   5,
+   44,
+   254,
+   3156,
+   9398,
+   60236,
+   253265,
+   1874161
+  ],
+  "chi_minus23": -1,
+  "P(chi) mod 23": 0,
+  "P(chi p) mod 23": 0,
+  "P mod 2": [
+   [
+    "x+1",
+    2
+   ],
+   [
+    "x^3+x+1",
+    1
+   ],
+   [
+    "x^3+x^2+1",
+    1
+   ]
+  ],
+  "Q candidates": [
+   "x^4+x^3+x^2+1",
+   "x^4+x^2+x+1"
+  ],
+  "golay_split": true
+ },
+ {
+  "p": 41,
+  "status": "ok",
+  "model": "non-nodal singularity mod p, counted as unibranch; validated by the Weil test only",
+  "counts": [
+   42,
+   1780,
+   69408,
+   2827728
+  ],
+  "P": [
+   1,
+   0,
+   49,
+   162,
+   1692,
+   6642,
+   82369,
+   0,
+   2825761
+  ],
+  "chi_minus23": 1,
+  "P(chi) mod 23": 0,
+  "P(chi p) mod 23": 0,
+  "P mod 2": [
+   [
+    "x+1",
+    4
+   ],
+   [
+    "x^2+x+1",
+    2
+   ]
+  ],
+  "Q candidates": [
+   "x^4+x^3+x+1"
+  ],
+  "golay_split": true
+ },
+ {
+  "p": 43,
+  "status": "ok",
+  "model": "nodal reduction of the plane model",
+  "counts": [
+   44,
+   1996,
+   80192,
+   3422024
+  ],
+  "P": [
+   1,
+   0,
+   73,
+   228,
+   3470,
+   9804,
+   134977,
+   0,
+   3418801
+  ],
+  "chi_minus23": -1,
+  "P(chi) mod 23": 0,
+  "P(chi p) mod 23": 0,
+  "P mod 2": [
+   [
+    "x+1",
+    4
+   ],
+   [
+    "x^2+x+1",
+    2
+   ]
+  ],
+  "Q candidates": [
+   "x^4+x^3+x+1"
+  ],
+  "golay_split": true
+ },
+ {
+  "p": 47,
+  "status": "ok",
+  "model": "nodal reduction of the plane model",
+  "counts": [
+   47,
+   2349,
+   104321,
+   4882281
+  ],
+  "P": [
+   1,
+   -1,
+   70,
+   96,
+   2934,
+   4512,
+   154630,
+   -103823,
+   4879681
+  ],
+  "chi_minus23": 1,
+  "P(chi) mod 23": 0,
+  "P(chi p) mod 23": 0,
+  "P mod 2": [
+   [
+    "x+1",
+    2
+   ],
+   [
+    "x^3+x+1",
+    1
+   ],
+   [
+    "x^3+x^2+1",
+    1
+   ]
+  ],
+  "Q candidates": [
+   "x^4+x^3+x^2+1",
+   "x^4+x^2+x+1"
+  ],
+  "golay_split": true
+ },
+ {
+  "p": 53,
+  "status": "ok",
+  "model": "nodal reduction of the plane model",
+  "counts": [
+   54,
+   2804,
+   148704,
+   7881808
+  ],
+  "P": [
+   1,
+   0,
+   -3,
+   -58,
+   -2164,
+   -3074,
+   -8427,
+   0,
+   7890481
+  ],
+  "chi_minus23": -1,
+  "P(chi) mod 23": 0,
+  "P(chi p) mod 23": 0,
+  "P mod 2": [
+   [
+    "x+1",
+    4
+   ],
+   [
+    "x^2+x+1",
+    2
+   ]
+  ],
+  "Q candidates": [
+   "x^4+x^3+x+1"
+  ],
+  "golay_split": true
+ },
+ {
+  "p": 59,
+  "status": "ok",
+  "model": "nodal reduction of the plane model",
+  "counts": [
+   72,
+   3560,
+   205056,
+   12120780
+  ],
+  "P": [
+   1,
+   12,
+   111,
+   648,
+   3991,
+   38232,
+   386391,
+   2464548,
+   12117361
+  ],
+  "chi_minus23": 1,
+  "P(chi) mod 23": 0,
+  "P(chi p) mod 23": 0,
+  "P mod 2": [
+   [
+    "x^4+x^3+x^2+x+1",
+    2
+   ]
+  ],
+  "Q candidates": [
+   "x^4+x^3+x^2+x+1"
+  ],
+  "golay_split": true
+ },
+ {
+  "p": 61,
+  "status": "ok",
+  "model": "nodal reduction of the plane model",
+  "counts": [
+   64,
+   3740,
+   226852,
+   13855856
+  ],
+  "P": [
+   1,
+   2,
+   11,
+   -24,
+   2476,
+   -1464,
+   40931,
+   453962,
+   13845841
+  ],
+  "chi_minus23": -1,
+  "P(chi) mod 23": 0,
+  "P(chi p) mod 23": 0,
+  "P mod 2": [
+   [
+    "x+1",
+    4
+   ],
+   [
+    "x^2+x+1",
+    2
+   ]
+  ],
+  "Q candidates": [
+   "x^4+x^3+x+1"
+  ],
+  "golay_split": true
+ },
+ {
+  "p": 67,
+  "status": "ok",
+  "model": "nodal reduction of the plane model",
+  "counts": [
+   80,
+   4460,
+   302192,
+   20163724
+  ],
+  "P": [
+   1,
+   12,
+   57,
+   584,
+   8759,
+   39128,
+   255873,
+   3609156,
+   20151121
+  ],
+  "chi_minus23": -1,
+  "P(chi) mod 23": 0,
+  "P(chi p) mod 23": 0,
+  "P mod 2": [
+   [
+    "x^4+x^3+x^2+x+1",
+    2
+   ]
+  ],
+  "Q candidates": [
+   "x^4+x^3+x^2+x+1"
+  ],
+  "golay_split": true
+ },
+ {
+  "p": 71,
+  "status": "ok",
+  "model": "nodal reduction of the plane model",
+  "counts": [
+   68,
+   5048,
+   358256,
+   25432076
+  ],
+  "P": [
+   1,
+   -4,
+   11,
+   92,
+   4679,
+   6532,
+   55451,
+   -1431644,
+   25411681
+  ],
+  "chi_minus23": 1,
+  "P(chi) mod 23": 0,
+  "P(chi p) mod 23": 0,
+  "P mod 2": [
+   [
+    "x^4+x^3+x^2+x+1",
+    2
+   ]
+  ],
+  "Q candidates": [
+   "x^4+x^3+x^2+x+1"
+  ],
+  "golay_split": true
+ },
+ {
+  "p": 73,
+  "status": "ok",
+  "model": "non-nodal singularity mod p, counted as unibranch; validated by the Weil test only",
+  "counts": [
+   83,
+   5541,
+   390089,
+   28393065
+  ],
+  "P": [
+   1,
+   9,
+   146,
+   1428,
+   12030,
+   104244,
+   778034,
+   3501153,
+   28398241
+  ],
+  "chi_minus23": 1,
+  "P(chi) mod 23": 0,
+  "P(chi p) mod 23": 0,
+  "P mod 2": [
+   [
+    "x+1",
+    2
+   ],
+   [
+    "x^3+x+1",
+    1
+   ],
+   [
+    "x^3+x^2+1",
+    1
+   ]
+  ],
+  "Q candidates": [
+   "x^4+x^3+x^2+1",
+   "x^4+x^2+x+1"
+  ],
+  "golay_split": true
+ },
+ {
+  "p": 79,
+  "status": "ok",
+  "model": "nodal reduction of the plane model",
+  "counts": [
+   77,
+   6369,
+   491636,
+   38964585
+  ],
+  "P": [
+   1,
+   -3,
+   68,
+   -663,
+   7335,
+   -52377,
+   424388,
+   -1479117,
+   38950081
+  ],
+  "chi_minus23": -1,
+  "P(chi) mod 23": 0,
+  "P(chi p) mod 23": 0,
+  "P mod 2": [
+   [
+    "x^4+x+1",
+    1
+   ],
+   [
+    "x^4+x^3+1",
+    1
+   ]
+  ],
+  "Q candidates": [
+   "x^4+x^3+1",
+   "x^4+x+1"
+  ],
+  "golay_split": true
+ }
+]

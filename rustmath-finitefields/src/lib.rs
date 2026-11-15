@@ -31,6 +31,7 @@ pub mod galois_ring; // ch 48: Galois rings GR(p^a, d) (finite chain rings)
 mod group_order; // ch 19, 21: orders from the factored group exponent (Cohen Alg. 1.4.3)
 pub mod poly_factor; // ch 21: Cantor–Zassenhaus / DDF / EDF / irreducibility
                      // ch 19 (Integers(m) = Z/mZ) lives in `zmod` / `integer_mod`.
+pub mod small_field; // ch 21: word-size GF(p^K), p < 2^16, with distinct-root counts (WP-F kernel)
 
 // --- MAGMA port Wave 2 (chapter 21 depth) ---
 pub mod embedding; // ch 21: norm-compatible embeddings GF(p^m) -> GF(p^n), m | n
@@ -55,6 +56,7 @@ pub use zmod::{Integers, Zmod};
 pub use embedding::FieldEmbedding;
 pub use finite_field::{FiniteField, FiniteFieldElement};
 pub use galois_ring::{GaloisRing, GaloisRingElement};
+pub use small_field::{count_distinct_roots, SmallFq, SmallFqElt};
 pub use poly_factor::{
     distinct_degree_factorization, equal_degree_factorization, factor as factor_fq,
     find_irreducible, irreducible_polynomial, is_irreducible, is_irreducible_fp,

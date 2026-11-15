@@ -60,6 +60,10 @@ pub mod differentials;
 pub mod special_divisors;
 pub mod belyi;
 pub mod igp_closure;
+// WP-F (docs/workstreams/m23_golay/HANDOFF.md Section 3): point counts on curves in P^1 x P^1
+// and Frobenius polynomials. Independent of the plane-curve layer above.
+pub mod nodal_biprojective;
+pub mod weil;
 
 // --- Genus >= 2 hyperelliptic/Jacobian stack (temporarily gated) ---------------
 // These four modules do not currently compile (25 lib errors) and `belyi` does
