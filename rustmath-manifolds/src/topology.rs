@@ -79,9 +79,12 @@ impl DeRhamCohomology {
     }
 
     /// Check if a form is closed (dω = 0)
+    ///
+    /// Delegates to [`DiffForm::is_closed`]: `Err(Undecided)` when the exact zero test cannot
+    /// decide, and the errors of the exterior derivative. `chart` must be the chart the
+    /// components were written in.
     pub fn is_closed(&self, form: &DiffForm, chart: &Chart) -> Result<bool> {
-        let d_form = form.exterior_derivative(chart)?;
-        Ok(d_form.tensor().is_zero())
+        form.is_closed(chart)
     }
 
     /// Check if a form is exact (ω = dη for some η)
@@ -733,5 +736,24 @@ mod tests {
 
         let euler = EulerClass::new(euclidean_3d.clone(), 3 /* rank */);
         assert!(euler.form().is_none());
+    }
+
+    #[test]
+    fn test_de_rham_is_closed() {
+        // A = x*y*z dx - z*x dy + y*z dz: dA = -(x + 1)*z dx∧dy - x*y dx∧dz + (x + z) dy∧dz
+        // (gp: [-z*x - z, -y*x, x + z]), so A is not closed and dA is (d∘d = 0).
+        // HEAD: the structural zero of the facade d.
+        let m = Arc::new(EuclideanSpace::new(3).manifold().clone());
+        let c = m.default_chart().unwrap().clone();
+        let (x, y, z) = (Expr::symbol("x"), Expr::symbol("y"), Expr::symbol("z"));
+        let a = DiffForm::from_components(
+            m.clone(), &c, 1,
+            vec![x.clone() * y.clone() * z.clone(), -(z.clone() * x.clone()), y * z],
+        ).unwrap();
+        let h1 = DeRhamCohomology::new(m.clone(), 1);
+        let h2 = DeRhamCohomology::new(m.clone(), 2);
+        assert!(!h1.is_closed(&a, &c).unwrap());
+        let da = a.exterior_derivative(&c).unwrap();
+        assert!(h2.is_closed(&da, &c).unwrap());
     }
 }

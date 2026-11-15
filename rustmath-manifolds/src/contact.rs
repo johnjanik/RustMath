@@ -30,6 +30,7 @@ use crate::errors::{ManifoldError, Result};
 use crate::chart::Chart;
 use crate::differentiable::DifferentiableManifold;
 use crate::diff_form::DiffForm;
+use crate::expr_zero::ZeroTest;
 use crate::vector_field::VectorField;
 use crate::subriemannian::Distribution;
 use rustmath_symbolic::Expr;
@@ -102,20 +103,24 @@ impl ContactForm {
     ///
     /// This is the canonical contact form
     pub fn standard(n: usize) -> Result<Self> {
-        let dim = 2 * n + 1;
+        let dim = n
+            .checked_mul(2)
+            .and_then(|d| d.checked_add(1))
+            .ok_or(ManifoldError::DegreeOverflow { left: n, right: n })?;
         let mut base = DifferentiableManifold::new("ℝ²ⁿ⁺¹", dim);
         base.add_chart(Chart::standard("standard", dim))
             .expect("failed to add standard chart");
         let manifold = Arc::new(base);
         let chart = manifold.default_chart().unwrap();
 
-        // Build α = dz - Σ yᵢ dxᵢ
+        // Build α = dz - Σ yᵢ dxᵢ in the chart coordinates (x1, ..., x_{2n+1}):
+        // xᵢ is coordinate 2i, yᵢ is coordinate 2i + 1, z is the last one.
         // Components: [α_x₁, α_y₁, ..., α_xₙ, α_yₙ, α_z]
-        let mut components = vec![Expr::from(0); dim];
+        let mut components = crate::tensor_field::zeroed_components(dim)?;
 
         for i in 0..n {
-            // α_xᵢ = -yᵢ
-            components[2*i] = -Expr::symbol(&format!("y{}", i));
+            // α_xᵢ = -yᵢ, with yᵢ the chart coordinate 2i + 1
+            components[2*i] = -Expr::Symbol(chart.coordinate_symbol(2 * i + 1));
             // α_yᵢ = 0
             components[2*i + 1] = Expr::from(0);
         }
@@ -142,29 +147,50 @@ impl ContactForm {
         self
     }
 
-    /// Check if the form satisfies the contact condition
-    ///
-    /// α ∧ (dα)^n ≠ 0
-    fn is_contact(&self) -> Result<bool> {
+    /// α ∧ (dα)^n in the default chart, a top-degree form (α itself for n = 0).
+    fn contact_volume(&self) -> Result<DiffForm> {
         let chart = self.manifold.default_chart()
             .ok_or(ManifoldError::NoChart)?;
+        let n = self.manifold.dimension().saturating_sub(1) / 2;
+        if n == 0 {
+            return Ok(self.form.clone());
+        }
 
-        // Compute dα
+        // Compute dα, then (dα)^n via wedge product
         let d_alpha = self.form.exterior_derivative(chart)?;
-
-        // Compute (dα)^n via wedge product
-        let n = (self.manifold.dimension() - 1) / 2;
         let mut power = d_alpha.clone();
-
         for _ in 1..n {
             power = power.wedge(&d_alpha, chart)?;
         }
 
         // Compute α ∧ (dα)^n
-        let contact_volume = self.form.wedge(&power, chart)?;
+        self.form.wedge(&power, chart)
+    }
 
-        // Check if it's non-zero (i.e., a volume form)
-        Ok(!contact_volume.is_zero())
+    /// Check if the form satisfies the contact condition: α ∧ (dα)^n vanishes nowhere
+    ///
+    /// α ∧ (dα)^n has one independent component c. `Ok(true)` when c is a nonzero rational
+    /// constant; `Ok(false)` when c is decided zero; otherwise `Err(Undecided)`, since a
+    /// non-constant c may vanish somewhere. The errors of the exterior derivative propagate.
+    fn is_contact(&self) -> Result<bool> {
+        let chart = self.manifold.default_chart()
+            .ok_or(ManifoldError::NoChart)?;
+        let volume = self.contact_volume()?;
+        let components = volume.independent_components(chart)?;
+        let Some((_, c)) = components.first() else {
+            return Ok(false);
+        };
+        match c {
+            Expr::Integer(_) | Expr::Rational(_) if !c.is_zero() => return Ok(true),
+            _ => {}
+        }
+        match volume.vanishes(chart)? {
+            ZeroTest::Zero => Ok(false),
+            _ => Err(ManifoldError::Undecided(format!(
+                "α∧(dα)^n = {} is not constant; whether it vanishes nowhere is not decided",
+                c
+            ))),
+        }
     }
 
     /// Get the form
@@ -231,9 +257,10 @@ impl ContactManifold {
 
     /// Create the standard contact structure on ℝ²ⁿ⁺¹
     pub fn standard(n: usize) -> Result<Self> {
-        let dim = 2 * n + 1;
-        let base = Arc::new(DifferentiableManifold::new("ℝ²ⁿ⁺¹", dim));
+        // ContactForm::standard checks that 2n + 1 fits
         let contact_form = ContactForm::standard(n)?;
+        let dim = contact_form.manifold().dimension();
+        let base = Arc::new(DifferentiableManifold::new("ℝ²ⁿ⁺¹", dim));
 
         Ok(Self {
             base_manifold: base,
@@ -398,5 +425,38 @@ mod tests {
 
         let ch = ContactHamiltonian::new(cm, h);
         assert!(ch.vector_field().is_ok());
+    }
+
+    #[test]
+    fn test_contact_volume() {
+        // α = dz - Σ y_i dx_i: α∧(dα)^k = k! dx1∧dy1∧...∧dxk∧dyk∧dz (gp: k! = 1, 2, 6)
+        // (with HEAD's y{i}, which are not chart coordinates, dα was 0)
+        for (k, top) in [(1usize, 1i64), (2, 2), (3, 6)] {
+            let alpha = ContactForm::standard(k).unwrap();
+            let chart = alpha.manifold().default_chart().unwrap().clone();
+            let volume = alpha.contact_volume().unwrap();
+            assert_eq!(volume.degree(), 2 * k + 1);
+            let v = volume.independent_components(&chart).unwrap();
+            assert_eq!(v.len(), 1);
+            let diff = v[0].1.clone() - Expr::from(top);
+            assert_eq!(crate::expr_zero::zero_test(&diff), ZeroTest::Zero, "{}", v[0].1);
+            assert!(alpha.is_contact().unwrap());
+        }
+    }
+
+    #[test]
+    fn test_dz_is_not_contact() {
+        // HEAD accepted dz on R^3 (the structural is_zero of a facade wedge)
+        let m = Arc::new(crate::examples::EuclideanSpace::new(3).manifold().clone());
+        let chart = m.default_chart().unwrap().clone();
+        let dz = DiffForm::coordinate_form(m.clone(), &chart, 2).unwrap();
+        assert!(ContactForm::new(m.clone(), dz).is_err());
+        // α = dz - y dx is contact (α∧dα = dx∧dy∧dz). β = dz - x*y dx has β∧dβ = x dx∧dy∧dz,
+        // which vanishes at x = 0: not decided as a constant.
+        let (x, y) = (Expr::symbol("x"), Expr::symbol("y"));
+        let alpha = DiffForm::from_components(m.clone(), &chart, 1, vec![-y.clone(), Expr::from(0), Expr::from(1)]).unwrap();
+        assert!(ContactForm::new(m.clone(), alpha).is_ok());
+        let beta = DiffForm::from_components(m.clone(), &chart, 1, vec![-(x * y), Expr::from(0), Expr::from(1)]).unwrap();
+        assert!(matches!(ContactForm::new(m, beta), Err(ManifoldError::Undecided(_))));
     }
 }

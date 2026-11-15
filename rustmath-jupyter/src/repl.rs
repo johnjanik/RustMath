@@ -4900,8 +4900,8 @@ impl ReplContext {
                                     let (n, p, q) = (f1.manifold().dimension(), f1.degree(), f2.degree());
                                     let degree = p.checked_add(q).ok_or_else(|| EvalError::new("ValueError", format!(
                                         "wedge: the degree p + q of the product for p = {}, q = {} does not fit in a machine word", p, q)))?;
-                                    // For p + q <= n the callee builds all n^(p+q) products
-                                    // (rustmath-manifolds `DiffForm::wedge` through `TensorField::tensor_product`).
+                                    // For p + q <= n the callee allocates all n^(p+q) components
+                                    // (rustmath-manifolds `DiffForm::wedge`).
                                     if degree <= n {
                                         if let Err(limit) = check_form_components("wedge", n, degree) {
                                             return Err(missing_components_error(&[f1, f2], chart).unwrap_or(limit));
@@ -12324,7 +12324,7 @@ fn check_form_components(cmd: &str, n: usize, degree: usize) -> Result<(), EvalE
 /// For a call of exterior_derivative or wedge that `check_form_components` refuses: the
 /// callee's own error when one of `forms` (in the callee's order) has no components in
 /// `chart`. Both callees look the components up before they allocate anything
-/// (`TensorField::components`, `NoComponentsInChart`), so such a call
+/// (`NoComponentsInChart`), so such a call
 /// fails there whatever the dimension, and that error is the accurate answer (in the REPL these
 /// are the forms built by diff_form: every REPL chart is named "user_chart"). The lookup clones
 /// the components, so it is made only on this refusal path, and only for a form of at most

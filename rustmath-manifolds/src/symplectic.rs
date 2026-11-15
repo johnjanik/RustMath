@@ -7,6 +7,7 @@ use crate::differentiable::DifferentiableManifold;
 use crate::errors::{ManifoldError, Result};
 use crate::point::ManifoldPoint;
 use crate::diff_form::DiffForm;
+use crate::tensor_field::{component_count, zeroed_components};
 use crate::vector_field::VectorField;
 use crate::scalar_field::ScalarFieldEnhanced as ScalarField;
 use crate::chart::Chart;
@@ -15,6 +16,7 @@ use rustmath_symbolic::Expr;
 use rustmath_matrix::Matrix;
 use rustmath_rationals::Rational;
 use rustmath_core::Ring;
+use rustmath_integers::Integer;
 use std::sync::Arc;
 
 /// A symplectic manifold (M, ω)
@@ -161,7 +163,9 @@ pub struct SymplecticForm {
 impl SymplecticForm {
     /// Create a symplectic form from a 2-form
     ///
-    /// Verifies that the form is closed and non-degenerate
+    /// Checks only that the form has degree 2. Closedness is checked by `is_closed` (and by
+    /// `SymplecticManifold::new`); non-degeneracy is not checked (`is_non_degenerate` reads a
+    /// fixed matrix, see its documentation).
     pub fn new(manifold: Arc<DifferentiableManifold>, form: DiffForm) -> Result<Self> {
         if form.degree() != 2 {
             return Err(ManifoldError::InvalidStructure(
@@ -179,9 +183,10 @@ impl SymplecticForm {
     ///
     /// ω = Σᵢ₌₁ⁿ dq^i ∧ dp^i
     pub fn standard_form(manifold: Arc<DifferentiableManifold>, n: usize) -> Result<Self> {
-        if manifold.dimension() != 2 * n {
+        let two_n = n.checked_mul(2).ok_or(ManifoldError::DegreeOverflow { left: n, right: n })?;
+        if manifold.dimension() != two_n {
             return Err(ManifoldError::InvalidDimension(
-                format!("Expected dimension {} for standard form with n={}, got {}", 2*n, n, manifold.dimension())
+                format!("Expected dimension {} for standard form with n={}, got {}", two_n, n, manifold.dimension())
             ));
         }
 
@@ -190,7 +195,7 @@ impl SymplecticForm {
 
         // Create dq^i ∧ dp^i for each i
         // In coordinates: ω has components ω_{ij} with ω_{i,n+i} = 1, ω_{n+i,i} = -1
-        let mut components = vec![Expr::from(0); n * n * 4];
+        let mut components = zeroed_components(component_count(two_n, 2)?)?;
 
         for i in 0..n {
             let idx1 = i * (2 * n) + (n + i); // ω_{i, n+i}
@@ -218,21 +223,24 @@ impl SymplecticForm {
         &self.form
     }
 
-    /// Check if the form is closed (dω = 0)
+    /// Check if the form is closed (dω = 0), in the default chart
+    ///
+    /// Delegates to [`DiffForm::is_closed`]: `Ok(true)` and `Ok(false)` are decisions of the
+    /// exact zero test; `Err(Undecided)` when it cannot decide, and the errors of the exterior
+    /// derivative (`NotImplemented` for a component whose derivative rustmath-symbolic does not
+    /// implement).
     pub fn is_closed(&self) -> Result<bool> {
         let chart = self.manifold.default_chart()
             .ok_or(ManifoldError::NoChart)?;
-        let d_omega = self.form.exterior_derivative(chart)?;
-        // The exterior-derivative routine leaves unsimplified constant sums
-        // (e.g. `0 + 0 + 0`), which a purely structural is_zero() would treat
-        // as non-zero. Simplify each component before the zero test.
-        let comps = d_omega.tensor().components(chart)?;
-        Ok(comps.iter().all(|c| c.simplify().is_zero()))
+        self.form.is_closed(chart)
     }
 
     /// Check if the form is non-degenerate
     ///
-    /// ω is non-degenerate if the matrix ω_{ij} is invertible at each point
+    /// ω is non-degenerate if the matrix ω_{ij} is invertible at each point.
+    ///
+    /// Known defect (not fixed here): `matrix_at` ignores the point, the chart and the form, and
+    /// returns the standard block matrix, so every 2-form is reported non-degenerate.
     pub fn is_non_degenerate(&self) -> Result<bool> {
         // Get the matrix representation at a point
         let chart = self.manifold.default_chart()
@@ -302,11 +310,19 @@ impl SymplecticForm {
         Ok(result)
     }
 
-    /// Volume form Ω = ωⁿ/n!
+    /// Volume form Ω = ωⁿ/n! (in the default chart)
+    ///
+    /// ωⁿ is computed with the exact wedge product and scaled by the exact rational 1/n!.
+    /// For n = 0 it is the 0-form 1. Storage is dense (n^p slots for a p-form): ω^4 on R^8
+    /// needs 8^8 slots, and on R^10 and above the powers end in `ComponentAllocationFailed`.
     pub fn volume_form(&self) -> Result<DiffForm> {
         let n = self.manifold.dimension() / 2;
         let chart = self.manifold.default_chart()
             .ok_or(ManifoldError::NoChart)?;
+
+        if n == 0 {
+            return DiffForm::from_components(self.form.manifold().clone(), chart, 0, vec![Expr::from(1)]);
+        }
 
         // ωⁿ = ω ∧ ω ∧ ... ∧ ω (n times)
         let mut result = self.form.clone();
@@ -316,10 +332,13 @@ impl SymplecticForm {
         }
 
         // Divide by n!
-        let factorial = (1..=n).product::<usize>() as f64;
-
-        // Scale the form (would need to implement scalar multiplication for DiffForm)
-        Ok(result)
+        let mut factorial = Integer::one();
+        for i in 2..=n {
+            factorial = factorial * Integer::from(i as u64);
+        }
+        let inverse = Rational::new(Integer::one(), factorial)
+            .map_err(|e| ManifoldError::ComputationError(format!("1/n!: {}", e)))?;
+        result.scale(&Expr::Rational(inverse))
     }
 }
 
@@ -534,5 +553,43 @@ mod tests {
 
         // X_H should have 2 components
         assert_eq!(x_h.as_vector_field().manifold().dimension(), 2);
+    }
+
+    #[test]
+    fn test_symplectic_is_closed_nonconstant() {
+        // HEAD: x1 dx1∧dx2 + dx3∧dx4 (closed: d = dx1∧dx1∧dx2 = 0) gave Ok(false)
+        let manifold: Arc<DifferentiableManifold> = Arc::new(EuclideanSpace::new(4).into());
+        let chart = manifold.default_chart().unwrap().clone();
+        // independent components in the order (0,1), (0,2), (0,3), (1,2), (1,3), (2,3)
+        let closed = DiffForm::from_independent_components(
+            manifold.clone(), &chart, 2,
+            vec![Expr::symbol("x1"), Expr::from(0), Expr::from(0), Expr::from(0), Expr::from(0), Expr::from(1)],
+        ).unwrap();
+        assert!(SymplecticForm::new(manifold.clone(), closed).unwrap().is_closed().unwrap());
+        // q2 dq1∧dp1 + dq2∧dp2 = x2 dx1∧dx3 + dx2∧dx4: d = dx2∧dx1∧dx3 ≠ 0
+        let not_closed = DiffForm::from_independent_components(
+            manifold.clone(), &chart, 2,
+            vec![Expr::from(0), Expr::symbol("x2"), Expr::from(0), Expr::from(0), Expr::from(1), Expr::from(0)],
+        ).unwrap();
+        let form = SymplecticForm::new(manifold.clone(), not_closed).unwrap();
+        assert!(!form.is_closed().unwrap());
+        assert!(SymplecticManifold::new(manifold, form).is_err());
+    }
+
+    #[test]
+    fn test_symplectic_volume_form() {
+        // gp: (-1)^(k*(k-1)/2) prints 1, -1, -1 for k = 1, 2, 3 (ω^k / k! for ω = Σ dq_i∧dp_i)
+        // (HEAD returned ω^k with the facade wedge and did not divide by k!)
+        for (k, top) in [(1usize, 1i64), (2, -1), (3, -1)] {
+            let manifold: Arc<DifferentiableManifold> = Arc::new(EuclideanSpace::new(2 * k).into());
+            let chart = manifold.default_chart().unwrap().clone();
+            let form = SymplecticForm::standard_form(manifold.clone(), k).unwrap();
+            let vol = form.volume_form().unwrap();
+            assert_eq!(vol.degree(), 2 * k);
+            let v = vol.independent_components(&chart).unwrap();
+            assert_eq!(v.len(), 1);
+            let diff = v[0].1.clone() - Expr::from(top);
+            assert_eq!(crate::expr_zero::zero_test(&diff), crate::expr_zero::ZeroTest::Zero, "{}", v[0].1);
+        }
     }
 }

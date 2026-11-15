@@ -3344,6 +3344,7 @@ dependencies = [
  "rustmath-core",
  "rustmath-integers",
  "rustmath-matrix",
+ "rustmath-polynomials",
  "rustmath-rationals",
  "rustmath-reals",
  "rustmath-symbolic",
