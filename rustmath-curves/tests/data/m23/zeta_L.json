@@ -8,13 +8,19 @@
   {
    "p": 5,
    "s0": 3,
-   "status": "skipped",
-   "reason": "BadFibre('fibre polynomial vanishes identically')"
+   "status": "refused",
+   "reason": "the degree in V drops mod p"
   },
   {
    "p": 7,
    "s0": 5,
    "status": "ok",
+   "certificate": {
+    "singular_points": {
+     "A_1": 62
+    },
+    "delta": 62
+   },
    "counts": [
     7,
     45,
@@ -32,6 +38,8 @@
     -343,
     2401
    ],
+   "P(chi) mod 23": 0,
+   "P(chi p) mod 23": 0,
    "P mod 2": [
     [
      "x+1",
@@ -55,13 +63,19 @@
   {
    "p": 11,
    "s0": 2,
-   "status": "skipped",
-   "reason": "BadFibre('fibre polynomial vanishes identically')"
+   "status": "refused",
+   "reason": "the discriminant vanishes identically mod p"
   },
   {
    "p": 19,
    "s0": 3,
    "status": "ok",
+   "certificate": {
+    "singular_points": {
+     "A_1": 62
+    },
+    "delta": 62
+   },
    "counts": [
     15,
     413,
@@ -79,6 +93,8 @@
     -34295,
     130321
    ],
+   "P(chi) mod 23": 0,
+   "P(chi p) mod 23": 0,
    "P mod 2": [
     [
      "x+1",
@@ -100,34 +116,65 @@
    "golay_split": true
   },
   {
+   "p": 23,
+   "s0": 5,
+   "status": "refused",
+   "reason": "the characteristic divides the degree in V"
+  },
+  {
+   "p": 23,
+   "s0": 15,
+   "status": "refused",
+   "reason": "the characteristic divides the degree in V"
+  },
+  {
    "p": 31,
    "s0": 12,
    "status": "ok",
+   "certificate": {
+    "singular_points": {
+     "A_1": 57,
+     "A_3": 1,
+     "ordinary 3-fold": 1
+    },
+    "delta": 62
+   },
    "counts": [
-    44,
-    1014,
-    30266,
-    923726
+    43,
+    1017,
+    30265,
+    923729
    ],
    "P": [
     1,
-    12,
-    98,
-    758,
-    5021,
-    23498,
-    94178,
-    357492,
+    11,
+    88,
+    682,
+    4438,
+    21142,
+    84568,
+    327701,
     923521
    ],
+   "P(chi) mod 23": 0,
+   "P(chi p) mod 23": 0,
    "P mod 2": [
     [
-     "x^2+x+1",
-     4
+     "x+1",
+     2
+    ],
+    [
+     "x^3+x+1",
+     1
+    ],
+    [
+     "x^3+x^2+1",
+     1
     ]
    ],
    "Q candidates": [
-    "x^4+x^2+1"
+    "x^4+x^3+x^2+1",
+    "x^4+x^2+x+1"
    ],
    "golay_split": true
   },
@@ -135,6 +182,12 @@
    "p": 41,
    "s0": 8,
    "status": "ok",
+   "certificate": {
+    "singular_points": {
+     "A_1": 62
+    },
+    "delta": 62
+   },
    "counts": [
     40,
     1790,
@@ -152,6 +205,8 @@
     -137842,
     2825761
    ],
+   "P(chi) mod 23": 0,
+   "P(chi p) mod 23": 0,
    "P mod 2": [
     [
      "x+1",
@@ -167,6 +222,12 @@
    "p": 43,
    "s0": 15,
    "status": "ok",
+   "certificate": {
+    "singular_points": {
+     "A_1": 62
+    },
+    "delta": 62
+   },
    "counts": [
     43,
     1829,
@@ -184,6 +245,8 @@
     -79507,
     3418801
    ],
+   "P(chi) mod 23": 0,
+   "P(chi p) mod 23": 0,
    "P mod 2": [
     [
      "x+1",

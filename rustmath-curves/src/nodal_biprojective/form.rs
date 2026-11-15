@@ -171,7 +171,25 @@ impl BihomogeneousForm {
         a == b
     }
 
-    /// The reduction mod p, an odd prime below `2^16`.
+    /// True iff the content is 1 (a hypothesis of Lemma 9.1 of the owner's paper, johnjanik/M23
+    /// at `2d11038`, `paper/golay_m23.tex`, `\label{lem:reduction}`).
+    pub fn is_primitive(&self) -> bool {
+        self.content() == Integer::one()
+    }
+
+    /// The reduction mod p of a primitive form: `Err(NotPrimitive { content })` unless the
+    /// content is 1, otherwise as [`BihomogeneousForm::reduce`]. Use it for the certificate of
+    /// [`certify`](fn@super::certify), whose Lemma 9.1 needs `F` primitive.
+    pub fn reduce_primitive(&self, p: u64) -> Result<FormModP, CountError> {
+        let content = self.content();
+        if content != Integer::one() {
+            return Err(CountError::NotPrimitive { content });
+        }
+        self.reduce(p)
+    }
+
+    /// The reduction mod p, an odd prime below `2^16`. It does not check that the form is
+    /// primitive ([`BihomogeneousForm::reduce_primitive`] does).
     pub fn reduce(&self, p: u64) -> Result<FormModP, CountError> {
         check_prime(p)?;
         let pi = Integer::from(p);
@@ -193,6 +211,14 @@ impl BihomogeneousForm {
 }
 
 /// A bihomogeneous form over `F_p`, `p` an odd prime below `2^16`, coefficients in `[0, p)`.
+///
+/// For [`certify`](fn@super::certify) and
+/// [`normalization_point_counts`](super::normalization_point_counts), the hypotheses of Lemma 9.1
+/// (owner's paper, `\label{lem:reduction}`) that this type cannot check are the caller's: the
+/// form is the reduction of a primitive form of the same bidegree (over `Z`, or over the ring of
+/// integers of a number field at a prime of residue degree one), whose zero set over the
+/// generic fibre is birational to the curve of the genus passed in. Locally at p primitivity is
+/// `F mod p != 0`, which [`FormModP::new`] checks (`ZeroForm`).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FormModP {
     p: u64,

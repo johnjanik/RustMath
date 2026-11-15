@@ -20,11 +20,13 @@
 #![allow(dead_code)]
 
 use rustmath_curves::nodal_biprojective::{
-    certify, normalization_point_counts, singular_locus, BihomogeneousForm, BranchRule, CountError,
-    CountOptions, FormModP, NormalizationCounts, ReductionStatus, Unresolved,
+    certify, normalization_point_counts, BihomogeneousForm, BranchRule, Certificate, CountError,
+    CountOptions, FormModP, LocalType, NormalizationCounts, ReductionStatus, SingularLocus,
+    Unresolved,
 };
 use rustmath_curves::weil::{f2_poly_string, FrobeniusPolynomial, TwoTorsionOrder};
 use rustmath_integers::Integer;
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 /// The genus of X and of the covers over L (HJLPPZ Prop. 3.10; Riemann-Hurwitz).
@@ -216,6 +218,15 @@ fn mod_p(c: &Integer, p: u64) -> u64 {
 }
 
 /// The reduction of `calF` at the degree-one prime `(p, s - s0)` of `L`.
+///
+/// The hypotheses of Lemma 9.1 (owner's paper, `\label{lem:reduction}`) that `certify` cannot
+/// check here, and why they hold. Primitivity: HJLPPZ state in the header of
+/// `polynomial_calF.m` that the coefficients of calF generate the unit ideal of `O_L`. The
+/// prime: PARI gives `[O_L : Z[s]] = 1` (F-9 design, `wpf/gp/lfield.gp`), so `(p, s - s0)` is a
+/// prime of `O_L` with residue field `F_p` and this is the reduction there. Lemma 9.1 is stated
+/// over Q, but its proof uses only that the base is a discrete valuation ring with perfect
+/// residue field. The ramified primes of L are 2, 11 and 23, and the only rows there,
+/// (11, 2), (23, 5) and (23, 15), are refused; so every counted row is at an unramified prime.
 pub fn calf_mod(calf: &[Vec<[Integer; 6]>], p: u64, s0: u64) -> Result<FormModP, CountError> {
     let mut pw = [1u64; 6];
     for e in 1..6 {
@@ -258,6 +269,10 @@ pub struct RefRow {
     pub counts: Option<Vec<u64>>,
     pub p_coeffs: Option<Vec<i64>>,
     pub q_candidates: Vec<String>,
+    /// `certificate.singular_points` of the owner's classifier (`m23golay/curve.py` at
+    /// `2d11038`): the number of geometric singular points of each type, with the labels
+    /// `A_1`, `A_k`, `ordinary m-fold`.
+    pub singular_points: Option<BTreeMap<String, usize>>,
 }
 
 fn ref_rows(v: &serde_json::Value) -> Vec<RefRow> {
@@ -285,17 +300,29 @@ fn ref_rows(v: &serde_json::Value) -> Vec<RefRow> {
                         .collect()
                 })
                 .unwrap_or_default(),
+            singular_points: r
+                .get("certificate")
+                .and_then(|c| c.get("singular_points"))
+                .and_then(|c| c.as_object())
+                .map(|m| {
+                    m.iter()
+                        .map(|(k, v)| (k.clone(), v.as_u64().expect("number") as usize))
+                        .collect()
+                }),
         })
         .collect()
 }
 
-/// `zeta_X.json` (johnjanik/M23 at d05475b): 19 rows, p = 5 (skipped, "not a Weil
-/// polynomial", counts 8, 36, 170, 560) and p = 7..79.
+/// `zeta_X.json` (johnjanik/M23 at `2d11038`): 19 rows, p = 5..79 without 23, all "ok", each
+/// with the owner's certificate. The row at 5 is the corrected one (F-8): at `d05475b` it was
+/// skipped with the counts 8, 36, 170, 560 ("not a Weil polynomial").
 pub fn zeta_x() -> Vec<RefRow> {
     ref_rows(&read_json("zeta_X.json"))
 }
 
-/// `zeta_L.json` rows and `check_53` (johnjanik/M23 at d05475b).
+/// `zeta_L.json` rows and `check_53` (johnjanik/M23 at `2d11038`): 9 rows, four refused
+/// ((5, 3), (11, 2), (23, 5), (23, 15)), and (31, 12) corrected (F-8; at `d05475b` it was
+/// 44, 1014, 30266, 923726).
 pub fn zeta_l() -> (Vec<RefRow>, Vec<u64>) {
     let v = read_json("zeta_L.json");
     let check: Vec<u64> = v["check_53"]
@@ -317,15 +344,33 @@ pub fn h62() -> Vec<Integer> {
         .collect()
 }
 
-/// The rank of a status for model selection: Nodal > DeltaSumCertified > Unclassified >
-/// DeltaMismatch (a refusal ranks below all of them).
+/// The rank of a status for model selection: Decided nodal > Decided delta-sum >
+/// IrreducibilityNotShown > Unclassified > DeltaMismatch (a refusal ranks below all of them).
 pub fn status_rank(s: &ReductionStatus) -> u8 {
     match s {
-        ReductionStatus::Decided(_) => 4,
-        ReductionStatus::Unresolved(Unresolved::DeltaSumCertified { .. }) => 3,
+        ReductionStatus::Decided(Certificate::Nodal { .. }) => 5,
+        ReductionStatus::Decided(Certificate::DeltaSum { .. }) => 4,
+        ReductionStatus::Unresolved(Unresolved::IrreducibilityNotShown(_)) => 3,
         ReductionStatus::Unresolved(Unresolved::Unclassified(_)) => 2,
         ReductionStatus::Unresolved(Unresolved::DeltaMismatch { .. }) => 1,
     }
+}
+
+/// The singular points of a locus in the owner's labels (`m23golay/curve.py` at `2d11038`,
+/// `resolve_point`): `A_1` for a node, `A_k`, `ordinary m-fold`, counted over `F_p-bar` (each
+/// closed point with its residue degree).
+pub fn owner_types(locus: &SingularLocus) -> BTreeMap<String, usize> {
+    let mut out = BTreeMap::new();
+    for s in &locus.points {
+        let key = match &s.local {
+            LocalType::Node => "A_1".to_string(),
+            LocalType::A(k) => format!("A_{k}"),
+            LocalType::OrdinaryMultiple(m) => format!("ordinary {m}-fold"),
+            LocalType::Unclassified(_) => "unclassified".to_string(),
+        };
+        *out.entry(key).or_insert(0) += s.residue_degree;
+    }
+    out
 }
 
 /// The result of one row.
@@ -348,25 +393,25 @@ pub fn assert_genus_consistent<T>(result: &Result<T, CountError>, what: &str) {
     }
 }
 
-/// The certificate of each model at p (cheap), and the index of the best one (None if all are
-/// refused). The first model wins among equal ranks.
+/// The result of `certify` for one model.
+pub type ModelStatus = Result<(ReductionStatus, SingularLocus), CountError>;
+
+/// The status and singular locus of each model at p (cheap: `certify`), and the index of the
+/// best one (None if all are refused). The first model wins among equal ranks.
 ///
 /// Panics if a model gives `CountError::GenusInconsistent` (see [`assert_genus_consistent`]).
-pub fn select_model(
-    forms: &[(String, FormModP)],
-) -> (Vec<Result<ReductionStatus, CountError>>, Option<usize>) {
-    let statuses: Vec<Result<ReductionStatus, CountError>> = forms
+pub fn select_model(forms: &[(String, FormModP)]) -> (Vec<ModelStatus>, Option<usize>) {
+    let statuses: Vec<ModelStatus> = forms
         .iter()
         .map(|(name, f)| {
-            let status =
-                singular_locus(f).and_then(|locus| certify(&locus, f.arithmetic_genus(), GENUS));
+            let status = certify(f, GENUS);
             assert_genus_consistent(&status, &format!("model {name} at p = {}", f.p()));
             status
         })
         .collect();
     let mut best: Option<(usize, u8)> = None;
     for (i, s) in statuses.iter().enumerate() {
-        if let Ok(st) = s {
+        if let Ok((st, _)) = s {
             let r = status_rank(st);
             if best.is_none_or(|(_, b)| r > b) {
                 best = Some((i, r));
@@ -376,10 +421,10 @@ pub fn select_model(
     (statuses, best.map(|b| b.0))
 }
 
-/// X at p from the CC0 models `[G, G7, G13]`: the first model with the best status. When two
-/// models both have a status that gives counts (Decided or DeltaSumCertified), their counts at
-/// `k <= min(kmax, 2)` are checked to agree (they must: the models are isomorphic over Q and the
-/// counts are those of the reduction of X).
+/// X at p from the CC0 models `[G, G7, G13]`: the first model with the best status. The models
+/// are reduced by `reduce_primitive` (Lemma 9.1 needs a primitive form). When two models are
+/// both Decided, their counts at `k <= min(kmax, 2)` are checked to agree (they must: both are
+/// the counts of the reduction of X).
 pub fn x_row(
     models: &[(&'static str, BihomogeneousForm)],
     p: u64,
@@ -389,7 +434,7 @@ pub fn x_row(
     let mut forms = Vec::new();
     let mut first_err = None;
     for (name, g) in models {
-        match g.reduce(p) {
+        match g.reduce_primitive(p) {
             Ok(f) => forms.push((name.to_string(), f)),
             Err(e) => {
                 if first_err.is_none() {
@@ -413,11 +458,11 @@ pub fn x_row(
         };
     };
     let result = normalization_point_counts(&forms[b].1, GENUS, kmax, opts);
-    // Only exact counts are invariants of X; the reference rule may differ between models.
-    if let (Ok(r), BranchRule::Exact) = (&result, opts.branch_rule) {
+    // The counts of a Decided model are those of the reduction of X, so two Decided models agree.
+    if let Ok(r) = &result {
         let k = kmax.min(2);
         for (i, s) in statuses.iter().enumerate() {
-            if i == b || !matches!(s, Ok(st) if status_rank(st) >= 3) {
+            if i == b || !r.status.is_decided() || !matches!(s, Ok((st, _)) if st.is_decided()) {
                 continue;
             }
             let other = normalization_point_counts(&forms[i].1, GENUS, k, opts)
@@ -458,12 +503,26 @@ pub struct Checks {
     pub predicted: Option<bool>,
 }
 
+/// The derived checks of a row with counts.
 pub fn checks(r: &NormalizationCounts) -> Option<Result<Checks, String>> {
-    let fp = match r.frobenius_polynomial()? {
+    checks_of_counts(r.p, &r.counts)
+}
+
+/// The derived checks of counts `N_1..N_k` of a genus-4 curve at p, `k >= 4` (`None` below):
+/// those of [`checks`], for counts that do not come from a [`NormalizationCounts`] (the reference
+/// rule of [`NormalizationCounts::counts_under`]).
+pub fn checks_of_counts(p: u64, counts: &[u64]) -> Option<Result<Checks, String>> {
+    if counts.len() < GENUS {
+        return None;
+    }
+    let fp = match FrobeniusPolynomial::from_counts_u64(p, &counts[..GENUS]) {
         Ok(f) => f,
         Err(e) => return Some(Err(e.to_string())),
     };
-    let p = r.p;
+    let predicted = (counts.len() > GENUS).then(|| {
+        let c: Vec<Integer> = counts.iter().map(|&n| Integer::from(n)).collect();
+        fp.predicts(&c)
+    });
     let c = chi(p);
     let m23 = Integer::from(23);
     let e1 = fp.eval_mod(&Integer::from(c), &m23).to_i64().unwrap_or(-1);
@@ -494,7 +553,7 @@ pub fn checks(r: &NormalizationCounts) -> Option<Result<Checks, String>> {
         p_mod2,
         q,
         two_torsion: fp.two_torsion_frobenius_order(),
-        predicted: r.predicted_counts_agree(),
+        predicted,
         frob: fp,
     }))
 }
@@ -518,6 +577,13 @@ pub fn format_row(row: &Row) -> String {
                 r.counts,
                 r.status.label()
             );
+            if let Some(c) = r.status.certificate() {
+                s += &format!(
+                    " | irreducibility: {} | types {:?}",
+                    c.irreducibility(),
+                    owner_types(&r.locus)
+                );
+            }
             if let Some(c) = checks(r) {
                 match c {
                     Err(e) => s += &format!(" | P: {e}"),

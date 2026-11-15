@@ -14,14 +14,24 @@
 //! The curves of WP-F code review 1, Section 2.2 are `X^2 + b(Y) X + c(Y) = 0`, of bidegree
 //! (2, dy), found by the review's search script (`adv2.gp`, not kept). Their reference values
 //! were rerun from `b` and `c` alone by `verify.gp` in the same folder (PARI/GP 2.15.4).
+//!
+//! Statuses follow Lemma 9.1 of the owner's paper (johnjanik/M23 at `2d11038`,
+//! `paper/golay_m23.tex`, `\label{lem:reduction}`): Decided needs the delta-sum `p_a - g` and
+//! the absolute irreducibility of `F mod p`. By the owner's decision on follow-up F-9
+//! (2026-11-15) both the nodal and the delta-sum certificate are Decided. The reducible
+//! reductions of [`reducible_reductions_are_never_decided`] come from the F-9 design, Section
+//! 3.3, with their PARI values from `regress.gp` and `f9_tests.gp` (same folder).
+//! MAGMA ch. 114.8.1 `IsAbsolutelyIrreducible`.
 
 // The case tables are tuples on purpose: one line per curve, as in the PARI/GP scripts.
 #![allow(clippy::type_complexity)]
 
 use rustmath_curves::nodal_biprojective::{
-    normalization_point_counts, plane_point_count, singular_locus, BranchRule, Certificate,
-    CountError, CountOptions, Degeneracy, Fibration, FormModP, LocalType, ReductionStatus,
-    Unresolved,
+    absolute_irreducibility, certify, normalization_point_counts, plane_point_count,
+    singular_locus, AbsoluteWitness, BasePoint, BihomogeneousForm, BranchRule, Certificate,
+    CountError, CountOptions, Degeneracy, Fibration, FormModP, Irreducibility,
+    IrreducibilityEvidence, IrreducibilityGap, IrreducibleFibre, LocalType, NormalizationCounts,
+    ReductionStatus, Unresolved,
 };
 use rustmath_curves::weil::FrobeniusPolynomial;
 use rustmath_integers::Integer;
@@ -131,24 +141,71 @@ fn check(
     r
 }
 
-fn decided_nodal(r: &rustmath_curves::nodal_biprojective::NormalizationCounts, nodes: usize) {
-    assert_eq!(
-        r.status,
-        ReductionStatus::Decided(Certificate::Nodal {
-            nodes,
-            genus_hypothesis: r.genus
-        })
-    );
+/// Decided by the nodal certificate with `nodes` nodes over `F_p-bar`; exact counts. Returns the
+/// irreducibility evidence.
+fn decided_nodal(r: &NormalizationCounts, nodes: usize) -> IrreducibilityEvidence {
     assert_eq!(r.branch_rule, BranchRule::Exact);
+    match &r.status {
+        ReductionStatus::Decided(Certificate::Nodal {
+            nodes: n,
+            genus_hypothesis,
+            irreducibility,
+            ..
+        }) => {
+            assert_eq!(*n, nodes);
+            assert_eq!(*genus_hypothesis, r.genus);
+            assert_eq!(r.status.label(), format!("Decided: nodal ({nodes} nodes)"));
+            irreducibility.clone()
+        }
+        s => panic!("expected Decided: nodal ({nodes} nodes), got {s:?}"),
+    }
 }
 
-fn delta_certified(r: &rustmath_curves::nodal_biprojective::NormalizationCounts) -> Vec<LocalType> {
+/// Decided by the delta-sum certificate: the local types of the non-nodal points; exact counts.
+/// The owner's decision on F-9 (2026-11-15) made this status Decided (it was
+/// `Unresolved(DeltaSumCertified)` before).
+fn decided_delta_sum(r: &NormalizationCounts) -> Vec<LocalType> {
+    assert_eq!(r.branch_rule, BranchRule::Exact);
     match &r.status {
-        ReductionStatus::Unresolved(Unresolved::DeltaSumCertified { non_nodal, .. }) => {
+        ReductionStatus::Decided(Certificate::DeltaSum {
+            non_nodal,
+            delta_sum,
+            genus_hypothesis,
+            ..
+        }) => {
+            assert_eq!(*genus_hypothesis, r.genus);
+            assert_eq!(Some(*delta_sum), r.locus.delta_sum());
+            assert!(r
+                .status
+                .label()
+                .starts_with("Decided: delta-sum, Lemma 9.1 ("));
             non_nodal.iter().map(|s| s.local.clone()).collect()
         }
-        s => panic!("expected DeltaSumCertified, got {s:?}"),
+        s => panic!("expected Decided by the delta-sum certificate, got {s:?}"),
     }
+}
+
+/// The value and the gradient of `f` at an affine point (for checking a smooth point).
+fn value_and_gradient(f: &FormModP, x: u64, y: u64) -> (u64, u64, u64) {
+    let p = f.p();
+    let (mut v, mut fx, mut fy) = (0u64, 0u64, 0u64);
+    for (i, row) in f.coeffs().iter().enumerate() {
+        for (j, &c) in row.iter().enumerate() {
+            let m = |e_x: u64, e_y: u64| c * pow(x, e_x, p) % p * pow(y, e_y, p) % p;
+            v = (v + m(i as u64, j as u64)) % p;
+            if i > 0 {
+                fx = (fx + i as u64 % p * m(i as u64 - 1, j as u64)) % p;
+            }
+            if j > 0 {
+                fy = (fy + j as u64 % p * m(i as u64, j as u64 - 1)) % p;
+            }
+        }
+    }
+    (v, fx, fy)
+}
+
+fn from_rows(p: u64, rows: &[&[u64]]) -> FormModP {
+    FormModP::new(p, rows.iter().map(|r| r.to_vec()).collect()).unwrap()
 }
 
 const B11: [i64; 5] = [5, 1, 0, 3, 1]; // T^4 + 3T^3 + T + 5
@@ -160,7 +217,19 @@ fn smooth_genus_3() {
     // PARI: charpoly = x^6 + 5*x^4 - 6*x^3 + 55*x^2 + 1331.
     let f = quad_form(11, &[3, 1, 0, 0, 2], &[1, 0, 5, 1], &[7, 0, 4, 0, 1]);
     let r = check("A", &f, 3, 3, &[1, 0, 5, -6, 55, 0, 1331]);
-    decided_nodal(&r, 0);
+    let ev = decided_nodal(&r, 0);
+    // gcd(4, 2) = 2: absolute irreducibility by a smooth F_11-point, checked here on the curve.
+    match ev.absolute {
+        AbsoluteWitness::SmoothRationalPoint {
+            x: Some(x),
+            y: Some(y),
+        } => {
+            let (v, fx, fy) = value_and_gradient(&f, x, y);
+            assert_eq!(v, 0, "A: ({x}, {y}) on the curve");
+            assert!(fx != 0 || fy != 0, "A: ({x}, {y}) smooth");
+        }
+        w => panic!("A: expected an affine smooth F_p-point, got {w:?}"),
+    }
     // With a genus below the true one the delta-sum is too small: an error, not a status.
     assert_eq!(
         normalization_point_counts(&f, 2, 1, &CountOptions::default()).unwrap_err(),
@@ -231,17 +300,20 @@ fn cusp_and_tacnodes() {
     // D: A2 at 3, PARI charpoly x^4 + 10*x^2 + 121.
     let f = quad_form(11, &[1], &B11, &[1, 8, 3, 2, 6]);
     let r = check("D", &f, 2, 3, &[1, 0, 10, 0, 121]);
-    assert_eq!(delta_certified(&r), vec![LocalType::A(2)]);
-    assert_eq!(r.branch_rule, BranchRule::Exact);
-    // A2 is unibranch: the reference rule gives the same counts (but stays Unresolved).
-    let opts = CountOptions {
-        branch_rule: BranchRule::AssumedUnibranch,
-        ..CountOptions::default()
-    };
-    let u = normalization_point_counts(&f, 2, 3, &opts).unwrap();
-    assert_eq!(u.counts, r.counts);
-    assert_eq!(u.branch_rule, BranchRule::AssumedUnibranch);
-    assert!(!u.status.is_decided());
+    assert_eq!(decided_delta_sum(&r), vec![LocalType::A(2)]);
+    assert_eq!(
+        r.status.label(),
+        "Decided: delta-sum, Lemma 9.1 (0 nodes, A2)"
+    );
+    // A2 is unibranch: the reference rule gives the same counts. (Before the owner's decision
+    // on F-9 this test also asserted that the status under that rule is not Decided; the rule is
+    // now never the rule of a status: `counts` with a Decided status are exact, and the rule's
+    // counts are only `counts_under`.)
+    assert_eq!(
+        r.counts_under(BranchRule::AssumedUnibranch),
+        Some(r.counts.clone())
+    );
+    assert_eq!(r.counts_under(BranchRule::Exact), Some(r.counts.clone()));
     // A3 (tacnodes), genus 1: E at 1 conjugate (x^2 - x + 11), F at 6 rational (x^2 + 2x + 11),
     // I at 2 conjugate (x^2 - 6x + 13), I2 at 3 conjugate (x^2 - 5x + 13).
     let cases: [(&str, u64, &[i64], &[i64], [i64; 3], Vec<usize>); 4] = [
@@ -253,20 +325,11 @@ fn cusp_and_tacnodes() {
     for (name, p, b, c, pp, orbits) in cases {
         let f = quad_form(p, &[1], b, c);
         let r = check(name, &f, 1, 3, &pp);
-        assert_eq!(delta_certified(&r), vec![LocalType::A(3)], "{name}");
+        assert_eq!(decided_delta_sum(&r), vec![LocalType::A(3)], "{name}");
         assert_eq!(r.locus.non_nodal()[0].branch_orbits, Some(orbits), "{name}");
         // the reference rule counts the tacnode once: wrong by +-1 at k = 1, so P changes
-        let u = normalization_point_counts(
-            &f,
-            1,
-            3,
-            &CountOptions {
-                branch_rule: BranchRule::AssumedUnibranch,
-                ..CountOptions::default()
-            },
-        )
-        .unwrap();
-        assert_ne!(u.counts[0], r.counts[0], "{name}: unibranch rule differs");
+        let u = r.counts_under(BranchRule::AssumedUnibranch).unwrap();
+        assert_ne!(u[0], r.counts[0], "{name}: unibranch rule differs");
     }
 }
 
@@ -278,7 +341,7 @@ fn tacnode_tangent_to_the_fibre() {
     let f = quad_form(11, &[1], &[0, 0, 0, 1, 2], &[0, 0, 0, 0, 3]);
     let r = check("T3", &f, 1, 3, &[1, -4, 11]);
     assert_eq!(r.counts[0], 8);
-    assert_eq!(delta_certified(&r), vec![LocalType::A(3)]);
+    assert_eq!(decided_delta_sum(&r), vec![LocalType::A(3)]);
     let s = &r.locus.non_nodal()[0];
     assert_eq!(s.coordinates, Some((Some(0), Some(0))));
     assert_eq!(s.branch_orbits, Some(vec![2]));
@@ -340,7 +403,11 @@ fn points_of_residue_degree_two() {
         if ty == LocalType::Node {
             decided_nodal(&r, 2);
         } else {
-            assert_eq!(delta_certified(&r), vec![LocalType::A(2)]);
+            assert_eq!(decided_delta_sum(&r), vec![LocalType::A(2)]);
+            assert_eq!(
+                r.status.label(),
+                "Decided: delta-sum, Lemma 9.1 (0 nodes, A2 at a point of degree 2)"
+            );
         }
     }
 }
@@ -369,7 +436,7 @@ fn split_fibre_with_a_cusp_and_a_node() {
             (LocalType::Node, Some((Some(4), Some(v0)))),
         ]
     );
-    assert_eq!(delta_certified(&r), vec![LocalType::A(2)]);
+    assert_eq!(decided_delta_sum(&r), vec![LocalType::A(2)]);
 }
 
 #[test]
@@ -415,9 +482,14 @@ fn elliptic_curves_with_singular_points_at_infinity() {
         cols[0][0] = p - 5;
         let f = FormModP::new(p, cols).unwrap();
         let r = check("E1", &f, 1, 3, &[1, -ap, p as i64]);
-        assert_eq!(delta_certified(&r), vec![LocalType::A(2)]);
+        assert_eq!(decided_delta_sum(&r), vec![LocalType::A(2)]);
         let s = r.locus.non_nodal()[0];
         assert_eq!(s.coordinates, Some((None, None)));
+        // gcd(3, 2) = 1: a fibre irreducible of full degree settles absolute irreducibility.
+        assert_eq!(
+            r.status.certificate().unwrap().irreducibility().absolute,
+            AbsoluteWitness::Bidegree { gcd: 1 }
+        );
     }
     // E2: V^3 = T^3 + 2T + 3 as a (3,3) form: an ordinary triple point at (inf, inf).
     // PARI: e = ellfromeqn(y^3 - (x^3 + 2*x + 3)) = [0,0,27,0,-251]; ellap = -5, 7, -8 at
@@ -432,7 +504,7 @@ fn elliptic_curves_with_singular_points_at_infinity() {
     };
     for (p, ap) in [(7u64, -5i64), (13, 7), (19, -8)] {
         let r = check("E2", &e2(p), 1, 3, &[1, -ap, p as i64]);
-        assert_eq!(delta_certified(&r), vec![LocalType::OrdinaryMultiple(3)]);
+        assert_eq!(decided_delta_sum(&r), vec![LocalType::OrdinaryMultiple(3)]);
     }
     // p = 11: x^3 + 2x + 3 has a double root mod 11 (disc = -4*8 - 27*9 = -275 = 0 mod 11), so
     // the curve acquires further singular points: delta-sum 4 > p_a - g = 3.
@@ -579,6 +651,23 @@ fn unclassified_e6_points() {
         );
         assert!(s.counts.is_empty(), "E6 at {p}, genus 6: no counts");
     }
+    // The criterion still applies to E6 (it needs no classification): at 11 no F_11-rational
+    // fibre is irreducible of full degree in either ruling, and the x-fibre over the root of
+    // y^2 + y + 6 is irreducible over F_121, the first in the order of the search (PARI,
+    // f9_tests.gp; unit.gp). gcd(4, 3) = 1.
+    match absolute_irreducibility(&e6(11)).unwrap() {
+        Irreducibility::Absolute(ev) => {
+            assert_eq!(
+                ev.fibre,
+                IrreducibleFibre {
+                    fibration: Fibration::FibresInX,
+                    base: BasePoint::Closed(vec![6, 1, 1]),
+                }
+            );
+            assert_eq!(ev.absolute, AbsoluteWitness::Bidegree { gcd: 1 });
+        }
+        r => panic!("E6 at 11: {r:?}"),
+    }
 }
 
 /// A curve of WP-F code review 1, Section 2.2 at p = 13: `X^2 + b(Y) X + c(Y)`, with its
@@ -702,7 +791,7 @@ fn check_review_case(case: &ReviewCase, kmax: u32) {
     if case.local == LocalType::Node {
         decided_nodal(&r, case.degree);
     } else {
-        assert_eq!(delta_certified(&r), vec![case.local.clone()], "{name}");
+        assert_eq!(decided_delta_sum(&r), vec![case.local.clone()], "{name}");
     }
 }
 
@@ -728,4 +817,260 @@ fn node_of_degree_3_up_to_k6() {
     for case in review_cases().iter().filter(|c| c.local == LocalType::Node) {
         check_review_case(case, 6);
     }
+}
+
+/// The regression curves of the F-9 design, Section 3.3, at p = 13 (PARI/GP `regress.gp`,
+/// output `regress.out.txt`; the search that found (i) and (ii) is `regress_search.gp`).
+/// Coefficient rows `[i][j]` of `x^i y^j`.
+const RED_I: [&[u64]; 5] = [
+    &[8, 3, 0, 10, 5],
+    &[5, 4, 3, 4, 0],
+    &[8, 3, 0, 8, 0],
+    &[5, 7, 8, 0, 11],
+    &[5, 7, 5, 5, 1],
+];
+const RED_II: [&[u64]; 5] = [
+    &[7, 11, 4, 3, 6],
+    &[9, 3, 1, 11, 0],
+    &[7, 6, 2, 0, 12],
+    &[5, 0, 9, 1, 4],
+    &[3, 0, 0, 11, 1],
+];
+
+#[test]
+fn reducible_reductions_are_never_decided() {
+    // Lemma 9.1 needs F mod p absolutely irreducible. Each curve below has a singular locus
+    // whose delta-sum is p_a - g for the genus input, so the delta tally alone (the certificate
+    // before F-9) would call it Decided. Each is reducible over F_p-bar; none is Decided now.
+    let opts = CountOptions::default();
+
+    // (i) F = E1 E2, two smooth (2,2) curves over F_13 meeting transversally in 8 points
+    // (PARI: factor over F_13 gives two factors of bidegree (2,2); Res_x(E1, E2) squarefree of
+    // degree 8). Bidegree (4,4), p_a = 9, genus input 1: 8 nodes, delta 8 = p_a - g.
+    let f1 = from_rows(13, &RED_I);
+    let locus = singular_locus(&f1).unwrap();
+    assert_eq!(locus.node_count(), 8);
+    assert_eq!(locus.delta_sum(), Some(8));
+    let r = normalization_point_counts(&f1, 1, 2, &opts).unwrap();
+    assert_eq!(
+        r.status,
+        ReductionStatus::Unresolved(Unresolved::IrreducibilityNotShown(
+            IrreducibilityGap::NoIrreducibleFibre
+        ))
+    );
+    assert_eq!(
+        r.status.label(),
+        "Unresolved: absolute irreducibility not shown (no irreducible fibre among the first 64 \
+         closed points of each degree <= 4 in either ruling)"
+    );
+    // The counts are those of the normalization E1 + E2 (PARI: #E1 = 9, 171, #E2 = 10, 180),
+    // and the plane model has 18 points over F_13 (PARI brute force); the genus-1 polynomial
+    // T^2 + 5T + 13 from N_1 = 19 is Weil but predicts N_2 = 171, not 351.
+    assert_eq!(r.counts, vec![19, 351]);
+    assert_eq!(r.plane_counts[0], 18);
+    assert_eq!(brute_force(&f1), 18);
+    assert_eq!(r.predicted_counts_agree(), Some(false));
+    assert_eq!(
+        absolute_irreducibility(&f1),
+        Ok(Irreducibility::NotShown(
+            IrreducibilityGap::NoIrreducibleFibre
+        ))
+    );
+
+    // (ii) F = E E^sigma for a smooth (2,2) curve E over F_169 = F_13(w), w^2 = 2: irreducible
+    // over F_13, two conjugate factors over F_169 (PARI). 8 nodes (E meets E^sigma in 8
+    // points), no F_13-point at all (PARI brute force 0), N_2 = 2 #E(F_169) = 290.
+    let f2 = from_rows(13, &RED_II);
+    let r = normalization_point_counts(&f2, 1, 2, &opts).unwrap();
+    assert_eq!(r.locus.node_count(), 8);
+    let x_over_0 = IrreducibleFibre {
+        fibration: Fibration::FibresInX,
+        base: BasePoint::Rational(0),
+    };
+    assert_eq!(
+        r.status,
+        ReductionStatus::Unresolved(Unresolved::IrreducibilityNotShown(
+            IrreducibilityGap::NoSmoothRationalPoint {
+                fibre: x_over_0,
+                gcd: 4
+            }
+        ))
+    );
+    assert_eq!(
+        r.status.label(),
+        "Unresolved: absolute irreducibility not shown (irreducible over F_p by the x-fibre over \
+         y = 0; gcd(dx, dy) = 4 and no smooth F_p-point)"
+    );
+    assert_eq!(r.counts, vec![0, 290]);
+    assert_eq!(r.plane_counts[0], 0);
+    assert_eq!(brute_force(&f2), 0);
+
+    // (iii) F = (x - 3) G, G smooth of bidegree (3,2) and genus 2 (PARI: factor gives x - 3
+    // and G). Bidegree (4,2), p_a = 3, genus input 1: singular_locus finds 2 nodes (the line
+    // meets G in a closed point of degree 2), delta 2 = p_a - g. A vertical line: refused.
+    let f3 = from_rows(
+        13,
+        &[
+            &[5, 10, 11],
+            &[4, 5, 12],
+            &[1, 0, 2],
+            &[7, 1, 10],
+            &[2, 0, 1],
+        ],
+    );
+    let locus = singular_locus(&f3).unwrap();
+    assert_eq!(locus.node_count(), 2);
+    assert_eq!(locus.delta_sum(), Some(2));
+    let vertical = CountError::DegenerateModel(Degeneracy::FibreComponent {
+        place: "x-place g(x) = [10, 1] (ascending)".into(),
+    });
+    assert_eq!(certify(&f3, 1).unwrap_err(), vertical);
+    assert_eq!(
+        normalization_point_counts(&f3, 1, 2, &opts).unwrap_err(),
+        vertical
+    );
+    // (iii') G alone read as a (4,2) form: the line x = infinity is a component (the bidegree
+    // drops). Again 2 nodes and delta 2 = p_a - 1.
+    let f4 = from_rows(
+        13,
+        &[&[7, 1, 5], &[1, 3, 2], &[0, 1, 0], &[2, 0, 1], &[0, 0, 0]],
+    );
+    assert_eq!(singular_locus(&f4).unwrap().delta_sum(), Some(2));
+    assert_eq!(
+        certify(&f4, 1).unwrap_err(),
+        CountError::DegenerateModel(Degeneracy::FibreComponent {
+            place: "x = infinity".into()
+        })
+    );
+    // (iii'') the line y = infinity: (x^4 + 2x + 1) y + (x^3 + 5) as a (4,2) form, refused by
+    // singular_locus already (unchanged).
+    let f5 = from_rows(
+        13,
+        &[&[5, 1, 0], &[0, 2, 0], &[0, 0, 0], &[1, 0, 0], &[0, 1, 0]],
+    );
+    let horizontal = CountError::DegenerateModel(Degeneracy::FibreComponent {
+        place: "y = infinity".into(),
+    });
+    assert_eq!(singular_locus(&f5).unwrap_err(), horizontal);
+    assert_eq!(certify(&f5, 0).unwrap_err(), horizontal);
+
+    // (v) x^2 + 11 of bidegree (2, 0): two conjugate vertical lines (PARI: irreducible over
+    // F_13). A bidegree with a zero entry is a shape error on every path.
+    let fv = from_rows(13, &[&[11], &[0], &[1]]);
+    assert!(matches!(certify(&fv, 0), Err(CountError::Shape(_))));
+    assert!(matches!(
+        normalization_point_counts(&fv, 0, 1, &opts),
+        Err(CountError::Shape(_))
+    ));
+    assert!(matches!(
+        absolute_irreducibility(&fv),
+        Err(CountError::Shape(_))
+    ));
+}
+
+#[test]
+fn smooth_22_curve_certified_by_a_smooth_point() {
+    // (iv) E1 of (i) alone, a smooth (2,2) curve of genus 1 over F_13 (PARI: charpoly
+    // x^2 - 5x + 13, #E1 = 9, 171, 2268). gcd(2, 2) = 2, so a fibre is not enough; the first
+    // smooth F_13-point in the order of the search is (3, 6) (PARI, f9_tests.gp).
+    let e1 = from_rows(13, &[&[11, 9, 11], &[6, 12, 8], &[5, 11, 1]]);
+    let r = check("E1 (2,2)", &e1, 1, 3, &[1, -5, 13]);
+    assert_eq!(r.counts, vec![9, 171, 2268]);
+    let ev = decided_nodal(&r, 0);
+    assert_eq!(
+        ev.fibre,
+        IrreducibleFibre {
+            fibration: Fibration::FibresInX,
+            base: BasePoint::Rational(0),
+        }
+    );
+    assert_eq!(
+        ev.absolute,
+        AbsoluteWitness::SmoothRationalPoint {
+            x: Some(3),
+            y: Some(6)
+        }
+    );
+    let (v, fx, fy) = value_and_gradient(&e1, 3, 6);
+    assert_eq!(v, 0);
+    assert!(fx != 0 || fy != 0);
+    assert_eq!(
+        ev.to_string(),
+        "x-fibre over y = 0 irreducible of full degree; smooth F_p-point (3, 6)"
+    );
+}
+
+#[test]
+fn absolute_irreducibility_settled_by_a_residue_degree() {
+    // F-9 review 1, m3: gcd(a, b) = 2 settled by a fibre over a point of even degree (Claim B:
+    // the m conjugate factors fall into gcd(m, d) orbits over F_(p^d), and m | 2).
+    // S1 (p = 3, bidegree (2,2)): (y^2 + y + 1) x^2 + (y + 1) x + (2y + 1). PARI (f9_tests.gp):
+    // one factor over F_3 and over F_9; no F_3-rational fibre is irreducible of full degree in
+    // either ruling; the x-fibre over the root of y^2 + 1 is irreducible over F_9; the
+    // x-discriminant y^3 + y^2 + 2y is squarefree (one simple root at infinity), so S1 is smooth
+    // of genus 1: charpoly x^2 + 2x + 3, N = 6, 12, 18 (brute force and hyperellcharpoly).
+    let s1 = from_rows(3, &[&[1, 2, 0], &[1, 1, 0], &[1, 1, 1]]);
+    let r = check("S1", &s1, 1, 3, &[1, 2, 3]);
+    assert_eq!(r.counts, vec![6, 12, 18]);
+    let ev = decided_nodal(&r, 0);
+    assert_eq!(
+        ev.fibre,
+        IrreducibleFibre {
+            fibration: Fibration::FibresInX,
+            base: BasePoint::Closed(vec![1, 0, 1]),
+        }
+    );
+    assert_eq!(ev.absolute, AbsoluteWitness::Bidegree { gcd: 2 });
+    assert_eq!(
+        ev.to_string(),
+        "x-fibre over the point g(y) = [1, 0, 1] of degree 2 irreducible of full degree; \
+         gcd(dx, dy) = 2, settled by the residue degree 2"
+    );
+    // S2 (p = 3, bidegree (4,2)): (2y^2 + 2) x^4 + (2y^2 + 2y + 1) x^3 + (y^2 + 2y + 1) x^2 +
+    // (2y^2 + 2y + 2) x + (2y^2 + 2). PARI (f9_tests.gp): one factor over F_3 and over F_9; the
+    // x-fibre over y = 1 is irreducible, there is no smooth F_3-point, and the first x-fibre over
+    // a point of degree 2 that is irreducible over F_9 is the one over y^2 + 2y + 2.
+    let s2 = from_rows(
+        3,
+        &[&[2, 0, 2], &[2, 2, 2], &[1, 2, 1], &[1, 2, 2], &[2, 0, 2]],
+    );
+    match absolute_irreducibility(&s2).unwrap() {
+        Irreducibility::Absolute(ev) => {
+            assert_eq!(
+                ev.fibre,
+                IrreducibleFibre {
+                    fibration: Fibration::FibresInX,
+                    base: BasePoint::Closed(vec![2, 2, 1]),
+                }
+            );
+            assert_eq!(ev.absolute, AbsoluteWitness::Bidegree { gcd: 2 });
+        }
+        r => panic!("S2: {r:?}"),
+    }
+}
+
+#[test]
+fn primitive_forms() {
+    // Lemma 9.1 needs a primitive F: reduce_primitive refuses content 2 and accepts the
+    // primitive part.
+    let n = |v: i64| Integer::from(v);
+    let g = BihomogeneousForm::new(vec![vec![n(2), n(4)], vec![n(6), n(0)], vec![n(2), n(-2)]])
+        .unwrap();
+    assert!(!g.is_primitive());
+    let e = g.reduce_primitive(13).unwrap_err();
+    assert_eq!(e, CountError::NotPrimitive { content: n(2) });
+    assert_eq!(
+        e.to_string(),
+        "the form is not primitive (content 2); Lemma 9.1 needs content 1"
+    );
+    let h = g.primitive_part();
+    assert!(h.is_primitive());
+    assert_eq!(h.reduce_primitive(13).unwrap(), h.reduce(13).unwrap());
+    // content 13 at p = 13: not primitive (reduce alone gives the zero form)
+    let z = BihomogeneousForm::new(vec![vec![n(13), n(26)], vec![n(39), n(0)]]).unwrap();
+    assert_eq!(
+        z.reduce_primitive(13).unwrap_err(),
+        CountError::NotPrimitive { content: n(13) }
+    );
+    assert_eq!(z.reduce(13).unwrap_err(), CountError::ZeroForm);
 }

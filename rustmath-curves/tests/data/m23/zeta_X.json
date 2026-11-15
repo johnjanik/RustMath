@@ -1,19 +1,58 @@
 [
  {
   "p": 5,
-  "status": "skipped",
-  "reason": "not a Weil polynomial",
+  "status": "ok",
+  "certificate": {
+   "certified": true,
+   "singular_points": {
+    "A_1": 60,
+    "A_3": 1
+   },
+   "delta": 62
+  },
   "counts": [
-   8,
-   36,
-   170,
-   560
-  ]
+   7,
+   37,
+   169,
+   561
+  ],
+  "P": [
+   1,
+   1,
+   6,
+   20,
+   16,
+   100,
+   150,
+   125,
+   625
+  ],
+  "chi_minus23": -1,
+  "P(chi) mod 23": 0,
+  "P(chi p) mod 23": 0,
+  "P mod 2": [
+   [
+    "x+1",
+    2
+   ],
+   [
+    "x^3+x+1",
+    1
+   ],
+   [
+    "x^3+x^2+1",
+    1
+   ]
+  ],
+  "Q candidates": [
+   "x^4+x^3+x^2+1",
+   "x^4+x^2+x+1"
+  ],
+  "golay_split": true
  },
  {
   "p": 7,
   "status": "ok",
-  "model": "nodal reduction of the plane model",
   "counts": [
    11,
    69,
@@ -52,12 +91,18 @@
    "x^4+x^3+x^2+1",
    "x^4+x^2+x+1"
   ],
-  "golay_split": true
+  "golay_split": true,
+  "certificate": {
+   "certified": true,
+   "singular_points": {
+    "A_1": 62
+   },
+   "delta": 62
+  }
  },
  {
   "p": 11,
   "status": "ok",
-  "model": "nodal reduction of the plane model",
   "counts": [
    15,
    133,
@@ -92,12 +137,26 @@
    "x^4+x^3+1",
    "x^4+x+1"
   ],
-  "golay_split": true
+  "golay_split": true,
+  "certificate": {
+   "certified": true,
+   "singular_points": {
+    "A_1": 62
+   },
+   "delta": 62
+  }
  },
  {
   "p": 13,
   "status": "ok",
-  "model": "non-nodal singularity mod p, counted as unibranch; validated by the Weil test only",
+  "certificate": {
+   "certified": true,
+   "singular_points": {
+    "A_1": 61,
+    "A_2": 1
+   },
+   "delta": 62
+  },
   "counts": [
    11,
    161,
@@ -141,7 +200,6 @@
  {
   "p": 17,
   "status": "ok",
-  "model": "nodal reduction of the plane model",
   "counts": [
    21,
    285,
@@ -180,12 +238,18 @@
    "x^4+x^3+x^2+1",
    "x^4+x^2+x+1"
   ],
-  "golay_split": true
+  "golay_split": true,
+  "certificate": {
+   "certified": true,
+   "singular_points": {
+    "A_1": 62
+   },
+   "delta": 62
+  }
  },
  {
   "p": 19,
   "status": "ok",
-  "model": "nodal reduction of the plane model",
   "counts": [
    17,
    405,
@@ -224,12 +288,18 @@
    "x^4+x^3+x^2+1",
    "x^4+x^2+x+1"
   ],
-  "golay_split": true
+  "golay_split": true,
+  "certificate": {
+   "certified": true,
+   "singular_points": {
+    "A_1": 62
+   },
+   "delta": 62
+  }
  },
  {
   "p": 29,
   "status": "ok",
-  "model": "nodal reduction of the plane model",
   "counts": [
    35,
    789,
@@ -268,12 +338,26 @@
    "x^4+x^3+x^2+1",
    "x^4+x^2+x+1"
   ],
-  "golay_split": true
+  "golay_split": true,
+  "certificate": {
+   "certified": true,
+   "singular_points": {
+    "A_1": 62
+   },
+   "delta": 62
+  }
  },
  {
   "p": 31,
   "status": "ok",
-  "model": "non-nodal singularity mod p, counted as unibranch; validated by the Weil test only",
+  "certificate": {
+   "certified": true,
+   "singular_points": {
+    "A_1": 61,
+    "A_2": 1
+   },
+   "delta": 62
+  },
   "counts": [
    33,
    993,
@@ -313,7 +397,6 @@
  {
   "p": 37,
   "status": "ok",
-  "model": "nodal reduction of the plane model",
   "counts": [
    43,
    1433,
@@ -352,12 +435,26 @@
    "x^4+x^3+x^2+1",
    "x^4+x^2+x+1"
   ],
-  "golay_split": true
+  "golay_split": true,
+  "certificate": {
+   "certified": true,
+   "singular_points": {
+    "A_1": 62
+   },
+   "delta": 62
+  }
  },
  {
   "p": 41,
   "status": "ok",
-  "model": "non-nodal singularity mod p, counted as unibranch; validated by the Weil test only",
+  "certificate": {
+   "certified": true,
+   "singular_points": {
+    "A_1": 61,
+    "A_2": 1
+   },
+   "delta": 62
+  },
   "counts": [
    42,
    1780,
@@ -396,7 +493,6 @@
  {
   "p": 43,
   "status": "ok",
-  "model": "nodal reduction of the plane model",
   "counts": [
    44,
    1996,
@@ -430,12 +526,18 @@
   "Q candidates": [
    "x^4+x^3+x+1"
   ],
-  "golay_split": true
+  "golay_split": true,
+  "certificate": {
+   "certified": true,
+   "singular_points": {
+    "A_1": 62
+   },
+   "delta": 62
+  }
  },
  {
   "p": 47,
   "status": "ok",
-  "model": "nodal reduction of the plane model",
   "counts": [
    47,
    2349,
@@ -474,12 +576,18 @@
    "x^4+x^3+x^2+1",
    "x^4+x^2+x+1"
   ],
-  "golay_split": true
+  "golay_split": true,
+  "certificate": {
+   "certified": true,
+   "singular_points": {
+    "A_1": 62
+   },
+   "delta": 62
+  }
  },
  {
   "p": 53,
   "status": "ok",
-  "model": "nodal reduction of the plane model",
   "counts": [
    54,
    2804,
@@ -513,12 +621,18 @@
   "Q candidates": [
    "x^4+x^3+x+1"
   ],
-  "golay_split": true
+  "golay_split": true,
+  "certificate": {
+   "certified": true,
+   "singular_points": {
+    "A_1": 62
+   },
+   "delta": 62
+  }
  },
  {
   "p": 59,
   "status": "ok",
-  "model": "nodal reduction of the plane model",
   "counts": [
    72,
    3560,
@@ -548,12 +662,18 @@
   "Q candidates": [
    "x^4+x^3+x^2+x+1"
   ],
-  "golay_split": true
+  "golay_split": true,
+  "certificate": {
+   "certified": true,
+   "singular_points": {
+    "A_1": 62
+   },
+   "delta": 62
+  }
  },
  {
   "p": 61,
   "status": "ok",
-  "model": "nodal reduction of the plane model",
   "counts": [
    64,
    3740,
@@ -587,12 +707,18 @@
   "Q candidates": [
    "x^4+x^3+x+1"
   ],
-  "golay_split": true
+  "golay_split": true,
+  "certificate": {
+   "certified": true,
+   "singular_points": {
+    "A_1": 62
+   },
+   "delta": 62
+  }
  },
  {
   "p": 67,
   "status": "ok",
-  "model": "nodal reduction of the plane model",
   "counts": [
    80,
    4460,
@@ -622,12 +748,18 @@
   "Q candidates": [
    "x^4+x^3+x^2+x+1"
   ],
-  "golay_split": true
+  "golay_split": true,
+  "certificate": {
+   "certified": true,
+   "singular_points": {
+    "A_1": 62
+   },
+   "delta": 62
+  }
  },
  {
   "p": 71,
   "status": "ok",
-  "model": "nodal reduction of the plane model",
   "counts": [
    68,
    5048,
@@ -657,12 +789,26 @@
   "Q candidates": [
    "x^4+x^3+x^2+x+1"
   ],
-  "golay_split": true
+  "golay_split": true,
+  "certificate": {
+   "certified": true,
+   "singular_points": {
+    "A_1": 62
+   },
+   "delta": 62
+  }
  },
  {
   "p": 73,
   "status": "ok",
-  "model": "non-nodal singularity mod p, counted as unibranch; validated by the Weil test only",
+  "certificate": {
+   "certified": true,
+   "singular_points": {
+    "A_1": 61,
+    "A_2": 1
+   },
+   "delta": 62
+  },
   "counts": [
    83,
    5541,
@@ -706,7 +852,6 @@
  {
   "p": 79,
   "status": "ok",
-  "model": "nodal reduction of the plane model",
   "counts": [
    77,
    6369,
@@ -741,6 +886,13 @@
    "x^4+x^3+1",
    "x^4+x+1"
   ],
-  "golay_split": true
+  "golay_split": true,
+  "certificate": {
+   "certified": true,
+   "singular_points": {
+    "A_1": 62
+   },
+   "delta": 62
+  }
  }
 ]
