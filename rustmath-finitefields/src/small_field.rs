@@ -2,7 +2,7 @@
 //!
 //! Specification: MAGMA Handbook ch. 21 *Finite Fields* (digest
 //! `rustmath-lava/docs/Chapter_21_Finite_Fields.md`): `FiniteField`, `Frobenius` (21.4.6),
-//! `Norm` (21.4.6), `IsSquare` (21.4.5), and ch. 23 `Roots` (the root count is the degree of
+//! `Norm` (21.4.6), `IsSquare` (21.4.4), and ch. 23 `Roots` (the root count is the degree of
 //! `gcd(f, x^q - x)`). This is a specialised kernel, not a new general field type: the canonical
 //! `GF(p^n)` of this crate is [`crate::FiniteField`].
 //!
@@ -645,6 +645,11 @@ fn trimmed_degree<const K: usize>(fq: &SmallFq<K>, c: &[SmallFqElt<K>]) -> isize
 ///
 /// Degrees `<= 4` use fixed-size arithmetic modulo `f` and the semilinear Frobenius; larger
 /// degrees use [`count_distinct_roots_any_degree`]. Exact: the result is `deg gcd(f, x^q - x)`.
+///
+/// # Panics
+///
+/// Panics if the degree of `f` (after trimming) is above 4096. Degrees above 4 take the vector
+/// path [`count_distinct_roots_any_degree`], which has this bound.
 #[inline]
 pub fn count_distinct_roots<const K: usize>(fq: &SmallFq<K>, f: &[SmallFqElt<K>]) -> Option<usize> {
     let d = trimmed_degree(fq, f);
@@ -722,6 +727,11 @@ fn vmulmod<const K: usize>(
 
 /// [`count_distinct_roots`] on vectors, for any degree (the path used above degree 4; public so
 /// that both paths can be tested against each other). Degree `<= 2^12` (accumulator bound).
+///
+/// # Panics
+///
+/// Panics if the degree of `f` (after trimming) is above 4096. Above it, the bound `2^48` on
+/// the lazy `u64` accumulators of the products modulo `f` (module doc) no longer holds.
 pub fn count_distinct_roots_any_degree<const K: usize>(
     fq: &SmallFq<K>,
     f: &[SmallFqElt<K>],

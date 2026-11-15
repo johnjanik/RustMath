@@ -1,0 +1,7 @@
+deg 31: irreducible 1, self-reciprocal 0, 2^d - 1 prime 1, x^(2^d-1) = 1: 1
+deg 19: irreducible 1, self-reciprocal 0, 2^d - 1 prime 1, x^(2^d-1) = 1: 1
+deg 17: irreducible 1, self-reciprocal 0, 2^d - 1 prime 1, x^(2^d-1) = 1: 1
+deg F = 134, palindromic: 1
+factor(F mod 2) degrees: [17, 17, 19, 19, 31, 31]
+lcm = 147572545148221521919 > 2^64: 1, lcm of the first two < 2^64: 1
+c[0..=67] (descending, coefficient of T^(134-i)) = [1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1]

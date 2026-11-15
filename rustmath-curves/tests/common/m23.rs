@@ -336,16 +336,32 @@ pub struct Row {
     pub result: Result<NormalizationCounts, CountError>,
 }
 
+/// Panics on `Err(CountError::GenusInconsistent)`. A delta-sum below `p_a - g` contradicts the
+/// genus 4 of X and of the covers ([`GENUS`]), on which every certificate rests. So it is a
+/// fault in the genus input or in the code, not a refusal of one model.
+pub fn assert_genus_consistent<T>(result: &Result<T, CountError>, what: &str) {
+    if let Err(e @ CountError::GenusInconsistent { .. }) = result {
+        panic!(
+            "{what}: {e}. This contradicts the genus hypothesis g = {GENUS} of every \
+             certificate; it is not a refusal"
+        );
+    }
+}
+
 /// The certificate of each model at p (cheap), and the index of the best one (None if all are
 /// refused). The first model wins among equal ranks.
+///
+/// Panics if a model gives `CountError::GenusInconsistent` (see [`assert_genus_consistent`]).
 pub fn select_model(
     forms: &[(String, FormModP)],
 ) -> (Vec<Result<ReductionStatus, CountError>>, Option<usize>) {
     let statuses: Vec<Result<ReductionStatus, CountError>> = forms
         .iter()
-        .map(|(_, f)| {
-            let locus = singular_locus(f)?;
-            certify(&locus, f.arithmetic_genus(), GENUS)
+        .map(|(name, f)| {
+            let status =
+                singular_locus(f).and_then(|locus| certify(&locus, f.arithmetic_genus(), GENUS));
+            assert_genus_consistent(&status, &format!("model {name} at p = {}", f.p()));
+            status
         })
         .collect();
     let mut best: Option<(usize, u8)> = None;

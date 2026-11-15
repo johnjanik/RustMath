@@ -384,6 +384,17 @@ impl FrobeniusPolynomial {
 
     /// The order of Frobenius on `Jac[2]` as far as `P mod 2` decides it (see
     /// [`TwoTorsionOrder`]).
+    ///
+    /// Cost: for each irreducible factor of `P mod 2`, of degree `d`, the order of `x` is the
+    /// least divisor of `2^d - 1` that works. The divisors are found by trial division up to
+    /// `2^(d/2)`, so about `2^31` steps near `d = 62`. For genus 4 (`d <= 8`) this is instant.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `P mod 2` has an irreducible factor of degree above 62, which is possible from
+    /// genus 32 on (`deg P = 2g`), or if the order or the bound `divides` does not fit in a
+    /// `u64`, which is possible from genus 64 on (the order is below `2^(g + 1)`). It never
+    /// returns a wrapped value.
     pub fn two_torsion_frobenius_order(&self) -> TwoTorsionOrder {
         let fac = self.factor_mod(2);
         let mut s = 1u64;
@@ -402,7 +413,7 @@ impl FrobeniusPolynomial {
             }
             TwoTorsionOrder::Unresolved {
                 semisimple_order: s,
-                divides: s * two,
+                divides: s.checked_mul(two).expect(ORDER_OVERFLOW),
             }
         }
     }
@@ -448,8 +459,10 @@ fn gcd(a: u64, b: u64) -> u64 {
     }
 }
 
+const ORDER_OVERFLOW: &str = "two_torsion_frobenius_order: the order does not fit in a u64";
+
 fn lcm(a: u64, b: u64) -> u64 {
-    a / gcd(a, b) * b
+    (a / gcd(a, b)).checked_mul(b).expect(ORDER_OVERFLOW)
 }
 
 /// The multiplicative order of `x` in `F_2[x]/(f)` for an irreducible `f != x` (ascending bits).
@@ -669,5 +682,33 @@ mod tests {
         assert!(fp.predicts(&ints(&[7, 63])));
         assert!(!fp.predicts(&ints(&[7, 64])));
         assert_eq!(format!("{fp}"), "T^2 - T + 7");
+    }
+
+    #[test]
+    #[should_panic(expected = "does not fit in a u64")]
+    fn two_torsion_order_above_u64_panics() {
+        // Genus 67, p = 3, P mod 2 = f f^rev for f = x^31 + x^3 + 1, x^19 + x^5 + x^2 + x + 1 and
+        // x^17 + x^3 + 1, irreducible over F_2 with prime 2^d - 1. The order of Frobenius on
+        // Jac[2] is (2^31 - 1)(2^19 - 1)(2^17 - 1), above 2^64 (PARI/GP polisirreducible,
+        // factormod, lcm; docs/workstreams/m23_golay/wpf/gp/two_torsion_overflow.gp). Before the
+        // fix this wrapped in release builds.
+        let mut f2 = vec![1i64];
+        for exps in [&[31, 3, 0][..], &[19, 5, 2, 1, 0], &[17, 3, 0]] {
+            let mut f = vec![0i64; exps[0] + 1];
+            for &e in exps {
+                f[e] = 1;
+            }
+            let rev: Vec<i64> = f.iter().rev().cloned().collect();
+            f2 = fp_factor::mul(&fp_factor::mul(&f2, &f, 2), &rev, 2);
+        }
+        let g = 67;
+        assert_eq!(f2.len(), 2 * g + 1);
+        // Descending, c[i] = c[2g - i] mod 2 (f2 is palindromic) and c[2g - i] = 3^(g - i) c[i].
+        let mut c: Vec<Integer> = f2.iter().rev().map(|&b| Integer::from(b)).collect();
+        for i in 0..g {
+            c[2 * g - i] = int(3).pow((g - i) as u32) * c[i].clone();
+        }
+        let fp = FrobeniusPolynomial::from_coefficients(&int(3), c).unwrap();
+        fp.two_torsion_frobenius_order();
     }
 }

@@ -1,0 +1,64 @@
+J: p=11 b=[5, 1, 0, 3, 1] c=[2, 4, 8, 0, 6] (ascending in T)
+    D factor [T + 1, T + 5, T + 6, T^2 + 9] mults [1, 2, 1, 2]
+    normalization y^2 = T^2 + 7*T + 6 ; charpoly = 1
+J2: p=11 b=[5, 0, 3, 0, 1] c=[0, 0, 1, 0, 6] (ascending in T)
+    D factor [T^2 + 1, T^2 + 9] mults [1, 3]
+    normalization y^2 = T^4 + 10*T^2 + 9 ; charpoly = x^2 + 4*x + 11
+K1: p=11 b=[5, 0, 3, 0, 1] c=[0, 0, 1, 0, 6] (ascending in T)
+    D factor [T^2 + 1, T^2 + 9] mults [1, 3]
+    normalization y^2 = T^4 + 10*T^2 + 9 ; charpoly = x^2 + 4*x + 11
+K2: p=13 b=[31, -27, 1, -3, 1] c=[12, 6, 1, 12, 7] (ascending in T)
+    D factor [T + 3, T + 7, T + 8, T + 9, T + 12] mults [1, 1, 1, 2, 3]
+    normalization y^2 = T^4 + 30*T^3 + 317*T^2 + 1380*T + 2016 ; charpoly = x^2 + 2*x + 13
+K2 b(1), b(4) mod 13: [3, 3]
+J h(sqrt 2) square in F_121: 0
+J2 h(sqrt 2) square in F_121: 1
+K2 node at 4: h(4) square mod 13: 1
+J k=1 square=1  J: p=11 b=[5, 1, 0, 3, 1] c=[4, 4, 6, 0, 1] (ascending in T)
+    D factor [T + 7, T^2 + 9, T^3 + 10*T^2 + 9*T + 7] mults [1, 2, 1]
+    normalization y^2 = T^4 + 17*T^3 + 79*T^2 + 70*T + 49 ; charpoly = x^2 + 3*x + 11
+J k=2 square=1  J: p=11 b=[5, 1, 0, 3, 1] c=[8, 4, 2, 0, 2] (ascending in T)
+    D factor [T^2 + 9, T^2 + 8*T + 3, T^2 + 9*T + 4] mults [2, 1, 1]
+    normalization y^2 = T^4 + 17*T^3 + 79*T^2 + 59*T + 12 ; charpoly = x^2 + 4*x + 11
+J k=3 square=0  J: p=11 b=[5, 1, 0, 3, 1] c=[1, 4, 9, 0, 3] (ascending in T)
+    D factor [T + 9, T^2 + 9, T^3 + 8*T^2 + 7*T + 7] mults [1, 2, 1]
+    normalization y^2 = T^4 + 17*T^3 + 79*T^2 + 70*T + 63 ; charpoly = x^2 + x + 11
+J k=4 square=0  J: p=11 b=[5, 1, 0, 3, 1] c=[5, 4, 5, 0, 4] (ascending in T)
+    D factor [T^2 + 9, T^4 + 6*T^3 + 2*T^2 + 4*T + 4] mults [2, 1]
+    normalization y^2 = T^4 + 6*T^3 + 2*T^2 + 4*T + 4 ; charpoly = x^2 - 6*x + 11
+J k=5 square=1  J: p=11 b=[5, 1, 0, 3, 1] c=[9, 4, 1, 0, 5] (ascending in T)
+    D factor [T, T^2 + 9, T^3 + 6*T^2 + 2*T + 4] mults [1, 2, 1]
+    normalization y^2 = T^4 + 6*T^3 + 2*T^2 + 4*T ; charpoly = x^2 + 5*x + 11
+J k=7 square=1  J: p=11 b=[5, 1, 0, 3, 1] c=[6, 4, 4, 0, 7] (ascending in T)
+    D factor [T^2 + 9, T^4 + 6*T^3 + 2*T^2 + 4*T + 3] mults [2, 1]
+    normalization y^2 = T^4 + 6*T^3 + 2*T^2 + 4*T + 3 ; charpoly = x^2 + 4*x + 11
+J k=8 square=0  J: p=11 b=[5, 1, 0, 3, 1] c=[10, 4, 0, 0, 8] (ascending in T)
+    D factor [T + 2, T^2 + 9, T^3 + 4*T^2 + 5*T + 5] mults [1, 2, 1]
+    normalization y^2 = T^4 + 6*T^3 + 13*T^2 + 15*T + 10 ; charpoly = x^2 + 3*x + 11
+J k=9 square=1  J: p=11 b=[5, 1, 0, 3, 1] c=[3, 4, 7, 0, 9] (ascending in T)
+    D factor [T^2 + 9, T^4 + 6*T^3 + 2*T^2 + 4*T + 6] mults [2, 1]
+    normalization y^2 = T^4 + 6*T^3 + 2*T^2 + 4*T + 6 ; charpoly = x^2 - 2*x + 11
+J2 k=1 square=1  J2: p=11 b=[5, 0, 3, 0, 1] c=[2, 0, 10, 0, 1] (ascending in T)
+    D factor [T^2 + 9, T^4 + 10*T^2 + 7] mults [2, 1]
+    normalization y^2 = T^4 + 10*T^2 + 7 ; charpoly = x^2 - 6*x + 11
+J2 k=3 square=1  J2: p=11 b=[5, 0, 3, 0, 1] c=[10, 0, 2, 0, 3] (ascending in T)
+    D factor [T + 2, T + 9, T^2 + 3, T^2 + 9] mults [1, 1, 1, 2]
+    normalization y^2 = T^4 + 11*T^3 + 21*T^2 + 33*T + 54 ; charpoly = x^2 + 11
+J2 k=4 square=1  J2: p=11 b=[5, 0, 3, 0, 1] c=[3, 0, 9, 0, 4] (ascending in T)
+    D factor [T^2 + 9, T^4 + 10*T^2 + 6] mults [2, 1]
+    normalization y^2 = T^4 + 10*T^2 + 6 ; charpoly = x^2 + 2*x + 11
+J2 k=5 square=1  J2: p=11 b=[5, 0, 3, 0, 1] c=[7, 0, 5, 0, 5] (ascending in T)
+    D factor [T + 4, T + 7, T^2 + 4, T^2 + 9] mults [1, 1, 1, 2]
+    normalization y^2 = T^4 + 11*T^3 + 32*T^2 + 44*T + 112 ; charpoly = x^2 - 4*x + 11
+J2 k=7 square=1  J2: p=11 b=[5, 0, 3, 0, 1] c=[4, 0, 8, 0, 7] (ascending in T)
+    D factor [T + 3, T + 5, T + 6, T + 8, T^2 + 9] mults [1, 1, 1, 1, 2]
+    normalization y^2 = T^4 + 22*T^3 + 175*T^2 + 594*T + 720 ; charpoly = x^2 + 4*x + 11
+J2 k=8 square=1  J2: p=11 b=[5, 0, 3, 0, 1] c=[8, 0, 4, 0, 8] (ascending in T)
+    D factor [T^2 + 9, T^2 + 5*T + 1, T^2 + 6*T + 1] mults [2, 1, 1]
+    normalization y^2 = T^4 + 11*T^3 + 32*T^2 + 11*T + 1 ; charpoly = x^2 - 4*x + 11
+J2 k=9 square=1  J2: p=11 b=[5, 0, 3, 0, 1] c=[1, 0, 0, 0, 9] (ascending in T)
+    D factor [T^2 + 9, T^4 + 10*T^2 + 8] mults [2, 1]
+    normalization y^2 = T^4 + 10*T^2 + 8 ; charpoly = x^2 + 2*x + 11
+J2 k=10 square=1  J2: p=11 b=[5, 0, 3, 0, 1] c=[5, 0, 7, 0, 10] (ascending in T)
+    D factor [T^2 + 9, T^2 + 4*T + 2, T^2 + 7*T + 2] mults [2, 1, 1]
+    normalization y^2 = T^4 + 11*T^3 + 32*T^2 + 22*T + 4 ; charpoly = x^2 + 11

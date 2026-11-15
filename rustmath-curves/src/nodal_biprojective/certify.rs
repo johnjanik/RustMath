@@ -1,5 +1,10 @@
 //! The reduction certificate and the point counts of the normalization.
 //!
+//! Specification: MAGMA Handbook ch. 114 *Algebraic Curves* (digest
+//! `rustmath-lava/docs/Chapter_114_Algebraic_Curves.md`): 114.5.1 `Genus`, `ArithmeticGenus`
+//! (the delta-sum `p_a - g`), 114.4.3 `IsNode`, `IsAnalyticallyIrreducible` (the branches above
+//! a singular point), and 114.8.1 `NumberOfPlacesOfDegreeOneECF`, `LPolynomial`.
+//!
 //! Theorem (WP-F design, Theorem 4.5). Let `F` be primitive of bidegree `(dx, dy)`, `C` the
 //! normalization of `V(F)` over `Q`, of genus `g`, and `X0_p = V(F mod p)`. If `X0_p` has finitely
 //! many singular points over `F_p-bar` and the sum of their delta invariants is
@@ -303,6 +308,12 @@ pub(crate) fn corrections(
 /// `genus` is the genus of the normalization of `V(F)` over `Q`, a trusted input: the status is
 /// relative to it (cite its source at the call site). `F` must have `X`-degree in `2..=4`
 /// (transpose otherwise); `p` is the prime of `f`; `kmax <= 8` and `p^kmax < 2^63`.
+///
+/// Cost: [`singular_locus`] once (see its cost), then [`plane_point_count`] for each
+/// `k = 1..=kmax`, so about `p^k/k + 1` fibre root counts for each k. The last k dominates. For
+/// the M23 curve in release on 4 threads: milliseconds for the certificate, about 20 s at p = 79
+/// and kmax = 4 (WP-F report, Section 6). The bound `p^kmax < 2^63` does not make the call
+/// fast: see [`plane_point_count`].
 ///
 /// Never returns counts with `BranchRule::AssumedUnibranch` and a Decided status.
 pub fn normalization_point_counts(

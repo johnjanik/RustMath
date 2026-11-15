@@ -54,6 +54,7 @@ fn main() {
                 let t = Instant::now();
                 let result = calf_mod(&calf, p, s0)
                     .and_then(|f| normalization_point_counts(&f, GENUS, kmax, &opts));
+                assert_genus_consistent(&result, &format!("calF at p = {p}, s0 = {s0}"));
                 let row = Row {
                     p,
                     s0: Some(s0),

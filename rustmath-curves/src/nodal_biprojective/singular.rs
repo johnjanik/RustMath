@@ -415,6 +415,12 @@ fn analyse_place(
 
 /// The singular locus of `V(F mod p)` for a form with `X`-degree in `2..=4` (Lemma 4.3 above).
 ///
+/// Cost: dominated by the factorization of the discriminant over `F_p` (`fp_factor`,
+/// distinct-degree and Cantor-Zassenhaus on schoolbook arithmetic). Its degree is
+/// `(2dx - 2) dy`, so up to `6 dy`. For the M23 form (`dy = 23`, degree 138) this takes
+/// milliseconds in release. [`FormModP`] accepts `dy` up to 4096, which means a discriminant of
+/// degree up to 24576: far from interactive.
+///
 /// Errors: `FibreDegree` (`dx` not in `2..=4`), `DegenerateModel(DiscriminantVanishes)`,
 /// `DegenerateModel(FibreComponent)`.
 pub fn singular_locus(f: &FormModP) -> Result<SingularLocus, CountError> {

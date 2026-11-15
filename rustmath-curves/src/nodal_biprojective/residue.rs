@@ -2,6 +2,11 @@
 //! computations). `K = F_p[Y]/(g)` on `fp_factor` polynomials, and the quadratic extension
 //! `K[X]/(X^2 + g1 X + g0)` for a fibre with two conjugate singular points.
 //!
+//! Specification: MAGMA Handbook ch. 114 *Algebraic Curves* (digest
+//! `rustmath-lava/docs/Chapter_114_Algebraic_Curves.md`): 114.4.1 points with coordinates in an
+//! extension of the base field, 114.5.1 `HasSingularPointsOverExtension`; and ch. 21 *Finite
+//! Fields* for `Norm` and `IsSquare` in these fields.
+//!
 //! These are small private helpers built on `rustmath_polynomials::fp_factor`, not a new
 //! numeric type. Squares: `a != 0` is a square iff `N(a)` is a square in `F_p` (the norm of a
 //! finite field extension is onto and `a^((q-1)/2) = N(a)^((p-1)/2)`; R. Lidl, H. Niederreiter,

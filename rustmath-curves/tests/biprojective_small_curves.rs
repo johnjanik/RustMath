@@ -5,11 +5,15 @@
 //! The curves `V^2 + b(T) V + c(T) = 0` have bidegree (4,2) (fibre variable `X = T`, degree 4;
 //! `Y = V`). Their singular points are those of `y^2 = D(T)`, `D = b^2 - 4c`, `y = 2V + b`, and the
 //! normalization is `y^2 = D / (square part)`. Reference values: PARI/GP 2.15
-//! `hyperellcharpoly` of the normalization, and `ellap`, from the scripts
-//! `scratchpad/m23/design/WPF/gp/small_curves.gp` (curves A to I2, E1, E2; reproduced in the WP-F
-//! design review), `scratchpad/m23/design/WPF/review1/tangent.gp` (curve T3), and
-//! `scratchpad/m23/impl/gp/small_curves4.gp` (curves J, J', J2, K1, K2). The PARI output is quoted
-//! at each case. `P` is descending: `[1, a_1, ..., p^g]`.
+//! `hyperellcharpoly` of the normalization, and `ellap`. The scripts and their output are in
+//! `docs/workstreams/m23_golay/wpf/gp/`: `small_curves.gp` and `branch.gp` (curves A to I2, E1,
+//! E2; reproduced in the WP-F design review), `tangent.gp` (curve T3), and `small_curves4.gp`,
+//! which reads `small_curves2.gp` (curves J, J', J2, K1, K2). The PARI output is quoted at each
+//! case. `P` is descending: `[1, a_1, ..., p^g]`.
+//!
+//! The curves of WP-F code review 1, Section 2.2 are `X^2 + b(Y) X + c(Y) = 0`, of bidegree
+//! (2, dy), found by the review's search script (`adv2.gp`, not kept). Their reference values
+//! were rerun from `b` and `c` alone by `verify.gp` in the same folder (PARI/GP 2.15.4).
 
 // The case tables are tuples on purpose: one line per curve, as in the PARI/GP scripts.
 #![allow(clippy::type_complexity)]
@@ -31,6 +35,14 @@ fn quad_form(p: u64, a: &[i64], b: &[i64], c: &[i64]) -> FormModP {
         }
     }
     FormModP::new(p, cols).unwrap()
+}
+
+/// `X^2 + b(Y) X + c(Y)` (ascending in `Y`, `b` and `c` of length `dy + 1`) as a (2, dy) form
+/// mod p.
+fn monic_quadratic_in_x(p: u64, b: &[u64], c: &[u64]) -> FormModP {
+    let mut a = vec![0u64; b.len()];
+    a[0] = 1;
+    FormModP::new(p, vec![c.to_vec(), b.to_vec(), a]).unwrap()
 }
 
 /// Brute-force `#X0(F_p)` over `P^1 x P^1(F_p)` (independent of the fibre counter).
@@ -499,4 +511,221 @@ fn weil_polynomial_of_b_from_counts() {
     let r = normalization_point_counts(&f, 2, 2, &CountOptions::default()).unwrap();
     let fp = FrobeniusPolynomial::from_counts_u64(11, &r.counts).unwrap();
     assert_eq!(fp.coefficients(), &ints(&[1, 3, 14, 33, 121])[..]);
+}
+
+#[test]
+fn unclassified_e6_points() {
+    // Review 1, 2.2 and 3.1: F = Y^3 - X^4 of bidegree (4,3), p_a = 6, at p = 7, 11, 13. Its
+    // singular points (0, 0) and (inf, inf) are both E6 (y^3 = x^4), which the classifier does
+    // not identify. The curve is rational: t -> (t^3, t^4) is a bijection from P^1 (inverse
+    // t = Y/X), so #X0(F_q) = q + 1. PARI (verify.gp): brute force gives p affine points
+    // plus (inf, inf), so p + 1, at p = 7, 11, 13.
+    let e6 = |p: u64| {
+        let mut cols = vec![vec![0u64; 4]; 5];
+        cols[0][3] = 1;
+        cols[4][0] = p - 1;
+        FormModP::new(p, cols).unwrap()
+    };
+    for p in [7u64, 11, 13] {
+        let f = e6(p);
+        let line: Vec<u64> = (1..=3u32).map(|k| p.pow(k) + 1).collect();
+        // By default: Unclassified and no counts at all.
+        let r = normalization_point_counts(&f, 0, 3, &CountOptions::default()).unwrap();
+        assert!(
+            matches!(
+                r.status,
+                ReductionStatus::Unresolved(Unresolved::Unclassified(_))
+            ),
+            "E6 at {p}: {:?}",
+            r.status
+        );
+        assert!(r.counts.is_empty(), "E6 at {p}: no counts");
+        assert_eq!(r.plane_counts, line, "E6 at {p}: plane counts");
+        assert_eq!(brute_force(&f), p + 1, "E6 at {p}: brute force");
+        assert_eq!(r.locus.points.len(), 2, "E6 at {p}");
+        for s in &r.locus.points {
+            assert!(
+                matches!(s.local, LocalType::Unclassified(_)),
+                "E6 at {p}: {}",
+                s.describe()
+            );
+            assert_eq!(s.delta, None, "E6 at {p}");
+        }
+        // unibranch_if_unclassified: counts under the assumed rule, never Decided. E6 is
+        // unibranch, so here these counts happen to be q + 1.
+        let opts = CountOptions {
+            unibranch_if_unclassified: true,
+            ..CountOptions::default()
+        };
+        let u = normalization_point_counts(&f, 0, 3, &opts).unwrap();
+        assert_eq!(u.branch_rule, BranchRule::AssumedUnibranch, "E6 at {p}");
+        assert!(!u.status.is_decided(), "E6 at {p}");
+        assert_eq!(
+            u.status, r.status,
+            "E6 at {p}: the option does not change the status"
+        );
+        assert_eq!(u.counts, line, "E6 at {p}");
+        // As the reduction of a smooth (4,3) curve over Q (genus 6, p_a - g = 0), the two points
+        // count at least 1 each: a delta-sum of at least 2, a lower bound.
+        let s = normalization_point_counts(&f, 6, 1, &CountOptions::default()).unwrap();
+        assert_eq!(
+            s.status,
+            ReductionStatus::Unresolved(Unresolved::DeltaMismatch {
+                found: 2,
+                expected: 0,
+                found_is_lower_bound: true,
+            }),
+            "E6 at {p}, genus 6"
+        );
+        assert!(s.counts.is_empty(), "E6 at {p}, genus 6: no counts");
+    }
+}
+
+/// A curve of WP-F code review 1, Section 2.2 at p = 13: `X^2 + b(Y) X + c(Y)`, with its
+/// PARI/GP reference (quoted at [`review_cases`]) and its one singular closed point.
+struct ReviewCase {
+    name: &'static str,
+    b: &'static [u64],
+    c: &'static [u64],
+    genus: usize,
+    /// `hyperellcharpoly` of the normalization, descending.
+    charpoly: &'static [i64],
+    /// `N_1, ..., N_6` of the normalization.
+    counts: [u64; 6],
+    local: LocalType,
+    degree: usize,
+    orbits: &'static [usize],
+}
+
+/// Follow-up F-11, the A_k part: odd k over a residue field of degree > 1, and the precision
+/// doubling of the classifier.
+// F = X^2 + b(Y) X + c(Y) at p = 13 with D = b^2 - 4c = S(Y)^2 H(Y). The singular points lie
+// over the roots y0 of S, the normalization is y^2 = H, and the branches at y0 are rational iff
+// h(y0) = (D / S^ord)(y0) is a square in F_13(y0). PARI (verify.gp): D = factor(D) mod 13,
+// charpoly = hyperellcharpoly(Mod(1,13)*H), N_k = 13^k + 1 - polsym(charpoly, 6)[k+1], and
+// issquare(subst(h, 'Y, ffgen(S))).
+// node3_sq0: D = (Y+5)(Y^3+2)^2(Y^3+8Y^2+Y+11), H = Y^4+2Y^2+3Y+3, charpoly x^2 + x + 13,
+//   N = 15, 195, 2160, 28275, 372075, 4829760. h(y0) not a square in F_13^3: the branches are
+//   conjugate over F_13^3 and rational over F_13^6.
+// node3_sq1: D = (Y+5)(Y^3+2)^2(Y^3+8Y^2+4Y+9), H = Y^4+5Y^2+3Y+6, charpoly x^2 - x + 13,
+//   N = 13, 195, 2236, 28275, 370513, 4829760. h(y0) a square: rational branches.
+// A3_d2_sq0: D = (Y+1)(Y+8)(Y^2+2)^4(Y^2+7Y+7), H = Y^4+3Y^3+2Y+4, charpoly x^2 + 4x + 13,
+//   N = 18, 180, 2106, 28800, 371538, 4822740. h(y0) not a square in F_13^2: conjugate branches.
+// A3_d2_sq1: D = (Y+1)(Y^2+2)^4(Y^3+2Y^2+11Y+6), H = Y^4+3Y^3+4Y+6, charpoly x^2 - 5x + 13,
+//   N = 9, 171, 2268, 28899, 372069, 4826304. h(y0) a square: rational branches.
+// A15_sq1: D = (Y-1)^16 (Y^2+Y+2), genus 0, N = 14, 170, 2198, 28562, 371294, 4826810
+//   (13^k + 1). h(1) = 4, a square.
+// A15_sq0: D = (Y-1)^16 (Y+6)(Y+9), genus 0, N as for A15_sq1. h(1) = 5, not a square.
+fn review_cases() -> Vec<ReviewCase> {
+    let a15 = [14, 170, 2198, 28562, 371294, 4826810];
+    vec![
+        ReviewCase {
+            name: "node3_sq0",
+            b: &[7, 1, 10, 1, 0, 1],
+            c: &[6, 7, 4, 12, 2, 0],
+            genus: 1,
+            charpoly: &[1, 1, 13],
+            counts: [15, 195, 2160, 28275, 372075, 4829760],
+            local: LocalType::Node,
+            degree: 3,
+            orbits: &[2],
+        },
+        ReviewCase {
+            name: "node3_sq1",
+            b: &[11, 8, 10, 9, 0, 1],
+            c: &[8, 2, 1, 12, 5, 0],
+            genus: 1,
+            charpoly: &[1, -1, 13],
+            counts: [13, 195, 2236, 28275, 370513, 4829760],
+            local: LocalType::Node,
+            degree: 3,
+            orbits: &[1, 1],
+        },
+        ReviewCase {
+            name: "A3_d2_sq0",
+            b: &[12, 3, 1, 3, 11, 8, 1],
+            c: &[7, 10, 12, 11, 7, 4, 0],
+            genus: 1,
+            charpoly: &[1, 4, 13],
+            counts: [18, 180, 2106, 28800, 371538, 4822740],
+            local: LocalType::A(3),
+            degree: 2,
+            orbits: &[2],
+        },
+        ReviewCase {
+            name: "A3_d2_sq1",
+            b: &[1, 4, 7, 4, 11, 8, 1],
+            c: &[12, 12, 5, 11, 2, 5, 0],
+            genus: 1,
+            charpoly: &[1, -5, 13],
+            counts: [9, 171, 2268, 28899, 372069, 4826304],
+            local: LocalType::A(3),
+            degree: 2,
+            orbits: &[1, 1],
+        },
+        ReviewCase {
+            name: "A15_sq1",
+            b: &[12, 2, 9, 8, 12, 9, 5, 7, 12, 1],
+            c: &[3, 10, 2, 12, 12, 8, 5, 12, 11, 0],
+            genus: 0,
+            charpoly: &[1],
+            counts: a15,
+            local: LocalType::A(15),
+            degree: 1,
+            orbits: &[1, 1],
+        },
+        ReviewCase {
+            name: "A15_sq0",
+            b: &[11, 12, 10, 0, 3, 8, 0, 1, 6, 1],
+            c: &[7, 2, 3, 11, 12, 7, 11, 0, 12, 0],
+            genus: 0,
+            charpoly: &[1],
+            counts: a15,
+            local: LocalType::A(15),
+            degree: 1,
+            orbits: &[2],
+        },
+    ]
+}
+
+/// Counts up to `kmax` against PARI, the closed point, its branches and the status.
+fn check_review_case(case: &ReviewCase, kmax: u32) {
+    let name = case.name;
+    let f = monic_quadratic_in_x(13, case.b, case.c);
+    let r = check(name, &f, case.genus, kmax, case.charpoly);
+    assert_eq!(r.counts, &case.counts[..kmax as usize], "{name}: counts");
+    assert_eq!(r.locus.points.len(), 1, "{name}: one closed point");
+    let s = &r.locus.points[0];
+    assert_eq!(s.residue_degree, case.degree, "{name}");
+    assert_eq!(s.local, case.local, "{name}");
+    assert_eq!(s.branch_orbits.as_deref(), Some(case.orbits), "{name}");
+    if case.local == LocalType::Node {
+        decided_nodal(&r, case.degree);
+    } else {
+        assert_eq!(delta_certified(&r), vec![case.local.clone()], "{name}");
+    }
+}
+
+#[test]
+fn node_of_degree_3_tacnode_of_degree_2_and_a15() {
+    // k = 3 already separates the two node classes (3 more or 3 fewer points than the plane
+    // model). k = 6 is in node_of_degree_3_up_to_k6 (release). The A3 at a degree 2 place needs
+    // k = 2 (class) and k = 4 (branches rational); the A15 needs k = 1 and 2.
+    for case in review_cases() {
+        let kmax = match case.local {
+            LocalType::Node => 3,
+            LocalType::A(3) => 4,
+            _ => 3,
+        };
+        check_review_case(&case, kmax);
+    }
+}
+
+#[test]
+#[ignore = "release, about 2 s (k = 6 at p = 13 takes about 20 s per curve in debug)"]
+fn node_of_degree_3_up_to_k6() {
+    // The conjugate branches of node3_sq0 become rational over F_13^6.
+    for case in review_cases().iter().filter(|c| c.local == LocalType::Node) {
+        check_review_case(case, 6);
+    }
 }

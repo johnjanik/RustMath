@@ -124,17 +124,20 @@ fn count_k<const K: usize>(p: u64, cols: &[Vec<u64>]) -> Result<u64, CountError>
     let q = fq.order();
     let chunk = 1u64 << 14;
     let nchunks = q.div_ceil(chunk);
-    let parts: Result<Vec<u64>, CountError> = (0..nchunks)
+    // Sum the chunks by a reduction, so no vector of q / 2^14 partial sums is kept. If a fibre
+    // vanishes, the error of one failing chunk is returned, as with a collect. Every partial sum
+    // is at most the count, so an overflow means a count above u64::MAX: FieldTooLarge.
+    let overflow = || CountError::FieldTooLarge { p, k: K as u32 };
+    let mut total: u64 = (0..nchunks)
         .into_par_iter()
         .map(|c| chunk_count(&fq, cols, c * chunk, ((c + 1) * chunk).min(q)))
-        .collect();
-    let mut total: u64 = parts?.iter().sum();
+        .try_reduce(|| 0, |a, b| a.checked_add(b).ok_or_else(overflow))?;
     // The base point at infinity: the leading coefficients in the base variable.
     let m = cols.len() - 1;
     let n = cols[0].len() - 1;
     let lead: Vec<SmallFqElt<K>> = (0..=m).map(|i| fq.from_fp(cols[i][n])).collect();
     match projective_roots(&fq, &lead, m) {
-        Some(r) => total += r as u64,
+        Some(r) => total = total.checked_add(r as u64).ok_or_else(overflow)?,
         None => {
             return Err(CountError::DegenerateModel(Degeneracy::FibreComponent {
                 place: "base point at infinity".into(),
@@ -148,7 +151,16 @@ fn count_k<const K: usize>(p: u64, cols: &[Vec<u64>]) -> Result<u64, CountError>
 /// `P^1 x P^1` (not of its normalization), by summing the distinct roots in `P^1(F_q)` of every
 /// fibre. Runs on the current rayon pool, in chunks of `2^14` base points.
 ///
-/// Errors: `k = 0`, `k > 8` or `p^k >= 2^63` (`FieldTooLarge`); a fibre that vanishes
+/// Cost: one pass over the `q` base points (an orbit test each) and about `q/k + 1` fibre root
+/// counts, one per Frobenius orbit plus the base point at infinity. Measured in release on 4
+/// threads at k = 4: about 2 us wall per quartic fibre (p = 79: 9.7 million fibres in about
+/// 20 s; WP-F report, Section 6). Every `p^k < 2^63` is accepted, but the cost grows like `p^k`.
+/// For example p = 65521 with k = 3 means about 9.4e13 fibres: years at that rate.
+///
+/// Errors: `k = 0`, `k > 8` or `p^k >= 2^63` (`FieldTooLarge`); a count above `u64::MAX`
+/// (`FieldTooLarge`, never a wrapped sum: the count is at most `m (q + 1)`, where `m` is the
+/// degree of the counted fibres, `dx` for `FibresInX` and `dy` for `FibresInY`, so this needs
+/// `m >= 3` and `q + 1 > 2^64 / m`); a fibre that vanishes
 /// identically (`DegenerateModel(FibreComponent)`).
 pub fn plane_point_count(f: &FormModP, k: u32, fib: Fibration) -> Result<u64, CountError> {
     let p = f.p();

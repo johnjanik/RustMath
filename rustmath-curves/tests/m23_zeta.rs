@@ -380,6 +380,7 @@ fn l_row(calf: &[Vec<[Integer; 6]>], p: u64, s0: u64, kmax: u32, opts: &CountOpt
     let result = calf_mod(calf, p, s0).and_then(|f| {
         rustmath_curves::nodal_biprojective::normalization_point_counts(&f, GENUS, kmax, opts)
     });
+    assert_genus_consistent(&result, &format!("calF at p = {p}, s0 = {s0}"));
     Row {
         p,
         s0: Some(s0),

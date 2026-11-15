@@ -85,7 +85,7 @@ pub enum CountError {
     CharacteristicTwo,
     /// `p >= 2^16`, the bound of the word-size kernel.
     PrimeTooLarge(u64),
-    /// `p^k >= 2^63` or `k > 8`.
+    /// `p^k >= 2^63` or `k > 8`, or a point count above `u64::MAX`.
     FieldTooLarge { p: u64, k: u32 },
     /// The form is zero mod p.
     ZeroForm,
