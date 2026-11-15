@@ -41,6 +41,8 @@ python3 tools/magma_tracker/build.py
 | `n/a` | override | Not meaningful for a Rust library (e.g. pure language syntax) |
 
 Overrides always win over the generator. Put the evidence (test name, reference source) in `note`.
+An override with status `candidate` only replaces the generator's `rust_path` (to remove a false lead).
+It is not a review, but `build.py` counts every row whose override has a `note` as Reviewed in `STATUS.md`.
 
 ## Review status
 

@@ -1,0 +1,10 @@
+read("steiner.gp");
+f = polsubcyclo(47, 23); print("f = ", f);
+print("disc factor: ", factor(poldisc(f)));
+ps = [p | p <- primes(40), polisirreducible(Mod(1,p)*f)]; print("inert primes < 200: ", ps);
+p = ps[1]; N = 20; q = p^N; Hp = heptads(1); Hm = heptads(-1); r = frob_roots(f, p, N);
+print("p = ", p, " T5+ = ", t5(r, Hp, q), " T5- = ", t5(r, Hm, q));
+g = x^23 - x - 1; ps2 = [p | p <- primes(40), polisirreducible(Mod(1,p)*g)]; print("x^23-x-1 inert primes: ", ps2);
+p = ps2[1]; N = 30; q = p^N; r = frob_roots(g, p, N);
+print("p = ", p, " T5+ = ", t5(r, Hp, q), " T5- = ", t5(r, Hm, q));
+quit;
