@@ -83,37 +83,294 @@ terms have the form `<int>*T^<i>*V^<j>` (see `m23golay/data.py`).
 
 ## 2. What RustMath can and cannot be trusted for
 
-From `PROJECT_TRACKER.md` at RustMath commit `02d1bbf`. Check the tracker again before relying
-on any row.
+From `PROJECT_TRACKER.md` at RustMath commit `6e03987`, with each line checked in the code. Check the
+tracker again before relying on any row. Each line names the entry point as `file:line`. The bracket
+after it gives the tracker rating: done (tested against reference values), partial, facade, broken or
+missing. "No row" means the tracker has no inventory row, so the line rests on the code and its own
+tests. Costs are read from the code and were not timed, unless a line names a tracker timing.
 
-Usable as is:
+### Usable as is
 
-- exact kernel: integers, rationals, `GF(p^n)` with Cantor-Zassenhaus factorization
-  (`rustmath-finitefields/src/poly_factor.rs`), Galois rings `GR(p^a, d)` with Frobenius and
-  Newton inversion (`galois_ring.rs`), which is exactly the ring `(Z/p^N)[x]/(f)` needed below;
-- Zassenhaus factorization over Z, Hensel lifting, resultants, discriminants, LLL;
-- number fields: round 2 maximal order, prime decomposition, polred, heuristic recognition
-  (`rustmath-numberfields/src/recognize.rs`);
-- permutation groups: deterministic Schreier-Sims (`rustmath-groups/src/bsgs.rs`), tested on
-  M23 and M24 from generators;
-- Belyi engine: triangle groups, coset graphs, high-precision modular-forms route
-  (`rustmath-curves/src/belyi/`), used so far for a genus 0 cover.
+All three packages:
 
-Do not call (facade, broken or missing at that commit):
+- Integers, rationals, CRT: `rustmath-integers/src/integer.rs:64`, `crt.rs:17`, `rustmath-rationals`
+  [done]. `try_is_prime` (`prime.rs:160`) returns a proof or `Err`. `is_prime` (`:173`) panics when
+  the ECPP proof is unresolved. The Kronecker symbol for `chi(p)` is `integer.rs:788` [done].
+- `GF(p)` on machine words: `rustmath-polynomials/src/fp_factor.rs`, `squarefree_factor` `:379`,
+  `distinct_degree_factor` `:435`, `factor` `:809`, `factor_with_multiplicity` `:854` [done]. These
+  entries prove `p` with the deterministic `is_prime_u64` (`check_modulus` `:592`), which is cheap.
+  They need `p <= 3037000499` (`MAX_P` `:483`). They take `i64` coefficients and read them modulo
+  `p`, so the caller reduces a large `Integer` coefficient first. The helpers (`gcd` `:167`, `mul`,
+  `div_mod`, `pow_mod` and the rest) check nothing (module doc, `:48`). They need `p` prime
+  `<= MAX_P` and coefficients already in `[0, p)`. Characteristic 2 uses the trace map. This is the
+  fast path for any computation modulo one prime.
+- `GF(p^n)`: `FiniteField::new`, `with_modulus` (`rustmath-finitefields/src/finite_field.rs:145`,
+  `:183`) [done]. Both prove `p` once with `try_is_prime`. Element operations do not check it again.
+  Conway polynomials exist only for small `p` and `n` (`conway.rs:139`). Otherwise `new` takes the
+  first irreducible in base-`p` counter order (`poly_factor.rs:252`). This default may change in a
+  future version: `docs/HANDOFF.md:342` notes that a fix of the search changes default moduli. So use
+  `with_modulus` when the field must be reproducible. Frobenius `finite_field.rs:537`, `is_square`
+  `:699`, `sqrt` `:725` [done].
+- Factorization over `GF(q)`: squarefree `rustmath-finitefields/src/poly_factor.rs:627`,
+  distinct-degree `:681`, equal-degree `:763`, `factor` `:946`, `roots` `:998` [done]. A second
+  stack, `cantor_zassenhaus.rs:622` [done], is generic over `FiniteFieldElement`, with impls for
+  `PrimeField` and `Gfpn` (`ff_poly.rs:213`, `:785`). It proves `p` on every public call
+  (`ff_poly.rs:196`). `PrimeField` and `Gfpn` also store `Integer`s, so neither stack is a
+  word-size kernel.
+  Equal-degree splitting certifies each block. It panics with probability at most 2^-256 and never
+  returns an unsplit block.
+- Zassenhaus over `Z`: `rustmath-polynomials/src/zassenhaus.rs:385` [done]. Typed errors, and `Err`
+  beyond 2^22 recombination subsets (`MAX_RECOMBINE` `:91`). There is no van Hoeij.
+- Hensel lifting of a factorization: `rustmath-polynomials/src/zp_hensel.rs:143`, `hensel_lift_all`
+  `:192`, quadratic lift mod `p^k` `factorization.rs:671` [done].
+- Resultant and discriminant over `Z`: `rustmath-polynomials/src/disc.rs:150`, `:204` [done],
+  multimodular with the Hadamard bound. Generic Bareiss resultant `univariate.rs:537` [done].
+- Linear algebra over a field: `Matrix<F: Field>`, echelon form
+  `rustmath-matrix/src/linear_solve.rs:52`, rank `:158`, solve `:175`, kernel `:374`, inverse `:482`
+  [done]. Over `Q` it runs on `Rational`. Over `GF(p)` it runs on `PrimeField`: `solve_gf7` checks
+  solve against PARI, and the canonical-form tests run over GF(2), GF(3), GF(5), GF(7) and GF(101)
+  (`rustmath-finitefields/tests/matrix_forms_gfp.rs`). Limits: build entries with `PrimeField::new`.
+  It does not check that `p` is prime (`prime_field.rs:54`). An entry made only from `Ring::zero()`
+  or `Ring::one()` stays an integer (`docs/HANDOFF.md:331`).
+- Integer factorization (for `disc(g8)` and similar): `factorization_with_limits`
+  (`rustmath-integers/src/factorization.rs:183`) [done]. Factors in its `primes` list are proven. A
+  factor whose ECPP proof is unresolved comes back in `probable_primes` (BPSW), as does every factor above
+  psi_12 (about 3.2 * 10^23) when the proof is switched off. What it cannot split comes back as a composite, never as a prime.
+  There is no NFS. The tracker times the SIQS at about 36 s for 70 digits in a release build.
 
-- `rustmath-curves`: genus, singularities, differentials, Riemann-Roch are facades or wrong.
-  WP-F and WP-A need their own small exact routines, specified below.
-- `rustmath-functionfields/src/genus.rs` is wrong outside its three tests.
-- character tables and class-function inner products in `rustmath-groups` are broken (T-215);
-  conjugacy classes exist only by brute force on a full element list.
-- no zeta functions of curves, no subfields, no factorization over number fields, no period
-  matrices or theta functions, interval arithmetic only on f64.
-- `rustmath-galois`: exact engine up to degree 5; Stauduhar descent is an honest stub. The
-  Galois groups needed here (A8 in degree 8 and 15) are certified by cycle types, see WP-A.
+WP-F:
+
+- Root count of a quartic over `GF(p)`: `fp_factor::distinct_degree_factor` on the radical from
+  `squarefree_factor` [done]. It panics on a repeated factor. It returns pairs `(d, g_d)` and leaves
+  out every empty block. The number of distinct roots is the degree of `g_1`, from the pair with
+  `d = 1`, and 0 when there is no such pair. For example, an irreducible quartic gives `[(4, f)]`.
+  One `x^p mod f` per degree step, on `i64` words.
+- Root count of a quartic over `GF(p^k)`: `square_free_factorization`, then
+  `distinct_degree_factorization` on each squarefree factor (`poly_factor.rs:627`, `:681`), on an
+  `FqPoly` over `FiniteField::new(p, k)`. This DDF returns pairs `(g_d, d)` and also leaves out empty
+  blocks, so the root count is the sum of the degrees of the `d = 1` blocks over all
+  squarefree factors. Limit: cost. Each degree step computes `x^q mod f`, about
+  `k log2 p` squarings of a cubic modulo the quartic. Each `GF(p^k)` product is `k^2` products of
+  heap-allocated `Integer`s plus a reduction. Correct, but far too slow for the `p^4` base points of
+  the `k = 4` count near `p = 100`. `roots` (`:998`) also runs equal-degree splitting.
+- Frobenius orbits and the Hessian square test: `FiniteFieldElement::frobenius`, `is_square`
+  (`finite_field.rs:537`, `:699`), `PrimeField::is_square` (`prime_field.rs:241`) [done].
+- Sturm sequences over `Q`: `count_real_roots`, `count_real_roots_in`
+  (`rustmath-polynomials/src/real_roots.rs:147`, `:158`) [done, four hand-checked tests]. Limit: it
+  counts distinct roots in a half-open interval `(a, b]` with rational endpoints. The interval
+  `[-2 sqrt(p), 2 sqrt(p)]` of 3.1 step 5 has irrational endpoints and needs an exact reduction.
+  The Weil test counts roots with multiplicity, so run it on each squarefree factor of `R` and weight
+  by multiplicity.
+- `P_p mod 2` and the mod 23 check: `fp_factor::factor_with_multiplicity` [done] and integer
+  evaluation.
+- Discriminant identity at integer `T`: `disc.rs:204` on `F(t, V)` [done]. Squarefreeness of `h62`
+  mod `p`: reduce its coefficients into `[0, p)`. Then the radical from
+  `fp_factor::squarefree_factor` has degree 62 exactly when `h62` stays squarefree of degree 62.
+  Coprimality with `T(T^2+23)`: the unchecked `fp_factor::gcd` on the reduced inputs.
+
+WP-P:
+
+- Schreier-Sims: `StabilizerChain::new` (`rustmath-groups/src/bsgs.rs:138`), order `:278`,
+  membership by sifting `:289` [no row; blocker B-02 records it as resolved in `5ff8749`].
+  Deterministic. Tests: `mathieu_m23_order` (`:480`), `m23_membership_respects_point_stabilizer`
+  (`:510`, M23 on 23 points), `mathieu_m24_order_and_membership` (`:487`). Limits: products are read
+  right to left (`compose(a, b)[i] = a[b[i]]`, `bsgs.rs:43`), the opposite of Section 1. The chain
+  keeps its transversals private, so there is no element iterator.
+- Orbits, transitivity, primitivity: `rustmath-groups/src/perm_predicates.rs:41`, `:63`, `:80`,
+  `:202` [done]. Transitivity is the generation test of 4.2 step 5.
+- Cycle types on 23 points: `transitive23::cycle_type` (`transitive23.rs:74`) on `[u8; 23]` [done,
+  inside the degree-23 classifier row].
+- The whole group by closure: `transitive23::group_closure` (`transitive23.rs:99`) [no row of its
+  own]. Limit: closure into an unordered `HashSet`, tested only on the solvable groups of degree 23
+  (order at most 506). For M23 it needs several hundred MB (estimate, not measured). It is not the
+  ordered stabilizer-chain enumeration of 4.2.
+- Binary Golay code `[23,12,7]`: `BinaryGolayCode::new` (`rustmath-coding/src/golay.rs:33`) [done]:
+  weight enumerator checked, every error of weight at most 3 corrected. Limits: the coordinates are
+  those of the cyclic code of `x^11+x^10+x^6+x^5+x^4+x^2+1`, the reciprocal of the polynomial in
+  4.2. They are not the labelling of the published generators. There is no accessor for the 253
+  heptads, the even subcode `G0` or the automorphism group. The extended code `golay.rs:371`
+  [partial] has its 759 octads checked. Its decoder ignores the parity bit.
+- Linear algebra over `F_2` for 4.3: `Matrix<PrimeField>` with `p = 2`, as above. The modules have
+  dimension at most 22, so cost does not matter.
+- Genus 0 Belyi engine, `rustmath-curves/src/belyi/`. These parts take any passport: permutations
+  and the Riemann-Hurwitz genus (`monodromy.rs:41`), triangle groups and coset graphs
+  (`triangle_group.rs:113`), the ansatz encoder (`encode.rs:178`) [all done], and the KMSV fit of a
+  genus 0 map (`genus0_map.rs:116`) on the modular-forms route (`modular_forms.rs:33`) [partial].
+  These parts are written for the degree 24 passport `2^8 1^8 / 12^2 / 5^4 1^4` only: the Newton
+  solves (`newton.rs:262`, `:785`), the numerical monodromy (`numerical_monodromy.rs:96`, `:152`) and
+  the exact verifier `verify_2_12_5_cover` (`verify.rs:59`) [done]. The solves and the monodromy
+  take that passport's root layout, `FactorizedRoots` (`factorized_residual.rs:112`). The verifier's
+  trait asks for `verify_ramification_2_12_5` (`verify.rs:49`). `candidate_verify.rs:48` checks the
+  identity for any passport, but only in f64, and the f64 refinement `refine_candidate`
+  (`solve.rs:299`) and the true-root gate `gate_numerical_candidate` (`:278`) take any square system.
+  Tracker row 2099 records that the power-series route did not scale for [2,12,5] (rho about 0.9906). Limits: genus 0 only (`genus0_map.rs:1`; the tracker
+  lists Belyi maps of genus >= 1 as absent). The path tracking is not certified. So the degree 23
+  rows of 4.4 item 2 can use the encoder and the KMSV fit, and need the rest built (What to build).
+
+WP-A:
+
+- Groebner bases over a field: `groebner_basis_field`, `reduced_groebner_basis_field`
+  (`rustmath-polynomials/src/groebner.rs:1043`, `:1164`) [done]. Orders Lex, Grlex, Grevlex and
+  `Elimination { block }` (`:66`). Elimination ideals `elimination.rs:88` [done]. The number of
+  solutions with multiplicity `staircase.rs:58` [done]. The code type-checks for any `Field`:
+  `PrimeField`, `FiniteFieldElement` or `GFp<P>` (`rustmath-rings/src/function_field/typed/gfp.rs:32`
+  [done]; `P` is not checked prime). But every test is small and over `Q` or `Z`, and none runs over
+  a finite field. Before A1, add a small test over `GF(p)` with a Singular or Sage reference. Limits:
+  Buchberger with normal selection and the first criterion only (row `groebner.rs:719`, [partial]).
+  `groebner_basis_f4` (`:800`) is Buchberger under that name [missing]. There is no FGLM. The default
+  budget (`:847`) allows 20,000 pairs, 500 basis elements, degree 40, 5,000 terms and 10 s. It
+  returns `Err` when it trips. `GroebnerBudget::generous()` (`:863`) allows degree 500 and 120 s.
+  The cost on a zero-dimensional system over `F_p` with hundreds of solutions is unknown. A degree
+  240 eliminant already exceeds the default degree.
+- Smoothness of the canonical model (A0): the model is a complete intersection of a quadric and a
+  cubic in P^3, not a hypersurface. So `hypersurface_singular_locus` and `is_smooth_hypersurface`
+  (`rustmath-schemes/src/singularity.rs:96`, `:116`) [done] do not apply. Use `singular_subscheme`
+  (`:263`) [partial] on each affine chart `x_i = 1`, and test each result with `is_unit_ideal`
+  (`:63`) [done]. Its precondition is an equidimensional `V(I)`, which a complete intersection is.
+  Tested over `Q` only.
+- Galois rings `GR(p^a, d)`: `GaloisRing::new`, `with_modulus`
+  (`rustmath-finitefields/src/galois_ring.rs:77`, `:105`), Teichmueller lift `:203`, `:609`,
+  Teichmueller digits `:627`, Frobenius `:664`, Newton unit inverse `:732`, `xgcd` `:855`, orders
+  `:1156` [done, row `galois_ring.rs:55`]. `p` is proven at construction. This is the ring
+  `(Z/p^N)[x]/(f)`. Newton on a simple root of one polynomial runs on its ring operations and
+  `unit_inverse`, which is what the Steiner labelling exercise of Section 6 needs. Limits: elements
+  are `Integer` vectors. Frobenius recomputes all `a` Teichmueller digits by powers of `p^d`, which
+  costs roughly `a (a/d + 1) d log2 p` ring products per call. The ring is not a field, so `Matrix`
+  has no solve or inverse over it (see Do not call).
+- The same ring with a cheap Frobenius: `UnramifiedExtension`
+  (`rustmath-rings/src/padics/unramified.rs:138`) [done]. Frobenius uses the precomputed image of the
+  generator (`:243`, `:411`). Norm and trace are cross-certified.
+- Rational reconstruction: `rational_reconstruct`, `crt_rational_reconstruct`
+  (`rustmath-integers/src/crt.rs:130`, `:212`) [done in the tracker's IGP24 table, item C3];
+  `recognize_rational` (`rustmath-numberfields/src/recognize.rs:183`) [done, labelled heuristic].
+  `rational_reconstruct` returns the unique `n/d` with `|n|, d <= floor(sqrt((M-1)/2))` that matches,
+  or `None` when there is none. A returned fraction is not certified: if the true height is larger,
+  it can be wrong. There is no stability loop, so the caller adds primes or raises `N` and compares.
+- Recognition of algebraic numbers: `recognize_algebraic` (from a p-adic residue), and
+  `recognize_complex_algebraic` (`recognize.rs:195`, `:259`) [done, labelled heuristic], and its
+  high-precision form (`:354`) [no tracker row]. They find a minimal polynomial by LLL. The caller must certify it by
+  exact substitution.
+- Maximal order, integral basis, field discriminant: `rustmath-numberfields/src/round2.rs:1086`,
+  `:745`, `:732` [done, checked against LMFDB]. Limit: only primes up to 10^5 whose square divides
+  `disc(f)` are made maximal (`:682`, bound set at `:733`), and a larger one stays in the answer. A
+  result supported on `{2, 3, 5, 23}` therefore proves test 3 of 5.2. A large prime in it must be
+  checked.
+- Prime decomposition: `rustmath-numberfields/src/ideals.rs:127` [done, LMFDB], with `p` an `i64`.
+- polred: `rustmath-numberfields/src/polred.rs:302` [done, LMFDB]. The output always defines the
+  same field. Limit: the T2 lattice comes from f64 roots rounded into `i64` (`polred.rs:51-56`,
+  `:145-153`), and the LLL is the f64 one of `rustmath-matrix/src/lll.rs:75` [partial].
+- LLL: `lll_reduce_rf` with BigFloat Gram-Schmidt (`rustmath-matrix/src/lattice.rs:378`) [done] and
+  the exact test `lll_is_reduced_exact` (`:246`) [done]. Limit: both LLL loops stop at an iteration
+  cap without saying so (`lll.rs:92`, `lattice.rs:329`). Run the exact test on the output.
+- Cycle types mod `p` for 5.2: `frobenius_cycle_types`, `cycle_type_mod_p`
+  (`rustmath-galois/src/sieve.rs:103`, `:82`), Dedekind shape
+  `rustmath-polynomials/src/padic_factor.rs:72` [done]. `galois_group`
+  (`rustmath-galois/src/lib.rs:165`) is exact up to degree 5 [done]. Above that it decides only `A_n`
+  and `S_n`, by Jordan's criterion (`sieve.rs:156`, [partial]). For `g8` a Frobenius of type `3 5`
+  or `1^3 5` powers to a 5-cycle, so it can decide A8. For `g15` expect `Unresolved`.
+- Exact arithmetic in `Q(T)[V]/(F)` for 5.6: `RationalFunction`
+  (`rustmath-functionfields/src/ratfunc.rs:30`, a `Field`) with `UnivariatePolynomial` division [no
+  row; five unit tests].
+
+### Do not call
+
+Facade, broken or missing at `6e03987`:
+
+- `rustmath-curves` plane-curve layer: geometric genus `genus.rs:30` [broken: always the arithmetic
+  genus], `find_singularities` `singularities.rs:104` [facade: returns no points], differentials
+  `differentials.rs:95` [facade], Riemann-Roch dimension `riemann_roch.rs:225` [broken] and basis
+  `:297` [facade], parametrization `parameterization.rs:38` [facade], the genus 2 stack (gated off,
+  does not compile) [broken]. Only the arithmetic genus `genus.rs:20` [done] is real. There is no
+  adjoint computation. WP-F and WP-A need their own small exact routines, specified below.
+- `rustmath-functionfields/src/genus.rs:71` [broken]: right on its three tests and wrong elsewhere
+  (it assumes the constant field is `Q` and skips branch places at poles).
+- The function-field layer of `rustmath-rings`: genus and places
+  `function_field/function_field_polymod.rs:156`, orders `order_polymod.rs:190` (`count_points`
+  `:334` returns `q^n + 1`), Jacobians `jacobian_base.rs:159` (the Frobenius polynomial is a string),
+  zeta function `function_field_rational.rs:339` [all facade].
+- Point counts, zeta functions and L-polynomials of curves of genus >= 2: absent. The only point
+  count is the genus 1 routine `EllipticCurve::compute_a_p` (`rustmath-ellipticcurves/src/curve.rs:328`).
+- Character tables (T-215): inner product `rustmath-groups/src/representation.rs:148` [broken],
+  class functions `class_function.rs:211` [facade]. Tables exist only for `C_n` and `S_3`
+  (`representation.rs:267`, [partial]). There is no ATLAS table of M23 and no Dixon-Schneider.
+- Conjugacy classes `conjugacy_classes.rs:161` [partial]: they need the full element list and cost
+  `O(|G|^2)`, so they are unusable at `|M23|`. There are no centralizers, normalizers or backtrack
+  searches over a BSGS (tracker, absent list), and no public M23 or M24 constructor. The generators
+  are in the `bsgs.rs` tests only. `block_systems` `perm_predicates.rs:182` [broken] misses systems.
+- `SteinerSystem::new` (`rustmath-combinatorics/src/designs.rs:226`) checks the design property only
+  for `t <= 2` and `v <= 10` (`:61`), so it does not verify S(4,7,23) or S(5,8,24) [row `:233`,
+  partial].
+- Cohomology: `rustmath-homology` gives free ranks over `Z` only (`chain_complex.rs:145`,
+  `cochain_complex.rs:143`, [facade]). There is no group cohomology and nothing over `F_2`.
+- Multivariate Newton over `GR(p^N, k)`: absent. `newton_lift_bivariate`
+  (`rustmath-rings/src/padics/newton_lift.rs:398`) [no row; IGP24 table item C1 done] lifts a square
+  system over `Z_p` from a seed in `F_p` only. `PolySystem::jacobian_mod`
+  (`rustmath-polynomials/src/poly_system.rs:153`) works modulo an integer. A seed in `GF(p^15)` needs
+  new code. `hensel_lift_root` (`rustmath-rings/src/padics/padic_integer.rs:384`) is [partial].
+- Resultants over `GF(p)`: no public entry. `resultant_mod_p` (`disc.rs:110`) is private.
+  `UnivariatePolynomial::resultant` needs `EuclideanDomain`, which `PrimeField` and
+  `FiniteFieldElement` lack (`GFp<P>` has it). Reduce the integer resultant mod `p` or use `gcd`.
+  `bivariate::discriminant_in_t` (`bivariate.rs:248`) panics unless the leading coefficient is
+  constant in `t`, which is false for `F`.
+- Certified enclosures: absent. The f64 `Interval` (`rustmath-reals/src/interval.rs:186`, [broken],
+  blocker B-03) rounds to nearest. Complex intervals are f64
+  (`rustmath-complex/src/complex_interval.rs:1`, [partial]) with a non-enclosing `sqrt` (`:393`,
+  [broken]). `BigRealBall`, `BigComplexBall` (`ball.rs:50`) and `ComplexBall` (`complex_arb.rs:40`)
+  do not widen radii for rounding [partial]. `RIF` sin and cos
+  (`rustmath-rings/src/real_mpfi.rs:535`) are [broken]. Partial: `RIF` (`real_mpfi.rs:217`) rounds
+  +, -, *, / outward on MPFR, but its sqrt, exp and ln may miss by 1 ulp (tracker row). The exact
+  rational balls of `real_arb.rs:139` are sound for +, -, * and have no transcendental functions.
+  Aberth roots (`rustmath-complex/src/roots.rs:378`, [done]) bound the roots of one polynomial in
+  floating point. Nothing certifies the solutions of a system, so the certificate of 5.6 has nothing
+  to build on.
+- Period matrices: absent. `rustmath-rings/src/function_field/theta_functions.rs:312` sums an f64
+  theta series with no truncation bound [partial].
+- Number fields: no factorization over a number field, no subfields, no Galois group as a
+  permutation group. Stauduhar descent `rustmath-galois/src/stauduhar.rs:58` [missing] returns `Err`.
+  The numeric descent `descent.rs:103` [no row] covers degrees 3 to 5. The legacy `NumberField`
+  methods give wrong values (`rustmath-numberfields/src/lib.rs`: norm `:126` [broken], trace `:137`,
+  signature `:482`, `galois_closure` `:539` [facade]). Use `round2.rs` and `ideals.rs`.
+- `QuotientRing` (`rustmath-polynomials/src/quotient.rs:157`, `:168`, `:273`, `:282`) [facade]. Use
+  `staircase.rs:58` and `RationalFunction` division instead.
 
 RustMath rules that apply: a bounded search that finds nothing never decides; certifying
 routines return `Decided` or `Unresolved`; reference values come from data files, not from
 memory; one crate per pull request.
+
+### What to build
+
+The pieces that do not exist yet, per package (Section 6 says where they go):
+
+- WP-F: a word-size `GF(p^k)` kernel with distinct-root counts for the quartic fibres over the
+  `V`-line and for the degree 23 fibres over the `T`-line (3.1 step 6); the nodal point counter on
+  P^1 x P^1; the L-polynomial from counts (Newton's identities, integrality, functional equation);
+  the exact Weil test on `[-2 sqrt(p), 2 sqrt(p)]`; the mod 2 and mod 23 checks; readers for
+  `polynomial_F.m`, `polynomial_calF.m` and the zeta JSON files.
+- Steiner labelling exercise (end of Section 6, Section 8 step 2): Newton lifting of the 23 roots of
+  `f1` and `f2` in a Galois ring `GR(29^N, k)`; S(4,7,23) on those roots; `T5`, `J5`, `J7` by
+  rational reconstruction with the stability loop; the degree 253 heptad and duad resolvents of
+  `data/golay_resolvents.json`.
+- WP-P: element enumeration from a `StabilizerChain`; a public M23 on the published generators;
+  class identification with the split classes; `G0`, `P0`, `P0/G0` and S(4,7,23) in the published
+  labelling; the ATLAS table of M23 as data with a correct class-function inner product (T-215), and
+  the class structure constants from it; centralizer orders; Nielsen class counts, real points and
+  ovals; the swap action on Nielsen classes for the twists of 4.4 item 1; parabolic cohomology over
+  `F_2`. For 4.4 item 2: a passport-generic high-precision Newton solve, monodromy check and exact verifier
+  for the genus 0 rows of degree 23; factorization over a quadratic field for the etale algebra of the
+  genus 2 rows; branch cycles by certified continuation; Belyi maps of genus >= 1 for
+  the genus 2 rows. Left out: 4.4 item 3 (four branch points). Also needed: readers for the WP-P JSON
+  files.
+- WP-A: adjoints and the canonical model of the nodal curve; point counts on the model in P^3; the
+  rulings of the canonical quadric over `F_p` or `F_{p^2}` and the bidegree (3,3) equation
+  `G(s, u)` of A1; the tritangency system; zero-dimensional solving over `F_p` that is known to
+  finish at 240 solutions; linear solving with unit pivots and multivariate Newton over
+  `GR(p^N, 15)`; the square-class test on `X(F_q)`; the stability loop for rational reconstruction;
+  the octic of A5 from the spreads of `data/pg32_a8_model.json`; certified complex enclosures for the
+  120 planes; local (Puiseux) expansions at the two totally ramified points for the A0 test of the
+  vanishing sequence (0,1,2,3); readers for Le Lay's `Fint_coefficients_Z.json` (3.3 item 1) and for
+  `f1`, `f2` (Section 6). Left out on purpose: a direct check of the A1 prediction of one theta characteristic
+  over `F_p`. Its odd part follows from the Frobenius orbits of the 120 planes. The even theta
+  characteristic would need divisor classes on X, which no package builds.
 
 ## 3. WP-F: the Frobenius table
 
@@ -413,8 +670,9 @@ In order of cost:
    factor degrees). Any degree-one factor is a candidate rational point. The existing Belyi
    engine is genus 0; genus 2 needs the modular-forms route with a basis of weight 2 forms, or
    a different method. The genus 0 rows `(3A,5A,6A)`, `(4A,4A,5A)`, `(3A,6A,6A)`, `(4A,4A,6A)`
-   fit the existing genus 0 engine directly and are the natural first run: 70, 104, 120 and 192
-   Belyi maps of degree 23.
+   are the natural first run for the genus 0 engine: 70, 104, 120 and 192 Belyi maps of degree 23.
+   (Section 2: its encoder and KMSV fit take any passport, but its solve, monodromy and exact
+   verifier are written for the degree 24 `[2,12,5]` passport and must be generalized first.)
 3. **Four branch points.** Braid orbits on Nielsen classes of length 4, genera of the reduced
    Hurwitz curves. Not started here.
 
@@ -494,6 +752,7 @@ A rigorous link between a candidate `g15` and `K_W` needs more than these tests;
 
 Everything here uses layers RustMath already has: `GF(p^k)`, Galois rings, Hensel lifting,
 linear algebra, rational reconstruction.
+Section 2 lists what these layers still lack here (multivariate Newton over `GR`, a stability loop).
 
 **A0. Canonical model of X over Q.** Two sources; use one and test with the other.
 
@@ -615,6 +874,7 @@ planes from gradients of theta functions with odd characteristics. RustMath has 
 matrices and no theta functions (in the handbook digests they appear only in chapter 125, for
 hyperelliptic curves), so
 this is the most expensive route. It is listed for completeness.
+(Section 2: `rustmath-rings` has an f64 theta series with no error bound, and no period matrices.)
 
 ### 5.6 What would make the result a theorem
 
@@ -632,6 +892,7 @@ primes. That is strong evidence, not a proof that the field is `K_W`. For a proo
   precision proves vanishing. This needs certified complex bounds for the solutions, hence real
   interval or ball arithmetic beyond f64. Until that exists, report the result as
   `Unresolved (verified at two primes and 17 Frobenius classes)`.
+  (Section 2: a real interval type on MPFR exists; certified complex enclosures do not.)
 
 ### 5.7 Risks and unknowns
 
@@ -656,7 +917,7 @@ primes. That is strong evidence, not a proof that the field is `K_W`. For a proo
 | Binary Golay code, S(4,7,23), modules `G0`, `P0`, `P0/G0`, parabolic cohomology over `F_2` | WP-P, WP-A | `rustmath-coding` and `rustmath-groups` | 152, 147, 68 |
 | Adjoint computation: canonical model of a nodal curve in P^1 x P^1 | WP-A | `rustmath-curves` | 114 |
 | Zero-dimensional solving over `F_p`, Newton lifting in `GR(p^N, k)` | WP-A | `rustmath-polynomials`, `rustmath-finitefields` | 105, 47, 48 |
-| Rational reconstruction with stability check, polred | WP-A | `rustmath-numberfields` (exists) | 34 |
+| Rational reconstruction with stability check, polred | WP-A | `rustmath-integers`, `rustmath-numberfields` (exist, but not the stability loop; Section 2) | 34 |
 | Certified complex enclosures (ball arithmetic) | WP-A certificate | `rustmath-reals` | 25 |
 
 The Steiner labelling of roots (paper, Section 5; `m23golay/arith.py`) is a good first exercise
@@ -700,7 +961,7 @@ for anyone extending the work.
 4. WP-F extensions 1 and 2 (the D flags, p = 3 and 5).
 5. WP-A A0 and A1 with their predictions. Stop and report if a prediction fails.
 6. WP-A A2 to A5, then the tests of 5.2 against the table.
-7. WP-P 4.4, item 2: the genus 0 class vectors with the existing Belyi engine.
+7. WP-P 4.4, item 2: the genus 0 class vectors, after the Belyi engine is generalized (Section 2).
 
 Report each result with its status: reproduced from reference, new and verified at two primes,
 or new and unverified. Do not report the A8 polynomial as a theorem until 5.6 is done.
