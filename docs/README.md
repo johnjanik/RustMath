@@ -36,6 +36,10 @@ This directory is the **single source of truth** for RustMath's status and direc
 - [`BRANCHES.md`](./BRANCHES.md): audit of all 20 remote branches and the belyi + lava-galois merge.
 - [`workstreams/belyi/`](./workstreams/belyi/): Belyi/dessin/curves specs and build handoffs
   (`DESSIN_REFACTOR_PLAN.md`, `M23_*`, `CURVES_*`, `RUSTMATH_BUILD_HANDOFF*.md`, `BELYI_SESSION_SOW.md`).
+- [`workstreams/m23_golay/`](./workstreams/m23_golay/): [`HANDOFF.md`](./workstreams/m23_golay/HANDOFF.md),
+  three work packages with reference values from the `johnjanik/M23` repository: the Frobenius table
+  of the genus 4 M23 curve, the three-point class vectors of M23, and the A8 field of the Golay
+  Lagrangian.
 - [`algorithm_notes/`](./algorithm_notes/), `cft_*.md`: design notes (Stauduhar, S-units, CFT engine).
 - [`archive/`](./archive/): superseded status docs. `archive/root-legacy/` holds the 2025 root files
   (SageMath trackers, logs, old README/CLAUDE.md, `THINGS_TO_DO.md`); scripts are in `../tools/legacy/`.
