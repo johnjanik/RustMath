@@ -374,6 +374,110 @@ The pieces that do not exist yet, per package (Section 6 says where they go):
 
 ## 3. WP-F: the Frobenius table
 
+### Status (2026-11-15)
+
+The WP-F core is done (Section 8, step 1). Extensions 3 and 5 of 3.3 are done, 1 and 2 in part
+(see below). The code is on branch `claude/m23-wpf` (base `origin/main` `0d277f0`).
+
+The design, its review, the implementation report and the code review are in
+`docs/workstreams/m23_golay/wpf/` (`design/`, `impl/`).
+
+Code:
+
+- `rustmath-finitefields/src/small_field.rs:55` `SmallFq<K>` (word-size `GF(p^K)`, `p < 2^16`,
+  `K <= 8`) and `:649` `count_distinct_roots`.
+- `rustmath-curves/src/nodal_biprojective/fibres.rs:153` `plane_point_count`, `singular.rs:420`
+  `singular_locus`, `local.rs:200` the local classifier, `certify.rs:133` `certify` and `:308`
+  `normalization_point_counts`.
+- `rustmath-curves/src/weil.rs:112` `FrobeniusPolynomial::from_point_counts`, `:281` `is_weil`
+  (exact, by Sturm sequences), `:347` `reciprocal_halves_mod2`, `:387`
+  `two_torsion_frobenius_order`.
+- Tests: `rustmath-curves/tests/m23_zeta.rs`, `rustmath-curves/tests/biprojective_small_curves.rs`,
+  `rustmath-finitefields/tests/small_field.rs`. Data: `rustmath-curves/tests/data/m23/`
+  (`zeta_X.json`, `zeta_L.json`, `h62.json` from `d05475b`, and Le Lay's CC0 form G, with a
+  README). `polynomial_F.m` and `polynomial_calF.m` are read only from `$M23ISGALOIS`.
+
+The counts of X run on G, which is F after a Moebius change of `V`. The test
+`env_f_equals_g_by_mobius` checks `F o M = c G` exactly. Two more integral models, G7 and G13, are
+built from G at run time for p = 7 and p = 13.
+
+Reproduced:
+
+- `zeta_X.json`: all 18 rows at k = 4 (`full_x_table_k4`, release, about 83 s).
+- `zeta_L.json`: the refusals at 5 and 11 and the rows at 7, 19, 41 and 43 (`env_l_table`). The row
+  at (31, 12) is reproduced only under the reference rule (see below). An L row (p, s0) is the
+  degree-one prime (p, s - s0) of L.
+- The anchor at 53: 45, 52, 57, all three Decided (`env_anchor_53`).
+- The derived checks of 3.1 step 6 on every counted row: the exact Weil test,
+  `P(chi(p)) = P(chi(p) p) = 0 mod 23` and `P mod 2 = Q Q^rev`
+  (`reference_polynomials_pass_the_derived_checks`). Both fibrations give the same counts
+  (`both_fibrations_and_brute_force`, `full_both_fibrations_k3`).
+
+Statuses. Decided means the nodal certificate: every singular point of the model mod p is a node,
+and there are 62 of them. The genus 4 is a trusted input.
+
+- X, Decided: 7, 11, 17, 19, 29, 37, 43, 47, 53, 59, 61, 67, 71, 79.
+- X, Unresolved (`DeltaSumCertified`): 13, 31, 41, 73. Each model has 61 nodes and one ordinary
+  cusp, classified exactly. The counts equal the table. This explains the D flags. Under the project
+  rule they stay Unresolved (`x_at_13_and_31_one_cusp`).
+- L, Decided: (7, 5), (19, 3), (41, 8), (43, 15).
+- L, (31, 12): Unresolved (`DeltaSumCertified`: 57 nodes, an ordinary triple point and a tacnode
+  with conjugate branches). The exact counts are `43, 1017, 30265, 923729`,
+  `a = (11, 88, 682, 4438)`, Q = `x^4+x^3+x^2+1` up to reversal. The published row
+  `44, 1014, 30266, 923726` fails the mod 23 check, and its prediction of N_5 fails (`env_l31_k5`).
+- X at p = 5: the reference row is not a Weil polynomial. The exact counts are `7, 37, 169, 561`,
+  `a = (1, 6, 20, 16)`: 60 nodes and one tacnode with conjugate branches. N_5 and N_6 are the values
+  P predicts. Weil, mod 23 and mod 2 hold. Status Unresolved (`DeltaSumCertified`)
+  (`x_at_5_tacnode_with_conjugate_branches`).
+- Refused, because the discriminant vanishes identically mod p: X at 3 and 23 for every model
+  (`x_at_3_and_23_refused`); L at (5, 3), (11, 2), (23, 5), (23, 15).
+
+New primes (k <= 4, with the example `m23_zeta`). Every row passes the exact Weil test and the
+mod 23 check, and was checked again in PARI/GP.
+
+- X: 83, 89, 97, 101, 103, 109, 113, 127, 131 Decided. 107 Unresolved (`DeltaSumCertified`: one
+  tacnode with rational branches).
+- L, Decided: (47, 13), (53, 21), (53, 36), (53, 41), (61, 52), (67, 15), (67, 42), (71, 37),
+  (71, 67), (79, 40), (79, 46), (89, 57), (89, 69), (97, 76), (101, 74), (101, 98), (127, 63),
+  (127, 74). L, Unresolved (`DeltaSumCertified`: one tacnode with rational branches):
+  (79, 15), (103, 93).
+- The full tables, with times, are in `wpf/impl/WPF.md`, Section 3.
+
+Order of Frobenius on `Jac(X)[2]` (3.3 item 5): 15 and Decided at X for p = 11, 79, 97 and at L for
+(53, 41), (67, 15). At X for p = 31 it is 15 if the counts are right (the row is not Decided).
+Elsewhere only bounds (`weil.rs:387`, `two_torsion_orders`).
+
+Extensions of 3.3:
+
+1. D flags: explained (one cusp each), not removed. Le Lay's (8,23) model does not help: the
+   certificate needs fibre degree 2 to 4, and that model has two non-nodal points over Q.
+2. p = 5: exact counts as above, Unresolved. If the owner promotes `DeltaSumCertified` to Decided
+   (F-9), X has good reduction at 5. p = 3: refused by every model (F-1).
+3. More primes: X to 131, L to 127.
+4. Q versus Q^rev: not attempted (WP-A, F-7).
+5. Done as above.
+
+Follow-ups (`wpf/impl/WPF.md`, Section 7): F-1 a 3-adically good model; F-2 Le Lay's model as a
+cross-check; F-4 a faster quartic root count above p = 131; F-5 p = 23; F-6 a CC0 route for the L
+covers; F-7 Q versus Q^rev; F-8 report the two corrected rows to the owner; F-9 the owner's
+decision on `DeltaSumCertified`; F-10 JSON output of the example; F-11 tests of `A_k` with odd k
+and of ordinary m-fold points over residue fields of degree > 1. The code review adds six minor
+items (`wpf/impl/WPF.review1.md`, Section 3): a test of the Unclassified path, the cost and the
+panics in the docs, `select_model` must not skip `GenusInconsistent`, the MAGMA chapter in the
+headers of `certify.rs` and `residue.rs`, and tests that close F-11.
+
+Commands:
+
+- `cargo test -p rustmath-curves --test m23_zeta` (fast set, debug, about 7 s);
+- `cargo test --release -p rustmath-curves --test m23_zeta -- --ignored full_`;
+- `M23ISGALOIS=<checkout of shaowuz/m23isgalois> cargo test --release -p rustmath-curves --test m23_zeta -- --ignored env_`;
+- `cargo run --release -p rustmath-curves --example m23_zeta -- <pmin> <pmax> <kmax> [--cover L]`.
+
+Two older lines of this file are now out of date. The JSON files are vendored (the opening
+paragraph says nothing is). Section 2's "Point counts, zeta functions and L-polynomials of curves
+of genus >= 2: absent" no longer holds for curves in `P^1 x P^1` with fibre degree 2 to 4,
+`p < 2^16` and `k <= 8`.
+
 ### 3.1 Specification
 
 Input: the coefficients `F[i][j]` of `T^i V^j` (0 <= i <= 4, 0 <= j <= 23) and a prime p.
