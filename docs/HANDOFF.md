@@ -1,11 +1,12 @@
-# Session handoff (2026-11-14, updated after Tasks 0-2, the L0-L1 fixes, their follow-ups, the final follow-up fixes and 11 of 13 units of the open follow-ups)
+# Session handoff (2026-11-15, updated after Tasks 0-2, the L0-L1 fixes, their follow-ups, the final follow-up fixes and 12 of 13 units of the open follow-ups)
 
 Read this first, then `CLAUDE.md` and `docs/README.md`. It records where the project stands and
 what to do next. **Tasks 0, 1 and 2 are done** (status notes below), and so are the L0-L1 defects
 the review found (2026-11-07), their follow-ups and the final follow-up fixes (both 2026-11-08). In the
-open follow-ups round **11 of 13 units are done** (2026-11-14), and S1 and MF1 are in a further design round:
-see "Open follow-ups round" below and `docs/workstreams/handoff-followups/README.md`, which has the designs and
-the steps to resume. After that come the dead code, the mixin wiring and the `docs/PLAN.md` build targets.
+open follow-ups round **12 of 13 units are done** (2026-11-15; the last one committed is MF1, `f29c492`),
+and S1 is in a further design round: see "Open follow-ups round" below and
+`docs/workstreams/handoff-followups/README.md`, which has the designs and the steps to resume. After that
+come the dead code, the mixin wiring and the `docs/PLAN.md` build targets.
 
 ## Where things stand
 
@@ -249,7 +250,7 @@ with a new status: ch023.EqualDegreeFactorization from done to verified; 19 rows
 `path refreshed 9c24389`) and `docs/magma/REVIEW_2026-11-06.md` record the result. Designs, reports and reviews
 are in the session scratchpad only (`fu/final/`).
 
-**Open follow-ups round: 11 of 13 units done** on the same branch (paused 2026-11-13, resumed 2026-11-14). The list below was split
+**Open follow-ups round: 12 of 13 units done** on the same branch (paused 2026-11-13, resumed 2026-11-14). The list below was split
 into 13 units by crate; every unit has a design with independent adversarial reviews, and each unit is
 implemented with adversarial code review before its commit. Designs, reviews, reports, the workflow script and
 the resume steps are in `docs/workstreams/handoff-followups/`. Committed and pushed:
@@ -297,16 +298,27 @@ the resume steps are in `docs/workstreams/handoff-followups/`. Committed and pus
 - `36c2170` jupyter (J1b): Arc-backed REPL values (F2, REPL part), growth guards on result size (S12), a display
   budget with GMP decimal conversion, interrupts, a time limit and a kernel that answers while it computes
   (S13), the C1 arms (any integer for falling/rising factorials, `partitions` up to 2·10^10), re-measured limits.
+- `f29c492` manifolds (MF1; two comment lines in `rustmath-jupyter/src/repl.rs`): the exact exterior derivative and
+  wedge product (Lee 2013 ch. 14, Spivak ch. 4) instead of the facades, written to every permutation with its sign and
+  zero-tested slot by slot, so d∘d of a polynomial form is a literal 0; a budgeted exact zero test (`expr_zero.rs`:
+  Zero, NonZero or Unresolved) with a derivative guard that refuses components whose derivative rustmath-symbolic
+  fabricates; checked component counts (`component_count`, fallible allocation; `to_flat`, `total_rank` and
+  `num_components` return `Result`); contraction and tensor product rewritten; the interior product, Cartan's Lie
+  derivative, `Add`, `Neg`, `scale`, `vanishes` and a three-valued `is_closed`; constructors that check finiteness and
+  antisymmetry; d checks the chart; the Lie derivative, symplectic, contact and topology routines delegate to the exact
+  ones; three pullback and pushforward facades return `Err(NotImplemented)`. 49 new unit tests and 2 doc tests with
+  PARI/GP 2.15 and Sage values.
 
-Still to do in this round: S1 (symbolic: `Expr::taylor`, the literal parser) and MF1 (manifolds: `d` and `wedge`
-growth, checked powers). Their designs are in a further review round; their items below stay open. The trackers
-follow all eleven commits: `PROJECT_TRACKER.md` (Change Log "Open follow-ups round, part 1" and "part 2"),
-`docs/magma/status_overrides.csv` (part 2: 102 rows of the reviewed chapters re-rated, 57 of them with a new
-status, seven pilot rows, 18 rows added for chapters 83, 144 and 145, and 384 path-only refreshes tagged `path
-refreshed 36c2170`) and `docs/magma/REVIEW_2026-11-06.md`. The list below no longer has the items they fixed; its
-last two bullets name each fixed item with its commit.
+Still to do in this round: S1 (symbolic: `Expr::taylor`, the literal parser). Its design was not approved after
+seven design reviews (reviews 1 to 7 in `docs/workstreams/handoff-followups/design/`); a further design round with a red team is
+running, and its items below stay open. The trackers follow all twelve commits: `PROJECT_TRACKER.md` (Change Log
+"Open follow-ups round, part 1", "part 2" and "part 3"), `docs/magma/status_overrides.csv` (part 2: 102 rows of the
+reviewed chapters re-rated, 57 of them with a new status, seven pilot rows, 18 rows added for chapters 83, 144 and
+145, and 384 path-only refreshes tagged `path refreshed 36c2170`; part 3: no row cites the code that `f29c492`
+changed, so none was re-rated) and `docs/magma/REVIEW_2026-11-06.md`. The list below no longer has the items they
+fixed; its last three bullets name each fixed item with its commit.
 
-**Open follow-ups** (each has a tracker row or note unless marked; lines at `36c2170`):
+**Open follow-ups** (each has a tracker row or note unless marked; lines at `f29c492`):
 - MAGMA conventions still unverified against MAGMA itself (the handbook pages answer HTTP 401, no MAGMA
   binary): `Quotrem` over Z, `Content` over Q, the content in `IsIrreducible` over Z, `Binomial(n, r)` for
   r < 0, the shape of `QMatrix`, the generalised Jordan layout for deg p >= 2 and the block order of the primary
@@ -469,9 +481,9 @@ last two bullets name each fixed item with its commit.
     2^22-bit parts); `POW_BITS` could be 2^26 (5.3 s measured); the binomial family and `PRIMES_COUNT` are
     conservative (`catalan(316227)` takes 0.03 s); `stirling_band`'s a-priori bounds are loose at the band edges
     for stirling2 with small k; `kernel_stops_on_shutdown_during_library_call` relies on `factor` being unbounded
-    trial division. `TAYLOR_ORDER` (`:11087`), `FORM_COMPONENTS` and `DIFF_FORM_DEGREE` were not re-measured (S1
-    and MF1 not landed). `is_prime`, `next_prime` and `sqrt_mod` prove primes up to `PROOF_BITS` = 1024 bits
-    (`:12353`).
+    trial division. `TAYLOR_ORDER` (`:11087`) was not re-measured (S1 not landed); for `FORM_COMPONENTS` and
+    `DIFF_FORM_DEGREE` see the manifolds items below. `is_prime`, `next_prime` and `sqrt_mod` prove primes up to
+    `PROOF_BITS` = 1024 bits (`:12353`).
 - Integer factorization and primality (not tracked as rows unless marked):
   - `factorint::factor_trial_division(n, None)` (`rustmath-integers/src/factorint.rs:199`) stops at 10^6 above
     2^128 and appends a composite cofactor, against its doc (tracker 🛑 row since 2026-11-14); `factorization::trial_division_stage`
@@ -494,7 +506,7 @@ last two bullets name each fixed item with its commit.
   - Half-gcd is not implemented (Lehmer since `80130e7`; estimated crossover 10^5 to 10^6 bits), and
     `Integer::nth_root(n)` (MAGMA `Iroot`) is slow for a large n on a large input (num-bigint's Newton start; a
     start from the leading bits would fix it).
-- Units S1 and MF1 (designs in a further review round; the X2 split-outs they take):
+- Unit S1 (design in a further review round with a red team; the X2 split-outs it takes):
   - S1: `Expr::taylor` (`rustmath-symbolic/src/series.rs:24`) differentiates without simplifying, so memory grows
     exponentially with the order (x^2 at order 9 needs more than 3 GB) and a debug build overflows the stack at
     order 20000 (`TAYLOR_ORDER`); no REPL bound prevents it. The i64-only literal parser
@@ -502,11 +514,69 @@ last two bullets name each fixed item with its commit.
     before any operator, so `x^2/4` parses as x^(1/2), `2/3^2` as 4/9 and `1/x` not at all (the REPL gives
     `diff(z^2/2, z)` = 1; J1a review 1 minor 6; S1 design §1.6; tracker 🔴 row since part 2). `expand` under a minus is wrong (`expand.rs:250-263`:
     `expand(-(x - 1))` gives x - 1; tracker 🔴 row since part 2).
-  - MF1: repeated `d` and `wedge` build ever larger expression trees (`rustmath-manifolds/src/diff_form.rs:126`,
-    `:173`; d(d(dx_0)) peaks at 574 MB at 10^6 components; the inner loop of `exterior_derivative` is also
-    O(n^(p+2)) for O(n^(p+1)) components); the library computes `n.pow(p + 1)` and `n.pow(p + q)` unchecked
-    (`diff_form.rs:139`, `tensor_field.rs:105`, `:237`, `:280`; only the REPL arms check them). The library
-    `exterior_derivative` does not check the chart dimension (the REPL's `check_chart` does since `bd03278`).
+  - For S1 from the MF1 report: every match on `Expr` in rustmath-manifolds is on a reference, so S1's `impl Drop
+    for Expr` compiles there; MF1's `root_sum`, `abs`, `x^y` and `d_budget` slot assertions are structural and depend
+    on HEAD's `simplify` results.
+- Manifolds after MF1 (MF1 design §4.4 and §5, report and code review; `rustmath-manifolds/src/` unless marked; not
+  tracked as rows unless marked):
+  - REPL (`rustmath-jupyter/src/repl.rs`, design §4.4): `DIFF_FORM_DEGREE` (`:11101`, used at `:4819`) can go, since the
+    library returns `DegreeOverflow`; drop its test lines (`:14671-14672`, and the degree block of
+    `test_form_component_limits` from `:14820`). The arms' own overflow checks (`:4862-4863`, `:4901-4902`) are
+    redundant. `check_form_components` (`:12314`) and `missing_components_error` (`:12334`) should count with
+    `rustmath_manifolds::tensor_field::component_count` ("too many components to store"). Re-measure `FORM_COMPONENTS`
+    in release with J1b's harness (64 bytes a slot, held once) and rewrite its doc (`:11102-11107`, which still says
+    each d enlarges the expressions) and the `repl_limits` overview (`:11002-11003`). Every REPL chart is named
+    `user_chart` (`:4801`) and is not registered, so REPL charts need unique names or registration before forms get
+    symbolic components. Optional: expose `is_closed`, `closedness`, `interior_product`, `lie_derivative` and the
+    components (a form displays only its degree, `:550-553`).
+  - The `differentiate` facades of rustmath-symbolic (tracker 🛑 row "Derivative of a named function":
+    `rustmath-symbolic/src/differentiate.rs:230-234` named functions, `:90` Mod, `:184-188` gamma, `:191` factorial,
+    `:204` zeta, `:194-198` erf with 500/443 for 2/sqrt(π), `:218-221` a `root_sum` whose polynomial contains the
+    variable). d and the 1-form Lie derivative refuse them (`expr_zero::unsupported_derivative`, `expr_zero.rs:726`);
+    the other callers in the crate are unguarded: `vector_field.rs:169`, `:198`, `:202`, `scalar_field.rs:149`,
+    `maps.rs:126`, `transition.rs:143`, `utilities.rs:134`, `symplectic.rs:398`, `:405` (`from_hamiltonian`),
+    `symmetries.rs:121-139`, `finsler.rs:160-161`, `:309-311`. Wiring the hooks of `function.rs` (`:23`,
+    `FunctionRegistry` `:207`) into `differentiate` lifts the refusal; `unsupported_derivative` must then admit exactly
+    the kinds that gained a derivative.
+  - Integration (tracker 🔴 row since part 3): `integrate_form_on_chart` and `VolumeForm::evaluate_at` read
+    `components[0]` (`integration.rs:310`, `:254`), which is 0 in every n-form with n >= 2; the quadrature for n >= 2
+    covers one coordinate (`:644`); `VolumeForm::from_metric` allocates factorial(n) slots (`:201`). Stokes' `verify`
+    (`:361`) compares with 0.
+  - Pullback and pushforward (tracker 🛑 row): the Jacobian-minor pullback of p-forms, the Jacobian products for
+    tensors (Lee 2013 ch. 12 and 14) and the inverse map for the pushforward (`maps.rs:327`, `:362`, `:428` return
+    `Err(NotImplemented)`); `apply_to_one_form` (`:278`) does not compose ω with f; `apply_to_tangent_vector` pushes
+    zeros and keeps the source base point (`:188-195`).
+  - Symplectic (tracker 🛑 row): `matrix_at` (`symplectic.rs:261`) ignores the point, the chart and the form, so
+    `is_non_degenerate` (`:244`) and `evaluate` (`:281`) use the standard form; `SymplecticForm::new` (`:169`) checks
+    only the degree. The pattern of `is_contact` (`contact.rs:175`, one independent component of ω^n) gives an honest
+    test.
+  - `LieDerivative::apply_to_tensor` (`lie_derivative.rs:209`) returns `Err(NotImplemented)`: the correction terms of
+    the Lie derivative of a general tensor are missing (formula in its doc and error, Lee 2013 ch. 12).
+  - Charts are identified by name only (`tensor_field.rs`, `vector_field.rs:81`, `scalar_field.rs:31`,
+    `riemannian.rs:79` key components by `chart.name()`); d checks a registered chart and trusts an unregistered one.
+    Storing the coordinate names with the components would let every reader check the chart.
+  - Unchecked counts outside MF1's files: `spin.rs:76`, `:78`, `:341`, `:343`, `almost_complex.rs:160`,
+    `finsler.rs:153`, `:300`, `symmetries.rs:110`, `symplectic.rs:266` (`matrix_at`); the module rank sums
+    `modules.rs:605`, `traits.rs:124`.
+  - Dense storage: a p-form holds n^p slots of 64 bytes, not C(n, p); ω^4 on R^8 needs 8^8 slots, and from R^10 on
+    `SymplecticForm::volume_form` ends in `ComponentAllocationFailed`. `DiffForm::new` means both "zero" and "no
+    components in this chart". `tracker_08_09_tests.rs` is still not compiled (it reads the private field
+    `PullBack::map`).
+  - One public zero test: move `expr_zero` to rustmath-symbolic (and, if S1 lands, merge it with S1's constants).
+    rustmath-symbolic's `simplify` folds `0 * a` to 0 for any a (`oo`, NaN and `1/(y - y)` included) and keeps
+    `Rational(1)` as a `Rational`; `Expr::from(f64)` maps NaN and the infinities to `Integer(0)`
+    (`rustmath-symbolic/src/expression.rs:399-404`), so such a float becomes a literal 0 before the finiteness checks of
+    forms see it.
+  - `cargo clippy -p rustmath-manifolds` stops in rustmath-combinatorics on its five old deny lints (see Combinatorics;
+    `--no-deps` passes), and with `--tests` also on `approx_constant` in `examples.rs:520`, `:522`.
+  - Code review notes of MF1 (minor, not applied): two negation items of `test_zero_test_budget`
+    (`expr_zero.rs:956-972`) are Unresolved by the nesting limit before the negation charge is reached, because the
+    factors of P are balanced sums (build them left-deep with 100 terms each, or use 150 levels); `Symbol("π")`, which
+    `rustmath-symbolic/src/solve.rs:911`, `:919`, `:938`, `:952`, `:977`, `:985` build for π, is a free indeterminate
+    in the zero test (`reserved::NAMED_CONSTANTS`, `expr_zero.rs:94`, has only `pi` and `e`), so π - e is NonZero where
+    pi - e is Unresolved (add "π", a doc sentence and a test row); the module doc (`diff_form.rs:49-50`) says every
+    result component is simplified and zero-tested, but `Add` copies a summand when the other is a literal 0
+    (`:945-948`) and `Neg` only simplifies.
 - From the P1 design, section I (not tracked as rows): facade-like `Err` handling of Zassenhaus results at
   `rustmath-groups/src/galois_resolvent.rs:159-169`, `rustmath-curves/src/belyi/audit.rs:390-398`,
   `rustmath-igp24/src/main.rs:117` (`unwrap_or(false)`), `rustmath-functionfields/src/factor.rs:70` and
@@ -563,6 +633,13 @@ last two bullets name each fixed item with its commit.
   rows); `36c2170`: F2 in the REPL (values cloned on every assignment and lookup), S12 (growth guards for
   `matrix_power`, `**` and products), S13 (no timeout or interrupt), the REPL `falling_factorial` /
   `rising_factorial` and `partitions` arms limited to u32 and 416, and the 7-minute `test_table_limits`.
+- Fixed by part 3 of the round and removed from this list: `f29c492`: F2 in the library (repeated d and wedge built
+  ever larger expression trees, 574 MB for d(d(dx_0)) at 10^6 components, and the O(n^(p+2)) inner loop of d), the d
+  and wedge facades (a flat-index sum and the raw tensor product, tracker 🔴 rows), N4 / S8 (the unchecked
+  `n.pow(p + 1)` and `n.pow(p + q)` in `diff_form.rs` and `tensor_field.rs`), the library d without a chart check, the
+  contraction that summed index values, the tensor product layout, `Add` and `Neg` returning an operand, the
+  structural `is_closed`, `is_contact` and symplectic volume form built on the facades, `ContactForm::standard` with
+  symbols that are not coordinates, and the three pullback and pushforward relabellings (now `Err(NotImplemented)`).
 
 **Next steps** (unchanged): wire up or delete the dead code listed in
 `docs/magma/REVIEW_2026-11-06.md` (the `rustmath-rings/src/number_field/` orphan files, the gated

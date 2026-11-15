@@ -21,8 +21,8 @@ complete.
 | R1 rings, p-adics, category | rings, padics, category, core, powerseries | approved (review 2) | `fd081fa`, approved at review 2 |
 | M1a bounded rational form | matrix | approved (review 1) | `d3a133b`, approved at review 1 |
 | M1b JordanForm, PrimaryRationalForm, IsSimilar, IsConsistent | matrix (+ polynomials, finitefields) | approved (review 1) | `dc367a2`, approved at review 1 |
-| S1 symbolic (taylor, parser) | symbolic | NOT approved: reviews 4 and 5 have 2 blockers each; revisions 5 and 6 running | not started |
-| MF1 manifolds (d and wedge growth, checked powers) | manifolds | NOT approved: review 3 has 1 blocker; revisions 3 and 4 running | not started (skipped in run 2 because it was ordered after S1) |
+| S1 symbolic (taylor, parser) | symbolic | NOT approved: reviews 4 to 7 have 2 blockers each | not started |
+| MF1 manifolds (d and wedge growth, checked powers) | manifolds | approved (review 4) | `f29c492`, approved at review 1 |
 | C1 combinatorics | combinatorics | approved (review 4) | `2e000c9`, approved at review 2 |
 | J1a REPL parser and small fixes | jupyter (+ rationals, finitefields) | approved (review 3) | `bd03278`, approved at review 1 |
 | J1b REPL shared values, interrupt, limits | jupyter | approved (review 2) | `36c2170`, approved at review 1 |
@@ -34,6 +34,13 @@ searches, 13 s and 1.1 GB under the REPL budget). MF1 was skipped because the sc
 its design does not need S1's code. Run 3 (`implement-workflow-run3.js` in the scratchpad, summarized in
 this folder at the end) gives S1 two more rounds with hard structural caps and an explicit review bar, gives
 MF1 two rounds made independent of S1, and then implements each approved unit.
+
+Run 3 (2026-11-14 and 15): MF1's design was approved at review 4 and the unit committed as `f29c492`. S1's
+revisions 5 and 6 added structural caps, an "Invariants" section and a fixed review bar, but reviews 6 and 7
+again found two holes each over the bar (review 6: the sparse accumulator of the series product; review 7:
+MPFR's erf costs O(x^2) terms and was charged as cheap, 32 s at 12 KB; owned `Expr` coefficients copy a
+kernel's top node uncharged, 2.35 GB at 100 KB). Run 4 adds a red team with separate lenses before each
+formal review.
 
 For the four committed units the trackers are updated (2026-11-14: `PROJECT_TRACKER.md` Change Log
 "Open follow-ups round, part 1", `docs/magma/status_overrides.csv`, `REVIEW_2026-11-06.md` and the

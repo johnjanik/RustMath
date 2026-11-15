@@ -1,8 +1,38 @@
 # MF1-manifolds: correct and bounded exterior algebra on forms, checked component counts
 
-Unit MF1 of the HANDOFF follow-ups. Crate: `rustmath-manifolds` (plus one test block in
-`rustmath-jupyter/src/repl.rs`, the only downstream crate, adapted to a library behaviour change).
-HEAD `c79a582` (same code as `9c24389`).
+Unit MF1 of the HANDOFF follow-ups. Crate: `rustmath-manifolds` (plus two comments in
+`rustmath-jupyter/src/repl.rs`, the only downstream crate; no REPL code or test changes).
+Written against `c79a582` (same code as `9c24389`). Revision 3 re-checked every fact against HEAD
+`36c2170`. Line numbers in the body are at `36c2170`; the revision tables keep the numbers they were
+written with.
+
+## Revision 3 (after review 3, and re-checked against HEAD `36c2170`)
+
+Review: `MF1-manifolds.review3.md` (1 blocker, 7 minor issues). Since review 3, units F1, R1, M1a, M1b,
+C1, J1a and J1b landed (`4b7f034..36c2170`); unit S1 is not committed and may land just before MF1 or
+not at all. So this revision also re-checks every fact against `36c2170` and makes the design rely on
+nothing S1 adds (last rows of the table). New experiments are in `$S/rev3/` (scratch table).
+`$S/rev3/proto4.rs` is `rev2/proto3.rs` with the `root_sum` rule below; it is the reference
+implementation now. Every prototype program was rebuilt against the `36c2170` debug rlibs
+(`$S/rev3/build.sh`, `rlibs.txt`). The body below is one consistent design at `36c2170`. Each issue
+and what changed:
+
+| Issue | What changed |
+|---|---|
+| B1 (blocker): the guard admits `root_sum(f, g)` with the variable in f; d and closedness fabricate 0 | Agreed and reproduced. `differentiate.rs:218-221` returns 0 when f contains the variable, trusting (comment `:215-217`) that it is then the bound one; the roots of f may move with it (`root_sum(t^2 - x, t^2)` = 2x, derivative 2; gp `polsym`, `$S/rev3/refs4.gp`). New rule (1.4): a two-argument `root_sum` whose first argument contains `var` is an unsupported node, returned as the offending subterm. The scan pushes f with the `root_sum` node as its ancestor (and g with the node's own ancestor), so the existing memoized walk decides it: no `contains_symbol` walk, still linear in the distinct nodes. The review's simpler rule is taken. It also refuses `root_sum(x^2 - 2, x*y)` with respect to x (x is bound there and 0 is right), because the scan cannot tell which symbol of f is bound and f may hold parameters; the Risch integrator binds the reserved `_t` (`risch.rs:33-38`, `:1151-1158`), never a chart coordinate, so its output passes. Table and precondition of 1.4 corrected. On `proto4.rs` (`$S/rev3/t_rootsum3.rs`, `rootsum3.txt`): `root_sum(t^2 - x, t^2)` dy (built and parsed), `root_sum(t^2 - x, t^4)` dy, `root_sum(t - x, t)` dy, `sin(root_sum(t^2 - x, t^2))` dy, the bound case, `gamma(root_sum(t^2 - x, t^2))` dy (the `gamma` is named) and `root_sum(t^2 - 2, root_sum(s^2 - x, s^2))` dy (the inner `root_sum` is named) are refused, and so is L_∂x of `root_sum(t - x, t)` dy. Accepted: `root_sum(t^2 - 2, t*x)` dy, `root_sum(t^2 - y, t*x)` dy and `root_sum(t^2 - x, t)` dx (each `Unresolved`, honestly: each is 0). The reviewer's probes now print Err for every case (`rootsum_on_proto4.txt`, `misc_on_proto4.txt`). `t_dguard` prints `rev2/dguard.txt` exactly, `t_dag` the answers of `rev2/dag.txt`, and a DAG with 2^40 copies of `root_sum(t^2 - x, t) + y` is decided in 76 µs. New test rows in 1.8 (`test_d_refuses_unsupported_derivatives`, with `closedness` and `is_closed` propagating the Err), 3.4 (`test_lie_one_form_guard`) and 1.6.6 (`test_scans_on_shared_subtrees`); `root_sum(t^2 - 2, t*x)` dy stays accepted. Section 5 and the HANDOFF bullet on the `differentiate` facades name the rule |
+| Minor 1: `LieDerivative::apply_to_tensor` stays a facade next to an edited line | It now returns `Err(NotImplemented)` after its three rank checks (3.4); the component lookups and the loop go. It has no caller (`git grep apply_to_tensor`: the other hits are the two methods of that name in `maps.rs`). Plan step 4 makes this change instead of patching `:225-226`. New test `test_apply_to_tensor_not_implemented`. The formula it lacks is in section 5; plan step 8 updates tracker row "Lie derivative of scalars/vectors/forms" (`:2548`) |
+| Minor 2: tracker row "Pullback / pushforward" missing from plan step 8 | Added (`:2539`): the three facades return `Err(NotImplemented)`; the base-point issue (`maps.rs:193-195`) and the 1-form pullback without ω∘f remain |
+| Minor 3: d trusts the chart name | Both of the review's options. d and the Lie derivative of a 1-form call a new crate-private `check_coordinate_chart` (1.4 step 4): the dimension, then the coordinate names against a chart of the same name registered with the manifold (`differentiable.rs:125`); a mismatch is `Err(InvalidChart)`. A chart that is not registered cannot be checked, because the stored components do not record their coordinates. So the docs of `exterior_derivative`, `closedness`, `is_closed` and `lie_derivative` state the precondition, and section 5 adds the crate-wide fix (store the coordinate names with the components). New test `test_d_chart_identity` (2.3): x dy under the registered chart `c` (x, y), then a chart `c` (u, v): Err(InvalidChart) from d, `closedness` and `is_closed` (`Ok(true)` at HEAD). Every existing caller passes `default_chart()` or its caller's chart (6.3), so none is affected. REPL charts are all named `user_chart` and none is registered (`repl.rs:4801`): the check never fires there, and REPL forms have constant components, so no REPL answer is wrong today; 4.4 item 4 is the follow-up |
+| Minor 4: a test input can abort the test binary before S1 | `test_zero_test_budget` builds its 30000-symbol sum with `sum_signed` (depth 16). Measured at `36c2170` in a 2 MB thread (`$S/rev3/r_drop3.rs`, `drop3.txt`): the left-deep sum aborts the process when dropped; the balanced one is `Unresolved` and drops cleanly. The sin chains of the same test (4000, 5000, also 6000 levels) drop cleanly too; the rev1 harness had kept them alive with `mem::forget`. 1.6.6 and 6.1 say so; no MF1 test depends on S1's iterative `Drop` |
+| Minor 5: the R1 hand-off | R1 implemented the ring predicates of `DiffScalarFieldAlgebra` itself (`fd081fa`, `modules.rs:195-225`, test `scalar_field_algebra_ring_predicates`); its report asks MF1 only to rebase on it. Nothing is left, and MF1 does not edit `modules.rs`. Section 5 says so |
+| Minor 6: wording in 3.3 | Restated: `VectorField` components are not validated (`vector_field.rs:68-83` checks the length only). A term whose form factor is a literal 0 is skipped, and `simplify` folds `X^j * 0` to 0, so a non-finite X^k gives `Err(ValidationError)` only when its term is kept. Vector fields with `oo` are outside the contract; for finite X the results are right |
+| Minor 7: plan order across crates | Moot at `36c2170`. J1a (`bd03278`) added `check_chart` to the REPL form arms (`repl.rs:11455-11462`), which refuses a chart of the wrong dimension before the library runs, and restored the R^3 block of `test_form_component_limits` with `chart(E3, "x,y,z")`. So MF1 changes no REPL test: the R^1 block of the old 4.3 is gone, plan step 7 is two comments, and rustmath-jupyter builds and passes after every plan step (4.3 lists each REPL test that reaches d or wedge and why it passes) |
+| Re-check: REPL after J1a, J1b, C1 | Section 4 rewritten at `36c2170`: the lines of the arms, `check_chart`, `check_form_components`, `missing_components_error`, the limits and the tests. J1b made values `Arc`-shared (the REPL part of F2) and did the old 4.4 item 4 (its report: "MF1 §4.4 item 4 ... is done"); J1a did the old item 5. J1b left items 1 to 3 and the `FORM_COMPONENTS` re-measurement for after MF1 (its report, "Left undone"), so 4.4 is now the list of REPL follow-ups for HANDOFF. Two REPL comments that MF1 makes wrong are corrected (4.3). The items list, section 0, 1.1 (the 574 MB note), 3.4 and 6.3 follow; 6.3 drops the old REPL risk ("no d on R^n, n >= 2, until J1a") |
+| Re-check: library facts | rustmath-manifolds changed only in `Cargo.toml` (a rustmath-category dependency) and `modules.rs` (R1), so every line of `diff_form.rs`, `tensor_field.rs`, `lie_derivative.rs`, `maps.rs`, `symplectic.rs`, `contact.rs`, `topology.rs` and `integration.rs` holds. rustmath-symbolic changed in 15 files, but not `differentiate.rs`, `parser.rs`, `expression.rs` or `symbol.rs`, and `simplify.rs` on one line only (`:596`), so their lines hold. Moved or changed: `MultivariatePolynomial::neg` is `multivariate.rs:891-900` (F1 added unbound-constant binding to `add_term`, a constant-false branch for `Integer`); `impl Ring for Integer` is `integer.rs:1524`; I3 made the inherent `Integer::to_i64` return `Option` (`:100`; `NumericConversion::to_i64` is `:1688`); `Rational::from_f64` is `rational.rs:176-209`; `modules.rs` `total_rank` is `:605`; the tracker rows moved down by 11 lines (`:2106` is `:2117`, the manifolds block `:2516-2561` is `:2527-2572`; plan step 8 names the rows by title too); `REVIEW_2026-11-06.md:69` is `:69-70`. Baseline: 259 passed, 11 ignored, 31 doc tests (`$S/rev3/baseline_36c2170.txt`; R1 added one). The 33 zero-test calls of 1.6.3 give the same answers with the same work units at `36c2170` (`$S/rev3/sweep4.txt`; slowest 0.17 s in this session), so 1.6.3 and 1.9 stand |
+| S1 not committed: what holds without it | MF1 relies on nothing S1 adds (6.1, "Rules"). (a) Code: every `match` on an `Expr` is on a reference and no field is moved out of an owned `Expr`, so MF1 compiles with or without S1's `impl Drop for Expr` (S1 §2.14, which makes such moves E0509). (b) Tests build long sums with `sum_signed` (minor 4), compare printed subterms through `format!("{}", u)` of an expression built in the test (S1 §2.11 changes `Display`), and compare slots with expressions built in the test; the structures are those of HEAD's `simplify`, which S1 states it keeps (S1 §2.10). (c) 1.6.1, 1.6.5, section 5 and 6.3 now say what holds with and without S1: without it, `expr_zero` is the only zero test of its kind, HEAD's `simplify` keeps `I*I`, and the HANDOFF entry is "move `expr_zero` to rustmath-symbolic as a public API" |
+
+Disagreements with the review: none. Where it offered two options (B1, minor 3), the rows above give
+the choice and the reason.
 
 ## Revision 2 (after review 2)
 
@@ -69,17 +99,19 @@ Items (docs/HANDOFF.md, "Open follow-ups", REPL split-outs of the X2 design):
 1. **F2 (library part).** "repeated `d` and `wedge` build ever larger expression trees
    (`rustmath-manifolds/src/diff_form.rs:126`, `:173`; d(d(dx_0)) peaks at 574 MB at 10^6 components; the
    inner loop of `exterior_derivative` is also O(n^(p+2)) for O(n^(p+1)) components)". The REPL part of F2
-   (`repl.rs:649`, `:706` clone a value on every assignment and lookup) belongs to J1b.
+   (the REPL cloned a value on every assignment and lookup) belonged to J1b, which did it (`36c2170`).
 2. **N4 / S8.** "the library computes `n.pow(p + 1)` and `n.pow(p + q)` unchecked (`diff_form.rs:139`,
    `tensor_field.rs:105`, `:237`, `:280`); only the REPL arms check them" (checked arithmetic and a
    component guard returning an error).
 3. **REPL guards.** Check the arms in rustmath-jupyter that guard these today (`FORM_COMPONENTS`,
    `DIFF_FORM_DEGREE` in `repl.rs`) and say what J1b should change once the library checks itself.
+   J1b landed first and left these changes for after MF1, so section 4.4 lists them for HANDOFF.
 
 Scratch: `$S = /tmp/claude-0/-home-user-RustMath/501faa10-c1ae-5db8-88c8-be37c311b5d8/scratchpad/fu2/design/MF1-manifolds`.
-Programs are standalone `rustc` builds against the debug rlibs of HEAD (`$S/build.sh src.rs out`,
-`$S/rlibs.txt`; the binaries were deleted to save disk, rebuild with `build.sh`). The crate sources were
-not modified.
+Programs are standalone `rustc` builds against the debug rlibs of the workspace (`$S/build.sh src.rs
+out` with `$S/rlibs.txt` at `c79a582`; `$S/rev3/build.sh` with `$S/rev3/rlibs.txt` at `36c2170`, after
+`cargo build -p rustmath-manifolds`; the binaries were deleted to save disk, rebuild with `build.sh`).
+The crate sources were not modified.
 
 | Path | Content |
 |---|---|
@@ -103,14 +135,19 @@ not modified.
 | `$S/rev2/t_dag.rs` (output `dag.txt`) | Minor 6 of review 2: the scans on a DAG of fewer than 100 nodes whose tree has 2^41 leaves |
 | `$S/rev2/measure3.txt`, `parse.txt`, `refs2.gp` | 1.9 rows on `proto2.rs` and `proto3.rs` side by side; which node kinds `parse` produces and what `differentiate` gives for them; gp values of Revision 2 (`gp -q refs2.gp < /dev/null`) |
 | `$S/rev2/t_b1.rs`, `t_ref2.rs`, `t_ref22.rs`, `t_contact2.rs`, `t_zero2.rs`, `measure_new2.rs`, `t_stack.rs`, `t_int_bal.rs`, `r_dcost2.rs`; `old/` | The rev1 harnesses pointed at `proto3.rs` (`b1_3.txt`, `ref3.out`); `old/` holds the same harnesses on `proto2.rs` for comparison |
+| `$S/rev3/proto4.rs` | Revision 3 prototype, the reference implementation now: `rev2/proto3.rs` plus the `root_sum` rule of the derivative guard (1.4, `unsupported_derivative`). Built against the `36c2170` rlibs |
+| `$S/rev3/t_rootsum3.rs` (output `rootsum3.txt`) | B1 of review 3: the `root_sum` components d refuses and accepts, the Lie derivative of a 1-form, a DAG with 2^40 copies of a `root_sum` |
+| `$S/rev3/r_rootsum.rs`, `r_misc.rs`, `t_dguard.rs`, `t_dag.rs`, `t_b2.rs` | The reviewer's probes and the rev2 harnesses pointed at `proto4.rs`: `rootsum_on_proto4.txt`, `misc_on_proto4.txt`, `dguard4.txt` (equal to `rev2/dguard.txt`), `dag4.txt` (the answers of `rev2/dag.txt`), `sweep4.txt` (the 33 calls of `rev2/sweep3.txt` at `36c2170`) |
+| `$S/rev3/r_drop3.rs` (output `drop3.txt`) | Minor 4 of review 3: which inputs of `test_zero_test_budget` drop cleanly in a 2 MB thread at `36c2170`, without S1's `Drop` |
+| `$S/rev3/refs4.gp` (output `refs4.out`), `baseline_36c2170.txt` | gp values of the `root_sum` tests (`gp -q refs4.gp < /dev/null`); `cargo test -p rustmath-manifolds` at `36c2170` |
 
 ## 0. Summary
 
 | Item | At HEAD | Fix |
 |---|---|---|
-| F2 | `exterior_derivative` is not the exterior derivative: slot i gets the sum over all j of ∂_j of `components[i]` (`diff_form.rs:145-156`), unsimplified, so each of the first n^p slots is a left-deep tree of n `Add` nodes. `wedge` returns the unsimplified tensor product (`(1 * 0)` nodes) with the degree relabelled. Both rows are already 🔴 in PROJECT_TRACKER.md (`:2520`, `:2522`). Measured (debug, standalone): d(dx_0) at n = 1000 takes 6.85 s and 253 MB; d(d(dx_0)) at n = 100 takes 1.39 s and 444 MB (574 MB in the REPL with its copies); the loop runs n^(p+2) iterations | The exterior derivative and the wedge product from their coordinate formulas [Lee 2013, ch. 14], computed on the C(n, k) strictly increasing index tuples only, each sum built balanced, simplified and then put through a new three-valued exact zero test (`expr_zero.rs`) with a fixed work budget per call. d∘d of a polynomial form is then literally 0, and d(dx_0) is all `Integer(0)`. Cost: (p+1)·C(n, p+1) derivatives plus n^(p+1) slot writes, plus at most one budgeted zero test (about 20 µs typical, at most 0.25 s measured, debug) per nonzero non-constant independent component. A component whose derivative rustmath-symbolic does not implement (named functions, `mod`, gamma, factorial, zeta, erf of the coordinate) makes d return `Err(NotImplemented)` instead of a fabricated 0. Measured on the prototype: d(dx_0), n = 1000: 0.12 s, 66 MB (the dense output itself, 64 bytes a slot); d(d(dx_0)), n = 100: 0.10 s, 66 MB |
-| N4 / S8 | `n.pow(k as u32)` at `diff_form.rs:139`, `tensor_field.rs:105`, `:158`, `:237`, `:280`; `p + 1` (`diff_form.rs:132`, `:161`), `p + q` (`:182`), rank sums (`tensor_field.rs:105`, `:153`, `:273-274`) and `MultiIndex::to_flat` (`:31-38`) unchecked. Debug: panics. Release: wraps. Both: `rank as u32` truncates (rank 2^32 + 1 gives n^1). Also `j % symbols.len()` divides by zero for a chart without coordinates (`diff_form.rs:151`) | `tensor_field::component_count(n, rank) -> Result<usize>` (checked power, bytes bounded by `isize::MAX`), `zeroed_components(count) -> Result<Vec<Expr>>` (`try_reserve_exact`), `checked_add` on every degree and rank sum, `MultiIndex::to_flat` checked. New errors `ComponentCountOverflow`, `ComponentAllocationFailed`, `DegreeOverflow`. A chart whose dimension is not dim(M) is refused by `exterior_derivative` (`InvalidChart`) |
-| REPL | `check_form_components` (n^degree <= 10^6), `p.checked_add(1)` / `p.checked_add(q)` in the arms, `DIFF_FORM_DEGREE = usize::MAX / 2` | Section 4: what J1b should change. MF1 itself changes only one REPL test block (the library now refuses the REPL's one-name chart on R^3) |
+| F2 | `exterior_derivative` is not the exterior derivative: slot i gets the sum over all j of ∂_j of `components[i]` (`diff_form.rs:145-156`), unsimplified, so each of the first n^p slots is a left-deep tree of n `Add` nodes. `wedge` returns the unsimplified tensor product (`(1 * 0)` nodes) with the degree relabelled. Both rows are already 🔴 in PROJECT_TRACKER.md (`:2531`, `:2533`). Measured (debug, standalone): d(dx_0) at n = 1000 takes 6.85 s and 253 MB; d(d(dx_0)) at n = 100 takes 1.39 s and 444 MB (574 MB in the REPL with its copies, before J1b); the loop runs n^(p+2) iterations | The exterior derivative and the wedge product from their coordinate formulas [Lee 2013, ch. 14], computed on the C(n, k) strictly increasing index tuples only, each sum built balanced, simplified and then put through a new three-valued exact zero test (`expr_zero.rs`) with a fixed work budget per call. d∘d of a polynomial form is then literally 0, and d(dx_0) is all `Integer(0)`. Cost: (p+1)·C(n, p+1) derivatives plus n^(p+1) slot writes, plus at most one budgeted zero test (about 20 µs typical, at most 0.25 s measured, debug) per nonzero non-constant independent component. A component whose derivative rustmath-symbolic does not implement (named functions, `mod`, gamma, factorial, zeta, erf of the coordinate, a `root_sum` whose polynomial contains it) makes d return `Err(NotImplemented)` instead of a fabricated 0. Measured on the prototype: d(dx_0), n = 1000: 0.12 s, 66 MB (the dense output itself, 64 bytes a slot); d(d(dx_0)), n = 100: 0.10 s, 66 MB |
+| N4 / S8 | `n.pow(k as u32)` at `diff_form.rs:139`, `tensor_field.rs:105`, `:158`, `:237`, `:280`; `p + 1` (`diff_form.rs:132`, `:161`), `p + q` (`:182`), rank sums (`tensor_field.rs:105`, `:153`, `:273-274`) and `MultiIndex::to_flat` (`:31-38`) unchecked. Debug: panics. Release: wraps. Both: `rank as u32` truncates (rank 2^32 + 1 gives n^1). Also `j % symbols.len()` divides by zero for a chart without coordinates (`diff_form.rs:151`) | `tensor_field::component_count(n, rank) -> Result<usize>` (checked power, bytes bounded by `isize::MAX`), `zeroed_components(count) -> Result<Vec<Expr>>` (`try_reserve_exact`), `checked_add` on every degree and rank sum, `MultiIndex::to_flat` checked. New errors `ComponentCountOverflow`, `ComponentAllocationFailed`, `DegreeOverflow`. A chart whose dimension is not dim(M), or whose coordinates differ from a chart of the same name registered with the manifold, is refused by `exterior_derivative` (`InvalidChart`) |
+| REPL | `check_form_components` (n^degree <= 10^6), `p.checked_add(1)` / `p.checked_add(q)` in the arms, `DIFF_FORM_DEGREE = usize::MAX / 2` | Section 4. J1b landed before MF1 and left the REPL changes that need MF1 for later: 4.4 lists them for HANDOFF. MF1 changes no REPL code or test, only two comments that MF1 makes wrong (4.3): J1a's `check_chart` already refuses a chart of the wrong dimension, and every REPL test that reaches d or wedge passes with the new library |
 
 Adjacent facades are fixed because the rewrite of `diff_form.rs` and `tensor_field.rs` touches them and
 leaving them would keep a function returning fabricated values next to the new code (section 3):
@@ -120,14 +157,17 @@ antisymmetry check in `from_components` / `from_tensor`, the callers whose answe
 d and wedge (`SymplecticForm::is_closed` and `volume_form`, `DeRhamCohomology::is_closed`,
 `ContactForm::is_contact` and `standard`, `LieDerivative::apply_to_form` and
 `commutes_with_exterior_derivative`), the pullback of p-forms, p > 1, which returned its input
-and now returns `Err(NotImplemented)` (`maps.rs:346-350`, with the same facade at `:388-412`), and the
+and now returns `Err(NotImplemented)` (`maps.rs:346-350`, with the same facade at `:388-412`), the
 pushforward of contravariant tensors of rank >= 2, which has the same facade (`maps.rs:485-487`) and
-now returns `Err(NotImplemented)` too. The Lie derivative of a 1-form keeps its formula and gains the
-derivative guard of d (3.4).
+now returns `Err(NotImplemented)` too, and `LieDerivative::apply_to_tensor`, which leaves out the
+correction terms of its own doc comment and now returns `Err(NotImplemented)` as well (review 3). The
+Lie derivative of a 1-form keeps its formula and gains the derivative guard and the chart check of d
+(3.4).
 
 Nothing of the three items is declared out of scope. Section 5 lists defects found on the way that this
 unit does not fix (integration quadrature, the missing pullback and pushforward of higher-rank tensors,
-`apply_to_tensor`, unchecked `dim * dim` and `spin.rs` powers, the symplectic non-degeneracy and
+the Lie derivative of general tensors, charts identified by name only, unchecked `dim * dim` and
+`spin.rs` powers, the symplectic non-degeneracy and
 evaluation facades, the dense-storage limit, the `differentiate` facades of rustmath-symbolic, the
 uncompiled `tracker_08_09_tests.rs`).
 
@@ -175,8 +215,9 @@ Measured (`$S/measure_head.rs`, debug build of HEAD, standalone program, this co
 | d(d(dx_0)), n = 100 (10^6 slots) | 1.39 s | 444 MB |
 | d of ω_i = x_{i+1}, n = 300 / 600 | 0.30 s / 1.54 s | 25 MB / 93 MB |
 
-The HANDOFF figure (574 MB) is the REPL, which holds up to three copies of a value (repl.rs comments at
-`:10538-10552`).
+The HANDOFF figure (574 MB) was measured in the REPL before J1b, when it held up to three copies of a
+value. Since J1b (`36c2170`) a REPL value is held once behind an `Arc` (`repl.rs:213`; the
+`FORM_COMPONENTS` doc at `:11102-11107` says its peaks were measured with the old copies).
 
 ### 1.2 Why the fix is the correct algorithm
 
@@ -198,7 +239,7 @@ components are those of the alternating tensor, ω_{i_1...i_p} = ω(∂_{i_1}, .
 Storage stays dense: per chart a `Vec<Expr>` of n^p slots in the layout of `MultiIndex::to_flat` (first
 index most significant). The callers read `form.tensor().components(chart)` (maps.rs, integration.rs,
 lie_derivative.rs, the REPL's `missing_components_error`), so a change of representation would ripple into
-rustmath-jupyter, which J1b edits. Antisymmetric storage (C(n, p) slots, Sage's `CompFullyAntiSym`) is a
+rustmath-jupyter. Antisymmetric storage (C(n, p) slots, Sage's `CompFullyAntiSym`) is a
 possible later step; it is not needed to fix the items, because the measured growth was the trees, not
 the slots.
 
@@ -226,15 +267,24 @@ agrees with the comment at `diff_form.rs:124`, (dω)_{i_0...i_p} = (p+1) ∂_{[i
 
 I \ i_k is again increasing, so only stored increasing tuples are read.
 
-Algorithm (`$S/rev2/proto3.rs`, `d_dense`):
+Algorithm (`$S/rev3/proto4.rs`, `d_dense`):
 
 1. `k = p.checked_add(1)`, else `Err(DegreeOverflow { left: p, right: 1 })`.
 2. If p >= n: `Ok(DiffForm::new(manifold, k))` (I2; HEAD order, before any lookup).
 3. `w = self.tensor.components_ref(chart)?` (`NoComponentsInChart`; a new crate-private borrowing
    accessor, so the input is not cloned as `components()` does at `tensor_field.rs:162-166`).
-4. If `chart.dimension() != n`: `Err(InvalidChart(format!("the chart '{}' has dimension {}, but the
+4. `check_coordinate_chart(&manifold, chart)?` (crate-private, `diff_form.rs`). If
+   `chart.dimension() != n`: `Err(InvalidChart(format!("the chart '{}' has dimension {}, but the
    manifold has dimension {}", ...)))`. This replaces `symbols[j % symbols.len()]` (division by zero for a
-   chart without coordinates, silent reuse of coordinates for a short chart).
+   chart without coordinates, silent reuse of coordinates for a short chart). Then (review 3), if the
+   manifold has a registered chart of the same name (`DifferentiableManifold::chart`,
+   `differentiable.rs:125`) whose coordinate names differ: `Err(InvalidChart(format!("the chart '{}'
+   has coordinates ({}), but the manifold's chart of that name has coordinates ({}); components are
+   stored by chart name", ...)))`. Components are keyed by the chart name alone (`tensor_field.rs:115`),
+   so d cannot see the coordinates they were written in. A chart that is not registered is therefore
+   trusted: the docs of `exterior_derivative`, `closedness`, `is_closed` and `lie_derivative` state the
+   precondition "the chart is the one the components were written in". Section 5 has the crate-wide
+   fix.
 5. `count = component_count(n, k)?`; `out = zeroed_components(count)?` (section 2).
 6. For each increasing k-tuple I in lexicographic order (`next_comb`): for each position kk, take
    `w_J = w[flat(I without i_kk)]`; skip it if `w_J.is_constant()`; else
@@ -266,12 +316,13 @@ finite", e)))`; this check comes first because `simplify` folds `0 * oo` to `0` 
 algorithm over the permutations of I, flipping the sign at each swap, writes `v` or `nv` (`Expr` clones of
 `Binary`/`Unary` nodes are `Arc` clones). (p+1)! writes per tuple, n!/(n-p-1)! <= n^(p+1) in total.
 
-The derivative guard (Revision 2). rustmath-symbolic's `differentiate` is not the derivative on six node
-kinds. It returns a value anyway:
+The derivative guard (Revision 2; the `root_sum` row is Revision 3). rustmath-symbolic's `differentiate`
+is not the derivative on the node kinds of this table. It returns a value anyway:
 
 | Node | `differentiate` at HEAD | True derivative |
 |---|---|---|
-| `Function(name, args)`, except `root_sum` with 2 arguments | 0 (`differentiate.rs:230-234`; tracker 🛑 `PROJECT_TRACKER.md:2106`) | the chain rule through the unknown derivative of the function |
+| `Function(name, args)`, except `root_sum` with 2 arguments | 0 (`differentiate.rs:230-234`; tracker 🛑 `PROJECT_TRACKER.md:2117`) | the chain rule through the unknown derivative of the function |
+| `Function("root_sum", [f, g])` whose f contains `var` (review 3) | 0 (`:218-221`; the comment at `:215-217` assumes that `var` is then the bound variable) | depends on how the roots of f move with `var`: `root_sum(t^2 - x, t^2)` is 2x, derivative 2; `root_sum(t - x, t)` is x, derivative 1 (gp `polsym`, `$S/rev3/refs4.gp`) |
 | `Binary(Mod, a, b)` | 0 (`:90`) | a' wherever a mod b is continuous (x mod 3 has derivative 1 off 3Z) |
 | `Unary(Gamma, a)` | 0 (`:184-188`) | Γ(a) ψ(a) a' |
 | `Unary(Factorial, a)` | 0 (`:191`) | Γ(a + 1) ψ(a + 1) a' |
@@ -280,7 +331,8 @@ kinds. It returns a value anyway:
 
 Every other kind is differentiated by its rule in `differentiate.rs:24-206`: the field operations, `Pow`
 (a constant exponent, or f^g (g' log f + g f'/f)), the elementary `Unary` functions, `Abs` (sign(f) f')
-and `Sign` (0, true off the zero set of f), and `root_sum` with two arguments (termwise, `:218-229`). The
+and `Sign` (0, true off the zero set of f), and `root_sum(f, g)` with two arguments when f does not
+contain `var` (termwise, `:218-228`; the roots of f then do not depend on `var`). The
 parser produces `Unary` nodes for the elementary functions and for gamma, zeta, erf and factorial, and a
 `Function` node for any other name (`$S/rev2/parse.txt`: `bessel_j(0, x)` and `f(x)` are `Function`). A
 hand-built `Expr::Function("sin", ..)`, as `catalog.rs:197` builds one, is a `Function` too.
@@ -289,9 +341,12 @@ hand-built `Expr::Function("sin", ..)`, as `catalog.rs:197` builds one, is a `Fu
 // expr_zero.rs, crate-private (used by diff_form.rs and lie_derivative.rs)
 
 /// The outermost subterm of `e` that contains `var` and is a `Function` other than `root_sum` with two
-/// arguments, a `Unary` Gamma, Factorial, Zeta or Erf, or a `Binary` Mod; None when there is none.
+/// arguments, a `Unary` Gamma, Factorial, Zeta or Erf, or a `Binary` Mod; or a two-argument
+/// `root_sum(f, g)` whose f contains `var`. None when there is none.
 /// Iterative pre-order scan with an explicit stack; each entry carries its outermost ancestor of these
-/// kinds, and a `Symbol` equal to `var` below such an ancestor returns that ancestor. A leaf returns at
+/// kinds, and a `Symbol` equal to `var` below such an ancestor returns that ancestor. A two-argument
+/// `root_sum` node pushes f with itself as the ancestor (unless it already has one) and g with its own
+/// ancestor, so the root_sum rule needs no second walk (no `contains_symbol`). A leaf returns at
 /// once. After MEMO_AFTER = 64 visited nodes, a child held by an `Arc` with strong count > 1 is pushed at
 /// most once per (address, below-an-ancestor) pair, and not again below no ancestor once it was visited
 /// below one. A child with strong count 1 is reachable only through its single parent, so the scan is
@@ -301,23 +356,35 @@ pub(crate) fn unsupported_derivative<'a>(e: &'a Expr, var: &Symbol) -> Option<&'
 /// Ok(()) when unsupported_derivative(e, var) is None. Otherwise, for that subterm u:
 ///   Err(ManifoldError::NotImplemented(format!("the derivative of {} with respect to {} is not
 ///   available: rustmath-symbolic's differentiate does not implement it", u, var.name())))
-/// The code comment cites differentiate.rs and PROJECT_TRACKER.md:2106; the message has no line numbers.
+/// The code comment cites differentiate.rs and PROJECT_TRACKER.md:2117; the message has no line numbers.
 pub(crate) fn check_derivative(e: &Expr, var: &Symbol) -> Result<()>;
 ```
 
 A subterm of these kinds that does not contain `var` is constant in `var`, and `differentiate` gives 0
 for it, which is right. So it is allowed: d(f(y) dy) and d(gamma(3) dy) are the literal 0, and so is
-d(f(x) dx), because ∂_y f(x) = 0. The arguments of `root_sum` are scanned like any other subterm:
-`root_sum(t^2 - 2, t*f(x))` is refused, `root_sum(t^2 - 2, t*x)` is differentiated. Evidence:
-`$S/rev2/dguard.txt` (the 12 refused and 9 accepted 1-forms of `test_d_refuses_unsupported_derivatives`,
-two 0-forms, the Lie derivative cases of 3.4). The scan runs only on non-constant components (step 6
+d(f(x) dx), because ∂_y f(x) = 0. The second argument of `root_sum` is scanned like any other subterm:
+`root_sum(t^2 - 2, t*f(x))` is refused, `root_sum(t^2 - 2, t*x)` and `root_sum(t^2 - y, t*x)` are
+differentiated. The first argument makes the `root_sum` itself the offending subterm as soon as it
+contains `var` (review 3): `root_sum(t^2 - x, t^2)`, `root_sum(t - x, t)`, also inside `sin`; inside
+`gamma` the outer `gamma` is named, and a `root_sum` in the second argument of another is named itself.
+The rule also refuses `root_sum(x^2 - 2, x*y)` with respect to x, where x is the bound variable and 0 is
+right: the scan does not decide which symbol of f is bound, and f may hold parameters. The cost is small:
+the Risch integrator binds the reserved symbol `_t` (`risch.rs:33-38`, `:1151-1158`), never a chart
+coordinate, so its output passes. `root_sum(t^2 - x, t) dx` is accepted, because (dω)_{xy} = -∂_y ω_x
+does not meet x. Evidence: `$S/rev2/dguard.txt` (the 12 refused and 9 accepted 1-forms of
+`test_d_refuses_unsupported_derivatives`, two 0-forms, the Lie derivative cases of 3.4; rerun at
+`36c2170` on `proto4.rs`: `$S/rev3/dguard4.txt`, identical) and `$S/rev3/rootsum3.txt` (the `root_sum`
+cases, the Lie derivative, a DAG). The scan runs only on non-constant components (step 6
 skips constants first). It costs about 0.25 µs on a 3-node component in debug (1.9).
 
 Precondition: on every node kind that `unsupported_derivative` admits, `differentiate` returns the
-derivative wherever the expression is defined. This holds by the rules listed above. A new node kind
-or a new facade in rustmath-symbolic must be added to the scan. Once the FunctionRegistry derivative
-hooks (tracker `:2106`) are wired into `differentiate`, the scan can admit the functions that have one
-(section 5).
+derivative wherever the expression is defined. This holds by the rules listed above. For the `root_sum`
+rule it needs the roots of f to be independent of `var`. That holds because the scan admits a
+`root_sum` only when f does not contain `var`, and the symbols of f are then indeterminates independent
+of `var` (Revision 2 admitted every two-argument `root_sum`, which review 3 B1 showed wrong). A new node
+kind or a new facade in rustmath-symbolic must be added to the scan. Once the FunctionRegistry
+derivative hooks (tracker `:2117`) are wired into `differentiate`, the scan can admit the functions that
+have one (section 5).
 
 Correctness: under the precondition, step 6 computes the formula for every increasing I, or returns
 `Err(NotImplemented)` before it would use a derivative that `differentiate` does not compute. The
@@ -335,13 +402,14 @@ Formula (Lee 2013, ch. 14, "The Wedge Product", determinant convention; Sage's c
 where A and I \ A are increasing and sgn(A, I \ A) is the sign of the shuffle that sorts the concatenation:
 (-1) to the number of pairs (a ∈ A, b ∈ I \ A) with b before a in I.
 
-Algorithm (`$S/rev2/proto3.rs`, `wedge_dense`, the same as in `proto2.rs`):
+Algorithm (`$S/rev3/proto4.rs`, `wedge_dense`, the same as in `proto2.rs`):
 
 1. Same manifold (`Arc::ptr_eq`), else `DifferentManifolds` (as HEAD).
 2. `k = p.checked_add(q)`, else `DegreeOverflow { left: p, right: q }`.
 3. If k > n: `Ok(DiffForm::new(manifold, k))` (I2; HEAD order).
 4. `a = self` components, then `b = other` components (`NoComponentsInChart`, HEAD order: self first).
-   No chart-dimension check: the wedge does not use coordinates (keeps the REPL test of section 4 working).
+   No chart check: the wedge does not use coordinates, and the stored vectors have n^p and n^q slots
+   whatever chart of that name is passed. (The REPL checks the chart dimension itself since J1a.)
 5. `count = component_count(n, k)?`, `out = zeroed_components(count)?`.
 6. For each increasing I, for each p-subset S of positions 0..k (lexicographic), split I into
    `ia`, `ib`, count the inversions (`inv += p - x` when a b-element is placed with x a-elements before it),
@@ -358,7 +426,7 @@ The simplifier of rustmath-symbolic only folds constants and identities (`simpli
 not cancel `x - x`. Without a zero test, d∘d of a polynomial form stays a tree like `(2 * x) - (2 * x)`,
 and `is_closed` (structural `is_zero`, `diff_form.rs:251`, `tensor_field.rs:301-310`) would answer false
 for a closed form. The zero test makes `normalize` collapse such components, and gives the three-valued
-answers of section 3.3. Reference implementation: `$S/rev2/proto3.rs` (`zero_test`, `Conv`, `prescan`).
+answers of section 3.3. Reference implementation: `$S/rev3/proto4.rs` (`zero_test`, `Conv`, `prescan`).
 
 ```rust
 /// rustmath-manifolds/src/expr_zero.rs
@@ -396,11 +464,11 @@ pub(crate) fn normalize(e: Expr) -> Result<Expr>;
 
 What the answers are about: `e` denotes a function of independent real indeterminates. Every `Symbol`
 other than the reserved names is such an indeterminate (chart coordinates and free parameters, as in
-Sage's symbolic ring and as S1's `Indeterminate` class). The reserved names:
+Sage's symbolic ring; S1's design calls this class `Indeterminate`). The reserved names:
 
 | Name | Meaning in rustmath-symbolic | Treatment in `expr_zero` |
 |---|---|---|
-| `I` | imaginary unit (parser maps `I` and `i` to it, `parser.rs:227-232`; S1 reduces I^2 = -1) | opaque atom: a `Zero` answer holds for any value of it; `NonZero` is never claimed when it occurs |
+| `I` | imaginary unit (parser maps `I` and `i` to it, `parser.rs:227-232`; HEAD's `simplify` does not reduce `I*I`; S1's series constants reduce I^2 = -1 if S1 lands) | opaque atom: a `Zero` answer holds for any value of it; `NonZero` is never claimed when it occurs |
 | `pi`, `e` | π and Euler's number (`parser.rs:216-226`) | named constant atoms: `NonZero` is claimed only when at most one of them occurs (1.6.4) |
 | `oo` | infinity (parser maps `oo`, `inf`, `infinity` to it, `parser.rs:233-237`) | `Unresolved` at once, wherever it occurs, also inside an opaque subterm |
 
@@ -409,7 +477,7 @@ So `0.5*x - x/2` is `Zero`, `0.1*x - x/10` is `NonZero` (0.1 is 3602879701896397
 float residue of inexact arithmetic, such as `0.1 + 0.2 - 0.3` folded by the caller to 5.55e-17, is
 `NonZero`. A NaN or infinite `Real` anywhere gives `Unresolved` at once. Documented in the module doc.
 The exact value is decoded from `f64::to_bits` (sign, exponent, mantissa: m·2^e; `exact_real` in
-`$S/rev2/proto3.rs`). `Rational::from_f64` (`rustmath-rationals/src/rational.rs:166-199`) must not be
+`$S/rev3/proto4.rs`). `Rational::from_f64` (`rustmath-rationals/src/rational.rs:176-209`) must not be
 used: it returns an approximation, found by trying every denominator up to 10^6.
 
 `I` is opaque rather than reduced with I^2 = -1 because `Chart::new` accepts any coordinate names (the
@@ -449,7 +517,7 @@ Computation*, Springer 1982, pp. 11-43 (canonical simplifier for rational functi
 2. Fast paths: `Integer` and `Rational` by value; `Real` by exact value (0.0 is `Zero`, any other finite
    value `NonZero`); `Sub(l, r)` with `l == r` structurally and no division in the tree is `Zero`.
 3. Conversion to a fraction N/D with N, D in `rustmath_polynomials::MultivariatePolynomial<Integer>`
-   (integer coefficients; `Integer` implements `Ring`, `integer.rs:1432`) over atoms t_1..t_m:
+   (integer coefficients; `Integer` implements `Ring`, `integer.rs:1524`) over atoms t_1..t_m:
 
 | `Expr` | N/D |
 |---|---|
@@ -464,8 +532,8 @@ Computation*, Springer 1982, pp. 11-43 (canonical simplifier for rational functi
 | `a / b` | N_a D_b / D_a N_b; `Undefined` when N_b is the zero polynomial |
 | `Pow(b, k)`, `Integer` k with abs(k) <= 2^20 | binary powering; for k < 0 swap N and D (`Undefined` if N = 0) |
 
-   The exponent is read with `rustmath_core::NumericConversion::to_i64 -> Option<i64>`
-   (`integer.rs:1588`), not the panicking inherent `Integer::to_i64` (`integer.rs:88`, HANDOFF S7). The
+   The exponent is read with `Integer::to_i64 -> Option<i64>` (`integer.rs:100`; unit I3 made the
+   inherent method return `Option`, like `NumericConversion::to_i64` at `:1688`). The
    recursion that remains after flattening (an operand of a different kind of node) is at most
    `MAX_NESTING = 200` deep.
 4. Answer. `Undefined` or an exhausted budget or limit: `Unresolved`. N = 0: `Zero`. Otherwise let V be
@@ -482,7 +550,7 @@ One budget of `ZERO_TEST_WORK = 100_000` units per call. Every step is charged b
 | an opaque atom of s nodes | s × (1 + number of opaque atoms so far): its node count and the `==` comparisons |
 | sum of polynomials | weight(smaller) + 1; the smaller is inserted into the larger |
 | product of polynomials with s and t terms | s·t + s·weight(b) + t·weight(a) |
-| negation of a polynomial (`Unary(Neg)`, the right operand of a subtraction, a negated first term of a chain) | weight + 1: `MultivariatePolynomial::neg` rebuilds the map with one `add_term` per term (`multivariate.rs:804-813`) |
+| negation of a polynomial (`Unary(Neg)`, the right operand of a subtraction, a negated first term of a chain) | weight + 1: `MultivariatePolynomial::neg` rebuilds the map with one `add_term` per term (`multivariate.rs:891-900`; F1's unbound-constant binding in `add_term`, `:385-404`, is a constant-false branch for `Integer`) |
 | clone of an operand (powering) | weight |
 | comparison D_a == D_b | number of terms of the smaller |
 | recomputing a coefficient bound | number of terms |
@@ -490,7 +558,7 @@ One budget of `ZERO_TEST_WORK = 100_000` units per call. Every step is charged b
 Every operation that touches the terms of a polynomial is in this table, except the final scan of the
 variables of N and D (step 4), which reads polynomials whose construction was charged, and the drop of
 the intermediate polynomials, likewise. `$S/rev1/proto2.rs` did not charge negation (review 2): 197 nested `Neg` around a product of 10^4 terms took 12.9 s there for 51396
-charged units. `$S/rev2/proto3.rs` charges it (`pneg`).
+charged units. `$S/rev3/proto4.rs` charges it (`pneg`).
 
 weight(p) = Σ over the terms of (1 + number of variables in the monomial). It covers the cost of
 `Monomial::mul` (a `BTreeMap` merge) and of the degree scan.
@@ -535,7 +603,8 @@ to 14 % more units (`lin 1000`: 14003 to 16004).
 on `proto3.rs`, because the negation of the 6400-term operand now counts. The slowest of the 33 calls of
 `sweep3.txt` takes 0.25 s, at 0.06 to 2.5 µs a unit; the slow units are the `BTreeMap` inserts of large
 polynomials in two-variable monomials. So one call costs at most about 0.25 s in a debug build. A typical
-component of d or wedge costs about 20 µs (1.9).
+component of d or wedge costs about 20 µs (1.9). Rerun at `36c2170` on `proto4.rs` (`$S/rev3/sweep4.txt`):
+the 33 calls give the same answers and use the same units; the slowest took 0.17 s in that session.
 
 #### 1.6.4 Soundness
 
@@ -571,8 +640,9 @@ a wrong one; `normalize` then keeps the simplified expression.
 
 #### 1.6.5 Relation to S1's zero test
 
-Unit S1 (implemented before MF1) adds a three-valued zero test on `SeriesConst` in rustmath-symbolic
-(`S1-symbolic.md` section 2.2, crate-private). The classes agree:
+Unit S1 (rustmath-symbolic) is designed in this round but not committed. It may land just before MF1,
+or not at all. MF1 uses nothing of it. S1's design adds a three-valued zero test on `SeriesConst`
+(`S1-symbolic.md` section 2.2, crate-private). If S1 lands, the classes agree:
 
 | Input | S1 (`KernelClass`, `zero_status`) | MF1 (`expr_zero`) |
 |---|---|---|
@@ -586,8 +656,10 @@ Unit S1 (implemented before MF1) adds a three-valued zero test on `SeriesConst` 
 Both are sound for the same semantics, so they never contradict each other (one `Zero` where the other
 says `NonZero`). They differ in reach: S1 decides more about constants (I^2 = -1, radicals, ball
 arithmetic); MF1 handles rational functions of many indeterminates under a work budget. One public zero
-test in rustmath-symbolic would serve both. That is a HANDOFF entry (section 5); MF1 keeps
-`expr_zero.rs` crate-local because S1's type is crate-private and one crate per PR is the rule.
+test in rustmath-symbolic would serve both. That is a HANDOFF entry (section 5). Without S1, `expr_zero`
+is the only zero test of this kind in the workspace, and the entry reads: move it to rustmath-symbolic
+as a public API. Either way MF1 keeps `expr_zero.rs` crate-local, because one crate per PR is the rule
+(and S1's type would be crate-private).
 
 #### 1.6.6 Tests (module `expr_zero`)
 
@@ -606,9 +678,14 @@ not flaky):
 * s = 1 + x + ... + x^49: `zero_test(s^64 - (s*1)^64)` is `Unresolved` within 5 s (measured 0.048 s).
 * (x1 + ... + x10)^10 - ((x1 + ... + x10)*1)^10: `Unresolved`; the same with exponent 4: `Zero`.
 * `zero_test_with_budget((x+y)^2 - x^2 - 2xy - y^2, 10)`: `Unresolved` (the default budget gives `Zero`).
-* a sum of 30000 distinct symbols minus (the same times 1): `Unresolved` within 1 s.
+* a sum of 30000 distinct symbols, built with `sum_signed` (balanced, depth 16), minus (the same times
+  1): `Unresolved` within 1 s. Not built left-deep (review 3): at `36c2170`, dropping a left-deep sum of
+  30000 terms overflows a 2 MB test thread and aborts the whole test binary; the balanced sum is
+  `Unresolved` and drops cleanly (`$S/rev3/r_drop3.rs`, `drop3.txt`). S1's iterative `Drop` would also
+  remove the abort, but the test does not rely on it.
 * sin applied 4000 times to x, minus (the same times 1): `Zero`; applied 5000 times: `Unresolved`
-  (`MAX_TREE_DEPTH`). Run in a thread with a 2 MB stack.
+  (`MAX_TREE_DEPTH`). Run in a thread with a 2 MB stack. Both chains (and one of 6000) drop cleanly
+  there at `36c2170` (`drop3.txt`; the rev1 harness had kept them alive with `mem::forget`).
 * (Σ_{i<60} ((2i + 1) / (2^999 + 2i + 3)) x^i)^2 - (same*1)^2 (rational coefficients with 1000-bit
   denominators): `Unresolved` within 1 s.
 * Negation (review 2), P = (a0 + ... + a99)(b0 + ... + b99), 10^4 terms: 197 nested `Neg` around P is
@@ -622,8 +699,10 @@ not flaky):
 times e = e + e or e = e * e (alternating; once with `e.clone()` twice, once with one `Arc` used for both
 children), so the tree has 2^40 copies of L and the DAG fewer than 100 nodes. With L = x + y:
 `is_finite_expr` is true and `unsupported_derivative(e, x)` is None. With L = gamma(y) + x: None. With
-L = gamma(x) + y: `Some(gamma(x))`. With L = x + oo: `is_finite_expr` is false. Each call within 1 s
-(measured under 1 ms; a tree walk would visit 2^41 leaves).
+L = gamma(x) + y: `Some(gamma(x))`. With L = x + oo: `is_finite_expr` is false. With
+L = root_sum(t^2 - x, t) + y (review 3): `Some` of that `root_sum` with respect to x, None with respect
+to y (`$S/rev3/rootsum3.txt`, 74 µs). Each call within 1 s (measured under 1 ms; a tree walk would visit
+2^41 leaves).
 
 `test_normalize_and_finiteness`: `is_finite_expr` is false for `oo`, `sin(oo)`, `Real(NaN) * x`,
 `Real(-inf)` and true for `x + pi + I`. `normalize(0 * oo)` is `Err(ValidationError)` (`simplify` alone
@@ -636,6 +715,10 @@ gives 0); `normalize(2x - x*2)` is `Integer(0)`; `normalize(x - y)` is `x - y`.
 ```rust
 pub fn exterior_derivative(&self, chart: &Chart) -> Result<DiffForm>;   // 1.4
 pub fn wedge(&self, other: &DiffForm, chart: &Chart) -> Result<DiffForm>; // 1.5
+
+// crate-private, used by d and by lie_derivative.rs (review 3): dimension, then coordinates
+// against a registered chart of the same name; Err(InvalidChart) (1.4 step 4)
+pub(crate) fn check_coordinate_chart(manifold: &DifferentiableManifold, chart: &Chart) -> Result<()>;
 ```
 
 `tensor_field.rs` (crate-private helpers used by diff_form.rs):
@@ -693,9 +776,15 @@ compile on HEAD".
 | `test_d_budget` | on R^2: ω = (0, s^64), s = 1 + x + ... + x^49 | `Ok` within 5 s (measured 0.05 s; 26.8 s on the original prototype); slot (0,1) is not literal 0 and is structurally `(s^64).differentiate(x).simplify()`; `closedness` is `Ok(Unresolved)`, `is_closed` is `Err(Undecided)` | review B2 (`$S/rev1/r_dcost2.rs`) | 1-form formula of HEAD, wrong |
 | `test_d_reserved_constants` | on R^2: (0, (I^2 + 1) x), (0, I x), (0, pi x), (0, (pi - e) x) | the [0,1] components are `(I^2) + 1`, `I`, `pi`, `pi - e` (not literal 0); `closedness` is `Unresolved`, `Unresolved`, `NonZero`, `Unresolved` | 1.6.1 (`$S/rev1/b1.txt`) | fails |
 | `test_interior_product_long_sum` | i_X ω on R^20000 for ω = Σ x_{i+1} dx_i, X = Σ x_i ∂_i, in a thread with a 2 MB stack | `Ok` (measured 0.08 s), a 0-form whose component is not literal 0 (its zero test is `Unresolved`: the budget runs out) | 1.4 (`sum_signed`; `$S/rev1/t_int_bal.rs`) | `interior_product` errs |
-| `test_d_refuses_unsupported_derivatives` (review 2) | on R^2, ω = f dy with f = `Function("f", [x])`, `bessel_j(0, x)` (a `Function` with 2 arguments), gamma(x), zeta(x), factorial(x) (the `Unary` nodes), `Binary(Mod, x, 3)`, erf(x), sin(f(x^2 + y)), y*gamma(1 + x), `root_sum(t^2 - 2, t*f(x))`, `parse("gamma(x)")`, `parse("f(x)")`; the 0-form gamma(x) | `exterior_derivative` is `Err(NotImplemented(m))` for each, with m containing "the derivative of" and the offending subterm (`f(x)`, `gamma(x)`, `(x % 3)`, ...); `closedness` and `is_closed` of each form return the same Err | 1.4 (the true derivatives are nonzero: f'(x), Γ(x)ψ(x), ζ'(x), 1 off 3Z, 2/sqrt(π) exp(-x^2), ...; `$S/rev2/dguard.txt`) | every d returns Ok with fabricated components (`$S/review2/dfacade.txt`) |
+| `test_d_refuses_unsupported_derivatives` (review 2) | on R^2, ω = f dy with f = `Function("f", [x])`, `bessel_j(0, x)` (a `Function` with 2 arguments), gamma(x), zeta(x), factorial(x) (the `Unary` nodes), `Binary(Mod, x, 3)`, erf(x), sin(f(x^2 + y)), y*gamma(1 + x), `root_sum(t^2 - 2, t*f(x))`, `parse("gamma(x)")`, `parse("f(x)")`; the 0-form gamma(x) | `exterior_derivative` is `Err(NotImplemented(m))` for each, with m containing "the derivative of" and `format!("{}", u)` for the offending subterm u, built in the test (`f(x)`, `gamma(x)`, `x mod 3`, ...); `closedness` and `is_closed` of each form return the same Err | 1.4 (the true derivatives are nonzero: f'(x), Γ(x)ψ(x), ζ'(x), 1 off 3Z, 2/sqrt(π) exp(-x^2), ...; `$S/rev2/dguard.txt`) | every d returns Ok with fabricated components (`$S/review2/dfacade.txt`) |
 | same test, accepted forms | on R^2: f(y) dy, f(x) dx, gamma(3) dy, gamma(y) dy, `Binary(Mod, y, 3)` dy, sign(x) dy | `Ok`; slot (0,1) is literal 0 and `closedness` is `Zero` (no unsupported node contains the variable it is differentiated in, and ∂_x of a function of y is 0) | definition | Ok, but by the facade |
-| same test, accepted forms | abs(x) dy; x^y dy; `root_sum(t^2 - 2, t*x)` dy | `Ok`; slot (0,1) is `sign(x)`, `(x ^ y) * (y / x)` (equal to y x^(y-1)), `root_sum((t ^ 2) - 2, t)`; `closedness` `Unresolved` each (opaque atoms) | by hand: d/dx |x| = sign(x) off 0, d/dx x^y = y x^(y-1) for x > 0, Σ_{c^2 = 2} c = 0 (the zero test cannot see this: `Unresolved` is honest) | fabricated layout |
+| same test, accepted forms | abs(x) dy; x^y dy; `root_sum(t^2 - 2, t*x)` dy; `root_sum(t^2 - y, t*x)` dy (review 3: a parameter in f) | `Ok`; slot (0,1) is `sign(x)`, `(x ^ y) * (y / x)` (equal to y x^(y-1)), `root_sum((t ^ 2) - 2, t)`, `root_sum((t ^ 2) - y, t)`; `closedness` `Unresolved` each (opaque atoms) | by hand: d/dx |x| = sign(x) off 0, d/dx x^y = y x^(y-1) for x > 0, Σ_{c^2 = 2} c = 0 and Σ_{c^2 = y} c = 0 (gp `polsym(t^2 - 2, 1)`; the zero test cannot see this: `Unresolved` is honest) | fabricated layout |
+| same test, `root_sum` refused (review 3 B1) | on R^2, ω = r dy with r = `root_sum(t^2 - x, t^2)` (built, and `parse("root_sum(t^2 - x, t^2)")`), `root_sum(t^2 - x, t^4)`, `root_sum(t - x, t)`, `sin(root_sum(t^2 - x, t^2))`, `root_sum(x^2 - 2, x*y)`, `gamma(root_sum(t^2 - x, t^2))`, `root_sum(t^2 - 2, root_sum(s^2 - x, s^2))` | `Err(NotImplemented(m))`, m containing `format!("{}", u)` for u = the `root_sum` itself (for `sin(..)` the inner `root_sum`; for `gamma(..)` the `gamma` node; for the nested one the inner `root_sum`); `closedness` and `is_closed` return the same Err | the true (dω)_{xy} are 2, 2, 4x, 1, 2 cos(2x), 2Γ(2x)ψ(2x) (0.8457 at x = 1) and 4 (gp `polsym`, `psi`: `$S/rev3/refs4.gp`, `refs4.out`); 0 for `root_sum(x^2 - 2, x*y)`, refused anyway (1.4); `$S/rev3/rootsum3.txt` | Ok: the facade d, and `differentiate` gives 0 for each; the Revision 2 guard let them through too (`$S/review3/rootsum.txt`: literal 0 and `closedness` `Zero` on `proto3.rs`) |
+| same test, `root_sum` accepted in the other slot | `root_sum(t^2 - x, t)` dx | `Ok`; (dω)_{xy} = -∂_y ω_x is `-root_sum((t ^ 2) - x, 0)`, not literal 0; `closedness` `Unresolved` | a sum of zeros (the zero test cannot see it) | fabricated layout |
+
+The expected structures are those printed at `36c2170` (`$S/rev3/dguard4.txt`, `rootsum3.txt`). A test
+compares a slot with an expression it builds itself (structural `==`), never with a string literal;
+S1's design states that it does not change any `simplify` result (S1 §2.10).
 
 At HEAD a 0-form has one slot; d builds n slots and puts Σ_j ∂_j f into slot 0 only.
 
@@ -799,7 +888,8 @@ Undecided(String),
 ```
 
 `diff_form.rs`: every degree sum is `checked_add` (1.4 step 1, 1.5 step 2); every allocation of n^k slots
-goes through `component_count` and `zeroed_components`; d checks the chart dimension (1.4 step 4).
+goes through `component_count` and `zeroed_components`; d checks the chart (1.4 step 4: the dimension,
+then the coordinates of a registered chart of the same name).
 `MultiIndex::from_flat` is unchanged (it panics for dimension 0 with rank >= 1, where no index exists; it
 is used only in a test).
 
@@ -817,6 +907,7 @@ Contraction (`:237`) and tensor product (`:280`) get the same checks; their bodi
 | `test_multi_index_checked` | `to_flat` of [0, 3] with n = 3; `set_component(c, [0, 3], ..)`; `component(c, [1])` on a rank-2 tensor | Err(InvalidIndex) each | Ok(3) (aliases slot (1, 0)) |
 | `test_degree_overflow` (diff_form.rs) | `DiffForm::new(M, usize::MAX).exterior_derivative(c)`; `DiffForm::new(R2, usize::MAX).wedge(&DiffForm::new(R2, 1), c)` | Err(DegreeOverflow { left: usize::MAX, right: 1 }) each | panics |
 | `test_d_chart_dimension` (diff_form.rs) | `m` = the manifold of `EuclideanSpace::new(2)`, `c2 = Chart::new("c", 2, vec!["x", "y"])`, ω = `DiffForm::from_components(m, &c2, 1, vec![x*y, x^2])`. Components are keyed by the chart name (`tensor_field.rs:115`, `chart.name()`), so the lookup of step 3 finds them for any chart named `c`. Then `ω.exterior_derivative(&Chart::new("c", 0, Vec::<String>::new()).unwrap())` and `ω.exterior_derivative(&Chart::new("c", 1, vec!["x"]).unwrap())` | Err(InvalidChart(..)) containing "the chart 'c' has dimension 0, but the manifold has dimension 2", and "has dimension 1, but the manifold has dimension 2". With `c2` itself: Ok (the d of `test_d_two_dim`) | panic (`j % 0`, `diff_form.rs:151`); silent reuse of `x` |
+| `test_d_chart_identity` (diff_form.rs; review 3 minor 3) | `m` = `DifferentiableManifold::new("R2", 2)` with `c = Chart::new("c", 2, vec!["x", "y"])` registered (`add_chart`), ω = x dy = `DiffForm::from_components(m, &c, 1, vec![0, x])`, `u = Chart::new("c", 2, vec!["u", "v"])` | `ω.exterior_derivative(&u)`, `ω.closedness(&u)`, `ω.is_closed(&u)`: Err(InvalidChart(..)) containing "has coordinates (u, v), but the manifold's chart of that name has coordinates (x, y)". With `c`: `is_closed` Ok(false) (dω = dx∧dy). An unregistered chart of the same name is not detected (the documented precondition, 1.4 step 4); the test does not assert anything about it | d differentiates x dy in u and v, and `is_closed(&u)` answers Ok(true) |
 | `test_zero_by_dimension` (diff_form.rs) | d of a top form on R^2; dx∧(dx∧dy) | zero forms of degree 3; `vanishes(c) == Ok(Zero)` | degree only |
 
 ## 3. Adjacent facades in the rewritten files, and changed callers
@@ -862,7 +953,7 @@ pub fn independent_components(&self, chart: &Chart) -> Result<Vec<(Vec<usize>, E
 
 * `contract` (`:216-265`) sums `Expr::from(k as i64)`, the index values: every slot is n(n-1)/2. The
   trace of diag(5, 7) comes out `[1]` (`$S/repro_head.rs`; gp `trace(matdiagonal([5,7]))` = 12). Tracker
-  row `PROJECT_TRACKER.md:2521` (🔴). New body (Lee 2013, ch. 12, "Tensors", contraction): rank checks as
+  row `PROJECT_TRACKER.md:2532` (🔴). New body (Lee 2013, ch. 12, "Tensors", contraction): rank checks as
   HEAD, `components_ref`, `out_rank = r - 2`, `count = component_count(n, out_rank)?`,
   `zeroed_components`; for each output slot decode its digits, insert k at position `contra_index` and at
   position `p + cov_index` of the input index, sum over k (literal zeros skipped) with `sum_signed`,
@@ -892,11 +983,15 @@ itself, `:217`); `lie_derivative` of a 0-form returns the form (`:235-239`; L_X(
 pub fn interior_product(&self, vector: &VectorField, chart: &Chart) -> Result<DiffForm>;
 //   X = vector.components(chart)?; for each increasing (p-1)-tuple J: the terms
 //   (X^k * ω[flat(k, J)]).simplify() over k ∉ J, combined with sum_signed, normalize(..)?, scatter.
-//   A non-finite X^k gives Err(ValidationError) through normalize.
+//   X is not validated: VectorField::from_components checks the length only (vector_field.rs:68-83).
+//   A term whose ω factor is a literal 0 is skipped, and simplify folds X^k * 0 to 0, so a
+//   non-finite X^k gives Err(ValidationError) through normalize only when its term is kept.
+//   Vector fields with oo are outside the contract; for finite X the result is right (review 3).
 
 /// L_X ω by Cartan's formula L_X = i_X d + d i_X (Lee 2013, ch. 14, "Lie Derivatives of Differential
 /// Forms"). p == 0: i_X(dω), that is X(f). 1 <= p < n: i_X(dω) + d(i_X ω). p == n: d(i_X ω) (dω has
-/// degree n + 1). p > n: DiffForm::new(m, p). n == 0: the 0-form 0.
+/// degree n + 1). p > n: DiffForm::new(m, p). n == 0: the 0-form 0. The errors and the chart
+/// precondition of d (1.4) apply.
 pub fn lie_derivative(&self, vector: &VectorField, chart: &Chart) -> Result<DiffForm>;
 
 /// Componentwise sum in every chart where both summands have components; the sums are computed on the
@@ -965,55 +1060,68 @@ Only `rustmath-jupyter` depends on rustmath-manifolds (`git grep -l rustmath-man
 | `contact.rs:148` `is_contact` | `!contact_volume.is_zero()`: dz on R^3 is accepted as a contact form (`$S/repro_head3.rs`) | the contact condition is "α∧(dα)^n vanishes nowhere". It is decided only when the single independent component is a nonzero rational constant (Ok(true)) or `vanishes` gives Zero (Ok(false)); otherwise Err(Undecided("α∧(dα)^n = ... is not constant; whether it vanishes nowhere is not decided")). n = 0 (dim 1): the condition is α itself | yes |
 | `contact.rs:118` `ContactForm::standard` | uses `Expr::symbol("y{i}")`, which is not a chart coordinate (the chart is `Chart::standard`, x1..x_{2n+1}); the facade hid it | component 2i is `-Expr::Symbol(chart.coordinate_symbol(2 * i + 1))`. `standard` never calls `is_contact` (it builds the form directly), so HEAD's error is invisible there; but with `y{i}` dα = 0, and the new `test_contact_volume` would get α∧(dα)^k = 0 instead of k! | yes; tests `test_standard_contact_form_3d`, `_5d`, `test_standard_contact_manifold` keep passing; new `test_contact_volume`: standard(k) gives α∧(dα)^k top component k! for k = 1, 2, 3 (`$S/t_contact.rs`; gp `k!`); new `test_dz_is_not_contact`: `ContactForm::new(R3, dz)` is Err |
 | `lie_derivative.rs:107` `apply_to_form` | p >= 2 runs the 1-form formula: a 2-form comes back as a 1-form (`$S/repro_head3.rs`) | p >= 2 delegates to `form.lie_derivative(&self.vector_field, chart)` (Cartan, through the guarded d); p = 1 calls `apply_to_one_form` (next row); p = 0 keeps its Err | yes; test `test_apply_to_two_form`: equal to gp `d(L_X A)` |
-| `lie_derivative.rs:130-176` `apply_to_one_form` (private; reached from `apply_to_form` and `commutes_with_exterior_derivative`) | (L_X ω)_i = Σ_j X^j ∂_j ω_i + ω_j ∂_i X^j as a left-deep unsimplified sum; `differentiate` of named functions, gamma, ... gives fabricated 0 terms; `chart.coordinate_symbol(j)` falls back to `x` for a short chart (`chart.rs:125-130`) | the same formula, with: the chart dimension check of d after the two lookups (`InvalidChart`); a term whose other factor (X^j, or ω_j) is a literal 0 is skipped before its derivative is taken; `check_derivative` before every other `differentiate` (`Err(NotImplemented)`); each term simplified, combined with `sum_signed` and put through `normalize`. So L_X of a constant form is literal zero (`$S/rev2/proto3.rs`, `lie_one_dense`) | yes; new test `test_lie_one_form_guard` on R^2 (chart `c2 = Chart::new("c", 2, vec!["x", "y"])`): X = ∂_x, ω = f(x) dy: Err(NotImplemented) (true value f'(x) dy); X = (gamma(y), 0), ω = x dx: Err(NotImplemented) (needs ∂_y gamma(y)); X = ∂_x, ω = gamma(y) dy: Ok, both components literal 0; X = (gamma(y), 0), ω = dy: Ok, literal [0, 0]; X = (y, x), ω = x y dx: equal to `[x^2 + y^2, y*x]` (gp, `$S/rev2/refs2.gp`); a 1-coordinate chart named `c`: Err(InvalidChart). Evidence `$S/rev2/dguard.txt`. On HEAD the first two are Ok with fabricated terms and the last is silent |
+| `lie_derivative.rs:130-176` `apply_to_one_form` (private; reached from `apply_to_form` and `commutes_with_exterior_derivative`) | (L_X ω)_i = Σ_j X^j ∂_j ω_i + ω_j ∂_i X^j as a left-deep unsimplified sum; `differentiate` of named functions, gamma, ... gives fabricated 0 terms; `chart.coordinate_symbol(j)` falls back to `x` for a short chart (`chart.rs:125-130`) | the same formula, with: the chart check of d (`check_coordinate_chart`: dimension, then the coordinates of a registered chart of the same name) after the two lookups (`InvalidChart`); a term whose other factor (X^j, or ω_j) is a literal 0 is skipped before its derivative is taken; `check_derivative` before every other `differentiate` (`Err(NotImplemented)`); each term simplified, combined with `sum_signed` and put through `normalize`. So L_X of a constant form is literal zero (`$S/rev3/proto4.rs`, `lie_one_dense`) | yes; new test `test_lie_one_form_guard` on R^2 (chart `c2 = Chart::new("c", 2, vec!["x", "y"])`): X = ∂_x, ω = f(x) dy: Err(NotImplemented) (true value f'(x) dy); X = (gamma(y), 0), ω = x dx: Err(NotImplemented) (needs ∂_y gamma(y)); X = ∂_x, ω = gamma(y) dy: Ok, both components literal 0; X = (gamma(y), 0), ω = dy: Ok, literal [0, 0]; X = (y, x), ω = x y dx: equal to `[x^2 + y^2, y*x]` (gp, `$S/rev2/refs2.gp`); a 1-coordinate chart named `c`: Err(InvalidChart); review 3: X = ∂_x, ω = `root_sum(t - x, t)` dy: Err(NotImplemented) (true value dy, gp `polsym(t - a, 1)`, `$S/rev3/refs4.gp`), and X = ∂_y with the same ω: Ok, `[0, root_sum((t - x), 0)]` (f has no y; the sum of zeros is not literal 0). Evidence `$S/rev2/dguard.txt`, `$S/rev3/rootsum3.txt`. On HEAD the first two and the `root_sum` case are Ok with fabricated terms and the 1-coordinate chart is silent |
 | `lie_derivative.rs:253` `commutes_with_exterior_derivative` | structural `!=`; gives Ok(false) for A (`$S/repro_head3.rs`) | `(L_X dω + (-(d L_X ω)))?.vanishes(chart)?`: Zero → Ok(true), NonZero → Ok(false), Unresolved → Err(Undecided) | yes; test: A gives Ok(true) |
+| `lie_derivative.rs:189-247` `LieDerivative::apply_to_tensor` (review 3) | X^k ∂_k T only: the correction terms of its own doc comment are left out (`:229-244`; tracker ⏳ "Lie derivative of scalars/vectors/forms", `PROJECT_TRACKER.md:2548`); it reads `tensor.num_components()` (`:225`) | the three rank checks stay (`(0, 0)`, `(1, 0)`, `(0, 1)` keep their `InvalidOperation` errors); then `Err(NotImplemented("the Lie derivative of a (p, q) tensor field needs the correction terms -Σ_a T^{..k..} ∂_k X^{i_a} + Σ_b T_{..k..} ∂_{j_b} X^k (Lee 2013, ch. 12)"))`. The component lookups and the loop go. No caller in the workspace (`git grep apply_to_tensor`: the other hits are the two methods of that name in `maps.rs`) | yes; test `test_apply_to_tensor_not_implemented`: (0, 2), (2, 0) and (1, 1) tensors on R^2: Err(NotImplemented); a (1, 0) tensor: Err(InvalidOperation), as at HEAD |
 | `kahler.rs:95`, `:239` | `is_closed` | same signature; unreachable today (`compute_kahler_form` is `unimplemented!`, `:112-119`) | none |
 | `integration.rs:390`, `:423` (Stokes) | integrates `components[0]` of the facade dω | integrates `components[0]` of the true dω, which is ω_{0...0} = 0 | none: integration is wrong before and after (section 5) |
-| `maps.rs:346-350` `PullBack::apply_to_form` (p > 1) | returns the input form, relabelled (facade; tracker `PROJECT_TRACKER.md:2561`) | `Err(NotImplemented("the pullback of a p-form for p > 1 needs the Jacobian minors (f^*ω)_I = Σ_J (ω_J ∘ f) det(∂f^J/∂x^I)"))`. No caller in the workspace | yes; test `test_pull_push_facades_not_implemented` (a 2-form on R^2 under `SmoothMap::new(r2, r2, "id")`: Err(NotImplemented)) |
+| `maps.rs:346-350` `PullBack::apply_to_form` (p > 1) | returns the input form, relabelled (facade; tracker `PROJECT_TRACKER.md:2572`, row `:2539`) | `Err(NotImplemented("the pullback of a p-form for p > 1 needs the Jacobian minors (f^*ω)_I = Σ_J (ω_J ∘ f) det(∂f^J/∂x^I)"))`. No caller in the workspace | yes; test `test_pull_push_facades_not_implemented` (a 2-form on R^2 under `SmoothMap::new(r2, r2, "id")`: Err(NotImplemented)) |
 | `maps.rs:388-412` `PullBack::apply_to_covariant_tensor` (q >= 2) | computes the Jacobian, then returns the target components unchanged on the source manifold (facade) | `Err(NotImplemented(..))` right after the rank checks, before the Jacobian lookup. Only caller: `apply_to_tensor` (`:431`), which has none | yes; same test, a (0, 2) tensor: Err(NotImplemented) |
 | `maps.rs:442-494` `PushForward::apply_to_contravariant_tensor` (p >= 2; review 2) | computes the Jacobian, then returns the source components unchanged on the target manifold (`:485-487`, the same facade) | `Err(NotImplemented("the pushforward of a (p, 0) tensor field for p >= 2 needs (f_* T)^J = Σ_I T^I Π_a ∂f^{j_a}/∂x^{i_a}, composed with the inverse map"))` right after the rank checks. Only caller: `PushForward::apply_to_tensor` (`:502-515`), which has none (`tracker_08_09_tests.rs:111` builds a `PushForward` but is not compiled) | yes; same test, a (2, 0) tensor: Err(NotImplemented) |
 | `utilities.rs:117` `exterior_derivative` (HashMap forms) | a correct sparse d of its own | unchanged | none |
-| `rustmath-jupyter/src/repl.rs` | see section 4 | `exterior_derivative` refuses the one-name REPL chart on a manifold of dimension >= 2 | one test block (section 4.3) |
+| `rustmath-jupyter/src/repl.rs` | see section 4 | no change of behaviour: J1a's `check_chart` (`repl.rs:11455-11462`) refuses a chart of the wrong dimension before the library is called, REPL charts are not registered with their manifold, and every REPL form has constant components | two comments (4.3); no code or test |
 
 Existing manifolds tests that use d or wedge (`diff_form.rs:347`, `:359`; `symplectic.rs:493-499`;
 `contact.rs:325-375`; `lie_derivative.rs:355-388`) keep passing with the changes above. Their inputs are
 zero or constant forms (constants skip the guard), or the constant 1-form dx on the `apply_to_one_form`
 path, whose result is now literal zero and is tested with `simplify().is_zero()`.
-`tracker_08_09_tests.rs` is not compiled: no `mod` declares it (`git grep tracker_08_09` finds only the
-file and `docs/magma/REVIEW_2026-11-06.md:69`, which lists it as uncompiled). It would not compile as a
+`tracker_08_09_tests.rs` is not compiled: no `mod` declares it (`git grep tracker_08_09` finds the
+file, `docs/magma/REVIEW_2026-11-06.md:69-70`, which lists it as uncompiled, and copies of this design). It would not compile as a
 child of the crate root either, because it reads the private field `PullBack::map` (`:102`). Its tests
 never ran, so they neither pass nor fail; section 5. `test_contact_manifold_creation` (`contact.rs:346-368`) uses `-y` on the chart x1, x2, x3, so
 after MF1 its form is not contact (dα = 0) and its `if let Ok(..)` body is skipped; it passes before and
 after. The tests at `tensor_field.rs:361` (`to_flat`), `:373`, `:374` and `:396` need `.unwrap()` for
-the new `Result` returns, and `lie_derivative.rs:225` (`num_components()?`) must change in the same step
-as `tensor_field.rs` (plan step 4) so that the crate builds after each step.
+the new `Result` returns, and `apply_to_tensor` (`lie_derivative.rs:225` is the only other caller of
+`num_components`) changes in the same step as `tensor_field.rs` (plan step 4), so that the crate builds
+after each step. All these tests use `default_chart()`, the registered chart, so the chart check of
+1.4 step 4 passes for them; the new tests use a registered chart or a name the manifold does not have.
 
-## 4. The REPL arms (item 3) and what J1b should change
+## 4. The REPL arms (item 3) and the REPL follow-ups
 
-### 4.1 What the REPL checks today
+Revision 3 rewrote this section against HEAD `36c2170`. J1a (`bd03278`) fixed S9 (commas inside a
+string argument) and S14 (`chart` compares the number of names with dim(M)) and added `check_chart` to
+the form arms. J1b (`36c2170`) made REPL values `Arc`-shared (the REPL part of F2) and replaced the stale
+line references in the form arms (the old item 4 of 4.4). J1b left the changes that need MF1's library
+for after MF1 (J1b report, "Left undone": "the MF1 §4.4 items 2-3 and the DIFF_FORM_DEGREE removal (MF1
+did not land), FORM_COMPONENTS re-measurement (same)"). 4.4 lists them for HANDOFF.
+
+### 4.1 What the REPL checks at `36c2170`
 
 | Place | Check |
 |---|---|
-| `repl.rs:4599-4615` `diff_form` | degree in `0..=DIFF_FORM_DEGREE` (`usize::MAX / 2`, `:10548`) so that p + 1 and p + q of forms built directly cannot overflow in the library |
-| `repl.rs:4641-4662` `exterior_derivative` | `p.checked_add(1)` (`:4649`); for p < n, `check_form_components(n, p + 1)` (n^degree <= `FORM_COMPONENTS` = 10^6, `:10553`), with `missing_components_error` first so that a form without components gets the library's error |
-| `repl.rs:4680-4699` `wedge` | same manifold, `p.checked_add(q)` (`:4686`), for p + q <= n the same component check |
-| `repl.rs:10869-10879` `check_form_components` | `u32::try_from(degree)` and `checked_pow`, then the limit |
-| `repl.rs:10891-10902` `missing_components_error` | looks the components up only for forms of at most 10^6 slots |
-| Tests | `:12204-12209` (diff_form degree range), `test_form_component_limits` `:12345-12389`, `test_form_without_components` `:12393-12426` |
+| `repl.rs:4793-4807` `chart` | `chart_coordinate_names` (`:11428-11451`, J1a S14): exactly dim(M) distinct identifiers, split at the commas of the one string argument (J1a S9). Every chart is named `user_chart` (`:4801`) and is not registered with its manifold |
+| `repl.rs:4810-4826` `diff_form` | degree in `0..=DIFF_FORM_DEGREE` (`usize::MAX / 2`, `:11101`) so that p + 1 and p + q of forms built directly cannot overflow in the library |
+| `repl.rs:4829-4850` `coordinate_form` | dim(M) <= `MANIFOLD_COORDS` (2.5·10^6, `:11097`, re-measured by J1b), `check_chart`, the index range |
+| `repl.rs:4853-4877` `exterior_derivative` | `check_chart` (`:4860`; `:11455-11462`: the chart has dim(M) coordinates), `p.checked_add(1)` (`:4862-4863`); for p < n, `check_form_components(n, p + 1)` (n^degree <= `FORM_COMPONENTS` = 10^6, `:11108`), with `missing_components_error` first so that a form without components gets the library's error |
+| `repl.rs:4880-4920` `wedge` | `check_chart` (`:4897`), same manifold, `p.checked_add(q)` (`:4901-4902`), for p + q <= n the same component check |
+| `repl.rs:12312-12322` `check_form_components` | `u32::try_from(degree)` and `checked_pow`, then the limit |
+| `repl.rs:12324-12346` `missing_components_error` | looks the components up (`TensorField::components`, a clone) only for forms of at most 10^6 slots |
+| Values | `RustMathValue::DiffFormVal(Arc<DiffForm>)` (`:213`): a form is held once since J1b; it is displayed as its degree only (`:550-553`) |
+| Tests | `:14670-14674` (diff_form degree range), `test_chart_checked_in_form_arms` `:13659-13673`, `test_form_component_limits` `:14790-14834`, `test_form_without_components` `:14838-14871`, `test_values_shared_not_copied` `:14880` (a shared coordinate form) |
 
 ### 4.2 What MF1 changes in the library that the REPL sees
 
 * Degree sums are checked in the library: `Err(DegreeOverflow)` for p + 1 and p + q.
 * The library refuses only what cannot be stored (overflow of n^k or of the byte count, or a refused
   allocation). It has no memory policy: `FORM_COMPONENTS` stays the REPL's.
-* The library's lookup order is kept: d checks p >= n first, then looks the components up, then the chart
-  dimension, then counts and allocates; wedge checks p + q > n first, then self's and other's components.
-  So `missing_components_error` stays accurate.
-* New: `exterior_derivative` refuses a chart whose dimension is not dim(M):
-  `Invalid chart: the chart 'user_chart' has dimension 1, but the manifold has dimension 3`. A REPL chart
-  has one coordinate per name, and a list of names cannot be written (S9, commas inside strings), and
-  `chart` does not compare names with dim(M) (S14). So in the REPL, d now works only on 1-dimensional
-  manifolds until J1a fixes S9 and S14. HEAD computed a wrong d there anyway.
+* The library's lookup order is kept: d checks p >= n first, then looks the components up, then checks
+  the chart, then counts and allocates; wedge checks p + q > n first, then self's and other's
+  components. So `missing_components_error` stays accurate.
+* New: `exterior_derivative` checks the chart (1.4 step 4): the dimension, and the coordinates against a
+  registered chart of the same name. The REPL never reaches either check. `check_chart` refuses a chart
+  of the wrong dimension first, with its own message ("exterior_derivative: the chart has 4 coordinates,
+  but the manifold has dimension 3", `test_chart_checked_in_form_arms`), and REPL charts are not
+  registered. So the REPL's answers do not change.
 * Memory: the expression growth is gone. d(d(dx_0)) at n = 100 is 66 MB standalone (HEAD 444 MB); the peak
   is now the dense output (64 bytes a slot) plus symbolic trees for symbolic forms (about 800 MB for
   999000 nonzero slots of x_i x_{j+1} - x_j x_{i+1}, section 1.9).
@@ -1021,78 +1129,95 @@ as `tensor_field.rs` (plan step 4) so that the crate builds after each step.
   about 0.25 s in debug, 1.6.3), so d and wedge time is bounded by the component count, whatever the
   expressions are.
 * d refuses a component whose derivative rustmath-symbolic does not implement (a named function, `mod`,
-  gamma, factorial, zeta or erf of the coordinate): `Err(NotImplemented)`, which the arm maps to
-  `ComputationError` like every library error. REPL forms have constant components today, so no REPL test
-  reaches it. Once forms with symbolic components can be built in the REPL, its tests should expect this
-  error for such components, not a value.
+  gamma, factorial, zeta or erf of the coordinate, a `root_sum` whose polynomial contains it):
+  `Err(NotImplemented)`, which the arm maps to `ComputationError` like every library error. REPL forms
+  have constant components (`coordinate_form`, `diff_form`), so no REPL test reaches it. Once forms with
+  symbolic components can be built in the REPL, its tests should expect this error for such
+  components, not a value.
 * Forms whose components contain `oo` or a NaN or infinite `Real` are refused by the constructors
-  (`ValidationError`). The REPL builds forms only with `coordinate_form` and `diff_form` (constants or
-  no components), so no REPL test changes.
+  (`ValidationError`). The REPL builds forms only with `coordinate_form` and `diff_form`, so no REPL test
+  changes.
 
-### 4.3 The one REPL change made by MF1
+### 4.3 What MF1 changes in rustmath-jupyter: two comments
 
-`test_form_component_limits` (`repl.rs:12359-12366`) computes `da = exterior_derivative(a, C3)` with
-`C3 = chart(E3, "t")`, a one-coordinate chart on R^3. It now errs. Replace the block by:
+No REPL code and no REPL test changes. Every REPL test that reaches d or wedge passes with the new
+library:
 
-```rust
-        // A REPL chart has one coordinate per name, and a list of names cannot be written yet (S9).
-        // On R^3 the one-name chart has the wrong dimension, so rustmath-manifolds refuses d; wedge
-        // does not use coordinates. On R^1, d of a 1-form and wedge(u, du) are the degree shortcuts
-        // (p >= n, p + q > n). So no REPL test computes a nontrivial d until S9 and S14 are fixed;
-        // the rustmath-manifolds tests cover d itself.
-        ctx.eval("E3 = EuclideanSpace(3)").unwrap();
-        ctx.eval("C3 = chart(E3, \"t\")").unwrap();
-        ctx.eval("a = coordinate_form(E3, C3, 0)").unwrap();
-        ctx.eval("b = coordinate_form(E3, C3, 1)").unwrap();
-        let e = ctx.eval("exterior_derivative(a, C3)").unwrap_err();
-        assert_eq!(e.name, "ComputationError");
-        assert!(e.message.contains("has dimension 1, but the manifold has dimension 3"), "{}", e.message);
-        ctx.eval("ab = wedge(a, b, C3)").unwrap();
-        assert!(ctx.eval("wedge(ab, b, C3)").is_ok());
-        ctx.eval("E1 = EuclideanSpace(1)").unwrap();
-        ctx.eval("C1 = chart(E1, \"t\")").unwrap();
-        ctx.eval("u = coordinate_form(E1, C1, 0)").unwrap();
-        ctx.eval("du = exterior_derivative(u, C1)").unwrap();
-        assert!(ctx.eval("exterior_derivative(du, C1)").is_ok());
-        assert!(ctx.eval("wedge(u, du, C1)").is_ok());
-```
+* `test_form_component_limits` (`:14790-14834`): the 10^5-dimensional calls stop in
+  `check_form_components`, before the library. On R^3 with `chart(E3, "x,y,z")` (J1a restored this
+  block, the old 4.4 item 5) `da = exterior_derivative(a, C3)` is now the zero 2-form (9 literal zeros),
+  `exterior_derivative(da, C3)` the zero 3-form, `wedge(a, b, C3)` is dx∧dy and `wedge(da, b, C3)` the
+  zero 3-form; each is `Ok`, as asserted. The degree lines use the p >= n and p + q > n shortcuts, which
+  MF1 keeps first, and the REPL's own overflow checks answer before the library.
+* `test_form_without_components` (`:14838-14871`): `exterior_derivative(fs, CS)` reaches the library,
+  which looks the components up before it checks the chart or allocates (1.4 steps 3 to 5), so the
+  message stays "No components defined in this chart". The other calls stop in the REPL.
+* `test_chart_checked_in_form_arms` (`:13659-13673`): the `C4` calls stop in `check_chart`;
+  `exterior_derivative(a, C3)` and `wedge(a, a, C3)` are `Ok` (the zero 2-form, both).
+* `test_values_shared_not_copied` (`:14880`) takes no d.
+* The REPL uses only `DiffForm::new`, `DiffForm::coordinate_form`, `exterior_derivative`, `wedge`,
+  `degree`, `manifold` and `tensor().components(chart)` (imports `:55-58`), whose signatures do not
+  change. So rustmath-jupyter builds and passes after every plan step (review 3 minor 7 is moot).
 
-No other REPL test changes: every other form test is refused by the REPL limit before the library runs,
-or hits `NoComponentsInChart` before the chart check (`exterior_derivative(fs, CS)` at `:12418`), or uses
-`p >= n` / `p + q > n` shortcuts (`:12377-12388`).
+Two comments become wrong with MF1 and are corrected in plan step 7 (comments only):
 
-### 4.4 Recommendations for J1b
+* `repl.rs:4903-4904`: "For p + q <= n the callee builds all n^(p+q) products (rustmath-manifolds
+  `DiffForm::wedge` through `TensorField::tensor_product`)" becomes "For p + q <= n the callee allocates
+  all n^(p+q) components (rustmath-manifolds `DiffForm::wedge`)". MF1's wedge no longer calls
+  `tensor_product`, and it forms C(n, p+q)·C(p+q, p) products, not n^(p+q).
+* `repl.rs:12326-12327`: "Both callees look the components up before they allocate anything
+  (`TensorField::components`, `NoComponentsInChart`)" becomes "... before they allocate anything
+  (`NoComponentsInChart`)". MF1's d and wedge borrow the components (the crate-private
+  `components_ref`) instead of calling `TensorField::components`.
 
-1. `DIFF_FORM_DEGREE` (`:10548`, used at `:4608`) can go: any usize degree is safe now, d and wedge
-   return `DegreeOverflow`. Drop the bound and its test lines (`:12204-12207`); keep `diff_form(M, -1)`
-   refused (a usize conversion).
-2. The arms' own overflow checks (`:4649-4650`, `:4686-4687`) are redundant. Either delete them and let
-   the library error through (then `:12382-12388` assert the library message "The degree ... does not fit
-   in a machine word"), or keep them for the wording. Deleting is simpler.
+### 4.4 REPL follow-ups after MF1 (for HANDOFF)
+
+J1b could not do these, because they need MF1's library. Each is small; the re-measurement needs a
+release build.
+
+1. `DIFF_FORM_DEGREE` (`:11101`, used at `:4819`, its comment at `:4817-4818`) can go: any usize degree
+   is safe, d and wedge return `DegreeOverflow`. Drop the bound and its test lines (`:14671-14672`);
+   keep `diff_form(M, -1)` refused (a usize conversion). The degree block of `test_form_component_limits`
+   (`:14820-14833`) builds its forms from `DIFF_FORM_DEGREE`; it would use `usize::MAX` and friends
+   instead.
+2. The arms' own overflow checks (`:4862-4863`, `:4901-4902`) are redundant. Either delete them and let
+   the library error through (then `:14827-14833` assert the library message "The degree ... does not
+   fit in a machine word", a `ComputationError`), or keep them for the wording. Deleting is simpler.
 3. Keep `check_form_components` and `FORM_COMPONENTS` as the REPL memory policy, but compute the count
-   with `rustmath_manifolds::tensor_field::component_count` (one source of truth). Its Err means "too
-   many components to store": either n^k does not fit in a `usize`, or it fits but its storage exceeds
-   `isize::MAX` bytes. So the REPL message should say "too many components to store", or report the
-   count n^k when `n.checked_pow(k)` gives one. Re-measure with `ReplContext` (VmHWM) and rewrite the doc comment at
-   `:10549-10552`: the "each further d enlarges the expressions" sentence is no longer true, and the
-   peak per 10^6 slots is 64 MB per copy plus symbolic trees. The limit may rise if the clones of
-   `:649`, `:706` (the REPL part of F2) are removed.
-4. Stale line references: `:4651` ("diff_form.rs:139") and `:4689` ("tensor_field.rs:268-292"),
-   `:10884` ("tensor_field.rs:162-166") change with MF1; cite the new functions instead of lines.
-5. For J1a, which owns them: S14 (`chart` must compare the number of names with dim(M)) and S9 (commas
-   inside strings). Once `chart(E3, "x,y,z")` can be written, restore the R^3 version of the block in
-   4.3 with a real d.
-6. Optional: expose `is_closed` (it can now answer Undecided), `interior_product` and `lie_derivative`
-   for forms; the REPL's `interior_product` name is taken by Clifford algebras (`:4241`).
+   with `rustmath_manifolds::tensor_field::component_count` (one source of truth), in
+   `check_form_components` (`:12314-12322`) and in `missing_components_error` (`:12334-12346`). Its Err
+   means "too many components to store": either n^k does not fit in a `usize`, or it fits but its
+   storage exceeds `isize::MAX` bytes. So the REPL message should say "too many components to store",
+   or report the count n^k when `n.checked_pow(k)` gives one. Re-measure `FORM_COMPONENTS` with J1b's
+   `ReplContext` harness (VmHWM, release) and rewrite its doc (`:11102-11107`): "each further d enlarges
+   the expressions" is no longer true, and the peak per 10^6 slots is 64 MB plus symbolic trees, held
+   once since J1b. The limit may rise. The `repl_limits` overview (`:11002-11003`, "TAYLOR_ORDER,
+   FORM_COMPONENTS and DIFF_FORM_DEGREE wait for ... MF1") changes with it.
+4. Charts (review 3 minor 3). Every REPL chart is named `user_chart` (`:4801`) and is not registered with
+   its manifold. Since J1a one manifold can have several REPL charts with different coordinates, all
+   under that one key, so a form built in one chart is found in the others. Harmless today: REPL forms
+   have constant components, whose d is 0 in every chart. Before the REPL builds forms with symbolic
+   components, its charts need unique names, or registration with the manifold so that MF1's chart
+   check (1.4 step 4) sees them.
+5. Optional: expose `is_closed` (it can now answer Undecided), `closedness`, `interior_product` and
+   `lie_derivative` for forms, and a way to read components (today a form displays only its degree,
+   `:550-553`, so no REPL test can check a d by value). The REPL's `interior_product` name is taken by
+   Clifford algebras (`:4454-4455`).
 
 ## 5. Defects found on the way and not fixed in this unit
 
 These are outside the items. They should go to HANDOFF (plan step 8 adds them).
 
 * rustmath-symbolic `differentiate` returns 0 for named functions (`differentiate.rs:230-234`, tracker 🛑
-  `PROJECT_TRACKER.md:2106`, which still cites the old line `:205`), `Mod` (`:90`), gamma (`:184-188`),
+  `PROJECT_TRACKER.md:2117`, which still cites the old line `:205`), `Mod` (`:90`), gamma (`:184-188`),
   factorial (`:191`) and zeta (`:204`), and approximates 2/sqrt(π) by 500/443 for erf (`:194-198`).
-  MF1's d and the Lie derivative of a 1-form refuse such components (`Err(NotImplemented)`, 1.4).
+  It also returns 0 for `root_sum(f, g)` when f contains the variable (`:218-221`): the comment at
+  `:215-217` trusts that the variable is then the bound one, but the roots of f may move with it
+  (`root_sum(t^2 - x, t^2)` = 2x has derivative 2, gp `polsym`; review 3). A correct rule needs the
+  bound variable recorded in the `root_sum` node (the Risch integrator uses `_t`, `risch.rs:1151-1158`)
+  and, for a variable in f, the derivative of the roots (implicit differentiation, as `risch.rs`'s
+  exact trace machinery does for its own terms).
+  MF1's d and the Lie derivative of a 1-form refuse all such components (`Err(NotImplemented)`, 1.4).
   Wiring the derivative hooks of `rustmath-symbolic/src/function.rs` (the trait method at `:22-23`,
   `with_derivative` at `:59-64`, the `FunctionRegistry` at `:204-245`) into
   `differentiate`, with digamma for gamma and factorial and an exact 2/sqrt(π) for erf, lifts the
@@ -1100,15 +1225,16 @@ These are outside the items. They should go to HANDOFF (plan step 8 adds them).
   callers of `differentiate` in rustmath-manifolds are not guarded by MF1 and inherit the facade:
   `vector_field.rs:169` (`apply_to_scalar`), `:198`, `:202` (`lie_bracket`), `scalar_field.rs:149`
   (`differential`), `maps.rs:126` (`jacobian`), `transition.rs:143`, `utilities.rs:134` (the HashMap d),
-  `lie_derivative.rs:234` (`apply_to_tensor`), `symplectic.rs:379`, `:386` (`from_hamiltonian`),
-  `symmetries.rs:121-139`, `finsler.rs:160-161`, `:309-311`. Each needs the same guard or the fixed
-  `differentiate`. S1 refuses the same facade in its series engine.
+  `symplectic.rs:379`, `:386` (`from_hamiltonian`), `symmetries.rs:121-139`, `finsler.rs:160-161`,
+  `:309-311`. Each needs the same guard or the fixed `differentiate` (`apply_to_tensor`, which also
+  called it, returns `Err(NotImplemented)` after MF1). S1's series engine, if S1 lands, refuses the same
+  facade (S1 design §1.4).
 * `integration.rs`: the quadrature for n >= 2 is wrong: ∫∫ 1 over the default domain [-10, 10]^2 gives
   20.0 (true 400; `$S/repro_head3.rs`, a form whose `components[0]` is 1). `integrate_form_on_chart`
   (`:309-310`) and `evaluate_at` (`:254`) read `components[0]`, which is ω_{0...0} = 0 for an
   antisymmetric top form (∫ dx∧dy gives 0.0 at HEAD), and `VolumeForm::from_metric` builds `factorial(n)`
   slots instead of n^n (`:201`; Err for n >= 2). Stokes' `verify` therefore integrates 0 for dω after
-  MF1 (garbage at HEAD). Tracker row `PROJECT_TRACKER.md:2536` (⏳) should say so. A fix needs the top
+  MF1 (garbage at HEAD). Tracker row `PROJECT_TRACKER.md:2547` (⏳) should say so. A fix needs the top
   component (flat index of (0, 1, ..., n-1), or `from_independent_components`) and a correct tensor-product
   quadrature.
 * Pullback and pushforward (`maps.rs`). MF1 turns the three facades into `Err(NotImplemented)` (3.4):
@@ -1120,7 +1246,7 @@ These are outside the items. They should go to HANDOFF (plan step 8 adds them).
   (`apply_to_one_form`, `:278-322`) is also wrong for non-constant ω: it multiplies by `ω_j` without
   substituting the map's coordinate expressions (`ω_j ∘ f`), unlike `apply_to_scalar_field`
   (`:259-272`, which calls `substitute_in_expr`). Found by reading the code; no caller.
-* Symplectic non-degeneracy (`symplectic.rs:236-268`, tracker 🛑 row `PROJECT_TRACKER.md:2531`):
+* Symplectic non-degeneracy (`symplectic.rs:236-268`, tracker 🛑 row `PROJECT_TRACKER.md:2542`):
   `matrix_at` ignores the point and the chart and returns the standard block matrix, so every 2-form is
   "non-degenerate". MF1 edits `symplectic.rs` (3.4) but not this. An honest version can use the pattern of
   `is_contact`: ω^n has one independent component; a nonzero rational constant gives Ok(true), a
@@ -1135,23 +1261,39 @@ These are outside the items. They should go to HANDOFF (plan step 8 adds them).
   already does. The REPL caps forms at 10^6 slots (`FORM_COMPONENTS`). Antisymmetric storage would lift
   this; it changes the representation that `maps.rs`, `integration.rs`, `lie_derivative.rs` and the
   REPL read (1.3).
-* Two zero tests: S1's crate-private `SeriesConst::zero_status` (rustmath-symbolic) and MF1's
-  `expr_zero` (1.6.5). Plan: one public zero test in rustmath-symbolic (S1's constants as coefficients,
-  MF1's budgeted rational-function normal form), then `expr_zero.rs` re-exports it.
+* One public zero test (1.6.5). If S1 lands, there are two: S1's crate-private
+  `SeriesConst::zero_status` (rustmath-symbolic) and MF1's `expr_zero`. Plan: one public zero test in
+  rustmath-symbolic (S1's constants as coefficients, MF1's budgeted rational-function normal form), then
+  `expr_zero.rs` re-exports it. Without S1: move `expr_zero` to rustmath-symbolic as a public API.
 * rustmath-symbolic's `simplify` folds `0 * a` to `0` for any a, including `oo`, NaN and `1/(y - y)`
-  (`$S/rev1/t_simp.rs`). MF1 guards against it for forms (1.6.1); the rule itself is S1's area.
-* `lie_derivative.rs:189-247` `apply_to_tensor`: no correction terms (tracker ⏳ row `:2537`).
+  (`$S/rev1/t_simp.rs`). MF1 guards against it for forms (1.6.1); the rule itself belongs to
+  rustmath-symbolic (S1's design does not change it).
+* `lie_derivative.rs:189-247` `apply_to_tensor` left out the correction terms (tracker ⏳ row `:2548`).
+  MF1 makes it return `Err(NotImplemented)` (3.4). The missing piece is
+  (L_X T)^{i_1..i_p}_{j_1..j_q} = X^k ∂_k T - Σ_a T^{..k..} ∂_k X^{i_a} + Σ_b T_{..k..} ∂_{j_b} X^k
+  (Lee 2013, ch. 12), with the derivative guard, the chart check and `sum_signed`.
+* Charts are identified by name only (review 3). Components are keyed by `chart.name()` in every field
+  type (`tensor_field.rs:115`, `vector_field.rs:81`, `scalar_field.rs:31`, `riemannian.rs:79`), so two
+  charts with one name and different coordinates share a key. MF1's d and the Lie derivative of a
+  1-form refuse a chart whose name is registered with the manifold under other coordinates (1.4 step 4),
+  but they cannot check a chart that is not registered. Storing the coordinate names with the
+  components (or keying by name and coordinates) would let every reader check the chart. The REPL names
+  every chart `user_chart` (4.4 item 4).
+* R1's hand-off (review 3). R1's design (F.2) handed the ring predicates of `DiffScalarFieldAlgebra`
+  (C^∞(M)) to MF1. R1 implemented them itself (`fd081fa`, `modules.rs:195-225`, test
+  `scalar_field_algebra_ring_predicates`); its report asks MF1 only to rebase on that. Nothing is left
+  for MF1, which does not edit `modules.rs`.
 * Unchecked component counts of the N4 class outside the files MF1 rewrites (not listed in the item):
   `spin.rs:76`, `:78`, `:341`, `:343` (`2_usize.pow((dimension / 2) as u32)` overflows for dimension
   >= 128); `dim * dim` at `almost_complex.rs:160` (`vec![Expr::from(0); dim * dim]`), `finsler.rs:153`,
   `symmetries.rs:110` (`Vec::with_capacity`) and `symplectic.rs:258` (`matrix_at`); `dim * dim * dim` at
   `finsler.rs:300`. Each should use `checked_mul` or `component_count`.
-* `modules.rs:573` and `traits.rs:124` `total_rank`: unchecked rank sums of module types (no allocation
+* `modules.rs:605` and `traits.rs:124` `total_rank`: unchecked rank sums of module types (no allocation
   follows).
 * `DiffForm::new` / `DiffForm::zero` mean both "zero" (`is_zero` is true) and "no components in this
   chart" (d errs). A sparse antisymmetric storage with an explicit zero would remove the ambiguity.
 * `tracker_08_09_tests.rs` is not compiled (no `mod` declares it; already listed in
-  `docs/magma/REVIEW_2026-11-06.md:69`). As a child of the crate root it would not compile, because it
+  `docs/magma/REVIEW_2026-11-06.md:69-70`). As a child of the crate root it would not compile, because it
   reads the private field `PullBack::map` (`:102`, also `PushForward::map` at `:114`). Its
   `test_lie_derivative_one_form` (`:186-212`) asserts that L_∂x dx is structurally zero; that fails at
   HEAD (unsimplified terms) and holds after MF1 (`apply_to_one_form` normalizes, 3.4). Wiring the file
@@ -1161,7 +1303,8 @@ These are outside the items. They should go to HANDOFF (plan step 8 adds them).
 
 ### 6.1 Files, in implementation order
 
-1. `rustmath-manifolds/Cargo.toml`: add `rustmath-polynomials`.
+1. `rustmath-manifolds/Cargo.toml`: add `rustmath-polynomials` (the crate already depends on
+   rustmath-category since R1, `fd081fa`; keep it).
 2. `rustmath-manifolds/src/errors.rs`: the four variants of 2.2.
 3. `rustmath-manifolds/src/expr_zero.rs` (new): header citing MAGMA Chapter_24 §24.4.2 and §24.4.7,
    Chapter_41, Buchberger-Loos 1982, Richardson 1968, Lindemann 1882 and Hermite 1873, and
@@ -1169,15 +1312,16 @@ These are outside the items. They should go to HANDOFF (plan step 8 adds them).
    the reserved names, the exact value of a `Real` and the precondition (1.6.1). Contents: `ZeroTest`,
    `reserved`, `ZERO_TEST_WORK`, `zero_test`, `zero_test_with_budget`, `is_finite_expr`, `normalize`, and
    the private prescan, conversion (`MultivariatePolynomial<Integer>` with a cached coefficient-size bound)
-   and limits of 1.6.2 and 1.6.3, following `$S/rev2/proto3.rs` (without its `ZT_*` environment
+   and limits of 1.6.2 and 1.6.3, following `$S/rev3/proto4.rs` (without its `ZT_*` environment
    overrides and counters). `$S/rev1/proto2.rs` lacks the negation charge of 1.6.3 (review 2): every
    negation of a polynomial, in the `Unary(Neg)` arm, for the right operand of a subtraction and for a
-   negated first term, goes through one charged helper (`pneg` in `proto3.rs`). Also `sum_signed` (1.4),
-   the memoized scans `is_finite_expr` and `unsupported_derivative` / `check_derivative` (1.4; the
-   header also cites `rustmath-symbolic/src/differentiate.rs` and `PROJECT_TRACKER.md:2106` for the
-   node kinds it refuses). Module tests of 1.6.6 (`test_zero_test_cases`, `test_zero_test_budget`,
-   `test_normalize_and_finiteness`, `test_scans_on_shared_subtrees`). `lib.rs`: `pub mod expr_zero;` and
-   the re-export.
+   negated first term, goes through one charged helper (`pneg` in `proto4.rs`). `$S/rev3/proto4.rs`
+   lacks the `root_sum` rule of `unsupported_derivative` (review 3). Also `sum_signed` (1.4), the
+   memoized scans `is_finite_expr` and `unsupported_derivative` / `check_derivative` (1.4; the header also
+   cites `rustmath-symbolic/src/differentiate.rs` and `PROJECT_TRACKER.md:2117` for the node kinds it
+   refuses, and `differentiate.rs:215-221` for the `root_sum` case). Module tests of 1.6.6
+   (`test_zero_test_cases`, `test_zero_test_budget`, `test_normalize_and_finiteness`,
+   `test_scans_on_shared_subtrees`). `lib.rs`: `pub mod expr_zero;` and the re-export.
 4. `rustmath-manifolds/src/tensor_field.rs`: header gains the citations (Lee 2013 ch. 12); `component_count`,
    `zeroed_components`, checked `to_flat`, `total_rank`, `num_components`, `from_components`,
    `component`, `set_component`; the crate-private helpers of 1.7; `contract` and `tensor_product`
@@ -1185,57 +1329,90 @@ These are outside the items. They should go to HANDOFF (plan step 8 adds them).
    and the (1,2) tensor δ^i_j a_k: contract(0,0) = 3a_k, contract(0,1) = a_j;
    `test_tensor_product_index_order` = [3, 4, 6, 8]). In the same step, so that the crate builds:
    `.unwrap()` in the tests at `tensor_field.rs:361`, `:373`, `:374`, `:396`, and
-   `lie_derivative.rs:225` becomes `tensor.num_components()?` (with `zeroed_components` for the vector
-   at `:226`). `contract` uses `expr_zero::sum_signed` (step 3).
+   `LieDerivative::apply_to_tensor` (`lie_derivative.rs:189-247`, the only other caller of
+   `num_components`) returns `Err(NotImplemented)` after its rank checks (3.4, review 3), with
+   `test_apply_to_tensor_not_implemented`. `contract` uses `expr_zero::sum_signed` (step 3).
 5. `rustmath-manifolds/src/diff_form.rs`: header citing MAGMA Chapter_82 §82.3 (exterior algebras),
    Chapter_42 §42.15 (`Differential(a)`), Chapter_111 (derivations), Lee 2013 ch. 14, Spivak, *Calculus on
    Manifolds* (1965) ch. 4, and the Sage module as the API reference; the convention and invariants I1, I2
    in the module doc; the combinatorial helpers (`first_comb`/`next_comb`, Heap's permutations with sign,
-   `scatter`, `neg`); construction with the antisymmetry and finiteness checks (3.1), d
-   (1.4, with `check_derivative` before every `differentiate` and the precondition in its doc), wedge
-   (1.5), 3.3; tests of 1.8 (including `test_d_refuses_unsupported_derivatives`), 2.3, 3.3. Note in the module doc that MAGMA has no
-   smooth-manifold chapter and that the handbook has no examples to port.
+   `scatter`, `neg`); `check_coordinate_chart` (1.4 step 4); construction with the antisymmetry and
+   finiteness checks (3.1), d (1.4, with `check_derivative` before every `differentiate`, and the
+   derivative and chart preconditions in its doc), wedge (1.5), 3.3 (the chart precondition also in the
+   docs of `closedness`, `is_closed` and `lie_derivative`); tests of 1.8 (including
+   `test_d_refuses_unsupported_derivatives` with the `root_sum` rows), 2.3 (including
+   `test_d_chart_identity`), 3.3. Note in the module doc that MAGMA has no smooth-manifold chapter and
+   that the handbook has no examples to port.
 6. Callers (3.4): `symplectic.rs` (also the doc of `SymplecticForm::new`), `topology.rs`, `contact.rs`,
-   `lie_derivative.rs` (`apply_to_form`, `apply_to_one_form` with the guard, the chart check and
-   `sum_signed`, `commutes_with_exterior_derivative`; `test_lie_one_form_guard`), `maps.rs` (the three
-   `Err(NotImplemented)`: two pullbacks and the pushforward; `test_pull_push_facades_not_implemented`),
-   with their tests.
-7. `rustmath-jupyter/src/repl.rs`: the test block of 4.3 only.
-8. Docs: PROJECT_TRACKER.md rows `:2520` (d), `:2521` (contraction), `:2522` (wedge) to 🟢 with the new
-   locations; `:2537` (Lie derivative: `apply_to_form` correct, `apply_to_tensor` still without
-   correction terms, stays ⏳); `:2543` (de Rham: `is_closed` is three-valued now); `:2536` (integration,
-   section 5); remove the two "Absent entirely" bullets `:2555`, `:2556`; the bullet `:2561` (pullback)
-   says that the p-form and covariant-tensor pullback facades and the pushforward facade for rank >= 2
-   now return `Err(NotImplemented)`, and that the 1-form pullback lacks ω∘f; the tally line `:2516`. Row `:2531` (symplectic non-degeneracy) stays 🛑.
-   The tracker row `:2106` (rustmath-symbolic, derivative of a named function) gains "MF1's d refuses
-   such components (rustmath-manifolds `expr_zero::unsupported_derivative`)" and its stale line `:205`
-   becomes `:230-234`; the list of other facade kinds (Mod, gamma, factorial, zeta, erf) is added to it.
-   HANDOFF: remove the library part of F2 and N4 / S8, keep the REPL part of F2 for J1b, add section 4.4
-   and every bullet of section 5 (the `differentiate` facades and the unguarded callers, integration,
-   pullback and pushforward, symplectic non-degeneracy and evaluation and the `SymplecticForm::new`
-   checks, `apply_to_tensor`, the unchecked counts of `spin.rs`, `almost_complex.rs`, `finsler.rs`,
-   `symmetries.rs`, `symplectic.rs:258`, module rank sums, the `DiffForm::new` ambiguity, the
-   uncompiled `tracker_08_09_tests.rs`, the dense-storage limit, the two zero tests, `simplify`'s
-   `0 * a` rule). No docs/magma rows change (MAGMA has no intrinsics for smooth forms).
+   `lie_derivative.rs` (`apply_to_form`, `apply_to_one_form` with the guard, `check_coordinate_chart`
+   and `sum_signed`, `commutes_with_exterior_derivative`; `test_lie_one_form_guard` with the `root_sum`
+   case), `maps.rs` (the three `Err(NotImplemented)`: two pullbacks and the pushforward;
+   `test_pull_push_facades_not_implemented`), with their tests.
+7. `rustmath-jupyter/src/repl.rs`: the two comments of 4.3 (`:4903-4904`, `:12326-12327`). No code and
+   no test changes. rustmath-jupyter builds and passes after every step (4.3), so this step can go in
+   any commit of the unit.
+8. Docs (the orchestrator; the implementer does not edit them). PROJECT_TRACKER.md rows, by title, with
+   their lines at `36c2170`: "Exterior derivative d on p-forms" `:2531`, "Tensor contraction (Einstein
+   summation)" `:2532`, "Wedge product" `:2533` to 🟢 with the new locations; "Lie derivative of
+   scalars/vectors/forms" `:2548` (`apply_to_form` correct; `apply_to_tensor` returns
+   `Err(NotImplemented)`; stays ⏳); "De Rham cohomology" `:2554` (`is_closed` is three-valued now);
+   "Integration on manifolds" `:2547` (section 5); "Pullback / pushforward of forms and vectors along
+   maps" `:2539` (review 3: the p-form and covariant-tensor pullbacks and the rank >= 2 pushforward
+   return `Err(NotImplemented)`; the base-point issue `maps.rs:193-195` and the 1-form pullback without
+   ω∘f remain; stays 🛑); remove the two "Absent entirely" bullets `:2566`, `:2567`; the bullet `:2572`
+   (pullback) says the same as the row; the tally line `:2527`. Row "Symplectic form non-degeneracy
+   test" `:2542` stays 🛑. The row "Derivative of a named function" `:2117` (rustmath-symbolic) gains
+   "MF1's d refuses such components (rustmath-manifolds `expr_zero::unsupported_derivative`)", its stale
+   line `:205` becomes `:230-234`, and the list of the other facade kinds is added to it (Mod, gamma,
+   factorial, zeta, erf, and `root_sum` with the variable in its polynomial, `:218-221`). HANDOFF:
+   remove the library part of F2 and N4 / S8 (the REPL part of F2 was done by J1b); add section 4.4 (the
+   REPL follow-ups) and every bullet of section 5 (the `differentiate` facades with the `root_sum` rule
+   and the unguarded callers, integration, pullback and pushforward, symplectic non-degeneracy and
+   evaluation and the `SymplecticForm::new` checks, the Lie derivative of general tensors, the chart
+   identity, the unchecked counts of `spin.rs`, `almost_complex.rs`, `finsler.rs`, `symmetries.rs`,
+   `symplectic.rs:258`, module rank sums, the `DiffForm::new` ambiguity, the uncompiled
+   `tracker_08_09_tests.rs`, the dense-storage limit, one public zero test, `simplify`'s `0 * a` rule).
+   No docs/magma rows change (MAGMA has no intrinsics for smooth forms).
+
+Rules that keep MF1 independent of S1 (S1 is not committed; it may land just before MF1 or not at all):
+
+* Every `match` and `if let` on an `Expr` is on a reference, and no field is moved out of an owned
+  `Expr` (use `(**arc).clone()` where an owned child is needed). With S1's `impl Drop for Expr` (S1
+  §2.14) such a move is error E0509; without it the same code compiles. Tests follow the same rule
+  (`matches!(slot, Expr::Integer(_))` binds nothing and is fine).
+* Tests build every sum of more than a few hundred terms with `sum_signed`, never left-deep (1.6.6):
+  at `36c2170` the drop of a left-deep sum of 30000 terms aborts a 2 MB test thread.
+* Tests compare a printed subterm through `format!("{}", u)` of an expression built in the test, and a
+  slot with an expression built in the test, never with a hand-written string of a structure. So S1's
+  Display change (S1 §2.11) cannot break them.
+* Nothing calls S1's API. If S1 has landed when MF1 is implemented, rebuild, rerun the acceptance
+  commands and the rev3 harnesses; no part of this design changes.
 
 ### 6.2 Acceptance
 
 ```bash
-cargo test -p rustmath-manifolds --no-fail-fast        # HEAD baseline: 258 passed, 11 ignored; 31 doc tests
-cargo test -p rustmath-jupyter --no-fail-fast          # the only downstream crate
+cargo test -p rustmath-manifolds --no-fail-fast        # HEAD 36c2170: 259 passed, 11 ignored; 31 doc tests
+cargo test -p rustmath-jupyter --no-fail-fast          # the only downstream crate: unchanged REPL tests pass
 cargo check --workspace --tests
 cargo clippy -p rustmath-manifolds
 gp -q $S/refs.gp                                       # the reference values quoted in the tests
 gp -q $S/rev2/refs2.gp < /dev/null                     # the Revision 2 values (L_X(xy dx), the erf coefficient)
-cd $S/rev2 && ../build.sh t_b1.rs t_b1 && ./t_b1       # expected output: $S/rev1/b1.txt (also t_b2 <family> <a> <b>: sweep3.txt)
-cd $S/rev2 && ../build.sh t_dguard.rs t_dguard && ./t_dguard   # expected output: dguard.txt
+gp -q $S/rev3/refs4.gp < /dev/null                     # the Revision 3 values (root_sum derivatives); refs4.out
+cd /home/user/RustMath && cargo build -p rustmath-manifolds   # the debug rlibs the harnesses link against
+cd $S/rev3 && ./build.sh t_rootsum3.rs t_rootsum3 && ./t_rootsum3   # expected output: rootsum3.txt
+cd $S/rev3 && ./build.sh t_dguard.rs t_dguard && ./t_dguard         # expected output: $S/rev2/dguard.txt
+cd $S/rev3 && ./build.sh t_b2.rs t_b2 && ./t_b2 negp 80 197         # answers and units of sweep4.txt
 ```
+
+The harness binaries are about 70 MB each; delete them afterwards. If S1 has landed, `rlibs.txt` may
+name stale rlib hashes: regenerate it from `cargo build -p rustmath-manifolds --message-format=json`.
 
 Every test of 1.8, 2.3 and 3.3 named "fails" must fail or not compile on HEAD and pass after (apply only
 the test hunks to HEAD once to check). Most use new APIs and cannot compile on HEAD; for those the
-prototype programs (`$S/repro_head*.rs`, `$S/rev1/*.rs`, `$S/review2/r_dfacade.rs`) are the HEAD
-evidence. The tests with wall-clock bounds (`test_zero_test_budget`, `test_d_budget`,
-`test_scans_on_shared_subtrees`) allow at least 25 times the measured debug time.
+prototype programs (`$S/repro_head*.rs`, `$S/rev1/*.rs`, `$S/review2/r_dfacade.rs`,
+`$S/review3/r_rootsum.rs`) are the HEAD evidence. The tests with wall-clock bounds
+(`test_zero_test_budget`, `test_d_budget`, `test_scans_on_shared_subtrees`) allow at least 25 times the
+measured debug time.
 
 ### 6.3 Risks
 
@@ -1243,8 +1420,11 @@ evidence. The tests with wall-clock bounds (`test_zero_test_budget`, `test_d_bud
   antisymmetry cannot be verified (Undecided). No caller in the workspace passes such input (the only
   degree >= 2 caller is `standard_form`, constant ±1).
 * Public signatures change: `MultiIndex::to_flat`, `TensorField::total_rank` and `num_components` now
-  return `Result` (callers: `tensor_field.rs` itself, `lie_derivative.rs:225`, three tests). `Neg`
-  keeps its signature; `scale` is new.
+  return `Result` (callers: `tensor_field.rs` itself, `lie_derivative.rs:225`, which goes with
+  `apply_to_tensor`, and three tests). `Neg` keeps its signature; `scale` is new.
+* `LieDerivative::apply_to_tensor` now returns `Err(NotImplemented)` for tensors of rank (p, q) other
+  than (0, 0), (1, 0), (0, 1). It has no caller in the workspace; it returned values without the
+  correction terms before.
 * The zero test treats free symbols as indeterminates: a form a dx∧dy with a parameter a is NonZero, as in
   Sage. Its budget and limits make large inputs Unresolved, never a wrong decision. The reserved names
   follow the parser: a chart coordinate named `I`, `pi` or `e` gets the conservative treatment of 1.6.1
@@ -1260,13 +1440,20 @@ evidence. The tests with wall-clock bounds (`test_zero_test_budget`, `test_d_bud
   implementation that adds an uncharged pass over the terms of a polynomial breaks the bound, as the
   uncharged negation did (review 2). Every such pass must be in the table of 1.6.3.
 * d refuses components whose derivative rustmath-symbolic does not implement (1.4): any `Function` of
-  the coordinate other than `root_sum`, and `mod`, gamma, factorial, zeta, erf of it. Such forms gave a
-  fabricated d at HEAD; now they give `Err(NotImplemented)`, and so do `closedness`, `is_closed`, the Lie
-  derivative, `is_contact`, `SymplecticManifold::new` and `commutes_with_exterior_derivative` on them. No
-  caller in the workspace builds such forms (`git grep` for `Expr::Function`, gamma, zeta, erf, factorial
-  and `Mod` in rustmath-manifolds finds only `catalog.rs` metrics, integration and transition helpers,
-  none of which reaches d). A hand-built `Expr::Function("sin", ..)` is refused too: the parser's
-  `sin(x)` is `Unary(Sin)` and works.
+  the coordinate other than `root_sum`; `mod`, gamma, factorial, zeta, erf of it; and a `root_sum` whose
+  polynomial contains the coordinate, also when that coordinate is the bound variable (review 3). Such
+  forms gave a fabricated d at HEAD; now they give `Err(NotImplemented)`, and so do `closedness`,
+  `is_closed`, the Lie derivative, `is_contact`, `SymplecticManifold::new` and
+  `commutes_with_exterior_derivative` on them. No caller in the workspace builds such forms (`git grep`
+  for `Expr::Function`, `root_sum`, gamma, zeta, erf, factorial and `Mod` in rustmath-manifolds finds
+  only `catalog.rs` metrics, integration and transition helpers, none of which reaches d). A hand-built
+  `Expr::Function("sin", ..)` is refused too: the parser's `sin(x)` is `Unary(Sin)` and works.
+* d refuses a chart whose name is registered with the manifold under other coordinates (1.4 step 4).
+  Every existing caller in rustmath-manifolds passes `default_chart()`, the registered chart itself
+  (`git grep default_chart` in `diff_form.rs`, `symplectic.rs`, `contact.rs`, `lie_derivative.rs`,
+  `kahler.rs`, `integration.rs`), or passes its own caller's chart through (`topology.rs:82`), so none
+  is affected. A chart that is not registered is
+  trusted, as at HEAD; the precondition is documented (section 5 has the fix).
 * Tree walks on shared subtrees. `is_finite_expr` and `unsupported_derivative` are linear in the
   number of distinct nodes (1.4, 1.6). The other walks are linear in the tree size, which can be
   exponential in the DAG size (a component built by repeated `e.clone() + e.clone()`): `is_constant`,
@@ -1277,10 +1464,13 @@ evidence. The tests with wall-clock bounds (`test_zero_test_budget`, `test_d_bud
   The zero test itself stops after 100000 tree nodes (`Unresolved`). A memoized `simplify` and an
   `Arc::ptr_eq` shortcut in the structural comparison would remove this; both belong to
   rustmath-symbolic.
-* The REPL can no longer take d on manifolds of dimension >= 2 until J1a fixes S9 and S14 (4.2). This is
-  the honest answer: the REPL chart does not match the manifold.
-* Recursion: `simplify` and `differentiate` recurse over the input trees (as HEAD; S1 makes `simplify`
-  iterative along the left spine). The sums built by MF1 are balanced (`sum_signed`), the zero test's
-  prescan is iterative, its conversion flattens chains and is capped at 200 nested levels, and trees deeper
-  than 4096 are `Unresolved`. A user component that is itself a very deep tree can still overflow the
-  stack in `simplify` or `Drop`, as at HEAD.
+* Recursion: `simplify`, `differentiate`, `Display` and `Drop` recurse once per tree level at
+  `36c2170` (a left-deep sum of 5000 terms overflows `simplify` in a 2 MB thread; one of 30000
+  overflows its drop, `$S/rev3/drop3.txt`). S1, if it lands, makes `simplify` iterative along the left
+  spine and `Drop` bounded; MF1 relies on neither. The sums built by MF1 are balanced (`sum_signed`), its
+  tests build long sums the same way, the zero test's prescan is iterative, its conversion flattens
+  chains and is capped at 200 nested levels, and trees deeper than 4096 are `Unresolved`. A user
+  component that is itself a very deep tree can still overflow the stack in `simplify` or `Drop`, as at
+  HEAD.
+* S1 lands first. Then the E0509 rule of 6.1 matters, and the implementer rebuilds the harness rlibs.
+  Nothing else in this design depends on whether S1 lands.
