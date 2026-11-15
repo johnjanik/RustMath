@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 5187 | 95 | 343 | 1250 | 18 | 152 | 3454 (26%) | 7999 (60%) |
+| 13341 | 5188 | 95 | 343 | 1250 | 18 | 152 | 3453 (26%) | 8000 (60%) |
 
 ## By chapter
 
@@ -139,7 +139,7 @@ automatic `candidate`/`missing` counts.
 | 115 | Resolution Graphs and Splice Diagrams | XV | 58 | 0 | 0 | 0 | 0 | 0 | 0 | 19 | 39 | none | `rustmath-geometry (new module) building on rustmath-graphs` |
 | 116 | Algebraic Surfaces | XV | 78 | 0 | 0 | 0 | 0 | 0 | 0 | 7 | 71 | none | `rustmath-schemes` |
 | 117 | Hilbert Series of Polarised Varieties | XV | 121 | 0 | 0 | 0 | 0 | 0 | 0 | 31 | 90 | stub | `rustmath-schemes` |
-| 118 | Toric Varieties | XV | 193 | 0 | 0 | 0 | 0 | 0 | 0 | 62 | 131 | partial | `rustmath-geometry` |
+| 118 | Toric Varieties | XV | 193 | 1 | 0 | 0 | 0 | 0 | 0 | 61 | 132 | partial | `rustmath-geometry` |
 | 119 | Rational Curves and Conics | XVI | 33 | 0 | 0 | 0 | 0 | 0 | 0 | 15 | 18 | partial | `rustmath-quadraticforms (+ rustmath-curves for parametrization)` |
 | 120 | Elliptic Curves | XVI | 136 | 0 | 0 | 0 | 0 | 0 | 0 | 65 | 71 | partial | `rustmath-ellipticcurves` |
 | 121 | Elliptic Curves over Finite Fields | XVI | 34 | 0 | 0 | 0 | 0 | 0 | 0 | 16 | 18 | stub | `rustmath-ellipticcurves` |

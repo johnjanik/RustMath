@@ -379,18 +379,19 @@ The pieces that do not exist yet, per package (Section 6 says where they go):
 The WP-F core is done (Section 8, step 1). Extensions 3 and 5 of 3.3 are done, 1 and 2 in part
 (see below). The code is on branch `claude/m23-wpf` (base `origin/main` `0d277f0`).
 
-The design, its review, the implementation report and the code review are in
-`docs/workstreams/m23_golay/wpf/` (`design/`, `impl/`).
+The design, its review, the implementation report, the code review, the docs check and the report
+on the minor fixes are in `docs/workstreams/m23_golay/wpf/` (`design/`, `impl/`). The PARI/GP
+scripts behind the small-curve tests, with their output, are in `wpf/gp/`.
 
 Code:
 
 - `rustmath-finitefields/src/small_field.rs:55` `SmallFq<K>` (word-size `GF(p^K)`, `p < 2^16`,
-  `K <= 8`) and `:649` `count_distinct_roots`.
-- `rustmath-curves/src/nodal_biprojective/fibres.rs:153` `plane_point_count`, `singular.rs:420`
-  `singular_locus`, `local.rs:200` the local classifier, `certify.rs:133` `certify` and `:308`
+  `K <= 8`, `p^K < 2^63`) and `:654` `count_distinct_roots`.
+- `rustmath-curves/src/nodal_biprojective/fibres.rs:165` `plane_point_count`, `singular.rs:426`
+  `singular_locus`, `local.rs:200` the local classifier, `certify.rs:138` `certify` and `:319`
   `normalization_point_counts`.
 - `rustmath-curves/src/weil.rs:112` `FrobeniusPolynomial::from_point_counts`, `:281` `is_weil`
-  (exact, by Sturm sequences), `:347` `reciprocal_halves_mod2`, `:387`
+  (exact, by Sturm sequences), `:347` `reciprocal_halves_mod2`, `:398`
   `two_torsion_frobenius_order`.
 - Tests: `rustmath-curves/tests/m23_zeta.rs`, `rustmath-curves/tests/biprojective_small_curves.rs`,
   `rustmath-finitefields/tests/small_field.rs`. Data: `rustmath-curves/tests/data/m23/`
@@ -410,7 +411,9 @@ Reproduced:
 - The anchor at 53: 45, 52, 57, all three Decided (`env_anchor_53`).
 - The derived checks of 3.1 step 6 on every counted row: the exact Weil test,
   `P(chi(p)) = P(chi(p) p) = 0 mod 23` and `P mod 2 = Q Q^rev`
-  (`reference_polynomials_pass_the_derived_checks`). Both fibrations give the same counts
+  (`reference_polynomials_pass_the_derived_checks` on the reference rows; `full_x_table_k4`,
+  `env_l_table`, `x_at_7_k6_and_11_k5_nodal` and the example `m23_zeta` on the counted rows).
+  Both fibrations give the same counts
   (`both_fibrations_and_brute_force`, `full_both_fibrations_k3`).
 
 Statuses. Decided means the nodal certificate: every singular point of the model mod p is a node,
@@ -445,7 +448,7 @@ mod 23 check, and was checked again in PARI/GP.
 
 Order of Frobenius on `Jac(X)[2]` (3.3 item 5): 15 and Decided at X for p = 11, 79, 97 and at L for
 (53, 41), (67, 15). At X for p = 31 it is 15 if the counts are right (the row is not Decided).
-Elsewhere only bounds (`weil.rs:387`, `two_torsion_orders`).
+Elsewhere only bounds (`weil.rs:398`, `two_torsion_orders`).
 
 Extensions of 3.3:
 
@@ -460,15 +463,24 @@ Extensions of 3.3:
 Follow-ups (`wpf/impl/WPF.md`, Section 7): F-1 a 3-adically good model; F-2 Le Lay's model as a
 cross-check; F-4 a faster quartic root count above p = 131; F-5 p = 23; F-6 a CC0 route for the L
 covers; F-7 Q versus Q^rev; F-8 report the two corrected rows to the owner; F-9 the owner's
-decision on `DeltaSumCertified`; F-10 JSON output of the example; F-11 tests of `A_k` with odd k
-and of ordinary m-fold points over residue fields of degree > 1. The code review adds six minor
-items (`wpf/impl/WPF.review1.md`, Section 3): a test of the Unclassified path, the cost and the
-panics in the docs, `select_model` must not skip `GenusInconsistent`, the MAGMA chapter in the
-headers of `certify.rs` and `residue.rs`, and tests that close F-11.
+decision on `DeltaSumCertified`; F-10 JSON output of the example; F-11 a test of an ordinary
+m-fold point over a residue field of degree > 1 (the `A_k` part is closed: degree-3 nodes, A3 at
+a degree-2 place and A15, in both branch classes, `biprojective_small_curves.rs`).
+
+The six minor items of the code review (`wpf/impl/WPF.review1.md`, Section 3) are fixed
+(`wpf/impl/WPF_minors.md`): a test of the Unclassified path (`unclassified_e6_points`), the cost
+and the panics in the docs, the chunk sum of `plane_point_count` as a reduction,
+`GenusInconsistent` panics in the drivers instead of counting as a refusal, and the MAGMA chapter
+in the headers of `certify.rs` and `residue.rs`, and the F-11 tests above. The checks of those fixes added two overflow
+guards: a count above `u64::MAX` in `plane_point_count` is `FieldTooLarge`, and an order of
+Frobenius on `Jac[2]` above `u64::MAX` (possible from genus 64 on) panics; neither wraps.
 
 Commands:
 
 - `cargo test -p rustmath-curves --test m23_zeta` (fast set, debug, about 7 s);
+- `cargo test -p rustmath-curves --test biprojective_small_curves` (debug, about 2 s), and
+  `cargo test --release -p rustmath-curves --test biprojective_small_curves -- --ignored`
+  (`node_of_degree_3_up_to_k6`, about 2 s);
 - `cargo test --release -p rustmath-curves --test m23_zeta -- --ignored full_`;
 - `M23ISGALOIS=<checkout of shaowuz/m23isgalois> cargo test --release -p rustmath-curves --test m23_zeta -- --ignored env_`;
 - `cargo run --release -p rustmath-curves --example m23_zeta -- <pmin> <pmax> <kmax> [--cover L]`.
@@ -476,7 +488,7 @@ Commands:
 Two older lines of this file are now out of date. The JSON files are vendored (the opening
 paragraph says nothing is). Section 2's "Point counts, zeta functions and L-polynomials of curves
 of genus >= 2: absent" no longer holds for curves in `P^1 x P^1` with fibre degree 2 to 4,
-`p < 2^16` and `k <= 8`.
+odd `p < 2^16`, `k <= 8` and `p^k < 2^63`.
 
 ### 3.1 Specification
 
