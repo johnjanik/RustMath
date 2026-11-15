@@ -21,7 +21,7 @@ complete.
 | R1 rings, p-adics, category | rings, padics, category, core, powerseries | approved (review 2) | `fd081fa`, approved at review 2 |
 | M1a bounded rational form | matrix | approved (review 1) | `d3a133b`, approved at review 1 |
 | M1b JordanForm, PrimaryRationalForm, IsSimilar, IsConsistent | matrix (+ polynomials, finitefields) | approved (review 1) | `dc367a2`, approved at review 1 |
-| S1 symbolic (taylor, parser) | symbolic | NOT approved: reviews 4 to 7 have 2 blockers each | not started |
+| S1 symbolic (taylor, parser) | symbolic | NOT approved: reviews 4 to 9 have 1 or 2 blockers each (run 4 added four red-team rounds) | not started; parked for an owner decision |
 | MF1 manifolds (d and wedge growth, checked powers) | manifolds | approved (review 4) | `f29c492`, approved at review 1 |
 | C1 combinatorics | combinatorics | approved (review 4) | `2e000c9`, approved at review 2 |
 | J1a REPL parser and small fixes | jupyter (+ rationals, finitefields) | approved (review 3) | `bd03278`, approved at review 1 |
@@ -41,6 +41,21 @@ again found two holes each over the bar (review 6: the sparse accumulator of the
 MPFR's erf costs O(x^2) terms and was charged as cheap, 32 s at 12 KB; owned `Expr` coefficients copy a
 kernel's top node uncharged, 2.35 GB at 100 KB). Run 4 adds a red team with separate lenses before each
 formal review.
+
+Run 4 (2026-11-15, `implement-workflow-run4.js`, 24 agents): four red-team rounds with four lenses each
+(numeric, memory, series, structure; `design/S1-symbolic.redteam<round>-<lens>.md`), revisions "7, red-team
+round 1" to "round 4" and revision 8, and formal reviews 8 and 9. Neither approved the design. Review 8 had one
+blocker (a hint substituted into a subtree that is not regular). Review 9 has two, of one class: the engine
+raises a decided `DivisionByZero` where the input divides by no exact zero. B1: the atan family builds its
+integrand for an argument whose series is an exact constant, and the integrand is singular at arcsin(+-1),
+arccos(+-1), arccosh(+-1) and arcsinh(+-I), although the value is a constant. B2: revision 7rt4's pole rule for
+arctanh(+-1) fires on the constant term of a non-constant argument, so a logarithmic branch point that revision
+8 reported as `NotLaurent` became `DivisionByZero` (a regression of that revision). Everything else review 9
+checked holds, including 2000 random inputs against PARI/GP at 300 digits. The red team's last round still
+listed three holes over the bar (empty truncated arguments of negative precision; `0^r` decided from syntax;
+results whose trees are exponential in their DAG). The design is now 5259 lines. The prototypes (2.6 GB) stay
+in the session scratchpad and are not kept. S1 is parked until the owner decides how to continue (see
+`docs/HANDOFF.md`, "Open follow-ups round").
 
 For the four committed units the trackers are updated (2026-11-14: `PROJECT_TRACKER.md` Change Log
 "Open follow-ups round, part 1", `docs/magma/status_overrides.csv`, `REVIEW_2026-11-06.md` and the
