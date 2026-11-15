@@ -18,7 +18,7 @@ come the dead code, the mixin wiring and the `docs/PLAN.md` build targets.
   were deleted; their tips are tags `archive/<branch>` (`docs/BRANCHES.md`). Work on a new branch
   off `main`; cloud sessions can push only their own branch (no tags, no other branches).
 - **Build and tests:** the whole workspace compiles, and `cargo test --workspace` is green:
-  14,386 passed, 0 failed, 333 ignored, 194 targets at `922024b` (`docs/TEST_BASELINE.md`). First build
+  14,791 passed, 0 failed, 328 ignored, 203 targets at `f29c492` (`docs/TEST_BASELINE.md`). First build
   compiles GMP/MPFR for `rug` (minutes).
 - **Disk:** the session's disk allowance is about 39 GB. With incremental compilation on, `target/`
   grew past 20 GB and filled it mid-session. This session set `[build] incremental = false` in
